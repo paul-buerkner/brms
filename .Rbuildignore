@@ -1,0 +1,11 @@
+^.*\.Rproj$
+^.*\.RData$
+^.*\.Rhistory$
+^\.Rproj\.user$
+^.*\.Rprofile$
+^README\.Rmd$
+^README-.*\.png$
+^\README_cache$
+^News\.md$
+^cran-comments\.md$
+^brm\.txt$
