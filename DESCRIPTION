@@ -12,4 +12,6 @@ Description: Fit Bayesian generalized linear and ordinal mixed models using Stan
 LazyData: true
 NeedsCompilation: no
 License: GPL (>= 2)
+URL: http://github.com/paul-buerkner/brms
+BugReports: http://github.com/paul-buerkner/brms/issues
 Additional_repositories: http://rstan.org/repo
