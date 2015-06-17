@@ -3,12 +3,13 @@ title: "News"
 output: html_document
 ---
 
-# brms 0.2.1
+# brms 0.2.0.9000
 
+* introduced new argument 'cov.ranef' to function brm allowing for customized covariance structures of random effects
 * amended parametrization of random effects to increase efficiency of the sampling algorithms
 * improved vectorization of sampling statements
 * introduced new argument 'autocor' to function brm allowing for autocorrelation of the response variable.
-* introduced new functions 'cor.ar', 'cor.ma', and 'cor.arma', to be used with argument 'autocor' for modeling autoregressive, moving-average, and autoregressive- moving-average models. 
+* introduced new functions 'cor.ar', 'cor.ma', and 'cor.arma', to be used with argument 'autocor' for modeling autoregressive, moving-average, and autoregressive-moving-average models. 
 * fixed a bug that caused an error when sampling only one chain while silent = TRUE 
 
 # brms 0.2.0
