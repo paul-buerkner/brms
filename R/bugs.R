@@ -158,6 +158,7 @@ brm.bugs <- function(formula, data = NULL, family = "gaussian", link = "identiy"
         ord.fe.prior.jags[2], ord.re.prior.jags[2]), "\n",
     "}")
 
+  class(model) <- c("character", "brmsmodel")
   if (is.character(save.model)) {
     sink(save.model)
     cat(model)

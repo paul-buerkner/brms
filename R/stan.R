@@ -188,6 +188,7 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
     ranef$genC, 
   "} \n")
   
+  class(model) <- c("character", "brmsmodel")
   if (is.character(save.model)) {
     sink(save.model)
     cat(model)

@@ -296,6 +296,11 @@ predict.brmsfit <- function(object, ...) {
   out
 }
 
+#' @export
+print.brmsmodel <- function(x, ...) {
+  cat(x)
+}
+
 #' Trace and density plots for MCMC samples
 #' 
 #' Trace and density plots for MCMC samples using the \code{ggmcmc} package
