@@ -5,17 +5,17 @@
 brm.bugs <- function(formula, data = NULL, family = "gaussian", link = "identiy", 
                        prior = list(), partial = NULL, threshold = "flexible", 
                        predict = FALSE, save.model = FALSE, ...) {  
-  ef <- extract.effects(formula = formula, partial = partial)   
+  ef <- extract.effects(formula = formula, family = family, partial = partial)   
   data <- model.frame(ef$all, data=data, drop.unused.levels=TRUE)
   
   is.ord <- family %in% c("cumulative", "cratio", "sratio", "acat")
   X = brm.model.matrix(ef$fixed, data, rm.int = is.ord)
   f = colnames(X)
   r = sapply(lapply(ef$random, brm.model.matrix, data = data, rm.int = is.ord), colnames)
-  n = ifelse(is(ef$add,"formula"),"[n]","")
+  n = ifelse(is(ef$trials,"formula") | is(ef$cat,"formula"), "[n]", "")
   ilink <- c(identity = "", log = "exp", inverse = "inv", sqrt = "square", logit = "ilogit", 
              probit = "phi", probit.approx = "Phi_approx", cloglog = "icloglog")[[link]]
-  llh <- bugs.llh(family, link = link)
+  llh <- bugs.llh(family, link = link, se = is(ef$se, "formula"))
   fe.only <- setdiff(f, unlist(lapply(r, intersect, y = f)))
   if (length(f)) eta.fe <- unlist(sapply(eval(1:length(f)), function(x)
     if (is.element(f[x],fe.only)) paste0("b_",f[x],"*X[n,",x,"]")))
@@ -88,7 +88,7 @@ brm.bugs <- function(formula, data = NULL, family = "gaussian", link = "identiy"
   prior[c(b.priors, "sigma", "shape")] <- bugs.prior(c(b.priors, "sigma", "shape"), 
                                             prior = prior, engine = "jags", s = 0) 
   fe.prior.jags <- paste0(prior[b.priors], collapse = "")
-  if (family=="gaussian" & !is(ef$add,"formula")) 
+  if (family=="gaussian" & !is(ef$se,"formula")) 
     fe.prior.jags <- paste0(fe.prior.jags, prior["sigma"])
   if (is.element(family,c("gamma","weibull"))) 
     fe.prior.jags <- paste0(fe.prior.jags, prior["shape"])
@@ -220,13 +220,13 @@ bugs.prior = function(par, prior = list(), ind = rep("", length(par)), s = 0, ..
 # brm.llh(family = "gaussian")
 # brm.llh(family = "cumulative", link = "logit")
 # }
-bugs.llh <- function(family, link = "identity", predict = FALSE, add = FALSE,
+bugs.llh <- function(family, link = "identity", predict = FALSE, se = FALSE,
                      weights = FALSE, cens = FALSE) {
   is.ord <- is.element(family, c("cumulative", "cratio", "sratio", "acat"))
   n <- ifelse(predict | is.element(link, c("inverse","sqrt")), "[n]", "")
   ilink <- c(identity = "", log = "exp", inverse = "inv", sqrt = "square", logit = "ilogit", 
              probit = "phi", probit_approx = "Phi_approx", cloglog = "icloglog")[[link]]
-  llh <- list(gaussian = paste0("dnorm(eta[n],pow(sigma",if(add)"[n]",",-2))"), 
+  llh <- list(gaussian = paste0("dnorm(eta[n],pow(sigma",if (se)"[n]",",-2))"), 
               poisson = "dpois(exp(eta[n]))", 
               binomial = paste0("dbin(",ilink,"(eta[n]), max_obs",n,")"), 
               gamma = "dgamma(shape, shape/exp(eta[n]))",
@@ -253,17 +253,19 @@ bugs.llh <- function(family, link = "identity", predict = FALSE, add = FALSE,
 bugs.inits <- function(formula, data = NULL, range = 2, family="gaussian", partial = NULL, 
                        threshold = "flexible", engine="stan", seed=NULL) {
   if (is.null(range)) range <- 2
-  ef <- extract.effects(formula = formula, partial = partial) 
+  ef <- extract.effects(formula = formula, family = family, partial = partial) 
   data <- model.frame(ef$all, data = data, drop.unused.levels = TRUE)
   
   if(length(as.integer(seed)) == 1) set.seed(as.integer(seed))
   is.lin <- is.element(family, c("gaussian", "student", "cauchy"))
   is.ord <- is.element(family,c("cumulative","cratio","sratio","acat"))
   if (is.ord | family == "binomial") {
-    if (!length(ef$add)) max_obs <- max(as.numeric(model.response(data)))
-    else if (is.numeric(ef$add)) max_obs <- ef$add
-    else if (is(ef$add, "formula") & length(all.vars(ef$add)) == 1) 
-      max_obs <- brm.model.matrix(ef$add, data, rm.int = TRUE)
+    if (family == "binomial") add <- ef$trials
+    else add <- ef$cat
+    if (!length(add)) max_obs <- max(as.numeric(model.response(data)))
+    else if (is.numeric(add)) max_obs <- add
+    else if (is(add, "formula")) 
+      max_obs <- brm.model.matrix(add, data, rm.int = TRUE)
     else stop("response part of argument formula is invalid")
   }
   f <- colnames(brm.model.matrix(ef$fixed,data, rm.int = is.ord))
@@ -274,7 +276,7 @@ bugs.inits <- function(formula, data = NULL, range = 2, family="gaussian", parti
   
   inits = list()
   if (length(f)) inits <- c(inits, setNames(as.list(runif(length(f), -range, range)), paste0("b_",f)))
-  if (is.lin & !is(ef$add,"formula")) inits <- c(inits,sigma=runif(1,2,10))
+  if (is.lin & !is(ef$se,"formula")) inits <- c(inits,sigma=runif(1,2,10))
   if (family == "student") inits <- c(inits, nu = runif(1,1,60))
   else if (is.element(family,c("gamma","weibull"))) inits <- c(inits, shape = runif(1,0.2,5))
   if (length(ef$random))

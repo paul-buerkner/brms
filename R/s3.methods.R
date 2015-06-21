@@ -34,7 +34,7 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, center.zero = TRUE,
   thin <- attr(x$fit@sim$samples[[1]],"args")$thin
   chains <- length(x$fit@sim$samples)
   n.samples <- (iter-warmup)/thin*chains
-  group <- unlist(extract.effects(x$formula)$group)
+  group <- unlist(extract.effects(x$formula, add.ignore = TRUE)$group)
   
   ranef <- lapply(group, function(g) {
     r.pars <- pars[grepl(paste0("^r_",g,"\\["), pars)]
@@ -88,7 +88,7 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
   warmup <- attr(x$fit@sim$samples[[1]],"args")$warmup
   thin <- attr(x$fit@sim$samples[[1]],"args")$thin
   chains <- length(x$fit@sim$samples) 
-  group <- unlist(extract.effects(x$formula)$group)
+  group <- unlist(extract.effects(x$formula, add.ignore = TRUE)$group)
   
   VarCorr <- lapply(group, function(g) {
     sd.pars <- pars[grepl(paste0("^sd_",g,"_"), pars)]
@@ -152,11 +152,13 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
 summary.brmsfit <- function(object, ...) {
   if (!is(object$fit, "stanfit")) 
     out <- brmssummary(formula = object$formula, family = object$family, link = object$link,
-             data.name = object$data.name, group = unlist(extract.effects(object$formula)$group),
+             data.name = object$data.name, 
+             group = unlist(extract.effects(object$formula, add.ignore = TRUE)$group),
              nobs = nobs(object), ngrps = brms::ngrps(object), autocor = object$autocor)
   else {
     out <- brmssummary(formula = object$formula, family = object$family, link = object$link,
-             data.name = object$data.name, group = unlist(extract.effects(object$formula)$group),
+             data.name = object$data.name, 
+             group = unlist(extract.effects(object$formula, add.ignore = TRUE)$group),
              nobs = nobs(object), ngrps <- ngrps(object), autocor = object$autocor,
              n.chain = length(object$fit@sim$samples),
              n.iter = attr(object$fit@sim$samples[[1]],"args")$iter,
@@ -273,7 +275,7 @@ nobs.brmsfit <- function(object, ...) length(object$data$Y)
 
 #' @export
 ngrps.brmsfit <- function(object, ...) {
-  group <- unlist(extract.effects(object$formula)$group)
+  group <- unlist(extract.effects(object$formula, add.ignore = TRUE)$group)
   setNames(lapply(group, function(g) object$data[[paste0("N_",g)]]), group)
 }
 

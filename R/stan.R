@@ -10,7 +10,7 @@
 stan.model <- function(formula, data = NULL, family = "gaussian", link = "identity",
                        prior = list(), partial = NULL, threshold = "flexible", cov.ranef = NULL,
                        predict = FALSE, autocor = cor.arma(), save.model = NULL) {
-  ef <- extract.effects(formula = formula, partial = partial)  
+  ef <- extract.effects(formula = formula, family = family, partial = partial)  
   data <- stats::model.frame(ef$all, data = data, drop.unused.levels = TRUE)
 
   is.lin <- family %in% c("gaussian", "student", "cauchy")
@@ -30,7 +30,7 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
   p <- colnames(Xp)
   Z <- lapply(ef$random, brm.model.matrix, data = data)
   r <- lapply(Z,colnames)
-  n <- ifelse(is(ef$add, "formula") & (is.ord | family %in% c("binomial", "categorical")), "[n]", "")
+  n <- ifelse(is(ef$trials, "formula") | is(ef$cat, "formula"), "[n]", "")
   
   ranef <- unlist(lapply(mapply(list, r, ef$group, SIMPLIFY = FALSE), stan.ranef, 
                          f = f, family = family, prior = prior, cov.ranef = cov.ranef))
@@ -50,18 +50,18 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
       "  int<lower=1> Kar; \n  matrix[N,Kar] Yar; \n",
     if (autocor$q & is(autocor, "cor.arma")) 
       "  int<lower=1> Kma; \n  row_vector[Kma] Ema_pre[N]; \n  vector[N] tgroup; \n",
-    if (is.lin & is(ef$add, "formula"))
+    if (is.lin & is(ef$se, "formula"))
       "  real<lower=0> sigma[N]; \n"
-    else if (is.lin & is(ef$add2, "formula"))
+    else if (is.lin & is(ef$weights, "formula"))
       "  vector<lower=0>[N] inv_weights; \n"
-    else if (is.ord | is.element(family, c("binomial", "categorical"))) 
+    else if (is.ord | family %in% c("binomial", "categorical")) 
       paste0("  int max_obs",toupper(n),"; \n")
-    else if (is.skew & is(ef$add, "formula"))
+    else if (is(ef$cens, "formula"))
       "  vector[N] cens; \n",
     ranef$data,
     "} \n")
   
-  max_obs <- ifelse(rep(is(ef$add, "formula") & (is.ord | family == "categorical"), 3), 
+  max_obs <- ifelse(rep(is(ef$trials, "formula") | is(ef$cat, "formula"), 3), 
     c("MAX_obs", "  int MAX_obs; \n", "  MAX_obs <- max(max_obs); \n"), c("max_obs", rep("", 2)))
   zero <- ifelse(rep(family == "categorical", 2), c("  row_vector[1] zero; \n", "  zero[1] <- 0; \n"), "")
   trans.data.text <- paste0(
@@ -81,7 +81,7 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
       "  real", ifelse(family == "cumulative","<lower=0>", "")," delta; \n"),
     if (autocor$p & is(autocor, "cor.arma")) "  vector[Kar] ar; \n",
     if (autocor$q & is(autocor, "cor.arma")) "  vector[Kma] ma; \n",
-    if (is.lin & !is(ef$add, "formula")) 
+    if (is.lin & !is(ef$se, "formula")) 
       "  real<lower=0> sigma; \n",
     if (family == "student") 
       "  real<lower=1> nu; \n",
@@ -126,11 +126,11 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
  
   ord <- stan.ord(family, ilink = ilink, partial = length(p), max_obs = max_obs[1], n = n, 
                   predict = predict)  
-  llh <- stan.llh(family, link = link, add = is(ef$add, "formula"), 
-                 add2 = is(ef$add2, "formula"), cens = is.skew & is(ef$add, "formula"))
-  llh.pred <- stan.llh(family, link = link, predict = TRUE, add = is(ef$add, "formula"),  
-                 add2 = is(ef$add2, "formula")) 
-  cens <- ifelse(is.skew & is(ef$add, "formula"), "if (cens[n] == 0) ", "")
+  llh <- stan.llh(family, link = link, add = is(ef$trials, "formula") | is(ef$cat, "formula"), 
+                  weights = is(ef$weights, "formula"), cens = is(ef$cens, "formula"))
+  llh.pred <- stan.llh(family, link = link, add = is(ef$trials, "formula") | is(ef$cat, "formula"),  
+                       weights = is(ef$weights, "formula"), predict = TRUE) 
+  cens <- ifelse(is(ef$cens, "formula"), "if (cens[n] == 0) ", "")
                       
   priors <- paste0(
     if (length(f)) paste0(stan.prior(paste0("b_",f), prior, ind = 1:length(f)), collapse = ""),
@@ -148,8 +148,8 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
     if (is.lin & !is(ef$add, "formula")) stan.prior("sigma", prior), ranef$model)
   
   vectorize <- c(!(length(ef$random) | autocor$q | eta.trans |
-    (is.ord & !(family == "cumulative" & link == "logit" & !predict & !is(ef$add, "formula")))),            
-    !(is.skew & is(ef$add, "formula") | is.ord | family == "categorical")) 
+    (is.ord & !(family == "cumulative" & link == "logit" & !predict & !is(ef$cat, "formula")))),            
+    !(is(ef$cens, "formula") | is.ord | family == "categorical")) 
 
   model <- paste0(data.text, 
   trans.data.text, par.text,
@@ -410,7 +410,7 @@ stan.prior = function(par, prior = list(), add.type = NULL, ind = rep("", length
 # stan.llh(family = "cumulative", link = "logit")
 # }
 stan.llh <- function(family, link = "identity", predict = FALSE, add = FALSE,
-                    add2 = FALSE, cens = FALSE, engine = "stan") {
+                     weights = FALSE, cens = FALSE, engine = "stan") {
   is.ord <- family %in% c("cumulative", "cratio", "sratio", "acat")
   is.count <- family %in% c("poisson","negbinomial", "geometric")
   is.skew <- family %in% c("gamma","exponential","weibull")
@@ -421,7 +421,7 @@ stan.llh <- function(family, link = "identity", predict = FALSE, add = FALSE,
              probit = "Phi", probit_approx = "Phi_approx", cloglog = "inv_cloglog")[link]
   ilink2 <- ifelse(predict & (link=="logit" & family %in% c("binomial", "bernoulli") | 
                                 is.skew & link == "log"), ilink, "")
-  lin.args <- paste0("eta",n,",sigma",n, ifelse(add2, paste0("*inv_weights",n),""))
+  lin.args <- paste0("eta",n,",sigma",n, ifelse(weights, paste0("*inv_weights",n),""))
   if (simplify) 
     llh <- list(poisson = c("poisson_log", "(eta);"), 
             negbinomial = c("neg_binomial_2_log", "(eta,shape);"),

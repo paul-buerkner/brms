@@ -19,7 +19,7 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
              threshold = "flexible", predict = FALSE, ranef = TRUE, engine = "stan", ...) {
   dots <- list(...)  
   if (is.null(autocor)) autocor <- cor.arma()
-  ef <- extract.effects(formula = formula, partial = partial) 
+  ef <- extract.effects(formula = formula, family = family, partial = partial) 
   data <- model.frame(ef$all, data = data, drop.unused.levels = TRUE)
   
   family <- family[1]
@@ -33,7 +33,7 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
       c("poisson", "negbinomial", "geometric", "binomial","bernoulli", "categorical")))
     stop(paste(family,"is not a valid family"))
   
-  f <- colnames(brm.model.matrix(ef$fixed,data, rm.int = is.ord))
+  f <- colnames(brm.model.matrix(ef$fixed, data, rm.int = is.ord))
   r <- lapply(lapply(ef$random, brm.model.matrix, data=data, rm.int = is.ord & !stan), colnames)
   p <- colnames(brm.model.matrix(partial, data, rm.int = TRUE))
   out = NULL
@@ -51,7 +51,7 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
         lapply(1:(j-1), function(k) paste0(r[[i]][k],"_",r[[i]][j]))))))))
     if (ranef) out <- c(out, paste0("r_",ef$group))
   }  
-  if (is.lin & !is(ef$add,"formula")) out <- c(out,"sigma")
+  if (is.lin & !is(ef$se,"formula")) out <- c(out,"sigma")
   if (family == "student") out <- c(out,"nu")
   if (family %in% c("gamma","weibull","negbinomial")) out <- c(out,"shape")
   if (predict) out <- c(out,"Y_pred")
@@ -84,7 +84,7 @@ brm.data <- function(formula, data = NULL, family = c("gaussian", "identity"), p
   dots <- list(...)  
   if (is.null(autocor)) autocor <- cor.arma()
   et <- extract.time(autocor$form)
-  ef <- extract.effects(formula = formula, partial, et$all) 
+  ef <- extract.effects(formula = formula, family = family, partial, et$all) 
   data <- model.frame(ef$all, data = data, drop.unused.levels = TRUE)
   group.names <- list()
   for (g in ef$group) { 
@@ -120,19 +120,21 @@ brm.data <- function(formula, data = NULL, family = c("gaussian", "identity"), p
   else if (is.factor(supl.data$Y)) 
     stop(paste("family", family, "expects numeric response variable")) 
   if (is.lin) {
-    if (is(ef$add, "formula") & length(all.vars(ef$add)) == 1)
-      supl.data <- c(supl.data,list(sigma = brm.model.matrix(ef$add, data, rm.int = TRUE)[,1]))
-    else if (is(ef$add2, "formula")) {
-      inv_weights <- 1/sqrt(brm.model.matrix(ef$add2, data, rm.int = TRUE)[,1])
+    if (is(ef$se, "formula"))
+      supl.data <- c(supl.data,list(sigma = brm.model.matrix(ef$se, data, rm.int = TRUE)[,1]))
+    else if (is(ef$weights, "formula")) {
+      inv_weights <- 1/sqrt(brm.model.matrix(ef$weights, data, rm.int = TRUE)[,1])
       inv_weights <- supl.data$N*inv_weights/sum(inv_weights)
       supl.data <- c(supl.data, list(inv_weights = inv_weights))
     }
   }  
-  else if (is.ord | is.element(family, c("binomial", "categorical"))) {
-    if (!length(ef$add)) supl.data$max_obs <- max(supl.data$Y)
-    else if (is.numeric(ef$add)) supl.data$max_obs <- ef$add
-    else if (is(ef$add, "formula") & length(all.vars(ef$add)) == 1) 
-      supl.data$max_obs <- brm.model.matrix(ef$add, data, rm.int = TRUE)[,1]
+  else if (is.ord | family %in% c("binomial", "categorical")) {
+    if (family == "binomial") add <- ef$trials
+    else add <- ef$cat
+    if (!length(add)) supl.data$max_obs <- max(supl.data$Y)
+    else if (is.numeric(add)) supl.data$max_obs <- add
+    else if (is(add, "formula")) 
+      supl.data$max_obs <- brm.model.matrix(add, data, rm.int = TRUE)[,1]
     else stop("Response part of formula is invalid")
     
     if (is(partial,"formula")) {
@@ -151,11 +153,9 @@ brm.data <- function(formula, data = NULL, family = c("gaussian", "identity"), p
     family <- ifelse(family == "binomial" & max(supl.data$Y) == 1 | two.cat, 
                      "bernoulli", family)
   } 
-  else if (family %in% c("gamma", "exponential", "weibull")) {
-    if (is(ef$add,"formula") & length(all.vars(ef$add)) == 1) {
-      cens <- brm.model.matrix(ef$add, data, rm.int = TRUE)[,1]
-      supl.data <- c(supl.data,list(cens = ifelse(cens, 1, 0)))
-    }
+  if (is(ef$cens,"formula")) {
+    cens <- brm.model.matrix(ef$cens, data, rm.int = TRUE)[,1]
+    supl.data <- c(supl.data, list(cens = ifelse(cens, 1, 0)))
   }
   
   if (length(ef$random)) {
