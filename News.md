@@ -10,6 +10,7 @@ output: html_document
 * improved vectorization of sampling statements
 * introduced new argument 'autocor' to function brm allowing for autocorrelation of the response variable.
 * introduced new functions 'cor.ar', 'cor.ma', and 'cor.arma', to be used with argument 'autocor' for modeling autoregressive, moving-average, and autoregressive-moving-average models. 
+* fixed a bug that could cause an error when fitting poisson models while predict = TRUE
 * fixed a bug that caused an error when sampling only one chain while silent = TRUE 
 
 # brms 0.2.0

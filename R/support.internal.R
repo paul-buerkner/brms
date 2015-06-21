@@ -79,7 +79,8 @@ extract.effects <- function(formula, ..., family = "none", add.ignore = FALSE) {
     add <- substr(add, 2, nchar(add)-1)
     families <- list(se = c("gaussian","student","cauchy"), weights = c("gaussian","student","cauchy"),
       trials = c("binomial"), cat = c("categorical", "cumulative", "cratio", "sratio", "acat"), 
-      cens = "all")
+      cens = c("gaussian","student","cauchy","binomial","poisson","geometric","negbinomial","exponential",
+               "weibull","gamma"))
     for (f in fun) {
       x[[f]] <- unlist(regmatches(add, gregexpr(paste0(f,"\\([^\\|]*\\)"), add)))[1]
       add <- gsub(paste0(f,"\\([^~|\\|]*\\)\\|*"), "", add)
@@ -203,3 +204,11 @@ rmNULL <- function(x) {
 }
 
 rmNum <- function(x) x[sapply(x, Negate(is.numeric))]
+
+is.formula <- function(x, or = TRUE) {
+  if (!is.list(x)) x <- list(x)
+  out <- sapply(x, function(y) is(y, "formula"))
+  if (or) out <- any(out)
+  else out <- all(out)
+  out
+}

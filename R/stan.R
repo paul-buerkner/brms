@@ -30,7 +30,7 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
   p <- colnames(Xp)
   Z <- lapply(ef$random, brm.model.matrix, data = data)
   r <- lapply(Z,colnames)
-  n <- ifelse(is(ef$trials, "formula") | is(ef$cat, "formula"), "[n]", "")
+  n <- ifelse(is.formula(ef[c("trials","cat")]), "[n]", "")
   
   ranef <- unlist(lapply(mapply(list, r, ef$group, SIMPLIFY = FALSE), stan.ranef, 
                          f = f, family = family, prior = prior, cov.ranef = cov.ranef))
@@ -50,18 +50,18 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
       "  int<lower=1> Kar; \n  matrix[N,Kar] Yar; \n",
     if (autocor$q & is(autocor, "cor.arma")) 
       "  int<lower=1> Kma; \n  row_vector[Kma] Ema_pre[N]; \n  vector[N] tgroup; \n",
-    if (is.lin & is(ef$se, "formula"))
+    if (is.lin & is.formula(ef$se))
       "  real<lower=0> sigma[N]; \n"
-    else if (is.lin & is(ef$weights, "formula"))
-      "  vector<lower=0>[N] inv_weights; \n"
-    else if (is.ord | family %in% c("binomial", "categorical")) 
-      paste0("  int max_obs",toupper(n),"; \n")
-    else if (is(ef$cens, "formula"))
+    else if (is.lin & is.formula(ef$weights))
+      "  vector<lower=0>[N] inv_weights; \n",
+    if (is.ord | family %in% c("binomial", "categorical")) 
+      paste0("  int max_obs",toupper(n),"; \n"),
+    if (is.formula(ef$cens) & !(is.ord | family == "categorical"))
       "  vector[N] cens; \n",
     ranef$data,
     "} \n")
   
-  max_obs <- ifelse(rep(is(ef$trials, "formula") | is(ef$cat, "formula"), 3), 
+  max_obs <- ifelse(rep(is.formula(ef[c("trials", "cat")]), 3), 
     c("MAX_obs", "  int MAX_obs; \n", "  MAX_obs <- max(max_obs); \n"), c("max_obs", rep("", 2)))
   zero <- ifelse(rep(family == "categorical", 2), c("  row_vector[1] zero; \n", "  zero[1] <- 0; \n"), "")
   trans.data.text <- paste0(
@@ -81,12 +81,12 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
       "  real", ifelse(family == "cumulative","<lower=0>", "")," delta; \n"),
     if (autocor$p & is(autocor, "cor.arma")) "  vector[Kar] ar; \n",
     if (autocor$q & is(autocor, "cor.arma")) "  vector[Kma] ma; \n",
-    if (is.lin & !is(ef$se, "formula")) 
+    if (is.lin & !is.formula(ef$se)) 
       "  real<lower=0> sigma; \n",
     if (family == "student") 
       "  real<lower=1> nu; \n",
     if (family %in% c("gamma", "weibull", "negbinomial")) 
-      "  real<lower=1e-10> shape; \n",
+      "  real<lower=0> shape; \n",
     ranef$par,
     "} \n")
   
@@ -126,11 +126,11 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
  
   ord <- stan.ord(family, ilink = ilink, partial = length(p), max_obs = max_obs[1], n = n, 
                   predict = predict)  
-  llh <- stan.llh(family, link = link, add = is(ef$trials, "formula") | is(ef$cat, "formula"), 
-                  weights = is(ef$weights, "formula"), cens = is(ef$cens, "formula"))
-  llh.pred <- stan.llh(family, link = link, add = is(ef$trials, "formula") | is(ef$cat, "formula"),  
-                       weights = is(ef$weights, "formula"), predict = TRUE) 
-  cens <- ifelse(is(ef$cens, "formula"), "if (cens[n] == 0) ", "")
+  llh <- stan.llh(family, link = link, add = is.formula(ef[c("se", "trials", "cat")]), 
+                  weights = is.formula(ef$weights), cens = is.formula(ef$cens))
+  llh.pred <- stan.llh(family, link = link, add = is.formula(ef[c("se", "trials", "cat")]),  
+                       weights = is.formula(ef$weights), predict = TRUE) 
+  cens <- ifelse(is.formula(ef$cens), "if (cens[n] == 0) ", "")
                       
   priors <- paste0(
     if (length(f)) paste0(stan.prior(paste0("b_",f), prior, ind = 1:length(f)), collapse = ""),
@@ -145,11 +145,11 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
                     ind = 1:length(p), partial = TRUE), collapse = ""), 
     if (is.element(family,c("gamma", "weibull"))) stan.prior("shape", prior),
     if (family == "student") stan.prior("nu", prior),
-    if (is.lin & !is(ef$add, "formula")) stan.prior("sigma", prior), ranef$model)
+    if (is.lin & !is.formula(ef$se)) stan.prior("sigma", prior), ranef$model)
   
   vectorize <- c(!(length(ef$random) | autocor$q | eta.trans |
-    (is.ord & !(family == "cumulative" & link == "logit" & !predict & !is(ef$cat, "formula")))),            
-    !(is(ef$cens, "formula") | is.ord | family == "categorical")) 
+    (is.ord & !(family == "cumulative" & link == "logit" & !predict & !is.formula(ef$cat)))),            
+    !(is.formula(ef$cens) | is.ord | family == "categorical")) 
 
   model <- paste0(data.text, 
   trans.data.text, par.text,
@@ -414,40 +414,40 @@ stan.llh <- function(family, link = "identity", predict = FALSE, add = FALSE,
   is.ord <- family %in% c("cumulative", "cratio", "sratio", "acat")
   is.count <- family %in% c("poisson","negbinomial", "geometric")
   is.skew <- family %in% c("gamma","exponential","weibull")
-  simplify <- !predict & (link=="logit" & family %in% c("binomial", "bernoulli") |
+  simplify <- !cens & !predict & (link=="logit" & family %in% c("binomial", "bernoulli") |
     family %in% c("cumulative", "categorical") & !add | is.count & link == "log") 
-  n <- ifelse(predict | is.skew & cens, "[n]", "")
+  n <- ifelse(predict | cens, "[n]", "")
+  ns <- ifelse(add & (predict | cens), "[n]", "")
   ilink <- c(identity = "", log = "exp", inverse = "inv", sqrt = "square", logit = "inv_logit", 
              probit = "Phi", probit_approx = "Phi_approx", cloglog = "inv_cloglog")[link]
-  ilink2 <- ifelse(predict & (link=="logit" & family %in% c("binomial", "bernoulli") | 
-                                is.skew & link == "log"), ilink, "")
-  lin.args <- paste0("eta",n,",sigma",n, ifelse(weights, paste0("*inv_weights",n),""))
+  ilink2 <- ifelse((predict | cens) & (link=="logit" & family %in% c("binomial", "bernoulli") | 
+                              is.count & link == "log"), ilink, "")
+  lin.args <- paste0("eta",n,",sigma",ns, ifelse(weights, paste0("*inv_weights",n),""))
   if (simplify) 
-    llh <- list(poisson = c("poisson_log", "(eta);"), 
-            negbinomial = c("neg_binomial_2_log", "(eta,shape);"),
-            geometric = c("neg_binomial_2_log", "(eta,1);"),
-            cumulative = c("ordered_logistic", "(eta[n],b_Intercept);"),
-            categorical = c("categorical_logit", "(to_vector(append_col(zero, eta[n] + etap[n])));"), 
-            binomial=c("binomial_logit", "(max_obs,eta);"), 
-            bernoulli=c("bernoulli_logit", "(eta);"))[[family]]
-  else llh <- list(gaussian = c("normal", paste0("(",lin.args,");")),
-               student = c("student_t", paste0("(nu,",lin.args,");")),
-               cauchy = c("cauchy", paste0("(",lin.args,");")),
-               poisson = c("poisson", paste0("(",ilink2,"(eta",n,"));")),
-               negbinomial = c("neg_binomial_2", paste0("(",ilink2,"(eta",n,"),shape);")),
-               geometric = c("neg_binomial_2", paste0("(",ilink2,"(eta",n,"),1);")),
-               binomial = c("binomial", paste0("(max_obs,",ilink2,"(eta",n,"));")),
-               bernoulli = c("bernoulli", paste0("(",ilink2,"(eta",n,"));")), 
-               gamma = c("gamma", paste0("(shape, eta",n,");")), 
-               exponential = c("exponential", paste0("(eta",n,");")),
-               weibull = c("weibull", paste0("(shape, eta",n,");")), 
-               categorical = c("categorical","(p[n]);"))[[ifelse(is.ord, "categorical", family)]]
-  llh <- paste0(llh[1],ifelse(predict, "_rng",""),llh[2],"\n")
+    llh.pre <- list(poisson = c("poisson_log", "eta"), 
+            negbinomial = c("neg_binomial_2_log", "eta,shape"),
+            geometric = c("neg_binomial_2_log", "eta,1"),
+            cumulative = c("ordered_logistic", "eta[n],b_Intercept"),
+            categorical = c("categorical_logit", "to_vector(append_col(zero, eta[n] + etap[n]))"), 
+            binomial=c("binomial_logit", "max_obs,eta"), 
+            bernoulli=c("bernoulli_logit", "eta"))[[family]]
+  else llh.pre <- list(gaussian = c("normal", lin.args),
+               student = c("student_t", paste0("nu,",lin.args)),
+               cauchy = c("cauchy", lin.args),
+               poisson = c("poisson", paste0(ilink2,"(eta",n,")")),
+               negbinomial = c("neg_binomial_2", paste0(ilink2,"(eta",n,"),shape")),
+               geometric = c("neg_binomial_2", paste0(ilink2,"(eta",n,"),1")),
+               binomial = c("binomial", paste0("max_obs,",ilink2,"(eta",n,")")),
+               bernoulli = c("bernoulli", paste0(ilink2,"(eta",n,")")), 
+               gamma = c("gamma", paste0("shape,eta",n)), 
+               exponential = c("exponential", paste0("eta",n)),
+               weibull = c("weibull", paste0("shape,eta",n)), 
+               categorical = c("categorical","p[n]"))[[ifelse(is.ord, "categorical", family)]]
+  llh <- paste0(llh.pre[1],ifelse(predict, "_rng",""),"(",llh.pre[2],"); \n")
   if (cens) {
-    llh.cens <- list(gamma = "gamma_cdf_log(Y[n], shape, eta[n])",
-                exponential = "exponential_cdf_log(Y[n], eta[n])",
-                weibull = "weibull_cdf_log(Y[n], shape, eta[n])")[family]
-    llh <- paste0(llh, "    else increment_log_prob(",llh.cens,"); \n")
+    llh <- paste0(llh, "    else { \n",         
+      "      if (cens[n] == 1) increment_log_prob(",llh.pre[1], "_ccdf_log(Y[n],", llh.pre[2],")); \n",
+      "      else increment_log_prob(",llh.pre[1], "_cdf_log(Y[n],", llh.pre[2],")); \n    } \n")
   }  
   llh
 }

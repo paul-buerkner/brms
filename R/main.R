@@ -216,8 +216,8 @@
 #' ## Surivival Regression (with family 'weibull') modeling time between 
 #' ## first and second recurrence of an infection in kidney patients
 #' ## time | cens indicates which values in variable time are right censored
-#' fit_k <- brm(time | cens ~ age + sex + disease, data = kidney, 
-#'              family = "weibull", silent = TRUE)
+#' fit_k <- brm(time | cens(censored) ~ age + sex + disease, data = kidney, 
+#'              family = "weibull", silent = TRUE, inits = "0")
 #' summary(fit_k) 
 #' plot(fit_k)             
 #' }

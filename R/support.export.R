@@ -155,7 +155,17 @@ brm.data <- function(formula, data = NULL, family = c("gaussian", "identity"), p
   } 
   if (is(ef$cens,"formula")) {
     cens <- brm.model.matrix(ef$cens, data, rm.int = TRUE)[,1]
-    supl.data <- c(supl.data, list(cens = ifelse(cens, 1, 0)))
+    cens <- sapply(cens, function(x) {
+      if (grepl(paste("^",x), "right") | is.logical(x) & x) x <- 1
+      else if (grepl(paste("^",x), "none") | is.logical(x) & !x) x <- 0
+      else if (grepl(paste("^",x), "left")) x <- -1
+      else x
+    })
+    if (!all(unique(cens) %in% c(-1:1)))
+      stop (paste0("Invalid censoring data. Accepted values are 'left', 'none', and 'right' \n",
+                   "(abbreviations are allowed) or -1, 0, and 1. TRUE and FALSE are also accepted \n",
+                   "and refer to 'right' and 'none' respectively."))
+    supl.data <- c(supl.data, list(cens = cens))
   }
   
   if (length(ef$random)) {
