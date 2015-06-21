@@ -92,7 +92,7 @@
 #'   
 #'   For families \code{gamma}, \code{exponential}, and \code{weibull}, \code{addition} may contain 
 #'   a logical variable (or a variable than can be coerced to logical) indicating
-#'   if the response variable is left censored (corresponding to \code{TRUE}) or not censored 
+#'   if the response variable is right censored (corresponding to \code{TRUE}) or not censored 
 #'   (corresponding to \code{FALSE}). \cr
 #' 
 #'   \bold{Families and link functions}
@@ -215,7 +215,7 @@
 #' 
 #' ## Surivival Regression (with family 'weibull') modeling time between 
 #' ## first and second recurrence of an infection in kidney patients
-#' ## time | cens indicates which values in variable time are left censored
+#' ## time | cens indicates which values in variable time are right censored
 #' fit_k <- brm(time | cens ~ age + sex + disease, data = kidney, 
 #'              family = "weibull", silent = TRUE)
 #' summary(fit_k) 

@@ -8,7 +8,7 @@
 \describe{
  \item{time}{The time to first or second recurrence of the infection, or the time of censoring}
  \item{recur}{A factor of levels \code{1} or \code{2} indicating if the infection recurred for the first or second time for this patient}
- \item{cens}{Either \code{0} or \code{1}, where \code{0} indicates no censoring of recurrence time and \code{1} indicates left censoring}
+ \item{cens}{Either \code{0} or \code{1}, where \code{0} indicates no censoring of recurrence time and \code{1} indicates right censoring}
  \item{patient}{The patient number}
  \item{age}{The age of the patient}
  \item{sex}{The sex of the patient}
@@ -22,13 +22,13 @@ McGilchrist, C. A., & Aisbett, C. W. (1991). Regression with frailty in survival
 kidney
 }
 \description{
-This dataset, originally discussed in McGilchrist and Aisbett (1991), describes the first and second (possibly left censored) recurrence time of
+This dataset, originally discussed in McGilchrist and Aisbett (1991), describes the first and second (possibly right censored) recurrence time of
 infection in kideny patients using portable dialysis equipment. In addition, information on the risk variables age, sex and disease type is provided.
 }
 \examples{
 \dontrun{
 ## performing surivival analysis using the "weibull" family
-## time | cens indicates which values in variable time are left censored
+## time | cens indicates which values in variable time are right censored
 fit_k1 <- brm(time | cens ~ age + sex + disease, data = kidney,
               family = "weibull")
 summary(fit_k1)

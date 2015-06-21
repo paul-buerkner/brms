@@ -57,7 +57,7 @@ brm.replace <- function(names, symbols = NULL, subs = NULL) {
 # # (e.g., standard errors in a gaussian linear model)
 # extract.effects(response | se ~ I(1/a) + b + (1 + c | d))
 # }
-extract.effects <- function(formula, ...) {
+extract.effects <- function(formula, family, ...) {
   formula <- gsub(" ","",Reduce(paste, deparse(formula)))  
   fixed <- gsub(paste0("\\([^(\\||~)]*\\|[^\\)]*\\)\\+|\\+\\([^(\\||~)]*\\|[^\\)]*\\)",
                        "|\\([^(\\||~)]*\\|[^\\)]*\\)"),"",formula)
@@ -66,27 +66,38 @@ extract.effects <- function(formula, ...) {
   fixed <- formula(fixed)
   if (length(fixed) < 3) stop("invalid formula: response variable is missing")
   
-  add <- unlist(regmatches(formula,gregexpr("[^\\|]\\|[^~|\\|]*~",formula)))[1]
-  add <- substr(add, 3, nchar(add)-1)
-  if (is.na(add)) add <- NULL
-  else if (is.na(suppressWarnings(as.numeric(add)))) add <- as.formula(paste0("~", add))
-  else add <- as.numeric(add)
-  
-  add2 <- unlist(regmatches(formula, gregexpr("\\|\\|[^~]*~", formula)))[1]
-  if (is.na(add2)) add2 <- NULL
-  else add2 <- as.formula(paste0("~", substr(add2, 3, nchar(add2) - 1)))
-  
   rg <- unlist(regmatches(formula, gregexpr("\\([^\\|\\)]*\\|[^\\)]*\\)", formula)))
   random <- lapply(regmatches(rg, gregexpr("\\([^\\|]*", rg)), function(r) 
     formula(paste0("~ ",substr(r, 2, nchar(r)))))
   group <- lapply(regmatches(rg, gregexpr("\\|[^\\)]*", rg)), function(g) 
     substr(g, 2, nchar(g)))
-  x <- list(fixed = fixed, random = random, group = group, add = add, add2 = add2)
+  x <- list(fixed = fixed, random = random, group = group)
+  
+  add <- unlist(regmatches(formula, gregexpr("\\|[^~]*~", formula)))[1]
+  add <- substr(add, 2, nchar(add)-1)
+  fun <- c("se", "weight", "trials", "cat", "cens")
+  families <- list(se = c("gaussian","student","cauchy"), weight = c("gaussian","student","cauchy"),
+    trials = c("binomial"), cat = c("categorical", "cumulative", "cratio", "sratio", "acat"), 
+    cens = "all")
+  for (f in fun) {
+    x[[f]] <- unlist(regmatches(add, gregexpr(paste0(f,":[^\\|]*"), add)))[1]
+    add <- gsub(paste0(f,":[^~|\\|]*"), "", add)
+    if (is.na(x[[f]])) x[[f]] <- NULL
+    else if (family %in% families[[f]] | families[[f]][1] == "all") {
+      x[[f]] <- substr(x[[f]], nchar(f) + 2, nchar(x[[f]]))
+      if (is.na(suppressWarnings(as.numeric(x[[f]])))) x[[f]] <- as.formula(paste0("~", x[[f]]))
+      else x[[f]] <- as.numeric(x[[f]])
+    }  
+    else stop(paste("Argument",f,"in formula is not supported by family",family))
+  }
+  if (nchar(gsub("\\|", "", add)) > 0 & !is.na(add))
+    stop(paste0("Invalid addition part of formula. Please see the 'Details' section of help(brm) ",
+      "for further information. \nNote that the syntax of addition has changed in brms 0.2.1 as ",
+      "the old one was not reliable and flexible enough."))
   
   if (length(group)) group <- lapply(paste("~",group),"formula") 
-  if (is.numeric(add)) add <- NULL
-  up.formula <- unlist(lapply(c(add, add2, random, group, ...), 
-                              function(x) paste0("+", Reduce(paste, deparse(x[[2]])))))
+  up.formula <- unlist(lapply(c(random, group, rmNum(rmNULL(x[fun])), ...), 
+                       function(x) paste0("+", Reduce(paste, deparse(x[[2]])))))
   up.formula <- paste0("update(",Reduce(paste, deparse(fixed)),", . ~ .",paste0(up.formula, collapse=""),")")
   return(c(x, all = eval(parse(text = up.formula))))
 } 
@@ -182,3 +193,5 @@ rmNULL <- function(x) {
   x <- Filter(Negate(isNULL), x)
   lapply(x, function(x) if (is.list(x)) rmNULL(x) else x)
 }
+
+rmNum <- function(x) x[sapply(x, Negate(is.numeric))]
