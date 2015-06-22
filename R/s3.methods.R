@@ -151,13 +151,13 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
 #' @export
 summary.brmsfit <- function(object, ...) {
   if (!is(object$fit, "stanfit")) 
-    out <- brmssummary(formula = object$formula, family = object$family, link = object$link,
-             data.name = object$data.name, 
+    out <- brmssummary(formula = brm.update.formula(object$formula, partial = object$partial),
+             family = object$family, link = object$link, data.name = object$data.name, 
              group = unlist(extract.effects(object$formula, add.ignore = TRUE)$group),
              nobs = nobs(object), ngrps = brms::ngrps(object), autocor = object$autocor)
   else {
-    out <- brmssummary(formula = object$formula, family = object$family, link = object$link,
-             data.name = object$data.name, 
+    out <- brmssummary(brm.update.formula(object$formula, partial = object$partial),
+             family = object$family, link = object$link, data.name = object$data.name, 
              group = unlist(extract.effects(object$formula, add.ignore = TRUE)$group),
              nobs = nobs(object), ngrps <- ngrps(object), autocor = object$autocor,
              n.chain = length(object$fit@sim$samples),

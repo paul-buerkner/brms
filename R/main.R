@@ -47,8 +47,6 @@
 #' @param seed Positive integer. Used by \code{set.seed} to make results reproducable.  
 #' @param engine A character string, either \code{"stan"} (the default) or \code{"jags"}. Specifies which program should be used to fit the model. 
 #'  Note that \code{jags} is currently implemented for testing purposes only, does not allow full functionality and is not supported or documented.
-#' @param pars deprecated; all relevant parameters including random effects for each level are now returned by default.
-#' @param post.pred A deprecated alias for argument \code{predict}.
 #' @param ... Further arguments to be passed to Stan.
 #' 
 #' @return An object of class \code{brmsfit}, which contains the posterior samples along with many other useful information about the model.
@@ -228,26 +226,25 @@
 #' @import stats   
 #' @export 
 brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior = list(),
-                autocor = NULL, partial = NULL, threshold = "flexible", cov.ranef = NULL, 
+                addition = NULL, autocor = NULL, partial = NULL, threshold = "flexible", cov.ranef = NULL, 
                 ranef = TRUE, predict = FALSE, fit = NA, n.chains = 2, n.iter = 2000, n.warmup = 500, 
                 n.thin = 1, n.cluster = 1, inits = "random", silent = FALSE, seed = 12345, 
-                save.model = NULL, engine = "stan", pars = "auto", post.pred = FALSE, ...) {
+                save.model = NULL, engine = "stan", ...) {
   dots <- list(...) 
   link <- brm.link(family)
-  if (is.null(autocor)) autocor <- cor.arma()
+  formula <- brm.update.formula(formula, addition = addition)
   if (n.chains %% n.cluster != 0) stop("n.chains must be a multiple of n.cluster")
   if (!engine %in% c("stan","jags")) stop("engine must be either 'stan' or 'jags'")
-  if (!is(autocor,"cor.brms")) stop("cor must be of class cor.brms")
-  if (!is.element(threshold,c("flexible","equidistant"))) 
+  if (is.null(autocor)) autocor <- cor.arma()
+  if (!is(autocor, "cor.brms")) stop("cor must be of class cor.brms")
+  if (!threshold %in% c("flexible","equidistant")) 
     stop("threshold must be either flexible or equidistant")
-  if (!predict & post.pred) predict <- post.pred
   names(prior) <- gsub(":", "__", names(prior))
   set.seed(seed)
 
-  
   if (is(fit,"brmsfit")) x <- fit
   else {
-    x <- brmsfit(formula = formula, family = family[1], link = link, 
+    x <- brmsfit(formula = formula, family = family[1], link = link, partial = partial,
                  data.name = Reduce(paste, deparse(substitute(data))), autocor = autocor)
     x$data <- brm.data(formula, data = data, family = family, prior = prior, cov.ranef = cov.ranef,
                        autocor = autocor, partial = partial, engine = engine, ...) 
@@ -261,7 +258,7 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
   if (engine == "stan") {
     if(!nchar(x$model)) 
       x$model <- stan.model(formula = x$formula, data = data, family = x$family, 
-                  link = x$link, prior = prior, autocor = x$autocor, partial = partial, 
+                  link = x$link, prior = prior, autocor = x$autocor, partial = x$partial, 
                   predict = predict, threshold = threshold, cov.ranef = names(cov.ranef), 
                   save.model = save.model)
     if (!requireNamespace("rstan", quietly = TRUE)) {

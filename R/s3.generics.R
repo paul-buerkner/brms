@@ -1,8 +1,9 @@
 # brmsfit class
-brmsfit <- function(formula = NULL, family = "", link = "", data.name = "", 
-                    data = data.frame(), model = "", pars = NULL, autocor = NULL, fit = NA) {
+brmsfit <- function(formula = NULL, family = "", link = "", data.name = "", data = data.frame(), 
+                    model = "", pars = NULL, autocor = NULL, partial = NULL, fit = NA) {
   x <- list(formula = formula, family = family, link = link, data.name = data.name,
-            data = data, model = model, pars = pars, autocor = autocor, fit = fit)
+            data = data, model = model, pars = pars, autocor = autocor, partial = partial,
+            fit = fit)
   class(x) <- "brmsfit"
   return(x)
 }

@@ -5,12 +5,11 @@
 \title{Fit Bayesian Generalized Linear and Ordinal Mixed Models}
 \usage{
 brm(formula, data = NULL, family = c("gaussian", "identity"),
-  prior = list(), autocor = NULL, partial = NULL,
+  prior = list(), autocor = NULL, addition = NULL, partial = NULL,
   threshold = "flexible", cov.ranef = NULL, ranef = TRUE,
   predict = FALSE, fit = NA, n.chains = 2, n.iter = 2000,
   n.warmup = 500, n.thin = 1, n.cluster = 1, inits = "random",
-  silent = FALSE, seed = 12345, save.model = NULL, engine = "stan",
-  pars = "auto", post.pred = FALSE, ...)
+  silent = FALSE, seed = 12345, save.model = NULL, engine = "stan", ...)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class): a symbolic description of the model to be fitted.
@@ -78,10 +77,6 @@ If only a name is given, the file is save in the current working directory.}
 
 \item{engine}{A character string, either \code{"stan"} (the default) or \code{"jags"}. Specifies which program should be used to fit the model.
 Note that \code{jags} is currently implemented for testing purposes only, does not allow full functionality and is not supported or documented.}
-
-\item{pars}{deprecated; all relevant parameters including random effects for each level are now returned by default.}
-
-\item{post.pred}{A deprecated alias for argument \code{predict}.}
 
 \item{...}{Further arguments to be passed to Stan.}
 }
