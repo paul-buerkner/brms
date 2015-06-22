@@ -51,9 +51,9 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
     if (autocor$q & is(autocor, "cor.arma")) 
       "  int<lower=1> Kma; \n  row_vector[Kma] Ema_pre[N]; \n  vector[N] tgroup; \n",
     if (is.lin & is.formula(ef$se))
-      "  real<lower=0> sigma[N]; \n"
-    else if (is.lin & is.formula(ef$weights))
-      "  vector<lower=0>[N] inv_weights; \n",
+      "  real<lower=0> sigma[N]; \n",
+    if (is.formula(ef$weights))
+      "  vector<lower=0>[N] weights; \n",
     if (is.ord | family %in% c("binomial", "categorical")) 
       paste0("  int max_obs",toupper(n),"; \n"),
     if (is.formula(ef$cens) & !(is.ord | family == "categorical"))
@@ -149,7 +149,7 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
   
   vectorize <- c(!(length(ef$random) | autocor$q | eta.trans |
     (is.ord & !(family == "cumulative" & link == "logit" & !predict & !is.formula(ef$cat)))),            
-    !(is.formula(ef$cens) | is.ord | family == "categorical")) 
+    !(is.formula(ef$cens) | is.formula(ef$weights) | is.ord | family == "categorical")) 
 
   model <- paste0(data.text, 
   trans.data.text, par.text,
@@ -165,10 +165,12 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
     if (!vectorize[1]) "  } \n",
   "} \n",
   "model { \n",
+    if (is.formula(ef$weights) & !is.formula(ef$cens)) 
+    "  vector[N] lp_pre; \n",
     priors, 
-    ifelse(vectorize[2], paste0("  Y ~ ", llh),
-      paste0("  for(n in 1:N) { \n    ",
-        cens,"Y[n] ~ ",llh,"  } \n")), 
+    ifelse(vectorize[2], llh, paste0("  for(n in 1:N) { \n  ", llh,"  } \n")),
+    if (is.formula(ef$weights) & !is.formula(ef$cens)) 
+    "  increment_log_prob(dot_product(weights,lp_pre)); \n",
   "} \n",
   "generated quantities { \n",
     if (length(f)) paste0(
@@ -178,9 +180,7 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
     ranef$genD,
     if (predict) paste0(
     "  ",type," Y_pred[N]; \n", 
-    "  for (n in 1:N) { \n", 
-    "    Y_pred[n] <- ",llh.pred,
-    "  } \n"),
+    "  for (n in 1:N) { \n", llh.pred, "  } \n"),
     if (length(f)) paste0(
     "  b_",f," <- b[",1:length(f),"]; \n", collapse = ""),
     if (length(p)) paste0(
@@ -240,10 +240,8 @@ stan.ranef <- function(rg, f, family = "gaussian", prior = list(), cov.ranef = "
     out$transC <- paste0(paste0(sapply(1:length(r), function(i) {
       if (is.element(r[i],f) & family != "categorical") paste0("  mu_",g,"[",i,"] <- b[",which(r[i]==f),"]; \n") 
       else paste0("  mu_",g,"[",i,"] <- 0; \n")}), collapse = ""), 
-        #if (c.cov) paste0("  CF_pre_",g," <- append_col(CF_cov_",g," * col(pre_",g,",1), rep_matrix(0,N_",g,",K_",g,"-1)); \n"),
         "  for (i in 1:N_",g,") { \n",
         "    r_",g, "[i] <- mu_",g," + sd_",g," .* (L_",g,"*to_vector(pre_",g,"[i])); \n",
-        #if (c.cov) paste0(" + to_vector(CF_pre_",g,"[i])"), "); \n",
         if (c.cov) paste0(
         "    r_",g, "[i,1] <- r_",g, "[i,1] + sd_",g,"[1] * (CF_cov_",g,"[i]*col(pre_",g,",1)); \n"),
         "  } \n")
@@ -416,13 +414,13 @@ stan.llh <- function(family, link = "identity", predict = FALSE, add = FALSE,
   is.skew <- family %in% c("gamma","exponential","weibull")
   simplify <- !cens & !predict & (link=="logit" & family %in% c("binomial", "bernoulli") |
     family %in% c("cumulative", "categorical") & !add | is.count & link == "log") 
-  n <- ifelse(predict | cens, "[n]", "")
+  n <- ifelse(predict | cens | weights, "[n]", "")
   ns <- ifelse(add & (predict | cens), "[n]", "")
   ilink <- c(identity = "", log = "exp", inverse = "inv", sqrt = "square", logit = "inv_logit", 
              probit = "Phi", probit_approx = "Phi_approx", cloglog = "inv_cloglog")[link]
   ilink2 <- ifelse((predict | cens) & (link=="logit" & family %in% c("binomial", "bernoulli") | 
                               is.count & link == "log"), ilink, "")
-  lin.args <- paste0("eta",n,",sigma",ns, ifelse(weights, paste0("*inv_weights",n),""))
+  lin.args <- paste0("eta",n,",sigma",ns)
   if (simplify) 
     llh.pre <- list(poisson = c("poisson_log", "eta"), 
             negbinomial = c("neg_binomial_2_log", "eta,shape"),
@@ -443,11 +441,24 @@ stan.llh <- function(family, link = "identity", predict = FALSE, add = FALSE,
                exponential = c("exponential", paste0("eta",n)),
                weibull = c("weibull", paste0("shape,eta",n)), 
                categorical = c("categorical","p[n]"))[[ifelse(is.ord, "categorical", family)]]
-  llh <- paste0(llh.pre[1],ifelse(predict, "_rng",""),"(",llh.pre[2],"); \n")
-  if (cens) {
-    llh <- paste0(llh, "    else { \n",         
-      "      if (cens[n] == 1) increment_log_prob(",llh.pre[1], "_ccdf_log(Y[n],", llh.pre[2],")); \n",
-      "      else increment_log_prob(",llh.pre[1], "_cdf_log(Y[n],", llh.pre[2],")); \n    } \n")
-  }  
+  
+  type <- ifelse(predict, "predict", ifelse(cens, "cens", ifelse(weights, "weights", "general")))
+  addW <- ifelse(weights, "weights[n] * ", "")
+  llh <- switch(type, 
+    predict = paste0("    Y_pred[n] <- ", llh.pre[1],"_rng(",llh.pre[2],"); \n"),
+    cens = paste0("if (cens[n] == 0) ", 
+           ifelse(!weights, paste0("Y[n] ~ ", llh.pre[1],"(",llh.pre[2],"); \n"),
+                  paste0("increment_log_prob(", addW, llh.pre[1], "_log(Y[n],",llh.pre[2],")); \n")),
+           "    else { \n",         
+           "      if (cens[n] == 1) increment_log_prob(", addW, llh.pre[1], "_ccdf_log(Y[n],", llh.pre[2],")); \n",
+           "      else increment_log_prob(", addW, llh.pre[1], "_cdf_log(Y[n],", llh.pre[2],")); \n",
+           "    } \n"),
+    weights = paste0("  lp_pre[n] <- ", llh.pre[1], "_log(Y[n],",llh.pre[2],"); \n"),
+    general = paste0("  Y", n, " ~ ", llh.pre[1],"(",llh.pre[2],"); \n"))
+  #if (cens & !predict) {
+  #  llh <- paste0(llh, "    else { \n",         
+  #    "      if (cens[n] == 1) increment_log_prob(", addW, llh.pre[1], "_ccdf_log(Y[n],", llh.pre[2],")); \n",
+  #    "      else increment_log_prob(", addW, llh.pre[1], "_cdf_log(Y[n],", llh.pre[2],")); \n    } \n")
+  #}  
   llh
 }

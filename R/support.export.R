@@ -112,23 +112,32 @@ brm.data <- function(formula, data = NULL, family = c("gaussian", "identity"), p
   
   supl.data <- list(N = nrow(data), Y = model.response(data))
   X <- brm.model.matrix(ef$fixed, data, rm.int = is.ord)
-  
   if (is.ord | family == "categorical") {
     if (is.factor(supl.data$Y)) supl.data$Y <- as.numeric(supl.data$Y)
     else supl.data$Y <- supl.data$Y - min(supl.data$Y) + 1
   }
   else if (is.factor(supl.data$Y)) 
     stop(paste("family", family, "expects numeric response variable")) 
-  if (is.lin) {
-    if (is(ef$se, "formula"))
-      supl.data <- c(supl.data,list(sigma = brm.model.matrix(ef$se, data, rm.int = TRUE)[,1]))
-    else if (is(ef$weights, "formula")) {
-      inv_weights <- 1/sqrt(brm.model.matrix(ef$weights, data, rm.int = TRUE)[,1])
-      inv_weights <- supl.data$N*inv_weights/sum(inv_weights)
-      supl.data <- c(supl.data, list(inv_weights = inv_weights))
-    }
-  }  
-  else if (is.ord | family %in% c("binomial", "categorical")) {
+  
+  if (is.formula(ef$se))
+    supl.data <- c(supl.data,list(sigma = brm.model.matrix(ef$se, data, rm.int = TRUE)[,1])) 
+  if (is.formula(ef$weights)) 
+    supl.data <- c(supl.data, list(weights = brm.model.matrix(ef$weights, data, rm.int = TRUE)[,1]))
+  if (is.formula(ef$cens)) {
+    cens <- brm.model.matrix(ef$cens, data, rm.int = TRUE)[,1]
+    cens <- sapply(cens, function(x) {
+      if (grepl(paste("^",x), "right") | is.logical(x) & x) x <- 1
+      else if (grepl(paste("^",x), "none") | is.logical(x) & !x) x <- 0
+      else if (grepl(paste("^",x), "left")) x <- -1
+      else x
+    })
+    if (!all(unique(cens) %in% c(-1:1)))
+      stop (paste0("Invalid censoring data. Accepted values are 'left', 'none', and 'right' \n",
+                   "(abbreviations are allowed) or -1, 0, and 1. TRUE and FALSE are also accepted \n",
+                   "and refer to 'right' and 'none' respectively."))
+    supl.data <- c(supl.data, list(cens = cens))
+  }
+  if (is.ord | family %in% c("binomial", "categorical")) {
     if (family == "binomial") add <- ef$trials
     else add <- ef$cat
     if (!length(add)) supl.data$max_obs <- max(supl.data$Y)
@@ -153,20 +162,6 @@ brm.data <- function(formula, data = NULL, family = c("gaussian", "identity"), p
     family <- ifelse(family == "binomial" & max(supl.data$Y) == 1 | two.cat, 
                      "bernoulli", family)
   } 
-  if (is(ef$cens,"formula")) {
-    cens <- brm.model.matrix(ef$cens, data, rm.int = TRUE)[,1]
-    cens <- sapply(cens, function(x) {
-      if (grepl(paste("^",x), "right") | is.logical(x) & x) x <- 1
-      else if (grepl(paste("^",x), "none") | is.logical(x) & !x) x <- 0
-      else if (grepl(paste("^",x), "left")) x <- -1
-      else x
-    })
-    if (!all(unique(cens) %in% c(-1:1)))
-      stop (paste0("Invalid censoring data. Accepted values are 'left', 'none', and 'right' \n",
-                   "(abbreviations are allowed) or -1, 0, and 1. TRUE and FALSE are also accepted \n",
-                   "and refer to 'right' and 'none' respectively."))
-    supl.data <- c(supl.data, list(cens = cens))
-  }
   
   if (length(ef$random)) {
     Z <- lapply(ef$random, brm.model.matrix, data = data, rm.int = is.ord & !stan)

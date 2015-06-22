@@ -29,10 +29,10 @@ If not specified, default link functions are used. Further information is provid
 is provided under 'Details'.}
 
 \item{addition}{A named list of one sided formulas each containing additional information on the response variable. The following names are allowed:
-\code{se} for specifying standard errors for meta-analysis, \code{weights} for specifying weights in linear models, \code{cens} to indicate censoring,
-\code{trials} to specify the number of trials per observation in binomial models, and \code{cat} to specify the number of categories in
-categorical or ordinal models. Alternatively, the \code{addition} arguments can be incorporated directly into \code{formula}. See 'Formula Syntax' in the
-'Details' section for further information.}
+\code{se} for specifying standard errors for meta-analysis, \code{weights} to fit weighted regression models,
+\code{trials} to specify the number of trials per observation in binomial models, \code{cat} to specify the number of categories in
+categorical or ordinal models, and \code{cens} to indicate censoring. Alternatively, the \code{addition} arguments can be incorporated directly into \code{formula}.
+See 'Formula Syntax' under 'Details' for further information.}
 
 \item{autocor}{An optional \code{\link{cor.brms}} object describing the correlation structure within the response variable (i.e. the 'autocorrelation').
 See the documentation of \code{\link{cor.brms}} for a description of the available correlation structures.
@@ -122,10 +122,9 @@ Fit a generalized linear mixed model, which incorporates both fixed-effects para
   or \code{yi | se(sei) ~ 1 + mod1 + mod2 + (1 + mod1 + mod2|study)}, where
   \code{mod1} and \code{mod2} represent moderator variables.
 
-  Again for families \code{gaussian}, \code{student}, and \code{cauchy}, weighted regression may be performed using
+  For all families, weighted regression may be performed using
   \code{weights} in the addition part. Suppose that variable \code{wei} contains the weights and that \code{yi} is the response variable.
-  Then, formula \code{yi | weights(wei) ~ predictors} implements a weighted linear regression. Note that the type of weighting implemented in
-  \code{brms} may lead to different results than typical weighting applied in maximum likelihood estimation.
+  Then, formula \code{yi | weights(wei) ~ predictors} implements a weighted regression.
 
   For family \code{binomial}, addition may contain a variable indicating the number of trials
   underlying each observation. In \code{lme4} syntax, we may write for instance
@@ -133,11 +132,11 @@ Fit a generalized linear mixed model, which incorporates both fixed-effects para
   to \code{success | trials(n)} in \code{brms} syntax. If the number of trials
   is constant across all observation (say \code{10}), we may also write \code{success | trials(10)}.
 
-  For family \code{categorical} and all ordinal families, \code{addition} may contain a term such as \code{cat(categories)} to
-  specify the number categories for each observation, either with a variable name (e.g, \code{categories}) or a single number.
+  For family \code{categorical} and all ordinal families, \code{addition} may contain a term \code{cat(categories)} to
+  specify the number categories for each observation, either with a variable name (e.g, \code{categories} in this example) or a single number.
 
   With the expection of \code{categorical} and ordinal families, left and right censoring can be modeled through \code{yi | cens(censored) ~ predictors}.
-  The censoring variable (named \code{censored} in this example) may contain the values \code{'left'}, \code{'none'}, and \code{'right'}
+  The censoring variable (named \code{censored} in this example) should contain the values \code{'left'}, \code{'none'}, and \code{'right'}
   (or equivalenty -1, 0, and 1) to indicate that the corresponding observation is left censored, not censored, or right censored. \cr
 
   Mutiple \code{addition} terms may be specified at the same time, for instance \code{yi | se(sei) | cens(censored) ~ 1} for a censored meta-analytic model.

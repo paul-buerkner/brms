@@ -43,7 +43,7 @@ extract.effects <- function(formula, ..., family = "none", add.ignore = FALSE) {
   if (!add.ignore) {
     add <- unlist(regmatches(formula, gregexpr("\\|[^~]*~", formula)))[1]
     add <- substr(add, 2, nchar(add)-1)
-    families <- list(se = c("gaussian","student","cauchy"), weights = c("gaussian","student","cauchy"),
+    families <- list(se = c("gaussian","student","cauchy"), weights = c("all"),
                      trials = c("binomial"), cat = c("categorical", "cumulative", "cratio", "sratio", "acat"), 
                      cens = c("gaussian","student","cauchy","binomial","poisson","geometric","negbinomial","exponential",
                               "weibull","gamma"))
