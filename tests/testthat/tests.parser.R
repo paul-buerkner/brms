@@ -14,3 +14,19 @@ test_that("Test that extract.effects handles addition arguments correctly", {
   expect_equal(extract.effects(y | cens(I(cens^2)) ~ z + (x|patient), family = "weibull")$all, 
                y ~ z + x + patient + I(cens^2))
 })
+
+test_that("Test that brm.update.formula returns correct formulas", {
+  expect_equal(brm.update.formula(y~x, addition = list(se = ~I(sei+2))), y | se(I(sei+2)) ~ x)
+  expect_equal(brm.update.formula(y~x, addition = list(se = ~sei, cens = ~censored)), 
+               y | se(sei) | cens(censored) ~ x)
+})
+
+test_that("Test that is.formula is TRUE for formulas and otherwise FALSE", {
+  expect_equal(is.formula(y~1), TRUE)
+  expect_equal(is.formula("a"), FALSE)
+  expect_equal(is.formula(list(y~1, ~1)), TRUE)
+  expect_equal(is.formula(list(y~1,1)), TRUE)
+  expect_equal(is.formula(list("a",1)), FALSE)
+  expect_equal(is.formula(list(y~1, ~1), or = FALSE), TRUE)
+  expect_equal(is.formula(list(y~1,1), or = FALSE), FALSE)
+})

@@ -5,7 +5,7 @@
 \title{Fit Bayesian Generalized Linear and Ordinal Mixed Models}
 \usage{
 brm(formula, data = NULL, family = c("gaussian", "identity"),
-  prior = list(), autocor = NULL, addition = NULL, partial = NULL,
+  prior = list(), addition = NULL, autocor = NULL, partial = NULL,
   threshold = "flexible", cov.ranef = NULL, ranef = TRUE,
   predict = FALSE, fit = NA, n.chains = 2, n.iter = 2000,
   n.warmup = 500, n.thin = 1, n.cluster = 1, inits = "random",
@@ -27,6 +27,12 @@ If not specified, default link functions are used. Further information is provid
 
 \item{prior}{A named list of character strings specifing the prior distributions of the parameters. Further information
 is provided under 'Details'.}
+
+\item{addition}{A named list of one sided formulas each containing additional information on the response variable. The following names are allowed:
+\code{se} for specifying standard errors for meta-analysis, \code{weights} for specifying weights in linear models, \code{cens} to indicate censoring,
+\code{trials} to specify the number of trials per observation in binomial models, and \code{cat} to specify the number of categories in
+categorical or ordinal models. Alternatively, the \code{addition} arguments can be incorporated directly into \code{formula}. See 'Formula Syntax' in the
+'Details' section for further information.}
 
 \item{autocor}{An optional \code{\link{cor.brms}} object describing the correlation structure within the response variable (i.e. the 'autocorrelation').
 See the documentation of \code{\link{cor.brms}} for a description of the available correlation structures.
@@ -50,7 +56,7 @@ Set to \code{FALSE} to save memory. The argument has no impact on the model fitt
 \item{predict}{A flag to indicate if posterior predictives of the dependent variable should be generated.}
 
 \item{fit}{An instance of S3 class \code{brmsfit} derived from a previous fit; defaults to \code{NA}. If \code{fit} is of class \code{brmsfit}, the compiled model associated
- with the fitted result is re-used and the arguments \code{formula}, \code{data}, \code{family}, \code{prior}, \code{autocor}, \code{partial}, \code{threshold},
+ with the fitted result is re-used and the arguments \code{formula}, \code{data}, \code{family}, \code{prior}, \code{addition}, \code{autocor}, \code{partial}, \code{threshold},
 \code{cov.ranef}, \code{ranef}, and \code{predict} are ignored.}
 
 \item{n.chains}{Number of Markov chains (default: 2)}
@@ -101,31 +107,40 @@ Fit a generalized linear mixed model, which incorporates both fixed-effects para
 
   Multiple grouping factors each with multiple random effects are possible. With the exception of \code{addition},
   this is basically \code{lme4} syntax.
-  The optional argument \code{addition} has different meanings depending on the \code{family} argument.
+  The optional \code{addition} term may contain multiple terms of the form \code{fun(variable)} seperated by \code{|} each providing
+  special information on the response variable. \code{fun} can be replaced with either \code{se}, \code{weights}, \code{trials},
+  \code{cat}, or \code{cens} (their meanings are explained below). Using the \code{addition} term in \code{formula} is equivalent
+  to using argument \code{addition}: Instead of writing \code{fun(variable)} in \code{formula}, we may use \code{addition = list(fun = ~variable)}.
 
-  For families \code{gaussian}, \code{student}, and \code{cauchy}
-  it may be a variable specifying the standard errors of the observation, thus allowing to perform meta-analysis.
+  For families \code{gaussian}, \code{student}, and \code{cauchy} it is possible to specify
+  standard errors of the observation, thus allowing to perform meta-analysis.
   Suppose that the variable \code{yi} contains the effect sizes from the studies and \code{sei} the
   corresponding standard errors. Then, fixed and random effects meta-analyses can be conducted
-  using the formulae \code{yi | sei ~ 1} and \code{yi | sei ~ 1 + (1|study)}, respectively, where
+  using the formulae \code{yi | se(sei) ~ 1} and \code{yi | se(sei) ~ 1 + (1|study)}, respectively, where
   \code{study} is a variable uniquely identifying every study.
-  If desired, meta-regressen can be performed via \code{yi | sei ~ 1 + mod1 + mod2 + (1|study)}
-  or \code{yi | sei ~ 1 + mod1 + mod2 + (1 + mod1 + mod2|study)}, where
+  If desired, meta-regressen can be performed via \code{yi | se(sei) ~ 1 + mod1 + mod2 + (1|study)}
+  or \code{yi | se(sei) ~ 1 + mod1 + mod2 + (1 + mod1 + mod2|study)}, where
   \code{mod1} and \code{mod2} represent moderator variables.
 
-  For family \code{binomial}, addition may be a variable indicating the number of trials
+  Again for families \code{gaussian}, \code{student}, and \code{cauchy}, weighted regression may be performed using
+  \code{weights} in the addition part. Suppose that variable \code{wei} contains the weights and that \code{yi} is the response variable.
+  Then, formula \code{yi | weights(wei) ~ predictors} implements a weighted linear regression. Note that the type of weighting implemented in
+  \code{brms} may lead to different results than typical weighting applied in maximum likelihood estimation.
+
+  For family \code{binomial}, addition may contain a variable indicating the number of trials
   underlying each observation. In \code{lme4} syntax, we may write for instance
-  \code{cbind(success, trials - success)}, which is equivalent
-  to \code{success | trials} in \code{brms} syntax. If the number of trials
-  is constant across all observation (say \code{10}), we may also write \code{success | 10}.
+  \code{cbind(success, n - success)}, which is equivalent
+  to \code{success | trials(n)} in \code{brms} syntax. If the number of trials
+  is constant across all observation (say \code{10}), we may also write \code{success | trials(10)}.
 
-  For family \code{categorical} and all ordinal families, \code{addition} specifies the number of
-  categories for each observation, either with a variable name or a single number.
+  For family \code{categorical} and all ordinal families, \code{addition} may contain a term such as \code{cat(categories)} to
+  specify the number categories for each observation, either with a variable name (e.g, \code{categories}) or a single number.
 
-  For families \code{gamma}, \code{exponential}, and \code{weibull}, \code{addition} may contain
-  a logical variable (or a variable than can be coerced to logical) indicating
-  if the response variable is right censored (corresponding to \code{TRUE}) or not censored
-  (corresponding to \code{FALSE}). \cr
+  With the expection of \code{categorical} and ordinal families, left and right censoring can be modeled through \code{yi | cens(censored) ~ predictors}.
+  The censoring variable (named \code{censored} in this example) may contain the values \code{'left'}, \code{'none'}, and \code{'right'}
+  (or equivalenty -1, 0, and 1) to indicate that the corresponding observation is left censored, not censored, or right censored. \cr
+
+  Mutiple \code{addition} terms may be specified at the same time, for instance \code{yi | se(sei) | cens(censored) ~ 1} for a censored meta-analytic model.
 
   \bold{Families and link functions}
 
