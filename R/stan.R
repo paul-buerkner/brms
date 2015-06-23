@@ -412,9 +412,9 @@ stan.llh <- function(family, link = "identity", predict = FALSE, add = FALSE,
   is.ord <- family %in% c("cumulative", "cratio", "sratio", "acat")
   is.count <- family %in% c("poisson","negbinomial", "geometric")
   is.skew <- family %in% c("gamma","exponential","weibull")
-  simplify <- !cens & !predict & (link=="logit" & family %in% c("binomial", "bernoulli") |
-    family %in% c("cumulative", "categorical") & !add | is.count & link == "log") 
-  n <- ifelse(predict | cens | weights, "[n]", "")
+  simplify <- !cens & !predict & (family %in% c("binomial", "bernoulli") & link == "logit" |
+    family %in% c("cumulative", "categorical") & link == "logit" & !add | is.count & link == "log") 
+  n <- ifelse(predict | cens | weights | is.ord | family == "categorical" , "[n]", "")
   ns <- ifelse(add & (predict | cens), "[n]", "")
   ilink <- c(identity = "", log = "exp", inverse = "inv", sqrt = "square", logit = "inv_logit", 
              probit = "Phi", probit_approx = "Phi_approx", cloglog = "inv_cloglog")[link]
@@ -454,11 +454,6 @@ stan.llh <- function(family, link = "identity", predict = FALSE, add = FALSE,
            "      else increment_log_prob(", addW, llh.pre[1], "_cdf_log(Y[n],", llh.pre[2],")); \n",
            "    } \n"),
     weights = paste0("  lp_pre[n] <- ", llh.pre[1], "_log(Y[n],",llh.pre[2],"); \n"),
-    general = paste0("  Y", n, " ~ ", llh.pre[1],"(",llh.pre[2],"); \n"))
-  #if (cens & !predict) {
-  #  llh <- paste0(llh, "    else { \n",         
-  #    "      if (cens[n] == 1) increment_log_prob(", addW, llh.pre[1], "_ccdf_log(Y[n],", llh.pre[2],")); \n",
-  #    "      else increment_log_prob(", addW, llh.pre[1], "_cdf_log(Y[n],", llh.pre[2],")); \n    } \n")
-  #}  
+    general = paste0("  Y", n, " ~ ", llh.pre[1],"(",llh.pre[2],"); \n")) 
   llh
 }
