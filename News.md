@@ -5,10 +5,12 @@ output: html_document
 
 # brms 0.2.0.9000
 
-* introduced new argument 'cov.ranef' to function brm allowing for customized covariance structures of random effects
+* introduced new argument 'addition' in function brm to get a more flexible approach in specifying additional information on the response variable (e.g., standard errors for meta-analysis). Alternatively, this information can also be passed to the formula argument directly.
+* introduced weighted and censored regressions through argument 'addition' of function brm
+* introduced new argument 'cov.ranef' in function brm allowing for customized covariance structures of random effects
 * amended parametrization of random effects to increase efficiency of the sampling algorithms
 * improved vectorization of sampling statements
-* introduced new argument 'autocor' to function brm allowing for autocorrelation of the response variable.
+* introduced new argument 'autocor' in function brm allowing for autocorrelation of the response variable.
 * introduced new functions 'cor.ar', 'cor.ma', and 'cor.arma', to be used with argument 'autocor' for modeling autoregressive, moving-average, and autoregressive-moving-average models. 
 * fixed a bug that could cause an error when fitting poisson models while predict = TRUE
 * fixed a bug that caused an error when sampling only one chain while silent = TRUE 
