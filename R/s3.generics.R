@@ -138,3 +138,7 @@ VarCorr <- function(x, estimate = "mean", as.list = TRUE, ...)
 #' @export
 ngrps <- function(object, ...) 
   UseMethod("ngrps")
+
+#' @export
+hypothesis <- function(x, hypothesis, ...)
+  UseMethod("hypothesis")

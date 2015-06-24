@@ -86,7 +86,12 @@ array2list <- function(x) {
 
 #calculate estimates over posterior samples 
 get.estimate <- function(coef, samples, margin = 1, to.array = FALSE, ...) {
-  x <- apply(samples, margin, coef, ...)
+  dots <- list(...)
+  args <- list(X = samples, MARGIN = margin, FUN = coef)
+  fun.args <- names(formals(coef))
+  if (!"..." %in% fun.args) 
+    dots <- dots[fun.args %in% names(dots)] 
+  x <- do.call(apply, c(args, dots))
   if (is.null(dim(x))) 
     x <- matrix(x, dimnames = list(NULL, coef))
   else if (coef == "quantile") x <- aperm(x, length(dim(x)):1)
@@ -113,3 +118,13 @@ rmNULL <- function(x) {
 }
 
 rmNum <- function(x) x[sapply(x, Negate(is.numeric))]
+
+#removes matchs in x appearing also in y
+rmMatch <- function(x, y) {
+  att <- attributes(x)
+  keep <- which(!(x %in% y))
+  x <- x[keep]
+  attributes(x) <- att
+  attr(x, "match.length") <- att$match.length[keep] 
+  x
+} 

@@ -303,6 +303,54 @@ print.brmsmodel <- function(x, ...) {
   cat(x)
 }
 
+#' @export
+hypothesis.brmsfit <- function(x, hypothesis, ...) {
+  if (!is.character(hypothesis)) stop("x must be of class character")
+  chains <- length(x$fit@sim$samples) 
+  iter <- attr(x$fit@sim$samples[[1]],"args")$iter
+  warmup <- attr(x$fit@sim$samples[[1]],"args")$warmup
+  thin <- attr(x$fit@sim$samples[[1]],"args")$thin
+  chains <- length(x$fit@sim$samples)
+  pars <- names(x$fit@sim$samples[[1]])
+  pars <- pars[grepl("^b_", pars)]
+  
+  out <- do.call(rbind, lapply(hypothesis, function(h) {
+    h <- gsub(" ", "", h)
+    if (length(gregexpr("=", h)[[1]]) != 1 || length(gregexpr(".=.", h)[[1]]) != 1)
+      stop("Every hypothesis must be of the form 'left = right'")
+    lr <- unlist(regmatches(h, gregexpr("[^=]+", h)))
+    h <- paste0(lr[1], ifelse(lr[2] != "0", paste0("-(",lr[2],")"), ""))
+    fun.pos <- gregexpr("[[:alpha:]_\\.][[:alnum:]_\\.]*\\(", h)
+    var.pos <- list(rmMatch(gregexpr("[[:alpha:]_\\.][[:alnum:]_\\.]*", h)[[1]], fun.pos[[1]]))
+    varsH <- unlist(regmatches(h, var.pos))
+    parsH <- paste0("b_",varsH)
+    if (!all(parsH %in% pars)) 
+      stop(paste("The following fixed effects cannot be found in the model:", 
+                 paste0(varsH[which(!parsH %in% pars)], collapse = ", ")))
+    samples <- data.frame(sapply(1:length(parsH), function(i)
+      unlist(lapply(1:chains, function(j) 
+        x$fit@sim$samples[[j]][[parsH[i]]][(warmup/thin+1):(iter/thin)]))))
+    names(samples) <- varsH
+    out <- with(samples, eval(parse(text = h)))
+    out <- as.data.frame(matrix(unlist(lapply(c("mean","sd","quantile"), get.estimate, 
+                         samples = matrix(out, nrow=1), probs = c(.025, .975))), nrow = 1))
+    out <- cbind(out, ifelse(!(out[1,3] <= 0 & 0 <= out[1,4]), '*', ''))
+    rownames(out) <- paste(h, "= 0")
+    colnames(out) <- c("Estimate", "Est.Error", "l-95% CI", "u-95% CI", "")
+    out
+  }))
+  class(out) <- c("brmshypothesis", "data.frame")
+  out
+}
+
+#' @export
+print.brmshypothesis <- function(x, digits = 2, ...) {
+  cat("Hypotheses Tests: \n")
+  class(x) <- "data.frame"
+  print(x, digits = digits, quote = FALSE)
+  cat("---\n'*': The expected value under the hypothesis lies outside the 95% CI.")
+}
+
 #' Trace and density plots for MCMC samples
 #' 
 #' Trace and density plots for MCMC samples using the \code{ggmcmc} package
