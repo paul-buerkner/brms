@@ -138,6 +138,25 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
   VarCorr
 }
 
+#' @export
+posterior.samples.brmsfit <- function(x, parameters = NA, ...) {
+  pars <- names(x$fit@sim$samples[[1]])
+  if (!(anyNA(parameters) | is.character(parameters))) 
+    stop("Argument parameters must be NA or a character vector")
+  if (!anyNA(parameters)) pars <- pars[apply(sapply(parameters, grepl, x = pars), 1, any)]
+  
+  iter <- attr(x$fit@sim$samples[[1]],"args")$iter
+  warmup <- attr(x$fit@sim$samples[[1]],"args")$warmup
+  thin <- attr(x$fit@sim$samples[[1]],"args")$thin
+  chains <- length(x$fit@sim$samples) 
+  
+  samples <- data.frame(sapply(1:length(pars), function(i)
+    unlist(lapply(1:chains, function(j) 
+      x$fit@sim$samples[[j]][[pars[i]]][(warmup/thin+1):(iter/thin)]))))
+  names(samples) <- pars
+  samples
+}
+
 #' Create a summary of a fitted model represented by a \code{brmsfit} object
 #' 
 #' Summarize estimated fixed and random effects as well as other useful
@@ -299,6 +318,12 @@ predict.brmsfit <- function(object, ...) {
 }
 
 #' @export
+par.names.brmsfit <- function(x, ...) {
+  if (!is(x, "brmsfit")) stop("Argument x must be of class brmsfit")
+  names(x$fit@sim$samples[[1]])
+}
+
+#' @export
 print.brmsmodel <- function(x, ...) {
   cat(x)
 }
@@ -347,7 +372,8 @@ hypothesis.brmsfit <- function(x, hypothesis, ...) {
 print.brmshypothesis <- function(x, digits = 2, ...) {
   cat("Hypotheses Tests: \n")
   class(x) <- "data.frame"
-  print(x, digits = digits, quote = FALSE)
+  x[,1:4] <- round(x[,1:4], digits = digits)
+  print(x, quote = FALSE)
   cat("---\n'*': The expected value under the hypothesis lies outside the 95% CI.")
 }
 

@@ -5,7 +5,8 @@ output: html_document
 
 # brms 0.2.0.9000
 
-* introduced new method 'hypothesis' for class 'brmsfit' allowing to test non-linear hypothesis concerning fixed effects
+* introduced new methods 'par.names' and 'posterior.samples' for class 'brmsfit' to extract parameter names and posterior samples for given parameters.
+* introduced new method 'hypothesis' for class 'brmsfit' allowing to test non-linear hypotheses concerning fixed effects
 * introduced new argument 'addition' in function brm to get a more flexible approach in specifying additional information on the response variable (e.g., standard errors for meta-analysis). Alternatively, this information can also be passed to the formula argument directly.
 * introduced weighted and censored regressions through argument 'addition' of function brm
 * introduced new argument 'cov.ranef' in function brm allowing for customized covariance structures of random effects

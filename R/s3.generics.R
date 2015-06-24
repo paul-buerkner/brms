@@ -127,7 +127,7 @@ VarCorr <- function(x, estimate = "mean", as.list = TRUE, ...)
 #' 
 #' @aliases ngrps.brmsfit
 #' 
-#' @param object An \code{R} object.
+#' @param object An \code{R} object typically of class \code{brmsfit}.
 #' @param ... Currently ignored.
 #' 
 #' @details Currently there are methods for \code{brmsfit} objects.
@@ -139,6 +139,81 @@ VarCorr <- function(x, estimate = "mean", as.list = TRUE, ...)
 ngrps <- function(object, ...) 
   UseMethod("ngrps")
 
+#' Non-linear hypothesis testing
+#' 
+#' Perform non-linear hypothesis testing of fixed effects parameters
+#' 
+#' @aliases hypothesis.brmsfit
+#' 
+#' @param x An \code{R} object typically of class \code{brmsfit}
+#' @param hypothesis A character vector specifying one or more non-linear hypothesis concerning fixed effects
+#' @param ... Currently ignored
+#' 
+#' @details Currently there are methods for \code{brmsfit} objects.
+#' @return Summary statistics of the posterior distributions related to the hypotheses
+#' 
+#' @author Paul-Christian Buerkner <\email{paul.buerkner@@gmail.com}>
+#' 
+#' @examples
+#' \dontrun{
+#' fit_i <- brm(rating ~ treat + period + carry, data = inhaler, family = "cumulative")
+#' 
+#' hypothesis(fit_i, "treat = period + carry")
+#' hypothesis(fit_i, "exp(treat) - 3 = 0")
+#' 
+#' ## test both of the above hypotheses with the same call 
+#' hypothesis(fit_i, c("treat = period + carry", "exp(treat) - 3 = 0"))
+#' }
+#' 
 #' @export
 hypothesis <- function(x, hypothesis, ...)
   UseMethod("hypothesis")
+
+#' Extract posterior samples
+#' 
+#' Extract posterior samples of specified parameters 
+#' 
+#' @aliases posterior.samples.brmsfit
+#' 
+#' @param x An \code{R} object typically of class \code{brmsfit}
+#' @param parameters Name of parameters for which posterior samples should be returned, as given by a character vector or regular expressions.
+#'   By default, all posterior samples of all parameters are extracted
+#' @param ... Currently ignored
+#'   
+#' @details Currently there are methods for \code{brmsfit} objects.
+#' @return A data frame containing the posterior samples, with one column per parameter.
+#' 
+#' @author Paul-Christian Buerkner <\email{paul.buerkner@@gmail.com}>
+#' 
+#' @examples
+#' \dontrun{
+#' fit_i <- brm(rating ~ treat + period + carry + (1|subject), data = inhaler, family = "cumulative")
+#' 
+#' #extract posterior samples of fixed effects 
+#' samples1 <- posterior.samples(fit_i, "b_")
+#' head(samples1)
+#' 
+#' #extract posterior samples of standard deviations of random effects
+#' samples2 <- posterior.samples(fit_i, "sd_")
+#' head(samples2)
+#' }
+#' 
+#' @export 
+posterior.samples <- function(x, parameters = NA, ...)
+  UseMethod("posterior.samples")
+
+#' Extract parameter names
+#' 
+#' Extract all parameter names of a given model
+#' 
+#' @param x An \code{R} object typically of class \code{brmsfit}
+#' @param ... Currently ignored
+#' 
+#' @details Currently there are methods for \code{brmsfit} objects.
+#' @return A character vector containing the parameter names of the model
+#' 
+#' @author Paul-Christian Buerkner <\email{paul.buerkner@@gmail.com}>
+#' 
+#' @export
+par.names <- function(x, ...)
+  UseMethod("par.names")
