@@ -140,7 +140,7 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
 
 #' @export
 posterior.samples.brmsfit <- function(x, parameters = NA, ...) {
-  pars <- names(x$fit@sim$samples[[1]])
+  pars <- names(x$fit@sim$samples[[1]])  
   if (!(anyNA(parameters) | is.character(parameters))) 
     stop("Argument parameters must be NA or a character vector")
   if (!anyNA(parameters)) pars <- pars[apply(sapply(parameters, grepl, x = pars), 1, any)]
@@ -318,19 +318,15 @@ predict.brmsfit <- function(object, ...) {
 }
 
 #' @export
-par.names.brmsfit <- function(x, ...) {
-  if (!is(x, "brmsfit")) stop("Argument x must be of class brmsfit")
-  names(x$fit@sim$samples[[1]])
-}
+par.names.brmsfit <- function(x, ...) names(x$fit@sim$samples[[1]])
 
 #' @export
-print.brmsmodel <- function(x, ...) {
-  cat(x)
-}
+print.brmsmodel <- function(x, ...) cat(x)
 
 #' @export
 hypothesis.brmsfit <- function(x, hypothesis, ...) {
-  if (!is.character(hypothesis)) stop("x must be of class character")
+  if (!is.character(hypothesis)) 
+    stop("Argument hypothesis must be a character vector")
   chains <- length(x$fit@sim$samples) 
   iter <- attr(x$fit@sim$samples[[1]],"args")$iter
   warmup <- attr(x$fit@sim$samples[[1]],"args")$warmup
@@ -340,8 +336,8 @@ hypothesis.brmsfit <- function(x, hypothesis, ...) {
   pars <- pars[grepl("^b_", pars)]
   
   out <- do.call(rbind, lapply(hypothesis, function(h) {
-    h <- gsub(" ", "", h)
-    if (length(gregexpr("=", h)[[1]]) != 1 || length(gregexpr(".=.", h)[[1]]) != 1)
+    h <- gsub(":", "__", gsub(" ", "", h))
+    if (length(gregexpr("[^=]+", h)[[1]]) != 2)
       stop("Every hypothesis must be of the form 'left = right'")
     lr <- unlist(regmatches(h, gregexpr("[^=]+", h)))
     h <- paste0(lr[1], ifelse(lr[2] != "0", paste0("-(",lr[2],")"), ""))
@@ -360,7 +356,7 @@ hypothesis.brmsfit <- function(x, hypothesis, ...) {
     out <- as.data.frame(matrix(unlist(lapply(c("mean","sd","quantile"), get.estimate, 
                          samples = matrix(out, nrow=1), probs = c(.025, .975))), nrow = 1))
     out <- cbind(out, ifelse(!(out[1,3] <= 0 & 0 <= out[1,4]), '*', ''))
-    rownames(out) <- paste(h, "= 0")
+    rownames(out) <- paste(gsub("__", ":", h), "= 0")
     colnames(out) <- c("Estimate", "Est.Error", "l-95% CI", "u-95% CI", "")
     out
   }))
