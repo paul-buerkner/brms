@@ -341,8 +341,9 @@ hypothesis.brmsfit <- function(x, hypothesis, ...) {
       stop("Every hypothesis must be of the form 'left = right'")
     lr <- unlist(regmatches(h, gregexpr("[^=]+", h)))
     h <- paste0(lr[1], ifelse(lr[2] != "0", paste0("-(",lr[2],")"), ""))
-    fun.pos <- gregexpr("[[:alpha:]_\\.][[:alnum:]_\\.]*\\(", h)
-    var.pos <- list(rmMatch(gregexpr("[[:alpha:]_\\.][[:alnum:]_\\.]*", h)[[1]], fun.pos[[1]]))
+    fun.pos <- gregexpr("[^([:digit:]|[:punct:])][[:alnum:]_\\.]*\\(", h)
+    var.pos <- list(rmMatch(gregexpr("[^([:digit:]|[:punct:])][[:alnum:]_\\.]*", h)[[1]], 
+                            fun.pos[[1]]))
     varsH <- unlist(regmatches(h, var.pos))
     parsH <- paste0("b_",varsH)
     if (!all(parsH %in% pars)) 
