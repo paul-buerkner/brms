@@ -416,8 +416,8 @@ plot.brmsfit <- function(x, parameters = NA, combine = FALSE, N = 5, ask = TRUE,
   rel.att <- c("class", "nChains", "nIterations", "nBurnin", "nThin", "description")
   pfit <- pfit[which(pfit$Parameter %in% pars),]
   
-  default.ask <- devAskNewPage()
-  devAskNewPage(ask = FALSE)
+  default.ask <- grDevices::devAskNewPage()
+  grDevices::devAskNewPage(ask = FALSE)
   for (i in 1:ceiling(length(pars)/N)) {
     pfit.sub1 <- pfit[which(pfit$Parameter %in% pars[((i-1)*N+1):min(i*N,length(pars))]),]
     for (j in 1:length(rel.att)) 
@@ -427,7 +427,7 @@ plot.brmsfit <- function(x, parameters = NA, combine = FALSE, N = 5, ask = TRUE,
     gridExtra::grid.arrange(ggmcmc::ggs_traceplot(pfit.sub1) + 
         ggplot2::theme(legend.position = "none"), 
         ggmcmc::ggs_density(pfit.sub2), ncol = 2, nrow = 1)
-    if (i == 1) devAskNewPage(ask = ask)
+    if (i == 1) grDevices::devAskNewPage(ask = ask)
   }
-  devAskNewPage(default.ask)
+  grDevices::devAskNewPage(default.ask)
 }

@@ -1,3 +1,6 @@
+## Resubsmission
+* The NAMESPACE issue concerning function 'devAskNewPage' should now be solved.
+
 ## Test environments
 * local Windows 8.1 install, R 3.2.0, R 3.3.0
 * win-builder (devel and release)
