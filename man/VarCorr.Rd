@@ -38,6 +38,6 @@ VarCorr(fit_e, estimate = "quantile", probs = c(0.025, 0.975))
 }
 }
 \author{
-Paul-Christian Buerkner <\email{paul.buerkner@gmail.com}>
+Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 }
 

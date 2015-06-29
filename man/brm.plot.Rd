@@ -22,4 +22,7 @@ Trace and density plots for MCMC samples (deprecated)
 This function is deprecated and will soon be defunct. For models created with brms 0.2.0 or higher,
 we recommend using the S3 plot method for class \code{brmsfit} (see also \code{\link[brms:plot.brmsfit]{plot.brmsfit}}).
 }
+\author{
+Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
+}
 

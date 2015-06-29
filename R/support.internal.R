@@ -119,7 +119,7 @@ rmNULL <- function(x) {
 
 rmNum <- function(x) x[sapply(x, Negate(is.numeric))]
 
-#removes matchs in x appearing also in y
+#removes all elements in x appearing also in y
 rmMatch <- function(x, y) {
   att <- attributes(x)
   keep <- which(!(x %in% y))

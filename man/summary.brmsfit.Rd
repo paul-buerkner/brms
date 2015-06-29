@@ -16,6 +16,6 @@ Summarize estimated fixed and random effects as well as other useful
 results included in a \code{brmsfit} object.
 }
 \author{
-Paul-Christian Buerkner <\email{paul.buerkner@gmail.com}>
+Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 }
 

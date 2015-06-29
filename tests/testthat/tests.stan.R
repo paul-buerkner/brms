@@ -56,3 +56,8 @@ test_that("Test that stan.model returns correct strings for customized covarianc
                           cov.ranef = "subject"),
              "r_subject <- b\\[1\\] \\+ sd_subject \\* \\(CF_cov_subject\\*pre_subject\\)")
 })
+
+test_that("Test that stan.model handles addition arguments correctly", {
+  expect_match(stan.model(time | cens(censored) ~ age + sex + disease, data = kidney,
+                          family = "weibull", link = "log"), "vector\\[N\\] cens;")
+})

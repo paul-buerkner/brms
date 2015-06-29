@@ -1,6 +1,3 @@
-## Update
-This update contains some important bug fixes and greatly improves usability of the outputs. I am sorry for sending you an update only 20 days after the initial release.
-
 ## Test environments
 * local Windows 8.1 install, R 3.2.0, R 3.3.0
 * win-builder (devel and release)

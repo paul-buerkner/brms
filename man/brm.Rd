@@ -96,7 +96,9 @@ Fit a Bayesian generalized linear or ordinal mixed model using Stan
 \details{
 Fit a generalized linear mixed model, which incorporates both fixed-effects parameters and random effects in a linear predictor
   via full bayesian inference using Stan. During warmup aka burnin phase, Stan may print out quite a few informational
-  messages that \code{"the current Metropolis proposal is about the be rejected ..."}. These messages can be ignored in nearly all cases.
+  messages that \cr
+  \code{"the current Metropolis proposal is about the be rejected ..."}. \cr
+  These messages can be ignored in nearly all cases.
   Use \code{silent = TRUE} to stop these messages from being printed out. \cr
 
   \bold{Formula syntax}
@@ -119,7 +121,7 @@ Fit a generalized linear mixed model, which incorporates both fixed-effects para
   using the formulae \code{yi | se(sei) ~ 1} and \code{yi | se(sei) ~ 1 + (1|study)}, respectively, where
   \code{study} is a variable uniquely identifying every study.
   If desired, meta-regressen can be performed via \code{yi | se(sei) ~ 1 + mod1 + mod2 + (1|study)}
-  or \code{yi | se(sei) ~ 1 + mod1 + mod2 + (1 + mod1 + mod2|study)}, where
+  or \cr \code{yi | se(sei) ~ 1 + mod1 + mod2 + (1 + mod1 + mod2|study)}, where
   \code{mod1} and \code{mod2} represent moderator variables.
 
   For all families, weighted regression may be performed using
@@ -137,9 +139,11 @@ Fit a generalized linear mixed model, which incorporates both fixed-effects para
 
   With the expection of \code{categorical} and ordinal families, left and right censoring can be modeled through \code{yi | cens(censored) ~ predictors}.
   The censoring variable (named \code{censored} in this example) should contain the values \code{'left'}, \code{'none'}, and \code{'right'}
-  (or equivalenty -1, 0, and 1) to indicate that the corresponding observation is left censored, not censored, or right censored. \cr
+  (or equivalenty -1, 0, and 1) to indicate that the corresponding observation is left censored, not censored, or right censored.
 
-  Mutiple \code{addition} terms may be specified at the same time, for instance \code{yi | se(sei) | cens(censored) ~ 1} for a censored meta-analytic model.
+  Mutiple \code{addition} terms may be specified at the same time, for instance \cr
+  \code{formula = yi | se(sei) | cens(censored) ~ 1} for a censored meta-analytic model, equivalent to
+  \code{formula = yi ~ 1} and \code{addition = list(se = ~sei, cens = ~censored)} when using argument \code{addition}. \cr
 
   \bold{Families and link functions}
 
@@ -194,7 +198,7 @@ Fit a generalized linear mixed model, which incorporates both fixed-effects para
 
   The autocorrelation parameters currently implemented are named \code{ar} (autoregression) and \code{ma} (moving average).
   The default prior for autocorrelation parameters is an improper flat prior over the reals. It should be noted that \code{ar} will
-  only take one values between -1 and 1 if the response variable is wide-sence stationay, i.e. if there is no drift in the responses.
+  only take one values between -1 and 1 if the response variable is wide-sence stationay, i.e. if there is no drift in the responses. \cr
 
   3. Standard deviations of random effects
 
@@ -269,6 +273,6 @@ plot(fit_k)
 }
 }
 \author{
-Paul-Christian Buerkner <\email{paul.buerkner@gmail.com}>
+Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 }
 

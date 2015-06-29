@@ -35,6 +35,6 @@ hypothesis(fit_i, c("treat = period + carry", "exp(treat) - 3 = 0"))
 }
 }
 \author{
-Paul-Christian Buerkner <\email{paul.buerkner@gmail.com}>
+Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 }
 

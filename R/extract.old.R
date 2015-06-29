@@ -12,6 +12,8 @@
 #' 
 #' @return NULL
 #' 
+#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
+#' 
 #' @import ggplot2
 #' @export
 brm.plot <- function(fit, family = "^[^(r_)]") {

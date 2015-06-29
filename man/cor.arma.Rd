@@ -27,6 +27,6 @@ This functions is a constructor for the \code{cor.arma} class, representing an a
 cor.arma(~visit|patient, p = 2, q = 2)
 }
 \author{
-Paul-Christian Buerkner <\email{paul.buerkner@gmail.com}>
+Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 }
 

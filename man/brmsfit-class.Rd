@@ -16,7 +16,9 @@ Models fitted with the \code{\link[brms:brms]{brms}} package are represented as 
   \code{\link[brms:plot.brmsfit]{plot}}, \code{\link[brms:fixef.brmsfit]{fixef}}
   \code{\link[brms:ranef.brmsfit]{ranef}},   \code{\link[brms:VarCorr.brmsfit]{VarCorr}}, 
   \code{\link[stats:predict]{predict}}, \code{\link[stats:formula]{formula}},
-  \code{\link[stats:nobs]{nobs}}, \code{\link[brms:ngrps.brmsfit]{ngrps}}.
+  \code{\link[stats:nobs]{nobs}}, \code{\link[brms:ngrps.brmsfit]{ngrps}},
+  \code{\link[brms:hypothesis]{hypothesis}}, \code{\link[brms:par.names]{par.names}},
+  \code{\link[brms:posterior.samples]{posterior.samples}}
 }
 
 \section{Slots}{
@@ -28,6 +30,8 @@ Models fitted with the \code{\link[brms:brms]{brms}} package are represented as 
     \item{\code{data}:}{the data passed to Stan; a list of vectors and matrices}
     \item{\code{model}:}{the model in Stan language; a character string}
     \item{\code{pars}:}{the parameters of interest; a character vector}
+    \item{\code{autcor}:}{an object of class 'cor.brms' containing the autocorrelation structure}
+    \item{\code{partial}:}{the formula of the partial effects applied in categorical and ordinal models}
     \item{\code{fit}:}{the fitted results including the posterior samples; (usually) an object of class \code{stanfit}}
   }
 }

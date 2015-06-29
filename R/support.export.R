@@ -5,7 +5,7 @@
 #' 
 #' @return A vector of character strings specifying parameters of interest for models produced by the \code{brms} package.
 #' 
-#' @author Paul-Christian Buerkner <\email{paul.buerkner@@gmail.com}>
+#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
 #' @examples 
 #' brm.pars(rating ~ treat + period + carry + (1|subject),
@@ -67,7 +67,7 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
 #' 
 #' @return A named list of objects containing the required data to fit a \code{brms} model 
 #' 
-#' @author Paul-Christian Buerkner <\email{paul.buerkner@@gmail.com}>
+#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
 #' @examples
 #' data1 <- brm.data(rating ~ treat + period + carry + (1|subject), 

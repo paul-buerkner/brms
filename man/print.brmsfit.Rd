@@ -20,6 +20,6 @@ Print basic information regarding the fitted model and a summary for the fixed a
 estimated by the samples included in a \code{brmsfit} object.
 }
 \author{
-Paul-Christian Buerkner <\email{paul.buerkner@gmail.com}>
+Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 }
 

@@ -37,7 +37,7 @@ brmssummary <- function(formula = NULL, family = "", link = "", data.name = "", 
 #' 
 #' @return A matrix with one row per fixed effect and one column per calculated estimate.
 #' 
-#' @author Paul-Christian Buerkner <\email{paul.buerkner@@gmail.com}>
+#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
 #' @examples
 #' \dontrun{
@@ -67,7 +67,7 @@ fixef <- function(x, estimate = "mean", ...)
 #' @return A list of matrices (one per grouping factor), each with one row per level
 #'  and one single column for the estimate (either mean or median).
 #'     
-#' @author Paul-Christian Buerkner <\email{paul.buerkner@@gmail.com}>   
+#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}   
 #'   
 #' @examples
 #' \dontrun{
@@ -104,7 +104,7 @@ ranef <- function(x, estimate = "mean", var = FALSE, center.zero = TRUE, ...)
 #' @return A list of lists (one per grouping factor), each containing 3 elements:
 #'  a matrix containing the standard deviations, a list of correlation matrices, and a list of covariance matrices.
 #' 
-#' @author Paul-Christian Buerkner <\email{paul.buerkner@@gmail.com}>
+#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
 #' @examples
 #' \dontrun{
@@ -133,7 +133,7 @@ VarCorr <- function(x, estimate = "mean", as.list = TRUE, ...)
 #' @details Currently there are methods for \code{brmsfit} objects.
 #' @return Number(s) of levels
 #' 
-#' @author Paul-Christian Buerkner <\email{paul.buerkner@@gmail.com}>
+#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
 #' @export
 ngrps <- function(object, ...) 
@@ -152,7 +152,7 @@ ngrps <- function(object, ...)
 #' @details Currently there are methods for \code{brmsfit} objects.
 #' @return Summary statistics of the posterior distributions related to the hypotheses
 #' 
-#' @author Paul-Christian Buerkner <\email{paul.buerkner@@gmail.com}>
+#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
 #' @examples
 #' \dontrun{
@@ -183,7 +183,7 @@ hypothesis <- function(x, hypothesis, ...)
 #' @details Currently there are methods for \code{brmsfit} objects.
 #' @return A data frame containing the posterior samples, with one column per parameter.
 #' 
-#' @author Paul-Christian Buerkner <\email{paul.buerkner@@gmail.com}>
+#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
 #' @examples
 #' \dontrun{
@@ -212,7 +212,7 @@ posterior.samples <- function(x, parameters = NA, ...)
 #' @details Currently there are methods for \code{brmsfit} objects.
 #' @return A character vector containing the parameter names of the model
 #' 
-#' @author Paul-Christian Buerkner <\email{paul.buerkner@@gmail.com}>
+#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
 #' @export
 par.names <- function(x, ...)

@@ -29,6 +29,6 @@ fixef(brm(time | cens ~ age + sex + disease, data=kidney, family="exponential"),
 }
 }
 \author{
-Paul-Christian Buerkner <\email{paul.buerkner@gmail.com}>
+Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 }
 

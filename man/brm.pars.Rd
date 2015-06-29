@@ -52,6 +52,6 @@ brm.pars(rating ~ treat + period + carry + (1|subject),
          data = inhaler, family = "cumulative")
 }
 \author{
-Paul-Christian Buerkner <\email{paul.buerkner@gmail.com}>
+Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 }
 

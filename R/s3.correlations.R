@@ -13,7 +13,7 @@
 #' 
 #' @return An object of class \code{cor.arma}, representing an autoregression-moving average correlation structure.
 #' 
-#' @author Paul-Christian Buerkner <\email{paul.buerkner@@gmail.com}>
+#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
 #' @examples
 #' cor.arma(~visit|patient, p = 2, q = 2)
@@ -43,7 +43,7 @@ cor.arma <- function(formula = ~ 1, p = 0, q = 0) {
 #' 
 #' @return An object of class \code{cor.arma} containing solely autoregression terms.
 #' 
-#' @author Paul-Christian Buerkner <\email{paul.buerkner@@gmail.com}>
+#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
 #' @seealso \code{\link{cor.arma}}
 #' 
@@ -67,7 +67,7 @@ cor.ar <- function(formula = ~ 1, p = 1) {
 #' 
 #' @return An object of class \code{cor.arma} containing solely moving average terms.
 #' 
-#' @author Paul-Christian Buerkner <\email{paul.buerkner@@gmail.com}>
+#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
 #' @seealso \code{\link{cor.arma}}
 #' 

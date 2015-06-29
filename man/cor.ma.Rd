@@ -24,7 +24,7 @@ This function is a constructor for the \code{cor.arma} class, allowing for movin
 cor.ma(~visit|patient, q = 2)
 }
 \author{
-Paul-Christian Buerkner <\email{paul.buerkner@gmail.com}>
+Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 }
 \seealso{
 \code{\link{cor.arma}}

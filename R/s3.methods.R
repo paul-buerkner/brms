@@ -165,7 +165,7 @@ posterior.samples.brmsfit <- function(x, parameters = NA, ...) {
 #' @param object An object of class \code{brmsfit}
 #' @param ... Other potential arguments
 #' 
-#' @author Paul-Christian Buerkner <\email{paul.buerkner@@gmail.com}>
+#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
 #' @export
 summary.brmsfit <- function(object, ...) {
@@ -282,7 +282,7 @@ print.brmssummary <- function(x, digits = 2, ...) {
 #'   The effective sample size is always rounded to integers.
 #' @param ... Additional arguments that would be passed to method \code{summary} of \code{brmsfit}.
 #'
-#' @author Paul-Christian Buerkner <\email{paul.buerkner@@gmail.com}>
+#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
 #' @export
 print.brmsfit <- function(x, digits = 2, ...) {
@@ -387,7 +387,7 @@ print.brmshypothesis <- function(x, digits = 2, ...) {
 #' 
 #' @return NULL
 #' 
-#' @author Paul-Christian Buerkner <\email{paul.buerkner@@gmail.com}>
+#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
 #' @examples
 #' \dontrun{ 

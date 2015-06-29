@@ -39,6 +39,6 @@ ranef(fit_e, estimate = "median", center.zero = FALSE)
 }
 }
 \author{
-Paul-Christian Buerkner <\email{paul.buerkner@gmail.com}>
+Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 }
 
