@@ -3,6 +3,11 @@ title: "News"
 output: html_document
 ---
 
+# under development
+----------------------------------------------------------------
+
+* fixed a bug in S3 method 'hypothesis' leading to an error when numbers with decimal places were used in the formulation of the hypotheses.
+
 # brms 0.3.0
 ----------------------------------------------------------------
 
