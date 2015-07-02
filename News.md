@@ -6,7 +6,8 @@ output: html_document
 # under development
 ----------------------------------------------------------------
 
-* fixed a bug in S3 method 'hypothesis' leading to an error when numbers with decimal places were used in the formulation of the hypotheses.
+* function calls with several arguments (e.g. poly(x,3)) are now allowed in the formula argument of function 'brm'
+* fixed a bug in S3 method 'hypothesis' leading to an error when numbers with decimal places were used in the formulation of the hypotheses. 
 
 # brms 0.3.0
 ----------------------------------------------------------------

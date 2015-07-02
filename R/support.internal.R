@@ -22,7 +22,7 @@ brm.model.matrix = function(formula, data = environment(formula), rm.int = FALSE
 #  replace certain symbols in a character vector
 brm.replace <- function(names, symbols = NULL, subs = NULL) {
   if (is.null(symbols))
-    symbols <- c(" |\\.|\\(|\\)|\\[|\\]", ":", "\\+", "-", "\\*", "/", "\\^", "=", "!=")
+    symbols <- c(" |\\.|\\(|\\)|\\[|\\]|,", ":", "\\+", "-", "\\*", "/", "\\^", "=", "!=")
   if (is.null(subs))
     subs <- c("", "__", "P", "M", "T", "D", "E", "EQ", "NEQ")
   if (length(symbols) != length(subs)) 
