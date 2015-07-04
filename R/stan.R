@@ -415,7 +415,7 @@ stan.llh <- function(family, link = "identity", predict = FALSE, add = FALSE,
   simplify <- !cens & !predict & (family %in% c("binomial", "bernoulli") & link == "logit" |
     family %in% c("cumulative", "categorical") & link == "logit" & !add | is.count & link == "log") 
   n <- ifelse(predict | cens | weights | is.ord | family == "categorical" , "[n]", "")
-  ns <- ifelse(add & (predict | cens), "[n]", "")
+  ns <- ifelse(add & (predict | cens | weights), "[n]", "")
   ilink <- c(identity = "", log = "exp", inverse = "inv", sqrt = "square", logit = "inv_logit", 
              probit = "Phi", probit_approx = "Phi_approx", cloglog = "inv_cloglog")[link]
   ilink2 <- ifelse((predict | cens) & (link=="logit" & family %in% c("binomial", "bernoulli") | 

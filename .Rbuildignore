@@ -9,3 +9,4 @@
 ^News\.md$
 ^cran-comments\.md$
 ^brm\.txt$
+^brm\.stan$
