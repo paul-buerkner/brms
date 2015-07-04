@@ -19,7 +19,7 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
              threshold = "flexible", predict = FALSE, ranef = TRUE, engine = "stan", ...) {
   dots <- list(...)  
   if (is.null(autocor)) autocor <- cor.arma()
-  ef <- extract.effects(formula = formula, family = family, partial = partial) 
+  ef <- extract.effects(formula = formula, family = family[1], partial = partial) 
   data <- model.frame(ef$all, data = data, drop.unused.levels = TRUE)
   
   family <- family[1]
@@ -84,7 +84,7 @@ brm.data <- function(formula, data = NULL, family = c("gaussian", "identity"), p
   dots <- list(...)  
   if (is.null(autocor)) autocor <- cor.arma()
   et <- extract.time(autocor$form)
-  ef <- extract.effects(formula = formula, family = family, partial, et$all) 
+  ef <- extract.effects(formula = formula, family = family[1], partial, et$all) 
   data <- model.frame(ef$all, data = data, drop.unused.levels = TRUE)
   group.names <- list()
   for (g in ef$group) { 
