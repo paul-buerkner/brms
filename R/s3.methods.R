@@ -178,13 +178,14 @@ summary.brmsfit <- function(object, ...) {
     out <- brmssummary(brm.update.formula(object$formula, partial = object$partial),
              family = object$family, link = object$link, data.name = object$data.name, 
              group = unlist(extract.effects(object$formula, add.ignore = TRUE)$group),
-             nobs = nobs(object), ngrps <- ngrps(object), autocor = object$autocor,
+             nobs = nobs(object), ngrps = ngrps(object), autocor = object$autocor,
              n.chain = length(object$fit@sim$samples),
              n.iter = attr(object$fit@sim$samples[[1]],"args")$iter,
              n.warmup = attr(object$fit@sim$samples[[1]],"args")$warmup,
              n.thin = attr(object$fit@sim$samples[[1]],"args")$thin,
              sampler = attr(object$fit@sim$samples[[1]],"args")$sampler_t) 
-    pars <- names(object$fit@sim$samples[[1]])
+    #pars <- names(object$fit@sim$samples[[1]])
+    pars <- dimnames(fit)$parameters
     fit.summary <- rstan::summary(object$fit, probs = c(0.025, 0.975))
     col.names <- c("Estimate", "Est.Error", "l-95% CI", "u-95% CI", "Eff.Sample", "Rhat")
     
@@ -193,7 +194,8 @@ summary.brmsfit <- function(object, ...) {
     colnames(out$fixed) <- col.names
     rownames(out$fixed) <- gsub("__",":",gsub("^b_","",fix.pars))
     
-    spec.pars <- pars[pars %in% c("sigma","nu","shape","delta")]
+    spec.pars <- pars[pars %in% c("nu","shape","delta") | 
+      apply(sapply(c("^sigma", "^rescor"), grepl, x = pars), 1, any)]
     out$spec.pars <- matrix(fit.summary$summary[spec.pars,-c(2)], ncol = 6)
     colnames(out$spec.pars) <- col.names
     rownames(out$spec.pars) <- spec.pars

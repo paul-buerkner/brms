@@ -72,9 +72,14 @@ extract.effects <- function(formula, ..., family = "none", add.ignore = FALSE) {
   up.formula <- unlist(lapply(c(random, group, rmNULL(rmNum(x[fun])), ...), 
                               function(x) paste0("+", Reduce(paste, deparse(x[[2]])))))
   up.formula <- paste0("update(",Reduce(paste, deparse(fixed)),", . ~ .",paste0(up.formula, collapse=""),")")
-  all <- eval(parse(text = up.formula))
-  environment(all) <- globalenv()
-  return(c(x, all = all))
+  x$all <- eval(parse(text = up.formula))
+  environment(x$all) <- globalenv()
+  x$response = all.vars(x$all[[2]])
+  if (length(x$response) > 1) {
+    x$fixed <- eval(parse(text = paste0("update(x$fixed, ", x$response[1], " ~ .)"))) 
+    x$all <- eval(parse(text = paste0("update(x$all, ", x$response[1], " ~ .)"))) 
+  }  
+  x
 } 
 
 # extract time and grouping variabels for correlation structure

@@ -249,6 +249,7 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
                 save.model = NULL, engine = "stan", ...) {
   dots <- list(...) 
   link <- brm.link(family)
+  data.name <- Reduce(paste, deparse(substitute(data)))
   if (n.chains %% n.cluster != 0) stop("n.chains must be a multiple of n.cluster")
   if (!engine %in% c("stan","jags")) stop("engine must be either 'stan' or 'jags'")
   if (is.null(autocor)) autocor <- cor.arma()
@@ -256,28 +257,31 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
   if (!threshold %in% c("flexible","equidistant")) 
     stop("threshold must be either flexible or equidistant")
   names(prior) <- gsub(":", "__", names(prior))
-  set.seed(seed)
-
+  
   if (is(fit,"brmsfit")) x <- fit
   else {
     formula <- brm.update.formula(formula, addition = addition)
+    ef <- extract.effects(formula = formula, family = family[1], partial = partial, extract.time(autocor$form)$all)
+    data <- brm.melt(data, response = ef$response, family = family[1])
+    data <- stats::model.frame(ef$all, data = data, drop.unused.levels = TRUE)
+    class(data) <- c("model.frame", "data.frame")
+    
     x <- brmsfit(formula = formula, family = family[1], link = link, partial = partial,
-                 data.name = Reduce(paste, deparse(substitute(data))), autocor = autocor)
+                 data.name = data.name, autocor = autocor)
     x$data <- brm.data(formula, data = data, family = family, prior = prior, cov.ranef = cov.ranef,
                        autocor = autocor, partial = partial, engine = engine, ...) 
-    x$pars <- brm.pars(formula, data, family = family[1], autocor = autocor, partial = partial, 
+    x$pars <- brm.pars(formula, data = data, family = family[1], autocor = autocor, partial = partial, 
                 threshold = threshold, ranef = ranef, engine = engine, predict = predict)
   }  
   
+  set.seed(seed)
   if (is.function(inits) | (is.character(inits) & !is.element(inits, c("random", "0")))) 
     inits <- replicate(n.chains, do.call(inits, list()), simplify = FALSE)
-  
   if (engine == "stan") {
     if(!nchar(x$model)) 
-      x$model <- stan.model(formula = x$formula, data = data, family = x$family, 
-                  link = x$link, prior = prior, autocor = x$autocor, partial = x$partial, 
-                  predict = predict, threshold = threshold, cov.ranef = names(cov.ranef), 
-                  save.model = save.model)
+      x$model <- stan.model(formula = x$formula, data = data, family = x$family, link = x$link, 
+                  prior = prior, autocor = x$autocor, partial = x$partial,  predict = predict, 
+                  threshold = threshold, cov.ranef = names(cov.ranef), save.model = save.model)
     if (!requireNamespace("rstan", quietly = TRUE)) {
       warning(paste("Package rstan is not installed yet so that the model cannot be fitted. \n",
         "Returning only the Stan model, the required data, and the parameters of interest. \n",
@@ -304,15 +308,15 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
     else x$fit <- rstan::stan(model_code = x$model, data = x$data, pars = x$pars, init = inits, 
                            iter = n.iter, chains = n.chains, warmup = n.warmup, thin = n.thin, 
                            fit = x$fit, ...)
+    x$fit <- rename.pars(x$fit, ef = ef, data = data, is.ord = is.ord)
   } 
   else if (engine == "jags") {
     warning("Engine 'jags' is currently implemented for testing purposes only and we do not support its usage.")
     if (is.character(inits) | is.numeric(inits)) 
       inits <- replicate(n.chains, bugs.inits(formula = formula, data = data, family = family[1], 
         partial = partial, threshold = threshold, engine = engine, range = dots$range), simplify = FALSE)
-    x$model <- brm.bugs(formula = x$formula, data = data, family = x$family, link = x$link, 
-                      prior = prior, partial = partial, threshold = threshold, 
-                      predict = predict, save.model = save.model)
+    x$model <- brm.bugs(formula = x$formula, data = data, family = x$family, link = x$link, prior = prior, 
+                        partial = partial, threshold = threshold, predict = predict, save.model = save.model)
     if (!requireNamespace("R2jags", quietly = TRUE)) {
       warning(paste0("Package 'R2jags' is not installed yet so that the model cannot be fitted.
         Returning the Bugs model, the required data, and the parameters of interest instead."))

@@ -19,9 +19,12 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
              threshold = "flexible", predict = FALSE, ranef = TRUE, engine = "stan", ...) {
   dots <- list(...)  
   if (is.null(autocor)) autocor <- cor.arma()
-  ef <- extract.effects(formula = formula, family = family[1], partial = partial) 
-  data <- model.frame(ef$all, data = data, drop.unused.levels = TRUE)
-  
+  ef <- extract.effects(formula = formula, family = family[1], partial = partial)
+  if (!"model.frame" %in% class(data)) {
+    data <- brm.melt(data, response = ef$response, family = family[1])
+    data <- stats::model.frame(ef$all, data = data, drop.unused.levels = TRUE)
+  }
+    
   family <- family[1]
   if (is.element(engine,c("stan","jags"))) stan <- engine == "stan"
   else stop("engine must be either stan or jags")
@@ -30,7 +33,7 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
   is.ord <- family  %in% c("cumulative","cratio","sratio","acat")
   is.skew <- family %in% c("gamma", "weibull", "exponential")
   if (!(is.lin | is.ord | is.skew | family %in% 
-      c("poisson", "negbinomial", "geometric", "binomial","bernoulli", "categorical")))
+      c("poisson", "negbinomial", "geometric", "binomial","bernoulli", "categorical", "multigaussian")))
     stop(paste(family,"is not a valid family"))
   
   f <- colnames(brm.model.matrix(ef$fixed, data, rm.int = is.ord))
@@ -39,7 +42,8 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
   out = NULL
   if (is.ord & threshold == "flexible") out <- c(out, "b_Intercept")
   if (is.ord & threshold == "equidistant") out <- c(out, "b_Intercept1", "delta")
-  if (length(f)) out <- c(out, paste0("b_",f))
+  #if (length(f)) out <- c(out, paste0("b_",f))
+  if (length(f)) out <- c(out, "b")
   if (is.ord & length(p)) out <- c(out, paste0("b_",p))
   if (length(ef$group) & engine == "jags") 
     out <- c(out, paste0("V_",ef$group), paste0("VI_",ef$group))
@@ -52,6 +56,7 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
     if (ranef) out <- c(out, paste0("r_",ef$group))
   }  
   if (is.lin & !is(ef$se,"formula")) out <- c(out,"sigma")
+  if (family == "multigaussian") out <- c(out,"sigma", "rescor")
   if (family == "student") out <- c(out,"nu")
   if (family %in% c("gamma","weibull","negbinomial")) out <- c(out,"shape")
   if (predict) out <- c(out,"Y_pred")
@@ -84,8 +89,11 @@ brm.data <- function(formula, data = NULL, family = c("gaussian", "identity"), p
   dots <- list(...)  
   if (is.null(autocor)) autocor <- cor.arma()
   et <- extract.time(autocor$form)
-  ef <- extract.effects(formula = formula, family = family[1], partial, et$all) 
-  data <- model.frame(ef$all, data = data, drop.unused.levels = TRUE)
+  ef <- extract.effects(formula = formula, family = family[1], partial, et$all)
+  if (!"model.frame" %in% class(data)) {
+    data <- brm.melt(data, response = ef$response, family = family[1])
+    data <- stats::model.frame(ef$all, data = data, drop.unused.levels = TRUE)
+  }
   group.names <- list()
   for (g in ef$group) { 
     group.names[[g]] <- sort(as.character(unique(data[[g]])))
@@ -106,11 +114,16 @@ brm.data <- function(formula, data = NULL, family = c("gaussian", "identity"), p
   is.lin <- family %in% c("gaussian", "student", "cauchy")
   is.ord <- family  %in% c("cumulative","cratio","sratio","acat")
   is.skew <- family %in% c("gamma", "weibull", "exponential")
-  if (!(is.lin | is.ord | is.skew | family %in% 
-      c("poisson", "negbinomial", "geometric", "binomial","bernoulli", "categorical")))
+  is.count <- family %in% c("poisson", "negbinomial", "geometric")
+  if (!(is.lin | is.ord | is.skew | is.count | family %in% 
+      c("binomial", "bernoulli", "categorical", "multigaussian")))
     stop(paste(family,"is not a valid family"))
   
   supl.data <- list(N = nrow(data), Y = model.response(data))
+  if (family == "multigaussian") {
+    supl.data$Y <- matrix(supl.data$Y, ncol = length(ef$response))
+    supl.data <- c(supl.data, list(N_trait = nrow(supl.data$Y), K_trait = ncol(supl.data$Y))) 
+  }
   X <- brm.model.matrix(ef$fixed, data, rm.int = is.ord)
   if (is.ord | family == "categorical") {
     if (is.factor(supl.data$Y)) supl.data$Y <- as.numeric(supl.data$Y)

@@ -52,7 +52,7 @@ brm.replace <- function(names, symbols = NULL, subs = NULL) {
 brm.link <- function(family) {
   link <- family[2]
   family <- family[1]
-  is.lin <- family %in% c("gaussian", "student", "cauchy")
+  is.lin <- family %in% c("gaussian", "student", "cauchy", "multigaussian")
   is.skew <- family %in% c("gamma", "weibull", "exponential")
   is.bin <- family %in% c("cumulative", "cratio", "sratio", "acat","binomial", "bernoulli")                    
   is.count <- family %in% c("poisson", "negbinomial", "geometric")
@@ -128,3 +128,28 @@ rmMatch <- function(x, y) {
   attr(x, "match.length") <- att$match.length[keep] 
   x
 } 
+
+#melt data frame for family = "multigaussian"
+brm.melt <- function(data, response, family) {
+  if (length(response) > 1 & family != "multigaussian")
+    stop("multivariate models are currently only allowed for family 'multigaussian'")
+  else if (length(response) == 1 & family == "multigaussian")
+    stop("Only one response variable detected. Use family 'gaussian' instead of 'multigaussian'")
+  else if (!is(data, "data.frame"))
+    stop("data must be a data.frame if family 'multigaussian' is used")
+  else if (length(response) > 1 & family == "multigaussian") {
+    if ("trait" %in% names(data))
+      stop("trait is a resevered variable name for family 'multigaussian'")
+    data <- reshape2::melt(data, measure.vars = response)
+    names(data)[(ncol(data)-1):ncol(data)] <- c("trait", response[1])
+  }
+  data
+}  
+
+#rename parameters
+rename.pars <- function(fit, ef, data, is.ord = FALSE, ...) {
+  X <- brm.model.matrix(ef$fixed, data, rm.int = is.ord)
+  b <- grepl("^b\\[", dimnames(fit)$parameters)
+  fit@sim$fnames_oi[b] <- colnames(X)
+  fit
+}
