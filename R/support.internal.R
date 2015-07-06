@@ -197,9 +197,8 @@ rename.pars <- function(x, ...) {
     sigmas <- grepl("^sigma\\[", pars)
     sigma_names <- paste0("sigma_",ee$response)
     rescors <- grepl("^rescor\\[", pars)
-    rescor_names <- unlist(lapply(1:length(ee$group), function(i)
-      if (length(r[[i]])>1) paste0("rescor_",unlist(lapply(2:length(ee$response), function(j) 
-        lapply(1:(j-1), function(k) paste0(ee$response[k],"_",ee$response[j])))))))
+    rescor_names <- paste0("rescor_",unlist(lapply(2:length(ee$response), function(j) 
+        lapply(1:(j-1), function(k) paste0(ee$response[k],"_",ee$response[j])))))
     x$fit@sim$fnames_oi[sigmas] <- sigma_names
     x$fit@sim$fnames_oi[rescors] <- rescor_names
     for (i in 1:chains) {

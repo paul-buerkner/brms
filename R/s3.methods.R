@@ -213,8 +213,6 @@ summary.brmsfit <- function(object, ...) {
       for (i in 1:length(out$group)) {
         sd.pars <- pars[grepl(paste0("^sd_", out$group[i]), pars)]
         cor.pars <- pars[grepl(paste0("^cor_", out$group[i]), pars)]
-        #sd.names <- gsub(paste0("_",out$group[i]), "", sd.pars)
-        #cor.names <- gsub(paste0("_",out$group[i]), "", cor.pars)
         r.names <- gsub(paste0("^sd_",out$group[i],"_"), "", sd.pars)
         sd.names <- paste0("sd(",r.names,")")
         cor.names <- get.cor.names(r.names)
@@ -315,11 +313,11 @@ predict.brmsfit <- function(object, ...) {
     stop(paste0("The model does not contain predicted values. \n",
          "You should use argument predict = TRUE in function brm."))
   else {
-    pars <- names(object$fit@sim$samples[[1]])
+    ee <- extract.effects(object$formula, add.ignore = TRUE)
+    pars <- dimnames(object$fit)$parameters
     fit.summary <- rstan::summary(object$fit, probs = c(0.025, 0.975))
     pred.pars <- pars[grepl("^Y_pred\\[", pars)]
-    out <- matrix(fit.summary$summary[pred.pars,-c(2,6,7)], ncol = 4)
-    rownames(out) <- NULL
+    out <- fit.summary$summary[pred.pars,-c(2,6,7)]
     colnames(out) <- c("Estimate", "Est.Error", "l-95% CI", "u-95% CI")
   } 
   out

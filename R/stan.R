@@ -11,9 +11,6 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
                        prior = list(), partial = NULL, threshold = "flexible", cov.ranef = NULL,
                        predict = FALSE, autocor = cor.arma(), save.model = NULL) {
   ee <- extract.effects(formula = formula, family = family, partial = partial) 
-  #data <- brm.melt(data, response = ee$response, family = family[1])
-  #data <- stats::model.frame(ee$all, data = data, drop.unused.levels = TRUE)
-
   is.lin <- family %in% c("gaussian", "student", "cauchy")
   is.ord <- family %in% c("cumulative", "cratio", "sratio", "acat") 
   is.skew <- family %in% c("gamma", "weibull", "exponential")
@@ -137,10 +134,9 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
  
   ord <- stan.ord(family, ilink = ilink, partial = length(p), max_obs = max_obs[1], n = n, 
                   predict = predict)  
+  mg <- stan.mg(family, response = ee$response)
   llh <- stan.llh(family, link = link, add = is.formula(ee[c("se", "trials", "cat")]), 
                   weights = is.formula(ee$weights), cens = is.formula(ee$cens))
-  llh.pred <- stan.llh(family, link = link, add = is.formula(ee[c("se", "trials", "cat")]),  
-                       weights = is.formula(ee$weights), predict = TRUE) 
   cens <- ifelse(is.formula(ee$cens), "if (cens[n] == 0) ", "")
                       
   priors <- paste0(
@@ -192,22 +188,10 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
     "  increment_log_prob(dot_product(weights,lp_pre)); \n",
   "} \n",
   "generated quantities { \n",
-    #if (length(p)) paste0(
-    #"  vector[",max_obs[1],"-1] b_",p,"; \n", collapse =""),
-    if (family == "multigaussian") paste0(
-    "  corr_matrix[K_trait] Rescor; \n",
-    "  vector<lower=-1,upper=1>[NC_trait] rescor; \n"),
-    ranef$genD,
-    if (predict) paste0(
-    "  ", ifelse(is.lin | is.skew, "real", "int"), " Y_pred[N]; \n", 
-    "  for (n in 1:N) { \n", llh.pred, "  } \n"),
-    #if (length(p)) paste0(
-    #"  b_",p," <- to_vector(bp[",1:length(p),"]); \n", collapse = ""),
-    if (family == "multigaussian") paste0(
-    "  Rescor <- multiply_lower_tri_self_transpose(Lrescor); \n",
-    paste0(unlist(lapply(2:length(ee$response),function(i) lapply(1:(i-1), function(j)
-       paste0("  rescor[",(i-1)*(i-2)/2+j,"] <- Rescor[",j,",",i,"]; \n")))), collapse = "")), 
-    ranef$genC, 
+    mg$genD, ranef$genD,
+    stan.predict(predict = predict, add = is.formula(ee[c("se", "trials", "cat")]),  
+                 family = family, link = link, weights = is.formula(ee$weights)), 
+    mg$genC, ranef$genC, 
   "} \n")
   
   class(model) <- c("character", "brmsmodel")
@@ -273,6 +257,39 @@ stan.ranef <- function(rg, f, family = "gaussian", prior = list(), cov.ranef = "
                        paste0(unlist(lapply(2:length(r),function(i) lapply(1:(i-1), function(j)
                         paste0("  cor_",g,"[",(i-1)*(i-2)/2+j,"] <- Cor_",g,"[",j,",",i,"]; \n")))),
                         collapse = "")) 
+  }
+  out
+}
+
+# predicted values in stan
+stan.predict <- function(predict, family, link, add, weights) {
+  if (predict) {
+    llh.pred <- stan.llh(family = family, link = link, add = add, weights = weights, predict = TRUE) 
+    is.lin <- family %in% c("gaussian", "student", "cauchy")
+    is.ord <- family %in% c("cumulative", "cratio", "sratio", "acat") 
+    is.skew <- family %in% c("gamma", "weibull", "exponential")
+    is.count <- family %in% c("poisson", "negbinomial", "geometric")
+    if (family %in% c("gaussian", "student", "cauchy", "gamma", "weibull", "exponential"))
+      out <- paste0("  real Y_pred[N]; \n  for (n in 1:N) { \n", llh.pred, "  } \n")
+    else if (family %in% c("binomial", "bernoulli", "poisson", "negbinomial", "geometric",
+                           "categorical", "cumulative", "cratio", "sratio", "acat"))
+      out <- paste0("  int Y_pred[N]; \n  for (n in 1:N) { \n", llh.pred, "  } \n")
+    else if (family == "multigaussian")
+      out <- paste0("  vector[K_trait] Y_pred[N_trait]; \n  for (n in 1:N_trait) { \n", llh.pred, "  } \n")
+  }
+  else out <- ""
+  out
+}
+
+# multigaussian effects in Stan
+stan.mg <- function(family, response) {
+  out <- list(genD = "", genC = "")
+  if (family == "multigaussian") {
+   out$genD <- paste0("  corr_matrix[K_trait] Rescor; \n",
+    "  vector<lower=-1,upper=1>[NC_trait] rescor; \n")
+   out$genC <- paste0("  Rescor <- multiply_lower_tri_self_transpose(Lrescor); \n",
+      paste0(unlist(lapply(2:length(response),function(i) lapply(1:(i-1), function(j)
+        paste0("  rescor[",(i-1)*(i-2)/2+j,"] <- Rescor[",j,",",i,"]; \n")))), collapse = ""))
   }
   out
 }
@@ -451,7 +468,7 @@ stan.llh <- function(family, link = "identity", predict = FALSE, add = FALSE,
   else llh.pre <- list(gaussian = c("normal", lin.args),
                student = c("student_t", paste0("nu,",lin.args)),
                cauchy = c("cauchy", lin.args),
-               multigaussian = c("multi_normal_cholesky", "etam, diag_pre_multiply(sigma, Lrescor)"),
+               multigaussian = c("multi_normal_cholesky", paste0("etam",n,",diag_pre_multiply(sigma,Lrescor)")),
                poisson = c("poisson", paste0(ilink2,"(eta",n,")")),
                negbinomial = c("neg_binomial_2", paste0(ilink2,"(eta",n,"),shape")),
                geometric = c("neg_binomial_2", paste0(ilink2,"(eta",n,"),1")),
