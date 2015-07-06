@@ -140,7 +140,7 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
 
 #' @export
 posterior.samples.brmsfit <- function(x, parameters = NA, ...) {
-  pars <- dimnames(object$fit)$parameters
+  pars <- dimnames(x$fit)$parameters
   if (!(anyNA(parameters) | is.character(parameters))) 
     stop("Argument parameters must be NA or a character vector")
   if (!anyNA(parameters)) pars <- pars[apply(sapply(parameters, grepl, x = pars), 1, any)]
@@ -169,11 +169,12 @@ posterior.samples.brmsfit <- function(x, parameters = NA, ...) {
 #' 
 #' @export
 summary.brmsfit <- function(object, ...) {
+  ee <- extract.effects(object$formula, add.ignore = TRUE)
   if (!is(object$fit, "stanfit")) 
     out <- brmssummary(formula = brm.update.formula(object$formula, partial = object$partial),
              family = object$family, link = object$link, data.name = object$data.name, 
-             group = unlist(extract.effects(object$formula, add.ignore = TRUE)$group),
-             nobs = nobs(object), ngrps = brms::ngrps(object), autocor = object$autocor)
+             group = unlist(ee$group), nobs = nobs(object), ngrps = brms::ngrps(object), 
+             autocor = object$autocor)
   else {
     out <- brmssummary(brm.update.formula(object$formula, partial = object$partial),
              family = object$family, link = object$link, data.name = object$data.name, 
@@ -184,7 +185,6 @@ summary.brmsfit <- function(object, ...) {
              n.warmup = attr(object$fit@sim$samples[[1]],"args")$warmup,
              n.thin = attr(object$fit@sim$samples[[1]],"args")$thin,
              sampler = attr(object$fit@sim$samples[[1]],"args")$sampler_t) 
-    #pars <- names(object$fit@sim$samples[[1]])
     pars <- dimnames(object$fit)$parameters
     fit.summary <- rstan::summary(object$fit, probs = c(0.025, 0.975))
     col.names <- c("Estimate", "Est.Error", "l-95% CI", "u-95% CI", "Eff.Sample", "Rhat")
@@ -194,9 +194,13 @@ summary.brmsfit <- function(object, ...) {
     colnames(out$fixed) <- col.names
     rownames(out$fixed) <- gsub("__",":",gsub("^b_","",fix.pars))
     
-    spec.pars <- pars[pars %in% c("nu","shape","delta") | 
-      apply(sapply(c("^sigma", "^rescor"), grepl, x = pars), 1, any)]
+    spec.pars <- pars[pars %in% c("nu","shape","delta","sigma") | 
+      apply(sapply(c("^sigma_", "^rescor_"), grepl, x = pars), 1, any)]
     out$spec.pars <- matrix(fit.summary$summary[spec.pars,-c(2)], ncol = 6)
+    if (object$family == "multigaussian") {
+      spec.pars[grepl("^sigma_", spec.pars)] <- paste0("sigma(",ee$response,")")
+      spec.pars[grepl("^rescor_", spec.pars)] <- get.cor.names(ee$response, type = "rescor")   
+    }    
     colnames(out$spec.pars) <- col.names
     rownames(out$spec.pars) <- spec.pars
     
@@ -209,12 +213,14 @@ summary.brmsfit <- function(object, ...) {
       for (i in 1:length(out$group)) {
         sd.pars <- pars[grepl(paste0("^sd_", out$group[i]), pars)]
         cor.pars <- pars[grepl(paste0("^cor_", out$group[i]), pars)]
+        #sd.names <- gsub(paste0("_",out$group[i]), "", sd.pars)
+        #cor.names <- gsub(paste0("_",out$group[i]), "", cor.pars)
         r.names <- gsub(paste0("^sd_",out$group[i],"_"), "", sd.pars)
         sd.names <- paste0("sd(",r.names,")")
         cor.names <- get.cor.names(r.names)
         out$random[[out$group[i]]] <- matrix(fit.summary$summary[c(sd.pars, cor.pars),-c(2)], ncol = 6)
         colnames(out$random[[out$group[i]]]) <- col.names
-        rownames(out$random[[out$group[i]]]) <- gsub("__",":",c(sd.names,cor.names)) 
+        rownames(out$random[[out$group[i]]]) <- c(sd.names,cor.names)
       }
     }
   }  
@@ -408,7 +414,7 @@ plot.brmsfit <- function(x, parameters = NA, combine = FALSE, N = 5, ask = TRUE,
   if (!is(x$fit, "stanfit")) 
     stop("Argument x does not contain posterior samples")
   if (is.na(parameters)) 
-    parameters <- c("^b_", "^sd_", "^cor_", "^sigma$", "^nu$", 
+    parameters <- c("^b_", "^sd_", "^cor_", "^sigma", "^rescor", "^nu$", 
                     "^shape$", "^delta$", "^ar", "^ma")
   
   pars <- sort(dimnames(x$fit)$parameters)

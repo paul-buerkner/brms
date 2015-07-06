@@ -248,6 +248,7 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
                 n.thin = 1, n.cluster = 1, inits = "random", silent = FALSE, seed = 12345, 
                 save.model = NULL, engine = "stan", ...) {
   dots <- list(...) 
+  link <- brm.link(family)
   if (n.chains %% n.cluster != 0) stop("n.chains must be a multiple of n.cluster")
   if (!engine %in% c("stan","jags")) stop("engine must be either 'stan' or 'jags'")
   if (is.null(autocor)) autocor <- cor.arma()
@@ -255,16 +256,16 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
   if (!threshold %in% c("flexible","equidistant")) 
     stop("threshold must be either flexible or equidistant")
   names(prior) <- gsub(":", "__", names(prior))
+  set.seed(seed)
   
   if (is(fit,"brmsfit")) x <- fit
   else {
     formula <- brm.update.formula(formula, addition = addition)
-    link <- brm.link(family)
+    ee <- extract.effects(formula = formula, family = family[1], partial = partial, extract.time(autocor$form)$all)
     data.name <- Reduce(paste, deparse(substitute(data)))
-    ef <- extract.effects(formula = formula, family = family[1], partial = partial, extract.time(autocor$form)$all)
-    data <- brm.melt(data, response = ef$response, family = family[1])
-    data <- stats::model.frame(ef$all, data = data, drop.unused.levels = TRUE)
-    class(data) <- c("model.frame", "data.frame")
+    data <- brm.melt(data, response = ee$response, family = family[1])
+    data <- stats::model.frame(ee$all, data = data, drop.unused.levels = TRUE)
+    class(data) <- c("model.frame", "data.frame") 
     x <- brmsfit(formula = formula, family = family[1], link = link, partial = partial,
                  data.name = data.name, autocor = autocor)
     x$data <- brm.data(formula, data = data, family = family, prior = prior, cov.ranef = cov.ranef,
@@ -273,7 +274,6 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
                 threshold = threshold, ranef = ranef, engine = engine, predict = predict)
   }  
   
-  set.seed(seed)
   if (is.function(inits) | (is.character(inits) & !is.element(inits, c("random", "0")))) 
     inits <- replicate(n.chains, do.call(inits, list()), simplify = FALSE)
   if (engine == "stan") {

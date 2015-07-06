@@ -12,7 +12,7 @@ brm.model.matrix = function(formula, data = environment(formula), rm.int = FALSE
   X <- model.matrix(formula,data)
   #cn.new <- brm.replace(colnames(X))
   cn.new <- colnames(X)
-  if (rm.int & "Intercept" %in% cn.new) {
+  if (rm.int & "(Intercept)" %in% cn.new) {
     X <- as.matrix(X[,-(1)])
     if (ncol(X)) colnames(X) <- cn.new[2:length(cn.new)]
   } 
@@ -101,13 +101,13 @@ get.estimate <- function(coef, samples, margin = 1, to.array = FALSE, ...) {
   x 
 }
 
-#get correlation names of random effects
-get.cor.names <- function(names) {
+#get correlation names
+get.cor.names <- function(names, type = "cor") {
   cor.names <- NULL
   if (length(names) > 1)
     for (i in 2:length(names)) 
       for (j in 1:(i-1)) 
-        cor.names <- c(cor.names, paste0("cor(",names[j],",",names[i],")"))
+        cor.names <- c(cor.names, paste0(type,"(",names[j],",",names[i],")"))
   cor.names
 }
 
@@ -148,7 +148,6 @@ brm.melt <- function(data, response, family) {
 }  
 
 #rename parameters
-#' @export
 rename.pars <- function(x, ...) {
   chains <- length(x$fit@sim$samples) 
   f <- colnames(x$data$X)
@@ -158,27 +157,42 @@ rename.pars <- function(x, ...) {
   
   #rename fixed effects
   bs <- grepl("^b\\[", pars)
-  x$fit@sim$fnames_oi[bs] <- paste0("b_",f)
-  for (i in 1:chains) names(x$fit@sim$samples[[i]])[bs] <- paste0("b_",f)
+  b_names <- paste0("b_",f)
+  x$fit@sim$fnames_oi[bs] <- b_names
+  for (i in 1:chains) names(x$fit@sim$samples[[i]])[bs] <- b_names
   
   #rename random effects
-  for (j in 1:length(r)) {
-    sds <- grepl(paste0("^sd_",ee$group[[j]]), pars)
-    sds_names <- paste0("sd_",ee$group[[j]],"_",r[[j]])
-    cors <- grepl(paste0("^cor_",ee$group[[j]]), pars)
-    cors_names <- unlist(lapply(1:length(ee$group), function(i)
-      if (length(r[[i]])>1) paste0("cor_",ee$group[[i]],"_", unlist(lapply(2:length(r[[i]]), function(j) 
-        lapply(1:(j-1), function(k) paste0(r[[i]][k],"_",r[[i]][j]))))))) 
-    x$fit@sim$fnames_oi[sds] <- sds_names
-    x$fit@sim$fnames_oi[cors] <- cors_names
-    for (i in 1:chains) {
-      names(x$fit@sim$samples[[i]])[sds] <- sds_names
-      names(x$fit@sim$samples[[i]])[cors] <- cors_names
-    }  
+  if (length(r)) {
+    for (j in 1:length(r)) {
+      sds <- grepl(paste0("^sd_",ee$group[[j]]), pars)
+      sd_names <- paste0("sd_",ee$group[[j]],"_",r[[j]])
+      cors <- grepl(paste0("^cor_",ee$group[[j]]), pars)
+      cor_names <- unlist(lapply(1:length(ee$group), function(i)
+        if (length(r[[i]])>1) paste0("cor_",ee$group[[i]],"_", unlist(lapply(2:length(r[[i]]), function(j) 
+          lapply(1:(j-1), function(k) paste0(r[[i]][k],"_",r[[i]][j]))))))) 
+      x$fit@sim$fnames_oi[sds] <- sd_names
+      x$fit@sim$fnames_oi[cors] <- cor_names
+      for (i in 1:chains) {
+        names(x$fit@sim$samples[[i]])[sds] <- sd_names
+        names(x$fit@sim$samples[[i]])[cors] <- cor_names
+      }  
+    }
   }
   
   #rename residuals for family "multigaussian"
-  
-  
+  if (x$family == "multigaussian") {
+    sigmas <- grepl("^sigma\\[", pars)
+    sigma_names <- paste0("sigma_",ee$response)
+    rescors <- grepl("^rescor\\[", pars)
+    rescor_names <- unlist(lapply(1:length(ee$group), function(i)
+      if (length(r[[i]])>1) paste0("rescor_",unlist(lapply(2:length(ee$response), function(j) 
+        lapply(1:(j-1), function(k) paste0(ee$response[k],"_",ee$response[j])))))))
+    x$fit@sim$fnames_oi[sigmas] <- sigma_names
+    x$fit@sim$fnames_oi[rescors] <- rescor_names
+    for (i in 1:chains) {
+      names(x$fit@sim$samples[[i]])[sigmas] <- sigma_names
+      names(x$fit@sim$samples[[i]])[rescors] <- rescor_names
+    } 
+  }  
   x
 }

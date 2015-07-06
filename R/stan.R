@@ -10,9 +10,9 @@
 stan.model <- function(formula, data = NULL, family = "gaussian", link = "identity",
                        prior = list(), partial = NULL, threshold = "flexible", cov.ranef = NULL,
                        predict = FALSE, autocor = cor.arma(), save.model = NULL) {
-  ef <- extract.effects(formula = formula, family = family, partial = partial) 
-  #data <- brm.melt(data, response = ef$response, family = family[1])
-  #data <- stats::model.frame(ef$all, data = data, drop.unused.levels = TRUE)
+  ee <- extract.effects(formula = formula, family = family, partial = partial) 
+  #data <- brm.melt(data, response = ee$response, family = family[1])
+  #data <- stats::model.frame(ee$all, data = data, drop.unused.levels = TRUE)
 
   is.lin <- family %in% c("gaussian", "student", "cauchy")
   is.ord <- family %in% c("cumulative", "cratio", "sratio", "acat") 
@@ -21,19 +21,19 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
     
   if (family == "categorical") {
     X <- data.frame()
-    Xp <- brm.model.matrix(ef$fixed, data, rm.int = is.ord)
+    Xp <- brm.model.matrix(ee$fixed, data, rm.int = is.ord)
   }
   else {
-    X <- brm.model.matrix(ef$fixed, data, rm.int = is.ord)
+    X <- brm.model.matrix(ee$fixed, data, rm.int = is.ord)
     Xp <- brm.model.matrix(partial, data, rm.int = TRUE)
   }  
   f <- colnames(X)
   p <- colnames(Xp)
-  Z <- lapply(ef$random, brm.model.matrix, data = data)
+  Z <- lapply(ee$random, brm.model.matrix, data = data)
   r <- lapply(Z,colnames)
-  n <- ifelse(is.formula(ef[c("trials","cat")]), "[n]", "")
+  n <- ifelse(is.formula(ee[c("trials","cat")]), "[n]", "")
   
-  ranef <- unlist(lapply(mapply(list, r, ef$group, SIMPLIFY = FALSE), stan.ranef, 
+  ranef <- unlist(lapply(mapply(list, r, ee$group, SIMPLIFY = FALSE), stan.ranef, 
                          f = f, family = family, prior = prior, cov.ranef = cov.ranef))
   names.ranef <- unique(names(ranef))
   if (length(ranef)) ranef <- sapply(1:length(names.ranef), function(x) 
@@ -44,29 +44,30 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
     "data { \n",
     "  int<lower=1> N; \n", 
     if (is.lin | is.skew) 
-      "  real Y[N]; \n"
+    "  real Y[N]; \n"
     else if (is.count | is.ord | family %in% c("binomial", "bernoulli", "categorical")) 
-      "  int Y[N]; \n"
-    else if (family == "multigaussian") 
-      "  int<lower=1> N_trait; \n  int<lower=1> K_trait; \n  vector[K_trait] Y[N_trait]; \n",
+    "  int Y[N]; \n"
+    else if (family == "multigaussian") paste0(
+      "  int<lower=1> N_trait; \n  int<lower=1> K_trait; \n",  
+      "  int NC_trait; \n  vector[K_trait] Y[N_trait]; \n"),
     if (ncol(X)) "  int<lower=1> K; \n  matrix[N,K] X; \n",
     if (length(p)) "  int<lower=1> Kp; \n  matrix[N,Kp] Xp; \n",  
     if (autocor$p & is(autocor, "cor.arma")) 
       "  int<lower=1> Kar; \n  matrix[N,Kar] Yar; \n",
     if (autocor$q & is(autocor, "cor.arma")) 
       "  int<lower=1> Kma; \n  row_vector[Kma] Ema_pre[N]; \n  vector[N] tgroup; \n",
-    if (is.lin & is.formula(ef$se))
+    if (is.lin & is.formula(ee$se))
       "  real<lower=0> sigma[N]; \n",
-    if (is.formula(ef$weights))
+    if (is.formula(ee$weights))
       "  vector<lower=0>[N] weights; \n",
     if (is.ord | family %in% c("binomial", "categorical")) 
       paste0("  int max_obs",toupper(n),"; \n"),
-    if (is.formula(ef$cens) & !(is.ord | family == "categorical"))
+    if (is.formula(ee$cens) & !(is.ord | family == "categorical"))
       "  vector[N] cens; \n",
     ranef$data,
     "} \n")
   
-  max_obs <- ifelse(rep(is.formula(ef[c("trials", "cat")]), 3), 
+  max_obs <- ifelse(rep(is.formula(ee[c("trials", "cat")]), 3), 
     c("MAX_obs", "  int MAX_obs; \n", "  MAX_obs <- max(max_obs); \n"), c("max_obs", rep("", 2)))
   zero <- ifelse(rep(family == "categorical", 2), c("  row_vector[1] zero; \n", "  zero[1] <- 0; \n"), "")
   trans.data.text <- paste0(
@@ -86,7 +87,7 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
       "  real", ifelse(family == "cumulative","<lower=0>", "")," delta; \n"),
     if (autocor$p & is(autocor, "cor.arma")) "  vector[Kar] ar; \n",
     if (autocor$q & is(autocor, "cor.arma")) "  vector[Kma] ma; \n",
-    if (is.lin & !is.formula(ef$se)) 
+    if (is.lin & !is.formula(ee$se)) 
       "  real<lower=0> sigma; \n"
     else if (family == "multigaussian") 
       "  vector<lower=0>[K_trait] sigma; \n  cholesky_factor_corr[K_trait] Lrescor; \n"
@@ -111,7 +112,7 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
   } else eta.ilink <- ""                               
   eta.fe <- paste0("  eta <- ", ifelse(length(f), "X*b", "rep_vector(0,N)"), 
     if (autocor$p & is(autocor, "cor.arma")) " + Yar*ar", "; \n", if (length(p)) "  etap <- Xp * bp; \n")
-  eta.re <- ifelse(length(ef$group), paste0(" + Z_",ef$group,"[n]*r_",ef$group,"[",ef$group,"[n]]", 
+  eta.re <- ifelse(length(ee$group), paste0(" + Z_",ee$group,"[n]*r_",ee$group,"[",ee$group,"[n]]", 
                    collapse = ""), "")
   eta.ma <- ifelse(autocor$q & is(autocor, "cor.arma"), " + Ema[n]*ma", "")
   if (nchar(eta.re) | nchar(eta.ma) | family == "multigaussian") {
@@ -122,11 +123,11 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
     
   if (autocor$q & is(autocor, "cor.arma")) {
     link.fun <- c(identity = "", log = "log", inverse = "inv")[link]
-    levels <- unlist(lapply(ef$group, function(g) length(unique(get(g, data)))))
+    levels <- unlist(lapply(ee$group, function(g) length(unique(get(g, data)))))
     if (!is.lin & suppressWarnings(max(levels)) < nrow(data)) 
       stop(paste0("moving-average models for family ",family," require a random effect with the same number \n",
                   "of levels as observations in the data"))
-    e.ranef <- ifelse(!is.lin, paste0("r_", ef$group[levels == max(levels)][[1]]), "")
+    e.ranef <- ifelse(!is.lin, paste0("r_", ee$group[levels == max(levels)][[1]]), "")
     Ema <- c(paste0("  row_vector[Kma] Ema[N]; \n", if(is.lin) "  vector[N] e; \n"), 
         "  Ema <- Ema_pre; \n", paste0(if (is.lin) paste0("    e[n] <- ",link.fun,"(Y[n]) - eta[n]", "; \n"), 
         "    for (i in 1:Kma) if (n+1-i > 0 && n < N && tgroup[n+1] == tgroup[n+1-i]) \n",
@@ -136,11 +137,11 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
  
   ord <- stan.ord(family, ilink = ilink, partial = length(p), max_obs = max_obs[1], n = n, 
                   predict = predict)  
-  llh <- stan.llh(family, link = link, add = is.formula(ef[c("se", "trials", "cat")]), 
-                  weights = is.formula(ef$weights), cens = is.formula(ef$cens))
-  llh.pred <- stan.llh(family, link = link, add = is.formula(ef[c("se", "trials", "cat")]),  
-                       weights = is.formula(ef$weights), predict = TRUE) 
-  cens <- ifelse(is.formula(ef$cens), "if (cens[n] == 0) ", "")
+  llh <- stan.llh(family, link = link, add = is.formula(ee[c("se", "trials", "cat")]), 
+                  weights = is.formula(ee$weights), cens = is.formula(ee$cens))
+  llh.pred <- stan.llh(family, link = link, add = is.formula(ee[c("se", "trials", "cat")]),  
+                       weights = is.formula(ee$weights), predict = TRUE) 
+  cens <- ifelse(is.formula(ee$cens), "if (cens[n] == 0) ", "")
                       
   priors <- paste0(
     if (length(f)) paste0(stan.prior(paste0("b_",f), prior, ind = 1:length(f)), collapse = ""),
@@ -155,13 +156,13 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
                     ind = 1:length(p), partial = TRUE), collapse = ""), 
     if (is.element(family,c("gamma", "weibull"))) stan.prior("shape", prior),
     if (family == "student") stan.prior("nu", prior),
-    if (is.lin & !is.formula(ef$se)) stan.prior("sigma", prior), 
+    if (is.lin & !is.formula(ee$se)) stan.prior("sigma", prior), 
     if (family == "multigaussian") paste0(stan.prior("sigma", prior), stan.prior("Lrescor", prior)),
     ranef$model)
   
-  vectorize <- c(!(length(ef$random) | autocor$q | eta.trans |
-    (is.ord & !(family == "cumulative" & link == "logit" & !predict & !is.formula(ef$cat)))),            
-    !(is.formula(ef$cens) | is.formula(ef$weights) | is.ord | family == "categorical")) 
+  vectorize <- c(!(length(ee$random) | autocor$q | eta.trans |
+    (is.ord & !(family == "cumulative" & link == "logit" & !predict & !is.formula(ee$cat)))),            
+    !(is.formula(ee$cens) | is.formula(ee$weights) | is.ord | family == "categorical")) 
   if (!vectorize[1] & family != "multigaussian")
     loop.trans <- c("  for (n in 1:N) { \n", "  } \n")
   else if (family == "multigaussian")
@@ -183,30 +184,29 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
     loop.trans[2],
   "} \n",
   "model { \n",
-    if (is.formula(ef$weights) & !is.formula(ef$cens)) 
+    if (is.formula(ee$weights) & !is.formula(ee$cens)) 
     "  vector[N] lp_pre; \n",
     priors, 
     ifelse(vectorize[2], llh, paste0("  for(n in 1:N) { \n  ", llh,"  } \n")),
-    if (is.formula(ef$weights) & !is.formula(ef$cens)) 
+    if (is.formula(ee$weights) & !is.formula(ee$cens)) 
     "  increment_log_prob(dot_product(weights,lp_pre)); \n",
   "} \n",
   "generated quantities { \n",
-    #if (length(f)) paste0(
-    #"  real b_",f,"; \n", collapse =""),
     #if (length(p)) paste0(
     #"  vector[",max_obs[1],"-1] b_",p,"; \n", collapse =""),
-    if (family == "multigaussian")
-    "  corr_matrix[K_trait] rescor; \n",
+    if (family == "multigaussian") paste0(
+    "  corr_matrix[K_trait] Rescor; \n",
+    "  vector<lower=-1,upper=1>[NC_trait] rescor; \n"),
     ranef$genD,
     if (predict) paste0(
     "  ", ifelse(is.lin | is.skew, "real", "int"), " Y_pred[N]; \n", 
     "  for (n in 1:N) { \n", llh.pred, "  } \n"),
-    #if (length(f)) paste0(
-    #"  b_",f," <- b[",1:length(f),"]; \n", collapse = ""),
     #if (length(p)) paste0(
     #"  b_",p," <- to_vector(bp[",1:length(p),"]); \n", collapse = ""),
-    if (family == "multigaussian")
-    "  rescor <- multiply_lower_tri_self_transpose(Lrescor); \n",
+    if (family == "multigaussian") paste0(
+    "  Rescor <- multiply_lower_tri_self_transpose(Lrescor); \n",
+    paste0(unlist(lapply(2:length(ee$response),function(i) lapply(1:(i-1), function(j)
+       paste0("  rescor[",(i-1)*(i-2)/2+j,"] <- Rescor[",j,",",i,"]; \n")))), collapse = "")), 
     ranef$genC, 
   "} \n")
   
@@ -245,8 +245,6 @@ stan.ranef <- function(rg, f, family = "gaussian", prior = list(), cov.ranef = "
     out$transD <- paste0("  vector[N_",g,"] r_",g,"; \n")
     out$transC <- paste0("  r_",g, " <- ",m," + sd_",g," * (", 
       if (c.cov) paste0("CF_cov_",g,"*"), "pre_",g,"); \n")
-    #out$genD <- paste0("  real<lower=0> sd_",g,"_",r,"; \n")
-    #out$genC <- paste0("  sd_",g,"_",r," <- sd_",g,"; \n")
     out$genD <- ""
     out$genC <- ""
   }  
@@ -269,20 +267,10 @@ stan.ranef <- function(rg, f, family = "gaussian", prior = list(), cov.ranef = "
         if (c.cov) paste0(
         "    r_",g, "[i,1] <- r_",g, "[i,1] + sd_",g,"[1] * (CF_cov_",g,"[i]*col(pre_",g,",1)); \n"),
         "  } \n")
-    out$genD <- paste0(#paste0("  real<lower=0> sd_",g,"_",r,"; \n", collapse = ""),
-                     "  corr_matrix[K_",g,"] Cor_",g,"; \n",
-                     "  vector<lower=-1,upper=1>[NC_",g,"] cor_",g,"; \n")
-                     #paste0(unlist(lapply(2:length(r),function(i) lapply(1:(i-1), function(j)
-                     #   paste0("  real<lower=-1,upper=1> cor_",g,"_",r[j],"_",r[i],"; \n")))),
-                     #   collapse = ""))
-    out$genC <- paste0(#paste0("  sd_",g,"_",r," <- sd_",g,"[",1:length(r),"]; \n", collapse = ""),
-                     "  Cor_",g," <- multiply_lower_tri_self_transpose(L_",g,"); \n",
-                     #"  for (i in 2:K_",g,") for (j in 1:(i-1)) \n",
-                     #"    cor_",g,"[(i-1)*(i-2)*0.5+j] <- Cor_",g,"[j,i]; \n")
-                     #paste0(unlist(lapply(2:length(r),function(i) lapply(1:(i-1), function(j)
-                     #    paste0("  cor_",g,"_",r[j],"_",r[i]," <- cor_",g,"[",j,",",i,"]; \n")))),
-                     #    collapse = ""))  
-                     paste0(unlist(lapply(2:length(r),function(i) lapply(1:(i-1), function(j)
+    out$genD <- paste0("  corr_matrix[K_",g,"] Cor_",g,"; \n",
+                       "  vector<lower=-1,upper=1>[NC_",g,"] cor_",g,"; \n")
+    out$genC <- paste0("  Cor_",g," <- multiply_lower_tri_self_transpose(L_",g,"); \n",
+                       paste0(unlist(lapply(2:length(r),function(i) lapply(1:(i-1), function(j)
                         paste0("  cor_",g,"[",(i-1)*(i-2)/2+j,"] <- Cor_",g,"[",j,",",i,"]; \n")))),
                         collapse = "")) 
   }
@@ -351,6 +339,7 @@ stan.ord <- function(family, ilink = "inv_logit", partial = FALSE, max_obs = "ma
     "    p[n] <- p[n]/sum(p[n]); \n")
   ord
 }
+
 
 # Priors in Stan
 # 
