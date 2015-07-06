@@ -192,7 +192,7 @@ summary.brmsfit <- function(object, ...) {
     fix.pars <- pars[grepl("^b_", pars)]
     out$fixed <- matrix(fit.summary$summary[fix.pars,-c(2)], ncol = 6)
     colnames(out$fixed) <- col.names
-    rownames(out$fixed) <- gsub("__",":",gsub("^b_","",fix.pars))
+    rownames(out$fixed) <- gsub("^b_", "", fix.pars)
     
     spec.pars <- pars[pars %in% c("nu","shape","delta","sigma") | 
       apply(sapply(c("^sigma_", "^rescor_"), grepl, x = pars), 1, any)]

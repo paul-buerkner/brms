@@ -149,19 +149,32 @@ brm.melt <- function(data, response, family) {
 
 #rename parameters
 rename.pars <- function(x, ...) {
-  chains <- length(x$fit@sim$samples) 
-  f <- colnames(x$data$X)
   ee <- extract.effects(x$formula, family = x$family)
-  r <- lapply(lapply(ee$group, function(g) get(paste0("Z_",g), x$data)), colnames)
   pars <- dimnames(x$fit)$parameters
-  
+  chains <- length(x$fit@sim$samples) 
+
   #rename fixed effects
+  f <- colnames(x$data$X)
   bs <- grepl("^b\\[", pars)
   b_names <- paste0("b_",f)
   x$fit@sim$fnames_oi[bs] <- b_names
   for (i in 1:chains) names(x$fit@sim$samples[[i]])[bs] <- b_names
   
+  #rename partial effects
+  if (is.formula(x$partial)) {
+    p <- colnames(x$data$Xp)
+    bps <- grepl("^bp\\[", pars)
+    bp_names <- paste0("b_",sapply(1:(max(x$data$max_obs) - 1), function(i) 
+      sapply(p, function(p) paste0(p,"[",i,"]"))))
+    x$fit@sim$fnames_oi[bps] <- sort(bp_names)
+    for (i in 1:chains) {
+      names(x$fit@sim$samples[[i]])[bps] <- bp_names
+      x$fit@sim$samples[[i]][bps] <- x$fit@sim$samples[[i]][bps][order(bp_names)]
+    }  
+  }
+  
   #rename random effects
+  r <- lapply(lapply(ee$group, function(g) get(paste0("Z_",g), x$data)), colnames)
   if (length(r)) {
     for (j in 1:length(r)) {
       sds <- grepl(paste0("^sd_",ee$group[[j]]), pars)
@@ -179,7 +192,7 @@ rename.pars <- function(x, ...) {
     }
   }
   
-  #rename residuals for family "multigaussian"
+  #rename residual sds and correlations for family "multigaussian"
   if (x$family == "multigaussian") {
     sigmas <- grepl("^sigma\\[", pars)
     sigma_names <- paste0("sigma_",ee$response)
@@ -193,6 +206,6 @@ rename.pars <- function(x, ...) {
       names(x$fit@sim$samples[[i]])[sigmas] <- sigma_names
       names(x$fit@sim$samples[[i]])[rescors] <- rescor_names
     } 
-  }  
+  } 
   x
 }
