@@ -2,7 +2,7 @@
 fixef.brmsfit <-  function(x, estimate = "mean", ...) {
   if (!is(x$fit, "stanfit")) 
     stop("Argument x does not contain posterior samples")
-  pars <- names(x$fit@sim$samples[[1]])
+  pars <- dimnames(x$fit)$parameters
   iter <- attr(x$fit@sim$samples[[1]],"args")$iter
   warmup <- attr(x$fit@sim$samples[[1]],"args")$warmup
   thin <- attr(x$fit@sim$samples[[1]],"args")$thin
@@ -28,7 +28,7 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, center.zero = TRUE,
     stop("Argument x does not contain posterior samples")
   if (!estimate %in% c("mean","median"))
     stop("Argument estimate must be either 'mean' or 'median'")
-  pars <- names(x$fit@sim$samples[[1]])
+  pars <- dimnames(x$fit)$parameters
   iter <- attr(x$fit@sim$samples[[1]],"args")$iter
   warmup <- attr(x$fit@sim$samples[[1]],"args")$warmup
   thin <- attr(x$fit@sim$samples[[1]],"args")$thin
@@ -83,7 +83,7 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, center.zero = TRUE,
 VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
   if (!is(x$fit, "stanfit")) 
     stop("Argument x does not contain posterior samples")
-  pars <- names(x$fit@sim$samples[[1]])
+  pars <- dimnames(x$fit)$parameters
   iter <- attr(x$fit@sim$samples[[1]],"args")$iter
   warmup <- attr(x$fit@sim$samples[[1]],"args")$warmup
   thin <- attr(x$fit@sim$samples[[1]],"args")$thin
@@ -140,7 +140,7 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
 
 #' @export
 posterior.samples.brmsfit <- function(x, parameters = NA, ...) {
-  pars <- names(x$fit@sim$samples[[1]])  
+  pars <- dimnames(object$fit)$parameters
   if (!(anyNA(parameters) | is.character(parameters))) 
     stop("Argument parameters must be NA or a character vector")
   if (!anyNA(parameters)) pars <- pars[apply(sapply(parameters, grepl, x = pars), 1, any)]
@@ -185,7 +185,7 @@ summary.brmsfit <- function(object, ...) {
              n.thin = attr(object$fit@sim$samples[[1]],"args")$thin,
              sampler = attr(object$fit@sim$samples[[1]],"args")$sampler_t) 
     #pars <- names(object$fit@sim$samples[[1]])
-    pars <- dimnames(fit)$parameters
+    pars <- dimnames(object$fit)$parameters
     fit.summary <- rstan::summary(object$fit, probs = c(0.025, 0.975))
     col.names <- c("Estimate", "Est.Error", "l-95% CI", "u-95% CI", "Eff.Sample", "Rhat")
     
@@ -320,7 +320,7 @@ predict.brmsfit <- function(object, ...) {
 }
 
 #' @export
-par.names.brmsfit <- function(x, ...) names(x$fit@sim$samples[[1]])
+par.names.brmsfit <- function(x, ...) dimnames(x$fit)$parameters
 
 #' @export
 print.brmsmodel <- function(x, ...) cat(x)
@@ -334,7 +334,7 @@ hypothesis.brmsfit <- function(x, hypothesis, ...) {
   warmup <- attr(x$fit@sim$samples[[1]],"args")$warmup
   thin <- attr(x$fit@sim$samples[[1]],"args")$thin
   chains <- length(x$fit@sim$samples)
-  pars <- names(x$fit@sim$samples[[1]])
+  pars <- dimnames(x$fit)$parameters
   pars <- pars[grepl("^b_", pars)]
   
   out <- do.call(rbind, lapply(hypothesis, function(h) {
@@ -411,7 +411,7 @@ plot.brmsfit <- function(x, parameters = NA, combine = FALSE, N = 5, ask = TRUE,
     parameters <- c("^b_", "^sd_", "^cor_", "^sigma$", "^nu$", 
                     "^shape$", "^delta$", "^ar", "^ma")
   
-  pars <- sort(names(x$fit@sim$samples[[1]]))
+  pars <- sort(dimnames(x$fit)$parameters)
   pars <- gsub("__", ":", pars[apply(sapply(parameters, grepl, x = pars), 1, any)])
   pfit <- ggmcmc::ggs(x$fit)
   pfit$Parameter <- gsub("__", ":", pfit$Parameter)

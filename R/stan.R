@@ -245,11 +245,13 @@ stan.ranef <- function(rg, f, family = "gaussian", prior = list(), cov.ranef = "
     out$transD <- paste0("  vector[N_",g,"] r_",g,"; \n")
     out$transC <- paste0("  r_",g, " <- ",m," + sd_",g," * (", 
       if (c.cov) paste0("CF_cov_",g,"*"), "pre_",g,"); \n")
-    out$genD <- paste0("  real<lower=0> sd_",g,"_",r,"; \n")
-    out$genC <- paste0("  sd_",g,"_",r," <- sd_",g,"; \n")
+    #out$genD <- paste0("  real<lower=0> sd_",g,"_",r,"; \n")
+    #out$genC <- paste0("  sd_",g,"_",r," <- sd_",g,"; \n")
+    out$genD <- ""
+    out$genC <- ""
   }  
   else if (length(r) > 1) {
-    out$data <- paste0(out$data,  "  row_vector[K_",g,"] Z_",g,"[N]; \n",
+    out$data <- paste0(out$data,  "  row_vector[K_",g,"] Z_",g,"[N]; \n  int NC_",g,"; \n",
       if (c.cov) paste0("  matrix[N_",g,",N_",g,"] CF_cov_",g,"; \n"))
     out$par <- paste0("  matrix[N_",g,",K_",g,"] pre_",g,"; \n",
                       "  vector<lower=0>[K_",g,"] sd_",g,"; \n",
@@ -267,16 +269,22 @@ stan.ranef <- function(rg, f, family = "gaussian", prior = list(), cov.ranef = "
         if (c.cov) paste0(
         "    r_",g, "[i,1] <- r_",g, "[i,1] + sd_",g,"[1] * (CF_cov_",g,"[i]*col(pre_",g,",1)); \n"),
         "  } \n")
-    out$genD <- paste0(paste0("  real<lower=0> sd_",g,"_",r,"; \n", collapse = ""),
-                     "  corr_matrix[K_",g,"] cor_",g,"; \n",
+    out$genD <- paste0(#paste0("  real<lower=0> sd_",g,"_",r,"; \n", collapse = ""),
+                     "  corr_matrix[K_",g,"] Cor_",g,"; \n",
+                     "  vector<lower=-1,upper=1>[NC_",g,"] cor_",g,"; \n")
+                     #paste0(unlist(lapply(2:length(r),function(i) lapply(1:(i-1), function(j)
+                     #   paste0("  real<lower=-1,upper=1> cor_",g,"_",r[j],"_",r[i],"; \n")))),
+                     #   collapse = ""))
+    out$genC <- paste0(#paste0("  sd_",g,"_",r," <- sd_",g,"[",1:length(r),"]; \n", collapse = ""),
+                     "  Cor_",g," <- multiply_lower_tri_self_transpose(L_",g,"); \n",
+                     #"  for (i in 2:K_",g,") for (j in 1:(i-1)) \n",
+                     #"    cor_",g,"[(i-1)*(i-2)*0.5+j] <- Cor_",g,"[j,i]; \n")
+                     #paste0(unlist(lapply(2:length(r),function(i) lapply(1:(i-1), function(j)
+                     #    paste0("  cor_",g,"_",r[j],"_",r[i]," <- cor_",g,"[",j,",",i,"]; \n")))),
+                     #    collapse = ""))  
                      paste0(unlist(lapply(2:length(r),function(i) lapply(1:(i-1), function(j)
-                       paste0("  real<lower=-1,upper=1> cor_",g,"_",r[j],"_",r[i],"; \n")))),
-                       collapse = ""))
-    out$genC <- paste0(paste0("  sd_",g,"_",r," <- sd_",g,"[",1:length(r),"]; \n", collapse = ""),
-                     "  cor_",g," <- multiply_lower_tri_self_transpose(L_",g,"); \n",
-                     paste0(unlist(lapply(2:length(r),function(i) lapply(1:(i-1), function(j)
-                       paste0("  cor_",g,"_",r[j],"_",r[i]," <- cor_",g,"[",j,",",i,"]; \n")))),
-                       collapse = ""))  
+                        paste0("  cor_",g,"[",(i-1)*(i-2)/2+j,"] <- Cor_",g,"[",j,",",i,"]; \n")))),
+                        collapse = "")) 
   }
   out
 }

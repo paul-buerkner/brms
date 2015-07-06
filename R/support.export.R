@@ -48,11 +48,13 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
   if (length(ef$group) & engine == "jags") 
     out <- c(out, paste0("V_",ef$group), paste0("VI_",ef$group))
   else if (length(ef$group) & engine == "stan") {
-    out <- c(out, unlist(lapply(1:length(ef$group), function(i) 
-      paste0("sd_",ef$g[[i]],"_",r[[i]]))))
-    out <- c(out, unlist(lapply(1:length(ef$group), function(i)
-      if (length(r[[i]])>1) paste0("cor_",ef$g[[i]],"_", unlist(lapply(2:length(r[[i]]), function(j) 
-        lapply(1:(j-1), function(k) paste0(r[[i]][k],"_",r[[i]][j]))))))))
+    #out <- c(out, unlist(lapply(1:length(ef$group), function(i) 
+    #  paste0("sd_",ef$g[[i]],"_",r[[i]]))))
+    out <- c(out, paste0("sd_",ef$group))
+    out <- c(out, paste0("cor_",ef$group))
+    #out <- c(out, unlist(lapply(1:length(ef$group), function(i)
+    #  if (length(r[[i]])>1) paste0("cor_",ef$g[[i]],"_", unlist(lapply(2:length(r[[i]]), function(j) 
+    #    lapply(1:(j-1), function(k) paste0(r[[i]][k],"_",r[[i]][j]))))))))
     if (ranef) out <- c(out, paste0("r_",ef$group))
   }  
   if (is.lin & !is(ef$se,"formula")) out <- c(out,"sigma")
@@ -186,10 +188,10 @@ brm.data <- function(formula, data = NULL, family = c("gaussian", "identity"), p
     X[,to.zero] <- 0
     ncolZ <- lapply(Z, ncol)
     expr <- expression(get(g, data), length(unique(get(g, data))), 
-                       ncolZ[[i]], Z[[i]])
+                       ncolZ[[i]], Z[[i]], ncolZ[[i]]*(ncolZ[[i]]-1)/2)
     for (i in 1:length(ef$group)) {
       g <- ef$group[[i]]
-      name <- paste0(c("", "N_", "K_", "Z_"), g)
+      name <- paste0(c("", "N_", "K_", "Z_", "NC_"), g)
       if (ncolZ[[i]] == 1 & stan) Z[[i]] <- as.vector(Z[[i]])
       for ( j in 1:length(name)) supl.data <- c(supl.data, setNames(list(eval(expr[j])), name[j]))
       if (is.null(dots$Sigma[[g]])) mat <- diag(1,ncolZ[[i]])

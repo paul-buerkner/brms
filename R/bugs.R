@@ -6,8 +6,8 @@ brm.bugs <- function(formula, data = NULL, family = "gaussian", link = "identiy"
                        prior = list(), partial = NULL, threshold = "flexible", 
                        predict = FALSE, save.model = FALSE, ...) {  
   ef <- extract.effects(formula = formula, family = family, partial = partial)
-  data <- brm.melt(data, response = ef$response, family = family[1])
-  data <- model.frame(ef$all, data=data, drop.unused.levels=TRUE)
+  #data <- brm.melt(data, response = ef$response, family = family[1])
+  #data <- model.frame(ef$all, data=data, drop.unused.levels=TRUE)
   
   is.ord <- family %in% c("cumulative", "cratio", "sratio", "acat")
   X = brm.model.matrix(ef$fixed, data, rm.int = is.ord)
@@ -255,8 +255,8 @@ bugs.inits <- function(formula, data = NULL, range = 2, family="gaussian", parti
                        threshold = "flexible", engine="stan", seed=NULL) {
   if (is.null(range)) range <- 2
   ef <- extract.effects(formula = formula, family = family, partial = partial) 
-  data <- brm.melt(data, response = ef$response, family = family[1])
-  data <- model.frame(ef$all, data = data, drop.unused.levels = TRUE)
+  #data <- brm.melt(data, response = ef$response, family = family[1])
+  #data <- model.frame(ef$all, data = data, drop.unused.levels = TRUE)
   
   if(length(as.integer(seed)) == 1) set.seed(as.integer(seed))
   is.lin <- is.element(family, c("gaussian", "student", "cauchy"))

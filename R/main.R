@@ -248,8 +248,6 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
                 n.thin = 1, n.cluster = 1, inits = "random", silent = FALSE, seed = 12345, 
                 save.model = NULL, engine = "stan", ...) {
   dots <- list(...) 
-  link <- brm.link(family)
-  data.name <- Reduce(paste, deparse(substitute(data)))
   if (n.chains %% n.cluster != 0) stop("n.chains must be a multiple of n.cluster")
   if (!engine %in% c("stan","jags")) stop("engine must be either 'stan' or 'jags'")
   if (is.null(autocor)) autocor <- cor.arma()
@@ -261,11 +259,12 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
   if (is(fit,"brmsfit")) x <- fit
   else {
     formula <- brm.update.formula(formula, addition = addition)
+    link <- brm.link(family)
+    data.name <- Reduce(paste, deparse(substitute(data)))
     ef <- extract.effects(formula = formula, family = family[1], partial = partial, extract.time(autocor$form)$all)
     data <- brm.melt(data, response = ef$response, family = family[1])
     data <- stats::model.frame(ef$all, data = data, drop.unused.levels = TRUE)
     class(data) <- c("model.frame", "data.frame")
-    
     x <- brmsfit(formula = formula, family = family[1], link = link, partial = partial,
                  data.name = data.name, autocor = autocor)
     x$data <- brm.data(formula, data = data, family = family, prior = prior, cov.ranef = cov.ranef,
@@ -308,7 +307,7 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
     else x$fit <- rstan::stan(model_code = x$model, data = x$data, pars = x$pars, init = inits, 
                            iter = n.iter, chains = n.chains, warmup = n.warmup, thin = n.thin, 
                            fit = x$fit, ...)
-    x$fit <- rename.pars(x$fit, ef = ef, data = data, is.ord = is.ord)
+    x <- rename.pars(x)
   } 
   else if (engine == "jags") {
     warning("Engine 'jags' is currently implemented for testing purposes only and we do not support its usage.")
