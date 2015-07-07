@@ -96,7 +96,7 @@ brm.data <- function(formula, data = NULL, family = c("gaussian", "identity"), p
     data[[g]] <- as.numeric(as.factor(data[[g]]))
   }  
   if (is(autocor, "cor.brms")) {
-    to.order <- rmNULL(list(data[[et$group]], data[[et$time]]))
+    to.order <- rmNULL(list(data[["trait"]], data[[et$group]], data[[et$time]]))
     if (length(to.order)) 
       data <- data[do.call(order, to.order),]
   }
@@ -131,8 +131,10 @@ brm.data <- function(formula, data = NULL, family = c("gaussian", "identity"), p
   
   if (is.formula(ee$se))
     supl.data <- c(supl.data,list(sigma = brm.model.matrix(ee$se, data, rm.int = TRUE)[,1])) 
-  if (is.formula(ee$weights)) 
+  if (is.formula(ee$weights)) {
     supl.data <- c(supl.data, list(weights = brm.model.matrix(ee$weights, data, rm.int = TRUE)[,1]))
+    if (family == "multigaussian") supl.data$weights <- supl.data$weights[1:supl.data$N_trait]
+  }
   if (is.formula(ee$cens)) {
     cens <- brm.model.matrix(ee$cens, data, rm.int = TRUE)[,1]
     cens <- sapply(cens, function(x) {

@@ -29,6 +29,7 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
   Z <- lapply(ee$random, brm.model.matrix, data = data)
   r <- lapply(Z,colnames)
   n <- ifelse(is.formula(ee[c("trials","cat")]), "[n]", "")
+  trait <- ifelse(family == "multigaussian", "_trait", "")
   
   ranef <- unlist(lapply(mapply(list, r, ee$group, SIMPLIFY = FALSE), stan.ranef, 
                          f = f, family = family, prior = prior, cov.ranef = cov.ranef))
@@ -41,9 +42,9 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
     "data { \n",
     "  int<lower=1> N; \n", 
     if (is.lin | is.skew) 
-    "  real Y[N]; \n"
+      "  real Y[N]; \n"
     else if (is.count | is.ord | family %in% c("binomial", "bernoulli", "categorical")) 
-    "  int Y[N]; \n"
+      "  int Y[N]; \n"
     else if (family == "multigaussian") paste0(
       "  int<lower=1> N_trait; \n  int<lower=1> K_trait; \n",  
       "  int NC_trait; \n  vector[K_trait] Y[N_trait]; \n"),
@@ -56,7 +57,7 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
     if (is.lin & is.formula(ee$se))
       "  real<lower=0> sigma[N]; \n",
     if (is.formula(ee$weights))
-      "  vector<lower=0>[N] weights; \n",
+      paste0("  vector<lower=0>[N",trait,"] weights; \n"),
     if (is.ord | family %in% c("binomial", "categorical")) 
       paste0("  int max_obs",toupper(n),"; \n"),
     if (is.formula(ee$cens) & !(is.ord | family == "categorical"))
@@ -181,9 +182,9 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
   "} \n",
   "model { \n",
     if (is.formula(ee$weights) & !is.formula(ee$cens)) 
-    "  vector[N] lp_pre; \n",
+      paste0("  vector[N",trait,"] lp_pre; \n"),
     priors, 
-    ifelse(vectorize[2], llh, paste0("  for(n in 1:N) { \n  ", llh,"  } \n")),
+    ifelse(vectorize[2], llh, paste0("  for(n in 1:N",trait,") { \n  ", llh,"  } \n")),
     if (is.formula(ee$weights) & !is.formula(ee$cens)) 
     "  increment_log_prob(dot_product(weights,lp_pre)); \n",
   "} \n",
