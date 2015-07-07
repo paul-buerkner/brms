@@ -36,8 +36,9 @@ extract.effects <- function(formula, ..., family = "none", add.ignore = FALSE) {
   random <- lapply(regmatches(rg, gregexpr("\\([^\\|]*", rg)), function(r) 
     formula(paste0("~ ",substr(r, 2, nchar(r)))))
   group <- lapply(regmatches(rg, gregexpr("\\|[^\\)]*", rg)), function(g) 
-    substr(g, 2, nchar(g)))
-  x <- list(fixed = fixed, random = random, group = group)
+                  formula(paste("~", substr(g, 2, nchar(g)))))
+  x <- list(fixed = fixed, random = random, vars.group = lapply(group, all.vars),
+            group = lapply(group, function(g) paste0(all.vars(g), collapse = "")))
   
   fun <- c("se", "weights", "trials", "cat", "cens")
   if (!add.ignore) {
@@ -68,7 +69,7 @@ extract.effects <- function(formula, ..., family = "none", add.ignore = FALSE) {
                   "the old one was not flexible enough."))
   }
   
-  if (length(group)) group <- lapply(paste("~",group),"formula") 
+  #if (length(group)) group <- lapply(paste("~",group),"formula") 
   up.formula <- unlist(lapply(c(random, group, rmNULL(rmNum(x[fun])), ...), 
                               function(x) paste0("+", Reduce(paste, deparse(x[[2]])))))
   up.formula <- paste0("update(",Reduce(paste, deparse(fixed)),", . ~ .",paste0(up.formula, collapse=""),")")
@@ -86,11 +87,14 @@ extract.effects <- function(formula, ..., family = "none", add.ignore = FALSE) {
 extract.time <- function(formula) {
   if (is.null(formula)) return(NULL)
   formula <- gsub(" ","",Reduce(paste, deparse(formula))) 
-  time <- gsub("~|\\|[[:print:]]*", "", formula)
+  x <- list(time = gsub("~|\\|[[:print:]]*", "", formula), group = "", vars.group = NULL)
   group <- gsub("~[^\\|]*|\\|", "", formula)
-  x <- list(time = time, group = group)
-  if (!nchar(group)) group <- NULL
-  x$all <- formula(paste("~",paste(c(time, group), collapse = "+")))
+  if (nchar(group)) {
+    group <- formula(paste("~", group))
+    x$group <- paste0(all.vars(group), collapse = "")
+    x$vars.group <- all.vars(group)
+  }
+  x$all <- formula(paste("~",paste(c(x$time, x$vars.group), collapse = "+")))
   x
 }
 

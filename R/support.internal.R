@@ -130,26 +130,8 @@ rmMatch <- function(x, y) {
   x
 } 
 
-#melt data frame for family = "multigaussian"
-brm.melt <- function(data, response, family) {
-  if (length(response) > 1 & family != "multigaussian")
-    stop("multivariate models are currently only allowed for family 'multigaussian'")
-  else if (length(response) == 1 & family == "multigaussian")
-    stop("Only one response variable detected. Use family 'gaussian' instead of 'multigaussian'")
-  else if (!is(data, "data.frame"))
-    stop("data must be a data.frame if family 'multigaussian' is used")
-  else if (length(response) > 1 & family == "multigaussian") {
-    if ("trait" %in% names(data))
-      stop("trait is a resevered variable name for family 'multigaussian'")
-    data <- reshape2::melt(data, measure.vars = response)
-    names(data)[(ncol(data)-1):ncol(data)] <- c("trait", response[1])
-  }
-  data
-}  
-
 #rename parameters
 rename.pars <- function(x, ...) {
-  ee <- extract.effects(x$formula, family = x$family)
   pars <- dimnames(x$fit)$parameters
   chains <- length(x$fit@sim$samples) 
 
@@ -174,15 +156,15 @@ rename.pars <- function(x, ...) {
   }
   
   #rename random effects
-  r <- lapply(lapply(ee$group, function(g) get(paste0("Z_",g), x$data)), colnames)
-  if (length(r)) {
-    for (j in 1:length(r)) {
-      sds <- grepl(paste0("^sd_",ee$group[[j]]), pars)
-      sd_names <- paste0("sd_",ee$group[[j]],"_",r[[j]])
-      cors <- grepl(paste0("^cor_",ee$group[[j]]), pars)
-      cor_names <- unlist(lapply(1:length(ee$group), function(i)
-        if (length(r[[i]])>1) paste0("cor_",ee$group[[i]],"_", unlist(lapply(2:length(r[[i]]), function(j) 
-          lapply(1:(j-1), function(k) paste0(r[[i]][k],"_",r[[i]][j]))))))) 
+  group <- names(x$ranef)
+  if (length(x$ranef)) {
+    for (j in 1:length(x$ranef)) {
+      sds <- grepl(paste0("^sd_",group[j],"$"), pars)
+      sd_names <- paste0("sd_",group[j],"_", x$ranef[[j]])
+      cors <- grepl(paste0("^cor_",group[j],"$"), pars)
+      cor_names <- unlist(lapply(1:length(group), function(i)
+        if (length(x$ranef[[i]])>1) paste0("cor_",group[i],"_", unlist(lapply(2:length(x$ranef[[i]]), 
+          function(j) lapply(1:(j-1), function(k) paste0(x$ranef[[i]][k],"_",x$ranef[[i]][j]))))))) 
       x$fit@sim$fnames_oi[sds] <- sd_names
       x$fit@sim$fnames_oi[cors] <- cor_names
       for (i in 1:chains) {
@@ -193,6 +175,7 @@ rename.pars <- function(x, ...) {
   }
   
   #rename residual sds and correlations for family "multigaussian"
+  ee <- extract.effects(x$formula, family = x$family)
   if (x$family == "multigaussian") {
     sigmas <- grepl("^sigma\\[", pars)
     sigma_names <- paste0("sigma_",ee$response)
@@ -207,4 +190,47 @@ rename.pars <- function(x, ...) {
     } 
   } 
   x
+}
+
+#melt data frame for family = "multigaussian"
+brm.melt <- function(data, response, family) {
+  if (length(response) > 1 & family != "multigaussian")
+    stop("multivariate models are currently only allowed for family 'multigaussian'")
+  else if (length(response) == 1 & family == "multigaussian")
+    stop("Only one response variable detected. Use family 'gaussian' instead of 'multigaussian'")
+  else if (!is(data, "data.frame"))
+    stop("data must be a data.frame if family 'multigaussian' is used")
+  else if (length(response) > 1 & family == "multigaussian") {
+    if ("trait" %in% names(data))
+      stop("trait is a resevered variable name for family 'multigaussian'")
+    data <- reshape2::melt(data, measure.vars = response)
+    names(data)[(ncol(data)-1):ncol(data)] <- c("trait", response[1])
+  }
+  data
+}  
+
+#combine grouping factors
+combine.groups <- function(data, ...) {
+  groups <- c(...)
+  for (i in 1:length(groups)) {
+    if (length(groups[[i]]) > 1) {
+      new.var <- get(groups[[i]][1], data)
+      for (j in 2:length(groups[[i]])) {
+        new.var <- paste0(new.var, "_", get(groups[[i]][j], data))
+      }
+      data[[paste0(groups[[i]], collapse = "")]] <- new.var
+    }
+  } 
+  data
+}
+
+#update data for use in brm
+update.data <- function(data, ee, family, ...) {
+  if (!"brms.frame" %in% class(data)) {
+    data <- brm.melt(data, response = ee$response, family = family)
+    data <- stats::model.frame(ee$all, data = data, drop.unused.levels = TRUE)
+    data <- combine.groups(data, ee$vars.group, ...)
+    class(data) <- c("brms.frame", "data.frame") 
+  }
+  data
 }

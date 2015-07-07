@@ -261,13 +261,13 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
   if (is(fit,"brmsfit")) x <- fit
   else {
     formula <- brm.update.formula(formula, addition = addition)
-    ee <- extract.effects(formula = formula, family = family[1], partial = partial, extract.time(autocor$form)$all)
+    et <- extract.time(autocor$formula)
+    ee <- extract.effects(formula, family = family[1], partial, et$all)
     data.name <- Reduce(paste, deparse(substitute(data)))
-    data <- brm.melt(data, response = ee$response, family = family[1])
-    data <- stats::model.frame(ee$all, data = data, drop.unused.levels = TRUE)
-    class(data) <- c("model.frame", "data.frame") 
+    data <- update.data(data, ee = ee, family = family[1], et$vars.group)
     x <- brmsfit(formula = formula, family = family[1], link = link, partial = partial,
                  data.name = data.name, autocor = autocor)
+    x$ranef <- setNames(lapply(lapply(ee$random, brm.model.matrix, data = data), colnames), ee$group)
     x$data <- brm.data(formula, data = data, family = family, prior = prior, cov.ranef = cov.ranef,
                        autocor = autocor, partial = partial, engine = engine, ...) 
     x$pars <- brm.pars(formula, data = data, family = family[1], autocor = autocor, partial = partial, 

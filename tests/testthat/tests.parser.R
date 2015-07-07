@@ -30,3 +30,7 @@ test_that("Test that is.formula is TRUE for formulas and otherwise FALSE", {
   expect_equal(is.formula(list(y~1, ~1), or = FALSE), TRUE)
   expect_equal(is.formula(list(y~1,1), or = FALSE), FALSE)
 })
+
+test_that("Test that extract.time returns all desired variables", {
+  
+})

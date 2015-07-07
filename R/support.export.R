@@ -20,10 +20,7 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
   dots <- list(...)  
   if (is.null(autocor)) autocor <- cor.arma()
   ee <- extract.effects(formula = formula, family = family[1], partial = partial)
-  if (!"model.frame" %in% class(data)) {
-    data <- brm.melt(data, response = ee$response, family = family[1])
-    data <- stats::model.frame(ee$all, data = data, drop.unused.levels = TRUE)
-  }
+  data <- update.data(data, ee = ee, family = family[1])
     
   family <- family[1]
   if (is.element(engine,c("stan","jags"))) stan <- engine == "stan"
@@ -48,7 +45,8 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
     out <- c(out, paste0("V_",ee$group), paste0("VI_",ee$group))
   else if (length(ee$group) & engine == "stan") {
     out <- c(out, paste0("sd_",ee$group))
-    out <- c(out, paste0("cor_",ee$group))
+    out <- c(out, unlist(lapply(1:length(ee$group), function(i)
+             if (length(r[[i]])>1) paste0("cor_",ee$group[[i]]))))
     if (ranef) out <- c(out, paste0("r_",ee$group))
   }  
   if (is.lin & !is(ee$se,"formula")) out <- c(out,"sigma")
@@ -86,10 +84,7 @@ brm.data <- function(formula, data = NULL, family = c("gaussian", "identity"), p
   if (is.null(autocor)) autocor <- cor.arma()
   et <- extract.time(autocor$form)
   ee <- extract.effects(formula = formula, family = family[1], partial, et$all)
-  if (!"model.frame" %in% class(data)) {
-    data <- brm.melt(data, response = ee$response, family = family[1])
-    data <- stats::model.frame(ee$all, data = data, drop.unused.levels = TRUE)
-  }
+  data <- update.data(data, ee = ee, family = family[1], et$vars.group)
   group.names <- list()
   for (g in ee$group) { 
     group.names[[g]] <- sort(as.character(unique(data[[g]])))
@@ -184,8 +179,8 @@ brm.data <- function(formula, data = NULL, family = c("gaussian", "identity"), p
     else to.zero <- NULL
     X[,to.zero] <- 0
     ncolZ <- lapply(Z, ncol)
-    expr <- expression(get(g, data), length(unique(get(g, data))), 
-                       ncolZ[[i]], Z[[i]], ncolZ[[i]]*(ncolZ[[i]]-1)/2)
+    expr <- expression(get(g, data), length(unique(get(g, data))), ncolZ[[i]], 
+                       Z[[i]], ncolZ[[i]]*(ncolZ[[i]]-1)/2)
     for (i in 1:length(ee$group)) {
       g <- ee$group[[i]]
       name <- paste0(c("", "N_", "K_", "Z_", "NC_"), g)

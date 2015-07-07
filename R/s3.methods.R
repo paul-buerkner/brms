@@ -173,12 +173,12 @@ summary.brmsfit <- function(object, ...) {
   if (!is(object$fit, "stanfit")) 
     out <- brmssummary(formula = brm.update.formula(object$formula, partial = object$partial),
              family = object$family, link = object$link, data.name = object$data.name, 
-             group = unlist(ee$group), nobs = nobs(object), ngrps = brms::ngrps(object), 
+             group = names(object$ranef), nobs = nobs(object), ngrps = brms::ngrps(object), 
              autocor = object$autocor)
   else {
     out <- brmssummary(brm.update.formula(object$formula, partial = object$partial),
              family = object$family, link = object$link, data.name = object$data.name, 
-             group = unlist(extract.effects(object$formula, add.ignore = TRUE)$group),
+             group = names(object$ranef),
              nobs = nobs(object), ngrps = ngrps(object), autocor = object$autocor,
              n.chain = length(object$fit@sim$samples),
              n.iter = attr(object$fit@sim$samples[[1]],"args")$iter,
@@ -209,10 +209,13 @@ summary.brmsfit <- function(object, ...) {
     colnames(out$cor.pars) <- col.names
     rownames(out$cor.pars) <- cor.pars
     
+    print(pars)
+    print(out$group)
     if (length(out$group)) {
       for (i in 1:length(out$group)) {
-        sd.pars <- pars[grepl(paste0("^sd_", out$group[i]), pars)]
-        cor.pars <- pars[grepl(paste0("^cor_", out$group[i]), pars)]
+        sd.pars <- pars[grepl(paste0("^sd_", out$group[i],"_"), pars)]
+        print(sd.pars)
+        cor.pars <- pars[grepl(paste0("^cor_", out$group[i],"_"), pars)]
         r.names <- gsub(paste0("^sd_",out$group[i],"_"), "", sd.pars)
         sd.names <- paste0("sd(",r.names,")")
         cor.names <- get.cor.names(r.names)
