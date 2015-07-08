@@ -103,20 +103,19 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
     "} \n")
  
   priors <- paste0(
-    if (length(f)) paste0(stan.prior(paste0("b_",f), prior, ind = 1:length(f)), collapse = ""),
+    if (length(f)) stan.prior(paste0("b_",f), prior, ind = 1:length(f)),
+    if (length(p)) stan.prior(paste0("b_",p), prior, ind = 1:length(p), partial = TRUE), 
     if (autocor$p) stan.prior("ar", prior),
     if (autocor$q) stan.prior("ma", prior),
     if (is.ord & threshold == "flexible") 
       stan.prior("b_Intercept", prior, add.type = "Intercept")
     else if (is.ord & threshold == "equidistant") 
-      paste0(stan.prior("b_Intercept1", prior, add.type = "Intercept1"),
-             stan.prior("delta",prior)),
-    if (length(p)) paste0(stan.prior(paste0("b_",p), prior, 
-                    ind = 1:length(p), partial = TRUE), collapse = ""), 
+      paste0(stan.prior("b_Intercept1", prior, add.type = "Intercept1"), stan.prior("delta",prior)),
     if (is.element(family,c("gamma", "weibull"))) stan.prior("shape", prior),
     if (family == "student") stan.prior("nu", prior),
-    if (is.lin & !is.formula(ee$se)) stan.prior("sigma", prior), 
-    if (is.mg) paste0(stan.prior("sigma", prior), stan.prior("Lrescor", prior)),
+    if (is.lin & !is.formula(ee$se)) stan.prior(paste0("sigma_",ee$response), prior), 
+    if (is.mg) paste0(stan.prior(paste0("sigma_",ee$response), prior, ind = 1:length(ee$response)), 
+                      stan.prior("Lrescor", prior)),
     ranef$model)
   
   vectorize <- c(!(length(ee$group) | autocor$q | eta$transform |
@@ -456,7 +455,7 @@ stan.prior = function(par, prior = list(), add.type = NULL, ind = rep("", length
     out <- paste0(paste0(rep(" ", s), collapse = ""), 
       ifelse(identical(type,"bp"), "to_vector(bp)", type), " ~ ", base.prior, "; \n")
   else out <- ""
-  out
+  return(paste0(out, collapse = ""))
 }
 
 # Likelihoods in stan language
