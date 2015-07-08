@@ -209,12 +209,9 @@ summary.brmsfit <- function(object, ...) {
     colnames(out$cor.pars) <- col.names
     rownames(out$cor.pars) <- cor.pars
     
-    print(pars)
-    print(out$group)
     if (length(out$group)) {
       for (i in 1:length(out$group)) {
         sd.pars <- pars[grepl(paste0("^sd_", out$group[i],"_"), pars)]
-        print(sd.pars)
         cor.pars <- pars[grepl(paste0("^cor_", out$group[i],"_"), pars)]
         r.names <- gsub(paste0("^sd_",out$group[i],"_"), "", sd.pars)
         sd.names <- paste0("sd(",r.names,")")

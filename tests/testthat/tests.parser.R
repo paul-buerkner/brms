@@ -32,5 +32,9 @@ test_that("Test that is.formula is TRUE for formulas and otherwise FALSE", {
 })
 
 test_that("Test that extract.time returns all desired variables", {
-  
+  expect_equal(extract.time(~1)$groups, NULL) 
+  expect_equal(extract.time(~time|trait)$groups, list("trait")) 
+  expect_equal(extract.time(~time|Site + trait)$groups, list(c("Site","trait")))
+  expect_equal(extract.time(~time|Site + trait)$group, "Sitetrait")
+  expect_equal(extract.time(~time|Site + trait)$all, ~ time + Site + trait)
 })

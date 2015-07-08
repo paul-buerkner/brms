@@ -17,15 +17,15 @@
 #' @export
 brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, partial = NULL,
              threshold = "flexible", predict = FALSE, ranef = TRUE, engine = "stan", ...) {
-  dots <- list(...)  
-  if (is.null(autocor)) autocor <- cor.arma()
-  ee <- extract.effects(formula = formula, family = family[1], partial = partial)
-  data <- update.data(data, ee = ee, family = family[1])
-    
+  dots <- list(...)
   family <- family[1]
+  if (is.null(autocor)) autocor <- cor.arma()
   if (is.element(engine,c("stan","jags"))) stan <- engine == "stan"
   else stop("engine must be either stan or jags")
   if (!is(autocor,"cor.brms")) stop("cor must be of class cor.brms")
+  ee <- extract.effects(formula = formula, family = family, partial = partial)
+  data <- update.data(data, family = family, effects = ee)
+    
   is.lin <- family %in% c("gaussian", "student", "cauchy")
   is.ord <- family  %in% c("cumulative","cratio","sratio","acat")
   is.skew <- family %in% c("gamma", "weibull", "exponential")
@@ -81,27 +81,29 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
 brm.data <- function(formula, data = NULL, family = c("gaussian", "identity"), prior = list(),
                      autocor = NULL, partial = NULL, cov.ranef = NULL, engine = "stan", ...) {
   dots <- list(...)  
+  link <- brm.link(family)
+  family <- family[1]
   if (is.null(autocor)) autocor <- cor.arma()
+  if (engine %in% c("stan", "jags")) stan <- engine == "stan"
+  else stop("engine must be either stan or jags")
+  if (!is(autocor,"cor.brms")) stop("cor must be of class cor.brms")
+  
   et <- extract.time(autocor$form)
-  ee <- extract.effects(formula = formula, family = family[1], partial, et$all)
-  data <- update.data(data, ee = ee, family = family[1], et$vars.group)
+  ee <- extract.effects(formula = formula, family = family, partial, et$all)
+  data <- update.data(data, family = family, effects = ee, et$groups)
   group.names <- list()
   for (g in ee$group) { 
     group.names[[g]] <- sort(as.character(unique(data[[g]])))
     data[[g]] <- as.numeric(as.factor(data[[g]]))
   }  
   if (is(autocor, "cor.brms")) {
+    if (family == "multigaussian" & !"trait" %in% et$groups[[1]])
+      stop("autocorrelation structure for family 'multigaussian' must contain 'trait' as a grouping variable")
     to.order <- rmNULL(list(data[["trait"]], data[[et$group]], data[[et$time]]))
     if (length(to.order)) 
       data <- data[do.call(order, to.order),]
   }
   
-  if (is.element(engine,c("stan", "jags"))) stan <- engine == "stan"
-  else stop("engine must be either stan or jags")
-  if (!is(autocor,"cor.brms")) stop("cor must be of class cor.brms")
-  
-  link <- brm.link(family)
-  family <- family[1]
   is.lin <- family %in% c("gaussian", "student", "cauchy")
   is.ord <- family  %in% c("cumulative","cratio","sratio","acat")
   is.skew <- family %in% c("gamma", "weibull", "exponential")

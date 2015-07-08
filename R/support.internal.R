@@ -159,9 +159,9 @@ rename.pars <- function(x, ...) {
   group <- names(x$ranef)
   if (length(x$ranef)) {
     for (j in 1:length(x$ranef)) {
-      sds <- grepl(paste0("^sd_",group[j],"$"), pars)
+      sds <- grepl(paste0("^sd_",group[j],"(\\[|$)"), pars)
       sd_names <- paste0("sd_",group[j],"_", x$ranef[[j]])
-      cors <- grepl(paste0("^cor_",group[j],"$"), pars)
+      cors <- grepl(paste0("^cor_",group[j],"(\\[|$)"), pars)
       cor_names <- unlist(lapply(1:length(group), function(i)
         if (length(x$ranef[[i]])>1) paste0("cor_",group[i],"_", unlist(lapply(2:length(x$ranef[[i]]), 
           function(j) lapply(1:(j-1), function(k) paste0(x$ranef[[i]][k],"_",x$ranef[[i]][j]))))))) 
@@ -198,7 +198,7 @@ brm.melt <- function(data, response, family) {
     stop("multivariate models are currently only allowed for family 'multigaussian'")
   else if (length(response) == 1 & family == "multigaussian")
     stop("Only one response variable detected. Use family 'gaussian' instead of 'multigaussian'")
-  else if (!is(data, "data.frame"))
+  else if (!is(data, "data.frame") & family == "multigaussian")
     stop("data must be a data.frame if family 'multigaussian' is used")
   else if (length(response) > 1 & family == "multigaussian") {
     if ("trait" %in% names(data))
@@ -212,24 +212,26 @@ brm.melt <- function(data, response, family) {
 #combine grouping factors
 combine.groups <- function(data, ...) {
   groups <- c(...)
-  for (i in 1:length(groups)) {
-    if (length(groups[[i]]) > 1) {
-      new.var <- get(groups[[i]][1], data)
-      for (j in 2:length(groups[[i]])) {
-        new.var <- paste0(new.var, "_", get(groups[[i]][j], data))
+  if (length(groups)) {
+    for (i in 1:length(groups)) {
+      if (length(groups[[i]]) > 1) {
+        new.var <- get(groups[[i]][1], data)
+        for (j in 2:length(groups[[i]])) {
+          new.var <- paste0(new.var, "_", get(groups[[i]][j], data))
+        }
+        data[[paste0(groups[[i]], collapse = "")]] <- new.var
       }
-      data[[paste0(groups[[i]], collapse = "")]] <- new.var
-    }
-  } 
+    } 
+  }
   data
 }
 
 #update data for use in brm
-update.data <- function(data, ee, family, ...) {
+update.data <- function(data, family, effects, ...) {
   if (!"brms.frame" %in% class(data)) {
-    data <- brm.melt(data, response = ee$response, family = family)
-    data <- stats::model.frame(ee$all, data = data, drop.unused.levels = TRUE)
-    data <- combine.groups(data, ee$vars.group, ...)
+    data <- brm.melt(data, response = effects$response, family = family)
+    data <- stats::model.frame(effects$all, data = data, drop.unused.levels = TRUE)
+    data <- combine.groups(data, effects$groups, ...)
     class(data) <- c("brms.frame", "data.frame") 
   }
   data
