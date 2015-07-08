@@ -336,7 +336,7 @@ par.names.brmsfit <- function(x, ...) dimnames(x$fit)$parameters
 print.brmsmodel <- function(x, ...) cat(x)
 
 #' @export
-hypothesis.brmsfit <- function(x, hypothesis, ...) {
+hypothesis.brmsfit <- function(x, hypothesis, class = "b", ...) {
   if (!is.character(hypothesis)) 
     stop("Argument hypothesis must be a character vector")
   chains <- length(x$fit@sim$samples) 
@@ -344,11 +344,12 @@ hypothesis.brmsfit <- function(x, hypothesis, ...) {
   warmup <- attr(x$fit@sim$samples[[1]],"args")$warmup
   thin <- attr(x$fit@sim$samples[[1]],"args")$thin
   chains <- length(x$fit@sim$samples)
-  pars <- dimnames(x$fit)$parameters
-  pars <- pars[grepl("^b_", pars)]
+  if (!is.null(class)) class <- paste0(class,"_")
+  else class <- ""
+  pars <- gsub(":", "___", dimnames(x$fit)$parameters[grepl("^",class, dimnames(x$fit)$parameters)])
   
   out <- do.call(rbind, lapply(hypothesis, function(h) {
-    h <- gsub(":", "__", gsub(" ", "", h))
+    h <- gsub(":", "___", gsub(" ", "", h))
     if (length(gregexpr("[^=]+", h)[[1]]) != 2)
       stop("Every hypothesis must be of the form 'left = right'")
     lr <- unlist(regmatches(h, gregexpr("[^=]+", h)))
@@ -357,32 +358,32 @@ hypothesis.brmsfit <- function(x, hypothesis, ...) {
     var.pos <- list(rmMatch(gregexpr("[^([:digit:]|[:punct:])][[:alnum:]_\\.]*", h)[[1]], 
                             fun.pos[[1]]))
     varsH <- unlist(regmatches(h, var.pos))
-    parsH <- paste0("b_",varsH)
+    parsH <- paste0(class, varsH)
     if (!all(parsH %in% pars)) 
       stop(paste("The following fixed effects cannot be found in the model:", 
-                 paste0(varsH[which(!parsH %in% pars)], collapse = ", ")))
+                 paste0(gsub("___", ":", varsH[which(!parsH %in% pars)]), collapse = ", ")))
     samples <- data.frame(sapply(1:length(parsH), function(i)
       unlist(lapply(1:chains, function(j) 
-        x$fit@sim$samples[[j]][[parsH[i]]][(warmup/thin+1):(iter/thin)]))))
+        x$fit@sim$samples[[j]][[match(parsH[i], pars)]][(warmup/thin+1):(iter/thin)]))))
     names(samples) <- varsH
     out <- with(samples, eval(parse(text = h)))
     out <- as.data.frame(matrix(unlist(lapply(c("mean","sd","quantile"), get.estimate, 
                          samples = matrix(out, nrow=1), probs = c(.025, .975))), nrow = 1))
     out <- cbind(out, ifelse(!(out[1,3] <= 0 & 0 <= out[1,4]), '*', ''))
-    rownames(out) <- paste(gsub("__", ":", h), "= 0")
+    rownames(out) <- paste(gsub("___", ":", h), "= 0")
     colnames(out) <- c("Estimate", "Est.Error", "l-95% CI", "u-95% CI", "")
     out
   }))
-  class(out) <- c("brmshypothesis", "data.frame")
+  out <- list(hypothesis = out, class = substr(class, 1, nchar(class)-1))
+  class(out) <- "brmshypothesis"
   out
 }
 
 #' @export
 print.brmshypothesis <- function(x, digits = 2, ...) {
-  cat("Hypotheses Tests: \n")
-  class(x) <- "data.frame"
-  x[,1:4] <- round(x[,1:4], digits = digits)
-  print(x, quote = FALSE)
+  cat(paste0("Hypothesis Tests for class ", x$class, ":\n"))
+  x$hypothesis[,1:4] <- round(x$hypothesis[,1:4], digits = digits)
+  print(x$hypothesis, quote = FALSE)
   cat("---\n'*': The expected value under the hypothesis lies outside the 95% CI.")
 }
 
