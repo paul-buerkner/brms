@@ -255,7 +255,6 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
   if (!is(autocor, "cor.brms")) stop("cor must be of class cor.brms")
   if (!threshold %in% c("flexible","equidistant")) 
     stop("threshold must be either flexible or equidistant")
-  names(prior) <- gsub(":", "__", names(prior))
   set.seed(seed)
   
   if (is(fit,"brmsfit")) x <- fit

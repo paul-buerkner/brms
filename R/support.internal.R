@@ -143,8 +143,9 @@ rename.pars <- function(x, ...) {
   for (i in 1:chains) names(x$fit@sim$samples[[i]])[bs] <- b_names
   
   #rename partial effects
-  if (is.formula(x$partial)) {
-    p <- colnames(x$data$Xp)
+  if (is.formula(x$partial) | x$family == "categorical") {
+    if (x$family == "categorical") p <- colnames(x$data$X)
+    else p <- colnames(x$data$Xp)
     bps <- grepl("^bp\\[", pars)
     bp_names <- paste0("b_",sapply(1:(max(x$data$max_obs) - 1), function(i) 
       sapply(p, function(p) paste0(p,"[",i,"]"))))

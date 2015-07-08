@@ -61,3 +61,8 @@ test_that("Test that stan.model handles addition arguments correctly", {
   expect_match(stan.model(time | cens(censored) ~ age + sex + disease, data = kidney,
                           family = "weibull", link = "log"), "vector\\[N\\] cens;")
 })
+
+test_that("Test that stan.ord return the correct string", {
+  expect_match(stan.ord(family = "sratio", link = "logit")$par, "")
+  
+})

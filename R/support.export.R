@@ -39,8 +39,8 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
   out = NULL
   if (is.ord & threshold == "flexible") out <- c(out, "b_Intercept")
   if (is.ord & threshold == "equidistant") out <- c(out, "b_Intercept1", "delta")
-  if (length(f)) out <- c(out, "b")
-  if (is.ord & length(p)) out <- c(out, "bp")
+  if (length(f) & family != "categorical") out <- c(out, "b")
+  if (is.ord & length(p) | family == "categorical") out <- c(out, "bp")
   if (length(ee$group) & engine == "jags") 
     out <- c(out, paste0("V_",ee$group), paste0("VI_",ee$group))
   else if (length(ee$group) & engine == "stan") {
