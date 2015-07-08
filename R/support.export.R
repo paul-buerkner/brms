@@ -36,7 +36,7 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
   f <- colnames(brm.model.matrix(ee$fixed, data, rm.int = is.ord))
   r <- lapply(lapply(ee$random, brm.model.matrix, data=data, rm.int = is.ord & !stan), colnames)
   p <- colnames(brm.model.matrix(partial, data, rm.int = TRUE))
-  out = NULL
+  out <- NULL
   if (is.ord & threshold == "flexible") out <- c(out, "b_Intercept")
   if (is.ord & threshold == "equidistant") out <- c(out, "b_Intercept1", "delta")
   if (length(f) & family != "categorical") out <- c(out, "b")
@@ -45,7 +45,6 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
   if (family == "multigaussian") out <- c(out,"sigma", "rescor")
   if (family == "student") out <- c(out,"nu")
   if (family %in% c("gamma","weibull","negbinomial")) out <- c(out,"shape")
-  if (predict) out <- c(out,"Y_pred")
   if (autocor$p > 0) out <- c(out,"ar")
   if (autocor$q > 0) out <- c(out,"ma")
   if (length(ee$group) & engine == "jags") 
@@ -56,6 +55,7 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
       if (length(r[[i]])>1) paste0("cor_",ee$group[[i]]))))
     if (ranef) out <- c(out, paste0("r_",ee$group))
   }
+  if (predict) out <- c(out,"Y_pred")
   return(out)
 }
 

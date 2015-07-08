@@ -19,7 +19,7 @@ test_that("Test that stan.prior accepts supported prior families", {
                "  b ~ uniform(0,10); \n")
   expect_equal(stan.prior(c("b_x1","b_x2"), prior = list(b = "uniform(0,10)", 
                b_x1 = "normal(0,1)"), ind = 1:2), 
-               c("  b[1] ~ normal(0,1); \n", "  b[2] ~ uniform(0,10); \n"))
+               "  b[1] ~ normal(0,1); \n  b[2] ~ uniform(0,10); \n")
   expect_equal(stan.prior("ar", prior = list(ar = "uniform(0,1)")),
                "  ar ~ uniform(0,1); \n")
   expect_equal(stan.prior("ma", prior = list(ma = "normal(0,5)")),
@@ -34,7 +34,7 @@ test_that("Test that stan.prior returns the correct indices", {
   expect_equal(stan.prior("sd_Intercept", ind = "k", prior = list(sd_Intercept = "normal(0,1)")), 
                "  sd[k] ~ normal(0,1); \n")
   expect_equal(stan.prior(c("sd_x1","sd_x2"), ind = 1:2, prior = list(sd_x1 = "normal(0,1)")),
-               c("  sd[1] ~ normal(0,1); \n","  sd[2] ~ cauchy(0,5); \n"))                                                       
+               "  sd[1] ~ normal(0,1); \n  sd[2] ~ cauchy(0,5); \n")                                                       
 })
 
 test_that("Test that stan.model returns correct strings (or errors) for autocorrelation models", {
