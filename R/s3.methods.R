@@ -90,14 +90,13 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
   chains <- length(x$fit@sim$samples) 
   group <- unlist(extract.effects(x$formula, add.ignore = TRUE)$group)
   
-  VarCorr <- lapply(group, function(g) {
-    sd.pars <- pars[grepl(paste0("^sd_",g,"_"), pars)]
-    cor.pars <- pars[grepl(paste0("^cor_",g,"_"), pars)]
-    r.names <- gsub(paste0("^sd_",g,"_"), "", sd.pars)
-    r.names <- gsub("__",":",r.names)
+  # extracts samples for sd, cor and cov
+  extract <- function(pattern) {
+    if (length(pattern) != 2) stop("pattern must be of length 2")
+    sd.pars <- pars[grepl(pattern[1], pars)]
+    cor.pars <- pars[grepl(pattern[2], pars)]
+    r.names <- gsub(pattern[1], "", sd.pars)
     nr <- length(sd.pars)
-    if (!nr)
-      stop(paste("Grouping variable",g,"is not present in argument x"))
     out <- list() 
     sds <- t(sapply(1:nr, function(i)
       unlist(lapply(1:chains, function(j) 
@@ -133,7 +132,14 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
       }
     }
     out
-  })
+  }
+  
+  pattern <- lapply(group, function(g) c(paste0("^sd_",g,"_"), paste0("^cor_",g,"_")))
+  if (x$family == "multigaussian") {
+    pattern <- c(pattern, list(c("^sigma_", "^rescor_")))
+    group <- c(group, "RESIDUAL")
+  } 
+  VarCorr <- lapply(pattern, extract)
   names(VarCorr) <- group
   VarCorr
 }

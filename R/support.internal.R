@@ -228,7 +228,7 @@ combine.groups <- function(data, ...) {
 }
 
 #update data for use in brm
-update.data <- function(data, family, effects, ...) {
+updateData <- function(data, family, effects, ...) {
   if (!"brms.frame" %in% class(data)) {
     data <- brm.melt(data, response = effects$response, family = family)
     data <- stats::model.frame(effects$all, data = data, drop.unused.levels = TRUE)

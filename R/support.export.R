@@ -24,7 +24,7 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
   else stop("engine must be either stan or jags")
   if (!is(autocor,"cor.brms")) stop("cor must be of class cor.brms")
   ee <- extract.effects(formula = formula, family = family, partial = partial)
-  data <- update.data(data, family = family, effects = ee)
+  data <- updateData(data, family = family, effects = ee)
     
   is.lin <- family %in% c("gaussian", "student", "cauchy")
   is.ord <- family  %in% c("cumulative","cratio","sratio","acat")
@@ -90,7 +90,7 @@ brm.data <- function(formula, data = NULL, family = c("gaussian", "identity"), p
   
   et <- extract.time(autocor$form)
   ee <- extract.effects(formula = formula, family = family, partial, et$all)
-  data <- update.data(data, family = family, effects = ee, et$groups)
+  data <- updateData(data, family = family, effects = ee, et$groups)
   group.names <- list()
   for (g in ee$group) { 
     group.names[[g]] <- sort(as.character(unique(data[[g]])))
