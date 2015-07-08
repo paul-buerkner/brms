@@ -41,14 +41,6 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
   if (is.ord & threshold == "equidistant") out <- c(out, "b_Intercept1", "delta")
   if (length(f) & family != "categorical") out <- c(out, "b")
   if (is.ord & length(p) | family == "categorical") out <- c(out, "bp")
-  if (length(ee$group) & engine == "jags") 
-    out <- c(out, paste0("V_",ee$group), paste0("VI_",ee$group))
-  else if (length(ee$group) & engine == "stan") {
-    out <- c(out, paste0("sd_",ee$group))
-    out <- c(out, unlist(lapply(1:length(ee$group), function(i)
-             if (length(r[[i]])>1) paste0("cor_",ee$group[[i]]))))
-    if (ranef) out <- c(out, paste0("r_",ee$group))
-  }  
   if (is.lin & !is(ee$se,"formula")) out <- c(out,"sigma")
   if (family == "multigaussian") out <- c(out,"sigma", "rescor")
   if (family == "student") out <- c(out,"nu")
@@ -56,6 +48,14 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
   if (predict) out <- c(out,"Y_pred")
   if (autocor$p > 0) out <- c(out,"ar")
   if (autocor$q > 0) out <- c(out,"ma")
+  if (length(ee$group) & engine == "jags") 
+    out <- c(out, paste0("V_",ee$group), paste0("VI_",ee$group))
+  else if (length(ee$group) & engine == "stan") {
+    out <- c(out, paste0("sd_",ee$group))
+    out <- c(out, unlist(lapply(1:length(ee$group), function(i)
+      if (length(r[[i]])>1) paste0("cor_",ee$group[[i]]))))
+    if (ranef) out <- c(out, paste0("r_",ee$group))
+  }
   return(out)
 }
 
@@ -97,7 +97,7 @@ brm.data <- function(formula, data = NULL, family = c("gaussian", "identity"), p
     data[[g]] <- as.numeric(as.factor(data[[g]]))
   }  
   if (is(autocor, "cor.brms")) {
-    if (family == "multigaussian" & !"trait" %in% et$groups[[1]])
+    if (family == "multigaussian" & sum(autocor$p, autocor$q) > 0 & !"trait" %in% et$groups[[1]])
       stop("autocorrelation structure for family 'multigaussian' must contain 'trait' as a grouping variable")
     to.order <- rmNULL(list(data[["trait"]], data[[et$group]], data[[et$time]]))
     if (length(to.order)) 

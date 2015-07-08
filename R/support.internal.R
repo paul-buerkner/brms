@@ -134,62 +134,52 @@ rmMatch <- function(x, y) {
 rename.pars <- function(x, ...) {
   pars <- dimnames(x$fit)$parameters
   chains <- length(x$fit@sim$samples) 
-
-  #rename fixed effects
-  f <- colnames(x$data$X)
-  bs <- grepl("^b\\[", pars)
-  b_names <- paste0("b_",f)
-  x$fit@sim$fnames_oi[bs] <- b_names
-  for (i in 1:chains) names(x$fit@sim$samples[[i]])[bs] <- b_names
+  change <- list()
   
-  #rename partial effects
+  #find positions of parameters and define new names
+  f <- colnames(x$data$X)
+  if (length(f)) 
+    change[[length(change)+1]] <- list(pos = grepl("^b\\[", pars), names = paste0("b_",f))
   if (is.formula(x$partial) | x$family == "categorical") {
     if (x$family == "categorical") p <- colnames(x$data$X)
     else p <- colnames(x$data$Xp)
-    bps <- grepl("^bp\\[", pars)
-    bp_names <- paste0("b_",sapply(1:(max(x$data$max_obs) - 1), function(i) 
-      sapply(p, function(p) paste0(p,"[",i,"]"))))
-    x$fit@sim$fnames_oi[bps] <- sort(bp_names)
-    for (i in 1:chains) {
-      names(x$fit@sim$samples[[i]])[bps] <- bp_names
-      x$fit@sim$samples[[i]][bps] <- x$fit@sim$samples[[i]][bps][order(bp_names)]
-    }  
-  }
-  
-  #rename random effects
+   change[[length(change)+1]] <- list(pos = grepl("^bp\\[", pars), sort = TRUE,
+      names = paste0("b_",sapply(1:(max(x$data$max_obs) - 1), function(i) 
+                     sapply(p, function(p) paste0(p,"[",i,"]")))))
+  }  
   group <- names(x$ranef)
   if (length(x$ranef)) {
     for (j in 1:length(x$ranef)) {
-      sds <- grepl(paste0("^sd_",group[j],"(\\[|$)"), pars)
-      sd_names <- paste0("sd_",group[j],"_", x$ranef[[j]])
-      cors <- grepl(paste0("^cor_",group[j],"(\\[|$)"), pars)
+     change[[length(change)+1]] <- list(pos = grepl(paste0("^sd_",group[j],"(\\[|$)"), pars),
+                                       names = paste0("sd_",group[j],"_", x$ranef[[j]]))
       cor_names <- unlist(lapply(1:length(group), function(i)
         if (length(x$ranef[[i]])>1) paste0("cor_",group[i],"_", unlist(lapply(2:length(x$ranef[[i]]), 
-          function(j) lapply(1:(j-1), function(k) paste0(x$ranef[[i]][k],"_",x$ranef[[i]][j]))))))) 
-      x$fit@sim$fnames_oi[sds] <- sd_names
-      x$fit@sim$fnames_oi[cors] <- cor_names
-      for (i in 1:chains) {
-        names(x$fit@sim$samples[[i]])[sds] <- sd_names
-        names(x$fit@sim$samples[[i]])[cors] <- cor_names
-      }  
+           function(j) lapply(1:(j-1), function(k) paste0(x$ranef[[i]][k],"_",x$ranef[[i]][j]))))))) 
+     change[[length(change)+1]] <- list(pos = grepl(paste0("^cor_",group[j],"(\\[|$)"), pars),
+                                       names = cor_names) 
     }
   }
-  
-  #rename residual sds and correlations for family "multigaussian"
   ee <- extract.effects(x$formula, family = x$family)
-  if (x$family == "multigaussian") {
-    sigmas <- grepl("^sigma\\[", pars)
-    sigma_names <- paste0("sigma_",ee$response)
-    rescors <- grepl("^rescor\\[", pars)
-    rescor_names <- paste0("rescor_",unlist(lapply(2:length(ee$response), function(j) 
-        lapply(1:(j-1), function(k) paste0(ee$response[k],"_",ee$response[j])))))
-    x$fit@sim$fnames_oi[sigmas] <- sigma_names
-    x$fit@sim$fnames_oi[rescors] <- rescor_names
-    for (i in 1:chains) {
-      names(x$fit@sim$samples[[i]])[sigmas] <- sigma_names
-      names(x$fit@sim$samples[[i]])[rescors] <- rescor_names
-    } 
+  if (x$family %in% c("gaussian", "student", "cauchy", "multigaussian")) {
+   change[[length(change)+1]] <- list(pos = grepl("^sigma", pars), names = paste0("sigma_",ee$response))
+    if (x$family == "multigaussian") {
+      rescor_names <- paste0("rescor_",unlist(lapply(2:length(ee$response), function(j) 
+          lapply(1:(j-1), function(k) paste0(ee$response[k],"_",ee$response[j])))))
+     change[[length(change)+1]] <- list(pos = grepl("^rescor\\[", pars), names = rescor_names)
+    }
   } 
+  
+  #rename parameters
+  for (c in 1:length(change)) {
+    sort <- !is.null(change[[c]]$sort)
+    if (sort) x$fit@sim$fnames_oi[change[[c]]$pos] <- sort(change[[c]]$names)
+    else x$fit@sim$fnames_oi[change[[c]]$pos] <- change[[c]]$names
+    for (i in 1:chains) {
+      names(x$fit@sim$samples[[i]])[change[[c]]$pos] <- change[[c]]$names
+      if (sort) x$fit@sim$samples[[i]][change[[c]]$pos] <- 
+          x$fit@sim$samples[[i]][change[[c]]$pos][order(change[[c]]$names)]
+    }  
+  }
   x
 }
 
