@@ -35,10 +35,14 @@ extract.effects <- function(formula, ..., family = "none", add.ignore = FALSE) {
   rg <- unlist(regmatches(formula, gregexpr("\\([^\\|\\)]*\\|[^\\)]*\\)", formula)))
   random <- lapply(regmatches(rg, gregexpr("\\([^\\|]*", rg)), function(r) 
     formula(paste0("~ ",substr(r, 2, nchar(r)))))
-  group <- lapply(regmatches(rg, gregexpr("\\|[^\\)]*", rg)), function(g) 
-                  formula(paste("~", substr(g, 2, nchar(g)))))
-  x <- list(fixed = fixed, random = random, groups = lapply(group, all.vars),
-            group = lapply(group, function(g) paste0(all.vars(g), collapse = "")))
+  group <- lapply(regmatches(rg, gregexpr("\\|[^\\)]*", rg)), function(g) {
+    g <- substr(g, 2, nchar(g))
+    if (nchar(gsub(":", "", gsub("[^([:digit:]|[:punct:])][[:alnum:]_\\.]*", "", g))))
+      stop(paste("Illegal grouping term:",g,"\nGrouping terms may contain only variable names",
+                 "combined by the interaction symbol ':'"))
+    return(formula(paste("~",g)))})
+  x <- list(fixed = fixed, random = random, 
+            group = lapply(group, function(g) paste0(all.vars(g), collapse = "__")))
   
   fun <- c("se", "weights", "trials", "cat", "cens")
   if (!add.ignore) {
@@ -89,11 +93,13 @@ extract.time <- function(formula) {
   x <- list(time = gsub("~|\\|[[:print:]]*", "", formula), group = "", groups = NULL)
   group <- gsub("~[^\\|]*|\\|", "", formula)
   if (nchar(group)) {
+    if (nchar(gsub(":", "", gsub("[^([:digit:]|[:punct:])][[:alnum:]_\\.]*", "", group))))
+      stop(paste("Illegal grouping term:",group,"\nGrouping terms may contain only variable names",
+                 "combined by the interaction symbol ':'"))
     group <- formula(paste("~", group))
-    x$group <- paste0(all.vars(group), collapse = "")
-    x$groups <- list(all.vars(group))
+    x$group <- paste0(all.vars(group), collapse = "__")
   }
-  x$all <- formula(paste("~",paste(c(x$time, unlist(x$groups)), collapse = "+")))
+  x$all <- formula(paste("~",paste(c(x$time, all.vars(group)), collapse = "+")))
   x
 }
 

@@ -8,7 +8,7 @@
 #'  the variables in the model. If not found in data, the variables are taken from \code{environment(formula)}, 
 #'  typically the environment from which \code{brm} is called.
 #' @param family A vector of one or two character strings. The first string indicates the distribution of the dependent variable (the 'family'). Currently, the following families are supported:
-#'  \code{"gaussian"}, \code{"student"}, \code{"cauchy"}, \code{"binomial"}, \code{"categorical"}, \code{"poisson"}, \code{"negbinomial"}, \code{"geometric"},
+#'  \code{"gaussian"}, \code{"student"}, \code{"cauchy"}, \code{"multigaussian"}, \code{"binomial"}, \code{"categorical"}, \code{"poisson"}, \code{"negbinomial"}, \code{"geometric"},
 #'  \code{"gamma"}, \code{"exponential"}, \code{"weibull"}, \code{"cumulative"}, \code{"cratio"}, \code{"sratio"}, and \code{"acat"}.
 #'  The second string indicates the link function, which must be supported by the distribution of the dependent variable. 
 #'  If not specified, default link functions are used. Further information is provided under 'Details'.
@@ -72,8 +72,8 @@
 #'   
 #'   \code{response | addition ~ fixed + (random | group)} 
 #'   
-#'   Multiple grouping factors each with multiple random effects are possible. With the exception of \code{addition}, 
-#'   this is basically \code{lme4} syntax.
+#'   Multiple grouping factors each with multiple random effects are possible.  
+#'   With the exception of \code{addition}, this is basically \code{lme4} syntax. 
 #'   The optional \code{addition} term may contain multiple terms of the form \code{fun(variable)} seperated by \code{|} each providing
 #'   special information on the response variable. \code{fun} can be replaced with either \code{se}, \code{weights}, \code{trials},
 #'   \code{cat}, or \code{cens} (their meanings are explained below). Using the \code{addition} term in \code{formula} is equivalent
@@ -263,10 +263,11 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
     et <- extract.time(autocor$formula)
     ee <- extract.effects(formula, family = family[1], partial, et$all)
     data.name <- Reduce(paste, deparse(substitute(data)))
-    data <- updateData(data, family = family[1], effects = ee, et$groups)
+    data <- updateData(data, family = family[1], effects = ee, et$group)
     x <- brmsfit(formula = formula, family = family[1], link = link, partial = partial,
                  data.name = data.name, autocor = autocor)
-    x$ranef <- setNames(lapply(lapply(ee$random, brm.model.matrix, data = data), colnames), ee$group)
+    x$ranef <- setNames(lapply(lapply(ee$random, brm.model.matrix, data = data), colnames), 
+                        gsub("__", ":", ee$group))
     x$data <- brm.data(formula, data = data, family = family, prior = prior, cov.ranef = cov.ranef,
                        autocor = autocor, partial = partial, engine = engine, ...) 
     x$pars <- brm.pars(formula, data = data, family = family[1], autocor = autocor, partial = partial, 

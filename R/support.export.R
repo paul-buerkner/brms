@@ -90,7 +90,7 @@ brm.data <- function(formula, data = NULL, family = c("gaussian", "identity"), p
   
   et <- extract.time(autocor$form)
   ee <- extract.effects(formula = formula, family = family, partial, et$all)
-  data <- updateData(data, family = family, effects = ee, et$groups)
+  data <- updateData(data, family = family, effects = ee, et$group)
   group.names <- list()
   for (g in ee$group) { 
     group.names[[g]] <- sort(as.character(unique(data[[g]])))

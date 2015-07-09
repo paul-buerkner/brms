@@ -132,8 +132,11 @@ rmMatch <- function(x, y) {
 #rename parameters
 rename.pars <- function(x, ...) {
   if (!length(x$fit@sim)) return(x)
-  pars <- dimnames(x$fit)$parameters
   chains <- length(x$fit@sim$samples) 
+  n.pars <- length(x$fit@sim$fnames_oi)
+  x$fit@sim$fnames_oi[1:(n.pars-1)] <- gsub("__", ":", x$fit@sim$fnames_oi[1:(n.pars-1)])
+  for (i in 1:chains) names(x$fit@sim$samples[[i]]) <- x$fit@sim$fnames_oi[1:(n.pars-1)]
+  pars <- dimnames(x$fit)$parameters
   change <- list()
   
   #find positions of parameters and define new names
@@ -151,12 +154,12 @@ rename.pars <- function(x, ...) {
   if (length(x$ranef)) {
     for (j in 1:length(x$ranef)) {
      change[[length(change)+1]] <- list(pos = grepl(paste0("^sd_",group[j],"(\\[|$)"), pars),
-                                       names = paste0("sd_",group[j],"_", x$ranef[[j]]))
+                                        names = paste0("sd_",group[j],"_", x$ranef[[j]]))
       cor_names <- unlist(lapply(1:length(group), function(i)
-        if (length(x$ranef[[i]])>1) paste0("cor_",group[i],"_", unlist(lapply(2:length(x$ranef[[i]]), 
+        if (length(x$ranef[[i]])>1) paste0("cor_",group[j],"_", unlist(lapply(2:length(x$ranef[[i]]), 
            function(j) lapply(1:(j-1), function(k) paste0(x$ranef[[i]][k],"_",x$ranef[[i]][j]))))))) 
      change[[length(change)+1]] <- list(pos = grepl(paste0("^cor_",group[j],"(\\[|$)"), pars),
-                                       names = cor_names) 
+                                        names = cor_names) 
     }
   }
   ee <- extract.effects(x$formula, family = x$family)
@@ -202,15 +205,16 @@ brm.melt <- function(data, response, family) {
 
 #combine grouping factors
 combine.groups <- function(data, ...) {
-  groups <- c(...)
-  if (length(groups)) {
-    for (i in 1:length(groups)) {
-      if (length(groups[[i]]) > 1) {
-        new.var <- get(groups[[i]][1], data)
-        for (j in 2:length(groups[[i]])) {
-          new.var <- paste0(new.var, "_", get(groups[[i]][j], data))
+  group <- c(...)
+  if (length(group)) {
+    for (i in 1:length(group)) {
+      sgroup <- unlist(strsplit(group[[i]], "__"))
+      if (length(sgroup) > 1) {
+        new.var <- get(sgroup[1], data)
+        for (j in 2:length(sgroup)) {
+          new.var <- paste0(new.var, "_", get(sgroup[j], data))
         }
-        data[[paste0(groups[[i]], collapse = "")]] <- new.var
+        data[[group[[i]]]] <- new.var
       }
     } 
   }
@@ -222,7 +226,9 @@ updateData <- function(data, family, effects, ...) {
   if (!"brms.frame" %in% class(data)) {
     data <- brm.melt(data, response = effects$response, family = family)
     data <- stats::model.frame(effects$all, data = data, drop.unused.levels = TRUE)
-    data <- combine.groups(data, effects$groups, ...)
+    if (any(grepl("__", colnames(data))))
+      stop("Variable names may not contain double underscores '__'")
+    data <- combine.groups(data, effects$group, ...)
     class(data) <- c("brms.frame", "data.frame") 
   }
   data

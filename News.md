@@ -6,7 +6,8 @@ output: html_document
 # under development
 ----------------------------------------------------------------
 
-* multiple grouping factors can now be passed within one random effects argument and will be combined automatically 
+* variable names containing double underscores '__' are now prohibited to avoid naming conflicts
+* multiple grouping factors can now be combined within one random effects argument using the interaction symbol ':'
 * generalized S3 method 'hypothesis' to be used with all parameter classes not just fixed effects
 * introduced new family 'multigaussian' allowing for multivariate normal regression
 * function calls with several arguments (e.g. poly(x,3)) are now allowed in the formula argument of function 'brm'

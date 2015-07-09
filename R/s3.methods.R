@@ -34,17 +34,16 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, center.zero = TRUE,
   thin <- attr(x$fit@sim$samples[[1]],"args")$thin
   chains <- length(x$fit@sim$samples)
   n.samples <- (iter-warmup)/thin*chains
-  group <- unlist(extract.effects(x$formula, add.ignore = TRUE)$group)
+  group <- names(x$ranef)
   
   ranef <- lapply(group, function(g) {
     r.pars <- pars[grepl(paste0("^r_",g,"\\["), pars)]
     r.names <- gsub(paste0("^sd_",g,"_"), "", pars[grepl(paste0("^sd_",g,"_"), pars)])
-    r.names <- gsub("__",":",r.names) 
     nr <- length(r.pars)
     if (!nr)
       stop(paste0("The model does not contain random effects for group '",g,"'\n",
                   "You should use argument ranef = TRUE in function brm."))
-    r_dims <- x$fit@par_dims[[paste0("r_",g)]]
+    r_dims <- x$fit@par_dims[[paste0("r_",gsub(":", "__", g))]]
     rs <- t(sapply(1:nr, function(i)
       unlist(lapply(1:chains, function(j) 
         x$fit@sim$samples[[j]][[r.pars[i]]][(warmup/thin+1):(iter/thin)]))))
@@ -88,7 +87,7 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
   warmup <- attr(x$fit@sim$samples[[1]],"args")$warmup
   thin <- attr(x$fit@sim$samples[[1]],"args")$thin
   chains <- length(x$fit@sim$samples) 
-  group <- unlist(extract.effects(x$formula, add.ignore = TRUE)$group)
+  group <- names(x$ranef)
   
   # extracts samples for sd, cor and cov
   extract <- function(pattern) {
@@ -308,8 +307,8 @@ nobs.brmsfit <- function(object, ...) length(object$data$Y)
 
 #' @export
 ngrps.brmsfit <- function(object, ...) {
-  group <- unlist(extract.effects(object$formula, add.ignore = TRUE)$group)
-  setNames(lapply(group, function(g) object$data[[paste0("N_",g)]]), group)
+  group <- names(object$ranef)
+  setNames(lapply(group, function(g) object$data[[paste0("N_",gsub(":","__",g))]]), group)
 }
 
 #' @export
@@ -356,10 +355,10 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", ...) {
   chains <- length(x$fit@sim$samples)
   if (!is.null(class)) class <- paste0(class,"_")
   else class <- ""
-  pars <- gsub(":", "___", dimnames(x$fit)$parameters[grepl("^",class, dimnames(x$fit)$parameters)])
+  pars <- gsub(":", "__", dimnames(x$fit)$parameters[grepl("^",class, dimnames(x$fit)$parameters)])
   
   out <- do.call(rbind, lapply(hypothesis, function(h) {
-    h <- gsub(":", "___", gsub(" ", "", h))
+    h <- gsub(":", "__", gsub(" ", "", h))
     if (length(gregexpr("[^=]+", h)[[1]]) != 2)
       stop("Every hypothesis must be of the form 'left = right'")
     lr <- unlist(regmatches(h, gregexpr("[^=]+", h)))
@@ -371,7 +370,7 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", ...) {
     parsH <- paste0(class, varsH)
     if (!all(parsH %in% pars)) 
       stop(paste("The following fixed effects cannot be found in the model:", 
-                 paste0(gsub("___", ":", varsH[which(!parsH %in% pars)]), collapse = ", ")))
+                 paste0(gsub("__", ":", varsH[which(!parsH %in% pars)]), collapse = ", ")))
     samples <- data.frame(sapply(1:length(parsH), function(i)
       unlist(lapply(1:chains, function(j) 
         x$fit@sim$samples[[j]][[match(parsH[i], pars)]][(warmup/thin+1):(iter/thin)]))))
@@ -380,7 +379,7 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", ...) {
     out <- as.data.frame(matrix(unlist(lapply(c("mean","sd","quantile"), get.estimate, 
                          samples = matrix(out, nrow=1), probs = c(.025, .975))), nrow = 1))
     out <- cbind(out, ifelse(!(out[1,3] <= 0 & 0 <= out[1,4]), '*', ''))
-    rownames(out) <- paste(gsub("___", ":", h), "= 0")
+    rownames(out) <- paste(gsub("__", ":", h), "= 0")
     colnames(out) <- c("Estimate", "Est.Error", "l-95% CI", "u-95% CI", "")
     out
   }))
