@@ -97,7 +97,8 @@ brm.data <- function(formula, data = NULL, family = c("gaussian", "identity"), p
     data[[g]] <- as.numeric(as.factor(data[[g]]))
   }  
   if (is(autocor, "cor.brms")) {
-    if (family == "multigaussian" & sum(autocor$p, autocor$q) > 0 & !"trait" %in% et$groups[[1]])
+    if (family == "multigaussian" & sum(autocor$p, autocor$q) > 0 & 
+        !any(sapply(c("__trait","trait__"), grepl, x = et$group)))
       stop("autocorrelation structure for family 'multigaussian' must contain 'trait' as a grouping variable")
     to.order <- rmNULL(list(data[["trait"]], data[[et$group]], data[[et$time]]))
     if (length(to.order)) 
