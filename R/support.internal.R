@@ -131,6 +131,7 @@ rmMatch <- function(x, y) {
 
 #rename parameters
 rename.pars <- function(x, ...) {
+  if (!length(x$fit@sim)) return(x)
   pars <- dimnames(x$fit)$parameters
   chains <- length(x$fit@sim$samples) 
   change <- list()

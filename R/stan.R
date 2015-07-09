@@ -239,6 +239,7 @@ stan.eta <- function(family, link, f, p, group, autocor = cor.arma(), max_obs = 
              probit = "Phi", probit_approx = "Phi_approx", cloglog = "inv_cloglog")[link]
   eta$transform <- !(link == "identity" | is.ord | family == "categorical" | is.count & link == "log" |
                      family %in% c("binomial", "bernoulli") & link == "logit")
+  eta.ilink <- rep("", 2)
   if (eta$transform) {
     eta.ilink <- switch(family, c(paste0(ilink,"("), ")"),
                    gamma = c(paste0("shape*inv(",ilink,"("), "))"), 

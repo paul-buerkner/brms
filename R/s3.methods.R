@@ -1,6 +1,6 @@
 #' @export
 fixef.brmsfit <-  function(x, estimate = "mean", ...) {
-  if (!is(x$fit, "stanfit")) 
+  if (!is(x$fit, "stanfit") | !length(x$fit@sim)) 
     stop("Argument x does not contain posterior samples")
   pars <- dimnames(x$fit)$parameters
   iter <- attr(x$fit@sim$samples[[1]],"args")$iter
@@ -24,7 +24,7 @@ fixef.brmsfit <-  function(x, estimate = "mean", ...) {
 
 #' @export
 ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, center.zero = TRUE, ...) {
-  if (!is(x$fit, "stanfit")) 
+  if (!is(x$fit, "stanfit") | !length(x$fit@sim)) 
     stop("Argument x does not contain posterior samples")
   if (!estimate %in% c("mean","median"))
     stop("Argument estimate must be either 'mean' or 'median'")
@@ -81,7 +81,7 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, center.zero = TRUE,
 
 #' @export
 VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
-  if (!is(x$fit, "stanfit")) 
+  if (!is(x$fit, "stanfit") | !length(x$fit@sim)) 
     stop("Argument x does not contain posterior samples")
   pars <- dimnames(x$fit)$parameters
   iter <- attr(x$fit@sim$samples[[1]],"args")$iter
@@ -146,6 +146,8 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
 
 #' @export
 posterior.samples.brmsfit <- function(x, parameters = NA, ...) {
+  if (!is(x$fit, "stanfit") | !length(x$fit@sim)) 
+    stop("Argument x does not contain posterior samples")
   pars <- dimnames(x$fit)$parameters
   if (!(anyNA(parameters) | is.character(parameters))) 
     stop("Argument parameters must be NA or a character vector")
@@ -176,7 +178,7 @@ posterior.samples.brmsfit <- function(x, parameters = NA, ...) {
 #' @export
 summary.brmsfit <- function(object, ...) {
   ee <- extract.effects(object$formula, add.ignore = TRUE)
-  if (!is(object$fit, "stanfit")) 
+  if (!length(object$fit@sim)) 
     out <- brmssummary(formula = brm.update.formula(object$formula, partial = object$partial),
              family = object$family, link = object$link, data.name = object$data.name, 
              group = names(object$ranef), nobs = nobs(object), ngrps = brms::ngrps(object), 
@@ -237,7 +239,7 @@ print.brmssummary <- function(x, digits = 2, ...) {
   cat(paste("Formula:", gsub(" {1,}", " ", Reduce(paste, deparse(x$formula))), "\n"))
   cat(paste0("   Data: ", x$data.name, " (Number of observations: ",x$nobs,") \n"))
   if (x$sampler == "") {
-    cat(paste("\nArgument x does not contain posterior samples. Most likely, this is \n",
+    cat(paste("\nThe model does not contain posterior samples. Most likely, this is \n",
         "because the package rstan was not installed when the model was fitted. \n",
         "Please see https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started \n",
         "for instructions on how to install rstan."))
@@ -317,7 +319,9 @@ formula.brmsfit <- function(x, ...) x$formula
 predict.brmsfit <- function(object, ...) {
   if (!"Y_pred" %in% object$fit@model_pars) 
     stop(paste0("The model does not contain predicted values. \n",
-         "You should use argument predict = TRUE in function brm."))
+                "You should use argument predict = TRUE in function brm."))
+  if (!is(object$fit, "stanfit") | !length(object$fit@sim)) 
+    stop("Argument x does not contain posterior samples")
   else {
     ee <- extract.effects(object$formula, add.ignore = TRUE)
     pars <- dimnames(object$fit)$parameters
@@ -330,13 +334,19 @@ predict.brmsfit <- function(object, ...) {
 }
 
 #' @export
-par.names.brmsfit <- function(x, ...) dimnames(x$fit)$parameters
-
+par.names.brmsfit <- function(x, ...) {
+  if (!is(x$fit, "stanfit") | !length(x$fit@sim)) 
+    stop("Argument x does not contain posterior samples")
+  dimnames(x$fit)$parameters
+}
+  
 #' @export
 print.brmsmodel <- function(x, ...) cat(x)
 
 #' @export
 hypothesis.brmsfit <- function(x, hypothesis, class = "b", ...) {
+  if (!is(x$fit, "stanfit") | !length(x$fit@sim)) 
+    stop("Argument x does not contain posterior samples")
   if (!is.character(hypothesis)) 
     stop("Argument hypothesis must be a character vector")
   chains <- length(x$fit@sim$samples) 
@@ -416,7 +426,7 @@ print.brmshypothesis <- function(x, digits = 2, ...) {
 #' @import ggplot2
 #' @export
 plot.brmsfit <- function(x, parameters = NA, combine = FALSE, N = 5, ask = TRUE, ...) {
-  if (!is(x$fit, "stanfit")) 
+  if (!is(x$fit, "stanfit") | !length(x$fit@sim)) 
     stop("Argument x does not contain posterior samples")
   if (is.na(parameters)) 
     parameters <- c("^b_", "^sd_", "^cor_", "^sigma", "^rescor", "^nu$", 
