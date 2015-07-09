@@ -135,7 +135,7 @@ rename.pars <- function(x, ...) {
   chains <- length(x$fit@sim$samples) 
   n.pars <- length(x$fit@sim$fnames_oi)
   x$fit@sim$fnames_oi[1:(n.pars-1)] <- gsub("__", ":", x$fit@sim$fnames_oi[1:(n.pars-1)])
-  for (i in 1:chains) names(x$fit@sim$samples[[i]]) <- x$fit@sim$fnames_oi[1:(n.pars-1)]
+  for (i in 1:chains) names(x$fit@sim$samples[[i]]) <- x$fit@sim$fnames_oi
   pars <- dimnames(x$fit)$parameters
   change <- list()
   
