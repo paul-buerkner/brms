@@ -134,7 +134,7 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
     eta$transD, ma$transD, ord$transD, ranef$transD, 
     eta$transC1, ma$transC1, ord$transC1, ranef$transC, 
     loop.trans[1],
-      eta$transC2, ma$transC2, ord$transC2, eta$ilink, 
+      eta$transC2, ma$transC2, ord$transC2, eta$transC3, 
     loop.trans[2],
   "} \n",
   "model { \n",
@@ -220,7 +220,7 @@ stan.ranef <- function(rg, f, family = "gaussian", prior = list(), cov.ranef = "
 }
 
 # prediction part in Stan
-stan.eta <- function(family, link, f, p, group, autocor, max_obs) {
+stan.eta <- function(family, link, f, p, group, autocor = cor.arma(), max_obs = "max_obs") {
   is.lin <- family %in% c("gaussian", "student", "cauchy")
   is.ord <- family %in% c("cumulative", "cratio", "sratio", "acat") 
   is.skew <- family %in% c("gamma", "weibull", "exponential")
@@ -232,31 +232,32 @@ stan.eta <- function(family, link, f, p, group, autocor, max_obs) {
   eta$transD <- paste0("  vector[N] eta; \n", 
                        ifelse(length(p), paste0("  matrix[N,",max_obs[1],"-1] etap; \n"), ""),
                        ifelse(is.mg, "  vector[K_trait] etam[N_trait]; \n", ""))
+  eta.mg <- ifelse(is.mg, "etam[m,k]", "eta[n]")
   
   # transform eta before it is passed to the likelihood
   ilink <- c(identity = "", log = "exp", inverse = "inv", sqrt = "square", logit = "inv_logit", 
              probit = "Phi", probit_approx = "Phi_approx", cloglog = "inv_cloglog")[link]
-  eta$transform <- !(link == "identity" | is.ord | family == "categorical" | 
-                       family %in% c("binomial", "bernoulli") & link == "logit" | is.count & link == "log")
+  eta$transform <- !(link == "identity" | is.ord | family == "categorical" | is.count & link == "log" |
+                     family %in% c("binomial", "bernoulli") & link == "logit")
   if (eta$transform) {
-    if (is.skew) eta$ilink <- c(gamma = paste0("shape*inv(",ilink,"(eta[n]))"), 
-                                exponential = paste0(ilink,"(-eta[n])"), weibull = paste0("inv(",ilink,"(-eta[n]/shape))"))[family]
-    else eta$ilink <- paste0(ilink,"(eta[n])")
-    eta$ilink <- paste0("    eta[n] <- ",eta$ilink,"; \n")
+    eta.ilink <- switch(family, c(paste0(ilink,"("), ")"),
+                   gamma = c(paste0("shape*inv(",ilink,"("), "))"), 
+                   exponential = c(paste0(ilink,"(-("), "))"), 
+                   weibull = c(paste0("inv(",ilink,"(-("), ")/shape))"))
+    if (autocor$q > 0) {
+      eta$transC3 <- paste0("    ",eta.mg," <- ",eta.ilink[1], eta.mg, eta.ilink[2],"; \n")
+      eta.ilink <- rep("", 2)  
+    }
   }
-  else eta$ilink <- ""
   
   #define fixed, random and autocorrelation effects
   eta$transC1 <- paste0("  eta <- ", ifelse(length(f), "X*b", "rep_vector(0,N)"), 
                         if (autocor$p & is(autocor, "cor.arma")) " + Yar*ar", "; \n", if (length(p)) "  etap <- Xp * bp; \n")
   eta.re <- ifelse(length(group), paste0(" + Z_",group,"[n]*r_",group,"[",group,"[n]]", collapse = ""), "")
   eta.ma <- ifelse(autocor$q & is(autocor, "cor.arma"), " + Ema[n]*ma", "")
-  if (nchar(eta.re) | nchar(eta.ma) | is.mg) {
-    eta$transC2 <- paste0(" <- eta[n]", eta.ma, eta.re, "; \n")
-    if (is.mg) eta$transC2 <- paste0("    etam[m,k]", eta$transC2)
-    else eta$transC2 <- paste0("    eta[n]", eta$transC2)
+  if (nchar(eta.re) | nchar(eta.ma) | is.mg | nchar(eta.ilink[1])) {
+    eta$transC2 <- paste0("    ",eta.mg," <- ",eta.ilink[1],"eta[n]", eta.ma, eta.re, eta.ilink[2],"; \n")
   }
-  else eta$transC2 <- ""
   eta
 }
 

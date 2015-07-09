@@ -11,7 +11,7 @@ brm.model.matrix = function(formula, data = environment(formula), rm.int = FALSE
   if (!is(formula, "formula")) return(NULL) 
   X <- model.matrix(formula,data)
   cn.new <- brm.replace(colnames(X))
-  if (rm.int & "(Intercept)" %in% cn.new) {
+  if (rm.int & "Intercept" %in% cn.new) {
     X <- as.matrix(X[,-(1)])
     if (ncol(X)) colnames(X) <- cn.new[2:length(cn.new)]
   } 
