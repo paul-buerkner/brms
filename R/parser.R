@@ -90,7 +90,10 @@ extract.effects <- function(formula, ..., family = "none", add.ignore = FALSE) {
 extract.time <- function(formula) {
   if (is.null(formula)) return(NULL)
   formula <- gsub(" ","",Reduce(paste, deparse(formula))) 
-  x <- list(time = gsub("~|\\|[[:print:]]*", "", formula), group = "", groups = NULL)
+  time <- all.vars(as.formula(paste("~", gsub("~|\\|[[:print:]]*", "", formula))))
+  if (length(time) > 1) stop("Autocorrelation structures may only contain 1 time variable")
+  x <- list(time = ifelse(length(time), time, ""), group = "")
+
   group <- gsub("~[^\\|]*|\\|", "", formula)
   if (nchar(group)) {
     if (nchar(gsub(":", "", gsub("[^([:digit:]|[:punct:])][[:alnum:]_\\.]*", "", group))))
@@ -99,7 +102,7 @@ extract.time <- function(formula) {
     group <- formula(paste("~", group))
     x$group <- paste0(all.vars(group), collapse = "__")
   }
-  x$all <- formula(paste("~",paste(c(x$time, all.vars(group)), collapse = "+")))
+  x$all <- formula(paste("~",paste(c("1", time, all.vars(group)), collapse = "+")))
   x
 }
 
