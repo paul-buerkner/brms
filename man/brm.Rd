@@ -9,7 +9,7 @@ brm(formula, data = NULL, family = c("gaussian", "identity"),
   threshold = "flexible", cov.ranef = NULL, ranef = TRUE,
   predict = FALSE, fit = NA, n.chains = 2, n.iter = 2000,
   n.warmup = 500, n.thin = 1, n.cluster = 1, inits = "random",
-  silent = FALSE, seed = 12345, save.model = NULL, engine = "stan", ...)
+  silent = FALSE, seed = 12345, save.model = NULL, ...)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class): a symbolic description of the model to be fitted.
@@ -20,7 +20,7 @@ the variables in the model. If not found in data, the variables are taken from \
 typically the environment from which \code{brm} is called.}
 
 \item{family}{A vector of one or two character strings. The first string indicates the distribution of the dependent variable (the 'family'). Currently, the following families are supported:
-\code{"gaussian"}, \code{"student"}, \code{"cauchy"}, \code{"binomial"}, \code{"categorical"}, \code{"poisson"}, \code{"negbinomial"}, \code{"geometric"},
+\code{"gaussian"}, \code{"student"}, \code{"cauchy"}, \code{"multigaussian"}, \code{"binomial"}, \code{"categorical"}, \code{"poisson"}, \code{"negbinomial"}, \code{"geometric"},
 \code{"gamma"}, \code{"exponential"}, \code{"weibull"}, \code{"cumulative"}, \code{"cratio"}, \code{"sratio"}, and \code{"acat"}.
 The second string indicates the link function, which must be supported by the distribution of the dependent variable.
 If not specified, default link functions are used. Further information is provided under 'Details'.}
@@ -81,9 +81,6 @@ If inits is \code{"random"} (the default), Stan will generate initial values for
 saved in a file named after the string supplied in \code{save.model}, which may also contain the full path where to save the file.
 If only a name is given, the file is save in the current working directory.}
 
-\item{engine}{A character string, either \code{"stan"} (the default) or \code{"jags"}. Specifies which program should be used to fit the model.
-Note that \code{jags} is currently implemented for testing purposes only, does not allow full functionality and is not supported or documented.}
-
 \item{...}{Further arguments to be passed to Stan.}
 }
 \value{
@@ -107,8 +104,8 @@ Fit a generalized linear mixed model, which incorporates both fixed-effects para
 
   \code{response | addition ~ fixed + (random | group)}
 
-  Multiple grouping factors each with multiple random effects are possible. With the exception of \code{addition},
-  this is basically \code{lme4} syntax.
+  Multiple grouping factors each with multiple random effects are possible.
+  With the exception of \code{addition}, this is basically \code{lme4} syntax.
   The optional \code{addition} term may contain multiple terms of the form \code{fun(variable)} seperated by \code{|} each providing
   special information on the response variable. \code{fun} can be replaced with either \code{se}, \code{weights}, \code{trials},
   \code{cat}, or \code{cens} (their meanings are explained below). Using the \code{addition} term in \code{formula} is equivalent

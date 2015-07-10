@@ -434,7 +434,6 @@ plot.brmsfit <- function(x, parameters = NA, combine = FALSE, N = 5, ask = TRUE,
   pars <- sort(dimnames(x$fit)$parameters)
   pars <- gsub("__", ":", pars[apply(sapply(parameters, grepl, x = pars), 1, any)])
   pfit <- ggmcmc::ggs(x$fit)
-  pfit$Parameter <- gsub("__", ":", pfit$Parameter)
   att <- attributes(pfit)
   rel.att <- c("class", "nChains", "nIterations", "nBurnin", "nThin", "description")
   pfit <- pfit[which(pfit$Parameter %in% pars),]

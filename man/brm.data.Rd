@@ -5,8 +5,7 @@
 \title{Extract required data for \code{brms} models}
 \usage{
 brm.data(formula, data = NULL, family = c("gaussian", "identity"),
-  prior = list(), autocor = NULL, partial = NULL, cov.ranef = NULL,
-  engine = "stan", ...)
+  prior = list(), autocor = NULL, partial = NULL, cov.ranef = NULL, ...)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class): a symbolic description of the model to be fitted.
@@ -17,7 +16,7 @@ the variables in the model. If not found in data, the variables are taken from \
 typically the environment from which \code{brm} is called.}
 
 \item{family}{A vector of one or two character strings. The first string indicates the distribution of the dependent variable (the 'family'). Currently, the following families are supported:
-\code{"gaussian"}, \code{"student"}, \code{"cauchy"}, \code{"binomial"}, \code{"categorical"}, \code{"poisson"}, \code{"negbinomial"}, \code{"geometric"},
+\code{"gaussian"}, \code{"student"}, \code{"cauchy"}, \code{"multigaussian"}, \code{"binomial"}, \code{"categorical"}, \code{"poisson"}, \code{"negbinomial"}, \code{"geometric"},
 \code{"gamma"}, \code{"exponential"}, \code{"weibull"}, \code{"cumulative"}, \code{"cratio"}, \code{"sratio"}, and \code{"acat"}.
 The second string indicates the link function, which must be supported by the distribution of the dependent variable.
 If not specified, default link functions are used. Further information is provided under 'Details'.}
@@ -37,9 +36,6 @@ The names of the matrices should correspond to columns in \code{data} that are u
 All levels of the grouping factor should appear as rownames of the corresponding matrix.
 Currently, the covariance structure applies only to the first random effect of each grouping factor.
 If incorporated, random intercepts will always be treated as the first random effect.}
-
-\item{engine}{A character string, either \code{"stan"} (the default) or \code{"jags"}. Specifies which program should be used to fit the model.
-Note that \code{jags} is currently implemented for testing purposes only, does not allow full functionality and is not supported or documented.}
 
 \item{...}{Further arguments for testing purposes only}
 }

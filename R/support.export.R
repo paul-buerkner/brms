@@ -16,12 +16,10 @@
 #'               
 #' @export
 brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, partial = NULL,
-             threshold = "flexible", predict = FALSE, ranef = TRUE, engine = "stan", ...) {
+             threshold = "flexible", predict = FALSE, ranef = TRUE, ...) {
   dots <- list(...)
   family <- family[1]
   if (is.null(autocor)) autocor <- cor.arma()
-  if (is.element(engine,c("stan","jags"))) stan <- engine == "stan"
-  else stop("engine must be either stan or jags")
   if (!is(autocor,"cor.brms")) stop("cor must be of class cor.brms")
   ee <- extract.effects(formula = formula, family = family, partial = partial)
   data <- updateData(data, family = family, effects = ee)
@@ -34,7 +32,7 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
     stop(paste(family,"is not a valid family"))
   
   f <- colnames(brm.model.matrix(ee$fixed, data, rm.int = is.ord))
-  r <- lapply(lapply(ee$random, brm.model.matrix, data=data, rm.int = is.ord & !stan), colnames)
+  r <- lapply(lapply(ee$random, brm.model.matrix, data=data), colnames)
   p <- colnames(brm.model.matrix(partial, data, rm.int = TRUE))
   out <- NULL
   if (is.ord & threshold == "flexible") out <- c(out, "b_Intercept")
@@ -47,9 +45,7 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
   if (family %in% c("gamma","weibull","negbinomial")) out <- c(out,"shape")
   if (autocor$p > 0) out <- c(out,"ar")
   if (autocor$q > 0) out <- c(out,"ma")
-  if (length(ee$group) & engine == "jags") 
-    out <- c(out, paste0("V_",ee$group), paste0("VI_",ee$group))
-  else if (length(ee$group) & engine == "stan") {
+  else if (length(ee$group)) {
     out <- c(out, paste0("sd_",ee$group))
     out <- c(out, unlist(lapply(1:length(ee$group), function(i)
       if (length(r[[i]])>1) paste0("cor_",ee$group[[i]]))))
@@ -79,13 +75,11 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
 #'          
 #' @export
 brm.data <- function(formula, data = NULL, family = c("gaussian", "identity"), prior = list(),
-                     autocor = NULL, partial = NULL, cov.ranef = NULL, engine = "stan", ...) {
+                     autocor = NULL, partial = NULL, cov.ranef = NULL, ...) {
   dots <- list(...)  
   link <- brm.link(family)
   family <- family[1]
   if (is.null(autocor)) autocor <- cor.arma()
-  if (engine %in% c("stan", "jags")) stan <- engine == "stan"
-  else stop("engine must be either stan or jags")
   if (!is(autocor,"cor.brms")) stop("cor must be of class cor.brms")
   
   et <- extract.time(autocor$form)
@@ -174,7 +168,7 @@ brm.data <- function(formula, data = NULL, family = c("gaussian", "identity"), p
   } 
   
   if (length(ee$random)) {
-    Z <- lapply(ee$random, brm.model.matrix, data = data, rm.int = is.ord & !stan)
+    Z <- lapply(ee$random, brm.model.matrix, data = data)
     r <- lapply(Z, colnames)
     if (family != "categorical")
       to.zero <- unlist(lapply(unlist(lapply(r, intersect, y = colnames(X))), 
@@ -187,11 +181,8 @@ brm.data <- function(formula, data = NULL, family = c("gaussian", "identity"), p
     for (i in 1:length(ee$group)) {
       g <- ee$group[[i]]
       name <- paste0(c("", "N_", "K_", "Z_", "NC_"), g)
-      if (ncolZ[[i]] == 1 & stan) Z[[i]] <- as.vector(Z[[i]])
+      if (ncolZ[[i]] == 1) Z[[i]] <- as.vector(Z[[i]])
       for ( j in 1:length(name)) supl.data <- c(supl.data, setNames(list(eval(expr[j])), name[j]))
-      if (is.null(dots$Sigma[[g]])) mat <- diag(1,ncolZ[[i]])
-      else mat <- dots$Sigma[[g]]
-      if (ncolZ[[i]] > 1) supl.data <- c(supl.data, setNames(list(mat), paste0("Sigma_", g)))    
       if (g %in% names(cov.ranef)) {
         cov.ranef[[g]] <- as.matrix(cov.ranef[[g]])
         level.names <- rownames(cov.ranef[[g]])
@@ -216,8 +207,7 @@ brm.data <- function(formula, data = NULL, family = c("gaussian", "identity"), p
     supl.data <- c(supl.data, list(Kp = ncol(X), Xp = X))
     X <- data.frame()
   }
-  if (stan & ncol(X) > 0) supl.data <- c(supl.data, list(K = ncol(X), X = X))
-  else if (!stan & ncol(X) > 0) supl.data <- c(supl.data, list(X = X))
+  if (ncol(X) > 0) supl.data <- c(supl.data, list(K = ncol(X), X = X))
   
   if (autocor$p + autocor$q > 0) {
     time <- data[[et$time]]
