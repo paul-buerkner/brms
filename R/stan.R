@@ -287,10 +287,6 @@ stan.ma <- function(family, link, autocor, group, levels, N) {
 stan.predict <- function(predict, family, link, add, weights) {
   if (predict) {
     llh.pred <- stan.llh(family = family, link = link, add = add, weights = weights, predict = TRUE) 
-    is.lin <- family %in% c("gaussian", "student", "cauchy")
-    is.ord <- family %in% c("cumulative", "cratio", "sratio", "acat") 
-    is.skew <- family %in% c("gamma", "weibull", "exponential")
-    is.count <- family %in% c("poisson", "negbinomial", "geometric")
     if (family %in% c("gaussian", "student", "cauchy", "gamma", "weibull", "exponential"))
       out <- paste0("  real Y_pred[N]; \n  for (n in 1:N) { \n", llh.pred, "  } \n")
     else if (family %in% c("binomial", "bernoulli", "poisson", "negbinomial", "geometric",
@@ -305,7 +301,7 @@ stan.predict <- function(predict, family, link, add, weights) {
 
 # multigaussian effects in Stan
 stan.mg <- function(family, response) {
-  out <- list(genD = "", genC = "")
+  out <- list()
   if (family == "multigaussian") {
    out$genD <- paste0("  corr_matrix[K_trait] Rescor; \n",
     "  vector<lower=-1,upper=1>[NC_trait] rescor; \n")
@@ -477,8 +473,8 @@ stan.prior = function(par, prior = list(), add.type = NULL, ind = rep("", length
 # stan.llh(family = "gaussian")
 # stan.llh(family = "cumulative", link = "logit")
 # }
-stan.llh <- function(family, link = "identity", predict = FALSE, add = FALSE,
-                     weights = FALSE, cens = FALSE, engine = "stan") {
+stan.llh <- function(family, link, predict = FALSE, add = FALSE,
+                     weights = FALSE, cens = FALSE) {
   is.ord <- family %in% c("cumulative", "cratio", "sratio", "acat")
   is.count <- family %in% c("poisson","negbinomial", "geometric")
   is.skew <- family %in% c("gamma","exponential","weibull")

@@ -1,19 +1,3 @@
-#test_that("Test that stan.ranef contains the correct strings", {
-#  expect_match(stan.ranef(list(c("Intercept","PROD"), "site"), f = c("Intercept","Prod"))$genC, 
-#               "cor_site\\[1,2\\]", all = FALSE)
-#  expect_equal(stan.ranef(list(c("Intercept"), "site"), f = c("Intercept","Prod"))$genC, 
-#               "  sd_site_Intercept <- sd_site; \n", all = FALSE)
-#})
-
-test_that("Test that stan.model accepts supported links", {
-  expect_match(stan.model(rating ~ treat + period + carry, data = inhaler, family = "sratio", 
-                        link="probit_approx"), "Phi_approx")
-  expect_match(stan.model(rating ~ treat + period + carry, data = inhaler, family = "cumulative", 
-                        link="probit"), "Phi")
-  expect_match(stan.model(rating ~ treat + period + carry, data = inhaler, family = "poisson", 
-                        link="log"), "log")
-})
-
 test_that("Test that stan.prior accepts supported prior families", {
   expect_equal(stan.prior("b_x1", prior = list(b = "uniform(0,10)")), 
                "  b ~ uniform(0,10); \n")
@@ -24,6 +8,8 @@ test_that("Test that stan.prior accepts supported prior families", {
                "  ar ~ uniform(0,1); \n")
   expect_equal(stan.prior("ma", prior = list(ma = "normal(0,5)")),
                "  ma ~ normal(0,5); \n")
+  expect_equal(stan.prior("rescor", prior = list(rescor = "lkj_corr_cholesky(2)")),
+               "  rescor ~ lkj_corr_cholesky(2); \n")
 })
 
 test_that("Test that stan.prior returns the correct indices", {
@@ -34,35 +20,89 @@ test_that("Test that stan.prior returns the correct indices", {
   expect_equal(stan.prior("sd_Intercept", ind = "k", prior = list(sd_Intercept = "normal(0,1)")), 
                "  sd[k] ~ normal(0,1); \n")
   expect_equal(stan.prior(c("sd_x1","sd_x2"), ind = 1:2, prior = list(sd_x1 = "normal(0,1)")),
-               "  sd[1] ~ normal(0,1); \n  sd[2] ~ cauchy(0,5); \n")                                                       
+               "  sd[1] ~ normal(0,1); \n  sd[2] ~ cauchy(0,5); \n") 
+  expect_equal(stan.prior("sigma_y", prior = list(sigma_y = "cauchy(0,1)"), ind = 1),
+               "  sigma[1] ~ cauchy(0,1); \n")
 })
 
-test_that("Test that stan.model returns correct strings (or errors) for autocorrelation models", {
-  expect_match(stan.model(count~Trt_c, data=epilepsy, family = "poisson", link = "log",
-                          autocor = cor.arma(~visit|patient, p=1)),
+test_that("Test that stan.prior can remove default priors", {
+  expect_equal(stan.prior("sigma_y", prior = list(sigma = "")), "")
+  expect_equal(stan.prior("sd_y_Intercept", prior = list(sd = "")), "")
+  expect_equal(stan.prior("sd_y_Intercept", prior = list(sd_y = ""), add.type = "y"), "")
+  expect_equal(stan.prior("shape", prior = list(shape = "")), "")
+})
+
+test_that("Test that stan.eta returns correct strings for autocorrelation models", {
+  expect_match(stan.eta(family = "poisson", link = "log", f = c("Trt_c"), p = NULL, group = list(),
+                        autocor = cor.arma(~visit|patient, p=1))$transC1,
                "eta <- X\\*b \\+ Yar\\*ar")
-  expect_match(stan.model(rating ~ treat + period + carry + (1|subject), data = inhaler,
-                          autocor = cor.arma(~visit|patient, p=1, q=2)),
+  expect_match(stan.eta(family = "poisson", link = "log", f = c("Trt_c"), p = NULL, group = list(),
+                        autocor = cor.arma(~visit|patient, q=1))$transC2,
                "eta\\[n\\] <- eta\\[n\\] \\+ Ema\\[n\\]\\*ma")
-  expect_error(stan.model(count~Trt_c, data=epilepsy, family = "poisson", link = "log",
-                          autocor = cor.arma(~visit|patient, p=1, q=1)),
+})
+
+test_that("Test_that stan.ma returns correct strings (or errors) for moving average models", {
+  expect_equal(stan.ma(family = "gaussian", link = "log", group = list("g1", "g2"), 
+                       levels = c(120,60), N = 240, autocor = cor.arma()), list())
+  expect_match(stan.ma(family = "poisson", link = "log", group = list("g1", "g2"), 
+                 levels = c(240,60), N = 240, autocor = cor.arma(~visit|patient, q=1))$transC2,
+               "Ema[n+1,i] <- r_g1[n+1-i]", fixed = TRUE)
+  expect_match(stan.ma(family = "gaussian", link = "log", group = list("g1", "g2"), 
+                       levels = c(120,60), N = 240, autocor = cor.arma(~visit|patient, q=1))$transC2,
+               "Ema[n+1,i] <- e[n+1-i]", fixed = TRUE)
+  expect_match(stan.ma(family = "multigaussian", link = "log", group = "g1", 
+                       levels = 60, N = 240, autocor = cor.arma(~visit|patient, q=1))$transC2,
+               "e[n] <- log(Y[m,k]) - eta[n]", fixed = TRUE)
+  expect_error(stan.ma(family = "poisson", link = "log", group = list("g1", "g2"), 
+                       levels = c(120,60), N = 240, autocor = cor.arma(~visit|patient, p=1, q=1)),
                paste0("moving-average models for family poisson require a random effect with the same number \n",
                       "of levels as observations in the data"))
-  
+})
+
+test_that("Test that stan.predict returns correct strings", {
+  expect_match(stan.predict(TRUE, family = "multigaussian", link = "identity", 
+                            add = FALSE, weights = FALSE), fixed = TRUE, "Y_pred[N_trait]")
+  expect_equal(stan.predict(FALSE, family = "multigaussian", link = "identity", 
+                            add = FALSE, weights = FALSE), "")
+})
+
+test_that("Test that stan.model accepts supported links", {
+  expect_match(stan.model(rating ~ treat + period + carry, data = inhaler, family = "sratio", 
+                          link="probit_approx"), "Phi_approx")
+  expect_match(stan.model(rating ~ treat + period + carry, data = inhaler, family = "cumulative", 
+                          link="probit"), "Phi")
+  expect_match(stan.model(rating ~ treat + period + carry, data = inhaler, family = "poisson", 
+                          link="log"), "log")
 })
 
 test_that("Test that stan.model returns correct strings for customized covariances", {
   expect_match(stan.model(rating ~ treat + period + carry + (1|subject), data = inhaler,
-                          cov.ranef = "subject"),
-             "r_subject <- b\\[1\\] \\+ sd_subject \\* \\(CF_cov_subject\\*pre_subject\\)")
+                          cov.ranef = "subject"), fixed = TRUE,
+             "r_subject <- b[1] + sd_subject * (CF_cov_subject*pre_subject)")
 })
 
 test_that("Test that stan.model handles addition arguments correctly", {
   expect_match(stan.model(time | cens(censored) ~ age + sex + disease, data = kidney,
-                          family = "weibull", link = "log"), "vector\\[N\\] cens;")
+                          family = "weibull", link = "log"), "vector[N] cens;", fixed = TRUE)
 })
 
-test_that("Test that stan.ord return the correct string", {
+test_that("Test that stan.ord returns correct strings", {
   expect_match(stan.ord(family = "sratio", link = "logit")$par, "")
   
+})
+
+test_that("Test that stan.llh uses simplifications when possible", {
+  expect_equal(stan.llh(family = "bernoulli", link = "logit"), "  Y ~ bernoulli_logit(eta); \n")
+  expect_equal(stan.llh(family = "poisson", link = "log"), "  Y ~ poisson_log(eta); \n")
+  expect_match(stan.llh(family = "cumulative", link = "logit"), fixed = TRUE,
+               "  Y[n] ~ ordered_logistic(eta[n],b_Intercept); \n")
+})
+
+test_that("Test that stan.llh returns correct llhs under weights, censoring, etc.", {
+  expect_equal(stan.llh(family = "cauchy", link = "inverse", weights = TRUE),
+               "  lp_pre[n] <- cauchy_log(Y[n],eta[n],sigma); \n")
+  expect_match(stan.llh(family = "weibull", link = "inverse", cens = TRUE), fixed = TRUE,
+               "increment_log_prob(weibull_ccdf_log(Y[n],shape,eta[n])); \n")
+  expect_match(stan.llh(family = "weibull", link = "inverse", cens = TRUE, weights = TRUE), fixed = TRUE,
+               "increment_log_prob(weights[n] * weibull_ccdf_log(Y[n],shape,eta[n])); \n")
 })
