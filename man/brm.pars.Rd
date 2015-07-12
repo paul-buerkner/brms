@@ -5,8 +5,7 @@
 \title{Parameters of interest for \code{brms} models}
 \usage{
 brm.pars(formula, data = NULL, family = "gaussian", autocor = NULL,
-  partial = NULL, threshold = "flexible", predict = FALSE, ranef = TRUE,
-  ...)
+  partial = NULL, threshold = "flexible", predict = FALSE, ranef = TRUE)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class): a symbolic description of the model to be fitted.
@@ -35,8 +34,6 @@ Defaults to NULL, corresponding to no correlations.}
 \item{predict}{A flag to indicate if posterior predictives of the dependent variable should be generated.}
 
 \item{ranef}{logical; indicating if random effects estimates should be returned}
-
-\item{...}{Further arguments to be passed to Stan.}
 }
 \value{
 A vector of character strings specifying parameters of interest for models produced by the \code{brms} package.

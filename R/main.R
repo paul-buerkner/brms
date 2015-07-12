@@ -266,7 +266,7 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
     x$ranef <- setNames(lapply(lapply(ee$random, brm.model.matrix, data = data), colnames), 
                         gsub("__", ":", ee$group))
     x$data <- brm.data(formula, data = data, family = family, prior = prior, cov.ranef = cov.ranef,
-                       autocor = autocor, partial = partial, ...) 
+                       autocor = autocor, partial = partial) 
     x$pars <- brm.pars(formula, data = data, family = family[1], autocor = autocor, partial = partial, 
                 threshold = threshold, ranef = ranef, predict = predict)
   }  

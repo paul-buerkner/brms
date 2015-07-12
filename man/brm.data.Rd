@@ -5,7 +5,7 @@
 \title{Extract required data for \code{brms} models}
 \usage{
 brm.data(formula, data = NULL, family = c("gaussian", "identity"),
-  prior = list(), autocor = NULL, partial = NULL, cov.ranef = NULL, ...)
+  prior = list(), autocor = NULL, partial = NULL, cov.ranef = NULL)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class): a symbolic description of the model to be fitted.
@@ -36,8 +36,6 @@ The names of the matrices should correspond to columns in \code{data} that are u
 All levels of the grouping factor should appear as rownames of the corresponding matrix.
 Currently, the covariance structure applies only to the first random effect of each grouping factor.
 If incorporated, random intercepts will always be treated as the first random effect.}
-
-\item{...}{Further arguments for testing purposes only}
 }
 \value{
 A named list of objects containing the required data to fit a \code{brms} model

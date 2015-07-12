@@ -16,8 +16,7 @@
 #'               
 #' @export
 brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, partial = NULL,
-                    threshold = "flexible", predict = FALSE, ranef = TRUE, ...) {
-  dots <- list(...)
+                    threshold = "flexible", predict = FALSE, ranef = TRUE) {
   family <- family[1]
   if (is.null(autocor)) autocor <- cor.arma()
   if (!is(autocor,"cor.brms")) stop("cor must be of class cor.brms")
@@ -58,7 +57,6 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
 #' Extract required data for \code{brms} models
 #'
 #' @inheritParams brm
-#' @param ... Further arguments for testing purposes only
 #' 
 #' @return A named list of objects containing the required data to fit a \code{brms} model 
 #' 
@@ -75,14 +73,13 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
 #'          
 #' @export
 brm.data <- function(formula, data = NULL, family = c("gaussian", "identity"), prior = list(),
-                     autocor = NULL, partial = NULL, cov.ranef = NULL, ...) {
-  dots <- list(...)  
+                     autocor = NULL, partial = NULL, cov.ranef = NULL) {
   link <- brm.link(family)
   family <- family[1]
   if (is.null(autocor)) autocor <- cor.arma()
   if (!is(autocor,"cor.brms")) stop("cor must be of class cor.brms")
   
-  et <- extract.time(autocor$form)
+  et <- extract.time(autocor$formula)
   ee <- extract.effects(formula = formula, family = family, partial, et$all)
   data <- updateData(data, family = family, effects = ee, et$group)
   group.names <- list()
