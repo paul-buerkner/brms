@@ -16,7 +16,7 @@
 #'               
 #' @export
 brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, partial = NULL,
-             threshold = "flexible", predict = FALSE, ranef = TRUE, ...) {
+                    threshold = "flexible", predict = FALSE, ranef = TRUE, ...) {
   dots <- list(...)
   family <- family[1]
   if (is.null(autocor)) autocor <- cor.arma()
@@ -32,20 +32,20 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
     stop(paste(family,"is not a valid family"))
   
   f <- colnames(brm.model.matrix(ee$fixed, data, rm.int = is.ord))
-  r <- lapply(lapply(ee$random, brm.model.matrix, data=data), colnames)
+  r <- lapply(lapply(ee$random, brm.model.matrix, data = data), colnames)
   p <- colnames(brm.model.matrix(partial, data, rm.int = TRUE))
   out <- NULL
   if (is.ord & threshold == "flexible") out <- c(out, "b_Intercept")
   if (is.ord & threshold == "equidistant") out <- c(out, "b_Intercept1", "delta")
   if (length(f) & family != "categorical") out <- c(out, "b")
   if (is.ord & length(p) | family == "categorical") out <- c(out, "bp")
-  if (is.lin & !is(ee$se,"formula")) out <- c(out,"sigma")
-  if (family == "multigaussian") out <- c(out,"sigma", "rescor")
+  if (is.lin & !is(ee$se,"formula")) out <- c(out, "sigma")
+  if (family == "multigaussian") out <- c(out, "sigma", "rescor")
   if (family == "student") out <- c(out,"nu")
   if (family %in% c("gamma","weibull","negbinomial")) out <- c(out,"shape")
   if (autocor$p > 0) out <- c(out,"ar")
   if (autocor$q > 0) out <- c(out,"ma")
-  else if (length(ee$group)) {
+  if (length(ee$group)) {
     out <- c(out, paste0("sd_",ee$group))
     out <- c(out, unlist(lapply(1:length(ee$group), function(i)
       if (length(r[[i]])>1) paste0("cor_",ee$group[[i]]))))
