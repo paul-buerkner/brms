@@ -87,9 +87,8 @@ brm.data <- function(formula, data = NULL, family = c("gaussian", "identity"), p
     group.names[[g]] <- sort(as.character(unique(data[[g]])))
     data[[g]] <- as.numeric(as.factor(data[[g]]))
   }  
-  if (is(autocor, "cor.brms")) {
-    if (family == "multigaussian" & sum(autocor$p, autocor$q) > 0 & 
-        !any(sapply(c("__trait","trait__"), grepl, x = et$group)))
+  if (sum(autocor$p, autocor$q) > 0) {
+    if (family == "multigaussian" & !any(sapply(c("__trait","trait__"), grepl, x = et$group)))
       stop("autocorrelation structure for family 'multigaussian' must contain 'trait' as a grouping variable")
     to.order <- rmNULL(list(data[["trait"]], data[[et$group]], data[[et$time]]))
     if (length(to.order)) 
@@ -102,15 +101,15 @@ brm.data <- function(formula, data = NULL, family = c("gaussian", "identity"), p
   is.count <- family %in% c("poisson", "negbinomial", "geometric")
   if (!(is.lin | is.ord | is.skew | is.count | family %in% 
       c("binomial", "bernoulli", "categorical", "multigaussian")))
-    stop(paste(family,"is not a valid family"))
+    stop(paste(family, "is not a valid family"))
   
+  #response variable
   supl.data <- list(N = nrow(data), Y = model.response(data))
   if (family == "multigaussian") {
     supl.data$Y <- matrix(supl.data$Y, ncol = length(ee$response))
     supl.data <- c(supl.data, list(N_trait = nrow(supl.data$Y), K_trait = ncol(supl.data$Y)),
                    NC_trait = ncol(supl.data$Y) * (ncol(supl.data$Y)-1)/2) 
   }
-  X <- brm.model.matrix(ee$fixed, data, rm.int = is.ord)
   if (is.ord | family == "categorical") {
     if (is.factor(supl.data$Y)) supl.data$Y <- as.numeric(supl.data$Y)
     else supl.data$Y <- supl.data$Y - min(supl.data$Y) + 1
@@ -118,52 +117,8 @@ brm.data <- function(formula, data = NULL, family = c("gaussian", "identity"), p
   else if (is.factor(supl.data$Y)) 
     stop(paste("family", family, "expects numeric response variable")) 
   
-  if (is.formula(ee$se))
-    supl.data <- c(supl.data,list(sigma = brm.model.matrix(ee$se, data, rm.int = TRUE)[,1])) 
-  if (is.formula(ee$weights)) {
-    supl.data <- c(supl.data, list(weights = brm.model.matrix(ee$weights, data, rm.int = TRUE)[,1]))
-    if (family == "multigaussian") supl.data$weights <- supl.data$weights[1:supl.data$N_trait]
-  }
-  if (is.formula(ee$cens)) {
-    cens <- brm.model.matrix(ee$cens, data, rm.int = TRUE)[,1]
-    cens <- sapply(cens, function(x) {
-      if (grepl(paste("^",x), "right") | is.logical(x) & x) x <- 1
-      else if (grepl(paste("^",x), "none") | is.logical(x) & !x) x <- 0
-      else if (grepl(paste("^",x), "left")) x <- -1
-      else x
-    })
-    if (!all(unique(cens) %in% c(-1:1)))
-      stop (paste0("Invalid censoring data. Accepted values are 'left', 'none', and 'right' \n",
-                   "(abbreviations are allowed) or -1, 0, and 1. TRUE and FALSE are also accepted \n",
-                   "and refer to 'right' and 'none' respectively."))
-    supl.data <- c(supl.data, list(cens = cens))
-  }
-  if (is.ord | family %in% c("binomial", "categorical")) {
-    if (family == "binomial") add <- ee$trials
-    else add <- ee$cat
-    if (!length(add)) supl.data$max_obs <- max(supl.data$Y)
-    else if (is.numeric(add)) supl.data$max_obs <- add
-    else if (is(add, "formula")) 
-      supl.data$max_obs <- brm.model.matrix(add, data, rm.int = TRUE)[,1]
-    else stop("Response part of formula is invalid")
-    
-    if (is(partial,"formula")) {
-      if (family %in% c("sratio","cratio","acat")) {
-        Xp <- brm.model.matrix(partial, data, rm.int = TRUE)
-        supl.data <- c(supl.data, list(Kp = ncol(Xp), Xp = Xp))
-        fp <- intersect(colnames(X), colnames(Xp))
-        if (length(fp))
-          stop(paste("Variables cannot be modeled as fixed and partial effects at the same time.",
-                     "Error occured for variables:", paste(fp, collapse = ", ")))
-      } 
-      else stop("partial is only meaningful for families 'sratio', 'cratio', and 'acat'")  
-    } 
-    two.cat <- (family == "categorical" | is.ord) & max(supl.data$max_obs) == 2
-    if (two.cat) supl.data$Y <- supl.data$Y - 1
-    family <- ifelse(family == "binomial" & max(supl.data$Y) == 1 | two.cat, 
-                     "bernoulli", family)
-  } 
-  
+  #fixed and random design matrices
+  X <- brm.model.matrix(ee$fixed, data, rm.int = is.ord)
   if (length(ee$random)) {
     Z <- lapply(ee$random, brm.model.matrix, data = data)
     r <- lapply(Z, colnames)
@@ -200,12 +155,57 @@ brm.data <- function(formula, data = NULL, family = c("gaussian", "identity"), p
       }
     }
   }
-  if (family == "categorical") {
-    supl.data <- c(supl.data, list(Kp = ncol(X), Xp = X))
-    X <- data.frame()
-  }
-  if (ncol(X) > 0) supl.data <- c(supl.data, list(K = ncol(X), X = X))
+  if (family == "categorical") supl.data <- c(supl.data, list(Kp = ncol(X), Xp = X))
+  else supl.data <- c(supl.data, list(K = ncol(X), X = X))   
   
+  #addition and partial variables
+  if (is.formula(ee$se))
+    supl.data <- c(supl.data,list(sigma = brm.model.matrix(ee$se, data, rm.int = TRUE)[,1])) 
+  if (is.formula(ee$weights)) {
+    supl.data <- c(supl.data, list(weights = brm.model.matrix(ee$weights, data, rm.int = TRUE)[,1]))
+    if (family == "multigaussian") supl.data$weights <- supl.data$weights[1:supl.data$N_trait]
+  }
+  if (is.formula(ee$cens)) {
+    cens <- brm.model.matrix(ee$cens, data, rm.int = TRUE)[,1]
+    cens <- sapply(cens, function(x) {
+      if (grepl(paste("^",x), "right") | is.logical(x) & x) x <- 1
+      else if (grepl(paste("^",x), "none") | is.logical(x) & !x) x <- 0
+      else if (grepl(paste("^",x), "left")) x <- -1
+      else x
+    })
+    if (!all(unique(cens) %in% c(-1:1)))
+      stop (paste0("Invalid censoring data. Accepted values are 'left', 'none', and 'right' \n",
+                   "(abbreviations are allowed) or -1, 0, and 1. TRUE and FALSE are also accepted \n",
+                   "and refer to 'right' and 'none' respectively."))
+    supl.data <- c(supl.data, list(cens = cens))
+  }
+  if (is.ord | family %in% c("binomial", "categorical")) {
+    if (family == "binomial") add <- ee$trials
+    else add <- ee$cat
+    if (!length(add)) supl.data$max_obs <- max(supl.data$Y)
+    else if (is.numeric(add)) supl.data$max_obs <- add
+    else if (is.formula(add)) 
+      supl.data$max_obs <- brm.model.matrix(add, data, rm.int = TRUE)[,1]
+    else stop("Response part of formula is invalid")
+    
+    if (is.formula(partial)) {
+      if (family %in% c("sratio","cratio","acat")) {
+        Xp <- brm.model.matrix(partial, data, rm.int = TRUE)
+        supl.data <- c(supl.data, list(Kp = ncol(Xp), Xp = Xp))
+        fp <- intersect(colnames(X), colnames(Xp))
+        if (length(fp))
+          stop(paste("Variables cannot be modeled as fixed and partial effects at the same time.",
+                     "Error occured for variables:", paste(fp, collapse = ", ")))
+      } 
+      else stop("partial is only meaningful for families 'sratio', 'cratio', and 'acat'")  
+    } 
+    two.cat <- (family == "categorical" | is.ord) & max(supl.data$max_obs) == 2
+    if (two.cat) supl.data$Y <- supl.data$Y - 1
+    family <- ifelse(family == "binomial" & max(supl.data$Y) == 1 | two.cat, 
+                     "bernoulli", family)
+  } 
+  
+  #autocorrelation variables
   if (autocor$p + autocor$q > 0) {
     time <- data[[et$time]]
     if (is.null(time)) time <- 1:nrow(data)
