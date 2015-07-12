@@ -3,7 +3,7 @@
 \name{VarCorr}
 \alias{VarCorr}
 \alias{VarCorr.brmsfit}
-\title{Extract random effects covariance and correlation components}
+\title{Extract variance and correlation components}
 \usage{
 ## S3 method for class 'brmsfit'
 VarCorr(x, estimate = "mean", as.list = TRUE, ...)
@@ -25,7 +25,8 @@ A list of lists (one per grouping factor), each containing 3 elements:
 }
 \description{
 This function calculates the estimated standard deviations, correlations and covariances of the
-random-effects terms in a mixed-effects model, of class \code{brmsfit}.
+random-effects terms in a mixed-effects model of class \code{brmsfit}. For linear models, the residual
+standard deviations, correlations and covariances are also returned.
 }
 \examples{
 \dontrun{

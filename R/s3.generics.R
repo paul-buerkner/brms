@@ -84,10 +84,10 @@ fixef <- function(x, estimate = "mean", ...)
 ranef <- function(x, estimate = "mean", var = FALSE, center.zero = TRUE, ...) 
   UseMethod("ranef")
 
-#' Extract random effects covariance and correlation components
+#' Extract variance and correlation components
 #' 
 #' This function calculates the estimated standard deviations, correlations and covariances of the
-#' random-effects terms in a mixed-effects model, of class \code{brmsfit}. For linear models, the residual
+#' random-effects terms in a mixed-effects model of class \code{brmsfit}. For linear models, the residual
 #' standard deviations, correlations and covariances are also returned. 
 #' 
 #' @aliases VarCorr.brmsfit
