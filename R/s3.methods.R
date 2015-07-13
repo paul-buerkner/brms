@@ -54,7 +54,8 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, center.zero = TRUE,
       for (i in 1:r_dims[1]) {
         k <- k + 1
         rs.array[i,j,] <- rs[k,]
-      }}
+      }
+    }
     if (center.zero) {
       center <- t(sapply(1:dim(rs.array)[2], function(i)
         unlist(lapply(1:n.samples, function(k) mean(rs.array[,i,k])))))
@@ -67,9 +68,10 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, center.zero = TRUE,
     if(var) {
       Var <- array(dim = c(rep(n.col, 2), r_dims[1]), 
                    dimnames = list(r.names, r.names, 1:r_dims[1]))
-      for (i in 1:r_dims[1])
-        if (is.na(r_dims[2])) Var[,,i] <- var(rs.array[i,]) 
-      else Var[,,i] <- cov(t(rs.array[i,,])) 
+      for (i in 1:r_dims[1]) {
+        if (is.na(r_dims[2])) Var[,,i] <- var(rs.array[i,1,]) 
+        else Var[,,i] <- cov(t(rs.array[i,,])) 
+      }
       attr(out, "var") <- Var
     }
     out
