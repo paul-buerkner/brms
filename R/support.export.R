@@ -116,7 +116,7 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
   else if (family == "bernoulli") {
     supl.data$Y <- as.numeric(as.factor(supl.data$Y)) - 1
     if (any(!supl.data$Y %in% c(0,1)))
-      stop("family bernoulli expects response variable containing two different values only")
+      stop("family bernoulli expects response variable to contain only two different values")
   }
   else if (family == "categorical") 
     supl.data$Y <- as.numeric(as.factor(supl.data$Y))
