@@ -16,7 +16,7 @@ the variables in the model. If not found in data, the variables are taken from \
 typically the environment from which \code{brm} is called.}
 
 \item{family}{A vector of one or two character strings. The first string indicates the distribution of the dependent variable (the 'family'). Currently, the following families are supported:
-\code{"gaussian"}, \code{"student"}, \code{"cauchy"}, \code{"multigaussian"}, \code{"binomial"}, \code{"categorical"}, \code{"poisson"}, \code{"negbinomial"}, \code{"geometric"},
+\code{"gaussian"}, \code{"student"}, \code{"cauchy"}, \code{"multigaussian"}, \code{"binomial"}, \code{"bernoulli"}, \code{"categorical"}, \code{"poisson"}, \code{"negbinomial"}, \code{"geometric"},
 \code{"gamma"}, \code{"exponential"}, \code{"weibull"}, \code{"cumulative"}, \code{"cratio"}, \code{"sratio"}, and \code{"acat"}.
 The second string indicates the link function, which must be supported by the distribution of the dependent variable.
 If not specified, default link functions are used. Further information is provided under 'Details'.}

@@ -20,7 +20,7 @@ the variables in the model. If not found in data, the variables are taken from \
 typically the environment from which \code{brm} is called.}
 
 \item{family}{A vector of one or two character strings. The first string indicates the distribution of the dependent variable (the 'family'). Currently, the following families are supported:
-\code{"gaussian"}, \code{"student"}, \code{"cauchy"}, \code{"multigaussian"}, \code{"binomial"}, \code{"categorical"}, \code{"poisson"}, \code{"negbinomial"}, \code{"geometric"},
+\code{"gaussian"}, \code{"student"}, \code{"cauchy"}, \code{"multigaussian"}, \code{"binomial"}, \code{"bernoulli"}, \code{"categorical"}, \code{"poisson"}, \code{"negbinomial"}, \code{"geometric"},
 \code{"gamma"}, \code{"exponential"}, \code{"weibull"}, \code{"cumulative"}, \code{"cratio"}, \code{"sratio"}, and \code{"acat"}.
 The second string indicates the link function, which must be supported by the distribution of the dependent variable.
 If not specified, default link functions are used. Further information is provided under 'Details'.}
@@ -142,21 +142,33 @@ Fit a generalized linear mixed model, which incorporates both fixed-effects para
   \code{formula = yi | se(sei) | cens(censored) ~ 1} for a censored meta-analytic model, equivalent to
   \code{formula = yi ~ 1} and \code{addition = list(se = ~sei, cens = ~censored)} when using argument \code{addition}. \cr
 
+  Family \code{multigaussian} allows to perform multivariate (normal) regression using \code{cbind} notation. Suppose that
+  \code{y1} and \code{y2} are response variables and \code{x} is a predictor, then \code{cbind(y1,y2) ~ x} speficies a multivariate model, where
+  \code{x} has the same effect on \code{y1} and \code{y2}.
+  To indicate different effects on each response variable, the word \code{trait} (which is reserved in \code{multigaussian} models) can be used
+  as an additional categorical predictor. For instance, \code{cbind(y1,y2) ~ -1 + x:trait} leads to seperate effects
+  of \code{x} on \code{y1} and \code{y2}. In this case, \code{trait} has two levels, namely \code{"y1"} and \code{"y2"}.
+  By default, \code{trait} is dummy-coded.
+  It may also be used within random effects terms, both as grouping factor or as random effect within a grouping factor.
+  Note that variable \code{trait} is generated internally and may not be specified in the data passed to \code{brm}. \cr
+
+
   \bold{Families and link functions}
 
   Family \code{gaussian} with \code{identity} link leads to linear regression. Families \code{student}, and \code{cauchy}
-  with \code{identity} link leads to robust linear regression that is less influenced by outliers.
+  with \code{identity} link leads to robust linear regression that is less influenced by outliers. Family \code{multigaussian} with link
+  \code{identity} may be used for multivariate normal regression as explained above.
   Families \code{poisson}, \code{negbinomial}, and \code{geometric} with \code{log} link lead to regression models for count data.
-  Family \code{binomial} with \code{logit} link leads to logistic regression and family \code{categorical} to
+  Families \code{binomial} and \code{bernoulli} with \code{logit} link leads to logistic regression and family \code{categorical} to
   multi-logistic regression when there are more than two possible outcomes.
   Families \code{cumulative}, \code{cratio} ('contiuation ratio'), \code{sratio} ('stopping ratio'),
   and \code{acat} ('adjacent category') leads to ordinal regression. Families \code{gamma}, \code{weibull}, and \code{exponential}
   can be used (among others) for survival regression when combined with the \code{log} link.
 
   In the following, we list all possible links for each family.
-  The families \code{gaussian}, \code{student}, and \code{cauchy} accept the links (as names) \code{identity}, \code{log}, and \code{inverse};
+  The families \code{gaussian}, \code{student}, \code{cauchy}, and \code{multigaussian} accept the links (as names) \code{identity}, \code{log}, and \code{inverse};
   families \code{poisson}, \code{negbinomial}, and \code{geometric} the links \code{log}, \code{identity}, and \code{sqrt};
-  families \code{binomial}, \code{cumulative}, \code{cratio}, \code{sratio}, and \code{acat} the links \code{logit}, \code{probit}, \code{probit_approx}, and \code{cloglog};
+  families \code{binomial}, \code{bernoulli}, \code{cumulative}, \code{cratio}, \code{sratio}, and \code{acat} the links \code{logit}, \code{probit}, \code{probit_approx}, and \code{cloglog};
   family  \code{categorical} the link \code{logit}; families \code{gamma}, \code{weibull}, and \code{exponential} the links \code{log}, \code{identity}, and \code{inverse}.
   The first link mentioned for each family is the default. \cr
 
