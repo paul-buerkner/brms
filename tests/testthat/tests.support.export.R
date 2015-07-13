@@ -8,7 +8,15 @@ test_that("Test that brm.pars returns correct parameter names", {
   expect_equal(brm.pars(rating ~ treat + period + carry + (1+treat|subject), data = inhaler, autocor = cor.ma()),
                c("b", "sigma", "ma", "sd_subject", "cor_subject", "r_subject"))
   expect_equal(brm.pars(rating ~ treat + period + carry + (1+treat|subject), data = inhaler, 
+<<<<<<< HEAD
                autocor = cor.ma(), ranef = FALSE), c("b", "sigma", "ma", "sd_subject", "cor_subject"))
+=======
+<<<<<<< HEAD
+               autocor = cor.ma(), ranef = FALSE), c("b", "sigma", "ma", "sd_subject", "cor_subject"))
+=======
+                 autocor = cor.ma(), ranef = FALSE), c("b", "sigma", "ma", "sd_subject", "cor_subject"))
+>>>>>>> cf2d1904de21dc0af9d1f738a59fff5132d76a99
+>>>>>>> 146b37c96e6e68c6bfaeea341196b83c6e8a6e21
 })
 
 test_that("Test that brm.data returns correct data names for fixed and random effects", {
@@ -62,7 +70,15 @@ test_that("Test that brm.data rejects incorrect response variables depending on 
   expect_error(brm.data(y ~ 1, data = data.frame(y = -5:5), family = "geometric"),
                "family geometric expects response variable of non-negative integers")
   expect_error(brm.data(y ~ 1, data = data.frame(y = -1:1), family = "bernoulli"),
+<<<<<<< HEAD
                "family bernoulli expects response variable to contain only two different values")
+=======
+<<<<<<< HEAD
+               "family bernoulli expects response variable to contain only two different values")
+=======
+               "family bernoulli expects response variable containing two different values only")
+>>>>>>> cf2d1904de21dc0af9d1f738a59fff5132d76a99
+>>>>>>> 146b37c96e6e68c6bfaeea341196b83c6e8a6e21
   expect_error(brm.data(y ~ 1, data = data.frame(y = factor(-1:1)), family = "cratio"),
                "family cratio requires factored response variables to be ordered")
   expect_error(brm.data(y ~ 1, data = data.frame(y = rep(0.5:7.5), 2), family = "sratio"),
