@@ -45,11 +45,11 @@ Extract required data for \code{brms} models
 }
 \examples{
 data1 <- brm.data(rating ~ treat + period + carry + (1|subject),
-         data = inhaler, family = "cumulative")
+                  data = inhaler, family = "cumulative")
 names(data1)
 
 data2 <- brm.data(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient) + (1|visit),
-         data = epilepsy, family = c("poisson", "log"))
+                  data = epilepsy, family = "poisson")
 names(data2)
 }
 \author{
