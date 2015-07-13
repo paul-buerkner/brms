@@ -181,11 +181,14 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
   else supl.data <- c(supl.data, list(K = ncol(X), X = X))   
   
   #addition and partial variables
-  if (is.formula(ee$se))
-    supl.data <- c(supl.data,list(sigma = brm.model.matrix(ee$se, data, rm.int = TRUE)[,1])) 
+  if (is.formula(ee$se)) {
+    supl.data <- c(supl.data, list(sigma = unname(brm.model.matrix(ee$se, data, rm.int = TRUE)[,1])))
+    if (min(supl.data$sigma) < 0) stop("standard errors must be non-negative")
+  }
   if (is.formula(ee$weights)) {
     supl.data <- c(supl.data, list(weights = unname(brm.model.matrix(ee$weights, data, rm.int = TRUE)[,1])))
     if (family == "multigaussian") supl.data$weights <- supl.data$weights[1:supl.data$N_trait]
+    if (min(supl.data$weights) < 0) stop("weights must be non-negative")
   }
   if (is.formula(ee$cens)) {
     cens <- get(all.vars(ee$cens)[1], data)
@@ -208,12 +211,13 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
     if (!length(add)) supl.data$max_obs <- max(supl.data$Y)
     else if (is.numeric(add)) supl.data$max_obs <- add
     else if (is.formula(add)) 
-      supl.data$max_obs <- brm.model.matrix(add, data, rm.int = TRUE)[,1]
-    else stop("Response part of formula is invalid")
+      supl.data$max_obs <- unname(brm.model.matrix(add, data, rm.int = TRUE)[,1])
+    else stop("Response part of formula is invalid.")
+    if (any(supl.data$Y > supl.data$max_obs))
+      stop("The number of trials / categories is smaller the response variable would suggest.")
     if ((is.ord | family == "categorical") & max(supl.data$max_obs) == 2 |
         family == "binomial" & max(supl.data$max_obs) == 1) 
-      message(paste0("Only 2 levels detected for family '", family, "' so that ", 
-              "using family 'bernoulli' might be more efficient is this case."))
+      message("Only 2 levels detected so that family 'bernoulli' might be a more efficient choice.")
   } 
   
   #get data for partial effects
