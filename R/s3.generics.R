@@ -32,7 +32,7 @@ brmssummary <- function(formula = NULL, family = "", link = "", data.name = "", 
 #' 
 #' @param x An object of class \code{brmsfit}
 #' @param estimate A character vector specifying which coefficients (e.g., "mean", "median", "sd", or "quantile") 
-#' should be calculated for the random effects.
+#' should be calculated for the fixed effects.
 #' @param ... Further arguments to be passed to the functions specified in \code{estimate}
 #' 
 #' @return A matrix with one row per fixed effect and one column per calculated estimate.

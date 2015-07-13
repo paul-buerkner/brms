@@ -12,7 +12,7 @@ fixef(x, estimate = "mean", ...)
 \item{x}{An object of class \code{brmsfit}}
 
 \item{estimate}{A character vector specifying which coefficients (e.g., "mean", "median", "sd", or "quantile")
-should be calculated for the random effects.}
+should be calculated for the fixed effects.}
 
 \item{...}{Further arguments to be passed to the functions specified in \code{estimate}}
 }
