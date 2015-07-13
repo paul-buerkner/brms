@@ -188,13 +188,14 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
     if (family == "multigaussian") supl.data$weights <- supl.data$weights[1:supl.data$N_trait]
   }
   if (is.formula(ee$cens)) {
-    cens <- brm.model.matrix(ee$cens, data, rm.int = TRUE)[,1]
-    cens <- sapply(cens, function(x) {
-      if (grepl(paste("^",x), "right") | is.logical(x) & x) x <- 1
-      else if (grepl(paste("^",x), "none") | is.logical(x) & !x) x <- 0
-      else if (grepl(paste("^",x), "left")) x <- -1
+    cens <- get(all.vars(ee$cens)[1], data)
+    if (is.factor(cens)) cens <- as.character(cens)
+    cens <- unname(sapply(cens, function(x) {
+      if (grepl(paste0("^",x), "right") | is.logical(x) & isTRUE(x)) x <- 1
+      else if (grepl(paste0("^",x), "none") | is.logical(x) & !isTRUE(x)) x <- 0
+      else if (grepl(paste0("^",x), "left")) x <- -1
       else x
-    })
+    }))
     if (!all(unique(cens) %in% c(-1:1)))
       stop (paste0("Invalid censoring data. Accepted values are 'left', 'none', and 'right' \n",
                    "(abbreviations are allowed) or -1, 0, and 1. TRUE and FALSE are also accepted \n",
