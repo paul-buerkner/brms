@@ -4,8 +4,8 @@
 \alias{brm.data}
 \title{Extract required data for \code{brms} models}
 \usage{
-brm.data(formula, data = NULL, family = c("gaussian", "identity"),
-  prior = list(), autocor = NULL, partial = NULL, cov.ranef = NULL)
+brm.data(formula, data = NULL, family = "gaussian", prior = list(),
+  autocor = NULL, partial = NULL, cov.ranef = NULL)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class): a symbolic description of the model to be fitted.

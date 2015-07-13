@@ -72,10 +72,16 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
 #' names(data2)
 #'          
 #' @export
-brm.data <- function(formula, data = NULL, family = c("gaussian", "identity"), prior = list(),
+brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
                      autocor = NULL, partial = NULL, cov.ranef = NULL) {
-  link <- brm.link(family)
   family <- family[1]
+  is.lin <- family %in% c("gaussian", "student", "cauchy")
+  is.ord <- family  %in% c("cumulative","cratio","sratio","acat")
+  is.count <- family %in% c("poisson", "negbinomial", "geometric")
+  is.skew <- family %in% c("gamma", "weibull", "exponential")
+  if (!(is.lin | is.ord | is.skew | is.count | family %in% 
+        c("binomial", "bernoulli", "categorical", "multigaussian")))
+    stop(paste(family, "is not a valid family"))
   if (is.null(autocor)) autocor <- cor.arma()
   if (!is(autocor,"cor.brms")) stop("cor must be of class cor.brms")
   
@@ -86,7 +92,9 @@ brm.data <- function(formula, data = NULL, family = c("gaussian", "identity"), p
   for (g in ee$group) { 
     group.names[[g]] <- sort(as.character(unique(data[[g]])))
     data[[g]] <- as.numeric(as.factor(data[[g]]))
-  }  
+  } 
+  
+  #sort data in case of autocorrelation models
   if (sum(autocor$p, autocor$q) > 0) {
     if (family == "multigaussian" & !any(sapply(c("__trait","trait__"), grepl, x = et$group)))
       stop("autocorrelation structure for family 'multigaussian' must contain 'trait' as a grouping variable")
@@ -95,27 +103,41 @@ brm.data <- function(formula, data = NULL, family = c("gaussian", "identity"), p
       data <- data[do.call(order, to.order),]
   }
   
-  is.lin <- family %in% c("gaussian", "student", "cauchy")
-  is.ord <- family  %in% c("cumulative","cratio","sratio","acat")
-  is.skew <- family %in% c("gamma", "weibull", "exponential")
-  is.count <- family %in% c("poisson", "negbinomial", "geometric")
-  if (!(is.lin | is.ord | is.skew | is.count | family %in% 
-      c("binomial", "bernoulli", "categorical", "multigaussian")))
-    stop(paste(family, "is not a valid family"))
-  
   #response variable
-  supl.data <- list(N = nrow(data), Y = model.response(data))
-  if (family == "multigaussian") {
+  supl.data <- list(N = nrow(data), Y = unname(model.response(data)))
+  if (!is.numeric(supl.data$Y) & !(is.ord | family %in% c("bernoulli", "categorical"))) 
+    stop(paste("family", family, "expects numeric response variable"))
+  
+  #transform and check response variable for different families
+  if (is.count | family == "binomial") {
+    if (!all(is.wholenumber(supl.data$Y)) | min(supl.data$Y) < 0)
+      stop(paste("family", family, "expects response variable of non-negative integers"))
+  }
+  else if (family == "bernoulli") {
+    supl.data$Y <- as.numeric(as.factor(supl.data$Y)) - 1
+    if (any(!supl.data$Y %in% c(0,1)))
+      stop("family bernoulli expects response variable containing two different values only")
+  }
+  else if (family == "categorical") 
+    supl.data$Y <- as.numeric(as.factor(supl.data$Y))
+  else if (is.ord) {
+    if (is.factor(supl.data$Y)) {
+      if (is.ordered(supl.data$Y)) supl.data$Y <- as.numeric(supl.data$Y)
+      else stop(paste("family", family, "requires factored response variables to be ordered"))
+    }
+    else if (all(is.wholenumber(supl.data$Y)))
+      supl.data$Y <- supl.data$Y - min(supl.data$Y) + 1
+    else stop(paste("family", family, "expects either integers or ordered factors as response variables"))
+  }
+  else if (is.skew) {
+    if (min(supl.data$Y) < 0)
+      stop(paste("family", family, "requires response variable to be non-negative"))
+  }  
+  else if (family == "multigaussian") {
     supl.data$Y <- matrix(supl.data$Y, ncol = length(ee$response))
     supl.data <- c(supl.data, list(N_trait = nrow(supl.data$Y), K_trait = ncol(supl.data$Y)),
                    NC_trait = ncol(supl.data$Y) * (ncol(supl.data$Y)-1)/2) 
   }
-  if (is.ord | family == "categorical") {
-    if (is.factor(supl.data$Y)) supl.data$Y <- as.numeric(supl.data$Y)
-    else supl.data$Y <- supl.data$Y - min(supl.data$Y) + 1
-  }
-  else if (is.factor(supl.data$Y)) 
-    stop(paste("family", family, "expects numeric response variable")) 
   
   #fixed and random design matrices
   X <- brm.model.matrix(ee$fixed, data, rm.int = is.ord)
@@ -162,7 +184,7 @@ brm.data <- function(formula, data = NULL, family = c("gaussian", "identity"), p
   if (is.formula(ee$se))
     supl.data <- c(supl.data,list(sigma = brm.model.matrix(ee$se, data, rm.int = TRUE)[,1])) 
   if (is.formula(ee$weights)) {
-    supl.data <- c(supl.data, list(weights = brm.model.matrix(ee$weights, data, rm.int = TRUE)[,1]))
+    supl.data <- c(supl.data, list(weights = unname(brm.model.matrix(ee$weights, data, rm.int = TRUE)[,1])))
     if (family == "multigaussian") supl.data$weights <- supl.data$weights[1:supl.data$N_trait]
   }
   if (is.formula(ee$cens)) {
@@ -187,23 +209,24 @@ brm.data <- function(formula, data = NULL, family = c("gaussian", "identity"), p
     else if (is.formula(add)) 
       supl.data$max_obs <- brm.model.matrix(add, data, rm.int = TRUE)[,1]
     else stop("Response part of formula is invalid")
-    
-    if (is.formula(partial)) {
-      if (family %in% c("sratio","cratio","acat")) {
-        Xp <- brm.model.matrix(partial, data, rm.int = TRUE)
-        supl.data <- c(supl.data, list(Kp = ncol(Xp), Xp = Xp))
-        fp <- intersect(colnames(X), colnames(Xp))
-        if (length(fp))
-          stop(paste("Variables cannot be modeled as fixed and partial effects at the same time.",
-                     "Error occured for variables:", paste(fp, collapse = ", ")))
-      } 
-      else stop("partial is only meaningful for families 'sratio', 'cratio', and 'acat'")  
-    } 
-    two.cat <- (family == "categorical" | is.ord) & max(supl.data$max_obs) == 2
-    if (two.cat) supl.data$Y <- supl.data$Y - 1
-    family <- ifelse(family == "binomial" & max(supl.data$Y) == 1 | two.cat, 
-                     "bernoulli", family)
+    if ((is.ord | family == "categorical") & max(supl.data$max_obs) == 2 |
+        family == "binomial" & max(supl.data$max_obs) == 1) 
+      message(paste0("Only 2 levels detected for family '", family, "' so that ", 
+              "using family 'bernoulli' might be more efficient is this case."))
   } 
+  
+  #get data for partial effects
+  if (is.formula(partial)) {
+    if (family %in% c("sratio","cratio","acat")) {
+      Xp <- brm.model.matrix(partial, data, rm.int = TRUE)
+      supl.data <- c(supl.data, list(Kp = ncol(Xp), Xp = Xp))
+      fp <- intersect(colnames(X), colnames(Xp))
+      if (length(fp))
+        stop(paste("Variables cannot be modeled as fixed and partial effects at the same time.",
+                   "Error occured for variables:", paste(fp, collapse = ", ")))
+    } 
+    else stop("partial is only meaningful for families 'sratio', 'cratio', and 'acat'")  
+  }
   
   #autocorrelation variables
   if (autocor$p + autocor$q > 0) {

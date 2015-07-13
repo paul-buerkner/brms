@@ -265,10 +265,10 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
                  data.name = data.name, autocor = autocor)
     x$ranef <- setNames(lapply(lapply(ee$random, brm.model.matrix, data = data), colnames), 
                         gsub("__", ":", ee$group))
+    x$pars <- brm.pars(formula, data = data, family = family, autocor = autocor, partial = partial, 
+                       threshold = threshold, ranef = ranef, predict = predict)
     x$data <- brm.data(formula, data = data, family = family, prior = prior, cov.ranef = cov.ranef,
                        autocor = autocor, partial = partial) 
-    x$pars <- brm.pars(formula, data = data, family = family[1], autocor = autocor, partial = partial, 
-                threshold = threshold, ranef = ranef, predict = predict)
   }  
   
   if (is.function(inits) | (is.character(inits) & !is.element(inits, c("random", "0")))) 

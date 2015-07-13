@@ -129,6 +129,12 @@ rmMatch <- function(x, y) {
   x
 } 
 
+#check if x is a whole number (integer)
+is.wholenumber <- function(x, tol = .Machine$double.eps^0.5) {  
+  if (!is.numeric(x)) return(FALSE)
+  else return(abs(x - round(x)) < tol)
+}  
+
 #rename parameters
 rename.pars <- function(x, ...) {
   if (!length(x$fit@sim)) return(x)
