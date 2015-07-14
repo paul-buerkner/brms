@@ -372,8 +372,8 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", alpha = 0.05, ...) {
     varsH <- unlist(regmatches(h, var.pos))
     parsH <- paste0(class, varsH)
     if (!all(parsH %in% pars)) 
-      stop(paste("The following fixed effects cannot be found in the model:", 
-                 paste0(gsub("__", ":", varsH[which(!parsH %in% pars)]), collapse = ", ")))
+      stop(paste("The following parameters cannot be found in the model:", 
+                 paste0(gsub("__", ":", parsH[which(!parsH %in% pars)]), collapse = ", ")))
     samples <- data.frame(sapply(1:length(parsH), function(i)
       unlist(lapply(1:chains, function(j) 
         x$fit@sim$samples[[j]][[match(parsH[i], pars)]][(warmup/thin+1):(iter/thin)]))))
