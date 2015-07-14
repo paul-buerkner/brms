@@ -23,20 +23,21 @@ test_that("Test that brm.data returns correct data names for fixed and random ef
 })
 
 test_that("Test that brm.data returns correct data names for addition and partial variables", {
-  expect_equal(names(brm.data(y | se(w) ~ x, family = "gaussian",
-               data = data.frame(y = 1:10, w = 1:10, x = rep(0,10)))), c("N","Y","K","X","sigma"))
-  expect_equal(names(brm.data(y | weights(w) ~ x, family = "gaussian",
-               data = data.frame(y = 1:10, w = 1:10, x = rep(0,10)))), c("N","Y","K","X","weights"))
-  expect_equal(names(brm.data(y | cens(w) ~ x, family = "cauchy",
-          data = data.frame(y = 1:10, w = sample(-1:1,10,TRUE), x = rep(0,10)))), c("N","Y","K","X","cens"))
-  expect_equal(names(brm.data(y | trials(t) ~ x, family = "binomial",
-               data = data.frame(y = 1:10, t = 1:10, x = rep(0,10)))), c("N","Y","K","X","max_obs"))
-  expect_equal(names(brm.data(y | trials(10) ~ x, family = "binomial",
-               data = data.frame(y = 1:10, x = rep(0,10)))), c("N","Y","K","X","max_obs"))
-  expect_equal(names(brm.data(y | cat(t) ~ x, family = "acat",
-               data = data.frame(y = 1:10, t = 1:10, x = rep(0,10)))), c("N","Y","K","X","max_obs"))
-  expect_equal(names(brm.data(y | cat(10) ~ x, family = "cumulative",
-               data = data.frame(y = 1:10, x = rep(0,10)))), c("N","Y","K","X","max_obs"))
+  data <- data.frame(y = 1:10, w = 1:10, t = 1:10, x = rep(0,10), c = sample(-1:1,10,TRUE))
+  expect_equal(names(brm.data(y | se(w) ~ x, family = "gaussian", data = data)), 
+               c("N","Y","K","X","sigma"))
+  expect_equal(names(brm.data(y | weights(w) ~ x, family = "gaussian", data = data)), 
+               c("N","Y","K","X","weights"))
+  expect_equal(names(brm.data(y | cens(c) ~ x, family = "cauchy", data = data)), 
+               c("N","Y","K","X","cens"))
+  expect_equal(names(brm.data(y | trials(t) ~ x, family = "binomial", data = data)), 
+               c("N","Y","K","X","max_obs"))
+  expect_equal(names(brm.data(y | trials(10) ~ x, family = "binomial", data = data)), 
+               c("N","Y","K","X","max_obs"))
+  expect_equal(names(brm.data(y | cat(t) ~ x, family = "acat", data = data)), 
+               c("N","Y","K","X","max_obs"))
+  expect_equal(names(brm.data(y | cat(10) ~ x, family = "cumulative", data = data)), 
+               c("N","Y","K","X","max_obs"))
 })
 
 test_that("Test that brm.data accepts correct response variables depending on the family", {
@@ -104,27 +105,24 @@ test_that("Test that brm.data rejects incorrect addition arguments", {
 })
 
 test_that("Test that brm.data handles addition arguments and autocorrelation in multigaussian models", {
-  expect_equal(brm.data(cbind(y1,y2) | weights(w) ~ x, family = "multigaussian",
-                        data = data.frame(y1 = 1:10, y2 = 11:20, w = 1:10, x = rep(0,10)))$weights, 1:10)
-  expect_error(brm.data(cbind(y1,y2) | cens(w) ~ x, family = "multigaussian",
-                        data = data.frame(y1 = 1:10, y2 = 11:20, w = 1:10, x = rep(0,10))),
+  data <- data.frame(y1=1:10, y2=11:20, w=1:10, x=rep(0,10), tim=10:1, g = rep(1:2,5))
+  expect_equal(brm.data(cbind(y1,y2) | weights(w) ~ x, family = "multigaussian", data = data)$weights, 1:10)
+  expect_error(brm.data(cbind(y1,y2) | cens(w) ~ x, family = "multigaussian", data = data),
                "Argument cens in formula is not supported by family multigaussian")
-  expect_equal(brm.data(cbind(y1,y2) | weights(w) ~ x, family = "multigaussian", autocor = cor.ar(~tim|g:trait),
-                        data = data.frame(y1=1:10, y2=11:20, w=1:10, x=rep(0,10), tim=10:1, g = rep(1:2,5)))$Y,
+  expect_equal(brm.data(cbind(y1,y2) | weights(w) ~ x, family = "multigaussian", 
+                        autocor = cor.ar(~tim|g:trait), data = data)$Y,
                cbind(c(seq(9,1,-2), seq(10,2,-2)), c(seq(19,11,-2), seq(20,12,-2))))
-  expect_error(brm.data(cbind(y1,y2) | weights(w) ~ x, family = "multigaussian", autocor = cor.ar(~tim|g),
-                        data = data.frame(y1=1:10, y2=11:20, w=1:10, x=rep(0,10), tim=10:1, g = rep(1:2,5))),
+  expect_error(brm.data(cbind(y1,y2) | weights(w) ~ x, family = "multigaussian", 
+                        autocor = cor.ar(~tim|g), data = data),
                "autocorrelation structure for family 'multigaussian' must contain 'trait' as a grouping variable")
 })
 
 test_that("Test that brm.data returns correct data for autocorrelations structures", {
-  expect_equal(brm.data(y ~ x, family = "gaussian", autocor = cor.ar(~tim|g),
-                        data = data.frame(y=1:10, x=rep(0,10), tim=10:1, g = rep(1:2,5)))$Yar,
+  data <- data.frame(y=1:10, x=rep(0,10), tim=10:1, g = rep(3:4,5))
+  expect_equal(brm.data(y ~ x, family = "gaussian", autocor = cor.ar(~tim|g), data = data)$Yar,
                cbind(c(0,3.5,1.5,-0.5,-2.5,0,4.5,2.5,0.5,-1.5)))
-  expect_equal(brm.data(y ~ x, family = "gaussian", autocor = cor.ar(~tim|g, p = 2),
-                        data = data.frame(y=1:10, x=rep(0,10), tim=10:1, g = rep(1:2,5)))$Yar,
+  expect_equal(brm.data(y ~ x, family = "gaussian", autocor = cor.ar(~tim|g, p = 2), data = data)$Yar,
                cbind(c(0,3.5,1.5,-0.5,-2.5,0,4.5,2.5,0.5,-1.5), c(0,0,3.5,1.5,-0.5,0,0,4.5,2.5,0.5)))
-  expect_equal(brm.data(y ~ x, family = "gaussian", autocor = cor.ma(~tim|g),
-                        data = data.frame(y=1:10, x=rep(0,10), tim=10:1, g = rep(3:4,5)))$tgroup,
+  expect_equal(brm.data(y ~ x, family = "gaussian", autocor = cor.ma(~tim|g), data = data)$tgroup,
                c(rep(1,5), rep(2,5)))
 })
