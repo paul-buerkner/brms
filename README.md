@@ -26,7 +26,7 @@ If rstan is not installed, brm will return the Stan model, the required data, an
 ``` r
 summary(fit) 
 #>  Family: poisson (log) 
-#> Formula: count ~ log_Age_c + log_Base4_c * Trt_c + (1 | patient) + (1 | visit) 
+#> Formula: count ~ log_Age_c + log_Base4_c + Trt_c + (1 | patient) + (1 | visit) + log_Base4_c:Trt_c 
 #>    Data: epilepsy (Number of observations: 236) 
 #> Samples: 2 chains, each with n.iter = 2000; n.warmup = 500; n.thin = 1; 
 #>          total post-warmup samples = 3000
@@ -34,29 +34,49 @@ summary(fit)
 #> Random Effects: 
 #> ~patient (Number of levels: 59) 
 #>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> sd(Intercept)     0.55      0.07     0.43      0.7       1868    1
+#> sd(Intercept)     0.55      0.07     0.43     0.71        587    1
 #> 
 #> ~visit (Number of levels: 4) 
 #>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> sd(Intercept)     0.14      0.14     0.02     0.49        959    1
+#> sd(Intercept)     0.13      0.12     0.02     0.47        504    1
 #> 
 #> Fixed Effects: 
 #>                   Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> Intercept             0.81      0.06     0.70     0.92       1280 1.00
-#> log_Age_c             0.47      0.38    -0.27     1.21        488 1.01
-#> log_Base4_c           1.06      0.11     0.86     1.27        549 1.00
-#> Trt_c                -0.34      0.16    -0.66    -0.03        515 1.01
-#> log_Base4_c:Trt_c     0.34      0.22    -0.09     0.78        611 1.00
+#> Intercept             0.81      0.06     0.69     0.92        663    1
+#> log_Age_c             0.48      0.38    -0.26     1.25        690    1
+#> log_Base4_c           1.06      0.11     0.85     1.28        780    1
+#> Trt_c                -0.34      0.16    -0.67    -0.02        582    1
+#> log_Base4_c:Trt_c     0.34      0.23    -0.10     0.77        607    1
 #> 
 #> Samples were drawn using NUTS(diag_e). For each parameter, Eff.Sample is a 
 #> crude measure of effective sample size, and Rhat is the potential scale 
 #> reduction factor on split chains (at convergence, Rhat = 1).
 ```
 
+On the top of the output, some general information on the model is given, such as family, formula, as well as number of iterations and chains. Next, random effects are displayed seperately for each grouping factor in terms of standard deviations and (in case of more than one random effect per grouping factor; not displayed here) correlations between random effects. On the bottom of the output, fixed effects are displayed. If incorporated, autocorrelation effects and family specific parameters (e.g., the residual standard deviation 'sigma' in normal models) are also given.
+
+In general, every parameter is summarized using the mean ('Estimate') and the standard deviation ('Est.Error') of the posterior distribution as well as two-sided 95% Credible intervals ('l-95% CI' and 'u-95% CI') based on quantiles. The last two values ('Eff.Sample' and 'Rhat') provide information on how well the algorithm could estimate the posterior distribution of this parameter. If 'Rhat' is considerably greater than 1, the algorithm has not yet converged and it is necessary to run more iterations and / or set stronger priors.
+
 To visually investigate the chains as well as the posterior, you can use
 
 ``` r
 plot(fit) 
+```
+
+For a complete list of methods to apply on <b>brms</b> models see
+
+``` r
+methods(class = "brmsfit") 
+#>  [1] fixef             formula           hypothesis        ngrps             nobs              par.names        
+#>  [7] plot              posterior.samples predict           print             ranef             summary          
+#> [13] VarCorr          
+#> see '?methods' for accessing help and source code
+```
+
+For details on formula syntax, families and link functions, as well as prior distributions see the help page of the <b>brm</b> function:
+
+``` r
+help(brm) 
 ```
 
 How to install brms
