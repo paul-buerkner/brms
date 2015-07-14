@@ -147,7 +147,11 @@ ngrps <- function(object, ...)
 #' @aliases hypothesis.brmsfit
 #' 
 #' @param x An \code{R} object typically of class \code{brmsfit}
-#' @param hypothesis A character vector specifying one or more non-linear hypothesis concerning fixed effects
+#' @param hypothesis A character vector specifying one or more non-linear hypothesis concerning parameters of the model
+#' @param class A string specifying the class of parameters being tested. Default is "b" for fixed effects. 
+#'        Other typical options are "sd" or "cor". If \code{class = NULL}, all parameters can be tested
+#'        against each other, but have to be specified with their full name (see also \code{\link[brms:par.names]{par.names}}) 
+#' @param alpha the alpha-level of the tests (default is 0.05)        
 #' @param ... Currently ignored
 #' 
 #' @details Currently there are methods for \code{brmsfit} objects.
@@ -157,17 +161,24 @@ ngrps <- function(object, ...)
 #' 
 #' @examples
 #' \dontrun{
-#' fit_i <- brm(rating ~ treat + period + carry, data = inhaler, family = "cumulative")
+#' fit_i <- brm(rating ~ treat + period + carry + (1+treat|subject),
+#'              data = inhaler, family = "gaussian")
 #' 
 #' hypothesis(fit_i, "treat = period + carry")
 #' hypothesis(fit_i, "exp(treat) - 3 = 0")
 #' 
-#' ## test both of the above hypotheses with the same call 
+#' ## perform one-sided hypothesis testing
+#' hypothesis(fit_i, "period + carry - 3 < 0")
+#' 
+#' # compare random effects standard deviations
+#' hypothesis(fit_i, "treat < Intercept", class = "sd_subject")
+#' 
+#' ## test more than one hypothesis at once
 #' hypothesis(fit_i, c("treat = period + carry", "exp(treat) - 3 = 0"))
 #' }
 #' 
 #' @export
-hypothesis <- function(x, hypothesis, ...)
+hypothesis <- function(x, hypothesis, class = "b", alpha = 0.05, ...)
   UseMethod("hypothesis")
 
 #' Extract posterior samples

@@ -5,12 +5,18 @@
 \alias{hypothesis.brmsfit}
 \title{Non-linear hypothesis testing}
 \usage{
-hypothesis(x, hypothesis, ...)
+hypothesis(x, hypothesis, class = "b", alpha = 0.05, ...)
 }
 \arguments{
 \item{x}{An \code{R} object typically of class \code{brmsfit}}
 
-\item{hypothesis}{A character vector specifying one or more non-linear hypothesis concerning fixed effects}
+\item{hypothesis}{A character vector specifying one or more non-linear hypothesis concerning parameters of the model}
+
+\item{class}{A string specifying the class of parameters being tested. Default is "b" for fixed effects.
+Other typical options are "sd" or "cor". If \code{class = NULL}, all parameters can be tested
+against each other, but have to be specified with their full name (see also \code{\link[brms:par.names]{par.names}})}
+
+\item{alpha}{the alpha-level of the tests (default is 0.05)}
 
 \item{...}{Currently ignored}
 }
@@ -25,12 +31,19 @@ Currently there are methods for \code{brmsfit} objects.
 }
 \examples{
 \dontrun{
-fit_i <- brm(rating ~ treat + period + carry, data = inhaler, family = "cumulative")
+fit_i <- brm(rating ~ treat + period + carry + (1+treat|subject),
+             data = inhaler, family = "gaussian")
 
 hypothesis(fit_i, "treat = period + carry")
 hypothesis(fit_i, "exp(treat) - 3 = 0")
 
-## test both of the above hypotheses with the same call
+## perform one-sided hypothesis testing
+hypothesis(fit_i, "period + carry - 3 < 0")
+
+# compare random effects standard deviations
+hypothesis(fit_i, "treat < Intercept", class = "sd_subject")
+
+## test more than one hypothesis at once
 hypothesis(fit_i, c("treat = period + carry", "exp(treat) - 3 = 0"))
 }
 }
