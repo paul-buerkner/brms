@@ -27,9 +27,14 @@ brm.replace <- function(names, symbols = NULL, subs = NULL) {
     subs <- c("", "P", "M", "MU", "D", "E", "EQ", "NEQ")
   if (length(symbols) != length(subs)) 
     stop("length(symbols) != length(subs)")
+  new.names <- names
   for (i in 1:length(symbols)) 
-    names <- gsub(symbols[i], subs[i], names)
-  names
+    new.names <- gsub(symbols[i], subs[i], new.names)
+  dup <- duplicated(new.names)
+  if (any(dup)) 
+    stop(paste0("Internal renaming of variables led to duplicated names. \n",
+      "Occured for variables: ", paste(names[which(new.names %in% new.names[dup])], collapse = ", ")))
+  new.names
 }
 
 # Links for \code{brms} families
