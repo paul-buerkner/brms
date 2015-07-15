@@ -3,22 +3,11 @@ fixef.brmsfit <-  function(x, estimate = "mean", ...) {
   if (!is(x$fit, "stanfit") | !length(x$fit@sim)) 
     stop("Argument x does not contain posterior samples")
   pars <- dimnames(x$fit)$parameters
-  iter <- attr(x$fit@sim$samples[[1]],"args")$iter
-  warmup <- attr(x$fit@sim$samples[[1]],"args")$warmup
-  thin <- attr(x$fit@sim$samples[[1]],"args")$thin
-  chains <- length(x$fit@sim$samples) 
-  
   f.pars <- pars[grepl("^b_", pars)]
-  f.names <- gsub("^b_", "", f.pars)
-  f.names <- gsub("__", ":", f.names)
-  nf <- length(f.pars)
-  if (!nf)
-    stop(paste("No fixed effect present in argument x")) 
-  out <- t(sapply(1:nf, function(i)
-    unlist(lapply(1:chains, function(j) 
-      x$fit@sim$samples[[j]][[f.pars[i]]][(warmup/thin+1):(iter/thin)]))))
+  if (!length(f.pars)) stop(paste("No fixed effect present in argument x")) 
+  out <- posterior.samples(x, parameters = paste0("^",f.pars,"$"))
   out <- do.call(cbind, lapply(estimate, get.estimate, samples = out, ...))
-  rownames(out) <- f.names
+  rownames(out) <- gsub("^b_", "", f.pars)
   out
 }
 
@@ -29,31 +18,24 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, center.zero = TRUE,
   if (!estimate %in% c("mean","median"))
     stop("Argument estimate must be either 'mean' or 'median'")
   pars <- dimnames(x$fit)$parameters
-  iter <- attr(x$fit@sim$samples[[1]],"args")$iter
-  warmup <- attr(x$fit@sim$samples[[1]],"args")$warmup
-  thin <- attr(x$fit@sim$samples[[1]],"args")$thin
-  chains <- length(x$fit@sim$samples)
-  n.samples <- (iter-warmup)/thin*chains
   group <- names(x$ranef)
   
   ranef <- lapply(group, function(g) {
     r.pars <- pars[grepl(paste0("^r_",g,"\\["), pars)]
     r.names <- gsub(paste0("^sd_",g,"_"), "", pars[grepl(paste0("^sd_",g,"_"), pars)])
-    nr <- length(r.pars)
-    if (!nr)
+    if (!length(r.pars))
       stop(paste0("The model does not contain random effects for group '",g,"'\n",
                   "You should use argument ranef = TRUE in function brm."))
     r_dims <- x$fit@par_dims[[paste0("r_",gsub(":", "__", g))]]
-    rs <- t(sapply(1:nr, function(i)
-      unlist(lapply(1:chains, function(j) 
-        x$fit@sim$samples[[j]][[r.pars[i]]][(warmup/thin+1):(iter/thin)]))))
+    rs <- posterior.samples(x, parameters = r.pars, fixed = TRUE)
+    n.samples <- nrow(rs)
     n.col <- ifelse(is.na(r_dims[2]), 1, r_dims[2])
     rs.array <- array(dim = c(r_dims[1], n.col, n.samples))
     k <- 0
     for (j in 1:n.col) {
       for (i in 1:r_dims[1]) {
         k <- k + 1
-        rs.array[i,j,] <- rs[k,]
+        rs.array[i,j,] <- rs[,k]
       }
     }
     if (center.zero) {
@@ -85,10 +67,6 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
   if (!is(x$fit, "stanfit") | !length(x$fit@sim)) 
     stop("Argument x does not contain posterior samples")
   pars <- dimnames(x$fit)$parameters
-  iter <- attr(x$fit@sim$samples[[1]],"args")$iter
-  warmup <- attr(x$fit@sim$samples[[1]],"args")$warmup
-  thin <- attr(x$fit@sim$samples[[1]],"args")$thin
-  chains <- length(x$fit@sim$samples) 
   group <- names(x$ranef)
   
   # extracts samples for sd, cor and cov
@@ -98,27 +76,23 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
     cor.pars <- pars[grepl(pattern[2], pars)]
     r.names <- gsub(pattern[1], "", sd.pars)
     nr <- length(sd.pars)
-    out <- list() 
-    sds <- t(sapply(1:nr, function(i)
-      unlist(lapply(1:chains, function(j) 
-        x$fit@sim$samples[[j]][[sd.pars[i]]][(warmup/thin+1):(iter/thin)]))))
-    out$sd <- do.call(cbind, lapply(estimate, get.estimate, samples = sds, ...))
+    sds <- posterior.samples(x, parameters = paste0("^",sd.pars,"$"))
+    n.samples <- nrow(sds)
+    out <- list(sd = do.call(cbind, lapply(estimate, get.estimate, samples = sds, ...)))
     rownames(out$sd) <- r.names 
     if (length(cor.pars)) {
-      cors <- t(sapply(1:length(cor.pars), function(i)
-        unlist(lapply(1:chains, function(j) 
-          x$fit@sim$samples[[j]][[cor.pars[i]]][(warmup/thin+1):(iter/thin)])))) 
-      out$cor <- array(diag(1,nr), dim = c(nr, nr, (iter-warmup)/thin*chains))
+      cors <- posterior.samples(x, parameters = paste0("^",cor.pars,"$"))
+      out$cor <- array(diag(1,nr), dim = c(nr, nr, n.samples))
       out$cov <- out$cor
       k <- 0 
       for (i in 1:nr) {
         for (j in 1:i) {
-          if (i == j) out$cov[i,j,] <- sds[i,]^2
+          if (i == j) out$cov[i,j,] <- sds[,i]^2
           else {
             k = k + 1
-            out$cor[i,j,] <- cors[k,]
+            out$cor[i,j,] <- cors[,k]
             out$cor[j,i,] <- out$cor[i,j,]
-            out$cov[i,j,] <- out$cor[i,j,] * sds[i,] * sds[j,]
+            out$cov[i,j,] <- out$cor[i,j,] * sds[,i] * sds[,j]
             out$cov[j,i,] <- out$cov[i,j,]
           }}}
       out$cor <- abind(lapply(estimate, get.estimate, samples = out$cor, 
@@ -152,7 +126,7 @@ posterior.samples.brmsfit <- function(x, parameters = NA, ...) {
   pars <- dimnames(x$fit)$parameters
   if (!(anyNA(parameters) | is.character(parameters))) 
     stop("Argument parameters must be NA or a character vector")
-  if (!anyNA(parameters)) pars <- pars[apply(sapply(parameters, grepl, x = pars), 1, any)]
+  if (!anyNA(parameters)) pars <- pars[apply(sapply(parameters, grepl, x = pars, ...), 1, any)]
   
   iter <- attr(x$fit@sim$samples[[1]],"args")$iter
   warmup <- attr(x$fit@sim$samples[[1]],"args")$warmup
@@ -350,11 +324,6 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", alpha = 0.05, ...) {
     stop("Argument x does not contain posterior samples")
   if (!is.character(hypothesis)) 
     stop("Argument hypothesis must be a character vector")
-  chains <- length(x$fit@sim$samples) 
-  iter <- attr(x$fit@sim$samples[[1]],"args")$iter
-  warmup <- attr(x$fit@sim$samples[[1]],"args")$warmup
-  thin <- attr(x$fit@sim$samples[[1]],"args")$thin
-  chains <- length(x$fit@sim$samples)
   if (!is.null(class)) class <- paste0(class,"_")
   else class <- ""
   pars <- gsub(":", "__", dimnames(x$fit)$parameters[grepl("^",class, dimnames(x$fit)$parameters)])
@@ -374,17 +343,15 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", alpha = 0.05, ...) {
     if (!all(parsH %in% pars)) 
       stop(paste("The following parameters cannot be found in the model:", 
                  paste0(gsub("__", ":", parsH[which(!parsH %in% pars)]), collapse = ", ")))
-    samples <- data.frame(sapply(1:length(parsH), function(i)
-      unlist(lapply(1:chains, function(j) 
-        x$fit@sim$samples[[j]][[match(parsH[i], pars)]][(warmup/thin+1):(iter/thin)]))))
+    samples <- posterior.samples(x, parameters = paste0("^",parsH,"$"))
     names(samples) <- varsH
     
     #evaluate hypothesis
-    out <- with(samples, eval(parse(text = h)))
+    out <- matrix(with(samples, eval(parse(text = h))), ncol=1)
     sign.word <- ifelse(sign == "=", "equal", ifelse(sign == "<", "less", "greater"))
     probs <- switch(sign.word, equal = c(alpha/2, 1-alpha/2), less = c(0, 1-alpha), greater = c(alpha, 1))
     out <- as.data.frame(matrix(unlist(lapply(c("mean","sd","quantile"), get.estimate, 
-                         samples = matrix(out, nrow=1), probs = probs)), nrow = 1))
+                         samples = out, probs = probs)), nrow = 1))
     if (sign == "<") out[1,3] <- -Inf
     else if (sign == ">") out[1,4] <- Inf
     out <- cbind(out, ifelse(!(out[1,3] <= 0 & 0 <= out[1,4]), '*', ''))

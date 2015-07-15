@@ -1,5 +1,5 @@
 #calculate estimates over posterior samples 
-get.estimate <- function(coef, samples, margin = 1, to.array = FALSE, ...) {
+get.estimate <- function(coef, samples, margin = 2, to.array = FALSE, ...) {
   dots <- list(...)
   args <- list(X = samples, MARGIN = margin, FUN = coef)
   fun.args <- names(formals(coef))
