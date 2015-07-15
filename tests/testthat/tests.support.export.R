@@ -13,13 +13,13 @@ test_that("Test that brm.pars returns correct parameter names", {
 
 test_that("Test that brm.data returns correct data names for fixed and random effects", {
   expect_equal(names(brm.data(rating ~ treat + period + carry + (1|subject), data = inhaler)),
-               c("N","Y","subject","N_subject","K_subject","Z_subject","NC_subject","K","X"))
+               c("N","Y","K","X","subject","N_subject","K_subject","Z_subject","NC_subject"))
   expect_equal(names(brm.data(rating ~ treat + period + carry + (1+treat|subject), data = inhaler,
                family = "categorical")),
-               c("N","Y","subject","N_subject","K_subject","Z_subject","NC_subject","Kp","Xp","max_obs"))
+               c("N","Y","Kp","Xp","subject","N_subject","K_subject","Z_subject","NC_subject","max_obs"))
   expect_equal(names(brm.data(y ~ x + (1|g) + (1|h), family = "poisson",
               data = data.frame(y = 1:10, g = 1:10, h = 11:10, x = rep(0,10)))),
-               c("N","Y","g","N_g","K_g","Z_g","NC_g","h","N_h","K_h","Z_h","NC_h","K","X"))
+               c("N","Y","K","X","g","N_g","K_g","Z_g","NC_g","h","N_h","K_h","Z_h","NC_h"))
 })
 
 test_that("Test that brm.data returns correct data names for addition and partial variables", {

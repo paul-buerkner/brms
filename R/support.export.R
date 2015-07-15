@@ -139,8 +139,12 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
                    NC_trait = ncol(supl.data$Y) * (ncol(supl.data$Y)-1)/2) 
   }
   
-  #fixed and random design matrices
+  #fixed effects data
   X <- brm.model.matrix(ee$fixed, data, rm.int = is.ord)
+  if (family == "categorical") supl.data <- c(supl.data, list(Kp = ncol(X), Xp = X))
+  else supl.data <- c(supl.data, list(K = ncol(X), X = X))
+  
+  #random effects data
   if (length(ee$random)) {
     Z <- lapply(ee$random, brm.model.matrix, data = data)
     r <- lapply(Z, colnames)
@@ -148,7 +152,6 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
       to.zero <- unlist(lapply(unlist(lapply(r, intersect, y = colnames(X))), 
                                function(x) which(x == colnames(X)))) 
     else to.zero <- NULL
-    X[,to.zero] <- 0
     ncolZ <- lapply(Z, ncol)
     expr <- expression(get(g, data), length(unique(get(g, data))), ncolZ[[i]], 
                        Z[[i]], ncolZ[[i]]*(ncolZ[[i]]-1)/2)
@@ -177,8 +180,6 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
       }
     }
   }
-  if (family == "categorical") supl.data <- c(supl.data, list(Kp = ncol(X), Xp = X))
-  else supl.data <- c(supl.data, list(K = ncol(X), X = X))   
   
   #addition and partial variables
   if (is.formula(ee$se)) {

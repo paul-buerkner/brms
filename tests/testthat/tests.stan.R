@@ -78,7 +78,7 @@ test_that("Test that stan.model accepts supported links", {
 test_that("Test that stan.model returns correct strings for customized covariances", {
   expect_match(stan.model(rating ~ treat + period + carry + (1|subject), data = inhaler,
                           cov.ranef = "subject"), fixed = TRUE,
-             "r_subject <- b[1] + sd_subject * (CF_cov_subject*pre_subject)")
+             "r_subject <- sd_subject * (CF_cov_subject*pre_subject)")
 })
 
 test_that("Test that stan.model handles addition arguments correctly", {
