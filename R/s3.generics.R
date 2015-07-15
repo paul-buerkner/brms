@@ -55,13 +55,11 @@ fixef <- function(x, estimate = "mean", ...)
 #' 
 #' @aliases ranef.brmsfit
 #' @usage ## S3 method for class 'brmsfit'
-#' ranef(x, estimate = "mean", var = FALSE, center.zero = TRUE, ...)
+#' ranef(x, estimate = "mean", var = FALSE, ...)
 #' 
 #' @param x An object of a class of fitted models with random effects, typically a \code{brmsfit} object.
 #' @param estimate The point estimate to be calculated for the random effects, either "mean" or "median".
 #' @param var logical; indicating if the covariance matrix for each random effects should be computed.
-#' @param center.zero logical; indicating if the random effects are centered around the corresponding
-#'   fixed effect (if present) or around zero (the default).
 #' @param ... Further arguments to be passed to the function specified in \code{estimate}
 #'
 #' @return A list of matrices (one per grouping factor), each with one row per level
@@ -73,15 +71,15 @@ fixef <- function(x, estimate = "mean", ...)
 #' \dontrun{
 #' fit_e <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
 #'              data = epilepsy, family = "poisson", n.chains = 1)
-#' ## random effects means centered around zero with corresponding covariances
+#' ## random effects means with corresponding covariances
 #' rf <- ranef(fit_e, var = TRUE)
 #' attr(rf, "var")
-#' ## random effects medians centered around the corresponding fixed effect
-#' ranef(fit_e, estimate = "median", center.zero = FALSE)                                                        
+#' ## random effects medians
+#' ranef(fit_e, estimate = "median")                                                        
 #' }
 #' 
 #' @export
-ranef <- function(x, estimate = "mean", var = FALSE, center.zero = TRUE, ...) 
+ranef <- function(x, estimate = "mean", var = FALSE, ...) 
   UseMethod("ranef")
 
 #' Extract variance and correlation components
