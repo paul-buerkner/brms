@@ -12,7 +12,7 @@ fixef.brmsfit <-  function(x, estimate = "mean", ...) {
 }
 
 #' @export
-ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, center.zero = TRUE, ...) {
+ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, ...) {
   if (!is(x$fit, "stanfit") | !length(x$fit@sim)) 
     stop("Argument x does not contain posterior samples")
   if (!estimate %in% c("mean","median"))
@@ -37,13 +37,6 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, center.zero = TRUE,
         k <- k + 1
         rs.array[i,j,] <- rs[,k]
       }
-    }
-    if (center.zero) {
-      center <- t(sapply(1:dim(rs.array)[2], function(i)
-        unlist(lapply(1:n.samples, function(k) mean(rs.array[,i,k])))))
-      for (j in 1:n.col) 
-        rs.array[,j,] <- rs.array[,j,] - 
-        matrix(center[j,], nrow = r_dims[1], ncol = n.samples, byrow = TRUE)
     }
     out <- get.estimate(estimate, samples = rs.array, margin = 1:2, ...)
     colnames(out) <- r.names

@@ -7,13 +7,15 @@ output: html_document
 ----------------------------------------------------------------
 
 * validity of the response variable is now thoroughly checked before the data is passed to Stan.
-* variable names containing double underscores '__' are now prohibited to avoid naming conflicts
+* variable names containing double underscores '__' are now prohibited to avoid naming conflicts.
 * multiple grouping factors can now be combined within one random effects argument using the interaction symbol ':'
-* generalized S3 method 'hypothesis' to be used with all parameter classes not just fixed effects
-* introduced new family 'multigaussian' allowing for multivariate normal regression
-* function calls with several arguments (e.g. poly(x,3)) are now allowed in the formula argument of function 'brm'
+* generalized S3 method 'hypothesis' to be used with all parameter classes not just fixed effects. In addition, one-sided hypothesis testing is now possible.
+* introduced new family 'multigaussian' allowing for multivariate normal regression.
+* function calls with several arguments (e.g. poly(x,3)) are now allowed in the formula argument of function 'brm.
+* random effects estimates returned by S3 method 'ranef' are now always centered around zero.
 * fixed a bug in S3 method 'hypothesis' leading to an error when numbers with decimal places were used in the formulation of the hypotheses. 
 * fixed a bug in S3 method 'ranef' that caused an error for grouping factors with only one random effect.
+* fixed a bug that could cause the fixed effect intercept to be wrongly estimated in the presence of multiple random intercepts.
 
 # brms 0.3.0
 ----------------------------------------------------------------
