@@ -38,7 +38,7 @@ plot(fit_k1)
 ## for regression parameters and standard deviations of random effects
 fit_k2 <- brm(time | cens(censored) ~ age + sex + disease + (1|patient),
               data = kidney, prior = list(sd = "uniform(0,20)"),
-              family = "weibull", n.iter = 3000, silent = TRUE)
+              family = "weibull", inits = "0", silent = TRUE)
 summary(fit_k2)
 plot(fit_k2)
 }
