@@ -32,7 +32,7 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
   n <- ifelse(is.formula(ee[c("trials","cat")]), "[n]", "")
   trait <- ifelse(is.mg, "_trait", "")
   
-  ranef <- unlist(lapply(mapply(list, r, ee$group, SIMPLIFY = FALSE), stan.ranef, 
+  ranef <- unlist(lapply(mapply(list, r, ee$group, ee$cor, SIMPLIFY = FALSE), stan.ranef, 
                          f = f, family = family, prior = prior, cov.ranef = cov.ranef))
   names.ranef <- unique(names(ranef))
   if (length(ranef)) ranef <- sapply(1:length(names.ranef), function(x) 
@@ -167,6 +167,7 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
 stan.ranef <- function(rg, f, family = "gaussian", prior = list(), cov.ranef = "") {
   r <- rg[[1]]
   g <- rg[[2]]
+  cor <- rg[[3]]
   c.cov <- g %in% cov.ranef
   is.ord <- is.element(family, c("cumulative", "cratio", "sratio", "acat")) 
   out <- list()
@@ -185,29 +186,29 @@ stan.ranef <- function(rg, f, family = "gaussian", prior = list(), cov.ranef = "
     out$transD <- paste0("  vector[N_",g,"] r_",g,"; \n")
     out$transC <- paste0("  r_",g, " <- sd_",g," * (", 
       if (c.cov) paste0("CF_cov_",g,"*"), "pre_",g,"); \n")
-    out$genD <- ""
-    out$genC <- ""
   }  
   else if (length(r) > 1) {
     out$data <- paste0(out$data,  "  row_vector[K_",g,"] Z_",g,"[N]; \n  int NC_",g,"; \n",
       if (c.cov) paste0("  matrix[N_",g,",N_",g,"] CF_cov_",g,"; \n"))
     out$par <- paste0("  matrix[N_",g,",K_",g,"] pre_",g,"; \n",
                       "  vector<lower=0>[K_",g,"] sd_",g,"; \n",
-                      "  cholesky_factor_corr[K_",g,"] L_",g,"; \n")
-    out$model <- paste0(out$model, stan.prior(paste0("L_",g), prior = prior, add.type = g),
+      if (cor) paste0("  cholesky_factor_corr[K_",g,"] L_",g,"; \n"))
+    out$model <- paste0(out$model, ifelse(cor, stan.prior(paste0("L_",g), prior = prior, add.type = g), ""),
                      "  to_vector(pre_",g,") ~ normal(0,1); \n")
     out$transD <- paste0("  vector[K_",g,"] r_",g,"[N_",g,"]; \n")
     out$transC <- paste0("  for (i in 1:N_",g,") { \n",
-                         "    r_",g, "[i] <- sd_",g," .* (L_",g,"*to_vector(pre_",g,"[i])); \n",
-                         if (c.cov) paste0(
-                         "    r_",g, "[i,1] <- r_",g, "[i,1] + sd_",g,"[1] * (CF_cov_",g,"[i]*col(pre_",g,",1)); \n"),
+      if (cor) paste0("    r_",g, "[i] <- sd_",g," .* (L_",g,"*to_vector(pre_",g,"[i])); \n")
+      else paste0("    r_",g, "[i] <- sd_",g," .* to_vector(pre_",g,"[i]); \n"),
+      if (c.cov) paste0("    r_",g, "[i,1] <- r_",g, "[i,1] + sd_",g,"[1] * (CF_cov_",g,"[i]*col(pre_",g,",1)); \n"),
                          "  } \n")
-    out$genD <- paste0("  corr_matrix[K_",g,"] Cor_",g,"; \n",
-                       "  vector<lower=-1,upper=1>[NC_",g,"] cor_",g,"; \n")
-    out$genC <- paste0("  Cor_",g," <- multiply_lower_tri_self_transpose(L_",g,"); \n",
-                       paste0(unlist(lapply(2:length(r),function(i) lapply(1:(i-1), function(j)
-                        paste0("  cor_",g,"[",(i-1)*(i-2)/2+j,"] <- Cor_",g,"[",j,",",i,"]; \n")))),
-                        collapse = "")) 
+    if (cor) {
+      out$genD <- paste0("  corr_matrix[K_",g,"] Cor_",g,"; \n",
+                         "  vector<lower=-1,upper=1>[NC_",g,"] cor_",g,"; \n")
+      out$genC <- paste0("  Cor_",g," <- multiply_lower_tri_self_transpose(L_",g,"); \n",
+                         paste0(unlist(lapply(2:length(r),function(i) lapply(1:(i-1), function(j)
+                          paste0("  cor_",g,"[",(i-1)*(i-2)/2+j,"] <- Cor_",g,"[",j,",",i,"]; \n")))),
+                          collapse = "")) 
+    }  
   }
   out
 }

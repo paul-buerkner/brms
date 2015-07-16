@@ -47,7 +47,7 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
   if (length(ee$group)) {
     out <- c(out, paste0("sd_",ee$group))
     out <- c(out, unlist(lapply(1:length(ee$group), function(i)
-      if (length(r[[i]])>1) paste0("cor_",ee$group[[i]]))))
+      if (length(r[[i]])>1 & ee$cor[[i]]) paste0("cor_",ee$group[[i]]))))
     if (ranef) out <- c(out, paste0("r_",ee$group))
   }
   if (predict) out <- c(out,"Y_pred")

@@ -29,7 +29,7 @@
 #' @param cov.ranef A list of matrices that are proportional to the (within) covariance structure of the random effects. 
 #'   The names of the matrices should correspond to columns in \code{data} that are used as grouping factors. 
 #'   All levels of the grouping factor should appear as rownames of the corresponding matrix. 
-#'   Currently, the covariance structure applies only to the first random effect of each grouping factor. 
+#'   Currently, the covariance matrix applies only to the first random effect of each grouping factor. 
 #'   If incorporated, random intercepts will always be treated as the first random effect.
 #' @param predict A flag to indicate if posterior predictives of the dependent variable should be generated. 
 #' @param ranef A flag to indicate if random effects for each level of the grouping factor(s) should be saved (default is \code{TRUE}). 

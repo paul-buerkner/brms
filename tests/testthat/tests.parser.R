@@ -13,6 +13,16 @@ test_that("Test that extract.effects finds all random effects and grouping facto
           "combined by the interaction symbol ':'\n"))
 })
 
+test_that("Test that extract.effects accepts || syntax", {
+  expect_equal(extract.effects(y ~ a + (1+x||g2) + (1+z|g1))$cor, list(FALSE,TRUE))
+  expect_equal(extract.effects(y ~ a + (1+x||g2))$random, list(~1 + x))
+  expect_equal(extract.effects(y ~ (1+x||g2) + x + (1||g1))$group, list("g2", "g1"))
+  expect_equal(extract.effects(y ~ (1+x||g1:g2))$group, list("g1__g2"))
+  expect_error(extract.effects(y ~ (1+x||g1/g2) + x + (1|g1)), 
+               paste("Illegal grouping term: g1/g2 \nGrouping terms may contain only variable names",
+                     "combined by the interaction symbol ':'\n"))
+})
+
 test_that("Test that extract effects finds all response variables", {
  expect_equal(extract.effects(y1~x)$response, "y1")
  expect_equal(extract.effects(cbind(y1,y2)~x)$response, c("y1", "y2")) 
