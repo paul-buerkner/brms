@@ -191,7 +191,7 @@ summary.brmsfit <- function(object, ...) {
         cor.pars <- pars[grepl(paste0("^cor_", out$group[i],"_"), pars)]
         r.names <- gsub(paste0("^sd_",out$group[i],"_"), "", sd.pars)
         sd.names <- paste0("sd(",r.names,")")
-        cor.names <- get.cor.names(r.names)
+        cor.names <- get.cor.names(r.names, eval = length(cor.pars))
         out$random[[out$group[i]]] <- matrix(fit.summary$summary[c(sd.pars, cor.pars),-c(2)], ncol = 6)
         colnames(out$random[[out$group[i]]]) <- col.names
         rownames(out$random[[out$group[i]]]) <- c(sd.names,cor.names)

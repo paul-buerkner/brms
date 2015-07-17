@@ -15,9 +15,9 @@ get.estimate <- function(coef, samples, margin = 2, to.array = FALSE, ...) {
 }
 
 #get correlation names
-get.cor.names <- function(names, type = "cor") {
+get.cor.names <- function(names, type = "cor", eval = TRUE) {
   cor.names <- NULL
-  if (length(names) > 1)
+  if (length(names) > 1 & eval)
     for (i in 2:length(names)) 
       for (j in 1:(i-1)) 
         cor.names <- c(cor.names, paste0(type,"(",names[j],",",names[i],")"))
