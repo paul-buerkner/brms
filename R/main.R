@@ -247,6 +247,7 @@
 #' plot(fit_k)             
 #' }
 #' 
+#' @import rstan
 #' @import parallel
 #' @import Rcpp
 #' @import methods
