@@ -56,7 +56,7 @@ For a complete list of methods to apply on <b>brms</b> models see
 methods(class = "brmsfit") 
 ``` 
 
-For details on formula syntax, families and link functions, as well as prior distributions see the help page of the <b>brm</b> function:
+For details on formula syntax, families and link functions, as well as prior distributions see the help page of the brm function:
 ```{r help.brm, eval=FALSE}
 help(brm) 
 ``` 
@@ -67,7 +67,7 @@ help(brm)
 install.packages("brms")
 ```
 
-Without having rstan installed, the function brm will return the Stan model, the required data, and the parameters of interest. To allow brm to fit the model automatically, the package rstan has to be installed manually, as it is not on CRAN, yet. However, the developers of Stan and rstan are currently working on a version to be uploaded on CRAN. In the meantime, instructions on how to install rstan can be found at https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started.  
+Because <b>brms</b> is based on Stan, a C++ compiler is required. The program Rtools (available on https://cran.r-project.org/bin/windows/Rtools/) comes with a C++ compiler for Windows. On Mac, you should use Xcode. We recommend to install rstan (available on CRAN) before installing <b>brms</b>. For further instructions see https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started.
 
 <!-- Before you will be able to actually fit bayesian models with brms, the package rstan has to be installed manually, as it is not on CRAN, yet. First, you need a C++ compiler. See https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started#prerequisites for instructions on how to get one. Second, install rstan by running the following R code (the number behind 'j' in the first line corresponds to the number of cores to use for the installation). This may take a few minutes and you should restart R after the installation.
 
