@@ -143,6 +143,7 @@ posterior.samples.brmsfit <- function(x, parameters = NA, ...) {
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
+#' @method summary brmsfit
 #' @export
 summary.brmsfit <- function(object, ...) {
   ee <- extract.effects(object$formula, add.ignore = TRUE)
@@ -392,6 +393,7 @@ print.brmshypothesis <- function(x, digits = 2, ...) {
 #' plot(fit_e, parameters = "^b_", combine = TRUE) 
 #' }
 #' 
+#' @method plot brmsfit
 #' @import ggplot2
 #' @export
 plot.brmsfit <- function(x, parameters = NA, combine = FALSE, N = 5, ask = TRUE, ...) {
