@@ -266,7 +266,7 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
     stop("threshold must be either flexible or equidistant")
   set.seed(seed)
   
-  if (is(fit,"brmsfit")) x <- fit
+  if (is(fit, "brmsfit")) x <- fit
   else {
     formula <- brm.update.formula(formula, addition = addition)
     et <- extract.time(autocor$formula)
@@ -281,39 +281,27 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
                        threshold = threshold, ranef = ranef, predict = predict)
     x$data <- brm.data(formula, data = data, family = family, prior = prior, cov.ranef = cov.ranef,
                        autocor = autocor, partial = partial) 
+    x$model <- stan.model(formula = x$formula, data = data, family = x$family, link = x$link, 
+                          prior = prior, autocor = x$autocor, partial = x$partial,  predict = predict, 
+                          threshold = threshold, cov.ranef = names(cov.ranef), save.model = save.model)
   }  
   
-  if (is.function(inits) | (is.character(inits) & !is.element(inits, c("random", "0")))) 
+  if (is.function(inits) || (is.character(inits) && !is.element(inits, c("random", "0")))) 
     inits <- replicate(n.chains, do.call(inits, list()), simplify = FALSE)
-  if(!nchar(x$model)) 
-    x$model <- stan.model(formula = x$formula, data = data, family = x$family, link = x$link, 
-                prior = prior, autocor = x$autocor, partial = x$partial,  predict = predict, 
-                threshold = threshold, cov.ranef = names(cov.ranef), save.model = save.model)
-  if (!requireNamespace("rstan", quietly = TRUE)) {
-    warning(paste("Package rstan is not installed yet so that the model cannot be fitted. \n",
-      "Returning only the Stan model, the required data, and the parameters of interest. \n",
-      "Please see https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started \n",
-      "for instructions on how to install rstan. \n",
-      "You may need to restart R after the installation of rstan to make it work correctly.")) 
-    return(x)
-  }
-
-  if (n.cluster > 1 | silent & n.chains > 0) {
-    if (is.character(inits) | is.numeric(inits)) inits <- rep(inits, n.chains)
-    x$fit <- suppressMessages(rstan::stan(model_code = x$model, data = x$data, 
-                                          chains = 0, fit = x$fit, ...))
+  if (n.cluster > 1 || silent && n.chains > 0) {
+    if (is.character(inits) || is.numeric(inits)) inits <- rep(inits, n.chains)
+    x$fit <- suppressMessages(rstan::stan(model_code = x$model, data = x$data, chains = 0, fit = x$fit, ...))
     cl <- makeCluster(n.cluster)
     clusterEvalQ(cl, require(rstan))
     clusterExport(cl = cl, c("x", "inits", "n.iter", "n.warmup", "n.thin"), envir = environment())
     sflist <- parLapply(cl, 1:n.chains, fun = function(i)  
       rstan::stan(fit = x$fit, data = x$data, iter = n.iter, pars = x$pars, init = inits[i],
                   warmup = n.warmup, thin = n.thin, chains = 1, chain_id = i))
-    if (n.chains > 1) x$fit <- rstan::sflist2stanfit(sflist)
-    else x$fit <- sflist[[1]]
+    x$fit <- rstan::sflist2stanfit(sflist)
     stopCluster(cl)
   } 
   else x$fit <- rstan::stan(model_code = x$model, data = x$data, pars = x$pars, init = inits, 
-                         iter = n.iter, chains = n.chains, warmup = n.warmup, thin = n.thin, 
-                         fit = x$fit, ...)
+                            iter = n.iter, chains = n.chains, warmup = n.warmup, thin = n.thin, 
+                            fit = x$fit, ...)
   rename.pars(x)
 }
