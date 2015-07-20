@@ -10,7 +10,7 @@
 brm.model.matrix = function(formula, data = environment(formula), rm.int = FALSE) {
   if (!is(formula, "formula")) return(NULL) 
   X <- model.matrix(formula,data)
-  cn.new <- brm.replace(colnames(X))
+  cn.new <- rename(colnames(X))
   if (rm.int & "Intercept" %in% cn.new) {
     X <- as.matrix(X[,-(1)])
     if (ncol(X)) colnames(X) <- cn.new[2:length(cn.new)]
@@ -19,17 +19,17 @@ brm.model.matrix = function(formula, data = environment(formula), rm.int = FALSE
   X   
 }
 
-#  replace certain symbols in a character vector
-brm.replace <- function(names, symbols = NULL, subs = NULL) {
+#  rename certain symbols in a character vector
+rename <- function(names, symbols = NULL, subs = NULL) {
   if (is.null(symbols))
-    symbols <- c(" |\\(|\\)|\\[|\\]|,", "\\+", "-", "\\*", "/", "\\^", "=", "!=")
+    symbols <- c(" ", "(", ")", "[", "]", ",", "+", "-", "*", "/", "^", "=", "!=")
   if (is.null(subs))
-    subs <- c("", "P", "M", "MU", "D", "E", "EQ", "NEQ")
+    subs <- c(rep("", 6), "P", "M", "MU", "D", "E", "EQ", "NEQ")
   if (length(symbols) != length(subs)) 
     stop("length(symbols) != length(subs)")
   new.names <- names
   for (i in 1:length(symbols)) 
-    new.names <- gsub(symbols[i], subs[i], new.names)
+    new.names <- gsub(symbols[i], subs[i], new.names, fixed = TRUE)
   dup <- duplicated(new.names)
   if (any(dup)) 
     stop(paste0("Internal renaming of variables led to duplicated names. \n",
