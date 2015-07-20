@@ -320,28 +320,29 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", alpha = 0.05, ...) {
     stop("Argument hypothesis must be a character vector")
   if (!is.null(class)) class <- paste0(class,"_")
   else class <- ""
-  pars <- gsub(":", "__", dimnames(x$fit)$parameters[grepl("^",class, dimnames(x$fit)$parameters)])
+  pars <- rename(dimnames(x$fit)$parameters[grepl("^",class, dimnames(x$fit)$parameters)],
+                 symbols = ":", subs = "__")
   
   out <- do.call(rbind, lapply(hypothesis, function(h) {
-    h <- gsub(":", "__", gsub(" ", "", h))
+    h <- rename(h, symbols = c(" ", ":"), subs = c("", "__"))
     sign <- unlist(regmatches(h, gregexpr("=|<|>", h)))
     lr <- unlist(regmatches(h, gregexpr("[^=<>]+", h)))
     if (length(sign) != 1 | length(lr) != 2)
       stop("Every hypothesis must be of the form 'left (= OR < OR >) right'")
     h <- paste0(lr[1], ifelse(lr[2] != "0", paste0("-(",lr[2],")"), ""))
     fun.pos <- gregexpr("([^([:digit:]|[:punct:])]|\\.|_)[[:alnum:]_\\.]*\\(", h)
-    var.pos <- list(rmMatch(gregexpr("([^([:digit:]|[:punct:])]|\\.|_)[[:alnum:]_\\.]*", h)[[1]], 
+    var.pos <- list(rmMatch(gregexpr("([^([:digit:]|[:punct:])]|\\.|_)[[:alnum:]_\\.]*(\\[[[:digit:]]*\\])?", h)[[1]], 
                             fun.pos[[1]]))
     varsH <- unlist(regmatches(h, var.pos))
     parsH <- paste0(class, varsH)
     if (!all(parsH %in% pars)) 
       stop(paste("The following parameters cannot be found in the model:", 
                  paste0(gsub("__", ":", parsH[which(!parsH %in% pars)]), collapse = ", ")))
-    samples <- posterior.samples(x, parameters = paste0("^",parsH,"$"))
-    names(samples) <- varsH
+    samples <- posterior.samples(x, parameters = rename(parsH, "__", ":"), fixed = TRUE)
+    names(samples) <- rename(varsH, c("[", "]"), c("OB", "CB"))
     
     #evaluate hypothesis
-    out <- matrix(with(samples, eval(parse(text = h))), ncol=1)
+    out <- matrix(with(samples, eval(parse(text = rename(h, c("[", "]"), c("OB", "CB"))))), ncol=1)
     sign.word <- ifelse(sign == "=", "equal", ifelse(sign == "<", "less", "greater"))
     probs <- switch(sign.word, equal = c(alpha/2, 1-alpha/2), less = c(0, 1-alpha), greater = c(alpha, 1))
     out <- as.data.frame(matrix(unlist(lapply(c("mean","sd","quantile"), get.estimate, 
@@ -349,7 +350,7 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", alpha = 0.05, ...) {
     if (sign == "<") out[1,3] <- -Inf
     else if (sign == ">") out[1,4] <- Inf
     out <- cbind(out, ifelse(!(out[1,3] <= 0 & 0 <= out[1,4]), '*', ''))
-    rownames(out) <- paste(gsub("__", ":", h), sign, "0")
+    rownames(out) <- paste(rename(h, "__", ":"), sign, "0")
     cl <- (1-alpha)*100
     colnames(out) <- c("Estimate", "Est.Error", paste0("l-",cl,"% CI"), paste0("u-",cl,"% CI"), "")
     out
