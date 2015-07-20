@@ -10,7 +10,7 @@ array2list <- function(x) {
   l
 }
 
-isNULL <- function(x) is.null(x) | all(sapply(x, is.null))
+isNULL <- function(x) is.null(x) || all(sapply(x, is.null))
 
 rmNULL <- function(x) {
   x <- Filter(Negate(isNULL), x)

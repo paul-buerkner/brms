@@ -57,7 +57,7 @@ extract.effects <- function(formula, ..., family = "none", add.ignore = FALSE) {
       x[[f]] <- unlist(regmatches(add, gregexpr(paste0(f,"\\([^\\|]*\\)"), add)))[1]
       add <- gsub(paste0(f,"\\([^~|\\|]*\\)\\|*"), "", add)
       if (is.na(x[[f]])) x[[f]] <- NULL
-      else if (family %in% families[[f]] | families[[f]][1] == "all") {
+      else if (family %in% families[[f]] || families[[f]][1] == "all") {
         x[[f]] <- substr(x[[f]], nchar(f) + 2, nchar(x[[f]]) -1)
         if (is.na(suppressWarnings(as.numeric(x[[f]])))) {
           x[[f]] <- as.formula(paste0("~", x[[f]]))
@@ -68,7 +68,7 @@ extract.effects <- function(formula, ..., family = "none", add.ignore = FALSE) {
       }  
       else stop(paste("Argument",f,"in formula is not supported by family",family))
     }
-    if (nchar(gsub("\\|", "", add)) > 0 & !is.na(add))
+    if (nchar(gsub("\\|", "", add)) > 0 && !is.na(add))
       stop(paste0("Invalid addition part of formula. Please see the 'Details' section of help(brm) ",
                   "for further information. \nNote that the syntax of addition has changed in brms 0.2.1 as ",
                   "the old one was not flexible enough."))

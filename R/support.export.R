@@ -26,7 +26,7 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
   is.lin <- family %in% c("gaussian", "student", "cauchy")
   is.ord <- family  %in% c("cumulative","cratio","sratio","acat")
   is.skew <- family %in% c("gamma", "weibull", "exponential")
-  if (!(is.lin | is.ord | is.skew | family %in% 
+  if (!(is.lin || is.ord || is.skew || family %in% 
       c("poisson", "negbinomial", "geometric", "binomial","bernoulli", "categorical", "multigaussian")))
     stop(paste(family,"is not a valid family"))
   
@@ -34,11 +34,11 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
   r <- lapply(lapply(ee$random, brm.model.matrix, data = data), colnames)
   p <- colnames(brm.model.matrix(partial, data, rm.int = TRUE))
   out <- NULL
-  if (is.ord & threshold == "flexible") out <- c(out, "b_Intercept")
-  if (is.ord & threshold == "equidistant") out <- c(out, "b_Intercept1", "delta")
-  if (length(f) & family != "categorical") out <- c(out, "b")
-  if (is.ord & length(p) | family == "categorical") out <- c(out, "bp")
-  if (is.lin & !is(ee$se,"formula")) out <- c(out, "sigma")
+  if (is.ord && threshold == "flexible") out <- c(out, "b_Intercept")
+  if (is.ord && threshold == "equidistant") out <- c(out, "b_Intercept1", "delta")
+  if (length(f) && family != "categorical") out <- c(out, "b")
+  if (is.ord && length(p) || family == "categorical") out <- c(out, "bp")
+  if (is.lin && !is(ee$se,"formula")) out <- c(out, "sigma")
   if (family == "multigaussian") out <- c(out, "sigma", "rescor")
   if (family == "student") out <- c(out,"nu")
   if (family %in% c("gamma","weibull","negbinomial")) out <- c(out,"shape")
@@ -47,7 +47,7 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
   if (length(ee$group)) {
     out <- c(out, paste0("sd_",ee$group))
     out <- c(out, unlist(lapply(1:length(ee$group), function(i)
-      if (length(r[[i]])>1 & ee$cor[[i]]) paste0("cor_",ee$group[[i]]))))
+      if (length(r[[i]])>1 && ee$cor[[i]]) paste0("cor_",ee$group[[i]]))))
     if (ranef) out <- c(out, paste0("r_",ee$group))
   }
   if (predict) out <- c(out,"Y_pred")
@@ -96,7 +96,7 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
   
   #sort data in case of autocorrelation models
   if (sum(autocor$p, autocor$q) > 0) {
-    if (family == "multigaussian" & !any(sapply(c("__trait","trait__"), grepl, x = et$group)))
+    if (family == "multigaussian" && !any(sapply(c("__trait","trait__"), grepl, x = et$group)))
       stop("autocorrelation structure for family 'multigaussian' must contain 'trait' as a grouping variable")
     to.order <- rmNULL(list(data[["trait"]], data[[et$group]], data[[et$time]]))
     if (length(to.order)) 
@@ -105,12 +105,12 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
   
   #response variable
   supl.data <- list(N = nrow(data), Y = unname(model.response(data)))
-  if (!is.numeric(supl.data$Y) & !(is.ord | family %in% c("bernoulli", "categorical"))) 
+  if (!is.numeric(supl.data$Y) && !(is.ord || family %in% c("bernoulli", "categorical"))) 
     stop(paste("family", family, "expects numeric response variable"))
   
   #transform and check response variable for different families
-  if (is.count | family == "binomial") {
-    if (!all(is.wholenumber(supl.data$Y)) | min(supl.data$Y) < 0)
+  if (is.count || family == "binomial") {
+    if (!all(is.wholenumber(supl.data$Y)) || min(supl.data$Y) < 0)
       stop(paste("family", family, "expects response variable of non-negative integers"))
   }
   else if (family == "bernoulli") {
@@ -195,8 +195,8 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
     cens <- get(all.vars(ee$cens)[1], data)
     if (is.factor(cens)) cens <- as.character(cens)
     cens <- unname(sapply(cens, function(x) {
-      if (grepl(paste0("^",x), "right") | is.logical(x) & isTRUE(x)) x <- 1
-      else if (grepl(paste0("^",x), "none") | is.logical(x) & !isTRUE(x)) x <- 0
+      if (grepl(paste0("^",x), "right") || is.logical(x) && isTRUE(x)) x <- 1
+      else if (grepl(paste0("^",x), "none") || is.logical(x) && !isTRUE(x)) x <- 0
       else if (grepl(paste0("^",x), "left")) x <- -1
       else x
     }))
@@ -206,7 +206,7 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
                    "and refer to 'right' and 'none' respectively."))
     supl.data <- c(supl.data, list(cens = cens))
   }
-  if (is.ord | family %in% c("binomial", "categorical")) {
+  if (is.ord || family %in% c("binomial", "categorical")) {
     if (family == "binomial") add <- ee$trials
     else add <- ee$cat
     if (!length(add)) supl.data$max_obs <- max(supl.data$Y)
@@ -216,8 +216,8 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
     else stop("Response part of formula is invalid.")
     if (any(supl.data$Y > supl.data$max_obs))
       stop("The number of trials / categories is smaller the response variable would suggest.")
-    if ((is.ord | family == "categorical") & max(supl.data$max_obs) == 2 |
-        family == "binomial" & max(supl.data$max_obs) == 1) 
+    if ((is.ord || family == "categorical") && max(supl.data$max_obs) == 2 ||
+        family == "binomial" && max(supl.data$max_obs) == 1) 
       message("Only 2 levels detected so that family 'bernoulli' might be a more efficient choice.")
   } 
   
@@ -242,7 +242,7 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
     if (is.null(tgroup)) tgroup <- rep(1, supl.data$N) 
     U_tgroup <- unique(tgroup)
     N_tgroup <- length(U_tgroup)
-    if (autocor$p > 0 & is(autocor,"cor.arma")) {
+    if (autocor$p > 0 && is(autocor,"cor.arma")) {
       supl.data$Yar <- matrix(0, nrow = supl.data$N, ncol = autocor$p)
       supl.data$Kar <- autocor$p
       ptsum <- rep(0, N_tgroup + 1)
@@ -256,7 +256,7 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
         }
       }
     }
-    if (autocor$q > 0 & is(autocor,"cor.arma")) {
+    if (autocor$q > 0 && is(autocor,"cor.arma")) {
       supl.data$Ema_pre <- matrix(0, nrow = supl.data$N, ncol = autocor$q)
       supl.data$Kma <- autocor$q
       supl.data$tgroup <- as.numeric(as.factor(tgroup))

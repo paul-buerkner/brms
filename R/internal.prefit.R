@@ -11,7 +11,7 @@ brm.model.matrix = function(formula, data = environment(formula), rm.int = FALSE
   if (!is(formula, "formula")) return(NULL) 
   X <- model.matrix(formula,data)
   cn.new <- rename(colnames(X))
-  if (rm.int & "Intercept" %in% cn.new) {
+  if (rm.int && "Intercept" %in% cn.new) {
     X <- as.matrix(X[,-(1)])
     if (ncol(X)) colnames(X) <- cn.new[2:length(cn.new)]
   } 
@@ -63,29 +63,29 @@ brm.link <- function(family) {
   is.count <- family %in% c("poisson", "negbinomial", "geometric")
   if (is.na(link)) {
     if (is.lin) link <- "identity"
-    else if (is.skew | is.count) link <- "log"
-    else if (is.bin | family == "categorical") link <- "logit"
+    else if (is.skew || is.count) link <- "log"
+    else if (is.bin || family == "categorical") link <- "logit"
   }
-  else if (is.lin & !is.element(link, c("identity", "log", "inverse")) |
-           is.count & !link %in% c("log", "identity", "sqrt") |
-           is.bin & !link %in% c("logit", "probit", "probit_approx", "cloglog") |
-           family == "categorical" & link != "logit" |
-           is.skew & !link %in% c("log", "identity", "inverse"))
+  else if (is.lin && !is.element(link, c("identity", "log", "inverse")) ||
+           is.count && !link %in% c("log", "identity", "sqrt") ||
+           is.bin && !link %in% c("logit", "probit", "probit_approx", "cloglog") ||
+           family == "categorical" && link != "logit" ||
+           is.skew && !link %in% c("log", "identity", "inverse"))
     stop(paste(link, "is not a valid link for family", family))
-  else if (is.count & link == "sqrt") 
+  else if (is.count && link == "sqrt") 
     warning(paste(family, "model with sqrt link may not be uniquely identified"))
   link
 }
 
 #melt data frame for family = "multigaussian"
 brm.melt <- function(data, response, family) {
-  if (length(response) > 1 & family != "multigaussian")
+  if (length(response) > 1 && family != "multigaussian")
     stop("multivariate models are currently only allowed for family 'multigaussian'")
-  else if (length(response) == 1 & family == "multigaussian")
+  else if (length(response) == 1 && family == "multigaussian")
     stop("Only one response variable detected. Use family 'gaussian' instead of 'multigaussian'")
-  else if (!is(data, "data.frame") & family == "multigaussian")
+  else if (!is(data, "data.frame") && family == "multigaussian")
     stop("data must be a data.frame if family 'multigaussian' is used")
-  else if (length(response) > 1 & family == "multigaussian") {
+  else if (length(response) > 1 && family == "multigaussian") {
     if ("trait" %in% names(data))
       stop("trait is a resevered variable name for family 'multigaussian'")
     data <- reshape2::melt(data, measure.vars = response)

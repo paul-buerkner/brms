@@ -9,7 +9,7 @@ get.estimate <- function(coef, samples, margin = 2, to.array = FALSE, ...) {
   if (is.null(dim(x))) 
     x <- matrix(x, dimnames = list(NULL, coef))
   else if (coef == "quantile") x <- aperm(x, length(dim(x)):1)
-  if (to.array & length(dim(x)) == 2) 
+  if (to.array && length(dim(x)) == 2) 
     x <- array(x, dim = c(dim(x), 1), dimnames = list(NULL, NULL, coef))
   x 
 }
@@ -17,7 +17,7 @@ get.estimate <- function(coef, samples, margin = 2, to.array = FALSE, ...) {
 #get correlation names
 get.cor.names <- function(names, type = "cor", eval = TRUE) {
   cor.names <- NULL
-  if (length(names) > 1 & eval)
+  if (length(names) > 1 && eval)
     for (i in 2:length(names)) 
       for (j in 1:(i-1)) 
         cor.names <- c(cor.names, paste0(type,"(",names[j],",",names[i],")"))
@@ -38,7 +38,7 @@ rename.pars <- function(x, ...) {
   f <- colnames(x$data$X)
   if (length(f)) 
     change[[length(change)+1]] <- list(pos = grepl("^b\\[", pars), names = paste0("b_",f))
-  if (is.formula(x$partial) | x$family == "categorical") {
+  if (is.formula(x$partial) || x$family == "categorical") {
     if (x$family == "categorical") p <- colnames(x$data$X)
     else p <- colnames(x$data$Xp)
    change[[length(change)+1]] <- list(pos = grepl("^bp\\[", pars), sort = TRUE,
