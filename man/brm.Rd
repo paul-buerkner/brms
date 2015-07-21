@@ -6,7 +6,7 @@
 \usage{
 brm(formula, data = NULL, family = c("gaussian", "identity"),
   prior = list(), addition = NULL, autocor = NULL, partial = NULL,
-  threshold = "flexible", cov.ranef = NULL, ranef = TRUE,
+  threshold = "flexible", cov.ranef = NULL, ranef = TRUE, WAIC = FALSE,
   predict = FALSE, fit = NA, n.chains = 2, n.iter = 2000,
   n.warmup = 500, n.thin = 1, n.cluster = 1, inits = "random",
   silent = FALSE, seed = 12345, save.model = NULL, ...)
@@ -53,7 +53,11 @@ If incorporated, random intercepts will always be treated as the first random ef
 \item{ranef}{A flag to indicate if random effects for each level of the grouping factor(s) should be saved (default is \code{TRUE}).
 Set to \code{FALSE} to save memory. The argument has no impact on the model fitting itself.}
 
-\item{predict}{A flag to indicate if posterior predictives of the dependent variable should be generated.}
+\item{WAIC}{A flag to indicate if the log likelihood of the model should be saved so that the WAIC can be computed afterwards.
+For models with many observation, this leads to rather huge fitted model objects.}
+
+\item{predict}{A flag to indicate if posterior predictives of the dependent variable should be generated.
+For models with many observation, this leads to rather huge fitted model objects.}
 
 \item{fit}{An instance of S3 class \code{brmsfit} derived from a previous fit; defaults to \code{NA}. If \code{fit} is of class \code{brmsfit}, the compiled model associated
  with the fitted result is re-used and the arguments \code{formula}, \code{data}, \code{family}, \code{prior}, \code{addition}, \code{autocor}, \code{partial}, \code{threshold},

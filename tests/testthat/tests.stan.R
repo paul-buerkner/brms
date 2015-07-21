@@ -59,11 +59,16 @@ test_that("Test_that stan.ma returns correct strings (or errors) for moving aver
                       "of levels as observations in the data"))
 })
 
-test_that("Test that stan.predict returns correct strings", {
-  expect_match(stan.predict(TRUE, family = "multigaussian", link = "identity", 
-                            add = FALSE, weights = FALSE), fixed = TRUE, "Y_pred[N_trait]")
-  expect_equal(stan.predict(FALSE, family = "multigaussian", link = "identity", 
-                            add = FALSE, weights = FALSE), "")
+test_that("Test that stan.genquant returns correct strings", {
+  expect_equal(stan.genquant(family = "multigaussian", link = "identity"), list())
+  expect_match(stan.genquant(family = "multigaussian", link = "identity", predict = TRUE)$genD, 
+               "Y_pred[N_trait]", fixed = TRUE)
+  expect_match(stan.genquant(family = "poisson", link = "log", logllh = TRUE)$genD, 
+               "vector[N] log_llh", fixed = TRUE)
+  expect_match(stan.genquant(family = "poisson", link = "log", logllh = TRUE)$genC, 
+               "poisson_log(Y[n],exp(eta[n]))", fixed = TRUE)
+  expect_match(stan.genquant(family = "weibull", link = "log", logllh = TRUE)$genC, 
+               "weibull_log(Y[n],shape,eta[n])", fixed = TRUE)
 })
 
 test_that("Test that stan.model accepts supported links", {

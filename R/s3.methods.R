@@ -155,14 +155,16 @@ summary.brmsfit <- function(object, ...) {
   else {
     out <- brmssummary(brm.update.formula(object$formula, partial = object$partial),
              family = object$family, link = object$link, data.name = object$data.name, 
-             group = names(object$ranef),
+             group = names(object$ranef), 
              nobs = nobs(object), ngrps = ngrps(object), autocor = object$autocor,
              n.chain = length(object$fit@sim$samples),
              n.iter = attr(object$fit@sim$samples[[1]],"args")$iter,
              n.warmup = attr(object$fit@sim$samples[[1]],"args")$warmup,
              n.thin = attr(object$fit@sim$samples[[1]],"args")$thin,
              sampler = attr(object$fit@sim$samples[[1]],"args")$sampler_t) 
-    pars <- dimnames(object$fit)$parameters
+    
+    if ("log_llh" %in% object$fit@model_pars) out$WAIC <- WAIC(object)
+    pars <- par.names(object)
     fit.summary <- rstan::summary(object$fit, probs = c(0.025, 0.975))
     col.names <- c("Estimate", "Est.Error", "l-95% CI", "u-95% CI", "Eff.Sample", "Rhat")
     
@@ -208,15 +210,13 @@ print.brmssummary <- function(x, digits = 2, ...) {
   cat(paste("Formula:", gsub(" {1,}", " ", Reduce(paste, deparse(x$formula))), "\n"))
   cat(paste0("   Data: ", x$data.name, " (Number of observations: ",x$nobs,") \n"))
   if (x$sampler == "") {
-    cat(paste("\nThe model does not contain posterior samples. Most likely, this is \n",
-        "because the package rstan was not installed when the model was fitted. \n",
-        "Please see https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started \n",
-        "for instructions on how to install rstan."))
+    cat(paste("\nThe model does not contain posterior samples."))
   }
   else {
     cat(paste0("Samples: ", x$n.chain, " chains, each with n.iter = ", x$n.iter, 
                "; n.warmup = ", x$n.warmup, "; n.thin = ", x$n.thin, "; \n",
-      "         total post-warmup samples = ", (x$n.iter-x$n.warmup)/x$n.thin*x$n.chain, "\n \n"))  
+      "         total post-warmup samples = ", (x$n.iter-x$n.warmup)/x$n.thin*x$n.chain, "\n"))
+    cat(paste0("   WAIC: ", ifelse(is.numeric(x$WAIC), round(x$WAIC, digits = digits), x$WAIC), "\n \n"))
     
     if (length(x$group)) {
       cat("Random Effects: \n")
@@ -425,4 +425,25 @@ plot.brmsfit <- function(x, parameters = NA, combine = FALSE, N = 5, ask = TRUE,
     if (i == 1) grDevices::devAskNewPage(ask = ask)
   }
   grDevices::devAskNewPage(default.ask)
+}
+
+#' @export
+WAIC.brmsfit <- function(x, ...) {
+  models <- list(x, ...)
+  names <- c(deparse(substitute(x)), sapply(substitute(list(...))[-1], deparse))
+  fun <- function(x) {
+    if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
+      stop("The model does not contain posterior samples") 
+    if (!"log_llh" %in% x$fit@model_pars) 
+      stop(paste0("The model does not contain log likelihood values. \n",
+                  "You should use argument WAIC = TRUE in function brm."))
+    log_llh <- posterior.samples(x, parameters = "^log_llh")
+    lpd <- sum(log(apply(exp(log_llh), 2, mean)))
+    pwaic <- sum(apply(log_llh, 2, var))
+    return(-2*(lpd-pwaic))
+  }
+  if (length(models) > 1) 
+    out <- setNames(lapply(models, fun), names)
+  else out <- fun(x)
+  out
 }

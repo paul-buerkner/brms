@@ -5,7 +5,8 @@
 \title{Parameters of interest for \code{brms} models}
 \usage{
 brm.pars(formula, data = NULL, family = "gaussian", autocor = NULL,
-  partial = NULL, threshold = "flexible", predict = FALSE, ranef = TRUE)
+  partial = NULL, threshold = "flexible", ranef = TRUE, WAIC = FALSE,
+  predict = FALSE)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class): a symbolic description of the model to be fitted.
@@ -31,9 +32,13 @@ Defaults to NULL, corresponding to no correlations.}
 \item{threshold}{A character string indicating the type of thresholds (i.e. intercepts) used in an ordinal model.
 \code{"flexible"} provides the standard unstructured thresholds and \code{"equidistant"} restricts the distance between consecutive thresholds to the same value.}
 
-\item{predict}{A flag to indicate if posterior predictives of the dependent variable should be generated.}
-
 \item{ranef}{logical; indicating if random effects estimates should be returned}
+
+\item{WAIC}{A flag to indicate if the log likelihood of the model should be saved so that the WAIC can be computed afterwards.
+For models with many observation, this leads to rather huge fitted model objects.}
+
+\item{predict}{A flag to indicate if posterior predictives of the dependent variable should be generated.
+For models with many observation, this leads to rather huge fitted model objects.}
 }
 \value{
 A vector of character strings specifying parameters of interest for models produced by the \code{brms} package.

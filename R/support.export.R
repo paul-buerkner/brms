@@ -16,7 +16,7 @@
 #'               
 #' @export
 brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, partial = NULL,
-                    threshold = "flexible", predict = FALSE, ranef = TRUE) {
+                    threshold = "flexible", ranef = TRUE, WAIC = FALSE, predict = FALSE) {
   family <- family[1]
   if (is.null(autocor)) autocor <- cor.arma()
   if (!is(autocor,"cor.brms")) stop("cor must be of class cor.brms")
@@ -50,7 +50,8 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
       if (length(r[[i]])>1 && ee$cor[[i]]) paste0("cor_",ee$group[[i]]))))
     if (ranef) out <- c(out, paste0("r_",ee$group))
   }
-  if (predict) out <- c(out,"Y_pred")
+  if (predict) out <- c(out, "Y_pred")
+  if (WAIC) out <- c(out, "log_llh")
   return(out)
 }
 

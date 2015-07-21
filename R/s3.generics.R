@@ -12,10 +12,10 @@ brmsfit <- function(formula = NULL, family = "", link = "", data.name = "", data
 brmssummary <- function(formula = NULL, family = "", link = "", data.name = "", group = NULL,
                  nobs = NULL, ngrps = NULL, n.chain = 1, n.iter = 2000, n.warmup = 500, n.thin = 1,
                  sampler = "", fixed = NULL, random = list(), cor.pars = NULL, autocor = NULL, 
-                 spec.pars = NULL) {
+                 spec.pars = NULL, WAIC = "Not computed") {
   x <- list(formula = formula, family = family, link = link, data.name = data.name, group = group, 
             nobs = nobs, ngrps = ngrps, n.chain = n.chain, n.iter = n.iter,  n.warmup = n.warmup, 
-            n.thin = n.thin, sampler = sampler, fixed = fixed, random = random, 
+            n.thin = n.thin, sampler = sampler, fixed = fixed, random = random, WAIC = WAIC,
             cor.pars = cor.pars, autocor = autocor, spec.pars = spec.pars)
   class(x) <- "brmssummary"
   x
@@ -227,3 +227,26 @@ posterior.samples <- function(x, parameters = NA, ...)
 #' @export
 par.names <- function(x, ...)
   UseMethod("par.names")
+
+
+#' Compute the WAIC
+#' 
+#' Compute the Watanabe-Akaike Information Criterion based on the posterior likelihood
+#' 
+#' @param x A fitted model object typically of class \code{brmsfit}. 
+#' @param ... Optionally more fitted model objects. 
+#' 
+#' @details When comparing models fitted to the same data, the smaller the WAIC, the better the fit.
+#' 
+#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
+#' 
+#' @references 
+#' Gelman, A., Hwang, J., & Vehtari, A. (2014). Understanding predictive information criteria for Bayesian models. 
+#' Statistics and Computing, 24, 997-1016.
+#' 
+#' Watanabe, S. (2010). Asymptotic equivalence of Bayes cross validation and widely applicable information criterion in singular learning theory. 
+#' The Journal of Machine Learning Research, 11, 3571-3594.
+#' 
+#' @export
+WAIC <- function(x, ...)
+  UseMethod("WAIC")

@@ -32,6 +32,9 @@
 #'   Currently, the covariance matrix applies only to the first random effect of each grouping factor. 
 #'   If incorporated, random intercepts will always be treated as the first random effect.
 #' @param predict A flag to indicate if posterior predictives of the dependent variable should be generated. 
+#'   For models with many observation, this leads to rather huge fitted model objects.
+#' @param WAIC A flag to indicate if the log likelihood of the model should be saved so that the WAIC can be computed afterwards.
+#'   For models with many observation, this leads to rather huge fitted model objects.
 #' @param ranef A flag to indicate if random effects for each level of the grouping factor(s) should be saved (default is \code{TRUE}). 
 #'   Set to \code{FALSE} to save memory. The argument has no impact on the model fitting itself.
 #' @param fit An instance of S3 class \code{brmsfit} derived from a previous fit; defaults to \code{NA}. If \code{fit} is of class \code{brmsfit}, the compiled model associated 
@@ -255,7 +258,7 @@
 #' @export 
 brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior = list(),
                 addition = NULL, autocor = NULL, partial = NULL, threshold = "flexible", cov.ranef = NULL, 
-                ranef = TRUE, predict = FALSE, fit = NA, n.chains = 2, n.iter = 2000, n.warmup = 500, 
+                ranef = TRUE, WAIC = FALSE, predict = FALSE, fit = NA, n.chains = 2, n.iter = 2000, n.warmup = 500, 
                 n.thin = 1, n.cluster = 1, inits = "random", silent = FALSE, seed = 12345, 
                 save.model = NULL, ...) {
   dots <- list(...) 
@@ -279,11 +282,11 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
     x$ranef <- setNames(lapply(lapply(ee$random, brm.model.matrix, data = data), colnames), 
                         gsub("__", ":", ee$group))
     x$pars <- brm.pars(formula, data = data, family = family, autocor = autocor, partial = partial, 
-                       threshold = threshold, ranef = ranef, predict = predict)
+                       threshold = threshold, ranef = ranef, WAIC = WAIC, predict = predict)
     x$data <- brm.data(formula, data = data, family = family, prior = prior, cov.ranef = cov.ranef,
                        autocor = autocor, partial = partial) 
-    x$model <- stan.model(formula = x$formula, data = data, family = x$family, link = x$link, 
-                          prior = prior, autocor = x$autocor, partial = x$partial,  predict = predict, 
+    x$model <- stan.model(formula = x$formula, data = data, family = x$family, link = x$link, prior = prior, 
+                          autocor = x$autocor, partial = x$partial, predict = predict, WAIC = WAIC,
                           threshold = threshold, cov.ranef = names(cov.ranef), save.model = save.model)
   }  
   

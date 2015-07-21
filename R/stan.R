@@ -9,7 +9,7 @@
 # }
 stan.model <- function(formula, data = NULL, family = "gaussian", link = "identity",
                        prior = list(), partial = NULL, threshold = "flexible", cov.ranef = NULL,
-                       predict = FALSE, autocor = cor.arma(), save.model = NULL) {
+                       WAIC = FALSE, predict = FALSE, autocor = cor.arma(), save.model = NULL) {
   ee <- extract.effects(formula = formula, family = family, partial = partial) 
   is.lin <- family %in% c("gaussian", "student", "cauchy")
   is.ord <- family %in% c("cumulative", "cratio", "sratio", "acat") 
@@ -50,6 +50,8 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
   mg <- stan.mg(family, response = ee$response)
   llh <- stan.llh(family, link = link, add = is.formula(ee[c("se", "trials", "cat")]), 
                   weights = is.formula(ee$weights), cens = is.formula(ee$cens))
+  genquant <- stan.genquant(family, link = link, add = is.formula(ee[c("se", "trials", "cat")]),
+                            predict = predict, logllh = WAIC)
   cens <- ifelse(is.formula(ee$cens), "if (cens[n] == 0) ", "")
   
   data.text <- paste0(
@@ -146,10 +148,8 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
     "  increment_log_prob(dot_product(weights,lp_pre)); \n",
   "} \n",
   "generated quantities { \n",
-    mg$genD, ranef$genD,
-    stan.predict(predict = predict, add = is.formula(ee[c("se", "trials", "cat")]),  
-                 family = family, link = link, weights = is.formula(ee$weights)), 
-    mg$genC, ranef$genC, 
+    mg$genD, ranef$genD, genquant$genD,
+    mg$genC, ranef$genC, genquant$genC,
   "} \n")
   
   class(model) <- c("character", "brmsmodel")
@@ -277,19 +277,29 @@ stan.ma <- function(family, link, autocor, group, levels, N) {
   ma
 }
 
-# predicted values in stan
-stan.predict <- function(predict, family, link, add, weights) {
-  if (predict) {
-    llh.pred <- stan.llh(family = family, link = link, add = add, weights = weights, predict = TRUE) 
-    if (family %in% c("gaussian", "student", "cauchy", "gamma", "weibull", "exponential"))
-      out <- paste0("  real Y_pred[N]; \n  for (n in 1:N) { \n", llh.pred, "  } \n")
-    else if (family %in% c("binomial", "bernoulli", "poisson", "negbinomial", "geometric",
-                           "categorical", "cumulative", "cratio", "sratio", "acat"))
-      out <- paste0("  int Y_pred[N]; \n  for (n in 1:N) { \n", llh.pred, "  } \n")
-    else if (family == "multigaussian")
-      out <- paste0("  vector[K_trait] Y_pred[N_trait]; \n  for (n in 1:N_trait) { \n", llh.pred, "  } \n")
+#stan code for posterior predictives and log likelihood
+stan.genquant <- function(family, link, predict = FALSE, logllh = FALSE, add = FALSE) {
+  if (predict || logllh) {
+    trait <- ifelse(family == "multigaussian", "_trait", "")
+    out <- list(genC = paste0("  for (n in 1:N",trait,") { \n"))
+    if (predict) {
+      llh.pred <- stan.llh(family = family, link = link, add = add, predict = TRUE) 
+      if (family %in% c("gaussian", "student", "cauchy", "gamma", "weibull", "exponential"))
+        out$genD <- "  real Y_pred[N]; \n"  
+      else if (family %in% c("binomial", "bernoulli", "poisson", "negbinomial", "geometric",
+                             "categorical", "cumulative", "cratio", "sratio", "acat"))
+        out$genD <- "  int Y_pred[N]; \n"
+      else if (family == "multigaussian")
+        out$genD <-"  vector[K_trait] Y_pred[N_trait]; \n"
+      out$genC <- paste0(out$genC, stan.llh(family = family, link = link, add = add, predict = TRUE))
+    }
+    if (logllh) {
+      out$genD <- paste0(out$genD, "  vector[N",trait,"] log_llh; \n")
+      out$genC <- paste0(out$genC, stan.llh(family = family, link = link, add = add, logllh = TRUE))
+    }
+    out$genC <- paste0(out$genC, "  } \n")
   }
-  else out <- ""
+  else out <- list()
   out
 }
 
@@ -468,18 +478,18 @@ stan.prior = function(par, prior = list(), add.type = NULL, ind = rep("", length
 # stan.llh(family = "cumulative", link = "logit")
 # }
 stan.llh <- function(family, link, predict = FALSE, add = FALSE,
-                     weights = FALSE, cens = FALSE) {
+                     weights = FALSE, cens = FALSE, logllh = FALSE) {
   is.ord <- family %in% c("cumulative", "cratio", "sratio", "acat")
   is.count <- family %in% c("poisson","negbinomial", "geometric")
   is.skew <- family %in% c("gamma","exponential","weibull")
-  simplify <- !cens && !predict && (family %in% c("binomial", "bernoulli") && link == "logit" ||
+  simplify <- !cens && !predict && !logllh && (family %in% c("binomial", "bernoulli") && link == "logit" ||
     family %in% c("cumulative", "categorical") && link == "logit" && !add || is.count && link == "log") 
-  n <- ifelse(predict || cens || weights || is.ord || family == "categorical" , "[n]", "")
-  ns <- ifelse(add && (predict || cens || weights), "[n]", "")
+  n <- ifelse(predict || logllh || cens || weights || is.ord || family == "categorical" , "[n]", "")
+  ns <- ifelse(add && (predict || logllh || cens || weights), "[n]", "")
   ilink <- c(identity = "", log = "exp", inverse = "inv", sqrt = "square", logit = "inv_logit", 
              probit = "Phi", probit_approx = "Phi_approx", cloglog = "inv_cloglog")[link]
-  ilink2 <- ifelse((predict || cens) && (link=="logit" && family %in% c("binomial", "bernoulli") || 
-                              is.count && link == "log"), ilink, "")
+  ilink2 <- ifelse((predict || logllh || cens) && (link == "logit" && family %in% c("binomial", "bernoulli") || 
+                   is.count && link == "log"), ilink, "")
   lin.args <- paste0("eta",n,",sigma",ns)
   if (simplify) 
     llh.pre <- list(poisson = c("poisson_log", "eta"), 
@@ -503,10 +513,12 @@ stan.llh <- function(family, link, predict = FALSE, add = FALSE,
                weibull = c("weibull", paste0("shape,eta",n)), 
                categorical = c("categorical","p[n]"))[[ifelse(is.ord, "categorical", family)]]
   
-  type <- ifelse(predict, "predict", ifelse(cens, "cens", ifelse(weights, "weights", "general")))
+  type <- c("predict", "logllh", "cens", "weights")[match(TRUE, c(predict, logllh, cens, weights))]
+  if (is.na(type)) type <- "general"
   addW <- ifelse(weights, "weights[n] * ", "")
   llh <- switch(type, 
     predict = paste0("    Y_pred[n] <- ", llh.pre[1],"_rng(",llh.pre[2],"); \n"),
+    logllh = paste0("    log_llh[n] <- ", llh.pre[1], "_log(Y[n],",llh.pre[2],"); \n"),
     cens = paste0("if (cens[n] == 0) ", 
            ifelse(!weights, paste0("Y[n] ~ ", llh.pre[1],"(",llh.pre[2],"); \n"),
                   paste0("increment_log_prob(", addW, llh.pre[1], "_log(Y[n],",llh.pre[2],")); \n")),
