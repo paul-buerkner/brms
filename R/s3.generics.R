@@ -240,6 +240,20 @@ par.names <- function(x, ...)
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
+#' @examples
+#' \dontrun{
+#' #model with fixed effects only
+#' fit_i1 <- brm(rating ~ treat + period + carry,
+#'               data = inhaler, family = "gaussian", WAIC = TRUE)
+#' WAIC(fit_i1)
+#' 
+#' #model with an additional random intercept for subjects
+#' fit_i2 <- brm(rating ~ treat + period + carry + (1|subject),
+#'              data = inhaler, family = "gaussian", WAIC = TRUE)
+#' #compare both models
+#' WAIC(fit_i1, fit_i2)                          
+#' }
+#' 
 #' @references 
 #' Gelman, A., Hwang, J., & Vehtari, A. (2014). Understanding predictive information criteria for Bayesian models. 
 #' Statistics and Computing, 24, 997-1016.

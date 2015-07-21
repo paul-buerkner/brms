@@ -303,6 +303,27 @@ predict.brmsfit <- function(object, ...) {
 }
 
 #' @export
+WAIC.brmsfit <- function(x, ...) {
+  models <- list(x, ...)
+  names <- c(deparse(substitute(x)), sapply(substitute(list(...))[-1], deparse))
+  fun <- function(x) {
+    if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
+      stop("The model does not contain posterior samples") 
+    if (!"log_llh" %in% x$fit@model_pars) 
+      stop(paste0("The model does not contain log likelihood values. \n",
+                  "You should use argument WAIC = TRUE in function brm."))
+    log_llh <- posterior.samples(x, parameters = "^log_llh")
+    lpd <- sum(log(apply(exp(log_llh), 2, mean)))
+    pwaic <- sum(apply(log_llh, 2, var))
+    return(-2*(lpd-pwaic))
+  }
+  if (length(models) > 1) 
+    out <- setNames(lapply(models, fun), names)
+  else out <- fun(x)
+  out
+}
+
+#' @export
 par.names.brmsfit <- function(x, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("Argument x does not contain posterior samples")
@@ -374,7 +395,7 @@ print.brmshypothesis <- function(x, digits = 2, ...) {
 #' 
 #' @param x An object of class \code{brmsfit}.
 #' @param parameters Name of the parameters to plot, as given by a character vector or a regular expression.
-#'   By default, all parameters except for random effects and posterior predictives are plotted. 
+#'   By default, all parameters except for random effects, posterior predictives, and log likelihood values are plotted. 
 #' @param combine logical; Indicates if the samples of all chains should be combined into one posterior distribution. 
 #' @param N The number of parameters plotted per page.
 #' @param ask logical; Indicates if the user is prompted before a new page is plotted.   
@@ -404,7 +425,7 @@ plot.brmsfit <- function(x, parameters = NA, combine = FALSE, N = 5, ask = TRUE,
     parameters <- c("^b_", "^sd_", "^cor_", "^sigma", "^rescor", "^nu$", 
                     "^shape$", "^delta$", "^ar", "^ma")
   
-  pars <- sort(dimnames(x$fit)$parameters)
+  pars <- sort(par.names(x))
   pars <- gsub("__", ":", pars[apply(sapply(parameters, grepl, x = pars), 1, any)])
   pfit <- ggmcmc::ggs(x$fit)
   att <- attributes(pfit)
@@ -425,25 +446,4 @@ plot.brmsfit <- function(x, parameters = NA, combine = FALSE, N = 5, ask = TRUE,
     if (i == 1) grDevices::devAskNewPage(ask = ask)
   }
   grDevices::devAskNewPage(default.ask)
-}
-
-#' @export
-WAIC.brmsfit <- function(x, ...) {
-  models <- list(x, ...)
-  names <- c(deparse(substitute(x)), sapply(substitute(list(...))[-1], deparse))
-  fun <- function(x) {
-    if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
-      stop("The model does not contain posterior samples") 
-    if (!"log_llh" %in% x$fit@model_pars) 
-      stop(paste0("The model does not contain log likelihood values. \n",
-                  "You should use argument WAIC = TRUE in function brm."))
-    log_llh <- posterior.samples(x, parameters = "^log_llh")
-    lpd <- sum(log(apply(exp(log_llh), 2, mean)))
-    pwaic <- sum(apply(log_llh, 2, var))
-    return(-2*(lpd-pwaic))
-  }
-  if (length(models) > 1) 
-    out <- setNames(lapply(models, fun), names)
-  else out <- fun(x)
-  out
 }

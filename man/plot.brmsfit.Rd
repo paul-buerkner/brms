@@ -11,7 +11,7 @@
 \item{x}{An object of class \code{brmsfit}.}
 
 \item{parameters}{Name of the parameters to plot, as given by a character vector or a regular expression.
-By default, all parameters except for random effects and posterior predictives are plotted.}
+By default, all parameters except for random effects, posterior predictives, and log likelihood values are plotted.}
 
 \item{combine}{logical; Indicates if the samples of all chains should be combined into one posterior distribution.}
 

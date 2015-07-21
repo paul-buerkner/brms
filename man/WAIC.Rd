@@ -17,6 +17,20 @@ Compute the Watanabe-Akaike Information Criterion based on the posterior likelih
 \details{
 When comparing models fitted to the same data, the smaller the WAIC, the better the fit.
 }
+\examples{
+\dontrun{
+#model with fixed effects only
+fit_i1 <- brm(rating ~ treat + period + carry,
+              data = inhaler, family = "gaussian", WAIC = TRUE)
+WAIC(fit_i1)
+
+#model with an additional random intercept for subjects
+fit_i2 <- brm(rating ~ treat + period + carry + (1|subject),
+             data = inhaler, family = "gaussian", WAIC = TRUE)
+#compare both models
+WAIC(fit_i1, fit_i2)
+}
+}
 \author{
 Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 }

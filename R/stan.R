@@ -46,7 +46,7 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
   ma <- stan.ma(family = family, link = link, autocor = autocor, group = ee$group, N = nrow(data),
                 levels = unlist(lapply(ee$group, function(g) length(unique(get(g, data))))))
   ord <- stan.ord(family = family, link = link, partial = length(p), max_obs = max_obs[1], n = n, 
-                  threshold = threshold, predict = predict)  
+                  threshold = threshold, simplify = !(predict || WAIC))  
   mg <- stan.mg(family, response = ee$response)
   llh <- stan.llh(family, link = link, add = is.formula(ee[c("se", "trials", "cat")]), 
                   weights = is.formula(ee$weights), cens = is.formula(ee$cens))
@@ -320,7 +320,7 @@ stan.mg <- function(family, response) {
 # 
 # @return A vector of strings containing the ordinal effects in stan language
 stan.ord <- function(family, link, partial = FALSE, max_obs = "max_obs", 
-                     n = "", threshold = "flexible", predict = FALSE) {
+                     n = "", threshold = "flexible", simplify = TRUE) {
   is.ord <- family %in% c("cumulative", "cratio", "sratio", "acat")
   if (!(is.ord || family == "categorical")) return(list())
   ilink <- c(identity = "", log = "exp", inverse = "inv", sqrt = "square", logit = "inv_logit", 
@@ -345,7 +345,7 @@ stan.ord <- function(family, link, partial = FALSE, max_obs = "max_obs",
       paste0("  for (k in 1:(",max_obs,"-1)) { \n    b_Intercept[k] <- b_Intercept1 + (k-1.0)*delta; \n  } \n"), "")
     ord$transD <- ifelse(threshold == "equidistant", intercept, "")
   }
-  if (!(family %in% c("cumulative", "categorical") && ilink == "inv_logit" && n != "[n]" && !predict)) {
+  if (!(family %in% c("cumulative", "categorical") && ilink == "inv_logit" && n != "[n]" && simplify)) {
     ord$transD <- paste0(ord$transD, "  vector[",max_obs,"] p[N]; \n", 
       if (!family %in% c("cumulative", "categorical")) paste0("  vector[",max_obs,"-1] q[N]; \n"))
     if (family == "categorical" && ilink == "inv_logit") ord$transC <- paste0(
