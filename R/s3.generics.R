@@ -235,6 +235,8 @@ par.names <- function(x, ...)
 #' 
 #' @param x A fitted model object typically of class \code{brmsfit}. 
 #' @param ... Optionally more fitted model objects. 
+#' @param se A flag to indicate if the standard error of the WAIC should be estimated. 
+#'   When the samples size is low, this estimation should be interpreted with caution.
 #' 
 #' @details When comparing models fitted to the same data, the smaller the WAIC, the better the fit.
 #' 
@@ -262,5 +264,5 @@ par.names <- function(x, ...)
 #' The Journal of Machine Learning Research, 11, 3571-3594.
 #' 
 #' @export
-WAIC <- function(x, ...)
+WAIC <- function(x, ..., se = FALSE)
   UseMethod("WAIC")

@@ -4,12 +4,15 @@
 \alias{WAIC}
 \title{Compute the WAIC}
 \usage{
-WAIC(x, ...)
+WAIC(x, ..., se = FALSE)
 }
 \arguments{
 \item{x}{A fitted model object typically of class \code{brmsfit}.}
 
 \item{...}{Optionally more fitted model objects.}
+
+\item{se}{A flag to indicate if the standard error of the WAIC should be estimated.
+  When the samples size is low, this estimation should be interpreted with caution.}
 }
 \description{
 Compute the Watanabe-Akaike Information Criterion based on the posterior likelihood

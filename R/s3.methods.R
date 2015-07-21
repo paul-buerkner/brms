@@ -303,7 +303,7 @@ predict.brmsfit <- function(object, ...) {
 }
 
 #' @export
-WAIC.brmsfit <- function(x, ...) {
+WAIC.brmsfit <- function(x, ..., se = FALSE) {
   models <- list(x, ...)
   names <- c(deparse(substitute(x)), sapply(substitute(list(...))[-1], deparse))
   fun <- function(x) {
@@ -313,9 +313,11 @@ WAIC.brmsfit <- function(x, ...) {
       stop(paste0("The model does not contain log likelihood values. \n",
                   "You should use argument WAIC = TRUE in function brm."))
     log_llh <- posterior.samples(x, parameters = "^log_llh")
-    lpd <- sum(log(apply(exp(log_llh), 2, mean)))
-    pwaic <- sum(apply(log_llh, 2, var))
-    return(-2*(lpd-pwaic))
+    lpd <- log(apply(exp(log_llh), 2, mean))
+    pwaic <- apply(log_llh, 2, var)
+    WAIC <- -2*sum(lpd-pwaic)
+    if (se) attr(WAIC, "se") <- 2*sqrt(nrow(log_llh))*sd(lpd-pwaic)
+    return(WAIC)
   }
   if (length(models) > 1) 
     out <- setNames(lapply(models, fun), names)
