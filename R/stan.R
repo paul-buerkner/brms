@@ -36,7 +36,7 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
                          f = f, family = family, prior = prior, cov.ranef = cov.ranef))
   names.ranef <- unique(names(ranef))
   if (length(ranef)) ranef <- sapply(1:length(names.ranef), function(x) 
-    paste0(ranef[seq(x, length(ranef), length(names.ranef))], collapse = ""))
+    collapse(ranef[seq(x, length(ranef), length(names.ranef))]))
   ranef <- setNames(as.list(ranef), names.ranef)
   
   max_obs <- ifelse(rep(is.formula(ee[c("trials", "cat")]), 3), 
@@ -202,9 +202,8 @@ stan.ranef <- function(rg, f, family = "gaussian", prior = list(), cov.ranef = "
       out$genD <- paste0("  corr_matrix[K_",g,"] Cor_",g,"; \n",
                          "  vector<lower=-1,upper=1>[NC_",g,"] cor_",g,"; \n")
       out$genC <- paste0("  Cor_",g," <- multiply_lower_tri_self_transpose(L_",g,"); \n",
-                         paste0(unlist(lapply(2:length(r),function(i) lapply(1:(i-1), function(j)
-                          paste0("  cor_",g,"[",(i-1)*(i-2)/2+j,"] <- Cor_",g,"[",j,",",i,"]; \n")))),
-                          collapse = "")) 
+                         collapse(unlist(lapply(2:length(r),function(i) lapply(1:(i-1), function(j)
+                          paste0("  cor_",g,"[",(i-1)*(i-2)/2+j,"] <- Cor_",g,"[",j,",",i,"]; \n")))))) 
     }  
   }
   out
@@ -245,7 +244,7 @@ stan.eta <- function(family, link, f, p, group, autocor = cor.arma(), max_obs = 
   #define fixed, random and autocorrelation effects
   eta$transC1 <- paste0("  eta <- ", ifelse(length(f), "X*b", "rep_vector(0,N)"), 
                         if (autocor$p && is(autocor, "cor.arma")) " + Yar*ar", "; \n", if (length(p)) "  etap <- Xp * bp; \n")
-  eta.re <- ifelse(length(group), paste0(" + Z_",group,"[n]*r_",group,"[",group,"[n]]", collapse = ""), "")
+  eta.re <- ifelse(length(group), collapse(" + Z_",group,"[n]*r_",group,"[",group,"[n]]"), "")
   eta.ma <- ifelse(autocor$q && is(autocor, "cor.arma"), " + Ema[n]*ma", "")
   if (nchar(eta.re) || nchar(eta.ma) || is.mg || nchar(eta.ilink[1])) {
     eta$transC2 <- paste0("    ",eta.mg," <- ",eta.ilink[1],"eta[n]", eta.ma, eta.re, eta.ilink[2],"; \n")
@@ -307,8 +306,8 @@ stan.mg <- function(family, response) {
    out$genD <- paste0("  corr_matrix[K_trait] Rescor; \n",
     "  vector<lower=-1,upper=1>[NC_trait] rescor; \n")
    out$genC <- paste0("  Rescor <- multiply_lower_tri_self_transpose(Lrescor); \n",
-      paste0(unlist(lapply(2:length(response),function(i) lapply(1:(i-1), function(j)
-        paste0("  rescor[",(i-1)*(i-2)/2+j,"] <- Rescor[",j,",",i,"]; \n")))), collapse = ""))
+        collapse(unlist(lapply(2:length(response),function(i) lapply(1:(i-1), function(j)
+        paste0("  rescor[",(i-1)*(i-2)/2+j,"] <- Rescor[",j,",",i,"]; \n"))))))
   }
   out
 }
@@ -446,15 +445,14 @@ stan.prior = function(par, prior = list(), add.type = NULL, ind = rep("", length
       if (!par[i] %in% names(prior))
         prior[[par[i]]] <- base.prior
       if (paste0(prior[[par[i]]],"") != "")  
-        return(paste0(paste0(rep(" ", s), collapse = ""), 
-               type, ind[i], " ~ ", prior[[par[i]]], "; \n"))
+        return(paste0(collapse(rep(" ", s)), type, ind[i], " ~ ", prior[[par[i]]], "; \n"))
       else return("") }, 
     par = par, ind = ind)
   else if (base.prior != "")
-    out <- paste0(paste0(rep(" ", s), collapse = ""), 
+    out <- paste0(collapse(rep(" ", s)), 
       ifelse(identical(type,"bp"), "to_vector(bp)", type), " ~ ", base.prior, "; \n")
   else out <- ""
-  return(paste0(out, collapse = ""))
+  return(collapse(out))
 }
 
 # Likelihoods in stan language

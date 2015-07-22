@@ -34,3 +34,7 @@ is.wholenumber <- function(x, tol = .Machine$double.eps^0.5) {
   if (!is.numeric(x)) return(FALSE)
   else return(abs(x - round(x)) < tol)
 }  
+
+#wrapper for paste with collapse
+collapse <- function(..., sep = "")
+  paste(..., sep = sep, collapse = "")
