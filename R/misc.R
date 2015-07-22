@@ -19,10 +19,10 @@ rmNULL <- function(x) {
 
 rmNum <- function(x) x[sapply(x, Negate(is.numeric))]
 
-#removes all elements in x appearing also in y
-rmMatch <- function(x, y) {
+#remove all elements in x that also appear in ... while keeping all attributes
+rmMatch <- function(x, ...) {
   att <- attributes(x)
-  keep <- which(!(x %in% y))
+  keep <- which(!(x %in% c(...)))
   x <- x[keep]
   attributes(x) <- att
   attr(x, "match.length") <- att$match.length[keep] 

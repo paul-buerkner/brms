@@ -336,7 +336,9 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", alpha = 0.05, ...) {
     stop("Argument x does not contain posterior samples")
   if (!is.character(hypothesis)) 
     stop("Argument hypothesis must be a character vector")
-  if (!is.null(class)) class <- paste0(class,"_")
+  if (alpha < 0 || alpha > 1)
+    stop("Argument alpha must be in [0,1]")
+  if (!is.null(class) && nchar(class)) class <- paste0(class,"_")
   else class <- ""
   pars <- rename(par.names(x)[grepl("^",class, par.names(x))],
                  symbols = ":", subs = "__")
@@ -348,10 +350,7 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", alpha = 0.05, ...) {
     if (length(sign) != 1 || length(lr) != 2)
       stop("Every hypothesis must be of the form 'left (= OR < OR >) right'")
     h <- paste0(lr[1], ifelse(lr[2] != "0", paste0("-(",lr[2],")"), ""))
-    fun.pos <- gregexpr("([^([:digit:]|[:punct:])]|\\.|_)[[:alnum:]_\\.]*\\(", h)
-    var.pos <- list(rmMatch(gregexpr("([^([:digit:]|[:punct:])]|\\.|_)[[:alnum:]_\\.]*(\\[[[:digit:]]*\\])?", h)[[1]], 
-                            fun.pos[[1]]))
-    varsH <- unlist(regmatches(h, var.pos))
+    varsH <- find.names(h)
     parsH <- paste0(class, varsH)
     if (!all(parsH %in% pars)) 
       stop(paste("The following parameters cannot be found in the model:", 

@@ -123,6 +123,16 @@ brm.update.formula <- function(formula, addition = NULL, partial = NULL) {
   update.formula(formula, formula(fnew))
 }
 
+#find all valid object names in a string
+find.names <- function(x) {
+  if (!is.character(x)) stop("x must be of class character")
+  fun.pos <- gregexpr("([^([:digit:]|[:punct:])]|\\.|_)[[:alnum:]_\\.]*\\(", x)[[1]]
+  decnum.pos <- gregexpr("\\.[[:digit:]]+", x)[[1]]
+  var.pos <- list(rmMatch(gregexpr("([^([:digit:]|[:punct:])]|\\.|_)[[:alnum:]_\\.]*(\\[[[:digit:]]*\\])?", x)[[1]], 
+                          fun.pos, decnum.pos))
+  unlist(regmatches(x, var.pos))
+}
+
 #checks if x is formula (or list of formulas)
 is.formula <- function(x, or = TRUE) {
   if (!is.list(x)) x <- list(x)
