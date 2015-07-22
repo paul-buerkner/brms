@@ -34,8 +34,7 @@ Defaults to NULL, corresponding to no correlations.}
 \item{cov.ranef}{A list of matrices that are proportional to the (within) covariance structure of the random effects.
 The names of the matrices should correspond to columns in \code{data} that are used as grouping factors.
 All levels of the grouping factor should appear as rownames of the corresponding matrix.
-Currently, the covariance matrix applies only to the first random effect of each grouping factor.
-If incorporated, random intercepts will always be treated as the first random effect.}
+Currently, customized covariance structures are only implemented for grouping factors with a single random effect.}
 }
 \value{
 A named list of objects containing the required data to fit a \code{brms} model

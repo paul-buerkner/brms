@@ -162,6 +162,9 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
       if (ncolZ[[i]] == 1) Z[[i]] <- as.vector(Z[[i]])
       for ( j in 1:length(name)) supl.data <- c(supl.data, setNames(list(eval(expr[j])), name[j]))
       if (g %in% names(cov.ranef)) {
+        if (length(r[[i]]) > 1) 
+          stop(paste("Currently, customized covariance structures are only implemented",
+                      "for grouping factors with a single random effect"))
         cov.ranef[[g]] <- as.matrix(cov.ranef[[g]])
         level.names <- rownames(cov.ranef[[g]])
         colnames(cov.ranef[[g]]) <- level.names
@@ -175,9 +178,7 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
           stop(paste("Covariance matrix of grouping factor",g,"is not symmetric"))
         cov.ranef[[g]] <- nrow(cov.ranef[[g]])/sum(diag(cov.ranef[[g]])) * cov.ranef[[g]]
         cov.ranef[[g]] <- t(chol(cov.ranef[[g]][order(level.names), order(level.names)]))
-        if (length(r[[i]]) > 1) 
-          diag(cov.ranef[[g]]) <- diag(cov.ranef[[g]]) - 1
-        supl.data <- c(supl.data, setNames(list(cov.ranef[[g]]), paste0("CF_cov_",g)))
+        supl.data <- c(supl.data, setNames(list(cov.ranef[[g]]), paste0("CFcov_",g)))
       }
     }
   }

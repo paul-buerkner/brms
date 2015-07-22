@@ -179,17 +179,16 @@ stan.ranef <- function(rg, f, family = "gaussian", prior = list(), cov.ranef = "
   
   if (length(r) == 1) {
     out$data <- paste0(out$data, "  real Z_",g,"[N]; \n",
-      if (c.cov) paste0("  cholesky_factor_cov[N_",g,"] CF_cov_",g,"; \n"))
+      if (c.cov) paste0("  cholesky_factor_cov[N_",g,"] CFcov_",g,"; \n"))
     out$par <- paste0("  vector[N_",g,"] pre_",g,"; \n",
                       "  real<lower=0> sd_",g,"; \n")
     out$model <- paste0(out$model,"  pre_",g," ~ normal(0,1); \n")
     out$transD <- paste0("  vector[N_",g,"] r_",g,"; \n")
     out$transC <- paste0("  r_",g, " <- sd_",g," * (", 
-      if (c.cov) paste0("CF_cov_",g,"*"), "pre_",g,"); \n")
+      if (c.cov) paste0("CFcov_",g,"*"), "pre_",g,"); \n")
   }  
   else if (length(r) > 1) {
-    out$data <- paste0(out$data,  "  row_vector[K_",g,"] Z_",g,"[N]; \n  int NC_",g,"; \n",
-      if (c.cov) paste0("  matrix[N_",g,",N_",g,"] CF_cov_",g,"; \n"))
+    out$data <- paste0(out$data,  "  row_vector[K_",g,"] Z_",g,"[N]; \n  int NC_",g,"; \n")
     out$par <- paste0("  matrix[N_",g,",K_",g,"] pre_",g,"; \n",
                       "  vector<lower=0>[K_",g,"] sd_",g,"; \n",
       if (cor) paste0("  cholesky_factor_corr[K_",g,"] L_",g,"; \n"))
@@ -198,9 +197,7 @@ stan.ranef <- function(rg, f, family = "gaussian", prior = list(), cov.ranef = "
     out$transD <- paste0("  vector[K_",g,"] r_",g,"[N_",g,"]; \n")
     out$transC <- paste0("  for (i in 1:N_",g,") { \n",
       if (cor) paste0("    r_",g, "[i] <- sd_",g," .* (L_",g,"*to_vector(pre_",g,"[i])); \n")
-      else paste0("    r_",g, "[i] <- sd_",g," .* to_vector(pre_",g,"[i]); \n"),
-      if (c.cov) paste0("    r_",g, "[i,1] <- r_",g, "[i,1] + sd_",g,"[1] * (CF_cov_",g,"[i]*col(pre_",g,",1)); \n"),
-                         "  } \n")
+      else paste0("    r_",g, "[i] <- sd_",g," .* to_vector(pre_",g,"[i]); \n"), "  } \n")
     if (cor) {
       out$genD <- paste0("  corr_matrix[K_",g,"] Cor_",g,"; \n",
                          "  vector<lower=-1,upper=1>[NC_",g,"] cor_",g,"; \n")
