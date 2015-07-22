@@ -1,7 +1,7 @@
 #' @export
 fixef.brmsfit <-  function(x, estimate = "mean", ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
-    stop("Argument x does not contain posterior samples")
+    stop("The model does not contain posterior samples")
   pars <- par.names(x)
   f.pars <- pars[grepl("^b_", pars)]
   if (!length(f.pars)) stop(paste("No fixed effect present in argument x")) 
@@ -14,7 +14,7 @@ fixef.brmsfit <-  function(x, estimate = "mean", ...) {
 #' @export
 ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
-    stop("Argument x does not contain posterior samples")
+    stop("The model does not contain posterior samples")
   if (!estimate %in% c("mean","median"))
     stop("Argument estimate must be either 'mean' or 'median'")
   pars <- par.names(x)
@@ -58,7 +58,7 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, ...) {
 #' @export
 VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
-    stop("Argument x does not contain posterior samples")
+    stop("The model does not contain posterior samples")
   pars <- par.names(x)
   group <- names(x$ranef)
   
@@ -115,7 +115,7 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
 #' @export
 posterior.samples.brmsfit <- function(x, parameters = NA, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
-    stop("Argument x does not contain posterior samples")
+    stop("The model does not contain posterior samples")
   pars <- par.names(x)
   if (!(anyNA(parameters) || is.character(parameters))) 
     stop("Argument parameters must be NA or a character vector")
@@ -285,7 +285,7 @@ predict.brmsfit <- function(object, ...) {
     stop(paste0("The model does not contain predicted values. \n",
                 "You should use argument predict = TRUE in function brm."))
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
-    stop("Argument x does not contain posterior samples")
+    stop("The model does not contain posterior samples")
   else {
     ee <- extract.effects(object$formula, add.ignore = TRUE)
     pars <- par.names(object)
@@ -323,7 +323,7 @@ WAIC.brmsfit <- function(x, ..., se = FALSE) {
 #' @export
 par.names.brmsfit <- function(x, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
-    stop("Argument x does not contain posterior samples")
+    stop("The model does not contain posterior samples")
   dimnames(x$fit)$parameters
 }
   
@@ -333,7 +333,7 @@ print.brmsmodel <- function(x, ...) cat(x)
 #' @export
 hypothesis.brmsfit <- function(x, hypothesis, class = "b", alpha = 0.05, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
-    stop("Argument x does not contain posterior samples")
+    stop("The model does not contain posterior samples")
   if (!is.character(hypothesis)) 
     stop("Argument hypothesis must be a character vector")
   if (alpha < 0 || alpha > 1)
@@ -416,7 +416,7 @@ print.brmshypothesis <- function(x, digits = 2, ...) {
 #' @export
 plot.brmsfit <- function(x, parameters = NA, combine = FALSE, N = 5, ask = TRUE, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
-    stop("Argument x does not contain posterior samples")
+    stop("The model does not contain posterior samples")
   if (is.na(parameters)) 
     parameters <- c("^b_", "^sd_", "^cor_", "^sigma", "^rescor", "^nu$", 
                     "^shape$", "^delta$", "^ar", "^ma")
