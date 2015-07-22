@@ -72,7 +72,8 @@
 #'   
 #'   \code{response | addition ~ fixed + (random | group)} 
 #'   
-#'   Multiple grouping factors each with multiple random effects are possible.  
+#'   Multiple grouping factors each with multiple random effects are possible. Instead of | you may use || in random effects terms
+#'   to prevent random effects correlations from being modeled.
 #'   With the exception of \code{addition}, this is basically \code{lme4} syntax. 
 #'   The optional \code{addition} term may contain multiple terms of the form \code{fun(variable)} seperated by \code{|} each providing
 #'   special information on the response variable. \code{fun} can be replaced with either \code{se}, \code{weights}, \code{trials},
