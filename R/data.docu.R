@@ -89,6 +89,7 @@
 #'  \item{visit}{The session number from \code{1} (first visit) to \code{4} (last visit)}
 #'  \item{count}{The seizure count between two visits}
 #'  \item{patient}{The patient number}
+#'  \item{obs}{The observation number, i.e. a unique identifier for each observation}
 #' } 
 #' 
 #' @examples
