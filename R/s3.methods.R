@@ -2,7 +2,7 @@
 fixef.brmsfit <-  function(x, estimate = "mean", ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("Argument x does not contain posterior samples")
-  pars <- dimnames(x$fit)$parameters
+  pars <- par.names(x)
   f.pars <- pars[grepl("^b_", pars)]
   if (!length(f.pars)) stop(paste("No fixed effect present in argument x")) 
   out <- posterior.samples(x, parameters = paste0("^",f.pars,"$"))
@@ -17,7 +17,7 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, ...) {
     stop("Argument x does not contain posterior samples")
   if (!estimate %in% c("mean","median"))
     stop("Argument estimate must be either 'mean' or 'median'")
-  pars <- dimnames(x$fit)$parameters
+  pars <- par.names(x)
   group <- names(x$ranef)
   
   ranef <- lapply(group, function(g) {
@@ -59,7 +59,7 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, ...) {
 VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("Argument x does not contain posterior samples")
-  pars <- dimnames(x$fit)$parameters
+  pars <- par.names(x)
   group <- names(x$ranef)
   
   # extracts samples for sd, cor and cov
@@ -116,7 +116,7 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
 posterior.samples.brmsfit <- function(x, parameters = NA, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("Argument x does not contain posterior samples")
-  pars <- dimnames(x$fit)$parameters
+  pars <- par.names(x)
   if (!(anyNA(parameters) || is.character(parameters))) 
     stop("Argument parameters must be NA or a character vector")
   if (!anyNA(parameters)) pars <- pars[apply(sapply(parameters, grepl, x = pars, ...), 1, any)]
@@ -293,7 +293,7 @@ predict.brmsfit <- function(object, ...) {
     stop("Argument x does not contain posterior samples")
   else {
     ee <- extract.effects(object$formula, add.ignore = TRUE)
-    pars <- dimnames(object$fit)$parameters
+    pars <- par.names(object)
     fit.summary <- rstan::summary(object$fit, probs = c(0.025, 0.975))
     pred.pars <- pars[grepl("^Y_pred\\[", pars)]
     out <- fit.summary$summary[pred.pars,-c(2,6,7)]
@@ -343,7 +343,7 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", alpha = 0.05, ...) {
     stop("Argument hypothesis must be a character vector")
   if (!is.null(class)) class <- paste0(class,"_")
   else class <- ""
-  pars <- rename(dimnames(x$fit)$parameters[grepl("^",class, dimnames(x$fit)$parameters)],
+  pars <- rename(par.names(x)[grepl("^",class, par.names(x))],
                  symbols = ":", subs = "__")
   
   out <- do.call(rbind, lapply(hypothesis, function(h) {
