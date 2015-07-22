@@ -3,19 +3,29 @@ title: "News"
 output: html_document
 ---
 
-# under development
+# 0.4.0
 ----------------------------------------------------------------
 
-* validity of the response variable is now thoroughly checked before the data is passed to Stan.
-* variable names containing double underscores '__' are now prohibited to avoid naming conflicts.
-* multiple grouping factors can now be combined within one random effects argument using the interaction symbol ':'
-* generalized S3 method 'hypothesis' to be used with all parameter classes not just fixed effects. In addition, one-sided hypothesis testing is now possible.
-* introduced new family 'multigaussian' allowing for multivariate normal regression.
-* function calls with several arguments (e.g. poly(x,3)) are now allowed in the formula argument of function 'brm.
+## new features
+* implement the Wakanabe-Akaike Information Criterion (WAIC)
+* implement the ||-syntax for random effects allowing for the estimation of random effects standard deviations without the estimation of correlations.
+* allow to combine multiple grouping factors within one random effects argument using the interaction symbol ':'
+* generalize S3 method 'hypothesis' to be used with all parameter classes not just fixed effects. In addition, one-sided hypothesis testing is now possible.
+* introduce new family 'multigaussian' allowing for multivariate normal regression.
+* introduce new family 'bernoulli' for dichotomous response variables as a more efficient alternative to families 'binomial' or 'categorical' in this special case.
+
+## minor changes
+* slightly change the internal structure of brms to reflect that rstan is finally on CRAN.
+* thoroughly check validity of the response variable before the data is passed to Stan.
+* prohibit variable names containing double underscores '__' to avoid naming conflicts.
+* allow function calls with several arguments (e.g. poly(x,3)) in the formula argument of function 'brm.
 * random effects estimates returned by S3 method 'ranef' are now always centered around zero.
-* fixed a bug in S3 method 'hypothesis' leading to an error when numbers with decimal places were used in the formulation of the hypotheses. 
-* fixed a bug in S3 method 'ranef' that caused an error for grouping factors with only one random effect.
-* fixed a bug that could cause the fixed effect intercept to be wrongly estimated in the presence of multiple random intercepts.
+* prevent the use of customized covariance matrices for grouping factors with multiple random effects for now. 
+
+## bug fixes
+* fix a bug in S3 method 'hypothesis' leading to an error when numbers with decimal places were used in the formulation of the hypotheses. 
+* fix a bug in S3 method 'ranef' that caused an error for grouping factors with only one random effect.
+* fix a bug that could cause the fixed intercept to be wrongly estimated in the presence of multiple random intercepts.
 
 # brms 0.3.0
 ----------------------------------------------------------------
