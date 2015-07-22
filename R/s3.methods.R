@@ -147,23 +147,18 @@ posterior.samples.brmsfit <- function(x, parameters = NA, ...) {
 #' @export
 summary.brmsfit <- function(object, ...) {
   ee <- extract.effects(object$formula, add.ignore = TRUE)
-  if (!length(object$fit@sim)) 
-    out <- brmssummary(formula = brm.update.formula(object$formula, partial = object$partial),
+  out <- brmssummary(formula = brm.update.formula(object$formula, partial = object$partial),
              family = object$family, link = object$link, data.name = object$data.name, 
              group = names(object$ranef), nobs = nobs(object), ngrps = brms::ngrps(object), 
              autocor = object$autocor)
-  else {
-    out <- brmssummary(brm.update.formula(object$formula, partial = object$partial),
-             family = object$family, link = object$link, data.name = object$data.name, 
-             group = names(object$ranef), 
-             nobs = nobs(object), ngrps = ngrps(object), autocor = object$autocor,
-             n.chain = length(object$fit@sim$samples),
-             n.iter = attr(object$fit@sim$samples[[1]],"args")$iter,
-             n.warmup = attr(object$fit@sim$samples[[1]],"args")$warmup,
-             n.thin = attr(object$fit@sim$samples[[1]],"args")$thin,
-             sampler = attr(object$fit@sim$samples[[1]],"args")$sampler_t) 
-    
+  if (length(object$fit@sim)) {
+    out$n.chains <- length(object$fit@sim$samples)
+    out$n.iter = attr(object$fit@sim$samples[[1]],"args")$iter
+    out$n.warmup = attr(object$fit@sim$samples[[1]],"args")$warmup
+    out$n.thin = attr(object$fit@sim$samples[[1]],"args")$thin
+    out$sampler = attr(object$fit@sim$samples[[1]],"args")$sampler_t
     if ("log_llh" %in% object$fit@model_pars) out$WAIC <- WAIC(object)
+    
     pars <- par.names(object)
     fit.summary <- rstan::summary(object$fit, probs = c(0.025, 0.975))
     col.names <- c("Estimate", "Est.Error", "l-95% CI", "u-95% CI", "Eff.Sample", "Rhat")
@@ -213,9 +208,9 @@ print.brmssummary <- function(x, digits = 2, ...) {
     cat(paste("\nThe model does not contain posterior samples."))
   }
   else {
-    cat(paste0("Samples: ", x$n.chain, " chains, each with n.iter = ", x$n.iter, 
+    cat(paste0("Samples: ", x$n.chains, " chains, each with n.iter = ", x$n.iter, 
                "; n.warmup = ", x$n.warmup, "; n.thin = ", x$n.thin, "; \n",
-      "         total post-warmup samples = ", (x$n.iter-x$n.warmup)/x$n.thin*x$n.chain, "\n"))
+      "         total post-warmup samples = ", (x$n.iter-x$n.warmup)/x$n.thin*x$n.chains, "\n"))
     cat(paste0("   WAIC: ", ifelse(is.numeric(x$WAIC), round(x$WAIC, digits = digits), x$WAIC), "\n \n"))
     
     if (length(x$group)) {

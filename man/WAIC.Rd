@@ -14,6 +14,10 @@ WAIC(x, ..., se = FALSE)
 \item{se}{A flag to indicate if the standard error of the WAIC should be estimated.
   When the samples size is low, this estimation should be interpreted with caution.}
 }
+\value{
+If just one object is provided, a numeric value with the corresponding WAIC.
+If multiple objects are provided, a named list of numeric values with the corresponding WAICs.
+}
 \description{
 Compute the Watanabe-Akaike Information Criterion based on the posterior likelihood
 }
