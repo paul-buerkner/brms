@@ -28,7 +28,7 @@ Trace and density plots for MCMC samples using the \code{ggmcmc} package
 \dontrun{
 fit_e <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient) + (1|visit),
              data = epilepsy, family = "poisson")
-## plot fixed effects as well as standard devations and correlations (if present) of random effects
+## plot fixed effects as well as standard devations of the random effects
 plot(fit_e)
 ## plot fixed effects only and combine the chains into one posterior
 plot(fit_e, parameters = "^b_", combine = TRUE)

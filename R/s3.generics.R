@@ -197,7 +197,8 @@ hypothesis <- function(x, hypothesis, class = "b", alpha = 0.05, ...)
 #' 
 #' @examples
 #' \dontrun{
-#' fit_i <- brm(rating ~ treat + period + carry + (1|subject), data = inhaler, family = "cumulative")
+#' fit_i <- brm(rating ~ treat + period + carry + (1|subject), 
+#'              data = inhaler, family = "cumulative")
 #' 
 #' #extract posterior samples of fixed effects 
 #' samples1 <- posterior.samples(fit_i, "b_")
