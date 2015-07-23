@@ -30,6 +30,7 @@ summary(fit)
 #>    Data: epilepsy (Number of observations: 236) 
 #> Samples: 2 chains, each with n.iter = 2000; n.warmup = 500; n.thin = 1; 
 #>          total post-warmup samples = 3000
+#>    WAIC: Not computed
 #>  
 #> Random Effects: 
 #> ~patient (Number of levels: 59) 
@@ -69,7 +70,7 @@ For a complete list of methods to apply on <b>brms</b> models see
 methods(class = "brmsfit") 
 #>  [1] fixef             formula           hypothesis        ngrps             nobs              par.names        
 #>  [7] plot              posterior.samples predict           print             ranef             summary          
-#> [13] VarCorr          
+#> [13] VarCorr           WAIC             
 #> see '?methods' for accessing help and source code
 ```
 
@@ -82,8 +83,17 @@ help(brm)
 How to install brms
 ===================
 
+To install the latest release version from CRAN use
+
 ``` r
 install.packages("brms")
+```
+
+The current developmental version can be downloaded from github via
+
+``` r
+library(devtools)
+install_github("paul-buerkner/brms")
 ```
 
 Because <b>brms</b> is based on Stan, a C++ compiler is required. The program Rtools (available on <https://cran.r-project.org/bin/windows/Rtools/>) comes with a C++ compiler for Windows. On Mac, you should use Xcode. We recommend to install rstan (available on CRAN) before installing <b>brms</b>. For further instructions see <https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started>.

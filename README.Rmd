@@ -63,8 +63,17 @@ help(brm)
 
 # How to install brms
 
+To install the latest release version from CRAN use
+
 ```{r install_brms, eval=FALSE}
 install.packages("brms")
+```
+
+The current developmental version can be downloaded from github via
+
+```{r install_brms2, eval=FALSE}
+library(devtools)
+install_github("paul-buerkner/brms")
 ```
 
 Because <b>brms</b> is based on Stan, a C++ compiler is required. The program Rtools (available on https://cran.r-project.org/bin/windows/Rtools/) comes with a C++ compiler for Windows. On Mac, you should use Xcode. We recommend to install rstan (available on CRAN) before installing <b>brms</b>. For further instructions see https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started.
