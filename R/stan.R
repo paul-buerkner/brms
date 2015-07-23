@@ -432,7 +432,7 @@ stan.prior = function(par, prior = list(), add.type = NULL, ind = rep("", length
   }  
   default.prior <- list(b = "", bp = "", sigma = "cauchy(0,5)", delta = "", ar = "", 
     ma = "", L = "lkj_corr_cholesky(1)", sd = "cauchy(0,5)", Lrescor = "lkj_corr_cholesky(1)",  
-    nu = "uniform(1,60)", shape = "gamma(0.01,0.01)") 
+    nu = "uniform(1,100)", shape = "gamma(0.01,0.01)") 
   if (!is.null(prior[[type[2]]])) base.prior <- prior[[type[2]]]
   else if (!is.null(prior[[type[1]]])) base.prior <- prior[[type[1]]]
   else base.prior <- default.prior[[type[1]]]

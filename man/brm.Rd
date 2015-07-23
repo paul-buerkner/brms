@@ -245,10 +245,10 @@ Fit a generalized linear mixed model, which incorporates both fixed-effects para
   Families \code{gaussian}, \code{student}, and \code{cauchy} need the parameter \code{sigma}
   to account for the standard deviation of the response variable around the regression line
   (not to be confused with the standard deviations of random effects).
-  By default, \code{sigma} has an improper flat prior over the positiv reals.
+  By default, \code{sigma} has a half cauchy prior with 'mean' 0 and 'standard deviation' 5.
   Furthermore, family \code{student} needs the parameter \code{nu} representing
   the degrees of freedom of students t distribution.
-  By default, \code{nu} has prior \code{"uniform(1,60)"}.
+  By default, \code{nu} has prior \code{"uniform(1,100)"}.
   Families \code{gamma} and \code{weibull} need the parameter \code{shape}
   that has a \code{"gamma(0.01,0.01)"} prior by default. For families \code{cumulative}, \code{cratio}, \code{sratio},
   and \code{acat}, and only if \code{threshold = "equidistant"}, the parameter \code{delta} is used to model the distance
