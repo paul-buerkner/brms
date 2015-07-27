@@ -227,7 +227,8 @@ stan.eta <- function(family, link, f, p, group, autocor = cor.arma(), max_obs = 
   # transform eta before it is passed to the likelihood
   ilink <- c(identity = "", log = "exp", inverse = "inv", sqrt = "square", logit = "inv_logit", 
              probit = "Phi", probit_approx = "Phi_approx", cloglog = "inv_cloglog")[link]
-  eta$transform <- !(link == "identity" || is.ord || family == "categorical" || is.count && link == "log" ||
+  eta$transform <- !(link == "identity" || family == "gaussian" && link == "log" ||
+                     is.ord || family == "categorical" || is.count && link == "log" ||
                      family %in% c("binomial", "bernoulli") && link == "logit")
   eta.ilink <- rep("", 2)
   if (eta$transform) {
@@ -478,7 +479,8 @@ stan.llh <- function(family, link, predict = FALSE, add = FALSE,
   is.count <- family %in% c("poisson","negbinomial", "geometric")
   is.skew <- family %in% c("gamma","exponential","weibull")
   simplify <- !cens && !predict && !logllh && (family %in% c("binomial", "bernoulli") && link == "logit" ||
-    family %in% c("cumulative", "categorical") && link == "logit" && !add || is.count && link == "log") 
+    family %in% c("cumulative", "categorical") && link == "logit" && !add || is.count && link == "log" ||
+    family == "gaussian" && link == "log") 
   n <- ifelse(predict || logllh || cens || weights || is.ord || family == "categorical" , "[n]", "")
   ns <- ifelse(add && (predict || logllh || cens || weights), "[n]", "")
   ilink <- c(identity = "", log = "exp", inverse = "inv", sqrt = "square", logit = "inv_logit", 
@@ -487,13 +489,15 @@ stan.llh <- function(family, link, predict = FALSE, add = FALSE,
                    is.count && link == "log"), ilink, "")
   lin.args <- paste0("eta",n,",sigma",ns)
   if (simplify) 
-    llh.pre <- list(poisson = c("poisson_log", "eta"), 
+    llh.pre <- switch(family,
+            poisson = c("poisson_log", "eta"), 
             negbinomial = c("neg_binomial_2_log", "eta,shape"),
             geometric = c("neg_binomial_2_log", "eta,1"),
             cumulative = c("ordered_logistic", "eta[n],b_Intercept"),
             categorical = c("categorical_logit", "to_vector(append_col(zero, eta[n] + etap[n]))"), 
-            binomial=c("binomial_logit", "max_obs,eta"), 
-            bernoulli=c("bernoulli_logit", "eta"))[[family]]
+            binomial = c("binomial_logit", "max_obs,eta"), 
+            bernoulli = c("bernoulli_logit", "eta"),
+            gaussian = c("lognormal", lin.args))
   else llh.pre <- list(gaussian = c("normal", lin.args),
                student = c("student_t", paste0("nu,",lin.args)),
                cauchy = c("cauchy", lin.args),
