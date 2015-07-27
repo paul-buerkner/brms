@@ -3,6 +3,11 @@ title: "News"
 output: html_document
 ---
 
+# under development
+----------------------------------------------------------------
+
+* fix a bug that could cause an error for weighted poisson and exponential models
+
 # brms 0.4.0
 ----------------------------------------------------------------
 
