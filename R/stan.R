@@ -488,29 +488,29 @@ stan.llh <- function(family, link, predict = FALSE, add = FALSE,
   ilink2 <- ifelse((predict || logllh || cens) && (link == "logit" && family %in% c("binomial", "bernoulli") || 
                    is.count && link == "log"), ilink, "")
   lin.args <- paste0("eta",n,",sigma",ns)
-  if (simplify) 
-    llh.pre <- switch(family,
-            poisson = c("poisson_log", "eta"), 
-            negbinomial = c("neg_binomial_2_log", "eta,shape"),
-            geometric = c("neg_binomial_2_log", "eta,1"),
-            cumulative = c("ordered_logistic", "eta[n],b_Intercept"),
-            categorical = c("categorical_logit", "to_vector(append_col(zero, eta[n] + etap[n]))"), 
-            binomial = c("binomial_logit", "max_obs,eta"), 
-            bernoulli = c("bernoulli_logit", "eta"),
-            gaussian = c("lognormal", lin.args))
-  else llh.pre <- list(gaussian = c("normal", lin.args),
-               student = c("student_t", paste0("nu,",lin.args)),
-               cauchy = c("cauchy", lin.args),
-               multigaussian = c("multi_normal_cholesky", paste0("etam",n,",diag_pre_multiply(sigma,Lrescor)")),
-               poisson = c("poisson", paste0(ilink2,"(eta",n,")")),
-               negbinomial = c("neg_binomial_2", paste0(ilink2,"(eta",n,"),shape")),
-               geometric = c("neg_binomial_2", paste0(ilink2,"(eta",n,"),1")),
-               binomial = c("binomial", paste0("max_obs,",ilink2,"(eta",n,")")),
-               bernoulli = c("bernoulli", paste0(ilink2,"(eta",n,")")), 
-               gamma = c("gamma", paste0("shape,eta",n)), 
-               exponential = c("exponential", paste0("eta",n)),
-               weibull = c("weibull", paste0("shape,eta",n)), 
-               categorical = c("categorical","p[n]"))[[ifelse(is.ord, "categorical", family)]]
+  if (simplify) llh.pre <- switch(family,
+    poisson = c("poisson_log", paste0("eta",n)), 
+    negbinomial = c("neg_binomial_2_log", paste0("eta",n,",shape")),
+    geometric = c("neg_binomial_2_log", paste0("eta",n,",1")),
+    cumulative = c("ordered_logistic", "eta[n],b_Intercept"),
+    categorical = c("categorical_logit", "to_vector(append_col(zero, eta[n] + etap[n]))"), 
+    binomial = c("binomial_logit", paste0("max_obs",ns,",eta",n)), 
+    bernoulli = c("bernoulli_logit", paste0("eta",n)),
+    gaussian = c("lognormal", lin.args))
+  else llh.pre <- switch(ifelse(is.ord, "categorical", family),
+    gaussian = c("normal", lin.args),
+    student = c("student_t", paste0("nu,",lin.args)),
+    cauchy = c("cauchy", lin.args),
+    multigaussian = c("multi_normal_cholesky", paste0("etam",n,",diag_pre_multiply(sigma,Lrescor)")),
+    poisson = c("poisson", paste0(ilink2,"(eta",n,")")),
+    negbinomial = c("neg_binomial_2", paste0(ilink2,"(eta",n,"),shape")),
+    geometric = c("neg_binomial_2", paste0(ilink2,"(eta",n,"),1")),
+    binomial = c("binomial", paste0("max_obs,",ilink2,"(eta",n,")")),
+    bernoulli = c("bernoulli", paste0(ilink2,"(eta",n,")")), 
+    gamma = c("gamma", paste0("shape,eta",n)), 
+    exponential = c("exponential", paste0("eta",n)),
+    weibull = c("weibull", paste0("shape,eta",n)), 
+    categorical = c("categorical","p[n]"))
   
   type <- c("predict", "logllh", "cens", "weights")[match(TRUE, c(predict, logllh, cens, weights))]
   if (is.na(type)) type <- "general"
