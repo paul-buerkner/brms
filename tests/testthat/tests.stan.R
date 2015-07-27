@@ -103,9 +103,13 @@ test_that("Test that stan.llh uses simplifications when possible", {
                "  Y[n] ~ ordered_logistic(eta[n],b_Intercept); \n")
 })
 
-test_that("Test that stan.llh returns correct llhs under weights, censoring, etc.", {
+test_that("Test that stan.llh returns correct llhs under weights and censoring", {
   expect_equal(stan.llh(family = "cauchy", link = "inverse", weights = TRUE),
                "  lp_pre[n] <- cauchy_log(Y[n],eta[n],sigma); \n")
+  expect_equal(stan.llh(family = "poisson", link = "log", weights = TRUE),
+               "  lp_pre[n] <- poisson_log_log(Y[n],eta[n]); \n")
+  expect_equal(stan.llh(family = "binomial", link = "logit", add = TRUE, weights = TRUE),
+               "  lp_pre[n] <- binomial_logit_log(Y[n],max_obs[n],eta[n]); \n")
   expect_match(stan.llh(family = "weibull", link = "inverse", cens = TRUE), fixed = TRUE,
                "increment_log_prob(weibull_ccdf_log(Y[n],shape,eta[n])); \n")
   expect_match(stan.llh(family = "weibull", link = "inverse", cens = TRUE, weights = TRUE), fixed = TRUE,

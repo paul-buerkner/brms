@@ -225,8 +225,7 @@ stan.eta <- function(family, link, f, p, group, autocor = cor.arma(), max_obs = 
   eta.mg <- ifelse(is.mg, "etam[m,k]", "eta[n]")
   
   # transform eta before it is passed to the likelihood
-  ilink <- c(identity = "", log = "exp", inverse = "inv", sqrt = "square", logit = "inv_logit", 
-             probit = "Phi", probit_approx = "Phi_approx", cloglog = "inv_cloglog")[link]
+  ilink <- stan.ilink(link)
   eta$transform <- !(link == "identity" || family == "gaussian" && link == "log" ||
                      is.ord || family == "categorical" || is.count && link == "log" ||
                      family %in% c("binomial", "bernoulli") && link == "logit")
@@ -475,18 +474,16 @@ stan.prior = function(par, prior = list(), add.type = NULL, ind = rep("", length
 # }
 stan.llh <- function(family, link, predict = FALSE, add = FALSE,
                      weights = FALSE, cens = FALSE, logllh = FALSE) {
-  is.ord <- family %in% c("cumulative", "cratio", "sratio", "acat")
+  is.cat <- family %in% c("cumulative", "cratio", "sratio", "acat", "categorical")
   is.count <- family %in% c("poisson","negbinomial", "geometric")
   is.skew <- family %in% c("gamma","exponential","weibull")
-  simplify <- !cens && !predict && !logllh && (family %in% c("binomial", "bernoulli") && link == "logit" ||
+  simplify <- !(cens || predict || logllh) && (family %in% c("binomial", "bernoulli") && link == "logit" ||
     family %in% c("cumulative", "categorical") && link == "logit" && !add || is.count && link == "log" ||
     family == "gaussian" && link == "log") 
-  n <- ifelse(predict || logllh || cens || weights || is.ord || family == "categorical" , "[n]", "")
+  n <- ifelse(predict || logllh || cens || weights || is.cat, "[n]", "")
   ns <- ifelse(add && (predict || logllh || cens || weights), "[n]", "")
-  ilink <- c(identity = "", log = "exp", inverse = "inv", sqrt = "square", logit = "inv_logit", 
-             probit = "Phi", probit_approx = "Phi_approx", cloglog = "inv_cloglog")[link]
-  ilink2 <- ifelse((predict || logllh || cens) && (link == "logit" && family %in% c("binomial", "bernoulli") || 
-                   is.count && link == "log"), ilink, "")
+  ilink <- ifelse((predict || logllh || cens) && (link == "logit" && family %in% c("binomial", "bernoulli") || 
+                   is.count && link == "log"), stan.ilink(link), "")
   lin.args <- paste0("eta",n,",sigma",ns)
   if (simplify) llh.pre <- switch(family,
     poisson = c("poisson_log", paste0("eta",n)), 
@@ -497,16 +494,16 @@ stan.llh <- function(family, link, predict = FALSE, add = FALSE,
     binomial = c("binomial_logit", paste0("max_obs",ns,",eta",n)), 
     bernoulli = c("bernoulli_logit", paste0("eta",n)),
     gaussian = c("lognormal", lin.args))
-  else llh.pre <- switch(ifelse(is.ord, "categorical", family),
+  else llh.pre <- switch(ifelse(is.cat, "categorical", family),
     gaussian = c("normal", lin.args),
     student = c("student_t", paste0("nu,",lin.args)),
     cauchy = c("cauchy", lin.args),
     multigaussian = c("multi_normal_cholesky", paste0("etam",n,",diag_pre_multiply(sigma,Lrescor)")),
-    poisson = c("poisson", paste0(ilink2,"(eta",n,")")),
-    negbinomial = c("neg_binomial_2", paste0(ilink2,"(eta",n,"),shape")),
-    geometric = c("neg_binomial_2", paste0(ilink2,"(eta",n,"),1")),
-    binomial = c("binomial", paste0("max_obs,",ilink2,"(eta",n,")")),
-    bernoulli = c("bernoulli", paste0(ilink2,"(eta",n,")")), 
+    poisson = c("poisson", paste0(ilink,"(eta",n,")")),
+    negbinomial = c("neg_binomial_2", paste0(ilink,"(eta",n,"),shape")),
+    geometric = c("neg_binomial_2", paste0(ilink,"(eta",n,"),1")),
+    binomial = c("binomial", paste0("max_obs",ns,",",ilink,"(eta",n,")")),
+    bernoulli = c("bernoulli", paste0(ilink,"(eta",n,")")), 
     gamma = c("gamma", paste0("shape,eta",n)), 
     exponential = c("exponential", paste0("eta",n)),
     weibull = c("weibull", paste0("shape,eta",n)), 
@@ -528,4 +525,10 @@ stan.llh <- function(family, link, predict = FALSE, add = FALSE,
     weights = paste0("  lp_pre[n] <- ", llh.pre[1], "_log(Y[n],",llh.pre[2],"); \n"),
     general = paste0("  Y", n, " ~ ", llh.pre[1],"(",llh.pre[2],"); \n")) 
   llh
+}
+
+# find the inverse link to a given link function
+stan.ilink <- function(link) {
+  switch(link, identity = "", log = "exp", inverse = "inv", sqrt = "square", 
+         logit = "inv_logit", probit = "Phi", probit_approx = "Phi_approx", cloglog = "inv_cloglog")
 }
