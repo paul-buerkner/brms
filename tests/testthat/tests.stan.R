@@ -33,10 +33,10 @@ test_that("Test that stan.prior can remove default priors", {
 })
 
 test_that("Test that stan.eta returns correct strings for autocorrelation models", {
-  expect_match(stan.eta(family = "poisson", link = "log", f = c("Trt_c"), p = NULL, group = list(),
+  expect_match(stan.eta(family = "poisson", link = "log", f = c("Trt_c"),
                         autocor = cor.arma(~visit|patient, p=1))$transC1,
                "eta <- X\\*b \\+ Yar\\*ar")
-  expect_match(stan.eta(family = "poisson", link = "log", f = c("Trt_c"), p = NULL, group = list(),
+  expect_match(stan.eta(family = "poisson", link = "log", f = c("Trt_c"),
                         autocor = cor.arma(~visit|patient, q=1))$transC2,
                "eta\\[n\\] <- eta\\[n\\] \\+ Ema\\[n\\]\\*ma")
 })
@@ -98,6 +98,9 @@ test_that("Test that stan.ord returns correct strings", {
 
 test_that("Test that stan.llh uses simplifications when possible", {
   expect_equal(stan.llh(family = "bernoulli", link = "logit"), "  Y ~ bernoulli_logit(eta); \n")
+  expect_equal(stan.llh(family = "gaussian", link = "log"), "  Y ~ lognormal(eta,sigma); \n")
+  expect_match(stan.llh(family = "gaussian", link = "log", weights = TRUE), 
+               "lognormal_log(Y[n],eta[n],sigma); \n", fixed = TRUE)
   expect_equal(stan.llh(family = "poisson", link = "log"), "  Y ~ poisson_log(eta); \n")
   expect_match(stan.llh(family = "cumulative", link = "logit"), fixed = TRUE,
                "  Y[n] ~ ordered_logistic(eta[n],b_Intercept); \n")
@@ -108,6 +111,8 @@ test_that("Test that stan.llh returns correct llhs under weights and censoring",
                "  lp_pre[n] <- cauchy_log(Y[n],eta[n],sigma); \n")
   expect_equal(stan.llh(family = "poisson", link = "log", weights = TRUE),
                "  lp_pre[n] <- poisson_log_log(Y[n],eta[n]); \n")
+  expect_match(stan.llh(family = "poisson", link = "log", cens = TRUE),
+               "Y[n] ~ poisson(exp(eta[n])); \n", fixed = TRUE)
   expect_equal(stan.llh(family = "binomial", link = "logit", add = TRUE, weights = TRUE),
                "  lp_pre[n] <- binomial_logit_log(Y[n],max_obs[n],eta[n]); \n")
   expect_match(stan.llh(family = "weibull", link = "inverse", cens = TRUE), fixed = TRUE,

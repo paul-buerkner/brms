@@ -209,12 +209,89 @@ stan.ranef <- function(rg, f, family = "gaussian", prior = list(), cov.ranef = "
   out
 }
 
+# Likelihoods in stan language
+# 
+# Define the likelihood of the dependent variable in stan language
+# 
+# @inheritParams brm
+# @param add A flag inicating if the model contains additional information of the response variable
+#   (e.g., standard errors in a gaussian linear model)
+# @param add2 A flag indicating if the response variable should have unequal weights 
+#   Only used if \code{family} is either \code{"gaussian", "student"}, or \code{"cauchy"}.
+#    
+# @return A character string defining a line of code in stan language 
+#   that contains the likelihood of the dependent variable. 
+# @examples 
+# \dontrun{
+# stan.llh(family = "gaussian")
+# stan.llh(family = "cumulative", link = "logit")
+# }
+stan.llh <- function(family, link, predict = FALSE, add = FALSE,
+                     weights = FALSE, cens = FALSE, logllh = FALSE) {
+  is.cat <- family %in% c("cumulative", "cratio", "sratio", "acat", "categorical")
+  is.count <- family %in% c("poisson","negbinomial", "geometric")
+  is.skew <- family %in% c("gamma","exponential","weibull")
+  is.dich <- family %in% c("binomial", "bernoulli")
+  
+  simplify <- !(cens || predict || logllh) && (is.dich && link == "logit" || is.count && link == "log" ||
+                family %in% c("cumulative", "categorical") && link == "logit" && !add) 
+  n <- ifelse(predict || logllh || cens || weights || is.cat, "[n]", "")
+  ns <- ifelse(add && (predict || logllh || cens || weights), "[n]", "")
+  ilink <- ifelse((cens || predict || logllh) && (is.dich && link == "logit" || is.count && link == "log"), 
+                  stan.ilink(link), "")
+  
+  lin.args <- paste0("eta",n,",sigma",ns)
+  if (simplify) llh.pre <- switch(family,
+     poisson = c("poisson_log", paste0("eta",n)), 
+     negbinomial = c("neg_binomial_2_log", paste0("eta",n,",shape")),
+     geometric = c("neg_binomial_2_log", paste0("eta",n,",1")),
+     cumulative = c("ordered_logistic", "eta[n],b_Intercept"),
+     categorical = c("categorical_logit", "to_vector(append_col(zero, eta[n] + etap[n]))"), 
+     binomial = c("binomial_logit", paste0("max_obs",ns,",eta",n)), 
+     bernoulli = c("bernoulli_logit", paste0("eta",n)))
+  else llh.pre <- switch(ifelse(is.cat, "categorical", 
+                         ifelse(family == "gaussian" && link == "log", "lognormal", family)),
+     gaussian = c("normal", lin.args),
+     student = c("student_t", paste0("nu,",lin.args)),
+     cauchy = c("cauchy", lin.args),
+     multigaussian = c("multi_normal_cholesky", paste0("etam",n,",diag_pre_multiply(sigma,Lrescor)")),
+     lognormal = c("lognormal", lin.args),
+     poisson = c("poisson", paste0(ilink,"(eta",n,")")),
+     negbinomial = c("neg_binomial_2", paste0(ilink,"(eta",n,"),shape")),
+     geometric = c("neg_binomial_2", paste0(ilink,"(eta",n,"),1")),
+     binomial = c("binomial", paste0("max_obs",ns,",",ilink,"(eta",n,")")),
+     bernoulli = c("bernoulli", paste0(ilink,"(eta",n,")")), 
+     gamma = c("gamma", paste0("shape,eta",n)), 
+     exponential = c("exponential", paste0("eta",n)),
+     weibull = c("weibull", paste0("shape,eta",n)), 
+     categorical = c("categorical","p[n]"))
+  
+  type <- c("predict", "logllh", "cens", "weights")[match(TRUE, c(predict, logllh, cens, weights))]
+  if (is.na(type)) type <- "general"
+  addW <- ifelse(weights, "weights[n] * ", "")
+  llh <- switch(type, 
+    predict = paste0("    Y_pred[n] <- ", llh.pre[1],"_rng(",llh.pre[2],"); \n"),
+    logllh = paste0("    log_llh[n] <- ", llh.pre[1], "_log(Y[n],",llh.pre[2],"); \n"),
+    cens = paste0("if (cens[n] == 0) ", 
+      ifelse(!weights, paste0("Y[n] ~ ", llh.pre[1],"(",llh.pre[2],"); \n"),
+             paste0("increment_log_prob(", addW, llh.pre[1], "_log(Y[n],",llh.pre[2],")); \n")),
+      "    else { \n",         
+      "      if (cens[n] == 1) increment_log_prob(", addW, llh.pre[1], "_ccdf_log(Y[n],", llh.pre[2],")); \n",
+      "      else increment_log_prob(", addW, llh.pre[1], "_cdf_log(Y[n],", llh.pre[2],")); \n",
+      "    } \n"),
+    weights = paste0("  lp_pre[n] <- ", llh.pre[1], "_log(Y[n],",llh.pre[2],"); \n"),
+    general = paste0("  Y", n, " ~ ", llh.pre[1],"(",llh.pre[2],"); \n")) 
+  llh
+}
+
 # prediction part in Stan
-stan.eta <- function(family, link, f, p, group, autocor = cor.arma(), max_obs = "max_obs") {
+stan.eta <- function(family, link, f, p = NULL, group = list(), 
+                     autocor = cor.arma(), max_obs = "max_obs") {
   is.lin <- family %in% c("gaussian", "student", "cauchy")
   is.ord <- family %in% c("cumulative", "cratio", "sratio", "acat") 
   is.skew <- family %in% c("gamma", "weibull", "exponential")
   is.count <- family %in% c("poisson", "negbinomial", "geometric")
+  is.dich <- family %in% c("binomial", "bernoulli")
   is.mg <- family == "multigaussian"
   
   eta <- list()
@@ -228,7 +305,7 @@ stan.eta <- function(family, link, f, p, group, autocor = cor.arma(), max_obs = 
   ilink <- stan.ilink(link)
   eta$transform <- !(link == "identity" || family == "gaussian" && link == "log" ||
                      is.ord || family == "categorical" || is.count && link == "log" ||
-                     family %in% c("binomial", "bernoulli") && link == "logit")
+                     is.dich && link == "logit")
   eta.ilink <- rep("", 2)
   if (eta$transform) {
     eta.ilink <- switch(family, c(paste0(ilink,"("), ")"),
@@ -455,77 +532,6 @@ stan.prior = function(par, prior = list(), add.type = NULL, ind = rep("", length
   return(collapse(out))
 }
 
-# Likelihoods in stan language
-# 
-# Define the likelihood of the dependent variable in stan language
-# 
-# @inheritParams brm
-# @param add A flag inicating if the model contains additional information of the response variable
-#   (e.g., standard errors in a gaussian linear model)
-# @param add2 A flag indicating if the response variable should have unequal weights 
-#   Only used if \code{family} is either \code{"gaussian", "student"}, or \code{"cauchy"}.
-#    
-# @return A character string defining a line of code in stan language 
-#   that contains the likelihood of the dependent variable. 
-# @examples 
-# \dontrun{
-# stan.llh(family = "gaussian")
-# stan.llh(family = "cumulative", link = "logit")
-# }
-stan.llh <- function(family, link, predict = FALSE, add = FALSE,
-                     weights = FALSE, cens = FALSE, logllh = FALSE) {
-  is.cat <- family %in% c("cumulative", "cratio", "sratio", "acat", "categorical")
-  is.count <- family %in% c("poisson","negbinomial", "geometric")
-  is.skew <- family %in% c("gamma","exponential","weibull")
-  simplify <- !(cens || predict || logllh) && (family %in% c("binomial", "bernoulli") && link == "logit" ||
-    family %in% c("cumulative", "categorical") && link == "logit" && !add || is.count && link == "log" ||
-    family == "gaussian" && link == "log") 
-  n <- ifelse(predict || logllh || cens || weights || is.cat, "[n]", "")
-  ns <- ifelse(add && (predict || logllh || cens || weights), "[n]", "")
-  ilink <- ifelse((predict || logllh || cens) && (link == "logit" && family %in% c("binomial", "bernoulli") || 
-                   is.count && link == "log"), stan.ilink(link), "")
-  lin.args <- paste0("eta",n,",sigma",ns)
-  if (simplify) llh.pre <- switch(family,
-    poisson = c("poisson_log", paste0("eta",n)), 
-    negbinomial = c("neg_binomial_2_log", paste0("eta",n,",shape")),
-    geometric = c("neg_binomial_2_log", paste0("eta",n,",1")),
-    cumulative = c("ordered_logistic", "eta[n],b_Intercept"),
-    categorical = c("categorical_logit", "to_vector(append_col(zero, eta[n] + etap[n]))"), 
-    binomial = c("binomial_logit", paste0("max_obs",ns,",eta",n)), 
-    bernoulli = c("bernoulli_logit", paste0("eta",n)),
-    gaussian = c("lognormal", lin.args))
-  else llh.pre <- switch(ifelse(is.cat, "categorical", family),
-    gaussian = c("normal", lin.args),
-    student = c("student_t", paste0("nu,",lin.args)),
-    cauchy = c("cauchy", lin.args),
-    multigaussian = c("multi_normal_cholesky", paste0("etam",n,",diag_pre_multiply(sigma,Lrescor)")),
-    poisson = c("poisson", paste0(ilink,"(eta",n,")")),
-    negbinomial = c("neg_binomial_2", paste0(ilink,"(eta",n,"),shape")),
-    geometric = c("neg_binomial_2", paste0(ilink,"(eta",n,"),1")),
-    binomial = c("binomial", paste0("max_obs",ns,",",ilink,"(eta",n,")")),
-    bernoulli = c("bernoulli", paste0(ilink,"(eta",n,")")), 
-    gamma = c("gamma", paste0("shape,eta",n)), 
-    exponential = c("exponential", paste0("eta",n)),
-    weibull = c("weibull", paste0("shape,eta",n)), 
-    categorical = c("categorical","p[n]"))
-  
-  type <- c("predict", "logllh", "cens", "weights")[match(TRUE, c(predict, logllh, cens, weights))]
-  if (is.na(type)) type <- "general"
-  addW <- ifelse(weights, "weights[n] * ", "")
-  llh <- switch(type, 
-    predict = paste0("    Y_pred[n] <- ", llh.pre[1],"_rng(",llh.pre[2],"); \n"),
-    logllh = paste0("    log_llh[n] <- ", llh.pre[1], "_log(Y[n],",llh.pre[2],"); \n"),
-    cens = paste0("if (cens[n] == 0) ", 
-           ifelse(!weights, paste0("Y[n] ~ ", llh.pre[1],"(",llh.pre[2],"); \n"),
-                  paste0("increment_log_prob(", addW, llh.pre[1], "_log(Y[n],",llh.pre[2],")); \n")),
-           "    else { \n",         
-           "      if (cens[n] == 1) increment_log_prob(", addW, llh.pre[1], "_ccdf_log(Y[n],", llh.pre[2],")); \n",
-           "      else increment_log_prob(", addW, llh.pre[1], "_cdf_log(Y[n],", llh.pre[2],")); \n",
-           "    } \n"),
-    weights = paste0("  lp_pre[n] <- ", llh.pre[1], "_log(Y[n],",llh.pre[2],"); \n"),
-    general = paste0("  Y", n, " ~ ", llh.pre[1],"(",llh.pre[2],"); \n")) 
-  llh
-}
 
 # find the inverse link to a given link function
 stan.ilink <- function(link) {
