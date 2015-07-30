@@ -124,3 +124,14 @@ updateData <- function(data, family, effects, ...) {
   }
   data
 }
+
+#list irrelevant parameters not to be saved by Stan
+exclude_pars <- function(formula, ranef = TRUE) {
+  ee <- extract.effects(formula = formula, add.ignore = TRUE)
+  out <- "eta"
+  if (length(ee$group)) {
+    out <- c(out, paste0("pre_",ee$group))
+    if (!ranef) out <- c(out, paste0("r_",ee$group))
+  }
+  out
+}

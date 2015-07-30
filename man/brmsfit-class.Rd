@@ -29,7 +29,7 @@ Models fitted with the \code{\link[brms:brms]{brms}} package are represented as 
     \item{\code{data.name}:}{the name of the data frame; a character string} 
     \item{\code{data}:}{the data passed to Stan; a list of vectors and matrices}
     \item{\code{model}:}{the model in Stan language; a character string}
-    \item{\code{pars}:}{the parameters of interest; a character vector}
+    \item{\code{exclude}:}{parameters for which samples are not saved; a character vector}
     \item{\code{autcor}:}{an object of class 'cor.brms' containing the autocorrelation structure}
     \item{\code{partial}:}{the formula of the partial effects applied in categorical and ordinal models}
     \item{\code{fit}:}{the fitted results including the posterior samples; (usually) an object of class \code{stanfit}}

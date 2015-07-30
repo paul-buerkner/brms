@@ -1,4 +1,4 @@
-#' Parameters of interest for \code{brms} models
+#' Parameters of interest for \code{brms} models (depricated)
 #' 
 #' @inheritParams brm
 #' @param ranef logical; indicating if random effects estimates should be returned
@@ -6,6 +6,8 @@
 #' @return A vector of character strings specifying parameters of interest for models produced by the \code{brms} package.
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
+#' 
+#' @details This function is depricated. Parameters of interest are now chosen by exclusion not by inclusion.
 #' 
 #' @examples 
 #' brm.pars(rating ~ treat + period + carry + (1|subject),

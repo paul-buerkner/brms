@@ -280,8 +280,7 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
                  data.name = data.name, autocor = autocor)
     x$ranef <- setNames(lapply(lapply(ee$random, brm.model.matrix, data = data), colnames), 
                         gsub("__", ":", ee$group))
-    x$pars <- brm.pars(formula, data = data, family = family, autocor = autocor, partial = partial, 
-                       threshold = threshold, ranef = ranef, WAIC = WAIC, predict = predict)
+    x$exclude <- exclude_pars(formula, ranef = ranef)
     x$data <- brm.data(formula, data = data, family = family, prior = prior, cov.ranef = cov.ranef,
                        autocor = autocor, partial = partial) 
     x$model <- stan.model(formula = x$formula, data = data, family = x$family, link = x$link, prior = prior, 
@@ -291,7 +290,7 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
   
   if (is.function(inits) || (is.character(inits) && !is.element(inits, c("random", "0")))) 
     inits <- replicate(n.chains, do.call(inits, list()), simplify = FALSE)
-  x$fit <- suppressMessages(rstan::get_stanmodel(rstan::stan(model_code = x$model, data = x$data, 
+  x$fit <- rstan::get_stanmodel(suppressMessages(rstan::stan(model_code = x$model, data = x$data, 
                                                              chains = 0, fit = x$fit)))
   if (n.cluster > 1 || silent && n.chains > 0) {
     if (is.character(inits) || is.numeric(inits)) inits <- rep(inits, n.chains)
@@ -299,11 +298,11 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
     clusterEvalQ(cl, require(rstan))
     clusterExport(cl = cl, c("x", "inits", "n.iter", "n.warmup", "n.thin"), envir = environment())
     x$fit <- rstan::sflist2stanfit(parLapply(cl, 1:n.chains, fun = function(i)  
-      rstan::sampling(x$fit, data = x$data, iter = n.iter, pars = x$pars, init = inits[i],
-                      warmup = n.warmup, thin = n.thin, chains = 1, chain_id = i)))
+      rstan::sampling(x$fit, data = x$data, iter = n.iter, pars = x$exclude, init = inits[i],
+                      warmup = n.warmup, thin = n.thin, chains = 1, chain_id = i, include = FALSE)))
     stopCluster(cl)
   } 
-  else x$fit <- rstan::sampling(x$fit, data = x$data, iter = n.iter, pars = x$pars, init = inits,
-                                warmup = n.warmup, thin = n.thin, chains = n.chains, ...)
+  else x$fit <- rstan::sampling(x$fit, data = x$data, iter = n.iter, pars = x$exclude, init = inits,
+                                warmup = n.warmup, thin = n.thin, chains = n.chains, include = FALSE, ...)
   return(rename.pars(x))
 }

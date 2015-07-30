@@ -2,7 +2,7 @@
 % Please edit documentation in R/support.export.R
 \name{brm.pars}
 \alias{brm.pars}
-\title{Parameters of interest for \code{brms} models}
+\title{Parameters of interest for \code{brms} models (depricated)}
 \usage{
 brm.pars(formula, data = NULL, family = "gaussian", autocor = NULL,
   partial = NULL, threshold = "flexible", ranef = TRUE, WAIC = FALSE,
@@ -44,7 +44,10 @@ For models with many observation, this leads to rather huge fitted model objects
 A vector of character strings specifying parameters of interest for models produced by the \code{brms} package.
 }
 \description{
-Parameters of interest for \code{brms} models
+Parameters of interest for \code{brms} models (depricated)
+}
+\details{
+This function is depricated. Parameters of interest are now chosen by exclusion not by inclusion.
 }
 \examples{
 brm.pars(rating ~ treat + period + carry + (1|subject),
