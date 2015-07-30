@@ -4,7 +4,7 @@ get.estimate <- function(coef, samples, margin = 2, to.array = FALSE, ...) {
   args <- list(X = samples, MARGIN = margin, FUN = coef)
   fun.args <- names(formals(coef))
   if (!"..." %in% fun.args) 
-    dots <- dots[fun.args %in% names(dots)] 
+    dots <- dots[names(dots) %in% fun.args] 
   x <- do.call(apply, c(args, dots))
   if (is.null(dim(x))) 
     x <- matrix(x, dimnames = list(NULL, coef))
@@ -12,6 +12,21 @@ get.estimate <- function(coef, samples, margin = 2, to.array = FALSE, ...) {
   if (to.array && length(dim(x)) == 2) 
     x <- array(x, dim = c(dim(x), 1), dimnames = list(NULL, NULL, coef))
   x 
+}
+
+#calculate the evidence ratio between two disjunct hypotheses
+eratio <- function(x, cut = 0, hypothesis = c("equal", "less", "greater")) {
+  hypothesis <- match.arg(hypothesis)
+  if (hypothesis == "equal") out <- NA
+  else if (hypothesis == "less") {
+    out <- length(which(x < cut))
+    out <- out/(length(x)-out)
+  }  
+  else if (hypothesis == "greater") {
+    out <- length(which(x > cut))
+    out <- out/(length(x)-out)
+  }
+  out  
 }
 
 #get correlation names

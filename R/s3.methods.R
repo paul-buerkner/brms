@@ -360,16 +360,16 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", alpha = 0.05, ...) {
     
     #evaluate hypothesis
     out <- matrix(with(samples, eval(parse(text = rename(h, c("[", "]"), c("OB", "CB"))))), ncol=1)
-    sign.word <- ifelse(sign == "=", "equal", ifelse(sign == "<", "less", "greater"))
-    probs <- switch(sign.word, equal = c(alpha/2, 1-alpha/2), less = c(0, 1-alpha), greater = c(alpha, 1))
-    out <- as.data.frame(matrix(unlist(lapply(c("mean","sd","quantile"), get.estimate, 
-                         samples = out, probs = probs)), nrow = 1))
+    wsign <- ifelse(sign == "=", "equal", ifelse(sign == "<", "less", "greater"))
+    probs <- switch(wsign, equal = c(alpha/2, 1-alpha/2), less = c(0, 1-alpha), greater = c(alpha, 1))
+    out <- as.data.frame(matrix(unlist(lapply(c("mean","sd","quantile", "eratio"), get.estimate, 
+                         samples = out, probs = probs, hypothesis = wsign)), nrow = 1))
     if (sign == "<") out[1,3] <- -Inf
     else if (sign == ">") out[1,4] <- Inf
     out <- cbind(out, ifelse(!(out[1,3] <= 0 && 0 <= out[1,4]), '*', ''))
     rownames(out) <- paste(rename(h, "__", ":"), sign, "0")
     cl <- (1-alpha)*100
-    colnames(out) <- c("Estimate", "Est.Error", paste0("l-",cl,"% CI"), paste0("u-",cl,"% CI"), "")
+    colnames(out) <- c("Estimate", "Est.Error", paste0("l-",cl,"% CI"), paste0("u-",cl,"% CI"), "Evid.Ratio", "")
     out
   }))
   out <- list(hypothesis = out, class = substr(class, 1, nchar(class)-1), alpha = alpha)
@@ -380,7 +380,7 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", alpha = 0.05, ...) {
 #' @export
 print.brmshypothesis <- function(x, digits = 2, ...) {
   cat(paste0("Hypothesis Tests for class ", x$class, ":\n"))
-  x$hypothesis[,1:4] <- round(x$hypothesis[,1:4], digits = digits)
+  x$hypothesis[,1:5] <- round(x$hypothesis[,1:5], digits = digits)
   print(x$hypothesis, quote = FALSE)
   cat(paste0("---\n'*': The expected value under the hypothesis lies outside the ",(1-x$alpha)*100,"% CI."))
 }
