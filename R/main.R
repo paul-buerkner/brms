@@ -291,7 +291,7 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
   
   if (is.function(inits) || (is.character(inits) && !is.element(inits, c("random", "0")))) 
     inits <- replicate(n.chains, do.call(inits, list()), simplify = FALSE)
-  x$fit <- rstan::get_stanmodel(suppressMessages(rstan::stan(model_code = x$model, data = x$data, 
+  x$fit <- suppressMessages(rstan::get_stanmodel(rstan::stan(model_code = x$model, data = x$data, 
                                                              chains = 0, fit = x$fit)))
   if (n.cluster > 1 || silent && n.chains > 0) {
     if (is.character(inits) || is.numeric(inits)) inits <- rep(inits, n.chains)

@@ -105,45 +105,45 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
   }
   
   #response variable
-  supl.data <- list(N = nrow(data), Y = unname(model.response(data)))
-  if (!is.numeric(supl.data$Y) && !(is.ord || family %in% c("bernoulli", "categorical"))) 
+  standata <- list(N = nrow(data), Y = unname(model.response(data)))
+  if (!is.numeric(standata$Y) && !(is.ord || family %in% c("bernoulli", "categorical"))) 
     stop(paste("family", family, "expects numeric response variable"))
   
   #transform and check response variable for different families
   if (is.count || family == "binomial") {
-    if (!all(is.wholenumber(supl.data$Y)) || min(supl.data$Y) < 0)
+    if (!all(is.wholenumber(standata$Y)) || min(standata$Y) < 0)
       stop(paste("family", family, "expects response variable of non-negative integers"))
   }
   else if (family == "bernoulli") {
-    supl.data$Y <- as.numeric(as.factor(supl.data$Y)) - 1
-    if (any(!supl.data$Y %in% c(0,1)))
+    standata$Y <- as.numeric(as.factor(standata$Y)) - 1
+    if (any(!standata$Y %in% c(0,1)))
       stop("family bernoulli expects response variable to contain only two different values")
   }
   else if (family == "categorical") 
-    supl.data$Y <- as.numeric(as.factor(supl.data$Y))
+    standata$Y <- as.numeric(as.factor(standata$Y))
   else if (is.ord) {
-    if (is.factor(supl.data$Y)) {
-      if (is.ordered(supl.data$Y)) supl.data$Y <- as.numeric(supl.data$Y)
+    if (is.factor(standata$Y)) {
+      if (is.ordered(standata$Y)) standata$Y <- as.numeric(standata$Y)
       else stop(paste("family", family, "requires factored response variables to be ordered"))
     }
-    else if (all(is.wholenumber(supl.data$Y)))
-      supl.data$Y <- supl.data$Y - min(supl.data$Y) + 1
+    else if (all(is.wholenumber(standata$Y)))
+      standata$Y <- standata$Y - min(standata$Y) + 1
     else stop(paste("family", family, "expects either integers or ordered factors as response variables"))
   }
   else if (is.skew) {
-    if (min(supl.data$Y) < 0)
+    if (min(standata$Y) < 0)
       stop(paste("family", family, "requires response variable to be non-negative"))
   }  
   else if (family == "multigaussian") {
-    supl.data$Y <- matrix(supl.data$Y, ncol = length(ee$response))
-    supl.data <- c(supl.data, list(N_trait = nrow(supl.data$Y), K_trait = ncol(supl.data$Y)),
-                   NC_trait = ncol(supl.data$Y) * (ncol(supl.data$Y)-1)/2) 
+    standata$Y <- matrix(standata$Y, ncol = length(ee$response))
+    standata <- c(standata, list(N_trait = nrow(standata$Y), K_trait = ncol(standata$Y)),
+                   NC_trait = ncol(standata$Y) * (ncol(standata$Y)-1)/2) 
   }
   
   #fixed effects data
   X <- brm.model.matrix(ee$fixed, data, rm.int = is.ord)
-  if (family == "categorical") supl.data <- c(supl.data, list(Kp = ncol(X), Xp = X))
-  else supl.data <- c(supl.data, list(K = ncol(X), X = X))
+  if (family == "categorical") standata <- c(standata, list(Kp = ncol(X), Xp = X))
+  else standata <- c(standata, list(K = ncol(X), X = X))
   
   #random effects data
   if (length(ee$random)) {
@@ -160,7 +160,7 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
       g <- ee$group[[i]]
       name <- paste0(c("", "N_", "K_", "Z_", "NC_"), g)
       if (ncolZ[[i]] == 1) Z[[i]] <- as.vector(Z[[i]])
-      for ( j in 1:length(name)) supl.data <- c(supl.data, setNames(list(eval(expr[j])), name[j]))
+      for ( j in 1:length(name)) standata <- c(standata, setNames(list(eval(expr[j])), name[j]))
       if (g %in% names(cov.ranef)) {
         if (length(r[[i]]) > 1) 
           stop(paste("Currently, customized covariance structures are only implemented",
@@ -178,20 +178,20 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
           stop(paste("Covariance matrix of grouping factor",g,"is not symmetric"))
         cov.ranef[[g]] <- nrow(cov.ranef[[g]])/sum(diag(cov.ranef[[g]])) * cov.ranef[[g]]
         cov.ranef[[g]] <- t(chol(cov.ranef[[g]][order(level.names), order(level.names)]))
-        supl.data <- c(supl.data, setNames(list(cov.ranef[[g]]), paste0("CFcov_",g)))
+        standata <- c(standata, setNames(list(cov.ranef[[g]]), paste0("CFcov_",g)))
       }
     }
   }
   
   #addition and partial variables
   if (is.formula(ee$se)) {
-    supl.data <- c(supl.data, list(sigma = unname(brm.model.matrix(ee$se, data, rm.int = TRUE)[,1])))
-    if (min(supl.data$sigma) < 0) stop("standard errors must be non-negative")
+    standata <- c(standata, list(sigma = unname(brm.model.matrix(ee$se, data, rm.int = TRUE)[,1])))
+    if (min(standata$sigma) < 0) stop("standard errors must be non-negative")
   }
   if (is.formula(ee$weights)) {
-    supl.data <- c(supl.data, list(weights = unname(brm.model.matrix(ee$weights, data, rm.int = TRUE)[,1])))
-    if (family == "multigaussian") supl.data$weights <- supl.data$weights[1:supl.data$N_trait]
-    if (min(supl.data$weights) < 0) stop("weights must be non-negative")
+    standata <- c(standata, list(weights = unname(brm.model.matrix(ee$weights, data, rm.int = TRUE)[,1])))
+    if (family == "multigaussian") standata$weights <- standata$weights[1:standata$N_trait]
+    if (min(standata$weights) < 0) stop("weights must be non-negative")
   }
   if (is.formula(ee$cens)) {
     cens <- get(all.vars(ee$cens)[1], data)
@@ -206,20 +206,20 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
       stop (paste0("Invalid censoring data. Accepted values are 'left', 'none', and 'right' \n",
                    "(abbreviations are allowed) or -1, 0, and 1. TRUE and FALSE are also accepted \n",
                    "and refer to 'right' and 'none' respectively."))
-    supl.data <- c(supl.data, list(cens = cens))
+    standata <- c(standata, list(cens = cens))
   }
   if (is.ord || family %in% c("binomial", "categorical")) {
     if (family == "binomial") add <- ee$trials
     else add <- ee$cat
-    if (!length(add)) supl.data$max_obs <- max(supl.data$Y)
-    else if (is.numeric(add)) supl.data$max_obs <- add
+    if (!length(add)) standata$max_obs <- max(standata$Y)
+    else if (is.numeric(add)) standata$max_obs <- add
     else if (is.formula(add)) 
-      supl.data$max_obs <- unname(brm.model.matrix(add, data, rm.int = TRUE)[,1])
+      standata$max_obs <- unname(brm.model.matrix(add, data, rm.int = TRUE)[,1])
     else stop("Response part of formula is invalid.")
-    if (any(supl.data$Y > supl.data$max_obs))
+    if (any(standata$Y > standata$max_obs))
       stop("The number of trials / categories is smaller the response variable would suggest.")
-    if ((is.ord || family == "categorical") && max(supl.data$max_obs) == 2 ||
-        family == "binomial" && max(supl.data$max_obs) == 1) 
+    if ((is.ord || family == "categorical") && max(standata$max_obs) == 2 ||
+        family == "binomial" && max(standata$max_obs) == 1) 
       message("Only 2 levels detected so that family 'bernoulli' might be a more efficient choice.")
   } 
   
@@ -227,7 +227,7 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
   if (is.formula(partial)) {
     if (family %in% c("sratio","cratio","acat")) {
       Xp <- brm.model.matrix(partial, data, rm.int = TRUE)
-      supl.data <- c(supl.data, list(Kp = ncol(Xp), Xp = Xp))
+      standata <- c(standata, list(Kp = ncol(Xp), Xp = Xp))
       fp <- intersect(colnames(X), colnames(Xp))
       if (length(fp))
         stop(paste("Variables cannot be modeled as fixed and partial effects at the same time.",
@@ -241,28 +241,28 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
     time <- data[[et$time]]
     if (is.null(time)) time <- 1:nrow(data)
     tgroup <- data[[et$group]]
-    if (is.null(tgroup)) tgroup <- rep(1, supl.data$N) 
+    if (is.null(tgroup)) tgroup <- rep(1, standata$N) 
     U_tgroup <- unique(tgroup)
     N_tgroup <- length(U_tgroup)
     if (autocor$p > 0 && is(autocor,"cor.arma")) {
-      supl.data$Yar <- matrix(0, nrow = supl.data$N, ncol = autocor$p)
-      supl.data$Kar <- autocor$p
+      standata$Yar <- matrix(0, nrow = standata$N, ncol = autocor$p)
+      standata$Kar <- autocor$p
       ptsum <- rep(0, N_tgroup + 1)
-      mean.Y <- mean(supl.data$Y) 
+      mean.Y <- mean(standata$Y) 
       for (j in 1:N_tgroup) {
         ptsum[j+1] <- ptsum[j] + sum(tgroup == U_tgroup[j])
         for (i in 1:autocor$p) {
           if (ptsum[j]+i+1 <= ptsum[j+1])
-            supl.data$Yar[(ptsum[j]+i+1):ptsum[j+1], i] <- 
-            supl.data$Y[(ptsum[j]+1):(ptsum[j+1]-i)] - mean.Y
+            standata$Yar[(ptsum[j]+i+1):ptsum[j+1], i] <- 
+            standata$Y[(ptsum[j]+1):(ptsum[j+1]-i)] - mean.Y
         }
       }
     }
     if (autocor$q > 0 && is(autocor,"cor.arma")) {
-      supl.data$Ema_pre <- matrix(0, nrow = supl.data$N, ncol = autocor$q)
-      supl.data$Kma <- autocor$q
-      supl.data$tgroup <- as.numeric(as.factor(tgroup))
+      standata$Ema_pre <- matrix(0, nrow = standata$N, ncol = autocor$q)
+      standata$Kma <- autocor$q
+      standata$tgroup <- as.numeric(as.factor(tgroup))
     }
   } 
-  supl.data
+  standata
 }  
