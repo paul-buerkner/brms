@@ -9,7 +9,8 @@
 # }
 stan.model <- function(formula, data = NULL, family = "gaussian", link = "identity",
                        prior = list(), partial = NULL, threshold = "flexible", cov.ranef = NULL,
-                       WAIC = FALSE, predict = FALSE, autocor = cor.arma(), save.model = NULL) {
+                       WAIC = FALSE, predict = FALSE, sample.prior = FALSE, autocor = cor.arma(), 
+                       save.model = NULL) {
   ee <- extract.effects(formula = formula, family = family, partial = partial) 
   is.lin <- family %in% c("gaussian", "student", "cauchy")
   is.ord <- family %in% c("cumulative", "cratio", "sratio", "acat") 
@@ -52,7 +53,22 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
                   weights = is.formula(ee$weights), cens = is.formula(ee$cens))
   genquant <- stan.genquant(family, link = link, add = is.formula(ee[c("se", "trials", "cat")]),
                             predict = predict, logllh = WAIC)
-  cens <- ifelse(is.formula(ee$cens), "if (cens[n] == 0) ", "")
+  prior <- paste0(
+    if (length(f)) stan.prior(paste0("b_",f), prior, ind = 1:length(f)),
+    if (length(p)) stan.prior(paste0("b_",p), prior, ind = 1:length(p), partial = TRUE), 
+    if (autocor$p) stan.prior("ar", prior),
+    if (autocor$q) stan.prior("ma", prior),
+    if (is.ord && threshold == "flexible") 
+      stan.prior("b_Intercept", prior, add.type = "Intercept")
+    else if (is.ord && threshold == "equidistant") 
+      paste0(stan.prior("b_Intercept1", prior, add.type = "Intercept1"), stan.prior("delta",prior)),
+    if (is.element(family,c("gamma", "weibull"))) stan.prior("shape", prior),
+    if (family == "student") stan.prior("nu", prior),
+    if (is.lin && !is.formula(ee$se)) stan.prior(paste0("sigma_",ee$response), prior), 
+    if (is.mg) paste0(stan.prior(paste0("sigma_",ee$response), prior, ind = 1:length(ee$response)), 
+                      stan.prior("Lrescor", prior)),
+    ranef$model)
+  rngprior <- stan.rngprior(prior, sample.prior = sample.prior, family = family)
   
   data.text <- paste0(
     "data { \n",
@@ -95,30 +111,15 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
     if (autocor$p && is(autocor, "cor.arma")) "  vector[Kar] ar; \n",
     if (autocor$q && is(autocor, "cor.arma")) "  vector[Kma] ma; \n",
     if (is.lin && !is.formula(ee$se)) 
-      "  real<lower=0> sigma; \n"
-    else if (is.mg) 
-      "  vector<lower=0>[K_trait] sigma; \n  cholesky_factor_corr[K_trait] Lrescor; \n"
-    else if (family == "student") 
-      "  real<lower=1> nu; \n"
-    else if (family %in% c("gamma", "weibull", "negbinomial")) 
+      "  real<lower=0> sigma; \n",
+    if (family == "student") 
+      "  real<lower=0> nu; \n",
+    if (family == "multigaussian") 
+      "  vector<lower=0>[K_trait] sigma; \n  cholesky_factor_corr[K_trait] Lrescor; \n",
+    if (family %in% c("gamma", "weibull", "negbinomial")) 
       "  real<lower=0> shape; \n",
+    rngprior$par,
     "} \n")
- 
-  priors <- paste0(
-    if (length(f)) stan.prior(paste0("b_",f), prior, ind = 1:length(f)),
-    if (length(p)) stan.prior(paste0("b_",p), prior, ind = 1:length(p), partial = TRUE), 
-    if (autocor$p) stan.prior("ar", prior),
-    if (autocor$q) stan.prior("ma", prior),
-    if (is.ord && threshold == "flexible") 
-      stan.prior("b_Intercept", prior, add.type = "Intercept")
-    else if (is.ord && threshold == "equidistant") 
-      paste0(stan.prior("b_Intercept1", prior, add.type = "Intercept1"), stan.prior("delta",prior)),
-    if (is.element(family,c("gamma", "weibull"))) stan.prior("shape", prior),
-    if (family == "student") stan.prior("nu", prior),
-    if (is.lin && !is.formula(ee$se)) stan.prior(paste0("sigma_",ee$response), prior), 
-    if (is.mg) paste0(stan.prior(paste0("sigma_",ee$response), prior, ind = 1:length(ee$response)), 
-                      stan.prior("Lrescor", prior)),
-    ranef$model)
   
   vectorize <- c(!(length(ee$group) || autocor$q || eta$transform ||
     (is.ord && !(family == "cumulative" && link == "logit" && !predict && !is.formula(ee$cat)))),            
@@ -142,14 +143,15 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
   "model { \n",
     if (is.formula(ee$weights) && !is.formula(ee$cens)) 
       paste0("  vector[N",trait,"] lp_pre; \n"),
-    priors, 
+    prior, 
     ifelse(vectorize[2], llh, paste0("  for (n in 1:N",trait,") { \n  ", llh,"  } \n")),
     if (is.formula(ee$weights) && !is.formula(ee$cens)) 
     "  increment_log_prob(dot_product(weights,lp_pre)); \n",
+    rngprior$model,
   "} \n",
   "generated quantities { \n",
-    mg$genD, ranef$genD, genquant$genD,
-    mg$genC, ranef$genC, genquant$genC,
+    mg$genD, ranef$genD, genquant$genD, rngprior$genD, 
+    mg$genC, ranef$genC, genquant$genC, rngprior$genC,
   "} \n")
   
   class(model) <- c("character", "brmsmodel")
@@ -508,7 +510,7 @@ stan.prior = function(par, prior = list(), add.type = NULL, ind = rep("", length
       stop("Additional parameter type not present in all parameters")
   }  
   default.prior <- list(b = "", bp = "", sigma = "cauchy(0,5)", delta = "", ar = "", 
-    ma = "", L = "lkj_corr_cholesky(1)", sd = "cauchy(0,5)", Lrescor = "lkj_corr_cholesky(1)",  
+    ma = "", L = "lkj_corr_cholesky(1.0)", sd = "cauchy(0,5)", Lrescor = "lkj_corr_cholesky(1.0)",  
     nu = "uniform(1,100)", shape = "gamma(0.01,0.01)") 
   if (!is.null(prior[[type[2]]])) base.prior <- prior[[type[2]]]
   else if (!is.null(prior[[type[1]]])) base.prior <- prior[[type[1]]]
@@ -532,6 +534,37 @@ stan.prior = function(par, prior = list(), add.type = NULL, ind = rep("", length
   return(collapse(out))
 }
 
+#stan code to sample from priors seperately
+stan.rngprior <- function(prior, sample.prior = FALSE, family = "gaussian") {
+  out <- list()
+  if (sample.prior) {
+    prior <- gsub(" ", "", paste0("\n",prior))
+    pars <- gsub("\\\n|to_vector\\(|\\)", "", regmatches(prior, gregexpr("\\\n[^~]+", prior))[[1]])
+    take <- !grepl("^pre_", pars)
+    pars <- rename(pars[take], symbols = c("^L_", "^rescorL_"), subs = c("cor_", "rescor_"), 
+                   fixed = FALSE)
+    dis <- gsub("~", "", regmatches(prior, gregexpr("~[^\\(]+", prior))[[1]])[take]
+    args <- regmatches(prior, gregexpr("\\([^\\)]+\\);", prior))[[1]][take]
+    
+    #special treatment of lkj_corr_cholesky prior
+    args <- ifelse(grepl("corr_cholesky$", dis), paste0("(2,", substr(args, 2, nchar(args)-1), "[1,2];"), args)
+    dis <- sub("corr_cholesky$", "corr", dis)
+    
+    #distinguish between bounded and unbounded parameters
+    bound <- grepl("^sd|^sigma", pars) | family == "cumulative" & grepl("^delta$", pars) |
+      family %in% c("gamma", "weibull", "negbinomial") & grepl("^shape$", pars) | 
+      family == "student" & grepl("^nu$", pars)
+    if (any(bound)) {
+      out$par <- collapse("  real<lower=0> prior_",pars[bound],"; \n")
+      out$model <- collapse("  prior_",pars[bound]," ~ ",dis[bound],args[bound]," \n")
+    }
+    if (any(!bound)) {
+      out$genD <- collapse("  real prior_",pars[!bound],"; \n")
+      out$genC <- collapse("  prior_",pars[!bound]," <- ",dis[!bound],"_rng",args[!bound]," \n")
+    }
+  }
+  out
+}
 
 # find the inverse link to a given link function
 stan.ilink <- function(link) {

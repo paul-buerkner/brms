@@ -120,3 +120,11 @@ test_that("Test that stan.llh returns correct llhs under weights and censoring",
   expect_match(stan.llh(family = "weibull", link = "inverse", cens = TRUE, weights = TRUE), fixed = TRUE,
                "increment_log_prob(weights[n] * weibull_ccdf_log(Y[n],shape,eta[n])); \n")
 })
+
+test_that("Test that stan.rngprior returns correct sampling statements for priors", {
+  expect_equal(stan.rngprior(prior = "nu ~ uniform(0,100); \n"), list())
+  expect_equal(stan.rngprior(prior = "nu ~ uniform(0,100); \n", sample.prior = TRUE, family = "student"),
+               list(par = "  real<lower=0> prior_nu; \n", model = "  prior_nu ~ uniform(0,100); \n"))
+  expect_equal(stan.rngprior(prior = "b ~ normal(0,5); \n", sample.prior = TRUE),
+               list(genD = "  real prior_b; \n", genC = "  prior_b <- normal_rng(0,5); \n"))
+})

@@ -20,7 +20,7 @@ brm.model.matrix = function(formula, data = environment(formula), rm.int = FALSE
 }
 
 #  rename certain symbols in a character vector
-rename <- function(names, symbols = NULL, subs = NULL) {
+rename <- function(names, symbols = NULL, subs = NULL, fixed = TRUE) {
   if (is.null(symbols))
     symbols <- c(" ", "(", ")", "[", "]", ",", "+", "-", "*", "/", "^", "=", "!=")
   if (is.null(subs))
@@ -29,7 +29,7 @@ rename <- function(names, symbols = NULL, subs = NULL) {
     stop("length(symbols) != length(subs)")
   new.names <- names
   for (i in 1:length(symbols)) 
-    new.names <- gsub(symbols[i], subs[i], new.names, fixed = TRUE)
+    new.names <- gsub(symbols[i], subs[i], new.names, fixed = fixed)
   dup <- duplicated(new.names)
   if (any(dup)) 
     stop(paste0("Internal renaming of variables led to duplicated names. \n",

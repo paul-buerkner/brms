@@ -36,6 +36,8 @@
 #'   For models with many observation, this leads to rather huge fitted model objects.
 #' @param ranef A flag to indicate if random effects for each level of the grouping factor(s) should be saved (default is \code{TRUE}). 
 #'   Set to \code{FALSE} to save memory. The argument has no impact on the model fitting itself.
+#' @param sample.prior A flag to indicate if samples from all specified proper priors should be additionally drawn. 
+#'   Among others, these samples can be used to calculate Bayes factors for point hypotheses. Default is \code{FALSE}. 
 #' @param fit An instance of S3 class \code{brmsfit} derived from a previous fit; defaults to \code{NA}. If \code{fit} is of class \code{brmsfit}, the compiled model associated 
 #'   with the fitted result is re-used and the arguments \code{formula}, \code{data}, \code{family}, \code{prior}, \code{addition}, \code{autocor}, \code{partial}, \code{threshold},
 #'  \code{cov.ranef}, \code{ranef}, and \code{predict} are ignored.
@@ -258,8 +260,9 @@
 #' @export 
 brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior = list(),
                 addition = NULL, autocor = NULL, partial = NULL, threshold = "flexible", cov.ranef = NULL, 
-                ranef = TRUE, WAIC = FALSE, predict = FALSE, fit = NA, n.chains = 2, n.iter = 2000, n.warmup = 500, 
-                n.thin = 1, n.cluster = 1, inits = "random", silent = FALSE, seed = 12345, save.model = NULL, ...) {
+                ranef = TRUE, WAIC = FALSE, predict = FALSE, sample.prior = FALSE, fit = NA, 
+                n.chains = 2, n.iter = 2000, n.warmup = 500, n.thin = 1, n.cluster = 1, inits = "random", 
+                silent = FALSE, seed = 12345, save.model = NULL, ...) {
   dots <- list(...) 
   link <- brm.link(family)
   if (n.chains %% n.cluster != 0) stop("n.chains must be a multiple of n.cluster")
@@ -285,7 +288,8 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
                        autocor = autocor, partial = partial) 
     x$model <- stan.model(formula = x$formula, data = data, family = x$family, link = x$link, prior = prior, 
                           autocor = x$autocor, partial = x$partial, predict = predict, WAIC = WAIC,
-                          threshold = threshold, cov.ranef = names(cov.ranef), save.model = save.model)
+                          threshold = threshold, cov.ranef = names(cov.ranef),
+                          sample.prior = sample.prior, save.model = save.model)
   }  
   
   if (is.function(inits) || (is.character(inits) && !is.element(inits, c("random", "0")))) 
