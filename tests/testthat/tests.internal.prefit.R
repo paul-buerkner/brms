@@ -14,10 +14,10 @@ test_that("Test that brm.links return an error on wrong links", {
 })
 
 test_that("Test that rename return an error on duplicated names", {
-  expect_error(rename(c(letters[1:4],"a()","a[")), fixed = TRUE,
+  expect_error(rename(c(letters[1:4],"a()","a["), check_dup = TRUE), fixed = TRUE,
     "Internal renaming of variables led to duplicated names. \nOccured for variables: a, a(), a[")
-  expect_error(rename(c("aDb","a/b","b")), fixed = TRUE,
+  expect_error(rename(c("aDb","a/b","b"), check_dup = TRUE), fixed = TRUE,
     "Internal renaming of variables led to duplicated names. \nOccured for variables: aDb, a/b")
-  expect_error(rename(c("log(a,b)","logab","bac","ba")), fixed = TRUE,
+  expect_error(rename(c("log(a,b)","logab","bac","ba"), check_dup = TRUE), fixed = TRUE,
     "Internal renaming of variables led to duplicated names. \nOccured for variables: log(a,b), logab")
 })

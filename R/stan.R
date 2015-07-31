@@ -548,20 +548,20 @@ stan.rngprior <- function(sample.prior, priors = "", family = "gaussian", fixed 
     dis <- gsub("~", "", regmatches(priors, gregexpr("~[^\\(]+", priors))[[1]])[take]
     args <- regmatches(priors, gregexpr("\\([^\\)]+\\);", priors))[[1]][take]
     
-    # rename parameters which are indexed instead of being named directly
+    #rename parameters containing indices
     has_ind <- grepl("\\[[[:digit:]]+\\]", pars)
-    for (i in c(1:length(pars))[has_ind]) {
-      ind <- regmatches(pars[i], gregexpr("\\[[[:digit:]]+\\]", pars[i]))
-      ind <- as.numeric(substr(ind, 2, nchar(ind)-1))
-      if (grepl("^b\\[", pars[i])) pars[i] <- paste0("b_",fixed[ind])
-      else if (grepl("^bp\\[", pars[i])) pars[i] <- paste0("b_",partial[ind])
-      else if (grepl("^sigma\\[", pars[i])) pars[i] <- paste0("sigma_",response[ind])
-      else if (grepl("^sd_", pars[i])) {
-        ind_group <- which(grepl(paste0("^sd_",group), pars[i]))
-        pars[i] <- gsub("\\[[[:digit:]]+\\]", paste0("_",random[[ind_group]][ind]), pars[i])
+    pars[has_ind] <- sapply(pars[has_ind], function(par) {
+      ind <- regmatches(par, gregexpr("\\[[[:digit:]]+\\]", par))
+      ind <- as.numeric(substr(ind, 2, nchar(ind) - 1))
+      if (grepl("^b\\[", par)) par <- paste0("b_",fixed[ind])
+      else if (grepl("^bp\\[", par)) par <- paste0("b_",partial[ind])
+      else if (grepl("^sigma\\[", par)) par <- paste0("sigma_",response[ind])
+      else if (grepl("^sd_", par)) {
+        ind_group <- which(grepl(paste0("^sd_",group), par))
+        par <- gsub("\\[[[:digit:]]+\\]", paste0("_",random[[ind_group]][ind]), par)
       }
-    }
-
+      return(par)})
+    
     #special treatment of lkj_corr_cholesky priors
     args <- ifelse(grepl("corr_cholesky$", dis), paste0("(2,", substr(args, 2, nchar(args)-1), "[1,2];"), args)
     dis <- sub("corr_cholesky$", "corr", dis)
