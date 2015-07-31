@@ -152,8 +152,13 @@ ngrps <- function(object, ...)
 #' @param alpha the alpha-level of the tests (default is 0.05)        
 #' @param ... Currently ignored
 #' 
-#' @details Currently there are methods for \code{brmsfit} objects.
-#' @return Summary statistics of the posterior distributions related to the hypotheses
+#' @details Among others, \code{hypothesis} calculates an evidence ratio for each hypothesis. 
+#'   For a directed hypothesis, this is just the posterior probability under the hypothesis against its alternative.
+#'   For an undirected (i.e. point) hypothesis the evidence ratio is a Bayes factor between the hypothesis and its alternative.
+#'   In order to calculate this Bayes factor, all parameters related to the hypothesis must have proper priors
+#'   and argument \code{sample.priors} of function \code{brm} must be set to \code{TRUE}.
+#' 
+#' @return Summary statistics of the posterior distributions related to the hypotheses. 
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 

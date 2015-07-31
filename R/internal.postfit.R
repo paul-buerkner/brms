@@ -15,14 +15,22 @@ get.estimate <- function(coef, samples, margin = 2, to.array = FALSE, ...) {
 }
 
 #calculate the evidence ratio between two disjunct hypotheses
-eratio <- function(x, cut = 0, hypothesis = c("equal", "less", "greater")) {
-  hypothesis <- match.arg(hypothesis)
-  if (hypothesis == "equal") out <- NA
-  else if (hypothesis == "less") {
+eratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"), prior_samples = NULL) {
+  wsign <- match.arg(wsign)
+  if (wsign == "equal") 
+    if (is.null(prior_samples)) out <- NA
+    else {
+      prior_density <- density(prior_samples, n = 4096)
+      posterior_density <- density(x, n = 4096)
+      at_zero_prior <- which(abs(prior_density$x-0) == min(abs(prior_density$x-0)))
+      at_zero_posterior <- which(abs(posterior_density$x-0) == min(abs(posterior_density$x-0)))
+      out <- posterior_density$y[at_zero_posterior] / prior_density$y[at_zero_prior] 
+    }
+  else if (wsign == "less") {
     out <- length(which(x < cut))
     out <- out/(length(x)-out)
   }  
-  else if (hypothesis == "greater") {
+  else if (wsign == "greater") {
     out <- length(which(x > cut))
     out <- out/(length(x)-out)
   }
@@ -94,4 +102,19 @@ rename.pars <- function(x, ...) {
     }  
   }
   x
+}
+
+#get appropriate prior samples for hypothesis testing
+get_prior_samples <- function(x, pars = NULL) {
+  if (!is(x, "brmsfit")) stop("x must be of class brmsfit")
+  if (!is.character(pars)) stop("pars must be a character vector")
+  par_names <- par.names(x)
+  prior_names <- par_names[grepl("^prior_", par_names)]
+  prior_samples <- posterior.samples(x, parameters = prior_names, fixed = TRUE)
+  matches <- lapply(sub("^prior_", "", prior_names), regexpr, text = pars, fixed = TRUE)
+  matches <- matrix(unlist(matches), ncol = length(pars), byrow = TRUE)
+  matches <- apply(matches, 2, function(table) match(1, table))
+  if (!anyNA(matches)) prior_samples <- as.data.frame(prior_samples[,matches])
+  else prior_samples <- NULL
+  prior_samples
 }
