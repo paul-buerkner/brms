@@ -53,7 +53,7 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
                   weights = is.formula(ee$weights), cens = is.formula(ee$cens))
   genquant <- stan.genquant(family, link = link, add = is.formula(ee[c("se", "trials", "cat")]),
                             predict = predict, logllh = WAIC)
-  prior <- paste0(
+  priors <- paste0(
     if (length(f)) stan.prior(paste0("b_",f), prior, ind = 1:length(f)),
     if (length(p)) stan.prior(paste0("b_",p), prior, ind = 1:length(p), partial = TRUE), 
     if (autocor$p) stan.prior("ar", prior),
@@ -61,14 +61,15 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
     if (is.ord && threshold == "flexible") 
       stan.prior("b_Intercept", prior, add.type = "Intercept")
     else if (is.ord && threshold == "equidistant") 
-      paste0(stan.prior("b_Intercept1", prior, add.type = "Intercept1"), stan.prior("delta",prior)),
-    if (is.element(family,c("gamma", "weibull"))) stan.prior("shape", prior),
+      paste0(stan.prior("b_Intercept1", prior, add.type = "Intercept1"), stan.prior("delta", prior)),
+    if (family %in% c("gamma", "weibull", "negbinomial")) stan.prior("shape", prior),
     if (family == "student") stan.prior("nu", prior),
     if (is.lin && !is.formula(ee$se)) stan.prior(paste0("sigma_",ee$response), prior), 
     if (is.mg) paste0(stan.prior(paste0("sigma_",ee$response), prior, ind = 1:length(ee$response)), 
                       stan.prior("Lrescor", prior)),
     ranef$model)
-  rngprior <- stan.rngprior(prior, sample.prior = sample.prior, family = family)
+  rngprior <- stan.rngprior(sample.prior = sample.prior, priors = priors, family = family, fixed = f,
+                            partial = p, response = ee$response, random = r, group = ee$group)
   
   data.text <- paste0(
     "data { \n",
@@ -143,7 +144,7 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
   "model { \n",
     if (is.formula(ee$weights) && !is.formula(ee$cens)) 
       paste0("  vector[N",trait,"] lp_pre; \n"),
-    prior, 
+    priors, 
     ifelse(vectorize[2], llh, paste0("  for (n in 1:N",trait,") { \n  ", llh,"  } \n")),
     if (is.formula(ee$weights) && !is.formula(ee$cens)) 
     "  increment_log_prob(dot_product(weights,lp_pre)); \n",
@@ -534,26 +535,39 @@ stan.prior = function(par, prior = list(), add.type = NULL, ind = rep("", length
   return(collapse(out))
 }
 
-#stan code to sample from priors seperately
-stan.rngprior <- function(prior, sample.prior = FALSE, family = "gaussian") {
+# stan code to sample from priors seperately
+stan.rngprior <- function(sample.prior, priors = "", family = "gaussian", fixed = NULL,
+                          partial = NULL, response = NULL, random = list(), group = list()) {
   out <- list()
   if (sample.prior) {
-    prior <- gsub(" ", "", paste0("\n",prior))
-    pars <- gsub("\\\n|to_vector\\(|\\)", "", regmatches(prior, gregexpr("\\\n[^~]+", prior))[[1]])
+    priors <- gsub(" ", "", paste0("\n",priors))
+    pars <- gsub("\\\n|to_vector\\(|\\)", "", regmatches(priors, gregexpr("\\\n[^~]+", priors))[[1]])
     take <- !grepl("^pre_", pars)
     pars <- rename(pars[take], symbols = c("^L_", "^rescorL_"), subs = c("cor_", "rescor_"), 
                    fixed = FALSE)
-    dis <- gsub("~", "", regmatches(prior, gregexpr("~[^\\(]+", prior))[[1]])[take]
-    args <- regmatches(prior, gregexpr("\\([^\\)]+\\);", prior))[[1]][take]
+    dis <- gsub("~", "", regmatches(priors, gregexpr("~[^\\(]+", priors))[[1]])[take]
+    args <- regmatches(priors, gregexpr("\\([^\\)]+\\);", priors))[[1]][take]
     
-    #special treatment of lkj_corr_cholesky prior
+    # rename parameters which are indexed instead of being named directly
+    has_ind <- grepl("\\[[[:digit:]]+\\]", pars)
+    for (i in c(1:length(pars))[has_ind]) {
+      ind <- regmatches(pars[i], gregexpr("\\[[[:digit:]]+\\]", pars[i]))
+      ind <- as.numeric(substr(ind, 2, nchar(ind)-1))
+      if (grepl("^b\\[", pars[i])) pars[i] <- paste0("b_",fixed[ind])
+      else if (grepl("^bp\\[", pars[i])) pars[i] <- paste0("b_",partial[ind])
+      else if (grepl("^sigma\\[", pars[i])) pars[i] <- paste0("sigma_",response[ind])
+      else if (grepl("^sd_", pars[i])) {
+        ind_group <- which(grepl(paste0("^sd_",group), pars[i]))
+        pars[i] <- gsub("\\[[[:digit:]]+\\]", paste0("_",random[[ind_group]][ind]), pars[i])
+      }
+    }
+
+    #special treatment of lkj_corr_cholesky priors
     args <- ifelse(grepl("corr_cholesky$", dis), paste0("(2,", substr(args, 2, nchar(args)-1), "[1,2];"), args)
     dis <- sub("corr_cholesky$", "corr", dis)
     
     #distinguish between bounded and unbounded parameters
-    bound <- grepl("^sd|^sigma", pars) | family == "cumulative" & grepl("^delta$", pars) |
-      family %in% c("gamma", "weibull", "negbinomial") & grepl("^shape$", pars) | 
-      family == "student" & grepl("^nu$", pars)
+    bound <- grepl("^sd|^sigma|^shape$|^nu$", pars) | family == "cumulative" & grepl("^delta$", pars)
     if (any(bound)) {
       out$par <- collapse("  real<lower=0> prior_",pars[bound],"; \n")
       out$model <- collapse("  prior_",pars[bound]," ~ ",dis[bound],args[bound]," \n")

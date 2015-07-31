@@ -122,9 +122,20 @@ test_that("Test that stan.llh returns correct llhs under weights and censoring",
 })
 
 test_that("Test that stan.rngprior returns correct sampling statements for priors", {
-  expect_equal(stan.rngprior(prior = "nu ~ uniform(0,100); \n"), list())
-  expect_equal(stan.rngprior(prior = "nu ~ uniform(0,100); \n", sample.prior = TRUE, family = "student"),
+  expect_equal(stan.rngprior(TRUE, prior = "nu ~ uniform(0,100); \n"),
                list(par = "  real<lower=0> prior_nu; \n", model = "  prior_nu ~ uniform(0,100); \n"))
-  expect_equal(stan.rngprior(prior = "b ~ normal(0,5); \n", sample.prior = TRUE),
+  expect_equal(stan.rngprior(TRUE, prior = "delta ~ normal(0,1); \n", family = "cumulative"),
+               list(par = "  real<lower=0> prior_delta; \n", model = "  prior_delta ~ normal(0,1); \n"))
+  expect_equal(stan.rngprior(TRUE, prior = "b ~ normal(0,5); \n"),
                list(genD = "  real prior_b; \n", genC = "  prior_b <- normal_rng(0,5); \n"))
+  expect_equal(stan.rngprior(TRUE, prior = "b[1] ~ normal(0,5); \n", fixed = c("x1", "x2")),
+               list(genD = "  real prior_b_x1; \n", genC = "  prior_b_x1 <- normal_rng(0,5); \n"))
+  expect_equal(stan.rngprior(TRUE, prior = "bp[1] ~ normal(0,5); \n", partial = c("x1", "x2")),
+               list(genD = "  real prior_b_x1; \n", genC = "  prior_b_x1 <- normal_rng(0,5); \n"))
+  expect_equal(stan.rngprior(TRUE, prior = "sigma[2] ~ normal(0,5); \n", response = c("y1", "y2")),
+               list(par = "  real<lower=0> prior_sigma_y2; \n", model = "  prior_sigma_y2 ~ normal(0,5); \n"))
+  expect_equal(stan.rngprior(TRUE, prior = "sd_id[1] ~ normal(0,5); \n  sd_id[2] ~ cauchy(0,2); \n",
+                             group = list("id"), random = list(c("x1", "x2"))),
+               list(par = "  real<lower=0> prior_sd_id_x1; \n  real<lower=0> prior_sd_id_x2; \n", 
+                    model = "  prior_sd_id_x1 ~ normal(0,5); \n  prior_sd_id_x2 ~ cauchy(0,2); \n"))
 })
