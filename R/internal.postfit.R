@@ -22,9 +22,9 @@ eratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"), prior_samp
     else {
       prior_density <- density(prior_samples, n = 4096)
       posterior_density <- density(x, n = 4096)
-      at_zero_prior <- which(abs(prior_density$x-0) == min(abs(prior_density$x-0)))
-      at_zero_posterior <- which(abs(posterior_density$x-0) == min(abs(posterior_density$x-0)))
-      out <- posterior_density$y[at_zero_posterior] / prior_density$y[at_zero_prior] 
+      at_cut_prior <- which(abs(prior_density$x - cut) == min(abs(prior_density$x - cut)))
+      at_cut_posterior <- which(abs(posterior_density$x - cut) == min(abs(posterior_density$x - cut)))
+      out <- posterior_density$y[at_cut_posterior] / prior_density$y[at_cut_prior] 
     }
   else if (wsign == "less") {
     out <- length(which(x < cut))
