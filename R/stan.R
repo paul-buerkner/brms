@@ -546,7 +546,7 @@ stan.rngprior <- function(sample.prior, priors = "", family = "gaussian", fixed 
     pars <- rename(pars[take], symbols = c("^L_", "^rescorL_"), subs = c("cor_", "rescor_"), 
                    fixed = FALSE)
     dis <- gsub("~", "", regmatches(priors, gregexpr("~[^\\(]+", priors))[[1]])[take]
-    args <- regmatches(priors, gregexpr("\\([^\\)]+\\);", priors))[[1]][take]
+    args <- regmatches(priors, gregexpr("\\([^;]+\\);", priors))[[1]][take]
     
     #rename parameters containing indices
     has_ind <- grepl("\\[[[:digit:]]+\\]", pars)
