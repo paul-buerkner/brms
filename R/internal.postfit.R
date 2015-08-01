@@ -3,8 +3,8 @@ get.estimate <- function(coef, samples, margin = 2, to.array = FALSE, ...) {
   dots <- list(...)
   args <- list(X = samples, MARGIN = margin, FUN = coef)
   fun.args <- names(formals(coef))
-  if (!"..." %in% fun.args) 
-    dots <- dots[names(dots) %in% fun.args] 
+  if (!"..." %in% fun.args)
+    dots <- dots[names(dots) %in% fun.args]
   x <- do.call(apply, c(args, dots))
   if (is.null(dim(x))) 
     x <- matrix(x, dimnames = list(NULL, coef))
@@ -15,24 +15,26 @@ get.estimate <- function(coef, samples, margin = 2, to.array = FALSE, ...) {
 }
 
 #calculate the evidence ratio between two disjunct hypotheses
-eratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"), prior_samples = NULL) {
+eratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"), prior_samples = NULL, pow = 12, ...) {
   wsign <- match.arg(wsign)
   if (wsign == "equal") 
     if (is.null(prior_samples)) out <- NA
     else {
-      prior_density <- density(prior_samples, n = 4096)
-      posterior_density <- density(x, n = 4096)
+      dots <- list(...)
+      dots <- dots[names(dots) %in% names(formals("density.default"))]
+      prior_density <- do.call(density, c(list(x = prior_samples, n = 2^pow), dots))
+      posterior_density <- do.call(density, c(list(x = x, n = 2^pow), dots))
       at_cut_prior <- which(abs(prior_density$x - cut) == min(abs(prior_density$x - cut)))
       at_cut_posterior <- which(abs(posterior_density$x - cut) == min(abs(posterior_density$x - cut)))
       out <- posterior_density$y[at_cut_posterior] / prior_density$y[at_cut_prior] 
     }
   else if (wsign == "less") {
     out <- length(which(x < cut))
-    out <- out/(length(x)-out)
+    out <- out/(length(x) - out)
   }  
   else if (wsign == "greater") {
     out <- length(which(x > cut))
-    out <- out/(length(x)-out)
+    out <- out/(length(x) - out)
   }
   out  
 }
@@ -105,7 +107,7 @@ rename.pars <- function(x, ...) {
 }
 
 #get appropriate prior samples for hypothesis testing
-get_prior_samples <- function(x, pars = NULL) {
+get_prior_samples <- function(x, pars) {
   if (!is(x, "brmsfit")) stop("x must be of class brmsfit")
   if (!is.character(pars)) stop("pars must be a character vector")
   par_names <- par.names(x)

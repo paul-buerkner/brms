@@ -368,7 +368,7 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", alpha = 0.05, ...) {
     wsign <- ifelse(sign == "=", "equal", ifelse(sign == "<", "less", "greater"))
     probs <- switch(wsign, equal = c(alpha/2, 1-alpha/2), less = c(0, 1-alpha), greater = c(alpha, 1))
     out <- as.data.frame(matrix(unlist(lapply(c("mean","sd","quantile", "eratio"), get.estimate, 
-             samples = samples, probs = probs, wsign = wsign, prior_samples = prior_samples)), nrow = 1))
+      samples = samples, probs = probs, wsign = wsign, prior_samples = prior_samples, ...)), nrow = 1))
     if (sign == "<") out[1,3] <- -Inf
     else if (sign == ">") out[1,4] <- Inf
     out <- cbind(out, ifelse(!(out[1,3] <= 0 && 0 <= out[1,4]), '*', ''))
