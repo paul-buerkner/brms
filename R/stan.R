@@ -172,13 +172,12 @@ stan.ranef <- function(rg, prior = list(), cov.ranef = "") {
   g <- rg[[2]]
   cor <- rg[[3]]
   c.cov <- g %in% cov.ranef
-  out <- structure(as.list(rep("", 7)), 
-                   names = c("data", "par", "model", "tranD", "transC", "genD", "genC"))
+  out <- setNames(as.list(rep("", 7)), c("data", "par", "model", "tranD", "transC", "genD", "genC"))
   out$data <- paste0("  int<lower=1> ",g,"[N]; \n",
                      "  int<lower=1> N_",g,"; \n",
                      "  int<lower=1> K_",g,"; \n")
   out$model <- paste0(stan.prior(paste0("sd_",g,"_",r), add.type = g, prior = prior ,
-                     ind = ifelse(length(r) == 1, "", list(1:length(r)))[[1]]))
+                      ind = ifelse(length(r) == 1, "", list(1:length(r)))[[1]]))
   
   if (length(r) == 1) {
     out$data <- paste0(out$data, "  real Z_",g,"[N]; \n",
