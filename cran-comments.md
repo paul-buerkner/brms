@@ -1,3 +1,5 @@
+This is an update to fix a critical bug.
+
 ## Test environments
 * local Windows 8.1 install, R 3.2.0, R 3.3.0
 * win-builder (devel and release)

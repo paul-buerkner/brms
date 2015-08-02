@@ -3,11 +3,12 @@ title: "News"
 output: html_document
 ---
 
-# under development
+# brms 0.4.1
 ----------------------------------------------------------------
 
 * allow for sampling from all specified proper priors in the model
 * calculate Bayes factors for point hypotheses in S3 method 'hypothesis'
+* fix a bug that could cause an error for models with multiple grouping factors
 * fix a bug that could cause an error for weighted poisson and exponential models
 
 # brms 0.4.0
