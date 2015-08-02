@@ -34,7 +34,7 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
   trait <- ifelse(is.mg, "_trait", "")
   
   ranef <- unlist(lapply(mapply(list, r, ee$group, ee$cor, SIMPLIFY = FALSE), stan.ranef, 
-                         f = f, family = family, prior = prior, cov.ranef = cov.ranef))
+                                prior = prior, cov.ranef = cov.ranef))
   names.ranef <- unique(names(ranef))
   if (length(ranef)) ranef <- sapply(1:length(names.ranef), function(x) 
     collapse(ranef[seq(x, length(ranef), length(names.ranef))]))
@@ -167,13 +167,13 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
 # Random effects in Stan 
 # 
 # @return A vector of strings containing the random effects in stan language
-stan.ranef <- function(rg, f, family = "gaussian", prior = list(), cov.ranef = "") {
+stan.ranef <- function(rg, prior = list(), cov.ranef = "") {
   r <- rg[[1]]
   g <- rg[[2]]
   cor <- rg[[3]]
   c.cov <- g %in% cov.ranef
-  is.ord <- is.element(family, c("cumulative", "cratio", "sratio", "acat")) 
-  out <- list()
+  out <- structure(as.list(rep("", 7)), 
+                   names = c("data", "par", "model", "tranD", "transC", "genD", "genC"))
   out$data <- paste0("  int<lower=1> ",g,"[N]; \n",
                      "  int<lower=1> N_",g,"; \n",
                      "  int<lower=1> K_",g,"; \n")
@@ -213,22 +213,6 @@ stan.ranef <- function(rg, f, family = "gaussian", prior = list(), cov.ranef = "
 }
 
 # Likelihoods in stan language
-# 
-# Define the likelihood of the dependent variable in stan language
-# 
-# @inheritParams brm
-# @param add A flag inicating if the model contains additional information of the response variable
-#   (e.g., standard errors in a gaussian linear model)
-# @param add2 A flag indicating if the response variable should have unequal weights 
-#   Only used if \code{family} is either \code{"gaussian", "student"}, or \code{"cauchy"}.
-#    
-# @return A character string defining a line of code in stan language 
-#   that contains the likelihood of the dependent variable. 
-# @examples 
-# \dontrun{
-# stan.llh(family = "gaussian")
-# stan.llh(family = "cumulative", link = "logit")
-# }
 stan.llh <- function(family, link, predict = FALSE, add = FALSE,
                      weights = FALSE, cens = FALSE, logllh = FALSE) {
   is.cat <- family %in% c("cumulative", "cratio", "sratio", "acat", "categorical")

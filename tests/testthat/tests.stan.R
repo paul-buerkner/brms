@@ -91,6 +91,13 @@ test_that("Test that stan.model handles addition arguments correctly", {
                           family = "weibull", link = "log"), "vector[N] cens;", fixed = TRUE)
 })
 
+test_that("Test that stan.model correctly combines strings of multiple grouping factors", {
+  expect_match(stan.model(count ~ (1|patient) + (1+Trt_c|visit), data = epilepsy, family = "poisson", link = "log"), 
+               "  real Z_patient[N]; \n  int<lower=1> visit[N];", fixed = TRUE)
+  expect_match(stan.model(count ~ (1+Trt_c|visit) + (1|patient), data = epilepsy, family = "poisson", link = "log"), 
+               "  int NC_visit; \n  int<lower=1> patient[N];", fixed = TRUE)
+})
+
 test_that("Test that stan.ord returns correct strings", {
   expect_match(stan.ord(family = "sratio", link = "logit")$par, "")
   
