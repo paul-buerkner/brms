@@ -301,9 +301,15 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
     cl <- makeCluster(n.cluster)
     clusterEvalQ(cl, require(rstan))
     clusterExport(cl = cl, c("x", "inits", "n.iter", "n.warmup", "n.thin"), envir = environment())
-    x$fit <- rstan::sflist2stanfit(parLapply(cl, 1:n.chains, fun = function(i)  
+    sflist <- parLapply(cl, 1:n.chains, fun = function(i)  
       rstan::sampling(x$fit, data = x$data, iter = n.iter, pars = x$exclude, init = inits[i],
-                      warmup = n.warmup, thin = n.thin, chains = 1, chain_id = i, include = FALSE)))
+                      warmup = n.warmup, thin = n.thin, chains = 1, chain_id = i, include = FALSE))
+    x$fit <- rstan::sflist2stanfit(rmNULL(lapply(1:length(sflist), function(i) {
+      if (!is(sflist[[i]], "stanfit") || length(sflist[[i]]@sim$samples) == 0) {
+        warning(paste("chain", i, "did not contain samples and was removed from the fitted model"))
+        return(NULL)
+      } else return(sflist[[i]])
+    })))
     stopCluster(cl)
   } 
   else x$fit <- rstan::sampling(x$fit, data = x$data, iter = n.iter, pars = x$exclude, init = inits,

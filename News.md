@@ -6,6 +6,7 @@ output: html_document
 # under development
 ----------------------------------------------------------------
 
+* remove chains that fail to initialize while sampling in parallel leaving the other chains untouched
 
 # brms 0.4.1
 ----------------------------------------------------------------
