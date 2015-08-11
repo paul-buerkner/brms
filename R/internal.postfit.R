@@ -24,17 +24,17 @@ eratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"), prior_samp
       dots <- dots[names(dots) %in% names(formals("density.default"))]
       prior_density <- do.call(density, c(list(x = prior_samples, n = 2^pow), dots))
       posterior_density <- do.call(density, c(list(x = x, n = 2^pow), dots))
-      at_cut_prior <- which(abs(prior_density$x - cut) == min(abs(prior_density$x - cut)))
-      at_cut_posterior <- which(abs(posterior_density$x - cut) == min(abs(posterior_density$x - cut)))
+      at_cut_prior <- match(min(abs(prior_density$x - cut)), abs(prior_density$x - cut))
+      at_cut_posterior <- match(min(abs(posterior_density$x - cut)), abs(posterior_density$x - cut))
       out <- posterior_density$y[at_cut_posterior] / prior_density$y[at_cut_prior] 
     }
   else if (wsign == "less") {
     out <- length(which(x < cut))
-    out <- out/(length(x) - out)
+    out <- out / (length(x) - out)
   }  
   else if (wsign == "greater") {
     out <- length(which(x > cut))
-    out <- out/(length(x) - out)
+    out <- out / (length(x) - out)
   }
   out  
 }

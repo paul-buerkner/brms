@@ -363,7 +363,7 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", alpha = 0.05, ...) {
       names(prior_samples) <- rename(varsH, c("[", "]"), c("OB", "CB"))
       prior_samples <- matrix(with(prior_samples, eval(parse(text = rename(h, c("[", "]"), c("OB", "CB"))))), ncol=1)
     } 
-    
+
     #evaluate hypothesis
     wsign <- ifelse(sign == "=", "equal", ifelse(sign == "<", "less", "greater"))
     probs <- switch(wsign, equal = c(alpha/2, 1-alpha/2), less = c(0, 1-alpha), greater = c(alpha, 1))
