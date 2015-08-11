@@ -25,22 +25,22 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
   ee <- extract.effects(formula = formula, family = family, partial = partial)
   data <- updateData(data, family = family, effects = ee)
     
-  is.lin <- family %in% c("gaussian", "student", "cauchy")
-  is.ord <- family  %in% c("cumulative","cratio","sratio","acat")
+  is.linear <- family %in% c("gaussian", "student", "cauchy")
+  is.ordinal <- family  %in% c("cumulative","cratio","sratio","acat")
   is.skew <- family %in% c("gamma", "weibull", "exponential")
-  if (!(is.lin || is.ord || is.skew || family %in% 
+  if (!(is.linear || is.ordinal || is.skew || family %in% 
       c("poisson", "negbinomial", "geometric", "binomial","bernoulli", "categorical")))
     stop(paste(family,"is not a valid family"))
   
-  f <- colnames(brm.model.matrix(ee$fixed, data, rm.int = is.ord))
+  f <- colnames(brm.model.matrix(ee$fixed, data, rm.int = is.ordinal))
   r <- lapply(lapply(ee$random, brm.model.matrix, data = data), colnames)
   p <- colnames(brm.model.matrix(partial, data, rm.int = TRUE))
   out <- NULL
-  if (is.ord && threshold == "flexible") out <- c(out, "b_Intercept")
-  if (is.ord && threshold == "equidistant") out <- c(out, "b_Intercept1", "delta")
+  if (is.ordinal && threshold == "flexible") out <- c(out, "b_Intercept")
+  if (is.ordinal && threshold == "equidistant") out <- c(out, "b_Intercept1", "delta")
   if (length(f) && family != "categorical") out <- c(out, "b")
-  if (is.ord && length(p) || family == "categorical") out <- c(out, "bp")
-  if (is.lin && !is(ee$se,"formula") && length(ee$response) == 1) out <- c(out, "sigma")
+  if (is.ordinal && length(p) || family == "categorical") out <- c(out, "bp")
+  if (is.linear && !is(ee$se,"formula") && length(ee$response) == 1) out <- c(out, "sigma")
   if (family == "gaussian" && length(ee$response) > 1) out <- c(out, "sigma", "rescor")
   if (family == "student") out <- c(out,"nu")
   if (family %in% c("gamma", "weibull", "negbinomial")) out <- c(out,"shape")
@@ -78,13 +78,13 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
 brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
                      autocor = NULL, partial = NULL, cov.ranef = NULL) {
   family <- family[1]
-  is.lin <- family %in% c("gaussian", "student", "cauchy")
-  is.ord <- family  %in% c("cumulative","cratio","sratio","acat")
+  is.linear <- family %in% c("gaussian", "student", "cauchy")
+  is.ordinal <- family  %in% c("cumulative","cratio","sratio","acat")
   is.count <- family %in% c("poisson", "negbinomial", "geometric")
   is.skew <- family %in% c("gamma", "weibull", "exponential")
   if (family == "multigaussian") 
     stop("family 'multigaussian' is depricated. Use family 'gaussian' instead")
-  if (!(is.lin | is.ord | is.skew | is.count | family %in% 
+  if (!(is.linear | is.ordinal | is.skew | is.count | family %in% 
         c("binomial", "bernoulli", "categorical")))
     stop(paste(family, "is not a valid family"))
   if (is.null(autocor)) autocor <- cor.arma()
@@ -110,7 +110,7 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
   
   #response variable
   standata <- list(N = nrow(data), Y = unname(model.response(data)))
-  if (!is.numeric(standata$Y) && !(is.ord || family %in% c("bernoulli", "categorical"))) 
+  if (!is.numeric(standata$Y) && !(is.ordinal || family %in% c("bernoulli", "categorical"))) 
     stop(paste("family", family, "expects numeric response variable"))
   
   #transform and check response variable for different families
@@ -125,7 +125,7 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
   }
   else if (family == "categorical") 
     standata$Y <- as.numeric(as.factor(standata$Y))
-  else if (is.ord) {
+  else if (is.ordinal) {
     if (is.factor(standata$Y)) {
       if (is.ordered(standata$Y)) standata$Y <- as.numeric(standata$Y)
       else stop(paste("family", family, "requires factored response variables to be ordered"))
@@ -145,7 +145,7 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
   }
   
   #fixed effects data
-  X <- brm.model.matrix(ee$fixed, data, rm.int = is.ord)
+  X <- brm.model.matrix(ee$fixed, data, rm.int = is.ordinal)
   if (family == "categorical") standata <- c(standata, list(Kp = ncol(X), Xp = X))
   else standata <- c(standata, list(K = ncol(X), X = X))
   
@@ -212,7 +212,7 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
                    "and refer to 'right' and 'none' respectively."))
     standata <- c(standata, list(cens = cens))
   }
-  if (is.ord || family %in% c("binomial", "categorical")) {
+  if (is.ordinal || family %in% c("binomial", "categorical")) {
     if (family == "binomial") add <- ee$trials
     else add <- ee$cat
     if (!length(add)) standata$max_obs <- max(standata$Y)
@@ -222,7 +222,7 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
     else stop("Response part of formula is invalid.")
     if (any(standata$Y > standata$max_obs))
       stop("The number of trials / categories is smaller the response variable would suggest.")
-    if ((is.ord || family == "categorical") && max(standata$max_obs) == 2 ||
+    if ((is.ordinal || family == "categorical") && max(standata$max_obs) == 2 ||
         family == "binomial" && max(standata$max_obs) == 1) 
       message("Only 2 levels detected so that family 'bernoulli' might be a more efficient choice.")
   } 

@@ -98,8 +98,8 @@ test_that("Test that stan.model correctly combines strings of multiple grouping 
                "  int NC_visit; \n  int<lower=1> patient[N];", fixed = TRUE)
 })
 
-test_that("Test that stan.ord returns correct strings", {
-  expect_match(stan.ord(family = "sratio", link = "logit")$par, "")
+test_that("Test that stan.ordinal returns correct strings", {
+  expect_match(stan.ordinal(family = "sratio", link = "logit")$par, "")
   
 })
 
