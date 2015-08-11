@@ -83,9 +83,9 @@ rename.pars <- function(x, ...) {
     }
   }
   ee <- extract.effects(x$formula, family = x$family)
-  if (x$family %in% c("gaussian", "student", "cauchy", "multigaussian")) {
+  if (x$family %in% c("gaussian", "student", "cauchy")) {
    change[[length(change)+1]] <- list(pos = grepl("^sigma", pars), names = paste0("sigma_",ee$response))
-    if (x$family == "multigaussian") {
+    if (x$family == "gaussian" && length(ee$response) > 1) {
       rescor_names <- paste0("rescor_",unlist(lapply(2:length(ee$response), function(j) 
           lapply(1:(j-1), function(k) paste0(ee$response[k],"_",ee$response[j])))))
      change[[length(change)+1]] <- list(pos = grepl("^rescor\\[", pars), names = rescor_names)

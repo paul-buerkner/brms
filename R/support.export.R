@@ -29,7 +29,7 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
   is.ord <- family  %in% c("cumulative","cratio","sratio","acat")
   is.skew <- family %in% c("gamma", "weibull", "exponential")
   if (!(is.lin || is.ord || is.skew || family %in% 
-      c("poisson", "negbinomial", "geometric", "binomial","bernoulli", "categorical", "multigaussian")))
+      c("poisson", "negbinomial", "geometric", "binomial","bernoulli", "categorical")))
     stop(paste(family,"is not a valid family"))
   
   f <- colnames(brm.model.matrix(ee$fixed, data, rm.int = is.ord))
@@ -40,10 +40,10 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
   if (is.ord && threshold == "equidistant") out <- c(out, "b_Intercept1", "delta")
   if (length(f) && family != "categorical") out <- c(out, "b")
   if (is.ord && length(p) || family == "categorical") out <- c(out, "bp")
-  if (is.lin && !is(ee$se,"formula")) out <- c(out, "sigma")
-  if (family == "multigaussian") out <- c(out, "sigma", "rescor")
+  if (is.lin && !is(ee$se,"formula") && length(ee$response) == 1) out <- c(out, "sigma")
+  if (family == "gaussian" && length(ee$response) > 1) out <- c(out, "sigma", "rescor")
   if (family == "student") out <- c(out,"nu")
-  if (family %in% c("gamma","weibull","negbinomial")) out <- c(out,"shape")
+  if (family %in% c("gamma", "weibull", "negbinomial")) out <- c(out,"shape")
   if (autocor$p > 0) out <- c(out,"ar")
   if (autocor$q > 0) out <- c(out,"ma")
   if (length(ee$group)) {
@@ -82,8 +82,10 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
   is.ord <- family  %in% c("cumulative","cratio","sratio","acat")
   is.count <- family %in% c("poisson", "negbinomial", "geometric")
   is.skew <- family %in% c("gamma", "weibull", "exponential")
+  if (family == "multigaussian") 
+    stop("family 'multigaussian' is depricated. Use family 'gaussian' instead")
   if (!(is.lin | is.ord | is.skew | is.count | family %in% 
-        c("binomial", "bernoulli", "categorical", "multigaussian")))
+        c("binomial", "bernoulli", "categorical")))
     stop(paste(family, "is not a valid family"))
   if (is.null(autocor)) autocor <- cor.arma()
   if (!is(autocor,"cor.brms")) stop("cor must be of class cor.brms")
@@ -99,8 +101,8 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
   
   #sort data in case of autocorrelation models
   if (sum(autocor$p, autocor$q) > 0) {
-    if (family == "multigaussian" && !any(sapply(c("__trait","trait__"), grepl, x = et$group)))
-      stop("autocorrelation structure for family 'multigaussian' must contain 'trait' as a grouping variable")
+    if (family == "gaussian" && length(ee$response) > 1 && !any(sapply(c("__trait","trait__"), grepl, x = et$group)))
+      stop("autocorrelation structures for multiple responses must contain 'trait' as grouping variable")
     to.order <- rmNULL(list(data[["trait"]], data[[et$group]], data[[et$time]]))
     if (length(to.order)) 
       data <- data[do.call(order, to.order),]
@@ -136,7 +138,7 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
     if (min(standata$Y) < 0)
       stop(paste("family", family, "requires response variable to be non-negative"))
   }  
-  else if (family == "multigaussian") {
+  else if (family == "gaussian" && length(ee$response) > 1) {
     standata$Y <- matrix(standata$Y, ncol = length(ee$response))
     standata <- c(standata, list(N_trait = nrow(standata$Y), K_trait = ncol(standata$Y)),
                    NC_trait = ncol(standata$Y) * (ncol(standata$Y)-1)/2) 
@@ -192,7 +194,7 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
   }
   if (is.formula(ee$weights)) {
     standata <- c(standata, list(weights = unname(brm.model.matrix(ee$weights, data, rm.int = TRUE)[,1])))
-    if (family == "multigaussian") standata$weights <- standata$weights[1:standata$N_trait]
+    if (family == "gaussian" && length(ee$response) > 1) standata$weights <- standata$weights[1:standata$N_trait]
     if (min(standata$weights) < 0) stop("weights must be non-negative")
   }
   if (is.formula(ee$cens)) {

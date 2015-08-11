@@ -53,7 +53,7 @@ test_that("Test that brm.data accepts correct response variables depending on th
   expect_equal(brm.data(y ~ 1, data = data.frame(y = factor(rep(-4:5,5), order = TRUE)), family = "acat")$Y, 
                rep(1:10,5))
   expect_equal(brm.data(y ~ 1, data = data.frame(y = seq(0,10,0.1)), family = "exponential")$Y, seq(0,10,0.1))
-  expect_equal(brm.data(cbind(y1,y2) | weights(w) ~ x, family = "multigaussian",
+  expect_equal(brm.data(cbind(y1,y2) | weights(w) ~ x, family = "gaussian",
                data = data.frame(y1 = 1:10, y2 = 11:20, w = 1:10, x = rep(0,10)))$Y, cbind(1:10,11:20))
 })
 
@@ -104,17 +104,18 @@ test_that("Test that brm.data rejects incorrect addition arguments", {
                "The number of trials / categories is smaller the response variable would suggest.")
 })
 
-test_that("Test that brm.data handles addition arguments and autocorrelation in multigaussian models", {
+test_that("Test that brm.data handles addition arguments and autocorrelation in multinormal models", {
   data <- data.frame(y1=1:10, y2=11:20, w=1:10, x=rep(0,10), tim=10:1, g = rep(1:2,5))
-  expect_equal(brm.data(cbind(y1,y2) | weights(w) ~ x, family = "multigaussian", data = data)$weights, 1:10)
-  expect_error(brm.data(cbind(y1,y2) | cens(w) ~ x, family = "multigaussian", data = data),
-               "Argument cens in formula is not supported by family multigaussian")
-  expect_equal(brm.data(cbind(y1,y2) | weights(w) ~ x, family = "multigaussian", 
+  expect_equal(brm.data(cbind(y1,y2) | weights(w) ~ x, family = "gaussian", data = data)$weights, 1:10)
+  expect_equal(brm.data(cbind(y1,y2) | weights(w) ~ x, family = "gaussian", 
                         autocor = cor.ar(~tim|g:trait), data = data)$Y,
                cbind(c(seq(9,1,-2), seq(10,2,-2)), c(seq(19,11,-2), seq(20,12,-2))))
+  expect_error(brm.data(cbind(y1,y2) | weights(w) ~ x, family = "gaussian", 
+                        autocor = cor.ar(~tim|g), data = data),
+               "autocorrelation structures for multiple responses must contain 'trait' as grouping variable")
   expect_error(brm.data(cbind(y1,y2) | weights(w) ~ x, family = "multigaussian", 
                         autocor = cor.ar(~tim|g), data = data),
-               "autocorrelation structure for family 'multigaussian' must contain 'trait' as a grouping variable")
+               "family 'multigaussian' is depricated. Use family 'gaussian' instead")
 })
 
 test_that("Test that brm.data returns correct data for autocorrelations structures", {

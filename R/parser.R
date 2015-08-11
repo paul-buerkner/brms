@@ -81,6 +81,8 @@ extract.effects <- function(formula, ..., family = "none", add.ignore = FALSE) {
   environment(x$all) <- globalenv()
   x$response = all.vars(x$all[[2]])
   if (length(x$response) > 1) {
+    if (!is.null(x$cens) || !is.null(x$se))
+      stop("multivariate models currently allow only weights as addition arguments")
     x$fixed <- eval(parse(text = paste0("update(x$fixed, ", x$response[1], " ~ .)"))) 
     x$all <- eval(parse(text = paste0("update(x$all, ", x$response[1], " ~ .)"))) 
   }  

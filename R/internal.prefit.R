@@ -57,7 +57,7 @@ rename <- function(names, symbols = NULL, subs = NULL, fixed = TRUE, check_dup =
 brm.link <- function(family) {
   link <- family[2]
   family <- family[1]
-  is.lin <- family %in% c("gaussian", "student", "cauchy", "multigaussian")
+  is.lin <- family %in% c("gaussian", "student", "cauchy")
   is.skew <- family %in% c("gamma", "weibull", "exponential")
   is.bin <- family %in% c("cumulative", "cratio", "sratio", "acat","binomial", "bernoulli")                    
   is.count <- family %in% c("poisson", "negbinomial", "geometric")
@@ -79,15 +79,17 @@ brm.link <- function(family) {
 
 #melt data frame for family = "multigaussian"
 brm.melt <- function(data, response, family) {
-  if (length(response) > 1 && family != "multigaussian")
-    stop("multivariate models are currently only allowed for family 'multigaussian'")
-  else if (length(response) == 1 && family == "multigaussian")
-    stop("Only one response variable detected. Use family 'gaussian' instead of 'multigaussian'")
-  else if (!is(data, "data.frame") && family == "multigaussian")
-    stop("data must be a data.frame if family 'multigaussian' is used")
-  else if (length(response) > 1 && family == "multigaussian") {
+  if (length(response) > 1 && family != "gaussian")
+    stop("multivariate models are currently only allowed for family 'gaussian'")
+  #else if (length(response) == 1 && family == "multigaussian")
+  #  stop("Only one response variable detected. Use family 'gaussian' instead of 'multigaussian'")
+  #else if (!is(data, "data.frame") && family == "gaussian")
+  #  stop("data must be a data.frame if family 'multigaussian' is used")
+  else if (length(response) > 1 && family == "gaussian") {
+    if (!is(data, "data.frame"))
+      stop("data must be a data.frame in case of multiple responses")
     if ("trait" %in% names(data))
-      stop("trait is a resevered variable name for family 'multigaussian'")
+      stop("trait is a resevered variable name in case of multiple responses")
     data <- reshape2::melt(data, measure.vars = response)
     names(data)[(ncol(data)-1):ncol(data)] <- c("trait", response[1])
   }

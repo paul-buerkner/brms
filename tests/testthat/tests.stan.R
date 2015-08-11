@@ -50,7 +50,7 @@ test_that("Test_that stan.ma returns correct strings (or errors) for moving aver
   expect_match(stan.ma(family = "gaussian", link = "log", group = list("g1", "g2"), 
                        levels = c(120,60), N = 240, autocor = cor.arma(~visit|patient, q=1))$transC2,
                "Ema[n+1,i] <- e[n+1-i]", fixed = TRUE)
-  expect_match(stan.ma(family = "multigaussian", link = "log", group = "g1", 
+  expect_match(stan.ma(family = "multinormal", link = "log", group = "g1", 
                        levels = 60, N = 240, autocor = cor.arma(~visit|patient, q=1))$transC2,
                "e[n] <- log(Y[m,k]) - eta[n]", fixed = TRUE)
   expect_error(stan.ma(family = "poisson", link = "log", group = list("g1", "g2"), 
@@ -60,8 +60,8 @@ test_that("Test_that stan.ma returns correct strings (or errors) for moving aver
 })
 
 test_that("Test that stan.genquant returns correct strings", {
-  expect_equal(stan.genquant(family = "multigaussian", link = "identity"), list())
-  expect_match(stan.genquant(family = "multigaussian", link = "identity", predict = TRUE)$genD, 
+  expect_equal(stan.genquant(family = "multinormal", link = "identity"), list())
+  expect_match(stan.genquant(family = "multinormal", link = "identity", predict = TRUE)$genD, 
                "Y_pred[N_trait]", fixed = TRUE)
   expect_match(stan.genquant(family = "poisson", link = "log", logllh = TRUE)$genD, 
                "vector[N] log_llh", fixed = TRUE)

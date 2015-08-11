@@ -103,7 +103,7 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
   }
   
   pattern <- lapply(group, function(g) c(paste0("^sd_",g,"_"), paste0("^cor_",g,"_")))
-  if (x$family %in% c("gaussian", "student", "cauchy", "multigaussian")) {
+  if (x$family %in% c("gaussian", "student", "cauchy")) {
     pattern <- c(pattern, list(c("^sigma_", "^rescor_")))
     group <- c(group, "RESIDUAL")
   } 
@@ -171,7 +171,7 @@ summary.brmsfit <- function(object, ...) {
     spec.pars <- pars[pars %in% c("nu","shape","delta") | 
       apply(sapply(c("^sigma_", "^rescor_"), grepl, x = pars), 1, any)]
     out$spec.pars <- matrix(fit.summary$summary[spec.pars,-c(2)], ncol = 6)
-    if (object$family %in% c("gaussian", "student", "cauchy", "multigaussian")) {
+    if (object$family %in% c("gaussian", "student", "cauchy")) {
       spec.pars[grepl("^sigma_", spec.pars)] <- paste0("sigma(",ee$response,")")
       spec.pars[grepl("^rescor_", spec.pars)] <- get.cor.names(ee$response, type = "rescor")   
     }    
