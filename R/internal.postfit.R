@@ -112,11 +112,14 @@ get_prior_samples <- function(x, pars) {
   if (!is.character(pars)) stop("pars must be a character vector")
   par_names <- par.names(x)
   prior_names <- par_names[grepl("^prior_", par_names)]
-  prior_samples <- posterior.samples(x, parameters = prior_names, fixed = TRUE)
-  matches <- lapply(sub("^prior_", "", prior_names), regexpr, text = pars, fixed = TRUE)
-  matches <- matrix(unlist(matches), ncol = length(pars), byrow = TRUE)
-  matches <- apply(matches, 2, function(table) match(1, table))
-  if (!anyNA(matches)) prior_samples <- as.data.frame(prior_samples[,matches])
+  if (length(prior_names)) {
+    prior_samples <- posterior.samples(x, parameters = prior_names, fixed = TRUE)
+    matches <- lapply(sub("^prior_", "", prior_names), regexpr, text = pars, fixed = TRUE)
+    matches <- matrix(unlist(matches), ncol = length(pars), byrow = TRUE)
+    matches <- apply(matches, 2, function(table) match(1, table))
+    if (!anyNA(matches)) prior_samples <- as.data.frame(prior_samples[,matches])
+    else prior_samples <- NULL
+  }
   else prior_samples <- NULL
   prior_samples
 }
