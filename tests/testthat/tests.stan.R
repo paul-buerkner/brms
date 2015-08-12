@@ -86,13 +86,12 @@ test_that("Test that stan.model returns correct strings for customized covarianc
               "r_subject <- sd_subject * (cov_subject * pre_subject)")
   expect_match(stan.model(rating ~ treat + period + carry + (1+carry|subject), data = inhaler,
                           cov.ranef = "subject"), fixed = TRUE,
-              "r_subject <- to_array(kronecker_cholesky(cov_subject, L_subject, sd_subject) * to_vector(pre_subject)")
+       paste0("r_subject <- to_array(kronecker_cholesky(cov_subject, L_subject, sd_subject) * ",
+              "to_vector(pre_subject), N_subject, K_subject"))
   expect_match(stan.model(rating ~ treat + period + carry + (1+carry||subject), data = inhaler,
                           cov.ranef = "subject"), fixed = TRUE,
-              "r_subject <- to_array(kronecker_cholesky(cov_subject, L_subject, sd_subject) * to_vector(pre_subject)")
-  expect_match(stan.model(rating ~ treat + period + carry + (1+carry||subject), data = inhaler,
-                         cov.ranef = "subject"), fixed = TRUE,
-               "cholesky_factor_corr[K_subject] L_subject; \n  L_subject <- diag_matrix(rep_vector(1,K_subject)); ")
+       paste0("r_subject <- to_array(to_vector(rep_matrix(sd_subject, N_subject)) .* ",
+              "(cov_subject * to_vector(pre_subject)), N_subject, K_subject)"))
 })
 
 test_that("Test that stan.model handles addition arguments correctly", {

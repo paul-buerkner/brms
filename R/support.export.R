@@ -183,6 +183,8 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
         cov.ranef[[g]] <- nrow(cov.ranef[[g]])/sum(diag(cov.ranef[[g]])) * cov.ranef[[g]]
         if (length(r[[i]]) == 1) 
           cov.ranef[[g]] <- t(suppressWarnings(chol(cov.ranef[[g]], pivot = TRUE)))
+        else if (length(r[[i]]) > 1 && !ee$cor[[i]])
+          cov.ranef[[g]] <- t(suppressWarnings(chol(kronecker(cov.ranef[[g]], diag(ncolZ[[i]])), pivot = TRUE)))
         standata <- c(standata, setNames(list(cov.ranef[[g]]), paste0("cov_",g)))
       }
     }

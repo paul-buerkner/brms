@@ -182,7 +182,10 @@ stan.ranef <- function(rg, prior = list(), cov.ranef = "") {
   out$data <- paste0("  int<lower=1> ",g,"[N]; \n",
                      "  int<lower=1> N_",g,"; \n",
                      "  int<lower=1> K_",g,"; \n",
-                     if (c.cov) paste0("  matrix[N_",g,",N_",g,"] cov_",g,"; \n"))
+                     if (c.cov && (cor || length(r) == 1)) 
+                       paste0("  matrix[N_",g,", N_",g,"] cov_",g,"; \n"),
+                     if (c.cov && !cor && length(r) > 1) 
+                       paste0("  matrix[N_",g,"*K_",g,", N_",g,"*K_",g,"] cov_",g,"; \n"))
   out$model <- paste0(stan.prior(paste0("sd_",g,"_",r), add.type = g, prior = prior ,
                       ind = ifelse(length(r) == 1, "", list(1:length(r)))[[1]]))
   
@@ -204,12 +207,10 @@ stan.ranef <- function(rg, prior = list(), cov.ranef = "") {
                      "  to_vector(pre_",g,") ~ normal(0,1); \n")
     out$transD <- paste0("  vector[K_",g,"] r_",g,"[N_",g,"]; \n")
     if (c.cov) {
-      if (!cor) {
-        out$tdataD <- paste0("  cholesky_factor_corr[K_",g,"] L_",g,"; \n")
-        out$tdataC <- paste0("  L_",g," <- diag_matrix(rep_vector(1,K_",g,")); \n")
-      }
-      out$transC <- paste0("  r_",g," <- to_array(kronecker_cholesky(cov_",g,", L_",g,", sd_",g,")",
-                           " * to_vector(pre_",g,"), N_",g,", K_",g,"); \n")
+      if (cor) out$transC <- paste0("  r_",g," <- to_array(kronecker_cholesky(cov_",g,", L_",g,", sd_",g,") * ",
+                                    "to_vector(pre_",g,"), N_",g,", K_",g,"); \n")
+      else out$transC <- paste0("  r_",g," <- to_array(to_vector(rep_matrix(sd_",g,", N_",g,")) .* ",
+                                "(cov_",g," * to_vector(pre_",g,")), N_",g,", K_",g,"); \n")
     }
     else out$transC <- paste0("  for (i in 1:N_",g,") { \n",
                               "    r_",g, "[i] <- sd_",g," .* (", if (cor) paste0("L_",g," * "), 
