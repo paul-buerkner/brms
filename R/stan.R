@@ -181,13 +181,13 @@ stan.ranef <- function(rg, prior = list(), cov.ranef = "") {
   out <- setNames(as.list(rep("", 9)), c("data", "tdataD", "tdataC", "par", "model", "tranD", "transC", "genD", "genC"))
   out$data <- paste0("  int<lower=1> ",g,"[N]; \n",
                      "  int<lower=1> N_",g,"; \n",
-                     "  int<lower=1> K_",g,"; \n")
+                     "  int<lower=1> K_",g,"; \n",
+                     if (c.cov) paste0("  matrix[N_",g,",N_",g,"] cov_",g,"; \n"))
   out$model <- paste0(stan.prior(paste0("sd_",g,"_",r), add.type = g, prior = prior ,
                       ind = ifelse(length(r) == 1, "", list(1:length(r)))[[1]]))
   
   if (length(r) == 1) {
-    out$data <- paste0(out$data, "  real Z_",g,"[N]; \n",
-                       if (c.cov) paste0("  cholesky_factor_cov[N_",g,"] cov_",g,"; \n"))
+    out$data <- paste0(out$data, "  real Z_",g,"[N]; \n")
     out$par <- paste0("  vector[N_",g,"] pre_",g,"; \n",
                       "  real<lower=0> sd_",g,"; \n")
     out$model <- paste0(out$model,"  pre_",g," ~ normal(0,1); \n")
@@ -196,8 +196,7 @@ stan.ranef <- function(rg, prior = list(), cov.ranef = "") {
                          if (c.cov) paste0("cov_",g," * "), "pre_",g,"); \n")
   }  
   else if (length(r) > 1) {
-    out$data <- paste0(out$data,  "  row_vector[K_",g,"] Z_",g,"[N]; \n  int NC_",g,"; \n", 
-                       if (c.cov) paste0("  cov_matrix[N_",g,"] cov_",g,"; \n"))
+    out$data <- paste0(out$data,  "  row_vector[K_",g,"] Z_",g,"[N]; \n  int NC_",g,"; \n")
     out$par <- paste0("  matrix[N_",g,",K_",g,"] pre_",g,"; \n",
                       "  vector<lower=0>[K_",g,"] sd_",g,"; \n",
                       if (cor) paste0("  cholesky_factor_corr[K_",g,"] L_",g,"; \n"))

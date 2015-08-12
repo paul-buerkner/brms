@@ -177,9 +177,12 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
           stop(paste("Row names of covariance matrix of",g,"do not match names of the grouping levels"))
         if (!isSymmetric(unname(cov.ranef[[g]])))
           stop(paste("Covariance matrix of grouping factor",g,"is not symmetric"))
+        if (min(eigen(cov.ranef[[g]], symmetric = TRUE, only.values = TRUE)$values) <= 0)
+          warning(paste("Covariance matrix of grouping factor",g,"may not be positive definite"))
         cov.ranef[[g]] <- cov.ranef[[g]][order(level.names), order(level.names)]
         cov.ranef[[g]] <- nrow(cov.ranef[[g]])/sum(diag(cov.ranef[[g]])) * cov.ranef[[g]]
-        if (length(r[[i]]) == 1) cov.ranef[[g]] <- t(chol(cov.ranef[[g]]))
+        if (length(r[[i]]) == 1) 
+          cov.ranef[[g]] <- t(suppressWarnings(chol(cov.ranef[[g]], pivot = TRUE)))
         standata <- c(standata, setNames(list(cov.ranef[[g]]), paste0("cov_",g)))
       }
     }
