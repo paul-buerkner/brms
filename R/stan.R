@@ -35,7 +35,7 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
   trait <- ifelse(is.multi, "_trait", "")
   
   ranef <- unlist(lapply(mapply(list, r, ee$group, ee$cor, SIMPLIFY = FALSE), stan.ranef, 
-                                prior = prior, cov.ranef = cov.ranef))
+                         prior = prior, cov.ranef = cov.ranef))
   names.ranef <- unique(names(ranef))
   if (length(ranef)) ranef <- sapply(1:length(names.ranef), function(x) 
     collapse(ranef[seq(x, length(ranef), length(names.ranef))]))
@@ -72,6 +72,10 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
   rngprior <- stan.rngprior(sample.prior = sample.prior, priors = priors, family = family, fixed = f,
                             partial = p, response = ee$response, random = r, group = ee$group)
   
+  kronecker <- any(sapply(mapply(list, r, ee$group, SIMPLIFY = FALSE), function(x, cov.ranef = "")
+    length(x[[1]]) > 1 && x[[2]] %in% cov.ranef, cov.ranef = cov.ranef))
+  functions.text <- stan.function(kronecker = kronecker)
+  
   data.text <- paste0(
     "data { \n",
     "  int<lower=1> N; \n", 
@@ -102,7 +106,8 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
   zero <- ifelse(rep(family == "categorical", 2), c("  row_vector[1] zero; \n", "  zero[1] <- 0; \n"), "")
   trans.data.text <- paste0(
     "transformed data { \n",
-      max_obs[2], zero[1], max_obs[3], zero[2],
+      max_obs[2], zero[1], ranef$tdataD, 
+      max_obs[3], zero[2], ranef$tdataC,
     "} \n")
   
   par.text <- paste0(
@@ -133,8 +138,8 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
                            "    int n; \n    n <- (k-1)*N_trait + m; \n"), "  }} \n")
   else loop.trans <- rep("", 2)
 
-  model <- paste0(data.text, 
-  trans.data.text, par.text,
+  model <- paste0(functions.text,
+  data.text, trans.data.text, par.text,
   "transformed parameters { \n",
     eta$transD, ma$transD, ordinal$transD, ranef$transD, 
     eta$transC1, ma$transC1, ordinal$transC1, ranef$transC, 
@@ -173,7 +178,7 @@ stan.ranef <- function(rg, prior = list(), cov.ranef = "") {
   g <- rg[[2]]
   cor <- rg[[3]]
   c.cov <- g %in% cov.ranef
-  out <- setNames(as.list(rep("", 7)), c("data", "par", "model", "tranD", "transC", "genD", "genC"))
+  out <- setNames(as.list(rep("", 9)), c("data", "tdataD", "tdataC", "par", "model", "tranD", "transC", "genD", "genC"))
   out$data <- paste0("  int<lower=1> ",g,"[N]; \n",
                      "  int<lower=1> N_",g,"; \n",
                      "  int<lower=1> K_",g,"; \n")
@@ -182,25 +187,34 @@ stan.ranef <- function(rg, prior = list(), cov.ranef = "") {
   
   if (length(r) == 1) {
     out$data <- paste0(out$data, "  real Z_",g,"[N]; \n",
-      if (c.cov) paste0("  cholesky_factor_cov[N_",g,"] CFcov_",g,"; \n"))
+                       if (c.cov) paste0("  cholesky_factor_cov[N_",g,"] cov_",g,"; \n"))
     out$par <- paste0("  vector[N_",g,"] pre_",g,"; \n",
                       "  real<lower=0> sd_",g,"; \n")
     out$model <- paste0(out$model,"  pre_",g," ~ normal(0,1); \n")
     out$transD <- paste0("  vector[N_",g,"] r_",g,"; \n")
     out$transC <- paste0("  r_",g, " <- sd_",g," * (", 
-      if (c.cov) paste0("CFcov_",g,"*"), "pre_",g,"); \n")
+                         if (c.cov) paste0("cov_",g," * "), "pre_",g,"); \n")
   }  
   else if (length(r) > 1) {
-    out$data <- paste0(out$data,  "  row_vector[K_",g,"] Z_",g,"[N]; \n  int NC_",g,"; \n")
+    out$data <- paste0(out$data,  "  row_vector[K_",g,"] Z_",g,"[N]; \n  int NC_",g,"; \n", 
+                       if (c.cov) paste0("  cov_matrix[N_",g,"] cov_",g,"; \n"))
     out$par <- paste0("  matrix[N_",g,",K_",g,"] pre_",g,"; \n",
                       "  vector<lower=0>[K_",g,"] sd_",g,"; \n",
-      if (cor) paste0("  cholesky_factor_corr[K_",g,"] L_",g,"; \n"))
+                      if (cor) paste0("  cholesky_factor_corr[K_",g,"] L_",g,"; \n"))
     out$model <- paste0(out$model, ifelse(cor, stan.prior(paste0("L_",g), prior = prior, add.type = g), ""),
                      "  to_vector(pre_",g,") ~ normal(0,1); \n")
     out$transD <- paste0("  vector[K_",g,"] r_",g,"[N_",g,"]; \n")
-    out$transC <- paste0("  for (i in 1:N_",g,") { \n",
-      if (cor) paste0("    r_",g, "[i] <- sd_",g," .* (L_",g,"*to_vector(pre_",g,"[i])); \n")
-      else paste0("    r_",g, "[i] <- sd_",g," .* to_vector(pre_",g,"[i]); \n"), "  } \n")
+    if (c.cov) {
+      if (!cor) {
+        out$tdataD <- paste0("  cholesky_factor_corr[K_",g,"] L_",g,"; \n")
+        out$tdataC <- paste0("  L_",g," <- diag_matrix(rep_vector(1,K_",g,")); \n")
+      }
+      out$transC <- paste0("  r_",g," <- to_array(kronecker_cholesky(cov_",g,", L_",g,", sd_",g,")",
+                           " * to_vector(pre_",g,"), N_",g,", K_",g,"); \n")
+    }
+    else out$transC <- paste0("  for (i in 1:N_",g,") { \n",
+                              "    r_",g, "[i] <- sd_",g," .* (", if (cor) paste0("L_",g," * "), 
+                              "to_vector(pre_",g,"[i])); \n  } \n")
     if (cor) {
       out$genD <- paste0("  corr_matrix[K_",g,"] Cor_",g,"; \n",
                          "  vector<lower=-1,upper=1>[NC_",g,"] cor_",g,"; \n")
@@ -361,6 +375,40 @@ stan.genquant <- function(family, link, predict = FALSE, logllh = FALSE, add = F
   }
   else out <- list()
   out
+}
+
+#stan code for user defined functions
+stan.function <- function(kronecker = FALSE) {
+  out <- NULL
+  if (kronecker) out <- paste0(
+    "  // calculate the cholesky factor of the kronecker covariance matrix \n",
+    "  matrix kronecker_cholesky(matrix X, matrix L, vector sd) { \n",
+    "    matrix[rows(X)*rows(L), cols(X)*cols(L)] kron; \n",
+    "    matrix[rows(L), cols(L)] C; \n",
+    "    int rX; \n",
+    "    int rC; \n",
+    "    C <- multiply_lower_tri_self_transpose(L); \n",
+    "    rX <- rows(X); \n",
+    "    rC <- rows(C); \n",
+    "    for (i in 1:rX) { \n",
+    "      for (j in 1:rC) { \n",
+    "        for (k in 1:rX) { \n",
+    "          for (l in 1:rC) { \n",
+    "            kron[(k-1)*rC+l, (i-1)*rC+j] <- sd[l] * sd[j] * X[k,i] * C[l,j]; \n",
+    "          } \n",
+    "        } \n",
+    "      } \n",
+    "    } \n",
+    "    return cholesky_decompose(kron); \n",
+    "  } \n",
+    "  // turn a vector into a 2 dimensional array \n",
+    "  vector[] to_array(vector X, int N, int K) { \n",
+    "    vector[K] Y[N]; \n",
+    "    for (i in 1:N) \n",
+    "      Y[i] <- segment(X, (i-1)*K+1, K); \n",
+    "    return Y; \n",
+    "  } \n")
+  return(paste0("functions { \n", out, "} \n"))
 }
 
 # multinormal effects in Stan

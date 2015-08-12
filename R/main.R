@@ -29,7 +29,6 @@
 #' @param cov.ranef A list of matrices that are proportional to the (within) covariance structure of the random effects. 
 #'   The names of the matrices should correspond to columns in \code{data} that are used as grouping factors. 
 #'   All levels of the grouping factor should appear as rownames of the corresponding matrix. 
-#'   Currently, customized covariance structures are only implemented for grouping factors with a single random effect.
 #' @param predict A flag to indicate if posterior predictives of the dependent variable should be generated. 
 #'   For models with many observation, this leads to rather huge fitted model objects.
 #' @param WAIC A flag to indicate if the log likelihood of the model should be saved so that the WAIC can be computed afterwards.

@@ -47,8 +47,7 @@ Defaults to NULL, corresponding to no correlations.}
 
 \item{cov.ranef}{A list of matrices that are proportional to the (within) covariance structure of the random effects.
 The names of the matrices should correspond to columns in \code{data} that are used as grouping factors.
-All levels of the grouping factor should appear as rownames of the corresponding matrix.
-Currently, customized covariance structures are only implemented for grouping factors with a single random effect.}
+All levels of the grouping factor should appear as rownames of the corresponding matrix.}
 
 \item{ranef}{A flag to indicate if random effects for each level of the grouping factor(s) should be saved (default is \code{TRUE}).
 Set to \code{FALSE} to save memory. The argument has no impact on the model fitting itself.}

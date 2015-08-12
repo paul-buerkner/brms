@@ -7,6 +7,8 @@ output: html_document
 ----------------------------------------------------------------
 
 * remove chains that fail to initialize while sampling in parallel leaving the other chains untouched
+* allow for customized covariance structures of grouping factors with multiple random effects
+* fix a bug in S3 method 'hypothesis' related to the calculation of Bayes factors for point hypotheses
 
 # brms 0.4.1
 ----------------------------------------------------------------

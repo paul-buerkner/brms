@@ -83,7 +83,16 @@ test_that("Test that stan.model accepts supported links", {
 test_that("Test that stan.model returns correct strings for customized covariances", {
   expect_match(stan.model(rating ~ treat + period + carry + (1|subject), data = inhaler,
                           cov.ranef = "subject"), fixed = TRUE,
-             "r_subject <- sd_subject * (CFcov_subject*pre_subject)")
+              "r_subject <- sd_subject * (cov_subject * pre_subject)")
+  expect_match(stan.model(rating ~ treat + period + carry + (1+carry|subject), data = inhaler,
+                          cov.ranef = "subject"), fixed = TRUE,
+              "r_subject <- to_array(kronecker_cholesky(cov_subject, L_subject, sd_subject) * to_vector(pre_subject)")
+  expect_match(stan.model(rating ~ treat + period + carry + (1+carry||subject), data = inhaler,
+                          cov.ranef = "subject"), fixed = TRUE,
+              "r_subject <- to_array(kronecker_cholesky(cov_subject, L_subject, sd_subject) * to_vector(pre_subject)")
+  expect_match(stan.model(rating ~ treat + period + carry + (1+carry||subject), data = inhaler,
+                         cov.ranef = "subject"), fixed = TRUE,
+               "cholesky_factor_corr[K_subject] L_subject; \n  L_subject <- diag_matrix(rep_vector(1,K_subject)); ")
 })
 
 test_that("Test that stan.model handles addition arguments correctly", {
@@ -145,4 +154,9 @@ test_that("Test that stan.rngprior returns correct sampling statements for prior
                              group = list("id"), random = list(c("x1", "x2"))),
                list(par = "  real<lower=0> prior_sd_id_x1; \n  real<lower=0> prior_sd_id_x2; \n", 
                     model = "  prior_sd_id_x1 ~ normal(0,5); \n  prior_sd_id_x2 ~ cauchy(0,2); \n"))
+})
+
+test_that("Test that stan.functions returns correct user defined functions", {
+  expect_match(stan.model(rating ~ treat + period + carry + (1+carry|subject), data = inhaler,
+                          cov.ranef = "subject"), "matrix kronecker_cholesky.*vector\\[\\] to_array")
 })
