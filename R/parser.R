@@ -44,6 +44,8 @@ extract.effects <- function(formula, ..., family = "none", add.ignore = FALSE) {
     return(formula(paste("~",g)))})
   x <- list(fixed = fixed, random = random, cor = cor,
             group = lapply(group, function(g) paste0(all.vars(g), collapse = "__")))
+  if (anyDuplicated(x$group))
+    stop("Duplicated grouping factors are not allowed")
   
   fun <- c("se", "weights", "trials", "cat", "cens")
   if (!add.ignore) {
