@@ -1,4 +1,4 @@
-# make a trace and density plot for one parameter
+# trace and density plots for one parameter
 td_plot <- function(par, x) {
   if (!is.character(par) || length(par) != 1)
     stop("par must be a character string")
@@ -6,14 +6,16 @@ td_plot <- function(par, x) {
     stop("x must be a data.frame")
   names(x)[match(par, names(x))] <- "value" 
   trace <- ggplot(x, aes_string(x = "iter", y = "value", group = "chains", colour = "chains")) +
-    geom_line(alpha = 0.7) + xlab("") + ggtitle(par) + 
+    geom_line(alpha = 0.7) + 
+    xlab("") + ylab("") + ggtitle(paste("Trace of", par)) + 
     theme(legend.position = "none",
           plot.title = element_text(size=15, vjust=1),
-          plot.margin = grid::unit(c(0.2,0,-0.8,0), "lines"))
+          plot.margin = grid::unit(c(0.2,0,-0.8,-0.5), "lines"))
   density <- ggplot(x, aes_string(x = "value")) + 
-    geom_density(aes_string(fill = "chains"), alpha = 0.5) + xlab("") + ggtitle(par) + 
+    geom_density(aes_string(fill = "chains"), alpha = 0.5) + 
+    xlab("") + ylab("") + ggtitle(paste("Density of", par)) + 
     theme(plot.title = element_text(size=15, vjust=1),
-          plot.margin = grid::unit(c(0.2,0,-0.8,0), "lines"))
+          plot.margin = grid::unit(c(0.2,0,-0.8,-0.5), "lines"))
   return(gridExtra::arrangeGrob(trace, density, ncol = 2, nrow = 1))
 }
 
