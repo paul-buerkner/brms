@@ -164,7 +164,10 @@ summary.brmsfit <- function(object, ...) {
     if ("log_llh" %in% object$fit@model_pars) out$WAIC <- WAIC(object)
     
     pars <- par.names(object)
-    fit.summary <- rstan::summary(object$fit, probs = c(0.025, 0.975))
+    meta_pars <- object$fit@sim$pars_oi
+    meta_pars <- meta_pars[!apply(sapply(paste0("^",c("r_","log_llh","prior_","Y_pred")), 
+                                  grepl, x = meta_pars, ...), 1, any)]
+    fit.summary <- rstan::summary(object$fit, pars = meta_pars, probs = c(0.025, 0.975))
     col.names <- c("Estimate", "Est.Error", "l-95% CI", "u-95% CI", "Eff.Sample", "Rhat")
     
     fix.pars <- pars[grepl("^b_", pars)]
