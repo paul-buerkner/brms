@@ -5,13 +5,15 @@
 \alias{posterior.samples.brmsfit}
 \title{Extract posterior samples}
 \usage{
-posterior.samples(x, parameters = NA, ...)
+posterior.samples(x, parameters = NA, add.chains = FALSE, ...)
 }
 \arguments{
 \item{x}{An \code{R} object typically of class \code{brmsfit}}
 
 \item{parameters}{Name of parameters for which posterior samples should be returned, as given by a character vector or regular expressions.
 By default, all posterior samples of all parameters are extracted}
+
+\item{add.chains}{A flag indicating if the returned data.frame should contain information on the chains}
 
 \item{...}{Currently ignored}
 }

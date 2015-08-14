@@ -113,7 +113,7 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
 }
 
 #' @export
-posterior.samples.brmsfit <- function(x, parameters = NA, ...) {
+posterior.samples.brmsfit <- function(x, parameters = NA, add.chains = FALSE, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
   pars <- par.names(x)
@@ -130,6 +130,10 @@ posterior.samples.brmsfit <- function(x, parameters = NA, ...) {
     unlist(lapply(1:chains, function(j) 
       x$fit@sim$samples[[j]][[pars[i]]][(warmup/thin+1):(iter/thin)]))))
   names(samples) <- pars
+  if (add.chains) {
+    samples$chains <- factor(do.call(c, lapply(1:chains, rep, times = nrow(samples)/chains)))
+    samples$iter <- rep((warmup+1):(nrow(samples)/chains+warmup), chains)
+  }  
   samples
 }
 
@@ -388,63 +392,4 @@ print.brmshypothesis <- function(x, digits = 2, ...) {
   x$hypothesis[,1:5] <- round(x$hypothesis[,1:5], digits = digits)
   print(x$hypothesis, quote = FALSE)
   cat(paste0("---\n'*': The expected value under the hypothesis lies outside the ",(1-x$alpha)*100,"% CI."))
-}
-
-#' Trace and density plots for MCMC samples
-#' 
-#' Trace and density plots for MCMC samples using the \code{ggmcmc} package
-#' 
-#' @param x An object of class \code{brmsfit}.
-#' @param parameters Name of the parameters to plot, as given by a character vector or a regular expression.
-#'   By default, all parameters except for random effects, posterior predictives, and log likelihood values are plotted. 
-#' @param combine logical; Indicates if the samples of all chains should be combined into one posterior distribution. 
-#' @param N The number of parameters plotted per page.
-#' @param ask logical; Indicates if the user is prompted before a new page is plotted.   
-#' @param ... Currently ignored.
-#' 
-#' @return NULL
-#' 
-#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
-#' 
-#' @examples
-#' \dontrun{ 
-#' fit_e <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient) + (1|visit), 
-#'              data = epilepsy, family = "poisson")
-#' ## plot fixed effects as well as standard devations of the random effects
-#' plot(fit_e)
-#' ## plot fixed effects only and combine the chains into one posterior
-#' plot(fit_e, parameters = "^b_", combine = TRUE) 
-#' }
-#' 
-#' @method plot brmsfit
-#' @import ggplot2
-#' @export
-plot.brmsfit <- function(x, parameters = NA, combine = FALSE, N = 5, ask = TRUE, ...) {
-  if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
-    stop("The model does not contain posterior samples")
-  if (is.na(parameters)) 
-    parameters <- c("^b_", "^sd_", "^cor_", "^sigma", "^rescor", "^nu$", 
-                    "^shape$", "^delta$", "^ar", "^ma")
-  
-  pars <- sort(par.names(x))
-  pars <- gsub("__", ":", pars[apply(sapply(parameters, grepl, x = pars), 1, any)])
-  pfit <- ggmcmc::ggs(x$fit)
-  att <- attributes(pfit)
-  rel.att <- c("class", "nChains", "nIterations", "nBurnin", "nThin", "description")
-  pfit <- pfit[which(pfit$Parameter %in% pars),]
-  
-  default.ask <- grDevices::devAskNewPage()
-  grDevices::devAskNewPage(ask = FALSE)
-  for (i in 1:ceiling(length(pars)/N)) {
-    pfit.sub1 <- pfit[which(pfit$Parameter %in% pars[((i-1)*N+1):min(i*N,length(pars))]),]
-    for (j in 1:length(rel.att)) 
-      attr(pfit.sub1, rel.att[j]) <- att[[rel.att[j]]]
-    pfit.sub2 <- pfit.sub1
-    if (combine) pfit.sub2$Chain <- 1
-    gridExtra::grid.arrange(ggmcmc::ggs_traceplot(pfit.sub1) + 
-        ggplot2::theme(legend.position = "none"), 
-        ggmcmc::ggs_density(pfit.sub2), ncol = 2, nrow = 1)
-    if (i == 1) grDevices::devAskNewPage(ask = ask)
-  }
-  grDevices::devAskNewPage(default.ask)
 }
