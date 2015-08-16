@@ -26,7 +26,7 @@ td_plot <- function(par, x) {
 #'   By default, all parameters except for random effects, posterior predictives, and log likelihood values are plotted. 
 #' @param N The number of parameters plotted per page.
 #' @param ask logical; Indicates if the user is prompted before a new page is plotted.   
-#' @param ... Currently ignored.
+#' @param ... Additional arguments passed to function 'grid.arrange' of package 'gridExtra'.
 #' 
 #' @return NULL
 #' 
@@ -48,7 +48,9 @@ td_plot <- function(par, x) {
 plot.brmsfit <- function(x, parameters = NA, N = 5, ask = TRUE, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
-  if (is.na(parameters)) 
+  if (!is.wholenumber(N) || N < 1) 
+    stop("N must be a positive integer")
+  if (!is.character(parameters)) 
     parameters <- c("^b_", "^sd_", "^cor_", "^sigma", "^rescor", "^nu$", 
                     "^shape$", "^delta$", "^ar", "^ma")
   samples <- posterior.samples(x, parameters = parameters, add.chains = TRUE)
@@ -58,7 +60,7 @@ plot.brmsfit <- function(x, parameters = NA, N = 5, ask = TRUE, ...) {
   grDevices::devAskNewPage(ask = FALSE)
   for (i in 1:ceiling(length(pars)/N)) {
     plots <- lapply(pars[((i-1)*N+1):min(i*N,length(pars))], td_plot, x = samples)
-    plot(gridExtra::arrangeGrob(grobs = plots, nrow = length(plots), ncol = 1))
+    gridExtra::grid.arrange(grobs = plots, nrow = length(plots), ncol = 1, ...)
     if (i == 1) grDevices::devAskNewPage(ask = ask)
   }
   grDevices::devAskNewPage(default.ask)

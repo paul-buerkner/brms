@@ -16,7 +16,7 @@ By default, all parameters except for random effects, posterior predictives, and
 
 \item{ask}{logical; Indicates if the user is prompted before a new page is plotted.}
 
-\item{...}{Currently ignored.}
+\item{...}{Additional arguments passed to function 'grid.arrange' of package 'gridExtra'.}
 }
 \description{
 Trace and density plots for MCMC samples
