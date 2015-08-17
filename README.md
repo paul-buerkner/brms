@@ -68,9 +68,10 @@ For a complete list of methods to apply on <b>brms</b> models see
 
 ``` r
 methods(class = "brmsfit") 
-#>  [1] fixef             formula           hypothesis        ngrps             nobs             
-#>  [6] par.names         plot              posterior.samples predict           print            
-#> [11] ranef             summary           VarCorr           WAIC             
+#>  [1] fixef             formula           hypothesis        LOO              
+#>  [5] ngrps             nobs              par.names         plot             
+#>  [9] posterior.samples predict           print             ranef            
+#> [13] summary           VarCorr           WAIC             
 #> see '?methods' for accessing help and source code
 ```
 
