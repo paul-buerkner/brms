@@ -161,7 +161,7 @@ summary.brmsfit <- function(object, ...) {
     out$n.warmup = attr(object$fit@sim$samples[[1]],"args")$warmup
     out$n.thin = attr(object$fit@sim$samples[[1]],"args")$thin
     out$sampler = attr(object$fit@sim$samples[[1]],"args")$sampler_t
-    if ("log_llh" %in% object$fit@model_pars) out$WAIC <- WAIC(object)
+    if ("log_llh" %in% object$fit@model_pars) out$WAIC <- WAIC(object)$waic
     
     pars <- par.names(object)
     meta_pars <- object$fit@sim$pars_oi

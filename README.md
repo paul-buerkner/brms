@@ -18,7 +18,7 @@ As a simple example, we use poisson regression to model the seizure counts in ep
 
 ``` r
 fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient) + (1|visit), 
-           data = epilepsy, family = "poisson")
+           data = epilepsy, family = "poisson", WAIC = TRUE)
 ```
 
 If rstan is not installed, brm will return the Stan model, the required data, and the parameters of interest, which are the important prerequisites to fit the model in Stan. If rstan is installed, the model is fitted automatically and the results (i.e. posterior samples) can be investigated using
@@ -30,7 +30,7 @@ summary(fit)
 #>    Data: epilepsy (Number of observations: 236) 
 #> Samples: 2 chains, each with n.iter = 2000; n.warmup = 500; n.thin = 1; 
 #>          total post-warmup samples = 3000
-#>    WAIC: Not computed
+#>    WAIC: 1337.78
 #>  
 #> Random Effects: 
 #> ~patient (Number of levels: 59) 
