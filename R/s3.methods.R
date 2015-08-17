@@ -305,25 +305,29 @@ predict.brmsfit <- function(object, ...) {
 }
 
 #' @export
-WAIC.brmsfit <- function(x, ..., se = FALSE) {
+WAIC.brmsfit <- function(x, ..., compare = TRUE) {
   models <- list(x, ...)
   names <- c(deparse(substitute(x)), sapply(substitute(list(...))[-1], deparse))
-  fun <- function(x) {
-    if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
-      stop("The model does not contain posterior samples") 
-    if (!"log_llh" %in% x$fit@model_pars) 
-      stop(paste0("The model does not contain log likelihood values. \n",
-                  "You should use argument WAIC = TRUE in function brm."))
-    log_llh <- posterior.samples(x, parameters = "^log_llh")
-    lpd <- log(apply(exp(log_llh), 2, mean))
-    pwaic <- apply(log_llh, 2, var)
-    WAIC <- -2*sum(lpd-pwaic)
-    if (se) attr(WAIC, "se") <- 2*sqrt(nrow(log_llh))*sd(lpd-pwaic)
-    return(WAIC)
-  }
-  if (length(models) > 1) 
-    out <- setNames(lapply(models, fun), names)
-  else out <- fun(x)
+  if (length(models) > 1) {
+    out <- setNames(lapply(models, calculate_ic, ic = "waic"), names)
+    if (compare)
+      attr(out, "compare") <- compare_ic(out, ic = "waic")
+  }  
+  else out <- calculate_ic(x, ic = "waic")
+  out
+}
+
+#' @export
+LOO.brmsfit <- function(x, ..., compare = TRUE) {
+  models <- list(x, ...)
+  names <- c(deparse(substitute(x)), sapply(substitute(list(...))[-1], deparse))
+  if (length(models) > 1) {
+    out <- structure(lapply(models, calculate_ic, ic = "loo"), 
+                     names = names, class = "iclist")
+    if (compare)
+      attr(out, "compare") <- compare_ic(out, ic = "loo")
+  }  
+  else out <- calculate_ic(x, ic = "loo")
   out
 }
 

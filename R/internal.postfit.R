@@ -123,3 +123,37 @@ get_prior_samples <- function(x, pars) {
   else prior_samples <- NULL
   prior_samples
 }
+
+#calculate WAIC and LOO using the 'loo' package
+calculate_ic <- function(x, ic = c("waic", "loo")) {
+  ic <- match.arg(ic)
+  if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
+    stop("The model does not contain posterior samples") 
+  if (!"log_llh" %in% x$fit@model_pars) 
+    stop(paste0("The model does not contain log likelihood values. \n",
+                "You should use argument WAIC = TRUE in function brm."))
+  log_llh <- as.matrix(posterior.samples(x, parameters = "^log_llh"))
+  IC <- do.call(eval(parse(text = paste0("loo::",ic))), list(log_llh))
+  class(IC) <- c("ic", "loo")
+  return(IC)
+}
+
+#compare information criteria of different models
+compare_ic <- function(x, ic = c("waic", "loo")) {
+  ic <- match.arg(ic)
+  n_models <- length(x)
+  compare_matrix <- matrix(0, nrow = n_models*(n_models-1)/2, ncol = 2)
+  rnames <- rep("", nrow(compare_matrix))
+  n <- 1
+  for (i in 1:(n_models-1)) {
+    for (j in (i+1):n_models) {
+      temp <- loo::compare(x[[j]], x[[i]])
+      compare_matrix[n,] <- c(-2*temp$elpd_diff, 2*temp$se) 
+      rnames[n] <- paste(names(x)[i], "-", names(x)[j])
+      n <- n + 1
+    }
+  }
+  rownames(compare_matrix) <- rnames
+  colnames(compare_matrix) <- c(paste0("Diff.", toupper(ic)), "SE")
+  compare_matrix
+}

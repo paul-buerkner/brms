@@ -239,15 +239,15 @@ par.names <- function(x, ...)
 #' Compute the WAIC
 #' 
 #' Compute the Watanabe-Akaike Information Criterion based on the posterior likelihood
+#' by using the \pkg{loo} package
 #' 
 #' @param x A fitted model object typically of class \code{brmsfit}. 
-#' @param ... Optionally more fitted model objects. 
-#' @param se A flag to indicate if the standard error of the WAIC should be estimated. 
-#'   When the samples size is low, this estimation should be interpreted with caution.
+#' @param ... Optionally more fitted model objects.
+#' @param compare A flag indicating if the WAICs of the models should be compared to each other
 #' 
 #' @details When comparing models fitted to the same data, the smaller the WAIC, the better the fit.
-#' @return If just one object is provided, a numeric value with the corresponding WAIC. 
-#' If multiple objects are provided, a named list of numeric values with the corresponding WAICs.
+#' @return If just one object is provided, an object of class \code{ic}. 
+#' If multiple objects are provided, an object of class \code{iclist}.
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
@@ -266,6 +266,8 @@ par.names <- function(x, ...)
 #' }
 #' 
 #' @references 
+#' Vehtari, A., Gelman, A., and Gabry, J. (2015). Efficient implementation of leave-one-out cross-validation and WAIC for evaluating fitted Bayesian models.
+#' 
 #' Gelman, A., Hwang, J., & Vehtari, A. (2014). Understanding predictive information criteria for Bayesian models. 
 #' Statistics and Computing, 24, 997-1016.
 #' 
@@ -273,5 +275,46 @@ par.names <- function(x, ...)
 #' The Journal of Machine Learning Research, 11, 3571-3594.
 #' 
 #' @export
-WAIC <- function(x, ..., se = FALSE)
+WAIC <- function(x, ..., compare = TRUE)
   UseMethod("WAIC")
+
+#' Compute the LOO
+#' 
+#' Compute the Leave-one-out cross-validation based on the posterior likelihood
+#' by using the \pkg{loo} package
+#' 
+#' @inheritParams WAIC
+#' @param compare A flag indicating if the LOOs of the models should be compared to each other
+#' 
+#' @details When comparing models fitted to the same data, the smaller the LOO, the better the fit.
+#' @return If just one object is provided, an object of class \code{ic}. 
+#' If multiple objects are provided, an object of class \code{iclist}.
+#' 
+#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
+#' 
+#' @examples
+#' \dontrun{
+#' #model with fixed effects only
+#' fit_i1 <- brm(rating ~ treat + period + carry,
+#'               data = inhaler, family = "gaussian", WAIC = TRUE)
+#' LOO(fit_i1)
+#' 
+#' #model with an additional random intercept for subjects
+#' fit_i2 <- brm(rating ~ treat + period + carry + (1|subject),
+#'              data = inhaler, family = "gaussian", WAIC = TRUE)
+#' #compare both models
+#' LOO(fit_i1, fit_i2)                          
+#' }
+#' 
+#' @references 
+#' Vehtari, A., Gelman, A., and Gabry, J. (2015). Efficient implementation of leave-one-out cross-validation and WAIC for evaluating fitted Bayesian models.
+#' 
+#' Gelman, A., Hwang, J., & Vehtari, A. (2014). Understanding predictive information criteria for Bayesian models. 
+#' Statistics and Computing, 24, 997-1016.
+#' 
+#' Watanabe, S. (2010). Asymptotic equivalence of Bayes cross validation and widely applicable information criterion in singular learning theory. 
+#' The Journal of Machine Learning Research, 11, 3571-3594.
+#' 
+#' @export
+LOO <- function(x, ..., compare = TRUE)
+  UseMethod("LOO")
