@@ -76,3 +76,23 @@ print.brmshypothesis <- function(x, digits = 2, ...) {
 
 #' @export
 print.brmsmodel <- function(x, ...) cat(x)
+
+#' @export
+print.ic <- function(x, digits = 2, ...) {
+  ic <- names(x)[3]
+  mat <- matrix(c(x[[ic]], x[[paste0("se_",ic)]]), ncol = 2, 
+                      dimnames = list("", c(toupper(ic), "SE")))
+  print(round(mat, digits = digits))
+}
+
+#' @export
+print.iclist <- function(x, digits = 2, ...) {
+  ic <- names(x[[1]])[3]
+  mat <- matrix(0, nrow = length(x), ncol = 2, 
+                dimnames = list(names(x), c(toupper(ic), "SE")))
+  for (i in 1:length(x))
+    mat[i, ] <- c(x[[i]][[ic]], x[[i]][[paste0("se_",ic)]])
+  if (is.matrix(attr(x, "compare")))
+    mat <- rbind(mat, attr(x, "compare"))
+  print(round(mat, digits = digits))
+}

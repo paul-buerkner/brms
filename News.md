@@ -6,6 +6,7 @@ output: html_document
 # under development
 ----------------------------------------------------------------
 
+* calculate the Watanabe-Akaike Information Criterion (WAIC) and the Leave-one-out cross-validation (LOO) using the 'loo' package  
 * remove chains that fail to initialize while sampling in parallel leaving the other chains untouched
 * allow for customized covariance structures of grouping factors with multiple random effects
 * redesign trace and density plots to be faster and more stable
@@ -23,7 +24,7 @@ output: html_document
 ----------------------------------------------------------------
 
 ## new features
-* implement the Wakanabe-Akaike Information Criterion (WAIC)
+* implement the Watanabe-Akaike Information Criterion (WAIC)
 * implement the ||-syntax for random effects allowing for the estimation of random effects standard deviations without the estimation of correlations.
 * allow to combine multiple grouping factors within one random effects argument using the interaction symbol ':'
 * generalize S3 method 'hypothesis' to be used with all parameter classes not just fixed effects. In addition, one-sided hypothesis testing is now possible.

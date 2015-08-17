@@ -154,6 +154,6 @@ compare_ic <- function(x, ic = c("waic", "loo")) {
     }
   }
   rownames(compare_matrix) <- rnames
-  colnames(compare_matrix) <- c(paste0("Diff.", toupper(ic)), "SE")
+  colnames(compare_matrix) <- c(toupper(ic), "SE")
   compare_matrix
 }

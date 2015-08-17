@@ -242,8 +242,8 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE) {
   names <- c(deparse(substitute(x)), sapply(substitute(list(...))[-1], deparse))
   if (length(models) > 1) {
     out <- setNames(lapply(models, calculate_ic, ic = "waic"), names)
-    if (compare)
-      attr(out, "compare") <- compare_ic(out, ic = "waic")
+    class(out) <- c("iclist", "list")
+    if (compare) attr(out, "compare") <- compare_ic(out, ic = "waic")
   }  
   else out <- calculate_ic(x, ic = "waic")
   out
@@ -254,10 +254,9 @@ LOO.brmsfit <- function(x, ..., compare = TRUE) {
   models <- list(x, ...)
   names <- c(deparse(substitute(x)), sapply(substitute(list(...))[-1], deparse))
   if (length(models) > 1) {
-    out <- structure(lapply(models, calculate_ic, ic = "loo"), 
-                     names = names, class = "iclist")
-    if (compare)
-      attr(out, "compare") <- compare_ic(out, ic = "loo")
+    out <- setNames(lapply(models, calculate_ic, ic = "loo"), names)
+    class(out) <- c("iclist", "list")
+    if (compare) attr(out, "compare") <- compare_ic(out, ic = "loo")
   }  
   else out <- calculate_ic(x, ic = "loo")
   out
