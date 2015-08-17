@@ -30,6 +30,10 @@ test_that("Test that stan.prior can remove default priors", {
   expect_equal(stan.prior("sd_y_Intercept", prior = list(sd = "")), "")
   expect_equal(stan.prior("sd_y_Intercept", prior = list(sd_y = ""), add.type = "y"), "")
   expect_equal(stan.prior("shape", prior = list(shape = "")), "")
+  expect_equal(stan.prior("sigma_y", prior = list(sigma = NULL)), "")
+  expect_equal(stan.prior("sd_y_Intercept", prior = list(sd = NULL)), "")
+  expect_equal(stan.prior("sd_y_Intercept", prior = list(sd_y = NULL), add.type = "y"), "")
+  expect_equal(stan.prior("shape", prior = list(shape = NULL)), "")
 })
 
 test_that("Test that stan.eta returns correct strings for autocorrelation models", {

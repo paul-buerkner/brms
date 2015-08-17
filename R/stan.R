@@ -545,22 +545,23 @@ stan.prior = function(par, prior = list(), add.type = NULL, ind = rep("", length
   default.prior <- list(b = "", bp = "", sigma = "cauchy(0,5)", delta = "", ar = "", 
     ma = "", L = "lkj_corr_cholesky(1.0)", sd = "cauchy(0,5)", Lrescor = "lkj_corr_cholesky(1.0)",  
     nu = "uniform(1,100)", shape = "gamma(0.01,0.01)") 
-  if (!is.null(prior[[type[2]]])) base.prior <- prior[[type[2]]]
-  else if (!is.null(prior[[type[1]]])) base.prior <- prior[[type[1]]]
+  if (type[2] %in% names(prior)) base.prior <- prior[[type[2]]]
+  else if (type[1] %in% names(prior)) base.prior <- prior[[type[1]]]
   else base.prior <- default.prior[[type[1]]]
   
   if (type[1] == "b" && partial) type[1] <- "bp"
   type <- ifelse(is.na(type[2]), type[1], type[2])  
   if (any(par %in% names(prior)))
     out <- sapply(1:length(par), function(i, par, ind) {
-      if (ind[i] != "") ind[i] <- paste0("[",ind[i],"]")
-      if (!par[i] %in% names(prior))
+      if (ind[i] != "") 
+        ind[i] <- paste0("[",ind[i],"]")
+      if (!par[i] %in% names(prior)) 
         prior[[par[i]]] <- base.prior
-      if (paste0(prior[[par[i]]],"") != "")  
+      if (nchar(paste0(prior[[par[i]]], "")) > 0)  
         return(paste0(collapse(rep(" ", s)), type, ind[i], " ~ ", prior[[par[i]]], "; \n"))
       else return("") }, 
     par = par, ind = ind)
-  else if (base.prior != "")
+  else if (nchar(paste0(base.prior, "")) > 0)
     out <- paste0(collapse(rep(" ", s)), 
       ifelse(identical(type,"bp"), "to_vector(bp)", type), " ~ ", base.prior, "; \n")
   else out <- ""
