@@ -22,7 +22,7 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, ...) {
   
   ranef <- lapply(group, function(g) {
     r.pars <- pars[grepl(paste0("^r_",g,"\\["), pars)]
-    r.names <- gsub(paste0("^sd_",g,"_"), "", pars[grepl(paste0("^sd_",g,"_"), pars)])
+    r.names <- x$ranef[[match(g, names(x$ranef))]]
     if (!length(r.pars))
       stop(paste0("The model does not contain random effects for group '",g,"'\n",
                   "You should use argument ranef = TRUE in function brm."))
@@ -61,20 +61,17 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
     stop("The model does not contain posterior samples")
   pars <- par.names(x)
   group <- names(x$ranef)
+  ee <- extract.effects(x$formula, add.ignore = TRUE)
   
   # extracts samples for sd, cor and cov
-  extract <- function(pattern) {
-    if (length(pattern) != 2) stop("pattern must be of length 2")
-    sd.pars <- pars[grepl(pattern[1], pars)]
-    cor.pars <- pars[grepl(pattern[2], pars)]
-    r.names <- gsub(pattern[1], "", sd.pars)
-    nr <- length(sd.pars)
-    sds <- posterior.samples(x, parameters = paste0("^",sd.pars,"$"))
+  extract <- function(p) {
+    nr <- length(p$sd.pars)
+    sds <- posterior.samples(x, parameters = paste0("^",p$sd.pars,"$"))
     n.samples <- nrow(sds)
     out <- list(sd = do.call(cbind, lapply(estimate, get.estimate, samples = sds, ...)))
-    rownames(out$sd) <- r.names 
-    if (length(cor.pars)) {
-      cors <- posterior.samples(x, parameters = paste0("^",cor.pars,"$"))
+    rownames(out$sd) <- p$r.names 
+    if (length(p$cor.pars)) {
+      cors <- posterior.samples(x, parameters = paste0("^",p$cor.pars,"$"))
       out$cor <- array(diag(1,nr), dim = c(nr, nr, n.samples))
       out$cov <- out$cor
       k <- 0 
@@ -92,7 +89,7 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
                               margin=  c(1,2), to.array=TRUE, ...))
       out$cov <- abind(lapply(estimate, get.estimate, samples = out$cov, 
                               margin = c(1,2), to.array=TRUE, ...))
-      dimnames(out$cor) <- list(r.names, r.names, dimnames(out$cor)[[3]])
+      dimnames(out$cor) <- list(p$r.names, p$r.names, dimnames(out$cor)[[3]])
       dimnames(out$cov) <- dimnames(out$cor)
       if (as.list) {
         out$cor <- array2list(out$cor)
@@ -102,12 +99,21 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
     out
   }
   
-  pattern <- lapply(group, function(g) c(paste0("^sd_",g,"_"), paste0("^cor_",g,"_")))
+  p <- lapply(1:length(group), function(i)
+    list(r.names = x$ranef[[i]],
+         sd.pars = paste0("sd_",group[i],"_",x$ranef[[i]]),
+         cor.pars = get.cor.names(x$ranef[[i]], type = paste0("cor_",group[i]),
+                                  eval = length(x$ranef[[i]]) > 1 && ee$cor[[i]], 
+                                  brackets = FALSE)))
   if (x$family %in% c("gaussian", "student", "cauchy")) {
-    pattern <- c(pattern, list(c("^sigma_", "^rescor_")))
+    p[[length(p)+1]] <- list(r.names = ee$response, 
+                             sd.pars = paste0("sigma_",ee$response),
+                             cor.pars = get.cor.names(ee$response, type = "rescor", 
+                                                      eval = length(ee$response) > 1, 
+                                                      brackets = FALSE))
     group <- c(group, "RESIDUAL")
   } 
-  VarCorr <- lapply(pattern, extract)
+  VarCorr <- lapply(p, extract)
   names(VarCorr) <- group
   VarCorr
 }
@@ -192,14 +198,16 @@ summary.brmsfit <- function(object, ...) {
     
     if (length(out$group)) {
       for (i in 1:length(out$group)) {
-        sd.pars <- pars[grepl(paste0("^sd_", out$group[i],"_"), pars)]
-        cor.pars <- pars[grepl(paste0("^cor_", out$group[i],"_"), pars)]
-        r.names <- gsub(paste0("^sd_",out$group[i],"_"), "", sd.pars)
+        r.names <- object$ranef[[i]]
+        has_cor <- length(r.names) > 1 && ee$cor[[i]]
+        sd.pars <- paste0("sd_", out$group[i],"_",r.names)
+        cor.pars <- get.cor.names(r.names, type = paste0("cor_",out$group[i]),
+                                  eval = has_cor, brackets = FALSE)
         sd.names <- paste0("sd(",r.names,")")
-        cor.names <- get.cor.names(r.names, eval = length(cor.pars))
+        cor.names <- get.cor.names(r.names, eval = has_cor)
         out$random[[out$group[i]]] <- matrix(fit.summary$summary[c(sd.pars, cor.pars),-c(2)], ncol = 6)
         colnames(out$random[[out$group[i]]]) <- col.names
-        rownames(out$random[[out$group[i]]]) <- c(sd.names,cor.names)
+        rownames(out$random[[out$group[i]]]) <- c(sd.names, cor.names)
       }
     }
   }  

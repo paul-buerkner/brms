@@ -11,6 +11,7 @@ output: html_document
 * allow for customized covariance structures of grouping factors with multiple random effects
 * redesign trace and density plots to be faster and more stable
 * fix a bug in S3 method 'hypothesis' related to the calculation of Bayes factors for point hypotheses
+* fix minor issues with internal parameter naming
 
 # brms 0.4.1
 ----------------------------------------------------------------
