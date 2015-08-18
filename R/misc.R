@@ -3,7 +3,7 @@ array2list <- function(x) {
   if (is.null(dim(x))) stop("Argument x has no dimension")
   n.dim <- length(dim(x))
   l <- list(length = dim(x)[n.dim])
-  ind <- paste0(rep(",",n.dim-1),collapse="")
+  ind <- collapse(rep(",",n.dim-1))
   for (i in 1:dim(x)[n.dim])
     l[[i]] <- eval(parse(text = paste0("x[",ind,i,"]")))
   names(l) <- dimnames(x)[[n.dim]]

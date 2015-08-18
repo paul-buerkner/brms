@@ -70,31 +70,38 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
     n.samples <- nrow(sds)
     out <- list(sd = do.call(cbind, lapply(estimate, get.estimate, samples = sds, ...)))
     rownames(out$sd) <- p$r.names 
-    if (length(p$cor.pars)) {
+    
+    # calculate correlation and covariance matrices
+    out$cor <- array(diag(1,nr), dim = c(nr, nr, n.samples))
+    out$cov <- out$cor
+    if (length(p$cor.pars))
       cors <- posterior.samples(x, parameters = paste0("^",p$cor.pars,"$"))
-      out$cor <- array(diag(1,nr), dim = c(nr, nr, n.samples))
-      out$cov <- out$cor
-      k <- 0 
-      for (i in 1:nr) {
-        for (j in 1:i) {
-          if (i == j) out$cov[i,j,] <- sds[,i]^2
-          else {
-            k = k + 1
+    k <- 0 
+    for (i in 1:nr) {
+      for (j in 1:i) {
+        if (i == j) out$cov[i,j,] <- sds[,i]^2
+        else {
+          k = k + 1
+          if (length(p$cor.pars)) {
             out$cor[i,j,] <- cors[,k]
             out$cor[j,i,] <- out$cor[i,j,]
-            out$cov[i,j,] <- out$cor[i,j,] * sds[,i] * sds[,j]
-            out$cov[j,i,] <- out$cov[i,j,]
-          }}}
-      out$cor <- abind(lapply(estimate, get.estimate, samples = out$cor, 
-                              margin=  c(1,2), to.array=TRUE, ...))
-      out$cov <- abind(lapply(estimate, get.estimate, samples = out$cov, 
-                              margin = c(1,2), to.array=TRUE, ...))
-      dimnames(out$cor) <- list(p$r.names, p$r.names, dimnames(out$cor)[[3]])
-      dimnames(out$cov) <- dimnames(out$cor)
-      if (as.list) {
-        out$cor <- array2list(out$cor)
-        out$cov <- array2list(out$cov)
+          }
+          out$cov[i,j,] <- out$cor[i,j,] * sds[,i] * sds[,j]
+          out$cov[j,i,] <- out$cov[i,j,]
+        }
       }
+    }
+    out$cor <- abind(lapply(estimate, get.estimate, samples = out$cor, 
+                            margin=  c(1,2), to.array=TRUE, ...))
+    out$cov <- abind(lapply(estimate, get.estimate, samples = out$cov, 
+                            margin = c(1,2), to.array=TRUE, ...))
+    dimnames(out$cor) <- list(p$r.names, p$r.names, dimnames(out$cor)[[3]])
+    dimnames(out$cov) <- dimnames(out$cor)
+    if (as.list) {
+      out$cor <- lapply(array2list(out$cor), function(x)
+        if (is.null(dim(x))) structure(matrix(x), dimnames = list(p$r.names, p$r.names)) else x)
+      out$cov <- lapply(array2list(out$cov), function(x)
+        if (is.null(dim(x))) structure(matrix(x), dimnames = list(p$r.names, p$r.names)) else x)
     }
     out
   }
