@@ -40,12 +40,16 @@ eratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"), prior_samp
 }
 
 #get correlation names
-get.cor.names <- function(names, type = "cor", eval = TRUE) {
+get.cor.names <- function(names, type = "cor", eval = TRUE, brackets = TRUE) {
   cor.names <- NULL
-  if (length(names) > 1 && eval)
-    for (i in 2:length(names)) 
-      for (j in 1:(i-1)) 
-        cor.names <- c(cor.names, paste0(type,"(",names[j],",",names[i],")"))
+  if (length(names) > 1 && eval) {
+    for (i in 2:length(names)) {
+      for (j in 1:(i-1)) {
+        if (brackets) cor.names <- c(cor.names, paste0(type,"(",names[j],",",names[i],")"))
+        else cor.names <- c(cor.names, paste0(type,"_",names[j],"_",names[i]))
+      }
+    }
+  }
   cor.names
 }
 
@@ -75,9 +79,7 @@ rename.pars <- function(x, ...) {
     for (j in 1:length(x$ranef)) {
      change[[length(change)+1]] <- list(pos = grepl(paste0("^sd_",group[j],"(\\[|$)"), pars),
                                         names = paste0("sd_",group[j],"_", x$ranef[[j]]))
-      cor_names <- unlist(lapply(1:length(group), function(i)
-        if (length(x$ranef[[i]])>1) paste0("cor_",group[j],"_", unlist(lapply(2:length(x$ranef[[i]]), 
-           function(j) lapply(1:(j-1), function(k) paste0(x$ranef[[i]][k],"_",x$ranef[[i]][j]))))))) 
+     cor_names <- get.cor.names(x$ranef[[j]], type = paste0("cor_",group[j]), brackets = FALSE)
      change[[length(change)+1]] <- list(pos = grepl(paste0("^cor_",group[j],"(\\[|$)"), pars),
                                         names = cor_names) 
     }
