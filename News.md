@@ -10,6 +10,7 @@ output: html_document
 * remove chains that fail to initialize while sampling in parallel leaving the other chains untouched
 * allow for customized covariance structures of grouping factors with multiple random effects
 * redesign trace and density plots to be faster and more stable
+* S3 method 'VarCorr' now returns covariances matrices for all grouping factors regardless of whether random effects correlations were estimated
 * fix a bug in S3 method 'hypothesis' related to the calculation of Bayes factors for point hypotheses
 * fix minor issues with internal parameter naming
 
