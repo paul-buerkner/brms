@@ -46,6 +46,8 @@ extract.effects <- function(formula, ..., family = "none", add.ignore = FALSE) {
             group = lapply(group, function(g) paste0(all.vars(g), collapse = "__")))
   if (anyDuplicated(x$group))
     stop("Duplicated grouping factors are not allowed")
+  if (any(grepl(".", x$group, fixed = TRUE)))
+    stop("Names of grouping factors may not contain dots")
   
   fun <- c("se", "weights", "trials", "cat", "cens")
   if (!add.ignore) {
