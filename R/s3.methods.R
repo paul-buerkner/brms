@@ -95,8 +95,7 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
                             margin=  c(1,2), to.array=TRUE, ...))
     out$cov <- abind(lapply(estimate, get.estimate, samples = out$cov, 
                             margin = c(1,2), to.array=TRUE, ...))
-    dimnames(out$cor) <- list(p$r.names, p$r.names, dimnames(out$cor)[[3]])
-    dimnames(out$cov) <- dimnames(out$cor)
+    dimnames(out$cov) <- dimnames(out$cor) <- list(p$r.names, p$r.names, dimnames(out$cor)[[3]])
     if (as.list) {
       out$cor <- lapply(array2list(out$cor), function(x)
         if (is.null(dim(x))) structure(matrix(x), dimnames = list(p$r.names, p$r.names)) else x)

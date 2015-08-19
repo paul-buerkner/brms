@@ -129,7 +129,7 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
     "} \n")
   
   vectorize <- c(!(length(ee$group) || autocor$q || eta$transform ||
-    (is.ordinal && !(family == "cumulative" && link == "logit" && !predict && !is.formula(ee$cat)))),            
+    (is.ordinal && !(family == "cumulative" && link == "logit" && !predict && !WAIC && !is.formula(ee$cat)))),            
     !(is.formula(ee$cens) || is.formula(ee$weights) || is.ordinal || family == "categorical")) 
   if (!vectorize[1] && !is.multi)
     loop.trans <- c("  for (n in 1:N) { \n", "  } \n")
@@ -310,7 +310,7 @@ stan.eta <- function(family, link, f, p = NULL, group = list(),
   eta.ilink <- rep("", 2)
   if (eta$transform) {
     eta.ilink <- switch(family, c(paste0(ilink,"("), ")"),
-                   gamma = c(paste0("shape*inv(",ilink,"("), "))"), 
+                   gamma = c(paste0("shape/(",ilink,"("), "))"), 
                    exponential = c(paste0(ilink,"(-("), "))"), 
                    weibull = c(paste0("inv(",ilink,"(-("), ")/shape))"))
     if (autocor$q > 0) {

@@ -318,3 +318,27 @@ WAIC <- function(x, ..., compare = TRUE)
 #' @export
 LOO <- function(x, ..., compare = TRUE)
   UseMethod("LOO")
+
+#' Compute the pointwise log-likelihood
+#' 
+#' @param x A fitted model object typically of class \code{brmsfit}. 
+#' @param ... Currently ignored
+#' 
+#' @return Usually, an S x N matrix containing the pointwise log-likelihood samples, where S is the number of samples
+#'   and N is the number of observations in the data. 
+#' 
+#' @export
+loglik <- function(x, ...)
+  UseMethod("loglik")
+
+#' Compute linear predictors term
+#' 
+#' @param x A fitted model object typically of class \code{brmsfit}. 
+#' @param ... Currently ignored
+#' 
+#' @return Usually, an S x N matrix containing the linear predictor samples, where S is the number of samples
+#'   and N is the number of observations in the data. 
+#' 
+#' @export
+linear.predictor <- function(x, ...)
+  UseMethod("linear.predictor")

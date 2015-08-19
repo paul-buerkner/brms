@@ -38,3 +38,22 @@ is.wholenumber <- function(x, tol = .Machine$double.eps^0.5) {
 #wrapper for paste with collapse
 collapse <- function(..., sep = "")
   paste(..., sep = sep, collapse = "")
+
+#calculate the inverse of logit
+ilogit <- function(x) { 
+  exp(x) / (1 + exp(x))
+}
+
+#apply the inverse link function on x
+ilink <- function(x, link) {
+  if (link == "identity") x
+  else if (link == "log") exp(x)
+  else if (link == "inverse") 1/x
+  else if (link == "sqrt") x^2
+  else if (link == "logit") ilogit(x)
+  else if (link == "probit") pnorm(x)
+  else if (link == "cloglog") 1 - exp(-exp(x))
+  else if (link == "probit_approx") ilogit(0.07056*x^3 + 1.5976*x)
+  else stop(paste("Link", link, "not supported"))
+}
+  
