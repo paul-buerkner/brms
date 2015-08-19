@@ -17,8 +17,10 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, ...) {
     stop("The model does not contain posterior samples")
   if (!estimate %in% c("mean","median"))
     stop("Argument estimate must be either 'mean' or 'median'")
-  pars <- par.names(x)
+  if (!length(x$ranef))
+    stop("The model does not contain random effects")
   group <- names(x$ranef)
+  pars <- par.names(x)
   
   ranef <- lapply(group, function(g) {
     r.pars <- pars[grepl(paste0("^r_",g,"\\["), pars)]
@@ -59,8 +61,10 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, ...) {
 VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
-  pars <- par.names(x)
+  if (!length(x$ranef))
+    stop("The model does not contain random effects")
   group <- names(x$ranef)
+  pars <- par.names(x)
   ee <- extract.effects(x$formula, add.ignore = TRUE)
   
   # extracts samples for sd, cor and cov
