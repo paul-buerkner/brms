@@ -4,7 +4,7 @@ calculate_ic <- function(x, ic = c("waic", "loo")) {
   ee <- extract.effects(x$formula, add.ignore = TRUE)
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples") 
-  if (x$family != "categorical" && sum(x$autocor$p, x$autocor$q) == 0 && length(ee$response) == 1) 
+  if (x$family != "categorical" && length(ee$response) == 1) 
     loglik <- as.matrix(loglik(x))
   else {
     if (!"log_llh" %in% x$fit@model_pars) 
