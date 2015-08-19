@@ -14,6 +14,26 @@ get.estimate <- function(coef, samples, margin = 2, to.array = FALSE, ...) {
   x 
 }
 
+#compute covariance and correlation matrices based on correlation and sd samples
+cov_matrix <- function(sd, cor = NULL) {
+  nsamples <- nrow(sd)
+  nranef <- ncol(sd)
+  cor_matrix <- cov_matrix <- aperm(array(diag(1, nranef), dim = c(nranef, nranef, nsamples)), c(3,1,2))
+  for (i in 1:nranef) 
+    cov_matrix[,i,i] <- sd[,i]^2 
+  if (!is.null(cor)) {
+    k <- 0 
+    for (i in 2:nranef) {
+      for (j in 1:(i-1)) {
+        k = k + 1
+        cor_matrix[,j,i] <- cor_matrix[,i,j] <- cor[,k]
+        cov_matrix[,j,i] <- cov_matrix[,i,j] <- cor[,k] * sd[,i] * sd[,j]
+      }
+    }
+  }
+  list(cor = cor_matrix, cov = cov_matrix)
+}
+
 #calculate the evidence ratio between two disjunct hypotheses
 eratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"), prior_samples = NULL, pow = 12, ...) {
   wsign <- match.arg(wsign)

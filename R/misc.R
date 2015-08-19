@@ -57,7 +57,7 @@ link <- function(x, link) {
   else if (link == "sqrt") sqrt(x)
   else if (link == "logit") logit(x)
   else if (link == "probit") logit(0.07056*x^3 + 1.5976*x)
-  else if (link == "cloglog") ln(-ln(1-x))
+  else if (link == "cloglog") log(-log(1-x))
   else if (link == "probit_approx") logit(0.07056*x^3 + 1.5976*x)
   else stop(paste("Link", link, "not supported"))
 }

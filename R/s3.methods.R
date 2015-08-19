@@ -61,44 +61,26 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, ...) {
 VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
-  if (!length(x$ranef))
-    stop("The model does not contain random effects")
-  group <- names(x$ranef)
-  pars <- par.names(x)
-  ee <- extract.effects(x$formula, add.ignore = TRUE)
-  
+  if (!(length(x$ranef) || x$family %in% c("gaussian", "student", "cauchy")))
+    stop("The model does not contain covariance matrices")
+
   # extracts samples for sd, cor and cov
   extract <- function(p) {
     nr <- length(p$sd.pars)
-    sds <- posterior.samples(x, parameters = paste0("^",p$sd.pars,"$"))
-    n.samples <- nrow(sds)
-    out <- list(sd = do.call(cbind, lapply(estimate, get.estimate, samples = sds, ...)))
+    sd <- posterior.samples(x, parameters = paste0("^",p$sd.pars,"$"))
+    nsamples <- nrow(sd)
+    out <- list(sd = do.call(cbind, lapply(estimate, get.estimate, samples = sd, ...)))
     rownames(out$sd) <- p$r.names 
     
     # calculate correlation and covariance matrices
-    out$cor <- array(diag(1,nr), dim = c(nr, nr, n.samples))
-    out$cov <- out$cor
     if (length(p$cor.pars))
-      cors <- posterior.samples(x, parameters = paste0("^",p$cor.pars,"$"))
-    k <- 0 
-    for (i in 1:nr) {
-      for (j in 1:i) {
-        if (i == j) out$cov[i,j,] <- sds[,i]^2
-        else {
-          k = k + 1
-          if (length(p$cor.pars)) {
-            out$cor[i,j,] <- cors[,k]
-            out$cor[j,i,] <- out$cor[i,j,]
-          }
-          out$cov[i,j,] <- out$cor[i,j,] * sds[,i] * sds[,j]
-          out$cov[j,i,] <- out$cov[i,j,]
-        }
-      }
-    }
-    out$cor <- abind(lapply(estimate, get.estimate, samples = out$cor, 
-                            margin=  c(1,2), to.array=TRUE, ...))
-    out$cov <- abind(lapply(estimate, get.estimate, samples = out$cov, 
-                            margin = c(1,2), to.array=TRUE, ...))
+      cor <- posterior.samples(x, parameters = paste0("^",p$cor.pars,"$"))
+    else cor <- NULL
+    matrices <- cov_matrix(sd = sd, cor = cor)
+    out$cor <- abind(lapply(estimate, get.estimate, samples = matrices$cor, 
+                            margin=  c(2,3), to.array = TRUE, ...))
+    out$cov <- abind(lapply(estimate, get.estimate, samples = matrices$cov, 
+                            margin = c(2,3), to.array = TRUE, ...))
     dimnames(out$cov) <- dimnames(out$cor) <- list(p$r.names, p$r.names, dimnames(out$cor)[[3]])
     if (as.list) {
       out$cor <- lapply(array2list(out$cor), function(x)
@@ -109,12 +91,16 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
     out
   }
   
-  p <- lapply(1:length(group), function(i)
+  ee <- extract.effects(x$formula, add.ignore = TRUE)
+  if (length(x$ranef)) {
+    group <- names(x$ranef)
+    p <- lapply(1:length(group), function(i)
     list(r.names = x$ranef[[i]],
          sd.pars = paste0("sd_",group[i],"_",x$ranef[[i]]),
          cor.pars = get.cor.names(x$ranef[[i]], type = paste0("cor_",group[i]),
                                   eval = length(x$ranef[[i]]) > 1 && ee$cor[[i]], 
                                   brackets = FALSE)))
+  } else p <- group <- NULL
   if (x$family %in% c("gaussian", "student", "cauchy")) {
     p[[length(p)+1]] <- list(r.names = ee$response, 
                              sd.pars = paste0("sigma_",ee$response),
