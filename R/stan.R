@@ -335,7 +335,7 @@ stan.ma <- function(family, link, autocor, group, levels, N) {
   is.linear <- family %in% c("gaussian", "student", "cauchy")
   is.multi <- family == "multinormal"
   ma <- list()
-  if (autocor$q && is(autocor, "cor.arma")) {
+  if (is(autocor, "cor.arma") && autocor$q) {
     link.fun <- c(identity = "", log = "log", inverse = "inv")[link]
     if (!(is.linear || is.multi) && suppressWarnings(max(levels)) < N) 
       stop(paste0("moving-average models for family ",family," require a random effect with the same number \n",

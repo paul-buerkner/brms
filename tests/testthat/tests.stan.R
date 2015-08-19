@@ -49,20 +49,20 @@ test_that("Test_that stan.ma returns correct strings (or errors) for moving aver
   expect_equal(stan.ma(family = "gaussian", link = "log", group = list("g1", "g2"), 
                        levels = c(120,60), N = 240, autocor = cor.arma()), list())
   expect_match(stan.ma(family = "poisson", link = "log", group = list("g1", "g2"), 
-                 levels = c(240,60), N = 240, autocor = cor.arma(~visit|patient, q=1))$transC2,
+                       levels = c(240,60), N = 240, autocor = cor.arma(~visit|patient, q=1))$transC2,
                "Ema[n+1,i] <- r_g1[n+1-i]", fixed = TRUE)
   expect_match(stan.ma(family = "gaussian", link = "log", group = list("g1", "g2"), 
                        levels = c(120,60), N = 240, autocor = cor.arma(~visit|patient, q=1))$transC2,
                "Ema[n+1,i] <- e[n+1-i]", fixed = TRUE)
-  expect_match(stan.ma(family = "multinormal", link = "log", group = "g1", 
+  expect_match(stan.ma(family = "multinormal", link = "inverse", group = "g1", 
                        levels = 60, N = 240, autocor = cor.arma(~visit|patient, q=1))$transC2,
-               "e[n] <- log(Y[m,k]) - eta[n]", fixed = TRUE)
+               "e[n] <- inv(Y[m,k]) - eta[n]", fixed = TRUE)
   expect_error(stan.ma(family = "poisson", link = "log", group = list("g1", "g2"), 
                        levels = c(120,60), N = 240, autocor = cor.arma(~visit|patient, p=1, q=1)),
                paste0("moving-average models for family poisson require a random effect with the same number \n",
                       "of levels as observations in the data"))
-})
-
+})  
+  
 test_that("Test that stan.genquant returns correct strings", {
   expect_equal(stan.genquant(family = "multinormal", link = "identity"), list())
   expect_match(stan.genquant(family = "multinormal", link = "identity", predict = TRUE)$genD, 
