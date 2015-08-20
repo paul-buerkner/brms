@@ -272,7 +272,7 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
   
   #set WAIC to FALSE when possible (will be removed in the future)
   ee <- extract.effects(formula, add.ignore = TRUE)
-  if (family != "categorical" && length(ee$response) == 1) WAIC <- FALSE
+  if (family != "categorical") WAIC <- FALSE
   
   if (is(fit, "brmsfit")) x <- fit
   else {

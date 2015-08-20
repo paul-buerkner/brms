@@ -5,3 +5,13 @@ dstudent <- function(x, df, mu = 0, sigma = 1, log = FALSE) {
   if (!log) out <- exp(out)
   out
 }
+
+#density of the multinormal distribution
+dmultinormal <- function(x, mu, Sigma, log = TRUE) {
+  k <- length(x)
+  rooti <- backsolve(chol(Sigma),diag(k))
+  quads <- colSums((crossprod(rooti, (x-mu)))^2)
+  out <- -(k/2)*log(2*pi) + sum(log(diag(rooti))) - .5*quads
+  if (!log) out <- exp(out)
+  out
+}

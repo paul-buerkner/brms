@@ -4,7 +4,7 @@ calculate_ic <- function(x, ic = c("waic", "loo")) {
   ee <- extract.effects(x$formula, add.ignore = TRUE)
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples") 
-  if (x$family != "categorical" && length(ee$response) == 1) 
+  if (x$family != "categorical") 
     loglik <- as.matrix(loglik(x))
   else {
     if (!"log_llh" %in% x$fit@model_pars) 
@@ -42,20 +42,27 @@ loglik.brmsfit <- function(x, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
   ee <- extract.effects(x$formula, add.ignore = TRUE)
-  if (x$link == "log" && x$family == "gaussian" && length(ee$response == 1)) 
+  if (x$link == "log" && x$family == "gaussian" && length(ee$response) == 1) 
     x$family <- "lognormal"
+  if (x$family == "gaussian" && length(ee$response) > 1)
+    x$family <- "multinormal"
   
   samples <- list(eta = linear.predictor(x))
-  if (x$family %in% c("gaussian", "student", "cauchy", "lognormal")) 
+  if (x$family %in% c("gaussian", "student", "cauchy", "lognormal", "multinormal")) 
     samples$sigma <- as.matrix(posterior.samples(x, parameters = "^sigma_"))
   if (x$family == "student") 
     samples$nu <- as.matrix(posterior.samples(x, parameters = "^nu$"))
+  if (x$family == "multinormal") {
+    samples$rescor <- as.matrix(posterior.samples(x, parameters = "^rescor_"))
+    samples$Sigma <- cov_matrix(sd = samples$sigma, cor = samples$rescor)$cov
+    message("Computing pointwise log-likelihood of multinormal distribution. This may take a while.")
+  }
   if (x$family %in% c("gamma", "weibull","negbinomial")) 
     samples$shape <- as.matrix(posterior.samples(x, parameters = "^shape$"))
   if (x$family %in% c("cumulative", "cratio", "sratio", "acat"))
     samples$Intercept <- as.matrix(posterior.samples(x, parameters = "^b_Intercept\\["))
   loglik_fun <- get(paste0("loglik_",x$family))
-  return(do.call(cbind, lapply(1:ncol(samples$eta), function(n) 
+  return(do.call(cbind, lapply(1:nrow(as.matrix(x$data$Y)), function(n) 
     do.call(loglik_fun, list(n = n, data = x$data, samples = samples, link = x$link)))))
 }
 
@@ -84,6 +91,14 @@ loglik_cauchy <- function(n, data, samples, link) {
 
 loglik_lognormal <- function(n, data, samples, link) {
   out <- dlnorm(data$Y[n], meanlog = samples$eta[,n], sdlog = samples$sigma, log = TRUE)
+  if ("weights" %in% names(data)) out <- out * weights[n]
+  out
+}
+
+loglik_multinormal <- function(n, data, samples, link) {
+  out <- sapply(1:nrow(samples$eta), function(i) 
+    dmultinormal(data$Y[n,], Sigma = samples$Sigma[i,,], log = TRUE,
+                 mu = samples$eta[i, seq(n, ncol(data$Y) * nrow(data$Y), nrow(data$Y))]))
   if ("weights" %in% names(data)) out <- out * weights[n]
   out
 }
