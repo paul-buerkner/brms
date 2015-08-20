@@ -6,7 +6,7 @@ dstudent <- function(x, df, mu = 0, sigma = 1, log = FALSE) {
   out
 }
 
-#density of the multinormal distribution
+#density of the multinormal distribution with parameters mu and Sigma
 dmultinormal <- function(x, mu, Sigma, log = TRUE) {
   k <- length(x)
   rooti <- backsolve(chol(Sigma),diag(k))

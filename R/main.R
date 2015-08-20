@@ -270,9 +270,8 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
     stop("threshold must be either flexible or equidistant")
   set.seed(seed)
   
-  #set WAIC to FALSE when possible (will be removed in the future)
-  ee <- extract.effects(formula, add.ignore = TRUE)
-  if (family != "categorical") WAIC <- FALSE
+  #set WAIC to FALSE (will be removed in the future)
+  WAIC <- FALSE
   
   if (is(fit, "brmsfit")) x <- fit
   else {

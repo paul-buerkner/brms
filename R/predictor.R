@@ -6,7 +6,7 @@ linear.predictor.brmsfit <- function(x, ...) {
   Y <- x$data$Y
   eta <- matrix(0, nrow = n.samples, ncol = length(Y))
   X <- x$data$X
-  if (!is.null(X)) {
+  if (ncol(X) && x$family != "categorical") {
     b <- posterior.samples(x, parameters = "^b_[^\\[]+$")
     eta <- eta + fixef_predictor(X = X, b = b)  
   }
@@ -28,6 +28,29 @@ linear.predictor.brmsfit <- function(x, ...) {
     ma <- posterior.samples(x, parameters = "^ma\\[")
     eta <- ma_predictor(data = x$data, ma = ma, eta = eta, link = x$link)
   }
+  if (x$family %in% c("cumulative", "cratio", "sratio", "acat")) {
+    Intercept <- posterior.samples(x, "^b_Intercept\\[")
+    if (ncol(x$data$Xp)) {
+      p <- posterior.samples(x, paste0("^b_",colnames(x$data$Xp),"\\["))
+      etap <- partial_predictor(Xp = x$data$Xp, p = p, max_obs = x$data$max_obs)
+    }  
+    else etap <- array(0, dim = c(dim(eta), x$data$max_obs-1))
+    for (k in 1:(x$data$max_obs-1)) {
+      etap[,,k] <- etap[,,k] + eta
+      if (x$family %in% c("cumulative", "sratio")) etap[,,k] <-  Intercept[,k] - etap[,,k]
+      else etap[,,k] <- etap[,,k] - Intercept[,k]
+    }
+    eta <- etap
+  }
+  else if (x$family == "categorical") {
+    if (ncol(x$data$X)) {
+      p <- posterior.samples(x, parameters = "^b_")
+      etap <- partial_predictor(x$data$X, p, x$data$max_obs)
+    }
+    else etap <- array(0, dim = c(dim(eta), x$data$max_obs-1))
+    for (k in 1:(x$data$max_obs-1)) etap[,,k] <- etap[,,k] + eta
+    eta <- etap
+  }
   eta
 }
 
@@ -42,6 +65,15 @@ ranef_predictor <- function(Z, gf, r) {
   nlevels <- length(unique(gf))
   sort_levels <- unlist(lapply(1:nlevels, function(n) seq(n, ncol(r), nlevels)))
   as.matrix(r[,sort_levels]) %*% t(Z)
+}
+
+partial_predictor <- function(Xp, p, max_obs) {
+  max_obs <- max(max_obs)
+  etap <- array(0, dim = c(nrow(p), nrow(Xp), max_obs-1))
+  for (k in 1:(max_obs-1)) {
+    etap[,,k] <- as.matrix(p[,(k-1)*ncol(Xp)+1:ncol(Xp)]) %*% t(as.matrix(Xp))
+  }
+  etap
 }
 
 #compute eta for moving average effects
