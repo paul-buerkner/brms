@@ -6,7 +6,7 @@
 \usage{
 brm(formula, data = NULL, family = c("gaussian", "identity"),
   prior = list(), addition = NULL, autocor = NULL, partial = NULL,
-  threshold = "flexible", cov.ranef = NULL, ranef = TRUE, WAIC = FALSE,
+  threshold = "flexible", cov.ranef = NULL, ranef = TRUE,
   predict = FALSE, sample.prior = FALSE, fit = NA, n.chains = 2,
   n.iter = 2000, n.warmup = 500, n.thin = 1, n.cluster = 1,
   inits = "random", silent = FALSE, seed = 12345, save.model = NULL,
@@ -51,9 +51,6 @@ All levels of the grouping factor should appear as rownames of the corresponding
 
 \item{ranef}{A flag to indicate if random effects for each level of the grouping factor(s) should be saved (default is \code{TRUE}).
 Set to \code{FALSE} to save memory. The argument has no impact on the model fitting itself.}
-
-\item{WAIC}{A flag to indicate if the log likelihood of the model should be saved so that the WAIC can be computed afterwards.
-For models with many observation, this leads to rather huge fitted model objects.}
 
 \item{predict}{A flag to indicate if posterior predictives of the dependent variable should be generated.
 For models with many observation, this leads to rather huge fitted model objects.}

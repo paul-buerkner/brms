@@ -67,12 +67,6 @@ test_that("Test that stan.genquant returns correct strings", {
   expect_equal(stan.genquant(family = "multinormal", link = "identity"), list())
   expect_match(stan.genquant(family = "multinormal", link = "identity", predict = TRUE)$genD, 
                "Y_pred[N_trait]", fixed = TRUE)
-  expect_match(stan.genquant(family = "poisson", link = "log", logllh = TRUE)$genD, 
-               "vector[N] log_llh", fixed = TRUE)
-  expect_match(stan.genquant(family = "poisson", link = "log", logllh = TRUE)$genC, 
-               "poisson_log(Y[n],exp(eta[n]))", fixed = TRUE)
-  expect_match(stan.genquant(family = "weibull", link = "log", logllh = TRUE)$genC, 
-               "weibull_log(Y[n],shape,eta[n])", fixed = TRUE)
 })
 
 test_that("Test that stan.model accepts supported links", {

@@ -9,7 +9,7 @@
 # }
 stan.model <- function(formula, data = NULL, family = "gaussian", link = "identity",
                        prior = list(), partial = NULL, threshold = "flexible", cov.ranef = NULL,
-                       WAIC = FALSE, predict = FALSE, sample.prior = FALSE, autocor = cor.arma(), 
+                       predict = FALSE, sample.prior = FALSE, autocor = cor.arma(), 
                        save.model = NULL) {
   ee <- extract.effects(formula = formula, family = family, partial = partial) 
   family <- ifelse(family == "gaussian" && length(ee$response) > 1, "multinormal", family) 
@@ -48,12 +48,12 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
   ma <- stan.ma(family = family, link = link, autocor = autocor, group = ee$group, N = nrow(data),
                 levels = unlist(lapply(ee$group, function(g) length(unique(get(g, data))))))
   ordinal <- stan.ordinal(family = family, link = link, partial = length(p), max_obs = max_obs[1], n = n, 
-                  threshold = threshold, simplify = !(predict || WAIC))  
+                  threshold = threshold, simplify = !predict)  
   multi <- stan.multi(family, response = ee$response)
   llh <- stan.llh(family, link = link, add = is.formula(ee[c("se", "trials", "cat")]), 
                   weights = is.formula(ee$weights), cens = is.formula(ee$cens))
   genquant <- stan.genquant(family, link = link, add = is.formula(ee[c("se", "trials", "cat")]),
-                            predict = predict, logllh = WAIC)
+                            predict = predict)
   priors <- paste0(
     if (length(f)) stan.prior(paste0("b_",f), prior, ind = 1:length(f)),
     if (length(p)) stan.prior(paste0("b_",p), prior, ind = 1:length(p), partial = TRUE), 
@@ -129,7 +129,7 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
     "} \n")
   
   vectorize <- c(!(length(ee$group) || autocor$q || eta$transform ||
-    (is.ordinal && !(family == "cumulative" && link == "logit" && !predict && !WAIC && !is.formula(ee$cat)))),            
+    (is.ordinal && !(family == "cumulative" && link == "logit" && !predict && !is.formula(ee$cat)))),            
     !(is.formula(ee$cens) || is.formula(ee$weights) || is.ordinal || family == "categorical")) 
   if (!vectorize[1] && !is.multi)
     loop.trans <- c("  for (n in 1:N) { \n", "  } \n")
@@ -228,17 +228,17 @@ stan.ranef <- function(rg, prior = list(), cov.ranef = "") {
 
 # Likelihoods in stan language
 stan.llh <- function(family, link, predict = FALSE, add = FALSE, weights = FALSE, 
-                     cens = FALSE, logllh = FALSE) {
+                     cens = FALSE) {
   is.cat <- family %in% c("cumulative", "cratio", "sratio", "acat", "categorical")
   is.count <- family %in% c("poisson","negbinomial", "geometric")
   is.skew <- family %in% c("gamma","exponential","weibull")
   is.dich <- family %in% c("binomial", "bernoulli")
   
-  simplify <- !(cens || predict || logllh) && (is.dich && link == "logit" || is.count && link == "log" ||
+  simplify <- !(cens || predict) && (is.dich && link == "logit" || is.count && link == "log" ||
                 family %in% c("cumulative", "categorical") && link == "logit" && !add) 
-  n <- ifelse(predict || logllh || cens || weights || is.cat, "[n]", "")
-  ns <- ifelse(add && (predict || logllh || cens || weights), "[n]", "")
-  ilink <- ifelse((cens || predict || logllh) && (is.dich && link == "logit" || is.count && link == "log"), 
+  n <- ifelse(predict || cens || weights || is.cat, "[n]", "")
+  ns <- ifelse(add && (predict || cens || weights), "[n]", "")
+  ilink <- ifelse((cens || predict) && (is.dich && link == "logit" || is.count && link == "log"), 
                   stan.ilink(link), "")
   
   lin.args <- paste0("eta",n,",sigma",ns)
@@ -267,12 +267,11 @@ stan.llh <- function(family, link, predict = FALSE, add = FALSE, weights = FALSE
      weibull = c("weibull", paste0("shape,eta",n)), 
      categorical = c("categorical","p[n]"))
   
-  type <- c("predict", "logllh", "cens", "weights")[match(TRUE, c(predict, logllh, cens, weights))]
+  type <- c("predict", "cens", "weights")[match(TRUE, c(predict, cens, weights))]
   if (is.na(type)) type <- "general"
   addW <- ifelse(weights, "weights[n] * ", "")
   llh <- switch(type, 
     predict = paste0("    Y_pred[n] <- ", llh.pre[1],"_rng(",llh.pre[2],"); \n"),
-    logllh = paste0("    log_llh[n] <- ", llh.pre[1], "_log(Y[n],",llh.pre[2],"); \n"),
     cens = paste0("if (cens[n] == 0) ", 
       ifelse(!weights, paste0("Y[n] ~ ", llh.pre[1],"(",llh.pre[2],"); \n"),
              paste0("increment_log_prob(", addW, llh.pre[1], "_log(Y[n],",llh.pre[2],")); \n")),
@@ -352,8 +351,8 @@ stan.ma <- function(family, link, autocor, group, levels, N) {
 }
 
 #stan code for posterior predictives and log likelihood
-stan.genquant <- function(family, link, predict = FALSE, logllh = FALSE, add = FALSE) {
-  if (predict || logllh) {
+stan.genquant <- function(family, link, predict = FALSE, add = FALSE) {
+  if (predict) {
     trait <- ifelse(family == "multinormal", "_trait", "")
     out <- list(genC = paste0("  for (n in 1:N",trait,") { \n"))
     if (predict) {
@@ -366,10 +365,6 @@ stan.genquant <- function(family, link, predict = FALSE, logllh = FALSE, add = F
       else if (family == "multinormal")
         out$genD <-"  vector[K_trait] Y_pred[N_trait]; \n"
       out$genC <- paste0(out$genC, stan.llh(family = family, link = link, add = add, predict = TRUE))
-    }
-    if (logllh) {
-      out$genD <- paste0(out$genD, "  vector[N",trait,"] log_llh; \n")
-      out$genC <- paste0(out$genC, stan.llh(family = family, link = link, add = add, logllh = TRUE))
     }
     out$genC <- paste0(out$genC, "  } \n")
   }

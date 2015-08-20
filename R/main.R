@@ -31,8 +31,6 @@
 #'   All levels of the grouping factor should appear as rownames of the corresponding matrix. 
 #' @param predict A flag to indicate if posterior predictives of the dependent variable should be generated. 
 #'   For models with many observation, this leads to rather huge fitted model objects.
-#' @param WAIC A flag to indicate if the log likelihood of the model should be saved so that the WAIC can be computed afterwards.
-#'   For models with many observation, this leads to rather huge fitted model objects.
 #' @param ranef A flag to indicate if random effects for each level of the grouping factor(s) should be saved (default is \code{TRUE}). 
 #'   Set to \code{FALSE} to save memory. The argument has no impact on the model fitting itself.
 #' @param sample.prior A flag to indicate if samples from all specified proper priors should be additionally drawn. 
@@ -258,20 +256,19 @@
 #' @export 
 brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior = list(),
                 addition = NULL, autocor = NULL, partial = NULL, threshold = "flexible", cov.ranef = NULL, 
-                ranef = TRUE, WAIC = FALSE, predict = FALSE, sample.prior = FALSE, fit = NA, 
+                ranef = TRUE, predict = FALSE, sample.prior = FALSE, fit = NA, 
                 n.chains = 2, n.iter = 2000, n.warmup = 500, n.thin = 1, n.cluster = 1, inits = "random", 
                 silent = FALSE, seed = 12345, save.model = NULL, ...) {
-  dots <- list(...) 
   link <- brm.link(family)
   if (n.chains %% n.cluster != 0) stop("n.chains must be a multiple of n.cluster")
   if (is.null(autocor)) autocor <- cor.arma()
   if (!is(autocor, "cor.brms")) stop("cor must be of class cor.brms")
   if (!threshold %in% c("flexible","equidistant")) 
     stop("threshold must be either flexible or equidistant")
+  dots <- list(...) 
+  if ("WAIC" %in% names(dots)) 
+    warning("Argument WAIC is depricated. Just use method WAIC on the fitted model.")
   set.seed(seed)
-  
-  #set WAIC to FALSE (will be removed in the future)
-  WAIC <- FALSE
   
   if (is(fit, "brmsfit")) x <- fit
   else {
@@ -288,7 +285,7 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
     x$data <- brm.data(formula, data = data, family = family, prior = prior, cov.ranef = cov.ranef,
                        autocor = autocor, partial = partial) 
     x$model <- stan.model(formula = x$formula, data = data, family = x$family, link = x$link, prior = prior, 
-                          autocor = x$autocor, partial = x$partial, predict = predict, WAIC = WAIC,
+                          autocor = x$autocor, partial = x$partial, predict = predict,
                           threshold = threshold, cov.ranef = names(cov.ranef),
                           sample.prior = sample.prior, save.model = save.model)
   }  
