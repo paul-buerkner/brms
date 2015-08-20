@@ -324,3 +324,10 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", alpha = 0.05, ...) {
   class(out) <- "brmshypothesis"
   out
 }
+
+#' @export
+launch.shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"), ...) {
+  if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
+    stop("The model does not contain posterior samples")
+  shinystan::launch_shinystan(x$fit, rstudio = rstudio, ...)
+}
