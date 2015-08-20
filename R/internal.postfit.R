@@ -81,36 +81,43 @@ rename.pars <- function(x, ...) {
   x$fit@sim$fnames_oi[1:(n.pars-1)] <- gsub("__", ":", x$fit@sim$fnames_oi[1:(n.pars-1)])
   for (i in 1:chains) names(x$fit@sim$samples[[i]]) <- x$fit@sim$fnames_oi
   pars <- dimnames(x$fit)$parameters
+  ee <- extract.effects(x$formula, family = x$family)
   change <- list()
   
   #find positions of parameters and define new names
   f <- colnames(x$data$X)
   if (length(f)) 
-    change[[length(change)+1]] <- list(pos = grepl("^b\\[", pars), names = paste0("b_",f))
+    change[[length(change)+1]] <- list(pos = grepl("^b\\[", pars), names = paste0("b_",f),
+                                       oldname = "b")
   if (is.formula(x$partial) || x$family == "categorical") {
     if (x$family == "categorical") p <- colnames(x$data$X)
     else p <- colnames(x$data$Xp)
     change[[length(change)+1]] <- list(pos = grepl("^bp\\[", pars),
       names = paste0("b_",sapply(1:(max(x$data$max_obs) - 1), function(i) 
-                     sapply(p, function(p) paste0(p,"[",i,"]")))))
+                     sapply(p, function(p) paste0(p,"[",i,"]")))),
+      oldname = "bp")
   }  
   group <- names(x$ranef)
   if (length(x$ranef)) {
     for (j in 1:length(x$ranef)) {
-     change[[length(change)+1]] <- list(pos = grepl(paste0("^sd_",group[j],"(\\[|$)"), pars),
-                                        names = paste0("sd_",group[j],"_", x$ranef[[j]]))
-     cor_names <- get.cor.names(x$ranef[[j]], type = paste0("cor_",group[j]), brackets = FALSE)
-     change[[length(change)+1]] <- list(pos = grepl(paste0("^cor_",group[j],"(\\[|$)"), pars),
-                                        names = cor_names) 
+      change[[length(change)+1]] <- list(pos = grepl(paste0("^sd_",group[j],"(\\[|$)"), pars),
+                                        names = paste0("sd_",group[j],"_", x$ranef[[j]]),
+                                        oldname = paste0("sd_",group[j]))
+      if (length(x$ranef[[j]]) > 1 && ee$cor[[j]]) {
+        cor_names <- get.cor.names(x$ranef[[j]], type = paste0("cor_",group[j]), brackets = FALSE)
+        change[[length(change)+1]] <- list(pos = grepl(paste0("^cor_",group[j],"(\\[|$)"), pars),
+                                        names = cor_names, oldname = paste0("cor_",group[j])) 
+      }
     }
   }
-  ee <- extract.effects(x$formula, family = x$family)
   if (x$family %in% c("gaussian", "student", "cauchy")) {
-   change[[length(change)+1]] <- list(pos = grepl("^sigma", pars), names = paste0("sigma_",ee$response))
+   change[[length(change)+1]] <- list(pos = grepl("^sigma", pars), names = paste0("sigma_",ee$response),
+                                      oldname = "sigma")
     if (x$family == "gaussian" && length(ee$response) > 1) {
       rescor_names <- paste0("rescor_",unlist(lapply(2:length(ee$response), function(j) 
           lapply(1:(j-1), function(k) paste0(ee$response[k],"_",ee$response[j])))))
-     change[[length(change)+1]] <- list(pos = grepl("^rescor\\[", pars), names = rescor_names)
+     change[[length(change)+1]] <- list(pos = grepl("^rescor\\[", pars), names = rescor_names,
+                                        oldname = "rescor")
     }
   } 
   
@@ -123,8 +130,13 @@ rename.pars <- function(x, ...) {
       names(x$fit@sim$samples[[i]])[change[[c]]$pos] <- change[[c]]$names
       if (sort) x$fit@sim$samples[[i]][change[[c]]$pos] <- 
           x$fit@sim$samples[[i]][change[[c]]$pos][order(change[[c]]$names)]
-    }  
+    }
+    onp <- match(change[[c]]$oldname, names(x$fit@sim$dims_oi))
+    x$fit@sim$dims_oi <- c(if (onp > 1) x$fit@sim$dims_oi[1:(onp-1)], 
+                           setNames(lapply(change[[c]]$names, function(x) numeric(0)), change[[c]]$names),
+                           x$fit@sim$dims_oi[(onp+1):length(x$fit@sim$dims_oi)])
   }
+  x$fit@sim$pars_oi <- names(x$fit@sim$dims_oi)
   x
 }
 
