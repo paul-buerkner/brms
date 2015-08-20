@@ -18,4 +18,11 @@ Usually, an S x N matrix containing the linear predictor samples, where S is the
 \description{
 Compute linear predictors term
 }
+\examples{
+\dontrun{
+ fit_i2 <- brm(rating ~ treat + period + carry + (1|subject),
+             data = inhaler, family = "gaussian")
+ eta <- linear.predictor(fit_i2)
+ }
+}
 

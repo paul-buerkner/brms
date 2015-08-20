@@ -255,12 +255,12 @@ par.names <- function(x, ...)
 #' \dontrun{
 #' #model with fixed effects only
 #' fit_i1 <- brm(rating ~ treat + period + carry,
-#'               data = inhaler, family = "gaussian", WAIC = TRUE)
+#'               data = inhaler, family = "gaussian")
 #' WAIC(fit_i1)
 #' 
 #' #model with an additional random intercept for subjects
 #' fit_i2 <- brm(rating ~ treat + period + carry + (1|subject),
-#'              data = inhaler, family = "gaussian", WAIC = TRUE)
+#'              data = inhaler, family = "gaussian")
 #' #compare both models
 #' WAIC(fit_i1, fit_i2)                          
 #' }
@@ -296,12 +296,12 @@ WAIC <- function(x, ..., compare = TRUE)
 #' \dontrun{
 #' #model with fixed effects only
 #' fit_i1 <- brm(rating ~ treat + period + carry,
-#'               data = inhaler, family = "gaussian", WAIC = TRUE)
+#'               data = inhaler, family = "gaussian")
 #' LOO(fit_i1)
 #' 
 #' #model with an additional random intercept for subjects
 #' fit_i2 <- brm(rating ~ treat + period + carry + (1|subject),
-#'              data = inhaler, family = "gaussian", WAIC = TRUE)
+#'              data = inhaler, family = "gaussian")
 #' #compare both models
 #' LOO(fit_i1, fit_i2)                          
 #' }
@@ -338,7 +338,39 @@ loglik <- function(x, ...)
 #' 
 #' @return Usually, an S x N matrix containing the linear predictor samples, where S is the number of samples
 #'   and N is the number of observations in the data. 
+#'   
+#'  @examples
+#'  \dontrun{
+#'  fit_i2 <- brm(rating ~ treat + period + carry + (1|subject),
+#'              data = inhaler, family = "gaussian")
+#'  eta <- linear.predictor(fit_i2)                         
+#'  }
 #' 
 #' @export
 linear.predictor <- function(x, ...)
   UseMethod("linear.predictor")
+
+#' Interface to \pkg{shinystan}
+#' 
+#' Provide an interface to \pkg{shinystan} for models fitted with \pkg{brms}
+#' 
+#' @param x A fitted model object typically of class \code{brmsfit}. 
+#' @param rstudio Only relevant for RStudio users. The default (\code{rstudio=FALSE}) is to launch the app 
+#' in the default web browser rather than RStudio's pop-up Viewer. Users can change the default to \code{TRUE} 
+#' by setting the global option \code{options(shinystan.rstudio = TRUE)}.
+#' @param ... Optional arguments to pass to \code{\link[shiny:runApp]{runApp}}
+#' 
+#' @return An S4 shinystan object
+#' 
+#' @examples
+#' \dontrun{
+#' fit_i2 <- brm(rating ~ treat + period + carry + (1|subject),
+#'              data = inhaler, family = "gaussian")
+#' launch.shiny(fit_i2)                         
+#' }
+#' 
+#' @seealso \code{\link[shinystan:launch_shinystan]{launch_shinystan}}
+#' 
+#' @export
+launch.shiny <- function(x, rstudio = getOption("shinystan.rstudio"), ...)
+  UseMethod("launch.shiny")

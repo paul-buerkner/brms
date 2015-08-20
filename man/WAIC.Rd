@@ -28,12 +28,12 @@ When comparing models fitted to the same data, the smaller the WAIC, the better 
 \dontrun{
 #model with fixed effects only
 fit_i1 <- brm(rating ~ treat + period + carry,
-              data = inhaler, family = "gaussian", WAIC = TRUE)
+              data = inhaler, family = "gaussian")
 WAIC(fit_i1)
 
 #model with an additional random intercept for subjects
 fit_i2 <- brm(rating ~ treat + period + carry + (1|subject),
-             data = inhaler, family = "gaussian", WAIC = TRUE)
+             data = inhaler, family = "gaussian")
 #compare both models
 WAIC(fit_i1, fit_i2)
 }
