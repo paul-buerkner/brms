@@ -5,7 +5,7 @@
 \title{Parameters of interest for \code{brms} models (depricated)}
 \usage{
 brm.pars(formula, data = NULL, family = "gaussian", autocor = NULL,
-  partial = NULL, threshold = "flexible", ranef = TRUE, predict = FALSE)
+  partial = NULL, threshold = "flexible", ranef = TRUE)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class): a symbolic description of the model to be fitted.
@@ -32,9 +32,6 @@ Defaults to NULL, corresponding to no correlations.}
 \code{"flexible"} provides the standard unstructured thresholds and \code{"equidistant"} restricts the distance between consecutive thresholds to the same value.}
 
 \item{ranef}{logical; indicating if random effects estimates should be returned}
-
-\item{predict}{A flag to indicate if posterior predictives of the dependent variable should be generated.
-For models with many observation, this leads to rather huge fitted model objects.}
 }
 \value{
 A vector of character strings specifying parameters of interest for models produced by the \code{brms} package.

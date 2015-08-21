@@ -1,8 +1,6 @@
 test_that("Test that brm.pars returns correct parameter names", {
   expect_equal(brm.pars(rating ~ treat + period + carry + (1|subject), data = inhaler),
                c("b", "sigma", "sd_subject", "r_subject"))
-  expect_equal(brm.pars(rating ~ treat + period + carry + (1|subject), data = inhaler,
-               predict = TRUE), c("b", "sigma", "sd_subject", "r_subject", "Y_pred"))
   expect_equal(brm.pars(rating ~ treat + period + carry + (1+treat|subject), data = inhaler),
               c("b", "sigma", "sd_subject", "cor_subject", "r_subject"))
   expect_equal(brm.pars(rating ~ treat + period + carry + (1+treat|subject), data = inhaler, autocor = cor.ma()),

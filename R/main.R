@@ -29,15 +29,13 @@
 #' @param cov.ranef A list of matrices that are proportional to the (within) covariance structure of the random effects. 
 #'   The names of the matrices should correspond to columns in \code{data} that are used as grouping factors. 
 #'   All levels of the grouping factor should appear as rownames of the corresponding matrix. 
-#' @param predict A flag to indicate if posterior predictives of the dependent variable should be generated. 
-#'   For models with many observation, this leads to rather huge fitted model objects.
 #' @param ranef A flag to indicate if random effects for each level of the grouping factor(s) should be saved (default is \code{TRUE}). 
 #'   Set to \code{FALSE} to save memory. The argument has no impact on the model fitting itself.
 #' @param sample.prior A flag to indicate if samples from all specified proper priors should be additionally drawn. 
 #'   Among others, these samples can be used to calculate Bayes factors for point hypotheses. Default is \code{FALSE}. 
 #' @param fit An instance of S3 class \code{brmsfit} derived from a previous fit; defaults to \code{NA}. If \code{fit} is of class \code{brmsfit}, the compiled model associated 
 #'   with the fitted result is re-used and the arguments \code{formula}, \code{data}, \code{family}, \code{prior}, \code{addition}, \code{autocor}, \code{partial}, \code{threshold},
-#'  \code{cov.ranef}, \code{ranef}, and \code{predict} are ignored.
+#'  \code{cov.ranef}, and \code{ranef}, are ignored.
 #' @param n.chains Number of Markov chains (default: 2)
 #' @param n.iter Number of total iterations per chain (including burnin; default: 2000)
 #' @param n.warmup A positive integer specifying number of warmup (aka burnin) iterations. This also specifies the number of iterations used for stepsize adaptation, 
@@ -256,7 +254,7 @@
 #' @export 
 brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior = list(),
                 addition = NULL, autocor = NULL, partial = NULL, threshold = "flexible", cov.ranef = NULL, 
-                ranef = TRUE, predict = FALSE, sample.prior = FALSE, fit = NA, 
+                ranef = TRUE, sample.prior = FALSE, fit = NA, 
                 n.chains = 2, n.iter = 2000, n.warmup = 500, n.thin = 1, n.cluster = 1, inits = "random", 
                 silent = FALSE, seed = 12345, save.model = NULL, ...) {
   link <- brm.link(family)
@@ -268,6 +266,8 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
   dots <- list(...) 
   if ("WAIC" %in% names(dots)) 
     warning("Argument WAIC is depricated. Just use method WAIC on the fitted model.")
+  if ("predict" %in% names(dots)) 
+    warning("Argument predict is depricated. Just use method predict on the fitted model.")
   set.seed(seed)
   
   if (is(fit, "brmsfit")) x <- fit
@@ -285,7 +285,7 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
     x$data <- brm.data(formula, data = data, family = family, prior = prior, cov.ranef = cov.ranef,
                        autocor = autocor, partial = partial) 
     x$model <- stan.model(formula = x$formula, data = data, family = x$family, link = x$link, prior = prior, 
-                          autocor = x$autocor, partial = x$partial, predict = predict,
+                          autocor = x$autocor, partial = x$partial,
                           threshold = threshold, cov.ranef = names(cov.ranef),
                           sample.prior = sample.prior, save.model = save.model)
   }  

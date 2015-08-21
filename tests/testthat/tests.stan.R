@@ -62,12 +62,6 @@ test_that("Test_that stan.ma returns correct strings (or errors) for moving aver
                paste0("moving-average models for family poisson require a random effect with the same number \n",
                       "of levels as observations in the data"))
 })  
-  
-test_that("Test that stan.genquant returns correct strings", {
-  expect_equal(stan.genquant(family = "multinormal", link = "identity"), list())
-  expect_match(stan.genquant(family = "multinormal", link = "identity", predict = TRUE)$genD, 
-               "Y_pred[N_trait]", fixed = TRUE)
-})
 
 test_that("Test that stan.model accepts supported links", {
   expect_match(stan.model(rating ~ treat + period + carry, data = inhaler, family = "sratio", 

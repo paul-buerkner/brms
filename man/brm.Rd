@@ -7,10 +7,9 @@
 brm(formula, data = NULL, family = c("gaussian", "identity"),
   prior = list(), addition = NULL, autocor = NULL, partial = NULL,
   threshold = "flexible", cov.ranef = NULL, ranef = TRUE,
-  predict = FALSE, sample.prior = FALSE, fit = NA, n.chains = 2,
-  n.iter = 2000, n.warmup = 500, n.thin = 1, n.cluster = 1,
-  inits = "random", silent = FALSE, seed = 12345, save.model = NULL,
-  ...)
+  sample.prior = FALSE, fit = NA, n.chains = 2, n.iter = 2000,
+  n.warmup = 500, n.thin = 1, n.cluster = 1, inits = "random",
+  silent = FALSE, seed = 12345, save.model = NULL, ...)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class): a symbolic description of the model to be fitted.
@@ -52,15 +51,12 @@ All levels of the grouping factor should appear as rownames of the corresponding
 \item{ranef}{A flag to indicate if random effects for each level of the grouping factor(s) should be saved (default is \code{TRUE}).
 Set to \code{FALSE} to save memory. The argument has no impact on the model fitting itself.}
 
-\item{predict}{A flag to indicate if posterior predictives of the dependent variable should be generated.
-For models with many observation, this leads to rather huge fitted model objects.}
-
 \item{sample.prior}{A flag to indicate if samples from all specified proper priors should be additionally drawn.
 Among others, these samples can be used to calculate Bayes factors for point hypotheses. Default is \code{FALSE}.}
 
 \item{fit}{An instance of S3 class \code{brmsfit} derived from a previous fit; defaults to \code{NA}. If \code{fit} is of class \code{brmsfit}, the compiled model associated
  with the fitted result is re-used and the arguments \code{formula}, \code{data}, \code{family}, \code{prior}, \code{addition}, \code{autocor}, \code{partial}, \code{threshold},
-\code{cov.ranef}, \code{ranef}, and \code{predict} are ignored.}
+\code{cov.ranef}, and \code{ranef}, are ignored.}
 
 \item{n.chains}{Number of Markov chains (default: 2)}
 
