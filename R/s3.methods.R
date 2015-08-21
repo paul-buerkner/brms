@@ -78,7 +78,7 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
     else cor <- NULL
     matrices <- cov_matrix(sd = sd, cor = cor)
     out$cor <- abind(lapply(estimate, get.estimate, samples = matrices$cor, 
-                            margin=  c(2,3), to.array = TRUE, ...))
+                            margin = c(2,3), to.array = TRUE, ...))
     out$cov <- abind(lapply(estimate, get.estimate, samples = matrices$cov, 
                             margin = c(2,3), to.array = TRUE, ...))
     dimnames(out$cov) <- dimnames(out$cor) <- list(p$r.names, p$r.names, dimnames(out$cor)[[3]])
@@ -221,24 +221,6 @@ ngrps.brmsfit <- function(object, ...) {
 
 #' @export
 formula.brmsfit <- function(x, ...) x$formula
-
-#' @export 
-predict.brmsfit <- function(object, ...) {
-  if (!"Y_pred" %in% object$fit@model_pars) 
-    stop(paste0("The model does not contain predicted values. \n",
-                "You should use argument predict = TRUE in function brm."))
-  if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
-    stop("The model does not contain posterior samples")
-  else {
-    ee <- extract.effects(object$formula, add.ignore = TRUE)
-    pars <- par.names(object)
-    fit.summary <- rstan::summary(object$fit, probs = c(0.025, 0.975))
-    pred.pars <- pars[grepl("^Y_pred\\[", pars)]
-    out <- fit.summary$summary[pred.pars,-c(2,6,7)]
-    colnames(out) <- c("Estimate", "Est.Error", "l-95% CI", "u-95% CI")
-  } 
-  out
-}
 
 #' @export
 WAIC.brmsfit <- function(x, ..., compare = TRUE) {

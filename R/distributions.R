@@ -9,6 +9,16 @@ pstudent <- function(q, df = stop("df is required"), mu = 0, sigma = 1, lower.ta
   pt((q - mu)/sigma, df = df, lower.tail = lower.tail, log.p = log.p)
 }
 
+#rquantiles of student's distribution with parameters df, mu, and sigma
+qstudent <-  function(p, df = stop("df is required"), mu = 0, sigma = 1) {
+  mu + sigma * qt(p, df = df)
+}
+
+#random values of student's distribution with parameters df, mu, and sigma
+rstudent <-  function(n, df = stop("df is required"), mu = 0, sigma = 1) {
+  mu + sigma * rt(n, df = df)
+}
+
 #density of the multinormal distribution with parameters mu and Sigma
 dmultinormal <- function(x, mu, Sigma, log = TRUE) {
   k <- length(x)

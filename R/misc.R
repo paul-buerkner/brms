@@ -39,6 +39,12 @@ is.wholenumber <- function(x, tol = .Machine$double.eps^0.5) {
 collapse <- function(..., sep = "")
   paste(..., sep = sep, collapse = "")
 
+
+#find the first element in row that is greater than target (function is vectorized)
+first_greater <- function(A, target, i = 1) {
+  ifelse(target <= A[,i] | ncol(A) == i, i, first_greater(A, target, i+1))
+}
+
 #compute the logit
 logit <- function(p) {
   log(p/(1-p))
