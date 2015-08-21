@@ -121,15 +121,16 @@ loglik_multinormal <- function(n, data, samples, link) {
 }
 
 loglik_binomial <- function(n, data, samples, link) {
+  max_obs <- ifelse(length(data$max_obs) > 1, data$max_obs[n], data$max_obs) 
   out <- if (is.null(data$cens) || data$cens[n] == 0)
-    dbinom(data$Y[n], size = data$max_obs, 
+    dbinom(data$Y[n], size = max_obs, 
            prob = ilink(samples$eta[,n], link), log = TRUE)
   else if (data$cens[n] == 1)
-    pbinom(data$Y[n], size = data$max_obs, 
+    pbinom(data$Y[n], size = max_obs, 
            prob = ilink(samples$eta[,n], link), 
            lower.tail = FALSE, log.p = TRUE)
   else if (data$cens[n] == -1)
-    pbinom(data$Y[n], size = data$max_obs, 
+    pbinom(data$Y[n], size = max_obs, 
            prob = ilink(samples$eta[,n], link), log.p = TRUE)
   if ("weights" %in% names(data)) out <- out * data$weights[n]
   out
@@ -241,7 +242,7 @@ loglik_categorical <- function(n, data, samples, link) {
   max_obs <- ifelse(length(data$max_obs) > 1, data$max_obs[n], data$max_obs) 
   if (link == "logit") {
     p <- cbind(rep(0, nrow(samples$eta)), samples$eta[,n,1:(max_obs-1)])
-    out <- p[,data$Y[n]] - log(apply(exp(p), 1, sum))
+    out <- p[,data$Y[n]] - log(rowSums(exp(p)))
   }
   else stop(paste("Link",link,"not supported"))
   if ("weights" %in% names(data)) out <- out * data$weights[n]
@@ -266,8 +267,8 @@ loglik_sratio <- function(n, data, samples, link) {
     1 - ilink(samples$eta[,n,k], link))
   if (y == 1) out <- log(1 - q[,1])
   else if (y == 2) out <- log(1 - q[,2]) + log(q[,1])
-  else if (y == max_obs) out <- apply(log(q), 1, sum)
-  else out <- log(1 - q[,y]) + apply(log(q[,1:(y-1)]), 1, sum)
+  else if (y == max_obs) out <- rowSums(log(q))
+  else out <- log(1 - q[,y]) + rowSums(log(q[,1:(y-1)]))
   if ("weights" %in% names(data)) out <- out * data$weights[n]
   out
 }
@@ -279,8 +280,8 @@ loglik_cratio <- function(n, data, samples, link) {
     ilink(samples$eta[,n,k], link))
   if (y == 1) out <- log(1 - q[,1])
   else if (y == 2) out <- log(1 - q[,2]) + log(q[,1])
-  else if (y == max_obs) out <- apply(log(q), 1, sum)
-  else out <- log(1 - q[,y]) + apply(log(q[,1:(y-1)]), 1, sum)
+  else if (y == max_obs) out <- rowSums(log(q))
+  else out <- log(1 - q[,y]) + rowSums(log(q[,1:(y-1)]))
   if ("weights" %in% names(data)) out <- out * data$weights[n]
   out
 }
@@ -293,8 +294,8 @@ loglik_acat <- function(n, data, samples, link) {
     p <- cbind(rep(0, nrow(samples$eta)), q[,1], 
                matrix(0, nrow = nrow(samples$eta), ncol = max_obs - 2))
     if (max_obs > 2) 
-      p[,3:max_obs] <- sapply(3:max_obs, function(k) apply(q[,1:(k-1)], 1, sum))
-    out <- p[,y] - log(apply(exp(p), 1, sum))
+      p[,3:max_obs] <- sapply(3:max_obs, function(k) rowSums(q[,1:(k-1)]))
+    out <- p[,y] - log(rowSums(exp(p)))
   }
   else {
     q <- sapply(1:(max_obs-1), function(k) 
