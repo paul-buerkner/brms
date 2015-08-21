@@ -28,3 +28,17 @@ dmultinormal <- function(x, mu, Sigma, log = TRUE) {
   if (!log) out <- exp(out)
   out
 }
+
+#random values of the multinormal distribution with parameters mu and Sigma
+rmultinormal <- function(n, mu, Sigma, check = FALSE) {
+  p <- length(mu)
+  if (check) {
+    if (!all(dim(Sigma) == c(p, p))) 
+      stop("incompatible arguments")
+    if (!isSymmetric(unname(Sigma)))
+      stop("Sigma is not symmetric")
+  }
+  cholSigma <- chol(Sigma)
+  samples <- matrix(rnorm(n*p), nrow = n, ncol = p)
+  mu + samples %*% cholSigma
+}

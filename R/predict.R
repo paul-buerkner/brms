@@ -18,6 +18,8 @@ predict.brmsfit <- function(object, ...) {
   if (object$family == "multinormal") {
     samples$rescor <- as.matrix(posterior.samples(object, parameters = "^rescor_"))
     samples$Sigma <- cov_matrix(sd = samples$sigma, cor = samples$rescor)$cov
+    message(paste("Computing posterior predictive samples of multinormal distribution. \n", 
+            "This may take a while."))
   }
   predict_fun <- get(paste0("predict_",object$family))
   samples <- do.call(cbind, lapply(1:nrow(as.matrix(object$data$Y)), function(n) 
@@ -49,7 +51,9 @@ predict_lognormal <- function(n, data, samples, link) {
 }
 
 predict_multinormal <- function(n, data, samples, link) {
-  stop("Not yet implemented")
+  do.call(rbind, lapply(1:nrow(samples$eta), function(i) 
+    rmultinormal(1, Sigma = samples$Sigma[i,,],
+                 mu = samples$eta[i, seq(n, ncol(data$Y) * nrow(data$Y), nrow(data$Y))])))
 }
 
 predict_binomial <- function(n, data, samples, link) {

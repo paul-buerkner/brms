@@ -49,7 +49,8 @@ loglik.brmsfit <- function(x, ...) {
   if (x$family == "multinormal") {
     samples$rescor <- as.matrix(posterior.samples(x, parameters = "^rescor_"))
     samples$Sigma <- cov_matrix(sd = samples$sigma, cor = samples$rescor)$cov
-    message("Computing pointwise log-likelihood of multinormal distribution. This may take a while.")
+    message(paste("Computing pointwise log-likelihood of multinormal distribution. \n",
+                  "This may take a while."))
   }
   loglik_fun <- get(paste0("loglik_",x$family))
   return(do.call(cbind, lapply(1:nrow(as.matrix(x$data$Y)), function(n) 
