@@ -156,18 +156,17 @@ summary.brmsfit <- function(object, ...) {
   out <- brmssummary(formula = brm.update.formula(object$formula, partial = object$partial),
              family = object$family, link = object$link, data.name = object$data.name, 
              group = names(object$ranef), nobs = nobs(object), ngrps = brms::ngrps(object), 
-             autocor = object$autocor)
+             autocor = object$autocor, WAIC = WAIC(object)$waic)
   if (length(object$fit@sim)) {
     out$n.chains <- length(object$fit@sim$samples)
     out$n.iter = attr(object$fit@sim$samples[[1]],"args")$iter
     out$n.warmup = attr(object$fit@sim$samples[[1]],"args")$warmup
     out$n.thin = attr(object$fit@sim$samples[[1]],"args")$thin
     out$sampler = attr(object$fit@sim$samples[[1]],"args")$sampler_t
-    if ("log_llh" %in% object$fit@model_pars) out$WAIC <- WAIC(object)$waic
     
     pars <- par.names(object)
     meta_pars <- object$fit@sim$pars_oi
-    meta_pars <- meta_pars[!apply(sapply(paste0("^",c("r_","log_llh","prior_","Y_pred")), 
+    meta_pars <- meta_pars[!apply(sapply(paste0("^",c("r_","prior_","Y_pred")), 
                                   grepl, x = meta_pars, ...), 1, any)]
     fit.summary <- rstan::summary(object$fit, pars = meta_pars, probs = c(0.025, 0.975))
     col.names <- c("Estimate", "Est.Error", "l-95% CI", "u-95% CI", "Eff.Sample", "Rhat")
