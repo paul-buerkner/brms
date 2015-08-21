@@ -156,13 +156,14 @@ summary.brmsfit <- function(object, ...) {
   out <- brmssummary(formula = brm.update.formula(object$formula, partial = object$partial),
              family = object$family, link = object$link, data.name = object$data.name, 
              group = names(object$ranef), nobs = nobs(object), ngrps = brms::ngrps(object), 
-             autocor = object$autocor, WAIC = WAIC(object)$waic)
+             autocor = object$autocor)
   if (length(object$fit@sim)) {
     out$n.chains <- length(object$fit@sim$samples)
     out$n.iter = attr(object$fit@sim$samples[[1]],"args")$iter
     out$n.warmup = attr(object$fit@sim$samples[[1]],"args")$warmup
     out$n.thin = attr(object$fit@sim$samples[[1]],"args")$thin
     out$sampler = attr(object$fit@sim$samples[[1]],"args")$sampler_t
+    if (length(ee$response) == 1) out$WAIC <- WAIC(object)$waic
     
     pars <- par.names(object)
     meta_pars <- object$fit@sim$pars_oi
