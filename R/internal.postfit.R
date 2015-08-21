@@ -86,55 +86,72 @@ rename.pars <- function(x, ...) {
   
   #find positions of parameters and define new names
   f <- colnames(x$data$X)
-  if (length(f)) 
-    change[[length(change)+1]] <- list(pos = grepl("^b\\[", pars), names = paste0("b_",f),
-                                       oldname = "b")
+  if (length(f) && x$family != "categorical") 
+    change[[length(change)+1]] <- list(pos = grepl("^b\\[", pars), 
+                                       oldname = "b", 
+                                       pnames = paste0("b_",f), 
+                                       fnames = paste0("b_",f))
   if (is.formula(x$partial) || x$family == "categorical") {
     if (x$family == "categorical") p <- colnames(x$data$X)
     else p <- colnames(x$data$Xp)
-    change[[length(change)+1]] <- list(pos = grepl("^bp\\[", pars),
-      names = paste0("b_",sapply(1:(max(x$data$max_obs) - 1), function(i) 
-                     sapply(p, function(p) paste0(p,"[",i,"]")))),
-      oldname = "bp")
+    thres <- (max(x$data$max_obs) - 1)
+    change[[length(change)+1]] <- list(pos = grepl("^bp\\[", pars), 
+                                       oldname = "bp", 
+                                       pnames = paste0("b_",p), 
+                                       fnames = paste0("b_", sapply(p, function(p) 
+                                         sapply(1:thres, function(i) paste0(p,"[",i,"]")))),
+                                       dim = thres,
+                                       sort = unlist(lapply(1:length(p), function(k) 
+                                         seq(k, thres*length(p), length(p)))))
   }  
   group <- names(x$ranef)
   if (length(x$ranef)) {
     for (j in 1:length(x$ranef)) {
       change[[length(change)+1]] <- list(pos = grepl(paste0("^sd_",group[j],"(\\[|$)"), pars),
-                                        names = paste0("sd_",group[j],"_", x$ranef[[j]]),
-                                        oldname = paste0("sd_",group[j]))
+                                         oldname = paste0("sd_",group[j]),
+                                         pnames = paste0("sd_",group[j],"_", x$ranef[[j]]),
+                                         fnames = paste0("sd_",group[j],"_", x$ranef[[j]]))
       if (length(x$ranef[[j]]) > 1 && ee$cor[[j]]) {
         cor_names <- get.cor.names(x$ranef[[j]], type = paste0("cor_",group[j]), brackets = FALSE)
         change[[length(change)+1]] <- list(pos = grepl(paste0("^cor_",group[j],"(\\[|$)"), pars),
-                                        names = cor_names, oldname = paste0("cor_",group[j])) 
+                                           oldname = paste0("cor_",group[j]),
+                                           pnames = cor_names,
+                                           fnames = cor_names) 
       }
     }
   }
   if (x$family %in% c("gaussian", "student", "cauchy")) {
-   change[[length(change)+1]] <- list(pos = grepl("^sigma", pars), names = paste0("sigma_",ee$response),
-                                      oldname = "sigma")
+   change[[length(change)+1]] <- list(pos = grepl("^sigma", pars), 
+                                      oldname = "sigma",
+                                      pnames = paste0("sigma_",ee$response),
+                                      fnames = paste0("sigma_",ee$response))
     if (x$family == "gaussian" && length(ee$response) > 1) {
       rescor_names <- paste0("rescor_",unlist(lapply(2:length(ee$response), function(j) 
           lapply(1:(j-1), function(k) paste0(ee$response[k],"_",ee$response[j])))))
-     change[[length(change)+1]] <- list(pos = grepl("^rescor\\[", pars), names = rescor_names,
-                                        oldname = "rescor")
+     change[[length(change)+1]] <- list(pos = grepl("^rescor\\[", pars), 
+                                        oldname = "rescor",
+                                        pnames = rescor_names,
+                                        fnames = rescor_names)
     }
   } 
   
   #rename parameters
-  for (c in 1:length(change)) {
-    sort <- !is.null(change[[c]]$sort)
-    if (sort) x$fit@sim$fnames_oi[change[[c]]$pos] <- sort(change[[c]]$names)
-    else x$fit@sim$fnames_oi[change[[c]]$pos] <- change[[c]]$names
-    for (i in 1:chains) {
-      names(x$fit@sim$samples[[i]])[change[[c]]$pos] <- change[[c]]$names
-      if (sort) x$fit@sim$samples[[i]][change[[c]]$pos] <- 
-          x$fit@sim$samples[[i]][change[[c]]$pos][order(change[[c]]$names)]
+  if (length(change)) {
+    for (c in 1:length(change)) {
+      x$fit@sim$fnames_oi[change[[c]]$pos] <- change[[c]]$fnames
+      for (i in 1:chains) {
+        names(x$fit@sim$samples[[i]])[change[[c]]$pos] <- change[[c]]$fnames
+        if (!is.null(change[[c]]$sort)) x$fit@sim$samples[[i]][change[[c]]$pos] <- 
+            x$fit@sim$samples[[i]][change[[c]]$pos][change[[c]]$sort]
+      }
+      onp <- match(change[[c]]$oldname, names(x$fit@sim$dims_oi))
+      x$fit@sim$dims_oi <- c(if (onp > 1) x$fit@sim$dims_oi[1:(onp-1)], 
+                             setNames(lapply(change[[c]]$pnames, function(x) 
+                               if (is.null(change[[c]]$dim)) numeric(0)
+                               else change[[c]]$dim), 
+                               change[[c]]$pnames),
+                             x$fit@sim$dims_oi[(onp+1):length(x$fit@sim$dims_oi)])
     }
-    onp <- match(change[[c]]$oldname, names(x$fit@sim$dims_oi))
-    x$fit@sim$dims_oi <- c(if (onp > 1) x$fit@sim$dims_oi[1:(onp-1)], 
-                           setNames(lapply(change[[c]]$names, function(x) numeric(0)), change[[c]]$names),
-                           x$fit@sim$dims_oi[(onp+1):length(x$fit@sim$dims_oi)])
   }
   x$fit@sim$pars_oi <- names(x$fit@sim$dims_oi)
   x

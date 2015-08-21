@@ -67,15 +67,6 @@ ranef_predictor <- function(Z, gf, r) {
   as.matrix(r[,sort_levels]) %*% t(Z)
 }
 
-partial_predictor <- function(Xp, p, max_obs) {
-  max_obs <- max(max_obs)
-  etap <- array(0, dim = c(nrow(p), nrow(Xp), max_obs-1))
-  for (k in 1:(max_obs-1)) {
-    etap[,,k] <- as.matrix(p[,(k-1)*ncol(Xp)+1:ncol(Xp)]) %*% t(as.matrix(Xp))
-  }
-  etap
-}
-
 #compute eta for moving average effects
 ma_predictor <- function(data, ma, eta, link = "identity") {
   ma <- as.matrix(ma)
@@ -95,6 +86,16 @@ ma_predictor <- function(data, ma, eta, link = "identity") {
     }
   }
   eta
+}
+
+#compute etap for partial and categorical effects
+partial_predictor <- function(Xp, p, max_obs) {
+  max_obs <- max(max_obs)
+  etap <- array(0, dim = c(nrow(p), nrow(Xp), max_obs-1))
+  for (k in 1:(max_obs-1)) {
+    etap[,,k] <- as.matrix(p[,seq(k, (max_obs-1)*ncol(Xp), max_obs-1)]) %*% t(as.matrix(Xp))
+  }
+  etap
 }
 
 #expand a matrix into a sparse matrix of higher dimension
