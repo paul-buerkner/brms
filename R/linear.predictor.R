@@ -6,7 +6,7 @@ linear.predictor.brmsfit <- function(x, ...) {
   Y <- x$data$Y
   eta <- matrix(0, nrow = n.samples, ncol = length(Y))
   X <- x$data$X
-  if (ncol(X) && x$family != "categorical") {
+  if (!is.null(X) && ncol(X) && x$family != "categorical") {
     b <- posterior.samples(x, parameters = "^b_[^\\[]+$")
     eta <- eta + fixef_predictor(X = X, b = b)  
   }
@@ -30,7 +30,7 @@ linear.predictor.brmsfit <- function(x, ...) {
   }
   if (x$family %in% c("cumulative", "cratio", "sratio", "acat")) {
     Intercept <- posterior.samples(x, "^b_Intercept\\[")
-    if (ncol(x$data$Xp)) {
+    if (!is.null(x$data$Xp) && ncol(x$data$Xp)) {
       p <- posterior.samples(x, paste0("^b_",colnames(x$data$Xp),"\\["))
       etap <- partial_predictor(Xp = x$data$Xp, p = p, max_obs = x$data$max_obs)
     }  
@@ -43,7 +43,7 @@ linear.predictor.brmsfit <- function(x, ...) {
     eta <- etap
   }
   else if (x$family == "categorical") {
-    if (ncol(x$data$X)) {
+    if (!is.null(x$data$X)) {
       p <- posterior.samples(x, parameters = "^b_")
       etap <- partial_predictor(x$data$X, p, x$data$max_obs)
     }
