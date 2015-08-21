@@ -57,30 +57,57 @@ loglik.brmsfit <- function(x, ...) {
 }
 
 loglik_gaussian <- function(n, data, samples, link) {
-  if (ncol(samples$sigma) > 1)
-    stop("loglik for multivariate models not yet implemented")
-  out <- dnorm(data$Y[n], mean = ilink(samples$eta[,n], link), 
-               sd = samples$sigma, log = TRUE)
+  out <- if (is.null(data$cens) || data$cens[n] == 0)
+    dnorm(data$Y[n], mean = ilink(samples$eta[,n], link), 
+          sd = samples$sigma, log = TRUE)
+  else if (data$cens[n] == 1)
+    pnorm(data$Y[n], mean = ilink(samples$eta[,n], link), 
+          sd = samples$sigma, lower.tail = FALSE, log.p = TRUE)
+  else if (data$cens[n] == -1)
+    pnorm(data$Y[n], mean = ilink(samples$eta[,n], link), 
+          sd = samples$sigma, log.p = TRUE)
   if ("weights" %in% names(data)) out <- out * data$weights[n]
   out
 }
 
 loglik_student <- function(n, data, samples, link) {
-  out <- dstudent(data$Y[n], df = samples$nu, mu = ilink(samples$eta[,n], link), 
-                  sigma = samples$sigma, log = TRUE)
+  out <- if (is.null(data$cens) || data$cens[n] == 0)
+    dstudent(data$Y[n], df = samples$nu, mu = ilink(samples$eta[,n], link), 
+             sigma = samples$sigma, log = TRUE)
+  else if (data$cens[n] == 1)
+    pstudent(data$Y[n], df = samples$nu, mu = ilink(samples$eta[,n], link), 
+             sigma = samples$sigma, lower.tail = FALSE, log.p = TRUE)
+  else if (data$cens[n] == -1)
+    pstudent(data$Y[n], df = samples$nu, mu = ilink(samples$eta[,n], link), 
+             sigma = samples$sigma, log.p = TRUE)
   if ("weights" %in% names(data)) out <- out * data$weights[n]
   out
 }
 
 loglik_cauchy <- function(n, data, samples, link) {
-  out <- dstudent(data$Y[n], df = 1, mu = ilink(samples$eta[,n], link), 
-                  sigma = samples$sigma, log = TRUE)
+  out <- if (is.null(data$cens) || data$cens[n] == 0)
+    dstudent(data$Y[n], df = 1, mu = ilink(samples$eta[,n], link), 
+             sigma = samples$sigma, log = TRUE)
+  else if (data$cens[n] == 1)
+    pstudent(data$Y[n], df = 1, mu = ilink(samples$eta[,n], link), 
+             sigma = samples$sigma, lower.tail = FALSE, log.p = TRUE)
+  else if (data$cens[n] == -1)
+    pstudent(data$Y[n], df = 1, mu = ilink(samples$eta[,n], link), 
+             sigma = samples$sigma, log.p = TRUE)
   if ("weights" %in% names(data)) out <- out * data$weights[n]
   out
 }
 
 loglik_lognormal <- function(n, data, samples, link) {
-  out <- dlnorm(data$Y[n], meanlog = samples$eta[,n], sdlog = samples$sigma, log = TRUE)
+  out <- if (is.null(data$cens) || data$cens[n] == 0)
+    dlnorm(data$Y[n], meanlog = samples$eta[,n], 
+           sdlog = samples$sigma, log = TRUE)
+  else if (data$cens[n] == 1)
+    plnorm(data$Y[n], meanlog = ilink(samples$eta[,n], link), 
+           sdlog = samples$sigma, lower.tail = FALSE, log.p = TRUE)
+  else if (data$cens[n] == -1)
+    plnorm(data$Y[n], meanlog = ilink(samples$eta[,n], link), 
+           sdlog = samples$sigma, log.p = TRUE)
   if ("weights" %in% names(data)) out <- out * data$weights[n]
   out
 }
@@ -94,55 +121,118 @@ loglik_multinormal <- function(n, data, samples, link) {
 }
 
 loglik_binomial <- function(n, data, samples, link) {
-  out <- dbinom(data$Y[n], size = data$max_obs, 
-                prob = ilink(samples$eta[,n], link), log = TRUE)
+  out <- if (is.null(data$cens) || data$cens[n] == 0)
+    dbinom(data$Y[n], size = data$max_obs, 
+           prob = ilink(samples$eta[,n], link), log = TRUE)
+  else if (data$cens[n] == 1)
+    pbinom(data$Y[n], size = data$max_obs, 
+           prob = ilink(samples$eta[,n], link), 
+           lower.tail = FALSE, log.p = TRUE)
+  else if (data$cens[n] == -1)
+    pbinom(data$Y[n], size = data$max_obs, 
+           prob = ilink(samples$eta[,n], link), log.p = TRUE)
   if ("weights" %in% names(data)) out <- out * data$weights[n]
   out
 }  
 
 loglik_bernoulli <- function(n, data, samples, link) {
-  out <- dbinom(data$Y[n], size = 1, 
-                prob = ilink(samples$eta[,n], link), log = TRUE)
+  out <- if (is.null(data$cens) || data$cens[n] == 0)
+    dbinom(data$Y[n], size = 1, 
+           prob = ilink(samples$eta[,n], link), log = TRUE)
+  else if (data$cens[n] == 1)
+    pbinom(data$Y[n], size = 1, 
+           prob = ilink(samples$eta[,n], link), 
+           lower.tail = FALSE, log.p = TRUE)
+  else if (data$cens[n] == -1)
+    pbinom(data$Y[n], size = 1, 
+           prob = ilink(samples$eta[,n], link), 
+           log.p = TRUE)
   if ("weights" %in% names(data)) out <- out * data$weights[n]
   out
 }
 
 loglik_poisson <- function(n, data, samples, link) {
-  out <- dpois(data$Y[n], lambda = ilink(samples$eta[,n], link), log = TRUE)
+  out <- if (is.null(data$cens) || data$cens[n] == 0)
+    dpois(data$Y[n], lambda = ilink(samples$eta[,n], link), log = TRUE)
+  else if (data$cens[n] == 1)
+    ppois(data$Y[n], lambda = ilink(samples$eta[,n], link), 
+          lower.tail = FALSE, log.p = TRUE)
+  else if (data$cens[n] == -1)
+    ppois(data$Y[n], lambda = ilink(samples$eta[,n], link), 
+          log.p = TRUE)
   if ("weights" %in% names(data)) out <- out * data$weights[n]
   out
 }
 
 loglik_negbinomial <- function(n, data, samples, link) {
-  out <- dnbinom(data$Y[n], mu = ilink(samples$eta[,n], link), 
-                 size = samples$shape, log = TRUE)
+  out <- if (is.null(data$cens) || data$cens[n] == 0)
+    dnbinom(data$Y[n], mu = ilink(samples$eta[,n], link), 
+            size = samples$shape, log = TRUE)
+  else if (data$cens[n] == 1)
+    pnbinom(data$Y[n], mu = ilink(samples$eta[,n], link), 
+            size = samples$shape, lower.tail = FALSE, log.p = TRUE)
+  else if (data$cens[n] == -1)
+    pnbinom(data$Y[n], mu = ilink(samples$eta[,n], link), 
+            size = samples$shape, log.p = TRUE)
   if ("weights" %in% names(data)) out <- out * data$weights[n]
   out
 }
 
 loglik_geometric <- function(n, data, samples, link) {
-  out <- dnbinom(data$Y[n], mu = ilink(samples$eta[,n], link), 
-                 size = 1, log = TRUE)
+  out <- if (is.null(data$cens) || data$cens[n] == 0)
+    dnbinom(data$Y[n], mu = ilink(samples$eta[,n], link), 
+            size = 1, log = TRUE)
+  else if (data$cens[n] == 1)
+    pnbinom(data$Y[n], mu = ilink(samples$eta[,n], link), 
+            size = 1, lower.tail = FALSE, log.p = TRUE)
+  else if (data$cens[n] == -1)
+    pnbinom(data$Y[n], mu = ilink(samples$eta[,n], link), 
+            size = 1, log.p = TRUE)
   if ("weights" %in% names(data)) out <- out * data$weights[n]
   out
 }
 
 loglik_exponential <-  function(n, data, samples, link) {
-  out <- dexp(data$Y[n], rate = ilink(-samples$eta[,n], link), log = TRUE)
+  out <- if (is.null(data$cens) || data$cens[n] == 0)
+    dexp(data$Y[n], rate = ilink(-samples$eta[,n], link), log = TRUE)
+  else if (data$cens[n] == 1)
+    pexp(data$Y[n], rate = ilink(-samples$eta[,n], link), 
+         lower.tail = FALSE, log.p = TRUE)
+  else if (data$cens[n] == -1)
+    pexp(data$Y[n], rate = ilink(-samples$eta[,n], link), 
+         log.p = TRUE)
   if ("weights" %in% names(data)) out <- out * data$weights[n]
   out
 }
 
 loglik_gamma <- function(n, data, samples, link) {
-  out <- dgamma(data$Y[n], shape = samples$shape, log = TRUE,
-                scale = ilink(samples$eta[,n], link) / samples$shape)
+  out <- if (is.null(data$cens) || data$cens[n] == 0)
+    dgamma(data$Y[n], shape = samples$shape, log = TRUE,
+           scale = ilink(samples$eta[,n], link) / samples$shape)
+  else if (data$cens[n] == 1)
+    pgamma(data$Y[n], shape = samples$shape, 
+           scale = ilink(samples$eta[,n], link) / samples$shape,
+           lower.tail = FALSE, log.p = TRUE)
+  else if (data$cens[n] == -1)
+    pgamma(data$Y[n], shape = samples$shape, 
+           scale = ilink(samples$eta[,n], link) / samples$shape,
+           log.p = TRUE)
   if ("weights" %in% names(data)) out <- out * data$weights[n]
   out
 }
 
 loglik_weibull <- function(n, data, samples, link) {
-  out <- dweibull(data$Y[n], shape = samples$shape, log = TRUE,
-                scale = 1/(ilink(-samples$eta[,n]/samples$shape, link)))
+  out <- if (is.null(data$cens) || data$cens[n] == 0)
+    dweibull(data$Y[n], shape = samples$shape, log = TRUE,
+             scale = 1/(ilink(-samples$eta[,n]/samples$shape, link)))
+  else if (data$cens[n] == 1)
+    pweibull(data$Y[n], shape = samples$shape, 
+             scale = 1/(ilink(-samples$eta[,n]/samples$shape, link)),
+             log.p = TRUE, lower.tail = FALSE)
+  else if (data$cens[n] == -1)
+    pweibull(data$Y[n], shape = samples$shape, 
+             scale = 1/(ilink(-samples$eta[,n]/samples$shape, link)),
+             log.p = TRUE)
   if ("weights" %in% names(data)) out <- out * data$weights[n]
   out
 }

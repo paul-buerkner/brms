@@ -1,9 +1,12 @@
 #density of student's distribution with parameters df, mu, and sigma
-dstudent <- function(x, df, mu = 0, sigma = 1, log = FALSE) {
-  log.const = log(gamma((df+1)/2)) - log(gamma(df/2)) - log(df*pi)/2 - log(sigma)
-  out <- log.const - log(1 + 1/df * ((x - mu)/sigma)^2) * (df + 1)/2
-  if (!log) out <- exp(out)
-  out
+dstudent <- function(x, df = stop("df is required"), mu = 0, sigma = 1, log = FALSE) {
+  if (log) dt((x - mu)/sigma, df = df, log = TRUE) - log(sigma)
+  else dt((x - mu)/sigma, df = df)/sigma
+}
+
+#distribution function of student's distribution with parameters df, mu, and sigma
+pstudent <- function(q, df = stop("df is required"), mu = 0, sigma = 1, lower.tail = TRUE, log.p = FALSE) {
+  pt((q - mu)/sigma, df = df, lower.tail = lower.tail, log.p = log.p)
 }
 
 #density of the multinormal distribution with parameters mu and Sigma
