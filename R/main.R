@@ -264,10 +264,11 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
   if (!threshold %in% c("flexible","equidistant")) 
     stop("threshold must be either flexible or equidistant")
   dots <- list(...) 
-  if ("WAIC" %in% names(dots)) 
+  if ("WAIC" %in% names(dots))
     warning("Argument WAIC is depricated. Just use method WAIC on the fitted model.")
   if ("predict" %in% names(dots)) 
     warning("Argument predict is depricated. Just use method predict on the fitted model.")
+  dots[c("WAIC", "predict")] <- NULL
   set.seed(seed)
   
   if (is(fit, "brmsfit")) x <- fit
@@ -294,23 +295,25 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
     inits <- replicate(n.chains, do.call(inits, list()), simplify = FALSE)
   x$fit <- rstan::get_stanmodel(suppressMessages(rstan::stan(model_code = x$model, data = x$data, 
                                                              chains = 0, fit = x$fit)))
+  args <- list(object = x$fit, data = x$data, pars = x$exclude, init = inits,
+            iter = n.iter, warmup = n.warmup, thin = n.thin, chains = n.chains, 
+            include = FALSE)
+  args[names(dots)] <- dots 
   if (n.cluster > 1 || silent && n.chains > 0) {
     if (is.character(inits) || is.numeric(inits)) inits <- rep(inits, n.chains)
     cl <- makeCluster(n.cluster)
     clusterEvalQ(cl, require(rstan))
-    clusterExport(cl = cl, c("x", "inits", "n.iter", "n.warmup", "n.thin"), envir = environment())
-    sflist <- parLapply(cl, 1:n.chains, fun = function(i)  
-      rstan::sampling(x$fit, data = x$data, iter = n.iter, pars = x$exclude, init = inits[i],
-                      warmup = n.warmup, thin = n.thin, chains = 1, chain_id = i, include = FALSE))
-    x$fit <- rstan::sflist2stanfit(rmNULL(lapply(1:length(sflist), function(i) {
+    clusterExport(cl = cl, varlist = "args", envir = environment())
+    sflist <- parLapply(cl, 1:n.chains, fun = function(i) { 
+      args[c("chains", "chain_id", "init")] <- list(chains = 1, chain_id = i, init = args$init[i])
+      do.call(rstan::sampling, args)})
+    x$fit <- rstan::sflist2stanfit(rmNULL(lapply(1:length(sflist), function(i)
       if (!is(sflist[[i]], "stanfit") || length(sflist[[i]]@sim$samples) == 0) {
         warning(paste("chain", i, "did not contain samples and was removed from the fitted model"))
-        return(NULL)
-      } else return(sflist[[i]])
-    })))
+        NULL
+      } else sflist[[i]])))
     stopCluster(cl)
   } 
-  else x$fit <- rstan::sampling(x$fit, data = x$data, iter = n.iter, pars = x$exclude, init = inits,
-                                warmup = n.warmup, thin = n.thin, chains = n.chains, include = FALSE, ...)
+  else x$fit <- do.call(rstan::sampling, args)
   return(rename.pars(x))
 }
