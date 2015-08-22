@@ -279,24 +279,25 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
   }
   else {
     link <- brm.link(family)
+    family <- family[1]
     formula <- brm.update.formula(formula, addition = addition)
     et <- extract.time(autocor$formula)
-    ee <- extract.effects(formula, family = family[1], partial, et$all)
+    ee <- extract.effects(formula, family = family, partial, et$all)
     data.name <- Reduce(paste, deparse(substitute(data)))
-    data <- updateData(data, family = family[1], effects = ee, et$group)
-    x <- brmsfit(formula = formula, family = family[1], link = link, partial = partial,
-                 data.name = data.name, autocor = autocor)
+    data <- updateData(data, family = family, effects = ee, et$group)
+    x <- brmsfit(formula = formula, family = family, link = link, partial = partial,
+                 data.name = data.name, autocor = autocor, prior = prior)
     x$ranef <- setNames(lapply(lapply(ee$random, brm.model.matrix, data = data), colnames), 
                         gsub("__", ":", ee$group))
     x$exclude <- exclude_pars(formula, ranef = ranef)
     x$data <- brm.data(formula, data = data, family = family, prior = prior, cov.ranef = cov.ranef,
                        autocor = autocor, partial = partial) 
-    x$model <- stan.model(formula = x$formula, data = data, family = x$family, link = x$link, prior = prior, 
-                          autocor = x$autocor, partial = x$partial,
-                          threshold = threshold, cov.ranef = names(cov.ranef),
-                          sample.prior = sample.prior, save.model = save.model)
+    x$model <- stan.model(formula = formula, data = data, family = family, link = link, prior = prior, 
+                          autocor = autocor, partial = partial, threshold = threshold, 
+                          cov.ranef = names(cov.ranef), sample.prior = sample.prior, 
+                          save.model = save.model)
     x$fit <- rstan::stan_model(model_code = x$model, auto_write = FALSE,
-                               model_name = paste0(x$family,"(",x$link,") brmsmodel"))
+                               model_name = paste0(family,"(",link,") brms-model"))
   }
   
   if (is.character(inits) && !inits %in% c("random", "0")) 
