@@ -6,7 +6,9 @@ output: html_document
 # under development
 ----------------------------------------------------------------
 
-* calculate the Watanabe-Akaike Information Criterion (WAIC) and the Leave-one-out cross-validation (LOO) using the 'loo' package  
+* calculate the Watanabe-Akaike Information Criterion (WAIC) and the Leave-one-out cross-validation (LOO) using the loo package 
+* log-likelihood values and posterior predictive samples can now always be calculated for a fitted model. Thus, arguments WAIC and predict are removed from function brm
+* provide an interface to shinystan with the S3 method 'launch.shiny'
 * remove chains that fail to initialize while sampling in parallel leaving the other chains untouched
 * allow for customized covariance structures of grouping factors with multiple random effects
 * redesign trace and density plots to be faster and more stable
