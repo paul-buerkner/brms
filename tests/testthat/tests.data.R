@@ -1,14 +1,3 @@
-test_that("Test that brm.pars returns correct parameter names", {
-  expect_equal(brm.pars(rating ~ treat + period + carry + (1|subject), data = inhaler),
-               c("b", "sigma", "sd_subject", "r_subject"))
-  expect_equal(brm.pars(rating ~ treat + period + carry + (1+treat|subject), data = inhaler),
-              c("b", "sigma", "sd_subject", "cor_subject", "r_subject"))
-  expect_equal(brm.pars(rating ~ treat + period + carry + (1+treat|subject), data = inhaler, autocor = cor.ma()),
-               c("b", "sigma", "ma", "sd_subject", "cor_subject", "r_subject"))
-  expect_equal(brm.pars(rating ~ treat + period + carry + (1+treat|subject), data = inhaler, 
-               autocor = cor.ma(), ranef = FALSE), c("b", "sigma", "ma", "sd_subject", "cor_subject"))
-})
-
 test_that("Test that brm.data returns correct data names for fixed and random effects", {
   expect_equal(names(brm.data(rating ~ treat + period + carry + (1|subject), data = inhaler)),
                c("N","Y","K","X","subject","N_subject","K_subject","Z_subject","NC_subject"))
@@ -124,4 +113,18 @@ test_that("Test that brm.data returns correct data for autocorrelations structur
                cbind(c(0,3.5,1.5,-0.5,-2.5,0,4.5,2.5,0.5,-1.5), c(0,0,3.5,1.5,-0.5,0,0,4.5,2.5,0.5)))
   expect_equal(brm.data(y ~ x, family = "gaussian", autocor = cor.ma(~tim|g), data = data)$tgroup,
                c(rep(1,5), rep(2,5)))
+})
+
+test_that("Test that brm.melt returns data in correct long format", {
+  data <- data.frame(x = rep(c("a","b"), 5), y1 = 1:10, y2 = 11:20, y3 = 21:30, z = 100:91)
+  expect_equal(brm.melt(data, response = "y1", family = "poisson"), data)
+  
+  target1 <- data.frame(x = rep(c("a","b"), 10), y2 = rep(11:20, 2), z = rep(100:91, 2),
+                        trait = c(rep("y3", 10), rep("y1", 10)), y3 = c(21:30,1:10))
+  expect_equal(brm.melt(data, response = c("y3", "y1"), family = "gaussian"), target1)
+  
+  target2 <- data.frame(x = rep(c("a","b"), 15), z = rep(100:91, 3),
+                        trait = c(rep("y2", 10), rep("y1", 10), rep("y3", 10)), 
+                        y2 = c(11:20, 1:10, 21:30))
+  expect_equal(brm.melt(data, response = c("y2", "y1", "y3"), family = "gaussian"), target2)
 })
