@@ -1,58 +1,47 @@
-#' Parameters of interest for \code{brms} models (depricated)
-#' 
-#' @inheritParams brm
-#' @param ranef logical; indicating if random effects estimates should be returned
-#' 
-#' @return A vector of character strings specifying parameters of interest for models produced by the \code{brms} package.
-#' 
-#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
-#' 
-#' @details This function is depricated. Parameters of interest are now chosen by exclusion not by inclusion.
-#' 
-#' @examples 
-#' brm.pars(rating ~ treat + period + carry + (1|subject),
-#'          data = inhaler, family = "cumulative")
-#
-#  brm.pars(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient) + (1|visit),
-#         data = epilepsy, family = c("poisson", "log"))
-#'               
-#' @export
-brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, partial = NULL,
-                    threshold = "flexible", ranef = TRUE) {
-  family <- family[1]
-  if (is.null(autocor)) autocor <- cor.arma()
-  if (!is(autocor,"cor.brms")) stop("cor must be of class cor.brms")
-  ee <- extract.effects(formula = formula, family = family, partial = partial)
-  data <- updateData(data, family = family, effects = ee)
-    
-  is.linear <- family %in% c("gaussian", "student", "cauchy")
-  is.ordinal <- family  %in% c("cumulative","cratio","sratio","acat")
-  is.skew <- family %in% c("gamma", "weibull", "exponential")
-  if (!(is.linear || is.ordinal || is.skew || family %in% 
-      c("poisson", "negbinomial", "geometric", "binomial","bernoulli", "categorical")))
-    stop(paste(family,"is not a valid family"))
-  
-  f <- colnames(brm.model.matrix(ee$fixed, data, rm.int = is.ordinal))
-  r <- lapply(lapply(ee$random, brm.model.matrix, data = data), colnames)
-  p <- colnames(brm.model.matrix(partial, data, rm.int = TRUE))
-  out <- NULL
-  if (is.ordinal && threshold == "flexible") out <- c(out, "b_Intercept")
-  if (is.ordinal && threshold == "equidistant") out <- c(out, "b_Intercept1", "delta")
-  if (length(f) && family != "categorical") out <- c(out, "b")
-  if (is.ordinal && length(p) || family == "categorical") out <- c(out, "bp")
-  if (is.linear && !is(ee$se,"formula") && length(ee$response) == 1) out <- c(out, "sigma")
-  if (family == "gaussian" && length(ee$response) > 1) out <- c(out, "sigma", "rescor")
-  if (family == "student") out <- c(out,"nu")
-  if (family %in% c("gamma", "weibull", "negbinomial")) out <- c(out,"shape")
-  if (autocor$p > 0) out <- c(out,"ar")
-  if (autocor$q > 0) out <- c(out,"ma")
-  if (length(ee$group)) {
-    out <- c(out, paste0("sd_",ee$group))
-    out <- c(out, unlist(lapply(1:length(ee$group), function(i)
-      if (length(r[[i]])>1 && ee$cor[[i]]) paste0("cor_",ee$group[[i]]))))
-    if (ranef) out <- c(out, paste0("r_",ee$group))
+#melt data frame for multinormal models
+brm.melt <- function(data, response, family) {
+  if (length(response) > 1 && family != "gaussian")
+    stop("multivariate models are currently only allowed for family 'gaussian'")
+  else if (length(response) > 1 && family == "gaussian") {
+    if (!is(data, "data.frame"))
+      stop("data must be a data.frame in case of multiple responses")
+    if ("trait" %in% names(data))
+      stop("trait is a resevered variable name in case of multiple responses")
+    data <- reshape2::melt(data, measure.vars = response)
+    names(data)[(ncol(data)-1):ncol(data)] <- c("trait", response[1])
   }
-  return(out)
+  data
+}  
+
+#combine grouping factors
+combine.groups <- function(data, ...) {
+  group <- c(...)
+  if (length(group)) {
+    for (i in 1:length(group)) {
+      sgroup <- unlist(strsplit(group[[i]], "__"))
+      if (length(sgroup) > 1) {
+        new.var <- get(sgroup[1], data)
+        for (j in 2:length(sgroup)) {
+          new.var <- paste0(new.var, "_", get(sgroup[j], data))
+        }
+        data[[group[[i]]]] <- new.var
+      }
+    } 
+  }
+  data
+}
+
+#update data for use in brm
+updateData <- function(data, family, effects, ...) {
+  if (!"brms.frame" %in% class(data)) {
+    data <- brm.melt(data, response = effects$response, family = family)
+    data <- stats::model.frame(effects$all, data = data, drop.unused.levels = TRUE)
+    if (any(grepl("__", colnames(data))))
+      stop("Variable names may not contain double underscores '__'")
+    data <- combine.groups(data, effects$group, ...)
+    class(data) <- c("brms.frame", "data.frame") 
+  }
+  data
 }
 
 #' Extract required data for \code{brms} models
@@ -270,3 +259,24 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
   } 
   standata
 }  
+
+# Construct Design Matrices for \code{brms} models
+# 
+# @param formula An object of class "formula"
+# @param data A data frame created with \code{model.frame}. If another sort of object, \code{model.frame} is called first.
+# @param rm.int Flag indicating if the intercept column should be removed from the model.matrix. 
+#   Primarily useful for ordinal models.
+# 
+# @return The design matrix for a regression-like model with the specified formula and data. 
+#   For details see the documentation of \code{model.matrix}.
+brm.model.matrix = function(formula, data = environment(formula), rm.int = FALSE) {
+  if (!is(formula, "formula")) return(NULL) 
+  X <- model.matrix(formula,data)
+  cn.new <- rename(colnames(X), check_dup = TRUE)
+  if (rm.int && "Intercept" %in% cn.new) {
+    X <- as.matrix(X[,-(1)])
+    if (ncol(X)) colnames(X) <- cn.new[2:length(cn.new)]
+  } 
+  else colnames(X) <- cn.new
+  X   
+}

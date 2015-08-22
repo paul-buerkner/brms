@@ -80,3 +80,116 @@ ilink <- function(x, link) {
   else if (link == "probit_approx") ilogit(0.07056*x^3 + 1.5976*x)
   else stop(paste("Link", link, "not supported"))
 }
+
+#calculate estimates over posterior samples 
+get.estimate <- function(coef, samples, margin = 2, to.array = FALSE, ...) {
+  dots <- list(...)
+  args <- list(X = samples, MARGIN = margin, FUN = coef)
+  fun.args <- names(formals(coef))
+  if (!"..." %in% fun.args)
+    dots <- dots[names(dots) %in% fun.args]
+  x <- do.call(apply, c(args, dots))
+  if (is.null(dim(x))) 
+    x <- matrix(x, dimnames = list(NULL, coef))
+  else if (coef == "quantile") x <- aperm(x, length(dim(x)):1)
+  if (to.array && length(dim(x)) == 2) 
+    x <- array(x, dim = c(dim(x), 1), dimnames = list(NULL, NULL, coef))
+  x 
+}
+
+#compute covariance and correlation matrices based on correlation and sd samples
+cov_matrix <- function(sd, cor = NULL) {
+  nsamples <- nrow(sd)
+  nranef <- ncol(sd)
+  cor_matrix <- cov_matrix <- aperm(array(diag(1, nranef), dim = c(nranef, nranef, nsamples)), c(3,1,2))
+  for (i in 1:nranef) 
+    cov_matrix[,i,i] <- sd[,i]^2 
+  if (!is.null(cor)) {
+    k <- 0 
+    for (i in 2:nranef) {
+      for (j in 1:(i-1)) {
+        k = k + 1
+        cor_matrix[,j,i] <- cor_matrix[,i,j] <- cor[,k]
+        cov_matrix[,j,i] <- cov_matrix[,i,j] <- cor[,k] * sd[,i] * sd[,j]
+      }
+    }
+  }
+  list(cor = cor_matrix, cov = cov_matrix)
+}
+
+#calculate the evidence ratio between two disjunct hypotheses
+eratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"), prior_samples = NULL, pow = 12, ...) {
+  wsign <- match.arg(wsign)
+  if (wsign == "equal") 
+    if (is.null(prior_samples)) out <- NA
+    else {
+      dots <- list(...)
+      dots <- dots[names(dots) %in% names(formals("density.default"))]
+      prior_density <- do.call(density, c(list(x = prior_samples, n = 2^pow), dots))
+      posterior_density <- do.call(density, c(list(x = x, n = 2^pow), dots))
+      at_cut_prior <- match(min(abs(prior_density$x - cut)), abs(prior_density$x - cut))
+      at_cut_posterior <- match(min(abs(posterior_density$x - cut)), abs(posterior_density$x - cut))
+      out <- posterior_density$y[at_cut_posterior] / prior_density$y[at_cut_prior] 
+    }
+    else if (wsign == "less") {
+      out <- length(which(x < cut))
+      out <- out / (length(x) - out)
+    }  
+    else if (wsign == "greater") {
+      out <- length(which(x > cut))
+      out <- out / (length(x) - out)
+    }
+    out  
+}
+
+# Links for \code{brms} families
+# 
+# @param family A vector of one or two character strings. The first string indicates the distribution of the dependent variable (the 'family'). Currently, the following distributions are supported:
+#  \code{"gaussian"}, \code{"student"}, \code{"cauchy"}, \code{"poisson"}, \code{"binomial"}, \code{"categorical"}, 
+#  \code{"gamma"}, \code{"exponential"}, \code{"weibull"}, \code{"cumulative"}, \cr
+#  \code{"cratio"}, \code{"sratio"}, and \code{"acat"}.
+#  The second string indicates the link function, which must supported by the distribution of the dependent variable. If not specified, default link functions are used (see 'Details').
+# @return The second element of \code{family} (if present) or else the default link of the specified family
+#   
+# @details The families \code{gaussian}, \code{student}, and \code{cauchy} accept the links (as names) \code{identity}, \code{log}, and \code{inverse};
+# the \code{poisson} family the links \code{log}, \code{identity}, and \code{sqrt}; 
+# families \code{binomial}, \code{cumulative}, \code{cratio}, \code{sratio}, and \code{acat} the links \code{logit}, \code{probit}, \code{probit_approx}, and \code{cloglog};
+# family  \code{categorical} the link \code{logit}; families \code{gamma}, \code{weibull}, and \code{exponential} the links \code{log}, \code{identity}, and \code{inverse}. 
+# The first link mentioned for each family is the default.     
+# 
+# @examples brm.link("gaussian")
+# brm.link(c("gaussian","log"))
+brm.link <- function(family) {
+  link <- family[2]
+  family <- family[1]
+  is.lin <- family %in% c("gaussian", "student", "cauchy")
+  is.skew <- family %in% c("gamma", "weibull", "exponential")
+  is.bin <- family %in% c("cumulative", "cratio", "sratio", "acat","binomial", "bernoulli")                    
+  is.count <- family %in% c("poisson", "negbinomial", "geometric")
+  if (is.na(link)) {
+    if (is.lin) link <- "identity"
+    else if (is.skew || is.count) link <- "log"
+    else if (is.bin || family == "categorical") link <- "logit"
+  }
+  else if (is.lin && !is.element(link, c("identity", "log", "inverse")) ||
+           is.count && !link %in% c("log", "identity", "sqrt") ||
+           is.bin && !link %in% c("logit", "probit", "probit_approx", "cloglog") ||
+           family == "categorical" && link != "logit" ||
+           is.skew && !link %in% c("log", "identity", "inverse"))
+    stop(paste(link, "is not a valid link for family", family))
+  else if (is.count && link == "sqrt") 
+    warning(paste(family, "model with sqrt link may not be uniquely identified"))
+  link
+}
+
+#list irrelevant parameters not to be saved by Stan
+exclude_pars <- function(formula, ranef = TRUE) {
+  ee <- extract.effects(formula = formula, add.ignore = TRUE)
+  out <- c("eta", "etam", "etap", "b_Intercept1", "Lrescor", "Rescor",
+           "p", "q", "e", "Ema", "lp_pre")
+  if (length(ee$group)) {
+    out <- c(out, paste0("pre_",ee$group), paste0("L_",ee$group), paste0("Cor_",ee$group))
+    if (!ranef) out <- c(out, paste0("r_",ee$group))
+  }
+  out
+}

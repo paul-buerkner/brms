@@ -1,62 +1,19 @@
-#calculate estimates over posterior samples 
-get.estimate <- function(coef, samples, margin = 2, to.array = FALSE, ...) {
-  dots <- list(...)
-  args <- list(X = samples, MARGIN = margin, FUN = coef)
-  fun.args <- names(formals(coef))
-  if (!"..." %in% fun.args)
-    dots <- dots[names(dots) %in% fun.args]
-  x <- do.call(apply, c(args, dots))
-  if (is.null(dim(x))) 
-    x <- matrix(x, dimnames = list(NULL, coef))
-  else if (coef == "quantile") x <- aperm(x, length(dim(x)):1)
-  if (to.array && length(dim(x)) == 2) 
-    x <- array(x, dim = c(dim(x), 1), dimnames = list(NULL, NULL, coef))
-  x 
-}
-
-#compute covariance and correlation matrices based on correlation and sd samples
-cov_matrix <- function(sd, cor = NULL) {
-  nsamples <- nrow(sd)
-  nranef <- ncol(sd)
-  cor_matrix <- cov_matrix <- aperm(array(diag(1, nranef), dim = c(nranef, nranef, nsamples)), c(3,1,2))
-  for (i in 1:nranef) 
-    cov_matrix[,i,i] <- sd[,i]^2 
-  if (!is.null(cor)) {
-    k <- 0 
-    for (i in 2:nranef) {
-      for (j in 1:(i-1)) {
-        k = k + 1
-        cor_matrix[,j,i] <- cor_matrix[,i,j] <- cor[,k]
-        cov_matrix[,j,i] <- cov_matrix[,i,j] <- cor[,k] * sd[,i] * sd[,j]
-      }
-    }
-  }
-  list(cor = cor_matrix, cov = cov_matrix)
-}
-
-#calculate the evidence ratio between two disjunct hypotheses
-eratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"), prior_samples = NULL, pow = 12, ...) {
-  wsign <- match.arg(wsign)
-  if (wsign == "equal") 
-    if (is.null(prior_samples)) out <- NA
-    else {
-      dots <- list(...)
-      dots <- dots[names(dots) %in% names(formals("density.default"))]
-      prior_density <- do.call(density, c(list(x = prior_samples, n = 2^pow), dots))
-      posterior_density <- do.call(density, c(list(x = x, n = 2^pow), dots))
-      at_cut_prior <- match(min(abs(prior_density$x - cut)), abs(prior_density$x - cut))
-      at_cut_posterior <- match(min(abs(posterior_density$x - cut)), abs(posterior_density$x - cut))
-      out <- posterior_density$y[at_cut_posterior] / prior_density$y[at_cut_prior] 
-    }
-  else if (wsign == "less") {
-    out <- length(which(x < cut))
-    out <- out / (length(x) - out)
-  }  
-  else if (wsign == "greater") {
-    out <- length(which(x > cut))
-    out <- out / (length(x) - out)
-  }
-  out  
+#  rename certain symbols in a character vector
+rename <- function(names, symbols = NULL, subs = NULL, fixed = TRUE, check_dup = FALSE) {
+  if (is.null(symbols))
+    symbols <- c(" ", "(", ")", "[", "]", ",", "+", "-", "*", "/", "^", "=", "!=")
+  if (is.null(subs))
+    subs <- c(rep("", 6), "P", "M", "MU", "D", "E", "EQ", "NEQ")
+  if (length(symbols) != length(subs)) 
+    stop("length(symbols) != length(subs)")
+  new.names <- names
+  for (i in 1:length(symbols)) 
+    new.names <- gsub(symbols[i], subs[i], new.names, fixed = fixed)
+  dup <- duplicated(new.names)
+  if (check_dup && any(dup)) 
+    stop(paste0("Internal renaming of variables led to duplicated names. \n",
+                "Occured for variables: ", paste(names[which(new.names %in% new.names[dup])], collapse = ", ")))
+  new.names
 }
 
 #get correlation names
