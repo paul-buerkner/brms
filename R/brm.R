@@ -250,7 +250,6 @@
 #' 
 #' @import rstan
 #' @import parallel
-#' @import Rcpp
 #' @import methods
 #' @import stats   
 #' @export 

@@ -1,5 +1,5 @@
 #melt data frame for multinormal models
-brm.melt <- function(data, response, family) {
+melt <- function(data, response, family) {
   if (length(response) > 1 && family != "gaussian")
     stop("multivariate models are currently only allowed for family 'gaussian'")
   else if (length(response) > 1 && family == "gaussian") {
@@ -7,8 +7,12 @@ brm.melt <- function(data, response, family) {
       stop("data must be a data.frame in case of multiple responses")
     if ("trait" %in% names(data))
       stop("trait is a resevered variable name in case of multiple responses")
-    data <- reshape2::melt(data, measure.vars = response)
-    names(data)[(ncol(data)-1):ncol(data)] <- c("trait", response[1])
+    new_columns <- structure(data.frame(unlist(lapply(response, rep, time = nrow(data))), 
+                                        as.numeric(as.matrix(data[,response]))),
+                             names = c("trait", response[1]))
+    old_columns <- data[,which(!names(data) %in% response), drop = FALSE]
+    old_columns <- do.call(rbind, lapply(response, function(i) old_columns))
+    data <- cbind(old_columns, new_columns)
   }
   data
 }  
@@ -34,7 +38,7 @@ combine.groups <- function(data, ...) {
 #update data for use in brm
 updateData <- function(data, family, effects, ...) {
   if (!"brms.frame" %in% class(data)) {
-    data <- brm.melt(data, response = effects$response, family = family)
+    data <- melt(data, response = effects$response, family = family)
     data <- stats::model.frame(effects$all, data = data, drop.unused.levels = TRUE)
     if (any(grepl("__", colnames(data))))
       stop("Variable names may not contain double underscores '__'")
