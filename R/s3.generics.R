@@ -219,6 +219,44 @@ hypothesis <- function(x, hypothesis, class = "b", alpha = 0.05, ...)
 posterior.samples <- function(x, parameters = NA, add.chains = FALSE,...)
   UseMethod("posterior.samples")
 
+
+#' Extract prior samples
+#' 
+#' Extract prior samples of specified parameters 
+#' 
+#' @aliases prior.samples.brmsfit
+#' 
+#' @param x An \code{R} object typically of class \code{brmsfit}
+#' @param parameters Name of parameters for which posterior samples should be returned, as given by a character vector or regular expressions.
+#'   By default, all prior samples are extracted
+#' @param ... Currently ignored
+#'   
+#' @details To make use of this function, the model must contain samples of prior distributions.
+#'  This can be ensured by setting \code{prior.samples = TRUE} in function \code{brm}.
+#'  Currently there are methods for \code{brmsfit} objects.
+#' @return A data frame containing the prior samples.
+#' 
+#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
+#' 
+#' @examples
+#' \dontrun{
+#' fit_i <- brm(rating ~ treat + period + carry + (1|subject), 
+#'              data = inhaler, family = "cumulative", 
+#'              prior = list(b = "normal(0,2)"), sample.prior = TRUE)
+#' 
+#' #extract all prior samples
+#' samples1 <- prior.samples(fit_i)
+#' head(samples1)
+#' 
+#' #extract prior samples for the fixed effect of \code{treat}.
+#' samples2 <- posterior.samples(fit_i, "b_treat")
+#' head(samples2)
+#' }
+#' 
+#' @export 
+prior.samples <- function(x, parameters = NA, ...)
+  UseMethod("prior.samples")
+
 #' Extract parameter names
 #' 
 #' Extract all parameter names of a given model

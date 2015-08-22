@@ -139,6 +139,29 @@ posterior.samples.brmsfit <- function(x, parameters = NA, add.chains = FALSE, ..
   samples
 }
 
+#' @export
+prior.samples.brmsfit <- function(x, parameters = NA, ...) {
+  if (!anyNA(parameters) && !is.character(parameters)) 
+    stop("pars must be a character vector")
+  par_names <- par.names(x)
+  prior_names <- par_names[grepl("^prior_", par_names)]
+  if (length(prior_names)) {
+    samples <- posterior.samples(x, parameters = prior_names, fixed = TRUE)
+    names(samples) <- sub("^prior_", "", prior_names)
+    if (!anyNA(parameters)) {
+      samples <- data.frame(rmNULL(lapply(parameters, function(par) {
+        matches <- lapply(paste0("^",sub("^prior_", "", prior_names)), regexpr, 
+                          text = par)
+        matches <- unlist(lapply(matches, attr, which = "match.length"))
+        if (max(matches) == -1) NULL
+        else structure(list(samples[,match(max(matches), matches)]), names = par)
+      })))
+    }
+  }
+  else samples <- NULL
+  samples
+}
+
 #' Create a summary of a fitted model represented by a \code{brmsfit} object
 #' 
 #' Summarize estimated fixed and random effects as well as other useful
@@ -283,11 +306,11 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", alpha = 0.05, ...) {
     samples <- structure(posterior.samples(x, parameters = rename(parsH, "__", ":"), fixed = TRUE),
                          names = rename(varsH, c("[", "]"), c("OB", "CB")))
     samples <- matrix(with(samples, eval(parse(text = rename(h, c("[", "]"), c("OB", "CB"))))), ncol=1)
-    prior_samples <- get_prior_samples(x, pars = rename(parsH, "__", ":"))
-    if (!is.null(prior_samples)) {
+    prior_samples <- prior.samples(x, parameters = rename(parsH, "__", ":"))
+    if (!is.null(prior_samples) && ncol(prior_samples) == length(varsH)) {
       names(prior_samples) <- rename(varsH, c("[", "]"), c("OB", "CB"))
       prior_samples <- matrix(with(prior_samples, eval(parse(text = rename(h, c("[", "]"), c("OB", "CB"))))), ncol=1)
-    } 
+    } else prior_samples <- NULL
 
     #evaluate hypothesis
     wsign <- ifelse(sign == "=", "equal", ifelse(sign == "<", "less", "greater"))
