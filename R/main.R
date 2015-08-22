@@ -42,8 +42,10 @@
 #'   so warmup samples should not be used for inference. The number of warmup should not be larger than \code{n.iter} and the default is 500.
 #' @param n.thin Thinning rate. Must be a positive integer. Set \code{n.thin > 1} to save memory and computation time if \code{n.iter} is large. Default is 1, that is no thinning.
 #' @param n.cluster	Number of clusters to use to run parallel chains. Default is 1.   
-#' @param inits A list with \code{n.chains} elements; each element of the list is itself a list of starting values for the model, or a function creating (possibly random) initial values. 
-#'   If inits is \code{"random"} (the default), Stan will generate initial values for parameters. Other options supported by Stan are also possible.
+#' @param inits Either \code{"random"} or \code{"0"}. If inits is \code{"random"} (the default), Stan will randomly generate initial values for parameters. 
+#'   If it is \code{"0"}, all parameters are initiliazed to zero (recommended for \code{weibull} models). 
+#'   Alternatively, \code{inits} can be a list of lists containing the initial values, or a function (or function name) generating initial values. 
+#'   The latter options are mainly implemented for internal testing.
 #' @param save.model Either \code{NULL} or a character string. In the latter case, the model code is
 #'   saved in a file named after the string supplied in \code{save.model}, which may also contain the full path where to save the file.
 #'   If only a name is given, the file is save in the current working directory. 
@@ -297,8 +299,8 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
                                model_name = paste0(x$family,"(",x$link,") brmsmodel"))
   }
   
-  if (is.function(inits) || (is.character(inits) && !inits %in% c("random", "0")))
-    inits <- replicate(n.chains, do.call(inits, list()), simplify = FALSE)
+  if (is.character(inits) && !inits %in% c("random", "0")) 
+    inits <- get(inits, mode = "function", envir = parent.frame())
   args <- list(object = x$fit, data = x$data, pars = x$exclude, init = inits,
             iter = n.iter, warmup = n.warmup, thin = n.thin, chains = n.chains, 
             include = FALSE)
