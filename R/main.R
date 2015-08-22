@@ -257,7 +257,7 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
                 ranef = TRUE, sample.prior = FALSE, fit = NA, 
                 n.chains = 2, n.iter = 2000, n.warmup = 500, n.thin = 1, n.cluster = 1, inits = "random", 
                 silent = FALSE, seed = 12345, save.model = NULL, ...) {
-  link <- brm.link(family)
+  
   if (n.chains %% n.cluster != 0) stop("n.chains must be a multiple of n.cluster")
   if (is.null(autocor)) autocor <- cor.arma()
   if (!is(autocor, "cor.brms")) stop("cor must be of class cor.brms")
@@ -271,8 +271,12 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
   dots[c("WAIC", "predict")] <- NULL
   set.seed(seed)
   
-  if (is(fit, "brmsfit")) x <- fit
+  if (is(fit, "brmsfit")) {
+    x <- fit
+    x$fit <- rstan::get_stanmodel(x$fit)
+  }
   else {
+    link <- brm.link(family)
     formula <- brm.update.formula(formula, addition = addition)
     et <- extract.time(autocor$formula)
     ee <- extract.effects(formula, family = family[1], partial, et$all)
@@ -289,12 +293,12 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
                           autocor = x$autocor, partial = x$partial,
                           threshold = threshold, cov.ranef = names(cov.ranef),
                           sample.prior = sample.prior, save.model = save.model)
-  }  
+    x$fit <- rstan::stan_model(model_code = x$model, auto_write = FALSE,
+                               model_name = paste0(x$family,"(",x$link,") brmsmodel"))
+  }
   
-  if (is.function(inits) || (is.character(inits) && !is.element(inits, c("random", "0")))) 
+  if (is.function(inits) || (is.character(inits) && !inits %in% c("random", "0")))
     inits <- replicate(n.chains, do.call(inits, list()), simplify = FALSE)
-  x$fit <- rstan::get_stanmodel(suppressMessages(rstan::stan(model_code = x$model, data = x$data, 
-                                                             chains = 0, fit = x$fit)))
   args <- list(object = x$fit, data = x$data, pars = x$exclude, init = inits,
             iter = n.iter, warmup = n.warmup, thin = n.thin, chains = n.chains, 
             include = FALSE)
