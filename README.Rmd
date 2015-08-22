@@ -29,26 +29,28 @@ options(width=90)
 library(brms)
 ```
 
-As a simple example, we use poisson regression to model the seizure counts in epileptic patients to investigate whether the treatment (represented by variable Trt_c) can reduce the seizure counts. Two random intercepts are incorporated to account for the variance between patients and visits. 
+As a simple example, we use poisson regression to model the seizure counts in epileptic patients to investigate whether the treatment (represented by variable Trt_c) can reduce the seizure counts. Three random intercepts are incorporated to account for the variance between patients and visits, as well as for the residual variance. 
 ```{r fit, results='hide'}
-fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient) + (1|visit), 
-           data = epilepsy, family = "poisson", WAIC = TRUE)
+fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient) + (1|visit) + (1|obs), 
+           data = epilepsy, family = "poisson")
 ```
 
-If rstan is not installed, brm will return the Stan model, the required data, and the parameters of interest, which are the important prerequisites to fit the model in Stan.
-If rstan is installed, the model is fitted automatically and the results (i.e. posterior samples) can be investigated using
-
+The results (i.e. posterior samples) can be investigated using
 ```{r print}
 summary(fit) 
 ```
 
-On the top of the output, some general information on the model is given, such as family, formula, as well as number of iterations and chains. Next, random effects are displayed seperately for each grouping factor in terms of standard deviations and (in case of more than one random effect per grouping factor; not displayed here) correlations between random effects. On the bottom of the output, fixed effects are displayed. If incorporated, autocorrelation effects and family specific parameters (e.g., the residual standard deviation 'sigma' in normal models) are also given.
+On the top of the output, some general information on the model is given, such as family, formula, number of iterations and chains, as well as the WAIC, which is an information criterion for Bayesian models. Next, random effects are displayed seperately for each grouping factor in terms of standard deviations and (in case of more than one random effect per grouping factor; not displayed here) correlations between random effects. On the bottom of the output, fixed effects are displayed. If incorporated, autocorrelation effects and family specific parameters (e.g., the residual standard deviation 'sigma' in normal models) are also given.
 
 In general, every parameter is summarized using the mean ('Estimate') and the standard deviation ('Est.Error') of the posterior distribution as well as two-sided 95% Credible intervals ('l-95% CI' and 'u-95% CI') based on quantiles. The last two values ('Eff.Sample' and 'Rhat') provide information on how well the algorithm could estimate the posterior distribution of this parameter. If 'Rhat' is considerably greater than 1, the algorithm has not yet converged and it is necessary to run more iterations and / or set stronger priors.
 
-To visually investigate the chains as well as the posterior, you can use
-```{r plot.full, eval=FALSE, fig.align='center', fig.height=8, fig.width=10}
+To visually investigate the chains as well as the posterior distributions, you can use
+```{r plot, eval=FALSE, fig.align='center', fig.height=8, fig.width=10}
 plot(fit) 
+``` 
+An even more detailed investigation can be achieved by applying the shinystan package:
+```{r shiny, eval=FALSE}
+launch.shiny(fit) 
 ``` 
 
 For a complete list of methods to apply on <b>brms</b> models see
@@ -77,12 +79,3 @@ install_github("paul-buerkner/brms")
 ```
 
 Because <b>brms</b> is based on Stan, a C++ compiler is required. The program Rtools (available on https://cran.r-project.org/bin/windows/Rtools/) comes with a C++ compiler for Windows. On Mac, you should use Xcode. We recommend to install rstan (available on CRAN) before installing <b>brms</b>. For further instructions see https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started.
-
-<!-- Before you will be able to actually fit bayesian models with brms, the package rstan has to be installed manually, as it is not on CRAN, yet. First, you need a C++ compiler. See https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started#prerequisites for instructions on how to get one. Second, install rstan by running the following R code (the number behind 'j' in the first line corresponds to the number of cores to use for the installation). This may take a few minutes and you should restart R after the installation.
-
-```{r install_rstan, eval=FALSE}
-Sys.setenv(MAKEFLAGS = "-j1") 
-source('http://mc-stan.org/rstan/install.R', echo = TRUE, max.deparse.length = 2000)
-install_rstan()
-```
--->
