@@ -115,16 +115,16 @@ test_that("Test that brm.data returns correct data for autocorrelations structur
                c(rep(1,5), rep(2,5)))
 })
 
-test_that("Test that brm.melt returns data in correct long format", {
+test_that("Test that melt returns data in correct long format", {
   data <- data.frame(x = rep(c("a","b"), 5), y1 = 1:10, y2 = 11:20, y3 = 21:30, z = 100:91)
-  expect_equal(brm.melt(data, response = "y1", family = "poisson"), data)
+  expect_equal(melt(data, response = "y1", family = "poisson"), data)
   
   target1 <- data.frame(x = rep(c("a","b"), 10), y2 = rep(11:20, 2), z = rep(100:91, 2),
                         trait = c(rep("y3", 10), rep("y1", 10)), y3 = c(21:30,1:10))
-  expect_equal(brm.melt(data, response = c("y3", "y1"), family = "gaussian"), target1)
+  expect_equal(melt(data, response = c("y3", "y1"), family = "gaussian"), target1)
   
   target2 <- data.frame(x = rep(c("a","b"), 15), z = rep(100:91, 3),
                         trait = c(rep("y2", 10), rep("y1", 10), rep("y3", 10)), 
                         y2 = c(11:20, 1:10, 21:30))
-  expect_equal(brm.melt(data, response = c("y2", "y1", "y3"), family = "gaussian"), target2)
+  expect_equal(melt(data, response = c("y2", "y1", "y3"), family = "gaussian"), target2)
 })

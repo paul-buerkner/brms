@@ -10,6 +10,24 @@ array2list <- function(x) {
   l
 }
 
+#convert list to array of increased dimension
+list2array <- function(x) {
+  if (!is.list(x) || length(x) == 0) 
+    stop("x must be a non-empty list")
+  x <- unlist(lapply(x, array2list), recursive = FALSE)
+  dim_elements <- lapply(x, dim)
+  dim_target <- dim_elements[[1]]
+  if (!all(sapply(dim_elements, all.equal, current = dim_target)))
+    stop("dimensions of list elements do not match")
+  a <- array(NA, dim = c(dim_target, length(x)))
+  ind <- collapse(rep(",",length(dim_target)))
+  for (i in 1:length(x)) 
+    eval(parse(text = paste0("a[",ind,i,"] <- x[[",i,"]]")))
+  if (length(x) == 1) dimnames(a)[[length(dim_target)+1]] <- list(names(x))
+  else dimnames(a)[[length(dim_target)+1]] <- names(x)
+  a
+}
+
 isNULL <- function(x) is.null(x) || ifelse(is.vector(x), all(sapply(x, is.null)), FALSE)
 
 rmNULL <- function(x) {

@@ -115,7 +115,6 @@ ranef <- function(x, estimate = "mean", var = FALSE, ...)
 #' VarCorr(fit_e, estimate = "quantile", probs = c(0.025, 0.975))
 #' }
 #' 
-#' @import abind
 #' @export
 VarCorr <- function(x, estimate = "mean", as.list = TRUE, ...) 
   UseMethod("VarCorr")

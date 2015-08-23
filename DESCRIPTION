@@ -6,7 +6,7 @@ Date: 2015-08-02
 Authors@R: person("Paul-Christian", "Buerkner", email = "paul.buerkner@gmail.com",
   role = c("aut", "cre"))
 Depends: R (>= 3.1.0), rstan (>= 2.7.0), ggplot2 (>= 1.0.1) 
-Imports: methods, stats, parallel, grDevices, grid, abind, loo (>= 0.1.2), gridExtra (>= 2.0.0), shinystan (>= 2.0.0)
+Imports: loo (>= 0.1.2), shinystan (>= 2.0.0), gridExtra (>= 2.0.0), methods, stats, parallel, grDevices, grid
 Suggests: testthat (>= 0.9.1)
 Description: Fit Bayesian generalized linear mixed models using Stan for full Bayesian inference.
 LazyData: true
