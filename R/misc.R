@@ -80,9 +80,9 @@ link <- function(x, link) {
   else if (link == "inverse") 1/x
   else if (link == "sqrt") sqrt(x)
   else if (link == "logit") logit(x)
-  else if (link == "probit") logit(0.07056*x^3 + 1.5976*x)
+  else if (link == "probit") qnorm(x)
   else if (link == "cloglog") log(-log(1-x))
-  else if (link == "probit_approx") logit(0.07056*x^3 + 1.5976*x)
+  else if (link == "probit_approx") qnorm(x)
   else stop(paste("Link", link, "not supported"))
 }
 
@@ -177,7 +177,7 @@ eratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"), prior_samp
 # 
 # @examples brm.link("gaussian")
 # brm.link(c("gaussian","log"))
-brm.link <- function(family) {
+link4family <- function(family) {
   link <- family[2]
   family <- family[1]
   is.lin <- family %in% c("gaussian", "student", "cauchy")
