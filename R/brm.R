@@ -245,7 +245,16 @@
 #' fit_k <- brm(time | cens(censored) ~ age + sex + disease, data = kidney, 
 #'              family = "weibull", silent = TRUE, inits = "0")
 #' summary(fit_k) 
-#' plot(fit_k)             
+#' plot(fit_k)    
+#' 
+#' ## Logisitic Regression (with family 'binomial') to illustrate model specification
+#' ## variable n contains the number of trials, success contains the number of successes
+#' n <- sample(1:10, 100, TRUE)
+#' success <- rbinom(100, size = n, prob = 0.4)
+#' x <- rnorm(100)
+#' fit_b <- brm(success | trials(n) ~ x, family = "binomial")
+#' summary(fit_b)
+#'                                           
 #' }
 #' 
 #' @import rstan
