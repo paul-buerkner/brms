@@ -15,7 +15,7 @@ list2array <- function(x) {
   if (!is.list(x) || length(x) == 0) 
     stop("x must be a non-empty list")
   x <- unlist(lapply(x, array2list), recursive = FALSE)
-  dim_elements <- lapply(x, dim)
+  dim_elements <- lapply(x, function(y) if (!is.null(dim(y))) dim(y) else length(y))
   dim_target <- dim_elements[[1]]
   if (!all(sapply(dim_elements, all.equal, current = dim_target)))
     stop("dimensions of list elements do not match")
