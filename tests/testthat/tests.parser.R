@@ -31,14 +31,15 @@ test_that("Test that extract effects finds all response variables", {
 })
 
 test_that("Test that extract.effects handles addition arguments correctly", {
-  expect_equal(extract.effects(y | se(I(a+2)) ~ x, family = "gaussian")$se, ~I(a+2))
-  expect_equal(extract.effects(y | se(I(a+2)) ~ x, family = "gaussian")$all, y~ x + I(a+2))
-  expect_equal(extract.effects(y | weights(I(1/n)) ~ x, family = "gaussian")$weights, ~I(1/n))
-  expect_equal(extract.effects(y | se(I(a+2)) | cens(log(b)) ~ x, family = "gaussian")$cens, ~log(b))
+  expect_equal(extract.effects(y | se(I(a+2)) ~ x, family = "gaussian")$se, ~ .se(I(a+2)))
+  expect_equal(extract.effects(y | se(I(a+2)) ~ x, family = "gaussian")$all, y ~ x + a)
+  expect_equal(extract.effects(y | weights(1/n) ~ x, family = "gaussian")$weights, ~ .weights(1/n))
+  expect_equal(extract.effects(y | se(a+2) | cens(log(b)) ~ x, family = "gaussian")$cens, ~ .cens(log(b)))
   expect_equal(extract.effects(y | trials(10) ~ x, family = "binomial")$trials, 10)
-  expect_equal(extract.effects(y | cat(cate) ~ x, family = "cumulative")$cat, ~cate)
-  expect_equal(extract.effects(y | cens(I(cens^2)) ~ z + (x|patient), family = "weibull")$all, 
-               y ~ z + x + patient + I(cens^2))
+  expect_equal(extract.effects(y | cat(cate) ~ x, family = "cumulative")$cat, ~ .cat(cate))
+  expect_equal(extract.effects(y | cens(cens^2) ~ z, family = "weibull")$cens, ~ .cens(cens^2))
+  expect_equal(extract.effects(y | cens(cens^2) ~ z + (x|patient), family = "weibull")$all, 
+               y ~ z + x + patient + cens)
 })
 
 test_that("Test that extract.time returns all desired variables", {

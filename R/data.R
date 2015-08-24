@@ -18,7 +18,7 @@ melt <- function(data, response, family) {
 }  
 
 #combine grouping factors
-combine.groups <- function(data, ...) {
+combine_groups <- function(data, ...) {
   group <- c(...)
   if (length(group)) {
     for (i in 1:length(group)) {
@@ -36,13 +36,13 @@ combine.groups <- function(data, ...) {
 }
 
 #update data for use in brm
-updateData <- function(data, family, effects, ...) {
+update_data <- function(data, family, effects, ...) {
   if (!"brms.frame" %in% class(data)) {
     data <- melt(data, response = effects$response, family = family)
     data <- stats::model.frame(effects$all, data = data, drop.unused.levels = TRUE)
     if (any(grepl("__", colnames(data))))
       stop("Variable names may not contain double underscores '__'")
-    data <- combine.groups(data, effects$group, ...)
+    data <- combine_groups(data, effects$group, ...)
     class(data) <- c("brms.frame", "data.frame") 
   }
   data
@@ -83,7 +83,7 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
   
   et <- extract.time(autocor$formula)
   ee <- extract.effects(formula = formula, family = family, partial, et$all)
-  data <- updateData(data, family = family, effects = ee, et$group)
+  data <- update_data(data, family = family, effects = ee, et$group)
   group.names <- list()
   for (g in ee$group) { 
     group.names[[g]] <- sort(as.character(unique(data[[g]])))
@@ -182,43 +182,36 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
   
   #addition and partial variables
   if (is.formula(ee$se)) {
-    standata <- c(standata, list(sigma = unname(brm.model.matrix(ee$se, data, rm.int = TRUE)[,1])))
-    if (min(standata$sigma) < 0) stop("standard errors must be non-negative")
+    standata <- c(standata, list(sigma = .addition(formula = ee$se, data = data)))
   }
   if (is.formula(ee$weights)) {
-    standata <- c(standata, list(weights = unname(brm.model.matrix(ee$weights, data, rm.int = TRUE)[,1])))
-    if (family == "gaussian" && length(ee$response) > 1) standata$weights <- standata$weights[1:standata$N_trait]
-    if (min(standata$weights) < 0) stop("weights must be non-negative")
+    standata <- c(standata, list(weights = .addition(formula = ee$weights, data = data)))
+    if (family == "gaussian" && length(ee$response) > 1) 
+      standata$weights <- standata$weights[1:standata$N_trait]
   }
   if (is.formula(ee$cens)) {
-    cens <- get(all.vars(ee$cens)[1], data)
-    if (is.factor(cens)) cens <- as.character(cens)
-    cens <- unname(sapply(cens, function(x) {
-      if (grepl(paste0("^",x), "right") || is.logical(x) && isTRUE(x)) x <- 1
-      else if (grepl(paste0("^",x), "none") || is.logical(x) && !isTRUE(x)) x <- 0
-      else if (grepl(paste0("^",x), "left")) x <- -1
-      else x
-    }))
-    if (!all(unique(cens) %in% c(-1:1)))
-      stop (paste0("Invalid censoring data. Accepted values are 'left', 'none', and 'right' \n",
-                   "(abbreviations are allowed) or -1, 0, and 1. TRUE and FALSE are also accepted \n",
-                   "and refer to 'right' and 'none' respectively."))
-    standata <- c(standata, list(cens = cens))
+    standata <- c(standata, list(cens = .addition(formula = ee$cens, data = data)))
   }
-  if (is.ordinal || family %in% c("binomial", "categorical")) {
-    if (family == "binomial") add <- ee$trials
-    else add <- ee$cat
-    if (!length(add)) standata$max_obs <- max(standata$Y)
-    else if (is.numeric(add)) standata$max_obs <- add
-    else if (is.formula(add)) 
-      standata$max_obs <- unname(brm.model.matrix(add, data, rm.int = TRUE)[,1])
-    else stop("Response part of formula is invalid.")
-    if (any(standata$Y > standata$max_obs))
-      stop("The number of trials / categories is smaller the response variable would suggest.")
-    if ((is.ordinal || family == "categorical") && max(standata$max_obs) == 2 ||
-        family == "binomial" && max(standata$max_obs) == 1) 
+  if (family == "binomial") {
+    standata$max_obs <- if (!length(ee$trials)) max(standata$Y)
+                        else if (is.wholenumber(ee$trials)) ee$trials
+                        else if (is.formula(ee$trials)) .addition(formula = ee$trials, data = data)
+                        else stop("Response part of formula is invalid.")
+    if (max(standata$max_obs) == 1) 
       message("Only 2 levels detected so that family 'bernoulli' might be a more efficient choice.")
-  } 
+    if (any(standata$Y > standata$max_obs))
+      stop("Number of trials is smaller than the response variable would suggest.")
+  }
+  if (is.ordinal || family == "categorical") {
+    standata$max_obs <- if (!length(ee$cat)) max(standata$Y)
+                        else if (is.wholenumber(ee$cat)) ee$cat
+                        else if (is.formula(ee$cat)) .addition(formula = ee$cat, data = data)
+                        else stop("Response part of formula is invalid.")
+    if (max(standata$max_obs) == 2) 
+      message("Only 2 levels detected so that family 'bernoulli' might be a more efficient choice.")
+    if (any(standata$Y > standata$max_obs))
+      stop("Number of categories is smaller than the response variable would suggest.")
+  }  
   
   #get data for partial effects
   if (is.formula(partial)) {
@@ -275,7 +268,7 @@ brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
 #   For details see the documentation of \code{model.matrix}.
 brm.model.matrix = function(formula, data = environment(formula), rm.int = FALSE) {
   if (!is(formula, "formula")) return(NULL) 
-  X <- model.matrix(formula,data)
+  X <- stats::model.matrix(formula,data)
   cn.new <- rename(colnames(X), check_dup = TRUE)
   if (rm.int && "Intercept" %in% cn.new) {
     X <- as.matrix(X[,-(1)])
@@ -284,3 +277,53 @@ brm.model.matrix = function(formula, data = environment(formula), rm.int = FALSE
   else colnames(X) <- cn.new
   X   
 }
+
+#computes data for addition arguments
+.addition <- function(formula, data) {
+  if (!is.formula(formula))
+    formula <- as.formula(formula)
+  eval(formula[[2]], data, environment(formula))
+}
+
+#standard errors for meta-analysis
+.se <- function(x) {
+  if (min(x) < 0) stop("standard errors must be non-negative")
+  x  
+}
+
+#weights to be applied on any model
+.weights <- function(x) {
+  if (min(x) < 0) stop("weights must be non-negative")
+  x
+}
+
+#trials for binomial models
+.trials <- function(x) {
+  if (any(!is.wholenumber(x) || x < 1))
+    stop("number of trials must be positive integers")
+  x
+}
+
+#number of categories for categorical and ordinal models
+.cat <- function(x) {
+  if (any(!is.wholenumber(x) || x < 1))
+    stop("number of categories must be positive integers")
+  x
+}
+
+#indicator for censoring
+.cens <- function(x) {
+  if (is.factor(x)) x <- as.character(x)
+  cens <- unname(sapply(x, function(x) {
+    if (grepl(paste0("^",x), "right") || is.logical(x) && isTRUE(x)) x <- 1
+    else if (grepl(paste0("^",x), "none") || is.logical(x) && !isTRUE(x)) x <- 0
+    else if (grepl(paste0("^",x), "left")) x <- -1
+    else x
+  }))
+  if (!all(unique(cens) %in% c(-1:1)))
+    stop (paste0("Invalid censoring data. Accepted values are 'left', 'none', and 'right' \n",
+                 "(abbreviations are allowed) or -1, 0, and 1. TRUE and FALSE are also accepted \n",
+                 "and refer to 'right' and 'none' respectively."))
+  cens
+}
+  

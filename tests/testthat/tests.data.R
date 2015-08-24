@@ -88,7 +88,7 @@ test_that("Test that brm.data rejects incorrect addition arguments", {
                "weights must be non-negative")
   expect_error(brm.data(y | cens(c) ~ 1, data = data.frame(y = rnorm(9), c = rep(-2:1,3))))
   expect_error(brm.data(y | trials(c) ~ 1, data = data.frame(y = 1:10, c = 10:1), family = "binomial"),
-               "The number of trials / categories is smaller the response variable would suggest.")
+               "Number of trials is smaller than the response variable would suggest.")
 })
 
 test_that("Test that brm.data handles addition arguments and autocorrelation in multinormal models", {

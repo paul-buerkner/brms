@@ -23,7 +23,7 @@ brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, p
   if (is.null(autocor)) autocor <- cor.arma()
   if (!is(autocor,"cor.brms")) stop("cor must be of class cor.brms")
   ee <- extract.effects(formula = formula, family = family, partial = partial)
-  data <- updateData(data, family = family, effects = ee)
+  data <- update_data(data, family = family, effects = ee)
   
   is.linear <- family %in% c("gaussian", "student", "cauchy")
   is.ordinal <- family  %in% c("cumulative","cratio","sratio","acat")

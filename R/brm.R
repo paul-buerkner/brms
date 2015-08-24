@@ -292,7 +292,7 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
     et <- extract.time(autocor$formula)
     ee <- extract.effects(formula, family = family, partial, et$all)
     data.name <- Reduce(paste, deparse(substitute(data)))
-    data <- updateData(data, family = family, effects = ee, et$group)
+    data <- update_data(data, family = family, effects = ee, et$group)
     x <- brmsfit(formula = formula, family = family, link = link, partial = partial,
                  data.name = data.name, autocor = autocor, prior = prior)
     x$ranef <- setNames(lapply(lapply(ee$random, brm.model.matrix, data = data), colnames), 

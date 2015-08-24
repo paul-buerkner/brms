@@ -50,6 +50,7 @@ extract.effects <- function(formula, ..., family = "none", add.ignore = FALSE) {
     stop("Names of grouping factors may not contain dots")
   
   fun <- c("se", "weights", "trials", "cat", "cens")
+  add_vars <- list()
   if (!add.ignore) {
     add <- unlist(regmatches(formula, gregexpr("\\|[^~]*~", formula)))[1]
     add <- substr(add, 2, nchar(add)-1)
@@ -62,13 +63,12 @@ extract.effects <- function(formula, ..., family = "none", add.ignore = FALSE) {
       add <- gsub(paste0(f,"\\([^~|\\|]*\\)\\|*"), "", add)
       if (is.na(x[[f]])) x[[f]] <- NULL
       else if (family %in% families[[f]] || families[[f]][1] == "all") {
-        x[[f]] <- substr(x[[f]], nchar(f) + 2, nchar(x[[f]]) -1)
-        if (is.na(suppressWarnings(as.numeric(x[[f]])))) {
-          x[[f]] <- as.formula(paste0("~", x[[f]]))
-          if (length(all.vars(x[[f]])) > 1) 
-            stop(paste("Argument",f,"in formula contains more than one variable"))
+        args <- substr(x[[f]], nchar(f) + 2, nchar(x[[f]]) -1)
+        if (is.na(suppressWarnings(as.numeric(args)))) {
+          x[[f]] <- as.formula(paste0("~ .", x[[f]]))
+          add_vars[[f]] <- as.formula(paste("~", paste(all.vars(x[[f]]), collapse = "+")))
         }  
-        else x[[f]] <- as.numeric(x[[f]])
+        else x[[f]] <- as.numeric(args)
       }  
       else stop(paste("Argument",f,"in formula is not supported by family",family))
     }
@@ -78,7 +78,7 @@ extract.effects <- function(formula, ..., family = "none", add.ignore = FALSE) {
                   "the old one was not flexible enough."))
   }
   
-  up.formula <- unlist(lapply(c(random, group, rmNULL(rmNum(x[fun])), ...), 
+  up.formula <- unlist(lapply(c(random, group, add_vars, ...), 
                               function(x) paste0("+", Reduce(paste, deparse(x[[2]])))))
   up.formula <- paste0("update(",Reduce(paste, deparse(fixed)),", . ~ .",paste0(up.formula, collapse=""),")")
   x$all <- eval(parse(text = up.formula))
