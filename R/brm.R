@@ -277,7 +277,7 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
     x$fit <- rstan::get_stanmodel(x$fit)
   }
   else {
-    link <- brm.link(family)
+    link <- link4family(family)
     family <- family[1]
     formula <- brm.update.formula(formula, addition = addition)
     et <- extract.time(autocor$formula)
@@ -295,8 +295,8 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
                           autocor = autocor, partial = partial, threshold = threshold, 
                           cov.ranef = names(cov.ranef), sample.prior = sample.prior, 
                           save.model = save.model)
-    x$fit <- rstan::stan_model(model_code = x$model, auto_write = FALSE,
-                               model_name = paste0(family,"(",link,") brms-model"))
+    x$fit <- get_stanmodel(suppressMessages(stan(model_code = x$model, data = x$data,
+               model_name = paste0(family,"(",link,") brms-model"), chains = 0)))
   }
   
   if (is.character(inits) && !inits %in% c("random", "0")) 
