@@ -167,8 +167,8 @@
 #'   we can specify this via \cr
 #'   \code{prior = list(b_x1 = "normal(0,5)", b_x2 = "uniform(-10,10)")}. 
 #'   To put the same prior (e.g. a normal prior) on all fixed effects at once, 
-#'   we may write as a shortcut \code{prior = } \cr \code{list(b = "normal(0,5)")}. In addition, this
-#'   leads to faster sampling in Stan, because priors can be vectorized. \cr
+#'   we may write as a shortcut \code{prior = } \cr \code{list(b = "normal(0,5)")}. This also
+#'   leads to faster sampling, because priors can be vectorized in this case. \cr
 #'   
 #'   2. Autocorrelation parameters
 #'   
@@ -191,16 +191,13 @@
 #'   
 #'   If there is more than one random effect per grouping factor, the correlations between those random
 #'   effects have to be estimated. 
-#'   However, in \code{brms} models, the corresponding correlation matrix \eqn{C} does not have prior itself. 
-#'   Instead, a prior is defined for the cholesky factor \eqn{L} of \eqn{C}. They are related through the equation
-#'     \deqn{L * L' = C.} 
-#'   The prior \code{"lkj_corr_cholesky(eta)"} with \code{eta > 0} is essentially the only prior for 
-#'   cholesky factors of correlation matrices.
-#'   If \code{eta = 1} (the default) all correlations matrices are equally likely a priori. If \code{eta > 1}, 
+#'   The prior \code{"lkj_corr_cholesky(eta)"} or in short \code{"lkj(eta)"} with \code{eta > 0} is essentially the only prior 
+#'   for (choelsky factors) of correlation matrices. If \code{eta = 1} (the default) all correlations matrices are equally likely a priori. If \code{eta > 1}, 
 #'   extreme correlations become less likely, 
 #'   whereas \code{0 < eta < 1} results in higher probabilities for extreme correlations. 
-#'   The cholesky factors in \code{brms} models are named as 
-#'   \code{L_(group)}, (e.g., \code{L_z} if \code{z} is the grouping factor). \cr
+#'   Correlation matrix parameters in \code{brms} models are named as 
+#'   \code{cor_(group)}, (e.g., \code{cor_z} if \code{z} is the grouping factor).
+#'   To set the same prior on every correlation matrix, use for instance \code{prior = list(cor = "lkj(2)")} \cr
 #'   
 #'   5. Parameters for specific families 
 #'   
@@ -217,6 +214,9 @@
 #'   and \code{acat}, and only if \code{threshold = "equidistant"}, the parameter \code{delta} is used to model the distance
 #'   between to adjacent thresholds. By default, \code{delta} has an improper flat prior over the reals. \cr
 #' 
+#'   To get a full list of parameters for which priors can be specified (depending on the model) 
+#'   use method \code{\link[brms:par.names.formula]{par.names.formula}}.
+#'   
 #' @examples
 #' \dontrun{ 
 #' ## Poisson Regression for the number of seizures in epileptic patients
