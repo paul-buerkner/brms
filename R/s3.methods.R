@@ -93,7 +93,7 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
     out
   }
   
-  ee <- extract.effects(x$formula, add.ignore = TRUE)
+  ee <- extract.effects(x$formula, family = x$family)
   if (length(x$ranef)) {
     group <- names(x$ranef)
     p <- lapply(1:length(group), function(i)
@@ -103,7 +103,7 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
                                   eval = length(x$ranef[[i]]) > 1 && ee$cor[[i]], 
                                   brackets = FALSE)))
   } else p <- group <- NULL
-  if (x$family %in% c("gaussian", "student", "cauchy")) {
+  if (x$family %in% c("gaussian", "student", "cauchy") && !is.formula(ee$se)) {
     p[[length(p)+1]] <- list(r.names = ee$response, 
                              sd.pars = paste0("sigma_",ee$response),
                              cor.pars = get.cor.names(ee$response, type = "rescor", 
@@ -130,14 +130,16 @@ posterior.samples.brmsfit <- function(x, parameters = NA, add.chains = FALSE, ..
   thin <- attr(x$fit@sim$samples[[1]],"args")$thin
   chains <- length(x$fit@sim$samples) 
   
-  samples <- data.frame(sapply(1:length(pars), function(i)
-    unlist(lapply(1:chains, function(j) 
-      x$fit@sim$samples[[j]][[pars[i]]][(warmup/thin+1):(iter/thin)]))))
-  names(samples) <- pars
-  if (add.chains) {
-    samples$chains <- factor(do.call(c, lapply(1:chains, rep, times = nrow(samples)/chains)))
-    samples$iter <- rep((warmup+1):(nrow(samples)/chains+warmup), chains)
-  }  
+  if (length(pars)) {
+    samples <- data.frame(sapply(1:length(pars), function(i)
+      unlist(lapply(1:chains, function(j) 
+        x$fit@sim$samples[[j]][[pars[i]]][(warmup/thin+1):(iter/thin)]))))
+    names(samples) <- pars
+    if (add.chains) {
+      samples$chains <- factor(do.call(c, lapply(1:chains, rep, times = nrow(samples)/chains)))
+      samples$iter <- rep((warmup+1):(nrow(samples)/chains+warmup), chains)
+    }
+  } else samples <- NULL  
   samples
 }
 
@@ -177,7 +179,7 @@ prior.samples.brmsfit <- function(x, parameters = NA, ...) {
 #' @method summary brmsfit
 #' @export
 summary.brmsfit <- function(object, ...) {
-  ee <- extract.effects(object$formula, add.ignore = TRUE)
+  ee <- extract.effects(object$formula, family = object$family)
   out <- brmssummary(formula = brm.update.formula(object$formula, partial = object$partial),
              family = object$family, link = object$link, data.name = object$data.name, 
              group = names(object$ranef), nobs = nobs(object), ngrps = brms::ngrps(object), 
@@ -192,7 +194,7 @@ summary.brmsfit <- function(object, ...) {
     
     pars <- par.names(object)
     meta_pars <- object$fit@sim$pars_oi
-    meta_pars <- meta_pars[!apply(sapply(paste0("^",c("r_","prior_","Y_pred")), 
+    meta_pars <- meta_pars[!apply(sapply(paste0("^",c("r_","prior_")), 
                                   grepl, x = meta_pars, ...), 1, any)]
     fit.summary <- rstan::summary(object$fit, pars = meta_pars, probs = c(0.025, 0.975))
     col.names <- c("Estimate", "Est.Error", "l-95% CI", "u-95% CI", "Eff.Sample", "Rhat")

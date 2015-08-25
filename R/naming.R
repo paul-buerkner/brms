@@ -77,7 +77,7 @@ rename.pars <- function(x, ...) {
       }
     }
   }
-  if (x$family %in% c("gaussian", "student", "cauchy")) {
+  if (x$family %in% c("gaussian", "student", "cauchy") && !is.formula(ee$se)) {
    change[[length(change)+1]] <- list(pos = grepl("^sigma", pars), 
                                       oldname = "sigma",
                                       pnames = paste0("sigma_",ee$response),

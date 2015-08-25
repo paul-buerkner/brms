@@ -2,14 +2,14 @@
 predict.brmsfit <- function(object, ...) {
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
-  ee <- extract.effects(object$formula, add.ignore = TRUE)
+  ee <- extract.effects(object$formula, family = object$family)
   if (object$link == "log" && object$family == "gaussian" && length(ee$response) == 1) 
     object$family <- "lognormal"
   if (object$family == "gaussian" && length(ee$response) > 1)
     object$family <- "multinormal"
   
   samples <- list(eta = linear.predictor(object))
-  if (object$family %in% c("gaussian", "student", "cauchy", "lognormal", "multinormal")) 
+  if (object$family %in% c("gaussian", "student", "cauchy", "lognormal", "multinormal") && !is.formula(ee$se))
     samples$sigma <- as.matrix(posterior.samples(object, parameters = "^sigma_"))
   if (object$family == "student") 
     samples$nu <- as.matrix(posterior.samples(object, parameters = "^nu$"))
@@ -31,23 +31,28 @@ predict.brmsfit <- function(object, ...) {
 }
 
 predict_gaussian <- function(n, data, samples, link) {
-  rnorm(nrow(samples$eta), mean = ilink(samples$eta[,n], link), 
-        sd = samples$sigma)
+  sigma <- if (!is.null(samples$sigma)) samples$sigma
+           else data$sigma
+  rnorm(nrow(samples$eta), mean = ilink(samples$eta[,n], link), sd = sigma)
 }
 
 predict_student <- function(n, data, samples, link) {
+  sigma <- if (!is.null(samples$sigma)) samples$sigma
+           else data$sigma
   rstudent(nrow(samples$eta), df = samples$nu, mu = ilink(samples$eta[,n], link), 
-           sigma = samples$sigma)
+           sigma = sigma)
 }
 
 predict_cauchy <- function(n, data, samples, link) {
-  rstudent(nrow(samples$eta), df = 1, mu = ilink(samples$eta[,n], link), 
-           sigma = samples$sigma)
+  sigma <- if (!is.null(samples$sigma)) samples$sigma
+           else data$sigma
+  rstudent(nrow(samples$eta), df = 1, mu = ilink(samples$eta[,n], link), sigma = sigma)
 }
 
 predict_lognormal <- function(n, data, samples, link) {
-  rlnorm(nrow(samples$eta), meanlog = samples$eta[,n], 
-         sdlog = samples$sigma)
+  sigma <- if (!is.null(samples$sigma)) samples$sigma
+           else data$sigma
+  rlnorm(nrow(samples$eta), meanlog = samples$eta[,n], sdlog = sigma)
 }
 
 predict_multinormal <- function(n, data, samples, link) {

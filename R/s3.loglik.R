@@ -33,14 +33,14 @@ compare_ic <- function(x, ic = c("waic", "loo")) {
 loglik.brmsfit <- function(x, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
-  ee <- extract.effects(x$formula, add.ignore = TRUE)
+  ee <- extract.effects(x$formula, family = x$family)
   if (x$link == "log" && x$family == "gaussian" && length(ee$response) == 1) 
     x$family <- "lognormal"
   if (x$family == "gaussian" && length(ee$response) > 1)
     x$family <- "multinormal"
   
   samples <- list(eta = linear.predictor(x))
-  if (x$family %in% c("gaussian", "student", "cauchy", "lognormal", "multinormal")) 
+  if (x$family %in% c("gaussian", "student", "cauchy", "lognormal", "multinormal") && !is.formula(ee$se)) 
     samples$sigma <- as.matrix(posterior.samples(x, parameters = "^sigma_"))
   if (x$family == "student") 
     samples$nu <- as.matrix(posterior.samples(x, parameters = "^nu$"))
@@ -58,57 +58,65 @@ loglik.brmsfit <- function(x, ...) {
 }
 
 loglik_gaussian <- function(n, data, samples, link) {
+  sigma <- if (!is.null(samples$sigma)) samples$sigma
+           else data$sigma
   out <- if (is.null(data$cens) || data$cens[n] == 0)
     dnorm(data$Y[n], mean = ilink(samples$eta[,n], link), 
-          sd = samples$sigma, log = TRUE)
+          sd = sigma, log = TRUE)
   else if (data$cens[n] == 1)
     pnorm(data$Y[n], mean = ilink(samples$eta[,n], link), 
-          sd = samples$sigma, lower.tail = FALSE, log.p = TRUE)
+          sd = sigma, lower.tail = FALSE, log.p = TRUE)
   else if (data$cens[n] == -1)
     pnorm(data$Y[n], mean = ilink(samples$eta[,n], link), 
-          sd = samples$sigma, log.p = TRUE)
+          sd = sigma, log.p = TRUE)
   if ("weights" %in% names(data)) out <- out * data$weights[n]
   out
 }
 
 loglik_student <- function(n, data, samples, link) {
+  sigma <- if (!is.null(samples$sigma)) samples$sigma
+           else data$sigma
   out <- if (is.null(data$cens) || data$cens[n] == 0)
     dstudent(data$Y[n], df = samples$nu, mu = ilink(samples$eta[,n], link), 
-             sigma = samples$sigma, log = TRUE)
+             sigma = sigma, log = TRUE)
   else if (data$cens[n] == 1)
     pstudent(data$Y[n], df = samples$nu, mu = ilink(samples$eta[,n], link), 
-             sigma = samples$sigma, lower.tail = FALSE, log.p = TRUE)
+             sigma = sigma, lower.tail = FALSE, log.p = TRUE)
   else if (data$cens[n] == -1)
     pstudent(data$Y[n], df = samples$nu, mu = ilink(samples$eta[,n], link), 
-             sigma = samples$sigma, log.p = TRUE)
+             sigma = sigma, log.p = TRUE)
   if ("weights" %in% names(data)) out <- out * data$weights[n]
   out
 }
 
 loglik_cauchy <- function(n, data, samples, link) {
+  sigma <- if (!is.null(samples$sigma)) samples$sigma
+           else data$sigma
   out <- if (is.null(data$cens) || data$cens[n] == 0)
     dstudent(data$Y[n], df = 1, mu = ilink(samples$eta[,n], link), 
-             sigma = samples$sigma, log = TRUE)
+             sigma = sigma, log = TRUE)
   else if (data$cens[n] == 1)
     pstudent(data$Y[n], df = 1, mu = ilink(samples$eta[,n], link), 
-             sigma = samples$sigma, lower.tail = FALSE, log.p = TRUE)
+             sigma = sigma, lower.tail = FALSE, log.p = TRUE)
   else if (data$cens[n] == -1)
     pstudent(data$Y[n], df = 1, mu = ilink(samples$eta[,n], link), 
-             sigma = samples$sigma, log.p = TRUE)
+             sigma = sigma, log.p = TRUE)
   if ("weights" %in% names(data)) out <- out * data$weights[n]
   out
 }
 
 loglik_lognormal <- function(n, data, samples, link) {
+  sigma <- if (!is.null(samples$sigma)) samples$sigma
+           else data$sigma
   out <- if (is.null(data$cens) || data$cens[n] == 0)
     dlnorm(data$Y[n], meanlog = samples$eta[,n], 
-           sdlog = samples$sigma, log = TRUE)
+           sdlog = sigma, log = TRUE)
   else if (data$cens[n] == 1)
     plnorm(data$Y[n], meanlog = ilink(samples$eta[,n], link), 
-           sdlog = samples$sigma, lower.tail = FALSE, log.p = TRUE)
+           sdlog = sigma, lower.tail = FALSE, log.p = TRUE)
   else if (data$cens[n] == -1)
     plnorm(data$Y[n], meanlog = ilink(samples$eta[,n], link), 
-           sdlog = samples$sigma, log.p = TRUE)
+           sdlog = sigma, log.p = TRUE)
   if ("weights" %in% names(data)) out <- out * data$weights[n]
   out
 }
