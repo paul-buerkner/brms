@@ -30,6 +30,8 @@ extract.effects <- function(formula, ..., family = "none", add.ignore = FALSE) {
   fixed <- gsub("\\|+[^~]*~", "~", fixed)
   if (substr(fixed, nchar(fixed), nchar(fixed)) == "~") fixed <- paste0(fixed, "1")
   fixed <- formula(fixed)
+  if (family %in% c("cumulative", "sratio", "cratio", "acat"))
+    fixed <- update.formula(fixed, . ~ . +1)
   if (length(fixed) < 3) stop("invalid formula: response variable is missing")
   
   rg <- unlist(regmatches(formula, gregexpr("\\([^\\|\\)]*\\|[^\\)]*\\)", formula)))
