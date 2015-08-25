@@ -43,7 +43,7 @@
 #' @param n.thin Thinning rate. Must be a positive integer. Set \code{n.thin > 1} to save memory and computation time if \code{n.iter} is large. Default is 1, that is no thinning.
 #' @param n.cluster	Number of clusters to use to run parallel chains. Default is 1.   
 #' @param inits Either \code{"random"} or \code{"0"}. If inits is \code{"random"} (the default), Stan will randomly generate initial values for parameters. 
-#'   If it is \code{"0"}, all parameters are initiliazed to zero (recommended for \code{weibull} models). 
+#'   If it is \code{"0"}, all parameters are initiliazed to zero (recommended for \code{exponential} and \code{weibull} models). 
 #'   Alternatively, \code{inits} can be a list of lists containing the initial values, or a function (or function name) generating initial values. 
 #'   The latter options are mainly implemented for internal testing.
 #' @param save.model Either \code{NULL} or a character string. In the latter case, the model code is

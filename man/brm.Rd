@@ -70,7 +70,7 @@ so warmup samples should not be used for inference. The number of warmup should 
 \item{n.cluster}{Number of clusters to use to run parallel chains. Default is 1.}
 
 \item{inits}{Either \code{"random"} or \code{"0"}. If inits is \code{"random"} (the default), Stan will randomly generate initial values for parameters.
-If it is \code{"0"}, all parameters are initiliazed to zero (recommended for \code{weibull} models).
+If it is \code{"0"}, all parameters are initiliazed to zero (recommended for \code{exponential} and \code{weibull} models).
 Alternatively, \code{inits} can be a list of lists containing the initial values, or a function (or function name) generating initial values.
 The latter options are mainly implemented for internal testing.}
 
