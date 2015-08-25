@@ -169,3 +169,29 @@ par.names.formula <- function(x, data = NULL, family = "gaussian", autocor = NUL
     out$other <- c(out$other, "delta")
   out
 }
+
+# check prior and amend it if needed
+check_prior <- function(prior, formula, data = NULL, family = "gaussian", autocor = NULL, 
+                        partial = NULL, threshold = "flexible") {
+  #expand lkj correlation prior to full name
+  prior <- lapply(prior, function(p) sub("^lkj\\(", "lkj_corr_cholesky(", p))
+  #check if parameter names in prior are correct
+  ee <- extract.effects(formula, family = family)  
+  possible_priors <- unlist(par.names(formula, data = data, family = family, autocor = autocor,
+                            partial = partial, threshold = threshold, internal = TRUE), use.names = FALSE)
+  meta_priors <- unlist(regmatches(possible_priors, gregexpr("^[^_]+", possible_priors)))
+  if ("sd" %in% meta_priors)
+    meta_priors <- c(meta_priors, paste0("sd_",ee$group))
+  possible_priors <- unique(c(possible_priors, meta_priors))
+  wrong_priors <- names(prior)[!names(prior) %in% possible_priors]
+  if (length(wrong_priors))
+    warning(paste("Some parameter names in prior cannot be found in the model:", 
+                   paste0(wrong_priors, collapse = ", ")))
+  #rename certain parameters
+  names(prior) <- rename(names(prior), symbols = c("^cor_", "^cor$", "^rescor$"), 
+                         subs = c("L_", "L", "Lrescor"), fixed = FALSE)
+  if (family %in% c("cumulative", "sratio", "cratio", "acat") && threshold == "equidistant")
+    names(prior) <- rename(names(prior), symbols = "^b_Intercept$", subs = "b_Intercept1",
+                           fixed = FALSE)
+  prior
+}

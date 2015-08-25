@@ -289,6 +289,8 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
     link <- link4family(family)
     family <- family[1]
     formula <- brm.update.formula(formula, addition = addition)
+    prior <- check_prior(prior, formula = formula, data = data, family = family, autocor = autocor,
+                         partial = partial, threshold = threshold)
     et <- extract.time(autocor$formula)
     ee <- extract.effects(formula, family = family, partial, et$all)
     data.name <- Reduce(paste, deparse(substitute(data)))
