@@ -7,18 +7,20 @@
 par.names(x, ...)
 }
 \arguments{
-\item{x}{An \code{R} object typically of class \code{brmsfit}}
+\item{x}{An \code{R} object}
 
-\item{...}{Currently ignored}
+\item{...}{Further arguments passed to or from other methods}
 }
 \value{
 A character vector containing the parameter names of the model
 }
 \description{
-Extract all parameter names of a given model
+Extract all parameter names of a given model or formula. This help page describes the functionality for
+ an object of class \code{brmsfit}. See \code{\link[brms:par.names.formula]{par.names.formula}} for
+ help on the \code{formula} method.
 }
 \details{
-Currently there are methods for \code{brmsfit} objects.
+Currently there are methods for \code{brmsfit} and \code{formula} objects.
 }
 \author{
 Paul-Christian Buerkner \email{paul.buerkner@gmail.com}

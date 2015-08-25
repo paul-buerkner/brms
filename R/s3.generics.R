@@ -259,12 +259,14 @@ prior.samples <- function(x, parameters = NA, ...)
 
 #' Extract parameter names
 #' 
-#' Extract all parameter names of a given model
+#' Extract all parameter names of a given model or formula. This help page describes the functionality for
+#'  an object of class \code{brmsfit}. See \code{\link[brms:par.names.formula]{par.names.formula}} for
+#'  help on the \code{formula} method.
 #' 
-#' @param x An \code{R} object typically of class \code{brmsfit}
-#' @param ... Currently ignored
+#' @param x An \code{R} object
+#' @param ... Further arguments passed to or from other methods
 #' 
-#' @details Currently there are methods for \code{brmsfit} objects.
+#' @details Currently there are methods for \code{brmsfit} and \code{formula} objects.
 #' @return A character vector containing the parameter names of the model
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}

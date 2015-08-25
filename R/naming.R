@@ -113,3 +113,59 @@ rename.pars <- function(x, ...) {
   x$fit@sim$pars_oi <- names(x$fit@sim$dims_oi)
   x
 }
+
+#' Extract parameter names
+#' 
+#' Extract all parameter names for which priors may be specified
+#' 
+#' @param x An object of class \code{formula}
+#' @inheritParams brm
+#' @param internal A flag indicating if the names of additional internal parameters should be displayed. 
+#'   Setting priors on these parameters is not recommended
+#' @param ... Currently ignored
+#' 
+#' @return A list of character vectors containing the parameter names for which priors may be specified
+#' 
+#' @examples 
+#' par.names(rating ~ treat + period + carry + (1+carry|subject), 
+#'           data = inhaler, family = "student")
+#'           
+#' par.names(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient) + (1|visit),
+#'           data = epilepsy, family = "poisson")          
+#' 
+#' @export
+par.names.formula <- function(x, data = NULL, family = "gaussian", autocor = NULL, 
+                              partial = NULL, threshold = "flexible", internal = FALSE, ...) {
+  if (is.null(autocor)) autocor <- cor.arma()
+  if (!is(autocor, "cor.brms")) stop("cor must be of class cor.brms")
+  if (!threshold %in% c("flexible","equidistant")) 
+    stop("threshold must be either flexible or equidistant")
+  family <- family[1]
+  ee <- extract.effects(x, family = family)
+  data <- update_data(data, family = family, effects = ee)
+  out <- list(fixef = paste0("b_",colnames(brm.model.matrix(ee$fixed, data = data))),
+              ranef = list(), other = NULL)
+  if (is.formula(partial)) 
+    out$fixef <- c(out$fixef, colnames(brm.model.matrix(partial, data = data, rm.int = TRUE)))
+  if (length(ee$group)) {
+    gs <- unlist(ee$group)
+    for (i in 1:length(gs)) {
+      ranef <- colnames(brm.model.matrix(ee$random[[i]], data = data))
+      out$ranef[[gs[i]]] <- c(paste0("sd_",gs[i],"_",ranef),
+                              if (ee$cor[[i]] && length(ranef) > 1) 
+                                c(paste0("cor_",gs[i]), if(internal) paste0("L_",gs[i]))) 
+    }
+  }
+  if (is(autocor, "cor.arma") && autocor$p) out$other <- c(out$other, "ar")
+  if (is(autocor, "cor.arma") && autocor$q) out$other <- c(out$other, "ma")
+  if (family %in% c("gaussian", "student", "cauchy") && !is.formula(ee$se))
+    out$other <- c(out$other, paste0("sigma_",ee$response))
+  if (family == "gaussian" && length(ee$response) > 1)
+    out$other <- c(out$other, "rescor", if (internal) "Lrescor")
+  if (family == "student") out$other <- c(out$other, "nu")
+  if (family %in% c("gamma", "weibull", "negbinomial")) 
+    out$other <- c(out$other, "shape")
+  if (family %in% c("cumulative", "sratio", "cratio", "acat") && threshold == "equidistant")
+    out$other <- c(out$other, "delta")
+  out
+}
