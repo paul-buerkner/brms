@@ -100,9 +100,6 @@ test_that("Test that brm.data handles addition arguments and autocorrelation in 
   expect_error(brm.data(cbind(y1,y2) | weights(w) ~ x, family = "gaussian", 
                         autocor = cor.ar(~tim|g), data = data),
                "autocorrelation structures for multiple responses must contain 'trait' as grouping variable")
-  expect_error(brm.data(cbind(y1,y2) | weights(w) ~ x, family = "multigaussian", 
-                        autocor = cor.ar(~tim|g), data = data),
-               "family 'multigaussian' is depricated. Use family 'gaussian' instead")
 })
 
 test_that("Test that brm.data returns correct data for autocorrelations structures", {

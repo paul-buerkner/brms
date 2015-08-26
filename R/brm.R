@@ -287,7 +287,7 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
   }
   else {
     link <- link4family(family)
-    family <- family[1]
+    family <- check_family(family[1])
     formula <- brm.update.formula(formula, addition = addition)
     prior <- check_prior(prior, formula = formula, data = data, family = family, autocor = autocor,
                          partial = partial, threshold = threshold)
@@ -300,7 +300,7 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
     x$ranef <- setNames(lapply(lapply(ee$random, brm.model.matrix, data = data), colnames), 
                         gsub("__", ":", ee$group))
     x$exclude <- exclude_pars(formula, ranef = ranef)
-    x$data <- brm.data(formula, data = data, family = family, prior = prior, cov.ranef = cov.ranef,
+    x$data <- brm.data(formula, data = data, family = family, cov.ranef = cov.ranef,
                        autocor = autocor, partial = partial) 
     x$model <- stan.model(formula = formula, data = data, family = family, link = link, prior = prior, 
                           autocor = autocor, partial = partial, threshold = threshold, 
@@ -312,6 +312,10 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
   
   if (is.character(inits) && !inits %in% c("random", "0")) 
     inits <- get(inits, mode = "function", envir = parent.frame())
+  if (family %in% c("exponential", "weibull") && inits == "random")
+    warning(paste("Families exponential and weibull may not work with default initial values. \n",
+                   "It is thus recommended to set inits = '0'"))
+  
   args <- list(object = x$fit, data = x$data, pars = x$exclude, init = inits,
             iter = n.iter, warmup = n.warmup, thin = n.thin, chains = n.chains, 
             include = FALSE)

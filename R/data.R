@@ -66,18 +66,13 @@ update_data <- function(data, family, effects, ...) {
 #' names(data2)
 #'          
 #' @export
-brm.data <- function(formula, data = NULL, family = "gaussian", prior = list(),
-                     autocor = NULL, partial = NULL, cov.ranef = NULL) {
-  family <- family[1]
+brm.data <- function(formula, data = NULL, family = "gaussian", autocor = NULL, 
+                     partial = NULL, cov.ranef = NULL) {
+  family <- check_family(family[1])
   is.linear <- family %in% c("gaussian", "student", "cauchy")
-  is.ordinal <- family  %in% c("cumulative","cratio","sratio","acat")
+  is.ordinal <- family %in% c("cumulative","cratio","sratio","acat")
   is.count <- family %in% c("poisson", "negbinomial", "geometric")
   is.skew <- family %in% c("gamma", "weibull", "exponential")
-  if (family == "multigaussian") 
-    stop("family 'multigaussian' is depricated. Use family 'gaussian' instead")
-  if (!(is.linear | is.ordinal | is.skew | is.count | family %in% 
-        c("binomial", "bernoulli", "categorical")))
-    stop(paste(family, "is not a valid family"))
   if (is.null(autocor)) autocor <- cor.arma()
   if (!is(autocor,"cor.brms")) stop("cor must be of class cor.brms")
   

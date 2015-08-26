@@ -180,16 +180,17 @@ eratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"), prior_samp
 link4family <- function(family) {
   link <- family[2]
   family <- family[1]
-  is.lin <- family %in% c("gaussian", "student", "cauchy")
+  is.linear <- family %in% c("gaussian", "student", "cauchy")
   is.skew <- family %in% c("gamma", "weibull", "exponential")
-  is.bin <- family %in% c("cumulative", "cratio", "sratio", "acat","binomial", "bernoulli")                    
+  is.bin <- family %in% c("cumulative", "cratio", "sratio", "acat", "binomial", "bernoulli")                    
   is.count <- family %in% c("poisson", "negbinomial", "geometric")
+
   if (is.na(link)) {
-    if (is.lin) link <- "identity"
+    if (is.linear) link <- "identity"
     else if (is.skew || is.count) link <- "log"
     else if (is.bin || family == "categorical") link <- "logit"
   }
-  else if (is.lin && !is.element(link, c("identity", "log", "inverse")) ||
+  else if (is.linear && !is.element(link, c("identity", "log", "inverse")) ||
            is.count && !link %in% c("log", "identity", "sqrt") ||
            is.bin && !link %in% c("logit", "probit", "probit_approx", "cloglog") ||
            family == "categorical" && link != "logit" ||
@@ -198,6 +199,18 @@ link4family <- function(family) {
   else if (is.count && link == "sqrt") 
     warning(paste(family, "model with sqrt link may not be uniquely identified"))
   link
+}
+
+#check validity of family
+check_family <- function(family) {
+  if (family == "normal") family <- "gaussian"
+  if (family == "multigaussian") 
+    stop("family 'multigaussian' is deprecated. Use family 'gaussian' instead")
+  if (!family %in% c("gaussian", "student", "cauchy", "binomial", "bernoulli", "categorical",
+                     "poisson", "negbinomial", "geometric", "gamma", "weibull", "exponential",
+                     "cumulative", "cratio", "sratio", "acat"))
+    stop(paste(family, "is not a valid family"))
+  family
 }
 
 #list irrelevant parameters not to be saved by Stan
@@ -210,4 +223,33 @@ exclude_pars <- function(formula, ranef = TRUE) {
     if (!ranef) out <- c(out, paste0("r_",ee$group))
   }
   out
+}
+
+#check prior and amend it if needed
+check_prior <- function(prior, formula, data = NULL, family = "gaussian", autocor = NULL, 
+                        partial = NULL, threshold = "flexible") {
+  
+  #expand lkj correlation prior to full name
+  prior <- lapply(prior, function(p) sub("^lkj\\(", "lkj_corr_cholesky(", p))
+  
+  #check if parameter names in prior are correct
+  ee <- extract.effects(formula, family = family)  
+  possible_priors <- unlist(par.names(formula, data = data, family = family, autocor = autocor,
+                                      partial = partial, threshold = threshold, internal = TRUE), use.names = FALSE)
+  meta_priors <- unlist(regmatches(possible_priors, gregexpr("^[^_]+", possible_priors)))
+  if ("sd" %in% meta_priors)
+    meta_priors <- c(meta_priors, paste0("sd_",ee$group))
+  possible_priors <- unique(c(possible_priors, meta_priors))
+  wrong_priors <- names(prior)[!names(prior) %in% possible_priors]
+  if (length(wrong_priors))
+    warning(paste("Some parameter names in prior cannot be found in the model:", 
+                  paste0(wrong_priors, collapse = ", ")))
+  
+  #rename certain parameters
+  names(prior) <- rename(names(prior), symbols = c("^cor_", "^cor$", "^rescor$"), 
+                         subs = c("L_", "L", "Lrescor"), fixed = FALSE)
+  if (family %in% c("cumulative", "sratio", "cratio", "acat") && threshold == "equidistant")
+    names(prior) <- rename(names(prior), symbols = "^b_Intercept$", subs = "b_Intercept1",
+                           fixed = FALSE)
+  prior
 }

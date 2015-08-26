@@ -4,8 +4,8 @@
 \alias{brm.data}
 \title{Extract required data for \code{brms} models}
 \usage{
-brm.data(formula, data = NULL, family = "gaussian", prior = list(),
-  autocor = NULL, partial = NULL, cov.ranef = NULL)
+brm.data(formula, data = NULL, family = "gaussian", autocor = NULL,
+  partial = NULL, cov.ranef = NULL)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class): a symbolic description of the model to be fitted.
@@ -20,9 +20,6 @@ typically the environment from which \code{brm} is called.}
 \code{"geometric"}, \code{"gamma"}, \code{"exponential"}, \code{"weibull"}, \code{"cumulative"}, \code{"cratio"}, \code{"sratio"}, and \code{"acat"}.
 The second string indicates the link function, which must be supported by the distribution of the dependent variable.
 If not specified, default link functions are used. Further information is provided under 'Details'.}
-
-\item{prior}{A named list of character strings specifing the prior distributions of the parameters. Further information
-is provided under 'Details'.}
 
 \item{autocor}{An optional \code{\link{cor.brms}} object describing the correlation structure within the response variable (i.e. the 'autocorrelation').
 See the documentation of \code{\link{cor.brms}} for a description of the available correlation structures.

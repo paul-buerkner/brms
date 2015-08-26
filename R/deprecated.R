@@ -19,7 +19,7 @@
 #' @export
 brm.pars = function(formula, data = NULL, family = "gaussian", autocor = NULL, partial = NULL,
                     threshold = "flexible", ranef = TRUE) {
-  family <- family[1]
+  family <- check_family(family[1])
   if (is.null(autocor)) autocor <- cor.arma()
   if (!is(autocor,"cor.brms")) stop("cor must be of class cor.brms")
   ee <- extract.effects(formula = formula, family = family, partial = partial)

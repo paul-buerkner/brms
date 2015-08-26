@@ -3,6 +3,7 @@ test_that("Test that link4familys returns correct links", {
   expect_equal(link4family("weibull"), "log")
   expect_equal(link4family("binomial"), "logit")
   expect_equal(link4family(c("binomial", "probit")), "probit")
+  expect_equal(link4family(c("acat", "cloglog")), "cloglog")
   expect_warning(link4family(c("poisson", "sqrt")), "poisson model with sqrt link may not be uniquely identified")
 })
 
@@ -33,5 +34,11 @@ test_that("Test that list2array performs correct conversion", {
   expect_equal(list2array(B), A)
 })
 
+test_that("Test that check_family rejects invalid families", {
+  expect_error(check_family("multigaussian"),
+               "family 'multigaussian' is deprecated. Use family 'gaussian' instead")
+  expect_error(check_family("ordinal"),
+               "ordinal is not a valid family")
+})
 
 
