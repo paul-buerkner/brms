@@ -313,15 +313,16 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
   if (is.character(inits) && !inits %in% c("random", "0")) 
     inits <- get(inits, mode = "function", envir = parent.frame())
   if (family %in% c("exponential", "weibull") && inits == "random")
-    warning(paste("Families exponential and weibull may not work with default initial values. \n",
-                   "It is thus recommended to set inits = '0'"))
+    warning(paste0("Families exponential and weibull may not work well with default initial values. \n",
+                   "  It is thus recommended to set inits = '0'"))
   
   args <- list(object = x$fit, data = x$data, pars = x$exclude, init = inits,
             iter = n.iter, warmup = n.warmup, thin = n.thin, chains = n.chains, 
             include = FALSE)
   args[names(dots)] <- dots 
   if (n.cluster > 1 || silent && n.chains > 0) {
-    if (is.character(inits) || is.numeric(inits)) inits <- rep(inits, n.chains)
+    if (is.character(args$init) || is.numeric(args$init)) 
+      args$init <- rep(args$init, n.chains)
     cl <- makeCluster(n.cluster)
     clusterEvalQ(cl, require(rstan))
     clusterExport(cl = cl, varlist = "args", envir = environment())
