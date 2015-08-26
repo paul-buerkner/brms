@@ -3,16 +3,24 @@ title: "News"
 output: html_document
 ---
 
-# under development
+# brms 0.4.2
 ----------------------------------------------------------------
 
-* calculate the Watanabe-Akaike Information Criterion (WAIC) and the Leave-one-out cross-validation (LOO) using the loo package 
-* log-likelihood values and posterior predictive samples can now always be calculated for a fitted model. Thus, arguments WAIC and predict are removed from function brm
-* provide an interface to shinystan with the S3 method 'launch.shiny'
-* remove chains that fail to initialize while sampling in parallel leaving the other chains untouched
+## new features
+* compute the Watanabe-Akaike information criterion (WAIC) and the leave-one-out cross-validation (LOO) using the loo package 
+* provide an interface to shinystan with S3 method 'launch.shiny'
+* log-likelihood values and posterior predictive samples can now be calculated after the model has been fitted 
 * allow for customized covariance structures of grouping factors with multiple random effects
+* new S3 method 'par.names' for the formula class returning all names of parameters for which priors can be specified
+
+## other changes
+* arguments WAIC and predict are removed from function brm as they are no longer necessary
+* remove chains that fail to initialize while sampling in parallel leaving the other chains untouched
 * redesign trace and density plots to be faster and more stable
-* S3 method 'VarCorr' now returns covariances matrices for all grouping factors regardless of whether random effects correlations were estimated
+* S3 method 'VarCorr' now always returns covariance matrices regardless of whether correlations were estimated
+* perform additional checking on user specified priors
+
+## bug fixes
 * fix a bug in S3 method 'hypothesis' related to the calculation of Bayes factors for point hypotheses
 * fix minor issues with internal parameter naming
 
