@@ -302,24 +302,28 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", alpha = 0.05, ...) {
     if (length(sign) != 1 || length(lr) != 2)
       stop("Every hypothesis must be of the form 'left (= OR < OR >) right'")
     h <- paste0(lr[1], ifelse(lr[2] != "0", paste0("-(",lr[2],")"), ""))
-    varsH <- find.names(h)
+    varsH <- unique(find.names(h))
     parsH <- paste0(class, varsH)
     if (!all(parsH %in% pars)) 
       stop(paste("The following parameters cannot be found in the model:", 
                  paste0(gsub("__", ":", parsH[which(!parsH %in% pars)]), collapse = ", ")))
-    samples <- structure(posterior.samples(x, parameters = rename(parsH, "__", ":"), fixed = TRUE),
-                         names = rename(varsH, c("[", "]"), c("OB", "CB")))
+    
+    #get posterior samples
+    samples <- posterior.samples(x, parameters = rename(parsH, "__", ":"), fixed = TRUE)
+    names(samples) <- rename(names(samples), symbols = paste0("^",class), subs = "", fixed = FALSE)
     samples <- matrix(with(samples, eval(parse(text = rename(h, c("[", "]"), c("OB", "CB"))))), ncol=1)
+    
+    #get prior samples
     prior_samples <- prior.samples(x, parameters = rename(parsH, "__", ":"))
     if (!is.null(prior_samples) && ncol(prior_samples) == length(varsH)) {
-      names(prior_samples) <- rename(varsH, c("[", "]"), c("OB", "CB"))
+      names(prior_samples) <- rename(names(prior_samples), symbols = paste0("^",class), subs = "", fixed = FALSE)
       prior_samples <- matrix(with(prior_samples, eval(parse(text = rename(h, c("[", "]"), c("OB", "CB"))))), ncol=1)
     } else prior_samples <- NULL
 
     #evaluate hypothesis
     wsign <- ifelse(sign == "=", "equal", ifelse(sign == "<", "less", "greater"))
     probs <- switch(wsign, equal = c(alpha/2, 1-alpha/2), less = c(0, 1-alpha), greater = c(alpha, 1))
-    out <- as.data.frame(matrix(unlist(lapply(c("mean","sd","quantile", "eratio"), get.estimate, 
+    out <- as.data.frame(matrix(unlist(lapply(c("mean", "sd", "quantile", "eratio"), get.estimate, 
       samples = samples, probs = probs, wsign = wsign, prior_samples = prior_samples, ...)), nrow = 1))
     if (sign == "<") out[1,3] <- -Inf
     else if (sign == ">") out[1,4] <- Inf
