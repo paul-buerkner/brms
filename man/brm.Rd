@@ -17,7 +17,7 @@ The details of model specification are given under 'Details'.}
 
 \item{data}{An optional data frame, list or environment  (or object coercible by \code{as.data.frame} to a data frame) containing
 the variables in the model. If not found in data, the variables are taken from \code{environment(formula)},
-typically the environment from which \code{brm} is called.}
+typically the environment from which \code{brm} is called. Although it is optional, we strongly recommend to supply a data.frame.}
 
 \item{family}{A vector of one or two character strings. The first string indicates the distribution of the dependent variable (the 'family'). Currently, the following families are supported:
 \code{"gaussian"}, \code{"student"}, \code{"cauchy"}, \code{"binomial"}, \code{"bernoulli"}, \code{"categorical"}, \code{"poisson"}, \code{"negbinomial"}, \cr
