@@ -30,6 +30,32 @@ compare_ic <- function(x, ic = c("waic", "loo")) {
 }
 
 #' @export
+WAIC.brmsfit <- function(x, ..., compare = TRUE) {
+  models <- list(x, ...)
+  names <- c(deparse(substitute(x)), sapply(substitute(list(...))[-1], deparse))
+  if (length(models) > 1) {
+    out <- setNames(lapply(models, calculate_ic, ic = "waic"), names)
+    class(out) <- c("iclist", "list")
+    if (compare) attr(out, "compare") <- compare_ic(out, ic = "waic")
+  }  
+  else out <- calculate_ic(x, ic = "waic")
+  out
+}
+
+#' @export
+LOO.brmsfit <- function(x, ..., compare = TRUE) {
+  models <- list(x, ...)
+  names <- c(deparse(substitute(x)), sapply(substitute(list(...))[-1], deparse))
+  if (length(models) > 1) {
+    out <- setNames(lapply(models, calculate_ic, ic = "loo"), names)
+    class(out) <- c("iclist", "list")
+    if (compare) attr(out, "compare") <- compare_ic(out, ic = "loo")
+  }  
+  else out <- calculate_ic(x, ic = "loo")
+  out
+}
+
+#' @export
 loglik.brmsfit <- function(x, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
@@ -122,9 +148,10 @@ loglik_lognormal <- function(n, data, samples, link) {
 }
 
 loglik_multinormal <- function(n, data, samples, link) {
+  nobs <- data$N_trait * data$K_trait
   out <- sapply(1:nrow(samples$eta), function(i) 
     dmultinormal(data$Y[n,], Sigma = samples$Sigma[i,,], log = TRUE,
-                 mu = samples$eta[i, seq(n, ncol(data$Y) * nrow(data$Y), nrow(data$Y))]))
+                 mu = samples$eta[i, seq(n, nobs, data$N_trait)]))
   if ("weights" %in% names(data)) out <- out * data$weights[n]
   out
 }

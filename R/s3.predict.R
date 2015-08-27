@@ -8,6 +8,7 @@ predict.brmsfit <- function(object, ...) {
   if (object$family == "gaussian" && length(ee$response) > 1)
     object$family <- "multinormal"
   
+  #compute all necessary samples
   samples <- list(eta = linear.predictor(object))
   if (object$family %in% c("gaussian", "student", "cauchy", "lognormal", "multinormal") && !is.formula(ee$se))
     samples$sigma <- as.matrix(posterior.samples(object, parameters = "^sigma_"))
@@ -21,12 +22,20 @@ predict.brmsfit <- function(object, ...) {
     message(paste("Computing posterior predictive samples of multinormal distribution. \n", 
             "This may take a while."))
   }
+  
+  #call predict functions
   predict_fun <- get(paste0("predict_",object$family))
   samples <- do.call(cbind, lapply(1:nrow(as.matrix(object$data$Y)), function(n) 
     do.call(predict_fun, list(n = n, data = object$data, samples = samples, link = object$link))))
   out <- do.call(cbind, lapply(c("mean", "sd", "quantile"), get.estimate, 
                                samples = samples, probs = c(0.025, 0.975)))
   colnames(out) <- c("Estimate", "Est.Error", "l-95% CI", "u-95% CI")
+  
+  #sort rows in case of multinormal models
+  if (object$family == "multinormal") {
+    nobs <- object$data$N_trait * object$data$K_trait
+    out <- out[unlist(lapply(1:object$data$K_trait, function(k) seq(k, nobs, object$data$K_trait))),]
+  }
   out
 }
 
@@ -56,9 +65,10 @@ predict_lognormal <- function(n, data, samples, link) {
 }
 
 predict_multinormal <- function(n, data, samples, link) {
+  nobs <- data$N_trait * data$K_trait
   do.call(rbind, lapply(1:nrow(samples$eta), function(i) 
     rmultinormal(1, Sigma = samples$Sigma[i,,],
-                 mu = samples$eta[i, seq(n, ncol(data$Y) * nrow(data$Y), nrow(data$Y))])))
+                 mu = samples$eta[i, seq(n, nobs, data$N_trait)])))
 }
 
 predict_binomial <- function(n, data, samples, link) {

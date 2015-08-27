@@ -87,11 +87,13 @@ brm.data <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
   
   #sort data in case of autocorrelation models
   if (sum(autocor$p, autocor$q) > 0) {
-    if (family == "gaussian" && length(ee$response) > 1 && !any(sapply(c("__trait","trait__"), grepl, x = et$group)))
-      stop("autocorrelation structures for multiple responses must contain 'trait' as grouping variable")
-    to.order <- rmNULL(list(data[["trait"]], data[[et$group]], data[[et$time]]))
-    if (length(to.order)) 
-      data <- data[do.call(order, to.order),]
+    if (family == "gaussian" && length(ee$response) > 1) {
+      if (!grepl("^trait$|__trait$|^trait__|__trait__", et$group))
+        stop("autocorrelation structures for multiple responses must contain 'trait' as grouping variable")
+      else to.order <- rmNULL(list(data[["trait"]], data[[et$group]], data[[et$time]]))
+    }
+    else to.order <- rmNULL(list(data[[et$group]], data[[et$time]]))
+    if (length(to.order)) data <- data[do.call(order, to.order),]
   }
   
   #response variable
@@ -222,26 +224,12 @@ brm.data <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
   }
   
   #autocorrelation variables
-  if (autocor$p + autocor$q > 0) {
-    time <- data[[et$time]]
-    if (is.null(time)) time <- 1:nrow(data)
+  if (is(autocor,"cor.arma") && autocor$p + autocor$q > 0) {
     tgroup <- data[[et$group]]
     if (is.null(tgroup)) tgroup <- rep(1, standata$N) 
-    U_tgroup <- unique(tgroup)
-    N_tgroup <- length(U_tgroup)
-    if (autocor$p > 0 && is(autocor,"cor.arma")) {
-      standata$Yar <- matrix(0, nrow = standata$N, ncol = autocor$p)
+    if (autocor$p > 0) {
+      standata$Yar <- ar_design_matrix(Y = standata$Y, p = autocor$p, group = tgroup)
       standata$Kar <- autocor$p
-      ptsum <- rep(0, N_tgroup + 1)
-      mean.Y <- mean(standata$Y) 
-      for (j in 1:N_tgroup) {
-        ptsum[j+1] <- ptsum[j] + sum(tgroup == U_tgroup[j])
-        for (i in 1:autocor$p) {
-          if (ptsum[j]+i+1 <= ptsum[j+1])
-            standata$Yar[(ptsum[j]+i+1):ptsum[j+1], i] <- 
-            standata$Y[(ptsum[j]+1):(ptsum[j+1]-i)] - mean.Y
-        }
-      }
     }
     if (autocor$q > 0 && is(autocor,"cor.arma")) {
       standata$Ema_pre <- matrix(0, nrow = standata$N, ncol = autocor$q)
@@ -271,6 +259,31 @@ brm.model.matrix = function(formula, data = environment(formula), rm.int = FALSE
   } 
   else colnames(X) <- cn.new
   X   
+}
+
+#calculate design matrix for autoregressive effects
+# data: standata
+# p: autocor$p
+# group: vector containing the grouping variable for each observation
+ar_design_matrix <- function(Y, p, group)  { 
+  if (length(Y) != length(group)) 
+    stop("Y and group must have the same length")
+  if (p > 0) {
+    U_group <- unique(group)
+    N_group <- length(U_group)
+    out <- matrix(0, nrow = length(Y), ncol = p)
+    ptsum <- rep(0, N_group + 1)
+    meanY <- mean(Y) 
+    for (j in 1:N_group) {
+      ptsum[j+1] <- ptsum[j] + sum(group == U_group[j])
+      for (i in 1:p) {
+        if (ptsum[j]+i+1 <= ptsum[j+1])
+          out[(ptsum[j]+i+1):ptsum[j+1], i] <- Y[(ptsum[j]+1):(ptsum[j+1]-i)] - meanY
+      }
+    }
+  }
+  else out <- NULL
+  out
 }
 
 #computes data for addition arguments
