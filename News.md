@@ -12,6 +12,7 @@ output: html_document
 * log-likelihood values and posterior predictive samples can now be calculated after the model has been fitted 
 * allow for customized covariance structures of grouping factors with multiple random effects
 * new S3 method 'par.names' for the formula class returning all names of parameters for which priors can be specified
+* new S3 method 'residuals' to compute residuals for linear mixed models
 
 ## other changes
 * arguments WAIC and predict are removed from function brm as they are no longer necessary
