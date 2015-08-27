@@ -85,7 +85,7 @@ print.cor.arma <- function(x, ...) {
              ", ",x$p,", ",x$q,")"))
 }
 
-#' Autocorrelation Function Estimation based on MCMC samples (experimental)
+#' Autocorrelation Function Estimation based on MCMC-Samples (experimental)
 #' 
 #' Compute (and plot by default) the autocorrelation function based on MCMC samples
 #' 
@@ -98,7 +98,7 @@ print.cor.arma <- function(x, ...) {
 #' @param plot logical. If \code{TRUE} (the default) results are plotted directly
 #' @param ... Further arguments to be passed to \code{plot.acf}.
 #'                
-#' @return An object of class \code{link[stats:acf]{acf}}.
+#' @return An object of class \code{\link[stats:acf]{acf}}.
 #' 
 #' @examples 
 #' \dontrun{
@@ -127,7 +127,7 @@ print.cor.arma <- function(x, ...) {
 #' }
 #'              
 #' @export
-bacf <- function(x, lag.max = NULL, plot = TRUE, ...) {
+macf <- function(x, lag.max = NULL, plot = TRUE, ...) {
   series <- Reduce(paste, deparse(substitute(x)))
   if (!is.matrix(x)) {
     if (is.data.frame(x)) x <- as.matrix(x)
