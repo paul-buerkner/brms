@@ -36,7 +36,8 @@ Among others, \code{hypothesis} calculates an evidence ratio for each hypothesis
 \examples{
 \dontrun{
 fit_i <- brm(rating ~ treat + period + carry + (1+treat|subject),
-             data = inhaler, family = "gaussian")
+             data = inhaler, family = "gaussian", sample.prior = TRUE,
+             prior = list(b = "normal(0,2)"), n.cluster = 2)
 
 hypothesis(fit_i, "treat = period + carry")
 hypothesis(fit_i, "exp(treat) - 3 = 0")
@@ -44,8 +45,13 @@ hypothesis(fit_i, "exp(treat) - 3 = 0")
 ## perform one-sided hypothesis testing
 hypothesis(fit_i, "period + carry - 3 < 0")
 
-# compare random effects standard deviations
+## compare random effects standard deviations
 hypothesis(fit_i, "treat < Intercept", class = "sd_subject")
+
+## test the amount of random intercept variance on all variance
+h <- paste("sd_subject_Intercept^2 / (sd_subject_Intercept^2 +",
+           "sd_subject_treat^2 + sigma_rating^2) = 0")
+hypothesis(fit_i, h, class = NULL)
 
 ## test more than one hypothesis at once
 hypothesis(fit_i, c("treat = period + carry", "exp(treat) - 3 = 0"))

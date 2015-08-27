@@ -249,6 +249,29 @@ ngrps.brmsfit <- function(object, ...) {
 #' @export
 formula.brmsfit <- function(x, ...) x$formula
 
+#' Extract Model Residuals from brmsfit Objects
+#' 
+#' @param object An object of class \code{brmsfit}
+#' @param summary logical. Should summary statistics (i.e. means, sds, and 95\% intervals) be returned
+#'  instead of the raw values. Default is \code{FALSE}
+#' @param ... Currently ignored
+#' 
+#' @details Currently, the method only supports families \code{gaussian}, \code{student},
+#'   or \code{cauchy}. This will likely be changed in the future. 
+#' 
+#' @return Residuals extracted from \code{object}.
+#' 
+#' @examples 
+#' \dontrun{
+#' ## fit the model
+#' fit <- brm(rating ~ treat + period + carry + (1|subject), data = inhaler,
+#'            n.cluster = 2)
+#' 
+#' ## extract residuals 
+#' res <- residuals(fit, summary = TRUE)
+#' head(res)
+#' }
+#' 
 #' @export
 residuals.brmsfit <- function(object, summary = FALSE, ...) {
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
@@ -310,7 +333,7 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", alpha = 0.05, ...) {
     samples <- matrix(with(samples, eval(parse(text = rename(h, c("[", "]"), c("OB", "CB"))))), ncol=1)
     
     #get prior samples
-    prior_samples <- prior.samples(x, parameters = rename(parsH, "__", ":"))
+    prior_samples <- prior.samples(x, parameters = rename(parsH, "__", ":"), fixed = TRUE)
     if (!is.null(prior_samples) && ncol(prior_samples) == length(varsH)) {
       names(prior_samples) <- rename(names(prior_samples), symbols = paste0("^",class), subs = "", fixed = FALSE)
       prior_samples <- matrix(with(prior_samples, eval(parse(text = rename(h, c("[", "]"), c("OB", "CB"))))), ncol=1)
