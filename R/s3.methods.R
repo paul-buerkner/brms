@@ -250,28 +250,24 @@ ngrps.brmsfit <- function(object, ...) {
 formula.brmsfit <- function(x, ...) x$formula
 
 #' @export
-WAIC.brmsfit <- function(x, ..., compare = TRUE) {
-  models <- list(x, ...)
-  names <- c(deparse(substitute(x)), sapply(substitute(list(...))[-1], deparse))
-  if (length(models) > 1) {
-    out <- setNames(lapply(models, calculate_ic, ic = "waic"), names)
-    class(out) <- c("iclist", "list")
-    if (compare) attr(out, "compare") <- compare_ic(out, ic = "waic")
-  }  
-  else out <- calculate_ic(x, ic = "waic")
-  out
-}
-
-#' @export
-LOO.brmsfit <- function(x, ..., compare = TRUE) {
-  models <- list(x, ...)
-  names <- c(deparse(substitute(x)), sapply(substitute(list(...))[-1], deparse))
-  if (length(models) > 1) {
-    out <- setNames(lapply(models, calculate_ic, ic = "loo"), names)
-    class(out) <- c("iclist", "list")
-    if (compare) attr(out, "compare") <- compare_ic(out, ic = "loo")
-  }  
-  else out <- calculate_ic(x, ic = "loo")
+residuals.brmsfit <- function(object, summary = FALSE, ...) {
+  if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
+    stop("The model does not contain posterior samples")
+  if (!object$family %in% c("gaussian", "student", "cauchy"))
+    stop(paste("resdiuals not yet implemented for family", object$family))
+  eta <- ilink(linear.predictor(object), object$link)
+  Y <- matrix(rep(as.numeric(object$data$Y), nrow(eta)), nrow = nrow(eta), byrow = TRUE)
+  out <- Y - eta
+  colnames(out) <- NULL
+  if (is(object$autocor, "cor.arma") && sum(object$autocor$p, object$autocor$q) > 0) {
+    tgroup <- extract.time(object$autocor$formula)$group
+    if (nchar(tgroup)) colnames(out) <- object$data[[tgroup]]
+  }
+  if (summary) {
+    out <- do.call(cbind, lapply(c("mean", "sd", "quantile"), get.estimate, 
+                                 samples = out, probs = c(0.025, 0.975)))
+    colnames(out) <- c("Estimate", "Est.Error", "l-95% CI", "u-95% CI")
+  }
   out
 }
 
