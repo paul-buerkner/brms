@@ -71,18 +71,18 @@ plot(fit)
 An even more detailed investigation can be achieved by applying the shinystan package:
 
 ``` r
-launch.shiny(fit) 
+launch_shiny(fit) 
 ```
 
 For a complete list of methods to apply on <b>brms</b> models see
 
 ``` r
 methods(class = "brmsfit") 
-#>  [1] fixef             formula           hypothesis        launch.shiny     
-#>  [5] linear.predictor  loglik            LOO               ngrps            
-#>  [9] nobs              par.names         plot              posterior.samples
-#> [13] predict           print             prior.samples     ranef            
-#> [17] summary           VarCorr           WAIC             
+#>  [1] fixef             formula           hypothesis        launch_shiny     
+#>  [5] linear_predictor  loglik            LOO               ngrps            
+#>  [9] nobs              parnames          plot              posterior_samples
+#> [13] predict           print             prior_samples     ranef            
+#> [17] residuals         summary           VarCorr           WAIC             
 #> see '?methods' for accessing help and source code
 ```
 

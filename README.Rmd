@@ -50,7 +50,7 @@ plot(fit)
 ``` 
 An even more detailed investigation can be achieved by applying the shinystan package:
 ```{r shiny, eval=FALSE}
-launch.shiny(fit) 
+launch_shiny(fit) 
 ``` 
 
 For a complete list of methods to apply on <b>brms</b> models see
