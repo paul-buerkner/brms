@@ -17,28 +17,28 @@ rename <- function(names, symbols = NULL, subs = NULL, fixed = TRUE, check_dup =
 }
 
 #get correlation names
-get.cor.names <- function(names, type = "cor", eval = TRUE, brackets = TRUE) {
-  cor.names <- NULL
+get_cornames <- function(names, type = "cor", eval = TRUE, brackets = TRUE) {
+  cor_names <- NULL
   if (length(names) > 1 && eval) {
     for (i in 2:length(names)) {
       for (j in 1:(i-1)) {
-        if (brackets) cor.names <- c(cor.names, paste0(type,"(",names[j],",",names[i],")"))
-        else cor.names <- c(cor.names, paste0(type,"_",names[j],"_",names[i]))
+        if (brackets) cor_names <- c(cor_names, paste0(type,"(",names[j],",",names[i],")"))
+        else cor_names <- c(cor_names, paste0(type,"_",names[j],"_",names[i]))
       }
     }
   }
-  cor.names
+  cor_names
 }
 
 #rename parameters
-rename.pars <- function(x, ...) {
+rename_pars <- function(x, ...) {
   if (!length(x$fit@sim)) return(x)
   chains <- length(x$fit@sim$samples) 
   n.pars <- length(x$fit@sim$fnames_oi)
   x$fit@sim$fnames_oi[1:(n.pars-1)] <- gsub("__", ":", x$fit@sim$fnames_oi[1:(n.pars-1)])
   for (i in 1:chains) names(x$fit@sim$samples[[i]]) <- x$fit@sim$fnames_oi
   pars <- dimnames(x$fit)$parameters
-  ee <- extract.effects(x$formula, family = x$family)
+  ee <- extract_effects(x$formula, family = x$family)
   change <- list()
   
   #find positions of parameters and define new names
@@ -69,7 +69,7 @@ rename.pars <- function(x, ...) {
                                          pnames = paste0("sd_",group[j],"_", x$ranef[[j]]),
                                          fnames = paste0("sd_",group[j],"_", x$ranef[[j]]))
       if (length(x$ranef[[j]]) > 1 && ee$cor[[j]]) {
-        cor_names <- get.cor.names(x$ranef[[j]], type = paste0("cor_",group[j]), brackets = FALSE)
+        cor_names <- get_cornames(x$ranef[[j]], type = paste0("cor_",group[j]), brackets = FALSE)
         change[[length(change)+1]] <- list(pos = grepl(paste0("^cor_",group[j],"(\\[|$)"), pars),
                                            oldname = paste0("cor_",group[j]),
                                            pnames = cor_names,
@@ -127,21 +127,21 @@ rename.pars <- function(x, ...) {
 #' @return A list of character vectors containing the parameter names for which priors may be specified
 #' 
 #' @examples 
-#' par.names(rating ~ treat + period + carry + (1+carry|subject), 
+#' parnames(rating ~ treat + period + carry + (1+carry|subject), 
 #'           data = inhaler, family = "student")
 #'           
-#' par.names(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient) + (1|visit),
+#' parnames(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient) + (1|visit),
 #'           data = epilepsy, family = "poisson")          
 #' 
 #' @export
-par.names.formula <- function(x, data = NULL, family = "gaussian", autocor = NULL, 
+parnames.formula <- function(x, data = NULL, family = "gaussian", autocor = NULL, 
                               partial = NULL, threshold = "flexible", internal = FALSE, ...) {
-  if (is.null(autocor)) autocor <- cor.arma()
-  if (!is(autocor, "cor.brms")) stop("cor must be of class cor.brms")
+  if (is.null(autocor)) autocor <- cor_arma()
+  if (!is(autocor, "cor_brms")) stop("cor must be of class cor_brms")
   if (!threshold %in% c("flexible","equidistant")) 
     stop("threshold must be either flexible or equidistant")
   family <- check_family(family[1])
-  ee <- extract.effects(x, family = family)
+  ee <- extract_effects(x, family = family)
   data <- update_data(data, family = family, effects = ee)
   out <- list(fixef = paste0("b_",colnames(brm.model.matrix(ee$fixed, data = data))),
               ranef = list(), other = NULL)
@@ -156,8 +156,8 @@ par.names.formula <- function(x, data = NULL, family = "gaussian", autocor = NUL
                                 c(paste0("cor_",gs[i]), if(internal) paste0("L_",gs[i]))) 
     }
   }
-  if (is(autocor, "cor.arma") && autocor$p) out$other <- c(out$other, "ar")
-  if (is(autocor, "cor.arma") && autocor$q) out$other <- c(out$other, "ma")
+  if (is(autocor, "cor_arma") && autocor$p) out$other <- c(out$other, "ar")
+  if (is(autocor, "cor_arma") && autocor$q) out$other <- c(out$other, "ma")
   if (family %in% c("gaussian", "student", "cauchy") && !is.formula(ee$se))
     out$other <- c(out$other, paste0("sigma_",ee$response))
   if (family == "gaussian" && length(ee$response) > 1)

@@ -2,12 +2,12 @@
 fixef.brmsfit <-  function(x, estimate = "mean", ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
-  pars <- par.names(x)
-  f.pars <- pars[grepl("^b_", pars)]
-  if (!length(f.pars)) stop(paste("No fixed effect present in argument x")) 
-  out <- posterior.samples(x, parameters = paste0("^",f.pars,"$"))
-  out <- do.call(cbind, lapply(estimate, get.estimate, samples = out, ...))
-  rownames(out) <- gsub("^b_", "", f.pars)
+  pars <- parnames(x)
+  fpars <- pars[grepl("^b_", pars)]
+  if (!length(fpars)) stop(paste("No fixed effect present in argument x")) 
+  out <- posterior_samples(x, parameters = paste0("^",fpars,"$"))
+  out <- do.call(cbind, lapply(estimate, get_estimate, samples = out, ...))
+  rownames(out) <- gsub("^b_", "", fpars)
   out
 }
 
@@ -20,34 +20,33 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, ...) {
   if (!length(x$ranef))
     stop("The model does not contain random effects")
   group <- names(x$ranef)
-  pars <- par.names(x)
+  pars <- parnames(x)
   
   ranef <- lapply(group, function(g) {
-    r.pars <- pars[grepl(paste0("^r_",g,"\\["), pars)]
-    r.names <- x$ranef[[match(g, names(x$ranef))]]
-    if (!length(r.pars))
+    rpars <- pars[grepl(paste0("^r_",g,"\\["), pars)]
+    rnames <- x$ranef[[match(g, names(x$ranef))]]
+    if (!length(rpars))
       stop(paste0("The model does not contain random effects for group '",g,"'\n",
                   "You should use argument ranef = TRUE in function brm."))
-    r_dims <- x$fit@par_dims[[paste0("r_",gsub(":", "__", g))]]
-    rs <- posterior.samples(x, parameters = r.pars, fixed = TRUE)
-    n.samples <- nrow(rs)
-    n.col <- ifelse(is.na(r_dims[2]), 1, r_dims[2])
-    rs.array <- array(dim = c(r_dims[1], n.col, n.samples))
+    rdims <- x$fit@par_dims[[paste0("r_",gsub(":", "__", g))]]
+    rs <- posterior_samples(x, parameters = rpars, fixed = TRUE)
+    ncol <- ifelse(is.na(rdims[2]), 1, rdims[2])
+    rs_array <- array(dim = c(rdims[1], ncol, nrow(rs)))
     k <- 0
-    for (j in 1:n.col) {
-      for (i in 1:r_dims[1]) {
+    for (j in 1:ncol) {
+      for (i in 1:rdims[1]) {
         k <- k + 1
-        rs.array[i,j,] <- rs[,k]
+        rs_array[i,j,] <- rs[,k]
       }
     }
-    out <- get.estimate(estimate, samples = rs.array, margin = 1:2, ...)
-    colnames(out) <- r.names
+    out <- get_estimate(estimate, samples = rs_array, margin = 1:2, ...)
+    colnames(out) <- rnames
     if(var) {
-      Var <- array(dim = c(rep(n.col, 2), r_dims[1]), 
-                   dimnames = list(r.names, r.names, 1:r_dims[1]))
-      for (i in 1:r_dims[1]) {
-        if (is.na(r_dims[2])) Var[,,i] <- var(rs.array[i,1,]) 
-        else Var[,,i] <- cov(t(rs.array[i,,])) 
+      Var <- array(dim = c(rep(ncol, 2), rdims[1]), 
+                   dimnames = list(rnames, rnames, 1:rdims[1]))
+      for (i in 1:rdims[1]) {
+        if (is.na(rdims[2])) Var[,,i] <- var(rs_array[i,1,]) 
+        else Var[,,i] <- cov(t(rs_array[i,,])) 
       }
       attr(out, "var") <- Var
     }
@@ -66,47 +65,47 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
 
   # extracts samples for sd, cor and cov
   extract <- function(p) {
-    nr <- length(p$sd.pars)
-    sd <- posterior.samples(x, parameters = paste0("^",p$sd.pars,"$"))
+    nr <- length(p$sd_pars)
+    sd <- posterior_samples(x, parameters = paste0("^",p$sd_pars,"$"))
     nsamples <- nrow(sd)
-    out <- list(sd = do.call(cbind, lapply(estimate, get.estimate, samples = sd, ...)))
-    rownames(out$sd) <- p$r.names 
+    out <- list(sd = do.call(cbind, lapply(estimate, get_estimate, samples = sd, ...)))
+    rownames(out$sd) <- p$rnames 
     
     # calculate correlation and covariance matrices
-    if (length(p$cor.pars))
-      cor <- posterior.samples(x, parameters = paste0("^",p$cor.pars,"$"))
+    if (length(p$cor_pars))
+      cor <- posterior_samples(x, parameters = paste0("^",p$cor_pars,"$"))
     else cor <- NULL
     matrices <- cov_matrix(sd = sd, cor = cor)
-    out$cor <- list2array(lapply(estimate, get.estimate, samples = matrices$cor, 
+    out$cor <- list2array(lapply(estimate, get_estimate, samples = matrices$cor, 
                             margin = c(2,3), to.array = TRUE, ...))
-    out$cov <- list2array(lapply(estimate, get.estimate, samples = matrices$cov, 
+    out$cov <- list2array(lapply(estimate, get_estimate, samples = matrices$cov, 
                             margin = c(2,3), to.array = TRUE, ...))
-    if (length(p$r.names) > 1)
-      dimnames(out$cov) <- dimnames(out$cor) <- list(p$r.names, p$r.names, dimnames(out$cor)[[3]])
+    if (length(p$rnames) > 1)
+      dimnames(out$cov) <- dimnames(out$cor) <- list(p$rnames, p$rnames, dimnames(out$cor)[[3]])
     else dimnames(out$cov) <- dimnames(out$cor) <- list(dimnames(out$cor)[[1]])
     if (as.list) {
       out$cor <- lapply(array2list(out$cor), function(x)
-        if (is.null(dim(x))) structure(matrix(x), dimnames = list(p$r.names, p$r.names)) else x)
+        if (is.null(dim(x))) structure(matrix(x), dimnames = list(p$rnames, p$rnames)) else x)
       out$cov <- lapply(array2list(out$cov), function(x)
-        if (is.null(dim(x))) structure(matrix(x), dimnames = list(p$r.names, p$r.names)) else x)
+        if (is.null(dim(x))) structure(matrix(x), dimnames = list(p$rnames, p$rnames)) else x)
     }
     out
   }
   
-  ee <- extract.effects(x$formula, family = x$family)
+  ee <- extract_effects(x$formula, family = x$family)
   if (length(x$ranef)) {
     group <- names(x$ranef)
     p <- lapply(1:length(group), function(i)
-    list(r.names = x$ranef[[i]],
-         sd.pars = paste0("sd_",group[i],"_",x$ranef[[i]]),
-         cor.pars = get.cor.names(x$ranef[[i]], type = paste0("cor_",group[i]),
+    list(rnames = x$ranef[[i]],
+         sd_pars = paste0("sd_",group[i],"_",x$ranef[[i]]),
+         cor_pars = get_cornames(x$ranef[[i]], type = paste0("cor_",group[i]),
                                   eval = length(x$ranef[[i]]) > 1 && ee$cor[[i]], 
                                   brackets = FALSE)))
   } else p <- group <- NULL
   if (x$family %in% c("gaussian", "student", "cauchy") && !is.formula(ee$se)) {
-    p[[length(p)+1]] <- list(r.names = ee$response, 
-                             sd.pars = paste0("sigma_",ee$response),
-                             cor.pars = get.cor.names(ee$response, type = "rescor", 
+    p[[length(p)+1]] <- list(rnames = ee$response, 
+                             sd_pars = paste0("sigma_",ee$response),
+                             cor_pars = get_cornames(ee$response, type = "rescor", 
                                                       eval = length(ee$response) > 1, 
                                                       brackets = FALSE))
     group <- c(group, "RESIDUAL")
@@ -117,10 +116,10 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
 }
 
 #' @export
-posterior.samples.brmsfit <- function(x, parameters = NA, add.chains = FALSE, ...) {
+posterior_samples.brmsfit <- function(x, parameters = NA, add.chains = FALSE, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
-  pars <- par.names(x)
+  pars <- parnames(x)
   if (!(anyNA(parameters) || is.character(parameters))) 
     stop("Argument parameters must be NA or a character vector")
   if (!anyNA(parameters)) pars <- pars[apply(sapply(parameters, grepl, x = pars, ...), 1, any)]
@@ -144,13 +143,13 @@ posterior.samples.brmsfit <- function(x, parameters = NA, add.chains = FALSE, ..
 }
 
 #' @export
-prior.samples.brmsfit <- function(x, parameters = NA, ...) {
+prior_samples.brmsfit <- function(x, parameters = NA, ...) {
   if (!anyNA(parameters) && !is.character(parameters)) 
     stop("pars must be a character vector")
-  par_names <- par.names(x)
+  par_names <- parnames(x)
   prior_names <- par_names[grepl("^prior_", par_names)]
   if (length(prior_names)) {
-    samples <- posterior.samples(x, parameters = prior_names, fixed = TRUE)
+    samples <- posterior_samples(x, parameters = prior_names, fixed = TRUE)
     names(samples) <- sub("^prior_", "", prior_names)
     if (!anyNA(parameters)) {
       samples <- data.frame(rmNULL(lapply(parameters, function(par) {
@@ -179,8 +178,8 @@ prior.samples.brmsfit <- function(x, parameters = NA, ...) {
 #' @method summary brmsfit
 #' @export
 summary.brmsfit <- function(object, ...) {
-  ee <- extract.effects(object$formula, family = object$family)
-  out <- brmssummary(formula = brm.update.formula(object$formula, partial = object$partial),
+  ee <- extract_effects(object$formula, family = object$family)
+  out <- brmssummary(formula = update_formula(object$formula, partial = object$partial),
              family = object$family, link = object$link, data.name = object$data.name, 
              group = names(object$ranef), nobs = nobs(object), ngrps = brms::ngrps(object), 
              autocor = object$autocor)
@@ -192,45 +191,45 @@ summary.brmsfit <- function(object, ...) {
     out$sampler = attr(object$fit@sim$samples[[1]],"args")$sampler_t
     if (length(ee$response) == 1) out$WAIC <- WAIC(object)$waic
     
-    pars <- par.names(object)
+    pars <- parnames(object)
     meta_pars <- object$fit@sim$pars_oi
     meta_pars <- meta_pars[!apply(sapply(paste0("^",c("r_","prior_")), 
                                   grepl, x = meta_pars, ...), 1, any)]
-    fit.summary <- rstan::summary(object$fit, pars = meta_pars, probs = c(0.025, 0.975))
-    col.names <- c("Estimate", "Est.Error", "l-95% CI", "u-95% CI", "Eff.Sample", "Rhat")
+    fit_summary <- rstan::summary(object$fit, pars = meta_pars, probs = c(0.025, 0.975))
+    col_names <- c("Estimate", "Est.Error", "l-95% CI", "u-95% CI", "Eff.Sample", "Rhat")
     
-    fix.pars <- pars[grepl("^b_", pars)]
-    out$fixed <- matrix(fit.summary$summary[fix.pars,-c(2)], ncol = 6)
-    colnames(out$fixed) <- col.names
-    rownames(out$fixed) <- gsub("^b_", "", fix.pars)
+    fix_pars <- pars[grepl("^b_", pars)]
+    out$fixed <- matrix(fit_summary$summary[fix_pars,-c(2)], ncol = 6)
+    colnames(out$fixed) <- col_names
+    rownames(out$fixed) <- gsub("^b_", "", fix_pars)
     
-    spec.pars <- pars[pars %in% c("nu","shape","delta") | 
+    spec_pars <- pars[pars %in% c("nu","shape","delta") | 
       apply(sapply(c("^sigma_", "^rescor_"), grepl, x = pars), 1, any)]
-    out$spec.pars <- matrix(fit.summary$summary[spec.pars,-c(2)], ncol = 6)
+    out$spec_pars <- matrix(fit_summary$summary[spec_pars,-c(2)], ncol = 6)
     if (object$family %in% c("gaussian", "student", "cauchy")) {
-      spec.pars[grepl("^sigma_", spec.pars)] <- paste0("sigma(",ee$response,")")
-      spec.pars[grepl("^rescor_", spec.pars)] <- get.cor.names(ee$response, type = "rescor")   
+      spec_pars[grepl("^sigma_", spec_pars)] <- paste0("sigma(",ee$response,")")
+      spec_pars[grepl("^rescor_", spec_pars)] <- get_cornames(ee$response, type = "rescor")   
     }    
-    colnames(out$spec.pars) <- col.names
-    rownames(out$spec.pars) <- spec.pars
+    colnames(out$spec_pars) <- col_names
+    rownames(out$spec_pars) <- spec_pars
     
-    cor.pars <- pars[grepl("^ar|^ma", pars)]
-    out$cor.pars <- matrix(fit.summary$summary[cor.pars,-c(2)], ncol = 6)
-    colnames(out$cor.pars) <- col.names
-    rownames(out$cor.pars) <- cor.pars
+    cor_pars <- pars[grepl("^ar|^ma", pars)]
+    out$cor_pars <- matrix(fit_summary$summary[cor_pars,-c(2)], ncol = 6)
+    colnames(out$cor_pars) <- col_names
+    rownames(out$cor_pars) <- cor_pars
     
     if (length(out$group)) {
       for (i in 1:length(out$group)) {
-        r.names <- object$ranef[[i]]
-        has_cor <- length(r.names) > 1 && ee$cor[[i]]
-        sd.pars <- paste0("sd_", out$group[i],"_",r.names)
-        cor.pars <- get.cor.names(r.names, type = paste0("cor_",out$group[i]),
+        rnames <- object$ranef[[i]]
+        has_cor <- length(rnames) > 1 && ee$cor[[i]]
+        sd_pars <- paste0("sd_", out$group[i],"_",rnames)
+        cor_pars <- get_cornames(rnames, type = paste0("cor_",out$group[i]),
                                   eval = has_cor, brackets = FALSE)
-        sd.names <- paste0("sd(",r.names,")")
-        cor.names <- get.cor.names(r.names, eval = has_cor)
-        out$random[[out$group[i]]] <- matrix(fit.summary$summary[c(sd.pars, cor.pars),-c(2)], ncol = 6)
-        colnames(out$random[[out$group[i]]]) <- col.names
-        rownames(out$random[[out$group[i]]]) <- c(sd.names, cor.names)
+        sd_names <- paste0("sd(",rnames,")")
+        cor_names <- get_cornames(rnames, eval = has_cor)
+        out$random[[out$group[i]]] <- matrix(fit_summary$summary[c(sd_pars, cor_pars),-c(2)], ncol = 6)
+        colnames(out$random[[out$group[i]]]) <- col_names
+        rownames(out$random[[out$group[i]]]) <- c(sd_names, cor_names)
       }
     }
   }  
@@ -278,16 +277,16 @@ residuals.brmsfit <- function(object, summary = FALSE, ...) {
     stop("The model does not contain posterior samples")
   if (!object$family %in% c("gaussian", "student", "cauchy"))
     stop(paste("resdiuals not yet implemented for family", object$family))
-  eta <- ilink(linear.predictor(object), object$link)
+  eta <- ilink(linear_predictor(object), object$link)
   Y <- matrix(rep(as.numeric(object$data$Y), nrow(eta)), nrow = nrow(eta), byrow = TRUE)
   out <- Y - eta
   colnames(out) <- NULL
-  if (is(object$autocor, "cor.arma") && sum(object$autocor$p, object$autocor$q) > 0) {
-    tgroup <- extract.time(object$autocor$formula)$group
+  if (is(object$autocor, "cor_arma") && sum(object$autocor$p, object$autocor$q) > 0) {
+    tgroup <- extract_time(object$autocor$formula)$group
     if (nchar(tgroup)) colnames(out) <- object$data[[tgroup]]
   }
   if (summary) {
-    out <- do.call(cbind, lapply(c("mean", "sd", "quantile"), get.estimate, 
+    out <- do.call(cbind, lapply(c("mean", "sd", "quantile"), get_estimate, 
                                  samples = out, probs = c(0.025, 0.975)))
     colnames(out) <- c("Estimate", "Est.Error", "l-95% CI", "u-95% CI")
   }
@@ -295,7 +294,7 @@ residuals.brmsfit <- function(object, summary = FALSE, ...) {
 }
 
 #' @export
-par.names.brmsfit <- function(x, ...) {
+parnames.brmsfit <- function(x, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
   dimnames(x$fit)$parameters
@@ -311,7 +310,7 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", alpha = 0.05, ...) {
     stop("Argument alpha must be in [0,1]")
   if (!is.null(class) && nchar(class)) class <- paste0(class,"_")
   else class <- ""
-  pars <- rename(par.names(x)[grepl("^",class, par.names(x))],
+  pars <- rename(parnames(x)[grepl("^",class, parnames(x))],
                  symbols = ":", subs = "__")
   
   out <- do.call(rbind, lapply(hypothesis, function(h) {
@@ -321,19 +320,19 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", alpha = 0.05, ...) {
     if (length(sign) != 1 || length(lr) != 2)
       stop("Every hypothesis must be of the form 'left (= OR < OR >) right'")
     h <- paste0(lr[1], ifelse(lr[2] != "0", paste0("-(",lr[2],")"), ""))
-    varsH <- unique(find.names(h))
+    varsH <- unique(find_names(h))
     parsH <- paste0(class, varsH)
     if (!all(parsH %in% pars)) 
       stop(paste("The following parameters cannot be found in the model:", 
                  paste0(gsub("__", ":", parsH[which(!parsH %in% pars)]), collapse = ", ")))
     
     #get posterior samples
-    samples <- posterior.samples(x, parameters = rename(parsH, "__", ":"), fixed = TRUE)
+    samples <- posterior_samples(x, parameters = rename(parsH, "__", ":"), fixed = TRUE)
     names(samples) <- rename(names(samples), symbols = paste0("^",class), subs = "", fixed = FALSE)
     samples <- matrix(with(samples, eval(parse(text = rename(h, c("[", "]"), c("OB", "CB"))))), ncol=1)
     
     #get prior samples
-    prior_samples <- prior.samples(x, parameters = rename(parsH, "__", ":"), fixed = TRUE)
+    prior_samples <- prior_samples(x, parameters = rename(parsH, "__", ":"), fixed = TRUE)
     if (!is.null(prior_samples) && ncol(prior_samples) == length(varsH)) {
       names(prior_samples) <- rename(names(prior_samples), symbols = paste0("^",class), subs = "", fixed = FALSE)
       prior_samples <- matrix(with(prior_samples, eval(parse(text = rename(h, c("[", "]"), c("OB", "CB"))))), ncol=1)
@@ -342,7 +341,7 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", alpha = 0.05, ...) {
     #evaluate hypothesis
     wsign <- ifelse(sign == "=", "equal", ifelse(sign == "<", "less", "greater"))
     probs <- switch(wsign, equal = c(alpha/2, 1-alpha/2), less = c(0, 1-alpha), greater = c(alpha, 1))
-    out <- as.data.frame(matrix(unlist(lapply(c("mean", "sd", "quantile", "eratio"), get.estimate, 
+    out <- as.data.frame(matrix(unlist(lapply(c("mean", "sd", "quantile", "eratio"), get_estimate, 
       samples = samples, probs = probs, wsign = wsign, prior_samples = prior_samples, ...)), nrow = 1))
     if (sign == "<") out[1,3] <- -Inf
     else if (sign == ">") out[1,4] <- Inf
@@ -358,7 +357,7 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", alpha = 0.05, ...) {
 }
 
 #' @export
-launch.shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"), ...) {
+launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"), ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
   shinystan::launch_shinystan(x$fit, rstudio = rstudio, ...)

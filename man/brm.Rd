@@ -34,8 +34,8 @@ is provided under 'Details'.}
 categorical or ordinal models, and \code{cens} to indicate censoring. Alternatively, the \code{addition} arguments can be incorporated directly into \code{formula}.
 See 'Formula Syntax' under 'Details' for further information.}
 
-\item{autocor}{An optional \code{\link{cor.brms}} object describing the correlation structure within the response variable (i.e. the 'autocorrelation').
-See the documentation of \code{\link{cor.brms}} for a description of the available correlation structures.
+\item{autocor}{An optional \code{\link{cor_brms}} object describing the correlation structure within the response variable (i.e. the 'autocorrelation').
+See the documentation of \code{\link{cor_brms}} for a description of the available correlation structures.
 Defaults to NULL, corresponding to no correlations.}
 
 \item{partial}{A one sided formula of the form \code{~partial.effects} specifing the predictors that can vary between categories in non-cumulative ordinal models
@@ -249,7 +249,7 @@ Fit a generalized linear mixed model, which incorporates both fixed-effects para
   between to adjacent thresholds. By default, \code{delta} has an improper flat prior over the reals. \cr
 
   To get a full list of parameters for which priors can be specified (depending on the model)
-  use method \code{\link[brms:par.names.formula]{par.names.formula}}.
+  use method \code{\link[brms:parnames.formula]{parnames.formula}}.
 }
 \examples{
 \dontrun{

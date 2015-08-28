@@ -2,6 +2,7 @@
 % Please edit documentation in R/s3.generics.R
 \name{LOO}
 \alias{LOO}
+\alias{LOO.brmsfit}
 \title{Compute the LOO}
 \usage{
 LOO(x, ..., compare = TRUE)

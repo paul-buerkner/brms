@@ -2,6 +2,7 @@
 % Please edit documentation in R/s3.generics.R
 \name{loglik}
 \alias{loglik}
+\alias{loglik.brmsfit}
 \title{Compute the pointwise log-likelihood}
 \usage{
 loglik(x, ...)

@@ -14,7 +14,7 @@ hypothesis(x, hypothesis, class = "b", alpha = 0.05, ...)
 
 \item{class}{A string specifying the class of parameters being tested. Default is "b" for fixed effects.
 Other typical options are "sd" or "cor". If \code{class = NULL}, all parameters can be tested
-against each other, but have to be specified with their full name (see also \code{\link[brms:par.names]{par.names}})}
+against each other, but have to be specified with their full name (see also \code{\link[brms:parnames]{parnames}})}
 
 \item{alpha}{the alpha-level of the tests (default is 0.05)}
 

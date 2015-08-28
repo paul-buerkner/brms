@@ -4,26 +4,26 @@
 # @return A character string containing the model in stan language
 # @examples
 # \dontrun{
-# stan.model <- brm.stan(y ~ log_Age + log_Base4 * Trt, data = epilepsy, 
+# stan_model <- brm.stan(y ~ log_Age + log_Base4 * Trt, data = epilepsy, 
 #                   family = "poisson", link = "log", prior = list(b_ = "normal(0,5)"))
 # }
-stan.model <- function(formula, data = NULL, family = "gaussian", link = "identity",
+stan_model <- function(formula, data = NULL, family = "gaussian", link = "identity",
                        prior = list(), partial = NULL, threshold = "flexible", cov.ranef = NULL,
-                       sample.prior = FALSE, autocor = cor.arma(),  save.model = NULL) {
-  ee <- extract.effects(formula = formula, family = family, partial = partial) 
+                       sample.prior = FALSE, autocor = cor_arma(),  save.model = NULL) {
+  ee <- extract_effects(formula = formula, family = family, partial = partial) 
   family <- ifelse(family == "gaussian" && length(ee$response) > 1, "multinormal", family) 
-  is.linear <- family %in% c("gaussian", "student", "cauchy")
-  is.ordinal <- family %in% c("cumulative", "cratio", "sratio", "acat") 
-  is.skew <- family %in% c("gamma", "weibull", "exponential")
-  is.count <- family %in% c("poisson", "negbinomial", "geometric")
-  is.multi <- family == "multinormal"
+  is_linear <- family %in% c("gaussian", "student", "cauchy")
+  is_ordinal <- family %in% c("cumulative", "cratio", "sratio", "acat") 
+  is_skew <- family %in% c("gamma", "weibull", "exponential")
+  is_count <- family %in% c("poisson", "negbinomial", "geometric")
+  is_multi <- family == "multinormal"
 
   if (family == "categorical") {
     X <- data.frame()
-    Xp <- brm.model.matrix(ee$fixed, data, rm.int = is.ordinal)
+    Xp <- brm.model.matrix(ee$fixed, data, rm.int = is_ordinal)
   }
   else {
-    X <- brm.model.matrix(ee$fixed, data, rm.int = is.ordinal)
+    X <- brm.model.matrix(ee$fixed, data, rm.int = is_ordinal)
     Xp <- brm.model.matrix(partial, data, rm.int = TRUE)
   }  
   f <- colnames(X)
@@ -31,9 +31,9 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
   Z <- lapply(ee$random, brm.model.matrix, data = data)
   r <- lapply(Z,colnames)
   n <- ifelse(is.formula(ee[c("trials","cat")]), "[n]", "")
-  trait <- ifelse(is.multi, "_trait", "")
+  trait <- ifelse(is_multi, "_trait", "")
   
-  ranef <- unlist(lapply(mapply(list, r, ee$group, ee$cor, SIMPLIFY = FALSE), stan.ranef, 
+  ranef <- unlist(lapply(mapply(list, r, ee$group, ee$cor, SIMPLIFY = FALSE), stan_ranef, 
                          prior = prior, cov.ranef = cov.ranef))
   names.ranef <- unique(names(ranef))
   if (length(ranef)) ranef <- sapply(1:length(names.ranef), function(x) 
@@ -42,60 +42,60 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
   
   max_obs <- ifelse(rep(is.formula(ee[c("trials", "cat")]), 3), 
     c("MAX_obs", "  int MAX_obs; \n", "  MAX_obs <- max(max_obs); \n"), c("max_obs", rep("", 2)))
-  eta <- stan.eta(family = family, link = link, f = f, p = p, group = ee$group, 
+  eta <- stan_eta(family = family, link = link, f = f, p = p, group = ee$group, 
                   autocor = autocor, max_obs = max_obs)
-  ma <- stan.ma(family = family, link = link, autocor = autocor, group = ee$group, N = nrow(data),
+  ma <- stan_ma(family = family, link = link, autocor = autocor, group = ee$group, N = nrow(data),
                 levels = unlist(lapply(ee$group, function(g) length(unique(get(g, data))))))
-  ordinal <- stan.ordinal(family = family, link = link, partial = length(p), max_obs = max_obs[1], n = n, 
+  ordinal <- stan_ordinal(family = family, link = link, partial = length(p), max_obs = max_obs[1], n = n, 
                   threshold = threshold)  
-  multi <- stan.multi(family, response = ee$response)
-  llh <- stan.llh(family, link = link, add = is.formula(ee[c("se", "trials", "cat")]), 
+  multi <- stan_multi(family, response = ee$response)
+  llh <- stan_llh(family, link = link, add = is.formula(ee[c("se", "trials", "cat")]), 
                   weights = is.formula(ee$weights), cens = is.formula(ee$cens))
   priors <- paste0(
-    if (length(f)) stan.prior(paste0("b_",f), prior, ind = 1:length(f)),
-    if (length(p)) stan.prior(paste0("b_",p), prior, ind = 1:length(p), partial = TRUE), 
-    if (autocor$p) stan.prior("ar", prior),
-    if (autocor$q) stan.prior("ma", prior),
-    if (is.ordinal && threshold == "flexible") 
-      stan.prior("b_Intercept", prior, add.type = "Intercept")
-    else if (is.ordinal && threshold == "equidistant") 
-      paste0(stan.prior("b_Intercept1", prior, add.type = "Intercept1"), stan.prior("delta", prior)),
-    if (family %in% c("gamma", "weibull", "negbinomial")) stan.prior("shape", prior),
-    if (family == "student") stan.prior("nu", prior),
-    if (is.linear && !is.formula(ee$se)) stan.prior(paste0("sigma_",ee$response), prior), 
-    if (is.multi) paste0(stan.prior(paste0("sigma_",ee$response), prior, ind = 1:length(ee$response)), 
-                      stan.prior("Lrescor", prior)),
+    if (length(f)) stan_prior(paste0("b_",f), prior, ind = 1:length(f)),
+    if (length(p)) stan_prior(paste0("b_",p), prior, ind = 1:length(p), partial = TRUE), 
+    if (autocor$p) stan_prior("ar", prior),
+    if (autocor$q) stan_prior("ma", prior),
+    if (is_ordinal && threshold == "flexible") 
+      stan_prior("b_Intercept", prior, add.type = "Intercept")
+    else if (is_ordinal && threshold == "equidistant") 
+      paste0(stan_prior("b_Intercept1", prior, add.type = "Intercept1"), stan_prior("delta", prior)),
+    if (family %in% c("gamma", "weibull", "negbinomial")) stan_prior("shape", prior),
+    if (family == "student") stan_prior("nu", prior),
+    if (is_linear && !is.formula(ee$se)) stan_prior(paste0("sigma_",ee$response), prior), 
+    if (is_multi) paste0(stan_prior(paste0("sigma_",ee$response), prior, ind = 1:length(ee$response)), 
+                      stan_prior("Lrescor", prior)),
     ranef$model)
-  rngprior <- stan.rngprior(sample.prior = sample.prior, priors = priors, family = family, fixed = f,
+  rngprior <- stan_rngprior(sample.prior = sample.prior, priors = priors, family = family, fixed = f,
                             partial = p, response = ee$response, random = r, group = ee$group)
   
   kronecker <- any(sapply(mapply(list, r, ee$group, SIMPLIFY = FALSE), function(x, cov.ranef = "")
     length(x[[1]]) > 1 && x[[2]] %in% cov.ranef, cov.ranef = cov.ranef))
-  functions.text <- stan.function(kronecker = kronecker)
+  functions.text <- stan_function(kronecker = kronecker)
   
   data.text <- paste0(
     "data { \n",
     "  int<lower=1> N; \n", 
-    if (is.linear || is.skew) 
+    if (is_linear || is_skew) 
       "  real Y[N]; \n"
-    else if (is.count || is.ordinal || family %in% c("binomial", "bernoulli", "categorical")) 
+    else if (is_count || is_ordinal || family %in% c("binomial", "bernoulli", "categorical")) 
       "  int Y[N]; \n"
-    else if (is.multi) paste0(
+    else if (is_multi) paste0(
       "  int<lower=1> N_trait; \n  int<lower=1> K_trait; \n",  
       "  int NC_trait; \n  vector[K_trait] Y[N_trait]; \n"),
     if (ncol(X)) "  int<lower=1> K; \n  matrix[N,K] X; \n",
     if (length(p)) "  int<lower=1> Kp; \n  matrix[N,Kp] Xp; \n",  
-    if (autocor$p && is(autocor, "cor.arma")) 
+    if (autocor$p && is(autocor, "cor_arma")) 
       "  int<lower=1> Kar; \n  matrix[N,Kar] Yar; \n",
-    if (autocor$q && is(autocor, "cor.arma")) 
+    if (autocor$q && is(autocor, "cor_arma")) 
       "  int<lower=1> Kma; \n  row_vector[Kma] Ema_pre[N]; \n  vector[N] tgroup; \n",
-    if (is.linear && is.formula(ee$se))
+    if (is_linear && is.formula(ee$se))
       "  real<lower=0> sigma[N]; \n",
     if (is.formula(ee$weights))
       paste0("  vector<lower=0>[N",trait,"] weights; \n"),
-    if (is.ordinal || family %in% c("binomial", "categorical")) 
+    if (is_ordinal || family %in% c("binomial", "categorical")) 
       paste0("  int max_obs",toupper(n),"; \n"),
-    if (is.formula(ee$cens) && !(is.ordinal || family == "categorical"))
+    if (is.formula(ee$cens) && !(is_ordinal || family == "categorical"))
       "  vector[N] cens; \n",
     ranef$data,
     "} \n")
@@ -112,13 +112,13 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
     if (length(f)) "  vector[K] b; \n",
     if (length(p)) paste0("  matrix[Kp,",max_obs[1],"-1] bp; \n"),
     ordinal$par, ranef$par,
-    if (autocor$p && is(autocor, "cor.arma")) "  vector[Kar] ar; \n",
-    if (autocor$q && is(autocor, "cor.arma")) "  vector[Kma] ma; \n",
-    if (is.linear && !is.formula(ee$se)) 
+    if (autocor$p && is(autocor, "cor_arma")) "  vector[Kar] ar; \n",
+    if (autocor$q && is(autocor, "cor_arma")) "  vector[Kma] ma; \n",
+    if (is_linear && !is.formula(ee$se)) 
       "  real<lower=0> sigma; \n",
     if (family == "student") 
       "  real<lower=0> nu; \n",
-    if (is.multi) 
+    if (is_multi) 
       "  vector<lower=0>[K_trait] sigma; \n  cholesky_factor_corr[K_trait] Lrescor; \n",
     if (family %in% c("gamma", "weibull", "negbinomial")) 
       "  real<lower=0> shape; \n",
@@ -126,11 +126,11 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
     "} \n")
   
   vectorize <- c(!(length(ee$group) || autocor$q || eta$transform ||
-    (is.ordinal && !(family == "cumulative" && link == "logit" && !is.formula(ee$cat)))),            
-    !(is.formula(ee$cens) || is.formula(ee$weights) || is.ordinal || family == "categorical")) 
-  if (!vectorize[1] && !is.multi)
+    (is_ordinal && !(family == "cumulative" && link == "logit" && !is.formula(ee$cat)))),            
+    !(is.formula(ee$cens) || is.formula(ee$weights) || is_ordinal || family == "categorical")) 
+  if (!vectorize[1] && !is_multi)
     loop.trans <- c("  for (n in 1:N) { \n", "  } \n")
-  else if (is.multi)
+  else if (is_multi)
     loop.trans <- c(paste0("  for (m in 1:N_trait) { \n  for (k in 1:K_trait) { \n",    
                            "    int n; \n    n <- (k-1)*N_trait + m; \n"), "  }} \n")
   else loop.trans <- rep("", 2)
@@ -170,20 +170,20 @@ stan.model <- function(formula, data = NULL, family = "gaussian", link = "identi
 # Random effects in Stan 
 # 
 # @return A vector of strings containing the random effects in stan language
-stan.ranef <- function(rg, prior = list(), cov.ranef = "") {
+stan_ranef <- function(rg, prior = list(), cov.ranef = "") {
   r <- rg[[1]]
   g <- rg[[2]]
   cor <- rg[[3]]
-  c.cov <- g %in% cov.ranef
+  ccov <- g %in% cov.ranef
   out <- setNames(as.list(rep("", 9)), c("data", "tdataD", "tdataC", "par", "model", "tranD", "transC", "genD", "genC"))
   out$data <- paste0("  int<lower=1> ",g,"[N]; \n",
                      "  int<lower=1> N_",g,"; \n",
                      "  int<lower=1> K_",g,"; \n",
-                     if (c.cov && (cor || length(r) == 1)) 
+                     if (ccov && (cor || length(r) == 1)) 
                        paste0("  matrix[N_",g,", N_",g,"] cov_",g,"; \n"),
-                     if (c.cov && !cor && length(r) > 1) 
+                     if (ccov && !cor && length(r) > 1) 
                        paste0("  matrix[N_",g,"*K_",g,", N_",g,"*K_",g,"] cov_",g,"; \n"))
-  out$model <- paste0(stan.prior(paste0("sd_",g,"_",r), add.type = g, prior = prior ,
+  out$model <- paste0(stan_prior(paste0("sd_",g,"_",r), add.type = g, prior = prior ,
                       ind = ifelse(length(r) == 1, "", list(1:length(r)))[[1]]))
   
   if (length(r) == 1) {
@@ -193,17 +193,17 @@ stan.ranef <- function(rg, prior = list(), cov.ranef = "") {
     out$model <- paste0(out$model,"  pre_",g," ~ normal(0,1); \n")
     out$transD <- paste0("  vector[N_",g,"] r_",g,"; \n")
     out$transC <- paste0("  r_",g, " <- sd_",g," * (", 
-                         if (c.cov) paste0("cov_",g," * "), "pre_",g,"); \n")
+                         if (ccov) paste0("cov_",g," * "), "pre_",g,"); \n")
   }  
   else if (length(r) > 1) {
     out$data <- paste0(out$data,  "  row_vector[K_",g,"] Z_",g,"[N]; \n  int NC_",g,"; \n")
     out$par <- paste0("  matrix[N_",g,",K_",g,"] pre_",g,"; \n",
                       "  vector<lower=0>[K_",g,"] sd_",g,"; \n",
                       if (cor) paste0("  cholesky_factor_corr[K_",g,"] L_",g,"; \n"))
-    out$model <- paste0(out$model, ifelse(cor, stan.prior(paste0("L_",g), prior = prior, add.type = g), ""),
+    out$model <- paste0(out$model, ifelse(cor, stan_prior(paste0("L_",g), prior = prior, add.type = g), ""),
                      "  to_vector(pre_",g,") ~ normal(0,1); \n")
     out$transD <- paste0("  vector[K_",g,"] r_",g,"[N_",g,"]; \n")
-    if (c.cov) {
+    if (ccov) {
       if (cor) out$transC <- paste0("  r_",g," <- to_array(kronecker_cholesky(cov_",g,", L_",g,", sd_",g,") * ",
                                     "to_vector(pre_",g,"), N_",g,", K_",g,"); \n")
       else out$transC <- paste0("  r_",g," <- to_array(to_vector(rep_matrix(sd_",g,", N_",g,")) .* ",
@@ -224,18 +224,18 @@ stan.ranef <- function(rg, prior = list(), cov.ranef = "") {
 }
 
 # Likelihoods in stan language
-stan.llh <- function(family, link, add = FALSE, weights = FALSE, cens = FALSE) {
-  is.cat <- family %in% c("cumulative", "cratio", "sratio", "acat", "categorical")
-  is.count <- family %in% c("poisson","negbinomial", "geometric")
-  is.skew <- family %in% c("gamma","exponential","weibull")
-  is.dich <- family %in% c("binomial", "bernoulli")
+stan_llh <- function(family, link, add = FALSE, weights = FALSE, cens = FALSE) {
+  is_cat <- family %in% c("cumulative", "cratio", "sratio", "acat", "categorical")
+  is_count <- family %in% c("poisson","negbinomial", "geometric")
+  is_skew <- family %in% c("gamma","exponential","weibull")
+  is_binary <- family %in% c("binomial", "bernoulli")
   
-  simplify <- !cens && (is.dich && link == "logit" || is.count && link == "log" ||
+  simplify <- !cens && (is_binary && link == "logit" || is_count && link == "log" ||
                 family %in% c("cumulative", "categorical") && link == "logit" && !add) 
-  n <- ifelse(cens || weights || is.cat, "[n]", "")
+  n <- ifelse(cens || weights || is_cat, "[n]", "")
   ns <- ifelse(add && (cens || weights), "[n]", "")
-  ilink <- ifelse(cens && (is.dich && link == "logit" || is.count && link == "log"), 
-                  stan.ilink(link), "")
+  ilink <- ifelse(cens && (is_binary && link == "logit" || is_count && link == "log"), 
+                  stan_ilink(link), "")
   
   lin.args <- paste0("eta",n,",sigma",ns)
   if (simplify) llh.pre <- switch(family,
@@ -246,7 +246,7 @@ stan.llh <- function(family, link, add = FALSE, weights = FALSE, cens = FALSE) {
      categorical = c("categorical_logit", "to_vector(append_col(zero, eta[n] + etap[n]))"), 
      binomial = c("binomial_logit", paste0("max_obs",ns,",eta",n)), 
      bernoulli = c("bernoulli_logit", paste0("eta",n)))
-  else llh.pre <- switch(ifelse(is.cat, "categorical", 
+  else llh.pre <- switch(ifelse(is_cat, "categorical", 
                          ifelse(family == "gaussian" && link == "log", "lognormal", family)),
      gaussian = c("normal", lin.args),
      student = c("student_t", paste0("nu,",lin.args)),
@@ -280,27 +280,27 @@ stan.llh <- function(family, link, add = FALSE, weights = FALSE, cens = FALSE) {
 }
 
 # linear.predictor part in Stan
-stan.eta <- function(family, link, f, p = NULL, group = list(), 
-                     autocor = cor.arma(), max_obs = "max_obs") {
-  is.linear <- family %in% c("gaussian", "student", "cauchy")
-  is.ordinal <- family %in% c("cumulative", "cratio", "sratio", "acat") 
-  is.skew <- family %in% c("gamma", "weibull", "exponential")
-  is.count <- family %in% c("poisson", "negbinomial", "geometric")
-  is.dich <- family %in% c("binomial", "bernoulli")
-  is.multi <- family == "multinormal"
+stan_eta <- function(family, link, f, p = NULL, group = list(), 
+                     autocor = cor_arma(), max_obs = "max_obs") {
+  is_linear <- family %in% c("gaussian", "student", "cauchy")
+  is_ordinal <- family %in% c("cumulative", "cratio", "sratio", "acat") 
+  is_skew <- family %in% c("gamma", "weibull", "exponential")
+  is_count <- family %in% c("poisson", "negbinomial", "geometric")
+  is_binary <- family %in% c("binomial", "bernoulli")
+  is_multi <- family == "multinormal"
   
   eta <- list()
   # initialize eta
   eta$transD <- paste0("  vector[N] eta; \n", 
                        ifelse(length(p), paste0("  matrix[N,",max_obs[1],"-1] etap; \n"), ""),
-                       ifelse(is.multi, "  vector[K_trait] etam[N_trait]; \n", ""))
-  eta.multi <- ifelse(is.multi, "etam[m,k]", "eta[n]")
+                       ifelse(is_multi, "  vector[K_trait] etam[N_trait]; \n", ""))
+  eta.multi <- ifelse(is_multi, "etam[m,k]", "eta[n]")
   
   # transform eta before it is passed to the likelihood
-  ilink <- stan.ilink(link)
+  ilink <- stan_ilink(link)
   eta$transform <- !(link == "identity" || family == "gaussian" && link == "log" ||
-                     is.ordinal || family == "categorical" || is.count && link == "log" ||
-                     is.dich && link == "logit")
+                     is_ordinal || family == "categorical" || is_count && link == "log" ||
+                     is_binary && link == "logit")
   eta.ilink <- rep("", 2)
   if (eta$transform) {
     eta.ilink <- switch(family, c(paste0(ilink,"("), ")"),
@@ -315,38 +315,38 @@ stan.eta <- function(family, link, f, p = NULL, group = list(),
   
   #define fixed, random and autocorrelation effects
   eta$transC1 <- paste0("  eta <- ", ifelse(length(f), "X*b", "rep_vector(0,N)"), 
-                        if (autocor$p && is(autocor, "cor.arma")) " + Yar*ar", "; \n", if (length(p)) "  etap <- Xp * bp; \n")
+                        if (autocor$p && is(autocor, "cor_arma")) " + Yar*ar", "; \n", if (length(p)) "  etap <- Xp * bp; \n")
   eta.re <- ifelse(length(group), collapse(" + Z_",group,"[n]*r_",group,"[",group,"[n]]"), "")
-  eta.ma <- ifelse(autocor$q && is(autocor, "cor.arma"), " + Ema[n]*ma", "")
-  if (nchar(eta.re) || nchar(eta.ma) || is.multi || nchar(eta.ilink[1])) {
+  eta.ma <- ifelse(autocor$q && is(autocor, "cor_arma"), " + Ema[n]*ma", "")
+  if (nchar(eta.re) || nchar(eta.ma) || is_multi || nchar(eta.ilink[1])) {
     eta$transC2 <- paste0("    ",eta.multi," <- ",eta.ilink[1],"eta[n]", eta.ma, eta.re, eta.ilink[2],"; \n")
   }
   eta
 }
 
 # moving average autocorrelation in Stan
-stan.ma <- function(family, link, autocor, group, levels, N) {
-  is.linear <- family %in% c("gaussian", "student", "cauchy")
-  is.multi <- family == "multinormal"
+stan_ma <- function(family, link, autocor, group, levels, N) {
+  is_linear <- family %in% c("gaussian", "student", "cauchy")
+  is_multi <- family == "multinormal"
   ma <- list()
-  if (is(autocor, "cor.arma") && autocor$q) {
+  if (is(autocor, "cor_arma") && autocor$q) {
     link.fun <- c(identity = "", log = "log", inverse = "inv")[link]
-    if (!(is.linear || is.multi) && suppressWarnings(max(levels)) < N) 
+    if (!(is_linear || is_multi) && suppressWarnings(max(levels)) < N) 
       stop(paste0("moving-average models for family ",family," require a random effect with the same number \n",
                   "of levels as observations in the data"))
-    e.ranef <- ifelse(!(is.linear || is.multi), paste0("r_", group[levels == max(levels)][[1]]), "")
-    index <- ifelse(is.multi, "m,k", "n")
-    ma$transD <- paste0("  row_vector[Kma] Ema[N]; \n", if(is.linear || is.multi) "  vector[N] e; \n") 
+    eranef <- ifelse(!(is_linear || is_multi), paste0("r_", group[levels == max(levels)][[1]]), "")
+    index <- ifelse(is_multi, "m,k", "n")
+    ma$transD <- paste0("  row_vector[Kma] Ema[N]; \n", if(is_linear || is_multi) "  vector[N] e; \n") 
     ma$transC1 <- "  Ema <- Ema_pre; \n" 
-    ma$transC2 <- paste0(ifelse(is.linear || is.multi, paste0("    e[n] <- ",link.fun,"(Y[",index,"]) - eta[n]", "; \n"), ""), 
+    ma$transC2 <- paste0(ifelse(is_linear || is_multi, paste0("    e[n] <- ",link.fun,"(Y[",index,"]) - eta[n]", "; \n"), ""), 
                          "    for (i in 1:Kma) if (n+1-i > 0 && n < N && tgroup[n+1] == tgroup[n+1-i]) \n",
-                         "      Ema[n+1,i] <- ",ifelse(is.linear || is.multi, "e[n+1-i]", paste0(e.ranef,"[n+1-i]")), "; \n")
+                         "      Ema[n+1,i] <- ",ifelse(is_linear || is_multi, "e[n+1-i]", paste0(eranef,"[n+1-i]")), "; \n")
   }
   ma
 }
 
 #stan code for user defined functions
-stan.function <- function(kronecker = FALSE) {
+stan_function <- function(kronecker = FALSE) {
   out <- NULL
   if (kronecker) out <- paste0(
     "  // calculate the cholesky factor of the kronecker covariance matrix \n",
@@ -380,7 +380,7 @@ stan.function <- function(kronecker = FALSE) {
 }
 
 # multinormal effects in Stan
-stan.multi <- function(family, response) {
+stan_multi <- function(family, response) {
   out <- list()
   if (family == "multinormal") {
    out$genD <- paste0("  matrix[K_trait,K_trait] Rescor; \n",
@@ -395,26 +395,26 @@ stan.multi <- function(family, response) {
 # Ordinal effects in Stan
 # 
 # @return A vector of strings containing the ordinal effects in stan language
-stan.ordinal <- function(family, link, partial = FALSE, max_obs = "max_obs", 
+stan_ordinal <- function(family, link, partial = FALSE, max_obs = "max_obs", 
                      n = "", threshold = "flexible", simplify = TRUE) {
-  is.ordinal <- family %in% c("cumulative", "cratio", "sratio", "acat")
-  if (!(is.ordinal || family == "categorical")) return(list())
+  is_ordinal <- family %in% c("cumulative", "cratio", "sratio", "acat")
+  if (!(is_ordinal || family == "categorical")) return(list())
   ilink <- c(identity = "", log = "exp", inverse = "inv", sqrt = "square", logit = "inv_logit", 
              probit = "Phi", probit_approx = "Phi_approx", cloglog = "inv_cloglog")[link]
   th <- function(k) {
-    sign <- ifelse(is.element(family, c("cumulative", "sratio"))," - ", " + ")
+    sign <- ifelse(family %in% c("cumulative", "sratio")," - ", " + ")
     ptl <- ifelse(partial, paste0(sign, "etap[n,k]"), "") 
     if (sign == " - ") out <- paste0("b_Intercept[",k,"]", ptl, " - eta[n]")
     else out <- paste0("eta[n]", ptl, " - b_Intercept[",k,"]")
   }  
-  add.loop <- ifelse(n == "[n]", paste0("    for (k in (max_obs[n]+1):MAX_obs) p[n,k] <- 0.0; \n"), "")
-  hd <- ifelse(rep(n == "[n]" && is.element(family, c("sratio","cratio")), 2), 
+  add_loop <- ifelse(n == "[n]", paste0("    for (k in (max_obs[n]+1):MAX_obs) p[n,k] <- 0.0; \n"), "")
+  hd <- ifelse(rep(n == "[n]" && family %in% c("sratio","cratio"), 2), 
                c("head(", paste0(",max_obs",n,"-1)")), "")
   sc <- ifelse(family == "sratio", "1-", "")
   intercept <- paste0("  ", ifelse(family == "cumulative", "ordered", "vector"), "[",max_obs,"-1] b_Intercept; \n")
   
   out <- list()
-  if (is.ordinal) {
+  if (is_ordinal) {
     out$par <-  ifelse(threshold == "flexible", intercept,
       paste0("  real b_Intercept1; \n  real", ifelse(family == "cumulative", "<lower=0>", "")," delta; \n")) 
     out$transC1 <- ifelse(threshold == "equidistant", 
@@ -428,7 +428,7 @@ stan.ordinal <- function(family, link, partial = FALSE, max_obs = "max_obs",
       "    p[n,1] <- 1.0; \n",
       "    for (k in 2:max_obs",n,") { \n",
       "      p[n,k] <- exp(eta[n,k-1]); \n",
-      "    } \n", add.loop,
+      "    } \n", add_loop,
       "    p[n] <- p[n]/sum(p[n]); \n")
     else if (family == "cumulative") out$transC2 <- paste0(
       "    p[n,1] <- ",ilink,"(",th(1),"); \n",
@@ -436,15 +436,15 @@ stan.ordinal <- function(family, link, partial = FALSE, max_obs = "max_obs",
       "      p[n,k] <- ",ilink,"(",th("k"),") - ",ilink,"(",th("k-1"),"); \n", 
       "    } \n",
       "    p[n,max_obs",n,"] <- 1 - ",ilink,"(",th(paste0("max_obs",n,"-1")),"); \n", 
-      add.loop)
-    else if (is.element(family,c("sratio", "cratio"))) out$transC2 <- paste0(
+      add_loop)
+    else if (family %in% c("sratio", "cratio")) out$transC2 <- paste0(
       "    for (k in 1:(max_obs",n,"-1)) { \n",
       "      q[n,k] <- ",sc, ilink,"(",th("k"),"); \n",
       "      p[n,k] <- 1-q[n,k]; \n",
       "      for (kk in 1:(k-1)) p[n,k] <- p[n,k] * q[n,kk]; \n", 
       "    } \n",
       "    p[n,max_obs",n,"] <- prod(",hd[1],"q[n]",hd[2],"); \n",
-      add.loop)
+      add_loop)
     else if (family == "acat") 
       if (ilink == "inv_logit") out$transC2 <- paste0(
         "    p[n,1] <- 1.0; \n",
@@ -453,7 +453,7 @@ stan.ordinal <- function(family, link, partial = FALSE, max_obs = "max_obs",
         "      p[n,k+1] <- q[n,1]; \n",
         "      for (kk in 2:k) p[n,k+1] <- p[n,k+1] + q[n,kk]; \n",
         "      p[n,k+1] <- exp(p[n,k+1]); \n",
-        "    } \n", add.loop,
+        "    } \n", add_loop,
         "    p[n] <- p[n]/sum(p[n]); \n")
     else out$transC2 <- paste0(                   
       "    for (k in 1:(max_obs",n,"-1)) \n",
@@ -462,7 +462,7 @@ stan.ordinal <- function(family, link, partial = FALSE, max_obs = "max_obs",
       "      p[n,k] <- 1.0; \n",
       "      for (kk in 1:(k-1)) p[n,k] <- p[n,k] * q[n,kk]; \n",
       "      for (kk in k:(max_obs",n,"-1)) p[n,k] <- p[n,k] * (1-q[n,kk]); \n",      
-      "    } \n", add.loop,
+      "    } \n", add_loop,
       "    p[n] <- p[n]/sum(p[n]); \n")
   }
   out
@@ -481,22 +481,22 @@ stan.ordinal <- function(family, link, partial = FALSE, max_obs = "max_obs",
 # 
 # @return A vector of character strings each defining a line of code in stan language that
 #   defines the prior of a parameter in \code{par}. If a parameter has has no corresponding prior in \code{prior} 
-#   and also no internal default in \code{stan.prior} (see 'Details'), an empty string is returned.
+#   and also no internal default in \code{stan_prior} (see 'Details'), an empty string is returned.
 #      
 # @examples 
-# stan.prior(c("b_x1","sd_Site","sd_obs"), 
+# stan_prior(c("b_x1","sd_Site","sd_obs"), 
 #           prior = list(b_ = "normal(0,1)", sd = "cauchy(0,2.5)"))
 #  
 # # returns a cauchy prior for sd_Site and a uniform prior for sd_obs                
-# stan.prior(c("sd_Site","sd_obs"), 
+# stan_prior(c("sd_Site","sd_obs"), 
 #           prior = list(sd = "cauchy(0,5)", sd_obs = "uniform(0,100)"))            
 # 
 # # returns a uniform prior for the first element of b                      
-# stan.prior("b", prior = list(beta = "uniform(0,10)"), ind = "[1]")
+# stan_prior("b", prior = list(beta = "uniform(0,10)"), ind = "[1]")
 # 
 # # returns the default prior for nu
-# stan.prior("nu")
-stan.prior = function(par, prior = list(), add.type = NULL, ind = rep("", length(par)), 
+# stan_prior("nu")
+stan_prior = function(par, prior = list(), add.type = NULL, ind = rep("", length(par)), 
                       partial = FALSE, s = 2) { 
   if (length(par) != length(ind)) 
     stop("Arguments par and ind must have the same length")
@@ -537,7 +537,7 @@ stan.prior = function(par, prior = list(), add.type = NULL, ind = rep("", length
 }
 
 # stan code to sample from priors seperately
-stan.rngprior <- function(sample.prior, priors = "", family = "gaussian", fixed = NULL,
+stan_rngprior <- function(sample.prior, priors = "", family = "gaussian", fixed = NULL,
                           partial = NULL, response = NULL, random = list(), group = list()) {
   out <- list()
   if (sample.prior) {
@@ -582,7 +582,7 @@ stan.rngprior <- function(sample.prior, priors = "", family = "gaussian", fixed 
 }
 
 # find the inverse link to a given link function
-stan.ilink <- function(link) {
+stan_ilink <- function(link) {
   switch(link, identity = "", log = "exp", inverse = "inv", sqrt = "square", 
          logit = "inv_logit", probit = "Phi", probit_approx = "Phi_approx", cloglog = "inv_cloglog")
 }

@@ -41,10 +41,10 @@ print.brmssummary <- function(x, digits = 2, ...) {
       }
     }
     
-    if (nrow(x$cor.pars)) {
+    if (nrow(x$cor_pars)) {
       cat("Correlation Structure: "); print(x$autocor); cat("\n")
-      x$cor.pars[,"Eff.Sample"] <- round(x$cor.pars[,"Eff.Sample"], digits = 0)
-      print(round(x$cor.pars, digits = digits))
+      x$cor_pars[,"Eff.Sample"] <- round(x$cor_pars[,"Eff.Sample"], digits = 0)
+      print(round(x$cor_pars, digits = digits))
       cat("\n")
     }
     
@@ -53,10 +53,10 @@ print.brmssummary <- function(x, digits = 2, ...) {
     print(round(x$fixed, digits = digits)) 
     cat("\n")
     
-    if (nrow(x$spec.pars)) {
+    if (nrow(x$spec_pars)) {
       cat("Family Specific Parameters: \n")
-      x$spec.pars[,"Eff.Sample"] <- round(x$spec.pars[,"Eff.Sample"], digits = 0)
-      print(round(x$spec.pars, digits = digits))
+      x$spec_pars[,"Eff.Sample"] <- round(x$spec_pars[,"Eff.Sample"], digits = 0)
+      print(round(x$spec_pars, digits = digits))
       cat("\n")
     }
     
@@ -81,7 +81,7 @@ print.brmsmodel <- function(x, ...) cat(x)
 print.ic <- function(x, digits = 2, ...) {
   ic <- names(x)[3]
   mat <- matrix(c(x[[ic]], x[[paste0("se_",ic)]]), ncol = 2, 
-                      dimnames = list("", c(toupper(ic), "SE")))
+                dimnames = list("", c(toupper(ic), "SE")))
   print(round(mat, digits = digits))
 }
 

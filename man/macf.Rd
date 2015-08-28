@@ -44,7 +44,7 @@ summary(fit1)
 bacf(residuals(fit1), lag.max = 10)
 
 ## fit the model again with autoregressive coefficients
-fit2 <- brm(y ~ 1, autocor = cor.ar(p = 3))
+fit2 <- brm(y ~ 1, autocor = cor_ar(p = 3))
 summary(fit2)
 
 ## investigate the residuals again (autocorrelation is gone)

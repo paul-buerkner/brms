@@ -7,12 +7,12 @@ output: html_document
 ----------------------------------------------------------------
 
 ## new features
-* compute the Watanabe-Akaike information criterion (WAIC) and the leave-one-out cross-validation (LOO) using the loo package 
-* provide an interface to shinystan with S3 method 'launch.shiny'
-* log-likelihood values and posterior predictive samples can now be calculated after the model has been fitted 
+* compute the Watanabe-Akaike information criterion (WAIC) and the leave-one-out cross-validation (LOO) using the loo package.
+* provide an interface to shinystan with S3 method 'launch_shiny'.
+* log-likelihood values and posterior predictive samples can now be calculated after the model has been fitted. 
 * allow for customized covariance structures of grouping factors with multiple random effects
-* new S3 method 'par.names' for the formula class returning all names of parameters for which priors can be specified
-* new S3 method 'residuals' to compute residuals for linear mixed models
+* new S3 method 'parnames' for the formula class returning all names of parameters for which priors can be specified.
+* new S3 method 'residuals' to compute residuals for linear mixed models.
 
 ## other changes
 * arguments WAIC and predict are removed from function brm as they are no longer necessary
@@ -61,7 +61,7 @@ output: html_document
 # brms 0.3.0
 ----------------------------------------------------------------
 
-* introduce new methods 'par.names' and 'posterior.samples' for class 'brmsfit' to extract parameter names and posterior samples for given parameters, respectively.
+* introduce new methods 'parnames' and 'posterior_samples' for class 'brmsfit' to extract parameter names and posterior samples for given parameters, respectively.
 * introduce new method 'hypothesis' for class 'brmsfit' allowing to test non-linear hypotheses concerning fixed effects
 * introduce new argument 'addition' in function brm to get a more flexible approach in specifying additional information on the response variable (e.g., standard errors for meta-analysis). Alternatively, this information can also be passed to the formula argument directly.
 * introduce weighted and censored regressions through argument 'addition' of function brm

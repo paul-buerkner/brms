@@ -2,22 +2,22 @@
 predict.brmsfit <- function(object, ...) {
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
-  ee <- extract.effects(object$formula, family = object$family)
+  ee <- extract_effects(object$formula, family = object$family)
   if (object$link == "log" && object$family == "gaussian" && length(ee$response) == 1) 
     object$family <- "lognormal"
   if (object$family == "gaussian" && length(ee$response) > 1)
     object$family <- "multinormal"
   
   #compute all necessary samples
-  samples <- list(eta = linear.predictor(object))
+  samples <- list(eta = linear_predictor(object))
   if (object$family %in% c("gaussian", "student", "cauchy", "lognormal", "multinormal") && !is.formula(ee$se))
-    samples$sigma <- as.matrix(posterior.samples(object, parameters = "^sigma_"))
+    samples$sigma <- as.matrix(posterior_samples(object, parameters = "^sigma_"))
   if (object$family == "student") 
-    samples$nu <- as.matrix(posterior.samples(object, parameters = "^nu$"))
+    samples$nu <- as.matrix(posterior_samples(object, parameters = "^nu$"))
   if (object$family %in% c("gamma", "weibull","negbinomial")) 
-    samples$shape <- as.matrix(posterior.samples(object, parameters = "^shape$"))
+    samples$shape <- as.matrix(posterior_samples(object, parameters = "^shape$"))
   if (object$family == "multinormal") {
-    samples$rescor <- as.matrix(posterior.samples(object, parameters = "^rescor_"))
+    samples$rescor <- as.matrix(posterior_samples(object, parameters = "^rescor_"))
     samples$Sigma <- cov_matrix(sd = samples$sigma, cor = samples$rescor)$cov
     message(paste("Computing posterior predictive samples of multinormal distribution. \n", 
             "This may take a while."))
@@ -27,7 +27,7 @@ predict.brmsfit <- function(object, ...) {
   predict_fun <- get(paste0("predict_",object$family))
   samples <- do.call(cbind, lapply(1:nrow(as.matrix(object$data$Y)), function(n) 
     do.call(predict_fun, list(n = n, data = object$data, samples = samples, link = object$link))))
-  out <- do.call(cbind, lapply(c("mean", "sd", "quantile"), get.estimate, 
+  out <- do.call(cbind, lapply(c("mean", "sd", "quantile"), get_estimate, 
                                samples = samples, probs = c(0.025, 0.975)))
   colnames(out) <- c("Estimate", "Est.Error", "l-95% CI", "u-95% CI")
   

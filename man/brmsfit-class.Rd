@@ -17,8 +17,11 @@ Models fitted with the \code{\link[brms:brms]{brms}} package are represented as 
   \code{\link[brms:ranef.brmsfit]{ranef}},   \code{\link[brms:VarCorr.brmsfit]{VarCorr}}, 
   \code{\link[stats:predict]{predict}}, \code{\link[stats:formula]{formula}},
   \code{\link[stats:nobs]{nobs}}, \code{\link[brms:ngrps.brmsfit]{ngrps}},
-  \code{\link[brms:hypothesis]{hypothesis}}, \code{\link[brms:par.names]{par.names}},
-  \code{\link[brms:posterior.samples]{posterior.samples}}
+  \code{\link[brms:residuals.brmsfit]{residuals}}, \code{\link[brms:loglik.brmsfit]{loglik}},
+  \code{\link[brms:hypothesis]{hypothesis}}, \code{\link[brms:parnames]{parnames}},
+  \code{\link[brms:posterior_samples]{posterior_samples}}, \code{\link[brms:prior_samples]{prior_samples}},
+  \code{\link[brms:linear_predictor.brmsfit]{linear_predictor}}, \code{\link[brms:launch_shiny.brmsfit]{launch_shiny}},
+  \code{\link[brms:WAIC.brmsfit]{WAIC}}, \code{\link[brms:LOO.brmsfit]{LOO}},
 }
 
 \section{Slots}{

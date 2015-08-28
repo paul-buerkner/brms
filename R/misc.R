@@ -100,7 +100,7 @@ ilink <- function(x, link) {
 }
 
 #calculate estimates over posterior samples 
-get.estimate <- function(coef, samples, margin = 2, to.array = FALSE, ...) {
+get_estimate <- function(coef, samples, margin = 2, to.array = FALSE, ...) {
   dots <- list(...)
   args <- list(X = samples, MARGIN = margin, FUN = coef)
   fun.args <- names(formals(coef))
@@ -180,23 +180,23 @@ eratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"), prior_samp
 link4family <- function(family) {
   link <- family[2]
   family <- family[1]
-  is.linear <- family %in% c("gaussian", "student", "cauchy")
-  is.skew <- family %in% c("gamma", "weibull", "exponential")
-  is.bin <- family %in% c("cumulative", "cratio", "sratio", "acat", "binomial", "bernoulli")                    
-  is.count <- family %in% c("poisson", "negbinomial", "geometric")
+  is_linear <- family %in% c("gaussian", "student", "cauchy")
+  is_skew <- family %in% c("gamma", "weibull", "exponential")
+  is_cat <- family %in% c("cumulative", "cratio", "sratio", "acat", "binomial", "bernoulli")                    
+  is_count <- family %in% c("poisson", "negbinomial", "geometric")
 
   if (is.na(link)) {
-    if (is.linear) link <- "identity"
-    else if (is.skew || is.count) link <- "log"
-    else if (is.bin || family == "categorical") link <- "logit"
+    if (is_linear) link <- "identity"
+    else if (is_skew || is_count) link <- "log"
+    else if (is_cat || family == "categorical") link <- "logit"
   }
-  else if (is.linear && !is.element(link, c("identity", "log", "inverse")) ||
-           is.count && !link %in% c("log", "identity", "sqrt") ||
-           is.bin && !link %in% c("logit", "probit", "probit_approx", "cloglog") ||
+  else if (is_linear && !link %in% c("identity", "log", "inverse") ||
+           is_count && !link %in% c("log", "identity", "sqrt") ||
+           is_cat && !link %in% c("logit", "probit", "probit_approx", "cloglog") ||
            family == "categorical" && link != "logit" ||
-           is.skew && !link %in% c("log", "identity", "inverse"))
+           is_skew && !link %in% c("log", "identity", "inverse"))
     stop(paste(link, "is not a valid link for family", family))
-  else if (is.count && link == "sqrt") 
+  else if (is_count && link == "sqrt") 
     warning(paste(family, "model with sqrt link may not be uniquely identified"))
   link
 }
@@ -215,7 +215,7 @@ check_family <- function(family) {
 
 #list irrelevant parameters not to be saved by Stan
 exclude_pars <- function(formula, ranef = TRUE) {
-  ee <- extract.effects(formula = formula, add.ignore = TRUE)
+  ee <- extract_effects(formula = formula, add.ignore = TRUE)
   out <- c("eta", "etam", "etap", "b_Intercept1", "Lrescor", "Rescor",
            "p", "q", "e", "Ema", "lp_pre")
   if (length(ee$group)) {
@@ -233,7 +233,7 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian", autoco
   prior <- lapply(prior, function(p) sub("^lkj\\(", "lkj_corr_cholesky(", p))
   
   #check if parameter names in prior are correct
-  ee <- extract.effects(formula, family = family)  
+  ee <- extract_effects(formula, family = family)  
   possible_priors <- unlist(par.names(formula, data = data, family = family, autocor = autocor,
                                       partial = partial, threshold = threshold, internal = TRUE), use.names = FALSE)
   meta_priors <- unlist(regmatches(possible_priors, gregexpr("^[^_]+", possible_priors)))

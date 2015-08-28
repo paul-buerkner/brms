@@ -1,5 +1,5 @@
 #' @export
-linear.predictor.brmsfit <- function(x, ...) {
+linear_predictor.brmsfit <- function(x, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
   n.samples <- nrow(posterior.samples(x, parameters = "^lp__$"))

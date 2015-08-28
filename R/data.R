@@ -52,36 +52,38 @@ update_data <- function(data, family, effects, ...) {
 #'
 #' @inheritParams brm
 #' 
+#' @aliases brm.data
+#' 
 #' @return A named list of objects containing the required data to fit a \code{brms} model 
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
 #' @examples
-#' data1 <- brm.data(rating ~ treat + period + carry + (1|subject), 
+#' data1 <- brmdata(rating ~ treat + period + carry + (1|subject), 
 #'                   data = inhaler, family = "cumulative")
 #' names(data1)
 #' 
-#' data2 <- brm.data(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient) + (1|visit), 
+#' data2 <- brmdata(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient) + (1|visit), 
 #'                   data = epilepsy, family = "poisson")
 #' names(data2)
 #'          
 #' @export
-brm.data <- function(formula, data = NULL, family = "gaussian", autocor = NULL, 
+brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL, 
                      partial = NULL, cov.ranef = NULL) {
   family <- check_family(family[1])
-  is.linear <- family %in% c("gaussian", "student", "cauchy")
-  is.ordinal <- family %in% c("cumulative","cratio","sratio","acat")
-  is.count <- family %in% c("poisson", "negbinomial", "geometric")
-  is.skew <- family %in% c("gamma", "weibull", "exponential")
-  if (is.null(autocor)) autocor <- cor.arma()
-  if (!is(autocor,"cor.brms")) stop("cor must be of class cor.brms")
+  is_linear <- family %in% c("gaussian", "student", "cauchy")
+  is_ordinal <- family %in% c("cumulative","cratio","sratio","acat")
+  is_count <- family %in% c("poisson", "negbinomial", "geometric")
+  is_skew <- family %in% c("gamma", "weibull", "exponential")
+  if (is.null(autocor)) autocor <- cor_arma()
+  if (!is(autocor,"cor_brms")) stop("cor must be of class cor_brms")
   
-  et <- extract.time(autocor$formula)
-  ee <- extract.effects(formula = formula, family = family, partial, et$all)
+  et <- extract_time(autocor$formula)
+  ee <- extract_effects(formula = formula, family = family, partial, et$all)
   data <- update_data(data, family = family, effects = ee, et$group)
-  group.names <- list()
+  group_names <- list()
   for (g in ee$group) { 
-    group.names[[g]] <- sort(as.character(unique(data[[g]])))
+    group_names[[g]] <- sort(as.character(unique(data[[g]])))
     data[[g]] <- as.numeric(as.factor(data[[g]]))
   } 
   
@@ -98,11 +100,11 @@ brm.data <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
   
   #response variable
   standata <- list(N = nrow(data), Y = unname(model.response(data)))
-  if (!is.numeric(standata$Y) && !(is.ordinal || family %in% c("bernoulli", "categorical"))) 
+  if (!is.numeric(standata$Y) && !(is_ordinal || family %in% c("bernoulli", "categorical"))) 
     stop(paste("family", family, "expects numeric response variable"))
   
   #transform and check response variable for different families
-  if (is.count || family == "binomial") {
+  if (is_count || family == "binomial") {
     if (!all(is.wholenumber(standata$Y)) || min(standata$Y) < 0)
       stop(paste("family", family, "expects response variable of non-negative integers"))
   }
@@ -113,7 +115,7 @@ brm.data <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
   }
   else if (family == "categorical") 
     standata$Y <- as.numeric(as.factor(standata$Y))
-  else if (is.ordinal) {
+  else if (is_ordinal) {
     if (is.factor(standata$Y)) {
       if (is.ordered(standata$Y)) standata$Y <- as.numeric(standata$Y)
       else stop(paste("family", family, "requires factored response variables to be ordered"))
@@ -122,7 +124,7 @@ brm.data <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
       standata$Y <- standata$Y - min(standata$Y) + 1
     else stop(paste("family", family, "expects either integers or ordered factors as response variables"))
   }
-  else if (is.skew) {
+  else if (is_skew) {
     if (min(standata$Y) < 0)
       stop(paste("family", family, "requires response variable to be non-negative"))
   }  
@@ -133,7 +135,7 @@ brm.data <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
   }
   
   #fixed effects data
-  X <- brm.model.matrix(ee$fixed, data, rm.int = is.ordinal)
+  X <- brm.model.matrix(ee$fixed, data, rm.int = is_ordinal)
   if (family == "categorical") standata <- c(standata, list(Kp = ncol(X), Xp = X))
   else standata <- c(standata, list(K = ncol(X), X = X))
   
@@ -155,19 +157,19 @@ brm.data <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
       for ( j in 1:length(name)) standata <- c(standata, setNames(list(eval(expr[j])), name[j]))
       if (g %in% names(cov.ranef)) {
         cov.ranef[[g]] <- as.matrix(cov.ranef[[g]])
-        level.names <- rownames(cov.ranef[[g]])
-        colnames(cov.ranef[[g]]) <- level.names
-        if (is.null(level.names)) 
+        level_names <- rownames(cov.ranef[[g]])
+        colnames(cov.ranef[[g]]) <- level_names
+        if (is.null(level_names)) 
           stop(paste("Row names are required for covariance matrix of",g))
-        if (nrow(cov.ranef[[g]]) != length(group.names[[g]]))
+        if (nrow(cov.ranef[[g]]) != length(group_names[[g]]))
           stop(paste("Dimension of covariance matrix of",g,"is incorrect"))
-        if (any(sort(level.names) != group.names[[g]]))
+        if (any(sort(level_names) != group_names[[g]]))
           stop(paste("Row names of covariance matrix of",g,"do not match names of the grouping levels"))
         if (!isSymmetric(unname(cov.ranef[[g]])))
           stop(paste("Covariance matrix of grouping factor",g,"is not symmetric"))
         if (min(eigen(cov.ranef[[g]], symmetric = TRUE, only.values = TRUE)$values) <= 0)
           warning(paste("Covariance matrix of grouping factor",g,"may not be positive definite"))
-        cov.ranef[[g]] <- cov.ranef[[g]][order(level.names), order(level.names)]
+        cov.ranef[[g]] <- cov.ranef[[g]][order(level_names), order(level_names)]
         if (length(r[[i]]) == 1) 
           cov.ranef[[g]] <- t(suppressWarnings(chol(cov.ranef[[g]], pivot = TRUE)))
         else if (length(r[[i]]) > 1 && !ee$cor[[i]])
@@ -199,7 +201,7 @@ brm.data <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
     if (any(standata$Y > standata$max_obs))
       stop("Number of trials is smaller than the response variable would suggest.")
   }
-  if (is.ordinal || family == "categorical") {
+  if (is_ordinal || family == "categorical") {
     standata$max_obs <- if (!length(ee$cat)) max(standata$Y)
                         else if (is.wholenumber(ee$cat)) ee$cat
                         else if (is.formula(ee$cat)) .addition(formula = ee$cat, data = data)
@@ -224,14 +226,14 @@ brm.data <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
   }
   
   #autocorrelation variables
-  if (is(autocor,"cor.arma") && autocor$p + autocor$q > 0) {
+  if (is(autocor,"cor_arma") && autocor$p + autocor$q > 0) {
     tgroup <- data[[et$group]]
     if (is.null(tgroup)) tgroup <- rep(1, standata$N) 
     if (autocor$p > 0) {
       standata$Yar <- ar_design_matrix(Y = standata$Y, p = autocor$p, group = tgroup)
       standata$Kar <- autocor$p
     }
-    if (autocor$q > 0 && is(autocor,"cor.arma")) {
+    if (autocor$q > 0 && is(autocor,"cor_arma")) {
       standata$Ema_pre <- matrix(0, nrow = standata$N, ncol = autocor$q)
       standata$Kma <- autocor$q
       standata$tgroup <- as.numeric(as.factor(tgroup))
@@ -239,6 +241,13 @@ brm.data <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
   } 
   standata
 }  
+
+# deprectated version of brmdata
+#' @export
+brm.data <- function(formula, data = NULL, family = "gaussian", autocor = NULL, 
+                     partial = NULL, cov.ranef = NULL) 
+  brmdata(formula = formula, data = data, family = family, autocor = autocor,
+          partial = partial, cov.ranef = cov.ranef)
 
 # Construct Design Matrices for \code{brms} models
 # 

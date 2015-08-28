@@ -12,12 +12,12 @@ brmsfit <- function(formula = NULL, family = "", link = "", data.name = "", data
 # brmssummary class
 brmssummary <- function(formula = NULL, family = "", link = "", data.name = "", group = NULL,
                  nobs = NULL, ngrps = NULL, n.chains = 1, n.iter = 2000, n.warmup = 500, n.thin = 1,
-                 sampler = "", fixed = NULL, random = list(), cor.pars = NULL, autocor = NULL, 
-                 spec.pars = NULL, WAIC = "Not computed") {
+                 sampler = "", fixed = NULL, random = list(), cor_pars = NULL, autocor = NULL, 
+                 spec_pars = NULL, WAIC = "Not computed") {
   x <- list(formula = formula, family = family, link = link, data.name = data.name, group = group, 
             nobs = nobs, ngrps = ngrps, n.chains = n.chains, n.iter = n.iter,  n.warmup = n.warmup, 
             n.thin = n.thin, sampler = sampler, fixed = fixed, random = random, WAIC = WAIC,
-            cor.pars = cor.pars, autocor = autocor, spec.pars = spec.pars)
+            cor_pars = cor_pars, autocor = autocor, spec_pars = spec_pars)
   class(x) <- "brmssummary"
   x
 }
@@ -55,6 +55,7 @@ fixef <- function(x, estimate = "mean", ...)
 #' A generic function to extract the random effects of each level from a fitted model object. 
 #' 
 #' @aliases ranef.brmsfit
+#' 
 #' @usage ## S3 method for class 'brmsfit'
 #' ranef(x, estimate = "mean", var = FALSE, ...)
 #' 
@@ -148,7 +149,7 @@ ngrps <- function(object, ...)
 #' @param hypothesis A character vector specifying one or more non-linear hypothesis concerning parameters of the model
 #' @param class A string specifying the class of parameters being tested. Default is "b" for fixed effects. 
 #'        Other typical options are "sd" or "cor". If \code{class = NULL}, all parameters can be tested
-#'        against each other, but have to be specified with their full name (see also \code{\link[brms:par.names]{par.names}}) 
+#'        against each other, but have to be specified with their full name (see also \code{\link[brms:parnames]{parnames}}) 
 #' @param alpha the alpha-level of the tests (default is 0.05)        
 #' @param ... Currently ignored
 #' 
@@ -194,7 +195,7 @@ hypothesis <- function(x, hypothesis, class = "b", alpha = 0.05, ...)
 #' 
 #' Extract posterior samples of specified parameters 
 #' 
-#' @aliases posterior.samples.brmsfit
+#' @aliases posterior.samples posterior_samples.brmsfit posterior.samples.brmsfit
 #' 
 #' @param x An \code{R} object typically of class \code{brmsfit}
 #' @param parameters Name of parameters for which posterior samples should be returned, as given by a character vector or regular expressions.
@@ -213,24 +214,27 @@ hypothesis <- function(x, hypothesis, class = "b", alpha = 0.05, ...)
 #'              data = inhaler, family = "cumulative")
 #' 
 #' #extract posterior samples of fixed effects 
-#' samples1 <- posterior.samples(fit_i, "b_")
+#' samples1 <- posterior_samples(fit_i, "b_")
 #' head(samples1)
 #' 
 #' #extract posterior samples of standard deviations of random effects
-#' samples2 <- posterior.samples(fit_i, "sd_")
+#' samples2 <- posterior_samples(fit_i, "sd_")
 #' head(samples2)
 #' }
 #' 
 #' @export 
-posterior.samples <- function(x, parameters = NA, add.chains = FALSE,...)
-  UseMethod("posterior.samples")
+posterior_samples <- function(x, parameters = NA, add.chains = FALSE,...)
+  UseMethod("posterior_samples")
 
+#' @export 
+posterior.samples <- function(x, parameters = NA, add.chains = FALSE,...)
+  UseMethod("posterior_samples")
 
 #' Extract prior samples
 #' 
 #' Extract prior samples of specified parameters 
 #' 
-#' @aliases prior.samples.brmsfit
+#' @aliases prior_samples.brmsfit
 #' 
 #' @param x An \code{R} object typically of class \code{brmsfit}
 #' @param parameters Name of parameters for which posterior samples should be returned, as given by a character vector or regular expressions.
@@ -238,7 +242,7 @@ posterior.samples <- function(x, parameters = NA, add.chains = FALSE,...)
 #' @param ... Currently ignored
 #'   
 #' @details To make use of this function, the model must contain samples of prior distributions.
-#'  This can be ensured by setting \code{prior.samples = TRUE} in function \code{brm}.
+#'  This can be ensured by setting \code{prior_samples = TRUE} in function \code{brm}.
 #'  Currently there are methods for \code{brmsfit} objects.
 #' @return A data frame containing the prior samples.
 #' 
@@ -251,23 +255,25 @@ posterior.samples <- function(x, parameters = NA, add.chains = FALSE,...)
 #'              prior = list(b = "normal(0,2)"), sample.prior = TRUE)
 #' 
 #' #extract all prior samples
-#' samples1 <- prior.samples(fit_i)
+#' samples1 <- prior_samples(fit_i)
 #' head(samples1)
 #' 
 #' #extract prior samples for the fixed effect of \code{treat}.
-#' samples2 <- posterior.samples(fit_i, "b_treat")
+#' samples2 <- posterior_samples(fit_i, "b_treat")
 #' head(samples2)
 #' }
 #' 
 #' @export 
-prior.samples <- function(x, parameters = NA, ...)
-  UseMethod("prior.samples")
+prior_samples <- function(x, parameters = NA, ...)
+  UseMethod("prior_samples")
 
 #' Extract parameter names
 #' 
 #' Extract all parameter names of a given model or formula. This help page describes the functionality for
-#'  an object of class \code{brmsfit}. See \code{\link[brms:par.names.formula]{par.names.formula}} for
+#'  an object of class \code{brmsfit}. See \code{\link[brms:parnames.formula]{parnames.formula}} for
 #'  help on the \code{formula} method.
+#'  
+#' @aliases par.names parnames.brmsfit par.names.brmsfit
 #' 
 #' @param x An \code{R} object
 #' @param ... Further arguments passed to or from other methods
@@ -278,14 +284,19 @@ prior.samples <- function(x, parameters = NA, ...)
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
 #' @export
-par.names <- function(x, ...)
-  UseMethod("par.names")
+parnames <- function(x, ...)
+  UseMethod("parnames")
 
+#' @export
+par.names <- function(x, ...)
+  UseMethod("parnames")
 
 #' Compute the WAIC
 #' 
 #' Compute the Watanabe-Akaike Information Criterion based on the posterior likelihood
 #' by using the \pkg{loo} package
+#' 
+#' @aliases WAIC.brmsfit
 #' 
 #' @param x A fitted model object typically of class \code{brmsfit}. 
 #' @param ... Optionally more fitted model objects.
@@ -329,6 +340,8 @@ WAIC <- function(x, ..., compare = TRUE)
 #' Compute the Leave-one-out cross-validation based on the posterior likelihood
 #' by using the \pkg{loo} package
 #' 
+#' @aliases LOO.brmsfit
+#' 
 #' @inheritParams WAIC
 #' @param compare A flag indicating if the LOOs of the models should be compared to each other
 #' 
@@ -367,6 +380,8 @@ LOO <- function(x, ..., compare = TRUE)
 
 #' Compute the pointwise log-likelihood
 #' 
+#' @aliases loglik.brmsfit
+#' 
 #' @param x A fitted model object typically of class \code{brmsfit}. 
 #' @param ... Currently ignored
 #' 
@@ -382,6 +397,8 @@ loglik <- function(x, ...)
 #' @param x A fitted model object typically of class \code{brmsfit}. 
 #' @param ... Currently ignored
 #' 
+#' @aliases linear_predictor.brmsfit
+#' 
 #' @return Usually, an S x N matrix containing the linear predictor samples, where S is the number of samples
 #'   and N is the number of observations in the data. 
 #'   
@@ -389,16 +406,18 @@ loglik <- function(x, ...)
 #'  \dontrun{
 #'  fit_i2 <- brm(rating ~ treat + period + carry + (1|subject),
 #'              data = inhaler, family = "gaussian")
-#'  eta <- linear.predictor(fit_i2)                         
+#'  eta <- linear_predictor(fit_i2)                         
 #'  }
 #' 
 #' @export
-linear.predictor <- function(x, ...)
-  UseMethod("linear.predictor")
+linear_predictor <- function(x, ...)
+  UseMethod("linear_predictor")
 
 #' Interface to \pkg{shinystan}
 #' 
 #' Provide an interface to \pkg{shinystan} for models fitted with \pkg{brms}
+#' 
+#' @aliases launch_shiny.brmsfit
 #' 
 #' @param x A fitted model object typically of class \code{brmsfit}. 
 #' @param rstudio Only relevant for RStudio users. The default (\code{rstudio=FALSE}) is to launch the app 
@@ -412,11 +431,11 @@ linear.predictor <- function(x, ...)
 #' \dontrun{
 #' fit_i2 <- brm(rating ~ treat + period + carry + (1|subject),
 #'              data = inhaler, family = "gaussian")
-#' launch.shiny(fit_i2)                         
+#' launch_shiny(fit_i2)                         
 #' }
 #' 
 #' @seealso \code{\link[shinystan:launch_shinystan]{launch_shinystan}}
 #' 
 #' @export
-launch.shiny <- function(x, rstudio = getOption("shinystan.rstudio"), ...)
-  UseMethod("launch.shiny")
+launch_shiny <- function(x, rstudio = getOption("shinystan.rstudio"), ...)
+  UseMethod("launch_shiny")

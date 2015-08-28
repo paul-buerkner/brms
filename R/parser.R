@@ -14,16 +14,16 @@
 # @examples
 # \dontrun{ 
 # # fixed effects model
-# extract.effects(response ~ I(1/a) + b)
+# extract_effects(response ~ I(1/a) + b)
 # 
 # # mixed effects model
-# extract.effects(response ~ I(1/a) + b + (1 + c | d))
+# extract_effects(response ~ I(1/a) + b + (1 + c | d))
 # 
 # # mixed effects model with additional information on the response variable 
 # # in this case standard errors in a gaussian linear model
-# extract.effects(response | se(sei) ~ I(1/a) + b + (1 + c | d), family = "gaussian")
+# extract_effects(response | se(sei) ~ I(1/a) + b + (1 + c | d), family = "gaussian")
 # }
-extract.effects <- function(formula, ..., family = "none", add.ignore = FALSE) {
+extract_effects <- function(formula, ..., family = "none", add.ignore = FALSE) {
   formula <- formula2string(formula)  
   fixed <- gsub(paste0("\\([^(\\||~)]*\\|[^\\)]*\\)\\+|\\+\\([^(\\||~)]*\\|[^\\)]*\\)",
                        "|\\([^(\\||~)]*\\|[^\\)]*\\)"),"",formula)
@@ -80,10 +80,10 @@ extract.effects <- function(formula, ..., family = "none", add.ignore = FALSE) {
                   "the old one was not flexible enough."))
   }
   
-  up.formula <- unlist(lapply(c(random, group, add_vars, ...), 
+  new_formula <- unlist(lapply(c(random, group, add_vars, ...), 
                               function(x) paste0("+", Reduce(paste, deparse(x[[2]])))))
-  up.formula <- paste0("update(",Reduce(paste, deparse(fixed)),", . ~ .",paste0(up.formula, collapse=""),")")
-  x$all <- eval(parse(text = up.formula))
+  new_formula <- paste0("update(",Reduce(paste, deparse(fixed)),", . ~ .",paste0(new_formula, collapse=""),")")
+  x$all <- eval(parse(text = new_formula))
   environment(x$all) <- globalenv()
   x$response = all.vars(x$all[[2]])
   if (length(x$response) > 1) {
@@ -96,7 +96,7 @@ extract.effects <- function(formula, ..., family = "none", add.ignore = FALSE) {
 } 
 
 # extract time and grouping variabels for correlation structure
-extract.time <- function(formula) {
+extract_time <- function(formula) {
   if (is.null(formula)) return(NULL)
   formula <- gsub(" ","",Reduce(paste, deparse(formula))) 
   time <- all.vars(as.formula(paste("~", gsub("~|\\|[[:print:]]*", "", formula))))
@@ -116,13 +116,13 @@ extract.time <- function(formula) {
 }
 
 # incorporate addition and partial arguments into formula 
-brm.update.formula <- function(formula, addition = NULL, partial = NULL) {
-  var.name <- names(addition)
+update_formula <- function(formula, addition = NULL, partial = NULL) {
+  var_names <- names(addition)
   addition <- lapply(addition, formula2string, rm = 1)
   fnew <- "."
   if (length(addition)) 
     for (i in 1:length(addition))
-      fnew <- paste0(fnew, " | ", var.name[i], "(", addition[[i]], ")")
+      fnew <- paste0(fnew, " | ", var_names[i], "(", addition[[i]], ")")
   fnew <- paste(fnew, "~ .")
   if (is.formula(partial)) {
     partial <- formula2string(partial, rm=1)
@@ -132,13 +132,13 @@ brm.update.formula <- function(formula, addition = NULL, partial = NULL) {
 }
 
 #find all valid object names in a string
-find.names <- function(x) {
+find_names <- function(x) {
   if (!is.character(x)) stop("x must be of class character")
-  fun.pos <- gregexpr("([^([:digit:]|[:punct:])]|\\.|_)[[:alnum:]_\\.]*\\(", x)[[1]]
-  decnum.pos <- gregexpr("\\.[[:digit:]]+", x)[[1]]
-  var.pos <- list(rmMatch(gregexpr("([^([:digit:]|[:punct:])]|\\.|_)[[:alnum:]_\\.]*(\\[[[:digit:]]*\\])?", x)[[1]], 
-                          fun.pos, decnum.pos))
-  unlist(regmatches(x, var.pos))
+  pos_fun <- gregexpr("([^([:digit:]|[:punct:])]|\\.|_)[[:alnum:]_\\.]*\\(", x)[[1]]
+  pos_decnum <- gregexpr("\\.[[:digit:]]+", x)[[1]]
+  pos_var <- list(rmMatch(gregexpr("([^([:digit:]|[:punct:])]|\\.|_)[[:alnum:]_\\.]*(\\[[[:digit:]]*\\])?", x)[[1]], 
+                          pos_fun, pos_decnum))
+  unlist(regmatches(x, pos_var))
 }
 
 #checks if x is formula (or list of formulas)

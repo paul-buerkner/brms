@@ -1,7 +1,7 @@
 #compute WAIC and LOO using the 'loo' package
 calculate_ic <- function(x, ic = c("waic", "loo")) {
   ic <- match.arg(ic)
-  ee <- extract.effects(x$formula, add.ignore = TRUE)
+  ee <- extract_effects(x$formula, add.ignore = TRUE)
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples") 
   IC <- do.call(eval(parse(text = paste0("loo::",ic))), list(loglik(x)))
@@ -59,13 +59,13 @@ LOO.brmsfit <- function(x, ..., compare = TRUE) {
 loglik.brmsfit <- function(x, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
-  ee <- extract.effects(x$formula, family = x$family)
+  ee <- extract_effects(x$formula, family = x$family)
   if (x$link == "log" && x$family == "gaussian" && length(ee$response) == 1) 
     x$family <- "lognormal"
   if (x$family == "gaussian" && length(ee$response) > 1)
     x$family <- "multinormal"
   
-  samples <- list(eta = linear.predictor(x))
+  samples <- list(eta = linear_predictor(x))
   if (x$family %in% c("gaussian", "student", "cauchy", "lognormal", "multinormal") && !is.formula(ee$se)) 
     samples$sigma <- as.matrix(posterior.samples(x, parameters = "^sigma_"))
   if (x$family == "student") 

@@ -19,8 +19,8 @@
 #'  \code{trials} to specify the number of trials per observation in binomial models, \code{cat} to specify the number of categories in 
 #'  categorical or ordinal models, and \code{cens} to indicate censoring. Alternatively, the \code{addition} arguments can be incorporated directly into \code{formula}.
 #'  See 'Formula Syntax' under 'Details' for further information.
-#' @param autocor An optional \code{\link{cor.brms}} object describing the correlation structure within the response variable (i.e. the 'autocorrelation'). 
-#'   See the documentation of \code{\link{cor.brms}} for a description of the available correlation structures. 
+#' @param autocor An optional \code{\link{cor_brms}} object describing the correlation structure within the response variable (i.e. the 'autocorrelation'). 
+#'   See the documentation of \code{\link{cor_brms}} for a description of the available correlation structures. 
 #'   Defaults to NULL, corresponding to no correlations.
 #' @param partial A one sided formula of the form \code{~partial.effects} specifing the predictors that can vary between categories in non-cumulative ordinal models
 #'  (i.e. in families \code{"cratio"}, \code{"sratio"}, or \code{"acat"}).
@@ -215,7 +215,7 @@
 #'   between to adjacent thresholds. By default, \code{delta} has an improper flat prior over the reals. \cr
 #' 
 #'   To get a full list of parameters for which priors can be specified (depending on the model) 
-#'   use method \code{\link[brms:par.names.formula]{par.names.formula}}.
+#'   use method \code{\link[brms:parnames.formula]{parnames.formula}}.
 #'   
 #' @examples
 #' \dontrun{ 
@@ -269,8 +269,8 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
                 silent = FALSE, seed = 12345, save.model = NULL, ...) {
   
   if (n.chains %% n.cluster != 0) stop("n.chains must be a multiple of n.cluster")
-  if (is.null(autocor)) autocor <- cor.arma()
-  if (!is(autocor, "cor.brms")) stop("cor must be of class cor.brms")
+  if (is.null(autocor)) autocor <- cor_arma()
+  if (!is(autocor, "cor_brms")) stop("cor must be of class cor_brms")
   if (!threshold %in% c("flexible","equidistant")) 
     stop("threshold must be either flexible or equidistant")
   dots <- list(...) 
@@ -288,11 +288,11 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
   else {
     link <- link4family(family)
     family <- check_family(family[1])
-    formula <- brm.update.formula(formula, addition = addition)
+    formula <- update_formula(formula, addition = addition)
     prior <- check_prior(prior, formula = formula, data = data, family = family, autocor = autocor,
                          partial = partial, threshold = threshold)
-    et <- extract.time(autocor$formula)
-    ee <- extract.effects(formula, family = family, partial, et$all)
+    et <- extract_time(autocor$formula)
+    ee <- extract_effects(formula, family = family, partial, et$all)
     data.name <- Reduce(paste, deparse(substitute(data)))
     data <- update_data(data, family = family, effects = ee, et$group)
     x <- brmsfit(formula = formula, family = family, link = link, partial = partial,
@@ -300,9 +300,9 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
     x$ranef <- setNames(lapply(lapply(ee$random, brm.model.matrix, data = data), colnames), 
                         gsub("__", ":", ee$group))
     x$exclude <- exclude_pars(formula, ranef = ranef)
-    x$data <- brm.data(formula, data = data, family = family, cov.ranef = cov.ranef,
+    x$data <- brmdata(formula, data = data, family = family, cov.ranef = cov.ranef,
                        autocor = autocor, partial = partial) 
-    x$model <- stan.model(formula = formula, data = data, family = family, link = link, prior = prior, 
+    x$model <- stan_model(formula = formula, data = data, family = family, link = link, prior = prior, 
                           autocor = autocor, partial = partial, threshold = threshold, 
                           cov.ranef = names(cov.ranef), sample.prior = sample.prior, 
                           save.model = save.model)
@@ -337,5 +337,5 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
     stopCluster(cl)
   } 
   else x$fit <- do.call(rstan::sampling, args)
-  return(rename.pars(x))
+  return(rename_pars(x))
 }

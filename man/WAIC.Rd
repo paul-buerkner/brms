@@ -2,6 +2,7 @@
 % Please edit documentation in R/s3.generics.R
 \name{WAIC}
 \alias{WAIC}
+\alias{WAIC.brmsfit}
 \title{Compute the WAIC}
 \usage{
 WAIC(x, ..., compare = TRUE)
