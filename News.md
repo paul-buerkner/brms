@@ -23,6 +23,7 @@ output: html_document
 
 ## bug fixes
 * fix a bug in S3 method 'hypothesis' related to the calculation of Bayes factors for point hypotheses
+* user defined covariance matrices that are not strictly positive definite for numerical reasons should now be handled correctly.
 * fix minor issues with internal parameter naming
 
 # brms 0.4.1

@@ -147,26 +147,28 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
       if (ncolZ[[i]] == 1) Z[[i]] <- as.vector(Z[[i]])
       for (j in 1:length(name)) standata <- c(standata, setNames(list(eval(expr[j])), name[j]))
       if (g %in% names(cov.ranef)) {
-        cov.ranef[[g]] <- as.matrix(cov.ranef[[g]])
-        found_level_names <- rownames(cov.ranef[[g]])
-        colnames(cov.ranef[[g]]) <- found_level_names
+        cov_mat <- as.matrix(cov.ranef[[g]])
+        found_level_names <- rownames(cov_mat)
+        colnames(cov_mat) <- found_level_names
         true_level_names <- sort(as.character(unique(data[[g]])))
         if (is.null(found_level_names)) 
           stop(paste("Row names are required for covariance matrix of",g))
-        if (nrow(cov.ranef[[g]]) != length(true_level_names))
+        if (nrow(cov_mat) != length(true_level_names))
           stop(paste("Dimension of covariance matrix of",g,"is incorrect"))
         if (any(sort(found_level_names) != true_level_names))
           stop(paste("Row names of covariance matrix of",g,"do not match names of the grouping levels"))
-        if (!isSymmetric(unname(cov.ranef[[g]])))
+        if (!isSymmetric(unname(cov_mat)))
           stop(paste("Covariance matrix of grouping factor",g,"is not symmetric"))
-        if (min(eigen(cov.ranef[[g]], symmetric = TRUE, only.values = TRUE)$values) <= 0)
+        if (min(eigen(cov_mat, symmetric = TRUE, only.values = TRUE)$values) <= 0)
           warning(paste("Covariance matrix of grouping factor",g,"may not be positive definite"))
-        cov.ranef[[g]] <- cov.ranef[[g]][order(found_level_names), order(found_level_names)]
-        if (length(r[[i]]) == 1) 
-          cov.ranef[[g]] <- t(suppressWarnings(chol(cov.ranef[[g]], pivot = TRUE)))
+        cov_mat <- cov_mat[order(found_level_names), order(found_level_names)]
+        if (length(r[[i]]) == 1) {
+          cov_mat <- suppressWarnings(chol(cov_mat, pivot = TRUE))
+          cov_mat <- t(cov_mat[, order(attr(cov_mat, "pivot"))])
+        }  
         else if (length(r[[i]]) > 1 && !ee$cor[[i]])
-          cov.ranef[[g]] <- t(suppressWarnings(chol(kronecker(cov.ranef[[g]], diag(ncolZ[[i]])), pivot = TRUE)))
-        standata <- c(standata, setNames(list(cov.ranef[[g]]), paste0("cov_",g)))
+          cov_mat <- t(suppressWarnings(chol(kronecker(cov_mat, diag(ncolZ[[i]])), pivot = TRUE)))
+        standata <- c(standata, setNames(list(cov_mat), paste0("cov_",g)))
       }
     }
   }
