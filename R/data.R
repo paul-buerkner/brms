@@ -130,13 +130,13 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
   }
   
   #fixed effects data
-  X <- brm.model.matrix(ee$fixed, data, rm.int = is_ordinal)
+  X <- get_model_matrix(ee$fixed, data, rm.int = is_ordinal)
   if (family == "categorical") standata <- c(standata, list(Kp = ncol(X), Xp = X))
   else standata <- c(standata, list(K = ncol(X), X = X))
   
   #random effects data
   if (length(ee$random)) {
-    Z <- lapply(ee$random, brm.model.matrix, data = data)
+    Z <- lapply(ee$random, get_model_matrix, data = data)
     r <- lapply(Z, colnames)
     ncolZ <- lapply(Z, ncol)
     expr <- expression(as.numeric(as.factor(get(g, data))), length(unique(get(g, data))), 
@@ -207,7 +207,7 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
   #get data for partial effects
   if (is.formula(partial)) {
     if (family %in% c("sratio","cratio","acat")) {
-      Xp <- brm.model.matrix(partial, data, rm.int = TRUE)
+      Xp <- get_model_matrix(partial, data, rm.int = TRUE)
       standata <- c(standata, list(Kp = ncol(Xp), Xp = Xp))
       fp <- intersect(colnames(X), colnames(Xp))
       if (length(fp))
@@ -250,15 +250,15 @@ brm.data <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
 # 
 # @return The design matrix for a regression-like model with the specified formula and data. 
 #   For details see the documentation of \code{model.matrix}.
-brm.model.matrix = function(formula, data = environment(formula), rm.int = FALSE) {
+get_model_matrix <- function(formula, data = environment(formula), rm.int = FALSE) {
   if (!is(formula, "formula")) return(NULL) 
-  X <- stats::model.matrix(formula,data)
-  cn.new <- rename(colnames(X), check_dup = TRUE)
-  if (rm.int && "Intercept" %in% cn.new) {
-    X <- as.matrix(X[,-(1)])
-    if (ncol(X)) colnames(X) <- cn.new[2:length(cn.new)]
+  X <- stats::model.matrix(formula, data)
+  new_colnames <- rename(colnames(X), check_dup = TRUE)
+  if (rm.int && "Intercept" %in% new_colnames) {
+    X <- as.matrix(X[, -(1)])
+    if (ncol(X)) colnames(X) <- new_colnames[2:length(new_colnames)]
   } 
-  else colnames(X) <- cn.new
+  else colnames(X) <- new_colnames
   X   
 }
 

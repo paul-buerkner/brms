@@ -20,15 +20,15 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
 
   if (family == "categorical") {
     X <- data.frame()
-    Xp <- brm.model.matrix(ee$fixed, data, rm.int = is_ordinal)
+    Xp <- get_model_matrix(ee$fixed, data, rm.int = is_ordinal)
   }
   else {
-    X <- brm.model.matrix(ee$fixed, data, rm.int = is_ordinal)
-    Xp <- brm.model.matrix(partial, data, rm.int = TRUE)
+    X <- get_model_matrix(ee$fixed, data, rm.int = is_ordinal)
+    Xp <- get_model_matrix(partial, data, rm.int = TRUE)
   }  
   f <- colnames(X)
   p <- colnames(Xp)
-  Z <- lapply(ee$random, brm.model.matrix, data = data)
+  Z <- lapply(ee$random, get_model_matrix, data = data)
   r <- lapply(Z,colnames)
   n <- ifelse(is.formula(ee[c("trials","cat")]), "[n]", "")
   trait <- ifelse(is_multi, "_trait", "")

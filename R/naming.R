@@ -146,14 +146,14 @@ parnames.formula <- function(x, data = NULL, family = "gaussian", autocor = NULL
   family <- check_family(family[1])
   ee <- extract_effects(x, family = family)
   data <- update_data(data, family = family, effects = ee)
-  out <- list(fixef = paste0("b_",colnames(brm.model.matrix(ee$fixed, data = data))),
+  out <- list(fixef = paste0("b_",colnames(get_model_matrix(ee$fixed, data = data))),
               ranef = list(), other = NULL)
   if (is.formula(partial)) 
-    out$fixef <- c(out$fixef, colnames(brm.model.matrix(partial, data = data, rm.int = TRUE)))
+    out$fixef <- c(out$fixef, colnames(get_model_matrix(partial, data = data, rm.int = TRUE)))
   if (length(ee$group)) {
     gs <- unlist(ee$group)
     for (i in 1:length(gs)) {
-      ranef <- colnames(brm.model.matrix(ee$random[[i]], data = data))
+      ranef <- colnames(get_model_matrix(ee$random[[i]], data = data))
       out$ranef[[gs[i]]] <- c(paste0("sd_",gs[i],"_",ranef),
                               if (ee$cor[[i]] && length(ranef) > 1) 
                                 c(paste0("cor_",gs[i]), if(internal) paste0("L_",gs[i]))) 
