@@ -248,21 +248,54 @@ ngrps.brmsfit <- function(object, ...) {
 #' @export
 formula.brmsfit <- function(x, ...) x$formula
 
+#' Extract Model Fitted Values of \code{brmsfit} Objects
+#' 
+#' @inheritParams residuals.brmsfit
+#' 
+#' @details Currently, the method does not support \code{categorical} or ordinal models. 
+#'
+#' @return Fitted values extracted from \code{object}.
+#'
+#' @examples 
+#' \dontrun{
+#' ## fit a model
+#' fit <- brm(rating ~ treat + period + carry + (1|subject), data = inhaler,
+#'            n.cluster = 2)
+#' 
+#' ## extract fitted values
+#' fitted_values <- fitted(fit, summary = TRUE)
+#' head(fitted_values)
+#' }
+#' 
+#' @export 
+fitted.brmsfit <- function(object, summary = FALSE, ...) {
+  if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
+    stop("The model does not contain posterior samples")
+  if (object$family %in% c("categorical", "cumulative", "sratio", "cratio", "acat"))
+    stop(paste("fitted values not yet implemented for family", object$family))
+  mu <- ilink(linear_predictor(object), object$link)
+  if (summary) {
+    mu <- do.call(cbind, lapply(c("mean", "sd", "quantile"), get_estimate, 
+                                 samples = mu, probs = c(0.025, 0.975)))
+    colnames(mu) <- c("Estimate", "Est.Error", "l-95% CI", "u-95% CI")
+  }
+  mu
+}
+
 #' Extract Model Residuals from brmsfit Objects
 #' 
 #' @param object An object of class \code{brmsfit}
+#' @param type The type of the residuals, either \code{ordinary} or \code{pearson}. Currently, the latter 
+#'   is only supported for families \code{binomial} and \code{bernoulli}
 #' @param summary logical. Should summary statistics (i.e. means, sds, and 95\% intervals) be returned
 #'  instead of the raw values. Default is \code{FALSE}
 #' @param ... Currently ignored
 #' 
-#' @details Currently, the method only supports families \code{gaussian}, \code{student},
-#'   or \code{cauchy}. This will likely be changed in the future. 
-#' 
-#' @return Residuals extracted from \code{object}.
+#' @details Currently, the method does not support \code{categorical} or ordinal models. 
 #' 
 #' @examples 
 #' \dontrun{
-#' ## fit the model
+#' ## fit a model
 #' fit <- brm(rating ~ treat + period + carry + (1|subject), data = inhaler,
 #'            n.cluster = 2)
 #' 
@@ -272,25 +305,41 @@ formula.brmsfit <- function(x, ...) x$formula
 #' }
 #' 
 #' @export
-residuals.brmsfit <- function(object, summary = FALSE, ...) {
+residuals.brmsfit <- function(object, type = c("ordinary", "pearson"), summary = FALSE, ...) {
+  type <- match.arg(type)
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
-  if (!object$family %in% c("gaussian", "student", "cauchy"))
-    stop(paste("resdiuals not yet implemented for family", object$family))
-  eta <- ilink(linear_predictor(object), object$link)
-  Y <- matrix(rep(as.numeric(object$data$Y), nrow(eta)), nrow = nrow(eta), byrow = TRUE)
-  out <- Y - eta
-  colnames(out) <- NULL
+  if (object$family %in% c("categorical", "cumulative", "sratio", "cratio", "acat"))
+    stop(paste("residuals not yet implemented for family", object$family))
+  if (type == "pearson" && !family %in% c("binomial", "bernoulli"))
+    stop("Pearson residuals are currently only available for families binomial and bernoulli")
+  
+  mu <- fitted(object)
+  if (object$family %in% c("binomial", "bernoulli")) {
+    if (object$family == "binomial")
+      max_obs <- matrix(rep(object$data$max_obs, nrow(mu)), nrow = nrow(mu), byrow = TRUE)
+    else max_obs <- 1
+    mu <- mu * max_obs
+  }
+  Y <- matrix(rep(as.numeric(object$data$Y), nrow(mu)), nrow = nrow(mu), byrow = TRUE)
+  res <- Y - mu
+  colnames(res) <- NULL
+  
+  if (type == "pearson")
+    res <- res / sqrt(mu * (max_obs - mu) / max_obs)  
+  
+  # for compatibility with the macf function
   if (is(object$autocor, "cor_arma") && sum(object$autocor$p, object$autocor$q) > 0) {
     tgroup <- extract_time(object$autocor$formula)$group
-    if (nchar(tgroup)) colnames(out) <- object$data[[tgroup]]
+    if (nchar(tgroup)) colnames(res) <- object$data[[tgroup]]
   }
+  
   if (summary) {
-    out <- do.call(cbind, lapply(c("mean", "sd", "quantile"), get_estimate, 
-                                 samples = out, probs = c(0.025, 0.975)))
-    colnames(out) <- c("Estimate", "Est.Error", "l-95% CI", "u-95% CI")
+    res <- do.call(cbind, lapply(c("mean", "sd", "quantile"), get_estimate, 
+                                 samples = res, probs = c(0.025, 0.975)))
+    colnames(res) <- c("Estimate", "Est.Error", "l-95% CI", "u-95% CI")
   }
-  out
+  res
 }
 
 #' @export

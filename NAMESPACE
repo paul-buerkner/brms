@@ -3,6 +3,7 @@
 S3method(LOO,brmsfit)
 S3method(VarCorr,brmsfit)
 S3method(WAIC,brmsfit)
+S3method(fitted,brmsfit)
 S3method(fixef,brmsfit)
 S3method(formula,brmsfit)
 S3method(hypothesis,brmsfit)
