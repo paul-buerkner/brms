@@ -81,11 +81,6 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
   et <- extract_time(autocor$formula)
   ee <- extract_effects(formula = formula, family = family, partial, et$all)
   data <- update_data(data, family = family, effects = ee, et$group)
-  group_names <- list()
-  for (g in ee$group) { 
-    group_names[[g]] <- sort(as.character(unique(data[[g]])))
-    data[[g]] <- as.numeric(as.factor(data[[g]]))
-  } 
   
   #sort data in case of autocorrelation models
   if (sum(autocor$p, autocor$q) > 0) {
@@ -143,33 +138,30 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
   if (length(ee$random)) {
     Z <- lapply(ee$random, brm.model.matrix, data = data)
     r <- lapply(Z, colnames)
-    if (family != "categorical")
-      to.zero <- unlist(lapply(unlist(lapply(r, intersect, y = colnames(X))), 
-                               function(x) which(x == colnames(X)))) 
-    else to.zero <- NULL
     ncolZ <- lapply(Z, ncol)
-    expr <- expression(get(g, data), length(unique(get(g, data))), ncolZ[[i]], 
-                       Z[[i]], ncolZ[[i]]*(ncolZ[[i]]-1)/2)
+    expr <- expression(as.numeric(as.factor(get(g, data))), length(unique(get(g, data))), 
+                       ncolZ[[i]], Z[[i]], ncolZ[[i]]*(ncolZ[[i]]-1)/2)
     for (i in 1:length(ee$group)) {
       g <- ee$group[[i]]
       name <- paste0(c("", "N_", "K_", "Z_", "NC_"), g)
       if (ncolZ[[i]] == 1) Z[[i]] <- as.vector(Z[[i]])
-      for ( j in 1:length(name)) standata <- c(standata, setNames(list(eval(expr[j])), name[j]))
+      for (j in 1:length(name)) standata <- c(standata, setNames(list(eval(expr[j])), name[j]))
       if (g %in% names(cov.ranef)) {
         cov.ranef[[g]] <- as.matrix(cov.ranef[[g]])
-        level_names <- rownames(cov.ranef[[g]])
-        colnames(cov.ranef[[g]]) <- level_names
-        if (is.null(level_names)) 
+        found_level_names <- rownames(cov.ranef[[g]])
+        colnames(cov.ranef[[g]]) <- found_level_names
+        true_level_names <- sort(as.character(unique(data[[g]])))
+        if (is.null(found_level_names)) 
           stop(paste("Row names are required for covariance matrix of",g))
-        if (nrow(cov.ranef[[g]]) != length(group_names[[g]]))
+        if (nrow(cov.ranef[[g]]) != length(true_level_names))
           stop(paste("Dimension of covariance matrix of",g,"is incorrect"))
-        if (any(sort(level_names) != group_names[[g]]))
+        if (any(sort(found_level_names) != true_level_names))
           stop(paste("Row names of covariance matrix of",g,"do not match names of the grouping levels"))
         if (!isSymmetric(unname(cov.ranef[[g]])))
           stop(paste("Covariance matrix of grouping factor",g,"is not symmetric"))
         if (min(eigen(cov.ranef[[g]], symmetric = TRUE, only.values = TRUE)$values) <= 0)
           warning(paste("Covariance matrix of grouping factor",g,"may not be positive definite"))
-        cov.ranef[[g]] <- cov.ranef[[g]][order(level_names), order(level_names)]
+        cov.ranef[[g]] <- cov.ranef[[g]][order(found_level_names), order(found_level_names)]
         if (length(r[[i]]) == 1) 
           cov.ranef[[g]] <- t(suppressWarnings(chol(cov.ranef[[g]], pivot = TRUE)))
         else if (length(r[[i]]) > 1 && !ee$cor[[i]])
