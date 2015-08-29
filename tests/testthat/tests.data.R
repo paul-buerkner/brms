@@ -9,6 +9,13 @@ test_that("Test that brmdata returns correct data names for fixed and random eff
                c("N","Y","K","X","g","N_g","K_g","Z_g","NC_g","h","N_h","K_h","Z_h","NC_h"))
 })
 
+test_that("Test that brmdata handles variables used as fixed effects and grouping factors at the same time", {
+  data <- data.frame(y = 1:9, x = factor(rep(c("a","b","c"), 3)))
+  standata <- brmdata(y ~ x + (1|x), data = data)
+  expect_equal(colnames(standata$X), c("Intercept", "xb", "xc"))
+  expect_equal(standata$x, rep(1:3, 3))
+})
+
 test_that("Test that brmdata returns correct data names for addition and partial variables", {
   data <- data.frame(y = 1:10, w = 1:10, t = 1:10, x = rep(0,10), c = sample(-1:1,10,TRUE))
   expect_equal(names(brmdata(y | se(w) ~ x, family = "gaussian", data = data)), 
@@ -111,6 +118,15 @@ test_that("Test that brmdata returns correct data for autocorrelations structure
   expect_equal(brmdata(y ~ x, family = "gaussian", autocor = cor.ma(~tim|g), data = data)$tgroup,
                c(rep(1,5), rep(2,5)))
 })
+
+test_that("Test for backwards compatibility", {
+  data <- data.frame(y = 1:10, x = sample(1:5, 10, TRUE))
+  expect_identical(brm.data(y ~ x + (1|x), data = data, family = "poisson"), 
+                   brmdata(y ~ x + (1|x), data = data, family = "poisson"))
+  expect_identical(brm.data(y ~ 1, data = data, family = "acat", partial = ~ x), 
+                   brmdata(y ~ 1, data = data, family = "acat", partial = ~ x))
+})
+
 
 test_that("Test that melt returns data in correct long format", {
   data <- data.frame(x = rep(c("a","b"), 5), y1 = 1:10, y2 = 11:20, y3 = 21:30, z = 100:91)
