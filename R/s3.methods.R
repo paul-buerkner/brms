@@ -328,13 +328,15 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", alpha = 0.05, ...) {
     
     #get posterior samples
     samples <- posterior_samples(x, parameters = rename(parsH, "__", ":"), fixed = TRUE)
-    names(samples) <- rename(names(samples), symbols = paste0("^",class), subs = "", fixed = FALSE)
+    names(samples) <- rename(names(samples), symbols = c(paste0("^",class), ":"), 
+                             subs = c("", "__"), fixed = FALSE)
     samples <- matrix(with(samples, eval(parse(text = rename(h, c("[", "]"), c("OB", "CB"))))), ncol=1)
     
     #get prior samples
     prior_samples <- prior_samples(x, parameters = rename(parsH, "__", ":"), fixed = TRUE)
     if (!is.null(prior_samples) && ncol(prior_samples) == length(varsH)) {
-      names(prior_samples) <- rename(names(prior_samples), symbols = paste0("^",class), subs = "", fixed = FALSE)
+      names(prior_samples) <- rename(names(prior_samples), symbols = c(paste0("^",class), ":"), 
+                                     subs = c("", "__"), fixed = FALSE)
       prior_samples <- matrix(with(prior_samples, eval(parse(text = rename(h, c("[", "]"), c("OB", "CB"))))), ncol=1)
     } else prior_samples <- NULL
 
