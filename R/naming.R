@@ -34,8 +34,11 @@ get_cornames <- function(names, type = "cor", eval = TRUE, brackets = TRUE) {
 rename_pars <- function(x, ...) {
   if (!length(x$fit@sim)) return(x)
   chains <- length(x$fit@sim$samples) 
-  n.pars <- length(x$fit@sim$fnames_oi)
-  x$fit@sim$fnames_oi[1:(n.pars-1)] <- gsub("__", ":", x$fit@sim$fnames_oi[1:(n.pars-1)])
+  n_pars <- length(x$fit@sim$fnames_oi)
+  n_metapars <- length(x$fit@sim$dims_oi)
+  x$fit@sim$fnames_oi[1:(n_pars-1)] <- rename(x$fit@sim$fnames_oi[1:(n_pars-1)], "__", ":")
+  names(x$fit@sim$dims_oi)[1:(n_metapars-1)] <- 
+    rename(names(x$fit@sim$dims_oi[1:(n_metapars-1)]), "__", ":")
   for (i in 1:chains) names(x$fit@sim$samples[[i]]) <- x$fit@sim$fnames_oi
   pars <- dimnames(x$fit)$parameters
   ee <- extract_effects(x$formula, family = x$family)
