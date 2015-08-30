@@ -564,8 +564,9 @@ stan_rngprior <- function(sample.prior, priors = "", family = "gaussian", fixed 
       else if (grepl("^bp\\[", par)) par <- paste0("b_",partial[ind])
       else if (grepl("^sigma\\[", par)) par <- paste0("sigma_",response[ind])
       else if (grepl("^sd_", par)) {
-        ind_group <- which(grepl(paste0("^sd_",group), par))
-        par <- gsub("\\[[[:digit:]]+\\]", paste0("_",random[[ind_group]][ind]), par)
+        ind_group <- which(sapply(1:length(group), 
+                                  function(i) grepl(paste0("^sd_",i), par)))
+        par <- gsub("\\[[[:digit:]]+\\]", paste0("_",ind), par)
       }
       return(par)})
     

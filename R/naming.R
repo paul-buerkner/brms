@@ -227,9 +227,9 @@ parnames.formula <- function(x, data = NULL, family = "gaussian", autocor = NULL
     gs <- unlist(ee$group)
     for (i in 1:length(gs)) {
       ranef <- colnames(get_model_matrix(ee$random[[i]], data = data))
-      out$ranef[[gs[i]]] <- c(paste0("sd_",gs[i],"_",ranef),
+      out$ranef[[gs[i]]] <- sort(unique(c(out$ranef[[gs[i]]], paste0("sd_",gs[i],"_",ranef),
                               if (ee$cor[[i]] && length(ranef) > 1) 
-                                c(paste0("cor_",gs[i]), if(internal) paste0("L_",gs[i]))) 
+                                c(paste0("cor_",gs[i]), if(internal) paste0("L_",gs[i]))))) 
     }
   }
   if (is(autocor, "cor_arma") && autocor$p) out$other <- c(out$other, "ar")
