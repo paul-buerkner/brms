@@ -315,7 +315,7 @@ residuals.brmsfit <- function(object, type = c("ordinary", "pearson"), summary =
     stop("The model does not contain posterior samples")
   if (object$family %in% c("categorical", "cumulative", "sratio", "cratio", "acat"))
     stop(paste("residuals not yet implemented for family", object$family))
-  if (type == "pearson" && !family %in% c("binomial", "bernoulli"))
+  if (type == "pearson" && !object$family %in% c("binomial", "bernoulli"))
     stop("Pearson residuals are currently only available for families binomial and bernoulli")
   
   mu <- fitted(object)
