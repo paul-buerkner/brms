@@ -25,11 +25,11 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, ...) {
   ranef <- lapply(1:length(group), function(i) {
     g <- group[i]
     rnames <- x$ranef[[i]]
-    rpars <- pars[grepl(paste0("^r_",i,g,"\\["), pars)]
+    rpars <- pars[grepl(paste0("^r_",group[i],"\\["), pars)]
     if (!length(rpars))
       stop(paste0("The model does not contain random effects for group '",g,"'\n",
                   "You should use argument ranef = TRUE in function brm."))
-    rdims <- x$fit@par_dims[[paste0("r_",i,gsub(":", "__", g))]]
+    rdims <- x$fit@sim$dims_oi[[paste0("r_",group[i])]]
     rs <- posterior_samples(x, parameters = rpars, fixed = TRUE)
     ncol <- ifelse(is.na(rdims[2]), 1, rdims[2])
     rs_array <- array(dim = c(rdims[1], ncol, nrow(rs)))
@@ -83,7 +83,6 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
                             margin = c(2,3), to.array = TRUE, ...))
     if (length(p$rnames) > 1)
       dimnames(out$cov) <- dimnames(out$cor) <- list(p$rnames, p$rnames, dimnames(out$cor)[[3]])
-    else dimnames(out$cov) <- dimnames(out$cor) <- list(dimnames(out$cor)[[1]])
     if (as.list) {
       out$cor <- lapply(array2list(out$cor), function(x)
         if (is.null(dim(x))) structure(matrix(x), dimnames = list(p$rnames, p$rnames)) else x)
@@ -97,18 +96,18 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
   if (length(x$ranef)) {
     group <- names(x$ranef)
     p <- lapply(1:length(group), function(i)
-    list(rnames = x$ranef[[i]],
-         sd_pars = paste0("sd_",group[i],"_",x$ranef[[i]]),
-         cor_pars = get_cornames(x$ranef[[i]], type = paste0("cor_",group[i]),
-                                  eval = length(x$ranef[[i]]) > 1 && ee$cor[[i]], 
-                                  brackets = FALSE)))
+      list(rnames = x$ranef[[i]],
+           sd_pars = paste0("sd_",group[i],"_",x$ranef[[i]]),
+           cor_pars = intersect(get_cornames(x$ranef[[i]], type = paste0("cor_",group[i]), 
+                                             brackets = FALSE),
+                                 parnames(x))))
   } else p <- group <- NULL
   if (x$family %in% c("gaussian", "student", "cauchy") && !is.formula(ee$se)) {
     p[[length(p)+1]] <- list(rnames = ee$response, 
                              sd_pars = paste0("sigma_",ee$response),
-                             cor_pars = get_cornames(ee$response, type = "rescor", 
-                                                      eval = length(ee$response) > 1, 
-                                                      brackets = FALSE))
+                             cor_pars = intersect(get_cornames(ee$response, type = "rescor", 
+                                                               brackets = FALSE),
+                                                  parnames(x)))
     group <- c(group, "RESIDUAL")
   } 
   VarCorr <- lapply(p, extract)
@@ -222,12 +221,12 @@ summary.brmsfit <- function(object, ...) {
     if (length(out$group)) {
       for (i in 1:length(out$group)) {
         rnames <- object$ranef[[i]]
-        has_cor <- length(rnames) > 1 && ee$cor[[i]]
         sd_pars <- paste0("sd_", out$group[i],"_",rnames)
-        cor_pars <- get_cornames(rnames, type = paste0("cor_",out$group[i]),
-                                  eval = has_cor, brackets = FALSE)
+        cor_pars <- intersect(get_cornames(rnames, type = paste0("cor_",out$group[i]),
+                                           brackets = FALSE),
+                              parnames(object))
         sd_names <- paste0("sd(",rnames,")")
-        cor_names <- get_cornames(rnames, eval = has_cor)
+        cor_names <- get_cornames(rnames, pars = cor_pars, group = out$group[i])
         out$random[[out$group[i]]] <- matrix(fit_summary$summary[c(sd_pars, cor_pars),-c(2)], ncol = 6)
         colnames(out$random[[out$group[i]]]) <- col_names
         rownames(out$random[[out$group[i]]]) <- c(sd_names, cor_names)
@@ -242,8 +241,12 @@ nobs.brmsfit <- function(object, ...) length(object$data$Y)
 
 #' @export
 ngrps.brmsfit <- function(object, ...) {
-  group <- names(object$ranef)
-  setNames(lapply(group, function(g) object$data[[paste0("N_",gsub(":","__",g))]]), group)
+  group <- unlist(extract_effects(object$formula, family = object$family)$group)
+  if (length(group)) {
+    out <- setNames(lapply(1:length(group), function(i) object$data[[paste0("N_",i)]]), group)
+    out <- out[!duplicated(group)]
+  } else out <- NULL
+  out
 }
 
 #' @export

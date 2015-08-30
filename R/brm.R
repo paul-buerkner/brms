@@ -298,7 +298,7 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
     x <- brmsfit(formula = formula, family = family, link = link, partial = partial,
                  data.name = data.name, autocor = autocor, prior = prior)
     x$ranef <- setNames(lapply(lapply(ee$random, get_model_matrix, data = data), colnames), 
-                        gsub("__", ":", ee$group))
+                        nm = ee$group)
     x$exclude <- exclude_pars(formula, ranef = ranef)
     x$data <- brmdata(formula, data = data, family = family, cov.ranef = cov.ranef,
                        autocor = autocor, partial = partial) 
@@ -337,5 +337,5 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
     stopCluster(cl)
   } 
   else x$fit <- do.call(rstan::sampling, args)
-  return(rename_pars(x))
+  return(rename_pars(x, ranef = ranef))
 }

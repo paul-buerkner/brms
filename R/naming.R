@@ -16,22 +16,41 @@ rename <- function(names, symbols = NULL, subs = NULL, fixed = TRUE, check_dup =
   new.names
 }
 
+# combine elements of a list that have the same name
+combine_duplicates <- function(x) {
+  if (!is.list(x)) stop("x must be a list")
+  if (is.null(names(x))) stop("elements of x must be named")
+  unique_names <- unique(names(x))
+  new_list <- setNames(do.call(list, as.list(rep(NA, length(unique_names)))), nm = unique_names)
+  for (i in 1:length(unique_names)) {
+    pos <- which(names(x) %in% unique_names[i])
+    new_list[[unique_names[i]]] <- unname(unlist(x[pos]))
+  }
+  new_list
+}
+
 #get correlation names
-get_cornames <- function(names, type = "cor", eval = TRUE, brackets = TRUE) {
+get_cornames <- function(names, type = "cor", pars = NULL, group = "", brackets = TRUE) {
   cor_names <- NULL
-  if (length(names) > 1 && eval) {
+  if (is.null(pars) && length(names) > 1) {
     for (i in 2:length(names)) {
       for (j in 1:(i-1)) {
         if (brackets) cor_names <- c(cor_names, paste0(type,"(",names[j],",",names[i],")"))
         else cor_names <- c(cor_names, paste0(type,"_",names[j],"_",names[i]))
       }
     }
+  } else if (!is.null(pars)) {
+    possible_values <- get_cornames(names = names, type = "", brackets = FALSE)
+    pars <- rename(pars, paste0("^",type,"_",group), "", fixed = FALSE)
+    matches <- which(possible_values %in% pars)
+    cor_names <-  get_cornames(names = names, type = type)[matches]
   }
   cor_names
 }
 
-#rename parameters
-rename_pars <- function(x, ...) {
+# rename parameters within the stanfit object 
+# to ensure full compatibility with all S3 method and with shinystan  
+rename_pars <- function(x, ranef = TRUE, ...) {
   if (!length(x$fit@sim)) return(x)
   chains <- length(x$fit@sim$samples) 
   n_pars <- length(x$fit@sim$fnames_oi)
@@ -64,8 +83,10 @@ rename_pars <- function(x, ...) {
                                        sort = unlist(lapply(1:length(p), function(k) 
                                          seq(k, thres*length(p), length(p)))))
   }  
-  group <- names(x$ranef)
+  
   if (length(x$ranef)) {
+    group <- names(x$ranef)
+    gf <- make_group_frame(x$ranef)
     for (i in 1:length(x$ranef)) {
       change[[length(change)+1]] <- list(pos = grepl(paste0("^sd_",i,"(\\[|$)"), pars),
                                          oldname = paste0("sd_",i),
@@ -78,6 +99,24 @@ rename_pars <- function(x, ...) {
                                            pnames = cor_names,
                                            fnames = cor_names) 
       }
+      if (ranef) {
+        lc <- length(change) + 1
+        change[[lc]] <- list(pos = grepl(paste0("^r_",i,"(\\[|$)"), pars),
+                                         oldname = paste0("r_",i))
+        # prepare for removal of redundant parameters r_<i>
+        # and for commbining random effects into one paramater matrix
+        n_ranefs <- max(gf$last[which(gf$g == group[i])]) #number of total REs for this grouping factor
+        old_dim <- x$fit@sim$dims_oi[[change[[lc]]$oldname]]
+        indizes <- make_indizes(rows = 1:old_dim[1], cols = gf$first[i]:gf$last[i], 
+                               dim = ifelse(n_ranefs == 1, 1, 2))
+        if (match(gf$g[i], group) < i) 
+          change[[lc]]$pnames <- NULL 
+        else {
+          change[[lc]]$pnames <- paste0("r_",group[i])
+          change[[lc]]$dim <- if (n_ranefs == 1) old_dim else c(old_dim[1], n_ranefs) 
+        } 
+        change[[lc]]$fnames <- paste0("r_",group[i], indizes)
+      }  
     }
   }
   if (x$family %in% c("gaussian", "student", "cauchy") && !is.formula(ee$se)) {
@@ -105,16 +144,49 @@ rename_pars <- function(x, ...) {
             x$fit@sim$samples[[i]][change[[c]]$pos][change[[c]]$sort]
       }
       onp <- match(change[[c]]$oldname, names(x$fit@sim$dims_oi))
-      x$fit@sim$dims_oi <- c(if (onp > 1) x$fit@sim$dims_oi[1:(onp-1)], 
-                             setNames(lapply(change[[c]]$pnames, function(x) 
-                               if (is.null(change[[c]]$dim)) numeric(0)
-                               else change[[c]]$dim), 
-                               change[[c]]$pnames),
-                             x$fit@sim$dims_oi[(onp+1):length(x$fit@sim$dims_oi)])
+      if (is.null(change[[c]]$pnames)) 
+        x$fit@sim$dims_oi[[onp]] <- NULL #remove this parameter from dims_oi
+      else #rename dims_oi 
+        x$fit@sim$dims_oi <- c(if (onp > 1) x$fit@sim$dims_oi[1:(onp-1)], 
+                               setNames(lapply(change[[c]]$pnames, function(x) 
+                                 if (is.null(change[[c]]$dim)) numeric(0)
+                                 else change[[c]]$dim), 
+                                 change[[c]]$pnames),
+                               x$fit@sim$dims_oi[(onp+1):length(x$fit@sim$dims_oi)])
     }
   }
   x$fit@sim$pars_oi <- names(x$fit@sim$dims_oi)
+  x$ranef <- combine_duplicates(x$ranef)
   x
+}
+
+# make a little data.frame helping to rename random effects
+make_group_frame <- function(ranef) {
+  group <- names(ranef)
+  out <- data.frame(g = group, first = NA, last = NA)
+  out[1,2:3] <- c(1, length(ranef[[1]]))
+  if (length(group) > 1) {
+    for (i in 2:length(group)) {
+      matches <- which(out$g[1:(i-1)] == group[i])
+      if (length(matches))
+        out[i,2:3] <- c(out$last[max(matches)] + 1, out$last[max(matches)] + length(ranef[[i]]))
+      else out[i,2:3] <- c(1, length(ranef[[i]]))
+    }
+  }
+  out
+}
+
+# make indizes in square brackets for indexing stan parameters
+make_indizes <- function(rows, cols = NULL, dim = 1) {
+  if (dim < 1 || !is.wholenumber(dim))
+    stop("dim must be a positive integer")
+  if (dim == 1) indizes <- paste0("[",rows,"]")
+  else {
+    indizes <- expand.grid(rows, cols)
+    indizes <- unlist(lapply(1:nrow(indizes), function(i)
+      paste0("[",paste0(indizes[i,], collapse = ","),"]")))
+  }
+  indizes
 }
 
 #' Extract parameter names

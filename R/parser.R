@@ -37,19 +37,19 @@ extract_effects <- function(formula, ..., family = "none", add.ignore = FALSE) {
   rg <- unlist(regmatches(formula, gregexpr("\\([^\\|\\)]*\\|[^\\)]*\\)", formula)))
   random <- lapply(regmatches(rg, gregexpr("\\([^\\|]*", rg)), function(r) 
     formula(paste0("~ ",substr(r, 2, nchar(r)))))
-  cor <- lapply(regmatches(rg, gregexpr("\\|[^\\)]*", rg)), function(g) substr(g, 1, 2) != "||")
-  group <- lapply(regmatches(rg, gregexpr("\\|[^\\)]*", rg)), function(g) {
+  cor <- unlist(lapply(regmatches(rg, gregexpr("\\|[^\\)]*", rg)), function(g) substr(g, 1, 2) != "||"))
+  group_formulas <- lapply(regmatches(rg, gregexpr("\\|[^\\)]*", rg)), function(g) {
     g <- ifelse(substr(g, 1, 2) == "||", substr(g, 3, nchar(g)), substr(g, 2, nchar(g)))
     if (nchar(gsub(":", "", gsub("[^([:digit:]|[:punct:])][[:alnum:]_\\.]*", "", g))))
       stop(paste("Illegal grouping term:",g,"\nGrouping terms may contain only variable names",
                  "combined by the interaction symbol ':'"))
     return(formula(paste("~",g)))})
-  x <- list(fixed = fixed, random = random, cor = cor,
-            group = lapply(group, function(g) paste0(all.vars(g), collapse = "__")))
-  if (anyDuplicated(x$group))
-    stop("Duplicated grouping factors are not allowed")
-  if (any(grepl(".", x$group, fixed = TRUE)))
-    stop("Names of grouping factors may not contain dots")
+  group <- unlist(lapply(group_formulas, function(g) paste0(all.vars(g), collapse = ":")))
+  # ordering is to ensure that all REs of the same grouping factor are next to each other
+  x <- list(fixed = fixed, 
+            random = if (length(group)) random[order(group)] else random, 
+            cor = if (length(group)) cor[order(group)] else cor,
+            group = if (length(group)) group[order(group)] else group)
   
   fun <- c("se", "weights", "trials", "cat", "cens")
   add_vars <- list()
@@ -80,7 +80,7 @@ extract_effects <- function(formula, ..., family = "none", add.ignore = FALSE) {
                   "the old one was not flexible enough."))
   }
   
-  new_formula <- unlist(lapply(c(random, group, add_vars, ...), 
+  new_formula <- unlist(lapply(c(random, group_formulas, add_vars, ...), 
                               function(x) paste0("+", Reduce(paste, deparse(x[[2]])))))
   new_formula <- paste0("update(",Reduce(paste, deparse(fixed)),", . ~ .",paste0(new_formula, collapse=""),")")
   x$all <- eval(parse(text = new_formula))

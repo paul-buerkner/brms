@@ -10,12 +10,21 @@ linear_predictor.brmsfit <- function(x, ...) {
     b <- posterior.samples(x, parameters = "^b_[^\\[]+$")
     eta <- eta + fixef_predictor(X = X, b = b)  
   }
+
   group <- names(x$ranef)
+  all_groups <- extract_effects(x$formula, family = x$family)$group #may contain the same group more than ones
   if (length(group)) {
     for (i in 1:length(group)) {
-      Z <- get(paste0("Z_",i), x$data)
-      gf <- get(paste0("lev_",i), x$data)
-      r <- posterior.samples(x, parameters = paste0("^r_",i,"\\["))
+      if (any(grepl(paste0("^lev_"), names(x$data)))) { # implies brms > 0.4.2
+        #create a single RE design matrix for every grouping factor
+        Z <- do.call(cbind, lapply(which(all_groups == group[i]), function(k) 
+                     get(paste0("Z_",k), x$data)))
+        gf <- get(paste0("lev_",match(group[i], all_groups)), x$data)
+      } else { # implies brms < 0.4.2
+        Z <- get(paste0("Z_",group[i]), x$data)
+        gf <- get(group[i], x$data)
+      }
+      r <- posterior.samples(x, parameters = paste0("^r_",group[i],"\\["))
       eta <- eta + ranef_predictor(Z = Z, gf = gf, r = r) 
     }
   }

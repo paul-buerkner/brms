@@ -94,7 +94,7 @@ test_that("Test that stan_model handles addition arguments correctly", {
 test_that("Test that stan_model correctly combines strings of multiple grouping factors", {
   expect_match(stan_model(count ~ (1|patient) + (1+Trt_c|visit), data = epilepsy, family = "poisson", link = "log"), 
                "  real Z_1[N]; \n  int<lower=1> lev_2[N];", fixed = TRUE)
-  expect_match(stan_model(count ~ (1+Trt_c|visit) + (1|patient), data = epilepsy, family = "poisson", link = "log"), 
+  expect_match(stan_model(count ~ (1|visit) + (1+Trt_c|patient), data = epilepsy, family = "poisson", link = "log"), 
                "  int NC_1; \n  int<lower=1> lev_2[N];", fixed = TRUE)
 })
 
