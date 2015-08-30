@@ -73,14 +73,26 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
     rownames(out$sd) <- p$rnames 
     
     # calculate correlation and covariance matrices
-    if (length(p$cor_pars))
-      cor <- posterior_samples(x, parameters = paste0("^",p$cor_pars,"$"))
-    else cor <- NULL
-    matrices <- cov_matrix(sd = sd, cor = cor)
+    found_cor_pars <- intersect(p$cor_pars, parnames(x))
+    if (length(found_cor_pars)) {
+      cor <- posterior_samples(x, parameters = paste0("^",found_cor_pars,"$"))
+      if (length(found_cor_pars) < length(p$cor_pars)) { # some correlations are missing
+        cor_all <- as.data.frame(matrix(0, nrow = nrow(cor), ncol = length(p$cor_pars)))
+        names(cor_all) <- p$cor_pars
+        for (i in 1:ncol(cor_all)) {
+          found <- match(names(cor_all)[i], names(cor))
+          if (!is.na(found)) # correlation was estimated
+            cor_all[, i] <- cor[, found]
+        }
+        cor <- cor_all
+      }
+    } else cor <- NULL
+    # cov_matrix, list2arry, and array2list can be found in misc.R
+    matrices <- cov_matrix(sd = sd, cor = cor) 
     out$cor <- list2array(lapply(estimate, get_estimate, samples = matrices$cor, 
-                            margin = c(2,3), to.array = TRUE, ...))
+                          margin = c(2,3), to.array = TRUE, ...))
     out$cov <- list2array(lapply(estimate, get_estimate, samples = matrices$cov, 
-                            margin = c(2,3), to.array = TRUE, ...))
+                          margin = c(2,3), to.array = TRUE, ...)) 
     if (length(p$rnames) > 1)
       dimnames(out$cov) <- dimnames(out$cor) <- list(p$rnames, p$rnames, dimnames(out$cor)[[3]])
     if (as.list) {
@@ -97,17 +109,19 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
     group <- names(x$ranef)
     p <- lapply(1:length(group), function(i)
       list(rnames = x$ranef[[i]],
+           type = paste0("cor_",group[i]),
            sd_pars = paste0("sd_",group[i],"_",x$ranef[[i]]),
-           cor_pars = intersect(get_cornames(x$ranef[[i]], type = paste0("cor_",group[i]), 
-                                             brackets = FALSE),
-                                 parnames(x))))
+           cor_pars = get_cornames(x$ranef[[i]], type = paste0("cor_",group[i]), 
+                                   brackets = FALSE)))
+                                 #parnames(x))))
   } else p <- group <- NULL
   if (x$family %in% c("gaussian", "student", "cauchy") && !is.formula(ee$se)) {
     p[[length(p)+1]] <- list(rnames = ee$response, 
+                             type = "rescor",
                              sd_pars = paste0("sigma_",ee$response),
-                             cor_pars = intersect(get_cornames(ee$response, type = "rescor", 
-                                                               brackets = FALSE),
-                                                  parnames(x)))
+                             cor_pars = get_cornames(ee$response, type = "rescor", 
+                                                     brackets = FALSE))
+                                                  #parnames(x)))
     group <- c(group, "RESIDUAL")
   } 
   VarCorr <- lapply(p, extract)
