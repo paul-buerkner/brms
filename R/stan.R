@@ -560,14 +560,11 @@ stan_rngprior <- function(sample.prior, priors = "", family = "gaussian", fixed 
     pars[has_ind] <- sapply(pars[has_ind], function(par) {
       ind <- regmatches(par, gregexpr("\\[[[:digit:]]+\\]", par))
       ind <- as.numeric(substr(ind, 2, nchar(ind) - 1))
-      if (grepl("^b\\[", par)) par <- paste0("b_",fixed[ind])
-      else if (grepl("^bp\\[", par)) par <- paste0("b_",partial[ind])
-      else if (grepl("^sigma\\[", par)) par <- paste0("sigma_",response[ind])
-      else if (grepl("^sd_", par)) {
-        ind_group <- which(sapply(1:length(group), 
-                                  function(i) grepl(paste0("^sd_",i), par)))
+      if (grepl("^b\\[", par)) par <- paste0("b_",ind)
+      else if (grepl("^bp\\[", par)) par <- paste0("bp_",ind)
+      else if (grepl("^sigma\\[", par)) par <- paste0("sigma_",ind)
+      else if (grepl("^sd_", par)) 
         par <- gsub("\\[[[:digit:]]+\\]", paste0("_",ind), par)
-      }
       return(par)})
     
     #special treatment of lkj_corr_cholesky priors

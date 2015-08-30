@@ -337,5 +337,5 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
     stopCluster(cl)
   } 
   else x$fit <- do.call(rstan::sampling, args)
-  return(rename_pars(x, ranef = ranef))
+  return(rename_pars(x))
 }

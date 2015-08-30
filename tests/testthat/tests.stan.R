@@ -136,15 +136,15 @@ test_that("Test that stan_rngprior returns correct sampling statements for prior
   expect_equal(stan_rngprior(TRUE, prior = "b ~ normal(0,5); \n"),
                list(genD = "  real prior_b; \n", genC = "  prior_b <- normal_rng(0,5); \n"))
   expect_equal(stan_rngprior(TRUE, prior = "b[1] ~ normal(0,5); \n", fixed = c("x1", "x2")),
-               list(genD = "  real prior_b_x1; \n", genC = "  prior_b_x1 <- normal_rng(0,5); \n"))
+               list(genD = "  real prior_b_1; \n", genC = "  prior_b_1 <- normal_rng(0,5); \n"))
   expect_equal(stan_rngprior(TRUE, prior = "bp[1] ~ normal(0,5); \n", partial = c("x1", "x2")),
-               list(genD = "  real prior_b_x1; \n", genC = "  prior_b_x1 <- normal_rng(0,5); \n"))
+               list(genD = "  real prior_bp_1; \n", genC = "  prior_bp_1 <- normal_rng(0,5); \n"))
   expect_equal(stan_rngprior(TRUE, prior = "sigma[2] ~ normal(0,5); \n", response = c("y1", "y2")),
-               list(par = "  real<lower=0> prior_sigma_y2; \n", model = "  prior_sigma_y2 ~ normal(0,5); \n"))
-  expect_equal(stan_rngprior(TRUE, prior = "sd_id[1] ~ normal(0,5); \n  sd_id[2] ~ cauchy(0,2); \n",
+               list(par = "  real<lower=0> prior_sigma_2; \n", model = "  prior_sigma_2 ~ normal(0,5); \n"))
+  expect_equal(stan_rngprior(TRUE, prior = "sd_1[1] ~ normal(0,5); \n  sd_1[2] ~ cauchy(0,2); \n",
                              group = list("id"), random = list(c("x1", "x2"))),
-               list(par = "  real<lower=0> prior_sd_id_x1; \n  real<lower=0> prior_sd_id_x2; \n", 
-                    model = "  prior_sd_id_x1 ~ normal(0,5); \n  prior_sd_id_x2 ~ cauchy(0,2); \n"))
+               list(par = "  real<lower=0> prior_sd_1_1; \n  real<lower=0> prior_sd_1_2; \n", 
+                    model = "  prior_sd_1_1 ~ normal(0,5); \n  prior_sd_1_2 ~ cauchy(0,2); \n"))
 })
 
 test_that("Test that stan_functions returns correct user defined functions", {

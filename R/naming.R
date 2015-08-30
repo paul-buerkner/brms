@@ -49,8 +49,8 @@ get_cornames <- function(names, type = "cor", pars = NULL, group = "", brackets 
 }
 
 # rename parameters within the stanfit object 
-# to ensure full compatibility with all S3 method and with shinystan  
-rename_pars <- function(x, ranef = TRUE, ...) {
+# to ensure full compatibility with all S3 method and with shinystan 
+rename_pars <- function(x, ...) {
   if (!length(x$fit@sim)) return(x)
   chains <- length(x$fit@sim$samples) 
   n_pars <- length(x$fit@sim$fnames_oi)
@@ -99,7 +99,7 @@ rename_pars <- function(x, ranef = TRUE, ...) {
                                            pnames = cor_names,
                                            fnames = cor_names) 
       }
-      if (ranef) {
+      if (any(grepl("^r_", pars))) {
         lc <- length(change) + 1
         change[[lc]] <- list(pos = grepl(paste0("^r_",i,"(\\[|$)"), pars),
                                          oldname = paste0("r_",i))
@@ -133,6 +133,22 @@ rename_pars <- function(x, ranef = TRUE, ...) {
                                         fnames = rescor_names)
     }
   } 
+  
+  #prepare for renaming of priors
+  if (any(grepl("^prior_", pars))) {
+    pos_priors_b <- which(grepl("^prior_b_[[:digit:]]+$", pars))
+    if (length(pos_priors_b)) {
+      priors_b <- pars[pos_priors_b]
+      digits <- as.numeric(unlist(regmatches(priors_b, gregexpr("[[:digit:]]+$", priors_b))))
+      for (i in 1:length(priors_b)) {
+        priors_b[i] <- rename(priors_b[i], "[[:digit:]]+$", f[digits[i]], fixed = FALSE)
+        change[[length(change)+1]] <- list(pos = pos_priors_b[i], 
+                                           oldname = pars[pos_priors_b[i]],
+                                           pnames = priors_b[i],
+                                           fnames = priors_b[i])
+      }
+    }
+  }
   
   #rename parameters
   if (length(change)) {
