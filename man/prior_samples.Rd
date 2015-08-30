@@ -10,7 +10,7 @@ prior_samples(x, parameters = NA, ...)
 \arguments{
 \item{x}{An \code{R} object typically of class \code{brmsfit}}
 
-\item{parameters}{Name of parameters for which posterior samples should be returned, as given by a character vector or regular expressions.
+\item{parameters}{Name of parameters for which prior samples should be returned, as given by a character vector or regular expressions.
 By default, all prior samples are extracted}
 
 \item{...}{Currently ignored}

@@ -156,7 +156,8 @@ rename_pars <- function(x, ranef = TRUE, ...) {
     }
   }
   x$fit@sim$pars_oi <- names(x$fit@sim$dims_oi)
-  x$ranef <- combine_duplicates(x$ranef)
+  # combines duplicated grouping factors to appear as if it was only one
+  if (length(x$ranef)) x$ranef <- combine_duplicates(x$ranef)
   x
 }
 

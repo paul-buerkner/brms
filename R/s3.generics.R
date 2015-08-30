@@ -237,7 +237,7 @@ posterior.samples <- function(x, parameters = NA, add.chains = FALSE,...)
 #' @aliases prior_samples.brmsfit
 #' 
 #' @param x An \code{R} object typically of class \code{brmsfit}
-#' @param parameters Name of parameters for which posterior samples should be returned, as given by a character vector or regular expressions.
+#' @param parameters Name of parameters for which prior samples should be returned, as given by a character vector or regular expressions.
 #'   By default, all prior samples are extracted
 #' @param ... Currently ignored
 #'   

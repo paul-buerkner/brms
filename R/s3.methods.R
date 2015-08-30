@@ -332,7 +332,8 @@ residuals.brmsfit <- function(object, type = c("ordinary", "pearson"), summary =
   if (type == "pearson")
     res <- res / sqrt(mu * (max_obs - mu) / max_obs)  
   
-  # for compatibility with the macf function
+  # for compatibility with the macf function (see misc.R)
+  # so that colnames of the outout correspond to levels of the autocor grouping factor
   if (is(object$autocor, "cor_arma") && sum(object$autocor$p, object$autocor$q) > 0) {
     tgroup <- extract_time(object$autocor$formula)$group
     if (nchar(tgroup)) colnames(res) <- object$data[[tgroup]]
