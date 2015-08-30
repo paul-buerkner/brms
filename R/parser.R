@@ -23,7 +23,7 @@
 # # in this case standard errors in a gaussian linear model
 # extract_effects(response | se(sei) ~ I(1/a) + b + (1 + c | d), family = "gaussian")
 # }
-extract_effects <- function(formula, ..., family = "none", add.ignore = FALSE) {
+extract_effects <- function(formula, ..., family = "none") {
   formula <- formula2string(formula)  
   fixed <- gsub(paste0("\\([^(\\||~)]*\\|[^\\)]*\\)\\+|\\+\\([^(\\||~)]*\\|[^\\)]*\\)",
                        "|\\([^(\\||~)]*\\|[^\\)]*\\)"),"",formula)
@@ -53,7 +53,7 @@ extract_effects <- function(formula, ..., family = "none", add.ignore = FALSE) {
   
   fun <- c("se", "weights", "trials", "cat", "cens")
   add_vars <- list()
-  if (!add.ignore) {
+  if (family != "none") {
     add <- unlist(regmatches(formula, gregexpr("\\|[^~]*~", formula)))[1]
     add <- substr(add, 2, nchar(add)-1)
     families <- list(se = c("gaussian","student","cauchy"), weights = c("all"),

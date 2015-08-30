@@ -215,7 +215,7 @@ check_family <- function(family) {
 
 #list irrelevant parameters not to be saved by Stan
 exclude_pars <- function(formula, ranef = TRUE) {
-  ee <- extract_effects(formula = formula, add.ignore = TRUE)
+  ee <- extract_effects(formula)
   out <- c("eta", "etam", "etap", "b_Intercept1", "Lrescor", "Rescor",
            "p", "q", "e", "Ema", "lp_pre")
   if (length(ee$group)) {

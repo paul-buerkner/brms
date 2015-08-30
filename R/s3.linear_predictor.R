@@ -12,7 +12,7 @@ linear_predictor.brmsfit <- function(x, ...) {
   }
 
   group <- names(x$ranef)
-  all_groups <- extract_effects(x$formula, family = x$family)$group #may contain the same group more than ones
+  all_groups <- extract_effects(x$formula)$group #may contain the same group more than ones
   if (length(group)) {
     for (i in 1:length(group)) {
       if (any(grepl(paste0("^lev_"), names(x$data)))) { # implies brms > 0.4.2
