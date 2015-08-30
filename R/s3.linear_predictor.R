@@ -13,9 +13,9 @@ linear_predictor.brmsfit <- function(x, ...) {
   group <- names(x$ranef)
   if (length(group)) {
     for (i in 1:length(group)) {
-      Z <- get(paste0("Z_",i,rename(group[i], ":", "__")), x$data)
-      gf <- get(paste0("lev_",i,rename(group[i], ":", "__")), x$data)
-      r <- posterior.samples(x, parameters = paste0("^r_",i,group[i],"\\["))
+      Z <- get(paste0("Z_",i), x$data)
+      gf <- get(paste0("lev_",i), x$data)
+      r <- posterior.samples(x, parameters = paste0("^r_",i,"\\["))
       eta <- eta + ranef_predictor(Z = Z, gf = gf, r = r) 
     }
   }

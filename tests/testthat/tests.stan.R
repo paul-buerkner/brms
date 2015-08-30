@@ -39,10 +39,10 @@ test_that("Test that stan_prior can remove default priors", {
 test_that("Test that stan_eta returns correct strings for autocorrelation models", {
   expect_match(stan_eta(family = "poisson", link = "log", f = c("Trt_c"),
                         autocor = cor.arma(~visit|patient, p=1))$transC1,
-               "eta <- X\\*b \\+ Yar\\*ar")
+               "eta <- X*b + Yar*ar", fixed = TRUE)
   expect_match(stan_eta(family = "poisson", link = "log", f = c("Trt_c"),
                         autocor = cor.arma(~visit|patient, q=1))$transC2,
-               "eta\\[n\\] <- eta\\[n\\] \\+ Ema\\[n\\]\\*ma")
+               "eta[n] <- eta[n] + Ema[n]*ma", fixed = TRUE)
 })
 
 test_that("Test_that stan_ma returns correct strings (or errors) for moving average models", {
@@ -75,15 +75,15 @@ test_that("Test that stan_model accepts supported links", {
 test_that("Test that stan_model returns correct strings for customized covariances", {
   expect_match(stan_model(rating ~ treat + period + carry + (1|subject), data = inhaler,
                           cov.ranef = "subject"), fixed = TRUE,
-              "r_1subject <- sd_1subject * (cov_1subject * pre_1subject)")
+              "r_1 <- sd_1 * (cov_1 * pre_1)")
   expect_match(stan_model(rating ~ treat + period + carry + (1+carry|subject), data = inhaler,
                           cov.ranef = "subject"), fixed = TRUE,
-       paste0("r_1subject <- to_array(kronecker_cholesky(cov_1subject, L_1subject, sd_1subject) * ",
-              "to_vector(pre_1subject), N_1subject, K_1subject"))
+       paste0("r_1 <- to_array(kronecker_cholesky(cov_1, L_1, sd_1) * ",
+              "to_vector(pre_1), N_1, K_1"))
   expect_match(stan_model(rating ~ treat + period + carry + (1+carry||subject), data = inhaler,
                           cov.ranef = "subject"), fixed = TRUE,
-       paste0("r_1subject <- to_array(to_vector(rep_matrix(sd_1subject, N_1subject)) .* ",
-              "(cov_1subject * to_vector(pre_1subject)), N_1subject, K_1subject)"))
+       paste0("r_1 <- to_array(to_vector(rep_matrix(sd_1, N_1)) .* ",
+              "(cov_1 * to_vector(pre_1)), N_1, K_1)"))
 })
 
 test_that("Test that stan_model handles addition arguments correctly", {
@@ -93,9 +93,9 @@ test_that("Test that stan_model handles addition arguments correctly", {
 
 test_that("Test that stan_model correctly combines strings of multiple grouping factors", {
   expect_match(stan_model(count ~ (1|patient) + (1+Trt_c|visit), data = epilepsy, family = "poisson", link = "log"), 
-               "  real Z_patient[N]; \n  int<lower=1> visit[N];", fixed = TRUE)
+               "  real Z_1[N]; \n  int<lower=1> lev_2[N];", fixed = TRUE)
   expect_match(stan_model(count ~ (1+Trt_c|visit) + (1|patient), data = epilepsy, family = "poisson", link = "log"), 
-               "  int NC_visit; \n  int<lower=1> patient[N];", fixed = TRUE)
+               "  int NC_1; \n  int<lower=1> lev_2[N];", fixed = TRUE)
 })
 
 test_that("Test that stan_ordinal returns correct strings", {

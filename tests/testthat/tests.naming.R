@@ -38,9 +38,9 @@ test_that("Test that check_prior accepts correct prior names", {
   expect_equal(check_prior(list(b = "normal(0,1)",  sd = "gamma(1,1)"), 
                 family = "exponential", formula = time ~ age + (1+age|patient), data = kidney),
                list(b = "normal(0,1)",  sd = "gamma(1,1)"))
-  expect_equal(check_prior(list(sd_Intercept = "normal(0,1)",  sd_age = "gamma(1,1)"), 
+  expect_equal(check_prior(list(sd_patient_Intercept = "normal(0,1)",  sd_patient_age = "gamma(1,1)"), 
                            family = "exponential", formula = time ~ age + (1+age|patient), data = kidney),
-               list(sd_Intercept = "normal(0,1)",  sd_age = "gamma(1,1)"))
+               list(sd_1_Intercept = "normal(0,1)",  sd_1_age = "gamma(1,1)"))
   expect_equal(check_prior(list(sigma = "cauchy(0,1)"), formula = rating ~ 1, 
                            family = "cauchy", data = inhaler),
                list(sigma = "cauchy(0,1)"))
@@ -58,7 +58,7 @@ test_that("Test that check_prior accepts correct prior names", {
                list(ar = "normal(0,2)", ma = "student_t(1,2,3)"))
 })
 
-test_that("Test that check_priro rejects incorrect prior names", {
+test_that("Test that check_prior rejects incorrect prior names", {
   expect_warning(check_prior(list(b_Intercept = "normal(0,1)",  b_age = "gamma(1,1)"), 
                  family = "acat", formula = rating ~ treat + (1+treat|subject), data = inhaler))
   expect_warning(check_prior(list(b_Intercept = "normal(0,1)",  sd_patient = "gamma(1,1)"), 
