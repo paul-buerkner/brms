@@ -41,4 +41,3 @@ test_that("Test that check_family rejects invalid families", {
                "ordinal is not a valid family")
 })
 
-

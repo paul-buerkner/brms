@@ -28,11 +28,11 @@ test_that("Test that stan_prior returns the correct indices", {
 test_that("Test that stan_prior can remove default priors", {
   expect_equal(stan_prior("sigma_y", prior = list(sigma = "")), "")
   expect_equal(stan_prior("sd_y_Intercept", prior = list(sd = "")), "")
-  expect_equal(stan_prior("sd_y_Intercept", prior = list(sd_y = ""), add.type = "y"), "")
+  expect_equal(stan_prior("sd_y_Intercept", prior = list(sd_y = ""), add_type = "y"), "")
   expect_equal(stan_prior("shape", prior = list(shape = "")), "")
   expect_equal(stan_prior("sigma_y", prior = list(sigma = NULL)), "")
   expect_equal(stan_prior("sd_y_Intercept", prior = list(sd = NULL)), "")
-  expect_equal(stan_prior("sd_y_Intercept", prior = list(sd_y = NULL), add.type = "y"), "")
+  expect_equal(stan_prior("sd_y_Intercept", prior = list(sd_y = NULL), add_type = "y"), "")
   expect_equal(stan_prior("shape", prior = list(shape = NULL)), "")
 })
 
@@ -75,15 +75,15 @@ test_that("Test that stan_model accepts supported links", {
 test_that("Test that stan_model returns correct strings for customized covariances", {
   expect_match(stan_model(rating ~ treat + period + carry + (1|subject), data = inhaler,
                           cov.ranef = "subject"), fixed = TRUE,
-              "r_subject <- sd_subject * (cov_subject * pre_subject)")
+              "r_1subject <- sd_1subject * (cov_1subject * pre_1subject)")
   expect_match(stan_model(rating ~ treat + period + carry + (1+carry|subject), data = inhaler,
                           cov.ranef = "subject"), fixed = TRUE,
-       paste0("r_subject <- to_array(kronecker_cholesky(cov_subject, L_subject, sd_subject) * ",
-              "to_vector(pre_subject), N_subject, K_subject"))
+       paste0("r_1subject <- to_array(kronecker_cholesky(cov_1subject, L_1subject, sd_1subject) * ",
+              "to_vector(pre_1subject), N_1subject, K_1subject"))
   expect_match(stan_model(rating ~ treat + period + carry + (1+carry||subject), data = inhaler,
                           cov.ranef = "subject"), fixed = TRUE,
-       paste0("r_subject <- to_array(to_vector(rep_matrix(sd_subject, N_subject)) .* ",
-              "(cov_subject * to_vector(pre_subject)), N_subject, K_subject)"))
+       paste0("r_1subject <- to_array(to_vector(rep_matrix(sd_1subject, N_1subject)) .* ",
+              "(cov_1subject * to_vector(pre_1subject)), N_1subject, K_1subject)"))
 })
 
 test_that("Test that stan_model handles addition arguments correctly", {

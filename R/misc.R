@@ -219,13 +219,16 @@ exclude_pars <- function(formula, ranef = TRUE) {
   out <- c("eta", "etam", "etap", "b_Intercept1", "Lrescor", "Rescor",
            "p", "q", "e", "Ema", "lp_pre")
   if (length(ee$group)) {
-    out <- c(out, paste0("pre_",ee$group), paste0("L_",ee$group), paste0("Cor_",ee$group))
-    if (!ranef) out <- c(out, paste0("r_",ee$group))
+    for (i in 1:length(ee$group)) {
+      out <- c(out, paste0("pre_",i,ee$group), paste0("L_",i,ee$group), paste0("Cor_",i,ee$group))
+      if (!ranef) out <- c(out, paste0("r_",i,ee$group))
+    }
   }
   out
 }
 
 #check prior and amend it if needed
+#' @export
 check_prior <- function(prior, formula, data = NULL, family = "gaussian", autocor = NULL, 
                         partial = NULL, threshold = "flexible") {
   
@@ -248,6 +251,10 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian", autoco
   #rename certain parameters
   names(prior) <- rename(names(prior), symbols = c("^cor_", "^cor$", "^rescor$"), 
                          subs = c("L_", "L", "Lrescor"), fixed = FALSE)
+  if (any(grepl("^sd_.+", names(prior))))
+    for (i in 1:length(ee$group)) 
+      names(prior) <-  rename(names(prior), symbols = paste0("^sd_",ee$group[[i]]),
+                              subs = paste0("^sd_",i,ee$group[[i]]), fixed = FALSE)
   if (family %in% c("cumulative", "sratio", "cratio", "acat") && threshold == "equidistant")
     names(prior) <- rename(names(prior), symbols = "^b_Intercept$", subs = "b_Intercept1",
                            fixed = FALSE)

@@ -143,7 +143,7 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
                        ncolZ[[i]], Z[[i]], ncolZ[[i]]*(ncolZ[[i]]-1)/2)
     for (i in 1:length(ee$group)) {
       g <- ee$group[[i]]
-      name <- paste0(c("", "N_", "K_", "Z_", "NC_"), g)
+      name <- paste0(c("lev_", "N_", "K_", "Z_", "NC_"), i,g)
       if (ncolZ[[i]] == 1) Z[[i]] <- as.vector(Z[[i]])
       for (j in 1:length(name)) standata <- c(standata, setNames(list(eval(expr[j])), name[j]))
       if (g %in% names(cov.ranef)) {

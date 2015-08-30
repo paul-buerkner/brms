@@ -22,13 +22,14 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, ...) {
   group <- names(x$ranef)
   pars <- parnames(x)
   
-  ranef <- lapply(group, function(g) {
-    rpars <- pars[grepl(paste0("^r_",g,"\\["), pars)]
-    rnames <- x$ranef[[match(g, names(x$ranef))]]
+  ranef <- lapply(1:length(group), function(i) {
+    g <- group[i]
+    rnames <- x$ranef[[i]]
+    rpars <- pars[grepl(paste0("^r_",i,g,"\\["), pars)]
     if (!length(rpars))
       stop(paste0("The model does not contain random effects for group '",g,"'\n",
                   "You should use argument ranef = TRUE in function brm."))
-    rdims <- x$fit@par_dims[[paste0("r_",gsub(":", "__", g))]]
+    rdims <- x$fit@par_dims[[paste0("r_",i,gsub(":", "__", g))]]
     rs <- posterior_samples(x, parameters = rpars, fixed = TRUE)
     ncol <- ifelse(is.na(rdims[2]), 1, rdims[2])
     rs_array <- array(dim = c(rdims[1], ncol, nrow(rs)))

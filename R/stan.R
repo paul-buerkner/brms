@@ -33,7 +33,7 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
   n <- ifelse(is.formula(ee[c("trials","cat")]), "[n]", "")
   trait <- ifelse(is_multi, "_trait", "")
   
-  ranef <- unlist(lapply(mapply(list, r, ee$group, ee$cor, SIMPLIFY = FALSE), stan_ranef, 
+  ranef <- unlist(lapply(1:length(ee$group), stan_ranef, ranef = r, group = ee$group, cor = ee$cor,
                          prior = prior, cov.ranef = cov.ranef))
   names.ranef <- unique(names(ranef))
   if (length(ranef)) ranef <- sapply(1:length(names.ranef), function(x) 
@@ -57,9 +57,9 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
     if (autocor$p) stan_prior("ar", prior),
     if (autocor$q) stan_prior("ma", prior),
     if (is_ordinal && threshold == "flexible") 
-      stan_prior("b_Intercept", prior, add.type = "Intercept")
+      stan_prior("b_Intercept", prior, add_type = "Intercept")
     else if (is_ordinal && threshold == "equidistant") 
-      paste0(stan_prior("b_Intercept1", prior, add.type = "Intercept1"), stan_prior("delta", prior)),
+      paste0(stan_prior("b_Intercept1", prior, add_type = "Intercept1"), stan_prior("delta", prior)),
     if (family %in% c("gamma", "weibull", "negbinomial")) stan_prior("shape", prior),
     if (family == "student") stan_prior("nu", prior),
     if (is_linear && !is.formula(ee$se)) stan_prior(paste0("sigma_",ee$response), prior), 
@@ -170,54 +170,55 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
 # Random effects in Stan 
 # 
 # @return A vector of strings containing the random effects in stan language
-stan_ranef <- function(rg, prior = list(), cov.ranef = "") {
-  r <- rg[[1]]
-  g <- rg[[2]]
-  cor <- rg[[3]]
+stan_ranef <- function(i, ranef, group, cor, prior = list(), cov.ranef = "") {
+  r <- ranef[[i]]
+  g <- group[[i]]
+  cor <- cor[[i]]
   ccov <- g %in% cov.ranef
+  ig <- paste0(i,g)
   out <- setNames(as.list(rep("", 9)), c("data", "tdataD", "tdataC", "par", "model", "tranD", "transC", "genD", "genC"))
-  out$data <- paste0("  int<lower=1> ",g,"[N]; \n",
-                     "  int<lower=1> N_",g,"; \n",
-                     "  int<lower=1> K_",g,"; \n",
+  out$data <- paste0("  int<lower=1> lev_",ig,"[N]; \n",
+                     "  int<lower=1> N_",ig,"; \n",
+                     "  int<lower=1> K_",ig,"; \n",
                      if (ccov && (cor || length(r) == 1)) 
-                       paste0("  matrix[N_",g,", N_",g,"] cov_",g,"; \n"),
+                       paste0("  matrix[N_",ig,", N_",ig,"] cov_",ig,"; \n"),
                      if (ccov && !cor && length(r) > 1) 
-                       paste0("  matrix[N_",g,"*K_",g,", N_",g,"*K_",g,"] cov_",g,"; \n"))
-  out$model <- paste0(stan_prior(paste0("sd_",g,"_",r), add.type = g, prior = prior ,
+                       paste0("  matrix[N_",ig,"*K_",ig,", N_",ig,"*K_",ig,"] cov_",ig,"; \n"))
+  out$model <- paste0(stan_prior(paste0("sd_",ig,"_",r), add_type = ig, prior = prior ,
                       ind = ifelse(length(r) == 1, "", list(1:length(r)))[[1]]))
   
   if (length(r) == 1) {
-    out$data <- paste0(out$data, "  real Z_",g,"[N]; \n")
-    out$par <- paste0("  vector[N_",g,"] pre_",g,"; \n",
-                      "  real<lower=0> sd_",g,"; \n")
-    out$model <- paste0(out$model,"  pre_",g," ~ normal(0,1); \n")
-    out$transD <- paste0("  vector[N_",g,"] r_",g,"; \n")
-    out$transC <- paste0("  r_",g, " <- sd_",g," * (", 
-                         if (ccov) paste0("cov_",g," * "), "pre_",g,"); \n")
+    out$data <- paste0(out$data, "  real Z_",ig,"[N]; \n")
+    out$par <- paste0("  vector[N_",ig,"] pre_",ig,"; \n",
+                      "  real<lower=0> sd_",ig,"; \n")
+    out$model <- paste0(out$model,"  pre_",ig," ~ normal(0,1); \n")
+    out$transD <- paste0("  vector[N_",ig,"] r_",ig,"; \n")
+    out$transC <- paste0("  r_",ig, " <- sd_",ig," * (", 
+                         if (ccov) paste0("cov_",ig," * "), "pre_",ig,"); \n")
   }  
   else if (length(r) > 1) {
-    out$data <- paste0(out$data,  "  row_vector[K_",g,"] Z_",g,"[N]; \n  int NC_",g,"; \n")
-    out$par <- paste0("  matrix[N_",g,",K_",g,"] pre_",g,"; \n",
-                      "  vector<lower=0>[K_",g,"] sd_",g,"; \n",
-                      if (cor) paste0("  cholesky_factor_corr[K_",g,"] L_",g,"; \n"))
-    out$model <- paste0(out$model, ifelse(cor, stan_prior(paste0("L_",g), prior = prior, add.type = g), ""),
-                     "  to_vector(pre_",g,") ~ normal(0,1); \n")
-    out$transD <- paste0("  vector[K_",g,"] r_",g,"[N_",g,"]; \n")
+    out$data <- paste0(out$data,  "  row_vector[K_",ig,"] Z_",ig,"[N]; \n  int NC_",ig,"; \n")
+    out$par <- paste0("  matrix[N_",ig,",K_",ig,"] pre_",ig,"; \n",
+                      "  vector<lower=0>[K_",ig,"] sd_",ig,"; \n",
+                      if (cor) paste0("  cholesky_factor_corr[K_",ig,"] L_",ig,"; \n"))
+    out$model <- paste0(out$model, ifelse(cor, stan_prior(paste0("L_",ig), prior = prior, add_type = ig), ""),
+                     "  to_vector(pre_",ig,") ~ normal(0,1); \n")
+    out$transD <- paste0("  vector[K_",ig,"] r_",ig,"[N_",ig,"]; \n")
     if (ccov) {
-      if (cor) out$transC <- paste0("  r_",g," <- to_array(kronecker_cholesky(cov_",g,", L_",g,", sd_",g,") * ",
-                                    "to_vector(pre_",g,"), N_",g,", K_",g,"); \n")
-      else out$transC <- paste0("  r_",g," <- to_array(to_vector(rep_matrix(sd_",g,", N_",g,")) .* ",
-                                "(cov_",g," * to_vector(pre_",g,")), N_",g,", K_",g,"); \n")
+      if (cor) out$transC <- paste0("  r_",ig," <- to_array(kronecker_cholesky(cov_",ig,", L_",ig,", sd_",ig,") * ",
+                                    "to_vector(pre_",ig,"), N_",ig,", K_",ig,"); \n")
+      else out$transC <- paste0("  r_",ig," <- to_array(to_vector(rep_matrix(sd_",ig,", N_",ig,")) .* ",
+                                "(cov_",ig," * to_vector(pre_",ig,")), N_",ig,", K_",ig,"); \n")
     }
-    else out$transC <- paste0("  for (i in 1:N_",g,") { \n",
-                              "    r_",g, "[i] <- sd_",g," .* (", if (cor) paste0("L_",g," * "), 
-                              "to_vector(pre_",g,"[i])); \n  } \n")
+    else out$transC <- paste0("  for (i in 1:N_",ig,") { \n",
+                              "    r_",ig, "[i] <- sd_",ig," .* (", if (cor) paste0("L_",ig," * "), 
+                              "to_vector(pre_",ig,"[i])); \n  } \n")
     if (cor) {
-      out$genD <- paste0("  corr_matrix[K_",g,"] Cor_",g,"; \n",
-                         "  vector<lower=-1,upper=1>[NC_",g,"] cor_",g,"; \n")
-      out$genC <- paste0("  Cor_",g," <- multiply_lower_tri_self_transpose(L_",g,"); \n",
+      out$genD <- paste0("  corr_matrix[K_",ig,"] Cor_",ig,"; \n",
+                         "  vector<lower=-1,upper=1>[NC_",ig,"] cor_",ig,"; \n")
+      out$genC <- paste0("  Cor_",ig," <- multiply_lower_tri_self_transpose(L_",ig,"); \n",
                          collapse(unlist(lapply(2:length(r),function(i) lapply(1:(i-1), function(j)
-                          paste0("  cor_",g,"[",(i-1)*(i-2)/2+j,"] <- Cor_",g,"[",j,",",i,"]; \n")))))) 
+                          paste0("  cor_",ig,"[",(i-1)*(i-2)/2+j,"] <- Cor_",ig,"[",j,",",i,"]; \n")))))) 
     }  
   }
   out
@@ -280,6 +281,7 @@ stan_llh <- function(family, link, add = FALSE, weights = FALSE, cens = FALSE) {
 }
 
 # linear.predictor part in Stan
+#' @export
 stan_eta <- function(family, link, f, p = NULL, group = list(), 
                      autocor = cor_arma(), max_obs = "max_obs") {
   is_linear <- family %in% c("gaussian", "student", "cauchy")
@@ -316,7 +318,9 @@ stan_eta <- function(family, link, f, p = NULL, group = list(),
   #define fixed, random and autocorrelation effects
   eta$transC1 <- paste0("  eta <- ", ifelse(length(f), "X*b", "rep_vector(0,N)"), 
                         if (autocor$p && is(autocor, "cor_arma")) " + Yar*ar", "; \n", if (length(p)) "  etap <- Xp * bp; \n")
-  eta.re <- ifelse(length(group), collapse(" + Z_",group,"[n]*r_",group,"[",group,"[n]]"), "")
+  if (length(group)) eta.re <- collapse(lapply(1:length(group), function(i) 
+    paste0(" + Z_",i,group[[i]],"[n]*r_",i,group[[i]],"[lev_",i,group[[i]],"[n]]")))
+  else eta.re <- ""
   eta.ma <- ifelse(autocor$q && is(autocor, "cor_arma"), " + Ema[n]*ma", "")
   if (nchar(eta.re) || nchar(eta.ma) || is_multi || nchar(eta.ilink[1])) {
     eta$transC2 <- paste0("    ",eta.multi," <- ",eta.ilink[1],"eta[n]", eta.ma, eta.re, eta.ilink[2],"; \n")
@@ -496,7 +500,7 @@ stan_ordinal <- function(family, link, partial = FALSE, max_obs = "max_obs",
 # 
 # # returns the default prior for nu
 # stan_prior("nu")
-stan_prior = function(par, prior = list(), add.type = NULL, ind = rep("", length(par)), 
+stan_prior = function(par, prior = list(), add_type = NULL, ind = rep("", length(par)), 
                       partial = FALSE, s = 2) { 
   if (length(par) != length(ind)) 
     stop("Arguments par and ind must have the same length")
@@ -505,8 +509,8 @@ stan_prior = function(par, prior = list(), add.type = NULL, ind = rep("", length
   type <- unique(unlist(lapply(par, function(par) 
     unlist(regmatches(par, gregexpr("[^_]*", par)))[1])))
   if (length(type) > 1) stop("Only one parameter type can be handled at once")
-  if (!is.null(add.type)) {
-    type <- c(type, paste0(type,"_",add.type))
+  if (!is.null(add_type)) {
+    type <- c(type, paste0(type,"_",add_type))
     if (!all(grepl(type[2], par))) 
       stop("Additional parameter type not present in all parameters")
   }  

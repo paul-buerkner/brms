@@ -66,15 +66,15 @@ rename_pars <- function(x, ...) {
   }  
   group <- names(x$ranef)
   if (length(x$ranef)) {
-    for (j in 1:length(x$ranef)) {
-      change[[length(change)+1]] <- list(pos = grepl(paste0("^sd_",group[j],"(\\[|$)"), pars),
-                                         oldname = paste0("sd_",group[j]),
-                                         pnames = paste0("sd_",group[j],"_", x$ranef[[j]]),
-                                         fnames = paste0("sd_",group[j],"_", x$ranef[[j]]))
-      if (length(x$ranef[[j]]) > 1 && ee$cor[[j]]) {
-        cor_names <- get_cornames(x$ranef[[j]], type = paste0("cor_",group[j]), brackets = FALSE)
-        change[[length(change)+1]] <- list(pos = grepl(paste0("^cor_",group[j],"(\\[|$)"), pars),
-                                           oldname = paste0("cor_",group[j]),
+    for (i in 1:length(x$ranef)) {
+      change[[length(change)+1]] <- list(pos = grepl(paste0("^sd_",i,group[i],"(\\[|$)"), pars),
+                                         oldname = paste0("sd_",i,group[i]),
+                                         pnames = paste0("sd_",group[i],"_", x$ranef[[i]]),
+                                         fnames = paste0("sd_",group[i],"_", x$ranef[[i]]))
+      if (length(x$ranef[[i]]) > 1 && ee$cor[[i]]) {
+        cor_names <- get_cornames(x$ranef[[i]], type = paste0("cor_",group[i]), brackets = FALSE)
+        change[[length(change)+1]] <- list(pos = grepl(paste0("^cor_",i,group[i],"(\\[|$)"), pars),
+                                           oldname = paste0("cor_",i,group[i]),
                                            pnames = cor_names,
                                            fnames = cor_names) 
       }
