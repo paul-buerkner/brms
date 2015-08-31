@@ -304,7 +304,7 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
                        autocor = autocor, partial = partial) 
     x$model <- stan_model(formula = formula, data = data, family = family, link = link, prior = prior, 
                           autocor = autocor, partial = partial, threshold = threshold, 
-                          cov.ranef = names(cov.ranef), sample.prior = sample.prior, 
+                          names_cov_ranef = names(cov.ranef), sample.prior = sample.prior, 
                           save.model = save.model)
     x$fit <- get_stanmodel(suppressMessages(stan(model_code = x$model, data = x$data,
                model_name = paste0(family,"(",link,") brms-model"), chains = 0)))
