@@ -87,7 +87,7 @@ test_that("Test that brmdata returns correct values for addition arguments", {
   expect_equal(brmdata(y | trials(c) ~ 1, data = data.frame(y = 1:9, c = 11:19), 
                         family = "binomial")$max_obs, 11:19)
   expect_equal(brmdata(y | cat(c) ~ 1, data = data.frame(y = 1:9, c = 11:19), 
-                        family = "categorical")$max_obs, 11:19)
+                        family = "categorical")$max_obs, 19)
 })
 
 test_that("Test that brmdata rejects incorrect addition arguments", {

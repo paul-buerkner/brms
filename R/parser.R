@@ -96,6 +96,10 @@ extract_effects <- function(formula, ..., family = "none") {
 } 
 
 # extract time and grouping variabels for correlation structure
+# 
+# @formula a one sided formula of the form ~ time|group typically taken from a cor_brms object
+# 
+# @return a list with elements time, group, and all, where all contains a formula with all variables in formula
 extract_time <- function(formula) {
   if (is.null(formula)) return(NULL)
   formula <- gsub(" ","",Reduce(paste, deparse(formula))) 
@@ -116,6 +120,12 @@ extract_time <- function(formula) {
 }
 
 # incorporate addition and partial arguments into formula 
+# 
+# @param formula a model formula 
+# @param addition a list with one sided formulas taken from the addition arguments in brm
+# @param partial a one sided formula containing partial effects
+#
+# @return an updated formula containing the addition and partial effects
 update_formula <- function(formula, addition = NULL, partial = NULL) {
   var_names <- names(addition)
   addition <- lapply(addition, formula2string, rm = 1)
@@ -131,9 +141,13 @@ update_formula <- function(formula, addition = NULL, partial = NULL) {
   update.formula(formula, formula(fnew))
 }
 
-#find all valid object names in a string
+# find all valid object names in a string (used in method hypothesis in s3.methods.R)
+# 
+# @x a character string
+#
+# @return all valid variable names within the string
 find_names <- function(x) {
-  if (!is.character(x)) stop("x must be of class character")
+  if (!is.character(x) || length(x) > 1) stop("x must be a character string of length 1")
   pos_fun <- gregexpr("([^([:digit:]|[:punct:])]|\\.|_)[[:alnum:]_\\.]*\\(", x)[[1]]
   pos_decnum <- gregexpr("\\.[[:digit:]]+", x)[[1]]
   pos_var <- list(rmMatch(gregexpr("([^([:digit:]|[:punct:])]|\\.|_)[[:alnum:]_\\.]*(\\[[[:digit:]]*\\])?", x)[[1]], 
@@ -142,6 +156,11 @@ find_names <- function(x) {
 }
 
 #checks if x is formula (or list of formulas)
+#
+# @param x s formula or a list of formulas
+# @param or logical; indicates if any element must be a formula (or = TRUE) or if all elements must be formulas
+# 
+# @return TRUE or FALSE 
 is.formula <- function(x, or = TRUE) {
   if (!is.list(x)) x <- list(x)
   out <- sapply(x, function(y) is(y, "formula"))
@@ -150,8 +169,14 @@ is.formula <- function(x, or = TRUE) {
   out
 }
 
-#converts formula to string
-formula2string <- function(formula, rm = c(0,0)) {
+# converts formula to string
+#
+# @param formula a model formula
+# @param rm a vector of to elements indicating how many characters should be removed at the beginning
+#  and end of the string respectively
+#
+# @return the formula as string 
+formula2string <- function(formula, rm = c(0, 0)) {
   if (!is.formula(formula))
     stop(paste(deparse(substitute(formula)),"must be of class formula"))
   if (is.na(rm[2])) rm[2] <- 0

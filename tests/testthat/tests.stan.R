@@ -46,21 +46,13 @@ test_that("Test that stan_eta returns correct strings for autocorrelation models
 })
 
 test_that("Test_that stan_ma returns correct strings (or errors) for moving average models", {
-  expect_equal(stan_ma(family = "gaussian", link = "log", group = list("g1", "g2"), 
-                       levels = c(120,60), N = 240, autocor = cor.arma()), list())
-  expect_match(stan_ma(family = "poisson", link = "log", group = list("g1", "g2"), 
-                       levels = c(240,60), N = 240, autocor = cor.arma(~visit|patient, q=1))$transC2,
-               "Ema[n+1,i] <- r_g1[n+1-i]", fixed = TRUE)
-  expect_match(stan_ma(family = "gaussian", link = "log", group = list("g1", "g2"), 
-                       levels = c(120,60), N = 240, autocor = cor.arma(~visit|patient, q=1))$transC2,
+  expect_equal(stan_ma(family = "gaussian", link = "log", autocor = cor.arma()), list())
+  expect_match(stan_ma(family = "gaussian", link = "log", autocor = cor.arma(~visit|patient, q=1))$transC2,
                "Ema[n+1,i] <- e[n+1-i]", fixed = TRUE)
-  expect_match(stan_ma(family = "multinormal", link = "inverse", group = "g1", 
-                       levels = 60, N = 240, autocor = cor.arma(~visit|patient, q=1))$transC2,
+  expect_match(stan_ma(family = "multinormal", link = "inverse", autocor = cor.arma(~visit|patient, q=1))$transC2,
                "e[n] <- inv(Y[m,k]) - eta[n]", fixed = TRUE)
-  expect_error(stan_ma(family = "poisson", link = "log", group = list("g1", "g2"), 
-                       levels = c(120,60), N = 240, autocor = cor.arma(~visit|patient, p=1, q=1)),
-               paste0("moving-average models for family poisson require a random effect with the same number \n",
-                      "of levels as observations in the data"))
+  expect_error(stan_ma(family = "poisson", link = "log", autocor = cor.arma(~visit|patient, p=1, q=1)),
+               "moving-average models for family poisson are not yet implemented")
 })  
 
 test_that("Test that stan_model accepts supported links", {
@@ -135,14 +127,13 @@ test_that("Test that stan_rngprior returns correct sampling statements for prior
                list(par = "  real<lower=0> prior_delta; \n", model = "  prior_delta ~ normal(0,1); \n"))
   expect_equal(stan_rngprior(TRUE, prior = "b ~ normal(0,5); \n"),
                list(genD = "  real prior_b; \n", genC = "  prior_b <- normal_rng(0,5); \n"))
-  expect_equal(stan_rngprior(TRUE, prior = "b[1] ~ normal(0,5); \n", fixed = c("x1", "x2")),
+  expect_equal(stan_rngprior(TRUE, prior = "b[1] ~ normal(0,5); \n"),
                list(genD = "  real prior_b_1; \n", genC = "  prior_b_1 <- normal_rng(0,5); \n"))
-  expect_equal(stan_rngprior(TRUE, prior = "bp[1] ~ normal(0,5); \n", partial = c("x1", "x2")),
+  expect_equal(stan_rngprior(TRUE, prior = "bp[1] ~ normal(0,5); \n"),
                list(genD = "  real prior_bp_1; \n", genC = "  prior_bp_1 <- normal_rng(0,5); \n"))
-  expect_equal(stan_rngprior(TRUE, prior = "sigma[2] ~ normal(0,5); \n", response = c("y1", "y2")),
+  expect_equal(stan_rngprior(TRUE, prior = "sigma[2] ~ normal(0,5); \n"),
                list(par = "  real<lower=0> prior_sigma_2; \n", model = "  prior_sigma_2 ~ normal(0,5); \n"))
-  expect_equal(stan_rngprior(TRUE, prior = "sd_1[1] ~ normal(0,5); \n  sd_1[2] ~ cauchy(0,2); \n",
-                             group = list("id"), random = list(c("x1", "x2"))),
+  expect_equal(stan_rngprior(TRUE, prior = "sd_1[1] ~ normal(0,5); \n  sd_1[2] ~ cauchy(0,2); \n"),
                list(par = "  real<lower=0> prior_sd_1_1; \n  real<lower=0> prior_sd_1_2; \n", 
                     model = "  prior_sd_1_1 ~ normal(0,5); \n  prior_sd_1_2 ~ cauchy(0,2); \n"))
 })

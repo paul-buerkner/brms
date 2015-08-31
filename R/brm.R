@@ -99,8 +99,8 @@
 #'   to \code{success | trials(n)} in \code{brms} syntax. If the number of trials
 #'   is constant across all observation (say \code{10}), we may also write \code{success | trials(10)}. 
 #'   
-#'   For family \code{categorical} and all ordinal families, \code{addition} may contain a term \code{cat(categories)} to
-#'   specify the number categories for each observation, either with a variable name (e.g, \code{categories} in this example) or a single number.
+#'   For family \code{categorical} and all ordinal families, \code{addition} may contain a term \code{cat(number)} to
+#'   specify the number categories (e.g, \code{cat(7)}. If not given, the number of categories is calculated from the data.
 #'   
 #'   With the expection of \code{categorical} and ordinal families, left and right censoring can be modeled through \code{yi | cens(censored) ~ predictors}.
 #'   The censoring variable (named \code{censored} in this example) should contain the values \code{'left'}, \code{'none'}, and \code{'right'}  

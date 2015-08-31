@@ -254,13 +254,11 @@ change_prior_names <- function(class, pars, names = NULL, new_class = class) {
   pos_priors <- which(grepl(paste0("^prior_",class,"(_|$)"), pars))
   if (length(pos_priors)) {
     priors <- gsub(paste0("^prior_",class), paste0("prior_",new_class), pars[pos_priors])
-    print(priors)
     digits <- sapply(priors, function(prior) {
       d <- regmatches(prior, gregexpr("_[[:digit:]]+$", prior))[[1]]
       if (length(d)) as.numeric(substr(d, 2, nchar(d))) else 0
     })
-    print(digits)
-    if (sum(abs(digits)) > 0 && is.null(names)) stop("names are needed")
+    if (sum(abs(digits)) > 0 && is.null(names)) stop("argument names is missing")
     for (i in 1:length(priors)) {
       if (digits[i]) priors[i] <- gsub("[[:digit:]]+$", names[digits[i]], priors[i])
       change[[length(change)+1]] <- list(pos = pos_priors[i], 
