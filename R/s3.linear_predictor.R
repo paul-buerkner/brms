@@ -63,12 +63,23 @@ linear_predictor.brmsfit <- function(x, ...) {
   eta
 }
 
-#compute eta for fixed effects
+# compute eta for fixed effects
+#
+# @param X fixed effects design matrix
+# @param b fixed effects samples
+# 
+# @return linear predictor for fixed effects
 fixef_predictor <- function(X, b) {
   as.matrix(b) %*% t(as.matrix(X))
 }
   
-#compute eta for random effects
+# compute eta for random effects
+#  
+# @param Z random effects design matrix
+# @param gf levels of grouping factor for each observation
+# @param r random effects samples
+#
+# @return linear predictor for random effects
 ranef_predictor <- function(Z, gf, r) {
   Z <- expand_matrix(Z, gf)
   nlevels <- length(unique(gf))
@@ -77,9 +88,16 @@ ranef_predictor <- function(Z, gf, r) {
 }
 
 #compute eta for moving average effects
+#
+# @param data the data initially passed to stan
+# @param ma moving average samples 
+# @param eta previous linear predictor samples
+# @param link
+#
+# @param new linear predictor samples updated by moving average effects
 ma_predictor <- function(data, ma, eta, link = "identity") {
   ma <- as.matrix(ma)
-  K <- 1:ncol(ma)
+  K <- ncol(ma)
   Ks <- 1:K
   Y <- link(data$Y, link)
   N <- length(Y)
@@ -97,7 +115,13 @@ ma_predictor <- function(data, ma, eta, link = "identity") {
   eta
 }
 
-#compute etap for partial and categorical effects
+# compute etap for partial and categorical effects
+# 
+# @param Xp partial design matrix 
+# @param p partial effects samples
+# @param max_obs number of categories
+#
+# @return linear predictor of partial effects as a 3D array (not as a matrix)
 partial_predictor <- function(Xp, p, max_obs) {
   max_obs <- max(max_obs)
   etap <- array(0, dim = c(nrow(p), nrow(Xp), max_obs-1))
@@ -107,7 +131,12 @@ partial_predictor <- function(Xp, p, max_obs) {
   etap
 }
 
-#expand a matrix into a sparse matrix of higher dimension
+# expand a matrix into a sparse matrix of higher dimension
+# 
+# @param A matrix to be expanded
+# @param x levels to expand the matrix
+#
+# @return An expanded matrix of dimensions nrow(A) and ncol(A) * length(unique(x)) 
 expand_matrix <- function(A, x) {
   A <- as.matrix(A)
   if (length(x) != nrow(A))
