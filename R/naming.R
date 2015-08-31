@@ -290,14 +290,15 @@ change_prior_names <- function(class, pars, names = NULL, new_class = class) {
 #'           data = epilepsy, family = "poisson")          
 #' 
 #' @export
-parnames.formula <- function(x, data = NULL, family = "gaussian", autocor = NULL, 
-                              partial = NULL, threshold = "flexible", internal = FALSE, ...) {
+parnames.formula <- function(x, data = NULL, family = "gaussian", addition = NULL, autocor = NULL, 
+                             partial = NULL, threshold = "flexible", internal = FALSE, ...) {
   if (is.null(autocor)) autocor <- cor_arma()
   if (!is(autocor, "cor_brms")) stop("cor must be of class cor_brms")
   if (!threshold %in% c("flexible","equidistant")) 
     stop("threshold must be either flexible or equidistant")
   family <- check_family(family[1])
-  ee <- extract_effects(x, family = family)
+  x <- update_formula(x, addition = addition)
+  ee <- extract_effects(x, partial, family = family)
   data <- update_data(data, family = family, effects = ee)
   out <- list(fixef = paste0("b_",colnames(get_model_matrix(ee$fixed, data = data))),
               ranef = list(), other = NULL)
@@ -339,7 +340,7 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian", autoco
   
   #check if parameter names in prior are correct
   ee <- extract_effects(formula, family = family)  
-  possible_priors <- unlist(par.names(formula, data = data, family = family, autocor = autocor,
+  possible_priors <- unlist(parnames(formula, data = data, family = family, autocor = autocor,
                                       partial = partial, threshold = threshold, internal = TRUE), use.names = FALSE)
   meta_priors <- unlist(regmatches(possible_priors, gregexpr("^[^_]+", possible_priors)))
   if ("sd" %in% meta_priors)

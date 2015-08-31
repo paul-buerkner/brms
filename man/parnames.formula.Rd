@@ -5,8 +5,8 @@
 \title{Extract parameter names}
 \usage{
 \method{parnames}{formula}(x, data = NULL, family = "gaussian",
-  autocor = NULL, partial = NULL, threshold = "flexible",
-  internal = FALSE, ...)
+  addition = NULL, autocor = NULL, partial = NULL,
+  threshold = "flexible", internal = FALSE, ...)
 }
 \arguments{
 \item{x}{An object of class \code{formula}}
@@ -20,6 +20,12 @@ typically the environment from which \code{brm} is called. Although it is option
 \code{"geometric"}, \code{"gamma"}, \code{"exponential"}, \code{"weibull"}, \code{"cumulative"}, \code{"cratio"}, \code{"sratio"}, and \code{"acat"}.
 The second string indicates the link function, which must be supported by the distribution of the dependent variable.
 If not specified, default link functions are used. Further information is provided under 'Details'.}
+
+\item{addition}{A named list of one sided formulas each containing additional information on the response variable. The following names are allowed:
+\code{se} for specifying standard errors for meta-analysis, \code{weights} to fit weighted regression models,
+\code{trials} to specify the number of trials per observation in binomial models, \code{cat} to specify the number of categories in
+categorical or ordinal models, and \code{cens} to indicate censoring. Alternatively, the \code{addition} arguments can be incorporated directly into \code{formula}.
+See 'Formula Syntax' under 'Details' for further information.}
 
 \item{autocor}{An optional \code{\link{cor_brms}} object describing the correlation structure within the response variable (i.e. the 'autocorrelation').
 See the documentation of \code{\link{cor_brms}} for a description of the available correlation structures.

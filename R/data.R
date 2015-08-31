@@ -265,9 +265,10 @@ get_model_matrix <- function(formula, data = environment(formula), rm.int = FALS
 }
 
 #calculate design matrix for autoregressive effects
-# data: standata
-# p: autocor$p
-# group: vector containing the grouping variable for each observation
+#
+# @param Y a vector containing the response variable
+# @param p autocor$p
+# @param group vector containing the grouping variable for each observation
 ar_design_matrix <- function(Y, p, group)  { 
   if (length(Y) != length(group)) 
     stop("Y and group must have the same length")
