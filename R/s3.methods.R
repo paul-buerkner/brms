@@ -164,12 +164,11 @@ prior_samples.brmsfit <- function(x, parameters = NA, ...) {
   par_names <- parnames(x)
   prior_names <- par_names[grepl("^prior_", par_names)]
   if (length(prior_names)) {
-    samples <- posterior_samples(x, parameters = prior_names, fixed = TRUE)
+    samples <- posterior_samples(x, parameters = prior_names, exact_match = TRUE)
     names(samples) <- sub("^prior_", "", prior_names)
     if (!anyNA(parameters)) {
       samples <- data.frame(rmNULL(lapply(parameters, function(par) {
-        matches <- lapply(paste0("^",sub("^prior_", "", prior_names)), regexpr, 
-                          text = par)
+        matches <- lapply(paste0("^",sub("^prior_", "", prior_names)), regexpr, text = par)
         matches <- unlist(lapply(matches, attr, which = "match.length"))
         if (max(matches) == -1) NULL
         else structure(list(samples[,match(max(matches), matches)]), names = par)
@@ -347,7 +346,7 @@ residuals.brmsfit <- function(object, type = c("ordinary", "pearson"), summary =
     res <- res / sqrt(mu * (max_obs - mu) / max_obs)  
   
   # for compatibility with the macf function (see misc.R)
-  # so that colnames of the outout correspond to levels of the autocor grouping factor
+  # so that the colnames of the output correspond to the levels of the autocor grouping factor
   if (is(object$autocor, "cor_arma") && sum(object$autocor$p, object$autocor$q) > 0) {
     tgroup <- extract_time(object$autocor$formula)$group
     if (nchar(tgroup)) colnames(res) <- object$data[[tgroup]]
@@ -394,18 +393,22 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", alpha = 0.05, ...) {
       stop(paste("The following parameters cannot be found in the model:", 
                  paste0(gsub("__", ":", parsH[which(!parsH %in% pars)]), collapse = ", ")))
     
-    #get posterior samples
-    samples <- posterior_samples(x, parameters = rename(parsH, "__", ":"), fixed = TRUE)
-    names(samples) <- rename(names(samples), symbols = c(paste0("^",class), ":"), 
-                             subs = c("", "__"), fixed = FALSE)
-    samples <- matrix(with(samples, eval(parse(text = rename(h, c("[", "]"), c("OB", "CB"))))), ncol=1)
+    # prepare for renaming of parameters so that h can be evaluated
+    parsH <- rename(parsH, "__", ":")
+    h_renamed <- rename(h, c("[", "]"), c(".", "."))
+    symbols <- c(paste0("^",class), ":", "\\[", "\\]")
+    subs <- c("", "__", ".", ".")
     
-    #get prior samples
-    prior_samples <- prior_samples(x, parameters = rename(parsH, "__", ":"), fixed = TRUE)
+    # get posterior samples
+    samples <- posterior_samples(x, parameters = parsH, exact_match = TRUE)
+    names(samples) <- rename(names(samples), symbols = symbols, subs = subs, fixed = FALSE)
+    samples <- matrix(with(samples, eval(parse(text = h_renamed))), ncol=1)
+    
+    # get prior samples
+    prior_samples <- prior_samples(x, parameters = parsH, fixed = TRUE)
     if (!is.null(prior_samples) && ncol(prior_samples) == length(varsH)) {
-      names(prior_samples) <- rename(names(prior_samples), symbols = c(paste0("^",class), ":"), 
-                                     subs = c("", "__"), fixed = FALSE)
-      prior_samples <- matrix(with(prior_samples, eval(parse(text = rename(h, c("[", "]"), c("OB", "CB"))))), ncol=1)
+      names(prior_samples) <- rename(names(prior_samples), symbols = symbols, subs = subs, fixed = FALSE)
+      prior_samples <- matrix(with(prior_samples, eval(parse(text = h_renamed))), ncol=1)
     } else prior_samples <- NULL
 
     #evaluate hypothesis

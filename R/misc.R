@@ -1,4 +1,8 @@
 # convert array to list of elements with reduced dimension
+#
+# @param x an arrary of dimension d
+#
+# @return a list of arrays of dimension d-1
 array2list <- function(x) {
   if (is.null(dim(x))) stop("Argument x has no dimension")
   n.dim <- length(dim(x))
@@ -10,7 +14,11 @@ array2list <- function(x) {
   l
 }
 
-#convert list to array of increased dimension
+# convert list to array of increased dimension
+#
+# @param x a list containing arrary of dimension d
+#
+# @return an arrary of dimension d+1
 list2array <- function(x) {
   if (!is.list(x) || length(x) == 0) 
     stop("x must be a non-empty list")
@@ -28,16 +36,19 @@ list2array <- function(x) {
   a
 }
 
+# check if an object is NULL
 isNULL <- function(x) is.null(x) || ifelse(is.vector(x), all(sapply(x, is.null)), FALSE)
 
+# recursively removes NULL entries from an object
 rmNULL <- function(x) {
   x <- Filter(Negate(isNULL), x)
   lapply(x, function(x) if (is.list(x)) rmNULL(x) else x)
 }
 
+# remove all numeric elements from an object
 rmNum <- function(x) x[sapply(x, Negate(is.numeric))]
 
-#remove all elements in x that also appear in ... while keeping all attributes
+# remove all elements in x that also appear in ... while keeping all attributes
 rmMatch <- function(x, ...) {
   att <- attributes(x)
   keep <- which(!(x %in% c(...)))
@@ -47,33 +58,40 @@ rmMatch <- function(x, ...) {
   x
 } 
 
-#check if x is a whole number (integer)
+# check if x is a whole number (integer)
 is.wholenumber <- function(x, tol = .Machine$double.eps^0.5) {  
   if (!is.numeric(x)) return(FALSE)
   else return(abs(x - round(x)) < tol)
 }  
 
-#wrapper for paste with collapse
+# wrapper for paste with collapse
 collapse <- function(..., sep = "")
   paste(..., sep = sep, collapse = "")
 
 
-#find the first element in row that is greater than target (function is vectorized)
+# find the first element in A that is greater than target
+#
+# @param A a matrix
+# @param target a vector of length nrow(A)
+# @param i column of A being checked first
+#
+# @return a vector of the same length as target 
+#   containing the column ids where A[,i] was first greater than target
 first_greater <- function(A, target, i = 1) {
   ifelse(target <= A[,i] | ncol(A) == i, i, first_greater(A, target, i+1))
 }
 
-#compute the logit
+# compute the logit
 logit <- function(p) {
   log(p/(1-p))
 }
 
-#compute the inverse of logit
+# compute the inverse of logit
 ilogit <- function(x) { 
   exp(x) / (1 + exp(x))
 }
 
-#apply the link function on x
+# apply the link function on x
 link <- function(x, link) {
   if (link == "identity") x
   else if (link == "log") log(x)
@@ -86,7 +104,7 @@ link <- function(x, link) {
   else stop(paste("Link", link, "not supported"))
 }
 
-#apply the inverse link function on x
+# apply the inverse link function on x
 ilink <- function(x, link) {
   if (link == "identity") x
   else if (link == "log") exp(x)
@@ -99,7 +117,15 @@ ilink <- function(x, link) {
   else stop(paste("Link", link, "not supported"))
 }
 
-#calculate estimates over posterior samples 
+# calculate estimates over posterior samples 
+# 
+# @param coef coefficient to be applied on the samples (e.g., "mean")
+# @param samples the samples over which to apply coef
+# @param margin see apply
+# @param to.array logical; should theresult be transformed into an array of increased dimension?
+# @param ... additional arguments passed to get(coef)
+#
+# @return typically a matrix with colnames(samples) as colnames
 get_estimate <- function(coef, samples, margin = 2, to.array = FALSE, ...) {
   dots <- list(...)
   args <- list(X = samples, MARGIN = margin, FUN = coef)
