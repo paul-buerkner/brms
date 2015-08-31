@@ -5,7 +5,7 @@ fixef.brmsfit <-  function(x, estimate = "mean", ...) {
   pars <- parnames(x)
   fpars <- pars[grepl("^b_", pars)]
   if (!length(fpars)) stop(paste("No fixed effect present in argument x")) 
-  out <- posterior_samples(x, parameters = paste0("^",fpars,"$"))
+  out <- posterior_samples(x, parameters = fpars, exact_match = TRUE)
   out <- do.call(cbind, lapply(estimate, get_estimate, samples = out, ...))
   rownames(out) <- gsub("^b_", "", fpars)
   out
@@ -30,7 +30,7 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, ...) {
       stop(paste0("The model does not contain random effects for group '",g,"'\n",
                   "You should use argument ranef = TRUE in function brm."))
     rdims <- x$fit@sim$dims_oi[[paste0("r_",group[i])]]
-    rs <- posterior_samples(x, parameters = rpars, fixed = TRUE)
+    rs <- posterior_samples(x, parameters = rpars, exact_match = TRUE)
     ncol <- ifelse(is.na(rdims[2]), 1, rdims[2])
     rs_array <- array(dim = c(rdims[1], ncol, nrow(rs)))
     k <- 0
@@ -67,7 +67,7 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
   # extracts samples for sd, cor and cov
   extract <- function(p) {
     nr <- length(p$sd_pars)
-    sd <- posterior_samples(x, parameters = paste0("^",p$sd_pars,"$"))
+    sd <- posterior_samples(x, parameters = p$sd_pars, exact_match = TRUE)
     nsamples <- nrow(sd)
     out <- list(sd = do.call(cbind, lapply(estimate, get_estimate, samples = sd, ...)))
     rownames(out$sd) <- p$rnames 
@@ -128,13 +128,16 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
 }
 
 #' @export
-posterior_samples.brmsfit <- function(x, parameters = NA, add.chains = FALSE, ...) {
+posterior_samples.brmsfit <- function(x, parameters = NA, exact_match = FALSE, add_chains = FALSE, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
   pars <- parnames(x)
   if (!(anyNA(parameters) || is.character(parameters))) 
     stop("Argument parameters must be NA or a character vector")
-  if (!anyNA(parameters)) pars <- pars[apply(sapply(parameters, grepl, x = pars, ...), 1, any)]
+  if (!anyNA(parameters)) {
+    if (exact_match) pars <- pars[pars %in% parameters]
+    else pars <- pars[apply(sapply(parameters, grepl, x = pars, ...), 1, any)]
+  } 
   
   iter <- attr(x$fit@sim$samples[[1]],"args")$iter
   warmup <- attr(x$fit@sim$samples[[1]],"args")$warmup
@@ -146,7 +149,7 @@ posterior_samples.brmsfit <- function(x, parameters = NA, add.chains = FALSE, ..
       unlist(lapply(1:chains, function(j) 
         x$fit@sim$samples[[j]][[pars[i]]][(warmup/thin+1):(iter/thin)]))))
     names(samples) <- pars
-    if (add.chains) {
+    if (add_chains) {
       samples$chains <- factor(do.call(c, lapply(1:chains, rep, times = nrow(samples)/chains)))
       samples$iter <- rep((warmup+1):(nrow(samples)/chains+warmup), chains)
     }

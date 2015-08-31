@@ -53,7 +53,7 @@ plot.brmsfit <- function(x, parameters = NA, N = 5, ask = TRUE, ...) {
   if (!is.character(parameters)) 
     parameters <- c("^b_", "^sd_", "^cor_", "^sigma", "^rescor", "^nu$", 
                     "^shape$", "^delta$", "^ar", "^ma")
-  samples <- posterior.samples(x, parameters = parameters, add.chains = TRUE)
+  samples <- posterior.samples(x, parameters = parameters, add_chains = TRUE)
   pars <- names(samples)[which(!names(samples) %in% c("chains", "iter"))] 
   
   default.ask <- grDevices::devAskNewPage()

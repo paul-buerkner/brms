@@ -200,7 +200,8 @@ hypothesis <- function(x, hypothesis, class = "b", alpha = 0.05, ...)
 #' @param x An \code{R} object typically of class \code{brmsfit}
 #' @param parameters Name of parameters for which posterior samples should be returned, as given by a character vector or regular expressions.
 #'   By default, all posterior samples of all parameters are extracted
-#' @param add.chains A flag indicating if the returned data.frame should contain information on the chains
+#' @param exact_match Indicates whether parameter names should be matched exactly or treated as regular expression. Default is \code{FALSE}.
+#' @param add_chains A flag indicating if the returned data.frame should contain information on the chains
 #' @param ... Currently ignored
 #'   
 #' @details Currently there are methods for \code{brmsfit} objects.
@@ -223,11 +224,11 @@ hypothesis <- function(x, hypothesis, class = "b", alpha = 0.05, ...)
 #' }
 #' 
 #' @export 
-posterior_samples <- function(x, parameters = NA, add.chains = FALSE,...)
+posterior_samples <- function(x, parameters = NA, exact_match = FALSE, add_chains = FALSE,...)
   UseMethod("posterior_samples")
 
 #' @export 
-posterior.samples <- function(x, parameters = NA, add.chains = FALSE,...)
+posterior.samples <- function(x, parameters = NA, exact_match = FALSE, add_chains = FALSE,...)
   UseMethod("posterior_samples")
 
 #' Extract prior samples
