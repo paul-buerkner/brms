@@ -550,7 +550,7 @@ stan_rngprior <- function(sample.prior, priors = "", family = "gaussian", fixed 
     priors <- gsub(" ", "", paste0("\n",priors))
     pars <- gsub("\\\n|to_vector\\(|\\)", "", regmatches(priors, gregexpr("\\\n[^~]+", priors))[[1]])
     take <- !grepl("^pre_", pars)
-    pars <- rename(pars[take], symbols = c("^L_", "^rescorL_"), subs = c("cor_", "rescor_"), 
+    pars <- rename(pars[take], symbols = c("^L_", "^Lrescor"), subs = c("cor_", "rescor"), 
                    fixed = FALSE)
     dis <- gsub("~", "", regmatches(priors, gregexpr("~[^\\(]+", priors))[[1]])[take]
     args <- regmatches(priors, gregexpr("\\([^;]+\\);", priors))[[1]][take]

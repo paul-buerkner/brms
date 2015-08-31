@@ -1,4 +1,12 @@
-#  rename certain symbols in a character vector
+# rename certain symbols in a character vector
+# 
+# @param names a character vector of names to be renamed
+# @param symbols the regular expressions in names to be replaced
+# @param subs the replacements
+# @param fixed same as for sub, grepl etc
+# @param check_dup logical; check for duplications in names after renaming
+# 
+# @return renamed parameter vector of the same length as names
 rename <- function(names, symbols = NULL, subs = NULL, fixed = TRUE, check_dup = FALSE) {
   if (is.null(symbols))
     symbols <- c(" ", "(", ")", "[", "]", ",", "+", "-", "*", "/", "^", "=", "!=")
@@ -17,6 +25,14 @@ rename <- function(names, symbols = NULL, subs = NULL, fixed = TRUE, check_dup =
 }
 
 # combine elements of a list that have the same name
+#
+# @param x a list
+#
+# @return a list of possibly reducte length.
+# 
+# @examples
+# combine_duplicates(list(a = 1, a = c(2,3)))
+# #becomes list(a = c(1,2,3)) 
 combine_duplicates <- function(x) {
   if (!is.list(x)) stop("x must be a list")
   if (is.null(names(x))) stop("elements of x must be named")
@@ -29,8 +45,14 @@ combine_duplicates <- function(x) {
   new_list
 }
 
-#get correlation names
-get_cornames <- function(names, type = "cor", pars = NULL, group = "", brackets = TRUE) {
+# get correlation names as combinations of variable names
+# 
+# @param names the variable names 
+# @param type of the correlation to be put in front of the returned strings
+# @param brackets should the correlation names contain brackets or underscores as seperators
+#
+# @return the correlation names
+get_cornames <- function(names, type = "cor", brackets = TRUE) {
   cor_names <- NULL
   if (is.null(pars) && length(names) > 1) {
     for (i in 2:length(names)) {
@@ -39,18 +61,17 @@ get_cornames <- function(names, type = "cor", pars = NULL, group = "", brackets 
         else cor_names <- c(cor_names, paste0(type,"_",names[j],"_",names[i]))
       }
     }
-  } else if (!is.null(pars)) {
-    possible_values <- get_cornames(names = names, type = "", brackets = FALSE)
-    pars <- rename(pars, paste0("^",type,"_",group), "", fixed = FALSE)
-    matches <- which(possible_values %in% pars)
-    cor_names <-  get_cornames(names = names, type = type)[matches]
-  }
+  } 
   cor_names
 }
 
-# rename parameters within the stanfit object 
-# to ensure full compatibility with all S3 method and with shinystan 
-rename_pars <- function(x, ...) {
+# rename parameters (and possibly change their dimensions) within the stanfit object 
+# to ensure reasonable parameter names for summary, plot, launch_shiny etc.
+# 
+# @param x a brmsfit obejct
+#
+# @return a brmfit object with adjusted parameter names and dimensions
+rename_pars <- function(x) {
   if (!length(x$fit@sim)) return(x)
   chains <- length(x$fit@sim$samples) 
   n_pars <- length(x$fit@sim$fnames_oi)
@@ -65,11 +86,15 @@ rename_pars <- function(x, ...) {
   
   #find positions of parameters and define new names
   f <- colnames(x$data$X)
-  if (length(f) && x$family != "categorical") 
+  if (length(f) && x$family != "categorical") {
     change[[length(change)+1]] <- list(pos = grepl("^b\\[", pars), 
                                        oldname = "b", 
                                        pnames = paste0("b_",f), 
                                        fnames = paste0("b_",f))
+    #change prior parameters
+    change <- c(change, change_prior_names(class = "b", pars = pars, names = f))
+  }
+  
   if (is.formula(x$partial) || x$family == "categorical") {
     if (x$family == "categorical") p <- colnames(x$data$X)
     else p <- colnames(x$data$Xp)
@@ -82,6 +107,8 @@ rename_pars <- function(x, ...) {
                                        dim = thres,
                                        sort = unlist(lapply(1:length(p), function(k) 
                                          seq(k, thres*length(p), length(p)))))
+    #change prior parameters 
+    change <- c(change, change_prior_names(class = "bp", pars = pars, names = p, new_class = "b"))
   }  
   
   if (length(x$ranef)) {
@@ -92,12 +119,19 @@ rename_pars <- function(x, ...) {
                                          oldname = paste0("sd_",i),
                                          pnames = paste0("sd_",group[i],"_", x$ranef[[i]]),
                                          fnames = paste0("sd_",group[i],"_", x$ranef[[i]]))
+      #change prior parameters
+      change <- c(change, change_prior_names(class = paste0("sd_",i), pars = pars, names = x$ranef[[i]],
+                                             new_class = paste0("sd_",group[i])))
+      
       if (length(x$ranef[[i]]) > 1 && ee$cor[[i]]) {
         cor_names <- get_cornames(x$ranef[[i]], type = paste0("cor_",group[i]), brackets = FALSE)
         change[[length(change)+1]] <- list(pos = grepl(paste0("^cor_",i,"(\\[|$)"), pars),
                                            oldname = paste0("cor_",i),
                                            pnames = cor_names,
                                            fnames = cor_names) 
+        #change prior parameters
+        change <- c(change, change_prior_names(class = paste0("cor_",i), pars = pars, 
+                                               new_class = paste0("cor_",group[i])))
       }
       if (any(grepl("^r_", pars))) {
         lc <- length(change) + 1
@@ -124,7 +158,10 @@ rename_pars <- function(x, ...) {
                                       oldname = "sigma",
                                       pnames = paste0("sigma_",ee$response),
                                       fnames = paste0("sigma_",ee$response))
-    if (x$family == "gaussian" && length(ee$response) > 1) {
+   #change prior parameters
+   change <- c(change, change_prior_names(class = "sigma", pars = pars, names = ee$response))
+   #rename residual correlation paramaters
+   if (x$family == "gaussian" && length(ee$response) > 1) {
       rescor_names <- paste0("rescor_",unlist(lapply(2:length(ee$response), function(j) 
           lapply(1:(j-1), function(k) paste0(ee$response[k],"_",ee$response[j])))))
      change[[length(change)+1]] <- list(pos = grepl("^rescor\\[", pars), 
@@ -133,22 +170,6 @@ rename_pars <- function(x, ...) {
                                         fnames = rescor_names)
     }
   } 
-  
-  #prepare for renaming of priors
-  if (any(grepl("^prior_", pars))) {
-    pos_priors_b <- which(grepl("^prior_b_[[:digit:]]+$", pars))
-    if (length(pos_priors_b)) {
-      priors_b <- pars[pos_priors_b]
-      digits <- as.numeric(unlist(regmatches(priors_b, gregexpr("[[:digit:]]+$", priors_b))))
-      for (i in 1:length(priors_b)) {
-        priors_b[i] <- rename(priors_b[i], "[[:digit:]]+$", f[digits[i]], fixed = FALSE)
-        change[[length(change)+1]] <- list(pos = pos_priors_b[i], 
-                                           oldname = pars[pos_priors_b[i]],
-                                           pnames = priors_b[i],
-                                           fnames = priors_b[i])
-      }
-    }
-  }
   
   #rename parameters
   if (length(change)) {
@@ -177,7 +198,12 @@ rename_pars <- function(x, ...) {
   x
 }
 
-# make a little data.frame helping to rename random effects
+# make a little data.frame helping to rename and combine random effects
+# @param ranef a named list containing the random effects. The names are taken as grouping factors
+# @return a data.frame with length(ranef) rows and 3 columns: 
+#   \code{g}: the grouping factor of each terms 
+#   \code{first} a number corresponding to the first column for this term in the final r_<gf> matrices
+#   \code{last} a number corresponding to the last column for this term in the final r_<gf> matrices
 make_group_frame <- function(ranef) {
   group <- names(ranef)
   out <- data.frame(g = group, first = NA, last = NA)
@@ -194,9 +220,13 @@ make_group_frame <- function(ranef) {
 }
 
 # make indizes in square brackets for indexing stan parameters
+# @param rows a vector of rows
+# @param cols a vector of columns
+# @param dim The number of dimensions of the output either 1 or 2
+# @return all index (pairs) for rows and cols
 make_indizes <- function(rows, cols = NULL, dim = 1) {
-  if (dim < 1 || !is.wholenumber(dim))
-    stop("dim must be a positive integer")
+  if (!dim %in% c(1,2))
+    stop("dim must be 1 or 2")
   if (dim == 1) indizes <- paste0("[",rows,"]")
   else {
     indizes <- expand.grid(rows, cols)
@@ -205,6 +235,37 @@ make_indizes <- function(rows, cols = NULL, dim = 1) {
   }
   indizes
 }
+
+# helps in renaming priors
+#
+# @param class the class of the parameters for which prior names should be change
+# @param pars all parameters in the model
+# @param names to replace digits at the end of parameter names
+# @param new_class replacment of the orginal class name
+#
+# @returns a list whose elements can be interpreted by rename_pars
+change_prior_names <- function(class, pars, names = NULL, new_class = class) {
+  change <- list()
+  pos_priors <- which(grepl(paste0("^prior_",class,"(_|$)"), pars))
+  if (length(pos_priors)) {
+    priors <- gsub(paste0("^prior_",class), paste0("prior_",new_class), pars[pos_priors])
+    print(priors)
+    digits <- sapply(priors, function(prior) {
+      d <- regmatches(prior, gregexpr("_[[:digit:]]+$", prior))[[1]]
+      if (length(d)) as.numeric(substr(d, 2, nchar(d))) else 0
+    })
+    print(digits)
+    if (sum(abs(digits)) > 0 && is.null(names)) stop("names are needed")
+    for (i in 1:length(priors)) {
+      if (digits[i]) priors[i] <- gsub("[[:digit:]]+$", names[digits[i]], priors[i])
+      change[[length(change)+1]] <- list(pos = pos_priors[i], 
+                                         oldname = pars[pos_priors[i]],
+                                         pnames = priors[i],
+                                         fnames = priors[i])
+    }
+  }
+  change
+}  
 
 #' Extract parameter names
 #' 
@@ -262,7 +323,11 @@ parnames.formula <- function(x, data = NULL, family = "gaussian", autocor = NULL
   out
 }
 
-#check prior and amend it if needed
+# check prior input by and amend it if needed
+#
+# @param same as the respective parameters in brm
+#
+# @return a list of prior specifications adjusted to be used in stan_prior (see stan.R)
 check_prior <- function(prior, formula, data = NULL, family = "gaussian", autocor = NULL, 
                         partial = NULL, threshold = "flexible") {
   
