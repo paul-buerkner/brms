@@ -113,7 +113,6 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
            sd_pars = paste0("sd_",group[i],"_",x$ranef[[i]]),
            cor_pars = get_cornames(x$ranef[[i]], type = paste0("cor_",group[i]), 
                                    brackets = FALSE)))
-                                 #parnames(x))))
   } else p <- group <- NULL
   if (x$family %in% c("gaussian", "student", "cauchy") && !is.formula(ee$se)) {
     p[[length(p)+1]] <- list(rnames = ee$response, 
@@ -121,7 +120,6 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
                              sd_pars = paste0("sigma_",ee$response),
                              cor_pars = get_cornames(ee$response, type = "rescor", 
                                                      brackets = FALSE))
-                                                  #parnames(x)))
     group <- c(group, "RESIDUAL")
   } 
   VarCorr <- lapply(p, extract)
@@ -237,10 +235,9 @@ summary.brmsfit <- function(object, ...) {
         rnames <- object$ranef[[i]]
         sd_pars <- paste0("sd_", out$group[i],"_",rnames)
         cor_pars <- intersect(get_cornames(rnames, type = paste0("cor_",out$group[i]),
-                                           brackets = FALSE),
-                              parnames(object))
+                                           brackets = FALSE), parnames(object))
         sd_names <- paste0("sd(",rnames,")")
-        cor_names <- get_cornames(rnames, pars = cor_pars, group = out$group[i])
+        cor_names <- get_cornames(rnames, subset = cor_pars, subtype = out$group[i])
         out$random[[out$group[i]]] <- matrix(fit_summary$summary[c(sd_pars, cor_pars),-c(2)], ncol = 6)
         colnames(out$random[[out$group[i]]]) <- col_names
         rownames(out$random[[out$group[i]]]) <- c(sd_names, cor_names)

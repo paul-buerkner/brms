@@ -50,18 +50,23 @@ combine_duplicates <- function(x) {
 # @param names the variable names 
 # @param type of the correlation to be put in front of the returned strings
 # @param brackets should the correlation names contain brackets or underscores as seperators
-#
-# @return the correlation names
-get_cornames <- function(names, type = "cor", brackets = TRUE) {
+# @param subset subset of correlation parameters to be returned. Currently only used in summary.brmsfit (s3.methods.R)
+# @param the subtype of the correlation (e.g., g1 in cor_g1_x_y). Only used when subset not NULL
+get_cornames <- function(names, type = "cor", brackets = TRUE, subset = NULL, subtype = "") {
   cor_names <- NULL
-  if (is.null(pars) && length(names) > 1) {
+  if (is.null(subset) && length(names) > 1) {
     for (i in 2:length(names)) {
       for (j in 1:(i-1)) {
         if (brackets) cor_names <- c(cor_names, paste0(type,"(",names[j],",",names[i],")"))
         else cor_names <- c(cor_names, paste0(type,"_",names[j],"_",names[i]))
       }
     }
-  } 
+  } else if (!is.null(subset)) {
+    possible_values <- get_cornames(names = names, type = "", brackets = FALSE)
+    subset <- rename(subset, paste0("^",type,"_",subtype), "", fixed = FALSE)
+    matches <- which(possible_values %in% subset)
+    cor_names <- get_cornames(names = names, type = type)[matches]
+  }
   cor_names
 }
 

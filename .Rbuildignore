@@ -2,6 +2,7 @@
 ^.*\.RData$
 ^.*\.Rhistory$
 ^\.Rproj\.user$
+^\.git$
 ^.*\.Rprofile$
 ^README\.Rmd$
 ^README-.*\.png$
