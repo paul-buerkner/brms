@@ -4,14 +4,17 @@
 \alias{predict.brmsfit}
 \title{Model Predictions of \code{brmsfit} Objects}
 \usage{
-\method{predict}{brmsfit}(object, new_data = NULL, summary = TRUE,
-  probs = c(0.025, 0.975), ...)
+\method{predict}{brmsfit}(object, new_data = NULL, transform = NULL,
+  summary = TRUE, probs = c(0.025, 0.975), ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}}
 
 \item{new_data}{An optional data.frame containing new data to make predictions for.
-  If \code{NULL} (the default), the data used to fit the model is applied.}
+If \code{NULL} (the default), the data used to fit the model is applied.}
+
+\item{transform}{A function or a character string naming a function to be applied on the predicted responses
+  before summary statistics are computed.}
 
 \item{summary}{logical. Should summary statistics (i.e. means, sds, and 95\% intervals) be returned
 instead of the raw values. Default is \code{FALSE}}
