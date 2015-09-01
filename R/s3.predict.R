@@ -68,7 +68,8 @@ predict.brmsfit <- function(object, new_data = NULL, transform = NULL,
   predict_fun <- get(paste0("predict_",family))
   out <- do.call(cbind, lapply(1:ncol(samples$eta), function(n) 
     do.call(predict_fun, list(n = n, data = data, samples = samples, link = object$link))))
-  if (!is.null(transform)) out <- do.call(transform, list(out))
+  if (!is.null(transform)) 
+    out <- do.call(transform, list(out))
   if (summary) {
     out <- do.call(cbind, lapply(c("mean", "sd", "quantile"), get_estimate, 
                                  samples = out, probs = probs))
