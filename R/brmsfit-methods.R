@@ -180,7 +180,7 @@ prior_samples.brmsfit <- function(x, parameters = NA, ...) {
         matches <- unlist(lapply(matches, attr, which = "match.length"))
         if (max(matches) == -1) NULL
         else structure(list(samples[,match(max(matches), matches)]), names = par)
-      })))
+      })), check.names = FALSE)
     }
   }
   else samples <- NULL
