@@ -1,50 +1,53 @@
 #' @export
-linear_predictor.brmsfit <- function(x, ...) {
+linear_predictor.brmsfit <- function(x, new_data = NULL, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
+  if (is.null(new_data)) data <- x$data
+  else if (is.data.frame(new_data))
+    data <- amend_new_data(new_data, fit = x) # can be found in data.R
+  else stop("new_data must be a data.frame")
   n.samples <- nrow(posterior.samples(x, parameters = "^lp__$"))
-  Y <- x$data$Y
-  eta <- matrix(0, nrow = n.samples, ncol = length(Y))
-  X <- x$data$X
+  eta <- matrix(0, nrow = n.samples, ncol = data$N)
+  X <- data$X
   if (!is.null(X) && ncol(X) && x$family != "categorical") {
     b <- posterior.samples(x, parameters = "^b_[^\\[]+$")
     eta <- eta + fixef_predictor(X = X, b = b)  
   }
 
   group <- names(x$ranef)
-  all_groups <- extract_effects(x$formula)$group #may contain the same group more than ones
+  all_groups <- extract_effects(x$formula)$group # may contain the same group more than ones
   if (length(group)) {
     for (i in 1:length(group)) {
-      if (any(grepl(paste0("^lev_"), names(x$data)))) { # implies brms > 0.4.2
-        #create a single RE design matrix for every grouping factor
+      if (any(grepl(paste0("^lev_"), names(data)))) { # implies brms > 0.4.2
+        # create a single RE design matrix for every grouping factor
         Z <- do.call(cbind, lapply(which(all_groups == group[i]), function(k) 
-                     get(paste0("Z_",k), x$data)))
-        gf <- get(paste0("lev_",match(group[i], all_groups)), x$data)
+                     get(paste0("Z_",k), data)))
+        gf <- get(paste0("lev_",match(group[i], all_groups)), data)
       } else { # implies brms < 0.4.2
-        Z <- get(paste0("Z_",group[i]), x$data)
-        gf <- get(group[i], x$data)
+        Z <- get(paste0("Z_",group[i]), data)
+        gf <- get(group[i], data)
       }
       r <- posterior.samples(x, parameters = paste0("^r_",group[i],"\\["))
       eta <- eta + ranef_predictor(Z = Z, gf = gf, r = r) 
     }
   }
   if (x$autocor$p > 0) {
-    Yar <- as.matrix(x$data$Yar)
+    Yar <- as.matrix(data$Yar)
     ar <- posterior.samples(x, parameters = "^ar\\[")
     eta <- eta + fixef_predictor(X = Yar, b = ar)
   }
   if (x$autocor$q > 0) {
     ma <- posterior.samples(x, parameters = "^ma\\[")
-    eta <- ma_predictor(data = x$data, ma = ma, eta = eta, link = x$link)
+    eta <- ma_predictor(data = data, ma = ma, eta = eta, link = x$link)
   }
   if (x$family %in% c("cumulative", "cratio", "sratio", "acat")) {
     Intercept <- posterior.samples(x, "^b_Intercept\\[")
-    if (!is.null(x$data$Xp) && ncol(x$data$Xp)) {
-      p <- posterior.samples(x, paste0("^b_",colnames(x$data$Xp),"\\["))
-      etap <- partial_predictor(Xp = x$data$Xp, p = p, max_obs = x$data$max_obs)
+    if (!is.null(data$Xp) && ncol(data$Xp)) {
+      p <- posterior.samples(x, paste0("^b_",colnames(data$Xp),"\\["))
+      etap <- partial_predictor(Xp = data$Xp, p = p, max_obs = data$max_obs)
     }  
-    else etap <- array(0, dim = c(dim(eta), x$data$max_obs-1))
-    for (k in 1:(x$data$max_obs-1)) {
+    else etap <- array(0, dim = c(dim(eta), data$max_obs-1))
+    for (k in 1:(data$max_obs-1)) {
       etap[,,k] <- etap[,,k] + eta
       if (x$family %in% c("cumulative", "sratio")) etap[,,k] <-  Intercept[,k] - etap[,,k]
       else etap[,,k] <- etap[,,k] - Intercept[,k]
@@ -52,12 +55,12 @@ linear_predictor.brmsfit <- function(x, ...) {
     eta <- etap
   }
   else if (x$family == "categorical") {
-    if (!is.null(x$data$X)) {
+    if (!is.null(data$X)) {
       p <- posterior.samples(x, parameters = "^b_")
-      etap <- partial_predictor(x$data$X, p, x$data$max_obs)
+      etap <- partial_predictor(data$X, p, data$max_obs)
     }
-    else etap <- array(0, dim = c(dim(eta), x$data$max_obs-1))
-    for (k in 1:(x$data$max_obs-1)) etap[,,k] <- etap[,,k] + eta
+    else etap <- array(0, dim = c(dim(eta), data$max_obs-1))
+    for (k in 1:(data$max_obs-1)) etap[,,k] <- etap[,,k] + eta
     eta <- etap
   }
   eta

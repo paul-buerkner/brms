@@ -5,7 +5,7 @@
 \title{Extract Model Residuals from brmsfit Objects}
 \usage{
 \method{residuals}{brmsfit}(object, type = c("ordinary", "pearson"),
-  summary = FALSE, ...)
+  summary = TRUE, probs = c(0.025, 0.975), ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}}
@@ -16,7 +16,14 @@ is only supported for families \code{binomial} and \code{bernoulli}}
 \item{summary}{logical. Should summary statistics (i.e. means, sds, and 95\% intervals) be returned
 instead of the raw values. Default is \code{FALSE}}
 
+\item{probs}{The percentiles to be computed by the \code{quantile} function. Only used if \code{summary = TRUE}.}
+
 \item{...}{Currently ignored}
+}
+\value{
+Models residuals. If \code{summary = TRUE} this is a S x N matrix and if \code{summary = FALSE}
+  a N x C matrix, where S is the number of samples, N is the number of observations,
+  and C is equal to \code{length(probs) + 2}.
 }
 \description{
 Extract Model Residuals from brmsfit Objects

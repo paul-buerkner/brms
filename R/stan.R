@@ -256,7 +256,7 @@ stan_ranef <- function(i, ranef, group, cor, prior = list(), names_cov_ranef = N
 # @param weights logical;
 # @param cens logical;
 #
-# return a string containing the likelihood of the model in stan language
+# @return a string containing the likelihood of the model in stan language
 stan_llh <- function(family, link, add = FALSE, weights = FALSE, cens = FALSE) {
   is_cat <- family %in% c("cumulative", "cratio", "sratio", "acat", "categorical")
   is_count <- family %in% c("poisson","negbinomial", "geometric")
@@ -312,7 +312,7 @@ stan_llh <- function(family, link, add = FALSE, weights = FALSE, cens = FALSE) {
   llh
 }
 
-# linear.predictor part in Stan
+# linear predictor in Stan
 #
 # @param family
 # @param link
@@ -320,6 +320,8 @@ stan_llh <- function(family, link, add = FALSE, weights = FALSE, cens = FALSE) {
 # @param paref names of the partiel effects paraneters
 # @param group names of the grouping factors
 # @param autocor
+# 
+# @return the linear predictor in stan language
 stan_eta <- function(family, link, fixef, paref = NULL, 
                      group = NULL, autocor = cor_arma()) {
   is_linear <- family %in% c("gaussian", "student", "cauchy")
@@ -373,7 +375,7 @@ stan_eta <- function(family, link, fixef, paref = NULL,
 # @param link
 # @param autocor
 #
-# @return 
+# @return stan code for computing moving average effects
 stan_ma <- function(family, link, autocor) {
   is_linear <- family %in% c("gaussian", "student", "cauchy")
   is_multi <- family == "multinormal"

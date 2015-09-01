@@ -1,4 +1,10 @@
-#melt data frame for multinormal models
+# melt data frame for multinormal models
+#
+# @param data a data.frame
+# @param response names of the response variables
+# @param family
+#
+# @return data in long format 
 melt <- function(data, response, family) {
   if (length(response) > 1 && family != "gaussian")
     stop("multivariate models are currently only allowed for family 'gaussian'")
@@ -17,7 +23,12 @@ melt <- function(data, response, family) {
   data
 }  
 
-#combine grouping factors
+# combine grouping factors
+#
+# @param data a data.frame
+# @param ... the grouping factors to be combined. 
+#
+# @return a data.frame containing all old variables and the new combined grouping factors
 combine_groups <- function(data, ...) {
   group <- c(...)
   if (length(group)) {
@@ -35,7 +46,13 @@ combine_groups <- function(data, ...) {
   data
 }
 
-#update data for use in brm
+# update data for use in brm
+#
+# @param data the original data.frame
+# @param family
+# @param effects output of extract_effects
+#
+# @return model.frame in long format with combined grouping variables if present
 update_data <- function(data, family, effects, ...) {
   if (!"brms.frame" %in% class(data)) {
     data <- melt(data, response = effects$response, family = family)
@@ -69,7 +86,7 @@ update_data <- function(data, family, effects, ...) {
 #'          
 #' @export
 brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL, 
-                     partial = NULL, cov.ranef = NULL) {
+                    partial = NULL, cov.ranef = NULL) {
   family <- check_family(family[1])
   is_linear <- family %in% c("gaussian", "student", "cauchy")
   is_ordinal <- family %in% c("cumulative","cratio","sratio","acat")
@@ -288,6 +305,25 @@ ar_design_matrix <- function(Y, p, group)  {
   }
   else out <- NULL
   out
+}
+
+# amend new data for predict method
+# 
+# @param new_data a data.frame containing new data for prediction 
+# @param fit an object of class \code{brmsfit}
+#
+# @return updated data.frame to be compatible with fit$formula
+amend_new_data <- function(new_data, fit) {
+  ee <- extract_effects(fit$formula, family = fit$family)
+  if (length(ee$group))
+    stop("random effects models not yet supported for predicting new data")
+  if (sum(fit$autocor$p, fit$autocor$q) > 0 && !all(ee$response %in% names(new_data))) 
+    stop("response variables must be specified in new_data for autocorrelative models")
+  else for (resp in ee$response) new_data[[resp]] <- 0 # add irrelevant response variables
+  if (is.formula(ee$cens)) 
+    for (cens in all.vars(ee$cens)) new_data[[cens]] <- 0 # add irrelevant censor variables
+  data <- brmdata(fit$formula, data = new_data, family = fit$family,
+                  autocor = fit$autocor, partial = fit$partial)
 }
 
 #computes data for addition arguments

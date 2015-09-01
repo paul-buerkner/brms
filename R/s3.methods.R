@@ -271,7 +271,9 @@ formula.brmsfit <- function(x, ...) x$formula
 #' 
 #' @details Currently, the method does not support \code{categorical} or ordinal models. 
 #'
-#' @return Fitted values extracted from \code{object}.
+#' @return Fitted values extracted from \code{object}. If \code{summary = TRUE} this is a S x N matrix and if \code{summary = FALSE}
+#'   a N x C matrix, where S is the number of samples, N is the number of observations, 
+#'   and C is equal to \code{length(probs) + 2}.  
 #'
 #' @examples 
 #' \dontrun{
@@ -280,12 +282,12 @@ formula.brmsfit <- function(x, ...) x$formula
 #'            n.cluster = 2)
 #' 
 #' ## extract fitted values
-#' fitted_values <- fitted(fit, summary = TRUE)
+#' fitted_values <- fitted(fit)
 #' head(fitted_values)
 #' }
 #' 
 #' @export 
-fitted.brmsfit <- function(object, summary = FALSE, ...) {
+fitted.brmsfit <- function(object, summary = TRUE, probs = c(0.025, 0.975), ...) {
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
   if (object$family %in% c("categorical", "cumulative", "sratio", "cratio", "acat"))
@@ -293,8 +295,8 @@ fitted.brmsfit <- function(object, summary = FALSE, ...) {
   mu <- ilink(linear_predictor(object), object$link)
   if (summary) {
     mu <- do.call(cbind, lapply(c("mean", "sd", "quantile"), get_estimate, 
-                                 samples = mu, probs = c(0.025, 0.975)))
-    colnames(mu) <- c("Estimate", "Est.Error", "l-95% CI", "u-95% CI")
+                                 samples = mu, probs = probs))
+    colnames(mu) <- c("Estimate", "Est.Error", paste0(probs * 100, "%ile"))
   }
   mu
 }
@@ -306,9 +308,14 @@ fitted.brmsfit <- function(object, summary = FALSE, ...) {
 #'   is only supported for families \code{binomial} and \code{bernoulli}
 #' @param summary logical. Should summary statistics (i.e. means, sds, and 95\% intervals) be returned
 #'  instead of the raw values. Default is \code{FALSE}
+#' @param probs The percentiles to be computed by the \code{quantile} function. Only used if \code{summary = TRUE}.
 #' @param ... Currently ignored
 #' 
 #' @details Currently, the method does not support \code{categorical} or ordinal models. 
+#' 
+#' @return Models residuals. If \code{summary = TRUE} this is a S x N matrix and if \code{summary = FALSE}
+#'   a N x C matrix, where S is the number of samples, N is the number of observations, 
+#'   and C is equal to \code{length(probs) + 2}.  
 #' 
 #' @examples 
 #' \dontrun{
@@ -322,7 +329,8 @@ fitted.brmsfit <- function(object, summary = FALSE, ...) {
 #' }
 #' 
 #' @export
-residuals.brmsfit <- function(object, type = c("ordinary", "pearson"), summary = FALSE, ...) {
+residuals.brmsfit <- function(object, type = c("ordinary", "pearson"), summary = TRUE, 
+                              probs = c(0.025, 0.975), ...) {
   type <- match.arg(type)
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
@@ -354,8 +362,8 @@ residuals.brmsfit <- function(object, type = c("ordinary", "pearson"), summary =
   
   if (summary) {
     res <- do.call(cbind, lapply(c("mean", "sd", "quantile"), get_estimate, 
-                                 samples = res, probs = c(0.025, 0.975)))
-    colnames(res) <- c("Estimate", "Est.Error", "l-95% CI", "u-95% CI")
+                                 samples = res, probs = probs))
+    colnames(res) <- c("Estimate", "Est.Error", paste0(probs * 100, "%ile"))
   }
   res
 }

@@ -4,7 +4,8 @@
 \alias{fitted.brmsfit}
 \title{Extract Model Fitted Values of \code{brmsfit} Objects}
 \usage{
-\method{fitted}{brmsfit}(object, summary = FALSE, ...)
+\method{fitted}{brmsfit}(object, summary = TRUE, probs = c(0.025, 0.975),
+  ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}}
@@ -12,10 +13,14 @@
 \item{summary}{logical. Should summary statistics (i.e. means, sds, and 95\% intervals) be returned
 instead of the raw values. Default is \code{FALSE}}
 
+\item{probs}{The percentiles to be computed by the \code{quantile} function. Only used if \code{summary = TRUE}.}
+
 \item{...}{Currently ignored}
 }
 \value{
-Fitted values extracted from \code{object}.
+Fitted values extracted from \code{object}. If \code{summary = TRUE} this is a S x N matrix and if \code{summary = FALSE}
+  a N x C matrix, where S is the number of samples, N is the number of observations,
+  and C is equal to \code{length(probs) + 2}.
 }
 \description{
 Extract Model Fitted Values of \code{brmsfit} Objects
@@ -30,7 +35,7 @@ fit <- brm(rating ~ treat + period + carry + (1|subject), data = inhaler,
            n.cluster = 2)
 
 ## extract fitted values
-fitted_values <- fitted(fit, summary = TRUE)
+fitted_values <- fitted(fit)
 head(fitted_values)
 }
 }

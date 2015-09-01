@@ -1,22 +1,57 @@
+#' Model Predictions of \code{brmsfit} Objects
+#' 
+#' Make predictions based on the fitted model parameters. 
+#' Can be performed for the data used to fit the model (posterior predictive checks) or for new data.
+#' 
+#' @inheritParams residuals.brmsfit
+#' @param new_data An optional data.frame containing new data to make predictions for.
+#'   If \code{NULL} (the default), the data used to fit the model is applied.
+#' 
+#' @return predicted values of the response variable. If \code{summary = TRUE} this is a S x N matrix and if \code{summary = FALSE}
+#'   a N x C matrix, where S is the number of samples, N is the number of observations, 
+#'   and C is equal to \code{length(probs) + 2}.   
+#' 
+#' @details Be careful when using new_data with factors: The predicted results are only valid
+#'   if all factor levels present in the initial data are also defined and ordered correctly 
+#'   for the factors in new_data. 
+#' 
+#' @examples 
+#' \dontrun{
+#' ## fit a model
+#' fit <- brm(time | cens(censored) ~ age + sex, data = kidney,
+#'            family = "exponential", silent = TRUE)
+#' 
+#' ## posterior predictive checks
+#' pp <- predict(fit)
+#' head(pp)
+#' 
+#' ## predict response for new data (be careful with factors)
+#' new_data <- data.frame(age = c(20,50), 
+#'                        sex = factor(c("male", "female"), levels = c("male", "female")))
+#' predict(fit, new_data = new_data)
+#' }
+#' 
 #' @export 
-predict.brmsfit <- function(object, ...) {
+predict.brmsfit <- function(object, new_data = NULL, summary = TRUE, 
+                            probs = c(0.025, 0.975), ...) {
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
-  ee <- extract_effects(object$formula, family = object$family)
-  if (object$link == "log" && object$family == "gaussian" && length(ee$response) == 1) 
-    object$family <- "lognormal"
-  if (object$family == "gaussian" && length(ee$response) > 1)
-    object$family <- "multinormal"
+  family <- object$family
+  ee <- extract_effects(object$formula, family = family)
+  if (object$link == "log" && family == "gaussian" && length(ee$response) == 1) 
+    family <- "lognormal"
+  if (family == "gaussian" && length(ee$response) > 1)
+    family <- "multinormal"
   
   #compute all necessary samples
-  samples <- list(eta = linear_predictor(object))
-  if (object$family %in% c("gaussian", "student", "cauchy", "lognormal", "multinormal") && !is.formula(ee$se))
+  samples <- list(eta = linear_predictor(object, new_data = new_data))
+  if (family %in% c("gaussian", "student", "cauchy", "lognormal", "multinormal") && !is.formula(ee$se))
     samples$sigma <- as.matrix(posterior_samples(object, parameters = "^sigma_"))
-  if (object$family == "student") 
+  if (family == "student") 
     samples$nu <- as.matrix(posterior_samples(object, parameters = "^nu$"))
-  if (object$family %in% c("gamma", "weibull","negbinomial")) 
+  if (family %in% c("gamma", "weibull","negbinomial")) 
     samples$shape <- as.matrix(posterior_samples(object, parameters = "^shape$"))
-  if (object$family == "multinormal") {
+  if (family == "multinormal") {
     samples$rescor <- as.matrix(posterior_samples(object, parameters = "^rescor_"))
     samples$Sigma <- cov_matrix(sd = samples$sigma, cor = samples$rescor)$cov
     message(paste("Computing posterior predictive samples of multinormal distribution. \n", 
@@ -24,17 +59,21 @@ predict.brmsfit <- function(object, ...) {
   }
   
   #call predict functions
-  predict_fun <- get(paste0("predict_",object$family))
-  samples <- do.call(cbind, lapply(1:nrow(as.matrix(object$data$Y)), function(n) 
+  predict_fun <- get(paste0("predict_",family))
+  out <- do.call(cbind, lapply(1:ncol(samples$eta), function(n) 
     do.call(predict_fun, list(n = n, data = object$data, samples = samples, link = object$link))))
-  out <- do.call(cbind, lapply(c("mean", "sd", "quantile"), get_estimate, 
-                               samples = samples, probs = c(0.025, 0.975)))
-  colnames(out) <- c("Estimate", "Est.Error", "l-95% CI", "u-95% CI")
+  if (summary) {
+    out <- do.call(cbind, lapply(c("mean", "sd", "quantile"), get_estimate, 
+                                 samples = out, probs = probs))
+    colnames(out) <- c("Estimate", "Est.Error", paste0(probs * 100, "%ile"))
+  }
   
-  #sort rows in case of multinormal models
-  if (object$family == "multinormal") {
+  #sort predicted responses in case of multinormal models
+  if (family == "multinormal") {
     nobs <- object$data$N_trait * object$data$K_trait
-    out <- out[unlist(lapply(1:object$data$K_trait, function(k) seq(k, nobs, object$data$K_trait))),]
+    to_order <- unlist(lapply(1:object$data$K_trait, function(k) seq(k, nobs, object$data$K_trait)))
+    if (summary) out <- out[to_order, ] # observations in rows
+    else out <- out[, to_order] # observations in columns
   }
   out
 }
