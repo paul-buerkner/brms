@@ -34,9 +34,9 @@ brmpars <- function(formula, data = NULL, family = "gaussian", autocor = NULL, p
         c("poisson", "negbinomial", "geometric", "binomial","bernoulli", "categorical")))
     stop(paste(family,"is not a valid family"))
   
-  f <- colnames(get_model_matrix(ee$fixed, data, rm.int = is_ordinal))
+  f <- colnames(get_model_matrix(ee$fixed, data, rm_intercept = is_ordinal))
   r <- lapply(lapply(ee$random, get_model_matrix, data = data), colnames)
-  p <- colnames(get_model_matrix(partial, data, rm.int = TRUE))
+  p <- colnames(get_model_matrix(partial, data, rm_intercept = TRUE))
   out <- NULL
   if (is_ordinal && threshold == "flexible") out <- c(out, "b_Intercept")
   if (is_ordinal && threshold == "equidistant") out <- c(out, "b_Intercept1", "delta")

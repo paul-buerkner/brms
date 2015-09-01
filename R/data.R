@@ -33,7 +33,7 @@ combine_groups <- function(data, ...) {
   group <- c(...)
   if (length(group)) {
     for (i in 1:length(group)) {
-      sgroup <- unlist(strsplit(group[[i]], "__"))
+      sgroup <- unlist(strsplit(group[[i]], ":"))
       if (length(sgroup) > 1) {
         new.var <- get(sgroup[1], data)
         for (j in 2:length(sgroup)) {
@@ -102,7 +102,7 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
   #sort data in case of autocorrelation models
   if (sum(autocor$p, autocor$q) > 0) {
     if (family == "gaussian" && length(ee$response) > 1) {
-      if (!grepl("^trait$|__trait$|^trait__|__trait__", et$group))
+      if (!grepl("^trait$|:trait$|^trait:|:trait:", et$group))
         stop("autocorrelation structures for multiple responses must contain 'trait' as grouping variable")
       else to.order <- rmNULL(list(data[["trait"]], data[[et$group]], data[[et$time]]))
     }
@@ -147,7 +147,7 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
   }
   
   #fixed effects data
-  X <- get_model_matrix(ee$fixed, data, rm.int = is_ordinal)
+  X <- get_model_matrix(ee$fixed, data, rm_intercept = is_ordinal)
   if (family == "categorical") standata <- c(standata, list(Kp = ncol(X), Xp = X))
   else standata <- c(standata, list(K = ncol(X), X = X))
   
@@ -226,7 +226,7 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
   #get data for partial effects
   if (is.formula(partial)) {
     if (family %in% c("sratio","cratio","acat")) {
-      Xp <- get_model_matrix(partial, data, rm.int = TRUE)
+      Xp <- get_model_matrix(partial, data, rm_intercept = TRUE)
       standata <- c(standata, list(Kp = ncol(Xp), Xp = Xp))
       fp <- intersect(colnames(X), colnames(Xp))
       if (length(fp))
@@ -264,16 +264,16 @@ brm.data <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
 # 
 # @param formula An object of class "formula"
 # @param data A data frame created with \code{model.frame}. If another sort of object, \code{model.frame} is called first.
-# @param rm.int Flag indicating if the intercept column should be removed from the model.matrix. 
+# @param rm_intercept Flag indicating if the intercept column should be removed from the model.matrix. 
 #   Primarily useful for ordinal models.
 # 
 # @return The design matrix for a regression-like model with the specified formula and data. 
 #   For details see the documentation of \code{model.matrix}.
-get_model_matrix <- function(formula, data = environment(formula), rm.int = FALSE) {
+get_model_matrix <- function(formula, data = environment(formula), rm_intercept = FALSE) {
   if (!is(formula, "formula")) return(NULL) 
   X <- stats::model.matrix(formula, data)
   new_colnames <- rename(colnames(X), check_dup = TRUE)
-  if (rm.int && "Intercept" %in% new_colnames) {
+  if (rm_intercept && "Intercept" %in% new_colnames) {
     X <- as.matrix(X[, -(1)])
     if (ncol(X)) colnames(X) <- new_colnames[2:length(new_colnames)]
   } 
@@ -281,11 +281,15 @@ get_model_matrix <- function(formula, data = environment(formula), rm.int = FALS
   X   
 }
 
-#calculate design matrix for autoregressive effects
+# calculate design matrix for autoregressive effects
 #
 # @param Y a vector containing the response variable
 # @param p autocor$p
 # @param group vector containing the grouping variable for each observation
+#
+# @details expects Y to be sorted after group already
+# 
+# @return the deisgn matrix for autoregressive effects
 ar_design_matrix <- function(Y, p, group)  { 
   if (length(Y) != length(group)) 
     stop("Y and group must have the same length")

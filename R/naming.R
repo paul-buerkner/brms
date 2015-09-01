@@ -303,7 +303,7 @@ parnames.formula <- function(x, data = NULL, family = "gaussian", addition = NUL
   out <- list(fixef = paste0("b_",colnames(get_model_matrix(ee$fixed, data = data))),
               ranef = list(), other = NULL)
   if (is.formula(partial)) 
-    out$fixef <- c(out$fixef, colnames(get_model_matrix(partial, data = data, rm.int = TRUE)))
+    out$fixef <- c(out$fixef, colnames(get_model_matrix(partial, data = data, rm_intercept = TRUE)))
   if (length(ee$group)) {
     gs <- unlist(ee$group)
     for (i in 1:length(gs)) {

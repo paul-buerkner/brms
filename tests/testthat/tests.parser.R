@@ -49,7 +49,7 @@ test_that("Test that extract_time returns all desired variables", {
   expect_equal(extract_time(~time|trait), 
                list(time = "time", group = "trait", all = ~1+time+trait)) 
   expect_equal(extract_time(~time|Site:trait),
-               list(time = "time", group = "Site__trait", all = ~1+time+Site+trait))
+               list(time = "time", group = "Site:trait", all = ~1+time+Site+trait))
   expect_error(extract_time(~t1+t2|g1), 
                "Autocorrelation structures may only contain 1 time variable")
   expect_error(extract_time(~1|g1/g2), 

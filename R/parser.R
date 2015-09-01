@@ -113,7 +113,7 @@ extract_time <- function(formula) {
       stop(paste("Illegal grouping term:",group,"\nGrouping terms may contain only variable names",
                  "combined by the interaction symbol ':'"))
     group <- formula(paste("~", group))
-    x$group <- paste0(all.vars(group), collapse = "__")
+    x$group <- paste0(all.vars(group), collapse = ":")
   }
   x$all <- formula(paste("~",paste(c("1", time, all.vars(group)), collapse = "+")))
   x

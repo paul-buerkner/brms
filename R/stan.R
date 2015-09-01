@@ -20,11 +20,11 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
 
   if (family == "categorical") {
     X <- data.frame()
-    Xp <- get_model_matrix(ee$fixed, data, rm.int = is_ordinal)
+    Xp <- get_model_matrix(ee$fixed, data, rm_intercept = is_ordinal)
   }
   else {
-    X <- get_model_matrix(ee$fixed, data, rm.int = is_ordinal)
-    Xp <- get_model_matrix(partial, data, rm.int = TRUE)
+    X <- get_model_matrix(ee$fixed, data, rm_intercept = is_ordinal)
+    Xp <- get_model_matrix(partial, data, rm_intercept = TRUE)
   }  
   fixef <- colnames(X)
   paref <- colnames(Xp)

@@ -1,3 +1,39 @@
+test_that("Test that melt returns data in correct long format", {
+  data <- data.frame(x = rep(c("a","b"), 5), y1 = 1:10, y2 = 11:20, y3 = 21:30, z = 100:91)
+  expect_equal(melt(data, response = "y1", family = "poisson"), data)
+  
+  target1 <- data.frame(x = rep(c("a","b"), 10), y2 = rep(11:20, 2), z = rep(100:91, 2),
+                        trait = c(rep("y3", 10), rep("y1", 10)), y3 = c(21:30,1:10))
+  expect_equal(melt(data, response = c("y3", "y1"), family = "gaussian"), target1)
+  
+  target2 <- data.frame(x = rep(c("a","b"), 15), z = rep(100:91, 3),
+                        trait = c(rep("y2", 10), rep("y1", 10), rep("y3", 10)), 
+                        y2 = c(11:20, 1:10, 21:30))
+  expect_equal(melt(data, response = c("y2", "y1", "y3"), family = "gaussian"), target2)
+})
+
+test_that("Test that combine_groups does the expected", {
+  data <- data.frame(x = rep(c("a","b"), 5), y1 = 1:10, y2 = 11:20, y3 = 21:30, z = 100:91)
+  expected <- data 
+  expected[["y1:y2"]] <- paste0(data$y1, "_", data$y2)
+  expected[["y1:y2:y3"]] <- paste0(data$y1, "_", data$y2, "_", data$y3)
+  expect_equal(combine_groups(data, "y1:y2", "y1:y2:y3"), expected)
+})
+
+test_that("Test that get_model_matrix removes intercepts correctly", {
+  data <- data.frame(x = factor(rep(1:2, 5)), y = 11:20)
+  expect_equal(get_model_matrix(y ~ x, data, rm_intercept = TRUE),
+               structure(matrix(rep(0:1, 5)), dimnames = list(1:10, "x2")))
+})
+
+test_that("Test that ar_design_matrix returns correct design matrices for autoregressive effects", {
+  expect_equal(ar_design_matrix(1:10, 0, sort(rep(1:2, 5))), NULL)
+  expect_equal(ar_design_matrix(1:10, 1, sort(rep(1:2, 5))), 
+               matrix(c(0,1:4-5.5,0,6:9-5.5)))
+  expect_equal(ar_design_matrix(1:10, 2, sort(rep(1:2, 5))), 
+               cbind(c(0,1:4-5.5,0,6:9-5.5), c(0,0,1:3-5.5,0,0,6:8-5.5)))
+})
+
 test_that("Test that brmdata returns correct data names for fixed and random effects", {
   expect_equal(names(brmdata(rating ~ treat + period + carry + (1|subject), data = inhaler)),
                c("N","Y","K","X","lev_1","N_1","K_1","Z_1","NC_1"))
@@ -104,7 +140,7 @@ test_that("Test that brmdata handles addition arguments and autocorrelation in m
   data <- data.frame(y1=1:10, y2=11:20, w=1:10, x=rep(0,10), tim=10:1, g = rep(1:2,5))
   expect_equal(brmdata(cbind(y1,y2) | weights(w) ~ x, family = "gaussian", data = data)$weights, 1:10)
   expect_equal(brmdata(cbind(y1,y2) | weights(w) ~ x, family = "gaussian", 
-                        autocor = cor.ar(~tim|g:trait), data = data)$Y,
+                       autocor = cor.ar(~tim|g:trait), data = data)$Y,
                cbind(c(seq(9,1,-2), seq(10,2,-2)), c(seq(19,11,-2), seq(20,12,-2))))
   expect_error(brmdata(cbind(y1,y2) | weights(w) ~ x, family = "gaussian", 
                         autocor = cor.ar(~tim|g), data = data),
@@ -121,25 +157,10 @@ test_that("Test that brmdata returns correct data for autocorrelations structure
                c(rep(1,5), rep(2,5)))
 })
 
-test_that("Test for backwards compatibility", {
+test_that("Test brm.data for backwards compatibility", {
   data <- data.frame(y = 1:10, x = sample(1:5, 10, TRUE))
   expect_identical(brm.data(y ~ x + (1|x), data = data, family = "poisson"), 
                    brmdata(y ~ x + (1|x), data = data, family = "poisson"))
   expect_identical(brm.data(y ~ 1, data = data, family = "acat", partial = ~ x), 
                    brmdata(y ~ 1, data = data, family = "acat", partial = ~ x))
-})
-
-
-test_that("Test that melt returns data in correct long format", {
-  data <- data.frame(x = rep(c("a","b"), 5), y1 = 1:10, y2 = 11:20, y3 = 21:30, z = 100:91)
-  expect_equal(melt(data, response = "y1", family = "poisson"), data)
-  
-  target1 <- data.frame(x = rep(c("a","b"), 10), y2 = rep(11:20, 2), z = rep(100:91, 2),
-                        trait = c(rep("y3", 10), rep("y1", 10)), y3 = c(21:30,1:10))
-  expect_equal(melt(data, response = c("y3", "y1"), family = "gaussian"), target1)
-  
-  target2 <- data.frame(x = rep(c("a","b"), 15), z = rep(100:91, 3),
-                        trait = c(rep("y2", 10), rep("y1", 10), rep("y3", 10)), 
-                        y2 = c(11:20, 1:10, 21:30))
-  expect_equal(melt(data, response = c("y2", "y1", "y3"), family = "gaussian"), target2)
 })
