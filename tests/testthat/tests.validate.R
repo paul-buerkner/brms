@@ -146,3 +146,12 @@ test_that("Test that link4familys return an error on wrong links", {
   expect_error(link4family(c("weibull","sqrt")), "sqrt is not a valid link for family weibull")
   expect_error(link4family(c("categorical","probit")), "probit is not a valid link for family categorical")
 })
+
+test_that("Test that parnames.formula finds all parameters for which priors can be specified", {
+  expect_true(all(c("b_Trt_c", "b_log_Base4_c:Trt_c", "cor_visit", "sd_patient_Intercept") %in%
+    unlist(parnames(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient) + (1+Trt_c|visit),
+                    data = epilepsy, family = "poisson"))))
+  expect_true(all(c("b_treat", "b_carry", "delta") %in%
+    unlist(parnames(rating ~ treat + period, partial = ~ carry, data = inhaler, family = "sratio",
+                    threshold = "equidistant"))))
+})
