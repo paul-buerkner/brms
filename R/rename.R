@@ -24,52 +24,6 @@ rename <- function(names, symbols = NULL, subs = NULL, fixed = TRUE, check_dup =
   new.names
 }
 
-# combine elements of a list that have the same name
-#
-# @param x a list
-#
-# @return a list of possibly reducte length.
-# 
-# @examples
-# combine_duplicates(list(a = 1, a = c(2,3)))
-# #becomes list(a = c(1,2,3)) 
-combine_duplicates <- function(x) {
-  if (!is.list(x)) stop("x must be a list")
-  if (is.null(names(x))) stop("elements of x must be named")
-  unique_names <- unique(names(x))
-  new_list <- setNames(do.call(list, as.list(rep(NA, length(unique_names)))), nm = unique_names)
-  for (i in 1:length(unique_names)) {
-    pos <- which(names(x) %in% unique_names[i])
-    new_list[[unique_names[i]]] <- unname(unlist(x[pos]))
-  }
-  new_list
-}
-
-# get correlation names as combinations of variable names
-# 
-# @param names the variable names 
-# @param type of the correlation to be put in front of the returned strings
-# @param brackets should the correlation names contain brackets or underscores as seperators
-# @param subset subset of correlation parameters to be returned. Currently only used in summary.brmsfit (s3.methods.R)
-# @param the subtype of the correlation (e.g., g1 in cor_g1_x_y). Only used when subset not NULL
-get_cornames <- function(names, type = "cor", brackets = TRUE, subset = NULL, subtype = "") {
-  cor_names <- NULL
-  if (is.null(subset) && length(names) > 1) {
-    for (i in 2:length(names)) {
-      for (j in 1:(i-1)) {
-        if (brackets) cor_names <- c(cor_names, paste0(type,"(",names[j],",",names[i],")"))
-        else cor_names <- c(cor_names, paste0(type,"_",names[j],"_",names[i]))
-      }
-    }
-  } else if (!is.null(subset)) {
-    possible_values <- get_cornames(names = names, type = "", brackets = FALSE)
-    subset <- rename(subset, paste0("^",type,"_",subtype), "", fixed = FALSE)
-    matches <- which(possible_values %in% subset)
-    cor_names <- get_cornames(names = names, type = type)[matches]
-  }
-  cor_names
-}
-
 # rename parameters (and possibly change their dimensions) within the stanfit object 
 # to ensure reasonable parameter names for summary, plot, launch_shiny etc.
 # 
@@ -241,6 +195,27 @@ make_indizes <- function(rows, cols = NULL, dim = 1) {
   indizes
 }
 
+# combine elements of a list that have the same name
+#
+# @param x a list
+#
+# @return a list of possibly reducte length.
+# 
+# @examples
+# combine_duplicates(list(a = 1, a = c(2,3)))
+# #becomes list(a = c(1,2,3)) 
+combine_duplicates <- function(x) {
+  if (!is.list(x)) stop("x must be a list")
+  if (is.null(names(x))) stop("elements of x must be named")
+  unique_names <- unique(names(x))
+  new_list <- setNames(do.call(list, as.list(rep(NA, length(unique_names)))), nm = unique_names)
+  for (i in 1:length(unique_names)) {
+    pos <- which(names(x) %in% unique_names[i])
+    new_list[[unique_names[i]]] <- unname(unlist(x[pos]))
+  }
+  new_list
+}
+
 # helps in renaming priors
 #
 # @param class the class of the parameters for which prior names should be change
@@ -269,97 +244,3 @@ change_prior_names <- function(class, pars, names = NULL, new_class = class) {
   }
   change
 }  
-
-#' Extract parameter names
-#' 
-#' Extract all parameter names for which priors may be specified
-#' 
-#' @param x An object of class \code{formula}
-#' @inheritParams brm
-#' @param internal A flag indicating if the names of additional internal parameters should be displayed. 
-#'   Setting priors on these parameters is not recommended
-#' @param ... Currently ignored
-#' 
-#' @return A list of character vectors containing the parameter names for which priors may be specified
-#' 
-#' @examples 
-#' parnames(rating ~ treat + period + carry + (1+carry|subject), 
-#'           data = inhaler, family = "student")
-#'           
-#' parnames(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient) + (1|visit),
-#'           data = epilepsy, family = "poisson")          
-#' 
-#' @export
-parnames.formula <- function(x, data = NULL, family = "gaussian", addition = NULL, autocor = NULL, 
-                             partial = NULL, threshold = "flexible", internal = FALSE, ...) {
-  if (is.null(autocor)) autocor <- cor_arma()
-  if (!is(autocor, "cor_brms")) stop("cor must be of class cor_brms")
-  if (!threshold %in% c("flexible","equidistant")) 
-    stop("threshold must be either flexible or equidistant")
-  family <- check_family(family[1])
-  x <- update_formula(x, addition = addition)
-  ee <- extract_effects(x, partial, family = family)
-  data <- update_data(data, family = family, effects = ee)
-  out <- list(fixef = paste0("b_",colnames(get_model_matrix(ee$fixed, data = data))),
-              ranef = list(), other = NULL)
-  if (is.formula(partial)) 
-    out$fixef <- c(out$fixef, colnames(get_model_matrix(partial, data = data, rm_intercept = TRUE)))
-  if (length(ee$group)) {
-    gs <- unlist(ee$group)
-    for (i in 1:length(gs)) {
-      ranef <- colnames(get_model_matrix(ee$random[[i]], data = data))
-      out$ranef[[gs[i]]] <- sort(unique(c(out$ranef[[gs[i]]], paste0("sd_",gs[i],"_",ranef),
-                              if (ee$cor[[i]] && length(ranef) > 1) 
-                                c(paste0("cor_",gs[i]), if(internal) paste0("L_",gs[i]))))) 
-    }
-  }
-  if (is(autocor, "cor_arma") && autocor$p) out$other <- c(out$other, "ar")
-  if (is(autocor, "cor_arma") && autocor$q) out$other <- c(out$other, "ma")
-  if (family %in% c("gaussian", "student", "cauchy") && !is.formula(ee$se))
-    out$other <- c(out$other, paste0("sigma_",ee$response))
-  if (family == "gaussian" && length(ee$response) > 1)
-    out$other <- c(out$other, "rescor", if (internal) "Lrescor")
-  if (family == "student") out$other <- c(out$other, "nu")
-  if (family %in% c("gamma", "weibull", "negbinomial")) 
-    out$other <- c(out$other, "shape")
-  if (family %in% c("cumulative", "sratio", "cratio", "acat") && threshold == "equidistant")
-    out$other <- c(out$other, "delta")
-  out
-}
-
-# check prior input by and amend it if needed
-#
-# @param same as the respective parameters in brm
-#
-# @return a list of prior specifications adjusted to be used in stan_prior (see stan.R)
-check_prior <- function(prior, formula, data = NULL, family = "gaussian", autocor = NULL, 
-                        partial = NULL, threshold = "flexible") {
-  
-  #expand lkj correlation prior to full name
-  prior <- lapply(prior, function(p) sub("^lkj\\(", "lkj_corr_cholesky(", p))
-  
-  #check if parameter names in prior are correct
-  ee <- extract_effects(formula, family = family)  
-  possible_priors <- unlist(parnames(formula, data = data, family = family, autocor = autocor,
-                                      partial = partial, threshold = threshold, internal = TRUE), use.names = FALSE)
-  meta_priors <- unlist(regmatches(possible_priors, gregexpr("^[^_]+", possible_priors)))
-  if ("sd" %in% meta_priors)
-    meta_priors <- c(meta_priors, paste0("sd_",ee$group))
-  possible_priors <- unique(c(possible_priors, meta_priors))
-  wrong_priors <- names(prior)[!names(prior) %in% possible_priors]
-  if (length(wrong_priors))
-    warning(paste("Some parameter names in prior cannot be found in the model:", 
-                  paste0(wrong_priors, collapse = ", ")))
-  
-  #rename certain parameters
-  names(prior) <- rename(names(prior), symbols = c("^cor_", "^cor$", "^rescor$"), 
-                         subs = c("L_", "L", "Lrescor"), fixed = FALSE)
-  if (any(grepl("^sd_.+", names(prior))))
-    for (i in 1:length(ee$group)) 
-      names(prior) <-  rename(names(prior), symbols = paste0("^sd_",ee$group[[i]]),
-                              subs = paste0("sd_",i), fixed = FALSE)
-  if (family %in% c("cumulative", "sratio", "cratio", "acat") && threshold == "equidistant")
-    names(prior) <- rename(names(prior), symbols = "^b_Intercept$", subs = "b_Intercept1",
-                           fixed = FALSE)
-  prior
-}

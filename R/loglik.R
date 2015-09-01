@@ -29,60 +29,6 @@ compare_ic <- function(x, ic = c("waic", "loo")) {
   compare_matrix
 }
 
-#' @export
-WAIC.brmsfit <- function(x, ..., compare = TRUE) {
-  models <- list(x, ...)
-  names <- c(deparse(substitute(x)), sapply(substitute(list(...))[-1], deparse))
-  if (length(models) > 1) {
-    out <- setNames(lapply(models, calculate_ic, ic = "waic"), names)
-    class(out) <- c("iclist", "list")
-    if (compare) attr(out, "compare") <- compare_ic(out, ic = "waic")
-  }  
-  else out <- calculate_ic(x, ic = "waic")
-  out
-}
-
-#' @export
-LOO.brmsfit <- function(x, ..., compare = TRUE) {
-  models <- list(x, ...)
-  names <- c(deparse(substitute(x)), sapply(substitute(list(...))[-1], deparse))
-  if (length(models) > 1) {
-    out <- setNames(lapply(models, calculate_ic, ic = "loo"), names)
-    class(out) <- c("iclist", "list")
-    if (compare) attr(out, "compare") <- compare_ic(out, ic = "loo")
-  }  
-  else out <- calculate_ic(x, ic = "loo")
-  out
-}
-
-#' @export
-loglik.brmsfit <- function(x, ...) {
-  if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
-    stop("The model does not contain posterior samples")
-  ee <- extract_effects(x$formula, family = x$family)
-  if (x$link == "log" && x$family == "gaussian" && length(ee$response) == 1) 
-    x$family <- "lognormal"
-  if (x$family == "gaussian" && length(ee$response) > 1)
-    x$family <- "multinormal"
-  
-  samples <- list(eta = linear_predictor(x))
-  if (x$family %in% c("gaussian", "student", "cauchy", "lognormal", "multinormal") && !is.formula(ee$se)) 
-    samples$sigma <- as.matrix(posterior.samples(x, parameters = "^sigma_"))
-  if (x$family == "student") 
-    samples$nu <- as.matrix(posterior.samples(x, parameters = "^nu$"))
-  if (x$family %in% c("gamma", "weibull","negbinomial")) 
-    samples$shape <- as.matrix(posterior.samples(x, parameters = "^shape$"))
-  if (x$family == "multinormal") {
-    samples$rescor <- as.matrix(posterior.samples(x, parameters = "^rescor_"))
-    samples$Sigma <- cov_matrix(sd = samples$sigma, cor = samples$rescor)$cov
-    message(paste("Computing pointwise log-likelihood of multinormal distribution. \n",
-                  "This may take a while."))
-  }
-  loglik_fun <- get(paste0("loglik_",x$family))
-  return(do.call(cbind, lapply(1:nrow(as.matrix(x$data$Y)), function(n) 
-    do.call(loglik_fun, list(n = n, data = x$data, samples = samples, link = x$link)))))
-}
-
 loglik_gaussian <- function(n, data, samples, link) {
   sigma <- if (!is.null(samples$sigma)) samples$sigma
            else data$sigma
