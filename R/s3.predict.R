@@ -40,10 +40,10 @@ predict.brmsfit <- function(object, new_data = NULL, summary = TRUE,
   ee <- extract_effects(object$formula, family = family)
   if (object$link == "log" && family == "gaussian" && length(ee$response) == 1) 
     family <- "lognormal"
-  if (family == "gaussian" && length(ee$response) > 1)
+  else if (family == "gaussian" && length(ee$response) > 1)
     family <- "multinormal"
   
-  #compute all necessary samples
+  # compute all necessary samples
   samples <- list(eta = linear_predictor(object, new_data = new_data))
   if (family %in% c("gaussian", "student", "cauchy", "lognormal", "multinormal") && !is.formula(ee$se))
     samples$sigma <- as.matrix(posterior_samples(object, parameters = "^sigma_"))
@@ -58,10 +58,14 @@ predict.brmsfit <- function(object, new_data = NULL, summary = TRUE,
             "This may take a while."))
   }
   
+  # use new_data if defined
+  if (is.null(new_data)) data <- object$data
+  else data <- amend_new_data(new_data, fit = object)
+  
   #call predict functions
   predict_fun <- get(paste0("predict_",family))
   out <- do.call(cbind, lapply(1:ncol(samples$eta), function(n) 
-    do.call(predict_fun, list(n = n, data = object$data, samples = samples, link = object$link))))
+    do.call(predict_fun, list(n = n, data = data, samples = samples, link = object$link))))
   if (summary) {
     out <- do.call(cbind, lapply(c("mean", "sd", "quantile"), get_estimate, 
                                  samples = out, probs = probs))
