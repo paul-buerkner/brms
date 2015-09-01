@@ -310,20 +310,23 @@ ar_design_matrix <- function(Y, p, group)  {
 # amend new data for predict method
 # 
 # @param new_data a data.frame containing new data for prediction 
-# @param fit an object of class \code{brmsfit}
+# @param formula a brms model formula
+# @param family
+# @param autocor
+# @param partial
 #
-# @return updated data.frame to be compatible with fit$formula
-amend_new_data <- function(new_data, fit) {
-  ee <- extract_effects(fit$formula, family = fit$family)
+# @return updated data.frame being compatible with formula
+amend_new_data <- function(new_data, formula, family = "gaussian", autocor = cor_arma(),
+                           partial = NULL) {
+  ee <- extract_effects(formula, family = family)
   if (length(ee$group))
     stop("random effects models not yet supported for predicting new data")
-  if (sum(fit$autocor$p, fit$autocor$q) > 0 && !all(ee$response %in% names(new_data))) 
+  if (sum(autocor$p, autocor$q) > 0 && !all(ee$response %in% names(new_data))) 
     stop("response variables must be specified in new_data for autocorrelative models")
   else for (resp in ee$response) new_data[[resp]] <- 0 # add irrelevant response variables
   if (is.formula(ee$cens)) 
     for (cens in all.vars(ee$cens)) new_data[[cens]] <- 0 # add irrelevant censor variables
-  data <- brmdata(fit$formula, data = new_data, family = fit$family,
-                  autocor = fit$autocor, partial = fit$partial)
+  data <- brmdata(formula, data = new_data, family = family, autocor = autocor, partial = partial)
 }
 
 #computes data for addition arguments

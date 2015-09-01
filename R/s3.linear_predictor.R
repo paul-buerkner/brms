@@ -4,7 +4,8 @@ linear_predictor.brmsfit <- function(x, new_data = NULL, ...) {
     stop("The model does not contain posterior samples")
   if (is.null(new_data)) data <- x$data
   else if (is.data.frame(new_data))
-    data <- amend_new_data(new_data, fit = x) # can be found in data.R
+    data <- amend_new_data(new_data, formula = x$formula, family = x$family, 
+                           autocor = x$autocor, partial = x$partial) # can be found in data.R
   else stop("new_data must be a data.frame")
   n.samples <- nrow(posterior.samples(x, parameters = "^lp__$"))
   eta <- matrix(0, nrow = n.samples, ncol = data$N)

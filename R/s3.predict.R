@@ -62,7 +62,8 @@ predict.brmsfit <- function(object, new_data = NULL, transform = NULL,
   
   # use new_data if defined
   if (is.null(new_data)) data <- object$data
-  else data <- amend_new_data(new_data, fit = object)
+  else data <- amend_new_data(new_data, formula = object$formula, family = object$family, 
+                              autocor = object$autocor, partial = object$partial) # can be found in data.R
   
   #call predict functions
   predict_fun <- get(paste0("predict_",family))
