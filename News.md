@@ -3,13 +3,14 @@ title: "News"
 output: html_document
 ---
 
-# brms 0.4.2
+# under development
 ----------------------------------------------------------------
 
 ## new features
 * compute the Watanabe-Akaike information criterion (WAIC) and the leave-one-out cross-validation (LOO) using the loo package.
 * provide an interface to shinystan with S3 method 'launch_shiny'.
 * log-likelihood values and posterior predictive samples can now be calculated after the model has been fitted. 
+* make predictions based on new data using S3 method 'predict'. Currently only available for fixed effects models. 
 * allow for customized covariance structures of grouping factors with multiple random effects
 * new S3 method 'parnames' for the formula class returning all names of parameters for which priors can be specified.
 * new S3 methods 'fitted' and 'residuals' to compute fitted values and residuals, respectively.
