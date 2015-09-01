@@ -80,7 +80,7 @@ ilink <- function(x, link) {
 # @param type of the correlation to be put in front of the returned strings
 # @param brackets should the correlation names contain brackets or underscores as seperators
 # @param subset subset of correlation parameters to be returned. Currently only used in summary.brmsfit (s3.methods.R)
-# @param the subtype of the correlation (e.g., g1 in cor_g1_x_y). Only used when subset not NULL
+# @param the subtype of the correlation (e.g., g1 in cor_g1_x_y). Only used when subset is not NULL
 get_cornames <- function(names, type = "cor", brackets = TRUE, subset = NULL, subtype = "") {
   cor_names <- NULL
   if (is.null(subset) && length(names) > 1) {
@@ -92,7 +92,8 @@ get_cornames <- function(names, type = "cor", brackets = TRUE, subset = NULL, su
     }
   } else if (!is.null(subset)) {
     possible_values <- get_cornames(names = names, type = "", brackets = FALSE)
-    subset <- rename(subset, paste0("^",type,"_",subtype), "", fixed = FALSE)
+    subset <- rename(subset, paste0("^",type, if (nchar(subtype)) paste0("_",subtype)),
+                     "", fixed = FALSE)
     matches <- which(possible_values %in% subset)
     cor_names <- get_cornames(names = names, type = type)[matches]
   }
@@ -130,8 +131,15 @@ get_estimate <- function(coef, samples, margin = 2, to.array = FALSE, ...) {
 #
 # @details used in VarCorr.brmsfit
 # 
-# @return samples of covariance and correlation matrices 
-cov_matrix <- function(sd, cor = NULL) {
+# @return samples of covariance and correlation matrices
+get_cov_matrix <- function(sd, cor = NULL) {
+  if (any(sd < 0)) stop("standard deviations must be non negative")
+  if (!is.null(cor)) {
+    if (ncol(cor) != ncol(sd)*(ncol(sd)-1)/ 2 || nrow(sd) != nrow(cor))
+      stop("dimensions of standard deviations and corrrelations do not match")
+    if (any(cor < -1 || cor > 1)) 
+      stop("correlations must be between -1 and 1")  
+  }
   nsamples <- nrow(sd)
   nranef <- ncol(sd)
   cor_matrix <- cov_matrix <- aperm(array(diag(1, nranef), dim = c(nranef, nranef, nsamples)), c(3,1,2))
@@ -150,29 +158,42 @@ cov_matrix <- function(sd, cor = NULL) {
   list(cor = cor_matrix, cov = cov_matrix)
 }
 
-#calculate the evidence ratio between two disjunct hypotheses
-eratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"), prior_samples = NULL, pow = 12, ...) {
+# calculate the evidence ratio between two disjunct hypotheses
+# 
+# @param x posterior samples 
+# @param cut the cut point between the two hypotheses
+# @param wsign direction of the hypothesis
+# @param prior_samples optional prior samples for undirected hypothesis
+# @param pow influence the accuracy of the density
+# @param ... optional arguments passed to density.default
+#
+# @return the evidence ratio of the two hypothesis
+evidence_ratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"), 
+                           prior_samples = NULL, pow = 12, ...) {
   wsign <- match.arg(wsign)
-  if (wsign == "equal") 
+  if (wsign == "equal") {
     if (is.null(prior_samples)) out <- NA
     else {
       dots <- list(...)
       dots <- dots[names(dots) %in% names(formals("density.default"))]
+      # compute prior and posterior densities
       prior_density <- do.call(density, c(list(x = prior_samples, n = 2^pow), dots))
       posterior_density <- do.call(density, c(list(x = x, n = 2^pow), dots))
       at_cut_prior <- match(min(abs(prior_density$x - cut)), abs(prior_density$x - cut))
+      # evaluate densities at the cut point
       at_cut_posterior <- match(min(abs(posterior_density$x - cut)), abs(posterior_density$x - cut))
       out <- posterior_density$y[at_cut_posterior] / prior_density$y[at_cut_prior] 
     }
-    else if (wsign == "less") {
-      out <- length(which(x < cut))
-      out <- out / (length(x) - out)
-    }  
-    else if (wsign == "greater") {
-      out <- length(which(x > cut))
-      out <- out / (length(x) - out)
-    }
-    out  
+  }
+  else if (wsign == "less") {
+    out <- length(which(x < cut))
+    out <- out / (length(x) - out)
+  }  
+  else if (wsign == "greater") {
+    out <- length(which(x > cut))
+    out <- out / (length(x) - out)  
+  }
+  out  
 }
 
 # compute eta for fixed effects
@@ -196,7 +217,7 @@ ranef_predictor <- function(Z, gf, r) {
   Z <- expand_matrix(Z, gf)
   nlevels <- length(unique(gf))
   sort_levels <- unlist(lapply(1:nlevels, function(n) seq(n, ncol(r), nlevels)))
-  as.matrix(r[,sort_levels]) %*% t(Z)
+  as.matrix(r[, sort_levels]) %*% t(Z)
 }
 
 #compute eta for moving average effects
@@ -238,7 +259,7 @@ partial_predictor <- function(Xp, p, max_obs) {
   max_obs <- max(max_obs)
   etap <- array(0, dim = c(nrow(p), nrow(Xp), max_obs-1))
   for (k in 1:(max_obs-1)) {
-    etap[,,k] <- as.matrix(p[,seq(k, (max_obs-1)*ncol(Xp), max_obs-1)]) %*% t(as.matrix(Xp))
+    etap[,,k] <- as.matrix(p[, seq(k, (max_obs-1)*ncol(Xp), max_obs-1)]) %*% t(as.matrix(Xp))
   }
   etap
 }
@@ -297,9 +318,10 @@ amend_newdata <- function(newdata, formula, family = "gaussian", autocor = cor_a
 # @return all valid variable names within the string
 find_names <- function(x) {
   if (!is.character(x) || length(x) > 1) stop("x must be a character string of length 1")
-  pos_fun <- gregexpr("([^([:digit:]|[:punct:])]|\\.|_)[[:alnum:]_\\.]*\\(", x)[[1]]
+  x <- gsub(" ", "", x)
+  pos_fun <- gregexpr("([^([:digit:]|[:punct:])]|\\.)[[:alnum:]_\\.]*\\(", x)[[1]]
   pos_decnum <- gregexpr("\\.[[:digit:]]+", x)[[1]]
-  pos_var <- list(rmMatch(gregexpr("([^([:digit:]|[:punct:])]|\\.|_)[[:alnum:]_\\.]*(\\[[[:digit:]]*\\])?", x)[[1]], 
+  pos_var <- list(rmMatch(gregexpr("([^([:digit:]|[:punct:])]|\\.)[[:alnum:]_\\.]*(\\[[[:digit:]]*\\])?", x)[[1]], 
                           pos_fun, pos_decnum))
   unlist(regmatches(x, pos_var))
 }
@@ -320,13 +342,13 @@ td_plot <- function(par, x) {
     geom_line(alpha = 0.7) + 
     xlab("") + ylab("") + ggtitle(paste("Trace of", par)) + 
     theme(legend.position = "none",
-          plot.title = element_text(size=15, vjust=1),
-          plot.margin = grid::unit(c(0.2,0,-0.8,-0.5), "lines"))
+          plot.title = element_text(size = 15, vjust = 1),
+          plot.margin = grid::unit(c(0.2, 0, -0.8, -0.5), "lines"))
   density <- ggplot(x, aes_string(x = "value")) + 
     geom_density(aes_string(fill = "chains"), alpha = 0.5) + 
     xlab("") + ylab("") + ggtitle(paste("Density of", par)) + 
-    theme(plot.title = element_text(size=15, vjust=1),
-          plot.margin = grid::unit(c(0.2,0,-0.8,-0.5), "lines"))
+    theme(plot.title = element_text(size = 15, vjust = 1),
+          plot.margin = grid::unit(c(0.2, 0, -0.8, -0.5), "lines"))
   return(gridExtra::arrangeGrob(trace, density, ncol = 2, nrow = 1))
 }
 

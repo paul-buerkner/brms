@@ -95,8 +95,8 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
         cor <- cor_all
       }
     } else cor <- NULL
-    # cov_matrix, list2arry, and array2list can be found in misc.R
-    matrices <- cov_matrix(sd = sd, cor = cor) 
+    # get_cov_matrix, list2arry, and array2list can be found in misc.R
+    matrices <- get_cov_matrix(sd = sd, cor = cor) 
     out$cor <- list2array(lapply(estimate, get_estimate, samples = matrices$cor, 
                           margin = c(2,3), to.array = TRUE, ...))
     out$cov <- list2array(lapply(estimate, get_estimate, samples = matrices$cov, 
@@ -576,7 +576,7 @@ predict.brmsfit <- function(object, newdata = NULL, transform = NULL,
     samples$shape <- as.matrix(posterior_samples(object, parameters = "^shape$"))
   if (family == "multinormal") {
     samples$rescor <- as.matrix(posterior_samples(object, parameters = "^rescor_"))
-    samples$Sigma <- cov_matrix(sd = samples$sigma, cor = samples$rescor)$cov
+    samples$Sigma <- get_cov_matrix(sd = samples$sigma, cor = samples$rescor)$cov
     message(paste("Computing posterior predictive samples of multinormal distribution. \n", 
                   "This may take a while."))
   }
@@ -653,7 +653,7 @@ loglik.brmsfit <- function(x, ...) {
     samples$shape <- as.matrix(posterior.samples(x, parameters = "^shape$"))
   if (x$family == "multinormal") {
     samples$rescor <- as.matrix(posterior.samples(x, parameters = "^rescor_"))
-    samples$Sigma <- cov_matrix(sd = samples$sigma, cor = samples$rescor)$cov
+    samples$Sigma <- get_cov_matrix(sd = samples$sigma, cor = samples$rescor)$cov
     message(paste("Computing pointwise log-likelihood of multinormal distribution. \n",
                   "This may take a while."))
   }
@@ -709,7 +709,7 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", alpha = 0.05, ...) {
     #evaluate hypothesis
     wsign <- ifelse(sign == "=", "equal", ifelse(sign == "<", "less", "greater"))
     probs <- switch(wsign, equal = c(alpha/2, 1-alpha/2), less = c(0, 1-alpha), greater = c(alpha, 1))
-    out <- as.data.frame(matrix(unlist(lapply(c("mean", "sd", "quantile", "eratio"), get_estimate, 
+    out <- as.data.frame(matrix(unlist(lapply(c("mean", "sd", "quantile", "evidence_ratio"), get_estimate, 
       samples = samples, probs = probs, wsign = wsign, prior_samples = prior_samples, ...)), nrow = 1))
     if (sign == "<") out[1,3] <- -Inf
     else if (sign == ">") out[1,4] <- Inf
