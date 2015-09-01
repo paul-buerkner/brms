@@ -100,7 +100,7 @@ rename_pars <- function(x) {
         # and for commbining random effects into one paramater matrix
         n_ranefs <- max(gf$last[which(gf$g == group[i])]) #number of total REs for this grouping factor
         old_dim <- x$fit@sim$dims_oi[[change[[lc]]$oldname]]
-        indizes <- make_indizes(rows = 1:old_dim[1], cols = gf$first[i]:gf$last[i], 
+        indices <- make_indices(rows = 1:old_dim[1], cols = gf$first[i]:gf$last[i], 
                                dim = ifelse(n_ranefs == 1, 1, 2))
         if (match(gf$g[i], group) < i) 
           change[[lc]]$pnames <- NULL 
@@ -108,7 +108,7 @@ rename_pars <- function(x) {
           change[[lc]]$pnames <- paste0("r_",group[i])
           change[[lc]]$dim <- if (n_ranefs == 1) old_dim else c(old_dim[1], n_ranefs) 
         } 
-        change[[lc]]$fnames <- paste0("r_",group[i], indizes)
+        change[[lc]]$fnames <- paste0("r_",group[i], indices)
       }  
     }
   }
@@ -178,21 +178,21 @@ make_group_frame <- function(ranef) {
   out
 }
 
-# make indizes in square brackets for indexing stan parameters
+# make indices in square brackets for indexing stan parameters
 # @param rows a vector of rows
 # @param cols a vector of columns
 # @param dim The number of dimensions of the output either 1 or 2
 # @return all index (pairs) for rows and cols
-make_indizes <- function(rows, cols = NULL, dim = 1) {
+make_indices <- function(rows, cols = NULL, dim = 1) {
   if (!dim %in% c(1,2))
     stop("dim must be 1 or 2")
-  if (dim == 1) indizes <- paste0("[",rows,"]")
+  if (dim == 1) indices <- paste0("[",rows,"]")
   else {
-    indizes <- expand.grid(rows, cols)
-    indizes <- unlist(lapply(1:nrow(indizes), function(i)
-      paste0("[",paste0(indizes[i,], collapse = ","),"]")))
+    indices <- expand.grid(rows, cols)
+    indices <- unlist(lapply(1:nrow(indices), function(i)
+      paste0("[",paste0(indices[i,], collapse = ","),"]")))
   }
-  indizes
+  indices
 }
 
 # combine elements of a list that have the same name
@@ -218,9 +218,9 @@ combine_duplicates <- function(x) {
 
 # helps in renaming priors
 #
-# @param class the class of the parameters for which prior names should be change
+# @param class the class of the parameters for which prior names should be changed
 # @param pars all parameters in the model
-# @param names to replace digits at the end of parameter names
+# @param names names to replace digits at the end of parameter names
 # @param new_class replacment of the orginal class name
 #
 # @returns a list whose elements can be interpreted by rename_pars
@@ -236,10 +236,11 @@ change_prior_names <- function(class, pars, names = NULL, new_class = class) {
     if (sum(abs(digits)) > 0 && is.null(names)) stop("argument names is missing")
     for (i in 1:length(priors)) {
       if (digits[i]) priors[i] <- gsub("[[:digit:]]+$", names[digits[i]], priors[i])
-      change[[length(change)+1]] <- list(pos = pos_priors[i], 
-                                         oldname = pars[pos_priors[i]],
-                                         pnames = priors[i],
-                                         fnames = priors[i])
+      if (pars[pos_priors[i]] != priors[i])
+        change[[length(change)+1]] <- list(pos = pos_priors[i], 
+                                           oldname = pars[pos_priors[i]],
+                                           pnames = priors[i],
+                                           fnames = priors[i])
     }
   }
   change

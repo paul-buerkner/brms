@@ -8,4 +8,20 @@ test_that("Test that is.formula is TRUE for formulas and otherwise FALSE", {
   expect_equal(is.formula(list(y~1,1), or = FALSE), FALSE)
 })
 
+test_that("Test that rmNULL removes all NULL entries", {
+  expect_equal(rmNULL(list(a = NULL, b = 1, c = list(NULL, 1))),
+               list(b = 1, c = list(1)))
+  expect_equal(rmNULL(list(a = NULL, b = 1, c = NULL)),
+               list(b = 1))
+})
 
+test_that("Test that rmNum remove all numeric entries", {
+  expect_equal(rmNum(list(1, "a", 2.3, "b")), list("a","b"))
+  expect_equal(rmNum(list(x = 1.5, y = "abc", z = pi)), list(y = "abc"))
+})
+
+test_that("Test that forumla2string performs correct conversion", {
+  expect_error(formula2string("y~x"))
+  expect_equal(formula2string(y ~ x + c), "y~x+c")
+  expect_equal(formula2string(abc ~ x + cd, rm = c(3,2)), "~x+")
+})

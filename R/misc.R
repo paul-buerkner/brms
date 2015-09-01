@@ -66,6 +66,6 @@ formula2string <- function(formula, rm = c(0, 0)) {
     stop(paste(deparse(substitute(formula)),"must be of class formula"))
   if (is.na(rm[2])) rm[2] <- 0
   x <- gsub(" ","", Reduce(paste, deparse(formula)))
-  x <- substr(x, 1 + rm[1], nchar(x)-rm[2])
+  x <- substr(x, 1 + rm[1], nchar(x) - rm[2])
   x
 } 
