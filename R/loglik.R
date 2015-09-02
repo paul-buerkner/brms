@@ -1,34 +1,3 @@
-#compute WAIC and LOO using the 'loo' package
-calculate_ic <- function(x, ic = c("waic", "loo")) {
-  ic <- match.arg(ic)
-  ee <- extract_effects(x$formula)
-  if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
-    stop("The model does not contain posterior samples") 
-  IC <- do.call(eval(parse(text = paste0("loo::",ic))), list(loglik(x)))
-  class(IC) <- c("ic", "loo")
-  return(IC)
-}
-
-#compare information criteria of different models
-compare_ic <- function(x, ic = c("waic", "loo")) {
-  ic <- match.arg(ic)
-  n_models <- length(x)
-  compare_matrix <- matrix(0, nrow = n_models * (n_models-1) / 2, ncol = 2)
-  rnames <- rep("", nrow(compare_matrix))
-  n <- 1
-  for (i in 1:(n_models-1)) {
-    for (j in (i+1):n_models) {
-      temp <- loo::compare(x[[j]], x[[i]])
-      compare_matrix[n,] <- c(-2 * temp$elpd_diff, 2 * temp$se) 
-      rnames[n] <- paste(names(x)[i], "-", names(x)[j])
-      n <- n + 1
-    }
-  }
-  rownames(compare_matrix) <- rnames
-  colnames(compare_matrix) <- c(toupper(ic), "SE")
-  compare_matrix
-}
-
 loglik_gaussian <- function(n, data, samples, link) {
   sigma <- if (!is.null(samples$sigma)) samples$sigma
            else data$sigma

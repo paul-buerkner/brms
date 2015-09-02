@@ -14,18 +14,18 @@
 If \code{NULL} (the default), the data used to fit the model is applied.}
 
 \item{transform}{A function or a character string naming a function to be applied on the predicted responses
-  before summary statistics are computed.}
+before summary statistics are computed.}
 
 \item{summary}{logical. Should summary statistics (i.e. means, sds, and 95\% intervals) be returned
-instead of the raw values. Default is \code{FALSE}}
+instead of the raw values. Default is \code{TRUE}}
 
 \item{probs}{The percentiles to be computed by the \code{quantile} function. Only used if \code{summary = TRUE}.}
 
 \item{...}{Currently ignored}
 }
 \value{
-predicted values of the response variable. If \code{summary = TRUE} this is a S x N matrix and if \code{summary = FALSE}
-  a N x C matrix, where S is the number of samples, N is the number of observations,
+predicted values of the response variable. If \code{summary = TRUE} this is a N x C matrix and if \code{summary = FALSE}
+  a S x N matrix, where S is the number of samples, N is the number of observations,
   and C is equal to \code{length(probs) + 2}.
 }
 \description{

@@ -16,13 +16,15 @@ array2list <- function(x) {
 
 # convert list to array of increased dimension
 #
-# @param x a list containing arrary of dimension d
+# @param x a list containing arrarys of dimension d
 #
 # @return an arrary of dimension d+1
 list2array <- function(x) {
   if (!is.list(x) || length(x) == 0) 
     stop("x must be a non-empty list")
-  x <- unlist(lapply(x, array2list), recursive = FALSE)
+  # reduce dimension of all elements of x having a last dimension of 1
+  x <- lapply(x, function(y) if (dim(y)[length(dim(y))] == 1) 
+                   array(as.vector(y), dim = dim(y)[1:(length(dim(y))-1)]) else y)
   dim_elements <- lapply(x, function(y) if (!is.null(dim(y))) dim(y) else length(y))
   dim_target <- dim_elements[[1]]
   if (!all(sapply(dim_elements, all.equal, current = dim_target)))
@@ -105,7 +107,7 @@ get_cornames <- function(names, type = "cor", brackets = TRUE, subset = NULL, su
 # @param coef coefficient to be applied on the samples (e.g., "mean")
 # @param samples the samples over which to apply coef
 # @param margin see apply
-# @param to.array logical; should theresult be transformed into an array of increased dimension?
+# @param to.array logical; should the result be transformed into an array of increased dimension?
 # @param ... additional arguments passed to get(coef)
 #
 # @return typically a matrix with colnames(samples) as colnames
@@ -122,6 +124,26 @@ get_estimate <- function(coef, samples, margin = 2, to.array = FALSE, ...) {
   if (to.array && length(dim(x)) == 2) 
     x <- array(x, dim = c(dim(x), 1), dimnames = list(NULL, NULL, coef))
   x 
+}
+
+# summarizes parameter samples based on mean, sd, and quantiles
+#
+# @param samples a matrix or data.frame containing the samples to be summarized. 
+#                rows are samples, columns are parameters
+# @param probs quantiles to be computed
+#
+# @return a N x C matric where N is the number of observations and C is equal to \code{length(probs) + 2}.
+get_summary <- function(samples, probs = c(0.025, 0.975)) {
+  if (length(dim(samples)) == 2)
+    out <- do.call(cbind, lapply(c("mean", "sd", "quantile"), get_estimate, 
+                                 samples = samples, probs = probs))
+  else if (length(dim(samples)) == 3)
+    out <- list2array(lapply(1:dim(samples)[3], function(i)
+      do.call(cbind, lapply(c("mean", "sd", "quantile"), get_estimate, 
+                            samples = samples[,,i], probs = probs))))
+  else stop("dimension of samples must be either 2 or 3") 
+  colnames(out) <- c("Estimate", "Est.Error", paste0(probs * 100, "%ile"))
+  out  
 }
 
 #compute covariance and correlation matrices based on correlation and sd samples
@@ -194,6 +216,82 @@ evidence_ratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"),
     out <- out / (length(x) - out)  
   }
   out  
+}
+
+# compute the linear predictor (eta) for brms models
+#
+# @param x a brmsfit object
+# @param newdata optional data.frame containing new data to make predictions for.
+#   If \code{NULL} (the default), the data used to fit the model is applied.
+#
+# @return usually, an S x N matrix where S is the number of samples
+#   and N is the number of observations in the data.
+linear_predictor <- function(x, newdata = NULL) {
+  if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
+    stop("The model does not contain posterior samples")
+  if (is.null(newdata)) data <- x$data
+  else if (is.data.frame(newdata))
+    data <- amend_newdata(newdata, formula = x$formula, family = x$family, 
+                          autocor = x$autocor, partial = x$partial) # can be found in data.R
+  else stop("newdata must be a data.frame")
+  n.samples <- nrow(posterior.samples(x, parameters = "^lp__$"))
+  eta <- matrix(0, nrow = n.samples, ncol = data$N)
+  X <- data$X
+  if (!is.null(X) && ncol(X) && x$family != "categorical") {
+    b <- posterior.samples(x, parameters = "^b_[^\\[]+$")
+    eta <- eta + fixef_predictor(X = X, b = b)  
+  }
+  
+  group <- names(x$ranef)
+  all_groups <- extract_effects(x$formula)$group # may contain the same group more than ones
+  if (length(group)) {
+    for (i in 1:length(group)) {
+      if (any(grepl(paste0("^lev_"), names(data)))) { # implies brms > 0.4.2
+        # create a single RE design matrix for every grouping factor
+        Z <- do.call(cbind, lapply(which(all_groups == group[i]), function(k) 
+          get(paste0("Z_",k), data)))
+        gf <- get(paste0("lev_",match(group[i], all_groups)), data)
+      } else { # implies brms < 0.4.2
+        Z <- get(paste0("Z_",group[i]), data)
+        gf <- get(group[i], data)
+      }
+      r <- posterior.samples(x, parameters = paste0("^r_",group[i],"\\["))
+      eta <- eta + ranef_predictor(Z = Z, gf = gf, r = r) 
+    }
+  }
+  if (x$autocor$p > 0) {
+    Yar <- as.matrix(data$Yar)
+    ar <- posterior.samples(x, parameters = "^ar\\[")
+    eta <- eta + fixef_predictor(X = Yar, b = ar)
+  }
+  if (x$autocor$q > 0) {
+    ma <- posterior.samples(x, parameters = "^ma\\[")
+    eta <- ma_predictor(data = data, ma = ma, eta = eta, link = x$link)
+  }
+  if (x$family %in% c("cumulative", "cratio", "sratio", "acat")) {
+    Intercept <- posterior.samples(x, "^b_Intercept\\[")
+    if (!is.null(data$Xp) && ncol(data$Xp)) {
+      p <- posterior.samples(x, paste0("^b_",colnames(data$Xp),"\\["))
+      etap <- partial_predictor(Xp = data$Xp, p = p, max_obs = data$max_obs)
+    }  
+    else etap <- array(0, dim = c(dim(eta), data$max_obs-1))
+    for (k in 1:(data$max_obs-1)) {
+      etap[,,k] <- etap[,,k] + eta
+      if (x$family %in% c("cumulative", "sratio")) etap[,,k] <-  Intercept[,k] - etap[,,k]
+      else etap[,,k] <- etap[,,k] - Intercept[,k]
+    }
+    eta <- etap
+  }
+  else if (x$family == "categorical") {
+    if (!is.null(data$X)) {
+      p <- posterior.samples(x, parameters = "^b_")
+      etap <- partial_predictor(data$X, p, data$max_obs)
+    }
+    else etap <- array(0, dim = c(dim(eta), data$max_obs-1))
+    for (k in 1:(data$max_obs-1)) etap[,,k] <- etap[,,k] + eta
+    eta <- etap
+  }
+  eta
 }
 
 # compute eta for fixed effects
@@ -283,6 +381,47 @@ expand_matrix <- function(A, x) {
   do.call(rbind, lapply(1:nrow(A), function(n, v) {
     v[K*(x[n]-1) + 1:K] <- A[n, ] 
     return(v)}, v = v))
+}
+
+# compute WAIC and LOO using the 'loo' package
+#
+# @param x an object of class brmsfit
+# @param ic the information criterion to be computed
+#
+# @return output of the loo package with amended class attribute
+calculate_ic <- function(x, ic = c("waic", "loo")) {
+  ic <- match.arg(ic)
+  ee <- extract_effects(x$formula)
+  if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
+    stop("The model does not contain posterior samples") 
+  IC <- do.call(eval(parse(text = paste0("loo::",ic))), list(logLik(x)))
+  class(IC) <- c("ic", "loo")
+  return(IC)
+}
+
+# compare information criteria of different models
+#
+# @param x
+# @param ic the information criterion to be computed
+#
+# @return a matrix with differences in the ICs as well as corresponding standard errors
+compare_ic <- function(x, ic = c("waic", "loo")) {
+  ic <- match.arg(ic)
+  n_models <- length(x)
+  compare_matrix <- matrix(0, nrow = n_models * (n_models-1) / 2, ncol = 2)
+  rnames <- rep("", nrow(compare_matrix))
+  n <- 1
+  for (i in 1:(n_models-1)) {
+    for (j in (i+1):n_models) {
+      temp <- loo::compare(x[[j]], x[[i]])
+      compare_matrix[n,] <- c(-2 * temp$elpd_diff, 2 * temp$se) 
+      rnames[n] <- paste(names(x)[i], "-", names(x)[j])
+      n <- n + 1
+    }
+  }
+  rownames(compare_matrix) <- rnames
+  colnames(compare_matrix) <- c(toupper(ic), "SE")
+  compare_matrix
 }
 
 # amend new data for predict method

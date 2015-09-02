@@ -4,22 +4,28 @@
 \alias{fitted.brmsfit}
 \title{Extract Model Fitted Values of \code{brmsfit} Objects}
 \usage{
-\method{fitted}{brmsfit}(object, summary = TRUE, probs = c(0.025, 0.975),
-  ...)
+\method{fitted}{brmsfit}(object, newdata = NULL, scale = c("response",
+  "linear"), summary = TRUE, probs = c(0.025, 0.975), ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}}
 
+\item{newdata}{An optional data.frame containing new data to make predictions for.
+If \code{NULL} (the default), the data used to fit the model is applied.}
+
+\item{scale}{Either \code{"response"} or \code{"linear"}. If \code{scale = "response"} results are returned
+on the scale of the response variable. If \code{scale = "linear"} fitted values are returned on the scale of the linear predictor.}
+
 \item{summary}{logical. Should summary statistics (i.e. means, sds, and 95\% intervals) be returned
-instead of the raw values. Default is \code{FALSE}}
+instead of the raw values. Default is \code{TRUE}}
 
 \item{probs}{The percentiles to be computed by the \code{quantile} function. Only used if \code{summary = TRUE}.}
 
 \item{...}{Currently ignored}
 }
 \value{
-Fitted values extracted from \code{object}. If \code{summary = TRUE} this is a S x N matrix and if \code{summary = FALSE}
-  a N x C matrix, where S is the number of samples, N is the number of observations,
+Fitted values extracted from \code{object}. If \code{summary = TRUE} this is a N x C matrix and if \code{summary = FALSE}
+  a S x N matrix, where S is the number of samples, N is the number of observations,
   and C is equal to \code{length(probs) + 2}.
 }
 \description{

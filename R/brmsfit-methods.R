@@ -346,84 +346,16 @@ plot.brmsfit <- function(x, parameters = NA, N = 5, ask = TRUE, ...) {
   grDevices::devAskNewPage(default.ask)
 }
 
-#' @export
-linear_predictor.brmsfit <- function(x, newdata = NULL, ...) {
-  if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
-    stop("The model does not contain posterior samples")
-  if (is.null(newdata)) data <- x$data
-  else if (is.data.frame(newdata))
-    data <- amend_newdata(newdata, formula = x$formula, family = x$family, 
-                           autocor = x$autocor, partial = x$partial) # can be found in data.R
-  else stop("newdata must be a data.frame")
-  n.samples <- nrow(posterior.samples(x, parameters = "^lp__$"))
-  eta <- matrix(0, nrow = n.samples, ncol = data$N)
-  X <- data$X
-  if (!is.null(X) && ncol(X) && x$family != "categorical") {
-    b <- posterior.samples(x, parameters = "^b_[^\\[]+$")
-    eta <- eta + fixef_predictor(X = X, b = b)  
-  }
-  
-  group <- names(x$ranef)
-  all_groups <- extract_effects(x$formula)$group # may contain the same group more than ones
-  if (length(group)) {
-    for (i in 1:length(group)) {
-      if (any(grepl(paste0("^lev_"), names(data)))) { # implies brms > 0.4.2
-        # create a single RE design matrix for every grouping factor
-        Z <- do.call(cbind, lapply(which(all_groups == group[i]), function(k) 
-          get(paste0("Z_",k), data)))
-        gf <- get(paste0("lev_",match(group[i], all_groups)), data)
-      } else { # implies brms < 0.4.2
-        Z <- get(paste0("Z_",group[i]), data)
-        gf <- get(group[i], data)
-      }
-      r <- posterior.samples(x, parameters = paste0("^r_",group[i],"\\["))
-      eta <- eta + ranef_predictor(Z = Z, gf = gf, r = r) 
-    }
-  }
-  if (x$autocor$p > 0) {
-    Yar <- as.matrix(data$Yar)
-    ar <- posterior.samples(x, parameters = "^ar\\[")
-    eta <- eta + fixef_predictor(X = Yar, b = ar)
-  }
-  if (x$autocor$q > 0) {
-    ma <- posterior.samples(x, parameters = "^ma\\[")
-    eta <- ma_predictor(data = data, ma = ma, eta = eta, link = x$link)
-  }
-  if (x$family %in% c("cumulative", "cratio", "sratio", "acat")) {
-    Intercept <- posterior.samples(x, "^b_Intercept\\[")
-    if (!is.null(data$Xp) && ncol(data$Xp)) {
-      p <- posterior.samples(x, paste0("^b_",colnames(data$Xp),"\\["))
-      etap <- partial_predictor(Xp = data$Xp, p = p, max_obs = data$max_obs)
-    }  
-    else etap <- array(0, dim = c(dim(eta), data$max_obs-1))
-    for (k in 1:(data$max_obs-1)) {
-      etap[,,k] <- etap[,,k] + eta
-      if (x$family %in% c("cumulative", "sratio")) etap[,,k] <-  Intercept[,k] - etap[,,k]
-      else etap[,,k] <- etap[,,k] - Intercept[,k]
-    }
-    eta <- etap
-  }
-  else if (x$family == "categorical") {
-    if (!is.null(data$X)) {
-      p <- posterior.samples(x, parameters = "^b_")
-      etap <- partial_predictor(data$X, p, data$max_obs)
-    }
-    else etap <- array(0, dim = c(dim(eta), data$max_obs-1))
-    for (k in 1:(data$max_obs-1)) etap[,,k] <- etap[,,k] + eta
-    eta <- etap
-  }
-  eta
-}
-
-
 #' Extract Model Fitted Values of \code{brmsfit} Objects
 #' 
-#' @inheritParams residuals.brmsfit
+#' @inheritParams predict.brmsfit
+#' @param scale Either \code{"response"} or \code{"linear"}. If \code{scale = "response"} results are returned 
+#' on the scale of the response variable. If \code{scale = "linear"} fitted values are returned on the scale of the linear predictor.
 #' 
 #' @details Currently, the method does not support \code{categorical} or ordinal models. 
 #'
-#' @return Fitted values extracted from \code{object}. If \code{summary = TRUE} this is a S x N matrix and if \code{summary = FALSE}
-#'   a N x C matrix, where S is the number of samples, N is the number of observations, 
+#' @return Fitted values extracted from \code{object}. If \code{summary = TRUE} this is a N x C matrix and if \code{summary = FALSE}
+#'   a S x N matrix, where S is the number of samples, N is the number of observations, 
 #'   and C is equal to \code{length(probs) + 2}.  
 #'
 #' @examples 
@@ -438,34 +370,37 @@ linear_predictor.brmsfit <- function(x, newdata = NULL, ...) {
 #' }
 #' 
 #' @export 
-fitted.brmsfit <- function(object, summary = TRUE, probs = c(0.025, 0.975), ...) {
+fitted.brmsfit <- function(object, newdata = NULL, scale = c("response", "linear"),
+                           summary = TRUE, probs = c(0.025, 0.975), ...) {
+  scale <- match.arg(scale)
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
   if (object$family %in% c("categorical", "cumulative", "sratio", "cratio", "acat"))
-    stop(paste("fitted values not yet implemented for family", object$family))
-  mu <- ilink(linear_predictor(object), object$link)
-  if (summary) {
-    mu <- do.call(cbind, lapply(c("mean", "sd", "quantile"), get_estimate, 
-                                 samples = mu, probs = probs))
-    colnames(mu) <- c("Estimate", "Est.Error", paste0(probs * 100, "%ile"))
+    stop(paste("fitted not yet implemented for family", object$family))
+  
+  mu <- linear_predictor(object, newdata = newdata)
+  if (scale == "response") {
+    mu <- ilink(mu, object$link)
+    if (object$family == "binomial") {
+      # scale mu from [0,1] to [0,max_obs]
+      max_obs <- matrix(rep(object$data$max_obs, nrow(mu)), nrow = nrow(mu), byrow = TRUE)
+      mu <- mu * max_obs
+    }
   }
+  if (summary) mu <- get_summary(mu, probs = probs)
   mu
 }
 
 #' Extract Model Residuals from brmsfit Objects
 #' 
-#' @param object An object of class \code{brmsfit}
+#' @inheritParams predict.brmsfit
 #' @param type The type of the residuals, either \code{ordinary} or \code{pearson}. Currently, the latter 
 #'   is only supported for families \code{binomial} and \code{bernoulli}
-#' @param summary logical. Should summary statistics (i.e. means, sds, and 95\% intervals) be returned
-#'  instead of the raw values. Default is \code{FALSE}
-#' @param probs The percentiles to be computed by the \code{quantile} function. Only used if \code{summary = TRUE}.
-#' @param ... Currently ignored
 #' 
 #' @details Currently, the method does not support \code{categorical} or ordinal models. 
 #' 
-#' @return Models residuals. If \code{summary = TRUE} this is a S x N matrix and if \code{summary = FALSE}
-#'   a N x C matrix, where S is the number of samples, N is the number of observations, 
+#' @return Models residuals. If \code{summary = TRUE} this is a N x C matrix and if \code{summary = FALSE}
+#'   a S x N matrix, where S is the number of samples, N is the number of observations, 
 #'   and C is equal to \code{length(probs) + 2}.  
 #' 
 #' @examples 
@@ -489,16 +424,9 @@ residuals.brmsfit <- function(object, type = c("ordinary", "pearson"), summary =
     stop(paste("residuals not yet implemented for family", object$family))
   
   mu <- fitted(object, summary = FALSE)
-  if (object$family %in% c("binomial", "bernoulli")) {
-    if (object$family == "binomial")
-      max_obs <- matrix(rep(object$data$max_obs, nrow(mu)), nrow = nrow(mu), byrow = TRUE)
-    else max_obs <- 1
-    mu <- mu * max_obs
-  }
   Y <- matrix(rep(as.numeric(object$data$Y), nrow(mu)), nrow = nrow(mu), byrow = TRUE)
   res <- Y - mu
   colnames(res) <- NULL
-  
   if (type == "pearson") {
     # get predicted standard deviation for each observation
     sd <- matrix(rep(predict(object, summary = TRUE)[,2], nrow(mu)), 
@@ -512,11 +440,7 @@ residuals.brmsfit <- function(object, type = c("ordinary", "pearson"), summary =
     if (nchar(tgroup)) colnames(res) <- object$data[[tgroup]]
   }
   
-  if (summary) {
-    res <- do.call(cbind, lapply(c("mean", "sd", "quantile"), get_estimate, 
-                                 samples = res, probs = probs))
-    colnames(res) <- c("Estimate", "Est.Error", paste0(probs * 100, "%ile"))
-  }
+  if (summary) res <- get_summary(res, probs = probs)
   res
 }
 
@@ -525,15 +449,19 @@ residuals.brmsfit <- function(object, type = c("ordinary", "pearson"), summary =
 #' Make predictions based on the fitted model parameters. 
 #' Can be performed for the data used to fit the model (posterior predictive checks) or for new data.
 #' 
-#' @inheritParams residuals.brmsfit
+#' @param object An object of class \code{brmsfit}
 #' @param newdata An optional data.frame containing new data to make predictions for.
 #'   If \code{NULL} (the default), the data used to fit the model is applied.
 #' @param transform A function or a character string naming a function to be applied on the predicted responses
 #'   before summary statistics are computed.
+#' @param summary logical. Should summary statistics (i.e. means, sds, and 95\% intervals) be returned
+#'  instead of the raw values. Default is \code{TRUE}
+#' @param probs The percentiles to be computed by the \code{quantile} function. Only used if \code{summary = TRUE}.
+#' @param ... Currently ignored
 #' 
-#' @return predicted values of the response variable. If \code{summary = TRUE} this is a S x N matrix and if \code{summary = FALSE}
-#'   a N x C matrix, where S is the number of samples, N is the number of observations, 
-#'   and C is equal to \code{length(probs) + 2}.   
+#' @return predicted values of the response variable. If \code{summary = TRUE} this is a N x C matrix and if \code{summary = FALSE}
+#'   a S x N matrix, where S is the number of samples, N is the number of observations, 
+#'   and C is equal to \code{length(probs) + 2}.  
 #' 
 #' @details Be careful when using newdata with factors: The predicted results are only valid
 #'   if all factor levels present in the initial data are also defined and ordered correctly 
@@ -585,7 +513,7 @@ predict.brmsfit <- function(object, newdata = NULL, transform = NULL,
   # use newdata if defined
   if (is.null(newdata)) data <- object$data
   else data <- amend_newdata(newdata, formula = object$formula, family = object$family, 
-                              autocor = object$autocor, partial = object$partial) # can be found in data.R
+                             autocor = object$autocor, partial = object$partial)
   
   #call predict functions
   predict_fun <- get(paste0("predict_",family))
@@ -593,11 +521,7 @@ predict.brmsfit <- function(object, newdata = NULL, transform = NULL,
     do.call(predict_fun, list(n = n, data = data, samples = samples, link = object$link))))
   if (!is.null(transform)) 
     out <- do.call(transform, list(out))
-  if (summary) {
-    out <- do.call(cbind, lapply(c("mean", "sd", "quantile"), get_estimate, 
-                                 samples = out, probs = probs))
-    colnames(out) <- c("Estimate", "Est.Error", paste0(probs * 100, "%ile"))
-  }
+  if (summary) out <- get_summary(out, probs = probs)
   
   #sort predicted responses in case of multinormal models
   if (family == "multinormal") {
@@ -635,32 +559,40 @@ LOO.brmsfit <- function(x, ..., compare = TRUE) {
   out
 }
 
+#' Compute the pointwise log-likelihood
+#' 
+#' @param object A fitted model object of class \code{brmsfit}. 
+#' @param ... Currently ignored
+#' 
+#' @return Usually, an S x N matrix containing the pointwise log-likelihood samples, where S is the number of samples
+#'   and N is the number of observations in the data. 
+#' 
 #' @export
-loglik.brmsfit <- function(x, ...) {
-  if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
+logLik.brmsfit <- function(object, ...) {
+  if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
-  ee <- extract_effects(x$formula, family = x$family)
-  if (x$link == "log" && x$family == "gaussian" && length(ee$response) == 1) 
-    x$family <- "lognormal"
-  if (x$family == "gaussian" && length(ee$response) > 1)
-    x$family <- "multinormal"
+  ee <- extract_effects(object$formula, family = object$family)
+  if (object$link == "log" && object$family == "gaussian" && length(ee$response) == 1) 
+    object$family <- "lognormal"
+  if (object$family == "gaussian" && length(ee$response) > 1)
+    object$family <- "multinormal"
   
-  samples <- list(eta = linear_predictor(x))
-  if (x$family %in% c("gaussian", "student", "cauchy", "lognormal", "multinormal") && !is.formula(ee$se)) 
-    samples$sigma <- as.matrix(posterior.samples(x, parameters = "^sigma_"))
-  if (x$family == "student") 
-    samples$nu <- as.matrix(posterior.samples(x, parameters = "^nu$"))
-  if (x$family %in% c("gamma", "weibull","negbinomial")) 
-    samples$shape <- as.matrix(posterior.samples(x, parameters = "^shape$"))
-  if (x$family == "multinormal") {
-    samples$rescor <- as.matrix(posterior.samples(x, parameters = "^rescor_"))
+  samples <- list(eta = linear_predictor(object))
+  if (object$family %in% c("gaussian", "student", "cauchy", "lognormal", "multinormal") && !is.formula(ee$se)) 
+    samples$sigma <- as.matrix(posterior.samples(object, parameters = "^sigma_"))
+  if (object$family == "student") 
+    samples$nu <- as.matrix(posterior.samples(object, parameters = "^nu$"))
+  if (object$family %in% c("gamma", "weibull","negbinomial")) 
+    samples$shape <- as.matrix(posterior.samples(object, parameters = "^shape$"))
+  if (object$family == "multinormal") {
+    samples$rescor <- as.matrix(posterior.samples(object, parameters = "^rescor_"))
     samples$Sigma <- get_cov_matrix(sd = samples$sigma, cor = samples$rescor)$cov
     message(paste("Computing pointwise log-likelihood of multinormal distribution. \n",
                   "This may take a while."))
   }
-  loglik_fun <- get(paste0("loglik_",x$family))
-  return(do.call(cbind, lapply(1:nrow(as.matrix(x$data$Y)), function(n) 
-    do.call(loglik_fun, list(n = n, data = x$data, samples = samples, link = x$link)))))
+  loglik_fun <- get(paste0("loglik_",object$family))
+  return(do.call(cbind, lapply(1:nrow(as.matrix(object$data$Y)), function(n) 
+    do.call(loglik_fun, list(n = n, data = object$data, samples = samples, link = object$link)))))
 }
 
 #' @export
