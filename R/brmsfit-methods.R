@@ -487,10 +487,8 @@ residuals.brmsfit <- function(object, type = c("ordinary", "pearson"), summary =
     stop("The model does not contain posterior samples")
   if (object$family %in% c("categorical", "cumulative", "sratio", "cratio", "acat"))
     stop(paste("residuals not yet implemented for family", object$family))
-  if (type == "pearson" && !object$family %in% c("binomial", "bernoulli"))
-    stop("Pearson residuals are currently only available for families binomial and bernoulli")
   
-  mu <- fitted(object)
+  mu <- fitted(object, summary = FALSE)
   if (object$family %in% c("binomial", "bernoulli")) {
     if (object$family == "binomial")
       max_obs <- matrix(rep(object$data$max_obs, nrow(mu)), nrow = nrow(mu), byrow = TRUE)
@@ -501,9 +499,12 @@ residuals.brmsfit <- function(object, type = c("ordinary", "pearson"), summary =
   res <- Y - mu
   colnames(res) <- NULL
   
-  if (type == "pearson")
-    res <- res / sqrt(mu * (max_obs - mu) / max_obs)  
-  
+  if (type == "pearson") {
+    # get predicted standard deviation for each observation
+    sd <- matrix(rep(predict(object, summary = TRUE)[,2], nrow(mu)), 
+                 nrow = nrow(mu), byrow = TRUE)
+    res <- res / sd
+  }
   # for compatibility with the macf function (see correlations.R)
   # so that the colnames of the output correspond to the levels of the autocor grouping factor
   if (is(object$autocor, "cor_arma") && sum(object$autocor$p, object$autocor$q) > 0) {

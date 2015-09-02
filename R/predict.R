@@ -31,7 +31,8 @@ predict_multinormal <- function(n, data, samples, link) {
 }
 
 predict_binomial <- function(n, data, samples, link) {
-  rbinom(nrow(samples$eta), size = data$max_obs, 
+  max_obs <- ifelse(length(data$max_obs) > 1, data$max_obs[n], data$max_obs) 
+  rbinom(nrow(samples$eta), size = max_obs, 
          prob = ilink(samples$eta[,n], link))
 }  
 
