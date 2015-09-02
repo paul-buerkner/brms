@@ -293,6 +293,9 @@ ngrps.brmsfit <- function(object, ...) {
 formula.brmsfit <- function(x, ...) x$formula
 
 #' @export
+family.brmsfit <- function(x, ...) list(family = x$family, link = x$link)
+
+#' @export
 launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"), ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
@@ -377,6 +380,7 @@ fitted.brmsfit <- function(object, newdata = NULL, scale = c("response", "linear
     stop("The model does not contain posterior samples")
   if (object$family %in% c("categorical", "cumulative", "sratio", "cratio", "acat"))
     stop(paste("fitted not yet implemented for family", object$family))
+  ee <- extract_effects(object$formula, family = object$family)
   
   # use newdata if defined
   if (is.null(newdata)) data <- object$data
@@ -386,12 +390,19 @@ fitted.brmsfit <- function(object, newdata = NULL, scale = c("response", "linear
   # get mu and scale it appropriately
   mu <- linear_predictor(object, newdata = newdata)
   if (scale == "response") {
-    mu <- ilink(mu, object$link)
     if (object$family == "binomial") {
-      # scale mu from [0,1] to [0,max_obs]
       max_obs <- matrix(rep(data$max_obs, nrow(mu)), nrow = nrow(mu), byrow = TRUE)
-      mu <- mu * max_obs
+      mu <- ilink(mu, object$link) * max_obs # scale mu from [0,1] to [0,max_obs]
     }
+    else if (object$family == "gaussian" && object$link == "log" && length(ee$response) == 1) {
+      sigma <- posterior_samples(object, "^sigma_")$sigma
+      mu <- ilink(mu + sigma^2/2, object$link) # lognormal mean
+    }
+    else if (object$family == "weibull") {
+      shape <- posterior_samples(object, "^shape$")$shape
+      mu <-  1/(ilink(-mu/shape, object$link)) * gamma(1+1/shape) # weibull mean
+    } 
+    else mu <- ilink(mu, object$link)
   }
   if (summary) mu <- get_summary(mu, probs = probs)
   mu
