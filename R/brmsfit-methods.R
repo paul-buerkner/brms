@@ -378,12 +378,18 @@ fitted.brmsfit <- function(object, newdata = NULL, scale = c("response", "linear
   if (object$family %in% c("categorical", "cumulative", "sratio", "cratio", "acat"))
     stop(paste("fitted not yet implemented for family", object$family))
   
+  # use newdata if defined
+  if (is.null(newdata)) data <- object$data
+  else data <- amend_newdata(newdata, formula = object$formula, family = object$family, 
+                             autocor = object$autocor, partial = object$partial)
+  
+  # get mu and scale it appropriately
   mu <- linear_predictor(object, newdata = newdata)
   if (scale == "response") {
     mu <- ilink(mu, object$link)
     if (object$family == "binomial") {
       # scale mu from [0,1] to [0,max_obs]
-      max_obs <- matrix(rep(object$data$max_obs, nrow(mu)), nrow = nrow(mu), byrow = TRUE)
+      max_obs <- matrix(rep(data$max_obs, nrow(mu)), nrow = nrow(mu), byrow = TRUE)
       mu <- mu * max_obs
     }
   }
