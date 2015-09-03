@@ -74,66 +74,28 @@ predict_categorical <- function(n, data, samples, link) {
     p <- exp(cbind(rep(0, nrow(samples$eta)), samples$eta[,n,1:(max_obs-1)]))
     p <- do.call(cbind, lapply(1:max_obs, function(j) rowSums(as.matrix(p[,1:j]))))
   }
-  else stop(paste("Link",link,"not supported"))
+  else stop(paste("Link", link, "not supported"))
   first_greater(p, target = runif(nrow(samples$eta), min = 0, max = p[,max_obs]))
 }
 
 predict_cumulative <- function(n, data, samples, link) {
-  max_obs <- ifelse(length(data$max_obs) > 1, data$max_obs[n], data$max_obs) 
-  p <- cbind(ilink(samples$eta[,n,1], link), 
-             if (max_obs > 2) sapply(2:(max_obs-1), function(k) 
-               ilink(samples$eta[,n,k], link) - ilink(samples$eta[,n,k-1], link)),
-             1 - ilink(samples$eta[,n,max_obs-1], link))
-  p <- do.call(cbind, lapply(1:max_obs, function(j) rowSums(as.matrix(p[,1:j]))))
-  first_greater(p, target = runif(nrow(samples$eta), min = 0, max = p[,max_obs]))
+  predict_ordinal(n = n, data = data, samples = samples, link = link, family = "cumulative")
 }
 
 predict_sratio <- function(n, data, samples, link) {
-  max_obs <- ifelse(length(data$max_obs) > 1, data$max_obs[n], data$max_obs) 
-  y <- data$Y[n]
-  q <- sapply(1:(max_obs-1), function(k) 
-    1 - ilink(samples$eta[,n,k], link))
-  p <- cbind(1 - q[,1], 
-             if (max_obs > 2) sapply(2:(max_obs-1), function(k)
-               (1 - q[,k]) * apply(as.matrix(q[,1:(k-1)]), 1, prod)),
-             apply(q, 1, prod))
-  p <- do.call(cbind, lapply(1:max_obs, function(j) rowSums(as.matrix(p[,1:j]))))
-  first_greater(p, target = runif(nrow(samples$eta), min = 0, max = p[,max_obs]))
+  predict_ordinal(n = n, data = data, samples = samples, link = link, family = "sratio")
 }
 
 predict_cratio <- function(n, data, samples, link) {
-  max_obs <- ifelse(length(data$max_obs) > 1, data$max_obs[n], data$max_obs) 
-  y <- data$Y[n]
-  q <- sapply(1:(max_obs-1), function(k) 
-    ilink(samples$eta[,n,k], link))
-  p <- cbind(1 - q[,1], 
-             if (max_obs > 2) sapply(2:(max_obs-1), function(k)
-               (1 - q[,k]) * apply(as.matrix(q[,1:(k-1)]), 1, prod)),
-             apply(q, 1, prod))
-  p <- do.call(cbind, lapply(1:max_obs, function(j) rowSums(as.matrix(p[,1:j]))))
-  first_greater(p, target = runif(nrow(samples$eta), min = 0, max = p[,max_obs]))
+  predict_ordinal(n = n, data = data, samples = samples, link = link, family = "cratio")
 }
 
 predict_acat <- function(n, data, samples, link) {
-  max_obs <- ifelse(length(data$max_obs) > 1, data$max_obs[n], data$max_obs) 
-  y <- data$Y[n]
-  if (link == "logit") {
-    q <- sapply(1:(max_obs-1), function(k) samples$eta[,n,k])
-    p <- cbind(rep(0, nrow(samples$eta)), q[,1], 
-               matrix(0, nrow = nrow(samples$eta), ncol = max_obs - 2))
-    if (max_obs > 2) 
-      p[,3:max_obs] <- sapply(3:max_obs, function(k) rowSums(q[,1:(k-1)]))
-  }
-  else {
-    q <- sapply(1:(max_obs-1), function(k) 
-      ilink(samples$eta[,n,k], link))
-    p <- cbind(apply(1 - q[,1:(max_obs-1)], 1, prod), 
-               matrix(0, nrow = nrow(samples$eta), ncol = max_obs - 1))
-    if (max_obs > 2)
-      p[,2:(max_obs-1)] <- sapply(2:(max_obs-1), function(k) 
-        apply(as.matrix(q[,1:(k-1)]), 1, prod) * apply(as.matrix(1 - q[,k:(max_obs-1)]), 1, prod))
-    p[,max_obs] <- apply(q[,1:(max_obs-1)], 1, prod)
-  }
-  p <- do.call(cbind, lapply(1:max_obs, function(j) rowSums(as.matrix(p[,1:j]))))
-  first_greater(p, target = runif(nrow(samples$eta), min = 0, max = p[,max_obs]))
+  predict_ordinal(n = n, data = data, samples = samples, link = link, family = "acat")
 }  
+
+predict_ordinal <- function(n, data, samples, family, link) {
+  cat <- ifelse(length(data$max_obs) > 1, data$max_obs[n], data$max_obs)
+  p <- pordinal(1:cat, eta = samples$eta[,n,], cat = cat, family = family, link = link)
+  first_greater(p, target = runif(nrow(samples$eta), min = 0, max = 1))
+}

@@ -19,7 +19,7 @@ rstudent <-  function(n, df = stop("df is required"), mu = 0, sigma = 1) {
   mu + sigma * rt(n, df = df)
 }
 
-#density of the multinormal distribution with parameters mu and Sigma
+# density of the multinormal distribution with parameters mu and Sigma (not vectorized)
 dmultinormal <- function(x, mu, Sigma, log = TRUE) {
   k <- length(x)
   rooti <- backsolve(chol(Sigma),diag(k))
@@ -29,7 +29,7 @@ dmultinormal <- function(x, mu, Sigma, log = TRUE) {
   out
 }
 
-#random values of the multinormal distribution with parameters mu and Sigma
+# random values of the multinormal distribution with parameters mu and Sigma
 rmultinormal <- function(n, mu, Sigma, check = FALSE) {
   p <- length(mu)
   if (check) {
@@ -41,4 +41,95 @@ rmultinormal <- function(n, mu, Sigma, check = FALSE) {
   cholSigma <- chol(Sigma)
   samples <- matrix(rnorm(n*p), nrow = n, ncol = p)
   mu + samples %*% cholSigma
+}
+
+# density of the cumulative distribution
+# 
+# @param x positive integers not greater than cat
+# @param mu the linear predictor (of length or ncol cat-1)  
+# @param cat the number of categories
+#
+# @return the probabilities of the values in x
+dcumulative <- function(x, eta, cat, link = "logit") {
+  if (is.null(dim(eta))) eta <- matrix(eta, nrow = 1)
+  if (length(dim(eta)) != 2 || !is.numeric(eta)) 
+    stop("eta must be a numeric vector or matrix")
+  if (missing(cat)) cat <- ncol(eta)
+  mu <- ilink(eta, link)
+  p <- cbind(mu[,1], 
+             if (cat > 2) sapply(2:(cat-1), function(k) mu[,k] - mu[,k-1]), 
+             1 - mu[,cat-1])
+  p[,x]
+}
+
+# density of the sratio distribution
+# 
+# @param same arguments as dcumulative
+dsratio <- function(x, eta, cat, link = "logit") {
+  if (is.null(dim(eta))) eta <- matrix(eta, nrow = 1)
+  if (length(dim(eta)) != 2 || !is.numeric(eta)) 
+    stop("eta must be a numeric vector or matrix")
+  if (missing(cat)) cat <- ncol(eta)
+  mu <- ilink(eta, link)
+  p <- cbind(mu[,1], 
+        if (cat > 2) sapply(2:(cat-1), function(k)
+          (mu[,k]) * apply(as.matrix(1-mu[,1:(k-1)]), 1, prod)),
+        apply(1-mu, 1, prod))
+  p[,x]
+}
+
+# density of the cratio distribution
+# 
+# @param same arguments as dcumulative
+dcratio <- function(x, eta, cat, link = "logit") {
+  if (is.null(dim(eta))) eta <- matrix(eta, nrow = 1)
+  if (length(dim(eta)) != 2 || !is.numeric(eta)) 
+    stop("eta must be a numeric vector or matrix")
+  if (missing(cat)) cat <- ncol(eta)
+  mu <- ilink(eta, link)
+  p <- cbind(1 - mu[,1], 
+        if (cat > 2) sapply(2:(cat-1), function(k)
+          (1 - mu[,k]) * apply(as.matrix(mu[,1:(k-1)]), 1, prod)),
+        apply(mu, 1, prod))
+  p[,x]
+}
+
+# density of the acat family
+# 
+# @param same arguments as dcumulative
+dacat <- function(x, eta, cat, link = "logit") {
+  if (is.null(dim(eta))) eta <- matrix(eta, nrow = 1)
+  if (length(dim(eta)) != 2 || !is.numeric(eta)) 
+    stop("eta must be a numeric vector or matrix")
+  if (missing(cat)) cat <- ncol(eta)
+  
+  if (link == "logit") {
+    p <- cbind(rep(1, nrow(eta)), exp(eta[,1]), 
+               matrix(NA, nrow = nrow(eta), ncol = cat - 2))
+    if (cat > 2) 
+      p[,3:cat] <- exp(sapply(3:cat, function(k) rowSums(eta[,1:(k-1)])))
+  } 
+  else {
+    mu <- ilink(eta, link)
+    p <- cbind(apply(1 - mu[,1:(cat-1)], 1, prod), 
+               matrix(0, nrow = nrow(eta), ncol = cat - 1))
+    if (cat > 2)
+      p[,2:(cat-1)] <- sapply(2:(cat-1), function(k) 
+        apply(as.matrix(mu[,1:(k-1)]), 1, prod) * apply(as.matrix(1 - mu[,k:(cat-1)]), 1, prod))
+    p[,cat] <- apply(mu[,1:(cat-1)], 1, prod)
+  }
+  p <- p / rowSums(p)
+  p[,x]
+}
+
+# distribution functions for ordinal families
+#
+# @param q positive integers not greater than cat
+# @param mu the linear predictor (of length or ncol cat-1)  
+# @param cat the number of categories
+#
+# @return probabilites P(x <= q)
+pordinal <- function(q, eta, cat, family, link = "logit") {
+  p <- do.call(paste0("d", family), list(1:max(q), eta = eta, cat = cat, link = link))
+  do.call(cbind, lapply(q, function(j) rowSums(as.matrix(p[,1:j]))))
 }

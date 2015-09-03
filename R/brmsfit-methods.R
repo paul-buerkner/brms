@@ -293,7 +293,7 @@ ngrps.brmsfit <- function(object, ...) {
 formula.brmsfit <- function(x, ...) x$formula
 
 #' @export
-family.brmsfit <- function(x, ...) list(family = x$family, link = x$link)
+family.brmsfit <- function(object, ...) list(family = object$family, link = object$link)
 
 #' @export
 launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"), ...) {
