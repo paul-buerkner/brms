@@ -86,7 +86,7 @@ If only a name is given, the file is save in the current working directory.}
 }
 \value{
 An object of class \code{brmsfit}, which contains the posterior samples along with many other useful information about the model.
- If rstan is not installed, \code{brmsfit} will not contain posterior samples.
+ Use \code{methods(class = "brmsfit")} for an overview on available methods.
 }
 \description{
 Fit a Bayesian generalized linear or ordinal mixed model using Stan

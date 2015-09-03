@@ -227,15 +227,16 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian", autoco
   #check if parameter names in prior are correct
   ee <- extract_effects(formula, family = family)  
   possible_priors <- unlist(parnames(formula, data = data, family = family, autocor = autocor,
-                                     partial = partial, threshold = threshold, internal = TRUE), use.names = FALSE)
+                                     partial = partial, threshold = threshold, internal = TRUE), 
+                            use.names = FALSE)
   meta_priors <- unlist(regmatches(possible_priors, gregexpr("^[^_]+", possible_priors)))
   if ("sd" %in% meta_priors)
     meta_priors <- c(meta_priors, paste0("sd_",ee$group))
   possible_priors <- unique(c(possible_priors, meta_priors))
   wrong_priors <- names(prior)[!names(prior) %in% possible_priors]
   if (length(wrong_priors))
-    warning(paste("Some parameter names in prior cannot be found in the model:", 
-                  paste0(wrong_priors, collapse = ", ")))
+    message(paste0("Some parameter names in prior cannot be found in the model and are ignored. \n", 
+                   "Occured for parameter(s): ", paste0(wrong_priors, collapse = ", ")))
   
   #rename certain parameters
   names(prior) <- rename(names(prior), symbols = c("^cor_", "^cor$", "^rescor$"), 

@@ -54,7 +54,7 @@
 #' @param ... Further arguments to be passed to Stan.
 #' 
 #' @return An object of class \code{brmsfit}, which contains the posterior samples along with many other useful information about the model.
-#'  If rstan is not installed, \code{brmsfit} will not contain posterior samples.
+#'  Use \code{methods(class = "brmsfit")} for an overview on available methods.
 #'  
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
