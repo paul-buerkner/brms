@@ -137,13 +137,32 @@ get_summary <- function(samples, probs = c(0.025, 0.975)) {
   if (length(dim(samples)) == 2)
     out <- do.call(cbind, lapply(c("mean", "sd", "quantile"), get_estimate, 
                                  samples = samples, probs = probs))
-  else if (length(dim(samples)) == 3)
+  else if (length(dim(samples)) == 3) {
     out <- list2array(lapply(1:dim(samples)[3], function(i)
       do.call(cbind, lapply(c("mean", "sd", "quantile"), get_estimate, 
                             samples = samples[,,i], probs = probs))))
+    dimnames(out) <- list(NULL, NULL, paste0("P(Y = ", 1:dim(out)[3], ")")) 
+  }
   else stop("dimension of samples must be either 2 or 3") 
+  rownames(out) <- 1:nrow(out)
   colnames(out) <- c("Estimate", "Est.Error", paste0(probs * 100, "%ile"))
   out  
+}
+
+# compute absolute frequencies for each column
+# 
+# @param samples a S x N matrix
+# @param levels all possible values in \code{samples}
+# 
+# @return a N x \code{levels} matrix containing absolute frequencies in each column seperately
+get_table <- function(samples, levels = sort(unique(samples))) {
+  if (!is.matrix(samples)) 
+    stop("samples must be a matrix")
+  out <- do.call(rbind, lapply(1:ncol(samples), function(n) 
+    table(factor(samples[,n], levels = levels))))
+  rownames(out) <- 1:nrow(out)
+  colnames(out) <- paste0("N(Y = ", 1:ncol(out), ")")
+  out
 }
 
 #compute covariance and correlation matrices based on correlation and sd samples

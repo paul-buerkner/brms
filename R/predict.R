@@ -69,13 +69,9 @@ predict_weibull <- function(n, data, samples, link) {
 }
 
 predict_categorical <- function(n, data, samples, link) {
-  max_obs <- ifelse(length(data$max_obs) > 1, data$max_obs[n], data$max_obs) 
-  if (link == "logit") {
-    p <- exp(cbind(rep(0, nrow(samples$eta)), samples$eta[,n,1:(max_obs-1)]))
-    p <- do.call(cbind, lapply(1:max_obs, function(j) rowSums(as.matrix(p[,1:j]))))
-  }
-  else stop(paste("Link", link, "not supported"))
-  first_greater(p, target = runif(nrow(samples$eta), min = 0, max = p[,max_obs]))
+  cat <- ifelse(length(data$max_obs) > 1, data$max_obs[n], data$max_obs) 
+  p <- pcategorical(1:cat, eta = samples$eta[,n,], cat = cat, link = link)
+  first_greater(p, target = runif(nrow(samples$eta), min = 0, max = 1))
 }
 
 predict_cumulative <- function(n, data, samples, link) {

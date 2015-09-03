@@ -24,9 +24,11 @@ instead of the raw values. Default is \code{TRUE}}
 \item{...}{Currently ignored}
 }
 \value{
-Fitted values extracted from \code{object}. If \code{summary = TRUE} this is a N x C matrix and if \code{summary = FALSE}
-  a S x N matrix, where S is the number of samples, N is the number of observations,
-  and C is equal to \code{length(probs) + 2}.
+Fitted values extracted from \code{object}. The output depends on the family:
+  If \code{summary = TRUE} it is a N x E x C array for categorical and ordinal models and a N x E matrix else.
+  If \code{summary = FALSE} it is a S x N x C array for categorical and ordinal models and a S x N matrix else.
+  N is the number of observations, S is the number of samples, C is the number of categories,
+  and E is equal to \code{length(probs) + 2}.
 }
 \description{
 Extract Model Fitted Values of \code{brmsfit} Objects

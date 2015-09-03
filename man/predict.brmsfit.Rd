@@ -24,9 +24,10 @@ instead of the raw values. Default is \code{TRUE}}
 \item{...}{Currently ignored}
 }
 \value{
-predicted values of the response variable. If \code{summary = TRUE} this is a N x C matrix and if \code{summary = FALSE}
-  a S x N matrix, where S is the number of samples, N is the number of observations,
-  and C is equal to \code{length(probs) + 2}.
+Predicted values of the response variable. If \code{summary = TRUE} the output depends on the family:
+  For catagorical and ordinal families, it is a N x C matrix where N is the number of observations and
+  C is the number of categories. For all other families, it is a N x E matrix where E is equal to \code{length(probs) + 2}.
+  If \code{summary = FALSE}, the output is as a S x N matrix, where S is the number of samples.
 }
 \description{
 Make predictions based on the fitted model parameters.

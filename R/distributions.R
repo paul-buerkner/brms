@@ -1,20 +1,20 @@
-#density of student's distribution with parameters df, mu, and sigma
+# density of student's distribution with parameters df, mu, and sigma
 dstudent <- function(x, df = stop("df is required"), mu = 0, sigma = 1, log = FALSE) {
   if (log) dt((x - mu)/sigma, df = df, log = TRUE) - log(sigma)
   else dt((x - mu)/sigma, df = df)/sigma
 }
 
-#distribution function of student's distribution with parameters df, mu, and sigma
+# distribution function of student's distribution with parameters df, mu, and sigma
 pstudent <- function(q, df = stop("df is required"), mu = 0, sigma = 1, lower.tail = TRUE, log.p = FALSE) {
   pt((q - mu)/sigma, df = df, lower.tail = lower.tail, log.p = log.p)
 }
 
-#rquantiles of student's distribution with parameters df, mu, and sigma
+# rquantiles of student's distribution with parameters df, mu, and sigma
 qstudent <-  function(p, df = stop("df is required"), mu = 0, sigma = 1) {
   mu + sigma * qt(p, df = df)
 }
 
-#random values of student's distribution with parameters df, mu, and sigma
+# random values of student's distribution with parameters df, mu, and sigma
 rstudent <-  function(n, df = stop("df is required"), mu = 0, sigma = 1) {
   mu + sigma * rt(n, df = df)
 }
@@ -41,6 +41,33 @@ rmultinormal <- function(n, mu, Sigma, check = FALSE) {
   cholSigma <- chol(Sigma)
   samples <- matrix(rnorm(n*p), nrow = n, ncol = p)
   mu + samples %*% cholSigma
+}
+
+# density of the categorical distribution
+# 
+# @param same arguments as dcumulative
+dcategorical <- function(x, eta, cat, link = "logit") {
+  if (is.null(dim(eta))) eta <- matrix(eta, nrow = 1)
+  if (length(dim(eta)) != 2 || !is.numeric(eta)) 
+    stop("eta must be a numeric vector or matrix")
+  if (missing(cat)) cat <- ncol(eta)
+  if (link == "logit")
+    p <- exp(cbind(rep(0, nrow(eta)), eta[,1:(cat-1)]))
+  else stop(paste("Link", link, "not supported"))
+  p <- p / rowSums(p)
+  p[,x]
+}
+
+# distribution functions for the categorical family
+#
+# @param q positive integers not greater than cat
+# @param mu the linear predictor (of length or ncol cat-1)  
+# @param cat the number of categories
+#
+# @return probabilites P(x <= q)
+pcategorical <- function(q, eta, cat, link = "logit") {
+  p <- dcategorical(1:max(q), eta = eta, cat = cat, link = link)
+  do.call(cbind, lapply(q, function(j) rowSums(as.matrix(p[,1:j]))))
 }
 
 # density of the cumulative distribution

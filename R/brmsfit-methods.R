@@ -357,9 +357,11 @@ plot.brmsfit <- function(x, parameters = NA, N = 5, ask = TRUE, ...) {
 #' 
 #' @details Currently, the method does not support \code{categorical} or ordinal models. 
 #'
-#' @return Fitted values extracted from \code{object}. If \code{summary = TRUE} this is a N x C matrix and if \code{summary = FALSE}
-#'   a S x N matrix, where S is the number of samples, N is the number of observations, 
-#'   and C is equal to \code{length(probs) + 2}.  
+#' @return Fitted values extracted from \code{object}. The output depends on the family:
+#'   If \code{summary = TRUE} it is a N x E x C array for categorical and ordinal models and a N x E matrix else.
+#'   If \code{summary = FALSE} it is a S x N x C array for categorical and ordinal models and a S x N matrix else.
+#'   N is the number of observations, S is the number of samples, C is the number of categories,
+#'   and E is equal to \code{length(probs) + 2}.
 #'
 #' @examples 
 #' \dontrun{
@@ -378,8 +380,6 @@ fitted.brmsfit <- function(object, newdata = NULL, scale = c("response", "linear
   scale <- match.arg(scale)
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
-  if (object$family %in% c("categorical", "cumulative", "sratio", "cratio", "acat"))
-    stop(paste("fitted not yet implemented for family", object$family))
   ee <- extract_effects(object$formula, family = object$family)
   
   # use newdata if defined
@@ -402,6 +402,13 @@ fitted.brmsfit <- function(object, newdata = NULL, scale = c("response", "linear
       shape <- posterior_samples(object, "^shape$")$shape
       mu <-  1/(ilink(-mu/shape, object$link)) * gamma(1+1/shape) # weibull mean
     } 
+    else if (object$family %in% c("categorical", "cumulative", "sratio", "cratio", "acat")) {
+      cat <- max(data$max_obs)
+      # get probabilities of each category
+      mu <- aperm(list2array(lapply(1:ncol(mu), function(n)
+        do.call(paste0("d",object$family), list(1:cat, eta = mu[,n,], cat = cat, link = object$link)))),
+        perm = c(1, 3, 2))
+    }
     else mu <- ilink(mu, object$link)
   }
   if (summary) mu <- get_summary(mu, probs = probs)
@@ -476,9 +483,10 @@ residuals.brmsfit <- function(object, type = c("ordinary", "pearson"), summary =
 #' @param probs The percentiles to be computed by the \code{quantile} function. Only used if \code{summary = TRUE}.
 #' @param ... Currently ignored
 #' 
-#' @return predicted values of the response variable. If \code{summary = TRUE} this is a N x C matrix and if \code{summary = FALSE}
-#'   a S x N matrix, where S is the number of samples, N is the number of observations, 
-#'   and C is equal to \code{length(probs) + 2}.  
+#' @return Predicted values of the response variable. If \code{summary = TRUE} the output depends on the family:
+#'   For catagorical and ordinal families, it is a N x C matrix where N is the number of observations and
+#'   C is the number of categories. For all other families, it is a N x E matrix where E is equal to \code{length(probs) + 2}.
+#'   If \code{summary = FALSE}, the output is as a S x N matrix, where S is the number of samples.
 #' 
 #' @details Be careful when using newdata with factors: The predicted results are only valid
 #'   if all factor levels present in the initial data are also defined and ordered correctly 
@@ -505,12 +513,14 @@ predict.brmsfit <- function(object, newdata = NULL, transform = NULL,
                             summary = TRUE, probs = c(0.025, 0.975), ...) {
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
+  ee <- extract_effects(object$formula, family = object$family)
+  
   family <- object$family
-  ee <- extract_effects(object$formula, family = family)
   if (object$link == "log" && family == "gaussian" && length(ee$response) == 1) 
     family <- "lognormal"
   else if (family == "gaussian" && length(ee$response) > 1)
     family <- "multinormal"
+  is_categorical <- family %in% c("categorical", "cumulative", "sratio", "cratio", "acat")
   
   # compute all necessary samples
   samples <- list(eta = linear_predictor(object, newdata = newdata))
@@ -536,9 +546,13 @@ predict.brmsfit <- function(object, newdata = NULL, transform = NULL,
   predict_fun <- get(paste0("predict_",family))
   out <- do.call(cbind, lapply(1:ncol(samples$eta), function(n) 
     do.call(predict_fun, list(n = n, data = data, samples = samples, link = object$link))))
-  if (!is.null(transform)) 
+  if (!is.null(transform) && !is_categorical) 
     out <- do.call(transform, list(out))
-  if (summary) out <- get_summary(out, probs = probs)
+  
+  if (summary && !is_categorical) 
+    out <- get_summary(out, probs = probs)
+  else if (summary && is_categorical) # compute frequencies of categories for categorical and ordinal models
+    out <- get_table(out, levels = 1:max(data$max_obs)) 
   
   #sort predicted responses in case of multinormal models
   if (family == "multinormal") {
