@@ -403,10 +403,11 @@ fitted.brmsfit <- function(object, newdata = NULL, scale = c("response", "linear
       mu <-  1/(ilink(-mu/shape, object$link)) * gamma(1+1/shape) # weibull mean
     } 
     else if (object$family %in% c("categorical", "cumulative", "sratio", "cratio", "acat")) {
-      cat <- max(data$max_obs)
+      ncat <- max(data$max_obs)
       # get probabilities of each category
       mu <- aperm(list2array(lapply(1:ncol(mu), function(n)
-        do.call(paste0("d",object$family), list(1:cat, eta = mu[,n,], cat = cat, link = object$link)))),
+        do.call(paste0("d",object$family), list(1:ncat, eta = mu[,n,], ncat = ncat, 
+                                                link = object$link)))),
         perm = c(1, 3, 2))
     }
     else mu <- ilink(mu, object$link)

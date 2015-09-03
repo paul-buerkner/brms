@@ -69,8 +69,8 @@ predict_weibull <- function(n, data, samples, link) {
 }
 
 predict_categorical <- function(n, data, samples, link) {
-  cat <- ifelse(length(data$max_obs) > 1, data$max_obs[n], data$max_obs) 
-  p <- pcategorical(1:cat, eta = samples$eta[,n,], cat = cat, link = link)
+  ncat <- ifelse(length(data$max_obs) > 1, data$max_obs[n], data$max_obs) 
+  p <- pcategorical(1:ncat, eta = samples$eta[,n,], ncat = ncat, link = link)
   first_greater(p, target = runif(nrow(samples$eta), min = 0, max = 1))
 }
 
@@ -91,7 +91,7 @@ predict_acat <- function(n, data, samples, link) {
 }  
 
 predict_ordinal <- function(n, data, samples, family, link) {
-  cat <- ifelse(length(data$max_obs) > 1, data$max_obs[n], data$max_obs)
-  p <- pordinal(1:cat, eta = samples$eta[,n,], cat = cat, family = family, link = link)
+  ncat <- ifelse(length(data$max_obs) > 1, data$max_obs[n], data$max_obs)
+  p <- pordinal(1:ncat, eta = samples$eta[,n,], ncat = ncat, family = family, link = link)
   first_greater(p, target = runif(nrow(samples$eta), min = 0, max = 1))
 }

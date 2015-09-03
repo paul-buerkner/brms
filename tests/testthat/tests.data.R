@@ -40,7 +40,7 @@ test_that("Test that brmdata returns correct data names for fixed and random eff
   expect_equal(names(brmdata(rating ~ treat + period + carry + (1+treat|subject), data = inhaler,
                family = "categorical")),
                c("N","Y","Kp","Xp","lev_1","N_1","K_1",
-                 "Z_1","NC_1","max_obs"))
+                 "Z_1","NC_1", "ncat", "max_obs"))
   expect_equal(names(brmdata(y ~ x + (1|g) + (1|h), family = "poisson",
               data = data.frame(y = 1:10, g = 1:10, h = 11:10, x = rep(0,10)))),
                c("N","Y","K","X","lev_1","N_1","K_1","Z_1","NC_1",
@@ -63,13 +63,13 @@ test_that("Test that brmdata returns correct data names for addition and partial
   expect_equal(names(brmdata(y | cens(c) ~ x, family = "cauchy", data = data)), 
                c("N","Y","K","X","cens"))
   expect_equal(names(brmdata(y | trials(t) ~ x, family = "binomial", data = data)), 
-               c("N","Y","K","X","max_obs"))
+               c("N","Y","K","X","trials","max_obs"))
   expect_equal(names(brmdata(y | trials(10) ~ x, family = "binomial", data = data)), 
-               c("N","Y","K","X","max_obs"))
+               c("N","Y","K","X","trials","max_obs"))
   expect_equal(names(brmdata(y | cat(t) ~ x, family = "acat", data = data)), 
-               c("N","Y","K","X","max_obs"))
+               c("N","Y","K","X","ncat","max_obs"))
   expect_equal(names(brmdata(y | cat(10) ~ x, family = "cumulative", data = data)), 
-               c("N","Y","K","X","max_obs"))
+               c("N","Y","K","X","ncat","max_obs"))
 })
 
 test_that("Test that brmdata accepts correct response variables depending on the family", {

@@ -203,23 +203,28 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
     standata <- c(standata, list(cens = .addition(formula = ee$cens, data = data)))
   }
   if (family == "binomial") {
-    standata$max_obs <- if (!length(ee$trials)) max(standata$Y)
+    standata$trials <- if (!length(ee$trials)) max(standata$Y)
                         else if (is.wholenumber(ee$trials)) ee$trials
                         else if (is.formula(ee$trials)) .addition(formula = ee$trials, data = data)
                         else stop("Response part of formula is invalid.")
-    if (max(standata$max_obs) == 1) 
+    standata$max_obs <- standata$trials # for backwards compatibility
+    if (max(standata$trials) == 1) 
       message("Only 2 levels detected so that family 'bernoulli' might be a more efficient choice.")
-    if (any(standata$Y > standata$max_obs))
+    if (any(standata$Y > standata$trials))
       stop("Number of trials is smaller than the response variable would suggest.")
   }
   if (is_ordinal || family == "categorical") {
-    standata$max_obs <- if (!length(ee$cat)) max(standata$Y)
+    standata$ncat <- if (!length(ee$cat)) max(standata$Y)
                         else if (is.wholenumber(ee$cat)) ee$cat
-                        else if (is.formula(ee$cat)) max(.addition(formula = ee$cat, data = data))
+                        else if (is.formula(ee$cat)) {
+                          warning("observations may no longer have different numbers of categories.")
+                          max(.addition(formula = ee$cat, data = data))
+                        }
                         else stop("Response part of formula is invalid.")
-    if (max(standata$max_obs) == 2) 
+    standata$max_obs <- standata$ncat # for backwards compatibility
+    if (max(standata$ncat) == 2) 
       message("Only 2 levels detected so that family 'bernoulli' might be a more efficient choice.")
-    if (any(standata$Y > standata$max_obs))
+    if (any(standata$Y > standata$ncat))
       stop("Number of categories is smaller than the response variable would suggest.")
   }  
   

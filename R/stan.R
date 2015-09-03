@@ -94,8 +94,10 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
       "  real<lower=0> sigma[N]; \n",
     if (is.formula(ee$weights))
       paste0("  vector<lower=0>[N",trait,"] weights; \n"),
-    if (is_ordinal || family %in% c("binomial", "categorical")) 
-      paste0("  int max_obs", if (is.formula(ee$trials)) "[N]", "; \n"),
+    if (family == "binomial")
+      paste0("  int trials", if (is.formula(ee$trials)) "[N]", "; \n"),
+    if (is_ordinal || family == "categorical")
+      paste0("  int ncat; \n"),
     if (is.formula(ee$cens) && !(is_ordinal || family == "categorical"))
       "  vector[N] cens; \n",
     text_ranef$data,
@@ -113,7 +115,7 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
   text_parameters <- paste0(
     "parameters { \n",
     if (length(fixef)) "  vector[K] b; \n",
-    if (length(paref)) paste0("  matrix[Kp,max_obs-1] bp; \n"),
+    if (length(paref)) paste0("  matrix[Kp,ncat-1] bp; \n"),
     text_ordinal$par, text_ranef$par,
     if (autocor$p && is(autocor, "cor_arma")) "  vector[Kar] ar; \n",
     if (autocor$q && is(autocor, "cor_arma")) "  vector[Kma] ma; \n",
@@ -277,7 +279,7 @@ stan_llh <- function(family, link, add = FALSE, weights = FALSE, cens = FALSE) {
      geometric = c("neg_binomial_2_log", paste0("eta",n,",1")),
      cumulative = c("ordered_logistic", "eta[n],b_Intercept"),
      categorical = c("categorical_logit", "to_vector(append_col(zero, eta[n] + etap[n]))"), 
-     binomial = c("binomial_logit", paste0("max_obs",ns,",eta",n)), 
+     binomial = c("binomial_logit", paste0("trials",ns,",eta",n)), 
      bernoulli = c("bernoulli_logit", paste0("eta",n)))
   else llh.pre <- switch(ifelse(is_cat, "categorical", 
                          ifelse(family == "gaussian" && link == "log", "lognormal", family)),
@@ -289,7 +291,7 @@ stan_llh <- function(family, link, add = FALSE, weights = FALSE, cens = FALSE) {
      poisson = c("poisson", paste0(ilink,"(eta",n,")")),
      negbinomial = c("neg_binomial_2", paste0(ilink,"(eta",n,"),shape")),
      geometric = c("neg_binomial_2", paste0(ilink,"(eta",n,"),1")),
-     binomial = c("binomial", paste0("max_obs",ns,",",ilink,"(eta",n,")")),
+     binomial = c("binomial", paste0("trials",ns,",",ilink,"(eta",n,")")),
      bernoulli = c("bernoulli", paste0(ilink,"(eta",n,")")), 
      gamma = c("gamma", paste0("shape,eta",n)), 
      exponential = c("exponential", paste0("eta",n)),
@@ -334,7 +336,7 @@ stan_eta <- function(family, link, fixef, paref = NULL,
   eta <- list()
   # initialize eta
   eta$transD <- paste0("  vector[N] eta; \n", 
-                       ifelse(length(paref), paste0("  matrix[N,max_obs-1] etap; \n"), ""),
+                       ifelse(length(paref), paste0("  matrix[N,ncat-1] etap; \n"), ""),
                        ifelse(is_multi, "  vector[K_trait] etam[N_trait]; \n", ""))
   eta.multi <- ifelse(is_multi, "etam[m,k]", "eta[n]")
   
@@ -471,42 +473,42 @@ stan_ordinal <- function(family, link, partial = FALSE, threshold = "flexible") 
   }  
   sc <- ifelse(family == "sratio", "1-", "")
   intercept <- paste0("  ", ifelse(family == "cumulative", "ordered", "vector"), 
-                      "[max_obs-1] b_Intercept; \n")
+                      "[ncat-1] b_Intercept; \n")
   
   out <- list()
   if (is_ordinal) {
     out$par <-  ifelse(threshold == "flexible", intercept,
       paste0("  real b_Intercept1; \n  real", ifelse(family == "cumulative", "<lower=0>", "")," delta; \n")) 
     out$transC1 <- ifelse(threshold == "equidistant", 
-      paste0("  for (k in 1:(max_obs-1)) { \n    b_Intercept[k] <- b_Intercept1 + (k-1.0)*delta; \n  } \n"), "")
+      paste0("  for (k in 1:(ncat-1)) { \n    b_Intercept[k] <- b_Intercept1 + (k-1.0)*delta; \n  } \n"), "")
     out$transD <- ifelse(threshold == "equidistant", intercept, "")
   }
   if (!(family %in% c("cumulative", "categorical") && ilink == "inv_logit")) {
-    out$transD <- paste0(out$transD, "  vector[max_obs] p[N]; \n", 
-      if (!family %in% c("cumulative", "categorical")) paste0("  vector[max_obs-1] q[N]; \n"))
+    out$transD <- paste0(out$transD, "  vector[ncat] p[N]; \n", 
+      if (!family %in% c("cumulative", "categorical")) paste0("  vector[ncat-1] q[N]; \n"))
     if (family == "categorical" && ilink == "inv_logit") out$transC <- paste0(
       "    p[n,1] <- 1.0; \n",
-      "    for (k in 2:max_obs) { \n",
+      "    for (k in 2:ncat) { \n",
       "      p[n,k] <- exp(eta[n,k-1]); \n",
       "    } \n",
       "    p[n] <- p[n]/sum(p[n]); \n")
     else if (family == "cumulative") out$transC2 <- paste0(
       "    p[n,1] <- ",ilink,"(",th(1),"); \n",
-      "    for (k in 2:(max_obs-1)) { \n", 
+      "    for (k in 2:(ncat-1)) { \n", 
       "      p[n,k] <- ",ilink,"(",th("k"),") - ",ilink,"(",th("k-1"),"); \n", 
       "    } \n",
-      "    p[n,max_obs] <- 1 - ",ilink,"(",th("max_obs-1"),"); \n")
+      "    p[n,ncat] <- 1 - ",ilink,"(",th("ncat-1"),"); \n")
     else if (family %in% c("sratio", "cratio")) out$transC2 <- paste0(
-      "    for (k in 1:(max_obs-1)) { \n",
+      "    for (k in 1:(ncat-1)) { \n",
       "      q[n,k] <- ",sc, ilink,"(",th("k"),"); \n",
       "      p[n,k] <- 1-q[n,k]; \n",
       "      for (kk in 1:(k-1)) p[n,k] <- p[n,k] * q[n,kk]; \n", 
       "    } \n",
-      "    p[n,max_obs] <- prod(q[n]); \n")
+      "    p[n,ncat] <- prod(q[n]); \n")
     else if (family == "acat") 
       if (ilink == "inv_logit") out$transC2 <- paste0(
         "    p[n,1] <- 1.0; \n",
-        "    for (k in 1:(max_obs-1)) { \n",
+        "    for (k in 1:(ncat-1)) { \n",
         "      q[n,k] <- ",th("k"),"; \n",
         "      p[n,k+1] <- q[n,1]; \n",
         "      for (kk in 2:k) p[n,k+1] <- p[n,k+1] + q[n,kk]; \n",
@@ -514,12 +516,12 @@ stan_ordinal <- function(family, link, partial = FALSE, threshold = "flexible") 
         "    } \n",
         "    p[n] <- p[n]/sum(p[n]); \n")
     else out$transC2 <- paste0(                   
-      "    for (k in 1:(max_obs-1)) \n",
+      "    for (k in 1:(ncat-1)) \n",
       "      q[n,k] <- ",ilink,"(",th("k"),"); \n",
-      "    for (k in 1:max_obs) { \n",     
+      "    for (k in 1:ncat) { \n",     
       "      p[n,k] <- 1.0; \n",
       "      for (kk in 1:(k-1)) p[n,k] <- p[n,k] * q[n,kk]; \n",
-      "      for (kk in k:(max_obs-1)) p[n,k] <- p[n,k] * (1-q[n,kk]); \n",      
+      "      for (kk in k:(ncat-1)) p[n,k] <- p[n,k] * (1-q[n,kk]); \n",      
       "    } \n",
       "    p[n] <- p[n]/sum(p[n]); \n")
   }

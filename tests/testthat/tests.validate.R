@@ -116,11 +116,11 @@ test_that("Test that check_prior accepts correct prior names", {
 })
 
 test_that("Test that check_prior rejects incorrect prior names", {
-  expect_warning(check_prior(list(b_Intercept = "normal(0,1)",  b_age = "gamma(1,1)"), 
+  expect_message(check_prior(list(b_Intercept = "normal(0,1)",  b_age = "gamma(1,1)"), 
                              family = "acat", formula = rating ~ treat + (1+treat|subject), data = inhaler))
-  expect_warning(check_prior(list(b_Intercept = "normal(0,1)",  sd_patient = "gamma(1,1)"), 
+  expect_message(check_prior(list(b_Intercept = "normal(0,1)",  sd_patient = "gamma(1,1)"), 
                              family = "cauchy", formula = rating ~ treat + (1+treat|subject), data = inhaler))
-  expect_warning(check_prior(list(ar = "normal(0,1)",  b = "gamma(1,1)"), 
+  expect_message(check_prior(list(ar = "normal(0,1)",  b = "gamma(1,1)"), 
                              formula = count ~ log_Base4_c * Trt_c + (1+Trt_c|patient), data = epilepsy))
 })
 

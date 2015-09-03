@@ -113,7 +113,7 @@ test_that("Test that stan_llh returns correct llhs under weights and censoring",
   expect_match(stan_llh(family = "poisson", link = "log", cens = TRUE),
                "Y[n] ~ poisson(exp(eta[n])); \n", fixed = TRUE)
   expect_equal(stan_llh(family = "binomial", link = "logit", add = TRUE, weights = TRUE),
-               "  lp_pre[n] <- binomial_logit_log(Y[n],max_obs[n],eta[n]); \n")
+               "  lp_pre[n] <- binomial_logit_log(Y[n],trials[n],eta[n]); \n")
   expect_match(stan_llh(family = "weibull", link = "inverse", cens = TRUE), fixed = TRUE,
                "increment_log_prob(weibull_ccdf_log(Y[n],shape,eta[n])); \n")
   expect_match(stan_llh(family = "weibull", link = "inverse", cens = TRUE, weights = TRUE), fixed = TRUE,
