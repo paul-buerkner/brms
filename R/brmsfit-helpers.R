@@ -1,9 +1,11 @@
-# convert array to list of elements with reduced dimension
-#
-# @param x an arrary of dimension d
-#
-# @return a list of arrays of dimension d-1
 array2list <- function(x) {
+  # convert array to list of elements with reduced dimension
+  #
+  # Args: 
+  #   x: an arrary of dimension d
+  #
+  # Returns: 
+  #   A list of arrays of dimension d-1
   if (is.null(dim(x))) stop("Argument x has no dimension")
   n.dim <- length(dim(x))
   l <- list(length = dim(x)[n.dim])
@@ -14,14 +16,18 @@ array2list <- function(x) {
   l
 }
 
-# convert list to array of increased dimension
-#
-# @param x a list containing arrarys of dimension d
-#
-# @return an arrary of dimension d+1
 list2array <- function(x) {
+  # convert a list to an array of increased dimension
+  #
+  # Args: 
+  #   x: a list containing arrarys of dimension d
+  #
+  # Returns:
+  #   An arrary of dimension d+1 unless the elements in x have dim = c(..., 1). 
+  #   In the latter case, the output is of dimenstion d.
   if (!is.list(x) || length(x) == 0) 
     stop("x must be a non-empty list")
+  
   # reduce dimension of all elements of x having a last dimension of 1
   x <- lapply(x, function(y) if (dim(y)[length(dim(y))] == 1) 
                    array(as.vector(y), dim = dim(y)[1:(length(dim(y))-1)]) else y)
@@ -38,20 +44,30 @@ list2array <- function(x) {
   a
 }
 
-# find the first element in A that is greater than target
-#
-# @param A a matrix
-# @param target a vector of length nrow(A)
-# @param i column of A being checked first
-#
-# @return a vector of the same length as target 
-#   containing the column ids where A[,i] was first greater than target
 first_greater <- function(A, target, i = 1) {
+  # find the first element in A that is greater than target
+  #
+  # Args: 
+  #   A: a matrix
+  #   target: a vector of length nrow(A)
+  #   i: column of A being checked first
+  #
+  # Returns: 
+  #   A vector of the same length as target containing the column ids 
+  #   where A[,i] was first greater than target
   ifelse(target <= A[,i] | ncol(A) == i, i, first_greater(A, target, i+1))
 }
 
-# apply the link function on x
+
 link <- function(x, link) {
+  # apply a link function on x
+  #
+  # Args:
+  #   x: An arrary of arbitrary dimension
+  #   link: a character string defining the link
+  #
+  # Returns:
+  #   an array of dimension dim(x) on which the link function was applied
   if (link == "identity") x
   else if (link == "log") log(x)
   else if (link == "inverse") 1/x
@@ -63,8 +79,15 @@ link <- function(x, link) {
   else stop(paste("Link", link, "not supported"))
 }
 
-# apply the inverse link function on x
 ilink <- function(x, link) {
+  # apply the inverse link function on x
+  #
+  # Args:
+  #   x: An arrary of arbitrary dimension
+  #   link: a character string defining the link
+  #
+  # Returns:
+  #   an array of dimension dim(x) on which the inverse link function was applied
   if (link == "identity") x
   else if (link == "log") exp(x)
   else if (link == "inverse") 1/x
@@ -76,14 +99,18 @@ ilink <- function(x, link) {
   else stop(paste("Link", link, "not supported"))
 }
 
-# get correlation names as combinations of variable names
-# 
-# @param names the variable names 
-# @param type of the correlation to be put in front of the returned strings
-# @param brackets should the correlation names contain brackets or underscores as seperators
-# @param subset subset of correlation parameters to be returned. Currently only used in summary.brmsfit (s3.methods.R)
-# @param the subtype of the correlation (e.g., g1 in cor_g1_x_y). Only used when subset is not NULL
 get_cornames <- function(names, type = "cor", brackets = TRUE, subset = NULL, subtype = "") {
+  # get correlation names as combinations of variable names
+  #
+  # Args:
+  #  names: the variable names 
+  #  type: of the correlation to be put in front of the returned strings
+  #  brackets: should the correlation names contain brackets or underscores as seperators
+  #  subset: subset of correlation parameters to be returned. Currently only used in summary.brmsfit (s3.methods.R)
+  #  subtype: the subtype of the correlation (e.g., g1 in cor_g1_x_y). Only used when subset is not NULL
+  #
+  # Returns: 
+  #  correlation names based on the variable names passed to the names argument
   cor_names <- NULL
   if (is.null(subset) && length(names) > 1) {
     for (i in 2:length(names)) {
@@ -102,16 +129,18 @@ get_cornames <- function(names, type = "cor", brackets = TRUE, subset = NULL, su
   cor_names
 }
 
-# calculate estimates over posterior samples 
-# 
-# @param coef coefficient to be applied on the samples (e.g., "mean")
-# @param samples the samples over which to apply coef
-# @param margin see apply
-# @param to.array logical; should the result be transformed into an array of increased dimension?
-# @param ... additional arguments passed to get(coef)
-#
-# @return typically a matrix with colnames(samples) as colnames
 get_estimate <- function(coef, samples, margin = 2, to.array = FALSE, ...) {
+  # calculate estimates over posterior samples 
+  # 
+  # Args:
+  #   coef: coefficient to be applied on the samples (e.g., "mean")
+  #   samples: the samples over which to apply coef
+  #   margin: see apply
+  #   to.array: logical; should the result be transformed into an array of increased dimension?
+  #   ...: additional arguments passed to get(coef)
+  #
+  # Returns: 
+  #   typically a matrix with colnames(samples) as colnames
   dots <- list(...)
   args <- list(X = samples, MARGIN = margin, FUN = coef)
   fun.args <- names(formals(coef))
@@ -126,14 +155,16 @@ get_estimate <- function(coef, samples, margin = 2, to.array = FALSE, ...) {
   x 
 }
 
-# summarizes parameter samples based on mean, sd, and quantiles
-#
-# @param samples a matrix or data.frame containing the samples to be summarized. 
-#                rows are samples, columns are parameters
-# @param probs quantiles to be computed
-#
-# @return a N x C matric where N is the number of observations and C is equal to \code{length(probs) + 2}.
 get_summary <- function(samples, probs = c(0.025, 0.975)) {
+  # summarizes parameter samples based on mean, sd, and quantiles
+  #
+  # Args: 
+  #  samples: a matrix or data.frame containing the samples to be summarized. 
+  #    rows are samples, columns are parameters
+  #  probs: quantiles to be computed
+  #
+  # Returns:
+  #   a N x C matric where N is the number of observations and C is equal to \code{length(probs) + 2}.
   if (length(dim(samples)) == 2)
     out <- do.call(cbind, lapply(c("mean", "sd", "quantile"), get_estimate, 
                                  samples = samples, probs = probs))
@@ -149,13 +180,15 @@ get_summary <- function(samples, probs = c(0.025, 0.975)) {
   out  
 }
 
-# compute absolute frequencies for each column
-# 
-# @param samples a S x N matrix
-# @param levels all possible values in \code{samples}
-# 
-# @return a N x \code{levels} matrix containing absolute frequencies in each column seperately
 get_table <- function(samples, levels = sort(unique(samples))) {
+  # compute absolute frequencies for each column
+  # 
+  # Args:
+  #  samples: a S x N matrix
+  #  levels: all possible values in \code{samples}
+  # 
+  # Returns:
+  #   a N x \code{levels} matrix containing absolute frequencies in each column seperately
   if (!is.matrix(samples)) 
     stop("samples must be a matrix")
   out <- do.call(rbind, lapply(1:ncol(samples), function(n) 
@@ -165,15 +198,18 @@ get_table <- function(samples, levels = sort(unique(samples))) {
   out
 }
 
-#compute covariance and correlation matrices based on correlation and sd samples
-#
-# @param sd samples of standard deviations
-# @param cor samples of correlations
-#
-# @details used in VarCorr.brmsfit
-# 
-# @return samples of covariance and correlation matrices
 get_cov_matrix <- function(sd, cor = NULL) {
+  # compute covariance and correlation matrices based on correlation and sd samples
+  #
+  # Args:
+  #   sd: samples of standard deviations
+  #   cor: samples of correlations
+  #
+  # Notes: 
+  #   used in VarCorr.brmsfit
+  # 
+  # Returns: 
+  #   samples of covariance and correlation matrices
   if (any(sd < 0)) stop("standard deviations must be non negative")
   if (!is.null(cor)) {
     if (ncol(cor) != ncol(sd)*(ncol(sd)-1)/ 2 || nrow(sd) != nrow(cor))
@@ -199,18 +235,20 @@ get_cov_matrix <- function(sd, cor = NULL) {
   list(cor = cor_matrix, cov = cov_matrix)
 }
 
-# calculate the evidence ratio between two disjunct hypotheses
-# 
-# @param x posterior samples 
-# @param cut the cut point between the two hypotheses
-# @param wsign direction of the hypothesis
-# @param prior_samples optional prior samples for undirected hypothesis
-# @param pow influence the accuracy of the density
-# @param ... optional arguments passed to density.default
-#
-# @return the evidence ratio of the two hypothesis
 evidence_ratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"), 
                            prior_samples = NULL, pow = 12, ...) {
+  # calculate the evidence ratio between two disjunct hypotheses
+  # 
+  # Args:
+  #   x: posterior samples 
+  #   cut: the cut point between the two hypotheses
+  #   wsign: direction of the hypothesis
+  #   prior_samples: optional prior samples for undirected hypothesis
+  #   pow influence: the accuracy of the density
+  #   ...: optional arguments passed to density.default
+  #
+  # Returns:
+  #   the evidence ratio of the two hypothesis
   wsign <- match.arg(wsign)
   if (wsign == "equal") {
     if (is.null(prior_samples)) out <- NA
@@ -237,15 +275,17 @@ evidence_ratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"),
   out  
 }
 
-# compute the linear predictor (eta) for brms models
-#
-# @param x a brmsfit object
-# @param newdata optional data.frame containing new data to make predictions for.
-#   If \code{NULL} (the default), the data used to fit the model is applied.
-#
-# @return usually, an S x N matrix where S is the number of samples
-#   and N is the number of observations in the data.
 linear_predictor <- function(x, newdata = NULL) {
+  # compute the linear predictor (eta) for brms models
+  #
+  # Args:
+  #   x: a brmsfit object
+  #   newdata: optional data.frame containing new data to make predictions for.
+  #            If \code{NULL} (the default), the data used to fit the model is applied.
+  #
+  # Returns:
+  #   usually, an S x N matrix where S is the number of samples
+  #   and N is the number of observations in the data.
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
   if (is.null(newdata)) data <- x$data
@@ -262,15 +302,15 @@ linear_predictor <- function(x, newdata = NULL) {
   }
   
   group <- names(x$ranef)
-  all_groups <- extract_effects(x$formula)$group # may contain the same group more than ones
+  all_groups <- extract_effects(x$formula)$group  # may contain the same group more than ones
   if (length(group)) {
     for (i in 1:length(group)) {
-      if (any(grepl(paste0("^lev_"), names(data)))) { # implies brms > 0.4.2
+      if (any(grepl(paste0("^lev_"), names(data)))) {  # implies brms > 0.4.1
         # create a single RE design matrix for every grouping factor
         Z <- do.call(cbind, lapply(which(all_groups == group[i]), function(k) 
           get(paste0("Z_",k), data)))
         gf <- get(paste0("lev_",match(group[i], all_groups)), data)
-      } else { # implies brms < 0.4.2
+      } else {  # implies brms <= 0.4.1
         Z <- get(paste0("Z_",group[i]), data)
         gf <- get(group[i], data)
       }
@@ -291,7 +331,7 @@ linear_predictor <- function(x, newdata = NULL) {
     Intercept <- posterior.samples(x, "^b_Intercept\\[")
     if (!is.null(data$Xp) && ncol(data$Xp)) {
       p <- posterior.samples(x, paste0("^b_",colnames(data$Xp),"\\["))
-      etap <- partial_predictor(Xp = data$Xp, p = p, max_obs = data$max_obs)
+      etap <- partial_predictor(Xp = data$Xp, p = p, ncat = data$max_obs)
     }  
     else etap <- array(0, dim = c(dim(eta), data$max_obs-1))
     for (k in 1:(data$max_obs-1)) {
@@ -313,39 +353,45 @@ linear_predictor <- function(x, newdata = NULL) {
   eta
 }
 
-# compute eta for fixed effects
-#
-# @param X fixed effects design matrix
-# @param b fixed effects samples
-# 
-# @return linear predictor for fixed effects
 fixef_predictor <- function(X, b) {
+  # compute eta for fixed effects
+  #
+  # Args:
+  #   X: fixed effects design matrix
+  #   b: fixed effects samples
+  # 
+  # Returns:
+  #   linear predictor for fixed effects
   as.matrix(b) %*% t(as.matrix(X))
 }
 
-# compute eta for random effects
-#  
-# @param Z random effects design matrix
-# @param gf levels of grouping factor for each observation
-# @param r random effects samples
-#
-# @return linear predictor for random effects
 ranef_predictor <- function(Z, gf, r) {
+  # compute eta for random effects
+  #  
+  # Args:
+  #   Z: random effects design matrix
+  #   gf: levels of grouping factor for each observation
+  #   r: random effects samples
+  #
+  # Returns: 
+  #   linear predictor for random effects
   Z <- expand_matrix(Z, gf)
   nlevels <- length(unique(gf))
   sort_levels <- unlist(lapply(1:nlevels, function(n) seq(n, ncol(r), nlevels)))
   as.matrix(r[, sort_levels]) %*% t(Z)
 }
 
-#compute eta for moving average effects
-#
-# @param data the data initially passed to stan
-# @param ma moving average samples 
-# @param eta previous linear predictor samples
-# @param link
-#
-# @param new linear predictor samples updated by moving average effects
 ma_predictor <- function(data, ma, eta, link = "identity") {
+  # compute eta for moving average effects
+  #
+  # Args:
+  #   data: the data initially passed to stan
+  #   ma: moving average samples 
+  #   eta: previous linear predictor samples
+  #   link: the link function
+  #
+  # Returns:
+  #   new linear predictor samples updated by moving average effects
   ma <- as.matrix(ma)
   K <- ncol(ma)
   Ks <- 1:K
@@ -365,31 +411,35 @@ ma_predictor <- function(data, ma, eta, link = "identity") {
   eta
 }
 
-# compute etap for partial and categorical effects
-# 
-# @param Xp partial design matrix 
-# @param p partial effects samples
-# @param max_obs number of categories
-#
-# @return linear predictor of partial effects as a 3D array (not as a matrix)
-partial_predictor <- function(Xp, p, max_obs) {
-  max_obs <- max(max_obs)
-  etap <- array(0, dim = c(nrow(p), nrow(Xp), max_obs-1))
-  for (k in 1:(max_obs-1)) {
-    etap[,,k] <- as.matrix(p[, seq(k, (max_obs-1)*ncol(Xp), max_obs-1)]) %*% t(as.matrix(Xp))
+partial_predictor <- function(Xp, p, ncat) {
+  # compute etap for partial and categorical effects
+  # 
+  # Args:
+  #   Xp: partial design matrix 
+  #   p: partial effects samples
+  #   ncat: number of categories
+  #
+  # @return linear predictor of partial effects as a 3D array (not as a matrix)
+  ncat <- max(ncat)
+  etap <- array(0, dim = c(nrow(p), nrow(Xp), ncat-1))
+  for (k in 1:(ncat-1)) {
+    etap[,,k] <- as.matrix(p[, seq(k, (ncat-1)*ncol(Xp), ncat-1)]) %*% t(as.matrix(Xp))
   }
   etap
 }
 
-# expand a matrix into a sparse matrix of higher dimension
-# 
-# @param A matrix to be expanded
-# @param x levels to expand the matrix
-# 
-# @details used in linear_predictor.brmsfit
-#
-# @return An expanded matrix of dimensions nrow(A) and ncol(A) * length(unique(x)) 
 expand_matrix <- function(A, x) {
+  # expand a matrix into a sparse matrix of higher dimension
+  # 
+  # Args:
+  #   A: matrix to be expanded
+  #   x: levels to expand the matrix
+  # 
+  # Notes:
+  #   used in linear_predictor.brmsfit
+  #
+  # Returns:
+  #   An expanded matrix of dimensions nrow(A) and ncol(A) * length(unique(x)) 
   A <- as.matrix(A)
   if (length(x) != nrow(A))
     stop("x must have nrow(A) elements")
@@ -402,13 +452,15 @@ expand_matrix <- function(A, x) {
     return(v)}, v = v))
 }
 
-# compute WAIC and LOO using the 'loo' package
-#
-# @param x an object of class brmsfit
-# @param ic the information criterion to be computed
-#
-# @return output of the loo package with amended class attribute
 calculate_ic <- function(x, ic = c("waic", "loo")) {
+  # compute WAIC and LOO using the 'loo' package
+  #
+  # Args:
+  #   x: an object of class brmsfit
+  #   ic: the information criterion to be computed
+  #
+  # Returns:
+  #   output of the loo package with amended class attribute
   ic <- match.arg(ic)
   ee <- extract_effects(x$formula)
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
@@ -418,13 +470,15 @@ calculate_ic <- function(x, ic = c("waic", "loo")) {
   return(IC)
 }
 
-# compare information criteria of different models
-#
-# @param x
-# @param ic the information criterion to be computed
-#
-# @return a matrix with differences in the ICs as well as corresponding standard errors
 compare_ic <- function(x, ic = c("waic", "loo")) {
+  # compare information criteria of different models
+  #
+  # Args:
+  #   x: A list containing loo objects
+  #   ic: the information criterion to be computed
+  #
+  # Returns:
+  #   A matrix with differences in the ICs as well as corresponding standard errors
   ic <- match.arg(ic)
   n_models <- length(x)
   compare_matrix <- matrix(0, nrow = n_models * (n_models-1) / 2, ncol = 2)
@@ -443,39 +497,46 @@ compare_ic <- function(x, ic = c("waic", "loo")) {
   compare_matrix
 }
 
-# amend new data for predict method
-# 
-# @param newdata a data.frame containing new data for prediction 
-# @param formula a brms model formula
-# @param family
-# @param autocor
-# @param partial
-#
-# @details used in predict.brmsfit and linear_predictor.brmsfit
-#
-# @return updated data.frame being compatible with formula
 amend_newdata <- function(newdata, formula, family = "gaussian", autocor = cor_arma(),
                           partial = NULL) {
+  # amend new data for predict method
+  # 
+  # Args:
+  #   newdata: a data.frame containing new data for prediction 
+  #   formula: a brms model formula
+  #   family: the family
+  #   autocor: object of class cor_brms
+  #   partial: one sided formula containing partial effects for ordinal models
+  #
+  # Notes:
+  #   used in predict.brmsfit and linear_predictor.brmsfit
+  #
+  # Returns:
+  #   updated data.frame being compatible with formula
   ee <- extract_effects(formula, family = family)
   if (length(ee$group))
     stop("random effects models not yet supported for predicting new data")
   if (sum(autocor$p, autocor$q) > 0 && !all(ee$response %in% names(newdata))) 
     stop("response variables must be specified in newdata for autocorrelative models")
-  else for (resp in ee$response) newdata[[resp]] <- 0 # add irrelevant response variables
+  else for (resp in ee$response) newdata[[resp]] <- 0  # add irrelevant response variables
   if (is.formula(ee$cens)) 
-    for (cens in all.vars(ee$cens)) newdata[[cens]] <- 0 # add irrelevant censor variables
+    for (cens in all.vars(ee$cens)) newdata[[cens]] <- 0  # add irrelevant censor variables
     data <- brmdata(formula, data = newdata, family = family, autocor = autocor, partial = partial)
 }
 
-# find all valid object names in a string (used in method hypothesis in s3.methods.R)
-# 
-# @x a character string
-#
-# @details currently used in hypothesis.brmsfit
-#
-# @return all valid variable names within the string
 find_names <- function(x) {
-  if (!is.character(x) || length(x) > 1) stop("x must be a character string of length 1")
+  # find all valid object names in a string (used in method hypothesis in s3.methods.R)
+  # 
+  # Args:
+  #   x: a character string
+  #
+  # Notes:
+  #   currently used in hypothesis.brmsfit
+  #
+  # Returns:
+  #   all valid variable names within the string
+  if (!is.character(x) || length(x) > 1) 
+    stop("x must be a character string of length 1")
   x <- gsub(" ", "", x)
   pos_fun <- gregexpr("([^([:digit:]|[:punct:])]|\\.)[[:alnum:]_\\.]*\\(", x)[[1]]
   pos_decnum <- gregexpr("\\.[[:digit:]]+", x)[[1]]
@@ -484,13 +545,15 @@ find_names <- function(x) {
   unlist(regmatches(x, pos_var))
 }
 
-# trace and density plots for one parameter
-#
-# @param par a single character string 
-# @parm x a data.frame containing the samples
-#
-# @return trace and density plot for this parameter
 td_plot <- function(par, x) {
+  # trace and density plots for one parameter
+  #
+  # Args:
+  #   par: a single character string 
+  #   x: a data.frame containing the samples
+  #
+  # Returns:
+  #   trace and density plot for this parameter
   if (!is.character(par) || length(par) != 1)
     stop("par must be a character string")
   if (!is.data.frame(x))
@@ -572,6 +635,7 @@ print.brmsmodel <- function(x, ...) cat(x)
 
 #' @export
 print.ic <- function(x, digits = 2, ...) {
+  # print the output of LOO(x) and WAIC(x)
   ic <- names(x)[3]
   mat <- matrix(c(x[[ic]], x[[paste0("se_",ic)]]), ncol = 2, 
                 dimnames = list("", c(toupper(ic), "SE")))
@@ -580,6 +644,7 @@ print.ic <- function(x, digits = 2, ...) {
 
 #' @export
 print.iclist <- function(x, digits = 2, ...) {
+  # print the output of LOO(x1, x2, ...) and WAIC(x1, x2, ...)
   ic <- names(x[[1]])[3]
   mat <- matrix(0, nrow = length(x), ncol = 2, 
                 dimnames = list(names(x), c(toupper(ic), "SE")))

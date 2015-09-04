@@ -1,11 +1,13 @@
-# melt data frame for multinormal models
-#
-# @param data a data.frame
-# @param response names of the response variables
-# @param family
-#
-# @return data in long format 
 melt <- function(data, response, family) {
+  # melt data frame for multinormal models
+  #
+  # Args:
+  #   data: a data.frame
+  #   response: names of the response variables
+  #   family: the model family
+  #
+  # Returns:
+  #   data in long format 
   if (length(response) > 1 && family != "gaussian")
     stop("multivariate models are currently only allowed for family 'gaussian'")
   else if (length(response) > 1 && family == "gaussian") {
@@ -23,13 +25,15 @@ melt <- function(data, response, family) {
   data
 }  
 
-# combine grouping factors
-#
-# @param data a data.frame
-# @param ... the grouping factors to be combined. 
-#
-# @return a data.frame containing all old variables and the new combined grouping factors
 combine_groups <- function(data, ...) {
+  # combine grouping factors
+  #
+  # Args:
+  #   data: a data.frame
+  #   ...: the grouping factors to be combined. 
+  #
+  # Returns:
+  #   a data.frame containing all old variables and the new combined grouping factors
   group <- c(...)
   if (length(group)) {
     for (i in 1:length(group)) {
@@ -46,14 +50,16 @@ combine_groups <- function(data, ...) {
   data
 }
 
-# update data for use in brm
-#
-# @param data the original data.frame
-# @param family
-# @param effects output of extract_effects
-#
-# @return model.frame in long format with combined grouping variables if present
 update_data <- function(data, family, effects, ...) {
+  # update data for use in brm
+  #
+  # Args:
+  #   data: the original data.frame
+  #   family: the model family
+  #   effects: output of extract_effects (see validate.R)
+  #
+  # Returns:
+  #   model.frame in long format with combined grouping variables if present
   if (!"brms.frame" %in% class(data)) {
     data <- melt(data, response = effects$response, family = family)
     data <- stats::model.frame(effects$all, data = data, drop.unused.levels = TRUE)
@@ -99,7 +105,7 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
   ee <- extract_effects(formula = formula, family = family, partial, et$all)
   data <- update_data(data, family = family, effects = ee, et$group)
   
-  #sort data in case of autocorrelation models
+  # sort data in case of autocorrelation models
   if (sum(autocor$p, autocor$q) > 0) {
     if (family == "gaussian" && length(ee$response) > 1) {
       if (!grepl("^trait$|:trait$|^trait:|:trait:", et$group))
@@ -110,48 +116,48 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
     if (length(to.order)) data <- data[do.call(order, to.order),]
   }
   
-  #response variable
+  # response variable
   standata <- list(N = nrow(data), Y = unname(model.response(data)))
   if (!is.numeric(standata$Y) && !(is_ordinal || family %in% c("bernoulli", "categorical"))) 
     stop(paste("family", family, "expects numeric response variable"))
   
-  #transform and check response variable for different families
+  # transform and check response variable for different families
   if (is_count || family == "binomial") {
     if (!all(is.wholenumber(standata$Y)) || min(standata$Y) < 0)
       stop(paste("family", family, "expects response variable of non-negative integers"))
-  }
-  else if (family == "bernoulli") {
+  } else if (family == "bernoulli") {
     standata$Y <- as.numeric(as.factor(standata$Y)) - 1
     if (any(!standata$Y %in% c(0,1)))
       stop("family bernoulli expects response variable to contain only two different values")
-  }
-  else if (family == "categorical") 
+  } else if (family == "categorical") { 
     standata$Y <- as.numeric(as.factor(standata$Y))
-  else if (is_ordinal) {
+  } else if (is_ordinal) {
     if (is.factor(standata$Y)) {
       if (is.ordered(standata$Y)) standata$Y <- as.numeric(standata$Y)
       else stop(paste("family", family, "requires factored response variables to be ordered"))
-    }
-    else if (all(is.wholenumber(standata$Y)))
+    } else if (all(is.wholenumber(standata$Y))) {
       standata$Y <- standata$Y - min(standata$Y) + 1
-    else stop(paste("family", family, "expects either integers or ordered factors as response variables"))
-  }
-  else if (is_skew) {
+    } else {
+      stop(paste("family", family, "expects either integers or ordered factors as response variables"))
+    }
+  } else if (is_skew) {
     if (min(standata$Y) < 0)
       stop(paste("family", family, "requires response variable to be non-negative"))
-  }  
-  else if (family == "gaussian" && length(ee$response) > 1) {
+  } else if (family == "gaussian" && length(ee$response) > 1) {
     standata$Y <- matrix(standata$Y, ncol = length(ee$response))
     standata <- c(standata, list(N_trait = nrow(standata$Y), K_trait = ncol(standata$Y)),
                    NC_trait = ncol(standata$Y) * (ncol(standata$Y)-1)/2) 
   }
   
-  #fixed effects data
+  # fixed effects data
   X <- get_model_matrix(ee$fixed, data, rm_intercept = is_ordinal)
-  if (family == "categorical") standata <- c(standata, list(Kp = ncol(X), Xp = X))
-  else standata <- c(standata, list(K = ncol(X), X = X))
+  if (family == "categorical") {
+    standata <- c(standata, list(Kp = ncol(X), Xp = X))
+  } else {
+    standata <- c(standata, list(K = ncol(X), X = X))
+  } 
   
-  #random effects data
+  # random effects data
   if (length(ee$random)) {
     Z <- lapply(ee$random, get_model_matrix, data = data)
     r <- lapply(Z, colnames)
@@ -182,15 +188,15 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
         if (length(r[[i]]) == 1) {
           cov_mat <- suppressWarnings(chol(cov_mat, pivot = TRUE))
           cov_mat <- t(cov_mat[, order(attr(cov_mat, "pivot"))])
-        }  
-        else if (length(r[[i]]) > 1 && !ee$cor[[i]])
+        } else if (length(r[[i]]) > 1 && !ee$cor[[i]]) {
           cov_mat <- t(suppressWarnings(chol(kronecker(cov_mat, diag(ncolZ[[i]])), pivot = TRUE)))
+        }
         standata <- c(standata, setNames(list(cov_mat), paste0("cov_",i)))
       }
     }
   }
   
-  #addition and partial variables
+  # addition and partial variables
   if (is.formula(ee$se)) {
     standata <- c(standata, list(sigma = .addition(formula = ee$se, data = data)))
   }
@@ -228,7 +234,7 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
       stop("Number of categories is smaller than the response variable would suggest.")
   }  
   
-  #get data for partial effects
+  # get data for partial effects
   if (is.formula(partial)) {
     if (family %in% c("sratio","cratio","acat")) {
       Xp <- get_model_matrix(partial, data, rm_intercept = TRUE)
@@ -241,7 +247,7 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
     else stop("partial is only meaningful for families 'sratio', 'cratio', and 'acat'")  
   }
   
-  #autocorrelation variables
+  # autocorrelation variables
   if (is(autocor,"cor_arma") && autocor$p + autocor$q > 0) {
     tgroup <- data[[et$group]]
     if (is.null(tgroup)) tgroup <- rep(1, standata$N) 
@@ -258,23 +264,27 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
   standata
 }  
 
-# deprectated version of brmdata
 #' @export
 brm.data <- function(formula, data = NULL, family = "gaussian", autocor = NULL, 
-                     partial = NULL, cov.ranef = NULL) 
+                     partial = NULL, cov.ranef = NULL)  {
+  # deprectated alias of brmdata
   brmdata(formula = formula, data = data, family = family, autocor = autocor,
           partial = partial, cov.ranef = cov.ranef)
+}
 
-# Construct Design Matrices for \code{brms} models
-# 
-# @param formula An object of class "formula"
-# @param data A data frame created with \code{model.frame}. If another sort of object, \code{model.frame} is called first.
-# @param rm_intercept Flag indicating if the intercept column should be removed from the model.matrix. 
-#   Primarily useful for ordinal models.
-# 
-# @return The design matrix for a regression-like model with the specified formula and data. 
-#   For details see the documentation of \code{model.matrix}.
 get_model_matrix <- function(formula, data = environment(formula), rm_intercept = FALSE) {
+  # Construct Design Matrices for \code{brms} models
+  # 
+  # Args:
+  #   formula: An object of class "formula"
+  #   data: A data frame created with \code{model.frame}. If another sort of object, 
+  #         \code{model.frame} is called first.
+  #   rm_intercept: Flag indicating if the intercept column should be removed from the model.matrix. 
+  #                 Primarily useful for ordinal models.
+  # 
+  # Returns:
+  #   The design matrix for a regression-like model with the specified formula and data. 
+  #   For details see the documentation of \code{model.matrix}.
   if (!is(formula, "formula")) return(NULL) 
   X <- stats::model.matrix(formula, data)
   new_colnames <- rename(colnames(X), check_dup = TRUE)
@@ -286,16 +296,19 @@ get_model_matrix <- function(formula, data = environment(formula), rm_intercept 
   X   
 }
 
-# calculate design matrix for autoregressive effects
-#
-# @param Y a vector containing the response variable
-# @param p autocor$p
-# @param group vector containing the grouping variable for each observation
-#
-# @details expects Y to be sorted after group already
-# 
-# @return the deisgn matrix for autoregressive effects
 ar_design_matrix <- function(Y, p, group)  { 
+  # calculate design matrix for autoregressive effects
+  #
+  # Args:
+  #   Y: a vector containing the response variable
+  #   p: autocor$p
+  #   group: vector containing the grouping variable for each observation
+  #
+  # Notes: 
+  #   expects Y to be sorted after group already
+  # 
+  # Returns:
+  #   the deisgn matrix for autoregressive effects
   if (length(Y) != length(group)) 
     stop("Y and group must have the same length")
   if (p > 0) {
@@ -316,41 +329,41 @@ ar_design_matrix <- function(Y, p, group)  {
   out
 }
 
-#computes data for addition arguments
 .addition <- function(formula, data) {
+  # computes data for addition arguments
   if (!is.formula(formula))
     formula <- as.formula(formula)
   eval(formula[[2]], data, environment(formula))
 }
 
-#standard errors for meta-analysis
 .se <- function(x) {
+  # standard errors for meta-analysis
   if (min(x) < 0) stop("standard errors must be non-negative")
   x  
 }
 
-#weights to be applied on any model
 .weights <- function(x) {
+  # weights to be applied on any model
   if (min(x) < 0) stop("weights must be non-negative")
   x
 }
 
-#trials for binomial models
 .trials <- function(x) {
+  # trials for binomial models
   if (any(!is.wholenumber(x) || x < 1))
     stop("number of trials must be positive integers")
   x
 }
 
-#number of categories for categorical and ordinal models
 .cat <- function(x) {
+  # number of categories for categorical and ordinal models
   if (any(!is.wholenumber(x) || x < 1))
     stop("number of categories must be positive integers")
   x
 }
 
-#indicator for censoring
 .cens <- function(x) {
+  # indicator for censoring
   if (is.factor(x)) x <- as.character(x)
   cens <- unname(sapply(x, function(x) {
     if (grepl(paste0("^",x), "right") || is.logical(x) && isTRUE(x)) x <- 1

@@ -32,11 +32,12 @@ cor_arma <- function(formula = ~ 1, p = 0, q = 0) {
   x
 }
 
-# deprecated alias
 #' @export
-cor.arma <- function(formula = ~ 1, p = 0, q = 0)
+cor.arma <- function(formula = ~ 1, p = 0, q = 0) {
+  # deprecated alias of cor_carma
   cor_arma(formula = formula, p = p, q = q)
-  
+}
+
 #' AR(p) correlation structure
 #' 
 #' This function is a constructor for the \code{cor_arma} class, allowing for autoregression terms only.
@@ -63,11 +64,12 @@ cor_ar <- function(formula = ~ 1, p = 1) {
   cor_arma(formula = formula, p = p, q = 0)
 }
 
-# deprecated alias
 #' @export
-cor.ar <- function(formula = ~ 1, p = 1)
+cor.ar <- function(formula = ~ 1, p = 1) {
+  # deprecated alias of cor_ar
   cor_ar(formula = formula, p = p)
-
+}
+  
 #' MA(q) correlation structure
 #' 
 #' This function is a constructor for the \code{cor_arma} class, allowing for moving average terms only.
@@ -94,11 +96,11 @@ cor_ma <- function(formula = ~ 1, q = 1) {
   cor_arma(formula = formula, p = 0, q = q)
 }
 
-# deprecated alias
 #' @export
-cor.ma <- function(formula = ~ 1, q = 1)
+cor.ma <- function(formula = ~ 1, q = 1) {
+  # deprecated alias of cor_ma
   cor_ma(formula = formula, q = q)
-
+}
 #' @export
 print.cor_arma <- function(x, ...) {
   cat(paste0("arma(", gsub(" ", "", Reduce(paste, deparse(x$formula))),

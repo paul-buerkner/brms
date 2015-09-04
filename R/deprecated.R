@@ -57,9 +57,10 @@ brmpars <- function(formula, data = NULL, family = "gaussian", autocor = NULL, p
   return(out)
 }
 
-# deprecated alias of brm.pars
 #' @export
 brm.pars <- function(formula, data = NULL, family = "gaussian", autocor = NULL, partial = NULL,
-                     threshold = "flexible", ranef = TRUE) 
+                     threshold = "flexible", ranef = TRUE) {
+  # deprecated alias of brm.pars
   brmpars(formula = formula, data = data, family = family, autocor = autocor, partial = partial,
           threshold = threshold, ranef = ranef)
+}

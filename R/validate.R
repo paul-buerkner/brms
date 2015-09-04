@@ -1,29 +1,18 @@
-# Extract fixed and random effects from a formula
-# 
-# @param formula An object of class "formula" using mostly the syntax of the \code{lme4} package
-# @param ... Additional objects of class "formula"
-# 
-# @return A named list of the following six objects: \cr
-#   \code{fixed}:    An object of class "formula" that contains the fixed effects including the dependent variable. \cr
-#   \code{random}:   A list of formulas containing the random effects per grouping variable. \cr
-#   \code{group}:    A list of names of the grouping variables. \cr
-#   \code{add}:      A one sided formula containing the \code{add} part of \code{formula = y | add ~ predictors} if present. \cr
-#   \code{add2}:  A one sided formula containing the \code{add2} part of \code{formula = y || add2 ~ predictors} if present. \cr
-#   \code{all}:      A formula that contains every variable mentioned in \code{formula} and \code{...} 
-# 
-# @examples
-# \dontrun{ 
-# # fixed effects model
-# extract_effects(response ~ I(1/a) + b)
-# 
-# # mixed effects model
-# extract_effects(response ~ I(1/a) + b + (1 + c | d))
-# 
-# # mixed effects model with additional information on the response variable 
-# # in this case standard errors in a gaussian linear model
-# extract_effects(response | se(sei) ~ I(1/a) + b + (1 + c | d), family = "gaussian")
-# }
 extract_effects <- function(formula, ..., family = "none") {
+  # Extract fixed and random effects from a formula
+  # 
+  # Args:
+  #   formula: An object of class "formula" using mostly the syntax of the \code{lme4} package
+  #   ...: Additional objects of class "formula"
+  #   family: the model family
+  # 
+  # Returns: 
+  #   A named list of the following elements: 
+  #   fixed: An object of class "formula" that contains the fixed effects including the dependent variable. 
+  #   random: A list of formulas containing the random effects per grouping variable. 
+  #   group: A vector of names of the grouping variables. 
+  #   weights, se, cens, trials, cat: information on possible addition arguments
+  #   all: A formula that contains every variable mentioned in formula and ...
   formula <- formula2string(formula)  
   fixed <- gsub(paste0("\\([^(\\||~)]*\\|[^\\)]*\\)\\+|\\+\\([^(\\||~)]*\\|[^\\)]*\\)",
                        "|\\([^(\\||~)]*\\|[^\\)]*\\)"),"",formula)
@@ -32,8 +21,10 @@ extract_effects <- function(formula, ..., family = "none") {
   fixed <- formula(fixed)
   if (family %in% c("cumulative", "sratio", "cratio", "acat"))
     fixed <- update.formula(fixed, . ~ . +1)
-  if (length(fixed) < 3) stop("invalid formula: response variable is missing")
+  if (length(fixed) < 3) 
+    stop("invalid formula: response variable is missing")
   
+  # extract random effects part
   rg <- unlist(regmatches(formula, gregexpr("\\([^\\|\\)]*\\|[^\\)]*\\)", formula)))
   random <- lapply(regmatches(rg, gregexpr("\\([^\\|]*", rg)), function(r) 
     formula(paste0("~ ",substr(r, 2, nchar(r)))))
@@ -45,21 +36,25 @@ extract_effects <- function(formula, ..., family = "none") {
                  "combined by the interaction symbol ':'"))
     return(formula(paste("~",g)))})
   group <- unlist(lapply(group_formulas, function(g) paste0(all.vars(g), collapse = ":")))
+  
   # ordering is to ensure that all REs of the same grouping factor are next to each other
   x <- list(fixed = fixed, 
             random = if (length(group)) random[order(group)] else random, 
             cor = if (length(group)) cor[order(group)] else cor,
             group = if (length(group)) group[order(group)] else group)
   
+  # handle addition arguments
   fun <- c("se", "weights", "trials", "cat", "cens")
   add_vars <- list()
   if (family != "none") {
     add <- unlist(regmatches(formula, gregexpr("\\|[^~]*~", formula)))[1]
     add <- substr(add, 2, nchar(add)-1)
-    families <- list(se = c("gaussian","student","cauchy"), weights = c("all"),
-                     trials = c("binomial"), cat = c("categorical", "cumulative", "cratio", "sratio", "acat"), 
-                     cens = c("gaussian","student","cauchy","binomial","poisson","geometric","negbinomial","exponential",
-                              "weibull","gamma"))
+    families <- list(se = c("gaussian","student","cauchy"),
+                     weights = c("all"),
+                     trials = c("binomial"), 
+                     cat = c("categorical", "cumulative", "cratio", "sratio", "acat"), 
+                     cens = c("gaussian","student","cauchy","binomial","poisson",
+                              "geometric","negbinomial","exponential", "weibull","gamma"))
     for (f in fun) {
       x[[f]] <- unlist(regmatches(add, gregexpr(paste0(f,"\\([^\\|]*\\)"), add)))[1]
       add <- gsub(paste0(f,"\\([^~|\\|]*\\)\\|*"), "", add)
@@ -80,11 +75,14 @@ extract_effects <- function(formula, ..., family = "none") {
                   "the old one was not flexible enough."))
   }
   
+  # make a formula containing all required variables (element 'all')
   new_formula <- unlist(lapply(c(random, group_formulas, add_vars, ...), 
                                function(x) paste0("+", Reduce(paste, deparse(x[[2]])))))
   new_formula <- paste0("update(",Reduce(paste, deparse(fixed)),", . ~ .",paste0(new_formula, collapse=""),")")
   x$all <- eval(parse(text = new_formula))
   environment(x$all) <- globalenv()
+  
+  # extract response variables
   x$response = all.vars(x$all[[2]])
   if (length(x$response) > 1) {
     if (!is.null(x$cens) || !is.null(x$se))
@@ -95,12 +93,14 @@ extract_effects <- function(formula, ..., family = "none") {
   x
 } 
 
-# extract time and grouping variabels for correlation structure
-# 
-# @formula a one sided formula of the form ~ time|group typically taken from a cor_brms object
-# 
-# @return a list with elements time, group, and all, where all contains a formula with all variables in formula
 extract_time <- function(formula) {
+  # extract time and grouping variabels for correlation structure
+  # 
+  # Args:
+  #   formula: a one sided formula of the form ~ time|group typically taken from a cor_brms object
+  # 
+  # Returns: 
+  #   a list with elements time, group, and all, where all contains a formula with all variables in formula
   if (is.null(formula)) return(NULL)
   formula <- gsub(" ","",Reduce(paste, deparse(formula))) 
   time <- all.vars(as.formula(paste("~", gsub("~|\\|[[:print:]]*", "", formula))))
@@ -119,14 +119,16 @@ extract_time <- function(formula) {
   x
 }
 
-# incorporate addition and partial arguments into formula 
-# 
-# @param formula a model formula 
-# @param addition a list with one sided formulas taken from the addition arguments in brm
-# @param partial a one sided formula containing partial effects
-#
-# @return an updated formula containing the addition and partial effects
 update_formula <- function(formula, addition = NULL, partial = NULL) {
+  # incorporate addition and partial arguments into formula 
+  # 
+  # Args:
+  #   formula: a model formula 
+  #   addition: a list with one sided formulas taken from the addition arguments in brm
+  #   partial: a one sided formula containing partial effects
+  #
+  # Returns:
+  #   an updated formula containing the addition and partial effects
   var_names <- names(addition)
   addition <- lapply(addition, formula2string, rm = 1)
   fnew <- "."
@@ -141,8 +143,8 @@ update_formula <- function(formula, addition = NULL, partial = NULL) {
   update.formula(formula, formula(fnew))
 }
 
-# check validity of family
 check_family <- function(family) {
+  # check validity of model family
   if (family == "normal") family <- "gaussian"
   if (family == "multigaussian") 
     stop("family 'multigaussian' is deprecated. Use family 'gaussian' instead")
@@ -153,24 +155,8 @@ check_family <- function(family) {
   family
 }
 
-# Links for \code{brms} families
-# 
-# @param family A vector of one or two character strings. The first string indicates the distribution of the dependent variable (the 'family'). Currently, the following distributions are supported:
-#  \code{"gaussian"}, \code{"student"}, \code{"cauchy"}, \code{"poisson"}, \code{"binomial"}, \code{"categorical"}, 
-#  \code{"gamma"}, \code{"exponential"}, \code{"weibull"}, \code{"cumulative"}, \cr
-#  \code{"cratio"}, \code{"sratio"}, and \code{"acat"}.
-#  The second string indicates the link function, which must supported by the distribution of the dependent variable. If not specified, default link functions are used (see 'Details').
-# @return The second element of \code{family} (if present) or else the default link of the specified family
-#   
-# @details The families \code{gaussian}, \code{student}, and \code{cauchy} accept the links (as names) \code{identity}, \code{log}, and \code{inverse};
-# the \code{poisson} family the links \code{log}, \code{identity}, and \code{sqrt}; 
-# families \code{binomial}, \code{cumulative}, \code{cratio}, \code{sratio}, and \code{acat} the links \code{logit}, \code{probit}, \code{probit_approx}, and \code{cloglog};
-# family  \code{categorical} the link \code{logit}; families \code{gamma}, \code{weibull}, and \code{exponential} the links \code{log}, \code{identity}, and \code{inverse}. 
-# The first link mentioned for each family is the default.     
-# 
-# @examples brm.link("gaussian")
-# brm.link(c("gaussian","log"))
 link4family <- function(family) {
+  # check validity of the link function and return default links if no link is specified
   link <- family[2]
   family <- family[1]
   is_linear <- family %in% c("gaussian", "student", "cauchy")
@@ -194,13 +180,15 @@ link4family <- function(family) {
   link
 }
 
-# list irrelevant parameters not to be saved by Stan
-# 
-# @param formula a model formula
-# @param ranef logical; should random effects parameters of each levels be saved?
-#
-# @return a vector of parameters to be excluded
 exclude_pars <- function(formula, ranef = TRUE) {
+  # list irrelevant parameters not to be saved by Stan
+  # 
+  # Args:
+  #   formula: a model formula
+  #   ranef: logical; should random effects parameters of each levels be saved?
+  #
+  # Returns:
+  #   a vector of parameters to be excluded
   ee <- extract_effects(formula)
   out <- c("eta", "etam", "etap", "b_Intercept1", "Lrescor", "Rescor",
            "p", "q", "e", "Ema", "lp_pre")
@@ -213,23 +201,26 @@ exclude_pars <- function(formula, ranef = TRUE) {
   out
 }
 
-# check prior input by and amend it if needed
-#
-# @param same as the respective parameters in brm
-#
-# @return a list of prior specifications adjusted to be used in stan_prior (see stan.R)
 check_prior <- function(prior, formula, data = NULL, family = "gaussian", autocor = NULL, 
                         partial = NULL, threshold = "flexible") {
+  # check prior input by and amend it if needed
+  #
+  # Args:
+  #   same as the respective parameters in brm
+  #
+  # Returns:
+  #   a list of prior specifications adjusted to be used in stan_prior (see stan.R)
   
-  #expand lkj correlation prior to full name
+  # expand lkj correlation prior to full name
   prior <- lapply(prior, function(p) sub("^lkj\\(", "lkj_corr_cholesky(", p))
   
-  #check if parameter names in prior are correct
+  # check if parameter names in prior are correct
   ee <- extract_effects(formula, family = family)  
   possible_priors <- unlist(parnames(formula, data = data, family = family, autocor = autocor,
                                      partial = partial, threshold = threshold, internal = TRUE), 
                             use.names = FALSE)
-  meta_priors <- unlist(regmatches(possible_priors, gregexpr("^[^_]+", possible_priors)))
+  meta_priors <- unlist(regmatches(possible_priors, 
+                                   gregexpr("^[^_]+", possible_priors)))
   if ("sd" %in% meta_priors)
     meta_priors <- c(meta_priors, paste0("sd_",ee$group))
   possible_priors <- unique(c(possible_priors, meta_priors))
@@ -238,7 +229,7 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian", autoco
     message(paste0("Some parameter names in prior cannot be found in the model and are ignored. \n", 
                    "Occured for parameter(s): ", paste0(wrong_priors, collapse = ", ")))
   
-  #rename certain parameters
+  # rename certain parameters
   names(prior) <- rename(names(prior), symbols = c("^cor_", "^cor$", "^rescor$"), 
                          subs = c("L_", "L", "Lrescor"), fixed = FALSE)
   if (any(grepl("^sd_.+", names(prior))))
@@ -271,20 +262,27 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian", autoco
 #'           data = epilepsy, family = "poisson")          
 #' 
 #' @export
-parnames.formula <- function(x, data = NULL, family = "gaussian", addition = NULL, autocor = NULL, 
-                             partial = NULL, threshold = "flexible", internal = FALSE, ...) {
+parnames.formula <- function(x, data = NULL, family = "gaussian", addition = NULL, 
+                             autocor = NULL, partial = NULL, 
+                             threshold = c("flexible", "equidistant"), internal = FALSE, ...) {
+  
   if (is.null(autocor)) autocor <- cor_arma()
   if (!is(autocor, "cor_brms")) stop("cor must be of class cor_brms")
-  if (!threshold %in% c("flexible","equidistant")) 
-    stop("threshold must be either flexible or equidistant")
+  threshold <- match.arg(threshold)
   family <- check_family(family[1])
   x <- update_formula(x, addition = addition)
   ee <- extract_effects(x, partial, family = family)
   data <- update_data(data, family = family, effects = ee)
+  
+  # initialize output
   out <- list(fixef = paste0("b_",colnames(get_model_matrix(ee$fixed, data = data))),
               ranef = list(), other = NULL)
-  if (is.formula(partial)) 
-    out$fixef <- c(out$fixef, paste0("b_",colnames(get_model_matrix(partial, data = data, rm_intercept = TRUE))))
+  if (is.formula(partial)) {
+    paref <- colnames(get_model_matrix(partial, data = data, rm_intercept = TRUE))
+    out$fixef <- c(out$fixef, paste0("b_",paref))
+  }
+  
+  # handle random effects
   if (length(ee$group)) {
     gs <- unlist(ee$group)
     for (i in 1:length(gs)) {
@@ -294,6 +292,8 @@ parnames.formula <- function(x, data = NULL, family = "gaussian", addition = NUL
                                             c(paste0("cor_",gs[i]), if(internal) paste0("L_",gs[i]))))) 
     }
   }
+  
+  # handle additional parameters
   if (is(autocor, "cor_arma") && autocor$p) out$other <- c(out$other, "ar")
   if (is(autocor, "cor_arma") && autocor$q) out$other <- c(out$other, "ma")
   if (family %in% c("gaussian", "student", "cauchy") && !is.formula(ee$se))

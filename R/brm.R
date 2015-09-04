@@ -263,51 +263,51 @@
 #' @import stats   
 #' @export 
 brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior = list(),
-                addition = NULL, autocor = NULL, partial = NULL, threshold = "flexible", cov.ranef = NULL, 
+                addition = NULL, autocor = NULL, partial = NULL, 
+                threshold = c("flexible", "equidistant"), cov.ranef = NULL, 
                 ranef = TRUE, sample.prior = FALSE, fit = NA, 
-                n.chains = 2, n.iter = 2000, n.warmup = 500, n.thin = 1, n.cluster = 1, inits = "random", 
-                silent = FALSE, seed = 12345, save.model = NULL, ...) {
+                n.chains = 2, n.iter = 2000, n.warmup = 500, n.thin = 1, n.cluster = 1, 
+                inits = "random", silent = FALSE, seed = 12345, save.model = NULL, ...) {
   
   if (n.chains %% n.cluster != 0) stop("n.chains must be a multiple of n.cluster")
   if (is.null(autocor)) autocor <- cor_arma()
   if (!is(autocor, "cor_brms")) stop("cor must be of class cor_brms")
-  if (!threshold %in% c("flexible","equidistant")) 
-    stop("threshold must be either flexible or equidistant")
+  threshold <- match.arg(threshold)
+  
   dots <- list(...) 
   if ("WAIC" %in% names(dots))
     warning("Argument WAIC is depricated. Just use method WAIC on the fitted model.")
   if ("predict" %in% names(dots)) 
     warning("Argument predict is depricated. Just use method predict on the fitted model.")
   dots[c("WAIC", "predict")] <- NULL
-  set.seed(seed)
   
-  if (is(fit, "brmsfit")) {
+  set.seed(seed)
+  if (is(fit, "brmsfit")) {  # re-use existing model
     x <- fit
     x$fit <- rstan::get_stanmodel(x$fit)
-  }
-  else {
-    link <- link4family(family)
-    family <- check_family(family[1])
-    formula <- update_formula(formula, addition = addition)
+  } else {  # build new model
+    link <- link4family(family)  # see validate.R
+    family <- check_family(family[1])  # see validate.R
+    formula <- update_formula(formula, addition = addition)  # see validate.R
     prior <- check_prior(prior, formula = formula, data = data, family = family, autocor = autocor,
-                         partial = partial, threshold = threshold)
-    et <- extract_time(autocor$formula)
-    ee <- extract_effects(formula, family = family, partial, et$all)
+                         partial = partial, threshold = threshold)  # see validate.R
+    et <- extract_time(autocor$formula)  # see validate.R
+    ee <- extract_effects(formula, family = family, partial, et$all)  # see validate.R
     data.name <- Reduce(paste, deparse(substitute(data)))
-    data <- update_data(data, family = family, effects = ee, et$group)
+    data <- update_data(data, family = family, effects = ee, et$group)  # see data.R
     x <- brmsfit(formula = formula, family = family, link = link, partial = partial,
-                 data.name = data.name, autocor = autocor, prior = prior)
+                 data.name = data.name, autocor = autocor, prior = prior)  # make S3 object
     x$ranef <- setNames(lapply(lapply(ee$random, get_model_matrix, data = data), colnames), 
                         nm = ee$group)
-    x$exclude <- exclude_pars(formula, ranef = ranef)
+    x$exclude <- exclude_pars(formula, ranef = ranef)  # see validate.R
     x$data <- brmdata(formula, data = data, family = family, cov.ranef = cov.ranef,
-                       autocor = autocor, partial = partial) 
+                       autocor = autocor, partial = partial)  # see data.R
     x$model <- stan_model(formula = formula, data = data, family = family, link = link, prior = prior, 
                           autocor = autocor, partial = partial, threshold = threshold, 
-                          names_cov_ranef = names(cov.ranef), sample.prior = sample.prior, 
-                          save.model = save.model)
-    x$fit <- get_stanmodel(suppressMessages(stan(model_code = x$model, data = x$data,
-               model_name = paste0(family,"(",link,") brms-model"), chains = 0)))
+                          cov.ranef = cov.ranef, sample.prior = sample.prior, 
+                          save.model = save.model)  # see stan.R
+    x$fit <- rstan::get_stanmodel(suppressMessages(rstan::stan(model_code = x$model, data = x$data,
+               model_name = paste0(family,"(",link,") brms-model"), chains = 0)))  # let stan compile the model
   }
   
   if (is.character(inits) && !inits %in% c("random", "0")) 
@@ -318,7 +318,7 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
   
   args <- list(object = x$fit, data = x$data, pars = x$exclude, init = inits,
             iter = n.iter, warmup = n.warmup, thin = n.thin, chains = n.chains, 
-            include = FALSE)
+            include = FALSE)  # argument to be passed to stan
   args[names(dots)] <- dots 
   if (n.cluster > 1 || silent && n.chains > 0) {
     if (is.character(args$init) || is.numeric(args$init)) 
@@ -332,10 +332,9 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
     x$fit <- rstan::sflist2stanfit(rmNULL(lapply(1:length(sflist), function(i)
       if (!is(sflist[[i]], "stanfit") || length(sflist[[i]]@sim$samples) == 0) {
         warning(paste("chain", i, "did not contain samples and was removed from the fitted model"))
-        NULL
+        NULL  # remove chains that produce errors leaving the other chains untouched
       } else sflist[[i]])))
     stopCluster(cl)
-  } 
-  else x$fit <- do.call(rstan::sampling, args)
-  return(rename_pars(x))
+  } else x$fit <- do.call(rstan::sampling, args)
+  return(rename_pars(x))  # see rename.R
 }

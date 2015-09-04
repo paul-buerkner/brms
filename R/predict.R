@@ -1,3 +1,14 @@
+# All functions in this file have the same arguments structure
+#
+# Args:
+#  n: the column of samples to use i.e. the nth obervation in the initial data.frame 
+#  data: the data as passed to Stan
+#  samples: samples obtained through Stan. Must at least contain variable eta
+#  link: the link function
+#
+# Returns:
+#   A vector of length nrow(samples) containing samples from the posterior predictive distribution
+
 predict_gaussian <- function(n, data, samples, link) {
   sigma <- if (!is.null(samples$sigma)) samples$sigma
            else data$sigma
@@ -75,19 +86,23 @@ predict_categorical <- function(n, data, samples, link) {
 }
 
 predict_cumulative <- function(n, data, samples, link) {
-  predict_ordinal(n = n, data = data, samples = samples, link = link, family = "cumulative")
+  predict_ordinal(n = n, data = data, samples = samples, link = link, 
+                  family = "cumulative")
 }
 
 predict_sratio <- function(n, data, samples, link) {
-  predict_ordinal(n = n, data = data, samples = samples, link = link, family = "sratio")
+  predict_ordinal(n = n, data = data, samples = samples, link = link, 
+                  family = "sratio")
 }
 
 predict_cratio <- function(n, data, samples, link) {
-  predict_ordinal(n = n, data = data, samples = samples, link = link, family = "cratio")
+  predict_ordinal(n = n, data = data, samples = samples, link = link, 
+                  family = "cratio")
 }
 
 predict_acat <- function(n, data, samples, link) {
-  predict_ordinal(n = n, data = data, samples = samples, link = link, family = "acat")
+  predict_ordinal(n = n, data = data, samples = samples, link = link, 
+                  family = "acat")
 }  
 
 predict_ordinal <- function(n, data, samples, family, link) {

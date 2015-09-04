@@ -6,7 +6,7 @@
 \usage{
 \method{parnames}{formula}(x, data = NULL, family = "gaussian",
   addition = NULL, autocor = NULL, partial = NULL,
-  threshold = "flexible", internal = FALSE, ...)
+  threshold = c("flexible", "equidistant"), internal = FALSE, ...)
 }
 \arguments{
 \item{x}{An object of class \code{formula}}

@@ -66,14 +66,14 @@ test_that("Test that stan_model accepts supported links", {
 
 test_that("Test that stan_model returns correct strings for customized covariances", {
   expect_match(stan_model(rating ~ treat + period + carry + (1|subject), data = inhaler,
-                          names_cov_ranef = "subject"), fixed = TRUE,
+                          cov.ranef = list(subject = 1)), fixed = TRUE,
               "r_1 <- sd_1 * (cov_1 * pre_1)")
   expect_match(stan_model(rating ~ treat + period + carry + (1+carry|subject), data = inhaler,
-                          names_cov_ranef = "subject"), fixed = TRUE,
+                          cov.ranef = list(subject = 1)), fixed = TRUE,
        paste0("r_1 <- to_array(kronecker_cholesky(cov_1, L_1, sd_1) * ",
               "to_vector(pre_1), N_1, K_1"))
   expect_match(stan_model(rating ~ treat + period + carry + (1+carry||subject), data = inhaler,
-                          names_cov_ranef = "subject"), fixed = TRUE,
+                          cov.ranef = list(subject = 1)), fixed = TRUE,
        paste0("r_1 <- to_array(to_vector(rep_matrix(sd_1, N_1)) .* ",
               "(cov_1 * to_vector(pre_1)), N_1, K_1)"))
 })
@@ -140,5 +140,5 @@ test_that("Test that stan_rngprior returns correct sampling statements for prior
 
 test_that("Test that stan_functions returns correct user defined functions", {
   expect_match(stan_model(rating ~ treat + period + carry + (1+carry|subject), data = inhaler,
-                          names_cov_ranef = "subject"), "matrix kronecker_cholesky.*vector\\[\\] to_array")
+                          cov.ranef = list(subject = 1)), "matrix kronecker_cholesky.*vector\\[\\] to_array")
 })

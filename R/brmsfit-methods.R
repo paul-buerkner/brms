@@ -122,6 +122,7 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
            cor_pars = get_cornames(x$ranef[[i]], type = paste0("cor_",group[i]), 
                                    brackets = FALSE)))
   } else p <- group <- NULL
+  # special treatment of residuals variances in linear models
   if (x$family %in% c("gaussian", "student", "cauchy") && !is.formula(ee$se)) {
     p[[length(p)+1]] <- list(rnames = ee$response, 
                              type = "rescor",
@@ -543,7 +544,7 @@ predict.brmsfit <- function(object, newdata = NULL, transform = NULL,
   else data <- amend_newdata(newdata, formula = object$formula, family = object$family, 
                              autocor = object$autocor, partial = object$partial)
   
-  #call predict functions
+  # call predict functions
   predict_fun <- get(paste0("predict_",family))
   out <- do.call(cbind, lapply(1:ncol(samples$eta), function(n) 
     do.call(predict_fun, list(n = n, data = data, samples = samples, link = object$link))))
@@ -555,12 +556,12 @@ predict.brmsfit <- function(object, newdata = NULL, transform = NULL,
   else if (summary && is_categorical) # compute frequencies of categories for categorical and ordinal models
     out <- get_table(out, levels = 1:max(data$max_obs)) 
   
-  #sort predicted responses in case of multinormal models
+  # sort predicted responses in case of multinormal models
   if (family == "multinormal") {
     nobs <- object$data$N_trait * object$data$K_trait
     to_order <- unlist(lapply(1:object$data$K_trait, function(k) seq(k, nobs, object$data$K_trait)))
-    if (summary) out <- out[to_order, ] # observations in rows
-    else out <- out[, to_order] # observations in columns
+    if (summary) out <- out[to_order, ]  # observations in rows
+    else out <- out[, to_order]  # observations in columns
   }
   out
 }
@@ -671,7 +672,7 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", alpha = 0.05, ...) {
       prior_samples <- matrix(with(prior_samples, eval(parse(text = h_renamed))), ncol=1)
     } else prior_samples <- NULL
 
-    #evaluate hypothesis
+    # evaluate hypothesis
     wsign <- ifelse(sign == "=", "equal", ifelse(sign == "<", "less", "greater"))
     probs <- switch(wsign, equal = c(alpha/2, 1-alpha/2), less = c(0, 1-alpha), greater = c(alpha, 1))
     out <- as.data.frame(matrix(unlist(lapply(c("mean", "sd", "quantile", "evidence_ratio"), get_estimate, 

@@ -6,10 +6,11 @@
 \usage{
 brm(formula, data = NULL, family = c("gaussian", "identity"),
   prior = list(), addition = NULL, autocor = NULL, partial = NULL,
-  threshold = "flexible", cov.ranef = NULL, ranef = TRUE,
-  sample.prior = FALSE, fit = NA, n.chains = 2, n.iter = 2000,
-  n.warmup = 500, n.thin = 1, n.cluster = 1, inits = "random",
-  silent = FALSE, seed = 12345, save.model = NULL, ...)
+  threshold = c("flexible", "equidistant"), cov.ranef = NULL,
+  ranef = TRUE, sample.prior = FALSE, fit = NA, n.chains = 2,
+  n.iter = 2000, n.warmup = 500, n.thin = 1, n.cluster = 1,
+  inits = "random", silent = FALSE, seed = 12345, save.model = NULL,
+  ...)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class): a symbolic description of the model to be fitted.

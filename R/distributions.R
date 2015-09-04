@@ -1,26 +1,60 @@
-# density of student's distribution with parameters df, mu, and sigma
 dstudent <- function(x, df = stop("df is required"), mu = 0, sigma = 1, log = FALSE) {
+  # density of student's distribution 
+  #
+  # Args:
+  #  x: the value(s) at which the density should be evaluated
+  #  df: degrees of freedom
+  #  mu: the mean
+  #  sigma: the scale parameter
+  #  log: logical; return on log scale?
   if (log) dt((x - mu)/sigma, df = df, log = TRUE) - log(sigma)
   else dt((x - mu)/sigma, df = df)/sigma
 }
 
-# distribution function of student's distribution with parameters df, mu, and sigma
-pstudent <- function(q, df = stop("df is required"), mu = 0, sigma = 1, lower.tail = TRUE, log.p = FALSE) {
+
+pstudent <- function(q, df = stop("df is required"), mu = 0, sigma = 1, 
+                     lower.tail = TRUE, log.p = FALSE) {
+  # distribution function of student's distribution
+  #
+  # Args:
+  #  q: the value(s) at which the distribution should be evaluated
+  #  df: degrees of freedom
+  #  mu: the mean
+  #  sigma: the scale parameter
+  #  lower.tail: same as for every pdist function
+  #  log.p: logical; return on log scale?
   pt((q - mu)/sigma, df = df, lower.tail = lower.tail, log.p = log.p)
 }
 
-# rquantiles of student's distribution with parameters df, mu, and sigma
 qstudent <-  function(p, df = stop("df is required"), mu = 0, sigma = 1) {
+  # quantiles of student's distribution
+  # Args:
+  #  p: the probabilities to find quantiles for
+  #  df: degrees of freedom
+  #  mu: the mean
+  #  sigma: the scale parameter
   mu + sigma * qt(p, df = df)
 }
 
-# random values of student's distribution with parameters df, mu, and sigma
 rstudent <-  function(n, df = stop("df is required"), mu = 0, sigma = 1) {
+  # random values of student's distribution 
+  #
+  # Args:
+  #  n: number of random values
+  #  df: degrees of freedom
+  #  mu: the mean
+  #  sigma: the scale parameter
   mu + sigma * rt(n, df = df)
 }
 
-# density of the multinormal distribution with parameters mu and Sigma (not vectorized)
 dmultinormal <- function(x, mu, Sigma, log = TRUE) {
+  # density of the multinormal distribution
+  #
+  # Args:
+  #   x: the value(s) at which the density should be evaluated
+  #   mu: mean vector
+  #   sigma: covariance matrix
+  #   log: return on log scale?
   k <- length(x)
   rooti <- backsolve(chol(Sigma),diag(k))
   quads <- colSums((crossprod(rooti, (x-mu)))^2)
@@ -29,8 +63,14 @@ dmultinormal <- function(x, mu, Sigma, log = TRUE) {
   out
 }
 
-# random values of the multinormal distribution with parameters mu and Sigma
 rmultinormal <- function(n, mu, Sigma, check = FALSE) {
+  # random values of the multinormal distribution 
+  #
+  # Args:
+  #   n: number of random values
+  #   mu: mean vector
+  #   sigma: covariance matrix
+  #   check: check sigma for symmetry?
   p <- length(mu)
   if (check) {
     if (!all(dim(Sigma) == c(p, p))) 
@@ -43,10 +83,14 @@ rmultinormal <- function(n, mu, Sigma, check = FALSE) {
   mu + samples %*% cholSigma
 }
 
-# density of the categorical distribution
-# 
-# @param same arguments as dcumulative
 dcategorical <- function(x, eta, ncat, link = "logit") {
+  # density of the categorical distribution
+  # 
+  # Args:
+  #   x: positive integers not greater than ncat
+  #   mu: the linear predictor (of length or ncol ncat-1)  
+  #   ncat: the number of categories
+  #   link: the link function
   if (is.null(dim(eta))) eta <- matrix(eta, nrow = 1)
   if (length(dim(eta)) != 2 || !is.numeric(eta)) 
     stop("eta must be a numeric vector or matrix")
@@ -58,26 +102,24 @@ dcategorical <- function(x, eta, ncat, link = "logit") {
   p[,x]
 }
 
-# distribution functions for the categorical family
-#
-# @param q positive integers not greater than ncat
-# @param mu the linear predictor (of length or ncol ncat-1)  
-# @param ncat the number of categories
-#
-# @return probabilites P(x <= q)
 pcategorical <- function(q, eta, ncat, link = "logit") {
+  # distribution functions for the categorical family
+  #
+  # Args:
+  #   q: positive integers not greater than ncat
+  #   mu: the linear predictor (of length or ncol ncat-1)  
+  #   ncat: the number of categories
+  #
+  # Retruns: 
+  #   probabilites P(x <= q)
   p <- dcategorical(1:max(q), eta = eta, ncat = ncat, link = link)
   do.call(cbind, lapply(q, function(j) rowSums(as.matrix(p[,1:j]))))
 }
 
-# density of the cumulative distribution
-# 
-# @param x positive integers not greater than ncat
-# @param mu the linear predictor (of length or ncol ncat-1)  
-# @param ncat the number of categories
-#
-# @return the probabilities of the values in x
 dcumulative <- function(x, eta, ncat, link = "logit") {
+  # density of the cumulative distribution
+  #
+  # Args: same as dcategorical
   if (is.null(dim(eta))) eta <- matrix(eta, nrow = 1)
   if (length(dim(eta)) != 2 || !is.numeric(eta)) 
     stop("eta must be a numeric vector or matrix")
@@ -89,10 +131,10 @@ dcumulative <- function(x, eta, ncat, link = "logit") {
   p[,x]
 }
 
-# density of the sratio distribution
-# 
-# @param same arguments as dcumulative
 dsratio <- function(x, eta, ncat, link = "logit") {
+  # density of the sratio distribution
+  #
+  # Args: same as dcategorical
   if (is.null(dim(eta))) eta <- matrix(eta, nrow = 1)
   if (length(dim(eta)) != 2 || !is.numeric(eta)) 
     stop("eta must be a numeric vector or matrix")
@@ -105,10 +147,10 @@ dsratio <- function(x, eta, ncat, link = "logit") {
   p[,x]
 }
 
-# density of the cratio distribution
-# 
-# @param same arguments as dcumulative
 dcratio <- function(x, eta, ncat, link = "logit") {
+  # density of the cratio distribution
+  #
+  # Args: same as dcategorical
   if (is.null(dim(eta))) eta <- matrix(eta, nrow = 1)
   if (length(dim(eta)) != 2 || !is.numeric(eta)) 
     stop("eta must be a numeric vector or matrix")
@@ -121,22 +163,21 @@ dcratio <- function(x, eta, ncat, link = "logit") {
   p[,x]
 }
 
-# density of the acat family
-# 
-# @param same arguments as dcumulative
 dacat <- function(x, eta, ncat, link = "logit") {
+  # density of the acat distribution
+  #
+  # Args: same as dcategorical
   if (is.null(dim(eta))) eta <- matrix(eta, nrow = 1)
   if (length(dim(eta)) != 2 || !is.numeric(eta)) 
     stop("eta must be a numeric vector or matrix")
   if (missing(ncat)) ncat <- ncol(eta)
   
-  if (link == "logit") {
+  if (link == "logit") { # faster evaluation in this case
     p <- cbind(rep(1, nrow(eta)), exp(eta[,1]), 
                matrix(NA, nrow = nrow(eta), ncol = ncat - 2))
     if (ncat > 2) 
       p[,3:ncat] <- exp(sapply(3:ncat, function(k) rowSums(eta[,1:(k-1)])))
-  } 
-  else {
+  } else {
     mu <- ilink(eta, link)
     p <- cbind(apply(1 - mu[,1:(ncat-1)], 1, prod), 
                matrix(0, nrow = nrow(eta), ncol = ncat - 1))
@@ -149,14 +190,16 @@ dacat <- function(x, eta, ncat, link = "logit") {
   p[,x]
 }
 
-# distribution functions for ordinal families
-#
-# @param q positive integers not greater than ncat
-# @param mu the linear predictor (of length or ncol ncat-1)  
-# @param ncat the number of categories
-#
-# @return probabilites P(x <= q)
 pordinal <- function(q, eta, ncat, family, link = "logit") {
+  # distribution functions for ordinal families
+  #
+  # Args:
+  #   q: positive integers not greater than ncat
+  #   mu: the linear predictor (of length or ncol ncat-1)  
+  #   ncat: the number of categories
+  #
+  # Returns: 
+  #   probabilites P(x <= q)
   p <- do.call(paste0("d", family), list(1:max(q), eta = eta, ncat = ncat, link = link))
   do.call(cbind, lapply(q, function(j) rowSums(as.matrix(p[,1:j]))))
 }
