@@ -26,8 +26,11 @@ rmMatch <- function(x, ...) {
 
 is.wholenumber <- function(x, tol = .Machine$double.eps^0.5) {  
   # check if x is a whole number (integer)
-  if (!is.numeric(x)) return(FALSE)
-  else return(abs(x - round(x)) < tol)
+  if (!is.numeric(x)) {
+    return(FALSE)
+  } else {
+    return(abs(x - round(x)) < tol)
+  }
 }  
 
 collapse <- function(..., sep = "") {
@@ -35,9 +38,24 @@ collapse <- function(..., sep = "") {
   paste(..., sep = sep, collapse = "")
 }
 
+collapse_lists <- function(ls) {
+  # collapse strings having the same name in different lists
+  #
+  # Args:
+  #  ls: a list of named lists
+  # 
+  # Returns:
+  #  a named list containg the collapsed strings
+  elements <- unique(unlist(lapply(ls, names)))
+  out <- do.call(mapply, c(FUN = collapse, lapply(ls, "[", elements), 
+                           SIMPLIFY = FALSE))
+  names(out) <- elements
+  out
+}
+
 logit <- function(p) {
   # compute the logit
-  log(p/(1-p))
+  log(p / (1 - p))
 }
 
 ilogit <- function(x) { 
@@ -71,7 +89,7 @@ formula2string <- function(formula, rm = c(0, 0)) {
   # Returns:
   #    the formula as string 
   if (!is.formula(formula))
-    stop(paste(deparse(substitute(formula)),"must be of class formula"))
+    stop(paste(deparse(substitute(formula)), "must be of class formula"))
   if (is.na(rm[2])) rm[2] <- 0
   x <- gsub(" ","", Reduce(paste, deparse(formula)))
   x <- substr(x, 1 + rm[1], nchar(x) - rm[2])

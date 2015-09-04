@@ -7,8 +7,11 @@ dstudent <- function(x, df = stop("df is required"), mu = 0, sigma = 1, log = FA
   #  mu: the mean
   #  sigma: the scale parameter
   #  log: logical; return on log scale?
-  if (log) dt((x - mu)/sigma, df = df, log = TRUE) - log(sigma)
-  else dt((x - mu)/sigma, df = df)/sigma
+  if (log) {
+    dt((x - mu) / sigma, df = df, log = TRUE) - log(sigma)
+  } else {
+    dt((x - mu) / sigma, df = df) / sigma
+  }
 }
 
 
@@ -56,10 +59,11 @@ dmultinormal <- function(x, mu, Sigma, log = TRUE) {
   #   sigma: covariance matrix
   #   log: return on log scale?
   k <- length(x)
-  rooti <- backsolve(chol(Sigma),diag(k))
-  quads <- colSums((crossprod(rooti, (x-mu)))^2)
-  out <- -(k/2)*log(2*pi) + sum(log(diag(rooti))) - .5*quads
-  if (!log) out <- exp(out)
+  rooti <- backsolve(chol(Sigma), diag(k))
+  quads <- colSums((crossprod(rooti, (x - mu)))^2)
+  out <- -(k / 2) * log(2 * pi) + sum(log(diag(rooti))) - .5 * quads
+  if (!log) 
+    out <- exp(out)
   out
 }
 
@@ -79,7 +83,7 @@ rmultinormal <- function(n, mu, Sigma, check = FALSE) {
       stop("Sigma is not symmetric")
   }
   cholSigma <- chol(Sigma)
-  samples <- matrix(rnorm(n*p), nrow = n, ncol = p)
+  samples <- matrix(rnorm(n * p), nrow = n, ncol = p)
   mu + samples %*% cholSigma
 }
 
@@ -91,15 +95,19 @@ dcategorical <- function(x, eta, ncat, link = "logit") {
   #   mu: the linear predictor (of length or ncol ncat-1)  
   #   ncat: the number of categories
   #   link: the link function
-  if (is.null(dim(eta))) eta <- matrix(eta, nrow = 1)
+  if (is.null(dim(eta))) 
+    eta <- matrix(eta, nrow = 1)
   if (length(dim(eta)) != 2 || !is.numeric(eta)) 
     stop("eta must be a numeric vector or matrix")
-  if (missing(ncat)) ncat <- ncol(eta)
-  if (link == "logit")
-    p <- exp(cbind(rep(0, nrow(eta)), eta[,1:(ncat-1)]))
-  else stop(paste("Link", link, "not supported"))
+  if (missing(ncat)) 
+    ncat <- ncol(eta)
+  if (link == "logit") {
+    p <- exp(cbind(rep(0, nrow(eta)), eta[, 1:(ncat - 1)]))
+  } else {
+    stop(paste("Link", link, "not supported"))
+  }
   p <- p / rowSums(p)
-  p[,x]
+  p[, x]
 }
 
 pcategorical <- function(q, eta, ncat, link = "logit") {
@@ -113,7 +121,7 @@ pcategorical <- function(q, eta, ncat, link = "logit") {
   # Retruns: 
   #   probabilites P(x <= q)
   p <- dcategorical(1:max(q), eta = eta, ncat = ncat, link = link)
-  do.call(cbind, lapply(q, function(j) rowSums(as.matrix(p[,1:j]))))
+  do.call(cbind, lapply(q, function(j) rowSums(as.matrix(p[, 1:j]))))
 }
 
 dcumulative <- function(x, eta, ncat, link = "logit") {
@@ -125,10 +133,11 @@ dcumulative <- function(x, eta, ncat, link = "logit") {
     stop("eta must be a numeric vector or matrix")
   if (missing(ncat)) ncat <- ncol(eta)
   mu <- ilink(eta, link)
-  p <- cbind(mu[,1], 
-             if (ncat > 2) sapply(2:(ncat-1), function(k) mu[,k] - mu[,k-1]), 
-             1 - mu[,ncat-1])
-  p[,x]
+  p <- cbind(mu[, 1], 
+             if (ncat > 2) 
+               sapply(2:(ncat - 1), function(k) mu[, k] - mu[, k - 1]), 
+             1 - mu[, ncat - 1])
+  p[, x]
 }
 
 dsratio <- function(x, eta, ncat, link = "logit") {
@@ -140,54 +149,59 @@ dsratio <- function(x, eta, ncat, link = "logit") {
     stop("eta must be a numeric vector or matrix")
   if (missing(ncat)) ncat <- ncol(eta)
   mu <- ilink(eta, link)
-  p <- cbind(mu[,1], 
-        if (ncat > 2) sapply(2:(ncat-1), function(k)
-          (mu[,k]) * apply(as.matrix(1-mu[,1:(k-1)]), 1, prod)),
-        apply(1-mu, 1, prod))
-  p[,x]
+  p <- cbind(mu[, 1], 
+        if (ncat > 2) sapply(2:(ncat - 1), function(k)
+          (mu[, k]) * apply(as.matrix(1 - mu[, 1:(k - 1)]), 1, prod)),
+        apply(1 - mu, 1, prod))
+  p[, x]
 }
 
 dcratio <- function(x, eta, ncat, link = "logit") {
   # density of the cratio distribution
   #
   # Args: same as dcategorical
-  if (is.null(dim(eta))) eta <- matrix(eta, nrow = 1)
+  if (is.null(dim(eta))) 
+    eta <- matrix(eta, nrow = 1)
   if (length(dim(eta)) != 2 || !is.numeric(eta)) 
     stop("eta must be a numeric vector or matrix")
-  if (missing(ncat)) ncat <- ncol(eta)
+  if (missing(ncat)) 
+    ncat <- ncol(eta)
   mu <- ilink(eta, link)
-  p <- cbind(1 - mu[,1], 
-        if (ncat > 2) sapply(2:(ncat-1), function(k)
-          (1 - mu[,k]) * apply(as.matrix(mu[,1:(k-1)]), 1, prod)),
+  p <- cbind(1 - mu[, 1], 
+        if (ncat > 2) sapply(2:(ncat - 1), function(k)
+          (1 - mu[, k]) * apply(as.matrix(mu[, 1:(k - 1)]), 1, prod)),
         apply(mu, 1, prod))
-  p[,x]
+  p[, x]
 }
 
 dacat <- function(x, eta, ncat, link = "logit") {
   # density of the acat distribution
   #
   # Args: same as dcategorical
-  if (is.null(dim(eta))) eta <- matrix(eta, nrow = 1)
+  if (is.null(dim(eta))) 
+    eta <- matrix(eta, nrow = 1)
   if (length(dim(eta)) != 2 || !is.numeric(eta)) 
     stop("eta must be a numeric vector or matrix")
-  if (missing(ncat)) ncat <- ncol(eta)
+  if (missing(ncat)) 
+    ncat <- ncol(eta)
   
   if (link == "logit") { # faster evaluation in this case
     p <- cbind(rep(1, nrow(eta)), exp(eta[,1]), 
                matrix(NA, nrow = nrow(eta), ncol = ncat - 2))
     if (ncat > 2) 
-      p[,3:ncat] <- exp(sapply(3:ncat, function(k) rowSums(eta[,1:(k-1)])))
+      p[, 3:ncat] <- exp(sapply(3:ncat, function(k) rowSums(eta[, 1:(k-1)])))
   } else {
     mu <- ilink(eta, link)
-    p <- cbind(apply(1 - mu[,1:(ncat-1)], 1, prod), 
+    p <- cbind(apply(1 - mu[,1:(ncat - 1)], 1, prod), 
                matrix(0, nrow = nrow(eta), ncol = ncat - 1))
     if (ncat > 2)
-      p[,2:(ncat-1)] <- sapply(2:(ncat-1), function(k) 
-        apply(as.matrix(mu[,1:(k-1)]), 1, prod) * apply(as.matrix(1 - mu[,k:(ncat-1)]), 1, prod))
-    p[,ncat] <- apply(mu[,1:(ncat-1)], 1, prod)
+      p[, 2:(ncat - 1)] <- sapply(2:(ncat - 1), function(k) 
+        apply(as.matrix(mu[, 1:(k - 1)]), 1, prod) * 
+          apply(as.matrix(1 - mu[, k:(ncat - 1)]), 1, prod))
+    p[, ncat] <- apply(mu[, 1:(ncat - 1)], 1, prod)
   }
   p <- p / rowSums(p)
-  p[,x]
+  p[, x]
 }
 
 pordinal <- function(q, eta, ncat, family, link = "logit") {
@@ -200,6 +214,7 @@ pordinal <- function(q, eta, ncat, family, link = "logit") {
   #
   # Returns: 
   #   probabilites P(x <= q)
-  p <- do.call(paste0("d", family), list(1:max(q), eta = eta, ncat = ncat, link = link))
-  do.call(cbind, lapply(q, function(j) rowSums(as.matrix(p[,1:j]))))
+  p <- do.call(paste0("d", family), list(1:max(q), eta = eta, 
+                                         ncat = ncat, link = link))
+  do.call(cbind, lapply(q, function(j) rowSums(as.matrix(p[, 1:j]))))
 }

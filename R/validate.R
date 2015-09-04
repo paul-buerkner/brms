@@ -29,13 +29,15 @@ extract_effects <- function(formula, ..., family = "none") {
   random <- lapply(regmatches(rg, gregexpr("\\([^\\|]*", rg)), function(r) 
     formula(paste0("~ ",substr(r, 2, nchar(r)))))
   cor <- unlist(lapply(regmatches(rg, gregexpr("\\|[^\\)]*", rg)), function(g) substr(g, 1, 2) != "||"))
+  
   group_formulas <- lapply(regmatches(rg, gregexpr("\\|[^\\)]*", rg)), function(g) {
     g <- ifelse(substr(g, 1, 2) == "||", substr(g, 3, nchar(g)), substr(g, 2, nchar(g)))
     if (nchar(gsub(":", "", gsub("[^([:digit:]|[:punct:])][[:alnum:]_\\.]*", "", g))))
       stop(paste("Illegal grouping term:",g,"\nGrouping terms may contain only variable names",
                  "combined by the interaction symbol ':'"))
     return(formula(paste("~",g)))})
-  group <- unlist(lapply(group_formulas, function(g) paste0(all.vars(g), collapse = ":")))
+  group <- unlist(lapply(group_formulas, 
+                         function(g) paste0(all.vars(g), collapse = ":")))
   
   # ordering is to ensure that all REs of the same grouping factor are next to each other
   x <- list(fixed = fixed, 
@@ -78,7 +80,8 @@ extract_effects <- function(formula, ..., family = "none") {
   # make a formula containing all required variables (element 'all')
   new_formula <- unlist(lapply(c(random, group_formulas, add_vars, ...), 
                                function(x) paste0("+", Reduce(paste, deparse(x[[2]])))))
-  new_formula <- paste0("update(",Reduce(paste, deparse(fixed)),", . ~ .",paste0(new_formula, collapse=""),")")
+  new_formula <- paste0("update(",Reduce(paste, deparse(fixed)),
+                        ", . ~ .",paste0(new_formula, collapse=""),")")
   x$all <- eval(parse(text = new_formula))
   environment(x$all) <- globalenv()
   
@@ -145,12 +148,15 @@ update_formula <- function(formula, addition = NULL, partial = NULL) {
 
 check_family <- function(family) {
   # check validity of model family
-  if (family == "normal") family <- "gaussian"
+  if (family == "normal")
+    family <- "gaussian"
   if (family == "multigaussian") 
     stop("family 'multigaussian' is deprecated. Use family 'gaussian' instead")
-  if (!family %in% c("gaussian", "student", "cauchy", "binomial", "bernoulli", "categorical",
-                     "poisson", "negbinomial", "geometric", "gamma", "weibull", "exponential",
-                     "cumulative", "cratio", "sratio", "acat"))
+  if (!family %in% c("gaussian", "student", "cauchy", "binomial", 
+                     "bernoulli", "categorical", "poisson", 
+                     "negbinomial", "geometric", "gamma", 
+                     "weibull", "exponential", "cumulative", 
+                     "cratio", "sratio", "acat"))
     stop(paste(family, "is not a valid family"))
   family
 }
@@ -161,7 +167,8 @@ link4family <- function(family) {
   family <- family[1]
   is_linear <- family %in% c("gaussian", "student", "cauchy")
   is_skew <- family %in% c("gamma", "weibull", "exponential")
-  is_cat <- family %in% c("cumulative", "cratio", "sratio", "acat", "binomial", "bernoulli")                    
+  is_cat <- family %in% c("cumulative", "cratio", "sratio", 
+                          "acat", "binomial", "bernoulli")                    
   is_count <- family %in% c("poisson", "negbinomial", "geometric")
   
   if (is.na(link)) {
@@ -201,6 +208,20 @@ exclude_pars <- function(formula, ranef = TRUE) {
   out
 }
 
+remove_chains <- function(i, sflist) {
+  # remove chains that produce errors leaving the other chains untouched
+  #
+  # Args:
+  #   i: an index between 1 and length(sflist) 
+  #   sflist: list of stanfit objects as returned by parLapply
+  if (!is(sflist[[i]], "stanfit") || length(sflist[[i]]@sim$samples) == 0) {
+    warning(paste("chain", i, "did not contain samples and was removed from the fitted model"))
+    return(NULL)  
+  } else {
+    return(sflist[[i]])
+  }
+}
+
 check_prior <- function(prior, formula, data = NULL, family = "gaussian", autocor = NULL, 
                         partial = NULL, threshold = "flexible") {
   # check prior input by and amend it if needed
@@ -216,8 +237,9 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian", autoco
   
   # check if parameter names in prior are correct
   ee <- extract_effects(formula, family = family)  
-  possible_priors <- unlist(parnames(formula, data = data, family = family, autocor = autocor,
-                                     partial = partial, threshold = threshold, internal = TRUE), 
+  possible_priors <- unlist(parnames(formula, data = data, family = family, 
+                                     autocor = autocor, partial = partial, 
+                                     threshold = threshold, internal = TRUE), 
                             use.names = FALSE)
   meta_priors <- unlist(regmatches(possible_priors, 
                                    gregexpr("^[^_]+", possible_priors)))
@@ -237,8 +259,8 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian", autoco
       names(prior) <-  rename(names(prior), symbols = paste0("^sd_",ee$group[[i]]),
                               subs = paste0("sd_",i), fixed = FALSE)
   if (family %in% c("cumulative", "sratio", "cratio", "acat") && threshold == "equidistant")
-    names(prior) <- rename(names(prior), symbols = "^b_Intercept$", subs = "b_Intercept1",
-                           fixed = FALSE)
+    names(prior) <- rename(names(prior), symbols = "^b_Intercept$", 
+                           subs = "b_Intercept1", fixed = FALSE)
   prior
 }
 
@@ -264,7 +286,8 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian", autoco
 #' @export
 parnames.formula <- function(x, data = NULL, family = "gaussian", addition = NULL, 
                              autocor = NULL, partial = NULL, 
-                             threshold = c("flexible", "equidistant"), internal = FALSE, ...) {
+                             threshold = c("flexible", "equidistant"), 
+                             internal = FALSE, ...) {
   
   if (is.null(autocor)) autocor <- cor_arma()
   if (!is(autocor, "cor_brms")) stop("cor must be of class cor_brms")
@@ -287,20 +310,27 @@ parnames.formula <- function(x, data = NULL, family = "gaussian", addition = NUL
     gs <- unlist(ee$group)
     for (i in 1:length(gs)) {
       ranef <- colnames(get_model_matrix(ee$random[[i]], data = data))
-      out$ranef[[gs[i]]] <- sort(unique(c(out$ranef[[gs[i]]], paste0("sd_",gs[i],"_",ranef),
-                                          if (ee$cor[[i]] && length(ranef) > 1) 
-                                            c(paste0("cor_",gs[i]), if(internal) paste0("L_",gs[i]))))) 
+      # get all possible parameter names for one grouping factor
+      out$ranef[[gs[i]]] <- c(out$ranef[[gs[i]]], 
+                              paste0("sd_",gs[i],"_",ranef),
+                              if (ee$cor[[i]] && length(ranef) > 1) 
+                                c(paste0("cor_",gs[i]), 
+                                  if(internal) paste0("L_",gs[i])))
+      out$ranef[[gs[i]]] <- sort(unique(out$ranef[[gs[i]]]))
     }
   }
   
   # handle additional parameters
-  if (is(autocor, "cor_arma") && autocor$p) out$other <- c(out$other, "ar")
-  if (is(autocor, "cor_arma") && autocor$q) out$other <- c(out$other, "ma")
+  if (is(autocor, "cor_arma") && autocor$p) 
+    out$other <- c(out$other, "ar")
+  if (is(autocor, "cor_arma") && autocor$q) 
+    out$other <- c(out$other, "ma")
   if (family %in% c("gaussian", "student", "cauchy") && !is.formula(ee$se))
     out$other <- c(out$other, paste0("sigma_",ee$response))
   if (family == "gaussian" && length(ee$response) > 1)
     out$other <- c(out$other, "rescor", if (internal) "Lrescor")
-  if (family == "student") out$other <- c(out$other, "nu")
+  if (family == "student") 
+    out$other <- c(out$other, "nu")
   if (family %in% c("gamma", "weibull", "negbinomial")) 
     out$other <- c(out$other, "shape")
   if (family %in% c("cumulative", "sratio", "cratio", "acat") && threshold == "equidistant")

@@ -1,23 +1,31 @@
-brmsfit <- function(formula = NULL, family = "", link = "", data.name = "", data = data.frame(), 
-                    model = "", exclude = NULL, prior = list(), ranef = NULL, autocor = NULL,
+brmsfit <- function(formula = NULL, family = "", link = "", data.name = "", 
+                    data = data.frame(), model = "", exclude = NULL,
+                    prior = list(), ranef = NULL, autocor = NULL,
                     partial = NULL, fit = NA) {
   # brmsfit class
-  x <- list(formula = formula, family = family, link = link, data.name = data.name,
-            data = data, model = model, exclude = exclude, prior = prior, 
-            ranef = ranef, autocor = autocor, partial = partial, fit = fit)
+  x <- list(formula = formula, family = family, link = link, 
+            data.name = data.name, data = data, model = model, 
+            exclude = exclude, prior = prior, 
+            ranef = ranef, autocor = autocor, 
+            partial = partial, fit = fit)
   class(x) <- "brmsfit"
   return(x)
 }
 
-brmssummary <- function(formula = NULL, family = "", link = "", data.name = "", group = NULL,
-                 nobs = NULL, ngrps = NULL, n.chains = 1, n.iter = 2000, n.warmup = 500, n.thin = 1,
-                 sampler = "", fixed = NULL, random = list(), cor_pars = NULL, autocor = NULL, 
-                 spec_pars = NULL, WAIC = "Not computed") {
+brmssummary <- function(formula = NULL, family = "", link = "", 
+                        data.name = "", group = NULL, nobs = NULL, 
+                        ngrps = NULL, n.chains = 1, n.iter = 2000, 
+                        n.warmup = 500, n.thin = 1, sampler = "", 
+                        fixed = NULL, random = list(), cor_pars = NULL, 
+                        autocor = NULL, spec_pars = NULL, WAIC = "Not computed") {
   # brmssummary class
-  x <- list(formula = formula, family = family, link = link, data.name = data.name, group = group, 
-            nobs = nobs, ngrps = ngrps, n.chains = n.chains, n.iter = n.iter,  n.warmup = n.warmup, 
-            n.thin = n.thin, sampler = sampler, fixed = fixed, random = random, WAIC = WAIC,
-            cor_pars = cor_pars, autocor = autocor, spec_pars = spec_pars)
+  x <- list(formula = formula, family = family, link = link, 
+            data.name = data.name, group = group, 
+            nobs = nobs, ngrps = ngrps, n.chains = n.chains, 
+            n.iter = n.iter,  n.warmup = n.warmup, 
+            n.thin = n.thin, sampler = sampler, fixed = fixed, 
+            random = random, WAIC = WAIC, cor_pars = cor_pars, 
+            autocor = autocor, spec_pars = spec_pars)
   class(x) <- "brmssummary"
   x
 }
@@ -224,12 +232,14 @@ hypothesis <- function(x, hypothesis, class = "b", alpha = 0.05, ...)
 #' }
 #' 
 #' @export 
-posterior_samples <- function(x, parameters = NA, exact_match = FALSE, add_chains = FALSE,...)
+posterior_samples <- function(x, parameters = NA, exact_match = FALSE, 
+                              add_chains = FALSE,...)
   UseMethod("posterior_samples")
 
 # deprecated alias of posterior_samples
 #' @export 
-posterior.samples <- function(x, parameters = NA, exact_match = FALSE, add_chains = FALSE,...)
+posterior.samples <- function(x, parameters = NA, exact_match = FALSE, 
+                              add_chains = FALSE,...)
   UseMethod("posterior_samples")
 
 #' Extract prior samples

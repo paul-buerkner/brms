@@ -8,17 +8,17 @@ melt <- function(data, response, family) {
   #
   # Returns:
   #   data in long format 
-  if (length(response) > 1 && family != "gaussian")
+  if (length(response) > 1 && family != "gaussian") {
     stop("multivariate models are currently only allowed for family 'gaussian'")
-  else if (length(response) > 1 && family == "gaussian") {
+  } else if (length(response) > 1 && family == "gaussian") {
     if (!is(data, "data.frame"))
       stop("data must be a data.frame in case of multiple responses")
     if ("trait" %in% names(data))
       stop("trait is a resevered variable name in case of multiple responses")
-    new_columns <- structure(data.frame(unlist(lapply(response, rep, time = nrow(data))), 
-                                        as.numeric(as.matrix(data[,response]))),
-                             names = c("trait", response[1]))
-    old_columns <- data[,which(!names(data) %in% response), drop = FALSE]
+    new_columns <- data.frame(unlist(lapply(response, rep, time = nrow(data))), 
+                              as.numeric(as.matrix(data[, response])))
+    names(new_columns) <- c("trait", response[1])
+    old_columns <- data[, which(!names(data) %in% response), drop = FALSE]
     old_columns <- do.call(rbind, lapply(response, function(i) old_columns))
     data <- cbind(old_columns, new_columns)
   }

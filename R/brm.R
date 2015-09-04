@@ -269,9 +269,12 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
                 n.chains = 2, n.iter = 2000, n.warmup = 500, n.thin = 1, n.cluster = 1, 
                 inits = "random", silent = FALSE, seed = 12345, save.model = NULL, ...) {
   
-  if (n.chains %% n.cluster != 0) stop("n.chains must be a multiple of n.cluster")
-  if (is.null(autocor)) autocor <- cor_arma()
-  if (!is(autocor, "cor_brms")) stop("cor must be of class cor_brms")
+  if (n.chains %% n.cluster != 0) 
+    stop("n.chains must be a multiple of n.cluster")
+  if (is.null(autocor)) 
+    autocor <- cor_arma()
+  if (!is(autocor, "cor_brms")) 
+    stop("cor must be of class cor_brms")
   threshold <- match.arg(threshold)
   
   dots <- list(...) 
@@ -282,45 +285,59 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
   dots[c("WAIC", "predict")] <- NULL
   
   set.seed(seed)
-  if (is(fit, "brmsfit")) {  # re-use existing model
-    x <- fit
-    x$fit <- rstan::get_stanmodel(x$fit)
+  if (is(fit, "brmsfit")) {  
+    x <- fit  # re-use existing model
   } else {  # build new model
     link <- link4family(family)  # see validate.R
     family <- check_family(family[1])  # see validate.R
     formula <- update_formula(formula, addition = addition)  # see validate.R
-    prior <- check_prior(prior, formula = formula, data = data, family = family, autocor = autocor,
-                         partial = partial, threshold = threshold)  # see validate.R
+    prior <- check_prior(prior, formula = formula, 
+                         data = data, family = family, 
+                         autocor = autocor, partial = partial, 
+                         threshold = threshold)  # see validate.R
     et <- extract_time(autocor$formula)  # see validate.R
     ee <- extract_effects(formula, family = family, partial, et$all)  # see validate.R
     data.name <- Reduce(paste, deparse(substitute(data)))
     data <- update_data(data, family = family, effects = ee, et$group)  # see data.R
-    x <- brmsfit(formula = formula, family = family, link = link, partial = partial,
-                 data.name = data.name, autocor = autocor, prior = prior)  # make S3 object
-    x$ranef <- setNames(lapply(lapply(ee$random, get_model_matrix, data = data), colnames), 
-                        nm = ee$group)
+    
+    # initialize S3 object
+    x <- brmsfit(formula = formula, family = family, link = link, 
+                 partial = partial, data.name = data.name, 
+                 autocor = autocor, prior = prior)  
+    x$ranef <- lapply(lapply(ee$random, get_model_matrix, data = data), 
+                      colnames)
+    names(x$ranef) <- ee$group
     x$exclude <- exclude_pars(formula, ranef = ranef)  # see validate.R
-    x$data <- brmdata(formula, data = data, family = family, cov.ranef = cov.ranef,
-                       autocor = autocor, partial = partial)  # see data.R
-    x$model <- stan_model(formula = formula, data = data, family = family, link = link, prior = prior, 
-                          autocor = autocor, partial = partial, threshold = threshold, 
+    x$data <- brmdata(formula, data = data, family = family, 
+                      cov.ranef = cov.ranef, autocor = autocor, 
+                      partial = partial)  # see data.R
+    x$model <- stan_model(formula = formula, data = data, 
+                          family = family, link = link, 
+                          prior = prior,  autocor = autocor, 
+                          partial = partial, threshold = threshold, 
                           cov.ranef = cov.ranef, sample.prior = sample.prior, 
                           save.model = save.model)  # see stan.R
-    x$fit <- rstan::get_stanmodel(suppressMessages(rstan::stan(model_code = x$model, data = x$data,
-               model_name = paste0(family,"(",link,") brms-model"), chains = 0)))  # let stan compile the model
+    x$fit <- suppressMessages(rstan::stan(model_code = x$model, 
+                                          data = x$data,
+                                          model_name = paste0(family,"(",link,") brms-model"), 
+                                          chains = 0))  # let stan compile the model
   }
+  x$fit <- rstan::get_stanmodel(x$fit)  # extract the compiled model
   
   if (is.character(inits) && !inits %in% c("random", "0")) 
     inits <- get(inits, mode = "function", envir = parent.frame())
   if (family %in% c("exponential", "weibull") && inits == "random")
-    warning(paste0("Families exponential and weibull may not work well with default initial values. \n",
+    warning(paste0("Families exponential and weibull may not work well",
+                   "with default initial values. \n",
                    "  It is thus recommended to set inits = '0'"))
   
-  args <- list(object = x$fit, data = x$data, pars = x$exclude, init = inits,
-            iter = n.iter, warmup = n.warmup, thin = n.thin, chains = n.chains, 
-            include = FALSE)  # argument to be passed to stan
+  # arguments to be passed to stan
+  args <- list(object = x$fit, data = x$data, pars = x$exclude, 
+               init = inits,  iter = n.iter, warmup = n.warmup, 
+               thin = n.thin, chains = n.chains, include = FALSE)  
   args[names(dots)] <- dots 
-  if (n.cluster > 1 || silent && n.chains > 0) {
+  
+  if (n.cluster > 1 || silent && n.chains > 0) {  # sample in parallel
     if (is.character(args$init) || is.numeric(args$init)) 
       args$init <- rep(args$init, n.chains)
     cl <- makeCluster(n.cluster)
@@ -329,12 +346,11 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior 
     sflist <- parLapply(cl, 1:n.chains, fun = function(i) { 
       args[c("chains", "chain_id", "init")] <- list(chains = 1, chain_id = i, init = args$init[i])
       do.call(rstan::sampling, args)})
-    x$fit <- rstan::sflist2stanfit(rmNULL(lapply(1:length(sflist), function(i)
-      if (!is(sflist[[i]], "stanfit") || length(sflist[[i]]@sim$samples) == 0) {
-        warning(paste("chain", i, "did not contain samples and was removed from the fitted model"))
-        NULL  # remove chains that produce errors leaving the other chains untouched
-      } else sflist[[i]])))
     stopCluster(cl)
-  } else x$fit <- do.call(rstan::sampling, args)
+    x$fit <- lapply(1:length(sflist), remove_chains, sflist = sflist)  # see validate.R
+    x$fit <- rstan::sflist2stanfit(rmNULL(x$fit))
+  } else {  # do not sample in parallel
+    x$fit <- do.call(rstan::sampling, args)
+  }
   return(rename_pars(x))  # see rename.R
 }

@@ -152,31 +152,43 @@ print.cor_arma <- function(x, ...) {
 macf <- function(x, lag.max = NULL, plot = TRUE, ...) {
   series <- Reduce(paste, deparse(substitute(x)))
   if (!is.matrix(x)) {
-    if (is.data.frame(x)) x <- as.matrix(x)
-    else if (is.numeric(x)) x <- matrix(x, nrow = 1)
-    else stop("x must be a matrix, data.frame or numeric vector")
+    if (is.data.frame(x)) {
+      x <- as.matrix(x)
+    } else if (is.numeric(x)) {
+      x <- matrix(x, nrow = 1)
+    } else { 
+      stop("x must be a matrix, data.frame or numeric vector")
+    }
   }
-  if (is.null(colnames(x))) group <- rep(1, ncol(x))
-  else group <- colnames(x)
-  if (is.null(lag.max))
+  if (is.null(colnames(x))) {
+    group <- rep(1, ncol(x))
+  } else {
+    group <- colnames(x)
+  }
+  if (is.null(lag.max)) {
     lag.max <- min(sort(table(group), decreasing = TRUE)[1],
                    10*log(ncol(x)/length(unique(group)), base = 10))
+  }
   ac_names <- paste0("ac",1:lag.max) 
   lm_call <- parse(text = paste0("lm(y ~ ",paste(ac_names, collapse = "+"),", data = D)"))
   coefs <- do.call(rbind, lapply(1:nrow(x), function(i) {
-    D <- as.data.frame(ar_design_matrix(x[i,], p = lag.max, group = group))
-    names(D) <- paste0("ac",1:lag.max) 
-    D <- cbind(D, y = x[i,])
+    D <- as.data.frame(ar_design_matrix(x[i, ], p = lag.max, group = group))
+    names(D) <- paste0("ac", 1:lag.max) 
+    D <- cbind(D, y = x[i, ])
     fit <- eval(lm_call)
     fit$coefficients[2:length(fit$coefficients)]
   }))
-  out <- list(lag = array(0:lag.max, dim = c(lag.max+1, 1, 1)),
-              acf = array(c(1, colMeans(coefs)), dim = c(lag.max+1, 1, 1)), 
-              type = "correlation", n.used = ncol(x)/length(unique(group)), 
-              series = series, snames = NULL)
+  out <- list(lag = array(0:lag.max, dim = c(lag.max + 1, 1, 1)),
+              acf = array(c(1, colMeans(coefs)), dim = c(lag.max + 1, 1, 1)), 
+              type = "correlation", 
+              n.used = ncol(x) / length(unique(group)), 
+              series = series, 
+              snames = NULL)
   class(out) <- "acf"
   if (plot) {
     plot(out, ...)
     invisible(out)
-  } else out
+  } else {
+    out
+  }
 }

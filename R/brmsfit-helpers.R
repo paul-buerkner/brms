@@ -9,9 +9,9 @@ array2list <- function(x) {
   if (is.null(dim(x))) stop("Argument x has no dimension")
   n.dim <- length(dim(x))
   l <- list(length = dim(x)[n.dim])
-  ind <- collapse(rep(",",n.dim-1))
+  ind <- collapse(rep(",", n.dim-1))
   for (i in 1:dim(x)[n.dim])
-    l[[i]] <- eval(parse(text = paste0("x[",ind,i,"]")))
+    l[[i]] <- eval(parse(text = paste0("x[", ind, i,"]")))
   names(l) <- dimnames(x)[[n.dim]]
   l
 }
@@ -29,18 +29,27 @@ list2array <- function(x) {
     stop("x must be a non-empty list")
   
   # reduce dimension of all elements of x having a last dimension of 1
-  x <- lapply(x, function(y) if (dim(y)[length(dim(y))] == 1) 
-                   array(as.vector(y), dim = dim(y)[1:(length(dim(y))-1)]) else y)
-  dim_elements <- lapply(x, function(y) if (!is.null(dim(y))) dim(y) else length(y))
+  x <- lapply(x, function(y) {
+    if (dim(y)[length(dim(y))] == 1) {
+      array(as.vector(y), dim = dim(y)[1:(length(dim(y))-1)]) 
+    } else y
+  })
+  dim_elements <- lapply(x, function(y)
+    if (!is.null(dim(y))) dim(y)
+    else length(y))
   dim_target <- dim_elements[[1]]
   if (!all(sapply(dim_elements, all.equal, current = dim_target)))
     stop("dimensions of list elements do not match")
   a <- array(NA, dim = c(dim_target, length(x)))
-  ind <- collapse(rep(",",length(dim_target)))
-  for (i in 1:length(x)) 
-    eval(parse(text = paste0("a[",ind,i,"] <- x[[",i,"]]")))
-  if (length(x) == 1) dimnames(a)[[length(dim_target)+1]] <- list(names(x))
-  else dimnames(a)[[length(dim_target)+1]] <- names(x)
+  ind <- collapse(rep(",", length(dim_target)))
+  for (i in 1:length(x)) {
+    eval(parse(text = paste0("a[", ind, i,"] <- x[[",i,"]]")))
+  }
+  if (length(x) == 1) {
+    dimnames(a)[[length(dim_target)+1]] <- list(names(x))
+  } else {
+    dimnames(a)[[length(dim_target)+1]] <- names(x)
+  }
   a
 }
 
@@ -165,16 +174,17 @@ get_summary <- function(samples, probs = c(0.025, 0.975)) {
   #
   # Returns:
   #   a N x C matric where N is the number of observations and C is equal to \code{length(probs) + 2}.
-  if (length(dim(samples)) == 2)
+  if (length(dim(samples)) == 2) {
     out <- do.call(cbind, lapply(c("mean", "sd", "quantile"), get_estimate, 
                                  samples = samples, probs = probs))
-  else if (length(dim(samples)) == 3) {
+  } else if (length(dim(samples)) == 3) {
     out <- list2array(lapply(1:dim(samples)[3], function(i)
       do.call(cbind, lapply(c("mean", "sd", "quantile"), get_estimate, 
                             samples = samples[,,i], probs = probs))))
     dimnames(out) <- list(NULL, NULL, paste0("P(Y = ", 1:dim(out)[3], ")")) 
+  } else { 
+    stop("dimension of samples must be either 2 or 3") 
   }
-  else stop("dimension of samples must be either 2 or 3") 
   rownames(out) <- 1:nrow(out)
   colnames(out) <- c("Estimate", "Est.Error", paste0(probs * 100, "%ile"))
   out  
@@ -212,23 +222,25 @@ get_cov_matrix <- function(sd, cor = NULL) {
   #   samples of covariance and correlation matrices
   if (any(sd < 0)) stop("standard deviations must be non negative")
   if (!is.null(cor)) {
-    if (ncol(cor) != ncol(sd)*(ncol(sd)-1)/ 2 || nrow(sd) != nrow(cor))
+    if (ncol(cor) != ncol(sd) * (ncol(sd) - 1) / 2 || nrow(sd) != nrow(cor))
       stop("dimensions of standard deviations and corrrelations do not match")
     if (any(cor < -1 || cor > 1)) 
       stop("correlations must be between -1 and 1")  
   }
   nsamples <- nrow(sd)
   nranef <- ncol(sd)
-  cor_matrix <- cov_matrix <- aperm(array(diag(1, nranef), dim = c(nranef, nranef, nsamples)), c(3,1,2))
+  cor_matrix <- cov_matrix <- aperm(array(diag(1, nranef), 
+                                          dim = c(nranef, nranef, nsamples)), 
+                                    perm = c(3, 1, 2))
   for (i in 1:nranef) 
-    cov_matrix[,i,i] <- sd[,i]^2 
+    cov_matrix[, i, i] <- sd[, i]^2 
   if (!is.null(cor)) {
     k <- 0 
     for (i in 2:nranef) {
       for (j in 1:(i-1)) {
         k = k + 1
-        cor_matrix[,j,i] <- cor_matrix[,i,j] <- cor[,k]
-        cov_matrix[,j,i] <- cov_matrix[,i,j] <- cor[,k] * sd[,i] * sd[,j]
+        cor_matrix[, j, i] <- cor_matrix[, i, j] <- cor[, k]
+        cov_matrix[, j, i] <- cov_matrix[, i, j] <- cor[, k] * sd[, i] * sd[, j]
       }
     }
   }
@@ -251,8 +263,9 @@ evidence_ratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"),
   #   the evidence ratio of the two hypothesis
   wsign <- match.arg(wsign)
   if (wsign == "equal") {
-    if (is.null(prior_samples)) out <- NA
-    else {
+    if (is.null(prior_samples)) {
+      out <- NA
+    } else {
       dots <- list(...)
       dots <- dots[names(dots) %in% names(formals("density.default"))]
       # compute prior and posterior densities
@@ -263,12 +276,10 @@ evidence_ratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"),
       at_cut_posterior <- match(min(abs(posterior_density$x - cut)), abs(posterior_density$x - cut))
       out <- posterior_density$y[at_cut_posterior] / prior_density$y[at_cut_prior] 
     }
-  }
-  else if (wsign == "less") {
+  } else if (wsign == "less") {
     out <- length(which(x < cut))
     out <- out / (length(x) - out)
-  }  
-  else if (wsign == "greater") {
+  } else if (wsign == "greater") {
     out <- length(which(x > cut))
     out <- out / (length(x) - out)  
   }
@@ -288,11 +299,14 @@ linear_predictor <- function(x, newdata = NULL) {
   #   and N is the number of observations in the data.
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
-  if (is.null(newdata)) data <- x$data
-  else if (is.data.frame(newdata))
+  if (is.null(newdata)) { 
+    data <- x$data
+  } else if (is.data.frame(newdata)) {
     data <- amend_newdata(newdata, formula = x$formula, family = x$family, 
                           autocor = x$autocor, partial = x$partial) # can be found in data.R
-  else stop("newdata must be a data.frame")
+  } else {
+    stop("newdata must be a data.frame")
+  } 
   n.samples <- nrow(posterior.samples(x, parameters = "^lp__$"))
   eta <- matrix(0, nrow = n.samples, ncol = data$N)
   X <- data$X
@@ -332,12 +346,16 @@ linear_predictor <- function(x, newdata = NULL) {
     if (!is.null(data$Xp) && ncol(data$Xp)) {
       p <- posterior.samples(x, paste0("^b_",colnames(data$Xp),"\\["))
       etap <- partial_predictor(Xp = data$Xp, p = p, ncat = data$max_obs)
-    }  
-    else etap <- array(0, dim = c(dim(eta), data$max_obs-1))
+    } else {
+      etap <- array(0, dim = c(dim(eta), data$max_obs-1))
+    } 
     for (k in 1:(data$max_obs-1)) {
-      etap[,,k] <- etap[,,k] + eta
-      if (x$family %in% c("cumulative", "sratio")) etap[,,k] <-  Intercept[,k] - etap[,,k]
-      else etap[,,k] <- etap[,,k] - Intercept[,k]
+      etap[, , k] <- etap[, , k] + eta
+      if (x$family %in% c("cumulative", "sratio")) {
+        etap[, , k] <-  Intercept[, k] - etap[, , k]
+      } else {
+        etap[, , k] <- etap[, , k] - Intercept[, k]
+      }
     }
     eta <- etap
   }
@@ -345,9 +363,12 @@ linear_predictor <- function(x, newdata = NULL) {
     if (!is.null(data$X)) {
       p <- posterior.samples(x, parameters = "^b_")
       etap <- partial_predictor(data$X, p, data$max_obs)
+    } else {
+      etap <- array(0, dim = c(dim(eta), data$max_obs-1))
     }
-    else etap <- array(0, dim = c(dim(eta), data$max_obs-1))
-    for (k in 1:(data$max_obs-1)) etap[,,k] <- etap[,,k] + eta
+    for (k in 1:(data$max_obs-1)) {
+      etap[, , k] <- etap[, , k] + eta
+    }
     eta <- etap
   }
   eta
@@ -377,7 +398,8 @@ ranef_predictor <- function(Z, gf, r) {
   #   linear predictor for random effects
   Z <- expand_matrix(Z, gf)
   nlevels <- length(unique(gf))
-  sort_levels <- unlist(lapply(1:nlevels, function(n) seq(n, ncol(r), nlevels)))
+  sort_levels <- unlist(lapply(1:nlevels, 
+                               function(n) seq(n, ncol(r), nlevels)))
   as.matrix(r[, sort_levels]) %*% t(Z)
 }
 
@@ -401,11 +423,11 @@ ma_predictor <- function(data, ma, eta, link = "identity") {
   Ema <- array(0, dim = c(nrow(ma), K, N))
   e <- matrix(0, nrow = nrow(ma), ncol = N)
   for (n in 1:N) {
-    eta[,n] <- eta[,n] + apply(ma * Ema[,,n], 1, sum)
-    e[,n] <- Y[n] - eta[,n]
+    eta[, n] <- eta[, n] + apply(ma * Ema[, , n], 1, sum)
+    e[, n] <- Y[n] - eta[, n]
     if (n < N) {
       I <- which(n < N & tg[n+1+K] == tg[n+1+K-Ks])
-      Ema[,I,n+1] <- e[,n+1-I]
+      Ema[, I, n+1] <- e[, n+1-I]
     }
   }
   eta
@@ -423,7 +445,7 @@ partial_predictor <- function(Xp, p, ncat) {
   ncat <- max(ncat)
   etap <- array(0, dim = c(nrow(p), nrow(Xp), ncat-1))
   for (k in 1:(ncat-1)) {
-    etap[,,k] <- as.matrix(p[, seq(k, (ncat-1)*ncol(Xp), ncat-1)]) %*% t(as.matrix(Xp))
+    etap[, , k] <- as.matrix(p[, seq(k, (ncat-1) * ncol(Xp), ncat-1)]) %*% t(as.matrix(Xp))
   }
   etap
 }
@@ -484,10 +506,10 @@ compare_ic <- function(x, ic = c("waic", "loo")) {
   compare_matrix <- matrix(0, nrow = n_models * (n_models-1) / 2, ncol = 2)
   rnames <- rep("", nrow(compare_matrix))
   n <- 1
-  for (i in 1:(n_models-1)) {
-    for (j in (i+1):n_models) {
+  for (i in 1:(n_models - 1)) {
+    for (j in (i + 1):n_models) {
       temp <- loo::compare(x[[j]], x[[i]])
-      compare_matrix[n,] <- c(-2 * temp$elpd_diff, 2 * temp$se) 
+      compare_matrix[n, ] <- c(-2 * temp$elpd_diff, 2 * temp$se) 
       rnames[n] <- paste(names(x)[i], "-", names(x)[j])
       n <- n + 1
     }
@@ -516,12 +538,17 @@ amend_newdata <- function(newdata, formula, family = "gaussian", autocor = cor_a
   ee <- extract_effects(formula, family = family)
   if (length(ee$group))
     stop("random effects models not yet supported for predicting new data")
-  if (sum(autocor$p, autocor$q) > 0 && !all(ee$response %in% names(newdata))) 
+  if (sum(autocor$p, autocor$q) > 0 && !all(ee$response %in% names(newdata))) {
     stop("response variables must be specified in newdata for autocorrelative models")
-  else for (resp in ee$response) newdata[[resp]] <- 0  # add irrelevant response variables
-  if (is.formula(ee$cens)) 
-    for (cens in all.vars(ee$cens)) newdata[[cens]] <- 0  # add irrelevant censor variables
-    data <- brmdata(formula, data = newdata, family = family, autocor = autocor, partial = partial)
+  } else {
+    for (resp in ee$response)
+      newdata[[resp]] <- 0  # add irrelevant response variables
+  }
+  if (is.formula(ee$cens)) {
+    for (cens in all.vars(ee$cens)) 
+      newdata[[cens]] <- 0  # add irrelevant censor variables
+  }
+  brmdata(formula, data = newdata, family = family, autocor = autocor, partial = partial)
 }
 
 find_names <- function(x) {
@@ -598,7 +625,9 @@ print.brmssummary <- function(x, digits = 2, ...) {
     }
     
     if (nrow(x$cor_pars)) {
-      cat("Correlation Structure: "); print(x$autocor); cat("\n")
+      cat("Correlation Structure: ")
+      print(x$autocor)
+      cat("\n")
       x$cor_pars[,"Eff.Sample"] <- round(x$cor_pars[,"Eff.Sample"], digits = 0)
       print(round(x$cor_pars, digits = digits))
       cat("\n")

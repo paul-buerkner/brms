@@ -25,3 +25,13 @@ test_that("Test that forumla2string performs correct conversion", {
   expect_equal(formula2string(y ~ x + c), "y~x+c")
   expect_equal(formula2string(abc ~ x + cd, rm = c(3,2)), "~x+")
 })
+
+test_that("Test that collapse_lists performs correct collapsing after names", {
+  x <- list(a = "a <- ", b = "b <- ")
+  y <- list(b = "cauchy(1,2)", c = "normal(0,1)", a = "gamma(1,1)")
+  expect_equal(collapse_lists(list()), list())
+  expect_equal(collapse_lists(list(x, y)), 
+               list(a = "a <- gamma(1,1)", b = "b <- cauchy(1,2)", c = "normal(0,1)"))
+  expect_equal(collapse_lists(list(c(x, c = "c <- "), y)),
+               list(a = "a <- gamma(1,1)", b = "b <- cauchy(1,2)", c = "c <- normal(0,1)"))
+})

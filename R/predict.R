@@ -12,26 +12,26 @@
 predict_gaussian <- function(n, data, samples, link) {
   sigma <- if (!is.null(samples$sigma)) samples$sigma
            else data$sigma
-  rnorm(nrow(samples$eta), mean = ilink(samples$eta[,n], link), sd = sigma)
+  rnorm(nrow(samples$eta), mean = ilink(samples$eta[, n], link), sd = sigma)
 }
 
 predict_student <- function(n, data, samples, link) {
   sigma <- if (!is.null(samples$sigma)) samples$sigma
            else data$sigma
-  rstudent(nrow(samples$eta), df = samples$nu, mu = ilink(samples$eta[,n], link), 
+  rstudent(nrow(samples$eta), df = samples$nu, mu = ilink(samples$eta[, n], link), 
            sigma = sigma)
 }
 
 predict_cauchy <- function(n, data, samples, link) {
   sigma <- if (!is.null(samples$sigma)) samples$sigma
            else data$sigma
-  rstudent(nrow(samples$eta), df = 1, mu = ilink(samples$eta[,n], link), sigma = sigma)
+  rstudent(nrow(samples$eta), df = 1, mu = ilink(samples$eta[, n], link), sigma = sigma)
 }
 
 predict_lognormal <- function(n, data, samples, link) {
   sigma <- if (!is.null(samples$sigma)) samples$sigma
            else data$sigma
-  rlnorm(nrow(samples$eta), meanlog = samples$eta[,n], sdlog = sigma)
+  rlnorm(nrow(samples$eta), meanlog = samples$eta[, n], sdlog = sigma)
 }
 
 predict_multinormal <- function(n, data, samples, link) {
@@ -44,44 +44,45 @@ predict_multinormal <- function(n, data, samples, link) {
 predict_binomial <- function(n, data, samples, link) {
   max_obs <- ifelse(length(data$max_obs) > 1, data$max_obs[n], data$max_obs) 
   rbinom(nrow(samples$eta), size = max_obs, 
-         prob = ilink(samples$eta[,n], link))
+         prob = ilink(samples$eta[, n], link))
 }  
 
 predict_bernoulli <- function(n, data, samples, link) {
   rbinom(nrow(samples$eta), size = 1, 
-         prob = ilink(samples$eta[,n], link))
+         prob = ilink(samples$eta[, n], link))
 }
 
 predict_poisson <- function(n, data, samples, link) {
-  rpois(nrow(samples$eta), lambda = ilink(samples$eta[,n], link))
+  rpois(nrow(samples$eta), lambda = ilink(samples$eta[, n], link))
 }
 
 predict_negbinomial <- function(n, data, samples, link) {
-  rnbinom(nrow(samples$eta), mu = ilink(samples$eta[,n], link), 
+  rnbinom(nrow(samples$eta), mu = ilink(samples$eta[, n], link), 
           size = samples$shape)
 }
 
 predict_geometric <- function(n, data, samples, link) {
-  rnbinom(nrow(samples$eta), mu = ilink(samples$eta[,n], link), size = 1)
+  rnbinom(nrow(samples$eta), mu = ilink(samples$eta[, n], link), size = 1)
 }
 
 predict_exponential <-  function(n, data, samples, link) {
-  rexp(nrow(samples$eta), rate = ilink(-samples$eta[,n], link))
+  rexp(nrow(samples$eta), rate = ilink(-samples$eta[, n], link))
 }
 
 predict_gamma <- function(n, data, samples, link) {
   rgamma(nrow(samples$eta), shape = samples$shape,
-         scale = ilink(samples$eta[,n], link) / samples$shape)
+         scale = ilink(samples$eta[, n], link) / samples$shape)
 }
 
 predict_weibull <- function(n, data, samples, link) {
   rweibull(nrow(samples$eta), shape = samples$shape,
-           scale = 1/(ilink(-samples$eta[,n]/samples$shape, link)))
+           scale = 1 / (ilink(-samples$eta[, n] / samples$shape, link)))
 }
 
 predict_categorical <- function(n, data, samples, link) {
   ncat <- ifelse(length(data$max_obs) > 1, data$max_obs[n], data$max_obs) 
-  p <- pcategorical(1:ncat, eta = samples$eta[,n,], ncat = ncat, link = link)
+  p <- pcategorical(1:ncat, eta = samples$eta[, n, ], 
+                    ncat = ncat, link = link)
   first_greater(p, target = runif(nrow(samples$eta), min = 0, max = 1))
 }
 
@@ -107,6 +108,7 @@ predict_acat <- function(n, data, samples, link) {
 
 predict_ordinal <- function(n, data, samples, family, link) {
   ncat <- ifelse(length(data$max_obs) > 1, data$max_obs[n], data$max_obs)
-  p <- pordinal(1:ncat, eta = samples$eta[,n,], ncat = ncat, family = family, link = link)
+  p <- pordinal(1:ncat, eta = samples$eta[, n, ], ncat = ncat, 
+                family = family, link = link)
   first_greater(p, target = runif(nrow(samples$eta), min = 0, max = 1))
 }
