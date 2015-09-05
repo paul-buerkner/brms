@@ -17,16 +17,16 @@ rename <- function(names, symbols = NULL, subs = NULL,
     subs <- c(rep("", 6), "P", "M", "MU", "D", "E", "EQ", "NEQ")
   if (length(symbols) != length(subs)) 
     stop("length(symbols) != length(subs)")
-  new.names <- names
+  new_names <- names
   for (i in 1:length(symbols)) {
-    new.names <- gsub(symbols[i], subs[i], new.names, fixed = fixed)
+    new_names <- gsub(symbols[i], subs[i], new_names, fixed = fixed)
   }
-  dup <- duplicated(new.names)
+  dup <- duplicated(new_names)
   if (check_dup && any(dup)) 
     stop(paste0("Internal renaming of variables led to duplicated names. \n",
                 "Occured for variables: ", 
-                paste(names[which(new.names %in% new.names[dup])], collapse = ", ")))
-  new.names
+                paste(names[which(new_names %in% new_names[dup])], collapse = ", ")))
+  new_names
 }
 
 rename_pars <- function(x) {

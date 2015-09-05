@@ -330,13 +330,18 @@ parnames.formula <- function(x, data = NULL, family = "gaussian", addition = NUL
     for (i in 1:length(gs)) {
       ranef <- colnames(get_model_matrix(ee$random[[i]], data = data))
       # get all possible parameter names for one grouping factor
-      out$ranef[[gs[i]]] <- c(out$ranef[[gs[i]]], 
-                              paste0("sd_",gs[i],"_",ranef),
-                              if (ee$cor[[i]] && length(ranef) > 1) 
-                                c(paste0("cor_",gs[i]), 
-                                  if(internal) paste0("L_",gs[i])))
-      out$ranef[[gs[i]]] <- sort(unique(out$ranef[[gs[i]]]))
+      out$ranef[[gs[i]]] <- c(out$ranef[[gs[i]]], paste0("sd_",gs[i],"_",ranef))
+      dup <- duplicated(out$ranef[[gs[i]]])
+      if (any(dup))  # detect duplicated random effects
+        stop(paste0("Duplicated parameters detected so that the model is not identified. \n", 
+                    "Occured for: ", paste(out$ranef[[gs[i]]][dup], collapse = ", ")))
+      if (ee$cor[[i]] && length(ranef) > 1 && 
+          !paste0("cor_",gs[i]) %in% out$ranef[[gs[i]]]) {
+        out$ranef[[gs[i]]] <- c(out$ranef[[gs[i]]], paste0("cor_",gs[i]),
+                                if(internal) paste0("L_",gs[i]))
+      }                         
     }
+    out$ranef <- lapply(out$ranef, sort)
   }
   
   # handle additional parameters
