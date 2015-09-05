@@ -8,9 +8,7 @@ test_that("Test that extract_effects finds all random effects and grouping facto
   expect_equal(extract_effects(y ~ a + (1+x|g1) + x + (1|g2) + z)$random, list(~1 + x, ~1))
   expect_equal(extract_effects(y ~ (1+x|g1) + x + (1|g2))$group, c("g1", "g2"))
   expect_equal(extract_effects(y ~ (1+x|g1:g2) + x + (1|g1))$group, c("g1", "g1:g2"))
-  expect_error(extract_effects(y ~ (1+x|g1/g2) + x + (1|g1)), 
-               paste("Illegal grouping term: g1/g2 \nGrouping terms may contain only variable names",
-                     "combined by the interaction symbol ':'\n"))
+  expect_error(extract_effects(y ~ (1+x|g1/g2) + x + (1|g1)))
 })
 
 test_that("Test that extract_effects accepts || syntax", {
@@ -18,9 +16,7 @@ test_that("Test that extract_effects accepts || syntax", {
   expect_equal(extract_effects(y ~ a + (1+x||g2))$random, list(~1 + x))
   expect_equal(extract_effects(y ~ (1+x||g1) + x + (1||g2))$group, c("g1", "g2"))
   expect_equal(extract_effects(y ~ (1+x||g1:g2))$group, c("g1:g2"))
-  expect_error(extract_effects(y ~ (1+x||g1/g2) + x + (1|g1)), 
-               paste("Illegal grouping term: g1/g2 \nGrouping terms may contain only variable names",
-                     "combined by the interaction symbol ':'\n"))
+  expect_error(extract_effects(y ~ (1+x||g1/g2) + x + (1|g1)))
 })
 
 test_that("Test that extract effects finds all response variables", {
@@ -53,8 +49,8 @@ test_that("Test that extract_time returns all desired variables", {
   expect_error(extract_time(~t1+t2|g1), 
                "Autocorrelation structures may only contain 1 time variable")
   expect_error(extract_time(~1|g1/g2), 
-               paste("Illegal grouping term: g1/g2 \nGrouping terms may contain only variable names",
-                     "combined by the interaction symbol ':'\n"))
+               paste("Illegal grouping term: g1/g2 \n",
+                     "may contain only variable names combined by the symbol ':'\n"))
 })
 
 test_that("Test that update_formula returns correct formulas", {
@@ -62,6 +58,15 @@ test_that("Test that update_formula returns correct formulas", {
   expect_equal(update_formula(y~x, addition = list(se = ~sei, cens = ~censored)), 
                y | se(sei) | cens(censored) ~ x)
   expect_equal(update_formula(y~x+z, partial = ~ a + I(a^2)), y ~ x+z+partial(a + I(a^2)))
+})
+
+test_that("Test that get_group_formula rejects incorrect grouping terms", {
+  expect_error(get_group_formula("|g1/g2"), 
+               paste("Illegal grouping term: g1/g2 \n",
+                     "may contain only variable names combined by the symbol ':'"))
+  expect_error(get_group_formula("||g1/g2"), 
+               paste("Illegal grouping term: g1/g2 \n",
+                     "may contain only variable names combined by the symbol ':'"))
 })
 
 test_that("Test that check_prior performs correct renaming", {

@@ -15,9 +15,10 @@ extract_effects <- function(formula, ..., family = "none") {
   #   all: A formula that contains every variable mentioned in formula and ...
   formula <- formula2string(formula)  
   fixed <- gsub(paste0("\\([^(\\||~)]*\\|[^\\)]*\\)\\+|\\+\\([^(\\||~)]*\\|[^\\)]*\\)",
-                       "|\\([^(\\||~)]*\\|[^\\)]*\\)"),"",formula)
+                       "|\\([^(\\||~)]*\\|[^\\)]*\\)"), "", formula)
   fixed <- gsub("\\|+[^~]*~", "~", fixed)
-  if (substr(fixed, nchar(fixed), nchar(fixed)) == "~") fixed <- paste0(fixed, "1")
+  if (substr(fixed, nchar(fixed), nchar(fixed)) == "~") 
+    fixed <- paste0(fixed, "1")
   fixed <- formula(fixed)
   if (family %in% c("cumulative", "sratio", "cratio", "acat"))
     fixed <- update.formula(fixed, . ~ . +1)
@@ -26,18 +27,14 @@ extract_effects <- function(formula, ..., family = "none") {
   
   # extract random effects part
   rg <- unlist(regmatches(formula, gregexpr("\\([^\\|\\)]*\\|[^\\)]*\\)", formula)))
-  random <- lapply(regmatches(rg, gregexpr("\\([^\\|]*", rg)), function(r) 
-    formula(paste0("~ ",substr(r, 2, nchar(r)))))
-  cor <- unlist(lapply(regmatches(rg, gregexpr("\\|[^\\)]*", rg)), function(g) substr(g, 1, 2) != "||"))
-  
-  group_formulas <- lapply(regmatches(rg, gregexpr("\\|[^\\)]*", rg)), function(g) {
-    g <- ifelse(substr(g, 1, 2) == "||", substr(g, 3, nchar(g)), substr(g, 2, nchar(g)))
-    if (nchar(gsub(":", "", gsub("[^([:digit:]|[:punct:])][[:alnum:]_\\.]*", "", g))))
-      stop(paste("Illegal grouping term:",g,"\nGrouping terms may contain only variable names",
-                 "combined by the interaction symbol ':'"))
-    return(formula(paste("~",g)))})
-  group <- unlist(lapply(group_formulas, 
-                         function(g) paste0(all.vars(g), collapse = ":")))
+  random <- lapply(regmatches(rg, gregexpr("\\([^\\|]*", rg)), 
+                   function(r) formula(paste0("~ ",substr(r, 2, nchar(r)))))
+  cor <- unlist(lapply(regmatches(rg, gregexpr("\\|[^\\)]*", rg)), 
+                       function(g) substr(g, 1, 2) != "||"))
+  group <- regmatches(rg, gregexpr("\\|[^\\)]*", rg))
+  group_formula <- lapply(group, get_group_formula)
+  group <- unlist(lapply(group_formula, function(g) 
+                         paste0(all.vars(g), collapse = ":")))
   
   # ordering is to ensure that all REs of the same grouping factor are next to each other
   x <- list(fixed = fixed, 
@@ -52,33 +49,34 @@ extract_effects <- function(formula, ..., family = "none") {
     add <- unlist(regmatches(formula, gregexpr("\\|[^~]*~", formula)))[1]
     add <- substr(add, 2, nchar(add)-1)
     families <- list(se = c("gaussian","student","cauchy"),
-                     weights = c("all"),
-                     trials = c("binomial"), 
+                     weights = "all",
+                     trials = "binomial", 
                      cat = c("categorical", "cumulative", "cratio", "sratio", "acat"), 
                      cens = c("gaussian","student","cauchy","binomial","poisson",
                               "geometric","negbinomial","exponential", "weibull","gamma"))
     for (f in fun) {
       x[[f]] <- unlist(regmatches(add, gregexpr(paste0(f,"\\([^\\|]*\\)"), add)))[1]
       add <- gsub(paste0(f,"\\([^~|\\|]*\\)\\|*"), "", add)
-      if (is.na(x[[f]])) x[[f]] <- NULL
-      else if (family %in% families[[f]] || families[[f]][1] == "all") {
+      if (is.na(x[[f]])) {
+        x[[f]] <- NULL
+      } else if (family %in% families[[f]] || families[[f]][1] == "all") {
         args <- substr(x[[f]], nchar(f) + 2, nchar(x[[f]]) -1)
         if (is.na(suppressWarnings(as.numeric(args)))) {
           x[[f]] <- as.formula(paste0("~ .", x[[f]]))
           add_vars[[f]] <- as.formula(paste("~", paste(all.vars(x[[f]]), collapse = "+")))
-        }  
-        else x[[f]] <- as.numeric(args)
-      }  
-      else stop(paste("Argument",f,"in formula is not supported by family",family))
+        } else {
+          x[[f]] <- as.numeric(args)
+        }
+      } else {
+        stop(paste("Argument", f, "in formula is not supported by family", family))
+      }
     }
     if (nchar(gsub("\\|", "", add)) > 0 && !is.na(add))
-      stop(paste0("Invalid addition part of formula. Please see the 'Details' section of help(brm) ",
-                  "for further information. \nNote that the syntax of addition has changed in brms 0.2.1 as ",
-                  "the old one was not flexible enough."))
+      stop(paste0("Invalid addition part of formula. Please see the 'Details' section of help(brm)"))
   }
   
   # make a formula containing all required variables (element 'all')
-  new_formula <- unlist(lapply(c(random, group_formulas, add_vars, ...), 
+  new_formula <- unlist(lapply(c(random, group_formula, add_vars, ...), 
                                function(x) paste0("+", Reduce(paste, deparse(x[[2]])))))
   new_formula <- paste0("update(",Reduce(paste, deparse(fixed)),
                         ", . ~ .",paste0(new_formula, collapse=""),")")
@@ -104,20 +102,15 @@ extract_time <- function(formula) {
   # 
   # Returns: 
   #   a list with elements time, group, and all, where all contains a formula with all variables in formula
-  if (is.null(formula)) return(NULL)
+  if (is.null(formula)) 
+    return(NULL)
   formula <- gsub(" ","",Reduce(paste, deparse(formula))) 
   time <- all.vars(as.formula(paste("~", gsub("~|\\|[[:print:]]*", "", formula))))
-  if (length(time) > 1) stop("Autocorrelation structures may only contain 1 time variable")
-  x <- list(time = ifelse(length(time), time, ""), group = "")
-  
-  group <- gsub("~[^\\|]*|\\|", "", formula)
-  if (nchar(group)) {
-    if (nchar(gsub(":", "", gsub("[^([:digit:]|[:punct:])][[:alnum:]_\\.]*", "", group))))
-      stop(paste("Illegal grouping term:",group,"\nGrouping terms may contain only variable names",
-                 "combined by the interaction symbol ':'"))
-    group <- formula(paste("~", group))
-    x$group <- paste0(all.vars(group), collapse = ":")
-  }
+  if (length(time) > 1) 
+    stop("Autocorrelation structures may only contain 1 time variable")
+  x <- list(time = ifelse(length(time), time, ""))
+  group <- get_group_formula(sub("~[^\\|]*", "", formula))
+  x$group <- paste0(all.vars(group), collapse = ":")
   x$all <- formula(paste("~",paste(c("1", time, all.vars(group)), collapse = "+")))
   x
 }
@@ -144,6 +137,25 @@ update_formula <- function(formula, addition = NULL, partial = NULL) {
     fnew <- paste(fnew, "+ partial(", partial, ")")
   }
   update.formula(formula, formula(fnew))
+}
+
+get_group_formula <- function(g) {
+  # transform grouping term in formula
+  # 
+  # Args: 
+  #   g: a grouping term 
+  #
+  # Returns:
+  #   the formula ~ g if g is valid and else an error
+  g <- sub("^\\|*", "", g)
+  if (nchar(gsub(":|[^([:digit:]|[:punct:])][[:alnum:]_\\.]*", "", g)))
+    stop(paste("Illegal grouping term:", g, "\n",
+               "may contain only variable names combined by the symbol ':'"))
+  if (nchar(g)) {
+    return(formula(paste("~", g)))
+  } else {
+    return(~1)
+  }
 }
 
 check_family <- function(family) {
@@ -222,8 +234,8 @@ remove_chains <- function(i, sflist) {
   }
 }
 
-check_prior <- function(prior, formula, data = NULL, family = "gaussian", autocor = NULL, 
-                        partial = NULL, threshold = "flexible") {
+check_prior <- function(prior, formula, data = NULL, family = "gaussian", 
+                        autocor = NULL, partial = NULL, threshold = "flexible") {
   # check prior input by and amend it if needed
   #
   # Args:
@@ -248,19 +260,24 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian", autoco
   possible_priors <- unique(c(possible_priors, meta_priors))
   wrong_priors <- names(prior)[!names(prior) %in% possible_priors]
   if (length(wrong_priors))
-    message(paste0("Some parameter names in prior cannot be found in the model and are ignored. \n", 
+    message(paste0("Some parameter names in prior are invalid and will be ignored. \n", 
                    "Occured for parameter(s): ", paste0(wrong_priors, collapse = ", ")))
   
   # rename certain parameters
   names(prior) <- rename(names(prior), symbols = c("^cor_", "^cor$", "^rescor$"), 
                          subs = c("L_", "L", "Lrescor"), fixed = FALSE)
-  if (any(grepl("^sd_.+", names(prior))))
-    for (i in 1:length(ee$group)) 
-      names(prior) <-  rename(names(prior), symbols = paste0("^sd_",ee$group[[i]]),
+  if (any(grepl("^sd_.+", names(prior)))) {
+    for (i in 1:length(ee$group)) {
+      names(prior) <-  rename(names(prior), 
+                              symbols = paste0("^sd_",ee$group[[i]]),
                               subs = paste0("sd_",i), fixed = FALSE)
-  if (family %in% c("cumulative", "sratio", "cratio", "acat") && threshold == "equidistant")
+    }
+  }
+  if (family %in% c("cumulative", "sratio", "cratio", "acat") 
+      && threshold == "equidistant") {
     names(prior) <- rename(names(prior), symbols = "^b_Intercept$", 
                            subs = "b_Intercept1", fixed = FALSE)
+  }
   prior
 }
 
@@ -289,8 +306,10 @@ parnames.formula <- function(x, data = NULL, family = "gaussian", addition = NUL
                              threshold = c("flexible", "equidistant"), 
                              internal = FALSE, ...) {
   
-  if (is.null(autocor)) autocor <- cor_arma()
-  if (!is(autocor, "cor_brms")) stop("cor must be of class cor_brms")
+  if (is.null(autocor)) 
+    autocor <- cor_arma()
+  if (!is(autocor, "cor_brms")) 
+    stop("cor must be of class cor_brms")
   threshold <- match.arg(threshold)
   family <- check_family(family[1])
   x <- update_formula(x, addition = addition)
@@ -333,7 +352,8 @@ parnames.formula <- function(x, data = NULL, family = "gaussian", addition = NUL
     out$other <- c(out$other, "nu")
   if (family %in% c("gamma", "weibull", "negbinomial")) 
     out$other <- c(out$other, "shape")
-  if (family %in% c("cumulative", "sratio", "cratio", "acat") && threshold == "equidistant")
+  if (family %in% c("cumulative", "sratio", "cratio", "acat") 
+      && threshold == "equidistant")
     out$other <- c(out$other, "delta")
   out
 }
