@@ -16,43 +16,6 @@ array2list <- function(x) {
   l
 }
 
-list2array <- function(x) {
-  # convert a list to an array of increased dimension
-  #
-  # Args: 
-  #   x: a list containing arrarys of dimension d
-  #
-  # Returns:
-  #   An arrary of dimension d+1 unless the elements in x have dim = c(..., 1). 
-  #   In the latter case, the output is of dimenstion d.
-  if (!is.list(x) || length(x) == 0) 
-    stop("x must be a non-empty list")
-  
-  # reduce dimension of all elements of x having a last dimension of 1
-  x <- lapply(x, function(y) {
-    if (dim(y)[length(dim(y))] == 1) {
-      array(as.vector(y), dim = dim(y)[1:(length(dim(y))-1)]) 
-    } else y
-  })
-  dim_elements <- lapply(x, function(y)
-    if (!is.null(dim(y))) dim(y)
-    else length(y))
-  dim_target <- dim_elements[[1]]
-  if (!all(sapply(dim_elements, all.equal, current = dim_target)))
-    stop("dimensions of list elements do not match")
-  a <- array(NA, dim = c(dim_target, length(x)))
-  ind <- collapse(rep(",", length(dim_target)))
-  for (i in 1:length(x)) {
-    eval(parse(text = paste0("a[", ind, i,"] <- x[[",i,"]]")))
-  }
-  if (length(x) == 1) {
-    dimnames(a)[[length(dim_target)+1]] <- list(names(x))
-  } else {
-    dimnames(a)[[length(dim_target)+1]] <- names(x)
-  }
-  a
-}
-
 first_greater <- function(A, target, i = 1) {
   # find the first element in A that is greater than target
   #
@@ -66,7 +29,6 @@ first_greater <- function(A, target, i = 1) {
   #   where A[,i] was first greater than target
   ifelse(target <= A[,i] | ncol(A) == i, i, first_greater(A, target, i+1))
 }
-
 
 link <- function(x, link) {
   # apply a link function on x
@@ -158,7 +120,8 @@ get_estimate <- function(coef, samples, margin = 2, to.array = FALSE, ...) {
   x <- do.call(apply, c(args, dots))
   if (is.null(dim(x))) 
     x <- matrix(x, dimnames = list(NULL, coef))
-  else if (coef == "quantile") x <- aperm(x, length(dim(x)):1)
+  else if (coef == "quantile") 
+    x <- aperm(x, length(dim(x)):1)
   if (to.array && length(dim(x)) == 2) 
     x <- array(x, dim = c(dim(x), 1), dimnames = list(NULL, NULL, coef))
   x 
@@ -178,7 +141,7 @@ get_summary <- function(samples, probs = c(0.025, 0.975)) {
     out <- do.call(cbind, lapply(c("mean", "sd", "quantile"), get_estimate, 
                                  samples = samples, probs = probs))
   } else if (length(dim(samples)) == 3) {
-    out <- list2array(lapply(1:dim(samples)[3], function(i)
+    out <- abind(lapply(1:dim(samples)[3], function(i)
       do.call(cbind, lapply(c("mean", "sd", "quantile"), get_estimate, 
                             samples = samples[,,i], probs = probs))))
     dimnames(out) <- list(NULL, NULL, paste0("P(Y = ", 1:dim(out)[3], ")")) 

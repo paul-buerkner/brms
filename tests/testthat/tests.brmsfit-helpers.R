@@ -12,14 +12,6 @@ test_that("Test that array2list performs correct conversion", {
   expect_equal(array2list(A), B)
 })
 
-test_that("Test that list2array performs correct conversion", {
-  A <- array(1:27, dim = c(3,3,3))
-  B <- list(array(1:9, dim = c(3,3,1)), array(10:18, dim = c(3,3,1)), array(19:27, dim = c(3,3,1)))
-  C <- list(array(1:9, dim = c(3,3)), array(10:18, dim = c(3,3)), array(19:27, dim = c(3,3)))
-  expect_equal(list2array(B), A)
-  expect_equal(list2array(C), A)
-})
-
 test_that("Test that ilink(x, probit) and ilink(x, probit_approx) produce similar results", {
   all.equal(ilink(-10:10, "probit"), ilink(-10:10, "probit_approx"), tolerance = 1e-3)
 })

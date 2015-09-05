@@ -66,6 +66,7 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, ...) {
   ranef 
 } 
 
+#' @import abind
 #' @export
 VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
@@ -97,12 +98,12 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
       }
     } else cor <- NULL
     
-    # get_cov_matrix, list2arry, and array2list can be found in brsmfit-helpers.R
+    # get_cov_matrix and array2list can be found in brsmfit-helpers.R
     matrices <- get_cov_matrix(sd = sd, cor = cor) 
-    out$cor <- list2array(lapply(estimate, get_estimate, samples = matrices$cor, 
-                          margin = c(2,3), to.array = TRUE, ...))
-    out$cov <- list2array(lapply(estimate, get_estimate, samples = matrices$cov, 
-                          margin = c(2,3), to.array = TRUE, ...)) 
+    out$cor <- abind(lapply(estimate, get_estimate, samples = matrices$cor, 
+                            margin = c(2,3), to.array = TRUE, ...))
+    out$cov <- abind(lapply(estimate, get_estimate, samples = matrices$cov, 
+                            margin = c(2,3), to.array = TRUE, ...)) 
     if (length(p$rnames) > 1)
       dimnames(out$cov) <- dimnames(out$cor) <- list(p$rnames, p$rnames, dimnames(out$cor)[[3]])
     if (as.list) {
@@ -431,7 +432,7 @@ fitted.brmsfit <- function(object, newdata = NULL, scale = c("response", "linear
     } else if (object$family %in% c("categorical", "cumulative", "sratio", "cratio", "acat")) {
       ncat <- max(data$max_obs)
       # get probabilities of each category
-      mu <- aperm(list2array(lapply(1:ncol(mu), function(n)
+      mu <- aperm(abind(lapply(1:ncol(mu), function(n)
         do.call(paste0("d",object$family), list(1:ncat, eta = mu[,n,], ncat = ncat, 
                                                 link = object$link)))),
         perm = c(1, 3, 2))
