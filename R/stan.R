@@ -66,29 +66,27 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
   # get priors for all parameters in the model
   text_prior <- paste0(
     if (length(fixef)) 
-      stan_prior(paste0("b_",fixef), prior, ind = 1:length(fixef)),
+      stan_prior(class = "b", coef = fixef, prior = prior),
     if (length(paref)) 
-      stan_prior(paste0("b_",paref), prior, ind = 1:length(paref), 
-                 partial = TRUE), 
+      stan_prior(class = "bp", coef = paref, prior = prior),
     if (autocor$p) 
-      stan_prior("ar", prior),
+      stan_prior(class = "ar", prior = prior),
     if (autocor$q) 
-      stan_prior("ma", prior),
+      stan_prior(class = "ma", prior = prior),
     if (is_ordinal && threshold == "flexible") 
-      stan_prior("b_Intercept", prior, add_type = "Intercept")
+      stan_prior("b_Intercept", prior = prior)
     else if (is_ordinal && threshold == "equidistant") 
-      paste0(stan_prior("b_Intercept1", prior, add_type = "Intercept1"), 
-             stan_prior("delta", prior)),
+      paste0(stan_prior(class = "b_Intercept1", prior = prior), 
+             stan_prior(class = "delta", prior = prior)),
     if (family %in% c("gamma", "weibull", "negbinomial")) 
-      stan_prior("shape", prior),
+      stan_prior(class = "shape", prior = prior),
     if (family == "student") 
-      stan_prior("nu", prior),
+      stan_prior(class = "nu", prior = prior),
     if (is_linear && !is.formula(ee$se)) 
-      stan_prior(paste0("sigma_",ee$response), prior), 
+      stan_prior(class = "sigma", coef = ee$response, prior = prior), 
     if (is_multi) 
-      paste0(stan_prior(paste0("sigma_",ee$response), prior, 
-                        ind = 1:length(ee$response)), 
-                        stan_prior("Lrescor", prior)),
+      paste0(stan_prior(class = "sigma", coef = ee$response, prior = prior),
+             stan_prior(class = "Lrescor", prior = prior)),
     text_ranef$model)
   
   # generate code to additionally sample from priors if sample.prior = TRUE
@@ -251,9 +249,8 @@ stan_ranef <- function(i, ranef, group, cor, prior = list(),
                        paste0("  matrix[N_",i,", N_",i,"] cov_",i,"; \n"),
                      if (ccov && !cor && length(r) > 1) 
                        paste0("  matrix[N_",i,"*K_",i,", N_",i,"*K_",i,"] cov_",i,"; \n"))
-  out$model <- paste0(stan_prior(paste0("sd_",i,"_",r), add_type = i, prior = prior ,
-                      ind = ifelse(length(r) == 1, "", list(1:length(r)))[[1]]))
-  
+  out$model <- stan_prior(class = "sd", group = i, coef = r, prior = prior)
+                      
   if (length(r) == 1) {  # only one random effect
     out$data <- paste0(out$data, "  real Z_",i,"[N]; \n")
     out$par <- paste0("  vector[N_",i,"] pre_",i,"; \n",
@@ -269,7 +266,7 @@ stan_ranef <- function(i, ranef, group, cor, prior = list(),
                       "  vector<lower=0>[K_",i,"] sd_",i,"; \n",
                       if (cor) paste0("  cholesky_factor_corr[K_",i,"] L_",i,"; \n"))
     out$model <- paste0(out$model, 
-                        if (cor) stan_prior(paste0("L_",i), prior = prior, add_type = i),
+                        if (cor) stan_prior(class = "L", group = i, prior = prior),
                         "  to_vector(pre_",i,") ~ normal(0,1); \n")
     out$transD <- paste0("  vector[K_",i,"] r_",i,"[N_",i,"]; \n")
     if (ccov) {  # customized covariance matrix supplied
@@ -618,7 +615,85 @@ stan_ordinal <- function(family, link, partial = FALSE, threshold = "flexible") 
   out
 }
 
-stan_prior = function(par, prior = list(), add_type = NULL, ind = rep("", length(par)), 
+#' @export
+stan_prior <- function(class, coef = NULL, group = NULL, prior = NULL, s = 2) {
+  # Define priors for parameters in Stan language
+  # 
+  # Args:
+  #   class: the parameter class
+  #   coef: the coefficients of this class
+  #   group: the name of a grouping factor
+  #   prior: a data.frame containing user defined priors as returned by check_prior
+  #   s: An integer >= 0 defining the number of spaces in front of the output string
+  # 
+  # Returns:
+  #   A character strings in stan language that defines priors for a given class of parameters
+  #   If a parameter has has no corresponding prior in prior 
+  #   and also no internal default in stan_prior, an empty string is returned.
+  default_prior <- list(b = "", bp = "", sigma = "cauchy(0,5)", 
+                        delta = "", ar = "", ma = "", 
+                        sd = "cauchy(0,5)", nu = "uniform(1,100)",
+                        shape = "gamma(0.01,0.01)",
+                        L = "lkj_corr_cholesky(1.0)", 
+                        Lrescor = "lkj_corr_cholesky(1.0)")
+  
+  # only consider user defined priors related to this class
+  user_prior <- prior[which(prior$class == class), ]
+  if (!is.null(group)) {
+    user_prior <- user_prior[which(!nchar(user_prior$group) | user_prior$group == group), ]
+  }
+  if (any(!nchar(user_prior$coef) & nchar(user_prior$group))) {  
+    # if there is a global prior for this group
+    row_index <- which(!nchar(user_prior$coef) & nchar(user_prior$group))
+    base_prior <- user_prior[row_index, "prior"]
+  } else if (any(!nchar(user_prior$coef) & !nchar(user_prior$group))) {  
+    # if there is a global prior for this class
+    row_index <- which(!nchar(user_prior$coef) & !nchar(user_prior$group))
+    base_prior <- user_prior[row_index, "prior"]
+  } else {  
+    # no user defined prior for this class
+    base_prior <- default_prior[[class]]
+  } 
+  
+  individual_prior <- function(i, max_index) {
+    # individual priors for each parameter of a class
+    if (max_index > 1 || class == "bp") {
+      index <- paste0("[",i,"]")      
+    } else {
+      index <- ""
+    }
+    if (coef[i] %in% user_prior$coef) { 
+      # user defined prior for this parameter
+      coef_prior <- user_prior$prior[match(coef[i], user_prior$coef)]
+    } else {
+      # base prior for this parameter
+      coef_prior <- base_prior  
+    }  
+    if (nchar(coef_prior) > 0) {  # implies a proper prior
+      return(paste0(s, class, index, " ~ ", coef_prior, "; \n"))
+    } else {
+      return("")  # implies an improper flat prior
+    }
+  }
+  s <- collapse(rep(" ", s))
+  if (!is.null(group)) {
+    class <- paste0(class,"_",group)
+  }
+  # generate stan prior statements
+  if (any(coef %in% user_prior$coef)) {
+    out <- sapply(1:length(coef), individual_prior, max_index = length(coef))
+  } else if (nchar(base_prior) > 0) {
+    if (class == "bp") {
+      class <- "to_vector(bp)"
+    }
+    out <- paste0(s, class, " ~ ", base_prior, "; \n")
+  } else {
+    out <- ""
+  }
+  return(collapse(out))
+}
+
+stan_prior2 <- function(par, prior = list(), add_type = NULL, ind = rep("", length(par)), 
                       partial = FALSE, s = 2) { 
   # Define priors for parameters in Stan language
   # 

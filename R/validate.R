@@ -234,6 +234,7 @@ remove_chains <- function(i, sflist) {
   }
 }
 
+#' @export
 check_prior <- function(prior, formula, data = NULL, family = "gaussian", 
                         autocor = NULL, partial = NULL, threshold = "flexible") {
   # check prior input by and amend it if needed
@@ -243,9 +244,14 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
   #
   # Returns:
   #   a list of prior specifications adjusted to be used in stan_prior (see stan.R)
-  
+  lapply(prior, function(x) 
+    if (!is(x, "brmsprior")) 
+      stop("elements of prior must be of class brmsprior"))
+  prior <- data.frame(matrix(unlist(prior), ncol = 4, byrow = TRUE),
+                      stringsAsFactors = FALSE)
+  names(prior) <- c("prior", "class", "group", "coef")
   # expand lkj correlation prior to full name
-  prior <- lapply(prior, function(p) sub("^lkj\\(", "lkj_corr_cholesky(", p))
+  prior$prior <- lapply(prior$prior, function(p) sub("^lkj\\(", "lkj_corr_cholesky(", p))
   
   # check if parameter names in prior are correct
   ee <- extract_effects(formula, family = family)  
@@ -253,32 +259,77 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
                                      autocor = autocor, partial = partial, 
                                      threshold = threshold, internal = TRUE), 
                             use.names = FALSE)
-  meta_priors <- unlist(regmatches(possible_priors, 
-                                   gregexpr("^[^_]+", possible_priors)))
-  if ("sd" %in% meta_priors)
-    meta_priors <- c(meta_priors, paste0("sd_",ee$group))
-  possible_priors <- unique(c(possible_priors, meta_priors))
-  wrong_priors <- names(prior)[!names(prior) %in% possible_priors]
-  if (length(wrong_priors))
-    message(paste0("Some parameter names in prior are invalid and will be ignored. \n", 
-                   "Occured for parameter(s): ", paste0(wrong_priors, collapse = ", ")))
+  #meta_priors <- unlist(regmatches(possible_priors, 
+  #                                 gregexpr("^[^_]+", possible_priors)))
+  #if ("sd" %in% meta_priors)
+  #  meta_priors <- c(meta_priors, paste0("sd_",ee$group))
+  #possible_priors <- unique(c(possible_priors, meta_priors))
+  #wrong_priors <- names(prior)[!names(prior) %in% possible_priors]
+  #if (length(wrong_priors))
+  #  message(paste0("Some parameter names in prior are invalid and will be ignored. \n", 
+  #                 "Occured for parameter(s): ", paste0(wrong_priors, collapse = ", ")))
   
-  # rename certain parameters
-  names(prior) <- rename(names(prior), symbols = c("^cor_", "^cor$", "^rescor$"), 
-                         subs = c("L_", "L", "Lrescor"), fixed = FALSE)
-  if (any(grepl("^sd_.+", names(prior)))) {
-    for (i in 1:length(ee$group)) {
-      names(prior) <-  rename(names(prior), 
-                              symbols = paste0("^sd_",ee$group[[i]]),
-                              subs = paste0("sd_",i), fixed = FALSE)
+  
+  # rename parameter clases
+  prior$class <- rename(prior$class, symbols = c("cor", "rescor"), 
+                        subs = c("L", "Lrescor"))
+  # rename parameter groups
+  rows2remove <- NULL
+  group_indices <- which(nchar(prior$group) > 0)
+  for (i in group_indices) {
+    if (!prior$group[i] %in% ee$group) { 
+      stop(paste("grouping factor", prior$group[i], "not found in the model"))
+    } else if (sum(prior$group[i] == ee$group) == 1) {
+      # matches only one grouping factor in the model
+      prior$group[i] <- match(prior$group[i], ee$group)
+    } else {
+      # matches multiple grouping factors in the model
+      rows2remove <- c(rows2remove, i)
+      which_match <- which(prior$group[i] == ee$group)
+      new_rows <- lapply(which_match, function(j) {
+        new_row <- prior[i, ]
+        new_row$group <- j
+        new_row
+      })
+      prior <- do.call(rbind, c(prior, new_rows))  # add new rows
     }
   }
-  if (family %in% c("cumulative", "sratio", "cratio", "acat") 
-      && threshold == "equidistant") {
-    names(prior) <- rename(names(prior), symbols = "^b_Intercept$", 
-                           subs = "b_Intercept1", fixed = FALSE)
+  # get partial priors out of fixef priors
+  if (is.formula(partial)) {
+    paref <- colnames(get_model_matrix(partial, data = data, rm_intercept = TRUE))
+    b_index <- which(prior$class == "b" & !nchar(prior$coef))
+    partial_index <- which(prior$class == "b" & prior$coef %in% paref)
+    rows2remove <- c(rows2remove, partial_index)
+    partial_prior <- prior[c(b_index, partial_index), ]
+    partial_prior$class <- "bp"  # the partial effects class
+    prior <- rbind(prior, partial_prior)
   }
+  # special treatment of thresholds in ordinal models
+  if (family %in% c("cumulative", "sratio", "cratio", "acat")) {
+    Int_index <- which(prior$class == "b" & prior$coef == "Intercept")
+    rows2remove <- c(rows2remove, Int_index)
+    if (!length(Int_index)) {
+      Int_index <- which(prior$class == "b" & !nchar(prior$coef))
+    }
+    Int_prior <- prior[Int_index, ] 
+    # thresholds have their own parameter class
+    Int_prior$class <- ifelse(threshold == "equidistant", 
+                              "b_Intercept1", "b_Intercept")
+    Int_prior$coef <- ""
+    prior <- rbind(prior, Int_prior)
+  }
+  #if (length(rows2remove)) {  # remove unnecessary rows 
+  #  prior <- prior[-rows2remove, ]
+  #}
+  print(prior)
   prior
+}
+
+#' @export
+set_prior <- function(prior, class = "b", group = "", coef = "") {
+  out <- list(prior = prior, class = class, group = group, coef = coef)
+  class(out) <- c("brmsprior", "list")
+  out
 }
 
 #' Extract parameter names
