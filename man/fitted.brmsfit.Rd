@@ -43,6 +43,9 @@ fit <- brm(rating ~ treat + period + carry + (1|subject), data = inhaler,
 fitted_values <- fitted(fit)
 head(fitted_values)
 
+## plot fitted means against actual response
+dat <- as.data.frame(cbind(Y = fit$data$Y, fitted_values))
+ggplot(dat) + geom_point(aes(x = Estimate, y = Y))
 }
 }
 
