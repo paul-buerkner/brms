@@ -48,33 +48,33 @@ Define priors for specific parameters or classes of parameters
   \code{set_prior("normal(0,5)", class = "b", coef = "x1")} and
   \code{set_prior("uniform(-10,10)", class = "b", coef = "x2")}.
   To put the same prior on all fixed effects at once,
-  we may write as a shortcut \code{set_prior("<some prior>", class = "b")}. This also
+  we may write as a shortcut \code{set_prior("<prior>", class = "b")}. This also
   leads to faster sampling, because priors can be vectorized in this case. \cr
 
   2. Autocorrelation parameters
 
   The autocorrelation parameters currently implemented are named \code{ar} (autoregression) and \code{ma} (moving average).
   The default prior for autocorrelation parameters is an improper flat prior over the reals.
-  Other priors can be defined with \code{set_prior("<some prior>", class = "ar")}
-  or \code{set_prior("<some prior>", class = "ma")}. It should be noted that \code{ar} will
+  Other priors can be defined with \code{set_prior("<prior>", class = "ar")}
+  or \code{set_prior("<prior>", class = "ma")}. It should be noted that \code{ar} will
   only take one values between -1 and 1 if the response variable is wide-sence stationay,
   i.e. if there is no drift in the responses. \cr
 
   3. Standard deviations of random effects
 
   Each random effect of each grouping factor has a standard deviation named
-  \code{sd_(group)_(random)}. Consider, for instance, the formula \code{y ~ x1+x2+(1+x1|g)}.
+  \code{sd_<group>_<random>}. Consider, for instance, the formula \code{y ~ x1+x2+(1+x1|g)}.
   We see that the intercept as well as \code{x1} are random effects nested in the grouping factor \code{g}.
   The corresponding standard deviation parameters are named as \code{sd_g_Intercept} and \code{sd_g_x1} respectively.
   These parameters are restriced to be non-negative and, by default,
   have a half cauchy prior with scale parameter 5.
   We could make this explicit by writing \code{set_prior("cauchy(0,5)", class = "sd")}.
-  To define a prior distribution only for standard deviations of a specific grouping factor (e.g., \code{g}),
-  use \code{set_prior("<some prior>", class = "sd", group = "g")}.
-  To define a prior distribution only for a specific standard deviation (e.g. that of \code{x1})
-  of a specific grouping factor (e.g., \code{g}), you may write
-  \code{set_prior("<some prior>", class = "sd", group = "g", coef = "x1")}.
-  Recommendations on useful prior distributions are given in Gelman 2006. \cr
+  To define a prior distribution only for standard deviations of a specific grouping factor,
+  use \code{set_prior("<prior>", class = "sd", group = "<group>")}.
+  To define a prior distribution only for a specific standard deviation
+  of a specific grouping factor, you may write
+  \code{set_prior("<prior>", class = "sd", group = "<group>", coef = "<coef>")}.
+  Recommendations on useful prior distributions for standard deviations are given in Gelman (2006). \cr
 
   4. Correlations of random effects
 
@@ -103,10 +103,38 @@ Define priors for specific parameters or classes of parameters
   and \code{acat}, and only if \code{threshold = "equidistant"}, the parameter \code{delta} is used to model the distance
   between to adjacent thresholds. By default, \code{delta} has an improper flat prior over the reals. \cr
   Every family specific parameter has its own prior class, so that
-  \code{set_prior("<some prior>", class = "<parameter name>")} it the right way to go. \cr
+  \code{set_prior("<prior>", class = "<parameter>")} it the right way to go. \cr
 
   Often, it may not be immediately clear, which parameters are present in the model.
   To get a full list of parameters for which priors can be specified (depending on the model)
   use method \code{\link[brms:parnames.formula]{parnames.formula}}.
+}
+\examples{
+\dontrun{
+## check which parameters can have priors
+parnames(rating ~ period + carry + (1|subject),
+         data = inhaler, family = "sratio",
+         partial = ~ treat, threshold = "equidistant")
+
+## define some priors
+prior <- list(set_prior("normal(0,10)", class = "b"),
+              set_prior("normal(1,2)", class = "b", coef = "treat"),
+              set_prior("cauchy(0,2)", class = "sd",
+                        group = "subject", coef = "Intercept"),
+              set_prior("uniform(-5,5)", class = "delta"))
+
+## use the defined priors in the model
+fit <- brm(rating ~ period + carry + (1|subject),
+           data = inhaler, family = "sratio",
+           partial = ~ treat, threshold = "equidistant",
+           prior = prior, n.iter = 1000, n.cluster = 2)
+
+## check that the priors found their way into Stan's model code
+fit$model
+}
+}
+\references{
+Gelman A (2006). Prior distributions for variance parameters in hierarchical models."
+   Bayesian analysis, 1(3), 515 -- 534.
 }
 
