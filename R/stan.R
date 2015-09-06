@@ -615,7 +615,6 @@ stan_ordinal <- function(family, link, partial = FALSE, threshold = "flexible") 
   out
 }
 
-#' @export
 stan_prior <- function(class, coef = NULL, group = NULL, 
                        prior = prior_frame(), s = 2) {
   # Define priors for parameters in Stan language

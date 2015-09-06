@@ -37,7 +37,7 @@ Among others, \code{hypothesis} calculates an evidence ratio for each hypothesis
 \dontrun{
 fit_i <- brm(rating ~ treat + period + carry + (1+treat|subject),
              data = inhaler, family = "gaussian", sample.prior = TRUE,
-             prior = list(b = "normal(0,2)"), n.cluster = 2)
+             prior = set_prior("normal(0,2)", class = "b"), n.cluster = 2)
 
 hypothesis(fit_i, "treat = period + carry")
 hypothesis(fit_i, "exp(treat) - 3 = 0")

@@ -43,7 +43,9 @@ Setting priors on these parameters is not recommended}
 \item{...}{Currently ignored}
 }
 \value{
-A list of character vectors containing the parameter names for which priors may be specified
+A data.frame with columns \code{class}, \code{coef}, and \code{group}
+  and several rows, each providing information on a paramter (or parameter class) on which
+  priors can be specified. See also \code{\link[brms:set_prior]{set_prior}}.
 }
 \description{
 Extract all parameter names for which priors may be specified

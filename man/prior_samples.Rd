@@ -30,7 +30,8 @@ To make use of this function, the model must contain samples of prior distributi
 \dontrun{
 fit_i <- brm(rating ~ treat + period + carry + (1|subject),
              data = inhaler, family = "cumulative",
-             prior = list(b = "normal(0,2)"), sample.prior = TRUE)
+             prior = set_prior("normal(0,2)", class = "b"),
+             sample.prior = TRUE)
 
 #extract all prior samples
 samples1 <- prior_samples(fit_i)

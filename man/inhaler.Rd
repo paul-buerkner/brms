@@ -28,13 +28,13 @@ Ezzet and Whitehead (1991) analyse data from a two-treatment, two-period crossov
 \dontrun{
 ## ordinal regression with family "sratio"
 fit_i1 <- brm(rating ~ treat + period + carry, data = inhaler,
-              family = "sratio", prior = list(b = "normal(0,5)"))
+              family = "sratio", prior = set_prior("normal(0,5)"))
 summary(fit_i1)
 plot(fit_i1)
 
 ## ordinal regression with family "cumulative" and random intercept over subjects
 fit_i2 <- brm(rating ~ treat + period + carry + (1|subject), data = inhaler,
-              family = "cumulative", prior = list(b = "normal(0,5)"))
+              family = "cumulative", prior = set_prior("normal(0,5)"))
 summary(fit_i2)
 plot(fit_i2)
 }

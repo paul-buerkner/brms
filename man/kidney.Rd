@@ -37,7 +37,7 @@ plot(fit_k1)
 ## adding random intercepts over patients and using weakly informative priors
 ## for regression parameters and standard deviations of random effects
 fit_k2 <- brm(time | cens(censored) ~ age + sex + disease + (1|patient),
-              data = kidney, prior = list(sd = "uniform(0,20)"),
+              data = kidney, prior = set_prior("uniform(0,20)", class = "sd"),
               family = "weibull", inits = "0", silent = TRUE)
 summary(fit_k2)
 plot(fit_k2)

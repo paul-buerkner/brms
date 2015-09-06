@@ -26,7 +26,7 @@
 #' ## adding random intercepts over patients and using weakly informative priors 
 #' ## for regression parameters and standard deviations of random effects 
 #' fit_k2 <- brm(time | cens(censored) ~ age + sex + disease + (1|patient), 
-#'               data = kidney, prior = list(sd = "uniform(0,20)"), 
+#'               data = kidney, prior = set_prior("uniform(0,20)", class = "sd"), 
 #'               family = "weibull", inits = "0", silent = TRUE)
 #' summary(fit_k2) 
 #' plot(fit_k2)         
@@ -56,13 +56,13 @@
 #' \dontrun{
 #' ## ordinal regression with family "sratio"
 #' fit_i1 <- brm(rating ~ treat + period + carry, data = inhaler, 
-#'               family = "sratio", prior = list(b = "normal(0,5)"))
+#'               family = "sratio", prior = set_prior("normal(0,5)"))
 #' summary(fit_i1) 
 #' plot(fit_i1)
 #'        
 #' ## ordinal regression with family "cumulative" and random intercept over subjects             
 #' fit_i2 <- brm(rating ~ treat + period + carry + (1|subject), data = inhaler, 
-#'               family = "cumulative", prior = list(b = "normal(0,5)"))
+#'               family = "cumulative", prior = set_prior("normal(0,5)"))
 #' summary(fit_i2) 
 #' plot(fit_i2)
 #' }
@@ -104,7 +104,7 @@
 #' ## poisson regression with random intercepts over patients and visits
 #' ## as well as normal priors for fixed effects parameters.    
 #' fit_e2 <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient) + (1|visit), 
-#'             data = epilepsy, family = "poisson", prior = list(b = "normal(0,5)"))
+#'             data = epilepsy, family = "poisson", prior = set_prior("normal(0,5)"))
 #' summary(fit_e2) 
 #' plot(fit_e2)
 #' }

@@ -26,8 +26,8 @@ typically the environment from which \code{brm} is called. Although it is option
 The second string indicates the link function, which must be supported by the distribution of the dependent variable.
 If not specified, default link functions are used. Further information is provided under 'Details'.}
 
-\item{prior}{A named list of character strings specifing the prior distributions of the parameters. Further information
-is provided under 'Details'.}
+\item{prior}{A list of \code{brmsprior} objects each created by function \code{\link[brms:set_prior]{set_prior}}.
+A single \code{brmsprior} object may be passed without \code{list()} surrounding it.}
 
 \item{addition}{A named list of one sided formulas each containing additional information on the response variable. The following names are allowed:
 \code{se} for specifying standard errors for meta-analysis, \code{weights} to fit weighted regression models,
@@ -175,89 +175,21 @@ Fit a generalized linear mixed model, which incorporates both fixed-effects para
   The first link mentioned for each family is the default. \cr
 
 
-
   \bold{Prior distributions}
 
-  Below, we describe the usage of the \code{prior} argument and list some common prior distributions
-  for parameters in \code{brms} models.
-  A complete overview on possible prior distributions is given in the Stan Reference Manual available at
-  \url{http://mc-stan.org/}.
-
-  \code{brm} performs no checks if the priors are written in correct Stan language.
-  Instead, Stan will check their correctness when the model is parsed to C++ and returns an error if they are not.
-  Currently, there are five types of parameters in \code{brms} models,
-  for which the user can specify prior distributions. \cr
-
-  1. Fixed effects
-
-  Every fixed (and partial) effect has its corresponding regression parameter. These parameters are named as
-  \code{b_(fixed)}, where \code{(fixed)} represents the name of the corresponding fixed effect.
-  Suppose, for instance, that \code{y} is predicted by \code{x1} and \code{x2}
-  (i.e. \code{y ~ x1+x2} in formula syntax).
-  Then, \code{x1} and \code{x2} have regression parameters \code{b_x1} and \code{b_x2} respectively.
-  The default prior for fixed effects parameters is an improper flat prior over the reals.
-  Other common options are normal priors or uniform priors over a finite interval.
-  If we want to have a normal prior with mean 0 and standard deviation 5 for \code{b_x1},
-  and a uniform prior between -10 and 10 for \code{b_x2},
-  we can specify this via \cr
-  \code{prior = list(b_x1 = "normal(0,5)", b_x2 = "uniform(-10,10)")}.
-  To put the same prior (e.g. a normal prior) on all fixed effects at once,
-  we may write as a shortcut \code{prior = } \cr \code{list(b = "normal(0,5)")}. This also
-  leads to faster sampling, because priors can be vectorized in this case. \cr
-
-  2. Autocorrelation parameters
-
-  The autocorrelation parameters currently implemented are named \code{ar} (autoregression) and \code{ma} (moving average).
-  The default prior for autocorrelation parameters is an improper flat prior over the reals. It should be noted that \code{ar} will
-  only take one values between -1 and 1 if the response variable is wide-sence stationay, i.e. if there is no drift in the responses. \cr
-
-  3. Standard deviations of random effects
-
-  Each random effect of each grouping factor has a standard deviation named
-  \code{sd_(group)_(random)}. Consider, for instance, the formula \code{y ~ x1+x2+(1+x1|z)}.
-  We see that the intercept as well as \code{x1} are random effects nested in the grouping factor \code{z}.
-  The corresponding standard deviation parameters are named as \code{sd_z_Intercept} and \code{sd_z_x1} respectively.
-  These parameters are restriced to be non-negative and, by default,
-  have a half cauchy prior with 'mean' 0 and 'standard deviation' 5.
-  We could make this explicit by writing \code{prior = list(sd = "cauchy(0,5)")}.
-  One common alternative is a uniform prior over a positive interval. \cr
-
-  4. Correlations of random effects
-
-  If there is more than one random effect per grouping factor, the correlations between those random
-  effects have to be estimated.
-  The prior \code{"lkj_corr_cholesky(eta)"} or in short \code{"lkj(eta)"} with \code{eta > 0} is essentially the only prior
-  for (choelsky factors) of correlation matrices. If \code{eta = 1} (the default) all correlations matrices are equally likely a priori. If \code{eta > 1},
-  extreme correlations become less likely,
-  whereas \code{0 < eta < 1} results in higher probabilities for extreme correlations.
-  Correlation matrix parameters in \code{brms} models are named as
-  \code{cor_(group)}, (e.g., \code{cor_z} if \code{z} is the grouping factor).
-  To set the same prior on every correlation matrix, use for instance \code{prior = list(cor = "lkj(2)")} \cr
-
-  5. Parameters for specific families
-
-  Some families need additional parameters to be estimated.
-  Families \code{gaussian}, \code{student}, and \code{cauchy} need the parameter \code{sigma}
-  to account for the standard deviation of the response variable around the regression line
-  (not to be confused with the standard deviations of random effects).
-  By default, \code{sigma} has a half cauchy prior with 'mean' 0 and 'standard deviation' 5.
-  Furthermore, family \code{student} needs the parameter \code{nu} representing
-  the degrees of freedom of students t distribution.
-  By default, \code{nu} has prior \code{"uniform(1,100)"}.
-  Families \code{gamma} and \code{weibull} need the parameter \code{shape}
-  that has a \code{"gamma(0.01,0.01)"} prior by default. For families \code{cumulative}, \code{cratio}, \code{sratio},
-  and \code{acat}, and only if \code{threshold = "equidistant"}, the parameter \code{delta} is used to model the distance
-  between to adjacent thresholds. By default, \code{delta} has an improper flat prior over the reals. \cr
-
-  To get a full list of parameters for which priors can be specified (depending on the model)
-  use method \code{\link[brms:parnames.formula]{parnames.formula}}.
+  As of \pkg{brms} 0.5.0, priors should be specified using the
+  \code{\link[brms:set_prior]{set_prior}} function. Its documentation
+  contains detailed information on how to correctly specify priors.
 }
 \examples{
 \dontrun{
 ## Poisson Regression for the number of seizures in epileptic patients
-## using half cauchy priors for standard deviations of random effects
+## using uniform priors for fixed effects
+## and half cauchy priors for standard deviations of random effects
 fit_e <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient) + (1|visit),
-           data = epilepsy, family = "poisson", prior = list(sd = "cauchy(0,2.5)"))
+           data = epilepsy, family = "poisson",
+           prior = list(set_prior("uniform(-10,10)", class = "b"),
+                        set_prior("cauchy(0,2)", class = "sd")))
 ## generate a summary of the results
 summary(fit_e)
 ## plot the MCMC chains as well as the posterior distributions
@@ -270,7 +202,7 @@ ranef(fit_e)
 ## Ordinal regression (with family 'sratio') modeling patient's rating
 ## of inhaler instructions using normal priors for fixed effects parameters
 fit_i <- brm(rating ~ treat + period + carry, data = inhaler,
-              family = "sratio", prior = list(b = "normal(0,5)"))
+              family = "sratio", prior = set_prior("normal(0,5)"))
 summary(fit_i)
 plot(fit_i)
 

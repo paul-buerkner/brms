@@ -175,7 +175,7 @@ ngrps <- function(object, ...)
 #' \dontrun{
 #' fit_i <- brm(rating ~ treat + period + carry + (1+treat|subject),
 #'              data = inhaler, family = "gaussian", sample.prior = TRUE,
-#'              prior = list(b = "normal(0,2)"), n.cluster = 2)
+#'              prior = set_prior("normal(0,2)", class = "b"), n.cluster = 2)
 #' 
 #' hypothesis(fit_i, "treat = period + carry")
 #' hypothesis(fit_i, "exp(treat) - 3 = 0")
@@ -264,7 +264,8 @@ posterior.samples <- function(x, parameters = NA, exact_match = FALSE,
 #' \dontrun{
 #' fit_i <- brm(rating ~ treat + period + carry + (1|subject), 
 #'              data = inhaler, family = "cumulative", 
-#'              prior = list(b = "normal(0,2)"), sample.prior = TRUE)
+#'              prior = set_prior("normal(0,2)", class = "b"), 
+#'              sample.prior = TRUE)
 #' 
 #' #extract all prior samples
 #' samples1 <- prior_samples(fit_i)
