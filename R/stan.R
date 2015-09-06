@@ -1,7 +1,7 @@
 # This file contains all functions generating Stan code
 
 stan_model <- function(formula, data = NULL, family = "gaussian", link = "identity",
-                       prior = list(), partial = NULL, threshold = "flexible", 
+                       prior = prior_frame(), partial = NULL, threshold = "flexible", 
                        cov.ranef = NULL, sample.prior = FALSE, autocor = cor_arma(), 
                        save.model = NULL) {
   # Writes the regression model in Stan language
@@ -616,7 +616,8 @@ stan_ordinal <- function(family, link, partial = FALSE, threshold = "flexible") 
 }
 
 #' @export
-stan_prior <- function(class, coef = NULL, group = NULL, prior = NULL, s = 2) {
+stan_prior <- function(class, coef = NULL, group = NULL, 
+                       prior = prior_frame(), s = 2) {
   # Define priors for parameters in Stan language
   # 
   # Args:

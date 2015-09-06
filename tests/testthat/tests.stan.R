@@ -1,39 +1,37 @@
-test_that("Test that stan_prior accepts supported prior families", {
-  expect_equal(stan_prior("b_x1", prior = list(b = "uniform(0,10)")), 
+test_that("Test that stan_prior accepts supported prior classes", {
+  prior <- prior_frame(prior = "uniform(0,10)", class = "b")
+  expect_equal(stan_prior(class = "b", coef = "x1", prior = prior), 
                "  b ~ uniform(0,10); \n")
-  expect_equal(stan_prior(c("b_x1","b_x2"), prior = list(b = "uniform(0,10)", 
-               b_x1 = "normal(0,1)"), ind = 1:2), 
+  prior <- prior_frame(prior = c("uniform(0,10)", "normal(0,1)"), 
+                       class = "b", coef = c("", "x1"))
+  expect_equal(stan_prior(class = "b", coef = c("x1","x2"), prior = prior),
                "  b[1] ~ normal(0,1); \n  b[2] ~ uniform(0,10); \n")
-  expect_equal(stan_prior("ar", prior = list(ar = "uniform(0,1)")),
+  expect_equal(stan_prior("ar", prior = prior_frame("uniform(0,1)", class = "ar")),
                "  ar ~ uniform(0,1); \n")
-  expect_equal(stan_prior("ma", prior = list(ma = "normal(0,5)")),
+  expect_equal(stan_prior("ma", prior = prior_frame("normal(0,5)", class = "ma")),
                "  ma ~ normal(0,5); \n")
-  expect_equal(stan_prior("rescor", prior = list(rescor = "lkj_corr_cholesky(2)")),
+  prior <- prior_frame("lkj_corr_cholesky(2)", class = "rescor")
+  expect_equal(stan_prior("rescor", prior = prior),
                "  rescor ~ lkj_corr_cholesky(2); \n")
 })
 
 test_that("Test that stan_prior returns the correct indices", {
-  expect_equal(stan_prior("sd_Intercept"), 
+  expect_equal(stan_prior(class = "sd", coef = "Intercept"), 
                "  sd ~ cauchy(0,5); \n")
-  expect_equal(stan_prior("sd_Intercept", ind = "k"), 
-               "  sd ~ cauchy(0,5); \n")
-  expect_equal(stan_prior("sd_Intercept", ind = "k", prior = list(sd_Intercept = "normal(0,1)")), 
-               "  sd[k] ~ normal(0,1); \n")
-  expect_equal(stan_prior(c("sd_x1","sd_x2"), ind = 1:2, prior = list(sd_x1 = "normal(0,1)")),
-               "  sd[1] ~ normal(0,1); \n  sd[2] ~ cauchy(0,5); \n") 
-  expect_equal(stan_prior("sigma_y", prior = list(sigma_y = "cauchy(0,1)"), ind = 1),
-               "  sigma[1] ~ cauchy(0,1); \n")
+  prior <- prior_frame(prior = "normal(0,1)", class = c("sd", "bp"), 
+                       coef = c("x2", "z")) 
+  expect_equal(stan_prior(class = "sd", coef = c("x1", "x2"), prior = prior), 
+               "  sd[1] ~ cauchy(0,5); \n  sd[2] ~ normal(0,1); \n")
+  expect_equal(stan_prior("bp", coef = "z", prior = prior),
+               "  bp[1] ~ normal(0,1); \n")
 })
 
 test_that("Test that stan_prior can remove default priors", {
-  expect_equal(stan_prior("sigma_y", prior = list(sigma = "")), "")
-  expect_equal(stan_prior("sd_y_Intercept", prior = list(sd = "")), "")
-  expect_equal(stan_prior("sd_y_Intercept", prior = list(sd_y = ""), add_type = "y"), "")
-  expect_equal(stan_prior("shape", prior = list(shape = "")), "")
-  expect_equal(stan_prior("sigma_y", prior = list(sigma = NULL)), "")
-  expect_equal(stan_prior("sd_y_Intercept", prior = list(sd = NULL)), "")
-  expect_equal(stan_prior("sd_y_Intercept", prior = list(sd_y = NULL), add_type = "y"), "")
-  expect_equal(stan_prior("shape", prior = list(shape = NULL)), "")
+  prior <- prior_frame(prior = "", class = c("sigma", "sd", "shape"), 
+                       group = c("", "g", ""))
+  expect_equal(stan_prior("sigma", prior = prior), "")
+  expect_equal(stan_prior("sd", group = "g", prior = prior), "")
+  expect_equal(stan_prior("shape", prior = prior), "")
 })
 
 test_that("Test that stan_eta returns correct strings for autocorrelation models", {
@@ -56,12 +54,12 @@ test_that("Test_that stan_ma returns correct strings (or errors) for moving aver
 })  
 
 test_that("Test that stan_model accepts supported links", {
-  expect_match(stan_model(rating ~ treat + period + carry, data = inhaler, family = "sratio", 
-                          link="probit_approx"), "Phi_approx")
-  expect_match(stan_model(rating ~ treat + period + carry, data = inhaler, family = "cumulative", 
-                          link="probit"), "Phi")
-  expect_match(stan_model(rating ~ treat + period + carry, data = inhaler, family = "poisson", 
-                          link="log"), "log")
+  expect_match(stan_model(rating ~ treat + period + carry, data = inhaler, 
+                          family = "sratio", link = "probit_approx"), "Phi_approx")
+  expect_match(stan_model(rating ~ treat + period + carry, data = inhaler, 
+                          family = "cumulative", link = "probit"), "Phi")
+  expect_match(stan_model(rating ~ treat + period + carry, data = inhaler, 
+                          family = "poisson", link = "log"), "log")
 })
 
 test_that("Test that stan_model returns correct strings for customized covariances", {

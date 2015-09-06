@@ -263,28 +263,23 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
   # check if parameters in prior are valid
   ee <- extract_effects(formula, family = family)  
   possible_prior <- parnames(formula, data = data, family = family, 
-                              autocor = autocor, partial = partial, 
-                              threshold = threshold, internal = TRUE)
-  meta_prior <- prior_frame(class = unique(possible_prior$class))
-  if ("sd" %in% meta_prior$class) {
-    meta_prior <- rbind(meta_prior, prior_frame(class = "sd", group = ee$group))
-  }
-  possible_prior <- unique(rbind(possible_prior, meta_prior))
+                             autocor = autocor, partial = partial, 
+                             threshold = threshold, internal = TRUE)
   # index of valid rows in prior
-  valid <- which(duplicated(rbind(possible_prior, prior[,2:4]))) - 
+  valid <- which(duplicated(rbind(possible_prior, prior[, 2:4]))) - 
            nrow(possible_prior)
   invalid <- which(!1:nrow(prior) %in% valid)
   if (length(invalid)) {
-    message(paste("Element(s)", paste(invalid, collapse = ", "),
-                  "of prior are invalid and will be ignored."))
+    message(paste("Prior element", paste(invalid, collapse = ", "),
+                  "is invalid and will be ignored."))
   }
   
   # expand lkj correlation prior to full name
-  prior$prior <- lapply(prior$prior, function(p) 
-    sub("^lkj\\(", "lkj_corr_cholesky(", p))
+  prior$prior <- unlist(lapply(prior$prior, function(p) 
+    sub("^lkj\\(", "lkj_corr_cholesky(", p)))
   # rename parameter clases
-  prior$class <- rename(prior$class, symbols = c("cor", "rescor"), 
-                        subs = c("L", "Lrescor"))
+  prior$class <- rename(prior$class, symbols = c("^cor$", "^rescor$"), 
+                        subs = c("L", "Lrescor"), fixed = FALSE)
   # rename parameter groups
   rows2remove <- NULL
   group_indices <- which(nchar(prior$group) > 0)
@@ -334,6 +329,7 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
   if (length(rows2remove)) {   
     prior <- prior[-rows2remove, ]
   }
+  rownames(prior) <- 1:nrow(prior)
   prior
 }
 
@@ -346,7 +342,7 @@ set_prior <- function(prior, class = "b", coef = "", group = "") {
   if (length(c(prior, class, group, coef)) != 4) 
     stop("All arguments of set_prior must be of length 1")
   valid_classes <- c("b", "bp", "sd", "cor", "L", "ar", "ma", "sigma", 
-                     "rescor", "Lrescor", "nu", "alpha", "delta")
+                     "rescor", "Lrescor", "nu", "shape", "delta")
   if (!class %in% valid_classes)
     stop(paste(class, "is not a valid paramter class"))
   out <- list(prior = prior, class = class, coef = coef, group = group)
@@ -390,11 +386,13 @@ parnames.formula <- function(x, data = NULL, family = "gaussian", addition = NUL
   data <- update_data(data, family = family, effects = ee)
   
   # initialize output
-  out <- prior_frame(class = character(0), coef = character(0),
-                     group = character(0))
+  out <- prior_frame(prior = character(0), class = character(0), 
+                     coef = character(0), group = character(0))
   # fixed and partial effects
   fixef <- colnames(get_model_matrix(ee$fixed, data = data))
-  out <- rbind(out, prior_frame(class = "b", coef = fixef))
+  if (length(fixef)) {
+    out <- rbind(out, prior_frame(class = "b", coef = c("", fixef)))
+  }
   if (is.formula(partial)) {
     paref <- colnames(get_model_matrix(partial, data = data, rm_intercept = TRUE))
     out <- rbind(out, prior_frame(class = "b", coef = paref))
@@ -405,9 +403,10 @@ parnames.formula <- function(x, data = NULL, family = "gaussian", addition = NUL
     for (i in 1:length(gs)) {
       ranef <- colnames(get_model_matrix(ee$random[[i]], data = data))
       # include random effects standard deviations
-      out <- rbind(out, prior_frame(class = "sd", coef = ranef, group = gs[i]))
+      out <- rbind(out, prior_frame(class = "sd", coef = c("", ranef), group = gs[i]))
       # detect duplicated random effects
-      dupli <- duplicated(out[out$class == "sd" & out$group == gs[i], ])
+      J <- with(out, class == "sd" & group == gs[i] & nchar(coef))
+      dupli <- duplicated(out[J, ])
       if (any(dupli)) {
         stop(paste("Duplicated random effects detected for group", gs[i]))
       }
@@ -436,17 +435,12 @@ parnames.formula <- function(x, data = NULL, family = "gaussian", addition = NUL
     out <- rbind(out, prior_frame(class = "shape"))
   if (is_ordinal && threshold == "equidistant")
     out <- rbind(out, prior_frame(class = "delta"))
-  out
+  out[,2:4]  # do not return prior column as it is empty anyway
 }
 
 #' @export
-prior_frame <- function(prior = NULL, class = "", coef = "", group = "") {
+prior_frame <- function(prior = "", class = "", coef = "", group = "") {
   # easy adding of new rows to the output of parnames.formula
-  if (is.null(prior)) {
-    data.frame(class = class, coef = coef, group = group,
-               stringsAsFactors = FALSE)
-  } else {
-    data.frame(prior = prior, class = class, coef = coef, group = group,
-               stringsAsFactors = FALSE)
-  }
+  data.frame(prior = prior, class = class, coef = coef, group = group,
+             stringsAsFactors = FALSE)
 }
