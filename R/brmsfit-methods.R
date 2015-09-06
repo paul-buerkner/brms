@@ -381,8 +381,6 @@ plot.brmsfit <- function(x, parameters = NA, N = 5, ask = TRUE, ...) {
 #' @inheritParams predict.brmsfit
 #' @param scale Either \code{"response"} or \code{"linear"}. If \code{scale = "response"} results are returned 
 #' on the scale of the response variable. If \code{scale = "linear"} fitted values are returned on the scale of the linear predictor.
-#' 
-#' @details Currently, the method does not support \code{categorical} or ordinal models. 
 #'
 #' @return Fitted values extracted from \code{object}. The output depends on the family:
 #'   If \code{summary = TRUE} it is a N x E x C array for categorical and ordinal models and a N x E matrix else.
@@ -399,6 +397,7 @@ plot.brmsfit <- function(x, parameters = NA, N = 5, ask = TRUE, ...) {
 #' ## extract fitted values
 #' fitted_values <- fitted(fit)
 #' head(fitted_values)
+#' 
 #' }
 #' 
 #' @export 
@@ -419,6 +418,7 @@ fitted.brmsfit <- function(object, newdata = NULL, scale = c("response", "linear
     
   # get mu and scale it appropriately
   mu <- linear_predictor(object, newdata = newdata)
+  is_catordinal <- object$family %in% c("categorical", "cumulative", "sratio", "cratio", "acat")
   if (scale == "response") {
     if (object$family == "binomial") {
       max_obs <- matrix(rep(data$max_obs, nrow(mu)), nrow = nrow(mu), byrow = TRUE)
@@ -429,13 +429,15 @@ fitted.brmsfit <- function(object, newdata = NULL, scale = c("response", "linear
     } else if (object$family == "weibull") {
       shape <- posterior_samples(object, "^shape$")$shape
       mu <-  1/(ilink(-mu/shape, object$link)) * gamma(1+1/shape) # weibull mean
-    } else if (object$family %in% c("categorical", "cumulative", "sratio", "cratio", "acat")) {
+    } else if (is_catordinal) {
       ncat <- max(data$max_obs)
       # get probabilities of each category
-      mu <- aperm(abind(lapply(1:ncol(mu), function(n)
-        do.call(paste0("d",object$family), list(1:ncat, eta = mu[,n,], ncat = ncat, 
-                                                link = object$link)))),
-        perm = c(1, 3, 2))
+      get_density <- function(n) {
+        do.call(paste0("d", object$family), 
+                list(1:ncat, eta = mu[,n,], ncat = ncat, link = object$link))
+      }
+      mu <- aperm(abind(lapply(1:ncol(mu), get_density), along = 3), 
+                  perm = c(1, 3, 2))
     } else {
       mu <- ilink(mu, object$link)
     }

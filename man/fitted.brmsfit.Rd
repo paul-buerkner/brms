@@ -33,9 +33,6 @@ Fitted values extracted from \code{object}. The output depends on the family:
 \description{
 Extract Model Fitted Values of \code{brmsfit} Objects
 }
-\details{
-Currently, the method does not support \code{categorical} or ordinal models.
-}
 \examples{
 \dontrun{
 ## fit a model
@@ -45,6 +42,7 @@ fit <- brm(rating ~ treat + period + carry + (1|subject), data = inhaler,
 ## extract fitted values
 fitted_values <- fitted(fit)
 head(fitted_values)
+
 }
 }
 

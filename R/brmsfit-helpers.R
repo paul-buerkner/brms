@@ -143,7 +143,7 @@ get_summary <- function(samples, probs = c(0.025, 0.975)) {
   } else if (length(dim(samples)) == 3) {
     out <- abind(lapply(1:dim(samples)[3], function(i)
       do.call(cbind, lapply(c("mean", "sd", "quantile"), get_estimate, 
-                            samples = samples[,,i], probs = probs))))
+                            samples = samples[,,i], probs = probs))), along = 3)
     dimnames(out) <- list(NULL, NULL, paste0("P(Y = ", 1:dim(out)[3], ")")) 
   } else { 
     stop("dimension of samples must be either 2 or 3") 
