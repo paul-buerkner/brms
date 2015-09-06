@@ -50,9 +50,9 @@ Extract all parameter names for which priors may be specified
 }
 \examples{
 parnames(rating ~ treat + period + carry + (1+carry|subject),
-          data = inhaler, family = "student")
+         data = inhaler, family = "student")
 
 parnames(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient) + (1|visit),
-          data = epilepsy, family = "poisson")
+         data = epilepsy, family = "poisson")
 }
 

@@ -262,8 +262,8 @@
 #' @import methods
 #' @import stats   
 #' @export 
-brm <- function(formula, data = NULL, family = c("gaussian", "identity"), prior = list(),
-                addition = NULL, autocor = NULL, partial = NULL, 
+brm <- function(formula, data = NULL, family = c("gaussian", "identity"), 
+                prior = NULL, addition = NULL, autocor = NULL, partial = NULL, 
                 threshold = c("flexible", "equidistant"), cov.ranef = NULL, 
                 ranef = TRUE, sample.prior = FALSE, fit = NA, 
                 n.chains = 2, n.iter = 2000, n.warmup = 500, n.thin = 1, n.cluster = 1, 
