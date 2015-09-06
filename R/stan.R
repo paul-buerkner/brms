@@ -630,9 +630,9 @@ stan_prior <- function(class, coef = NULL, group = NULL, prior = NULL, s = 2) {
   #   A character strings in stan language that defines priors for a given class of parameters
   #   If a parameter has has no corresponding prior in prior 
   #   and also no internal default in stan_prior, an empty string is returned.
-  default_prior <- list(b = "", bp = "", sigma = "cauchy(0,5)", 
-                        delta = "", ar = "", ma = "", 
-                        sd = "cauchy(0,5)", nu = "uniform(1,100)",
+  default_prior <- list(sigma = "cauchy(0,5)", 
+                        sd = "cauchy(0,5)", 
+                        nu = "uniform(1,100)",
                         shape = "gamma(0.01,0.01)",
                         L = "lkj_corr_cholesky(1.0)", 
                         Lrescor = "lkj_corr_cholesky(1.0)")
@@ -640,7 +640,8 @@ stan_prior <- function(class, coef = NULL, group = NULL, prior = NULL, s = 2) {
   # only consider user defined priors related to this class
   user_prior <- prior[which(prior$class == class), ]
   if (!is.null(group)) {
-    user_prior <- user_prior[which(!nchar(user_prior$group) | user_prior$group == group), ]
+    user_prior <- user_prior[which(!nchar(user_prior$group) 
+                                   | user_prior$group == group), ]
   }
   if (any(!nchar(user_prior$coef) & nchar(user_prior$group))) {  
     # if there is a global prior for this group
@@ -652,7 +653,8 @@ stan_prior <- function(class, coef = NULL, group = NULL, prior = NULL, s = 2) {
     base_prior <- user_prior[row_index, "prior"]
   } else {  
     # no user defined prior for this class
-    base_prior <- default_prior[[class]]
+    # make sure it is a character (possibly "")
+    base_prior <- paste0(default_prior[[class]], "")
   } 
   
   individual_prior <- function(i, max_index) {
@@ -687,74 +689,6 @@ stan_prior <- function(class, coef = NULL, group = NULL, prior = NULL, s = 2) {
       class <- "to_vector(bp)"
     }
     out <- paste0(s, class, " ~ ", base_prior, "; \n")
-  } else {
-    out <- ""
-  }
-  return(collapse(out))
-}
-
-stan_prior2 <- function(par, prior = list(), add_type = NULL, ind = rep("", length(par)), 
-                      partial = FALSE, s = 2) { 
-  # Define priors for parameters in Stan language
-  # 
-  # Args:
-  #   par: A vector of parameter names
-  #   prior: A named list of strings containing the priors for parameters in \code{par}.
-  #   ind: An optional index to allow for different priors for different elements 
-  #        of a parameter vector (see 'Examples')
-  #   partial: logical; prior for partial effects?
-  #   s: An integer >= 0 defining the number of spaces in front of the output string
-  # 
-  # Returns:
-  #   A vector of character strings each defining a line of code in stan language that
-  #   defines the prior of a parameter in par. If a parameter has has no corresponding prior in prior 
-  #   and also no internal default in stan_prior, an empty string is returned.
-  if (length(par) != length(ind)) 
-    stop("Arguments par and ind must have the same length")
-  if (length(par) > 1 && all(ind == ""))
-    warning("Indices are all zero")
-  type <- unique(unlist(lapply(par, function(par) 
-    unlist(regmatches(par, gregexpr("[^_]*", par)))[1])))
-  if (length(type) > 1)
-    stop("Only one parameter type can be handled at once")
-  if (!is.null(add_type)) {
-    type <- c(type, paste0(type,"_",add_type))
-    if (!all(grepl(type[2], par))) 
-      stop("Additional parameter type not present in all parameters")
-  }  
-  default.prior <- list(b = "", bp = "", sigma = "cauchy(0,5)", 
-                        delta = "", ar = "", ma = "", 
-                        sd = "cauchy(0,5)", nu = "uniform(1,100)",
-                        shape = "gamma(0.01,0.01)",
-                        L = "lkj_corr_cholesky(1.0)", 
-                        Lrescor = "lkj_corr_cholesky(1.0)") 
-  if (type[2] %in% names(prior)) {
-    base.prior <- prior[[type[2]]]
-  } else if (type[1] %in% names(prior)) {
-    base.prior <- prior[[type[1]]]
-  } else {
-    base.prior <- default.prior[[type[1]]]
-  }
-  
-  if (type[1] == "b" && partial) 
-    type[1] <- "bp"  # special treatment of partial effects
-  type <- ifelse(is.na(type[2]), type[1], type[2])  
-  if (any(par %in% names(prior))) {
-    out <- sapply(1:length(par), function(i, par, ind) {
-      if (ind[i] != "") 
-        ind[i] <- paste0("[",ind[i],"]")
-      if (!par[i] %in% names(prior)) 
-        prior[[par[i]]] <- base.prior
-      if (nchar(paste0(prior[[par[i]]], "")) > 0) { 
-        return(paste0(collapse(rep(" ", s)), type, ind[i], 
-                      " ~ ", prior[[par[i]]], "; \n"))
-      } else return("") 
-    }, 
-    par = par, ind = ind)
-  } else if (nchar(paste0(base.prior, "")) > 0) {
-    out <- paste0(collapse(rep(" ", s)), 
-                  ifelse(identical(type,"bp"), "to_vector(bp)", type), 
-                  " ~ ", base.prior, "; \n")
   } else {
     out <- ""
   }
