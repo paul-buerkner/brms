@@ -623,6 +623,18 @@ print.brmshypothesis <- function(x, digits = 2, ...) {
 }
 
 #' @export
+print.brmsprior <- function(x, ...) {
+  group <- ifelse(nchar(x$group), paste0("_", x$group), "")
+  coef <- ifelse(nchar(x$coef), paste0("_", x$coef), "")
+  if (nchar(x$coef) || x$class %in% c("ar", "ma", "shape", "delta")) {
+    cat(paste0("Prior for parameter ", x$class, group, coef, ": \n"))    
+  } else {
+    cat(paste0("Prior for parameter class ", x$class, group, ": \n"))
+  }
+  cat(x$prior)
+}
+
+#' @export
 print.brmsmodel <- function(x, ...) cat(x)
 
 #' @export
