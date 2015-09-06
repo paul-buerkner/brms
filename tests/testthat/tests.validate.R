@@ -174,8 +174,19 @@ test_that("Test that link4familys return an error on wrong links", {
 test_that("Test that parnames.formula finds all classes for which priors can be specified", {
   expect_equal(parnames(count ~ log_Base4_c * Trt_c + (1|patient) + (1+Trt_c|visit),
                        data = epilepsy, family = "poisson")$class,
-               c(rep("b", 5), rep("sd", 5), "cor"))
+               c(rep("b", 5), rep("sd", 6), c("cor", "cor")))
   expect_equal(parnames(rating ~ treat + period, partial = ~ carry, data = inhaler, 
                         family = "sratio", threshold = "equidistant")$class,
                c(rep("b", 5), "delta"))
+})
+
+test_that("Test that update_deprecated_prior produces correct prior_frames", {
+  prior <- list(b = "p1", sd = "p2", cor = "p3", b_Intercept = "p4",
+                cor_visit = "p5", sd_visit_z_x = "p6", sigma = "p7")
+  result <- prior_frame(prior = paste0("p",1:7), 
+                        class = c("b", "sd", "cor", "b", "cor", "sd", "sigma"),
+                        coef = c(rep("", 3), "Intercept", "", "z_x", ""),
+                        group = c(rep("", 4), rep("visit", 2), ""))
+  expect_equal(update_deprecated_prior(prior),
+               result)
 })

@@ -234,6 +234,53 @@ remove_chains <- function(i, sflist) {
   }
 }
 
+prior_frame <- function(prior = "", class = "", coef = "", group = "") {
+  # easy adding of new rows to the output of parnames.formula
+  data.frame(prior = prior, class = class, coef = coef, group = group,
+             stringsAsFactors = FALSE)
+}
+
+#' @export
+set_prior <- function(prior, class = "b", coef = "", group = "") {
+  prior <- as.character(prior)
+  class <- as.character(class)
+  group <- as.character(group)
+  coef <- as.character(coef)
+  if (length(c(prior, class, group, coef)) != 4) 
+    stop("All arguments of set_prior must be of length 1")
+  valid_classes <- c("b", "bp", "sd", "cor", "L", "ar", "ma", "sigma", 
+                     "rescor", "Lrescor", "nu", "shape", "delta")
+  if (!class %in% valid_classes)
+    stop(paste(class, "is not a valid paramter class"))
+  out <- list(prior = prior, class = class, coef = coef, group = group)
+  class(out) <- c("brmsprior", "list")
+  out
+}
+
+#' @export
+update_deprecated_prior <- function(prior) {
+  # update prior specifications from before 0.5.0
+  #
+  # Args:
+  #   prior: A named list
+  #
+  # Returns:
+  #   a data.frame compatible with check_prior of brms >= 0.5.0
+  if (is.null(names(prior)) | length(prior) == 0) {
+    stop("Only named lists can be updated")
+  }
+  prior_names <- names(prior)
+  class <- regmatches(prior_names, regexpr("^[^_]+", prior_names))
+  group_coef <- substr(prior_names, nchar(class) + 2, nchar(prior_names))
+  group <- ifelse(prior_names == "sd", "", ifelse(class == "sd",
+                    regmatches(group_coef, regexpr("^[^_]+", group_coef)), 
+                    ifelse(class == "cor", group_coef, "")))
+  coef <- substr(group_coef, nchar(group) + ifelse(nchar(group), 2, 1), 
+                 nchar(group_coef))
+  prior_frame(prior = unlist(prior, use.names = FALSE),
+              class = class, coef = coef, group = group)
+}
+
 #' @export
 check_prior <- function(prior, formula, data = NULL, family = "gaussian", 
                         autocor = NULL, partial = NULL, threshold = "flexible") {
@@ -247,14 +294,22 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
   if (is.null(prior)) {
     return(prior)  # nothing to check
   } else if (is(prior, "brmsprior")) {
-    prior <- list(prior)
+    # a single prior may be specified without list(.)
+    prior <- as.data.frame(prior, stringsAsFactors = FALSE)
+  } else if (!is.null(names(prior))) {
+    # deprecated prior specification brms < 0.5.0
+    warning(paste("Specifying priors using a named list is deprecated. \n",
+                  "See help(set_prior) for further information."))
+    prior <- update_deprecated_prior(prior)
+  } else {
+    # the usual case since brms 0.5.0
+    lapply(prior, function(x) if (!is(x, "brmsprior")) 
+      stop(paste("Elements of prior must be of class brmsprior. \n",
+                 "See help(set_prior) for further information.")))
+    prior <- data.frame(matrix(unlist(prior), ncol = 4, byrow = TRUE),
+                        stringsAsFactors = FALSE)
+    names(prior) <- c("prior", "class", "coef", "group")
   }
-  lapply(prior, function(x) if (!is(x, "brmsprior")) 
-    stop(paste("Elements of prior must be of class brmsprior.",
-               "See help(set_prior) for further information.")))
-  prior <- data.frame(matrix(unlist(prior), ncol = 4, byrow = TRUE),
-                      stringsAsFactors = FALSE)
-  names(prior) <- c("prior", "class", "coef", "group")
   dupli <- duplicated(prior[, 2:4])
   if (any(dupli)) {
     stop("Duplicated prior specifications are not allowed. \n")
@@ -333,23 +388,6 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
   prior
 }
 
-#' @export
-set_prior <- function(prior, class = "b", coef = "", group = "") {
-  prior <- as.character(prior)
-  class <- as.character(class)
-  group <- as.character(group)
-  coef <- as.character(coef)
-  if (length(c(prior, class, group, coef)) != 4) 
-    stop("All arguments of set_prior must be of length 1")
-  valid_classes <- c("b", "bp", "sd", "cor", "L", "ar", "ma", "sigma", 
-                     "rescor", "Lrescor", "nu", "shape", "delta")
-  if (!class %in% valid_classes)
-    stop(paste(class, "is not a valid paramter class"))
-  out <- list(prior = prior, class = class, coef = coef, group = group)
-  class(out) <- c("brmsprior", "list")
-  out
-}
-
 #' Extract parameter names
 #' 
 #' Extract all parameter names for which priors may be specified
@@ -399,6 +437,7 @@ parnames.formula <- function(x, data = NULL, family = "gaussian", addition = NUL
   }
   # random effects
   if (length(ee$group)) {
+    out <- rbind(out, prior_frame(class = "sd"))  # global sd class
     gs <- unlist(ee$group)
     for (i in 1:length(gs)) {
       ranef <- colnames(get_model_matrix(ee$random[[i]], data = data))
@@ -411,8 +450,8 @@ parnames.formula <- function(x, data = NULL, family = "gaussian", addition = NUL
         stop(paste("Duplicated random effects detected for group", gs[i]))
       }
       # include correlation parameters
-      if (ee$cor[[i]] && length(ranef) > 1 && 
-          !nrow(out[out$class == "cor" & out$group == gs[i], ])) {
+      if (ee$cor[[i]] && length(ranef) > 1) {
+        out <- rbind(out, prior_frame(class = "cor"))  # global cor class  
         out <- rbind(out, prior_frame(class = "cor", group = gs[i]))
         if (internal) 
           out <- rbind(out, prior_frame(class = "L", group = gs[i]))
@@ -426,7 +465,7 @@ parnames.formula <- function(x, data = NULL, family = "gaussian", addition = NUL
   if (is(autocor, "cor_arma") && autocor$q) 
     out <- rbind(out, prior_frame(class = "ma"))
   if (family %in% c("gaussian", "student", "cauchy") && !is.formula(ee$se))
-    out <- rbind(out, prior_frame(class = "sigma", coef = ee$response))
+    out <- rbind(out, prior_frame(class = "sigma", coef = c("", ee$response)))
   if (family == "gaussian" && length(ee$response) > 1)
     out <- rbind(out, prior_frame(class = c("rescor", if (internal) "Lrescor")))
   if (family == "student") 
@@ -435,12 +474,5 @@ parnames.formula <- function(x, data = NULL, family = "gaussian", addition = NUL
     out <- rbind(out, prior_frame(class = "shape"))
   if (is_ordinal && threshold == "equidistant")
     out <- rbind(out, prior_frame(class = "delta"))
-  out[,2:4]  # do not return prior column as it is empty anyway
-}
-
-#' @export
-prior_frame <- function(prior = "", class = "", coef = "", group = "") {
-  # easy adding of new rows to the output of parnames.formula
-  data.frame(prior = prior, class = class, coef = coef, group = group,
-             stringsAsFactors = FALSE)
+  unique(out[,2:4])  # do not return prior column as it is empty anyway
 }
