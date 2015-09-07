@@ -8,12 +8,13 @@
 #'  the variables in the model. If not found in data, the variables are taken from \code{environment(formula)}, 
 #'  typically the environment from which \code{brm} is called. Although it is optional, we strongly recommend to supply a data.frame. 
 #' @param family A vector of one or two character strings. The first string indicates the distribution of the dependent variable (the 'family'). Currently, the following families are supported:
-#'  \code{"gaussian"}, \code{"student"}, \code{"cauchy"}, \code{"binomial"}, \code{"bernoulli"}, \code{"categorical"}, \code{"poisson"}, \code{"negbinomial"}, \cr
+#'  \code{"gaussian"}, \code{"student"}, \code{"cauchy"}, \code{"binomial"}, \code{"bernoulli"}, \code{"categorical"}, \code{"poisson"}, \code{"negbinomial"}, 
 #'  \code{"geometric"}, \code{"gamma"}, \code{"exponential"}, \code{"weibull"}, \code{"cumulative"}, \code{"cratio"}, \code{"sratio"}, and \code{"acat"}.
 #'  The second string indicates the link function, which must be supported by the distribution of the dependent variable. 
 #'  If not specified, default link functions are used. Further information is provided under 'Details'.
-#' @param prior A list of \code{brmsprior} objects each created by function \code{\link[brms:set_prior]{set_prior}}.
-#'  A single \code{brmsprior} object may be passed without \code{list()} surrounding it. 
+#' @param prior One or more \code{brmsprior} objects created by function \code{\link[brms:set_prior]{set_prior}} and combined
+#'  using the \code{c} method. A single \code{brmsprior} object may be passed without \code{c()} surrounding it. 
+#'  See also  \code{\link[brms:get_prior]{get_prior}} for more help.
 #' @param addition A named list of one sided formulas each containing additional information on the response variable. The following names are allowed:
 #'  \code{se} for specifying standard errors for meta-analysis, \code{weights} to fit weighted regression models, 
 #'  \code{trials} to specify the number of trials per observation in binomial models, \code{cat} to specify the number of categories in 

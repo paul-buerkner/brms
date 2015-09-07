@@ -254,7 +254,7 @@ posterior.samples <- function(x, parameters = NA, exact_match = FALSE,
 #' @param ... Currently ignored
 #'   
 #' @details To make use of this function, the model must contain samples of prior distributions.
-#'  This can be ensured by setting \code{prior_samples = TRUE} in function \code{brm}.
+#'  This can be ensured by setting \code{sample.prior = TRUE} in function \code{brm}.
 #'  Currently there are methods for \code{brmsfit} objects.
 #' @return A data frame containing the prior samples.
 #' 
@@ -347,9 +347,9 @@ par.names <- function(x, ...)
 WAIC <- function(x, ..., compare = TRUE)
   UseMethod("WAIC")
 
-#' Compute the LOO
+#' Compute LOO
 #' 
-#' Compute the Leave-one-out cross-validation based on the posterior likelihood
+#' Compute Leave-one-out cross-validation based on the posterior likelihood
 #' by using the \pkg{loo} package
 #' 
 #' @aliases LOO.brmsfit
@@ -399,7 +399,7 @@ LOO <- function(x, ..., compare = TRUE)
 #' @param x A fitted model object typically of class \code{brmsfit}. 
 #' @param rstudio Only relevant for RStudio users. The default (\code{rstudio=FALSE}) is to launch the app 
 #' in the default web browser rather than RStudio's pop-up Viewer. Users can change the default to \code{TRUE} 
-#' by setting the global option \code{options(shinystan.rstudio = TRUE)}.
+#' by setting the global option \cr \code{options(shinystan.rstudio = TRUE)}.
 #' @param ... Optional arguments to pass to \code{\link[shiny:runApp]{runApp}}
 #' 
 #' @return An S4 shinystan object

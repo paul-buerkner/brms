@@ -3,7 +3,7 @@
 \name{LOO}
 \alias{LOO}
 \alias{LOO.brmsfit}
-\title{Compute the LOO}
+\title{Compute LOO}
 \usage{
 LOO(x, ..., compare = TRUE)
 }
@@ -19,7 +19,7 @@ If just one object is provided, an object of class \code{ic}.
 If multiple objects are provided, an object of class \code{iclist}.
 }
 \description{
-Compute the Leave-one-out cross-validation based on the posterior likelihood
+Compute Leave-one-out cross-validation based on the posterior likelihood
 by using the \pkg{loo} package
 }
 \details{

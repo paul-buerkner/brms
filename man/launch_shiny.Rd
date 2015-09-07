@@ -12,7 +12,7 @@ launch_shiny(x, rstudio = getOption("shinystan.rstudio"), ...)
 
 \item{rstudio}{Only relevant for RStudio users. The default (\code{rstudio=FALSE}) is to launch the app
 in the default web browser rather than RStudio's pop-up Viewer. Users can change the default to \code{TRUE}
-by setting the global option \code{options(shinystan.rstudio = TRUE)}.}
+by setting the global option \cr \code{options(shinystan.rstudio = TRUE)}.}
 
 \item{...}{Optional arguments to pass to \code{\link[shiny:runApp]{runApp}}}
 }

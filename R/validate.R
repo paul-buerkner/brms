@@ -269,7 +269,7 @@ remove_chains <- function(i, sflist) {
 #'   Other common options are normal priors or uniform priors over a finite interval.
 #'   If we want to have a normal prior with mean 0 and standard deviation 5 for \code{x1}, 
 #'   and a uniform prior between -10 and 10 for \code{x2}, we can specify this via \cr
-#'   \code{set_prior("normal(0,5)", class = "b", coef = "x1")} and 
+#'   \code{set_prior("normal(0,5)", class = "b", coef = "x1")} and \cr
 #'   \code{set_prior("uniform(-10,10)", class = "b", coef = "x2")}.
 #'   To put the same prior on all fixed effects at once, 
 #'   we may write as a shortcut \code{set_prior("<prior>", class = "b")}. This also
@@ -280,7 +280,7 @@ remove_chains <- function(i, sflist) {
 #'   The autocorrelation parameters currently implemented are named \code{ar} (autoregression) and \code{ma} (moving average).
 #'   The default prior for autocorrelation parameters is an improper flat prior over the reals. 
 #'   Other priors can be defined with \code{set_prior("<prior>", class = "ar")} 
-#'   or \code{set_prior("<prior>", class = "ma")}. It should be noted that \code{ar} will
+#'   or \cr \code{set_prior("<prior>", class = "ma")}. It should be noted that \code{ar} will
 #'   only take one values between -1 and 1 if the response variable is wide-sence stationay, 
 #'   i.e. if there is no drift in the responses. \cr
 #'   
@@ -294,9 +294,9 @@ remove_chains <- function(i, sflist) {
 #'   have a half cauchy prior with scale parameter 5. 
 #'   We could make this explicit by writing \code{set_prior("cauchy(0,5)", class = "sd")}. 
 #'   To define a prior distribution only for standard deviations of a specific grouping factor,
-#'   use \code{set_prior("<prior>", class = "sd", group = "<group>")}. 
+#'   use \cr \code{set_prior("<prior>", class = "sd", group = "<group>")}. 
 #'   To define a prior distribution only for a specific standard deviation 
-#'   of a specific grouping factor, you may write
+#'   of a specific grouping factor, you may write \cr
 #'   \code{set_prior("<prior>", class = "sd", group = "<group>", coef = "<coef>")}. 
 #'   Recommendations on useful prior distributions for standard deviations are given in Gelman (2006). \cr
 #'   
@@ -326,7 +326,7 @@ remove_chains <- function(i, sflist) {
 #'   that has a \code{"gamma(0.01,0.01)"} prior by default. For families \code{cumulative}, \code{cratio}, \code{sratio}, 
 #'   and \code{acat}, and only if \code{threshold = "equidistant"}, the parameter \code{delta} is used to model the distance
 #'   between to adjacent thresholds. By default, \code{delta} has an improper flat prior over the reals. \cr
-#'   Every family specific parameter has its own prior class, so that 
+#'   Every family specific parameter has its own prior class, so that \cr
 #'   \code{set_prior("<prior>", class = "<parameter>")} it the right way to go. \cr
 #' 
 #'   Often, it may not be immediately clear, which parameters are present in the model.

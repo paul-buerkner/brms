@@ -23,7 +23,7 @@ Extract prior samples of specified parameters
 }
 \details{
 To make use of this function, the model must contain samples of prior distributions.
- This can be ensured by setting \code{prior_samples = TRUE} in function \code{brm}.
+ This can be ensured by setting \code{sample.prior = TRUE} in function \code{brm}.
  Currently there are methods for \code{brmsfit} objects.
 }
 \examples{
