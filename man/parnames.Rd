@@ -5,7 +5,7 @@
 \alias{par.names.brmsfit}
 \alias{parnames}
 \alias{parnames.brmsfit}
-\title{Extract parameter names}
+\title{Extract Parameter Names}
 \usage{
 parnames(x, ...)
 }
@@ -18,9 +18,7 @@ parnames(x, ...)
 A character vector containing the parameter names of the model
 }
 \description{
-Extract all parameter names of a given model or formula. This help page describes the functionality for
- an object of class \code{brmsfit}. See \code{\link[brms:parnames.formula]{parnames.formula}} for
- help on the \code{formula} method.
+Extract all parameter names of a given model.
 }
 \details{
 Currently there are methods for \code{brmsfit} and \code{formula} objects.

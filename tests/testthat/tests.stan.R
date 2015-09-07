@@ -16,10 +16,10 @@ test_that("Test that stan_prior accepts supported prior classes", {
 })
 
 test_that("Test that stan_prior returns the correct indices", {
-  expect_equal(stan_prior(class = "sd", coef = "Intercept"), 
+  prior <- prior_frame(prior = c("cauchy(0,5)", "normal(0,1)", "normal(0,1)"), 
+                       class = c("sd", "sd", "bp"), coef = c("", "x2", "z")) 
+  expect_equal(stan_prior(class = "sd", coef = "Intercept", prior = prior), 
                "  sd ~ cauchy(0,5); \n")
-  prior <- prior_frame(prior = "normal(0,1)", class = c("sd", "bp"), 
-                       coef = c("x2", "z")) 
   expect_equal(stan_prior(class = "sd", coef = c("x1", "x2"), prior = prior), 
                "  sd[1] ~ cauchy(0,5); \n  sd[2] ~ normal(0,1); \n")
   expect_equal(stan_prior("bp", coef = "z", prior = prior),

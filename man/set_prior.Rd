@@ -18,7 +18,7 @@ See 'Details' for other valid parameter classes.}
 }
 \value{
 An object of class \code{brmsprior} to be used in the \code{prior}
-  arguments of \code{\link[brms:brm]{brm}}.
+  argument of \code{\link[brms:brm]{brm}}.
 }
 \description{
 Define priors for specific parameters or classes of parameters
@@ -106,22 +106,22 @@ Define priors for specific parameters or classes of parameters
   \code{set_prior("<prior>", class = "<parameter>")} it the right way to go. \cr
 
   Often, it may not be immediately clear, which parameters are present in the model.
-  To get a full list of parameters for which priors can be specified (depending on the model)
-  use method \code{\link[brms:parnames.formula]{parnames.formula}}.
+  To get a full list of parameters and parameter classes for which priors can be specified (depending on the model)
+  use function \code{\link[brms:get_prior]{get_prior}}
 }
 \examples{
 \dontrun{
 ## check which parameters can have priors
-parnames(rating ~ period + carry + (1|subject),
-         data = inhaler, family = "sratio",
-         partial = ~ treat, threshold = "equidistant")
+get_prior(rating ~ treat + period + carry + (1|subject),
+          data = inhaler, family = "cumulative",
+          threshold = "equidistant")
 
 ## define some priors
-prior <- list(set_prior("normal(0,10)", class = "b"),
-              set_prior("normal(1,2)", class = "b", coef = "treat"),
-              set_prior("cauchy(0,2)", class = "sd",
-                        group = "subject", coef = "Intercept"),
-              set_prior("uniform(-5,5)", class = "delta"))
+prior <- c(set_prior("normal(0,10)", class = "b"),
+           set_prior("normal(1,2)", class = "b", coef = "treat"),
+           set_prior("cauchy(0,2)", class = "sd",
+                     group = "subject", coef = "Intercept"),
+           set_prior("uniform(-5,5)", class = "delta"))
 
 ## use the defined priors in the model
 fit <- brm(rating ~ period + carry + (1|subject),
@@ -136,5 +136,8 @@ fit$model
 \references{
 Gelman A (2006). Prior distributions for variance parameters in hierarchical models."
    Bayesian analysis, 1(3), 515 -- 534.
+}
+\seealso{
+\code{\link[brms:get_prior]{get_prior}}
 }
 

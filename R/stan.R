@@ -630,31 +630,27 @@ stan_prior <- function(class, coef = NULL, group = NULL,
   #   A character strings in stan language that defines priors for a given class of parameters
   #   If a parameter has has no corresponding prior in prior 
   #   and also no internal default in stan_prior, an empty string is returned.
-  default_prior <- list(sigma = "cauchy(0,5)", 
-                        sd = "cauchy(0,5)", 
-                        nu = "uniform(1,100)",
-                        shape = "gamma(0.01,0.01)",
-                        L = "lkj_corr_cholesky(1.0)", 
-                        Lrescor = "lkj_corr_cholesky(1.0)")
   
-  # only consider user defined priors related to this class
-  user_prior <- prior[which(prior$class == class), ]
+  # only consider user defined priors related to this class and group
+  keep <- which(prior$class == class & (prior$coef %in% coef | !nchar(prior$coef)))
+  user_prior <- prior[keep, ]
   if (!is.null(group)) {
-    user_prior <- user_prior[which(!nchar(user_prior$group) 
-                                   | user_prior$group == group), ]
+    keep2 <- which(user_prior$group == group | !nchar(user_prior$group))
+    user_prior <- user_prior[keep2, ]
   }
-  if (any(!nchar(user_prior$coef) & nchar(user_prior$group))) {  
+  
+  # get base prior
+  igroup <- which(with(user_prior, !nchar(coef) & nchar(group) & nchar(prior)))
+  iclass <- which(with(user_prior, !nchar(coef) & !nchar(group) & nchar(prior)))
+  if (length(igroup)) {  
     # if there is a global prior for this group
-    row_index <- which(!nchar(user_prior$coef) & nchar(user_prior$group))
-    base_prior <- user_prior[row_index, "prior"]
-  } else if (any(!nchar(user_prior$coef) & !nchar(user_prior$group))) {  
+    base_prior <- user_prior[igroup, "prior"]
+  } else if (length(iclass)) {  
     # if there is a global prior for this class
-    row_index <- which(!nchar(user_prior$coef) & !nchar(user_prior$group))
-    base_prior <- user_prior[row_index, "prior"]
+    base_prior <- user_prior[iclass, "prior"]
   } else {  
-    # no user defined prior for this class
-    # make sure it is a character (possibly "")
-    base_prior <- paste0(default_prior[[class]], "")
+    # no proper prior for this class
+    base_prior <- ""
   } 
   
   individual_prior <- function(i, max_index) {
@@ -664,9 +660,10 @@ stan_prior <- function(class, coef = NULL, group = NULL,
     } else {
       index <- ""
     }
-    if (coef[i] %in% user_prior$coef) { 
+    uc_prior <- user_prior$prior[match(coef[i], user_prior$coef)]
+    if (!is.na(uc_prior) & nchar(uc_prior)) { 
       # user defined prior for this parameter
-      coef_prior <- user_prior$prior[match(coef[i], user_prior$coef)]
+      coef_prior <- uc_prior
     } else {
       # base prior for this parameter
       coef_prior <- base_prior  
@@ -682,7 +679,8 @@ stan_prior <- function(class, coef = NULL, group = NULL,
     class <- paste0(class,"_",group)
   }
   # generate stan prior statements
-  if (any(coef %in% user_prior$coef)) {
+  if (any(with(user_prior, nchar(coef) & nchar(prior)))) {
+    # generate a prior for each coefficient
     out <- sapply(1:length(coef), individual_prior, max_index = length(coef))
   } else if (nchar(base_prior) > 0) {
     if (class == "bp") {

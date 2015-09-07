@@ -280,11 +280,9 @@ posterior.samples <- function(x, parameters = NA, exact_match = FALSE,
 prior_samples <- function(x, parameters = NA, ...)
   UseMethod("prior_samples")
 
-#' Extract parameter names
+#' Extract Parameter Names
 #' 
-#' Extract all parameter names of a given model or formula. This help page describes the functionality for
-#'  an object of class \code{brmsfit}. See \code{\link[brms:parnames.formula]{parnames.formula}} for
-#'  help on the \code{formula} method.
+#' Extract all parameter names of a given model.
 #'  
 #' @aliases par.names parnames.brmsfit par.names.brmsfit
 #' 

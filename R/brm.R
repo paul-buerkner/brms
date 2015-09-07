@@ -153,8 +153,8 @@
 #' ## and half cauchy priors for standard deviations of random effects 
 #' fit_e <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient) + (1|visit), 
 #'            data = epilepsy, family = "poisson", 
-#'            prior = list(set_prior("uniform(-10,10)", class = "b"),
-#'                         set_prior("cauchy(0,2)", class = "sd")))
+#'            prior = c(set_prior("uniform(-10,10)", class = "b"),
+#'                      set_prior("cauchy(0,2)", class = "sd")))
 #' ## generate a summary of the results
 #' summary(fit_e)
 #' ## plot the MCMC chains as well as the posterior distributions

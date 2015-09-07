@@ -234,12 +234,6 @@ remove_chains <- function(i, sflist) {
   }
 }
 
-prior_frame <- function(prior = "", class = "", coef = "", group = "") {
-  # helper function to easily create data.frames containing prior information 
-  data.frame(prior = prior, class = class, coef = coef, group = group,
-             stringsAsFactors = FALSE)
-}
-
 #' Prior Deinitions for \pkg{brms} Models
 #'
 #' Define priors for specific parameters or classes of parameters
@@ -251,7 +245,7 @@ prior_frame <- function(prior = "", class = "", coef = "", group = "") {
 #' @param group Grouping factor for random effects parameters.
 #' 
 #' @return An object of class \code{brmsprior} to be used in the \code{prior}
-#'   arguments of \code{\link[brms:brm]{brm}}.
+#'   argument of \code{\link[brms:brm]{brm}}.
 #' 
 #' @details 
 #'   \code{set_prior} is used to define prior distributions for parameters in \pkg{brms} models.
@@ -336,9 +330,11 @@ prior_frame <- function(prior = "", class = "", coef = "", group = "") {
 #'   \code{set_prior("<prior>", class = "<parameter>")} it the right way to go. \cr
 #' 
 #'   Often, it may not be immediately clear, which parameters are present in the model.
-#'   To get a full list of parameters for which priors can be specified (depending on the model) 
-#'   use method \code{\link[brms:parnames.formula]{parnames.formula}}.
+#'   To get a full list of parameters and parameter classes for which priors can be specified (depending on the model) 
+#'   use function \code{\link[brms:get_prior]{get_prior}}
 #'
+#' @seealso \code{\link[brms:get_prior]{get_prior}}
+#' 
 #' @references 
 #' Gelman A (2006). Prior distributions for variance parameters in hierarchical models."
 #'    Bayesian analysis, 1(3), 515 -- 534.
@@ -346,16 +342,16 @@ prior_frame <- function(prior = "", class = "", coef = "", group = "") {
 #' @examples
 #' \dontrun{
 #' ## check which parameters can have priors
-#' parnames(rating ~ period + carry + (1|subject),
-#'          data = inhaler, family = "sratio", 
-#'          partial = ~ treat, threshold = "equidistant")
+#' get_prior(rating ~ treat + period + carry + (1|subject),
+#'           data = inhaler, family = "cumulative", 
+#'           threshold = "equidistant")
 #'          
 #' ## define some priors          
-#' prior <- list(set_prior("normal(0,10)", class = "b"),
-#'               set_prior("normal(1,2)", class = "b", coef = "treat"),
-#'               set_prior("cauchy(0,2)", class = "sd", 
-#'                         group = "subject", coef = "Intercept"),
-#'               set_prior("uniform(-5,5)", class = "delta"))
+#' prior <- c(set_prior("normal(0,10)", class = "b"),
+#'            set_prior("normal(1,2)", class = "b", coef = "treat"),
+#'            set_prior("cauchy(0,2)", class = "sd", 
+#'                      group = "subject", coef = "Intercept"),
+#'            set_prior("uniform(-5,5)", class = "delta"))
 #'               
 #' ## use the defined priors in the model
 #' fit <- brm(rating ~ period + carry + (1|subject),
@@ -389,11 +385,121 @@ set_prior <- function(prior, class = "b", coef = "", group = "") {
   out
 }
 
+#' Overview on Priors for \pkg{brms} Models
+#' 
+#' Get information on all parameters (and parameter classes) for which priors may be specified including default priors.
+#' 
+#' @inheritParams brm
+#' @param internal A flag indicating if the names of additional internal parameters should be displayed. 
+#'   Setting priors on these parameters is not recommended
+#' 
+#' @return A data.frame with columns \code{prior}, \code{class}, \code{coef}, and \code{group}
+#'   and several rows, each providing information on a paramter (or parameter class) on which
+#'   priors can be specified. The prior column is empty except for internal default priors.
+#'   
+#' @seealso \code{\link[brms:set_prior]{set_prior}}
+#' 
+#' @examples 
+#' \dontrun{
+#' ## get all parameters and parameters classes to define priors on
+#' (prior <- get_prior(count ~ log_Age_c + log_Base4_c * Trt_c
+#'                     + (1|patient) + (1|visit),
+#'                     data = epilepsy, family = "poisson"))   
+#'          
+#' ## define a prior on all fixed effects a once
+#' prior$prior[1] <- "normal(0,10)"
+#' 
+#' ## define a specific prior on the fixed effect of Trt_c
+#' prior$prior[5] <- "uniform(-5,5)"       
+#' 
+#' ## fit a model using the priors above
+#' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c 
+#'            + (1|patient) + (1|visit),
+#'            data = epilepsy, family = "poisson", prior = prior)
+#'            
+#' ## check that priors indeed found their way into Stan's model code
+#' fit$model
+#' }
+#' 
 #' @export
-print.brmsprior <- function(x, ...) {
-  group <- ifelse(nchar(x$group), paste0("_", x$group), "")
-  coef <- ifelse(nchar(x$coef), paste0("_", x$coef), "")
-  cat(paste0("Prior: ", x$class, group, coef, " ~ ", x$prior))    
+get_prior <- function(formula, data = NULL, family = "gaussian", addition = NULL, 
+                      autocor = NULL, partial = NULL, threshold = c("flexible", "equidistant"), 
+                      internal = FALSE) {
+  
+  if (is.null(autocor)) 
+    autocor <- cor_arma()
+  if (!is(autocor, "cor_brms")) 
+    stop("cor must be of class cor_brms")
+  threshold <- match.arg(threshold)
+  family <- check_family(family[1])
+  formula <- update_formula(formula, addition = addition)
+  ee <- extract_effects(formula, partial, family = family)
+  data <- update_data(data, family = family, effects = ee)
+  
+  # initialize output
+  prior <- prior_frame(prior = character(0), class = character(0), 
+                     coef = character(0), group = character(0))
+  # fixed and partial effects
+  fixef <- colnames(get_model_matrix(ee$fixed, data = data))
+  if (length(fixef)) {
+    prior <- rbind(prior, prior_frame(class = "b", coef = c("", fixef)))
+  }
+  if (is.formula(partial)) {
+    paref <- colnames(get_model_matrix(partial, data = data, rm_intercept = TRUE))
+    prior <- rbind(prior, prior_frame(class = "b", coef = paref))
+  }
+  # random effects
+  if (length(ee$group)) {
+    prior <- rbind(prior, prior_frame(class = "sd", prior = "cauchy(0,5)"))  # global sd class
+    gs <- unlist(ee$group)
+    for (i in 1:length(gs)) {
+      ranef <- colnames(get_model_matrix(ee$random[[i]], data = data))
+      # include random effects standard deviations
+      prior <- rbind(prior, prior_frame(class = "sd", coef = c("", ranef), group = gs[i]))
+      # detect duplicated random effects
+      J <- with(prior, class == "sd" & group == gs[i] & nchar(coef))
+      dupli <- duplicated(prior[J, ])
+      if (any(dupli)) {
+        stop(paste("Duplicated random effects detected for group", gs[i]))
+      }
+      # include correlation parameters
+      if (ee$cor[[i]] && length(ranef) > 1) {
+        if (internal) {
+          prior <- rbind(prior, prior_frame(class = "L", group = c("", gs[i]),
+                                        prior = c("lkj_corr_cholesky(1)", "")))
+        } else {
+          prior <- rbind(prior, prior_frame(class = "cor", group = c("", gs[i]),
+                                        prior = c("lkj(1)", "")))
+        }
+      }
+    }
+  }
+  # handle additional parameters
+  is_ordinal <- family %in% c("cumulative", "sratio", "cratio", "acat") 
+  if (is(autocor, "cor_arma") && autocor$p) 
+    prior <- rbind(prior, prior_frame(class = "ar"))
+  if (is(autocor, "cor_arma") && autocor$q) 
+    prior <- rbind(prior, prior_frame(class = "ma"))
+  if (family %in% c("gaussian", "student", "cauchy") && !is.formula(ee$se))
+    prior <- rbind(prior, prior_frame(class = "sigma", coef = c("", ee$response),
+                                  prior = c("cauchy(0,5)", rep("", length(ee$response)))))
+  if (family == "gaussian" && length(ee$response) > 1) {
+    if (internal) {
+      prior <- rbind(prior, prior_frame(class = "Lrescor", prior = "lkj_corr_cholesky(1)"))
+    } else {
+      prior <- rbind(prior, prior_frame(class = "rescor", prior = "lkj(1)"))
+    }
+  }
+  if (family == "student") 
+    prior <- rbind(prior, prior_frame(class = "nu", prior = "uniform(1,100)"))
+  if (family %in% c("gamma", "weibull", "negbinomial")) 
+    prior <- rbind(prior, prior_frame(class = "shape", prior = "gamma(0.01,0.01)"))
+  if (is_ordinal && threshold == "equidistant")
+    prior <- rbind(prior, prior_frame(class = "delta"))
+  prior <- unique(prior)
+  prior <- prior[with(prior, order(class, group, coef)), ]
+  rownames(prior) <- 1:nrow(prior)
+  prior
 }
 
 check_prior <- function(prior, formula, data = NULL, family = "gaussian", 
@@ -405,51 +511,49 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
   #
   # Returns:
   #   a data.frame of prior specifications to be used in stan_prior (see stan.R)
+  ee <- extract_effects(formula, family = family)  
+  all_prior <- get_prior(formula = formula, data = data, family = family, 
+                         autocor = autocor, partial = partial, 
+                         threshold = threshold, internal = TRUE)
   if (is.null(prior)) {
-    return(prior)  # nothing to check
+    return(all_prior)  # nothing to check
   } else if (is(prior, "brmsprior")) {
-    # a single prior may be specified without list(.)
-    prior <- as.data.frame(prior, stringsAsFactors = FALSE)
-  } else if (!is.null(names(prior))) {
+    # a single prior may be specified without c(.)
+    prior <- c(prior)
+  } else if (!is(prior, "prior_frame") && is.list(prior) && !is.null(names(prior))) {
     # deprecated prior specification brms < 0.5.0
     warning(paste("Specifying priors using a named list is deprecated. \n",
                   "We strongly recommend to use the set_prior function instead. \n",
                   "See help(set_prior) for further information."))
-    prior <- update_deprecated_prior(prior)
-  } else {
-    # the usual case since brms 0.5.0
-    lapply(prior, function(x) if (!is(x, "brmsprior")) 
-      stop(paste("Elements of prior must be of class brmsprior. \n",
-                 "See help(set_prior) for further information.")))
-    prior <- data.frame(matrix(unlist(prior), ncol = 4, byrow = TRUE),
-                        stringsAsFactors = FALSE)
-    names(prior) <- c("prior", "class", "coef", "group")
+    prior <- update_prior(prior)
+  } else if (!is(prior, "prior_frame")) {
+    stop("Invalid input for argument prior. See help(set_prior) for further information.")
   }
-  dupli <- duplicated(prior[, 2:4])
-  if (any(dupli)) {
+  
+  prior$class <- rename(prior$class, symbols = c("^cor$", "^rescor$"), 
+                        subs = c("L", "Lrescor"), fixed = FALSE)
+  duplicated_input <- duplicated(prior[, 2:4])
+  if (any(duplicated_input)) {
     stop("Duplicated prior specifications are not allowed. \n")
   }
   
   # check if parameters in prior are valid
-  ee <- extract_effects(formula, family = family)  
-  possible_prior <- parnames(formula, data = data, family = family, 
-                             autocor = autocor, partial = partial, 
-                             threshold = threshold, internal = TRUE)
-  # index of valid rows in prior
-  valid <- which(duplicated(rbind(possible_prior, prior[, 2:4]))) - 
-           nrow(possible_prior)
-  invalid <- which(!1:nrow(prior) %in% valid)
+  valid <- which(duplicated(rbind(all_prior[, 2:4], prior[, 2:4])))
+  invalid <- which(!1:nrow(prior) %in% (valid - nrow(all_prior)))
   if (length(invalid)) {
     message(paste("Prior element", paste(invalid, collapse = ", "),
-                  "is invalid and will be ignored."))
+                  "is invalid and will be removed."))
+    prior <- prior[-invalid, ]
   }
   
+  # merge prior with all_prior
+  prior <- rbind(prior, all_prior)
+  rm <- which(duplicated(prior[, 2:4]))
+  if (length(rm))  # else it may happen that all rows a removed...
+    prior <- prior[-rm, ]
+  
   # expand lkj correlation prior to full name
-  prior$prior <- unlist(lapply(prior$prior, function(p) 
-    sub("^lkj\\(", "lkj_corr_cholesky(", p)))
-  # rename parameter clases
-  prior$class <- rename(prior$class, symbols = c("^cor$", "^rescor$"), 
-                        subs = c("L", "Lrescor"), fixed = FALSE)
+  prior$prior <- sub("^lkj\\(", "lkj_corr_cholesky(", prior$prior)
   # rename parameter groups
   rows2remove <- NULL
   group_indices <- which(nchar(prior$group) > 0)
@@ -502,19 +606,20 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
   if (length(rows2remove)) {   
     prior <- prior[-rows2remove, ]
   }
+  prior <- prior[with(prior, order(class, group, coef)), ]
   rownames(prior) <- 1:nrow(prior)
   prior
 }
 
-update_deprecated_prior <- function(prior) {
-  # update prior specifications from before 0.5.0
+update_prior <- function(prior) {
+  # update deprecated prior specifications from brms < 0.5.0
   #
   # Args:
   #   prior: A named list
   #
   # Returns:
   #   a data.frame compatible with check_prior of brms >= 0.5.0
-  if (is.null(names(prior)) | length(prior) == 0) {
+  if (!is.list(prior) || is.null(names(prior))) {
     stop("Only named lists can be updated")
   }
   prior_names <- names(prior)
@@ -529,93 +634,29 @@ update_deprecated_prior <- function(prior) {
               class = class, coef = coef, group = group)
 }
 
-#' Extract parameter names
-#' 
-#' Extract all parameter names for which priors may be specified
-#' 
-#' @param x An object of class \code{formula}
-#' @inheritParams brm
-#' @param internal A flag indicating if the names of additional internal parameters should be displayed. 
-#'   Setting priors on these parameters is not recommended
-#' @param ... Currently ignored
-#' 
-#' @return A data.frame with columns \code{class}, \code{coef}, and \code{group}
-#'   and several rows, each providing information on a paramter (or parameter class) on which
-#'   priors can be specified. See also \code{\link[brms:set_prior]{set_prior}}.
-#' 
-#' @examples 
-#' parnames(rating ~ treat + period + carry + (1+carry|subject), 
-#'          data = inhaler, family = "student")
-#'           
-#' parnames(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient) + (1|visit),
-#'          data = epilepsy, family = "poisson")          
-#' 
+prior_frame <- function(prior = "", class = "", coef = "", group = "") {
+  # helper function to create data.frames containing prior information 
+  out <- data.frame(prior = prior, class = class, coef = coef, group = group,
+                    stringsAsFactors = FALSE)
+  class(out) <- c("prior_frame", "data.frame")
+  out
+}
+
 #' @export
-parnames.formula <- function(x, data = NULL, family = "gaussian", addition = NULL, 
-                             autocor = NULL, partial = NULL, 
-                             threshold = c("flexible", "equidistant"), 
-                             internal = FALSE, ...) {
-  
-  if (is.null(autocor)) 
-    autocor <- cor_arma()
-  if (!is(autocor, "cor_brms")) 
-    stop("cor must be of class cor_brms")
-  threshold <- match.arg(threshold)
-  family <- check_family(family[1])
-  x <- update_formula(x, addition = addition)
-  ee <- extract_effects(x, partial, family = family)
-  data <- update_data(data, family = family, effects = ee)
-  
-  # initialize output
-  out <- prior_frame(prior = character(0), class = character(0), 
-                     coef = character(0), group = character(0))
-  # fixed and partial effects
-  fixef <- colnames(get_model_matrix(ee$fixed, data = data))
-  if (length(fixef)) {
-    out <- rbind(out, prior_frame(class = "b", coef = c("", fixef)))
-  }
-  if (is.formula(partial)) {
-    paref <- colnames(get_model_matrix(partial, data = data, rm_intercept = TRUE))
-    out <- rbind(out, prior_frame(class = "b", coef = paref))
-  }
-  # random effects
-  if (length(ee$group)) {
-    out <- rbind(out, prior_frame(class = "sd"))  # global sd class
-    gs <- unlist(ee$group)
-    for (i in 1:length(gs)) {
-      ranef <- colnames(get_model_matrix(ee$random[[i]], data = data))
-      # include random effects standard deviations
-      out <- rbind(out, prior_frame(class = "sd", coef = c("", ranef), group = gs[i]))
-      # detect duplicated random effects
-      J <- with(out, class == "sd" & group == gs[i] & nchar(coef))
-      dupli <- duplicated(out[J, ])
-      if (any(dupli)) {
-        stop(paste("Duplicated random effects detected for group", gs[i]))
-      }
-      # include correlation parameters
-      if (ee$cor[[i]] && length(ranef) > 1) {
-        out <- rbind(out, prior_frame(class = "cor"))  # global cor class  
-        out <- rbind(out, prior_frame(class = "cor", group = gs[i]))
-        if (internal) 
-          out <- rbind(out, prior_frame(class = "L", group = gs[i]))
-      }
-    }
-  }
-  # handle additional parameters
-  is_ordinal <- family %in% c("cumulative", "sratio", "cratio", "acat") 
-  if (is(autocor, "cor_arma") && autocor$p) 
-    out <- rbind(out, prior_frame(class = "ar"))
-  if (is(autocor, "cor_arma") && autocor$q) 
-    out <- rbind(out, prior_frame(class = "ma"))
-  if (family %in% c("gaussian", "student", "cauchy") && !is.formula(ee$se))
-    out <- rbind(out, prior_frame(class = "sigma", coef = c("", ee$response)))
-  if (family == "gaussian" && length(ee$response) > 1)
-    out <- rbind(out, prior_frame(class = c("rescor", if (internal) "Lrescor")))
-  if (family == "student") 
-    out <- rbind(out, prior_frame(class = "nu"))
-  if (family %in% c("gamma", "weibull", "negbinomial")) 
-    out <- rbind(out, prior_frame(class = "shape"))
-  if (is_ordinal && threshold == "equidistant")
-    out <- rbind(out, prior_frame(class = "delta"))
-  unique(out[,2:4])  # do not return prior column as it is empty anyway
+print.brmsprior <- function(x, ...) {
+  group <- ifelse(nchar(x$group), paste0("_", x$group), "")
+  coef <- ifelse(nchar(x$coef), paste0("_", x$coef), "")
+  cat(paste0("Prior: ", x$class, group, coef, " ~ ", x$prior))    
+}
+
+#' @export
+c.brmsprior <- function(x, ...) {
+  # combines multiple brmsprior objects into one prior_frame
+  if(any(!sapply(list(...), is, class2 = "brmsprior")))
+    stop("All arguments must be of class brmsprior")
+  prior <- data.frame(matrix(unlist(list(x, ...)), ncol = 4, byrow = TRUE),
+                      stringsAsFactors = FALSE)
+  names(prior) <- c("prior", "class", "coef", "group") 
+  class(prior) <- c("prior_frame", "data.frame")
+  prior
 }
