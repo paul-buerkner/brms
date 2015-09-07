@@ -9,31 +9,31 @@ output: html_document
 ## new features
 * compute the Watanabe-Akaike information criterion (WAIC) and the leave-one-out cross-validation (LOO) using the loo package.
 * provide an interface to shinystan with S3 method 'launch_shiny'.
+* new functions 'get\_prior' and 'set\_prior' to make prior specifications easier.
 * log-likelihood values and posterior predictive samples can now be calculated after the model has been fitted. 
 * make predictions based on new data using S3 method 'predict'. Currently only available for fixed effects models. 
 * allow for customized covariance structures of grouping factors with multiple random effects
-* new S3 method 'parnames' for the formula class returning all names of parameters for which priors can be specified.
 * new S3 methods 'fitted' and 'residuals' to compute fitted values and residuals, respectively.
 
 ## other changes
-* arguments WAIC and predict are removed from function brm as they are no longer necessary
-* remove chains that fail to initialize while sampling in parallel leaving the other chains untouched
-* redesign trace and density plots to be faster and more stable
-* S3 method 'VarCorr' now always returns covariance matrices regardless of whether correlations were estimated
-* perform additional checking on user specified priors
+* arguments WAIC and predict are removed from function brm as they are no longer necessary.
+* remove chains that fail to initialize while sampling in parallel leaving the other chains untouched.
+* redesign trace and density plots to be faster and more stable.
+* S3 method 'VarCorr' now always returns covariance matrices regardless of whether correlations were estimated.
 
 ## bug fixes
-* fix a bug in S3 method 'hypothesis' related to the calculation of Bayes factors for point hypotheses
+* fix a bug in S3 method 'hypothesis' related to the calculation of Bayes factors for point hypotheses.
 * user defined covariance matrices that are not strictly positive definite for numerical reasons should now be handled correctly.
-* fix minor issues with internal parameter naming
+* fix minor issues with internal parameter naming.
+* perform additional checking on user defined priors.
 
 # brms 0.4.1
 ----------------------------------------------------------------
 
-* allow for sampling from all specified proper priors in the model
-* calculate Bayes factors for point hypotheses in S3 method 'hypothesis'
-* fix a bug that could cause an error for models with multiple grouping factors
-* fix a bug that could cause an error for weighted poisson and exponential models
+* allow for sampling from all specified proper priors in the model.
+* calculate Bayes factors for point hypotheses in S3 method 'hypothesis'.
+* fix a bug that could cause an error for models with multiple grouping factors.
+* fix a bug that could cause an error for weighted poisson and exponential models.
 
 # brms 0.4.0
 ----------------------------------------------------------------
