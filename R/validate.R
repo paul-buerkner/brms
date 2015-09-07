@@ -376,15 +376,24 @@ set_prior <- function(prior, class = "b", coef = "", group = "") {
   if (length(prior) != 1 || length(class) != 1 
       || length(coef) != 1 || length(group) != 1)
     stop("All arguments of set_prior must be of length 1")
-  if (nchar(group) && !class %in% c("sd", "cor", "L"))
-    stop(paste("Group attribute not meaningful for class", class))
-  valid_classes <- c("b", "bp", "sd", "cor", "L", "ar", "ma", "sigma", 
+  valid_classes <- c("b", "sd", "cor", "L", "ar", "ma", "sigma", 
                      "rescor", "Lrescor", "nu", "shape", "delta")
   if (!class %in% valid_classes)
     stop(paste(class, "is not a valid paramter class"))
+  if (nchar(group) && !class %in% c("sd", "cor", "L"))
+    stop(paste("argument group not meaningful for class", class))
+  if (nchar(coef) && !class %in% c("b", "sd", "sigma"))
+    stop(paste("argument coef not meaningful for class", class))
   out <- list(prior = prior, class = class, coef = coef, group = group)
   class(out) <- c("brmsprior", "list")
   out
+}
+
+#' @export
+print.brmsprior <- function(x, ...) {
+  group <- ifelse(nchar(x$group), paste0("_", x$group), "")
+  coef <- ifelse(nchar(x$coef), paste0("_", x$coef), "")
+  cat(paste0("Prior: ", x$class, group, coef, " ~ ", x$prior))    
 }
 
 check_prior <- function(prior, formula, data = NULL, family = "gaussian", 
@@ -404,6 +413,7 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
   } else if (!is.null(names(prior))) {
     # deprecated prior specification brms < 0.5.0
     warning(paste("Specifying priors using a named list is deprecated. \n",
+                  "We strongly recommend to use the set_prior function instead. \n",
                   "See help(set_prior) for further information."))
     prior <- update_deprecated_prior(prior)
   } else {
