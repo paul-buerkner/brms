@@ -739,8 +739,8 @@ stan_rngprior <- function(sample.prior, prior, family = "gaussian") {
     dis <- sub("corr_cholesky$", "corr", dis)
     
     # distinguish between bounded and unbounded parameters
-    bound <- grepl("^sd|^sigma|^shape$|^nu$", pars) ||
-             family == "cumulative" & grepl("^delta$", pars)
+    bound <- grepl("^sd|^sigma|^shape$|^nu$", pars) |  # do not change to ||
+                   family == "cumulative" & grepl("^delta$", pars)
     if (any(bound)) {  
       # bounded parameters have to be sampled in the model block
       out$par <- collapse("  real<lower=0> prior_",pars[bound],"; \n")
