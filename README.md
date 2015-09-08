@@ -30,28 +30,28 @@ summary(fit)
 #>    Data: epilepsy (Number of observations: 236) 
 #> Samples: 2 chains, each with n.iter = 2000; n.warmup = 500; n.thin = 1; 
 #>          total post-warmup samples = 3000
-#>    WAIC: 1144.74
+#>    WAIC: 1145.3
 #>  
 #> Random Effects: 
+#> ~obs (Number of levels: 236) 
+#>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
+#> sd(Intercept)     0.37      0.04     0.29     0.47        789    1
+#> 
 #> ~patient (Number of levels: 59) 
 #>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> sd(Intercept)     0.51      0.07     0.38     0.66        805    1
+#> sd(Intercept)      0.5      0.07     0.38     0.65        563    1
 #> 
 #> ~visit (Number of levels: 4) 
 #>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> sd(Intercept)     0.12      0.12        0     0.47        416    1
-#> 
-#> ~obs (Number of levels: 236) 
-#>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> sd(Intercept)     0.37      0.04     0.29     0.46        931    1
+#> sd(Intercept)     0.11      0.11        0     0.42        435    1
 #> 
 #> Fixed Effects: 
 #>                   Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> Intercept             1.56      0.11     1.34     1.76        498    1
-#> log_Age_c             0.49      0.38    -0.22     1.22        741    1
-#> log_Base4_c           1.07      0.11     0.85     1.29        641    1
-#> Trt_c                -0.34      0.16    -0.66    -0.02        719    1
-#> log_Base4_c:Trt_c     0.34      0.22    -0.09     0.77        672    1
+#> Intercept             1.56      0.10     1.33     1.76        458 1.01
+#> log_Age_c             0.49      0.38    -0.27     1.22        869 1.00
+#> log_Base4_c           1.07      0.11     0.86     1.29        762 1.01
+#> Trt_c                -0.33      0.16    -0.64    -0.01        761 1.00
+#> log_Base4_c:Trt_c     0.35      0.21    -0.06     0.76        783 1.00
 #> 
 #> Samples were drawn using NUTS(diag_e). For each parameter, Eff.Sample is a 
 #> crude measure of effective sample size, and Rhat is the potential scale 
@@ -78,11 +78,12 @@ For a complete list of methods to apply on <b>brms</b> models see
 
 ``` r
 methods(class = "brmsfit") 
-#>  [1] fixef             formula           hypothesis        launch_shiny     
-#>  [5] linear_predictor  loglik            LOO               ngrps            
-#>  [9] nobs              parnames          plot              posterior_samples
-#> [13] predict           print             prior_samples     ranef            
-#> [17] residuals         summary           VarCorr           WAIC             
+#>  [1] family            fitted            fixef             formula          
+#>  [5] hypothesis        launch_shiny      logLik            LOO              
+#>  [9] ngrps             nobs              parnames          plot             
+#> [13] posterior_samples predict           print             prior_samples    
+#> [17] ranef             residuals         summary           VarCorr          
+#> [21] WAIC             
 #> see '?methods' for accessing help and source code
 ```
 
