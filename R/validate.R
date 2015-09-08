@@ -576,7 +576,7 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
     }
   }
   # get partial priors out of fixef priors
-  if (is.formula(partial)) {
+  if (family == "categorical" || is.formula(partial)) {
     paref <- colnames(get_model_matrix(partial, data = data, rm_intercept = TRUE))
     b_index <- which(prior$class == "b" & !nchar(prior$coef))
     partial_index <- which(prior$class == "b" & prior$coef %in% paref)
