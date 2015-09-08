@@ -425,7 +425,7 @@ set_prior <- function(prior, class = "b", coef = "", group = "") {
 get_prior <- function(formula, data = NULL, family = "gaussian", addition = NULL, 
                       autocor = NULL, partial = NULL, threshold = c("flexible", "equidistant"), 
                       internal = FALSE) {
-  
+  # note that default priors are stored in this function
   if (is.null(autocor)) 
     autocor <- cor_arma()
   if (!is(autocor, "cor_brms")) 
@@ -466,10 +466,10 @@ get_prior <- function(formula, data = NULL, family = "gaussian", addition = NULL
       if (ee$cor[[i]] && length(ranef) > 1) {
         if (internal) {
           prior <- rbind(prior, prior_frame(class = "L", group = c("", gs[i]),
-                                        prior = c("lkj_corr_cholesky(1)", "")))
+                                            prior = c("lkj_corr_cholesky(1)", "")))
         } else {
           prior <- rbind(prior, prior_frame(class = "cor", group = c("", gs[i]),
-                                        prior = c("lkj(1)", "")))
+                                            prior = c("lkj(1)", "")))
         }
       }
     }
@@ -482,7 +482,7 @@ get_prior <- function(formula, data = NULL, family = "gaussian", addition = NULL
     prior <- rbind(prior, prior_frame(class = "ma"))
   if (family %in% c("gaussian", "student", "cauchy") && !is.formula(ee$se))
     prior <- rbind(prior, prior_frame(class = "sigma", coef = c("", ee$response),
-                                  prior = c("cauchy(0,5)", rep("", length(ee$response)))))
+                                      prior = c("cauchy(0,5)", rep("", length(ee$response)))))
   if (family == "gaussian" && length(ee$response) > 1) {
     if (internal) {
       prior <- rbind(prior, prior_frame(class = "Lrescor", prior = "lkj_corr_cholesky(1)"))
@@ -536,6 +536,8 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
   if (any(duplicated_input)) {
     stop("Duplicated prior specifications are not allowed. \n")
   }
+  # expand lkj correlation prior to full name
+  prior$prior <- sub("^lkj\\(", "lkj_corr_cholesky(", prior$prior)
   
   # check if parameters in prior are valid
   valid <- which(duplicated(rbind(all_prior[, 2:4], prior[, 2:4])))
@@ -552,8 +554,6 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
   if (length(rm))  # else it may happen that all rows a removed...
     prior <- prior[-rm, ]
   
-  # expand lkj correlation prior to full name
-  prior$prior <- sub("^lkj\\(", "lkj_corr_cholesky(", prior$prior)
   # rename parameter groups
   rows2remove <- NULL
   group_indices <- which(nchar(prior$group) > 0)
@@ -572,7 +572,7 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
         new_row$group <- j
         new_row
       })
-      prior <- do.call(rbind, c(prior, new_rows))  # add new rows
+      prior <- rbind(prior, do.call(rbind, new_rows))  # add new rows
     }
   }
   # get partial priors out of fixef priors
@@ -624,12 +624,21 @@ update_prior <- function(prior) {
   }
   prior_names <- names(prior)
   class <- regmatches(prior_names, regexpr("^[^_]+", prior_names))
+  
+  # try to separate group from coef
   group_coef <- substr(prior_names, nchar(class) + 2, nchar(prior_names))
-  group <- ifelse(prior_names == "sd", "", ifelse(class == "sd",
-                                                  regmatches(group_coef, regexpr("^[^_]+", group_coef)), 
-                                                  ifelse(class == "cor", group_coef, "")))
+  group <- rep("", length(prior))
+  for (i in 1:length(prior)) {
+    if (class[i] == "sd" && prior_names[i] != "sd") {
+      s <- regmatches(group_coef[i], regexpr("^[^_]+", group_coef[i]))
+      group[i] <- ifelse(length(s), s, "")
+    } else if (class[i] == "cor") {
+      group[i] <- group_coef[i]
+    }
+  }
   coef <- substr(group_coef, nchar(group) + ifelse(nchar(group), 2, 1), 
                  nchar(group_coef))
+  
   prior_frame(prior = unlist(prior, use.names = FALSE),
               class = class, coef = coef, group = group)
 }

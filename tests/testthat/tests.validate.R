@@ -193,10 +193,11 @@ test_that("Test that parnames.formula finds all classes for which priors can be 
 
 test_that("Test that update_prior produces correct prior_frames", {
   prior <- list(b = "p1", sd = "p2", cor = "p3", b_Intercept = "p4",
-                cor_visit = "p5", sd_visit_z_x = "p6", sigma = "p7")
-  result <- prior_frame(prior = paste0("p",1:7), 
-                        class = c("b", "sd", "cor", "b", "cor", "sd", "sigma"),
-                        coef = c(rep("", 3), "Intercept", "", "z_x", ""),
-                        group = c(rep("", 4), rep("visit", 2), ""))
+                cor_visit = "p5", sd_visit_x = "p6", sd_visit = "p7", 
+                sigma = "p8")
+  result <- prior_frame(prior = paste0("p",1:8), 
+                        class = c("b", "sd", "cor", "b", "cor", "sd", "sd", "sigma"),
+                        coef = c(rep("", 3), "Intercept", "", "x", "", ""),
+                        group = c(rep("", 4), rep("visit", 3), ""))
   expect_equal(update_prior(prior), result)
 })
