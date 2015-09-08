@@ -71,26 +71,26 @@ test_that("Test that get_group_formula rejects incorrect grouping terms", {
 
 test_that("Test that check_prior performs correct renaming", {
   # ordering bug in devtools::check() for upper case letters
-  expect_true(any(duplicated(rbind(
-    check_prior(set_prior("normal(0,5)", class = "cor"),
-                formula = rating ~ 0 + treat + (0 + treat + carry | subject), 
-                data = inhaler, family = "student"),
-    prior_frame(prior = "normal(0,5)", class = "L")))))
+  prior <- check_prior(set_prior("normal(0,5)", class = "cor"),
+                       formula = rating ~ 0 + treat + (0 + treat + carry | subject), 
+                       data = inhaler, family = "student")
+  target <- prior_frame(prior = "normal(0,5)", class = "L")
+  expect_true(length(which(duplicated(rbind(prior, target)))) == 1)
   
-  expect_true(any(duplicated(rbind(
-    check_prior(c(set_prior("lkj(0.5)", class = "cor", group = "subject"),
-                set_prior("normal(0,1)", class = "b")),
-                formula = rating ~ treat + (0 + treat +  carry | subject), 
-                data = inhaler),
-    prior_frame(prior = c("normal(0,1)", "lkj_corr_cholesky(0.5)"),
-                class = c("b", "L"), group = c("", "1"))))))
+  prior <- check_prior(c(set_prior("lkj(0.5)", class = "cor", group = "subject"),
+                         set_prior("normal(0,1)", class = "b")),
+                       formula = rating ~ treat + (0 + treat +  carry | subject), 
+                       data = inhaler)
+  target <- prior_frame(prior = c("normal(0,1)", "lkj_corr_cholesky(0.5)"),
+                        class = c("b", "L"), group = c("", "1"))
+  expect_true(length(which(duplicated(rbind(prior, target)))) == 2)
   
-  expect_true(any(duplicated(rbind(
-    check_prior(c(set_prior("lkj(5)", class = "rescor"),
-                  set_prior("normal(0,1)", class = "b", coef = "carry")),
-                formula = cbind(treat, rating) ~ 0 + carry, data = inhaler),
-    prior_frame(prior = c("lkj_corr_cholesky(5)", "normal(0,1)"),
-                class = c("Lrescor", "b"), coef = c("", "carry"))))))
+  prior <- check_prior(c(set_prior("lkj(5)", class = "rescor"),
+                          set_prior("normal(0,1)", class = "b", coef = "carry")),
+                        formula = cbind(treat, rating) ~ 0 + carry, data = inhaler)
+  target <- prior_frame(prior = c("lkj_corr_cholesky(5)", "normal(0,1)"),
+                        class = c("Lrescor", "b"), coef = c("", "carry")) 
+  expect_true(length(which(duplicated(rbind(prior, target)))) == 2)
   
   expect_equivalent(check_prior(set_prior("normal(0,1)", class = "b", coef = "Intercept"),
                                 formula = rating ~ carry, data = inhaler, family = "cumulative")[3, ],
@@ -102,15 +102,23 @@ test_that("Test that check_prior performs correct renaming", {
                prior_frame("normal(0,1)", class = "b_Intercept1"))
 })
 
-# TODO 
-#test_that("Test that check_prior is backwards compatible", { 
-#  expect_equal(check_prior(list(L = "lkj_corr_cholesky(0.5)"), family = "student",
-#                           formula = rating ~ treat + (1+treat|subject), data = inhaler),
-#               list(L = "lkj_corr_cholesky(0.5)"))
-#  expect_equal(check_prior(list(Lrescor = "normal(0,5)", b_carry = "normal(0,1)"), 
-#                           cbind(rating, treat) ~ carry, data = inhaler),
-#               list(Lrescor = "normal(0,5)", b_carry = "normal(0,1)"))
-#})
+
+test_that("Test that check_prior is backwards compatible", { 
+  prior <- check_prior(list(b_carry = "normal(0,1)", nu = "gamma(1,1)"), family = "student",
+                       formula = rating ~ carry + (1+treat|subject), data = inhaler)
+  target <- prior_frame(prior = c("normal(0,1)", "gamma(1,1)"),
+                        class = c("b", "nu"), coef = c("carry", ""))
+  expect_true(length(which(duplicated(rbind(prior, target)))) == 2)
+  
+  prior <- check_prior(list(sd_subject_treat = "normal(0,1)", 
+                            Lrescor = "lkj_corr_cholesky(1)"), 
+                       formula = cbind(rating, carry) ~ treat + (1+treat|subject), 
+                       data = inhaler, family = "gaussian")
+  target <- prior_frame(prior = c("normal(0,1)", "lkj_corr_cholesky(1)"),
+                        class = c("sd", "Lrescor"), coef = c("treat", ""),
+                        group = c("1", ""))
+  expect_true(length(which(duplicated(rbind(prior, target)))) == 2)
+})
 
 test_that("Test that check_prior accepts correct prior names", {
   expect_equivalent(check_prior(c(set_prior("normal(0,1)", class = "b", coef = "carry"),
