@@ -22,6 +22,16 @@ rmMatch <- function(x, ...) {
   attributes(x) <- att
   attr(x, "match.length") <- att$match.length[keep] 
   x
+}
+
+keep_attr <- function(x, y) {
+  # take a subset of vector, list, etc. 
+  # while keeping all attributes except for names
+  att <- attributes(x)
+  x <- x[y]
+  att[["names"]] <- names(x)
+  attributes(x) <- att
+  x
 } 
 
 is.wholenumber <- function(x, tol = .Machine$double.eps^0.5) {  
