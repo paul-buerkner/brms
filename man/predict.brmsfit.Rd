@@ -14,7 +14,7 @@
 \item{newdata}{An optional data.frame containing new data to make predictions for.
 If \code{NULL} (default), the data used to fit the model is applied.}
 
-\item{re_formula}{formula for random effects to condition on.
+\item{re_formula}{formula containing random effects to be considered in the prediction.
 If \code{NULL} (default), include all random effects; if \code{NA}, include no random effects.
 Other options will be implemented in the future.}
 
@@ -42,9 +42,10 @@ Make predictions based on the fitted model parameters.
 Can be performed for the data used to fit the model (posterior predictive checks) or for new data.
 }
 \details{
-Be careful when using newdata with factors: The predicted results are only valid
-  if all factor levels present in the initial data are also defined and ordered correctly
-  for the factors in newdata.
+Be careful when using \code{newdata} with factors in fixed or random effects:
+ The predicted results are only valid if all factor levels present in the initial
+ data are also defined and ordered correctly for the factors in \code{newdata}.
+ Grouping factors may contain fewer levels than in the inital data without causing problems.
 }
 \examples{
 \dontrun{

@@ -387,6 +387,11 @@ plot.brmsfit <- function(x, parameters = NA, N = 5, ask = TRUE, ...) {
 #'   If \code{summary = FALSE} it is a S x N x C array for categorical and ordinal models and a S x N matrix else.
 #'   N is the number of observations, S is the number of samples, C is the number of categories,
 #'   and E is equal to \code{length(probs) + 2}.
+#'   
+#' @details Be careful when using \code{newdata} with factors in fixed or random effects: 
+#'  The predicted results are only valid if all factor levels present in the initial 
+#'  data are also defined and ordered correctly for the factors in \code{newdata}. 
+#'  Grouping factors may contain fewer levels than in the inital data without causing problems.
 #'
 #' @examples 
 #' \dontrun{
@@ -456,12 +461,17 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' Extract Model Residuals from brmsfit Objects
 #' 
 #' @inheritParams predict.brmsfit
-#' @param type The type of the residuals, either \code{ordinary} or \code{pearson}. Currently, the latter 
-#'   is only supported for families \code{binomial} and \code{bernoulli}
+#' @param type The type of the residuals, either \code{"ordinary"} or \code{"pearson"}. 
+#'   More information is provided under 'Details'. 
 #' 
-#' @details Currently, the method does not support \code{categorical} or ordinal models. 
+#' @details Residuals of type \code{ordinary} are of the form \eqn{R = Y - Yp},
+#'   where \eqn{Y} is the observed and \eqn{Yp} is the predicted response.
+#'   Residuals of type \code{pearson} are of the form \eqn{R = (Y - Yp) / Var(Y)},
+#'   where \eqn{Var(Y)} is an estimation of the variance of \eqn{Y}. \cr
+#'   
+#'   Currently, \code{residuals.brmsfit} does not support \code{categorical} or ordinal models. 
 #' 
-#' @return Models residuals. If \code{summary = TRUE} this is a N x C matrix and if \code{summary = FALSE}
+#' @return Model residuals. If \code{summary = TRUE} this is a N x C matrix and if \code{summary = FALSE}
 #'   a S x N matrix, where S is the number of samples, N is the number of observations, 
 #'   and C is equal to \code{length(probs) + 2}.  
 #' 
@@ -477,22 +487,23 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' }
 #' 
 #' @export
-residuals.brmsfit <- function(object, type = c("ordinary", "pearson"), summary = TRUE, 
-                              probs = c(0.025, 0.975), ...) {
+residuals.brmsfit <- function(object, re_formula = NULL, type = c("ordinary", "pearson"), 
+                              summary = TRUE, probs = c(0.025, 0.975), ...) {
   type <- match.arg(type)
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
   if (object$family %in% c("categorical", "cumulative", "sratio", "cratio", "acat"))
     stop(paste("residuals not yet implemented for family", object$family))
   
-  mu <- fitted(object, summary = FALSE)
+  mu <- fitted(object, re_formula = re_formula, summary = FALSE)
   Y <- matrix(rep(as.numeric(object$data$Y), nrow(mu)), 
               nrow = nrow(mu), byrow = TRUE)
   res <- Y - mu
   colnames(res) <- NULL
   if (type == "pearson") {
     # get predicted standard deviation for each observation
-    sd <- matrix(rep(predict(object, summary = TRUE)[, 2], nrow(mu)), 
+    sd <- matrix(rep(predict(object, re_formula = re_formula, 
+                             summary = TRUE)[, 2], nrow(mu)), 
                  nrow = nrow(mu), byrow = TRUE)
     res <- res / sd
   }
@@ -517,7 +528,7 @@ residuals.brmsfit <- function(object, type = c("ordinary", "pearson"), summary =
 #' @param object An object of class \code{brmsfit}
 #' @param newdata An optional data.frame containing new data to make predictions for.
 #'   If \code{NULL} (default), the data used to fit the model is applied.
-#' @param re_formula formula for random effects to condition on. 
+#' @param re_formula formula containing random effects to be considered in the prediction. 
 #'   If \code{NULL} (default), include all random effects; if \code{NA}, include no random effects.
 #'   Other options will be implemented in the future.
 #' @param transform A function or a character string naming a function to be applied on the predicted responses
@@ -534,9 +545,10 @@ residuals.brmsfit <- function(object, type = c("ordinary", "pearson"), summary =
 #'   C is the number of categories. For all other families, it is a N x E matrix where E is equal to \code{length(probs) + 2}.
 #'   If \code{summary = FALSE}, the output is as a S x N matrix, where S is the number of samples.
 #' 
-#' @details Be careful when using newdata with factors: The predicted results are only valid
-#'   if all factor levels present in the initial data are also defined and ordered correctly 
-#'   for the factors in newdata. 
+#' @details Be careful when using \code{newdata} with factors in fixed or random effects: 
+#'  The predicted results are only valid if all factor levels present in the initial 
+#'  data are also defined and ordered correctly for the factors in \code{newdata}. 
+#'  Grouping factors may contain fewer levels than in the inital data without causing problems.
 #' 
 #' @examples 
 #' \dontrun{
