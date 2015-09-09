@@ -158,6 +158,23 @@ get_group_formula <- function(g) {
   }
 }
 
+gather_ranef <- function(effects, data) {
+  # gathers helpful information on the random effects
+  #
+  # Args:
+  #   effects: output of extract_effects
+  #   data: data passed to brm after updating
+  #
+  # Returns: 
+  #   A named list with one element per grouping factor
+  Z <- lapply(effects$random, get_model_matrix, data = data)
+  ranef <- setNames(lapply(Z, colnames), effects$group)
+  for (i in 1:length(ranef)) {
+    attr(ranef[[i]], "levels") <- levels(as.factor(get(effects$group[[i]], data)))  
+  }
+  ranef
+}
+
 check_family <- function(family) {
   # check validity of model family
   if (family == "normal")

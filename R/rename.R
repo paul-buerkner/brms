@@ -256,6 +256,8 @@ combine_duplicates <- function(x) {
   for (i in 1:length(unique_names)) {
     pos <- which(names(x) %in% unique_names[i])
     new_list[[unique_names[i]]] <- unname(unlist(x[pos]))
+    # keep levels attribute
+    attr(new_list[[unique_names[i]]], "levels") <- attr(x[[pos[1]]], "levels")
   }
   new_list
 }

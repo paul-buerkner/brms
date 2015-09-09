@@ -237,9 +237,7 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"),
     x <- brmsfit(formula = formula, family = family, link = link, 
                  partial = partial, data.name = data.name, 
                  autocor = autocor, prior = prior)  
-    x$ranef <- lapply(lapply(ee$random, get_model_matrix, data = data), 
-                      colnames)
-    names(x$ranef) <- ee$group
+    x$ranef <- gather_ranef(effects = ee, data = data)  # see validate.R
     x$exclude <- exclude_pars(formula, ranef = ranef)  # see validate.R
     x$data <- brmdata(formula, data = data, family = family, 
                       cov.ranef = cov.ranef, autocor = autocor, 
