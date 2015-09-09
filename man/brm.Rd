@@ -40,7 +40,7 @@ See 'Formula Syntax' under 'Details' for further information.}
 See the documentation of \code{\link{cor_brms}} for a description of the available correlation structures.
 Defaults to NULL, corresponding to no correlations.}
 
-\item{partial}{A one sided formula of the form \code{~partial.effects} specifing the predictors that can vary between categories in non-cumulative ordinal models
+\item{partial}{A one sided formula of the form \code{~expression} specifying the predictors with category specific effects in non-cumulative ordinal models
 (i.e. in families \code{"cratio"}, \code{"sratio"}, or \code{"acat"}).}
 
 \item{threshold}{A character string indicating the type of thresholds (i.e. intercepts) used in an ordinal model.

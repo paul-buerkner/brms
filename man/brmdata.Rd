@@ -26,7 +26,7 @@ If not specified, default link functions are used. Further information is provid
 See the documentation of \code{\link{cor_brms}} for a description of the available correlation structures.
 Defaults to NULL, corresponding to no correlations.}
 
-\item{partial}{A one sided formula of the form \code{~partial.effects} specifing the predictors that can vary between categories in non-cumulative ordinal models
+\item{partial}{A one sided formula of the form \code{~expression} specifying the predictors with category specific effects in non-cumulative ordinal models
 (i.e. in families \code{"cratio"}, \code{"sratio"}, or \code{"acat"}).}
 
 \item{cov.ranef}{A list of matrices that are proportional to the (within) covariance structure of the random effects.

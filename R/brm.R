@@ -23,7 +23,7 @@
 #' @param autocor An optional \code{\link{cor_brms}} object describing the correlation structure within the response variable (i.e. the 'autocorrelation'). 
 #'   See the documentation of \code{\link{cor_brms}} for a description of the available correlation structures. 
 #'   Defaults to NULL, corresponding to no correlations.
-#' @param partial A one sided formula of the form \code{~partial.effects} specifing the predictors that can vary between categories in non-cumulative ordinal models
+#' @param partial A one sided formula of the form \code{~expression} specifying the predictors with category specific effects in non-cumulative ordinal models
 #'  (i.e. in families \code{"cratio"}, \code{"sratio"}, or \code{"acat"}).
 #' @param threshold A character string indicating the type of thresholds (i.e. intercepts) used in an ordinal model.
 #'  \code{"flexible"} provides the standard unstructured thresholds and \code{"equidistant"} restricts the distance between consecutive thresholds to the same value.
