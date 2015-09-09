@@ -201,3 +201,12 @@ test_that("Test that update_prior produces correct prior_frames", {
                         group = c(rep("", 4), rep("visit", 3), ""))
   expect_equal(update_prior(prior), result)
 })
+
+test_that("Test that gather_ranef works correctly", {
+  data <- data.frame(g = 1:10, x = 11:20)
+  target <- list(g = c("Intercept", "x"))
+  attr(target$g, "levels") <- paste(1:10)
+  expect_equal(gather_ranef(list(random = list(~1+x), group = "g"), data = data),
+               target)
+  expect_equal(gather_ranef(list()), list())
+})

@@ -158,7 +158,7 @@ get_group_formula <- function(g) {
   }
 }
 
-gather_ranef <- function(effects, data) {
+gather_ranef <- function(effects, data = NULL) {
   # gathers helpful information on the random effects
   #
   # Args:
