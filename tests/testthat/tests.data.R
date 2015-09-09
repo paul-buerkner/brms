@@ -36,22 +36,22 @@ test_that("Test that ar_design_matrix returns correct design matrices for autore
 
 test_that("Test that brmdata returns correct data names for fixed and random effects", {
   expect_equal(names(brmdata(rating ~ treat + period + carry + (1|subject), data = inhaler)),
-               c("N","Y","K","X","lev_1","N_1","K_1","Z_1","NC_1"))
+               c("N","Y","K","X","J_1","N_1","K_1","Z_1","NC_1"))
   expect_equal(names(brmdata(rating ~ treat + period + carry + (1+treat|subject), data = inhaler,
                family = "categorical")),
-               c("N","Y","Kp","Xp","lev_1","N_1","K_1",
+               c("N","Y","Kp","Xp","J_1","N_1","K_1",
                  "Z_1","NC_1", "ncat", "max_obs"))
   expect_equal(names(brmdata(y ~ x + (1|g) + (1|h), family = "poisson",
               data = data.frame(y = 1:10, g = 1:10, h = 11:10, x = rep(0,10)))),
-               c("N","Y","K","X","lev_1","N_1","K_1","Z_1","NC_1",
-                 "lev_2","N_2","K_2","Z_2","NC_2"))
+               c("N","Y","K","X","J_1","N_1","K_1","Z_1","NC_1",
+                 "J_2","N_2","K_2","Z_2","NC_2"))
 })
 
 test_that("Test that brmdata handles variables used as fixed effects and grouping factors at the same time", {
   data <- data.frame(y = 1:9, x = factor(rep(c("a","b","c"), 3)))
   standata <- brmdata(y ~ x + (1|x), data = data)
   expect_equal(colnames(standata$X), c("Intercept", "xb", "xc"))
-  expect_equal(standata$lev_1, rep(1:3, 3))
+  expect_equal(standata$J_1, rep(1:3, 3))
 })
 
 test_that("Test that brmdata returns correct data names for addition and partial variables", {
