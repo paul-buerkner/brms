@@ -404,7 +404,9 @@ plot.brmsfit <- function(x, parameters = NA, N = 5, ask = TRUE, ...) {
 #' }
 #' 
 #' @export 
-fitted.brmsfit <- function(object, newdata = NULL, scale = c("response", "linear"),
+fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
+                           scale = c("response", "linear"),
+                           allow_new_levels = FALSE,
                            summary = TRUE, probs = c(0.025, 0.975), ...) {
   scale <- match.arg(scale)
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
@@ -415,12 +417,12 @@ fitted.brmsfit <- function(object, newdata = NULL, scale = c("response", "linear
   if (is.null(newdata)) {
     data <- object$data
   } else {
-    data <- amend_newdata(newdata, formula = object$formula, family = object$family, 
-                          autocor = object$autocor, partial = object$partial)
+    data <- amend_newdata(newdata, fit = object, re_formula = re_formula,
+                          allow_new_levels = allow_new_levels)
   }
     
   # get mu and scale it appropriately
-  mu <- linear_predictor(object, newdata = newdata)
+  mu <- linear_predictor(object, newdata = data, re_formula = re_formula)
   is_catordinal <- object$family %in% c("categorical", "cumulative", "sratio", "cratio", "acat")
   if (scale == "response") {
     if (object$family == "binomial") {
@@ -514,9 +516,14 @@ residuals.brmsfit <- function(object, type = c("ordinary", "pearson"), summary =
 #' 
 #' @param object An object of class \code{brmsfit}
 #' @param newdata An optional data.frame containing new data to make predictions for.
-#'   If \code{NULL} (the default), the data used to fit the model is applied.
+#'   If \code{NULL} (default), the data used to fit the model is applied.
+#' @param re_formula formula for random effects to condition on. 
+#'   If \code{NULL} (default), include all random effects; if \code{NA}, include no random effects.
+#'   Other options will be implemented in the future.
 #' @param transform A function or a character string naming a function to be applied on the predicted responses
 #'   before summary statistics are computed.
+#' @param allow_new_levels Currenly, \code{FALSE} (no new levels allowed) is the only option. This will change in
+#'   future versions of the package.
 #' @param summary logical. Should summary statistics (i.e. means, sds, and 95\% intervals) be returned
 #'  instead of the raw values. Default is \code{TRUE}
 #' @param probs The percentiles to be computed by the \code{quantile} function. Only used if \code{summary = TRUE}.
@@ -549,7 +556,8 @@ residuals.brmsfit <- function(object, type = c("ordinary", "pearson"), summary =
 #' }
 #' 
 #' @export 
-predict.brmsfit <- function(object, newdata = NULL, transform = NULL, 
+predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
+                            transform = NULL, allow_new_levels = FALSE,
                             summary = TRUE, probs = c(0.025, 0.975), ...) {
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
@@ -562,8 +570,17 @@ predict.brmsfit <- function(object, newdata = NULL, transform = NULL,
     family <- "multinormal"
   is_categorical <- family %in% c("categorical", "cumulative", "sratio", "cratio", "acat")
   
+  # use newdata if defined
+  if (is.null(newdata)) {
+    data <- object$data
+  } else {
+    data <- amend_newdata(newdata, fit = object, re_formula = re_formula,
+                          allow_new_levels = allow_new_levels)
+  }
+  
   # compute all necessary samples
-  samples <- list(eta = linear_predictor(object, newdata = newdata))
+  samples <- list(eta = linear_predictor(object, newdata = data,  
+                                         re_formula = re_formula))
   if (family %in% c("gaussian", "student", "cauchy", "lognormal", "multinormal") 
       && !is.formula(ee$se))
     samples$sigma <- as.matrix(posterior_samples(object, parameters = "^sigma_"))
@@ -576,14 +593,6 @@ predict.brmsfit <- function(object, newdata = NULL, transform = NULL,
     samples$Sigma <- get_cov_matrix(sd = samples$sigma, cor = samples$rescor)$cov
     message(paste("Computing posterior predictive samples of multinormal distribution. \n", 
                   "This may take a while."))
-  }
-  
-  # use newdata if defined
-  if (is.null(newdata)) {
-    data <- object$data
-  } else {
-    data <- amend_newdata(newdata, formula = object$formula, family = object$family, 
-                             autocor = object$autocor, partial = object$partial)
   }
   
   # call predict functions

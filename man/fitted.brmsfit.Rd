@@ -4,17 +4,25 @@
 \alias{fitted.brmsfit}
 \title{Extract Model Fitted Values of \code{brmsfit} Objects}
 \usage{
-\method{fitted}{brmsfit}(object, newdata = NULL, scale = c("response",
-  "linear"), summary = TRUE, probs = c(0.025, 0.975), ...)
+\method{fitted}{brmsfit}(object, newdata = NULL, re_formula = NULL,
+  scale = c("response", "linear"), allow_new_levels = FALSE,
+  summary = TRUE, probs = c(0.025, 0.975), ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}}
 
 \item{newdata}{An optional data.frame containing new data to make predictions for.
-If \code{NULL} (the default), the data used to fit the model is applied.}
+If \code{NULL} (default), the data used to fit the model is applied.}
+
+\item{re_formula}{formula for random effects to condition on.
+If \code{NULL} (default), include all random effects; if \code{NA}, include no random effects.
+Other options will be implemented in the future.}
 
 \item{scale}{Either \code{"response"} or \code{"linear"}. If \code{scale = "response"} results are returned
 on the scale of the response variable. If \code{scale = "linear"} fitted values are returned on the scale of the linear predictor.}
+
+\item{allow_new_levels}{Currenly, \code{FALSE} (no new levels allowed) is the only option. This will change in
+future versions of the package.}
 
 \item{summary}{logical. Should summary statistics (i.e. means, sds, and 95\% intervals) be returned
 instead of the raw values. Default is \code{TRUE}}

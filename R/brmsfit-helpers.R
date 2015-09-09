@@ -249,7 +249,7 @@ evidence_ratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"),
   out  
 }
 
-linear_predictor <- function(x, newdata = NULL) {
+linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
   # compute the linear predictor (eta) for brms models
   #
   # Args:
@@ -264,11 +264,10 @@ linear_predictor <- function(x, newdata = NULL) {
     stop("The model does not contain posterior samples")
   if (is.null(newdata)) { 
     data <- x$data
-  } else if (is.data.frame(newdata)) {
-    data <- amend_newdata(newdata, fit = x) 
   } else {
-    stop("newdata must be a data.frame")
-  } 
+    data <- newdata
+  }
+  
   n.samples <- nrow(posterior.samples(x, parameters = "^lp__$"))
   eta <- matrix(0, nrow = n.samples, ncol = data$N)
   X <- data$X
@@ -279,7 +278,7 @@ linear_predictor <- function(x, newdata = NULL) {
   
   group <- names(x$ranef)
   all_groups <- extract_effects(x$formula)$group  # may contain the same group more than ones
-  if (length(group)) {
+  if (length(group) && is.null(re_formula)) {
     for (i in 1:length(group)) {
       if (any(grepl(paste0("^J_|^lev_"), names(data)))) {  # implies brms > 0.4.1
         # create a single RE design matrix for every grouping factor
@@ -364,11 +363,19 @@ ranef_predictor <- function(Z, gf, r) {
   # Returns: 
   #   linear predictor for random effects
   nranef <- ncol(Z)
-  nlevels <- ncol(r) / nranef
+  max_levels <- ncol(r) / nranef
   Z <- expand_matrix(Z, gf)
+  levels <- unique(gf)
   # sort levels because we need row major instead of column major order
-  sort_levels <- unlist(lapply(1:nlevels, function(n) seq(n, ncol(r), nlevels)))
-  as.matrix(r[, sort_levels]) %*% t(Z)
+  sort_levels <- unlist(lapply(1:max_levels, function(l) seq(l, ncol(r), max_levels)))
+  if (length(levels) < max_levels) {
+    # if only a subset of levels is provided (only for newdata)
+    take_levels <- unlist(lapply(levels, function(l) ((l-1) * nranef + 1):(l * nranef)))
+    eta <- as.matrix(r[, sort_levels])[, take_levels] %*% t(Z[, take_levels])
+  } else {
+    eta <- as.matrix(r[, sort_levels]) %*% t(Z)
+  }
+  eta
 }
 
 ma_predictor <- function(data, ma, eta, link = "identity") {
@@ -503,7 +510,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   #   updated data.frame being compatible with fit$formula
   if (allow_new_levels) {
     # TODO
-    stop("new levels not yet implemented")
+    stop("New random effects levels are not yet allowed.")
   }
   ee <- extract_effects(fit$formula, family = fit$family)
   if (sum(fit$autocor$p, fit$autocor$q) > 0 && !all(ee$response %in% names(newdata))) {
@@ -526,14 +533,13 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       } 
       newdata[[gnames[i]]] <- sapply(gf, match, table = old_levels)
     }
-    stop("Not finished yet")
   }
   if (is.formula(ee$cens)) {
     for (cens in all.vars(ee$cens)) 
       newdata[[cens]] <- 0  # add irrelevant censor variables
   }
   brmdata(fit$formula, data = newdata, family =  fit$family, 
-           autocor =  fit$autocor, partial =  fit$partial)
+          autocor =  fit$autocor, partial =  fit$partial, newdata = TRUE)
 }
 
 find_names <- function(x) {

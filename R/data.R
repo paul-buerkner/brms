@@ -74,6 +74,7 @@ update_data <- function(data, family, effects, ...) {
 #' Extract required data for \code{brms} models
 #'
 #' @inheritParams brm
+#' @param ... Other arguments for internal usage only
 #' 
 #' @aliases brm.data
 #' 
@@ -92,7 +93,8 @@ update_data <- function(data, family, effects, ...) {
 #'          
 #' @export
 brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL, 
-                    partial = NULL, cov.ranef = NULL) {
+                    partial = NULL, cov.ranef = NULL, ...) {
+  dots <- list(...)
   family <- check_family(family[1])
   is_linear <- family %in% c("gaussian", "student", "cauchy")
   is_ordinal <- family %in% c("cumulative","cratio","sratio","acat")
@@ -173,6 +175,10 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
                        ncolZ[[i]],  # number of random effects
                        Z[[i]],  # random effects design matrix
                        ncolZ[[i]] * (ncolZ[[i]]-1) / 2)  #  number of correlations
+    if (isTRUE(dots$newdata)) {
+      # for newdata only as levels are already defined correctly in amend_newdata
+      expr[1] <- expression(get(g, data)) 
+    }
     for (i in 1:length(ee$group)) {
       g <- ee$group[[i]]
       name <- paste0(c("J_", "N_", "K_", "Z_", "NC_"), i)

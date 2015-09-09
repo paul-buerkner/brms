@@ -4,17 +4,25 @@
 \alias{predict.brmsfit}
 \title{Model Predictions of \code{brmsfit} Objects}
 \usage{
-\method{predict}{brmsfit}(object, newdata = NULL, transform = NULL,
-  summary = TRUE, probs = c(0.025, 0.975), ...)
+\method{predict}{brmsfit}(object, newdata = NULL, re_formula = NULL,
+  transform = NULL, allow_new_levels = FALSE, summary = TRUE,
+  probs = c(0.025, 0.975), ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}}
 
 \item{newdata}{An optional data.frame containing new data to make predictions for.
-If \code{NULL} (the default), the data used to fit the model is applied.}
+If \code{NULL} (default), the data used to fit the model is applied.}
+
+\item{re_formula}{formula for random effects to condition on.
+If \code{NULL} (default), include all random effects; if \code{NA}, include no random effects.
+Other options will be implemented in the future.}
 
 \item{transform}{A function or a character string naming a function to be applied on the predicted responses
 before summary statistics are computed.}
+
+\item{allow_new_levels}{Currenly, \code{FALSE} (no new levels allowed) is the only option. This will change in
+future versions of the package.}
 
 \item{summary}{logical. Should summary statistics (i.e. means, sds, and 95\% intervals) be returned
 instead of the raw values. Default is \code{TRUE}}
