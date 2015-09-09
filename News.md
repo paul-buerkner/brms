@@ -11,7 +11,7 @@ output: html_document
 * provide an interface to shinystan with S3 method 'launch_shiny'.
 * new functions 'get\_prior' and 'set\_prior' to make prior specifications easier.
 * log-likelihood values and posterior predictive samples can now be calculated after the model has been fitted. 
-* make predictions based on new data using S3 method 'predict'. Currently only available for fixed effects models. 
+* make predictions based on new data using S3 method 'predict'.
 * allow for customized covariance structures of grouping factors with multiple random effects
 * new S3 methods 'fitted' and 'residuals' to compute fitted values and residuals, respectively.
 
