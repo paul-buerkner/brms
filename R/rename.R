@@ -44,7 +44,7 @@ rename_pars <- function(x) {
   
   # order parameter names and parameter samples
   chains <- length(x$fit@sim$samples) 
-  all_class <- c("b", "bp", "sd", "cor", "sigma", "rescor", 
+  all_class <- c("b", "bp", "ar", "ma", "sd", "cor", "sigma", "rescor", 
                  "nu", "shape", "delta", "r", "prior", "lp")
   class <- regmatches(x$fit@sim$fnames_oi, regexpr("^[^_\\[]+",  x$fit@sim$fnames_oi))
   ordered <- order(factor(class, levels = all_class))

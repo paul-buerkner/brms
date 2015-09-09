@@ -90,7 +90,8 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
     text_ranef$model)
   
   # generate code to additionally sample from priors if sample.prior = TRUE
-  text_rngprior <- stan_rngprior(sample.prior = sample.prior, prior = text_prior, family = family)
+  text_rngprior <- stan_rngprior(sample.prior = sample.prior, 
+                                 prior = text_prior, family = family)
   
   kronecker <- any(sapply(mapply(list, ranef, ee$group, SIMPLIFY = FALSE), 
                           function(x, names) length(x[[1]]) > 1 && x[[2]] %in% names, 
@@ -167,8 +168,11 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
   if (make_loop && !is_multi) {
     text_loop <- c("  for (n in 1:N) { \n", "  } \n")
   } else if (is_multi) {
-    text_loop <- c(paste0("  for (m in 1:N_trait) { \n  for (k in 1:K_trait) { \n",    
-                           "    int n; \n    n <- (k-1)*N_trait + m; \n"), "  }} \n")
+    text_loop <- c(paste0("  for (m in 1:N_trait) { \n",  
+                          "    for (k in 1:K_trait) { \n", 
+                          "      int n; \n",
+                          "      n <- (k-1)*N_trait + m; \n"), 
+                          "    } \n  } \n")
   } else {
     text_loop <- rep("", 2)
   }
@@ -392,9 +396,11 @@ stan_eta <- function(family, link, fixef, paref = NULL,
   eta <- list()
   # initialize eta
   eta$transD <- paste0("  vector[N] eta; \n", 
-                       ifelse(length(paref), paste0("  matrix[N,ncat-1] etap; \n"), ""),
-                       ifelse(is_multi, "  vector[K_trait] etam[N_trait]; \n", ""))
-  eta.multi <- ifelse(is_multi, "etam[m,k]", "eta[n]")
+                       if (length(paref)) 
+                         "  matrix[N,ncat-1] etap; \n",
+                       if (is_multi) 
+                         "  vector[K_trait] etam[N_trait]; \n")
+  eta.multi <- ifelse(is_multi, "  etam[m,k]", "eta[n]")
   
   # transform eta before it is passed to the likelihood
   ilink <- stan_ilink(link)
