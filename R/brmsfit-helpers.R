@@ -282,11 +282,11 @@ linear_predictor <- function(x, newdata = NULL) {
   all_groups <- extract_effects(x$formula)$group  # may contain the same group more than ones
   if (length(group)) {
     for (i in 1:length(group)) {
-      if (any(grepl(paste0("^lev_"), names(data)))) {  # implies brms > 0.4.1
+      if (any(grepl(paste0("^J_"), names(data)))) {  # implies brms > 0.4.1
         # create a single RE design matrix for every grouping factor
         Z <- do.call(cbind, lapply(which(all_groups == group[i]), function(k) 
           get(paste0("Z_",k), data)))
-        gf <- get(paste0("lev_",match(group[i], all_groups)), data)
+        gf <- get(paste0("J_",match(group[i], all_groups)), data)
       } else {  # implies brms <= 0.4.1
         Z <- get(paste0("Z_",group[i]), data)
         gf <- get(group[i], data)
@@ -482,9 +482,9 @@ compare_ic <- function(x, ic = c("waic", "loo")) {
   compare_matrix
 }
 
-amend_newdata <- function(newdata, formula, family = "gaussian", autocor = cor_arma(),
-                          partial = NULL) {
-  # amend new data for predict method
+amend_newdata <- function(newdata, formula, family = "gaussian", 
+                          autocor = cor_arma(), partial = NULL) {
+  # amend newdata passed to predict and fitted methods
   # 
   # Args:
   #   newdata: a data.frame containing new data for prediction 
@@ -494,7 +494,7 @@ amend_newdata <- function(newdata, formula, family = "gaussian", autocor = cor_a
   #   partial: one sided formula containing partial effects for ordinal models
   #
   # Notes:
-  #   used in predict.brmsfit and linear_predictor.brmsfit
+  #   used in predict.brmsfit, fitted.brmsfit and linear_predictor.brmsfit
   #
   # Returns:
   #   updated data.frame being compatible with formula

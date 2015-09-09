@@ -246,7 +246,7 @@ stan_ranef <- function(i, ranef, group, cor, prior = list(),
   cor <- cor[[i]]
   ccov <- g %in% names_cov_ranef
   out <- list()
-  out$data <- paste0("  int<lower=1> lev_",i,"[N]; \n",
+  out$data <- paste0("  int<lower=1> J_",i,"[N]; \n",
                      "  int<lower=1> N_",i,"; \n",
                      "  int<lower=1> K_",i,"; \n",
                      if (ccov && (cor || length(r) == 1)) 
@@ -425,7 +425,7 @@ stan_eta <- function(family, link, fixef, paref = NULL,
                         if (length(paref)) "  etap <- Xp * bp; \n")
   if (length(group)) {
     ind <- 1:length(group)
-    eta.re <- collapse(" + Z_",ind,"[n]*r_",ind,"[lev_",ind,"[n]]")
+    eta.re <- collapse(" + Z_",ind,"[n]*r_",ind,"[J_",ind,"[n]]")
   } else {
     eta.re <- ""
   }

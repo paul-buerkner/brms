@@ -108,12 +108,17 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
   # sort data in case of autocorrelation models
   if (sum(autocor$p, autocor$q) > 0) {
     if (family == "gaussian" && length(ee$response) > 1) {
-      if (!grepl("^trait$|:trait$|^trait:|:trait:", et$group))
-        stop("autocorrelation structures for multiple responses must contain 'trait' as grouping variable")
-      else to.order <- rmNULL(list(data[["trait"]], data[[et$group]], data[[et$time]]))
+      if (!grepl("^trait$|:trait$|^trait:|:trait:", et$group)) {
+        stop(paste("autocorrelation structures for multiple responses must",
+                   "contain 'trait' as grouping variable"))
+      } else {
+        to_order <- rmNULL(list(data[["trait"]], data[[et$group]], data[[et$time]]))
+      }
+    } else {
+      to_order <- rmNULL(list(data[[et$group]], data[[et$time]]))
     }
-    else to.order <- rmNULL(list(data[[et$group]], data[[et$time]]))
-    if (length(to.order)) data <- data[do.call(order, to.order),]
+    if (length(to_order)) 
+      data <- data[do.call(order, to_order), ]
   }
   
   # response variable
@@ -138,7 +143,8 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
     } else if (all(is.wholenumber(standata$Y))) {
       standata$Y <- standata$Y - min(standata$Y) + 1
     } else {
-      stop(paste("family", family, "expects either integers or ordered factors as response variables"))
+      stop(paste("family", family, "expects either integers or",
+                 "ordered factors as response variables"))
     }
   } else if (is_skew) {
     if (min(standata$Y) < 0)
@@ -162,13 +168,19 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
     Z <- lapply(ee$random, get_model_matrix, data = data)
     r <- lapply(Z, colnames)
     ncolZ <- lapply(Z, ncol)
-    expr <- expression(as.numeric(as.factor(get(g, data))), length(unique(get(g, data))), 
-                       ncolZ[[i]], Z[[i]], ncolZ[[i]]*(ncolZ[[i]]-1)/2)
+    expr <- expression(as.numeric(as.factor(get(g, data))),  # numeric levels passed to Stan
+                       length(unique(get(g, data))),  # number of levels
+                       ncolZ[[i]],  # number of random effects
+                       Z[[i]],  # random effects design matrix
+                       ncolZ[[i]] * (ncolZ[[i]]-1) / 2)  #  number of correlations
     for (i in 1:length(ee$group)) {
       g <- ee$group[[i]]
-      name <- paste0(c("lev_", "N_", "K_", "Z_", "NC_"), i)
-      if (ncolZ[[i]] == 1) Z[[i]] <- as.vector(Z[[i]])
-      for (j in 1:length(name)) standata <- c(standata, setNames(list(eval(expr[j])), name[j]))
+      name <- paste0(c("J_", "N_", "K_", "Z_", "NC_"), i)
+      if (ncolZ[[i]] == 1) 
+        Z[[i]] <- as.vector(Z[[i]])
+      for (j in 1:length(name)) {
+        standata <- c(standata, setNames(list(eval(expr[j])), name[j]))
+      }
       if (g %in% names(cov.ranef)) {
         cov_mat <- as.matrix(cov.ranef[[g]])
         found_level_names <- rownames(cov_mat)
@@ -213,7 +225,7 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
                         else if (is.wholenumber(ee$trials)) ee$trials
                         else if (is.formula(ee$trials)) .addition(formula = ee$trials, data = data)
                         else stop("Response part of formula is invalid.")
-    standata$max_obs <- standata$trials # for backwards compatibility
+    standata$max_obs <- standata$trials  # for backwards compatibility
     if (max(standata$trials) == 1) 
       message("Only 2 levels detected so that family 'bernoulli' might be a more efficient choice.")
     if (any(standata$Y > standata$trials))
@@ -227,7 +239,7 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
                           max(.addition(formula = ee$cat, data = data))
                         }
                         else stop("Response part of formula is invalid.")
-    standata$max_obs <- standata$ncat # for backwards compatibility
+    standata$max_obs <- standata$ncat  # for backwards compatibility
     if (max(standata$ncat) == 2) 
       message("Only 2 levels detected so that family 'bernoulli' might be a more efficient choice.")
     if (any(standata$Y > standata$ncat))
@@ -243,14 +255,16 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
       if (length(fp))
         stop(paste("Variables cannot be modeled as fixed and partial effects at the same time.",
                    "Error occured for variables:", paste(fp, collapse = ", ")))
-    } 
-    else stop("partial is only meaningful for families 'sratio', 'cratio', and 'acat'")  
+    } else {
+      stop("partial effects are only meaningful for families 'sratio', 'cratio', and 'acat'")  
+    }
   }
   
   # autocorrelation variables
   if (is(autocor,"cor_arma") && autocor$p + autocor$q > 0) {
     tgroup <- data[[et$group]]
-    if (is.null(tgroup)) tgroup <- rep(1, standata$N) 
+    if (is.null(tgroup)) 
+      tgroup <- rep(1, standata$N) 
     if (autocor$p > 0) {
       standata$Yar <- ar_design_matrix(Y = standata$Y, p = autocor$p, group = tgroup)
       standata$Kar <- autocor$p
