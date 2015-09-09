@@ -169,8 +169,11 @@ gather_ranef <- function(effects, data) {
   #   A named list with one element per grouping factor
   Z <- lapply(effects$random, get_model_matrix, data = data)
   ranef <- setNames(lapply(Z, colnames), effects$group)
-  for (i in 1:length(ranef)) {
-    attr(ranef[[i]], "levels") <- levels(as.factor(get(effects$group[[i]], data)))  
+  if (length(ranef)) {
+    for (i in 1:length(ranef)) {
+      attr(ranef[[i]], "levels") <- 
+        levels(as.factor(get(effects$group[[i]], data)))  
+    }
   }
   ranef
 }
