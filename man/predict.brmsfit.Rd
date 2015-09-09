@@ -49,8 +49,9 @@ pp <- predict(fit)
 head(pp)
 
 ## predict response for new data (be careful with factors)
-newdata <- data.frame(age = c(20,50),
-                       sex = factor(c("male", "female"), levels = c("male", "female")))
+newdata <- data.frame(sex = factor(c("male", "female"),
+                                   levels = c("male", "female")),
+                      age = c(20,50))
 predict(fit, newdata = newdata)
 }
 }

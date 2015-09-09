@@ -258,9 +258,9 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"),
   if (is.character(inits) && !inits %in% c("random", "0")) 
     inits <- get(inits, mode = "function", envir = parent.frame())
   if (family %in% c("exponential", "weibull") && inits == "random")
-    warning(paste0("Families exponential and weibull may not work well",
+    warning(paste("Families exponential and weibull may not work well",
                    "with default initial values. \n",
-                   "  It is thus recommended to set inits = '0'"))
+                   " It is thus recommended to set inits = '0'"))
   
   # arguments to be passed to stan
   args <- list(object = x$fit, data = x$data, pars = x$exclude, 

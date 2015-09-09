@@ -265,8 +265,7 @@ linear_predictor <- function(x, newdata = NULL) {
   if (is.null(newdata)) { 
     data <- x$data
   } else if (is.data.frame(newdata)) {
-    data <- amend_newdata(newdata, formula = x$formula, family = x$family, 
-                          autocor = x$autocor, partial = x$partial) # can be found in data.R
+    data <- amend_newdata(newdata, fit = x) 
   } else {
     stop("newdata must be a data.frame")
   } 
@@ -282,11 +281,16 @@ linear_predictor <- function(x, newdata = NULL) {
   all_groups <- extract_effects(x$formula)$group  # may contain the same group more than ones
   if (length(group)) {
     for (i in 1:length(group)) {
-      if (any(grepl(paste0("^J_"), names(data)))) {  # implies brms > 0.4.1
+      if (any(grepl(paste0("^J_|^lev_"), names(data)))) {  # implies brms > 0.4.1
         # create a single RE design matrix for every grouping factor
         Z <- do.call(cbind, lapply(which(all_groups == group[i]), function(k) 
           get(paste0("Z_",k), data)))
-        gf <- get(paste0("J_",match(group[i], all_groups)), data)
+        id <- match(group[i], all_groups)
+        if (any(grepl(paste0("^J_"), names(data)))) {
+          gf <- get(paste0("J_",id), data)
+        } else {
+          gf <- get(paste0("lev_",id), data)  # for backwards compatibility
+        }
       } else {  # implies brms <= 0.4.1
         Z <- get(paste0("Z_",group[i]), data)
         gf <- get(group[i], data)
@@ -359,10 +363,11 @@ ranef_predictor <- function(Z, gf, r) {
   #
   # Returns: 
   #   linear predictor for random effects
+  nranef <- ncol(Z)
+  nlevels <- ncol(r) / nranef
   Z <- expand_matrix(Z, gf)
-  nlevels <- length(unique(gf))
-  sort_levels <- unlist(lapply(1:nlevels, 
-                               function(n) seq(n, ncol(r), nlevels)))
+  # sort levels because we need row major instead of column major order
+  sort_levels <- unlist(lapply(1:nlevels, function(n) seq(n, ncol(r), nlevels)))
   as.matrix(r[, sort_levels]) %*% t(Z)
 }
 
@@ -482,36 +487,53 @@ compare_ic <- function(x, ic = c("waic", "loo")) {
   compare_matrix
 }
 
-amend_newdata <- function(newdata, formula, family = "gaussian", 
-                          autocor = cor_arma(), partial = NULL) {
+amend_newdata <- function(newdata, fit, re_formula = NULL, 
+                          allow_new_levels = FALSE) {
   # amend newdata passed to predict and fitted methods
   # 
   # Args:
   #   newdata: a data.frame containing new data for prediction 
-  #   formula: a brms model formula
-  #   family: the family
-  #   autocor: object of class cor_brms
-  #   partial: one sided formula containing partial effects for ordinal models
+  #   fit: an object of class brmsfit
+  #   re.form: a random effects formula
   #
   # Notes:
   #   used in predict.brmsfit, fitted.brmsfit and linear_predictor.brmsfit
   #
   # Returns:
-  #   updated data.frame being compatible with formula
-  ee <- extract_effects(formula, family = family)
-  if (length(ee$group))
-    stop("random effects models not yet supported for predicting new data")
-  if (sum(autocor$p, autocor$q) > 0 && !all(ee$response %in% names(newdata))) {
+  #   updated data.frame being compatible with fit$formula
+  if (allow_new_levels) {
+    # TODO
+    stop("new levels not yet implemented")
+  }
+  ee <- extract_effects(fit$formula, family = fit$family)
+  if (sum(fit$autocor$p, fit$autocor$q) > 0 && !all(ee$response %in% names(newdata))) {
     stop("response variables must be specified in newdata for autocorrelative models")
   } else {
     for (resp in ee$response)
       newdata[[resp]] <- 0  # add irrelevant response variables
   }
+  # validate grouping factors in newdata
+  if (length(fit$ranef) && is.null(re_formula)) {
+    gnames <- names(fit$ranef)
+    for (i in 1:length(gnames)) {
+      gf <- as.character(get(gnames[i], newdata))
+      new_levels <- unique(gf)
+      old_levels <- attr(fit$ranef[[i]], "levels")
+      unknown_levels <- setdiff(new_levels, old_levels)
+      if (length(unknown_levels)) {
+        stop(paste("levels", paste0(unknown_levels, collapse = ", "), 
+                   "of grouping factor", gf[i], "not found in the fitted model"))
+      } 
+      newdata[[gnames[i]]] <- sapply(gf, match, table = old_levels)
+    }
+    stop("Not finished yet")
+  }
   if (is.formula(ee$cens)) {
     for (cens in all.vars(ee$cens)) 
       newdata[[cens]] <- 0  # add irrelevant censor variables
   }
-  brmdata(formula, data = newdata, family = family, autocor = autocor, partial = partial)
+  brmdata(fit$formula, data = newdata, family =  fit$family, 
+           autocor =  fit$autocor, partial =  fit$partial)
 }
 
 find_names <- function(x) {
