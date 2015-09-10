@@ -323,6 +323,14 @@ family.brmsfit <- function(object, ...)
   list(family = object$family, link = object$link)
 
 #' @export
+stancode.brmsfit <- function(object, ...)
+  object$model
+
+#' @export
+standata.brmsfit <- function(object, ...)
+  object$data
+
+#' @export
 launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"), ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")

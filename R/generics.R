@@ -419,3 +419,29 @@ LOO <- function(x, ..., compare = TRUE)
 #' @export
 launch_shiny <- function(x, rstudio = getOption("shinystan.rstudio"), ...)
   UseMethod("launch_shiny")
+
+#' Extract Stan Model Code
+#' 
+#' Extract the model code in Stan language
+#' 
+#' @param object An object of class \code{brmsfit}
+#' @param ... Currently ignored
+#' 
+#' @return model code in stan language for further processing.
+#' 
+#' @export
+stancode <- function(object, ...)
+  UseMethod("stancode")
+
+#' Extract Data passed to Stan
+#' 
+#' Extract all data that was used by Stan to fit the model
+#' 
+#' @param object An object of class \code{brmsfit}
+#' @param ... Currently ignored
+#' 
+#' @return A named list containing the data passed to Stan
+#' 
+#' @export
+standata <- function(object, ...)
+  UseMethod("standata")
