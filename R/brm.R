@@ -272,7 +272,7 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"),
     if (is.character(args$init) || is.numeric(args$init)) 
       args$init <- rep(args$init, n.chains)
     cl <- makeCluster(n.cluster)
-    on.exit(stopCluster(cl))
+    on.exit(stopCluster(cl))  # close all clusters when exiting brm
     clusterExport(cl = cl, varlist = "args", envir = environment())
     clusterEvalQ(cl, require(rstan))
     sflist <- parLapply(cl, X = 1:n.chains, fun = function(i) { 

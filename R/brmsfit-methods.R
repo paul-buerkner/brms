@@ -702,22 +702,37 @@ logLik.brmsfit <- function(object, ...) {
 }
 
 #' @export
-hypothesis.brmsfit <- function(x, hypothesis, class = "b", alpha = 0.05, ...) {
+hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
+                               alpha = 0.05, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
   if (!is.character(hypothesis)) 
     stop("Argument hypothesis must be a character vector")
   if (alpha < 0 || alpha > 1)
     stop("Argument alpha must be in [0,1]")
-  if (!is.null(class) && nchar(class)) {
-    class <- paste0(class,"_")
-  } else {
-    class <- ""
-  }
-  pars <- rename(parnames(x)[grepl("^", class, parnames(x))],
-                 symbols = ":", subs = "__")
   
-  out <- do.call(rbind, lapply(hypothesis, function(h) {
+  # process class and group arguments
+  if (is.null(class)) class <- ""
+  valid_classes <- c("", "b", "sd", "cor", "ar", "ma", "sigma", 
+                     "rescor", "nu", "shape", "delta")
+  if (!class %in% valid_classes)
+    stop(paste(class, "is not a valid paramter class"))
+  if (class %in% c("b", "sd", "cor", "sigma", "rescor")) {
+    if (class %in% c("sd", "cor") && nchar(group)) {
+      class <- paste0(class, "_", group, "_")
+    } else {
+      class <- paste0(class, "_")
+    }
+  } else {
+    # no class required
+    class <- ""  
+  }
+
+  hyp_fun <- function(h) {
+    # internal function to evaluate hypotheses
+    # 
+    # Args:
+    #   h: A string containing a hypothesis
     h <- rename(h, symbols = c(" ", ":"), subs = c("", "__"))
     sign <- unlist(regmatches(h, gregexpr("=|<|>", h)))
     lr <- unlist(regmatches(h, gregexpr("[^=<>]+", h)))
@@ -751,7 +766,7 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", alpha = 0.05, ...) {
       prior_samples <- matrix(with(prior_samples, eval(parse(text = h_renamed))), 
                               ncol = 1)
     } else prior_samples <- NULL
-
+    
     # evaluate hypothesis
     wsign <- ifelse(sign == "=", "equal", ifelse(sign == "<", "less", "greater"))
     probs <- switch(wsign, equal = c(alpha / 2, 1 - alpha / 2), 
@@ -771,8 +786,11 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", alpha = 0.05, ...) {
     colnames(out) <- c("Estimate", "Est.Error", paste0("l-",cl,"% CI"), 
                        paste0("u-",cl,"% CI"), "Evid.Ratio", "")
     out
-  }))
+  }
   
+  pars <- rename(parnames(x)[grepl("^", class, parnames(x))],
+                 symbols = ":", subs = "__")
+  out <- do.call(rbind, lapply(hypothesis, hyp_fun))
   out <- list(hypothesis = out, class = substr(class, 1, nchar(class) - 1), 
               alpha = alpha)
   class(out) <- "brmshypothesis"

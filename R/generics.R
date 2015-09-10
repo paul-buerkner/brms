@@ -158,6 +158,8 @@ ngrps <- function(object, ...)
 #' @param class A string specifying the class of parameters being tested. Default is "b" for fixed effects. 
 #'        Other typical options are "sd" or "cor". If \code{class = NULL}, all parameters can be tested
 #'        against each other, but have to be specified with their full name (see also \code{\link[brms:parnames]{parnames}}) 
+#' @param group Name of a grouping factor to evaluate only random effects parameters related to this grouping factor.
+#'        Ignored if \code{class} is not \code{"sd"} or \code{"cor"}.
 #' @param alpha the alpha-level of the tests (default is 0.05)        
 #' @param ... Currently ignored
 #' 
@@ -184,7 +186,7 @@ ngrps <- function(object, ...)
 #' hypothesis(fit_i, "period + carry - 3 < 0")
 #' 
 #' ## compare random effects standard deviations
-#' hypothesis(fit_i, "treat < Intercept", class = "sd_subject")
+#' hypothesis(fit_i, "treat < Intercept", class = "sd", group  = "subject")
 #' 
 #' ## test the amount of random intercept variance on all variance
 #' h <- paste("sd_subject_Intercept^2 / (sd_subject_Intercept^2 +",
@@ -196,7 +198,8 @@ ngrps <- function(object, ...)
 #' }
 #' 
 #' @export
-hypothesis <- function(x, hypothesis, class = "b", alpha = 0.05, ...)
+hypothesis <- function(x, hypothesis, class = "b", group = "", 
+                       alpha = 0.05, ...)
   UseMethod("hypothesis")
 
 #' Extract posterior samples

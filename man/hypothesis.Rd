@@ -5,7 +5,7 @@
 \alias{hypothesis.brmsfit}
 \title{Non-linear hypothesis testing}
 \usage{
-hypothesis(x, hypothesis, class = "b", alpha = 0.05, ...)
+hypothesis(x, hypothesis, class = "b", group = "", alpha = 0.05, ...)
 }
 \arguments{
 \item{x}{An \code{R} object typically of class \code{brmsfit}}
@@ -15,6 +15,9 @@ hypothesis(x, hypothesis, class = "b", alpha = 0.05, ...)
 \item{class}{A string specifying the class of parameters being tested. Default is "b" for fixed effects.
 Other typical options are "sd" or "cor". If \code{class = NULL}, all parameters can be tested
 against each other, but have to be specified with their full name (see also \code{\link[brms:parnames]{parnames}})}
+
+\item{group}{Name of a grouping factor to evaluate only random effects parameters related to this grouping factor.
+Ignored if \code{class} is not \code{"sd"} or \code{"cor"}.}
 
 \item{alpha}{the alpha-level of the tests (default is 0.05)}
 
@@ -46,7 +49,7 @@ hypothesis(fit_i, "exp(treat) - 3 = 0")
 hypothesis(fit_i, "period + carry - 3 < 0")
 
 ## compare random effects standard deviations
-hypothesis(fit_i, "treat < Intercept", class = "sd_subject")
+hypothesis(fit_i, "treat < Intercept", class = "sd", group  = "subject")
 
 ## test the amount of random intercept variance on all variance
 h <- paste("sd_subject_Intercept^2 / (sd_subject_Intercept^2 +",
