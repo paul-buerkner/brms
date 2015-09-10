@@ -272,12 +272,13 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"),
     if (is.character(args$init) || is.numeric(args$init)) 
       args$init <- rep(args$init, n.chains)
     cl <- makeCluster(n.cluster)
-    clusterEvalQ(cl, require(rstan))
+    on.exit(stopCluster(cl))
     clusterExport(cl = cl, varlist = "args", envir = environment())
-    sflist <- parLapply(cl, 1:n.chains, fun = function(i) { 
-      args[c("chains", "chain_id", "init")] <- list(chains = 1, chain_id = i, init = args$init[i])
+    clusterEvalQ(cl, require(rstan))
+    sflist <- parLapply(cl, X = 1:n.chains, fun = function(i) { 
+      args[c("chains", "chain_id", "init")] <- 
+        list(chains = 1, chain_id = i, init = args$init[i])
       do.call(rstan::sampling, args)})
-    stopCluster(cl)
     x$fit <- lapply(1:length(sflist), remove_chains, sflist = sflist)  # see validate.R
     x$fit <- rstan::sflist2stanfit(rmNULL(x$fit))
   } else {  # do not sample in parallel
