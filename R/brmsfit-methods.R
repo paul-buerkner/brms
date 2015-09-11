@@ -344,7 +344,7 @@ launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"), ..
 #'   By default, all parameters except for random effects, posterior predictives, and log likelihood values are plotted. 
 #' @param N The number of parameters plotted per page.
 #' @param ask logical; Indicates if the user is prompted before a new page is plotted.   
-#' @param ... Additional arguments passed to function 'grid.arrange' of package 'gridExtra'.
+#' @param ... Further arguments passed to \code{\link[gridExtra:arrangeGrob]{arrangeGrob}}.
 #' 
 #' @return NULL
 #' 
@@ -362,6 +362,8 @@ launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"), ..
 #' 
 #' @method plot brmsfit
 #' @import ggplot2
+#' @importFrom gridExtra arrangeGrob
+#' @importFrom grDevices devAskNewPage
 #' @export
 plot.brmsfit <- function(x, parameters = NA, N = 5, ask = TRUE, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
@@ -374,16 +376,18 @@ plot.brmsfit <- function(x, parameters = NA, N = 5, ask = TRUE, ...) {
   samples <- posterior.samples(x, parameters = parameters, add_chains = TRUE)
   pars <- names(samples)[which(!names(samples) %in% c("chains", "iter"))] 
   
-  default.ask <- grDevices::devAskNewPage()
-  grDevices::devAskNewPage(ask = FALSE)
-  for (i in 1:ceiling(length(pars)/N)) {
+  default.ask <- devAskNewPage()
+  devAskNewPage(ask = FALSE)
+  for (i in 1:ceiling(length(pars) / N)) {
     plots <- lapply(pars[((i - 1) * N + 1):min(i * N, length(pars))], 
                     td_plot, x = samples)
-    gridExtra::grid.arrange(grobs = unlist(plots, recursive = FALSE), 
-                            nrow = length(plots), ncol = 2, ...)
-    if (i == 1) grDevices::devAskNewPage(ask = ask)
+    plot(arrangeGrob(grobs = unlist(plots, recursive = FALSE), 
+                     nrow = length(plots), ncol = 2, ...))
+    if (i == 1) {
+      devAskNewPage(ask = ask)
+    }
   }
-  grDevices::devAskNewPage(default.ask)
+  devAskNewPage(default.ask)
 }
 
 #' Extract Model Fitted Values of \code{brmsfit} Objects

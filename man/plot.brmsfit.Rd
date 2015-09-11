@@ -16,7 +16,7 @@ By default, all parameters except for random effects, posterior predictives, and
 
 \item{ask}{logical; Indicates if the user is prompted before a new page is plotted.}
 
-\item{...}{Additional arguments passed to function 'grid.arrange' of package 'gridExtra'.}
+\item{...}{Further arguments passed to \code{\link[gridExtra:arrangeGrob]{arrangeGrob}}.}
 }
 \description{
 Trace and density plots for MCMC samples
