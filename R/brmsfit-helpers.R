@@ -571,13 +571,14 @@ td_plot <- function(par, x) {
   #   x: a data.frame containing the samples
   #
   # Returns:
-  #   trace and density plot for this parameter
+  #   a list containing the trace and density plot of one parameter
   if (!is.character(par) || length(par) != 1)
     stop("par must be a character string")
   if (!is.data.frame(x))
     stop("x must be a data.frame")
   names(x)[match(par, names(x))] <- "value" 
-  trace <- ggplot(x, aes_string(x = "iter", y = "value", group = "chains", colour = "chains")) +
+  trace <- ggplot(x, aes_string(x = "iter", y = "value", group = "chains", 
+                                colour = "chains")) +
     geom_line(alpha = 0.7) + 
     xlab("") + ylab("") + ggtitle(paste("Trace of", par)) + 
     theme(legend.position = "none",
@@ -588,7 +589,7 @@ td_plot <- function(par, x) {
     xlab("") + ylab("") + ggtitle(paste("Density of", par)) + 
     theme(plot.title = element_text(size = 15, vjust = 1),
           plot.margin = grid::unit(c(0.2, 0, -0.8, -0.5), "lines"))
-  return(gridExtra::arrangeGrob(trace, density, ncol = 2, nrow = 1))
+  list(trace, density)
 }
 
 #' @export

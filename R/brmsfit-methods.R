@@ -377,8 +377,10 @@ plot.brmsfit <- function(x, parameters = NA, N = 5, ask = TRUE, ...) {
   default.ask <- grDevices::devAskNewPage()
   grDevices::devAskNewPage(ask = FALSE)
   for (i in 1:ceiling(length(pars)/N)) {
-    plots <- lapply(pars[((i-1)*N+1):min(i*N,length(pars))], td_plot, x = samples)
-    gridExtra::grid.arrange(grobs = plots, nrow = length(plots), ncol = 1, ...)
+    plots <- lapply(pars[((i - 1) * N + 1):min(i * N, length(pars))], 
+                    td_plot, x = samples)
+    gridExtra::grid.arrange(grobs = unlist(plots, recursive = FALSE), 
+                            nrow = length(plots), ncol = 2, ...)
     if (i == 1) grDevices::devAskNewPage(ask = ask)
   }
   grDevices::devAskNewPage(default.ask)

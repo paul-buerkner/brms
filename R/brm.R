@@ -49,7 +49,7 @@
 #' @param n.cluster	Number of clusters to use to run parallel chains. Default is 1.   
 #' @param cluster_type A character string specifying the type of cluster created by \code{\link[parallel:makeCluster]{makeCluster}} 
 #'   when sampling in parallel (i.e. when \code{n.cluster} is greater \code{1}). Default is \code{"PSOCK"} working on all platforms. 
-#'   For OS X and Linux \code{cluster_type = "FORK"} may be a faster and more stable option, but it does not work on Windows.
+#'   For OS X and Linux, \code{"FORK"} may be a faster and more stable option, but it does not work on Windows.
 #' @param save.model Either \code{NULL} or a character string. In the latter case, the model code is
 #'   saved in a file named after the string supplied in \code{save.model}, which may also contain the full path where to save the file.
 #'   If only a name is given, the file is save in the current working directory. 

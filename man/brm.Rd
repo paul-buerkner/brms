@@ -78,7 +78,7 @@ so warmup samples should not be used for inference. The number of warmup should 
 
 \item{cluster_type}{A character string specifying the type of cluster created by \code{\link[parallel:makeCluster]{makeCluster}}
 when sampling in parallel (i.e. when \code{n.cluster} is greater \code{1}). Default is \code{"PSOCK"} working on all platforms.
-For OS X and Linux \code{cluster_type = "FORK"} may be a faster and more stable option, but it does not work on Windows.}
+For OS X and Linux, \code{"FORK"} may be a faster and more stable option, but it does not work on Windows.}
 
 \item{silent}{logical; If \code{TRUE}, most intermediate output from Stan is suppressed.}
 
