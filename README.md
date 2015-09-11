@@ -82,8 +82,8 @@ methods(class = "brmsfit")
 #>  [5] hypothesis        launch_shiny      logLik            LOO              
 #>  [9] ngrps             nobs              parnames          plot             
 #> [13] posterior_samples predict           print             prior_samples    
-#> [17] ranef             residuals         summary           VarCorr          
-#> [21] WAIC             
+#> [17] ranef             residuals         stancode          standata         
+#> [21] summary           VarCorr           WAIC             
 #> see '?methods' for accessing help and source code
 ```
 
