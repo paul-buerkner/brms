@@ -37,16 +37,19 @@
 #' @param fit An instance of S3 class \code{brmsfit} derived from a previous fit; defaults to \code{NA}. If \code{fit} is of class \code{brmsfit}, the compiled model associated 
 #'   with the fitted result is re-used and the arguments \code{formula}, \code{data}, \code{family}, \code{prior}, \code{addition}, \code{autocor}, \code{partial}, \code{threshold},
 #'  \code{cov.ranef}, and \code{ranef}, are ignored.
+#' @param inits Either \code{"random"} or \code{"0"}. If inits is \code{"random"} (the default), Stan will randomly generate initial values for parameters. 
+#'   If it is \code{"0"}, all parameters are initiliazed to zero (recommended for \code{exponential} and \code{weibull} models). 
+#'   Alternatively, \code{inits} can be a list of lists containing the initial values, or a function (or function name) generating initial values. 
+#'   The latter options are mainly implemented for internal testing.
 #' @param n.chains Number of Markov chains (default: 2)
 #' @param n.iter Number of total iterations per chain (including burnin; default: 2000)
 #' @param n.warmup A positive integer specifying number of warmup (aka burnin) iterations. This also specifies the number of iterations used for stepsize adaptation, 
 #'   so warmup samples should not be used for inference. The number of warmup should not be larger than \code{n.iter} and the default is 500.
 #' @param n.thin Thinning rate. Must be a positive integer. Set \code{n.thin > 1} to save memory and computation time if \code{n.iter} is large. Default is 1, that is no thinning.
 #' @param n.cluster	Number of clusters to use to run parallel chains. Default is 1.   
-#' @param inits Either \code{"random"} or \code{"0"}. If inits is \code{"random"} (the default), Stan will randomly generate initial values for parameters. 
-#'   If it is \code{"0"}, all parameters are initiliazed to zero (recommended for \code{exponential} and \code{weibull} models). 
-#'   Alternatively, \code{inits} can be a list of lists containing the initial values, or a function (or function name) generating initial values. 
-#'   The latter options are mainly implemented for internal testing.
+#' @param cluster_type A character string specifying the type of cluster created by \code{\link[parallel:makeCluster]{makeCluster}} 
+#'   when sampling in parallel (i.e. when \code{n.cluster} is greater \code{1}). Default is \code{"PSOCK"} working on all platforms. 
+#'   For OS X and Linux \code{cluster_type = "FORK"} may be a faster and more stable option, but it does not work on Windows.
 #' @param save.model Either \code{NULL} or a character string. In the latter case, the model code is
 #'   saved in a file named after the string supplied in \code{save.model}, which may also contain the full path where to save the file.
 #'   If only a name is given, the file is save in the current working directory. 
@@ -198,9 +201,10 @@
 brm <- function(formula, data = NULL, family = c("gaussian", "identity"), 
                 prior = NULL, addition = NULL, autocor = NULL, partial = NULL, 
                 threshold = c("flexible", "equidistant"), cov.ranef = NULL, 
-                ranef = TRUE, sample.prior = FALSE, fit = NA, 
+                ranef = TRUE, sample.prior = FALSE, fit = NA, inits = "random", 
                 n.chains = 2, n.iter = 2000, n.warmup = 500, n.thin = 1, n.cluster = 1, 
-                inits = "random", silent = FALSE, seed = 12345, save.model = NULL, ...) {
+                cluster_type = "PSOCK", silent = FALSE, seed = 12345, 
+                save.model = NULL, ...) {
   
   if (n.chains %% n.cluster != 0) 
     stop("n.chains must be a multiple of n.cluster")
@@ -271,7 +275,7 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"),
   if (n.cluster > 1 || silent && n.chains > 0) {  # sample in parallel
     if (is.character(args$init) || is.numeric(args$init)) 
       args$init <- rep(args$init, n.chains)
-    cl <- makeCluster(n.cluster)
+    cl <- makeCluster(n.cluster, type = cluster_type)
     on.exit(stopCluster(cl))  # close all clusters when exiting brm
     clusterExport(cl = cl, varlist = "args", envir = environment())
     clusterEvalQ(cl, require(rstan))

@@ -7,10 +7,10 @@
 brm(formula, data = NULL, family = c("gaussian", "identity"),
   prior = NULL, addition = NULL, autocor = NULL, partial = NULL,
   threshold = c("flexible", "equidistant"), cov.ranef = NULL,
-  ranef = TRUE, sample.prior = FALSE, fit = NA, n.chains = 2,
-  n.iter = 2000, n.warmup = 500, n.thin = 1, n.cluster = 1,
-  inits = "random", silent = FALSE, seed = 12345, save.model = NULL,
-  ...)
+  ranef = TRUE, sample.prior = FALSE, fit = NA, inits = "random",
+  n.chains = 2, n.iter = 2000, n.warmup = 500, n.thin = 1,
+  n.cluster = 1, cluster_type = "PSOCK", silent = FALSE, seed = 12345,
+  save.model = NULL, ...)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class): a symbolic description of the model to be fitted.
@@ -60,6 +60,11 @@ Among others, these samples can be used to calculate Bayes factors for point hyp
  with the fitted result is re-used and the arguments \code{formula}, \code{data}, \code{family}, \code{prior}, \code{addition}, \code{autocor}, \code{partial}, \code{threshold},
 \code{cov.ranef}, and \code{ranef}, are ignored.}
 
+\item{inits}{Either \code{"random"} or \code{"0"}. If inits is \code{"random"} (the default), Stan will randomly generate initial values for parameters.
+If it is \code{"0"}, all parameters are initiliazed to zero (recommended for \code{exponential} and \code{weibull} models).
+Alternatively, \code{inits} can be a list of lists containing the initial values, or a function (or function name) generating initial values.
+The latter options are mainly implemented for internal testing.}
+
 \item{n.chains}{Number of Markov chains (default: 2)}
 
 \item{n.iter}{Number of total iterations per chain (including burnin; default: 2000)}
@@ -71,10 +76,9 @@ so warmup samples should not be used for inference. The number of warmup should 
 
 \item{n.cluster}{Number of clusters to use to run parallel chains. Default is 1.}
 
-\item{inits}{Either \code{"random"} or \code{"0"}. If inits is \code{"random"} (the default), Stan will randomly generate initial values for parameters.
-If it is \code{"0"}, all parameters are initiliazed to zero (recommended for \code{exponential} and \code{weibull} models).
-Alternatively, \code{inits} can be a list of lists containing the initial values, or a function (or function name) generating initial values.
-The latter options are mainly implemented for internal testing.}
+\item{cluster_type}{A character string specifying the type of cluster created by \code{\link[parallel:makeCluster]{makeCluster}}
+when sampling in parallel (i.e. when \code{n.cluster} is greater \code{1}). Default is \code{"PSOCK"} working on all platforms.
+For OS X and Linux \code{cluster_type = "FORK"} may be a faster and more stable option, but it does not work on Windows.}
 
 \item{silent}{logical; If \code{TRUE}, most intermediate output from Stan is suppressed.}
 
