@@ -38,11 +38,9 @@ rename_pars <- function(x) {
   #
   # Returns:
   #   a brmfit object with adjusted parameter names and dimensions
-  if (!length(x$fit@sim))  # the model does not contain posterior samples
-    return(x) 
+  if (!length(x$fit@sim)) return(x) 
   
-  
-  # order parameter names and parameter samples
+  # order parameter samples after parameter class
   chains <- length(x$fit@sim$samples) 
   all_class <- c("b", "bp", "ar", "ma", "sd", "cor", "sigma", "rescor", 
                  "nu", "shape", "delta", "r", "prior", "lp")
@@ -58,7 +56,7 @@ rename_pars <- function(x) {
   x$fit@sim$dims_oi <- x$fit@sim$dims_oi[ordered]
   x$fit@sim$pars_oi <- names(x$fit@sim$dims_oi)
   
-  # begin with changing parameter names
+  # some variables generally needed
   pars <- parnames(x)
   ee <- extract_effects(x$formula, family = x$family)
   change <- list()
@@ -66,12 +64,9 @@ rename_pars <- function(x) {
   # find positions of parameters and define new names
   f <- colnames(x$data$X)
   if (length(f) && x$family != "categorical") {
-    change[[length(change) + 1]] <- list(pos = grepl("^b\\[", pars), 
-                                         oldname = "b", 
-                                         pnames = paste0("b_",f), 
-                                         fnames = paste0("b_",f))
-    #change prior parameters
-    change <- c(change, change_prior_names(class = "b", pars = pars, names = f))
+    change <- lc(change, list(pos = grepl("^b\\[", pars), oldname = "b", 
+                              pnames = paste0("b_",f), fnames = paste0("b_",f)))
+    change <- c(change, prior_names(class = "b", pars = pars, names = f))
   }
   
   if (is.formula(x$partial) || x$family == "categorical") {
@@ -80,42 +75,37 @@ rename_pars <- function(x) {
     } else {
       p <- colnames(x$data$Xp)
     }
-    thres <- (max(x$data$max_obs) - 1)
-    change[[length(change) + 1]] <- list(pos = grepl("^bp\\[", pars), 
-                                       oldname = "bp", 
-                                       pnames = paste0("b_",p), 
-                                       fnames = paste0("b_", sapply(p, function(p) 
-                                         sapply(1:thres, function(i) paste0(p,"[",i,"]")))),
-                                       dim = thres,
-                                       sort = unlist(lapply(1:length(p), function(k) 
-                                         seq(k, thres*length(p), length(p)))))
-    # change prior parameters 
-    change <- c(change, change_prior_names(class = "bp", pars = pars, 
-                                           names = p, new_class = "b"))
+    lp <- length(p)
+    thres <- max(x$data$max_obs) - 1
+    pfnames <- paste0("b_",t(outer(p, paste0("[",1:thres,"]"), FUN = paste0)))
+    change <- lc(change, list(pos = grepl("^bp\\[", pars), oldname = "bp", 
+                              pnames = paste0("b_",p), fnames = pfnames,
+                              sort = ulapply(1:lp, seq, to = thres*lp, by = lp),
+                              dim = thres))
+    change <- c(change, prior_names(class = "bp", pars = pars, 
+                                    names = p, new_class = "b"))
   }  
   
   if (length(x$ranef)) {
     group <- names(x$ranef)
     gf <- make_group_frame(x$ranef)
     for (i in 1:length(x$ranef)) {
-      change[[length(change) + 1]] <- list(pos = grepl(paste0("^sd_",i,"(\\[|$)"), pars),
-                                           oldname = paste0("sd_",i),
-                                           pnames = paste0("sd_",group[i],"_", x$ranef[[i]]),
-                                           fnames = paste0("sd_",group[i],"_", x$ranef[[i]]))
-      # change prior parameters
-      change <- c(change, change_prior_names(class = paste0("sd_",i), pars = pars, 
-                                             names = x$ranef[[i]],
-                                             new_class = paste0("sd_",group[i])))
+      rfnames <- paste0("sd_",group[i],"_", x$ranef[[i]])
+      change <- lc(change, list(pos = grepl(paste0("^sd_",i,"(\\[|$)"), pars),
+                                oldname = paste0("sd_",i), pnames = rfnames, 
+                                fnames = rfnames))
+      change <- c(change, prior_names(class = paste0("sd_",i), pars = pars, 
+                                      names = x$ranef[[i]], 
+                                      new_class = paste0("sd_",group[i])))
       
       if (length(x$ranef[[i]]) > 1 && ee$cor[[i]]) {
-        cor_names <- get_cornames(x$ranef[[i]], type = paste0("cor_",group[i]), brackets = FALSE)
-        change[[length(change) + 1]] <- list(pos = grepl(paste0("^cor_",i,"(\\[|$)"), pars),
-                                             oldname = paste0("cor_",i),
-                                             pnames = cor_names,
-                                             fnames = cor_names) 
-        # change prior parameters
-        change <- c(change, change_prior_names(class = paste0("cor_",i), pars = pars, 
-                                               new_class = paste0("cor_",group[i])))
+        cor_names <- get_cornames(x$ranef[[i]], type = paste0("cor_",group[i]), 
+                                  brackets = FALSE)
+        change <- lc(change, list(pos = grepl(paste0("^cor_",i,"(\\[|$)"), pars),
+                                  oldname = paste0("cor_",i), pnames = cor_names,
+                                  fnames = cor_names)) 
+        change <- c(change, prior_names(class = paste0("cor_",i), pars = pars, 
+                                        new_class = paste0("cor_",group[i])))
       }
       if (any(grepl("^r_", pars))) {
         lc <- length(change) + 1
@@ -141,24 +131,20 @@ rename_pars <- function(x) {
     }
   }
   if (x$family %in% c("gaussian", "student", "cauchy") && !is.formula(ee$se)) {
-   change[[length(change) + 1]] <- list(pos = grepl("^sigma", pars), 
-                                        oldname = "sigma",
-                                        pnames = paste0("sigma_",ee$response),
-                                        fnames = paste0("sigma_",ee$response))
-   # change prior parameters
-   change <- c(change, change_prior_names(class = "sigma", pars = pars, names = ee$response))
-   # rename residual correlation paramaters
-   if (x$family == "gaussian" && length(ee$response) > 1) {
-      rescor_names <- paste0("rescor_",unlist(lapply(2:length(ee$response), function(j) 
-          lapply(1:(j-1), function(k) paste0(ee$response[k],"_",ee$response[j])))))
-     change[[length(change) + 1]] <- list(pos = grepl("^rescor\\[", pars), 
-                                          oldname = "rescor",
-                                          pnames = rescor_names,
-                                          fnames = rescor_names)
+    corfnames <- paste0("sigma_",ee$response)
+    change <- lc(change, list(pos = grepl("^sigma", pars), oldname = "sigma",
+                              pnames = corfnames, fnames = corfnames))
+    change <- c(change, prior_names(class = "sigma", pars = pars, 
+                                     names = ee$response))
+    # residual correlation paramaters
+    if (x$family == "gaussian" && length(ee$response) > 1) {
+       rescor_names <- get_cornames(ee$response, type = "rescor", brackets = FALSE)
+       change <- lc(change, list(pos = grepl("^rescor\\[", pars), oldname = "rescor",
+                                 pnames = rescor_names, fnames = rescor_names))
     }
   } 
   
-  # rename parameters
+  # perform the actual renaming in x$fit@sim
   if (length(change)) {
     for (c in 1:length(change)) {
       x$fit@sim$fnames_oi[change[[c]]$pos] <- change[[c]]$fnames
@@ -171,11 +157,14 @@ rename_pars <- function(x) {
       }
       onp <- match(change[[c]]$oldname, names(x$fit@sim$dims_oi))
       if (is.null(change[[c]]$pnames)) {
-        x$fit@sim$dims_oi[[onp]] <- NULL  # remove this parameter from dims_oi
-      } else { # rename dims_oi 
-        x$fit@sim$dims_oi <- c(if (onp > 1) x$fit@sim$dims_oi[1:(onp - 1)], 
+        # only needed to collapse multiple r_<i> of the same grouping factor
+        x$fit@sim$dims_oi[[onp]] <- NULL  
+      } else { 
+        # rename dims_oi to match names in fnames_oi
+        dims <- x$fit@sim$dims_oi
+        x$fit@sim$dims_oi <- c(if (onp > 1) dims[1:(onp - 1)], 
                                make_dims(change[[c]]),
-                               x$fit@sim$dims_oi[(onp + 1):length(x$fit@sim$dims_oi)])
+                               dims[(onp + 1):length(dims)])
       }
     }
   }
@@ -227,9 +216,7 @@ make_indices <- function(rows, cols = NULL, dim = 1) {
   if (dim == 1) 
     indices <- paste0("[",rows,"]")
   else {
-    indices <- expand.grid(rows, cols)
-    indices <- unlist(lapply(1:nrow(indices), function(i)
-      paste0("[",paste0(indices[i,], collapse = ","),"]")))
+    indices <- paste0("[", outer(rows, cols, FUN = paste, sep = ","), "]")
   }
   indices
 }
@@ -262,8 +249,7 @@ combine_duplicates <- function(x) {
   new_list
 }
 
-change_prior_names <- function(class, pars, names = NULL, 
-                               new_class = class) {
+prior_names <- function(class, pars, names = NULL, new_class = class) {
   # helps in renaming prior parameters
   #
   # Args: 
@@ -277,7 +263,8 @@ change_prior_names <- function(class, pars, names = NULL,
   change <- list()
   pos_priors <- which(grepl(paste0("^prior_",class,"(_|$)"), pars))
   if (length(pos_priors)) {
-    priors <- gsub(paste0("^prior_",class), paste0("prior_",new_class), pars[pos_priors])
+    priors <- gsub(paste0("^prior_",class), paste0("prior_",new_class), 
+                   pars[pos_priors])
     digits <- sapply(priors, function(prior) {
       d <- regmatches(prior, gregexpr("_[[:digit:]]+$", prior))[[1]]
       if (length(d)) 
@@ -287,12 +274,13 @@ change_prior_names <- function(class, pars, names = NULL,
     if (sum(abs(digits)) > 0 && is.null(names)) 
       stop("argument names is missing")
     for (i in 1:length(priors)) {
-      if (digits[i]) priors[i] <- gsub("[[:digit:]]+$", names[digits[i]], priors[i])
+      if (digits[i]) 
+        priors[i] <- gsub("[[:digit:]]+$", names[digits[i]], priors[i])
       if (pars[pos_priors[i]] != priors[i])
-        change[[length(change) + 1]] <- list(pos = pos_priors[i], 
-                                             oldname = pars[pos_priors[i]],
-                                             pnames = priors[i],
-                                             fnames = priors[i])
+        change <- lc(change, list(pos = pos_priors[i], 
+                                  oldname = pars[pos_priors[i]],
+                                  pnames = priors[i],
+                                  fnames = priors[i]))
     }
   }
   change
@@ -300,7 +288,7 @@ change_prior_names <- function(class, pars, names = NULL,
 
 make_dims <- function(x) {
   # helper function to make correct dims for .@sims$dims_oi
-  if (is.null(x$dim))
+  if (is.null(x$dim)) 
     x$dim <- numeric(0)
   setNames(rep(list(x$dim), length(x$pnames)), x$pnames)
 }

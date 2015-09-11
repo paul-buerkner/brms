@@ -313,8 +313,8 @@ stan_ranef <- function(i, ranef, group, cor, prior = list(),
                          "  vector<lower=-1,upper=1>[NC_",i,"] cor_",i,"; \n")
       out$genC <- paste0("  # take only relevant parts of correlation matrix \n",
                          "  Cor_",i," <- multiply_lower_tri_self_transpose(L_",i,"); \n",
-                         collapse(unlist(lapply(2:length(r), function(k) lapply(1:(k-1), function(j)
-                           paste0("  cor_",i,"[",(k-1)*(k-2)/2+j,"] <- Cor_",i,"[",j,",",k,"]; \n")))))) 
+                         collapse(ulapply(2:length(r), function(k) lapply(1:(k-1), function(j)
+                           paste0("  cor_",i,"[",(k-1)*(k-2)/2+j,"] <- Cor_",i,"[",j,",",k,"]; \n"))))) 
     }  
   }
   out
@@ -559,8 +559,8 @@ stan_multi <- function(family, response) {
     "  vector<lower=-1,upper=1>[NC_trait] rescor; \n")
    out$genC <- paste0("  # take only relevant parts of residual correlation matrix \n",
         "  Rescor <- multiply_lower_tri_self_transpose(Lrescor); \n",
-        collapse(unlist(lapply(2:length(response), function(i) lapply(1:(i-1), function(j)
-        paste0("  rescor[",(i-1)*(i-2)/2+j,"] <- Rescor[",j,",",i,"]; \n"))))))
+        collapse(ulapply(2:length(response), function(i) lapply(1:(i-1), function(j)
+        paste0("  rescor[",(i-1)*(i-2)/2+j,"] <- Rescor[",j,",",i,"]; \n")))))
   }
   out
 }

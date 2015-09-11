@@ -82,12 +82,12 @@ get_cornames <- function(names, type = "cor", brackets = TRUE, subset = NULL, su
   #
   # Returns: 
   #  correlation names based on the variable names passed to the names argument
-  cor_names <- NULL
+  cornames <- NULL
   if (is.null(subset) && length(names) > 1) {
     for (i in 2:length(names)) {
       for (j in 1:(i-1)) {
-        if (brackets) cor_names <- c(cor_names, paste0(type,"(",names[j],",",names[i],")"))
-        else cor_names <- c(cor_names, paste0(type,"_",names[j],"_",names[i]))
+        if (brackets) cornames <- c(cornames, paste0(type,"(",names[j],",",names[i],")"))
+        else cornames <- c(cornames, paste0(type,"_",names[j],"_",names[i]))
       }
     }
   } else if (!is.null(subset)) {
@@ -95,9 +95,9 @@ get_cornames <- function(names, type = "cor", brackets = TRUE, subset = NULL, su
     subset <- rename(subset, paste0("^",type, if (nchar(subtype)) paste0("_",subtype)),
                      "", fixed = FALSE)
     matches <- which(possible_values %in% subset)
-    cor_names <- get_cornames(names = names, type = type)[matches]
+    cornames <- get_cornames(names = names, type = type)[matches]
   }
-  cor_names
+  cornames
 }
 
 get_estimate <- function(coef, samples, margin = 2, to.array = FALSE, ...) {
@@ -367,10 +367,10 @@ ranef_predictor <- function(Z, gf, r) {
   Z <- expand_matrix(Z, gf)
   levels <- unique(gf)
   # sort levels because we need row major instead of column major order
-  sort_levels <- unlist(lapply(1:max_levels, function(l) seq(l, ncol(r), max_levels)))
+  sort_levels <- ulapply(1:max_levels, function(l) seq(l, ncol(r), max_levels))
   if (length(levels) < max_levels) {
     # if only a subset of levels is provided (only for newdata)
-    take_levels <- unlist(lapply(levels, function(l) ((l-1) * nranef + 1):(l * nranef)))
+    take_levels <- ulapply(levels, function(l) ((l-1) * nranef + 1):(l * nranef))
     eta <- as.matrix(r[, sort_levels])[, take_levels] %*% t(Z[, take_levels])
   } else {
     eta <- as.matrix(r[, sort_levels]) %*% t(Z)
@@ -419,8 +419,9 @@ partial_predictor <- function(Xp, p, ncat) {
   # @return linear predictor of partial effects as a 3D array (not as a matrix)
   ncat <- max(ncat)
   etap <- array(0, dim = c(nrow(p), nrow(Xp), ncat-1))
+  indices <- seq(1, (ncat-1) * ncol(Xp), ncat-1) - 1
   for (k in 1:(ncat-1)) {
-    etap[, , k] <- as.matrix(p[, seq(k, (ncat-1) * ncol(Xp), ncat-1)]) %*% t(as.matrix(Xp))
+    etap[, , k] <- as.matrix(p[, indices + k]) %*% t(as.matrix(Xp))
   }
   etap
 }
@@ -445,7 +446,7 @@ expand_matrix <- function(A, x) {
   K <- ncol(A)
   v <- rep(0, K * max(x))
   do.call(rbind, lapply(1:nrow(A), function(n, v) {
-    v[K*(x[n]-1) + 1:K] <- A[n, ] 
+    v[K * (x[n] - 1) + 1:K] <- A[n, ] 
     return(v)}, v = v))
 }
 

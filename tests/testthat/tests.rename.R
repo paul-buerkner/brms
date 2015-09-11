@@ -38,12 +38,12 @@ test_that("Test that combine_duplicates works as expected", {
                list(a = c(2,2,4,2), b = c("a", "c")))
 })
 
-test_that("Test that change_prior_names returns correct lists to be understood by rename_pars", {
+test_that("Test that prior_names returns correct lists to be understood by rename_pars", {
   pars <- c("b", "b_1", "bp", "bp_1", "prior_b", "prior_b_1", "prior_b_3", "sd_x[1]", "prior_bp_1")
-  expect_equal(change_prior_names(class = "b", pars = pars, names = c("x1", "x3", "x2")),
+  expect_equal(prior_names(class = "b", pars = pars, names = c("x1", "x3", "x2")),
                list(list(pos = 6, oldname = "prior_b_1", pnames = "prior_b_x1", fnames = "prior_b_x1"),
                     list(pos = 7, oldname = "prior_b_3", pnames = "prior_b_x2", fnames = "prior_b_x2")))
-  expect_equal(change_prior_names(class = "bp", pars = pars, names = c("x1", "x2"), new_class = "b"),
+  expect_equal(prior_names(class = "bp", pars = pars, names = c("x1", "x2"), new_class = "b"),
                list(list(pos = 9, oldname = "prior_bp_1", pnames = "prior_b_x1", fnames = "prior_b_x1")))
 })
 

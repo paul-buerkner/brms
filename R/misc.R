@@ -41,7 +41,18 @@ is.wholenumber <- function(x, tol = .Machine$double.eps^0.5) {
   } else {
     return(abs(x - round(x)) < tol)
   }
-}  
+} 
+
+ulapply <- function(X, FUN, ...) {
+  # short for unlist(lapply(.))
+  unlist(lapply(X = X, FUN = FUN, ...))
+}
+
+lc <- function(l, x) {
+  # append x to l
+  l[[length(l) + 1]] <- x
+  l
+}
 
 collapse <- function(..., sep = "") {
   # wrapper for paste with collapse
