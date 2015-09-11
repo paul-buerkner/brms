@@ -82,10 +82,14 @@ test_that("Test that stan_model handles addition arguments correctly", {
 })
 
 test_that("Test that stan_model correctly combines strings of multiple grouping factors", {
-  expect_match(stan_model(count ~ (1|patient) + (1+Trt_c|visit), data = epilepsy, family = "poisson", link = "log"), 
-               "  real Z_1[N]; \n  int<lower=1> J_2[N];", fixed = TRUE)
-  expect_match(stan_model(count ~ (1|visit) + (1+Trt_c|patient), data = epilepsy, family = "poisson", link = "log"), 
-               "  int NC_1; \n  int<lower=1> J_2[N];", fixed = TRUE)
+  expect_match(stan_model(count ~ (1|patient) + (1+Trt_c|visit), 
+                          data = epilepsy, family = "poisson", link = "log"), 
+               "  real Z_1[N];  # RE design matrix \n  # data for random effects of visit \n", 
+               fixed = TRUE)
+  expect_match(stan_model(count ~ (1|visit) + (1+Trt_c|patient), 
+                          data = epilepsy, family = "poisson", link = "log"), 
+               "  int NC_1;  # number of correlations \n  # data for random effects of visit \n", 
+               fixed = TRUE)
 })
 
 test_that("Test that stan_ordinal returns correct strings", {
@@ -119,21 +123,29 @@ test_that("Test that stan_llh returns correct llhs under weights and censoring",
 })
 
 test_that("Test that stan_rngprior returns correct sampling statements for priors", {
+  c1 <- "  # parameters to store prior samples \n"
+  c2 <- "  # additionally draw samples from priors \n"
   expect_equal(stan_rngprior(TRUE, prior = "nu ~ uniform(0,100); \n"),
-               list(par = "  real<lower=0> prior_nu; \n", model = "  prior_nu ~ uniform(0,100); \n"))
+               list(par = paste0(c1,"  real<lower=0> prior_nu; \n"), 
+                    model = paste0(c2,"  prior_nu ~ uniform(0,100); \n")))
   expect_equal(stan_rngprior(TRUE, prior = "delta ~ normal(0,1); \n", family = "cumulative"),
-               list(par = "  real<lower=0> prior_delta; \n", model = "  prior_delta ~ normal(0,1); \n"))
+               list(par = paste0(c1,"  real<lower=0> prior_delta; \n"), 
+                    model = paste0(c2,"  prior_delta ~ normal(0,1); \n")))
   expect_equal(stan_rngprior(TRUE, prior = "b ~ normal(0,5); \n"),
-               list(genD = "  real prior_b; \n", genC = "  prior_b <- normal_rng(0,5); \n"))
+               list(genD = "  real prior_b; \n", 
+                    genC = paste0(c2,"  prior_b <- normal_rng(0,5); \n")))
   expect_equal(stan_rngprior(TRUE, prior = "b[1] ~ normal(0,5); \n"),
-               list(genD = "  real prior_b_1; \n", genC = "  prior_b_1 <- normal_rng(0,5); \n"))
+               list(genD = "  real prior_b_1; \n", 
+                    genC = paste0(c2,"  prior_b_1 <- normal_rng(0,5); \n")))
   expect_equal(stan_rngprior(TRUE, prior = "bp[1] ~ normal(0,5); \n"),
-               list(genD = "  real prior_bp_1; \n", genC = "  prior_bp_1 <- normal_rng(0,5); \n"))
+               list(genD = "  real prior_bp_1; \n", 
+                    genC = paste0(c2,"  prior_bp_1 <- normal_rng(0,5); \n")))
   expect_equal(stan_rngprior(TRUE, prior = "sigma[2] ~ normal(0,5); \n"),
-               list(par = "  real<lower=0> prior_sigma_2; \n", model = "  prior_sigma_2 ~ normal(0,5); \n"))
+               list(par = paste0(c1,"  real<lower=0> prior_sigma_2; \n"), 
+                    model = paste0(c2,"  prior_sigma_2 ~ normal(0,5); \n")))
   expect_equal(stan_rngprior(TRUE, prior = "sd_1[1] ~ normal(0,5); \n  sd_1[2] ~ cauchy(0,2); \n"),
-               list(par = "  real<lower=0> prior_sd_1_1; \n  real<lower=0> prior_sd_1_2; \n", 
-                    model = "  prior_sd_1_1 ~ normal(0,5); \n  prior_sd_1_2 ~ cauchy(0,2); \n"))
+               list(par = paste0(c1,"  real<lower=0> prior_sd_1_1; \n  real<lower=0> prior_sd_1_2; \n"), 
+                    model = paste0(c2,"  prior_sd_1_1 ~ normal(0,5); \n  prior_sd_1_2 ~ cauchy(0,2); \n")))
 })
 
 test_that("Test that stan_functions returns correct user defined functions", {
