@@ -388,21 +388,19 @@ plot.brmsfit <- function(x, parameters = NA, N = 5, ask = TRUE, ...) {
   if (!is.character(parameters)) 
     parameters <- c("^b_", "^sd_", "^cor_", "^sigma", "^rescor", "^nu$", 
                     "^shape$", "^delta$", "^ar", "^ma")
-  samples <- posterior.samples(x, parameters = parameters, add_chains = TRUE)
+  samples <- posterior_samples(x, parameters = parameters, add_chains = TRUE)
   pars <- names(samples)[which(!names(samples) %in% c("chains", "iter"))] 
   
-  default.ask <- devAskNewPage()
+  default_ask <- devAskNewPage()
+  on.exit(devAskNewPage(default_ask))
   devAskNewPage(ask = FALSE)
   for (i in 1:ceiling(length(pars) / N)) {
     plots <- lapply(pars[((i - 1) * N + 1):min(i * N, length(pars))], 
                     td_plot, x = samples)
     plot(arrangeGrob(grobs = unlist(plots, recursive = FALSE), 
                      nrow = length(plots), ncol = 2, ...))
-    if (i == 1) {
-      devAskNewPage(ask = ask)
-    }
+    if (i == 1) devAskNewPage(ask = ask)
   }
-  devAskNewPage(default.ask)
 }
 
 #' Extract Model Fitted Values of \code{brmsfit} Objects
