@@ -27,7 +27,8 @@ future versions of the package.}
 \item{summary}{logical. Should summary statistics (i.e. means, sds, and 95\% intervals) be returned
 instead of the raw values. Default is \code{TRUE}}
 
-\item{probs}{The percentiles to be computed by the \code{quantile} function. Only used if \code{summary = TRUE}.}
+\item{probs}{The percentiles to be computed by the \code{quantile} function.
+Only used if \code{summary} is \code{TRUE}.}
 
 \item{...}{Currently ignored}
 }

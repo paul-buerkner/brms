@@ -9,7 +9,8 @@
 #'  typically the environment from which \code{brm} is called. Although it is optional, we strongly recommend to supply a data.frame. 
 #' @param family A vector of one or two character strings. The first string indicates the distribution of the dependent variable (the 'family'). Currently, the following families are supported:
 #'  \code{"gaussian"}, \code{"student"}, \code{"cauchy"}, \code{"binomial"}, \code{"bernoulli"}, \code{"categorical"}, \code{"poisson"}, \code{"negbinomial"}, 
-#'  \code{"geometric"}, \code{"gamma"}, \code{"exponential"}, \code{"weibull"}, \code{"cumulative"}, \code{"cratio"}, \code{"sratio"}, and \code{"acat"}.
+#'  \code{"geometric"}, \code{"gamma"}, \cr
+#'  \code{"exponential"}, \code{"weibull"}, \code{"cumulative"}, \code{"cratio"}, \code{"sratio"}, and \code{"acat"}.
 #'  The second string indicates the link function, which must be supported by the distribution of the dependent variable. 
 #'  If not specified, default link functions are used. Further information is provided under 'Details'.
 #' @param prior One or more \code{brmsprior} objects created by function \code{\link[brms:set_prior]{set_prior}} and combined
@@ -141,8 +142,8 @@
 #'   In the following, we list all possible links for each family.
 #'   The families \code{gaussian}, \code{student}, and \code{cauchy} accept the links (as names) \code{identity}, \code{log}, and \code{inverse};
 #'   families \code{poisson}, \code{negbinomial}, and \code{geometric} the links \code{log}, \code{identity}, and \code{sqrt}; 
-#'   families \code{binomial}, \code{bernoulli}, \code{cumulative}, \code{cratio}, \code{sratio}, and \code{acat} the links \code{logit}, \code{probit}, \code{probit_approx}, and \code{cloglog};
-#'   family  \code{categorical} the link \code{logit}; families \code{gamma}, \code{weibull}, and \code{exponential} the links \code{log}, \code{identity}, and \code{inverse}. 
+#'   families \code{binomial}, \code{bernoulli}, \code{cumulative}, \code{cratio}, \code{sratio}, and \code{acat} the links \code{logit}, \code{probit}, \code{probit_approx}, and \code{cloglog}; \cr
+#'   family \code{categorical} the link \code{logit}; families \code{gamma}, \code{weibull}, and \code{exponential} the links \code{log}, \code{identity}, and \code{inverse}. 
 #'   The first link mentioned for each family is the default. \cr    
 #'   
 #'   

@@ -116,15 +116,15 @@ extract_time <- function(formula) {
 }
 
 update_formula <- function(formula, addition = NULL, partial = NULL) {
-  # incorporate addition and partial arguments into formula 
+  # incorporate addition arguments and category specific effects into formula 
   # 
   # Args:
   #   formula: a model formula 
   #   addition: a list with one sided formulas taken from the addition arguments in brm
-  #   partial: a one sided formula containing partial effects
+  #   partial: a one sided formula containing category specific effects
   #
   # Returns:
-  #   an updated formula containing the addition and partial effects
+  #   an updated formula containing the addition and category specific effects
   var_names <- names(addition)
   addition <- lapply(addition, formula2string, rm = 1)
   fnew <- "."
@@ -261,7 +261,7 @@ remove_chains <- function(i, sflist) {
 #' @param prior A character string defining a distribution in \pkg{Stan} language
 #' @param class The parameter class. Defaults to \code{"b"} (fixed effects). 
 #'   See 'Details' for other valid parameter classes. 
-#' @param coef Name of the (fixed, partial, or random effects) parameter  
+#' @param coef Name of the (fixed, category specific, or random effects) parameter  
 #' @param group Grouping factor for random effects parameters.
 #' 
 #' @return An object of class \code{brmsprior} to be used in the \code{prior}
@@ -273,22 +273,23 @@ remove_chains <- function(i, sflist) {
 #'   A complete overview on possible prior distributions is given in the Stan Reference Manual available at 
 #'   \url{http://mc-stan.org/}.
 #'   
+#'   To combine multiple priors, use \code{c(...)}, e.g., \code{c(set_prior(...), set_prior(...))}.
 #'   \pkg{brms} performs no checks if the priors are written in correct Stan language.
 #'   Instead, Stan will check their correctness when the model is parsed to C++ and returns an error if they are not.
 #'   Currently, there are five types of parameters in \pkg{brms} models, 
 #'   for which the user can specify prior distributions. \cr
 #'   
-#'   1. Fixed and partial effects 
+#'   1. Fixed and category specific effects 
 #'   
-#'   Every fixed (and partial) effect has its corresponding regression parameter. These parameters are internally named as
+#'   Every fixed (and category specific) effect has its corresponding regression parameter. These parameters are internally named as
 #'   \code{b_<fixed>}, where \code{<fixed>} represents the name of the corresponding fixed effect. 
 #'   Suppose, for instance, that \code{y} is predicted by \code{x1} and \code{x2} 
 #'   (i.e. \code{y ~ x1+x2} in formula syntax). 
 #'   Then, \code{x1} and \code{x2} have regression parameters \code{b_x1} and \code{b_x2} respectively. 
-#'   The default prior for fixed and partial effects is an improper flat prior over the reals. 
+#'   The default prior for fixed and category specific effects is an improper flat prior over the reals. 
 #'   Other common options are normal priors or uniform priors over a finite interval.
 #'   If we want to have a normal prior with mean 0 and standard deviation 5 for \code{x1}, 
-#'   and a uniform prior between -10 and 10 for \code{x2}, we can specify this via \cr
+#'   and a uniform prior between -10 and 10 for \code{x2}, we can specify this via
 #'   \code{set_prior("normal(0,5)", class = "b", coef = "x1")} and \cr
 #'   \code{set_prior("uniform(-10,10)", class = "b", coef = "x2")}.
 #'   To put the same prior on all fixed effects at once, 
@@ -347,11 +348,11 @@ remove_chains <- function(i, sflist) {
 #'   and \code{acat}, and only if \code{threshold = "equidistant"}, the parameter \code{delta} is used to model the distance
 #'   between to adjacent thresholds. By default, \code{delta} has an improper flat prior over the reals. \cr
 #'   Every family specific parameter has its own prior class, so that \cr
-#'   \code{set_prior("<prior>", class = "<parameter>")} it the right way to go. \cr
+#'   \code{set_prior("<prior>", class = "<parameter>")} it the right way to go.
 #' 
 #'   Often, it may not be immediately clear, which parameters are present in the model.
 #'   To get a full list of parameters and parameter classes for which priors can be specified (depending on the model) 
-#'   use function \code{\link[brms:get_prior]{get_prior}}
+#'   use function \code{\link[brms:get_prior]{get_prior}}.
 #'
 #' @seealso \code{\link[brms:get_prior]{get_prior}}
 #' 
@@ -459,7 +460,7 @@ get_prior <- function(formula, data = NULL, family = "gaussian", addition = NULL
   # initialize output
   prior <- prior_frame(prior = character(0), class = character(0), 
                      coef = character(0), group = character(0))
-  # fixed and partial effects
+  # fixed and category specific effects
   fixef <- colnames(get_model_matrix(ee$fixed, data = data))
   if (length(fixef)) {
     prior <- rbind(prior, prior_frame(class = "b", coef = c("", fixef)))
@@ -595,14 +596,14 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
       prior <- rbind(prior, do.call(rbind, new_rows))  # add new rows
     }
   }
-  # get partial priors out of fixef priors
+  # get category specific priors out of fixef priors
   if (family == "categorical" || is.formula(partial)) {
     paref <- colnames(get_model_matrix(partial, data = data, rm_intercept = TRUE))
     b_index <- which(prior$class == "b" & !nchar(prior$coef))
     partial_index <- which(prior$class == "b" & prior$coef %in% paref)
     rows2remove <- c(rows2remove, partial_index)
     partial_prior <- prior[c(b_index, partial_index), ]
-    partial_prior$class <- "bp"  # the partial effects class
+    partial_prior$class <- "bp"  # the category specific effects class
     prior <- rbind(prior, partial_prior)
   }
   # special treatment of thresholds in ordinal models

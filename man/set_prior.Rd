@@ -12,7 +12,7 @@ set_prior(prior, class = "b", coef = "", group = "")
 \item{class}{The parameter class. Defaults to \code{"b"} (fixed effects).
 See 'Details' for other valid parameter classes.}
 
-\item{coef}{Name of the (fixed, partial, or random effects) parameter}
+\item{coef}{Name of the (fixed, category specific, or random effects) parameter}
 
 \item{group}{Grouping factor for random effects parameters.}
 }
@@ -29,22 +29,23 @@ Define priors for specific parameters or classes of parameters
   A complete overview on possible prior distributions is given in the Stan Reference Manual available at
   \url{http://mc-stan.org/}.
 
+  To combine multiple priors, use \code{c(...)}, e.g., \code{c(set_prior(...), set_prior(...))}.
   \pkg{brms} performs no checks if the priors are written in correct Stan language.
   Instead, Stan will check their correctness when the model is parsed to C++ and returns an error if they are not.
   Currently, there are five types of parameters in \pkg{brms} models,
   for which the user can specify prior distributions. \cr
 
-  1. Fixed and partial effects
+  1. Fixed and category specific effects
 
-  Every fixed (and partial) effect has its corresponding regression parameter. These parameters are internally named as
+  Every fixed (and category specific) effect has its corresponding regression parameter. These parameters are internally named as
   \code{b_<fixed>}, where \code{<fixed>} represents the name of the corresponding fixed effect.
   Suppose, for instance, that \code{y} is predicted by \code{x1} and \code{x2}
   (i.e. \code{y ~ x1+x2} in formula syntax).
   Then, \code{x1} and \code{x2} have regression parameters \code{b_x1} and \code{b_x2} respectively.
-  The default prior for fixed and partial effects is an improper flat prior over the reals.
+  The default prior for fixed and category specific effects is an improper flat prior over the reals.
   Other common options are normal priors or uniform priors over a finite interval.
   If we want to have a normal prior with mean 0 and standard deviation 5 for \code{x1},
-  and a uniform prior between -10 and 10 for \code{x2}, we can specify this via \cr
+  and a uniform prior between -10 and 10 for \code{x2}, we can specify this via
   \code{set_prior("normal(0,5)", class = "b", coef = "x1")} and \cr
   \code{set_prior("uniform(-10,10)", class = "b", coef = "x2")}.
   To put the same prior on all fixed effects at once,
@@ -103,11 +104,11 @@ Define priors for specific parameters or classes of parameters
   and \code{acat}, and only if \code{threshold = "equidistant"}, the parameter \code{delta} is used to model the distance
   between to adjacent thresholds. By default, \code{delta} has an improper flat prior over the reals. \cr
   Every family specific parameter has its own prior class, so that \cr
-  \code{set_prior("<prior>", class = "<parameter>")} it the right way to go. \cr
+  \code{set_prior("<prior>", class = "<parameter>")} it the right way to go.
 
   Often, it may not be immediately clear, which parameters are present in the model.
   To get a full list of parameters and parameter classes for which priors can be specified (depending on the model)
-  use function \code{\link[brms:get_prior]{get_prior}}
+  use function \code{\link[brms:get_prior]{get_prior}}.
 }
 \examples{
 \dontrun{

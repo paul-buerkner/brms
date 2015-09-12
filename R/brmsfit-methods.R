@@ -566,7 +566,8 @@ residuals.brmsfit <- function(object, re_formula = NULL, type = c("ordinary", "p
 #'   future versions of the package.
 #' @param summary logical. Should summary statistics (i.e. means, sds, and 95\% intervals) be returned
 #'  instead of the raw values. Default is \code{TRUE}
-#' @param probs The percentiles to be computed by the \code{quantile} function. Only used if \code{summary = TRUE}.
+#' @param probs The percentiles to be computed by the \code{quantile} function. 
+#'  Only used if \code{summary} is \code{TRUE}.
 #' @param ... Currently ignored
 #' 
 #' @return Predicted values of the response variable. If \code{summary = TRUE} the output depends on the family:
