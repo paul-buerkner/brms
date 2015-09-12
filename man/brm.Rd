@@ -61,7 +61,9 @@ Among others, these samples can be used to calculate Bayes factors for point hyp
 \code{cov.ranef}, and \code{ranef}, are ignored.}
 
 \item{inits}{Either \code{"random"} or \code{"0"}. If inits is \code{"random"} (the default), Stan will randomly generate initial values for parameters.
-If it is \code{"0"}, all parameters are initiliazed to zero (recommended for \code{exponential} and \code{weibull} models).
+If it is \code{"0"}, all parameters are initiliazed to zero. This option is recommended for \code{exponential} and \code{weibull} models, as it
+happens that default (\code{"random"}) inits cause samples to be essentially constant. Generally, setting \code{inits = "0"} is worth
+a try, if chains do not behave well.
 Alternatively, \code{inits} can be a list of lists containing the initial values, or a function (or function name) generating initial values.
 The latter options are mainly implemented for internal testing.}
 
