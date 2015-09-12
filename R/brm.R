@@ -279,14 +279,19 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"),
     on.exit(stopCluster(cl))  # close all clusters when exiting brm
     clusterExport(cl = cl, varlist = "args", envir = environment())
     clusterEvalQ(cl, require(rstan))
-    sflist <- parLapply(cl, X = 1:n.chains, fun = function(i) { 
-      args[c("chains", "chain_id", "init")] <- 
-        list(chains = 1, chain_id = i, init = args$init[i])
-      do.call(rstan::sampling, args)})
-    x$fit <- lapply(1:length(sflist), remove_chains, sflist = sflist)  # see validate.R
+    run_chain <- function(i) {
+      args$chains <- 1L
+      args$chain_id <- i
+      args$init <- args$init[i]
+      Sys.sleep(0.5 * i)
+      do.call(rstan::sampling, args = args)
+    }
+    sflist <- parLapply(cl, X = 1:n.chains, run_chain)
+    # remove chains that failed to run correctly; see validate.R
+    x$fit <- lapply(1:length(sflist), remove_chains, sflist = sflist)  
     x$fit <- rstan::sflist2stanfit(rmNULL(x$fit))
   } else {  # do not sample in parallel
-    x$fit <- do.call(rstan::sampling, args)
+    x$fit <- do.call(rstan::sampling, args = args)
   }
   return(rename_pars(x))  # see rename.R
 }

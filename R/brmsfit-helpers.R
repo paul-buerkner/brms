@@ -86,8 +86,11 @@ get_cornames <- function(names, type = "cor", brackets = TRUE, subset = NULL, su
   if (is.null(subset) && length(names) > 1) {
     for (i in 2:length(names)) {
       for (j in 1:(i-1)) {
-        if (brackets) cornames <- c(cornames, paste0(type,"(",names[j],",",names[i],")"))
-        else cornames <- c(cornames, paste0(type,"_",names[j],"_",names[i]))
+        if (brackets) {
+          cornames <- c(cornames, paste0(type,"(",names[j],",",names[i],")"))
+        } else {
+          cornames <- c(cornames, paste0(type,"_",names[j],"_",names[i]))
+        }
       }
     }
   } else if (!is.null(subset)) {
@@ -143,7 +146,7 @@ get_summary <- function(samples, probs = c(0.025, 0.975)) {
   } else if (length(dim(samples)) == 3) {
     out <- abind(lapply(1:dim(samples)[3], function(i)
       do.call(cbind, lapply(c("mean", "sd", "quantile"), get_estimate, 
-                            samples = samples[,,i], probs = probs))), along = 3)
+                            samples = samples[, , i], probs = probs))), along = 3)
     dimnames(out) <- list(NULL, NULL, paste0("P(Y = ", 1:dim(out)[3], ")")) 
   } else { 
     stop("dimension of samples must be either 2 or 3") 
@@ -192,9 +195,9 @@ get_cov_matrix <- function(sd, cor = NULL) {
   }
   nsamples <- nrow(sd)
   nranef <- ncol(sd)
-  cor_matrix <- cov_matrix <- aperm(array(diag(1, nranef), 
-                                          dim = c(nranef, nranef, nsamples)), 
-                                    perm = c(3, 1, 2))
+  cor_matrix <- aperm(array(diag(1, nranef), dim = c(nranef, nranef, nsamples)), 
+                      perm = c(3, 1, 2))
+  cov_matrix <- cor_matrix
   for (i in 1:nranef) 
     cov_matrix[, i, i] <- sd[, i]^2 
   if (!is.null(cor)) {
@@ -234,9 +237,11 @@ evidence_ratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"),
       # compute prior and posterior densities
       prior_density <- do.call(density, c(list(x = prior_samples, n = 2^pow), dots))
       posterior_density <- do.call(density, c(list(x = x, n = 2^pow), dots))
-      at_cut_prior <- match(min(abs(prior_density$x - cut)), abs(prior_density$x - cut))
       # evaluate densities at the cut point
-      at_cut_posterior <- match(min(abs(posterior_density$x - cut)), abs(posterior_density$x - cut))
+      at_cut_prior <- match(min(abs(prior_density$x - cut)), 
+                            abs(prior_density$x - cut))
+      at_cut_posterior <- match(min(abs(posterior_density$x - cut)), 
+                                abs(posterior_density$x - cut))
       out <- posterior_density$y[at_cut_posterior] / prior_density$y[at_cut_prior] 
     }
   } else if (wsign == "less") {
@@ -277,7 +282,8 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
   }
   
   group <- names(x$ranef)
-  all_groups <- extract_effects(x$formula)$group  # may contain the same group more than ones
+  # may contain the same group more than ones
+  all_groups <- extract_effects(x$formula)$group  
   if (length(group) && is.null(re_formula)) {
     for (i in 1:length(group)) {
       if (any(grepl(paste0("^J_|^lev_"), names(data)))) {  # implies brms > 0.4.1
@@ -288,7 +294,8 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
         if (any(grepl(paste0("^J_"), names(data)))) {
           gf <- get(paste0("J_",id), data)
         } else {
-          gf <- get(paste0("lev_",id), data)  # for backwards compatibility
+          # for backwards compatibility
+          gf <- get(paste0("lev_",id), data)  
         }
       } else {  # implies brms <= 0.4.1
         Z <- get(paste0("Z_",group[i]), data)
@@ -330,7 +337,7 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
       p <- posterior.samples(x, parameters = "^b_")
       etap <- partial_predictor(data$X, p, data$max_obs)
     } else {
-      etap <- array(0, dim = c(dim(eta), data$max_obs-1))
+      etap <- array(0, dim = c(dim(eta), data$max_obs - 1))
     }
     for (k in 1:(data$max_obs-1)) {
       etap[, , k] <- etap[, , k] + eta
@@ -479,7 +486,7 @@ compare_ic <- function(x, ic = c("waic", "loo")) {
   #   A matrix with differences in the ICs as well as corresponding standard errors
   ic <- match.arg(ic)
   n_models <- length(x)
-  compare_matrix <- matrix(0, nrow = n_models * (n_models-1) / 2, ncol = 2)
+  compare_matrix <- matrix(0, nrow = n_models * (n_models - 1) / 2, ncol = 2)
   rnames <- rep("", nrow(compare_matrix))
   n <- 1
   for (i in 1:(n_models - 1)) {
@@ -557,10 +564,10 @@ find_names <- function(x) {
   if (!is.character(x) || length(x) > 1) 
     stop("x must be a character string of length 1")
   x <- gsub(" ", "", x)
+  pos_all <- gregexpr("([^([:digit:]|[:punct:])]|\\.)[[:alnum:]_\\.]*(\\[[[:digit:]]*\\])?", x)[[1]]
   pos_fun <- gregexpr("([^([:digit:]|[:punct:])]|\\.)[[:alnum:]_\\.]*\\(", x)[[1]]
   pos_decnum <- gregexpr("\\.[[:digit:]]+", x)[[1]]
-  pos_var <- list(rmMatch(gregexpr("([^([:digit:]|[:punct:])]|\\.)[[:alnum:]_\\.]*(\\[[[:digit:]]*\\])?", x)[[1]], 
-                          pos_fun, pos_decnum))
+  pos_var <- list(rmMatch(pos_all, pos_fun, pos_decnum))
   unlist(regmatches(x, pos_var))
 }
 
@@ -602,17 +609,21 @@ print.brmssummary <- function(x, digits = 2, ...) {
     cat(paste("\nThe model does not contain posterior samples."))
   }
   else {
+    final_samples <- (x$n.iter - x$n.warmup) / x$n.thin * x$n.chains
+    waic <- ifelse(is.numeric(x$WAIC), round(x$WAIC, digits = digits), x$WAIC)
     cat(paste0("Samples: ", x$n.chains, " chains, each with n.iter = ", x$n.iter, 
                "; n.warmup = ", x$n.warmup, "; n.thin = ", x$n.thin, "; \n",
-               "         total post-warmup samples = ", (x$n.iter-x$n.warmup)/x$n.thin*x$n.chains, "\n"))
-    cat(paste0("   WAIC: ", ifelse(is.numeric(x$WAIC), round(x$WAIC, digits = digits), x$WAIC), "\n \n"))
+               "         total post-warmup samples = ", final_samples, "\n"))
+    cat(paste0("   WAIC: ", waic, "\n \n"))
     
     if (length(x$group)) {
       cat("Random Effects: \n")
       for (i in 1:length(x$group)) {
-        cat(paste0("~",x$group[i], " (Number of levels: ",x$ngrps[[x$group[i]]],") \n"))
-        x$random[[x$group[i]]][,"Eff.Sample"] <- round(x$random[[x$group[i]]][,"Eff.Sample"], digits = 0)
-        print(round(x$random[[x$group[i]]], digits = digits))
+        g <- x$group[i]
+        cat(paste0("~",g," (Number of levels: ",x$ngrps[[g]],") \n"))
+        x$random[[g]][, "Eff.Sample"] <- 
+          round(x$random[[g]][, "Eff.Sample"], digits = 0)
+        print(round(x$random[[g]], digits = digits))
         cat("\n")
       }
     }
@@ -621,19 +632,20 @@ print.brmssummary <- function(x, digits = 2, ...) {
       cat("Correlation Structure: ")
       print(x$autocor)
       cat("\n")
-      x$cor_pars[,"Eff.Sample"] <- round(x$cor_pars[,"Eff.Sample"], digits = 0)
+      x$cor_pars[, "Eff.Sample"] <- round(x$cor_pars[, "Eff.Sample"], digits = 0)
       print(round(x$cor_pars, digits = digits))
       cat("\n")
     }
     
     cat("Fixed Effects: \n")
-    x$fixed[,"Eff.Sample"] <- round(x$fixed[,"Eff.Sample"], digits = 0)
+    x$fixed[, "Eff.Sample"] <- round(x$fixed[, "Eff.Sample"], digits = 0)
     print(round(x$fixed, digits = digits)) 
     cat("\n")
     
     if (nrow(x$spec_pars)) {
       cat("Family Specific Parameters: \n")
-      x$spec_pars[,"Eff.Sample"] <- round(x$spec_pars[,"Eff.Sample"], digits = 0)
+      x$spec_pars[, "Eff.Sample"] <- 
+        round(x$spec_pars[, "Eff.Sample"], digits = 0)
       print(round(x$spec_pars, digits = digits))
       cat("\n")
     }
@@ -649,7 +661,8 @@ print.brmshypothesis <- function(x, digits = 2, ...) {
   cat(paste0("Hypothesis Tests for class ", x$class, ":\n"))
   x$hypothesis[,1:5] <- round(x$hypothesis[,1:5], digits = digits)
   print(x$hypothesis, quote = FALSE)
-  cat(paste0("---\n'*': The expected value under the hypothesis lies outside the ",(1-x$alpha)*100,"% CI."))
+  cat(paste0("---\n'*': The expected value under the hypothesis lies outside the ",
+             (1-x$alpha)*100,"% CI."))
 }
 
 #' @export
