@@ -3,7 +3,7 @@
 \name{fixef}
 \alias{fixef}
 \alias{fixef.brmsfit}
-\title{Extract Fixed Effects for \code{brmsfit} objects}
+\title{Extract Fixed Effects Estimates}
 \usage{
 ## S3 method for class 'brmsfit'
 fixef(x, estimate = "mean", ...)

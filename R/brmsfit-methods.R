@@ -12,11 +12,42 @@ fixef.brmsfit <-  function(x, estimate = "mean", ...) {
   pars <- parnames(x)
   fpars <- pars[grepl("^b_", pars)]
   if (!length(fpars)) 
-    stop(paste("No fixed effect present in argument x")) 
+    stop(paste("The model does not contain fixed effects")) 
   out <- posterior_samples(x, parameters = fpars, exact_match = TRUE)
   out <- do.call(cbind, lapply(estimate, get_estimate, samples = out, ...))
   rownames(out) <- gsub("^b_", "", fpars)
   out
+}
+
+#' Covariance and Correlation Matrix of Fixed Effects
+#' 
+#' Get a point estimate of the covariance or correlation matrix of fixed effects parameters
+#' 
+#' @param object An object of class \code{brmsfit}
+#' @param correlation logical; if \code{FALSE} (the default), compute the covariance matrix,
+#'   if \code{TRUE}, compute the correlation matrix
+#' @param ... Currently ignored
+#' 
+#' @return covariance or correlation matrix of fixed effects parameters
+#' 
+#' @details Estimates are obtained by calculating the maximum likelihood 
+#'   covariances (correlations) of the posterior samples. 
+#'
+#' @export
+vcov.brmsfit <- function(object, correlation = FALSE, ...) {
+  if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
+    stop("The model does not contain posterior samples")
+  pars <- parnames(object)
+  fpars <- pars[grepl("^b_", pars)]
+  if (!length(fpars)) 
+    stop(paste("The model does not contain fixed effects")) 
+  samples <- posterior_samples(object, parameters = fpars, exact_match = TRUE)
+  names(samples) <- sub("^b_", "", names(samples))
+  if (correlation) {
+    cor(samples) 
+  } else {
+    cov(samples)
+  }
 }
 
 #' @export

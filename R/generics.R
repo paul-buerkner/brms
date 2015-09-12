@@ -30,7 +30,7 @@ brmssummary <- function(formula = NULL, family = "", link = "",
   x
 }
 
-#' Extract Fixed Effects for \code{brmsfit} objects
+#' Extract Fixed Effects Estimates
 #' 
 #' A generic function to extract the fixed effects from a fitted model object. 
 #' 
