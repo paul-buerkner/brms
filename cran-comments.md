@@ -1,10 +1,8 @@
-This is an update to fix a critical bug.
-
 ## Test environments
-* local Windows 8.1 install, R 3.2.0, R 3.3.0
+* local Windows 8.1 install, R 3.2.2, R 3.3.0
 * win-builder (devel and release)
-* ubuntu 12.04, R 3.2.0
-* local OS X install, R 3.2.0
+* ubuntu 12.04, R 3.2.2
+* local OS X install, R 3.2.2
 
 ## R CMD check results
 There were no ERRORs, WARNINGs or NOTEs. 

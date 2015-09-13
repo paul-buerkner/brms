@@ -3,20 +3,21 @@ title: "News"
 output: html_document
 ---
 
-# under development
+# brms 0.5.0
 ----------------------------------------------------------------
 
 ## new features
-* compute the Watanabe-Akaike information criterion (WAIC) and the leave-one-out cross-validation (LOO) using the loo package.
+* compute the Watanabe-Akaike information criterion (WAIC) and leave-one-out cross-validation (LOO) using the loo package.
 * provide an interface to shinystan with S3 method 'launch_shiny'.
 * new functions 'get\_prior' and 'set\_prior' to make prior specifications easier.
-* log-likelihood values and posterior predictive samples can now be calculated after the model has been fitted. 
+* log-likelihood values and posterior predictive samples can now be calculated within R after the model has been fitted. 
 * make predictions based on new data using S3 method 'predict'.
-* allow for customized covariance structures of grouping factors with multiple random effects
+* allow for customized covariance structures of grouping factors with multiple random effects.
 * new S3 methods 'fitted' and 'residuals' to compute fitted values and residuals, respectively.
 
 ## other changes
-* arguments WAIC and predict are removed from function brm as they are no longer necessary.
+* arguments 'WAIC' and 'predict' are removed from function 'brm' as they are no longer necessary.
+* new argument 'cluster_type' in function 'brm' allowing to choose the cluster type created by the parallel package
 * remove chains that fail to initialize while sampling in parallel leaving the other chains untouched.
 * redesign trace and density plots to be faster and more stable.
 * S3 method 'VarCorr' now always returns covariance matrices regardless of whether correlations were estimated.

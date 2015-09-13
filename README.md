@@ -83,7 +83,7 @@ methods(class = "brmsfit")
 #>  [9] ngrps             nobs              parnames          plot             
 #> [13] posterior_samples predict           print             prior_samples    
 #> [17] ranef             residuals         stancode          standata         
-#> [21] summary           VarCorr           WAIC             
+#> [21] summary           VarCorr           vcov              WAIC             
 #> see '?methods' for accessing help and source code
 ```
 
