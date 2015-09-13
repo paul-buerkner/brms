@@ -1,0 +1,425 @@
+\documentclass[article, nojss]{jss}
+
+%\VignetteIndexEntry{brms}
+%\VignetteEngine{R.rsp::tex}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% declarations for jss.cls %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% almost as usual
+\author{Paul-Christian B\"urkner\\University of M\"unster}
+\title{\pkg{brms}: An R Package for Bayesian Generalized Linear Mixed Models using Stan}
+
+%% for pretty printing and a nice hypersummary also set:
+\Plainauthor{Paul-Christian B\"urkner} %% comma-separated
+\Plaintitle{brms: An R Package for Performing Bayesian Generalized Linear and Ordinal Mixed Models using Stan} %% without formatting
+\Shorttitle{\pkg{brms}: Bayesian Generalized Linear Mixed Models Models using Stan} %% a short title (if necessary)
+
+%% an abstract and keywords
+\Abstract{
+  The \pkg{brms} package implements Bayesian generalized linear mixed models in \proglang{R} using the probabilistic programming language \pkg{Stan}. A wide range of distributions and link functions are supported, allowing to fit -- among others -- linear, robust linear, binomial, Poisson, survival, and ordinal models. Further modeling options include multiple grouping factors each with multiple random effects, autocorrelation of the response variable, user defined covariance structures, censored data, as well as meta-analytic standard errors. Prior specifications are flexible and explicitly encourage users to apply prior distributions that actually reflect their beliefs. In addition, model fit can easily be assessed and compared with the Watanabe-Akaike-Information Criterion and leave-one-out cross-validation.
+}
+\Keywords{Bayesian inference, mixed model, ordinal data, MCMC, \pkg{Stan}, \proglang{R}}
+\Plainkeywords{Bayesian inference, mixed model, ordinal data, MCMC, Stan, R} %% without formatting
+%% at least one keyword must be supplied
+
+%% publication information
+%% NOTE: Typically, this can be left commented and will be filled out by the technical editor
+%% \Volume{50}
+%% \Issue{9}
+%% \Month{June}
+%% \Year{2012}
+%% \Submitdate{2012-06-04}
+%% \Acceptdate{2012-06-04}
+
+%% The address of (at least) one author should be given
+%% in the following format:
+\Address{
+  Paul-Christian B\"urkner\\
+  Department of Statistics\\
+  Faculty of Psychology \\
+  University of M\"unster\\
+  48149, M\"unster\\
+  E-mail: \email{paul.buerkner@wwu.de}\\
+  URL: \url{http://wwwpsy.uni-muenster.de/Psychologie.inst4/AEHolling/personen/buerkner.html}
+}
+%% It is also possible to add a telephone and fax number
+%% before the e-mail in the following format:
+%% Telephone: +43/512/507-7103
+%% Fax: +43/512/507-2851
+
+%% for those who use Sweave please include the following line (with % symbols):
+%% need no \usepackage{Sweave.sty}
+
+%% end of declarations %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\begin{document}
+
+%% include your article here, just as usual
+%% Note that you should use the \pkg{}, \proglang{} and \code{} commands.
+
+\section{Introduction}
+Generalized linear mixed models (GLMMs) offer a great flexibility for researchers across sciences \citep{brown2015, pinheiro2006, demidenko2013} and it is not surprising that many packages for \proglang{R} \citep{Rcore2015} have been developed to fit GLMMs. Possibly the most widely known package in this area is \pkg{lme4} \citep{lme4}, which uses maximum likelihood or restricted maximum likelihood methods for model fitting. Although alternative Bayesian methods have several advantages over frequentist approaches (e.g., the possibility of explicitly incorporating prior knowledge about parameters into the model), their practical use was limited for a long time because the posterior distributions of more complex models (such as GLMMs) could not be found analytically. Markov chain Monte Carlo (MCMC) algorithms allowing to draw random samples from the posterior were not available or too time-consuming. In the last few decades, however, this has changed with the development of new algorithms and the rapid increase of general computing power.   Today, several software packages implement these techniques, for instance \pkg{WinBugs} \citep{lunn2000, spiegelhalter2003}, \pkg{OpenBugs} \citep{spiegelhalter2007}, \pkg{JAGS} \citep{plummer2013}, \pkg{MCMCglmm} \citep{hadfield2010} and \pkg{Stan} \citep{stan2015} to mention only a few. With the exception of the latter one, all of these programs are primarily using combinations of Metropolis-Hastings updates \citep{metropolis1953,hastings1970} and Gibbs-sampling \citep{geman1984,gelfand1990}, sometimes also coupled with slice-sampling \citep{damien1999,neal2003}. While being relatively easy to implement, convergence is usually rather slow for high-dimensional models with correlated parameters \citep{neal2011,hoffman2014,gelman2014}. Furthermore, Gibbs-sampling requires priors to be conjugate to the likelihood of parameters in order to work efficiently \citep{gelman2014}, thus reducing the freedom of the researcher in choosing a prior that reflects his or her beliefs. In contrast, \pkg{Stan} implements Hamiltonian Monte Carlo \citep{duane1987, neal2011} and its extension, the No-U-Turn Sampler (NUTS) \citep{hoffman2014}. These algorithms converge much more quickly especially for high-dimensional models regardless of whether the priors are conjugate or not \citep{hoffman2014}.
+
+Similar to software packages like \pkg{WinBugs}, \pkg{Stan} comes with its own programming language allowing for great modeling flexibility (c.f. \citeauthor{stanM2015}, \citeyear{stanM2015}). Many researchers may still hesitate to use \pkg{Stan} directly, as every model has to be written, debugged and possibly also optimized. This may be a time taking and error prone process even for researchers familiar with Bayesian inference. The package \pkg{brms}, presented in this paper, aims at closing this gap (at least for GLMMs) allowing the user to benefit from the merits of \pkg{Stan} only by using simple, \pkg{lme4}-like formula syntax. \pkg{brms} supports a wide range of distributions and link functions, allows for multiple grouping factors each with multiple random effects, autocorrelation of the response variable, user defined covariance structures, as well as flexible and explicit prior specifications.  
+
+The purpose of the present article is to provide a general overview of the \pkg{brms} package (version 0.5.0). We begin by explaining the underlying structure of GLMMs. Next, the software is introduced in detail using recurrence times of infection in kidney patients \citep{mcgilchrist1991} and ratings of inhaler instructions \citep{ezzet1991} as examples. We end by comparing \pkg{brms} to other \proglang{R} packages implementing GLMMs and describe future plans for extending the package. 
+
+\section{Model description}
+\label{model}
+
+The core of every GLMM is the prediction of the response $y$ through the linear combination $\eta$ of fixed and random effects predictors transformed by the inverse link function $f$ assuming a certain distribution $D$ for $y$. We write 
+$$y_i \sim D(f(\eta_i), \theta)$$
+to stress the dependency on the $i^{th}$ data point. In many \proglang{R} packages, $D$ is also called the `family' and we will use this term in the following. The parameter $\theta$ describes additional family specific parameters that typically do not vary across data points, such as the standard deviation $\sigma$ in normal models or the shape $\alpha$ in Gamma or negative binomial models. The linear predictor can generally be written as
+$$\eta = X \beta + Z u$$
+where $X, Z$ are the fixed and random effects design matrices respectively and $\beta, u$ the corresponding fixed and random effects. The design matrices $X$ and $Z$ as well as $y$ make up the data, whereas $\beta$, $u$, and $\theta$ are the model parameters being estimated. Except for linear models, we do not incorporate an additional error term for every observation by default. If desired, such an error term can always be modeled using a random effect with as many levels as observations in the data.
+
+\subsection{Prior distributions}
+
+\subsubsection{Fixed effects}
+
+In \pkg{brms}, fixed effects are not restricted to have normal priors. Instead, every fixed effect can have every one-dimensional prior implemented in \pkg{Stan}, for instance uniform, Cauchy or even Gamma priors. As a negative side effect of this flexibility, correlations between fixed effects cannot be modeled as parameters. If desired, point estimates of the correlations can be obtained after sampling has been done. By default, fixed effects have an improper flat prior over the reals.
+
+\subsubsection{Random effects}
+
+The random effects $u$ are assumed to come from a multivariate normal distribution with mean zero and unknown covariance matrix $\Sigma$:
+$$u \sim N(0, \Sigma)$$ 
+As it is generally the case, covariances between random effects of different grouping factors are assumed to be zero. This implies that $Z$ and $u$ can be split up into several matrices $Z_k$ and random effects $u_k$, where $k$ indexes grouping factors, so that the model can be simplified to
+$$u_k \sim N(0, \Sigma_k)$$ 
+Usually, but not always, we can also assume random effects associated with different levels (indexed by $j$) of the same grouping factor to be independent leading to
+$$u_{kj} \sim N(0, V_k)$$ 
+The covariance matrices $V_k$ are modeled as parameters. In most packages, an Inverse-Wishert distribution is used as prior for $V_k$. This is mostly because its conjugacy leads to good properties of Gibbs-Samplers \citep{gelman2014}. However, there are good arguments against the Inverse-Wishart prior \citep{natarajan2000, kass2006}. The NUTS-Sampler implemented in \pkg{Stan} does not require priors to be conjugate. This advantage is utilized in \pkg{brms}: $V_k$ is parameterized in terms of a correlation matrix $\Omega_k$ and a vector of standard deviations $\sigma_k$ through
+$$V_k = \sigma_k^{T} \Omega_k \sigma_k$$
+Priors are then specified for the parameters on the right hand side of the equation. For $\Omega_k$, we use the LKJ-Correlation prior with parameter $\zeta > 0$ by \cite{lewandowski2009}\footnote{Internally, the Cholesky factor of the correlation matrix is used, as it more efficient and numerically stable.}:
+$$\Omega_k \sim LKJ(\zeta)$$
+If $\zeta = 1$ (the default in \pkg{brms}) the density is uniform over correlation matrices of the respective dimension. If $\zeta > 1$, non-zero correlations become less likely, whereas $0 < \zeta < 1$ results in higher probabilities for non-zero correlations. For every element of $\sigma_k$, any prior can be applied that is defined on the non-negative reals only. As default in \pkg{brms} we use a half Cauchy prior following the recommendations of \cite{gelman2006}.
+
+Sometimes -- for instance when modeling pedigrees -- different levels of the same grouping factor cannot be assumed to be independent. In this case, the covariance matrix of $u_k$ becomes
+$$\Sigma_k = V_k \otimes A_k$$
+where $A_k$ is the known covariance matrix between levels and $\otimes$ is the Kronecker product.
+
+\subsubsection{Family specific parameters}
+
+For some families, additional parameters need to be estimated. In the current section, we only name the most important ones. Normal, Student and Cauchy distributions need the parameter $\sigma$ to account for residual error variance. By default, $\sigma$ has a half Cauchy prior. Furthermore, Student's distributions needs the parameter $\nu$ representing the degrees of freedom. By default, $\nu$ has a wide proper flat prior over positive values. Technically, it would be more appropriate to use an \emph{improper} flat prior as Student's distribution tends to the normal distribution as $\nu \rightarrow \infty$. However, using such a prior does often lead to bad convergence so that a wide proper prior is used instead. Gamma and Weibull distributions need the shape parameter $\alpha$ that has a wide Gamma prior by default. 
+
+\section{Parameter estimation}
+
+The \pkg{brms} package does not fit models itself but uses \pkg{Stan} on the back-end. Accordingly, all samplers implemented in \pkg{Stan} can be used to fit \pkg{brms} models. Currently, these are the static Hamiltonien Monte-Carlo (HMC) Sampler sometimes also referred to as Hybrid Monte-Carlo \citep{neal2011, neal2003, duane1987} and its extension the No-U-Turn Sampler (NUTS) by \cite{hoffman2014}. HMC like algorithms produce samples, which are much less autocorrelated than those of other samplers such as the random-walk Metropolis algorithm \citep{hoffman2014, Creutz1988}. The main drawback of this increased efficiency is the need to calculate the gradient of the log-posterior, which can be automated using algorithmic differentiation \citep{griewank2008} but is still a time taking process for more complex models. Thus, using HMC leads to higher quality samples but takes more time per sample than other algorithms typically applied. Another drawback of HMC is the need to pre-specify at least two parameters, which are both critical for the performance of HMC. The NUTS Sampler allows to set these parameters automatically thus eliminating the need for any hand-tuning, while still being at least as efficient as a well tuned HMC \citep{hoffman2014}. For more details on the sampling algorithms applied in \pkg{Stan}, see the \pkg{Stan} user's manual \citep{stanM2015} as well as \cite{hoffman2014}.
+
+Despite the estimation of model parameters, \pkg{brms} allows to draw samples from the posterior predictive distribution as well as from the pointwise log-likelihood. Both can be used to assess model fit. The former allows a comparison between the actual response $y$ and the response $\hat{y}$ predicted by the model. The pointwise log-likelihood can be used, among others, to calculate the Watanabe-Akaike information criterion (WAIC) proposed by \cite{watanabe2010} and leave-one-out cross-validation (LOO; \citealp{gelfand1992}; \citealp{vehtari2015}; see also \citealp{ionides2008}) allow for comparing different models applied to the same data (lower WAICs and LOOs indicate better model fit). The WAIC can be viewed as an improvement of the popular deviance information criterion (DIC), which has been criticized by several authors (\citealp{vehtari2015}; \citealp{plummer2008}; \citealp{vanderlinde2005}; see also the discussion at the end of the original DIC paper by \citealp{spiegelhalter2002}) in part because of problems arising from fact that the DIC is only a point estimate. In \pkg{brms},  WAIC and LOO are implemented using the \pkg{loo} package \citep{loo2015} also following the recommendations of \cite{vehtari2015}.
+
+\section{Software}
+\label{software}
+
+The \pkg{brms} package provides functions for fitting GLMMs using \pkg{Stan} for full Bayesian inference. To install the latest release version of \pkg{brms} from CRAN, type \code{install.packages("brms")} within \proglang{R}. The current developmental version can be downloaded from GitHub via
+\begin{Code}
+library(devtools)
+install_github("paul-buerkner/brms")
+\end{Code}
+Additionally, a \proglang{C++} compiler is required. This is because \pkg{brms} internally creates \pkg{Stan} code, which is translated to \proglang{C++} and compiled afterwards. The program \pkg{Rtools} (available on \url{https://cran.r-project.org/bin/windows/Rtools}) comes with a \proglang{C++} compiler for Windows\footnote{During the installation process, there is an option to change the system \code{PATH}. Please make sure to check this options, because otherwise \pkg{Rtools} will not be available within \proglang{R}.}. 
+On OS X, one should use \pkg{Xcode} from the App Store. To check whether the compiler can be called within \proglang{R}, run \code{system("g++ -v")} when using \pkg{Rtools} or \code{system("clang++ -v")} when using \pkg{Xcode}. If no warning occurs and a few lines of hardly readable system code are printed out, the compiler should work correctly. For more detailed instructions on how to get the compilers running, see the prerequisites section on \url{https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started}.
+
+\subsection{A worked example}
+
+In the following, we use an example about the recurrence time of an infection in kidney patients initially published by \cite{mcgilchrist1991}. The data set consists of 76 entries of 7 variables:
+\begin{Code}
+> library("brms")
+> data("kidney")
+> head(kidney, n = 3)
+  time censored patient recur age    sex disease
+1    8        0       1     1  28   male   other
+2   23        0       2     1  48 female      GN
+3   22        0       3     1  32   male   other
+\end{Code}
+Variable \code{time} represents the recurrence time of the infection, 
+\code{censored} indicates if \code{time} is right censored (\code{1}) or not censored (\code{0}), variable \code{patient} is the patient id, and 
+\code{recur} indicates if it is the first or second recurrence in that patient. Finally, variables \code{age}, \code{sex}, and \code{disease} make up the predictors. 
+
+\subsection[Fitting models with brms]{Fitting models with \pkg{brms}}
+
+The core of the \pkg{brms} package is the \code{brm} function and we will explain its argument structure using the example above. Suppose we want to predict the (possibly censored) recurrence time using a log-normal model with a random intercept and a random slope for \code{age} nested within patients. Then, we may use the following code:
+\begin{Code}
+fit1 <- brm(formula = time | cens(censored) ~ age + sex + disease 
+            + (1 + age|patient), 
+            data = kidney, family = c("gaussian", "log"),
+            prior = c(set_prior("normal(0,10)", class = "b"),
+                      set_prior("cauchy(0,2)", class = "sd"),
+                      set_prior("lkj(2)", class = "cor")),
+            n.warmup = 500, n.iter = 2000, n.chains = 2)
+\end{Code}
+
+\subsection[formula: Information on the response, fixed and random effects]{\code{formula}: Information on the response, fixed and random effects}
+
+Without doubt, \code{formula} is the most complicated argument, as it contains information on the response variable, fixed effects, and random effects at the same time. Everything before the $\sim$ sign relates to the response part of \code{formula}. In the usual and most simple case, this is just one variable name (e.g., \code{time}). However, to incorporate additional information about the response, one can add one or more terms of the form \code{| fun(variable)}. \code{fun} may be one of a few functions defined internally in \pkg{brms} and \code{variable} corresponds to a variable in the data set supplied by the user. In this example, \code{cens} makes up the internal function that handles censored data, and \code{censored} is the variable that contains information on the censoring. Other available functions in this context are \code{weights} for weighted regression, \code{se} to specify known standard errors primarily for meta-analysis, \code{trials} for binomial models\footnote{In functions such as \code{glm} or \code{glmer}, the binomial response is typically passed as \code{cbind(success, failure)}. In \pkg{brms}, the equivalent syntax is \code{success | trials(success + failure)}.}, and \code{cat} to specify the number of categories for categorical and ordinal models.  
+
+Everything on the right side of $\sim$ specifies predictors. The syntax closely resembles that of \pkg{lme4}. For both, random and fixed effects terms, the \code{+} is used to separate different effects from each other. Random terms are of the form \code{(random | group)}, where \code{random} contains one or more variables whose effects are assumed to vary with the levels of the grouping factor given in \code{group}. Multiple grouping factors each with multiple random effects are possible. In the present example, only one random term is specified in which \code{1 + age} are the random effects and the grouping factor is \code{patient}. This implies that the intercept of the model as well as the effect of age is supposed to vary between patients. By default, random effects within a grouping factor are assumed to be correlated. Correlations can be set to zero by using the \code{(random || group)} syntax. Everything on the right side of \code{formula} that is not recognized as part of a random term is treated as a fixed effect. In this example, the fixed effects are \code{age}, \code{sex}, and \code{disease}. 
+
+\subsection[family: Distribution of the response variable]{\code{family}: Distribution of the response variable}
+
+Argument \code{family} should be a vector of either one or two elements. The first always defines the distribution of the response variable and the second is the link function. If left blank, default link functions are applied. \pkg{brms} comes with a large variety of families. Linear and robust linear regression can be performed using the \code{gaussian}, \code{student}, or \code{cauchy} family combined with the \code{identity} link. For dichotomous and categorical data, families \code{bernoulli}, \code{binomial}, and \code{categorical} combined with the \code{logit} link, by default, are perfectly suited. Families \code{poisson}, \code{negbinomial}, and \code{geometric} allow for modeling count data.  Families \code{gaussian}, \code{gamma}, \code{exponential}, and \code{weibull} can be used (among others) for survival regression when combined with the \code{log} link. Finally, ordinal regression can be performed using the families \code{cumulative}, \code{cratio}, \code{sratio}, and \code{acat}. In our example, we use \code{family = c("gaussian", "log")} implying a log-normal\footnote{For reasons of numerical efficiency and stability of the sampling algorithm, family \code{gaussian} with link \code{log} is interpreted as a log-normal distribution with identity link.} ``survival'' model for the response variable \code{time}.
+
+\subsection[prior: Prior distributions of model parameters]{\code{prior}: Prior distributions of model parameters}
+
+Every fixed effect has its corresponding regression parameter. These parameters are named as \code{b\_<fixed>}, where \code{<fixed>} represents the name of the corresponding fixed effect. The default prior for fixed effects parameters is an improper flat prior over the reals. Suppose, for instance, that we want to set a normal prior with mean \code{0} and standard deviation \code{10} on the fixed effect of \code{age} and a uniform prior between -5 and 5 on \code{sexfemale}\footnote{When factors are used as predictors, parameter names will depend on the factor levels. To get an overview of all parameters and parameter classes for which priors can be specified, use funcion \code{get\_prior}. For the present example, \code{get\_prior(time | cens(censored) $\sim$ age + sex + disease + (1 + age|patient), data = kidney)} does the desired.}. Then, we may write 
+\begin{Code}
+prior <- c(set_prior("normal(0,10)", class = "b", coef = "age"),
+           set_prior("uniform(-5,5)", class = "b", coef = "sexfemale"))
+\end{Code}
+To put the same prior (e.g., a normal prior) on all fixed effects at once, we may write as a shortcut \code{set_prior("normal(0,10)", class = "b")}. This also leads to faster sampling, because priors can be vectorized in this case. Note that we could also omit the \code{class} argument for fixed effects, as it is the default class in \code{set_prior}.
+
+Each random effect of each grouping factor has a standard deviation parameter, which is restricted to be non-negative and, by default, has a half Cauchy prior with scale parameter 5. \pkg{Stan} implicitly defines this prior by using a Cauchy prior on a restricted parameter \citep{stanM2015}. For other reasonable priors on standard deviations see \cite{gelman2006}. In \pkg{brms}, standard deviations are named as \code{sd\_<group>\_<random>}, so that \code{sd\_patient\_Intercept} and \code{sd\_patient\_age} are the parameter names in the example. If desired, it is possible to set a different prior on each parameter, but statements such as \code{set_prior("cauchy(0,5)", class = "sd", group = "patient")} or even \\ \code{set_prior("cauchy(0,5)", class = "sd")} may also be used and are again faster because of vectorization. 
+
+If there is more than one random effect per grouping factor, correlations between random effects are estimated. As mentioned in Section~\ref{model}, the LKJ-Correlation prior with parameter $\zeta > 0$ \citep{lewandowski2009} is used for this purpose. In \pkg{brms}, this prior is abbreviated as \code{"lkj(zeta)"} and correlation matrix parameters are named as \code{cor\_<group>}, (e.g., \code{cor_patient}), so that \code{set_prior("lkj(2)", class = "cor", group = "patient")} is a valid statement.  To set the same prior on every correlation matrix in the model, \code{set_prior("lkj(2)", class = "cor")} is also allowed, but does not come with any efficiency increases.
+
+Other model parameters such as the residual standard deviation \code{sigma} in normal models or the \code{shape} in Gamma models have their priors defined in the same way, where each of them is treated as having its own parameter class. A complete overview on possible prior distributions is given in the \pkg{Stan} user's manual \citep{stanM2015}. Note that \pkg{brms} performs no checks if the priors are written in correct \pkg{Stan} language. Instead, \pkg{Stan} will check their correctness when the model is parsed to \proglang{C++} and returns an error if they are not. 
+
+\subsection{Analyzing the results}
+
+The example model \code{fit1} is fitted using 2 chains, each with 2000 iterations of which the first 500 are warm-up to calibrate the sampler, leading to a total of 3000 posterior samples\footnote{To save time, chains may also run in parallel when using argument \code{n.cluster}.}. For researchers familiar with Gibbs or Metropolis-Hastings sampling, this number may seem far to small to achieve good convergence and reasonable results, especially for hierarchical models. However, as \pkg{brms} utilizes the NUTS sampler \citep{hoffman2014} implemented in \pkg{Stan}, even complex models can often be fitted with not more than a few thousand samples. Of course, every iteration is more computationally intensive and time taking than the iterations of other algorithms, but the quality of the samples is way higher.  
+
+While fitting the model, you may have observed quite a few informational messages at start that \code{"The current Metropolis proposal is about to be rejected ..."}. In almost all circumstances, they can be safely ignored. Set argument \code{silent = TRUE} to stop these messages from being printed out.
+
+After the posterior samples have been computed, the \code{brm} function returns an  \proglang{R} object, containing (among others) the fully commented model code in \pkg{Stan} language, the data to fit the model, and the posterior samples themselves. The model code and data for the present example can be extracted through \code{stancode(fit1)} and \code{standata(fit1)} respectively\footnote{Both, model code and data, may be amended and used to fit new models. That way, \pkg{brms} can also serve as a good starting point in building more complicated models in \pkg{Stan}, directly.}.
+A model summary is readily available using 
+
+\begin{Code}
+> summary(fit1)
+ Family: gaussian (log) 
+Formula: time | cens(censored) ~ age + sex + disease + (1 + age | patient) 
+   Data: kidney (Number of observations: 76) 
+Samples: 2 chains, each with n.iter = 2000; n.warmup = 500; n.thin = 1; 
+         total post-warmup samples = 3000
+   WAIC: 660.52
+ 
+Random Effects: 
+~patient (Number of levels: 38) 
+                   Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
+sd(Intercept)          0.39      0.28     0.02     1.01       1020    1
+sd(age)                0.01      0.01     0.00     0.02        767    1
+cor(Intercept,age)    -0.14      0.46    -0.87     0.77       1323    1
+
+Fixed Effects: 
+           Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
+Intercept      3.35      0.58     2.18     4.50       1865    1
+age            0.00      0.01    -0.03     0.03       1644    1
+sexfemale      1.56      0.40     0.80     2.33       3000    1
+diseaseGN     -0.27      0.51    -1.29     0.72       1709    1
+diseaseAN     -0.47      0.51    -1.49     0.50       1532    1
+diseasePKD     0.74      0.72    -0.75     2.12       1659    1
+
+Family Specific Parameters: 
+            Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
+sigma(time)     1.14      0.13     0.92     1.43       1633    1
+
+Samples were drawn using NUTS(diag_e). For each parameter, Eff.Sample is a 
+crude measure of effective sample size, and Rhat is the potential scale 
+reduction factor on split chains (at convergence, Rhat = 1).
+\end{Code}
+
+On the top of the output, some general information on the model is given, such as family, formula, number of iterations and chains, as well as the WAIC. Next, random effects are displayed separately for each grouping factor in terms of standard deviations and correlations between random effects. On the bottom of the output, fixed effects are displayed. If incorporated, autocorrelation and family specific parameters (e.g., the residual standard deviation \code{sigma}) are also given.
+
+In general, every parameter is summarized using the mean (\code{Estimate}) and the standard deviation (\code{Est.Error}) of the posterior distribution as well as two-sided 95\% Credible intervals (\code{l-95\% CI} and \code{u-95\% CI}) based on quantiles. The last two values (\code{Eff.Sample} and \code{Rhat}) provide information on how well the algorithm could estimate the posterior distribution of this parameter. If \code{Rhat} is considerably greater than 1 (i.e. $> 1.1$), the algorithm has not yet converged and it is necessary to run more iterations and / or set stronger priors.
+
+To visually investigate the chains as well as the posterior distributions, the \code{plot} method can be used (see Figure~\ref{kidney_plot}). An even more detailed investigation can be achieved by applying the \pkg{shinystan} package \citep{gabry2015} through method \code{launch_shiny}.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.95\textwidth]{kidney_plot.pdf}
+	\caption{Trace and Density plots of all relevant parameters of the kidney model discussed in Section~\ref{software}.}
+	\label{kidney_plot}
+\end{figure}
+
+With respect to the above summary, \code{sexfemale} seems to be the only fixed effect with considerable effect on the response. Because the mean of \code{sexfemale} is positive, the model predicts longer periods without an infection for females than for males. Looking at the random effects, the standard deviation of \code{age} is suspiciously small. To test whether it is smaller than the standard deviation of \code{Intercept}, we apply the \code{hypothesis} method:
+\begin{Code}
+> hypothesis(fit1, "Intercept - age > 0", class = "sd", group = "patient")
+Hypothesis Tests for class sd_patient:
+                  Estimate Est.Error l-95% CI u-95% CI Evid.Ratio  
+Intercept-age > 0     0.38      0.27     0.02      Inf      80.08 *
+---
+'*': The expected value under the hypothesis lies outside the 95% CI.
+\end{Code}
+The one-sided 95\% credibility interval does not contain zero, thus indicating that the standard deviations differ from each other in the expected direction. In accordance with this finding, the \code{Evid.Ratio} shows that the hypothesis being tested (i.e. \code{Intercept - age > 0}) is about 80 times more likely than the alternative hypothesis \code{Intercept - age < 0}.
+
+When looking at the correlation between both random effects, its distribution displayed in Figure~\ref{kidney_plot} and the 95\% credibility interval in the summary output appear to be rather wide. This indicates that there is not enough evidence in the data to reasonably estimate the correlation. Together, the small standard deviation of \code{age} and the uncertainty in the correlation raise the question if the random effect of \code{age} should be modeled at all. To answer this question, we fit another model (named \code{fit2}) similar to \code{fit1} but with  \code{formula = time | cens(censored) ~ age + sex + disease + (1|patient)} and without any prior for \code{cor}. A good way to compare both models is the WAIC\footnote{Alternatively, the \code{LOO} method can be used to compute leave-one-out cross-validation, which may be an even better information criterion than the WAIC \citep{vehtari2015}. Unfortunately, its implementation in the \pkg{loo} package currently runs into errors for some models including the ones fitted in the present paper, so we decided to use the WAIC instead.}, which can by called in \pkg{brms} using
+\begin{Code}
+> WAIC(fit1, fit2)
+              WAIC    SE
+fit1        660.52 47.26
+fit2        659.93 47.28
+fit1 - fit2   0.59  0.83
+\end{Code}
+In the output, the WAIC for each model as well as the difference of the WAICs each with its corresponding standard error is shown. Both, WAIC and LOO are approximately normal if the number of observations is large so that the standard errors can be very helpful in evaluating differences in the information criteria. However, for small sample sizes, standard errors should be interpreted with care \citep{vehtari2015}. For the present example, it is immediately evident that both models have very similar fit. Accordingly, the more parsimonious model \code{fit2} not containing random effects for \code{age} may be preferred.
+
+\subsection{Modeling ordinal data}
+
+In the following, we want to briefly discuss a second example to demonstrate the capabilities of \pkg{brms} in handling ordinal data. \cite{ezzet1991} analyze data from a two-treatment, two-period crossover trial to compare 2 inhalation devices for delivering the drug salbutamol in 286 asthma patients. Patients were asked to rate the clarity of leaflet instructions accompanying each device, using a four-point ordinal scale. Ratings are predicted by \code{treat} to indicate which of the two inhaler devices was used, \code{period} to indicate the time of administration, and \code{carry} to model possible carry over effects.
+\begin{Code}
+> data("inhaler")
+> head(inhaler, n = 1)
+  subject rating treat period carry
+1       1      1   0.5    0.5     0
+\end{Code}
+
+Typically, the ordinal response is assumed to originate from the categorization of a latent continuous variable. That is there are $K$ latent thresholds (model intercepts), which partition the continuous scale into the $K + 1$ observable, ordered categories. Following this approach leads to the cumulative or graded-response model \citep{samejima1969} for ordinal data implemented in many \proglang{R} packages. In \pkg{brms}, it is available via family \code{cumulative}. Fitting the cumulative model to the inhaler data, also incorporating a random intercept over subjects, may look this:
+\begin{Code}
+fit3 <- brm(formula = rating ~ treat + period + carry + (1|subject), 
+            data = inhaler, family = "cumulative")
+\end{Code}
+While the support for ordinal data in most \proglang{R} packages ends here\footnote{Exceptions known to us are the packages \pkg{ordinal} \citep{christensen2015} and \pkg{VGAM} \citep{yee2010}. The former supports only cumulative models but with different modeling option for the thresholds. The latter supports all four ordinal families also implemented in \pkg{brms} as well as category specific effects but no random effects.}, \pkg{brms} allows changes to this basic model in at least three ways. First of all, three additional ordinal families are implemented. Families \code{sratio} (stopping ratio) and \code{cratio} (continuation ratio) are so called sequential models \citep{tutz1990}. Both are equivalent to each other for symmetric link functions such as \code{logit} but will differ for asymmetric ones such as \code{cloglog}. The fourth ordinal family is \code{acat} (adjacent category) also known as partial credits model \citep{masters1982, andrich1978a}. Second, restrictions to the thresholds can be applied. By default, thresholds are ordered for family \code{cumulative} or are completely free to vary for the other families. This is indicated by argument \code{threshold = "flexible"} (default) in \code{brm}. Using \code{threshold = "equidistant"} forces the distance between two adjacent thresholds to be the same, that is
+$$\tau_k = \tau_1 + (k-1)\delta$$ 
+for thresholds $\tau_k$ and distance $\delta$ (see also \citealp{andrich1978b}; \citealp{andrich1978a};  \citealp{andersen1977}).
+Third, the assumption that predictors have constant effects across categories may be relaxed for non-cumulative ordinal models \citep{vanderark2001, tutz2000} leading to category specific effects. For instance, variable \code{treat} may 
+only have an impact on the decision between category 3 and 4, but not on the lower categories. Without using category specific effects, such a pattern would remain invisible. 
+
+To illustrate all three modeling options at once, we fit a (hardly theoretically justified) stopping ratio model with equidistant thresholds and category specific effects for variable \code{treat} on which we apply an informative prior.
+\begin{Code}
+fit4 <- brm(formula = rating ~ period + carry + (1|subject),
+            data = inhaler, family = "sratio",
+            partial = ~ treat, threshold = "equidistant",
+            prior = set_prior("normal(1,2)", coef = "treat"))
+\end{Code}
+Note that priors are defined on category specific effects as if they were fixed effects. A model summary can be obtained in the same way as before:
+\begin{Code}
+> summary(fit4)
+ Family: sratio (logit) 
+Formula: rating ~ period + carry + (1 | subject) + partial(treat) 
+   Data: inhaler (Number of observations: 572) 
+Samples: 2 chains, each with n.iter = 2000; n.warmup = 500; n.thin = 1; 
+         total post-warmup samples = 3000
+   WAIC: 913.78
+ 
+Random Effects: 
+~subject (Number of levels: 286) 
+              Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
+sd(Intercept)     1.04      0.25     0.51     1.51        267    1
+
+Fixed Effects: 
+             Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
+period           0.26      0.18    -0.10     0.61       3000    1
+carry           -0.31      0.23    -0.77     0.13       1645    1
+Intercept[1]     0.72      0.12     0.48     0.97       1675    1
+Intercept[2]     2.59      0.35     1.91     3.27        455    1
+Intercept[3]     4.46      0.66     3.13     5.76        468    1
+treat[1]        -0.89      0.30    -1.49    -0.30       1886    1
+treat[2]        -0.45      0.47    -1.40     0.44       3000    1
+treat[3]        -1.83      1.25    -4.34     0.64       3000    1
+
+Family Specific Parameters: 
+      Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
+delta     1.87      0.32     1.22     2.49        514    1
+
+Samples were drawn using NUTS(diag_e). For each parameter, Eff.Sample is a 
+crude measure of effective sample size, and Rhat is the potential scale 
+reduction factor on split chains (at convergence, Rhat = 1).
+\end{Code}
+Trace and density plots of the model parameters as produced by \code{plot(fit4)} can be found in Figure~\ref{inhaler_plot}. We see that three intercepts (thresholds) and three effects of \code{treat} have been estimated, because a four-point scale was used for the ratings. The treatment effect seems to be strongest between category 3 and 4. At the same time, however, the credible interval is also much larger. In fact, the intervals of all three effects of \code{treat} are highly overlapping, which indicates that there is not enough evidence in the data to support category specific effects. On the bottom of the output, parameter \code{delta} specifies the distance between two adjacent thresholds and indeed the intercepts differ from each other by the magnitude of \code{delta}.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.95\textwidth]{inhaler_plot.pdf}
+	\caption{Trace and Density plots of all relevant parameters of the inhaler model discussed in Section~\ref{software}.}
+	\label{inhaler_plot}
+\end{figure}
+
+
+\section[Comparison]{Comparison between packages}
+
+Over the years, many \proglang{R} packages have been developed that implement GLMMs, each being more or less general in their supported models. Comparing all of them to \pkg{brms} would be too extensive and barely helpful for the purpose of the present paper. Accordingly, we concentrate on a brief comparison with two packages that we believe are the most general and widely applied, namely \pkg{lme4} by \cite{lme4} and \pkg{MCMCglmm} by \cite{hadfield2010}.
+
+Regarding model families, all three packages support the most common types such as linear and binomial models as well as Poisson models for count data. Currently, \pkg{brms} and \pkg{MCMCglmm} provide more flexibility when modeling categorical and ordinal data. In addition, \pkg{brms} supports robust linear regression using  Student's distribution, whereas \pkg{MCMCglmm} has some families to fit zero-inflated and hurdle models currently not available in \pkg{brms} or \pkg{lme4}.
+
+In all three packages, there are quite a few additional modeling options. Variable link functions can be specified in \pkg{brms} and \pkg{lme4} but not in \pkg{MCMCglmm} in which only one link is available per family. \pkg{MCMCglmm} generally supports multivariate responses using data in wide format, whereas \pkg{brms} currently only offers this option for family \code{gaussian}. It should be noted that it is always possible to transform data from wide to long format for full compatibility with \pkg{brms} or \pkg{lme4}. Autocorrelation of the response can only be fitted in \pkg{brms}, which supports auto-regressive as well as moving-average effects. For ordinal models in \pkg{brms}, effects of predictors may vary across different levels of the response as explained in the inhaler example. 
+
+Information criteria are available in all three packages. The advantage of WAIC and LOO implemented in \pkg{brms} is that their standard errors can be easily estimated to get a better sense of the uncertainty in the criteria. Comparing the prior options of the Bayesian packages, \pkg{brms} offers a little more flexibility than \pkg{MCMCglmm}, as virtually any prior distribution can be applied on fixed effects as well as on the standard deviations of random effects. In addition, we believe that the way priors are specified in \pkg{brms} is more intuitive as it is directly evident what prior is actually applied (see the model specification in Section~\ref{software}). A more detailed comparison of the packages can be found in Table~\ref{comparison}. To facilitate the understanding of the model formulation in \pkg{brms}, Table~\ref{syntax} shows \pkg{lme4} function calls to fit sample models along with the equivalent \pkg{brms} syntax. 
+
+So far the focus was only on capabilities. Another important topic is speed, especially for huge and complex models. Of course, \pkg{lme4} is usually much faster than the other packages as it uses maximum likelihood methods instead of MCMC algorithms, which are slower by design. As compared to \pkg{MCMCglmm}, \pkg{brms} needs more time per iteration, but also produces higher quality samples, so that the default of 3000 posterior samples is often more than enough to achieve good results. On the other hand, \pkg{MCMCglmm} may require hundreds of thousand iterations, but can manage to get this in the same time \pkg{brms} samples a few thousand. For small models, it feels that \pkg{MCMCglmm} is faster than \pkg{brms} as the latter additionally requires a few seconds to compile the model. For larger models, \pkg{brms} can benefit from the possibility of parallelizing chains to drastically improve its efficiency.
+
+\begin{table}[hbtp]
+\centering
+\begin{tabular}{llll}
+   &  \parbox{2.6cm}{\pkg{brms}} &  \parbox{2.6cm}{\pkg{lme4}} &  \parbox{2.6cm}{\pkg{MCMCglmm}} \\ \hline
+\\ [-1.5ex]
+\parbox{6cm}{\emph{Suppored model types:}} & & & \\ [1ex] 
+Linear models & yes & yes & yes \\
+Robust linear models & yes & no & no \\ 
+Binomial models & yes & yes & yes \\
+Categorical models & yes & no & yes \\
+Multinomial models & no & no & yes \\
+Count data models & yes & yes & yes \\
+Survival models & yes$^1$ & yes & yes \\
+Ordinal models & various & no & cumulative \\ 
+Zero-inflated and hurdle models & no & no & yes \\ \hline
+\\ [-1.5ex]
+\parbox{5cm}{\emph{Additional modeling options:}} & & & \\ [1ex] 
+Variable link functions & various & various & no \\
+Weights & yes & yes & no \\
+Offset & using priors & yes & using priors \\
+Multivariate responses & limited & no & yes \\
+Autocorrelation effects & yes & no & no \\
+Category specific effects & yes & no & no \\
+Standard errors for meta-analysis & yes & no & yes \\
+Censored data & yes & no & yes \\
+Customized covariances & yes & no & yes \\ \hline
+\\ [-1.5ex]
+\emph{Bayesian specifics:} & & & \\ [1ex]
+parallelization & yes & -- & no \\
+fixed effects priors & flexible & -- & normal \\
+random effects priors & normal & -- & normal \\
+covariance priors & flexible & -- & flexible \\ \hline
+\\ [-1.5ex]
+\emph{Other:} & & & \\ [1ex]
+Estimator & HMC, NUTS & ML, REML & MH, Gibbs$^2$ \\
+Information criterion & WAIC, LOO & AIC, BIC & DIC \\
+\proglang{C++} compiler required & yes & no & no \\ 
+Modularized & no & yes & no \\ \hline
+\end{tabular}
+\caption{Comparison of the capabilities of the \pkg{brms}, \pkg{lme4} and \pkg{MCMCglmm} package. Notes: (1) Weibull family only available in \pkg{brms}. (2) Estimator consists of a combination of both algorithms.}
+\label{comparison}
+\end{table}
+
+
+\begin{table}[hbtp]
+\centering
+%\renewcommand{\arraystretch}{2}
+\begin{tabular}{ll}
+ \textbf{Dataset}  & \parbox{10cm}{\textbf{Function call}} \\ \hline
+\\ [-1.5ex]
+\parbox{2cm}{\emph{cake}} & \\ [1ex] 
+\pkg{lme4} & \parbox{13cm}{\code{lmer(angle $\sim$ recipe * temperature + (1|recipe:replicate), \\ \hspace*{5ex} data = cake)}} \\ [3ex]
+\pkg{brms} & \parbox{13cm}{\code{brm(angle $\sim$ recipe * temperature + (1|recipe:replicate), \\ \hspace*{4ex} data = cake)}} \\ [2ex] \hline
+\\ [-1.5ex]
+\parbox{2cm}{\emph{sleepstudy}} & \\ [1ex] 
+\pkg{lme4} & \parbox{13cm}{\code{lmer(Reaction $\sim$ Days + (Days|Subject), data = sleepstudy)}} \\ [1.5ex]
+\pkg{brms} & \parbox{13cm}{\code{brm(Reaction $\sim$ Days + (Days|Subject), data = sleepstudy)}} \\ [2ex] \hline
+\\ [-1.5ex]
+\parbox{2cm}{\emph{cbpp$^1$}} & \\ [1ex] 
+\pkg{lme4} & \parbox{13cm}{\code{glmer(cbind(incidence, size - incidence) $\sim$ period + (1 | herd), \\ \hspace*{6ex} family = binomial(link = "logit"), data = cbpp)}} \\ [3ex]
+\pkg{brms} & \parbox{13cm}{\code{brm(incidence | trials(size) $\sim$ period + (1 | herd), \\ \hspace*{4ex} family = c("binomial", "logit"), data = cbpp)}} \\ [2ex] \hline
+\\ [-1.5ex]
+\parbox{2cm}{\emph{grouseticks}$^1$} & \\ [1ex] 
+\pkg{lme4} & \parbox{13cm}{\code{glmer(TICKS $\sim$ YEAR + HEIGHT + (1|BROOD) + (1|LOCATION), \\ \hspace*{6ex} family = poisson(link = "log"), data = grouseticks)}} \\ [3ex]
+\pkg{brms} & \parbox{13cm}{\code{brm(TICKS $\sim$ YEAR + HEIGHT + (1|BROOD) + (1|LOCATION), \\ \hspace*{4ex} family = c("poisson", "log"), data = grouseticks)}} \\ [2ex] \hline
+\\ [-1ex]
+\parbox{2cm}{\emph{VerbAgg}$^2$} & \\ [1ex] 
+\pkg{lme4} & \parbox{13cm}{\code{glmer(r2 $\sim$ (Anger + Gender + btype + situ)\^{}2 + (1|id) \\ \hspace*{6ex} + (1|item), family = binomial, data = VerbAgg)}} \\ [3ex]
+\pkg{brms} & \parbox{13cm}{\code{brm(r2 $\sim$ (Anger + Gender + btype + situ)\^{}2 + (1|id) \\ \hspace*{4ex} + (1|item), family = "bernoulli", data = VerbAgg)}} \\ [2ex] \hline
+\\ [-1.5ex]
+\end{tabular}
+\caption{Comparison of the model syntax of \pkg{lme4} and \pkg{brms} using data sets included in \pkg{lme4}. Notes: (1) Default links are used to that the link argument may be omitted. (2) Fitting this model takes some time. A proper prior on the fixed effects (e.g., \code{prior = set\_prior("normal(0,5)")}) may help in increasing sampling speed.}
+\label{syntax}
+\end{table}
+
+\section{Conclusion}
+The present paper is meant to provide a general overview on the \proglang{R} package \pkg{brms} implementing GLMMs using the probabilistic programming language \pkg{Stan} for full Bayesian inference. Although only a small selection of the modeling options available in \pkg{brms} are discussed in detail, we hope that this article can serve as a good starting point to further explore the capabilities of the package.  
+
+For the future, we have several plans on how to improve the functionality of \pkg{brms}. We want to include more families to fit, among others, zero-inflated and hurdle models, requiring \pkg{brms} to work with multiple response variables coming from different distributions. Also, generalized additive mixed models \citep{hastie1990} may be implemented in future versions of the package. Besides MCMC sampling, \pkg{Stan} also provides algorithms for penalized maximum likelihood and variational inference \citep{stanM2015}. While providing support for penalized maximum likelihood is probably of less importance, variational inference can serve as a good alternative to MCMC sampling, if the latter is unfeasible for instance because it is not fast enough. At the time of writing this article, variational inference was not yet fully available in \pkg{rstan} (the \proglang{R} interface of \pkg{Stan}) so that it could not be implemented in the present version of \pkg{brms}.
+
+\section*{Acknowledgments}
+
+First of all, we would like to thank the Stan Development Team for creating the probabilistic programming language \pkg{Stan}, which is an incredibly powerful and flexible tool for performing full Bayesian inference. Without it, \pkg{brms} could not fit a single model. Furthermore, many users have provided valuable feedback and suggestions since the initial release of the package, thus helping to substantially improve \pkg{brms}.
+
+\bibliography{citations}
+
+\end{document}
