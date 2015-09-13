@@ -26,9 +26,9 @@ Only used if \code{summary} is \code{TRUE}.}
 \item{...}{Currently ignored}
 }
 \value{
-Model residuals. If \code{summary = TRUE} this is a N x C matrix and if \code{summary = FALSE}
-  a S x N matrix, where S is the number of samples, N is the number of observations,
-  and C is equal to \code{length(probs) + 2}.
+Model residuals. If \code{summary = TRUE} this is a N x C matrix
+  and if \code{summary = FALSE} a S x N matrix, where S is the number of samples,
+  N is the number of observations, and C is equal to \code{length(probs) + 2}.
 }
 \description{
 Extract Model Residuals from brmsfit Objects

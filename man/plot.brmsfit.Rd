@@ -9,8 +9,9 @@
 \arguments{
 \item{x}{An object of class \code{brmsfit}.}
 
-\item{parameters}{Name of the parameters to plot, as given by a character vector or a regular expression.
-By default, all parameters except for random effects, posterior predictives, and log likelihood values are plotted.}
+\item{parameters}{Name of the parameters to plot, as given by a character vector
+or a regular expression. By default, all parameters except for random effects,
+posterior predictives, and log likelihood values are plotted.}
 
 \item{N}{The number of parameters plotted per page.}
 

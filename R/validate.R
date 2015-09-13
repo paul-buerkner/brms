@@ -8,7 +8,8 @@ extract_effects <- function(formula, ..., family = "none") {
   # 
   # Returns: 
   #   A named list of the following elements: 
-  #   fixed: An object of class "formula" that contains the fixed effects including the dependent variable. 
+  #   fixed: An object of class "formula" that contains the fixed effects 
+  #          including the dependent variable. 
   #   random: A list of formulas containing the random effects per grouping variable. 
   #   group: A vector of names of the grouping variables. 
   #   weights, se, cens, trials, cat: information on possible addition arguments
@@ -101,7 +102,8 @@ extract_time <- function(formula) {
   #   formula: a one sided formula of the form ~ time|group typically taken from a cor_brms object
   # 
   # Returns: 
-  #   a list with elements time, group, and all, where all contains a formula with all variables in formula
+  #   a list with elements time, group, and all, where all contains a 
+  #   formula with all variables in formula
   if (is.null(formula)) 
     return(NULL)
   formula <- gsub(" ","",Reduce(paste, deparse(formula))) 
@@ -275,14 +277,16 @@ remove_chains <- function(i, sflist) {
 #'   
 #'   To combine multiple priors, use \code{c(...)}, e.g., \code{c(set_prior(...), set_prior(...))}.
 #'   \pkg{brms} performs no checks if the priors are written in correct Stan language.
-#'   Instead, Stan will check their correctness when the model is parsed to C++ and returns an error if they are not.
+#'   Instead, Stan will check their correctness when the model is parsed to C++ 
+#'   and returns an error if they are not.
 #'   Currently, there are five types of parameters in \pkg{brms} models, 
 #'   for which the user can specify prior distributions. \cr
 #'   
 #'   1. Fixed and category specific effects 
 #'   
-#'   Every fixed (and category specific) effect has its corresponding regression parameter. These parameters are internally named as
-#'   \code{b_<fixed>}, where \code{<fixed>} represents the name of the corresponding fixed effect. 
+#'   Every fixed (and category specific) effect has its corresponding regression parameter. 
+#'   These parameters are internally named as \code{b_<fixed>}, where \code{<fixed>} represents 
+#'   the name of the corresponding fixed effect. 
 #'   Suppose, for instance, that \code{y} is predicted by \code{x1} and \code{x2} 
 #'   (i.e. \code{y ~ x1+x2} in formula syntax). 
 #'   Then, \code{x1} and \code{x2} have regression parameters \code{b_x1} and \code{b_x2} respectively. 
@@ -298,7 +302,8 @@ remove_chains <- function(i, sflist) {
 #'   
 #'   2. Autocorrelation parameters
 #'   
-#'   The autocorrelation parameters currently implemented are named \code{ar} (autoregression) and \code{ma} (moving average).
+#'   The autocorrelation parameters currently implemented are named \code{ar} (autoregression) 
+#'   and \code{ma} (moving average).
 #'   The default prior for autocorrelation parameters is an improper flat prior over the reals. 
 #'   Other priors can be defined with \code{set_prior("<prior>", class = "ar")} 
 #'   or \cr \code{set_prior("<prior>", class = "ma")}. It should be noted that \code{ar} will
@@ -310,7 +315,8 @@ remove_chains <- function(i, sflist) {
 #'   Each random effect of each grouping factor has a standard deviation named
 #'   \code{sd_<group>_<random>}. Consider, for instance, the formula \code{y ~ x1+x2+(1+x1|g)}.
 #'   We see that the intercept as well as \code{x1} are random effects nested in the grouping factor \code{g}. 
-#'   The corresponding standard deviation parameters are named as \code{sd_g_Intercept} and \code{sd_g_x1} respectively. 
+#'   The corresponding standard deviation parameters are named as 
+#'   \code{sd_g_Intercept} and \code{sd_g_x1} respectively. 
 #'   These parameters are restriced to be non-negative and, by default, 
 #'   have a half cauchy prior with scale parameter 5. 
 #'   We could make this explicit by writing \code{set_prior("cauchy(0,5)", class = "sd")}. 
@@ -325,13 +331,15 @@ remove_chains <- function(i, sflist) {
 #'   
 #'   If there is more than one random effect per grouping factor, the correlations between those random
 #'   effects have to be estimated. 
-#'   The prior \code{"lkj_corr_cholesky(eta)"} or in short \code{"lkj(eta)"} with \code{eta > 0} is essentially the only prior 
-#'   for (choelsky factors) of correlation matrices. If \code{eta = 1} (the default) all correlations matrices 
+#'   The prior \code{"lkj_corr_cholesky(eta)"} or in short \code{"lkj(eta)"} with \code{eta > 0} 
+#'   is essentially the only prior for (choelsky factors) of correlation matrices. 
+#'   If \code{eta = 1} (the default) all correlations matrices 
 #'   are equally likely a priori. If \code{eta > 1}, extreme correlations become less likely, 
 #'   whereas \code{0 < eta < 1} results in higher probabilities for extreme correlations. 
 #'   Correlation matrix parameters in \code{brms} models are named as 
 #'   \code{cor_(group)}, (e.g., \code{cor_g} if \code{g} is the grouping factor).
-#'   To set the same prior on every correlation matrix, use for instance \code{set_prior("lkj(2)", class = "cor")}.
+#'   To set the same prior on every correlation matrix, 
+#'   use for instance \code{set_prior("lkj(2)", class = "cor")}.
 #'   
 #'   5. Parameters for specific families 
 #'   
@@ -344,14 +352,17 @@ remove_chains <- function(i, sflist) {
 #'   the degrees of freedom of students t distribution. 
 #'   By default, \code{nu} has prior \code{"uniform(1,100)"}. 
 #'   Families \code{gamma} and \code{weibull} need the parameter \code{shape} 
-#'   that has a \code{"gamma(0.01,0.01)"} prior by default. For families \code{cumulative}, \code{cratio}, \code{sratio}, 
-#'   and \code{acat}, and only if \code{threshold = "equidistant"}, the parameter \code{delta} is used to model the distance
-#'   between to adjacent thresholds. By default, \code{delta} has an improper flat prior over the reals. \cr
+#'   that has a \code{"gamma(0.01,0.01)"} prior by default. 
+#'   For families \code{cumulative}, \code{cratio}, \code{sratio}, 
+#'   and \code{acat}, and only if \code{threshold = "equidistant"}, 
+#'   the parameter \code{delta} is used to model the distance between to adjacent thresholds. 
+#'   By default, \code{delta} has an improper flat prior over the reals. \cr
 #'   Every family specific parameter has its own prior class, so that \cr
 #'   \code{set_prior("<prior>", class = "<parameter>")} it the right way to go.
 #' 
 #'   Often, it may not be immediately clear, which parameters are present in the model.
-#'   To get a full list of parameters and parameter classes for which priors can be specified (depending on the model) 
+#'   To get a full list of parameters and parameter classes for which 
+#'   priors can be specified (depending on the model) 
 #'   use function \code{\link[brms:get_prior]{get_prior}}.
 #'
 #' @seealso \code{\link[brms:get_prior]{get_prior}}
@@ -408,7 +419,8 @@ set_prior <- function(prior, class = "b", coef = "", group = "") {
 
 #' Overview on Priors for \pkg{brms} Models
 #' 
-#' Get information on all parameters (and parameter classes) for which priors may be specified including default priors.
+#' Get information on all parameters (and parameter classes) for which priors 
+#' may be specified including default priors.
 #' 
 #' @inheritParams brm
 #' @param internal A flag indicating if the names of additional internal parameters should be displayed. 

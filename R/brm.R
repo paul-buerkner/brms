@@ -2,72 +2,101 @@
 #' 
 #' Fit a Bayesian generalized linear or ordinal mixed model using Stan
 #' 
-#' @param formula An object of class "formula" (or one that can be coerced to that class): a symbolic description of the model to be fitted. 
+#' @param formula An object of class "formula" (or one that can be coerced to that class): 
+#'   a symbolic description of the model to be fitted. 
 #'   The details of model specification are given under 'Details'.
-#' @param data An optional data frame, list or environment  (or object coercible by \code{as.data.frame} to a data frame) containing 
-#'  the variables in the model. If not found in data, the variables are taken from \code{environment(formula)}, 
-#'  typically the environment from which \code{brm} is called. Although it is optional, we strongly recommend to supply a data.frame. 
-#' @param family A vector of one or two character strings. The first string indicates the distribution of the dependent variable (the 'family'). Currently, the following families are supported:
-#'  \code{"gaussian"}, \code{"student"}, \code{"cauchy"}, \code{"binomial"}, \code{"bernoulli"}, \code{"categorical"}, \code{"poisson"}, \code{"negbinomial"}, 
-#'  \code{"geometric"}, \code{"gamma"}, \cr
-#'  \code{"exponential"}, \code{"weibull"}, \code{"cumulative"}, \code{"cratio"}, \code{"sratio"}, and \code{"acat"}.
-#'  The second string indicates the link function, which must be supported by the distribution of the dependent variable. 
-#'  If not specified, default link functions are used. Further information is provided under 'Details'.
-#' @param prior One or more \code{brmsprior} objects created by function \code{\link[brms:set_prior]{set_prior}} and combined
-#'  using the \code{c} method. A single \code{brmsprior} object may be passed without \code{c()} surrounding it. 
-#'  See also  \code{\link[brms:get_prior]{get_prior}} for more help.
-#' @param addition A named list of one sided formulas each containing additional information on the response variable. The following names are allowed:
-#'  \code{se} for specifying standard errors for meta-analysis, \code{weights} to fit weighted regression models, 
-#'  \code{trials} to specify the number of trials per observation in binomial models, \code{cat} to specify the number of categories in 
-#'  categorical or ordinal models, and \code{cens} to indicate censoring. Alternatively, the \code{addition} arguments can be incorporated directly into \code{formula}.
-#'  See 'Formula Syntax' under 'Details' for further information.
-#' @param autocor An optional \code{\link{cor_brms}} object describing the correlation structure within the response variable (i.e. the 'autocorrelation'). 
-#'   See the documentation of \code{\link{cor_brms}} for a description of the available correlation structures. 
-#'   Defaults to NULL, corresponding to no correlations.
-#' @param partial A one sided formula of the form \code{~expression} specifying the predictors with category specific effects in non-cumulative ordinal models
-#'  (i.e. in families \code{"cratio"}, \code{"sratio"}, or \code{"acat"}).
-#' @param threshold A character string indicating the type of thresholds (i.e. intercepts) used in an ordinal model.
-#'  \code{"flexible"} provides the standard unstructured thresholds and \code{"equidistant"} restricts the distance between consecutive thresholds to the same value.
+#' @param data An optional data frame, list or environment  (or object coercible by 
+#'   \code{as.data.frame} to a data frame) containing the variables in the model. If not found in data, 
+#'   the variables are taken from \code{environment(formula)}, 
+#'   typically the environment from which \code{brm} is called. 
+#'   Although it is optional, we strongly recommend to supply a data.frame. 
+#' @param family A vector of one or two character strings. 
+#'   The first string indicates the distribution of the dependent variable (the 'family'). 
+#'   Currently, the following families are supported:
+#'   \code{"gaussian"}, \code{"student"}, \code{"cauchy"}, \code{"binomial"}, \code{"bernoulli"}, 
+#'   \code{"categorical"}, \code{"poisson"}, \code{"negbinomial"}, \code{"geometric"}, \code{"gamma"}, \cr
+#'   \code{"exponential"}, \code{"weibull"}, \code{"cumulative"}, \code{"cratio"}, \code{"sratio"}, and \code{"acat"}.
+#'   The second string indicates the link function, which must be supported by the distribution 
+#'   of the dependent variable. If not specified, default link functions are used. 
+#'   Further information is provided under 'Details'.
+#' @param prior One or more \code{brmsprior} objects created by function 
+#'   \code{\link[brms:set_prior]{set_prior}} and combined using the \code{c} method. 
+#'   A single \code{brmsprior} object may be passed without \code{c()} surrounding it. 
+#'   See also  \code{\link[brms:get_prior]{get_prior}} for more help.
+#' @param addition A named list of one sided formulas each containing additional information 
+#'   on the response variable. The following names are allowed:
+#'   \code{se} for specifying standard errors for meta-analysis, 
+#'   \code{weights} to fit weighted regression models, 
+#'   \code{trials} to specify the number of trials per observation in binomial models, 
+#'   \code{cat} to specify the number of categories in 
+#'   categorical or ordinal models, and \code{cens} to indicate censoring. 
+#'   Alternatively, the \code{addition} arguments can be incorporated directly into \code{formula}.
+#'   See 'Formula Syntax' under 'Details' for further information.
+#' @param autocor An optional \code{\link{cor_brms}} object describing the correlation structure 
+#'   within the response variable (i.e. the 'autocorrelation'). 
+#'   See the documentation of \code{\link{cor_brms}} for a description 
+#'   of the available correlation structures. Defaults to NULL, corresponding to no correlations.
+#' @param partial A one sided formula of the form \code{~expression} specifying the predictors with 
+#'   category specific effects in non-cumulative ordinal models
+#'   (i.e. in families \code{"cratio"}, \code{"sratio"}, or \code{"acat"}).
+#' @param threshold A character string indicating the type of thresholds (i.e. intercepts) 
+#'   used in an ordinal model. \code{"flexible"} provides the standard unstructured thresholds and 
+#'   \code{"equidistant"} restricts the distance between consecutive thresholds to the same value.
 #' @param cov.ranef A list of matrices that are proportional to the (within) covariance structure of the random effects. 
 #'   The names of the matrices should correspond to columns in \code{data} that are used as grouping factors. 
 #'   All levels of the grouping factor should appear as rownames of the corresponding matrix. 
-#' @param ranef A flag to indicate if random effects for each level of the grouping factor(s) should be saved (default is \code{TRUE}). 
-#'   Set to \code{FALSE} to save memory. The argument has no impact on the model fitting itself.
-#' @param sample.prior A flag to indicate if samples from all specified proper priors should be additionally drawn. 
-#'   Among others, these samples can be used to calculate Bayes factors for point hypotheses. Default is \code{FALSE}. 
-#' @param fit An instance of S3 class \code{brmsfit} derived from a previous fit; defaults to \code{NA}. If \code{fit} is of class \code{brmsfit}, the compiled model associated 
-#'   with the fitted result is re-used and the arguments \code{formula}, \code{data}, \code{family}, \code{prior}, \code{addition}, \code{autocor}, \code{partial}, \code{threshold},
+#' @param ranef A flag to indicate if random effects for each level of the grouping factor(s) 
+#'   should be saved (default is \code{TRUE}). Set to \code{FALSE} to save memory. 
+#'   The argument has no impact on the model fitting itself.
+#' @param sample.prior A flag to indicate if samples from all specified proper priors 
+#'   should be additionally drawn. Among others, these samples can be used to calculate 
+#'   Bayes factors for point hypotheses. Default is \code{FALSE}. 
+#' @param fit An instance of S3 class \code{brmsfit} derived from a previous fit; defaults to \code{NA}. 
+#'   If \code{fit} is of class \code{brmsfit}, the compiled model associated 
+#'   with the fitted result is re-used and the arguments \code{formula}, \code{data}, 
+#'   \code{family}, \code{prior}, \code{addition}, \code{autocor}, \code{partial}, \code{threshold},
 #'  \code{cov.ranef}, and \code{ranef}, are ignored.
-#' @param inits Either \code{"random"} or \code{"0"}. If inits is \code{"random"} (the default), Stan will randomly generate initial values for parameters. 
-#'   If it is \code{"0"}, all parameters are initiliazed to zero. This option is recommended for \code{exponential} and \code{weibull} models, as it
-#'   happens that default (\code{"random"}) inits cause samples to be essentially constant. Generally, setting \code{inits = "0"} is worth
-#'   a try, if chains do not behave well.
-#'   Alternatively, \code{inits} can be a list of lists containing the initial values, or a function (or function name) generating initial values. 
+#' @param inits Either \code{"random"} or \code{"0"}. If inits is \code{"random"} (the default), 
+#'   Stan will randomly generate initial values for parameters. 
+#'   If it is \code{"0"}, all parameters are initiliazed to zero. 
+#'   This option is recommended for \code{exponential} and \code{weibull} models, as it
+#'   happens that default (\code{"random"}) inits cause samples to be essentially constant. 
+#'   Generally, setting \code{inits = "0"} is worth a try, if chains do not behave well.
+#'   Alternatively, \code{inits} can be a list of lists containing the initial values, 
+#'   or a function (or function name) generating initial values. 
 #'   The latter options are mainly implemented for internal testing.
 #' @param n.chains Number of Markov chains (default: 2)
 #' @param n.iter Number of total iterations per chain (including burnin; default: 2000)
-#' @param n.warmup A positive integer specifying number of warmup (aka burnin) iterations. This also specifies the number of iterations used for stepsize adaptation, 
-#'   so warmup samples should not be used for inference. The number of warmup should not be larger than \code{n.iter} and the default is 500.
-#' @param n.thin Thinning rate. Must be a positive integer. Set \code{n.thin > 1} to save memory and computation time if \code{n.iter} is large. Default is 1, that is no thinning.
+#' @param n.warmup A positive integer specifying number of warmup (aka burnin) iterations. 
+#'   This also specifies the number of iterations used for stepsize adaptation, 
+#'   so warmup samples should not be used for inference. The number of warmup should not 
+#'   be larger than \code{n.iter} and the default is 500.
+#' @param n.thin Thinning rate. Must be a positive integer. 
+#'   Set \code{n.thin > 1} to save memory and computation time if \code{n.iter} is large. 
+#'   Default is 1, that is no thinning.
 #' @param n.cluster	Number of clusters to use to run parallel chains. Default is 1.   
-#' @param cluster_type A character string specifying the type of cluster created by \code{\link[parallel:makeCluster]{makeCluster}} 
-#'   when sampling in parallel (i.e. when \code{n.cluster} is greater \code{1}). Default is \code{"PSOCK"} working on all platforms. 
-#'   For OS X and Linux, \code{"FORK"} may be a faster and more stable option, but it does not work on Windows.
+#' @param cluster_type A character string specifying the type of cluster created by 
+#'   \code{\link[parallel:makeCluster]{makeCluster}} when sampling in parallel 
+#'   (i.e. when \code{n.cluster} is greater \code{1}). Default is \code{"PSOCK"} working on all platforms. 
+#'   For OS X and Linux, \code{"FORK"} may be a faster and more stable option, 
+#'   but it does not work on Windows.
 #' @param save.model Either \code{NULL} or a character string. In the latter case, the model code is
-#'   saved in a file named after the string supplied in \code{save.model}, which may also contain the full path where to save the file.
+#'   saved in a file named after the string supplied in \code{save.model}, 
+#'   which may also contain the full path where to save the file.
 #'   If only a name is given, the file is save in the current working directory. 
 #' @param silent logical; If \code{TRUE}, most intermediate output from Stan is suppressed.
 #' @param seed Positive integer. Used by \code{set.seed} to make results reproducable.  
 #' @param ... Further arguments to be passed to Stan.
 #' 
-#' @return An object of class \code{brmsfit}, which contains the posterior samples along with many other useful information about the model.
-#'  Use \code{methods(class = "brmsfit")} for an overview on available methods.
+#' @return An object of class \code{brmsfit}, which contains the posterior samples along 
+#'   with many other useful information about the model.
+#'   Use \code{methods(class = "brmsfit")} for an overview on available methods.
 #'  
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
-#' @details Fit a generalized linear mixed model, which incorporates both fixed-effects parameters and random effects in a linear predictor  
-#'   via full bayesian inference using Stan. During warmup aka burnin phase, Stan may print out quite a few informational
-#'   messages that \cr
+#' @details Fit a generalized linear mixed model, which incorporates both fixed-effects parameters 
+#'   and random effects in a linear predictor via full bayesian inference using Stan. 
+#'   During warmup aka burnin phase, Stan may print out quite a few informational messages that \cr
 #'   \code{"the current Metropolis proposal is about the be rejected ..."}. \cr 
 #'   These messages can be ignored in nearly all cases. 
 #'   Use \code{silent = TRUE} to stop these messages from being printed out. \cr
@@ -78,13 +107,17 @@
 #'   
 #'   \code{response | addition ~ fixed + (random | group)} 
 #'   
-#'   Multiple grouping factors each with multiple random effects are possible. Instead of | you may use || in random effects terms
+#'   Multiple grouping factors each with multiple random effects are possible. 
+#'   Instead of | you may use || in random effects terms
 #'   to prevent random effects correlations from being modeled.
 #'   With the exception of \code{addition}, this is basically \code{lme4} syntax. 
-#'   The optional \code{addition} term may contain multiple terms of the form \code{fun(variable)} seperated by \code{|} each providing
-#'   special information on the response variable. \code{fun} can be replaced with either \code{se}, \code{weights}, \code{trials},
-#'   \code{cat}, or \code{cens} (their meanings are explained below). Using the \code{addition} term in \code{formula} is equivalent
-#'   to using argument \code{addition}: Instead of writing \code{fun(variable)} in \code{formula}, we may use \code{addition = list(fun = ~variable)}.
+#'   The optional \code{addition} term may contain multiple terms of the form \code{fun(variable)} 
+#'   seperated by \code{|} each providing special information on the response variable. 
+#'   \code{fun} can be replaced with either \code{se}, \code{weights}, \code{trials},
+#'   \code{cat}, or \code{cens} (their meanings are explained below). 
+#'   Using the \code{addition} term in \code{formula} is equivalent
+#'   to using argument \code{addition}: Instead of writing \code{fun(variable)} in \code{formula}, 
+#'   we may use \code{addition = list(fun = ~variable)}.
 #'   
 #'   For families \code{gaussian}, \code{student}, and \code{cauchy} it is possible to specify
 #'   standard errors of the observation, thus allowing to perform meta-analysis. 
@@ -97,8 +130,9 @@
 #'   \code{mod1} and \code{mod2} represent moderator variables. 
 #'   
 #'   For all families, weighted regression may be performed using
-#'   \code{weights} in the addition part. Suppose that variable \code{wei} contains the weights and that \code{yi} is the response variable.
-#'   Then, formula \code{yi | weights(wei) ~ predictors} implements a weighted regression. 
+#'   \code{weights} in the addition part. Suppose that variable \code{wei} contains the weights 
+#'   and that \code{yi} is the response variable. Then, formula \code{yi | weights(wei) ~ predictors} 
+#'   implements a weighted regression. 
 #'   
 #'   For family \code{binomial}, addition may contain a variable indicating the number of trials 
 #'   underlying each observation. In \code{lme4} syntax, we may write for instance 
@@ -107,51 +141,70 @@
 #'   is constant across all observation (say \code{10}), we may also write \code{success | trials(10)}. 
 #'   
 #'   For family \code{categorical} and all ordinal families, \code{addition} may contain a term \code{cat(number)} to
-#'   specify the number categories (e.g, \code{cat(7)}. If not given, the number of categories is calculated from the data.
+#'   specify the number categories (e.g, \code{cat(7)}. 
+#'   If not given, the number of categories is calculated from the data.
 #'   
-#'   With the expection of \code{categorical} and ordinal families, left and right censoring can be modeled through \code{yi | cens(censored) ~ predictors}.
-#'   The censoring variable (named \code{censored} in this example) should contain the values \code{'left'}, \code{'none'}, and \code{'right'}  
-#'   (or equivalenty -1, 0, and 1) to indicate that the corresponding observation is left censored, not censored, or right censored. 
+#'   With the expection of \code{categorical} and ordinal families, left and right censoring 
+#'   can be modeled through \code{yi | cens(censored) ~ predictors}.
+#'   The censoring variable (named \code{censored} in this example) should 
+#'   contain the values \code{'left'}, \code{'none'}, and \code{'right'}  
+#'   (or equivalenty -1, 0, and 1) to indicate that the corresponding observation is 
+#'   left censored, not censored, or right censored. 
 #' 
 #'   Mutiple \code{addition} terms may be specified at the same time, for instance \cr 
 #'   \code{formula = yi | se(sei) | cens(censored) ~ 1} for a censored meta-analytic model, equivalent to 
-#'   \code{formula = yi ~ 1} and \code{addition = list(se = ~sei, cens = ~censored)} when using argument \code{addition}. \cr
+#'   \code{formula = yi ~ 1} and \code{addition = list(se = ~sei, cens = ~censored)} 
+#'   when using argument \code{addition}. \cr
 #'   
-#'   Family \code{gaussian} allows to perform multivariate (normal) regression using \code{cbind} notation. Suppose that
-#'   \code{y1} and \code{y2} are response variables and \code{x} is a predictor, then \code{cbind(y1,y2) ~ x} speficies a multivariate model, where
-#'   \code{x} has the same effect on \code{y1} and \code{y2}.
-#'   To indicate different effects on each response variable, the word \code{trait} (which is reserved in models with mutiple responses) can be used
-#'   as an additional categorical predictor. For instance, \code{cbind(y1,y2) ~ -1 + x:trait} leads to seperate effects
-#'   of \code{x} on \code{y1} and \code{y2}. In this case, \code{trait} has two levels, namely \code{"y1"} and \code{"y2"}. 
+#'   Family \code{gaussian} allows to perform multivariate (normal) regression using \code{cbind} notation. 
+#'   Suppose that \code{y1} and \code{y2} are response variables and \code{x} is a predictor, 
+#'   then \code{cbind(y1,y2) ~ x} speficies a multivariate model, 
+#'   where \code{x} has the same effect on \code{y1} and \code{y2}.
+#'   To indicate different effects on each response variable, the word \code{trait} 
+#'   (which is reserved in models with mutiple responses) can be used as an additional categorical predictor. 
+#'   For instance, \code{cbind(y1,y2) ~ -1 + x:trait} leads to seperate effects
+#'   of \code{x} on \code{y1} and \code{y2}. 
+#'   In this case, \code{trait} has two levels, namely \code{"y1"} and \code{"y2"}. 
 #'   By default, \code{trait} is dummy-coded. 
-#'   It may also be used within random effects terms, both as grouping factor or as random effect within a grouping factor. 
-#'   Note that variable \code{trait} is generated internally and may not be specified in the data passed to \code{brm}. \cr
+#'   It may also be used within random effects terms, both as grouping factor or 
+#'   as random effect within a grouping factor. Note that variable \code{trait} is generated 
+#'   internally and may not be specified in the data passed to \code{brm}. \cr
 #'   
 #'   
 #'   \bold{Families and link functions}
 #'   
-#'   Family \code{gaussian} with \code{identity} link leads to linear regression. Families \code{student}, and \code{cauchy}
-#'   with \code{identity} link leads to robust linear regression that is less influenced by outliers. 
-#'   Families \code{poisson}, \code{negbinomial}, and \code{geometric} with \code{log} link lead to regression models for count data. 
-#'   Families \code{binomial} and \code{bernoulli} with \code{logit} link leads to logistic regression and family \code{categorical} to
-#'   multi-logistic regression when there are more than two possible outcomes.
+#'   Family \code{gaussian} with \code{identity} link leads to linear regression. 
+#'   Families \code{student}, and \code{cauchy} with \code{identity} link leads to 
+#'   robust linear regression that is less influenced by outliers. 
+#'   Families \code{poisson}, \code{negbinomial}, and \code{geometric} with \code{log} link lead to 
+#'   regression models for count data. 
+#'   Families \code{binomial} and \code{bernoulli} with \code{logit} link leads to 
+#'   logistic regression and family \code{categorical} to multi-logistic regression 
+#'   when there are more than two possible outcomes.
 #'   Families \code{cumulative}, \code{cratio} ('contiuation ratio'), \code{sratio} ('stopping ratio'), 
-#'   and \code{acat} ('adjacent category') leads to ordinal regression. Families \code{gamma}, \code{weibull}, and \code{exponential}
-#'   can be used (among others) for survival regression when combined with the \code{log} link.
+#'   and \code{acat} ('adjacent category') leads to ordinal regression. Families \code{gamma}, 
+#'   \code{weibull}, and \code{exponential} can be used (among others) for survival regression 
+#'   when combined with the \code{log} link.
 #'   
 #'   In the following, we list all possible links for each family.
-#'   The families \code{gaussian}, \code{student}, and \code{cauchy} accept the links (as names) \code{identity}, \code{log}, and \code{inverse};
-#'   families \code{poisson}, \code{negbinomial}, and \code{geometric} the links \code{log}, \code{identity}, and \code{sqrt}; 
-#'   families \code{binomial}, \code{bernoulli}, \code{cumulative}, \code{cratio}, \code{sratio}, and \code{acat} the links \code{logit}, \code{probit}, \code{probit_approx}, and \code{cloglog}; \cr
-#'   family \code{categorical} the link \code{logit}; families \code{gamma}, \code{weibull}, and \code{exponential} the links \code{log}, \code{identity}, and \code{inverse}. 
+#'   The families \code{gaussian}, \code{student}, and \code{cauchy} accept the links (as names) 
+#'   \code{identity}, \code{log}, and \code{inverse};
+#'   families \code{poisson}, \code{negbinomial}, and \code{geometric} the links 
+#'   \code{log}, \code{identity}, and \code{sqrt}; 
+#'   families \code{binomial}, \code{bernoulli}, \code{cumulative}, \code{cratio}, \code{sratio}, 
+#'   and \code{acat} the links \code{logit}, \code{probit}, \code{probit_approx}, and \code{cloglog}; \cr
+#'   family \code{categorical} the link \code{logit}; families \code{gamma}, \code{weibull}, 
+#'   and \code{exponential} the links \code{log}, \code{identity}, and \code{inverse}. 
 #'   The first link mentioned for each family is the default. \cr    
 #'   
 #'   
 #'   \bold{Prior distributions}
 #'   
-#'   As of \pkg{brms} 0.5.0, priors should be specified using the \code{\link[brms:set_prior]{set_prior}} function. 
+#'   As of \pkg{brms} 0.5.0, priors should be specified using the 
+#'   \code{\link[brms:set_prior]{set_prior}} function. 
 #'   Its documentation contains detailed information on how to correctly specify priors. 
-#'   To find out on which parameters or parameter classes priors can be defined, use \code{\link[brms:get_prior]{get_prior}}.
+#'   To find out on which parameters or parameter classes priors can be defined, 
+#'   use \code{\link[brms:get_prior]{get_prior}}.
 #'   
 #' @examples
 #' \dontrun{ 

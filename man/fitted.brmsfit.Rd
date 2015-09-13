@@ -18,11 +18,12 @@ If \code{NULL} (default), the data used to fit the model is applied.}
 If \code{NULL} (default), include all random effects; if \code{NA}, include no random effects.
 Other options will be implemented in the future.}
 
-\item{scale}{Either \code{"response"} or \code{"linear"}. If \code{scale = "response"} results are returned
-on the scale of the response variable. If \code{scale = "linear"} fitted values are returned on the scale of the linear predictor.}
+\item{scale}{Either \code{"response"} or \code{"linear"}. If \code{scale = "response"}
+  results are returned on the scale of the response variable. If \code{scale = "linear"}
+  fitted values are returned on the scale of the linear predictor.}
 
-\item{allow_new_levels}{Currenly, \code{FALSE} (no new levels allowed) is the only option. This will change in
-future versions of the package.}
+\item{allow_new_levels}{Currenly, \code{FALSE} (no new levels allowed) is the only option.
+This will change in future versions of the package.}
 
 \item{summary}{logical. Should summary statistics (i.e. means, sds, and 95\% intervals) be returned
 instead of the raw values. Default is \code{TRUE}}
@@ -34,8 +35,10 @@ Only used if \code{summary} is \code{TRUE}.}
 }
 \value{
 Fitted values extracted from \code{object}. The output depends on the family:
-  If \code{summary = TRUE} it is a N x E x C array for categorical and ordinal models and a N x E matrix else.
-  If \code{summary = FALSE} it is a S x N x C array for categorical and ordinal models and a S x N matrix else.
+  If \code{summary = TRUE} it is a N x E x C array for categorical and ordinal models
+  and a N x E matrix else.
+  If \code{summary = FALSE} it is a S x N x C array for categorical and ordinal models
+  and a S x N matrix else.
   N is the number of observations, S is the number of samples, C is the number of categories,
   and E is equal to \code{length(probs) + 2}.
 }

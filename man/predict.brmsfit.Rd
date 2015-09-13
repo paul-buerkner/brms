@@ -21,8 +21,8 @@ Other options will be implemented in the future.}
 \item{transform}{A function or a character string naming a function to be applied on the predicted responses
 before summary statistics are computed.}
 
-\item{allow_new_levels}{Currenly, \code{FALSE} (no new levels allowed) is the only option. This will change in
-future versions of the package.}
+\item{allow_new_levels}{Currenly, \code{FALSE} (no new levels allowed) is the only option.
+This will change in future versions of the package.}
 
 \item{summary}{logical. Should summary statistics (i.e. means, sds, and 95\% intervals) be returned
 instead of the raw values. Default is \code{TRUE}}
@@ -35,7 +35,8 @@ Only used if \code{summary} is \code{TRUE}.}
 \value{
 Predicted values of the response variable. If \code{summary = TRUE} the output depends on the family:
   For catagorical and ordinal families, it is a N x C matrix where N is the number of observations and
-  C is the number of categories. For all other families, it is a N x E matrix where E is equal to \code{length(probs) + 2}.
+  C is the number of categories. For all other families, it is a N x E matrix where E is equal
+  to \code{length(probs) + 2}.
   If \code{summary = FALSE}, the output is as a S x N matrix, where S is the number of samples.
 }
 \description{

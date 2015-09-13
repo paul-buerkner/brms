@@ -251,14 +251,15 @@ prior_samples.brmsfit <- function(x, parameters = NA, ...) {
 
 #' Print a summary for a fitted model represented by a \code{brmsfit} object
 #'
-#' Print basic information regarding the fitted model and a summary for the fixed and random effects
+#' Print basic information regarding the fitted model and a summary 
+#' for the fixed and random effects
 #' estimated by the samples included in a \code{brmsfit} object.
 #' 
 #' @aliases print.brmssummary
 #' 
 #' @param x An object of class \code{brmsfit}
-#' @param digits The number of significant digits for printing out the summary; defaults to 2. 
-#'   The effective sample size is always rounded to integers.
+#' @param digits The number of significant digits for printing out the summary; 
+#'   defaults to 2. The effective sample size is always rounded to integers.
 #' @param ... Additional arguments that would be passed to method \code{summary} of \code{brmsfit}.
 #'
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
@@ -337,7 +338,8 @@ summary.brmsfit <- function(object, ...) {
                                            brackets = FALSE), parnames(object))
         sd_names <- paste0("sd(",rnames,")")
         cor_names <- get_cornames(rnames, subset = cor_pars, subtype = out$group[i])
-        out$random[[out$group[i]]] <- matrix(fit_summary$summary[c(sd_pars, cor_pars), -c(2)], ncol = 6)
+        out$random[[out$group[i]]] <- 
+          matrix(fit_summary$summary[c(sd_pars, cor_pars), -c(2)], ncol = 6)
         colnames(out$random[[out$group[i]]]) <- col_names
         rownames(out$random[[out$group[i]]]) <- c(sd_names, cor_names)
       }
@@ -386,8 +388,9 @@ launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"), ..
 #' Trace and density plots for MCMC samples
 #' 
 #' @param x An object of class \code{brmsfit}.
-#' @param parameters Name of the parameters to plot, as given by a character vector or a regular expression.
-#'   By default, all parameters except for random effects, posterior predictives, and log likelihood values are plotted. 
+#' @param parameters Name of the parameters to plot, as given by a character vector 
+#'   or a regular expression. By default, all parameters except for random effects, 
+#'   posterior predictives, and log likelihood values are plotted. 
 #' @param N The number of parameters plotted per page.
 #' @param ask logical; Indicates if the user is prompted before a new page is plotted.   
 #' @param ... Further arguments passed to \code{\link[gridExtra:arrangeGrob]{arrangeGrob}}.
@@ -437,12 +440,15 @@ plot.brmsfit <- function(x, parameters = NA, N = 5, ask = TRUE, ...) {
 #' Extract Model Fitted Values of \code{brmsfit} Objects
 #' 
 #' @inheritParams predict.brmsfit
-#' @param scale Either \code{"response"} or \code{"linear"}. If \code{scale = "response"} results are returned 
-#' on the scale of the response variable. If \code{scale = "linear"} fitted values are returned on the scale of the linear predictor.
+#' @param scale Either \code{"response"} or \code{"linear"}. If \code{scale = "response"} 
+#'   results are returned on the scale of the response variable. If \code{scale = "linear"} 
+#'   fitted values are returned on the scale of the linear predictor.
 #'
 #' @return Fitted values extracted from \code{object}. The output depends on the family:
-#'   If \code{summary = TRUE} it is a N x E x C array for categorical and ordinal models and a N x E matrix else.
-#'   If \code{summary = FALSE} it is a S x N x C array for categorical and ordinal models and a S x N matrix else.
+#'   If \code{summary = TRUE} it is a N x E x C array for categorical and ordinal models 
+#'   and a N x E matrix else.
+#'   If \code{summary = FALSE} it is a S x N x C array for categorical and ordinal models 
+#'   and a S x N matrix else.
 #'   N is the number of observations, S is the number of samples, C is the number of categories,
 #'   and E is equal to \code{length(probs) + 2}.
 #'   
@@ -531,9 +537,9 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #'   
 #'   Currently, \code{residuals.brmsfit} does not support \code{categorical} or ordinal models. 
 #' 
-#' @return Model residuals. If \code{summary = TRUE} this is a N x C matrix and if \code{summary = FALSE}
-#'   a S x N matrix, where S is the number of samples, N is the number of observations, 
-#'   and C is equal to \code{length(probs) + 2}.  
+#' @return Model residuals. If \code{summary = TRUE} this is a N x C matrix 
+#'   and if \code{summary = FALSE} a S x N matrix, where S is the number of samples, 
+#'   N is the number of observations, and C is equal to \code{length(probs) + 2}.  
 #' 
 #' @examples 
 #' \dontrun{
@@ -593,8 +599,8 @@ residuals.brmsfit <- function(object, re_formula = NULL, type = c("ordinary", "p
 #'   Other options will be implemented in the future.
 #' @param transform A function or a character string naming a function to be applied on the predicted responses
 #'   before summary statistics are computed.
-#' @param allow_new_levels Currenly, \code{FALSE} (no new levels allowed) is the only option. This will change in
-#'   future versions of the package.
+#' @param allow_new_levels Currenly, \code{FALSE} (no new levels allowed) is the only option. 
+#'   This will change in future versions of the package.
 #' @param summary logical. Should summary statistics (i.e. means, sds, and 95\% intervals) be returned
 #'  instead of the raw values. Default is \code{TRUE}
 #' @param probs The percentiles to be computed by the \code{quantile} function. 
@@ -603,7 +609,8 @@ residuals.brmsfit <- function(object, re_formula = NULL, type = c("ordinary", "p
 #' 
 #' @return Predicted values of the response variable. If \code{summary = TRUE} the output depends on the family:
 #'   For catagorical and ordinal families, it is a N x C matrix where N is the number of observations and
-#'   C is the number of categories. For all other families, it is a N x E matrix where E is equal to \code{length(probs) + 2}.
+#'   C is the number of categories. For all other families, it is a N x E matrix where E is equal 
+#'   to \code{length(probs) + 2}.
 #'   If \code{summary = FALSE}, the output is as a S x N matrix, where S is the number of samples.
 #' 
 #' @details Be careful when using \code{newdata} with factors in fixed or random effects: 
