@@ -185,9 +185,9 @@ Fit a generalized linear mixed model, which incorporates both fixed-effects para
 
   \bold{Prior distributions}
 
-  As of \pkg{brms} 0.5.0, priors should be specified using the
-  \code{\link[brms:set_prior]{set_prior}} function. Its documentation
-  contains detailed information on how to correctly specify priors.
+  As of \pkg{brms} 0.5.0, priors should be specified using the \code{\link[brms:set_prior]{set_prior}} function.
+  Its documentation contains detailed information on how to correctly specify priors.
+  To find out on which parameters or parameter classes priors can be defined, use \code{\link[brms:get_prior]{get_prior}}.
 }
 \examples{
 \dontrun{
@@ -210,7 +210,7 @@ ranef(fit_e)
 ## Ordinal regression (with family 'sratio') modeling patient's rating
 ## of inhaler instructions using normal priors for fixed effects parameters
 fit_i <- brm(rating ~ treat + period + carry, data = inhaler,
-              family = "sratio", prior = set_prior("normal(0,5)"))
+             family = "sratio", prior = set_prior("normal(0,5)"))
 summary(fit_i)
 plot(fit_i)
 
