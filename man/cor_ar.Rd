@@ -21,6 +21,12 @@ An object of class \code{cor_arma} containing solely autoregression terms.
 \description{
 This function is a constructor for the \code{cor_arma} class, allowing for autoregression terms only.
 }
+\details{
+The AR structure implemented in \pkg{brms} regresses previous response(s) on the current response.
+  Other packages may use the term AR for the regression of previous residual(s) on the current residual.
+  When comparing the outputs of different packages using AR coefficients, it is thus important to
+  check which AR structure (response or residual) was actually applied.
+}
 \examples{
 cor_ar(~visit|patient, p = 2)
 }

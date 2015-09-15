@@ -14,6 +14,11 @@
 #' 
 #' @return An object of class \code{cor_arma}, representing an autoregression-moving average correlation structure.
 #' 
+#' @details The AR structure implemented in \pkg{brms} regresses previous response(s) on the current response. 
+#'   Other packages may use the term AR for the regression of previous residual(s) on the current residual.
+#'   When comparing the outputs of different packages using AR coefficients, it is thus important to 
+#'   check which AR structure (response or residual) was actually applied.
+#' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
 #' @examples
@@ -51,6 +56,11 @@ cor.arma <- function(formula = ~ 1, p = 0, q = 0) {
 #' @param p A non-negative integer specifying the autoregressive order of the ARMA structure. Default is 1. 
 #' 
 #' @return An object of class \code{cor_arma} containing solely autoregression terms.
+#' 
+#' @details The AR structure implemented in \pkg{brms} regresses previous response(s) on the current response. 
+#'   Other packages may use the term AR for the regression of previous residual(s) on the current residual.
+#'   When comparing the outputs of different packages using AR coefficients, it is thus important to 
+#'   check which AR structure (response or residual) was actually applied.
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
