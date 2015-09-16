@@ -24,8 +24,11 @@ An object of class \code{cor_arma}, representing an autoregression-moving averag
 This functions is a constructor for the \code{cor_arma} class, representing an autoregression-moving average correlation structure of order (p, q).
 }
 \details{
-The AR structure implemented in \pkg{brms} regresses previous response(s) on the current response
-  using fixed effects. Some other packages use different approaches that may lead to different estimates.
+The AR structure implemented in \pkg{brms} regresses previous response(s) on the current response.
+  Other packages may use the term AR for the regression of previous residual(s) on the current residual.
+  When comparing the outputs of different packages using AR coefficients, it is thus important to
+  check which AR structure (response or residual) was actually applied.
+  AR effects of residuals are currently developed for \pkg{brms}.
 }
 \examples{
 cor_arma(~visit|patient, p = 2, q = 2)

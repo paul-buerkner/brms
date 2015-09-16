@@ -336,12 +336,11 @@ ar_design_matrix <- function(Y, p, group)  {
     N_group <- length(U_group)
     out <- matrix(0, nrow = length(Y), ncol = p)
     ptsum <- rep(0, N_group + 1)
-    meanY <- mean(Y) 
     for (j in 1:N_group) {
       ptsum[j+1] <- ptsum[j] + sum(group == U_group[j])
       for (i in 1:p) {
         if (ptsum[j]+i+1 <= ptsum[j+1])
-          out[(ptsum[j]+i+1):ptsum[j+1], i] <- Y[(ptsum[j]+1):(ptsum[j+1]-i)] - meanY
+          out[(ptsum[j]+i+1):ptsum[j+1], i] <- Y[(ptsum[j]+1):(ptsum[j+1]-i)]
       }
     }
   }

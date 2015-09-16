@@ -29,9 +29,9 @@ test_that("Test that get_model_matrix removes intercepts correctly", {
 test_that("Test that ar_design_matrix returns correct design matrices for autoregressive effects", {
   expect_equal(ar_design_matrix(1:10, 0, sort(rep(1:2, 5))), NULL)
   expect_equal(ar_design_matrix(1:10, 1, sort(rep(1:2, 5))), 
-               matrix(c(0,1:4-5.5,0,6:9-5.5)))
+               matrix(c(0,1:4.5,0,6:9.5)))
   expect_equal(ar_design_matrix(1:10, 2, sort(rep(1:2, 5))), 
-               cbind(c(0,1:4-5.5,0,6:9-5.5), c(0,0,1:3-5.5,0,0,6:8-5.5)))
+               cbind(c(0,1:4.5,0,6:9), c(0,0,1:3,0,0,6:8)))
 })
 
 test_that("Test that brmdata returns correct data names for fixed and random effects", {
@@ -150,9 +150,9 @@ test_that("Test that brmdata handles addition arguments and autocorrelation in m
 test_that("Test that brmdata returns correct data for autocorrelations structures", {
   data <- data.frame(y=1:10, x=rep(0,10), tim=10:1, g = rep(3:4,5))
   expect_equal(brmdata(y ~ x, family = "gaussian", autocor = cor.ar(~tim|g), data = data)$Yar,
-               cbind(c(0,3.5,1.5,-0.5,-2.5,0,4.5,2.5,0.5,-1.5)))
+               cbind(c(0,9,7,5,3,0,10,8,6,4)))
   expect_equal(brmdata(y ~ x, family = "gaussian", autocor = cor.ar(~tim|g, p = 2), data = data)$Yar,
-               cbind(c(0,3.5,1.5,-0.5,-2.5,0,4.5,2.5,0.5,-1.5), c(0,0,3.5,1.5,-0.5,0,0,4.5,2.5,0.5)))
+               cbind(c(0,9,7,5,3,0,10,8,6,4), c(0,0,9,7,5,0,0,10,8,6)))
   expect_equal(brmdata(y ~ x, family = "gaussian", autocor = cor.ma(~tim|g), data = data)$tgroup,
                c(rep(1,5), rep(2,5)))
 })

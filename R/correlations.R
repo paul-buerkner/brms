@@ -14,8 +14,11 @@
 #' 
 #' @return An object of class \code{cor_arma}, representing an autoregression-moving average correlation structure.
 #' 
-#' @details The AR structure implemented in \pkg{brms} regresses previous response(s) on the current response
-#'   using fixed effects. Some other packages use different approaches that may lead to different estimates. 
+#' @details The AR structure implemented in \pkg{brms} regresses previous response(s) on the current response. 
+#'   Other packages may use the term AR for the regression of previous residual(s) on the current residual.
+#'   When comparing the outputs of different packages using AR coefficients, it is thus important to 
+#'   check which AR structure (response or residual) was actually applied. 
+#'   AR effects of residuals are currently developed for \pkg{brms}.
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
@@ -55,8 +58,11 @@ cor.arma <- function(formula = ~ 1, p = 0, q = 0) {
 #' 
 #' @return An object of class \code{cor_arma} containing solely autoregression terms.
 #' 
-#' @details The AR structure implemented in \pkg{brms} regresses previous response(s) on the current response
-#'   using fixed effects. Some other packages use different approaches that may lead to different estimates. 
+#' @details The AR structure implemented in \pkg{brms} regresses previous response(s) on the current response. 
+#'   Other packages may use the term AR for the regression of previous residual(s) on the current residual.
+#'   When comparing the outputs of different packages using AR coefficients, it is thus important to 
+#'   check which AR structure (response or residual) was actually applied. 
+#'   AR effects of residuals are currently developed for \pkg{brms}.
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
