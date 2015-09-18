@@ -280,6 +280,7 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"),
   set.seed(seed)
   if (is(fit, "brmsfit")) {  
     x <- fit  # re-use existing model
+    x$fit <- rstan::get_stanmodel(x$fit)  # extract the compiled model
   } else {  # build new model
     link <- link4family(family)  # see validate.R
     family <- check_family(family[1])  # see validate.R
@@ -310,10 +311,11 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"),
                           save.model = save.model)  # see stan.R
     x$fit <- suppressMessages(rstan::stan(model_code = x$model, 
                                           data = x$data,
-                                          model_name = paste0(family,"(",link,") brms-model"), 
+                                          model_name = as.character(Sys.time()), 
                                           chains = 0))  # let stan compile the model
+    x$fit <- rstan::get_stanmodel(x$fit)  # extract the compiled model
+    x$fit@model_name <- paste0(family,"(",link,") brms-model")
   }
-  x$fit <- rstan::get_stanmodel(x$fit)  # extract the compiled model
   
   if (is.character(inits) && !inits %in% c("random", "0")) 
     inits <- get(inits, mode = "function", envir = parent.frame())
