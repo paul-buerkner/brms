@@ -309,6 +309,7 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"),
                           partial = partial, threshold = threshold, 
                           cov.ranef = cov.ranef, sample.prior = sample.prior, 
                           save.model = save.model)  # see stan.R
+    message("Compiling the C++ model")
     x$fit <- rstan::stanc(model_code = x$model,
                           model_name = paste0(family,"(",link,") brms-model"))
     x$fit <- rstan::stan_model(stanc_ret = x$fit) 
@@ -328,6 +329,7 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"),
   args[names(dots)] <- dots 
   
   if (n.cluster > 1 || silent && n.chains > 0) {  # sample in parallel
+    message("Start sampling")
     if (is.character(args$init) || is.numeric(args$init)) 
       args$init <- rep(args$init, n.chains)
     cl <- makeCluster(n.cluster, type = cluster_type)
