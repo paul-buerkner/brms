@@ -3,6 +3,12 @@ title: "News"
 output: html_document
 ---
 
+# under development
+----------------------------------------------------------------
+
+## bug fixes
+* avoid side effects of rstan's compilation routines that could occasionally cause R to crash 
+
 # brms 0.5.0
 ----------------------------------------------------------------
 
