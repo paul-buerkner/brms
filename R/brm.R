@@ -309,12 +309,9 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"),
                           partial = partial, threshold = threshold, 
                           cov.ranef = cov.ranef, sample.prior = sample.prior, 
                           save.model = save.model)  # see stan.R
-    x$fit <- suppressMessages(rstan::stan(model_code = x$model, 
-                                          data = x$data,
-                                          model_name = as.character(Sys.time()), 
-                                          chains = 0))  # let stan compile the model
-    x$fit <- rstan::get_stanmodel(x$fit)  # extract the compiled model
-    x$fit@model_name <- paste0(family,"(",link,") brms-model")
+    x$fit <- rstan::stanc(model_code = x$model,
+                          model_name = paste0(family,"(",link,") brms-model"))
+    x$fit <- rstan::stan_model(stanc_ret = x$fit) 
   }
   
   if (is.character(inits) && !inits %in% c("random", "0")) 
