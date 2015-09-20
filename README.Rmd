@@ -58,9 +58,14 @@ For a complete list of methods to apply on <b>brms</b> models see
 methods(class = "brmsfit") 
 ``` 
 
-For details on formula syntax, families and link functions, as well as prior distributions see the help page of the brm function:
+Details on formula syntax, families and link functions, as well as prior distributions can be found on the help page of the brm function:
 ```{r help.brm, eval=FALSE}
 help(brm) 
+``` 
+
+More instructions on how to use <b>brms</b> are given in the package's vignette.
+```{r vignette, eval=FALSE}
+vignette("brms") 
 ``` 
 
 # How to install brms
@@ -78,4 +83,4 @@ library(devtools)
 install_github("paul-buerkner/brms")
 ```
 
-Because <b>brms</b> is based on Stan, a C++ compiler is required. The program Rtools (available on https://cran.r-project.org/bin/windows/Rtools/) comes with a C++ compiler for Windows. On Mac, you should use Xcode. We recommend to install rstan (available on CRAN) before installing <b>brms</b>. For further instructions see https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started.
+Because <b>brms</b> is based on Stan, a C++ compiler is required. The program Rtools (available on https://cran.r-project.org/bin/windows/Rtools/) comes with a C++ compiler for Windows. On Mac, you should use Xcode. For further instructions on how to get the compilers running, see the prerequisites section on https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started.
