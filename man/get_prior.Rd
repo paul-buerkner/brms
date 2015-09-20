@@ -4,9 +4,9 @@
 \alias{get_prior}
 \title{Overview on Priors for \pkg{brms} Models}
 \usage{
-get_prior(formula, data = NULL, family = "gaussian", addition = NULL,
-  autocor = NULL, partial = NULL, threshold = c("flexible",
-  "equidistant"), internal = FALSE)
+get_prior(formula, data = NULL, family = c("gaussian", "identity"),
+  addition = NULL, autocor = NULL, partial = NULL,
+  threshold = c("flexible", "equidistant"), internal = FALSE)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class):

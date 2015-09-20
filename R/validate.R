@@ -455,23 +455,34 @@ set_prior <- function(prior, class = "b", coef = "", group = "") {
 #' }
 #' 
 #' @export
-get_prior <- function(formula, data = NULL, family = "gaussian", addition = NULL, 
-                      autocor = NULL, partial = NULL, threshold = c("flexible", "equidistant"), 
-                      internal = FALSE) {
+get_prior <- function(formula, data = NULL, family = c("gaussian", "identity"),
+                      addition = NULL,  autocor = NULL, partial = NULL, 
+                      threshold = c("flexible", "equidistant"), internal = FALSE) {
   # note that default priors are stored in this function
   if (is.null(autocor)) 
     autocor <- cor_arma()
   if (!is(autocor, "cor_brms")) 
     stop("cor must be of class cor_brms")
   threshold <- match.arg(threshold)
+  # see validate.R
+  link <- link4family(family) 
   family <- check_family(family[1])
   formula <- update_formula(formula, addition = addition)
   ee <- extract_effects(formula, partial, family = family)
+  # see data.R
   data <- update_data(data, family = family, effects = ee)
+  
+  # ensure that RE and residual SDs only have a weakly informative prior by default
+  Y <- unname(model.response(data))
+  prior_scale <- 5
+  if (link %in% c("identity", "log", "inverse", "sqrt")) {
+    prior_scale <- max(prior_scale, round(2 * sd(link(Y, link = link)))) 
+  }
+  default_sd_prior <- paste0("cauchy(0,", prior_scale, ")")
   
   # initialize output
   prior <- prior_frame(prior = character(0), class = character(0), 
-                     coef = character(0), group = character(0))
+                       coef = character(0), group = character(0))
   # fixed and category specific effects
   fixef <- colnames(get_model_matrix(ee$fixed, data = data))
   if (length(fixef)) {
@@ -483,7 +494,7 @@ get_prior <- function(formula, data = NULL, family = "gaussian", addition = NULL
   }
   # random effects
   if (length(ee$group)) {
-    prior <- rbind(prior, prior_frame(class = "sd", prior = "cauchy(0,5)"))  # global sd class
+    prior <- rbind(prior, prior_frame(class = "sd", prior = default_sd_prior))  # global sd class
     gs <- unlist(ee$group)
     for (i in 1:length(gs)) {
       ranef <- colnames(get_model_matrix(ee$random[[i]], data = data))
@@ -514,8 +525,10 @@ get_prior <- function(formula, data = NULL, family = "gaussian", addition = NULL
   if (is(autocor, "cor_arma") && autocor$q) 
     prior <- rbind(prior, prior_frame(class = "ma"))
   if (family %in% c("gaussian", "student", "cauchy") && !is.formula(ee$se))
-    prior <- rbind(prior, prior_frame(class = "sigma", coef = c("", ee$response),
-                                      prior = c("cauchy(0,5)", rep("", length(ee$response)))))
+    prior <- rbind(prior, prior_frame(class = "sigma", 
+                                      coef = c("", ee$response),
+                                      prior = c(default_sd_prior, 
+                                                rep("", length(ee$response)))))
   if (family == "gaussian" && length(ee$response) > 1) {
     if (internal) {
       prior <- rbind(prior, prior_frame(class = "Lrescor", prior = "lkj_corr_cholesky(1)"))
@@ -536,7 +549,8 @@ get_prior <- function(formula, data = NULL, family = "gaussian", addition = NULL
 }
 
 check_prior <- function(prior, formula, data = NULL, family = "gaussian", 
-                        autocor = NULL, partial = NULL, threshold = "flexible") {
+                        link = "identity", autocor = NULL, partial = NULL, 
+                        threshold = "flexible") {
   # check prior input and amend it if needed
   #
   # Args:
@@ -545,7 +559,8 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
   # Returns:
   #   a data.frame of prior specifications to be used in stan_prior (see stan.R)
   ee <- extract_effects(formula, family = family)  
-  all_prior <- get_prior(formula = formula, data = data, family = family, 
+  all_prior <- get_prior(formula = formula, data = data, 
+                         family = c(family, link),
                          autocor = autocor, partial = partial, 
                          threshold = threshold, internal = TRUE)
   if (is.null(prior)) {

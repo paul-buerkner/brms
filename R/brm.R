@@ -285,8 +285,8 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"),
     link <- link4family(family)  # see validate.R
     family <- check_family(family[1])  # see validate.R
     formula <- update_formula(formula, addition = addition)  # see validate.R
-    prior <- check_prior(prior, formula = formula, 
-                         data = data, family = family, 
+    prior <- check_prior(prior, formula = formula, data = data, 
+                         family = family, link = link,
                          autocor = autocor, partial = partial, 
                          threshold = threshold)  # see validate.R
     et <- extract_time(autocor$formula)  # see validate.R

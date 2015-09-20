@@ -57,6 +57,8 @@ update_data <- function(data, family, effects, ...) {
   #   data: the original data.frame
   #   family: the model family
   #   effects: output of extract_effects (see validate.R)
+  #   ...: More formulae passed to combine_groups
+  #        Currently only used for autocorrelation structures
   #
   # Returns:
   #   model.frame in long format with combined grouping variables if present

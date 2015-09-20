@@ -93,12 +93,14 @@ test_that("Test that check_prior performs correct renaming", {
   expect_true(length(which(duplicated(rbind(prior, target)))) == 2)
   
   expect_equivalent(check_prior(set_prior("normal(0,1)", class = "b", coef = "Intercept"),
-                                formula = rating ~ carry, data = inhaler, family = "cumulative")[3, ],
+                                formula = rating ~ carry, data = inhaler, 
+                                family = "cumulative", link = "logit")[3, ],
                     prior_frame("normal(0,1)", class = "b_Intercept"))
   
   expect_equivalent(check_prior(set_prior("normal(0,1)", class = "b", coef = "Intercept"),
                            formula = rating ~ carry, data = inhaler, 
-                           family = "cumulative", threshold = "equidistant")[3, ],
+                           family = "cumulative", link = "logit",
+                           threshold = "equidistant")[3, ],
                prior_frame("normal(0,1)", class = "b_Intercept1"))
 })
 
@@ -148,7 +150,7 @@ test_that("Test that check_prior accepts correct prior names", {
 test_that("Test that check_prior rejects incorrect prior names", {
   expect_message(check_prior(c(set_prior("p1", class = "b", coef = "Intercept"),
                                set_prior("p2", class = "b", coef = "age")),
-                             family = "acat", data = inhaler,
+                             family = "acat", link = "logit", data = inhaler,
                              formula = rating ~ treat + (1+treat|subject)))
   expect_message(check_prior(c(set_prior("p1", class = "b", coef = "Intercept"),
                                set_prior("", class = "sd", group = "patient")),
