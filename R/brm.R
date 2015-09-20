@@ -282,15 +282,16 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"),
     x <- fit  # re-use existing model
     x$fit <- rstan::get_stanmodel(x$fit)  # extract the compiled model
   } else {  # build new model
-    link <- link4family(family)  # see validate.R
-    family <- check_family(family[1])  # see validate.R
-    formula <- update_formula(formula, addition = addition)  # see validate.R
+    # see validate.R for function definitions
+    link <- link4family(family)  
+    family <- check_family(family[1]) 
+    formula <- update_formula(formula, addition = addition) 
     prior <- check_prior(prior, formula = formula, data = data, 
                          family = family, link = link,
                          autocor = autocor, partial = partial, 
-                         threshold = threshold)  # see validate.R
-    et <- extract_time(autocor$formula)  # see validate.R
-    ee <- extract_effects(formula, family = family, partial, et$all)  # see validate.R
+                         threshold = threshold) 
+    et <- extract_time(autocor$formula)  
+    ee <- extract_effects(formula, family = family, partial, et$all)
     data.name <- Reduce(paste, deparse(substitute(data)))
     data <- update_data(data, family = family, effects = ee, et$group)  # see data.R
     
@@ -317,7 +318,7 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"),
   
   if (is.character(inits) && !inits %in% c("random", "0")) 
     inits <- get(inits, mode = "function", envir = parent.frame())
-  if (family %in% c("exponential", "weibull") && inits == "random")
+  if (x$family %in% c("exponential", "weibull") && inits == "random")
     warning(paste("Families exponential and weibull may not work well",
                    "with default initial values. \n",
                    " It is thus recommended to set inits = '0'"))
