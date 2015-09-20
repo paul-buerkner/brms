@@ -61,7 +61,11 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, ...) {
   group <- names(x$ranef)
   pars <- parnames(x)
   
-  ranef <- lapply(1:length(group), function(i) {
+  get_ranef <- function(i) {
+    # get random effects of a grouping factor
+    #
+    # Args:
+    #   i: index of a grouping factor
     g <- group[i]
     rnames <- x$ranef[[i]]
     rpars <- pars[grepl(paste0("^r_",group[i],"\\["), pars)]
@@ -69,6 +73,12 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, ...) {
       stop(paste0("The model does not contain random effects for group '",g,"'\n",
                   "You should use argument ranef = TRUE in function brm."))
     rdims <- x$fit@sim$dims_oi[[paste0("r_",group[i])]]
+    levels <- attr(x$ranef[[i]], "levels")
+    if (is.null(levels)) {
+      # avoid error in dimnames if levels are NULL 
+      # for backwards compatibility with brms < 0.5.0 
+      levels <- 1:rdims[1]
+    }
     rs <- posterior_samples(x, parameters = rpars, exact_match = TRUE)
     ncol <- ifelse(is.na(rdims[2]), 1, rdims[2])
     rs_array <- array(dim = c(rdims[1], ncol, nrow(rs)))
@@ -88,10 +98,14 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, ...) {
         if (is.na(rdims[2])) Var[, , i] <- var(rs_array[i, 1, ]) 
         else Var[, , i] <- cov(t(rs_array[i, , ])) 
       }
+      dimnames(Var)[[3]] <- levels
       attr(out, "var") <- Var
     }
+    rownames(out) <- levels
     out
-  })
+  }
+  
+  ranef <- lapply(1:length(group), get_ranef)
   names(ranef) <- group
   ranef 
 } 
