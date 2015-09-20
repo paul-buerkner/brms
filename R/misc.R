@@ -116,3 +116,12 @@ formula2string <- function(formula, rm = c(0, 0)) {
   x <- substr(x, 1 + rm[1], nchar(x) - rm[2])
   x
 } 
+
+# startup messages for brms
+.onAttach <- function(libname, pkgname) {
+  packageStartupMessage(paste0(
+    "Loading 'brms' package (version ", utils::packageVersion("brms"), "). ",
+    "Useful instructions \n", 
+    "can be found by typing help('brms'). A more detailed introduction \n", 
+    "to the package is available through vignette('brms')."))
+}
