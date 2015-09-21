@@ -165,7 +165,7 @@ test_that("Test that check_family rejects invalid families", {
   expect_error(check_family("multigaussian"),
                "family 'multigaussian' is deprecated. Use family 'gaussian' instead")
   expect_error(check_family("ordinal"),
-               "ordinal is not a valid family")
+               "ordinal is not a supported family")
 })
 
 test_that("Test that check_family returns correct links", {
@@ -179,10 +179,10 @@ test_that("Test that check_family returns correct links", {
 })
 
 test_that("Test that check_family return an error on wrong links", {
-  expect_error(check_family(gaussian("logit")), "logit is not a valid link for family gaussian")
-  expect_error(check_family(poisson("inverse")), "inverse is not a valid link for family poisson")
-  expect_error(check_family(c("weibull", "sqrt")), "sqrt is not a valid link for family weibull")
-  expect_error(check_family(c("categorical","probit")), "probit is not a valid link for family categorical")
+  expect_error(check_family(gaussian("logit")), "logit is not a supported link for family gaussian")
+  expect_error(check_family(poisson("inverse")), "inverse is not a supported link for family poisson")
+  expect_error(check_family(c("weibull", "sqrt")), "sqrt is not a supported link for family weibull")
+  expect_error(check_family(c("categorical","probit")), "probit is not a supported link for family categorical")
 })
 
 test_that("Test that parnames.formula finds all classes for which priors can be specified", {
