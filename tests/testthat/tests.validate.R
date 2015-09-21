@@ -168,20 +168,21 @@ test_that("Test that check_family rejects invalid families", {
                "ordinal is not a valid family")
 })
 
-test_that("Test that link4familys returns correct links", {
-  expect_equal(link4family("gaussian"), "identity")
-  expect_equal(link4family("weibull"), "log")
-  expect_equal(link4family("binomial"), "logit")
-  expect_equal(link4family(c("binomial", "probit")), "probit")
-  expect_equal(link4family(c("acat", "cloglog")), "cloglog")
-  expect_warning(link4family(c("poisson", "sqrt")), "poisson model with sqrt link may not be uniquely identified")
+test_that("Test that check_family returns correct links", {
+  expect_equal(check_family("gaussian")$link, "identity")
+  expect_equal(check_family("weibull")$link, "log")
+  expect_equal(check_family(binomial)$link, "logit")
+  expect_equal(check_family(binomial("probit"))$link, "probit")
+  expect_equal(check_family(c("acat", "cloglog"))$link, "cloglog")
+  expect_warning(check_family(c("poisson", "sqrt")), 
+                 "poisson model with sqrt link may not be uniquely identified")
 })
 
-test_that("Test that link4familys return an error on wrong links", {
-  expect_error(link4family(c("gaussian","logit")), "logit is not a valid link for family gaussian")
-  expect_error(link4family(c("poisson","inverse")), "inverse is not a valid link for family poisson")
-  expect_error(link4family(c("weibull","sqrt")), "sqrt is not a valid link for family weibull")
-  expect_error(link4family(c("categorical","probit")), "probit is not a valid link for family categorical")
+test_that("Test that check_family return an error on wrong links", {
+  expect_error(check_family(gaussian("logit")), "logit is not a valid link for family gaussian")
+  expect_error(check_family(poisson("inverse")), "inverse is not a valid link for family poisson")
+  expect_error(check_family(c("weibull", "sqrt")), "sqrt is not a valid link for family weibull")
+  expect_error(check_family(c("categorical","probit")), "probit is not a valid link for family categorical")
 })
 
 test_that("Test that parnames.formula finds all classes for which priors can be specified", {

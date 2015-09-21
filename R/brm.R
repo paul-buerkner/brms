@@ -283,11 +283,12 @@ brm <- function(formula, data = NULL, family = c("gaussian", "identity"),
     x$fit <- rstan::get_stanmodel(x$fit)  # extract the compiled model
   } else {  # build new model
     # see validate.R for function definitions
-    link <- link4family(family)  
-    family <- check_family(family[1]) 
+    family <- check_family(family) 
+    link <- family$link
+    family <- family$family
     formula <- update_formula(formula, addition = addition) 
     prior <- check_prior(prior, formula = formula, data = data, 
-                         family = family, link = link,
+                         family = family, link = link, 
                          autocor = autocor, partial = partial, 
                          threshold = threshold) 
     et <- extract_time(autocor$formula)  

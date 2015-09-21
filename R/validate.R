@@ -183,45 +183,75 @@ gather_ranef <- function(effects, data = NULL) {
   ranef
 }
 
-check_family <- function(family) {
-  # check validity of model family
+#' @export
+family.character <- function(object, link = NA, ...) {
+  # build a family object
+  # 
+  # Args:
+  #   object: A character string defining the family
+  #   link: A character string defining the link
+  family <- object
+  # check validity of family
   if (family == "normal")
     family <- "gaussian"
   if (family == "multigaussian") 
     stop("family 'multigaussian' is deprecated. Use family 'gaussian' instead")
-  if (!family %in% c("gaussian", "student", "cauchy", "binomial", 
-                     "bernoulli", "categorical", "poisson", 
-                     "negbinomial", "geometric", "gamma", 
-                     "weibull", "exponential", "cumulative", 
-                     "cratio", "sratio", "acat"))
-    stop(paste(family, "is not a valid family"))
-  family
-}
-
-link4family <- function(family) {
-  # check validity of the link function and return default links if no link is specified
-  link <- family[2]
-  family <- family[1]
+  okFamilies <- c("gaussian", "student", "cauchy", "binomial", 
+                  "bernoulli", "categorical", "poisson", 
+                  "negbinomial", "geometric", "gamma", 
+                  "weibull", "exponential", "cumulative", 
+                  "cratio", "sratio", "acat")
+  if (!family %in% okFamilies)
+    stop(paste(family, "is not a valid family. Valid families are: \n",
+               paste(okFamilies, collapse = ", ")))
+  
+  # check validity of link
   is_linear <- family %in% c("gaussian", "student", "cauchy")
   is_skew <- family %in% c("gamma", "weibull", "exponential")
   is_cat <- family %in% c("cumulative", "cratio", "sratio", 
                           "acat", "binomial", "bernoulli")                    
   is_count <- family %in% c("poisson", "negbinomial", "geometric")
-  
-  if (is.na(link)) {
-    if (is_linear) link <- "identity"
-    else if (is_skew || is_count) link <- "log"
-    else if (is_cat || family == "categorical") link <- "logit"
+  if (is_linear) {
+    okLinks <- c("identity", "log", "inverse")
+  } else if (is_count) {
+    okLinks <- c("log", "identity", "sqrt")
+  } else if (is_cat) {
+    okLinks <- c("logit", "probit", "probit_approx", "cloglog")
+  } else if (family == "categorical") {
+    okLinks <- c("logit")
+  } else if (is_skew) {
+    okLinks <- c("log", "identity", "inverse")
   }
-  else if (is_linear && !link %in% c("identity", "log", "inverse") ||
-           is_count && !link %in% c("log", "identity", "sqrt") ||
-           is_cat && !link %in% c("logit", "probit", "probit_approx", "cloglog") ||
-           family == "categorical" && link != "logit" ||
-           is_skew && !link %in% c("log", "identity", "inverse"))
-    stop(paste(link, "is not a valid link for family", family))
-  else if (is_count && link == "sqrt") 
+  if (is.na(link)) {
+    link <- okLinks[1]
+  }
+  if (!link %in% okLinks)
+    stop(paste0(link, " is not a valid link for family ", family, ". Valid links are: \n",
+                paste(okLinks, collapse = ", ")))
+  if (link == "sqrt") {
     warning(paste(family, "model with sqrt link may not be uniquely identified"))
-  link
+  }
+  structure(list(family = family, link = link), class = "family")
+}
+
+check_family <- function(family) {
+  # checks and corrects validity of the model family
+  #
+  # Args:
+  #   family: Either a function, an object of class 'family' of a character string
+  if (is.character(family)) {
+    family <- family(family[1], link = family[2])
+  } else if (is(family, "family")) {
+    if (family$family == "Gamma")
+      family$family <- "gamma"  # brms requires "gamma" family
+    family <- family(family$family, link = family$link)
+  } else if (is.function(family)) { 
+    family <- family() 
+    family <- family(family$family, link = family$link)
+  } else {
+    stop("family argument is invalid")
+  }
+  family
 }
 
 exclude_pars <- function(formula, ranef = TRUE) {
@@ -458,7 +488,7 @@ set_prior <- function(prior, class = "b", coef = "", group = "") {
 #' }
 #' 
 #' @export
-get_prior <- function(formula, data = NULL, family = c("gaussian", "identity"),
+get_prior <- function(formula, data = NULL, family = "gaussian",
                       addition = NULL,  autocor = NULL, partial = NULL, 
                       threshold = c("flexible", "equidistant"), internal = FALSE) {
   # note that default priors are stored in this function
@@ -468,8 +498,9 @@ get_prior <- function(formula, data = NULL, family = c("gaussian", "identity"),
     stop("cor must be of class cor_brms")
   threshold <- match.arg(threshold)
   # see validate.R
-  link <- link4family(family) 
-  family <- check_family(family[1])
+  family <- check_family(family) 
+  link <- family$link
+  family <- family$family
   formula <- update_formula(formula, addition = addition)
   ee <- extract_effects(formula, partial, family = family)
   # see data.R
@@ -567,7 +598,7 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
   #   a data.frame of prior specifications to be used in stan_prior (see stan.R)
   ee <- extract_effects(formula, family = family)  
   all_prior <- get_prior(formula = formula, data = data, 
-                         family = c(family, link),
+                         family = family(family, link = link),
                          autocor = autocor, partial = partial, 
                          threshold = threshold, internal = TRUE)
   if (is.null(prior)) {

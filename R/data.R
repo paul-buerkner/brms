@@ -97,7 +97,7 @@ update_data <- function(data, family, effects, ...) {
 brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL, 
                     partial = NULL, cov.ranef = NULL, ...) {
   dots <- list(...)
-  family <- check_family(family[1])
+  family <- check_family(family)$family
   is_linear <- family %in% c("gaussian", "student", "cauchy")
   is_ordinal <- family %in% c("cumulative","cratio","sratio","acat")
   is_count <- family %in% c("poisson", "negbinomial", "geometric")

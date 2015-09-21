@@ -382,7 +382,7 @@ formula.brmsfit <- function(x, ...)
 
 #' @export
 family.brmsfit <- function(object, ...) 
-  list(family = object$family, link = object$link)
+  family(object$family, link = object$link)
 
 #' @export
 stancode.brmsfit <- function(object, ...)

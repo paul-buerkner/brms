@@ -22,7 +22,7 @@
 brmpars <- function(formula, data = NULL, family = "gaussian", 
                     autocor = NULL, partial = NULL,
                     threshold = "flexible", ranef = TRUE) {
-  family <- check_family(family[1])
+  family <- check_family(family)$family
   if (is.null(autocor)) 
     autocor <- cor_arma()
   if (!is(autocor,"cor_brms")) 
