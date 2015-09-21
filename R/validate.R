@@ -1,4 +1,4 @@
-extract_effects <- function(formula, ..., family = "none") {
+extract_effects <- function(formula, ..., family = NA) {
   # Extract fixed and random effects from a formula
   # 
   # Args:
@@ -49,10 +49,10 @@ extract_effects <- function(formula, ..., family = "none") {
   # handle addition arguments
   fun <- c("se", "weights", "trials", "cat", "cens")
   add_vars <- list()
-  if (family != "none") {
+  if (!is.na(family)) {
     add <- unlist(regmatches(formula, gregexpr("\\|[^~]*~", formula)))[1]
     add <- substr(add, 2, nchar(add)-1)
-    families <- list(se = c("gaussian","student","cauchy"),
+    families <- list(se = c("gaussian", "student", "cauchy"),
                      weights = "all",
                      trials = "binomial", 
                      cat = c("categorical", "cumulative", "cratio", "sratio", "acat"), 

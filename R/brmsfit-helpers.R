@@ -385,14 +385,14 @@ ranef_predictor <- function(Z, gf, r) {
   eta
 }
 
-ma_predictor <- function(data, ma, eta, link = "identity") {
+ma_predictor <- function(data, ma, eta, link) {
   # compute eta for moving average effects
   #
   # Args:
   #   data: the data initially passed to stan
   #   ma: moving average samples 
   #   eta: previous linear predictor samples
-  #   link: the link function
+  #   link: the link function as character string
   #
   # Returns:
   #   new linear predictor samples updated by moving average effects
