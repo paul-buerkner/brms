@@ -202,7 +202,7 @@ family.character <- function(object, link = NA, ...) {
                   "weibull", "exponential", "cumulative", 
                   "cratio", "sratio", "acat")
   if (!family %in% okFamilies)
-    stop(paste(family, "is not a valid family. Valid families are: \n",
+    stop(paste(family, "is not a supported family. Supported families are: \n",
                paste(okFamilies, collapse = ", ")))
   
   # check validity of link
@@ -226,7 +226,7 @@ family.character <- function(object, link = NA, ...) {
     link <- okLinks[1]
   }
   if (!link %in% okLinks)
-    stop(paste0(link, " is not a valid link for family ", family, ". Valid links are: \n",
+    stop(paste0(link, " is not a support link of family ", family, ". Supported links are: \n",
                 paste(okLinks, collapse = ", ")))
   if (link == "sqrt") {
     warning(paste(family, "model with sqrt link may not be uniquely identified"))
@@ -239,15 +239,16 @@ check_family <- function(family) {
   #
   # Args:
   #   family: Either a function, an object of class 'family' of a character string
-  if (is.character(family)) {
-    family <- family(family[1], link = family[2])
-  } else if (is(family, "family")) {
-    if (family$family == "Gamma")
+  if (is.function(family)) {
+    family <- family()   
+  }
+  if (is(family, "family")) {
+    if (family$family == "Gamma") {
       family$family <- "gamma"  # brms requires "gamma" family
+    }
     family <- family(family$family, link = family$link)
-  } else if (is.function(family)) { 
-    family <- family() 
-    family <- family(family$family, link = family$link)
+  } else if (is.character(family)) {
+    family <- family(family[1], link = family[2])
   } else {
     stop("family argument is invalid")
   }

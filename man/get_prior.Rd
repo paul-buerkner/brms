@@ -19,14 +19,17 @@ the variables are taken from \code{environment(formula)},
 typically the environment from which \code{brm} is called.
 Although it is optional, we strongly recommend to supply a data.frame.}
 
-\item{family}{A vector of one or two character strings.
+\item{family}{A description of the error distribution and link function to be used in the model.
+The recommended input is a vector of one or two character strings.
 The first string indicates the distribution of the dependent variable (the 'family').
 Currently, the following families are supported:
 \code{"gaussian"}, \code{"student"}, \code{"cauchy"}, \code{"binomial"}, \code{"bernoulli"},
-\code{"categorical"}, \code{"poisson"}, \code{"negbinomial"}, \code{"geometric"}, \code{"gamma"}, \cr
+\code{"categorical"}, \code{"poisson"}, \code{"negbinomial"}, \code{"geometric"}, \code{"gamma"},
 \code{"exponential"}, \code{"weibull"}, \code{"cumulative"}, \code{"cratio"}, \code{"sratio"}, and \code{"acat"}.
-The second string indicates the link function, which must be supported by the distribution
-of the dependent variable. If not specified, default link functions are used.
+The second string indicates the link function, which must be supported by the family
+(if not specified, default links are used).
+Alternatively, a family function or the result of a call to a family function are also accepted
+(see \code{\link[stats:family]{family}} for help on standard \code{glm} family functions).
 Further information is provided under 'Details'.}
 
 \item{addition}{A named list of one sided formulas each containing additional information
