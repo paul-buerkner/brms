@@ -24,7 +24,7 @@ typically the environment from which \code{brm} is called.
 Although it is optional, we strongly recommend to supply a data.frame.}
 
 \item{family}{A description of the error distribution and link function to be used in the model.
-The recommended input is a vector of one or two character strings.
+This can be a vector of one or two character strings.
 The first string indicates the distribution of the dependent variable (the 'family').
 Currently, the following families are supported:
 \code{"gaussian"}, \code{"student"}, \code{"cauchy"}, \code{"binomial"}, \code{"bernoulli"},
@@ -34,7 +34,7 @@ The second string indicates the link function, which must be supported by the fa
 (if not specified, default links are used).
 Alternatively, a family function or the result of a call to a family function are also accepted
 (see \code{\link[stats:family]{family}} for help on standard family functions and
-\code{\link[stats:brmsfamily]{brmsfamily}} for \pkg{brms} specific family functions).
+\code{\link[brms:brmsfamily]{brmsfamily}} for \pkg{brms} specific family functions).
 Further information is provided under 'Details'.}
 
 \item{prior}{One or more \code{brmsprior} objects created by function
