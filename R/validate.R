@@ -183,7 +183,6 @@ gather_ranef <- function(effects, data = NULL) {
   ranef
 }
 
-#' @export
 family.character <- function(object, link = NA, ...) {
   # build a family object
   # 
@@ -226,7 +225,7 @@ family.character <- function(object, link = NA, ...) {
     link <- okLinks[1]
   }
   if (!link %in% okLinks)
-    stop(paste0(link, " is not a support link of family ", family, ". Supported links are: \n",
+    stop(paste0(link, " is not a supported link for family ", family, ". Supported links are: \n",
                 paste(okLinks, collapse = ", ")))
   if (link == "sqrt") {
     warning(paste(family, "model with sqrt link may not be uniquely identified"))
