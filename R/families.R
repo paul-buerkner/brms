@@ -9,8 +9,20 @@
 #' (in particular the 'Details' section) of \code{\link[brms:brm]{brm}}.
 #' 
 #' @param link A specification for the model link function. This can be a name/expression, 
-#'   a literal character string or a length-one character vector. For a full list of link functions
-#'   supported by families applied \pkg{brms}, see the 'Details' section of \code{\link[brms:brm]{brm}}.
+#'   a literal character string or a length-one character vector. 
+#'   The following list only refers to \pkg{brms} specific family functions.
+#'   Families \code{student}, and \code{cauchy} accept the links (as names) 
+#'   \code{identity}, \code{log}, and \code{inverse};
+#'   families \code{negbinomial}, and \code{geometric} the links 
+#'   \code{log}, \code{identity}, and \code{sqrt}; 
+#'   families \code{bernoulli}, \code{cumulative}, \code{cratio}, \code{sratio}, 
+#'   and \code{acat} the links \code{logit}, \code{probit}, \code{probit_approx}, and \code{cloglog}; \cr
+#'   family \code{categorical} the link \code{logit}; families \code{weibull}, 
+#'   and \code{exponential} the links \code{log}, \code{identity}, and \code{inverse}. 
+#'   The first link mentioned for each family is the default.
+#'   A full list of families and link functions supported by \pkg{brms}, 
+#'   is provided in the 'Details' section of \code{\link[brms:brm]{brm}}.   
+
 #' 
 #' @name brmsfamily
 NULL

@@ -29,7 +29,8 @@ Currently, the following families are supported:
 The second string indicates the link function, which must be supported by the family
 (if not specified, default links are used).
 Alternatively, a family function or the result of a call to a family function are also accepted
-(see \code{\link[stats:family]{family}} for help on standard \code{glm} family functions).
+(see \code{\link[stats:family]{family}} for help on standard family functions and
+\code{\link[stats:brmsfamily]{brmsfamily}} for \pkg{brms} specific family functions).
 Further information is provided under 'Details'.}
 
 \item{autocor}{An optional \code{\link{cor_brms}} object describing the correlation structure
