@@ -14,6 +14,9 @@ extract_effects <- function(formula, ..., family = "none") {
   #   group: A vector of names of the grouping variables. 
   #   weights, se, cens, trials, cat: information on possible addition arguments
   #   all: A formula that contains every variable mentioned in formula and ...
+  if (class(family) == "family") {
+    family <- family$family
+  }
   formula <- formula2string(formula)  
   fixed <- gsub(paste0("\\([^(\\||~)]*\\|[^\\)]*\\)\\+|\\+\\([^(\\||~)]*\\|[^\\)]*\\)",
                        "|\\([^(\\||~)]*\\|[^\\)]*\\)"), "", formula)
@@ -476,7 +479,11 @@ get_prior <- function(formula, data = NULL, family = c("gaussian", "identity"),
   Y <- unname(model.response(data))
   prior_scale <- 5
   if (link %in% c("identity", "log", "inverse", "sqrt")) {
-    prior_scale <- max(prior_scale, round(2 * sd(link(Y, link = link)))) 
+    if (link %in% c("log", "inverse")) {
+      # avoid Inf in link(Y)
+      Y <- ifelse(Y == 0, Y + 0.1, Y)
+    }
+    prior_scale <- max(prior_scale, round(sd(link(Y, link = link)))) 
   }
   default_sd_prior <- paste0("cauchy(0,", prior_scale, ")")
   
