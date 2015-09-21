@@ -4,8 +4,8 @@
 \alias{brm}
 \title{Fit Bayesian Generalized Linear and Ordinal Mixed Models}
 \usage{
-brm(formula, data = NULL, family = c("gaussian", "identity"),
-  prior = NULL, addition = NULL, autocor = NULL, partial = NULL,
+brm(formula, data = NULL, family = "gaussian", prior = NULL,
+  addition = NULL, autocor = NULL, partial = NULL,
   threshold = c("flexible", "equidistant"), cov.ranef = NULL,
   ranef = TRUE, sample.prior = FALSE, fit = NA, inits = "random",
   n.chains = 2, n.iter = 2000, n.warmup = 500, n.thin = 1,
@@ -269,10 +269,10 @@ VarCorr(fit_e)
 ## extract random effects for each level
 ranef(fit_e)
 
-## Ordinal regression (with family 'sratio') modeling patient's rating
+## Ordinal regression (with family \\code{sratio} and \\code{cloglog} link) modeling patient's rating
 ## of inhaler instructions using normal priors for fixed effects parameters
 fit_i <- brm(rating ~ treat + period + carry, data = inhaler,
-             family = "sratio", prior = set_prior("normal(0,5)"))
+             family = sratio("cloglog"), prior = set_prior("normal(0,5)"))
 summary(fit_i)
 plot(fit_i)
 
@@ -289,7 +289,7 @@ plot(fit_k)
 n <- sample(1:10, 100, TRUE)
 success <- rbinom(100, size = n, prob = 0.4)
 x <- rnorm(100)
-fit_b <- brm(success | trials(n) ~ x, family = "binomial")
+fit_b <- brm(success | trials(n) ~ x, family = binomial("probit"))
 summary(fit_b)
 
 }
