@@ -402,7 +402,7 @@ launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"), ..
   shinystan::launch_shinystan(x$fit, rstudio = rstudio, ...)
 }
 
-#' Trace and density plots for MCMC samples
+#' Trace and Density Plots for MCMC Samples
 #' 
 #' @param x An object of class \code{brmsfit}.
 #' @param pars Names of the parameters to plot, as given by a character vector 
@@ -441,7 +441,7 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5, ask = TRUE, ...) 
     stop("N must be a positive integer")
   if (!is.character(pars)) 
     pars <- c("^b_", "^sd_", "^cor_", "^sigma", "^rescor", "^nu$", 
-                    "^shape$", "^delta$", "^ar", "^ma")
+              "^shape$", "^delta$", "^ar", "^ma")
   samples <- posterior_samples(x, pars = pars, add_chains = TRUE)
   pars <- names(samples)[which(!names(samples) %in% c("chains", "iter"))] 
   
@@ -454,6 +454,57 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5, ask = TRUE, ...) 
     plot(arrangeGrob(grobs = unlist(plots, recursive = FALSE), 
                      nrow = length(plots), ncol = 2, ...))
     if (i == 1) devAskNewPage(ask = ask)
+  }
+}
+
+#' @describeIn stanplot A fitted model object returned by function
+#'                      \code{\link[brms:brm]{brm}} 
+#' @export
+stanplot.brmsfit <- function(object, pars = NA, type = "plot", 
+                             exact_match = FALSE, quiet = FALSE, ...) {
+  
+  # check validity of type first
+  basic_types <- c("plot", "trace", "scat", "hist", "dens", "ac")
+  diag_types <- c("diag", "par", "rhat", "ess", "mcse")
+  if (!type %in% c(basic_types, diag_types))
+    stop(paste("Invalid plot type. Valid plot types are: \n",
+               paste(c(basic_types, diag_types), collapse = ", ")))
+  plot_fun <- get(paste0("stan_", type), mode = "function")
+  
+  # ensure that only desired parameters are plotted
+  if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
+    stop("The model does not contain posterior samples")
+  all_pars <- parnames(object)
+  if (!(anyNA(pars) || is.character(pars))) 
+    stop("Argument pars must be NA or a character vector")
+  if (!anyNA(pars)) {
+    if (exact_match) {
+      pars <- all_pars[all_pars %in% pars]
+    } else {
+      pars <- all_pars[apply(sapply(pars, grepl, x = all_pars), 1, any)]
+    }
+  } 
+  
+  dots <- list(...)
+  args <- c(object = object$fit, dots)
+  basic_types <- c("plot", "trace", "scat", "hist", "dens", "ac")
+  diag_types <- c("diag", "par", "rhat", "ess", "mcse")
+  if (type %in% basic_types) {
+    if (!anyNA(pars)) {
+      args <- c(args, list(pars = pars))
+    }
+  } else if (type %in% diag_types) {
+    if (type %in% c("rhat", "ess", "msce") && !anyNA(pars)) {
+      args <- c(args, list(pars = pars))
+    } else if (type == "par") {
+      args <- c(args, list(pars = pars))
+    } 
+  }
+  # make the plot
+  if (quiet) {
+    quietgg(do.call(plot_fun, args))
+  } else {
+    do.call(plot_fun, args)
   }
 }
 

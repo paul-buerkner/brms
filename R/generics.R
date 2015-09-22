@@ -450,3 +450,51 @@ stancode <- function(object, ...)
 #' @export
 standata <- function(object, ...)
   UseMethod("standata")
+
+#' Various Plotting Functions implemented in \pkg{rstan} 
+#' 
+#' Conveniant way to call plotting functions implemented in the \pkg{rstan} package. 
+#' 
+#' @inheritParams posterior_samples
+#' @param object An R object typically of class \code{brmsfit}
+#' @param type The type of the plot. Supported types are (as names) \code{plot},
+#'   \code{trace}, \code{hist}, \code{dens}, \code{scat}, \code{diag}, \code{rhat},
+#'   \code{ess}, \code{mcse}, \code{ac}. For an overview on the various plot types see
+#'   \code{\link[rstan:plotting-functions]{plotting-unctions}}.
+#' @param quiet A flag indicating whether messages produced by \pkg{ggplot2} during
+#'   the plotting process should be silenced. Default is \code{FALSE}.
+#' @param ... Additional arguments passed to the plotting functions.
+#' 
+#' @details Instead of using \code{stanplot(<brmsfit-object>)}, the plotting functions 
+#'   can be called directly via \code{stan_<plot-type>(<brmsfit-object>$fit)}. 
+#'   For more details on the plotting functions see 
+#'   \code{\link[rstan:stan_plot]{Plots}} as well as 
+#'   \code{\link[rstan:stan_diag]{Diagnostic plots}}.
+#'   Note that the plotting functions themselves only accept full parameter names,
+#'   while \code{stanplot} allows for partial matching and regular expressions.
+#'   You should also consider using the \pkg{shinystan} package available via 
+#'   method \code{\link[brms:launch_shiny]{launch_shiny}} in \pkg{brms} for 
+#'   flexible and interactive visual analysis. 
+#' 
+#' @examples
+#' \dontrun{
+#' model <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient) + (1|visit),
+#'              data = epilepsy, family = "poisson")
+#' # plot 95% CIs
+#' stanplot(model, type = "plot", ci_level = 0.95)
+#' # equivalent to
+#' stan_plot(model$fit, ci_level = 0.95)
+#' 
+#' # only show fixed effects in the plots
+#' # this will not work when calling stan_plot directly
+#' stanplot(model, pars = "^b_", type = "plot", ci_level = 0.95)
+#' 
+#' # plot some diagnostics on the sampler
+#' stanplot(model, type = "diag")
+#' # equivalent to 
+#' stan_diag(model$fit)                           
+#' }
+#' 
+#' @export
+stanplot <- function(object, pars, type = "plot", ...)
+  UseMethod("stanplot")

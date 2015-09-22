@@ -119,9 +119,9 @@ get_estimate <- function(coef, samples, margin = 2, to.array = FALSE, ...) {
   #   typically a matrix with colnames(samples) as colnames
   dots <- list(...)
   args <- list(X = samples, MARGIN = margin, FUN = coef)
-  fun.args <- names(formals(coef))
-  if (!"..." %in% fun.args)
-    dots <- dots[names(dots) %in% fun.args]
+  fun_args <- names(formals(coef))
+  if (!"..." %in% fun_args)
+    dots <- dots[names(dots) %in% fun_args]
   x <- do.call(apply, c(args, dots))
   if (is.null(dim(x))) 
     x <- matrix(x, dimnames = list(NULL, coef))

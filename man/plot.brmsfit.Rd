@@ -2,7 +2,7 @@
 % Please edit documentation in R/brmsfit-methods.R
 \name{plot.brmsfit}
 \alias{plot.brmsfit}
-\title{Trace and density plots for MCMC samples}
+\title{Trace and Density Plots for MCMC Samples}
 \usage{
 \method{plot}{brmsfit}(x, pars = NA, parameters = NA, N = 5, ask = TRUE,
   ...)
@@ -23,7 +23,7 @@ are plotted.}
 \item{...}{Further arguments passed to \code{\link[gridExtra:arrangeGrob]{arrangeGrob}}.}
 }
 \description{
-Trace and density plots for MCMC samples
+Trace and Density Plots for MCMC Samples
 }
 \examples{
 \dontrun{
