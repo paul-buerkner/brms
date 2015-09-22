@@ -45,8 +45,9 @@ link <- function(x, link) {
   else if (link == "sqrt") sqrt(x)
   else if (link == "logit") logit(x)
   else if (link == "probit") qnorm(x)
-  else if (link == "cloglog") log(-log(1-x))
   else if (link == "probit_approx") qnorm(x)
+  else if (link == "cloglog") log(-log(1-x))
+  else if (link == "cauchit") qcauchy(x)
   else stop(paste("Link", link, "not supported"))
 }
 
@@ -65,8 +66,9 @@ ilink <- function(x, link) {
   else if (link == "sqrt") x^2
   else if (link == "logit") ilogit(x)
   else if (link == "probit") pnorm(x)
-  else if (link == "cloglog") 1 - exp(-exp(x))
   else if (link == "probit_approx") ilogit(0.07056*x^3 + 1.5976*x)
+  else if (link == "cloglog") 1 - exp(-exp(x))
+  else if (link == "cauchit") pcauchy(x)
   else stop(paste("Link", link, "not supported"))
 }
 

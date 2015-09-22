@@ -215,7 +215,7 @@ family.character <- function(object, link = NA, ...) {
   } else if (is_count) {
     okLinks <- c("log", "identity", "sqrt")
   } else if (is_cat) {
-    okLinks <- c("logit", "probit", "probit_approx", "cloglog")
+    okLinks <- c("logit", "probit", "probit_approx", "cloglog", "cauchit")
   } else if (family == "categorical") {
     okLinks <- c("logit")
   } else if (is_skew) {

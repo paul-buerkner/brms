@@ -96,7 +96,7 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
   kronecker <- any(sapply(mapply(list, ranef, ee$group, SIMPLIFY = FALSE), 
                           function(x, names) length(x[[1]]) > 1 && x[[2]] %in% names, 
                           names = names_cov_ranef))
-  text_functions <- stan_function(kronecker = kronecker)
+  text_functions <- stan_function(link = link, kronecker = kronecker)
   
   text_data <- paste0(
     "data { \n",
@@ -490,7 +490,7 @@ stan_ma <- function(family, link, autocor) {
   ma
 }
 
-stan_function <- function(kronecker = FALSE) {
+stan_function <- function(link = "identity", kronecker = FALSE) {
   # stan code for user defined functions
   #
   # Args:
@@ -499,7 +499,19 @@ stan_function <- function(kronecker = FALSE) {
   # Returns:
   #   a string containing defined functions in stan code
   out <- NULL
-  if (kronecker) out <- paste0(
+  if (link == "cauchit") out <- paste0(out,
+    "  /* compute the inverse of the cauchit link \n",
+    "   * Args: \n",
+    "   *   y: the real value to be transformed \n",
+    "   * Returns: \n",
+    "   *   a value in (0,1) \n",
+    "   */ \n",
+    "  real inv_cauchit(real y) { \n",
+    "    real p; \n",
+    "    p <- cauchy_cdf(y, 0, 1); \n",
+    "    return p; \n",
+    "  } \n")
+  if (kronecker) out <- paste0(out,
     "  /* calculate the cholesky factor of a kronecker covariance matrix \n",
     "   * Args: \n",
     "   *   X: a covariance matrix \n",
@@ -820,5 +832,6 @@ stan_ilink <- function(link) {
   #   the inverse link function for stan; a character string
   switch(link, identity = "", log = "exp", inverse = "inv", 
          sqrt = "square", logit = "inv_logit", probit = "Phi", 
-         probit_approx = "Phi_approx", cloglog = "inv_cloglog")
+         probit_approx = "Phi_approx", cloglog = "inv_cloglog", 
+         cauchit = "inv_cauchit")
 }

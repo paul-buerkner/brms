@@ -16,7 +16,8 @@
 #'   families \code{negbinomial}, and \code{geometric} the links 
 #'   \code{log}, \code{identity}, and \code{sqrt}; 
 #'   families \code{bernoulli}, \code{cumulative}, \code{cratio}, \code{sratio}, 
-#'   and \code{acat} the links \code{logit}, \code{probit}, \code{probit_approx}, and \code{cloglog}; \cr
+#'   and \code{acat} the links \code{logit}, \code{probit}, \code{probit_approx}, 
+#'   \code{cloglog}, and \code{cauchit}; \cr
 #'   family \code{categorical} the link \code{logit}; families \code{weibull}, 
 #'   and \code{exponential} the links \code{log}, \code{identity}, and \code{inverse}. 
 #'   The first link mentioned for each family is the default.
@@ -39,8 +40,8 @@ student <- function(link = "identity") {
     linktemp <- link
   }
   if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family student. Supported links are: \n",
-               paste(okLinks, collapse = ", ")))
+    stop(paste(linktemp, "is not a supported link for family student.", 
+               "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
   structure(list(family = "student", link = linktemp), class = "family")
 }
@@ -57,8 +58,8 @@ cauchy <- function(link = "identity") {
     linktemp <- link
   }
   if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family cauchy. Supported links are: \n",
-               paste(okLinks, collapse = ", ")))
+    stop(paste(linktemp, "is not a supported link for family cauchy.", 
+               "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
   structure(list(family = "cauchy", link = linktemp), class = "family")
 }
@@ -70,13 +71,13 @@ bernoulli <- function(link = "logit") {
   if (!is.character(linktemp)) {
     linktemp <- deparse(linktemp)
   } 
-  okLinks <- c("logit", "probit", "probit_approx", "cloglog")
+  okLinks <- c("logit", "probit", "probit_approx", "cloglog", "cauchit")
   if (!linktemp %in% okLinks && is.character(link)) {
     linktemp <- link
   }
   if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family bernoulli. Supported links are: \n",
-               paste(okLinks, collapse = ", ")))
+    stop(paste(linktemp, "is not a supported link for family bernoulli.", 
+               "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
   structure(list(family = "bernoulli", link = linktemp), class = "family")
 }
@@ -93,8 +94,8 @@ negbinomial <- function(link = "log") {
     linktemp <- link
   }
   if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family negbinimial. Supported links are: \n",
-               paste(okLinks, collapse = ", ")))
+    stop(paste(linktemp, "is not a supported link for family negbinimial.", 
+               "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
   structure(list(family = "negbinomial", link = linktemp), class = "family")
 }
@@ -111,8 +112,8 @@ geometric <- function(link = "log") {
     linktemp <- link
   }
   if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family geometric. Supported links are: \n",
-               paste(okLinks, collapse = ", ")))
+    stop(paste(linktemp, "is not a supported link for family geometric.", 
+               "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
   structure(list(family = "geometric", link = linktemp), class = "family")
 }
@@ -129,8 +130,8 @@ exponential <- function(link = "log") {
     linktemp <- link
   }
   if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family exponential. Supported links are: \n",
-               paste(okLinks, collapse = ", ")))
+    stop(paste(linktemp, "is not a supported link for family exponential. ", 
+               "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
   structure(list(family = "exponential", link = linktemp), class = "family")
 }
@@ -147,8 +148,8 @@ weibull <- function(link = "log") {
     linktemp <- link
   }
   if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family weibull. Supported links are: \n",
-               paste(okLinks, collapse = ", ")))
+    stop(paste(linktemp, "is not a supported link for family weibull. ", 
+               "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
   structure(list(family = "weibull", link = linktemp), class = "family")
 }
@@ -165,8 +166,8 @@ categorical <- function(link = "logit") {
     linktemp <- link
   }
   if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family categorical. Supported links are: \n",
-               paste(okLinks, collapse = ", ")))
+    stop(paste(linktemp, "is not a supported link for family categorical.", 
+               "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
   structure(list(family = "categorical", link = linktemp), class = "family")
 }
@@ -178,13 +179,13 @@ cumulative <- function(link = "logit") {
   if (!is.character(linktemp)) {
     linktemp <- deparse(linktemp)
   } 
-  okLinks <- c("logit", "probit", "probit_approx", "cloglog")
+  okLinks <- c("logit", "probit", "probit_approx", "cloglog", "cauchit")
   if (!linktemp %in% okLinks && is.character(link)) {
     linktemp <- link
   }
   if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family cumulative. Supported links are: \n",
-               paste(okLinks, collapse = ", ")))
+    stop(paste(linktemp, "is not a supported link for family cumulative.", 
+               "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
   structure(list(family = "cumulative", link = linktemp), class = "family")
 }
@@ -196,13 +197,13 @@ sratio <- function(link = "logit") {
   if (!is.character(linktemp)) {
     linktemp <- deparse(linktemp)
   } 
-  okLinks <- c("logit", "probit", "probit_approx", "cloglog")
+  okLinks <- c("logit", "probit", "probit_approx", "cloglog", "cauchit")
   if (!linktemp %in% okLinks && is.character(link)) {
     linktemp <- link
   }
   if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family sratio. Supported links are: \n",
-               paste(okLinks, collapse = ", ")))
+    stop(paste(linktemp, "is not a supported link for family sratio.",
+               "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
   structure(list(family = "sratio", link = linktemp), class = "family")
 }
@@ -214,13 +215,13 @@ cratio <- function(link = "logit") {
   if (!is.character(linktemp)) {
     linktemp <- deparse(linktemp)
   } 
-  okLinks <- c("logit", "probit", "probit_approx", "cloglog")
+  okLinks <- c("logit", "probit", "probit_approx", "cloglog", "cauchit")
   if (!linktemp %in% okLinks && is.character(link)) {
     linktemp <- link
   }
   if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family cratio. Supported links are: \n",
-               paste(okLinks, collapse = ", ")))
+    stop(paste(linktemp, "is not a supported link for family cratio.", 
+               "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
   structure(list(family = "cratio", link = linktemp), class = "family")
 }
@@ -232,13 +233,13 @@ acat <- function(link = "logit") {
   if (!is.character(linktemp)) {
     linktemp <- deparse(linktemp)
   } 
-  okLinks <- c("logit", "probit", "probit_approx", "cloglog")
+  okLinks <- c("logit", "probit", "probit_approx", "cloglog", "cauchit")
   if (!linktemp %in% okLinks && is.character(link)) {
     linktemp <- link
   }
   if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family acat. Supported links are: \n",
-               paste(okLinks, collapse = ", ")))
+    stop(paste(linktemp, "is not a supported link for family acat.", 
+               "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
   structure(list(family = "acat", link = linktemp), class = "family")
 }

@@ -196,7 +196,8 @@
 #'   families \code{poisson}, \code{negbinomial}, and \code{geometric} the links 
 #'   \code{log}, \code{identity}, and \code{sqrt}; 
 #'   families \code{binomial}, \code{bernoulli}, \code{cumulative}, \code{cratio}, \code{sratio}, 
-#'   and \code{acat} the links \code{logit}, \code{probit}, \code{probit_approx}, and \code{cloglog}; \cr
+#'   and \code{acat} the links \code{logit}, \code{probit}, \code{probit_approx}, 
+#'   \code{cloglog}, and \code{cauchit}; \cr
 #'   family \code{categorical} the link \code{logit}; families \code{gamma}, \code{weibull}, 
 #'   and \code{exponential} the links \code{log}, \code{identity}, and \code{inverse}. 
 #'   The first link mentioned for each family is the default.     
