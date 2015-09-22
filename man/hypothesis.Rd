@@ -35,6 +35,8 @@ Among others, \code{hypothesis} calculates an evidence ratio for each hypothesis
   For an undirected (i.e. point) hypothesis the evidence ratio is a Bayes factor between the hypothesis and its alternative.
   In order to calculate this Bayes factor, all parameters related to the hypothesis must have proper priors
   and argument \code{sample.priors} of function \code{brm} must be set to \code{TRUE}.
+  When interpreting Bayes factors, make sure that your priors are reasonable and carefully chosen,
+  as the result will depend heavily on the priors. It particular, avoid using default priors.
 }
 \examples{
 \dontrun{

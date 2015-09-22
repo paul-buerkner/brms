@@ -167,7 +167,9 @@ ngrps <- function(object, ...)
 #'   For a directed hypothesis, this is just the posterior probability under the hypothesis against its alternative.
 #'   For an undirected (i.e. point) hypothesis the evidence ratio is a Bayes factor between the hypothesis and its alternative.
 #'   In order to calculate this Bayes factor, all parameters related to the hypothesis must have proper priors
-#'   and argument \code{sample.priors} of function \code{brm} must be set to \code{TRUE}.
+#'   and argument \code{sample.priors} of function \code{brm} must be set to \code{TRUE}. 
+#'   When interpreting Bayes factors, make sure that your priors are reasonable and carefully chosen,
+#'   as the result will depend heavily on the priors. It particular, avoid using default priors.
 #' 
 #' @return Summary statistics of the posterior distributions related to the hypotheses. 
 #' 
