@@ -6,7 +6,8 @@ output: html_document
 # under development
 ----------------------------------------------------------------
 
-## bug fixes
+* binomial and ordinal families now support the cauchit link function
+* easy access to various rstan plotting functions using the stanplot method
 * avoid side effects of rstan's compilation routines that could occasionally cause R to crash 
 
 # brms 0.5.0
