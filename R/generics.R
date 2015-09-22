@@ -9,7 +9,7 @@ brmsfit <- function(formula = NULL, family = "", link = "", data.name = "",
             ranef = ranef, autocor = autocor, 
             partial = partial, fit = fit)
   class(x) <- "brmsfit"
-  return(x)
+  x
 }
 
 brmssummary <- function(formula = NULL, family = "", link = "", 

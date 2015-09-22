@@ -5,7 +5,7 @@ Version: 0.5.0.9000
 Date: 2015-09-11
 Authors@R: person("Paul-Christian", "Buerkner", email = "paul.buerkner@gmail.com",
   role = c("aut", "cre"))
-Depends: R (>= 3.1.0), rstan (>= 2.7.0), ggplot2 (>= 1.0.1) 
+Depends: R (>= 3.1.0), rstan (>= 2.8.0), ggplot2 (>= 1.0.1) 
 Imports: loo (>= 0.1.2), shinystan (>= 2.0.0), gridExtra (>= 2.0.0), abind, 
   methods, stats, utils, parallel, grDevices, grid
 Suggests: testthat (>= 0.9.1), R.rsp
