@@ -5,13 +5,16 @@
 \alias{prior_samples.brmsfit}
 \title{Extract prior samples}
 \usage{
-prior_samples(x, parameters = NA, ...)
+prior_samples(x, pars = NA, parameters = NA, ...)
 }
 \arguments{
 \item{x}{An \code{R} object typically of class \code{brmsfit}}
 
-\item{parameters}{Name of parameters for which prior samples should be returned, as given by a character vector or regular expressions.
+\item{pars}{Names of parameters for which prior samples should be returned,
+as given by a character vector or regular expressions.
 By default, all prior samples are extracted}
+
+\item{parameters}{A deprecated alias of \code{pars}}
 
 \item{...}{Currently ignored}
 }

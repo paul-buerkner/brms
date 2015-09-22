@@ -209,8 +209,9 @@ hypothesis <- function(x, hypothesis, class = "b", group = "",
 #' @aliases posterior.samples posterior_samples.brmsfit posterior.samples.brmsfit
 #' 
 #' @param x An \code{R} object typically of class \code{brmsfit}
-#' @param parameters Name of parameters for which posterior samples should be returned, as given by a character vector or regular expressions.
+#' @param pars Names of parameters for which posterior samples should be returned, as given by a character vector or regular expressions.
 #'   By default, all posterior samples of all parameters are extracted
+#' @param parameters A deprecated alias of \code{pars}   
 #' @param exact_match Indicates whether parameter names should be matched exactly or treated as regular expression. Default is \code{FALSE}.
 #' @param add_chains A flag indicating if the returned data.frame should contain information on the chains
 #' @param ... Currently ignored
@@ -235,13 +236,13 @@ hypothesis <- function(x, hypothesis, class = "b", group = "",
 #' }
 #' 
 #' @export 
-posterior_samples <- function(x, parameters = NA, exact_match = FALSE, 
+posterior_samples <- function(x, pars = NA, parameters = NA, exact_match = FALSE, 
                               add_chains = FALSE,...)
   UseMethod("posterior_samples")
 
 # deprecated alias of posterior_samples
 #' @export 
-posterior.samples <- function(x, parameters = NA, exact_match = FALSE, 
+posterior.samples <- function(x, pars = NA, parameters = NA, exact_match = FALSE, 
                               add_chains = FALSE,...)
   UseMethod("posterior_samples")
 
@@ -252,8 +253,10 @@ posterior.samples <- function(x, parameters = NA, exact_match = FALSE,
 #' @aliases prior_samples.brmsfit
 #' 
 #' @param x An \code{R} object typically of class \code{brmsfit}
-#' @param parameters Name of parameters for which prior samples should be returned, as given by a character vector or regular expressions.
+#' @param pars Names of parameters for which prior samples should be returned, 
+#'   as given by a character vector or regular expressions.
 #'   By default, all prior samples are extracted
+#' @param parameters A deprecated alias of \code{pars}       
 #' @param ... Currently ignored
 #'   
 #' @details To make use of this function, the model must contain samples of prior distributions.
@@ -280,7 +283,7 @@ posterior.samples <- function(x, parameters = NA, exact_match = FALSE,
 #' }
 #' 
 #' @export 
-prior_samples <- function(x, parameters = NA, ...)
+prior_samples <- function(x, pars = NA, parameters = NA, ...)
   UseMethod("prior_samples")
 
 #' Extract Parameter Names

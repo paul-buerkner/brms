@@ -275,11 +275,11 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
     data <- newdata
   }
   
-  n.samples <- nrow(posterior.samples(x, parameters = "^lp__$"))
+  n.samples <- nrow(posterior_samples(x, pars = "^lp__$"))
   eta <- matrix(0, nrow = n.samples, ncol = data$N)
   X <- data$X
   if (!is.null(X) && ncol(X) && x$family != "categorical") {
-    b <- posterior.samples(x, parameters = "^b_[^\\[]+$")
+    b <- posterior_samples(x, pars = "^b_[^\\[]+$")
     eta <- eta + fixef_predictor(X = X, b = b)  
   }
   
@@ -303,23 +303,23 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
         Z <- get(paste0("Z_",group[i]), data)
         gf <- get(group[i], data)
       }
-      r <- posterior.samples(x, parameters = paste0("^r_",group[i],"\\["))
+      r <- posterior_samples(x, pars = paste0("^r_",group[i],"\\["))
       eta <- eta + ranef_predictor(Z = Z, gf = gf, r = r) 
     }
   }
   if (x$autocor$p > 0) {
     Yar <- as.matrix(data$Yar)
-    ar <- posterior.samples(x, parameters = "^ar\\[")
+    ar <- posterior_samples(x, pars = "^ar\\[")
     eta <- eta + fixef_predictor(X = Yar, b = ar)
   }
   if (x$autocor$q > 0) {
-    ma <- posterior.samples(x, parameters = "^ma\\[")
+    ma <- posterior_samples(x, pars = "^ma\\[")
     eta <- ma_predictor(data = data, ma = ma, eta = eta, link = x$link)
   }
   if (x$family %in% c("cumulative", "cratio", "sratio", "acat")) {
-    Intercept <- posterior.samples(x, "^b_Intercept\\[")
+    Intercept <- posterior_samples(x, "^b_Intercept\\[")
     if (!is.null(data$Xp) && ncol(data$Xp)) {
-      p <- posterior.samples(x, paste0("^b_",colnames(data$Xp),"\\["))
+      p <- posterior_samples(x, paste0("^b_",colnames(data$Xp),"\\["))
       etap <- partial_predictor(Xp = data$Xp, p = p, ncat = data$max_obs)
     } else {
       etap <- array(0, dim = c(dim(eta), data$max_obs-1))
@@ -336,7 +336,7 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
   }
   else if (x$family == "categorical") {
     if (!is.null(data$X)) {
-      p <- posterior.samples(x, parameters = "^b_")
+      p <- posterior_samples(x, pars = "^b_")
       etap <- partial_predictor(data$X, p, data$max_obs)
     } else {
       etap <- array(0, dim = c(dim(eta), data$max_obs - 1))

@@ -7,14 +7,16 @@
 \alias{posterior_samples.brmsfit}
 \title{Extract posterior samples}
 \usage{
-posterior_samples(x, parameters = NA, exact_match = FALSE,
+posterior_samples(x, pars = NA, parameters = NA, exact_match = FALSE,
   add_chains = FALSE, ...)
 }
 \arguments{
 \item{x}{An \code{R} object typically of class \code{brmsfit}}
 
-\item{parameters}{Name of parameters for which posterior samples should be returned, as given by a character vector or regular expressions.
+\item{pars}{Names of parameters for which posterior samples should be returned, as given by a character vector or regular expressions.
 By default, all posterior samples of all parameters are extracted}
+
+\item{parameters}{A deprecated alias of \code{pars}}
 
 \item{exact_match}{Indicates whether parameter names should be matched exactly or treated as regular expression. Default is \code{FALSE}.}
 

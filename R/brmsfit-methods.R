@@ -13,7 +13,7 @@ fixef.brmsfit <-  function(x, estimate = "mean", ...) {
   fpars <- pars[grepl("^b_", pars)]
   if (!length(fpars)) 
     stop(paste("The model does not contain fixed effects")) 
-  out <- posterior_samples(x, parameters = fpars, exact_match = TRUE)
+  out <- posterior_samples(x, pars = fpars, exact_match = TRUE)
   out <- do.call(cbind, lapply(estimate, get_estimate, samples = out, ...))
   rownames(out) <- gsub("^b_", "", fpars)
   out
@@ -41,7 +41,7 @@ vcov.brmsfit <- function(object, correlation = FALSE, ...) {
   fpars <- pars[grepl("^b_", pars)]
   if (!length(fpars)) 
     stop(paste("The model does not contain fixed effects")) 
-  samples <- posterior_samples(object, parameters = fpars, exact_match = TRUE)
+  samples <- posterior_samples(object, pars = fpars, exact_match = TRUE)
   names(samples) <- sub("^b_", "", names(samples))
   if (correlation) {
     cor(samples) 
@@ -79,7 +79,7 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, ...) {
       # for backwards compatibility with brms < 0.5.0 
       levels <- 1:rdims[1]
     }
-    rs <- posterior_samples(x, parameters = rpars, exact_match = TRUE)
+    rs <- posterior_samples(x, pars = rpars, exact_match = TRUE)
     ncol <- ifelse(is.na(rdims[2]), 1, rdims[2])
     rs_array <- array(dim = c(rdims[1], ncol, nrow(rs)))
     k <- 0
@@ -121,7 +121,7 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
   # extracts samples for sd, cor and cov
   extract <- function(p) {
     nr <- length(p$sd_pars)
-    sd <- posterior_samples(x, parameters = p$sd_pars, exact_match = TRUE)
+    sd <- posterior_samples(x, pars = p$sd_pars, exact_match = TRUE)
     nsamples <- nrow(sd)
     out <- list(sd = do.call(cbind, lapply(estimate, get_estimate, 
                                            samples = sd, ...)))
@@ -130,7 +130,7 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
     # calculate correlation and covariance matrices
     found_cor_pars <- intersect(p$cor_pars, parnames(x))
     if (length(found_cor_pars)) {
-      cor <- posterior_samples(x, parameters = paste0("^",found_cor_pars,"$"))
+      cor <- posterior_samples(x, pars = paste0("^",found_cor_pars,"$"))
       if (length(found_cor_pars) < length(p$cor_pars)) { 
         # some correlations are missing and will be replaced by 0
         cor_all <- as.data.frame(matrix(0, nrow = nrow(cor), 
@@ -198,18 +198,20 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
 }
 
 #' @export
-posterior_samples.brmsfit <- function(x, parameters = NA, exact_match = FALSE, 
-                                      add_chains = FALSE, ...) {
+posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA, 
+                                      exact_match = FALSE, add_chains = FALSE, ...) {
+  if (is.na(pars[1])) 
+    pars <- parameters  
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
-  pars <- parnames(x)
-  if (!(anyNA(parameters) || is.character(parameters))) 
-    stop("Argument parameters must be NA or a character vector")
-  if (!anyNA(parameters)) {
+  all_pars <- parnames(x)
+  if (!(anyNA(pars) || is.character(pars))) 
+    stop("Argument pars must be NA or a character vector")
+  if (!anyNA(pars)) {
     if (exact_match) {
-      pars <- pars[pars %in% parameters]
+      pars <- all_pars[all_pars %in% pars]
     } else {
-      pars <- pars[apply(sapply(parameters, grepl, x = pars, ...), 1, any)]
+      pars <- all_pars[apply(sapply(pars, grepl, x = all_pars, ...), 1, any)]
     }
   } 
   
@@ -234,17 +236,18 @@ posterior_samples.brmsfit <- function(x, parameters = NA, exact_match = FALSE,
 }
 
 #' @export
-prior_samples.brmsfit <- function(x, parameters = NA, ...) {
-  if (!anyNA(parameters) && !is.character(parameters)) 
+prior_samples.brmsfit <- function(x, pars = NA, parameters = NA, ...) {
+  if (is.na(pars[1])) 
+    pars <- parameters 
+  if (!anyNA(pars) && !is.character(pars)) 
     stop("pars must be a character vector")
   par_names <- parnames(x)
   prior_names <- par_names[grepl("^prior_", par_names)]
   if (length(prior_names)) {
-    samples <- posterior_samples(x, parameters = prior_names, 
-                                 exact_match = TRUE)
+    samples <- posterior_samples(x, pars = prior_names, exact_match = TRUE)
     names(samples) <- sub("^prior_", "", prior_names)
-    if (!anyNA(parameters)) {
-      samples <- data.frame(rmNULL(lapply(parameters, function(par) {
+    if (!anyNA(pars)) {
+      samples <- data.frame(rmNULL(lapply(pars, function(par) {
         matches <- lapply(paste0("^",sub("^prior_", "", prior_names)), 
                           regexpr, text = par)
         matches <- ulapply(matches, attr, which = "match.length")
@@ -402,9 +405,10 @@ launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"), ..
 #' Trace and density plots for MCMC samples
 #' 
 #' @param x An object of class \code{brmsfit}.
-#' @param parameters Name of the parameters to plot, as given by a character vector 
-#'   or a regular expression. By default, all parameters except for random effects, 
-#'   posterior predictives, and log likelihood values are plotted. 
+#' @param pars Names of the parameters to plot, as given by a character vector 
+#'   or a regular expression. By default, all parameters except for random effects 
+#'   are plotted. 
+#' @param parameters A deprecated alias of \code{pars}   
 #' @param N The number of parameters plotted per page.
 #' @param ask logical; Indicates if the user is prompted before a new page is plotted.   
 #' @param ... Further arguments passed to \code{\link[gridExtra:arrangeGrob]{arrangeGrob}}.
@@ -420,7 +424,7 @@ launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"), ..
 #' ## plot fixed effects as well as standard devations of the random effects
 #' plot(fit_e)
 #' ## plot fixed effects only and combine the chains into one posterior
-#' plot(fit_e, parameters = "^b_", combine = TRUE) 
+#' plot(fit_e, pars = "^b_", combine = TRUE) 
 #' }
 #' 
 #' @method plot brmsfit
@@ -428,15 +432,17 @@ launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"), ..
 #' @importFrom gridExtra arrangeGrob
 #' @importFrom grDevices devAskNewPage
 #' @export
-plot.brmsfit <- function(x, parameters = NA, N = 5, ask = TRUE, ...) {
+plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5, ask = TRUE, ...) {
+  if (is.na(pars[1])) 
+    pars <- parameters 
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
   if (!is.wholenumber(N) || N < 1) 
     stop("N must be a positive integer")
-  if (!is.character(parameters)) 
-    parameters <- c("^b_", "^sd_", "^cor_", "^sigma", "^rescor", "^nu$", 
+  if (!is.character(pars)) 
+    pars <- c("^b_", "^sd_", "^cor_", "^sigma", "^rescor", "^nu$", 
                     "^shape$", "^delta$", "^ar", "^ma")
-  samples <- posterior_samples(x, parameters = parameters, add_chains = TRUE)
+  samples <- posterior_samples(x, pars = pars, add_chains = TRUE)
   pars <- names(samples)[which(!names(samples) %in% c("chains", "iter"))] 
   
   default_ask <- devAskNewPage()
@@ -678,13 +684,13 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                                          re_formula = re_formula))
   if (family %in% c("gaussian", "student", "cauchy", "lognormal", "multinormal") 
       && !is.formula(ee$se))
-    samples$sigma <- as.matrix(posterior_samples(object, parameters = "^sigma_"))
+    samples$sigma <- as.matrix(posterior_samples(object, pars = "^sigma_"))
   if (family == "student") 
-    samples$nu <- as.matrix(posterior_samples(object, parameters = "^nu$"))
+    samples$nu <- as.matrix(posterior_samples(object, pars = "^nu$"))
   if (family %in% c("gamma", "weibull","negbinomial")) 
-    samples$shape <- as.matrix(posterior_samples(object, parameters = "^shape$"))
+    samples$shape <- as.matrix(posterior_samples(object, pars = "^shape$"))
   if (family == "multinormal") {
-    samples$rescor <- as.matrix(posterior_samples(object, parameters = "^rescor_"))
+    samples$rescor <- as.matrix(posterior_samples(object, pars = "^rescor_"))
     samples$Sigma <- get_cov_matrix(sd = samples$sigma, cor = samples$rescor)$cov
     message(paste("Computing posterior predictive samples of multinormal distribution. \n", 
                   "This may take a while."))
@@ -767,13 +773,13 @@ logLik.brmsfit <- function(object, ...) {
   samples <- list(eta = linear_predictor(object))
   if (object$family %in% c("gaussian", "student", "cauchy", "lognormal", "multinormal") 
       && !is.formula(ee$se)) 
-    samples$sigma <- as.matrix(posterior.samples(object, parameters = "^sigma_"))
+    samples$sigma <- as.matrix(posterior_samples(object, pars = "^sigma_"))
   if (object$family == "student") 
-    samples$nu <- as.matrix(posterior.samples(object, parameters = "^nu$"))
+    samples$nu <- as.matrix(posterior_samples(object, pars = "^nu$"))
   if (object$family %in% c("gamma", "weibull","negbinomial")) 
-    samples$shape <- as.matrix(posterior.samples(object, parameters = "^shape$"))
+    samples$shape <- as.matrix(posterior_samples(object, pars = "^shape$"))
   if (object$family == "multinormal") {
-    samples$rescor <- as.matrix(posterior.samples(object, parameters = "^rescor_"))
+    samples$rescor <- as.matrix(posterior_samples(object, pars = "^rescor_"))
     samples$Sigma <- get_cov_matrix(sd = samples$sigma, cor = samples$rescor)$cov
     message(paste("Computing pointwise log-likelihood of multinormal distribution. \n",
                   "This may take a while."))
@@ -836,13 +842,13 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
     subs <- c("", "__", ".", ".")
     
     # get posterior samples
-    samples <- posterior_samples(x, parameters = parsH, exact_match = TRUE)
+    samples <- posterior_samples(x, pars = parsH, exact_match = TRUE)
     names(samples) <- rename(names(samples), symbols = symbols, 
                              subs = subs, fixed = FALSE)
     samples <- matrix(with(samples, eval(parse(text = h_renamed))), ncol=1)
     
     # get prior samples
-    prior_samples <- prior_samples(x, parameters = parsH, fixed = TRUE)
+    prior_samples <- prior_samples(x, pars = parsH, fixed = TRUE)
     if (!is.null(prior_samples) && ncol(prior_samples) == length(varsH)) {
       names(prior_samples) <- rename(names(prior_samples), symbols = symbols, 
                                      subs = subs, fixed = FALSE)
