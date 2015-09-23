@@ -590,10 +590,7 @@ stan_ordinal <- function(family, link, partial = FALSE, threshold = "flexible") 
   #   A vector of strings containing the ordinal effects in stan language
   is_ordinal <- family %in% c("cumulative", "cratio", "sratio", "acat")
   if (!(is_ordinal || family == "categorical")) return(list())
-  ilink <- c(identity = "", log = "exp", inverse = "inv", 
-             sqrt = "square", logit = "inv_logit", 
-             probit = "Phi", probit_approx = "Phi_approx", 
-             cloglog = "inv_cloglog")[link]
+  ilink <- stan_ilink(link)
   th <- function(k) {
     sign <- ifelse(family %in% c("cumulative", "sratio")," - ", " + ")
     ptl <- ifelse(partial, paste0(sign, "etap[n,k]"), "") 
