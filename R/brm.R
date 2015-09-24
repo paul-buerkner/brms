@@ -328,11 +328,19 @@ brm <- function(formula, data = NULL, family = "gaussian",
   }
   
   if (is.character(inits) && !inits %in% c("random", "0")) 
-    inits <- get(inits, mode = "function", envir = parent.frame())
-  if (x$family %in% c("exponential", "weibull") && inits == "random")
+    inits <- get(inits, mode = "function", envir = parent.frame()) 
+  if (x$family %in% c("exponential", "weibull") && inits == "random") {
     warning(paste("Families exponential and weibull may not work well",
                    "with default initial values. \n",
                    " It is thus recommended to set inits = '0'"))
+  }
+  if (x$family == "inverse.gaussian") {
+    warning(paste("inverse gaussian models require carefully chosen prior distributions",
+                  "to ensure convergence of the chains"))
+  }
+  if (x$link == "sqrt") {
+    warning(paste(x$family, "model with sqrt link may not be uniquely identified"))
+  }
   
   # arguments to be passed to stan
   args <- list(object = x$fit, data = x$data, pars = x$exclude, 

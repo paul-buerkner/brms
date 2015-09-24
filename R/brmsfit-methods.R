@@ -738,7 +738,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     samples$sigma <- as.matrix(posterior_samples(object, pars = "^sigma_"))
   if (family == "student") 
     samples$nu <- as.matrix(posterior_samples(object, pars = "^nu$"))
-  if (family %in% c("gamma", "weibull","negbinomial")) 
+  if (family %in% c("gamma", "weibull","negbinomial", "inverse.gaussian")) 
     samples$shape <- as.matrix(posterior_samples(object, pars = "^shape$"))
   if (family == "multinormal") {
     samples$rescor <- as.matrix(posterior_samples(object, pars = "^rescor_"))
@@ -827,7 +827,7 @@ logLik.brmsfit <- function(object, ...) {
     samples$sigma <- as.matrix(posterior_samples(object, pars = "^sigma_"))
   if (object$family == "student") 
     samples$nu <- as.matrix(posterior_samples(object, pars = "^nu$"))
-  if (object$family %in% c("gamma", "weibull","negbinomial")) 
+  if (object$family %in% c("gamma", "weibull", "negbinomial", "inverse.gaussian")) 
     samples$shape <- as.matrix(posterior_samples(object, pars = "^shape$"))
   if (object$family == "multinormal") {
     samples$rescor <- as.matrix(posterior_samples(object, pars = "^rescor_"))

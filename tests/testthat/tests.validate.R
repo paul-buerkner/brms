@@ -174,8 +174,6 @@ test_that("Test that check_family returns correct links", {
   expect_equal(check_family(binomial)$link, "logit")
   expect_equal(check_family(binomial("probit"))$link, "probit")
   expect_equal(check_family(c("acat", "cloglog"))$link, "cloglog")
-  expect_warning(check_family(c("poisson", "sqrt")), 
-                 "poisson model with sqrt link may not be uniquely identified")
 })
 
 test_that("Test that check_family return an error on wrong links", {

@@ -8,7 +8,6 @@
 #
 # Returns:
 #   A vector of length nrow(samples) containing samples from the posterior predictive distribution
-
 predict_gaussian <- function(n, data, samples, link) {
   sigma <- if (!is.null(samples$sigma)) samples$sigma
            else data$sigma
@@ -77,6 +76,11 @@ predict_gamma <- function(n, data, samples, link) {
 predict_weibull <- function(n, data, samples, link) {
   rweibull(nrow(samples$eta), shape = samples$shape,
            scale = 1 / (ilink(-samples$eta[, n] / samples$shape, link)))
+}
+
+predict_inverse.gaussian <- function(n, data, samples, link) {
+  rinv_gaussian(nrow(samples$eta), mu = ilink(samples$eta[, n], link), 
+                lambda = samples$shape)
 }
 
 predict_categorical <- function(n, data, samples, link) {

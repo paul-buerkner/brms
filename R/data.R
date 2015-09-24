@@ -228,6 +228,15 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
   if (is.formula(ee$cens)) {
     standata <- c(standata, list(cens = .addition(formula = ee$cens, data = data)))
   }
+  if (family == "inverse.gaussian") {
+    # save as data to reduce computation time in Stan
+    if (is.formula(ee[c("weights", "cens")])) {
+      standata$log_Y <- log(standata$Y) 
+    } else {
+      standata$log_Y <- sum(log(standata$Y))
+    }
+    standata$sqrt_Y <- sqrt(standata$Y)
+  }
   if (family == "binomial") {
     standata$trials <- if (!length(ee$trials)) max(standata$Y)
                         else if (is.wholenumber(ee$trials)) ee$trials

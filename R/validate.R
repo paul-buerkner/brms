@@ -56,8 +56,9 @@ extract_effects <- function(formula, ..., family = NA) {
                      weights = "all",
                      trials = "binomial", 
                      cat = c("categorical", "cumulative", "cratio", "sratio", "acat"), 
-                     cens = c("gaussian","student","cauchy","binomial","poisson",
-                              "geometric","negbinomial","exponential", "weibull","gamma"))
+                     cens = c("gaussian", "student", "cauchy", "inverse.gaussian", 
+                              "binomial", "poisson", "geometric", "negbinomial", 
+                              "exponential", "weibull", "gamma"))
     for (f in fun) {
       x[[f]] <- unlist(regmatches(add, gregexpr(paste0(f,"\\([^\\|]*\\)"), add)))[1]
       add <- gsub(paste0(f,"\\([^~|\\|]*\\)\\|*"), "", add)
@@ -195,11 +196,11 @@ family.character <- function(object, link = NA, ...) {
     family <- "gaussian"
   if (family == "multigaussian") 
     stop("family 'multigaussian' is deprecated. Use family 'gaussian' instead")
-  okFamilies <- c("gaussian", "student", "cauchy", "binomial", 
-                  "bernoulli", "categorical", "poisson", 
-                  "negbinomial", "geometric", "gamma", 
-                  "weibull", "exponential", "cumulative", 
-                  "cratio", "sratio", "acat")
+  okFamilies <- c("gaussian", "student", "cauchy", "inverse.gaussian",
+                  "binomial", "bernoulli", "categorical", 
+                  "poisson", "negbinomial", "geometric", 
+                  "gamma","weibull", "exponential", 
+                  "cumulative", "cratio", "sratio", "acat")
   if (!family %in% okFamilies)
     stop(paste(family, "is not a supported family. Supported families are: \n",
                paste(okFamilies, collapse = ", ")))
@@ -212,6 +213,8 @@ family.character <- function(object, link = NA, ...) {
   is_count <- family %in% c("poisson", "negbinomial", "geometric")
   if (is_linear) {
     okLinks <- c("identity", "log", "inverse")
+  } else if (family == "inverse.gaussian") {
+    okLinks <- c("1/mu^2", "inverse", "identity", "log")
   } else if (is_count) {
     okLinks <- c("log", "identity", "sqrt")
   } else if (is_cat) {
@@ -227,9 +230,6 @@ family.character <- function(object, link = NA, ...) {
   if (!link %in% okLinks)
     stop(paste0(link, " is not a supported link for family ", family, ". Supported links are: \n",
                 paste(okLinks, collapse = ", ")))
-  if (link == "sqrt") {
-    warning(paste(family, "model with sqrt link may not be uniquely identified"))
-  }
   structure(list(family = family, link = link), class = "family")
 }
 
@@ -509,14 +509,14 @@ get_prior <- function(formula, data = NULL, family = "gaussian",
   # ensure that RE and residual SDs only have a weakly informative prior by default
   Y <- unname(model.response(data))
   prior_scale <- 5
-  if (link %in% c("identity", "log", "inverse", "sqrt")) {
+  if (link %in% c("identity", "log", "inverse", "sqrt", "1/mu^2")) {
     if (link %in% c("log", "inverse")) {
       # avoid Inf in link(Y)
       Y <- ifelse(Y == 0, Y + 0.1, Y)
     }
     prior_scale <- max(prior_scale, round(sd(link(Y, link = link)))) 
   }
-  default_sd_prior <- paste0("cauchy(0,", prior_scale, ")")
+  default_scale_prior <- paste0("cauchy(0,", prior_scale, ")")
   
   # initialize output
   prior <- prior_frame(prior = character(0), class = character(0), 
@@ -532,7 +532,8 @@ get_prior <- function(formula, data = NULL, family = "gaussian",
   }
   # random effects
   if (length(ee$group)) {
-    prior <- rbind(prior, prior_frame(class = "sd", prior = default_sd_prior))  # global sd class
+    # global sd class
+    prior <- rbind(prior, prior_frame(class = "sd", prior = default_scale_prior))  
     gs <- unlist(ee$group)
     for (i in 1:length(gs)) {
       ranef <- colnames(get_model_matrix(ee$random[[i]], data = data))
@@ -565,7 +566,7 @@ get_prior <- function(formula, data = NULL, family = "gaussian",
   if (family %in% c("gaussian", "student", "cauchy") && !is.formula(ee$se))
     prior <- rbind(prior, prior_frame(class = "sigma", 
                                       coef = c("", ee$response),
-                                      prior = c(default_sd_prior, 
+                                      prior = c(default_scale_prior, 
                                                 rep("", length(ee$response)))))
   if (family == "gaussian" && length(ee$response) > 1) {
     if (internal) {
@@ -576,8 +577,8 @@ get_prior <- function(formula, data = NULL, family = "gaussian",
   }
   if (family == "student") 
     prior <- rbind(prior, prior_frame(class = "nu", prior = "uniform(1,100)"))
-  if (family %in% c("gamma", "weibull", "negbinomial")) 
-    prior <- rbind(prior, prior_frame(class = "shape", prior = "gamma(0.01,0.01)"))
+  if (family %in% c("gamma", "weibull", "negbinomial", "inverse.gaussian")) 
+    prior <- rbind(prior, prior_frame(class = "shape", prior = default_scale_prior))
   if (is_ordinal && threshold == "equidistant")
     prior <- rbind(prior, prior_frame(class = "delta"))
   prior <- unique(prior)

@@ -16,7 +16,7 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
     family <- "multinormal"
   is_linear <- family %in% c("gaussian", "student", "cauchy")
   is_ordinal <- family %in% c("cumulative", "cratio", "sratio", "acat") 
-  is_skew <- family %in% c("gamma", "weibull", "exponential")
+  is_skewed <- family %in% c("gamma", "weibull", "exponential")
   is_count <- family %in% c("poisson", "negbinomial", "geometric")
   is_multi <- family == "multinormal"
 
@@ -78,7 +78,7 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
     else if (is_ordinal && threshold == "equidistant") 
       paste0(stan_prior(class = "b_Intercept1", prior = prior), 
              stan_prior(class = "delta", prior = prior)),
-    if (family %in% c("gamma", "weibull", "negbinomial")) 
+    if (family %in% c("inverse.gaussian", "gamma", "weibull", "negbinomial")) 
       stan_prior(class = "shape", prior = prior),
     if (family == "student") 
       stan_prior(class = "nu", prior = prior),
@@ -96,13 +96,16 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
   kronecker <- any(sapply(mapply(list, ranef, ee$group, SIMPLIFY = FALSE), 
                           function(x, names) length(x[[1]]) > 1 && x[[2]] %in% names, 
                           names = names_cov_ranef))
-  text_functions <- stan_function(link = link, kronecker = kronecker)
+  text_functions <- stan_function(family = family, link = link, 
+                                  weights = is.formula(ee$weights),
+                                  cens = is.formula(ee$cens),
+                                  kronecker = kronecker)
   
   text_data <- paste0(
     "data { \n",
     "  int<lower=1> N;  # number of observations \n", 
-    if (is_linear || is_skew) 
-      "  real Y[N];  # response variable \n"
+    if (is_linear || is_skewed || family == "inverse.gaussian") 
+      "  vector[N] Y;  # response variable \n"
     else if (family %in% c("binomial", "bernoulli", "categorical")
              || is_count || is_ordinal) 
       "  int Y[N];  # response variable \n"
@@ -136,6 +139,12 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
       paste0("  int ncat;  # number of categories \n"),
     if (is.formula(ee$cens) && !(is_ordinal || family == "categorical"))
       "  vector[N] cens;  # indicates censoring \n",
+    if (family == "inverse.gaussian")
+      paste0("  # quantities for the inverse gaussian distribution \n",
+             "  vector[N] sqrt_Y; \n",
+             if (is.formula(ee[c("weights", "cens")]))
+               "  vector[N] log_Y;  # log(Y) \n"   
+             else "  real log_Y;  # sum(log(Y)) \n"),
     text_ranef$data,
     "} \n")
   
@@ -167,7 +176,7 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
       paste0("  # parameters for multinormal models \n",
              "  vector<lower=0>[K_trait] sigma; \n",
              "  cholesky_factor_corr[K_trait] Lrescor; \n"),
-    if (family %in% c("gamma", "weibull", "negbinomial")) 
+    if (family %in% c("gamma", "weibull", "negbinomial", "inverse.gaussian")) 
       "  real<lower=0> shape; \n",
     text_rngprior$par,
     "} \n")
@@ -335,7 +344,7 @@ stan_llh <- function(family, link, add = FALSE,
   #   a string containing the likelihood of the model in stan language
   is_cat <- family %in% c("cumulative", "cratio", "sratio", "acat", "categorical")
   is_count <- family %in% c("poisson","negbinomial", "geometric")
-  is_skew <- family %in% c("gamma","exponential","weibull")
+  is_skewed <- family %in% c("gamma","exponential","weibull")
   is_binary <- family %in% c("binomial", "bernoulli")
   
   simplify <- !cens && (is_binary && link == "logit" || is_count && link == "log" ||
@@ -353,7 +362,7 @@ stan_llh <- function(family, link, add = FALSE,
       geometric = c("neg_binomial_2_log", paste0("eta",n,",1")),
       cumulative = c("ordered_logistic", "eta[n],b_Intercept"),
       categorical = c("categorical_logit", 
-                    "to_vector(append_col(zero, eta[n] + etap[n]))"), 
+                      "to_vector(append_col(zero, eta[n] + etap[n]))"), 
       binomial = c("binomial_logit", paste0("trials",ns,",eta",n)), 
       bernoulli = c("bernoulli_logit", paste0("eta",n)))
   } else {
@@ -366,6 +375,8 @@ stan_llh <- function(family, link, add = FALSE,
       multinormal = c("multi_normal_cholesky", 
                       paste0("etam",n,",diag_pre_multiply(sigma,Lrescor)")),
       lognormal = c("lognormal", lin.args),
+      inverse.gaussian = c("inv_gaussian", 
+                           paste0("eta",n,", shape, log_Y",n,", sqrt_Y",n)),
       poisson = c("poisson", paste0(ilink,"(eta",n,")")),
       negbinomial = c("neg_binomial_2", paste0(ilink,"(eta",n,"),shape")),
       geometric = c("neg_binomial_2", paste0(ilink,"(eta",n,"),1")),
@@ -375,6 +386,13 @@ stan_llh <- function(family, link, add = FALSE,
       exponential = c("exponential", paste0("eta",n)),
       weibull = c("weibull", paste0("shape,eta",n)), 
       categorical = c("categorical","p[n]"))
+  }
+  if (family == "inverse.gaussian") {
+    # required as inv_gaussian_log has 2 additional arguments
+    # not present in inv_gaussian_cdf_log
+    llh.pre[3] <- "eta[n], shape"
+  } else {
+    llh.pre[3] <- llh.pre[2]
   }
   
   # write likelihood code
@@ -387,8 +405,8 @@ stan_llh <- function(family, link, add = FALSE,
       ifelse(!weights, paste0("Y[n] ~ ", llh.pre[1],"(",llh.pre[2],"); \n"),
              paste0("increment_log_prob(", addW, llh.pre[1], "_log(Y[n],",llh.pre[2],")); \n")),
       "    else { \n",         
-      "      if (cens[n] == 1) increment_log_prob(", addW, llh.pre[1], "_ccdf_log(Y[n],", llh.pre[2],")); \n",
-      "      else increment_log_prob(", addW, llh.pre[1], "_cdf_log(Y[n],", llh.pre[2],")); \n",
+      "      if (cens[n] == 1) increment_log_prob(", addW, llh.pre[1], "_ccdf_log(Y[n],", llh.pre[3],")); \n",
+      "      else increment_log_prob(", addW, llh.pre[1], "_cdf_log(Y[n],", llh.pre[3],")); \n",
       "    } \n"),
     weights = paste0("  lp_pre[n] <- ", llh.pre[1], "_log(Y[n],",llh.pre[2],"); \n"),
     general = paste0("  Y", n, " ~ ", llh.pre[1],"(",llh.pre[2],"); \n")) 
@@ -411,7 +429,7 @@ stan_eta <- function(family, link, fixef, paref = NULL,
   #   the linear predictor in stan language
   is_linear <- family %in% c("gaussian", "student", "cauchy")
   is_ordinal <- family %in% c("cumulative", "cratio", "sratio", "acat") 
-  is_skew <- family %in% c("gamma", "weibull", "exponential")
+  is_skewed <- family %in% c("gamma", "weibull", "exponential")
   is_count <- family %in% c("poisson", "negbinomial", "geometric")
   is_binary <- family %in% c("binomial", "bernoulli")
   is_multi <- family == "multinormal"
@@ -490,28 +508,102 @@ stan_ma <- function(family, link, autocor) {
   ma
 }
 
-stan_function <- function(link = "identity", kronecker = FALSE) {
+stan_function <- function(family = "gaussian", link = "identity", 
+                          weights = FALSE, cens = FALSE,
+                          kronecker = FALSE) {
   # stan code for user defined functions
   #
   # Args:
+  #   family: the model family
+  #   link: the link function
+  #   vectorize: indicate if vectorization of the response distribution is possible
   #   kronecker: logical; is the kronecker product needed?
   #
   # Returns:
   #   a string containing defined functions in stan code
   out <- NULL
-  if (link == "cauchit") out <- paste0(out,
+  if (link == "cauchit") 
+    out <- paste0(out,
     "  /* compute the inverse of the cauchit link \n",
     "   * Args: \n",
     "   *   y: the real value to be transformed \n",
     "   * Returns: \n",
-    "   *   a value in (0,1) \n",
+    "   *   a scalar in (0,1) \n",
     "   */ \n",
     "  real inv_cauchit(real y) { \n",
     "    real p; \n",
     "    p <- cauchy_cdf(y, 0, 1); \n",
     "    return p; \n",
     "  } \n")
-  if (kronecker) out <- paste0(out,
+  if (family == "inverse.gaussian") {
+    if (weights || cens) {
+      out <- paste0(out,
+      "  /* inverse Gaussian log-PDF of a single response (for data only) \n",
+      "   * Copyright Stan Development Team 2015 \n",
+      "   * Args: \n",
+      "   *   y: the response value \n",
+      "   *   mu: positive mean parameter \n",
+      "   *   shape: positive shape parameter \n",
+      "   *   log_y: precomputed log(y) \n",
+      "   *   sqrt_y: precomputed sqrt(y) \n",
+      "   * Returns: \n", 
+      "   *   a scalar to be added to the log posterior \n",
+      "   */ \n",
+      "   real inv_gaussian_log(real y, real mu, real shape, \n", 
+      "                         real log_y, real sqrt_y) { \n",
+      "   return 0.5 * log(shape / (2 * pi())) - \n", 
+      "          1.5 * log_y - \n",
+      "          0.5 * shape * square((y - mu) / (mu * sqrt_y)); \n",
+      "   } \n")
+    } else {
+      out <- paste0(out, 
+      "  /* vectorized inverse Gaussian log-PDF (for data only) \n",
+      "   * Copyright Stan Development Team 2015 \n",
+      "   * Args: \n",
+      "   *   y: response vector \n",
+      "   *   mu: positive mean parameter vector \n",
+      "   *   shape: positive shape parameter \n",
+      "   *   sum_log_y: precomputed sum of log(y) \n",
+      "   *   sqrt_y: precomputed sqrt(y) \n",
+      "   * Returns: \n", 
+      "   *   a scalar to be added to the log posterior \n",
+      "   */ \n",
+      "   real inv_gaussian_log(vector y, vector mu, real shape, \n", 
+      "                         real sum_log_y, vector sqrt_y) { \n",
+      "   return 0.5 * rows(y) * log(shape / (2 * pi())) - \n", 
+      "          1.5 * sum_log_y - \n",
+      "          0.5 * shape * dot_self((y - mu) ./ (mu .* sqrt_y)); \n",
+      "   } \n")
+    }
+    if (cens) 
+      out <- paste0(out,
+      "  /* inverse Gaussian log-CDF for a single quantile \n",
+      "   * Args: \n",
+      "   *   y: a quantile \n",
+      "   *   mu: positive mean parameter \n",
+      "   *   shape: positive shape parameter \n",
+      "   * Returns: \n",
+      "   *   P(Y <= y) \n",
+      "   */ \n",
+      "  real inv_gaussian_cdf_log(real y, real mu, real shape) { \n",
+      "  return log(Phi(sqrt(shape / y) * (y / mu - 1)) + \n",
+      "             exp(2 * shape / mu) * Phi(-sqrt(shape / y) * (y / mu + 1))); \n",
+      "  } \n",
+      "  /* inverse Gaussian log-CCDF for a single quantile \n",
+      "   * Args: \n",
+      "   *   y: a quantile \n",
+      "   *   mu: positive mean parameter \n",
+      "   *   shape: positive shape parameter \n",
+      "   * Returns: \n",
+      "   *   P(Y > y) \n",
+      "   */ \n",
+      "  real inv_gaussian_ccdf_log(real y, real mu, real shape) { \n",
+      "  return log(1 - Phi(sqrt(shape / y) * (y / mu - 1)) - \n",
+      "             exp(2 * shape / mu) * Phi(-sqrt(shape / y) * (y / mu + 1))); \n",
+      "  } \n")
+  }
+  if (kronecker) 
+    out <- paste0(out,
     "  /* calculate the cholesky factor of a kronecker covariance matrix \n",
     "   * Args: \n",
     "   *   X: a covariance matrix \n",
@@ -828,7 +920,8 @@ stan_ilink <- function(link) {
   # Returns: 
   #   the inverse link function for stan; a character string
   switch(link, identity = "", log = "exp", inverse = "inv", 
-         sqrt = "square", logit = "inv_logit", probit = "Phi", 
+         sqrt = "square", "1/mu^2" = "inv_sqrt",
+         logit = "inv_logit", probit = "Phi", 
          probit_approx = "Phi_approx", cloglog = "inv_cloglog", 
          cauchit = "inv_cauchit")
 }

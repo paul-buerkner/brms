@@ -31,6 +31,7 @@ pstudent <- function(q, df = stop("df is required"), mu = 0, sigma = 1,
 
 qstudent <-  function(p, df = stop("df is required"), mu = 0, sigma = 1) {
   # quantiles of student's distribution
+  #
   # Args:
   #  p: the probabilities to find quantiles for
   #  df: degrees of freedom
@@ -85,6 +86,58 @@ rmultinormal <- function(n, mu, Sigma, check = FALSE) {
   cholSigma <- chol(Sigma)
   samples <- matrix(rnorm(n * p), nrow = n, ncol = p)
   mu + samples %*% cholSigma
+}
+
+dinv_gaussian <- function (x, mu, lambda, log = FALSE) {
+  # density of the inverse gaussian distribution
+  #
+  # Args:
+  #   x: the value(s) at which the density should be evaluated
+  #   mu: mean parameter
+  #   shape: shape parameter
+  #   log: return on log scale?
+  if (any(mu <= 0)) 
+    stop("mu must be positive")
+  if (any(lambda <= 0)) 
+    stop("lambda must be positive")
+  out <- 0.5 * log(lambda / (2 * pi * x^3)) -
+    lambda * (x - mu)^2 / (2 * mu^2 * x)
+  if (!log) out <- exp(out)
+  out
+}
+
+pinv_gaussian <- function (q, mu, lambda, lower.tail = TRUE, log.p = FALSE) {
+  # quantiles of the inverse gaussian distribution
+  #
+  # Args:
+  #  p: the probabilities to find quantiles for
+  #  mu: mean oarameter
+  #  lambda: shape parameter
+  if (any(mu <= 0)) 
+    stop("mu must be positive")
+  if (any(lambda <= 0)) 
+    stop("lambda must be positive")
+  out <- pnorm(sqrt(lambda / q) * (q / mu - 1)) + 
+    exp(2 * lambda / mu) * pnorm(-sqrt(lambda / q) * (q / mu + 1))
+  if (!lower.tail)
+    out <- 1 - out
+  if (log.p)
+    out <- log(out)
+  out
+}
+
+rinv_gaussian <- function(n, mu, lambda) {
+  # random values of the inverse gaussian distribution 
+  #
+  # Args:
+  #  n: number of random values
+  #  mu: mean oarameter
+  #  lambda: shape parameter
+  u <- runif(n)
+  z <- rnorm(n)^2
+  phi <- lambda / mu
+  y1 <- 1 - 0.5 * (sqrt(z^2 + 4 * phi * z) - z) / phi
+  mu * ifelse((1 + y1) * u > 1, 1 / y1, y1)
 }
 
 dcategorical <- function(x, eta, ncat, link = "logit") {

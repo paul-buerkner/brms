@@ -224,6 +224,22 @@ loglik_weibull <- function(n, data, samples, link) {
   out
 }
 
+loglik_inverse.gaussian <- function(n, data, samples, link) {
+  out <- if (is.null(data$cens) || data$cens[n] == 0) {
+    dinv_gaussian(data$Y[n], mu = ilink(samples$eta[, n], link), 
+                  lambda = samples$shape, log = TRUE)
+  } else if (data$cens[n] == 1) {
+    pinv_gaussian(data$Y[n], mu = ilink(samples$eta[, n], link), 
+                  lambda = samples$shape, lower.tail = FALSE, log.p = TRUE)
+  } else if (data$cens[n] == -1) {
+    pinv_gaussian(data$Y[n], mu = ilink(samples$eta[, n], link), 
+                  lambda = samples$shape, log.p = TRUE)
+  }
+  if ("weights" %in% names(data)) 
+    out <- out * data$weights[n]
+  out
+}
+
 loglik_categorical <- function(n, data, samples, link) {
   ncat <- ifelse(length(data$max_obs) > 1, data$max_obs[n], data$max_obs) 
   if (link == "logit") {
