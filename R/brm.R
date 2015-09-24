@@ -15,13 +15,14 @@
 #'   The first string indicates the distribution of the dependent variable (the 'family'). 
 #'   Currently, the following families are supported:
 #'   \code{"gaussian"}, \code{"student"}, \code{"cauchy"}, \code{"binomial"}, \code{"bernoulli"}, 
-#'   \code{"categorical"}, \code{"poisson"}, \code{"negbinomial"}, \code{"geometric"}, \code{"gamma"},
-#'   \code{"exponential"}, \code{"weibull"}, \code{"cumulative"}, \code{"cratio"}, \code{"sratio"}, and \code{"acat"}.
+#'   \code{"categorical"}, \code{"poisson"}, \code{"negbinomial"}, \code{"geometric"}, \code{"gamma"}, 
+#'   \code{"inverse.gaussian"}, \code{"exponential"}, \code{"weibull"}, \code{"cumulative"}, 
+#'   \code{"cratio"}, \code{"sratio"}, and \code{"acat"}.
 #'   The second string indicates the link function, which must be supported by the family 
 #'   (if not specified, default links are used). 
 #'   Alternatively, a family function or the result of a call to a family function are also accepted
 #'   (see \code{\link[stats:family]{family}} for help on standard family functions and 
-#'   \code{\link[brms:brmsfamily]{brmsfamily}} for \pkg{brms} specific family functions). 
+#'   \code{\link[brms:brmsfamily]{brmsfamily}} for brms specific family functions). 
 #'   Further information is provided under 'Details'.
 #' @param prior One or more \code{brmsprior} objects created by function 
 #'   \code{\link[brms:set_prior]{set_prior}} and combined using the \code{c} method. 
@@ -187,8 +188,8 @@
 #'   when there are more than two possible outcomes.
 #'   Families \code{cumulative}, \code{cratio} ('contiuation ratio'), \code{sratio} ('stopping ratio'), 
 #'   and \code{acat} ('adjacent category') leads to ordinal regression. Families \code{gamma}, 
-#'   \code{weibull}, and \code{exponential} can be used (among others) for survival regression 
-#'   when combined with the \code{log} link.
+#'   \code{weibull}, \code{exponential}, and \code{inverse.gaussian} can be used (among others) 
+#'   for survival regression when combined with the \code{log} link. 
 #'   
 #'   In the following, we list all possible links for each family.
 #'   The families \code{gaussian}, \code{student}, and \code{cauchy} accept the links (as names) 
@@ -197,16 +198,22 @@
 #'   \code{log}, \code{identity}, and \code{sqrt}; 
 #'   families \code{binomial}, \code{bernoulli}, \code{cumulative}, \code{cratio}, \code{sratio}, 
 #'   and \code{acat} the links \code{logit}, \code{probit}, \code{probit_approx}, 
-#'   \code{cloglog}, and \code{cauchit}; \cr
+#'   \code{cloglog}, and \code{cauchit}; 
 #'   family \code{categorical} the link \code{logit}; families \code{gamma}, \code{weibull}, 
-#'   and \code{exponential} the links \code{log}, \code{identity}, and \code{inverse}. 
-#'   The first link mentioned for each family is the default.     
+#'   and \code{exponential} the links \code{log}, \code{identity}, and \code{inverse};
+#'   family \code{inverse.gaussian} the links \code{1/mu^2}, \code{inverse}, \code{identity} 
+#'   and \code{log}. The first link mentioned for each family is the default.     
 #'   
 #'   Please note that when calling the \code{\link[stats:family]{Gamma}} family function, 
 #'   the default link will be \code{inverse} not \code{log}. 
 #'   Also, the \code{probit_approx} link cannot be used when calling the
-#'   \code{\link[stats:family]{binomial}} family function. \cr
+#'   \code{\link[stats:family]{binomial}} family function. 
 #'   
+#'   The current implementation of \code{inverse.gaussian} models has some 
+#'   convergence problems and requires carefully chosen prior distributions 
+#'   to work efficiently. For this reason, we currently do not recommend
+#'   to use the \code{inverse.gaussian} family, unless you really feel
+#'   that your data requires exactly this type of model. \cr
 #'   
 #'   \bold{Prior distributions}
 #'   

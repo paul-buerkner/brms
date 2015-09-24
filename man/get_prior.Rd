@@ -25,12 +25,13 @@ The first string indicates the distribution of the dependent variable (the 'fami
 Currently, the following families are supported:
 \code{"gaussian"}, \code{"student"}, \code{"cauchy"}, \code{"binomial"}, \code{"bernoulli"},
 \code{"categorical"}, \code{"poisson"}, \code{"negbinomial"}, \code{"geometric"}, \code{"gamma"},
-\code{"exponential"}, \code{"weibull"}, \code{"cumulative"}, \code{"cratio"}, \code{"sratio"}, and \code{"acat"}.
+\code{"inverse.gaussian"}, \code{"exponential"}, \code{"weibull"}, \code{"cumulative"},
+\code{"cratio"}, \code{"sratio"}, and \code{"acat"}.
 The second string indicates the link function, which must be supported by the family
 (if not specified, default links are used).
 Alternatively, a family function or the result of a call to a family function are also accepted
 (see \code{\link[stats:family]{family}} for help on standard family functions and
-\code{\link[brms:brmsfamily]{brmsfamily}} for \pkg{brms} specific family functions).
+\code{\link[brms:brmsfamily]{brmsfamily}} for brms specific family functions).
 Further information is provided under 'Details'.}
 
 \item{addition}{A named list of one sided formulas each containing additional information
