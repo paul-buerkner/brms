@@ -6,6 +6,7 @@ output: html_document
 # under development
 ----------------------------------------------------------------
 
+* add support for inverse gaussian models
 * binomial and ordinal families now support the cauchit link function
 * easy access to various rstan plotting functions using the stanplot method
 * avoid side effects of rstan's compilation routines that could occasionally cause R to crash 
