@@ -37,18 +37,18 @@ test_that("Test that stan_prior can remove default priors", {
 test_that("Test that stan_eta returns correct strings for autocorrelation models", {
   expect_match(stan_eta(family = "poisson", link = "log", f = c("Trt_c"),
                         autocor = cor.arma(~visit|patient, p=1))$transC1,
-               "eta <- X*b + Yar*ar", fixed = TRUE)
+               "eta <- X * b + Yar * ar", fixed = TRUE)
   expect_match(stan_eta(family = "poisson", link = "log", f = c("Trt_c"),
                         autocor = cor.arma(~visit|patient, q=1))$transC2,
-               "eta[n] <- eta[n] + Ema[n]*ma", fixed = TRUE)
+               "eta[n] <- eta[n] + Ema[n] * ma", fixed = TRUE)
 })
 
 test_that("Test_that stan_ma returns correct strings (or errors) for moving average models", {
   expect_equal(stan_ma(family = "gaussian", link = "log", autocor = cor.arma()), list())
   expect_match(stan_ma(family = "gaussian", link = "log", autocor = cor.arma(~visit|patient, q=1))$transC2,
-               "Ema[n+1,i] <- e[n+1-i]", fixed = TRUE)
+               "Ema[n + 1, i] <- e[n + 1 - i]", fixed = TRUE)
   expect_match(stan_ma(family = "multinormal", link = "inverse", autocor = cor.arma(~visit|patient, q=1))$transC2,
-               "e[n] <- inv(Y[m,k]) - eta[n]", fixed = TRUE)
+               "e[n] <- inv(Y[m, k]) - eta[n]", fixed = TRUE)
   expect_error(stan_ma(family = "poisson", link = "log", autocor = cor.arma(~visit|patient, p=1, q=1)),
                "moving-average models for family poisson are not yet implemented")
 })  
@@ -99,27 +99,27 @@ test_that("Test that stan_ordinal returns correct strings", {
 
 test_that("Test that stan_llh uses simplifications when possible", {
   expect_equal(stan_llh(family = "bernoulli", link = "logit"), "  Y ~ bernoulli_logit(eta); \n")
-  expect_equal(stan_llh(family = "gaussian", link = "log"), "  Y ~ lognormal(eta,sigma); \n")
+  expect_equal(stan_llh(family = "gaussian", link = "log"), "  Y ~ lognormal(eta, sigma); \n")
   expect_match(stan_llh(family = "gaussian", link = "log", weights = TRUE), 
-               "lognormal_log(Y[n],eta[n],sigma); \n", fixed = TRUE)
+               "lognormal_log(Y[n], eta[n], sigma); \n", fixed = TRUE)
   expect_equal(stan_llh(family = "poisson", link = "log"), "  Y ~ poisson_log(eta); \n")
   expect_match(stan_llh(family = "cumulative", link = "logit"), fixed = TRUE,
-               "  Y[n] ~ ordered_logistic(eta[n],b_Intercept); \n")
+               "  Y[n] ~ ordered_logistic(eta[n], b_Intercept); \n")
 })
 
 test_that("Test that stan_llh returns correct llhs under weights and censoring", {
   expect_equal(stan_llh(family = "cauchy", link = "inverse", weights = TRUE),
-               "  lp_pre[n] <- cauchy_log(Y[n],eta[n],sigma); \n")
+               "  lp_pre[n] <- cauchy_log(Y[n], eta[n], sigma); \n")
   expect_equal(stan_llh(family = "poisson", link = "log", weights = TRUE),
-               "  lp_pre[n] <- poisson_log_log(Y[n],eta[n]); \n")
+               "  lp_pre[n] <- poisson_log_log(Y[n], eta[n]); \n")
   expect_match(stan_llh(family = "poisson", link = "log", cens = TRUE),
                "Y[n] ~ poisson(exp(eta[n])); \n", fixed = TRUE)
   expect_equal(stan_llh(family = "binomial", link = "logit", add = TRUE, weights = TRUE),
-               "  lp_pre[n] <- binomial_logit_log(Y[n],trials[n],eta[n]); \n")
+               "  lp_pre[n] <- binomial_logit_log(Y[n], trials[n], eta[n]); \n")
   expect_match(stan_llh(family = "weibull", link = "inverse", cens = TRUE), fixed = TRUE,
-               "increment_log_prob(weibull_ccdf_log(Y[n],shape,eta[n])); \n")
+               "increment_log_prob(weibull_ccdf_log(Y[n], shape, eta[n])); \n")
   expect_match(stan_llh(family = "weibull", link = "inverse", cens = TRUE, weights = TRUE), fixed = TRUE,
-               "increment_log_prob(weights[n] * weibull_ccdf_log(Y[n],shape,eta[n])); \n")
+               "increment_log_prob(weights[n] * weibull_ccdf_log(Y[n], shape, eta[n])); \n")
 })
 
 test_that("Test that stan_rngprior returns correct sampling statements for priors", {
