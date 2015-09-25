@@ -2,7 +2,7 @@
 \title{brms News}
 \encoding{UTF-8}
 
-\section{UNDER DEVELOPMENT}{
+\section{CHANGES IN VERSION 0.5.0.9000}{
   \subsection{NEW FEATURES}{
     \itemize{
       \item add support for inverse gaussian models through family \code{inverse.gaussian}
@@ -10,10 +10,16 @@
       \item allow family functions to be used in the \code{family} argument
       \item easy access to various \code{rstan} plotting functions 
       using the \code{stanplot} method
+      \item automatically scale default standard deviation priors so that
+      they remain only weakly informative independent on the response scale
     }
   }
   \subsection{OTHER CHANGES}{
     \itemize{
+      \item improve checks on argument \code{newdata} used in the
+      \code{fitted} and \code{predict} method
+      \item method \code{standata} is now the only way to extract data
+      that was passed to Stan from a \code{brmsfit} object
       \item improve documenation to better explain differences in 
       autoregressive effects across R packages
     }
