@@ -272,7 +272,7 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
   if (is.null(newdata)) { 
-    data <- x$data
+    data <- standata(x)
   } else {
     data <- newdata
   }

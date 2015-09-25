@@ -311,18 +311,16 @@ brm <- function(formula, data = NULL, family = "gaussian",
     et <- extract_time(autocor$formula)  
     ee <- extract_effects(formula, family = family, partial, et$all)
     data.name <- Reduce(paste, deparse(substitute(data)))
-    data <- update_data(data, family = family, effects = ee, et$group)  # see data.R
     
     # initialize S3 object
     x <- brmsfit(formula = formula, family = family, link = link, 
                  partial = partial, data.name = data.name, 
-                 autocor = autocor, prior = prior)  
+                 autocor = autocor, prior = prior, 
+                 cov.ranef = cov.ranef)  
+    x$data <- update_data(data, family = family, effects = ee, et$group)  # see data.R
     x$ranef <- gather_ranef(effects = ee, data = data)  # see validate.R
     x$exclude <- exclude_pars(formula, ranef = ranef)  # see validate.R
-    x$data <- brmdata(formula, data = data, family = family, 
-                      cov.ranef = cov.ranef, autocor = autocor, 
-                      partial = partial)  # see data.R
-    x$model <- stan_model(formula = formula, data = data, 
+    x$model <- stan_model(formula = formula, data = x$data, 
                           family = family, link = link, 
                           prior = prior,  autocor = autocor, 
                           partial = partial, threshold = threshold, 
@@ -350,7 +348,7 @@ brm <- function(formula, data = NULL, family = "gaussian",
   }
   
   # arguments to be passed to stan
-  args <- list(object = x$fit, data = x$data, pars = x$exclude, 
+  args <- list(object = x$fit, data = standata(x), pars = x$exclude, 
                init = inits,  iter = n.iter, warmup = n.warmup, 
                thin = n.thin, chains = n.chains, include = FALSE)  
   args[names(dots)] <- dots 

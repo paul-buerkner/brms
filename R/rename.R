@@ -60,9 +60,10 @@ rename_pars <- function(x) {
   pars <- parnames(x)
   ee <- extract_effects(x$formula, family = x$family)
   change <- list()
+  standata <- standata(x)
   
   # find positions of parameters and define new names
-  f <- colnames(x$data$X)
+  f <- colnames(standata$X)
   if (length(f) && x$family != "categorical") {
     change <- lc(change, list(pos = grepl("^b\\[", pars), oldname = "b", 
                               pnames = paste0("b_",f), fnames = paste0("b_",f)))
@@ -71,12 +72,12 @@ rename_pars <- function(x) {
   
   if (is.formula(x$partial) || x$family == "categorical") {
     if (x$family == "categorical") {
-      p <- colnames(x$data$X)
+      p <- colnames(standata$X)
     } else {
-      p <- colnames(x$data$Xp)
+      p <- colnames(standata$Xp)
     }
     lp <- length(p)
-    thres <- max(x$data$max_obs) - 1
+    thres <- max(standata$max_obs) - 1
     pfnames <- paste0("b_",t(outer(p, paste0("[",1:thres,"]"), FUN = paste0)))
     change <- lc(change, list(pos = grepl("^bp\\[", pars), oldname = "bp", 
                               pnames = paste0("b_",p), fnames = pfnames,

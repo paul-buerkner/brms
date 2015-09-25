@@ -198,8 +198,9 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
 }
 
 #' @export
-posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA, 
-                                      exact_match = FALSE, add_chains = FALSE, ...) {
+posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,  
+                                      exact_match = FALSE, 
+                                      add_chains = FALSE, ...) {
   if (is.na(pars[1])) 
     pars <- parameters  
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
@@ -366,14 +367,17 @@ summary.brmsfit <- function(object, ...) {
 }
 
 #' @export
-nobs.brmsfit <- function(object, ...) length(object$data$Y)
-
+nobs.brmsfit <- function(object, ...) {
+  length(standata(object)$Y)
+}
+  
 #' @export
 ngrps.brmsfit <- function(object, ...) {
+  standata <- standata(object)
   group <- extract_effects(object$formula, family = object$family)$group
   if (length(group)) {
     out <- setNames(lapply(1:length(group), function(i) 
-      object$data[[paste0("N_",i)]]), group)
+      standata[[paste0("N_",i)]]), group)
     out <- out[!duplicated(group)]
   } else out <- NULL
   out
@@ -392,9 +396,19 @@ stancode.brmsfit <- function(object, ...)
   object$model
 
 #' @export
-standata.brmsfit <- function(object, ...)
-  object$data
-
+standata.brmsfit <- function(object, ...) {
+  if (is.data.frame(object$data)) {
+    # brms > 0.5.0 stores the original model.frame 
+    standata <- brmdata(object$formula, data = object$data, 
+                        family = object$family, autocor = object$autocor, 
+                        cov.ranef = object$cov.ranef, partial = object$partial)
+  } else {
+    # brms <= 0.5.0 only stores the data passed to Stan 
+    standata <- object$data
+  }
+  standata
+}
+  
 #' @export
 launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"), ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
@@ -555,7 +569,7 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   
   # use newdata if defined
   if (is.null(newdata)) {
-    data <- object$data
+    data <- standata(object)
   } else {
     data <- amend_newdata(newdata, fit = object, re_formula = re_formula,
                           allow_new_levels = allow_new_levels)
@@ -632,8 +646,9 @@ residuals.brmsfit <- function(object, re_formula = NULL, type = c("ordinary", "p
   if (object$family %in% c("categorical", "cumulative", "sratio", "cratio", "acat"))
     stop(paste("residuals not yet implemented for family", object$family))
   
+  standata <- standata(object)
   mu <- fitted(object, re_formula = re_formula, summary = FALSE)
-  Y <- matrix(rep(as.numeric(object$data$Y), nrow(mu)), 
+  Y <- matrix(rep(as.numeric(standata$Y), nrow(mu)), 
               nrow = nrow(mu), byrow = TRUE)
   res <- Y - mu
   colnames(res) <- NULL
@@ -649,7 +664,7 @@ residuals.brmsfit <- function(object, re_formula = NULL, type = c("ordinary", "p
   has_autocor <- sum(object$autocor$p, object$autocor$q) > 0
   if (is(object$autocor, "cor_arma") && has_autocor) {
     tgroup <- extract_time(object$autocor$formula)$group
-    if (nchar(tgroup)) colnames(res) <- object$data[[tgroup]]
+    if (nchar(tgroup)) colnames(res) <- standata[[tgroup]]
   }
   if (summary) {
     res <- get_summary(res, probs = probs)
@@ -724,7 +739,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   
   # use newdata if defined
   if (is.null(newdata)) {
-    data <- object$data
+    data <- standata(object)
   } else {
     data <- amend_newdata(newdata, fit = object, re_formula = re_formula,
                           allow_new_levels = allow_new_levels)
@@ -764,9 +779,8 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     
   # sort predicted responses in case of multinormal models
   if (family == "multinormal") {
-    nobs <- object$data$N_trait * object$data$K_trait
-    to_order <- ulapply(1:object$data$K_trait, seq,
-                        to = nobs, by = object$data$K_trait)
+    nobs <- data$N_trait * data$K_trait
+    to_order <- ulapply(1:data$K_trait, seq, to = nobs, by = data$K_trait)
     if (summary) out <- out[to_order, ]  # observations in rows
     else out <- out[, to_order]  # observations in columns
   }
@@ -835,10 +849,14 @@ logLik.brmsfit <- function(object, ...) {
     message(paste("Computing pointwise log-likelihood of multinormal distribution. \n",
                   "This may take a while."))
   }
+  standata <- standata(object)
   loglik_fun <- get(paste0("loglik_",object$family))
-  return(do.call(cbind, lapply(1:nrow(as.matrix(object$data$Y)), function(n) 
-    do.call(loglik_fun, list(n = n, data = object$data, 
-                             samples = samples, link = object$link)))))
+  call_loglik_fun <- function(n) {
+    do.call(loglik_fun, list(n = n, data = standata, samples = samples, 
+                             link = object$link)) 
+  }
+  loglik <- lapply(1:nrow(as.matrix(standata$Y)), call_loglik_fun)
+  do.call(cbind, loglik)
 }
 
 #' @export
