@@ -720,9 +720,8 @@ residuals.brmsfit <- function(object, re_formula = NULL, type = c("ordinary", "p
 #' pp <- predict(fit)
 #' head(pp)
 #' 
-#' ## predict response for new data (be careful with factors)
-#' newdata <- data.frame(sex = factor(c("male", "female"), 
-#'                                    levels = c("male", "female")),
+#' ## predict response for new data
+#' newdata <- data.frame(sex = factor(c("male", "female")),
 #'                       age = c(20,50))
 #' predict(fit, newdata = newdata)
 #' }
