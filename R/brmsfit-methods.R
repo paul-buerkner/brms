@@ -537,10 +537,13 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
 #'   N is the number of observations, S is the number of samples, C is the number of categories,
 #'   and E is equal to \code{length(probs) + 2}.
 #'   
-#' @details Be careful when using \code{newdata} with factors in fixed or random effects: 
+#' @details For \pkg{brms} <= 0.5.0 only: 
+#'  Be careful when using \code{newdata} with factors in fixed or random effects. 
 #'  The predicted results are only valid if all factor levels present in the initial 
-#'  data are also defined and ordered correctly for the factors in \code{newdata}. 
+#'  data are also defined and ordered correctly for the factors in \code{newdata}.
 #'  Grouping factors may contain fewer levels than in the inital data without causing problems.
+#'  When using higher versions of \pkg{brms}, all factors are automatically checked 
+#'  for correctness and amended if necessary.
 #'
 #' @examples 
 #' \dontrun{
@@ -699,10 +702,13 @@ residuals.brmsfit <- function(object, re_formula = NULL, type = c("ordinary", "p
 #'   to \code{length(probs) + 2}.
 #'   If \code{summary = FALSE}, the output is as a S x N matrix, where S is the number of samples.
 #' 
-#' @details Be careful when using \code{newdata} with factors in fixed or random effects: 
+#' @details For \pkg{brms} <= 0.5.0 only: 
+#'  Be careful when using \code{newdata} with factors in fixed or random effects. 
 #'  The predicted results are only valid if all factor levels present in the initial 
-#'  data are also defined and ordered correctly for the factors in \code{newdata}. 
+#'  data are also defined and ordered correctly for the factors in \code{newdata}.
 #'  Grouping factors may contain fewer levels than in the inital data without causing problems.
+#'  When using higher versions of \pkg{brms}, all factors are automatically checked 
+#'  for correctness and amended if necessary.
 #' 
 #' @examples 
 #' \dontrun{

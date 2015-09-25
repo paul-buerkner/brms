@@ -50,7 +50,8 @@ combine_groups <- function(data, ...) {
   data
 }
 
-update_data <- function(data, family, effects, ...) {
+update_data <- function(data, family, effects, 
+                        drop.unused.levels = TRUE, ...) {
   # update data for use in brm
   #
   # Args:
@@ -64,7 +65,8 @@ update_data <- function(data, family, effects, ...) {
   #   model.frame in long format with combined grouping variables if present
   if (!"brms.frame" %in% class(data)) {
     data <- melt(data, response = effects$response, family = family)
-    data <- stats::model.frame(effects$all, data = data, drop.unused.levels = TRUE)
+    data <- stats::model.frame(effects$all, data = data, 
+                               drop.unused.levels = drop.unused.levels)
     if (any(grepl("__", colnames(data))))
       stop("Variable names may not contain double underscores '__'")
     data <- combine_groups(data, effects$group, ...)
@@ -107,7 +109,8 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
   
   et <- extract_time(autocor$formula)
   ee <- extract_effects(formula = formula, family = family, partial, et$all)
-  data <- update_data(data, family = family, effects = ee, et$group)
+  data <- update_data(data, family = family, effects = ee, et$group,
+                      drop.unused.levels = !isTRUE(dots$newdata))
   
   # sort data in case of autocorrelation models
   if (sum(autocor$p, autocor$q) > 0) {

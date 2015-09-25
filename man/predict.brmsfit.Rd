@@ -44,10 +44,13 @@ Make predictions based on the fitted model parameters.
 Can be performed for the data used to fit the model (posterior predictive checks) or for new data.
 }
 \details{
-Be careful when using \code{newdata} with factors in fixed or random effects:
+For \pkg{brms} <= 0.5.0 only:
+ Be careful when using \code{newdata} with factors in fixed or random effects.
  The predicted results are only valid if all factor levels present in the initial
  data are also defined and ordered correctly for the factors in \code{newdata}.
  Grouping factors may contain fewer levels than in the inital data without causing problems.
+ When using higher versions of \pkg{brms}, all factors are automatically checked
+ for correctness and amended if necessary.
 }
 \examples{
 \dontrun{

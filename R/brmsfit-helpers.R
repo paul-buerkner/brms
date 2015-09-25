@@ -528,10 +528,41 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   if (sum(fit$autocor$p, fit$autocor$q) > 0 && !all(ee$response %in% names(newdata))) {
     stop("response variables must be specified in newdata for autocorrelative models")
   } else {
-    for (resp in ee$response)
-      newdata[[resp]] <- 0  # add irrelevant response variables
+    for (resp in ee$response) {
+      # add irrelevant response variables
+      newdata[[resp]] <- 0  
+    }
   }
-  # validate grouping factors in newdata
+  # try to validate factor levels in newdata
+  if (is.data.frame(fit$data)) {
+    # validating is possible (implies brms > 0.5.0)
+    list_data <- as.list(fit$data)
+    is_factor <- sapply(list_data, is.factor)
+    factors <- list_data[is_factor]
+    if (length(factors)) {
+      factor_names <- names(factors)
+      factor_levels <- lapply(factors, levels) 
+      for (i in 1:length(factors)) {
+        new_factor <- newdata[[factor_names[i]]]
+        if (!is.null(new_factor)) {
+          if (!is.factor(new_factor)) {
+            factor <- factor(new_factor)
+          }
+          new_levels <- levels(new_factor)
+          if (any(!new_levels %in% factor_levels[[i]])) {
+            stop(paste("New factor levels are not allowed. \n",
+                       "Levels found:", paste(new_levels, collapse = ", ") , "\n",
+                       "Levels allowed:", paste(factor_levels[[i]], collapse = ", ")))
+          }
+          newdata[[factor_names[i]]] <- factor(new_factor, factor_levels[[i]])
+        }
+      }
+    }
+  } else {
+    warning(paste("Validity of factors cannot be checked for fitted model objects",
+                  "created with brms <= 0.5.0"))
+  }
+  # validate grouping factors
   if (length(fit$ranef) && is.null(re_formula)) {
     gnames <- names(fit$ranef)
     for (i in 1:length(gnames)) {
