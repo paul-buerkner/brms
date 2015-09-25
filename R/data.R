@@ -50,8 +50,8 @@ combine_groups <- function(data, ...) {
   data
 }
 
-update_data <- function(data, family, effects, 
-                        drop.unused.levels = TRUE, ...) {
+update_data <- function(data, family, effects, ...,
+                        drop.unused.levels = TRUE) {
   # update data for use in brm
   #
   # Args:
@@ -60,6 +60,8 @@ update_data <- function(data, family, effects,
   #   effects: output of extract_effects (see validate.R)
   #   ...: More formulae passed to combine_groups
   #        Currently only used for autocorrelation structures
+  #   drop.unused.levels: logical; indicates whether unused factor levels
+  #                       should be dropped
   #
   # Returns:
   #   model.frame in long format with combined grouping variables if present
