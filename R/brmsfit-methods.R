@@ -312,10 +312,10 @@ summary.brmsfit <- function(object, ...) {
                      autocor = object$autocor)
   if (length(object$fit@sim)) {
     out$n.chains <- length(object$fit@sim$samples)
-    out$n.iter = attr(object$fit@sim$samples[[1]],"args")$iter
-    out$n.warmup = attr(object$fit@sim$samples[[1]],"args")$warmup
-    out$n.thin = attr(object$fit@sim$samples[[1]],"args")$thin
-    out$sampler = attr(object$fit@sim$samples[[1]],"args")$sampler_t
+    out$n.iter <- attr(object$fit@sim$samples[[1]],"args")$iter
+    out$n.warmup <- attr(object$fit@sim$samples[[1]],"args")$warmup
+    out$n.thin <- attr(object$fit@sim$samples[[1]],"args")$thin
+    out$sampler <- attr(object$fit@sim$samples[[1]],"args")$sampler_t
     if (length(ee$response) == 1) 
       out$WAIC <- WAIC(object)$waic
     

@@ -52,7 +52,13 @@ Define priors for specific parameters or classes of parameters
   \code{set_prior("uniform(-10,10)", class = "b", coef = "x2")}.
   To put the same prior on all fixed effects at once,
   we may write as a shortcut \code{set_prior("<prior>", class = "b")}. This also
-  leads to faster sampling, because priors can be vectorized in this case. \cr
+  leads to faster sampling, because priors can be vectorized in this case.
+  Both ways of defining priors can be combined using for instance \cr
+  \code{set_prior("normal(0,10)", class = "b", coef = "Intercept")} and
+  \code{set_prior("normal(0,2)", class = "b")} at the same time.
+  This will set a \code{normal(0,10)} prior on the Intercept and a \code{normal(0,2)}
+  prior on all other fixed effects. Note that the priors are no longer
+  vectorized in this case. \cr
 
   2. Autocorrelation parameters
 
