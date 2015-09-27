@@ -16,6 +16,8 @@
   }
   \subsection{OTHER CHANGES}{
     \itemize{
+      \item separate the fixed effects Intercept from other fixed effects
+      in the \pkg{Stan} code to slightly improve sampling efficiency  
       \item improve checks on argument \code{newdata} used in the
       \code{fitted} and \code{predict} method
       \item method \code{standata} is now the only way to extract data
@@ -28,6 +30,9 @@
     \itemize{
       \item avoid side effects of \code{rstan}'s compilation routines that could 
       occasionally cause R to crash
+      \item make \pkg{brms} work correctly with \pkg{loo} version 0.1.3
+      \item fix a bug that could cause WAIC and LOO estimates to be slightly incorrect in 
+      \code{gaussian} models with \code{log} link
     }
   }
 }
