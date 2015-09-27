@@ -25,7 +25,7 @@ extract_effects <- function(formula, ..., family = NA) {
     fixed <- paste0(fixed, "1")
   fixed <- formula(fixed)
   if (family %in% c("cumulative", "sratio", "cratio", "acat"))
-    fixed <- update.formula(fixed, . ~ . +1)
+    fixed <- update.formula(fixed, . ~ . + 1)
   if (length(fixed) < 3) 
     stop("invalid formula: response variable is missing")
   
@@ -649,8 +649,35 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
   if (length(rm))  # else it may happen that all rows a removed...
     prior <- prior[-rm, ]
   
-  # rename parameter groups
   rows2remove <- NULL
+  # special treatment of fixed effects Intercept(s)
+  Int_index <- which(prior$class == "b" & prior$coef == "Intercept" 
+                     & nchar(prior$prior))
+  rows2remove <- c(rows2remove, Int_index)
+  if (!length(Int_index)) {  
+    # take global fixed effects prior
+    Int_index <- which(prior$class == "b" & !nchar(prior$coef))
+  }
+  if (length(Int_index)) {
+    Int_prior <- prior[Int_index, ] 
+    # Intercepts have their own internal parameter class
+    is_ordinal <- family %in% c("cumulative", "sratio", "cratio", "acat") 
+    Int_prior$class <- ifelse(is_ordinal && threshold == "equidistant", 
+                              "b_Intercept1", "b_Intercept")
+    Int_prior$coef <- ""
+    prior <- rbind(prior, Int_prior)
+  }
+  # get category specific priors out of fixef priors
+  if (family == "categorical" || is.formula(partial)) {
+    paref <- colnames(get_model_matrix(partial, data = data, rm_intercept = TRUE))
+    b_index <- which(prior$class == "b" & !nchar(prior$coef))
+    partial_index <- which(prior$class == "b" & prior$coef %in% paref)
+    rows2remove <- c(rows2remove, partial_index)
+    partial_prior <- prior[c(b_index, partial_index), ]
+    partial_prior$class <- "bp"  # the category specific effects class
+    prior <- rbind(prior, partial_prior)
+  }
+  # rename parameter groups
   group_indices <- which(nchar(prior$group) > 0)
   for (i in group_indices) {
     if (!prior$group[i] %in% ee$group) { 
@@ -668,33 +695,6 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
         new_row
       })
       prior <- rbind(prior, do.call(rbind, new_rows))  # add new rows
-    }
-  }
-  # get category specific priors out of fixef priors
-  if (family == "categorical" || is.formula(partial)) {
-    paref <- colnames(get_model_matrix(partial, data = data, rm_intercept = TRUE))
-    b_index <- which(prior$class == "b" & !nchar(prior$coef))
-    partial_index <- which(prior$class == "b" & prior$coef %in% paref)
-    rows2remove <- c(rows2remove, partial_index)
-    partial_prior <- prior[c(b_index, partial_index), ]
-    partial_prior$class <- "bp"  # the category specific effects class
-    prior <- rbind(prior, partial_prior)
-  }
-  # special treatment of thresholds in ordinal models
-  if (family %in% c("cumulative", "sratio", "cratio", "acat")) {
-    # take specific fixed effects Intercept prior
-    Int_index <- which(prior$class == "b" & prior$coef == "Intercept")
-    rows2remove <- c(rows2remove, Int_index)
-    if (!length(Int_index)) {  # take global fixed effects prior
-      Int_index <- which(prior$class == "b" & !nchar(prior$coef))
-    }
-    if (length(Int_index)) {
-      Int_prior <- prior[Int_index, ] 
-      # thresholds have their own internal parameter class
-      Int_prior$class <- ifelse(threshold == "equidistant", 
-                                "b_Intercept1", "b_Intercept")
-      Int_prior$coef <- ""
-      prior <- rbind(prior, Int_prior)
     }
   }
   # remove unnecessary rows

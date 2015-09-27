@@ -401,7 +401,8 @@ standata.brmsfit <- function(object, ...) {
     # brms > 0.5.0 stores the original model.frame 
     standata <- brmdata(object$formula, data = object$data, 
                         family = object$family, autocor = object$autocor, 
-                        cov.ranef = object$cov.ranef, partial = object$partial)
+                        cov.ranef = object$cov.ranef, partial = object$partial,
+                        ...)
   } else {
     # brms <= 0.5.0 only stores the data passed to Stan 
     standata <- object$data
@@ -572,7 +573,7 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   
   # use newdata if defined
   if (is.null(newdata)) {
-    data <- standata(object)
+    data <- standata(object, keep_Intercept = TRUE)
   } else {
     data <- amend_newdata(newdata, fit = object, re_formula = re_formula,
                           allow_new_levels = allow_new_levels)
@@ -744,7 +745,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   
   # use newdata if defined
   if (is.null(newdata)) {
-    data <- standata(object)
+    data <- standata(object, keep_Intercept = TRUE)
   } else {
     data <- amend_newdata(newdata, fit = object, re_formula = re_formula,
                           allow_new_levels = allow_new_levels)

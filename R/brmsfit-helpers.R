@@ -272,7 +272,7 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
   if (is.null(newdata)) { 
-    data <- standata(x)
+    data <- standata(x, keep_Intercept = TRUE)
   } else {
     data <- newdata
   }
@@ -335,8 +335,7 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
       }
     }
     eta <- etap
-  }
-  else if (x$family == "categorical") {
+  } else if (x$family == "categorical") {
     if (!is.null(data$X)) {
       p <- posterior_samples(x, pars = "^b_")
       etap <- partial_predictor(data$X, p, data$max_obs)

@@ -19,18 +19,26 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
   is_skewed <- family %in% c("gamma", "weibull", "exponential")
   is_count <- family %in% c("poisson", "negbinomial", "geometric")
   is_multi <- family == "multinormal"
-
+  
   if (family == "categorical") {
     X <- data.frame()
-    Xp <- get_model_matrix(ee$fixed, data, rm_intercept = is_ordinal)
+    fixef <- colnames(X)
+    Xp <- get_model_matrix(ee$fixed, data)
+    paref <- colnames(Xp)
+    has_intercept <- "Intercept" == paref[1]
+    if (has_intercept) paref <- paref[-1]
   } else {
-    X <- get_model_matrix(ee$fixed, data, rm_intercept = is_ordinal)
+    X <- get_model_matrix(ee$fixed, data)
+    fixef <- colnames(X)
     Xp <- get_model_matrix(partial, data, rm_intercept = TRUE)
-  }  
-  fixef <- colnames(X)
-  paref <- colnames(Xp)
+    paref <- colnames(Xp)
+    # extract_effects ensures that ordinal models always have intercepts
+    has_intercept <- "Intercept" == fixef[1]
+    if (has_intercept) fixef <- fixef[-1]
+  }
+  
   Z <- lapply(ee$random, get_model_matrix, data = data)
-  ranef <- lapply(Z,colnames)
+  ranef <- lapply(Z, colnames)
   trait <- ifelse(is_multi, "_trait", "")
   names_cov_ranef <- names(cov.ranef)
   
@@ -48,7 +56,8 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
   
   # generate important parts of the stan code
   text_eta <- stan_eta(family = family, link = link, fixef = fixef, 
-                       paref = paref,  group = ee$group, autocor = autocor)
+                       has_intercept = has_intercept, paref = paref,  
+                       group = ee$group, autocor = autocor)
   text_ma <- stan_ma(family = family, link = link, autocor = autocor)
   text_ordinal <- stan_ordinal(family = family, link = link, 
                                partial = length(paref), 
@@ -65,6 +74,12 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
     
   # get priors for all parameters in the model
   text_prior <- paste0(
+    if (has_intercept) {
+      if (is_ordinal && threshold == "equidistant")
+        paste0(stan_prior(class = "b_Intercept1", prior = prior), 
+               stan_prior(class = "delta", prior = prior))
+      else stan_prior("b_Intercept", prior = prior) 
+    },
     if (length(fixef)) 
       stan_prior(class = "b", coef = fixef, prior = prior),
     if (length(paref)) 
@@ -73,11 +88,6 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
       stan_prior(class = "ar", prior = prior),
     if (autocor$q) 
       stan_prior(class = "ma", prior = prior),
-    if (is_ordinal && threshold == "flexible") 
-      stan_prior("b_Intercept", prior = prior)
-    else if (is_ordinal && threshold == "equidistant") 
-      paste0(stan_prior(class = "b_Intercept1", prior = prior), 
-             stan_prior(class = "delta", prior = prior)),
     if (family %in% c("inverse.gaussian", "gamma", "weibull", "negbinomial")) 
       stan_prior(class = "shape", prior = prior),
     if (family == "student") 
@@ -159,11 +169,18 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
   
   text_parameters <- paste0(
     "parameters { \n",
+    if (has_intercept) {
+      if (is_ordinal) 
+        text_ordinal$par
+      else if (family == "categorical")
+        "  row_vector[ncat - 1] b_Intercept;  # fixed effects Intercepts \n"
+      else "  real b_Intercept;  # fixed effects Intercept \n"
+    },
     if (length(fixef)) 
       "  vector[K] b;  # fixed effects \n",
     if (length(paref)) 
       paste0("  matrix[Kp, ncat - 1] bp;  # category specific effects \n"),
-    text_ordinal$par, text_ranef$par,
+    text_ranef$par,
     if (autocor$p && is(autocor, "cor_arma")) 
       "  vector[Kar] ar;  # autoregressive effecs \n",
     if (autocor$q && is(autocor, "cor_arma")) 
@@ -413,7 +430,7 @@ stan_llh <- function(family, link, add = FALSE,
   llh
 }
 
-stan_eta <- function(family, link, fixef, paref = NULL, 
+stan_eta <- function(family, link, fixef, has_intercept = TRUE, paref = NULL,
                      group = NULL, autocor = cor_arma()) {
   # linear predictor in Stan
   #
@@ -428,7 +445,8 @@ stan_eta <- function(family, link, fixef, paref = NULL,
   # Return:
   #   the linear predictor in stan language
   is_linear <- family %in% c("gaussian", "student", "cauchy")
-  is_ordinal <- family %in% c("cumulative", "cratio", "sratio", "acat") 
+  is_ordinal <- family %in% c("cumulative", "cratio", "sratio", "acat")
+  is_cat <- family == "categorical"
   is_skewed <- family %in% c("gamma", "weibull", "exponential")
   is_count <- family %in% c("poisson", "negbinomial", "geometric")
   is_binary <- family %in% c("binomial", "bernoulli")
@@ -436,9 +454,9 @@ stan_eta <- function(family, link, fixef, paref = NULL,
   
   eta <- list()
   # initialize eta
-  eta$transD <- paste0("  vector[N] eta; # linear predictor \n", 
+  eta$transD <- paste0("  vector[N] eta;  # linear predictor \n", 
                        if (length(paref)) 
-                         "  matrix[N, ncat - 1] etap; # linear predictor matrix \n",
+                         "  matrix[N, ncat - 1] etap;  # linear predictor matrix \n",
                        if (is_multi) 
                          "  vector[K_trait] etam[N_trait]; # linear predictor matrix \n")
   eta.multi <- ifelse(is_multi, "  etam[m, k]", "eta[n]")
@@ -461,10 +479,15 @@ stan_eta <- function(family, link, fixef, paref = NULL,
   }
   
   # define fixed, random, and autocorrelation effects
+  etap <- if (length(paref) || is_cat) {
+    paste0("  etap <- ", ifelse(length(paref), "Xp * bp", "rep_matrix(0, Kp, ncat - 1)"),
+           if (is_cat && has_intercept) " + rep_matrix(b_Intercept, N)", "; \n")
+  }
   eta$transC1 <- paste0("  # compute linear predictor \n",
                         "  eta <- ", ifelse(length(fixef), "X * b", "rep_vector(0, N)"), 
+                        if (has_intercept && !(is_ordinal || is_cat)) " + b_Intercept",
                         if (autocor$p && is(autocor, "cor_arma")) " + Yar * ar", "; \n", 
-                        if (length(paref)) "  etap <- Xp * bp; \n")
+                        etap)
   if (length(group)) {
     ind <- 1:length(group)
     eta.re <- collapse(" + Z_",ind,"[n]*r_",ind,"[J_",ind,"[n]]")
@@ -693,7 +716,7 @@ stan_ordinal <- function(family, link, partial = FALSE, threshold = "flexible") 
       out <- paste0("eta[n]", ptl, " - b_Intercept[",k,"]")
     }
   }  
-  sc <- ifelse(family == "sratio", "1-", "")
+  sc <- ifelse(family == "sratio", "1 - ", "")
   intercept <- paste0("  ", ifelse(family == "cumulative", "ordered", "vector"), 
                       "[ncat-1] b_Intercept;  # thresholds \n")
   
