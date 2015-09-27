@@ -102,7 +102,7 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
                     partial = NULL, cov.ranef = NULL, ...) {
   # internal arguments:
   #   newdata: logical; indicating if brmdata is called with new data
-  #   keep_Intercept: logical; indicating if the Intercept column
+  #   keep_intercept: logical; indicating if the Intercept column
   #                   should be kept in the FE design matrix
   dots <- list(...)
   family <- check_family(family)$family
@@ -169,7 +169,7 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
   }
   
   # fixed effects data
-  rm_Intercept <- is_ordinal || !isTRUE(dots$keep_Intercept)
+  rm_Intercept <- is_ordinal || !isTRUE(dots$keep_intercept)
   X <- get_model_matrix(ee$fixed, data, rm_intercept = rm_Intercept)
   if (family == "categorical") {
     standata <- c(standata, list(Kp = ncol(X), Xp = X))

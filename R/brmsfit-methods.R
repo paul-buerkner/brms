@@ -573,7 +573,7 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   
   # use newdata if defined
   if (is.null(newdata)) {
-    data <- standata(object, keep_Intercept = TRUE)
+    data <- standata(object, keep_intercept = TRUE)
   } else {
     data <- amend_newdata(newdata, fit = object, re_formula = re_formula,
                           allow_new_levels = allow_new_levels)
@@ -746,7 +746,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   
   # use newdata if defined
   if (is.null(newdata)) {
-    data <- standata(object, keep_Intercept = TRUE)
+    data <- standata(object, keep_intercept = TRUE)
   } else {
     data <- amend_newdata(newdata, fit = object, re_formula = re_formula,
                           allow_new_levels = allow_new_levels)
