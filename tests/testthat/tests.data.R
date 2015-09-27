@@ -50,8 +50,10 @@ test_that("Test that brmdata returns correct data names for fixed and random eff
 test_that("Test that brmdata handles variables used as fixed effects and grouping factors at the same time", {
   data <- data.frame(y = 1:9, x = factor(rep(c("a","b","c"), 3)))
   standata <- brmdata(y ~ x + (1|x), data = data)
-  expect_equal(colnames(standata$X), c("Intercept", "xb", "xc"))
+  expect_equal(colnames(standata$X), c("xb", "xc"))
   expect_equal(standata$J_1, rep(1:3, 3))
+  standata2 <- brmdata(y ~ x + (1|x), data = data, keep_intercept = TRUE)
+  expect_equal(colnames(standata2$X), c("Intercept", "xb", "xc"))
 })
 
 test_that("Test that brmdata returns correct data names for addition and partial variables", {

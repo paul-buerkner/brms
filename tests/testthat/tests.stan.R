@@ -37,7 +37,7 @@ test_that("Test that stan_prior can remove default priors", {
 test_that("Test that stan_eta returns correct strings for autocorrelation models", {
   expect_match(stan_eta(family = "poisson", link = "log", f = c("Trt_c"),
                         autocor = cor.arma(~visit|patient, p=1))$transC1,
-               "eta <- X * b + Yar * ar", fixed = TRUE)
+               "eta <- X * b + b_Intercept + Yar * ar", fixed = TRUE)
   expect_match(stan_eta(family = "poisson", link = "log", f = c("Trt_c"),
                         autocor = cor.arma(~visit|patient, q=1))$transC2,
                "eta[n] <- eta[n] + Ema[n] * ma", fixed = TRUE)

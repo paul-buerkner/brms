@@ -130,20 +130,20 @@ test_that("Test that check_prior accepts correct prior names", {
                                 coef = c("carry", "treat")))
   
   expect_equivalent(check_prior(c(set_prior("p1", class = "sd", coef = "sexfemale", group = "patient"),
-                                    set_prior("p2", class = "sd", coef = "age", group = "patient")),
+                                  set_prior("p2", class = "sd", coef = "age", group = "patient")),
                                   formula = time ~ age + (sex+age|patient),  
-                                  family = "exponential", data = kidney)[10, 1],
+                                  family = "exponential", data = kidney)[11, ],
                     prior_frame(prior = "p1", class = "sd", 
-                                coef = "sexfemale", group = "1")[1, 1])
+                                coef = "sexfemale", group = "1")[1, ])
   
   expect_equivalent(check_prior(set_prior("cauchy(0,1)", class = "sigma"), 
-                           formula = rating ~ 1, family = "cauchy", data = inhaler)[3, ],
+                                formula = rating ~ 1, family = "cauchy", data = inhaler)[4, ],
                     prior_frame("cauchy(0,1)", class = "sigma"))
   
   expect_equivalent(check_prior(c(set_prior("p1", class = "ar"),
                                 set_prior("p2", class = "ma")),
                            formula = count ~ Trt_c, data = epilepsy, 
-                           autocor = cor.arma(p = 1, q = 2))[c(1,5), ],
+                           autocor = cor.arma(p = 1, q = 2))[c(1, 6), ],
                     prior_frame(c("p1", "p2"), class = c("ar", "ma")))
 })
 
