@@ -495,7 +495,7 @@ compare_ic <- function(x, ic = c("waic", "loo")) {
   for (i in 1:(n_models - 1)) {
     for (j in (i + 1):n_models) {
       temp <- loo::compare(x[[j]], x[[i]])
-      compare_matrix[n, ] <- c(-2 * temp$elpd_diff, 2 * temp$se) 
+      compare_matrix[n, ] <- c(-2 * temp[["elpd_diff"]], 2 * temp[["se"]]) 
       rnames[n] <- paste(names(x)[i], "-", names(x)[j])
       n <- n + 1
     }
