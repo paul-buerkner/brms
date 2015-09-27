@@ -736,11 +736,12 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   ee <- extract_effects(object$formula, family = object$family)
   
   family <- object$family
-  if (object$link == "log" && family == "gaussian" && length(ee$response) == 1) 
+  if (object$link == "log" && family == "gaussian" && length(ee$response) == 1) {
     family <- "lognormal"
-  else if (family == "gaussian" && length(ee$response) > 1)
+  } else if (family == "gaussian" && length(ee$response) > 1) {
     family <- "multinormal"
-  is_categorical <- family %in% c("categorical", "cumulative", 
+  }
+  is_catordinal <- family %in% c("categorical", "cumulative", 
                                   "sratio", "cratio", "acat")
   
   # use newdata if defined
@@ -769,16 +770,16 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   }
   
   # call predict functions
-  predict_fun <- get(paste0("predict_",family))
+  predict_fun <- get(paste0("predict_", family))
   out <- do.call(cbind, lapply(1:ncol(samples$eta), function(n) 
     do.call(predict_fun, list(n = n, data = data, samples = samples, 
                               link = object$link))))
-  if (!is.null(transform) && !is_categorical) 
+  if (!is.null(transform) && !is_catordinal) 
     out <- do.call(transform, list(out))
   
-  if (summary && !is_categorical) {
+  if (summary && !is_catordinal) {
     out <- get_summary(out, probs = probs)
-  } else if (summary && is_categorical) { 
+  } else if (summary && is_catordinal) { 
     # compute frequencies of categories for categorical and ordinal models
     out <- get_table(out, levels = 1:max(data$max_obs)) 
   }
@@ -836,27 +837,30 @@ logLik.brmsfit <- function(object, ...) {
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
   ee <- extract_effects(object$formula, family = object$family)
-  if (object$link == "log" && object$family == "gaussian" && length(ee$response) == 1) 
-    object$family <- "lognormal"
-  if (object$family == "gaussian" && length(ee$response) > 1)
-    object$family <- "multinormal"
+  family <- object$family
+  if (object$link == "log" && family == "gaussian" && length(ee$response) == 1) {
+    family <- "lognormal"
+  } else if (family == "gaussian" && length(ee$response) > 1) {
+    family <- "multinormal"
+  }
   
   samples <- list(eta = linear_predictor(object))
-  if (object$family %in% c("gaussian", "student", "cauchy", "lognormal", "multinormal") 
+  if (family %in% c("gaussian", "student", "cauchy", "lognormal", "multinormal") 
       && !is.formula(ee$se)) 
     samples$sigma <- as.matrix(posterior_samples(object, pars = "^sigma_"))
-  if (object$family == "student") 
+  if (family == "student") 
     samples$nu <- as.matrix(posterior_samples(object, pars = "^nu$"))
-  if (object$family %in% c("gamma", "weibull", "negbinomial", "inverse.gaussian")) 
+  if (family %in% c("gamma", "weibull", "negbinomial", "inverse.gaussian")) 
     samples$shape <- as.matrix(posterior_samples(object, pars = "^shape$"))
-  if (object$family == "multinormal") {
+  if (family == "multinormal") {
     samples$rescor <- as.matrix(posterior_samples(object, pars = "^rescor_"))
     samples$Sigma <- get_cov_matrix(sd = samples$sigma, cor = samples$rescor)$cov
     message(paste("Computing pointwise log-likelihood of multinormal distribution. \n",
                   "This may take a while."))
   }
+  
   standata <- standata(object)
-  loglik_fun <- get(paste0("loglik_",object$family))
+  loglik_fun <- get(paste0("loglik_", family))
   call_loglik_fun <- function(n) {
     do.call(loglik_fun, list(n = n, data = standata, samples = samples, 
                              link = object$link)) 

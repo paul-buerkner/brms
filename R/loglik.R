@@ -63,16 +63,18 @@ loglik_cauchy <- function(n, data, samples, link) {
 }
 
 loglik_lognormal <- function(n, data, samples, link) {
+  # link is currently ignored for lognormal models
+  # as 'identity' is the only valid link
   sigma <- if (!is.null(samples$sigma)) samples$sigma
            else data$sigma
   out <- if (is.null(data$cens) || data$cens[n] == 0) {
     dlnorm(data$Y[n], meanlog = samples$eta[, n], 
            sdlog = sigma, log = TRUE)
   } else if (data$cens[n] == 1) {
-    plnorm(data$Y[n], meanlog = ilink(samples$eta[, n], link), 
+    plnorm(data$Y[n], meanlog = samples$eta[, n], 
            sdlog = sigma, lower.tail = FALSE, log.p = TRUE)
   } else if (data$cens[n] == -1) {
-    plnorm(data$Y[n], meanlog = ilink(samples$eta[, n], link), 
+    plnorm(data$Y[n], meanlog = samples$eta[, n], 
            sdlog = sigma, log.p = TRUE)
   }
   if ("weights" %in% names(data)) 

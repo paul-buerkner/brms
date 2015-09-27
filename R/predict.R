@@ -34,6 +34,8 @@ predict_lognormal <- function(n, data, samples, link) {
 }
 
 predict_multinormal <- function(n, data, samples, link) {
+  # link is currently ignored for lognormal models
+  # as 'identity' is the only valid link
   nobs <- data$N_trait * data$K_trait
   do.call(rbind, lapply(1:nrow(samples$eta), function(i) 
     rmultinormal(1, Sigma = samples$Sigma[i,,],

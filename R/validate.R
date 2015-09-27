@@ -196,10 +196,10 @@ family.character <- function(object, link = NA, ...) {
     family <- "gaussian"
   if (family == "multigaussian") 
     stop("family 'multigaussian' is deprecated. Use family 'gaussian' instead")
-  okFamilies <- c("gaussian", "student", "cauchy", "inverse.gaussian",
+  okFamilies <- c("gaussian", "student", "cauchy", 
                   "binomial", "bernoulli", "categorical", 
                   "poisson", "negbinomial", "geometric", 
-                  "gamma","weibull", "exponential", 
+                  "gamma", "weibull", "exponential", "inverse.gaussian", 
                   "cumulative", "cratio", "sratio", "acat")
   if (!family %in% okFamilies)
     stop(paste(family, "is not a supported family. Supported families are: \n",
