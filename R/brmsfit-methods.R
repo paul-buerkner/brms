@@ -293,13 +293,15 @@ print.brmsfit <- function(x, digits = 2, ...) {
 #' results included in a \code{brmsfit} object.
 #'
 #' @param object An object of class \code{brmsfit}
+#' @param waic logical; indicating if the WAIC should be computed
+#'   (this will take some time for larger models)
 #' @param ... Other potential arguments
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
 #' @method summary brmsfit
 #' @export
-summary.brmsfit <- function(object, ...) {
+summary.brmsfit <- function(object, waic = TRUE, ...) {
   ee <- extract_effects(object$formula, family = object$family)
   formula <- update_formula(object$formula, partial = object$partial)
   out <- brmssummary(formula = formula,
@@ -316,8 +318,7 @@ summary.brmsfit <- function(object, ...) {
     out$n.warmup <- attr(object$fit@sim$samples[[1]],"args")$warmup
     out$n.thin <- attr(object$fit@sim$samples[[1]],"args")$thin
     out$sampler <- attr(object$fit@sim$samples[[1]],"args")$sampler_t
-    if (length(ee$response) == 1) 
-      out$WAIC <- WAIC(object)$waic
+    if (waic) out$WAIC <- WAIC(object)$waic
     
     pars <- parnames(object)
     meta_pars <- object$fit@sim$pars_oi
