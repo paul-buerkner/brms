@@ -302,7 +302,7 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
           gf <- get(paste0("lev_",id), data)  
         }
       } else {  # implies brms <= 0.4.1
-        Z <- get(paste0("Z_",group[i]), data)
+        Z <- as.matrix(get(paste0("Z_",group[i]), data))
         gf <- get(group[i], data)
       }
       r <- posterior_samples(x, pars = paste0("^r_",group[i],"\\["))
