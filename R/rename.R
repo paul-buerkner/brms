@@ -42,9 +42,12 @@ rename_pars <- function(x) {
   
   # order parameter samples after parameter class
   chains <- length(x$fit@sim$samples) 
-  all_class <- c("b", "bp", "ar", "ma", "sd", "cor", "sigma", "rescor", 
-                 "nu", "shape", "delta", "r", "prior", "lp")
-  class <- regmatches(x$fit@sim$fnames_oi, regexpr("^[^_\\[]+",  x$fit@sim$fnames_oi))
+  all_class <- c("b_Intercept", "b", "bp", "ar", "ma", "sd", "cor", 
+                 "sigma", "rescor", "nu", "shape", "delta", "r", "prior", "lp")
+  class <- regmatches(x$fit@sim$fnames_oi, regexpr("^[^_\\[]+", x$fit@sim$fnames_oi))
+  # make sure that the fixed effects intercept comes first
+  pos_intercept <- which(grepl("^b_Intercept($|\\[)", x$fit@sim$fnames_oi))
+  class[pos_intercept] <- "b_Intercept"
   ordered <- order(factor(class, levels = all_class))
   x$fit@sim$fnames_oi <- x$fit@sim$fnames_oi[ordered]
   for (i in 1:chains) {
@@ -52,6 +55,9 @@ rename_pars <- function(x) {
     x$fit@sim$samples[[i]] <- keep_attr(x$fit@sim$samples[[i]], ordered)
   }
   mclass <- regmatches(x$fit@sim$pars_oi, regexpr("^[^_]+", x$fit@sim$pars_oi))
+  # make sure that the fixed effects intercept comes first
+  pos_intercept <- which(grepl("^b_Intercept($|\\[)", x$fit@sim$pars_oi))
+  mclass[pos_intercept] <- "b_Intercept"
   ordered <- order(factor(mclass, levels = all_class))
   x$fit@sim$dims_oi <- x$fit@sim$dims_oi[ordered]
   x$fit@sim$pars_oi <- names(x$fit@sim$dims_oi)
