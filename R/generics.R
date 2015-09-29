@@ -320,7 +320,7 @@ par.names <- function(x, ...)
 #' 
 #' @param x A fitted model object typically of class \code{brmsfit}. 
 #' @param ... Optionally more fitted model objects.
-#' @param compare A flag indicating if the WAICs of the models should be compared to each other
+#' @param compare A flag indicating if the WAICs of the models should be compared to each other.
 #' 
 #' @details When comparing models fitted to the same data, the smaller the WAIC, the better the fit.
 #' @return If just one object is provided, an object of class \code{ic}. 
@@ -363,7 +363,11 @@ WAIC <- function(x, ..., compare = TRUE)
 #' @aliases LOO.brmsfit
 #' 
 #' @inheritParams WAIC
-#' @param compare A flag indicating if the LOOs of the models should be compared to each other
+#' @param cores The number of cores to use for parallelization. 
+#'   This can be set for an entire R session by \code{options(loo.cores = NUMBER)}. 
+#'   The default is \code{\link[parallel:detectCores]{detectCores()}}.
+#' @param wcp,wtrunc Parameters used for the Pareto smoothed importance sampling. 
+#'   See \code{\link[loo:loo]{loo}} for details.
 #' 
 #' @details When comparing models fitted to the same data, the smaller the LOO, the better the fit.
 #' @return If just one object is provided, an object of class \code{ic}. 

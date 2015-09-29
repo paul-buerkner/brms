@@ -194,6 +194,7 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
   } 
   VarCorr <- lapply(p, extract)
   names(VarCorr) <- group
+  class(VarCorr) <- "VarCorr_brmsfit"
   VarCorr
 }
 
@@ -214,7 +215,10 @@ posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,
     } else {
       pars <- all_pars[apply(sapply(pars, grepl, x = all_pars, ...), 1, any)]
     }
-  } 
+  }
+  else {
+    pars <- all_pars
+  }
   
   # get basic information on the samples 
   iter <- attr(x$fit@sim$samples[[1]],"args")$iter
@@ -811,16 +815,20 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE) {
 }
 
 #' @export
-LOO.brmsfit <- function(x, ..., compare = TRUE) {
+#' @describeIn LOO method for class \code{brmsfit}
+LOO.brmsfit <- function(x, ..., compare = TRUE,
+                        cores = getOption("loo.cores", parallel::detectCores()),
+                        wcp = 0.2, wtrunc = 3/4) {
   models <- list(x, ...)
   names <- c(deparse(substitute(x)), sapply(substitute(list(...))[-1], deparse))
   if (length(models) > 1) {
-    out <- setNames(lapply(models, calculate_ic, ic = "loo"), names)
+    out <- setNames(lapply(models, calculate_ic, ic = "loo", wcp = wcp, 
+                           wtrunc = wtrunc, cores = cores), names)
     class(out) <- c("iclist", "list")
     if (compare) 
       attr(out, "compare") <- compare_ic(out, ic = "loo")
   } else {
-    out <- calculate_ic(x, ic = "loo")
+    out <- calculate_ic(x, ic = "loo", wcp = wcp, wtrunc = wtrunc, cores = cores)
   }
   out
 }

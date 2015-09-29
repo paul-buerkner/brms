@@ -12,7 +12,7 @@ WAIC(x, ..., compare = TRUE)
 
 \item{...}{Optionally more fitted model objects.}
 
-\item{compare}{A flag indicating if the WAICs of the models should be compared to each other}
+\item{compare}{A flag indicating if the WAICs of the models should be compared to each other.}
 }
 \value{
 If just one object is provided, an object of class \code{ic}.

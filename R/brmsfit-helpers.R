@@ -460,7 +460,7 @@ expand_matrix <- function(A, x) {
     return(v)}, v = v))
 }
 
-calculate_ic <- function(x, ic = c("waic", "loo")) {
+calculate_ic <- function(x, ic = c("waic", "loo"), ...) {
   # compute WAIC and LOO using the 'loo' package
   #
   # Args:
@@ -473,7 +473,9 @@ calculate_ic <- function(x, ic = c("waic", "loo")) {
   ee <- extract_effects(x$formula)
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples") 
-  IC <- do.call(eval(parse(text = paste0("loo::",ic))), list(logLik(x)))
+  args <- list(x = logLik(x))
+  if (ic == "loo") args <- c(args, ...)
+  IC <- do.call(eval(parse(text = paste0("loo::",ic))), args)
   class(IC) <- c("ic", "loo")
   return(IC)
 }
@@ -581,7 +583,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       newdata[[cens]] <- 0  # add irrelevant censor variables
   }
   brmdata(fit$formula, data = newdata, family =  fit$family, 
-          autocor =  fit$autocor, partial =  fit$partial, newdata = TRUE)
+          autocor =  fit$autocor, partial =  fit$partial, 
+          newdata = TRUE, keep_intercept = TRUE)
 }
 
 find_names <- function(x) {
@@ -688,15 +691,43 @@ print.brmssummary <- function(x, digits = 2, ...) {
                "crude measure of effective sample size, and Rhat is the potential scale \n",
                "reduction factor on split chains (at convergence, Rhat = 1)."))
   }
-}  
+}
+
+as.data.frame.VarCorr_brmsfit <- function(x, ...) {
+  # this method is under development
+  estimates <- colnames(x[[1]]$sd)
+  groups <- names(x)
+  n_groups <- length(groups)
+  names_coef <- lapply(x, function(y) rownames(y$sd))
+  groups_col <- unlist(lapply(1:n_groups, function(i) 
+    c(groups[i], rep("", length(names_coef[[i]]) - 1))))
+  # basic data.frame to be used in fill_base_frame
+  base_frame <- as.data.frame(matrix("", nrow = length(groups_col), ncol = 4))
+  names(base_frame) <- c("Group", "Name", "Std.Dev", "Cor")
+  base_frame[, 1:2] <- cbind(groups_col, unlist(names_coef))
+  
+  fill_base_frame <- function(estimate) {
+    # fills the base_frame with SD and COR estimates
+    # Args:
+    #   estimate: The estimate being applied on the SD and COR parameters
+    base_frame
+  }
+  
+  out <- do.call(rbind, lapply(estimates, fill_base_frame))
+  estimates_col <- unlist(lapply(estimates, function(e)
+    c(e, rep("", length(groups_col) - 1))))
+  out <- cbind(estimates_col, out)
+  names(out)[1] <- "Estimates"
+  out
+}
 
 #' @export
 print.brmshypothesis <- function(x, digits = 2, ...) {
   cat(paste0("Hypothesis Tests for class ", x$class, ":\n"))
-  x$hypothesis[,1:5] <- round(x$hypothesis[,1:5], digits = digits)
+  x$hypothesis[, 1:5] <- round(x$hypothesis[, 1:5], digits = digits)
   print(x$hypothesis, quote = FALSE)
   cat(paste0("---\n'*': The expected value under the hypothesis lies outside the ",
-             (1-x$alpha)*100,"% CI."))
+             (1 - x$alpha) * 100, "% CI."))
 }
 
 #' @export
