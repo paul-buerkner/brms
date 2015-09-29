@@ -106,16 +106,18 @@ test_that("Test that check_prior performs correct renaming", {
 
 
 test_that("Test that check_prior is backwards compatible", { 
-  prior <- check_prior(list(b_carry = "normal(0,1)", nu = "gamma(1,1)"), family = "student",
-                       formula = rating ~ carry + (1+treat|subject), data = inhaler)
+  prior <- suppressWarnings(check_prior(
+    list(b_carry = "normal(0,1)", nu = "gamma(1,1)"), 
+    family = "student", formula = rating ~ carry + (1+treat|subject), 
+    data = inhaler))
   target <- prior_frame(prior = c("normal(0,1)", "gamma(1,1)"),
                         class = c("b", "nu"), coef = c("carry", ""))
   expect_true(length(which(duplicated(rbind(prior, target)))) == 2)
   
-  prior <- check_prior(list(sd_subject_treat = "normal(0,1)", 
-                            Lrescor = "lkj_corr_cholesky(1)"), 
-                       formula = cbind(rating, carry) ~ treat + (1+treat|subject), 
-                       data = inhaler, family = "gaussian")
+  prior <- suppressWarnings(check_prior(
+    list(sd_subject_treat = "normal(0,1)", Lrescor = "lkj_corr_cholesky(1)"), 
+    formula = cbind(rating, carry) ~ treat + (1+treat|subject), 
+    data = inhaler, family = "gaussian"))
   target <- prior_frame(prior = c("normal(0,1)", "lkj_corr_cholesky(1)"),
                         class = c("sd", "Lrescor"), coef = c("treat", ""),
                         group = c("1", ""))

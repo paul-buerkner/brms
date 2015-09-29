@@ -68,7 +68,7 @@ test_that("Test that brmdata returns correct data names for addition and partial
                c("N","Y","K","X","trials","max_obs"))
   expect_equal(names(brmdata(y | trials(10) ~ x, family = "binomial", data = data)), 
                c("N","Y","K","X","trials","max_obs"))
-  expect_equal(names(brmdata(y | cat(t) ~ x, family = "acat", data = data)), 
+  expect_equal(names(brmdata(y | cat(11) ~ x, family = "acat", data = data)), 
                c("N","Y","K","X","ncat","max_obs"))
   expect_equal(names(brmdata(y | cat(10) ~ x, family = "cumulative", data = data)), 
                c("N","Y","K","X","ncat","max_obs"))
@@ -124,7 +124,7 @@ test_that("Test that brmdata returns correct values for addition arguments", {
   expect_equal(brmdata(y | trials(10) ~ 1, data = data.frame(y = 1:9), family = "binomial")$max_obs, 10)
   expect_equal(brmdata(y | trials(c) ~ 1, data = data.frame(y = 1:9, c = 11:19), 
                         family = "binomial")$max_obs, 11:19)
-  expect_equal(brmdata(y | cat(c) ~ 1, data = data.frame(y = 1:9, c = 11:19), 
+  expect_equal(brmdata(y | cat(19) ~ 1, data = data.frame(y = 1:9, c = 11:19), 
                         family = "categorical")$max_obs, 19)
 })
 
