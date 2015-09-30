@@ -82,8 +82,14 @@ test_that("Test that brm can be run and all S3 methods have reasonable ouputs", 
   # standata
   expect_equal(names(standata(fit)),
                c("N", "Y", "K", "X", "J_1", "N_1", "K_1", "Z_1", "NC_1"))
-  # summary (check that it can be run)
+  # summary
   .summary <- summary(fit)
+  expect_true(is.numeric(.summary$fixed))
+  expect_equal(rownames(.summary$fixed), c("Intercept", "log_Age_c"))
+  expect_equal(colnames(.summary$fixed), 
+               c("Estimate", "Est.Error", "l-95% CI", "u-95% CI", "Eff.Sample", "Rhat"))
+  expect_equal(rownames(.summary$random$visit), c("sd(Intercept)"))
+  expect_true(is.numeric(.summary$WAIC))
   # VarCorr
   vc <- VarCorr(fit)
   expect_equal(names(vc), "visit")
