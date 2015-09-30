@@ -380,7 +380,7 @@ ranef_predictor <- function(Z, gf, r) {
   sort_levels <- ulapply(1:max_levels, function(l) seq(l, ncol(r), max_levels))
   if (length(levels) < max_levels) {
     # if only a subset of levels is provided (only for newdata)
-    take_levels <- ulapply(levels, function(l) ((l-1) * nranef + 1):(l * nranef))
+    take_levels <- ulapply(levels, function(l) ((l - 1) * nranef + 1):(l * nranef))
     eta <- as.matrix(r[, sort_levels])[, take_levels] %*% t(Z[, take_levels])
   } else {
     eta <- as.matrix(r[, sort_levels]) %*% t(Z)
@@ -411,8 +411,8 @@ ma_predictor <- function(data, ma, eta, link) {
     eta[, n] <- eta[, n] + apply(ma * Ema[, , n], 1, sum)
     e[, n] <- Y[n] - eta[, n]
     if (n < N) {
-      I <- which(n < N & tg[n+1+K] == tg[n+1+K-Ks])
-      Ema[, I, n+1] <- e[, n+1-I]
+      I <- which(n < N & tg[n + 1 + K] == tg[n + 1 + K - Ks])
+      Ema[, I, n + 1] <- e[, n + 1 - I]
     }
   }
   eta
@@ -428,8 +428,8 @@ partial_predictor <- function(Xp, p, ncat) {
   #
   # @return linear predictor of partial effects as a 3D array (not as a matrix)
   ncat <- max(ncat)
-  etap <- array(0, dim = c(nrow(p), nrow(Xp), ncat-1))
-  indices <- seq(1, (ncat-1) * ncol(Xp), ncat-1) - 1
+  etap <- array(0, dim = c(nrow(p), nrow(Xp), ncat - 1))
+  indices <- seq(1, (ncat - 1) * ncol(Xp), ncat - 1) - 1
   for (k in 1:(ncat-1)) {
     etap[, , k] <- as.matrix(p[, indices + k]) %*% t(as.matrix(Xp))
   }
@@ -699,8 +699,8 @@ as.data.frame.VarCorr_brmsfit <- function(x, ...) {
   groups <- names(x)
   n_groups <- length(groups)
   names_coef <- lapply(x, function(y) rownames(y$sd))
-  groups_col <- unlist(lapply(1:n_groups, function(i) 
-    c(groups[i], rep("", length(names_coef[[i]]) - 1))))
+  groups_col <- ulapply(1:n_groups, function(i) 
+    c(groups[i], rep("", length(names_coef[[i]]) - 1)))
   # basic data.frame to be used in fill_base_frame
   base_frame <- as.data.frame(matrix("", nrow = length(groups_col), ncol = 4))
   names(base_frame) <- c("Group", "Name", "Std.Dev", "Cor")
@@ -714,8 +714,8 @@ as.data.frame.VarCorr_brmsfit <- function(x, ...) {
   }
   
   out <- do.call(rbind, lapply(estimates, fill_base_frame))
-  estimates_col <- unlist(lapply(estimates, function(e)
-    c(e, rep("", length(groups_col) - 1))))
+  estimates_col <- ulapply(estimates, function(e)
+    c(e, rep("", length(groups_col) - 1)))
   out <- cbind(estimates_col, out)
   names(out)[1] <- "Estimates"
   out
