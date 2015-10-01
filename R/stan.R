@@ -19,7 +19,9 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
   is_skewed <- family %in% c("gamma", "weibull", "exponential")
   is_count <- family %in% c("poisson", "negbinomial", "geometric")
   is_multi <- family == "multinormal"
-  is_hurdle <- family %in% c("hurdle_poisson")
+  is_hurdle <- family %in% c("hurdle_poisson", "hurdle_negbinomial")
+  has_shape <- family %in% c("inverse.gaussian", "gamma", "weibull", 
+                             "negbinomial", "hurdle_negbinomial")
   
   if (family == "categorical") {
     X <- data.frame()
@@ -89,7 +91,7 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
       stan_prior(class = "ar", prior = prior),
     if (autocor$q) 
       stan_prior(class = "ma", prior = prior),
-    if (family %in% c("inverse.gaussian", "gamma", "weibull", "negbinomial")) 
+    if (has_shape) 
       stan_prior(class = "shape", prior = prior),
     if (family == "student") 
       stan_prior(class = "nu", prior = prior),
@@ -197,7 +199,7 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
       paste0("  # parameters for multinormal models \n",
              "  vector<lower=0>[K_trait] sigma; \n",
              "  cholesky_factor_corr[K_trait] Lrescor; \n"),
-    if (family %in% c("gamma", "weibull", "negbinomial", "inverse.gaussian")) 
+    if (has_shape) 
       "  real<lower=0> shape;  # shape parameter constant across observations \n",
     text_rngprior$par,
     "} \n")
@@ -367,7 +369,7 @@ stan_llh <- function(family, link, add = FALSE,
   is_count <- family %in% c("poisson","negbinomial", "geometric")
   is_skewed <- family %in% c("gamma","exponential","weibull")
   is_binary <- family %in% c("binomial", "bernoulli")
-  is_hurdle <- family %in% c("hurdle_poisson")
+  is_hurdle <- family %in% c("hurdle_poisson", "hurdle_negbinomial")
   
   simplify <- !cens && (is_binary && link == "logit" || is_count && link == "log" ||
                 family %in% c("cumulative", "categorical") && link == "logit" && !add) 
@@ -408,7 +410,9 @@ stan_llh <- function(family, link, add = FALSE,
       exponential = c("exponential", paste0("eta",n)),
       weibull = c("weibull", paste0("shape, eta",n)), 
       categorical = c("categorical", "p[n]"),
-      hurdle_poisson = c("hurdle_poisson", "eta[n], eta[n + N_trait]"))
+      hurdle_poisson = c("hurdle_poisson", "eta[n], eta[n + N_trait]"),
+      hurdle_negbinomial = c("hurdle_neg_binomial_2", 
+                             "eta[n], eta[n + N_trait], shape"))
   }
   if (family == "inverse.gaussian") {
     # required as inv_gaussian_log has 2 additional arguments
@@ -455,7 +459,7 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE, paref = NULL,
   is_cat <- family == "categorical"
   is_skewed <- family %in% c("gamma", "weibull", "exponential")
   is_count <- family %in% c("poisson", "negbinomial", "geometric",
-                            "hurdle_poisson")
+                            "hurdle_poisson", "hurdle_negbinomial")
   is_binary <- family %in% c("binomial", "bernoulli")
   is_multi <- family == "multinormal"
   
@@ -636,7 +640,7 @@ stan_function <- function(family = "gaussian", link = "identity",
       "  } \n")
   } else if (family == "hurdle_poisson") {
     out <- paste0(out, 
-      "  /* hurdle poisson log-PDF of a single response with canonical links \n",
+      "  /* hurdle poisson log-PDF of a single response \n",
       "   * Args: \n",
       "   *   y: the response value \n",
       "   *   eta_count: linear predictor for poisson part \n",
@@ -651,6 +655,27 @@ stan_function <- function(family = "gaussian", link = "identity",
       "       return bernoulli_logit_log(0, eta_hurdle) + \n", 
       "              poisson_log_log(y, eta_count) - \n",
       "              log(1 - exp(-exp(eta_count))); \n",
+      "     } \n",
+      "   } \n")
+  } else if (family == "hurdle_negbinomial") {
+    out <- paste0(out, 
+      "  /* hurdle negative binomial log-PDF of a single response \n",
+      "   * Args: \n",
+      "   *   y: the response value \n",
+      "   *   eta_count: linear predictor for negative binomial part \n",
+      "   *   eta_hurdle: linear predictor for hurdle part \n",
+      "   *   shape: shape parameter of negative binomial distribution \n",
+      "   * Returns: \n", 
+      "   *   a scalar to be added to the log posterior \n",
+      "   */ \n",
+      "   real hurdle_neg_binomial_2_log(int y, real eta_count, real eta_hurdle, \n", 
+      "                                  real shape) { \n",
+      "     if (y == 0) { \n",
+      "       return bernoulli_logit_log(1, eta_hurdle); \n",
+      "     } else { \n",
+      "       return bernoulli_logit_log(0, eta_hurdle) + \n", 
+      "              neg_binomial_2_log_log(y, eta_count, shape) - \n",
+      "              neg_binomial_2_ccdf_log(1, exp(eta_count), shape); \n",
       "     } \n",
       "   } \n")
   }

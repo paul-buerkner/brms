@@ -8,7 +8,7 @@ melt <- function(data, response, family) {
   #
   # Returns:
   #   data in long format 
-  is_hurdle <- family %in% c("hurdle_poisson")
+  is_hurdle <- family %in% c("hurdle_poisson", "hurdle_negbinomial")
   nresp <- length(response)
   if (nresp > 1 && family == "gaussian" || nresp == 2 && is_hurdle) {
     if (!is(data, "data.frame"))
@@ -115,7 +115,7 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
   is_ordinal <- family %in% c("cumulative","cratio","sratio","acat")
   is_count <- family %in% c("poisson", "negbinomial", "geometric")
   is_skew <- family %in% c("gamma", "weibull", "exponential")
-  is_hurdle <- family %in% c("hurdle_poisson")
+  is_hurdle <- family %in% c("hurdle_poisson", "hurdle_negbinomial")
   if (is.null(autocor)) autocor <- cor_arma()
   if (!is(autocor,"cor_brms")) stop("cor must be of class cor_brms")
   
