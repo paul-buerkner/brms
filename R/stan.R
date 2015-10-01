@@ -14,14 +14,14 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
   ee <- extract_effects(formula = formula, family = family, partial = partial) 
   if (family == "gaussian" && length(ee$response) > 1)
     family <- "multinormal"
-  is_linear <- family %in% c("gaussian", "student", "cauchy")
-  is_ordinal <- family %in% c("cumulative", "cratio", "sratio", "acat") 
-  is_skewed <- family %in% c("gamma", "weibull", "exponential")
-  is_count <- family %in% c("poisson", "negbinomial", "geometric")
+  # flags to indicate of which type family is
+  is_linear <- indicate_linear(family)
+  is_ordinal <- indicate_ordinal(family)
+  is_skewed <- indicate_skewed(family)
+  is_count <- indicate_count(family)
+  is_hurdle <- indicate_hurdle(family)
   is_multi <- family == "multinormal"
-  is_hurdle <- family %in% c("hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma")
-  has_shape <- family %in% c("inverse.gaussian", "gamma", "weibull", "negbinomial", 
-                             "hurdle_negbinomial", "hurdle_gamma")
+  has_shape <- indicate_shape(family)
   
   if (family == "categorical") {
     X <- data.frame()
@@ -367,16 +367,15 @@ stan_llh <- function(family, link, add = FALSE,
   #
   # Returns:
   #   a string containing the likelihood of the model in stan language
-  is_cat <- family %in% c("cumulative", "cratio", "sratio", "acat", "categorical")
-  is_count <- family %in% c("poisson","negbinomial", "geometric")
-  is_skewed <- family %in% c("gamma","exponential","weibull")
-  is_binary <- family %in% c("binomial", "bernoulli")
-  is_hurdle <- family %in% c("hurdle_poisson", "hurdle_negbinomial", 
-                             "hurdle_gamma")
+  is_catordinal <- indicate_ordinal(family) || family == "categorical"
+  is_count <- indicate_count(family)
+  is_skewed <- indicate_skewed(family)
+  is_binary <- indicate_binary(family)
+  is_hurdle <- indicate_hurdle(family)
   
   simplify <- !cens && (is_binary && link == "logit" || is_count && link == "log" ||
                 family %in% c("cumulative", "categorical") && link == "logit" && !add) 
-  n <- ifelse(cens || weights || is_cat || is_hurdle, "[n]", "")
+  n <- ifelse(cens || weights || is_catordinal || is_hurdle, "[n]", "")
   ns <- ifelse(add && (cens || weights), "[n]", "")
   ilink <- ifelse(cens && (is_binary && link == "logit" || is_count && link == "log"), 
                   stan_ilink(link), "")
@@ -393,7 +392,7 @@ stan_llh <- function(family, link, add = FALSE,
       binomial = c("binomial_logit", paste0("trials",ns,", eta",n)), 
       bernoulli = c("bernoulli_logit", paste0("eta",n)))
   } else {
-    llh.pre <- switch(ifelse(is_cat, "categorical", 
+    llh.pre <- switch(ifelse(is_catordinal, "categorical", 
                              ifelse(family == "gaussian" && link == "log", 
                                     "lognormal", family)),
       gaussian = c("normal", lin.args),
@@ -458,13 +457,13 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE, paref = NULL,
   # 
   # Return:
   #   the linear predictor in stan language
-  is_linear <- family %in% c("gaussian", "student", "cauchy")
-  is_ordinal <- family %in% c("cumulative", "cratio", "sratio", "acat")
+  is_linear <- indicate_linear(family)
+  is_ordinal <- indicate_ordinal(family)
   is_cat <- family == "categorical"
-  is_skewed <- family %in% c("gamma", "weibull", "exponential", "hurdle_gamma")
-  is_count <- family %in% c("poisson", "negbinomial", "geometric",
-                            "hurdle_poisson", "hurdle_negbinomial")
-  is_binary <- family %in% c("binomial", "bernoulli")
+  is_skewed <- indicate_skewed(family)
+  is_count <- indicate_count(family) || 
+              family %in% c("hurdle_poisson", "hurdle_negbinomial")
+  is_binary <- indicate_binary(family)
   is_multi <- family == "multinormal"
   
   eta <- list()
@@ -530,7 +529,7 @@ stan_ma <- function(family, link, autocor) {
   #
   # Returns:
   #   stan code for computing moving average effects
-  is_linear <- family %in% c("gaussian", "student", "cauchy")
+  is_linear <- indicate_linear(family)
   is_multi <- family == "multinormal"
   ma <- list()
   if (is(autocor, "cor_arma") && autocor$q) {
@@ -782,7 +781,7 @@ stan_ordinal <- function(family, link, partial = FALSE, threshold = "flexible") 
   #
   # Returns:
   #   A vector of strings containing the ordinal effects in stan language
-  is_ordinal <- family %in% c("cumulative", "cratio", "sratio", "acat")
+  is_ordinal <- indicate_ordinal(family)
   if (!(is_ordinal || family == "categorical")) return(list())
   ilink <- stan_ilink(link)
   th <- function(k) {

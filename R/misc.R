@@ -117,6 +117,63 @@ formula2string <- function(formula, rm = c(0, 0)) {
   x
 } 
 
+indicate_linear <- function(family) {
+  # indicate if family is for a linear model
+  if (class(family) == "family") {
+    family <- family$family
+  }
+  family %in% c("gaussian", "student", "cauchy")
+}
+
+indicate_binary <- function(family) {
+  # indicate if family is bernoulli or binomial
+  if (class(family) == "family") {
+    family <- family$family
+  }
+  family %in% c("binomial", "bernoulli")
+}
+
+indicate_ordinal <- function(family) {
+  # indicate if family is for an ordinal model
+  if (class(family) == "family") {
+    family <- family$family
+  }
+  family %in% c("cumulative", "cratio", "sratio", "acat") 
+}
+
+indicate_skewed <- function(family) {
+  # indicate if family is for model with postive skewed response
+  if (class(family) == "family") {
+    family <- family$family
+  }
+  family %in% c("gamma", "weibull", "exponential")
+}
+
+indicate_count <- function(family) {
+  # indicate if family is for a count model
+  if (class(family) == "family") {
+    family <- family$family
+  }
+  family %in% c("poisson", "negbinomial", "geometric")
+}
+
+indicate_hurdle <- function(family) {
+  # indicate if family is for a hurdle model
+  if (class(family) == "family") {
+    family <- family$family
+  }
+  family %in% c("hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma")
+}
+
+indicate_shape <- function(family) {
+  # indicate if family needs a shape parameter
+  if (class(family) == "family") {
+    family <- family$family
+  }
+  family %in% c("gamma", "weibull", "inverse.gaussian", 
+                "negbinomial", "hurdle_negbinomial", "hurdle_gamma")
+}
+
 # startup messages for brms
 .onAttach <- function(libname, pkgname) {
   packageStartupMessage(paste0(

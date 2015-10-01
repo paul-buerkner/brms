@@ -318,7 +318,7 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
     ma <- posterior_samples(x, pars = "^ma\\[")
     eta <- ma_predictor(data = data, ma = ma, eta = eta, link = x$link)
   }
-  if (x$family %in% c("cumulative", "cratio", "sratio", "acat")) {
+  if (indicate_ordinal(x$family)) {
     Intercept <- posterior_samples(x, "^b_Intercept\\[")
     if (!is.null(data$Xp) && ncol(data$Xp)) {
       p <- posterior_samples(x, paste0("^b_",colnames(data$Xp),"\\["))

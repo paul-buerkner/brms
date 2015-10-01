@@ -90,7 +90,7 @@ extract_effects <- function(formula, ..., family = NA) {
   
   # extract response variables
   x$response <- all.vars(x$all[[2]])
-  if (family %in% c("hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma")) {
+  if (indicate_hurdle(family)) {
     x$response <- c(x$response, "hurdle")
   }
   if (length(x$response) > 1) {
@@ -210,26 +210,19 @@ family.character <- function(object, link = NA, ...) {
                paste(okFamilies, collapse = ", ")))
   
   # check validity of link
-  is_linear <- family %in% c("gaussian", "student", "cauchy")
-  is_skew <- family %in% c("gamma", "weibull", "exponential")
-  is_cat <- family %in% c("cumulative", "cratio", "sratio", 
-                          "acat", "binomial", "bernoulli")                    
-  is_count <- family %in% c("poisson", "negbinomial", "geometric")
-  is_hurdle <- family %in% c("hurdle_poisson", "hurdle_negbinomial",
-                             "hurdle_gamma")
-  if (is_linear) {
+  if (indicate_linear(family)) {
     okLinks <- c("identity", "log", "inverse")
   } else if (family == "inverse.gaussian") {
     okLinks <- c("1/mu^2", "inverse", "identity", "log")
-  } else if (is_count) {
+  } else if (indicate_count(family)) {
     okLinks <- c("log", "identity", "sqrt")
-  } else if (is_cat) {
+  } else if (indicate_binary(family) || indicate_ordinal(family)) {
     okLinks <- c("logit", "probit", "probit_approx", "cloglog", "cauchit")
   } else if (family == "categorical") {
     okLinks <- c("logit")
-  } else if (is_skew) {
+  } else if (indicate_skewed(family)) {
     okLinks <- c("log", "identity", "inverse")
-  } else if (is_hurdle)
+  } else if (indicate_hurdle(family))
     okLinks <- c("log")
   if (is.na(link)) {
     link <- okLinks[1]
@@ -573,7 +566,7 @@ get_prior <- function(formula, data = NULL, family = "gaussian",
     }
   }
   # handle additional parameters
-  is_ordinal <- family %in% c("cumulative", "sratio", "cratio", "acat") 
+  is_ordinal <- indicate_ordinal(family)
   if (is(autocor, "cor_arma") && autocor$p) 
     prior <- rbind(prior, prior_frame(class = "ar"))
   if (is(autocor, "cor_arma") && autocor$q) 
@@ -669,7 +662,7 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
   if (length(Int_index)) {
     Int_prior <- prior[Int_index, ] 
     # Intercepts have their own internal parameter class
-    is_ordinal <- family %in% c("cumulative", "sratio", "cratio", "acat") 
+    is_ordinal <- indicate_ordinal(family)
     Int_prior$class <- ifelse(is_ordinal && threshold == "equidistant", 
                               "b_Intercept1", "b_Intercept")
     Int_prior$coef <- ""

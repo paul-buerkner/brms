@@ -8,17 +8,16 @@ melt <- function(data, response, family) {
   #
   # Returns:
   #   data in long format 
-  is_hurdle <- family %in% c("hurdle_poisson", "hurdle_negbinomial",
-                             "hurdle_gamma")
+  is_hurdle <- indicate_hurdle(family)
   nresp <- length(response)
   if (nresp > 1 && family == "gaussian" || nresp == 2 && is_hurdle) {
     if (!is(data, "data.frame"))
       stop("data must be a data.frame for multivarite models")
     if ("trait" %in% names(data))
       stop("trait is a resevered variable name in multivariate models")
-    if (is_hurdle && "hurdle" %in% names(data))
-      stop("hurdle is a resevered variable name in hurdle models")
     if (is_hurdle) {
+      if ("hurdle" %in% names(data))
+        stop("hurdle is a resevered variable name in hurdle models")
       # dummy variable not actually used in Stan
       data$hurdle <- rep(0, nrow(data))
     }
@@ -115,12 +114,10 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
   #                   should be kept in the FE design matrix
   dots <- list(...)
   family <- check_family(family)$family
-  is_linear <- family %in% c("gaussian", "student", "cauchy")
-  is_ordinal <- family %in% c("cumulative","cratio","sratio","acat")
-  is_count <- family %in% c("poisson", "negbinomial", "geometric")
-  is_skew <- family %in% c("gamma", "weibull", "exponential")
-  is_hurdle <- family %in% c("hurdle_poisson", "hurdle_negbinomial",
-                             "hurdle_gamma")
+  is_linear <- indicate_linear(family)
+  is_ordinal <- indicate_ordinal(family)
+  is_count <- indicate_count(family)
+  is_hurdle <- indicate_hurdle(family)
   if (is.null(autocor)) autocor <- cor_arma()
   if (!is(autocor,"cor_brms")) stop("cor must be of class cor_brms")
   
@@ -170,7 +167,7 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
       stop(paste("family", family, "expects either integers or",
                  "ordered factors as response variables"))
     }
-  } else if (is_skew) {
+  } else if (indicate_skewed(family)) {
     if (min(standata$Y) < 0)
       stop(paste("family", family, "requires response variable to be non-negative"))
   } else if (family == "gaussian" && length(ee$response) > 1) {

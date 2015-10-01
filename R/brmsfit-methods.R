@@ -115,7 +115,8 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, ...) {
 VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
-  if (!(length(x$ranef) || x$family %in% c("gaussian", "student", "cauchy")))
+  if (!(length(x$ranef) || (indicate_linear(x$family) && 
+                            any(grepl("^sigma_", parnames(x))))))
     stop("The model does not contain covariance matrices")
 
   # extracts samples for sd, cor and cov
@@ -186,7 +187,7 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
   } 
   
   # special treatment of residuals variances in linear models
-  if (x$family %in% c("gaussian", "student", "cauchy") && !is.formula(ee$se)) {
+  if (indicate_linear(x$family) && !is.formula(ee$se)) {
     cor_pars <- get_cornames(ee$response, type = "rescor", brackets = FALSE)
     p <- lc(p, list(rnames = ee$response, sd_pars = paste0("sigma_",ee$response),
                     cor_pars = cor_pars))
@@ -341,7 +342,7 @@ summary.brmsfit <- function(object, waic = TRUE, ...) {
     spec_pars <- pars[pars %in% c("nu","shape","delta") | 
       apply(sapply(c("^sigma_", "^rescor_"), grepl, x = pars), 1, any)]
     out$spec_pars <- matrix(fit_summary$summary[spec_pars,-c(2)], ncol = 6)
-    if (object$family %in% c("gaussian", "student", "cauchy")) {
+    if (indicate_linear(object$family)) {
       spec_pars[grepl("^sigma_", spec_pars)] <- paste0("sigma(",ee$response,")")
       spec_pars[grepl("^rescor_", spec_pars)] <- get_cornames(ee$response, type = "rescor")   
     }    
@@ -586,8 +587,8 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     
   # get mu and scale it appropriately
   mu <- linear_predictor(object, newdata = data, re_formula = re_formula)
-  is_catordinal <- object$family %in% c("categorical", "cumulative", 
-                                        "sratio", "cratio", "acat")
+  is_catordinal <- indicate_ordinal(object$family) || 
+                   object$family == "categorical"
   if (scale == "response") {
     if (object$family == "binomial") {
       max_obs <- matrix(rep(data$max_obs, nrow(mu)), nrow = nrow(mu), byrow = TRUE)
@@ -652,7 +653,7 @@ residuals.brmsfit <- function(object, re_formula = NULL, type = c("ordinary", "p
   type <- match.arg(type)
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
-  if (object$family %in% c("categorical", "cumulative", "sratio", "cratio", "acat"))
+  if (indicate_ordinal(object$family) || object$family == "categorical")
     stop(paste("residuals not yet implemented for family", object$family))
   
   standata <- standata(object)
@@ -739,15 +740,8 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
   ee <- extract_effects(object$formula, family = object$family)
-  
-  family <- object$family
-  if (object$link == "log" && family == "gaussian" && length(ee$response) == 1) {
-    family <- "lognormal"
-  } else if (family == "gaussian" && length(ee$response) > 1) {
-    family <- "multinormal"
-  }
-  is_catordinal <- family %in% c("categorical", "cumulative", 
-                                  "sratio", "cratio", "acat")
+  nresp <- length(ee$response)
+  is_catordinal <- indicate_ordinal(object$family) || object$family == "categorical"
   
   # use newdata if defined
   if (is.null(newdata)) {
@@ -760,14 +754,13 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   # compute all necessary samples
   samples <- list(eta = linear_predictor(object, newdata = data,  
                                          re_formula = re_formula))
-  if (family %in% c("gaussian", "student", "cauchy", "lognormal", "multinormal") 
-      && !is.formula(ee$se))
+  if (indicate_linear(object$family) && !is.formula(ee$se))
     samples$sigma <- as.matrix(posterior_samples(object, pars = "^sigma_"))
-  if (family == "student") 
+  if (object$family == "student") 
     samples$nu <- as.matrix(posterior_samples(object, pars = "^nu$"))
-  if (family %in% c("gamma", "weibull","negbinomial", "inverse.gaussian")) 
+  if (indicate_shape(object$family)) 
     samples$shape <- as.matrix(posterior_samples(object, pars = "^shape$"))
-  if (family == "multinormal") {
+  if (object$family == "gaussian" && nresp > 1) {
     samples$rescor <- as.matrix(posterior_samples(object, pars = "^rescor_"))
     samples$Sigma <- get_cov_matrix(sd = samples$sigma, cor = samples$rescor)$cov
     message(paste("Computing posterior predictive samples of multinormal distribution. \n", 
@@ -775,6 +768,12 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   }
   
   # call predict functions
+  family <- object$family
+  if (object$link == "log" && family == "gaussian" && nresp == 1) {
+    family <- "lognormal"
+  } else if (family == "gaussian" && nresp > 1) {
+    family <- "multinormal"
+  }
   predict_fun <- get(paste0("predict_", family))
   out <- do.call(cbind, lapply(1:ncol(samples$eta), function(n) 
     do.call(predict_fun, list(n = n, data = data, samples = samples, 
@@ -846,28 +845,30 @@ logLik.brmsfit <- function(object, ...) {
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
   ee <- extract_effects(object$formula, family = object$family)
-  family <- object$family
-  if (object$link == "log" && family == "gaussian" && length(ee$response) == 1) {
-    family <- "lognormal"
-  } else if (family == "gaussian" && length(ee$response) > 1) {
-    family <- "multinormal"
-  }
+  nresp <- length(ee$response)
   
+  # extract relevant samples
   samples <- list(eta = linear_predictor(object))
-  if (family %in% c("gaussian", "student", "cauchy", "lognormal", "multinormal") 
-      && !is.formula(ee$se)) 
+  if (indicate_linear(object$family) && !is.formula(ee$se))
     samples$sigma <- as.matrix(posterior_samples(object, pars = "^sigma_"))
-  if (family == "student") 
+  if (object$family == "student") 
     samples$nu <- as.matrix(posterior_samples(object, pars = "^nu$"))
-  if (family %in% c("gamma", "weibull", "negbinomial", "inverse.gaussian")) 
+  if (indicate_shape(object$family)) 
     samples$shape <- as.matrix(posterior_samples(object, pars = "^shape$"))
-  if (family == "multinormal") {
+  if (object$family == "gaussian" && nresp > 1) {
     samples$rescor <- as.matrix(posterior_samples(object, pars = "^rescor_"))
     samples$Sigma <- get_cov_matrix(sd = samples$sigma, cor = samples$rescor)$cov
     message(paste("Computing pointwise log-likelihood of multinormal distribution. \n",
                   "This may take a while."))
   }
   
+  # prepare for calling family specific loglik functions
+  family <- object$family
+  if (object$link == "log" && family == "gaussian" && nresp == 1) {
+    family <- "lognormal"
+  } else if (family == "gaussian" && nresp > 1) {
+    family <- "multinormal"
+  }
   standata <- standata(object)
   loglik_fun <- get(paste0("loglik_", family))
   call_loglik_fun <- function(n) {

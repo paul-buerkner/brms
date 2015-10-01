@@ -29,9 +29,8 @@ brmpars <- function(formula, data = NULL, family = "gaussian",
     stop("cor must be of class cor_brms")
   ee <- extract_effects(formula = formula, family = family, partial = partial)
   data <- update_data(data, family = family, effects = ee)
-  
-  is_linear <- family %in% c("gaussian", "student", "cauchy")
-  is_ordinal <- family  %in% c("cumulative","cratio","sratio","acat")
+  is_linear <- indicate_linear(family)
+  is_ordinal <- indicate_ordinal(family)
   
   f <- colnames(get_model_matrix(ee$fixed, data, rm_intercept = is_ordinal))
   r <- lapply(lapply(ee$random, get_model_matrix, data = data), colnames)
@@ -51,7 +50,7 @@ brmpars <- function(formula, data = NULL, family = "gaussian",
     out <- c(out, "sigma", "rescor")
   if (family == "student") 
     out <- c(out,"nu")
-  if (family %in% c("gamma", "weibull", "negbinomial")) 
+  if (indicate_shape(family)) 
     out <- c(out, "shape")
   if (autocor$p > 0) 
     out <- c(out, "ar")
