@@ -19,9 +19,9 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
   is_skewed <- family %in% c("gamma", "weibull", "exponential")
   is_count <- family %in% c("poisson", "negbinomial", "geometric")
   is_multi <- family == "multinormal"
-  is_hurdle <- family %in% c("hurdle_poisson", "hurdle_negbinomial")
-  has_shape <- family %in% c("inverse.gaussian", "gamma", "weibull", 
-                             "negbinomial", "hurdle_negbinomial")
+  is_hurdle <- family %in% c("hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma")
+  has_shape <- family %in% c("inverse.gaussian", "gamma", "weibull", "negbinomial", 
+                             "hurdle_negbinomial", "hurdle_gamma")
   
   if (family == "categorical") {
     X <- data.frame()
@@ -117,19 +117,21 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
   text_data <- paste0(
     "data { \n",
     "  int<lower=1> N;  # number of observations \n", 
-    if (is_linear || is_skewed || family == "inverse.gaussian") 
+    if (is_linear || is_skewed || family == "inverse.gaussian") {
       "  vector[N] Y;  # response variable \n"
-    else if (family %in% c("binomial", "bernoulli", "categorical")
-             || is_count || is_ordinal) 
+    } else if (family %in% c("binomial", "bernoulli", "categorical") 
+             || is_count || is_ordinal) {
       "  int Y[N];  # response variable \n"
-    else if (is_multi) 
+    } else if (is_multi) {
       paste0("  int<lower=1> N_trait;  # number of observations per response \n",
              "  int<lower=1> K_trait;  # number of responses \n",  
              "  int NC_trait;  # number of residual correlations \n",
              "  vector[K_trait] Y[N_trait];  # response matrix \n")
-    else if (is_hurdle)
+    } else if (is_hurdle) {
       paste0("  int<lower=1> N_trait;  # number of observations per response \n",
-             "  int Y[N_trait];  # response variable \n"),
+             "  ", ifelse(family == "hurdle_gamma", "real", "int"),
+             " Y[N_trait];  # response variable \n")
+    },
     if (length(fixef)) 
       paste0("  int<lower=1> K;  # number of fixed effects \n", 
              "  matrix[N, K] X;  # FE design matrix \n"),
@@ -369,7 +371,8 @@ stan_llh <- function(family, link, add = FALSE,
   is_count <- family %in% c("poisson","negbinomial", "geometric")
   is_skewed <- family %in% c("gamma","exponential","weibull")
   is_binary <- family %in% c("binomial", "bernoulli")
-  is_hurdle <- family %in% c("hurdle_poisson", "hurdle_negbinomial")
+  is_hurdle <- family %in% c("hurdle_poisson", "hurdle_negbinomial", 
+                             "hurdle_gamma")
   
   simplify <- !cens && (is_binary && link == "logit" || is_count && link == "log" ||
                 family %in% c("cumulative", "categorical") && link == "logit" && !add) 
@@ -412,7 +415,8 @@ stan_llh <- function(family, link, add = FALSE,
       categorical = c("categorical", "p[n]"),
       hurdle_poisson = c("hurdle_poisson", "eta[n], eta[n + N_trait]"),
       hurdle_negbinomial = c("hurdle_neg_binomial_2", 
-                             "eta[n], eta[n + N_trait], shape"))
+                             "eta[n], eta[n + N_trait], shape"),
+      hurdle_gamma = c("hurdle_gamma", "eta[n], eta[n + N_trait], shape"))
   }
   if (family == "inverse.gaussian") {
     # required as inv_gaussian_log has 2 additional arguments
@@ -457,7 +461,7 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE, paref = NULL,
   is_linear <- family %in% c("gaussian", "student", "cauchy")
   is_ordinal <- family %in% c("cumulative", "cratio", "sratio", "acat")
   is_cat <- family == "categorical"
-  is_skewed <- family %in% c("gamma", "weibull", "exponential")
+  is_skewed <- family %in% c("gamma", "weibull", "exponential", "hurdle_gamma")
   is_count <- family %in% c("poisson", "negbinomial", "geometric",
                             "hurdle_poisson", "hurdle_negbinomial")
   is_binary <- family %in% c("binomial", "bernoulli")
@@ -478,7 +482,8 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE, paref = NULL,
                      || family == "gaussian" && link == "log"
                      || is_ordinal || family == "categorical" 
                      || is_count && link == "log" 
-                     || is_binary && link == "logit")
+                     || is_binary && link == "logit"
+                     || family == "hurdle_gamma")
   eta_ilink <- rep("", 2)
   if (eta$transform) {
     eta_ilink <- switch(family, c(paste0(ilink,"("), ")"),
@@ -678,6 +683,26 @@ stan_function <- function(family = "gaussian", link = "identity",
       "              log(1 - (shape / (exp(eta_count) + shape))^shape); \n",
       "     } \n",
       "   } \n")
+  } else if (family == "hurdle_gamma") {
+    out <- paste0(out, 
+                  "  /* hurdle gamma log-PDF of a single response \n",
+                  "   * Args: \n",
+                  "   *   y: the response value \n",
+                  "   *   eta_gamma: linear predictor for gamma part \n",
+                  "   *   eta_hurdle: linear predictor for hurdle part \n",
+                  "   *   shape: shape parameter of gamma distribution \n",
+                  "   * Returns: \n", 
+                  "   *   a scalar to be added to the log posterior \n",
+                  "   */ \n",
+                  "   real hurdle_gamma_log(real y, real eta_gamma, real eta_hurdle, \n", 
+                  "                         real shape) { \n",
+                  "     if (y == 0) { \n",
+                  "       return bernoulli_logit_log(1, eta_hurdle); \n",
+                  "     } else { \n",
+                  "       return bernoulli_logit_log(0, eta_hurdle) + \n", 
+                  "              gamma_log(y, shape / exp(eta_gamma), shape); \n",
+                  "     } \n",
+                  "   } \n")
   }
   if (kronecker) 
     out <- paste0(out,

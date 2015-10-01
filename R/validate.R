@@ -90,7 +90,7 @@ extract_effects <- function(formula, ..., family = NA) {
   
   # extract response variables
   x$response <- all.vars(x$all[[2]])
-  if (family %in% c("hurdle_poisson", "hurdle_negbinomial")) {
+  if (family %in% c("hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma")) {
     x$response <- c(x$response, "hurdle")
   }
   if (length(x$response) > 1) {
@@ -204,7 +204,7 @@ family.character <- function(object, link = NA, ...) {
                   "poisson", "negbinomial", "geometric", 
                   "gamma", "weibull", "exponential", "inverse.gaussian", 
                   "cumulative", "cratio", "sratio", "acat",
-                  "hurdle_poisson", "hurdle_negbinomial")
+                  "hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma")
   if (!family %in% okFamilies)
     stop(paste(family, "is not a supported family. Supported families are: \n",
                paste(okFamilies, collapse = ", ")))
@@ -215,7 +215,8 @@ family.character <- function(object, link = NA, ...) {
   is_cat <- family %in% c("cumulative", "cratio", "sratio", 
                           "acat", "binomial", "bernoulli")                    
   is_count <- family %in% c("poisson", "negbinomial", "geometric")
-  is_hurdle <- family %in% c("hurdle_poisson", "hurdle_negbinomial")
+  is_hurdle <- family %in% c("hurdle_poisson", "hurdle_negbinomial",
+                             "hurdle_gamma")
   if (is_linear) {
     okLinks <- c("identity", "log", "inverse")
   } else if (family == "inverse.gaussian") {
@@ -592,7 +593,7 @@ get_prior <- function(formula, data = NULL, family = "gaussian",
   if (family == "student") 
     prior <- rbind(prior, prior_frame(class = "nu", prior = "uniform(1,100)"))
   if (family %in% c("gamma", "weibull", "negbinomial", "inverse.gaussian",
-                    "hurdle_negbinomial")) 
+                    "hurdle_negbinomial", "hurdle_gamma")) 
     prior <- rbind(prior, prior_frame(class = "shape", prior = default_scale_prior))
   if (is_ordinal && threshold == "equidistant")
     prior <- rbind(prior, prior_frame(class = "delta"))
