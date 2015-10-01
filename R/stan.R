@@ -19,6 +19,7 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
   is_skewed <- family %in% c("gamma", "weibull", "exponential")
   is_count <- family %in% c("poisson", "negbinomial", "geometric")
   is_multi <- family == "multinormal"
+  is_hurdle <- family %in% c("hurdle_poisson")
   
   if (family == "categorical") {
     X <- data.frame()
@@ -39,7 +40,7 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
   
   Z <- lapply(ee$random, get_model_matrix, data = data)
   ranef <- lapply(Z, colnames)
-  trait <- ifelse(is_multi, "_trait", "")
+  trait <- ifelse(is_multi || is_hurdle, "_trait", "")
   names_cov_ranef <- names(cov.ranef)
   
   if (length(ee$group)) {
@@ -68,7 +69,7 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
                        weights = is.formula(ee$weights), 
                        cens = is.formula(ee$cens))
   if (is.formula(ee$cens) || is.formula(ee$weights) 
-      || is_ordinal || family == "categorical") {
+      || is_ordinal || family == "categorical" || is_hurdle) {
     text_llh <- paste0("  for (n in 1:N",trait,") { \n  ",text_llh,"  } \n")
   }
     
@@ -123,16 +124,19 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
       paste0("  int<lower=1> N_trait;  # number of observations per response \n",
              "  int<lower=1> K_trait;  # number of responses \n",  
              "  int NC_trait;  # number of residual correlations \n",
-             "  vector[K_trait] Y[N_trait];  # response matrix \n"),
+             "  vector[K_trait] Y[N_trait];  # response matrix \n")
+    else if (is_hurdle)
+      paste0("  int<lower=1> N_trait;  # number of observations per response \n",
+             "  int Y[N_trait];  # response variable \n"),
     if (length(fixef)) 
       paste0("  int<lower=1> K;  # number of fixed effects \n", 
-             "  matrix[N,K] X;  # FE design matrix \n"),
+             "  matrix[N, K] X;  # FE design matrix \n"),
     if (length(paref)) 
       paste0("  int<lower=1> Kp;  # number of category specific effects \n",
-             "  matrix[N,Kp] Xp;  # CSE design matrix \n"),  
+             "  matrix[N, Kp] Xp;  # CSE design matrix \n"),  
     if (autocor$p && is(autocor, "cor_arma")) 
       paste0("  int<lower=1> Kar;  # number of autoregressive effects \n",
-             "  matrix[N,Kar] Yar;  # AR design matrix \n"),
+             "  matrix[N, Kar] Yar;  # AR design matrix \n"),
     if (autocor$q && is(autocor, "cor_arma")) 
       paste0("  # data needed for moving-average models \n",
              "  int<lower=1> Kma; \n",
@@ -363,10 +367,11 @@ stan_llh <- function(family, link, add = FALSE,
   is_count <- family %in% c("poisson","negbinomial", "geometric")
   is_skewed <- family %in% c("gamma","exponential","weibull")
   is_binary <- family %in% c("binomial", "bernoulli")
+  is_hurdle <- family %in% c("hurdle_poisson")
   
   simplify <- !cens && (is_binary && link == "logit" || is_count && link == "log" ||
                 family %in% c("cumulative", "categorical") && link == "logit" && !add) 
-  n <- ifelse(cens || weights || is_cat, "[n]", "")
+  n <- ifelse(cens || weights || is_cat || is_hurdle, "[n]", "")
   ns <- ifelse(add && (cens || weights), "[n]", "")
   ilink <- ifelse(cens && (is_binary && link == "logit" || is_count && link == "log"), 
                   stan_ilink(link), "")
@@ -402,7 +407,8 @@ stan_llh <- function(family, link, add = FALSE,
       gamma = c("gamma", paste0("shape, eta",n)), 
       exponential = c("exponential", paste0("eta",n)),
       weibull = c("weibull", paste0("shape, eta",n)), 
-      categorical = c("categorical","p[n]"))
+      categorical = c("categorical", "p[n]"),
+      hurdle_poisson = c("hurdle_poisson", "eta[n], eta[n + N_trait]"))
   }
   if (family == "inverse.gaussian") {
     # required as inv_gaussian_log has 2 additional arguments
@@ -448,7 +454,8 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE, paref = NULL,
   is_ordinal <- family %in% c("cumulative", "cratio", "sratio", "acat")
   is_cat <- family == "categorical"
   is_skewed <- family %in% c("gamma", "weibull", "exponential")
-  is_count <- family %in% c("poisson", "negbinomial", "geometric")
+  is_count <- family %in% c("poisson", "negbinomial", "geometric",
+                            "hurdle_poisson")
   is_binary <- family %in% c("binomial", "bernoulli")
   is_multi <- family == "multinormal"
   
@@ -463,9 +470,11 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE, paref = NULL,
   
   # transform eta before it is passed to the likelihood
   ilink <- stan_ilink(link)
-  eta$transform <- !(link == "identity" || family == "gaussian" && link == "log" ||
-                     is_ordinal || family == "categorical" || is_count && link == "log" ||
-                     is_binary && link == "logit")
+  eta$transform <- !(link == "identity" 
+                     || family == "gaussian" && link == "log"
+                     || is_ordinal || family == "categorical" 
+                     || is_count && link == "log" 
+                     || is_binary && link == "logit")
   eta_ilink <- rep("", 2)
   if (eta$transform) {
     eta_ilink <- switch(family, c(paste0(ilink,"("), ")"),
@@ -575,9 +584,9 @@ stan_function <- function(family = "gaussian", link = "identity",
       "   */ \n",
       "   real inv_gaussian_log(real y, real mu, real shape, \n", 
       "                         real log_y, real sqrt_y) { \n",
-      "   return 0.5 * log(shape / (2 * pi())) - \n", 
-      "          1.5 * log_y - \n",
-      "          0.5 * shape * square((y - mu) / (mu * sqrt_y)); \n",
+      "     return 0.5 * log(shape / (2 * pi())) - \n", 
+      "            1.5 * log_y - \n",
+      "            0.5 * shape * square((y - mu) / (mu * sqrt_y)); \n",
       "   } \n")
     } else {
       out <- paste0(out, 
@@ -594,11 +603,11 @@ stan_function <- function(family = "gaussian", link = "identity",
       "   */ \n",
       "   real inv_gaussian_log(vector y, vector mu, real shape, \n", 
       "                         real sum_log_y, vector sqrt_y) { \n",
-      "   return 0.5 * rows(y) * log(shape / (2 * pi())) - \n", 
-      "          1.5 * sum_log_y - \n",
-      "          0.5 * shape * dot_self((y - mu) ./ (mu .* sqrt_y)); \n",
+      "     return 0.5 * rows(y) * log(shape / (2 * pi())) - \n", 
+      "            1.5 * sum_log_y - \n",
+      "            0.5 * shape * dot_self((y - mu) ./ (mu .* sqrt_y)); \n",
       "   } \n")
-    }
+    } 
     if (cens) 
       out <- paste0(out,
       "  /* inverse Gaussian log-CDF for a single quantile \n",
@@ -610,8 +619,8 @@ stan_function <- function(family = "gaussian", link = "identity",
       "   *   P(Y <= y) \n",
       "   */ \n",
       "  real inv_gaussian_cdf_log(real y, real mu, real shape) { \n",
-      "  return log(Phi(sqrt(shape / y) * (y / mu - 1)) + \n",
-      "             exp(2 * shape / mu) * Phi(-sqrt(shape / y) * (y / mu + 1))); \n",
+      "    return log(Phi(sqrt(shape / y) * (y / mu - 1)) + \n",
+      "               exp(2 * shape / mu) * Phi(-sqrt(shape / y) * (y / mu + 1))); \n",
       "  } \n",
       "  /* inverse Gaussian log-CCDF for a single quantile \n",
       "   * Args: \n",
@@ -622,9 +631,28 @@ stan_function <- function(family = "gaussian", link = "identity",
       "   *   P(Y > y) \n",
       "   */ \n",
       "  real inv_gaussian_ccdf_log(real y, real mu, real shape) { \n",
-      "  return log(1 - Phi(sqrt(shape / y) * (y / mu - 1)) - \n",
-      "             exp(2 * shape / mu) * Phi(-sqrt(shape / y) * (y / mu + 1))); \n",
+      "    return log(1 - Phi(sqrt(shape / y) * (y / mu - 1)) - \n",
+      "               exp(2 * shape / mu) * Phi(-sqrt(shape / y) * (y / mu + 1))); \n",
       "  } \n")
+  } else if (family == "hurdle_poisson") {
+    out <- paste0(out, 
+      "  /* hurdle poisson log-PDF of a single response with canonical links \n",
+      "   * Args: \n",
+      "   *   y: the response value \n",
+      "   *   eta_count: linear predictor for poisson part \n",
+      "   *   eta_hurdle: linear predictor for hurdle part \n",
+      "   * Returns: \n", 
+      "   *   a scalar to be added to the log posterior \n",
+      "   */ \n",
+      "   real hurdle_poisson_log(int y, real eta_count, real eta_hurdle) { \n",
+      "     if (y == 0) { \n",
+      "       return bernoulli_logit_log(1, eta_hurdle); \n",
+      "     } else { \n",
+      "       return bernoulli_logit_log(0, eta_hurdle) + \n", 
+      "              poisson_log_log(y, eta_count) - \n",
+      "              log(1 - exp(-exp(eta_count))); \n",
+      "     } \n",
+      "   } \n")
   }
   if (kronecker) 
     out <- paste0(out,

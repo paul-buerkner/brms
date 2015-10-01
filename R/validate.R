@@ -89,7 +89,10 @@ extract_effects <- function(formula, ..., family = NA) {
   environment(x$all) <- globalenv()
   
   # extract response variables
-  x$response = all.vars(x$all[[2]])
+  x$response <- all.vars(x$all[[2]])
+  if (family %in% c("hurdle_poisson")) {
+    x$response <- c(x$response, "hurdle")
+  }
   if (length(x$response) > 1) {
     if (!is.null(x$cens) || !is.null(x$se))
       stop("multivariate models currently allow only weights as addition arguments")
@@ -200,7 +203,8 @@ family.character <- function(object, link = NA, ...) {
                   "binomial", "bernoulli", "categorical", 
                   "poisson", "negbinomial", "geometric", 
                   "gamma", "weibull", "exponential", "inverse.gaussian", 
-                  "cumulative", "cratio", "sratio", "acat")
+                  "cumulative", "cratio", "sratio", "acat",
+                  "hurdle_poisson")
   if (!family %in% okFamilies)
     stop(paste(family, "is not a supported family. Supported families are: \n",
                paste(okFamilies, collapse = ", ")))
@@ -223,7 +227,8 @@ family.character <- function(object, link = NA, ...) {
     okLinks <- c("logit")
   } else if (is_skew) {
     okLinks <- c("log", "identity", "inverse")
-  }
+  } else if (family == "hurdle_poisson")
+    okLinks <- c("log")
   if (is.na(link)) {
     link <- okLinks[1]
   }

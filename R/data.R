@@ -8,19 +8,24 @@ melt <- function(data, response, family) {
   #
   # Returns:
   #   data in long format 
-  if (length(response) > 1 && family != "gaussian") {
-    stop("multivariate models are currently only allowed for family 'gaussian'")
-  } else if (length(response) > 1 && family == "gaussian") {
+  is_hurdle <- family %in% c("hurdle_poisson")
+  nresp <- length(response)
+  if (nresp > 1 && family == "gaussian" || nresp == 2 && is_hurdle) {
     if (!is(data, "data.frame"))
-      stop("data must be a data.frame in case of multiple responses")
+      stop("data must be a data.frame for multivarite models")
     if ("trait" %in% names(data))
-      stop("trait is a resevered variable name in case of multiple responses")
+      stop("trait is a resevered variable name in multivariate models")
+    if (is_hurdle && "hurdle" %in% names(data))
+      stop("hurdle is a resevered variable name in hurdle models")
+    data$hurdle <- rep(0, nrow(data))  # dummy variable not actually used as data
     new_columns <- data.frame(unlist(lapply(response, rep, time = nrow(data))), 
                               as.numeric(as.matrix(data[, response])))
     names(new_columns) <- c("trait", response[1])
     old_columns <- data[, which(!names(data) %in% response), drop = FALSE]
     old_columns <- do.call(rbind, lapply(response, function(i) old_columns))
     data <- cbind(old_columns, new_columns)
+  } else if (nresp > 1) {
+    stop("Invalid multivariate model")
   }
   data
 }  
@@ -110,6 +115,7 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
   is_ordinal <- family %in% c("cumulative","cratio","sratio","acat")
   is_count <- family %in% c("poisson", "negbinomial", "geometric")
   is_skew <- family %in% c("gamma", "weibull", "exponential")
+  is_hurdle <- family %in% c("hurdle_poisson")
   if (is.null(autocor)) autocor <- cor_arma()
   if (!is(autocor,"cor_brms")) stop("cor must be of class cor_brms")
   
@@ -164,8 +170,15 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
       stop(paste("family", family, "requires response variable to be non-negative"))
   } else if (family == "gaussian" && length(ee$response) > 1) {
     standata$Y <- matrix(standata$Y, ncol = length(ee$response))
-    standata <- c(standata, list(N_trait = nrow(standata$Y), K_trait = ncol(standata$Y)),
-                   NC_trait = ncol(standata$Y) * (ncol(standata$Y)-1)/2) 
+    standata <- c(standata, list(N_trait = nrow(standata$Y), 
+                                 K_trait = ncol(standata$Y)),
+                                 NC_trait = ncol(standata$Y) * 
+                                            (ncol(standata$Y) - 1) / 2) 
+  } else if (is_hurdle) {
+    # the second half of Y is not used because it is only dummy data
+    # that was put into data to make melt work correctly
+    standata$Y <- standata$Y[1:(nrow(data) / 2)] 
+    standata$N_trait <- length(standata$Y)
   }
   
   # fixed effects data
