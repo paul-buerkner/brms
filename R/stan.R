@@ -675,7 +675,7 @@ stan_function <- function(family = "gaussian", link = "identity",
       "     } else { \n",
       "       return bernoulli_logit_log(0, eta_hurdle) + \n", 
       "              neg_binomial_2_log_log(y, eta_count, shape) - \n",
-      "              neg_binomial_2_ccdf_log(1, exp(eta_count), shape); \n",
+      "              log(1 - (shape / (exp(eta_count) + shape))^shape); \n",
       "     } \n",
       "   } \n")
   }
