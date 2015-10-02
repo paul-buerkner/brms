@@ -92,6 +92,8 @@ extract_effects <- function(formula, ..., family = NA) {
   x$response <- all.vars(x$all[[2]])
   if (indicate_hurdle(family)) {
     x$response <- c(x$response, paste0("hu_", x$response))
+  } else if (indicate_zero_inflated(family)) {
+    x$response <- c(x$response, paste0("zi_", x$response))
   }
   if (length(x$response) > 1) {
     if (!is.null(x$cens) || !is.null(x$se))
@@ -204,7 +206,8 @@ family.character <- function(object, link = NA, ...) {
                   "poisson", "negbinomial", "geometric", 
                   "gamma", "weibull", "exponential", "inverse.gaussian", 
                   "cumulative", "cratio", "sratio", "acat",
-                  "hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma")
+                  "hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma",
+                  "zero_inflated_poisson", "zero_inflated_negbinomial")
   if (!family %in% okFamilies)
     stop(paste(family, "is not a supported family. Supported families are: \n",
                paste(okFamilies, collapse = ", ")))
@@ -222,7 +225,7 @@ family.character <- function(object, link = NA, ...) {
     okLinks <- c("logit")
   } else if (indicate_skewed(family)) {
     okLinks <- c("log", "identity", "inverse")
-  } else if (indicate_hurdle(family))
+  } else if (indicate_hurdle(family) || indicate_zero_inflated(family))
     okLinks <- c("log")
   if (is.na(link)) {
     link <- okLinks[1]
@@ -585,8 +588,9 @@ get_prior <- function(formula, data = NULL, family = "gaussian",
   }
   if (family == "student") 
     prior <- rbind(prior, prior_frame(class = "nu", prior = "uniform(1,100)"))
-  if (family %in% c("gamma", "weibull", "negbinomial", "inverse.gaussian",
-                    "hurdle_negbinomial", "hurdle_gamma")) 
+  if (family %in% c("gamma", "weibull", "negbinomial", 
+                    "inverse.gaussian", "hurdle_negbinomial", 
+                    "hurdle_gamma", "zero_inflated_negbinomial")) 
     prior <- rbind(prior, prior_frame(class = "shape", prior = default_scale_prior))
   if (is_ordinal && threshold == "equidistant")
     prior <- rbind(prior, prior_frame(class = "delta"))

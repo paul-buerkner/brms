@@ -165,6 +165,14 @@ indicate_hurdle <- function(family) {
   family %in% c("hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma")
 }
 
+indicate_zero_inflated <- function(family) {
+  # indicate if family is for a zero inflated model
+  if (class(family) == "family") {
+    family <- family$family
+  }
+  family %in% c("zero_inflated_poisson", "zero_inflated_negbinomial")
+}
+
 indicate_shape <- function(family) {
   # indicate if family needs a shape parameter
   if (class(family) == "family") {

@@ -9,13 +9,15 @@ melt <- function(data, response, family) {
   # Returns:
   #   data in long format 
   is_hurdle <- indicate_hurdle(family)
+  is_zero_inflated <- indicate_zero_inflated(family)
   nresp <- length(response)
-  if (nresp > 1 && family == "gaussian" || nresp == 2 && is_hurdle) {
+  if (nresp > 1 && family == "gaussian" || 
+      nresp == 2 && (is_hurdle || is_zero_inflated)) {
     if (!is(data, "data.frame"))
       stop("data must be a data.frame for multivarite models")
     if ("trait" %in% names(data))
       stop("trait is a resevered variable name in multivariate models")
-    if (is_hurdle) {
+    if (is_hurdle || is_zero_inflated) {
       if (response[2] %in% names(data))
         stop(paste(response[2], "is a resevered variable name"))
       # dummy variable not actually used in Stan
@@ -117,7 +119,6 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
   is_linear <- indicate_linear(family)
   is_ordinal <- indicate_ordinal(family)
   is_count <- indicate_count(family)
-  is_hurdle <- indicate_hurdle(family)
   if (is.null(autocor)) autocor <- cor_arma()
   if (!is(autocor,"cor_brms")) stop("cor must be of class cor_brms")
   
@@ -176,7 +177,7 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
                                  K_trait = ncol(standata$Y)),
                                  NC_trait = ncol(standata$Y) * 
                                             (ncol(standata$Y) - 1) / 2) 
-  } else if (is_hurdle) {
+  } else if (indicate_hurdle(family) || indicate_zero_inflated(family)) {
     # the second half of Y is not used because it is only dummy data
     # that was put into data to make melt work correctly
     standata$Y <- standata$Y[1:(nrow(data) / 2)] 

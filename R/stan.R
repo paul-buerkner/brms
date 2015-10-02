@@ -20,6 +20,7 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
   is_skewed <- indicate_skewed(family)
   is_count <- indicate_count(family)
   is_hurdle <- indicate_hurdle(family)
+  is_zero_inflated <- indicate_zero_inflated(family)
   is_multi <- family == "multinormal"
   has_shape <- indicate_shape(family)
   
@@ -42,7 +43,7 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
   
   Z <- lapply(ee$random, get_model_matrix, data = data)
   ranef <- lapply(Z, colnames)
-  trait <- ifelse(is_multi || is_hurdle, "_trait", "")
+  trait <- ifelse(is_multi || is_hurdle || is_zero_inflated, "_trait", "")
   names_cov_ranef <- names(cov.ranef)
   
   if (length(ee$group)) {
@@ -71,7 +72,8 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
                        weights = is.formula(ee$weights), 
                        cens = is.formula(ee$cens))
   if (is.formula(ee$cens) || is.formula(ee$weights) 
-      || is_ordinal || family == "categorical" || is_hurdle) {
+      || is_ordinal || family == "categorical" || is_hurdle
+      || is_zero_inflated) {
     text_llh <- paste0("  for (n in 1:N",trait,") { \n  ",text_llh,"  } \n")
   }
     
@@ -127,7 +129,7 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
              "  int<lower=1> K_trait;  # number of responses \n",  
              "  int NC_trait;  # number of residual correlations \n",
              "  vector[K_trait] Y[N_trait];  # response matrix \n")
-    } else if (is_hurdle) {
+    } else if (is_hurdle || is_zero_inflated) {
       paste0("  int<lower=1> N_trait;  # number of observations per response \n",
              "  ", ifelse(family == "hurdle_gamma", "real", "int"),
              " Y[N_trait];  # response variable \n")
@@ -372,10 +374,12 @@ stan_llh <- function(family, link, add = FALSE,
   is_skewed <- indicate_skewed(family)
   is_binary <- indicate_binary(family)
   is_hurdle <- indicate_hurdle(family)
+  is_zero_inflated <- indicate_zero_inflated(family)
   
   simplify <- !cens && (is_binary && link == "logit" || is_count && link == "log" ||
                 family %in% c("cumulative", "categorical") && link == "logit" && !add) 
-  n <- ifelse(cens || weights || is_catordinal || is_hurdle, "[n]", "")
+  n <- ifelse(cens || weights || is_catordinal || is_hurdle || is_zero_inflated, 
+              "[n]", "")
   ns <- ifelse(add && (cens || weights), "[n]", "")
   ilink <- ifelse(cens && (is_binary && link == "logit" || is_count && link == "log"), 
                   stan_ilink(link), "")
@@ -415,7 +419,9 @@ stan_llh <- function(family, link, add = FALSE,
       hurdle_poisson = c("hurdle_poisson", "eta[n], eta[n + N_trait]"),
       hurdle_negbinomial = c("hurdle_neg_binomial_2", 
                              "eta[n], eta[n + N_trait], shape"),
-      hurdle_gamma = c("hurdle_gamma", "shape, eta[n], eta[n + N_trait]"))
+      hurdle_gamma = c("hurdle_gamma", "shape, eta[n], eta[n + N_trait]"),
+      zero_inflated_poisson = c("zero_inflated_poisson", 
+                                "eta[n], eta[n + N_trait]"))
   }
   if (family == "inverse.gaussian") {
     # required as inv_gaussian_log has 2 additional arguments
@@ -461,7 +467,7 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE, paref = NULL,
   is_ordinal <- indicate_ordinal(family)
   is_cat <- family == "categorical"
   is_skewed <- indicate_skewed(family)
-  is_count <- indicate_count(family) || 
+  is_count <- indicate_count(family) || indicate_zero_inflated(family) ||
               family %in% c("hurdle_poisson", "hurdle_negbinomial")
   is_binary <- indicate_binary(family)
   is_multi <- family == "multinormal"
@@ -647,18 +653,18 @@ stan_function <- function(family = "gaussian", link = "identity",
       "  /* hurdle poisson log-PDF of a single response \n",
       "   * Args: \n",
       "   *   y: the response value \n",
-      "   *   eta_count: linear predictor for poisson part \n",
-      "   *   eta_hurdle: linear predictor for hurdle part \n",
+      "   *   eta: linear predictor for poisson part \n",
+      "   *   eta_hu: linear predictor for hurdle part \n",
       "   * Returns: \n", 
       "   *   a scalar to be added to the log posterior \n",
       "   */ \n",
-      "   real hurdle_poisson_log(int y, real eta_count, real eta_hurdle) { \n",
+      "   real hurdle_poisson_log(int y, real eta, real eta_hu) { \n",
       "     if (y == 0) { \n",
-      "       return bernoulli_logit_log(1, eta_hurdle); \n",
+      "       return bernoulli_logit_log(1, eta_hu); \n",
       "     } else { \n",
-      "       return bernoulli_logit_log(0, eta_hurdle) + \n", 
-      "              poisson_log_log(y, eta_count) - \n",
-      "              log(1 - exp(-exp(eta_count))); \n",
+      "       return bernoulli_logit_log(0, eta_hu) + \n", 
+      "              poisson_log_log(y, eta) - \n",
+      "              log(1 - exp(-exp(eta))); \n",
       "     } \n",
       "   } \n")
   } else if (family == "hurdle_negbinomial") {
@@ -666,42 +672,62 @@ stan_function <- function(family = "gaussian", link = "identity",
       "  /* hurdle negative binomial log-PDF of a single response \n",
       "   * Args: \n",
       "   *   y: the response value \n",
-      "   *   eta_count: linear predictor for negative binomial part \n",
-      "   *   eta_hurdle: linear predictor for hurdle part \n",
+      "   *   eta: linear predictor for negative binomial part \n",
+      "   *   eta_hu: linear predictor for hurdle part \n",
       "   *   shape: shape parameter of negative binomial distribution \n",
       "   * Returns: \n", 
       "   *   a scalar to be added to the log posterior \n",
       "   */ \n",
-      "   real hurdle_neg_binomial_2_log(int y, real eta_count, real eta_hurdle, \n", 
+      "   real hurdle_neg_binomial_2_log(int y, real eta, real eta_hu, \n", 
       "                                  real shape) { \n",
       "     if (y == 0) { \n",
-      "       return bernoulli_logit_log(1, eta_hurdle); \n",
+      "       return bernoulli_logit_log(1, eta_hu); \n",
       "     } else { \n",
-      "       return bernoulli_logit_log(0, eta_hurdle) + \n", 
-      "              neg_binomial_2_log_log(y, eta_count, shape) - \n",
-      "              log(1 - (shape / (exp(eta_count) + shape))^shape); \n",
+      "       return bernoulli_logit_log(0, eta_hu) + \n", 
+      "              neg_binomial_2_log_log(y, eta, shape) - \n",
+      "              log(1 - (shape / (exp(eta) + shape))^shape); \n",
       "     } \n",
       "   } \n")
   } else if (family == "hurdle_gamma") {
     out <- paste0(out, 
-                  "  /* hurdle gamma log-PDF of a single response \n",
-                  "   * Args: \n",
-                  "   *   y: the response value \n",
-                  "   *   shape: shape parameter of gamma distribution \n",
-                  "   *   eta_gamma: linear predictor for gamma part \n",
-                  "   *   eta_hurdle: linear predictor for hurdle part \n",
-                  "   * Returns: \n", 
-                  "   *   a scalar to be added to the log posterior \n",
-                  "   */ \n",
-                  "   real hurdle_gamma_log(real y, real shape, real eta_gamma, \n", 
-                  "                         real eta_hurdle) { \n",
-                  "     if (y == 0) { \n",
-                  "       return bernoulli_logit_log(1, eta_hurdle); \n",
-                  "     } else { \n",
-                  "       return bernoulli_logit_log(0, eta_hurdle) + \n", 
-                  "              gamma_log(y, shape, shape / exp(eta_gamma)); \n",
-                  "     } \n",
-                  "   } \n")
+      "  /* hurdle gamma log-PDF of a single response \n",
+      "   * Args: \n",
+      "   *   y: the response value \n",
+      "   *   shape: shape parameter of gamma distribution \n",
+      "   *   eta: linear predictor for gamma part \n",
+      "   *   eta_hu: linear predictor for hurdle part \n",
+      "   * Returns: \n", 
+      "   *   a scalar to be added to the log posterior \n",
+      "   */ \n",
+      "   real hurdle_gamma_log(real y, real shape, real eta, \n", 
+      "                         real eta_hu) { \n",
+      "     if (y == 0) { \n",
+      "       return bernoulli_logit_log(1, eta_hu); \n",
+      "     } else { \n",
+      "       return bernoulli_logit_log(0, eta_hu) + \n", 
+      "              gamma_log(y, shape, shape / exp(eta)); \n",
+      "     } \n",
+      "   } \n")
+  } else if (family == "zero_inflated_poisson") {
+    out <- paste0(out, 
+      "  /* zero-inflated poisson log-PDF of a single response \n",
+      "   * Args: \n",
+      "   *   y: the response value \n",
+      "   *   eta: linear predictor for poisson part \n",
+      "   *   eta_zi: linear predictor for zero-inflation part \n",
+      "   * Returns: \n", 
+      "   *   a scalar to be added to the log posterior \n",
+      "   */ \n",
+      "   real zero_inflated_poisson_log(int y, real eta, real eta_zi) { \n",
+      "     if (y == 0) { \n",
+      "       return log_sum_exp(bernoulli_logit_log(1, eta_zi), \n",
+      "                          bernoulli_logit_log(0, eta_zi) + \n",
+      "                          poisson_log_log(y, eta)); \n",
+      "     } else { \n",
+      "       return bernoulli_logit_log(0, eta_zi) + \n", 
+      "              poisson_log_log(y, eta); \n",
+      "     } \n",
+      "   } \n")
   }
   if (kronecker) 
     out <- paste0(out,
