@@ -738,9 +738,24 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
       mu <- aperm(abind(lapply(1:ncol(mu), get_density), along = 3), 
                   perm = c(1, 3, 2))
     } else if (indicate_hurdle(object$family)) {
-      nbasic <- 1:data$N_trait
-      nhurdle <- nbasic + data$N_trait
-      mu <- (1 - ilink(mu[, nhurdle], "logit")) * ilink(mu[, nbasic], object$link)
+      n_base <- 1:data$N_trait
+      n_hu <- n_base + data$N_trait
+      pre_mu <- ilink(mu[, n_base], object$link)
+      # adjust pre_mu as it is no longer the mean of the truncated distributions
+      if (object$family == "hurdle_poisson") {
+        adjusted_mu <- pre_mu / (1 - exp(-pre_mu))
+      } else if (object$family == "hurdle_negbinomial") {
+        shape <- posterior_samples(object, "^shape$")$shape 
+        adjusted_mu <- pre_mu / (1 - (shape / (pre_mu + shape))^shape)
+      } else {
+        adjusted_mu <- pre_mu
+      }
+      # incorporate hurdle process
+      mu <- (1 - ilink(mu[, n_hu], "logit")) * pre_mu
+    } else if (indicate_zero_inflated(object$family)) { 
+      n_base <- 1:data$N_trait
+      n_zi <- n_base + data$N_trait
+      mu <- (1 - ilink(mu[, n_zi], "logit")) * ilink(mu[, n_base], object$link)
     } else {
       mu <- ilink(mu, object$link)
     }
