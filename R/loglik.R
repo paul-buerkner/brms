@@ -242,6 +242,50 @@ loglik_inverse.gaussian <- function(n, data, samples, link) {
   out
 }
 
+loglik_hurdle_poisson <- function(n, data, samples, link) {
+  if (data$Y[n] == 0) {
+    out <- dbinom(1, size = 1, log = TRUE,
+                  prob = ilink(samples$eta[, n + data$N_trait], "logit"))
+  } else {
+    out <- dbinom(0, size = 1, log = TRUE,
+                  prob = ilink(samples$eta[, n + data$N_trait], "logit")) + 
+      dpois(data$Y[n], lambda = ilink(samples$eta[, n], link), log = TRUE)
+  }
+  if ("weights" %in% names(data)) 
+    out <- out * data$weights[n]
+  out
+}
+
+loglik_hurdle_negbinomial <- function(n, data, samples, link) {
+  if (data$Y[n] == 0) {
+    out <- dbinom(1, size = 1, log = TRUE,
+                  prob = ilink(samples$eta[, n + data$N_trait], "logit"))
+  } else {
+    out <- dbinom(0, size = 1, log = TRUE,
+                  prob = ilink(samples$eta[, n + data$N_trait], "logit")) + 
+      dnbinom(data$Y[n], mu = ilink(samples$eta[, n], link), 
+              size = samples$shape, log = TRUE)
+  }
+  if ("weights" %in% names(data)) 
+    out <- out * data$weights[n]
+  out
+}
+
+loglik_hurdle_gamma <- function(n, data, samples, link) {
+  if (data$Y[n] == 0) {
+    out <- dbinom(1, size = 1, log = TRUE,
+                  prob = ilink(samples$eta[, n + data$N_trait], "logit"))
+  } else {
+    out <- dbinom(0, size = 1, log = TRUE,
+                  prob = ilink(samples$eta[, n + data$N_trait], "logit")) + 
+      dgamma(data$Y[n], shape = samples$shape, log = TRUE,
+             scale = ilink(samples$eta[, n], link) / samples$shape)
+  }
+  if ("weights" %in% names(data)) 
+    out <- out * data$weights[n]
+  out
+}
+
 loglik_categorical <- function(n, data, samples, link) {
   ncat <- ifelse(length(data$max_obs) > 1, data$max_obs[n], data$max_obs) 
   if (link == "logit") {
