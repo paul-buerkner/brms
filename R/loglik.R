@@ -243,13 +243,12 @@ loglik_inverse.gaussian <- function(n, data, samples, link) {
 }
 
 loglik_hurdle_poisson <- function(n, data, samples, link) {
+  theta <- ilink(samples$eta[, n + data$N_trait], "logit")
   if (data$Y[n] == 0) {
-    out <- dbinom(1, size = 1, log = TRUE,
-                  prob = ilink(samples$eta[, n + data$N_trait], "logit"))
+    out <- dbinom(1, size = 1, prob = theta, log = TRUE)
   } else {
-    out <- dbinom(0, size = 1, log = TRUE,
-                  prob = ilink(samples$eta[, n + data$N_trait], "logit")) + 
-      dpois(data$Y[n], lambda = ilink(samples$eta[, n], link), log = TRUE)
+    out <- dbinom(0, size = 1, prob = theta, log = TRUE) + 
+           dpois(data$Y[n], lambda = ilink(samples$eta[, n], link), log = TRUE)
   }
   if ("weights" %in% names(data)) 
     out <- out * data$weights[n]
@@ -257,14 +256,13 @@ loglik_hurdle_poisson <- function(n, data, samples, link) {
 }
 
 loglik_hurdle_negbinomial <- function(n, data, samples, link) {
+  theta <- ilink(samples$eta[, n + data$N_trait], "logit")
   if (data$Y[n] == 0) {
-    out <- dbinom(1, size = 1, log = TRUE,
-                  prob = ilink(samples$eta[, n + data$N_trait], "logit"))
+    out <- dbinom(1, size = 1, prob = theta, log = TRUE)
   } else {
-    out <- dbinom(0, size = 1, log = TRUE,
-                  prob = ilink(samples$eta[, n + data$N_trait], "logit")) + 
-      dnbinom(data$Y[n], mu = ilink(samples$eta[, n], link), 
-              size = samples$shape, log = TRUE)
+    out <- dbinom(0, size = 1, prob = theta, log = TRUE) + 
+           dnbinom(data$Y[n], mu = ilink(samples$eta[, n], link), 
+                   size = samples$shape, log = TRUE)
   }
   if ("weights" %in% names(data)) 
     out <- out * data$weights[n]
@@ -272,14 +270,45 @@ loglik_hurdle_negbinomial <- function(n, data, samples, link) {
 }
 
 loglik_hurdle_gamma <- function(n, data, samples, link) {
+  theta <- ilink(samples$eta[, n + data$N_trait], "logit")
   if (data$Y[n] == 0) {
-    out <- dbinom(1, size = 1, log = TRUE,
-                  prob = ilink(samples$eta[, n + data$N_trait], "logit"))
+    out <- dbinom(1, size = 1, prob = theta, log = TRUE)
   } else {
-    out <- dbinom(0, size = 1, log = TRUE,
-                  prob = ilink(samples$eta[, n + data$N_trait], "logit")) + 
-      dgamma(data$Y[n], shape = samples$shape, log = TRUE,
-             scale = ilink(samples$eta[, n], link) / samples$shape)
+    scale <- ilink(samples$eta[, n], link) / samples$shape
+    out <- dbinom(0, size = 1, prob = theta, log = TRUE) + 
+           dgamma(data$Y[n], shape = samples$shape, scale = scale, log = TRUE)
+  }
+  if ("weights" %in% names(data)) 
+    out <- out * data$weights[n]
+  out
+}
+
+loglik_zero_inflated_poisson <- function(n, data, samples, link) {
+  theta <- ilink(samples$eta[, n + data$N_trait], "logit")
+  lambda <- ilink(samples$eta[, n], link)
+  if (data$Y[n] == 0) {
+    out <- log(dbinom(1, size = 1, prob = theta) + 
+               dbinom(0, size = 1, prob = theta) *
+               dpois(0, lambda = lambda))
+  } else {
+    out <- dbinom(0, size = 1, prob = theta, log = TRUE) + 
+           dpois(data$Y[n], lambda = lambda, log = TRUE)
+  }
+  if ("weights" %in% names(data)) 
+    out <- out * data$weights[n]
+  out
+}
+
+loglik_zero_inflated_negbinomial <- function(n, data, samples, link) {
+  theta <- ilink(samples$eta[, n + data$N_trait], "logit")
+  mu <- ilink(samples$eta[, n], link)
+  if (data$Y[n] == 0) {
+    out <- log(dbinom(1, size = 1, prob = theta) + 
+               dbinom(0, size = 1, prob = theta) *
+               dnbinom(0, mu = mu, size = samples$shape))
+  } else {
+    out <- dbinom(0, size = 1, prob = theta, log = TRUE) + 
+           dnbinom(data$Y[n], mu = mu, size = samples$shape, log = TRUE)
   }
   if ("weights" %in% names(data)) 
     out <- out * data$weights[n]
