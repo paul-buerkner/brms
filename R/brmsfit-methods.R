@@ -529,6 +529,131 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
   }
 }
 
+#' Model Predictions of \code{brmsfit} Objects
+#' 
+#' Make predictions based on the fitted model parameters. 
+#' Can be performed for the data used to fit the model (posterior predictive checks) or for new data.
+#' 
+#' @param object An object of class \code{brmsfit}
+#' @param newdata An optional data.frame containing new data to make predictions for.
+#'   If \code{NULL} (default), the data used to fit the model is applied.
+#' @param re_formula formula containing random effects to be considered in the prediction. 
+#'   If \code{NULL} (default), include all random effects; if \code{NA}, include no random effects.
+#'   Other options will be implemented in the future.
+#' @param transform A function or a character string naming a function to be applied on the predicted responses
+#'   before summary statistics are computed.
+#' @param allow_new_levels Currenly, \code{FALSE} (no new levels allowed) is the only option. 
+#'   This will change in future versions of the package.
+#' @param summary logical. Should summary statistics (i.e. means, sds, and 95\% intervals) be returned
+#'  instead of the raw values. Default is \code{TRUE}
+#' @param probs The percentiles to be computed by the \code{quantile} function. 
+#'  Only used if \code{summary} is \code{TRUE}.
+#' @param ... Currently ignored
+#' 
+#' @return Predicted values of the response variable. If \code{summary = TRUE} the output depends on the family:
+#'   For catagorical and ordinal families, it is a N x C matrix where N is the number of observations and
+#'   C is the number of categories. For all other families, it is a N x E matrix where E is equal 
+#'   to \code{length(probs) + 2}.
+#'   If \code{summary = FALSE}, the output is as a S x N matrix, where S is the number of samples.
+#' 
+#' @details For \pkg{brms} <= 0.5.0 only: 
+#'  Be careful when using \code{newdata} with factors in fixed or random effects. 
+#'  The predicted results are only valid if all factor levels present in the initial 
+#'  data are also defined and ordered correctly for the factors in \code{newdata}.
+#'  Grouping factors may contain fewer levels than in the inital data without causing problems.
+#'  When using higher versions of \pkg{brms}, all factors are automatically checked 
+#'  for correctness and amended if necessary.
+#' 
+#' @examples 
+#' \dontrun{
+#' ## fit a model
+#' fit <- brm(time | cens(censored) ~ age + sex, data = kidney,
+#'            family = "exponential", silent = TRUE)
+#' 
+#' ## posterior predictive checks
+#' pp <- predict(fit)
+#' head(pp)
+#' 
+#' ## predict response for new data
+#' newdata <- data.frame(sex = factor(c("male", "female")),
+#'                       age = c(20,50))
+#' predict(fit, newdata = newdata)
+#' }
+#' 
+#' @export 
+predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
+                            transform = NULL, allow_new_levels = FALSE,
+                            summary = TRUE, probs = c(0.025, 0.975), ...) {
+  if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
+    stop("The model does not contain posterior samples")
+  ee <- extract_effects(object$formula, family = object$family)
+  # use newdata if defined
+  if (is.null(newdata)) {
+    data <- standata(object, keep_intercept = TRUE)
+  } else {
+    data <- amend_newdata(newdata, fit = object, re_formula = re_formula,
+                          allow_new_levels = allow_new_levels)
+  }
+  
+  # compute all necessary samples
+  nresp <- length(ee$response)
+  samples <- list(eta = linear_predictor(object, newdata = data, 
+                                         re_formula = re_formula))
+  if (indicate_linear(object$family) && !is.formula(ee$se))
+    samples$sigma <- as.matrix(posterior_samples(object, pars = "^sigma_"))
+  if (object$family == "student") 
+    samples$nu <- as.matrix(posterior_samples(object, pars = "^nu$"))
+  if (indicate_shape(object$family)) 
+    samples$shape <- as.matrix(posterior_samples(object, pars = "^shape$"))
+  if (object$family == "gaussian" && nresp > 1) {
+    samples$rescor <- as.matrix(posterior_samples(object, pars = "^rescor_"))
+    samples$Sigma <- get_cov_matrix(sd = samples$sigma, cor = samples$rescor)$cov
+    message(paste("Computing posterior predictive samples of multinormal distribution. \n", 
+                  "This may take a while."))
+  }
+  
+  # call predict functions
+  family <- object$family
+  if (object$link == "log" && family == "gaussian" && nresp == 1) {
+    family <- "lognormal"
+  } else if (family == "gaussian" && nresp > 1) {
+    family <- "multinormal"
+  }
+  is_catordinal <- indicate_ordinal(family) || family == "categorical"
+  predict_fun <- get(paste0("predict_", family))
+  call_predict_fun <- function(n) {
+    do.call(predict_fun, list(n = n, data = data, samples = samples, 
+                              link = object$link))
+  }
+  N <- ifelse(is.null(data$N_trait), data$N, data$N_trait)
+  out <- do.call(cbind, lapply(1:N, call_predict_fun))
+  if (!is.null(transform) && !is_catordinal) {
+    out <- do.call(transform, list(out))
+  }
+  
+  if (summary && !is_catordinal) {
+    out <- get_summary(out, probs = probs)
+  } else if (summary && is_catordinal) { 
+    # compute frequencies of categories for categorical and ordinal models
+    out <- get_table(out, levels = 1:max(data$max_obs)) 
+  }
+  
+  # sort predicted responses in case of multinormal models
+  if (family == "multinormal") {
+    to_order <- ulapply(1:data$K_trait, seq, to = data$N, by = data$K_trait)
+    if (summary) {
+      # observations in rows
+      out <- out[to_order, ]
+      rownames(out) <- 1:nrow(out)
+    } else {
+      # observations in columns
+      out <- out[, to_order]  
+      colnames(out) <- 1:ncol(out) 
+    }
+  }
+  out
+}
+
 #' Extract Model Fitted Values of \code{brmsfit} Objects
 #' 
 #' @inheritParams predict.brmsfit
@@ -680,126 +805,6 @@ residuals.brmsfit <- function(object, re_formula = NULL, type = c("ordinary", "p
     res <- get_summary(res, probs = probs)
   }
   res
-}
-
-#' Model Predictions of \code{brmsfit} Objects
-#' 
-#' Make predictions based on the fitted model parameters. 
-#' Can be performed for the data used to fit the model (posterior predictive checks) or for new data.
-#' 
-#' @param object An object of class \code{brmsfit}
-#' @param newdata An optional data.frame containing new data to make predictions for.
-#'   If \code{NULL} (default), the data used to fit the model is applied.
-#' @param re_formula formula containing random effects to be considered in the prediction. 
-#'   If \code{NULL} (default), include all random effects; if \code{NA}, include no random effects.
-#'   Other options will be implemented in the future.
-#' @param transform A function or a character string naming a function to be applied on the predicted responses
-#'   before summary statistics are computed.
-#' @param allow_new_levels Currenly, \code{FALSE} (no new levels allowed) is the only option. 
-#'   This will change in future versions of the package.
-#' @param summary logical. Should summary statistics (i.e. means, sds, and 95\% intervals) be returned
-#'  instead of the raw values. Default is \code{TRUE}
-#' @param probs The percentiles to be computed by the \code{quantile} function. 
-#'  Only used if \code{summary} is \code{TRUE}.
-#' @param ... Currently ignored
-#' 
-#' @return Predicted values of the response variable. If \code{summary = TRUE} the output depends on the family:
-#'   For catagorical and ordinal families, it is a N x C matrix where N is the number of observations and
-#'   C is the number of categories. For all other families, it is a N x E matrix where E is equal 
-#'   to \code{length(probs) + 2}.
-#'   If \code{summary = FALSE}, the output is as a S x N matrix, where S is the number of samples.
-#' 
-#' @details For \pkg{brms} <= 0.5.0 only: 
-#'  Be careful when using \code{newdata} with factors in fixed or random effects. 
-#'  The predicted results are only valid if all factor levels present in the initial 
-#'  data are also defined and ordered correctly for the factors in \code{newdata}.
-#'  Grouping factors may contain fewer levels than in the inital data without causing problems.
-#'  When using higher versions of \pkg{brms}, all factors are automatically checked 
-#'  for correctness and amended if necessary.
-#' 
-#' @examples 
-#' \dontrun{
-#' ## fit a model
-#' fit <- brm(time | cens(censored) ~ age + sex, data = kidney,
-#'            family = "exponential", silent = TRUE)
-#' 
-#' ## posterior predictive checks
-#' pp <- predict(fit)
-#' head(pp)
-#' 
-#' ## predict response for new data
-#' newdata <- data.frame(sex = factor(c("male", "female")),
-#'                       age = c(20,50))
-#' predict(fit, newdata = newdata)
-#' }
-#' 
-#' @export 
-predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
-                            transform = NULL, allow_new_levels = FALSE,
-                            summary = TRUE, probs = c(0.025, 0.975), ...) {
-  if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
-    stop("The model does not contain posterior samples")
-  ee <- extract_effects(object$formula, family = object$family)
-  nresp <- length(ee$response)
-  is_catordinal <- indicate_ordinal(object$family) || object$family == "categorical"
-  
-  # use newdata if defined
-  if (is.null(newdata)) {
-    data <- standata(object, keep_intercept = TRUE)
-  } else {
-    data <- amend_newdata(newdata, fit = object, re_formula = re_formula,
-                          allow_new_levels = allow_new_levels)
-  }
-  
-  # compute all necessary samples
-  samples <- list(eta = linear_predictor(object, newdata = data,  
-                                         re_formula = re_formula))
-  if (indicate_linear(object$family) && !is.formula(ee$se))
-    samples$sigma <- as.matrix(posterior_samples(object, pars = "^sigma_"))
-  if (object$family == "student") 
-    samples$nu <- as.matrix(posterior_samples(object, pars = "^nu$"))
-  if (indicate_shape(object$family)) 
-    samples$shape <- as.matrix(posterior_samples(object, pars = "^shape$"))
-  if (object$family == "gaussian" && nresp > 1) {
-    samples$rescor <- as.matrix(posterior_samples(object, pars = "^rescor_"))
-    samples$Sigma <- get_cov_matrix(sd = samples$sigma, cor = samples$rescor)$cov
-    message(paste("Computing posterior predictive samples of multinormal distribution. \n", 
-                  "This may take a while."))
-  }
-  
-  # call predict functions
-  family <- object$family
-  if (object$link == "log" && family == "gaussian" && nresp == 1) {
-    family <- "lognormal"
-  } else if (family == "gaussian" && nresp > 1) {
-    family <- "multinormal"
-  }
-  predict_fun <- get(paste0("predict_", family))
-  call_predict_fun <- function(n) {
-    do.call(predict_fun, list(n = n, data = data, samples = samples, 
-                              link = object$link))
-  }
-  N <- ifelse(is.null(data$N_trait), data$N, data$N_trait)
-  out <- do.call(cbind, lapply(1:N, call_predict_fun))
-  if (!is.null(transform) && !is_catordinal) {
-    out <- do.call(transform, list(out))
-  }
-  
-  if (summary && !is_catordinal) {
-    out <- get_summary(out, probs = probs)
-  } else if (summary && is_catordinal) { 
-    # compute frequencies of categories for categorical and ordinal models
-    out <- get_table(out, levels = 1:max(data$max_obs)) 
-  }
-    
-  # sort predicted responses in case of multinormal models
-  if (family == "multinormal") {
-    nobs <- data$N_trait * data$K_trait
-    to_order <- ulapply(1:data$K_trait, seq, to = nobs, by = data$K_trait)
-    if (summary) out <- out[to_order, ]  # observations in rows
-    else out <- out[, to_order]  # observations in columns
-  }
-  out
 }
 
 #' @export

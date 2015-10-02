@@ -83,9 +83,8 @@ rmultinormal <- function(n, mu, Sigma, check = FALSE) {
     if (!isSymmetric(unname(Sigma)))
       stop("Sigma is not symmetric")
   }
-  cholSigma <- chol(Sigma)
   samples <- matrix(rnorm(n * p), nrow = n, ncol = p)
-  mu + samples %*% cholSigma
+  mu + samples %*% chol(Sigma)
 }
 
 dinv_gaussian <- function (x, mu, lambda, log = FALSE) {

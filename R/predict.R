@@ -28,18 +28,19 @@ predict_cauchy <- function(n, data, samples, link) {
 }
 
 predict_lognormal <- function(n, data, samples, link) {
+  # link is currently ignored for lognormal models
+  # as 'identity' is the only valid link
   sigma <- if (!is.null(samples$sigma)) samples$sigma
            else data$sigma
   rlnorm(nrow(samples$eta), meanlog = samples$eta[, n], sdlog = sigma)
 }
 
 predict_multinormal <- function(n, data, samples, link) {
-  # link is currently ignored for lognormal models
-  # as 'identity' is the only valid link
-  nobs <- data$N_trait * data$K_trait
-  do.call(rbind, lapply(1:nrow(samples$eta), function(i) 
-    rmultinormal(1, Sigma = samples$Sigma[i,,],
-                 mu = samples$eta[i, seq(n, nobs, data$N_trait)])))
+  .fun <- function(i) {
+    rmultinormal(1, Sigma = samples$Sigma[i, , ],
+                 mu = samples$eta[i, seq(n, data$N, data$N_trait)])
+  }
+  do.call(rbind, lapply(1:nrow(samples$eta), .fun))
 }
 
 predict_binomial <- function(n, data, samples, link) {
