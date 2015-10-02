@@ -17,6 +17,8 @@
 \alias{sratio}
 \alias{student}
 \alias{weibull}
+\alias{zero_inflated_negbinomial}
+\alias{zero_inflated_poisson}
 \title{Special Family Functions for \pkg{brms} Models}
 \usage{
 student(link = "identity")
@@ -38,6 +40,10 @@ hurdle_poisson(link = "log")
 hurdle_negbinomial(link = "log")
 
 hurdle_gamma(link = "log")
+
+zero_inflated_poisson(link = "log")
+
+zero_inflated_negbinomial(link = "log")
 
 categorical(link = "logit")
 
@@ -62,8 +68,9 @@ acat(link = "logit")
   \code{cloglog}, and \code{cauchit}; \cr
   family \code{categorical} the link \code{logit}; families \code{weibull},
   and \code{exponential} the links \code{log}, \code{identity}, and \code{inverse};
-  families \code{hurdle_poisson}, \code{hurdle_negbinomial}, and
-  \code{hurdle_gamma} the link \code{log}.
+  families \code{hurdle_poisson}, \code{hurdle_negbinomial},
+  \code{hurdle_gamma}, \code{zero_inflated_poisson}, and
+  \code{zero_inflated_negbinomial} the link \code{log}.
   The first link mentioned for each family is the default.
   A full list of families and link functions supported by \pkg{brms},
   is provided in the 'Details' section of \code{\link[brms:brm]{brm}}.}
