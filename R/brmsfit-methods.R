@@ -717,23 +717,30 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (scale == "response") {
     if (object$family == "binomial") {
       max_obs <- matrix(rep(data$max_obs, nrow(mu)), nrow = nrow(mu), byrow = TRUE)
-      mu <- ilink(mu, object$link) * max_obs # scale mu from [0,1] to [0,max_obs]
+      # scale mu from [0,1] to [0,max_obs]
+      mu <- ilink(mu, object$link) * max_obs 
     } else if (object$family == "gaussian" && object$link == "log"
                && length(ee$response) == 1) {
       sigma <- posterior_samples(object, "^sigma_")$sigma
-      mu <- ilink(mu + sigma^2/2, object$link) # lognormal mean
+      # lognormal mean
+      mu <- ilink(mu + sigma^2 / 2, object$link)  
     } else if (object$family == "weibull") {
       shape <- posterior_samples(object, "^shape$")$shape
-      mu <-  1/(ilink(-mu/shape, object$link)) * gamma(1+1/shape) # weibull mean
+      # weibull mean
+      mu <- 1 / (ilink(-mu / shape, object$link)) * gamma(1 + 1 / shape)  
     } else if (is_catordinal) {
       ncat <- max(data$max_obs)
       # get probabilities of each category
       get_density <- function(n) {
         do.call(paste0("d", object$family), 
-                list(1:ncat, eta = mu[,n,], ncat = ncat, link = object$link))
+                list(1:ncat, eta = mu[, n, ], ncat = ncat, link = object$link))
       }
       mu <- aperm(abind(lapply(1:ncol(mu), get_density), along = 3), 
                   perm = c(1, 3, 2))
+    } else if (indicate_hurdle(object$family)) {
+      nbasic <- 1:data$N_trait
+      nhurdle <- nbasic + data$N_trait
+      mu <- (1 - ilink(mu[, nhurdle], "logit")) * ilink(mu[, nbasic], object$link)
     } else {
       mu <- ilink(mu, object$link)
     }
