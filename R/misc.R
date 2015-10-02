@@ -179,7 +179,8 @@ indicate_shape <- function(family) {
     family <- family$family
   }
   family %in% c("gamma", "weibull", "inverse.gaussian", 
-                "negbinomial", "hurdle_negbinomial", "hurdle_gamma")
+                "negbinomial", "hurdle_negbinomial", 
+                "hurdle_gamma", "zero_inflated_negbinomial")
 }
 
 # startup messages for brms

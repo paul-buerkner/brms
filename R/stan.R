@@ -421,7 +421,9 @@ stan_llh <- function(family, link, add = FALSE,
                              "eta[n], eta[n + N_trait], shape"),
       hurdle_gamma = c("hurdle_gamma", "shape, eta[n], eta[n + N_trait]"),
       zero_inflated_poisson = c("zero_inflated_poisson", 
-                                "eta[n], eta[n + N_trait]"))
+                                "eta[n], eta[n + N_trait]"),
+      zero_inflated_negbinomial = c("zero_inflated_neg_binomial_2", 
+                                    "eta[n], eta[n + N_trait], shape"))
   }
   if (family == "inverse.gaussian") {
     # required as inv_gaussian_log has 2 additional arguments
@@ -722,10 +724,31 @@ stan_function <- function(family = "gaussian", link = "identity",
       "     if (y == 0) { \n",
       "       return log_sum_exp(bernoulli_logit_log(1, eta_zi), \n",
       "                          bernoulli_logit_log(0, eta_zi) + \n",
-      "                          poisson_log_log(y, eta)); \n",
+      "                          poisson_log_log(0, eta)); \n",
       "     } else { \n",
       "       return bernoulli_logit_log(0, eta_zi) + \n", 
       "              poisson_log_log(y, eta); \n",
+      "     } \n",
+      "   } \n")
+  } else if (family == "zero_inflated_negbinomial") {
+    out <- paste0(out, 
+      "  /* zero-inflated negative binomial log-PDF of a single response \n",
+      "   * Args: \n",
+      "   *   y: the response value \n",
+      "   *   eta: linear predictor for negative binomial part \n",
+      "   *   eta_zi: linear predictor for zero-inflation part \n",
+      "   * Returns: \n", 
+      "   *   a scalar to be added to the log posterior \n",
+      "   */ \n",
+      "   real zero_inflated_neg_binomial_2_log(int y, real eta, real eta_zi, \n",
+      "                                         real shape) { \n",
+      "     if (y == 0) { \n",
+      "       return log_sum_exp(bernoulli_logit_log(1, eta_zi), \n",
+      "                          bernoulli_logit_log(0, eta_zi) + \n",
+      "                          neg_binomial_2_log_log(0, eta, shape)); \n",
+      "     } else { \n",
+      "       return bernoulli_logit_log(0, eta_zi) + \n", 
+      "              neg_binomial_2_log_log(y, eta, shape); \n",
       "     } \n",
       "   } \n")
   }
