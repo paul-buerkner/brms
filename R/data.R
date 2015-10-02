@@ -16,10 +16,10 @@ melt <- function(data, response, family) {
     if ("trait" %in% names(data))
       stop("trait is a resevered variable name in multivariate models")
     if (is_hurdle) {
-      if ("hurdle" %in% names(data))
-        stop("hurdle is a resevered variable name in hurdle models")
+      if (response[2] %in% names(data))
+        stop(paste(response[2], "is a resevered variable name"))
       # dummy variable not actually used in Stan
-      data$hurdle <- rep(0, nrow(data))
+      data[response[2]] <- rep(0, nrow(data))
     }
     new_columns <- data.frame(unlist(lapply(response, rep, time = nrow(data))), 
                               as.numeric(as.matrix(data[, response])))

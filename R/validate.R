@@ -91,7 +91,7 @@ extract_effects <- function(formula, ..., family = NA) {
   # extract response variables
   x$response <- all.vars(x$all[[2]])
   if (indicate_hurdle(family)) {
-    x$response <- c(x$response, "hurdle")
+    x$response <- c(x$response, paste0("hu_", x$response))
   }
   if (length(x$response) > 1) {
     if (!is.null(x$cens) || !is.null(x$se))
