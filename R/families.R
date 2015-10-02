@@ -19,7 +19,9 @@
 #'   and \code{acat} the links \code{logit}, \code{probit}, \code{probit_approx}, 
 #'   \code{cloglog}, and \code{cauchit}; \cr
 #'   family \code{categorical} the link \code{logit}; families \code{weibull}, 
-#'   and \code{exponential} the links \code{log}, \code{identity}, and \code{inverse}. 
+#'   and \code{exponential} the links \code{log}, \code{identity}, and \code{inverse};
+#'   families \code{hurdle_poisson}, \code{hurdle_negbinomial}, and
+#'   \code{hurdle_gamma} the link \code{log}.  
 #'   The first link mentioned for each family is the default.
 #'   A full list of families and link functions supported by \pkg{brms}, 
 #'   is provided in the 'Details' section of \code{\link[brms:brm]{brm}}.   
@@ -152,6 +154,60 @@ weibull <- function(link = "log") {
                "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
   structure(list(family = "weibull", link = linktemp), class = "family")
+}
+
+#' @rdname brmsfamily
+#' @export
+hurdle_poisson <- function(link = "log") {
+  linktemp <- substitute(link)
+  if (!is.character(linktemp)) {
+    linktemp <- deparse(linktemp)
+  } 
+  okLinks <- c("log")
+  if (!linktemp %in% okLinks && is.character(link)) {
+    linktemp <- link
+  }
+  if (!linktemp %in% okLinks) {
+    stop(paste(linktemp, "is not a supported link for family weibull. ", 
+               "Supported links are: \n", paste(okLinks, collapse = ", ")))
+  }
+  structure(list(family = "hurdle_poisson", link = linktemp), class = "family")
+}
+
+#' @rdname brmsfamily
+#' @export
+hurdle_negbinomial <- function(link = "log") {
+  linktemp <- substitute(link)
+  if (!is.character(linktemp)) {
+    linktemp <- deparse(linktemp)
+  } 
+  okLinks <- c("log")
+  if (!linktemp %in% okLinks && is.character(link)) {
+    linktemp <- link
+  }
+  if (!linktemp %in% okLinks) {
+    stop(paste(linktemp, "is not a supported link for family weibull. ", 
+               "Supported links are: \n", paste(okLinks, collapse = ", ")))
+  }
+  structure(list(family = "hurdle_negbinomial", link = linktemp), class = "family")
+}
+
+#' @rdname brmsfamily
+#' @export
+hurdle_gamma <- function(link = "log") {
+  linktemp <- substitute(link)
+  if (!is.character(linktemp)) {
+    linktemp <- deparse(linktemp)
+  } 
+  okLinks <- c("log")
+  if (!linktemp %in% okLinks && is.character(link)) {
+    linktemp <- link
+  }
+  if (!linktemp %in% okLinks) {
+    stop(paste(linktemp, "is not a supported link for family weibull. ", 
+               "Supported links are: \n", paste(okLinks, collapse = ", ")))
+  }
+  structure(list(family = "hurdle_gamma", link = linktemp), class = "family")
 }
 
 #' @rdname brmsfamily

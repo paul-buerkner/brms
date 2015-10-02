@@ -10,6 +10,9 @@
 \alias{cumulative}
 \alias{exponential}
 \alias{geometric}
+\alias{hurdle_gamma}
+\alias{hurdle_negbinomial}
+\alias{hurdle_poisson}
 \alias{negbinomial}
 \alias{sratio}
 \alias{student}
@@ -29,6 +32,12 @@ geometric(link = "log")
 exponential(link = "log")
 
 weibull(link = "log")
+
+hurdle_poisson(link = "log")
+
+hurdle_negbinomial(link = "log")
+
+hurdle_gamma(link = "log")
 
 categorical(link = "logit")
 
@@ -52,7 +61,9 @@ acat(link = "logit")
   and \code{acat} the links \code{logit}, \code{probit}, \code{probit_approx},
   \code{cloglog}, and \code{cauchit}; \cr
   family \code{categorical} the link \code{logit}; families \code{weibull},
-  and \code{exponential} the links \code{log}, \code{identity}, and \code{inverse}.
+  and \code{exponential} the links \code{log}, \code{identity}, and \code{inverse};
+  families \code{hurdle_poisson}, \code{hurdle_negbinomial}, and
+  \code{hurdle_gamma} the link \code{log}.
   The first link mentioned for each family is the default.
   A full list of families and link functions supported by \pkg{brms},
   is provided in the 'Details' section of \code{\link[brms:brm]{brm}}.}
