@@ -775,11 +775,15 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     family <- "multinormal"
   }
   predict_fun <- get(paste0("predict_", family))
-  out <- do.call(cbind, lapply(1:ncol(samples$eta), function(n) 
+  call_predict_fun <- function(n) {
     do.call(predict_fun, list(n = n, data = data, samples = samples, 
-                              link = object$link))))
-  if (!is.null(transform) && !is_catordinal) 
+                              link = object$link))
+  }
+  N <- ifelse(is.null(data$N_trait), data$N, data$N_trait)
+  out <- do.call(cbind, lapply(1:N, call_predict_fun))
+  if (!is.null(transform) && !is_catordinal) {
     out <- do.call(transform, list(out))
+  }
   
   if (summary && !is_catordinal) {
     out <- get_summary(out, probs = probs)
@@ -875,8 +879,8 @@ logLik.brmsfit <- function(object, ...) {
     do.call(loglik_fun, list(n = n, data = standata, samples = samples, 
                              link = object$link)) 
   }
-  loglik <- do.call(cbind, lapply(1:nrow(as.matrix(standata$Y)), 
-                                  call_loglik_fun))
+  N <- nrow(as.matrix(standata$Y))
+  loglik <- do.call(cbind, lapply(1:N, call_loglik_fun))
   colnames(loglik) <- 1:ncol(loglik)
   loglik
 }

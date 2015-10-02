@@ -85,6 +85,33 @@ predict_inverse.gaussian <- function(n, data, samples, link) {
                 lambda = samples$shape)
 }
 
+predict_hurdle_poisson <- function(n, data, samples, link) {
+  # theta is the bernoulii hurdle parameter
+  theta <- ilink(samples$eta[, n + data$N_trait], "logit")
+  lambda <- ilink(samples$eta[, n], link)
+  nsamples <- nrow(samples$eta)
+  hurdle <- runif(nsamples, 0, 1)
+  ifelse(hurdle < theta, 0, rpois(nsamples, lambda = lambda))
+}
+
+predict_hurdle_negbinomial <- function(n, data, samples, link) {
+  # theta is the bernoulii hurdle parameter
+  theta <- ilink(samples$eta[, n + data$N_trait], "logit")
+  mu <- ilink(samples$eta[, n], link)
+  nsamples <- nrow(samples$eta)
+  hurdle <- runif(nsamples, 0, 1)
+  ifelse(hurdle < theta, 0, rnbinom(nsamples, mu = mu, size = samples$shape))
+}
+
+predict_hurdle_gamma <- function(n, data, samples, link) {
+  # theta is the bernoulii hurdle parameter
+  theta <- ilink(samples$eta[, n + data$N_trait], "logit")
+  scale <- ilink(samples$eta[, n], link) / samples$shape
+  nsamples <- nrow(samples$eta)
+  hurdle <- runif(nsamples, 0, 1)
+  ifelse(hurdle < theta, 0, rgamma(nsamples, shape = samples$shape, scale = scale))
+}
+
 predict_categorical <- function(n, data, samples, link) {
   ncat <- ifelse(length(data$max_obs) > 1, data$max_obs[n], data$max_obs) 
   p <- pcategorical(1:ncat, eta = samples$eta[, n, ], 
