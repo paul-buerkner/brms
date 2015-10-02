@@ -415,7 +415,7 @@ stan_llh <- function(family, link, add = FALSE,
       hurdle_poisson = c("hurdle_poisson", "eta[n], eta[n + N_trait]"),
       hurdle_negbinomial = c("hurdle_neg_binomial_2", 
                              "eta[n], eta[n + N_trait], shape"),
-      hurdle_gamma = c("hurdle_gamma", "eta[n], eta[n + N_trait], shape"))
+      hurdle_gamma = c("hurdle_gamma", "shape, eta[n], eta[n + N_trait]"))
   }
   if (family == "inverse.gaussian") {
     # required as inv_gaussian_log has 2 additional arguments
@@ -687,19 +687,19 @@ stan_function <- function(family = "gaussian", link = "identity",
                   "  /* hurdle gamma log-PDF of a single response \n",
                   "   * Args: \n",
                   "   *   y: the response value \n",
+                  "   *   shape: shape parameter of gamma distribution \n",
                   "   *   eta_gamma: linear predictor for gamma part \n",
                   "   *   eta_hurdle: linear predictor for hurdle part \n",
-                  "   *   shape: shape parameter of gamma distribution \n",
                   "   * Returns: \n", 
                   "   *   a scalar to be added to the log posterior \n",
                   "   */ \n",
-                  "   real hurdle_gamma_log(real y, real eta_gamma, real eta_hurdle, \n", 
-                  "                         real shape) { \n",
+                  "   real hurdle_gamma_log(real y, real shape, real eta_gamma, \n", 
+                  "                         real eta_hurdle) { \n",
                   "     if (y == 0) { \n",
                   "       return bernoulli_logit_log(1, eta_hurdle); \n",
                   "     } else { \n",
                   "       return bernoulli_logit_log(0, eta_hurdle) + \n", 
-                  "              gamma_log(y, shape / exp(eta_gamma), shape); \n",
+                  "              gamma_log(y, shape, shape / exp(eta_gamma)); \n",
                   "     } \n",
                   "   } \n")
   }
