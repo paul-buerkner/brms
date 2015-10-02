@@ -91,11 +91,12 @@ predict_hurdle_poisson <- function(n, data, samples, link) {
   theta <- ilink(samples$eta[, n + data$N_trait], "logit")
   lambda <- ilink(samples$eta[, n], link)
   nsamples <- nrow(samples$eta)
-  hurdle <- runif(nsamples, 0, 1)
+  # compare with theta to incorporate the hurdle process
+  hu <- runif(nsamples, 0, 1)
   # sample from a truncated poisson distribution
   # by adjusting lambda and adding 1
   t = -log(1 - runif(nsamples) * (1 - exp(-lambda)))
-  ifelse(hurdle < theta, 0, rpois(nsamples, lambda = lambda - t) + 1)
+  ifelse(hu < theta, 0, rpois(nsamples, lambda = lambda - t) + 1)
 }
 
 predict_hurdle_negbinomial <- function(n, data, samples, link) {
@@ -103,12 +104,12 @@ predict_hurdle_negbinomial <- function(n, data, samples, link) {
   theta <- ilink(samples$eta[, n + data$N_trait], "logit")
   mu <- ilink(samples$eta[, n], link)
   nsamples <- nrow(samples$eta)
-  hurdle <- runif(nsamples, 0, 1)
+  # compare with theta to incorporate the hurdle process
+  hu <- runif(nsamples, 0, 1)
   # sample from an approximative(!) truncated negbinomial distribution
   # by adjusting mu and adding 1
   t = -log(1 - runif(nsamples) * (1 - exp(-mu)))
-  ifelse(hurdle < theta, 0, 
-         rnbinom(nsamples, mu = mu - t, size = samples$shape) + 1)
+  ifelse(hu < theta, 0, rnbinom(nsamples, mu = mu - t, size = samples$shape) + 1)
 }
 
 predict_hurdle_gamma <- function(n, data, samples, link) {
@@ -116,8 +117,29 @@ predict_hurdle_gamma <- function(n, data, samples, link) {
   theta <- ilink(samples$eta[, n + data$N_trait], "logit")
   scale <- ilink(samples$eta[, n], link) / samples$shape
   nsamples <- nrow(samples$eta)
-  hurdle <- runif(nsamples, 0, 1)
-  ifelse(hurdle < theta, 0, rgamma(nsamples, shape = samples$shape, scale = scale))
+  # compare with theta to incorporate the hurdle process
+  hu <- runif(nsamples, 0, 1)
+  ifelse(hu < theta, 0, rgamma(nsamples, shape = samples$shape, scale = scale))
+}
+
+predict_zero_inflated_poisson <- function(n, data, samples, link) {
+  # theta is the bernoulii zero-inflation parameter
+  theta <- ilink(samples$eta[, n + data$N_trait], "logit")
+  lambda <- ilink(samples$eta[, n], link)
+  nsamples <- nrow(samples$eta)
+  # compare with theta to incorporate the zero-inflation process
+  zi <- runif(nsamples, 0, 1)
+  ifelse(zi < theta, 0, rpois(nsamples, lambda = lambda))
+}
+
+predict_zero_inflated_negbinomial <- function(n, data, samples, link) {
+  # theta is the bernoulii zero-inflation parameter
+  theta <- ilink(samples$eta[, n + data$N_trait], "logit")
+  mu <- ilink(samples$eta[, n], link)
+  nsamples <- nrow(samples$eta)
+  # compare with theta to incorporate the zero-inflation process
+  zi <- runif(nsamples, 0, 1)
+  ifelse(zi < theta, 0, rnbinom(nsamples, mu = mu, size = samples$shape))
 }
 
 predict_categorical <- function(n, data, samples, link) {
