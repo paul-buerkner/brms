@@ -875,8 +875,10 @@ logLik.brmsfit <- function(object, ...) {
     do.call(loglik_fun, list(n = n, data = standata, samples = samples, 
                              link = object$link)) 
   }
-  loglik <- lapply(1:nrow(as.matrix(standata$Y)), call_loglik_fun)
-  do.call(cbind, loglik)
+  loglik <- do.call(cbind, lapply(1:nrow(as.matrix(standata$Y)), 
+                                  call_loglik_fun))
+  colnames(loglik) <- 1:ncol(loglik)
+  loglik
 }
 
 #' @export
