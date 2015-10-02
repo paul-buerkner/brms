@@ -92,7 +92,10 @@ predict_hurdle_poisson <- function(n, data, samples, link) {
   lambda <- ilink(samples$eta[, n], link)
   nsamples <- nrow(samples$eta)
   hurdle <- runif(nsamples, 0, 1)
-  ifelse(hurdle < theta, 0, rpois(nsamples, lambda = lambda))
+  # sample from a truncated poisson distribution
+  # by adjusting lambda and adding 1
+  t = -log(1 - runif(nsamples) * (1 - exp(-lambda)))
+  ifelse(hurdle < theta, 0, rpois(nsamples, lambda = lambda - t) + 1)
 }
 
 predict_hurdle_negbinomial <- function(n, data, samples, link) {
@@ -101,7 +104,11 @@ predict_hurdle_negbinomial <- function(n, data, samples, link) {
   mu <- ilink(samples$eta[, n], link)
   nsamples <- nrow(samples$eta)
   hurdle <- runif(nsamples, 0, 1)
-  ifelse(hurdle < theta, 0, rnbinom(nsamples, mu = mu, size = samples$shape))
+  # sample from an approximative(!) truncated negbinomial distribution
+  # by adjusting mu and adding 1
+  t = -log(1 - runif(nsamples) * (1 - exp(-mu)))
+  ifelse(hurdle < theta, 0, 
+         rnbinom(nsamples, mu = mu - t, size = samples$shape) + 1)
 }
 
 predict_hurdle_gamma <- function(n, data, samples, link) {
