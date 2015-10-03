@@ -47,7 +47,8 @@ test_that("Test that brmdata returns correct data names for fixed and random eff
                  "J_2","N_2","K_2","Z_2","NC_2"))
 })
 
-test_that("Test that brmdata handles variables used as fixed effects and grouping factors at the same time", {
+test_that(paste0("Test that brmdata handles variables used as fixed effects", 
+                 "and grouping factors at the same time"), {
   data <- data.frame(y = 1:9, x = factor(rep(c("a","b","c"), 3)))
   standata <- brmdata(y ~ x + (1|x), data = data)
   expect_equal(colnames(standata$X), c("xb", "xc"))
@@ -72,6 +73,8 @@ test_that("Test that brmdata returns correct data names for addition and partial
                c("N","Y","K","X","ncat","max_obs"))
   expect_equal(names(brmdata(y | cat(10) ~ x, family = "cumulative", data = data)), 
                c("N","Y","K","X","ncat","max_obs"))
+  temp_data <- brmdata(y | trunc(0,20) ~ x, family = "gaussian", data = data)
+  expect_true(temp_data$lb == 0 && temp_data$ub == 20)
 })
 
 test_that("Test that brmdata accepts correct response variables depending on the family", {

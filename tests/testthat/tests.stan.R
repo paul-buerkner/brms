@@ -79,6 +79,12 @@ test_that("Test that stan_model returns correct strings for customized covarianc
 test_that("Test that stan_model handles addition arguments correctly", {
   expect_match(stan_model(time | cens(censored) ~ age + sex + disease, data = kidney,
                           family = "weibull", link = "log"), "vector[N] cens;", fixed = TRUE)
+  expect_match(stan_model(time | trunc(0) ~ age + sex + disease, data = kidney,
+                          family = "gamma", link = "log"), "T[lb, ];", fixed = TRUE)
+  expect_match(stan_model(time | trunc(ub = 100) ~ age + sex + disease, data = kidney,
+                          family = "cauchy", link = "log"), "T[, ub];", fixed = TRUE)
+  expect_match(stan_model(count | trunc(0, 150) ~ Trt_c, data = epilepsy,
+                          family = "poisson", link = "log"), "T[lb, ub];", fixed = TRUE)
 })
 
 test_that("Test that stan_model correctly combines strings of multiple grouping factors", {
