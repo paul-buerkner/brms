@@ -47,7 +47,7 @@ extract_effects <- function(formula, ..., family = NA) {
             group = if (length(group)) group[order(group)] else group)
   
   # handle addition arguments
-  fun <- c("se", "weights", "trials", "cat", "cens")
+  fun <- c("se", "weights", "trials", "cat", "cens", "trunc")
   add_vars <- list()
   if (!is.na(family)) {
     add <- unlist(regmatches(formula, gregexpr("\\|[^~]*~", formula)))[1]
@@ -58,19 +58,26 @@ extract_effects <- function(formula, ..., family = NA) {
                      cat = c("categorical", "cumulative", "cratio", "sratio", "acat"), 
                      cens = c("gaussian", "student", "cauchy", "inverse.gaussian", 
                               "binomial", "poisson", "geometric", "negbinomial", 
-                              "exponential", "weibull", "gamma"))
+                              "exponential", "weibull", "gamma"),
+                     trunc = c("gaussian", "student", "cauchy",
+                               "binomial", "poisson", "geometric", "negbinomial", 
+                               "exponential", "weibull", "gamma"))
     for (f in fun) {
       x[[f]] <- unlist(regmatches(add, gregexpr(paste0(f,"\\([^\\|]*\\)"), add)))[1]
       add <- gsub(paste0(f,"\\([^~|\\|]*\\)\\|*"), "", add)
       if (is.na(x[[f]])) {
         x[[f]] <- NULL
       } else if (family %in% families[[f]] || families[[f]][1] == "all") {
-        args <- substr(x[[f]], nchar(f) + 2, nchar(x[[f]]) -1)
-        if (is.na(suppressWarnings(as.numeric(args)))) {
-          x[[f]] <- as.formula(paste0("~ .", x[[f]]))
-          add_vars[[f]] <- as.formula(paste("~", paste(all.vars(x[[f]]), collapse = "+")))
+        args <- substr(x[[f]], nchar(f) + 2, nchar(x[[f]]) - 1)
+        try_numeric <- suppressWarnings(as.numeric(args))
+        if (f %in% c("trials", "cat") && !is.na(try_numeric)) {
+          x[[f]] <- try_numeric
         } else {
-          x[[f]] <- as.numeric(args)
+          x[[f]] <- as.formula(paste0("~ .", x[[f]]))
+          if (length(all.vars(x[[f]]))) {
+            form <- paste("~", paste(all.vars(x[[f]]), collapse = "+"))
+            add_vars[[f]] <- as.formula(form)
+          }
         }
       } else {
         stop(paste("Argument", f, "in formula is not supported by family", family))

@@ -67,13 +67,15 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
                                partial = length(paref), 
                                threshold = threshold)  
   text_multi <- stan_multi(family, response = ee$response)
+  trunc <- if (is.formula(ee$trunc)) .addition(ee$trunc)
+           else .trunc()
   text_llh <- stan_llh(family, link = link, 
                        add = is.formula(ee[c("se", "trials")]), 
                        weights = is.formula(ee$weights), 
-                       cens = is.formula(ee$cens))
-  if (is.formula(ee$cens) || is.formula(ee$weights) 
-      || is_ordinal || family == "categorical" || is_hurdle
-      || is_zero_inflated) {
+                       cens = is.formula(ee$cens),
+                       trunc = trunc)
+  if (is.formula(ee$cens) || is.formula(ee$weights) || is.formula(ee$trunc) ||
+      is_ordinal || family == "categorical" || is_hurdle|| is_zero_inflated) {
     text_llh <- paste0("  for (n in 1:N",trait,") { \n  ",text_llh,"  } \n")
   }
     
@@ -114,6 +116,7 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
   text_functions <- stan_function(family = family, link = link, 
                                   weights = is.formula(ee$weights),
                                   cens = is.formula(ee$cens),
+                                  trunc = is.formula(ee$trunc),
                                   kronecker = kronecker)
   
   text_data <- paste0(
@@ -159,10 +162,14 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
       paste0("  int ncat;  # number of categories \n"),
     if (is.formula(ee$cens) && !(is_ordinal || family == "categorical"))
       "  vector[N] cens;  # indicates censoring \n",
+    if (trunc$lb > -Inf)
+      "  real lb;  # lower bound for truncation; \n",
+    if (trunc$ub < Inf)
+      "  real ub;  # upper bound for truncation; \n",
     if (family == "inverse.gaussian")
       paste0("  # quantities for the inverse gaussian distribution \n",
              "  vector[N] sqrt_Y;  # sqrt(Y) \n",
-             if (is.formula(ee[c("weights", "cens")]))
+             if (is.formula(ee[c("weights", "cens", "trunc")]))
                "  vector[N] log_Y;  # log(Y) \n"   
              else "  real log_Y;  # sum(log(Y)) \n"),
     text_ranef$data,
@@ -356,8 +363,8 @@ stan_ranef <- function(i, ranef, group, cor, prior = list(),
   out
 }
 
-stan_llh <- function(family, link, add = FALSE, 
-                     weights = FALSE, cens = FALSE) {
+stan_llh <- function(family, link, add = FALSE,  weights = FALSE, 
+                     cens = FALSE, trunc = .trunc()) {
   # Likelihoods in stan language
   #
   # Args:
@@ -375,13 +382,16 @@ stan_llh <- function(family, link, add = FALSE,
   is_binary <- indicate_binary(family)
   is_hurdle <- indicate_hurdle(family)
   is_zero_inflated <- indicate_zero_inflated(family)
+  is_trunc <- trunc$lb > -Inf || trunc$ub < Inf
   
-  simplify <- !cens && (is_binary && link == "logit" || is_count && link == "log" ||
-                family %in% c("cumulative", "categorical") && link == "logit" && !add) 
-  n <- ifelse(cens || weights || is_catordinal || is_hurdle || is_zero_inflated, 
-              "[n]", "")
+  simplify <- !is_trunc && !cens && 
+    (is_binary && link == "logit" || is_count && link == "log" ||
+    family %in% c("cumulative", "categorical") && link == "logit" && !add) 
+  n <- ifelse(cens || weights || is_trunc || is_catordinal ||
+              is_hurdle || is_zero_inflated, "[n]", "")
   ns <- ifelse(add && (cens || weights), "[n]", "")
-  ilink <- ifelse(cens && (is_binary && link == "logit" || is_count && link == "log"), 
+  ilink <- ifelse((cens || is_trunc) && 
+                  (is_binary && link == "logit" || is_count && link == "log"), 
                   stan_ilink(link), "")
   
   lin.args <- paste0("eta",n,", sigma",ns)
@@ -436,6 +446,18 @@ stan_llh <- function(family, link, add = FALSE,
   # write likelihood code
   type <- c("cens", "weights")[match(TRUE, c(cens, weights))]
   if (is.na(type)) type <- "general"
+  # prepare for possibl truncation
+  if (is_trunc) {
+    if (type %in% c("cens", "weights")) {
+      stop(paste("truncation is not yet possible in censored or weighted models"))
+    } else {
+      lb <- ifelse(trunc$lb > -Inf, trunc$lb, "")
+      ub <- ifelse(trunc$ub < Inf, trunc$ub, "")
+      trunc <- paste0(" T[",lb,", ",ub,"]")
+    }
+  } else {
+    trunc <- ""
+  }
   addW <- ifelse(weights, "weights[n] * ", "")
   llh <- switch(type, 
     cens = paste0("  # special treatment of censored data \n",
@@ -447,7 +469,7 @@ stan_llh <- function(family, link, add = FALSE,
       "      else increment_log_prob(", addW, llh.pre[1], "_cdf_log(Y[n], ",llh.pre[3],")); \n",
       "    } \n"),
     weights = paste0("  lp_pre[n] <- ", llh.pre[1], "_log(Y[n], ",llh.pre[2],"); \n"),
-    general = paste0("  Y", n, " ~ ", llh.pre[1],"(",llh.pre[2],"); \n")) 
+    general = paste0("  Y", n, " ~ ", llh.pre[1],"(",llh.pre[2],")", trunc, "; \n")) 
   llh
 }
 
@@ -558,7 +580,7 @@ stan_ma <- function(family, link, autocor) {
 }
 
 stan_function <- function(family = "gaussian", link = "identity", 
-                          weights = FALSE, cens = FALSE,
+                          weights = FALSE, cens = FALSE, trunc = FALSE,
                           kronecker = FALSE) {
   # stan code for user defined functions
   #
@@ -585,7 +607,7 @@ stan_function <- function(family = "gaussian", link = "identity",
     "    return p; \n",
     "  } \n")
   if (family == "inverse.gaussian") {
-    if (weights || cens) {
+    if (weights || cens || trunc) {
       out <- paste0(out,
       "  /* inverse Gaussian log-PDF of a single response (for data only) \n",
       "   * Copyright Stan Development Team 2015 \n",

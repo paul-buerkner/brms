@@ -254,6 +254,12 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
   if (is.formula(ee$cens)) {
     standata <- c(standata, list(cens = .addition(formula = ee$cens, data = data)))
   }
+  if (is.formula(ee$trunc)) {
+    standata <- c(standata, .addition(formula = ee$trunc))
+    if (min(standata$Y) < standata$lb || max(standata$Y) > standata$ub) {
+      stop("some responses are outside of the truncation boundaries")
+    }
+  }
   if (family == "inverse.gaussian") {
     # save as data to reduce computation time in Stan
     if (is.formula(ee[c("weights", "cens")])) {
@@ -385,7 +391,7 @@ ar_design_matrix <- function(Y, p, group)  {
   out
 }
 
-.addition <- function(formula, data) {
+.addition <- function(formula, data = NULL) {
   # computes data for addition arguments
   if (!is.formula(formula))
     formula <- as.formula(formula)
@@ -432,5 +438,14 @@ ar_design_matrix <- function(Y, p, group)  {
                  "(abbreviations are allowed) or -1, 0, and 1. TRUE and FALSE are also accepted \n",
                  "and refer to 'right' and 'none' respectively."))
   cens
+}
+
+.trunc <- function(lb = -Inf, ub = Inf) {
+  lb <- as.numeric(lb)
+  ub <- as.numeric(ub)
+  if (length(lb) != 1 || length(ub) != 1) {
+    stop("Invalid truncation values")
+  }
+  list(lb = lb, ub = ub)
 }
   
