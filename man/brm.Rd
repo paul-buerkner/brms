@@ -287,11 +287,11 @@ Fit a generalized linear mixed model, which incorporates both fixed-effects para
 \examples{
 \dontrun{
 ## Poisson Regression for the number of seizures in epileptic patients
-## using uniform priors for fixed effects
+## using student_t priors for fixed effects
 ## and half cauchy priors for standard deviations of random effects
 fit_e <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient) + (1|visit),
            data = epilepsy, family = "poisson",
-           prior = c(set_prior("uniform(-10,10)", class = "b"),
+           prior = c(set_prior("student_t(5,0,10)", class = "b"),
                      set_prior("cauchy(0,2)", class = "sd")))
 ## generate a summary of the results
 summary(fit_e)
