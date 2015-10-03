@@ -16,8 +16,10 @@
 #'   Currently, the following families are supported:
 #'   \code{"gaussian"}, \code{"student"}, \code{"cauchy"}, \code{"binomial"}, \code{"bernoulli"}, 
 #'   \code{"categorical"}, \code{"poisson"}, \code{"negbinomial"}, \code{"geometric"}, \code{"gamma"}, 
-#'   \code{"inverse.gaussian"}, \code{"exponential"}, \code{"weibull"}, \code{"cumulative"}, 
-#'   \code{"cratio"}, \code{"sratio"}, and \code{"acat"}.
+#'   \code{"inverse.gaussian"}, \code{"exponential"}, \code{"weibull"}, 
+#'   \code{hurdle_poisson}, \code{hurdle_negbinomial}, \code{hurdle_gamma}, 
+#'   \code{zero_inflated_poisson}, \code{zero_inflated_negbinomial},
+#'   \code{"cumulative"}, \code{"cratio"}, \code{"sratio"}, and \code{"acat"}.
 #'   The second string indicates the link function, which must be supported by the family 
 #'   (if not specified, default links are used). 
 #'   Alternatively, a family function or the result of a call to a family function are also accepted
@@ -166,8 +168,8 @@
 #'   then \code{cbind(y1,y2) ~ x} speficies a multivariate model, 
 #'   where \code{x} has the same effect on \code{y1} and \code{y2}.
 #'   To indicate different effects on each response variable, the word \code{trait} 
-#'   (which is reserved in models with mutiple responses) can be used as an additional categorical predictor. 
-#'   For instance, \code{cbind(y1,y2) ~ -1 + x:trait} leads to seperate effects
+#'   (which is reserved in multivariate models) can be used as an additional categorical predictor. 
+#'   For instance, \code{cbind(y1,y2) ~ 0 + x:trait} leads to seperate effects
 #'   of \code{x} on \code{y1} and \code{y2}. 
 #'   In this case, \code{trait} has two levels, namely \code{"y1"} and \code{"y2"}. 
 #'   By default, \code{trait} is dummy-coded. 
@@ -175,6 +177,19 @@
 #'   as random effect within a grouping factor. Note that variable \code{trait} is generated 
 #'   internally and may not be specified in the data passed to \code{brm}. \cr
 #'   
+#'   Zero-inflated and hurdle families are bivariate and also make use of the special internal
+#'   variable \code{trait} having two levels in this case. 
+#'   However, only the actual response must be specified in \code{formula}, 
+#'   as the second response variable used for the zero-inflation / hurdle part 
+#'   is internally generated.
+#'   A \code{formula} for this type of models may, for instance, look like this: 
+#'   \code{y ~ 0 + trait * (x1 + x2) + (0 + trait | g)}. In this example, the fixed effects
+#'   \code{x1} and \code{x1} influence the zero-inflation / hurdle part differently
+#'   than the actual response part as indicated by their interaction with \code{trait}.
+#'   In addition, a random effect of \code{trait} was added while the random intercept 
+#'   was removed leading to the estimation of two random effects, 
+#'   one for the zero-inflation / hurdle part and one for the actual response. 
+#'   In the example above, the correlation between the two random effects will also be estimated.
 #'   
 #'   \bold{Families and link functions}
 #'   
@@ -190,6 +205,13 @@
 #'   and \code{acat} ('adjacent category') leads to ordinal regression. Families \code{gamma}, 
 #'   \code{weibull}, \code{exponential}, and \code{inverse.gaussian} can be used (among others) 
 #'   for survival regression when combined with the \code{log} link. 
+#'   Families \code{hurdle_poisson}, \code{hurdle_negbinomial}, \code{hurdle_gamma}, 
+#'   \code{zero_inflated_poisson}, and \code{zero_inflated_negbinomial} combined with the 
+#'   \code{log} link allow to estimate zero-inflated and hurdle models. These models 
+#'   can be very helpful when there are many zeros in the data that cannot be explained 
+#'   by the primary distribution of the response. Family \code{hurdle_gamma} is 
+#'   especially useful, as a traditional \code{gamma} model cannot be reasonably fitted for
+#'   data containing zeros in the response. 
 #'   
 #'   In the following, we list all possible links for each family.
 #'   The families \code{gaussian}, \code{student}, and \code{cauchy} accept the links (as names) 
@@ -202,7 +224,10 @@
 #'   family \code{categorical} the link \code{logit}; families \code{gamma}, \code{weibull}, 
 #'   and \code{exponential} the links \code{log}, \code{identity}, and \code{inverse};
 #'   family \code{inverse.gaussian} the links \code{1/mu^2}, \code{inverse}, \code{identity} 
-#'   and \code{log}. The first link mentioned for each family is the default.     
+#'   and \code{log}; families \code{hurdle_poisson}, \code{hurdle_negbinomial},
+#'   \code{hurdle_gamma}, \code{zero_inflated_poisson}, and
+#'   \code{zero_inflated_negbinomial} the link \code{log}. 
+#'   The first link mentioned for each family is the default.     
 #'   
 #'   Please note that when calling the \code{\link[stats:family]{Gamma}} family function, 
 #'   the default link will be \code{inverse} not \code{log}. 
@@ -263,7 +288,6 @@
 #' x <- rnorm(100)
 #' fit_b <- brm(success | trials(n) ~ x, family = binomial("probit"))
 #' summary(fit_b)
-#'                                           
 #' }
 #' 
 #' @import rstan

@@ -25,8 +25,10 @@ The first string indicates the distribution of the dependent variable (the 'fami
 Currently, the following families are supported:
 \code{"gaussian"}, \code{"student"}, \code{"cauchy"}, \code{"binomial"}, \code{"bernoulli"},
 \code{"categorical"}, \code{"poisson"}, \code{"negbinomial"}, \code{"geometric"}, \code{"gamma"},
-\code{"inverse.gaussian"}, \code{"exponential"}, \code{"weibull"}, \code{"cumulative"},
-\code{"cratio"}, \code{"sratio"}, and \code{"acat"}.
+\code{"inverse.gaussian"}, \code{"exponential"}, \code{"weibull"},
+\code{hurdle_poisson}, \code{hurdle_negbinomial}, \code{hurdle_gamma},
+\code{zero_inflated_poisson}, \code{zero_inflated_negbinomial},
+\code{"cumulative"}, \code{"cratio"}, \code{"sratio"}, and \code{"acat"}.
 The second string indicates the link function, which must be supported by the family
 (if not specified, default links are used).
 Alternatively, a family function or the result of a call to a family function are also accepted
