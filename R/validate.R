@@ -528,11 +528,14 @@ get_prior <- function(formula, data = NULL, family = "gaussian",
   Y <- unname(model.response(data))
   prior_scale <- 5
   if (link %in% c("identity", "log", "inverse", "sqrt", "1/mu^2")) {
-    if (link %in% c("log", "inverse")) {
+    if (link %in% c("log", "inverse", "1/mu^2")) {
       # avoid Inf in link(Y)
       Y <- ifelse(Y == 0, Y + 0.1, Y)
     }
-    prior_scale <- max(prior_scale, round(sd(link(Y, link = link)))) 
+    suggested_scale <- round(sd(link(Y, link = link)))
+    if (!is.nan(suggested_scale)) {
+      prior_scale <- max(prior_scale, suggested_scale)
+    } 
   }
   default_scale_prior <- paste0("cauchy(0,", prior_scale, ")")
   
