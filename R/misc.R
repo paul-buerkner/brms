@@ -183,6 +183,18 @@ indicate_shape <- function(family) {
                 "hurdle_gamma", "zero_inflated_negbinomial")
 }
 
+get_boundaries <- function(trunc) {
+  # extract truncation boundaries out of a formula
+  # that is known to contain the .trunc function
+  # Returns:
+  #   a list containing two numbers named lb and ub
+  if (is.formula(trunc)) {
+    .addition(trunc)
+  } else {
+    .trunc()
+  }
+}
+
 # startup messages for brms
 .onAttach <- function(libname, pkgname) {
   packageStartupMessage(paste0(

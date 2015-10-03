@@ -23,6 +23,7 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
   is_zero_inflated <- indicate_zero_inflated(family)
   is_multi <- family == "multinormal"
   has_shape <- indicate_shape(family)
+  trunc <- get_boundaries(ee$trunc)  # see misc.R
   
   if (family == "categorical") {
     X <- data.frame()
@@ -67,8 +68,6 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
                                partial = length(paref), 
                                threshold = threshold)  
   text_multi <- stan_multi(family, response = ee$response)
-  trunc <- if (is.formula(ee$trunc)) .addition(ee$trunc)
-           else .trunc()
   text_llh <- stan_llh(family, link = link, 
                        add = is.formula(ee[c("se", "trials")]), 
                        weights = is.formula(ee$weights), 
@@ -446,30 +445,33 @@ stan_llh <- function(family, link, add = FALSE,  weights = FALSE,
   # write likelihood code
   type <- c("cens", "weights")[match(TRUE, c(cens, weights))]
   if (is.na(type)) type <- "general"
-  # prepare for possibl truncation
+  # prepare for possible truncation
+  code_trunc <- ""
   if (is_trunc) {
     if (type %in% c("cens", "weights")) {
       stop(paste("truncation is not yet possible in censored or weighted models"))
     } else {
-      lb <- ifelse(trunc$lb > -Inf, trunc$lb, "")
-      ub <- ifelse(trunc$ub < Inf, trunc$ub, "")
-      trunc <- paste0(" T[",lb,", ",ub,"]")
+      lb <- ifelse(trunc$lb > -Inf, "lb", "")
+      ub <- ifelse(trunc$ub < Inf, "ub", "")
+      code_trunc <- paste0(" T[",lb,", ",ub,"]")
     }
-  } else {
-    trunc <- ""
   }
   addW <- ifelse(weights, "weights[n] * ", "")
   llh <- switch(type, 
     cens = paste0("  # special treatment of censored data \n",
       "    if (cens[n] == 0) ", 
       ifelse(!weights, paste0("Y[n] ~ ", llh.pre[1],"(",llh.pre[2],"); \n"),
-             paste0("increment_log_prob(", addW, llh.pre[1], "_log(Y[n], ",llh.pre[2],")); \n")),
+             paste0("increment_log_prob(", addW, 
+                    llh.pre[1], "_log(Y[n], ",llh.pre[2],")); \n")),
       "    else { \n",         
-      "      if (cens[n] == 1) increment_log_prob(", addW, llh.pre[1], "_ccdf_log(Y[n], ",llh.pre[3],")); \n",
-      "      else increment_log_prob(", addW, llh.pre[1], "_cdf_log(Y[n], ",llh.pre[3],")); \n",
+      "      if (cens[n] == 1) increment_log_prob(", addW, 
+               llh.pre[1], "_ccdf_log(Y[n], ",llh.pre[3],")); \n",
+      "      else increment_log_prob(", addW, 
+               llh.pre[1], "_cdf_log(Y[n], ",llh.pre[3],")); \n",
       "    } \n"),
     weights = paste0("  lp_pre[n] <- ", llh.pre[1], "_log(Y[n], ",llh.pre[2],"); \n"),
-    general = paste0("  Y", n, " ~ ", llh.pre[1],"(",llh.pre[2],")", trunc, "; \n")) 
+    general = paste0("  Y", n, " ~ ", llh.pre[1],"(",llh.pre[2],")", 
+                     code_trunc, "; \n")) 
   llh
 }
 
