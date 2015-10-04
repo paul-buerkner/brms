@@ -12,7 +12,7 @@ predict_gaussian <- function(n, data, samples, link) {
   sigma <- if (!is.null(samples$sigma)) samples$sigma
            else data$sigma
   args <- list(mean = ilink(samples$eta[, n], link), sd = sigma)
-  rng_continuous(rng = nrow(samples$eta), dist = "norm",
+  rng_continuous(nrng = nrow(samples$eta), dist = "norm",
                  args = args, data = data)
 }
 
@@ -20,7 +20,7 @@ predict_student <- function(n, data, samples, link) {
   sigma <- if (!is.null(samples$sigma)) samples$sigma
            else data$sigma
   args <- list(df = samples$nu, mu = ilink(samples$eta[, n], link), sigma = sigma)
-  rng_continuous(rng = nrow(samples$eta), dist = "student",
+  rng_continuous(nrng = nrow(samples$eta), dist = "student",
                  args = args, data = data)
 }
 
@@ -28,7 +28,7 @@ predict_cauchy <- function(n, data, samples, link) {
   sigma <- if (!is.null(samples$sigma)) samples$sigma
            else data$sigma
   args <- list(df = 1, mu = ilink(samples$eta[, n], link), sigma = sigma)
-  rng_continuous(rng = nrow(samples$eta), dist = "student",
+  rng_continuous(nrng = nrow(samples$eta), dist = "student",
                  args = args, data = data)
 }
 
@@ -38,7 +38,7 @@ predict_lognormal <- function(n, data, samples, link) {
   sigma <- if (!is.null(samples$sigma)) samples$sigma
            else data$sigma
   args <- list(meanlog = samples$eta[, n], sdlog = sigma)
-  rng_continuous(rng = nrow(samples$eta), dist = "lnorm",
+  rng_continuous(nrng = nrow(samples$eta), dist = "lnorm",
                  args = args, data = data)
 }
 
@@ -77,27 +77,27 @@ predict_geometric <- function(n, data, samples, link) {
 
 predict_exponential <-  function(n, data, samples, link) {
   args <- list(rate = ilink(-samples$eta[, n], link))
-  rng_continuous(rng = nrow(samples$eta), dist = "exp",
+  rng_continuous(nrng = nrow(samples$eta), dist = "exp",
                  args = args, data = data)
 }
 
 predict_gamma <- function(n, data, samples, link) {
   args <- list(shape = samples$shape,
                scale = ilink(samples$eta[, n], link) / samples$shape)
-  rng_continuous(rng = nrow(samples$eta), dist = "gamma",
+  rng_continuous(nrng = nrow(samples$eta), dist = "gamma",
                  args = args, data = data)
 }
 
 predict_weibull <- function(n, data, samples, link) {
   args <- list(shape = samples$shape,
                scale = 1 / (ilink(-samples$eta[, n] / samples$shape, link)))
-  rng_continuous(rng = nrow(samples$eta), dist = "weibull",
+  rng_continuous(nrng = nrow(samples$eta), dist = "weibull",
                  args = args, data = data)
 }
 
 predict_inverse.gaussian <- function(n, data, samples, link) {
-  args <- list(mu = ilink(samples$eta[, n], link), lambda = samples$shape)
-  rng_continuous(rng = nrow(samples$eta), dist = "invgauss",
+  args <- list(mean = ilink(samples$eta[, n], link), shape = samples$shape)
+  rng_continuous(nrng = nrow(samples$eta), dist = "invgauss",
                  args = args, data = data)
 }
 
