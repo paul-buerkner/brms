@@ -701,7 +701,6 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
   ee <- extract_effects(object$formula, family = object$family)
-  
   # use newdata if defined
   if (is.null(newdata)) {
     data <- standata(object, keep_intercept = TRUE)
@@ -709,56 +708,12 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     data <- amend_newdata(newdata, fit = object, re_formula = re_formula,
                           allow_new_levels = allow_new_levels)
   }
-    
   # get mu and scale it appropriately
   mu <- linear_predictor(object, newdata = data, re_formula = re_formula)
-  is_catordinal <- indicate_ordinal(object$family) || 
-                   object$family == "categorical"
   if (scale == "response") {
-    if (object$family == "binomial") {
-      max_obs <- matrix(rep(data$max_obs, nrow(mu)), nrow = nrow(mu), byrow = TRUE)
-      # scale mu from [0,1] to [0,max_obs]
-      mu <- ilink(mu, object$link) * max_obs 
-    } else if (object$family == "gaussian" && object$link == "log"
-               && length(ee$response) == 1) {
-      sigma <- posterior_samples(object, "^sigma_")$sigma
-      # lognormal mean
-      mu <- ilink(mu + sigma^2 / 2, object$link)  
-    } else if (object$family == "weibull") {
-      shape <- posterior_samples(object, "^shape$")$shape
-      # weibull mean
-      mu <- 1 / (ilink(-mu / shape, object$link)) * gamma(1 + 1 / shape)  
-    } else if (is_catordinal) {
-      ncat <- max(data$max_obs)
-      # get probabilities of each category
-      get_density <- function(n) {
-        do.call(paste0("d", object$family), 
-                list(1:ncat, eta = mu[, n, ], ncat = ncat, link = object$link))
-      }
-      mu <- aperm(abind(lapply(1:ncol(mu), get_density), along = 3), 
-                  perm = c(1, 3, 2))
-    } else if (indicate_hurdle(object$family)) {
-      n_base <- 1:data$N_trait
-      n_hu <- n_base + data$N_trait
-      pre_mu <- ilink(mu[, n_base], object$link)
-      # adjust pre_mu as it is no longer the mean of the truncated distributions
-      if (object$family == "hurdle_poisson") {
-        adjusted_mu <- pre_mu / (1 - exp(-pre_mu))
-      } else if (object$family == "hurdle_negbinomial") {
-        shape <- posterior_samples(object, "^shape$")$shape 
-        adjusted_mu <- pre_mu / (1 - (shape / (pre_mu + shape))^shape)
-      } else {
-        adjusted_mu <- pre_mu
-      }
-      # incorporate hurdle process
-      mu <- (1 - ilink(mu[, n_hu], "logit")) * pre_mu
-    } else if (indicate_zero_inflated(object$family)) { 
-      n_base <- 1:data$N_trait
-      n_zi <- n_base + data$N_trait
-      mu <- (1 - ilink(mu[, n_zi], "logit")) * ilink(mu[, n_base], object$link)
-    } else {
-      mu <- ilink(mu, object$link)
-    }
+    if (is.formula(ee$trunc))
+      stop("fitted values for truncated models not yet implemented")
+    mu <- fitted_response(object, eta = mu, data = data)
   }
   if (summary) {
     mu <- get_summary(mu, probs = probs)
