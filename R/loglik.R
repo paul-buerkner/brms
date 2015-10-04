@@ -23,9 +23,8 @@ loglik_gaussian <- function(n, data, samples, link) {
     pnorm(data$Y[n], mean = ilink(samples$eta[, n], link), 
           sd = sigma, log.p = TRUE)
   }
-  out <- .truncate(out, cdf = pnorm, args = args, data = data)
-  out <- .weight(out, n = n, data = data)
-  out 
+  out <- truncate_loglik(out, cdf = pnorm, args = args, data = data)
+  weight_loglik(out, n = n, data = data)
 }
 
 loglik_student <- function(n, data, samples, link) {
@@ -43,9 +42,8 @@ loglik_student <- function(n, data, samples, link) {
     pstudent(data$Y[n], df = samples$nu, mu = ilink(samples$eta[, n], link), 
              sigma = sigma, log.p = TRUE)
   }
-  out <- .truncate(out, cdf = pstudent, args = args, data = data)
-  out <- .weight(out, n, data)
-  out
+  out <- truncate_loglik(out, cdf = pstudent, args = args, data = data)
+  weight_loglik(out, n, data)
 }
 
 loglik_cauchy <- function(n, data, samples, link) {
@@ -63,9 +61,8 @@ loglik_cauchy <- function(n, data, samples, link) {
     pstudent(data$Y[n], df = 1, mu = ilink(samples$eta[, n], link), 
              sigma = sigma, log.p = TRUE)
   }
-  out <- .truncate(out, cdf = pstudent, args = args, data = data)
-  out <- .weight(out, n, data)
-  out
+  out <- truncate_loglik(out, cdf = pstudent, args = args, data = data)
+  weight_loglik(out, n, data)
 }
 
 loglik_lognormal <- function(n, data, samples, link) {
@@ -84,9 +81,8 @@ loglik_lognormal <- function(n, data, samples, link) {
     plnorm(data$Y[n], meanlog = samples$eta[, n], 
            sdlog = sigma, log.p = TRUE)
   }
-  out <- .truncate(out, cdf = plnorm, args = args, data = data)
-  out <- .weight(out, n, data)
-  out
+  out <- truncate_loglik(out, cdf = plnorm, args = args, data = data)
+  weight_loglik(out, n, data)
 }
 
 loglik_multinormal <- function(n, data, samples, link) {
@@ -95,8 +91,7 @@ loglik_multinormal <- function(n, data, samples, link) {
     dmultinormal(data$Y[n,], Sigma = samples$Sigma[i, , ], log = TRUE,
                  mu = samples$eta[i, seq(n, nobs, data$N_trait)]))
   # no truncation allowed
-  out <- .weight(out, n, data)
-  out
+  weight_loglik(out, n, data)
 }
 
 loglik_binomial <- function(n, data, samples, link) {
@@ -113,9 +108,8 @@ loglik_binomial <- function(n, data, samples, link) {
     pbinom(data$Y[n], size = trials, 
            prob = ilink(samples$eta[, n], link), log.p = TRUE)
   }
-  out <- .truncate(out, cdf = pbinom, args = args, data = data)
-  out <- .weight(out, n, data)
-  out
+  out <- truncate_loglik(out, cdf = pbinom, args = args, data = data)
+  weight_loglik(out, n, data)
 }  
 
 loglik_bernoulli <- function(n, data, samples, link) {
@@ -132,8 +126,7 @@ loglik_bernoulli <- function(n, data, samples, link) {
            log.p = TRUE)
   }
   # no truncation allowed
-  out <- .weight(out, n, data)
-  out
+  weight_loglik(out, n, data)
 }
 
 loglik_poisson <- function(n, data, samples, link) {
@@ -147,9 +140,8 @@ loglik_poisson <- function(n, data, samples, link) {
     ppois(data$Y[n], lambda = ilink(samples$eta[, n], link), 
           log.p = TRUE)
   }
-  out <- .truncate(out, cdf = ppois, args = args, data = data)
-  out <- .weight(out, n, data)
-  out
+  out <- truncate_loglik(out, cdf = ppois, args = args, data = data)
+  weight_loglik(out, n, data)
 }
 
 loglik_negbinomial <- function(n, data, samples, link) {
@@ -164,9 +156,8 @@ loglik_negbinomial <- function(n, data, samples, link) {
     pnbinom(data$Y[n], mu = ilink(samples$eta[, n], link), 
             size = samples$shape, log.p = TRUE)
   }
-  out <- .truncate(out, cdf = pnbinom, args = args, data = data)
-  out <- .weight(out, n, data)
-  out
+  out <- truncate_loglik(out, cdf = pnbinom, args = args, data = data)
+  weight_loglik(out, n, data)
 }
 
 loglik_geometric <- function(n, data, samples, link) {
@@ -181,9 +172,8 @@ loglik_geometric <- function(n, data, samples, link) {
     pnbinom(data$Y[n], mu = ilink(samples$eta[, n], link), 
             size = 1, log.p = TRUE)
   }
-  out <- .truncate(out, cdf = pnbinom, args = args, data = data)
-  out <- .weight(out, n, data)
-  out
+  out <- truncate_loglik(out, cdf = pnbinom, args = args, data = data)
+  weight_loglik(out, n, data)
 }
 
 loglik_exponential <-  function(n, data, samples, link) {
@@ -197,9 +187,8 @@ loglik_exponential <-  function(n, data, samples, link) {
     pexp(data$Y[n], rate = ilink(-samples$eta[, n], link), 
          log.p = TRUE)
   }
-  out <- .truncate(out, cdf = pexp, args = args, data = data)
-  out <- .weight(out, n, data)
-  out
+  out <- truncate_loglik(out, cdf = pexp, args = args, data = data)
+  weight_loglik(out, n, data)
 }
 
 loglik_gamma <- function(n, data, samples, link) {
@@ -217,9 +206,8 @@ loglik_gamma <- function(n, data, samples, link) {
            scale = ilink(samples$eta[, n], link) / samples$shape,
            log.p = TRUE)
   }
-  out <- .truncate(out, cdf = pgamma, args = args, data = data)
-  out <- .weight(out, n, data)
-  out
+  out <- truncate_loglik(out, cdf = pgamma, args = args, data = data)
+  weight_loglik(out, n, data)
 }
 
 loglik_weibull <- function(n, data, samples, link) {
@@ -237,9 +225,8 @@ loglik_weibull <- function(n, data, samples, link) {
              scale = 1 / (ilink(-samples$eta[, n] / samples$shape, link)),
              log.p = TRUE)
   }
-  out <- .truncate(out, cdf = pweibull, args = args, data = data)
-  out <- .weight(out, n, data)
-  out
+  out <- truncate_loglik(out, cdf = pweibull, args = args, data = data)
+  weight_loglik(out, n, data)
 }
 
 loglik_inverse.gaussian <- function(n, data, samples, link) {
@@ -254,9 +241,8 @@ loglik_inverse.gaussian <- function(n, data, samples, link) {
     pinv_gaussian(data$Y[n], mu = ilink(samples$eta[, n], link), 
                   lambda = samples$shape, log.p = TRUE)
   }
-  out <- .truncate(out, cdf = pinv_gaussian, args = args, data = data)
-  out <- .weight(out, n, data)
-  out
+  out <- truncate_loglik(out, cdf = pinv_gaussian, args = args, data = data)
+  weight_loglik(out, n, data)
 }
 
 loglik_hurdle_poisson <- function(n, data, samples, link) {
@@ -267,8 +253,7 @@ loglik_hurdle_poisson <- function(n, data, samples, link) {
     out <- dbinom(0, size = 1, prob = theta, log = TRUE) + 
            dpois(data$Y[n], lambda = ilink(samples$eta[, n], link), log = TRUE)
   }
-  out <- .weight(out, n, data)
-  out
+  weight_loglik(out, n, data)
 }
 
 loglik_hurdle_negbinomial <- function(n, data, samples, link) {
@@ -280,8 +265,7 @@ loglik_hurdle_negbinomial <- function(n, data, samples, link) {
            dnbinom(data$Y[n], mu = ilink(samples$eta[, n], link), 
                    size = samples$shape, log = TRUE)
   }
-  out <- .weight(out, n, data)
-  out
+  weight_loglik(out, n, data)
 }
 
 loglik_hurdle_gamma <- function(n, data, samples, link) {
@@ -293,8 +277,7 @@ loglik_hurdle_gamma <- function(n, data, samples, link) {
     out <- dbinom(0, size = 1, prob = theta, log = TRUE) + 
            dgamma(data$Y[n], shape = samples$shape, scale = scale, log = TRUE)
   }
-  out <- .weight(out, n, data)
-  out
+  weight_loglik(out, n, data)
 }
 
 loglik_zero_inflated_poisson <- function(n, data, samples, link) {
@@ -308,8 +291,7 @@ loglik_zero_inflated_poisson <- function(n, data, samples, link) {
     out <- dbinom(0, size = 1, prob = theta, log = TRUE) + 
            dpois(data$Y[n], lambda = lambda, log = TRUE)
   }
-  out <- .weight(out, n, data)
-  out
+  weight_loglik(out, n, data)
 }
 
 loglik_zero_inflated_negbinomial <- function(n, data, samples, link) {
@@ -323,8 +305,7 @@ loglik_zero_inflated_negbinomial <- function(n, data, samples, link) {
     out <- dbinom(0, size = 1, prob = theta, log = TRUE) + 
            dnbinom(data$Y[n], mu = mu, size = samples$shape, log = TRUE)
   }
-  out <- .weight(out, n, data)
-  out
+  weight_loglik(out, n, data)
 }
 
 loglik_categorical <- function(n, data, samples, link) {
@@ -333,9 +314,7 @@ loglik_categorical <- function(n, data, samples, link) {
     p <- cbind(rep(0, nrow(samples$eta)), samples$eta[, n, 1:(ncat - 1)])
     out <- p[,data$Y[n]] - log(rowSums(exp(p)))
   } else stop(paste("Link", link, "not supported"))
-  if ("weights" %in% names(data)) 
-    out <- out * data$weights[n]
-  out
+  weight_loglik(out, n, data)
 }
 
 loglik_cumulative <- function(n, data, samples, link) {
@@ -349,8 +328,7 @@ loglik_cumulative <- function(n, data, samples, link) {
     out <- log(ilink(samples$eta[, n, y], link) - 
                   ilink(samples$eta[, n, y - 1], link))
   }
-  out <- .weight(out, n, data)
-  out
+  weight_loglik(out, n, data)
 }
 
 loglik_sratio <- function(n, data, samples, link) {
@@ -367,8 +345,7 @@ loglik_sratio <- function(n, data, samples, link) {
   } else {
     out <- log(1 - q[, y]) + rowSums(log(q[, 1:(y - 1)]))
   }
-  out <- .weight(out, n, data)
-  out
+  weight_loglik(out, n, data)
 }
 
 loglik_cratio <- function(n, data, samples, link) {
@@ -385,8 +362,7 @@ loglik_cratio <- function(n, data, samples, link) {
   } else {
     out <- log(1 - q[, y]) + rowSums(log(q[, 1:(y - 1)]))
   }
-  out <- .weight(out, n, data)
-  out
+  weight_loglik(out, n, data)
 }
 
 loglik_acat <- function(n, data, samples, link) {
@@ -413,11 +389,10 @@ loglik_acat <- function(n, data, samples, link) {
     p[, ncat] <- apply(q[, 1:(ncat - 1)], 1, prod)
     out <- log(p[, y]) - log(apply(p, 1, sum))
   }
-  out <- .weight(out, n, data)
-  out
+  weight_loglik(out, n, data)
 }
 
-.truncate <- function(x, cdf, args, data) {
+truncate_loglik <- function(x, cdf, args, data) {
   # adjust logLik in truncated models
   if (!(is.null(data$lb) && is.null(data$ub))) {
     lb <- ifelse(is.null(data$lb), -Inf, data$lb)
@@ -428,7 +403,7 @@ loglik_acat <- function(n, data, samples, link) {
   }
 }
 
-.weight <- function(x, n, data) {
+weight_loglik <- function(x, n, data) {
   # weight loglik values according to defined weights
   # Args:
   #  x: vector of loglik values
