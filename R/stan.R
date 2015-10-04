@@ -117,14 +117,15 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
                                   cens = is.formula(ee$cens),
                                   trunc = is.formula(ee$trunc),
                                   kronecker = kronecker)
-  
+  is_real_Y <- is_linear || is_skewed || family == "inverse.gaussian"
+  is_int_Y <- family %in% c("binomial", "bernoulli", "categorical") || 
+              is_count || is_ordinal
   text_data <- paste0(
     "data { \n",
     "  int<lower=1> N;  # number of observations \n", 
-    if (is_linear || is_skewed || family == "inverse.gaussian") {
+    if (is_real_Y) {
       "  vector[N] Y;  # response variable \n"
-    } else if (family %in% c("binomial", "bernoulli", "categorical") 
-             || is_count || is_ordinal) {
+    } else if (is_int_Y) {
       "  int Y[N];  # response variable \n"
     } else if (is_multi) {
       paste0("  int<lower=1> N_trait;  # number of observations per response \n",
@@ -162,9 +163,11 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
     if (is.formula(ee$cens) && !(is_ordinal || family == "categorical"))
       "  vector[N] cens;  # indicates censoring \n",
     if (trunc$lb > -Inf)
-      "  real lb;  # lower bound for truncation; \n",
+      paste0("  ", ifelse(is_int_Y, "int", "real"), " lb;",  
+             "  # lower bound for truncation; \n"),
     if (trunc$ub < Inf)
-      "  real ub;  # upper bound for truncation; \n",
+      paste0("  ", ifelse(is_int_Y, "int", "real"), " ub;",  
+             "  # upper bound for truncation; \n"),
     if (family == "inverse.gaussian")
       paste0("  # quantities for the inverse gaussian distribution \n",
              "  vector[N] sqrt_Y;  # sqrt(Y) \n",
