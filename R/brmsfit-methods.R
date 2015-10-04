@@ -580,6 +580,7 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
 #' predict(fit, newdata = newdata)
 #' }
 #' 
+#' @importFrom statmod rinvgauss pinvgauss qinvgauss
 #' @export 
 predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                             transform = NULL, allow_new_levels = FALSE,
@@ -826,6 +827,7 @@ LOO.brmsfit <- function(x, ..., compare = TRUE,
 #' @return Usually, an S x N matrix containing the pointwise log-likelihood samples, 
 #'         where S is the number of samples and N is the number of observations in the data. 
 #' 
+#' @importFrom statmod dinvgauss
 #' @export
 logLik.brmsfit <- function(object, ...) {
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 

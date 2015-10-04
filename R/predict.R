@@ -96,8 +96,9 @@ predict_weibull <- function(n, data, samples, link) {
 }
 
 predict_inverse.gaussian <- function(n, data, samples, link) {
-  rinv_gaussian(nrow(samples$eta), mu = ilink(samples$eta[, n], link), 
-                lambda = samples$shape)
+  args <- list(mu = ilink(samples$eta[, n], link), lambda = samples$shape)
+  rng_continuous(rng = nrow(samples$eta), dist = "invgauss",
+                 args = args, data = data)
 }
 
 predict_hurdle_poisson <- function(n, data, samples, link) {
