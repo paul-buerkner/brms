@@ -584,7 +584,8 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
 #' @export 
 predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                             transform = NULL, allow_new_levels = FALSE,
-                            summary = TRUE, probs = c(0.025, 0.975), ...) {
+                            ntrys = 5, summary = TRUE, 
+                            probs = c(0.025, 0.975), ...) {
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
   ee <- extract_effects(object$formula, family = object$family)
@@ -624,14 +625,21 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   predict_fun <- get(paste0("predict_", family))
   call_predict_fun <- function(n) {
     do.call(predict_fun, list(n = n, data = data, samples = samples, 
-                              link = object$link))
+                              link = object$link, ntrys = ntrys))
   }
   N <- ifelse(is.null(data$N_trait), data$N, data$N_trait)
   out <- do.call(cbind, lapply(1:N, call_predict_fun))
+  
+  # percentage of invalid samples for truncated discrete models
+  pct_invalid <- get_pct_invalid(out, data = data)  # see predict.R
+  if (pct_invalid >= 0.01) {
+    warning(paste0(round(pct_invalid * 100), "% of all predicted values ", 
+                   "were invalid. Increasing argument ntrys may help."))
+  }
+  
   if (!is.null(transform) && !is_catordinal) {
     out <- do.call(transform, list(out))
   }
-  
   if (summary && !is_catordinal) {
     out <- get_summary(out, probs = probs)
   } else if (summary && is_catordinal) { 
