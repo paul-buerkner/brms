@@ -103,7 +103,7 @@ extract_effects <- function(formula, ..., family = NA) {
     x$response <- c(x$response, paste0("zi_", x$response))
   }
   if (length(x$response) > 1) {
-    if (!is.null(x$cens) || !is.null(x$se))
+    if (!is.null(x$cens) || !is.null(x$se) || !is.null(x$trunc))
       stop("multivariate models currently allow only weights as addition arguments")
     x$fixed <- eval(parse(text = paste0("update(x$fixed, ", x$response[1], " ~ .)"))) 
     x$all <- eval(parse(text = paste0("update(x$all, ", x$response[1], " ~ .)"))) 
