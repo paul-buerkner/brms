@@ -548,6 +548,8 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
 #'  instead of the raw values. Default is \code{TRUE}
 #' @param probs The percentiles to be computed by the \code{quantile} function. 
 #'  Only used if \code{summary} is \code{TRUE}.
+#' @param ntrys Parameter used in rejection sampling for truncated discrete models only 
+#'   (defaults to \code{5}). See Details for more information.
 #' @param ... Currently ignored
 #' 
 #' @return Predicted values of the response variable. If \code{summary = TRUE} the output depends on the family:
@@ -556,13 +558,23 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
 #'   to \code{length(probs) + 2}.
 #'   If \code{summary = FALSE}, the output is as a S x N matrix, where S is the number of samples.
 #' 
-#' @details For \pkg{brms} <= 0.5.0 only: 
-#'  Be careful when using \code{newdata} with factors in fixed or random effects. 
-#'  The predicted results are only valid if all factor levels present in the initial 
-#'  data are also defined and ordered correctly for the factors in \code{newdata}.
-#'  Grouping factors may contain fewer levels than in the inital data without causing problems.
-#'  When using higher versions of \pkg{brms}, all factors are automatically checked 
-#'  for correctness and amended if necessary.
+#' @details For truncated discrete models only:
+#'   In the absence of any general algorithm to sample from truncated discrete distributions,
+#'   rejection sampling is applied in this special case. This means that values are sampled until 
+#'   a value lies within the defined truncation boundaries. In practice, this procedure may be 
+#'   rather slow (especially in R). Thus, we try to do approximate rejection sampling 
+#'   by sampling each value \code{ntrys} times and then select a valid value. 
+#'   If all values are invalid, the closest boundary is used, instead. 
+#'   If there are more than a few of these pathological cases, 
+#'   a warning will occure suggesting to increase argument \code{ntrys}.
+#'   
+#'   For \pkg{brms} <= 0.5.0 only: 
+#'   Be careful when using \code{newdata} with factors in fixed or random effects. 
+#'   The predicted results are only valid if all factor levels present in the initial 
+#'   data are also defined and ordered correctly for the factors in \code{newdata}.
+#'   Grouping factors may contain fewer levels than in the inital data without causing problems.
+#'   When using higher versions of \pkg{brms}, all factors are automatically checked 
+#'   for correctness and amended if necessary.
 #' 
 #' @examples 
 #' \dontrun{
@@ -584,8 +596,8 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
 #' @export 
 predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                             transform = NULL, allow_new_levels = FALSE,
-                            ntrys = 5, summary = TRUE, 
-                            probs = c(0.025, 0.975), ...) {
+                            summary = TRUE, probs = c(0.025, 0.975), 
+                            ntrys = 5, ...) {
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
   ee <- extract_effects(object$formula, family = object$family)
