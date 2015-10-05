@@ -10,6 +10,7 @@ fitted_response <- function(x, eta, data) {
   if (family == "gaussian" && x$link == "log" && nresp == 1) {
     family <- "lognormal"
   }
+  
   # compute (mean) fitted values
   if (family == "binomial") {
     max_obs <- matrix(rep(data$max_obs, nrow(eta)), nrow = nrow(eta), byrow = TRUE)
@@ -34,6 +35,23 @@ fitted_response <- function(x, eta, data) {
     # for any other distribution, ilink(eta) is already the mean fitted value
     mu <- ilink(eta, x$link)
   }
+  
+  # fitted values for truncated models
+  if (!(is.null(data$lb) && is.null(data$ub))) {
+    if (family != "gaussian") {
+      stop(paste("fitted values on the respone scale not yet implemented",
+                 "for non-gaussian truncated models"))
+    } else {
+      # fitted values for truncated normal models
+      sigma <- posterior_samples(x, "^sigma_")$sigma
+      lb <- ifelse(is.null(data$lb), -Inf, data$lb)
+      ub <- ifelse(is.null(data$ub), Inf, data$ub)
+      zlb <- (lb - mu) / sigma
+      zub <- (ub - mu) / sigma
+      scale <- (dnorm(zlb) - dnorm(zub)) / (pnorm(zub) - pnorm(zlb))  
+      mu <- mu + scale * sigma  
+    }
+  } 
   mu
 }
 

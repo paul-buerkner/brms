@@ -732,8 +732,6 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   # get mu and scale it appropriately
   mu <- linear_predictor(object, newdata = data, re_formula = re_formula)
   if (scale == "response") {
-    if (is.formula(ee$trunc))
-      stop("fitted values for truncated models not yet implemented")
     mu <- fitted_response(object, eta = mu, data = data)
   }
   if (summary) {
