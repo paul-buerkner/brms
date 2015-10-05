@@ -634,6 +634,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     family <- "multinormal"
   }
   is_catordinal <- indicate_ordinal(family) || family == "categorical"
+  # see predict.R
   predict_fun <- get(paste0("predict_", family))
   call_predict_fun <- function(n) {
     do.call(predict_fun, list(n = n, data = data, samples = samples, 
@@ -643,6 +644,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   out <- do.call(cbind, lapply(1:N, call_predict_fun))
   
   # percentage of invalid samples for truncated discrete models
+  # should always be zero for all other models
   pct_invalid <- get_pct_invalid(out, data = data)  # see predict.R
   if (pct_invalid >= 0.01) {
     warning(paste0(round(pct_invalid * 100), "% of all predicted values ", 
@@ -732,6 +734,7 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   # get mu and scale it appropriately
   mu <- linear_predictor(object, newdata = data, re_formula = re_formula)
   if (scale == "response") {
+    # see fitted.R
     mu <- fitted_response(object, eta = mu, data = data)
   }
   if (summary) {

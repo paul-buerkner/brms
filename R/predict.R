@@ -200,7 +200,7 @@ predict_ordinal <- function(n, data, samples, family, link, ...) {
   first_greater(p, target = runif(nrow(samples$eta), min = 0, max = 1))
 }
 
-#---------------loglik helper-functions----------------------------
+#---------------predict helper-functions----------------------------
 
 rng_continuous <- function(nrng, dist, args, data) {
   # random numbers from (possibly truncated) continuous distributions
@@ -215,17 +215,21 @@ rng_continuous <- function(nrng, dist, args, data) {
   if (is.null(data$lb) && is.null(data$ub)) {
     # sample as usual
     rdist <- paste0("r",dist)
-    do.call(rdist, c(nrng, args))
+    out <- do.call(rdist, c(nrng, args))
   } else {
     # sample from truncated distribution
     lb <- ifelse(is.null(data$lb), -Inf, data$lb)
     ub <- ifelse(is.null(data$ub), Inf, data$ub)
     pdist <- paste0("p",dist)
     qdist <- paste0("q",dist)
-    p <- do.call(pdist, c(list(c(lb, ub)), args))
-    rng <- list(runif(nrng, min = p[1], max = p[2]))
-    do.call(qdist, c(rng, args))
+    plb <- do.call(pdist, c(lb, args))
+    pub <- do.call(pdist, c(ub, args))
+    rng <- list(runif(nrng, min = plb, max = pub))
+    out <- do.call(qdist, c(rng, args))
+    # remove infinte values caused by numerical imprecision
+    out[out %in% c(-Inf, Inf)] <- NA
   }
+  out
 }
 
 rng_discrete <- function(nrng, dist, args, data, ntrys) {
@@ -281,7 +285,7 @@ get_pct_invalid <- function(x, data) {
   if (!(is.null(data$lb) && is.null(data$ub))) {
     lb <- ifelse(is.null(data$lb), -Inf, data$lb)
     ub <- ifelse(is.null(data$ub), Inf, data$ub)
-    x <- c(x)
+    x <- c(x)[!is.na(c(x))]
     sum(x < lb | x > ub) / length(x) 
   } else {
     0
