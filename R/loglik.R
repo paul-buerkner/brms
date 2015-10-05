@@ -119,7 +119,7 @@ loglik_weibull <- function(n, data, samples, link) {
 loglik_inverse.gaussian <- function(n, data, samples, link) {
   args <- list(mean = ilink(samples$eta[, n], link), shape = samples$shape)
   out <- censor_loglik(dist = "invgauss", args = args, n = n, data = data)
-  out <- truncate_loglik(out, cdf = pinv_gaussian, args = args, data = data)
+  out <- truncate_loglik(out, cdf = pinvgauss, args = args, data = data)
   weight_loglik(out, n = n, data = data)
 }
 

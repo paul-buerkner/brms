@@ -396,9 +396,9 @@ stan_llh <- function(family, link, add = FALSE,  weights = FALSE,
                   (is_binary && link == "logit" || is_count && link == "log"), 
                   stan_ilink(link), "")
   
-  lin.args <- paste0("eta",n,", sigma",ns)
+  lin_args <- paste0("eta",n,", sigma",ns)
   if (simplify) { 
-    llh.pre <- switch(family,
+    llh_pre <- switch(family,
       poisson = c("poisson_log", paste0("eta",n)), 
       negbinomial = c("neg_binomial_2_log", paste0("eta",n,", shape")),
       geometric = c("neg_binomial_2_log", paste0("eta",n,", 1")),
@@ -408,15 +408,15 @@ stan_llh <- function(family, link, add = FALSE,  weights = FALSE,
       binomial = c("binomial_logit", paste0("trials",ns,", eta",n)), 
       bernoulli = c("bernoulli_logit", paste0("eta",n)))
   } else {
-    llh.pre <- switch(ifelse(is_catordinal, "categorical", 
+    llh_pre <- switch(ifelse(is_catordinal, "categorical", 
                              ifelse(family == "gaussian" && link == "log", 
                                     "lognormal", family)),
-      gaussian = c("normal", lin.args),
-      student = c("student_t", paste0("nu, ",lin.args)),
-      cauchy = c("cauchy", lin.args),
+      gaussian = c("normal", lin_args),
+      student = c("student_t", paste0("nu, ",lin_args)),
+      cauchy = c("cauchy", lin_args),
       multinormal = c("multi_normal_cholesky", 
                       paste0("etam",n,", diag_pre_multiply(sigma, Lrescor)")),
-      lognormal = c("lognormal", lin.args),
+      lognormal = c("lognormal", lin_args),
       inverse.gaussian = c("inv_gaussian", 
                            paste0("eta",n,", shape, log_Y",n,", sqrt_Y",n)),
       poisson = c("poisson", paste0(ilink,"(eta",n,")")),
@@ -437,13 +437,6 @@ stan_llh <- function(family, link, add = FALSE,  weights = FALSE,
       zero_inflated_negbinomial = c("zero_inflated_neg_binomial_2", 
                                     "eta[n], eta[n + N_trait], shape"))
   }
-  if (family == "inverse.gaussian") {
-    # required as inv_gaussian_log has 2 additional arguments
-    # not present in inv_gaussian_cdf_log
-    llh.pre[3] <- "eta[n], shape"
-  } else {
-    llh.pre[3] <- llh.pre[2]
-  }
   
   # write likelihood code
   type <- c("cens", "weights")[match(TRUE, c(cens, weights))]
@@ -463,17 +456,17 @@ stan_llh <- function(family, link, add = FALSE,  weights = FALSE,
   llh <- switch(type, 
     cens = paste0("  # special treatment of censored data \n",
       "    if (cens[n] == 0) ", 
-      ifelse(!weights, paste0("Y[n] ~ ", llh.pre[1],"(",llh.pre[2],"); \n"),
+      ifelse(!weights, paste0("Y[n] ~ ", llh_pre[1],"(",llh_pre[2],"); \n"),
              paste0("increment_log_prob(", addW, 
-                    llh.pre[1], "_log(Y[n], ",llh.pre[2],")); \n")),
+                    llh_pre[1], "_log(Y[n], ",llh_pre[2],")); \n")),
       "    else { \n",         
       "      if (cens[n] == 1) increment_log_prob(", addW, 
-               llh.pre[1], "_ccdf_log(Y[n], ",llh.pre[3],")); \n",
+               llh_pre[1], "_ccdf_log(Y[n], ",llh_pre[2],")); \n",
       "      else increment_log_prob(", addW, 
-               llh.pre[1], "_cdf_log(Y[n], ",llh.pre[3],")); \n",
+               llh_pre[1], "_cdf_log(Y[n], ",llh_pre[2],")); \n",
       "    } \n"),
-    weights = paste0("  lp_pre[n] <- ", llh.pre[1], "_log(Y[n], ",llh.pre[2],"); \n"),
-    general = paste0("  Y", n, " ~ ", llh.pre[1],"(",llh.pre[2],")", 
+    weights = paste0("  lp_pre[n] <- ", llh_pre[1], "_log(Y[n], ",llh_pre[2],"); \n"),
+    general = paste0("  Y", n, " ~ ", llh_pre[1],"(",llh_pre[2],")", 
                      code_trunc, "; \n")) 
   llh
 }
@@ -614,7 +607,7 @@ stan_function <- function(family = "gaussian", link = "identity",
   if (family == "inverse.gaussian") {
     if (weights || cens || trunc) {
       out <- paste0(out,
-      "  /* inverse Gaussian log-PDF of a single response (for data only) \n",
+      "  /* inverse Gaussian log-PDF for a single response (for data only) \n",
       "   * Copyright Stan Development Team 2015 \n",
       "   * Args: \n",
       "   *   y: the response value \n",
@@ -651,31 +644,37 @@ stan_function <- function(family = "gaussian", link = "identity",
       "            0.5 * shape * dot_self((y - mu) ./ (mu .* sqrt_y)); \n",
       "   } \n")
     } 
-    if (cens) 
+    if (cens || trunc) 
       out <- paste0(out,
       "  /* inverse Gaussian log-CDF for a single quantile \n",
       "   * Args: \n",
       "   *   y: a quantile \n",
       "   *   mu: positive mean parameter \n",
       "   *   shape: positive shape parameter \n",
+      "   *   log_y: ignored (cdf and pdf should have the same args) \n",
+      "   *   sqrt_y: precomputed sqrt(y) \n",
       "   * Returns: \n",
-      "   *   P(Y <= y) \n",
+      "   *   log(P(Y <= y)) \n",
       "   */ \n",
-      "  real inv_gaussian_cdf_log(real y, real mu, real shape) { \n",
-      "    return log(Phi(sqrt(shape / y) * (y / mu - 1)) + \n",
-      "               exp(2 * shape / mu) * Phi(-sqrt(shape / y) * (y / mu + 1))); \n",
+      "  real inv_gaussian_cdf_log(real y, real mu, real shape, \n", 
+      "                            real log_y, real sqrt_y) { \n",
+      "    return log(Phi(sqrt(shape) / sqrt_y * (y / mu - 1)) + \n",
+      "               exp(2 * shape / mu) * Phi(-sqrt(shape) / sqrt_y * (y / mu + 1))); \n",
       "  } \n",
       "  /* inverse Gaussian log-CCDF for a single quantile \n",
       "   * Args: \n",
       "   *   y: a quantile \n",
       "   *   mu: positive mean parameter \n",
       "   *   shape: positive shape parameter \n",
+      "   *   log_y: ignored (ccdf and pdf should have the same args) \n",
+      "   *   sqrt_y: precomputed sqrt(y) \n",
       "   * Returns: \n",
-      "   *   P(Y > y) \n",
+      "   *   log(P(Y > y)) \n",
       "   */ \n",
-      "  real inv_gaussian_ccdf_log(real y, real mu, real shape) { \n",
-      "    return log(1 - Phi(sqrt(shape / y) * (y / mu - 1)) - \n",
-      "               exp(2 * shape / mu) * Phi(-sqrt(shape / y) * (y / mu + 1))); \n",
+      "  real inv_gaussian_ccdf_log(real y, real mu, real shape, \n",
+      "                             real log_y, real sqrt_y) { \n",
+      "    return log(1 - Phi(sqrt(shape) / sqrt_y * (y / mu - 1)) - \n",
+      "               exp(2 * shape / mu) * Phi(-sqrt(shape) / sqrt_y * (y / mu + 1))); \n",
       "  } \n")
   } else if (family == "hurdle_poisson") {
     out <- paste0(out, 
