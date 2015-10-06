@@ -258,6 +258,34 @@ evidence_ratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"),
   out  
 }
 
+get_sigma <- function(x, data, method, n) {
+  # get residual standard devation of linear models
+  # Args:
+  #   x: a brmsfit object or posterior samples of sigma (can be NULL)
+  #   data: data initially passed to Stan
+  #   method: S3 method from which get_sigma is called
+  #   n: meaning depends on the method argument:
+  #      for predict and logLik this is the current observation number
+  #      for fitted this is the number of samples
+  if (!method %in% c("fitted", "predict", "logLik"))
+    stop("Invalid method argument")
+  if (is(x, "brmsfit")) {
+    sigma <- posterior_samples(x, pars = "^sigma_")$sigma
+  } else {
+    sigma <- x
+  }
+  if (is.null(sigma)) {
+    # sigma was defined by the user
+    sigma <- data$sigma
+    if (method %in% c("predict", "logLik")) {
+      sigma <- sigma[n]
+    } else {
+      sigma <- matrix(rep(sigma, n), ncol = data$N, byrow = TRUE)
+    }
+  }
+  sigma
+}
+
 linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
   # compute the linear predictor (eta) for brms models
   #

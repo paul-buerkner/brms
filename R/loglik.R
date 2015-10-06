@@ -9,8 +9,7 @@
 # Returns:
 #   A vector of length nrow(samples) containing the pointwise log-likelihood for the nth observation 
 loglik_gaussian <- function(n, data, samples, link) {
-  sigma <- if (!is.null(samples$sigma)) samples$sigma
-           else data$sigma
+  sigma <- get_sigma(samples$sigma, data = data, method = "logLik", n = n)
   args <- list(mean = ilink(samples$eta[, n], link), sd = sigma)
   # censor_loglik computes the conventional loglik in case of no censoring 
   out <- censor_loglik(dist = "norm", args = args, n = n, data = data)
@@ -19,8 +18,7 @@ loglik_gaussian <- function(n, data, samples, link) {
 }
 
 loglik_student <- function(n, data, samples, link) {
-  sigma <- if (!is.null(samples$sigma)) samples$sigma
-           else data$sigma
+  sigma <- get_sigma(samples$sigma, data = data, method = "logLik", n = n)
   args <- list(df = samples$nu, mu = ilink(samples$eta[, n], link), 
                sigma = sigma)
   out <- censor_loglik(dist = "student", args = args, n = n, data = data)
@@ -29,8 +27,7 @@ loglik_student <- function(n, data, samples, link) {
 }
 
 loglik_cauchy <- function(n, data, samples, link) {
-  sigma <- if (!is.null(samples$sigma)) samples$sigma
-           else data$sigma
+  sigma <- get_sigma(samples$sigma, data = data, method = "logLik", n = n)
   args <- list(df = 1, mu = ilink(samples$eta[, n], link), 
                sigma = sigma)
   out <- censor_loglik(dist = "student", args = args, n = n, data = data)
@@ -41,8 +38,7 @@ loglik_cauchy <- function(n, data, samples, link) {
 loglik_lognormal <- function(n, data, samples, link) {
   # link is currently ignored for lognormal models
   # as 'identity' is the only valid link
-  sigma <- if (!is.null(samples$sigma)) samples$sigma
-           else data$sigma
+  sigma <- get_sigma(samples$sigma, data = data, method = "logLik", n = n)
   args <- list(meanlog = samples$eta[, n], sdlog = sigma)
   out <- censor_loglik(dist = "lnorm", args = args, n = n, data = data)
   out <- truncate_loglik(out, cdf = plnorm, args = args, data = data)

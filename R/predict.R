@@ -11,24 +11,21 @@
 # Returns:
 #   A vector of length nrow(samples) containing samples from the posterior predictive distribution
 predict_gaussian <- function(n, data, samples, link, ...) {
-  sigma <- if (!is.null(samples$sigma)) samples$sigma
-           else data$sigma
+  sigma <- get_sigma(samples$sigma, data = data, method = "predict", n = n)
   args <- list(mean = ilink(samples$eta[, n], link), sd = sigma)
   rng_continuous(nrng = nrow(samples$eta), dist = "norm",
                  args = args, data = data)
 }
 
 predict_student <- function(n, data, samples, link, ...) {
-  sigma <- if (!is.null(samples$sigma)) samples$sigma
-           else data$sigma
+  sigma <- get_sigma(samples$sigma, data = data, method = "predict", n = n)
   args <- list(df = samples$nu, mu = ilink(samples$eta[, n], link), sigma = sigma)
   rng_continuous(nrng = nrow(samples$eta), dist = "student",
                  args = args, data = data)
 }
 
 predict_cauchy <- function(n, data, samples, link, ...) {
-  sigma <- if (!is.null(samples$sigma)) samples$sigma
-           else data$sigma
+  sigma <- get_sigma(samples$sigma, data = data, method = "predict", n = n)
   args <- list(df = 1, mu = ilink(samples$eta[, n], link), sigma = sigma)
   rng_continuous(nrng = nrow(samples$eta), dist = "student",
                  args = args, data = data)
@@ -37,8 +34,7 @@ predict_cauchy <- function(n, data, samples, link, ...) {
 predict_lognormal <- function(n, data, samples, link, ...) {
   # link is currently ignored for lognormal models
   # as 'identity' is the only valid link
-  sigma <- if (!is.null(samples$sigma)) samples$sigma
-           else data$sigma
+  sigma <- get_sigma(samples$sigma, data = data, method = "predict", n = n)
   args <- list(meanlog = samples$eta[, n], sdlog = sigma)
   rng_continuous(nrng = nrow(samples$eta), dist = "lnorm",
                  args = args, data = data)

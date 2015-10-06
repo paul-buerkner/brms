@@ -17,7 +17,7 @@ fitted_response <- function(x, eta, data) {
     # scale eta from [0,1] to [0,max_obs]
     mu <- ilink(eta, x$link) * max_obs 
   } else if (family == "lognormal") {
-    sigma <- posterior_samples(x, "^sigma_")$sigma
+    sigma <- get_sigma(x, data = data, method = "fitted", n = nrow(eta))
     mu <- ilink(eta + sigma^2 / 2, x$link)  
   } else if (family == "weibull") {
     shape <- posterior_samples(x, "^shape$")$shape
@@ -43,7 +43,7 @@ fitted_response <- function(x, eta, data) {
                  "for non-gaussian truncated models"))
     } else {
       # fitted values for truncated normal models
-      sigma <- posterior_samples(x, "^sigma_")$sigma
+      sigma <- get_sigma(x, data = data, method = "fitted", n = nrow(eta))
       lb <- ifelse(is.null(data$lb), -Inf, data$lb)
       ub <- ifelse(is.null(data$ub), Inf, data$ub)
       zlb <- (lb - mu) / sigma
