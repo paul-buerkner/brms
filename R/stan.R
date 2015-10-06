@@ -445,13 +445,14 @@ stan_llh <- function(family, link, add = FALSE,  weights = FALSE,
       exponential = c("exponential", eta),
       weibull = c("weibull", paste0("shape, ",eta)), 
       categorical = c("categorical", "p[n]"),
-      hurdle_poisson = c("hurdle_poisson", eta),
+      hurdle_poisson = c("hurdle_poisson", "eta[n], eta[n + N_trait]"),
       hurdle_negbinomial = c("hurdle_neg_binomial_2", 
-                             paste0(eta,", shape")),
-      hurdle_gamma = c("hurdle_gamma", paste0("shape, ",eta)),
-      zero_inflated_poisson = c("zero_inflated_poisson", eta),
+                             "eta[n], eta[n + N_trait], shape"),
+      hurdle_gamma = c("hurdle_gamma", "shape, eta[n], eta[n + N_trait]"),
+      zero_inflated_poisson = c("zero_inflated_poisson", 
+                                "eta[n], eta[n + N_trait]"),
       zero_inflated_negbinomial = c("zero_inflated_neg_binomial_2", 
-                                    paste0(eta,", shape")))
+                                    "eta[n], eta[n + N_trait], shape"))
   }
   
   # write likelihood code

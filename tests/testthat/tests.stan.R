@@ -141,6 +141,15 @@ test_that("Test that stan_llh returns correct llhs under truncation", {
                "  Y[n] ~ binomial(trials[n], inv_logit(eta[n])) T[lb, ub]; \n")
 })
 
+test_that("Test that stan_llh returns correct llhs for zero-inflated an hurdle modles", {
+  expect_equal(stan_llh(family = "zero_inflated_poisson", link = "log"),
+               "  Y[n] ~ zero_inflated_poisson(eta[n], eta[n + N_trait]); \n")
+  expect_equal(stan_llh(family = "hurdle_negbinomial", link = "log"),
+               "  Y[n] ~ hurdle_neg_binomial_2(eta[n], eta[n + N_trait], shape); \n")
+  expect_equal(stan_llh(family = "hurdle_gamma", link = "log"),
+               "  Y[n] ~ hurdle_gamma(shape, eta[n], eta[n + N_trait]); \n")
+})
+
 test_that("Test that stan_rngprior returns correct sampling statements for priors", {
   c1 <- "  # parameters to store prior samples \n"
   c2 <- "  # additionally draw samples from priors \n"
