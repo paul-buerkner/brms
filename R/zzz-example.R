@@ -1,3 +1,5 @@
+# Uncomment the code below to enable automated unit tests of S3 methods
+
 # brmsfit_example <- brm(count ~ log_Age_c + (1|visit),
 #                        data = data.frame(count = rpois(236, lambda = 20),
 #                                          visit = rep(c(1:4), each = 59),
