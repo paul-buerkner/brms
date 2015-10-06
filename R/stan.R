@@ -391,7 +391,7 @@ stan_llh <- function(family, link, add = FALSE,  weights = FALSE,
     family %in% c("cumulative", "categorical") && link == "logit" && !add) 
   n <- ifelse(cens || weights || is_trunc || is_catordinal ||
               is_hurdle || is_zero_inflated, "[n]", "")
-  ns <- ifelse(add && (cens || weights), "[n]", "")
+  ns <- ifelse(add && (cens || weights || is_trunc), "[n]", "")
   ilink <- ifelse((cens || is_trunc) && 
                   (is_binary && link == "logit" || is_count && link == "log"), 
                   stan_ilink(link), "")
@@ -422,7 +422,7 @@ stan_llh <- function(family, link, add = FALSE,  weights = FALSE,
       poisson = c("poisson", paste0(ilink,"(eta",n,")")),
       negbinomial = c("neg_binomial_2", paste0(ilink,"(eta",n,"), shape")),
       geometric = c("neg_binomial_2", paste0(ilink,"(eta",n,"), 1")),
-      binomial = c("binomial", paste0("trials",ns,",",ilink,"(eta",n,")")),
+      binomial = c("binomial", paste0("trials",ns,", ",ilink,"(eta",n,")")),
       bernoulli = c("bernoulli", paste0(ilink,"(eta",n,")")), 
       gamma = c("gamma", paste0("shape, eta",n)), 
       exponential = c("exponential", paste0("eta",n)),
