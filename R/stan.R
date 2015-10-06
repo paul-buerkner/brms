@@ -62,7 +62,8 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
   # generate important parts of the stan code
   text_eta <- stan_eta(family = family, link = link, fixef = fixef, 
                        has_intercept = has_intercept, paref = paref,  
-                       group = ee$group, autocor = autocor)
+                       group = ee$group, autocor = autocor,
+                       add = is.formula(ee[c("weights", "cens", "trunc")]))
   text_ma <- stan_ma(family = family, link = link, autocor = autocor)
   text_ordinal <- stan_ordinal(family = family, link = link, 
                                partial = length(paref), 
@@ -372,7 +373,7 @@ stan_llh <- function(family, link, add = FALSE,  weights = FALSE,
   # Args:
   #   family: the model family
   #   link: the link function
-  #   add: logical; indicating if there is information on se, trials or cat
+  #   add: logical; indicating if there is information on se or trials
   #   weights: logical; weights present?
   #   cens: logical; censored data?
   #
@@ -385,18 +386,36 @@ stan_llh <- function(family, link, add = FALSE,  weights = FALSE,
   is_hurdle <- indicate_hurdle(family)
   is_zero_inflated <- indicate_zero_inflated(family)
   is_trunc <- trunc$lb > -Inf || trunc$ub < Inf
+  if (family == "gaussian" && link == "log") {
+    # prepare for use of lognormal distribution
+    family <- "lognormal"
+    link <- "identity"
+  }
   
   simplify <- !is_trunc && !cens && 
     (is_binary && link == "logit" || is_count && link == "log" ||
-    family %in% c("cumulative", "categorical") && link == "logit" && !add) 
+    family %in% c("cumulative", "categorical") && link == "logit") 
   n <- ifelse(cens || weights || is_trunc || is_catordinal ||
               is_hurdle || is_zero_inflated, "[n]", "")
   ns <- ifelse(add && (cens || weights || is_trunc), "[n]", "")
-  ilink <- ifelse((cens || is_trunc) && 
-                  (is_binary && link == "logit" || is_count && link == "log"), 
-                  stan_ilink(link), "")
-  
-  lin_args <- paste0("eta",n,", sigma",ns)
+  # use inverse link in likelihood statement only 
+  # if it does not prevent vectorization 
+  ilink <- ifelse(n == "[n]" && !simplify, stan_ilink(link), "")
+  if (n == "[n]") {
+    if (is_hurdle || is_zero_inflated) {
+      eta <- paste0(ilink,"(eta[n]), ",ilink,"(eta[n + N_trait])")
+    } else {
+      eta <- switch(family, paste0(ilink,"(eta[n])"),
+                    gamma = paste0("shape / ",ilink,"(eta[n])"), 
+                    exponential = paste0(ilink,"(-eta[n])"), 
+                    weibull = paste0("inv(",ilink,"(-eta[n] / shape))"))
+    }
+  } else {
+    # possible transformations already performed
+    # in the transformed parameters block
+    eta <- "eta"
+  }
+
   if (simplify) { 
     llh_pre <- switch(family,
       poisson = c("poisson_log", paste0("eta",n)), 
@@ -408,34 +427,31 @@ stan_llh <- function(family, link, add = FALSE,  weights = FALSE,
       binomial = c("binomial_logit", paste0("trials",ns,", eta",n)), 
       bernoulli = c("bernoulli_logit", paste0("eta",n)))
   } else {
-    llh_pre <- switch(ifelse(is_catordinal, "categorical", 
-                             ifelse(family == "gaussian" && link == "log", 
-                                    "lognormal", family)),
-      gaussian = c("normal", lin_args),
-      student = c("student_t", paste0("nu, ",lin_args)),
-      cauchy = c("cauchy", lin_args),
+    llh_pre <- switch(ifelse(is_catordinal, "categorical", family),
+      gaussian = c("normal", paste0(eta,", sigma",ns)),
+      student = c("student_t",  paste0("nu, ",eta,", sigma",ns)),
+      cauchy = c("cauchy", paste0(eta,", sigma",ns)),
       multinormal = c("multi_normal_cholesky", 
                       paste0("etam",n,", diag_pre_multiply(sigma, Lrescor)")),
-      lognormal = c("lognormal", lin_args),
+      lognormal = c("lognormal", paste0(eta,", sigma",ns)),
       inverse.gaussian = c("inv_gaussian", 
-                           paste0("eta",n,", shape, log_Y",n,", sqrt_Y",n)),
-      poisson = c("poisson", paste0(ilink,"(eta",n,")")),
-      negbinomial = c("neg_binomial_2", paste0(ilink,"(eta",n,"), shape")),
-      geometric = c("neg_binomial_2", paste0(ilink,"(eta",n,"), 1")),
-      binomial = c("binomial", paste0("trials",ns,", ",ilink,"(eta",n,")")),
-      bernoulli = c("bernoulli", paste0(ilink,"(eta",n,")")), 
-      gamma = c("gamma", paste0("shape, eta",n)), 
-      exponential = c("exponential", paste0("eta",n)),
-      weibull = c("weibull", paste0("shape, eta",n)), 
+                           paste0(eta, ", shape, log_Y",n,", sqrt_Y",n)),
+      poisson = c("poisson", eta),
+      negbinomial = c("neg_binomial_2", paste0(eta,", shape")),
+      geometric = c("neg_binomial_2", paste0(eta,", 1")),
+      binomial = c("binomial", paste0("trials",ns,", ",eta)),
+      bernoulli = c("bernoulli", eta), 
+      gamma = c("gamma", paste0("shape, ",eta)), 
+      exponential = c("exponential", eta),
+      weibull = c("weibull", paste0("shape, ",eta)), 
       categorical = c("categorical", "p[n]"),
-      hurdle_poisson = c("hurdle_poisson", "eta[n], eta[n + N_trait]"),
+      hurdle_poisson = c("hurdle_poisson", eta),
       hurdle_negbinomial = c("hurdle_neg_binomial_2", 
-                             "eta[n], eta[n + N_trait], shape"),
-      hurdle_gamma = c("hurdle_gamma", "shape, eta[n], eta[n + N_trait]"),
-      zero_inflated_poisson = c("zero_inflated_poisson", 
-                                "eta[n], eta[n + N_trait]"),
+                             paste0(eta,", shape")),
+      hurdle_gamma = c("hurdle_gamma", paste0("shape, ",eta)),
+      zero_inflated_poisson = c("zero_inflated_poisson", eta),
       zero_inflated_negbinomial = c("zero_inflated_neg_binomial_2", 
-                                    "eta[n], eta[n + N_trait], shape"))
+                                    paste0(eta,", shape")))
   }
   
   # write likelihood code
@@ -472,7 +488,7 @@ stan_llh <- function(family, link, add = FALSE,  weights = FALSE,
 }
 
 stan_eta <- function(family, link, fixef, has_intercept = TRUE, paref = NULL,
-                     group = NULL, autocor = cor_arma()) {
+                     group = NULL, autocor = cor_arma(), add = FALSE) {
   # linear predictor in Stan
   #
   # Args:
@@ -482,6 +498,7 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE, paref = NULL,
   #   paref: names of the partiel effects paraneters
   #   group: names of the grouping factors
   #   autocor: autocorrelation structure
+  #   add: is the model weighted, censored, or truncated?
   # 
   # Return:
   #   the linear predictor in stan language
@@ -505,7 +522,7 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE, paref = NULL,
   
   # transform eta before it is passed to the likelihood
   ilink <- stan_ilink(link)
-  eta$transform <- !(link == "identity" 
+  eta$transform <- !(add || link == "identity"
                      || family == "gaussian" && link == "log"
                      || is_ordinal || family == "categorical" 
                      || is_count && link == "log" 
@@ -514,11 +531,12 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE, paref = NULL,
   eta_ilink <- rep("", 2)
   if (eta$transform) {
     eta_ilink <- switch(family, c(paste0(ilink,"("), ")"),
-                   gamma = c(paste0("shape / (",ilink,"("), "))"), 
-                   exponential = c(paste0(ilink,"(-("), "))"), 
-                   weibull = c(paste0("inv(",ilink,"(-("), ") / shape))"))
+                        gamma = c(paste0("shape / ",ilink,"("), ")"), 
+                        exponential = c(paste0(ilink,"(-("), "))"), 
+                        weibull = c(paste0("inv(",ilink,"(-("), ") / shape))"))
     if (autocor$q > 0) {
-      eta$transC3 <- paste0("    ",eta.multi," <- ",eta_ilink[1], eta.multi, eta_ilink[2],"; \n")
+      eta$transC3 <- paste0("    ",eta.multi," <- ",eta_ilink[1], 
+                            eta.multi, eta_ilink[2],"; \n")
       eta_ilink <- rep("", 2)  
     }
   }
@@ -535,7 +553,7 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE, paref = NULL,
                         etap)
   if (length(group)) {
     ind <- 1:length(group)
-    eta.re <- collapse(" + Z_",ind,"[n]*r_",ind,"[J_",ind,"[n]]")
+    eta.re <- collapse(" + Z_",ind,"[n] * r_",ind,"[J_",ind,"[n]]")
   } else {
     eta.re <- ""
   }

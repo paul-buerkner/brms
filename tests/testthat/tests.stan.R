@@ -107,7 +107,7 @@ test_that("Test that stan_llh uses simplifications when possible", {
   expect_equal(stan_llh(family = "bernoulli", link = "logit"), "  Y ~ bernoulli_logit(eta); \n")
   expect_equal(stan_llh(family = "gaussian", link = "log"), "  Y ~ lognormal(eta, sigma); \n")
   expect_match(stan_llh(family = "gaussian", link = "log", weights = TRUE), 
-               "lognormal_log(Y[n], eta[n], sigma); \n", fixed = TRUE)
+               "lognormal_log(Y[n], (eta[n]), sigma); \n", fixed = TRUE)
   expect_equal(stan_llh(family = "poisson", link = "log"), "  Y ~ poisson_log(eta); \n")
   expect_match(stan_llh(family = "cumulative", link = "logit"), fixed = TRUE,
                "  Y[n] ~ ordered_logistic(eta[n], b_Intercept); \n")
@@ -115,27 +115,27 @@ test_that("Test that stan_llh uses simplifications when possible", {
 
 test_that("Test that stan_llh returns correct llhs under weights and censoring", {
   expect_equal(stan_llh(family = "cauchy", link = "inverse", weights = TRUE),
-               "  lp_pre[n] <- cauchy_log(Y[n], eta[n], sigma); \n")
+               "  lp_pre[n] <- cauchy_log(Y[n], inv(eta[n]), sigma); \n")
   expect_equal(stan_llh(family = "poisson", link = "log", weights = TRUE),
                "  lp_pre[n] <- poisson_log_log(Y[n], eta[n]); \n")
   expect_match(stan_llh(family = "poisson", link = "log", cens = TRUE),
                "Y[n] ~ poisson(exp(eta[n])); \n", fixed = TRUE)
   expect_equal(stan_llh(family = "binomial", link = "logit", add = TRUE, weights = TRUE),
                "  lp_pre[n] <- binomial_logit_log(Y[n], trials[n], eta[n]); \n")
-  expect_match(stan_llh(family = "weibull", link = "inverse", cens = TRUE), fixed = TRUE,
-               "increment_log_prob(weibull_ccdf_log(Y[n], shape, eta[n])); \n")
+  expect_match(stan_llh(family = "weibull", link = "log", cens = TRUE), fixed = TRUE,
+               "increment_log_prob(weibull_ccdf_log(Y[n], shape, inv(exp(-eta[n] / shape)))); \n")
   expect_match(stan_llh(family = "weibull", link = "inverse", cens = TRUE, weights = TRUE), fixed = TRUE,
-               "increment_log_prob(weights[n] * weibull_ccdf_log(Y[n], shape, eta[n])); \n")
+               "increment_log_prob(weights[n] * weibull_ccdf_log(Y[n], shape, inv(inv(-eta[n] / shape)))); \n")
 })
 
 test_that("Test that stan_llh returns correct llhs under truncation", {
   expect_equal(stan_llh(family = "cauchy", link = "inverse", trunc = .trunc(0)),
-               "  Y[n] ~ cauchy(eta[n], sigma) T[lb, ]; \n")
+               "  Y[n] ~ cauchy(inv(eta[n]), sigma) T[lb, ]; \n")
   expect_equal(stan_llh(family = "poisson", link = "log", trunc = .trunc(ub = 100)),
                "  Y[n] ~ poisson(exp(eta[n])) T[, ub]; \n")
   expect_equal(stan_llh(family = "gaussian", link = "identity", 
                         add = TRUE, trunc = .trunc(0, 100)),
-               "  Y[n] ~ normal(eta[n], sigma[n]) T[lb, ub]; \n")
+               "  Y[n] ~ normal((eta[n]), sigma[n]) T[lb, ub]; \n")
   expect_equal(stan_llh(family = "binomial", link = "logit", 
                         add = TRUE, trunc = .trunc(0, 100)),
                "  Y[n] ~ binomial(trials[n], inv_logit(eta[n])) T[lb, ub]; \n")
