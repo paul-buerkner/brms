@@ -77,7 +77,7 @@ update_data <- function(data, family, effects, ...,
   #   model.frame in long format with combined grouping variables if present
   if (!"brms.frame" %in% class(data)) {
     data <- melt(data, response = effects$response, family = family)
-    data <- stats::model.frame(effects$all, data = data, 
+    data <- stats::model.frame(effects$all, data = data, na.action = na.omit,
                                drop.unused.levels = drop.unused.levels)
     if (any(grepl("__", colnames(data))))
       stop("Variable names may not contain double underscores '__'")
