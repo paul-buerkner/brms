@@ -128,6 +128,19 @@ test_that("Test that stan_llh returns correct llhs under weights and censoring",
                "increment_log_prob(weights[n] * weibull_ccdf_log(Y[n], shape, eta[n])); \n")
 })
 
+test_that("Test that stan_llh returns correct llhs under truncation", {
+  expect_equal(stan_llh(family = "cauchy", link = "inverse", trunc = .trunc(0)),
+               "  Y[n] ~ cauchy(eta[n], sigma) T[lb, ]; \n")
+  expect_equal(stan_llh(family = "poisson", link = "log", trunc = .trunc(ub = 100)),
+               "  Y[n] ~ poisson(exp(eta[n])) T[, ub]; \n")
+  expect_equal(stan_llh(family = "gaussian", link = "identity", 
+                        add = TRUE, trunc = .trunc(0, 100)),
+               "  Y[n] ~ normal(eta[n], sigma[n]) T[lb, ub]; \n")
+  expect_equal(stan_llh(family = "binomial", link = "logit", 
+                        add = TRUE, trunc = .trunc(0, 100)),
+               "  Y[n] ~ binomial(trials[n], inv_logit(eta[n])) T[lb, ub]; \n")
+})
+
 test_that("Test that stan_rngprior returns correct sampling statements for priors", {
   c1 <- "  # parameters to store prior samples \n"
   c2 <- "  # additionally draw samples from priors \n"
