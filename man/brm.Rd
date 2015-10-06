@@ -157,7 +157,7 @@ Fit a generalized linear mixed model, which incorporates both fixed-effects para
   The optional \code{addition} term may contain multiple terms of the form \code{fun(variable)}
   seperated by \code{|} each providing special information on the response variable.
   \code{fun} can be replaced with either \code{se}, \code{weights}, \code{trials},
-  \code{cat}, or \code{cens} (their meanings are explained below).
+  \code{cat}, \code{cens}, or \code{trunc} (their meanings are explained below).
   Using the \code{addition} term in \code{formula} is equivalent
   to using argument \code{addition}: Instead of writing \code{fun(variable)} in \code{formula},
   we may use \code{addition = list(fun = ~variable)}.
@@ -193,6 +193,12 @@ Fit a generalized linear mixed model, which incorporates both fixed-effects para
   contain the values \code{'left'}, \code{'none'}, and \code{'right'}
   (or equivalenty -1, 0, and 1) to indicate that the corresponding observation is
   left censored, not censored, or right censored.
+
+  With the expection of \code{categorical} and ordinal families, the response
+  distribution can be truncated using the \code{trunc} function in the addition part.
+  If the response variable is truncated between, say, 0 and 100, we can specify this via
+  \code{yi | trunc(lb = 0, ub = 100) ~ predictors}. Defining only one of the two arguments
+  in \code{trunc} leads to one-sided truncation.
 
   Mutiple \code{addition} terms may be specified at the same time, for instance \cr
   \code{formula = yi | se(sei) | cens(censored) ~ 1} for a censored meta-analytic model, equivalent to
