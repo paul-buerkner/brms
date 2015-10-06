@@ -5,7 +5,10 @@
 \section{CHANGES IN VERSION 0.5.0.9000}{
   \subsection{NEW FEATURES}{
     \itemize{
+      \item add support for zero-inflation and hurdle models
       \item add support for inverse gaussian models through family \code{inverse.gaussian}
+      \item add new \code{addition} argument \code{trunc} allowing
+      to specify truncation of the response variable
       \item binomial and ordinal families now support the \code{cauchit} link function
       \item allow family functions to be used in the \code{family} argument
       \item easy access to various \code{rstan} plotting functions 
@@ -22,6 +25,7 @@
       \code{fitted} and \code{predict} method
       \item method \code{standata} is now the only way to extract data
       that was passed to Stan from a \code{brmsfit} object
+      \item slightly improve \pkg{Stan} code for models containing no random effects
       \item improve documenation to better explain differences in 
       autoregressive effects across R packages
     }
