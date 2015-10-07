@@ -10,6 +10,7 @@ fitted_response <- function(x, eta, data) {
   if (family == "gaussian" && x$link == "log" && nresp == 1) {
     family <- "lognormal"
   }
+  is_trunc <- !(is.null(data$lb) && is.null(data$ub))
   
   # compute (mean) fitted values
   if (family == "binomial") {
@@ -18,10 +19,18 @@ fitted_response <- function(x, eta, data) {
     mu <- ilink(eta, x$link) * max_obs 
   } else if (family == "lognormal") {
     sigma <- get_sigma(x, data = data, method = "fitted", n = nrow(eta))
-    mu <- ilink(eta + sigma^2 / 2, x$link)  
+    mu <- eta
+    if (!is_trunc) {
+      # compute untruncated lognormal mean
+      mu <- ilink(mu + sigma^2 / 2, x$link)  
+    }
   } else if (family == "weibull") {
     shape <- posterior_samples(x, "^shape$")$shape
-    mu <- 1 / (ilink(-eta / shape, x$link)) * gamma(1 + 1 / shape)  
+    mu <- ilink(eta / shape, x$link)
+    if (!is_trunc) {
+      # compute untruncated weibull mean
+      mu <- mu * gamma(1 + 1 / shape) 
+    }
   } else if (is_catordinal) {
     mu <- fitted_catordinal(eta, max_obs = data$max_obs, family = x$family,
                             link = x$link)
@@ -37,19 +46,16 @@ fitted_response <- function(x, eta, data) {
   }
   
   # fitted values for truncated models
-  if (!(is.null(data$lb) && is.null(data$ub))) {
-    if (family != "gaussian") {
-      stop(paste("fitted values on the respone scale not yet implemented",
-                 "for non-gaussian truncated models"))
+  if (is_trunc) {
+    lb <- ifelse(is.null(data$lb), -Inf, data$lb)
+    ub <- ifelse(is.null(data$ub), Inf, data$ub)
+    fitted_trunc_fun <- try(get(paste0("fitted_trunc_",family), 
+                                mode = "function"))
+    if (is(fitted_trunc_fun, "try-error")) {
+      stop(paste("fitted values on the respone scale not implemented",
+                 "for truncated", family, "models"))
     } else {
-      # fitted values for truncated normal models
-      sigma <- get_sigma(x, data = data, method = "fitted", n = nrow(eta))
-      lb <- ifelse(is.null(data$lb), -Inf, data$lb)
-      ub <- ifelse(is.null(data$ub), Inf, data$ub)
-      zlb <- (lb - mu) / sigma
-      zub <- (ub - mu) / sigma
-      scale <- (dnorm(zlb) - dnorm(zub)) / (pnorm(zub) - pnorm(zlb))  
-      mu <- mu + scale * sigma  
+      mu <- fitted_trunc_fun(x, mu = mu, lb = lb, ub = ub, data = data)
     }
   } 
   mu
@@ -87,4 +93,71 @@ fitted_zero_inflated <- function(eta, N_trait, link) {
   n_zi <- n_base + N_trait
   # incorporate zero-inflation part
   ilink(eta[, n_base], link) * (1 - ilink(eta[, n_zi], "logit")) 
+}
+
+#------------- helper functions for truncated models ----------------
+# Args:
+#   x: a brmsfit object
+#   mu: (usually) samples of the untruncated mean parameter
+#   lb: lower truncation bound
+#   ub: upper truncation bound
+#   data: data iniitally passed to Stan
+#   ...: ignored arguments
+# Returns:
+#   samples of the truncated mean parameter
+fitted_trunc_gaussian <- function(x, mu, lb, ub, data) {
+  sigma <- get_sigma(x, data = data, method = "fitted", n = nrow(mu))
+  zlb <- (lb - mu) / sigma
+  zub <- (ub - mu) / sigma
+  # truncated mean of standard normal; see Wikipedia
+  trunc_zmean <- (dnorm(zlb) - dnorm(zub)) / (pnorm(zub) - pnorm(zlb))  
+  mu + trunc_zmean * sigma  
+}
+
+fitted_trunc_student <- function(x, mu, lb, ub, data) {
+  sigma <- get_sigma(x, data = data, method = "fitted", n = nrow(mu))
+  nu <- posterior_samples(x, pars = "^nu$")$nu
+  zlb <- (lb - mu) / sigma
+  zub <- (ub - mu) / sigma
+  # see Kim 2008: Moments of truncated Student-t distribution
+  G1 <- gamma((nu - 1) / 2) * nu^(nu / 2) / 
+    (2 * (pt(zub, df = nu) - pt(zlb, df = nu)) * gamma(nu / 2) * gamma(0.5))
+  A <- (nu + zlb^2) ^ (-(nu - 1) / 2)
+  B <- (nu + zub^2) ^ (-(nu - 1) / 2)
+  trunc_zmean <- G1 * (A - B)
+  mu + trunc_zmean * sigma 
+}
+
+fitted_trunc_lognormal <- function(x, mu, lb, ub, data) {
+  sigma <- get_sigma(x, data = data, method = "fitted", n = nrow(mu))
+  m1 <- exp(mu + sigma^2 / 2) * (pnorm((log(ub) - mu) / sigma - sigma) - 
+                                   pnorm((log(lb) - mu) / sigma - sigma))
+  m1 / (plnorm(ub, meanlog = mu, sdlog = sigma) - 
+          plnorm(lb, meanlog = mu, sdlog = sigma))
+}
+
+fitted_trunc_gamma <- function(x, mu, lb, ub, ...) {
+  shape <- posterior_samples(x, pars = "^shape$")$shape
+  scale <- mu / shape
+  # see Jawitz 2004: Moments of truncated continuous univariate distributions
+  m1 <- scale / gamma(shape) * 
+    (incgamma(ub / scale, 1 + shape) - incgamma(lb / scale, 1 + shape))
+  m1 / (pgamma(ub, shape, scale = scale) - pgamma(lb, shape, scale = scale))
+}
+
+fitted_trunc_exponential <- function(x, mu, lb, ub, ...) {
+  # see Jawitz 2004: Moments of truncated continuous univariate distributions
+  # mu is already the scale parameter
+  inv_mu <- 1 / mu
+  m1 <- mu * (incgamma(ub / mu, 2) - incgamma(lb / mu, 2))
+  m1 / (pexp(ub, rate = inv_mu) - pexp(lb, rate = inv_mu))
+}
+
+fitted_trunc_weibull <- function(x, mu, lb, ub, ...) {
+  # see Jawitz 2004: Moments of truncated continuous univariate distributions
+  # mu is already the scale parameter
+  shape <- posterior_samples(x, pars = "^shape$")$shape
+  a <- 1 + 1 / shape
+  m1 <- mu * (incgamma((ub / mu)^shape, a) - incgamma((lb / mu)^shape, a))
+  m1 / (pweibull(ub, shape, scale = mu) - pweibull(lb, shape, scale = mu))
 }

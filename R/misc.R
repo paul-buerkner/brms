@@ -84,6 +84,11 @@ ilogit <- function(x) {
   exp(x) / (1 + exp(x))
 }
 
+incgamma <- function(x, a) {
+  # incomplete gamma funcion
+  pgamma(x, shape = a) * gamma(a)
+}
+
 is.formula <- function(x, or = TRUE) {
   # checks if x is formula (or list of formulas)
   #
