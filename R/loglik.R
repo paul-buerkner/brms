@@ -90,7 +90,7 @@ loglik_geometric <- function(n, data, samples, link) {
 }
 
 loglik_exponential <-  function(n, data, samples, link) {
-  args <- list(rate = ilink(-samples$eta[, n], link))
+  args <- list(rate = 1 / ilink(samples$eta[, n], link))
   out <- censor_loglik(dist = "exp", args = args, n = n, data = data)
   out <- truncate_loglik(out, cdf = pexp, args = args, data = data)
   weight_loglik(out, n = n, data = data)
@@ -106,7 +106,7 @@ loglik_gamma <- function(n, data, samples, link) {
 
 loglik_weibull <- function(n, data, samples, link) {
   args <- list(shape = samples$shape,
-               scale = 1 / (ilink(-samples$eta[, n] / samples$shape, link)))
+               scale = ilink(samples$eta[, n] / samples$shape, link))
   out <- censor_loglik(dist = "weibull", args = args, n = n, data = data)
   out <- truncate_loglik(out, cdf = pweibull, args = args, data = data)
   weight_loglik(out, n = n, data = data)

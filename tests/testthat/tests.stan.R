@@ -123,9 +123,9 @@ test_that("Test that stan_llh returns correct llhs under weights and censoring",
   expect_equal(stan_llh(family = "binomial", link = "logit", add = TRUE, weights = TRUE),
                "  lp_pre[n] <- binomial_logit_log(Y[n], trials[n], eta[n]); \n")
   expect_match(stan_llh(family = "weibull", link = "log", cens = TRUE), fixed = TRUE,
-               "increment_log_prob(weibull_ccdf_log(Y[n], shape, inv(exp(-eta[n] / shape)))); \n")
+               "increment_log_prob(weibull_ccdf_log(Y[n], shape, exp(eta[n] / shape))); \n")
   expect_match(stan_llh(family = "weibull", link = "inverse", cens = TRUE, weights = TRUE), fixed = TRUE,
-               "increment_log_prob(weights[n] * weibull_ccdf_log(Y[n], shape, inv(inv(-eta[n] / shape)))); \n")
+               "increment_log_prob(weights[n] * weibull_ccdf_log(Y[n], shape, inv(eta[n] / shape))); \n")
 })
 
 test_that("Test that stan_llh returns correct llhs under truncation", {

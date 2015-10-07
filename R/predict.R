@@ -81,7 +81,7 @@ predict_geometric <- function(n, data, samples, link, ntrys, ...) {
 }
 
 predict_exponential <-  function(n, data, samples, link, ...) {
-  args <- list(rate = ilink(-samples$eta[, n], link))
+  args <- list(rate = 1 / ilink(samples$eta[, n], link))
   rng_continuous(nrng = nrow(samples$eta), dist = "exp",
                  args = args, data = data)
 }
@@ -95,7 +95,7 @@ predict_gamma <- function(n, data, samples, link, ...) {
 
 predict_weibull <- function(n, data, samples, link, ...) {
   args <- list(shape = samples$shape,
-               scale = 1 / (ilink(-samples$eta[, n] / samples$shape, link)))
+               scale = ilink(samples$eta[, n] / samples$shape, link))
   rng_continuous(nrng = nrow(samples$eta), dist = "weibull",
                  args = args, data = data)
 }

@@ -405,10 +405,16 @@ stan_llh <- function(family, link, add = FALSE,  weights = FALSE,
     if (is_hurdle || is_zero_inflated) {
       eta <- paste0(ilink,"(eta[n]), ",ilink,"(eta[n + N_trait])")
     } else {
-      eta <- switch(family, paste0(ilink,"(eta[n])"),
-                    gamma = paste0("shape / ",ilink,"(eta[n])"), 
-                    exponential = paste0(ilink,"(-eta[n])"), 
-                    weibull = paste0("inv(",ilink,"(-eta[n] / shape))"))
+      fl <- ifelse(family %in% c("gamma", "exponential"), 
+                   paste0(family,"_",link), family)
+      eta <- switch(fl, paste0(ilink,"(eta[n])"),
+                          gamma_log = "shape * exp(-eta[n])",
+                          gamma_inverse = "shape * eta[n]",
+                          gamma_identity = "shape / eta[n]",
+                          exponential_log = "exp(-eta[n])",
+                          exponential_inverse = "eta[n]",
+                          exponential_identity = "inv(eta[n])",
+                          weibull = paste0(ilink,"(eta[n] / shape)"))
     }
   } else {
     # possible transformations already performed
@@ -531,10 +537,16 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE, paref = NULL,
                      || family == "hurdle_gamma")
   eta_ilink <- rep("", 2)
   if (eta$transform) {
-    eta_ilink <- switch(family, c(paste0(ilink,"("), ")"),
-                        gamma = c(paste0("shape / ",ilink,"("), ")"), 
-                        exponential = c(paste0(ilink,"(-("), "))"), 
-                        weibull = c(paste0("inv(",ilink,"(-("), ") / shape))"))
+    fl <- ifelse(family %in% c("gamma", "exponential"), 
+                 paste0(family,"_",link), family)
+    eta_ilink <- switch(fl, c(paste0(ilink,"("), ")"),
+                        gamma_log = c("shape * exp(-(", "))"),
+                        gamma_inverse = c("shape * (", ")"),
+                        gamma_identity = c("shape / (", ")"),
+                        exponential_log = c("exp(-(", "))"),
+                        exponential_inverse = c("(", ")"),
+                        exponential_identity = c("inv(", ")"),
+                        weibull = c(paste0(ilink,"(("), ") / shape)"))
     if (autocor$q > 0) {
       eta$transC3 <- paste0("    ",eta.multi," <- ",eta_ilink[1], 
                             eta.multi, eta_ilink[2],"; \n")
