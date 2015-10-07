@@ -635,7 +635,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   }
   is_catordinal <- indicate_ordinal(family) || family == "categorical"
   # see predict.R
-  predict_fun <- get(paste0("predict_", family))
+  predict_fun <- get(paste0("predict_", family), mode = "function")
   call_predict_fun <- function(n) {
     do.call(predict_fun, list(n = n, data = data, samples = samples, 
                               link = object$link, ntrys = ntrys))
@@ -879,7 +879,7 @@ logLik.brmsfit <- function(object, ...) {
     family <- "multinormal"
   }
   standata <- standata(object)
-  loglik_fun <- get(paste0("loglik_", family))
+  loglik_fun <- get(paste0("loglik_", family), mode = "function")
   call_loglik_fun <- function(n) {
     do.call(loglik_fun, list(n = n, data = standata, samples = samples, 
                              link = object$link)) 

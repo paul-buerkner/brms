@@ -408,13 +408,13 @@ stan_llh <- function(family, link, add = FALSE,  weights = FALSE,
       fl <- ifelse(family %in% c("gamma", "exponential"), 
                    paste0(family,"_",link), family)
       eta <- switch(fl, paste0(ilink,"(eta[n])"),
-                          gamma_log = "shape * exp(-eta[n])",
-                          gamma_inverse = "shape * eta[n]",
-                          gamma_identity = "shape / eta[n]",
-                          exponential_log = "exp(-eta[n])",
-                          exponential_inverse = "eta[n]",
-                          exponential_identity = "inv(eta[n])",
-                          weibull = paste0(ilink,"(eta[n] / shape)"))
+                    gamma_log = "shape * exp(-eta[n])",
+                    gamma_inverse = "shape * eta[n]",
+                    gamma_identity = "shape / eta[n]",
+                    exponential_log = "exp(-eta[n])",
+                    exponential_inverse = "eta[n]",
+                    exponential_identity = "inv(eta[n])",
+                    weibull = paste0(ilink,"(eta[n] / shape)"))
     }
   } else {
     # possible transformations already performed
