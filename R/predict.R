@@ -262,12 +262,12 @@ extract_valid_sample <- function(rng, lb, ub) {
   #   ub: upper bound
   # Returns:
   #   a valid truncated sample or else the closest boundary
-  valid_rng <- match(TRUE, rng >= lb & rng <= ub)
+  valid_rng <- match(TRUE, rng > lb & rng <= ub)
   if (is.na(valid_rng)) {
     # no valid truncated value found
     # set sample to lb or ub
     # 1e-10 is only to identify the invalid samples later on
-    ifelse(max(rng) < lb, lb - 1e-10, ub + 1e-10)
+    ifelse(max(rng) <= lb, lb + 1 - 1e-10, ub + 1e-10)
   } else {
     rng[valid_rng]
   }
@@ -282,7 +282,7 @@ get_pct_invalid <- function(x, data) {
     lb <- ifelse(is.null(data$lb), -Inf, data$lb)
     ub <- ifelse(is.null(data$ub), Inf, data$ub)
     x <- c(x)[!is.na(c(x))]
-    sum(x < lb | x > ub) / length(x) 
+    sum(x < (lb + 1) | x > ub) / length(x) 
   } else {
     0
   }
