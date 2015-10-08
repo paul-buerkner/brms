@@ -146,9 +146,12 @@ update_formula <- function(formula, addition = NULL, partial = NULL) {
   var_names <- names(addition)
   addition <- lapply(addition, formula2string, rm = 1)
   fnew <- "."
-  if (length(addition)) 
-    for (i in 1:length(addition))
+  if (length(addition)) {
+    warning("Argument addition is deprecated. See help(brm) for further details.")
+    for (i in 1:length(addition)) {
       fnew <- paste0(fnew, " | ", var_names[i], "(", addition[[i]], ")")
+    }
+  }
   fnew <- paste(fnew, "~ .")
   if (is.formula(partial)) {
     partial <- formula2string(partial, rm=1)
@@ -507,8 +510,9 @@ set_prior <- function(prior, class = "b", coef = "", group = "") {
 #' 
 #' @export
 get_prior <- function(formula, data = NULL, family = "gaussian",
-                      addition = NULL,  autocor = NULL, partial = NULL, 
-                      threshold = c("flexible", "equidistant"), internal = FALSE) {
+                      autocor = NULL, partial = NULL, 
+                      threshold = c("flexible", "equidistant"), 
+                      internal = FALSE) {
   # note that default priors are stored in this function
   if (is.null(autocor)) 
     autocor <- cor_arma()
@@ -519,7 +523,6 @@ get_prior <- function(formula, data = NULL, family = "gaussian",
   family <- check_family(family) 
   link <- family$link
   family <- family$family
-  formula <- update_formula(formula, addition = addition)
   ee <- extract_effects(formula, partial, family = family)
   # see data.R
   data <- update_data(data, family = family, effects = ee)

@@ -30,15 +30,9 @@
 #'   \code{\link[brms:set_prior]{set_prior}} and combined using the \code{c} method. 
 #'   A single \code{brmsprior} object may be passed without \code{c()} surrounding it. 
 #'   See also  \code{\link[brms:get_prior]{get_prior}} for more help.
-#' @param addition A named list of one sided formulas each containing additional information 
-#'   on the response variable. The following names are allowed:
-#'   \code{se} for specifying standard errors for meta-analysis, 
-#'   \code{weights} to fit weighted regression models, 
-#'   \code{trials} to specify the number of trials per observation in binomial models, 
-#'   \code{cat} to specify the number of categories in 
-#'   categorical or ordinal models, and \code{cens} to indicate censoring. 
-#'   Alternatively, the \code{addition} arguments can be incorporated directly into \code{formula}.
-#'   See 'Formula Syntax' under 'Details' for further information.
+#' @param addition Deprecated.
+#'   All additional information on the response variable should be incorporated 
+#'   directly into \code{formula}. See 'Formula Syntax' under 'Details' for further information.
 #' @param autocor An optional \code{\link{cor_brms}} object describing the correlation structure 
 #'   within the response variable (i.e. the 'autocorrelation'). 
 #'   See the documentation of \code{\link{cor_brms}} for a description 
@@ -121,10 +115,7 @@
 #'   The optional \code{addition} term may contain multiple terms of the form \code{fun(variable)} 
 #'   seperated by \code{|} each providing special information on the response variable. 
 #'   \code{fun} can be replaced with either \code{se}, \code{weights}, \code{trials},
-#'   \code{cat}, \code{cens}, or \code{trunc} (their meanings are explained below). 
-#'   Using the \code{addition} term in \code{formula} is equivalent
-#'   to using argument \code{addition}: Instead of writing \code{fun(variable)} in \code{formula}, 
-#'   we may use \code{addition = list(fun = ~variable)}.
+#'   \code{cat}, \code{cens}, or \code{trunc}. Their meanings are explained below. 
 #'   
 #'   For families \code{gaussian}, \code{student}, and \code{cauchy} it is possible to specify
 #'   standard errors of the observation, thus allowing to perform meta-analysis. 
@@ -165,9 +156,7 @@
 #'   in \code{trunc} leads to one-sided truncation.
 #' 
 #'   Mutiple \code{addition} terms may be specified at the same time, for instance \cr 
-#'   \code{formula = yi | se(sei) | cens(censored) ~ 1} for a censored meta-analytic model, equivalent to 
-#'   \code{formula = yi ~ 1} and \code{addition = list(se = ~sei, cens = ~censored)} 
-#'   when using argument \code{addition}. \cr
+#'   \code{formula = yi | se(sei) | cens(censored) ~ 1} for a censored meta-analytic model. \cr
 #'   
 #'   Family \code{gaussian} allows to perform multivariate (normal) regression using \code{cbind} notation. 
 #'   Suppose that \code{y1} and \code{y2} are response variables and \code{x} is a predictor, 
@@ -319,9 +308,9 @@ brm <- function(formula, data = NULL, family = "gaussian",
   
   dots <- list(...) 
   if ("WAIC" %in% names(dots))
-    warning("Argument WAIC is depricated. Just use method WAIC on the fitted model.")
+    warning("Argument WAIC is deprecated. Just use method WAIC on the fitted model.")
   if ("predict" %in% names(dots)) 
-    warning("Argument predict is depricated. Just use method predict on the fitted model.")
+    warning("Argument predict is deprecated. Just use method predict on the fitted model.")
   dots[c("WAIC", "predict")] <- NULL
   
   set.seed(seed)

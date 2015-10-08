@@ -4,9 +4,9 @@
 \alias{get_prior}
 \title{Overview on Priors for \pkg{brms} Models}
 \usage{
-get_prior(formula, data = NULL, family = "gaussian", addition = NULL,
-  autocor = NULL, partial = NULL, threshold = c("flexible",
-  "equidistant"), internal = FALSE)
+get_prior(formula, data = NULL, family = "gaussian", autocor = NULL,
+  partial = NULL, threshold = c("flexible", "equidistant"),
+  internal = FALSE)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class):
@@ -35,16 +35,6 @@ Alternatively, a family function or the result of a call to a family function ar
 (see \code{\link[stats:family]{family}} for help on standard family functions and
 \code{\link[brms:brmsfamily]{brmsfamily}} for brms specific family functions).
 Further information is provided under 'Details'.}
-
-\item{addition}{A named list of one sided formulas each containing additional information
-on the response variable. The following names are allowed:
-\code{se} for specifying standard errors for meta-analysis,
-\code{weights} to fit weighted regression models,
-\code{trials} to specify the number of trials per observation in binomial models,
-\code{cat} to specify the number of categories in
-categorical or ordinal models, and \code{cens} to indicate censoring.
-Alternatively, the \code{addition} arguments can be incorporated directly into \code{formula}.
-See 'Formula Syntax' under 'Details' for further information.}
 
 \item{autocor}{An optional \code{\link{cor_brms}} object describing the correlation structure
 within the response variable (i.e. the 'autocorrelation').

@@ -32,7 +32,7 @@
   }
   \subsection{BUG FIXES}{
     \itemize{
-      \item avoid side effects of \code{rstan}´s compilation routines that could 
+      \item avoid side effects of the \code{rstan} compilation routines that could 
       occasionally cause R to crash
       \item make \pkg{brms} work correctly with \pkg{loo} version 0.1.3
       \item fix a bug that could cause WAIC and LOO estimates to be slightly incorrect for 
