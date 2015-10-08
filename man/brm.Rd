@@ -9,7 +9,7 @@ brm(formula, data = NULL, family = "gaussian", prior = NULL,
   threshold = c("flexible", "equidistant"), cov.ranef = NULL,
   ranef = TRUE, sample.prior = FALSE, fit = NA, inits = "random",
   n.chains = 2, n.iter = 2000, n.warmup = 500, n.thin = 1,
-  n.cluster = 1, cluster_type = "PSOCK", silent = FALSE, seed = 12345,
+  n.cluster = 1, cluster_type = "PSOCK", silent = TRUE, seed = 12345,
   save.model = NULL, ...)
 }
 \arguments{
@@ -117,7 +117,7 @@ Default is 1, that is no thinning.}
 For OS X and Linux, \code{"FORK"} may be a faster and more stable option,
 but it does not work on Windows.}
 
-\item{silent}{logical; If \code{TRUE}, most intermediate output from Stan is suppressed.}
+\item{silent}{logical; If \code{TRUE}, warning messages of the sampler are suppressed.}
 
 \item{seed}{Positive integer. Used by \code{set.seed} to make results reproducable.}
 

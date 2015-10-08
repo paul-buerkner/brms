@@ -91,7 +91,7 @@
 #'   saved in a file named after the string supplied in \code{save.model}, 
 #'   which may also contain the full path where to save the file.
 #'   If only a name is given, the file is save in the current working directory. 
-#' @param silent logical; If \code{TRUE}, most intermediate output from Stan is suppressed.
+#' @param silent logical; If \code{TRUE}, warning messages of the sampler are suppressed.
 #' @param seed Positive integer. Used by \code{set.seed} to make results reproducable.  
 #' @param ... Further arguments to be passed to Stan.
 #' 
@@ -306,7 +306,7 @@ brm <- function(formula, data = NULL, family = "gaussian",
                 threshold = c("flexible", "equidistant"), cov.ranef = NULL, 
                 ranef = TRUE, sample.prior = FALSE, fit = NA, inits = "random", 
                 n.chains = 2, n.iter = 2000, n.warmup = 500, n.thin = 1, n.cluster = 1, 
-                cluster_type = "PSOCK", silent = FALSE, seed = 12345, 
+                cluster_type = "PSOCK", silent = TRUE, seed = 12345, 
                 save.model = NULL, ...) {
   
   if (n.chains %% n.cluster != 0) 
@@ -382,10 +382,11 @@ brm <- function(formula, data = NULL, family = "gaussian",
   # arguments to be passed to stan
   args <- list(object = x$fit, data = standata, pars = x$exclude, 
                init = inits,  iter = n.iter, warmup = n.warmup, 
-               thin = n.thin, chains = n.chains, include = FALSE)  
+               thin = n.thin, chains = n.chains, include = FALSE,
+               show_messages = !silent)  
   args[names(dots)] <- dots 
   
-  if (n.cluster > 1 || silent && n.chains > 0) {  # sample in parallel
+  if (n.cluster > 1) {  # sample in parallel
     message("Start sampling")
     if (is.character(args$init) || is.numeric(args$init)) 
       args$init <- rep(args$init, n.chains)
