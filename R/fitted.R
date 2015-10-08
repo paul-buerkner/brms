@@ -2,8 +2,11 @@ fitted_response <- function(x, eta, data) {
   # comnpute fitted values on the response scale
   # Args:
   #   x: A brmsfit object
-  #   eta: linear predictor
+  #   eta: untransformed linear predictor
   #   data: data initially passed to Stan
+  # Returns: 
+  #   (usually) an S x N matrix containing samples of 
+  #   the response distribution's mean 
   family <- x$family
   nresp <- length(extract_effects(x$formula, family = family)$response)
   is_catordinal <- indicate_ordinal(family) || family == "categorical"
@@ -75,6 +78,10 @@ fitted_catordinal <- function(eta, max_obs, family, link) {
 }
 
 fitted_hurdle <- function(eta, shape, N_trait, family, link) {
+  # Args:
+  #   eta: untransformed linear predictor
+  #   shape: shape parameter samples
+  #   N_trait: Number of observations of the main response variable
   n_base <- 1:N_trait
   n_hu <- n_base + N_trait
   pre_mu <- ilink(eta[, n_base], link)
@@ -91,6 +98,9 @@ fitted_hurdle <- function(eta, shape, N_trait, family, link) {
 }
 
 fitted_zero_inflated <- function(eta, N_trait, link) {
+  # Args:
+  #   eta: untransformed linear predictor
+  #   N_trait: Number of observations of the main response variable
   n_base <- 1:N_trait
   n_zi <- n_base + N_trait
   # incorporate zero-inflation part
