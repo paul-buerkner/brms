@@ -63,6 +63,7 @@ loglik_binomial <- function(n, data, samples, link) {
 }  
 
 loglik_bernoulli <- function(n, data, samples, link) {
+  args <- list(size = 1, prob = ilink(samples$eta[, n], link))
   out <- censor_loglik(dist = "binom", args = args, n = n, data = data)
   # no truncation allowed
   weight_loglik(out, n = n, data = data)
