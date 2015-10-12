@@ -2,7 +2,7 @@ Package: brms
 Type: Package
 Title: Bayesian Regression Models using Stan
 Version: 0.5.0.9000
-Date: 2015-13-10
+Date: 2015-10-13
 Authors@R: person("Paul-Christian", "Buerkner", email = "paul.buerkner@gmail.com",
   role = c("aut", "cre"))
 Depends: R (>= 3.1.0), rstan (>= 2.8.0), ggplot2 (>= 1.0.1) 
