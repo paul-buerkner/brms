@@ -806,6 +806,33 @@ residuals.brmsfit <- function(object, re_formula = NULL, type = c("ordinary", "p
   res
 }
 
+#' Update \pkg{brms} models
+#' 
+#' This method allows to update an existing \code{brmsfit} object with new data
+#' as well as changed configuration of the chains.
+#' 
+#' @param object object of class \code{brmsfit}
+#' @param newdata optional \code{data.frame} to update the model with new data
+#' @param ... other arguments passed to \code{\link[brms:brm]{brm}} such as
+#'    \code{n.iter}, \code{n.warmup}, \code{n.chains}, \code{n.thin}, 
+#'    \code{n.cluster}, and \code{inits}.
+#'
+#' @export
+update.brmsfit <- function(object, newdata = NULL, ...) {
+  dots <- list(...)
+  z <- which(names(dots) %in% c("formula", "family", "prior", "autocor", 
+                                "partial", "threshold", "cov.ranef", 
+                                "sample.prior"))
+  if (length(z)) {
+    stop(paste("Argument(s)", paste(names(dots)[z], collapse = ", "),
+               "cannot be updated"))
+  }
+  if (!is.null(newdata)) {
+    object$data <- newdata
+  }
+  do.call(brm, c(list(fit = object), dots))
+}
+
 #' @export
 WAIC.brmsfit <- function(x, ..., compare = TRUE) {
   models <- list(x, ...)
