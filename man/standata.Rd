@@ -2,6 +2,7 @@
 % Please edit documentation in R/generics.R
 \name{standata}
 \alias{standata}
+\alias{standata.brmsfit}
 \title{Extract Data passed to Stan}
 \usage{
 standata(object, ...)

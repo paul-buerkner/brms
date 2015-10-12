@@ -2,6 +2,7 @@
 % Please edit documentation in R/generics.R
 \name{stancode}
 \alias{stancode}
+\alias{stancode.brmsfit}
 \title{Extract Stan Model Code}
 \usage{
 stancode(object, ...)

@@ -433,6 +433,8 @@ launch_shiny <- function(x, rstudio = getOption("shinystan.rstudio"), ...)
 #' 
 #' Extract the model code in Stan language
 #' 
+#' @aliases stancode.brmsfit
+#' 
 #' @param object An object of class \code{brmsfit}
 #' @param ... Currently ignored
 #' 
@@ -445,6 +447,8 @@ stancode <- function(object, ...)
 #' Extract Data passed to Stan
 #' 
 #' Extract all data that was used by Stan to fit the model
+#' 
+#' @aliases standata.brmsfit
 #' 
 #' @param object An object of class \code{brmsfit}
 #' @param ... Currently ignored
