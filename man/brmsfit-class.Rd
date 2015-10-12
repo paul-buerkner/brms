@@ -6,37 +6,53 @@
 Class \code{brmsfit} of fitted mixed-effect models
 }
 \description{
-Models fitted with the \code{\link[brms:brms]{brms}} package are represented as a \code{brmsfit} object, which contains, among others, the posterior samples (if package \code{rstan} is installed), the model code, the relevant data, the model formula, etc.
+Models fitted with the \code{\link[brms:brms]{brms}} package are represented as a \code{brmsfit} object, which contains the posterior samples, the model code, the relevant data, the model formula, and some other useful information.
 }
 
 \details{
   Currently, the following S3 methods are available for class \code{brmsfit}: 
   
-  \code{\link[brms:summary.brmsfit]{summary}}, \code{\link[brms:print.brmsfit]{print}}, 
-  \code{\link[brms:plot.brmsfit]{plot}}, \code{\link[brms:fixef.brmsfit]{fixef}}
-  \code{\link[brms:ranef.brmsfit]{ranef}},   \code{\link[brms:VarCorr.brmsfit]{VarCorr}}, 
-  \code{\link[stats:formula]{formula}}, \code{\link[stats:family]{family}},
-  \code{\link[stats:nobs]{nobs}}, \code{\link[brms:ngrps.brmsfit]{ngrps}},
-  \code{\link[brms:parnames]{parnames}},\code{\link[stats:predict]{predict}}, 
-  \code{\link[brms:residuals.brmsfit]{residuals}}, \code{\link[brms:fitted.brmsfit]{fitted}},
-  \code{\link[brms:hypothesis]{hypothesis}}, \code{\link[brms:logLik.brmsfit]{logLik}},
-  \code{\link[brms:posterior_samples]{posterior_samples}}, \code{\link[brms:prior_samples]{prior_samples}},
+  \code{\link[stats:family]{family}},
+  \code{\link[brms:fitted.brmsfit]{fitted}},
+  \code{\link[brms:fixef.brmsfit]{fixef}},
+  \code{\link[stats:formula]{formula}},
+  \code{\link[brms:hypothesis]{hypothesis}},
   \code{\link[brms:launch_shiny.brmsfit]{launch_shiny}},
-  \code{\link[brms:WAIC.brmsfit]{WAIC}}, \code{\link[brms:LOO.brmsfit]{LOO}},
+  \code{\link[brms:logLik.brmsfit]{logLik}},
+  \code{\link[brms:LOO.brmsfit]{LOO}},
+  \code{\link[brms:ngrps.brmsfit]{ngrps}},
+  \code{\link[stats:nobs]{nobs}},
+  \code{\link[brms:parnames]{parnames}},
+  \code{\link[brms:plot.brmsfit]{plot}},
+  \code{\link[brms:posterior_samples]{posterior_samples}}, 
+  \code{\link[stats:predict]{predict}}, 
+  \code{\link[brms:print.brmsfit]{print}},
+  \code{\link[brms:prior_samples]{prior_samples}},
+  \code{\link[brms:ranef.brmsfit]{ranef}}, 
+  \code{\link[brms:residuals.brmsfit]{residuals}}, 
+  \code{\link[brms:stancode.brmsfit]{stancode}},
+  \code{\link[brms:standata.brmsfit]{standata}},
+  \code{\link[brms:stanplot.brmsfit]{stanplot}},
+  \code{\link[brms:summary.brmsfit]{summary}}, 
+  \code{\link[brms:update.brmsfit]{update}},   
+  \code{\link[brms:VarCorr.brmsfit]{VarCorr}}, 
+  \code{\link[brms:vcov.brmsfit]{vcov}}, 
+  \code{\link[brms:WAIC.brmsfit]{WAIC}}
 }
 
 \section{Slots}{
   \describe{
-    \item{\code{formula}:}{the model formula; an object of class \code{formula}} 
-    \item{\code{family}:}{the model family; a character string}
-    \item{\code{link}:}{the link function; a character string}
-    \item{\code{data.name}:}{the name of the data frame; a character string} 
-    \item{\code{data}:}{the data passed to Stan; a list of vectors and matrices}
-    \item{\code{model}:}{the model in Stan language; a character string}
+    \item{\code{formula}:}{model formula; an object of class \code{formula}} 
+    \item{\code{family}:}{model family; a character string}
+    \item{\code{link}:}{link function; a character string}
+    \item{\code{data.name}:}{name of the data frame; a character string} 
+    \item{\code{data}:}{data.frame containing all variables used in the model}
+    \item{\code{model}:}{model in Stan language; a character string}
     \item{\code{exclude}:}{parameters for which samples are not saved; a character vector}
-    \item{\code{autcor}:}{an object of class 'cor.brms' containing the autocorrelation structure}
-    \item{\code{partial}:}{the formula of the partial effects applied in categorical and ordinal models}
-    \item{\code{fit}:}{the fitted results including the posterior samples; (usually) an object of class \code{stanfit}}
+    \item{\code{autocor}:}{an object of class 'cor.brms' containing the autocorrelation structure}
+    \item{\code{partial}:}{formula of the partial effects applied in categorical and ordinal models}
+    \item{\code{cov.ranef}:}{a list of customized random effects covariance matrices}
+    \item{\code{fit}:}{fitted results including the posterior samples; an object of class \code{stanfit}}
   }
 }
 
