@@ -458,7 +458,7 @@ set_prior <- function(prior, class = "b", coef = "", group = "") {
   if (length(prior) != 1 || length(class) != 1 
       || length(coef) != 1 || length(group) != 1)
     stop("All arguments of set_prior must be of length 1")
-  valid_classes <- c("b", "sd", "cor", "L", "ar", "ma", "sigma", 
+  valid_classes <- c("b", "sd", "cor", "L", "ar", "ma", "arr", "sigma", 
                      "rescor", "Lrescor", "nu", "shape", "delta")
   if (!class %in% valid_classes)
     stop(paste(class, "is not a valid paramter class"))
@@ -583,10 +583,12 @@ get_prior <- function(formula, data = NULL, family = "gaussian",
   }
   # handle additional parameters
   is_ordinal <- indicate_ordinal(family)
-  if (is(autocor, "cor_arma") && autocor$p) 
+  if (has_ar(autocor)) 
     prior <- rbind(prior, prior_frame(class = "ar"))
-  if (is(autocor, "cor_arma") && autocor$q) 
+  if (has_ma(autocor)) 
     prior <- rbind(prior, prior_frame(class = "ma"))
+  if (has_arr(autocor)) 
+    prior <- rbind(prior, prior_frame(class = "arr"))
   if (family %in% c("gaussian", "student", "cauchy") && !is.formula(ee$se))
     prior <- rbind(prior, prior_frame(class = "sigma", 
                                       coef = c("", ee$response),

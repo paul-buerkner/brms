@@ -95,6 +95,8 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
       stan_prior(class = "ar", prior = prior),
     if (autocor$q) 
       stan_prior(class = "ma", prior = prior),
+    if (autocor$r) 
+      stan_prior(class = "arr", prior = prior),
     if (has_shape) 
       stan_prior(class = "shape", prior = prior),
     if (family == "student") 
@@ -144,13 +146,15 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
     if (length(paref)) 
       paste0("  int<lower=1> Kp;  # number of category specific effects \n",
              "  matrix[N, Kp] Xp;  # CSE design matrix \n"),  
-    if (autocor$p && is(autocor, "cor_arma")) 
+    if (autocor$p) 
       paste0("  int<lower=1> Kar;  # number of autoregressive effects \n",
              "  matrix[N, Kar] Yar;  # AR design matrix \n"),
-    if (autocor$q && is(autocor, "cor_arma")) 
-      paste0("  # data needed for moving-average models \n",
-             "  int<lower=1> Kma; \n",
-             "  row_vector[Kma] Ema_pre[N]; \n",
+    if (has_ma(autocor) || has_arr(autocor)) 
+      paste0("  # data needed for residual autoregressive and moving-average effects \n",
+             "  int<lower=0> Kma;  \n",
+             "  int<lower=0> Karr; \n",
+             "  int<lower=1> Karma;  # max(Kma, Karr) \n",
+             "  row_vector[Karma] E_pre[N]; \n",
              "  vector[N] tgroup; \n"),
     if (is_linear && is.formula(ee$se))
       "  real<lower=0> sigma[N];  # SEs for meta-analysis \n",
@@ -178,7 +182,7 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
     text_ranef$data,
     "} \n")
   
-  if (family == "categorical")
+  if (family == "categorical" || TRUE)
     zero <- c("  row_vector[1] zero; \n", "  zero[1] <- 0; \n")
   else zero <- NULL
   text_transformed_data <- paste0(
@@ -201,10 +205,12 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
     if (length(paref)) 
       paste0("  matrix[Kp, ncat - 1] bp;  # category specific effects \n"),
     text_ranef$par,
-    if (autocor$p && is(autocor, "cor_arma")) 
+    if (has_ar(autocor)) 
       "  vector[Kar] ar;  # autoregressive effecs \n",
-    if (autocor$q && is(autocor, "cor_arma")) 
+    if (has_ma(autocor)) 
       "  vector[Kma] ma;  # moving-average effects \n",
+    if (has_arr(autocor)) 
+      "  vector[Karr] arr;  # residual autoregressive effects \n",
     if (is_linear && !is.formula(ee$se)) 
       "  real<lower=0> sigma;  # residual SD \n",
     if (family == "student") 
@@ -219,7 +225,7 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
     "} \n")
   
   # loop over all observations in transformed parameters if necessary
-  make_loop <- length(ee$group) || autocor$q || text_eta$transform ||
+  make_loop <- length(ee$group) || autocor$q || autocor$r || text_eta$transform ||
                  (is_ordinal && !(family == "cumulative" && link == "logit"))
   if (make_loop && !is_multi) {
     text_loop <- c(paste0("  # if available add REs to linear predictor \n",
@@ -525,7 +531,9 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE, paref = NULL,
                          "  matrix[N, ncat - 1] etap;  # linear predictor matrix \n",
                        if (is_multi) 
                          "  vector[K_trait] etam[N_trait]; # linear predictor matrix \n")
-  eta.multi <- ifelse(is_multi, "  etam[m, k]", "eta[n]")
+  eta_multi <- ifelse(is_multi, "  etam[m, k]", "eta[n]")
+  eta_arr <- ifelse(has_arr(autocor), " + head(E[n], Karr) * arr", "")
+  #eta_arr <- ifelse(has_arr(autocor), " + E[n] * arr", "")
   
   # transform eta before it is passed to the likelihood
   ilink <- stan_ilink(link)
@@ -536,7 +544,7 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE, paref = NULL,
                      || is_binary && link == "logit"
                      || family == "hurdle_gamma")
   eta_ilink <- rep("", 2)
-  if (eta$transform) {
+  if (eta$transform || has_arr(autocor)) {
     fl <- ifelse(family %in% c("gamma", "exponential"), 
                  paste0(family,"_",link), family)
     eta_ilink <- switch(fl, c(paste0(ilink,"("), ")"),
@@ -547,9 +555,9 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE, paref = NULL,
                         exponential_inverse = c("(", ")"),
                         exponential_identity = c("inv(", ")"),
                         weibull = c(paste0(ilink,"(("), ") / shape)"))
-    if (autocor$q > 0) {
-      eta$transC3 <- paste0("    ",eta.multi," <- ",eta_ilink[1], 
-                            eta.multi, eta_ilink[2],"; \n")
+    if (has_ma(autocor) || has_arr(autocor)) {
+      eta$transC3 <- paste0("    ", eta_multi," <- ",eta_ilink[1], 
+                            eta_multi, eta_arr, eta_ilink[2],"; \n")
       eta_ilink <- rep("", 2)  
     }
   }
@@ -566,14 +574,14 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE, paref = NULL,
                         etap)
   if (length(group)) {
     ind <- 1:length(group)
-    eta.re <- collapse(" + Z_",ind,"[n] * r_",ind,"[J_",ind,"[n]]")
+    eta_re <- collapse(" + Z_",ind,"[n] * r_",ind,"[J_",ind,"[n]]")
   } else {
-    eta.re <- ""
+    eta_re <- ""
   }
-  eta.ma <- ifelse(autocor$q && is(autocor, "cor_arma"), " + Ema[n] * ma", "")
-  if (nchar(eta.re) || nchar(eta.ma) || is_multi || nchar(eta_ilink[1])) {
-    eta$transC2 <- paste0("    ",eta.multi," <- ",
-                          eta_ilink[1],"eta[n]", eta.ma, eta.re, eta_ilink[2],"; \n")
+  eta_ma <- ifelse(autocor$q && is(autocor, "cor_arma"), " + E[n] * ma", "")
+  if (nchar(eta_re) || nchar(eta_ma) || is_multi || nchar(eta_ilink[1])) {
+    eta$transC2 <- paste0("    ",eta_multi," <- ",
+                          eta_ilink[1],"eta[n]", eta_ma, eta_re, eta_ilink[2],"; \n")
   }
   eta
 }
@@ -590,22 +598,26 @@ stan_ma <- function(family, link, autocor) {
   #   stan code for computing moving average effects
   is_linear <- indicate_linear(family)
   is_multi <- family == "multinormal"
-  ma <- list()
-  if (is(autocor, "cor_arma") && autocor$q) {
+  out <- list()
+  if (is(autocor, "cor_arma") && (autocor$q || autocor$r)) {
     link.fun <- c(identity = "", log = "log", inverse = "inv")[link]
     if (!(is_linear || is_multi))
-      stop(paste("moving-average models for family", family, "are not yet implemented"))
+      stop(paste("residual autoregressive and moving-average effects for family", 
+                 family, "are not yet implemented"))
     index <- ifelse(is_multi, "m, k", "n")
-    ma$transD <- paste0("  row_vector[Kma] Ema[N];  # MA design matrix \n",
+    out$transD <- paste0("  row_vector[Karma] E[N];  # residual design matrix \n",
                         "  vector[N] e;  # residuals \n") 
-    ma$transC1 <- "  Ema <- Ema_pre; \n" 
-    ma$transC2 <- paste0("    # calculation of moving average effects \n",
-                         "    e[n] <- ",link.fun,"(Y[",index,"]) - eta[n]", "; \n", 
-                         "    for (i in 1:Kma) if (n + 1 - i > 0 && n < N &&",
-                         " tgroup[n + 1] == tgroup[n + 1 - i]) \n",
-                         "      Ema[n + 1, i] <- e[n + 1 - i]", "; \n")
+    out$transC1 <- "  E <- E_pre; \n" 
+    out$transC2 <- paste0(
+      "    # calculation of moving average effects \n",
+      "    e[n] <- ",link.fun,"(Y[",index,"]) - eta[n]", "; \n",
+      "    for (i in 1:Karma) { \n", 
+      "      if (n + 1 - i > 0 && n < N && tgroup[n + 1] == tgroup[n + 1 - i]) { \n",
+      "        E[n + 1, i] <- e[n + 1 - i]; \n",
+      "      } \n",
+      "    } \n")
   }
-  ma
+  out
 }
 
 stan_function <- function(family = "gaussian", link = "identity", 

@@ -5,7 +5,7 @@
 \alias{cor_arma}
 \title{ARMA(p,q) correlation structure}
 \usage{
-cor_arma(formula = ~1, p = 0, q = 0)
+cor_arma(formula = ~1, p = 0, q = 0, r = 0)
 }
 \arguments{
 \item{formula}{A one sided formula of the form ~ t, or ~ t | g, specifying a time covariate t and, optionally, a grouping factor g.

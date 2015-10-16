@@ -26,22 +26,25 @@
 #' cor_arma(~visit|patient, p = 2, q = 2)
 #' 
 #' @export
-cor_arma <- function(formula = ~ 1, p = 0, q = 0) {
+cor_arma <- function(formula = ~ 1, p = 0, q = 0, r = 0) {
   if (!(p >= 0 && (p == round(p)))) {
     stop("autoregressive order must be a non-negative integer")
   }
   if (!(q >= 0 && (q == round(q)))) {
     stop("moving average order must be a non-negative integer")
   }
-  x <- list(formula = formula, p = p, q = q)
+  if (!(r >= 0 && (r == round(r)))) {
+    stop("response autoregressive order must be a non-negative integer")
+  }
+  x <- list(formula = formula, p = p, q = q, r = r)
   class(x) <- c("cor_arma", "cor_brms")
   x
 }
 
 #' @export
-cor.arma <- function(formula = ~ 1, p = 0, q = 0) {
+cor.arma <- function(formula = ~ 1, p = 0, q = 0, r = 0) {
   # deprecated alias of cor_carma
-  cor_arma(formula = formula, p = p, q = q)
+  cor_arma(formula = formula, p = p, q = q, r = r)
 }
 
 #' AR(p) correlation structure
@@ -113,10 +116,40 @@ cor.ma <- function(formula = ~ 1, q = 1) {
   # deprecated alias of cor_ma
   cor_ma(formula = formula, q = q)
 }
+
+#' @export
+cor_arr <- function(formula = ~ 1, r = 1) {
+  cor_arma(formula = formula, p = 0, q = 0, r = r)
+}
+
 #' @export
 print.cor_arma <- function(x, ...) {
   cat(paste0("arma(", gsub(" ", "", Reduce(paste, deparse(x$formula))),
              ", ",x$p,", ",x$q,")"))
+}
+
+has_ar <- function(x) {
+  # check if x contains AR effects
+  if (!is(x, "cor_arma")) {
+    stop("x must be of class cor_arma")
+  }
+  !is.null(x$p) && x$p > 0
+}
+
+has_ma <- function(x) {
+  # check if x contains MA effects
+  if (!is(x, "cor_arma")) {
+    stop("x must be of class cor_arma")
+  }
+  !is.null(x$q) && x$q > 0
+}
+
+has_arr <- function(x) {
+  # check if x contains ARR effects
+  if (!is(x, "cor_arma")) {
+    stop("x must be of class cor_arma")
+  }
+  !is.null(x$r) && x$r > 0
 }
 
 #' Autocorrelation Function Estimation based on MCMC-Samples (experimental)

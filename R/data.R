@@ -128,7 +128,7 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
                       drop.unused.levels = !isTRUE(dots$newdata))
   
   # sort data in case of autocorrelation models
-  if (sum(autocor$p, autocor$q) > 0) {
+  if (with(autocor, sum(p, q, r)) > 0) {
     if (family == "gaussian" && length(ee$response) > 1) {
       if (!grepl("^trait$|:trait$|^trait:|:trait:", et$group)) {
         stop(paste("autocorrelation structures for multiple responses must",
@@ -139,8 +139,9 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
     } else {
       to_order <- rmNULL(list(data[[et$group]], data[[et$time]]))
     }
-    if (length(to_order)) 
+    if (length(to_order)) {
       data <- data[do.call(order, to_order), ]
+    }
   }
   
   # response variable
@@ -310,7 +311,7 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
   }
   
   # autocorrelation variables
-  if (is(autocor,"cor_arma") && autocor$p + autocor$q > 0) {
+  if (is(autocor,"cor_arma") && with(autocor, sum(p, q, r)) > 0) {
     tgroup <- data[[et$group]]
     if (is.null(tgroup)) 
       tgroup <- rep(1, standata$N) 
@@ -318,9 +319,11 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
       standata$Yar <- ar_design_matrix(Y = standata$Y, p = autocor$p, group = tgroup)
       standata$Kar <- autocor$p
     }
-    if (autocor$q > 0 && is(autocor,"cor_arma")) {
-      standata$Ema_pre <- matrix(0, nrow = standata$N, ncol = autocor$q)
-      standata$Kma <- autocor$q
+    if (has_ma(autocor) || has_arr(autocor)) {
+      standata$E_pre <- matrix(0, nrow = standata$N, ncol = with(autocor, max(q, r)))
+      standata$Kma <- ifelse(is.null(autocor$q), 0, autocor$q)
+      standata$Karr <- ifelse(is.null(autocor$r), 0, autocor$r)
+      standata$Karma <- with(standata, max(Kma, Karr))
       standata$tgroup <- as.numeric(as.factor(tgroup))
     }
   } 
