@@ -656,12 +656,12 @@ td_plot <- function(par, x) {
     xlab("") + ylab("") + ggtitle(paste("Trace of", par)) + 
     theme(legend.position = "none",
           plot.title = element_text(size = 15, vjust = 1),
-          plot.margin = grid::unit(c(0.2, 0, -0.8, -0.5), "lines"))
+          plot.margin = grid::unit(c(0.2, 0, -0.5, -0.5), "lines"))
   density <- ggplot(x, aes_string(x = "value")) + 
     geom_density(aes_string(fill = "chains"), alpha = 0.5) + 
     xlab("") + ylab("") + ggtitle(paste("Density of", par)) + 
     theme(plot.title = element_text(size = 15, vjust = 1),
-          plot.margin = grid::unit(c(0.2, 0, -0.8, -0.5), "lines"))
+          plot.margin = grid::unit(c(0.2, 0, -0.5, -0.5), "lines"))
   list(trace, density)
 }
 
