@@ -35,22 +35,29 @@ test_that("Test that stan_prior can remove default priors", {
 })
 
 test_that("Test that stan_eta returns correct strings for autocorrelation models", {
+  expect_match(stan_eta(family = "student", link = "log", f = c("Trt_c"),
+                        autocor = cor_arma(~visit|patient, p = 2))$transC3,
+               "eta[n] <- exp(eta[n] + head(E[n], Kar) * ar)", fixed = TRUE)
+  expect_match(stan_eta(family = "gaussian", link = "log", f = c("Trt_c"),
+                        autocor = cor_arma(~visit|patient, q = 1))$transC2,
+               "eta[n] <- eta[n] + head(E[n], Kma) * ma", fixed = TRUE)
   expect_match(stan_eta(family = "poisson", link = "log", f = c("Trt_c"),
-                        autocor = cor.arma(~visit|patient, p=1))$transC1,
-               "eta <- X * b + b_Intercept + Yar * ar", fixed = TRUE)
-  expect_match(stan_eta(family = "poisson", link = "log", f = c("Trt_c"),
-                        autocor = cor.arma(~visit|patient, q=1))$transC2,
-               "eta[n] <- eta[n] + Ema[n] * ma", fixed = TRUE)
+                        autocor = cor_arma(~visit|patient, r = 3))$transC1,
+               "eta <- X * b + b_Intercept + Yarr * arr", fixed = TRUE)
 })
 
-test_that("Test_that stan_ma returns correct strings (or errors) for moving average models", {
-  expect_equal(stan_ma(family = "gaussian", link = "log", autocor = cor.arma()), list())
-  expect_match(stan_ma(family = "gaussian", link = "log", autocor = cor.arma(~visit|patient, q=1))$transC2,
-               "Ema[n + 1, i] <- e[n + 1 - i]", fixed = TRUE)
-  expect_match(stan_ma(family = "multinormal", link = "inverse", autocor = cor.arma(~visit|patient, q=1))$transC2,
+test_that("Test_that stan_arma returns correct strings (or errors)", {
+  expect_equal(stan_arma(family = "gaussian", link = "log", 
+                         autocor = cor.arma()), list())
+  expect_match(stan_arma(family = "gaussian", link = "log", 
+                         autocor = cor.arma(~visit|patient, q = 1))$transC2,
+               "E[n + 1, i] <- e[n + 1 - i]", fixed = TRUE)
+  expect_match(stan_arma(family = "multinormal", link = "inverse", 
+                       autocor = cor.arma(~visit|patient, p = 1))$transC2,
                "e[n] <- inv(Y[m, k]) - eta[n]", fixed = TRUE)
-  expect_error(stan_ma(family = "poisson", link = "log", autocor = cor.arma(~visit|patient, p=1, q=1)),
-               "moving-average models for family poisson are not yet implemented")
+  expect_error(stan_arma(family = "poisson", link = "log", 
+                       autocor = cor.arma(~visit|patient, p = 1, q = 1)),
+               "ARMA effects for family poisson are not yet implemented")
 })  
 
 test_that("Test that stan_model accepts supported links", {

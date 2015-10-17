@@ -26,11 +26,11 @@ test_that("Test that get_model_matrix removes intercepts correctly", {
                structure(matrix(rep(0:1, 5)), dimnames = list(1:10, "x2")))
 })
 
-test_that("Test that ar_design_matrix returns correct design matrices for autoregressive effects", {
-  expect_equal(ar_design_matrix(1:10, 0, sort(rep(1:2, 5))), NULL)
-  expect_equal(ar_design_matrix(1:10, 1, sort(rep(1:2, 5))), 
+test_that("Test that arr_design_matrix returns correct design matrices for autoregressive effects", {
+  expect_equal(arr_design_matrix(1:10, 0, sort(rep(1:2, 5))), NULL)
+  expect_equal(arr_design_matrix(1:10, 1, sort(rep(1:2, 5))), 
                matrix(c(0,1:4.5,0,6:9.5)))
-  expect_equal(ar_design_matrix(1:10, 2, sort(rep(1:2, 5))), 
+  expect_equal(arr_design_matrix(1:10, 2, sort(rep(1:2, 5))), 
                cbind(c(0,1:4.5,0,6:9), c(0,0,1:3,0,0,6:8)))
 })
 
@@ -145,20 +145,22 @@ test_that("Test that brmdata handles addition arguments and autocorrelation in m
   data <- data.frame(y1=1:10, y2=11:20, w=1:10, x=rep(0,10), tim=10:1, g = rep(1:2,5))
   expect_equal(brmdata(cbind(y1,y2) | weights(w) ~ x, family = "gaussian", data = data)$weights, 1:10)
   expect_equal(brmdata(cbind(y1,y2) | weights(w) ~ x, family = "gaussian", 
-                       autocor = cor.ar(~tim|g:trait), data = data)$Y,
+                       autocor = cor_ar(~tim | g:trait), data = data)$Y,
                cbind(c(seq(9,1,-2), seq(10,2,-2)), c(seq(19,11,-2), seq(20,12,-2))))
   expect_error(brmdata(cbind(y1,y2) | weights(w) ~ x, family = "gaussian", 
-                        autocor = cor.ar(~tim|g), data = data),
+                        autocor = cor.ar(~tim | g), data = data),
                "autocorrelation structures for multiple responses must contain 'trait' as grouping variable")
 })
 
 test_that("Test that brmdata returns correct data for autocorrelations structures", {
   data <- data.frame(y=1:10, x=rep(0,10), tim=10:1, g = rep(3:4,5))
-  expect_equal(brmdata(y ~ x, family = "gaussian", autocor = cor.ar(~tim|g), data = data)$Yar,
+  expect_equal(brmdata(y ~ x, family = "gaussian", autocor = cor_arr(~tim|g), data = data)$Yarr,
                cbind(c(0,9,7,5,3,0,10,8,6,4)))
-  expect_equal(brmdata(y ~ x, family = "gaussian", autocor = cor.ar(~tim|g, p = 2), data = data)$Yar,
+  expect_equal(brmdata(y ~ x, family = "gaussian", autocor = cor_arr(~tim|g, r = 2), data = data)$Yarr,
                cbind(c(0,9,7,5,3,0,10,8,6,4), c(0,0,9,7,5,0,0,10,8,6)))
-  expect_equal(brmdata(y ~ x, family = "gaussian", autocor = cor.ma(~tim|g), data = data)$tgroup,
+  expect_equal(brmdata(y ~ x, family = "gaussian", autocor = cor_ma(~tim|g), data = data)$tgroup,
+               c(rep(1,5), rep(2,5)))
+  expect_equal(brmdata(y ~ x, family = "gaussian", autocor = cor_ar(~tim|g), data = data)$tgroup,
                c(rep(1,5), rep(2,5)))
 })
 
