@@ -8,7 +8,7 @@
 \title{Extract posterior samples}
 \usage{
 posterior_samples(x, pars = NA, parameters = NA, exact_match = FALSE,
-  add_chains = FALSE, ...)
+  add_chains = FALSE, as.matrix = FALSE, ...)
 }
 \arguments{
 \item{x}{An \code{R} object typically of class \code{brmsfit}}
@@ -22,7 +22,9 @@ By default, all posterior samples of all parameters are extracted}
 
 \item{add_chains}{A flag indicating if the returned data.frame should contain information on the chains}
 
-\item{...}{Currently ignored}
+\item{as.matrix}{Should the output be a \code{matrix} instead of a \code{data.frame}? Defaults to \code{FALSE}}
+
+\item{...}{additional arguments}
 }
 \value{
 A data frame containing the posterior samples, with one column per parameter.

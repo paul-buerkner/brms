@@ -101,7 +101,7 @@ ranef <- function(x, estimate = "mean", var = FALSE, ...)
 #' @aliases VarCorr.brmsfit
 #' 
 #' @usage ## S3 method for class 'brmsfit'
-#' VarCorr(x, estimate = "mean", as.list = TRUE, ...) 
+#' VarCorr(x, estimate = "mean", as.list = TRUE, ...)
 #' 
 #' @param x An object of class \code{brmsfit}.
 #' @param estimate A character vector specifying which coefficients (e.g., "mean", "median", "sd", or "quantile")
@@ -216,7 +216,8 @@ hypothesis <- function(x, hypothesis, class = "b", group = "",
 #' @param parameters A deprecated alias of \code{pars}   
 #' @param exact_match Indicates whether parameter names should be matched exactly or treated as regular expression. Default is \code{FALSE}.
 #' @param add_chains A flag indicating if the returned data.frame should contain information on the chains
-#' @param ... Currently ignored
+#' @param as.matrix Should the output be a \code{matrix} instead of a \code{data.frame}? Defaults to \code{FALSE}
+#' @param ... additional arguments
 #'   
 #' @details Currently there are methods for \code{brmsfit} objects.
 #' @return A data frame containing the posterior samples, with one column per parameter.
@@ -239,13 +240,13 @@ hypothesis <- function(x, hypothesis, class = "b", group = "",
 #' 
 #' @export 
 posterior_samples <- function(x, pars = NA, parameters = NA, exact_match = FALSE, 
-                              add_chains = FALSE,...)
+                              add_chains = FALSE, as.matrix = FALSE, ...)
   UseMethod("posterior_samples")
 
 # deprecated alias of posterior_samples
 #' @export 
 posterior.samples <- function(x, pars = NA, parameters = NA, exact_match = FALSE, 
-                              add_chains = FALSE,...)
+                              add_chains = FALSE, as.matrix = FALSE, ...)
   UseMethod("posterior_samples")
 
 #' Extract prior samples

@@ -262,7 +262,7 @@ macf <- function(x, lag.max = NULL, plot = TRUE, ...) {
   ac_names <- paste0("ac",1:lag.max) 
   lm_call <- parse(text = paste0("lm(y ~ ",paste(ac_names, collapse = "+"),", data = D)"))
   coefs <- do.call(rbind, lapply(1:nrow(x), function(i) {
-    D <- as.data.frame(ar_design_matrix(x[i, ], p = lag.max, group = group))
+    D <- as.data.frame(arr_design_matrix(x[i, ], r = lag.max, group = group))
     names(D) <- paste0("ac", 1:lag.max) 
     D <- cbind(D, y = x[i, ])
     fit <- eval(lm_call)

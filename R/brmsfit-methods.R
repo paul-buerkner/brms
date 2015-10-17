@@ -256,7 +256,8 @@ prior_samples.brmsfit <- function(x, pars = NA, parameters = NA, ...) {
     samples <- posterior_samples(x, pars = prior_names, exact_match = TRUE)
     names(samples) <- sub("^prior_", "", prior_names)
     if (!anyNA(pars)) {
-      samples <- data.frame(rmNULL(lapply(pars, function(par) {
+      get_samples <- function(par) {
+        # get prior samples for parameter par 
         matches <- lapply(paste0("^",sub("^prior_", "", prior_names)), 
                           regexpr, text = par)
         matches <- ulapply(matches, attr, which = "match.length")
@@ -266,8 +267,9 @@ prior_samples.brmsfit <- function(x, pars = NA, parameters = NA, ...) {
           take <- match(max(matches), matches)
           return(structure(list(samples[, take]), names = par))
         }
-      })), 
-      check.names = FALSE)
+      }
+      samples <- data.frame(rmNULL(lapply(pars, get_samples)), 
+                            check.names = FALSE)
     }
   } else {
     samples <- NULL
