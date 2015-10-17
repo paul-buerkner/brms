@@ -52,10 +52,12 @@ brmpars <- function(formula, data = NULL, family = "gaussian",
     out <- c(out,"nu")
   if (indicate_shape(family)) 
     out <- c(out, "shape")
-  if (autocor$p > 0) 
+  if (get_ar(autocor)) 
     out <- c(out, "ar")
-  if (autocor$q > 0) 
+  if (get_ma(autocor)) 
     out <- c(out, "ma")
+  if (get_arr(autocor)) 
+    out <- c(out, "arr")
   if (length(ee$group)) {
     out <- c(out, paste0("sd_",ee$group))
     out <- c(out, unlist(lapply(1:length(ee$group), function(i)
@@ -71,6 +73,7 @@ brm.pars <- function(formula, data = NULL, family = "gaussian",
                      autocor = NULL, partial = NULL,
                      threshold = "flexible", ranef = TRUE) {
   # deprecated alias of brm.pars
-  brmpars(formula = formula, data = data, family = family, autocor = autocor, partial = partial,
+  brmpars(formula = formula, data = data, family = family, 
+          autocor = autocor, partial = partial,
           threshold = threshold, ranef = ranef)
 }
