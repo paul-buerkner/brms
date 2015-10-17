@@ -54,9 +54,8 @@ test_that("Test that extract_time returns all desired variables", {
 })
 
 test_that("Test that update_formula returns correct formulas", {
-  expect_equal(update_formula(y~x, addition = list(se = ~I(sei+2))), y | se(I(sei+2)) ~ x)
-  expect_equal(update_formula(y~x, addition = list(se = ~sei, cens = ~censored)), 
-               y | se(sei) | cens(censored) ~ x)
+  expect_warning(update_formula(y~x, addition = list(se = ~I(sei+2))))
+  expect_warning(update_formula(y~x, addition = list(se = ~sei, cens = ~censored)))
   expect_equal(update_formula(y~x+z, partial = ~ a + I(a^2)), y ~ x+z+partial(a + I(a^2)))
 })
 
