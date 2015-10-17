@@ -8,32 +8,47 @@
 cor_arma(formula = ~1, p = 0, q = 0, r = 0)
 }
 \arguments{
-\item{formula}{A one sided formula of the form ~ t, or ~ t | g, specifying a time covariate t and, optionally, a grouping factor g.
-A covariate for this correlation structure must be integer valued. When a grouping factor is present in \code{formula}, the correlation structure
-is assumed to apply only to observations within the same grouping level; observations with different grouping levels are assumed to be uncorrelated.
-Defaults to ~ 1, which corresponds to using the order of the observations in the data as a covariate, and no groups.}
+\item{formula}{A one sided formula of the form ~ t, or ~ t | g,
+specifying a time covariate t and, optionally, a grouping factor g.
+A covariate for this correlation structure must be integer valued.
+When a grouping factor is present in \code{formula}, the correlation structure
+is assumed to apply only to observations within the same grouping level;
+observations with different grouping levels are assumed to be uncorrelated.
+Defaults to ~ 1, which corresponds to using the order of the observations
+in the data as a covariate, and no groups.}
 
-\item{p}{A non-negative integer specifying the autoregressive order of the ARMA structure. Default is 0.}
+\item{p}{A non-negative integer specifying the autoregressive (AR) order of the ARMA structure.
+Default is 0.}
 
-\item{q}{A non-negative integer specifying the moving average order of the ARMA structure. Default is 0.}
+\item{q}{A non-negative integer specifying the moving average (MA) order of the ARMA structure.
+Default is 0.}
+
+\item{r}{A non-negative integer specifying the autoregressive response (ARR) order.
+  See 'Details' for differences of AR and ARR effects. Default is 0.}
 }
 \value{
-An object of class \code{cor_arma}, representing an autoregression-moving average correlation structure.
+An object of class \code{cor_arma}, representing an
+  autoregression-moving-average correlation structure.
 }
 \description{
-This functions is a constructor for the \code{cor_arma} class, representing an autoregression-moving average correlation structure of order (p, q).
+This functions is a constructor for the \code{cor_arma} class, representing
+an autoregression-moving average correlation structure of order (p, q).
 }
 \details{
-The AR structure implemented in \pkg{brms} regresses previous response(s) on the current response.
-  Other packages may use the term AR for the regression of previous residual(s) on the current residual.
-  When comparing the outputs of different packages using AR coefficients, it is thus important to
-  check which AR structure (response or residual) was actually applied.
-  AR effects of residuals are currently developed for \pkg{brms}.
+As of \pkg{brms} version 0.6.0, the AR structure refers to autoregressive effects of residuals
+  to match the naming and implementation in other packages such as nlme.
+  Previously, the AR term in \pkg{brms} referred to autoregressive effects of the response.
+  The latter are now named ARR effects and can be modeled using argument \code{r} in the
+  \code{cor_arma} and \code{cor_arr} functions.
 }
 \examples{
 cor_arma(~visit|patient, p = 2, q = 2)
 }
 \author{
 Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
+}
+\seealso{
+\code{\link[brms:cor_ar]{cor_ar}} \code{\link[brms:cor_ma]{cor_ma}}
+  \code{\link[brms:cor_arr]{cor_arr}}
 }
 

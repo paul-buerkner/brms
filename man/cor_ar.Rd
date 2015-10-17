@@ -8,12 +8,17 @@
 cor_ar(formula = ~1, p = 1)
 }
 \arguments{
-\item{formula}{A one sided formula of the form ~ t, or ~ t | g, specifying a time covariate t and, optionally, a grouping factor g.
-A covariate for this correlation structure must be integer valued. When a grouping factor is present in \code{formula}, the correlation structure
-is assumed to apply only to observations within the same grouping level; observations with different grouping levels are assumed to be uncorrelated.
-Defaults to ~ 1, which corresponds to using the order of the observations in the data as a covariate, and no groups.}
+\item{formula}{A one sided formula of the form ~ t, or ~ t | g,
+specifying a time covariate t and, optionally, a grouping factor g.
+A covariate for this correlation structure must be integer valued.
+When a grouping factor is present in \code{formula}, the correlation structure
+is assumed to apply only to observations within the same grouping level;
+observations with different grouping levels are assumed to be uncorrelated.
+Defaults to ~ 1, which corresponds to using the order of the observations
+in the data as a covariate, and no groups.}
 
-\item{p}{A non-negative integer specifying the autoregressive order of the ARMA structure. Default is 1.}
+\item{p}{A non-negative integer specifying the autoregressive (AR) order of the ARMA structure.
+Default is 0.}
 }
 \value{
 An object of class \code{cor_arma} containing solely autoregression terms.
@@ -22,11 +27,11 @@ An object of class \code{cor_arma} containing solely autoregression terms.
 This function is a constructor for the \code{cor_arma} class, allowing for autoregression terms only.
 }
 \details{
-The AR structure implemented in \pkg{brms} regresses previous response(s) on the current response.
-  Other packages may use the term AR for the regression of previous residual(s) on the current residual.
-  When comparing the outputs of different packages using AR coefficients, it is thus important to
-  check which AR structure (response or residual) was actually applied.
-  AR effects of residuals are currently developed for \pkg{brms}.
+As of \pkg{brms} version 0.6.0, the AR structure refers to autoregressive effects of residuals
+  to match the naming and implementation in other packages such as nlme.
+  Previously, the AR term in \pkg{brms} referred to autoregressive effects of the response.
+  The latter are now named ARR effects and can be modeled using argument \code{r} in the
+  \code{cor_arma} and \code{cor_arr} functions.
 }
 \examples{
 cor_ar(~visit|patient, p = 2)
