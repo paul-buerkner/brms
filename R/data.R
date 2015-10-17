@@ -128,7 +128,7 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
                       drop.unused.levels = !isTRUE(dots$newdata))
   
   # sort data in case of autocorrelation models
-  if (with(autocor, sum(p, q, r)) > 0) {
+  if (has_arma(autocor)) {
     if (family == "gaussian" && length(ee$response) > 1) {
       if (!grepl("^trait$|:trait$|^trait:|:trait:", et$group)) {
         stop(paste("autocorrelation structures for multiple responses must",
@@ -311,20 +311,26 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
   }
   
   # autocorrelation variables
-  if (is(autocor,"cor_arma") && with(autocor, sum(p, q, r)) > 0) {
+  if (has_arma(autocor)) {
     tgroup <- data[[et$group]]
-    if (is.null(tgroup)) 
+    if (is.null(tgroup)) {
       tgroup <- rep(1, standata$N) 
-    if (autocor$p > 0) {
-      standata$Yar <- ar_design_matrix(Y = standata$Y, p = autocor$p, group = tgroup)
-      standata$Kar <- autocor$p
     }
-    if (has_ma(autocor) || has_arr(autocor)) {
-      standata$E_pre <- matrix(0, nrow = standata$N, ncol = with(autocor, max(q, r)))
-      standata$Kma <- ifelse(is.null(autocor$q), 0, autocor$q)
-      standata$Karr <- ifelse(is.null(autocor$r), 0, autocor$r)
-      standata$Karma <- with(standata, max(Kma, Karr))
+    Kar <- get_ar(autocor)
+    Kma <- get_ma(autocor)
+    Karr <- get_arr(autocor)
+    if (Kar || Kma) {
+      # ARMA effects (of residuals)
+      standata$E_pre <- matrix(0, nrow = standata$N, ncol = max(Kar, Kma))
+      standata$Kar <- Kar
+      standata$Kma <- Kma
+      standata$Karma <- max(Kar, Kma)
       standata$tgroup <- as.numeric(as.factor(tgroup))
+    }
+    if (Karr) {
+      # ARR effects (autoregressive effects of the response)
+      standata$Yarr <- arr_design_matrix(Y = standata$Y, r = Karr, group = tgroup)
+      standata$Karr <- Karr
     }
   } 
   standata
@@ -362,29 +368,29 @@ get_model_matrix <- function(formula, data = environment(formula), rm_intercept 
   X   
 }
 
-ar_design_matrix <- function(Y, p, group)  { 
-  # calculate design matrix for autoregressive effects
+arr_design_matrix <- function(Y, r, group)  { 
+  # calculate design matrix for autoregressive effects of the response
   #
   # Args:
   #   Y: a vector containing the response variable
-  #   p: autocor$p
+  #   r: ARR order
   #   group: vector containing the grouping variable for each observation
   #
   # Notes: 
   #   expects Y to be sorted after group already
   # 
   # Returns:
-  #   the deisgn matrix for autoregressive effects
+  #   the design matrix for ARR effects
   if (length(Y) != length(group)) 
     stop("Y and group must have the same length")
-  if (p > 0) {
+  if (r > 0) {
     U_group <- unique(group)
     N_group <- length(U_group)
-    out <- matrix(0, nrow = length(Y), ncol = p)
+    out <- matrix(0, nrow = length(Y), ncol = r)
     ptsum <- rep(0, N_group + 1)
     for (j in 1:N_group) {
       ptsum[j+1] <- ptsum[j] + sum(group == U_group[j])
-      for (i in 1:p) {
+      for (i in 1:r) {
         if (ptsum[j]+i+1 <= ptsum[j+1])
           out[(ptsum[j]+i+1):ptsum[j+1], i] <- Y[(ptsum[j]+1):(ptsum[j+1]-i)]
       }

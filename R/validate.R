@@ -583,11 +583,11 @@ get_prior <- function(formula, data = NULL, family = "gaussian",
   }
   # handle additional parameters
   is_ordinal <- indicate_ordinal(family)
-  if (has_ar(autocor)) 
+  if (get_ar(autocor)) 
     prior <- rbind(prior, prior_frame(class = "ar"))
-  if (has_ma(autocor)) 
+  if (get_ma(autocor)) 
     prior <- rbind(prior, prior_frame(class = "ma"))
-  if (has_arr(autocor)) 
+  if (get_arr(autocor)) 
     prior <- rbind(prior, prior_frame(class = "arr"))
   if (family %in% c("gaussian", "student", "cauchy") && !is.formula(ee$se))
     prior <- rbind(prior, prior_frame(class = "sigma", 

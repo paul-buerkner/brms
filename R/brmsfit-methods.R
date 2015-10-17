@@ -201,8 +201,8 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
 
 #' @export
 posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,  
-                                      exact_match = FALSE, 
-                                      add_chains = FALSE, ...) {
+                                      exact_match = FALSE, add_chains = FALSE, 
+                                      as.matrix = FALSE, ...) {
   if (is.na(pars[1])) 
     pars <- parameters  
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
@@ -234,6 +234,9 @@ posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,
     if (add_chains) {
       samples$chains <- factor(rep(1:chains, each = final_iter))
       samples$iter <- rep(samples_taken, chains)
+    }
+    if (as.matrix) {
+      samples <- as.matrix(samples)
     }
   } else {
     samples <- NULL 
@@ -795,8 +798,7 @@ residuals.brmsfit <- function(object, re_formula = NULL, type = c("ordinary", "p
   }
   # for compatibility with the macf function (see correlations.R)
   # so that the colnames of the output correspond to the levels of the autocor grouping factor
-  has_autocor <- sum(object$autocor$p, object$autocor$q) > 0
-  if (is(object$autocor, "cor_arma") && has_autocor) {
+  if (has_arma(object$autocor)) {
     tgroup <- extract_time(object$autocor$formula)$group
     if (nchar(tgroup)) colnames(res) <- standata[[tgroup]]
   }

@@ -337,14 +337,29 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
       eta <- eta + ranef_predictor(Z = Z, gf = gf, r = r) 
     }
   }
-  if (x$autocor$p > 0) {
-    Yar <- as.matrix(data$Yar)
-    ar <- posterior_samples(x, pars = "^ar\\[")
-    eta <- eta + fixef_predictor(X = Yar, b = ar)
+  # indicates if the model was fitted with brms <= 0.5.0
+  old_autocor <- is.null(x$autocor$r)
+  if (get_arr(x$autocor)) {
+    # incorporate ARR effects
+    if (old_autocor) {
+      Yarr <- as.matrix(data$Yar)
+      arr <- posterior_samples(x, pars = "^ar\\[")
+    } else {
+      # brms > 0.5.0
+      Yarr <- as.matrix(data$Yarr)
+      arr <- posterior_samples(x, pars = "^arr\\[")
+    }
+    eta <- eta + fixef_predictor(X = Yarr, b = arr)
   }
-  if (x$autocor$q > 0) {
-    ma <- posterior_samples(x, pars = "^ma\\[")
-    eta <- ma_predictor(data = data, ma = ma, eta = eta, link = x$link)
+  if (get_ar(x$autocor) || get_ma(x$autocor)) {
+    if (old_autocor) {
+      ar <- NULL
+    } else {
+      ar <- posterior_samples(x, pars = "^ar\\[", as.matrix = TRUE)
+    }
+    ma <- posterior_samples(x, pars = "^ma\\[", as.matrix = TRUE)
+    eta <- arma_predictor(data = data, ar = ar, ma = ma, 
+                          eta = eta, link = x$link)
   }
   if (indicate_ordinal(x$family)) {
     Intercept <- posterior_samples(x, "^b_Intercept\\[")
@@ -416,31 +431,41 @@ ranef_predictor <- function(Z, gf, r) {
   eta
 }
 
-ma_predictor <- function(data, ma, eta, link) {
+arma_predictor <- function(data, ar, ma, eta, link) {
   # compute eta for moving average effects
   #
   # Args:
   #   data: the data initially passed to stan
-  #   ma: moving average samples 
+  #   ar: autoregressive samples (can be NULL)
+  #   ma: moving average samples (can be NULL)
   #   eta: previous linear predictor samples
   #   link: the link function as character string
   #
   # Returns:
   #   new linear predictor samples updated by moving average effects
-  ma <- as.matrix(ma)
-  K <- ncol(ma)
+  S <- max(nrow(ar), nrow(ma))
+  Kar <- ifelse(is.null(ar), 0, ncol(ar))
+  Kma <- ifelse(is.null(ma), 0, ncol(ma))
+  K <- max(Kar, Kma)
   Ks <- 1:K
   Y <- link(data$Y, link)
   N <- length(Y)
   tg <- c(rep(0, K), data$tgroup)
-  Ema <- array(0, dim = c(nrow(ma), K, N))
-  e <- matrix(0, nrow = nrow(ma), ncol = N)
+  E <- array(0, dim = c(S, K, N))
+  e <- matrix(0, nrow = S, ncol = N)
   for (n in 1:N) {
-    eta[, n] <- eta[, n] + apply(ma * Ema[, , n], 1, sum)
+    if (Kma) {
+      # add MA effects
+      eta[, n] <- eta[, n] + rowSums(ma * E[, 1:Kma, n])
+    }
     e[, n] <- Y[n] - eta[, n]
     if (n < N) {
       I <- which(n < N & tg[n + 1 + K] == tg[n + 1 + K - Ks])
-      Ema[, I, n + 1] <- e[, n + 1 - I]
+      E[, I, n + 1] <- e[, n + 1 - I]
+    }
+    if (Kar) {
+      # add AR effects
+      eta[, n] <- eta[, n] + rowSums(ar * E[, 1:Kar, n])
     }
   }
   eta
@@ -554,7 +579,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     stop("New random effects levels are not yet allowed.")
   }
   ee <- extract_effects(fit$formula, family = fit$family)
-  if (sum(fit$autocor$p, fit$autocor$q) > 0 && !all(ee$response %in% names(newdata))) {
+  if (has_arma(fit$autocor) && !all(ee$response %in% names(newdata))) {
     stop("response variables must be specified in newdata for autocorrelative models")
   } else {
     for (resp in ee$response) {
