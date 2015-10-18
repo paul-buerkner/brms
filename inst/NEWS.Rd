@@ -9,6 +9,8 @@
       \item add support for inverse gaussian models through family \code{inverse.gaussian}
       \item add new \code{addition} argument \code{trunc} allowing
       to specify truncation of the response variable
+      \item add support for autoregressive (AR) effects of residuals, which can
+      be modeled using the \code{cor_ar} and \code{cor_arma} functions
       \item binomial and ordinal families now support the \code{cauchit} link function
       \item allow family functions to be used in the \code{family} argument
       \item easy access to various \code{rstan} plotting functions 
@@ -20,7 +22,10 @@
   \subsection{OTHER CHANGES}{
     \itemize{
       \item separate the fixed effects Intercept from other fixed effects
-      in the \pkg{Stan} code to slightly improve sampling efficiency  
+      in the \pkg{Stan} code to slightly improve sampling efficiency
+      \item move autoregressive (AR) effects of the response from the \code{cor_ar}
+      to the \code{cor_arr} function as the result of implementing 
+      AR effects of residuals
       \item improve checks on argument \code{newdata} used in the
       \code{fitted} and \code{predict} method
       \item method \code{standata} is now the only way to extract data
