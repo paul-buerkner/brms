@@ -754,32 +754,58 @@ print.brmssummary <- function(x, digits = 2, ...) {
   }
 }
 
+#' @export
 as.data.frame.VarCorr_brmsfit <- function(x, ...) {
-  # this method is under development
   estimates <- colnames(x[[1]]$sd)
   groups <- names(x)
   n_groups <- length(groups)
   names_coef <- lapply(x, function(y) rownames(y$sd))
   groups_col <- ulapply(1:n_groups, function(i) 
     c(groups[i], rep("", length(names_coef[[i]]) - 1)))
+  max_cor <- max(ulapply(names_coef, length))
   # basic data.frame to be used in fill_base_frame
-  base_frame <- as.data.frame(matrix("", nrow = length(groups_col), ncol = 4))
-  names(base_frame) <- c("Group", "Name", "Std.Dev", "Cor")
+  base_frame <- as.data.frame(matrix(NA, nrow = length(groups_col), ncol = 3 + max_cor))
+  names(base_frame) <- c("Group", "Name", "Std.Dev", "Cor", rep("", max_cor - 1))
   base_frame[, 1:2] <- cbind(groups_col, unlist(names_coef))
   
   fill_base_frame <- function(estimate) {
     # fills the base_frame with SD and COR estimates
     # Args:
     #   estimate: The estimate being applied on the SD and COR parameters
-    base_frame
+    out <- base_frame
+    pos <- 1
+    for (i in 1:n_groups) {
+      len <- length(names_coef[[i]])
+      rows <- pos:(pos + len - 1)
+      out[rows, "Std.Dev"] <- x[[i]]$sd[, estimate]
+      if (len > 1) {
+        # correlations (possibly) present
+        cormat <- x[[i]]$cor[[estimate]]
+        lt <- lower.tri(out[rows, 4:ncol(out)])
+        out[rows, 4:ncol(out)][lt] <- cormat[lt]
+      }
+      pos <- pos + len
+    }
+    out
   }
   
   out <- do.call(rbind, lapply(estimates, fill_base_frame))
   estimates_col <- ulapply(estimates, function(e)
     c(e, rep("", length(groups_col) - 1)))
-  out <- cbind(estimates_col, out)
-  names(out)[1] <- "Estimates"
+  out <- cbind(Estimate = estimates_col, out)
+  if (ncol(out) > 5) {
+    # remove unneeded rownames
+    names(out)[6:ncol(out)] <- ""
+  }
   out
+}
+
+#' @export
+print.VarCorr_brmsfit <- function(x, digits = 2, ...) {
+  dat <- as.data.frame(x)
+  dat[, 4:ncol(dat)] <- round(as.matrix(dat[, 4:ncol(dat)]), digits = digits)
+  dat[is.na(dat)] <- ""
+  print(dat, row.names = FALSE, ...)
 }
 
 #' @export

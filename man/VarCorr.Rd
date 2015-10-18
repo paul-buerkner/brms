@@ -9,7 +9,7 @@
 VarCorr(x, estimate = "mean", as.list = TRUE, ...)
 }
 \arguments{
-\item{x}{An object of class \code{brmsfit}.}
+\item{x}{A fitted model object usually of class \code{brmsift}}
 
 \item{estimate}{A character vector specifying which coefficients (e.g., "mean", "median", "sd", or "quantile")
 should be calculated for the random effects.}
@@ -20,8 +20,10 @@ lists of matrices (the default), or as 3-dimensional arrays.}
 \item{...}{Further arguments to be passed to the functions specified in \code{estimate}}
 }
 \value{
-A list of lists (one per grouping factor), each containing 3 elements:
- a matrix containing the standard deviations, a list of correlation matrices, and a list of covariance matrices.
+An object of class \code{VarCorr_brmsfit}, which is a list of lists (one per grouping factor),
+each containing 3 elements: a matrix containing the standard deviations,
+a list of correlation matrices, and a list of covariance matrices.
+Can be coerced to a \code{data.frame} by using the \code{as.data.frame} method.
 }
 \description{
 This function calculates the estimated standard deviations, correlations and covariances of the
@@ -33,7 +35,9 @@ standard deviations, correlations and covariances are also returned.
 fit_e <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit),
              data = epilepsy, family = "poisson", n.chains = 1)
 ## return the means of random effects covariances
-VarCorr(fit_e)
+(vc <- VarCorr(fit_e))
+as.data.frame(vc)
+
 ## return 2.5\% and 97.5\% quantiles of random effects covariances
 VarCorr(fit_e, estimate = "quantile", probs = c(0.025, 0.975))
 }
