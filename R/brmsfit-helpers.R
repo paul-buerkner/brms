@@ -513,7 +513,7 @@ expand_matrix <- function(A, x) {
     return(v)}, v = v))
 }
 
-calculate_ic <- function(x, ic = c("waic", "loo"), ...) {
+compute_ic <- function(x, ic = c("waic", "loo"), ...) {
   # compute WAIC and LOO using the 'loo' package
   #
   # Args:
@@ -523,7 +523,6 @@ calculate_ic <- function(x, ic = c("waic", "loo"), ...) {
   # Returns:
   #   output of the loo package with amended class attribute
   ic <- match.arg(ic)
-  ee <- extract_effects(x$formula)
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples") 
   args <- list(x = logLik(x))
@@ -544,20 +543,29 @@ compare_ic <- function(x, ic = c("waic", "loo")) {
   #   A matrix with differences in the ICs as well as corresponding standard errors
   ic <- match.arg(ic)
   n_models <- length(x)
-  compare_matrix <- matrix(0, nrow = n_models * (n_models - 1) / 2, ncol = 2)
-  rnames <- rep("", nrow(compare_matrix))
+  ic_diffs <- matrix(0, nrow = n_models * (n_models - 1) / 2, ncol = 2)
+  rnames <- rep("", nrow(ic_diffs))
+  # pairwise comparision to get differences in ICs and their SEs
   n <- 1
   for (i in 1:(n_models - 1)) {
     for (j in (i + 1):n_models) {
       temp <- loo::compare(x[[j]], x[[i]])
-      compare_matrix[n, ] <- c(-2 * temp[["elpd_diff"]], 2 * temp[["se"]]) 
+      ic_diffs[n, ] <- c(-2 * temp[["elpd_diff"]], 2 * temp[["se"]]) 
       rnames[n] <- paste(names(x)[i], "-", names(x)[j])
       n <- n + 1
     }
   }
-  rownames(compare_matrix) <- rnames
-  colnames(compare_matrix) <- c(toupper(ic), "SE")
-  compare_matrix
+  rownames(ic_diffs) <- rnames
+  colnames(ic_diffs) <- c(toupper(ic), "SE")
+  # compare all models at once to obtain weights
+  all_compare <- do.call(loo::compare, x)
+  if (n_models == 2) {
+    # weights are named differently when comparing only 2 models
+    weights <- unname(all_compare[c("weight1", "weight2")])
+  } else {
+    weights <- unname(all_compare[, "weights"])
+  }
+  list(ic_diffs = ic_diffs, weights = weights)
 }
 
 amend_newdata <- function(newdata, fit, re_formula = NULL, 
@@ -801,9 +809,14 @@ print.iclist <- function(x, digits = 2, ...) {
   ic <- names(x[[1]])[3]
   mat <- matrix(0, nrow = length(x), ncol = 2, 
                 dimnames = list(names(x), c(toupper(ic), "SE")))
-  for (i in 1:length(x))
+  for (i in 1:length(x)) { 
     mat[i, ] <- c(x[[i]][[ic]], x[[i]][[paste0("se_",ic)]])
-  if (is.matrix(attr(x, "compare")))
+  }
+  if (is.matrix(attr(x, "compare"))) {
+    # models were compared using the compare_ic function
     mat <- rbind(mat, attr(x, "compare"))
-  print(round(mat, digits = digits))
+    weights <- c(attr(x, "weights"), rep(NA, nrow(attr(x, "compare")))) 
+    mat <- cbind(mat, Weights = weights)
+  }
+  print(round(mat, digits = digits), na.print = "")
 }

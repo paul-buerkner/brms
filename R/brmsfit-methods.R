@@ -842,12 +842,15 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE) {
   models <- list(x, ...)
   names <- c(deparse(substitute(x)), sapply(substitute(list(...))[-1], deparse))
   if (length(models) > 1) {
-    out <- setNames(lapply(models, calculate_ic, ic = "waic"), names)
+    out <- setNames(lapply(models, compute_ic, ic = "waic"), names)
     class(out) <- c("iclist", "list")
-    if (compare) 
-      attr(out, "compare") <- compare_ic(out, ic = "waic")
+    if (compare) {
+      comp <- compare_ic(out, ic = "waic")
+      attr(out, "compare") <- comp$ic_diffs
+      attr(out, "weights") <- comp$weights
+    }
   } else { 
-    out <- calculate_ic(x, ic = "waic")
+    out <- compute_ic(x, ic = "waic")
   }
   out
 }
@@ -860,13 +863,16 @@ LOO.brmsfit <- function(x, ..., compare = TRUE,
   models <- list(x, ...)
   names <- c(deparse(substitute(x)), sapply(substitute(list(...))[-1], deparse))
   if (length(models) > 1) {
-    out <- setNames(lapply(models, calculate_ic, ic = "loo", wcp = wcp, 
+    out <- setNames(lapply(models, compute_ic, ic = "loo", wcp = wcp, 
                            wtrunc = wtrunc, cores = cores), names)
     class(out) <- c("iclist", "list")
-    if (compare) 
-      attr(out, "compare") <- compare_ic(out, ic = "loo")
+    if (compare) {
+      comp <- compare_ic(out, ic = "loo")
+      attr(out, "compare") <- comp$ic_diffs
+      attr(out, "weights") <- comp$weights
+    }
   } else {
-    out <- calculate_ic(x, ic = "loo", wcp = wcp, wtrunc = wtrunc, cores = cores)
+    out <- compute_ic(x, ic = "loo", wcp = wcp, wtrunc = wtrunc, cores = cores)
   }
   out
 }
