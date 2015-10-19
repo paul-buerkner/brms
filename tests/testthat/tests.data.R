@@ -60,7 +60,7 @@ test_that(paste0("Test that brmdata handles variables used as fixed effects",
 test_that("Test that brmdata returns correct data names for addition and partial variables", {
   data <- data.frame(y = 1:10, w = 1:10, t = 1:10, x = rep(0,10), c = sample(-1:1,10,TRUE))
   expect_equal(names(brmdata(y | se(w) ~ x, family = "gaussian", data = data)), 
-               c("N","Y","K","X","sigma"))
+               c("N","Y","K","X","se"))
   expect_equal(names(brmdata(y | weights(w) ~ x, family = "gaussian", data = data)), 
                c("N","Y","K","X","weights"))
   expect_equal(names(brmdata(y | cens(c) ~ x, family = "cauchy", data = data)), 
@@ -117,7 +117,7 @@ test_that("Test that brmdata suggests using family bernoulli if appropriate", {
 })
 
 test_that("Test that brmdata returns correct values for addition arguments", {
-  expect_equal(brmdata(y | se(c) ~ 1, data = data.frame(y = rnorm(9), c = 1:9))$sigma, 1:9)
+  expect_equal(brmdata(y | se(c) ~ 1, data = data.frame(y = rnorm(9), c = 1:9))$se, 1:9)
   expect_equal(brmdata(y | weights(c) ~ 1, data = data.frame(y = rnorm(9), c = 1:9))$weights, 1:9)
   expect_equal(brmdata(y | cens(c) ~ 1, data = data.frame(y = rnorm(9), c = rep(-1:1,3)))$cens, rep(-1:1,3))
   expect_equal(brmdata(y | cens(c) ~ 1, data = data.frame(y = rnorm(9), c = rep(c("left","none","right"),3)))$cens,
