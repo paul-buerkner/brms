@@ -276,7 +276,11 @@ get_sigma <- function(x, data, method, n) {
   }
   if (is.null(sigma)) {
     # sigma was defined by the user
-    sigma <- data$sigma
+    sigma <- data$se
+    if (is.null(sigma)) {
+      # for backwards compatibility with brms <= 0.5.0
+      sigma <- data$sigma
+    }
     if (method %in% c("predict", "logLik")) {
       sigma <- sigma[n]
     } else {

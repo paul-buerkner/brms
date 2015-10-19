@@ -245,7 +245,7 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
   
   # addition and partial variables
   if (is.formula(ee$se)) {
-    standata <- c(standata, list(sigma = .addition(formula = ee$se, data = data)))
+    standata <- c(standata, list(se = .addition(formula = ee$se, data = data)))
   }
   if (is.formula(ee$weights)) {
     standata <- c(standata, list(weights = .addition(formula = ee$weights, data = data)))
@@ -321,11 +321,18 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
     Karr <- get_arr(autocor)
     if (Kar || Kma) {
       # ARMA effects (of residuals)
+      standata$tgroup <- as.numeric(as.factor(tgroup))
       standata$E_pre <- matrix(0, nrow = standata$N, ncol = max(Kar, Kma))
       standata$Kar <- Kar
       standata$Kma <- Kma
       standata$Karma <- max(Kar, Kma)
-      standata$tgroup <- as.numeric(as.factor(tgroup))
+      if (is.formula(ee$se)) {
+        # When using predefined SEs, the implementation 
+        # for ARMA effects requires additional data
+        standata$N_tg <- length(unique(standata$tgroup))
+        standata$begin_tg <- with(standata, ulapply(unique(tgroup), match, tgroup))
+        standata$nrow_tg <- with(standata, c(begin_tg[2:N_tg], N + 1) - begin_tg)
+      } 
     }
     if (Karr) {
       # ARR effects (autoregressive effects of the response)
