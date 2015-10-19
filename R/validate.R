@@ -124,8 +124,9 @@ extract_time <- function(formula) {
     return(NULL)
   formula <- gsub(" ","",Reduce(paste, deparse(formula))) 
   time <- all.vars(as.formula(paste("~", gsub("~|\\|[[:print:]]*", "", formula))))
-  if (length(time) > 1) 
+  if (length(time) > 1) {
     stop("Autocorrelation structures may only contain 1 time variable")
+  }
   x <- list(time = ifelse(length(time), time, ""))
   group <- get_group_formula(sub("~[^\\|]*", "", formula))
   x$group <- paste0(all.vars(group), collapse = ":")

@@ -615,6 +615,7 @@ stan_arma <- function(family, link, autocor, se = FALSE) {
   #   family: the model family
   #   link: the link function
   #   autocor: autocorrelation structure
+  #   se: user defined SEs present?
   #
   # Returns:
   #   stan code for computing moving average effects
@@ -625,6 +626,10 @@ stan_arma <- function(family, link, autocor, se = FALSE) {
     link.fun <- c(identity = "", log = "log", inverse = "inv")[link]
     if (!(is_linear || is_multi)) {
       stop(paste("ARMA effects for family", family, "are not yet implemented"))
+    }
+    if (se && (get_ar(autocor) > 1 || get_ma(autocor) > 0)) {
+      stop(paste("currently only AR1 autocorrelations are allowed", 
+                 "for models with user defined SEs"))
     }
     if (!se) {
       # if the user has specified standard errors (se == TRUE),
