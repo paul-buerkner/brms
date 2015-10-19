@@ -76,7 +76,8 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
                        add = is.formula(ee[c("se", "trials")]), 
                        weights = is.formula(ee$weights), 
                        cens = is.formula(ee$cens),
-                       trunc = trunc, se = is.formula(ee$se))
+                       trunc = trunc, se = is.formula(ee$se),
+                       autocor = autocor)
   if (is.formula(ee$cens) || is.formula(ee$weights) || is.formula(ee$trunc) ||
       is_ordinal || family == "categorical" || is_hurdle || is_zero_inflated) {
     text_llh <- paste0("  for (n in 1:N",trait,") { \n  ",text_llh,"  } \n")
@@ -195,7 +196,7 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
   if (family == "categorical") {
     zero <- c("  row_vector[1] zero; \n", "  zero[1] <- 0; \n")
   } else zero <- NULL
-  if (is.formula(ee$se) && (get_ar(autocor) || gat_ma(autocor))) {
+  if (is.formula(ee$se) && (get_ar(autocor) || get_ma(autocor))) {
     squared_se <- c("  vector[N] squared_se; \n", 
                     "  for (n in 1:N) squared_se[n] <- se[n]^2; \n")
   } else squared_se <- NULL
@@ -387,7 +388,8 @@ stan_ranef <- function(i, ranef, group, cor, prior = list(),
 }
 
 stan_llh <- function(family, link, add = FALSE,  weights = FALSE, 
-                     cens = FALSE, trunc = .trunc(), se = FALSE) {
+                     cens = FALSE, trunc = .trunc(), se = FALSE,
+                     autocor = cor_arma()) {
   # Likelihoods in stan language
   #
   # Args:
@@ -411,7 +413,7 @@ stan_llh <- function(family, link, add = FALSE,  weights = FALSE,
     family <- "lognormal"
     link <- "identity"
   }
-  if (se && family == "gussian" && get_ar(autocor) == 1) {
+  if (se && family == "gaussian" && get_ar(autocor) == 1) {
     # currently AR1 models have a special implementation
     # for models with user defined SEs
     family <- "gaussian_ar1"
@@ -466,8 +468,8 @@ stan_llh <- function(family, link, add = FALSE,  weights = FALSE,
       multinormal = c("multi_normal_cholesky", 
                       paste0("etam",n,", diag_pre_multiply(sigma, Lrescor)")),
       lognormal = c("lognormal", paste0(eta,", sigma",ns)),
-      gaussian_ar1 = c("gaussian_ar1", paste0(eta,", ar[1], sigma, squared_se,", 
-                                              " N_tg, begin_tg, nrow_tg")),
+      gaussian_ar1 = c("normal_ar1", paste0(eta,", ar[1], sigma, squared_se,", 
+                                            " N_tg, begin_tg, nrow_tg")),
       inverse.gaussian = c("inv_gaussian", 
                            paste0(eta, ", shape, log_Y",n,", sqrt_Y",n)),
       poisson = c("poisson", eta),
@@ -622,20 +624,17 @@ stan_arma <- function(family, link, autocor, se = FALSE) {
   is_linear <- indicate_linear(family)
   is_multi <- family == "multinormal"
   out <- list()
-  if (get_ar(autocor) || get_ma(autocor)) {
+  ar <- get_ar(autocor)
+  ma <- get_ma(autocor)
+  if (ar || ma) {
     link.fun <- c(identity = "", log = "log", inverse = "inv")[link]
     if (!(is_linear || is_multi)) {
       stop(paste("ARMA effects for family", family, "are not yet implemented"))
-    }
-    if (se && (get_ar(autocor) > 1 || get_ma(autocor) > 0)) {
-      stop(paste("currently only AR1 autocorrelations are allowed", 
-                 "for models with user defined SEs"))
     }
     if (!se) {
       # if the user has specified standard errors (se == TRUE),
       # computation is done within the functions block
       index <- ifelse(is_multi, "m, k", "n")
-      #e <- ifelse(se, paste0("r_", resid), "e")
       out$transD <- paste0("  matrix[N, Karma] E;  # ARMA design matrix \n",
                            "  vector[N] e;  # residuals \n") 
       out$transC1 <- "  E <- E_pre; \n" 
@@ -647,6 +646,10 @@ stan_arma <- function(family, link, autocor, se = FALSE) {
         "        E[n + 1, i] <- e[n + 1 - i]; \n",
         "      } \n",
         "    } \n")
+    } else if (ma > 0 || ar > 1 && family == "gaussian" ||
+               ar > 0 && family != "gaussian") {
+      stop(paste("currently only AR1 autocorrelations of gaussian residuals", 
+                 "are allowed for models with user defined SEs"))
     }
   }
   out
