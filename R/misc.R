@@ -188,6 +188,16 @@ indicate_shape <- function(family) {
                 "hurdle_gamma", "zero_inflated_negbinomial")
 }
 
+indicate_sigma <- function(family, se, autocor) {
+  # indicate if the model needs a sigma parameter
+  # Args:
+  #  family: a character string
+  #  se: does the model contain user defined SEs?
+  #  autocor: object of class cor_arma
+  is_linear <- indicate_linear(family)
+  is_linear && (!se || get_ar(autocor) || get_ma(autocor))
+}
+
 get_boundaries <- function(trunc) {
   # extract truncation boundaries out of a formula
   # that is known to contain the .trunc function

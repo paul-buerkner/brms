@@ -278,7 +278,7 @@ exclude_pars <- function(formula, ranef = TRUE) {
   #   a vector of parameters to be excluded
   ee <- extract_effects(formula)
   out <- c("eta", "etam", "etap", "b_Intercept1", "Lrescor", "Rescor",
-           "p", "q", "e", "Ema", "lp_pre")
+           "p", "q", "e", "E", "lp_pre")
   if (length(ee$group)) {
     for (i in 1:length(ee$group)) {
       out <- c(out, paste0("pre_",i), paste0("L_",i), paste0("Cor_",i))
@@ -583,13 +583,14 @@ get_prior <- function(formula, data = NULL, family = "gaussian",
   }
   # handle additional parameters
   is_ordinal <- indicate_ordinal(family)
+  is_linear <- family %in% c("gaussian", "student", "cauchy")
   if (get_ar(autocor)) 
     prior <- rbind(prior, prior_frame(class = "ar"))
   if (get_ma(autocor)) 
     prior <- rbind(prior, prior_frame(class = "ma"))
   if (get_arr(autocor)) 
     prior <- rbind(prior, prior_frame(class = "arr"))
-  if (family %in% c("gaussian", "student", "cauchy") && !is.formula(ee$se))
+  if (indicate_sigma(family, se = is.formula(ee$se), autocor = autocor))
     prior <- rbind(prior, prior_frame(class = "sigma", 
                                       coef = c("", ee$response),
                                       prior = c(default_scale_prior, 

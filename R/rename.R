@@ -137,7 +137,7 @@ rename_pars <- function(x) {
       }  
     }
   }
-  if (x$family %in% c("gaussian", "student", "cauchy") && !is.formula(ee$se)) {
+  if (indicate_sigma(x$family, se = is.formula(ee$se), autocor = x$autocor)) {
     corfnames <- paste0("sigma_",ee$response)
     change <- lc(change, list(pos = grepl("^sigma", pars), oldname = "sigma",
                               pnames = corfnames, fnames = corfnames))
