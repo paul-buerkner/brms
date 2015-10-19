@@ -25,6 +25,8 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
   has_sigma <- indicate_sigma(family, se = is.formula(ee$se), autocor = autocor)
   has_shape <- indicate_shape(family)
   trunc <- get_boundaries(ee$trunc)  # see misc.R
+  Kar <- get_ar(autocor)
+  Kma <- get_ma(autocor)
   
   if (family == "categorical") {
     X <- data.frame()
@@ -95,9 +97,9 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
       stan_prior(class = "b", coef = fixef, prior = prior),
     if (length(paref)) 
       stan_prior(class = "bp", coef = paref, prior = prior),
-    if (get_ar(autocor)) 
+    if (Kar) 
       stan_prior(class = "ar", prior = prior),
-    if (get_ma(autocor)) 
+    if (Kma) 
       stan_prior(class = "ma", prior = prior),
     if (get_arr(autocor)) 
       stan_prior(class = "arr", prior = prior),
@@ -152,22 +154,24 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
     if (length(paref)) 
       paste0("  int<lower=1> Kp;  # number of category specific effects \n",
              "  matrix[N, Kp] Xp;  # CSE design matrix \n"),  
-    if (get_ar(autocor) || get_ma(autocor)) 
+    if (Kar || Kma) 
       paste0("  # data needed for ARMA effects \n",
-             "  int<lower=0> Kar; \n",
-             "  int<lower=0> Kma;  \n",
+             "  int<lower=0> Kar;  # AR order \n",
+             "  int<lower=0> Kma;  # MA order \n",
              "  int<lower=1> Karma;  # max(Kma, Kar) \n",
-             "  matrix[N, Karma] E_pre; \n",
-             "  vector[N] tgroup; \n",
+             "  matrix[N, Karma] E_pre; # matrix of zeros \n",
+             "  vector[N] tgroup;  # indicates independent groups \n",
              if (is.formula(ee$se)) paste0(
-             "  int N_tg; \n",   
-             "  int begin_tg[N_tg]; \n",
-             "  int nrow_tg[N_tg]; \n")),
+             "  # see the normal_ar1_log function for details \n",
+             "  int<lower=1> N_tg; \n",   
+             "  int<lower=1> begin_tg[N_tg]; \n",
+             "  int<lower=1> nrows_tg[N_tg]; \n",
+             "  vector[N] squared_se; \n")),
     if (get_arr(autocor)) 
       paste0("  # data needed for ARR effects \n",
              "  int<lower=1> Karr; \n",
              "  matrix[N, Karr] Yarr;  # ARR design matrix \n"),
-    if (is_linear && is.formula(ee$se))
+    if (is_linear && is.formula(ee$se) && !(Kar || Kma))
       "  vector<lower=0>[N] se;  # SEs for meta-analysis \n",
     if (is.formula(ee$weights))
       paste0("  vector<lower=0>[N",trait,"] weights;  # model weights \n"),
@@ -196,14 +200,10 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
   if (family == "categorical") {
     zero <- c("  row_vector[1] zero; \n", "  zero[1] <- 0; \n")
   } else zero <- NULL
-  if (is.formula(ee$se) && (get_ar(autocor) || get_ma(autocor))) {
-    squared_se <- c("  vector[N] squared_se; \n", 
-                    "  for (n in 1:N) squared_se[n] <- se[n]^2; \n")
-  } else squared_se <- NULL
   text_transformed_data <- paste0(
     "transformed data { \n",
-      zero[1], squared_se[1], text_ranef$tdataD, 
-      zero[2], squared_se[2], text_ranef$tdataC,
+      zero[1], text_ranef$tdataD, 
+      zero[2], text_ranef$tdataC,
     "} \n")
   
   text_parameters <- paste0(
@@ -220,9 +220,9 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
     if (length(paref)) 
       paste0("  matrix[Kp, ncat - 1] bp;  # category specific effects \n"),
     text_ranef$par,
-    if (get_ar(autocor)) 
+    if (Kar) 
       "  vector[Kar] ar;  # autoregressive effecs \n",
-    if (get_ma(autocor)) 
+    if (Kma) 
       "  vector[Kma] ma;  # moving-average effects \n",
     if (get_arr(autocor)) 
       "  vector[Karr] arr;  # autoregressive effects of the response \n",
@@ -240,7 +240,7 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
     "} \n")
   
   # loop over all observations in transformed parameters if necessary
-  make_loop <- length(ee$group) || get_ar(autocor) || get_ma(autocor) || 
+  make_loop <- length(ee$group) || (Kar || Kma) && !is.formula(ee$se) ||  
     text_eta$transform || (is_ordinal && !(family == "cumulative" && link == "logit"))
   if (make_loop && !is_multi) {
     text_loop <- c(paste0("  # if available add REs to linear predictor \n",
@@ -387,7 +387,7 @@ stan_ranef <- function(i, ranef, group, cor, prior = list(),
   out
 }
 
-stan_llh <- function(family, link, add = FALSE,  weights = FALSE, 
+stan_llh <- function(family, link, add = FALSE, weights = FALSE, 
                      cens = FALSE, trunc = .trunc(), se = FALSE,
                      autocor = cor_arma()) {
   # Likelihoods in stan language
@@ -417,6 +417,9 @@ stan_llh <- function(family, link, add = FALSE,  weights = FALSE,
     # currently AR1 models have a special implementation
     # for models with user defined SEs
     family <- "gaussian_ar1"
+    if (weights || cens || is_trunc) {
+      stop("Invalid addition arguments")
+    }
   }
   
   simplify <- !is_trunc && !cens && 
@@ -469,7 +472,7 @@ stan_llh <- function(family, link, add = FALSE,  weights = FALSE,
                       paste0("etam",n,", diag_pre_multiply(sigma, Lrescor)")),
       lognormal = c("lognormal", paste0(eta,", sigma",ns)),
       gaussian_ar1 = c("normal_ar1", paste0(eta,", ar[1], sigma, squared_se,", 
-                                            " N_tg, begin_tg, nrow_tg")),
+                                            " N_tg, begin_tg, nrows_tg")),
       inverse.gaussian = c("inv_gaussian", 
                            paste0(eta, ", shape, log_Y",n,", sqrt_Y",n)),
       poisson = c("poisson", eta),
@@ -624,9 +627,9 @@ stan_arma <- function(family, link, autocor, se = FALSE) {
   is_linear <- indicate_linear(family)
   is_multi <- family == "multinormal"
   out <- list()
-  ar <- get_ar(autocor)
-  ma <- get_ma(autocor)
-  if (ar || ma) {
+  Kar <- get_ar(autocor)
+  Kma <- get_ma(autocor)
+  if (Kar || Kma) {
     link.fun <- c(identity = "", log = "log", inverse = "inv")[link]
     if (!(is_linear || is_multi)) {
       stop(paste("ARMA effects for family", family, "are not yet implemented"))
@@ -646,8 +649,8 @@ stan_arma <- function(family, link, autocor, se = FALSE) {
         "        E[n + 1, i] <- e[n + 1 - i]; \n",
         "      } \n",
         "    } \n")
-    } else if (ma > 0 || ar > 1 && family == "gaussian" ||
-               ar > 0 && family != "gaussian") {
+    } else if (Kma > 0 || Kar > 1 && family == "gaussian" ||
+               Kar > 0 && family != "gaussian") {
       stop(paste("currently only AR1 autocorrelations of gaussian residuals", 
                  "are allowed for models with user defined SEs"))
     }
@@ -862,22 +865,20 @@ stan_functions <- function(family = "gaussian", link = "identity",
     "   * Args: \n",
     "   *   ar: AR1 autocorrelation \n",
     "   *   sigma: standard deviation of the AR1 process \n",
-    "   *   nrow: number of rows of the covariance matrix \n",
+    "   *   nrows: number of rows of the covariance matrix \n",
     "   * Returns: \n",
-    "   *   A nrow x nrow AR1 covariance matrix \n",
+    "   *   A nrows x nrows AR1 covariance matrix \n",
     "   */ \n",
-    "   matrix cov_matrix_ar1(real ar, real sigma, int nrow) { \n",
-    "     matrix[nrow, nrow] mat; \n",
-    "     mat <- diag_matrix(rep_vector(1, nrow)); \n",
-    "     if (nrow > 1) { \n",
-    "       for (i in 2:nrow) { \n",
-    "         for (j in 1:(i-1)) { \n",
-    "           mat[i, j] <- pow(ar, abs(i-j)); \n",
-    "           mat[j, i] <- mat[i, j]; \n",
+    "   matrix cov_matrix_ar1(real ar, real sigma, int nrows) { \n",
+    "     matrix[nrows, nrows] mat; \n",
+    "     mat <- diag_matrix(rep_vector(1, nrows)); \n",
+    "     for (i in 2:nrows) { \n",
+    "       for (j in 1:(i-1)) { \n",
+    "         mat[i, j] <- pow(ar, abs(i-j)); \n",
+    "         mat[j, i] <- mat[i, j]; \n",
     "       } \n",
     "     } \n",
-    "   } \n",
-    "   return sigma^2 * mat; \n",
+    "     return sigma^2 * mat; \n",
     "   } \n",
     "  /* (multi) normal log-PDF of an AR1 process within each group \n",
     "   * and user defined standard error \n",
@@ -887,26 +888,26 @@ stan_functions <- function(family = "gaussian", link = "identity",
     "   *   ar: AR1 autocorrelation \n",
     "   *   sigma: standard deviation of the AR1 process \n",
     "   *   squared_se: square of the user defined standard errors \n",
-    "   *   ng: number of groups \n",
+    "   *   N_tg: number of groups \n",
     "   *   begin: indicates the first observation in each group \n",
-    "   *   nrow: number of observations in each group \n",
+    "   *   nrows: number of observations in each group \n",
     "   * Returns: \n",
     "   *   sum of the log-PDF values of all observations \n",
     "   */ \n",
     "   real normal_ar1_log(vector y, vector eta, real ar, real sigma, \n",
-    "                       vector squared_se, int ng, int[] begin, int[] nrow) { \n",
-    "     vector[ng] log_post; \n",
-    "     for (i in 1:ng) { \n",
-    "       matrix[nrow[i], nrow[i]] cov; \n",
-    "       vector[nrow[i]] y_part; \n",
-    "       vector[nrow[i]] eta_part; \n",
-    "       vector[nrow[i]] squared_se_part; \n",
-    "       y_part <- segment(y, begin[i], nrow[i]); \n",
-    "       eta_part <- segment(eta, begin[i], nrow[i]); \n",
-    "       squared_se_part <- segment(squared_se, begin[i], nrow[i]); \n",
-    "       cov <- cov_matrix_ar1(ar, sigma, nrow[i]) + diag_matrix(squared_se_part); \n",
-    "       cov <- cholesky_decompose(cov); \n",
-    "       log_post[i] <- multi_normal_cholesky_log(y_part, eta_part, cov); \n",
+    "                       vector squared_se, int N_tg, int[] begin, int[] nrows) { \n",
+    "     vector[N_tg] log_post; \n",
+    "     for (i in 1:N_tg) { \n",
+    "       matrix[nrows[i], nrows[i]] Sigma; \n",
+    "       vector[nrows[i]] y_part; \n",
+    "       vector[nrows[i]] eta_part; \n",
+    "       vector[nrows[i]] squared_se_part; \n",
+    "       y_part <- segment(y, begin[i], nrows[i]); \n",
+    "       eta_part <- segment(eta, begin[i], nrows[i]); \n",
+    "       squared_se_part <- segment(squared_se, begin[i], nrows[i]); \n",
+    "       Sigma <- cov_matrix_ar1(ar, sigma, nrows[i]) + diag_matrix(squared_se_part); \n",
+    "       Sigma <- cholesky_decompose(Sigma); \n",
+    "       log_post[i] <- multi_normal_cholesky_log(y_part, eta_part, Sigma); \n",
     "     } \n",                       
     "     return sum(log_post); \n",
     "   } \n")

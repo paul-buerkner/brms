@@ -331,7 +331,8 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
         # for ARMA effects requires additional data
         standata$N_tg <- length(unique(standata$tgroup))
         standata$begin_tg <- with(standata, ulapply(unique(tgroup), match, tgroup))
-        standata$nrow_tg <- with(standata, c(begin_tg[2:N_tg], N + 1) - begin_tg)
+        standata$nrows_tg <- with(standata, c(begin_tg[2:N_tg], N + 1) - begin_tg)
+        standata$squared_se <- standata$se^2
       } 
     }
     if (Karr) {
