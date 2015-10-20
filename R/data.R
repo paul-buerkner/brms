@@ -233,10 +233,14 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
           warning(paste("Covariance matrix of grouping factor",g,"may not be positive definite"))
         cov_mat <- cov_mat[order(found_level_names), order(found_level_names)]
         if (length(r[[i]]) == 1) {
+          # pivoting ensures that (numerically) semi-definite matrices can be used
           cov_mat <- suppressWarnings(chol(cov_mat, pivot = TRUE))
           cov_mat <- t(cov_mat[, order(attr(cov_mat, "pivot"))])
         } else if (length(r[[i]]) > 1 && !ee$cor[[i]]) {
-          cov_mat <- t(suppressWarnings(chol(kronecker(cov_mat, diag(ncolZ[[i]])), pivot = TRUE)))
+          # same here, but with a precomputed kronecker product
+          cov_mat <- kronecker(cov_mat, diag(ncolZ[[i]]))
+          cov_mat <- suppressWarnings(chol(cov_mat, pivot = TRUE))
+          cov_mat <- t(cov_mat[, order(attr(cov_mat, "pivot"))])
         }
         standata <- c(standata, setNames(list(cov_mat), paste0("cov_",i)))
       }
