@@ -225,16 +225,14 @@ get_cov_matrix_ar1 <- function(ar, sigma, sq_se, nrows) {
   #   nrowa: number of rows of the covariance matrix
   # Returns:
   #   An nrows x nrows x nsamples AR1 covariance array (!)
-  mat <- aperm(array(diag(sq_se), dim = c(nrows, nrows, nrow(ar))),
+  mat <- aperm(array(diag(sq_se, nrows), dim = c(nrows, nrows, nrow(ar))),
                perm = c(3, 1, 2))
-  if (nrows > 1) { 
-    for (i in 1:nrows) { 
-      for (j in 1:i) { 
-        mat[, i, j] <- mat[, i, j] + sigma^2 * ar^abs(i - j)
-        if (j < i) {
-          mat[, j, i] <- mat[, i, j]
-        }
-      } 
+  for (i in 1:nrows) { 
+    for (j in 1:i) { 
+      mat[, i, j] <- mat[, i, j] + sigma^2 * ar^abs(i - j)
+      if (j < i) {
+        mat[, j, i] <- mat[, i, j]
+      }
     } 
   } 
   mat 

@@ -60,7 +60,7 @@ loglik_gaussian_arma <- function(n, data, samples, link) {
   # currenlty, only the AR1 process is implemented
   rows <- with(data, begin_tg[n]:(begin_tg[n] + nrows_tg[n] - 1))
   Y_part <- data$Y[rows]
-  eta_part <- samples$eta[, rows]
+  eta_part <- samples$eta[, rows, drop = FALSE]
   squared_se_part <- data$squared_se[rows]
   # both sigma and SEs are present!
   Sigma <- get_cov_matrix_ar1(ar = samples$ar, sigma = samples$sigma, 
