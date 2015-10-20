@@ -892,10 +892,12 @@ logLik.brmsfit <- function(object, ...) {
     stop("The model does not contain posterior samples")
   ee <- extract_effects(object$formula, family = object$family)
   nresp <- length(ee$response)
+  standata <- standata(object)
+  N <- nrow(as.matrix(standata$Y))
   
   # extract relevant samples
   samples <- list(eta = linear_predictor(object))
-  if (indicate_linear(object$family) && !is.formula(ee$se))
+  if (indicate_sigma(object$family, se = ee$se, autocor = object$autocor))
     samples$sigma <- as.matrix(posterior_samples(object, pars = "^sigma_"))
   if (object$family == "student") 
     samples$nu <- as.matrix(posterior_samples(object, pars = "^nu$"))
@@ -914,14 +916,19 @@ logLik.brmsfit <- function(object, ...) {
     family <- "lognormal"
   } else if (family == "gaussian" && nresp > 1) {
     family <- "multinormal"
-  }
-  standata <- standata(object)
+  } else if (is.formula(ee$se) && family == "gaussian" && 
+             get_ar(object$autocor) == 1) {
+    # special model for AR1 autocorrelation with user defined SEs
+    family <- "gaussian_ar1"
+    N <- standata$N_tg
+    samples$ar <- as.matrix(posterior_samples(object, pars = "^ar\\["))
+  } 
+
   loglik_fun <- get(paste0("loglik_", family), mode = "function")
   call_loglik_fun <- function(n) {
     do.call(loglik_fun, list(n = n, data = standata, samples = samples, 
                              link = object$link)) 
   }
-  N <- nrow(as.matrix(standata$Y))
   loglik <- do.call(cbind, lapply(1:N, call_loglik_fun))
   colnames(loglik) <- 1:ncol(loglik)
   loglik

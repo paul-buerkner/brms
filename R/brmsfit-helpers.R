@@ -217,6 +217,29 @@ get_cov_matrix <- function(sd, cor = NULL) {
   list(cor = cor_matrix, cov = cov_matrix)
 }
 
+get_cov_matrix_ar1 <- function(ar, sigma, sq_se, nrows) {
+  # compute the covariance matrix for an AR1 process
+  # Args: 
+  #   ar: AR1 autocorrelation samples
+  #   sigma: standard deviation samples of the AR1 process
+  #   nrowa: number of rows of the covariance matrix
+  # Returns:
+  #   An nrows x nrows x nsamples AR1 covariance array (!)
+  mat <- aperm(array(diag(sq_se), dim = c(nrows, nrows, nrow(ar))),
+               perm = c(3, 1, 2))
+  if (nrows > 1) { 
+    for (i in 1:nrows) { 
+      for (j in 1:i) { 
+        mat[, i, j] <- mat[, i, j] + sigma^2 * ar^abs(i - j)
+        if (j < i) {
+          mat[, j, i] <- mat[, i, j]
+        }
+      } 
+    } 
+  } 
+  mat 
+}
+
 evidence_ratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"), 
                            prior_samples = NULL, pow = 12, ...) {
   # calculate the evidence ratio between two disjunct hypotheses
@@ -275,7 +298,7 @@ get_sigma <- function(x, data, method, n) {
     sigma <- x
   }
   if (is.null(sigma)) {
-    # sigma was defined by the user
+    # user defined standard errors were applied
     sigma <- data$se
     if (is.null(sigma)) {
       # for backwards compatibility with brms <= 0.5.0
@@ -309,6 +332,7 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
     data <- newdata
   }
   
+  ee <- extract_effects(x$formula, family = x$family)
   n.samples <- nrow(posterior_samples(x, pars = "^lp__$"))
   eta <- matrix(0, nrow = n.samples, ncol = data$N)
   X <- data$X
@@ -355,7 +379,7 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
     }
     eta <- eta + fixef_predictor(X = Yarr, b = arr)
   }
-  if (get_ar(x$autocor) || get_ma(x$autocor)) {
+  if ((get_ar(x$autocor) || get_ma(x$autocor)) && !is.formula(ee$se)) {
     if (old_autocor) {
       ar <- NULL
     } else {

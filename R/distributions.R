@@ -53,6 +53,7 @@ rstudent <-  function(n, df = stop("df is required"), mu = 0, sigma = 1) {
 
 dmultinormal <- function(x, mu, Sigma, log = TRUE) {
   # density of the multinormal distribution
+  # (not vectorized)
   #
   # Args:
   #   x: the value(s) at which the density should be evaluated

@@ -193,8 +193,11 @@ indicate_sigma <- function(family, se, autocor) {
   # Args:
   #  family: a character string
   #  se: does the model contain user defined SEs?
+  #      may be a formula in which case se is treated as TRUE
   #  autocor: object of class cor_arma
   is_linear <- indicate_linear(family)
+  if (is.null(se)) se <- FALSE
+  if (is.formula(se)) se <- TRUE
   is_linear && (!se || get_ar(autocor) || get_ma(autocor))
 }
 

@@ -47,11 +47,28 @@ loglik_lognormal <- function(n, data, samples, link) {
 
 loglik_multinormal <- function(n, data, samples, link) {
   nobs <- data$N_trait * data$K_trait
-  out <- sapply(1:nrow(samples$eta), function(i) 
+  nsamples <- nrow(samples$eta)
+  obs <- seq(n, nobs, data$N_trait)
+  out <- sapply(1:nsamples, function(i) 
     dmultinormal(data$Y[n,], Sigma = samples$Sigma[i, , ], log = TRUE,
-                 mu = samples$eta[i, seq(n, nobs, data$N_trait)]))
+                 mu = ilink(samples$eta[i, obs], link)))
   # no truncation allowed
   weight_loglik(out, n = n, data = data)
+}
+
+loglik_gaussian_ar1 <- function(n, data, samples, link) {
+  rows <- with(data, begin_tg[n]:(begin_tg[n] + nrows_tg[n] - 1))
+  Y_part <- data$Y[rows]
+  eta_part <- samples$eta[, rows]
+  squared_se_part <- data$squared_se[rows]
+  # both sigma and SEs are present!
+  Sigma <- get_cov_matrix_ar1(ar = samples$ar, sigma = samples$sigma, 
+                              sq_se = squared_se_part, nrows = length(rows)) 
+  out <- sapply(1:nrow(samples$eta), function(i)
+    dmultinormal(Y_part, mu = ilink(eta_part[i, ], link), 
+                 Sigma = Sigma[i, , ], log = TRUE))
+  # weights, truncation and censoring not allowed
+  out
 }
 
 loglik_binomial <- function(n, data, samples, link) {
