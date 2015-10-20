@@ -15,6 +15,7 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
   if (family == "gaussian" && length(ee$response) > 1)
     family <- "multinormal"
   # flags to indicate of which type family is
+  # see misc.R for details
   is_linear <- indicate_linear(family)
   is_ordinal <- indicate_ordinal(family)
   is_skewed <- indicate_skewed(family)
@@ -22,11 +23,12 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
   is_hurdle <- indicate_hurdle(family)
   is_zero_inflated <- indicate_zero_inflated(family)
   is_multi <- family == "multinormal"
-  has_sigma <- indicate_sigma(family, se = is.formula(ee$se), autocor = autocor)
+  has_sigma <- indicate_sigma(family, se = ee$se, autocor = autocor)
   has_shape <- indicate_shape(family)
-  trunc <- get_boundaries(ee$trunc)  # see misc.R
+  trunc <- get_boundaries(ee$trunc)  
   Kar <- get_ar(autocor)
   Kma <- get_ma(autocor)
+  cov_arma <- has_cov_arma(autocor, se = ee$se, family = family)
   
   if (family == "categorical") {
     X <- data.frame()
@@ -67,19 +69,19 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
                        has_intercept = has_intercept, paref = paref,  
                        group = ee$group, autocor = autocor,
                        add = is.formula(ee[c("weights", "cens", "trunc")]),
-                       se = is.formula(ee$se))
-  text_arma <- stan_arma(family = family, link = link, autocor = autocor, 
-                         se = is.formula(ee$se))
+                       cov_arma = cov_arma)
+  text_arma <- stan_arma(family = family, link = link, 
+                         autocor = autocor, 
+                         cov_arma = cov_arma)
   text_ordinal <- stan_ordinal(family = family, link = link, 
                                partial = length(paref), 
                                threshold = threshold)  
   text_multi <- stan_multi(family, response = ee$response)
-  text_llh <- stan_llh(family, link = link, 
-                       add = is.formula(ee[c("se", "trials")]), 
-                       weights = is.formula(ee$weights), 
+  text_llh <- stan_llh(family, link = link, se = is.formula(ee$se),  
+                       weights = is.formula(ee$weights),
+                       trials = is.formula(ee$trials),
                        cens = is.formula(ee$cens),
-                       trunc = trunc, se = is.formula(ee$se),
-                       autocor = autocor)
+                       trunc = trunc, cov_arma = cov_arma)
   if (is.formula(ee$cens) || is.formula(ee$weights) || is.formula(ee$trunc) ||
       is_ordinal || family == "categorical" || is_hurdle || is_zero_inflated) {
     text_llh <- paste0("  for (n in 1:N",trait,") { \n  ",text_llh,"  } \n")
@@ -125,8 +127,7 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
                                    weights = is.formula(ee$weights),
                                    cens = is.formula(ee$cens),
                                    trunc = is.formula(ee$trunc),
-                                   se = is.formula(ee$se), 
-                                   autocor = autocor, 
+                                   cov_arma = cov_arma,
                                    kronecker = kronecker)
   is_real_Y <- is_linear || is_skewed || family == "inverse.gaussian"
   is_int_Y <- family %in% c("binomial", "bernoulli", "categorical") || 
@@ -161,7 +162,7 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
              "  int<lower=1> Karma;  # max(Kma, Kar) \n",
              "  matrix[N, Karma] E_pre; # matrix of zeros \n",
              "  vector[N] tgroup;  # indicates independent groups \n",
-             if (is.formula(ee$se)) paste0(
+             if (cov_arma) paste0(
              "  # see the normal_ar1_log function for details \n",
              "  int<lower=1> N_tg; \n",   
              "  int<lower=1> begin_tg[N_tg]; \n",
@@ -171,7 +172,7 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
       paste0("  # data needed for ARR effects \n",
              "  int<lower=1> Karr; \n",
              "  matrix[N, Karr] Yarr;  # ARR design matrix \n"),
-    if (is_linear && is.formula(ee$se) && !(Kar || Kma))
+    if (is_linear && is.formula(ee$se) && !cov_arma)
       "  vector<lower=0>[N] se;  # SEs for meta-analysis \n",
     if (is.formula(ee$weights))
       paste0("  vector<lower=0>[N",trait,"] weights;  # model weights \n"),
@@ -387,17 +388,21 @@ stan_ranef <- function(i, ranef, group, cor, prior = list(),
   out
 }
 
-stan_llh <- function(family, link, add = FALSE, weights = FALSE, 
-                     cens = FALSE, trunc = .trunc(), se = FALSE,
-                     autocor = cor_arma()) {
+stan_llh <- function(family, link, se = FALSE, weights = FALSE, 
+                     trials = FALSE, cens = FALSE, trunc = .trunc(), 
+                     cov_arma = FALSE) {
   # Likelihoods in stan language
   #
   # Args:
   #   family: the model family
   #   link: the link function
-  #   add: logical; indicating if there is information on se or trials
+  #   se: logical; user defined SEs present?
   #   weights: logical; weights present?
+  #   trials: logical; number of bernoulli trials given per observation?
   #   cens: logical; censored data?
+  #   trunc: list containing lower and upper truncation boundaries
+  #   cov_arma: logical; are ARMA effects modeled using a special 
+  #             covariance matrix?
   #
   # Returns:
   #   a string containing the likelihood of the model in stan language
@@ -413,10 +418,11 @@ stan_llh <- function(family, link, add = FALSE, weights = FALSE,
     family <- "lognormal"
     link <- "identity"
   }
-  if (se && family == "gaussian" && get_ar(autocor) == 1) {
-    # currently AR1 models have a special implementation
+  if (cov_arma) {
+    # ARMA models have a special implementation
     # for models with user defined SEs
-    family <- "gaussian_ar1"
+    # currently only AR1 is supported
+    family <- "gaussian_arma"
     if (weights || cens || is_trunc) {
       stop("Invalid addition arguments")
     }
@@ -427,7 +433,7 @@ stan_llh <- function(family, link, add = FALSE, weights = FALSE,
     family %in% c("cumulative", "categorical") && link == "logit") 
   n <- ifelse(cens || weights || is_trunc || is_catordinal ||
               is_hurdle || is_zero_inflated, "[n]", "")
-  ns <- ifelse(add && (cens || weights || is_trunc), "[n]", "")
+  ns <- ifelse((se || trials) && (cens || weights || is_trunc), "[n]", "")
   sigma <- paste0(ifelse(se, "se", "sigma"), ns)
   # use inverse link in likelihood statement only 
   # if it does not prevent vectorization 
@@ -471,8 +477,8 @@ stan_llh <- function(family, link, add = FALSE, weights = FALSE,
       multinormal = c("multi_normal_cholesky", 
                       paste0("etam",n,", diag_pre_multiply(sigma, Lrescor)")),
       lognormal = c("lognormal", paste0(eta,", sigma",ns)),
-      gaussian_ar1 = c("normal_ar1", paste0(eta,", ar[1], sigma, squared_se,", 
-                                            " N_tg, begin_tg, nrows_tg")),
+      gaussian_arma = c("normal_arma", paste0(eta,", ar[1], sigma, squared_se,", 
+                                              " N_tg, begin_tg, nrows_tg")),
       inverse.gaussian = c("inv_gaussian", 
                            paste0(eta, ", shape, log_Y",n,", sqrt_Y",n)),
       poisson = c("poisson", eta),
@@ -508,17 +514,17 @@ stan_llh <- function(family, link, add = FALSE, weights = FALSE,
       code_trunc <- paste0(" T[",lb,", ",ub,"]")
     }
   }
-  addW <- ifelse(weights, "weights[n] * ", "")
+  add_weights <- ifelse(weights, "weights[n] * ", "")
   llh <- switch(type, 
     cens = paste0("  # special treatment of censored data \n",
       "    if (cens[n] == 0) ", 
       ifelse(!weights, paste0("Y[n] ~ ", llh_pre[1],"(",llh_pre[2],"); \n"),
-             paste0("increment_log_prob(", addW, 
+             paste0("increment_log_prob(", add_weights, 
                     llh_pre[1], "_log(Y[n], ",llh_pre[2],")); \n")),
       "    else { \n",         
-      "      if (cens[n] == 1) increment_log_prob(", addW, 
+      "      if (cens[n] == 1) increment_log_prob(", add_weights, 
                llh_pre[1], "_ccdf_log(Y[n], ",llh_pre[2],")); \n",
-      "      else increment_log_prob(", addW, 
+      "      else increment_log_prob(", add_weights, 
                llh_pre[1], "_cdf_log(Y[n], ",llh_pre[2],")); \n",
       "    } \n"),
     weights = paste0("  lp_pre[n] <- ", llh_pre[1], "_log(Y[n], ",llh_pre[2],"); \n"),
@@ -529,7 +535,7 @@ stan_llh <- function(family, link, add = FALSE, weights = FALSE,
 
 stan_eta <- function(family, link, fixef, has_intercept = TRUE, 
                      paref = NULL, group = NULL, autocor = cor_arma(), 
-                     add = FALSE, se = FALSE) {
+                     add = FALSE, cov_arma = FALSE) {
   # linear predictor in Stan
   #
   # Args:
@@ -540,6 +546,8 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE,
   #   group: names of the grouping factors
   #   autocor: autocorrelation structure
   #   add: is the model weighted, censored, or truncated?
+  #   cov_arma: logical; are ARMA effects modeled using a special 
+  #             covariance matrix?
   # 
   # Return:
   #   the linear predictor in stan language
@@ -570,7 +578,7 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE,
                      || is_binary && link == "logit"
                      || family == "hurdle_gamma")
   eta_ilink <- rep("", 2)
-  if (eta$transform || (get_ar(autocor) && !se)) {
+  if (eta$transform || (get_ar(autocor) && !cov_arma)) {
     fl <- ifelse(family %in% c("gamma", "exponential"), 
                  paste0(family,"_",link), family)
     eta_ilink <- switch(fl, c(paste0(ilink,"("), ")"),
@@ -613,7 +621,7 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE,
   eta
 }
 
-stan_arma <- function(family, link, autocor, se = FALSE) {
+stan_arma <- function(family, link, autocor, cov_arma = FALSE) {
   # moving average autocorrelation in Stan
   # 
   # Args:
@@ -621,6 +629,8 @@ stan_arma <- function(family, link, autocor, se = FALSE) {
   #   link: the link function
   #   autocor: autocorrelation structure
   #   se: user defined SEs present?
+  #   cov_arma: logical; are ARMA effects modeled using a special 
+  #             covariance matrix?
   #
   # Returns:
   #   stan code for computing moving average effects
@@ -634,7 +644,7 @@ stan_arma <- function(family, link, autocor, se = FALSE) {
     if (!(is_linear || is_multi)) {
       stop(paste("ARMA effects for family", family, "are not yet implemented"))
     }
-    if (!se) {
+    if (!cov_arma) {
       # if the user has specified standard errors (se == TRUE),
       # computation is done within the functions block
       index <- ifelse(is_multi, "m, k", "n")
@@ -649,24 +659,22 @@ stan_arma <- function(family, link, autocor, se = FALSE) {
         "        E[n + 1, i] <- e[n + 1 - i]; \n",
         "      } \n",
         "    } \n")
-    } else if (Kma > 0 || Kar > 1 && family == "gaussian" ||
-               Kar > 0 && family != "gaussian") {
-      stop(paste("currently only AR1 autocorrelations of gaussian residuals", 
-                 "are allowed for models with user defined SEs"))
     }
   }
   out
 }
 
 stan_functions <- function(family = "gaussian", link = "identity", 
-                          weights = FALSE, cens = FALSE, trunc = FALSE,
-                          se = FALSE, autocor = cor_arma(), kronecker = FALSE) {
+                           weights = FALSE, cens = FALSE, trunc = FALSE,
+                           cov_arma, kronecker = FALSE) {
   # stan code for user defined functions
   #
   # Args:
   #   family: the model family
   #   link: the link function
   #   vectorize: indicate if vectorization of the response distribution is possible
+  #   cov_arma: logical; are ARMA effects modeled using a special 
+  #             covariance matrix?
   #   kronecker: logical; is the kronecker product needed?
   #
   # Returns:
@@ -859,7 +867,7 @@ stan_functions <- function(family = "gaussian", link = "identity",
       "     } \n",
       "   } \n")
   }
-  if (se && (get_ar(autocor) || get_ma(autocor)))
+  if (cov_arma)
     out <- paste0(out,
     "  /* compute the covariance matrix for an AR1 process \n",
     "   * Args: \n",
@@ -880,8 +888,9 @@ stan_functions <- function(family = "gaussian", link = "identity",
     "     } \n",
     "     return sigma^2 * mat; \n",
     "   } \n",
-    "  /* (multi) normal log-PDF of an AR1 process within each group \n",
-    "   * and user defined standard error \n",
+    "  /* (multi) normal log-PDF of an ARMA process within each group \n",
+    "   * and user defined standard error. \n",
+    "   * currently only AR1 is implemented \n",
     "   * Args: \n",
     "   *   y: response vector \n",
     "   *   eta: linear predictor \n",
@@ -894,8 +903,8 @@ stan_functions <- function(family = "gaussian", link = "identity",
     "   * Returns: \n",
     "   *   sum of the log-PDF values of all observations \n",
     "   */ \n",
-    "   real normal_ar1_log(vector y, vector eta, real ar, real sigma, \n",
-    "                       vector squared_se, int N_tg, int[] begin, int[] nrows) { \n",
+    "   real normal_arma_log(vector y, vector eta, real ar, real sigma, \n",
+    "                        vector squared_se, int N_tg, int[] begin, int[] nrows) { \n",
     "     vector[N_tg] log_post; \n",
     "     for (i in 1:N_tg) { \n",
     "       matrix[nrows[i], nrows[i]] Sigma; \n",

@@ -637,10 +637,10 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     family <- "lognormal"
   } else if (family == "gaussian" && nresp > 1) {
     family <- "multinormal"
-  } else if (is.formula(ee$se) && family == "gaussian" && 
-             get_ar(object$autocor) == 1) {
-    # special model for AR1 autocorrelation with user defined SEs
-    family <- "gaussian_ar1"
+  } else if (has_cov_arma(object$autocor, se = ee$se, family = family)) {
+    # special model for ARMA autocorrelation with user defined SEs
+    # currently only the AR1 process is implemented
+    family <- "gaussian_arma"
     samples$ar <- as.matrix(posterior_samples(object, pars = "^ar\\["))
   } 
   
@@ -900,8 +900,8 @@ logLik.brmsfit <- function(object, ...) {
     stop("The model does not contain posterior samples")
   ee <- extract_effects(object$formula, family = object$family)
   nresp <- length(ee$response)
-  standata <- standata(object)
-  N <- nrow(as.matrix(standata$Y))
+  data <- standata(object)
+  N <- ifelse(is.null(data$N_tg), nrow(as.matrix(data$Y)), data$N_tg)
   
   # extract relevant samples
   samples <- list(eta = linear_predictor(object))
@@ -924,17 +924,16 @@ logLik.brmsfit <- function(object, ...) {
     family <- "lognormal"
   } else if (family == "gaussian" && nresp > 1) {
     family <- "multinormal"
-  } else if (is.formula(ee$se) && family == "gaussian" && 
-             get_ar(object$autocor) == 1) {
-    # special model for AR1 autocorrelation with user defined SEs
-    family <- "gaussian_ar1"
-    N <- standata$N_tg
+  } else if (has_cov_arma(object$autocor, se = ee$se, family = family)) {
+    # special model for ARMA autocorrelation with user defined SEs
+    # currently only implemented for the AR1 process
+    family <- "gaussian_arma"
     samples$ar <- as.matrix(posterior_samples(object, pars = "^ar\\["))
   } 
 
   loglik_fun <- get(paste0("loglik_", family), mode = "function")
   call_loglik_fun <- function(n) {
-    do.call(loglik_fun, list(n = n, data = standata, samples = samples, 
+    do.call(loglik_fun, list(n = n, data = data, samples = samples, 
                              link = object$link)) 
   }
   loglik <- do.call(cbind, lapply(1:N, call_loglik_fun))

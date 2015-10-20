@@ -127,7 +127,7 @@ test_that("Test that stan_llh returns correct llhs under weights and censoring",
                "  lp_pre[n] <- poisson_log_log(Y[n], eta[n]); \n")
   expect_match(stan_llh(family = "poisson", link = "log", cens = TRUE),
                "Y[n] ~ poisson(exp(eta[n])); \n", fixed = TRUE)
-  expect_equal(stan_llh(family = "binomial", link = "logit", add = TRUE, weights = TRUE),
+  expect_equal(stan_llh(family = "binomial", link = "logit", trials = TRUE, weights = TRUE),
                "  lp_pre[n] <- binomial_logit_log(Y[n], trials[n], eta[n]); \n")
   expect_match(stan_llh(family = "weibull", link = "log", cens = TRUE), fixed = TRUE,
                "increment_log_prob(weibull_ccdf_log(Y[n], shape, exp(eta[n] / shape))); \n")
@@ -141,10 +141,10 @@ test_that("Test that stan_llh returns correct llhs under truncation", {
   expect_equal(stan_llh(family = "poisson", link = "log", trunc = .trunc(ub = 100)),
                "  Y[n] ~ poisson(exp(eta[n])) T[, ub]; \n")
   expect_equal(stan_llh(family = "gaussian", link = "identity", 
-                        add = TRUE, trunc = .trunc(0, 100)),
-               "  Y[n] ~ normal((eta[n]), sigma[n]) T[lb, ub]; \n")
+                        se = TRUE, trunc = .trunc(0, 100)),
+               "  Y[n] ~ normal((eta[n]), se[n]) T[lb, ub]; \n")
   expect_equal(stan_llh(family = "binomial", link = "logit", 
-                        add = TRUE, trunc = .trunc(0, 100)),
+                        trials = TRUE, trunc = .trunc(0, 100)),
                "  Y[n] ~ binomial(trials[n], inv_logit(eta[n])) T[lb, ub]; \n")
 })
 

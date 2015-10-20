@@ -191,14 +191,32 @@ indicate_shape <- function(family) {
 indicate_sigma <- function(family, se, autocor) {
   # indicate if the model needs a sigma parameter
   # Args:
-  #  family: a character string
+  #  family: model family
   #  se: does the model contain user defined SEs?
-  #      may be a formula in which case se is treated as TRUE
   #  autocor: object of class cor_arma
   is_linear <- indicate_linear(family)
   if (is.null(se)) se <- FALSE
   if (is.formula(se)) se <- TRUE
   is_linear && (!se || get_ar(autocor) || get_ma(autocor))
+}
+
+has_cov_arma <- function(autocor, se, family = "gaussian") {
+  # indicates if an ARMA covariance matrix need to be fitted
+  # currently only allows the AR1 process
+  # Args:
+  #   autocor: object of class cor_arma
+  #   se: does the model contain user defined SEs?
+  #   family: model family
+  if (is.null(se)) se <- FALSE
+  if (is.formula(se)) se <- TRUE
+  Kar <- get_ar(autocor)
+  Kma <- get_ma(autocor)
+  if (se && (Kma > 0 || Kar > 1 && family == "gaussian" ||
+      Kar > 0 && family != "gaussian")) {
+    stop(paste("currently only AR1 autocorrelations of gaussian residuals", 
+               "are allowed for models with user defined SEs"))
+  }
+  Kar == 1 && se && family == "gaussian"
 }
 
 get_boundaries <- function(trunc) {

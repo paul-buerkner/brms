@@ -56,7 +56,8 @@ loglik_multinormal <- function(n, data, samples, link) {
   weight_loglik(out, n = n, data = data)
 }
 
-loglik_gaussian_ar1 <- function(n, data, samples, link) {
+loglik_gaussian_arma <- function(n, data, samples, link) {
+  # currenlty, only the AR1 process is implemented
   rows <- with(data, begin_tg[n]:(begin_tg[n] + nrows_tg[n] - 1))
   Y_part <- data$Y[rows]
   eta_part <- samples$eta[, rows]

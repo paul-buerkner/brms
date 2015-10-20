@@ -50,7 +50,8 @@ predict_multinormal <- function(n, data, samples, link, ...) {
   do.call(rbind, lapply(1:nrow(samples$eta), .fun))
 }
 
-predict_gaussian_ar1 <- function(n, data, samples, link, ...) {
+predict_gaussian_arma <- function(n, data, samples, link, ...) {
+  # currently, only the AR1 process is implemented
   # weights, truncation and censoring not allowed
   rows <- with(data, begin_tg[n]:(begin_tg[n] + nrows_tg[n] - 1))
   eta_part <- samples$eta[, rows]
