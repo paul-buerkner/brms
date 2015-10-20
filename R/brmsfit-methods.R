@@ -618,7 +618,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   nresp <- length(ee$response)
   samples <- list(eta = linear_predictor(object, newdata = data, 
                                          re_formula = re_formula))
-  if (indicate_linear(object$family) && !is.formula(ee$se))
+  if (indicate_sigma(object$family, se = ee$se, autocor = object$autocor))
     samples$sigma <- as.matrix(posterior_samples(object, pars = "^sigma_"))
   if (object$family == "student") 
     samples$nu <- as.matrix(posterior_samples(object, pars = "^nu$"))
@@ -637,7 +637,13 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     family <- "lognormal"
   } else if (family == "gaussian" && nresp > 1) {
     family <- "multinormal"
-  }
+  } else if (is.formula(ee$se) && family == "gaussian" && 
+             get_ar(object$autocor) == 1) {
+    # special model for AR1 autocorrelation with user defined SEs
+    family <- "gaussian_ar1"
+    samples$ar <- as.matrix(posterior_samples(object, pars = "^ar\\["))
+  } 
+  
   is_catordinal <- indicate_ordinal(family) || family == "categorical"
   # see predict.R
   predict_fun <- get(paste0("predict_", family), mode = "function")
@@ -645,7 +651,9 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     do.call(predict_fun, list(n = n, data = data, samples = samples, 
                               link = object$link, ntrys = ntrys))
   }
-  N <- ifelse(is.null(data$N_trait), data$N, data$N_trait)
+  N <- if (!is.null(data$N_trait)) data$N_trait
+       else if (!is.null(data$N_tg)) data$N_tg
+       else data$N
   out <- do.call(cbind, lapply(1:N, call_predict_fun))
   
   # percentage of invalid samples for truncated discrete models

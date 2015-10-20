@@ -42,9 +42,26 @@ predict_lognormal <- function(n, data, samples, link, ...) {
 
 predict_multinormal <- function(n, data, samples, link, ...) {
   # currently no truncation available
+  obs <- seq(n, data$N, data$N_trait)
   .fun <- function(i) {
     rmultinormal(1, Sigma = samples$Sigma[i, , ],
-                 mu = samples$eta[i, seq(n, data$N, data$N_trait)])
+                 mu = ilink(samples$eta[i, obs], link))
+  }
+  do.call(rbind, lapply(1:nrow(samples$eta), .fun))
+}
+
+predict_gaussian_ar1 <- function(n, data, samples, link, ...) {
+  # weights, truncation and censoring not allowed
+  rows <- with(data, begin_tg[n]:(begin_tg[n] + nrows_tg[n] - 1))
+  eta_part <- samples$eta[, rows]
+  squared_se_part <- data$squared_se[rows]
+  # both sigma and SEs are present!
+  Sigma <- get_cov_matrix_ar1(ar = samples$ar, sigma = samples$sigma, 
+                              sq_se = squared_se_part, nrows = length(rows)) 
+
+  .fun <- function(i) {
+    rmultinormal(1, mu = ilink(eta_part[i, ], link), 
+                 Sigma = Sigma[i, , ])
   }
   do.call(rbind, lapply(1:nrow(samples$eta), .fun))
 }
