@@ -222,7 +222,7 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
       paste0("  matrix[Kp, ncat - 1] bp;  # category specific effects \n"),
     text_ranef$par,
     if (Kar) 
-      "  vector[Kar] ar;  # autoregressive effecs \n",
+      "  vector[Kar] ar;  # autoregressive effects \n",
     if (Kma) 
       "  vector[Kma] ma;  # moving-average effects \n",
     if (get_arr(autocor)) 
@@ -477,8 +477,8 @@ stan_llh <- function(family, link, se = FALSE, weights = FALSE,
       multinormal = c("multi_normal_cholesky", 
                       paste0("etam",n,", diag_pre_multiply(sigma, Lrescor)")),
       lognormal = c("lognormal", paste0(eta,", sigma",ns)),
-      gaussian_arma = c("normal_arma", paste0(eta,", ar[1], sigma, squared_se,", 
-                                              " N_tg, begin_tg, nrows_tg")),
+      gaussian_arma = c("normal_arma", paste0(eta,", ar[1], sigma, squared_se, N_tg, \n", 
+                        "                  begin_tg, nrows_tg, arma_matrix")),
       inverse.gaussian = c("inv_gaussian", 
                            paste0(eta, ", shape, log_Y",n,", sqrt_Y",n)),
       poisson = c("poisson", eta),
@@ -644,9 +644,13 @@ stan_arma <- function(family, link, autocor, cov_arma = FALSE) {
     if (!(is_linear || is_multi)) {
       stop(paste("ARMA effects for family", family, "are not yet implemented"))
     }
-    if (!cov_arma) {
-      # if the user has specified standard errors (se == TRUE),
-      # computation is done within the functions block
+    if (cov_arma) {
+      # if the user has specified standard errors (cov_arma = TRUE),
+      # most computation is done within the functions block
+      out$transD <- "  matrix[max(nrows_tg), max(nrows_tg)] arma_matrix; \n"
+      out$transC1 <- paste0("  arma_matrix <- cov_matrix_ar1", 
+                            "(ar[1], sigma, max(nrows_tg)); \n")
+    } else {
       index <- ifelse(is_multi, "m, k", "n")
       out$transD <- paste0("  matrix[N, Karma] E;  # ARMA design matrix \n",
                            "  vector[N] e;  # residuals \n") 
@@ -659,7 +663,7 @@ stan_arma <- function(family, link, autocor, cov_arma = FALSE) {
         "        E[n + 1, i] <- e[n + 1 - i]; \n",
         "      } \n",
         "    } \n")
-    }
+    } 
   }
   out
 }
@@ -904,7 +908,8 @@ stan_functions <- function(family = "gaussian", link = "identity",
     "   *   sum of the log-PDF values of all observations \n",
     "   */ \n",
     "   real normal_arma_log(vector y, vector eta, real ar, real sigma, \n",
-    "                        vector squared_se, int N_tg, int[] begin, int[] nrows) { \n",
+    "                        vector squared_se, int N_tg, int[] begin, int[] nrows, \n",
+    "                        matrix arma_matrix) { \n",
     "     vector[N_tg] log_post; \n",
     "     for (i in 1:N_tg) { \n",
     "       matrix[nrows[i], nrows[i]] Sigma; \n",
@@ -914,7 +919,8 @@ stan_functions <- function(family = "gaussian", link = "identity",
     "       y_part <- segment(y, begin[i], nrows[i]); \n",
     "       eta_part <- segment(eta, begin[i], nrows[i]); \n",
     "       squared_se_part <- segment(squared_se, begin[i], nrows[i]); \n",
-    "       Sigma <- cov_matrix_ar1(ar, sigma, nrows[i]) + diag_matrix(squared_se_part); \n",
+    "       Sigma <- block(arma_matrix, 1, 1, nrows[i], nrows[i]) \n",
+    "                + diag_matrix(squared_se_part); \n",
     "       Sigma <- cholesky_decompose(Sigma); \n",
     "       log_post[i] <- multi_normal_cholesky_log(y_part, eta_part, Sigma); \n",
     "     } \n",                       
