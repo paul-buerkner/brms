@@ -187,7 +187,7 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
   } 
   
   # special treatment of residuals variances in linear models
-  if (indicate_linear(x$family) && !is.formula(ee$se)) {
+  if (indicate_sigma(x$family, se = ee$se, autocor = x$autocor)) {
     cor_pars <- get_cornames(ee$response, type = "rescor", brackets = FALSE)
     p <- lc(p, list(rnames = ee$response, sd_pars = paste0("sigma_",ee$response),
                     cor_pars = cor_pars))

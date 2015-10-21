@@ -222,7 +222,7 @@ get_cov_matrix_ar1 <- function(ar, sigma, sq_se, nrows) {
   # Args: 
   #   ar: AR1 autocorrelation samples
   #   sigma: standard deviation samples of the AR1 process
-  #   nrowa: number of rows of the covariance matrix
+  #   nrows: number of rows of the covariance matrix
   # Returns:
   #   An nrows x nrows x nsamples AR1 covariance array (!)
   mat <- aperm(array(diag(sq_se, nrows), dim = c(nrows, nrows, nrow(ar))),
@@ -790,10 +790,12 @@ as.data.frame.VarCorr_brmsfit <- function(x, ...) {
   names_coef <- lapply(x, function(y) rownames(y$sd))
   groups_col <- ulapply(1:n_groups, function(i) 
     c(groups[i], rep("", length(names_coef[[i]]) - 1)))
-  max_cor <- max(ulapply(names_coef, length))
+  max_cor <- max(ulapply(names_coef, length)) - 1
   # basic data.frame to be used in fill_base_frame
-  base_frame <- as.data.frame(matrix(NA, nrow = length(groups_col), ncol = 3 + max_cor))
-  names(base_frame) <- c("Group", "Name", "Std.Dev", "Cor", rep("", max_cor - 1))
+  base_frame <- as.data.frame(matrix(NA, nrow = length(groups_col),
+                                     ncol = 4 + 2 * max_cor))
+  names(base_frame) <- c("Group", "Name", "Std.Dev", rep("Cor", max_cor),
+                         rep("Cov", max_cor + 1))
   base_frame[, 1:2] <- cbind(groups_col, unlist(names_coef))
   
   fill_base_frame <- function(estimate) {
@@ -807,11 +809,18 @@ as.data.frame.VarCorr_brmsfit <- function(x, ...) {
       rows <- pos:(pos + len - 1)
       out[rows, "Std.Dev"] <- x[[i]]$sd[, estimate]
       if (len > 1) {
-        # correlations (possibly) present
-        cormat <- x[[i]]$cor[[estimate]]
-        lt <- lower.tri(out[rows, 4:ncol(out)])
-        out[rows, 4:ncol(out)][lt] <- cormat[lt]
+        # covariances and correlations present
+        # add correlations
+        cor_pos <- 4:(2 + len)
+        cormat <- x[[i]]$cor[[estimate]][2:len, 1:(len-1), drop = FALSE]
+        lt <- lower.tri(cormat, diag = TRUE)
+        out[rows[2:length(rows)], cor_pos][lt] <- cormat[lt]
       }
+      # add covariances
+      cov_pos <- (4 + max_cor):(3 + max_cor + len)
+      covmat <- x[[i]]$cov[[estimate]]
+      lt <- lower.tri(covmat, diag = TRUE)
+      out[rows, cov_pos][lt] <- covmat[lt]
       pos <- pos + len
     }
     out
@@ -820,12 +829,7 @@ as.data.frame.VarCorr_brmsfit <- function(x, ...) {
   out <- do.call(rbind, lapply(estimates, fill_base_frame))
   estimates_col <- ulapply(estimates, function(e)
     c(e, rep("", length(groups_col) - 1)))
-  out <- cbind(Estimate = estimates_col, out)
-  if (ncol(out) > 5) {
-    # remove unneeded rownames
-    names(out)[6:ncol(out)] <- ""
-  }
-  out
+  cbind(Estimate = estimates_col, out)
 }
 
 #' @export
