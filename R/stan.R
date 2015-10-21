@@ -23,14 +23,12 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
   is_hurdle <- indicate_hurdle(family)
   is_zero_inflated <- indicate_zero_inflated(family)
   is_multi <- family == "multinormal"
+  is_categorical <- family == "categorical"
   has_sigma <- indicate_sigma(family, se = ee$se, autocor = autocor)
   has_shape <- indicate_shape(family)
   trunc <- get_boundaries(ee$trunc)  
-  Kar <- get_ar(autocor)
-  Kma <- get_ma(autocor)
-  cov_arma <- has_cov_arma(autocor, se = ee$se, family = family)
   
-  if (family == "categorical") {
+  if (is_categorical) {
     X <- data.frame()
     fixef <- colnames(X)
     Xp <- get_model_matrix(ee$fixed, data)
@@ -51,7 +49,6 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
   ranef <- lapply(Z, colnames)
   trait <- ifelse(is_multi || is_hurdle || is_zero_inflated, "_trait", "")
   names_cov_ranef <- names(cov.ranef)
-  
   if (length(ee$group)) {
     # call stan_ranef for each random term seperately
     text_ranef <- lapply(1:length(ee$group), stan_ranef, 
@@ -65,6 +62,7 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
   text_ranef <- collapse_lists(text_ranef)
   
   # generate important parts of the stan code
+  cov_arma <- has_cov_arma(autocor, se = ee$se, family = family, link = link)
   text_eta <- stan_eta(family = family, link = link, fixef = fixef, 
                        has_intercept = has_intercept, paref = paref,  
                        group = ee$group, autocor = autocor,
@@ -83,11 +81,13 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
                        cens = is.formula(ee$cens),
                        trunc = trunc, cov_arma = cov_arma)
   if (is.formula(ee$cens) || is.formula(ee$weights) || is.formula(ee$trunc) ||
-      is_ordinal || family == "categorical" || is_hurdle || is_zero_inflated) {
+      is_ordinal || is_categorical || is_hurdle || is_zero_inflated) {
     text_llh <- paste0("  for (n in 1:N",trait,") { \n  ",text_llh,"  } \n")
   }
     
   # get priors for all parameters in the model
+  Kar <- get_ar(autocor)
+  Kma <- get_ma(autocor)
   text_prior <- paste0(
     if (has_intercept) {
       if (is_ordinal && threshold == "equidistant")
@@ -115,7 +115,6 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
       paste0(stan_prior(class = "sigma", coef = ee$response, prior = prior),
              stan_prior(class = "Lrescor", prior = prior)),
     text_ranef$model)
-  
   # generate code to additionally sample from priors if sample.prior = TRUE
   text_rngprior <- stan_rngprior(sample.prior = sample.prior, 
                                  prior = text_prior, family = family)
@@ -179,9 +178,9 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
     if (family == "binomial")
       paste0("  int trials", if (is.formula(ee$trials)) "[N]", 
              ";  # number of trials \n"),
-    if (is_ordinal || family == "categorical")
+    if (is_ordinal || is_categorical)
       paste0("  int ncat;  # number of categories \n"),
-    if (is.formula(ee$cens) && !(is_ordinal || family == "categorical"))
+    if (is.formula(ee$cens) && !(is_ordinal || is_categorical))
       "  vector[N] cens;  # indicates censoring \n",
     if (trunc$lb > -Inf)
       paste0("  ", ifelse(is_int_Y, "int", "real"), " lb;",  
@@ -198,23 +197,29 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
     text_ranef$data,
     "} \n")
   
-  if (family == "categorical") {
-    zero <- c("  row_vector[1] zero; \n", "  zero[1] <- 0; \n")
-  } else zero <- NULL
+  zero <- list()
+  if (is_categorical) {
+    zero$tdataD <- "  row_vector[1] zero; \n"
+    zero$tdataC <- "  zero[1] <- 0; \n"
+  }
   text_transformed_data <- paste0(
     "transformed data { \n",
-      zero[1], text_ranef$tdataD, 
-      zero[2], text_ranef$tdataC,
+       zero$tdataD,
+       text_ranef$tdataD, 
+       zero$tdataC,
+       text_ranef$tdataC,
     "} \n")
   
   text_parameters <- paste0(
     "parameters { \n",
     if (has_intercept) {
-      if (is_ordinal) 
+      if (is_ordinal) {
         text_ordinal$par
-      else if (family == "categorical")
+      } else if (is_categorical) {
         "  row_vector[ncat - 1] b_Intercept;  # fixed effects Intercepts \n"
-      else "  real b_Intercept;  # fixed effects Intercept \n"
+      } else {
+        "  real b_Intercept;  # fixed effects Intercept \n"
+      }
     },
     if (length(fixef)) 
       "  vector[K] b;  # fixed effects \n",
@@ -590,7 +595,7 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE,
                         exponential_identity = c("inv(", ")"),
                         weibull = c(paste0(ilink,"(("), ") / shape)"))
     if (get_ma(autocor) || get_ar(autocor)) {
-      eta_ar <- " + head(E[n], Kar) * ar"
+      eta_ar <- ifelse(!cov_arma, " + head(E[n], Kar) * ar", "")
       eta$transC3 <- paste0("    ", eta_multi," <- ",eta_ilink[1], 
                             eta_multi, eta_ar, eta_ilink[2],"; \n")
       eta_ilink <- rep("", 2)  

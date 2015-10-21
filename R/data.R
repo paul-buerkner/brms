@@ -248,7 +248,7 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
     }
   }
   
-  # addition and partial variables
+  # addition and category specific variables
   if (is.formula(ee$se)) {
     standata <- c(standata, list(se = .addition(formula = ee$se, data = data)))
   }
