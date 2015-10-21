@@ -637,7 +637,8 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     family <- "lognormal"
   } else if (family == "gaussian" && nresp > 1) {
     family <- "multinormal"
-  } else if (has_cov_arma(object$autocor, se = ee$se, family = family)) {
+  } else if (has_cov_arma(object$autocor, se = ee$se, family = family,
+                          link = object$link)) {
     # special model for ARMA autocorrelation with user defined SEs
     # currently only the AR1 process is implemented
     family <- "gaussian_arma"
@@ -924,7 +925,8 @@ logLik.brmsfit <- function(object, ...) {
     family <- "lognormal"
   } else if (family == "gaussian" && nresp > 1) {
     family <- "multinormal"
-  } else if (has_cov_arma(object$autocor, se = ee$se, family = family)) {
+  } else if (has_cov_arma(object$autocor, se = ee$se, family = family, 
+                          link = object$link)) {
     # special model for ARMA autocorrelation with user defined SEs
     # currently only implemented for the AR1 process
     family <- "gaussian_arma"

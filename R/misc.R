@@ -200,7 +200,8 @@ indicate_sigma <- function(family, se, autocor) {
   is_linear && (!se || get_ar(autocor) || get_ma(autocor))
 }
 
-has_cov_arma <- function(autocor, se, family = "gaussian") {
+has_cov_arma <- function(autocor, se, family = "gaussian",
+                         link = "identity") {
   # indicates if an ARMA covariance matrix need to be fitted
   # currently only allows the AR1 process
   # Args:
@@ -211,12 +212,12 @@ has_cov_arma <- function(autocor, se, family = "gaussian") {
   if (is.formula(se)) se <- TRUE
   Kar <- get_ar(autocor)
   Kma <- get_ma(autocor)
-  if (se && (Kma > 0 || Kar > 1 && family == "gaussian" ||
-      Kar > 0 && family != "gaussian")) {
-    stop(paste("currently only AR1 autocorrelations of gaussian residuals", 
-               "are allowed for models with user defined SEs"))
+  gaussian_identity <- family == "gaussian" && link == "identity"
+  if (se && (Kma > 0 || Kar > 1 || Kar == 1 && !gaussian_identity)) {
+    stop(paste("currently only AR1 autocorrelations of gaussian(identity)", 
+               "residuals are allowed for models with user defined SEs"))
   }
-  Kar == 1 && se && family == "gaussian"
+  Kar == 1 && se && gaussian_identity
 }
 
 get_boundaries <- function(trunc) {
