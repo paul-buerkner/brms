@@ -572,7 +572,8 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE,
                          "  matrix[N, ncat - 1] etap;  # linear predictor matrix \n",
                        if (is_multi) 
                          "  vector[K_trait] etam[N_trait]; # linear predictor matrix \n")
-  eta_multi <- ifelse(is_multi, "  etam[m, k]", "eta[n]")
+  eta_obj <- ifelse(is_multi, "etam[m, k]", "eta[n]")
+  s <- ifelse(is_multi, "  ", "")
   
   # transform eta before it is passed to the likelihood
   ilink <- stan_ilink(link)
@@ -596,8 +597,8 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE,
                         weibull = c(paste0(ilink,"(("), ") / shape)"))
     if (get_ma(autocor) || get_ar(autocor)) {
       eta_ar <- ifelse(!cov_arma, " + head(E[n], Kar) * ar", "")
-      eta$transC3 <- paste0("    ", eta_multi," <- ",eta_ilink[1], 
-                            eta_multi, eta_ar, eta_ilink[2],"; \n")
+      eta$transC3 <- paste0("    ", s, eta_obj," <- ",eta_ilink[1], 
+                            eta_obj, eta_ar, eta_ilink[2],"; \n")
       eta_ilink <- rep("", 2)  
     }
   }
@@ -620,7 +621,7 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE,
   }
   eta_ma <- ifelse(get_ma(autocor), " + head(E[n], Kma) * ma", "")
   if (nchar(eta_re) || nchar(eta_ma) || is_multi || nchar(eta_ilink[1])) {
-    eta$transC2 <- paste0("    ",eta_multi," <- ",
+    eta$transC2 <- paste0("    ",s, eta_obj," <- ",
                           eta_ilink[1],"eta[n]", eta_ma, eta_re, eta_ilink[2],"; \n")
   }
   eta
@@ -657,17 +658,18 @@ stan_arma <- function(family, link, autocor, cov_arma = FALSE) {
                             "(ar[1], sigma, max(nrows_tg)); \n")
     } else {
       index <- ifelse(is_multi, "m, k", "n")
+      s <- ifelse(is_multi, "  ", "")
       out$transD <- paste0("  matrix[N, Karma] E;  # ARMA design matrix \n",
                            "  vector[N] e;  # residuals \n") 
       out$transC1 <- "  E <- E_pre; \n" 
       out$transC2 <- paste0(
-        "    # calculation of ARMA effects \n",
-        "    e[n] <- ",link.fun,"(Y[",index,"]) - eta[n]", "; \n",
-        "    for (i in 1:Karma) { \n", 
-        "      if (n + 1 - i > 0 && n < N && tgroup[n + 1] == tgroup[n + 1 - i]) { \n",
-        "        E[n + 1, i] <- e[n + 1 - i]; \n",
-        "      } \n",
-        "    } \n")
+        s,"    # calculation of ARMA effects \n",
+        s,"    e[n] <- ",link.fun,"(Y[",index,"]) - eta[n]", "; \n",
+        s,"    for (i in 1:Karma) { \n", 
+        s,"      if (n + 1 - i > 0 && n < N && tgroup[n + 1] == tgroup[n + 1 - i]) { \n",
+        s,"        E[n + 1, i] <- e[n + 1 - i]; \n",
+        s,"      } \n",
+        s,"    } \n")
     } 
   }
   out
