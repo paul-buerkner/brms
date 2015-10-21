@@ -137,7 +137,7 @@ rename_pars <- function(x) {
       }  
     }
   }
-  if (indicate_sigma(x$family, se = is.formula(ee$se), autocor = x$autocor)) {
+  if (has_sigma(x$family, se = is.formula(ee$se), autocor = x$autocor)) {
     corfnames <- paste0("sigma_",ee$response)
     change <- lc(change, list(pos = grepl("^sigma", pars), oldname = "sigma",
                               pnames = corfnames, fnames = corfnames))

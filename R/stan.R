@@ -16,16 +16,16 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
     family <- "multinormal"
   # flags to indicate of which type family is
   # see misc.R for details
-  is_linear <- indicate_linear(family)
-  is_ordinal <- indicate_ordinal(family)
-  is_skewed <- indicate_skewed(family)
-  is_count <- indicate_count(family)
-  is_hurdle <- indicate_hurdle(family)
-  is_zero_inflated <- indicate_zero_inflated(family)
+  is_linear <- is.linear(family)
+  is_ordinal <- is.ordinal(family)
+  is_skewed <- is.skewed(family)
+  is_count <- is.count(family)
+  is_hurdle <- is.hurdle(family)
+  is_zero_inflated <- is.zero_inflated(family)
   is_multi <- family == "multinormal"
   is_categorical <- family == "categorical"
-  has_sigma <- indicate_sigma(family, se = ee$se, autocor = autocor)
-  has_shape <- indicate_shape(family)
+  sigma <- has_sigma(family, se = ee$se, autocor = autocor)
+  shape <- has_shape(family)
   trunc <- get_boundaries(ee$trunc)  
   
   if (is_categorical) {
@@ -105,11 +105,11 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
       stan_prior(class = "ma", prior = prior),
     if (get_arr(autocor)) 
       stan_prior(class = "arr", prior = prior),
-    if (has_shape) 
+    if (shape) 
       stan_prior(class = "shape", prior = prior),
     if (family == "student") 
       stan_prior(class = "nu", prior = prior),
-    if (has_sigma) 
+    if (sigma) 
       stan_prior(class = "sigma", coef = ee$response, prior = prior), 
     if (is_multi) 
       paste0(stan_prior(class = "sigma", coef = ee$response, prior = prior),
@@ -232,7 +232,7 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
       "  vector[Kma] ma;  # moving-average effects \n",
     if (get_arr(autocor)) 
       "  vector[Karr] arr;  # autoregressive effects of the response \n",
-    if (has_sigma)
+    if (sigma)
       "  real<lower=0> sigma;  # residual SD \n",
     if (family == "student") 
       "  real<lower=0> nu;  # degrees of freedom \n",
@@ -240,7 +240,7 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
       paste0("  # parameters for multinormal models \n",
              "  vector<lower=0>[K_trait] sigma; \n",
              "  cholesky_factor_corr[K_trait] Lrescor; \n"),
-    if (has_shape) 
+    if (shape) 
       "  real<lower=0> shape;  # shape parameter constant across observations \n",
     text_rngprior$par,
     "} \n")
@@ -411,12 +411,12 @@ stan_llh <- function(family, link, se = FALSE, weights = FALSE,
   #
   # Returns:
   #   a string containing the likelihood of the model in stan language
-  is_catordinal <- indicate_ordinal(family) || family == "categorical"
-  is_count <- indicate_count(family)
-  is_skewed <- indicate_skewed(family)
-  is_binary <- indicate_binary(family)
-  is_hurdle <- indicate_hurdle(family)
-  is_zero_inflated <- indicate_zero_inflated(family)
+  is_catordinal <- is.ordinal(family) || family == "categorical"
+  is_count <- is.count(family)
+  is_skewed <- is.skewed(family)
+  is_binary <- is.binary(family)
+  is_hurdle <- is.hurdle(family)
+  is_zero_inflated <- is.zero_inflated(family)
   is_trunc <- trunc$lb > -Inf || trunc$ub < Inf
   if (family == "gaussian" && link == "log") {
     # prepare for use of lognormal distribution
@@ -556,13 +556,13 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE,
   # 
   # Return:
   #   the linear predictor in stan language
-  is_linear <- indicate_linear(family)
-  is_ordinal <- indicate_ordinal(family)
+  is_linear <- is.linear(family)
+  is_ordinal <- is.ordinal(family)
   is_cat <- family == "categorical"
-  is_skewed <- indicate_skewed(family)
-  is_count <- indicate_count(family) || indicate_zero_inflated(family) ||
+  is_skewed <- is.skewed(family)
+  is_count <- is.count(family) || is.zero_inflated(family) ||
               family %in% c("hurdle_poisson", "hurdle_negbinomial")
-  is_binary <- indicate_binary(family)
+  is_binary <- is.binary(family)
   is_multi <- family == "multinormal"
   
   eta <- list()
@@ -640,7 +640,7 @@ stan_arma <- function(family, link, autocor, cov_arma = FALSE) {
   #
   # Returns:
   #   stan code for computing moving average effects
-  is_linear <- indicate_linear(family)
+  is_linear <- is.linear(family)
   is_multi <- family == "multinormal"
   out <- list()
   Kar <- get_ar(autocor)
@@ -1011,7 +1011,7 @@ stan_ordinal <- function(family, link, partial = FALSE, threshold = "flexible") 
   #
   # Returns:
   #   A vector of strings containing the ordinal effects in stan language
-  is_ordinal <- indicate_ordinal(family)
+  is_ordinal <- is.ordinal(family)
   if (!(is_ordinal || family == "categorical")) return(list())
   ilink <- stan_ilink(link)
   th <- function(k) {

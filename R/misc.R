@@ -122,7 +122,7 @@ formula2string <- function(formula, rm = c(0, 0)) {
   x
 } 
 
-indicate_linear <- function(family) {
+is.linear <- function(family) {
   # indicate if family is for a linear model
   if (class(family) == "family") {
     family <- family$family
@@ -130,7 +130,7 @@ indicate_linear <- function(family) {
   family %in% c("gaussian", "student", "cauchy")
 }
 
-indicate_binary <- function(family) {
+is.binary <- function(family) {
   # indicate if family is bernoulli or binomial
   if (class(family) == "family") {
     family <- family$family
@@ -138,7 +138,7 @@ indicate_binary <- function(family) {
   family %in% c("binomial", "bernoulli")
 }
 
-indicate_ordinal <- function(family) {
+is.ordinal <- function(family) {
   # indicate if family is for an ordinal model
   if (class(family) == "family") {
     family <- family$family
@@ -146,7 +146,7 @@ indicate_ordinal <- function(family) {
   family %in% c("cumulative", "cratio", "sratio", "acat") 
 }
 
-indicate_skewed <- function(family) {
+is.skewed <- function(family) {
   # indicate if family is for model with postive skewed response
   if (class(family) == "family") {
     family <- family$family
@@ -154,7 +154,7 @@ indicate_skewed <- function(family) {
   family %in% c("gamma", "weibull", "exponential")
 }
 
-indicate_count <- function(family) {
+is.count <- function(family) {
   # indicate if family is for a count model
   if (class(family) == "family") {
     family <- family$family
@@ -162,7 +162,7 @@ indicate_count <- function(family) {
   family %in% c("poisson", "negbinomial", "geometric")
 }
 
-indicate_hurdle <- function(family) {
+is.hurdle <- function(family) {
   # indicate if family is for a hurdle model
   if (class(family) == "family") {
     family <- family$family
@@ -170,7 +170,7 @@ indicate_hurdle <- function(family) {
   family %in% c("hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma")
 }
 
-indicate_zero_inflated <- function(family) {
+is.zero_inflated <- function(family) {
   # indicate if family is for a zero inflated model
   if (class(family) == "family") {
     family <- family$family
@@ -178,7 +178,7 @@ indicate_zero_inflated <- function(family) {
   family %in% c("zero_inflated_poisson", "zero_inflated_negbinomial")
 }
 
-indicate_shape <- function(family) {
+has_shape <- function(family) {
   # indicate if family needs a shape parameter
   if (class(family) == "family") {
     family <- family$family
@@ -188,16 +188,15 @@ indicate_shape <- function(family) {
                 "hurdle_gamma", "zero_inflated_negbinomial")
 }
 
-indicate_sigma <- function(family, se, autocor) {
+has_sigma <- function(family, se, autocor) {
   # indicate if the model needs a sigma parameter
   # Args:
   #  family: model family
   #  se: does the model contain user defined SEs?
   #  autocor: object of class cor_arma
-  is_linear <- indicate_linear(family)
   if (is.null(se)) se <- FALSE
   if (is.formula(se)) se <- TRUE
-  is_linear && (!se || get_ar(autocor) || get_ma(autocor))
+  is.linear(family) && (!se || get_ar(autocor) || get_ma(autocor))
 }
 
 has_cov_arma <- function(autocor, se, family = "gaussian",

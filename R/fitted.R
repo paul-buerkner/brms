@@ -9,7 +9,7 @@ fitted_response <- function(x, eta, data) {
   #   the response distribution's mean 
   family <- x$family
   nresp <- length(extract_effects(x$formula, family = family)$response)
-  is_catordinal <- indicate_ordinal(family) || family == "categorical"
+  is_catordinal <- is.ordinal(family) || family == "categorical"
   if (family == "gaussian" && x$link == "log" && nresp == 1) {
     family <- "lognormal"
   }
@@ -40,11 +40,11 @@ fitted_response <- function(x, eta, data) {
   } else if (is_catordinal) {
     mu <- fitted_catordinal(eta, max_obs = data$max_obs, family = x$family,
                             link = x$link)
-  } else if (indicate_hurdle(family)) {
+  } else if (is.hurdle(family)) {
     shape <- posterior_samples(x, "^shape$")$shape 
     mu <- fitted_hurdle(eta, shape = shape, N_trait = data$N_trait,
                         family = x$family, link = x$link)
-  } else if (indicate_zero_inflated(family)) {
+  } else if (is.zero_inflated(family)) {
     mu <- fitted_zero_inflated(eta, N_trait = data$N_trait, link = x$link)
   } else {
     # for any other distribution, ilink(eta) is already the mean fitted value

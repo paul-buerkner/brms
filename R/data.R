@@ -8,8 +8,8 @@ melt <- function(data, response, family) {
   #
   # Returns:
   #   data in long format 
-  is_hurdle <- indicate_hurdle(family)
-  is_zero_inflated <- indicate_zero_inflated(family)
+  is_hurdle <- is.hurdle(family)
+  is_zero_inflated <- is.zero_inflated(family)
   nresp <- length(response)
   if (nresp > 1 && family == "gaussian" || 
       nresp == 2 && (is_hurdle || is_zero_inflated)) {
@@ -116,9 +116,9 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
   #                   should be kept in the FE design matrix
   dots <- list(...)
   family <- check_family(family)$family
-  is_linear <- indicate_linear(family)
-  is_ordinal <- indicate_ordinal(family)
-  is_count <- indicate_count(family)
+  is_linear <- is.linear(family)
+  is_ordinal <- is.ordinal(family)
+  is_count <- is.count(family)
   if (is.null(autocor)) autocor <- cor_arma()
   if (!is(autocor,"cor_brms")) stop("cor must be of class cor_brms")
   
@@ -170,7 +170,7 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
       stop(paste("family", family, "expects either integers or",
                  "ordered factors as response variables"))
     }
-  } else if (indicate_skewed(family)) {
+  } else if (is.skewed(family)) {
     if (min(standata$Y) < 0)
       stop(paste("family", family, "requires response variable to be non-negative"))
   } else if (family == "gaussian" && length(ee$response) > 1) {
@@ -179,7 +179,7 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
                                  K_trait = ncol(standata$Y)),
                                  NC_trait = ncol(standata$Y) * 
                                             (ncol(standata$Y) - 1) / 2) 
-  } else if (indicate_hurdle(family) || indicate_zero_inflated(family)) {
+  } else if (is.hurdle(family) || is.zero_inflated(family)) {
     # the second half of Y is not used because it is only dummy data
     # that was put into data to make melt work correctly
     standata$Y <- standata$Y[1:(nrow(data) / 2)] 

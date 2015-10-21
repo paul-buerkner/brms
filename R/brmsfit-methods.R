@@ -115,7 +115,7 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, ...) {
 VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
-  if (!(length(x$ranef) || (indicate_linear(x$family) && 
+  if (!(length(x$ranef) || (is.linear(x$family) && 
                             any(grepl("^sigma_", parnames(x))))))
     stop("The model does not contain covariance matrices")
 
@@ -187,7 +187,7 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
   } 
   
   # special treatment of residuals variances in linear models
-  if (indicate_sigma(x$family, se = ee$se, autocor = x$autocor)) {
+  if (has_sigma(x$family, se = ee$se, autocor = x$autocor)) {
     cor_pars <- get_cornames(ee$response, type = "rescor", brackets = FALSE)
     p <- lc(p, list(rnames = ee$response, sd_pars = paste0("sigma_",ee$response),
                     cor_pars = cor_pars))
@@ -347,7 +347,7 @@ summary.brmsfit <- function(object, waic = TRUE, ...) {
     spec_pars <- pars[pars %in% c("nu","shape","delta") | 
       apply(sapply(c("^sigma_", "^rescor_"), grepl, x = pars), 1, any)]
     out$spec_pars <- matrix(fit_summary$summary[spec_pars,-c(2)], ncol = 6)
-    if (indicate_linear(object$family)) {
+    if (is.linear(object$family)) {
       spec_pars[grepl("^sigma_", spec_pars)] <- paste0("sigma(",ee$response,")")
       spec_pars[grepl("^rescor_", spec_pars)] <- get_cornames(ee$response, type = "rescor")   
     }    
@@ -618,11 +618,11 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   nresp <- length(ee$response)
   samples <- list(eta = linear_predictor(object, newdata = data, 
                                          re_formula = re_formula))
-  if (indicate_sigma(object$family, se = ee$se, autocor = object$autocor))
+  if (has_sigma(object$family, se = ee$se, autocor = object$autocor))
     samples$sigma <- as.matrix(posterior_samples(object, pars = "^sigma_"))
   if (object$family == "student") 
     samples$nu <- as.matrix(posterior_samples(object, pars = "^nu$"))
-  if (indicate_shape(object$family)) 
+  if (has_shape(object$family)) 
     samples$shape <- as.matrix(posterior_samples(object, pars = "^shape$"))
   if (object$family == "gaussian" && nresp > 1) {
     samples$rescor <- as.matrix(posterior_samples(object, pars = "^rescor_"))
@@ -645,7 +645,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     samples$ar <- as.matrix(posterior_samples(object, pars = "^ar\\["))
   } 
   
-  is_catordinal <- indicate_ordinal(family) || family == "categorical"
+  is_catordinal <- is.ordinal(family) || family == "categorical"
   # see predict.R
   predict_fun <- get(paste0("predict_", family), mode = "function")
   call_predict_fun <- function(n) {
@@ -791,7 +791,7 @@ residuals.brmsfit <- function(object, re_formula = NULL, type = c("ordinary", "p
   type <- match.arg(type)
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
-  if (indicate_ordinal(object$family) || object$family == "categorical")
+  if (is.ordinal(object$family) || object$family == "categorical")
     stop(paste("residuals not yet implemented for family", object$family))
   
   standata <- standata(object)
@@ -906,11 +906,11 @@ logLik.brmsfit <- function(object, ...) {
   
   # extract relevant samples
   samples <- list(eta = linear_predictor(object))
-  if (indicate_sigma(object$family, se = ee$se, autocor = object$autocor))
+  if (has_sigma(object$family, se = ee$se, autocor = object$autocor))
     samples$sigma <- as.matrix(posterior_samples(object, pars = "^sigma_"))
   if (object$family == "student") 
     samples$nu <- as.matrix(posterior_samples(object, pars = "^nu$"))
-  if (indicate_shape(object$family)) 
+  if (has_shape(object$family)) 
     samples$shape <- as.matrix(posterior_samples(object, pars = "^shape$"))
   if (object$family == "gaussian" && nresp > 1) {
     samples$rescor <- as.matrix(posterior_samples(object, pars = "^rescor_"))

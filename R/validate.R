@@ -97,9 +97,9 @@ extract_effects <- function(formula, ..., family = NA) {
   
   # extract response variables
   x$response <- all.vars(x$all[[2]])
-  if (indicate_hurdle(family)) {
+  if (is.hurdle(family)) {
     x$response <- c(x$response, paste0("hu_", x$response))
-  } else if (indicate_zero_inflated(family)) {
+  } else if (is.zero_inflated(family)) {
     x$response <- c(x$response, paste0("zi_", x$response))
   }
   if (length(x$response) > 1) {
@@ -224,19 +224,19 @@ family.character <- function(object, link = NA, ...) {
                paste(okFamilies, collapse = ", ")))
   
   # check validity of link
-  if (indicate_linear(family)) {
+  if (is.linear(family)) {
     okLinks <- c("identity", "log", "inverse")
   } else if (family == "inverse.gaussian") {
     okLinks <- c("1/mu^2", "inverse", "identity", "log")
-  } else if (indicate_count(family)) {
+  } else if (is.count(family)) {
     okLinks <- c("log", "identity", "sqrt")
-  } else if (indicate_binary(family) || indicate_ordinal(family)) {
+  } else if (is.binary(family) || is.ordinal(family)) {
     okLinks <- c("logit", "probit", "probit_approx", "cloglog", "cauchit")
   } else if (family == "categorical") {
     okLinks <- c("logit")
-  } else if (indicate_skewed(family)) {
+  } else if (is.skewed(family)) {
     okLinks <- c("log", "identity", "inverse")
-  } else if (indicate_hurdle(family) || indicate_zero_inflated(family))
+  } else if (is.hurdle(family) || is.zero_inflated(family))
     okLinks <- c("log")
   if (is.na(link)) {
     link <- okLinks[1]
@@ -583,7 +583,7 @@ get_prior <- function(formula, data = NULL, family = "gaussian",
     }
   }
   # handle additional parameters
-  is_ordinal <- indicate_ordinal(family)
+  is_ordinal <- is.ordinal(family)
   is_linear <- family %in% c("gaussian", "student", "cauchy")
   if (get_ar(autocor)) 
     prior <- rbind(prior, prior_frame(class = "ar"))
@@ -591,7 +591,7 @@ get_prior <- function(formula, data = NULL, family = "gaussian",
     prior <- rbind(prior, prior_frame(class = "ma"))
   if (get_arr(autocor)) 
     prior <- rbind(prior, prior_frame(class = "arr"))
-  if (indicate_sigma(family, se = is.formula(ee$se), autocor = autocor))
+  if (has_sigma(family, se = is.formula(ee$se), autocor = autocor))
     prior <- rbind(prior, prior_frame(class = "sigma", 
                                       coef = c("", ee$response),
                                       prior = c(default_scale_prior, 
@@ -683,7 +683,7 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
   if (length(Int_index)) {
     Int_prior <- prior[Int_index, ] 
     # Intercepts have their own internal parameter class
-    is_ordinal <- indicate_ordinal(family)
+    is_ordinal <- is.ordinal(family)
     Int_prior$class <- ifelse(is_ordinal && threshold == "equidistant", 
                               "b_Intercept1", "b_Intercept")
     Int_prior$coef <- ""

@@ -389,7 +389,7 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
     eta <- arma_predictor(data = data, ar = ar, ma = ma, 
                           eta = eta, link = x$link)
   }
-  if (indicate_ordinal(x$family)) {
+  if (is.ordinal(x$family)) {
     Intercept <- posterior_samples(x, "^b_Intercept\\[")
     if (!is.null(data$Xp) && ncol(data$Xp)) {
       p <- posterior_samples(x, paste0("^b_",colnames(data$Xp),"\\["))
