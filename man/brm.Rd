@@ -133,10 +133,6 @@ Fit a Bayesian generalized linear or ordinal mixed model using Stan
 \details{
 Fit a generalized linear mixed model, which incorporates both fixed-effects parameters
   and random effects in a linear predictor via full bayesian inference using Stan.
-  During warmup aka burnin phase, Stan may print out quite a few informational messages that \cr
-  \code{"the current Metropolis proposal is about the be rejected ..."}. \cr
-  These messages can be ignored in nearly all cases.
-  Use \code{silent = TRUE} to stop these messages from being printed out. \cr
 
   \bold{Formula syntax}
 
@@ -307,8 +303,8 @@ plot(fit_i)
 ## Surivival Regression (with family 'weibull') modeling time between
 ## first and second recurrence of an infection in kidney patients
 ## time | cens indicates which values in variable time are right censored
-fit_k <- brm(time | cens(censored) ~ age + sex + disease, data = kidney,
-             family = "weibull", silent = TRUE, inits = "0")
+fit_k <- brm(time | cens(censored) ~ age + sex + disease + (1|patient),
+             data = kidney, family = "weibull", inits = "0")
 summary(fit_k)
 plot(fit_k)
 

@@ -2,7 +2,7 @@
 % Please edit documentation in R/validate.R
 \name{set_prior}
 \alias{set_prior}
-\title{Prior Deinitions for \pkg{brms} Models}
+\title{Prior Definitions for \pkg{brms} Models}
 \usage{
 set_prior(prior, class = "b", coef = "", group = "")
 }

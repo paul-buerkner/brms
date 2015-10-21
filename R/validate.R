@@ -303,7 +303,7 @@ remove_chains <- function(i, sflist) {
   }
 }
 
-#' Prior Deinitions for \pkg{brms} Models
+#' Prior Definitions for \pkg{brms} Models
 #'
 #' Define priors for specific parameters or classes of parameters
 #'
@@ -538,7 +538,7 @@ get_prior <- function(formula, data = NULL, family = "gaussian",
     }
     suggested_scale <- round(sd(link(Y, link = link)))
     if (!is.nan(suggested_scale)) {
-      prior_scale <- max(prior_scale, suggested_scale)
+      prior_scale <- max(prior_scale, suggested_scale, na.rm = TRUE)
     } 
   }
   default_scale_prior <- paste0("cauchy(0,", prior_scale, ")")
