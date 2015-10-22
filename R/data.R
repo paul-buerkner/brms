@@ -147,9 +147,9 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
   
   # response variable
   standata <- list(N = nrow(data), Y = unname(model.response(data)))
-  if (!is.numeric(standata$Y) && !(is_ordinal || family %in% c("bernoulli", "categorical"))) 
+  if (!(is_ordinal || family %in% c("bernoulli", "categorical")) 
+      && !is.numeric(standata$Y)) 
     stop(paste("family", family, "expects numeric response variable"))
-  
   # transform and check response variable for different families
   if (is_count || family == "binomial") {
     if (!all(is.wholenumber(standata$Y)) || min(standata$Y) < 0)
@@ -184,6 +184,12 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
     # that was put into data to make melt work correctly
     standata$Y <- standata$Y[1:(nrow(data) / 2)] 
     standata$N_trait <- length(standata$Y)
+  }
+  
+  # add an offset if present
+  model_offset <- model.offset(data)
+  if (!is.null(model_offset)) {
+    standata$offset <- model_offset
   }
   
   # fixed effects data

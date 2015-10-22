@@ -26,6 +26,7 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
   is_categorical <- family == "categorical"
   sigma <- has_sigma(family, se = ee$se, autocor = autocor)
   shape <- has_shape(family)
+  offset <- !is.null(model.offset(data)) 
   trunc <- get_boundaries(ee$trunc)  
   
   if (is_categorical) {
@@ -67,7 +68,7 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
                        has_intercept = has_intercept, paref = paref,  
                        group = ee$group, autocor = autocor,
                        add = is.formula(ee[c("weights", "cens", "trunc")]),
-                       cov_arma = cov_arma)
+                       cov_arma = cov_arma, offset = offset)
   text_arma <- stan_arma(family = family, link = link, 
                          autocor = autocor, 
                          cov_arma = cov_arma)
@@ -153,7 +154,9 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
              "  matrix[N, K] X;  # FE design matrix \n"),
     if (length(paref)) 
       paste0("  int<lower=1> Kp;  # number of category specific effects \n",
-             "  matrix[N, Kp] Xp;  # CSE design matrix \n"),  
+             "  matrix[N, Kp] Xp;  # CSE design matrix \n"),
+    if (offset)
+      "  vector[N] offset;  # added to the linear predictor \n",
     if (Kar || Kma) 
       paste0("  # data needed for ARMA effects \n",
              "  int<lower=0> Kar;  # AR order \n",
@@ -210,6 +213,9 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
        text_ranef$tdataC,
     "} \n")
   
+  # restrict ARMA effects to be in [-1,1] when using covariance
+  # formulation as they cannot be outside this interval anyway
+  restrict <- ifelse(cov_arma, "<lower=-1, upper=1>", "")
   text_parameters <- paste0(
     "parameters { \n",
     if (has_intercept) {
@@ -227,9 +233,9 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
       paste0("  matrix[Kp, ncat - 1] bp;  # category specific effects \n"),
     text_ranef$par,
     if (Kar) 
-      "  vector[Kar] ar;  # autoregressive effects \n",
+      paste0("  vector", restrict, "[Kar] ar;  # autoregressive effects \n"),
     if (Kma) 
-      "  vector[Kma] ma;  # moving-average effects \n",
+      paste0("  vector", restrict, "[Kma] ma;  # moving-average effects \n"),
     if (get_arr(autocor)) 
       "  vector[Karr] arr;  # autoregressive effects of the response \n",
     if (sigma)
@@ -540,7 +546,7 @@ stan_llh <- function(family, link, se = FALSE, weights = FALSE,
 
 stan_eta <- function(family, link, fixef, has_intercept = TRUE, 
                      paref = NULL, group = NULL, autocor = cor_arma(), 
-                     add = FALSE, cov_arma = FALSE) {
+                     add = FALSE, cov_arma = FALSE, offset = FALSE) {
   # linear predictor in Stan
   #
   # Args:
@@ -553,6 +559,7 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE,
   #   add: is the model weighted, censored, or truncated?
   #   cov_arma: logical; are ARMA effects modeled using a special 
   #             covariance matrix?
+  #   offset: is an offset defined?
   # 
   # Return:
   #   the linear predictor in stan language
@@ -611,7 +618,8 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE,
   eta$transC1 <- paste0("  # compute linear predictor \n",
                         "  eta <- ", ifelse(length(fixef), "X * b", "rep_vector(0, N)"), 
                         if (has_intercept && !(is_ordinal || is_cat)) " + b_Intercept",
-                        if (get_arr(autocor)) " + Yarr * arr", "; \n", 
+                        if (offset) " + offset",
+                        if (get_arr(autocor)) " + Yarr * arr", "; \n",
                         etap)
   if (length(group)) {
     ind <- 1:length(group)

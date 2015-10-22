@@ -331,12 +331,16 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
   }
   
   ee <- extract_effects(x$formula, family = x$family)
-  n.samples <- nrow(posterior_samples(x, pars = "^lp__$"))
-  eta <- matrix(0, nrow = n.samples, ncol = data$N)
+  n_samples <- nrow(posterior_samples(x, pars = "^lp__$"))
+  eta <- matrix(0, nrow = n_samples, ncol = data$N)
   X <- data$X
   if (!is.null(X) && ncol(X) && x$family != "categorical") {
     b <- posterior_samples(x, pars = "^b_[^\\[]+$")
     eta <- eta + fixef_predictor(X = X, b = b)  
+  }
+  if (!is.null(data$offset)) {
+    eta <- eta + matrix(rep(data$offset, n_samples), 
+                        ncol = data$N, byrow = TRUE)
   }
   
   group <- names(x$ranef)
@@ -389,6 +393,8 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
     eta <- arma_predictor(data = data, ar = ar, ma = ma, 
                           eta = eta, link = x$link)
   }
+  
+  # transform eta to to etap for ordinal and categorical models
   if (is.ordinal(x$family)) {
     Intercept <- posterior_samples(x, "^b_Intercept\\[")
     if (!is.null(data$Xp) && ncol(data$Xp)) {
