@@ -166,7 +166,7 @@ get_ar <- function(x) {
   # get AR (autoregressive effects of residuals) order 
   # and ensure backwards compatibility with old models (brms <= 0.5.0),
   # for which AR effects were not implemented in the present form
-  if (!is(x, "cor_arma")) {
+  if (!(is(x, "cor_arma") || is(x, "cor.arma"))) {
     stop("x must be of class cor_arma")
   }
   if (is.null(x$r)) {
@@ -179,6 +179,9 @@ get_ar <- function(x) {
 
 get_ma <- function(x) {
   # get MA (moving-average) order
+  if (!(is(x, "cor_arma") || is(x, "cor.arma"))) {
+    stop("x must be of class cor_arma")
+  }
   x$q
 }
 
@@ -186,7 +189,7 @@ get_arr <- function(x) {
   # get ARR (autoregressive effects of the response) order 
   # and ensure backwards compatibility with old models (brms <= 0.5.0),
   # for which ARR was labled as AR
-  if (!is(x, "cor_arma")) {
+  if (!(is(x, "cor_arma") || is(x, "cor.arma"))) {
     stop("x must be of class cor_arma")
   }
   if (is.null(x$r)) {
