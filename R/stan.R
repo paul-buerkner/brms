@@ -115,7 +115,8 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
     if (is_multi) 
       paste0(stan_prior(class = "sigma", coef = ee$response, prior = prior),
              stan_prior(class = "Lrescor", prior = prior)),
-    text_ranef$model)
+    text_ranef$model,
+    stan_prior(class = "", prior = prior))
   # generate code to additionally sample from priors if sample.prior = TRUE
   text_rngprior <- stan_rngprior(sample.prior = sample.prior, 
                                  prior = text_prior, family = family)
@@ -1122,12 +1123,17 @@ stan_prior <- function(class, coef = NULL, group = NULL,
   #   and also no internal default in stan_prior, an empty string is returned.
   
   # only consider user defined priors related to this class and group
+  s <- collapse(rep(" ", s))
   keep <- which(prior$class == class & (prior$coef %in% coef | !nchar(prior$coef)))
   user_prior <- prior[keep, ]
   if (!is.null(group)) {
     keep2 <- which(user_prior$group == group | !nchar(user_prior$group))
     user_prior <- user_prior[keep2, ]
   }
+  if (!nchar(class) && nrow(user_prior)) {
+    # increment_log_prob statements are directly put into the Stan code
+    return(collapse(s, user_prior$prior, "; \n"))
+  } 
   
   # get base prior
   igroup <- which(with(user_prior, !nchar(coef) & nchar(group) & nchar(prior)))
@@ -1164,7 +1170,7 @@ stan_prior <- function(class, coef = NULL, group = NULL,
       return("")  # implies an improper flat prior
     }
   }
-  s <- collapse(rep(" ", s))
+  
   if (!is.null(group)) {
     class <- paste0(class,"_",group)
   }
@@ -1198,7 +1204,7 @@ stan_rngprior <- function(sample.prior, prior, family = "gaussian") {
     prior <- gsub(" ", "", paste0("\n",prior))
     pars <- gsub("\\\n|to_vector\\(|\\)", "", 
                  regmatches(prior, gregexpr("\\\n[^~]+", prior))[[1]])
-    take <- !grepl("^pre_", pars)
+    take <- !grepl("^pre_|^increment_log_prob\\(", pars)
     pars <- rename(pars[take], symbols = c("^L_", "^Lrescor"), 
                    subs = c("cor_", "rescor"), 
                    fixed = FALSE)

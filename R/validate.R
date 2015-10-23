@@ -467,6 +467,11 @@ set_prior <- function(prior, class = "b", coef = "", group = "") {
     stop(paste("argument group not meaningful for class", class))
   if (nchar(coef) && !class %in% c("b", "sd", "sigma"))
     stop(paste("argument coef not meaningful for class", class))
+  if (grepl("^increment_log_prob\\(", prior)) {
+    # increment_log_prob can be used to directly add a term 
+    # to the log posterior
+    class <- coef <- group <- ""
+  }
   out <- list(prior = prior, class = class, coef = coef, group = group)
   class(out) <- c("brmsprior", "list")
   out
@@ -647,6 +652,11 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
     stop("Invalid input for argument prior. See help(set_prior) for further information.")
   }
   
+  # exclude prior using increment_log_prob to readd the at the end
+  has_incr_lp <- grepl("^increment_log_prob\\(", prior$prior)
+  prior_incr_lp <- prior[has_incr_lp, ]
+  prior <- prior[!has_incr_lp, ]
+  
   prior$class <- rename(prior$class, symbols = c("^cor$", "^rescor$"), 
                         subs = c("L", "Lrescor"), fixed = FALSE)
   duplicated_input <- duplicated(prior[, 2:4])
@@ -657,12 +667,14 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
   prior$prior <- sub("^lkj\\(", "lkj_corr_cholesky(", prior$prior)
   
   # check if parameters in prior are valid
-  valid <- which(duplicated(rbind(all_prior[, 2:4], prior[, 2:4])))
-  invalid <- which(!1:nrow(prior) %in% (valid - nrow(all_prior)))
-  if (length(invalid)) {
-    message(paste("Prior element", paste(invalid, collapse = ", "),
-                  "is invalid and will be removed."))
-    prior <- prior[-invalid, ]
+  if (nrow(prior)) {
+    valid <- which(duplicated(rbind(all_prior[, 2:4], prior[, 2:4])))
+    invalid <- which(!1:nrow(prior) %in% (valid - nrow(all_prior)))
+    if (length(invalid)) {
+      message(paste("Prior element", paste(invalid, collapse = ", "),
+                    "is invalid and will be removed."))
+      prior <- prior[-invalid, ]
+    }
   }
   
   # merge prior with all_prior
@@ -724,6 +736,7 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
     prior <- prior[-rows2remove, ]
   }
   prior <- prior[with(prior, order(class, group, coef)), ]
+  prior <- rbind(prior, prior_incr_lp)
   rownames(prior) <- 1:nrow(prior)
   prior
 }
@@ -772,7 +785,8 @@ prior_frame <- function(prior = "", class = "", coef = "", group = "") {
 print.brmsprior <- function(x, ...) {
   group <- ifelse(nchar(x$group), paste0("_", x$group), "")
   coef <- ifelse(nchar(x$coef), paste0("_", x$coef), "")
-  cat(paste0("Prior: ", x$class, group, coef, " ~ ", x$prior))    
+  tilde <- ifelse(nchar(x$class) + nchar(group) + nchar(coef), " ~ ", "")
+  cat(paste0("Prior: ", x$class, group, coef, tilde, x$prior))    
 }
 
 #' @export

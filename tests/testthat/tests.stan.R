@@ -34,6 +34,13 @@ test_that("Test that stan_prior can remove default priors", {
   expect_equal(stan_prior("shape", prior = prior), "")
 })
 
+test_that("Test that stan_prior passes increment_log_prob statements without changes", {
+  prior <- prior_frame(prior = c("increment_log_prob(a)", "increment_log_prob(b)"), 
+                       class = rep("", 2))
+  expect_equal(stan_prior("", prior = prior),
+               "  increment_log_prob(a); \n  increment_log_prob(b); \n")
+})
+
 test_that("Test that stan_eta returns correct strings for autocorrelation models", {
   expect_match(stan_eta(family = "student", link = "log", f = c("Trt_c"),
                         autocor = cor_arma(~visit|patient, p = 2))$transC3,

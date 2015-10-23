@@ -162,6 +162,15 @@ test_that("Test that check_prior rejects incorrect prior names", {
                              data = epilepsy))
 })
 
+test_that("Test that check_prior returns increment_log_prob(.) whithout checking", {
+  expect_equivalent(check_prior(c(set_prior("increment_log_prob(p1)"),
+                                  set_prior("p2", class = "b")),
+                                formula = count ~ Trt_c, 
+                                data = epilepsy)[c(1,7), ],
+                    prior_frame(c("p2", "increment_log_prob(p1)"), 
+                                class = c("b", "")))
+}) 
+
 test_that("Test that check_family rejects invalid families", {
   expect_error(check_family("multigaussian"),
                "family 'multigaussian' is deprecated. Use family 'gaussian' instead")
