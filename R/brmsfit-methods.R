@@ -258,8 +258,11 @@ prior_samples.brmsfit <- function(x, pars = NA, parameters = NA, ...) {
     if (!anyNA(pars)) {
       get_samples <- function(par) {
         # get prior samples for parameter par 
+        is_partial <- grepl("^b_", par) && grepl("\\[[[:digit:]]+\\]", par)
+        # ensures correct parameter to prior mapping for partial effects
+        par_internal <- ifelse(is_partial, sub("^b_", "bp_", par), par)
         matches <- lapply(paste0("^",sub("^prior_", "", prior_names)), 
-                          regexpr, text = par)
+                          regexpr, text = par_internal)
         matches <- ulapply(matches, attr, which = "match.length")
         if (max(matches) == -1) {
           return(NULL)

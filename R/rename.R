@@ -89,8 +89,7 @@ rename_pars <- function(x) {
                               pnames = paste0("b_",p), fnames = pfnames,
                               sort = ulapply(1:lp, seq, to = thres*lp, by = lp),
                               dim = thres))
-    change <- c(change, prior_names(class = "bp", pars = pars, 
-                                    names = p, new_class = "b"))
+    change <- c(change, prior_names(class = "bp", pars = pars, names = p))
   }  
   
   if (length(x$ranef)) {
