@@ -39,7 +39,7 @@
 #' cor_arma(~visit|patient, p = 2, q = 2)
 #' 
 #' @export
-cor_arma <- function(formula = ~ 1, p = 0, q = 0, r = 0) {
+cor_arma <- function(formula = ~ 1, p = 0, q = 0, r = 0, cov = FALSE) {
   if (!(p >= 0 && (p == round(p)))) {
     stop("autoregressive order must be a non-negative integer")
   }
@@ -49,15 +49,19 @@ cor_arma <- function(formula = ~ 1, p = 0, q = 0, r = 0) {
   if (!(r >= 0 && (r == round(r)))) {
     stop("response autoregressive order must be a non-negative integer")
   }
-  x <- list(formula = formula, p = p, q = q, r = r)
+  if (cov && (p > 1 || q > 1)) {
+    stop(paste("covariance formulation of ARMA structures", 
+               "is only possible for effects of maximal order 1"))
+  }
+  x <- list(formula = formula, p = p, q = q, r = r, cov = as.logical(cov))
   class(x) <- c("cor_arma", "cor_brms")
   x
 }
 
 #' @export
-cor.arma <- function(formula = ~ 1, p = 0, q = 0, r = 0) {
+cor.arma <- function(formula = ~ 1, p = 0, q = 0, r = 0, cov = FALSE) {
   # deprecated alias of cor_carma
-  cor_arma(formula = formula, p = p, q = q, r = r)
+  cor_arma(formula = formula, p = p, q = q, r = r, cov = cov)
 }
 
 #' AR(p) correlation structure
@@ -84,14 +88,14 @@ cor.arma <- function(formula = ~ 1, p = 0, q = 0, r = 0) {
 #' cor_ar(~visit|patient, p = 2)
 #' 
 #' @export
-cor_ar <- function(formula = ~ 1, p = 1) {
-  cor_arma(formula = formula, p = p, q = 0, r = 0)
+cor_ar <- function(formula = ~ 1, p = 1, cov = FALSE) {
+  cor_arma(formula = formula, p = p, q = 0, r = 0, cov = cov)
 }
 
 #' @export
-cor.ar <- function(formula = ~ 1, p = 1) {
+cor.ar <- function(formula = ~ 1, p = 1, cov = FALSE) {
   # deprecated alias of cor_ar
-  cor_ar(formula = formula, p = p)
+  cor_ar(formula = formula, p = p, cov = cov)
 }
   
 #' MA(q) correlation structure
@@ -112,14 +116,14 @@ cor.ar <- function(formula = ~ 1, p = 1) {
 #' cor_ma(~visit|patient, q = 2)
 #' 
 #' @export
-cor_ma <- function(formula = ~ 1, q = 1) {
-  cor_arma(formula = formula, p = 0, q = q, r = 0)
+cor_ma <- function(formula = ~ 1, q = 1, cov = FALSE) {
+  cor_arma(formula = formula, p = 0, q = q, r = 0, cov = cov)
 }
 
 #' @export
-cor.ma <- function(formula = ~ 1, q = 1) {
+cor.ma <- function(formula = ~ 1, q = 1, cov = FALSE) {
   # deprecated alias of cor_ma
-  cor_ma(formula = formula, q = q)
+  cor_ma(formula = formula, q = q, cov = cov)
 }
 
 #' ARR(r) correlation structure
@@ -197,6 +201,17 @@ get_arr <- function(x) {
     x$p
   } else {
     x$r
+  }
+}
+
+use_cov <- function(x) {
+  if (!(is(x, "cor_arma") || is(x, "cor.arma"))) {
+    stop("x must be of class cor_arma")
+  }
+  if (!is.null(x$cov)) {
+    x$cov
+  } else {
+    FALSE
   }
 }
 

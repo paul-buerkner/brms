@@ -63,24 +63,24 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
   text_ranef <- collapse_lists(text_ranef)
   
   # generate important parts of the stan code
-  cov_arma <- has_cov_arma(autocor, se = ee$se, family = family, link = link)
+  #cov_arma <- has_cov_arma(autocor, se = ee$se, family = family, link = link)
   text_eta <- stan_eta(family = family, link = link, fixef = fixef, 
                        has_intercept = has_intercept, paref = paref,  
                        group = ee$group, autocor = autocor,
                        add = is.formula(ee[c("weights", "cens", "trunc")]),
-                       cov_arma = cov_arma, offset = offset)
+                       offset = offset)
   text_arma <- stan_arma(family = family, link = link, 
-                         autocor = autocor, 
-                         cov_arma = cov_arma)
+                         autocor = autocor, se = is.formula(ee$se))
   text_ordinal <- stan_ordinal(family = family, link = link, 
                                partial = length(paref), 
                                threshold = threshold)  
   text_multi <- stan_multi(family, response = ee$response)
-  text_llh <- stan_llh(family, link = link, se = is.formula(ee$se),  
+  text_llh <- stan_llh(family, link = link,
+                       se = is.formula(ee$se),  
                        weights = is.formula(ee$weights),
                        trials = is.formula(ee$trials),
                        cens = is.formula(ee$cens),
-                       trunc = trunc, cov_arma = cov_arma)
+                       trunc = trunc, autocor = autocor)
   if (is.formula(ee$cens) || is.formula(ee$weights) || is.formula(ee$trunc) ||
       is_ordinal || is_categorical || is_hurdle || is_zero_inflated) {
     text_llh <- paste0("  for (n in 1:N",trait,") { \n  ",text_llh,"  } \n")
@@ -128,7 +128,7 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
                                    weights = is.formula(ee$weights),
                                    cens = is.formula(ee$cens),
                                    trunc = is.formula(ee$trunc),
-                                   cov_arma = cov_arma,
+                                   autocor = autocor,
                                    kronecker = kronecker)
   is_real_Y <- is_linear || is_skewed || family == "inverse.gaussian"
   is_int_Y <- family %in% c("binomial", "bernoulli", "categorical") || 
@@ -165,8 +165,8 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
              "  int<lower=1> Karma;  # max(Kma, Kar) \n",
              "  matrix[N, Karma] E_pre; # matrix of zeros \n",
              "  vector[N] tgroup;  # indicates independent groups \n",
-             if (cov_arma) paste0(
-             "  # see the normal_ar1_log function for details \n",
+             if (use_cov(autocor)) paste0(
+             "  # see the normal_arma_log function for details \n",
              "  int<lower=1> N_tg; \n",   
              "  int<lower=1> begin_tg[N_tg]; \n",
              "  int<lower=1> nrows_tg[N_tg]; \n",
@@ -175,7 +175,7 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
       paste0("  # data needed for ARR effects \n",
              "  int<lower=1> Karr; \n",
              "  matrix[N, Karr] Yarr;  # ARR design matrix \n"),
-    if (is_linear && is.formula(ee$se) && !cov_arma)
+    if (is_linear && is.formula(ee$se) && !use_cov(autocor))
       "  vector<lower=0>[N] se;  # SEs for meta-analysis \n",
     if (is.formula(ee$weights))
       paste0("  vector<lower=0>[N",trait,"] weights;  # model weights \n"),
@@ -216,7 +216,7 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
   
   # restrict ARMA effects to be in [-1,1] when using covariance
   # formulation as they cannot be outside this interval anyway
-  restrict <- ifelse(cov_arma, "<lower=-1, upper=1>", "")
+  restrict <- ifelse(use_cov(autocor), "<lower=-1, upper=1>", "")
   text_parameters <- paste0(
     "parameters { \n",
     if (has_intercept) {
@@ -402,7 +402,7 @@ stan_ranef <- function(i, ranef, group, cor, prior = list(),
 
 stan_llh <- function(family, link, se = FALSE, weights = FALSE, 
                      trials = FALSE, cens = FALSE, trunc = .trunc(), 
-                     cov_arma = FALSE) {
+                     autocor = cor_arma()) {
   # Likelihoods in stan language
   #
   # Args:
@@ -413,8 +413,7 @@ stan_llh <- function(family, link, se = FALSE, weights = FALSE,
   #   trials: logical; number of bernoulli trials given per observation?
   #   cens: logical; censored data?
   #   trunc: list containing lower and upper truncation boundaries
-  #   cov_arma: logical; are ARMA effects modeled using a special 
-  #             covariance matrix?
+  #   autocor: autocorrelation structure; an object of classe cor_arma
   #
   # Returns:
   #   a string containing the likelihood of the model in stan language
@@ -430,10 +429,9 @@ stan_llh <- function(family, link, se = FALSE, weights = FALSE,
     family <- "lognormal"
     link <- "identity"
   }
-  if (cov_arma) {
-    # ARMA models have a special implementation
-    # for models with user defined SEs
-    # currently only AR1 is supported
+  if (use_cov(autocor)) {
+    # ARMA effects have a special formulation
+    # if fitted using a covariance matrix for residuals
     family <- "gaussian_arma"
     if (weights || cens || is_trunc) {
       stop("Invalid addition arguments")
@@ -489,8 +487,8 @@ stan_llh <- function(family, link, se = FALSE, weights = FALSE,
       multinormal = c("multi_normal_cholesky", 
                       paste0("etam",n,", diag_pre_multiply(sigma, Lrescor)")),
       lognormal = c("lognormal", paste0(eta,", sigma",ns)),
-      gaussian_arma = c("normal_arma", paste0(eta,", ar[1], sigma, squared_se, N_tg, \n", 
-                        "                  begin_tg, nrows_tg, arma_matrix")),
+      gaussian_arma = c("normal_arma", paste0(eta,", squared_se, N_tg, ", 
+                                         "begin_tg, nrows_tg, arma_matrix")),
       inverse.gaussian = c("inv_gaussian", 
                            paste0(eta, ", shape, log_Y",n,", sqrt_Y",n)),
       poisson = c("poisson", eta),
@@ -547,7 +545,7 @@ stan_llh <- function(family, link, se = FALSE, weights = FALSE,
 
 stan_eta <- function(family, link, fixef, has_intercept = TRUE, 
                      paref = NULL, group = NULL, autocor = cor_arma(), 
-                     add = FALSE, cov_arma = FALSE, offset = FALSE) {
+                     add = FALSE, offset = FALSE) {
   # linear predictor in Stan
   #
   # Args:
@@ -558,8 +556,6 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE,
   #   group: names of the grouping factors
   #   autocor: autocorrelation structure
   #   add: is the model weighted, censored, or truncated?
-  #   cov_arma: logical; are ARMA effects modeled using a special 
-  #             covariance matrix?
   #   offset: is an offset defined?
   # 
   # Return:
@@ -592,7 +588,7 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE,
                      || is_binary && link == "logit"
                      || family == "hurdle_gamma")
   eta_ilink <- rep("", 2)
-  if (eta$transform || (get_ar(autocor) && !cov_arma)) {
+  if (eta$transform || (get_ar(autocor) && !use_cov(autocor))) {
     fl <- ifelse(family %in% c("gamma", "exponential"), 
                  paste0(family,"_",link), family)
     eta_ilink <- switch(fl, c(paste0(ilink,"("), ")"),
@@ -604,7 +600,7 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE,
                         exponential_identity = c("inv(", ")"),
                         weibull = c(paste0(ilink,"(("), ") / shape)"))
     if (get_ma(autocor) || get_ar(autocor)) {
-      eta_ar <- ifelse(!cov_arma, " + head(E[n], Kar) * ar", "")
+      eta_ar <- ifelse(!use_cov(autocor), " + head(E[n], Kar) * ar", "")
       eta$transC3 <- paste0("    ", s, eta_obj," <- ",eta_ilink[1], 
                             eta_obj, eta_ar, eta_ilink[2],"; \n")
       eta_ilink <- rep("", 2)  
@@ -628,7 +624,8 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE,
   } else {
     eta_re <- ""
   }
-  eta_ma <- ifelse(get_ma(autocor), " + head(E[n], Kma) * ma", "")
+  eta_ma <- ifelse(get_ma(autocor) && !use_cov(autocor), 
+                   " + head(E[n], Kma) * ma", "")
   if (nchar(eta_re) || nchar(eta_ma) || is_multi || nchar(eta_ilink[1])) {
     eta$transC2 <- paste0("    ",s, eta_obj," <- ",
                           eta_ilink[1],"eta[n]", eta_ma, eta_re, eta_ilink[2],"; \n")
@@ -636,16 +633,14 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE,
   eta
 }
 
-stan_arma <- function(family, link, autocor, cov_arma = FALSE) {
+stan_arma <- function(family, link, autocor, se = FALSE) {
   # moving average autocorrelation in Stan
   # 
   # Args:
   #   family: the model family
   #   link: the link function
-  #   autocor: autocorrelation structure
-  #   se: user defined SEs present?
-  #   cov_arma: logical; are ARMA effects modeled using a special 
-  #             covariance matrix?
+  #   autocor: autocorrelation structure; object of class cor_arma
+  #   se: user defined standard errors present?
   #
   # Returns:
   #   stan code for computing moving average effects
@@ -659,13 +654,28 @@ stan_arma <- function(family, link, autocor, cov_arma = FALSE) {
     if (!(is_linear || is_multi)) {
       stop(paste("ARMA effects for family", family, "are not yet implemented"))
     }
-    if (cov_arma) {
-      # if the user has specified standard errors (cov_arma = TRUE),
-      # most computation is done within the functions block
+    if (use_cov(autocor) && (Kar || Kma)) {
+      # if the user wants ARMA effects to be estimated using
+      # a covariance matrix for residuals
       out$transD <- "  matrix[max(nrows_tg), max(nrows_tg)] arma_matrix; \n"
-      out$transC1 <- paste0("  arma_matrix <- cov_matrix_ar1", 
-                            "(ar[1], sigma, max(nrows_tg)); \n")
+      if (Kar && !Kma) {
+        cov_mat_fun <- "ar1"
+        cov_mat_args <- "ar[1]"
+      } else if (!Kar && Kma) {
+        cov_mat_fun <- "ma1"
+        cov_mat_args <- "ma[1]"
+      } else {
+        cov_mat_fun <- "arma1"
+        cov_mat_args <- "ar[1], ma[1]"
+      }
+      out$transC1 <- paste0("  # compute ARMA covariance matrix; \n",
+                            "  arma_matrix <- cov_matrix_", cov_mat_fun, 
+                            "(", cov_mat_args, ", sigma, max(nrows_tg)); \n")
     } else {
+      if (se) {
+        stop(paste("Plese set cov = TRUE in cor_arma / cor_ar / cor_ma",
+                    "when using meta-analytic standard errors"))
+      }
       index <- ifelse(is_multi, "m, k", "n")
       s <- ifelse(is_multi, "  ", "")
       out$transD <- paste0("  matrix[N, Karma] E;  # ARMA design matrix \n",
@@ -686,15 +696,16 @@ stan_arma <- function(family, link, autocor, cov_arma = FALSE) {
 
 stan_functions <- function(family = "gaussian", link = "identity", 
                            weights = FALSE, cens = FALSE, trunc = FALSE,
-                           cov_arma, kronecker = FALSE) {
+                           autocor = cor_arma(), kronecker = FALSE) {
   # stan code for user defined functions
   #
   # Args:
   #   family: the model family
   #   link: the link function
-  #   vectorize: indicate if vectorization of the response distribution is possible
-  #   cov_arma: logical; are ARMA effects modeled using a special 
-  #             covariance matrix?
+  #   weights: weights present?
+  #   cens: censored data?
+  #   truncated: truncated data?
+  #   autocor: object of class cor_arma
   #   kronecker: logical; is the kronecker product needed?
   #
   # Returns:
@@ -702,229 +713,210 @@ stan_functions <- function(family = "gaussian", link = "identity",
   out <- NULL
   if (link == "cauchit") 
     out <- paste0(out,
-      "  /* compute the inverse of the cauchit link \n",
-      "   * Args: \n",
-      "   *   y: the real value to be transformed \n",
-      "   * Returns: \n",
-      "   *   a scalar in (0,1) \n",
-      "   */ \n",
-      "  real inv_cauchit(real y) { \n",
-      "    real p; \n",
-      "    p <- cauchy_cdf(y, 0, 1); \n",
-      "    return p; \n",
-      "  } \n")
+    "  /* compute the inverse of the cauchit link \n",
+    "   * Args: \n",
+    "   *   y: the real value to be transformed \n",
+    "   * Returns: \n",
+    "   *   a scalar in (0,1) \n",
+    "   */ \n",
+    "  real inv_cauchit(real y) { \n",
+    "    real p; \n",
+    "    p <- cauchy_cdf(y, 0, 1); \n",
+    "    return p; \n",
+    "  } \n")
   if (family == "inverse.gaussian") {
     if (weights || cens || trunc) {
       out <- paste0(out,
-        "  /* inverse Gaussian log-PDF for a single response (for data only) \n",
-        "   * Copyright Stan Development Team 2015 \n",
-        "   * Args: \n",
-        "   *   y: the response value \n",
-        "   *   mu: positive mean parameter \n",
-        "   *   shape: positive shape parameter \n",
-        "   *   log_y: precomputed log(y) \n",
-        "   *   sqrt_y: precomputed sqrt(y) \n",
-        "   * Returns: \n", 
-        "   *   a scalar to be added to the log posterior \n",
-        "   */ \n",
-        "   real inv_gaussian_log(real y, real mu, real shape, \n", 
-        "                         real log_y, real sqrt_y) { \n",
-        "     return 0.5 * log(shape / (2 * pi())) - \n", 
-        "            1.5 * log_y - \n",
-        "            0.5 * shape * square((y - mu) / (mu * sqrt_y)); \n",
-        "   } \n")
+      "  /* inverse Gaussian log-PDF for a single response (for data only) \n",
+      "   * Copyright Stan Development Team 2015 \n",
+      "   * Args: \n",
+      "   *   y: the response value \n",
+      "   *   mu: positive mean parameter \n",
+      "   *   shape: positive shape parameter \n",
+      "   *   log_y: precomputed log(y) \n",
+      "   *   sqrt_y: precomputed sqrt(y) \n",
+      "   * Returns: \n", 
+      "   *   a scalar to be added to the log posterior \n",
+      "   */ \n",
+      "   real inv_gaussian_log(real y, real mu, real shape, \n", 
+      "                         real log_y, real sqrt_y) { \n",
+      "     return 0.5 * log(shape / (2 * pi())) - \n", 
+      "            1.5 * log_y - \n",
+      "            0.5 * shape * square((y - mu) / (mu * sqrt_y)); \n",
+      "   } \n")
     } else {
       out <- paste0(out, 
-        "  /* vectorized inverse Gaussian log-PDF (for data only) \n",
-        "   * Copyright Stan Development Team 2015 \n",
-        "   * Args: \n",
-        "   *   y: response vector \n",
-        "   *   mu: positive mean parameter vector \n",
-        "   *   shape: positive shape parameter \n",
-        "   *   sum_log_y: precomputed sum of log(y) \n",
-        "   *   sqrt_y: precomputed sqrt(y) \n",
-        "   * Returns: \n", 
-        "   *   a scalar to be added to the log posterior \n",
-        "   */ \n",
-        "   real inv_gaussian_log(vector y, vector mu, real shape, \n", 
-        "                         real sum_log_y, vector sqrt_y) { \n",
-        "     return 0.5 * rows(y) * log(shape / (2 * pi())) - \n", 
-        "            1.5 * sum_log_y - \n",
-        "            0.5 * shape * dot_self((y - mu) ./ (mu .* sqrt_y)); \n",
-        "   } \n")
+      "  /* vectorized inverse Gaussian log-PDF (for data only) \n",
+      "   * Copyright Stan Development Team 2015 \n",
+      "   * Args: \n",
+      "   *   y: response vector \n",
+      "   *   mu: positive mean parameter vector \n",
+      "   *   shape: positive shape parameter \n",
+      "   *   sum_log_y: precomputed sum of log(y) \n",
+      "   *   sqrt_y: precomputed sqrt(y) \n",
+      "   * Returns: \n", 
+      "   *   a scalar to be added to the log posterior \n",
+      "   */ \n",
+      "   real inv_gaussian_log(vector y, vector mu, real shape, \n", 
+      "                         real sum_log_y, vector sqrt_y) { \n",
+      "     return 0.5 * rows(y) * log(shape / (2 * pi())) - \n", 
+      "            1.5 * sum_log_y - \n",
+      "            0.5 * shape * dot_self((y - mu) ./ (mu .* sqrt_y)); \n",
+      "   } \n")
     } 
     if (cens || trunc) 
       out <- paste0(out,
-        "  /* inverse Gaussian log-CDF for a single quantile \n",
-        "   * Args: \n",
-        "   *   y: a quantile \n",
-        "   *   mu: positive mean parameter \n",
-        "   *   shape: positive shape parameter \n",
-        "   *   log_y: ignored (cdf and pdf should have the same args) \n",
-        "   *   sqrt_y: precomputed sqrt(y) \n",
-        "   * Returns: \n",
-        "   *   log(P(Y <= y)) \n",
-        "   */ \n",
-        "  real inv_gaussian_cdf_log(real y, real mu, real shape, \n", 
-        "                            real log_y, real sqrt_y) { \n",
-        "    return log(Phi(sqrt(shape) / sqrt_y * (y / mu - 1)) + \n",
-        "               exp(2 * shape / mu) * Phi(-sqrt(shape) / sqrt_y * (y / mu + 1))); \n",
-        "  } \n",
-        "  /* inverse Gaussian log-CCDF for a single quantile \n",
-        "   * Args: \n",
-        "   *   y: a quantile \n",
-        "   *   mu: positive mean parameter \n",
-        "   *   shape: positive shape parameter \n",
-        "   *   log_y: ignored (ccdf and pdf should have the same args) \n",
-        "   *   sqrt_y: precomputed sqrt(y) \n",
-        "   * Returns: \n",
-        "   *   log(P(Y > y)) \n",
-        "   */ \n",
-        "  real inv_gaussian_ccdf_log(real y, real mu, real shape, \n",
-        "                             real log_y, real sqrt_y) { \n",
-        "    return log(1 - Phi(sqrt(shape) / sqrt_y * (y / mu - 1)) - \n",
-        "               exp(2 * shape / mu) * Phi(-sqrt(shape) / sqrt_y * (y / mu + 1))); \n",
-        "  } \n")
+      "  /* inverse Gaussian log-CDF for a single quantile \n",
+      "   * Args: \n",
+      "   *   y: a quantile \n",
+      "   *   mu: positive mean parameter \n",
+      "   *   shape: positive shape parameter \n",
+      "   *   log_y: ignored (cdf and pdf should have the same args) \n",
+      "   *   sqrt_y: precomputed sqrt(y) \n",
+      "   * Returns: \n",
+      "   *   log(P(Y <= y)) \n",
+      "   */ \n",
+      "  real inv_gaussian_cdf_log(real y, real mu, real shape, \n", 
+      "                            real log_y, real sqrt_y) { \n",
+      "    return log(Phi(sqrt(shape) / sqrt_y * (y / mu - 1)) + \n",
+      "               exp(2 * shape / mu) * Phi(-sqrt(shape) / sqrt_y * (y / mu + 1))); \n",
+      "  } \n",
+      "  /* inverse Gaussian log-CCDF for a single quantile \n",
+      "   * Args: \n",
+      "   *   y: a quantile \n",
+      "   *   mu: positive mean parameter \n",
+      "   *   shape: positive shape parameter \n",
+      "   *   log_y: ignored (ccdf and pdf should have the same args) \n",
+      "   *   sqrt_y: precomputed sqrt(y) \n",
+      "   * Returns: \n",
+      "   *   log(P(Y > y)) \n",
+      "   */ \n",
+      "  real inv_gaussian_ccdf_log(real y, real mu, real shape, \n",
+      "                             real log_y, real sqrt_y) { \n",
+      "    return log(1 - Phi(sqrt(shape) / sqrt_y * (y / mu - 1)) - \n",
+      "               exp(2 * shape / mu) * Phi(-sqrt(shape) / sqrt_y * (y / mu + 1))); \n",
+      "  } \n")
   } else if (family == "hurdle_poisson") {
     out <- paste0(out, 
-      "  /* hurdle poisson log-PDF of a single response \n",
-      "   * Args: \n",
-      "   *   y: the response value \n",
-      "   *   eta: linear predictor for poisson part \n",
-      "   *   eta_hu: linear predictor for hurdle part \n",
-      "   * Returns: \n", 
-      "   *   a scalar to be added to the log posterior \n",
-      "   */ \n",
-      "   real hurdle_poisson_log(int y, real eta, real eta_hu) { \n",
-      "     if (y == 0) { \n",
-      "       return bernoulli_logit_log(1, eta_hu); \n",
-      "     } else { \n",
-      "       return bernoulli_logit_log(0, eta_hu) + \n", 
-      "              poisson_log_log(y, eta) - \n",
-      "              log(1 - exp(-exp(eta))); \n",
-      "     } \n",
-      "   } \n")
+    "  /* hurdle poisson log-PDF of a single response \n",
+    "   * Args: \n",
+    "   *   y: the response value \n",
+    "   *   eta: linear predictor for poisson part \n",
+    "   *   eta_hu: linear predictor for hurdle part \n",
+    "   * Returns: \n", 
+    "   *   a scalar to be added to the log posterior \n",
+    "   */ \n",
+    "   real hurdle_poisson_log(int y, real eta, real eta_hu) { \n",
+    "     if (y == 0) { \n",
+    "       return bernoulli_logit_log(1, eta_hu); \n",
+    "     } else { \n",
+    "       return bernoulli_logit_log(0, eta_hu) + \n", 
+    "              poisson_log_log(y, eta) - \n",
+    "              log(1 - exp(-exp(eta))); \n",
+    "     } \n",
+    "   } \n")
   } else if (family == "hurdle_negbinomial") {
     out <- paste0(out, 
-      "  /* hurdle negative binomial log-PDF of a single response \n",
-      "   * Args: \n",
-      "   *   y: the response value \n",
-      "   *   eta: linear predictor for negative binomial part \n",
-      "   *   eta_hu: linear predictor for hurdle part \n",
-      "   *   shape: shape parameter of negative binomial distribution \n",
-      "   * Returns: \n", 
-      "   *   a scalar to be added to the log posterior \n",
-      "   */ \n",
-      "   real hurdle_neg_binomial_2_log(int y, real eta, real eta_hu, \n", 
-      "                                  real shape) { \n",
-      "     if (y == 0) { \n",
-      "       return bernoulli_logit_log(1, eta_hu); \n",
-      "     } else { \n",
-      "       return bernoulli_logit_log(0, eta_hu) + \n", 
-      "              neg_binomial_2_log_log(y, eta, shape) - \n",
-      "              log(1 - (shape / (exp(eta) + shape))^shape); \n",
-      "     } \n",
-      "   } \n")
+    "  /* hurdle negative binomial log-PDF of a single response \n",
+    "   * Args: \n",
+    "   *   y: the response value \n",
+    "   *   eta: linear predictor for negative binomial part \n",
+    "   *   eta_hu: linear predictor for hurdle part \n",
+    "   *   shape: shape parameter of negative binomial distribution \n",
+    "   * Returns: \n", 
+    "   *   a scalar to be added to the log posterior \n",
+    "   */ \n",
+    "   real hurdle_neg_binomial_2_log(int y, real eta, real eta_hu, \n", 
+    "                                  real shape) { \n",
+    "     if (y == 0) { \n",
+    "       return bernoulli_logit_log(1, eta_hu); \n",
+    "     } else { \n",
+    "       return bernoulli_logit_log(0, eta_hu) + \n", 
+    "              neg_binomial_2_log_log(y, eta, shape) - \n",
+    "              log(1 - (shape / (exp(eta) + shape))^shape); \n",
+    "     } \n",
+    "   } \n")
   } else if (family == "hurdle_gamma") {
     out <- paste0(out, 
-      "  /* hurdle gamma log-PDF of a single response \n",
-      "   * Args: \n",
-      "   *   y: the response value \n",
-      "   *   shape: shape parameter of gamma distribution \n",
-      "   *   eta: linear predictor for gamma part \n",
-      "   *   eta_hu: linear predictor for hurdle part \n",
-      "   * Returns: \n", 
-      "   *   a scalar to be added to the log posterior \n",
-      "   */ \n",
-      "   real hurdle_gamma_log(real y, real shape, real eta, \n", 
-      "                         real eta_hu) { \n",
-      "     if (y == 0) { \n",
-      "       return bernoulli_logit_log(1, eta_hu); \n",
-      "     } else { \n",
-      "       return bernoulli_logit_log(0, eta_hu) + \n", 
-      "              gamma_log(y, shape, shape / exp(eta)); \n",
-      "     } \n",
-      "   } \n")
+    "  /* hurdle gamma log-PDF of a single response \n",
+    "   * Args: \n",
+    "   *   y: the response value \n",
+    "   *   shape: shape parameter of gamma distribution \n",
+    "   *   eta: linear predictor for gamma part \n",
+    "   *   eta_hu: linear predictor for hurdle part \n",
+    "   * Returns: \n", 
+    "   *   a scalar to be added to the log posterior \n",
+    "   */ \n",
+    "   real hurdle_gamma_log(real y, real shape, real eta, \n", 
+    "                         real eta_hu) { \n",
+    "     if (y == 0) { \n",
+    "       return bernoulli_logit_log(1, eta_hu); \n",
+    "     } else { \n",
+    "       return bernoulli_logit_log(0, eta_hu) + \n", 
+    "              gamma_log(y, shape, shape / exp(eta)); \n",
+    "     } \n",
+    "   } \n")
   } else if (family == "zero_inflated_poisson") {
     out <- paste0(out, 
-      "  /* zero-inflated poisson log-PDF of a single response \n",
-      "   * Args: \n",
-      "   *   y: the response value \n",
-      "   *   eta: linear predictor for poisson part \n",
-      "   *   eta_zi: linear predictor for zero-inflation part \n",
-      "   * Returns: \n", 
-      "   *   a scalar to be added to the log posterior \n",
-      "   */ \n",
-      "   real zero_inflated_poisson_log(int y, real eta, real eta_zi) { \n",
-      "     if (y == 0) { \n",
-      "       return log_sum_exp(bernoulli_logit_log(1, eta_zi), \n",
-      "                          bernoulli_logit_log(0, eta_zi) + \n",
-      "                          poisson_log_log(0, eta)); \n",
-      "     } else { \n",
-      "       return bernoulli_logit_log(0, eta_zi) + \n", 
-      "              poisson_log_log(y, eta); \n",
-      "     } \n",
-      "   } \n")
+    "  /* zero-inflated poisson log-PDF of a single response \n",
+    "   * Args: \n",
+    "   *   y: the response value \n",
+    "   *   eta: linear predictor for poisson part \n",
+    "   *   eta_zi: linear predictor for zero-inflation part \n",
+    "   * Returns: \n", 
+    "   *   a scalar to be added to the log posterior \n",
+    "   */ \n",
+    "   real zero_inflated_poisson_log(int y, real eta, real eta_zi) { \n",
+    "     if (y == 0) { \n",
+    "       return log_sum_exp(bernoulli_logit_log(1, eta_zi), \n",
+    "                          bernoulli_logit_log(0, eta_zi) + \n",
+    "                          poisson_log_log(0, eta)); \n",
+    "     } else { \n",
+    "       return bernoulli_logit_log(0, eta_zi) + \n", 
+    "              poisson_log_log(y, eta); \n",
+    "     } \n",
+    "   } \n")
   } else if (family == "zero_inflated_negbinomial") {
     out <- paste0(out, 
-      "  /* zero-inflated negative binomial log-PDF of a single response \n",
-      "   * Args: \n",
-      "   *   y: the response value \n",
-      "   *   eta: linear predictor for negative binomial part \n",
-      "   *   eta_zi: linear predictor for zero-inflation part \n",
-      "   * Returns: \n", 
-      "   *   a scalar to be added to the log posterior \n",
-      "   */ \n",
-      "   real zero_inflated_neg_binomial_2_log(int y, real eta, real eta_zi, \n",
-      "                                         real shape) { \n",
-      "     if (y == 0) { \n",
-      "       return log_sum_exp(bernoulli_logit_log(1, eta_zi), \n",
-      "                          bernoulli_logit_log(0, eta_zi) + \n",
-      "                          neg_binomial_2_log_log(0, eta, shape)); \n",
-      "     } else { \n",
-      "       return bernoulli_logit_log(0, eta_zi) + \n", 
-      "              neg_binomial_2_log_log(y, eta, shape); \n",
-      "     } \n",
-      "   } \n")
-  }
-  if (cov_arma)
-    out <- paste0(out,
-    "  /* compute the covariance matrix for an AR1 process \n",
+    "  /* zero-inflated negative binomial log-PDF of a single response \n",
     "   * Args: \n",
-    "   *   ar: AR1 autocorrelation \n",
-    "   *   sigma: standard deviation of the AR1 process \n",
-    "   *   nrows: number of rows of the covariance matrix \n",
-    "   * Returns: \n",
-    "   *   A nrows x nrows AR1 covariance matrix \n",
+    "   *   y: the response value \n",
+    "   *   eta: linear predictor for negative binomial part \n",
+    "   *   eta_zi: linear predictor for zero-inflation part \n",
+    "   * Returns: \n", 
+    "   *   a scalar to be added to the log posterior \n",
     "   */ \n",
-    "   matrix cov_matrix_ar1(real ar, real sigma, int nrows) { \n",
-    "     matrix[nrows, nrows] mat; \n",
-    "     mat <- diag_matrix(rep_vector(1, nrows)); \n",
-    "     for (i in 2:nrows) { \n",
-    "       for (j in 1:(i-1)) { \n",
-    "         mat[i, j] <- pow(ar, abs(i-j)); \n",
-    "         mat[j, i] <- mat[i, j]; \n",
-    "       } \n",
+    "   real zero_inflated_neg_binomial_2_log(int y, real eta, real eta_zi, \n",
+    "                                         real shape) { \n",
+    "     if (y == 0) { \n",
+    "       return log_sum_exp(bernoulli_logit_log(1, eta_zi), \n",
+    "                          bernoulli_logit_log(0, eta_zi) + \n",
+    "                          neg_binomial_2_log_log(0, eta, shape)); \n",
+    "     } else { \n",
+    "       return bernoulli_logit_log(0, eta_zi) + \n", 
+    "              neg_binomial_2_log_log(y, eta, shape); \n",
     "     } \n",
-    "     return sigma^2 * mat; \n",
-    "   } \n",
+    "   } \n")
+  }
+  if (use_cov(autocor) && (get_ar(autocor) || get_ma(autocor))) {
+    out <- paste0(out,
     "  /* (multi) normal log-PDF of an ARMA process within each group \n",
     "   * and user defined standard error. \n",
-    "   * currently only AR1 is implemented \n",
+    "   * currently only ARMA effects of order 1 are implemented \n",
     "   * Args: \n",
     "   *   y: response vector \n",
     "   *   eta: linear predictor \n",
-    "   *   ar: AR1 autocorrelation \n",
-    "   *   sigma: standard deviation of the AR1 process \n",
     "   *   squared_se: square of the user defined standard errors \n",
+    "   *               will be set to zero if non are defined \n",
     "   *   N_tg: number of groups \n",
     "   *   begin: indicates the first observation in each group \n",
     "   *   nrows: number of observations in each group \n",
+    "   *   arma_matrix: AR1, MA1, or ARMA1 covariance matrix; \n",
     "   * Returns: \n",
     "   *   sum of the log-PDF values of all observations \n",
     "   */ \n",
-    "   real normal_arma_log(vector y, vector eta, real ar, real sigma, \n",
-    "                        vector squared_se, int N_tg, int[] begin, int[] nrows, \n",
+    "   real normal_arma_log(vector y, vector eta, vector squared_se, \n", 
+    "                        int N_tg, int[] begin, int[] nrows, \n",
     "                        matrix arma_matrix) { \n",
     "     vector[N_tg] log_post; \n",
     "     for (i in 1:N_tg) { \n",
@@ -942,6 +934,79 @@ stan_functions <- function(family = "gaussian", link = "identity",
     "     } \n",                       
     "     return sum(log_post); \n",
     "   } \n")
+    if (get_ar(autocor) && !get_ma(autocor)) {
+      out <- paste0(out,
+      "  /* compute the covariance matrix for an AR1 process \n",
+      "   * Args: \n",
+      "   *   ar: AR1 autocorrelation \n",
+      "   *   sigma: standard deviation of the AR1 process \n",
+      "   *   nrows: number of rows of the covariance matrix \n",
+      "   * Returns: \n",
+      "   *   A nrows x nrows AR1 covariance matrix \n",
+      "   */ \n",
+      "   matrix cov_matrix_ar1(real ar, real sigma, int nrows) { \n",
+      "     matrix[nrows, nrows] mat; \n",
+      "     vector[nrows - 1] gamma; \n",
+      "     mat <- diag_matrix(rep_vector(1, nrows)); \n",
+      "     for (i in 2:nrows) { \n",
+      "       gamma[i - 1] <- pow(ar, i - 1); \n",
+      "       for (j in 1:(i - 1)) { \n",
+      "         mat[i, j] <- gamma[i - j]; \n",
+      "         mat[j, i] <- gamma[i - j]; \n",
+      "       } \n",
+      "     } \n",
+      "     return sigma^2 / (1 - ar^2) * mat; \n",
+      "   } \n")
+    } else if (!get_ar(autocor) && get_ma(autocor)) {
+      out <- paste0(out,
+      "  /* compute the covariance matrix for an MA1 process \n",
+      "   * Args: \n",
+      "   *   ma: MA1 autocorrelation \n",
+      "   *   sigma: standard deviation of the MA1 process \n",
+      "   *   nrows: number of rows of the covariance matrix \n",
+      "   * Returns: \n",
+      "   *   A nrows x nrows MA1 covariance matrix \n",
+      "   */ \n",
+      "   matrix cov_matrix_ma1(real ma, real sigma, int nrows) { \n",
+      "     matrix[nrows, nrows] mat; \n",
+      "     mat <- diag_matrix(rep_vector(1 + ma^2, nrows)); \n",
+      "     if (nrows > 1) { \n",
+      "       mat[1, 2] <- ma; \n",
+      "       for (i in 2:(nrows - 1)) { \n",
+      "         mat[i, i - 1] <- ma; \n",
+      "         mat[i, i + 1] <- ma; \n",
+      "       } \n",
+      "       mat[nrows, nrows - 1] <- ma; \n",
+      "     } \n",
+      "     return sigma^2 * mat; \n",
+      "   } \n")
+    } else {
+      out <- paste0(out,
+      "  /* compute the covariance matrix for an ARMA1 process \n",
+      "   * Args: \n",
+      "   *   ar: AR1 autocorrelation \n",
+      "   *   ma: MA1 autocorrelation \n",
+      "   *   sigma: standard deviation of the ARMA1 process \n",
+      "   *   nrows: number of rows of the covariance matrix \n",
+      "   * Returns: \n",
+      "   *   A nrows x nrows ARMA1 covariance matrix \n",
+      "   */ \n",
+      "   matrix cov_matrix_arma1(real ar, real ma, real sigma, int nrows) { \n",
+      "     matrix[nrows, nrows] mat; \n",
+      "     vector[nrows] gamma; \n",
+      "     mat <- diag_matrix(rep_vector(1 + ma^2 + 2 * ar * ma, nrows)); \n",
+      "     gamma[1] <- (1 + ar * ma) * (ar + ma); \n",
+      "     for (i in 2:nrows) { \n",
+      "       gamma[i] <- gamma[1] * pow(ar, i - 1); \n",
+      "       for (j in 1:(i - 1)) { \n",
+      "         mat[i, j] <- gamma[i - j]; \n",
+      "         mat[j, i] <- gamma[i - j]; \n",
+      "       } \n",
+      "     } \n",
+      "     return sigma^2 / (1 - ar^2) * mat; \n",
+      "   } \n")
+    }
+  }
   if (kronecker) 
     out <- paste0(out,
     "  /* calculate the cholesky factor of a kronecker covariance matrix \n",
