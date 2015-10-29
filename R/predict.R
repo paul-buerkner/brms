@@ -50,16 +50,26 @@ predict_multinormal <- function(n, data, samples, link, ...) {
   do.call(rbind, lapply(1:nrow(samples$eta), .fun))
 }
 
-predict_gaussian_arma <- function(n, data, samples, link, ...) {
-  # currently, only the AR1 process is implemented
-  # weights, truncation and censoring not allowed
+predict_gaussian_cov <- function(n, data, samples, link, ...) {
+  # currently, only ARMA1 processes are implemented
   rows <- with(data, begin_tg[n]:(begin_tg[n] + nrows_tg[n] - 1))
   eta_part <- samples$eta[, rows, drop = FALSE]
   squared_se_part <- data$squared_se[rows]
-  # both sigma and SEs are present!
-  Sigma <- get_cov_matrix_ar1(ar = samples$ar, sigma = samples$sigma, 
-                              sq_se = squared_se_part, nrows = length(rows)) 
-
+  # different functions for different residucal cov matrices
+  if (!is.null(samples$ar) && is.null(samples$ma)) {
+    # AR1 process
+    Sigma <- get_cov_matrix_ar1(ar = samples$ar, sigma = samples$sigma, 
+                                sq_se = squared_se_part, nrows = length(rows)) 
+  } else if (is.null(samples$ar) && !is.null(samples$ma)) {
+    # MA1 process
+    Sigma <- get_cov_matrix_ma1(ma = samples$ma, sigma = samples$sigma, 
+                                sq_se = squared_se_part, nrows = length(rows)) 
+  } else {
+    # ARMA1 process
+    Sigma <- get_cov_matrix_arma1(ar = samples$ar, ma = samples$ma, 
+                                  sigma = samples$sigma, sq_se = squared_se_part, 
+                                  nrows = length(rows))
+  }
   .fun <- function(i) {
     rmultinormal(1, mu = ilink(eta_part[i, ], link), 
                  Sigma = Sigma[i, , ])

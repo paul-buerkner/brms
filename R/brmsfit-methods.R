@@ -640,12 +640,11 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     family <- "lognormal"
   } else if (family == "gaussian" && nresp > 1) {
     family <- "multinormal"
-  } else if (has_cov_arma(object$autocor, se = ee$se, family = family,
-                          link = object$link)) {
-    # special model for ARMA autocorrelation with user defined SEs
-    # currently only the AR1 process is implemented
-    family <- "gaussian_arma"
-    samples$ar <- as.matrix(posterior_samples(object, pars = "^ar\\["))
+  } else if (use_cov(object$autocor)) {
+    # special family for ARMA models using residual covariance matrices
+    family <- "gaussian_cov"
+    samples$ar <- posterior_samples(object, pars = "^ar\\[", as.matrix = TRUE)
+    samples$ma <- posterior_samples(object, pars = "^ma\\[", as.matrix = TRUE)
   } 
   
   is_catordinal <- is.ordinal(family) || family == "categorical"
