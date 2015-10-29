@@ -63,7 +63,6 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
   text_ranef <- collapse_lists(text_ranef)
   
   # generate important parts of the stan code
-  #cov_arma <- has_cov_arma(autocor, se = ee$se, family = family, link = link)
   text_eta <- stan_eta(family = family, link = link, fixef = fixef, 
                        has_intercept = has_intercept, paref = paref,  
                        group = ee$group, autocor = autocor,
@@ -432,7 +431,7 @@ stan_llh <- function(family, link, se = FALSE, weights = FALSE,
   if (use_cov(autocor)) {
     # ARMA effects have a special formulation
     # if fitted using a covariance matrix for residuals
-    family <- "gaussian_arma"
+    family <- "gaussian_cov"
     if (weights || cens || is_trunc) {
       stop("Invalid addition arguments")
     }
@@ -482,13 +481,13 @@ stan_llh <- function(family, link, se = FALSE, weights = FALSE,
   } else {
     llh_pre <- switch(ifelse(is_catordinal, "categorical", family),
       gaussian = c("normal", paste0(eta,", ",sigma)),
+      gaussian_cov = c("normal_cov", paste0(eta,", squared_se, N_tg, ", 
+                       "begin_tg, nrows_tg, res_cov_matrix")),
       student = c("student_t",  paste0("nu, ",eta,", ",sigma)),
       cauchy = c("cauchy", paste0(eta,", ", sigma)),
       multinormal = c("multi_normal_cholesky", 
                       paste0("etam",n,", diag_pre_multiply(sigma, Lrescor)")),
       lognormal = c("lognormal", paste0(eta,", sigma",ns)),
-      gaussian_arma = c("normal_arma", paste0(eta,", squared_se, N_tg, ", 
-                                         "begin_tg, nrows_tg, arma_matrix")),
       inverse.gaussian = c("inv_gaussian", 
                            paste0(eta, ", shape, log_Y",n,", sqrt_Y",n)),
       poisson = c("poisson", eta),
@@ -657,7 +656,10 @@ stan_arma <- function(family, link, autocor, se = FALSE) {
     if (use_cov(autocor) && (Kar || Kma)) {
       # if the user wants ARMA effects to be estimated using
       # a covariance matrix for residuals
-      out$transD <- "  matrix[max(nrows_tg), max(nrows_tg)] arma_matrix; \n"
+      if (family != "gaussian") {
+        stop("family must be gaussian when fitting ARMA covariance matrices")
+      }
+      out$transD <- "  matrix[max(nrows_tg), max(nrows_tg)] res_cov_matrix; \n"
       if (Kar && !Kma) {
         cov_mat_fun <- "ar1"
         cov_mat_args <- "ar[1]"
@@ -668,8 +670,8 @@ stan_arma <- function(family, link, autocor, se = FALSE) {
         cov_mat_fun <- "arma1"
         cov_mat_args <- "ar[1], ma[1]"
       }
-      out$transC1 <- paste0("  # compute ARMA covariance matrix; \n",
-                            "  arma_matrix <- cov_matrix_", cov_mat_fun, 
+      out$transC1 <- paste0("  # compute residual covariance matrix; \n",
+                            "  res_cov_matrix <- cov_matrix_", cov_mat_fun, 
                             "(", cov_mat_args, ", sigma, max(nrows_tg)); \n")
     } else {
       if (se) {
@@ -900,8 +902,7 @@ stan_functions <- function(family = "gaussian", link = "identity",
   }
   if (use_cov(autocor) && (get_ar(autocor) || get_ma(autocor))) {
     out <- paste0(out,
-    "  /* (multi) normal log-PDF of an ARMA process within each group \n",
-    "   * and user defined standard error. \n",
+    "  /* (multi) normal log-PDF for specical residual covariance structures \n",
     "   * currently only ARMA effects of order 1 are implemented \n",
     "   * Args: \n",
     "   *   y: response vector \n",
@@ -911,13 +912,13 @@ stan_functions <- function(family = "gaussian", link = "identity",
     "   *   N_tg: number of groups \n",
     "   *   begin: indicates the first observation in each group \n",
     "   *   nrows: number of observations in each group \n",
-    "   *   arma_matrix: AR1, MA1, or ARMA1 covariance matrix; \n",
+    "   *   res_cov_matrix: AR1, MA1, or ARMA1 covariance matrix; \n",
     "   * Returns: \n",
     "   *   sum of the log-PDF values of all observations \n",
     "   */ \n",
-    "   real normal_arma_log(vector y, vector eta, vector squared_se, \n", 
+    "   real normal_cov_log(vector y, vector eta, vector squared_se, \n", 
     "                        int N_tg, int[] begin, int[] nrows, \n",
-    "                        matrix arma_matrix) { \n",
+    "                        matrix res_cov_matrix) { \n",
     "     vector[N_tg] log_post; \n",
     "     for (i in 1:N_tg) { \n",
     "       matrix[nrows[i], nrows[i]] Sigma; \n",
@@ -927,7 +928,7 @@ stan_functions <- function(family = "gaussian", link = "identity",
     "       y_part <- segment(y, begin[i], nrows[i]); \n",
     "       eta_part <- segment(eta, begin[i], nrows[i]); \n",
     "       squared_se_part <- segment(squared_se, begin[i], nrows[i]); \n",
-    "       Sigma <- block(arma_matrix, 1, 1, nrows[i], nrows[i]) \n",
+    "       Sigma <- block(res_cov_matrix, 1, 1, nrows[i], nrows[i]) \n",
     "                + diag_matrix(squared_se_part); \n",
     "       Sigma <- cholesky_decompose(Sigma); \n",
     "       log_post[i] <- multi_normal_cholesky_log(y_part, eta_part, Sigma); \n",
