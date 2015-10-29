@@ -17,7 +17,7 @@ Defaults to ~ 1, which corresponds to using the order of the observations
 in the data as a covariate, and no groups.}
 
 \item{r}{A non-negative integer specifying the autoregressive response (ARR) order.
-  See 'Details' for differences of AR and ARR effects. Default is 0.}
+See 'Details' for differences of AR and ARR effects. Default is 0.}
 }
 \value{
 An object of class \code{cor_arma} containing solely

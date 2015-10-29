@@ -57,7 +57,7 @@ loglik_multinormal <- function(n, data, samples, link) {
 }
 
 loglik_gaussian_cov <- function(n, data, samples, link) {
-  # currenlty, only the ARMA1 process is implemented
+  # currently, only ARMA1 processes are implemented
   rows <- with(data, begin_tg[n]:(begin_tg[n] + nrows_tg[n] - 1))
   Y_part <- data$Y[rows]
   eta_part <- samples$eta[, rows, drop = FALSE]

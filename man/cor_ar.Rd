@@ -5,7 +5,7 @@
 \alias{cor_ar}
 \title{AR(p) correlation structure}
 \usage{
-cor_ar(formula = ~1, p = 1)
+cor_ar(formula = ~1, p = 1, cov = FALSE)
 }
 \arguments{
 \item{formula}{A one sided formula of the form ~ t, or ~ t | g,
@@ -19,6 +19,13 @@ in the data as a covariate, and no groups.}
 
 \item{p}{A non-negative integer specifying the autoregressive (AR) order of the ARMA structure.
 Default is 0.}
+
+\item{cov}{A flag indicating whether ARMA effects should be estimated by means
+  of residual covariance matrices
+  (currently only possible for stationary ARMA effects of order 1).
+  If \code{FALSE} (the default) a regression formulation
+  is used that is considerably faster and allows for ARMA effects
+  of order higher than 1 but cannot handle user defined standard errors.}
 }
 \value{
 An object of class \code{cor_arma} containing solely autoregression terms.

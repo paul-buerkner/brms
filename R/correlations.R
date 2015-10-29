@@ -19,8 +19,14 @@
 #' @param q A non-negative integer specifying the moving average (MA) order of the ARMA structure. 
 #'   Default is 0. 
 #' @param r A non-negative integer specifying the autoregressive response (ARR) order. 
-#'   See 'Details' for differences of AR and ARR effects. Default is 0.  
-#' 
+#'   See 'Details' for differences of AR and ARR effects. Default is 0. 
+#' @param cov A flag indicating whether ARMA effects should be estimated by means
+#'   of residual covariance matrices
+#'   (currently only possible for stationary ARMA effects of order 1). 
+#'   If \code{FALSE} (the default) a regression formulation
+#'   is used that is considerably faster and allows for ARMA effects 
+#'   of order higher than 1 but cannot handle user defined standard errors.
+#'   
 #' @return An object of class \code{cor_arma}, representing an 
 #'   autoregression-moving-average correlation structure.
 #' 
