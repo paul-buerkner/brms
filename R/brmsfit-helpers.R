@@ -232,12 +232,13 @@ get_cov_matrix_ar1 <- function(ar, sigma, sq_se, nrows) {
   pow_ar <- as.list(rep(1, nrows + 1))
   for (i in 1:nrows) {
     pow_ar[[i + 1]] <- ar^i
-    for (j in 1:i) { 
-      mat[, i, j] <- mat[, i, j] + sigma2_adjusted * pow_ar[[i - j + 1]]
-      if (j < i) {
+    mat[, i, i] <- mat[, i, i] + sigma2_adjusted
+    if (i > 1) {
+      for (j in 1:(i - 1)) { 
+        mat[, i, j] <- sigma2_adjusted * pow_ar[[i - j + 1]]
         mat[, j, i] <- mat[, i, j]
-      }
-    } 
+      } 
+    }
   } 
   mat 
 }
