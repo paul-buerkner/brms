@@ -6,11 +6,14 @@
   \subsection{NEW FEATURES}{
     \itemize{
       \item add support for zero-inflation and hurdle models
-      \item add support for inverse gaussian models through family \code{inverse.gaussian}
+      \item add support for inverse gaussian models through family 
+      \code{inverse.gaussian}
       \item add new \code{addition} argument \code{trunc} allowing
       to specify truncation of the response variable
       \item add support for autoregressive (AR) effects of residuals, which can
       be modeled using the \code{cor_ar} and \code{cor_arma} functions
+      \item stationary autoregressive-moving-average (ARMA) effects 
+      of order one can now also be fitted using special covariance matrices
       \item binomial and ordinal families now support the \code{cauchit} link function
       \item allow family functions to be used in the \code{family} argument
       \item easy access to various \code{rstan} plotting functions 
@@ -37,11 +40,13 @@
   }
   \subsection{BUG FIXES}{
     \itemize{
+      \item fix a bug that could cause an unexpected error
+      when predict is called with new data
       \item avoid side effects of the \code{rstan} compilation routines that could 
       occasionally cause R to crash
       \item make \pkg{brms} work correctly with \pkg{loo} version 0.1.3
-      \item fix a bug that could cause WAIC and LOO estimates to be slightly incorrect for 
-      \code{gaussian} models with \code{log} link
+      \item fix a bug that could cause WAIC and LOO estimates to be slightly 
+      incorrect for \code{gaussian} models with \code{log} link
     }
   }
 }
