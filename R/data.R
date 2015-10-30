@@ -60,8 +60,8 @@ combine_groups <- function(data, ...) {
   data
 }
 
-update_data <- function(data, family, effects, ..., is_newdata = FALSE, 
-                        combined_groups = NULL) {
+update_data <- function(data, family, effects, ..., 
+                        drop.unused.levels = TRUE) {
   # update data for use in brm
   #
   # Args:
@@ -70,28 +70,18 @@ update_data <- function(data, family, effects, ..., is_newdata = FALSE,
   #   effects: output of extract_effects (see validate.R)
   #   ...: More formulae passed to combine_groups
   #        Currently only used for autocorrelation structures
-  #   is_newdata: logical; is data a new data.frame?
-  #   combined_groups: a data.frame with combined grouping factors 
-  #                    only used if is_newdata == TRUE
+  #   drop.unused.levels: indicates if unused factor levels
+  #                       should be removed
   #
   # Returns:
   #   model.frame in long format with combined grouping variables if present
   if (!"brms.frame" %in% class(data)) {
     data <- melt(data, response = effects$response, family = family)
     data <- stats::model.frame(effects$all, data = data, na.action = na.omit,
-                               drop.unused.levels = !is_newdata)
+                               drop.unused.levels = drop.unused.levels)
     if (any(grepl("__", colnames(data))))
       stop("Variable names may not contain double underscores '__'")
-    if (is_newdata && is.data.frame(combined_groups)) {
-      # if newdata, combined groups were already defined in amend_newdata
-      # do not use cbind as it will remove attributes from the model.frame
-      cgnames <- names(combined_groups)
-      for (i in 1:length(cgnames)) {
-        data[[cgnames[i]]] <- combined_groups[[cgnames[i]]]
-      }
-    } else {
-      data <- combine_groups(data, effects$group, ...)
-    }
+    data <- combine_groups(data, effects$group, ...)
     class(data) <- c("brms.frame", "data.frame") 
   }
   data
@@ -114,9 +104,6 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   if (allow_new_levels) {
     # TODO
     stop("New random effects levels are not yet allowed")
-  } 
-  if (anyNA(newdata)) {
-    stop("NAs are currently not allowed in newdata")
   }
   ee <- extract_effects(fit$formula, family = fit$family)
   et <- extract_time(fit$autocor$formula)
@@ -129,6 +116,12 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       newdata[[resp]] <- 0  
     }
   }
+  if (is.formula(ee$cens)) {
+    for (cens in all.vars(ee$cens)) 
+      newdata[[cens]] <- 0  # add irrelevant censor variables
+  }
+  newdata <- update_data(newdata, family = fit$family, effects = ee, 
+                         et$group, drop.unused.levels = FALSE)
   # try to validate factor levels in newdata
   if (is.data.frame(fit$data)) {
     # validating is possible (implies brms > 0.5.0)
@@ -159,8 +152,6 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
                   "created with brms <= 0.5.0"))
   }
   # validate grouping factors
-  newdata <- combine_groups(newdata, ee$group, et$group)
-  combined_groups <- NULL
   if (length(fit$ranef) && is.null(re_formula)) {
     gnames <- names(fit$ranef)
     for (i in 1:length(gnames)) {
@@ -176,21 +167,10 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       # to match the output of brmdata
       newdata[[gnames[i]]] <- sapply(gf, match, table = old_levels)
     }
-    # combined_groups are removed by model.frame
-    # so that they need a special treatment in update_data
-    cgnames <- gnames[grepl(":", gnames)]
-    if (length(cgnames)) {
-      combined_groups <- newdata[, cgnames, drop = FALSE]
-    }
-  }
-  if (is.formula(ee$cens)) {
-    for (cens in all.vars(ee$cens)) 
-      newdata[[cens]] <- 0  # add irrelevant censor variables
   }
   brmdata(fit$formula, data = newdata, family =  fit$family, 
           autocor =  fit$autocor, partial =  fit$partial, 
-          newdata = TRUE, keep_intercept = TRUE,
-          combined_groups = combined_groups)
+          newdata = TRUE, keep_intercept = TRUE)
 }
 
 #' Extract required data for \code{brms} models
@@ -230,9 +210,10 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
   
   et <- extract_time(autocor$formula)
   ee <- extract_effects(formula = formula, family = family, partial, et$all)
-  data <- update_data(data, family = family, effects = ee, et$group,
-                      is_newdata = isTRUE(dots$newdata), 
-                      combined_groups = dots$combined_groups)
+  if (!isTRUE(dots$newdata)) {
+    # for new data, update_data was already called in amend_newdata
+    data <- update_data(data, family = family, effects = ee, et$group)
+  }
   
   # sort data in case of autocorrelation models
   if (has_arma(autocor)) {

@@ -46,6 +46,9 @@
 #' 
 #' @export
 cor_arma <- function(formula = ~ 1, p = 0, q = 0, r = 0, cov = FALSE) {
+  if (!is.formula(formula)) {
+    stop("formula must be of class formula")
+  }
   if (!(p >= 0 && (p == round(p)))) {
     stop("autoregressive order must be a non-negative integer")
   }

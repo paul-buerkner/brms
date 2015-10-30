@@ -441,8 +441,7 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
     }
     eta <- eta + fixef_predictor(X = Yarr, b = arr)
   }
-  if ((get_ar(x$autocor) || get_ma(x$autocor)) &&
-      !has_cov_arma(x$autocor, se = ee$se, family = x$family, link = x$link)) {
+  if ((get_ar(x$autocor) || get_ma(x$autocor)) && !use_cov(x$autocor)) {
     # only run when ARMA effects were modeled as part of eta
     if (old_autocor) {
       ar <- NULL

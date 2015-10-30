@@ -199,26 +199,6 @@ has_sigma <- function(family, se, autocor) {
   is.linear(family) && (!se || get_ar(autocor) || get_ma(autocor))
 }
 
-has_cov_arma <- function(autocor, se, family = "gaussian",
-                         link = "identity") {
-  # indicates if an ARMA covariance matrix need to be fitted
-  # currently only allows the AR1 process
-  # Args:
-  #   autocor: object of class cor_arma
-  #   se: does the model contain user defined SEs?
-  #   family: model family
-  if (is.null(se)) se <- FALSE
-  if (is.formula(se)) se <- TRUE
-  Kar <- get_ar(autocor)
-  Kma <- get_ma(autocor)
-  gaussian_identity <- family == "gaussian" && link == "identity"
-  if (se && (Kma > 0 || Kar > 1 || Kar == 1 && !gaussian_identity)) {
-    stop(paste("currently only AR1 autocorrelations of gaussian(identity)", 
-               "residuals are allowed for models with user defined SEs"))
-  }
-  Kar == 1 && se && gaussian_identity
-}
-
 get_boundaries <- function(trunc) {
   # extract truncation boundaries out of a formula
   # that is known to contain the .trunc function
