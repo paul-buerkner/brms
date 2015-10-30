@@ -113,7 +113,10 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   #   updated data.frame being compatible with fit$formula
   if (allow_new_levels) {
     # TODO
-    stop("New random effects levels are not yet allowed.")
+    stop("New random effects levels are not yet allowed")
+  } 
+  if (anyNA(newdata)) {
+    stop("NAs are currently not allowed in newdata")
   }
   ee <- extract_effects(fit$formula, family = fit$family)
   et <- extract_time(fit$autocor$formula)
