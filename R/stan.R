@@ -69,7 +69,8 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
                        add = is.formula(ee[c("weights", "cens", "trunc")]),
                        offset = offset)
   text_arma <- stan_arma(family = family, link = link, 
-                         autocor = autocor, se = is.formula(ee$se))
+                         autocor = autocor, se = is.formula(ee$se),
+                         nresp = length(ee$response))
   text_ordinal <- stan_ordinal(family = family, link = link, 
                                partial = length(paref), 
                                threshold = threshold)  
@@ -632,7 +633,7 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE,
   eta
 }
 
-stan_arma <- function(family, link, autocor, se = FALSE) {
+stan_arma <- function(family, link, autocor, se = FALSE, nresp = 1) {
   # moving average autocorrelation in Stan
   # 
   # Args:
@@ -640,6 +641,7 @@ stan_arma <- function(family, link, autocor, se = FALSE) {
   #   link: the link function
   #   autocor: autocorrelation structure; object of class cor_arma
   #   se: user defined standard errors present?
+  #   nresp: number of respone variables
   #
   # Returns:
   #   stan code for computing moving average effects
@@ -656,8 +658,9 @@ stan_arma <- function(family, link, autocor, se = FALSE) {
     if (use_cov(autocor) && (Kar || Kma)) {
       # if the user wants ARMA effects to be estimated using
       # a covariance matrix for residuals
-      if (family != "gaussian") {
-        stop("family must be gaussian when fitting ARMA covariance matrices")
+      if (family != "gaussian" || nresp > 1) {
+        stop(paste("currently family must be (univariate) gaussian", 
+                   "when modeling ARMA covariance matrices"))
       }
       out$transD <- "  matrix[max(nrows_tg), max(nrows_tg)] res_cov_matrix; \n"
       if (Kar && !Kma) {
