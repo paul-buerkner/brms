@@ -105,6 +105,10 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     # TODO
     stop("New random effects levels are not yet allowed")
   }
+  if (use_cov(fit$autocor)) {
+    stop(paste("predictions with new data are not yet possible", 
+               "for ARMA covariance models"))
+  }
   ee <- extract_effects(fit$formula, family = fit$family)
   et <- extract_time(fit$autocor$formula)
   if (has_arma(fit$autocor) && !use_cov(fit$autocor)
