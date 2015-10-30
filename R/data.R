@@ -60,8 +60,8 @@ combine_groups <- function(data, ...) {
   data
 }
 
-update_data <- function(data, family, effects, ...,
-                        drop.unused.levels = TRUE) {
+update_data <- function(data, family, effects, ..., is_newdata = FALSE, 
+                        combined_groups = NULL) {
   # update data for use in brm
   #
   # Args:
@@ -70,21 +70,124 @@ update_data <- function(data, family, effects, ...,
   #   effects: output of extract_effects (see validate.R)
   #   ...: More formulae passed to combine_groups
   #        Currently only used for autocorrelation structures
-  #   drop.unused.levels: logical; indicates whether unused factor levels
-  #                       should be dropped
+  #   is_newdata: logical; is data a new data.frame?
+  #   combined_groups: a data.frame with combined grouping factors 
+  #                    only used if is_newdata == TRUE
   #
   # Returns:
   #   model.frame in long format with combined grouping variables if present
   if (!"brms.frame" %in% class(data)) {
     data <- melt(data, response = effects$response, family = family)
     data <- stats::model.frame(effects$all, data = data, na.action = na.omit,
-                               drop.unused.levels = drop.unused.levels)
+                               drop.unused.levels = !is_newdata)
     if (any(grepl("__", colnames(data))))
       stop("Variable names may not contain double underscores '__'")
-    data <- combine_groups(data, effects$group, ...)
+    if (is_newdata && is.data.frame(combined_groups)) {
+      # if newdata, combined groups were already defined in amend_newdata
+      # do not use cbind as it will remove attributes from the model.frame
+      cgnames <- names(combined_groups)
+      for (i in 1:length(cgnames)) {
+        data[[cgnames[i]]] <- combined_groups[[cgnames[i]]]
+      }
+    } else {
+      data <- combine_groups(data, effects$group, ...)
+    }
     class(data) <- c("brms.frame", "data.frame") 
   }
   data
+}
+
+amend_newdata <- function(newdata, fit, re_formula = NULL, 
+                          allow_new_levels = FALSE) {
+  # amend newdata passed to predict and fitted methods
+  # 
+  # Args:
+  #   newdata: a data.frame containing new data for prediction 
+  #   fit: an object of class brmsfit
+  #   re.form: a random effects formula
+  #
+  # Notes:
+  #   used in predict.brmsfit, fitted.brmsfit and linear_predictor.brmsfit
+  #
+  # Returns:
+  #   updated data.frame being compatible with fit$formula
+  if (allow_new_levels) {
+    # TODO
+    stop("New random effects levels are not yet allowed.")
+  }
+  ee <- extract_effects(fit$formula, family = fit$family)
+  et <- extract_time(fit$autocor$formula)
+  if (has_arma(fit$autocor) && !use_cov(fit$autocor)
+      && !all(ee$response %in% names(newdata))) {
+    stop("response variables must be specified in newdata for autocorrelative models")
+  } else {
+    for (resp in ee$response) {
+      # add irrelevant response variables
+      newdata[[resp]] <- 0  
+    }
+  }
+  # try to validate factor levels in newdata
+  if (is.data.frame(fit$data)) {
+    # validating is possible (implies brms > 0.5.0)
+    list_data <- as.list(fit$data)
+    is_factor <- sapply(list_data, is.factor)
+    factors <- list_data[is_factor]
+    if (length(factors)) {
+      factor_names <- names(factors)
+      factor_levels <- lapply(factors, levels) 
+      for (i in 1:length(factors)) {
+        new_factor <- newdata[[factor_names[i]]]
+        if (!is.null(new_factor)) {
+          if (!is.factor(new_factor)) {
+            factor <- factor(new_factor)
+          }
+          new_levels <- levels(new_factor)
+          if (any(!new_levels %in% factor_levels[[i]])) {
+            stop(paste("New factor levels are not allowed. \n",
+                       "Levels found:", paste(new_levels, collapse = ", ") , "\n",
+                       "Levels allowed:", paste(factor_levels[[i]], collapse = ", ")))
+          }
+          newdata[[factor_names[i]]] <- factor(new_factor, factor_levels[[i]])
+        }
+      }
+    }
+  } else {
+    warning(paste("Validity of factors cannot be checked for fitted model objects",
+                  "created with brms <= 0.5.0"))
+  }
+  # validate grouping factors
+  newdata <- combine_groups(newdata, ee$group, et$group)
+  combined_groups <- NULL
+  if (length(fit$ranef) && is.null(re_formula)) {
+    gnames <- names(fit$ranef)
+    for (i in 1:length(gnames)) {
+      gf <- as.character(get(gnames[i], newdata))
+      new_levels <- unique(gf)
+      old_levels <- attr(fit$ranef[[i]], "levels")
+      unknown_levels <- setdiff(new_levels, old_levels)
+      if (length(unknown_levels)) {
+        stop(paste("levels", paste0(unknown_levels, collapse = ", "), 
+                   "of grouping factor", gnames[i], "not found in the fitted model"))
+      } 
+      # transform grouping factor levels into their corresponding integers
+      # to match the output of brmdata
+      newdata[[gnames[i]]] <- sapply(gf, match, table = old_levels)
+    }
+    # combined_groups are removed by model.frame
+    # so that they need a special treatment in update_data
+    cgnames <- gnames[grepl(":", gnames)]
+    if (length(cgnames)) {
+      combined_groups <- newdata[, cgnames, drop = FALSE]
+    }
+  }
+  if (is.formula(ee$cens)) {
+    for (cens in all.vars(ee$cens)) 
+      newdata[[cens]] <- 0  # add irrelevant censor variables
+  }
+  brmdata(fit$formula, data = newdata, family =  fit$family, 
+          autocor =  fit$autocor, partial =  fit$partial, 
+          newdata = TRUE, keep_intercept = TRUE,
+          combined_groups = combined_groups)
 }
 
 #' Extract required data for \code{brms} models
@@ -124,9 +227,9 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
   
   et <- extract_time(autocor$formula)
   ee <- extract_effects(formula = formula, family = family, partial, et$all)
-  #cov_arma <- has_cov_arma(autocor, se = ee$se, family = family)
   data <- update_data(data, family = family, effects = ee, et$group,
-                      drop.unused.levels = !isTRUE(dots$newdata))
+                      is_newdata = isTRUE(dots$newdata), 
+                      combined_groups = dots$combined_groups)
   
   # sort data in case of autocorrelation models
   if (has_arma(autocor)) {
