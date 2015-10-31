@@ -656,7 +656,12 @@ compare_ic <- function(x, ic = c("waic", "loo")) {
     # weights are named differently when comparing only 2 models
     weights <- unname(all_compare[c("weight1", "weight2")])
   } else {
-    weights <- unname(all_compare[, "weights"])
+    # weights must be resorted as loo::compare sorts models after weights
+    get_input_names <- function(...) {
+      # mimic the way loo::compare defines model names
+      as.character(match.call())[-1L]
+    }
+    weights <- unname(all_compare[do.call(get_input_names, x), "weights"])
   }
   list(ic_diffs = ic_diffs, weights = weights)
 }
