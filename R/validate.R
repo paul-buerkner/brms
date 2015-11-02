@@ -269,17 +269,17 @@ check_family <- function(family) {
 }
 
 exclude_pars <- function(formula, ranef = TRUE) {
-  # list irrelevant parameters not to be saved by Stan
+  # list irrelevant parameters NOT to be saved by Stan
   # 
   # Args:
   #   formula: a model formula
-  #   ranef: logical; should random effects parameters of each levels be saved?
+  #   ranef: logical; should random effects of each level be saved?
   #
   # Returns:
   #   a vector of parameters to be excluded
   ee <- extract_effects(formula)
   out <- c("eta", "etam", "etap", "b_Intercept1", "Lrescor", "Rescor",
-           "p", "q", "e", "E", "arma_matrix", "lp_pre")
+           "p", "q", "e", "E", "res_cov_matrix", "lp_pre")
   if (length(ee$group)) {
     for (i in 1:length(ee$group)) {
       out <- c(out, paste0("pre_",i), paste0("L_",i), paste0("Cor_",i))
