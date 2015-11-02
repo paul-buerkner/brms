@@ -51,19 +51,33 @@ rstudent <-  function(n, df = stop("df is required"), mu = 0, sigma = 1) {
   mu + sigma * rt(n, df = df)
 }
 
-dmultinormal <- function(x, mu, Sigma, log = TRUE) {
-  # density of the multinormal distribution
-  # (not vectorized)
+dmultinormal <- function(x, mu, Sigma, log = TRUE,
+                         check = FALSE) {
+  # density of the multinormal distribution 
+  # not vectorized to increase speed when x is only a vector not a matrix
   #
   # Args:
   #   x: the value(s) at which the density should be evaluated
   #   mu: mean vector
   #   sigma: covariance matrix
   #   log: return on log scale?
-  k <- length(x)
-  rooti <- backsolve(chol(Sigma), diag(k))
+  #   check: check arguments for validity?
+  p <- length(x)
+  if (check) {
+    if (length(mu) != p) {
+      stop("dimension of mu is incompatible")
+    }
+    if (!all(dim(Sigma) == c(p, p))) {
+      stop("dimension of Sigma is incompatible")
+    }
+    if (!isSymmetric(Sigma, tol = sqrt(.Machine$double.eps), 
+                     check.attributes = FALSE)) {
+      stop("Sigma must be a symmetric matrix")
+    }
+  }
+  rooti <- backsolve(chol(Sigma), diag(p))
   quads <- colSums((crossprod(rooti, (x - mu)))^2)
-  out <- -(k / 2) * log(2 * pi) + sum(log(diag(rooti))) - .5 * quads
+  out <- -(p / 2) * log(2 * pi) + sum(log(diag(rooti))) - .5 * quads
   if (!log) 
     out <- exp(out)
   out
@@ -76,16 +90,83 @@ rmultinormal <- function(n, mu, Sigma, check = FALSE) {
   #   n: number of random values
   #   mu: mean vector
   #   sigma: covariance matrix
-  #   check: check sigma for symmetry?
+  #   check: check arguments for validity?
   p <- length(mu)
   if (check) {
-    if (!all(dim(Sigma) == c(p, p))) 
-      stop("incompatible arguments")
-    if (!isSymmetric(unname(Sigma)))
-      stop("Sigma is not symmetric")
+    if (!(is.wholenumber(n) && n > 0)) {
+      stop("n must be a positive integer")
+    }
+    if (!all(dim(Sigma) == c(p, p))) {
+      stop("dimension of Sigma is incompatible")
+    }
+    if (!isSymmetric(Sigma, tol = sqrt(.Machine$double.eps), 
+                     check.attributes = FALSE)) {
+      stop("Sigma must be a symmetric matrix")
+    }
   }
   samples <- matrix(rnorm(n * p), nrow = n, ncol = p)
   mu + samples %*% chol(Sigma)
+}
+
+dmultistudent <- function(x, df, mu, Sigma, log = TRUE,
+                           check = FALSE) {
+  # density of the multivariate student-t distribution 
+  #
+  # Args:
+  #   x: the value(s) at which the density should be evaluated
+  #   df: degrees of freedom
+  #   mu: mean vector
+  #   sigma: covariance matrix
+  #   log: return on log scale?
+  #   check: check arguments for validity?
+  if (is.vector(x)) {
+    x <- matrix(x, ncol = length(x))
+  }
+  p <- ncol(x)
+  if (check) {
+    if (df <= 0) {
+      stop("df must be greater zero")
+    }
+    if (length(mu) != p) {
+      stop("dimension of mu is incompatible")
+    }
+    if (!all(dim(Sigma) == c(p, p))) {
+      stop("dimension of Sigma is incompatible")
+    }
+    if (!isSymmetric(Sigma, tol = sqrt(.Machine$double.eps), 
+                     check.attributes = FALSE)) {
+      stop("Sigma must be a symmetric matrix")
+    }
+  }
+  chol_Sigma <- chol(Sigma)
+  rooti <- backsolve(chol_Sigma, t(x) - mu, transpose = TRUE)
+  quads <- colSums(rooti^2)
+  out <- lgamma((p + df)/2) - (lgamma(df / 2) + sum(log(diag(chol_Sigma))) + 
+         p/2 * log(pi * df)) - 0.5 * (df + p) * log1p(quads / df)
+  if (!log) 
+    out <- exp(out)
+  out
+}
+
+rmultistudent <- function(n, df, mu, Sigma, log = TRUE, 
+                          check = FALSE) {
+  # random values of the multivariate student-t distribution 
+  #
+  # Args:
+  #   n: number of random values
+  #   df: degrees of freedom
+  #   mu: mean vector
+  #   sigma: covariance matrix
+  #   check: check arguments for validity?
+  p <- length(mu)
+  if (check) {
+    if (df <= 0) {
+      stop("df must be greater zero")
+    }
+  }
+  samples <- rmultinormal(n, mu = rep(0, p), Sigma = Sigma, check = check) / 
+             sqrt(rchisq(n, df = df) / df)
+  sweep(samples, 2, mu, "+")
 }
 
 dcategorical <- function(x, eta, ncat, link = "logit") {
