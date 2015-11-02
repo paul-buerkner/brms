@@ -910,7 +910,7 @@ stan_functions <- function(family = "gaussian", link = "identity",
   if (use_cov(autocor) && (get_ar(autocor) || get_ma(autocor))) {
     if (family == "gaussian") {
       out <- paste0(out,
-      "  /* multi normal log-PDF for specical residual covariance structures \n",
+      "  /* multi normal log-PDF for special residual covariance structures \n",
       "   * currently only ARMA effects of order 1 are implemented \n",
       "   * Args: \n",
       "   *   y: response vector \n",
@@ -946,7 +946,7 @@ stan_functions <- function(family = "gaussian", link = "identity",
     } else {
       # family %in% c("student", "cauchy")
       out <- paste0(out,
-      "  /* multi student-t log-PDF for specical residual covariance structures \n",
+      "  /* multi student-t log-PDF for special residual covariance structures \n",
       "   * currently only ARMA effects of order 1 are implemented \n",
       "   * Args: \n",
       "   *   y: response vector \n",
