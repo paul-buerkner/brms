@@ -470,7 +470,7 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5, ask = TRUE, ...) 
     stop("N must be a positive integer")
   if (!is.character(pars)) 
     pars <- c("^b_", "^sd_", "^cor_", "^sigma", "^rescor", "^nu$", 
-              "^shape$", "^delta$", "^ar", "^ma")
+              "^shape$", "^delta$", "^ar", "^ma", "^arr")
   samples <- posterior_samples(x, pars = pars, add_chains = TRUE)
   pars <- names(samples)[which(!names(samples) %in% c("chains", "iter"))] 
   
@@ -956,8 +956,8 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
   
   # process class and group arguments
   if (is.null(class)) class <- ""
-  valid_classes <- c("", "b", "sd", "cor", "ar", "ma", "sigma", 
-                     "rescor", "nu", "shape", "delta")
+  valid_classes <- c("", "b", "sd", "cor", "ar", "ma", "arr", 
+                     "sigma", "rescor", "nu", "shape", "delta")
   if (!class %in% valid_classes)
     stop(paste(class, "is not a valid paramter class"))
   if (class %in% c("b", "sd", "cor", "sigma", "rescor")) {
