@@ -642,7 +642,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     family <- "multinormal"
   } else if (use_cov(object$autocor)) {
     # special family for ARMA models using residual covariance matrices
-    family <- "gaussian_cov"
+    family <- paste0(family, "_cov")
     samples$ar <- posterior_samples(object, pars = "^ar\\[", as.matrix = TRUE)
     samples$ma <- posterior_samples(object, pars = "^ma\\[", as.matrix = TRUE)
   } 
@@ -929,7 +929,7 @@ logLik.brmsfit <- function(object, ...) {
     family <- "multinormal"
   } else if (use_cov(object$autocor)) {
     # special family for ARMA models using residual covariance matrices
-    family <- "gaussian_cov"
+    family <- paste0(family, "_cov")
     samples$ar <- posterior_samples(object, pars = "^ar\\[", as.matrix = TRUE)
     samples$ma <- posterior_samples(object, pars = "^ma\\[", as.matrix = TRUE)
   } 

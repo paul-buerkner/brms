@@ -84,6 +84,41 @@ loglik_gaussian_cov <- function(n, data, samples, link) {
   out
 }
 
+loglik_student_cov <- function(n, data, samples, link) {
+  # currently, only ARMA1 processes are implemented
+  rows <- with(data, begin_tg[n]:(begin_tg[n] + nrows_tg[n] - 1))
+  Y_part <- data$Y[rows]
+  eta_part <- samples$eta[, rows, drop = FALSE]
+  squared_se_part <- data$squared_se[rows]
+  # different functions for different residucal cov matrices
+  if (!is.null(samples$ar) && is.null(samples$ma)) {
+    # AR1 process
+    Sigma <- get_cov_matrix_ar1(ar = samples$ar, sigma = samples$sigma, 
+                                sq_se = squared_se_part, nrows = length(rows)) 
+  } else if (is.null(samples$ar) && !is.null(samples$ma)) {
+    # MA1 process
+    Sigma <- get_cov_matrix_ma1(ma = samples$ma, sigma = samples$sigma, 
+                                sq_se = squared_se_part, nrows = length(rows)) 
+  } else {
+    # ARMA1 process
+    Sigma <- get_cov_matrix_arma1(ar = samples$ar, ma = samples$ma, 
+                                  sigma = samples$sigma, sq_se = squared_se_part, 
+                                  nrows = length(rows))
+  }
+  out <- sapply(1:nrow(samples$eta), function(i)
+    dmultistudent(Y_part, df = samples$nu[i, ], 
+                  mu = ilink(eta_part[i, ], link), 
+                  Sigma = Sigma[i, , ], log = TRUE))
+  # weights, truncation and censoring not yet allowed
+  out
+}
+
+loglik_cauchy_cov <- function(n, data, samples, link) {
+  samples$nu <- matrix(rep(1, nrow(samples$eta)))
+  loglik_student_cov(n = n, data = data, samples = samples, link = link)
+}
+                  
+
 loglik_binomial <- function(n, data, samples, link) {
   trials <- ifelse(length(data$max_obs) > 1, data$max_obs[n], data$max_obs) 
   args <- list(size = trials, prob = ilink(samples$eta[, n], link))
