@@ -77,6 +77,38 @@ predict_gaussian_cov <- function(n, data, samples, link, ...) {
   do.call(rbind, lapply(1:nrow(samples$eta), .fun))
 }
 
+predict_student_cov <- function(n, data, samples, link, ...) {
+  # currently, only ARMA1 processes are implemented
+  rows <- with(data, begin_tg[n]:(begin_tg[n] + nrows_tg[n] - 1))
+  eta_part <- samples$eta[, rows, drop = FALSE]
+  squared_se_part <- data$squared_se[rows]
+  # different functions for different residucal cov matrices
+  if (!is.null(samples$ar) && is.null(samples$ma)) {
+    # AR1 process
+    Sigma <- get_cov_matrix_ar1(ar = samples$ar, sigma = samples$sigma, 
+                                sq_se = squared_se_part, nrows = length(rows)) 
+  } else if (is.null(samples$ar) && !is.null(samples$ma)) {
+    # MA1 process
+    Sigma <- get_cov_matrix_ma1(ma = samples$ma, sigma = samples$sigma, 
+                                sq_se = squared_se_part, nrows = length(rows)) 
+  } else {
+    # ARMA1 process
+    Sigma <- get_cov_matrix_arma1(ar = samples$ar, ma = samples$ma, 
+                                  sigma = samples$sigma, sq_se = squared_se_part, 
+                                  nrows = length(rows))
+  }
+  .fun <- function(i) {
+    rmultistudent(1, df = samples$nu[i, ], mu = ilink(eta_part[i, ], link), 
+                  Sigma = Sigma[i, , ])
+  }
+  do.call(rbind, lapply(1:nrow(samples$eta), .fun))
+}
+
+predict_cauchy_cov <- function(n, data, samples, link, ...) {
+  samples$nu <- matrix(rep(1, nrow(samples$eta)))
+  predict_student_cov(n = n, data = data, samples = samples, link = link, ...) 
+}
+
 predict_binomial <- function(n, data, samples, link, ntrys, ...) {
   max_obs <- ifelse(length(data$max_obs) > 1, data$max_obs[n], data$max_obs) 
   args <- list(size = max_obs, prob = ilink(samples$eta[, n], link))
