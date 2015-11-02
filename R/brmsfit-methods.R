@@ -636,11 +636,12 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   
   # call predict functions
   family <- object$family
+  autocor <- object$autocor
   if (object$link == "log" && family == "gaussian" && nresp == 1) {
     family <- "lognormal"
   } else if (family == "gaussian" && nresp > 1) {
     family <- "multinormal"
-  } else if (use_cov(object$autocor)) {
+  } else if (use_cov(autocor) && (get_ar(autocor) || get_ma(autocor))) {
     # special family for ARMA models using residual covariance matrices
     family <- paste0(family, "_cov")
     samples$ar <- posterior_samples(object, pars = "^ar\\[", as.matrix = TRUE)
@@ -923,11 +924,12 @@ logLik.brmsfit <- function(object, ...) {
   
   # prepare for calling family specific loglik functions
   family <- object$family
+  autocor <- object$autocor
   if (object$link == "log" && family == "gaussian" && nresp == 1) {
     family <- "lognormal"
   } else if (family == "gaussian" && nresp > 1) {
     family <- "multinormal"
-  } else if (use_cov(object$autocor)) {
+  } else if (use_cov(autocor) && (get_ar(autocor) || get_ma(autocor))) {
     # special family for ARMA models using residual covariance matrices
     family <- paste0(family, "_cov")
     samples$ar <- posterior_samples(object, pars = "^ar\\[", as.matrix = TRUE)

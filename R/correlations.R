@@ -58,7 +58,7 @@ cor_arma <- function(formula = ~ 1, p = 0, q = 0, r = 0, cov = FALSE) {
   if (!(r >= 0 && (r == round(r)))) {
     stop("response autoregressive order must be a non-negative integer")
   }
-  if (cov && (p > 1 || q > 1 || (p == 0 && q == 0 && r > 0))) {
+  if (cov && (p > 1 || q > 1)) {
     stop(paste("covariance formulation of ARMA structures", 
                "is only possible for effects of maximal order 1"))
   }

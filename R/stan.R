@@ -175,7 +175,7 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
       paste0("  # data needed for ARR effects \n",
              "  int<lower=1> Karr; \n",
              "  matrix[N, Karr] Yarr;  # ARR design matrix \n"),
-    if (is_linear && is.formula(ee$se) && !use_cov(autocor))
+    if (is_linear && is.formula(ee$se) && !(use_cov(autocor) && (Kar || Kma)))
       "  vector<lower=0>[N] se;  # SEs for meta-analysis \n",
     if (is.formula(ee$weights))
       paste0("  vector<lower=0>[N",trait,"] weights;  # model weights \n"),
@@ -429,7 +429,7 @@ stan_llh <- function(family, link, se = FALSE, weights = FALSE,
     family <- "lognormal"
     link <- "identity"
   }
-  if (use_cov(autocor)) {
+  if (use_cov(autocor) && (get_ar(autocor) || get_ma(autocor))) {
     # ARMA effects have a special formulation
     # if fitted using a covariance matrix for residuals
     family <- paste0(family, "_cov")
