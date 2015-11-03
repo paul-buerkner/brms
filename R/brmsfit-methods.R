@@ -413,10 +413,12 @@ stancode.brmsfit <- function(object, ...)
 standata.brmsfit <- function(object, ...) {
   if (is.data.frame(object$data)) {
     # brms > 0.5.0 stores the original model.frame 
-    standata <- brmdata(object$formula, data = object$data, 
-                        family = object$family, autocor = object$autocor, 
-                        cov.ranef = object$cov.ranef, partial = object$partial,
-                        ...)
+    standata <- generate_standata(object$formula, 
+                                  data = object$data, 
+                                  family = object$family, 
+                                  autocor = object$autocor, 
+                                  cov.ranef = object$cov.ranef, 
+                                  partial = object$partial, ...)
   } else {
     # brms <= 0.5.0 only stores the data passed to Stan 
     standata <- object$data

@@ -168,40 +168,45 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
                    "of grouping factor", gnames[i], "not found in the fitted model"))
       } 
       # transform grouping factor levels into their corresponding integers
-      # to match the output of brmdata
+      # to match the output of generate_standata
       newdata[[gnames[i]]] <- sapply(gf, match, table = old_levels)
     }
   }
-  brmdata(fit$formula, data = newdata, family =  fit$family, 
-          autocor =  fit$autocor, partial =  fit$partial, 
-          newdata = TRUE, keep_intercept = TRUE)
+  generate_standata(fit$formula, data = newdata, family = fit$family, 
+                    autocor =  fit$autocor, partial = fit$partial, 
+                    newdata = TRUE, keep_intercept = TRUE)
 }
 
-#' Extract required data for \code{brms} models
+#' Data for \pkg{brms} Models
+#' 
+#' Generate data for \pkg{brms} models to be passed to \pkg{Stan}
 #'
 #' @inheritParams brm
 #' @param ... Other arguments for internal usage only
 #' 
-#' @aliases brm.data
+#' @aliases brmdata brm.data
 #' 
-#' @return A named list of objects containing the required data to fit a \code{brms} model 
+#' @return A named list of objects containing the required data 
+#'   to fit a \pkg{brms} model with \pkg{Stan}. 
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
 #' @examples
-#' data1 <- brmdata(rating ~ treat + period + carry + (1|subject), 
-#'                  data = inhaler, family = "cumulative")
+#' data1 <- generate_standata(rating ~ treat + period + carry + (1|subject), 
+#'                            data = inhaler, family = "cumulative")
 #' names(data1)
 #' 
-#' data2 <- brmdata(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient) + (1|visit), 
-#'                  data = epilepsy, family = "poisson")
+#' data2 <- generate_standata(count ~ log_Age_c + log_Base4_c * Trt_c 
+#'                            + (1|patient) + (1|visit), 
+#'                            data = epilepsy, family = "poisson")
 #' names(data2)
 #'          
 #' @export
-brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL, 
-                    partial = NULL, cov.ranef = NULL, ...) {
+generate_standata <- function(formula, data = NULL, family = "gaussian", 
+                              autocor = NULL, partial = NULL, 
+                              cov.ranef = NULL, ...) {
   # internal arguments:
-  #   newdata: logical; indicating if brmdata is called with new data
+  #   newdata: logical; indicating if generate_standata is called with new data
   #   keep_intercept: logical; indicating if the Intercept column
   #                   should be kept in the FE design matrix
   dots <- list(...)
@@ -214,10 +219,7 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
   
   et <- extract_time(autocor$formula)
   ee <- extract_effects(formula = formula, family = family, partial, et$all)
-  if (!isTRUE(dots$newdata)) {
-    # for new data, update_data was already called in amend_newdata
-    data <- update_data(data, family = family, effects = ee, et$group)
-  }
+  data <- update_data(data, family = family, effects = ee, et$group)
   
   # sort data in case of autocorrelation models
   if (has_arma(autocor)) {
@@ -451,11 +453,23 @@ brmdata <- function(formula, data = NULL, family = "gaussian", autocor = NULL,
 }  
 
 #' @export
-brm.data <- function(formula, data = NULL, family = "gaussian", autocor = NULL, 
-                     partial = NULL, cov.ranef = NULL)  {
-  # deprectated alias of brmdata
-  brmdata(formula = formula, data = data, family = family, autocor = autocor,
-          partial = partial, cov.ranef = cov.ranef)
+brmdata <- function(formula, data = NULL, family = "gaussian", 
+                    autocor = NULL, partial = NULL, 
+                    cov.ranef = NULL, ...)  {
+  # deprectated alias of generate_standata
+  generate_standata(formula = formula, data = data, 
+                    family = family, autocor = autocor,
+                    partial = partial, cov.ranef = cov.ranef, ...)
+}
+
+#' @export
+brm.data <- function(formula, data = NULL, family = "gaussian", 
+                     autocor = NULL, partial = NULL, 
+                     cov.ranef = NULL, ...)  {
+  # deprectated alias of generate_standata
+  generate_standata(formula = formula, data = data, 
+                    family = family, autocor = autocor,
+                    partial = partial, cov.ranef = cov.ranef, ...)
 }
 
 get_model_matrix <- function(formula, data = environment(formula), rm_intercept = FALSE) {
