@@ -28,11 +28,12 @@ This can be a vector of one or two character strings.
 The first string indicates the distribution of the dependent variable (the 'family').
 Currently, the following families are supported:
 \code{"gaussian"}, \code{"student"}, \code{"cauchy"}, \code{"binomial"}, \code{"bernoulli"},
-\code{"categorical"}, \code{"poisson"}, \code{"negbinomial"}, \code{"geometric"}, \code{"gamma"},
-\code{"inverse.gaussian"}, \code{"exponential"}, \code{"weibull"},
+\code{"categorical"}, \code{"poisson"}, \code{"negbinomial"}, \code{"geometric"}, \cr
+\code{"gamma"}, \code{"inverse.gaussian"}, \code{"exponential"}, \code{"weibull"},
 \code{hurdle_poisson}, \code{hurdle_negbinomial}, \code{hurdle_gamma},
-\code{zero_inflated_poisson}, \code{zero_inflated_negbinomial},
-\code{"cumulative"}, \code{"cratio"}, \code{"sratio"}, and \code{"acat"}.
+\code{zero_inflated_poisson}, \cr
+\code{zero_inflated_negbinomial}, \code{"cumulative"}, \code{"cratio"},
+\code{"sratio"}, and \code{"acat"}.
 The second string indicates the link function, which must be supported by the family
 (if not specified, default links are used).
 Alternatively, a family function or the result of a call to a family function are also accepted
@@ -209,7 +210,7 @@ Fit a generalized linear mixed model, which incorporates both fixed-effects para
   However, only the actual response must be specified in \code{formula},
   as the second response variable used for the zero-inflation / hurdle part
   is internally generated.
-  A \code{formula} for this type of models may, for instance, look like this:
+  A \code{formula} for this type of models may, for instance, look like this: \cr
   \code{y ~ 0 + trait * (x1 + x2) + (0 + trait | g)}. In this example, the fixed effects
   \code{x1} and \code{x1} influence the zero-inflation / hurdle part differently
   than the actual response part as indicated by their interaction with \code{trait}.
@@ -233,7 +234,8 @@ Fit a generalized linear mixed model, which incorporates both fixed-effects para
   \code{weibull}, \code{exponential}, and \code{inverse.gaussian} can be used (among others)
   for survival regression when combined with the \code{log} link.
   Families \code{hurdle_poisson}, \code{hurdle_negbinomial}, \code{hurdle_gamma},
-  \code{zero_inflated_poisson}, and \code{zero_inflated_negbinomial} combined with the
+  \code{zero_inflated_poisson}, and \cr
+  \code{zero_inflated_negbinomial} combined with the
   \code{log} link allow to estimate zero-inflated and hurdle models. These models
   can be very helpful when there are many zeros in the data that cannot be explained
   by the primary distribution of the response. Family \code{hurdle_gamma} is
@@ -293,7 +295,7 @@ VarCorr(fit_e)
 ## extract random effects for each level
 ranef(fit_e)
 
-## Ordinal regression (with family \\code{sratio} and \\code{cloglog} link) modeling patient's rating
+## Ordinal regression modeling patient's rating
 ## of inhaler instructions using normal priors for fixed effects parameters
 fit_i <- brm(rating ~ treat + period + carry, data = inhaler,
              family = sratio("cloglog"), prior = set_prior("normal(0,5)"))
