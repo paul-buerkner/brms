@@ -1,4 +1,4 @@
-melt <- function(data, response, family) {
+melt_data <- function(data, response, family) {
   # melt data frame for multinormal models
   #
   # Args:
@@ -76,7 +76,7 @@ update_data <- function(data, family, effects, ...,
   # Returns:
   #   model.frame in long format with combined grouping variables if present
   if (!"brms.frame" %in% class(data)) {
-    data <- melt(data, response = effects$response, family = family)
+    data <- melt_data(data, response = effects$response, family = family)
     data <- stats::model.frame(effects$all, data = data, na.action = na.omit,
                                drop.unused.levels = drop.unused.levels)
     if (any(grepl("__", colnames(data))))
@@ -274,7 +274,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
                                             (ncol(standata$Y) - 1) / 2) 
   } else if (is.hurdle(family) || is.zero_inflated(family)) {
     # the second half of Y is not used because it is only dummy data
-    # that was put into data to make melt work correctly
+    # that was put into data to make melt_data work correctly
     standata$Y <- standata$Y[1:(nrow(data) / 2)] 
     standata$N_trait <- length(standata$Y)
   }
