@@ -1,19 +1,36 @@
-# This file contains all functions generating Stan code
-
-stan_model <- function(formula, data = NULL, family = "gaussian", link = "identity",
-                       prior = prior_frame(), partial = NULL, threshold = "flexible", 
-                       cov.ranef = NULL, sample.prior = FALSE, autocor = cor_arma(), 
-                       save.model = NULL) {
-  # Writes the regression model in Stan language
-  # 
-  # Args: 
-  #   As in brm
-  #
-  # Returns:
-  #  The model in stan code
-  ee <- extract_effects(formula = formula, family = family, partial = partial) 
-  if (family == "gaussian" && length(ee$response) > 1)
+#' Stan Code for \pkg{brms} Models
+#' 
+#' Generate Stan code for \pkg{brms} models
+#' 
+#' @inheritParams brm
+#' 
+#' @return A character string containing the fully commented Stan code 
+#'   used to fit models with the \code{\link[brms:brm]{brm}} function.
+#'  
+#' @examples 
+#' generate_stancode(rating ~ treat + period + carry + (1|subject), 
+#'                   data = inhaler, family = "cumulative")
+#' 
+#' generate_stancode(count ~ log_Age_c + log_Base4_c * Trt_c 
+#'                   + (1|patient) + (1|visit), 
+#'                   data = epilepsy, family = "poisson")
+#'
+#' @export
+generate_stancode <- function(formula, data = NULL, family = "gaussian", 
+                              prior = prior_frame(), partial = NULL, 
+                              threshold = "flexible", cov.ranef = NULL, 
+                              sample.prior = FALSE, autocor = cor_arma(), 
+                              save.model = NULL) {
+  
+  obj_family <- check_family(family) 
+  link <- obj_family$link
+  family <- obj_family$family
+  et <- extract_time(autocor$formula)  
+  ee <- extract_effects(formula, family = family, partial, et$all)
+  data <- update_data(data, family = family, effects = ee, et$group)
+  if (family == "gaussian" && length(ee$response) > 1) {
     family <- "multinormal"
+  }
   # flags to indicate of which type family is
   # see misc.R for details
   is_linear <- is.linear(family)
@@ -28,7 +45,6 @@ stan_model <- function(formula, data = NULL, family = "gaussian", link = "identi
   shape <- has_shape(family)
   offset <- !is.null(model.offset(data)) 
   trunc <- get_boundaries(ee$trunc)  
-  
   if (is_categorical) {
     X <- data.frame()
     fixef <- colnames(X)

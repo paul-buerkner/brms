@@ -316,9 +316,9 @@ brm <- function(formula, data = NULL, family = "gaussian",
     standata <- standata(x)  # compute data to be passed to Stan
   } else {  # build new model
     # see validate.R for function definitions
-    family <- check_family(family) 
-    link <- family$link
-    family <- family$family
+    obj_family <- check_family(family) 
+    link <- obj_family$link
+    family <- obj_family$family
     formula <- update_formula(formula, addition = addition) 
     prior <- check_prior(prior, formula = formula, data = data, 
                          family = family, link = link, 
@@ -336,12 +336,13 @@ brm <- function(formula, data = NULL, family = "gaussian",
     x$data <- update_data(data, family = family, effects = ee, et$group)  # see data.R
     x$ranef <- gather_ranef(effects = ee, data = x$data)  # see validate.R
     x$exclude <- exclude_pars(formula, ranef = ranef)  # see validate.R
-    x$model <- stan_model(formula = formula, data = x$data, 
-                          family = family, link = link, 
-                          prior = prior,  autocor = autocor, 
-                          partial = partial, threshold = threshold, 
-                          cov.ranef = cov.ranef, sample.prior = sample.prior, 
-                          save.model = save.model)  # see stan.R
+    x$model <- generate_stancode(formula = formula, data = data, 
+                                 family = obj_family, prior = prior,  
+                                 autocor = autocor, partial = partial, 
+                                 threshold = threshold, 
+                                 cov.ranef = cov.ranef, 
+                                 sample.prior = sample.prior, 
+                                 save.model = save.model)  # see stan.R
     standata <- standata(x)  # compute data to be passed to Stan
     message("Compiling the C++ model")
     x$fit <- rstan::stanc(model_code = x$model,
