@@ -67,58 +67,56 @@ test_that("Test_that stan_arma returns correct strings (or errors)", {
                "ARMA effects for family poisson are not yet implemented")
 })  
 
-test_that("Test that generate_stancode accepts supported links", {
-  expect_match(generate_stancode(rating ~ treat + period + carry, 
-                                 data = inhaler, 
-                                 family = sratio("probit_approx")), 
+test_that("Test that make_stancode accepts supported links", {
+  expect_match(make_stancode(rating ~ treat + period + carry, 
+                             data = inhaler, family = sratio("probit_approx")), 
                "Phi_approx")
-  expect_match(generate_stancode(rating ~ treat + period + carry, 
-                                 data = inhaler, 
-                                 family = c("cumulative", "probit")), 
+  expect_match(make_stancode(rating ~ treat + period + carry, 
+                             data = inhaler, family = c("cumulative", "probit")), 
                "Phi")
-  expect_match(generate_stancode(rating ~ treat + period + carry, 
+  expect_match(make_stancode(rating ~ treat + period + carry, 
                                  data = inhaler, family = "poisson"), 
                "log")
 })
 
-test_that("Test that generate_stancode returns correct strings for customized covariances", {
-  expect_match(generate_stancode(rating ~ treat + period + carry + (1|subject), 
-                                 data = inhaler, cov.ranef = list(subject = 1)), 
+test_that("Test that make_stancode returns correct strings for customized covariances", {
+  expect_match(make_stancode(rating ~ treat + period + carry + (1|subject), 
+                             data = inhaler, cov.ranef = list(subject = 1)), 
               "r_1 <- sd_1 * (cov_1 * pre_1)", fixed = TRUE)
-  expect_match(generate_stancode(rating ~ treat + period + carry + (1+carry|subject), 
-                                 data = inhaler, cov.ranef = list(subject = 1)),
+  expect_match(make_stancode(rating ~ treat + period + carry + (1+carry|subject), 
+                             data = inhaler, cov.ranef = list(subject = 1)),
                paste0("r_1 <- to_array(kronecker_cholesky(cov_1, L_1, sd_1) * ",
                       "to_vector(pre_1), N_1, K_1"),
                fixed = TRUE)
-  expect_match(generate_stancode(rating ~ treat + period + carry + (1+carry||subject), 
-                                 data = inhaler, cov.ranef = list(subject = 1)), 
+  expect_match(make_stancode(rating ~ treat + period + carry + (1+carry||subject), 
+                             data = inhaler, cov.ranef = list(subject = 1)), 
                paste0("r_1 <- to_array(to_vector(rep_matrix(sd_1, N_1)) .* ",
                       "(cov_1 * to_vector(pre_1)), N_1, K_1)"),
                fixed = TRUE)
 })
 
-test_that("Test that generate_stancode handles addition arguments correctly", {
-  expect_match(generate_stancode(time | cens(censored) ~ age + sex + disease, 
-                                 data = kidney, family = c("weibull", "log")), 
+test_that("Test that make_stancode handles addition arguments correctly", {
+  expect_match(make_stancode(time | cens(censored) ~ age + sex + disease, 
+                             data = kidney, family = c("weibull", "log")), 
                "vector[N] cens;", fixed = TRUE)
-  expect_match(generate_stancode(time | trunc(0) ~ age + sex + disease,
+  expect_match(make_stancode(time | trunc(0) ~ age + sex + disease,
                                  data = kidney, family = "gamma"), 
                "T[lb, ];", fixed = TRUE)
-  expect_match(generate_stancode(time | trunc(ub = 100) ~ age + sex + disease, 
-                                 data = kidney, family = cauchy("log")), 
+  expect_match(make_stancode(time | trunc(ub = 100) ~ age + sex + disease, 
+                             data = kidney, family = cauchy("log")), 
                "T[, ub];", fixed = TRUE)
-  expect_match(generate_stancode(count | trunc(0, 150) ~ Trt_c, 
-                                 data = epilepsy, family = "poisson"), 
+  expect_match(make_stancode(count | trunc(0, 150) ~ Trt_c, 
+                             data = epilepsy, family = "poisson"), 
                "T[lb, ub];", fixed = TRUE)
 })
 
-test_that("Test that generate_stancode correctly combines strings of multiple grouping factors", {
-  expect_match(generate_stancode(count ~ (1|patient) + (1+Trt_c|visit), 
-                                 data = epilepsy, family = "poisson"), 
+test_that("Test that make_stancode correctly combines strings of multiple grouping factors", {
+  expect_match(make_stancode(count ~ (1|patient) + (1+Trt_c|visit), 
+                             data = epilepsy, family = "poisson"), 
                "  real Z_1[N];  # RE design matrix \n  # data for random effects of visit \n", 
                fixed = TRUE)
-  expect_match(generate_stancode(count ~ (1|visit) + (1+Trt_c|patient), 
-                                 data = epilepsy, family = "poisson"), 
+  expect_match(make_stancode(count ~ (1|visit) + (1+Trt_c|patient), 
+                             data = epilepsy, family = "poisson"), 
                "  int NC_1;  # number of correlations \n  # data for random effects of visit \n", 
                fixed = TRUE)
 })
@@ -202,7 +200,7 @@ test_that("Test that stan_rngprior returns correct sampling statements for prior
 })
 
 test_that("Test that stan_functions returns correct user defined functions", {
-  expect_match(generate_stancode(rating ~ treat + period + carry + (1+carry|subject), 
-                                 data = inhaler, cov.ranef = list(subject = 1)), 
+  expect_match(make_stancode(rating ~ treat + period + carry + (1+carry|subject), 
+                             data = inhaler, cov.ranef = list(subject = 1)), 
                "matrix kronecker_cholesky.*vector\\[\\] to_array")
 })

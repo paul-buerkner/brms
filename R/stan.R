@@ -8,19 +8,19 @@
 #'   used to fit models with the \code{\link[brms:brm]{brm}} function.
 #'  
 #' @examples 
-#' generate_stancode(rating ~ treat + period + carry + (1|subject), 
-#'                   data = inhaler, family = "cumulative")
+#' make_stancode(rating ~ treat + period + carry + (1|subject), 
+#'               data = inhaler, family = "cumulative")
 #' 
-#' generate_stancode(count ~ log_Age_c + log_Base4_c * Trt_c 
-#'                   + (1|patient) + (1|visit), 
-#'                   data = epilepsy, family = "poisson")
+#' make_stancode(count ~ log_Age_c + log_Base4_c * Trt_c 
+#'               + (1|patient) + (1|visit), 
+#'               data = epilepsy, family = "poisson")
 #'
 #' @export
-generate_stancode <- function(formula, data = NULL, family = "gaussian", 
-                              prior = prior_frame(), partial = NULL, 
-                              threshold = "flexible", cov.ranef = NULL, 
-                              sample.prior = FALSE, autocor = cor_arma(), 
-                              save.model = NULL) {
+make_stancode <- function(formula, data = NULL, family = "gaussian", 
+                          prior = prior_frame(), partial = NULL, 
+                          threshold = "flexible", cov.ranef = NULL, 
+                          sample.prior = FALSE, autocor = cor_arma(), 
+                          save.model = NULL) {
   
   obj_family <- check_family(family) 
   link <- obj_family$link

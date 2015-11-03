@@ -168,13 +168,13 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
                    "of grouping factor", gnames[i], "not found in the fitted model"))
       } 
       # transform grouping factor levels into their corresponding integers
-      # to match the output of generate_standata
+      # to match the output of make_standata
       newdata[[gnames[i]]] <- sapply(gf, match, table = old_levels)
     }
   }
-  generate_standata(fit$formula, data = newdata, family = fit$family, 
-                    autocor =  fit$autocor, partial = fit$partial, 
-                    newdata = TRUE, keep_intercept = TRUE)
+  make_standata(fit$formula, data = newdata, family = fit$family, 
+                autocor =  fit$autocor, partial = fit$partial, 
+                newdata = TRUE, keep_intercept = TRUE)
 }
 
 #' Data for \pkg{brms} Models
@@ -192,21 +192,21 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
 #' @examples
-#' data1 <- generate_standata(rating ~ treat + period + carry + (1|subject), 
-#'                            data = inhaler, family = "cumulative")
+#' data1 <- make_standata(rating ~ treat + period + carry + (1|subject), 
+#'                        data = inhaler, family = "cumulative")
 #' names(data1)
 #' 
-#' data2 <- generate_standata(count ~ log_Age_c + log_Base4_c * Trt_c 
-#'                            + (1|patient) + (1|visit), 
-#'                            data = epilepsy, family = "poisson")
+#' data2 <- make_standata(count ~ log_Age_c + log_Base4_c * Trt_c 
+#'                        + (1|patient) + (1|visit), 
+#'                        data = epilepsy, family = "poisson")
 #' names(data2)
 #'          
 #' @export
-generate_standata <- function(formula, data = NULL, family = "gaussian", 
-                              autocor = NULL, partial = NULL, 
-                              cov.ranef = NULL, ...) {
+make_standata <- function(formula, data = NULL, family = "gaussian", 
+                          autocor = NULL, partial = NULL, 
+                          cov.ranef = NULL, ...) {
   # internal arguments:
-  #   newdata: logical; indicating if generate_standata is called with new data
+  #   newdata: logical; indicating if make_standata is called with new data
   #   keep_intercept: logical; indicating if the Intercept column
   #                   should be kept in the FE design matrix
   dots <- list(...)
@@ -456,20 +456,20 @@ generate_standata <- function(formula, data = NULL, family = "gaussian",
 brmdata <- function(formula, data = NULL, family = "gaussian", 
                     autocor = NULL, partial = NULL, 
                     cov.ranef = NULL, ...)  {
-  # deprectated alias of generate_standata
-  generate_standata(formula = formula, data = data, 
-                    family = family, autocor = autocor,
-                    partial = partial, cov.ranef = cov.ranef, ...)
+  # deprectated alias of make_standata
+  make_standata(formula = formula, data = data, 
+                family = family, autocor = autocor,
+                partial = partial, cov.ranef = cov.ranef, ...)
 }
 
 #' @export
 brm.data <- function(formula, data = NULL, family = "gaussian", 
                      autocor = NULL, partial = NULL, 
                      cov.ranef = NULL, ...)  {
-  # deprectated alias of generate_standata
-  generate_standata(formula = formula, data = data, 
-                    family = family, autocor = autocor,
-                    partial = partial, cov.ranef = cov.ranef, ...)
+  # deprectated alias of make_standata
+  make_standata(formula = formula, data = data, 
+                family = family, autocor = autocor,
+                partial = partial, cov.ranef = cov.ranef, ...)
 }
 
 get_model_matrix <- function(formula, data = environment(formula), rm_intercept = FALSE) {
