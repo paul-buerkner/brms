@@ -255,14 +255,14 @@ use_cov <- function(x) {
 #' summary(fit1)
 #' 
 #' ## investigate the residuals (autocorrelation clearly visible)
-#' bacf(residuals(fit1, summary = FALSE), lag.max = 10)
+#' macf(residuals(fit1, summary = FALSE), lag.max = 10)
 #' 
 #' ## fit the model again with autoregressive coefficients
 #' fit2 <- brm(y ~ 1, autocor = cor_ar(p = 3))
 #' summary(fit2)
 #' 
 #' ## investigate the residuals again (autocorrelation is gone)
-#' bacf(residuals(fit2, summary = FALSE), lag.max = 10)
+#' macf(residuals(fit2, summary = FALSE), lag.max = 10)
 #' }
 #'              
 #' @export
@@ -284,10 +284,11 @@ macf <- function(x, lag.max = NULL, plot = TRUE, ...) {
   }
   if (is.null(lag.max)) {
     lag.max <- min(sort(table(group), decreasing = TRUE)[1],
-                   10*log(ncol(x)/length(unique(group)), base = 10))
+                   10 * log(ncol(x) / length(unique(group)), base = 10))
   }
-  ac_names <- paste0("ac",1:lag.max) 
-  lm_call <- parse(text = paste0("lm(y ~ ",paste(ac_names, collapse = "+"),", data = D)"))
+  ac_names <- paste0("ac", 1:lag.max) 
+  lm_call <- parse(text = paste0("lm(y ~ ",paste(ac_names, collapse = "+"), 
+                                 ", data = D)"))
   coefs <- do.call(rbind, lapply(1:nrow(x), function(i) {
     D <- as.data.frame(arr_design_matrix(x[i, ], r = lag.max, group = group))
     names(D) <- paste0("ac", 1:lag.max) 
