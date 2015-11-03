@@ -1,24 +1,23 @@
-#' Parameters of interest for \code{brms} models (deprecated)
-#' 
-#' @aliases brm.pars
-#' 
-#' @inheritParams brm
-#' @param ranef logical; indicating if random effects estimates should be returned
-#' 
-#' @return A vector of character strings specifying parameters of interest for models produced by the \code{brms} package.
-#' 
-#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
-#' 
-#' @details This function is depricated. Parameters of interest are now chosen by exclusion not by inclusion.
-#' 
-#' @examples 
-#' brmpars(rating ~ treat + period + carry + (1|subject),
-#'          data = inhaler, family = "cumulative")
-#
-#  brmpars(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient) + (1|visit),
+# Parameters of interest for \code{brms} models (deprecated)
+# 
+# @aliases brm.pars
+# 
+# @inheritParams brm
+# @param ranef logical; indicating if random effects estimates should be returned
+# 
+# @return A vector of character strings specifying parameters of interest for models produced by the \code{brms} package.
+# 
+# @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
+# 
+# @details This function is depricated. Parameters of interest are now chosen by exclusion not by inclusion.
+# 
+# @examples 
+# brmpars(rating ~ treat + period + carry + (1|subject),
+#         data = inhaler, family = "cumulative")
+# 
+# brmpars(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient) + (1|visit),
 #         data = epilepsy, family = c("poisson", "log"))
-#'               
-#' @export
+#               
 brmpars <- function(formula, data = NULL, family = "gaussian", 
                     autocor = NULL, partial = NULL,
                     threshold = "flexible", ranef = TRUE) {
@@ -68,7 +67,6 @@ brmpars <- function(formula, data = NULL, family = "gaussian",
   return(out)
 }
 
-#' @export
 brm.pars <- function(formula, data = NULL, family = "gaussian", 
                      autocor = NULL, partial = NULL,
                      threshold = "flexible", ranef = TRUE) {
