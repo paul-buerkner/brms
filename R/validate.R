@@ -279,7 +279,8 @@ exclude_pars <- function(formula, ranef = TRUE) {
   #   a vector of parameters to be excluded
   ee <- extract_effects(formula)
   out <- c("eta", "etam", "etap", "b_Intercept1", "Lrescor", "Rescor",
-           "p", "q", "e", "E", "res_cov_matrix", "lp_pre")
+           "p", "q", "e", "E", "res_cov_matrix", "lp_pre",
+           "hs_local", "hs_global")
   if (length(ee$group)) {
     for (i in 1:length(ee$group)) {
       out <- c(out, paste0("pre_",i), paste0("L_",i), paste0("Cor_",i))
@@ -546,7 +547,7 @@ get_prior <- function(formula, data = NULL, family = "gaussian",
       prior_scale <- max(prior_scale, suggested_scale, na.rm = TRUE)
     } 
   }
-  default_scale_prior <- paste0("cauchy(0,", prior_scale, ")")
+  default_scale_prior <- paste0("cauchy(0, ", prior_scale, ")")
   
   # initialize output
   prior <- prior_frame(prior = character(0), class = character(0), 
@@ -663,8 +664,11 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
   if (any(duplicated_input)) {
     stop("Duplicated prior specifications are not allowed. \n")
   }
-  # expand lkj correlation prior to full name
-  prior$prior <- sub("^lkj\\(", "lkj_corr_cholesky(", prior$prior)
+  
+  # handle special priors that are not explictly coded as functions in Stan
+  temp <- handle_special_priors(prior)  
+  prior <- temp$prior
+  attrib <- temp$attrib 
   
   # check if parameters in prior are valid
   if (nrow(prior)) {
@@ -680,15 +684,17 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
   # merge prior with all_prior
   prior <- rbind(prior, all_prior)
   rm <- which(duplicated(prior[, 2:4]))
-  if (length(rm))  # else it may happen that all rows a removed...
+  if (length(rm)) { 
+    # else it may happen that all rows a removed...
     prior <- prior[-rm, ]
+  }
   
   rows2remove <- NULL
   # special treatment of fixed effects Intercept(s)
   Int_index <- which(prior$class == "b" & prior$coef == "Intercept" 
                      & nchar(prior$prior))
   rows2remove <- c(rows2remove, Int_index)
-  if (!length(Int_index)) {  
+  if (!length(Int_index) && is.null(attrib[["hs_df"]])) {  
     # take global fixed effects prior
     Int_index <- which(prior$class == "b" & !nchar(prior$coef))
   }
@@ -738,7 +744,43 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
   prior <- prior[with(prior, order(class, group, coef)), ]
   prior <- rbind(prior, prior_incr_lp)
   rownames(prior) <- 1:nrow(prior)
+  # add attributes to prior generated in handle_special_priors
+  for (i in seq_along(attrib)) {
+    attr(prior, names(attrib)[i]) <- attrib[[i]]
+  }
   prior
+}
+
+handle_special_priors <- function(prior) {
+  # look for special priors such as horseshoe and process them appropriately
+  #
+  # Args:
+  #   prior: an object of class prior.frame
+  #
+  # Returns:
+  #   an updated version of prior with special attributes
+  attrib <- list()
+  b_index <- which(prior$class == "b" & !nchar(prior$coef))
+  if (length(b_index) && grepl("^horseshoe\\(.+\\)$", prior$prior[b_index])) {
+    # horseshoe prior for fixed effects parameters
+    hs_df <- as.numeric(gsub("^horseshoe\\(|\\)$", "", prior$prior[b_index]))
+    if (!is.na(hs_df) && hs_df > 0) {
+      b_coef_indices <- which(prior$class == "b" & nchar(prior$coef)
+                              & prior$coef != "Intercept")
+      if (any(nchar(prior$prior[b_coef_indices]))) {
+        stop(paste("Defining priors for single fixed effects parameters",
+                   "is not allowed when using horseshoe priors",
+                   "(except for the Intercept)"))
+      }
+      attrib$hs_df <- hs_df
+      prior$prior[b_index] <- "normal(0, hs_local * hs_global)"
+    } else {
+      stop("degrees of freedom of horseshoe prior must be a positive number")
+    }
+  }
+  # expand lkj correlation prior to full name
+  prior$prior <- sub("^lkj\\(", "lkj_corr_cholesky(", prior$prior)
+  list(prior = prior, attrib = attrib)
 }
 
 update_prior <- function(prior) {

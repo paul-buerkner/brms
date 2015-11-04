@@ -265,6 +265,10 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
              "  cholesky_factor_corr[K_trait] Lrescor; \n"),
     if (shape) 
       "  real<lower=0> shape;  # shape parameter constant across observations \n",
+    if (!is.null(attr(prior, "hs_df"))) 
+      paste0("  # horseshoe shrinkage parameters \n",
+             "  vector<lower=0>[K] hs_local; \n",
+             "  real<lower=0> hs_global; \n"),
     text_rngprior$par,
     "} \n")
   
@@ -1312,6 +1316,12 @@ stan_prior <- function(class, coef = NULL, group = NULL,
     out <- paste0(s, class, " ~ ", base_prior, "; \n")
   } else {
     out <- ""
+  }
+  if (class == "b" && !is.null(attr(prior, "hs_df"))) {
+    # add horseshoe shrinkage priors
+    out[[length(out) + 1]] <- paste0(
+      "  hs_local ~ student_t(", attr(prior, "hs_df"), ", 0, 1); \n",
+      "  hs_global ~ cauchy(0, 1); \n")
   }
   return(collapse(out))
 }
