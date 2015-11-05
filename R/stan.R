@@ -376,7 +376,7 @@ stan_ranef <- function(i, ranef, group, cor, prior = list(),
     out$data <- paste0(out$data, "  real Z_",i,"[N];  # RE design matrix \n")
     out$par <- paste0("  vector[N_",i,"] pre_",i,";  # unscaled REs \n",
                       "  real<lower=0> sd_",i,";  # RE standard deviation \n")
-    out$model <- paste0(out$model,"  pre_",i," ~ normal(0,1); \n")
+    out$model <- paste0(out$model,"  pre_",i," ~ normal(0, 1); \n")
     out$transD <- paste0("  vector[N_",i,"] r_",i,";  # REs \n")
     out$transC <- paste0("  r_",i, " <- sd_",i," * (", 
                          if (ccov) paste0("cov_",i," * "), "pre_",i,");",
@@ -392,7 +392,7 @@ stan_ranef <- function(i, ranef, group, cor, prior = list(),
                                       ";  # cholesky factor of correlations matrix \n"))
     out$model <- paste0(out$model, 
                         if (cor) stan_prior(class = "L", group = i, prior = prior),
-                        "  to_vector(pre_",i,") ~ normal(0,1); \n")
+                        "  to_vector(pre_",i,") ~ normal(0, 1); \n")
     out$transD <- paste0("  vector[K_",i,"] r_",i,"[N_",i,"];  # REs \n")
     if (ccov) {  # customized covariance matrix supplied
       if (cor) {  # estimate correlations between random effects
@@ -409,12 +409,13 @@ stan_ranef <- function(i, ranef, group, cor, prior = list(),
                            "to_vector(pre_",i,"[i]));  # scale REs \n  } \n")
     }
     if (cor) {  # return correlations above the diagonal only
+      cors_genC <- ulapply(2:length(r), function(k) lapply(1:(k-1), function(j)
+        paste0("  cor_",i,"[",(k-1)*(k-2)/2+j,"] <- Cor_",i,"[",j,",",k,"]; \n")))
       out$genD <- paste0("  corr_matrix[K_",i,"] Cor_",i,"; \n",
                          "  vector<lower=-1,upper=1>[NC_",i,"] cor_",i,"; \n")
       out$genC <- paste0("  # take only relevant parts of correlation matrix \n",
                          "  Cor_",i," <- multiply_lower_tri_self_transpose(L_",i,"); \n",
-                         collapse(ulapply(2:length(r), function(k) lapply(1:(k-1), function(j)
-                           paste0("  cor_",i,"[",(k-1)*(k-2)/2+j,"] <- Cor_",i,"[",j,",",k,"]; \n"))))) 
+                         collapse(cors_genC)) 
     }  
   }
   out

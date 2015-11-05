@@ -758,7 +758,9 @@ handle_special_priors <- function(prior) {
   #   prior: an object of class prior.frame
   #
   # Returns:
-  #   an updated version of prior with special attributes
+  #   an named list of two objects: 
+  #   prior: an updated version of prior
+  #   attrib: a named list containing future attributes of prior
   attrib <- list()
   b_index <- which(prior$class == "b" & !nchar(prior$coef))
   if (length(b_index) && grepl("^horseshoe\\(.+\\)$", prior$prior[b_index])) {
