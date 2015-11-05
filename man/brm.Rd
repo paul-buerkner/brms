@@ -275,7 +275,28 @@ Fit a generalized linear mixed model, which incorporates both fixed-effects para
   \code{\link[brms:set_prior]{set_prior}} function.
   Its documentation contains detailed information on how to correctly specify priors.
   To find out on which parameters or parameter classes priors can be defined,
-  use \code{\link[brms:get_prior]{get_prior}}.
+  use \code{\link[brms:get_prior]{get_prior}}. \cr
+
+  \bold{Adjusting the sampling behavior of \pkg{Stan}}
+
+  Despite choosing the number of iterations, chains, etc.,
+  users can directly change the sampling behavior of the NUTS sampler,
+  by using the \code{control} argument (a named list),
+  which is passed directly to \pkg{Stan} when specified in \code{brm}.
+  The most important reason to use \code{control} is to decrease
+  (or eliminate at best) the number of divergent transitions
+  that cause a bias in the obtained posterior samples.
+  Whenever you see the warning
+  "There were x divergent transitions after warmup.
+  Increasing adapt_delta may help."
+  you should really think about increasing \code{adapt_delta}.
+  To do this, write \code{control = list(adapt_delta = <x>)}, where \code{<x>}
+  should usually be value between \code{0.95} (default) and \code{1}.
+  Increasing \code{adapt_delta} will slow down the sampler but will
+  decrease the number of divergent transitions threatening
+  the validity of your posterior samples.
+  For more details on the \code{control} argument see
+  \code{\link[rstan:stan]{stan}}.
 }
 \examples{
 \dontrun{
