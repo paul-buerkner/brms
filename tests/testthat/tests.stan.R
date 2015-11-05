@@ -164,7 +164,7 @@ test_that("Test that stan_llh returns correct llhs under truncation", {
                "  Y[n] ~ binomial(trials[n], inv_logit(eta[n])) T[lb, ub]; \n")
 })
 
-test_that("Test that stan_llh returns correct llhs for zero-inflated an hurdle modles", {
+test_that("Test that stan_llh returns correct llhs for zero-inflated an hurdle models", {
   expect_equal(stan_llh(family = "zero_inflated_poisson", link = "log"),
                "  Y[n] ~ zero_inflated_poisson(eta[n], eta[n + N_trait]); \n")
   expect_equal(stan_llh(family = "hurdle_negbinomial", link = "log"),
@@ -199,7 +199,53 @@ test_that("Test that stan_rngprior returns correct sampling statements for prior
                     model = paste0(c2,"  prior_sd_1_1 ~ normal(0,5); \n  prior_sd_1_2 ~ cauchy(0,2); \n")))
 })
 
-test_that("Test that stan_functions returns correct user defined functions", {
+test_that("Test that stan_functions returns relevant user defined functions", {
+  # cauchit link
+  expect_match(make_stancode(rating ~ treat, data = inhaler,
+                             family = cumulative("cauchit")),
+               "real inv_cauchit(real y)", fixed = TRUE)
+  # inverse gaussian models
+  temp_stancode <- make_stancode(time | cens(censored) ~ age, data = kidney,
+                                 family = inverse.gaussian)
+  expect_match(temp_stancode, "real inv_gaussian_log(real y", fixed = TRUE)
+  expect_match(temp_stancode, "real inv_gaussian_cdf_log(real y", fixed = TRUE)
+  expect_match(temp_stancode, "real inv_gaussian_ccdf_log(real y", fixed = TRUE)
+  expect_match(make_stancode(time ~ 1, data = kidney, family = inverse.gaussian),
+               "real inv_gaussian_log(vector y", fixed = TRUE)
+  # zero-inflated and hurdle models
+  expect_match(make_stancode(count ~ Trt_c, data = epilepsy, 
+                             family = "zero_inflated_poisson"),
+               "real zero_inflated_poisson_log(int y", fixed = TRUE)
+  expect_match(make_stancode(count ~ Trt_c, data = epilepsy, 
+                             family = "zero_inflated_negbinomial"),
+               "real zero_inflated_neg_binomial_2_log(int y", fixed = TRUE)
+  expect_match(make_stancode(count ~ Trt_c, data = epilepsy, 
+                             family = hurdle_poisson()),
+               "real hurdle_poisson_log(int y", fixed = TRUE)
+  expect_match(make_stancode(count ~ Trt_c, data = epilepsy, 
+                             family = hurdle_negbinomial),
+               "real hurdle_neg_binomial_2_log(int y", fixed = TRUE)
+  expect_match(make_stancode(count ~ Trt_c, data = epilepsy, 
+                             family = hurdle_gamma("log")),
+               "real hurdle_gamma_log(real y", fixed = TRUE)
+  # linear models with special covariance structures
+  expect_match(make_stancode(rating ~ treat, data = inhaler, 
+                             autocor = cor_ma(cov = TRUE)),
+               "real normal_cov_log(vector y", fixed = TRUE)
+  expect_match(make_stancode(time ~ age, data = kidney, family = "student", 
+                             autocor = cor_ar(cov = TRUE)),
+               "real student_t_cov_log(vector y", fixed = TRUE)
+  # ARMA covariance matrices
+  expect_match(make_stancode(rating ~ treat, data = inhaler, 
+                             autocor = cor_ar(cov = TRUE)),
+               "matrix cov_matrix_ar1(real ar", fixed = TRUE)
+  expect_match(make_stancode(time ~ age, data = kidney, family = "student", 
+                             autocor = cor_ma(cov = TRUE)),
+               "matrix cov_matrix_ma1(real ma", fixed = TRUE)
+  expect_match(make_stancode(time ~ age, data = kidney, family = "cauchy", 
+                             autocor = cor_arma(p = 1, q = 1, cov = TRUE)),
+               "matrix cov_matrix_arma1(real ar, real ma", fixed = TRUE)
+  # kronecker matrices
   expect_match(make_stancode(rating ~ treat + period + carry + (1+carry|subject), 
                              data = inhaler, cov.ranef = list(subject = 1)), 
                "matrix kronecker_cholesky.*vector\\[\\] to_array")
