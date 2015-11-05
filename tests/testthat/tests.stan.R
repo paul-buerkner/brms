@@ -41,6 +41,17 @@ test_that("Test that stan_prior passes increment_log_prob statements without cha
                "  increment_log_prob(a); \n  increment_log_prob(b); \n")
 })
 
+test_that("Test that make_stancode handles horseshoe priors correctly", {
+  prior <- prior_frame(prior = "normal(0, hs_local * hs_global", class = "b")
+  attr(prior, "hs_df") <- 7
+  temp_stancode <- make_stancode(rating ~ treat*period*carry, data = inhaler,
+                                 prior = prior)
+  expect_match(temp_stancode, fixed = TRUE,
+    "  vector<lower=0>[K] hs_local; \n  real<lower=0> hs_global; \n")
+  expect_match(temp_stancode, fixed = TRUE,
+    "  hs_local ~ student_t(7, 0, 1); \n  hs_global ~ cauchy(0, 1); \n")
+})
+
 test_that("Test that stan_eta returns correct strings for autocorrelation models", {
   expect_match(stan_eta(family = "student", link = "log", f = c("Trt_c"),
                         autocor = cor_arma(~visit|patient, p = 2))$transC3,

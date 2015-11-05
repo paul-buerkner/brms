@@ -171,6 +171,16 @@ test_that("Test that check_prior returns increment_log_prob(.) whithout checking
                                 class = c("b", "")))
 }) 
 
+test_that("Test that handle_special_priors handles horseshoe prior correctly", {
+  prior <- set_prior("horseshoe(5)")
+  temp <- handle_special_priors(c(prior))
+  expect_equal(temp$attrib$hs_df, 5)
+  expect_equal(temp$prior$prior[1], "normal(0, hs_local * hs_global)")
+  expect_error(handle_special_priors(c(prior, set_prior("dist()", coef = "a"))))
+  expect_error(handle_special_priors(c(set_prior("horseshoe(b5)"))),
+               "degrees of freedom of horseshoe prior must be a positive number")
+})
+
 test_that("Test that check_family rejects invalid families", {
   expect_error(check_family("multigaussian"),
                "family 'multigaussian' is deprecated. Use family 'gaussian' instead")

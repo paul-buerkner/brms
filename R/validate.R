@@ -755,7 +755,7 @@ handle_special_priors <- function(prior) {
   # look for special priors such as horseshoe and process them appropriately
   #
   # Args:
-  #   prior: an object of class prior.frame
+  #   prior: an object of class prior_frame
   #
   # Returns:
   #   an named list of two objects: 
