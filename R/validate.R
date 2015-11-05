@@ -352,7 +352,25 @@ remove_chains <- function(i, sflist) {
 #'   \code{set_prior("normal(0,2)", class = "b")} at the same time.
 #'   This will set a \code{normal(0,10)} prior on the Intercept and a \code{normal(0,2)}
 #'   prior on all other fixed effects. Note that the priors are no longer 
-#'   vectorized in this case. \cr
+#'   vectorized in this case. 
+#'   
+#'   A special shrinkage prior to be applied on fixed effects is the horseshoe prior.
+#'   The horseshoe prior is symmetric around zero with fat tails and an infinitly large spike
+#'   at zero. This makes it ideal for (sparse) models with many regression coefficients,
+#'   where only a minority of coefficients is non-zero. 
+#'   For more details see Carvalho et al. (2009).
+#'   The horseshoe prior can be applied on all fixed effects at once (excluding the Intercept)
+#'   by using \code{set_prior("horseshoe(<df>)", class = "b")}.
+#'   Replace \code{<df>} with the desired degrees of freedom of the student-t prior
+#'   of the local shrinkage parameters. 
+#'   In their paper, Carvalho et al. (2009) use one degrees of freedom, but this
+#'   my lead to an increased number of divergent transition in \pkg{Stan}
+#'   so that slightly higher values may often be a better option. 
+#'   Generally, models with horseshoe priors a more likely than other models
+#'   to have divergent transitions so that increasing \code{adapt_delta} 
+#'   from \code{0.95} to values closer to \code{1} will often be necessary.
+#'   See the documentation of \code{\link[brms:brm]{brm}} for instructions
+#'   on how to increase \code{adapt_delta}. \cr
 #'   
 #'   2. Autocorrelation parameters
 #'   
@@ -424,8 +442,12 @@ remove_chains <- function(i, sflist) {
 #' @seealso \code{\link[brms:get_prior]{get_prior}}
 #' 
 #' @references 
-#' Gelman A (2006). Prior distributions for variance parameters in hierarchical models."
+#' Gelman A (2006). Prior distributions for variance parameters in hierarchical models.
 #'    Bayesian analysis, 1(3), 515 -- 534.
+#'    
+#' Carvalho, C. M., Polson, N. G., & Scott, J. G. (2009). 
+#'   Handling sparsity via the horseshoe. 
+#'   In International Conference on Artificial Intelligence and Statistics (pp. 73-80).
 #' 
 #' @examples
 #' \dontrun{
