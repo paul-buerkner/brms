@@ -135,7 +135,8 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
     stan_prior(class = "", prior = prior))
   # generate code to additionally sample from priors if sample.prior = TRUE
   text_rngprior <- stan_rngprior(sample.prior = sample.prior, 
-                                 prior = text_prior, family = family)
+                                 prior = text_prior, family = family,
+                                 horseshoe = !is.null(attr(prior, "hs_df")))
   
   kronecker <- any(sapply(mapply(list, ranef, ee$group, SIMPLIFY = FALSE), 
                           function(x, names) length(x[[1]]) > 1 && x[[2]] %in% names, 
@@ -258,7 +259,7 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
     if (sigma)
       "  real<lower=0> sigma;  # residual SD \n",
     if (family == "student") 
-      "  real<lower=0> nu;  # degrees of freedom \n",
+      "  real<lower=1> nu;  # degrees of freedom \n",
     if (is_multi) 
       paste0("  # parameters for multinormal models \n",
              "  vector<lower=0>[K_trait] sigma; \n",
@@ -1320,20 +1321,23 @@ stan_prior <- function(class, coef = NULL, group = NULL,
   }
   if (class == "b" && !is.null(attr(prior, "hs_df"))) {
     # add horseshoe shrinkage priors
-    out[[length(out) + 1]] <- paste0(
+    hs_shrinkage_priors <- paste0(
       "  hs_local ~ student_t(", attr(prior, "hs_df"), ", 0, 1); \n",
       "  hs_global ~ cauchy(0, 1); \n")
+    out <- c(hs_shrinkage_priors, out)
   }
   return(collapse(out))
 }
 
-stan_rngprior <- function(sample.prior, prior, family = "gaussian") {
+stan_rngprior <- function(sample.prior, prior, family = "gaussian",
+                          horseshoe = FALSE) {
   # stan code to sample from priors seperately
   #
   # Args:
   #   sample.prior: take samples from priors?
   #   prior: the character string taken from stan_prior
   #   family: the model family
+  #   horseshoe: logical; are horseshoe priors used for fixed effects? 
   #
   # Returns:
   #   a character string containing the priors to be sampled from in stan code
@@ -1373,22 +1377,28 @@ stan_rngprior <- function(sample.prior, prior, family = "gaussian") {
     dis <- sub("corr_cholesky$", "corr", dis)
     
     # distinguish between bounded and unbounded parameters
-    bound <- grepl("^sd|^sigma|^shape$|^nu$", pars) |  # do not change to ||
+    # do not change | to ||
+    bound <- grepl("^sd|^sigma|^shape$|^nu$|^hs_local$|^hs_global$", pars) |  
                    family == "cumulative" & grepl("^delta$", pars)
     if (any(bound)) {  
       # bounded parameters have to be sampled in the model block
+      lower_bound <- ifelse(pars[bound] == "nu", 1, 0)
       out$par <- paste0("  # parameters to store prior samples \n",
-                        collapse("  real<lower=0> prior_",pars[bound],"; \n"))
+                        collapse("  real<lower=", lower_bound, "> ", 
+                                 "prior_", pars[bound], "; \n"))
       out$model <- paste0("  # additionally draw samples from priors \n",
-                          collapse("  prior_",pars[bound]," ~ ",
-                            dis[bound],args[bound]," \n"))
+                          collapse("  prior_", pars[bound] ," ~ ",
+                            dis[bound], args[bound]," \n"))
     }
     if (any(!bound)) {  
       # unbounded parameters can be sampled in the generatated quantities block
-      out$genD <- collapse("  real prior_",pars[!bound],"; \n")
+      if (horseshoe) {
+        args[match("b", pars)] <- "(0, prior_hs_local * prior_hs_global);" 
+      } 
+      out$genD <- collapse("  real prior_", pars[!bound], "; \n")
       out$genC <- paste0("  # additionally draw samples from priors \n",
-                         collapse("  prior_",pars[!bound]," <- ",
-                           dis[!bound],"_rng",args[!bound]," \n"))
+                         collapse("  prior_", pars[!bound], " <- ",
+                           dis[!bound], "_rng", args[!bound], " \n"))
     }
   }
   out
