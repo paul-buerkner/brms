@@ -4,10 +4,9 @@
 \alias{make_stancode}
 \title{Stan Code for \pkg{brms} Models}
 \usage{
-make_stancode(formula, data = NULL, family = "gaussian",
-  prior = prior_frame(), partial = NULL, threshold = "flexible",
-  cov.ranef = NULL, sample.prior = FALSE, autocor = cor_arma(),
-  save.model = NULL)
+make_stancode(formula, data = NULL, family = "gaussian", prior = NULL,
+  partial = NULL, threshold = "flexible", cov.ranef = NULL,
+  sample.prior = FALSE, autocor = cor_arma(), save.model = NULL)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class):

@@ -17,7 +17,7 @@
 #'
 #' @export
 make_stancode <- function(formula, data = NULL, family = "gaussian", 
-                          prior = prior_frame(), partial = NULL, 
+                          prior = NULL, partial = NULL, 
                           threshold = "flexible", cov.ranef = NULL, 
                           sample.prior = FALSE, autocor = cor_arma(), 
                           save.model = NULL) {
@@ -25,6 +25,10 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
   obj_family <- check_family(family) 
   link <- obj_family$link
   family <- obj_family$family
+  prior <- check_prior(prior, formula = formula, data = data, 
+                       family = family, link = link, 
+                       autocor = autocor, partial = partial, 
+                       threshold = threshold) 
   et <- extract_time(autocor$formula)  
   ee <- extract_effects(formula, family = family, partial, et$all)
   data <- update_data(data, family = family, effects = ee, et$group)

@@ -656,13 +656,17 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
   #
   # Returns:
   #   a data.frame of prior specifications to be used in stan_prior (see stan.R)
+  if (isTRUE(attr(prior, "checked"))) {
+    # prior has already been checked; no need to do it twice
+    return(prior)
+  }
   ee <- extract_effects(formula, family = family)  
   all_prior <- get_prior(formula = formula, data = data, 
                          family = family(family, link = link),
                          autocor = autocor, partial = partial, 
                          threshold = threshold, internal = TRUE)
   if (is.null(prior)) {
-    return(all_prior)  # nothing to check
+    prior <- all_prior  
   } else if (is(prior, "brmsprior")) {
     # a single prior may be specified without c(.)
     prior <- c(prior)
@@ -771,6 +775,7 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
   for (i in seq_along(attrib)) {
     attr(prior, names(attrib)[i]) <- attrib[[i]]
   }
+  attr(prior, "checked") <- TRUE
   prior
 }
 
