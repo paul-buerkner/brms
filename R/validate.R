@@ -423,7 +423,8 @@ remove_chains <- function(i, sflist) {
 #'   random effects standard deviations. 
 #'   Furthermore, family \code{student} needs the parameter \code{nu} representing 
 #'   the degrees of freedom of students t distribution. 
-#'   By default, \code{nu} has prior \code{"uniform(1,100)"}. 
+#'   By default, \code{nu} has prior \code{"gamma(2,0.1)"}
+#'   and a fixed lower bound of \code{1}.
 #'   Families \code{gamma}, \code{weibull}, \code{inverse.gaussian}, and
 #'   \code{negbinomial} need a \code{shape} parameter that has a 
 #'   \code{"cauchy(0,5)"} prior by default. 
@@ -467,10 +468,10 @@ remove_chains <- function(i, sflist) {
 #' fit <- brm(rating ~ period + carry + (1|subject),
 #'            data = inhaler, family = "sratio", 
 #'            partial = ~ treat, threshold = "equidistant",
-#'            prior = prior, n.iter = 1000, n.cluster = 2)
+#'            prior = prior, n.iter = 1000, n.chains = 1)
 #'            
 #' ## check that the priors found their way into Stan's model code
-#' fit$model             
+#' stancode(fit)           
 #' }
 #'
 #' @export
@@ -632,7 +633,7 @@ get_prior <- function(formula, data = NULL, family = "gaussian",
     }
   }
   if (family == "student") 
-    prior <- rbind(prior, prior_frame(class = "nu", prior = "uniform(1,100)"))
+    prior <- rbind(prior, prior_frame(class = "nu", prior = "gamma(2, 0.1)"))
   if (family %in% c("gamma", "weibull", "negbinomial", 
                     "inverse.gaussian", "hurdle_negbinomial", 
                     "hurdle_gamma", "zero_inflated_negbinomial")) 
