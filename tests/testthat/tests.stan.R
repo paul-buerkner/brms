@@ -187,9 +187,9 @@ test_that("Test that stan_llh returns correct llhs for zero-inflated an hurdle m
 test_that("Test that stan_rngprior returns correct sampling statements for priors", {
   c1 <- "  # parameters to store prior samples \n"
   c2 <- "  # additionally draw samples from priors \n"
-  expect_equal(stan_rngprior(TRUE, prior = "nu ~ uniform(0,100); \n"),
-               list(par = paste0(c1,"  real<lower=0> prior_nu; \n"), 
-                    model = paste0(c2,"  prior_nu ~ uniform(0,100); \n")))
+  expect_equal(stan_rngprior(TRUE, prior = "nu ~ gamma(2,0.1); \n"),
+               list(par = paste0(c1,"  real<lower=1> prior_nu; \n"), 
+                    model = paste0(c2,"  prior_nu ~ gamma(2,0.1); \n")))
   expect_equal(stan_rngprior(TRUE, prior = "delta ~ normal(0,1); \n", family = "cumulative"),
                list(par = paste0(c1,"  real<lower=0> prior_delta; \n"), 
                     model = paste0(c2,"  prior_delta ~ normal(0,1); \n")))
