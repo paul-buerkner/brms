@@ -331,6 +331,11 @@ summary.brmsfit <- function(object, waic = TRUE, ...) {
     out$n.warmup <- attr(object$fit@sim$samples[[1]],"args")$warmup
     out$n.thin <- attr(object$fit@sim$samples[[1]],"args")$thin
     out$sampler <- attr(object$fit@sim$samples[[1]],"args")$sampler_t
+    
+    if (length(object$ranef) && !any(grepl("^r_", parnames(object)))) {
+      # if brm(..., ranef = FALSE)
+      waic <- FALSE
+    }
     if (waic) out$WAIC <- WAIC(object)$waic
     
     pars <- parnames(object)

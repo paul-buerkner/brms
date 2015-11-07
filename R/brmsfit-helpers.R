@@ -410,8 +410,9 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
     for (i in 1:length(group)) {
       if (any(grepl(paste0("^J_|^lev_"), names(data)))) {  # implies brms > 0.4.1
         # create a single RE design matrix for every grouping factor
-        Z <- do.call(cbind, lapply(which(all_groups == group[i]), function(k) 
-          get(paste0("Z_",k), data)))
+        Z <- lapply(which(all_groups == group[i]), 
+                    function(k) get(paste0("Z_",k), data))
+        Z <- do.call(cbind, Z)
         id <- match(group[i], all_groups)
         if (any(grepl(paste0("^J_"), names(data)))) {
           gf <- get(paste0("J_",id), data)
@@ -423,7 +424,13 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
         Z <- as.matrix(get(paste0("Z_",group[i]), data))
         gf <- get(group[i], data)
       }
-      r <- posterior_samples(x, pars = paste0("^r_",group[i],"\\["))
+      r <- posterior_samples(x, pars = paste0("^r_",group[i],"\\["),
+                             as.matrix = TRUE)
+      if (is.null(r)) {
+        stop(paste("Random effects for each level of grouping factor",
+                   group[i], "not found. Please set ranef = TRUE",
+                   "when calling brm."))
+      }
       eta <- eta + ranef_predictor(Z = Z, gf = gf, r = r) 
     }
   }
