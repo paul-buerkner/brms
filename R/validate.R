@@ -468,6 +468,11 @@ remove_chains <- function(i, sflist) {
 #'               data = inhaler, family = "sratio", 
 #'               partial = ~ treat, threshold = "equidistant",
 #'               prior = prior)
+#'               
+#' ## use horseshoe priors to model sparsity in fixed effects parameters
+#' make_stancode(count ~ log_Age_c + log_Base4_c * Trt_c,
+#'               data = epilepsy, family = "poisson",
+#'               prior = set_prior("horseshoe(3)"))
 #'
 #' @export
 set_prior <- function(prior, class = "b", coef = "", group = "") {
@@ -618,7 +623,8 @@ get_prior <- function(formula, data = NULL, family = "gaussian",
                                                 rep("", length(ee$response)))))
   if (family == "gaussian" && length(ee$response) > 1) {
     if (internal) {
-      prior <- rbind(prior, prior_frame(class = "Lrescor", prior = "lkj_corr_cholesky(1)"))
+      prior <- rbind(prior, prior_frame(class = "Lrescor", 
+                                        prior = "lkj_corr_cholesky(1)"))
     } else {
       prior <- rbind(prior, prior_frame(class = "rescor", prior = "lkj(1)"))
     }
@@ -628,7 +634,8 @@ get_prior <- function(formula, data = NULL, family = "gaussian",
   if (family %in% c("gamma", "weibull", "negbinomial", 
                     "inverse.gaussian", "hurdle_negbinomial", 
                     "hurdle_gamma", "zero_inflated_negbinomial")) 
-    prior <- rbind(prior, prior_frame(class = "shape", prior = default_scale_prior))
+    prior <- rbind(prior, prior_frame(class = "shape", 
+                                      prior = default_scale_prior))
   if (is_ordinal && threshold == "equidistant")
     prior <- rbind(prior, prior_frame(class = "delta"))
   prior <- unique(prior)
@@ -661,14 +668,16 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
   } else if (is(prior, "brmsprior")) {
     # a single prior may be specified without c(.)
     prior <- c(prior)
-  } else if (!is(prior, "prior_frame") && is.list(prior) && !is.null(names(prior))) {
+  } else if (!is(prior, "prior_frame") && is.list(prior) 
+             && !is.null(names(prior))) {
     # deprecated prior specification brms < 0.5.0
     warning(paste("Specifying priors using a named list is deprecated. \n",
                   "We strongly recommend to use the set_prior function instead. \n",
                   "See help(set_prior) for further information."))
     prior <- update_prior(prior)
   } else if (!is(prior, "prior_frame")) {
-    stop("Invalid input for argument prior. See help(set_prior) for further information.")
+    stop(paste("Invalid input for argument prior.", 
+               "See help(set_prior) for further information."))
   }
   
   # exclude prior using increment_log_prob to readd the at the end
@@ -727,7 +736,8 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
   }
   # get category specific priors out of fixef priors
   if (family == "categorical" || is.formula(partial)) {
-    paref <- colnames(get_model_matrix(partial, data = data, rm_intercept = TRUE))
+    paref <- colnames(get_model_matrix(partial, data = data, 
+                                       rm_intercept = TRUE))
     b_index <- which(prior$class == "b" & !nchar(prior$coef))
     partial_index <- which(prior$class == "b" & prior$coef %in% paref)
     rows2remove <- c(rows2remove, partial_index)
@@ -838,7 +848,8 @@ update_prior <- function(prior) {
 
 prior_frame <- function(prior = "", class = "", coef = "", group = "") {
   # helper function to create data.frames containing prior information 
-  out <- data.frame(prior = prior, class = class, coef = coef, group = group,
+  out <- data.frame(prior = prior, class = class, 
+                    coef = coef, group = group,
                     stringsAsFactors = FALSE)
   class(out) <- c("prior_frame", "data.frame")
   out

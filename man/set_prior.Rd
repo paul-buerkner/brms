@@ -164,6 +164,11 @@ make_stancode(rating ~ period + carry + (1|subject),
               data = inhaler, family = "sratio",
               partial = ~ treat, threshold = "equidistant",
               prior = prior)
+
+## use horseshoe priors to model sparsity in fixed effects parameters
+make_stancode(count ~ log_Age_c + log_Base4_c * Trt_c,
+              data = epilepsy, family = "poisson",
+              prior = set_prior("horseshoe(3)"))
 }
 \references{
 Gelman A (2006). Prior distributions for variance parameters in hierarchical models.
