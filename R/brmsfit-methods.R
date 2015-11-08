@@ -487,8 +487,8 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5, ask = TRUE, ...) 
   for (i in 1:ceiling(length(pars) / N)) {
     plots <- lapply(pars[((i - 1) * N + 1):min(i * N, length(pars))], 
                     td_plot, x = samples)
-    plot(arrangeGrob(grobs = unlist(plots, recursive = FALSE), 
-                     nrow = length(plots), ncol = 2, ...))
+    grid.arrange(grobs = unlist(plots, recursive = FALSE), 
+                 nrow = length(plots), ncol = 2, ...)
     if (i == 1) devAskNewPage(ask = ask)
   }
 }
