@@ -465,7 +465,7 @@ launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"), ..
 #' 
 #' @method plot brmsfit
 #' @import ggplot2
-#' @importFrom gridExtra arrangeGrob
+#' @importFrom gridExtra grid.arrange
 #' @importFrom grDevices devAskNewPage
 #' @export
 plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5, ask = TRUE, ...) {
