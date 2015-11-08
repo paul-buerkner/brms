@@ -583,7 +583,7 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
 #'   If there are more than a few of these pathological cases, 
 #'   a warning will occure suggesting to increase argument \code{ntrys}.
 #'   
-#'   For \pkg{brms} <= 0.5.0 only: 
+#'   For models fitted with \pkg{brms} <= 0.5.0 only: 
 #'   Be careful when using \code{newdata} with factors in fixed or random effects. 
 #'   The predicted results are only valid if all factor levels present in the initial 
 #'   data are also defined and ordered correctly for the factors in \code{newdata}.
@@ -716,7 +716,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #'   N is the number of observations, S is the number of samples, C is the number of categories,
 #'   and E is equal to \code{length(probs) + 2}.
 #'   
-#' @details For \pkg{brms} <= 0.5.0 only: 
+#' @details For models fitted with \pkg{brms} <= 0.5.0 only: 
 #'  Be careful when using \code{newdata} with factors in fixed or random effects. 
 #'  The predicted results are only valid if all factor levels present in the initial 
 #'  data are also defined and ordered correctly for the factors in \code{newdata}.
@@ -735,7 +735,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' head(fitted_values)
 #' 
 #' ## plot fitted means against actual response
-#' dat <- as.data.frame(cbind(Y = fit$data$Y, fitted_values))
+#' dat <- as.data.frame(cbind(Y = standata(fit)$Y, fitted_values))
 #' ggplot(dat) + geom_point(aes(x = Estimate, y = Y))
 #' }
 #' 
@@ -787,8 +787,8 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' @examples 
 #' \dontrun{
 #' ## fit a model
-#' fit <- brm(rating ~ treat + period + carry + (1|subject), data = inhaler,
-#'            n.cluster = 2)
+#' fit <- brm(rating ~ treat + period + carry + (1|subject), 
+#'            data = inhaler, n.cluster = 2)
 #' 
 #' ## extract residuals 
 #' res <- residuals(fit, summary = TRUE)

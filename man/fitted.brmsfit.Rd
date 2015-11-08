@@ -46,7 +46,7 @@ Fitted values extracted from \code{object}. The output depends on the family:
 Extract Model Fitted Values of \code{brmsfit} Objects
 }
 \details{
-For \pkg{brms} <= 0.5.0 only:
+For models fitted with \pkg{brms} <= 0.5.0 only:
  Be careful when using \code{newdata} with factors in fixed or random effects.
  The predicted results are only valid if all factor levels present in the initial
  data are also defined and ordered correctly for the factors in \code{newdata}.
@@ -65,7 +65,7 @@ fitted_values <- fitted(fit)
 head(fitted_values)
 
 ## plot fitted means against actual response
-dat <- as.data.frame(cbind(Y = fit$data$Y, fitted_values))
+dat <- as.data.frame(cbind(Y = standata(fit)$Y, fitted_values))
 ggplot(dat) + geom_point(aes(x = Estimate, y = Y))
 }
 }

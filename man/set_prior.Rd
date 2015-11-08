@@ -147,7 +147,6 @@ Define priors for specific parameters or classes of parameters
   use function \code{\link[brms:get_prior]{get_prior}}.
 }
 \examples{
-\dontrun{
 ## check which parameters can have priors
 get_prior(rating ~ treat + period + carry + (1|subject),
           data = inhaler, family = "cumulative",
@@ -160,15 +159,11 @@ prior <- c(set_prior("normal(0,10)", class = "b"),
                      group = "subject", coef = "Intercept"),
            set_prior("uniform(-5,5)", class = "delta"))
 
-## use the defined priors in the model
-fit <- brm(rating ~ period + carry + (1|subject),
-           data = inhaler, family = "sratio",
-           partial = ~ treat, threshold = "equidistant",
-           prior = prior, n.iter = 1000, n.chains = 1)
-
-## check that the priors found their way into Stan's model code
-stancode(fit)
-}
+## verify that the priors indeed found their way into Stan's model code
+make_stancode(rating ~ period + carry + (1|subject),
+              data = inhaler, family = "sratio",
+              partial = ~ treat, threshold = "equidistant",
+              prior = prior)
 }
 \references{
 Gelman A (2006). Prior distributions for variance parameters in hierarchical models.

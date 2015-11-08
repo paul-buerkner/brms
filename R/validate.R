@@ -451,7 +451,6 @@ remove_chains <- function(i, sflist) {
 #'   In International Conference on Artificial Intelligence and Statistics (pp. 73-80).
 #' 
 #' @examples
-#' \dontrun{
 #' ## check which parameters can have priors
 #' get_prior(rating ~ treat + period + carry + (1|subject),
 #'           data = inhaler, family = "cumulative", 
@@ -464,15 +463,11 @@ remove_chains <- function(i, sflist) {
 #'                      group = "subject", coef = "Intercept"),
 #'            set_prior("uniform(-5,5)", class = "delta"))
 #'               
-#' ## use the defined priors in the model
-#' fit <- brm(rating ~ period + carry + (1|subject),
-#'            data = inhaler, family = "sratio", 
-#'            partial = ~ treat, threshold = "equidistant",
-#'            prior = prior, n.iter = 1000, n.chains = 1)
-#'            
-#' ## check that the priors found their way into Stan's model code
-#' stancode(fit)           
-#' }
+#' ## verify that the priors indeed found their way into Stan's model code
+#' make_stancode(rating ~ period + carry + (1|subject),
+#'               data = inhaler, family = "sratio", 
+#'               partial = ~ treat, threshold = "equidistant",
+#'               prior = prior)
 #'
 #' @export
 set_prior <- function(prior, class = "b", coef = "", group = "") {
@@ -517,7 +512,6 @@ set_prior <- function(prior, class = "b", coef = "", group = "") {
 #' @seealso \code{\link[brms:set_prior]{set_prior}}
 #' 
 #' @examples 
-#' \dontrun{
 #' ## get all parameters and parameters classes to define priors on
 #' (prior <- get_prior(count ~ log_Age_c + log_Base4_c * Trt_c
 #'                     + (1|patient) + (1|visit),
@@ -527,16 +521,13 @@ set_prior <- function(prior, class = "b", coef = "", group = "") {
 #' prior$prior[1] <- "normal(0,10)"
 #' 
 #' ## define a specific prior on the fixed effect of Trt_c
-#' prior$prior[5] <- "uniform(-5,5)"       
+#' prior$prior[5] <- "student_t(10, 0, 5)"       
 #' 
-#' ## fit a model using the priors above
-#' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c 
-#'            + (1|patient) + (1|visit),
-#'            data = epilepsy, family = "poisson", prior = prior)
-#'            
-#' ## check that priors indeed found their way into Stan's model code
-#' fit$model
-#' }
+#' ## verify that the priors indeed found their way into Stan's model code
+#' make_stancode(count ~ log_Age_c + log_Base4_c * Trt_c 
+#'               + (1|patient) + (1|visit),
+#'               data = epilepsy, family = "poisson", 
+#'               prior = prior)
 #' 
 #' @export
 get_prior <- function(formula, data = NULL, family = "gaussian",

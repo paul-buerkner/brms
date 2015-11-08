@@ -57,7 +57,7 @@ For truncated discrete models only:
   If there are more than a few of these pathological cases,
   a warning will occure suggesting to increase argument \code{ntrys}.
 
-  For \pkg{brms} <= 0.5.0 only:
+  For models fitted with \pkg{brms} <= 0.5.0 only:
   Be careful when using \code{newdata} with factors in fixed or random effects.
   The predicted results are only valid if all factor levels present in the initial
   data are also defined and ordered correctly for the factors in \code{newdata}.

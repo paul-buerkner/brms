@@ -44,8 +44,8 @@ Residuals of type \code{ordinary} are of the form \eqn{R = Y - Yp},
 \examples{
 \dontrun{
 ## fit a model
-fit <- brm(rating ~ treat + period + carry + (1|subject), data = inhaler,
-           n.cluster = 2)
+fit <- brm(rating ~ treat + period + carry + (1|subject),
+           data = inhaler, n.cluster = 2)
 
 ## extract residuals
 res <- residuals(fit, summary = TRUE)
