@@ -3,6 +3,7 @@
 #' Generate Stan code for \pkg{brms} models
 #' 
 #' @inheritParams brm
+#' @param ... Other arguments for internal usage only
 #' 
 #' @return A character string containing the fully commented Stan code 
 #'   used to fit models with the \code{\link[brms:brm]{brm}} function.
@@ -20,7 +21,7 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
                           prior = NULL, partial = NULL, 
                           threshold = "flexible", cov.ranef = NULL, 
                           sample.prior = FALSE, autocor = cor_arma(), 
-                          save.model = NULL) {
+                          save.model = NULL, ...) {
   
   obj_family <- check_family(family) 
   link <- obj_family$link

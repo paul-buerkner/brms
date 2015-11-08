@@ -6,7 +6,7 @@
 \usage{
 make_stancode(formula, data = NULL, family = "gaussian", prior = NULL,
   partial = NULL, threshold = "flexible", cov.ranef = NULL,
-  sample.prior = FALSE, autocor = cor_arma(), save.model = NULL)
+  sample.prior = FALSE, autocor = cor_arma(), save.model = NULL, ...)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class):
@@ -67,6 +67,8 @@ of the available correlation structures. Defaults to NULL, corresponding to no c
 saved in a file named after the string supplied in \code{save.model},
 which may also contain the full path where to save the file.
 If only a name is given, the file is save in the current working directory.}
+
+\item{...}{Other arguments for internal usage only}
 }
 \value{
 A character string containing the fully commented Stan code
