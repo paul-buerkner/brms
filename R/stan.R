@@ -5,8 +5,8 @@
 #' @inheritParams brm
 #' @param ... Other arguments for internal usage only
 #' 
-#' @return A character string containing the fully commented Stan code 
-#'   used to fit models with the \code{\link[brms:brm]{brm}} function.
+#' @return A character string containing the fully commented \pkg{Stan} code 
+#'   to fit a \pkg{brms} model.
 #'  
 #' @examples 
 #' make_stancode(rating ~ treat + period + carry + (1|subject), 

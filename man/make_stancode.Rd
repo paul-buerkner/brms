@@ -71,8 +71,8 @@ If only a name is given, the file is save in the current working directory.}
 \item{...}{Other arguments for internal usage only}
 }
 \value{
-A character string containing the fully commented Stan code
-  used to fit models with the \code{\link[brms:brm]{brm}} function.
+A character string containing the fully commented \pkg{Stan} code
+  to fit a \pkg{brms} model.
 }
 \description{
 Generate Stan code for \pkg{brms} models

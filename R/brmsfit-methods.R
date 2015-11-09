@@ -357,7 +357,8 @@ summary.brmsfit <- function(object, waic = TRUE, ...) {
     out$spec_pars <- matrix(fit_summary$summary[spec_pars,-c(2)], ncol = 6)
     if (is.linear(object$family)) {
       spec_pars[grepl("^sigma_", spec_pars)] <- paste0("sigma(",ee$response,")")
-      spec_pars[grepl("^rescor_", spec_pars)] <- get_cornames(ee$response, type = "rescor")   
+      spec_pars[grepl("^rescor_", spec_pars)] <- get_cornames(ee$response, 
+                                                              type = "rescor")   
     }    
     colnames(out$spec_pars) <- col_names
     rownames(out$spec_pars) <- spec_pars
@@ -432,7 +433,8 @@ standata.brmsfit <- function(object, ...) {
 }
   
 #' @export
-launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"), ...) {
+launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"), 
+                                 ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
   shinystan::launch_shinystan(x$fit, rstudio = rstudio, ...)
