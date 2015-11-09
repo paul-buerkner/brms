@@ -61,12 +61,12 @@ Define priors for specific parameters or classes of parameters
   vectorized in this case.
 
   A special shrinkage prior to be applied on fixed effects is the horseshoe prior.
-  The horseshoe prior is symmetric around zero with fat tails and an infinitly large spike
-  at zero. This makes it ideal for (sparse) models with many regression coefficients,
-  where only a minority of coefficients is non-zero.
+  It is symmetric around zero with fat tails and an infinitely large spike
+  at zero. This makes it ideal for sparse models that have many regression coefficients,
+  although only a minority of them is non-zero.
   For more details see Carvalho et al. (2009).
-  The horseshoe prior can be applied on all fixed effects at once (excluding the Intercept)
-  by using \code{set_prior("horseshoe(<df>)", class = "b")}.
+  The horseshoe prior can be applied on all fixed effects at once
+  (excluding the intercept) by using \code{set_prior("horseshoe(<df>)")}.
   Replace \code{<df>} with the desired degrees of freedom of the student-t prior
   of the local shrinkage parameters.
   In their paper, Carvalho et al. (2009) use one degrees of freedom, but this
