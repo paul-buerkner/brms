@@ -202,6 +202,21 @@ has_sigma <- function(family, autocor = cor_arma(), se = FALSE,
     (!se || get_ar(autocor) || get_ma(autocor)) 
 }
 
+needs_kronecker <- function(names_ranef, names_group, 
+                            names_cov_ranef) {
+  # checks if a model needs the kronecker product
+  # Args: 
+  #   names_ranef: names of the random effects coefficients
+  #   names_group: names of the grouping factors
+  #   names_cov_ranef: names of the grouping factors that
+  #                    have a cov.ranef matrix 
+  ranef_list <- mapply(list, names_ranef, names_group, SIMPLIFY = FALSE)
+  .fun <- function(x, names) {
+    length(x[[1]]) > 1 && x[[2]] %in% names
+  }
+  any(sapply(ranef_list, .fun, names = names_cov_ranef))
+}
+
 get_boundaries <- function(trunc) {
   # extract truncation boundaries out of a formula
   # that is known to contain the .trunc function

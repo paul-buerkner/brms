@@ -77,9 +77,9 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
   if (length(ee$group)) {
     # call stan_ranef for each random term seperately
     text_ranef <- lapply(1:length(ee$group), stan_ranef, 
-                          ranef = ranef, group = ee$group, 
-                          cor = ee$cor, prior = prior, 
-                          names_cov_ranef = names_cov_ranef)
+                         ranef = ranef, group = ee$group, 
+                         cor = ee$cor, prior = prior, 
+                         names_cov_ranef = names_cov_ranef)
   } else {
     text_ranef <- list()
   }
@@ -147,9 +147,8 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
                                  prior = text_prior, family = family,
                                  horseshoe = !is.null(attr(prior, "hs_df")))
   
-  kronecker <- any(sapply(mapply(list, ranef, ee$group, SIMPLIFY = FALSE), 
-                          function(x, names) length(x[[1]]) > 1 && x[[2]] %in% names, 
-                          names = names_cov_ranef))
+  kronecker <- needs_kronecker(names_ranef = ranef, names_group = ee$group,
+                               names_cov_ranef = names_cov_ranef)
   text_functions <- stan_functions(family = family, link = link, 
                                    weights = is.formula(ee$weights),
                                    cens = is.formula(ee$cens),
