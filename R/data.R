@@ -30,7 +30,7 @@ melt_data <- function(data, response, family) {
     old_columns <- do.call(rbind, lapply(response, function(i) old_columns))
     data <- cbind(old_columns, new_columns)
   } else if (nresp > 1) {
-    stop("Invalid multivariate model")
+    stop("invalid multivariate model")
   }
   data
 }  

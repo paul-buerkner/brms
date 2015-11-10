@@ -70,9 +70,9 @@ test_that("Test_that stan_arma returns correct strings (or errors)", {
   expect_match(stan_arma(family = "gaussian", link = "log", 
                          autocor = cor.arma(~visit|patient, q = 1))$transC2,
                "E[n + 1, i] <- e[n + 1 - i]", fixed = TRUE)
-  expect_match(stan_arma(family = "multinormal", link = "inverse", 
-                       autocor = cor.arma(~visit|patient, p = 1))$transC2,
-               "e[n] <- inv(Y[m, k]) - eta[n]", fixed = TRUE)
+  expect_match(stan_arma(family = "gaussian", link = "log", is_multi = TRUE, 
+                         autocor = cor.arma(~visit|patient, p = 1))$transC2,
+               "e[n] <- log(Y[m, k]) - eta[n]", fixed = TRUE)
   expect_error(stan_arma(family = "poisson", link = "log", 
                        autocor = cor.arma(~visit|patient, p = 1, q = 1)),
                "ARMA effects for family poisson are not yet implemented")
@@ -260,4 +260,13 @@ test_that("Test that stan_functions returns relevant user defined functions", {
   expect_match(make_stancode(rating ~ treat + period + carry + (1+carry|subject), 
                              data = inhaler, cov.ranef = list(subject = 1)), 
                "matrix kronecker_cholesky.*vector\\[\\] to_array")
+})
+
+test_that("Test that stan_multi returns correct Stan code (or errors)", {
+  expect_equal(stan_multi("gaussian", "y"), list())
+  expect_error(stan_multi("poisson", c("y1", "y2")),
+               "invalid multivariate model")
+  expect_equal(stan_multi("student", c("y1", "y2"))$transD, 
+               "  cov_matrix[K_trait] Sigma; \n")
+  expect_equal(stan_multi("hurdle_gamma", c("y", "huy")), list())
 })

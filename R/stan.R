@@ -1138,42 +1138,46 @@ stan_multi <- function(family, response) {
   out <- list()
   nresp <- length(response)
   if (nresp > 1) {
-   out$data <- paste0(
-     "  int<lower=1> N_trait;  # number of observations per response \n",
-     "  int<lower=1> K_trait;  # number of responses \n",  
-     "  int NC_trait;  # number of residual correlations \n",
-     "  vector[K_trait] Y[N_trait];  # response matrix \n")
-   out$par <- paste0(
-     "  # parameters for multivariate linear models \n",
-     "  vector<lower=0>[K_trait] sigma; \n",
-     "  cholesky_factor_corr[K_trait] Lrescor; \n")
-   out$loop <- c(paste0(
-     "  # restructure linear predictor and add REs \n",
-     "  for (m in 1:N_trait) { \n",  
-     "    for (k in 1:K_trait) { \n", 
-     "      int n; \n",
-     "      n <- (k - 1) * N_trait + m; \n"), 
-     "    } \n  } \n")
-   if (family == "gaussian") {
-     out$transD <- "  cholesky_factor_cov[K_trait] LSigma; \n"
-     out$transC <- paste0(
-       "  # compute cholesky factor of residual covariance matrix \n",
-       "  LSigma <- diag_pre_multiply(sigma, Lrescor); \n")
-   } else if (family %in% c("student", "cauchy")) {
-     out$transD <- "  cov_matrix[K_trait] Sigma; \n"
-     out$transC <- paste0(
-       "  # compute residual covariance matrix \n",
-       "  Sigma <- multiply_lower_tri_self_transpose(", 
-       "diag_pre_multiply(sigma, Lrescor)); \n")
-   }
-   out$genD <- paste0(
-     "  matrix[K_trait,K_trait] Rescor; \n",
-     "  vector<lower=-1,upper=1>[NC_trait] rescor; \n")
-   out$genC <- paste0(
-    "  # take only relevant parts of residual correlation matrix \n",
-    "  Rescor <- multiply_lower_tri_self_transpose(Lrescor); \n",
-    collapse(ulapply(2:nresp, function(i) lapply(1:(i-1), function(j)
-    paste0("  rescor[",(i-1)*(i-2)/2+j,"] <- Rescor[",j,", ",i,"]; \n")))))
+    if (is.linear(family)) {
+      out$data <- paste0(
+        "  int<lower=1> N_trait;  # number of observations per response \n",
+        "  int<lower=1> K_trait;  # number of responses \n",  
+        "  int NC_trait;  # number of residual correlations \n",
+        "  vector[K_trait] Y[N_trait];  # response matrix \n")
+      out$par <- paste0(
+        "  # parameters for multivariate linear models \n",
+        "  vector<lower=0>[K_trait] sigma; \n",
+        "  cholesky_factor_corr[K_trait] Lrescor; \n")
+      out$loop <- c(paste0(
+        "  # restructure linear predictor and add REs \n",
+        "  for (m in 1:N_trait) { \n",  
+        "    for (k in 1:K_trait) { \n", 
+        "      int n; \n",
+        "      n <- (k - 1) * N_trait + m; \n"), 
+        "    } \n  } \n")
+      if (family == "gaussian") {
+        out$transD <- "  cholesky_factor_cov[K_trait] LSigma; \n"
+        out$transC <- paste0(
+          "  # compute cholesky factor of residual covariance matrix \n",
+          "  LSigma <- diag_pre_multiply(sigma, Lrescor); \n")
+      } else if (family %in% c("student", "cauchy")) {
+        out$transD <- "  cov_matrix[K_trait] Sigma; \n"
+        out$transC <- paste0(
+          "  # compute residual covariance matrix \n",
+          "  Sigma <- multiply_lower_tri_self_transpose(", 
+          "diag_pre_multiply(sigma, Lrescor)); \n")
+      }
+      out$genD <- paste0(
+        "  matrix[K_trait,K_trait] Rescor; \n",
+        "  vector<lower=-1,upper=1>[NC_trait] rescor; \n")
+      out$genC <- paste0(
+        "  # take only relevant parts of residual correlation matrix \n",
+        "  Rescor <- multiply_lower_tri_self_transpose(Lrescor); \n",
+        collapse(ulapply(2:nresp, function(i) lapply(1:(i-1), function(j)
+        paste0("  rescor[",(i-1)*(i-2)/2+j,"] <- Rescor[",j,", ",i,"]; \n")))))
+    } else if (!(is.zero_inflated(family) || is.hurdle(family))) {
+      stop("invalid multivariate model")
+    }
   }
   out
 }
