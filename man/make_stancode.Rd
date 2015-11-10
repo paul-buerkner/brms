@@ -5,8 +5,9 @@
 \title{Stan Code for \pkg{brms} Models}
 \usage{
 make_stancode(formula, data = NULL, family = "gaussian", prior = NULL,
-  partial = NULL, threshold = "flexible", cov.ranef = NULL,
-  sample.prior = FALSE, autocor = cor_arma(), save.model = NULL, ...)
+  autocor = NULL, partial = NULL, threshold = c("flexible",
+  "equidistant"), cov.ranef = NULL, sample.prior = FALSE,
+  save.model = NULL, ...)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class):
@@ -42,6 +43,11 @@ Further information is provided under 'Details'.}
 A single \code{brmsprior} object may be passed without \code{c()} surrounding it.
 See also  \code{\link[brms:get_prior]{get_prior}} for more help.}
 
+\item{autocor}{An optional \code{\link{cor_brms}} object describing the correlation structure
+within the response variable (i.e. the 'autocorrelation').
+See the documentation of \code{\link{cor_brms}} for a description
+of the available correlation structures. Defaults to NULL, corresponding to no correlations.}
+
 \item{partial}{A one sided formula of the form \code{~expression} specifying the predictors with
 category specific effects in non-cumulative ordinal models
 (i.e. in families \code{"cratio"}, \code{"sratio"}, or \code{"acat"}).}
@@ -57,11 +63,6 @@ All levels of the grouping factor should appear as rownames of the corresponding
 \item{sample.prior}{A flag to indicate if samples from all specified proper priors
 should be additionally drawn. Among others, these samples can be used to calculate
 Bayes factors for point hypotheses. Default is \code{FALSE}.}
-
-\item{autocor}{An optional \code{\link{cor_brms}} object describing the correlation structure
-within the response variable (i.e. the 'autocorrelation').
-See the documentation of \code{\link{cor_brms}} for a description
-of the available correlation structures. Defaults to NULL, corresponding to no correlations.}
 
 \item{save.model}{Either \code{NULL} or a character string. In the latter case, the model code is
 saved in a file named after the string supplied in \code{save.model},

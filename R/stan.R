@@ -18,14 +18,19 @@
 #'
 #' @export
 make_stancode <- function(formula, data = NULL, family = "gaussian", 
-                          prior = NULL, partial = NULL, 
-                          threshold = "flexible", cov.ranef = NULL, 
-                          sample.prior = FALSE, autocor = cor_arma(), 
+                          prior = NULL, autocor = NULL, partial = NULL, 
+                          threshold = c("flexible", "equidistant"),
+                          cov.ranef = NULL, sample.prior = FALSE, 
                           save.model = NULL, ...) {
   
   obj_family <- check_family(family) 
   link <- obj_family$link
   family <- obj_family$family
+  if (is.null(autocor)) autocor <- cor_arma()
+  if (!is(autocor, "cor_brms")) { 
+    stop("cor must be of class cor_brms")
+  }
+  threshold <- match.arg(threshold)
   prior <- check_prior(prior, formula = formula, data = data, 
                        family = family, link = link, 
                        autocor = autocor, partial = partial, 

@@ -215,7 +215,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   is_ordinal <- is.ordinal(family)
   is_count <- is.count(family)
   if (is.null(autocor)) autocor <- cor_arma()
-  if (!is(autocor,"cor_brms")) {
+  if (!is(autocor, "cor_brms")) {
     stop("cor must be of class cor_brms")
   }
   
