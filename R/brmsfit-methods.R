@@ -333,7 +333,7 @@ summary.brmsfit <- function(object, waic = TRUE, ...) {
     out$sampler <- attr(object$fit@sim$samples[[1]],"args")$sampler_t
     
     if (length(object$ranef) && !any(grepl("^r_", parnames(object)))
-        || length(ee$response) > 1) {
+        || length(ee$response) > 1 && is.linear(object$family)) {
       # if brm(..., ranef = FALSE) or model is multivariate
       waic <- FALSE
     }

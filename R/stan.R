@@ -47,7 +47,7 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
   is_hurdle <- is.hurdle(family)
   is_zero_inflated <- is.zero_inflated(family)
   is_categorical <- family == "categorical"
-  is_multi <- length(ee$response) > 1
+  is_multi <- is_linear && length(ee$response) > 1
   has_sigma <- has_sigma(family, autocor = autocor, se = ee$se, 
                          is_multi = is_multi)
   has_shape <- has_shape(family)
