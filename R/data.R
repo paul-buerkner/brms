@@ -355,7 +355,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   }
   if (is.formula(ee$weights)) {
     standata <- c(standata, list(weights = .addition(formula = ee$weights, data = data)))
-    if (family == "gaussian" && length(ee$response) > 1) 
+    if (is.linear(family) && length(ee$response) > 1) 
       standata$weights <- standata$weights[1:standata$N_trait]
   }
   if (is.formula(ee$cens)) {
