@@ -61,7 +61,7 @@ loglik_multi_student <- function(n, data, samples, link) {
   nsamples <- nrow(samples$eta)
   obs <- seq(n, nobs, data$N_trait)
   out <- sapply(1:nsamples, function(i) 
-    dmultistudent(data$Y[n,], df = samples$nu, 
+    dmultistudent(data$Y[n,], df = samples$nu[i, ], 
                   Sigma = samples$Sigma[i, , ], log = TRUE,
                   mu = ilink(samples$eta[i, obs], link)))
   # no truncation allowed
