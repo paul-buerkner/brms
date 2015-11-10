@@ -48,9 +48,9 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
   is_zero_inflated <- is.zero_inflated(family)
   is_categorical <- family == "categorical"
   is_multi <- length(ee$response) > 1
-  sigma <- has_sigma(family, autocor = autocor, se = ee$se, 
-                     is_multi = is_multi)
-  shape <- has_shape(family)
+  has_sigma <- has_sigma(family, autocor = autocor, se = ee$se, 
+                         is_multi = is_multi)
+  has_shape <- has_shape(family)
   offset <- !is.null(model.offset(data)) 
   trunc <- get_boundaries(ee$trunc)  
   if (is_categorical) {
@@ -131,11 +131,11 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
       stan_prior(class = "ma", prior = prior),
     if (get_arr(autocor)) 
       stan_prior(class = "arr", prior = prior),
-    if (shape) 
+    if (has_shape) 
       stan_prior(class = "shape", prior = prior),
     if (family == "student") 
       stan_prior(class = "nu", prior = prior),
-    if (sigma) 
+    if (has_sigma) 
       stan_prior(class = "sigma", coef = ee$response, prior = prior), 
     if (is_multi) 
       paste0(stan_prior(class = "sigma", coef = ee$response, prior = prior),
@@ -262,11 +262,11 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
       paste0("  vector", restrict, "[Kma] ma;  # moving-average effects \n"),
     if (get_arr(autocor)) 
       "  vector[Karr] arr;  # autoregressive effects of the response \n",
-    if (sigma)
+    if (has_sigma)
       "  real<lower=0> sigma;  # residual SD \n",
     if (family == "student") 
       "  real<lower=1> nu;  # degrees of freedom \n",
-    if (shape) 
+    if (has_shape) 
       "  real<lower=0> shape;  # shape parameter \n",
     if (!is.null(attr(prior, "hs_df"))) 
       paste0("  # horseshoe shrinkage parameters \n",
