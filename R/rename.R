@@ -143,7 +143,7 @@ rename_pars <- function(x) {
     change <- c(change, prior_names(class = "sigma", pars = pars, 
                                      names = ee$response))
     # residual correlation paramaters
-    if (x$family == "gaussian" && length(ee$response) > 1) {
+    if (is.linear(x$family) && length(ee$response) > 1) {
        rescor_names <- get_cornames(ee$response, type = "rescor", brackets = FALSE)
        change <- lc(change, list(pos = grepl("^rescor\\[", pars), oldname = "rescor",
                                  pnames = rescor_names, fnames = rescor_names))
