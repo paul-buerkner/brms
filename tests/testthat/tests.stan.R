@@ -184,6 +184,16 @@ test_that("Test that stan_llh returns correct llhs for zero-inflated an hurdle m
                "  Y[n] ~ hurdle_gamma(shape, eta[n], eta[n + N_trait]); \n")
 })
 
+test_that("Test that stan_llh returns correct llhs for multivariate models", {
+  expect_equal(stan_llh(family = "gaussian", link = "identity", is_multi = TRUE),
+               "  Y ~ multi_normal_cholesky(etam, LSigma); \n")
+  expect_equal(stan_llh(family = "student", link = "identity", is_multi = TRUE),
+               "  Y ~ multi_student_t(nu, etam, Sigma); \n")
+  expect_equal(stan_llh(family = "cauchy", link = "identity",
+                        is_multi = TRUE, weights = TRUE),
+               "  lp_pre[n] <- multi_student_t_log(Y[n], 1.0, etam[n], Sigma); \n")
+})
+
 test_that("Test that stan_rngprior returns correct sampling statements for priors", {
   c1 <- "  # parameters to store prior samples \n"
   c2 <- "  # additionally draw samples from priors \n"
