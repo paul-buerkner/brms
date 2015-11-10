@@ -689,7 +689,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   }
   
   # sort predicted responses in case of multinormal models
-  if (family == "multinormal") {
+  if (grepl("^multi_", family)) {
     to_order <- ulapply(1:data$K_trait, seq, to = data$N, by = data$K_trait)
     if (summary) {
       # observations in rows

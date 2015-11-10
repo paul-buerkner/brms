@@ -165,7 +165,7 @@ rmultistudent <- function(n, df, mu, Sigma, log = TRUE,
     }
   }
   samples <- rmultinormal(n, mu = rep(0, p), Sigma = Sigma, check = check) / 
-             sqrt(rchisq(n, df = df) / df)
+               sqrt(rchisq(n, df = df) / df)
   sweep(samples, 2, mu, "+")
 }
 

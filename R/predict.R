@@ -40,12 +40,33 @@ predict_lognormal <- function(n, data, samples, link, ...) {
                  args = args, data = data)
 }
 
-predict_multinormal <- function(n, data, samples, link, ...) {
+predict_multi_gaussian <- function(n, data, samples, link, ...) {
   # currently no truncation available
   obs <- seq(n, data$N, data$N_trait)
   .fun <- function(i) {
     rmultinormal(1, Sigma = samples$Sigma[i, , ],
                  mu = ilink(samples$eta[i, obs], link))
+  }
+  do.call(rbind, lapply(1:nrow(samples$eta), .fun))
+}
+
+predict_multi_student <- function(n, data, samples, link, ...) {
+  # currently no truncation available
+  obs <- seq(n, data$N, data$N_trait)
+  .fun <- function(i) {
+    rmultistudent(1, df = samples$nu[i, ], 
+                  mu = ilink(samples$eta[i, obs], link),
+                  Sigma = samples$Sigma[i, , ])
+  }
+  do.call(rbind, lapply(1:nrow(samples$eta), .fun))
+}
+
+predict_multi_cauchy <- function(n, data, samples, link, ...) {
+  # currently no truncation available
+  obs <- seq(n, data$N, data$N_trait)
+  .fun <- function(i) {
+    rmultistudent(1, df = 1, mu = ilink(samples$eta[i, obs], link),
+                  Sigma = samples$Sigma[i, , ])
   }
   do.call(rbind, lapply(1:nrow(samples$eta), .fun))
 }
