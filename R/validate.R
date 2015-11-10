@@ -541,10 +541,10 @@ get_prior <- function(formula, data = NULL, family = "gaussian",
                       threshold = c("flexible", "equidistant"), 
                       internal = FALSE) {
   # note that default priors are stored in this function
-  if (is.null(autocor)) 
-    autocor <- cor_arma()
-  if (!is(autocor, "cor_brms")) 
+  if (is.null(autocor)) autocor <- cor_arma()
+  if (!is(autocor, "cor_brms")) { 
     stop("cor must be of class cor_brms")
+  }
   threshold <- match.arg(threshold)
   # see validate.R
   family <- check_family(family) 
@@ -611,18 +611,19 @@ get_prior <- function(formula, data = NULL, family = "gaussian",
   # handle additional parameters
   is_ordinal <- is.ordinal(family)
   is_linear <- family %in% c("gaussian", "student", "cauchy")
+  nresp <- length(ee$response)
   if (get_ar(autocor)) 
     prior <- rbind(prior, prior_frame(class = "ar"))
   if (get_ma(autocor)) 
     prior <- rbind(prior, prior_frame(class = "ma"))
   if (get_arr(autocor)) 
     prior <- rbind(prior, prior_frame(class = "arr"))
-  if (has_sigma(family, se = is.formula(ee$se), autocor = autocor))
-    prior <- rbind(prior, prior_frame(class = "sigma", 
-                                      coef = c("", ee$response),
-                                      prior = c(default_scale_prior, 
-                                                rep("", length(ee$response)))))
-  if (family == "gaussian" && length(ee$response) > 1) {
+  if (has_sigma(family, se = is.formula(ee$se), autocor = autocor)) {
+    sigma_prior <- prior_frame(class = "sigma", coef = c("", ee$response),
+                               prior = c(default_scale_prior, rep("", nresp)))
+    prior <- rbind(prior, sigma_prior)
+  }
+  if (is_linear && nresp > 1) {
     if (internal) {
       prior <- rbind(prior, prior_frame(class = "Lrescor", 
                                         prior = "lkj_corr_cholesky(1)"))
