@@ -621,7 +621,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   ee <- extract_effects(object$formula, family = object$family)
   # use newdata if defined
   if (is.null(newdata)) {
-    data <- standata(object, keep_intercept = TRUE)
+    data <- standata(object, keep_intercept = TRUE, save_order = TRUE)
   } else {
     data <- amend_newdata(newdata, fit = object, re_formula = re_formula,
                           allow_new_levels = allow_new_levels)
@@ -678,6 +678,22 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                    "were invalid. Increasing argument ntrys may help."))
   }
   
+  # reorder predicted responses in case of multivariate models
+  # as they are sorted after units first not after traits
+  if (grepl("^multi_", family)) {
+    reorder <- ulapply(1:data$K_trait, seq, to = data$N, by = data$K_trait)
+    # observations in columns
+    out <- out[, reorder]  
+    colnames(out) <- 1:ncol(out) 
+  }
+  # reorder predicted responses to be in the initial user defined order
+  # currently only relevant for autocorrelation models 
+  old_order <- attr(data, "old_order")
+  if (!is.null(old_order)) {
+    out <- out[, old_order]  
+    colnames(out) <- 1:ncol(out) 
+  }
+  # transform predicted response samples before summarizing them 
   if (!is.null(transform) && !is_catordinal) {
     out <- do.call(transform, list(out))
   }
@@ -686,20 +702,6 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   } else if (summary && is_catordinal) { 
     # compute frequencies of categories for categorical and ordinal models
     out <- get_table(out, levels = 1:max(data$max_obs)) 
-  }
-  
-  # sort predicted responses in case of multinormal models
-  if (grepl("^multi_", family)) {
-    to_order <- ulapply(1:data$K_trait, seq, to = data$N, by = data$K_trait)
-    if (summary) {
-      # observations in rows
-      out <- out[to_order, ]
-      rownames(out) <- 1:nrow(out)
-    } else {
-      # observations in columns
-      out <- out[, to_order]  
-      colnames(out) <- 1:ncol(out) 
-    }
   }
   out
 }
@@ -753,7 +755,7 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   ee <- extract_effects(object$formula, family = object$family)
   # use newdata if defined
   if (is.null(newdata)) {
-    data <- standata(object, keep_intercept = TRUE)
+    data <- standata(object, keep_intercept = TRUE, save_order = TRUE)
   } else {
     data <- amend_newdata(newdata, fit = object, re_formula = re_formula,
                           allow_new_levels = allow_new_levels)
@@ -763,6 +765,13 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (scale == "response") {
     # see fitted.R
     mu <- fitted_response(object, eta = mu, data = data)
+  }
+  # reorder fitted values to be in the initial user defined order
+  # currently only relevant for autocorrelation models 
+  old_order <- attr(data, "old_order")
+  if (!is.null(old_order)) {
+    mu <- mu[, old_order]  
+    colnames(mu) <- 1:ncol(mu) 
   }
   if (summary) {
     mu <- get_summary(mu, probs = probs)
@@ -914,7 +923,7 @@ logLik.brmsfit <- function(object, ...) {
     stop("The model does not contain posterior samples")
   ee <- extract_effects(object$formula, family = object$family)
   nresp <- length(ee$response)
-  data <- standata(object)
+  data <- standata(object, save_order = TRUE)
   N <- ifelse(is.null(data$N_tg), nrow(as.matrix(data$Y)), data$N_tg)
   
   # extract relevant samples
@@ -952,6 +961,12 @@ logLik.brmsfit <- function(object, ...) {
                              link = object$link)) 
   }
   loglik <- do.call(cbind, lapply(1:N, call_loglik_fun))
+  # reorder loglik values to be in the initial user defined order
+  # currently only relevant for autocorrelation models 
+  old_order <- attr(data, "old_order")
+  if (!is.null(old_order)) {
+    loglik <- loglik[, old_order]  
+  }
   colnames(loglik) <- 1:ncol(loglik)
   loglik
 }

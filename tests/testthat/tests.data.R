@@ -231,6 +231,23 @@ test_that(paste("Test that make_standata returns correct data",
                c(rep(1,5), rep(2,5)))
 })
 
+test_that("Test that make_standata allows to retrieve the initial data order", {
+  temp_data <- data.frame(y1 = rnorm(100), y2 = rnorm(100), 
+                          id = sample(1:10, 100, TRUE), 
+                          time = sample(1:100, 100))
+  # univariate model
+  sdata1 <- make_standata(y1 ~ 1, data = temp_data, 
+                          autocor = cor_ar(~time|id),
+                          save_order = TRUE)
+  expect_equal(temp_data$y1, sdata1$Y[attr(sdata1, "old_order")])
+  # multivariate model
+  sdata2 <- make_standata(cbind(y1, y2) ~ 1, data = temp_data, 
+                          autocor = cor_ma(~time|id:trait),
+                          save_order = TRUE)
+  expect_equal(c(temp_data$y1, temp_data$y2), 
+               sdata2$Y[attr(sdata2, "old_order")])
+})
+
 test_that("Test brmdata and brm.data for backwards compatibility", {
   temp_data <- data.frame(y = 1:10, x = sample(1:5, 10, TRUE))
   expect_identical(brmdata(y ~ x + (1|x), data = temp_data, 

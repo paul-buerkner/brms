@@ -174,7 +174,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   }
   make_standata(fit$formula, data = newdata, family = fit$family, 
                 autocor =  fit$autocor, partial = fit$partial, 
-                newdata = TRUE, keep_intercept = TRUE)
+                newdata = TRUE, keep_intercept = TRUE,
+                save_order = TRUE)
 }
 
 #' Data for \pkg{brms} Models
@@ -209,6 +210,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   #   newdata: logical; indicating if make_standata is called with new data
   #   keep_intercept: logical; indicating if the Intercept column
   #                   should be kept in the FE design matrix
+  #   save_order: logical; should the initial order of the data be saved?
   dots <- list(...)
   family <- check_family(family)$family
   is_linear <- is.linear(family)
@@ -236,7 +238,10 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       to_order <- rmNULL(list(data[[et$group]], data[[et$time]]))
     }
     if (length(to_order)) {
-      data <- data[do.call(order, to_order), ]
+      new_order <- do.call(order, to_order)
+      data <- data[new_order, ]
+      # old_order will allow to retrieve the initial order of the data
+      attr(data, "old_order") <- order(new_order)
     }
   }
   
@@ -451,6 +456,9 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       standata$Karr <- Karr
     }
   } 
+  if (!is.null(attr(data, "old_order")) && isTRUE(dots$save_order)) {
+    attr(standata, "old_order") <- attr(data, "old_order")
+  }
   standata
 }  
 

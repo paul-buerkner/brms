@@ -155,12 +155,15 @@
 #'   Mutiple \code{addition} terms may be specified at the same time, for instance \cr 
 #'   \code{formula = yi | se(sei) | cens(censored) ~ 1} for a censored meta-analytic model. \cr
 #'   
-#'   Family \code{gaussian} allows to perform multivariate (normal) regression using \code{cbind} notation. 
-#'   Suppose that \code{y1} and \code{y2} are response variables and \code{x} is a predictor, 
-#'   then \code{cbind(y1,y2) ~ x} speficies a multivariate model, 
+#'   For families \code{gaussian}, \code{student}, and \code{cauchy} 
+#'   multivariate models may be specified using \code{cbind} notation. 
+#'   Suppose that \code{y1} and \code{y2} are both response variables 
+#'   and \code{x} is a predictor.
+#'   Then \code{cbind(y1,y2) ~ x} specifies a multivariate model, 
 #'   where \code{x} has the same effect on \code{y1} and \code{y2}.
-#'   To indicate different effects on each response variable, the word \code{trait} 
-#'   (which is reserved in multivariate models) can be used as an additional categorical predictor. 
+#'   To indicate different effects on each response variable, 
+#'   the variable \code{trait} (which is reserved in multivariate models) 
+#'   can be used as an additional categorical predictor. 
 #'   For instance, \code{cbind(y1,y2) ~ 0 + x:trait} leads to seperate effects
 #'   of \code{x} on \code{y1} and \code{y2}. 
 #'   In this case, \code{trait} has two levels, namely \code{"y1"} and \code{"y2"}. 
