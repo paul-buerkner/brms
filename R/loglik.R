@@ -45,13 +45,37 @@ loglik_lognormal <- function(n, data, samples, link) {
   weight_loglik(out, n = n, data = data)
 }
 
-loglik_multinormal <- function(n, data, samples, link) {
+loglik_multi_gaussian <- function(n, data, samples, link) {
   nobs <- data$N_trait * data$K_trait
   nsamples <- nrow(samples$eta)
   obs <- seq(n, nobs, data$N_trait)
   out <- sapply(1:nsamples, function(i) 
     dmultinormal(data$Y[n,], Sigma = samples$Sigma[i, , ], log = TRUE,
                  mu = ilink(samples$eta[i, obs], link)))
+  # no truncation allowed
+  weight_loglik(out, n = n, data = data)
+}
+
+loglik_multi_student <- function(n, data, samples, link) {
+  nobs <- data$N_trait * data$K_trait
+  nsamples <- nrow(samples$eta)
+  obs <- seq(n, nobs, data$N_trait)
+  out <- sapply(1:nsamples, function(i) 
+    dmultistudent(data$Y[n,], df = samples$nu, 
+                  Sigma = samples$Sigma[i, , ], log = TRUE,
+                  mu = ilink(samples$eta[i, obs], link)))
+  # no truncation allowed
+  weight_loglik(out, n = n, data = data)
+}
+
+loglik_multi_cauchy <- function(n, data, samples, link) {
+  nobs <- data$N_trait * data$K_trait
+  nsamples <- nrow(samples$eta)
+  obs <- seq(n, nobs, data$N_trait)
+  out <- sapply(1:nsamples, function(i) 
+    dmultistudent(data$Y[n,], df = 1, 
+                  Sigma = samples$Sigma[i, , ], log = TRUE,
+                  mu = ilink(samples$eta[i, obs], link)))
   # no truncation allowed
   weight_loglik(out, n = n, data = data)
 }

@@ -332,8 +332,9 @@ summary.brmsfit <- function(object, waic = TRUE, ...) {
     out$n.thin <- attr(object$fit@sim$samples[[1]],"args")$thin
     out$sampler <- attr(object$fit@sim$samples[[1]],"args")$sampler_t
     
-    if (length(object$ranef) && !any(grepl("^r_", parnames(object)))) {
-      # if brm(..., ranef = FALSE)
+    if (length(object$ranef) && !any(grepl("^r_", parnames(object)))
+        || length(ee$response) > 1) {
+      # if brm(..., ranef = FALSE) or model is multivariate
       waic <- FALSE
     }
     if (waic) out$WAIC <- WAIC(object)$waic
@@ -636,10 +637,10 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     samples$nu <- as.matrix(posterior_samples(object, pars = "^nu$"))
   if (has_shape(object$family)) 
     samples$shape <- as.matrix(posterior_samples(object, pars = "^shape$"))
-  if (object$family == "gaussian" && nresp > 1) {
+  if (is.linear(object$family) && nresp > 1) {
     samples$rescor <- as.matrix(posterior_samples(object, pars = "^rescor_"))
     samples$Sigma <- get_cov_matrix(sd = samples$sigma, cor = samples$rescor)$cov
-    message(paste("Computing posterior predictive samples of multinormal distribution. \n", 
+    message(paste("Computing predicted samples of a multivariate model. \n", 
                   "This may take a while."))
   }
   
@@ -648,8 +649,8 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   autocor <- object$autocor
   if (object$link == "log" && family == "gaussian" && nresp == 1) {
     family <- "lognormal"
-  } else if (family == "gaussian" && nresp > 1) {
-    family <- "multinormal"
+  } else if (is.linear(family) && nresp > 1) {
+    family <- paste0("multi_", family)
   } else if (use_cov(autocor) && (get_ar(autocor) || get_ma(autocor))) {
     # special family for ARMA models using residual covariance matrices
     family <- paste0(family, "_cov")
@@ -924,10 +925,10 @@ logLik.brmsfit <- function(object, ...) {
     samples$nu <- as.matrix(posterior_samples(object, pars = "^nu$"))
   if (has_shape(object$family)) 
     samples$shape <- as.matrix(posterior_samples(object, pars = "^shape$"))
-  if (object$family == "gaussian" && nresp > 1) {
+  if (is.linear(object$family) && nresp > 1) {
     samples$rescor <- as.matrix(posterior_samples(object, pars = "^rescor_"))
     samples$Sigma <- get_cov_matrix(sd = samples$sigma, cor = samples$rescor)$cov
-    message(paste("Computing pointwise log-likelihood of multinormal distribution. \n",
+    message(paste("Computing pointwise log-likelihood of a multivariate model. \n",
                   "This may take a while."))
   }
   
@@ -936,8 +937,8 @@ logLik.brmsfit <- function(object, ...) {
   autocor <- object$autocor
   if (object$link == "log" && family == "gaussian" && nresp == 1) {
     family <- "lognormal"
-  } else if (family == "gaussian" && nresp > 1) {
-    family <- "multinormal"
+  } else if (is.linear(family) && nresp > 1) {
+    family <- paste0("multi_", family)
   } else if (use_cov(autocor) && (get_ar(autocor) || get_ma(autocor))) {
     # special family for ARMA models using residual covariance matrices
     family <- paste0(family, "_cov")

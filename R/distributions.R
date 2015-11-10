@@ -109,7 +109,7 @@ rmultinormal <- function(n, mu, Sigma, check = FALSE) {
 }
 
 dmultistudent <- function(x, df, mu, Sigma, log = TRUE,
-                           check = FALSE) {
+                          check = FALSE) {
   # density of the multivariate student-t distribution 
   #
   # Args:
@@ -142,7 +142,7 @@ dmultistudent <- function(x, df, mu, Sigma, log = TRUE,
   rooti <- backsolve(chol_Sigma, t(x) - mu, transpose = TRUE)
   quads <- colSums(rooti^2)
   out <- lgamma((p + df)/2) - (lgamma(df / 2) + sum(log(diag(chol_Sigma))) + 
-         p/2 * log(pi * df)) - 0.5 * (df + p) * log1p(quads / df)
+         p / 2 * log(pi * df)) - 0.5 * (df + p) * log1p(quads / df)
   if (!log) 
     out <- exp(out)
   out
