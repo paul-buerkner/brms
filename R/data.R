@@ -8,11 +8,11 @@ melt_data <- function(data, response, family) {
   #
   # Returns:
   #   data in long format 
+  is_linear <- is.linear(family)
   is_hurdle <- is.hurdle(family)
   is_zero_inflated <- is.zero_inflated(family)
   nresp <- length(response)
-  if (nresp > 1 && family == "gaussian" || 
-      nresp == 2 && (is_hurdle || is_zero_inflated)) {
+  if (nresp > 1 && is_linear || nresp == 2 && (is_hurdle || is_zero_inflated)) {
     if (!is(data, "data.frame"))
       stop("data must be a data.frame for multivarite models")
     if ("trait" %in% names(data))
@@ -23,7 +23,7 @@ melt_data <- function(data, response, family) {
       # dummy variable not actually used in Stan
       data[response[2]] <- rep(0, nrow(data))
     }
-    new_columns <- data.frame(unlist(lapply(response, rep, time = nrow(data))), 
+    new_columns <- data.frame(ulapply(response, rep, time = nrow(data)), 
                               as.numeric(as.matrix(data[, response])))
     names(new_columns) <- c("trait", response[1])
     old_columns <- data[, which(!names(data) %in% response), drop = FALSE]
@@ -215,7 +215,9 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   is_ordinal <- is.ordinal(family)
   is_count <- is.count(family)
   if (is.null(autocor)) autocor <- cor_arma()
-  if (!is(autocor,"cor_brms")) stop("cor must be of class cor_brms")
+  if (!is(autocor,"cor_brms")) {
+    stop("cor must be of class cor_brms")
+  }
   
   et <- extract_time(autocor$formula)
   ee <- extract_effects(formula = formula, family = family, partial, et$all)
@@ -223,7 +225,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   
   # sort data in case of autocorrelation models
   if (has_arma(autocor)) {
-    if (family == "gaussian" && length(ee$response) > 1) {
+    if (is_linear && length(ee$response) > 1) {
       if (!grepl("^trait$|:trait$|^trait:|:trait:", et$group)) {
         stop(paste("autocorrelation structures for multiple responses must",
                    "contain 'trait' as grouping variable"))
@@ -266,7 +268,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   } else if (is.skewed(family)) {
     if (min(standata$Y) < 0)
       stop(paste("family", family, "requires response variable to be non-negative"))
-  } else if (family == "gaussian" && length(ee$response) > 1) {
+  } else if (is_linear && length(ee$response) > 1) {
     standata$Y <- matrix(standata$Y, ncol = length(ee$response))
     standata <- c(standata, list(N_trait = nrow(standata$Y), 
                                  K_trait = ncol(standata$Y)),

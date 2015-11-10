@@ -188,15 +188,18 @@ has_shape <- function(family) {
                 "hurdle_gamma", "zero_inflated_negbinomial")
 }
 
-has_sigma <- function(family, se, autocor) {
+has_sigma <- function(family, autocor = cor_arma(), se = FALSE,
+                      is_multi = FALSE) {
   # indicate if the model needs a sigma parameter
   # Args:
   #  family: model family
   #  se: does the model contain user defined SEs?
   #  autocor: object of class cor_arma
+  #  is_multi: is the model multivariate?
   if (is.null(se)) se <- FALSE
   if (is.formula(se)) se <- TRUE
-  is.linear(family) && (!se || get_ar(autocor) || get_ma(autocor))
+  is.linear(family) && !is_multi && 
+    (!se || get_ar(autocor) || get_ma(autocor)) 
 }
 
 get_boundaries <- function(trunc) {

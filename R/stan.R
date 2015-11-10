@@ -33,9 +33,6 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
   et <- extract_time(autocor$formula)  
   ee <- extract_effects(formula, family = family, partial, et$all)
   data <- update_data(data, family = family, effects = ee, et$group)
-  if (family == "gaussian" && length(ee$response) > 1) {
-    family <- "multinormal"
-  }
   # flags to indicate of which type family is
   # see misc.R for details
   is_linear <- is.linear(family)
@@ -44,9 +41,10 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
   is_count <- is.count(family)
   is_hurdle <- is.hurdle(family)
   is_zero_inflated <- is.zero_inflated(family)
-  is_multi <- family == "multinormal"
   is_categorical <- family == "categorical"
-  sigma <- has_sigma(family, se = ee$se, autocor = autocor)
+  is_multi <- length(ee$response) > 1
+  sigma <- has_sigma(family, autocor = autocor, se = ee$se, 
+                     is_multi = is_multi)
   shape <- has_shape(family)
   offset <- !is.null(model.offset(data)) 
   trunc <- get_boundaries(ee$trunc)  
@@ -88,15 +86,16 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
                        has_intercept = has_intercept, paref = paref,  
                        group = ee$group, autocor = autocor,
                        add = is.formula(ee[c("weights", "cens", "trunc")]),
-                       offset = offset)
+                       offset = offset, is_multi = is_multi)
   text_arma <- stan_arma(family = family, link = link, 
                          autocor = autocor, se = is.formula(ee$se),
-                         nresp = length(ee$response))
+                         is_multi = is_multi)
   text_ordinal <- stan_ordinal(family = family, link = link, 
                                partial = length(paref), 
                                threshold = threshold)  
-  text_multi <- stan_multi(family, response = ee$response)
-  text_llh <- stan_llh(family, link = link,
+  text_multi <- stan_multi(family = family, response = ee$response)
+  text_llh <- stan_llh(family, link = link, 
+                       is_multi = is_multi,
                        se = is.formula(ee$se),  
                        weights = is.formula(ee$weights),
                        trials = is.formula(ee$trials),
@@ -158,17 +157,14 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
   text_data <- paste0(
     "data { \n",
     "  int<lower=1> N;  # number of observations \n", 
-    if (is_real_Y) {
+    if (is_multi) {
+      text_multi$data
+    } else if (is_real_Y) {
       "  vector[N] Y;  # response variable \n"
     } else if (is_int_Y) {
       "  int Y[N];  # response variable \n"
-    } else if (is_multi) {
-      paste0("  int<lower=1> N_trait;  # number of observations per response \n",
-             "  int<lower=1> K_trait;  # number of responses \n",  
-             "  int NC_trait;  # number of residual correlations \n",
-             "  vector[K_trait] Y[N_trait];  # response matrix \n")
     } else if (is_hurdle || is_zero_inflated) {
-      paste0("  int<lower=1> N_trait;  # number of observations per response \n",
+      paste0("  int<lower=1> N_trait;  # number of obs per response \n",
              "  ", ifelse(family == "hurdle_gamma", "real", "int"),
              " Y[N_trait];  # response variable \n")
     },
@@ -265,16 +261,13 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
       "  real<lower=0> sigma;  # residual SD \n",
     if (family == "student") 
       "  real<lower=1> nu;  # degrees of freedom \n",
-    if (is_multi) 
-      paste0("  # parameters for multinormal models \n",
-             "  vector<lower=0>[K_trait] sigma; \n",
-             "  cholesky_factor_corr[K_trait] Lrescor; \n"),
     if (shape) 
-      "  real<lower=0> shape;  # shape parameter constant across observations \n",
+      "  real<lower=0> shape;  # shape parameter \n",
     if (!is.null(attr(prior, "hs_df"))) 
       paste0("  # horseshoe shrinkage parameters \n",
              "  vector<lower=0>[K] hs_local; \n",
              "  real<lower=0> hs_global; \n"),
+    text_multi$par,
     text_rngprior$par,
     "} \n")
   
@@ -285,12 +278,7 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
     text_loop <- c(paste0("  # if available add REs to linear predictor \n",
                           "  for (n in 1:N) { \n"), "  } \n")
   } else if (is_multi) {
-    text_loop <- c(paste0("  # restructure linear predictor and add REs \n",
-                          "  for (m in 1:N_trait) { \n",  
-                          "    for (k in 1:K_trait) { \n", 
-                          "      int n; \n",
-                          "      n <- (k - 1) * N_trait + m; \n"), 
-                          "    } \n  } \n")
+    text_loop <- text_multi$loop
   } else {
     text_loop <- rep("", 2)
   }
@@ -304,7 +292,8 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
   "transformed parameters { \n",
     text_eta$transD, 
     text_arma$transD, 
-    text_ordinal$transD, 
+    text_ordinal$transD,
+    text_multi$transD,
     text_ranef$transD, 
     text_eta$transC1, 
     text_arma$transC1, 
@@ -316,6 +305,7 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
       text_ordinal$transC2, 
       text_eta$transC3, 
     text_loop[2],
+    text_multi$transC,
   "} \n",
   "model { \n",
     if (is.formula(ee$weights) && !is.formula(ee$cens)) 
@@ -429,7 +419,7 @@ stan_ranef <- function(i, ranef, group, cor, prior = list(),
 
 stan_llh <- function(family, link, se = FALSE, weights = FALSE, 
                      trials = FALSE, cens = FALSE, trunc = .trunc(), 
-                     autocor = cor_arma()) {
+                     autocor = cor_arma(), is_multi = FALSE) {
   # Likelihoods in stan language
   #
   # Args:
@@ -441,9 +431,11 @@ stan_llh <- function(family, link, se = FALSE, weights = FALSE,
   #   cens: logical; censored data?
   #   trunc: list containing lower and upper truncation boundaries
   #   autocor: autocorrelation structure; an object of classe cor_arma
+  #   multi: is the model multivariate?
   #
   # Returns:
   #   a string containing the likelihood of the model in stan language
+  is_linear <- is.linear(family)
   is_catordinal <- is.ordinal(family) || family == "categorical"
   is_count <- is.count(family)
   is_skewed <- is.skewed(family)
@@ -451,19 +443,21 @@ stan_llh <- function(family, link, se = FALSE, weights = FALSE,
   is_hurdle <- is.hurdle(family)
   is_zero_inflated <- is.zero_inflated(family)
   is_trunc <- trunc$lb > -Inf || trunc$ub < Inf
-  if (family == "gaussian" && link == "log") {
-    # prepare for use of lognormal distribution
-    family <- "lognormal"
-    link <- "identity"
-  }
-  if (use_cov(autocor) && (get_ar(autocor) || get_ma(autocor))) {
+  if (is_multi) {
+    # prepare for use of a multivariate likelihood
+    family <- paste0("multi_", family)
+  } else if (use_cov(autocor) && (get_ar(autocor) || get_ma(autocor))) {
     # ARMA effects have a special formulation
     # if fitted using a covariance matrix for residuals
     family <- paste0(family, "_cov")
     if (weights || cens || is_trunc) {
       stop("Invalid addition arguments")
     }
-  }
+  } else if (family == "gaussian" && link == "log") {
+    # prepare for use of lognormal likelihood
+    family <- "lognormal"
+    link <- "identity"
+  } 
   
   simplify <- !is_trunc && !cens && 
     (is_binary && link == "logit" || is_count && link == "log" ||
@@ -518,8 +512,9 @@ stan_llh <- function(family, link, se = FALSE, weights = FALSE,
       cauchy_cov = c("student_t_cov", paste0("1, ",eta,", squared_se, N_tg, ", 
                      "begin_tg, nrows_tg, res_cov_matrix")),
       lognormal = c("lognormal", paste0(eta,", sigma",ns)),
-      multinormal = c("multi_normal_cholesky", 
-                      paste0("etam",n,", diag_pre_multiply(sigma, Lrescor)")),
+      multi_gaussian = c("multi_normal_cholesky", paste0("etam",n,", LSigma")),
+      multi_student = c("multi_student_t", paste0("nu, etam",n,", Sigma")),
+      multi_cauchy = c("multi_student_t", paste0("1.0, etam",n,", Sigma")),
       poisson = c("poisson", eta),
       negbinomial = c("neg_binomial_2", paste0(eta,", shape")),
       geometric = c("neg_binomial_2", paste0(eta,", 1")),
@@ -576,7 +571,7 @@ stan_llh <- function(family, link, se = FALSE, weights = FALSE,
 
 stan_eta <- function(family, link, fixef, has_intercept = TRUE, 
                      paref = NULL, group = NULL, autocor = cor_arma(), 
-                     add = FALSE, offset = FALSE) {
+                     add = FALSE, offset = FALSE, is_multi = FALSE) {
   # linear predictor in Stan
   #
   # Args:
@@ -588,6 +583,7 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE,
   #   autocor: autocorrelation structure
   #   add: is the model weighted, censored, or truncated?
   #   offset: is an offset defined?
+  #   is_multi: is the model multivariate?
   # 
   # Return:
   #   the linear predictor in stan language
@@ -598,7 +594,6 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE,
   is_count <- is.count(family) || is.zero_inflated(family) ||
               family %in% c("hurdle_poisson", "hurdle_negbinomial")
   is_binary <- is.binary(family)
-  is_multi <- family == "multinormal"
   
   eta <- list()
   # initialize eta
@@ -664,7 +659,8 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE,
   eta
 }
 
-stan_arma <- function(family, link, autocor, se = FALSE, nresp = 1) {
+stan_arma <- function(family, link, autocor, se = FALSE, 
+                      is_multi = FALSE) {
   # moving average autocorrelation in Stan
   # 
   # Args:
@@ -672,12 +668,11 @@ stan_arma <- function(family, link, autocor, se = FALSE, nresp = 1) {
   #   link: the link function
   #   autocor: autocorrelation structure; object of class cor_arma
   #   se: user defined standard errors present?
-  #   nresp: number of respone variables
+  #   is_multi: is the model multivariate?
   #
   # Returns:
   #   stan code for computing moving average effects
   is_linear <- is.linear(family)
-  is_multi <- family == "multinormal"
   out <- list()
   Kar <- get_ar(autocor)
   Kma <- get_ma(autocor)
@@ -689,7 +684,7 @@ stan_arma <- function(family, link, autocor, se = FALSE, nresp = 1) {
     if (use_cov(autocor) && (Kar || Kma)) {
       # if the user wants ARMA effects to be estimated using
       # a covariance matrix for residuals
-      if (nresp > 1) {
+      if (is_multi) {
         stop(paste("multivariate models are not yet allowed", 
                    "when using ARMA covariance matrices"))
       }
@@ -1127,22 +1122,53 @@ stan_functions <- function(family = "gaussian", link = "identity",
 }
 
 stan_multi <- function(family, response) {
-  # multinormal effects in Stan
+  # some Stan code for multivariate models
   #
   # Args:
-  #   family: the model family
+  #   family: model family
   #   response: names of the response variables
   # 
   # Returns: 
-  #   string containing the stan code specific for multinormal models
+  #   list containing Stan code specific for multivariate models
   out <- list()
-  if (family == "multinormal") {
-   out$genD <- paste0("  matrix[K_trait,K_trait] Rescor; \n",
-    "  vector<lower=-1,upper=1>[NC_trait] rescor; \n")
-   out$genC <- paste0("  # take only relevant parts of residual correlation matrix \n",
-        "  Rescor <- multiply_lower_tri_self_transpose(Lrescor); \n",
-        collapse(ulapply(2:length(response), function(i) lapply(1:(i-1), function(j)
-        paste0("  rescor[",(i-1)*(i-2)/2+j,"] <- Rescor[",j,", ",i,"]; \n")))))
+  nresp <- length(response)
+  if (nresp > 1) {
+   out$data <- paste0(
+     "  int<lower=1> N_trait;  # number of observations per response \n",
+     "  int<lower=1> K_trait;  # number of responses \n",  
+     "  int NC_trait;  # number of residual correlations \n",
+     "  vector[K_trait] Y[N_trait];  # response matrix \n")
+   out$par <- paste0(
+     "  # parameters for multivariate linear models \n",
+     "  vector<lower=0>[K_trait] sigma; \n",
+     "  cholesky_factor_corr[K_trait] Lrescor; \n")
+   out$loop <- c(paste0(
+     "  # restructure linear predictor and add REs \n",
+     "  for (m in 1:N_trait) { \n",  
+     "    for (k in 1:K_trait) { \n", 
+     "      int n; \n",
+     "      n <- (k - 1) * N_trait + m; \n"), 
+     "    } \n  } \n")
+   if (family == "gaussian") {
+     out$transD <- "  cholesky_factor_cov[K_trait] LSigma; \n"
+     out$transC <- paste0(
+       "  # compute cholesky factor of residual covariance matrix \n",
+       "  LSigma <- diag_pre_multiply(sigma, Lrescor); \n")
+   } else if (family %in% c("student", "cauchy")) {
+     out$transD <- "  cov_matrix[K_trait] Sigma; \n"
+     out$transC <- paste0(
+       "  # compute residual covariance matrix \n",
+       "  Sigma <- multiply_lower_tri_self_transpose(", 
+       "diag_pre_multiply(sigma, Lrescor)); \n")
+   }
+   out$genD <- paste0(
+     "  matrix[K_trait,K_trait] Rescor; \n",
+     "  vector<lower=-1,upper=1>[NC_trait] rescor; \n")
+   out$genC <- paste0(
+    "  # take only relevant parts of residual correlation matrix \n",
+    "  Rescor <- multiply_lower_tri_self_transpose(Lrescor); \n",
+    collapse(ulapply(2:nresp, function(i) lapply(1:(i-1), function(j)
+    paste0("  rescor[",(i-1)*(i-2)/2+j,"] <- Rescor[",j,", ",i,"]; \n")))))
   }
   out
 }
