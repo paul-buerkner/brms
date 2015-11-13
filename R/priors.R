@@ -489,7 +489,8 @@ handle_special_priors <- function(prior) {
   b_index <- which(prior$class == "b" & !nchar(prior$coef))
   if (length(b_index) && grepl("^horseshoe\\(.+\\)$", prior$prior[b_index])) {
     # horseshoe prior for fixed effects parameters
-    hs_df <- as.numeric(gsub("^horseshoe\\(|\\)$", "", prior$prior[b_index]))
+    hs_df <- gsub("^horseshoe\\(|\\)$", "", prior$prior[b_index])
+    hs_df <- suppressWarnings(as.numeric(hs_df))
     if (!is.na(hs_df) && hs_df > 0) {
       b_coef_indices <- which(prior$class == "b" & nchar(prior$coef)
                               & prior$coef != "Intercept")

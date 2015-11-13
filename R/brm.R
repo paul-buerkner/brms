@@ -342,7 +342,7 @@ brm <- function(formula, data = NULL, family = "gaussian",
     x$fit <- rstan::get_stanmodel(x$fit)  # extract the compiled model
     standata <- standata(x)  # compute data to be passed to Stan
   } else {  # build new model
-    # see validate.R for function definitions
+    # see validate.R and priors.R for function definitions
     obj_family <- check_family(family) 
     link <- obj_family$link
     family <- obj_family$family
