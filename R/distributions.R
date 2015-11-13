@@ -53,7 +53,7 @@ rstudent <-  function(n, df = stop("df is required"), mu = 0, sigma = 1) {
 
 dmulti_normal <- function(x, mu, Sigma, log = TRUE,
                          check = FALSE) {
-  # density of the multinormal distribution 
+  # density of the multivariate normal distribution 
   # not vectorized to increase speed when x is only a vector not a matrix
   #
   # Args:
@@ -87,7 +87,7 @@ dmulti_normal <- function(x, mu, Sigma, log = TRUE,
 }
 
 rmulti_normal <- function(n, mu, Sigma, check = FALSE) {
-  # random values of the multinormal distribution 
+  # random values of the multivariate normal distribution 
   #
   # Args:
   #   n: number of random values
@@ -176,7 +176,7 @@ rmulti_student <- function(n, df, mu, Sigma, log = TRUE,
       stop("df must be greater zero")
     }
   }
-  samples <- rmultinormal(n, mu = rep(0, p), Sigma = Sigma, check = check) / 
+  samples <- rmulti_normal(n, mu = rep(0, p), Sigma = Sigma, check = check) / 
                sqrt(rchisq(n, df = df) / df)
   sweep(samples, 2, mu, "+")
 }
