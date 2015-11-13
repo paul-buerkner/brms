@@ -640,7 +640,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (is.linear(object$family) && nresp > 1) {
     samples$rescor <- as.matrix(posterior_samples(object, pars = "^rescor_"))
     samples$Sigma <- get_cov_matrix(sd = samples$sigma, cor = samples$rescor)$cov
-    message(paste("Computing predicted samples of a multivariate model. \n", 
+    message(paste("Computing predicted values of a multivariate model. \n", 
                   "This may take a while."))
   }
   
@@ -962,10 +962,11 @@ logLik.brmsfit <- function(object, ...) {
   }
   loglik <- do.call(cbind, lapply(1:N, call_loglik_fun))
   # reorder loglik values to be in the initial user defined order
-  # currently only relevant for autocorrelation models 
+  # currently only relevant for autocorrelation models
+  # that are not using covariance formulation
   old_order <- attr(data, "old_order")
-  if (!is.null(old_order)) {
-    loglik <- loglik[, old_order]  
+  if (!is.null(old_order) && !isTRUE(autocor$cov)) {
+    loglik <- loglik[, old_order[1:N]]  
   }
   colnames(loglik) <- 1:ncol(loglik)
   loglik
