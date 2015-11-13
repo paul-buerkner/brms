@@ -51,7 +51,7 @@ rstudent <-  function(n, df = stop("df is required"), mu = 0, sigma = 1) {
   mu + sigma * rt(n, df = df)
 }
 
-dmultinormal <- function(x, mu, Sigma, log = TRUE,
+dmulti_normal <- function(x, mu, Sigma, log = TRUE,
                          check = FALSE) {
   # density of the multinormal distribution 
   # not vectorized to increase speed when x is only a vector not a matrix
@@ -62,6 +62,9 @@ dmultinormal <- function(x, mu, Sigma, log = TRUE,
   #   sigma: covariance matrix
   #   log: return on log scale?
   #   check: check arguments for validity?
+  #
+  # Returns:
+  #   density of the multi_normal distribution a values x
   p <- length(x)
   if (check) {
     if (length(mu) != p) {
@@ -83,7 +86,7 @@ dmultinormal <- function(x, mu, Sigma, log = TRUE,
   out
 }
 
-rmultinormal <- function(n, mu, Sigma, check = FALSE) {
+rmulti_normal <- function(n, mu, Sigma, check = FALSE) {
   # random values of the multinormal distribution 
   #
   # Args:
@@ -91,6 +94,9 @@ rmultinormal <- function(n, mu, Sigma, check = FALSE) {
   #   mu: mean vector
   #   sigma: covariance matrix
   #   check: check arguments for validity?
+  #
+  # Returns:
+  #   n samples of multi_normal distribution of dimension length(mu) 
   p <- length(mu)
   if (check) {
     if (!(is.wholenumber(n) && n > 0)) {
@@ -108,7 +114,7 @@ rmultinormal <- function(n, mu, Sigma, check = FALSE) {
   mu + samples %*% chol(Sigma)
 }
 
-dmultistudent <- function(x, df, mu, Sigma, log = TRUE,
+dmulti_student <- function(x, df, mu, Sigma, log = TRUE,
                           check = FALSE) {
   # density of the multivariate student-t distribution 
   #
@@ -119,6 +125,9 @@ dmultistudent <- function(x, df, mu, Sigma, log = TRUE,
   #   sigma: covariance matrix
   #   log: return on log scale?
   #   check: check arguments for validity?
+  #
+  # Returns:
+  #   density of the multi_student distribution a values x
   if (is.vector(x)) {
     x <- matrix(x, ncol = length(x))
   }
@@ -148,7 +157,7 @@ dmultistudent <- function(x, df, mu, Sigma, log = TRUE,
   out
 }
 
-rmultistudent <- function(n, df, mu, Sigma, log = TRUE, 
+rmulti_student <- function(n, df, mu, Sigma, log = TRUE, 
                           check = FALSE) {
   # random values of the multivariate student-t distribution 
   #
@@ -158,6 +167,9 @@ rmultistudent <- function(n, df, mu, Sigma, log = TRUE,
   #   mu: mean vector
   #   sigma: covariance matrix
   #   check: check arguments for validity?
+  #
+  # Returns:
+  #   n samples of multi_student distribution of dimension length(mu) 
   p <- length(mu)
   if (check) {
     if (df <= 0) {
@@ -174,9 +186,12 @@ dcategorical <- function(x, eta, ncat, link = "logit") {
   # 
   # Args:
   #   x: positive integers not greater than ncat
-  #   mu: the linear predictor (of length or ncol ncat-1)  
+  #   eta: the linear predictor (of length or ncol ncat-1)  
   #   ncat: the number of categories
   #   link: the link function
+  #
+  # Returns:
+  #   probabilities P(X = x)
   if (is.null(dim(eta))) 
     eta <- matrix(eta, nrow = 1)
   if (length(dim(eta)) != 2 || !is.numeric(eta)) 
@@ -197,11 +212,12 @@ pcategorical <- function(q, eta, ncat, link = "logit") {
   #
   # Args:
   #   q: positive integers not greater than ncat
-  #   mu: the linear predictor (of length or ncol ncat-1)  
+  #   eta: the linear predictor (of length or ncol ncat-1)  
   #   ncat: the number of categories
+  #   link: a character string naming the link
   #
   # Retruns: 
-  #   probabilites P(x <= q)
+  #   probabilities P(x <= q)
   p <- dcategorical(1:max(q), eta = eta, ncat = ncat, link = link)
   do.call(cbind, lapply(q, function(j) rowSums(as.matrix(p[, 1:j]))))
 }
@@ -291,8 +307,10 @@ pordinal <- function(q, eta, ncat, family, link = "logit") {
   #
   # Args:
   #   q: positive integers not greater than ncat
-  #   mu: the linear predictor (of length or ncol ncat-1)  
+  #   eta: the linear predictor (of length or ncol ncat-1)  
   #   ncat: the number of categories
+  #   family: a character string naming the family
+  #   link: a character string naming the link
   #
   # Returns: 
   #   probabilites P(x <= q)

@@ -50,7 +50,7 @@ loglik_multi_gaussian <- function(n, data, samples, link) {
   nsamples <- nrow(samples$eta)
   obs <- seq(n, nobs, data$N_trait)
   out <- sapply(1:nsamples, function(i) 
-    dmultinormal(data$Y[n,], Sigma = samples$Sigma[i, , ], log = TRUE,
+    dmulti_normal(data$Y[n,], Sigma = samples$Sigma[i, , ], log = TRUE,
                  mu = ilink(samples$eta[i, obs], link)))
   # no truncation allowed
   weight_loglik(out, n = n, data = data)
@@ -61,7 +61,7 @@ loglik_multi_student <- function(n, data, samples, link) {
   nsamples <- nrow(samples$eta)
   obs <- seq(n, nobs, data$N_trait)
   out <- sapply(1:nsamples, function(i) 
-    dmultistudent(data$Y[n,], df = samples$nu[i, ], 
+    dmulti_student(data$Y[n,], df = samples$nu[i, ], 
                   Sigma = samples$Sigma[i, , ], log = TRUE,
                   mu = ilink(samples$eta[i, obs], link)))
   # no truncation allowed
@@ -73,7 +73,7 @@ loglik_multi_cauchy <- function(n, data, samples, link) {
   nsamples <- nrow(samples$eta)
   obs <- seq(n, nobs, data$N_trait)
   out <- sapply(1:nsamples, function(i) 
-    dmultistudent(data$Y[n,], df = 1, 
+    dmulti_student(data$Y[n,], df = 1, 
                   Sigma = samples$Sigma[i, , ], log = TRUE,
                   mu = ilink(samples$eta[i, obs], link)))
   # no truncation allowed
@@ -102,7 +102,7 @@ loglik_gaussian_cov <- function(n, data, samples, link) {
                                   nrows = length(rows))
   }
   out <- sapply(1:nrow(samples$eta), function(i)
-    dmultinormal(Y_part, mu = ilink(eta_part[i, ], link), 
+    dmulti_normal(Y_part, mu = ilink(eta_part[i, ], link), 
                  Sigma = Sigma[i, , ], log = TRUE))
   # weights, truncation and censoring not allowed
   out
@@ -130,7 +130,7 @@ loglik_student_cov <- function(n, data, samples, link) {
                                   nrows = length(rows))
   }
   out <- sapply(1:nrow(samples$eta), function(i)
-    dmultistudent(Y_part, df = samples$nu[i, ], 
+    dmulti_student(Y_part, df = samples$nu[i, ], 
                   mu = ilink(eta_part[i, ], link), 
                   Sigma = Sigma[i, , ], log = TRUE))
   # weights, truncation and censoring not yet allowed

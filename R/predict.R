@@ -44,7 +44,7 @@ predict_multi_gaussian <- function(n, data, samples, link, ...) {
   # currently no truncation available
   obs <- seq(n, data$N, data$N_trait)
   .fun <- function(i) {
-    rmultinormal(1, Sigma = samples$Sigma[i, , ],
+    rmulti_normal(1, Sigma = samples$Sigma[i, , ],
                  mu = ilink(samples$eta[i, obs], link))
   }
   do.call(rbind, lapply(1:nrow(samples$eta), .fun))
@@ -54,7 +54,7 @@ predict_multi_student <- function(n, data, samples, link, ...) {
   # currently no truncation available
   obs <- seq(n, data$N, data$N_trait)
   .fun <- function(i) {
-    rmultistudent(1, df = samples$nu[i, ], 
+    rmulti_student(1, df = samples$nu[i, ], 
                   mu = ilink(samples$eta[i, obs], link),
                   Sigma = samples$Sigma[i, , ])
   }
@@ -65,7 +65,7 @@ predict_multi_cauchy <- function(n, data, samples, link, ...) {
   # currently no truncation available
   obs <- seq(n, data$N, data$N_trait)
   .fun <- function(i) {
-    rmultistudent(1, df = 1, mu = ilink(samples$eta[i, obs], link),
+    rmulti_student(1, df = 1, mu = ilink(samples$eta[i, obs], link),
                   Sigma = samples$Sigma[i, , ])
   }
   do.call(rbind, lapply(1:nrow(samples$eta), .fun))
@@ -92,7 +92,7 @@ predict_gaussian_cov <- function(n, data, samples, link, ...) {
                                   nrows = length(rows))
   }
   .fun <- function(i) {
-    rmultinormal(1, mu = ilink(eta_part[i, ], link), 
+    rmulti_normal(1, mu = ilink(eta_part[i, ], link), 
                  Sigma = Sigma[i, , ])
   }
   do.call(rbind, lapply(1:nrow(samples$eta), .fun))
@@ -119,7 +119,7 @@ predict_student_cov <- function(n, data, samples, link, ...) {
                                   nrows = length(rows))
   }
   .fun <- function(i) {
-    rmultistudent(1, df = samples$nu[i, ], mu = ilink(eta_part[i, ], link), 
+    rmulti_student(1, df = samples$nu[i, ], mu = ilink(eta_part[i, ], link), 
                   Sigma = Sigma[i, , ])
   }
   do.call(rbind, lapply(1:nrow(samples$eta), .fun))
