@@ -24,21 +24,22 @@ typically the environment from which \code{brm} is called.
 Although it is optional, we strongly recommend to supply a data.frame.}
 
 \item{family}{A description of the error distribution and link function to be used in the model. 
-This can be a vector of one or two character strings. 
-The first string indicates the distribution of the dependent variable (the 'family'). 
+This can be a family function, a call to a family function or a character string naming the family.
 Currently, the following families are supported:
-\code{"gaussian"}, \code{"student"}, \code{"cauchy"}, \code{"binomial"}, \code{"bernoulli"}, 
-\code{"categorical"}, \code{"poisson"}, \code{"negbinomial"}, \code{"geometric"}, \cr
-\code{"gamma"}, \code{"inverse.gaussian"}, \code{"exponential"}, \code{"weibull"}, 
+\code{gaussian}, \code{student}, \code{cauchy}, \code{binomial}, \code{bernoulli}, 
+\code{categorical}, \code{poisson}, \code{negbinomial}, \code{geometric},
+\code{gamma}, \code{inverse.gaussian}, \code{exponential}, \code{weibull},
+\code{cumulative}, \code{cratio}, \code{sratio}, \code{acat},
 \code{hurdle_poisson}, \code{hurdle_negbinomial}, \code{hurdle_gamma}, 
-\code{zero_inflated_poisson}, \cr
-\code{zero_inflated_negbinomial}, \code{"cumulative"}, \code{"cratio"}, 
-\code{"sratio"}, and \code{"acat"}.
-The second string indicates the link function, which must be supported by the family 
-(if not specified, default links are used). 
-Alternatively, a family function or the result of a call to a family function are also accepted
-(see \code{\link[stats:family]{family}} for help on standard family functions and 
-\code{\link[brms:brmsfamily]{brmsfamily}} for brms specific family functions). 
+\code{zero_inflated_poisson}, and \code{zero_inflated_negbinomial}.
+Every family function has a \code{link} argument allowing to specify
+the link function to be applied on the response variable.
+If not specified, default links are used.
+See \code{\link[stats:family]{family}} for help on standard family functions 
+and \code{\link[brms:brmsfamily]{brmsfamily}} for family functions
+specific to the \pkg{brms} package. 
+For backwards compatibility, \code{family} may also be a vector of two
+character strings, the first naming the family and the second naming the link.
 Further information is provided under 'Details'.}
 
 \item{prior}{One or more \code{brmsprior} objects created by function 
@@ -57,7 +58,7 @@ of the available correlation structures. Defaults to NULL, corresponding to no c
 
 \item{partial}{A one sided formula of the form \code{~expression} specifying the predictors with 
 category specific effects in non-cumulative ordinal models
-(i.e. in families \code{"cratio"}, \code{"sratio"}, or \code{"acat"}).}
+(i.e. in families \code{cratio}, \code{sratio}, or \code{acat}).}
 
 \item{threshold}{A character string indicating the type of thresholds (i.e. intercepts) 
 used in an ordinal model. \code{"flexible"} provides the standard unstructured thresholds and 
@@ -193,7 +194,7 @@ Fit a generalized linear mixed model, which incorporates both fixed-effects para
   
   For families \code{gaussian}, \code{student}, and \code{cauchy} 
   multivariate models may be specified using \code{cbind} notation. 
-  Suppose that \code{y1} and \code{y2} are both response variables 
+  Suppose that \code{y1} and \code{y2} are response variables 
   and \code{x} is a predictor.
   Then \code{cbind(y1,y2) ~ x} specifies a multivariate model, 
   where \code{x} has the same effect on \code{y1} and \code{y2}.

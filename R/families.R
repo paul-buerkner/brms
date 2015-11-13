@@ -8,8 +8,8 @@
 #' of families and link functions supported by \pkg{brms}, see the documentation
 #' (in particular the 'Details' section) of \code{\link[brms:brm]{brm}}.
 #' 
-#' @param link A specification for the model link function. This can be a name/expression, 
-#'   a literal character string or a length-one character vector. 
+#' @param link A specification for the model link function. 
+#'   This can be a name/expression or character string. 
 #'   The following list only refers to \pkg{brms} specific family functions.
 #'   Families \code{student}, and \code{cauchy} accept the links (as names) 
 #'   \code{identity}, \code{log}, and \code{inverse};
@@ -17,12 +17,12 @@
 #'   \code{log}, \code{identity}, and \code{sqrt}; 
 #'   families \code{bernoulli}, \code{cumulative}, \code{cratio}, \code{sratio}, 
 #'   and \code{acat} the links \code{logit}, \code{probit}, \code{probit_approx}, 
-#'   \code{cloglog}, and \code{cauchit}; \cr
+#'   \code{cloglog}, and \code{cauchit};
 #'   family \code{categorical} the link \code{logit}; families \code{weibull}, 
 #'   and \code{exponential} the links \code{log}, \code{identity}, and \code{inverse};
-#'   families \code{hurdle_poisson}, \code{hurdle_negbinomial},
-#'   \code{hurdle_gamma}, \code{zero_inflated_poisson}, and
-#'   \code{zero_inflated_negbinomial} the link \code{log}.  
+#'   families \code{hurdle_poisson}, \code{hurdle_gamma}, 
+#'   \code{hurdle_negbinomial}, \code{zero_inflated_poisson}, 
+#'   and \code{zero_inflated_negbinomial} the link \code{log}.  
 #'   The first link mentioned for each family is the default.
 #'   A full list of families and link functions supported by \pkg{brms}, 
 #'   is provided in the 'Details' section of \code{\link[brms:brm]{brm}}.   
