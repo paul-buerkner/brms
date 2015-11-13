@@ -158,21 +158,11 @@ update_formula <- function(formula, addition = NULL, partial = NULL) {
     partial <- formula2string(partial, rm=1)
     fnew <- paste(fnew, "+ partial(", partial, ")")
   }
-  update_formula_keep_short(formula, formula(fnew))
-}
-
-update_formula_keep_short <- function(old, new) {
-  # update a formula keeping it short
-  # i.e. not changing x*y to x + y + x:y
-  #
-  # Args:
-  #   old: formula to be updated
-  #   new: formula that contains the updates
-  #
-  # Returns:
-  #   same as update.formula but keeping the formula short
-  tmp <- .Call(stats:::C_updateform, as.formula(old), as.formula(new))
-  formula(terms.formula(tmp, simplify = FALSE))
+  if (fnew == ". ~ .") {
+    formula
+  } else {
+    update.formula(formula, formula(fnew))
+  }
 }
 
 get_group_formula <- function(g) {
