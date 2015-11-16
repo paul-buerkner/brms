@@ -400,7 +400,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     else if (is.wholenumber(ee$trials)) ee$trials
     else if (is.formula(ee$trials)) .addition(formula = ee$trials, data = data)
     else stop("Response part of formula is invalid.")
-    if (is.2PL(family)) {
+    if (is.2PL(family) && length(standata$trials) > 1) {
       # only use first half of trials for 2PL binomials
       standata$trials <- standata$trials[1:(nrow(data) / 2)] 
     }

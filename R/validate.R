@@ -102,7 +102,7 @@ extract_effects <- function(formula, ..., family = NA) {
   } else if (is.zero_inflated(family)) {
     x$response <- c(x$response, paste0("zi_", x$response))
   } else if (is.2PL(family)) {
-    x$response <- c(x$response, paste0("disc_", x$response))
+    x$response <- c(x$response, paste0("logDisc_", x$response))
   }
   if (length(x$response) > 1) {
     if (!is.null(x$cens) || !is.null(x$se) || !is.null(x$trunc))

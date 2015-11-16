@@ -1233,15 +1233,9 @@ stan_2PL <- function(family) {
     out$data <- paste0(
       "  int<lower=1> N_trait;  # number of obs per response \n",
       "  int Y[N_trait];  # response variable \n")
-    out$transD <- "  vector[N_trait] eta_2PL; \n"
+    out$transD <- "  vector[N_trait] eta_2PL;  # 2PL linear predictor \n"
     out$transC <- paste0("  eta_2PL <- head(eta, N_trait)", 
                          " .* exp(tail(eta, N_trait)); \n")
-    #if (family == "bernoulli_2PL") {
-    #  out$fun <- paste0(
-    #    "  real bernoulli_2PL_logit_log(y, eta, eta_disc) { \n",
-    #    "    return bernoulli_logit_log(y, eta_disc * eta); \n",
-    #    "  } \n")
-    #}
   }
   out
 }
