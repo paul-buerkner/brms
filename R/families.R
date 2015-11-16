@@ -18,8 +18,10 @@
 #'   families \code{bernoulli}, \code{cumulative}, \code{cratio}, \code{sratio}, 
 #'   and \code{acat} the links \code{logit}, \code{probit}, \code{probit_approx}, 
 #'   \code{cloglog}, and \code{cauchit};
-#'   family \code{categorical} the link \code{logit}; families \code{weibull}, 
-#'   and \code{exponential} the links \code{log}, \code{identity}, and \code{inverse};
+#'   family \code{categorical}, \code{bernoulli_2PL}, and \code{binomial_2PL} 
+#'   the link \code{logit}; 
+#'   families \code{weibull}, and \code{exponential} 
+#'   the links \code{log}, \code{identity}, and \code{inverse};
 #'   families \code{hurdle_poisson}, \code{hurdle_gamma}, 
 #'   \code{hurdle_negbinomial}, \code{zero_inflated_poisson}, 
 #'   and \code{zero_inflated_negbinomial} the link \code{log}.  
@@ -83,6 +85,42 @@ bernoulli <- function(link = "logit") {
                "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
   structure(list(family = "bernoulli", link = linktemp), class = "family")
+}
+
+#' @rdname brmsfamily
+#' @export
+bernoulli_2PL <- function(link = "logit") {
+  linktemp <- substitute(link)
+  if (!is.character(linktemp)) {
+    linktemp <- deparse(linktemp)
+  } 
+  okLinks <- c("logit")
+  if (!linktemp %in% okLinks && is.character(link)) {
+    linktemp <- link
+  }
+  if (!linktemp %in% okLinks) {
+    stop(paste(linktemp, "is not a supported link for family bernoulli_2PL.", 
+               "Supported links are: \n", paste(okLinks, collapse = ", ")))
+  }
+  structure(list(family = "bernoulli_2PL", link = linktemp), class = "family")
+}
+
+#' @rdname brmsfamily
+#' @export
+binomial_2PL <- function(link = "logit") {
+  linktemp <- substitute(link)
+  if (!is.character(linktemp)) {
+    linktemp <- deparse(linktemp)
+  } 
+  okLinks <- c("logit")
+  if (!linktemp %in% okLinks && is.character(link)) {
+    linktemp <- link
+  }
+  if (!linktemp %in% okLinks) {
+    stop(paste(linktemp, "is not a supported link for family binomial_2PL.", 
+               "Supported links are: \n", paste(okLinks, collapse = ", ")))
+  }
+  structure(list(family = "binomial_2PL", link = linktemp), class = "family")
 }
 
 #' @rdname brmsfamily
