@@ -16,7 +16,7 @@ melt_data <- function(data, response, family) {
   if (nresp == 2 && (is_hurdle || is_zero_inflated || is_2PL) 
       || nresp > 1 && is_linear) {
     if (!is(data, "data.frame"))
-      stop("data must be a data.frame for multivarite models")
+      stop("data must be a data.frame for multivariate models")
     if ("trait" %in% names(data))
       stop("trait is a resevered variable name in multivariate models")
     if (is_hurdle || is_zero_inflated || is_2PL) {
@@ -25,9 +25,10 @@ melt_data <- function(data, response, family) {
       # dummy variable not actually used in Stan
       data[response[2]] <- rep(0, nrow(data))
     }
-    new_columns <- data.frame(ulapply(response, rep, time = nrow(data)), 
+    new_columns <- data.frame(ulapply(response, rep, times = nrow(data)), 
                               as.numeric(as.matrix(data[, response])))
     names(new_columns) <- c("trait", response[1])
+    new_columns$trait <- factor(new_columns$trait, levels = response)
     old_columns <- data[, which(!names(data) %in% response), drop = FALSE]
     old_columns <- do.call(rbind, lapply(response, function(i) old_columns))
     data <- cbind(old_columns, new_columns)
