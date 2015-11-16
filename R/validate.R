@@ -54,7 +54,7 @@ extract_effects <- function(formula, ..., family = NA) {
     add <- substr(add, 2, nchar(add)-1)
     families <- list(se = c("gaussian", "student", "cauchy"),
                      weights = "all",
-                     trials = "binomial", 
+                     trials = c("binomial", "binomial_2PL"),
                      cat = c("categorical", "cumulative", "cratio", "sratio", "acat"), 
                      cens = c("gaussian", "student", "cauchy", "inverse.gaussian", 
                               "binomial", "poisson", "geometric", "negbinomial", 
@@ -101,6 +101,8 @@ extract_effects <- function(formula, ..., family = NA) {
     x$response <- c(x$response, paste0("hu_", x$response))
   } else if (is.zero_inflated(family)) {
     x$response <- c(x$response, paste0("zi_", x$response))
+  } else if (is.2PL(family)) {
+    x$response <- c(x$response, paste0("disc_", x$response))
   }
   if (length(x$response) > 1) {
     if (!is.null(x$cens) || !is.null(x$se) || !is.null(x$trunc))
@@ -222,7 +224,8 @@ family.character <- function(object, link = NA, ...) {
                   "gamma", "weibull", "exponential", "inverse.gaussian", 
                   "cumulative", "cratio", "sratio", "acat",
                   "hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma",
-                  "zero_inflated_poisson", "zero_inflated_negbinomial")
+                  "zero_inflated_poisson", "zero_inflated_negbinomial",
+                  "bernoulli_2PL", "binomial_2PL")
   if (!family %in% okFamilies)
     stop(paste(family, "is not a supported family. Supported families are: \n",
                paste(okFamilies, collapse = ", ")))
@@ -240,8 +243,11 @@ family.character <- function(object, link = NA, ...) {
     okLinks <- c("logit")
   } else if (is.skewed(family)) {
     okLinks <- c("log", "identity", "inverse")
-  } else if (is.hurdle(family) || is.zero_inflated(family))
+  } else if (is.hurdle(family) || is.zero_inflated(family)) {
     okLinks <- c("log")
+  } else if (is.2PL(family)) {
+    okLinks <- c("logit")
+  }
   if (is.na(link)) {
     link <- okLinks[1]
   }

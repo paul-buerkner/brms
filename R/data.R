@@ -11,13 +11,15 @@ melt_data <- function(data, response, family) {
   is_linear <- is.linear(family)
   is_hurdle <- is.hurdle(family)
   is_zero_inflated <- is.zero_inflated(family)
+  is_2PL <- is.2PL(family)
   nresp <- length(response)
-  if (nresp > 1 && is_linear || nresp == 2 && (is_hurdle || is_zero_inflated)) {
+  if (nresp == 2 && (is_hurdle || is_zero_inflated || is_2PL) 
+      || nresp > 1 && is_linear) {
     if (!is(data, "data.frame"))
       stop("data must be a data.frame for multivarite models")
     if ("trait" %in% names(data))
       stop("trait is a resevered variable name in multivariate models")
-    if (is_hurdle || is_zero_inflated) {
+    if (is_hurdle || is_zero_inflated || is_2PL) {
       if (response[2] %in% names(data))
         stop(paste(response[2], "is a resevered variable name"))
       # dummy variable not actually used in Stan
@@ -249,23 +251,29 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   
   # response variable
   standata <- list(N = nrow(data), Y = unname(model.response(data)))
-  if (!(is_ordinal || family %in% c("bernoulli", "categorical")) 
-      && !is.numeric(standata$Y)) 
+  if (!is.numeric(standata$Y) && !(is_ordinal || family %in% 
+      c("bernoulli", "bernoulli_2PL", "categorical")))  {
     stop(paste("family", family, "expects numeric response variable"))
+  }
   # transform and check response variable for different families
-  if (is_count || family == "binomial") {
-    if (!all(is.wholenumber(standata$Y)) || min(standata$Y) < 0)
-      stop(paste("family", family, "expects response variable of non-negative integers"))
-  } else if (family == "bernoulli") {
+  if (is_count || family %in% c("binomial", "binomial_2PL")) {
+    if (!all(is.wholenumber(standata$Y)) || min(standata$Y) < 0) {
+      stop(paste("family", family, "expects response variable", 
+                 "of non-negative integers"))
+    }
+  } else if (family %in% c("bernoulli", "bernoulli_2PL")) {
     standata$Y <- as.numeric(as.factor(standata$Y)) - 1
-    if (any(!standata$Y %in% c(0,1)))
-      stop("family bernoulli expects response variable to contain only two different values")
+    if (any(!standata$Y %in% c(0,1))) {
+      stop(paste("family", family, "expects response variable", 
+                 "to contain only two different values"))
+    }
   } else if (family == "categorical") { 
     standata$Y <- as.numeric(as.factor(standata$Y))
   } else if (is_ordinal) {
     if (is.factor(standata$Y)) {
       if (is.ordered(standata$Y)) standata$Y <- as.numeric(standata$Y)
-      else stop(paste("family", family, "requires factored response variables to be ordered"))
+      else stop(paste("family", family, "requires factored", 
+                      "response variables to be ordered"))
     } else if (all(is.wholenumber(standata$Y))) {
       standata$Y <- standata$Y - min(standata$Y) + 1
     } else {
@@ -274,14 +282,17 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     }
   } else if (is.skewed(family)) {
     if (min(standata$Y) < 0)
-      stop(paste("family", family, "requires response variable to be non-negative"))
+      stop(paste("family", family, "requires response variable", 
+                 "to be non-negative"))
   } else if (is_linear && length(ee$response) > 1) {
     standata$Y <- matrix(standata$Y, ncol = length(ee$response))
     standata <- c(standata, list(N_trait = nrow(standata$Y), 
                                  K_trait = ncol(standata$Y)),
                                  NC_trait = ncol(standata$Y) * 
                                             (ncol(standata$Y) - 1) / 2) 
-  } else if (is.hurdle(family) || is.zero_inflated(family)) {
+  }
+  # don't use else if here, because it is also required for 2PL families
+  if (is.hurdle(family) || is.zero_inflated(family) || is.2PL(family)) {
     # the second half of Y is not used because it is only dummy data
     # that was put into data to make melt_data work correctly
     standata$Y <- standata$Y[1:(nrow(data) / 2)] 
@@ -383,25 +394,31 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     }
     standata$sqrt_Y <- sqrt(standata$Y)
   }
-  if (family == "binomial") {
+  if (family %in% c("binomial", "binomial_2PL")) {
     standata$trials <- if (!length(ee$trials)) max(standata$Y)
-                        else if (is.wholenumber(ee$trials)) ee$trials
-                        else if (is.formula(ee$trials)) .addition(formula = ee$trials, data = data)
-                        else stop("Response part of formula is invalid.")
+    else if (is.wholenumber(ee$trials)) ee$trials
+    else if (is.formula(ee$trials)) .addition(formula = ee$trials, data = data)
+    else stop("Response part of formula is invalid.")
+    if (is.2PL(family)) {
+      # only use first half of trials for 2PL binomials
+      standata$trials <- standata$trials[1:(nrow(data) / 2)] 
+    }
     standata$max_obs <- standata$trials  # for backwards compatibility
     if (max(standata$trials) == 1) 
-      message("Only 2 levels detected so that family 'bernoulli' might be a more efficient choice.")
+      message(paste("Only 2 levels detected so that family", 
+                    sub("binomial", "bernoulli", family),  
+                    "might be a more efficient choice."))
     if (any(standata$Y > standata$trials))
       stop("Number of trials is smaller than the response variable would suggest.")
   }
   if (is_ordinal || family == "categorical") {
     standata$ncat <- if (!length(ee$cat)) max(standata$Y)
-                        else if (is.wholenumber(ee$cat)) ee$cat
-                        else if (is.formula(ee$cat)) {
-                          warning("observations may no longer have different numbers of categories.")
-                          max(.addition(formula = ee$cat, data = data))
-                        }
-                        else stop("Response part of formula is invalid.")
+    else if (is.wholenumber(ee$cat)) ee$cat
+    else if (is.formula(ee$cat)) {
+      warning("observations may no longer have different numbers of categories.")
+      max(.addition(formula = ee$cat, data = data))
+    }
+    else stop("Response part of formula is invalid.")
     standata$max_obs <- standata$ncat  # for backwards compatibility
     if (max(standata$ncat) == 2) 
       message("Only 2 levels detected so that family 'bernoulli' might be a more efficient choice.")
