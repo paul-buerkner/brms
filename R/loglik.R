@@ -151,11 +151,44 @@ loglik_binomial <- function(n, data, samples, link) {
   weight_loglik(out, n = n, data = data)
 }  
 
+loglik_binomial_2PL <- function(n, data, samples, link) {
+  trials <- ifelse(length(data$max_obs) > 1, data$max_obs[n], data$max_obs) 
+  eta_2PL <- samples$eta[, n] * exp(samples$eta[, n + data$N_trait])
+  args <- list(size = trials, prob = ilink(eta_2PL, link))
+  out <- censor_loglik(dist = "binom", args = args, n = n, data = data)
+  out <- truncate_loglik(out, cdf = pbinom, args = args, data = data)
+  out <- weight_loglik(out, n = n, data = data)
+  is_nan <- is.nan(out)
+  if (any(is_nan)) {
+    # for 2PL models NaN may occure for numerical reasons
+    warning(paste("observation", n, "had", length(which(is_nan)), 
+                  "logLik samples that were NaN"))
+    out[is_nan] <- mean(out[!is_nan])
+  }
+  out
+}  
+
 loglik_bernoulli <- function(n, data, samples, link) {
   args <- list(size = 1, prob = ilink(samples$eta[, n], link))
   out <- censor_loglik(dist = "binom", args = args, n = n, data = data)
   # no truncation allowed
   weight_loglik(out, n = n, data = data)
+}
+
+loglik_bernoulli_2PL <- function(n, data, samples, link) {
+  eta_2PL <- samples$eta[, n] * exp(samples$eta[, n + data$N_trait])
+  args <- list(size = 1, prob = ilink(eta_2PL, link))
+  out <- censor_loglik(dist = "binom", args = args, n = n, data = data)
+  # no truncation allowed
+  out <- weight_loglik(out, n = n, data = data)
+  is_nan <- is.nan(out)
+  if (any(is_nan)) {
+    # for 2PL models NaN may occure for numerical reasons
+    warning(paste("observation", n, "had", length(which(is_nan)), 
+                  "logLik samples that were NaN"))
+    out[is_nan] <- mean(out[!is_nan])
+  }
+  out
 }
 
 loglik_poisson <- function(n, data, samples, link) {
