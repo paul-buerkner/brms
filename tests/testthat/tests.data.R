@@ -5,13 +5,15 @@ test_that("Test that melt_data returns data in correct long format", {
   
   target1 <- data.frame(x = rep(c("a","b"), 10), y2 = rep(11:20, 2), 
                         z = rep(100:91, 2), 
-                        trait = c(rep("y3", 10), rep("y1", 10)), 
+                        trait = factor(rep(c("y3", "y1"), each = 10),
+                                       levels = c("y3", "y1")), 
                         y3 = c(21:30,1:10))
   expect_equal(melt_data(data, response = c("y3", "y1"), family = "gaussian"), 
                target1)
   
   target2 <- data.frame(x = rep(c("a","b"), 15), z = rep(100:91, 3),
-                        trait = c(rep("y2", 10), rep("y1", 10), rep("y3", 10)), 
+                        trait = factor(rep(c("y2", "y1", "y3"), each = 10),
+                                       levels = c("y2", "y1", "y3")), 
                         y2 = c(11:20, 1:10, 21:30))
   expect_equal(melt_data(data, response = c("y2", "y1", "y3"), family = "gaussian"), 
                target2)
@@ -150,11 +152,11 @@ test_that(paste("Test that make_standata rejects incorrect",
 test_that("Test that make_standata suggests using family bernoulli if appropriate", {
   expect_message(make_standata(y ~ 1, data = data.frame(y = rep(0:1,5)), 
                                family = "binomial"),
-                 paste("Only 2 levels detected so that family 'bernoulli'", 
+                 paste("Only 2 levels detected so that family bernoulli", 
                        "might be a more efficient choice."))
   expect_message(make_standata(y ~ 1, data = data.frame(y = rep(0:1,5)), 
                                family = "categorical"),
-                 paste("Only 2 levels detected so that family 'bernoulli'", 
+                 paste("Only 2 levels detected so that family bernoulli", 
                        "might be a more efficient choice."))
 })
 

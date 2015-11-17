@@ -422,7 +422,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     else stop("Response part of formula is invalid.")
     standata$max_obs <- standata$ncat  # for backwards compatibility
     if (max(standata$ncat) == 2) 
-      message("Only 2 levels detected so that family 'bernoulli' might be a more efficient choice.")
+      message("Only 2 levels detected so that family bernoulli might be a more efficient choice.")
     if (any(standata$Y > standata$ncat))
       stop("Number of categories is smaller than the response variable would suggest.")
   }  
