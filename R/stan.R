@@ -78,7 +78,8 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
   # generate random effects code
   Z <- lapply(ee$random, get_model_matrix, data = data)
   ranef <- lapply(Z, colnames)
-  trait <- ifelse(is_multi || is_hurdle || is_zero_inflated, "_trait", "")
+  trait <- ifelse(is_multi || is_hurdle || is_zero_inflated || is_2PL, 
+                  "_trait", "")
   names_cov_ranef <- names(cov.ranef)
   if (length(ee$group)) {
     # call stan_ranef for each random term seperately
@@ -162,21 +163,21 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
   Kma <- get_ma(autocor)
   is_real_Y <- is_linear || is_skewed || family == "inverse.gaussian"
   is_int_Y <- family %in% c("binomial", "bernoulli", "categorical") || 
-              is_count || is_ordinal
+              is_count || is_ordinal || is_2PL
   N_bin <- ifelse(is.formula(ee$trials), ifelse(is_2PL, "[N_trait]", "[N]"), "")
   text_data <- paste0(
     "data { \n",
     "  int<lower=1> N;  # number of observations \n", 
     if (is_multi) {
       text_multi$data
-    } else if (is_real_Y) {
-      "  vector[N] Y;  # response variable \n"
-    } else if (is_int_Y) {
-      "  int Y[N];  # response variable \n"
     } else if (is_hurdle || is_zero_inflated) {
       text_zi_hu$data
     } else if (is_2PL) {
       text_2PL$data
+    } else if (is_real_Y) {
+      "  vector[N] Y;  # response variable \n"
+    } else if (is_int_Y) {
+      "  int Y[N];  # response variable \n"
     },
     text_fixef$data,
     text_ranef$data,
@@ -193,7 +194,7 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
     if (is.formula(ee$weights))
       paste0("  vector<lower=0>[N",trait,"] weights;  # model weights \n"),
     if (is.formula(ee$cens))
-      "  vector[N] cens;  # indicates censoring \n",
+      paste0("  vector[N",trait,"] cens;  # indicates censoring \n"),
     if (trunc$lb > -Inf)
       paste0("  ", ifelse(is_int_Y, "int", "real"), " lb;",  
              "  # lower bound for truncation; \n"),
@@ -411,29 +412,32 @@ stan_ranef <- function(i, ranef, group, cor, prior = prior_frame(),
   }  
   else if (length(r) > 1) {  # multiple random effects
     out$data <- paste0(out$data,  
-                       "  row_vector[K_",i,"] Z_",i,"[N];  # RE design matrix \n",  
-                       "  int NC_",i,";  # number of correlations \n")
+      "  row_vector[K_",i,"] Z_",i,"[N];  # RE design matrix \n",  
+      "  int NC_",i,";  # number of correlations \n")
     out$par <- paste0("  matrix[N_",i,", K_",i,"] pre_",i,";  # unscaled REs \n",
-                      "  vector<lower=0>[K_",i,"] sd_",i,";  # RE standard deviation \n",
-                      if (cor) paste0("  cholesky_factor_corr[K_",i,"] L_",i,
-                                      ";  # cholesky factor of correlations matrix \n"))
+      "  vector<lower=0>[K_",i,"] sd_",i,";  # RE standard deviation \n",
+      if (cor) paste0("  cholesky_factor_corr[K_",i,"] L_",i,
+      ";  # cholesky factor of correlations matrix \n"))
     out$prior <- paste0(out$prior, 
-                        if (cor) stan_prior(class = "L", group = i, prior = prior),
-                        "  to_vector(pre_",i,") ~ normal(0, 1); \n")
+      if (cor) stan_prior(class = "L", group = i, prior = prior),
+      "  to_vector(pre_",i,") ~ normal(0, 1); \n")
     out$transD <- paste0("  vector[K_",i,"] r_",i,"[N_",i,"];  # REs \n")
     if (ccov) {  # customized covariance matrix supplied
       if (cor) {  # estimate correlations between random effects
-        out$transC <- paste0("  r_",i," <- to_array(kronecker_cholesky(cov_",i,", L_",i,", sd_",i,") * ",
-                             "to_vector(pre_",i,"), N_",i,", K_",i,");  # scale REs \n")
+        out$transC <- paste0(
+          "  r_",i," <- to_array(kronecker_cholesky(cov_",i,", L_",i,", sd_",i,") * ",
+          "to_vector(pre_",i,"), N_",i,", K_",i,");  # scale REs \n")
       } else { 
-        out$transC <- paste0("  r_",i," <- to_array(to_vector(rep_matrix(sd_",i,", N_",i,")) .* ",
-                             "(cov_",i," * to_vector(pre_",i,")), N_",i,", K_",i,");  # scale REs \n")
+        out$transC <- paste0(
+          "  r_",i," <- to_array(to_vector(rep_matrix(sd_",i,", N_",i,")) .* ",
+          "(cov_",i," * to_vector(pre_",i,")), N_",i,", K_",i,");  # scale REs \n")
       }
     } else { 
-      out$transC <- paste0("  for (i in 1:N_",i,") { \n",
-                           "    r_",i, "[i] <- sd_",i," .* (", 
-                           if (cor) paste0("L_",i," * "), 
-                           "to_vector(pre_",i,"[i]));  # scale REs \n  } \n")
+      out$transC <- paste0(
+        "  for (i in 1:N_",i,") { \n",
+        "    r_",i, "[i] <- sd_",i," .* (", 
+        if (cor) paste0("L_",i," * "), 
+        "to_vector(pre_",i,"[i]));  # scale REs \n  } \n")
     }
     if (cor) {  # return correlations above the diagonal only
       cors_genC <- ulapply(2:length(r), function(k) lapply(1:(k-1), function(j)
@@ -514,7 +518,9 @@ stan_llh <- function(family, link, se = FALSE, weights = FALSE,
                     exponential_log = "exp(-eta[n])",
                     exponential_inverse = "eta[n]",
                     exponential_identity = "inv(eta[n])",
-                    weibull = paste0(ilink,"(eta[n] / shape)"))
+                    weibull = paste0(ilink,"(eta[n] / shape)"),
+                    binomial_2PL = paste0(ilink,"(eta_2PL[n])"),
+                    bernoulli_2PL = paste0(ilink,"(eta_2PL[n])"))
     }
   } else {
     # possible transformations already performed
@@ -554,6 +560,8 @@ stan_llh <- function(family, link, se = FALSE, weights = FALSE,
       geometric = c("neg_binomial_2", paste0(eta,", 1")),
       binomial = c("binomial", paste0("trials",ns,", ",eta)),
       bernoulli = c("bernoulli", eta), 
+      binomial_2PL = c("binomial", paste0("trials",ns,", ",eta)),
+      bernoulli_2PL = c("bernoulli", eta), 
       gamma = c("gamma", paste0("shape, ",eta)), 
       exponential = c("exponential", eta),
       weibull = c("weibull", paste0("shape, ",eta)), 

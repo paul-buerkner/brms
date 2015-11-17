@@ -57,10 +57,12 @@ extract_effects <- function(formula, ..., family = NA) {
                      trials = c("binomial", "binomial_2PL"),
                      cat = c("categorical", "cumulative", "cratio", "sratio", "acat"), 
                      cens = c("gaussian", "student", "cauchy", "inverse.gaussian", 
-                              "binomial", "poisson", "geometric", "negbinomial", 
+                              "binomial", "binomial_2PL",
+                              "poisson", "geometric", "negbinomial", 
                               "exponential", "weibull", "gamma"),
                      trunc = c("gaussian", "student", "cauchy",
-                               "binomial", "poisson", "geometric", "negbinomial", 
+                               "binomial", "binomial_2PL",
+                               "poisson", "geometric", "negbinomial", 
                                "exponential", "weibull", "gamma"))
     for (f in fun) {
       x[[f]] <- unlist(regmatches(add, gregexpr(paste0(f,"\\([^\\|]*\\)"), add)))[1]
@@ -105,8 +107,10 @@ extract_effects <- function(formula, ..., family = NA) {
     x$response <- c(x$response, paste0("logDisc_", x$response))
   }
   if (length(x$response) > 1) {
-    if (!is.null(x$cens) || !is.null(x$se) || !is.null(x$trunc))
+    if (!(is.null(x$cens) && is.null(x$se) && is.null(x$trunc))
+        && is.linear(family)) {
       stop("multivariate models currently allow only weights as addition arguments")
+    }
     x$fixed <- eval(parse(text = paste0("update(x$fixed, ", x$response[1], " ~ .)"))) 
     x$all <- eval(parse(text = paste0("update(x$all, ", x$response[1], " ~ .)"))) 
   }  

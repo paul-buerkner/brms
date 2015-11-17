@@ -219,6 +219,8 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   is_linear <- is.linear(family)
   is_ordinal <- is.ordinal(family)
   is_count <- is.count(family)
+  has_fake_2nd_resp <- is.hurdle(family) || is.zero_inflated(family) || 
+                       is.2PL(family)
   if (is.null(autocor)) autocor <- cor_arma()
   if (!is(autocor, "cor_brms")) {
     stop("cor must be of class cor_brms")
@@ -293,7 +295,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
                                             (ncol(standata$Y) - 1) / 2) 
   }
   # don't use else if here, because it is also required for 2PL families
-  if (is.hurdle(family) || is.zero_inflated(family) || is.2PL(family)) {
+  if (has_fake_2nd_resp) {
     # the second half of Y is not used because it is only dummy data
     # that was put into data to make melt_data work correctly
     standata$Y <- standata$Y[1:(nrow(data) / 2)] 
@@ -374,11 +376,13 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   }
   if (is.formula(ee$weights)) {
     standata <- c(standata, list(weights = .addition(formula = ee$weights, data = data)))
-    if (is.linear(family) && length(ee$response) > 1) 
+    if (is.linear(family) && length(ee$response) > 1 || has_fake_2nd_resp) 
       standata$weights <- standata$weights[1:standata$N_trait]
   }
   if (is.formula(ee$cens)) {
     standata <- c(standata, list(cens = .addition(formula = ee$cens, data = data)))
+    if (is.linear(family) && length(ee$response) > 1 || has_fake_2nd_resp)
+      standata$cens <- standata$cens[1:standata$N_trait]
   }
   if (is.formula(ee$trunc)) {
     standata <- c(standata, .addition(formula = ee$trunc))
