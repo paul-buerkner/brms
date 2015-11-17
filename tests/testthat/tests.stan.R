@@ -140,6 +140,12 @@ test_that("Test that make_stancode correctly combines strings of multiple groupi
                fixed = TRUE)
 })
 
+test_that("Test that make_stancode handles models without fixed effects correctly", {
+  expect_match(make_stancode(count ~ 0 + (1|patient) + (1+Trt_c|visit), 
+                             data = epilepsy, family = "poisson"), 
+               "  eta <- rep_vector(0, N); \n", fixed = TRUE)
+})
+
 test_that("Test that stan_ordinal returns correct strings", {
   expect_match(stan_ordinal(family = "sratio", link = "logit")$par, "")
   

@@ -60,18 +60,16 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
     X <- data.frame()
     fixef <- colnames(X)
     Xp <- get_model_matrix(ee$fixed, data)
-    paref <- colnames(Xp)
-    has_intercept <- "Intercept" == paref[1]
-    if (has_intercept) paref <- paref[-1]
+    temp_list <- check_intercept(colnames(Xp))
+    paref <- temp_list$names
   } else {
     X <- get_model_matrix(ee$fixed, data)
-    fixef <- colnames(X)
+    temp_list <- check_intercept(colnames(X))
+    fixef <- temp_list$names
     Xp <- get_model_matrix(partial, data, rm_intercept = TRUE)
     paref <- colnames(Xp)
-    # extract_effects ensures that ordinal models always have intercepts
-    has_intercept <- "Intercept" == fixef[1]
-    if (has_intercept) fixef <- fixef[-1]
   }
+  has_intercept <- temp_list$has_intercept
   text_fixef <- stan_fixef(fixef = fixef, paref = paref, 
                            family = family, prior = prior, 
                            has_intercept = has_intercept,
