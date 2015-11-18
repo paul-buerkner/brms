@@ -377,7 +377,10 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
   # Args:
   #   x: a brmsfit object
   #   newdata: optional data.frame containing new data to make predictions for.
-  #            If \code{NULL} (the default), the data used to fit the model is applied.
+  #            If \code{NULL} (the default), the data used 
+  #            to fit the model is applied.
+  #   re_formula: formula containing random effects 
+  #               to be considered in the prediction
   #
   # Returns:
   #   usually, an S x N matrix where S is the number of samples
@@ -403,23 +406,18 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
                         ncol = data$N, byrow = TRUE)
   }
   
+  # incorporate random effects
+  ee <- extract_effects(x$formula)
   group <- names(x$ranef)
-  # may contain the same group more than ones
-  all_groups <- extract_effects(x$formula)$group  
   if (length(group) && is.null(re_formula)) {
     for (i in 1:length(group)) {
-      if (any(grepl(paste0("^J_|^lev_"), names(data)))) {  # implies brms > 0.4.1
+      if (any(grepl(paste0("^J_"), names(data)))) {  # implies brms > 0.4.1
         # create a single RE design matrix for every grouping factor
-        Z <- lapply(which(all_groups == group[i]), 
+        Z <- lapply(which(ee$group == group[i]), 
                     function(k) get(paste0("Z_",k), data))
         Z <- do.call(cbind, Z)
-        id <- match(group[i], all_groups)
-        if (any(grepl(paste0("^J_"), names(data)))) {
-          gf <- get(paste0("J_",id), data)
-        } else {
-          # for backwards compatibility
-          gf <- get(paste0("lev_",id), data)  
-        }
+        id <- match(group[i], ee$group)
+        gf <- get(paste0("J_",id), data)
       } else {  # implies brms <= 0.4.1
         Z <- as.matrix(get(paste0("Z_",group[i]), data))
         gf <- get(group[i], data)
