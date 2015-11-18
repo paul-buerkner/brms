@@ -234,7 +234,7 @@ combine_duplicates <- function(x) {
   #   x: a list
   #
   # Returns: 
-  #   a list of possibly reducte length.
+  #   a list of possibly reduced length.
   # 
   # Examples:
   #   combine_duplicates(list(a = 1, a = c(2,3)))

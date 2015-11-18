@@ -190,6 +190,56 @@ get_group_formula <- function(g) {
   }
 }
 
+validate_re_formula <- function(re_formula, old_ranef, data) {
+  # validate the re_formuala argument as passed to predict and fitted
+  #
+  # Args:
+  #   re_formula: see predict.brmsfit for documentation
+  #   old_ranef: named list containing the RE names 
+  #              of each grouping factor in the original model
+  #   data: data supplied by the user
+  #
+  # Returns:
+  #   named list containing the RE names of each grouping factor
+  #   as defined in re_formula; or NULL if re_formula is NA or ~ 1
+  if (is.null(re_formula)) {
+    new_ranef <- old_ranef
+  } else if (is.formula(re_formula)) {
+    if (!is.data.frame(data)) {
+      stop("argument re_formula requires models fitted with brms > 0.5.0")
+    }
+    re_formula <- update(re_formula, 1 ~ .)
+    ee <- extract_effects(re_formula)
+    if (length(all.vars(ee$fixed))) {
+      stop("fixed effects are not allowed in re_formula")
+    }
+    if (!length(ee$group)) {
+      # if no RE terms are present in re_formula
+      return(NULL)
+    }
+    # the true family doesn't matter here
+    data <- update_data(data, family = "gaussian", effects = ee)
+    new_ranef <- combine_duplicates(gather_ranef(effects = ee, data = data))
+    invalid_gf <- setdiff(names(new_ranef), names(old_ranef))
+    if (length(invalid_gf)) {
+      stop(paste("Invalid grouping factors detected:", 
+                 paste(invalid_gf, collapse = ", ")))
+    }
+    for (gf in names(new_ranef)) {
+      invalid_re <- setdiff(new_ranef[[gf]], old_ranef[[gf]])
+      if (length(invalid_re)) {
+        stop(paste0("Invalid random effects detected for grouping factor ", 
+                    gf, ": ", paste(invalid_re, collapse = ", ")))
+      } 
+    }
+  } else if (is.na(re_formula)) {
+    new_ranef <- NULL
+  } else {
+    stop("invalid re_formula argument")
+  }
+  new_ranef
+}
+
 gather_ranef <- function(effects, data = NULL) {
   # gathers helpful information on the random effects
   #

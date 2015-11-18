@@ -407,9 +407,10 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
   }
   
   # incorporate random effects
-  ee <- extract_effects(x$formula)
   group <- names(x$ranef)
-  if (length(group) && is.null(re_formula)) {
+  new_ranef <- validate_re_formula(re_formula, old_ranef = x$ranef, 
+                                   data = x$data)
+  if (length(group) && !is.null(new_ranef)) {
     for (i in 1:length(group)) {
       if (any(grepl(paste0("^J_"), names(data)))) {  # implies brms > 0.4.1
         # create a single RE design matrix for every grouping factor
@@ -429,7 +430,17 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
                    group[i], "not found. Please set ranef = TRUE",
                    "when calling brm."))
       }
-      eta <- eta + ranef_predictor(Z = Z, gf = gf, r = r) 
+      if (length(new_ranef[[group[i]]])) {
+        # else the random effects term of group[i] will not be considered
+        # take only a subset of random effects if defined in re_formula
+        used_re <- which(x$ranef[[group[i]]] %in% new_ranef[[group[i]]]) 
+        Z <- Z[, used_re, drop = FALSE]
+        n_levels <- ngrps(x)[[group[[i]]]]
+        used_re_pars <- ulapply(used_re, function(r) 
+          1:n_levels + (r - 1) * n_levels)
+        r <- r[, used_re_pars, drop = FALSE]
+        eta <- eta + ranef_predictor(Z = Z, gf = gf, r = r) 
+      }
     }
   }
   # indicates if the model was fitted with brms <= 0.5.0
