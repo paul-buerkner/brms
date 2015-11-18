@@ -190,8 +190,8 @@ get_group_formula <- function(g) {
   }
 }
 
-validate_re_formula <- function(re_formula, old_ranef, data) {
-  # validate the re_formuala argument as passed to predict and fitted
+check_re_formula <- function(re_formula, old_ranef, data) {
+  # validate the re_formula argument as passed to predict and fitted
   #
   # Args:
   #   re_formula: see predict.brmsfit for documentation

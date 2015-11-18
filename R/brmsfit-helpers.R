@@ -408,8 +408,7 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
   
   # incorporate random effects
   group <- names(x$ranef)
-  new_ranef <- validate_re_formula(re_formula, old_ranef = x$ranef, 
-                                   data = x$data)
+  new_ranef <- check_re_formula(re_formula, old_ranef = x$ranef, data = x$data)
   if (length(group) && !is.null(new_ranef)) {
     for (i in 1:length(group)) {
       if (any(grepl(paste0("^J_"), names(data)))) {  # implies brms > 0.4.1
