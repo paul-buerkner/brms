@@ -97,7 +97,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   # Args:
   #   newdata: a data.frame containing new data for prediction 
   #   fit: an object of class brmsfit
-  #   re.form: a random effects formula
+  #   re_formula: a random effects formula
+  #   allow_new_levels: are new random effects levels allowed?
   #
   # Notes:
   #   used in predict.brmsfit, fitted.brmsfit and linear_predictor.brmsfit
@@ -116,7 +117,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   et <- extract_time(fit$autocor$formula)
   if (has_arma(fit$autocor) && !use_cov(fit$autocor)
       && !all(ee$response %in% names(newdata))) {
-    stop("response variables must be specified in newdata for autocorrelative models")
+    stop(paste("response variables must be specified", 
+               "in newdata for autocorrelative models"))
   } else {
     for (resp in ee$response) {
       # add irrelevant response variables
@@ -147,19 +149,21 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
           new_levels <- levels(new_factor)
           if (any(!new_levels %in% factor_levels[[i]])) {
             stop(paste("New factor levels are not allowed. \n",
-                       "Levels found:", paste(new_levels, collapse = ", ") , "\n",
-                       "Levels allowed:", paste(factor_levels[[i]], collapse = ", ")))
+                 "Levels found:", paste(new_levels, collapse = ", ") , "\n",
+                 "Levels allowed:", paste(factor_levels[[i]], collapse = ", ")))
           }
           newdata[[factor_names[i]]] <- factor(new_factor, factor_levels[[i]])
         }
       }
     }
   } else {
-    warning(paste("Validity of factors cannot be checked for fitted model objects",
-                  "created with brms <= 0.5.0"))
+    warning(paste("Validity of factors cannot be checked for", 
+                  "fitted model objects created with brms <= 0.5.0"))
   }
   # validate grouping factors
-  if (length(fit$ranef) && is.null(re_formula)) {
+  new_ranef <- check_re_formula(re_formula, old_ranef = fit$ranef,
+                                data = fit$data)
+  if (length(fit$ranef) && !is.null(new_ranef)) {
     gnames <- names(fit$ranef)
     for (i in 1:length(gnames)) {
       gf <- as.character(get(gnames[i], newdata))
