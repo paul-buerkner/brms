@@ -557,7 +557,6 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
 #'   If \code{NULL} (default), the data used to fit the model is applied.
 #' @param re_formula formula containing random effects to be considered in the prediction. 
 #'   If \code{NULL} (default), include all random effects; if \code{NA}, include no random effects.
-#'   Other options will be implemented in the future.
 #' @param transform A function or a character string naming a function to be applied on the predicted responses
 #'   before summary statistics are computed.
 #' @param allow_new_levels Currenly, \code{FALSE} (no new levels allowed) is the only option. 
@@ -597,17 +596,23 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
 #' @examples 
 #' \dontrun{
 #' ## fit a model
-#' fit <- brm(time | cens(censored) ~ age + sex, data = kidney,
-#'            family = "exponential", silent = TRUE)
+#' fit <- brm(time | cens(censored) ~ age + sex + (1+age||patient), 
+#'            data = kidney, family = "exponential", inits = "0")
 #' 
-#' ## posterior predictive checks
+#' ## predicted responses
 #' pp <- predict(fit)
 #' head(pp)
 #' 
-#' ## predict response for new data
+#' ## predicted responses excluding the random effect of age
+#' pp2 <- predict(fit, re_formula = ~ (1|patient))
+#' head(pp2)
+#' 
+#' ## predicted responses of patient 1 for new data
 #' newdata <- data.frame(sex = factor(c("male", "female")),
-#'                       age = c(20,50))
+#'                       age = c(20, 50),
+#'                       patient = c(1, 1))
 #' predict(fit, newdata = newdata)
+#' 
 #' }
 #' 
 #' @importFrom statmod rinvgauss pinvgauss qinvgauss

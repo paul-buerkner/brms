@@ -11,8 +11,7 @@
 \item{object}{An object of class \code{brmsfit}}
 
 \item{re_formula}{formula containing random effects to be considered in the prediction. 
-If \code{NULL} (default), include all random effects; if \code{NA}, include no random effects.
-Other options will be implemented in the future.}
+If \code{NULL} (default), include all random effects; if \code{NA}, include no random effects.}
 
 \item{type}{The type of the residuals, either \code{"ordinary"} or \code{"pearson"}. 
 More information is provided under 'Details'.}

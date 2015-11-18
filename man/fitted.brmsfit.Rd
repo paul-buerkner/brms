@@ -15,8 +15,7 @@
 If \code{NULL} (default), the data used to fit the model is applied.}
 
 \item{re_formula}{formula containing random effects to be considered in the prediction. 
-If \code{NULL} (default), include all random effects; if \code{NA}, include no random effects.
-Other options will be implemented in the future.}
+If \code{NULL} (default), include all random effects; if \code{NA}, include no random effects.}
 
 \item{scale}{Either \code{"response"} or \code{"linear"}. If \code{scale = "response"} 
 results are returned on the scale of the response variable. If \code{scale = "linear"} 
