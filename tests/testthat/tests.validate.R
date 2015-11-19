@@ -68,6 +68,15 @@ test_that("Test that get_group_formula rejects incorrect grouping terms", {
                      "may contain only variable names combined by the symbol ':'"))
 })
 
+test_that("Test that gather_ranef works correctly", {
+  data <- data.frame(g = 1:10, x = 11:20)
+  target <- list(g = c("Intercept", "x"))
+  attr(target$g, "levels") <- paste(1:10)
+  expect_equal(gather_ranef(list(random = list(~1+x), group = "g"), data = data),
+               target)
+  expect_equal(gather_ranef(list()), list())
+})
+
 test_that("Test that check_family returns correct links", {
   expect_equal(check_family("gaussian")$link, "identity")
   expect_equal(check_family("weibull")$link, "log")
@@ -87,31 +96,9 @@ test_that("Test that check_family return an error on wrong links", {
                "probit is not a supported link for family categorical")
 })
 
-test_that("Test that get_prior finds all classes for which priors can be specified", {
-  expect_equal(get_prior(count ~ log_Base4_c * Trt_c + (1|patient) + (1+Trt_c|visit),
-                       data = epilepsy, family = "poisson")$class,
-               c(rep("b", 5), c("cor", "cor"), rep("sd", 6)))
-  expect_equal(get_prior(rating ~ treat + period, partial = ~ carry, data = inhaler, 
-                        family = "sratio", threshold = "equidistant")$class,
-               c(rep("b", 5), "delta"))
-})
-
-test_that("Test that update_prior produces correct prior_frames", {
-  prior <- list(b = "p1", sd = "p2", cor = "p3", b_Intercept = "p4",
-                cor_visit = "p5", sd_visit_x = "p6", sd_visit = "p7", 
-                sigma = "p8")
-  result <- prior_frame(prior = paste0("p",1:8), 
-                        class = c("b", "sd", "cor", "b", "cor", "sd", "sd", "sigma"),
-                        coef = c(rep("", 3), "Intercept", "", "x", "", ""),
-                        group = c(rep("", 4), rep("visit", 3), ""))
-  expect_equal(update_prior(prior), result)
-})
-
-test_that("Test that gather_ranef works correctly", {
-  data <- data.frame(g = 1:10, x = 11:20)
-  target <- list(g = c("Intercept", "x"))
-  attr(target$g, "levels") <- paste(1:10)
-  expect_equal(gather_ranef(list(random = list(~1+x), group = "g"), data = data),
-               target)
-  expect_equal(gather_ranef(list()), list())
+test_that("Test that check_family rejects invalid families", {
+  expect_error(check_family("multigaussian"),
+               "family 'multigaussian' is deprecated. Use family 'gaussian' instead")
+  expect_error(check_family("ordinal"),
+               "ordinal is not a supported family")
 })
