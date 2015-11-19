@@ -113,7 +113,11 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     stop(paste("predictions with new data are not yet possible", 
                "for ARMA covariance models"))
   }
-  ee <- extract_effects(fit$formula, family = fit$family)
+  # standata will be based on an updated formula if re_formula is specified
+  new_ranef <- check_re_formula(re_formula, old_ranef = fit$ranef,
+                                data = fit$data)
+  new_formula <- update_re_terms(fit$formula, re_formula = re_formula)
+  ee <- extract_effects(new_formula, family = fit$family)
   et <- extract_time(fit$autocor$formula)
   if (has_arma(fit$autocor) && !use_cov(fit$autocor)
       && !all(ee$response %in% names(newdata))) {
@@ -161,14 +165,12 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
                   "fitted model objects created with brms <= 0.5.0"))
   }
   # validate grouping factors
-  new_ranef <- check_re_formula(re_formula, old_ranef = fit$ranef,
-                                data = fit$data)
-  if (length(fit$ranef) && !is.null(new_ranef)) {
-    gnames <- names(fit$ranef)
+  if (length(new_ranef)) {
+    gnames <- names(new_ranef)
     for (i in 1:length(gnames)) {
       gf <- as.character(get(gnames[i], newdata))
       new_levels <- unique(gf)
-      old_levels <- attr(fit$ranef[[i]], "levels")
+      old_levels <- attr(new_ranef[[i]], "levels")
       unknown_levels <- setdiff(new_levels, old_levels)
       if (length(unknown_levels)) {
         stop(paste("levels", paste0(unknown_levels, collapse = ", "), 
@@ -179,7 +181,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       newdata[[gnames[i]]] <- sapply(gf, match, table = old_levels)
     }
   }
-  make_standata(fit$formula, data = newdata, family = fit$family, 
+  make_standata(new_formula, data = newdata, family = fit$family, 
                 autocor =  fit$autocor, partial = fit$partial, 
                 newdata = TRUE, keep_intercept = TRUE,
                 save_order = TRUE)

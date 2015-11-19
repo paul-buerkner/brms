@@ -387,13 +387,17 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
   #   and N is the number of observations in the data.
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
+  # the linear predictor will be based on an updated formula 
+  # if re_formula is specified
+  new_ranef <- check_re_formula(re_formula, old_ranef = x$ranef, data = x$data)
+  new_formula <- update_re_terms(x$formula, re_formula = re_formula)
   if (is.null(newdata)) { 
-    data <- standata(x, keep_intercept = TRUE)
+    data <- standata(x, keep_intercept = TRUE, re_formula = re_formula)
   } else {
     data <- newdata
   }
   
-  ee <- extract_effects(x$formula, family = x$family)
+  ee <- extract_effects(new_formula, family = x$family)
   n_samples <- nrow(posterior_samples(x, pars = "^lp__$"))
   eta <- matrix(0, nrow = n_samples, ncol = data$N)
   X <- data$X
@@ -407,9 +411,8 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
   }
   
   # incorporate random effects
-  group <- names(x$ranef)
-  new_ranef <- check_re_formula(re_formula, old_ranef = x$ranef, data = x$data)
-  if (length(group) && !is.null(new_ranef)) {
+  group <- names(new_ranef)
+  if (length(group)) {
     for (i in 1:length(group)) {
       if (any(grepl(paste0("^J_"), names(data)))) {  # implies brms > 0.4.1
         # create a single RE design matrix for every grouping factor
@@ -429,17 +432,14 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
                    group[i], "not found. Please set ranef = TRUE",
                    "when calling brm."))
       }
-      if (length(new_ranef[[group[i]]])) {
-        # else the random effects term of group[i] will not be considered
-        # take only a subset of random effects if defined in re_formula
-        used_re <- which(x$ranef[[group[i]]] %in% new_ranef[[group[i]]]) 
-        Z <- Z[, used_re, drop = FALSE]
-        n_levels <- ngrps(x)[[group[[i]]]]
-        used_re_pars <- ulapply(used_re, function(r) 
-          1:n_levels + (r - 1) * n_levels)
-        r <- r[, used_re_pars, drop = FALSE]
-        eta <- eta + ranef_predictor(Z = Z, gf = gf, r = r) 
-      }
+      # match columns of Z with corresponding RE estimates
+      n_levels <- ngrps(x)[[group[[i]]]]
+      used_re <- ulapply(new_ranef[[group[i]]], match, x$ranef[[group[i]]])
+      used_re_pars <- ulapply(used_re, function(r) 
+                              1:n_levels + (r - 1) * n_levels)
+      r <- r[, used_re_pars, drop = FALSE]
+      # add REs to linear predictor
+      eta <- eta + ranef_predictor(Z = Z, gf = gf, r = r) 
     }
   }
   # indicates if the model was fitted with brms <= 0.5.0

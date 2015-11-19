@@ -418,9 +418,11 @@ stancode.brmsfit <- function(object, ...)
 
 #' @export
 standata.brmsfit <- function(object, ...) {
+  dots <- list(...)
   if (is.data.frame(object$data)) {
-    # brms > 0.5.0 stores the original model.frame 
-    standata <- make_standata(object$formula,  
+    # brms > 0.5.0 stores the original model.frame
+    new_formula <- update_re_terms(object$formula, dots$re_formula)
+    standata <- make_standata(new_formula,  
                               data = object$data, 
                               family = object$family, 
                               autocor = object$autocor, 
@@ -626,7 +628,8 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   ee <- extract_effects(object$formula, family = object$family)
   # use newdata if defined
   if (is.null(newdata)) {
-    data <- standata(object, keep_intercept = TRUE, save_order = TRUE)
+    data <- standata(object, keep_intercept = TRUE, save_order = TRUE,
+                     re_formula = re_formula)
   } else {
     data <- amend_newdata(newdata, fit = object, re_formula = re_formula,
                           allow_new_levels = allow_new_levels)
@@ -760,7 +763,8 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   ee <- extract_effects(object$formula, family = object$family)
   # use newdata if defined
   if (is.null(newdata)) {
-    data <- standata(object, keep_intercept = TRUE, save_order = TRUE)
+    data <- standata(object, keep_intercept = TRUE, save_order = TRUE,
+                     re_formula = re_formula)
   } else {
     data <- amend_newdata(newdata, fit = object, re_formula = re_formula,
                           allow_new_levels = allow_new_levels)
@@ -821,7 +825,7 @@ residuals.brmsfit <- function(object, re_formula = NULL, type = c("ordinary", "p
   if (is.ordinal(object$family) || object$family == "categorical")
     stop(paste("residuals not yet implemented for family", object$family))
   
-  standata <- standata(object)
+  standata <- standata(object, re_formula = re_formula)
   mu <- fitted(object, re_formula = re_formula, summary = FALSE)
   Y <- matrix(rep(as.numeric(standata$Y), nrow(mu)), 
               nrow = nrow(mu), byrow = TRUE)

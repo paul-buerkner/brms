@@ -243,6 +243,37 @@ check_re_formula <- function(re_formula, old_ranef, data) {
   new_ranef
 }
 
+update_re_terms <- function(formula, re_formula = NULL) {
+  # remove RE terms in formula and add RE terms of re_formula
+  #
+  # Args:
+  #   formula: model formula to be updated
+  #   re_formula: formula containing new RE terms
+  #
+  # Returns:
+  #  a formula with updated RE terms
+  if (suppressWarnings(anyNA(re_formula))) {
+    re_formula <- ~ 1
+  }
+  if (is.formula(re_formula)) {
+    formula <- formula2string(formula)  
+    re_formula <- formula2string(re_formula)
+    fixef_formula <- gsub(paste0("\\([^(\\||~)]*\\|[^\\)]*\\)\\+",
+                                 "|\\+\\([^(\\||~)]*\\|[^\\)]*\\)",
+                                 "|\\([^(\\||~)]*\\|[^\\)]*\\)"), 
+                          "", formula)
+    new_re_terms <- gregexpr("\\([^\\|\\)]*\\|[^\\)]*\\)", re_formula)
+    new_re_terms <- unlist(regmatches(re_formula, new_re_terms))
+    new_formula <- paste(c(fixef_formula, new_re_terms), collapse = "+")
+    new_formula <- formula(new_formula)   
+  } else if (is.null(re_formula)) {
+    new_formula <- formula
+  } else {
+    stop("invalid re_formula argument")
+  } 
+  new_formula
+}
+
 gather_ranef <- function(effects, data = NULL) {
   # gathers helpful information on the random effects
   #
