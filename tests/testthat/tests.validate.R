@@ -68,6 +68,47 @@ test_that("Test that get_group_formula rejects incorrect grouping terms", {
                      "may contain only variable names combined by the symbol ':'"))
 })
 
+test_that("Test that check_re_formula returns correct REs", {
+  old_ranef = list(patient = c("Intercept"), visit = c("Trt_c", "Intercept"))
+  expect_equivalent(check_re_formula(~(1|visit), old_ranef = old_ranef, 
+                                data = epilepsy),
+                    list(visit = "Intercept"))
+  expect_equivalent(check_re_formula(~(1+Trt_c|visit), old_ranef = old_ranef, 
+                                data = epilepsy),
+                    list(visit = c("Intercept", "Trt_c")))
+  expect_equivalent(check_re_formula(~(0+Trt_c|visit) + (1|patient), 
+                                     old_ranef = old_ranef, data = epilepsy),
+                    list(patient = "Intercept", visit = "Trt_c"))
+})
+
+test_that("Test that check_re_formula rejects invalid re_formulae", {
+  old_ranef = list(patient = c("Intercept"), visit = c("Trt_c", "Intercept"))
+  expect_error(check_re_formula(~ visit + (1|visit), old_ranef = old_ranef, 
+                                data = epilepsy),
+               "fixed effects are not allowed in re_formula")
+  expect_error(check_re_formula(count ~ (1+Trt_c|visit), old_ranef = old_ranef, 
+                                data = epilepsy),
+               "re_formula must be one-sided")
+  expect_error(check_re_formula(~(1|Trt_c), old_ranef = old_ranef, 
+                                data = epilepsy),
+               "Invalid grouping factors detected: Trt_c")
+  expect_error(check_re_formula(~(1+Trt_c|patient), old_ranef = old_ranef, 
+                                data = epilepsy),
+               "Invalid random effects detected for grouping factor patient: Trt_c")
+})
+
+test_that("Test that update_re_terms works correctly", {
+  expect_equivalent(update_re_terms(y ~ x, ~ (1|visit)), y ~ x + (1|visit))
+  expect_equivalent(update_re_terms(y ~ x + (1|patient), ~ (1|visit)), 
+                    y ~ x + (1|visit))
+  expect_equivalent(update_re_terms(y ~ x + (1|patient), ~ 1), 
+                    y ~ x)
+  expect_equivalent(update_re_terms(y ~ x + (1+visit|patient), NA), 
+                    y ~ x)
+  expect_equivalent(update_re_terms(y ~ x + (1+visit|patient), NULL), 
+                    y ~ x + (1+visit|patient))
+})
+
 test_that("Test that gather_ranef works correctly", {
   data <- data.frame(g = 1:10, x = 11:20)
   target <- list(g = c("Intercept", "x"))
