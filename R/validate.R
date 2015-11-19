@@ -1,10 +1,11 @@
-extract_effects <- function(formula, ..., family = NA) {
+extract_effects <- function(formula, ..., family = NA, check_response = TRUE) {
   # Extract fixed and random effects from a formula
   # 
   # Args:
   #   formula: An object of class "formula" using mostly the syntax of the \code{lme4} package
   #   ...: Additional objects of class "formula"
   #   family: the model family
+  #   check_response: check if the response part is non-empty?
   # 
   # Returns: 
   #   A named list of the following elements: 
@@ -28,7 +29,7 @@ extract_effects <- function(formula, ..., family = NA) {
   fixed <- formula(fixed)
   if (family %in% c("cumulative", "sratio", "cratio", "acat"))
     fixed <- update.formula(fixed, . ~ . + 1)
-  if (length(fixed) < 3) 
+  if (check_response && length(fixed) < 3) 
     stop("invalid formula: response variable is missing")
   
   # extract random effects part
@@ -96,27 +97,29 @@ extract_effects <- function(formula, ..., family = NA) {
   new_formula <- unlist(lapply(c(random, group_formula, add_vars, ...), 
                                function(x) paste0("+", Reduce(paste, deparse(x[[2]])))))
   new_formula <- paste0("update(",Reduce(paste, deparse(fixed)),
-                        ", . ~ .",paste0(new_formula, collapse=""),")")
+                        ", ~ .",paste0(new_formula, collapse=""),")")
   x$all <- eval(parse(text = new_formula))
   environment(x$all) <- globalenv()
   
   # extract response variables
-  x$response <- all.vars(x$all[[2]])
-  if (is.hurdle(family)) {
-    x$response <- c(x$response, paste0("hu_", x$response))
-  } else if (is.zero_inflated(family)) {
-    x$response <- c(x$response, paste0("zi_", x$response))
-  } else if (is.2PL(family)) {
-    x$response <- c(x$response, paste0("logDisc_", x$response))
-  }
-  if (length(x$response) > 1) {
-    if (!(is.null(x$cens) && is.null(x$se) && is.null(x$trunc))
-        && is.linear(family)) {
-      stop("multivariate models currently allow only weights as addition arguments")
+  if (check_response) {
+    x$response <- all.vars(x$all[[2]])
+    if (is.hurdle(family)) {
+      x$response <- c(x$response, paste0("hu_", x$response))
+    } else if (is.zero_inflated(family)) {
+      x$response <- c(x$response, paste0("zi_", x$response))
+    } else if (is.2PL(family)) {
+      x$response <- c(x$response, paste0("logDisc_", x$response))
     }
-    x$fixed <- eval(parse(text = paste0("update(x$fixed, ", x$response[1], " ~ .)"))) 
-    x$all <- eval(parse(text = paste0("update(x$all, ", x$response[1], " ~ .)"))) 
-  }  
+    if (length(x$response) > 1) {
+      if (!(is.null(x$cens) && is.null(x$se) && is.null(x$trunc))
+          && is.linear(family)) {
+        stop("multivariate models currently allow only weights as addition arguments")
+      }
+      x$fixed <- eval(parse(text = paste0("update(x$fixed, ", x$response[1], " ~ .)"))) 
+      x$all <- eval(parse(text = paste0("update(x$all, ", x$response[1], " ~ .)"))) 
+    }  
+  }
   x
 } 
 
@@ -211,8 +214,10 @@ check_re_formula <- function(re_formula, old_ranef, data) {
     if (!is.data.frame(data)) {
       stop("argument re_formula requires models fitted with brms > 0.5.0")
     }
-    re_formula <- update(re_formula, 1 ~ .)
-    ee <- extract_effects(re_formula)
+    if (length(re_formula) == 3) {
+      stop("re_formula must be one-sided")
+    }
+    ee <- extract_effects(re_formula, check_response = FALSE)
     if (length(all.vars(ee$fixed))) {
       stop("fixed effects are not allowed in re_formula")
     }
@@ -221,7 +226,7 @@ check_re_formula <- function(re_formula, old_ranef, data) {
       return(NULL)
     }
     # the true family doesn't matter here
-    data <- update_data(data, family = "gaussian", effects = ee)
+    data <- update_data(data, family = "none", effects = ee)
     new_ranef <- combine_duplicates(gather_ranef(effects = ee, data = data))
     invalid_gf <- setdiff(names(new_ranef), names(old_ranef))
     if (length(invalid_gf)) {
