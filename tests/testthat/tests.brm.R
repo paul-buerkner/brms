@@ -32,13 +32,13 @@ test_that("Test that brm can be run and all S3 methods have reasonable ouputs", 
   # omit launch_shiny
   # logLik
   expect_equal(dim(logLik(fit)), c(80, 236))
-  # LOO (commented out as it hangs up when checking --as.cran)
-  #.loo <- LOO(fit, cores = 1)
-  #expect_true(.loo[["looic"]] > 2500)
-  #expect_true(.loo[["se_looic"]] > 0)
-  #loo_compare <- LOO(fit, fit, cores = 1)
-  #expect_equal(length(loo_compare), 2)
-  #expect_equal(dim(attr(loo_compare, "compare")), c(1,2))
+  # LOO
+  .loo <- suppressWarnings(LOO(fit, cores = 1))
+  expect_true(.loo[["looic"]] > 2500)
+  expect_true(.loo[["se_looic"]] > 0)
+  loo_compare <- suppressWarnings(LOO(fit, fit, cores = 1))
+  expect_equal(length(loo_compare), 2)
+  expect_equal(dim(attr(loo_compare, "compare")), c(1,2))
   # ngrps
   expect_equal(ngrps(fit), list(visit = 4))
   # nobs
