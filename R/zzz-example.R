@@ -8,3 +8,4 @@
 #                        prior = c(set_prior("normal(0,5)", class = "b"),
 #                                  set_prior("cauchy(0,2)", class = "sd")),
 #                        sample.prior = TRUE, n.warmup = 10, n.iter = 50)
+# brmsfit_example$fit@stanmodel <- new("stanmodel")
