@@ -438,10 +438,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       standata$log_Y <- sum(log(standata$Y))
     }
     standata$sqrt_Y <- sqrt(standata$Y)
-  } else if (family == "beta") {
-    #standata$log_Y <- log(standata$Y)
-    #standata$log_1mY <- log(1-standata$Y)
-  }
+  } 
   
   # get data for partial effects
   if (is.formula(partial)) {
