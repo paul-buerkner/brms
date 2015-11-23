@@ -353,7 +353,7 @@ summary.brmsfit <- function(object, waic = TRUE, ...) {
     colnames(out$fixed) <- col_names
     rownames(out$fixed) <- gsub("^b_", "", fix_pars)
     
-    spec_pars <- pars[pars %in% c("nu","shape","delta") | 
+    spec_pars <- pars[pars %in% c("nu","shape","delta", "phi") | 
       apply(sapply(c("^sigma_", "^rescor_"), grepl, x = pars), 1, any)]
     out$spec_pars <- matrix(fit_summary$summary[spec_pars,-c(2)], ncol = 6)
     if (is.linear(object$family)) {
@@ -482,7 +482,7 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5, ask = TRUE, ...) 
     stop("N must be a positive integer")
   if (!is.character(pars)) 
     pars <- c("^b_", "^sd_", "^cor_", "^sigma", "^rescor", "^nu$", 
-              "^shape$", "^delta$", "^ar", "^ma", "^arr")
+              "^shape$", "^delta$", "^phi$", "^ar", "^ma", "^arr")
   samples <- posterior_samples(x, pars = pars, add_chains = TRUE)
   pars <- names(samples)[which(!names(samples) %in% c("chains", "iter"))] 
   

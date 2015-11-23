@@ -276,6 +276,10 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       stop(paste("family", family, "expects response variable", 
                  "to contain only two different values"))
     }
+  } else if (family == "beta") {
+    if (any(standata$Y < 0) || any(standata$Y > 1)) {
+      stop("beta regression requires responses between 0 and 1")
+    }
   } else if (family == "categorical") { 
     standata$Y <- as.numeric(as.factor(standata$Y))
   } else if (is_ordinal) {
@@ -396,15 +400,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       stop("some responses are outside of the truncation boundaries")
     }
   }
-  if (family == "inverse.gaussian") {
-    # save as data to reduce computation time in Stan
-    if (is.formula(ee[c("weights", "cens")])) {
-      standata$log_Y <- log(standata$Y) 
-    } else {
-      standata$log_Y <- sum(log(standata$Y))
-    }
-    standata$sqrt_Y <- sqrt(standata$Y)
-  }
+  # data for specific families
   if (family %in% c("binomial", "binomial_2PL")) {
     standata$trials <- if (!length(ee$trials)) max(standata$Y)
     else if (is.wholenumber(ee$trials)) ee$trials
@@ -421,8 +417,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
                     "might be a more efficient choice."))
     if (any(standata$Y > standata$trials))
       stop("Number of trials is smaller than the response variable would suggest.")
-  }
-  if (is_ordinal || family == "categorical") {
+  } else if (is_ordinal || family == "categorical") {
     standata$ncat <- if (!length(ee$cat)) max(standata$Y)
     else if (is.wholenumber(ee$cat)) ee$cat
     else if (is.formula(ee$cat)) {
@@ -435,7 +430,18 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       message("Only 2 levels detected so that family bernoulli might be a more efficient choice.")
     if (any(standata$Y > standata$ncat))
       stop("Number of categories is smaller than the response variable would suggest.")
-  }  
+  } else if (family == "inverse.gaussian") {
+    # save as data to reduce computation time in Stan
+    if (is.formula(ee[c("weights", "cens")])) {
+      standata$log_Y <- log(standata$Y) 
+    } else {
+      standata$log_Y <- sum(log(standata$Y))
+    }
+    standata$sqrt_Y <- sqrt(standata$Y)
+  } else if (family == "beta") {
+    #standata$log_Y <- log(standata$Y)
+    #standata$log_1mY <- log(1-standata$Y)
+  }
   
   # get data for partial effects
   if (is.formula(partial)) {

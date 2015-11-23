@@ -318,7 +318,7 @@ family.character <- function(object, link = NA, ...) {
                   "cumulative", "cratio", "sratio", "acat",
                   "hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma",
                   "zero_inflated_poisson", "zero_inflated_negbinomial",
-                  "bernoulli_2PL", "binomial_2PL")
+                  "beta", "bernoulli_2PL", "binomial_2PL")
   if (!family %in% okFamilies)
     stop(paste(family, "is not a supported family. Supported families are: \n",
                paste(okFamilies, collapse = ", ")))
@@ -330,7 +330,7 @@ family.character <- function(object, link = NA, ...) {
     okLinks <- c("1/mu^2", "inverse", "identity", "log")
   } else if (is.count(family)) {
     okLinks <- c("log", "identity", "sqrt")
-  } else if (is.binary(family) || is.ordinal(family)) {
+  } else if (is.binary(family) || is.ordinal(family) || family == "beta") {
     okLinks <- c("logit", "probit", "probit_approx", "cloglog", "cauchit")
   } else if (family == "categorical") {
     okLinks <- c("logit")
@@ -345,8 +345,8 @@ family.character <- function(object, link = NA, ...) {
     link <- okLinks[1]
   }
   if (!link %in% okLinks)
-    stop(paste0(link, " is not a supported link for family ", family, ". Supported links are: \n",
-                paste(okLinks, collapse = ", ")))
+    stop(paste0(link, " is not a supported link for family ", family, ". ", 
+                "Supported links are: \n", paste(okLinks, collapse = ", ")))
   structure(list(family = family, link = link), class = "family")
 }
 

@@ -178,7 +178,7 @@ set_prior <- function(prior, class = "b", coef = "", group = "") {
       || length(coef) != 1 || length(group) != 1)
     stop("All arguments of set_prior must be of length 1")
   valid_classes <- c("b", "sd", "cor", "L", "ar", "ma", "arr", "sigma", 
-                     "rescor", "Lrescor", "nu", "shape", "delta")
+                     "rescor", "Lrescor", "nu", "shape", "delta", "phi")
   if (!class %in% valid_classes)
     stop(paste(class, "is not a valid paramter class"))
   if (nchar(group) && !class %in% c("sd", "cor", "L"))
@@ -326,6 +326,8 @@ get_prior <- function(formula, data = NULL, family = "gaussian",
   }
   if (family == "student") 
     prior <- rbind(prior, prior_frame(class = "nu", prior = "gamma(2, 0.1)"))
+  if (family == "beta") 
+    prior <- rbind(prior, prior_frame(class = "phi", prior = "gamma(0.01, 0.01)"))
   if (family %in% c("gamma", "weibull", "negbinomial", 
                     "inverse.gaussian", "hurdle_negbinomial", 
                     "hurdle_gamma", "zero_inflated_negbinomial")) 

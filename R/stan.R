@@ -126,6 +126,8 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
                                          weights = is.formula(ee$weights),
                                          cens = is.formula(ee$cens),
                                          trunc = is.formula(ee$trunc))
+  text_beta <- stan_beta(family = family, weights = is.formula(ee$weights),
+                         prior = prior)
   kronecker <- needs_kronecker(names_ranef = ranef, names_group = ee$group,
                                names_cov_ranef = names_cov_ranef)
   text_misc_funs <- stan_misc_functions(link = link, kronecker = kronecker)
@@ -137,6 +139,7 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
     text_ranef$prior,
     text_arma$prior,
     text_multi$prior,
+    text_beta$prior,
     if (has_sigma) 
       stan_prior(class = "sigma", coef = ee$response, prior = prior), 
     if (has_shape) 
@@ -155,13 +158,15 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
       text_arma$fun,
       text_zi_hu$fun,
       text_inv_gaussian$fun,
+      text_beta$fun,
       text_misc_funs,
     "} \n")
   
   # generate data block
   Kar <- get_ar(autocor)
   Kma <- get_ma(autocor)
-  is_real_Y <- is_linear || is_skewed || family == "inverse.gaussian"
+  is_real_Y <- is_linear || is_skewed || 
+               family %in% c("inverse.gaussian", "beta")
   is_int_Y <- family %in% c("binomial", "bernoulli", "categorical") || 
               is_count || is_ordinal || is_2PL
   N_bin <- ifelse(is.formula(ee$trials), ifelse(is_2PL, "[N_trait]", "[N]"), "")
@@ -183,6 +188,7 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
     text_ranef$data,
     text_arma$data,
     text_inv_gaussian$data,
+    text_beta$data,
     if (family %in% c("binomial", "binomial_2PL"))
       paste0("  int trials", N_bin, ";  # number of trials \n"),
     if (is_ordinal || is_categorical)
@@ -225,6 +231,7 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
     text_ranef$par,
     text_arma$par,
     text_multi$par,
+    text_beta$par,
     if (has_sigma)
       "  real<lower=0> sigma;  # residual SD \n",
     if (family == "student") 
@@ -567,6 +574,8 @@ stan_llh <- function(family, link, se = FALSE, weights = FALSE,
       weibull = c("weibull", paste0("shape, ",eta)), 
       inverse.gaussian = c("inv_gaussian", 
                            paste0(eta, ", shape, log_Y",n,", sqrt_Y",n)),
+      beta = c("beta", paste0(eta, " * phi, (1 - ", eta, ") * phi")),
+      #beta = c("beta2", paste0(eta, ", phi, log_Y",n,", log_1mY",n)),
       categorical = c("categorical", "p[n]"),
       hurdle_poisson = c("hurdle_poisson", "eta[n], eta[n + N_trait]"),
       hurdle_negbinomial = c("hurdle_neg_binomial_2", 
@@ -1340,6 +1349,42 @@ stan_inv_gaussian <- function(family, weights = FALSE, cens = FALSE,
     }
   }
   out
+}
+
+stan_beta <- function(family, weights = FALSE, prior = prior_frame()) {
+  out <- list()
+  if (family == "beta") {
+    out$prior <- stan_prior(class = "phi", prior = prior)
+    #out$data <- paste0("  vector[N] log_Y; \n",
+    #                   "  vector[N] log_1mY; \n")
+    out$par <- "  real<lower=0> phi;  # precision parameter \n"
+    #out$fun <- paste0( 
+    #"  /* vectorized beta log-PDF (for data only) \n",
+    #"   * Args: \n",
+    #"   *   y: response vector \n",
+    #"   *   mu: positive mean parameter vector \n",
+    #"   *   phi: positive precision parameter \n",
+    #"   *   log_y: precomputed log(y) \n",
+    #"   *   log_1my: precomputed log(1-y) \n",
+    #"   * Returns: \n", 
+    #"   *   a scalar to be added to the log posterior \n",
+    #"   */ \n",
+    #"   real beta2_log(vector y, vector mu, real phi, \n", 
+    #"                  vector log_y, vector log_1my) { \n",
+    #"     vector[rows(y)] alpha; \n",
+    #"     vector[rows(y)] beta; \n",
+    #"     vector[rows(y)] vec_lbeta; \n",
+    #"     alpha <- mu * phi; \n",
+    #"     beta <- (1.0 - mu) * phi; \n",
+    #"     for (n in 1:rows(y)) { \n",
+    #"       vec_lbeta[n] <- lbeta(alpha[n], beta[n]); \n",
+    #"     } \n",
+    #"     return sum((alpha - 1.0) .* log_y + \n",
+    #"                (beta - 1.0) .* log_1my - \n",
+    #"                vec_lbeta); \n",
+    #"   } \n")
+  } 
+  return(out)
 }
 
 stan_misc_functions <- function(link = "identity", kronecker = FALSE) {
