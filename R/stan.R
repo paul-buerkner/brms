@@ -28,7 +28,7 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
   family <- obj_family$family
   if (is.null(autocor)) autocor <- cor_arma()
   if (!is(autocor, "cor_brms")) { 
-    stop("cor must be of class cor_brms")
+    stop("autocor must be of class cor_brms")
   }
   threshold <- match.arg(threshold)
   prior <- check_prior(prior, formula = formula, data = data, 

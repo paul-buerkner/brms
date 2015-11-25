@@ -229,7 +229,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
                        is.2pl(family)
   if (is.null(autocor)) autocor <- cor_arma()
   if (!is(autocor, "cor_brms")) {
-    stop("cor must be of class cor_brms")
+    stop("autocor must be of class cor_brms")
   }
   
   et <- extract_time(autocor$formula)
