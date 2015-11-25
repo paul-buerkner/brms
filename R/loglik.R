@@ -242,6 +242,14 @@ loglik_inverse.gaussian <- function(n, data, samples, link) {
   weight_loglik(out, n = n, data = data)
 }
 
+loglik_beta <- function(n, data, samples, link) {
+  mu <- ilink(samples$eta[, n], link)
+  args <- list(shape1 = mu * samples$phi, shape2 = (1 - mu) * samples$phi)
+  out <- censor_loglik(dist = "beta", args = args, n = n, data = data)
+  out <- truncate_loglik(out, cdf = pbeta, args = args, data = data)
+  weight_loglik(out, n = n, data = data)
+}
+
 loglik_hurdle_poisson <- function(n, data, samples, link) {
   theta <- ilink(samples$eta[, n + data$N_trait], "logit")
   args <- list(lambda = ilink(samples$eta[, n], link))
