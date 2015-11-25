@@ -13,14 +13,14 @@ fitted_response <- function(x, eta, data) {
   if (family == "gaussian" && x$link == "log" && nresp == 1) {
     family <- "lognormal"
   }
-  if (is.2PL(family)) {
+  if (is.2pl(family)) {
     # the second part of eta is the log discriminability
     eta <- eta[, 1:data$N_trait] * exp(eta[, (data$N_trait + 1):data$N])
   }
   is_trunc <- !(is.null(data$lb) && is.null(data$ub))
   
   # compute (mean) fitted values
-  if (family %in% c("binomial", "binomial_2PL")) {
+  if (family %in% c("binomial", "binomial_2pl")) {
     max_obs <- matrix(rep(data$max_obs, nrow(eta)), nrow = nrow(eta), byrow = TRUE)
     mu <- ilink(eta, x$link) 
     if (!is_trunc) {

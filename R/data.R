@@ -11,15 +11,15 @@ melt_data <- function(data, response, family) {
   is_linear <- is.linear(family)
   is_hurdle <- is.hurdle(family)
   is_zero_inflated <- is.zero_inflated(family)
-  is_2PL <- is.2PL(family)
+  is_2pl <- is.2pl(family)
   nresp <- length(response)
-  if (nresp == 2 && (is_hurdle || is_zero_inflated || is_2PL) 
+  if (nresp == 2 && (is_hurdle || is_zero_inflated || is_2pl) 
       || nresp > 1 && is_linear) {
     if (!is(data, "data.frame"))
       stop("data must be a data.frame for multivariate models")
     if ("trait" %in% names(data))
       stop("trait is a resevered variable name in multivariate models")
-    if (is_hurdle || is_zero_inflated || is_2PL) {
+    if (is_hurdle || is_zero_inflated || is_2pl) {
       if (response[2] %in% names(data))
         stop(paste(response[2], "is a resevered variable name"))
       # dummy variable not actually used in Stan
@@ -226,7 +226,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   is_ordinal <- is.ordinal(family)
   is_count <- is.count(family)
   has_fake_2nd_resp <- is.hurdle(family) || is.zero_inflated(family) || 
-                       is.2PL(family)
+                       is.2pl(family)
   if (is.null(autocor)) autocor <- cor_arma()
   if (!is(autocor, "cor_brms")) {
     stop("cor must be of class cor_brms")
@@ -261,16 +261,16 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   # response variable
   standata <- list(N = nrow(data), Y = unname(model.response(data)))
   if (!is.numeric(standata$Y) && !(is_ordinal || family %in% 
-      c("bernoulli", "bernoulli_2PL", "categorical")))  {
+      c("bernoulli", "bernoulli_2pl", "categorical")))  {
     stop(paste("family", family, "expects numeric response variable"))
   }
   # transform and check response variable for different families
-  if (is_count || family %in% c("binomial", "binomial_2PL")) {
+  if (is_count || family %in% c("binomial", "binomial_2pl")) {
     if (!all(is.wholenumber(standata$Y)) || min(standata$Y) < 0) {
       stop(paste("family", family, "expects response variable", 
                  "of non-negative integers"))
     }
-  } else if (family %in% c("bernoulli", "bernoulli_2PL")) {
+  } else if (family %in% c("bernoulli", "bernoulli_2pl")) {
     standata$Y <- as.numeric(as.factor(standata$Y)) - 1
     if (any(!standata$Y %in% c(0,1))) {
       stop(paste("family", family, "expects response variable", 
@@ -304,7 +304,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
                                  NC_trait = ncol(standata$Y) * 
                                             (ncol(standata$Y) - 1) / 2) 
   }
-  # don't use else if here, because it is also required for 2PL families
+  # don't use else if here, because it is also required for 2pl families
   if (has_fake_2nd_resp) {
     # the second half of Y is not used because it is only dummy data
     # that was put into data to make melt_data work correctly
@@ -401,13 +401,13 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     }
   }
   # data for specific families
-  if (family %in% c("binomial", "binomial_2PL")) {
+  if (family %in% c("binomial", "binomial_2pl")) {
     standata$trials <- if (!length(ee$trials)) max(standata$Y)
     else if (is.wholenumber(ee$trials)) ee$trials
     else if (is.formula(ee$trials)) .addition(formula = ee$trials, data = data)
     else stop("Response part of formula is invalid.")
-    if (is.2PL(family) && length(standata$trials) > 1) {
-      # only use first half of trials for 2PL binomials
+    if (is.2pl(family) && length(standata$trials) > 1) {
+      # only use first half of trials for 2pl binomials
       standata$trials <- standata$trials[1:(nrow(data) / 2)] 
     }
     standata$max_obs <- standata$trials  # for backwards compatibility

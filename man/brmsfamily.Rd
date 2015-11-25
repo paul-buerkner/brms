@@ -3,8 +3,8 @@
 \name{brmsfamily}
 \alias{acat}
 \alias{bernoulli}
-\alias{bernoulli_2PL}
-\alias{binomial_2PL}
+\alias{bernoulli_2pl}
+\alias{binomial_2pl}
 \alias{brmsfamily}
 \alias{categorical}
 \alias{cauchy}
@@ -29,9 +29,9 @@ cauchy(link = "identity")
 
 bernoulli(link = "logit")
 
-bernoulli_2PL(link = "logit")
+bernoulli_2pl(link = "logit")
 
-binomial_2PL(link = "logit")
+binomial_2pl(link = "logit")
 
 negbinomial(link = "log")
 
@@ -72,7 +72,7 @@ families \code{negbinomial}, and \code{geometric} the links
 families \code{bernoulli}, \code{cumulative}, \code{cratio}, \code{sratio}, 
 and \code{acat} the links \code{logit}, \code{probit}, \code{probit_approx}, 
 \code{cloglog}, and \code{cauchit};
-family \code{categorical}, \code{bernoulli_2PL}, and \code{binomial_2PL} 
+family \code{categorical}, \code{bernoulli_2pl}, and \code{binomial_2pl} 
 the link \code{logit}; 
 families \code{weibull}, and \code{exponential} 
 the links \code{log}, \code{identity}, and \code{inverse};

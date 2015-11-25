@@ -137,10 +137,10 @@ predict_binomial <- function(n, data, samples, link, ntrys, ...) {
                args = args, data = data, ntrys = ntrys)
 }  
 
-predict_binomial_2PL <- function(n, data, samples, link, ntrys, ...) {
+predict_binomial_2pl <- function(n, data, samples, link, ntrys, ...) {
   max_obs <- ifelse(length(data$max_obs) > 1, data$max_obs[n], data$max_obs) 
-  eta_2PL <- samples$eta[, n] * exp(samples$eta[, n + data$N_trait])
-  args <- list(size = max_obs, prob = ilink(eta_2PL, link))
+  eta_2pl <- samples$eta[, n] * exp(samples$eta[, n + data$N_trait])
+  args <- list(size = max_obs, prob = ilink(eta_2pl, link))
   rng_discrete(nrng = nrow(samples$eta), dist = "binom",
                args = args, data = data, ntrys = ntrys)
 }  
@@ -151,11 +151,11 @@ predict_bernoulli <- function(n, data, samples, link, ...) {
          prob = ilink(samples$eta[, n], link))
 }
 
-predict_bernoulli_2PL <- function(n, data, samples, link, ...) {
+predict_bernoulli_2pl <- function(n, data, samples, link, ...) {
   # truncation not useful
-  eta_2PL <- samples$eta[, n] * exp(samples$eta[, n + data$N_trait])
+  eta_2pl <- samples$eta[, n] * exp(samples$eta[, n + data$N_trait])
   rbinom(nrow(samples$eta), size = 1, 
-         prob = ilink(eta_2PL, link))
+         prob = ilink(eta_2pl, link))
 }
 
 predict_poisson <- function(n, data, samples, link, ntrys, ...) {
