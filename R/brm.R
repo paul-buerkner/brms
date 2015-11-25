@@ -13,12 +13,13 @@
 #' @param family A description of the error distribution and link function to be used in the model. 
 #'   This can be a family function, a call to a family function or a character string naming the family.
 #'   Currently, the following families are supported:
-#'   \code{gaussian}, \code{student}, \code{cauchy}, \code{binomial}, \code{bernoulli}, 
-#'   \code{categorical}, \code{poisson}, \code{negbinomial}, \code{geometric},
-#'   \code{gamma}, \code{inverse.gaussian}, \code{exponential}, \code{weibull},
-#'   \code{cumulative}, \code{cratio}, \code{sratio}, \code{acat},
-#'   \code{hurdle_poisson}, \code{hurdle_negbinomial}, \code{hurdle_gamma}, 
-#'   \code{zero_inflated_poisson}, and \code{zero_inflated_negbinomial}.
+#'   \code{gaussian}, \code{student}, \code{cauchy}, \code{binomial}, 
+#'   \code{bernoulli}, \code{beta}, \code{categorical}, \code{poisson}, 
+#'   \code{negbinomial}, \code{geometric}, \code{gamma}, \code{inverse.gaussian}, 
+#'   \code{exponential}, \code{weibull}, \code{cumulative}, \code{cratio}, 
+#'   \code{sratio}, \code{acat}, \code{hurdle_poisson}, \code{hurdle_negbinomial},
+#'   \code{hurdle_gamma}, \code{zero_inflated_poisson}, 
+#'   and \code{zero_inflated_negbinomial}.
 #'   Every family function has a \code{link} argument allowing to specify
 #'   the link function to be applied on the response variable.
 #'   If not specified, default links are used.

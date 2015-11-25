@@ -15,8 +15,9 @@
 #'   \code{identity}, \code{log}, and \code{inverse};
 #'   families \code{negbinomial}, and \code{geometric} the links 
 #'   \code{log}, \code{identity}, and \code{sqrt}; 
-#'   families \code{bernoulli}, \code{cumulative}, \code{cratio}, \code{sratio}, 
-#'   and \code{acat} the links \code{logit}, \code{probit}, \code{probit_approx}, 
+#'   families \code{bernoulli}, \code{Beta}, \code{cumulative}, 
+#'   \code{cratio}, \code{sratio}, and \code{acat} 
+#'   the links \code{logit}, \code{probit}, \code{probit_approx}, 
 #'   \code{cloglog}, and \code{cauchit};
 #'   family \code{categorical}, \code{bernoulli_2pl}, and \code{binomial_2pl} 
 #'   the link \code{logit}; 
@@ -193,6 +194,24 @@ weibull <- function(link = "log") {
                "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
   structure(list(family = "weibull", link = linktemp), class = "family")
+}
+
+#' @rdname brmsfamily
+#' @export
+Beta <- function(link = "logit") {
+  linktemp <- substitute(link)
+  if (!is.character(linktemp)) {
+    linktemp <- deparse(linktemp)
+  } 
+  okLinks <- c("logit", "probit", "probit_approx", "cloglog", "cauchit")
+  if (!linktemp %in% okLinks && is.character(link)) {
+    linktemp <- link
+  }
+  if (!linktemp %in% okLinks) {
+    stop(paste(linktemp, "is not a supported link for family beta.", 
+               "Supported links are: \n", paste(okLinks, collapse = ", ")))
+  }
+  structure(list(family = "beta", link = linktemp), class = "family")
 }
 
 #' @rdname brmsfamily
