@@ -643,6 +643,8 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     samples$sigma <- as.matrix(posterior_samples(object, pars = "^sigma_"))
   if (object$family == "student") 
     samples$nu <- as.matrix(posterior_samples(object, pars = "^nu$"))
+  if (object$family == "beta")
+    samples$phi <- as.matrix(posterior_samples(object, pars = "^phi$"))
   if (has_shape(object$family)) 
     samples$shape <- as.matrix(posterior_samples(object, pars = "^shape$"))
   if (is.linear(object$family) && nresp > 1) {

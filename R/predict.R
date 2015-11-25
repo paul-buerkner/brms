@@ -202,6 +202,13 @@ predict_inverse.gaussian <- function(n, data, samples, link, ...) {
                  args = args, data = data)
 }
 
+predict_beta <- function(n, data, samples, link, ...) {
+  mu <- ilink(samples$eta[, n], link)
+  args <- list(shape1 = mu * samples$phi, shape2 = (1 - mu) * samples$phi)
+  rng_continuous(nrng = nrow(samples$eta), dist = "beta",
+                 args = args, data = data)
+}
+
 predict_hurdle_poisson <- function(n, data, samples, link, ...) {
   # theta is the bernoulii hurdle parameter
   theta <- ilink(samples$eta[, n + data$N_trait], "logit")
