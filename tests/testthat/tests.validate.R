@@ -22,8 +22,8 @@ test_that("Test that extract_effects accepts || syntax", {
 test_that("Test that extract_effects finds all response variables", {
   expect_equal(extract_effects(y1~x)$response, "y1")
   expect_equal(extract_effects(cbind(y1,y2)~x)$response, c("y1", "y2")) 
-  expect_equal(extract_effects(cbind(y1,y2,y2)~x)$response, c("y1", "y2")) 
-  expect_equal(extract_effects(y1+y2+y3~x)$response, c("y1", "y2", "y3")) 
+  expect_equal(extract_effects(cbind(y1,y2,y2)~x)$response, c("y1", "y2", "y2")) 
+  expect_equal(extract_effects(y1+y2+y3~x)$response, c("y1")) 
 })
 
 test_that("Test that extract_effects handles addition arguments correctly", {

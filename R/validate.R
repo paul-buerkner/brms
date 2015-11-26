@@ -86,24 +86,30 @@ extract_effects <- function(formula, ..., family = NA, check_response = TRUE) {
           }
         }
       } else {
-        stop(paste("Argument", f, "in formula is not supported by family", family))
+        stop(paste("Argument", f, "in formula", 
+                   "is not supported by family", family))
       }
     }
     if (nchar(gsub("\\|", "", add)) > 0 && !is.na(add))
-      stop(paste0("Invalid addition part of formula. Please see the 'Details' section of help(brm)"))
+      stop(paste("Invalid addition part of formula.", 
+                 "Please see the 'Details' section of help(brm)"))
   }
   
   # make a formula containing all required variables (element 'all')
-  new_formula <- unlist(lapply(c(random, group_formula, add_vars, ...), 
-                               function(x) paste0("+", Reduce(paste, deparse(x[[2]])))))
+  plus_rh <- function(x) {
+    # take the right hand side of a formula and add a +
+    paste0("+", Reduce(paste, deparse(x[[2]])))
+  }
+  formula_list <- c(random, group_formula, add_vars, ...)
+  new_formula <- ulapply(formula_list, plus_rh)
   new_formula <- paste0("update(",Reduce(paste, deparse(fixed)),
-                        ", ~ .",paste0(new_formula, collapse=""),")")
+                        ", ~ .", collapse(new_formula), ")")
   x$all <- eval(parse(text = new_formula))
   environment(x$all) <- globalenv()
   
   # extract response variables
   if (check_response) {
-    x$response <- all.vars(x$all[[2]])
+    x$response <- gather_response(x$all[[2]])
     if (is.hurdle(family)) {
       x$response <- c(x$response, paste0("hu_", x$response))
     } else if (is.zero_inflated(family)) {
@@ -116,8 +122,9 @@ extract_effects <- function(formula, ..., family = NA, check_response = TRUE) {
           && is.linear(family)) {
         stop("multivariate models currently allow only weights as addition arguments")
       }
-      x$fixed <- eval(parse(text = paste0("update(x$fixed, ", x$response[1], " ~ .)"))) 
-      x$all <- eval(parse(text = paste0("update(x$all, ", x$response[1], " ~ .)"))) 
+      first_var <- all.vars(x$all[[2]])[1]
+      x$fixed <- eval(parse(text = paste0("update(x$fixed, ", first_var, " ~ .)"))) 
+      x$all <- eval(parse(text = paste0("update(x$all, ", first_var, " ~ .)"))) 
     }  
   }
   x
@@ -277,6 +284,35 @@ update_re_terms <- function(formula, re_formula = NULL) {
     stop("invalid re_formula argument")
   } 
   new_formula
+}
+
+gather_response <- function(expr) {
+  # gather response variable names
+  # Args:
+  #   expr: an expression containing the reponse part
+  #         of the model formula
+  # Returns:
+  #   a vector of names of the response variables (columns)
+  all_vars <- all.vars(expr)
+  if (length(all_vars) == 0) {
+    stop("formula must contain at least one response variable")
+  }
+  pseudo_data <- as.data.frame(setNames(as.list(rep(1, length(all_vars))), 
+                                        all_vars))
+  resp_formula <- formula(paste(deparse(expr), " ~ 1"))
+  pseudo_resp <- model.response(model.frame(resp_formula, data = pseudo_data))
+  if (is.null(dim(pseudo_resp))) {
+    # response is a vector
+    response <- all_vars[1]
+  } else if (length(dim(pseudo_resp)) == 2) {
+    # response is a matrix
+    response <- colnames(pseudo_resp)
+    empty_names <- which(!nchar(response))
+    if (length(empty_names)) {
+      response[empty_names] <- paste0("response", empty_names)
+    }
+  }
+  response
 }
 
 gather_ranef <- function(effects, data = NULL) {
