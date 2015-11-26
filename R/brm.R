@@ -417,8 +417,13 @@ brm <- function(formula, data = NULL, family = "gaussian",
     }
     sflist <- parLapply(cl, X = 1:n.chains, run_chain)
     # remove chains that failed to run correctly; see validate.R
-    x$fit <- lapply(1:length(sflist), remove_chains, sflist = sflist)  
-    x$fit <- rstan::sflist2stanfit(rmNULL(x$fit))
+    sflist <- rmNULL(lapply(1:length(sflist), remove_chains, sflist = sflist))  
+    if (length(sflist) == 0) {
+      stop(paste("All chains failed to run correctly." ,
+                 "For more detailed error reporting",
+                 "fit the model in non-parallel mode."))
+    }
+    x$fit <- rstan::sflist2stanfit(sflist)
   } else {  # do not sample in parallel
     x$fit <- do.call(rstan::sampling, args = args)
   }
