@@ -98,7 +98,9 @@ extract_effects <- function(formula, ..., family = NA, check_response = TRUE) {
   # make a formula containing all required variables (element 'all')
   plus_rh <- function(x) {
     # take the right hand side of a formula and add a +
-    paste0("+", Reduce(paste, deparse(x[[2]])))
+    if (is.formula(x)) {
+      paste0("+", Reduce(paste, deparse(x[[2]])))
+    } else ""
   }
   formula_list <- c(random, group_formula, add_vars, ...)
   new_formula <- ulapply(formula_list, plus_rh)
@@ -109,7 +111,8 @@ extract_effects <- function(formula, ..., family = NA, check_response = TRUE) {
   
   # extract response variables
   if (check_response) {
-    x$response <- gather_response(x$all[[2]])
+    x$resp_formula <- update(x$all, . ~ 1)
+    x$response <- gather_response(x$resp_formula)
     if (is.hurdle(family)) {
       x$response <- c(x$response, paste0("hu_", x$response))
     } else if (is.zero_inflated(family)) {
@@ -120,11 +123,11 @@ extract_effects <- function(formula, ..., family = NA, check_response = TRUE) {
     if (length(x$response) > 1) {
       if (!(is.null(x$cens) && is.null(x$se) && is.null(x$trunc))
           && is.linear(family)) {
-        stop("multivariate models currently allow only weights as addition arguments")
+        stop(paste("Multivariate models currently allow", 
+                   "only weights as addition arguments"))
       }
-      first_var <- all.vars(x$all[[2]])[1]
-      x$fixed <- eval(parse(text = paste0("update(x$fixed, ", first_var, " ~ .)"))) 
-      x$all <- eval(parse(text = paste0("update(x$all, ", first_var, " ~ .)"))) 
+      x$fixed <- update(x$fixed, response ~ .)
+      x$all <- update(x$all, response ~ .)
     }  
   }
   x
@@ -286,21 +289,21 @@ update_re_terms <- function(formula, re_formula = NULL) {
   new_formula
 }
 
-gather_response <- function(expr) {
+gather_response <- function(formula) {
   # gather response variable names
   # Args:
-  #   expr: an expression containing the reponse part
-  #         of the model formula
+  #   formula: a formula containing only the model reponse
   # Returns:
   #   a vector of names of the response variables (columns)
-  all_vars <- all.vars(expr)
+  stopifnot(is.formula(formula))
+  all_vars <- all.vars(formula)
   if (length(all_vars) == 0) {
     stop("formula must contain at least one response variable")
   }
-  pseudo_data <- as.data.frame(setNames(as.list(rep(1, length(all_vars))), 
-                                        all_vars))
-  resp_formula <- formula(paste(deparse(expr), " ~ 1"))
-  pseudo_resp <- model.response(model.frame(resp_formula, data = pseudo_data))
+  mf <- as.data.frame(setNames(as.list(rep(1, length(all_vars))), 
+                               all_vars))
+  mf <- model.frame(formula, data = mf, na.action = NULL)
+  pseudo_resp <- model.response(mf)
   if (is.null(dim(pseudo_resp))) {
     # response is a vector
     response <- all_vars[1]

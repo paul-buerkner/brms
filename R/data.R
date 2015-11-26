@@ -1,39 +1,48 @@
-melt_data <- function(data, response, family) {
+melt_data <- function(data, family, effects) {
   # melt data frame for multinormal models
   #
   # Args:
   #   data: a data.frame
   #   response: names of the response variables
+  #   model_response: values returned by model.response
   #   family: the model family
   #
   # Returns:
   #   data in long format 
+  #ee <- extract_effects(formula, family = family, 
+  #                      check_response = check_response)
   is_linear <- is.linear(family)
   is_hurdle <- is.hurdle(family)
   is_zero_inflated <- is.zero_inflated(family)
   is_2pl <- is.2pl(family)
+  response <- effects$response
   nresp <- length(response)
   if (nresp == 2 && (is_hurdle || is_zero_inflated || is_2pl) 
       || nresp > 1 && is_linear) {
     if (!is(data, "data.frame"))
       stop("data must be a data.frame for multivariate models")
-    if ("trait" %in% names(data))
-      stop("trait is a resevered variable name in multivariate models")
+    if ("'trait'" %in% names(data))
+      stop("'trait' is a resevered variable name in multivariate models")
+    if ("response" %in% names(data))
+      stop("'response' is a resevered variable name in multivariate models")
+    temp_mf <- model.frame(effects$resp_formula, data = data)
+    model_response <- model.response(temp_mf)
     if (is_hurdle || is_zero_inflated || is_2pl) {
       if (response[2] %in% names(data))
         stop(paste(response[2], "is a resevered variable name"))
-      # dummy variable not actually used in Stan
-      data[response[2]] <- rep(0, nrow(data))
+      # dummy values not actually used in Stan
+      model_response <- cbind(model_response, rep(0, nrow(data)))
     }
     new_columns <- data.frame(ulapply(response, rep, times = nrow(data)), 
-                              as.numeric(as.matrix(data[, response])))
-    names(new_columns) <- c("trait", response[1])
+                              as.numeric(as.matrix(model_response)))
+    names(new_columns) <- c("trait", "response")
     new_columns$trait <- factor(new_columns$trait, levels = response)
-    old_columns <- data[, which(!names(data) %in% response), drop = FALSE]
-    old_columns <- do.call(rbind, lapply(response, function(i) old_columns))
-    data <- cbind(old_columns, new_columns)
+    #old_columns <- data[, which(!names(data) %in% response), drop = FALSE]
+    #old_columns <- do.call(rbind, lapply(response, function(i) old_columns))
+    data <- replicate(length(response), data, simplify = FALSE)
+    data <- cbind(do.call(rbind, data), new_columns)
   } else if (nresp > 1) {
-    stop("invalid multivariate model")
+    stop("Invalid multivariate model")
   }
   data
 }  
@@ -79,7 +88,7 @@ update_data <- function(data, family, effects, ...,
   # Returns:
   #   model.frame in long format with combined grouping variables if present
   if (!"brms.frame" %in% class(data)) {
-    data <- melt_data(data, response = effects$response, family = family)
+    data <- melt_data(data, family = family, effects = effects)
     data <- stats::model.frame(effects$all, data = data, na.action = na.omit,
                                drop.unused.levels = drop.unused.levels)
     if (any(grepl("__", colnames(data))))
@@ -119,12 +128,13 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   new_formula <- update_re_terms(fit$formula, re_formula = re_formula)
   ee <- extract_effects(new_formula, family = fit$family)
   et <- extract_time(fit$autocor$formula)
+  resp_vars <- all.vars(ee$resp_formula)
   if (has_arma(fit$autocor) && !use_cov(fit$autocor)
-      && !all(ee$response %in% names(newdata))) {
+      && !all(resp_vars %in% names(newdata))) {
     stop(paste("response variables must be specified", 
                "in newdata for autocorrelative models"))
   } else {
-    for (resp in ee$response) {
+    for (resp in setdiff(resp_vars, names(data))) {
       # add irrelevant response variables
       newdata[[resp]] <- 0  
     }
@@ -133,7 +143,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     for (cens in all.vars(ee$cens)) 
       newdata[[cens]] <- 0  # add irrelevant censor variables
   }
-  newdata <- update_data(newdata, family = fit$family, effects = ee, 
+  newdata <- update_data(newdata, family = fit$family, effects = ee,
                          et$group, drop.unused.levels = FALSE)
   # try to validate factor levels in newdata
   if (is.data.frame(fit$data)) {

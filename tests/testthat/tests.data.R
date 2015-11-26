@@ -1,21 +1,29 @@
 test_that("Test that melt_data returns data in correct long format", {
   data <- data.frame(x = rep(c("a","b"), 5), y1 = 1:10, y2 = 11:20, 
                      y3 = 21:30, z = 100:91)
-  expect_equal(melt_data(data, response = "y1", family = "poisson"), data)
   
-  target1 <- data.frame(x = rep(c("a","b"), 10), y2 = rep(11:20, 2), 
+  expect_equal(melt_data(data, effects = list(response = "y1"), 
+                         family = "poisson"), data)
+  
+  target1 <- data.frame(x = rep(c("a","b"), 10), y1 = rep(1:10, 2), 
+                        y2 = rep(11:20, 2), y3 = rep(21:30, 2),
                         z = rep(100:91, 2), 
                         trait = factor(rep(c("y3", "y1"), each = 10),
                                        levels = c("y3", "y1")), 
-                        y3 = c(21:30,1:10))
-  expect_equal(melt_data(data, response = c("y3", "y1"), family = "gaussian"), 
+                        response = c(21:30, 1:10))
+  effects <- list(response = c("y3", "y1"), resp_formula = cbind(y3,y1) ~ 1)
+  expect_equal(melt_data(data, effects = effects, family = "gaussian"), 
                target1)
   
-  target2 <- data.frame(x = rep(c("a","b"), 15), z = rep(100:91, 3),
+  target2 <- data.frame(x = rep(c("a","b"), 15), y1 = rep(1:10, 3), 
+                        y2 = rep(11:20, 3), y3 = rep(21:30, 3),
+                        z = rep(100:91, 3),
                         trait = factor(rep(c("y2", "y1", "y3"), each = 10),
                                        levels = c("y2", "y1", "y3")), 
-                        y2 = c(11:20, 1:10, 21:30))
-  expect_equal(melt_data(data, response = c("y2", "y1", "y3"), family = "gaussian"), 
+                        response = c(11:20, 1:10, 21:30))
+  effects <- list(response = c("y2", "y1", "y3"), 
+                  resp_formula = cbind(y2,y1,y3) ~ 1)
+  expect_equal(melt_data(data, effects = effects, family = "gaussian"), 
                target2)
 })
 

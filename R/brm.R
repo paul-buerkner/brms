@@ -361,7 +361,8 @@ brm <- function(formula, data = NULL, family = "gaussian",
                  partial = partial, data.name = data.name, 
                  autocor = autocor, prior = prior, 
                  cov.ranef = cov.ranef)  
-    x$data <- update_data(data, family = family, effects = ee, et$group)  # see data.R
+    # see data.R
+    x$data <- update_data(data, family = family, effects = ee, et$group) 
     x$ranef <- gather_ranef(effects = ee, data = x$data)  # see validate.R
     x$exclude <- exclude_pars(formula, ranef = ranef)  # see validate.R
     x$model <- make_stancode(formula = formula, data = data, 
