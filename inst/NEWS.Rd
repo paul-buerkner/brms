@@ -2,6 +2,33 @@
 \title{brms News}
 \encoding{UTF-8}
 
+\section{CHANGES IN VERSION 0.6.0.9000}{
+  \subsection{NEW FEATURES}{
+    \itemize{
+      \item implement beta regression models through family
+      \code{Beta}
+      \item allow to selectively exclude random effects
+      in the \code{predict}, \code{fitted}, and \code{residuals}
+      methods using argument \code{re_formula}
+    }
+  }
+  \subsection{OTHER CHANGES}{
+    \itemize{
+      \item improve evaluation of the response
+      part of the \code{formula} argument to
+      reliably allow terms with more than one variable
+      (e.g., \code{y/x ~ 1})
+    }
+  }
+  \subsection{BUG FIXES}{
+    \itemize{
+      \item fix a bug in the \code{hypothesis} method 
+      that could cause valid model parameters to be falsely 
+      reported as invalid
+    }
+  }
+}
+
 \section{CHANGES IN VERSION 0.6.0}{
   \subsection{NEW FEATURES}{
     \itemize{
