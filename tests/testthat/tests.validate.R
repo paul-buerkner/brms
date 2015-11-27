@@ -21,20 +21,33 @@ test_that("Test that extract_effects accepts || syntax", {
 
 test_that("Test that extract_effects finds all response variables", {
   expect_equal(extract_effects(y1~x)$response, "y1")
-  expect_equal(extract_effects(cbind(y1,y2)~x)$response, c("y1", "y2")) 
-  expect_equal(extract_effects(cbind(y1,y2,y2)~x)$response, c("y1", "y2", "y2")) 
-  expect_equal(extract_effects(y1+y2+y3~x)$response, c("y1")) 
+  expect_equal(extract_effects(cbind(y1,y2)~x)$response, 
+               c("y1", "y2")) 
+  expect_equal(extract_effects(cbind(y1,y2,y2)~x)$response, 
+               c("y1", "y2", "y2")) 
+  expect_equal(extract_effects(y1+y2+y3~x)$response, "y1") 
+  expect_equal(extract_effects(y1/y2 ~ (1|g))$response, "y1")
+  expect_equal(extract_effects(cbind(y1/y2,y2,y3*3) ~ (1|g))$response,
+               c("response1", "y2", "response3"))
 })
 
 test_that("Test that extract_effects handles addition arguments correctly", {
-  expect_equal(extract_effects(y | se(I(a+2)) ~ x, family = "gaussian")$se, ~ .se(I(a+2)))
-  expect_equal(extract_effects(y | se(I(a+2)) ~ x, family = "gaussian")$all, y ~ x + a)
-  expect_equal(extract_effects(y | weights(1/n) ~ x, family = "gaussian")$weights, ~ .weights(1/n))
-  expect_equal(extract_effects(y | se(a+2) | cens(log(b)) ~ x, family = "gaussian")$cens, ~ .cens(log(b)))
-  expect_equal(extract_effects(y | trials(10) ~ x, family = "binomial")$trials, 10)
-  expect_equal(extract_effects(y | cat(cate) ~ x, family = "cumulative")$cat, ~ .cat(cate))
-  expect_equal(extract_effects(y | cens(cens^2) ~ z, family = "weibull")$cens, ~ .cens(cens^2))
-  expect_equal(extract_effects(y | cens(cens^2) ~ z + (x|patient), family = "weibull")$all, 
+  expect_equal(extract_effects(y | se(I(a+2)) ~ x, family = "gaussian")$se, 
+               ~ .se(I(a+2)))
+  expect_equal(extract_effects(y | se(I(a+2)) ~ x, family = "gaussian")$all, 
+               y ~ x + a)
+  expect_equal(extract_effects(y | weights(1/n) ~ x, family = "gaussian")$weights, 
+               ~ .weights(1/n))
+  expect_equal(extract_effects(y | se(a+2) | cens(log(b)) ~ x, family = "gaussian")$cens, 
+               ~ .cens(log(b)))
+  expect_equal(extract_effects(y | trials(10) ~ x, family = "binomial")$trials, 
+               10)
+  expect_equal(extract_effects(y | cat(cate) ~ x, family = "cumulative")$cat, 
+               ~ .cat(cate))
+  expect_equal(extract_effects(y | cens(cens^2) ~ z, family = "weibull")$cens, 
+               ~ .cens(cens^2))
+  expect_equal(extract_effects(y | cens(cens^2) ~ z + (x|patient), 
+                               family = "weibull")$all, 
                y ~ z + x + patient + cens)
 })
 
