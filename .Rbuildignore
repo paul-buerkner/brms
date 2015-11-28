@@ -11,3 +11,4 @@
 ^cran-comments\.md$
 ^brm\.txt$
 ^brm\.stan$
+^\.travis\.yml$
