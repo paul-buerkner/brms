@@ -1,4 +1,6 @@
 <!-- README.md is generated from README.Rmd. Please edit that file -->
+[![Build Status](https://travis-ci.org/paul-buerkner/brms.svg?branch=master)](https://travis-ci.org/paul-buerkner/brms)
+
 brms
 ====
 
@@ -27,7 +29,7 @@ The results (i.e. posterior samples) can be investigated using
 ``` r
 summary(fit) 
 #>  Family: poisson (log) 
-#> Formula: count ~ log_Age_c + log_Base4_c + Trt_c + (1 | patient) + (1 | visit) + (1 | obs) + log_Base4_c:Trt_c 
+#> Formula: count ~ log_Age_c + log_Base4_c * Trt_c + (1 | patient) + (1 | visit) + (1 | obs) 
 #>    Data: epilepsy (Number of observations: 236) 
 #> Samples: 2 chains, each with n.iter = 2000; n.warmup = 500; n.thin = 1; 
 #>          total post-warmup samples = 3000
