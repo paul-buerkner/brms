@@ -1,5 +1,6 @@
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 [![Build Status](https://travis-ci.org/paul-buerkner/brms.svg?branch=master)](https://travis-ci.org/paul-buerkner/brms)
+[![CRAN\_Status\_Badge](http://www.r-pkg.org/badges/version/brms)](http://cran.r-project.org/package=brms)
 
 brms
 ====
