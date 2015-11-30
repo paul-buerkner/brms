@@ -200,12 +200,12 @@ test_that("Test that stan_llh returns correct llhs for zero-inflated an hurdle m
 
 test_that("Test that stan_llh returns correct llhs for multivariate models", {
   expect_equal(stan_llh(family = "gaussian", link = "identity", is_multi = TRUE),
-               "  Y ~ multi_normal_cholesky(etam, LSigma); \n")
+               "  Y ~ multi_normal_cholesky(Eta, LSigma); \n")
   expect_equal(stan_llh(family = "student", link = "identity", is_multi = TRUE),
-               "  Y ~ multi_student_t(nu, etam, Sigma); \n")
+               "  Y ~ multi_student_t(nu, Eta, Sigma); \n")
   expect_equal(stan_llh(family = "cauchy", link = "identity",
                         is_multi = TRUE, weights = TRUE),
-               "  lp_pre[n] <- multi_student_t_log(Y[n], 1.0, etam[n], Sigma); \n")
+               "  lp_pre[n] <- multi_student_t_log(Y[n], 1.0, Eta[n], Sigma); \n")
 })
 
 test_that("Test that stan_rngprior returns correct sampling statements for priors", {
