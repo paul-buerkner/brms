@@ -776,6 +776,11 @@ print.brmssummary <- function(x, digits = 2, ...) {
     print(round(x$fixed, digits = digits)) 
     cat("\n")
     
+    cat("Log Multiplicative Effects: \n")
+    x$multiply[, "Eff.Sample"] <- round(x$multiply[, "Eff.Sample"], digits = 0)
+    print(round(x$multiply, digits = digits)) 
+    cat("\n")
+    
     if (nrow(x$spec_pars)) {
       cat("Family Specific Parameters: \n")
       x$spec_pars[, "Eff.Sample"] <- 

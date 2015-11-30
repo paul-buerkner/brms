@@ -341,18 +341,20 @@ summary.brmsfit <- function(object, waic = TRUE, ...) {
     
     pars <- parnames(object)
     meta_pars <- object$fit@sim$pars_oi
-    meta_pars <- meta_pars[!apply(sapply(paste0("^",c("r_","prior_")), 
+    meta_pars <- meta_pars[!apply(sapply(paste0("^", c("r_", "prior_")), 
                                   grepl, x = meta_pars, ...), 1, any)]
     fit_summary <- rstan::summary(object$fit, pars = meta_pars,
                                   probs = c(0.025, 0.975))
     col_names <- c("Estimate", "Est.Error", "l-95% CI", 
                    "u-95% CI", "Eff.Sample", "Rhat")
     
+    # fixed effects summary
     fix_pars <- pars[grepl("^b_", pars)]
-    out$fixed <- matrix(fit_summary$summary[fix_pars,-c(2)], ncol = 6)
+    out$fixed <- matrix(fit_summary$summary[fix_pars, -c(2)], ncol = 6)
     colnames(out$fixed) <- col_names
     rownames(out$fixed) <- gsub("^b_", "", fix_pars)
     
+    # summary of family specific parameters
     spec_pars <- pars[pars %in% c("nu","shape","delta", "phi") | 
       apply(sapply(c("^sigma_", "^rescor_"), grepl, x = pars), 1, any)]
     out$spec_pars <- matrix(fit_summary$summary[spec_pars,-c(2)], ncol = 6)
@@ -364,6 +366,13 @@ summary.brmsfit <- function(object, waic = TRUE, ...) {
     colnames(out$spec_pars) <- col_names
     rownames(out$spec_pars) <- spec_pars
     
+    # summary of multiplicative effects
+    mult_pars <- pars[grepl("^bm_", pars)]
+    out$multiply <- matrix(fit_summary$summary[mult_pars, -c(2)], ncol = 6)
+    colnames(out$multiply) <- col_names
+    rownames(out$multiply) <- gsub("^bm_", "", mult_pars)
+    
+    # summary of ARMA effects
     cor_pars <- pars[grepl("^ar|^ma", pars)]
     out$cor_pars <- matrix(fit_summary$summary[cor_pars,-c(2)], ncol = 6)
     colnames(out$cor_pars) <- col_names
@@ -427,7 +436,8 @@ standata.brmsfit <- function(object, ...) {
                               family = object$family, 
                               autocor = object$autocor, 
                               cov.ranef = object$cov.ranef, 
-                              partial = object$partial, ...)
+                              partial = object$partial,
+                              multiply = object$multiply, ...)
   } else {
     # brms <= 0.5.0 only stores the data passed to Stan 
     standata <- object$data
@@ -481,8 +491,8 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5, ask = TRUE, ...) 
   if (!is.wholenumber(N) || N < 1) 
     stop("N must be a positive integer")
   if (!is.character(pars)) 
-    pars <- c("^b_", "^sd_", "^cor_", "^sigma", "^rescor", "^nu$", 
-              "^shape$", "^delta$", "^phi$", "^ar", "^ma", "^arr")
+    pars <- c("^b_", "^bm_", "^sd_", "^cor_", "^sigma", "^rescor", 
+              "^nu$", "^shape$", "^delta$", "^phi$", "^ar", "^ma", "^arr")
   samples <- posterior_samples(x, pars = pars, add_chains = TRUE)
   pars <- names(samples)[which(!names(samples) %in% c("chains", "iter"))] 
   
@@ -997,7 +1007,7 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
   
   # process class and group arguments
   if (is.null(class)) class <- ""
-  valid_classes <- c("", "b", "sd", "cor", "ar", "ma", "arr", 
+  valid_classes <- c("", "b", "bm", "sd", "cor", "ar", "ma", "arr", 
                      "sigma", "rescor", "nu", "shape", "delta")
   if (!class %in% valid_classes)
     stop(paste(class, "is not a valid paramter class"))
