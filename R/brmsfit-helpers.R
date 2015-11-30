@@ -498,6 +498,11 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
     }
     eta <- etap
   }
+  # include multiplicative effects
+  if (!is.null(data$Xm) && ncol(data$Xm)) {
+    bm <- posterior_samples(x, pars = "^bm_[^\\[]+$")
+    eta <- eta * exp(fixef_predictor(X = data$Xm, b = bm)) 
+  }
   eta
 }
 
