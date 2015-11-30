@@ -18,7 +18,8 @@
 #'
 #' @export
 make_stancode <- function(formula, data = NULL, family = "gaussian", 
-                          prior = NULL, autocor = NULL, partial = NULL, 
+                          prior = NULL, autocor = NULL, 
+                          multiply = NULL, partial = NULL, 
                           threshold = c("flexible", "equidistant"),
                           cov.ranef = NULL, sample.prior = FALSE, 
                           save.model = NULL, ...) {
@@ -70,10 +71,11 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
     paref <- colnames(Xp)
   }
   has_intercept <- temp_list$has_intercept
-  text_fixef <- stan_fixef(fixef = fixef, paref = paref, 
-                           family = family, prior = prior, 
-                           has_intercept = has_intercept,
-                           threshold = threshold)
+  multef <- colnames(get_model_matrix(multiply, data))
+  text_fixef <- stan_fixef(fixef = fixef, multef = multef,
+                           paref = paref, family = family, 
+                           prior = prior, threshold = threshold,
+                           has_intercept = has_intercept)
   
   # generate random effects code
   Z <- lapply(ee$random, get_model_matrix, data = data)
@@ -95,8 +97,8 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
   
   # generate other important parts of the stan code
   text_eta <- stan_eta(family = family, link = link, fixef = fixef, 
-                       has_intercept = has_intercept, paref = paref,  
-                       group = ee$group, autocor = autocor,
+                       has_intercept = has_intercept, multef = multef,
+                       paref = paref, group = ee$group, autocor = autocor,
                        add = is.formula(ee[c("weights", "cens", "trunc")]),
                        offset = offset, is_multi = is_multi)
   text_llh <- stan_llh(family, link = link, 
@@ -324,12 +326,14 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
   complete_model
 }
 
-stan_fixef <- function(fixef, paref, family, prior = prior_frame(), 
-                       has_intercept = TRUE, threshold = "flexible") {
+stan_fixef <- function(fixef, multef, paref, family = "gaussian", 
+                       prior = prior_frame(), has_intercept = TRUE, 
+                       threshold = "flexible") {
   # Stan code for fixec effects
   #
   # Args:
   #   fixef: names of the fixed effects
+  #   multef: names of the multiplicative effects
   #   paref: names of the category specific effects
   #   family: the model family
   #   prior: a data.frame containing user defined priors 
@@ -359,6 +363,15 @@ stan_fixef <- function(fixef, paref, family, prior = prior_frame(),
       "  vector[K] b;  # fixed effects \n") 
     fixef_prior <- stan_prior(class = "b", coef = fixef, prior = prior)
     out$prior <- paste0(out$prior, fixef_prior)
+  }
+  if (length(multef)) {
+    out$data <- paste0(out$data,
+      "  int<lower=1> Km; \n",
+      "  matrix[N, Km] Xm; \n")
+    out$par <- paste0(out$par, 
+      "  vector[Km] bm; \n")
+    multef_prior <- stan_prior(class = "bm", coef = multef, prior = prior)
+    out$prior <- paste0(out$prior, multef_prior)
   }
   if (length(paref)) {
     out$data <- paste0(out$data, 
@@ -557,9 +570,9 @@ stan_llh <- function(family, link, se = FALSE, weights = FALSE,
       cauchy_cov = c("student_t_cov", paste0("1, ",eta,", squared_se, N_tg, ", 
                      "begin_tg, nrows_tg, res_cov_matrix")),
       lognormal = c("lognormal", paste0(eta,", sigma",ns)),
-      multi_gaussian = c("multi_normal_cholesky", paste0("etam",n,", LSigma")),
-      multi_student = c("multi_student_t", paste0("nu, etam",n,", Sigma")),
-      multi_cauchy = c("multi_student_t", paste0("1.0, etam",n,", Sigma")),
+      multi_gaussian = c("multi_normal_cholesky", paste0("Eta",n,", LSigma")),
+      multi_student = c("multi_student_t", paste0("nu, Eta",n,", Sigma")),
+      multi_cauchy = c("multi_student_t", paste0("1.0, Eta",n,", Sigma")),
       poisson = c("poisson", eta),
       negbinomial = c("neg_binomial_2", paste0(eta,", shape")),
       geometric = c("neg_binomial_2", paste0(eta,", 1")),
@@ -618,15 +631,17 @@ stan_llh <- function(family, link, se = FALSE, weights = FALSE,
 }
 
 stan_eta <- function(family, link, fixef, has_intercept = TRUE, 
-                     paref = NULL, group = NULL, autocor = cor_arma(), 
-                     add = FALSE, offset = FALSE, is_multi = FALSE) {
+                     multef = NULL, paref = NULL, group = NULL, 
+                     autocor = cor_arma(),  add = FALSE, 
+                     offset = FALSE, is_multi = FALSE) {
   # linear predictor in Stan
   #
   # Args:
   #   family: the model family
   #   link: the link function
-  #   fixef: names of the fixed effects parameters
-  #   paref: names of the partiel effects paraneters
+  #   fixef: names of the fixed effects
+  #   multef: names of the multiplicative effects 
+  #   paref: names of the category specific effects
   #   group: names of the grouping factors
   #   autocor: autocorrelation structure
   #   add: is the model weighted, censored, or truncated?
@@ -646,12 +661,17 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE,
   
   eta <- list()
   # initialize eta
-  eta$transD <- paste0("  vector[N] eta;  # linear predictor \n", 
-                       if (length(paref)) 
-                         "  matrix[N, ncat - 1] etap;  # linear predictor matrix \n",
-                       if (is_multi) 
-                         "  vector[K_trait] etam[N_trait]; # linear predictor matrix \n")
-  eta_obj <- ifelse(is_multi, "etam[m, k]", "eta[n]")
+  eta$transD <- paste0(
+    "  vector[N] eta;  # linear predictor \n", 
+    if (length(multef)) 
+      "  vector[N] etam;  # multiplicative linear predictor \n",
+    if (length(paref)) 
+      paste0("  matrix[N, ncat - 1] etap;",
+             "  # linear predictor for category specific effects \n"),
+    if (is_multi) 
+      paste0("  vector[K_trait] Eta[N_trait];",
+             "  # multivariate linear predictor matrix \n"))
+  eta_obj <- ifelse(is_multi, "Eta[m, k]", "eta[n]")
   s <- ifelse(is_multi, "  ", "")
   
   # transform eta before it is passed to the likelihood
@@ -662,7 +682,8 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE,
                      || is_count && link == "log" 
                      || (is_binary || is_2pl) && link == "logit"
                      || family == "hurdle_gamma")
-  eta_ilink <- rep("", 2)
+  eta_ilink <- etam <- rep("", 2)
+  if (length(multef)) etam <- c("etam[n] * (", ")")
   if (eta$transform || (get_ar(autocor) && !use_cov(autocor))) {
     fl <- ifelse(family %in% c("gamma", "exponential"), 
                  paste0(family,"_",link), family)
@@ -674,25 +695,22 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE,
                         exponential_inverse = c("(", ")"),
                         exponential_identity = c("inv(", ")"),
                         weibull = c(paste0(ilink,"(("), ") / shape)"))
-    if (get_ma(autocor) || get_ar(autocor)) {
+    if (get_ar(autocor)) {
       eta_ar <- ifelse(!use_cov(autocor), " + head(E[n], Kar) * ar", "")
-      eta$transC3 <- paste0("    ", s, eta_obj," <- ",eta_ilink[1], 
-                            eta_obj, eta_ar, eta_ilink[2],"; \n")
-      eta_ilink <- rep("", 2)  
+      eta$transC3 <- paste0("    ", s, eta_obj," <- ", eta_ilink[1], 
+                            etam[1], eta_obj, eta_ar, etam[2], 
+                            eta_ilink[2], "; \n")
+      # don't apply link and multiplicative effects twice
+      eta_ilink <- etam <- rep("", 2)
     }
   }
   
   # define fixed, random, and autocorrelation effects
   etap <- if (length(paref) || is_cat) {
-    paste0("  etap <- ", ifelse(length(paref), "Xp * bp", "rep_matrix(0, Kp, ncat - 1)"),
+    paste0("  etap <- ", 
+           ifelse(length(paref), "Xp * bp", "rep_matrix(0, Kp, ncat - 1)"),
            if (is_cat && has_intercept) " + rep_matrix(b_Intercept, N)", "; \n")
   }
-  eta$transC1 <- paste0("  # compute linear predictor \n",
-                        "  eta <- ", ifelse(length(fixef), "X * b", "rep_vector(0, N)"), 
-                        if (has_intercept && !(is_ordinal || is_cat)) " + b_Intercept",
-                        if (offset) " + offset",
-                        if (get_arr(autocor)) " + Yarr * arr", "; \n",
-                        etap)
   if (length(group)) {
     ind <- 1:length(group)
     eta_re <- collapse(" + Z_",ind,"[n] * r_",ind,"[J_",ind,"[n]]")
@@ -702,9 +720,22 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE,
   eta_ma <- ifelse(get_ma(autocor) && !use_cov(autocor), 
                    " + head(E[n], Kma) * ma", "")
   if (nchar(eta_re) || nchar(eta_ma) || is_multi || nchar(eta_ilink[1])) {
-    eta$transC2 <- paste0("    ",s, eta_obj," <- ",
-                          eta_ilink[1],"eta[n]", eta_ma, eta_re, eta_ilink[2],"; \n")
+    eta$transC2 <- paste0("    ",s, eta_obj," <- ", eta_ilink[1], 
+                          etam[1], "eta[n]", eta_ma, eta_re, etam[2],
+                          eta_ilink[2],"; \n")
+    eta_ilink <- etam <- rep("", 2)
   }
+  # compute transC1 last to correctly incorporate multiplicative effects 
+  eta$transC1 <- paste0(
+    "  # compute linear predictor \n",
+    if (length(multef)) "  etam <- exp(Xm * bm); \n",
+    "  eta <- ", etam[1],
+    ifelse(length(fixef), "X * b", "rep_vector(0, N)"), 
+    if (has_intercept && !(is_ordinal || is_cat)) 
+      " + b_Intercept",
+    if (offset) " + offset",
+    if (get_arr(autocor)) " + Yarr * arr", 
+    etam[2], "; \n", etap)
   eta
 }
 

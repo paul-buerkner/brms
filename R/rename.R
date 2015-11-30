@@ -42,13 +42,14 @@ rename_pars <- function(x) {
   
   # order parameter samples after parameter class
   chains <- length(x$fit@sim$samples) 
-  all_class <- c("b_Intercept", "b", "bp", "ar", "ma", "sd", "cor", 
-                 "sigma", "rescor", "nu", "shape", "delta", "r", "prior", "lp")
+  all_classes <- c("b_Intercept", "b", "bm", "bp", "ar", "ma", "arr", 
+                 "sd", "cor", "sigma", "rescor", "nu", "shape", "phi",
+                 "delta", "r", "prior", "lp")
   class <- regmatches(x$fit@sim$fnames_oi, regexpr("^[^_\\[]+", x$fit@sim$fnames_oi))
   # make sure that the fixed effects intercept comes first
   pos_intercept <- which(grepl("^b_Intercept($|\\[)", x$fit@sim$fnames_oi))
   class[pos_intercept] <- "b_Intercept"
-  ordered <- order(factor(class, levels = all_class))
+  ordered <- order(factor(class, levels = all_classes))
   x$fit@sim$fnames_oi <- x$fit@sim$fnames_oi[ordered]
   for (i in 1:chains) {
     # keep_attr ensures that attributes are not removed
@@ -58,7 +59,7 @@ rename_pars <- function(x) {
   # make sure that the fixed effects intercept comes first
   pos_intercept <- which(grepl("^b_Intercept($|\\[)", x$fit@sim$pars_oi))
   mclass[pos_intercept] <- "b_Intercept"
-  ordered <- order(factor(mclass, levels = all_class))
+  ordered <- order(factor(mclass, levels = all_classes))
   x$fit@sim$dims_oi <- x$fit@sim$dims_oi[ordered]
   x$fit@sim$pars_oi <- names(x$fit@sim$dims_oi)
   
@@ -76,6 +77,14 @@ rename_pars <- function(x) {
     change <- c(change, prior_names(class = "b", pars = pars, names = f))
   }
   
+  if (is.formula(x$multiply)) {
+    m <- colnames(standata$Xm)
+    change <- lc(change, list(pos = grepl("^bm\\[", pars), oldname = "bm", 
+                              pnames = paste0("bm_", m), 
+                              fnames = paste0("bm_", m)))
+    change <- c(change, prior_names(class = "bm", pars = pars, names = m))
+  }
+  
   if (is.formula(x$partial) || x$family == "categorical") {
     if (x$family == "categorical") {
       p <- colnames(standata$X)
@@ -90,7 +99,7 @@ rename_pars <- function(x) {
                               sort = ulapply(1:lp, seq, to = thres*lp, by = lp),
                               dim = thres))
     change <- c(change, prior_names(class = "bp", pars = pars, names = p))
-  }  
+  } 
   
   if (length(x$ranef)) {
     group <- names(x$ranef)

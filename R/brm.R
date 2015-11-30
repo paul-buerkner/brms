@@ -35,22 +35,35 @@
 #'   See also  \code{\link[brms:get_prior]{get_prior}} for more help.
 #' @param addition Deprecated.
 #'   All additional information on the response variable should be incorporated 
-#'   directly into \code{formula}. See 'Formula Syntax' under 'Details' for further information.
-#' @param autocor An optional \code{\link{cor_brms}} object describing the correlation structure 
+#'   directly into \code{formula}. 
+#'   See 'Formula Syntax' under 'Details' for further information.
+#' @param autocor An optional \code{\link{cor_brms}} object describing 
+#'   the correlation structure 
 #'   within the response variable (i.e. the 'autocorrelation'). 
 #'   See the documentation of \code{\link{cor_brms}} for a description 
-#'   of the available correlation structures. Defaults to NULL, corresponding to no correlations.
-#' @param partial A one sided formula of the form \code{~expression} specifying the predictors with 
-#'   category specific effects in non-cumulative ordinal models
+#'   of the available correlation structures. Defaults to NULL, 
+#'   corresponding to no correlations.
+#' @param multiply A one side formula of the form \code{~expression}
+#'   allowing to specify multiplicative effects (e.g., for 2PL IRT models)
+#' @param partial A one sided formula of the form \code{~expression} 
+#'   allowing to specify predictors with category specific effects 
+#'   in non-cumulative ordinal models 
 #'   (i.e. in families \code{cratio}, \code{sratio}, or \code{acat}).
-#' @param threshold A character string indicating the type of thresholds (i.e. intercepts) 
-#'   used in an ordinal model. \code{"flexible"} provides the standard unstructured thresholds and 
-#'   \code{"equidistant"} restricts the distance between consecutive thresholds to the same value.
-#' @param cov.ranef A list of matrices that are proportional to the (within) covariance structure of the random effects. 
-#'   The names of the matrices should correspond to columns in \code{data} that are used as grouping factors. 
-#'   All levels of the grouping factor should appear as rownames of the corresponding matrix. 
-#' @param ranef A flag to indicate if random effects for each level of the grouping factor(s) 
-#'   should be saved (default is \code{TRUE}). Set to \code{FALSE} to save memory. 
+#' @param threshold A character string indicating the type of thresholds 
+#'   (i.e. intercepts) used in an ordinal model. 
+#'   \code{"flexible"} provides the standard unstructured thresholds and 
+#'   \code{"equidistant"} restricts the distance between 
+#'   consecutive thresholds to the same value.
+#' @param cov.ranef A list of matrices that are proportional to the 
+#'   (within) covariance structure of the random effects. 
+#'   The names of the matrices should correspond to columns 
+#'   in \code{data} that are used as grouping factors. 
+#'   All levels of the grouping factor should appear as rownames 
+#'   of the corresponding matrix. 
+#' @param ranef A flag to indicate if random effects 
+#'   for each level of the grouping factor(s) 
+#'   should be saved (default is \code{TRUE}). 
+#'   Set to \code{FALSE} to save memory. 
 #'   The argument has no impact on the model fitting itself.
 #' @param sample.prior A flag to indicate if samples from all specified proper priors 
 #'   should be additionally drawn. Among others, these samples can be used to calculate 
@@ -315,10 +328,12 @@
 #' @import stats   
 #' @export 
 brm <- function(formula, data = NULL, family = "gaussian", 
-                prior = NULL, addition = NULL, autocor = NULL, partial = NULL, 
+                prior = NULL, addition = NULL, autocor = NULL, 
+                multiply = NULL, partial = NULL, 
                 threshold = c("flexible", "equidistant"), cov.ranef = NULL, 
-                ranef = TRUE, sample.prior = FALSE, fit = NA, inits = "random", 
-                n.chains = 2, n.iter = 2000, n.warmup = 500, n.thin = 1, n.cluster = 1, 
+                ranef = TRUE, sample.prior = FALSE, fit = NA, 
+                inits = "random", n.chains = 2, n.iter = 2000, 
+                n.warmup = 500, n.thin = 1, n.cluster = 1, 
                 cluster_type = "PSOCK", silent = TRUE, seed = 12345, 
                 save.model = NULL, ...) {
   
@@ -358,9 +373,9 @@ brm <- function(formula, data = NULL, family = "gaussian",
     
     # initialize S3 object
     x <- brmsfit(formula = formula, family = family, link = link, 
-                 partial = partial, data.name = data.name, 
-                 autocor = autocor, prior = prior, 
-                 cov.ranef = cov.ranef)  
+                 multiply = multiply, partial = partial, 
+                 data.name = data.name, autocor = autocor, 
+                 prior = prior, cov.ranef = cov.ranef)  
     # see data.R
     x$data <- update_data(data, family = family, effects = ee, et$group) 
     x$ranef <- gather_ranef(effects = ee, data = x$data)  # see validate.R
@@ -368,7 +383,7 @@ brm <- function(formula, data = NULL, family = "gaussian",
     x$model <- make_stancode(formula = formula, data = data, 
                              family = obj_family, prior = prior,  
                              autocor = autocor, partial = partial, 
-                             threshold = threshold, 
+                             multiply = multiply, threshold = threshold, 
                              cov.ranef = cov.ranef, 
                              sample.prior = sample.prior, 
                              save.model = save.model)  # see stan.R

@@ -1,13 +1,14 @@
 brmsfit <- function(formula = NULL, family = "", link = "", data.name = "", 
                     data = data.frame(), model = "", exclude = NULL,
                     prior = list(), ranef = NULL, autocor = NULL,
-                    partial = NULL, cov.ranef = NULL, fit = NA) {
+                    multiply = NULL, partial = NULL, 
+                    cov.ranef = NULL, fit = NA) {
   # brmsfit class
   x <- list(formula = formula, family = family, link = link, 
             data.name = data.name, data = data, model = model, 
             exclude = exclude, prior = prior, ranef = ranef, 
-            autocor = autocor, partial = partial, 
-            cov.ranef = cov.ranef, fit = fit)
+            autocor = autocor, multiply = multiply, 
+            partial = partial, cov.ranef = cov.ranef, fit = fit)
   class(x) <- "brmsfit"
   x
 }
