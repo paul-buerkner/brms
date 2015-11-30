@@ -177,7 +177,7 @@ set_prior <- function(prior, class = "b", coef = "", group = "") {
   if (length(prior) != 1 || length(class) != 1 
       || length(coef) != 1 || length(group) != 1)
     stop("All arguments of set_prior must be of length 1")
-  valid_classes <- c("b", "sd", "cor", "L", "ar", "ma", "arr", "sigma", 
+  valid_classes <- c("b", "bm", "sd", "cor", "L", "ar", "ma", "arr", "sigma", 
                      "rescor", "Lrescor", "nu", "shape", "delta", "phi")
   if (!class %in% valid_classes)
     stop(paste(class, "is not a valid paramter class"))
@@ -230,7 +230,7 @@ set_prior <- function(prior, class = "b", coef = "", group = "") {
 #' 
 #' @export
 get_prior <- function(formula, data = NULL, family = "gaussian",
-                      autocor = NULL, partial = NULL, 
+                      autocor = NULL, multiply = NULL, partial = NULL, 
                       threshold = c("flexible", "equidistant"), 
                       internal = FALSE) {
   # note that default priors are stored in this function
@@ -265,7 +265,7 @@ get_prior <- function(formula, data = NULL, family = "gaussian",
   # initialize output
   prior <- prior_frame(prior = character(0), class = character(0), 
                        coef = character(0), group = character(0))
-  # fixed and category specific effects
+  # fixed, multiplicative, and category specific effects
   fixef <- colnames(get_model_matrix(ee$fixed, data = data))
   if (length(fixef)) {
     prior <- rbind(prior, prior_frame(class = "b", coef = c("", fixef)))
@@ -273,6 +273,10 @@ get_prior <- function(formula, data = NULL, family = "gaussian",
   if (is.formula(partial)) {
     paref <- colnames(get_model_matrix(partial, data = data, rm_intercept = TRUE))
     prior <- rbind(prior, prior_frame(class = "b", coef = paref))
+  }
+  if (is.formula(multiply)) {
+    multef <- colnames(get_model_matrix(multiply, data = data))
+    prior <- rbind(prior, prior_frame(class = "bm", coef = c("", multef)))
   }
   # random effects
   if (length(ee$group)) {
@@ -342,8 +346,8 @@ get_prior <- function(formula, data = NULL, family = "gaussian",
 }
 
 check_prior <- function(prior, formula, data = NULL, family = "gaussian", 
-                        link = "identity", autocor = NULL, partial = NULL, 
-                        threshold = "flexible") {
+                        link = "identity", autocor = NULL, multiply = NULL,
+                        partial = NULL, threshold = "flexible") {
   # check prior input and amend it if needed
   #
   # Args:
@@ -358,8 +362,9 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
   ee <- extract_effects(formula, family = family)  
   all_prior <- get_prior(formula = formula, data = data, 
                          family = family(family, link = link),
-                         autocor = autocor, partial = partial, 
-                         threshold = threshold, internal = TRUE)
+                         autocor = autocor, multiply = multiply, 
+                         partial = partial, threshold = threshold, 
+                         internal = TRUE)
   if (is.null(prior)) {
     prior <- all_prior  
   } else if (is(prior, "brmsprior")) {

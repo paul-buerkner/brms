@@ -273,7 +273,7 @@
 #'   Increasing adapt_delta may help." 
 #'   you should really think about increasing \code{adapt_delta}.
 #'   To do this, write \code{control = list(adapt_delta = <x>)}, where \code{<x>}
-#'   should usually be value between \code{0.95} (default) and \code{1}.
+#'   should usually be value between \code{0.8} (default) and \code{1}.
 #'   Increasing \code{adapt_delta} will slow down the sampler but will 
 #'   decrease the number of divergent transitions threatening
 #'   the validity of your posterior samples. 
@@ -365,8 +365,8 @@ brm <- function(formula, data = NULL, family = "gaussian",
     formula <- update_formula(formula, addition = addition) 
     prior <- check_prior(prior, formula = formula, data = data, 
                          family = family, link = link, 
-                         autocor = autocor, partial = partial, 
-                         threshold = threshold) 
+                         autocor = autocor, multiply = multiply,
+                         partial = partial, threshold = threshold) 
     et <- extract_time(autocor$formula)  
     ee <- extract_effects(formula, family = family, partial, et$all)
     data.name <- Reduce(paste, deparse(substitute(data)))
