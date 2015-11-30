@@ -737,8 +737,10 @@ td_plot <- function(par, x) {
 #' @export
 print.brmssummary <- function(x, digits = 2, ...) {
   cat(paste0(" Family: ", x$family, " (", x$link, ") \n"))
-  cat(paste("Formula:", gsub(" {1,}", " ", Reduce(paste, deparse(x$formula))), "\n"))
-  cat(paste0("   Data: ", x$data.name, " (Number of observations: ",x$nobs,") \n"))
+  cat(paste("Formula:", 
+            gsub(" {1,}", " ", Reduce(paste, deparse(x$formula))), "\n"))
+  cat(paste0("   Data: ", x$data.name, 
+             " (Number of observations: ",x$nobs,") \n"))
   if (x$sampler == "") {
     cat(paste("\nThe model does not contain posterior samples."))
   }
@@ -771,15 +773,19 @@ print.brmssummary <- function(x, digits = 2, ...) {
       cat("\n")
     }
     
-    cat("Fixed Effects: \n")
-    x$fixed[, "Eff.Sample"] <- round(x$fixed[, "Eff.Sample"], digits = 0)
-    print(round(x$fixed, digits = digits)) 
-    cat("\n")
+    if (nrow(x$fixed)) {
+      cat("Fixed Effects: \n")
+      x$fixed[, "Eff.Sample"] <- round(x$fixed[, "Eff.Sample"], digits = 0)
+      print(round(x$fixed, digits = digits)) 
+      cat("\n")
+    }
     
-    cat("Log Multiplicative Effects: \n")
-    x$multiply[, "Eff.Sample"] <- round(x$multiply[, "Eff.Sample"], digits = 0)
-    print(round(x$multiply, digits = digits)) 
-    cat("\n")
+    if (nrow(x$multiply)) {
+      cat("Log Multiplicative Effects: \n")
+      x$multiply[, "Eff.Sample"] <- round(x$multiply[, "Eff.Sample"], digits = 0)
+      print(round(x$multiply, digits = digits)) 
+      cat("\n")
+    }
     
     if (nrow(x$spec_pars)) {
       cat("Family Specific Parameters: \n")
@@ -789,9 +795,12 @@ print.brmssummary <- function(x, digits = 2, ...) {
       cat("\n")
     }
     
-    cat(paste0("Samples were drawn using ",x$sampler,". For each parameter, Eff.Sample is a \n",
-               "crude measure of effective sample size, and Rhat is the potential scale \n",
-               "reduction factor on split chains (at convergence, Rhat = 1)."))
+    cat(paste0("Samples were drawn using ",x$sampler,". ", 
+               "For each parameter, Eff.Sample is a \n",
+               "crude measure of effective sample size, ", 
+               "and Rhat is the potential scale \n",
+               "reduction factor on split chains ",
+               "(at convergence, Rhat = 1)."))
   }
 }
 
