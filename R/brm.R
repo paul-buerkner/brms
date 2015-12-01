@@ -44,7 +44,8 @@
 #'   of the available correlation structures. Defaults to NULL, 
 #'   corresponding to no correlations.
 #' @param multiply A one side formula of the form \code{~expression}
-#'   allowing to specify multiplicative effects (e.g., for 2PL IRT models)
+#'   allowing to specify multiplicative effects 
+#'   (e.g., for 2PL item response models)
 #' @param partial A one sided formula of the form \code{~expression} 
 #'   allowing to specify predictors with category specific effects 
 #'   in non-cumulative ordinal models 
@@ -68,11 +69,11 @@
 #' @param sample.prior A flag to indicate if samples from all specified proper priors 
 #'   should be additionally drawn. Among others, these samples can be used to calculate 
 #'   Bayes factors for point hypotheses. Default is \code{FALSE}. 
-#' @param fit An instance of S3 class \code{brmsfit} derived from a previous fit; defaults to \code{NA}. 
+#' @param fit An instance of S3 class \code{brmsfit} derived from a previous fit; 
+#'   defaults to \code{NA}. 
 #'   If \code{fit} is of class \code{brmsfit}, the compiled model associated 
-#'   with the fitted result is re-used and the arguments \code{formula}, \code{data}, 
-#'   \code{family}, \code{prior}, \code{addition}, \code{autocor}, \code{partial}, \code{threshold},
-#'  \code{cov.ranef}, and \code{ranef}, are ignored.
+#'   with the fitted result is re-used and all arguments 
+#'   modifying the model code or data are ignored.
 #' @param inits Either \code{"random"} or \code{"0"}. If inits is \code{"random"} (the default), 
 #'   Stan will randomly generate initial values for parameters. 
 #'   If it is \code{"0"}, all parameters are initiliazed to zero. 
@@ -150,7 +151,8 @@
 #'   to \code{success | trials(n)} in \code{brms} syntax. If the number of trials
 #'   is constant across all observation (say \code{10}), we may also write \code{success | trials(10)}. 
 #'   
-#'   For family \code{categorical} and all ordinal families, \code{addition} may contain a term \code{cat(number)} to
+#'   For family \code{categorical} and all ordinal families, 
+#'   \code{addition} may contain a term \code{cat(number)} to
 #'   specify the number categories (e.g, \code{cat(7)}. 
 #'   If not given, the number of categories is calculated from the data.
 #'   
@@ -200,6 +202,21 @@
 #'   was removed leading to the estimation of two random effects, 
 #'   one for the zero-inflation / hurdle part and one for the actual response. 
 #'   In the example above, the correlation between the two random effects will also be estimated.
+#'   
+#'   Additionally, \code{brm} allows to define multiplicative effects 
+#'   by using the \code{multiply} argument, which should be a one-sided formula. 
+#'   As the name indicates, these effects will be multiplied 
+#'   with the effects defined in \code{formula}. 
+#'   This way, it is easy to specify, for instance, 2PL item response models.
+#'   Suppose that we have the variables \code{item} and \code{person} and
+#'   want to model fixed effects for items and random effects for persons.
+#'   The discriminality (multiplicative effect) should depend only on the items. 
+#'   We can specify this by setting \code{formula = response ~ item + (1|person)} 
+#'   and \code{multiply = ~ item}. To identify the model, multiplicative effects
+#'   are estimated on the log scale. In addition, we recommend setting 
+#'   proper priors on both fixed and multiplicative effects to increase 
+#'   sampling efficiency 
+#'   (for details on priors see \code{\link[brms:set_prior]{set_prior}}).
 #'   
 #'   \bold{Families and link functions}
 #'   

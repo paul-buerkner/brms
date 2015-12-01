@@ -7,7 +7,7 @@
 \title{Data for \pkg{brms} Models}
 \usage{
 make_standata(formula, data = NULL, family = "gaussian", autocor = NULL,
-  partial = NULL, cov.ranef = NULL, ...)
+  multiply = NULL, partial = NULL, cov.ranef = NULL, ...)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class): 
@@ -40,18 +40,28 @@ For backwards compatibility, \code{family} may also be a vector of two
 character strings, the first naming the family and the second naming the link.
 Further information is provided under 'Details'.}
 
-\item{autocor}{An optional \code{\link{cor_brms}} object describing the correlation structure 
+\item{autocor}{An optional \code{\link{cor_brms}} object describing 
+the correlation structure 
 within the response variable (i.e. the 'autocorrelation'). 
 See the documentation of \code{\link{cor_brms}} for a description 
-of the available correlation structures. Defaults to NULL, corresponding to no correlations.}
+of the available correlation structures. Defaults to NULL, 
+corresponding to no correlations.}
 
-\item{partial}{A one sided formula of the form \code{~expression} specifying the predictors with 
-category specific effects in non-cumulative ordinal models
+\item{multiply}{A one side formula of the form \code{~expression}
+allowing to specify multiplicative effects 
+(e.g., for 2PL item response models)}
+
+\item{partial}{A one sided formula of the form \code{~expression} 
+allowing to specify predictors with category specific effects 
+in non-cumulative ordinal models 
 (i.e. in families \code{cratio}, \code{sratio}, or \code{acat}).}
 
-\item{cov.ranef}{A list of matrices that are proportional to the (within) covariance structure of the random effects. 
-The names of the matrices should correspond to columns in \code{data} that are used as grouping factors. 
-All levels of the grouping factor should appear as rownames of the corresponding matrix.}
+\item{cov.ranef}{A list of matrices that are proportional to the 
+(within) covariance structure of the random effects. 
+The names of the matrices should correspond to columns 
+in \code{data} that are used as grouping factors. 
+All levels of the grouping factor should appear as rownames 
+of the corresponding matrix.}
 
 \item{...}{Other arguments for internal usage only}
 }

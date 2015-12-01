@@ -5,9 +5,9 @@
 \title{Stan Code for \pkg{brms} Models}
 \usage{
 make_stancode(formula, data = NULL, family = "gaussian", prior = NULL,
-  autocor = NULL, partial = NULL, threshold = c("flexible",
-  "equidistant"), cov.ranef = NULL, sample.prior = FALSE,
-  save.model = NULL, ...)
+  autocor = NULL, multiply = NULL, partial = NULL,
+  threshold = c("flexible", "equidistant"), cov.ranef = NULL,
+  sample.prior = FALSE, save.model = NULL, ...)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class): 
@@ -45,22 +45,34 @@ Further information is provided under 'Details'.}
 A single \code{brmsprior} object may be passed without \code{c()} surrounding it. 
 See also  \code{\link[brms:get_prior]{get_prior}} for more help.}
 
-\item{autocor}{An optional \code{\link{cor_brms}} object describing the correlation structure 
+\item{autocor}{An optional \code{\link{cor_brms}} object describing 
+the correlation structure 
 within the response variable (i.e. the 'autocorrelation'). 
 See the documentation of \code{\link{cor_brms}} for a description 
-of the available correlation structures. Defaults to NULL, corresponding to no correlations.}
+of the available correlation structures. Defaults to NULL, 
+corresponding to no correlations.}
 
-\item{partial}{A one sided formula of the form \code{~expression} specifying the predictors with 
-category specific effects in non-cumulative ordinal models
+\item{multiply}{A one side formula of the form \code{~expression}
+allowing to specify multiplicative effects 
+(e.g., for 2PL item response models)}
+
+\item{partial}{A one sided formula of the form \code{~expression} 
+allowing to specify predictors with category specific effects 
+in non-cumulative ordinal models 
 (i.e. in families \code{cratio}, \code{sratio}, or \code{acat}).}
 
-\item{threshold}{A character string indicating the type of thresholds (i.e. intercepts) 
-used in an ordinal model. \code{"flexible"} provides the standard unstructured thresholds and 
-\code{"equidistant"} restricts the distance between consecutive thresholds to the same value.}
+\item{threshold}{A character string indicating the type of thresholds 
+(i.e. intercepts) used in an ordinal model. 
+\code{"flexible"} provides the standard unstructured thresholds and 
+\code{"equidistant"} restricts the distance between 
+consecutive thresholds to the same value.}
 
-\item{cov.ranef}{A list of matrices that are proportional to the (within) covariance structure of the random effects. 
-The names of the matrices should correspond to columns in \code{data} that are used as grouping factors. 
-All levels of the grouping factor should appear as rownames of the corresponding matrix.}
+\item{cov.ranef}{A list of matrices that are proportional to the 
+(within) covariance structure of the random effects. 
+The names of the matrices should correspond to columns 
+in \code{data} that are used as grouping factors. 
+All levels of the grouping factor should appear as rownames 
+of the corresponding matrix.}
 
 \item{sample.prior}{A flag to indicate if samples from all specified proper priors 
 should be additionally drawn. Among others, these samples can be used to calculate 

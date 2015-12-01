@@ -5,7 +5,7 @@
 \title{Fit Bayesian Generalized Linear and Ordinal Mixed Models}
 \usage{
 brm(formula, data = NULL, family = "gaussian", prior = NULL,
-  addition = NULL, autocor = NULL, partial = NULL,
+  addition = NULL, autocor = NULL, multiply = NULL, partial = NULL,
   threshold = c("flexible", "equidistant"), cov.ranef = NULL,
   ranef = TRUE, sample.prior = FALSE, fit = NA, inits = "random",
   n.chains = 2, n.iter = 2000, n.warmup = 500, n.thin = 1,
@@ -50,38 +50,53 @@ See also  \code{\link[brms:get_prior]{get_prior}} for more help.}
 
 \item{addition}{Deprecated.
 All additional information on the response variable should be incorporated 
-directly into \code{formula}. See 'Formula Syntax' under 'Details' for further information.}
+directly into \code{formula}. 
+See 'Formula Syntax' under 'Details' for further information.}
 
-\item{autocor}{An optional \code{\link{cor_brms}} object describing the correlation structure 
+\item{autocor}{An optional \code{\link{cor_brms}} object describing 
+the correlation structure 
 within the response variable (i.e. the 'autocorrelation'). 
 See the documentation of \code{\link{cor_brms}} for a description 
-of the available correlation structures. Defaults to NULL, corresponding to no correlations.}
+of the available correlation structures. Defaults to NULL, 
+corresponding to no correlations.}
 
-\item{partial}{A one sided formula of the form \code{~expression} specifying the predictors with 
-category specific effects in non-cumulative ordinal models
+\item{multiply}{A one side formula of the form \code{~expression}
+allowing to specify multiplicative effects 
+(e.g., for 2PL item response models)}
+
+\item{partial}{A one sided formula of the form \code{~expression} 
+allowing to specify predictors with category specific effects 
+in non-cumulative ordinal models 
 (i.e. in families \code{cratio}, \code{sratio}, or \code{acat}).}
 
-\item{threshold}{A character string indicating the type of thresholds (i.e. intercepts) 
-used in an ordinal model. \code{"flexible"} provides the standard unstructured thresholds and 
-\code{"equidistant"} restricts the distance between consecutive thresholds to the same value.}
+\item{threshold}{A character string indicating the type of thresholds 
+(i.e. intercepts) used in an ordinal model. 
+\code{"flexible"} provides the standard unstructured thresholds and 
+\code{"equidistant"} restricts the distance between 
+consecutive thresholds to the same value.}
 
-\item{cov.ranef}{A list of matrices that are proportional to the (within) covariance structure of the random effects. 
-The names of the matrices should correspond to columns in \code{data} that are used as grouping factors. 
-All levels of the grouping factor should appear as rownames of the corresponding matrix.}
+\item{cov.ranef}{A list of matrices that are proportional to the 
+(within) covariance structure of the random effects. 
+The names of the matrices should correspond to columns 
+in \code{data} that are used as grouping factors. 
+All levels of the grouping factor should appear as rownames 
+of the corresponding matrix.}
 
-\item{ranef}{A flag to indicate if random effects for each level of the grouping factor(s) 
-should be saved (default is \code{TRUE}). Set to \code{FALSE} to save memory. 
+\item{ranef}{A flag to indicate if random effects 
+for each level of the grouping factor(s) 
+should be saved (default is \code{TRUE}). 
+Set to \code{FALSE} to save memory. 
 The argument has no impact on the model fitting itself.}
 
 \item{sample.prior}{A flag to indicate if samples from all specified proper priors 
 should be additionally drawn. Among others, these samples can be used to calculate 
 Bayes factors for point hypotheses. Default is \code{FALSE}.}
 
-\item{fit}{An instance of S3 class \code{brmsfit} derived from a previous fit; defaults to \code{NA}. 
- If \code{fit} is of class \code{brmsfit}, the compiled model associated 
- with the fitted result is re-used and the arguments \code{formula}, \code{data}, 
- \code{family}, \code{prior}, \code{addition}, \code{autocor}, \code{partial}, \code{threshold},
-\code{cov.ranef}, and \code{ranef}, are ignored.}
+\item{fit}{An instance of S3 class \code{brmsfit} derived from a previous fit; 
+defaults to \code{NA}. 
+If \code{fit} is of class \code{brmsfit}, the compiled model associated 
+with the fitted result is re-used and all arguments 
+modifying the model code or data are ignored.}
 
 \item{inits}{Either \code{"random"} or \code{"0"}. If inits is \code{"random"} (the default), 
 Stan will randomly generate initial values for parameters. 
@@ -173,7 +188,8 @@ Fit a generalized linear mixed model, which incorporates both fixed-effects para
   to \code{success | trials(n)} in \code{brms} syntax. If the number of trials
   is constant across all observation (say \code{10}), we may also write \code{success | trials(10)}. 
   
-  For family \code{categorical} and all ordinal families, \code{addition} may contain a term \code{cat(number)} to
+  For family \code{categorical} and all ordinal families, 
+  \code{addition} may contain a term \code{cat(number)} to
   specify the number categories (e.g, \code{cat(7)}. 
   If not given, the number of categories is calculated from the data.
   
@@ -223,6 +239,21 @@ Fit a generalized linear mixed model, which incorporates both fixed-effects para
   was removed leading to the estimation of two random effects, 
   one for the zero-inflation / hurdle part and one for the actual response. 
   In the example above, the correlation between the two random effects will also be estimated.
+  
+  Additionally, \code{brm} allows to define multiplicative effects 
+  by using the \code{multiply} argument, which should be a one-sided formula. 
+  As the name indicates, these effects will be multiplied 
+  with the effects defined in \code{formula}. 
+  This way, it is easy to specify, for instance, 2PL item response models.
+  Suppose that we have the variables \code{item} and \code{person} and
+  want to model fixed effects for items and random effects for persons.
+  The discriminality (multiplicative effect) should depend only on the items. 
+  We can specify this by setting \code{formula = response ~ item + (1|person)} 
+  and \code{multiply = ~ item}. To identify the model, multiplicative effects
+  are estimated on the log scale. In addition, we recommend setting 
+  proper priors on both fixed and multiplicative effects to increase 
+  sampling efficiency 
+  (for details on priors see \code{\link[brms:set_prior]{set_prior}}).
   
   \bold{Families and link functions}
   
@@ -296,7 +327,7 @@ Fit a generalized linear mixed model, which incorporates both fixed-effects para
   Increasing adapt_delta may help." 
   you should really think about increasing \code{adapt_delta}.
   To do this, write \code{control = list(adapt_delta = <x>)}, where \code{<x>}
-  should usually be value between \code{0.95} (default) and \code{1}.
+  should usually be value between \code{0.8} (default) and \code{1}.
   Increasing \code{adapt_delta} will slow down the sampler but will 
   decrease the number of divergent transitions threatening
   the validity of your posterior samples. 

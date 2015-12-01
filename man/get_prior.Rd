@@ -5,8 +5,8 @@
 \title{Overview on Priors for \pkg{brms} Models}
 \usage{
 get_prior(formula, data = NULL, family = "gaussian", autocor = NULL,
-  partial = NULL, threshold = c("flexible", "equidistant"),
-  internal = FALSE)
+  multiply = NULL, partial = NULL, threshold = c("flexible",
+  "equidistant"), internal = FALSE)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class): 
@@ -39,18 +39,27 @@ For backwards compatibility, \code{family} may also be a vector of two
 character strings, the first naming the family and the second naming the link.
 Further information is provided under 'Details'.}
 
-\item{autocor}{An optional \code{\link{cor_brms}} object describing the correlation structure 
+\item{autocor}{An optional \code{\link{cor_brms}} object describing 
+the correlation structure 
 within the response variable (i.e. the 'autocorrelation'). 
 See the documentation of \code{\link{cor_brms}} for a description 
-of the available correlation structures. Defaults to NULL, corresponding to no correlations.}
+of the available correlation structures. Defaults to NULL, 
+corresponding to no correlations.}
 
-\item{partial}{A one sided formula of the form \code{~expression} specifying the predictors with 
-category specific effects in non-cumulative ordinal models
+\item{multiply}{A one side formula of the form \code{~expression}
+allowing to specify multiplicative effects 
+(e.g., for 2PL item response models)}
+
+\item{partial}{A one sided formula of the form \code{~expression} 
+allowing to specify predictors with category specific effects 
+in non-cumulative ordinal models 
 (i.e. in families \code{cratio}, \code{sratio}, or \code{acat}).}
 
-\item{threshold}{A character string indicating the type of thresholds (i.e. intercepts) 
-used in an ordinal model. \code{"flexible"} provides the standard unstructured thresholds and 
-\code{"equidistant"} restricts the distance between consecutive thresholds to the same value.}
+\item{threshold}{A character string indicating the type of thresholds 
+(i.e. intercepts) used in an ordinal model. 
+\code{"flexible"} provides the standard unstructured thresholds and 
+\code{"equidistant"} restricts the distance between 
+consecutive thresholds to the same value.}
 
 \item{internal}{A flag indicating if the names of additional internal parameters should be displayed. 
 Setting priors on these parameters is not recommended}
