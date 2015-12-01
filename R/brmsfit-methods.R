@@ -850,12 +850,6 @@ residuals.brmsfit <- function(object, re_formula = NULL, type = c("ordinary", "p
                  nrow = nrow(mu), byrow = TRUE)
     res <- res / sd
   }
-  # for compatibility with the macf function (see correlations.R)
-  # so that the colnames of the output correspond to the levels of the autocor grouping factor
-  if (has_arma(object$autocor)) {
-    tgroup <- extract_time(object$autocor$formula)$group
-    if (nchar(tgroup)) colnames(res) <- standata[[tgroup]]
-  }
   if (summary) {
     res <- get_summary(res, probs = probs)
   }
