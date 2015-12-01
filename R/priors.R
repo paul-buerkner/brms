@@ -26,7 +26,7 @@
 #'   
 #'   1. Fixed and category specific effects 
 #'   
-#'   Every fixed (and category specific) effect has its corresponding regression parameter. 
+#'   Every fixed (and category specific) effect has its own regression parameter. 
 #'   These parameters are internally named as \code{b_<fixed>}, where \code{<fixed>} represents 
 #'   the name of the corresponding fixed effect. 
 #'   Suppose, for instance, that \code{y} is predicted by \code{x1} and \code{x2} 
@@ -66,17 +66,31 @@
 #'   See the documentation of \code{\link[brms:brm]{brm}} for instructions
 #'   on how to increase \code{adapt_delta}. \cr
 #'   
-#'   2. Autocorrelation parameters
+#'   2. Multiplicative effects
 #'   
-#'   The autocorrelation parameters currently implemented are named \code{ar} (autoregression) 
-#'   and \code{ma} (moving average).
+#'   Every multiplicative effect as defined in the \code{multiply} 
+#'   argument of \code{\link[brms:brm]{brm}} 
+#'   has its own regression parameter. 
+#'   These parameters are internally named as \code{bm_<mult>}, 
+#'   where \code{<mult>} represents the name of the 
+#'   corresponding multiplicative effect. 
+#'   By default, multiplicative effects have an improper flat prior 
+#'   over the reals but we strongly recommend to define proper priors instead
+#'   to ensure both, identifiability of the model and sampling efficiency.
+#'   To set, for instance, a \code{normal(0,1)} prior on all
+#'   multiplicative effects at once, 
+#'   use \code{set_prior("normal(0,1)", class = "bm")}.
+#'   
+#'   3. Autocorrelation parameters
+#'   
+#'   The autocorrelation parameters currently implemented are named 
+#'   \code{ar} (autoregression), \code{ma} (moving average),
+#'   and \code{arr} (autoregression of the response).
 #'   The default prior for autocorrelation parameters is an improper flat prior over the reals. 
-#'   Other priors can be defined with \code{set_prior("<prior>", class = "ar")} 
-#'   or \cr \code{set_prior("<prior>", class = "ma")}. It should be noted that \code{ar} will
-#'   only take one values between -1 and 1 if the response variable is wide-sence stationay, 
-#'   i.e. if there is no drift in the responses. \cr
+#'   Other priors can be defined by \code{set_prior("<prior>", class = "ar")} 
+#'   for \code{ar} effects and similar for \code{ma} and \code{arr} effects.
 #'   
-#'   3. Standard deviations of random effects
+#'   4. Standard deviations of random effects
 #'   
 #'   Each random effect of each grouping factor has a standard deviation named
 #'   \code{sd_<group>_<random>}. Consider, for instance, the formula \code{y ~ x1+x2+(1+x1|g)}.
@@ -94,7 +108,7 @@
 #'   \code{set_prior("<prior>", class = "sd", group = "<group>", coef = "<coef>")}. 
 #'   Recommendations on useful prior distributions for standard deviations are given in Gelman (2006). \cr
 #'   
-#'   4. Correlations of random effects 
+#'   5. Correlations of random effects 
 #'   
 #'   If there is more than one random effect per grouping factor, the correlations between those random
 #'   effects have to be estimated. 
@@ -108,7 +122,7 @@
 #'   To set the same prior on every correlation matrix, 
 #'   use for instance \code{set_prior("lkj(2)", class = "cor")}.
 #'   
-#'   5. Parameters for specific families 
+#'   6. Parameters for specific families 
 #'   
 #'   Some families need additional parameters to be estimated. 
 #'   Families \code{gaussian}, \code{student}, and \code{cauchy} need the parameter \code{sigma} 
