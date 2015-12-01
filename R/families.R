@@ -19,8 +19,7 @@
 #'   \code{cratio}, \code{sratio}, and \code{acat} 
 #'   the links \code{logit}, \code{probit}, \code{probit_approx}, 
 #'   \code{cloglog}, and \code{cauchit};
-#'   family \code{categorical}, \code{bernoulli_2pl}, and \code{binomial_2pl} 
-#'   the link \code{logit}; 
+#'   family \code{categorical}, the link \code{logit}; 
 #'   families \code{weibull}, and \code{exponential} 
 #'   the links \code{log}, \code{identity}, and \code{inverse};
 #'   families \code{hurdle_poisson}, \code{hurdle_gamma}, 
@@ -86,42 +85,6 @@ bernoulli <- function(link = "logit") {
                "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
   structure(list(family = "bernoulli", link = linktemp), class = "family")
-}
-
-#' @rdname brmsfamily
-#' @export
-bernoulli_2pl <- function(link = "logit") {
-  linktemp <- substitute(link)
-  if (!is.character(linktemp)) {
-    linktemp <- deparse(linktemp)
-  } 
-  okLinks <- c("logit")
-  if (!linktemp %in% okLinks && is.character(link)) {
-    linktemp <- link
-  }
-  if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family bernoulli_2pl.", 
-               "Supported links are: \n", paste(okLinks, collapse = ", ")))
-  }
-  structure(list(family = "bernoulli_2pl", link = linktemp), class = "family")
-}
-
-#' @rdname brmsfamily
-#' @export
-binomial_2pl <- function(link = "logit") {
-  linktemp <- substitute(link)
-  if (!is.character(linktemp)) {
-    linktemp <- deparse(linktemp)
-  } 
-  okLinks <- c("logit")
-  if (!linktemp %in% okLinks && is.character(link)) {
-    linktemp <- link
-  }
-  if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family binomial_2pl.", 
-               "Supported links are: \n", paste(okLinks, collapse = ", ")))
-  }
-  structure(list(family = "binomial_2pl", link = linktemp), class = "family")
 }
 
 #' @rdname brmsfamily

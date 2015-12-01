@@ -178,14 +178,6 @@ is.zero_inflated <- function(family) {
   family %in% c("zero_inflated_poisson", "zero_inflated_negbinomial")
 }
 
-is.2pl <- function(family) {
-  # indicate if family is for a 2pl IRT models
-  if (class(family) == "family") {
-    family <- family$family
-  }
-  family %in% c("bernoulli_2pl", "binomial_2pl")
-}
-
 has_shape <- function(family) {
   # indicate if family needs a shape parameter
   if (class(family) == "family") {

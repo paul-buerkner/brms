@@ -58,14 +58,14 @@ extract_effects <- function(formula, ..., family = NA, check_response = TRUE) {
     add <- substr(add, 2, nchar(add)-1)
     families <- list(se = c("gaussian", "student", "cauchy"),
                      weights = "all",
-                     trials = c("binomial", "binomial_2pl"),
-                     cat = c("categorical", "cumulative", "cratio", "sratio", "acat"), 
-                     cens = c("gaussian", "student", "cauchy", "inverse.gaussian", 
-                              "binomial", "binomial_2pl",
+                     trials = c("binomial"),
+                     cat = c("categorical", "cumulative", 
+                             "cratio", "sratio", "acat"), 
+                     cens = c("gaussian", "student", "cauchy", 
+                              "inverse.gaussian", "binomial",
                               "poisson", "geometric", "negbinomial", 
                               "exponential", "weibull", "gamma"),
-                     trunc = c("gaussian", "student", "cauchy",
-                               "binomial", "binomial_2pl",
+                     trunc = c("gaussian", "student", "cauchy", "binomial",
                                "poisson", "geometric", "negbinomial", 
                                "exponential", "weibull", "gamma"))
     for (f in fun) {
@@ -117,8 +117,6 @@ extract_effects <- function(formula, ..., family = NA, check_response = TRUE) {
       x$response <- c(x$response, paste0("hu_", x$response))
     } else if (is.zero_inflated(family)) {
       x$response <- c(x$response, paste0("zi_", x$response))
-    } else if (is.2pl(family)) {
-      x$response <- c(x$response, paste0("logDisc_", x$response))
     }
     if (length(x$response) > 1) {
       if (!(is.null(x$cens) && is.null(x$se) && is.null(x$trunc))
@@ -357,7 +355,7 @@ family.character <- function(object, link = NA, ...) {
                   "cumulative", "cratio", "sratio", "acat",
                   "hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma",
                   "zero_inflated_poisson", "zero_inflated_negbinomial",
-                  "beta", "bernoulli_2pl", "binomial_2pl")
+                  "beta")
   if (!family %in% okFamilies)
     stop(paste(family, "is not a supported family. Supported families are: \n",
                paste(okFamilies, collapse = ", ")))
@@ -377,8 +375,6 @@ family.character <- function(object, link = NA, ...) {
     okLinks <- c("log", "identity", "inverse")
   } else if (is.hurdle(family) || is.zero_inflated(family)) {
     okLinks <- c("log")
-  } else if (is.2pl(family)) {
-    okLinks <- c("logit")
   } 
   if (is.na(link)) {
     link <- okLinks[1]
@@ -417,7 +413,7 @@ exclude_pars <- function(formula, ranef = TRUE) {
   # Returns:
   #   a vector of parameters to be excluded
   ee <- extract_effects(formula)
-  out <- c("eta", "etam", "etap", "eta_2pl", "Eta", "b_Intercept1", 
+  out <- c("eta", "etam", "etap", "Eta", "b_Intercept1", 
            "Lrescor", "Rescor", "Sigma", "LSigma",
            "p", "q", "e", "E", "res_cov_matrix", 
            "lp_pre", "hs_local", "hs_global")

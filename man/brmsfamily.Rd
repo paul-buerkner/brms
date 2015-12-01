@@ -4,8 +4,6 @@
 \alias{Beta}
 \alias{acat}
 \alias{bernoulli}
-\alias{bernoulli_2pl}
-\alias{binomial_2pl}
 \alias{brmsfamily}
 \alias{categorical}
 \alias{cauchy}
@@ -29,10 +27,6 @@ student(link = "identity")
 cauchy(link = "identity")
 
 bernoulli(link = "logit")
-
-bernoulli_2pl(link = "logit")
-
-binomial_2pl(link = "logit")
 
 negbinomial(link = "log")
 
@@ -76,8 +70,7 @@ families \code{bernoulli}, \code{Beta}, \code{cumulative},
 \code{cratio}, \code{sratio}, and \code{acat} 
 the links \code{logit}, \code{probit}, \code{probit_approx}, 
 \code{cloglog}, and \code{cauchit};
-family \code{categorical}, \code{bernoulli_2pl}, and \code{binomial_2pl} 
-the link \code{logit}; 
+family \code{categorical}, the link \code{logit}; 
 families \code{weibull}, and \code{exponential} 
 the links \code{log}, \code{identity}, and \code{inverse};
 families \code{hurdle_poisson}, \code{hurdle_gamma}, 
