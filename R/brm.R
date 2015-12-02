@@ -211,8 +211,11 @@
 #'   Suppose that we have the variables \code{item} and \code{person} and
 #'   want to model fixed effects for items and random effects for persons.
 #'   The discriminality (multiplicative effect) should depend only on the items. 
-#'   We can specify this by setting \code{formula = response ~ item + (1|person)} 
-#'   and \code{multiply = ~ item}. To identify the model, multiplicative effects
+#'   We can specify this by setting \code{formula = response ~ 0 + item + (1|person)} 
+#'   and \code{multiply = ~ 0 + item}. The intercept is omitted in both formulas
+#'   so that coefficients represent difficulties and discriminalities
+#'   seperately for each item, instead of differences between items.
+#'   To identify the model, multiplicative effects
 #'   are estimated on the log scale. In addition, we recommend setting 
 #'   proper priors on both fixed and multiplicative effects to increase 
 #'   sampling efficiency 
@@ -229,7 +232,7 @@
 #'   logistic regression and family \code{categorical} to multi-logistic regression 
 #'   when there are more than two possible outcomes.
 #'   Families \code{cumulative}, \code{cratio} ('contiuation ratio'), \code{sratio} ('stopping ratio'), 
-#'   and \code{acat} ('adjacent category') leads to ordinal regression. Families \code{gamma}, 
+#'   and \code{acat} ('adjacent category') leads to ordinal regression. Families \code{Gamma}, 
 #'   \code{weibull}, \code{exponential}, and \code{inverse.gaussian} can be used (among others) 
 #'   for survival regression when combined with the \code{log} link. 
 #'   Families \code{hurdle_poisson}, \code{hurdle_negbinomial}, \code{hurdle_gamma}, 
@@ -246,8 +249,9 @@
 #'   \code{identity}, \code{log}, and \code{inverse};
 #'   families \code{poisson}, \code{negbinomial}, and \code{geometric} the links 
 #'   \code{log}, \code{identity}, and \code{sqrt}; 
-#'   families \code{binomial}, \code{bernoulli}, \code{cumulative}, \code{cratio}, \code{sratio}, 
-#'   and \code{acat} the links \code{logit}, \code{probit}, \code{probit_approx}, 
+#'   families \code{binomial}, \code{bernoulli}, \code{Beta},
+#'   \code{cumulative}, \code{cratio}, \code{sratio}, and \code{acat} 
+#'   the links \code{logit}, \code{probit}, \code{probit_approx}, 
 #'   \code{cloglog}, and \code{cauchit}; 
 #'   family \code{categorical} the link \code{logit}; families \code{gamma}, \code{weibull}, 
 #'   and \code{exponential} the links \code{log}, \code{identity}, and \code{inverse};
