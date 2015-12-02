@@ -7,6 +7,8 @@
     \itemize{
       \item implement beta regression models through family
       \code{Beta}
+      \item implement multiplicative effects through argument
+      \code{multiply} of function \code{brm}
       \item allow to selectively exclude random effects
       in the \code{predict}, \code{fitted}, and \code{residuals}
       methods using argument \code{re_formula}
@@ -25,6 +27,10 @@
       \item fix a bug in the \code{hypothesis} method 
       that could cause valid model parameters to be falsely 
       reported as invalid
+      \item fix Stan code of linear models with 
+      moving-average effects and non-identity link functions 
+      so that they no longer contain code related solely 
+      to autoregressive effects
     }
   }
 }
