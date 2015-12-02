@@ -11,57 +11,77 @@
 \arguments{
 \item{object}{An object of class \code{brmsfit}}
 
-\item{newdata}{An optional data.frame containing new data to make predictions for.
+\item{newdata}{An optional data.frame containing 
+new data to make predictions for.
 If \code{NULL} (default), the data used to fit the model is applied.}
 
-\item{re_formula}{formula containing random effects to be considered in the prediction. 
-If \code{NULL} (default), include all random effects; if \code{NA}, include no random effects.}
+\item{re_formula}{formula containing random effects 
+to be considered in the prediction. 
+If \code{NULL} (default), include all random effects; 
+if \code{NA}, include no random effects.}
 
-\item{transform}{A function or a character string naming a function to be applied on the predicted responses
+\item{transform}{A function or a character string naming 
+a function to be applied on the predicted responses
 before summary statistics are computed.}
 
-\item{allow_new_levels}{Currenly, \code{FALSE} (no new levels allowed) is the only option. 
+\item{allow_new_levels}{Currenly, \code{FALSE} 
+(no new levels allowed) is the only option. 
 This will change in future versions of the package.}
 
-\item{summary}{logical. Should summary statistics (i.e. means, sds, and 95\% intervals) be returned
+\item{summary}{logical. Should summary statistics 
+ (i.e. means, sds, and 95\% intervals) be returned
 instead of the raw values. Default is \code{TRUE}}
 
-\item{probs}{The percentiles to be computed by the \code{quantile} function. 
+\item{probs}{The percentiles to be computed 
+by the \code{quantile} function. 
 Only used if \code{summary} is \code{TRUE}.}
 
-\item{ntrys}{Parameter used in rejection sampling for truncated discrete models only 
+\item{ntrys}{Parameter used in rejection sampling 
+for truncated discrete models only 
 (defaults to \code{5}). See Details for more information.}
 
 \item{...}{Currently ignored}
 }
 \value{
-Predicted values of the response variable. If \code{summary = TRUE} the output depends on the family:
-  For catagorical and ordinal families, it is a N x C matrix where N is the number of observations and
-  C is the number of categories. For all other families, it is a N x E matrix where E is equal 
+Predicted values of the response variable. 
+  If \code{summary = TRUE} the output depends on the family:
+  For catagorical and ordinal families, it is a N x C matrix, 
+  where N is the number of observations and
+  C is the number of categories. 
+  For all other families, it is a N x E matrix where E is equal 
   to \code{length(probs) + 2}.
-  If \code{summary = FALSE}, the output is as a S x N matrix, where S is the number of samples.
+  If \code{summary = FALSE}, the output is as a S x N matrix, 
+  where S is the number of samples.
 }
 \description{
 Make predictions based on the fitted model parameters. 
-Can be performed for the data used to fit the model (posterior predictive checks) or for new data.
+Can be performed for the data used to fit the model 
+(posterior predictive checks) or for new data.
 }
 \details{
 For truncated discrete models only:
-  In the absence of any general algorithm to sample from truncated discrete distributions,
-  rejection sampling is applied in this special case. This means that values are sampled until 
-  a value lies within the defined truncation boundaries. In practice, this procedure may be 
-  rather slow (especially in R). Thus, we try to do approximate rejection sampling 
+  In the absence of any general algorithm to sample 
+  from truncated discrete distributions,
+  rejection sampling is applied in this special case. 
+  This means that values are sampled until 
+  a value lies within the defined truncation boundaries. 
+  In practice, this procedure may be rather slow (especially in R). 
+  Thus, we try to do approximate rejection sampling 
   by sampling each value \code{ntrys} times and then select a valid value. 
   If all values are invalid, the closest boundary is used, instead. 
   If there are more than a few of these pathological cases, 
   a warning will occure suggesting to increase argument \code{ntrys}.
   
   For models fitted with \pkg{brms} <= 0.5.0 only: 
-  Be careful when using \code{newdata} with factors in fixed or random effects. 
-  The predicted results are only valid if all factor levels present in the initial 
-  data are also defined and ordered correctly for the factors in \code{newdata}.
-  Grouping factors may contain fewer levels than in the inital data without causing problems.
-  When using higher versions of \pkg{brms}, all factors are automatically checked 
+  Be careful when using \code{newdata} with factors 
+  in fixed or random effects. The predicted results are only valid 
+  if all factor levels present in the initial 
+  data are also defined and ordered correctly 
+  for the factors in \code{newdata}.
+  Grouping factors may contain fewer levels than in the 
+  inital data without causing problems.
+  When using higher versions of \pkg{brms}, 
+  all factors are automatically checked 
   for correctness and amended if necessary.
 }
 \examples{

@@ -23,7 +23,8 @@ compute covariances (or correlations) of multiplicative effects}
 covariance or correlation matrix of fixed effects parameters
 }
 \description{
-Get a point estimate of the covariance or correlation matrix of fixed effects parameters
+Get a point estimate of the covariance or 
+correlation matrix of fixed effects parameters
 }
 \details{
 Estimates are obtained by calculating the maximum likelihood 

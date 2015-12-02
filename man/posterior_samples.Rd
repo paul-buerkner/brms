@@ -13,21 +13,27 @@ posterior_samples(x, pars = NA, parameters = NA, exact_match = FALSE,
 \arguments{
 \item{x}{An \code{R} object typically of class \code{brmsfit}}
 
-\item{pars}{Names of parameters for which posterior samples should be returned, as given by a character vector or regular expressions.
+\item{pars}{Names of parameters for which posterior samples 
+should be returned, as given by a character vector or regular expressions.
 By default, all posterior samples of all parameters are extracted}
 
 \item{parameters}{A deprecated alias of \code{pars}}
 
-\item{exact_match}{Indicates whether parameter names should be matched exactly or treated as regular expression. Default is \code{FALSE}.}
+\item{exact_match}{Indicates whether parameter names 
+should be matched exactly or treated as regular expression. 
+Default is \code{FALSE}.}
 
-\item{add_chains}{A flag indicating if the returned data.frame should contain information on the chains}
+\item{add_chains}{A flag indicating if the returned data.frame 
+should contain information on the chains}
 
-\item{as.matrix}{Should the output be a \code{matrix} instead of a \code{data.frame}? Defaults to \code{FALSE}}
+\item{as.matrix}{Should the output be a \code{matrix} 
+instead of a \code{data.frame}? Defaults to \code{FALSE}}
 
 \item{...}{additional arguments}
 }
 \value{
-A data frame containing the posterior samples, with one column per parameter.
+A data frame containing the posterior samples, 
+  with one column per parameter.
 }
 \description{
 Extract posterior samples of specified parameters
@@ -37,15 +43,15 @@ Currently there are methods for \code{brmsfit} objects.
 }
 \examples{
 \dontrun{
-fit_i <- brm(rating ~ treat + period + carry + (1|subject), 
-             data = inhaler, family = "cumulative")
+fit <- brm(rating ~ treat + period + carry + (1|subject), 
+           data = inhaler, family = "cumulative")
 
 #extract posterior samples of fixed effects 
-samples1 <- posterior_samples(fit_i, "b_")
+samples1 <- posterior_samples(fit, "^b")
 head(samples1)
 
 #extract posterior samples of standard deviations of random effects
-samples2 <- posterior_samples(fit_i, "sd_")
+samples2 <- posterior_samples(fit, "^sd")
 head(samples2)
 }
 

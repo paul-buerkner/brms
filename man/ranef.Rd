@@ -9,30 +9,36 @@
 ranef(x, estimate = "mean", var = FALSE, ...)
 }
 \arguments{
-\item{x}{An object of a class of fitted models with random effects, typically a \code{brmsfit} object.}
+\item{x}{An object of a class of fitted models with random effects, 
+typically a \code{brmsfit} object.}
 
-\item{estimate}{The point estimate to be calculated for the random effects, either "mean" or "median".}
+\item{estimate}{The point estimate to be calculated 
+for the random effects, either "mean" or "median".}
 
-\item{var}{logical; indicating if the covariance matrix for each random effects should be computed.}
+\item{var}{logical; indicating if the covariance matrix 
+for each random effects should be computed.}
 
-\item{...}{Further arguments to be passed to the function specified in \code{estimate}}
+\item{...}{Further arguments to be passed to the function 
+specified in \code{estimate}}
 }
 \value{
-A list of matrices (one per grouping factor), each with one row per level
- and one single column for the estimate (either mean or median).
+A list of matrices (one per grouping factor), 
+ each with one row per level and one single column 
+ for the estimate (either mean or median).
 }
 \description{
-A generic function to extract the random effects of each level from a fitted model object.
+A generic function to extract the random effects 
+of each level from a fitted model object.
 }
 \examples{
 \dontrun{
-fit_e <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
+fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
              data = epilepsy, family = "poisson", n.chains = 1)
 ## random effects means with corresponding covariances
-rf <- ranef(fit_e, var = TRUE)
+rf <- ranef(fit, var = TRUE)
 attr(rf, "var")
 ## random effects medians
-ranef(fit_e, estimate = "median")                                                        
+ranef(fit, estimate = "median")                                                        
 }
 
 }

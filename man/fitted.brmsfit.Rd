@@ -11,53 +11,65 @@
 \arguments{
 \item{object}{An object of class \code{brmsfit}}
 
-\item{newdata}{An optional data.frame containing new data to make predictions for.
+\item{newdata}{An optional data.frame containing 
+new data to make predictions for.
 If \code{NULL} (default), the data used to fit the model is applied.}
 
-\item{re_formula}{formula containing random effects to be considered in the prediction. 
-If \code{NULL} (default), include all random effects; if \code{NA}, include no random effects.}
+\item{re_formula}{formula containing random effects 
+to be considered in the prediction. 
+If \code{NULL} (default), include all random effects; 
+if \code{NA}, include no random effects.}
 
-\item{scale}{Either \code{"response"} or \code{"linear"}. If \code{scale = "response"} 
-results are returned on the scale of the response variable. If \code{scale = "linear"} 
+\item{scale}{Either \code{"response"} or \code{"linear"}. 
+If \code{scale = "response"} results are returned on the scale 
+of the response variable. If \code{scale = "linear"} 
 fitted values are returned on the scale of the linear predictor.}
 
-\item{allow_new_levels}{Currenly, \code{FALSE} (no new levels allowed) is the only option. 
+\item{allow_new_levels}{Currenly, \code{FALSE} 
+(no new levels allowed) is the only option. 
 This will change in future versions of the package.}
 
-\item{summary}{logical. Should summary statistics (i.e. means, sds, and 95\% intervals) be returned
+\item{summary}{logical. Should summary statistics 
+ (i.e. means, sds, and 95\% intervals) be returned
 instead of the raw values. Default is \code{TRUE}}
 
-\item{probs}{The percentiles to be computed by the \code{quantile} function. 
+\item{probs}{The percentiles to be computed 
+by the \code{quantile} function. 
 Only used if \code{summary} is \code{TRUE}.}
 
 \item{...}{Currently ignored}
 }
 \value{
-Fitted values extracted from \code{object}. The output depends on the family:
-  If \code{summary = TRUE} it is a N x E x C array for categorical and ordinal models 
-  and a N x E matrix else.
-  If \code{summary = FALSE} it is a S x N x C array for categorical and ordinal models 
-  and a S x N matrix else.
-  N is the number of observations, S is the number of samples, C is the number of categories,
-  and E is equal to \code{length(probs) + 2}.
+Fitted values extracted from \code{object}. 
+ The output depends on the family:
+ If \code{summary = TRUE} it is a N x E x C array 
+ for categorical and ordinal models and a N x E matrix else.
+ If \code{summary = FALSE} it is a S x N x C array 
+ for categorical and ordinal models and a S x N matrix else.
+ N is the number of observations, S is the number of samples, 
+ C is the number of categories, and E is equal to \code{length(probs) + 2}.
 }
 \description{
 Extract Model Fitted Values of \code{brmsfit} Objects
 }
 \details{
 For models fitted with \pkg{brms} <= 0.5.0 only: 
- Be careful when using \code{newdata} with factors in fixed or random effects. 
- The predicted results are only valid if all factor levels present in the initial 
- data are also defined and ordered correctly for the factors in \code{newdata}.
- Grouping factors may contain fewer levels than in the inital data without causing problems.
- When using higher versions of \pkg{brms}, all factors are automatically checked 
- for correctness and amended if necessary.
+  Be careful when using \code{newdata} with factors 
+  in fixed or random effects. The predicted results are only valid 
+  if all factor levels present in the initial 
+  data are also defined and ordered correctly 
+  for the factors in \code{newdata}.
+  Grouping factors may contain fewer levels than in the 
+  inital data without causing problems.
+  When using higher versions of \pkg{brms}, 
+  all factors are automatically checked 
+  for correctness and amended if necessary.
 }
 \examples{
 \dontrun{
 ## fit a model
-fit <- brm(rating ~ treat + period + carry + (1|subject), data = inhaler,
-           n.cluster = 2)
+fit <- brm(rating ~ treat + period + carry + (1|subject), 
+           data = inhaler)
 
 ## extract fitted values
 fitted_values <- fitted(fit)

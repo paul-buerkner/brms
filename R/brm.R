@@ -306,41 +306,46 @@
 #' ## Poisson Regression for the number of seizures in epileptic patients
 #' ## using student_t priors for fixed effects 
 #' ## and half cauchy priors for standard deviations of random effects 
-#' fit_e <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient) + (1|visit), 
-#'            data = epilepsy, family = "poisson", 
-#'            prior = c(set_prior("student_t(5,0,10)", class = "b"),
-#'                      set_prior("cauchy(0,2)", class = "sd")))
+#' fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt_c 
+#'             + (1|patient) + (1|visit) + (1|obs), 
+#'             data = epilepsy, family = "poisson", 
+#'             prior = c(set_prior("student_t(5,0,10)", class = "b"),
+#'                       set_prior("cauchy(0,2)", class = "sd")))
 #' ## generate a summary of the results
-#' summary(fit_e)
+#' summary(fit1)
 #' ## plot the MCMC chains as well as the posterior distributions
-#' plot(fit_e)
+#' plot(fit1)
 #' ## extract random effects standard devations, correlation and covariance matrices
-#' VarCorr(fit_e)
+#' VarCorr(fit1)
 #' ## extract random effects for each level
-#' ranef(fit_e)
+#' ranef(fit1)
+#' ## predict responses based on the fitted model
+#' head(predict(fit1))  
 #'  
 #' ## Ordinal regression modeling patient's rating 
 #' ## of inhaler instructions using normal priors for fixed effects parameters
-#' fit_i <- brm(rating ~ treat + period + carry, data = inhaler, 
-#'              family = sratio("cloglog"), prior = set_prior("normal(0,5)"))
-#' summary(fit_i)
-#' plot(fit_i)    
+#' fit2 <- brm(rating ~ treat + period + carry, 
+#'             data = inhaler, family = sratio("cloglog"), 
+#'             prior = set_prior("normal(0,5)"))
+#' summary(fit2)
+#' plot(fit2)    
 #' 
 #' ## Surivival Regression (with family 'weibull') modeling time between 
 #' ## first and second recurrence of an infection in kidney patients
 #' ## time | cens indicates which values in variable time are right censored
-#' fit_k <- brm(time | cens(censored) ~ age + sex + disease + (1|patient), 
-#'              data = kidney, family = "weibull", inits = "0")
-#' summary(fit_k) 
-#' plot(fit_k)    
+#' fit3 <- brm(time | cens(censored) ~ age + sex + disease + (1|patient), 
+#'             data = kidney, family = "weibull", inits = "0")
+#' summary(fit3) 
+#' plot(fit3)    
 #' 
-#' ## Logisitic Regression (with family 'binomial') to illustrate model specification
-#' ## variable n contains the number of trials, success contains the number of successes
+#' ## Logistic (binomial) Regression to illustrate model specification
+#' ## variable n contains the number of trials, 
+#' ## success contains the number of successes
 #' n <- sample(1:10, 100, TRUE)
 #' success <- rbinom(100, size = n, prob = 0.4)
 #' x <- rnorm(100)
-#' fit_b <- brm(success | trials(n) ~ x, family = binomial("probit"))
-#' summary(fit_b)
+#' fit4 <- brm(success | trials(n) ~ x, family = binomial("probit"))
+#' summary(fit4)
 #' }
 #' 
 #' @import rstan

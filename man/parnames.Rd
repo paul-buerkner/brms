@@ -15,13 +15,14 @@ parnames(x, ...)
 \item{...}{Further arguments passed to or from other methods}
 }
 \value{
-A character vector containing the parameter names of the model
+A character vector containing the parameter names of the model.
 }
 \description{
 Extract all parameter names of a given model.
 }
 \details{
-Currently there are methods for \code{brmsfit} and \code{formula} objects.
+Currently there are methods for \code{brmsfit} 
+  and \code{formula} objects.
 }
 \author{
 Paul-Christian Buerkner \email{paul.buerkner@gmail.com}

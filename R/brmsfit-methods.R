@@ -21,7 +21,8 @@ fixef.brmsfit <-  function(x, estimate = "mean", ...) {
 
 #' Covariance and Correlation Matrix of Fixed Effects
 #' 
-#' Get a point estimate of the covariance or correlation matrix of fixed effects parameters
+#' Get a point estimate of the covariance or 
+#' correlation matrix of fixed effects parameters
 #' 
 #' @param object An object of class \code{brmsfit}
 #' @param correlation logical; if \code{FALSE} (the default), 
@@ -190,11 +191,12 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
   } else {
     p <- group <- NULL
   } 
-  
   # special treatment of residuals variances in linear models
   if (has_sigma(x$family, se = ee$se, autocor = x$autocor)) {
-    cor_pars <- get_cornames(ee$response, type = "rescor", brackets = FALSE)
-    p <- lc(p, list(rnames = ee$response, sd_pars = paste0("sigma_",ee$response),
+    cor_pars <- get_cornames(ee$response, type = "rescor", 
+                             brackets = FALSE)
+    p <- lc(p, list(rnames = ee$response, 
+                    sd_pars = paste0("sigma_", ee$response),
                     cor_pars = cor_pars))
     group <- c(group, "RESIDUAL")
   } 
@@ -206,7 +208,8 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
 
 #' @export
 posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,  
-                                      exact_match = FALSE, add_chains = FALSE, 
+                                      exact_match = FALSE, 
+                                      add_chains = FALSE, 
                                       as.matrix = FALSE, ...) {
   if (is.na(pars[1])) 
     pars <- parameters  
@@ -295,8 +298,9 @@ prior_samples.brmsfit <- function(x, pars = NA, parameters = NA, ...) {
 #' 
 #' @param x An object of class \code{brmsfit}
 #' @param digits The number of significant digits for printing out the summary; 
-#'   defaults to 2. The effective sample size is always rounded to integers.
-#' @param ... Additional arguments that would be passed to method \code{summary} of \code{brmsfit}.
+#'  defaults to 2. The effective sample size is always rounded to integers.
+#' @param ... Additional arguments that would be passed 
+#'  to method \code{summary} of \code{brmsfit}.
 #'
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
@@ -364,9 +368,10 @@ summary.brmsfit <- function(object, waic = TRUE, ...) {
       apply(sapply(c("^sigma_", "^rescor_"), grepl, x = pars), 1, any)]
     out$spec_pars <- matrix(fit_summary$summary[spec_pars,-c(2)], ncol = 6)
     if (is.linear(object$family)) {
-      spec_pars[grepl("^sigma_", spec_pars)] <- paste0("sigma(",ee$response,")")
-      spec_pars[grepl("^rescor_", spec_pars)] <- get_cornames(ee$response, 
-                                                              type = "rescor")   
+      sigma_names <- paste0("sigma(",ee$response,")")
+      rescor_names <- get_cornames(ee$response, type = "rescor")   
+      spec_pars[grepl("^sigma_", spec_pars)] <- sigma_names
+      spec_pars[grepl("^rescor_", spec_pars)] <- rescor_names 
     }    
     colnames(out$spec_pars) <- col_names
     rownames(out$spec_pars) <- spec_pars
@@ -387,10 +392,12 @@ summary.brmsfit <- function(object, waic = TRUE, ...) {
       for (i in 1:length(out$group)) {
         rnames <- object$ranef[[i]]
         sd_pars <- paste0("sd_", out$group[i],"_",rnames)
-        cor_pars <- intersect(get_cornames(rnames, type = paste0("cor_",out$group[i]),
-                                           brackets = FALSE), parnames(object))
+        all_cor_pars <- get_cornames(rnames, brackets = FALSE,
+                                     type = paste0("cor_",out$group[i]))
+        cor_pars <- intersect(all_cor_pars, parnames(object))
         sd_names <- paste0("sd(",rnames,")")
-        cor_names <- get_cornames(rnames, subset = cor_pars, subtype = out$group[i])
+        cor_names <- get_cornames(rnames, subset = cor_pars, 
+                                  subtype = out$group[i])
         out$random[[out$group[i]]] <- 
           matrix(fit_summary$summary[c(sd_pars, cor_pars), -c(2)], ncol = 6)
         colnames(out$random[[out$group[i]]]) <- col_names
@@ -475,12 +482,12 @@ launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"),
 #' 
 #' @examples
 #' \dontrun{ 
-#' fit_e <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient) + (1|visit), 
+#' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient) + (1|visit), 
 #'              data = epilepsy, family = "poisson")
 #' ## plot fixed effects as well as standard devations of the random effects
-#' plot(fit_e)
+#' plot(fit)
 #' ## plot fixed effects only and combine the chains into one posterior
-#' plot(fit_e, pars = "^b_", combine = TRUE) 
+#' plot(fit, pars = "^b_", combine = TRUE) 
 #' }
 #' 
 #' @method plot brmsfit
@@ -488,7 +495,8 @@ launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"),
 #' @importFrom gridExtra grid.arrange
 #' @importFrom grDevices devAskNewPage
 #' @export
-plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5, ask = TRUE, ...) {
+plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5, 
+                         ask = TRUE, ...) {
   if (is.na(pars[1])) 
     pars <- parameters 
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
@@ -567,47 +575,67 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
 #' Model Predictions of \code{brmsfit} Objects
 #' 
 #' Make predictions based on the fitted model parameters. 
-#' Can be performed for the data used to fit the model (posterior predictive checks) or for new data.
+#' Can be performed for the data used to fit the model 
+#' (posterior predictive checks) or for new data.
 #' 
 #' @param object An object of class \code{brmsfit}
-#' @param newdata An optional data.frame containing new data to make predictions for.
+#' @param newdata An optional data.frame containing 
+#'   new data to make predictions for.
 #'   If \code{NULL} (default), the data used to fit the model is applied.
-#' @param re_formula formula containing random effects to be considered in the prediction. 
-#'   If \code{NULL} (default), include all random effects; if \code{NA}, include no random effects.
-#' @param transform A function or a character string naming a function to be applied on the predicted responses
+#' @param re_formula formula containing random effects 
+#'   to be considered in the prediction. 
+#'   If \code{NULL} (default), include all random effects; 
+#'   if \code{NA}, include no random effects.
+#' @param transform A function or a character string naming 
+#'   a function to be applied on the predicted responses
 #'   before summary statistics are computed.
-#' @param allow_new_levels Currenly, \code{FALSE} (no new levels allowed) is the only option. 
+#' @param allow_new_levels Currenly, \code{FALSE} 
+#'   (no new levels allowed) is the only option. 
 #'   This will change in future versions of the package.
-#' @param summary logical. Should summary statistics (i.e. means, sds, and 95\% intervals) be returned
+#' @param summary logical. Should summary statistics 
+#'   (i.e. means, sds, and 95\% intervals) be returned
 #'  instead of the raw values. Default is \code{TRUE}
-#' @param probs The percentiles to be computed by the \code{quantile} function. 
+#' @param probs The percentiles to be computed 
+#'  by the \code{quantile} function. 
 #'  Only used if \code{summary} is \code{TRUE}.
-#' @param ntrys Parameter used in rejection sampling for truncated discrete models only 
+#' @param ntrys Parameter used in rejection sampling 
+#'   for truncated discrete models only 
 #'   (defaults to \code{5}). See Details for more information.
 #' @param ... Currently ignored
 #' 
-#' @return Predicted values of the response variable. If \code{summary = TRUE} the output depends on the family:
-#'   For catagorical and ordinal families, it is a N x C matrix where N is the number of observations and
-#'   C is the number of categories. For all other families, it is a N x E matrix where E is equal 
+#' @return Predicted values of the response variable. 
+#'   If \code{summary = TRUE} the output depends on the family:
+#'   For catagorical and ordinal families, it is a N x C matrix, 
+#'   where N is the number of observations and
+#'   C is the number of categories. 
+#'   For all other families, it is a N x E matrix where E is equal 
 #'   to \code{length(probs) + 2}.
-#'   If \code{summary = FALSE}, the output is as a S x N matrix, where S is the number of samples.
+#'   If \code{summary = FALSE}, the output is as a S x N matrix, 
+#'   where S is the number of samples.
 #' 
 #' @details For truncated discrete models only:
-#'   In the absence of any general algorithm to sample from truncated discrete distributions,
-#'   rejection sampling is applied in this special case. This means that values are sampled until 
-#'   a value lies within the defined truncation boundaries. In practice, this procedure may be 
-#'   rather slow (especially in R). Thus, we try to do approximate rejection sampling 
+#'   In the absence of any general algorithm to sample 
+#'   from truncated discrete distributions,
+#'   rejection sampling is applied in this special case. 
+#'   This means that values are sampled until 
+#'   a value lies within the defined truncation boundaries. 
+#'   In practice, this procedure may be rather slow (especially in R). 
+#'   Thus, we try to do approximate rejection sampling 
 #'   by sampling each value \code{ntrys} times and then select a valid value. 
 #'   If all values are invalid, the closest boundary is used, instead. 
 #'   If there are more than a few of these pathological cases, 
 #'   a warning will occure suggesting to increase argument \code{ntrys}.
 #'   
 #'   For models fitted with \pkg{brms} <= 0.5.0 only: 
-#'   Be careful when using \code{newdata} with factors in fixed or random effects. 
-#'   The predicted results are only valid if all factor levels present in the initial 
-#'   data are also defined and ordered correctly for the factors in \code{newdata}.
-#'   Grouping factors may contain fewer levels than in the inital data without causing problems.
-#'   When using higher versions of \pkg{brms}, all factors are automatically checked 
+#'   Be careful when using \code{newdata} with factors 
+#'   in fixed or random effects. The predicted results are only valid 
+#'   if all factor levels present in the initial 
+#'   data are also defined and ordered correctly 
+#'   for the factors in \code{newdata}.
+#'   Grouping factors may contain fewer levels than in the 
+#'   inital data without causing problems.
+#'   When using higher versions of \pkg{brms}, 
+#'   all factors are automatically checked 
 #'   for correctness and amended if necessary.
 #' 
 #' @examples 
@@ -734,31 +762,37 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' Extract Model Fitted Values of \code{brmsfit} Objects
 #' 
 #' @inheritParams predict.brmsfit
-#' @param scale Either \code{"response"} or \code{"linear"}. If \code{scale = "response"} 
-#'   results are returned on the scale of the response variable. If \code{scale = "linear"} 
-#'   fitted values are returned on the scale of the linear predictor.
+#' @param scale Either \code{"response"} or \code{"linear"}. 
+#'  If \code{scale = "response"} results are returned on the scale 
+#'  of the response variable. If \code{scale = "linear"} 
+#'  fitted values are returned on the scale of the linear predictor.
 #'
-#' @return Fitted values extracted from \code{object}. The output depends on the family:
-#'   If \code{summary = TRUE} it is a N x E x C array for categorical and ordinal models 
-#'   and a N x E matrix else.
-#'   If \code{summary = FALSE} it is a S x N x C array for categorical and ordinal models 
-#'   and a S x N matrix else.
-#'   N is the number of observations, S is the number of samples, C is the number of categories,
-#'   and E is equal to \code{length(probs) + 2}.
+#' @return Fitted values extracted from \code{object}. 
+#'  The output depends on the family:
+#'  If \code{summary = TRUE} it is a N x E x C array 
+#'  for categorical and ordinal models and a N x E matrix else.
+#'  If \code{summary = FALSE} it is a S x N x C array 
+#'  for categorical and ordinal models and a S x N matrix else.
+#'  N is the number of observations, S is the number of samples, 
+#'  C is the number of categories, and E is equal to \code{length(probs) + 2}.
 #'   
 #' @details For models fitted with \pkg{brms} <= 0.5.0 only: 
-#'  Be careful when using \code{newdata} with factors in fixed or random effects. 
-#'  The predicted results are only valid if all factor levels present in the initial 
-#'  data are also defined and ordered correctly for the factors in \code{newdata}.
-#'  Grouping factors may contain fewer levels than in the inital data without causing problems.
-#'  When using higher versions of \pkg{brms}, all factors are automatically checked 
-#'  for correctness and amended if necessary.
+#'   Be careful when using \code{newdata} with factors 
+#'   in fixed or random effects. The predicted results are only valid 
+#'   if all factor levels present in the initial 
+#'   data are also defined and ordered correctly 
+#'   for the factors in \code{newdata}.
+#'   Grouping factors may contain fewer levels than in the 
+#'   inital data without causing problems.
+#'   When using higher versions of \pkg{brms}, 
+#'   all factors are automatically checked 
+#'   for correctness and amended if necessary.
 #'
 #' @examples 
 #' \dontrun{
 #' ## fit a model
-#' fit <- brm(rating ~ treat + period + carry + (1|subject), data = inhaler,
-#'            n.cluster = 2)
+#' fit <- brm(rating ~ treat + period + carry + (1|subject), 
+#'            data = inhaler)
 #' 
 #' ## extract fitted values
 #' fitted_values <- fitted(fit)
@@ -808,19 +842,25 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' Extract Model Residuals from brmsfit Objects
 #' 
 #' @inheritParams predict.brmsfit
-#' @param type The type of the residuals, either \code{"ordinary"} or \code{"pearson"}. 
-#'   More information is provided under 'Details'. 
+#' @param type The type of the residuals, 
+#'  either \code{"ordinary"} or \code{"pearson"}. 
+#'  More information is provided under 'Details'. 
 #' 
-#' @details Residuals of type \code{ordinary} are of the form \eqn{R = Y - Yp},
-#'   where \eqn{Y} is the observed and \eqn{Yp} is the predicted response.
-#'   Residuals of type \code{pearson} are of the form \eqn{R = (Y - Yp) / Var(Y)},
-#'   where \eqn{Var(Y)} is an estimation of the variance of \eqn{Y}. \cr
+#' @details Residuals of type \code{ordinary} 
+#'  are of the form \eqn{R = Y - Yp}, where \eqn{Y} is the observed 
+#'  and \eqn{Yp} is the predicted response.
+#'  Residuals of type \code{pearson} are 
+#'  of the form \eqn{R = (Y - Yp) / Var(Y)},
+#'  where \eqn{Var(Y)} is an estimation of the variance of \eqn{Y}. \cr
 #'   
-#'   Currently, \code{residuals.brmsfit} does not support \code{categorical} or ordinal models. 
+#'  Currently, \code{residuals.brmsfit} does not support 
+#'  \code{categorical} or ordinal models. 
 #' 
-#' @return Model residuals. If \code{summary = TRUE} this is a N x C matrix 
-#'   and if \code{summary = FALSE} a S x N matrix, where S is the number of samples, 
-#'   N is the number of observations, and C is equal to \code{length(probs) + 2}.  
+#' @return Model residuals. If \code{summary = TRUE} 
+#'  this is a N x C matrix and if \code{summary = FALSE} 
+#'  a S x N matrix, where S is the number of samples, 
+#'  N is the number of observations, and C is equal to 
+#'  \code{length(probs) + 2}.  
 #' 
 #' @examples 
 #' \dontrun{
@@ -834,8 +874,10 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' }
 #' 
 #' @export
-residuals.brmsfit <- function(object, re_formula = NULL, type = c("ordinary", "pearson"), 
-                              summary = TRUE, probs = c(0.025, 0.975), ...) {
+residuals.brmsfit <- function(object, re_formula = NULL, 
+                              type = c("ordinary", "pearson"), 
+                              summary = TRUE, probs = c(0.025, 0.975), 
+                              ...) {
   type <- match.arg(type)
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
@@ -863,13 +905,15 @@ residuals.brmsfit <- function(object, re_formula = NULL, type = c("ordinary", "p
 
 #' Update \pkg{brms} models
 #' 
-#' This method allows to update an existing \code{brmsfit} object with new data
-#' as well as changed configuration of the chains.
+#' This method allows to update an existing \code{brmsfit} object 
+#' with new data as well as changed configuration of the chains.
 #' 
 #' @param object object of class \code{brmsfit}
-#' @param newdata optional \code{data.frame} to update the model with new data
-#' @param ... other arguments passed to \code{\link[brms:brm]{brm}} such as
-#'    \code{n.iter} or \code{n.chains}.
+#' @param newdata optional \code{data.frame} 
+#'  to update the model with new data
+#' @param ... other arguments passed to 
+#'  \code{\link[brms:brm]{brm}} such as
+#'  \code{n.iter} or \code{n.chains}.
 #'
 #' @export
 update.brmsfit <- function(object, newdata = NULL, ...) {
@@ -885,7 +929,7 @@ update.brmsfit <- function(object, newdata = NULL, ...) {
   # update arguments if required
   ee <- extract_effects(object$formula)
   if (is.null(newdata) && !is.null(dots$data)) {
-    # in case someone just uses argument data instead of newdata
+    # in case someone uses argument data instead of newdata
     data.name <- Reduce(paste, deparse(substitute(dots$data)))
     newdata <- dots$data
   } else {
@@ -901,14 +945,14 @@ update.brmsfit <- function(object, newdata = NULL, ...) {
   if (!is.null(dots$ranef)) {
     object$exclude <- exclude_pars(object$formula, ranef = dots$ranef)
   }
-  
   do.call(brm, c(list(fit = object), dots))
 }
 
 #' @export
 WAIC.brmsfit <- function(x, ..., compare = TRUE) {
   models <- list(x, ...)
-  names <- c(deparse(substitute(x)), sapply(substitute(list(...))[-1], deparse))
+  names <- c(deparse(substitute(x)), sapply(substitute(list(...))[-1], 
+                                            deparse))
   if (length(models) > 1) {
     out <- setNames(lapply(models, compute_ic, ic = "waic"), names)
     class(out) <- c("iclist", "list")
@@ -929,7 +973,8 @@ LOO.brmsfit <- function(x, ..., compare = TRUE,
                         cores = getOption("loo.cores", parallel::detectCores()),
                         wcp = 0.2, wtrunc = 3/4) {
   models <- list(x, ...)
-  names <- c(deparse(substitute(x)), sapply(substitute(list(...))[-1], deparse))
+  names <- c(deparse(substitute(x)), sapply(substitute(list(...))[-1], 
+                                            deparse))
   if (length(models) > 1) {
     out <- setNames(lapply(models, compute_ic, ic = "loo", wcp = wcp, 
                            wtrunc = wtrunc, cores = cores), names)
@@ -940,7 +985,8 @@ LOO.brmsfit <- function(x, ..., compare = TRUE,
       attr(out, "weights") <- comp$weights
     }
   } else {
-    out <- compute_ic(x, ic = "loo", wcp = wcp, wtrunc = wtrunc, cores = cores)
+    out <- compute_ic(x, ic = "loo", wcp = wcp, wtrunc = wtrunc, 
+                      cores = cores)
   }
   out
 }
@@ -950,8 +996,10 @@ LOO.brmsfit <- function(x, ..., compare = TRUE,
 #' @param object A fitted model object of class \code{brmsfit}. 
 #' @param ... Currently ignored
 #' 
-#' @return Usually, an S x N matrix containing the pointwise log-likelihood samples, 
-#'         where S is the number of samples and N is the number of observations in the data. 
+#' @return Usually, an S x N matrix containing 
+#'  the pointwise log-likelihood samples, 
+#'  where S is the number of samples and N is the number 
+#'  of observations in the data. 
 #' 
 #' @importFrom statmod dinvgauss
 #' @export
@@ -976,8 +1024,8 @@ logLik.brmsfit <- function(object, ...) {
   if (is.linear(object$family) && nresp > 1) {
     samples$rescor <- as.matrix(posterior_samples(object, pars = "^rescor_"))
     samples$Sigma <- get_cov_matrix(sd = samples$sigma, cor = samples$rescor)$cov
-    message(paste("Computing pointwise log-likelihood of a multivariate model. \n",
-                  "This may take a while."))
+    message(paste("Computing pointwise log-likelihood of a", 
+                  "multivariate model.\n This may take a while."))
   }
   
   # prepare for calling family specific loglik functions
@@ -1066,7 +1114,7 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
     samples <- posterior_samples(x, pars = parsH, exact_match = TRUE)
     names(samples) <- rename(names(samples), symbols = symbols, 
                              subs = subs, fixed = FALSE)
-    samples <- matrix(with(samples, eval(parse(text = h_renamed))), ncol=1)
+    samples <- matrix(with(samples, eval(parse(text = h_renamed))), ncol = 1)
     
     # get prior samples
     prior_samples <- prior_samples(x, pars = parsH, fixed = TRUE)

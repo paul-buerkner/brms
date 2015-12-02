@@ -9,13 +9,15 @@
 \arguments{
 \item{object}{object of class \code{brmsfit}}
 
-\item{newdata}{optional \code{data.frame} to update the model with new data}
+\item{newdata}{optional \code{data.frame} 
+to update the model with new data}
 
-\item{...}{other arguments passed to \code{\link[brms:brm]{brm}} such as
+\item{...}{other arguments passed to 
+\code{\link[brms:brm]{brm}} such as
 \code{n.iter} or \code{n.chains}.}
 }
 \description{
-This method allows to update an existing \code{brmsfit} object with new data
-as well as changed configuration of the chains.
+This method allows to update an existing \code{brmsfit} object 
+with new data as well as changed configuration of the chains.
 }
 

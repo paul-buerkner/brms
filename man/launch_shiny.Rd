@@ -10,8 +10,10 @@ launch_shiny(x, rstudio = getOption("shinystan.rstudio"), ...)
 \arguments{
 \item{x}{A fitted model object typically of class \code{brmsfit}.}
 
-\item{rstudio}{Only relevant for RStudio users. The default (\code{rstudio=FALSE}) is to launch the app 
-in the default web browser rather than RStudio's pop-up Viewer. Users can change the default to \code{TRUE} 
+\item{rstudio}{Only relevant for RStudio users. 
+The default (\code{rstudio=FALSE}) is to launch the app 
+in the default web browser rather than RStudio's pop-up Viewer. 
+Users can change the default to \code{TRUE} 
 by setting the global option \cr \code{options(shinystan.rstudio = TRUE)}.}
 
 \item{...}{Optional arguments to pass to \code{\link[shiny:runApp]{runApp}}}
@@ -24,9 +26,9 @@ Provide an interface to \pkg{shinystan} for models fitted with \pkg{brms}
 }
 \examples{
 \dontrun{
-fit_i2 <- brm(rating ~ treat + period + carry + (1|subject),
-             data = inhaler, family = "gaussian")
-launch_shiny(fit_i2)                         
+fit <- brm(rating ~ treat + period + carry + (1|subject),
+           data = inhaler, family = "gaussian")
+launch_shiny(fit)                         
 }
 
 }

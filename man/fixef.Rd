@@ -11,21 +11,25 @@ fixef(x, estimate = "mean", ...)
 \arguments{
 \item{x}{An object of class \code{brmsfit}}
 
-\item{estimate}{A character vector specifying which coefficients (e.g., "mean", "median", "sd", or "quantile") 
+\item{estimate}{A character vector specifying which coefficients 
+(e.g., "mean", "median", "sd", or "quantile") 
 should be calculated for the fixed effects.}
 
-\item{...}{Further arguments to be passed to the functions specified in \code{estimate}}
+\item{...}{Further arguments to be passed to the functions 
+specified in \code{estimate}}
 }
 \value{
-A matrix with one row per fixed effect and one column per calculated estimate.
+A matrix with one row per fixed effect 
+  and one column per calculated estimate.
 }
 \description{
 A generic function to extract the fixed effects from a fitted model object.
 }
 \examples{
 \dontrun{
-fixef(brm(time | cens ~ age + sex + disease, data=kidney, family="exponential"),
-      estimate = c("mean", "sd"))
+fit <- brm(time | cens(censored) ~ age + sex + disease, 
+           data = kidney, family = "exponential")
+fixef(fit, estimate = c("mean", "sd"))
 }
 
 }

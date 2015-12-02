@@ -15,25 +15,29 @@ LOO(x, ..., compare = TRUE)
 
 \item{...}{Optionally more fitted model objects.}
 
-\item{compare}{A flag indicating if the WAICs of the models should be compared to each other.}
+\item{compare}{A flag indicating if the WAICs 
+of the models should be compared to each other.}
 
 \item{cores}{The number of cores to use for parallelization. 
-This can be set for an entire R session by \code{options(loo.cores = NUMBER)}. 
+This can be set for an entire R session 
+by \code{options(loo.cores = NUMBER)}. 
 The default is \code{\link[parallel:detectCores]{detectCores()}}.}
 
-\item{wcp, wtrunc}{Parameters used for the Pareto smoothed importance sampling. 
+\item{wcp, wtrunc}{Parameters used for 
+the Pareto smoothed importance sampling. 
 See \code{\link[loo:loo]{loo}} for details.}
 }
 \value{
 If just one object is provided, an object of class \code{ic}. 
-If multiple objects are provided, an object of class \code{iclist}.
+ If multiple objects are provided, an object of class \code{iclist}.
 }
 \description{
 Compute Leave-one-out cross-validation based on the posterior likelihood
 by using the \pkg{loo} package
 }
 \details{
-When comparing models fitted to the same data, the smaller the LOO, the better the fit.
+When comparing models fitted to the same data, 
+ the smaller the LOO, the better the fit.
 }
 \section{Methods (by class)}{
 \itemize{
@@ -42,15 +46,15 @@ When comparing models fitted to the same data, the smaller the LOO, the better t
 \examples{
 \dontrun{
 #model with fixed effects only
-fit_i1 <- brm(rating ~ treat + period + carry,
-              data = inhaler, family = "gaussian")
-LOO(fit_i1)
+fit1 <- brm(rating ~ treat + period + carry,
+            data = inhaler, family = "gaussian")
+LOO(fit1)
 
 #model with an additional random intercept for subjects
-fit_i2 <- brm(rating ~ treat + period + carry + (1|subject),
-             data = inhaler, family = "gaussian")
+fit2 <- brm(rating ~ treat + period + carry + (1|subject),
+            data = inhaler, family = "gaussian")
 #compare both models
-LOO(fit_i1, fit_i2)                          
+LOO(fit1, fit2)                          
 }
 
 }
@@ -58,12 +62,16 @@ LOO(fit_i1, fit_i2)
 Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 }
 \references{
-Vehtari, A., Gelman, A., and Gabry, J. (2015). Efficient implementation of leave-one-out cross-validation and WAIC for evaluating fitted Bayesian models.
+Vehtari, A., Gelman, A., and Gabry, J. (2015). 
+Efficient implementation of leave-one-out cross-validation 
+and WAIC for evaluating fitted Bayesian models.
 
-Gelman, A., Hwang, J., & Vehtari, A. (2014). Understanding predictive information criteria for Bayesian models. 
+Gelman, A., Hwang, J., & Vehtari, A. (2014). 
+Understanding predictive information criteria for Bayesian models. 
 Statistics and Computing, 24, 997-1016.
 
-Watanabe, S. (2010). Asymptotic equivalence of Bayes cross validation and widely applicable information criterion in singular learning theory. 
+Watanabe, S. (2010). Asymptotic equivalence of Bayes cross validation 
+and widely applicable information criterion in singular learning theory. 
 The Journal of Machine Learning Research, 11, 3571-3594.
 }
 

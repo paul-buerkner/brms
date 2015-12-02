@@ -10,13 +10,18 @@ hypothesis(x, hypothesis, class = "b", group = "", alpha = 0.05, ...)
 \arguments{
 \item{x}{An \code{R} object typically of class \code{brmsfit}}
 
-\item{hypothesis}{A character vector specifying one or more non-linear hypothesis concerning parameters of the model}
+\item{hypothesis}{A character vector specifying one or more 
+non-linear hypothesis concerning parameters of the model}
 
-\item{class}{A string specifying the class of parameters being tested. Default is "b" for fixed effects. 
-Other typical options are "sd" or "cor". If \code{class = NULL}, all parameters can be tested
-against each other, but have to be specified with their full name (see also \code{\link[brms:parnames]{parnames}})}
+\item{class}{A string specifying the class of parameters being tested. 
+Default is "b" for fixed effects. 
+Other typical options are "sd" or "cor". 
+If \code{class = NULL}, all parameters can be tested
+against each other, but have to be specified with their full name 
+(see also \code{\link[brms:parnames]{parnames}})}
 
-\item{group}{Name of a grouping factor to evaluate only random effects parameters related to this grouping factor.
+\item{group}{Name of a grouping factor to evaluate only 
+random effects parameters related to this grouping factor.
 Ignored if \code{class} is not \code{"sd"} or \code{"cor"}.}
 
 \item{alpha}{the alpha-level of the tests (default is 0.05)}
@@ -24,42 +29,50 @@ Ignored if \code{class} is not \code{"sd"} or \code{"cor"}.}
 \item{...}{Currently ignored}
 }
 \value{
-Summary statistics of the posterior distributions related to the hypotheses.
+Summary statistics of the posterior distributions 
+ related to the hypotheses.
 }
 \description{
 Perform non-linear hypothesis testing of fixed effects parameters
 }
 \details{
-Among others, \code{hypothesis} calculates an evidence ratio for each hypothesis. 
-  For a directed hypothesis, this is just the posterior probability under the hypothesis against its alternative.
-  For an undirected (i.e. point) hypothesis the evidence ratio is a Bayes factor between the hypothesis and its alternative.
-  In order to calculate this Bayes factor, all parameters related to the hypothesis must have proper priors
-  and argument \code{sample.priors} of function \code{brm} must be set to \code{TRUE}. 
-  When interpreting Bayes factors, make sure that your priors are reasonable and carefully chosen,
-  as the result will depend heavily on the priors. It particular, avoid using default priors.
+Among others, \code{hypothesis} computes an 
+ evidence ratio for each hypothesis. 
+ For a directed hypothesis, this is just the posterior probability 
+ under the hypothesis against its alternative.
+ For an undirected (i.e. point) hypothesis the evidence ratio 
+ is a Bayes factor between the hypothesis and its alternative.
+ In order to calculate this Bayes factor, all parameters related 
+ to the hypothesis must have proper priors
+ and argument \code{sample.priors} of function \code{brm} 
+ must be set to \code{TRUE}. 
+ When interpreting Bayes factors, make sure 
+ that your priors are reasonable and carefully chosen,
+ as the result will depend heavily on the priors. 
+ It particular, avoid using default priors.
 }
 \examples{
 \dontrun{
-fit_i <- brm(rating ~ treat + period + carry + (1+treat|subject),
+fit <- brm(rating ~ treat + period + carry + (1+treat|subject),
              data = inhaler, family = "gaussian", sample.prior = TRUE,
              prior = set_prior("normal(0,2)", class = "b"), n.cluster = 2)
 
-hypothesis(fit_i, "treat = period + carry")
-hypothesis(fit_i, "exp(treat) - 3 = 0")
+hypothesis(fit, "treat = period + carry")
+hypothesis(fit, "exp(treat) - 3 = 0")
 
 ## perform one-sided hypothesis testing
-hypothesis(fit_i, "period + carry - 3 < 0")
+hypothesis(fit, "period + carry - 3 < 0")
 
 ## compare random effects standard deviations
-hypothesis(fit_i, "treat < Intercept", class = "sd", group  = "subject")
+hypothesis(fit, "treat < Intercept", class = "sd", group  = "subject")
 
 ## test the amount of random intercept variance on all variance
 h <- paste("sd_subject_Intercept^2 / (sd_subject_Intercept^2 +",
            "sd_subject_treat^2 + sigma_rating^2) = 0")
-hypothesis(fit_i, h, class = NULL)
+hypothesis(fit, h, class = NULL)
 
 ## test more than one hypothesis at once
-hypothesis(fit_i, c("treat = period + carry", "exp(treat) - 3 = 0"))
+hypothesis(fit, c("treat = period + carry", "exp(treat) - 3 = 0"))
 }
 
 }

@@ -12,8 +12,10 @@
 \item{...}{Currently ignored}
 }
 \value{
-Usually, an S x N matrix containing the pointwise log-likelihood samples, 
-        where S is the number of samples and N is the number of observations in the data.
+Usually, an S x N matrix containing 
+ the pointwise log-likelihood samples, 
+ where S is the number of samples and N is the number 
+ of observations in the data.
 }
 \description{
 Compute the pointwise log-likelihood

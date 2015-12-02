@@ -25,23 +25,25 @@ A data frame containing the prior samples.
 Extract prior samples of specified parameters
 }
 \details{
-To make use of this function, the model must contain samples of prior distributions.
- This can be ensured by setting \code{sample.prior = TRUE} in function \code{brm}.
+To make use of this function, 
+ the model must contain samples of prior distributions.
+ This can be ensured by setting \code{sample.prior = TRUE} 
+ in function \code{brm}.
  Currently there are methods for \code{brmsfit} objects.
 }
 \examples{
 \dontrun{
-fit_i <- brm(rating ~ treat + period + carry + (1|subject), 
-             data = inhaler, family = "cumulative", 
-             prior = set_prior("normal(0,2)", class = "b"), 
-             sample.prior = TRUE)
+fit <- brm(rating ~ treat + period + carry + (1|subject), 
+           data = inhaler, family = "cumulative", 
+           prior = set_prior("normal(0,2)", class = "b"), 
+           sample.prior = TRUE)
 
 #extract all prior samples
-samples1 <- prior_samples(fit_i)
+samples1 <- prior_samples(fit)
 head(samples1)
 
 #extract prior samples for the fixed effect of \\code{treat}.
-samples2 <- posterior_samples(fit_i, "b_treat")
+samples2 <- posterior_samples(fit, "b_treat")
 head(samples2)
 }
 
