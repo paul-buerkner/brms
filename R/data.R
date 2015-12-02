@@ -99,7 +99,8 @@ update_data <- function(data, family, effects, ...,
 }
 
 amend_newdata <- function(newdata, fit, re_formula = NULL, 
-                          allow_new_levels = FALSE) {
+                          allow_new_levels = FALSE,
+                          return_standata = TRUE) {
   # amend newdata passed to predict and fitted methods
   # 
   # Args:
@@ -107,6 +108,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   #   fit: an object of class brmsfit
   #   re_formula: a random effects formula
   #   allow_new_levels: are new random effects levels allowed?
+  #   return_standata: logical; compute the data to be passed 
+  #                    to Stan, or just return the updated newdata?
   #
   # Notes:
   #   used in predict.brmsfit, fitted.brmsfit and linear_predictor.brmsfit
@@ -133,14 +136,15 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     stop(paste("response variables must be specified", 
                "in newdata for autocorrelative models"))
   } else {
-    for (resp in setdiff(resp_vars, names(data))) {
+    for (resp in setdiff(resp_vars, names(newdata))) {
       # add irrelevant response variables
       newdata[[resp]] <- 0  
     }
   }
   if (is.formula(ee$cens)) {
-    for (cens in all.vars(ee$cens)) 
-      newdata[[cens]] <- 0  # add irrelevant censor variables
+    for (cens in setdiff(all.vars(ee$cens), names(newdata))) { 
+      newdata[[cens]] <- 0 # add irrelevant censor variables
+    }
   }
   newdata <- update_data(newdata, family = fit$family, effects = ee,
                          et$group, drop.unused.levels = FALSE)
@@ -190,10 +194,14 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       newdata[[gnames[i]]] <- sapply(gf, match, table = old_levels)
     }
   }
-  make_standata(new_formula, data = newdata, family = fit$family, 
-                autocor =  fit$autocor, partial = fit$partial, 
-                newdata = TRUE, keep_intercept = TRUE,
-                save_order = TRUE)
+  if (return_standata) {
+    make_standata(new_formula, data = newdata, family = fit$family, 
+                  autocor =  fit$autocor, partial = fit$partial, 
+                  is_newdata = TRUE, keep_intercept = TRUE,
+                  save_order = TRUE)
+  } else {
+    newdata
+  }
 }
 
 #' Data for \pkg{brms} Models
@@ -225,7 +233,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
                           autocor = NULL, multiply = NULL, partial = NULL, 
                           cov.ranef = NULL, ...) {
   # internal arguments:
-  #   newdata: logical; indicating if make_standata is called with new data
+  #   is_newdata: logical; indicating if make_standata is called with new data
   #   keep_intercept: logical; indicating if the Intercept column
   #                   should be kept in the FE design matrix
   #   save_order: logical; should the initial order of the data be saved?
@@ -345,7 +353,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
                        ncolZ[[i]],  # number of random effects
                        Z[[i]],  # random effects design matrix
                        ncolZ[[i]] * (ncolZ[[i]]-1) / 2)  #  number of correlations
-    if (isTRUE(dots$newdata)) {
+    if (isTRUE(dots$is_newdata)) {
       # for newdata only as levels are already defined correctly in amend_newdata
       expr[1] <- expression(get(g, data)) 
     }

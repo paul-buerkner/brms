@@ -869,22 +869,39 @@ residuals.brmsfit <- function(object, re_formula = NULL, type = c("ordinary", "p
 #' @param object object of class \code{brmsfit}
 #' @param newdata optional \code{data.frame} to update the model with new data
 #' @param ... other arguments passed to \code{\link[brms:brm]{brm}} such as
-#'    \code{n.iter}, \code{n.warmup}, \code{n.chains}, \code{n.thin}, 
-#'    \code{n.cluster}, and \code{inits}.
+#'    \code{n.iter} or \code{n.chains}.
 #'
 #' @export
 update.brmsfit <- function(object, newdata = NULL, ...) {
   dots <- list(...)
-  z <- which(names(dots) %in% c("formula", "family", "prior", "autocor", 
-                                "partial", "threshold", "cov.ranef", 
-                                "sample.prior"))
+  invalid_args <- c("formula", "family", "prior", "autocor", 
+                    "multiply", "partial", "threshold", "cov.ranef", 
+                    "sample.prior", "save.model")
+  z <- which(names(dots) %in% invalid_args)
   if (length(z)) {
     stop(paste("Argument(s)", paste(names(dots)[z], collapse = ", "),
                "cannot be updated"))
   }
-  if (!is.null(newdata)) {
-    object$data <- newdata
+  # update arguments if required
+  ee <- extract_effects(object$formula)
+  if (is.null(newdata) && !is.null(dots$data)) {
+    # in case someone just uses argument data instead of newdata
+    data.name <- Reduce(paste, deparse(substitute(dots$data)))
+    newdata <- dots$data
+  } else {
+    data.name <- Reduce(paste, deparse(substitute(newdata)))
   }
+  if (!is.null(newdata)) {
+    object$data <- amend_newdata(newdata, fit = object, 
+                                 return_standata = FALSE)
+    object$data.name <- data.name
+    object$ranef <- gather_ranef(ee, data = object$data)
+    dots$is_newdata <- TRUE
+  }
+  if (!is.null(dots$ranef)) {
+    object$exclude <- exclude_pars(object$formula, ranef = dots$ranef)
+  }
+  
   do.call(brm, c(list(fit = object), dots))
 }
 

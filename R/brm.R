@@ -377,7 +377,6 @@ brm <- function(formula, data = NULL, family = "gaussian",
   if (is(fit, "brmsfit")) {  
     x <- fit  # re-use existing model
     x$fit <- rstan::get_stanmodel(x$fit)  # extract the compiled model
-    standata <- standata(x)  # compute data to be passed to Stan
   } else {  # build new model
     # see validate.R and priors.R for function definitions
     obj_family <- check_family(family) 
@@ -408,12 +407,14 @@ brm <- function(formula, data = NULL, family = "gaussian",
                              cov.ranef = cov.ranef, 
                              sample.prior = sample.prior, 
                              save.model = save.model)  # see stan.R
-    standata <- standata(x)  # compute data to be passed to Stan
     message("Compiling the C++ model")
     x$fit <- rstan::stanc(model_code = x$model,
                           model_name = paste0(family,"(",link,") brms-model"))
     x$fit <- rstan::stan_model(stanc_ret = x$fit) 
   }
+  # compute data to be passed to Stan
+  standata <- standata(x, newdata = dots$is_newdata)
+  dots$is_newdata <- NULL
   
   if (is.character(inits) && !inits %in% c("random", "0")) 
     inits <- get(inits, mode = "function", envir = parent.frame()) 
