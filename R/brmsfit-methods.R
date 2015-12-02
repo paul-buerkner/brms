@@ -1010,7 +1010,7 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
                      "sigma", "rescor", "nu", "shape", "delta")
   if (!class %in% valid_classes)
     stop(paste(class, "is not a valid paramter class"))
-  if (class %in% c("b", "sd", "cor", "sigma", "rescor")) {
+  if (class %in% c("b", "bm", "sd", "cor", "sigma", "rescor")) {
     if (class %in% c("sd", "cor") && nchar(group)) {
       class <- paste0(class, "_", group, "_")
     } else {
