@@ -24,8 +24,11 @@ fixef.brmsfit <-  function(x, estimate = "mean", ...) {
 #' Get a point estimate of the covariance or correlation matrix of fixed effects parameters
 #' 
 #' @param object An object of class \code{brmsfit}
-#' @param correlation logical; if \code{FALSE} (the default), compute the covariance matrix,
+#' @param correlation logical; if \code{FALSE} (the default), 
+#'   compute the covariance matrix,
 #'   if \code{TRUE}, compute the correlation matrix
+#' @param include_multiply logical; if \code{TRUE} (the default) also 
+#'   compute covariances (or correlations) of multiplicative effects
 #' @param ... Currently ignored
 #' 
 #' @return covariance or correlation matrix of fixed effects parameters
@@ -34,11 +37,13 @@ fixef.brmsfit <-  function(x, estimate = "mean", ...) {
 #'   covariances (correlations) of the posterior samples. 
 #'
 #' @export
-vcov.brmsfit <- function(object, correlation = FALSE, ...) {
+vcov.brmsfit <- function(object, correlation = FALSE, 
+                         include_multiply = TRUE, ...) {
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
   pars <- parnames(object)
-  fpars <- pars[grepl("^b_", pars)]
+  regex <- ifelse(include_multiply, "^b_|^bm_", "^b_")
+  fpars <- pars[grepl(regex, pars)]
   if (!length(fpars)) 
     stop(paste("The model does not contain fixed effects")) 
   samples <- posterior_samples(object, pars = fpars, exact_match = TRUE)
