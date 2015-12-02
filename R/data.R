@@ -286,7 +286,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
                  "to contain only two different values"))
     }
   } else if (family == "beta") {
-    if (any(standata$Y < 0) || any(standata$Y > 1)) {
+    if (any(standata$Y <= 0) || any(standata$Y >= 1)) {
       stop("beta regression requires responses between 0 and 1")
     }
   } else if (family == "categorical") { 
