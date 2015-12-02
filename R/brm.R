@@ -368,15 +368,20 @@ brm <- function(formula, data = NULL, family = "gaussian",
   
   dots <- list(...) 
   if ("WAIC" %in% names(dots))
-    warning("Argument WAIC is deprecated. Just use method WAIC on the fitted model.")
+    warning(paste("Argument WAIC is deprecated.", 
+                  "Just use method WAIC on the fitted model."))
   if ("predict" %in% names(dots)) 
-    warning("Argument predict is deprecated. Just use method predict on the fitted model.")
+    warning(paste("Argument predict is deprecated.", 
+                  "Just use method predict on the fitted model."))
   dots[c("WAIC", "predict")] <- NULL
   
   set.seed(seed)
   if (is(fit, "brmsfit")) {  
     x <- fit  # re-use existing model
     x$fit <- rstan::get_stanmodel(x$fit)  # extract the compiled model
+    # compute data to be passed to Stan
+    standata <- standata(x, newdata = dots$is_newdata)
+    dots$is_newdata <- NULL
   } else {  # build new model
     # see validate.R and priors.R for function definitions
     obj_family <- check_family(family) 
@@ -407,14 +412,14 @@ brm <- function(formula, data = NULL, family = "gaussian",
                              cov.ranef = cov.ranef, 
                              sample.prior = sample.prior, 
                              save.model = save.model)  # see stan.R
+    # generate standata before compiling the model to avoid
+    # unnecessary compilations in case that the data is invalid
+    standata <- standata(x, newdata = dots$is_newdata)
     message("Compiling the C++ model")
     x$fit <- rstan::stanc(model_code = x$model,
                           model_name = paste0(family,"(",link,") brms-model"))
     x$fit <- rstan::stan_model(stanc_ret = x$fit) 
   }
-  # compute data to be passed to Stan
-  standata <- standata(x, newdata = dots$is_newdata)
-  dots$is_newdata <- NULL
   
   if (is.character(inits) && !inits %in% c("random", "0")) 
     inits <- get(inits, mode = "function", envir = parent.frame()) 
@@ -424,11 +429,12 @@ brm <- function(formula, data = NULL, family = "gaussian",
                    " It is thus recommended to set inits = '0'"))
   }
   if (x$family == "inverse.gaussian") {
-    warning(paste("inverse gaussian models require carefully chosen prior distributions",
-                  "to ensure convergence of the chains"))
+    warning(paste("inverse gaussian models require carefully chosen", 
+                  "prior distributions to ensure convergence of the chains"))
   }
   if (x$link == "sqrt") {
-    warning(paste(x$family, "model with sqrt link may not be uniquely identified"))
+    warning(paste(x$family, "model with sqrt link may not be", 
+                  "uniquely identified"))
   }
   
   # arguments to be passed to stan
