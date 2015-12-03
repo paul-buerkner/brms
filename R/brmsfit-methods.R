@@ -529,12 +529,21 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
                              exact_match = FALSE, quiet = FALSE, ...) {
   
   # check validity of type first
-  basic_types <- c("plot", "trace", "scat", "hist", "dens", "ac")
+  basic_types <- c("plot", "trace", "scat", "hist", "dens", "ac", "pairs")
   diag_types <- c("diag", "par", "rhat", "ess", "mcse")
-  if (!type %in% c(basic_types, diag_types))
+  if (!type %in% c(basic_types, diag_types)) {
     stop(paste("Invalid plot type. Valid plot types are: \n",
                paste(c(basic_types, diag_types), collapse = ", ")))
-  plot_fun <- get(paste0("stan_", type), mode = "function")
+  }
+  dots <- list(...)
+  if (type == "pairs") {
+    plot_fun <- "pairs"
+    args <- c(x = object$fit, dots)
+  } else {
+    plot_fun <- paste0("stan_", type)
+    args <- c(object = object$fit, dots)
+  }
+  plot_fun <- get(plot_fun, mode = "function")
   
   # ensure that only desired parameters are plotted
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
@@ -549,11 +558,8 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
       pars <- all_pars[apply(sapply(pars, grepl, x = all_pars), 1, any)]
     }
   } 
+  if (anyNA(pars) && type == "pairs") pars <- NULL
   
-  dots <- list(...)
-  args <- c(object = object$fit, dots)
-  basic_types <- c("plot", "trace", "scat", "hist", "dens", "ac")
-  diag_types <- c("diag", "par", "rhat", "ess", "mcse")
   if (type %in% basic_types) {
     if (!anyNA(pars)) {
       args <- c(args, list(pars = pars))
