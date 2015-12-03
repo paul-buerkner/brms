@@ -1,11 +1,12 @@
 test_that("Test that brm produces expected errors", {
   expect_error(brm(rating~treat+period+carry+(1|subject), data = inhaler, 
                    partial = ~treat, family = c("cratio", "logit")), 
-              paste("Variables cannot be modeled as fixed and partial effects at the same time.", 
+              paste("Variables cannot be modeled as fixed", 
+                    "and partial effects at the same time.", 
                     "Error occured for variables: treat"))
 })
 
-test_that("Test that brm can be run and all S3 methods have reasonable ouputs", {
+test_that("Test that all S3 methods have reasonable ouputs", {
   fit <- brmsfit_example
   # test S3 methods in alphabetical order
   # family
@@ -87,14 +88,16 @@ test_that("Test that brm can be run and all S3 methods have reasonable ouputs", 
   expect_true(is.numeric(.summary$fixed))
   expect_equal(rownames(.summary$fixed), c("Intercept", "log_Age_c"))
   expect_equal(colnames(.summary$fixed), 
-               c("Estimate", "Est.Error", "l-95% CI", "u-95% CI", "Eff.Sample", "Rhat"))
+               c("Estimate", "Est.Error", "l-95% CI", 
+                 "u-95% CI", "Eff.Sample", "Rhat"))
   expect_equal(rownames(.summary$random$visit), c("sd(Intercept)"))
   expect_true(is.numeric(.summary$WAIC))
   # do not test update as is causes CRAN checks to fail on Windows
   # VarCorr
   vc <- VarCorr(fit)
   expect_equal(names(vc), "visit")
-  expect_equivalent(dimnames(vc$visit$cov$mean), list("Intercept", "Intercept"))
+  expect_equivalent(dimnames(vc$visit$cov$mean), 
+                    list("Intercept", "Intercept"))
   # vcov
   expect_equal(dim(vcov(fit)), c(2, 2))
   # WAIC

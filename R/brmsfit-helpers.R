@@ -785,10 +785,12 @@ print.brmssummary <- function(x, digits = 2, ...) {
       cat("\n")
     }
     
-    if (nrow(x$multiply)) {
-      cat("Log Multiplicative Effects: \n")
-      x$multiply[, "Eff.Sample"] <- round(x$multiply[, "Eff.Sample"], digits = 0)
-      print(round(x$multiply, digits = digits)) 
+    if (nrow(x$mult_pars)) {
+      cat(paste0("Log Multiplicative Effects (",
+                 Reduce(paste, deparse(x$multiply)), "): \n"))
+      x$mult_pars[, "Eff.Sample"] <- 
+        round(x$mult_pars[, "Eff.Sample"], digits = 0)
+      print(round(x$mult_pars, digits = digits)) 
       cat("\n")
     }
     

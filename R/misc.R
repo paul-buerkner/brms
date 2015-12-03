@@ -109,7 +109,8 @@ formula2string <- function(formula, rm = c(0, 0)) {
   #
   # Args:
   #   formula: a model formula
-  #   rm: a vector of to elements indicating how many characters should be removed at the beginning
+  #   rm: a vector of to elements indicating how many characters 
+  #       should be removed at the beginning
   #       and end of the string respectively
   #
   # Returns:

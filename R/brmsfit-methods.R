@@ -333,7 +333,8 @@ summary.brmsfit <- function(object, waic = TRUE, ...) {
                      group = names(object$ranef), 
                      nobs = nobs(object), 
                      ngrps = brms::ngrps(object), 
-                     autocor = object$autocor)
+                     autocor = object$autocor,
+                     multiply = object$multiply)
   if (length(object$fit@sim)) {
     out$n.chains <- length(object$fit@sim$samples)
     out$n.iter <- attr(object$fit@sim$samples[[1]],"args")$iter
@@ -378,9 +379,9 @@ summary.brmsfit <- function(object, waic = TRUE, ...) {
     
     # summary of multiplicative effects
     mult_pars <- pars[grepl("^bm_", pars)]
-    out$multiply <- matrix(fit_summary$summary[mult_pars, -c(2)], ncol = 6)
-    colnames(out$multiply) <- col_names
-    rownames(out$multiply) <- gsub("^bm_", "", mult_pars)
+    out$mult_pars <- matrix(fit_summary$summary[mult_pars, -c(2)], ncol = 6)
+    colnames(out$mult_pars) <- col_names
+    rownames(out$mult_pars) <- gsub("^bm_", "", mult_pars)
     
     # summary of ARMA effects
     cor_pars <- pars[grepl("^ar|^ma", pars)]

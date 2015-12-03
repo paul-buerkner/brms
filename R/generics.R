@@ -18,7 +18,8 @@ brmssummary <- function(formula = NULL, family = "", link = "",
                         ngrps = NULL, n.chains = 1, n.iter = 2000, 
                         n.warmup = 500, n.thin = 1, sampler = "", 
                         fixed = NULL, random = list(), cor_pars = NULL, 
-                        autocor = NULL, spec_pars = NULL, WAIC = "Not computed") {
+                        autocor = NULL, multiply = NULL, 
+                        spec_pars = NULL, WAIC = "Not computed") {
   # brmssummary class
   x <- list(formula = formula, family = family, link = link, 
             data.name = data.name, group = group, 
@@ -26,7 +27,8 @@ brmssummary <- function(formula = NULL, family = "", link = "",
             n.iter = n.iter,  n.warmup = n.warmup, 
             n.thin = n.thin, sampler = sampler, fixed = fixed, 
             random = random, WAIC = WAIC, cor_pars = cor_pars, 
-            autocor = autocor, spec_pars = spec_pars)
+            autocor = autocor, multiply = multiply,
+            spec_pars = spec_pars)
   class(x) <- "brmssummary"
   x
 }
