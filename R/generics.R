@@ -544,6 +544,9 @@ standata <- function(object, ...)
 #'   should be silenced. Default is \code{FALSE}.
 #' @param ... Additional arguments passed to the plotting functions.
 #' 
+#' @return A \code{\link[ggplot2:ggplot]{ggplot}} object 
+#'   that can be further customized using the \pkg{ggplot2} package.
+#' 
 #' @details Instead of using \code{stanplot(<brmsfit-object>)}, 
 #'   the plotting functions can be called directly 
 #'   via \code{stan_<plot-type>(<brmsfit-object>$fit)}. 

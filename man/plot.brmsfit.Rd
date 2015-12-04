@@ -5,7 +5,7 @@
 \title{Trace and Density Plots for MCMC Samples}
 \usage{
 \method{plot}{brmsfit}(x, pars = NA, parameters = NA, N = 5, ask = TRUE,
-  ...)
+  do_plot = TRUE, newpage = TRUE, ...)
 }
 \arguments{
 \item{x}{An object of class \code{brmsfit}.}
@@ -18,9 +18,24 @@ are plotted.}
 
 \item{N}{The number of parameters plotted per page.}
 
-\item{ask}{logical; Indicates if the user is prompted before a new page is plotted.}
+\item{ask}{logical; indicates if the user is prompted 
+before a new page is plotted. 
+Only used if \code{do_plot} is \code{TRUE}.}
 
-\item{...}{Further arguments passed to \code{\link[gridExtra:arrangeGrob]{arrangeGrob}}.}
+\item{do_plot}{logical; indicates if plots should be
+plotted directly in the active graphic device.
+Defaults to \code{TRUE}.}
+
+\item{newpage}{logical; indicates if the first set of plots
+should be plotted to a new page. 
+Only used if \code{do_plot} is \code{TRUE}.}
+
+\item{...}{Further arguments passed to 
+\code{\link[gridExtra:arrangeGrob]{arrangeGrob}}.}
+}
+\value{
+A (possibly invisible) list of 
+  \code{\link[gtable:gtable]{gtable}} objects.
 }
 \description{
 Trace and Density Plots for MCMC Samples

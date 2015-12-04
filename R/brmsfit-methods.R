@@ -474,10 +474,20 @@ launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"),
 #'   are plotted. 
 #' @param parameters A deprecated alias of \code{pars}   
 #' @param N The number of parameters plotted per page.
-#' @param ask logical; Indicates if the user is prompted before a new page is plotted.   
-#' @param ... Further arguments passed to \code{\link[gridExtra:arrangeGrob]{arrangeGrob}}.
+#' @param do_plot logical; indicates if plots should be
+#'   plotted directly in the active graphic device.
+#'   Defaults to \code{TRUE}.
+#' @param ask logical; indicates if the user is prompted 
+#'   before a new page is plotted. 
+#'   Only used if \code{do_plot} is \code{TRUE}.
+#' @param newpage logical; indicates if the first set of plots
+#'   should be plotted to a new page. 
+#'   Only used if \code{do_plot} is \code{TRUE}.
+#' @param ... Further arguments passed to 
+#'   \code{\link[gridExtra:arrangeGrob]{arrangeGrob}}.
 #' 
-#' @return NULL
+#' @return A (possibly invisible) list of 
+#'   \code{\link[gtable:gtable]{gtable}} objects.
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
@@ -493,11 +503,14 @@ launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"),
 #' 
 #' @method plot brmsfit
 #' @import ggplot2
-#' @importFrom gridExtra grid.arrange
+#' @importFrom gridExtra arrangeGrob
 #' @importFrom grDevices devAskNewPage
+#' @importFrom grid grid.draw grid.newpage
 #' @export
 plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5, 
-                         ask = TRUE, ...) {
+                         ask = TRUE, do_plot = TRUE,
+                         newpage = TRUE, ...) {
+  dots <- list(...)
   if (is.na(pars[1])) 
     pars <- parameters 
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
@@ -510,15 +523,28 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5,
   samples <- posterior_samples(x, pars = pars, add_chains = TRUE)
   pars <- names(samples)[which(!names(samples) %in% c("chains", "iter"))] 
   
-  default_ask <- devAskNewPage()
-  on.exit(devAskNewPage(default_ask))
-  devAskNewPage(ask = FALSE)
-  for (i in 1:ceiling(length(pars) / N)) {
-    plots <- lapply(pars[((i - 1) * N + 1):min(i * N, length(pars))], 
-                    td_plot, x = samples)
-    grid.arrange(grobs = unlist(plots, recursive = FALSE), 
-                 nrow = length(plots), ncol = 2, ...)
-    if (i == 1) devAskNewPage(ask = ask)
+  if (do_plot) {
+    default_ask <- devAskNewPage()
+    on.exit(devAskNewPage(default_ask))
+    devAskNewPage(ask = FALSE)
+  }
+  n_plots <- ceiling(length(pars) / N)
+  plots <- vector(mode = "list", length = n_plots)
+  for (i in 1:n_plots) {
+    temp_plot <- lapply(pars[((i - 1) * N + 1):min(i * N, length(pars))], 
+                        td_plot, x = samples)
+    plots[[i]] <- arrangeGrob(grobs = unlist(temp_plot, recursive = FALSE), 
+                              nrow = length(temp_plot), ncol = 2, ...)
+    if (do_plot) {
+      if (newpage || i > 1) grid.newpage()
+      grid.draw(plots[[i]])
+      if (i == 1) devAskNewPage(ask = ask)
+    }
+  }
+  if (do_plot) {
+    invisible(plots) 
+  } else {
+    plots
   }
 }
 

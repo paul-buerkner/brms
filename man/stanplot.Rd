@@ -34,6 +34,10 @@ should be silenced. Default is \code{FALSE}.}
 
 \item{...}{Additional arguments passed to the plotting functions.}
 }
+\value{
+A \code{\link[ggplot2:ggplot]{ggplot}} object 
+  that can be further customized using the \pkg{ggplot2} package.
+}
 \description{
 Conveniant way to call plotting functions 
 implemented in the \pkg{rstan} package.
