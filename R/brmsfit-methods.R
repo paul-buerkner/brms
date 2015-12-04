@@ -573,7 +573,7 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
   }
   # make the plot
   if (quiet) {
-    quietgg(do.call(plot_fun, args))
+    suppressMessages(do.call(plot_fun, args))
   } else {
     do.call(plot_fun, args)
   }
