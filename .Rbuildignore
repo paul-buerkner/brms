@@ -12,3 +12,4 @@
 ^brm\.txt$
 ^brm\.stan$
 ^\.travis\.yml$
+^tests/testthat/Rplots\.pdf$

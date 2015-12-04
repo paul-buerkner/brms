@@ -3,3 +3,4 @@
 .RData
 brm.stan
 brms.Rproj
+tests/testthat/Rplots.pdf
