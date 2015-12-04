@@ -522,6 +522,9 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5,
               "^nu$", "^shape$", "^delta$", "^phi$", "^ar", "^ma", "^arr")
   samples <- posterior_samples(x, pars = pars, add_chains = TRUE)
   pars <- names(samples)[which(!names(samples) %in% c("chains", "iter"))] 
+  if (length(pars) == 0) {
+    stop("No valid parameters selected")
+  }
   
   if (do_plot) {
     default_ask <- devAskNewPage()
