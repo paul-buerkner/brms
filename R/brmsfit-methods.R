@@ -497,8 +497,8 @@ launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"),
 #'              data = epilepsy, family = "poisson")
 #' ## plot fixed effects as well as standard devations of the random effects
 #' plot(fit)
-#' ## plot fixed effects only and combine the chains into one posterior
-#' plot(fit, pars = "^b_", combine = TRUE) 
+#' ## plot fixed effects only
+#' plot(fit, pars = "^b_") 
 #' }
 #' 
 #' @method plot brmsfit
