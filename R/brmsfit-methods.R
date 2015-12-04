@@ -493,8 +493,9 @@ launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"),
 #' 
 #' @examples
 #' \dontrun{ 
-#' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient) + (1|visit), 
-#'              data = epilepsy, family = "poisson")
+#' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c 
+#'            + (1|patient) + (1|visit), 
+#'            data = epilepsy, family = "poisson")
 #' ## plot fixed effects as well as standard devations of the random effects
 #' plot(fit)
 #' ## plot fixed effects only
@@ -606,6 +607,35 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
   } else {
     do.call(plot_fun, args)
   }
+}
+
+#' Create a matrix of output plots from a \code{brmsfit} object
+#'
+#' A \code{\link[graphics:pairs]{pairs}} 
+#' method that is customized for MCMC output
+#' 
+#' @param x An object of class \code{stanfit}
+#' @param pars Names of the parameters to plot, as given by 
+#'  a character vector or a regular expression. 
+#'  By default, all parameters except for random effects 
+#'  are plotted. 
+#' @param ... Further arguments to be passed to 
+#'  \code{\link[rstan:pairs.stanfit]{pairs.stanfit}}.
+#'  
+#' @details For a detailed description see 
+#'  \code{\link[rstan:pairs.stanfit]{pairs.stanfit}}.
+#'  
+#' @examples 
+#' \dontrun{
+#' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c 
+#'            + (1|patient) + (1|visit), 
+#'            data = epilepsy, family = "poisson")  
+#' pairs(fit, pars = parnames(fit)[1:3])
+#' }
+#'
+#' @export
+pairs.brmsfit <- function(x, pars = NULL, ...) {
+  pairs(x$fit, pars = pars, ...)
 }
 
 #' Model Predictions of \code{brmsfit} Objects

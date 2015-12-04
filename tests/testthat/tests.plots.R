@@ -7,8 +7,9 @@ test_that("Test that plot doesn't throw errors", {
                "No valid parameters selected")
 })
 
-test_that("Test that stanplot doesn't throw errors", {
+test_that("Test that stanplot and pairs doesn't throw errors", {
   fit <- brmsfit_example
+  # tests for stanplot
   expect_silent(p <- stanplot(fit, quiet = TRUE))
   expect_silent(p <- stanplot(fit, pars = "^b", quiet = TRUE))
   expect_silent(p <- stanplot(fit, type = "trace", quiet = TRUE))
@@ -24,4 +25,6 @@ test_that("Test that stanplot doesn't throw errors", {
   expect_silent(p <- stanplot(fit, type = "ess", quiet = TRUE))
   expect_silent(p <- stanplot(fit, type = "mcse", quiet = TRUE))
   expect_silent(p <- stanplot(fit, type = "ac", quiet = TRUE))
+  # tests for pairs
+  expect_silent(p <- pairs(fit, pars = parnames(fit)[1:3]))
 })
