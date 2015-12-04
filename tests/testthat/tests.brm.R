@@ -48,7 +48,7 @@ test_that("Test that all S3 methods have reasonable ouputs", {
   expect_equal(parnames(fit)[c(1, 3, 4, 10, 11)],
                c("b_Intercept", "sd_visit_Intercept", "r_visit[1]",
                  "prior_b", "lp__"))
-  # omit plot
+  # plot tested in tests.plots.R
   # posterior_samples
   ps <- posterior_samples(fit)
   expect_equal(dim(ps), c(80, length(parnames(fit))))
@@ -83,6 +83,7 @@ test_that("Test that all S3 methods have reasonable ouputs", {
   # standata
   expect_equal(names(standata(fit)),
                c("N", "Y", "K", "X", "J_1", "N_1", "K_1", "Z_1", "NC_1"))
+  # stanplot tested in tests.plots.R
   # summary
   .summary <- summary(fit)
   expect_true(is.numeric(.summary$fixed))
