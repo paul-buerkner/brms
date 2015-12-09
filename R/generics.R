@@ -200,7 +200,7 @@ ngrps <- function(object, ...)
 #'  is a Bayes factor between the hypothesis and its alternative.
 #'  In order to calculate this Bayes factor, all parameters related 
 #'  to the hypothesis must have proper priors
-#'  and argument \code{sample.priors} of function \code{brm} 
+#'  and argument \code{sample.prior} of function \code{brm} 
 #'  must be set to \code{TRUE}. 
 #'  When interpreting Bayes factors, make sure 
 #'  that your priors are reasonable and carefully chosen,
@@ -247,7 +247,7 @@ hypothesis <- function(x, hypothesis, class = "b", group = "",
 #' 
 #' @aliases posterior.samples posterior_samples.brmsfit posterior.samples.brmsfit
 #' 
-#' @param x An \code{R} object typically of class \code{brmsfit}
+#' @param x An \proglang{R} object typically of class \code{brmsfit}
 #' @param pars Names of parameters for which posterior samples 
 #'   should be returned, as given by a character vector or regular expressions.
 #'   By default, all posterior samples of all parameters are extracted
