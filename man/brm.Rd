@@ -9,7 +9,8 @@ brm(formula, data = NULL, family = "gaussian", prior = NULL,
   threshold = c("flexible", "equidistant"), cov.ranef = NULL,
   ranef = TRUE, sample.prior = FALSE, fit = NA, inits = "random",
   n.chains = 2, n.iter = 2000, n.warmup = 500, n.thin = 1,
-  n.cluster = 1, cluster_type = "PSOCK", silent = TRUE, seed = 12345,
+  n.cluster = 1, cluster_type = "PSOCK", algorithm = c("sampling",
+  "meanfield", "fullrank"), silent = TRUE, seed = 12345,
   save.model = NULL, ...)
 }
 \arguments{
@@ -128,6 +129,12 @@ Default is 1, that is no thinning.}
 (i.e. when \code{n.cluster} is greater \code{1}). Default is \code{"PSOCK"} working on all platforms. 
 For OS X and Linux, \code{"FORK"} may be a faster and more stable option, 
 but it does not work on Windows.}
+
+\item{algorithm}{Character string indicating the estimation approach to use. 
+Can be \code{"sampling"} for MCMC (the default), \code{"meanfield"} for
+variational inference with independent normal distributions, or
+\code{"fullrank"} for variational inference with a multivariate normal
+distribution.}
 
 \item{silent}{logical; If \code{TRUE}, warning messages of the sampler are suppressed.}
 

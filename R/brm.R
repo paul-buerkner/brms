@@ -102,6 +102,11 @@
 #'   saved in a file named after the string supplied in \code{save.model}, 
 #'   which may also contain the full path where to save the file.
 #'   If only a name is given, the file is save in the current working directory. 
+#' @param algorithm Character string indicating the estimation approach to use. 
+#'   Can be \code{"sampling"} for MCMC (the default), \code{"meanfield"} for
+#'   variational inference with independent normal distributions, or
+#'   \code{"fullrank"} for variational inference with a multivariate normal
+#'   distribution.
 #' @param silent logical; If \code{TRUE}, warning messages of the sampler are suppressed.
 #' @param seed Positive integer. Used by \code{set.seed} to make results reproducable.  
 #' @param ... Further arguments to be passed to Stan.
@@ -359,9 +364,10 @@ brm <- function(formula, data = NULL, family = "gaussian",
                 threshold = c("flexible", "equidistant"), cov.ranef = NULL, 
                 ranef = TRUE, sample.prior = FALSE, fit = NA, 
                 inits = "random", n.chains = 2, n.iter = 2000, 
-                n.warmup = 500, n.thin = 1, n.cluster = 1, 
-                cluster_type = "PSOCK", silent = TRUE, seed = 12345, 
-                save.model = NULL, ...) {
+                n.warmup = 500, n.thin = 1, n.cluster = 1,
+                cluster_type = "PSOCK", 
+                algorithm = c("sampling", "meanfield", "fullrank"),
+                silent = TRUE, seed = 12345, save.model = NULL, ...) {
   
   if (n.chains %% n.cluster != 0) 
     stop("n.chains must be a multiple of n.cluster")
@@ -370,6 +376,7 @@ brm <- function(formula, data = NULL, family = "gaussian",
     stop("autocor must be of class cor_brms")
   }
   threshold <- match.arg(threshold)
+  algorithm <- match.arg(algorithm)
   
   dots <- list(...) 
   if ("WAIC" %in% names(dots))
@@ -426,8 +433,12 @@ brm <- function(formula, data = NULL, family = "gaussian",
     x$fit <- rstan::stan_model(stanc_ret = x$fit) 
   }
   
-  if (is.character(inits) && !inits %in% c("random", "0")) 
-    inits <- get(inits, mode = "function", envir = parent.frame()) 
+  # some input checks
+  if (algorithm %in% c("meanfield", "fullrank") && 
+      packageVersion("rstan") < "2.8.9") {
+    stop(paste("Algorithm", algorithm, "requires rstan version",
+               "2.8.9 or higher"))
+  }
   if (x$family %in% c("exponential", "weibull") && inits == "random") {
     warning(paste("Families exponential and weibull may not work well",
                    "with default initial values. \n",
@@ -443,10 +454,13 @@ brm <- function(formula, data = NULL, family = "gaussian",
   }
   
   # arguments to be passed to stan
+  if (is.character(inits) && !inits %in% c("random", "0")) {
+    inits <- get(inits, mode = "function", envir = parent.frame())
+  }
   args <- list(object = x$fit, data = standata, pars = x$exclude, 
                init = inits,  iter = n.iter, warmup = n.warmup, 
                thin = n.thin, chains = n.chains, include = FALSE,
-               show_messages = !silent)  
+               show_messages = !silent, algorithm = algorithm)  
   args[names(dots)] <- dots 
   
   if (n.cluster > 1) {  # sample in parallel
@@ -462,7 +476,12 @@ brm <- function(formula, data = NULL, family = "gaussian",
       args$chain_id <- i
       args$init <- args$init[i]
       Sys.sleep(0.5 * i)
-      do.call(rstan::sampling, args = args)
+      if (args$algorithm == "sampling") {
+        args$algorithm <- NULL
+        do.call(rstan::sampling, args = args)
+      } else {
+        do.call(rstan::vb, args = args)
+      } 
     }
     sflist <- parLapply(cl, X = 1:n.chains, run_chain)
     # remove chains that failed to run correctly; see validate.R
@@ -474,7 +493,12 @@ brm <- function(formula, data = NULL, family = "gaussian",
     }
     x$fit <- rstan::sflist2stanfit(sflist)
   } else {  # do not sample in parallel
-    x$fit <- do.call(rstan::sampling, args = args)
+    if (args$algorithm == "sampling") {
+      args$algorithm <- NULL
+      x$fit <- do.call(rstan::sampling, args = args)
+    } else {
+      x$fit <- do.call(rstan::vb, args = args)
+    } 
   }
   return(rename_pars(x))  # see rename.R
 }
