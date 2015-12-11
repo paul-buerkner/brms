@@ -258,6 +258,15 @@ loglik_zero_inflated_negbinomial <- function(n, data, samples, link) {
   weight_loglik(out, n = n, data = data)
 }
 
+loglik_zero_inflated_binomial <- function(n, data, samples, link) {
+  trials <- ifelse(length(data$max_obs) > 1, data$max_obs[n], data$max_obs) 
+  theta <- ilink(samples$eta[, n + data$N_trait], "logit")
+  args <- list(size = trials, prob = ilink(samples$eta[, n], link))
+  out <- zero_inflated_loglik(pdf = dbinom, theta = theta, 
+                              args = args, n = n, data = data)
+  weight_loglik(out, n = n, data = data)
+}
+
 loglik_categorical <- function(n, data, samples, link) {
   ncat <- ifelse(length(data$max_obs) > 1, data$max_obs[n], data$max_obs) 
   if (link == "logit") {
