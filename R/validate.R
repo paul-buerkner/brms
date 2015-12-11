@@ -58,7 +58,7 @@ extract_effects <- function(formula, ..., family = NA, check_response = TRUE) {
     add <- substr(add, 2, nchar(add)-1)
     families <- list(se = c("gaussian", "student", "cauchy"),
                      weights = "all",
-                     trials = c("binomial"),
+                     trials = c("binomial", "zero_inflated_binomial"),
                      cat = c("categorical", "cumulative", 
                              "cratio", "sratio", "acat"), 
                      cens = c("gaussian", "student", "cauchy", 
@@ -355,7 +355,7 @@ family.character <- function(object, link = NA, ...) {
                   "cumulative", "cratio", "sratio", "acat",
                   "hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma",
                   "zero_inflated_poisson", "zero_inflated_negbinomial",
-                  "beta")
+                  "zero_inflated_binomial", "beta")
   if (!family %in% okFamilies)
     stop(paste(family, "is not a supported family. Supported families are: \n",
                paste(okFamilies, collapse = ", ")))
@@ -369,11 +369,12 @@ family.character <- function(object, link = NA, ...) {
     okLinks <- c("log", "identity", "sqrt")
   } else if (is.binary(family) || is.ordinal(family) || family == "beta") {
     okLinks <- c("logit", "probit", "probit_approx", "cloglog", "cauchit")
-  } else if (family == "categorical") {
+  } else if (family %in% c("categorical", "zero_inflated_binomial")) {
     okLinks <- c("logit")
   } else if (is.skewed(family)) {
     okLinks <- c("log", "identity", "inverse")
   } else if (is.hurdle(family) || is.zero_inflated(family)) {
+    # does not include zero_inflated_binomial
     okLinks <- c("log")
   } 
   if (is.na(link)) {

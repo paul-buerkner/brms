@@ -282,7 +282,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     stop(paste("family", family, "expects numeric response variable"))
   }
   # transform and check response variable for different families
-  if (is_count || family == "binomial") {
+  if (family == "binomial" || is_count || has_fake_2nd_resp) {
     if (!all(is.wholenumber(standata$Y)) || min(standata$Y) < 0) {
       stop(paste("family", family, "expects response variable", 
                  "of non-negative integers"))
@@ -417,13 +417,13 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     }
   }
   # data for specific families
-  if (family == "binomial") {
+  if (family %in% c("binomial", "zero_inflated_binomial")) {
     standata$trials <- if (!length(ee$trials)) max(standata$Y)
     else if (is.wholenumber(ee$trials)) ee$trials
     else if (is.formula(ee$trials)) .addition(formula = ee$trials, data = data)
     else stop("Response part of formula is invalid.")
     standata$max_obs <- standata$trials  # for backwards compatibility
-    if (max(standata$trials) == 1) 
+    if (max(standata$trials) == 1 && family == "binomial") 
       message(paste("Only 2 levels detected so that family", 
                     sub("binomial", "bernoulli", family),  
                     "might be a more efficient choice."))

@@ -183,7 +183,7 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
     text_ranef$data,
     text_arma$data,
     text_inv_gaussian$data,
-    if (family == "binomial")
+    if (family %in% c("binomial", "zero_inflated_binomial"))
       paste0("  int trials", N_bin, ";  # number of trials \n"),
     if (is_ordinal || is_categorical)
       paste0("  int ncat;  # number of categories \n"),
@@ -510,7 +510,8 @@ stan_llh <- function(family, link, se = FALSE, weights = FALSE,
     family %in% c("cumulative", "categorical") && link == "logit") 
   n <- ifelse(cens || weights || is_trunc || is_catordinal ||
               is_hurdle || is_zero_inflated, "[n]", "")
-  ns <- ifelse((se || trials) && (cens || weights || is_trunc), "[n]", "")
+  ns <- ifelse((se || trials) && (cens || weights || is_trunc) 
+               || trials && is_zero_inflated, "[n]", "")
   sigma <- paste0(ifelse(se, "se", "sigma"), ns)
   # use inverse link in likelihood statement only 
   # if it does not prevent vectorization 
@@ -580,7 +581,9 @@ stan_llh <- function(family, link, se = FALSE, weights = FALSE,
       zero_inflated_poisson = c("zero_inflated_poisson", 
                                 "eta[n], eta[n + N_trait]"),
       zero_inflated_negbinomial = c("zero_inflated_neg_binomial_2", 
-                                    "eta[n], eta[n + N_trait], shape"))
+                                    "eta[n], eta[n + N_trait], shape"),
+      zero_inflated_binomial = c("zero_inflated_binomial", 
+        paste0("trials",ns,", eta[n], eta[n + N_trait]")))
   }
   
   # write likelihood code
@@ -1187,6 +1190,27 @@ stan_zero_inflated_hurdle <- function(family) {
       "     } else { \n",
       "       return bernoulli_logit_log(0, eta_zi) + \n", 
       "              neg_binomial_2_log_log(y, eta, shape); \n",
+      "     } \n",
+      "   } \n")
+    } else if (family == "zero_inflated_binomial") {
+      out$fun <- paste0(out$fun, 
+      "  /* zero-inflated binomial log-PDF of a single response \n",
+      "   * Args: \n",
+      "   *   y: the response value \n",
+      "   *   eta: linear predictor for binomial part \n",
+      "   *   eta_zi: linear predictor for zero-inflation part \n",
+      "   * Returns: \n", 
+      "   *   a scalar to be added to the log posterior \n",
+      "   */ \n",
+      "   real zero_inflated_binomial_log(int y, int trials, real eta, \n",
+      "                                         real eta_zi) { \n",
+      "     if (y == 0) { \n",
+      "       return log_sum_exp(bernoulli_logit_log(1, eta_zi), \n",
+      "                          bernoulli_logit_log(0, eta_zi) + \n",
+      "                          binomial_logit_log(0, trials, eta)); \n",
+      "     } else { \n",
+      "       return bernoulli_logit_log(0, eta_zi) + \n", 
+      "              binomial_logit_log(y, trials, eta); \n",
       "     } \n",
       "   } \n")
     } else if (family == "hurdle_poisson") {

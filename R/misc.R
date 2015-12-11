@@ -176,7 +176,8 @@ is.zero_inflated <- function(family) {
   if (class(family) == "family") {
     family <- family$family
   }
-  family %in% c("zero_inflated_poisson", "zero_inflated_negbinomial")
+  family %in% c("zero_inflated_poisson", "zero_inflated_negbinomial",
+                "zero_inflated_binomial")
 }
 
 has_shape <- function(family) {
