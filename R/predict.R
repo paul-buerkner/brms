@@ -131,8 +131,8 @@ predict_cauchy_cov <- function(n, data, samples, link, ...) {
 }
 
 predict_binomial <- function(n, data, samples, link, ntrys, ...) {
-  max_obs <- ifelse(length(data$max_obs) > 1, data$max_obs[n], data$max_obs) 
-  args <- list(size = max_obs, prob = ilink(samples$eta[, n], link))
+  trials <- ifelse(length(data$max_obs) > 1, data$max_obs[n], data$max_obs) 
+  args <- list(size = trials, prob = ilink(samples$eta[, n], link))
   rng_discrete(nrng = nrow(samples$eta), dist = "binom",
                args = args, data = data, ntrys = ntrys)
 }
@@ -248,6 +248,17 @@ predict_zero_inflated_negbinomial <- function(n, data, samples, link, ...) {
   # compare with theta to incorporate the zero-inflation process
   zi <- runif(nsamples, 0, 1)
   ifelse(zi < theta, 0, rnbinom(nsamples, mu = mu, size = samples$shape))
+}
+
+predict_zero_inflated_binomial <- function(n, data, samples, link, ...) {
+  # theta is the bernoulii zero-inflation parameter
+  theta <- ilink(samples$eta[, n + data$N_trait], "logit")
+  trials <- ifelse(length(data$max_obs) > 1, data$max_obs[n], data$max_obs)
+  prob <- ilink(samples$eta[, n], link)
+  nsamples <- nrow(samples$eta)
+  # compare with theta to incorporate the zero-inflation process
+  zi <- runif(nsamples, 0, 1)
+  ifelse(zi < theta, 0, rbinom(nsamples, size = trials, prob = prob))
 }
 
 predict_categorical <- function(n, data, samples, link, ...) {

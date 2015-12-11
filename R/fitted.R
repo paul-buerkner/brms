@@ -17,11 +17,12 @@ fitted_response <- function(x, eta, data) {
   
   # compute (mean) fitted values
   if (family == "binomial") {
-    max_obs <- matrix(rep(data$max_obs, nrow(eta)), nrow = nrow(eta), byrow = TRUE)
+    trials <- matrix(rep(data$max_obs, nrow(eta)), nrow = nrow(eta), 
+                     byrow = TRUE)
     mu <- ilink(eta, x$link) 
     if (!is_trunc) {
       # scale eta from [0,1] to [0,max_obs]
-      mu <- mu * max_obs 
+      mu <- mu * trials 
     }
   } else if (family == "lognormal") {
     sigma <- get_sigma(x, data = data, method = "fitted", n = nrow(eta))
@@ -46,6 +47,12 @@ fitted_response <- function(x, eta, data) {
                         family = x$family, link = x$link)
   } else if (is.zero_inflated(family)) {
     mu <- fitted_zero_inflated(eta, N_trait = data$N_trait, link = x$link)
+    if (family == "zero_inflated_binomial") {
+      trials <- data$max_obs[1:ceiling(length(data$max_obs) / 2)]
+      trials <- matrix(rep(trials, nrow(eta)), nrow = nrow(eta), 
+                       byrow = TRUE)
+      mu <- mu * trials
+    }
   } else {
     # for any other distribution, ilink(eta) is already the mean fitted value
     mu <- ilink(eta, x$link)
