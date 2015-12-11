@@ -18,6 +18,7 @@
 \alias{sratio}
 \alias{student}
 \alias{weibull}
+\alias{zero_inflated_binomial}
 \alias{zero_inflated_negbinomial}
 \alias{zero_inflated_poisson}
 \title{Special Family Functions for \pkg{brms} Models}
@@ -47,6 +48,8 @@ hurdle_gamma(link = "log")
 zero_inflated_poisson(link = "log")
 
 zero_inflated_negbinomial(link = "log")
+
+zero_inflated_binomial(link = "logit")
 
 categorical(link = "logit")
 

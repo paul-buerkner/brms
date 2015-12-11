@@ -189,7 +189,7 @@ hurdle_poisson <- function(link = "log") {
     linktemp <- link
   }
   if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family weibull. ", 
+    stop(paste(linktemp, "is not a supported link for family hurdle_poisson. ", 
                "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
   structure(list(family = "hurdle_poisson", link = linktemp), class = "family")
@@ -207,7 +207,7 @@ hurdle_negbinomial <- function(link = "log") {
     linktemp <- link
   }
   if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family weibull. ", 
+    stop(paste(linktemp, "is not a supported link for family hurdle_negbinomial. ", 
                "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
   structure(list(family = "hurdle_negbinomial", link = linktemp), class = "family")
@@ -225,7 +225,7 @@ hurdle_gamma <- function(link = "log") {
     linktemp <- link
   }
   if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family weibull. ", 
+    stop(paste(linktemp, "is not a supported link for family hurdle_gamma. ", 
                "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
   structure(list(family = "hurdle_gamma", link = linktemp), class = "family")
@@ -243,7 +243,8 @@ zero_inflated_poisson <- function(link = "log") {
     linktemp <- link
   }
   if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family weibull. ", 
+    stop(paste(linktemp, "is not a supported link", 
+               "for family zero_inflated_poisson. ", 
                "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
   structure(list(family = "zero_inflated_poisson", link = linktemp), 
@@ -262,10 +263,31 @@ zero_inflated_negbinomial <- function(link = "log") {
     linktemp <- link
   }
   if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family weibull. ", 
+    stop(paste(linktemp, "is not a supported link", 
+               "for family zero_inflated_negbinomial. ", 
                "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
   structure(list(family = "zero_inflated_negbinomial", link = linktemp), 
+            class = "family")
+}
+
+#' @rdname brmsfamily
+#' @export
+zero_inflated_binomial <- function(link = "logit") {
+  linktemp <- substitute(link)
+  if (!is.character(linktemp)) {
+    linktemp <- deparse(linktemp)
+  } 
+  okLinks <- c("logit")
+  if (!linktemp %in% okLinks && is.character(link)) {
+    linktemp <- link
+  }
+  if (!linktemp %in% okLinks) {
+    stop(paste(linktemp, "is not a supported link", 
+               "for family zero_inflated_binomial. ", 
+               "Supported links are: \n", paste(okLinks, collapse = ", ")))
+  }
+  structure(list(family = "zero_inflated_binomial", link = linktemp), 
             class = "family")
 }
 
