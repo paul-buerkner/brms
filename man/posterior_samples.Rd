@@ -11,7 +11,7 @@ posterior_samples(x, pars = NA, parameters = NA, exact_match = FALSE,
   add_chains = FALSE, as.matrix = FALSE, ...)
 }
 \arguments{
-\item{x}{An \proglang{R} object typically of class \code{brmsfit}}
+\item{x}{An \code{R} object typically of class \code{brmsfit}}
 
 \item{pars}{Names of parameters for which posterior samples 
 should be returned, as given by a character vector or regular expressions.

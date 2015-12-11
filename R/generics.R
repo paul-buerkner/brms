@@ -247,7 +247,7 @@ hypothesis <- function(x, hypothesis, class = "b", group = "",
 #' 
 #' @aliases posterior.samples posterior_samples.brmsfit posterior.samples.brmsfit
 #' 
-#' @param x An \proglang{R} object typically of class \code{brmsfit}
+#' @param x An \code{R} object typically of class \code{brmsfit}
 #' @param pars Names of parameters for which posterior samples 
 #'   should be returned, as given by a character vector or regular expressions.
 #'   By default, all posterior samples of all parameters are extracted
