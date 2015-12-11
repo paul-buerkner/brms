@@ -645,7 +645,7 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE,
   is_skewed <- is.skewed(family)
   is_count <- is.count(family) || is.zero_inflated(family) ||
               family %in% c("hurdle_poisson", "hurdle_negbinomial")
-  is_binary <- is.binary(family)
+  is_binary <- is.binary(family) || family == "zero_inflated_binomial"
   
   eta <- list()
   # initialize eta
