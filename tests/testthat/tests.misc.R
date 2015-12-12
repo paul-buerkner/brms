@@ -35,3 +35,12 @@ test_that("Test that collapse_lists performs correct collapsing after names", {
   expect_equal(collapse_lists(list(c(x, c = "c <- "), y)),
                list(a = "a <- gamma(1,1)", b = "b <- cauchy(1,2)", c = "c <- normal(0,1)"))
 })
+
+test_that("Test that nlist works correctly", {
+  x <- 1
+  y <- 2:3
+  exlist <- list(x = x, y = y)
+  expect_equal(nlist(x = x, y = y), exlist)
+  expect_equal(nlist(x, y), exlist)
+  expect_equal(nlist(x = x, y), exlist)
+})
