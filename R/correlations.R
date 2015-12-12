@@ -225,6 +225,7 @@ use_cov <- function(x) {
 }
 
 check_autocor <- function(autocor) {
+  # check validity of autocor argument
   if (is.null(autocor)) 
     autocor <- cor_arma()
   if (!is(autocor, "cor_brms")) { 

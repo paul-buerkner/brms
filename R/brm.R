@@ -369,14 +369,13 @@ brm <- function(formula, data = NULL, family = "gaussian",
                 algorithm = c("sampling", "meanfield", "fullrank"),
                 silent = TRUE, seed = 12345, save.model = NULL, ...) {
   
-  if (n.chains %% n.cluster != 0) 
-    stop("n.chains must be a multiple of n.cluster")
+  # some input checks 
+  check_brm_input(nlist(family, n.chains, n.cluster, inits, algorithm))
   autocor <- check_autocor(autocor)
   threshold <- match.arg(threshold)
   algorithm <- match.arg(algorithm)
-  dots <- list(...) 
   
-  set.seed(seed)
+  dots <- list(...) 
   if (is(fit, "brmsfit")) {  
     x <- fit  # re-use existing model
     x$fit <- rstan::get_stanmodel(x$fit)  # extract the compiled model
@@ -422,26 +421,7 @@ brm <- function(formula, data = NULL, family = "gaussian",
     x$fit <- rstan::stan_model(stanc_ret = x$fit) 
   }
   
-  # some input checks
-  if (algorithm %in% c("meanfield", "fullrank") && 
-      packageVersion("rstan") < "2.8.9") {
-    stop(paste("Algorithm", algorithm, "requires rstan version",
-               "2.8.9 or higher"))
-  }
-  if (x$family %in% c("exponential", "weibull") && inits == "random") {
-    warning(paste("Families exponential and weibull may not work well",
-                   "with default initial values. \n",
-                   " It is thus recommended to set inits = '0'"))
-  }
-  if (x$family == "inverse.gaussian") {
-    warning(paste("inverse gaussian models require carefully chosen", 
-                  "prior distributions to ensure convergence of the chains"))
-  }
-  if (x$link == "sqrt") {
-    warning(paste(x$family, "model with sqrt link may not be", 
-                  "uniquely identified"))
-  }
-  
+  set.seed(seed)
   # arguments to be passed to stan
   if (is.character(inits) && !inits %in% c("random", "0")) {
     inits <- get(inits, mode = "function", envir = parent.frame())

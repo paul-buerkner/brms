@@ -404,6 +404,36 @@ check_family <- function(family) {
   family
 }
 
+check_brm_input <- function(x) {
+  # misc checks on brm arguments 
+  # Args:
+  #   x: A named list
+  if (x$n.chains %% x$n.cluster != 0) {
+    stop("n.chains must be a multiple of n.cluster")
+  }
+  if (x$algorithm %in% c("meanfield", "fullrank") && 
+      packageVersion("rstan") < "2.8.9") {
+    stop(paste("Algorithm", x$algorithm, "requires rstan version",
+               "2.8.9 or higher"))
+  }
+  family <- check_family(x$family) 
+  if (family$family %in% c("exponential", "weibull") && 
+      x$inits == "random") {
+    warning(paste("Families exponential and weibull may not work well",
+                  "with default initial values. \n",
+                  " It is thus recommended to set inits = '0'"))
+  }
+  if (family$family == "inverse.gaussian") {
+    warning(paste("inverse gaussian models require carefully chosen", 
+                  "prior distributions to ensure convergence of the chains"))
+  }
+  if (family$link == "sqrt") {
+    warning(paste(family$family, "model with sqrt link may not be", 
+                  "uniquely identified"))
+  }
+  invisible(NULL)
+}
+
 exclude_pars <- function(formula, ranef = TRUE) {
   # list irrelevant parameters NOT to be saved by Stan
   # 
