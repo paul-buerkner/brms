@@ -421,7 +421,6 @@ brm <- function(formula, data = NULL, family = "gaussian",
     x$fit <- rstan::stan_model(stanc_ret = x$fit) 
   }
   
-  set.seed(seed)
   # arguments to be passed to stan
   if (is.character(inits) && !inits %in% c("random", "0")) {
     inits <- get(inits, mode = "function", envir = parent.frame())
@@ -432,6 +431,7 @@ brm <- function(formula, data = NULL, family = "gaussian",
                show_messages = !silent, algorithm = algorithm)  
   args[names(dots)] <- dots 
   
+  set.seed(seed)
   if (n.cluster > 1) {  # sample in parallel
     message("Start sampling")
     if (is.character(args$init) || is.numeric(args$init)) 
