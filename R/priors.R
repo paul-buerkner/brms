@@ -248,17 +248,12 @@ get_prior <- function(formula, data = NULL, family = "gaussian",
                       threshold = c("flexible", "equidistant"), 
                       internal = FALSE) {
   # note that default priors are stored in this function
-  if (is.null(autocor)) autocor <- cor_arma()
-  if (!is(autocor, "cor_brms")) { 
-    stop("cor must be of class cor_brms")
-  }
   threshold <- match.arg(threshold)
-  # see validate.R
   family <- check_family(family) 
   link <- family$link
   family <- family$family
+  autocor <- check_autocor(autocor)
   ee <- extract_effects(formula, partial, family = family)
-  # see data.R
   data <- update_data(data, family = family, effects = ee)
   
   # ensure that RE and residual SDs only have a weakly informative prior by default
@@ -285,7 +280,8 @@ get_prior <- function(formula, data = NULL, family = "gaussian",
     prior <- rbind(prior, prior_frame(class = "b", coef = c("", fixef)))
   }
   if (is.formula(partial)) {
-    paref <- colnames(get_model_matrix(partial, data = data, rm_intercept = TRUE))
+    paref <- colnames(get_model_matrix(partial, data = data, 
+                                       rm_intercept = TRUE))
     prior <- rbind(prior, prior_frame(class = "b", coef = paref))
   }
   if (is.formula(multiply)) {
@@ -300,7 +296,8 @@ get_prior <- function(formula, data = NULL, family = "gaussian",
     for (i in 1:length(gs)) {
       ranef <- colnames(get_model_matrix(ee$random[[i]], data = data))
       # include random effects standard deviations
-      prior <- rbind(prior, prior_frame(class = "sd", coef = c("", ranef), group = gs[i]))
+      prior <- rbind(prior, prior_frame(class = "sd", coef = c("", ranef), 
+                                        group = gs[i]))
       # detect duplicated random effects
       J <- with(prior, class == "sd" & group == gs[i] & nchar(coef))
       dupli <- duplicated(prior[J, ])
@@ -343,9 +340,11 @@ get_prior <- function(formula, data = NULL, family = "gaussian",
     }
   }
   if (family == "student") 
-    prior <- rbind(prior, prior_frame(class = "nu", prior = "gamma(2, 0.1)"))
+    prior <- rbind(prior, prior_frame(class = "nu", 
+                                      prior = "gamma(2, 0.1)"))
   if (family == "beta") 
-    prior <- rbind(prior, prior_frame(class = "phi", prior = "gamma(0.01, 0.01)"))
+    prior <- rbind(prior, prior_frame(class = "phi", 
+                                      prior = "gamma(0.01, 0.01)"))
   if (family %in% c("gamma", "weibull", "negbinomial", 
                     "inverse.gaussian", "hurdle_negbinomial", 
                     "hurdle_gamma", "zero_inflated_negbinomial")) 
@@ -374,13 +373,13 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
     return(prior)
   }
   ee <- extract_effects(formula, family = family)  
-  all_prior <- get_prior(formula = formula, data = data, 
+  all_priors <- get_prior(formula = formula, data = data, 
                          family = family(family, link = link),
                          autocor = autocor, multiply = multiply, 
                          partial = partial, threshold = threshold, 
                          internal = TRUE)
   if (is.null(prior)) {
-    prior <- all_prior  
+    prior <- all_priors  
   } else if (is(prior, "brmsprior")) {
     # a single prior may be specified without c(.)
     prior <- c(prior)
@@ -415,8 +414,8 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
   
   # check if parameters in prior are valid
   if (nrow(prior)) {
-    valid <- which(duplicated(rbind(all_prior[, 2:4], prior[, 2:4])))
-    invalid <- which(!1:nrow(prior) %in% (valid - nrow(all_prior)))
+    valid <- which(duplicated(rbind(all_priors[, 2:4], prior[, 2:4])))
+    invalid <- which(!1:nrow(prior) %in% (valid - nrow(all_priors)))
     if (length(invalid)) {
       message(paste("Prior element", paste(invalid, collapse = ", "),
                     "is invalid and will be removed."))
@@ -424,8 +423,8 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
     }
   }
   
-  # merge prior with all_prior
-  prior <- rbind(prior, all_prior)
+  # merge prior with all_priors
+  prior <- rbind(prior, all_priors)
   rm <- which(duplicated(prior[, 2:4]))
   if (length(rm)) { 
     # else it may happen that all rows a removed...

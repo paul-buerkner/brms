@@ -223,3 +223,12 @@ use_cov <- function(x) {
     FALSE
   }
 }
+
+check_autocor <- function(autocor) {
+  if (is.null(autocor)) 
+    autocor <- cor_arma()
+  if (!is(autocor, "cor_brms")) { 
+    stop("autocor must be of class cor_brms")
+  }
+  autocor
+}

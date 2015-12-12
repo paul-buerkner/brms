@@ -27,10 +27,7 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
   obj_family <- check_family(family) 
   link <- obj_family$link
   family <- obj_family$family
-  if (is.null(autocor)) autocor <- cor_arma()
-  if (!is(autocor, "cor_brms")) { 
-    stop("autocor must be of class cor_brms")
-  }
+  autocor <- check_autocor(autocor)
   threshold <- match.arg(threshold)
   prior <- check_prior(prior, formula = formula, data = data, 
                        family = family, link = link, 
@@ -39,6 +36,7 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
   et <- extract_time(autocor$formula)  
   ee <- extract_effects(formula, family = family, partial, et$all)
   data <- update_data(data, family = family, effects = ee, et$group)
+  
   # flags to indicate of which type family is
   # see misc.R for details
   is_linear <- is.linear(family)

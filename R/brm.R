@@ -371,10 +371,7 @@ brm <- function(formula, data = NULL, family = "gaussian",
   
   if (n.chains %% n.cluster != 0) 
     stop("n.chains must be a multiple of n.cluster")
-  if (is.null(autocor)) autocor <- cor_arma()
-  if (!is(autocor, "cor_brms")) { 
-    stop("autocor must be of class cor_brms")
-  }
+  autocor <- check_autocor(autocor)
   threshold <- match.arg(threshold)
   algorithm <- match.arg(algorithm)
   

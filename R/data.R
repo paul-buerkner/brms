@@ -239,15 +239,11 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   #   save_order: logical; should the initial order of the data be saved?
   dots <- list(...)
   family <- check_family(family)$family
+  autocor <- check_autocor(autocor)
   is_linear <- is.linear(family)
   is_ordinal <- is.ordinal(family)
   is_count <- is.count(family)
   has_fake_2nd_resp <- is.hurdle(family) || is.zero_inflated(family)
-  if (is.null(autocor)) autocor <- cor_arma()
-  if (!is(autocor, "cor_brms")) {
-    stop("autocor must be of class cor_brms")
-  }
-  
   et <- extract_time(autocor$formula)
   ee <- extract_effects(formula = formula, family = family, 
                         multiply, partial, et$all)
@@ -262,7 +258,8 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
         stop(paste("autocorrelation structures for multiple responses must",
                    "contain 'trait' as grouping variable"))
       } else {
-        to_order <- rmNULL(list(data[["trait"]], data[[et$group]], data[[et$time]]))
+        to_order <- rmNULL(list(data[["trait"]], data[[et$group]], 
+                                data[[et$time]]))
       }
     } else {
       to_order <- rmNULL(list(data[[et$group]], data[[et$time]]))
@@ -348,13 +345,16 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     Z <- lapply(ee$random, get_model_matrix, data = data)
     r <- lapply(Z, colnames)
     ncolZ <- lapply(Z, ncol)
-    expr <- expression(as.numeric(as.factor(get(g, data))),  # numeric levels passed to Stan
-                       length(unique(get(g, data))),  # number of levels
+    # numeric levels passed to Stan
+    expr <- expression(as.numeric(as.factor(get(g, data))), 
+                       # number of levels
+                       length(unique(get(g, data))),  
                        ncolZ[[i]],  # number of random effects
                        Z[[i]],  # random effects design matrix
-                       ncolZ[[i]] * (ncolZ[[i]]-1) / 2)  #  number of correlations
+                       #  number of correlations
+                       ncolZ[[i]] * (ncolZ[[i]]-1) / 2) 
     if (isTRUE(dots$is_newdata)) {
-      # for newdata only as levels are already defined correctly in amend_newdata
+      # for newdata only as levels are already defined in amend_newdata
       expr[1] <- expression(get(g, data)) 
     }
     for (i in 1:length(ee$group)) {
@@ -373,13 +373,16 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
         if (is.null(found_level_names)) 
           stop(paste("Row names are required for covariance matrix of",g))
         if (nrow(cov_mat) != length(true_level_names))
-          stop(paste("Dimension of covariance matrix of",g,"is incorrect"))
+          stop(paste("Dimension of covariance matrix of", g, "is incorrect"))
         if (any(sort(found_level_names) != true_level_names))
-          stop(paste("Row names of covariance matrix of",g,"do not match names of the grouping levels"))
+          stop(paste("Row names of covariance matrix of", g, 
+                     "do not match names of the grouping levels"))
         if (!isSymmetric(unname(cov_mat)))
-          stop(paste("Covariance matrix of grouping factor",g,"is not symmetric"))
+          stop(paste("Covariance matrix of grouping factor", g, 
+                     "is not symmetric"))
         if (min(eigen(cov_mat, symmetric = TRUE, only.values = TRUE)$values) <= 0)
-          warning(paste("Covariance matrix of grouping factor",g,"may not be positive definite"))
+          warning(paste("Covariance matrix of grouping factor", g, 
+                        "may not be positive definite"))
         cov_mat <- cov_mat[order(found_level_names), order(found_level_names)]
         if (length(r[[i]]) == 1) {
           # pivoting ensures that (numerically) semi-definite matrices can be used
@@ -401,12 +404,14 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     standata <- c(standata, list(se = .addition(formula = ee$se, data = data)))
   }
   if (is.formula(ee$weights)) {
-    standata <- c(standata, list(weights = .addition(formula = ee$weights, data = data)))
+    standata <- c(standata, list(weights = .addition(formula = ee$weights, 
+                                                     data = data)))
     if (is.linear(family) && length(ee$response) > 1 || has_fake_2nd_resp) 
       standata$weights <- standata$weights[1:standata$N_trait]
   }
   if (is.formula(ee$cens)) {
-    standata <- c(standata, list(cens = .addition(formula = ee$cens, data = data)))
+    standata <- c(standata, list(cens = .addition(formula = ee$cens, 
+                                                  data = data)))
     if (is.linear(family) && length(ee$response) > 1 || has_fake_2nd_resp)
       standata$cens <- standata$cens[1:standata$N_trait]
   }
@@ -519,7 +524,8 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     }
     if (Karr) {
       # ARR effects (autoregressive effects of the response)
-      standata$Yarr <- arr_design_matrix(Y = standata$Y, r = Karr, group = tgroup)
+      standata$Yarr <- arr_design_matrix(Y = standata$Y, r = Karr, 
+                                         group = tgroup)
       standata$Karr <- Karr
     }
   } 
