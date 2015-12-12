@@ -236,7 +236,7 @@ check_intercept <- function(names) {
   } else {
     has_intercept <- FALSE
   }
-  list(names = names, has_intercept = has_intercept)
+  nlist(names, has_intercept)
 }
 
 needs_kronecker <- function(names_ranef, names_group, 

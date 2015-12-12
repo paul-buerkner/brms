@@ -79,7 +79,7 @@ fitted_catordinal <- function(eta, max_obs, family, link) {
   # get probabilities of each category
   get_density <- function(n) {
     do.call(paste0("d", family), 
-            list(1:ncat, eta = eta[, n, ], ncat = ncat, link = link))
+            nlist(1:ncat, eta = eta[, n, ], ncat, link))
   }
   aperm(abind(lapply(1:ncol(eta), get_density), along = 3), perm = c(1, 3, 2))
 }

@@ -666,6 +666,6 @@ arr_design_matrix <- function(Y, r, group)  {
   if (length(lb) != 1 || length(ub) != 1) {
     stop("Invalid truncation values")
   }
-  list(lb = lb, ub = ub)
+  nlist(lb, ub)
 }
   

@@ -683,7 +683,7 @@ compare_ic <- function(x, ic = c("waic", "loo")) {
     }
     weights <- unname(all_compare[do.call(get_input_names, x), "weights"])
   }
-  list(ic_diffs = ic_diffs, weights = weights)
+  nlist(ic_diffs, weights)
 }
 
 find_names <- function(x) {

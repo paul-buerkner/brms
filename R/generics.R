@@ -4,11 +4,8 @@ brmsfit <- function(formula = NULL, family = "", link = "", data.name = "",
                     multiply = NULL, partial = NULL, 
                     cov.ranef = NULL, fit = NA) {
   # brmsfit class
-  x <- list(formula = formula, family = family, link = link, 
-            data.name = data.name, data = data, model = model, 
-            exclude = exclude, prior = prior, ranef = ranef, 
-            autocor = autocor, multiply = multiply, 
-            partial = partial, cov.ranef = cov.ranef, fit = fit)
+  x <- nlist(formula, family, link, data.name, data, model, exclude, prior, 
+             ranef, autocor, multiply, partial, cov.ranef, fit)
   class(x) <- "brmsfit"
   x
 }
@@ -17,18 +14,14 @@ brmssummary <- function(formula = NULL, family = "", link = "",
                         data.name = "", group = NULL, nobs = NULL, 
                         ngrps = NULL, n.chains = 1, n.iter = 2000, 
                         n.warmup = 500, n.thin = 1, sampler = "", 
-                        fixed = NULL, random = list(), cor_pars = NULL, 
-                        autocor = NULL, multiply = NULL, 
-                        spec_pars = NULL, WAIC = "Not computed") {
+                        autocor = NULL, multiply = NULL,
+                        fixed = NULL, random = list(), 
+                        cor_pars = NULL, spec_pars = NULL, 
+                        mult_pars = NULL, WAIC = "Not computed") {
   # brmssummary class
-  x <- list(formula = formula, family = family, link = link, 
-            data.name = data.name, group = group, 
-            nobs = nobs, ngrps = ngrps, n.chains = n.chains, 
-            n.iter = n.iter,  n.warmup = n.warmup, 
-            n.thin = n.thin, sampler = sampler, fixed = fixed, 
-            random = random, WAIC = WAIC, cor_pars = cor_pars, 
-            autocor = autocor, multiply = multiply,
-            spec_pars = spec_pars)
+  x <- nlist(formula, family, link, data.name, group, nobs, ngrps, n.chains, 
+             n.iter,  n.warmup, n.thin, sampler, autocor, multiply, 
+             fixed, random, cor_pars, spec_pars, mult_pars, WAIC)
   class(x) <- "brmssummary"
   x
 }

@@ -62,7 +62,7 @@ cor_arma <- function(formula = ~ 1, p = 0, q = 0, r = 0, cov = FALSE) {
     stop(paste("covariance formulation of ARMA structures", 
                "is only possible for effects of maximal order 1"))
   }
-  x <- list(formula = formula, p = p, q = q, r = r, cov = as.logical(cov))
+  x <- nlist(formula, p, q, r, cov = as.logical(cov))
   class(x) <- c("cor_arma", "cor_brms")
   x
 }

@@ -44,11 +44,15 @@ extract_effects <- function(formula, ..., family = NA, check_response = TRUE) {
   group <- unlist(lapply(group_formula, function(g) 
                          paste0(all.vars(g), collapse = ":")))
   
-  # ordering is to ensure that all REs of the same grouping factor are next to each other
-  x <- list(fixed = fixed, 
-            random = if (length(group)) random[order(group)] else random, 
-            cor = if (length(group)) cor[order(group)] else cor,
-            group = if (length(group)) group[order(group)] else group)
+  # ordering is to ensure that all REs of the same grouping factor 
+  # are next to each other
+  if (length(group)) {
+    ord <- order(group)
+    group <- group[ord]
+    random <- random[ord]
+    cor <- cor[ord]
+  }
+  x <- nlist(fixed, random, group, cor)
   
   # handle addition arguments
   fun <- c("se", "weights", "trials", "cat", "cens", "trunc")
@@ -383,7 +387,7 @@ family.character <- function(object, link = NA, ...) {
   if (!link %in% okLinks)
     stop(paste0(link, " is not a supported link for family ", family, ". ", 
                 "Supported links are: \n", paste(okLinks, collapse = ", ")))
-  structure(list(family = family, link = link), class = "family")
+  structure(nlist(family, link), class = "family")
 }
 
 check_family <- function(family) {
