@@ -35,7 +35,7 @@ test_that("Test that all S3 methods have reasonable ouputs", {
   expect_equal(dim(logLik(fit)), c(80, 236))
   # LOO
   .loo <- suppressWarnings(LOO(fit, cores = 1))
-  expect_true(.loo[["looic"]] > 2500)
+  expect_true(is.numeric(.loo[["looic"]]))
   expect_true(.loo[["se_looic"]] > 0)
   loo_compare <- suppressWarnings(LOO(fit, fit, cores = 1))
   expect_equal(length(loo_compare), 2)
