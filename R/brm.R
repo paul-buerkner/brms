@@ -374,15 +374,7 @@ brm <- function(formula, data = NULL, family = "gaussian",
   autocor <- check_autocor(autocor)
   threshold <- match.arg(threshold)
   algorithm <- match.arg(algorithm)
-  
   dots <- list(...) 
-  if ("WAIC" %in% names(dots))
-    warning(paste("Argument WAIC is deprecated.", 
-                  "Just use method WAIC on the fitted model."))
-  if ("predict" %in% names(dots)) 
-    warning(paste("Argument predict is deprecated.", 
-                  "Just use method predict on the fitted model."))
-  dots[c("WAIC", "predict")] <- NULL
   
   set.seed(seed)
   if (is(fit, "brmsfit")) {  
