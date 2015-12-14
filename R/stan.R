@@ -77,14 +77,12 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
   # generate random effects code
   Z <- lapply(ee$random, get_model_matrix, data = data)
   ranef <- lapply(Z, colnames)
-  trait <- ifelse(is_multi || is_hurdle || is_zero_inflated, "_trait", "")
-  names_cov_ranef <- names(cov.ranef)
   if (length(ee$group)) {
     # call stan_ranef for each random term seperately
     text_ranef <- lapply(1:length(ee$group), stan_ranef, 
                          ranef = ranef, group = ee$group, 
                          cor = ee$cor, prior = prior, 
-                         names_cov_ranef = names_cov_ranef)
+                         names_cov_ranef = names(cov.ranef))
   } else {
     text_ranef <- list()
   }
@@ -92,9 +90,10 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
   text_ranef <- collapse_lists(text_ranef)
   
   # generate other important parts of the stan code
+  eta_re <- stan_eta_re(ranef = ranef, group = ee$group, cor = ee$cor)
   text_eta <- stan_eta(family = family, link = link, fixef = fixef, 
                        has_intercept = has_intercept, multef = multef,
-                       paref = paref, group = ee$group, autocor = autocor,
+                       paref = paref, eta_re = eta_re, autocor = autocor,
                        add = is.formula(ee[c("weights", "cens", "trunc")]),
                        offset = offset, is_multi = is_multi)
   text_llh <- stan_llh(family, link = link, 
@@ -104,6 +103,7 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
                        trials = is.formula(ee$trials),
                        cens = is.formula(ee$cens),
                        trunc = trunc, autocor = autocor)
+  trait <- ifelse(is_multi || is_hurdle || is_zero_inflated, "_trait", "")
   if (is.formula(ee$cens) || is.formula(ee$weights) || is.formula(ee$trunc) ||
       is_ordinal || is_categorical || is_hurdle || is_zero_inflated) {
     text_llh <- paste0("  for (n in 1:N",trait,") { \n  ",text_llh,"  } \n")
@@ -124,7 +124,7 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
                                          cens = is.formula(ee$cens),
                                          trunc = is.formula(ee$trunc))
   kronecker <- needs_kronecker(names_ranef = ranef, names_group = ee$group,
-                               names_cov_ranef = names_cov_ranef)
+                               names_cov_ranef = names(cov.ranef))
   text_misc_funs <- stan_misc_functions(link = link, kronecker = kronecker)
     
   # get priors for all parameters in the model
@@ -407,8 +407,8 @@ stan_ranef <- function(i, ranef, group, cor, prior = prior_frame(),
                      if (ccov && !cor && length(r) > 1) 
                        paste0("  matrix[N_",i," * K_",i,", N_",i," * K_",i,"] cov_",i,";",
                               "  # user defined covariance matrix \n"))
+  
   out$prior <- stan_prior(class = "sd", group = i, coef = r, prior = prior)
-                      
   if (length(r) == 1) {  # only one random effect
     out$data <- paste0(out$data, "  real Z_",i,"[N];  # RE design matrix \n")
     out$par <- paste0("  vector[N_",i,"] pre_",i,";  # unscaled REs \n",
@@ -418,45 +418,51 @@ stan_ranef <- function(i, ranef, group, cor, prior = prior_frame(),
     out$transC <- paste0("  r_",i, " <- sd_",i," * (", 
                          if (ccov) paste0("cov_",i," * "), "pre_",i,");",
                          "  # scale REs \n")
-  }  
-  else if (length(r) > 1) {  # multiple random effects
+  } else if (length(r) > 1 && cor) {  
+    # multiple correlated random effects
     out$data <- paste0(out$data,  
       "  row_vector[K_",i,"] Z_",i,"[N];  # RE design matrix \n",  
       "  int NC_",i,";  # number of correlations \n")
     out$par <- paste0("  matrix[N_",i,", K_",i,"] pre_",i,";  # unscaled REs \n",
       "  vector<lower=0>[K_",i,"] sd_",i,";  # RE standard deviation \n",
-      if (cor) paste0("  cholesky_factor_corr[K_",i,"] L_",i,
-      ";  # cholesky factor of correlations matrix \n"))
+      "  cholesky_factor_corr[K_",i,"] L_",i, ";",
+      "  # cholesky factor of correlations matrix \n")
     out$prior <- paste0(out$prior, 
-      if (cor) stan_prior(class = "L", group = i, prior = prior),
+      stan_prior(class = "L", group = i, prior = prior),
       "  to_vector(pre_",i,") ~ normal(0, 1); \n")
     out$transD <- paste0("  vector[K_",i,"] r_",i,"[N_",i,"];  # REs \n")
     if (ccov) {  # customized covariance matrix supplied
-      if (cor) {  # estimate correlations between random effects
-        out$transC <- paste0(
-          "  r_",i," <- to_array(kronecker_cholesky(cov_",i,", L_",i,", sd_",i,") * ",
-          "to_vector(pre_",i,"), N_",i,", K_",i,");  # scale REs \n")
-      } else { 
-        out$transC <- paste0(
-          "  r_",i," <- to_array(to_vector(rep_matrix(sd_",i,", N_",i,")) .* ",
-          "(cov_",i," * to_vector(pre_",i,")), N_",i,", K_",i,");  # scale REs \n")
-      }
+      out$transC <- paste0(
+        "  r_",i," <- to_array(kronecker_cholesky(cov_",i,", L_",i,", sd_",i,") * ",
+        "to_vector(pre_",i,"), N_",i,", K_",i,");  # scale REs \n")
     } else { 
       out$transC <- paste0(
         "  for (i in 1:N_",i,") { \n",
-        "    r_",i, "[i] <- sd_",i," .* (", 
-        if (cor) paste0("L_",i," * "), 
+        "    r_",i, "[i] <- sd_",i," .* (L_",i," * ", 
         "to_vector(pre_",i,"[i]));  # scale REs \n  } \n")
     }
-    if (cor) {  # return correlations above the diagonal only
-      cors_genC <- ulapply(2:length(r), function(k) lapply(1:(k-1), function(j)
-        paste0("  cor_",i,"[",(k-1)*(k-2)/2+j,"] <- Cor_",i,"[",j,",",k,"]; \n")))
-      out$genD <- paste0("  corr_matrix[K_",i,"] Cor_",i,"; \n",
-                         "  vector<lower=-1,upper=1>[NC_",i,"] cor_",i,"; \n")
-      out$genC <- paste0("  # take only relevant parts of correlation matrix \n",
-                         "  Cor_",i," <- multiply_lower_tri_self_transpose(L_",i,"); \n",
-                         collapse(cors_genC)) 
-    }  
+    # return correlations above the diagonal only
+    cors_genC <- ulapply(2:length(r), function(k) lapply(1:(k-1), function(j)
+      paste0("  cor_",i,"[",(k-1)*(k-2)/2+j,"] <- Cor_",i,"[",j,",",k,"]; \n")))
+    out$genD <- paste0("  corr_matrix[K_",i,"] Cor_",i,"; \n",
+                       "  vector<lower=-1,upper=1>[NC_",i,"] cor_",i,"; \n")
+    out$genC <- paste0("  # take only relevant parts of correlation matrix \n",
+                       "  Cor_",i," <- multiply_lower_tri_self_transpose(L_",i,"); \n",
+                       collapse(cors_genC)) 
+  } else if (length(r) > 1 && !cor) {
+    # multiple uncorrelated random effects
+    j <- seq_along(r)
+    out$data <- paste0(out$data, "  matrix[N, K_", i, "] Z_", i, ";",
+                       "  # RE design matrix \n")
+    out$par <- paste0("  vector[N_",i,"] pre_",i,"[K_", i, "];",
+                      "  # unscaled REs \n",
+                      "  vector<lower=0>[K_",i,"] sd_", i, ";",
+                      "  # RE standard deviation \n")
+    out$prior <- paste0(out$prior, collapse("  pre_",i,"[",j,"] ~ normal(0, 1); \n"))
+    out$transD <- collapse("  vector[N_",i,"] r_",i,"_",j,";  # REs \n")
+    out$transC <- collapse("  r_",i,"_",j," <- sd_",i,"[",j,"] * (", 
+                           if (ccov) paste0("cov_",i," * "), "pre_",i,"[",j,"]);",
+                           "  # scale REs \n")
   }
   out
 }
@@ -617,8 +623,29 @@ stan_llh <- function(family, link, se = FALSE, weights = FALSE,
   llh
 }
 
+stan_eta_re <- function(ranef, group, cor) {
+  # Write the random effects part of the linear predictor
+  # Args:
+  #   ranef: a list of random effects 
+  #   group: a vector of grouping factors
+  #   cor: a logical vector to indicate if correlations should be estimated
+  # Returns:
+  #   A string containing the random effects part of the linear predictor
+  eta_re <- ""
+  for (i in seq_along(ranef)) {
+    if (length(ranef[[i]]) == 1 || cor[[i]]) {
+      eta_re <- paste0(eta_re, " + Z_",i,"[n] * r_",i,"[J_",i,"[n]]")
+    } else {
+      k <- seq_along(ranef[[i]])
+      eta_re <- paste0(eta_re, collapse(" + Z_",i,"[n, ",k, "]",
+                                        " * r_",i,"_",k,"[J_",i,"[n]]"))
+    }
+  }
+  eta_re
+}
+
 stan_eta <- function(family, link, fixef, has_intercept = TRUE, 
-                     multef = NULL, paref = NULL, group = NULL, 
+                     multef = NULL, paref = NULL, eta_re = "", 
                      autocor = cor_arma(),  add = FALSE, 
                      offset = FALSE, is_multi = FALSE) {
   # linear predictor in Stan
@@ -696,12 +723,6 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE,
     paste0("  etap <- ", 
            ifelse(length(paref), "Xp * bp", "rep_matrix(0, Kp, ncat - 1)"),
            if (is_cat && has_intercept) " + rep_matrix(b_Intercept, N)", "; \n")
-  }
-  if (length(group)) {
-    ind <- 1:length(group)
-    eta_re <- collapse(" + Z_",ind,"[n] * r_",ind,"[J_",ind,"[n]]")
-  } else {
-    eta_re <- ""
   }
   eta_ma <- ifelse(get_ma(autocor) && !use_cov(autocor), 
                    " + head(E[n], Kma) * ma", "")
@@ -1443,7 +1464,7 @@ stan_misc_functions <- function(link = "identity", kronecker = FALSE) {
   out
 }
 
-stan_prior <- function(class, coef = NULL, group = NULL, 
+stan_prior <- function(class, coef = NULL, group = NULL,
                        prior = prior_frame(), s = 2) {
   # Define priors for parameters in Stan language
   # 
@@ -1511,7 +1532,7 @@ stan_prior <- function(class, coef = NULL, group = NULL,
   }
   
   if (!is.null(group)) {
-    class <- paste0(class,"_",group)
+    class <- paste0(class, "_", group)
   }
   # generate stan prior statements
   if (any(with(user_prior, nchar(coef) & nchar(prior)))) {

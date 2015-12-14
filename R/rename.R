@@ -104,8 +104,8 @@ rename_pars <- function(x) {
   if (length(x$ranef)) {
     group <- names(x$ranef)
     gf <- make_group_frame(x$ranef)
-    for (i in 1:length(x$ranef)) {
-      rfnames <- paste0("sd_",group[i],"_", x$ranef[[i]])
+    for (i in seq_along(x$ranef)) {
+      rfnames <- paste0("sd_", group[i],"_", x$ranef[[i]])
       change <- lc(change, list(pos = grepl(paste0("^sd_",i,"(\\[|$)"), pars),
                                 oldname = paste0("sd_",i), pnames = rfnames, 
                                 fnames = rfnames))
@@ -123,25 +123,18 @@ rename_pars <- function(x) {
                                         new_class = paste0("cor_",group[i])))
       }
       if (any(grepl("^r_", pars))) {
-        lc <- length(change) + 1
-        change[[lc]] <- list(pos = grepl(paste0("^r_",i,"(\\[|$)"), pars),
-                             oldname = paste0("r_",i))
-        
-        # prepare for removal of redundant parameters r_<i>
-        # and for combining random effects into one paramater matrix
-        # number of total REs for this grouping factor
-        n_ranefs <- max(gf$last[which(gf$g == group[i])]) 
-        old_dim <- x$fit@sim$dims_oi[[change[[lc]]$oldname]]
-        indices <- make_indices(rows = 1:old_dim[1], cols = gf$first[i]:gf$last[i], 
-                                dim = ifelse(n_ranefs == 1, 1, 2))
-        if (match(gf$g[i], group) < i) 
-          change[[lc]]$pnames <- NULL 
-        else {
-          change[[lc]]$pnames <- paste0("r_",group[i])
-          change[[lc]]$dim <- if (n_ranefs == 1) old_dim 
-                              else c(old_dim[1], n_ranefs) 
-        } 
-        change[[lc]]$fnames <- paste0("r_",group[i], indices)
+        if (length(x$ranef[[i]]) == 1 || ee$cor[[i]]) {
+          change <- lc(change, 
+                       ranef_names(i = i, group = group, gf = gf, pars = pars,
+                                   dims_oi = x$fit@sim$dims_oi))
+        } else {
+          # multiple uncorrelated random effects
+          for (j in seq_along(x$ranef[[i]])) {
+            change <- lc(change, 
+                         ranef_names(i = i, group = group, gf = gf, pars = pars,
+                                     dims_oi = x$fit@sim$dims_oi, j = j))
+          }
+        }
       }  
     }
   }
@@ -243,6 +236,33 @@ combine_duplicates <- function(x) {
     attr(new_list[[unique_names[i]]], "levels") <- attr(x[[pos[1]]], "levels")
   }
   new_list
+}
+
+ranef_names <- function(i, group, gf, dims_oi, pars, j = NULL)  {
+  
+  stopifnot(length(j) <= 1)
+  r_index <- ifelse(is.null(j), i, paste0(i, "_", j))
+  r_parnames <- paste0("^r_", r_index,"(\\[|$)")
+  change <- list(pos = grepl(r_parnames, pars),
+                 oldname = paste0("r_", r_index))
+  
+  # prepare for removal of redundant parameters r_<i>
+  # and for combining random effects into one paramater matrix
+  # number of total REs for this grouping factor
+  n_ranefs <- max(gf$last[which(gf$g == group[i])]) 
+  old_dim <- dims_oi[[change$oldname]]
+  if (match(gf$g[i], group) == i && (is.null(j) || j == 1)) {
+    change$pnames <- paste0("r_",group[i])
+    change$dim <- if (n_ranefs == 1) old_dim 
+                  else c(old_dim[1], n_ranefs) 
+  } 
+  # define indices of new parameter names
+  cols <- gf$first[i]:gf$last[i]
+  if (!is.null(j)) cols <- cols[j]
+  indices <- make_indices(rows = 1:old_dim[1], cols = cols, 
+                          dim = ifelse(n_ranefs == 1, 1, 2))
+  change$fnames <- paste0("r_", group[i], indices)
+  change
 }
 
 prior_names <- function(class, pars, names = NULL, new_class = class) {

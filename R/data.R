@@ -360,8 +360,9 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     for (i in 1:length(ee$group)) {
       g <- ee$group[[i]]
       name <- paste0(c("J_", "N_", "K_", "Z_", "NC_"), i)
-      if (ncolZ[[i]] == 1) 
+      if (ncolZ[[i]] == 1) {
         Z[[i]] <- as.vector(Z[[i]])
+      }
       for (j in 1:length(name)) {
         standata <- c(standata, setNames(list(eval(expr[j])), name[j]))
       }
