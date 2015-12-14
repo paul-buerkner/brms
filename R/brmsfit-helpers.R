@@ -9,7 +9,7 @@ array2list <- function(x) {
   if (is.null(dim(x))) stop("Argument x has no dimension")
   n.dim <- length(dim(x))
   l <- list(length = dim(x)[n.dim])
-  ind <- collapse(rep(",", n.dim-1))
+  ind <- collapse(rep(",", n.dim - 1))
   for (i in 1:dim(x)[n.dim])
     l[[i]] <- eval(parse(text = paste0("x[", ind, i,"]")))
   names(l) <- dimnames(x)[[n.dim]]
@@ -27,7 +27,7 @@ first_greater <- function(A, target, i = 1) {
   # Returns: 
   #   A vector of the same length as target containing the column ids 
   #   where A[,i] was first greater than target
-  ifelse(target <= A[,i] | ncol(A) == i, i, first_greater(A, target, i+1))
+  ifelse(target <= A[, i] | ncol(A) == i, i, first_greater(A, target, i + 1))
 }
 
 link <- function(x, link) {

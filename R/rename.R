@@ -145,6 +145,7 @@ rename_pars <- function(x) {
       }  
     }
   }
+  
   if (has_sigma(x$family, se = is.formula(ee$se), autocor = x$autocor)) {
     corfnames <- paste0("sigma_",ee$response)
     change <- lc(change, list(pos = grepl("^sigma", pars), oldname = "sigma",
@@ -160,28 +161,8 @@ rename_pars <- function(x) {
   } 
   
   # perform the actual renaming in x$fit@sim
-  if (length(change)) {
-    for (c in 1:length(change)) {
-      x$fit@sim$fnames_oi[change[[c]]$pos] <- change[[c]]$fnames
-      for (i in 1:chains) {
-        names(x$fit@sim$samples[[i]])[change[[c]]$pos] <- change[[c]]$fnames
-        if (!is.null(change[[c]]$sort)) {
-          x$fit@sim$samples[[i]][change[[c]]$pos] <- 
-            x$fit@sim$samples[[i]][change[[c]]$pos][change[[c]]$sort]
-        }
-      }
-      onp <- match(change[[c]]$oldname, names(x$fit@sim$dims_oi))
-      if (is.null(change[[c]]$pnames)) {
-        # only needed to collapse multiple r_<i> of the same grouping factor
-        x$fit@sim$dims_oi[[onp]] <- NULL  
-      } else { 
-        # rename dims_oi to match names in fnames_oi
-        dims <- x$fit@sim$dims_oi
-        x$fit@sim$dims_oi <- c(if (onp > 1) dims[1:(onp - 1)], 
-                               make_dims(change[[c]]),
-                               dims[(onp + 1):length(dims)])
-      }
-    }
+  for (i in seq_along(change)) {
+    x <- do_renaming(change = change[[i]], x = x)
   }
   x$fit@sim$pars_oi <- names(x$fit@sim$dims_oi)
   # combines duplicated grouping factors to appear as if it was only one
@@ -306,4 +287,35 @@ make_dims <- function(x) {
   if (is.null(x$dim)) 
     x$dim <- numeric(0)
   setNames(rep(list(x$dim), length(x$pnames)), x$pnames)
+}
+
+do_renaming <- function(change, x) {
+  # perform actual renaming of parameters
+  # Args:
+  #   change: A list containing all information to rename 
+  #           a certain type of parameters (e.g., fixed effects)
+  #   x: An object of class brmsfit
+  # Returns:
+  #   A brmsfit object with updated parameter names
+  chains <- length(x$fit@sim$samples) 
+  x$fit@sim$fnames_oi[change$pos] <- change$fnames
+  for (i in 1:chains) {
+    names(x$fit@sim$samples[[i]])[change$pos] <- change$fnames
+    if (!is.null(change$sort)) {
+      x$fit@sim$samples[[i]][change$pos] <- 
+        x$fit@sim$samples[[i]][change$pos][change$sort]
+    }
+  }
+  onp <- match(change$oldname, names(x$fit@sim$dims_oi))
+  if (is.null(change$pnames)) {
+    # only needed to collapse multiple r_<i> of the same grouping factor
+    x$fit@sim$dims_oi[[onp]] <- NULL  
+  } else { 
+    # rename dims_oi to match names in fnames_oi
+    dims <- x$fit@sim$dims_oi
+    x$fit@sim$dims_oi <- c(if (onp > 1) dims[1:(onp - 1)], 
+                           make_dims(change),
+                           dims[(onp + 1):length(dims)])
+  }
+  x
 }
