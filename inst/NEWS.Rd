@@ -20,6 +20,9 @@
       part of the \code{formula} argument to
       reliably allow terms with more than one variable
       (e.g., \code{y/x ~ 1})
+      \item improve sampling efficiency of models containing
+      uncorrelated random effects specified by means
+      of \code{(random || group)} terms in \code{formula}
     }
   }
   \subsection{BUG FIXES}{
@@ -31,6 +34,9 @@
       moving-average effects and non-identity link functions 
       so that they no longer contain code related solely 
       to autoregressive effects
+      \item fix a bug in the evaluation of \code{formula} that
+      could cause complicated random effects terms to be 
+      falsely treated as fixed effects
     }
   }
 }
