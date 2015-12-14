@@ -51,6 +51,13 @@ test_that("Test that extract_effects handles addition arguments correctly", {
                y ~ z + x + patient + cens)
 })
 
+test_that("Test that extract_effects accepts complicated random terms", {
+  expect_equal(extract_effects(y ~ x + (I(as.numeric(x)-1) | z))$random,
+               list(~I(as.numeric(x) - 1)))
+  expect_equal(extract_effects(y ~ x + (I(exp(x)-1) + I(x/y) | z))$random,
+               list(~I(exp(x)-1) + I(x/y)))
+})
+
 test_that("Test that extract_time returns all desired variables", {
   expect_equal(extract_time(~1), list(time = "", group = "", all = ~1))
   expect_equal(extract_time(~tt), list(time = "tt", group = "", all = ~1 + tt)) 
