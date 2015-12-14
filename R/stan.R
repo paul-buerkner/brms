@@ -397,16 +397,17 @@ stan_ranef <- function(i, ranef, group, cor, prior = prior_frame(),
   cor <- cor[[i]]
   ccov <- g %in% names_cov_ranef
   out <- list()
-  out$data <- paste0("  # data for random effects of ",g," \n",
-                     "  int<lower=1> J_",i,"[N];  # RE levels \n",
-                     "  int<lower=1> N_",i,";  # number of levels \n",
-                     "  int<lower=1> K_",i,";  # number of REs \n",
-                     if (ccov && (cor || length(r) == 1)) 
-                       paste0("  matrix[N_",i,", N_",i,"] cov_",i,";",
-                              "  # user defined covariance matrix \n"),
-                     if (ccov && !cor && length(r) > 1) 
-                       paste0("  matrix[N_",i," * K_",i,", N_",i," * K_",i,"] cov_",i,";",
-                              "  # user defined covariance matrix \n"))
+  out$data <- paste0(
+    "  # data for random effects of ",g," \n",
+    "  int<lower=1> J_",i,"[N];  # RE levels \n",
+    "  int<lower=1> N_",i,";  # number of levels \n",
+    "  int<lower=1> K_",i,";  # number of REs \n",
+    if (ccov && (cor || length(r) == 1)) 
+      paste0("  matrix[N_",i,", N_",i,"] cov_",i,";",
+             "  # user defined covariance matrix \n"),
+    if (ccov && !cor && length(r) > 1) 
+      paste0("  matrix[N_",i," * K_",i,", N_",i," * K_",i,"] cov_",i,";",
+             "  # user defined covariance matrix \n"))
   
   out$prior <- stan_prior(class = "sd", group = i, coef = r, prior = prior)
   if (length(r) == 1) {  # only one random effect
@@ -423,7 +424,8 @@ stan_ranef <- function(i, ranef, group, cor, prior = prior_frame(),
     out$data <- paste0(out$data,  
       "  row_vector[K_",i,"] Z_",i,"[N];  # RE design matrix \n",  
       "  int NC_",i,";  # number of correlations \n")
-    out$par <- paste0("  matrix[N_",i,", K_",i,"] pre_",i,";  # unscaled REs \n",
+    out$par <- paste0(
+      "  matrix[N_",i,", K_",i,"] pre_",i,";  # unscaled REs \n",
       "  vector<lower=0>[K_",i,"] sd_",i,";  # RE standard deviation \n",
       "  cholesky_factor_corr[K_",i,"] L_",i, ";",
       "  # cholesky factor of correlations matrix \n")
@@ -444,11 +446,13 @@ stan_ranef <- function(i, ranef, group, cor, prior = prior_frame(),
     # return correlations above the diagonal only
     cors_genC <- ulapply(2:length(r), function(k) lapply(1:(k-1), function(j)
       paste0("  cor_",i,"[",(k-1)*(k-2)/2+j,"] <- Cor_",i,"[",j,",",k,"]; \n")))
-    out$genD <- paste0("  corr_matrix[K_",i,"] Cor_",i,"; \n",
-                       "  vector<lower=-1,upper=1>[NC_",i,"] cor_",i,"; \n")
-    out$genC <- paste0("  # take only relevant parts of correlation matrix \n",
-                       "  Cor_",i," <- multiply_lower_tri_self_transpose(L_",i,"); \n",
-                       collapse(cors_genC)) 
+    out$genD <- paste0(
+      "  corr_matrix[K_",i,"] Cor_",i,"; \n",
+      "  vector<lower=-1,upper=1>[NC_",i,"] cor_",i,"; \n")
+    out$genC <- paste0(
+      "  # take only relevant parts of correlation matrix \n",
+      "  Cor_",i," <- multiply_lower_tri_self_transpose(L_",i,"); \n",
+      collapse(cors_genC)) 
   } else if (length(r) > 1 && !cor) {
     # multiple uncorrelated random effects
     j <- seq_along(r)
@@ -458,11 +462,12 @@ stan_ranef <- function(i, ranef, group, cor, prior = prior_frame(),
                       "  # unscaled REs \n",
                       "  vector<lower=0>[K_",i,"] sd_", i, ";",
                       "  # RE standard deviation \n")
-    out$prior <- paste0(out$prior, collapse("  pre_",i,"[",j,"] ~ normal(0, 1); \n"))
+    out$prior <- paste0(out$prior, 
+      collapse("  pre_",i,"[",j,"] ~ normal(0, 1); \n"))
     out$transD <- collapse("  vector[N_",i,"] r_",i,"_",j,";  # REs \n")
-    out$transC <- collapse("  r_",i,"_",j," <- sd_",i,"[",j,"] * (", 
-                           if (ccov) paste0("cov_",i," * "), "pre_",i,"[",j,"]);",
-                           "  # scale REs \n")
+    out$transC <- collapse(
+      "  r_",i,"_",j," <- sd_",i,"[",j,"] * (", 
+      if (ccov) paste0("cov_",i," * "), "pre_",i,"[",j,"]);  # scale REs \n")
   }
   out
 }

@@ -74,7 +74,7 @@ rename_pars <- function(x) {
   if (length(f) && x$family != "categorical") {
     change <- lc(change, list(pos = grepl("^b\\[", pars), oldname = "b", 
                               pnames = paste0("b_",f), fnames = paste0("b_",f)))
-    change <- c(change, prior_names(class = "b", pars = pars, names = f))
+    change <- c(change, prior_changes(class = "b", pars = pars, names = f))
   }
   
   if (is.formula(x$multiply)) {
@@ -82,7 +82,7 @@ rename_pars <- function(x) {
     change <- lc(change, list(pos = grepl("^bm\\[", pars), oldname = "bm", 
                               pnames = paste0("bm_", m), 
                               fnames = paste0("bm_", m)))
-    change <- c(change, prior_names(class = "bm", pars = pars, names = m))
+    change <- c(change, prior_changes(class = "bm", pars = pars, names = m))
   }
   
   if (is.formula(x$partial) || x$family == "categorical") {
@@ -98,7 +98,7 @@ rename_pars <- function(x) {
                               pnames = paste0("b_",p), fnames = pfnames,
                               sort = ulapply(1:lp, seq, to = thres*lp, by = lp),
                               dim = thres))
-    change <- c(change, prior_names(class = "bp", pars = pars, names = p))
+    change <- c(change, prior_changes(class = "bp", pars = pars, names = p))
   } 
   
   if (length(x$ranef)) {
@@ -109,9 +109,9 @@ rename_pars <- function(x) {
       change <- lc(change, list(pos = grepl(paste0("^sd_",i,"(\\[|$)"), pars),
                                 oldname = paste0("sd_",i), pnames = rfnames, 
                                 fnames = rfnames))
-      change <- c(change, prior_names(class = paste0("sd_",i), pars = pars, 
-                                      names = x$ranef[[i]], 
-                                      new_class = paste0("sd_",group[i])))
+      change <- c(change, prior_changes(class = paste0("sd_",i), pars = pars, 
+                                        names = x$ranef[[i]], 
+                                        new_class = paste0("sd_",group[i])))
       
       if (length(x$ranef[[i]]) > 1 && ee$cor[[i]]) {
         cor_names <- get_cornames(x$ranef[[i]], type = paste0("cor_",group[i]), 
@@ -119,20 +119,20 @@ rename_pars <- function(x) {
         change <- lc(change, list(pos = grepl(paste0("^cor_",i,"(\\[|$)"), pars),
                                   oldname = paste0("cor_",i), pnames = cor_names,
                                   fnames = cor_names)) 
-        change <- c(change, prior_names(class = paste0("cor_",i), pars = pars, 
-                                        new_class = paste0("cor_",group[i])))
+        change <- c(change, prior_changes(class = paste0("cor_",i), pars = pars, 
+                                          new_class = paste0("cor_",group[i])))
       }
       if (any(grepl("^r_", pars))) {
         if (length(x$ranef[[i]]) == 1 || ee$cor[[i]]) {
           change <- lc(change, 
-                       ranef_names(i = i, group = group, gf = gf, pars = pars,
-                                   dims_oi = x$fit@sim$dims_oi))
+            ranef_changes(i = i, group = group, gf = gf, pars = pars,
+                          dims_oi = x$fit@sim$dims_oi))
         } else {
           # multiple uncorrelated random effects
           for (j in seq_along(x$ranef[[i]])) {
             change <- lc(change, 
-                         ranef_names(i = i, group = group, gf = gf, pars = pars,
-                                     dims_oi = x$fit@sim$dims_oi, j = j))
+              ranef_changes(i = i, group = group, gf = gf, pars = pars,
+                            dims_oi = x$fit@sim$dims_oi, j = j))
           }
         }
       }  
@@ -143,8 +143,8 @@ rename_pars <- function(x) {
     corfnames <- paste0("sigma_",ee$response)
     change <- lc(change, list(pos = grepl("^sigma", pars), oldname = "sigma",
                               pnames = corfnames, fnames = corfnames))
-    change <- c(change, prior_names(class = "sigma", pars = pars, 
-                                     names = ee$response))
+    change <- c(change, prior_changes(class = "sigma", pars = pars, 
+                                      names = ee$response))
     # residual correlation paramaters
     if (is.linear(x$family) && length(ee$response) > 1) {
        rescor_names <- get_cornames(ee$response, type = "rescor", brackets = FALSE)
@@ -238,8 +238,16 @@ combine_duplicates <- function(x) {
   new_list
 }
 
-ranef_names <- function(i, group, gf, dims_oi, pars, j = NULL)  {
-  
+ranef_changes <- function(i, group, gf, dims_oi, pars, j = NULL)  {
+  # helps in renaming random effects (r_) parameters
+  # Args:
+  #  i: the index of the grouping factor under consideration
+  #  group: a vector of names of all grouping factors
+  #  gf: matrix as constructed by make_group_frame
+  #  dims_oi: named list containing parameter dimensions
+  #  j: secondary indices used for uncorrelated random effects 
+  # Returns:
+  #  a list that can be interpreted by rename_pars
   stopifnot(length(j) <= 1)
   r_index <- ifelse(is.null(j), i, paste0(i, "_", j))
   r_parnames <- paste0("^r_", r_index,"(\\[|$)")
@@ -265,7 +273,7 @@ ranef_names <- function(i, group, gf, dims_oi, pars, j = NULL)  {
   change
 }
 
-prior_names <- function(class, pars, names = NULL, new_class = class) {
+prior_changes <- function(class, pars, names = NULL, new_class = class) {
   # helps in renaming prior parameters
   #
   # Args: 
