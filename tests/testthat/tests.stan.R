@@ -98,7 +98,8 @@ test_that("Test that make_stancode accepts supported links", {
                "log")
 })
 
-test_that("Test that make_stancode returns correct strings for customized covariances", {
+test_that(paste("Test that make_stancode returns correct strings", 
+                "for customized covariances"), {
   expect_match(make_stancode(rating ~ treat + period + carry + (1|subject), 
                              data = inhaler, cov.ranef = list(subject = 1)), 
               "r_1 <- sd_1 * (cov_1 * pre_1)", fixed = TRUE)
@@ -109,8 +110,8 @@ test_that("Test that make_stancode returns correct strings for customized covari
                fixed = TRUE)
   expect_match(make_stancode(rating ~ treat + period + carry + (1+carry||subject), 
                              data = inhaler, cov.ranef = list(subject = 1)), 
-               paste0("r_1 <- to_array(to_vector(rep_matrix(sd_1, N_1)) .* ",
-                      "(cov_1 * to_vector(pre_1)), N_1, K_1)"),
+               paste0("  r_1_1 <- sd_1[1] * (cov_1 * pre_1[1]);  # scale REs \n",
+                      "  r_1_2 <- sd_1[2] * (cov_1 * pre_1[2]);"),
                fixed = TRUE)
 })
 
