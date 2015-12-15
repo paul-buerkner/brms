@@ -21,10 +21,9 @@ extract_effects <- function(formula, ..., family = NA, check_response = TRUE) {
   formula <- formula2string(formula) 
   # formula without addition arguments
   simple_formula <- gsub("\\|+[^~]*~", "~", formula)
-  fixed <- gsub(paste0("\\([^\\|~]*\\|[^\\)]*\\)\\+",
-                       "|\\+\\([^\\|~]*\\|[^\\)]*\\)",
-                       "|\\([^\\|~]*\\|[^\\)]*\\)"), 
-                "", simple_formula)
+  re_exprs <- c("\\+\\([^\\|~]*\\|[^\\)]*\\)",
+                "~\\([^\\|~]*\\|[^\\)]*\\)")
+  fixed <- rename(simple_formula, re_exprs, c("", "~"), fixed = FALSE)
   if (substr(fixed, nchar(fixed), nchar(fixed)) == "~") 
     fixed <- paste0(fixed, "1")
   fixed <- formula(fixed)
@@ -34,7 +33,7 @@ extract_effects <- function(formula, ..., family = NA, check_response = TRUE) {
     stop("invalid formula: response variable is missing")
   
   # extract random effects part
-  rg <- gregexpr("\\([^\\|~]*\\|[^\\)]*\\)", simple_formula)
+  rg <- gregexpr(paste0(re_exprs, collapse = "|"), simple_formula)
   rg <- unlist(regmatches(simple_formula, rg))
   random <- lapply(regmatches(rg, gregexpr("\\([^\\|]*", rg)), 
                    function(r) formula(paste0("~ ",substr(r, 2, nchar(r)))))

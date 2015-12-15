@@ -5,9 +5,14 @@ test_that("Test that extract_effects finds all variables in very long formulas",
 })
 
 test_that("Test that extract_effects finds all random effects and grouping factors", {
-  expect_equal(extract_effects(y ~ a + (1+x|g1) + x + (1|g2) + z)$random, list(~1 + x, ~1))
-  expect_equal(extract_effects(y ~ (1+x|g1) + x + (1|g2))$group, c("g1", "g2"))
-  expect_equal(extract_effects(y ~ (1+x|g1:g2) + x + (1|g1))$group, c("g1", "g1:g2"))
+  expect_equal(extract_effects(y ~ a + (1+x|g1) + x + (1|g2) + z)$random, 
+              list(~1 + x, ~1))
+  expect_equal(extract_effects(y ~ (1+x|g1) + x + (1|g2))$group,
+               c("g1", "g2"))
+  expect_equal(extract_effects(y ~ (1+x|g1:g2) + (1|g1))$group, 
+               c("g1", "g1:g2"))
+  expect_equal(extract_effects(y ~ (1|g1))$group, c("g1"))
+  expect_equal(extract_effects(y ~ log(x) + (1|g1))$group, c("g1"))
   expect_error(extract_effects(y ~ (1+x|g1/g2) + x + (1|g1)))
 })
 
