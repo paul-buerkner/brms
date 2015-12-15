@@ -160,10 +160,6 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
   # generate data block
   Kar <- get_ar(autocor)
   Kma <- get_ma(autocor)
-  is_real_Y <- is_linear || is_skewed || 
-               family %in% c("inverse.gaussian", "beta")
-  is_int_Y <- family %in% c("binomial", "bernoulli", "categorical") || 
-              is_count || is_ordinal
   N_bin <- ifelse(is.formula(ee$trials), "[N]", "")
   text_data <- paste0(
     "data { \n",
@@ -172,18 +168,18 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
       text_multi$data
     } else if (is_hurdle || is_zero_inflated) {
       text_zi_hu$data
-    } else if (is_real_Y) {
+    } else if (use_real(family)) {
       "  vector[N] Y;  # response variable \n"
-    } else if (is_int_Y) {
+    } else if (use_int(family)) {
       "  int Y[N];  # response variable \n"
     },
     text_fixef$data,
     text_ranef$data,
     text_arma$data,
     text_inv_gaussian$data,
-    if (family %in% c("binomial", "zero_inflated_binomial"))
+    if (has_trials(family))
       paste0("  int trials", N_bin, ";  # number of trials \n"),
-    if (is_ordinal || is_categorical)
+    if (has_cat(family))
       paste0("  int ncat;  # number of categories \n"),
     if (offset)
       "  vector[N] offset;  # added to the linear predictor \n",
@@ -194,10 +190,10 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
     if (is.formula(ee$cens))
       paste0("  vector[N",trait,"] cens;  # indicates censoring \n"),
     if (trunc$lb > -Inf)
-      paste0("  ", ifelse(is_int_Y, "int", "real"), " lb;",  
+      paste0("  ", ifelse(use_int(family), "int", "real"), " lb;",  
              "  # lower bound for truncation; \n"),
     if (trunc$ub < Inf)
-      paste0("  ", ifelse(is_int_Y, "int", "real"), " ub;",  
+      paste0("  ", ifelse(use_int(family), "int", "real"), " ub;",  
              "  # upper bound for truncation; \n"),
     "} \n")
   

@@ -197,6 +197,39 @@ is.zero_inflated <- function(family) {
                 "zero_inflated_binomial")
 }
 
+use_real <- function(family) {
+  # indicate if family uses real responses
+  if (class(family) == "family") {
+    family <- family$family
+  }
+  is.linear(family) || is.skewed(family) || 
+    family %in% c("inverse.gaussian", "beta")
+}
+
+use_int <- function(family) {
+  # indicate if family uses integer responses
+  if (class(family) == "family") {
+    family <- family$family
+  }
+  is.binary(family) || has_cat(family) || is.count(family)
+}
+
+has_trials <- function(family) {
+  # indicate if family makes use of argument trials
+  if (class(family) == "family") {
+    family <- family$family
+  }
+  family %in% c("binomial", "zero_inflated_binomial")
+}
+
+has_cat <- function(family) {
+  # indicate if family makes use of argument cat
+  if (class(family) == "family") {
+    family <- family$family
+  }
+  family == "categorical" || is.ordinal(family)
+}
+
 has_shape <- function(family) {
   # indicate if family needs a shape parameter
   if (class(family) == "family") {

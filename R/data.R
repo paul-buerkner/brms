@@ -196,8 +196,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     omit_response <- !(has_arma(fit$autocor) && !use_cov(fit$autocor))
     control <- list(is_newdata = TRUE, keep_intercept = TRUE,
                     save_order = TRUE, omit_response = omit_response)
-    if (fit$family %in% c("binomial", "zero_inflated_binomial", "categorical")
-        || is.ordinal(fit$family)) {
+    if (has_trials(fit$family) || has_cat(fit$family)) {
       # if trials or cat are not explicitly part of the formula
       # the will be computed based on the response variable,
       # which should be avoided for newdata
@@ -434,7 +433,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     }
   }
   # data for specific families
-  if (family %in% c("binomial", "zero_inflated_binomial")) {
+  if (has_trials(family)) {
     if (!length(ee$trials)) {
       if (!is.null(control$trials)) {
         standata$trials <- control$trials
@@ -453,7 +452,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
                     "might be a more efficient choice."))
     if (any(standata$Y > standata$trials))
       stop("Number of trials is smaller than the response variable would suggest.")
-  } else if (is_ordinal || family == "categorical") {
+  } else if (has_cat(family)) {
     if (!length(ee$cat)) {
       if (!is.null(control$ncat)) {
         standata$ncat <- control$ncat
@@ -503,7 +502,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   
   # get data for multiplicative effects
   if (is.formula(multiply)) {
-    if (is_ordinal || family == "categorical") {
+    if (has_cat(family)) {
       stop(paste("Multiplicative effects not yet implemented",
                  "for family", family))
     }
