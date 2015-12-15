@@ -17,8 +17,12 @@ fitted_response <- function(x, eta, data) {
   
   # compute (mean) fitted values
   if (family == "binomial") {
-    trials <- matrix(rep(data$max_obs, nrow(eta)), nrow = nrow(eta), 
-                     byrow = TRUE)
+    if (length(data$max_obs) > 1) {
+      trials <- matrix(rep(data$max_obs, nrow(eta)), 
+                       nrow = nrow(eta), byrow = TRUE)
+    } else {
+      trials <- data$max_obs
+    }
     mu <- ilink(eta, x$link) 
     if (!is_trunc) {
       # scale eta from [0,1] to [0,max_obs]
