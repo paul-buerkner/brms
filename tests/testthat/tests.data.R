@@ -28,7 +28,8 @@ test_that("Test that melt_data returns data in correct long format", {
 })
 
 test_that("Test that combine_groups does the expected", {
-  data <- data.frame(x = rep(c("a","b"), 5), y1 = 1:10, y2 = 11:20, y3 = 21:30, z = 100:91)
+  data <- data.frame(x = rep(c("a","b"), 5), y1 = 1:10, 
+                     y2 = 11:20, y3 = 21:30, z = 100:91)
   expected <- data 
   expected[["y1:y2"]] <- paste0(data$y1, "_", data$y2)
   expected[["y1:y2:y3"]] <- paste0(data$y1, "_", data$y2, "_", data$y3)
@@ -41,7 +42,8 @@ test_that("Test that get_model_matrix removes intercepts correctly", {
                structure(matrix(rep(0:1, 5)), dimnames = list(1:10, "x2")))
 })
 
-test_that("Test that arr_design_matrix returns correct design matrices for autoregressive effects", {
+test_that(paste("Test that arr_design_matrix returns correct design", 
+                 "matrices for autoregressive effects"), {
   expect_equal(arr_design_matrix(1:10, 0, sort(rep(1:2, 5))), NULL)
   expect_equal(arr_design_matrix(1:10, 1, sort(rep(1:2, 5))), 
                matrix(c(0,1:4.5,0,6:9.5)))
@@ -49,7 +51,8 @@ test_that("Test that arr_design_matrix returns correct design matrices for autor
                cbind(c(0,1:4.5,0,6:9), c(0,0,1:3,0,0,6:8)))
 })
 
-test_that("Test that make_standata returns correct data names for fixed and random effects", {
+test_that(paste("Test that make_standata returns correct data names", 
+                "for fixed and random effects"), {
   expect_equal(names(make_standata(rating ~ treat + period + carry 
                                    + (1|subject), data = inhaler)),
                c("N","Y","K","X","J_1","N_1","K_1","Z_1","NC_1"))
@@ -65,18 +68,19 @@ test_that("Test that make_standata returns correct data names for fixed and rand
                  "J_2","N_2","K_2","Z_2","NC_2"))
 })
 
-test_that(paste0("Test that make_standata handles variables used as fixed effects", 
+test_that(paste("Test that make_standata handles variables used as fixed effects", 
                  "and grouping factors at the same time"), {
   data <- data.frame(y = 1:9, x = factor(rep(c("a","b","c"), 3)))
   standata <- make_standata(y ~ x + (1|x), data = data)
   expect_equal(colnames(standata$X), c("xb", "xc"))
   expect_equal(standata$J_1, rep(1:3, 3))
   standata2 <- make_standata(y ~ x + (1|x), data = data, 
-                             keep_intercept = TRUE)
+                             control = list(keep_intercept = TRUE))
   expect_equal(colnames(standata2$X), c("Intercept", "xb", "xc"))
 })
 
-test_that("Test that make_standata returns correct data names for addition and partial variables", {
+test_that(paste("Test that make_standata returns correct data names", 
+                "for addition and partial variables"), {
   temp_data <- data.frame(y = 1:10, w = 1:10, t = 1:10, x = rep(0,10), 
                           c = sample(-1:1,10,TRUE))
   expect_equal(names(make_standata(y | se(w) ~ x, family = "gaussian", 
@@ -105,7 +109,8 @@ test_that("Test that make_standata returns correct data names for addition and p
   expect_true(standata$lb == 0 && standata$ub == 20)
 })
 
-test_that("Test that make_standata accepts correct response variables depending on the family", {
+test_that(paste("Test that make_standata accepts correct response variables", 
+                "depending on the family"), {
   expect_equal(make_standata(y ~ 1, data = data.frame(y = seq(-9.9,0,0.1)), 
                              family = "student")$Y, seq(-9.9,0,0.1))
   expect_equal(make_standata(y ~ 1, data = data.frame(y = 1:10), 
@@ -248,12 +253,12 @@ test_that("Test that make_standata allows to retrieve the initial data order", {
   # univariate model
   sdata1 <- make_standata(y1 ~ 1, data = temp_data, 
                           autocor = cor_ar(~time|id),
-                          save_order = TRUE)
+                          control = list(save_order = TRUE))
   expect_equal(temp_data$y1, sdata1$Y[attr(sdata1, "old_order")])
   # multivariate model
   sdata2 <- make_standata(cbind(y1, y2) ~ 1, data = temp_data, 
                           autocor = cor_ma(~time|id:trait),
-                          save_order = TRUE)
+                          control = list(save_order = TRUE))
   expect_equal(c(temp_data$y1, temp_data$y2), 
                sdata2$Y[attr(sdata2, "old_order")])
 })
