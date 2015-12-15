@@ -20,7 +20,7 @@ test_that("Test that stanplot and pairs doesn't throw errors", {
                               exact_match = TRUE))
   #expect_silent(p <- stanplot(fit, type = "pairs", quiet = TRUE,
   #                            pars = parnames(fit)[2:3]))
-  expect_silent(p <- stanplot(fit, type = "diag", quiet = TRUE))
+  #expect_silent(p <- stanplot(fit, type = "diag", quiet = TRUE))
   expect_silent(p <- stanplot(fit, type = "rhat", quiet = TRUE))
   expect_silent(p <- stanplot(fit, type = "ess", quiet = TRUE))
   expect_silent(p <- stanplot(fit, type = "mcse", quiet = TRUE))
