@@ -44,3 +44,21 @@ test_that("Test that nlist works correctly", {
   expect_equal(nlist(x, y), exlist)
   expect_equal(nlist(x = x, y), exlist)
 })
+
+test_that("Test that convenience functions for model families work correctly", {
+  expect_true(use_real(gaussian()))
+  expect_true(!use_real("poisson"))
+  expect_true(use_int(binomial()))
+  expect_true(has_trials("zero_inflated_binomial"))
+  expect_true(has_cat("acat"))
+  expect_true(has_sigma(student()))
+  expect_true(!has_sigma("cauchy", se = TRUE))
+  expect_true(has_sigma("cauchy", se = TRUE, autocor = cor_ar()))
+})
+
+test_that("Test that check_intercept updates FE names", {
+  expect_equal(check_intercept(c("Intercept", "x", "z")),
+               list(names = c("x", "z"), has_intercept = TRUE))
+  expect_equal(check_intercept(c("x", "z")),
+               list(names = c("x", "z"), has_intercept = FALSE))
+})
