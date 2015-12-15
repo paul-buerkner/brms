@@ -392,7 +392,8 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
   new_ranef <- check_re_formula(re_formula, old_ranef = x$ranef, data = x$data)
   new_formula <- update_re_terms(x$formula, re_formula = re_formula)
   if (is.null(newdata)) { 
-    data <- standata(x, keep_intercept = TRUE, re_formula = re_formula)
+    data <- standata(x, re_formula = re_formula,
+                     control = list(keep_intercept = TRUE))
   } else {
     data <- newdata
   }

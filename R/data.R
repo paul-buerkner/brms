@@ -9,8 +9,6 @@ melt_data <- function(data, family, effects) {
   #
   # Returns:
   #   data in long format 
-  #ee <- extract_effects(formula, family = family, 
-  #                      check_response = check_response)
   is_linear <- is.linear(family)
   is_hurdle <- is.hurdle(family)
   is_zero_inflated <- is.zero_inflated(family)
@@ -195,13 +193,21 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     }
   }
   if (return_standata) {
-    make_standata(new_formula, data = newdata, family = fit$family, 
-                  autocor =  fit$autocor, partial = fit$partial, 
-                  is_newdata = TRUE, keep_intercept = TRUE,
-                  save_order = TRUE)
-  } else {
-    newdata
+    omit_response <- !(has_arma(fit$autocor) && !use_cov(fit$autocor))
+    control <- list(is_newdata = TRUE, keep_intercept = TRUE,
+                    save_order = TRUE, omit_response = omit_response)
+    if (fit$family %in% c("binomial", "zero_inflated_binomial", "categorical")
+        || is.ordinal(fit$family)) {
+      # if trials or cat are not explicitly part of the formula
+      # the will be computed based on the response variable,
+      # which should be avoided for newdata
+      control[c("trials", "ncat")] <- standata(fit)[c("trials", "ncat")]
+    }
+    newdata <- make_standata(new_formula, data = newdata, 
+                             family = fit$family, autocor = fit$autocor, 
+                             partial = fit$partial, control = control)
   }
+  newdata
 }
 
 #' Data for \pkg{brms} Models
@@ -209,7 +215,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
 #' Generate data for \pkg{brms} models to be passed to \pkg{Stan}
 #'
 #' @inheritParams brm
-#' @param ... Other arguments for internal usage only
+#' @param control A named list currently for internal usage only
+#' @param ... Other potential arguments
 #' 
 #' @aliases brmdata brm.data
 #' 
@@ -231,8 +238,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
 #' @export
 make_standata <- function(formula, data = NULL, family = "gaussian", 
                           autocor = NULL, multiply = NULL, partial = NULL, 
-                          cov.ranef = NULL, ...) {
-  # internal arguments:
+                          cov.ranef = NULL, control = NULL, ...) {
+  # internal control arguments:
   #   is_newdata: logical; indicating if make_standata is called with new data
   #   keep_intercept: logical; indicating if the Intercept column
   #                   should be kept in the FE design matrix
@@ -274,49 +281,52 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   
   # response variable
   standata <- list(N = nrow(data), Y = unname(model.response(data)))
-  if (!is.numeric(standata$Y) && !(is_ordinal || family %in% 
-      c("bernoulli", "categorical")))  {
-    stop(paste("family", family, "expects numeric response variable"))
-  }
-  # transform and check response variable for different families
-  if (family == "binomial" || is_count || has_fake_2nd_resp) {
-    if (!all(is.wholenumber(standata$Y)) || min(standata$Y) < 0) {
-      stop(paste("family", family, "expects response variable", 
-                 "of non-negative integers"))
+  check_response <- !isTRUE(control$omit_response)
+  if (check_response) {
+    if (!is.numeric(standata$Y) && !(is_ordinal || family %in% 
+        c("bernoulli", "categorical")))  {
+      stop(paste("family", family, "expects numeric response variable"))
     }
-  } else if (family == "bernoulli") {
-    standata$Y <- as.numeric(as.factor(standata$Y)) - 1
-    if (any(!standata$Y %in% c(0,1))) {
-      stop(paste("family", family, "expects response variable", 
-                 "to contain only two different values"))
+    # transform and check response variable for different families
+    if (family == "binomial" || is_count || has_fake_2nd_resp) {
+      if (!all(is.wholenumber(standata$Y)) || min(standata$Y) < 0) {
+        stop(paste("family", family, "expects response variable", 
+                   "of non-negative integers"))
+      }
+    } else if (family == "bernoulli") {
+      standata$Y <- as.numeric(as.factor(standata$Y)) - 1
+      if (any(!standata$Y %in% c(0,1))) {
+        stop(paste("family", family, "expects response variable", 
+                   "to contain only two different values"))
+      }
+    } else if (family == "beta") {
+      if (any(standata$Y <= 0) || any(standata$Y >= 1)) {
+        stop("beta regression requires responses between 0 and 1")
+      }
+    } else if (family == "categorical") { 
+      standata$Y <- as.numeric(as.factor(standata$Y))
+    } else if (is_ordinal) {
+      if (is.factor(standata$Y)) {
+        if (is.ordered(standata$Y)) standata$Y <- as.numeric(standata$Y)
+        else stop(paste("family", family, "requires factored", 
+                        "response variables to be ordered"))
+      } else if (all(is.wholenumber(standata$Y))) {
+        standata$Y <- standata$Y - min(standata$Y) + 1
+      } else {
+        stop(paste("family", family, "expects either integers or",
+                   "ordered factors as response variables"))
+      }
+    } else if (is.skewed(family)) {
+      if (min(standata$Y) < 0)
+        stop(paste("family", family, "requires response variable", 
+                   "to be non-negative"))
+    } else if (is_linear && length(ee$response) > 1) {
+      standata$Y <- matrix(standata$Y, ncol = length(ee$response))
+      standata <- c(standata, list(N_trait = nrow(standata$Y), 
+                                   K_trait = ncol(standata$Y)),
+                                   NC_trait = ncol(standata$Y) * 
+                                              (ncol(standata$Y) - 1) / 2) 
     }
-  } else if (family == "beta") {
-    if (any(standata$Y <= 0) || any(standata$Y >= 1)) {
-      stop("beta regression requires responses between 0 and 1")
-    }
-  } else if (family == "categorical") { 
-    standata$Y <- as.numeric(as.factor(standata$Y))
-  } else if (is_ordinal) {
-    if (is.factor(standata$Y)) {
-      if (is.ordered(standata$Y)) standata$Y <- as.numeric(standata$Y)
-      else stop(paste("family", family, "requires factored", 
-                      "response variables to be ordered"))
-    } else if (all(is.wholenumber(standata$Y))) {
-      standata$Y <- standata$Y - min(standata$Y) + 1
-    } else {
-      stop(paste("family", family, "expects either integers or",
-                 "ordered factors as response variables"))
-    }
-  } else if (is.skewed(family)) {
-    if (min(standata$Y) < 0)
-      stop(paste("family", family, "requires response variable", 
-                 "to be non-negative"))
-  } else if (is_linear && length(ee$response) > 1) {
-    standata$Y <- matrix(standata$Y, ncol = length(ee$response))
-    standata <- c(standata, list(N_trait = nrow(standata$Y), 
-                                 K_trait = ncol(standata$Y)),
-                                 NC_trait = ncol(standata$Y) * 
-                                            (ncol(standata$Y) - 1) / 2) 
   }
   if (has_fake_2nd_resp) {
     # the second half of Y is not used because it is only dummy data
@@ -332,7 +342,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   }
   
   # fixed effects data
-  rm_Intercept <- is_ordinal || !isTRUE(dots$keep_intercept)
+  rm_Intercept <- is_ordinal || !isTRUE(control$keep_intercept)
   X <- get_model_matrix(ee$fixed, data, rm_intercept = rm_Intercept)
   if (family == "categorical") {
     standata <- c(standata, list(Kp = ncol(X), Xp = X))
@@ -353,7 +363,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
                        Z[[i]],  # random effects design matrix
                        #  number of correlations
                        ncolZ[[i]] * (ncolZ[[i]]-1) / 2) 
-    if (isTRUE(dots$is_newdata)) {
+    if (isTRUE(control$is_newdata)) {
       # for newdata only as levels are already defined in amend_newdata
       expr[1] <- expression(get(g, data)) 
     }
@@ -418,16 +428,24 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   }
   if (is.formula(ee$trunc)) {
     standata <- c(standata, .addition(formula = ee$trunc))
-    if (min(standata$Y) < standata$lb || max(standata$Y) > standata$ub) {
+    if (check_response && (min(standata$Y) < standata$lb || 
+                            max(standata$Y) > standata$ub)) {
       stop("some responses are outside of the truncation boundaries")
     }
   }
   # data for specific families
   if (family %in% c("binomial", "zero_inflated_binomial")) {
-    standata$trials <- if (!length(ee$trials)) max(standata$Y)
-    else if (is.wholenumber(ee$trials)) ee$trials
-    else if (is.formula(ee$trials)) .addition(formula = ee$trials, data = data)
-    else stop("Response part of formula is invalid.")
+    if (!length(ee$trials)) {
+      if (!is.null(control$trials)) {
+        standata$trials <- control$trials
+      } else {
+        standata$trials <- max(standata$Y) 
+      }
+    } else if (is.wholenumber(ee$trials)) {
+      standata$trials <- ee$trials
+    } else if (is.formula(ee$trials)) {
+      standata$trials <- .addition(formula = ee$trials, data = data)
+    } else stop("Response part of formula is invalid.")
     standata$max_obs <- standata$trials  # for backwards compatibility
     if (max(standata$trials) == 1 && family == "binomial") 
       message(paste("Only 2 levels detected so that family", 
@@ -436,13 +454,18 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     if (any(standata$Y > standata$trials))
       stop("Number of trials is smaller than the response variable would suggest.")
   } else if (is_ordinal || family == "categorical") {
-    standata$ncat <- if (!length(ee$cat)) max(standata$Y)
-    else if (is.wholenumber(ee$cat)) ee$cat
-    else if (is.formula(ee$cat)) {
+    if (!length(ee$cat)) {
+      if (!is.null(control$ncat)) {
+        standata$ncat <- control$ncat
+      } else {
+        standata$ncat <- max(standata$Y)
+      }
+    } else if (is.wholenumber(ee$cat)) { 
+      standata$ncat <- ee$cat
+    } else if (is.formula(ee$cat)) {
       warning("observations may no longer have different numbers of categories.")
-      max(.addition(formula = ee$cat, data = data))
-    }
-    else stop("Response part of formula is invalid.")
+      standata$ncat <- max(.addition(formula = ee$cat, data = data))
+    } else stop("Response part of formula is invalid.")
     standata$max_obs <- standata$ncat  # for backwards compatibility
     if (max(standata$ncat) == 2) 
       message(paste("Only 2 levels detected so that family bernoulli", 
@@ -450,7 +473,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     if (any(standata$Y > standata$ncat))
       stop(paste0("Number of categories is smaller than", 
                   "the response variable would suggest."))
-  } else if (family == "inverse.gaussian") {
+  } else if (family == "inverse.gaussian" && check_response) {
     # save as data to reduce computation time in Stan
     if (is.formula(ee[c("weights", "cens")])) {
       standata$log_Y <- log(standata$Y) 
@@ -530,7 +553,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       standata$Karr <- Karr
     }
   } 
-  if (!is.null(attr(data, "old_order")) && isTRUE(dots$save_order)) {
+  if (!is.null(attr(data, "old_order")) && isTRUE(control$save_order)) {
     attr(standata, "old_order") <- attr(data, "old_order")
   }
   standata

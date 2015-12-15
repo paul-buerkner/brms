@@ -7,7 +7,8 @@
 \title{Data for \pkg{brms} Models}
 \usage{
 make_standata(formula, data = NULL, family = "gaussian", autocor = NULL,
-  multiply = NULL, partial = NULL, cov.ranef = NULL, ...)
+  multiply = NULL, partial = NULL, cov.ranef = NULL, control = NULL,
+  ...)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class): 
@@ -63,7 +64,9 @@ in \code{data} that are used as grouping factors.
 All levels of the grouping factor should appear as rownames 
 of the corresponding matrix.}
 
-\item{...}{Other arguments for internal usage only}
+\item{control}{A named list currently for internal usage only}
+
+\item{...}{Other potential arguments}
 }
 \value{
 A named list of objects containing the required data 

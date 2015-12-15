@@ -737,8 +737,8 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   ee <- extract_effects(object$formula, family = object$family)
   # use newdata if defined
   if (is.null(newdata)) {
-    data <- standata(object, keep_intercept = TRUE, save_order = TRUE,
-                     re_formula = re_formula)
+    data <- standata(object, re_formula = re_formula,
+                     control = list(keep_intercept = TRUE, save_order = TRUE))
   } else {
     data <- amend_newdata(newdata, fit = object, re_formula = re_formula,
                           allow_new_levels = allow_new_levels)
@@ -880,8 +880,8 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   ee <- extract_effects(object$formula, family = object$family)
   # use newdata if defined
   if (is.null(newdata)) {
-    data <- standata(object, keep_intercept = TRUE, save_order = TRUE,
-                     re_formula = re_formula)
+    data <- standata(object, re_formula = re_formula,
+                     control = list(keep_intercept = TRUE, save_order = TRUE))
   } else {
     data <- amend_newdata(newdata, fit = object, re_formula = re_formula,
                           allow_new_levels = allow_new_levels)
@@ -1074,7 +1074,7 @@ logLik.brmsfit <- function(object, ...) {
     stop("The model does not contain posterior samples")
   ee <- extract_effects(object$formula, family = object$family)
   nresp <- length(ee$response)
-  data <- standata(object, save_order = TRUE)
+  data <- standata(object, control = list(save_order = TRUE))
   N <- ifelse(is.null(data$N_tg), nrow(as.matrix(data$Y)), data$N_tg)
   
   # extract relevant samples
