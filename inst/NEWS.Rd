@@ -37,6 +37,8 @@
       \item fix a bug in the evaluation of \code{formula} that
       could cause complicated random effects terms to be 
       falsely treated as fixed effects
+      \item fix several minor bugs when calling the methods
+      \code{fitted} and \code{predict} with \code{newdata}
     }
   }
 }
@@ -91,7 +93,7 @@
   \subsection{BUG FIXES}{
     \itemize{
       \item fix a bug that could cause an unexpected error
-      when predict is called with new data
+      when the \code{predict} method was called with \code{newdata}
       \item avoid side effects of the \code{rstan} compilation routines that could 
       occasionally cause R to crash
       \item make \pkg{brms} work correctly with \pkg{loo} version 0.1.3
