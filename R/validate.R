@@ -468,7 +468,8 @@ remove_chains <- function(i, sflist) {
   #   i: an index between 1 and length(sflist) 
   #   sflist: list of stanfit objects as returned by parLapply
   if (!is(sflist[[i]], "stanfit") || length(sflist[[i]]@sim$samples) == 0) {
-    warning(paste("chain", i, "did not contain samples and was removed from the fitted model"))
+    warning(paste("chain", i, "did not contain samples", 
+                  "and was removed from the fitted model"))
     return(NULL)  
   } else {
     return(sflist[[i]])
