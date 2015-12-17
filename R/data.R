@@ -14,30 +14,39 @@ melt_data <- function(data, family, effects) {
   is_zero_inflated <- is.zero_inflated(family)
   response <- effects$response
   nresp <- length(response)
-  if (nresp == 2 && (is_hurdle || is_zero_inflated) 
-      || nresp > 1 && is_linear) {
-    if (!is(data, "data.frame"))
+  nobs <- nrow(data)
+  if (nresp == 2 && (is_hurdle || is_zero_inflated) || nresp > 1 && is_linear) {
+    if (!is(data, "data.frame")) {
       stop("data must be a data.frame for multivariate models")
-    if ("'trait'" %in% names(data))
+    }
+    if ("'trait'" %in% names(data)) {
       stop("'trait' is a resevered variable name in multivariate models")
-    if ("response" %in% names(data))
+    }
+    if ("response" %in% names(data)) {
       stop("'response' is a resevered variable name in multivariate models")
+    }
+    trait <- factor(rep(response, each = nobs), levels = response)
+    new_cols <- data.frame(trait = trait)
+    # prepare the response variable
     temp_mf <- model.frame(effects$resp_formula, data = data)
     model_response <- model.response(temp_mf)
     if (is_hurdle || is_zero_inflated) {
-      if (response[2] %in% names(data))
-        stop(paste(response[2], "is a resevered variable name"))
-      # dummy values not actually used in Stan
-      model_response <- cbind(model_response, rep(0, nrow(data)))
+      reserved <- c(response[2], "main", "spec")
+      reserved <- reserved[reserved %in% names(data)]
+      if (length(reserved)) {
+        stop(paste(paste(reserved, collapse = ", "), 
+                   "is a resevered variable name"))
+      }
+      one <- rep(1, nobs)
+      zero <- rep(0, nobs)
+      new_cols$main <- c(one, zero)
+      new_cols$spec <- c(zero, one)
+      # dummy responses not actually used in Stan
+      model_response <- cbind(model_response, zero)
     }
-    new_columns <- data.frame(ulapply(response, rep, times = nrow(data)), 
-                              as.numeric(as.matrix(model_response)))
-    names(new_columns) <- c("trait", "response")
-    new_columns$trait <- factor(new_columns$trait, levels = response)
-    #old_columns <- data[, which(!names(data) %in% response), drop = FALSE]
-    #old_columns <- do.call(rbind, lapply(response, function(i) old_columns))
+    new_cols$response <- as.numeric(as.matrix(model_response))
     data <- replicate(length(response), data, simplify = FALSE)
-    data <- cbind(do.call(rbind, data), new_columns)
+    data <- cbind(do.call(rbind, data), new_cols)
   } else if (nresp > 1) {
     stop("Invalid multivariate model")
   }
@@ -70,6 +79,7 @@ combine_groups <- function(data, ...) {
 }
 
 update_data <- function(data, family, effects, ..., 
+                        na.action = na.omit,
                         drop.unused.levels = TRUE) {
   # update data for use in brm
   #
@@ -79,6 +89,7 @@ update_data <- function(data, family, effects, ...,
   #   effects: output of extract_effects (see validate.R)
   #   ...: More formulae passed to combine_groups
   #        Currently only used for autocorrelation structures
+  #   na.action: function defining how to treat NAs
   #   drop.unused.levels: indicates if unused factor levels
   #                       should be removed
   #
@@ -86,7 +97,7 @@ update_data <- function(data, family, effects, ...,
   #   model.frame in long format with combined grouping variables if present
   if (!"brms.frame" %in% class(data)) {
     data <- melt_data(data, family = family, effects = effects)
-    data <- stats::model.frame(effects$all, data = data, na.action = na.omit,
+    data <- stats::model.frame(effects$all, data = data, na.action = na.action,
                                drop.unused.levels = drop.unused.levels)
     if (any(grepl("__", colnames(data))))
       stop("Variable names may not contain double underscores '__'")
@@ -129,14 +140,16 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   ee <- extract_effects(new_formula, family = fit$family)
   et <- extract_time(fit$autocor$formula)
   resp_vars <- all.vars(ee$resp_formula)
-  if (has_arma(fit$autocor) && !use_cov(fit$autocor)
-      && !all(resp_vars %in% names(newdata))) {
+  missing_resp <- setdiff(resp_vars, names(newdata))
+  if (has_arma(fit$autocor) && !use_cov(fit$autocor) 
+      && length(missing_resp)) {
     stop(paste("response variables must be specified", 
                "in newdata for autocorrelative models"))
   } else {
-    for (resp in setdiff(resp_vars, names(newdata))) {
+    for (resp in missing_resp) {
       # add irrelevant response variables
-      newdata[[resp]] <- 0  
+      # but make sure they pass all checks
+      newdata[[resp]] <- NA 
     }
   }
   if (is.formula(ee$cens)) {
@@ -145,7 +158,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     }
   }
   newdata <- update_data(newdata, family = fit$family, effects = ee,
-                         et$group, drop.unused.levels = FALSE)
+                         et$group, na.action = na.pass,
+                         drop.unused.levels = FALSE)
   # try to validate factor levels in newdata
   if (is.data.frame(fit$data)) {
     # validating is possible (implies brms > 0.5.0)
@@ -316,9 +330,10 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
                    "ordered factors as response variables"))
       }
     } else if (is.skewed(family)) {
-      if (min(standata$Y) < 0)
+      if (min(standata$Y) < 0) {
         stop(paste("family", family, "requires response variable", 
                    "to be non-negative"))
+      }
     } else if (is_linear && length(ee$response) > 1) {
       standata$Y <- matrix(standata$Y, ncol = length(ee$response))
       standata <- c(standata, list(N_trait = nrow(standata$Y), 
@@ -450,7 +465,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       message(paste("Only 2 levels detected so that family", 
                     sub("binomial", "bernoulli", family),  
                     "might be a more efficient choice."))
-    if (any(standata$Y > standata$trials))
+    if (check_response && any(standata$Y > standata$trials))
       stop("Number of trials is smaller than the response variable would suggest.")
   } else if (has_cat(family)) {
     if (!length(ee$cat)) {
@@ -466,12 +481,14 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       standata$ncat <- max(.addition(formula = ee$cat, data = data))
     } else stop("Response part of formula is invalid.")
     standata$max_obs <- standata$ncat  # for backwards compatibility
-    if (max(standata$ncat) == 2) 
+    if (max(standata$ncat) == 2) {
       message(paste("Only 2 levels detected so that family bernoulli", 
                     "might be a more efficient choice."))
-    if (any(standata$Y > standata$ncat))
+    }
+    if (check_response && any(standata$Y > standata$ncat)) {
       stop(paste0("Number of categories is smaller than", 
                   "the response variable would suggest."))
+    }
   } else if (family == "inverse.gaussian" && check_response) {
     # save as data to reduce computation time in Stan
     if (is.formula(ee[c("weights", "cens")])) {
