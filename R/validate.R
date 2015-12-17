@@ -18,31 +18,37 @@ extract_effects <- function(formula, ..., family = NA, check_response = TRUE) {
   if (class(family) == "family") {
     family <- family$family
   }
+  term_labels <- rename(attr(terms(formula), "term.labels"), " ", "")
   formula <- formula2string(formula) 
-  # formula without addition arguments
-  simple_formula <- gsub("\\|+[^~]*~", "~", formula)
-  re_exprs <- c("\\+\\([^\\|~]*\\|[^\\)]*\\)",
-                "~\\([^\\|~]*\\|[^\\)]*\\)")
-  fixed <- rename(simple_formula, re_exprs, c("", "~"), fixed = FALSE)
-  if (substr(fixed, nchar(fixed), nchar(fixed)) == "~") 
+  fixed <- gsub("\\|+[^~]*~", "~", formula)
+  re_terms <- term_labels[grepl("\\|", term_labels)]
+  if (length(re_terms)) {
+    re_terms <- paste0("(", re_terms, ")")
+    # make sure that + before random terms are also removed
+    extended_re_terms <- c(paste0("+", re_terms), re_terms)
+    fixed <- rename(fixed, extended_re_terms, "")
+  } 
+  if (substr(fixed, nchar(fixed), nchar(fixed)) == "~") {
     fixed <- paste0(fixed, "1")
+  }
+  if (grepl("|", x = fixed, fixed = TRUE)) {
+    stop("Random effects terms should be enclosed in brackets")
+  }
   fixed <- formula(fixed)
   if (family %in% c("cumulative", "sratio", "cratio", "acat"))
     fixed <- update.formula(fixed, . ~ . + 1)
   if (check_response && length(fixed) < 3) 
-    stop("invalid formula: response variable is missing")
+    stop("Invalid formula: response variable is missing")
   
-  # extract random effects part
-  rg <- gregexpr(paste0(re_exprs, collapse = "|"), simple_formula)
-  rg <- unlist(regmatches(simple_formula, rg))
-  random <- lapply(regmatches(rg, gregexpr("\\([^\\|]*", rg)), 
-                   function(r) formula(paste0("~ ",substr(r, 2, nchar(r)))))
-  cor <- unlist(lapply(regmatches(rg, gregexpr("\\|[^\\)]*", rg)), 
-                       function(g) substr(g, 1, 2) != "||"))
-  group <- regmatches(rg, gregexpr("\\|[^\\)]*", rg))
+  # extract random effects parts
+  random <- lapply(get_matches("\\([^\\|]*", re_terms), function(r) 
+                   formula(paste0("~ ", substr(r, 2, nchar(r)))))
+  cor <- ulapply(get_matches("\\|[^\\)]*", re_terms), 
+                 function(g) substr(g, 1, 2) != "||")
+  group <- get_matches("\\|[^\\)]*", re_terms)
   group_formula <- lapply(group, get_group_formula)
-  group <- unlist(lapply(group_formula, function(g) 
-                         paste0(all.vars(g), collapse = ":")))
+  group <- ulapply(group_formula, function(g) 
+                   paste0(all.vars(g), collapse = ":"))
   
   # ordering is to ensure that all REs of the same grouping factor 
   # are next to each other

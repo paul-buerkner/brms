@@ -1,10 +1,11 @@
 test_that("Test that extract_effects finds all variables in very long formulas", {
   expect_equal(extract_effects(t2_brand_recall ~ psi_expsi + psi_api_probsolv + 
                                  psi_api_ident + psi_api_intere + psi_api_groupint)$all, 
-               t2_brand_recall ~ psi_expsi + psi_api_probsolv + psi_api_ident + psi_api_intere + psi_api_groupint)
+               t2_brand_recall ~ psi_expsi + psi_api_probsolv + psi_api_ident + 
+                 psi_api_intere + psi_api_groupint)
 })
 
-test_that("Test that extract_effects finds all random effects and grouping factors", {
+test_that("Test that extract_effects finds all random effects terms", {
   expect_equal(extract_effects(y ~ a + (1+x|g1) + x + (1|g2) + z)$random, 
               list(~1 + x, ~1))
   expect_equal(extract_effects(y ~ (1+x|g1) + x + (1|g2))$group,
@@ -13,7 +14,10 @@ test_that("Test that extract_effects finds all random effects and grouping facto
                c("g1", "g1:g2"))
   expect_equal(extract_effects(y ~ (1|g1))$group, c("g1"))
   expect_equal(extract_effects(y ~ log(x) + (1|g1))$group, c("g1"))
+  expect_equal(extract_effects(y ~ (x+z):v + (1+x|g1))$random, list(~1+x))
   expect_error(extract_effects(y ~ (1+x|g1/g2) + x + (1|g1)))
+  expect_error(extract_effects(y ~ 1|g1),
+               "Random effects terms should be enclosed in brackets")
 })
 
 test_that("Test that extract_effects accepts || syntax", {
