@@ -91,6 +91,11 @@ nlist <- function(...) {
   dots
 }
 
+get_matches <- function(pattern, text, ...) {
+  # get pattern matches in text as vector
+  unlist(regmatches(text, gregexpr(pattern, text, ...)))
+}
+
 logit <- function(p) {
   # compute the logit
   log(p / (1 - p))
