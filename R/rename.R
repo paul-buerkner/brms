@@ -11,21 +11,32 @@ rename <- function(names, symbols = NULL, subs = NULL,
   # 
   # Returns: 
   #   renamed parameter vector of the same length as names
-  if (is.null(symbols))
-    symbols <- c(" ", "(", ")", "[", "]", ",", "+", "-", "*", "/", "^", "=", "!=")
-  if (is.null(subs))
+  if (is.null(symbols)) {
+    symbols <- c(" ", "(", ")", "[", "]", ",", 
+                 "+", "-", "*", "/", "^", "=", "!=")
+  }
+  if (is.null(subs)) {
     subs <- c(rep("", 6), "P", "M", "MU", "D", "E", "EQ", "NEQ")
-  if (length(symbols) != length(subs)) 
+  }
+  if (length(subs) == 1) {
+    subs <- rep(subs, length(symbols))
+  }
+  if (length(symbols) != length(subs)) {
     stop("length(symbols) != length(subs)")
+  }
   new_names <- names
-  for (i in 1:length(symbols)) {
-    new_names <- gsub(symbols[i], subs[i], new_names, fixed = fixed)
+  for (i in seq_along(symbols)) {
+    # avoid zero-length pattern error when nchar(symbols[i]) == 0
+    if (nchar(symbols[i])) {
+      new_names <- gsub(symbols[i], subs[i], new_names, fixed = fixed)
+    }
   }
   dup <- duplicated(new_names)
   if (check_dup && any(dup)) 
     stop(paste0("Internal renaming of variables led to duplicated names. \n",
                 "Occured for variables: ", 
-                paste(names[which(new_names %in% new_names[dup])], collapse = ", ")))
+                paste(names[which(new_names %in% new_names[dup])], 
+                      collapse = ", ")))
   new_names
 }
 
