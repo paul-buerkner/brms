@@ -263,6 +263,14 @@ test_that("Test that make_standata allows to retrieve the initial data order", {
                sdata2$Y[attr(sdata2, "old_order")])
 })
 
+test_that(paste("Test that make_standata rejects invalid input", 
+                "for argument partial"), {
+  expect_error(make_standata(rating ~ 1, data = inhaler,
+                             partial = ~treat, family = "gaussian"))
+  expect_error(make_standata(rating ~ 1, data = inhaler,
+                             partial = 1, family = "acat"))
+})
+
 test_that("Test brmdata and brm.data for backwards compatibility", {
   temp_data <- data.frame(y = 1:10, x = sample(1:5, 10, TRUE))
   expect_identical(brmdata(y ~ x + (1|x), data = temp_data, 
