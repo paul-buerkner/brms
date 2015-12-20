@@ -2,14 +2,14 @@ Package: brms
 Type: Package
 Title: Bayesian Regression Models using Stan
 Version: 0.6.0.9000
-Date: 2015-11-13
+Date: 2015-12-20
 Authors@R: person("Paul-Christian", "Buerkner", email = "paul.buerkner@gmail.com",
   role = c("aut", "cre"))
-Depends:
+Depends: 
     R (>= 3.1.0),
     rstan (>= 2.8.0),
     ggplot2 (>= 1.0.1)
-Imports:
+Imports: 
     loo (>= 0.1.3),
     shinystan (>= 2.0.0),
     gridExtra (>= 2.0.0),
@@ -21,9 +21,11 @@ Imports:
     parallel,
     grDevices,
     grid
-Suggests:
+Suggests: 
     testthat (>= 0.9.1),
-    R.rsp
+    R.rsp,
+    knitr,
+    rmarkdown
 Description: Fit Bayesian generalized linear mixed models using Stan for full
     Bayesian inference.
 LazyData: true
@@ -31,5 +33,7 @@ NeedsCompilation: yes
 License: GPL (>= 3)
 URL: http://github.com/paul-buerkner/brms
 BugReports: http://github.com/paul-buerkner/brms/issues
-VignetteBuilder: R.rsp
+VignetteBuilder: 
+    R.rsp,
+    knitr
 RoxygenNote: 5.0.1
