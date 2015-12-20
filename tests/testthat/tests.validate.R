@@ -176,7 +176,8 @@ test_that("Test that check_family rejects invalid families", {
 test_that("Test that check_brm_input returns correct warnings and errors", {
   expect_error(check_brm_input(list(n.chains = 3, n.cluster = 2)), 
                "n.chains must be a multiple of n.cluster", fixed = TRUE)
-  x <- list(family = weibull(), inits = "random", n.chains = 1, n.cluster = 1)
+  x <- list(family = weibull(), inits = "random", n.chains = 1, n.cluster = 1,
+            algorithm = "sampling")
   expect_warning(check_brm_input(x))
   x$family <- inverse.gaussian()
   expect_warning(check_brm_input(x))
@@ -186,8 +187,8 @@ test_that("Test that check_brm_input returns correct warnings and errors", {
 
 test_that("Test that remove_chains runs without errors", {
   fit <- rename_pars(brmsfit_example)
-  expect_silent(remove_chains(1, list(fit)))
+  expect_silent(remove_chains(1, list(fit$fit)))
   fit$fit@sim$samples <- NULL
-  expect_warning(remove_chains(1, list(fit)),
+  expect_warning(remove_chains(1, list(fit$fit)),
                  "chain 1 did not contain samples")
 })

@@ -42,7 +42,7 @@ test_that("Test that keep_attr works correcty", {
   res <- keep_attr(x, c("a", "c"))
   expect_equivalent(res, list(a = 1, c = 3))
   expect_equal(attr(res, "att"), "x")
-  expext_equal(names(res), c("a", "b"))
+  expect_equal(names(res), c("a", "c"))
 })
 
 test_that("Test that nlist works correctly", {
