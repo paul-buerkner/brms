@@ -1,5 +1,5 @@
 test_that("Test that plot doesn't throw errors", {
-  fit <- brmsfit_example
+  fit <- rename_pars(brmsfit_example)
   expect_silent(p <- plot(fit, do_plot = FALSE))
   expect_silent(p <- plot(fit, pars = "^b", do_plot = FALSE))
   expect_silent(p <- plot(fit, pars = "^sd", do_plot = FALSE))
@@ -8,7 +8,7 @@ test_that("Test that plot doesn't throw errors", {
 })
 
 test_that("Test that stanplot and pairs doesn't throw errors", {
-  fit <- brmsfit_example
+  fit <- rename_pars(brmsfit_example)
   # tests for stanplot
   expect_silent(p <- stanplot(fit, quiet = TRUE))
   expect_silent(p <- stanplot(fit, pars = "^b", quiet = TRUE))

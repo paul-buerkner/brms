@@ -7,7 +7,7 @@ test_that("Test that brm produces expected errors", {
 })
 
 test_that("Test that all S3 methods have reasonable ouputs", {
-  fit <- brmsfit_example
+  fit <- rename_pars(brmsfit_example)
   # test S3 methods in alphabetical order
   # family
   expect_equal(family(fit), family("poisson", link = "log"))

@@ -9,6 +9,10 @@ rmNULL <- function(x) {
   lapply(x, function(x) if (is.list(x)) rmNULL(x) else x)
 }
 
+isFALSE <- function(x) {
+  identical(FALSE, x)
+}
+
 rmNum <- function(x) {
   # remove all numeric elements from an object
   x[sapply(x, Negate(is.numeric))]

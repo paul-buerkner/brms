@@ -376,6 +376,8 @@ brm <- function(formula, data = NULL, family = "gaussian",
   algorithm <- match.arg(algorithm)
   
   dots <- list(...) 
+  rename <- dots$rename
+  dots$rename <- NULL
   if (is(fit, "brmsfit")) {  
     x <- fit  # re-use existing model
     x$fit <- rstan::get_stanmodel(x$fit)  # extract the compiled model
@@ -469,5 +471,6 @@ brm <- function(formula, data = NULL, family = "gaussian",
       x$fit <- do.call(rstan::vb, args = args)
     } 
   }
-  return(rename_pars(x))  # see rename.R
+  if (!isFALSE(rename)) x <- rename_pars(x) # see rename.R
+  x
 }
