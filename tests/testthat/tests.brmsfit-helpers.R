@@ -89,7 +89,7 @@ test_that("Test the find_names find all valid variable names in a string", {
   expect_equal(find_names("x + b.x - .5 + abc(a__3) : 1/2 - 0.2"), c("x", "b.x", "a__3"))
 })
 
-test_that("Test that get_summary returns corrects dims and names", {
+test_that("Test that get_summary returns correct dims and names", {
   col_names <- c("Estimate", "Est.Error", "5%ile", "50%ile", "95%ile")
   samples_2dim <- matrix(rnorm(1000), nrow = 100, ncol = 10)
   summary_2dim <- get_summary(samples_2dim, probs = c(0.05, 0.5, 0.95))
@@ -106,5 +106,14 @@ test_that("Test that get_summary returns corrects dims and names", {
                list(as.character(1:10), col_names, 
                     paste0("P(Y = ", 1:4, ")")))
   expect_error(get_summary(rnorm(100)))
+})
+
+test_that("Test that get_table returns correct dims and names", {
+  samples <- matrix(sample(1:5, 1000, replace = TRUE), 
+                    nrow = 100, ncol = 10)
+  res_table <- get_table(samples)
+  expect_equal(dim(res_table), c(10, 5))
+  expect_equal(dimnames(res_table), 
+               list(as.character(1:10), paste0("N(Y = ", 1:5, ")")))
 })
 

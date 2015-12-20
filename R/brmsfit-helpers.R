@@ -160,7 +160,7 @@ get_summary <- function(samples, probs = c(0.025, 0.975)) {
   out  
 }
 
-get_table <- function(samples, levels = sort(unique(samples))) {
+get_table <- function(samples, levels = sort(unique(as.numeric(samples)))) {
   # compute absolute frequencies for each column
   # 
   # Args:
