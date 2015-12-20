@@ -16,7 +16,8 @@ test_that("Test that all S3 methods have reasonable ouputs", {
   expect_equal(dim(fitted_old), c(nrow(epilepsy), 4))
   expect_equal(colnames(fitted_old), 
                c("Estimate", "Est.Error", "2.5%ile", "97.5%ile"))
-  newdata <- data.frame(log_Age_c = c(0, -0.2), visit = c(1, 4))
+  newdata <- data.frame(log_Age_c = c(0, -0.2), visit = c(1, 4),
+                        Trt_c = c(-0.2, 0.5))
   fitted_new <- fitted(fit, newdata = newdata)
   expect_equal(dim(fitted_new), c(2, 4))
   # fixef
@@ -28,8 +29,10 @@ test_that("Test that all S3 methods have reasonable ouputs", {
   # hypothesis
   h1 <- hypothesis(fit, "Intercept > log_Age_c")
   expect_equal(dim(h1$hypothesis), c(1, 6))
+  expect_silent(print(h1))
   h2 <- hypothesis(fit, "Intercept = 0", class = "sd", group = "visit")
   expect_true(is.numeric(h2$hypothesis$Evid.Ratio[1]))
+  expect_silent(print(h2))
   # omit launch_shiny
   # logLik
   expect_equal(dim(logLik(fit)), c(80, 236))
@@ -37,9 +40,15 @@ test_that("Test that all S3 methods have reasonable ouputs", {
   .loo <- suppressWarnings(LOO(fit, cores = 1))
   expect_true(is.numeric(.loo[["looic"]]))
   expect_true(.loo[["se_looic"]] > 0)
-  loo_compare <- suppressWarnings(LOO(fit, fit, cores = 1))
-  expect_equal(length(loo_compare), 2)
-  expect_equal(dim(attr(loo_compare, "compare")), c(1,2))
+  expect_silent(print(.loo))
+  loo_compare2 <- suppressWarnings(LOO(fit, fit, cores = 1))
+  expect_equal(length(loo_compare2), 2)
+  expect_equal(dim(attr(loo_compare2, "compare")), c(1, 2))
+  expect_silent(print(loo_compare2))
+  loo_compare3 <- suppressWarnings(LOO(fit, fit, fit, cores = 1))
+  expect_equal(length(loo_compare3), 3)
+  expect_equal(dim(attr(loo_compare3, "compare")), c(3, 2))
+  expect_silent(print(loo_compare3))
   # ngrps
   expect_equal(ngrps(fit), list(visit = 4))
   # nobs
@@ -63,7 +72,8 @@ test_that("Test that all S3 methods have reasonable ouputs", {
   newdata <- data.frame(log_Age_c = c(0, -0.2), visit = c(1, 4))
   predict_new <- predict(fit, newdata = newdata)
   expect_equal(dim(predict_new), c(2, 4))
-  # omit print
+  # print
+  expect_silent(print(fit))
   # prior_samples
   prs1 <- prior_samples(fit)
   expect_equal(dimnames(prs1),
@@ -80,6 +90,7 @@ test_that("Test that all S3 methods have reasonable ouputs", {
   expect_equal(dim(res), c(236, 3))
   # stancode
   expect_true(is.character(stancode(fit)))
+  expect_silent(print(stancode(fit)))
   # standata
   expect_equal(names(standata(fit)),
                c("N", "Y", "K", "X", "J_1", "N_1", "K_1", "Z_1", "NC_1"))
@@ -93,12 +104,19 @@ test_that("Test that all S3 methods have reasonable ouputs", {
                  "u-95% CI", "Eff.Sample", "Rhat"))
   expect_equal(rownames(.summary$random$visit), c("sd(Intercept)"))
   expect_true(is.numeric(.summary$WAIC))
+  expect_silent(print(.summary))
   # do not test update as is causes CRAN checks to fail on Windows
   # VarCorr
   vc <- VarCorr(fit)
   expect_equal(names(vc), "visit")
+  Names <- c("Intercept", "Trt_c")
   expect_equivalent(dimnames(vc$visit$cov$mean), 
-                    list("Intercept", "Intercept"))
+                    list(Names, Names))
+  expect_silent(print(vc))
+  dat_vc <- as.data.frame(vc)
+  expect_equal(dim(dat_vc), c(2, 7))
+  expect_equal(names(data_vc), c("Estimate", "Group", "Name", "Std.Dev",
+                                 "Cor", "Cov", "Cov"))
   # vcov
   expect_equal(dim(vcov(fit)), c(2, 2))
   # WAIC
