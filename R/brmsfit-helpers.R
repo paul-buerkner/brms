@@ -339,7 +339,7 @@ evidence_ratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"),
   out  
 }
 
-get_sigma <- function(x, data, method, n) {
+get_sigma <- function(x, data, n, method = c("fitted", "predict", "logLik")) {
   # get residual standard devation of linear models
   # Args:
   #   x: a brmsfit object or posterior samples of sigma (can be NULL)
@@ -348,8 +348,7 @@ get_sigma <- function(x, data, method, n) {
   #   n: meaning depends on the method argument:
   #      for predict and logLik this is the current observation number
   #      for fitted this is the number of samples
-  if (!method %in% c("fitted", "predict", "logLik"))
-    stop("Invalid method argument")
+  method <- match.arg(method)
   if (is(x, "brmsfit")) {
     sigma <- posterior_samples(x, pars = "^sigma_")$sigma
   } else {
@@ -361,6 +360,9 @@ get_sigma <- function(x, data, method, n) {
     if (is.null(sigma)) {
       # for backwards compatibility with brms <= 0.5.0
       sigma <- data$sigma
+    }
+    if (is.null(sigma)) {
+      stop("No residual standard deviation(s) found")
     }
     if (method %in% c("predict", "logLik")) {
       sigma <- sigma[n]

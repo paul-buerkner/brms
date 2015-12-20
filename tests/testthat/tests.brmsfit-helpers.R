@@ -127,3 +127,15 @@ test_that("Test that evidence_ratio runs without errors", {
   expect_true(is.numeric(evidence_ratio(post, wsign = "less")))
 })
 
+test_that("Test that get_sigma correctly extract residual SDs", {
+  fit <- brmsfit_example
+  expect_error(get_sigma(fit, data = standata(fit), n = 2),
+               "No residual standard deviation(s) found")
+  expect_equal(get_sigma(fit, data = list(se = 2:11), method = "logLik", n = 3), 
+               4)
+  expect_equal(dim(get_sigma(fit, data = list(se = 2:11, N = 10), n = 5)), 
+               c(5, 10))
+  expect_equal(get_sigma(NULL, data = list(sigma = 2:11), method = "predict", n = 5), 
+               6)
+})
+
