@@ -117,3 +117,13 @@ test_that("Test that get_table returns correct dims and names", {
                list(as.character(1:10), paste0("N(Y = ", 1:5, ")")))
 })
 
+test_that("Test that evidence_ratio runs without errors", {
+  post <- rnorm(100, mean = 1)
+  prior <- rnorm(100, sd = 2)
+  expect_true(is.na(evidence_ratio(post, wsign = "equal")))
+  expect_true(is.numeric(evidence_ratio(post, wsign = "equal",
+                                        prior_samples = prior)))
+  expect_true(is.numeric(evidence_ratio(post, wsign = "greater")))
+  expect_true(is.numeric(evidence_ratio(post, wsign = "less")))
+})
+
