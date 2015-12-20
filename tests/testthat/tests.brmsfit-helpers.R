@@ -139,3 +139,13 @@ test_that("Test that get_sigma correctly extract residual SDs", {
                6)
 })
 
+test_that("Test that arma_predictor runs without errors", {
+  data <- list(Y = rnorm(100), tgroup = rep(1:10, each = 10))
+  ar <- matrix(rnorm(5000), nrow = 500, ncol = 100)
+  ma <- matrix(rnorm(5000), nrow = 500, ncol = 100)
+  eta <- matrix(rnorm(5000), nrow = 500, ncol = 100)
+  expect_equal(arma_predictor(data = data, eta = eta), eta)
+  expect_silent(arma_predictor(data = data, eta = eta, ar = ar))
+  expect_silent(arma_predictor(data = data, eta = eta, ma = ma))
+  expect_silent(arma_predictor(data = data, eta = eta, ar = ar, ma = ma))
+})

@@ -547,22 +547,23 @@ ranef_predictor <- function(Z, gf, r) {
   eta
 }
 
-arma_predictor <- function(data, ar, ma, eta, link) {
-  # compute eta for moving average effects
+arma_predictor <- function(data, eta, ar = NULL, ma = NULL, 
+                           link = "identity") {
+  # compute eta for ARMA effects
   #
   # Args:
   #   data: the data initially passed to stan
+  #   eta: previous linear predictor samples
   #   ar: autoregressive samples (can be NULL)
   #   ma: moving average samples (can be NULL)
-  #   eta: previous linear predictor samples
   #   link: the link function as character string
   #
   # Returns:
-  #   new linear predictor samples updated by moving average effects
-  S <- max(nrow(ar), nrow(ma))
+  #   new linear predictor samples updated by ARMA effects
+  S <- nrow(eta)
   Kar <- ifelse(is.null(ar), 0, ncol(ar))
   Kma <- ifelse(is.null(ma), 0, ncol(ma))
-  K <- max(Kar, Kma)
+  K <- max(Kar, Kma, 1)
   Ks <- 1:K
   Y <- link(data$Y, link)
   N <- length(Y)
