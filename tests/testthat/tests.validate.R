@@ -172,3 +172,14 @@ test_that("Test that check_family rejects invalid families", {
   expect_error(check_family("ordinal"),
                "ordinal is not a supported family")
 })
+
+test_that("Test that check_brm_input returns correct warnings and errors", {
+  expect_error(check_brm_input(list(n.chains = 3, n.cluster = 2)), 
+               "n.chains must be a multiple of n.cluster", fixed = TRUE)
+  x <- list(family = weibull(), inits = "random", n.chains = 1, n.cluster = 1)
+  expect_warning(check_brm_input(x))
+  x$family <- inverse.gaussian()
+  expect_warning(check_brm_input(x))
+  x$family <- poisson("sqrt")
+  expect_warning(check_brm_input(x))
+})
