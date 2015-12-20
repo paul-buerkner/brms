@@ -149,3 +149,10 @@ test_that("Test that arma_predictor runs without errors", {
   expect_silent(arma_predictor(data = data, eta = eta, ma = ma))
   expect_silent(arma_predictor(data = data, eta = eta, ar = ar, ma = ma))
 })
+
+test_that("Test that partial_predictor runs without errors", {
+  Xp <- matrix(rnorm(300), nrow = 100, ncol = 3)
+  p <- matrix(rnorm(30 * 9), nrow = 30, ncol = 9)
+  expect_equal(dim(partial_predictor(Xp = Xp, p = p, ncat = 4)),
+               c(30, 100, 3))
+})
