@@ -3,11 +3,13 @@ sudo: required
 
 warnings_are_errors: TRUE
 
+r_packages:
+  - covr
+
 r_binary_packages:
   - rstan
   - ggplot2
   - testthat
-  - covr
   
 after_success:
   - Rscript -e 'library(covr); codecov()'
