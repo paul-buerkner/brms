@@ -36,6 +36,15 @@ test_that("Test that collapse_lists performs correct collapsing after names", {
                list(a = "a <- gamma(1,1)", b = "b <- cauchy(1,2)", c = "c <- normal(0,1)"))
 })
 
+test_that("Test that keep_attr works correcty", {
+  x <- list(a = 1, b = 2, c = 3)
+  attr(x, "att") <- "x"
+  res <- keep_attr(x, c("a", "c"))
+  expect_equivalent(res, list(a = 1, c = 3))
+  expect_equal(attr(res, "att"), "x")
+  expext_equal(names(res), c("a", "b"))
+})
+
 test_that("Test that nlist works correctly", {
   x <- 1
   y <- 2:3
