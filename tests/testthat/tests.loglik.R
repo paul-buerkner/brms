@@ -98,13 +98,17 @@ test_that("loglik for count and survival models works correctly", {
                                        link = "log"), ll_invgauss)
 })
 
-test_that("loglik for beta models works correctly", {
+test_that("loglik for bernoulli and beta models works correctly", {
   ns <- 200
   nobs <- 10
   s <- list(eta = matrix(rnorm(ns*nobs), ncol = nobs),
             phi = rgamma(ns, 4))
-  data <- list(Y = rbeta(nobs, 1, 1))
   i <- sample(1:nobs, 1)
+  data <- list(Y = sample(0:1, nobs, replace = TRUE))
+  ll_bern <- dbinom(x = data$Y[i], prob = ilogit(s$eta[, i]),
+                    size = 1, log = TRUE)
+  expect_equal(loglik_bernoulli(i, data = data, samples = s), ll_bern)
+  data <- list(Y = rbeta(nobs, 1, 1))
   ll_beta <- dbeta(x = data$Y[i], shape1 = ilogit(s$eta[, i]) * s$phi, 
                    shape2 = (1 - ilogit(s$eta[, i])) * s$phi, log = TRUE)
   expect_equal(loglik_beta(i, data = data, samples = s), ll_beta)
@@ -112,24 +116,23 @@ test_that("loglik for beta models works correctly", {
 
 test_that("loglik for zero-inflated and hurdle models runs without erros", {
   ns <- 50
-  nobs <- 7
+  nobs <- 8
   trials <- sample(10:30, nobs, replace = TRUE)
+  resp <- rbinom(nobs-4, size = trials[1:4], prob = rbeta(nobs-4, 1, 1))
   s <- list(eta = matrix(rnorm(ns*nobs*2), ncol = nobs*2),
             shape = rgamma(ns, 4))
-  data <- list(Y = rbinom(nobs, size = trials, prob = rbeta(nobs, 1, 1)),
-               N_trait = nobs, max_obs = trials)
-  i <- sample(1:nobs, 1)  
-  ll <- loglik_hurdle_poisson(i, data = data, samples = s)
+  data <- list(Y = c(resp, rep(0, 4)), N_trait = nobs, max_obs = trials)
+  ll <- loglik_hurdle_poisson(1, data = data, samples = s)
   expect_equal(length(ll), ns)
-  ll <- loglik_hurdle_negbinomial(i, data = data, samples = s)
+  ll <- loglik_hurdle_negbinomial(2, data = data, samples = s)
   expect_equal(length(ll), ns)
-  ll <- loglik_hurdle_negbinomial(i, data = data, samples = s)
+  ll <- loglik_hurdle_gamma(5, data = data, samples = s)
   expect_equal(length(ll), ns)
-  ll <- loglik_zero_inflated_poisson(i, data = data, samples = s)
+  ll <- loglik_zero_inflated_poisson(3, data = data, samples = s)
   expect_equal(length(ll), ns)
-  ll <- loglik_zero_inflated_binomial(i, data = data, samples = s)
+  ll <- loglik_zero_inflated_binomial(4, data = data, samples = s)
   expect_equal(length(ll), ns)
-  ll <- loglik_zero_inflated_negbinomial(i, data = data, samples = s)
+  ll <- loglik_zero_inflated_negbinomial(6, data = data, samples = s)
   expect_equal(length(ll), ns)
 })
 
@@ -148,6 +151,9 @@ test_that("loglik for categorical and ordinal models runs without erros", {
   ll <- sapply(1:nobs, loglik_cratio, data = data, samples = s)
   expect_equal(dim(ll), c(ns, nobs))
   ll <- sapply(1:nobs, loglik_acat, data = data, samples = s)
+  expect_equal(dim(ll), c(ns, nobs))
+  ll <- sapply(1:nobs, loglik_acat, data = data, samples = s,
+               link = "probit")
   expect_equal(dim(ll), c(ns, nobs))
 })
 
