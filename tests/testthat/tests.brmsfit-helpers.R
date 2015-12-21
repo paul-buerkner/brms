@@ -1,4 +1,4 @@
-test_that("Test that first_greater returns expected results", {
+test_that("first_greater returns expected results", {
   set.seed(12345)
   A <- cbind(1:10, 11:20, 21:30)
   x <- sample(1:25, size = 10, replace = TRUE)
@@ -6,17 +6,17 @@ test_that("Test that first_greater returns expected results", {
   expect_equal(first_greater(A, x, i = 2), c(3,3,3,3,2,2,2,2,2,3))
 })
 
-test_that("Test that array2list performs correct conversion", {
+test_that("array2list performs correct conversion", {
   A <- array(1:27, dim = c(3,3,3))
   B <- list(matrix(1:9,3,3), matrix(10:18,3,3), matrix(19:27,3,3))
   expect_equal(array2list(A), B)
 })
 
-test_that("Test that ilink(x, probit) and ilink(x, probit_approx) produce similar results", {
+test_that("ilink(x, probit) and ilink(x, probit_approx) produce similar results", {
   all.equal(ilink(-10:10, "probit"), ilink(-10:10, "probit_approx"), tolerance = 1e-3)
 })
 
-test_that("Test that get_cornames returns desired correlation names", {
+test_that("get_cornames returns desired correlation names", {
   names <- c("Intercept", "x", "y")
   expect_equal(get_cornames(names), c("cor(Intercept,x)", "cor(Intercept,y)", "cor(x,y)"))
   expect_equal(get_cornames(names, brackets = FALSE), 
@@ -27,13 +27,13 @@ test_that("Test that get_cornames returns desired correlation names", {
                c("cor(Intercept,x)", "cor(Intercept,y)"))
 })
 
-test_that("Test that get_cov_matrix returns appropriate dimensions", {
+test_that("get_cov_matrix returns appropriate dimensions", {
   sd <- cbind(1:10,11:20); cor <- cbind(seq(-0.5, 0.4, 0.1))
   expect_equal(dim(get_cov_matrix(sd = sd, cor = cor)$cov), c(10,2,2))
   expect_equal(dim(get_cov_matrix(sd = sd)$cov), c(10,2,2))
 })
 
-test_that("Test that ARMA covariance matrices are computed correctly", {
+test_that("ARMA covariance matrices are computed correctly", {
   ar <- 0.5
   ma <- 0.3
   sigma <- 2
@@ -73,14 +73,14 @@ test_that("Test that ARMA covariance matrices are computed correctly", {
   expect_equal(arma_mat[1, , ], expected_arma_mat)
 })
 
-test_that("Test that evidence_ratio returns expected results", {
+test_that("evidence_ratio returns expected results", {
   post_samples <- c(-4:10); prior_samples <- c(-2:12)
   expect_true(evidence_ratio(x = post_samples, prior_samples = prior_samples) > 1)
   expect_equal(evidence_ratio(x = post_samples, cut = 0.5, wsign = "greater"), 10/5)
   expect_equal(evidence_ratio(x = post_samples, cut = 0.5, wsign = "less"), 5/10)
 })
 
-test_that("Test that expand_matrix returns expected results", {
+test_that("expand_matrix returns expected results", {
   A <- matrix(1:6, 3, 2); x <- c(1,2,1)
   expect_equal(expand_matrix(A, x), matrix(c(1,0,3,4,0,6,0,2,0,0,5,0), 3, 4))
 })
@@ -89,7 +89,7 @@ test_that("Test the find_names find all valid variable names in a string", {
   expect_equal(find_names("x + b.x - .5 + abc(a__3) : 1/2 - 0.2"), c("x", "b.x", "a__3"))
 })
 
-test_that("Test that get_summary returns correct dims and names", {
+test_that("get_summary returns correct dims and names", {
   col_names <- c("Estimate", "Est.Error", "5%ile", "50%ile", "95%ile")
   samples_2dim <- matrix(rnorm(1000), nrow = 100, ncol = 10)
   summary_2dim <- get_summary(samples_2dim, probs = c(0.05, 0.5, 0.95))
@@ -108,7 +108,7 @@ test_that("Test that get_summary returns correct dims and names", {
   expect_error(get_summary(rnorm(100)))
 })
 
-test_that("Test that get_table returns correct dims and names", {
+test_that("get_table returns correct dims and names", {
   samples <- matrix(sample(1:5, 1000, replace = TRUE), 
                     nrow = 100, ncol = 10)
   res_table <- get_table(samples)
@@ -117,7 +117,7 @@ test_that("Test that get_table returns correct dims and names", {
                list(as.character(1:10), paste0("N(Y = ", 1:5, ")")))
 })
 
-test_that("Test that evidence_ratio runs without errors", {
+test_that("evidence_ratio runs without errors", {
   post <- rnorm(100, mean = 1)
   prior <- rnorm(100, sd = 2)
   expect_true(is.na(evidence_ratio(post, wsign = "equal")))
@@ -127,7 +127,7 @@ test_that("Test that evidence_ratio runs without errors", {
   expect_true(is.numeric(evidence_ratio(post, wsign = "less")))
 })
 
-test_that("Test that get_sigma correctly extract residual SDs", {
+test_that("get_sigma correctly extract residual SDs", {
   fit <- rename_pars(brmsfit_example)
   expect_error(get_sigma(fit, data = standata(fit), n = 2),
                "No residual standard deviation(s) found", fixed = TRUE)
@@ -139,7 +139,7 @@ test_that("Test that get_sigma correctly extract residual SDs", {
                6)
 })
 
-test_that("Test that arma_predictor runs without errors", {
+test_that("arma_predictor runs without errors", {
   data <- list(Y = rnorm(100), tgroup = rep(1:10, each = 10))
   ar <- matrix(rnorm(5000), nrow = 500, ncol = 100)
   ma <- matrix(rnorm(5000), nrow = 500, ncol = 100)
@@ -150,7 +150,7 @@ test_that("Test that arma_predictor runs without errors", {
   expect_silent(arma_predictor(data = data, eta = eta, ar = ar, ma = ma))
 })
 
-test_that("Test that partial_predictor runs without errors", {
+test_that("partial_predictor runs without errors", {
   Xp <- matrix(rnorm(300), nrow = 100, ncol = 3)
   p <- matrix(rnorm(30 * 9), nrow = 30, ncol = 9)
   expect_equal(dim(partial_predictor(Xp = Xp, p = p, ncat = 4)),

@@ -1,4 +1,4 @@
-test_that("Test that check_prior performs correct renaming", {
+test_that("check_prior performs correct renaming", {
   # ordering bug in devtools::check() for upper case letters
   prior <- check_prior(set_prior("normal(0,5)", class = "cor"),
                        formula = rating ~ 0 + treat + (0 + treat + carry | subject), 
@@ -34,7 +34,7 @@ test_that("Test that check_prior performs correct renaming", {
 })
 
 
-test_that("Test that check_prior is backwards compatible", { 
+test_that("check_prior is backwards compatible", { 
   prior <- suppressWarnings(check_prior(
     list(b_carry = "normal(0,1)", nu = "gamma(1,1)"), 
     family = "student", formula = rating ~ carry + (1+treat|subject), 
@@ -53,7 +53,7 @@ test_that("Test that check_prior is backwards compatible", {
   expect_true(length(which(duplicated(rbind(prior, target)))) == 2)
 })
 
-test_that("Test that check_prior accepts correct prior names", {
+test_that("check_prior accepts correct prior names", {
   expect_equivalent(check_prior(c(set_prior("normal(0,1)", class = "b", coef = "carry"),
                                   set_prior("gamma(1,1)", class = "b", coef = "treat")),
                                 formula = rating ~ -1 + treat + carry, data = inhaler)[c(2,3), ],
@@ -78,7 +78,7 @@ test_that("Test that check_prior accepts correct prior names", {
                     prior_frame(c("p1", "p2"), class = c("ar", "ma")))
 })
 
-test_that("Test that check_prior rejects incorrect prior names", {
+test_that("check_prior rejects incorrect prior names", {
   expect_message(check_prior(c(set_prior("p1", class = "b", coef = "Intercept"),
                                set_prior("p2", class = "b", coef = "age")),
                              family = "acat", link = "logit", data = inhaler,
@@ -92,7 +92,7 @@ test_that("Test that check_prior rejects incorrect prior names", {
                              data = epilepsy))
 })
 
-test_that("Test that check_prior returns increment_log_prob(.) whithout checking", {
+test_that("check_prior returns increment_log_prob(.) whithout checking", {
   expect_equivalent(check_prior(c(set_prior("increment_log_prob(p1)"),
                                   set_prior("p2", class = "b")),
                                 formula = count ~ Trt_c, 
@@ -101,7 +101,7 @@ test_that("Test that check_prior returns increment_log_prob(.) whithout checking
                                 class = c("b", "")))
 }) 
 
-test_that("Test that handle_special_priors handles horseshoe prior correctly", {
+test_that("handle_special_priors handles horseshoe prior correctly", {
   prior <- set_prior("horseshoe(5)")
   temp <- handle_special_priors(c(prior))
   expect_equal(temp$attrib$hs_df, 5)
@@ -111,7 +111,7 @@ test_that("Test that handle_special_priors handles horseshoe prior correctly", {
                "degrees of freedom of horseshoe prior must be a positive number")
 })
 
-test_that("Test that get_prior finds all classes for which priors can be specified", {
+test_that("get_prior finds all classes for which priors can be specified", {
   expect_equal(get_prior(count ~ log_Base4_c * Trt_c + (1|patient) + (1+Trt_c|visit),
                          data = epilepsy, family = "poisson")$class,
                c(rep("b", 5), c("cor", "cor"), rep("sd", 6)))
@@ -120,7 +120,7 @@ test_that("Test that get_prior finds all classes for which priors can be specifi
                c(rep("b", 5), "delta"))
 })
 
-test_that("Test that update_prior produces correct prior_frames", {
+test_that("update_prior produces correct prior_frames", {
   prior <- list(b = "p1", sd = "p2", cor = "p3", b_Intercept = "p4",
                 cor_visit = "p5", sd_visit_x = "p6", sd_visit = "p7", 
                 sigma = "p8")

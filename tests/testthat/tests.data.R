@@ -1,4 +1,4 @@
-test_that("Test that melt_data returns data in correct long format", {
+test_that("melt_data returns data in correct long format", {
   data <- data.frame(x = rep(c("a","b"), 5), y1 = 1:10, y2 = 11:20, 
                      y3 = 21:30, z = 100:91)
   
@@ -27,7 +27,7 @@ test_that("Test that melt_data returns data in correct long format", {
                target2)
 })
 
-test_that("Test that combine_groups does the expected", {
+test_that("combine_groups does the expected", {
   data <- data.frame(x = rep(c("a","b"), 5), y1 = 1:10, 
                      y2 = 11:20, y3 = 21:30, z = 100:91)
   expected <- data 
@@ -36,14 +36,14 @@ test_that("Test that combine_groups does the expected", {
   expect_equal(combine_groups(data, "y1:y2", "y1:y2:y3"), expected)
 })
 
-test_that("Test that get_model_matrix removes intercepts correctly", {
+test_that("get_model_matrix removes intercepts correctly", {
   data <- data.frame(x = factor(rep(1:2, 5)), y = 11:20)
   expect_equal(get_model_matrix(y ~ x, data, rm_intercept = TRUE),
                structure(matrix(rep(0:1, 5)), dimnames = list(1:10, "x2")))
 })
 
-test_that(paste("Test that arr_design_matrix returns correct design", 
-                 "matrices for autoregressive effects"), {
+test_that(paste("arr_design_matrix returns correct design", 
+                "matrices for autoregressive effects"), {
   expect_equal(arr_design_matrix(1:10, 0, sort(rep(1:2, 5))), NULL)
   expect_equal(arr_design_matrix(1:10, 1, sort(rep(1:2, 5))), 
                matrix(c(0,1:4.5,0,6:9.5)))
@@ -51,7 +51,7 @@ test_that(paste("Test that arr_design_matrix returns correct design",
                cbind(c(0,1:4.5,0,6:9), c(0,0,1:3,0,0,6:8)))
 })
 
-test_that(paste("Test that make_standata returns correct data names", 
+test_that(paste("make_standata returns correct data names", 
                 "for fixed and random effects"), {
   expect_equal(names(make_standata(rating ~ treat + period + carry 
                                    + (1|subject), data = inhaler)),
@@ -68,8 +68,8 @@ test_that(paste("Test that make_standata returns correct data names",
                  "J_2","N_2","K_2","Z_2","NC_2"))
 })
 
-test_that(paste("Test that make_standata handles variables used as fixed effects", 
-                 "and grouping factors at the same time"), {
+test_that(paste("make_standata handles variables used as fixed effects", 
+                "and grouping factors at the same time"), {
   data <- data.frame(y = 1:9, x = factor(rep(c("a","b","c"), 3)))
   standata <- make_standata(y ~ x + (1|x), data = data)
   expect_equal(colnames(standata$X), c("xb", "xc"))
@@ -79,7 +79,7 @@ test_that(paste("Test that make_standata handles variables used as fixed effects
   expect_equal(colnames(standata2$X), c("Intercept", "xb", "xc"))
 })
 
-test_that(paste("Test that make_standata returns correct data names", 
+test_that(paste("make_standata returns correct data names", 
                 "for addition and partial variables"), {
   temp_data <- data.frame(y = 1:10, w = 1:10, t = 1:10, x = rep(0,10), 
                           c = sample(-1:1,10,TRUE))
@@ -109,7 +109,7 @@ test_that(paste("Test that make_standata returns correct data names",
   expect_true(standata$lb == 0 && standata$ub == 20)
 })
 
-test_that(paste("Test that make_standata accepts correct response variables", 
+test_that(paste("make_standata accepts correct response variables", 
                 "depending on the family"), {
   expect_equal(make_standata(y ~ 1, data = data.frame(y = seq(-9.9,0,0.1)), 
                              family = "student")$Y, seq(-9.9,0,0.1))
@@ -140,8 +140,8 @@ test_that(paste("Test that make_standata accepts correct response variables",
                cbind(1:10,11:20))
 })
 
-test_that(paste("Test that make_standata rejects incorrect", 
-                "response variables depending on the family"), {
+test_that(paste("make_standata rejects incorrect response variables", 
+                "depending on the family"), {
   expect_error(make_standata(y ~ 1, data = data.frame(y = factor(1:10)), 
                              family = "cauchy"),
                "family cauchy expects numeric response variable")
@@ -162,7 +162,7 @@ test_that(paste("Test that make_standata rejects incorrect",
                "family gamma requires response variable to be non-negative")
 })
 
-test_that("Test that make_standata suggests using family bernoulli if appropriate", {
+test_that("make_standata suggests using family bernoulli if appropriate", {
   expect_message(make_standata(y ~ 1, data = data.frame(y = rep(0:1,5)), 
                                family = "binomial"),
                  paste("Only 2 levels detected so that family bernoulli", 
@@ -173,7 +173,7 @@ test_that("Test that make_standata suggests using family bernoulli if appropriat
                        "might be a more efficient choice."))
 })
 
-test_that("Test that make_standata returns correct values for addition arguments", {
+test_that("make_standata returns correct values for addition arguments", {
   temp_data <- data.frame(y = rnorm(9), s = 1:9, w = 1:9, c1 = rep(-1:1, 3), 
                           c2 = rep(c("left","none","right"), 3),
                           c3 = c(rep(c(TRUE, FALSE), 4), FALSE),
@@ -198,7 +198,7 @@ test_that("Test that make_standata returns correct values for addition arguments
                              family = "categorical")$max_obs, 19)
 })
 
-test_that("Test that make_standata rejects incorrect addition arguments", {
+test_that("make_standata rejects incorrect addition arguments", {
   temp_data <- data.frame(y = rnorm(9), s = -(1:9), w = -(1:9), 
                           c = rep(-2:0, 3), t = 9:1, z = 1:9)
   expect_error(make_standata(y | se(s) ~ 1, data = temp_data), 
@@ -211,7 +211,7 @@ test_that("Test that make_standata rejects incorrect addition arguments", {
                "Number of trials is smaller than the response variable would suggest.")
 })
 
-test_that(paste("Test that make_standata handles addition arguments", 
+test_that(paste("make_standata handles addition arguments", 
                 "and autocorrelation in multinormal models"), {
   temp_data <- data.frame(y1 = 1:10, y2 = 11:20, w = 1:10, x = rep(0,10), 
                           tim = 10:1, g = rep(1:2,5))
@@ -229,7 +229,7 @@ test_that(paste("Test that make_standata handles addition arguments",
                      "must contain 'trait' as grouping variable"))
 })
 
-test_that(paste("Test that make_standata returns correct data", 
+test_that(paste("make_standata returns correct data", 
                 "for autocorrelations structures"), {
   temp_data <- data.frame(y=1:10, x=rep(0,10), tim=10:1, g = rep(3:4,5))
   expect_equal(make_standata(y ~ x, family = "gaussian", data = temp_data,
@@ -246,7 +246,7 @@ test_that(paste("Test that make_standata returns correct data",
                c(rep(1,5), rep(2,5)))
 })
 
-test_that("Test that make_standata allows to retrieve the initial data order", {
+test_that("make_standata allows to retrieve the initial data order", {
   temp_data <- data.frame(y1 = rnorm(100), y2 = rnorm(100), 
                           id = sample(1:10, 100, TRUE), 
                           time = sample(1:100, 100))
@@ -263,15 +263,14 @@ test_that("Test that make_standata allows to retrieve the initial data order", {
                sdata2$Y[attr(sdata2, "old_order")])
 })
 
-test_that(paste("Test that make_standata rejects invalid input", 
-                "for argument partial"), {
+test_that("make_standata rejects invalid input for argument partial", {
   expect_error(make_standata(rating ~ 1, data = inhaler,
                              partial = ~treat, family = "gaussian"))
   expect_error(make_standata(rating ~ 1, data = inhaler,
                              partial = 1, family = "acat"))
 })
 
-test_that("Test brmdata and brm.data for backwards compatibility", {
+test_that("brmdata and brm.data are backwards compatible", {
   temp_data <- data.frame(y = 1:10, x = sample(1:5, 10, TRUE))
   expect_identical(brmdata(y ~ x + (1|x), data = temp_data, 
                            family = "poisson"), 

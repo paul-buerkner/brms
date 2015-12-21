@@ -1,4 +1,4 @@
-test_that("Test that loglik for (weighted) linear models works as expected", {
+test_that("loglik for (weighted) linear models works as expected", {
   ns <- 200
   s <- list(eta = matrix(rnorm(ns*2), ncol = 2),
             sigma = rchisq(ns, 3), nu = rgamma(ns, 4))
@@ -19,7 +19,7 @@ test_that("Test that loglik for (weighted) linear models works as expected", {
                ll_gaussian * data$weights[1])
 })
 
-test_that("Test that loglik for lognormal models works as expected", {
+test_that("loglik for lognormal models works as expected", {
   ns <- 50
   s <- list(sigma = rchisq(ns, 3), eta = matrix(rnorm(ns*2), ncol = 2))
   data <- list(Y = rlnorm(ns))
@@ -28,7 +28,7 @@ test_that("Test that loglik for lognormal models works as expected", {
   expect_equal(loglik_lognormal(1, data = data, samples = s), ll_lognormal)
 })
 
-test_that("Test that loglik for multivariate linear models runs without errors", {
+test_that("loglik for multivariate linear models runs without errors", {
   ns <- 10
   nvars <- 3
   ncols <- 4
@@ -45,7 +45,7 @@ test_that("Test that loglik for multivariate linear models runs without errors",
   expect_equal(length(loglik_multi_cauchy(2, data = data, samples = s)), ns)
 })
 
-test_that("Test that loglik for ARMA covariance models runs without errors", {
+test_that("loglik for ARMA covariance models runs without errors", {
   ns <- 20
   nobs <- 15
   s <- list(eta = matrix(rnorm(ns*nobs), ncol = nobs),
@@ -63,7 +63,7 @@ test_that("Test that loglik for ARMA covariance models runs without errors", {
                                         link = "identity")), ns)
 })
 
-test_that("Test that loglik for count/survival models works correctly", {
+test_that("loglik for count and survival models works correctly", {
   ns <- 200
   nobs <- 10
   trials <- sample(10:30, nobs, replace = TRUE)
@@ -98,7 +98,7 @@ test_that("Test that loglik for count/survival models works correctly", {
                                        link = "log"), ll_invgauss)
 })
 
-test_that("Test that loglik for beta models works correctly", {
+test_that("loglik for beta models works correctly", {
   ns <- 200
   nobs <- 10
   s <- list(eta = matrix(rnorm(ns*nobs), ncol = nobs),
@@ -110,8 +110,7 @@ test_that("Test that loglik for beta models works correctly", {
   expect_equal(loglik_beta(i, data = data, samples = s), ll_beta)
 })
 
-test_that(paste("Test that loglik for zero-inflated and hurdle models", 
-                "runs without erros"), {
+test_that("loglik for zero-inflated and hurdle models runs without erros", {
   ns <- 50
   nobs <- 7
   trials <- sample(10:30, nobs, replace = TRUE)
@@ -134,8 +133,7 @@ test_that(paste("Test that loglik for zero-inflated and hurdle models",
   expect_equal(length(ll), ns)
 })
 
-test_that(paste("Test that loglik for categorical and ordinal models", 
-                "runs without erros"), {
+test_that("loglik for categorical and ordinal models runs without erros", {
   ns <- 50
   nobs <- 8
   ncat <- 4
@@ -153,7 +151,7 @@ test_that(paste("Test that loglik for categorical and ordinal models",
   expect_equal(dim(ll), c(ns, nobs))
 })
 
-test_that("Test that censored and truncated loglik run without errors", {
+test_that("censored and truncated loglik run without errors", {
   ns <- 30
   nobs <- 3
   s <- list(eta = matrix(rnorm(ns * nobs), ncol = nobs),
@@ -165,4 +163,3 @@ test_that("Test that censored and truncated loglik run without errors", {
   ll <- sapply(1:nobs, loglik_gaussian, data = data, samples = s)
   expect_equal(dim(ll), c(ns, nobs))
 })
-

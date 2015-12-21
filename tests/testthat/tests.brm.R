@@ -1,4 +1,4 @@
-test_that("Test that brm produces expected errors", {
+test_that("brm produces expected errors", {
   expect_error(brm(rating~treat+period+carry+(1|subject), data = inhaler, 
                    partial = ~treat, family = c("cratio", "logit")), 
               paste("Variables cannot be modeled as fixed", 
@@ -6,7 +6,7 @@ test_that("Test that brm produces expected errors", {
                     "Error occured for variables: treat"))
 })
 
-test_that("Test that all S3 methods have reasonable ouputs", {
+test_that("all S3 methods have reasonable ouputs", {
   fit <- rename_pars(brmsfit_example)
   # test S3 methods in alphabetical order
   # family
