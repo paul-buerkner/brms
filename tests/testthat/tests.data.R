@@ -341,7 +341,7 @@ test_that("make_standata computes data for inverse.gaussian models", {
 test_that("amend_newdata handles factors correctly", {
   fit <- rename_pars(brmsfit_example)
   fit$data$fac <- factor(sample(1:3, nrow(fit$data), replace = TRUE))
-  newdata <- data[1:5, ]
+  newdata <- fit$data[1:5, ]
   expect_silent(amend_newdata(newdata, fit))
   newdata$visit <- 1:5
   expect_error(amend_newdata(newdata, fit), fixed = TRUE,
