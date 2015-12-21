@@ -123,7 +123,7 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
                                          weights = is.formula(ee$weights),
                                          cens = is.formula(ee$cens),
                                          trunc = is.formula(ee$trunc))
-  kronecker <- needs_kronecker(names_ranef = ranef, names_group = ee$group,
+  kronecker <- needs_kronecker(gather_ranef(effects = ee, data = data),
                                names_cov_ranef = names(cov.ranef))
   text_misc_funs <- stan_misc_functions(link = link, kronecker = kronecker)
     
@@ -398,12 +398,9 @@ stan_ranef <- function(i, ranef, group, cor, prior = prior_frame(),
     "  int<lower=1> J_",i,"[N];  # RE levels \n",
     "  int<lower=1> N_",i,";  # number of levels \n",
     "  int<lower=1> K_",i,";  # number of REs \n",
-    if (ccov && (cor || length(r) == 1)) 
-      paste0("  matrix[N_",i,", N_",i,"] cov_",i,";",
-             "  # user defined covariance matrix \n"),
-    if (ccov && !cor && length(r) > 1) 
-      paste0("  matrix[N_",i," * K_",i,", N_",i," * K_",i,"] cov_",i,";",
-             "  # user defined covariance matrix \n"))
+    if (ccov) paste0(
+      "  matrix[N_",i,", N_",i,"] cov_",i,";",
+      "  # user defined covariance matrix \n"))
   
   out$prior <- stan_prior(class = "sd", group = i, coef = r, prior = prior)
   if (length(r) == 1) {  # only one random effect

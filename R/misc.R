@@ -281,19 +281,16 @@ check_intercept <- function(names) {
   nlist(names, has_intercept)
 }
 
-needs_kronecker <- function(names_ranef, names_group, 
-                            names_cov_ranef) {
+needs_kronecker <- function(ranef, names_cov_ranef) {
   # checks if a model needs the kronecker product
   # Args: 
-  #   names_ranef: names of the random effects coefficients
-  #   names_group: names of the grouping factors
+  #   ranef: named list returned by gather_ranef
   #   names_cov_ranef: names of the grouping factors that
   #                    have a cov.ranef matrix 
-  ranef_list <- mapply(list, names_ranef, names_group, SIMPLIFY = FALSE)
   .fun <- function(x, names) {
-    length(x[[1]]) > 1 && x[[2]] %in% names
+    length(x) > 1 && attr(x, "group") %in% names && attr(x, "cor")
   }
-  any(sapply(ranef_list, .fun, names = names_cov_ranef))
+  any(sapply(ranef, .fun, names = names_cov_ranef))
 }
 
 get_boundaries <- function(trunc) {

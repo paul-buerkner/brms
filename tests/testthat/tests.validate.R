@@ -139,10 +139,12 @@ test_that("update_re_terms works correctly", {
 })
 
 test_that("gather_ranef works correctly", {
-  data <- data.frame(g = 1:10, x = 11:20)
+  data <- data.frame(g = 1:10, x = 11:20, y = 1:10)
   target <- list(g = c("Intercept", "x"))
   attr(target$g, "levels") <- paste(1:10)
-  expect_equal(gather_ranef(list(random = list(~1+x), group = "g"), data = data),
+  attr(target$g, "group") <- "g"
+  attr(target$g, "cor") <- FALSE
+  expect_equal(gather_ranef(extract_effects(y~(1+x||g)), data = data),
                target)
   expect_equal(gather_ranef(list()), list())
 })

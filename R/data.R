@@ -19,11 +19,11 @@ melt_data <- function(data, family, effects) {
     if (!is(data, "data.frame")) {
       stop("data must be a data.frame for multivariate models")
     }
-    if ("'trait'" %in% names(data)) {
-      stop("'trait' is a resevered variable name in multivariate models")
+    if ("trait" %in% names(data)) {
+      stop("trait is a resevered variable name in multivariate models")
     }
     if ("response" %in% names(data)) {
-      stop("'response' is a resevered variable name in multivariate models")
+      stop("response is a resevered variable name in multivariate models")
     }
     trait <- factor(rep(response, each = nobs), levels = response)
     new_cols <- data.frame(trait = trait)
@@ -173,7 +173,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
         new_factor <- newdata[[factor_names[i]]]
         if (!is.null(new_factor)) {
           if (!is.factor(new_factor)) {
-            factor <- factor(new_factor)
+            new_factor <- factor(new_factor)
           }
           new_levels <- levels(new_factor)
           if (any(!new_levels %in% factor_levels[[i]])) {
@@ -396,29 +396,24 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
         colnames(cov_mat) <- found_level_names
         true_level_names <- sort(as.character(unique(data[[g]])))
         if (is.null(found_level_names)) 
-          stop(paste("Row names are required for covariance matrix of",g))
+          stop(paste("rownames are required for covariance matrix of",g))
         if (nrow(cov_mat) != length(true_level_names))
-          stop(paste("Dimension of covariance matrix of", g, "is incorrect"))
+          stop(paste("dimension of covariance matrix of", g, "is incorrect"))
         if (any(sort(found_level_names) != true_level_names))
-          stop(paste("Row names of covariance matrix of", g, 
+          stop(paste("rownames of covariance matrix of", g, 
                      "do not match names of the grouping levels"))
         if (!isSymmetric(unname(cov_mat)))
-          stop(paste("Covariance matrix of grouping factor", g, 
+          stop(paste("covariance matrix of grouping factor", g, 
                      "is not symmetric"))
         if (min(eigen(cov_mat, symmetric = TRUE, only.values = TRUE)$values) <= 0)
-          warning(paste("Covariance matrix of grouping factor", g, 
+          warning(paste("covariance matrix of grouping factor", g, 
                         "may not be positive definite"))
         cov_mat <- cov_mat[order(found_level_names), order(found_level_names)]
-        if (length(r[[i]]) == 1) {
+        if (length(r[[i]]) == 1 || !ee$cor[[i]]) {
           # pivoting ensures that (numerically) semi-definite matrices can be used
           cov_mat <- suppressWarnings(chol(cov_mat, pivot = TRUE))
           cov_mat <- t(cov_mat[, order(attr(cov_mat, "pivot"))])
-        } else if (length(r[[i]]) > 1 && !ee$cor[[i]]) {
-          # same here, but with a precomputed kronecker product
-          cov_mat <- kronecker(cov_mat, diag(ncolZ[[i]]))
-          cov_mat <- suppressWarnings(chol(cov_mat, pivot = TRUE))
-          cov_mat <- t(cov_mat[, order(attr(cov_mat, "pivot"))])
-        }
+        } 
         standata <- c(standata, setNames(list(cov_mat), paste0("cov_",i)))
       }
     }
