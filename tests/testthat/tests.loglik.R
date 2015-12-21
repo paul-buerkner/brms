@@ -86,15 +86,83 @@ test_that("Test that loglik for count/survival models works correctly", {
   ll_exp <- dexp(x = data$Y[i], rate = 1 / exp(s$eta[, i]), log = TRUE)
   expect_equal(loglik_exponential(i, data = data, samples = s), ll_exp)
   ll_gamma <- dgamma(x = data$Y[i], shape = s$shape,
-                     scale = (1 / s$eta[, i]) / s$shape, log = TRUE)
-  expect_equal(loglik_gamma(i, data = data, samples = s), ll_gamma)
+                     scale = exp(s$eta[, i]) / s$shape, log = TRUE)
+  expect_equal(loglik_gamma(i, data = data, samples = s, link = "log"), 
+               ll_gamma)
   ll_weibull <- dweibull(x = data$Y[i], shape = s$shape,
                          scale = exp(s$eta[, i] / s$shape), log = TRUE)
   expect_equal(loglik_weibull(i, data = data, samples = s), ll_weibull)
   ll_invgauss <- dinvgauss(x = data$Y[i], shape = s$shape,
                            mean = exp(s$eta[, i]), log = TRUE)
   expect_equal(loglik_inverse.gaussian(i, data = data, samples = s,
-                                       link = "log"), 
-               ll_invgauss)
+                                       link = "log"), ll_invgauss)
+})
+
+test_that("Test that loglik for beta models works correctly", {
+  ns <- 200
+  nobs <- 10
+  s <- list(eta = matrix(rnorm(ns*nobs), ncol = nobs),
+            phi = rgamma(ns, 4))
+  data <- list(Y = rbeta(nobs, 1, 1))
+  i <- sample(1:nobs, 1)
+  ll_beta <- dbeta(x = data$Y[i], shape1 = ilogit(s$eta[, i]) * s$phi, 
+                   shape2 = (1 - ilogit(s$eta[, i])) * s$phi, log = TRUE)
+  expect_equal(loglik_beta(i, data = data, samples = s), ll_beta)
+})
+
+test_that(paste("Test that loglik for zero-inflated and hurdle models", 
+                "runs without erros"), {
+  ns <- 50
+  nobs <- 7
+  trials <- sample(10:30, nobs, replace = TRUE)
+  s <- list(eta = matrix(rnorm(ns*nobs*2), ncol = nobs*2),
+            shape = rgamma(ns, 4))
+  data <- list(Y = rbinom(nobs, size = trials, prob = rbeta(nobs, 1, 1)),
+               N_trait = nobs, max_obs = trials)
+  i <- sample(1:nobs, 1)  
+  ll <- loglik_hurdle_poisson(i, data = data, samples = s)
+  expect_equal(length(ll), ns)
+  ll <- loglik_hurdle_negbinomial(i, data = data, samples = s)
+  expect_equal(length(ll), ns)
+  ll <- loglik_hurdle_negbinomial(i, data = data, samples = s)
+  expect_equal(length(ll), ns)
+  ll <- loglik_zero_inflated_poisson(i, data = data, samples = s)
+  expect_equal(length(ll), ns)
+  ll <- loglik_zero_inflated_binomial(i, data = data, samples = s)
+  expect_equal(length(ll), ns)
+  ll <- loglik_zero_inflated_negbinomial(i, data = data, samples = s)
+  expect_equal(length(ll), ns)
+})
+
+test_that(paste("Test that loglik for categorical and ordinal models", 
+                "runs without erros"), {
+  ns <- 50
+  nobs <- 8
+  ncat <- 4
+  s <- list(eta = array(rnorm(ns*nobs), dim = c(ns, nobs, ncat)))
+  data <- list(Y = rep(1:ncat, 2), max_obs = ncat)
+  ll <- sapply(1:nobs, loglik_categorical, data = data, samples = s)
+  expect_equal(dim(ll), c(ns, nobs))
+  ll <- sapply(1:nobs, loglik_cumulative, data = data, samples = s)
+  expect_equal(dim(ll), c(ns, nobs))
+  ll <- sapply(1:nobs, loglik_sratio, data = data, samples = s)
+  expect_equal(dim(ll), c(ns, nobs))
+  ll <- sapply(1:nobs, loglik_cratio, data = data, samples = s)
+  expect_equal(dim(ll), c(ns, nobs))
+  ll <- sapply(1:nobs, loglik_acat, data = data, samples = s)
+  expect_equal(dim(ll), c(ns, nobs))
+})
+
+test_that("Test that censored and truncated loglik run without errors", {
+  ns <- 30
+  nobs <- 3
+  s <- list(eta = matrix(rnorm(ns * nobs), ncol = nobs),
+            sigma = rchisq(ns, 3))
+  data <- list(Y = rnorm(ns), cens = c(-1,0,1))
+  ll <- sapply(1:nobs, loglik_gaussian, data = data, samples = s)
+  expect_equal(dim(ll), c(ns, nobs))
+  data <- list(Y = sample(-3:3, nobs), lb = -4, ub = 5)
+  ll <- sapply(1:nobs, loglik_gaussian, data = data, samples = s)
+  expect_equal(dim(ll), c(ns, nobs))
 })
 
