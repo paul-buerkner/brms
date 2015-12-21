@@ -1,4 +1,4 @@
-test_that("melt_data returns data in correct long format", {
+test_that("melt_data returns data in long format", {
   data <- data.frame(x = rep(c("a","b"), 5), y1 = 1:10, y2 = 11:20, 
                      y3 = 21:30, z = 100:91)
   
@@ -25,6 +25,31 @@ test_that("melt_data returns data in correct long format", {
                   resp_formula = cbind(y2,y1,y3) ~ 1)
   expect_equal(melt_data(data, effects = effects, family = "gaussian"), 
                target2)
+})
+
+test_that("melt_data returns expected errors", {
+  ee <- extract_effects(y1 ~ x, family = hurdle_poisson())
+  data <- data.frame(y1 = rnorm(10), y2 = rnorm(10), x = 1:10)
+  expect_error(melt_data(data = NULL, family = hurdle_poisson(), effects = ee),
+               "data must be a data.frame for multivariate models", 
+               fixed = TRUE)
+  data$main <- 1:10 
+  expect_error(melt_data(data = data, family = hurdle_poisson(), effects = ee),
+               "main is a resevered variable name", 
+               fixed = TRUE)
+  data$response <- 1:10 
+  expect_error(melt_data(data = data, family = hurdle_poisson(), effects = ee),
+               "response is a resevered variable name in multivariate models", 
+               fixed = TRUE)
+  data$trait <- 1:10 
+  expect_error(melt_data(data = data, family = hurdle_poisson(), effects = ee),
+               "trait is a resevered variable name in multivariate models", 
+               fixed = TRUE)
+  
+  ee <- extract_effects(cbind(y1, y2) ~ x)
+  data <- data.frame(y1 = rnorm(10), y2 = rnorm(10), x = 1:10)
+  expect_error(melt_data(data = data, family = poisson(), effects = ee),
+               "Invalid multivariate model", fixed = TRUE)
 })
 
 test_that("combine_groups does the expected", {
@@ -268,6 +293,42 @@ test_that("make_standata rejects invalid input for argument partial", {
                              partial = ~treat, family = "gaussian"))
   expect_error(make_standata(rating ~ 1, data = inhaler,
                              partial = 1, family = "acat"))
+})
+
+test_that("make_standata handles covariance matrices correctly", {
+  A <- structure(diag(1, 4), dimnames = list(1:4, NULL))
+  expect_equivalent(make_standata(count ~ Trt_c + (1|visit), data = epilepsy,
+                             cov.ranef = list(visit = A))$cov_1, A)
+  B <- diag(1, 4)
+  expect_error(make_standata(count ~ Trt_c + (1|visit), data = epilepsy,
+                             cov.ranef = list(visit = B)),
+               "rownames are required")
+  B <- structure(diag(1, 4), dimnames = list(2:5, NULL))
+  expect_error(make_standata(count ~ Trt_c + (1|visit), data = epilepsy,
+                             cov.ranef = list(visit = B)),
+               "rownames .* do not match")
+  B <- structure(diag(1, 5), dimnames = list(1:5, NULL))
+  expect_error(make_standata(count ~ Trt_c + (1|visit), data = epilepsy,
+                             cov.ranef = list(visit = B)),
+               "dimension .* is incorrect")
+  B <- A
+  B[1,2] <- 0.5
+  expect_error(make_standata(count ~ Trt_c + (1|visit), data = epilepsy,
+                             cov.ranef = list(visit = B)),
+               "not symmetric")
+})
+
+test_that("amend_newdata handles factors correctly", {
+  fit <- rename_pars(brmsfit_example)
+  fit$data$fac <- factor(sample(1:3, nrow(fit$data), replace = TRUE))
+  newdata <- data[1:5, ]
+  expect_silent(amend_newdata(newdata, fit))
+  newdata$visit <- 1:5
+  expect_error(amend_newdata(newdata, fit), fixed = TRUE,
+               "levels 5 or grouping factor visit not found")
+  newdata$fac <- 1:5
+  expect_error(amend_newdata(newdata, fit), fixed = TRUE,
+               "New factor levels are not allowed")
 })
 
 test_that("brmdata and brm.data are backwards compatible", {
