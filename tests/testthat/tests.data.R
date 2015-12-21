@@ -129,6 +129,9 @@ test_that(paste("make_standata returns correct data names",
   expect_equal(names(make_standata(y | cat(10) ~ x, family = "cumulative", 
                                    data = temp_data)), 
                c("N","Y","K","X","ncat","max_obs"))
+  expect_warning(names(make_standata(y | cat(t) ~ x, family = "cumulative", 
+                                     data = temp_data)),
+                 "no longer have different numbers of categories")
   standata <- make_standata(y | trunc(0,20) ~ x, family = "gaussian", 
                             data = temp_data)
   expect_true(standata$lb == 0 && standata$ub == 20)
@@ -181,7 +184,8 @@ test_that(paste("make_standata rejects incorrect response variables",
                "family cratio requires factored response variables to be ordered")
   expect_error(make_standata(y ~ 1, data = data.frame(y = rep(0.5:7.5), 2), 
                              family = "sratio"),
-               "family sratio expects either integers or ordered factors as response variables")
+               paste("family sratio expects either integers or ordered factors", 
+                     "as response variables"))
   expect_error(make_standata(y ~ 1, data = data.frame(y = rep(-7.5:7.5), 2), 
                              family = "gamma"),
                "family gamma requires response variable to be non-negative")
@@ -257,18 +261,23 @@ test_that(paste("make_standata handles addition arguments",
 test_that(paste("make_standata returns correct data", 
                 "for autocorrelations structures"), {
   temp_data <- data.frame(y=1:10, x=rep(0,10), tim=10:1, g = rep(3:4,5))
-  expect_equal(make_standata(y ~ x, family = "gaussian", data = temp_data,
+  expect_equal(make_standata(y ~ x, data = temp_data,
                              autocor = cor_arr(~tim|g))$Yarr,
                cbind(c(0,9,7,5,3,0,10,8,6,4)))
-  expect_equal(make_standata(y ~ x, family = "gaussian", data = temp_data,
+  expect_equal(make_standata(y ~ x, data = temp_data,
                              autocor = cor_arr(~tim|g, r = 2))$Yarr,
                cbind(c(0,9,7,5,3,0,10,8,6,4), c(0,0,9,7,5,0,0,10,8,6)))
-  expect_equal(make_standata(y ~ x, family = "gaussian", data = temp_data,
+  expect_equal(make_standata(y ~ x, data = temp_data,
                              autocor = cor_ma(~tim|g))$tgroup,
                c(rep(1,5), rep(2,5)))
-  expect_equal(make_standata(y ~ x, family = "gaussian", data = temp_data,
+  expect_equal(make_standata(y ~ x, data = temp_data,
                              autocor = cor_ar(~tim|g))$tgroup,
                c(rep(1,5), rep(2,5)))
+  standata <- make_standata(y ~ x, data = temp_data,
+                            autocor = cor_ar(~tim|g, cov = TRUE))
+  expect_equal(standata$begin_tg, c(1, 6))
+  expect_equal(standata$nrows_tg, c(5, 5))
+  expect_equal(standata$squared_se, rep(0, 10))
 })
 
 test_that("make_standata allows to retrieve the initial data order", {
@@ -316,6 +325,17 @@ test_that("make_standata handles covariance matrices correctly", {
   expect_error(make_standata(count ~ Trt_c + (1|visit), data = epilepsy,
                              cov.ranef = list(visit = B)),
                "not symmetric")
+})
+
+test_that("make_standata computes data for inverse.gaussian models", {
+  temp_data <- data.frame(y = 1:10, x = rep(0,10), w = 1:10)
+  standata <- make_standata(y ~ x, data = temp_data, 
+                            family = inverse.gaussian)
+  expect_equal(standata$log_Y, sum(log(temp_data$y)))
+  expect_equal(standata$sqrt_Y, sqrt(temp_data$y))
+  standata <- make_standata(y | weights(w) ~ x, data = temp_data,
+                            family = inverse.gaussian)
+  expect_equal(standata$log_Y, log(temp_data$y))                         
 })
 
 test_that("amend_newdata handles factors correctly", {
