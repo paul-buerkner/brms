@@ -10,28 +10,28 @@
 #
 # Returns:
 #   A vector of length nrow(samples) containing samples from the posterior predictive distribution
-predict_gaussian <- function(n, data, samples, link, ...) {
+predict_gaussian <- function(n, data, samples, link = "identity", ...) {
   sigma <- get_sigma(samples$sigma, data = data, method = "predict", n = n)
   args <- list(mean = ilink(samples$eta[, n], link), sd = sigma)
   rng_continuous(nrng = nrow(samples$eta), dist = "norm",
                  args = args, data = data)
 }
 
-predict_student <- function(n, data, samples, link, ...) {
+predict_student <- function(n, data, samples, link = "identity", ...) {
   sigma <- get_sigma(samples$sigma, data = data, method = "predict", n = n)
   args <- list(df = samples$nu, mu = ilink(samples$eta[, n], link), sigma = sigma)
   rng_continuous(nrng = nrow(samples$eta), dist = "student",
                  args = args, data = data)
 }
 
-predict_cauchy <- function(n, data, samples, link, ...) {
+predict_cauchy <- function(n, data, samples, link = "identity", ...) {
   sigma <- get_sigma(samples$sigma, data = data, method = "predict", n = n)
   args <- list(df = 1, mu = ilink(samples$eta[, n], link), sigma = sigma)
   rng_continuous(nrng = nrow(samples$eta), dist = "student",
                  args = args, data = data)
 }
 
-predict_lognormal <- function(n, data, samples, link, ...) {
+predict_lognormal <- function(n, data, samples, link = "identity", ...) {
   # link is currently ignored for lognormal models
   # as 'identity' is the only valid link
   sigma <- get_sigma(samples$sigma, data = data, method = "predict", n = n)
@@ -40,7 +40,8 @@ predict_lognormal <- function(n, data, samples, link, ...) {
                  args = args, data = data)
 }
 
-predict_multi_gaussian <- function(n, data, samples, link, ...) {
+predict_multi_gaussian <- function(n, data, samples, 
+                                   link = "identity", ...) {
   # currently no truncation available
   obs <- seq(n, data$N, data$N_trait)
   .fun <- function(i) {
@@ -50,7 +51,8 @@ predict_multi_gaussian <- function(n, data, samples, link, ...) {
   do.call(rbind, lapply(1:nrow(samples$eta), .fun))
 }
 
-predict_multi_student <- function(n, data, samples, link, ...) {
+predict_multi_student <- function(n, data, samples, 
+                                  link = "identity", ...) {
   # currently no truncation available
   obs <- seq(n, data$N, data$N_trait)
   .fun <- function(i) {
@@ -61,7 +63,8 @@ predict_multi_student <- function(n, data, samples, link, ...) {
   do.call(rbind, lapply(1:nrow(samples$eta), .fun))
 }
 
-predict_multi_cauchy <- function(n, data, samples, link, ...) {
+predict_multi_cauchy <- function(n, data, samples, 
+                                 link = "identity", ...) {
   # currently no truncation available
   obs <- seq(n, data$N, data$N_trait)
   .fun <- function(i) {
@@ -71,7 +74,7 @@ predict_multi_cauchy <- function(n, data, samples, link, ...) {
   do.call(rbind, lapply(1:nrow(samples$eta), .fun))
 }
 
-predict_gaussian_cov <- function(n, data, samples, link, ...) {
+predict_gaussian_cov <- function(n, data, samples, link = "identity", ...) {
   # currently, only ARMA1 processes are implemented
   rows <- with(data, begin_tg[n]:(begin_tg[n] + nrows_tg[n] - 1))
   eta_part <- samples$eta[, rows, drop = FALSE]
@@ -98,7 +101,7 @@ predict_gaussian_cov <- function(n, data, samples, link, ...) {
   do.call(rbind, lapply(1:nrow(samples$eta), .fun))
 }
 
-predict_student_cov <- function(n, data, samples, link, ...) {
+predict_student_cov <- function(n, data, samples, link = "identity", ...) {
   # currently, only ARMA1 processes are implemented
   rows <- with(data, begin_tg[n]:(begin_tg[n] + nrows_tg[n] - 1))
   eta_part <- samples$eta[, rows, drop = FALSE]
@@ -125,7 +128,7 @@ predict_student_cov <- function(n, data, samples, link, ...) {
   do.call(rbind, lapply(1:nrow(samples$eta), .fun))
 }
 
-predict_cauchy_cov <- function(n, data, samples, link, ...) {
+predict_cauchy_cov <- function(n, data, samples, link = "identity", ...) {
   samples$nu <- matrix(rep(1, nrow(samples$eta)))
   predict_student_cov(n = n, data = data, samples = samples, link = link, ...) 
 }
@@ -137,64 +140,67 @@ predict_binomial <- function(n, data, samples, link, ntrys, ...) {
                args = args, data = data, ntrys = ntrys)
 }
 
-predict_bernoulli <- function(n, data, samples, link, ...) {
+predict_bernoulli <- function(n, data, samples, link = "logit", ...) {
   # truncation not useful
   rbinom(nrow(samples$eta), size = 1, 
          prob = ilink(samples$eta[, n], link))
 }
 
-predict_poisson <- function(n, data, samples, link, ntrys, ...) {
+predict_poisson <- function(n, data, samples, link = "log", 
+                            ntrys = 5, ...) {
   args <- list(lambda = ilink(samples$eta[, n], link))
   rng_discrete(nrng = nrow(samples$eta), dist = "pois",
                args = args, data = data, ntrys = ntrys)
 }
 
-predict_negbinomial <- function(n, data, samples, link, ntrys, ...) {
+predict_negbinomial <- function(n, data, samples, link = "log",
+                                ntrys = 5, ...) {
   args <- list(mu = ilink(samples$eta[, n], link), size = samples$shape)
   rng_discrete(nrng = nrow(samples$eta), dist = "nbinom",
                args = args, data = data, ntrys = ntrys)
 }
 
-predict_geometric <- function(n, data, samples, link, ntrys, ...) {
+predict_geometric <- function(n, data, samples, link = "log", 
+                              ntrys = 5, ...) {
   args <- list(mu = ilink(samples$eta[, n], link), size = 1)
   rng_discrete(nrng = nrow(samples$eta), dist = "nbinom",
                args = args, data = data, ntrys = ntrys)
 }
 
-predict_exponential <-  function(n, data, samples, link, ...) {
+predict_exponential <-  function(n, data, samples, link = "log", ...) {
   args <- list(rate = 1 / ilink(samples$eta[, n], link))
   rng_continuous(nrng = nrow(samples$eta), dist = "exp",
                  args = args, data = data)
 }
 
-predict_gamma <- function(n, data, samples, link, ...) {
+predict_gamma <- function(n, data, samples, link = "inverse", ...) {
   args <- list(shape = samples$shape,
                scale = ilink(samples$eta[, n], link) / samples$shape)
   rng_continuous(nrng = nrow(samples$eta), dist = "gamma",
                  args = args, data = data)
 }
 
-predict_weibull <- function(n, data, samples, link, ...) {
+predict_weibull <- function(n, data, samples, link = "log", ...) {
   args <- list(shape = samples$shape,
                scale = ilink(samples$eta[, n] / samples$shape, link))
   rng_continuous(nrng = nrow(samples$eta), dist = "weibull",
                  args = args, data = data)
 }
 
-predict_inverse.gaussian <- function(n, data, samples, link, ...) {
+predict_inverse.gaussian <- function(n, data, samples, link = "1/mu^2", ...) {
   args <- list(mean = ilink(samples$eta[, n], link), shape = samples$shape)
   rng_continuous(nrng = nrow(samples$eta), dist = "invgauss",
                  args = args, data = data)
 }
 
-predict_beta <- function(n, data, samples, link, ...) {
+predict_beta <- function(n, data, samples, link = "logit", ...) {
   mu <- ilink(samples$eta[, n], link)
   args <- list(shape1 = mu * samples$phi, shape2 = (1 - mu) * samples$phi)
   rng_continuous(nrng = nrow(samples$eta), dist = "beta",
                  args = args, data = data)
 }
 
-predict_hurdle_poisson <- function(n, data, samples, link, ...) {
+predict_hurdle_poisson <- function(n, data, samples, link = "log", ...) {
   # theta is the bernoulii hurdle parameter
   theta <- ilink(samples$eta[, n + data$N_trait], "logit")
   lambda <- ilink(samples$eta[, n], link)
@@ -207,7 +213,7 @@ predict_hurdle_poisson <- function(n, data, samples, link, ...) {
   ifelse(hu < theta, 0, rpois(nsamples, lambda = lambda - t) + 1)
 }
 
-predict_hurdle_negbinomial <- function(n, data, samples, link, ...) {
+predict_hurdle_negbinomial <- function(n, data, samples, link = "log", ...) {
   # theta is the bernoulii hurdle parameter
   theta <- ilink(samples$eta[, n + data$N_trait], "logit")
   mu <- ilink(samples$eta[, n], link)
@@ -220,7 +226,7 @@ predict_hurdle_negbinomial <- function(n, data, samples, link, ...) {
   ifelse(hu < theta, 0, rnbinom(nsamples, mu = mu - t, size = samples$shape) + 1)
 }
 
-predict_hurdle_gamma <- function(n, data, samples, link, ...) {
+predict_hurdle_gamma <- function(n, data, samples, link = "log", ...) {
   # theta is the bernoulii hurdle parameter
   theta <- ilink(samples$eta[, n + data$N_trait], "logit")
   scale <- ilink(samples$eta[, n], link) / samples$shape
@@ -230,7 +236,8 @@ predict_hurdle_gamma <- function(n, data, samples, link, ...) {
   ifelse(hu < theta, 0, rgamma(nsamples, shape = samples$shape, scale = scale))
 }
 
-predict_zero_inflated_poisson <- function(n, data, samples, link, ...) {
+predict_zero_inflated_poisson <- function(n, data, samples, 
+                                          link = "log", ...) {
   # theta is the bernoulii zero-inflation parameter
   theta <- ilink(samples$eta[, n + data$N_trait], "logit")
   lambda <- ilink(samples$eta[, n], link)
@@ -240,7 +247,8 @@ predict_zero_inflated_poisson <- function(n, data, samples, link, ...) {
   ifelse(zi < theta, 0, rpois(nsamples, lambda = lambda))
 }
 
-predict_zero_inflated_negbinomial <- function(n, data, samples, link, ...) {
+predict_zero_inflated_negbinomial <- function(n, data, samples, 
+                                              link = "log", ...) {
   # theta is the bernoulii zero-inflation parameter
   theta <- ilink(samples$eta[, n + data$N_trait], "logit")
   mu <- ilink(samples$eta[, n], link)
@@ -250,7 +258,8 @@ predict_zero_inflated_negbinomial <- function(n, data, samples, link, ...) {
   ifelse(zi < theta, 0, rnbinom(nsamples, mu = mu, size = samples$shape))
 }
 
-predict_zero_inflated_binomial <- function(n, data, samples, link, ...) {
+predict_zero_inflated_binomial <- function(n, data, samples, 
+                                           link = "log", ...) {
   # theta is the bernoulii zero-inflation parameter
   theta <- ilink(samples$eta[, n + data$N_trait], "logit")
   trials <- ifelse(length(data$max_obs) > 1, data$max_obs[n], data$max_obs)
@@ -261,34 +270,34 @@ predict_zero_inflated_binomial <- function(n, data, samples, link, ...) {
   ifelse(zi < theta, 0, rbinom(nsamples, size = trials, prob = prob))
 }
 
-predict_categorical <- function(n, data, samples, link, ...) {
+predict_categorical <- function(n, data, samples, link = "logit", ...) {
   ncat <- ifelse(length(data$max_obs) > 1, data$max_obs[n], data$max_obs) 
   p <- pcategorical(1:ncat, eta = samples$eta[, n, ], 
                     ncat = ncat, link = link)
   first_greater(p, target = runif(nrow(samples$eta), min = 0, max = 1))
 }
 
-predict_cumulative <- function(n, data, samples, link, ...) {
+predict_cumulative <- function(n, data, samples, link = "logit", ...) {
   predict_ordinal(n = n, data = data, samples = samples, link = link, 
                   family = "cumulative")
 }
 
-predict_sratio <- function(n, data, samples, link, ...) {
+predict_sratio <- function(n, data, samples, link = "logit", ...) {
   predict_ordinal(n = n, data = data, samples = samples, link = link, 
                   family = "sratio")
 }
 
-predict_cratio <- function(n, data, samples, link, ...) {
+predict_cratio <- function(n, data, samples, link = "logit", ...) {
   predict_ordinal(n = n, data = data, samples = samples, link = link, 
                   family = "cratio")
 }
 
-predict_acat <- function(n, data, samples, link, ...) {
+predict_acat <- function(n, data, samples, link = "logit", ...) {
   predict_ordinal(n = n, data = data, samples = samples, link = link, 
                   family = "acat")
 }  
 
-predict_ordinal <- function(n, data, samples, family, link, ...) {
+predict_ordinal <- function(n, data, samples, family, link = "logit", ...) {
   ncat <- ifelse(length(data$max_obs) > 1, data$max_obs[n], data$max_obs)
   p <- pordinal(1:ncat, eta = samples$eta[, n, ], ncat = ncat, 
                 family = family, link = link)
