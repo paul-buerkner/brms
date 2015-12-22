@@ -23,6 +23,7 @@ Imports:
     grid
 Suggests: 
     testthat (>= 0.9.1),
+    mvtnorm,
     R.rsp,
     knitr,
     rmarkdown
