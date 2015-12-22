@@ -91,7 +91,8 @@ predict_gaussian_cov <- function(n, data, samples, link = "identity", ...) {
   } else {
     # ARMA1 process
     Sigma <- get_cov_matrix_arma1(ar = samples$ar, ma = samples$ma, 
-                                  sigma = samples$sigma, sq_se = squared_se_part, 
+                                  sigma = samples$sigma, 
+                                  sq_se = squared_se_part, 
                                   nrows = length(rows))
   }
   .fun <- function(i) {
@@ -118,7 +119,8 @@ predict_student_cov <- function(n, data, samples, link = "identity", ...) {
   } else {
     # ARMA1 process
     Sigma <- get_cov_matrix_arma1(ar = samples$ar, ma = samples$ma, 
-                                  sigma = samples$sigma, sq_se = squared_se_part, 
+                                  sigma = samples$sigma, 
+                                  sq_se = squared_se_part, 
                                   nrows = length(rows))
   }
   .fun <- function(i) {
@@ -133,7 +135,7 @@ predict_cauchy_cov <- function(n, data, samples, link = "identity", ...) {
   predict_student_cov(n = n, data = data, samples = samples, link = link, ...) 
 }
 
-predict_binomial <- function(n, data, samples, link, ntrys, ...) {
+predict_binomial <- function(n, data, samples, link = "logit", ntrys, ...) {
   trials <- ifelse(length(data$max_obs) > 1, data$max_obs[n], data$max_obs) 
   args <- list(size = trials, prob = ilink(samples$eta[, n], link))
   rng_discrete(nrng = nrow(samples$eta), dist = "binom",
