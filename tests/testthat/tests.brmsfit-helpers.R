@@ -85,7 +85,7 @@ test_that("expand_matrix returns expected results", {
   expect_equal(expand_matrix(A, x), matrix(c(1,0,3,4,0,6,0,2,0,0,5,0), 3, 4))
 })
 
-test_that("Test the find_names find all valid variable names in a string", {
+test_that("find_names finds all valid variable names in a string", {
   expect_equal(find_names("x + b.x - .5 + abc(a__3) : 1/2 - 0.2"), c("x", "b.x", "a__3"))
 })
 
@@ -140,10 +140,12 @@ test_that("get_sigma correctly extract residual SDs", {
 })
 
 test_that("arma_predictor runs without errors", {
-  data <- list(Y = rnorm(100), tgroup = rep(1:10, each = 10))
-  ar <- matrix(rnorm(5000), nrow = 500, ncol = 100)
-  ma <- matrix(rnorm(5000), nrow = 500, ncol = 100)
-  eta <- matrix(rnorm(5000), nrow = 500, ncol = 100)
+  ns <- 30
+  nobs <- 18
+  data <- list(Y = rnorm(nobs), tgroup = rep(1:3, each = 6))
+  ar <- matrix(rnorm(ns * nobs), nrow = ns, ncol = nobs)
+  ma <- matrix(rnorm(ns * nobs), nrow = ns, ncol = nobs)
+  eta <- matrix(rnorm(ns * nobs), nrow = ns, ncol = nobs)
   expect_equal(arma_predictor(data = data, eta = eta), eta)
   expect_silent(arma_predictor(data = data, eta = eta, ar = ar))
   expect_silent(arma_predictor(data = data, eta = eta, ma = ma))
