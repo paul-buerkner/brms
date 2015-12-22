@@ -382,7 +382,7 @@ brm <- function(formula, data = NULL, family = "gaussian",
     x <- fit  # re-use existing model
     x$fit <- rstan::get_stanmodel(x$fit)  # extract the compiled model
     # compute data to be passed to Stan
-    standata <- standata(x, newdata = dots$is_newdata)
+    standata <- standata(x, is_newdata = dots$is_newdata)
     dots$is_newdata <- NULL
   } else {  # build new model
     # see validate.R and priors.R for function definitions
