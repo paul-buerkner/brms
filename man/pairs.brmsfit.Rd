@@ -4,15 +4,18 @@
 \alias{pairs.brmsfit}
 \title{Create a matrix of output plots from a \code{brmsfit} object}
 \usage{
-\method{pairs}{brmsfit}(x, pars = NULL, ...)
+\method{pairs}{brmsfit}(x, pars = NA, exact_match = FALSE, ...)
 }
 \arguments{
 \item{x}{An object of class \code{stanfit}}
 
 \item{pars}{Names of the parameters to plot, as given by 
 a character vector or a regular expression. 
-By default, all parameters except for random effects 
-are plotted.}
+By default, all parameters are plotted.}
+
+\item{exact_match}{Indicates whether parameter names 
+should be matched exactly or treated as regular expression. 
+Default is \code{FALSE}.}
 
 \item{...}{Further arguments to be passed to 
 \code{\link[rstan:pairs.stanfit]{pairs.stanfit}}.}
@@ -30,7 +33,8 @@ For a detailed description see
 fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c 
            + (1|patient) + (1|visit), 
            data = epilepsy, family = "poisson")  
-pairs(fit, pars = parnames(fit)[1:3])
+pairs(fit, pars = parnames(fit)[1:3], exact_match = TRUE)
+pairs(fit, pars = "^sd")
 }
 
 }

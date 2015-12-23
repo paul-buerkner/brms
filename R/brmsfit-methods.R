@@ -215,19 +215,8 @@ posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,
     pars <- parameters  
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
-  all_pars <- parnames(x)
-  if (!(anyNA(pars) || is.character(pars))) 
-    stop("Argument pars must be NA or a character vector")
-  if (!anyNA(pars)) {
-    if (exact_match) {
-      pars <- all_pars[all_pars %in% pars]
-    } else {
-      pars <- all_pars[apply(sapply(pars, grepl, x = all_pars, ...), 1, any)]
-    }
-  }
-  else {
-    pars <- all_pars
-  }
+  pars <- extract_pars(pars, all_pars = parnames(x), 
+                       exact_match = exact_match, ...)
   
   # get basic information on the samples 
   iter <- attr(x$fit@sim$samples[[1]],"args")$iter
@@ -518,9 +507,10 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5,
     stop("The model does not contain posterior samples")
   if (!is.wholenumber(N) || N < 1) 
     stop("N must be a positive integer")
-  if (!is.character(pars)) 
+  if (!is.character(pars)) {
     pars <- c("^b_", "^bm_", "^sd_", "^cor_", "^sigma", "^rescor", 
               "^nu$", "^shape$", "^delta$", "^phi$", "^ar", "^ma", "^arr")
+  }
   samples <- posterior_samples(x, pars = pars, add_chains = TRUE)
   pars <- names(samples)[which(!names(samples) %in% c("chains", "iter"))] 
   if (length(pars) == 0) {
@@ -559,36 +549,22 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
                              exact_match = FALSE, quiet = FALSE, ...) {
   
   # check validity of type first
-  basic_types <- c("plot", "trace", "scat", "hist", "dens", "ac", "pairs")
+  basic_types <- c("plot", "trace", "scat", "hist", "dens", "ac")
   diag_types <- c("diag", "par", "rhat", "ess", "mcse")
   if (!type %in% c(basic_types, diag_types)) {
     stop(paste("Invalid plot type. Valid plot types are: \n",
                paste(c(basic_types, diag_types), collapse = ", ")))
   }
   dots <- list(...)
-  if (type == "pairs") {
-    plot_fun <- "pairs"
-    args <- c(x = object$fit, dots)
-  } else {
-    plot_fun <- paste0("stan_", type)
-    args <- c(object = object$fit, dots)
-  }
-  plot_fun <- get(plot_fun, mode = "function")
+  args <- c(object = object$fit, dots)
+  plot_fun <- get(paste0("stan_", type), mode = "function")
   
   # ensure that only desired parameters are plotted
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
-  all_pars <- parnames(object)
-  if (!(anyNA(pars) || is.character(pars))) 
-    stop("Argument pars must be NA or a character vector")
-  if (!anyNA(pars)) {
-    if (exact_match) {
-      pars <- all_pars[all_pars %in% pars]
-    } else {
-      pars <- all_pars[apply(sapply(pars, grepl, x = all_pars), 1, any)]
-    }
-  } 
-  if (anyNA(pars) && type == "pairs") pars <- NULL
+  pars <- extract_pars(pars, all_pars = parnames(object),
+                       exact_match = exact_match, 
+                       na_value = NA)
   
   if (type %in% basic_types) {
     if (!anyNA(pars)) {
@@ -598,7 +574,11 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
     if (type %in% c("rhat", "ess", "msce") && !anyNA(pars)) {
       args <- c(args, list(pars = pars))
     } else if (type == "par") {
-      args <- c(args, list(pars = pars))
+      if (length(pars) > 1) {
+        warning(paste("stan_par expects a single parameter name",
+                      "so that only the first one will be used"))
+      }
+      args <- c(args, list(par = pars[1]))
     } 
   }
   # make the plot
@@ -617,8 +597,10 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
 #' @param x An object of class \code{stanfit}
 #' @param pars Names of the parameters to plot, as given by 
 #'  a character vector or a regular expression. 
-#'  By default, all parameters except for random effects 
-#'  are plotted. 
+#'  By default, all parameters are plotted. 
+#' @param exact_match Indicates whether parameter names 
+#'   should be matched exactly or treated as regular expression. 
+#'   Default is \code{FALSE}.
 #' @param ... Further arguments to be passed to 
 #'  \code{\link[rstan:pairs.stanfit]{pairs.stanfit}}.
 #'  
@@ -630,12 +612,15 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
 #' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c 
 #'            + (1|patient) + (1|visit), 
 #'            data = epilepsy, family = "poisson")  
-#' pairs(fit, pars = parnames(fit)[1:3])
+#' pairs(fit, pars = parnames(fit)[1:3], exact_match = TRUE)
+#' pairs(fit, pars = "^sd")
 #' }
 #'
 #' @export
-pairs.brmsfit <- function(x, pars = NULL, ...) {
-  pairs(x$fit, pars = pars, ...)
+pairs.brmsfit <- function(x, pars = NA, exact_match = FALSE, ...) {
+  pars <- extract_pars(pars, all_pars = parnames(x),
+                       exact_match = exact_match, na_value = NULL)
+  graphics::pairs(x$fit, pars = pars, ...)
 }
 
 #' Model Predictions of \code{brmsfit} Objects
