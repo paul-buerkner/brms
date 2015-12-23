@@ -373,6 +373,31 @@ get_sigma <- function(x, data, n, method = c("fitted", "predict", "logLik")) {
   sigma
 }
 
+extract_pars <- function(pars, all_pars, exact_match = FALSE,
+                         na_value = all_pars, ...) {
+  # extract all valid parameter names that match pars
+  # Args:
+  #   pars: A character vector or regular expression
+  #   all_pars: all parameter names of the fitted model
+  #   exact_match: should parnames be matched exactly?
+  #   na_value: what should be returned if pars is NA? 
+  #   ...: Further arguments to be passed to grepl
+  # Returns:
+  #   A character vector of parameter names
+  if (!(anyNA(pars) || is.character(pars))) 
+    stop("Argument pars must be NA or a character vector")
+  if (!anyNA(pars)) {
+    if (exact_match) {
+      pars <- all_pars[all_pars %in% pars]
+    } else {
+      pars <- all_pars[apply(sapply(pars, grepl, x = all_pars, ...), 1, any)]
+    }
+  } else {
+    pars <- na_value
+  }
+  pars
+}
+
 linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
   # compute the linear predictor (eta) for brms models
   #
@@ -691,7 +716,7 @@ compare_ic <- function(x, ic = c("waic", "loo")) {
 }
 
 find_names <- function(x) {
-  # find all valid object names in a string (used in method hypothesis in s3.methods.R)
+  # find all valid object names in a string 
   # 
   # Args:
   #   x: a character string
