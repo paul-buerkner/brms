@@ -87,7 +87,7 @@ test_that("loglik for count and survival models works correctly", {
             shape = rgamma(ns, 4))
   data <- list(Y = rbinom(nobs, size = trials, prob = rbeta(nobs, 1, 1)), 
                max_obs = trials)
-  i <- sample(1:nobs, 1)
+  i <- sample(nobs, 1)
   
   ll_binom <- dbinom(x = data$Y[i], prob = ilogit(s$eta[, i]), 
                      size = data$max_obs[i], log = TRUE)
@@ -151,7 +151,8 @@ test_that("loglik for zero-inflated and hurdle models runs without erros", {
   ns <- 50
   nobs <- 8
   trials <- sample(10:30, nobs, replace = TRUE)
-  resp <- rbinom(nobs-4, size = trials[1:4], prob = rbeta(nobs-4, 1, 1))
+  resp <- rbinom(nobs - 4, size = trials[1:4], 
+                 prob = rbeta(nobs - 4, 1, 1))
   s <- list(eta = matrix(rnorm(ns*nobs*2), ncol = nobs*2),
             shape = rgamma(ns, 4))
   data <- list(Y = c(resp, rep(0, 4)), N_trait = nobs, max_obs = trials)

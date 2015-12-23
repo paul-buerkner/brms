@@ -75,7 +75,7 @@ test_that("predict for count and survival models runs without errors", {
   s <- list(eta = matrix(rnorm(ns*nobs), ncol = nobs),
             shape = rgamma(ns, 4))
   data <- list(max_obs = trials)
-  i <- sample(1:nobs, 1)
+  i <- sample(nobs, 1)
   
   pred <- predict_binomial(i, data = data, samples = s)
   expect_equal(length(pred), ns)
