@@ -261,7 +261,7 @@ predict_zero_inflated_negbinomial <- function(n, data, samples,
 }
 
 predict_zero_inflated_binomial <- function(n, data, samples, 
-                                           link = "log", ...) {
+                                           link = "logit", ...) {
   # theta is the bernoulii zero-inflation parameter
   theta <- ilink(samples$eta[, n + data$N_trait], "logit")
   trials <- ifelse(length(data$max_obs) > 1, data$max_obs[n], data$max_obs)
