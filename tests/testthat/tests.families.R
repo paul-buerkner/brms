@@ -38,3 +38,29 @@ test_that("family functions returns expected results", {
   expect_equal(cratio("cloglog")$family, "cratio")
   expect_equal(acat(cloglog)$link, "cloglog")
 })
+
+test_that("check_family returns correct links", {
+  expect_equal(check_family("gaussian")$link, "identity")
+  expect_equal(check_family("weibull")$link, "log")
+  expect_equal(check_family(binomial)$link, "logit")
+  expect_equal(check_family(binomial("probit"))$link, "probit")
+  expect_equal(check_family(c("acat", "cloglog"))$link, "cloglog")
+})
+
+test_that("check_family return an error on wrong links", {
+  expect_error(check_family(gaussian("logit")), 
+               "logit is not a supported link for family gaussian")
+  expect_error(check_family(poisson("inverse")), 
+               "inverse is not a supported link for family poisson")
+  expect_error(check_family(c("weibull", "sqrt")), 
+               "sqrt is not a supported link for family weibull")
+  expect_error(check_family(c("categorical","probit")), 
+               "probit is not a supported link for family categorical")
+})
+
+test_that("check_family rejects invalid families", {
+  expect_error(check_family("multigaussian"),
+               "family 'multigaussian' is deprecated. Use family 'gaussian' instead")
+  expect_error(check_family("ordinal"),
+               "ordinal is not a supported family")
+})
