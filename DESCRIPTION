@@ -17,6 +17,7 @@ Imports:
     statmod,
     methods,
     stats,
+    graphics,
     utils,
     parallel,
     grDevices,
