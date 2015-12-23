@@ -206,6 +206,11 @@ is.zero_inflated <- function(family) {
                 "zero_inflated_binomial")
 }
 
+is.forked <- function(family) {
+  # indicate if family has two separate model parts
+  is.hurdle(family) || is.zero_inflated(family)
+}
+
 use_real <- function(family) {
   # indicate if family uses real responses
   if (class(family) == "family") {

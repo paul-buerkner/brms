@@ -47,6 +47,7 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
   is_zero_inflated <- is.zero_inflated(family)
   is_categorical <- family == "categorical"
   is_multi <- is_linear && length(ee$response) > 1
+  is_forked <- is.forked(family)
   has_sigma <- has_sigma(family, autocor = autocor, se = ee$se, 
                          is_multi = is_multi)
   has_shape <- has_shape(family)
@@ -61,7 +62,7 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
     temp_list <- check_intercept(colnames(Xp))
     paref <- temp_list$names
   } else {
-    X <- get_model_matrix(ee$fixed, data)
+    X <- get_model_matrix(ee$fixed, data, is_forked = is_forked)
     temp_list <- check_intercept(colnames(X))
     fixef <- temp_list$names
     Xp <- get_model_matrix(partial, data, rm_intercept = TRUE)
@@ -75,7 +76,7 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
                            has_intercept = has_intercept)
   
   # generate random effects code
-  Z <- lapply(ee$random, get_model_matrix, data = data)
+  Z <- lapply(ee$random, get_model_matrix, data = data, is_forked = is_forked)
   ranef <- lapply(Z, colnames)
   if (length(ee$group)) {
     # call stan_ranef for each random term seperately
@@ -123,7 +124,8 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
                                          weights = is.formula(ee$weights),
                                          cens = is.formula(ee$cens),
                                          trunc = is.formula(ee$trunc))
-  kronecker <- needs_kronecker(gather_ranef(effects = ee, data = data),
+  kronecker <- needs_kronecker(gather_ranef(effects = ee, data = data, 
+                                            is_forked = is_forked),
                                names_cov_ranef = names(cov.ranef))
   text_misc_funs <- stan_misc_functions(link = link, kronecker = kronecker)
     

@@ -297,6 +297,44 @@ update_re_terms <- function(formula, re_formula = NULL) {
   new_formula
 }
 
+amend_terms <- function(x, rm_intercept = FALSE, is_forked = FALSE) {
+  # amend a terms object (or one that can be coerced to it)
+  # to be used in get_model_matrix
+  # Args:
+  #   x: any R object; if not a formula or terms, NULL is returned
+  #   rm_intercept: a flag indicating if the intercept column 
+  #                 should be removed from the model.matrix. 
+  #                 Primarily useful for ordinal models
+  #   is_forked: a flag indicating if the model is forked into
+  #              two parts (e.g., a hurdle model)
+  # Returns:
+  #   a (possibly amended) terms object or NULL
+  if (is.formula(x) || is(x, "terms")) {
+    x <- terms(x)
+  } else {
+    return(NULL)
+  }
+  attr(x, "rm_intercept") <- as.logical(rm_intercept)
+  if (is_forked) {
+    # ensure that interactions with main and spec won't
+    # cause automatic cell mean coding of factors
+    term_labels <- attr(x, "term.labels")
+    if (any(grepl("(^|:)(main|spec)($|:)", term_labels))) {
+      if (any(grepl("(^|:)trait($|:)", term_labels))) {
+        stop(paste("formula may not contain variable 'trait'",
+                   "when using variables 'main' or 'spec'"))
+      }
+      if (attr(x, "intercept")) {
+        stop(paste("formula may not contain an intercept",
+                   "when using variables 'main' or 'spec'"))
+      }
+      attr(x, "intercept") <- 1
+      attr(x, "rm_intercept") <- TRUE
+    }
+  }
+  x
+}
+
 gather_response <- function(formula) {
   # gather response variable names
   # Args:
@@ -326,16 +364,17 @@ gather_response <- function(formula) {
   response
 }
 
-gather_ranef <- function(effects, data = NULL) {
+gather_ranef <- function(effects, data = NULL, ...) {
   # gathers helpful information on the random effects
   #
   # Args:
   #   effects: output of extract_effects
   #   data: data passed to brm after updating
+  #   ...: Further arguments passed to get_model_matrix
   #
   # Returns: 
   #   A named list with one element per grouping factor
-  Z <- lapply(effects$random, get_model_matrix, data = data)
+  Z <- lapply(effects$random, get_model_matrix, data = data, ...)
   ranef <- setNames(lapply(Z, colnames), effects$group)
   for (i in seq_along(ranef)) {
     attr(ranef[[i]], "levels") <- 

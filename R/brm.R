@@ -405,21 +405,24 @@ brm <- function(formula, data = NULL, family = "gaussian",
                  prior = prior, cov.ranef = cov.ranef)  
     # see data.R
     x$data <- update_data(data, family = family, effects = ee, et$group) 
-    x$ranef <- gather_ranef(effects = ee, data = x$data)  # see validate.R
-    x$exclude <- exclude_pars(formula, ranef = ranef)  # see validate.R
+    # see validate.R
+    x$ranef <- gather_ranef(effects = ee, data = x$data, 
+                            is_forked = is.forked(family))  
+    x$exclude <- exclude_pars(formula, ranef = ranef)
+    # see stan.R
     x$model <- make_stancode(formula = formula, data = data, 
                              family = obj_family, prior = prior,  
                              autocor = autocor, partial = partial, 
                              multiply = multiply, threshold = threshold, 
                              cov.ranef = cov.ranef, 
                              sample.prior = sample.prior, 
-                             save.model = save.model)  # see stan.R
+                             save.model = save.model)
     # generate standata before compiling the model to avoid
     # unnecessary compilations in case that the data is invalid
     standata <- standata(x, newdata = dots$is_newdata)
     message("Compiling the C++ model")
-    x$fit <- rstan::stanc(model_code = x$model,
-                          model_name = paste0(family,"(",link,") brms-model"))
+    model_name <- paste0(family,"(",link,") brms-model")
+    x$fit <- rstan::stanc(model_code = x$model, model_name = model_name)
     x$fit <- rstan::stan_model(stanc_ret = x$fit) 
   }
   

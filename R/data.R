@@ -263,7 +263,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   is_linear <- is.linear(family)
   is_ordinal <- is.ordinal(family)
   is_count <- is.count(family)
-  has_fake_2nd_resp <- is.hurdle(family) || is.zero_inflated(family)
+  is_forked <- is.forked(family)
   et <- extract_time(autocor$formula)
   ee <- extract_effects(formula = formula, family = family, 
                         multiply, partial, et$all)
@@ -301,7 +301,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       stop(paste("family", family, "expects numeric response variable"))
     }
     # transform and check response variable for different families
-    if (family == "binomial" || is_count || has_fake_2nd_resp) {
+    if (family == "binomial" || is_count || is_forked) {
       if (!all(is.wholenumber(standata$Y)) || min(standata$Y) < 0) {
         stop(paste("family", family, "expects response variable", 
                    "of non-negative integers"))
@@ -342,7 +342,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
                                               (ncol(standata$Y) - 1) / 2) 
     }
   }
-  if (has_fake_2nd_resp) {
+  if (is_forked) {
     # the second half of Y is not used because it is only dummy data
     # that was put into data to make melt_data work correctly
     standata$Y <- standata$Y[1:(nrow(data) / 2)] 
@@ -357,7 +357,8 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   
   # fixed effects data
   rm_Intercept <- is_ordinal || !isTRUE(control$keep_intercept)
-  X <- get_model_matrix(ee$fixed, data, rm_intercept = rm_Intercept)
+  X <- get_model_matrix(ee$fixed, data, rm_intercept = rm_Intercept,
+                        is_forked = is_forked)
   if (family == "categorical") {
     standata <- c(standata, list(Kp = ncol(X), Xp = X))
   } else {
@@ -366,7 +367,8 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   
   # random effects data
   if (length(ee$random)) {
-    Z <- lapply(ee$random, get_model_matrix, data = data)
+    Z <- lapply(ee$random, get_model_matrix, data = data, 
+                is_forked = is_forked)
     r <- lapply(Z, colnames)
     ncolZ <- lapply(Z, ncol)
     # numeric levels passed to Stan
@@ -426,13 +428,13 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   if (is.formula(ee$weights)) {
     standata <- c(standata, list(weights = .addition(formula = ee$weights, 
                                                      data = data)))
-    if (is.linear(family) && length(ee$response) > 1 || has_fake_2nd_resp) 
+    if (is.linear(family) && length(ee$response) > 1 || is_forked) 
       standata$weights <- standata$weights[1:standata$N_trait]
   }
   if (is.formula(ee$cens)) {
     standata <- c(standata, list(cens = .addition(formula = ee$cens, 
                                                   data = data)))
-    if (is.linear(family) && length(ee$response) > 1 || has_fake_2nd_resp)
+    if (is.linear(family) && length(ee$response) > 1 || is_forked)
       standata$cens <- standata$cens[1:standata$N_trait]
   }
   if (is.formula(ee$trunc)) {
@@ -590,27 +592,29 @@ brm.data <- function(formula, data = NULL, family = "gaussian",
                 partial = partial, cov.ranef = cov.ranef, ...)
 }
 
-get_model_matrix <- function(formula, data = environment(formula), rm_intercept = FALSE) {
+get_model_matrix <- function(formula, data = environment(formula), ...) {
   # Construct Design Matrices for \code{brms} models
   # 
   # Args:
-  #   formula: An object of class "formula"
-  #   data: A data frame created with \code{model.frame}. If another sort of object, 
-  #         \code{model.frame} is called first.
-  #   rm_intercept: Flag indicating if the intercept column should be removed from the model.matrix. 
-  #                 Primarily useful for ordinal models.
+  #   formula: An object of class formula
+  #   data: A data frame created with model.frame. 
+  #         If another sort of object, model.frame is called first.
+  #   ...: Further arguments passed to amend_terms
   # 
   # Returns:
-  #   The design matrix for a regression-like model with the specified formula and data. 
+  #   The design matrix for a regression-like model 
+  #   with the specified formula and data. 
   #   For details see the documentation of \code{model.matrix}.
-  if (!is(formula, "formula")) return(NULL) 
-  X <- stats::model.matrix(formula, data)
+  terms <- amend_terms(formula, ...)
+  if (is.null(terms)) return(NULL)
+  X <- stats::model.matrix(terms, data)
   new_colnames <- rename(colnames(X), check_dup = TRUE)
-  if (rm_intercept && "Intercept" %in% new_colnames) {
+  if (isTRUE(attr(terms, "rm_intercept")) && "Intercept" %in% new_colnames) {
     X <- as.matrix(X[, -(1)])
-    if (ncol(X)) colnames(X) <- new_colnames[2:length(new_colnames)]
-  } 
-  else colnames(X) <- new_colnames
+    if (ncol(X)) {
+      colnames(X) <- new_colnames[2:length(new_colnames)]
+    }
+  } else colnames(X) <- new_colnames
   X   
 }
 
