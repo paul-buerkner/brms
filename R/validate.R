@@ -422,7 +422,7 @@ check_brm_input <- function(x) {
     stop("n.chains must be a multiple of n.cluster")
   }
   if (x$algorithm %in% c("meanfield", "fullrank") && 
-      packageVersion("rstan") < "2.8.9") {
+      utils::packageVersion("rstan") < "2.8.9") {
     stop(paste("Algorithm", x$algorithm, "requires rstan version",
                "2.8.9 or higher"))
   }
