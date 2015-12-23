@@ -158,3 +158,16 @@ test_that("partial_predictor runs without errors", {
   expect_equal(dim(partial_predictor(Xp = Xp, p = p, ncat = 4)),
                c(30, 100, 3))
 })
+
+test_that("extract_pars returns correct parameter names", {
+  all_pars <- c("ab", "ba", "bac")
+  expect_equal(extract_pars("^b", all_pars = all_pars),
+               c("ba", "bac"))
+  expect_equal(extract_pars(c("ab", "ba$", "c$"), all_pars = all_pars),
+               all_pars)
+  expect_equal(extract_pars(c("ab", "ba", "cd"), all_pars = all_pars, 
+                            exact_match = TRUE), 
+               c("ab", "ba"))
+  expect_equal(extract_pars(NA, all_pars = all_pars, na_value = NA),
+               NA)
+})
