@@ -16,6 +16,16 @@ array2list <- function(x) {
   l
 }
 
+Nsamples <- function(x) {
+  # compute the number of posterior samples
+  if (!is(x$fit, "stanfit") || !length(x$fit@sim)) {
+    return(0)
+  } 
+  s <- x$fit@sim$samples
+  args <- attr(s[[1]], "args")
+  (args$iter - args$warmup) / args$thin * length(s)
+}
+
 first_greater <- function(A, target, i = 1) {
   # find the first element in A that is greater than target
   #
@@ -114,7 +124,8 @@ get_estimate <- function(coef, samples, margin = 2, to.array = FALSE, ...) {
   #   coef: coefficient to be applied on the samples (e.g., "mean")
   #   samples: the samples over which to apply coef
   #   margin: see apply
-  #   to.array: logical; should the result be transformed into an array of increased dimension?
+  #   to.array: logical; should the result be transformed 
+  #             into an array of increased dimension?
   #   ...: additional arguments passed to get(coef)
   #
   # Returns: 
@@ -122,15 +133,19 @@ get_estimate <- function(coef, samples, margin = 2, to.array = FALSE, ...) {
   dots <- list(...)
   args <- list(X = samples, MARGIN = margin, FUN = coef)
   fun_args <- names(formals(coef))
-  if (!"..." %in% fun_args)
+  if (!"..." %in% fun_args) {
     dots <- dots[names(dots) %in% fun_args]
+  }
   x <- do.call(apply, c(args, dots))
-  if (is.null(dim(x))) 
+  if (is.null(dim(x))) {
     x <- matrix(x, dimnames = list(NULL, coef))
-  else if (coef == "quantile") 
+  } else if (coef == "quantile") {
     x <- aperm(x, length(dim(x)):1)
-  if (to.array && length(dim(x)) == 2) 
-    x <- array(x, dim = c(dim(x), 1), dimnames = list(NULL, NULL, coef))
+  }
+  if (to.array && length(dim(x)) == 2) {
+    x <- array(x, dim = c(dim(x), 1), 
+               dimnames = list(NULL, NULL, coef))
+  }
   x 
 }
 
@@ -416,7 +431,8 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
     stop("The model does not contain posterior samples")
   # the linear predictor will be based on an updated formula 
   # if re_formula is specified
-  new_ranef <- check_re_formula(re_formula, old_ranef = x$ranef, data = x$data)
+  new_ranef <- check_re_formula(re_formula, old_ranef = x$ranef, 
+                                data = x$data)
   new_formula <- update_re_terms(x$formula, re_formula = re_formula)
   if (is.null(newdata)) { 
     data <- standata(x, re_formula = re_formula,
@@ -426,15 +442,15 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
   }
   
   ee <- extract_effects(new_formula, family = x$family)
-  n_samples <- nrow(posterior_samples(x, pars = "^lp__$"))
-  eta <- matrix(0, nrow = n_samples, ncol = data$N)
+  Nsamples <- Nsamples(x)
+  eta <- matrix(0, nrow = Nsamples, ncol = data$N)
   X <- data$X
   if (!is.null(X) && ncol(X) && x$family != "categorical") {
-    b <- posterior_samples(x, pars = "^b_[^\\[]+$")
+    b <- posterior_samples(x, pars = "^b_[^\\[]+$", as.matrix = TRUE)
     eta <- eta + fixef_predictor(X = X, b = b)  
   }
   if (!is.null(data$offset)) {
-    eta <- eta + matrix(rep(data$offset, n_samples), 
+    eta <- eta + matrix(rep(data$offset, Nsamples), 
                         ncol = data$N, byrow = TRUE)
   }
   
@@ -476,11 +492,11 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
     # incorporate ARR effects
     if (old_autocor) {
       Yarr <- as.matrix(data$Yar)
-      arr <- posterior_samples(x, pars = "^ar\\[")
+      arr <- posterior_samples(x, pars = "^ar\\[", as.matrix = TRUE)
     } else {
       # brms > 0.5.0
       Yarr <- as.matrix(data$Yarr)
-      arr <- posterior_samples(x, pars = "^arr\\[")
+      arr <- posterior_samples(x, pars = "^arr\\[", as.matrix = TRUE)
     }
     eta <- eta + fixef_predictor(X = Yarr, b = arr)
   }
@@ -498,9 +514,10 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
   
   # transform eta to to etap for ordinal and categorical models
   if (is.ordinal(x$family)) {
-    Intercept <- posterior_samples(x, "^b_Intercept\\[")
+    Intercept <- posterior_samples(x, "^b_Intercept\\[", as.matrix = TRUE)
     if (!is.null(data$Xp) && ncol(data$Xp)) {
-      p <- posterior_samples(x, paste0("^b_",colnames(data$Xp),"\\["))
+      p <- posterior_samples(x, paste0("^b_", colnames(data$Xp), "\\["),
+                             as.matrix = TRUE)
       etap <- partial_predictor(Xp = data$Xp, p = p, ncat = data$max_obs)
     } else {
       etap <- array(0, dim = c(dim(eta), data$max_obs-1))
@@ -516,7 +533,7 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
     eta <- etap
   } else if (x$family == "categorical") {
     if (!is.null(data$X)) {
-      p <- posterior_samples(x, pars = "^b_")
+      p <- posterior_samples(x, pars = "^b_", as.matrix = TRUE)
       etap <- partial_predictor(data$X, p, data$max_obs)
     } else {
       etap <- array(0, dim = c(dim(eta), data$max_obs - 1))
@@ -528,7 +545,7 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
   }
   # include multiplicative effects
   if (!is.null(data$Xm) && ncol(data$Xm)) {
-    bm <- posterior_samples(x, pars = "^bm_[^\\[]+$")
+    bm <- posterior_samples(x, pars = "^bm_[^\\[]+$", as.matrix = TRUE)
     eta <- eta * exp(fixef_predictor(X = data$Xm, b = bm)) 
   }
   eta
@@ -543,7 +560,11 @@ fixef_predictor <- function(X, b) {
   # 
   # Returns:
   #   linear predictor for fixed effects
-  as.matrix(b) %*% t(as.matrix(X))
+  if (!is.matrix(X))
+    stop("X must be a matrix")
+  if (!is.matrix(b))
+    stop("b must be a matrix")
+  b %*% t(X)
 }
 
 ranef_predictor <- function(Z, gf, r) {
@@ -556,18 +577,25 @@ ranef_predictor <- function(Z, gf, r) {
   #
   # Returns: 
   #   linear predictor for random effects
+  if (!is.matrix(Z))
+    stop("Z must be a matrix")
+  if (!is.matrix(r))
+    stop("r must be a matrix")
   nranef <- ncol(Z)
   max_levels <- ncol(r) / nranef
   Z <- expand_matrix(Z, gf)
   levels <- unique(gf)
   # sort levels because we need row major instead of column major order
-  sort_levels <- ulapply(1:max_levels, function(l) seq(l, ncol(r), max_levels))
+  sort_levels <- ulapply(1:max_levels, function(l) 
+                         seq(l, ncol(r), max_levels))
   if (length(levels) < max_levels) {
     # if only a subset of levels is provided (only for newdata)
-    take_levels <- ulapply(levels, function(l) ((l - 1) * nranef + 1):(l * nranef))
-    eta <- as.matrix(r[, sort_levels])[, take_levels] %*% t(Z[, take_levels])
+    take_levels <- ulapply(levels, function(l) 
+                           ((l - 1) * nranef + 1):(l * nranef))
+    eta <- r[, sort_levels][, take_levels, drop = FALSE] %*% 
+           t(Z[, take_levels, drop = FALSE])
   } else {
-    eta <- as.matrix(r[, sort_levels]) %*% t(Z)
+    eta <- r[, sort_levels] %*% t(Z)
   }
   eta
 }
@@ -577,7 +605,7 @@ arma_predictor <- function(data, eta, ar = NULL, ma = NULL,
   # compute eta for ARMA effects
   #
   # Args:
-  #   data: the data initially passed to stan
+  #   data: the data initially passed to Stan
   #   eta: previous linear predictor samples
   #   ar: autoregressive samples (can be NULL)
   #   ma: moving average samples (can be NULL)
@@ -622,11 +650,16 @@ partial_predictor <- function(Xp, p, ncat) {
   #   ncat: number of categories
   #
   # @return linear predictor of partial effects as a 3D array (not as a matrix)
+  if (!is.matrix(Xp))
+    stop("Xp must be a matrix")
+  if (!is.matrix(p))
+    stop("p must be a matrix")
   ncat <- max(ncat)
   etap <- array(0, dim = c(nrow(p), nrow(Xp), ncat - 1))
   indices <- seq(1, (ncat - 1) * ncol(Xp), ncat - 1) - 1
+  Xp <- t(Xp)
   for (k in 1:(ncat-1)) {
-    etap[, , k] <- as.matrix(p[, indices + k]) %*% t(as.matrix(Xp))
+    etap[, , k] <- p[, indices + k, drop = FALSE] %*% Xp
   }
   etap
 }
@@ -643,16 +676,19 @@ expand_matrix <- function(A, x) {
   #
   # Returns:
   #   An expanded matrix of dimensions nrow(A) and ncol(A) * length(unique(x)) 
-  A <- as.matrix(A)
+  if (!is.matrix(A)) 
+    stop("A must be a matrix")
   if (length(x) != nrow(A))
     stop("x must have nrow(A) elements")
   if (!all(is.wholenumber(x) & x > 0))
     stop("x must contain positive integers only")
   K <- ncol(A)
   v <- rep(0, K * max(x))
-  do.call(rbind, lapply(1:nrow(A), function(n, v) {
+  .fun <- function(n, v) {
     v[K * (x[n] - 1) + 1:K] <- A[n, ] 
-    return(v)}, v = v))
+    v
+  }
+  do.call(rbind, lapply(1:nrow(A), .fun, v = v))
 }
 
 compute_ic <- function(x, ic = c("waic", "loo"), ...) {
