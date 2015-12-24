@@ -977,26 +977,28 @@ update.brmsfit <- function(object, newdata = NULL, ...) {
     stop(paste("Argument(s)", paste(names(dots)[z], collapse = ", "),
                "cannot be updated"))
   }
+  if ("data" %in% names(dots)) {
+    stop("Please use argument 'newdata' to update your data")
+  }
   # update arguments if required
   ee <- extract_effects(object$formula)
-  if (is.null(newdata) && !is.null(dots$data)) {
-    # in case someone uses argument data instead of newdata
-    data.name <- Reduce(paste, deparse(substitute(dots$data)))
-    newdata <- dots$data
-  } else {
-    data.name <- Reduce(paste, deparse(substitute(newdata)))
-  }
   if (!is.null(newdata)) {
     object$data <- amend_newdata(newdata, fit = object, 
                                  return_standata = FALSE)
-    object$data.name <- data.name
-    object$ranef <- gather_ranef(ee, data = object$data)
+    object$data.name <- Reduce(paste, deparse(substitute(newdata)))
+    object$ranef <- gather_ranef(ee, data = object$data, 
+                                 is_forked = is.forked(object$family))
     dots$is_newdata <- TRUE
   }
   if (!is.null(dots$ranef)) {
     object$exclude <- exclude_pars(object$formula, ranef = dots$ranef)
   }
-  do.call(brm, c(list(fit = object), dots))
+  if (!isFALSE(dots$refit)) {
+    # allows test 'update' without having to fit a Stan model
+    dots$refit <- NULL
+    object <- do.call(brm, c(list(fit = object), dots))
+  }
+  object
 }
 
 #' @export
