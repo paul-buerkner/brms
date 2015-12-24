@@ -114,15 +114,15 @@ test_that("all S3 methods have reasonable ouputs", {
   # update
   # do not actually refit the model as is causes CRAN checks to fail
   new_data <- data.frame(log_Age_c = c(0, 1, -1), visit = c(3, 2, 4),
-                        Trt_c = c(0, 0.5, -0.5))
+                         Trt_c = c(0, 0.5, -0.5))
   up <- update(fit, newdata = new_data, ranef = FALSE, refit = FALSE)
   expect_true(class(up) == "brmsfit")
   expect_equal(up$data.name, "new_data")
   expect_equal(attr(up$ranef$visit, "levels"), c("2", "3", "4"))
-  expect_true("r_visit" %in% up$exclude)
+  expect_true("r_1" %in% up$exclude)
   expect_error(update(fit, family = "gaussian"),
                "family cannot be updated")
-  expect_error(updata(fit, data = new_data),
+  expect_error(update(fit, data = new_data),
                "use argument 'newdata' to update your data")
   # VarCorr
   vc <- VarCorr(fit)
