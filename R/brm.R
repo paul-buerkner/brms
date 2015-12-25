@@ -313,7 +313,7 @@
 #' ## and half cauchy priors for standard deviations of random effects 
 #' fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt_c 
 #'             + (1|patient) + (1|visit) + (1|obs), 
-#'             data = epilepsy, family = "poisson", 
+#'             data = epilepsy, family = poisson(), 
 #'             prior = c(set_prior("student_t(5,0,10)", class = "b"),
 #'                       set_prior("cauchy(0,2)", class = "sd")))
 #' ## generate a summary of the results
@@ -339,7 +339,7 @@
 #' ## first and second recurrence of an infection in kidney patients
 #' ## time | cens indicates which values in variable time are right censored
 #' fit3 <- brm(time | cens(censored) ~ age + sex + disease + (1|patient), 
-#'             data = kidney, family = "weibull", inits = "0")
+#'             data = kidney, family = weibull(), inits = "0")
 #' summary(fit3) 
 #' plot(fit3)    
 #' 
@@ -358,7 +358,7 @@
 #' @import methods
 #' @import stats   
 #' @export 
-brm <- function(formula, data = NULL, family = "gaussian", 
+brm <- function(formula, data = NULL, family = gaussian(), 
                 prior = NULL, addition = NULL, autocor = NULL, 
                 multiply = NULL, partial = NULL, 
                 threshold = c("flexible", "equidistant"), cov.ranef = NULL, 

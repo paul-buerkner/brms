@@ -84,15 +84,19 @@ ilink <- function(x, link) {
   else stop(paste("Link", link, "not supported"))
 }
 
-get_cornames <- function(names, type = "cor", brackets = TRUE, subset = NULL, subtype = "") {
+get_cornames <- function(names, type = "cor", brackets = TRUE, 
+                         subset = NULL, subtype = "") {
   # get correlation names as combinations of variable names
   #
   # Args:
   #  names: the variable names 
   #  type: of the correlation to be put in front of the returned strings
-  #  brackets: should the correlation names contain brackets or underscores as seperators
-  #  subset: subset of correlation parameters to be returned. Currently only used in summary.brmsfit (s3.methods.R)
-  #  subtype: the subtype of the correlation (e.g., g1 in cor_g1_x_y). Only used when subset is not NULL
+  #  brackets: should the correlation names contain brackets 
+  #            or underscores as seperators
+  #  subset: subset of correlation parameters to be returned. 
+  #          Currently only used in summary.brmsfit (s3.methods.R)
+  #  subtype: the subtype of the correlation (e.g., g1 in cor_g1_x_y). 
+  #           Only used when subset is not NULL
   #
   # Returns: 
   #  correlation names based on the variable names passed to the names argument
@@ -719,7 +723,8 @@ compare_ic <- function(x, ic = c("waic", "loo")) {
   #   ic: the information criterion to be computed
   #
   # Returns:
-  #   A matrix with differences in the ICs as well as corresponding standard errors
+  #   A matrix with differences in the ICs 
+  #   as well as corresponding standard errors
   ic <- match.arg(ic)
   n_models <- length(x)
   ic_diffs <- matrix(0, nrow = n_models * (n_models - 1) / 2, ncol = 2)
@@ -845,14 +850,16 @@ print.brmssummary <- function(x, digits = 2, ...) {
       cat("Correlation Structure: ")
       print(x$autocor)
       cat("\n")
-      x$cor_pars[, "Eff.Sample"] <- round(x$cor_pars[, "Eff.Sample"], digits = 0)
+      x$cor_pars[, "Eff.Sample"] <- round(x$cor_pars[, "Eff.Sample"], 
+                                          digits = 0)
       print(round(x$cor_pars, digits = digits))
       cat("\n")
     }
     
     if (nrow(x$fixed)) {
       cat("Fixed Effects: \n")
-      x$fixed[, "Eff.Sample"] <- round(x$fixed[, "Eff.Sample"], digits = 0)
+      x$fixed[, "Eff.Sample"] <- round(x$fixed[, "Eff.Sample"], 
+                                       digits = 0)
       print(round(x$fixed, digits = digits)) 
       cat("\n")
     }

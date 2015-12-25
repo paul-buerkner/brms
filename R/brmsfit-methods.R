@@ -121,8 +121,7 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, ...) {
 VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
-  if (!(length(x$ranef) || (is.linear(x$family) && 
-                            any(grepl("^sigma_", parnames(x))))))
+  if (!(length(x$ranef) || any(grepl("^sigma_", parnames(x)))))
     stop("The model does not contain covariance matrices")
 
   # extracts samples for sd, cor and cov
@@ -175,7 +174,8 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
     out
   }
   
-  ee <- extract_effects(x$formula, family = x$family)
+  family <- family(x)
+  ee <- extract_effects(x$formula, family = family)
   if (length(x$ranef)) {
     gather_names <- function(i) {
       # gather names of random effects parameters
@@ -192,7 +192,7 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
     p <- group <- NULL
   } 
   # special treatment of residuals variances in linear models
-  if (has_sigma(x$family, se = ee$se, autocor = x$autocor)) {
+  if (has_sigma(family, se = ee$se, autocor = x$autocor)) {
     cor_pars <- get_cornames(ee$response, type = "rescor", 
                              brackets = FALSE)
     p <- lc(p, list(rnames = ee$response, 

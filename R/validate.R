@@ -1,8 +1,10 @@
-extract_effects <- function(formula, ..., family = NA, check_response = TRUE) {
+extract_effects <- function(formula, ..., family = NA, 
+                            check_response = TRUE) {
   # Extract fixed and random effects from a formula
   # 
   # Args:
-  #   formula: An object of class "formula" using mostly the syntax of the \code{lme4} package
+  #   formula: An object of class "formula" using mostly the syntax 
+  #            of the \code{lme4} package
   #   ...: Additional objects of class "formula"
   #   family: the model family
   #   check_response: check if the response part is non-empty?
@@ -32,6 +34,8 @@ extract_effects <- function(formula, ..., family = NA, check_response = TRUE) {
     stop("Random effects terms should be enclosed in brackets")
   }
   fixed <- formula(fixed)
+  if (!is.na(family[[1]])) 
+    family <- check_family(family)
   if (is.ordinal(family))
     fixed <- update.formula(fixed, . ~ . + 1)
   if (check_response && length(fixed) < 3) 
@@ -60,7 +64,7 @@ extract_effects <- function(formula, ..., family = NA, check_response = TRUE) {
   # handle addition arguments
   fun <- c("se", "weights", "trials", "cat", "cens", "trunc")
   add_vars <- list()
-  if (!anyNA(family)) {
+  if (!is.na(family[[1]])) {
     add <- get_matches("\\|[^~]*~", formula)[1]
     add <- substr(add, 2, nchar(add)-1)
     families <- list(se = c("gaussian", "student", "cauchy"),

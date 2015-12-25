@@ -17,7 +17,7 @@
 #'               data = epilepsy, family = "poisson")
 #'
 #' @export
-make_stancode <- function(formula, data = NULL, family = "gaussian", 
+make_stancode <- function(formula, data = NULL, family = gaussian(), 
                           prior = NULL, autocor = NULL, 
                           multiply = NULL, partial = NULL, 
                           threshold = c("flexible", "equidistant"),
@@ -114,8 +114,8 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
   text_ordinal <- stan_ordinal(family = family, prior = prior, 
                                partial = length(paref), 
                                threshold = threshold)  
-  text_zi_hu <- stan_zero_inflated_hurdle(family = family)
-  text_2PL <- stan_2PL(family = family)
+  text_zi_hu <- stan_zero_inflated_hurdle(family)
+  text_2PL <- stan_2PL(family)
   text_inv_gaussian <- stan_inv_gaussian(family = family, 
                                          weights = is.formula(ee$weights),
                                          cens = is.formula(ee$cens),
@@ -315,7 +315,7 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
   complete_model
 }
 
-stan_fixef <- function(fixef, multef, paref, family = "gaussian", 
+stan_fixef <- function(fixef, multef, paref, family = gaussian(), 
                        prior = prior_frame(), has_intercept = TRUE, 
                        threshold = "flexible") {
   # Stan code for fixec effects
@@ -485,6 +485,8 @@ stan_llh <- function(family, se = FALSE, weights = FALSE,
   #
   # Returns:
   #   a string containing the likelihood of the model in stan language
+  if (!is(family, "family"))
+    stop("family must be of class family")
   link <- family$link
   type <- family$type
   family <- family$family
@@ -671,6 +673,8 @@ stan_eta <- function(family, fixef, has_intercept = TRUE,
   # 
   # Return:
   #   the linear predictor in stan language
+  if (!is(family, "family"))
+    stop("family must be of class family")
   link <- family$link
   family <- family$family
   is_linear <- is.linear(family)
@@ -769,6 +773,8 @@ stan_arma <- function(family, autocor, prior = prior_frame(),
   #
   # Returns:
   #   stan code for computing AR(R)MA effects
+  if (!is(family, "family"))
+    stop("family must be of class family")
   is_linear <- is.linear(family)
   Kar <- get_ar(autocor)
   Kma <- get_ma(autocor)
@@ -1016,6 +1022,8 @@ stan_multi <- function(family, response, prior = prior_frame()) {
   # 
   # Returns: 
   #   list containing Stan code specific for multivariate models
+  if (!is(family, "family"))
+    stop("family must be of class family")
   out <- list()
   nresp <- length(response)
   if (nresp > 1) {
@@ -1079,6 +1087,8 @@ stan_ordinal <- function(family, prior = prior_frame(),
   #
   # Returns:
   #   A vector of strings containing the ordinal effects in stan language
+  if (!is(family, "family"))
+    stop("family must be of class family")
   out <- list()
   if (is.ordinal(family)) {
     # define Stan code similar for all ordinal models
@@ -1125,7 +1135,8 @@ stan_ordinal <- function(family, prior = prior_frame(),
         out$transC2 <- paste0(out$transC2,
         "    p[n, 1] <- ",ilink,"(",th(1),"); \n",
         "    for (k in 2:(ncat - 1)) { \n", 
-        "      p[n, k] <- ",ilink,"(",th("k"),") - ",ilink,"(",th("k - 1"),"); \n", 
+        "      p[n, k] <- ",ilink,"(",th("k"),") - ",
+                            ilink,"(",th("k - 1"),"); \n", 
         "    } \n",
         "    p[n, ncat] <- 1 - ",ilink,"(",th("ncat - 1"),"); \n")
       } else if (family %in% c("sratio", "cratio")) {
@@ -1174,6 +1185,8 @@ stan_zero_inflated_hurdle <- function(family) {
   # Returns:
   #   a list of character strings defining the stan code
   #   specific for zero-inflated and hurdle models
+  if (!is(family, "family"))
+    stop("family must be of class family")
   out <- list()
   if (is.zero_inflated(family) || is.hurdle(family)) {
     if (family$family == "zero_inflated_poisson") {
@@ -1304,6 +1317,8 @@ stan_zero_inflated_hurdle <- function(family) {
 }
 
 stan_2PL <- function(family) {
+  if (!is(family, "family"))
+    stop("family must be of class family")
   out <- list()
   if (is.2PL(family)) {
     out$transD <- "  vector[N_trait] eta_2PL;  # 2PL linear predictor \n"
@@ -1326,6 +1341,8 @@ stan_inv_gaussian <- function(family, weights = FALSE, cens = FALSE,
   # Returns:
   #   a list of character strings defining the stan code
   #   specific for inverse gaussian models
+  if (!is(family, "family"))
+    stop("family must be of class family")
   out <- list()
   if (family$family == "inverse.gaussian") {
     out$data <- paste0(
@@ -1418,6 +1435,8 @@ stan_misc_functions <- function(family = gaussian(), kronecker = FALSE) {
   #
   # Returns:
   #   a string containing defined functions in stan code
+  if (!is(family, "family"))
+    stop("family must be of class family")
   out <- NULL
   if (family$link == "cauchit") {
     out <- paste0(out,
@@ -1584,6 +1603,8 @@ stan_rngprior <- function(sample.prior, prior, family = gaussian(),
   #
   # Returns:
   #   a character string containing the priors to be sampled from in stan code
+  if (!is(family, "family"))
+    stop("family must be of class family")
   out <- list()
   if (sample.prior) {
     prior <- gsub(" ", "", paste0("\n",prior))

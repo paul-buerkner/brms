@@ -12,35 +12,42 @@
 #'   argument of \code{\link[brms:brm]{brm}}.
 #' 
 #' @details 
-#'   \code{set_prior} is used to define prior distributions for parameters in \pkg{brms} models.
-#'   Below, we explain its usage and list some common prior distributions for parameters. 
-#'   A complete overview on possible prior distributions is given in the Stan Reference Manual available at 
-#'   \url{http://mc-stan.org/}.
+#'   \code{set_prior} is used to define prior distributions for parameters 
+#'   in \pkg{brms} models. Below, we explain its usage and list some common 
+#'   prior distributions for parameters. 
+#'   A complete overview on possible prior distributions is given 
+#'   in the Stan Reference Manual available at \url{http://mc-stan.org/}.
 #'   
-#'   To combine multiple priors, use \code{c(...)}, e.g., \code{c(set_prior(...), set_prior(...))}.
-#'   \pkg{brms} performs no checks if the priors are written in correct Stan language.
-#'   Instead, Stan will check their correctness when the model is parsed to C++ 
-#'   and returns an error if they are not.
+#'   To combine multiple priors, use \code{c(...)}, 
+#'   e.g., \code{c(set_prior(...), set_prior(...))}.
+#'   \pkg{brms} performs no checks if the priors are written in 
+#'   correct Stan language. Instead, Stan will check their correctness 
+#'   when the model is parsed to C++ and returns an error if they are not.
 #'   Currently, there are five types of parameters in \pkg{brms} models, 
 #'   for which the user can specify prior distributions. \cr
 #'   
 #'   1. Fixed and category specific effects 
 #'   
 #'   Every fixed (and category specific) effect has its own regression parameter. 
-#'   These parameters are internally named as \code{b_<fixed>}, where \code{<fixed>} represents 
+#'   These parameters are internally named as \code{b_<fixed>}, 
+#'   where \code{<fixed>} represents 
 #'   the name of the corresponding fixed effect. 
 #'   Suppose, for instance, that \code{y} is predicted by \code{x1} and \code{x2} 
 #'   (i.e. \code{y ~ x1+x2} in formula syntax). 
-#'   Then, \code{x1} and \code{x2} have regression parameters \code{b_x1} and \code{b_x2} respectively. 
-#'   The default prior for fixed and category specific effects is an improper flat prior over the reals. 
-#'   Other common options are normal priors or uniform priors over a finite interval.
-#'   If we want to have a normal prior with mean 0 and standard deviation 5 for \code{x1}, 
-#'   and a uniform prior between -10 and 10 for \code{x2}, we can specify this via
+#'   Then, \code{x1} and \code{x2} have regression parameters 
+#'   \code{b_x1} and \code{b_x2} respectively. 
+#'   The default prior for fixed and category specific effects is an 
+#'   improper flat prior over the reals. Other common options are normal priors 
+#'   or uniform priors over a finite interval.
+#'   If we want to have a normal prior with mean 0 and 
+#'   standard deviation 5 for \code{x1}, 
+#'   and a uniform prior between -10 and 10 for \code{x2}, 
+#'   we can specify this via
 #'   \code{set_prior("normal(0,5)", class = "b", coef = "x1")} and \cr
 #'   \code{set_prior("uniform(-10,10)", class = "b", coef = "x2")}.
 #'   To put the same prior on all fixed effects at once, 
-#'   we may write as a shortcut \code{set_prior("<prior>", class = "b")}. This also
-#'   leads to faster sampling, because priors can be vectorized in this case. 
+#'   we may write as a shortcut \code{set_prior("<prior>", class = "b")}. 
+#'   This also leads to faster sampling, because priors can be vectorized in this case. 
 #'   Both ways of defining priors can be combined using for instance \cr
 #'   \code{set_prior("normal(0,10)", class = "b", coef = "Intercept")} and \cr
 #'   \code{set_prior("normal(0,2)", class = "b")} at the same time.
@@ -50,8 +57,8 @@
 #'   
 #'   A special shrinkage prior to be applied on fixed effects is the horseshoe prior.
 #'   It is symmetric around zero with fat tails and an infinitely large spike
-#'   at zero. This makes it ideal for sparse models that have many regression coefficients,
-#'   although only a minority of them is non-zero. 
+#'   at zero. This makes it ideal for sparse models that have 
+#'   many regression coefficients,although only a minority of them is non-zero. 
 #'   For more details see Carvalho et al. (2009).
 #'   The horseshoe prior can be applied on all fixed effects at once 
 #'   (excluding the intercept) by using \code{set_prior("horseshoe(<df>)")}.
@@ -86,37 +93,45 @@
 #'   The autocorrelation parameters currently implemented are named 
 #'   \code{ar} (autoregression), \code{ma} (moving average),
 #'   and \code{arr} (autoregression of the response).
-#'   The default prior for autocorrelation parameters is an improper flat prior over the reals. 
+#'   The default prior for autocorrelation parameters is an 
+#'   improper flat prior over the reals. 
 #'   Other priors can be defined by \code{set_prior("<prior>", class = "ar")} 
 #'   for \code{ar} effects and similar for \code{ma} and \code{arr} effects.
 #'   
 #'   4. Standard deviations of random effects
 #'   
 #'   Each random effect of each grouping factor has a standard deviation named
-#'   \code{sd_<group>_<random>}. Consider, for instance, the formula \code{y ~ x1+x2+(1+x1|g)}.
-#'   We see that the intercept as well as \code{x1} are random effects nested in the grouping factor \code{g}. 
+#'   \code{sd_<group>_<random>}. Consider, for instance, the formula 
+#'   \code{y ~ x1+x2+(1+x1|g)}.
+#'   We see that the intercept as well as \code{x1} are random effects 
+#'   nested in the grouping factor \code{g}. 
 #'   The corresponding standard deviation parameters are named as 
 #'   \code{sd_g_Intercept} and \code{sd_g_x1} respectively. 
 #'   These parameters are restriced to be non-negative and, by default, 
 #'   have a half cauchy prior with a scale parameter that depends on the 
 #'   standard deviation of the response after applying the link function.
 #'   Minimally, the scale parameter is 5. 
-#'   To define a prior distribution only for standard deviations of a specific grouping factor,
+#'   To define a prior distribution only for standard deviations 
+#'   of a specific grouping factor,
 #'   use \cr \code{set_prior("<prior>", class = "sd", group = "<group>")}. 
 #'   To define a prior distribution only for a specific standard deviation 
 #'   of a specific grouping factor, you may write \cr
 #'   \code{set_prior("<prior>", class = "sd", group = "<group>", coef = "<coef>")}. 
-#'   Recommendations on useful prior distributions for standard deviations are given in Gelman (2006). \cr
+#'   Recommendations on useful prior distributions for 
+#'   standard deviations are given in Gelman (2006). \cr
 #'   
 #'   5. Correlations of random effects 
 #'   
-#'   If there is more than one random effect per grouping factor, the correlations between those random
+#'   If there is more than one random effect per grouping factor, 
+#'   the correlations between those random
 #'   effects have to be estimated. 
-#'   The prior \code{"lkj_corr_cholesky(eta)"} or in short \code{"lkj(eta)"} with \code{eta > 0} 
+#'   The prior \code{"lkj_corr_cholesky(eta)"} or in short 
+#'   \code{"lkj(eta)"} with \code{eta > 0} 
 #'   is essentially the only prior for (choelsky factors) of correlation matrices. 
 #'   If \code{eta = 1} (the default) all correlations matrices 
-#'   are equally likely a priori. If \code{eta > 1}, extreme correlations become less likely, 
-#'   whereas \code{0 < eta < 1} results in higher probabilities for extreme correlations. 
+#'   are equally likely a priori. If \code{eta > 1}, extreme correlations 
+#'   become less likely, whereas \code{0 < eta < 1} results in 
+#'   higher probabilities for extreme correlations. 
 #'   Correlation matrix parameters in \code{brms} models are named as 
 #'   \code{cor_(group)}, (e.g., \code{cor_g} if \code{g} is the grouping factor).
 #'   To set the same prior on every correlation matrix, 
@@ -125,12 +140,13 @@
 #'   6. Parameters for specific families 
 #'   
 #'   Some families need additional parameters to be estimated. 
-#'   Families \code{gaussian}, \code{student}, and \code{cauchy} need the parameter \code{sigma} 
+#'   Families \code{gaussian}, \code{student}, and \code{cauchy} 
+#'   need the parameter \code{sigma} 
 #'   to account for the residual standard deviation.
-#'   By default, \code{sigma} has a half cauchy prior that scales in the same way as the
-#'   random effects standard deviations. 
-#'   Furthermore, family \code{student} needs the parameter \code{nu} representing 
-#'   the degrees of freedom of students t distribution. 
+#'   By default, \code{sigma} has a half cauchy prior that scales 
+#'   in the same way as the random effects standard deviations. 
+#'   Furthermore, family \code{student} needs the parameter 
+#'   \code{nu} representing the degrees of freedom of students t distribution. 
 #'   By default, \code{nu} has prior \code{"gamma(2,0.1)"}
 #'   and a fixed lower bound of \code{1}.
 #'   Families \code{gamma}, \code{weibull}, \code{inverse.gaussian}, and
@@ -138,12 +154,14 @@
 #'   \code{"cauchy(0,5)"} prior by default. 
 #'   For families \code{cumulative}, \code{cratio}, \code{sratio}, 
 #'   and \code{acat}, and only if \code{threshold = "equidistant"}, 
-#'   the parameter \code{delta} is used to model the distance between to adjacent thresholds. 
+#'   the parameter \code{delta} is used to model the distance between 
+#'   two adjacent thresholds. 
 #'   By default, \code{delta} has an improper flat prior over the reals. \cr
 #'   Every family specific parameter has its own prior class, so that \cr
 #'   \code{set_prior("<prior>", class = "<parameter>")} it the right way to go.
 #' 
-#'   Often, it may not be immediately clear, which parameters are present in the model.
+#'   Often, it may not be immediately clear, 
+#'   which parameters are present in the model.
 #'   To get a full list of parameters and parameter classes for which 
 #'   priors can be specified (depending on the model) 
 #'   use function \code{\link[brms:get_prior]{get_prior}}.
@@ -161,7 +179,7 @@
 #' @examples
 #' ## check which parameters can have priors
 #' get_prior(rating ~ treat + period + carry + (1|subject),
-#'           data = inhaler, family = "cumulative", 
+#'           data = inhaler, family = sratio(), 
 #'           threshold = "equidistant")
 #'          
 #' ## define some priors          
@@ -173,13 +191,13 @@
 #'               
 #' ## verify that the priors indeed found their way into Stan's model code
 #' make_stancode(rating ~ period + carry + (1|subject),
-#'               data = inhaler, family = "sratio", 
+#'               data = inhaler, family = sratio(), 
 #'               partial = ~ treat, threshold = "equidistant",
 #'               prior = prior)
 #'               
 #' ## use horseshoe priors to model sparsity in fixed effects parameters
 #' make_stancode(count ~ log_Age_c + log_Base4_c * Trt_c,
-#'               data = epilepsy, family = "poisson",
+#'               data = epilepsy, family = poisson(),
 #'               prior = set_prior("horseshoe(3)"))
 #'
 #' @export
@@ -228,7 +246,7 @@ set_prior <- function(prior, class = "b", coef = "", group = "") {
 #' ## get all parameters and parameters classes to define priors on
 #' (prior <- get_prior(count ~ log_Age_c + log_Base4_c * Trt_c
 #'                     + (1|patient) + (1|visit),
-#'                     data = epilepsy, family = "poisson"))   
+#'                     data = epilepsy, family = poisson()))   
 #'          
 #' ## define a prior on all fixed effects a once
 #' prior$prior[1] <- "normal(0,10)"
@@ -239,11 +257,11 @@ set_prior <- function(prior, class = "b", coef = "", group = "") {
 #' ## verify that the priors indeed found their way into Stan's model code
 #' make_stancode(count ~ log_Age_c + log_Base4_c * Trt_c 
 #'               + (1|patient) + (1|visit),
-#'               data = epilepsy, family = "poisson", 
+#'               data = epilepsy, family = poisson(), 
 #'               prior = prior)
 #' 
 #' @export
-get_prior <- function(formula, data = NULL, family = "gaussian",
+get_prior <- function(formula, data = NULL, family = gaussian(),
                       autocor = NULL, multiply = NULL, partial = NULL, 
                       threshold = c("flexible", "equidistant"), 
                       internal = FALSE) {
@@ -359,7 +377,7 @@ get_prior <- function(formula, data = NULL, family = "gaussian",
   prior
 }
 
-check_prior <- function(prior, formula, data = NULL, family = "gaussian", 
+check_prior <- function(prior, formula, data = NULL, family = gaussian(), 
                         autocor = NULL, multiply = NULL,
                         partial = NULL, threshold = "flexible") {
   # check prior input and amend it if needed
@@ -373,7 +391,6 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
     # prior has already been checked; no need to do it twice
     return(prior)
   }
-  family <- check_family(family)
   ee <- extract_effects(formula, family = family)  
   all_priors <- get_prior(formula = formula, data = data, 
                           family = family, autocor = autocor, 
@@ -576,7 +593,8 @@ print.brmsprior <- function(x, ...) {
   group <- ifelse(nchar(x$group), paste0("_", x$group), "")
   coef <- ifelse(nchar(x$coef), paste0("_", x$coef), "")
   tilde <- ifelse(nchar(x$class) + nchar(group) + nchar(coef), " ~ ", "")
-  cat(paste0("Prior: ", x$class, group, coef, tilde, x$prior))    
+  cat(paste0("Prior: ", x$class, group, coef, tilde, x$prior))
+  invisible(x)
 }
 
 #' @export
