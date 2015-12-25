@@ -51,6 +51,8 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(length(loo_compare3), 3)
   expect_equal(dim(attr(loo_compare3, "compare")), c(3, 2))
   expect_silent(capture.output(print(loo_compare3)))
+  # model.frame
+  expect_equal(model.frame(fit), fit$data)
   # ngrps
   expect_equal(ngrps(fit), list(visit = 4))
   # nobs

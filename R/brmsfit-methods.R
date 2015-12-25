@@ -207,6 +207,11 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
 }
 
 #' @export
+model.frame.brmsfit <- function(formula, ...) {
+  formula$data
+}
+
+#' @export
 posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,  
                                       exact_match = FALSE, 
                                       add_chains = FALSE, 
