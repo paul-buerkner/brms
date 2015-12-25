@@ -40,6 +40,19 @@ rename <- function(names, symbols = NULL, subs = NULL,
   new_names
 }
 
+model_name <- function(family) {
+  # create the name of the fitted stan model
+  # Args:
+  #   family: A family object
+  if (!is(family, "family")) {
+    mn <- "brms-model"
+  } else {
+    type <- ifelse(is.null(family$type), "", paste0(" ", family$type))
+    mn <- paste0(family$family, "(",family$link, type, ") brms-model")
+  }
+  mn
+}
+
 rename_pars <- function(x) {
   # rename parameters (and possibly change their dimensions) within the stanfit object 
   # to ensure reasonable parameter names for summary, plot, launch_shiny etc.
@@ -76,13 +89,14 @@ rename_pars <- function(x) {
   
   # some variables generally needed
   pars <- parnames(x)
-  ee <- extract_effects(x$formula, family = x$family)
+  family <- family(x)
+  ee <- extract_effects(x$formula, family = family)
   change <- list()
   standata <- standata(x)
   
   # find positions of parameters and define new names
   f <- colnames(standata$X)
-  if (length(f) && x$family != "categorical") {
+  if (length(f) && !is.categorical(family)) {
     change <- lc(change, list(pos = grepl("^b\\[", pars), oldname = "b", 
                               pnames = paste0("b_",f), fnames = paste0("b_",f)))
     change <- c(change, prior_changes(class = "b", pars = pars, names = f))
@@ -96,8 +110,8 @@ rename_pars <- function(x) {
     change <- c(change, prior_changes(class = "bm", pars = pars, names = m))
   }
   
-  if (is.formula(x$partial) || x$family == "categorical") {
-    if (x$family == "categorical") {
+  if (is.formula(x$partial) || is.categorical(family)) {
+    if (is.categorical(family)) {
       p <- colnames(standata$X)
     } else {
       p <- colnames(standata$Xp)
@@ -150,14 +164,14 @@ rename_pars <- function(x) {
     }
   }
   
-  if (has_sigma(x$family, se = is.formula(ee$se), autocor = x$autocor)) {
+  if (has_sigma(family, se = is.formula(ee$se), autocor = x$autocor)) {
     corfnames <- paste0("sigma_",ee$response)
     change <- lc(change, list(pos = grepl("^sigma", pars), oldname = "sigma",
                               pnames = corfnames, fnames = corfnames))
     change <- c(change, prior_changes(class = "sigma", pars = pars, 
                                       names = ee$response))
     # residual correlation paramaters
-    if (is.linear(x$family) && length(ee$response) > 1) {
+    if (is.linear(family) && length(ee$response) > 1) {
        rescor_names <- get_cornames(ee$response, type = "rescor", brackets = FALSE)
        change <- lc(change, list(pos = grepl("^rescor\\[", pars), oldname = "rescor",
                                  pnames = rescor_names, fnames = rescor_names))

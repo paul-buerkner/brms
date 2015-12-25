@@ -2,7 +2,7 @@ test_that("check_prior performs correct renaming", {
   # ordering bug in devtools::check() for upper case letters
   prior <- check_prior(set_prior("normal(0,5)", class = "cor"),
                        formula = rating ~ 0 + treat + (0 + treat + carry | subject), 
-                       data = inhaler, family = "student")
+                       data = inhaler, family = student())
   target <- prior_frame(prior = "normal(0,5)", class = "L")
   expect_true(length(which(duplicated(rbind(prior, target)))) == 1)
   
@@ -23,12 +23,12 @@ test_that("check_prior performs correct renaming", {
   
   expect_equivalent(check_prior(set_prior("normal(0,1)", class = "b", coef = "Intercept"),
                                 formula = rating ~ carry, data = inhaler, 
-                                family = "cumulative", link = "logit")[3, ],
+                                family = "cumulative")[3, ],
                     prior_frame("normal(0,1)", class = "b_Intercept"))
   
   expect_equivalent(check_prior(set_prior("normal(0,1)", class = "b", coef = "Intercept"),
                                 formula = rating ~ carry, data = inhaler, 
-                                family = "cumulative", link = "logit",
+                                family = "cumulative",
                                 threshold = "equidistant")[3, ],
                     prior_frame("normal(0,1)", class = "b_Intercept1"))
 })
@@ -81,7 +81,7 @@ test_that("check_prior accepts correct prior names", {
 test_that("check_prior rejects incorrect prior names", {
   expect_message(check_prior(c(set_prior("p1", class = "b", coef = "Intercept"),
                                set_prior("p2", class = "b", coef = "age")),
-                             family = "acat", link = "logit", data = inhaler,
+                             family = "acat", data = inhaler,
                              formula = rating ~ treat + (1+treat|subject)))
   expect_message(check_prior(c(set_prior("p1", class = "b", coef = "Intercept"),
                                set_prior("", class = "sd", group = "patient")),

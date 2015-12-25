@@ -450,18 +450,24 @@ family.character <- function(object, link = NA, ...) {
   structure(nlist(family, link), class = "family")
 }
 
-check_family <- function(family) {
+check_family <- function(family, link = NULL) {
   # checks and corrects validity of the model family
   #
   # Args:
-  #   family: Either a function, an object of class 'family' of a character string
+  #   family: Either a function, an object of class 'family' 
+  #   or a character string
+  #   link: an optional character string naming the link function
+  #         ignored if family is a function or a family object
   if (is.function(family)) {
     family <- family()   
   }
   if (is(family, "family")) {
     family <- family(family$family, link = family$link)
   } else if (is.character(family)) {
-    family <- family(family[1], link = family[2])
+    if (is.null(link)) {
+      link <- family[2]
+    }
+    family <- family(family[1], link = link)
   } else {
     stop("family argument is invalid")
   }

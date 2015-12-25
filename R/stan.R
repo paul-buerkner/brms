@@ -24,15 +24,12 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
                           cov.ranef = NULL, sample.prior = FALSE, 
                           save.model = NULL, ...) {
   
-  obj_family <- check_family(family) 
-  link <- obj_family$link
-  family <- obj_family$family
+  family <- check_family(family) 
   autocor <- check_autocor(autocor)
   threshold <- match.arg(threshold)
   prior <- check_prior(prior, formula = formula, data = data, 
-                       family = family, link = link, 
-                       autocor = autocor, partial = partial, 
-                       threshold = threshold) 
+                       family = family, autocor = autocor, 
+                       partial = partial, threshold = threshold) 
   et <- extract_time(autocor$formula)  
   ee <- extract_effects(formula, family = family, partial, et$all)
   data <- update_data(data, family = family, effects = ee, et$group)
@@ -45,7 +42,7 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
   is_count <- is.count(family)
   is_hurdle <- is.hurdle(family)
   is_zero_inflated <- is.zero_inflated(family)
-  is_categorical <- family == "categorical"
+  is_categorical <- is.categorical(family)
   is_multi <- is_linear && length(ee$response) > 1
   is_forked <- is.forked(family)
   has_sigma <- has_sigma(family, autocor = autocor, se = ee$se, 
@@ -92,13 +89,12 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
   
   # generate other important parts of the stan code
   eta_re <- stan_eta_re(ranef = ranef, group = ee$group, cor = ee$cor)
-  text_eta <- stan_eta(family = family, link = link, fixef = fixef, 
+  text_eta <- stan_eta(family = family, fixef = fixef, 
                        has_intercept = has_intercept, multef = multef,
                        paref = paref, eta_re = eta_re, autocor = autocor,
                        add = is.formula(ee[c("weights", "cens", "trunc")]),
                        offset = offset, is_multi = is_multi)
-  text_llh <- stan_llh(family, link = link, 
-                       is_multi = is_multi,
+  text_llh <- stan_llh(family, is_multi = is_multi,
                        se = is.formula(ee$se),  
                        weights = is.formula(ee$weights),
                        trials = is.formula(ee$trials),
@@ -111,13 +107,12 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
   }
   
   # generate stan code specific to certain models
-  text_arma <- stan_arma(family = family, link = link, 
-                         autocor = autocor, prior = prior,
+  text_arma <- stan_arma(family = family, autocor = autocor, prior = prior,
                          se = is.formula(ee$se), is_multi = is_multi)
   text_multi <- stan_multi(family = family, response = ee$response,
                            prior = prior)
-  text_ordinal <- stan_ordinal(family = family, link = link, 
-                               prior = prior, partial = length(paref), 
+  text_ordinal <- stan_ordinal(family = family, prior = prior, 
+                               partial = length(paref), 
                                threshold = threshold)  
   text_zi_hu <- stan_zero_inflated_hurdle(family = family)
   text_inv_gaussian <- stan_inv_gaussian(family = family, 
@@ -127,7 +122,7 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
   kronecker <- needs_kronecker(gather_ranef(effects = ee, data = data, 
                                             is_forked = is_forked),
                                names_cov_ranef = names(cov.ranef))
-  text_misc_funs <- stan_misc_functions(link = link, kronecker = kronecker)
+  text_misc_funs <- stan_misc_functions(family = family, kronecker = kronecker)
     
   # get priors for all parameters in the model
   text_prior <- paste0(
@@ -140,9 +135,9 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
       stan_prior(class = "sigma", coef = ee$response, prior = prior), 
     if (has_shape) 
       stan_prior(class = "shape", prior = prior),
-    if (family == "student") 
+    if (family$family == "student") 
       stan_prior(class = "nu", prior = prior),
-    if (family == "beta") 
+    if (family$family == "beta") 
       stan_prior(class = "phi", prior = prior),
     stan_prior(class = "", prior = prior))
   # generate code to additionally sample from priors if sample.prior = TRUE
@@ -223,11 +218,11 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
     text_multi$par,
     if (has_sigma)
       "  real<lower=0> sigma;  # residual SD \n",
-    if (family == "student") 
+    if (family$family == "student") 
       "  real<lower=1> nu;  # degrees of freedom \n",
     if (has_shape) 
       "  real<lower=0> shape;  # shape parameter \n",
-    if (family == "beta") 
+    if (family$family == "beta") 
       "  real<lower=0> phi;  # precision parameter \n",
     if (!is.null(attr(prior, "hs_df"))) 
       paste0("  # horseshoe shrinkage parameters \n",
@@ -238,9 +233,9 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
   
   # generate transformed parameters block
   # loop over all observations in transformed parameters if necessary
+  cumu_logit <- family$family == "cumulative" && family$link == "logit"
   make_loop <- length(ee$group) || (Kar || Kma) && !is.formula(ee$se) ||  
-               text_eta$transform || 
-               (is_ordinal && !(family == "cumulative" && link == "logit"))
+               text_eta$transform || (is_ordinal && !cumu_logit)
   if (make_loop && !is_multi) {
     text_loop <- c(paste0("  # if available add REs to linear predictor \n",
                           "  for (n in 1:N) { \n"), "  } \n")
@@ -335,7 +330,7 @@ stan_fixef <- function(fixef, multef, paref, family = "gaussian",
   out <- list()
   if (has_intercept && !is.ordinal(family)) {
     # intercepts for ordinal models are defined in stan_ordinal
-    if (family == "categorical") {
+    if (is.categorical(family)) {
       out$par <- paste0(out$par,
         "  row_vector[ncat - 1] b_Intercept;  # fixed effects intercepts \n")
     } else {
@@ -467,7 +462,7 @@ stan_ranef <- function(i, ranef, group, cor, prior = prior_frame(),
   out
 }
 
-stan_llh <- function(family, link, se = FALSE, weights = FALSE, 
+stan_llh <- function(family, se = FALSE, weights = FALSE, 
                      trials = FALSE, cens = FALSE, trunc = .trunc(), 
                      autocor = cor_arma(), is_multi = FALSE) {
   # Likelihoods in stan language
@@ -485,8 +480,10 @@ stan_llh <- function(family, link, se = FALSE, weights = FALSE,
   #
   # Returns:
   #   a string containing the likelihood of the model in stan language
+  link <- family$link
+  family <- family$family
   is_linear <- is.linear(family)
-  is_catordinal <- is.ordinal(family) || family == "categorical"
+  is_catordinal <- is.ordinal(family) || is.categorical(family)
   is_count <- is.count(family)
   is_skewed <- is.skewed(family)
   is_binary <- is.binary(family)
@@ -503,7 +500,7 @@ stan_llh <- function(family, link, se = FALSE, weights = FALSE,
     if (weights || cens || is_trunc) {
       stop("Invalid addition arguments")
     }
-  } else if (family == "gaussian" && link == "log") {
+  } else if (is.lognormal(family, link = link)) {
     # prepare for use of lognormal likelihood
     family <- "lognormal"
     link <- "identity"
@@ -644,7 +641,7 @@ stan_eta_re <- function(ranef, group, cor) {
   eta_re
 }
 
-stan_eta <- function(family, link, fixef, has_intercept = TRUE, 
+stan_eta <- function(family, fixef, has_intercept = TRUE, 
                      multef = NULL, paref = NULL, eta_re = "", 
                      autocor = cor_arma(),  add = FALSE, 
                      offset = FALSE, is_multi = FALSE) {
@@ -664,9 +661,11 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE,
   # 
   # Return:
   #   the linear predictor in stan language
+  link <- family$link
+  family <- family$family
   is_linear <- is.linear(family)
   is_ordinal <- is.ordinal(family)
-  is_cat <- family == "categorical"
+  is_cat <- is.categorical(family)
   is_skewed <- is.skewed(family)
   is_count <- is.count(family) || is.zero_inflated(family) ||
               family %in% c("hurdle_poisson", "hurdle_negbinomial")
@@ -746,13 +745,12 @@ stan_eta <- function(family, link, fixef, has_intercept = TRUE,
   eta
 }
 
-stan_arma <- function(family, link, autocor, prior = prior_frame(),
+stan_arma <- function(family, autocor, prior = prior_frame(),
                       se = FALSE, is_multi = FALSE) {
   # AR(R)MA autocorrelation in Stan
   # 
   # Args:
   #   family: the model family
-  #   link: the link function
   #   autocor: autocorrelation structure; object of class cor_arma
   #   prior: a data.frame containing user defined priors 
   #          as returned by check_prior
@@ -768,7 +766,8 @@ stan_arma <- function(family, link, autocor, prior = prior_frame(),
   out <- list()
   if (Kar || Kma) {
     if (!is_linear) {
-      stop(paste("ARMA effects for family", family, "are not yet implemented"))
+      stop(paste("ARMA effects for family", family$family, 
+                 "are not yet implemented"))
     }
     out$data <- paste0(out$data,
       "  # data needed for ARMA effects \n",
@@ -819,7 +818,7 @@ stan_arma <- function(family, link, autocor, prior = prior_frame(),
                             "  res_cov_matrix <- cov_matrix_", cov_mat_fun, 
                             "(", cov_mat_args, ", sigma, max(nrows_tg)); \n")
       # defined selfmade functions for the functions block
-      if (family == "gaussian") {
+      if (family$family == "gaussian") {
         out$fun <- paste0(out$fun,
         "  /* multi normal log-PDF for special residual covariance structures \n",
         "   * currently only ARMA effects of order 1 are implemented \n",
@@ -969,7 +968,7 @@ stan_arma <- function(family, link, autocor, prior = prior_frame(),
       }
       index <- ifelse(is_multi, "m, k", "n")
       s <- ifelse(is_multi, "  ", "")
-      link_fun <- c(identity = "", log = "log", inverse = "inv")[link]
+      link_fun <- c(identity = "", log = "log", inverse = "inv")[family$link]
       out$transD <- paste0("  matrix[N, Karma] E;  # ARMA design matrix \n",
                            "  vector[N] e;  # residuals \n") 
       out$transC1 <- "  E <- E_pre; \n" 
@@ -1030,12 +1029,12 @@ stan_multi <- function(family, response, prior = prior_frame()) {
       out$prior <- paste0(
         stan_prior(class = "sigma", coef = response, prior = prior),
         stan_prior(class = "Lrescor", prior = prior))
-      if (family == "gaussian") {
+      if (family$family == "gaussian") {
         out$transD <- "  cholesky_factor_cov[K_trait] LSigma; \n"
         out$transC <- paste0(
           "  # compute cholesky factor of residual covariance matrix \n",
           "  LSigma <- diag_pre_multiply(sigma, Lrescor); \n")
-      } else if (family %in% c("student", "cauchy")) {
+      } else if (family$family %in% c("student", "cauchy")) {
         out$transD <- "  cov_matrix[K_trait] Sigma; \n"
         out$transC <- paste0(
           "  # compute residual covariance matrix \n",
@@ -1057,13 +1056,12 @@ stan_multi <- function(family, response, prior = prior_frame()) {
   out
 }
 
-stan_ordinal <- function(family, link, prior = prior_frame(), 
+stan_ordinal <- function(family, prior = prior_frame(), 
                          partial = FALSE, threshold = "flexible") {
   # Ordinal effects in Stan
   #
   # Args:
   #   family: the model family
-  #   link: the link function
   #   prior: a data.frame containing user defined priors 
   #          as returned by check_prior
   #   partial: logical; are there partial effects?
@@ -1083,7 +1081,9 @@ stan_ordinal <- function(family, link, prior = prior_frame(),
       } else {
         out <- paste0("eta[n]", ptl, " - b_Intercept[",k,"]")
       }
-    }  
+    } 
+    link <- family$link
+    family <- family$family
     ilink <- stan_ilink(link)
     type <- ifelse(family == "cumulative", "ordered", "vector")
     intercept <- paste0("  ", type, "[ncat-1] b_Intercept;  # thresholds \n")
@@ -1170,7 +1170,7 @@ stan_zero_inflated_hurdle <- function(family) {
       "  int<lower=1> N_trait;  # number of obs per response \n",
       "  ", ifelse(family == "hurdle_gamma", "real", "int"),
       " Y[N_trait];  # response variable \n")
-    if (family == "zero_inflated_poisson") {
+    if (family$family == "zero_inflated_poisson") {
       out$fun <- paste0(out$fun, 
       "  /* zero-inflated poisson log-PDF of a single response \n",
       "   * Args: \n",
@@ -1190,7 +1190,7 @@ stan_zero_inflated_hurdle <- function(family) {
       "              poisson_log_log(y, eta); \n",
       "     } \n",
       "   } \n")
-    } else if (family == "zero_inflated_negbinomial") {
+    } else if (family$family == "zero_inflated_negbinomial") {
       out$fun <- paste0(out$fun, 
       "  /* zero-inflated negative binomial log-PDF of a single response \n",
       "   * Args: \n",
@@ -1211,7 +1211,7 @@ stan_zero_inflated_hurdle <- function(family) {
       "              neg_binomial_2_log_log(y, eta, shape); \n",
       "     } \n",
       "   } \n")
-    } else if (family == "zero_inflated_binomial") {
+    } else if (family$family == "zero_inflated_binomial") {
       out$fun <- paste0(out$fun, 
       "  /* zero-inflated binomial log-PDF of a single response \n",
       "   * Args: \n",
@@ -1232,7 +1232,7 @@ stan_zero_inflated_hurdle <- function(family) {
       "              binomial_logit_log(y, trials, eta); \n",
       "     } \n",
       "   } \n")
-    } else if (family == "hurdle_poisson") {
+    } else if (family$family == "hurdle_poisson") {
       out$fun <- paste0(out$fun, 
       "  /* hurdle poisson log-PDF of a single response \n",
       "   * Args: \n",
@@ -1251,7 +1251,7 @@ stan_zero_inflated_hurdle <- function(family) {
       "              log(1 - exp(-exp(eta))); \n",
       "     } \n",
       "   } \n")
-    } else if (family == "hurdle_negbinomial") {
+    } else if (family$family == "hurdle_negbinomial") {
       out$fun <- paste0(out$fun, 
       "  /* hurdle negative binomial log-PDF of a single response \n",
       "   * Args: \n",
@@ -1272,7 +1272,7 @@ stan_zero_inflated_hurdle <- function(family) {
       "              log(1 - (shape / (exp(eta) + shape))^shape); \n",
       "     } \n",
       "   } \n")
-    } else if (family == "hurdle_gamma") {
+    } else if (family$family == "hurdle_gamma") {
       out$fun <- paste0(out$fun, 
       "  /* hurdle gamma log-PDF of a single response \n",
       "   * Args: \n",
@@ -1311,7 +1311,7 @@ stan_inv_gaussian <- function(family, weights = FALSE, cens = FALSE,
   #   a list of character strings defining the stan code
   #   specific for inverse gaussian models
   out <- list()
-  if (family == "inverse.gaussian") {
+  if (family$family == "inverse.gaussian") {
     out$data <- paste0(
       "  # quantities for the inverse gaussian distribution \n",
       "  vector[N] sqrt_Y;  # sqrt(Y) \n")
@@ -1393,17 +1393,17 @@ stan_inv_gaussian <- function(family, weights = FALSE, cens = FALSE,
   out
 }
 
-stan_misc_functions <- function(link = "identity", kronecker = FALSE) {
+stan_misc_functions <- function(family = gaussian(), kronecker = FALSE) {
   # stan code for user defined functions
   #
   # Args:
-  #   link: the link function
+  #   family: the model family
   #   kronecker: logical; is the kronecker product needed?
   #
   # Returns:
   #   a string containing defined functions in stan code
   out <- NULL
-  if (link == "cauchit") {
+  if (family$link == "cauchit") {
     out <- paste0(out,
     "  /* compute the inverse of the cauchit link \n",
     "   * Args: \n",
@@ -1556,7 +1556,7 @@ stan_prior <- function(class, coef = NULL, group = NULL,
   return(collapse(out))
 }
 
-stan_rngprior <- function(sample.prior, prior, family = "gaussian",
+stan_rngprior <- function(sample.prior, prior, family = gaussian(),
                           hs_df = NULL) {
   # stan code to sample from priors seperately
   #
@@ -1606,7 +1606,7 @@ stan_rngprior <- function(sample.prior, prior, family = "gaussian",
     # distinguish between bounded and unbounded parameters
     # do not change | to ||
     bound <- grepl("^sd|^sigma|^shape$|^nu$|^hs_local$|^hs_global$", pars) |  
-                   family == "cumulative" & grepl("^delta$", pars)
+                   family$family == "cumulative" & grepl("^delta$", pars)
     if (any(bound)) {  
       # bounded parameters have to be sampled in the model block
       lower_bound <- ifelse(pars[bound] == "nu", 1, 0)

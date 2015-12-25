@@ -441,11 +441,12 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
     data <- newdata
   }
   
-  ee <- extract_effects(new_formula, family = x$family)
+  family <- family(x)
+  ee <- extract_effects(new_formula, family = family)
   Nsamples <- Nsamples(x)
   eta <- matrix(0, nrow = Nsamples, ncol = data$N)
   X <- data$X
-  if (!is.null(X) && ncol(X) && x$family != "categorical") {
+  if (!is.null(X) && ncol(X) && !is.categorical(family)) {
     b <- posterior_samples(x, pars = "^b_[^\\[]+$", as.matrix = TRUE)
     eta <- eta + fixef_predictor(X = X, b = b)  
   }
@@ -513,7 +514,7 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
   }
   
   # transform eta to to etap for ordinal and categorical models
-  if (is.ordinal(x$family)) {
+  if (is.ordinal(family)) {
     Intercept <- posterior_samples(x, "^b_Intercept\\[", as.matrix = TRUE)
     if (!is.null(data$Xp) && ncol(data$Xp)) {
       p <- posterior_samples(x, paste0("^b_", colnames(data$Xp), "\\["),
@@ -524,14 +525,14 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
     } 
     for (k in 1:(data$max_obs-1)) {
       etap[, , k] <- etap[, , k] + eta
-      if (x$family %in% c("cumulative", "sratio")) {
+      if (family$family %in% c("cumulative", "sratio")) {
         etap[, , k] <-  Intercept[, k] - etap[, , k]
       } else {
         etap[, , k] <- etap[, , k] - Intercept[, k]
       }
     }
     eta <- etap
-  } else if (x$family == "categorical") {
+  } else if (is.categorical(family)) {
     if (!is.null(data$X)) {
       p <- posterior_samples(x, pars = "^b_", as.matrix = TRUE)
       etap <- partial_predictor(data$X, p, data$max_obs)
@@ -806,7 +807,13 @@ td_plot <- function(par, x) {
 
 #' @export
 print.brmssummary <- function(x, digits = 2, ...) {
-  cat(paste0(" Family: ", x$family, " (", x$link, ") \n"))
+  cat(" Family: ")
+  if (is(x$family, "family")) {
+    type <- ifelse(is.null(x$family$type), "", paste(",", x$family$type))
+    cat(paste0(x$family$family, " (", x$family$link, type, ") \n"))
+  } else {
+    cat(paste0(x$family, " (", x$link, ") \n"))  
+  }
   cat(paste("Formula:", 
             gsub(" {1,}", " ", Reduce(paste, deparse(x$formula))), "\n"))
   cat(paste0("   Data: ", x$data.name, 

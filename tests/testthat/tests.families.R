@@ -29,7 +29,7 @@ test_that("family functions returns expected results", {
                "zero_inflated_negbinomial")
   zi_binom <- list(family = "zero_inflated_binomial", link = "logit")
   class(zi_binom) <- "family"
-  expect_equal(zero_inflated_binomial(), zi_binom)
+  expect_equivalent(zero_inflated_binomial(), zi_binom)
   expect_error(zero_inflated_binomial(y~x), "zero_inflated_binomial")
   expect_equal(categorical()$link, "logit")
   expect_error(categorical(probit), "categorical")

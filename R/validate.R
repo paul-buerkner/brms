@@ -15,7 +15,7 @@ extract_effects <- function(formula, ..., family = NA, check_response = TRUE) {
   #   group: A vector of names of the grouping variables. 
   #   weights, se, cens, trials, cat: information on possible addition arguments
   #   all: A formula that contains every variable mentioned in formula and ...
-  if (class(family) == "family") {
+  if (is(family, "family")) {
     family <- family$family
   }
   term_labels <- rename(attr(terms(formula), "term.labels"), " ", "")
@@ -245,7 +245,7 @@ check_re_formula <- function(re_formula, old_ranef, data) {
       return(NULL)
     }
     # the true family doesn't matter here
-    data <- update_data(data, family = "none", effects = ee)
+    data <- update_data(data, family = NA, effects = ee)
     new_ranef <- combine_duplicates(gather_ranef(effects = ee, data = data))
     invalid_gf <- setdiff(names(new_ranef), names(old_ranef))
     if (length(invalid_gf)) {

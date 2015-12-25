@@ -318,11 +318,11 @@ print.brmsfit <- function(x, digits = 2, ...) {
 #' @method summary brmsfit
 #' @export
 summary.brmsfit <- function(object, waic = TRUE, ...) {
-  ee <- extract_effects(object$formula, family = object$family)
+  family <- family(object)
+  ee <- extract_effects(object$formula, family = family)
   formula <- update_formula(object$formula, partial = object$partial)
   out <- brmssummary(formula = formula,
-                     family = object$family, 
-                     link = object$link, 
+                     family = family, 
                      data.name = object$data.name, 
                      group = names(object$ranef), 
                      nobs = nobs(object), 
@@ -337,7 +337,7 @@ summary.brmsfit <- function(object, waic = TRUE, ...) {
     out$sampler <- attr(object$fit@sim$samples[[1]],"args")$sampler_t
     
     if (length(object$ranef) && !any(grepl("^r_", parnames(object)))
-        || length(ee$response) > 1 && is.linear(object$family)) {
+        || length(ee$response) > 1 && is.linear(family)) {
       # if brm(..., ranef = FALSE) or model is multivariate
       waic <- FALSE
     }
@@ -362,7 +362,7 @@ summary.brmsfit <- function(object, waic = TRUE, ...) {
     spec_pars <- pars[pars %in% c("nu","shape","delta", "phi") | 
       apply(sapply(c("^sigma_", "^rescor_"), grepl, x = pars), 1, any)]
     out$spec_pars <- matrix(fit_summary$summary[spec_pars,-c(2)], ncol = 6)
-    if (is.linear(object$family)) {
+    if (is.linear(family)) {
       sigma_names <- paste0("sigma(",ee$response,")")
       rescor_names <- get_cornames(ee$response, type = "rescor")   
       spec_pars[grepl("^sigma_", spec_pars)] <- sigma_names
@@ -421,12 +421,20 @@ ngrps.brmsfit <- function(object, ...) {
 }
 
 #' @export
-formula.brmsfit <- function(x, ...) 
+formula.brmsfit <- function(x, ...) {
   x$formula
+}
 
 #' @export
-family.brmsfit <- function(object, ...) 
-  family(object$family, link = object$link)
+family.brmsfit <- function(object, ...) {
+  if (is(object$family, "family")) {
+    # brms > 0.6.0
+    family <- object$family
+  } else {
+    family <- family(object$family, link = object$link) 
+  }
+  family
+}
 
 #' @export
 stancode.brmsfit <- function(object, ...)
@@ -724,7 +732,8 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                             ntrys = 5, ...) {
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
-  ee <- extract_effects(object$formula, family = object$family)
+  family <- family(object)
+  ee <- extract_effects(object$formula, family = family)
   # use newdata if defined
   if (is.null(newdata)) {
     data <- standata(object, re_formula = re_formula,
@@ -738,15 +747,15 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   nresp <- length(ee$response)
   samples <- list(eta = linear_predictor(object, newdata = data, 
                                          re_formula = re_formula))
-  if (has_sigma(object$family, se = ee$se, autocor = object$autocor))
+  if (has_sigma(family, se = ee$se, autocor = object$autocor))
     samples$sigma <- as.matrix(posterior_samples(object, pars = "^sigma_"))
-  if (object$family == "student") 
+  if (family$family == "student") 
     samples$nu <- as.matrix(posterior_samples(object, pars = "^nu$"))
-  if (object$family == "beta")
+  if (family$family == "beta")
     samples$phi <- as.matrix(posterior_samples(object, pars = "^phi$"))
-  if (has_shape(object$family)) 
+  if (has_shape(family)) 
     samples$shape <- as.matrix(posterior_samples(object, pars = "^shape$"))
-  if (is.linear(object$family) && nresp > 1) {
+  if (is.linear(family) && nresp > 1) {
     samples$rescor <- as.matrix(posterior_samples(object, pars = "^rescor_"))
     samples$Sigma <- get_cov_matrix(sd = samples$sigma, cor = samples$rescor)$cov
     message(paste("Computing predicted values of a multivariate model. \n", 
@@ -754,25 +763,25 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   }
   
   # call predict functions
-  family <- object$family
   autocor <- object$autocor
-  if (object$link == "log" && family == "gaussian" && nresp == 1) {
-    family <- "lognormal"
+  if (is.lognormal(family, nresp = nresp)) {
+    family$family <- "lognormal"
+    family$link <- "identity"
   } else if (is.linear(family) && nresp > 1) {
-    family <- paste0("multi_", family)
+    family$family <- paste0("multi_", family$family)
   } else if (use_cov(autocor) && (get_ar(autocor) || get_ma(autocor))) {
     # special family for ARMA models using residual covariance matrices
-    family <- paste0(family, "_cov")
+    family$family <- paste0(family$family, "_cov")
     samples$ar <- posterior_samples(object, pars = "^ar\\[", as.matrix = TRUE)
     samples$ma <- posterior_samples(object, pars = "^ma\\[", as.matrix = TRUE)
   } 
   
-  is_catordinal <- is.ordinal(family) || family == "categorical"
+  is_catordinal <- is.ordinal(family) || is.categorical(family)
   # see predict.R
-  predict_fun <- get(paste0("predict_", family), mode = "function")
+  predict_fun <- get(paste0("predict_", family$family), mode = "function")
   call_predict_fun <- function(n) {
     do.call(predict_fun, list(n = n, data = data, samples = samples, 
-                              link = object$link, ntrys = ntrys))
+                              link = family$link, ntrys = ntrys))
   }
   N <- if (!is.null(data$N_trait)) data$N_trait
        else if (!is.null(data$N_tg)) data$N_tg
@@ -789,7 +798,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   
   # reorder predicted responses in case of multivariate models
   # as they are sorted after units first not after traits
-  if (grepl("^multi_", family)) {
+  if (grepl("^multi_", family$family)) {
     reorder <- ulapply(1:data$K_trait, seq, to = data$N, by = data$K_trait)
     # observations in columns
     out <- out[, reorder]  
@@ -867,7 +876,8 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   scale <- match.arg(scale)
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
-  ee <- extract_effects(object$formula, family = object$family)
+  family <- family(object)
+  ee <- extract_effects(object$formula, family = family)
   # use newdata if defined
   if (is.null(newdata)) {
     data <- standata(object, re_formula = re_formula,
@@ -935,10 +945,11 @@ residuals.brmsfit <- function(object, re_formula = NULL,
                               summary = TRUE, probs = c(0.025, 0.975), 
                               ...) {
   type <- match.arg(type)
+  family <- family(object)
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
-  if (is.ordinal(object$family) || object$family == "categorical")
-    stop(paste("residuals not yet implemented for family", object$family))
+  if (is.ordinal(family) || is.categorical(family))
+    stop(paste("residuals not yet implemented for family", family$family))
   
   standata <- standata(object, re_formula = re_formula)
   mu <- fitted(object, re_formula = re_formula, summary = FALSE)
@@ -1064,22 +1075,23 @@ LOO.brmsfit <- function(x, ..., compare = TRUE,
 logLik.brmsfit <- function(object, ...) {
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
-  ee <- extract_effects(object$formula, family = object$family)
+  family <- family(object)
+  ee <- extract_effects(object$formula, family = family)
   nresp <- length(ee$response)
   data <- standata(object, control = list(save_order = TRUE))
   N <- ifelse(is.null(data$N_tg), nrow(as.matrix(data$Y)), data$N_tg)
   
   # extract relevant samples
   samples <- list(eta = linear_predictor(object))
-  if (has_sigma(object$family, se = ee$se, autocor = object$autocor))
+  if (has_sigma(family, se = ee$se, autocor = object$autocor))
     samples$sigma <- as.matrix(posterior_samples(object, pars = "^sigma_"))
-  if (object$family == "student") 
+  if (family$family == "student") 
     samples$nu <- as.matrix(posterior_samples(object, pars = "^nu$"))
-  if (object$family == "beta")
+  if (family$family == "beta")
     samples$phi <- as.matrix(posterior_samples(object, pars = "^phi$"))
-  if (has_shape(object$family)) 
+  if (has_shape(family)) 
     samples$shape <- as.matrix(posterior_samples(object, pars = "^shape$"))
-  if (is.linear(object$family) && nresp > 1) {
+  if (is.linear(family) && nresp > 1) {
     samples$rescor <- as.matrix(posterior_samples(object, pars = "^rescor_"))
     samples$Sigma <- get_cov_matrix(sd = samples$sigma, cor = samples$rescor)$cov
     message(paste("Computing pointwise log-likelihood of a", 
@@ -1087,23 +1099,23 @@ logLik.brmsfit <- function(object, ...) {
   }
   
   # prepare for calling family specific loglik functions
-  family <- object$family
   autocor <- object$autocor
-  if (object$link == "log" && family == "gaussian" && nresp == 1) {
-    family <- "lognormal"
+  if (is.lognormal(family, nresp = nresp)) {
+    family$family <- "lognormal"
+    family$link <- "identity"
   } else if (is.linear(family) && nresp > 1) {
-    family <- paste0("multi_", family)
+    family$family <- paste0("multi_", family$family)
   } else if (use_cov(autocor) && (get_ar(autocor) || get_ma(autocor))) {
     # special family for ARMA models using residual covariance matrices
-    family <- paste0(family, "_cov")
+    family$family <- paste0(family$family, "_cov")
     samples$ar <- posterior_samples(object, pars = "^ar\\[", as.matrix = TRUE)
     samples$ma <- posterior_samples(object, pars = "^ma\\[", as.matrix = TRUE)
   } 
 
-  loglik_fun <- get(paste0("loglik_", family), mode = "function")
+  loglik_fun <- get(paste0("loglik_", family$family), mode = "function")
   call_loglik_fun <- function(n) {
     do.call(loglik_fun, list(n = n, data = data, samples = samples, 
-                             link = object$link)) 
+                             link = family$link)) 
   }
   loglik <- do.call(cbind, lapply(1:N, call_loglik_fun))
   # reorder loglik values to be in the initial user defined order

@@ -53,36 +53,36 @@ test_that("make_stancode handles horseshoe priors correctly", {
 })
 
 test_that("stan_eta returns correct strings for autocorrelation models", {
-  expect_match(stan_eta(family = "student", link = "log", f = c("Trt_c"),
+  expect_match(stan_eta(family = student(log), f = c("Trt_c"),
                         autocor = cor_arma(~visit|patient, p = 2))$transC3,
                "eta[n] <- exp(eta[n] + head(E[n], Kar) * ar)", fixed = TRUE)
-  expect_match(stan_eta(family = "gaussian", link = "log", f = c("Trt_c"),
+  expect_match(stan_eta(family = gaussian(log), f = c("Trt_c"),
                         autocor = cor_arma(~visit|patient, q = 1))$transC2,
                "eta[n] <- eta[n] + head(E[n], Kma) * ma", fixed = TRUE)
-  expect_match(stan_eta(family = "poisson", link = "log", f = c("Trt_c"),
+  expect_match(stan_eta(family = poisson(), f = c("Trt_c"),
                         autocor = cor_arma(~visit|patient, r = 3))$transC1,
                "eta <- X * b + b_Intercept + Yarr * arr", fixed = TRUE)
 })
 
 test_that("Test_that stan_arma returns correct strings (or errors)", {
-  expect_equal(stan_arma(family = "gaussian", link = "log", 
+  expect_equal(stan_arma(family = gaussian(log), 
                          autocor = cor.arma()), list())
   prior <- c(set_prior("normal(0,2)", class = "ar"),
              set_prior("cauchy(0,1)", class = "ma"))
   
-  temp_arma <- stan_arma(family = "gaussian", link = "log", prior = prior,
+  temp_arma <- stan_arma(family = gaussian(log), prior = prior,
                          autocor = cor.arma(~visit|patient, q = 1))
   expect_match(temp_arma$transC2, "E[n + 1, i] <- e[n + 1 - i]", fixed = TRUE)
   expect_match(temp_arma$prior, "ma ~ cauchy(0,1)", fixed = TRUE)
   
-  temp_arma <- stan_arma(family = "gaussian", link = "log", is_multi = TRUE, 
+  temp_arma <- stan_arma(family = gaussian(log), is_multi = TRUE, 
                          autocor = cor.arma(~visit|patient, p = 1),
                          prior = prior)
   expect_match(temp_arma$transC2, "e[n] <- log(Y[m, k]) - eta[n]", fixed = TRUE)
   expect_match(temp_arma$prior, "ar ~ normal(0,2)", fixed = TRUE)
   
-  expect_error(stan_arma(family = "poisson", link = "log", 
-                       autocor = cor.arma(~visit|patient, p = 1, q = 1)),
+  expect_error(stan_arma(family = poisson(),
+                         autocor = cor.arma(~visit|patient, p = 1, q = 1)),
                "ARMA effects for family poisson are not yet implemented")
 })  
 
@@ -120,7 +120,7 @@ test_that("make_stancode handles addition arguments correctly", {
                              data = kidney, family = c("weibull", "log")), 
                "vector[N] cens;", fixed = TRUE)
   expect_match(make_stancode(time | trunc(0) ~ age + sex + disease,
-                                 data = kidney, family = "gamma"), 
+                             data = kidney, family = "gamma"), 
                "T[lb, ];", fixed = TRUE)
   expect_match(make_stancode(time | trunc(ub = 100) ~ age + sex + disease, 
                              data = kidney, family = cauchy("log")), 
@@ -148,63 +148,69 @@ test_that("make_stancode handles models without fixed effects correctly", {
 })
 
 test_that("stan_ordinal returns correct strings", {
-  expect_match(stan_ordinal(family = "sratio", link = "logit")$par, "")
+  expect_match(stan_ordinal(family = sratio())$par, "")
   
 })
 
 test_that("stan_llh uses simplifications when possible", {
-  expect_equal(stan_llh(family = "bernoulli", link = "logit"), "  Y ~ bernoulli_logit(eta); \n")
-  expect_equal(stan_llh(family = "gaussian", link = "log"), "  Y ~ lognormal(eta, sigma); \n")
-  expect_match(stan_llh(family = "gaussian", link = "log", weights = TRUE), 
+  expect_equal(stan_llh(family = bernoulli("logit")), 
+               "  Y ~ bernoulli_logit(eta); \n")
+  expect_equal(stan_llh(family = gaussian("log")), 
+               "  Y ~ lognormal(eta, sigma); \n")
+  expect_match(stan_llh(family = gaussian("log"), weights = TRUE), 
                "lognormal_log(Y[n], (eta[n]), sigma); \n", fixed = TRUE)
-  expect_equal(stan_llh(family = "poisson", link = "log"), "  Y ~ poisson_log(eta); \n")
-  expect_match(stan_llh(family = "cumulative", link = "logit"), fixed = TRUE,
+  expect_equal(stan_llh(family = poisson()), 
+               "  Y ~ poisson_log(eta); \n")
+  expect_match(stan_llh(family = cumulative("logit")), fixed = TRUE,
                "  Y[n] ~ ordered_logistic(eta[n], b_Intercept); \n")
 })
 
 test_that("stan_llh returns correct llhs under weights and censoring", {
-  expect_equal(stan_llh(family = "cauchy", link = "inverse", weights = TRUE),
+  expect_equal(stan_llh(family = cauchy("inverse"), weights = TRUE),
                "  lp_pre[n] <- cauchy_log(Y[n], inv(eta[n]), sigma); \n")
-  expect_equal(stan_llh(family = "poisson", link = "log", weights = TRUE),
+  expect_equal(stan_llh(family = poisson(), weights = TRUE),
                "  lp_pre[n] <- poisson_log_log(Y[n], eta[n]); \n")
-  expect_match(stan_llh(family = "poisson", link = "log", cens = TRUE),
+  expect_match(stan_llh(family = poisson(), cens = TRUE),
                "Y[n] ~ poisson(exp(eta[n])); \n", fixed = TRUE)
-  expect_equal(stan_llh(family = "binomial", link = "logit", trials = TRUE, weights = TRUE),
+  expect_equal(stan_llh(family = binomial(logit), trials = TRUE, weights = TRUE),
                "  lp_pre[n] <- binomial_logit_log(Y[n], trials[n], eta[n]); \n")
-  expect_match(stan_llh(family = "weibull", link = "log", cens = TRUE), fixed = TRUE,
-               "increment_log_prob(weibull_ccdf_log(Y[n], shape, exp(eta[n] / shape))); \n")
-  expect_match(stan_llh(family = "weibull", link = "inverse", cens = TRUE, weights = TRUE), fixed = TRUE,
-               "increment_log_prob(weights[n] * weibull_ccdf_log(Y[n], shape, inv(eta[n] / shape))); \n")
+  expect_match(stan_llh(family = weibull("log"), cens = TRUE), fixed = TRUE,
+               paste("increment_log_prob(weibull_ccdf_log(Y[n],", 
+                     "shape, exp(eta[n] / shape))); \n"))
+  expect_match(stan_llh(family = weibull("inverse"), cens = TRUE, weights = TRUE),
+               paste("increment_log_prob(weights[n] * weibull_ccdf_log(Y[n],", 
+                     "shape, inv(eta[n] / shape))); \n"),
+               fixed = TRUE)
 })
 
 test_that("stan_llh returns correct llhs under truncation", {
-  expect_equal(stan_llh(family = "cauchy", link = "inverse", trunc = .trunc(0)),
+  expect_equal(stan_llh(family = cauchy(inverse), trunc = .trunc(0)),
                "  Y[n] ~ cauchy(inv(eta[n]), sigma) T[lb, ]; \n")
-  expect_equal(stan_llh(family = "poisson", link = "log", trunc = .trunc(ub = 100)),
+  expect_equal(stan_llh(family = poisson(), trunc = .trunc(ub = 100)),
                "  Y[n] ~ poisson(exp(eta[n])) T[, ub]; \n")
-  expect_equal(stan_llh(family = "gaussian", link = "identity", 
+  expect_equal(stan_llh(family = gaussian(), 
                         se = TRUE, trunc = .trunc(0, 100)),
                "  Y[n] ~ normal((eta[n]), se[n]) T[lb, ub]; \n")
-  expect_equal(stan_llh(family = "binomial", link = "logit", 
-                        trials = TRUE, trunc = .trunc(0, 100)),
+  expect_equal(stan_llh(family = binomial(), trials = TRUE, 
+                        trunc = .trunc(0, 100)),
                "  Y[n] ~ binomial(trials[n], inv_logit(eta[n])) T[lb, ub]; \n")
 })
 
 test_that("stan_llh returns correct llhs for zero-inflated an hurdle models", {
-  expect_equal(stan_llh(family = "zero_inflated_poisson", link = "log"),
+  expect_equal(stan_llh(family = zero_inflated_poisson()),
                "  Y[n] ~ zero_inflated_poisson(eta[n], eta[n + N_trait]); \n")
-  expect_equal(stan_llh(family = "hurdle_negbinomial", link = "log"),
+  expect_equal(stan_llh(family = hurdle_negbinomial()),
                "  Y[n] ~ hurdle_neg_binomial_2(eta[n], eta[n + N_trait], shape); \n")
-  expect_equal(stan_llh(family = "hurdle_gamma", link = "log"),
+  expect_equal(stan_llh(family = hurdle_gamma()),
                "  Y[n] ~ hurdle_gamma(shape, eta[n], eta[n + N_trait]); \n")
 })
 
 test_that("stan_llh returns correct llhs for multivariate models", {
-  expect_equal(stan_llh(family = "gaussian", link = "identity", is_multi = TRUE),
+  expect_equal(stan_llh(family = gaussian(), is_multi = TRUE),
                "  Y ~ multi_normal_cholesky(Eta, LSigma); \n")
-  expect_equal(stan_llh(family = "student", link = "identity", is_multi = TRUE),
+  expect_equal(stan_llh(family = student(), is_multi = TRUE),
                "  Y ~ multi_student_t(nu, Eta, Sigma); \n")
-  expect_equal(stan_llh(family = "cauchy", link = "identity",
+  expect_equal(stan_llh(family = cauchy(),
                         is_multi = TRUE, weights = TRUE),
                "  lp_pre[n] <- multi_student_t_log(Y[n], 1.0, Eta[n], Sigma); \n")
 })
@@ -215,7 +221,8 @@ test_that("stan_rngprior returns correct sampling statements for priors", {
   expect_equal(stan_rngprior(TRUE, prior = "nu ~ gamma(2,0.1); \n"),
                list(par = paste0(c1,"  real<lower=1> prior_nu; \n"), 
                     model = paste0(c2,"  prior_nu ~ gamma(2,0.1); \n")))
-  expect_equal(stan_rngprior(TRUE, prior = "delta ~ normal(0,1); \n", family = "cumulative"),
+  expect_equal(stan_rngprior(TRUE, prior = "delta ~ normal(0,1); \n", 
+                             family = cumulative()),
                list(par = paste0(c1,"  real<lower=0> prior_delta; \n"), 
                     model = paste0(c2,"  prior_delta ~ normal(0,1); \n")))
   expect_equal(stan_rngprior(TRUE, prior = "b ~ normal(0,5); \n"),
@@ -288,10 +295,10 @@ test_that("make_stancode returns correct selfmade functions", {
 })
 
 test_that("stan_multi returns correct Stan code (or errors)", {
-  expect_equal(stan_multi("gaussian", "y"), list())
-  expect_error(stan_multi("poisson", c("y1", "y2")),
+  expect_equal(stan_multi(gaussian(), "y"), list())
+  expect_error(stan_multi(poisson(), c("y1", "y2")),
                "invalid multivariate model")
-  expect_equal(stan_multi("student", c("y1", "y2"))$transD, 
+  expect_equal(stan_multi(student(), c("y1", "y2"))$transD, 
                "  cov_matrix[K_trait] Sigma; \n")
-  expect_equal(stan_multi("hurdle_gamma", c("y", "huy")), list())
+  expect_equal(stan_multi(hurdle_gamma(), c("y", "huy")), list())
 })

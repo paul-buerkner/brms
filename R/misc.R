@@ -151,15 +151,27 @@ formula2string <- function(formula, rm = c(0, 0)) {
 
 is.linear <- function(family) {
   # indicate if family is for a linear model
-  if (class(family) == "family") {
+  if (is(family, "family")) {
     family <- family$family
   }
   family %in% c("gaussian", "student", "cauchy")
 }
 
+is.lognormal <- function(family, link = "identity", nresp = 1) {
+  # indicate transformation to lognormal model
+  # Args:
+  #   link: A character string
+  #   nresp: number of response variables
+  if (is(family, "family")) {
+    link <- family$link
+    family <- family$family
+  }
+  family == "gaussian" && link == "log" && nresp == 1
+}
+
 is.binary <- function(family) {
   # indicate if family is bernoulli or binomial
-  if (class(family) == "family") {
+  if (is(family, "family")) {
     family <- family$family
   }
   family %in% c("binomial", "bernoulli")
@@ -167,15 +179,22 @@ is.binary <- function(family) {
 
 is.ordinal <- function(family) {
   # indicate if family is for an ordinal model
-  if (class(family) == "family") {
+  if (is(family, "family")) {
     family <- family$family
   }
   family %in% c("cumulative", "cratio", "sratio", "acat") 
 }
 
+is.categorical <- function(family) {
+  if (is(family, "family")) {
+    family <- family$family
+  }
+  family == "categorical" 
+}
+
 is.skewed <- function(family) {
   # indicate if family is for model with postive skewed response
-  if (class(family) == "family") {
+  if (is(family, "family")) {
     family <- family$family
   }
   family %in% c("gamma", "weibull", "exponential")
@@ -183,7 +202,7 @@ is.skewed <- function(family) {
 
 is.count <- function(family) {
   # indicate if family is for a count model
-  if (class(family) == "family") {
+  if (is(family, "family")) {
     family <- family$family
   }
   family %in% c("poisson", "negbinomial", "geometric")
@@ -191,7 +210,7 @@ is.count <- function(family) {
 
 is.hurdle <- function(family) {
   # indicate if family is for a hurdle model
-  if (class(family) == "family") {
+  if (is(family, "family")) {
     family <- family$family
   }
   family %in% c("hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma")
@@ -199,11 +218,20 @@ is.hurdle <- function(family) {
 
 is.zero_inflated <- function(family) {
   # indicate if family is for a zero inflated model
-  if (class(family) == "family") {
+  if (is(family, "family")) {
     family <- family$family
   }
   family %in% c("zero_inflated_poisson", "zero_inflated_negbinomial",
                 "zero_inflated_binomial")
+}
+
+is.2pl <- function(family) {
+  if (!is(family, "brmsfamily")) {
+    out <- FALSE
+  } else {
+    out <- family$family == "bernoulli" && identical(family$type, "2PL")
+  }
+  out
 }
 
 is.forked <- function(family) {
@@ -213,7 +241,7 @@ is.forked <- function(family) {
 
 use_real <- function(family) {
   # indicate if family uses real responses
-  if (class(family) == "family") {
+  if (is(family, "family")) {
     family <- family$family
   }
   is.linear(family) || is.skewed(family) || 
@@ -222,7 +250,7 @@ use_real <- function(family) {
 
 use_int <- function(family) {
   # indicate if family uses integer responses
-  if (class(family) == "family") {
+  if (is(family, "family")) {
     family <- family$family
   }
   is.binary(family) || has_cat(family) || is.count(family)
@@ -230,7 +258,7 @@ use_int <- function(family) {
 
 has_trials <- function(family) {
   # indicate if family makes use of argument trials
-  if (class(family) == "family") {
+  if (is(family, "family")) {
     family <- family$family
   }
   family %in% c("binomial", "zero_inflated_binomial")
@@ -238,7 +266,7 @@ has_trials <- function(family) {
 
 has_cat <- function(family) {
   # indicate if family makes use of argument cat
-  if (class(family) == "family") {
+  if (is(family, "family")) {
     family <- family$family
   }
   family == "categorical" || is.ordinal(family)
@@ -246,7 +274,7 @@ has_cat <- function(family) {
 
 has_shape <- function(family) {
   # indicate if family needs a shape parameter
-  if (class(family) == "family") {
+  if (is(family, "family")) {
     family <- family$family
   }
   family %in% c("gamma", "weibull", "inverse.gaussian", 

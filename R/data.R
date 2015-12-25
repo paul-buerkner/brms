@@ -258,6 +258,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   #                   should be kept in the FE design matrix
   #   save_order: logical; should the initial order of the data be saved?
   dots <- list(...)
+  # link function not relevant in make_standata
   family <- check_family(family)$family
   autocor <- check_autocor(autocor)
   is_linear <- is.linear(family)
@@ -550,8 +551,10 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
           stop(paste("ARMA covariance models require a grouping factor",
                      "with at least 2 levels"))
         }
-        standata$begin_tg <- with(standata, ulapply(unique(tgroup), match, tgroup))
-        standata$nrows_tg <- with(standata, c(begin_tg[2:N_tg], N + 1) - begin_tg)
+        standata$begin_tg <- 
+          with(standata, ulapply(unique(tgroup), match, tgroup))
+        standata$nrows_tg <- 
+          with(standata, c(begin_tg[2:N_tg], N + 1) - begin_tg)
         if (!is.null(standata$se)) {
           standata$squared_se <- standata$se^2
         } else {

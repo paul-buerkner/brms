@@ -386,20 +386,18 @@ brm <- function(formula, data = NULL, family = "gaussian",
     dots$is_newdata <- NULL
   } else {  # build new model
     # see validate.R and priors.R for function definitions
-    obj_family <- check_family(family) 
-    link <- obj_family$link
-    family <- obj_family$family
+    family <- check_family(family) 
     formula <- update_formula(formula, addition = addition) 
     prior <- check_prior(prior, formula = formula, data = data, 
-                         family = family, link = link, 
-                         autocor = autocor, multiply = multiply,
-                         partial = partial, threshold = threshold) 
+                         family = family, autocor = autocor,
+                         multiply = multiply, partial = partial, 
+                         threshold = threshold) 
     et <- extract_time(autocor$formula)  
     ee <- extract_effects(formula, family = family, partial, et$all)
     data.name <- Reduce(paste, deparse(substitute(data)))
     
     # initialize S3 object
-    x <- brmsfit(formula = formula, family = family, link = link, 
+    x <- brmsfit(formula = formula, family = family, link = family$link, 
                  multiply = multiply, partial = partial, 
                  data.name = data.name, autocor = autocor, 
                  prior = prior, cov.ranef = cov.ranef)  
@@ -411,7 +409,7 @@ brm <- function(formula, data = NULL, family = "gaussian",
     x$exclude <- exclude_pars(formula, ranef = ranef)
     # see stan.R
     x$model <- make_stancode(formula = formula, data = data, 
-                             family = obj_family, prior = prior,  
+                             family = family, prior = prior,  
                              autocor = autocor, partial = partial, 
                              multiply = multiply, threshold = threshold, 
                              cov.ranef = cov.ranef, 
@@ -421,8 +419,8 @@ brm <- function(formula, data = NULL, family = "gaussian",
     # unnecessary compilations in case that the data is invalid
     standata <- standata(x, newdata = dots$is_newdata)
     message("Compiling the C++ model")
-    model_name <- paste0(family,"(",link,") brms-model")
-    x$fit <- rstan::stanc(model_code = x$model, model_name = model_name)
+    x$fit <- rstan::stanc(model_code = x$model, 
+                          model_name = model_name(family))
     x$fit <- rstan::stan_model(stanc_ret = x$fit) 
   }
   

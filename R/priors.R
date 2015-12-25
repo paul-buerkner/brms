@@ -251,7 +251,6 @@ get_prior <- function(formula, data = NULL, family = "gaussian",
   threshold <- match.arg(threshold)
   family <- check_family(family) 
   link <- family$link
-  family <- family$family
   autocor <- check_autocor(autocor)
   ee <- extract_effects(formula, partial, family = family)
   data <- update_data(data, family = family, effects = ee)
@@ -318,7 +317,7 @@ get_prior <- function(formula, data = NULL, family = "gaussian",
   }
   # handle additional parameters
   is_ordinal <- is.ordinal(family)
-  is_linear <- family %in% c("gaussian", "student", "cauchy")
+  is_linear <- is.linear(family)
   nresp <- length(ee$response)
   if (get_ar(autocor)) 
     prior <- rbind(prior, prior_frame(class = "ar"))
@@ -339,19 +338,21 @@ get_prior <- function(formula, data = NULL, family = "gaussian",
       prior <- rbind(prior, prior_frame(class = "rescor", prior = "lkj(1)"))
     }
   }
-  if (family == "student") 
+  if (family$family == "student") {
     prior <- rbind(prior, prior_frame(class = "nu", 
                                       prior = "gamma(2, 0.1)"))
-  if (family == "beta") 
+  }
+  if (family$family == "beta") {
     prior <- rbind(prior, prior_frame(class = "phi", 
                                       prior = "gamma(0.01, 0.01)"))
-  if (family %in% c("gamma", "weibull", "negbinomial", 
-                    "inverse.gaussian", "hurdle_negbinomial", 
-                    "hurdle_gamma", "zero_inflated_negbinomial")) 
+  }
+  if (has_shape(family)) {
     prior <- rbind(prior, prior_frame(class = "shape", 
                                       prior = default_scale_prior))
-  if (is_ordinal && threshold == "equidistant")
+  }
+  if (is_ordinal && threshold == "equidistant") {
     prior <- rbind(prior, prior_frame(class = "delta"))
+  }
   prior <- unique(prior)
   prior <- prior[with(prior, order(class, group, coef)), ]
   rownames(prior) <- 1:nrow(prior)
@@ -359,7 +360,7 @@ get_prior <- function(formula, data = NULL, family = "gaussian",
 }
 
 check_prior <- function(prior, formula, data = NULL, family = "gaussian", 
-                        link = "identity", autocor = NULL, multiply = NULL,
+                        autocor = NULL, multiply = NULL,
                         partial = NULL, threshold = "flexible") {
   # check prior input and amend it if needed
   #
@@ -372,12 +373,12 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
     # prior has already been checked; no need to do it twice
     return(prior)
   }
+  family <- check_family(family)
   ee <- extract_effects(formula, family = family)  
   all_priors <- get_prior(formula = formula, data = data, 
-                         family = family(family, link = link),
-                         autocor = autocor, multiply = multiply, 
-                         partial = partial, threshold = threshold, 
-                         internal = TRUE)
+                          family = family, autocor = autocor, 
+                          multiply = multiply, partial = partial, 
+                          threshold = threshold, internal = TRUE)
   if (is.null(prior)) {
     prior <- all_priors  
   } else if (is(prior, "brmsprior")) {
@@ -443,14 +444,13 @@ check_prior <- function(prior, formula, data = NULL, family = "gaussian",
   if (length(Int_index)) {
     Int_prior <- prior[Int_index, ] 
     # Intercepts have their own internal parameter class
-    is_ordinal <- is.ordinal(family)
-    Int_prior$class <- ifelse(is_ordinal && threshold == "equidistant", 
-                              "b_Intercept1", "b_Intercept")
+    res_thres <- is.ordinal(family) && threshold == "equidistant"
+    Int_prior$class <- ifelse(res_thres, "b_Intercept1", "b_Intercept")
     Int_prior$coef <- ""
     prior <- rbind(prior, Int_prior)
   }
   # get category specific priors out of fixef priors
-  if (family == "categorical" || is.formula(partial)) {
+  if (is.categorical(family) || is.formula(partial)) {
     paref <- colnames(get_model_matrix(partial, data = data, 
                                        rm_intercept = TRUE))
     b_index <- which(prior$class == "b" & !nchar(prior$coef))
