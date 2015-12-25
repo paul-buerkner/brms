@@ -4,7 +4,7 @@
 \alias{get_prior}
 \title{Overview on Priors for \pkg{brms} Models}
 \usage{
-get_prior(formula, data = NULL, family = "gaussian", autocor = NULL,
+get_prior(formula, data = NULL, family = gaussian(), autocor = NULL,
   multiply = NULL, partial = NULL, threshold = c("flexible",
   "equidistant"), internal = FALSE)
 }
@@ -77,7 +77,7 @@ may be specified including default priors.
 ## get all parameters and parameters classes to define priors on
 (prior <- get_prior(count ~ log_Age_c + log_Base4_c * Trt_c
                     + (1|patient) + (1|visit),
-                    data = epilepsy, family = "poisson"))   
+                    data = epilepsy, family = poisson()))   
          
 ## define a prior on all fixed effects a once
 prior$prior[1] <- "normal(0,10)"
@@ -88,7 +88,7 @@ prior$prior[5] <- "student_t(10, 0, 5)"
 ## verify that the priors indeed found their way into Stan's model code
 make_stancode(count ~ log_Age_c + log_Base4_c * Trt_c 
               + (1|patient) + (1|visit),
-              data = epilepsy, family = "poisson", 
+              data = epilepsy, family = poisson(), 
               prior = prior)
 
 }

@@ -4,7 +4,7 @@
 \alias{make_stancode}
 \title{Stan Code for \pkg{brms} Models}
 \usage{
-make_stancode(formula, data = NULL, family = "gaussian", prior = NULL,
+make_stancode(formula, data = NULL, family = gaussian(), prior = NULL,
   autocor = NULL, multiply = NULL, partial = NULL,
   threshold = c("flexible", "equidistant"), cov.ranef = NULL,
   sample.prior = FALSE, save.model = NULL, ...)
