@@ -48,7 +48,8 @@ student <- function(link = "identity") {
     stop(paste(linktemp, "is not a supported link for family student.", 
                "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
-  structure(list(family = "student", link = linktemp), class = "family")
+  structure(list(family = "student", link = linktemp), 
+            class = c("brmsfamily", "family"))
 }
 
 #' @rdname brmsfamily
@@ -66,12 +67,13 @@ cauchy <- function(link = "identity") {
     stop(paste(linktemp, "is not a supported link for family cauchy.", 
                "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
-  structure(list(family = "cauchy", link = linktemp), class = "family")
+  structure(list(family = "cauchy", link = linktemp), 
+            class = c("brmsfamily", "family"))
 }
 
 #' @rdname brmsfamily
 #' @export
-bernoulli <- function(link = "logit") {
+bernoulli <- function(link = "logit", type = NULL) {
   linktemp <- substitute(link)
   if (!is.character(linktemp)) {
     linktemp <- deparse(linktemp)
@@ -84,7 +86,11 @@ bernoulli <- function(link = "logit") {
     stop(paste(linktemp, "is not a supported link for family bernoulli.", 
                "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
-  structure(list(family = "bernoulli", link = linktemp), class = "family")
+  if (!is.null(type)) {
+    type <- match.arg(type, c("2PL"))
+  }
+  structure(list(family = "bernoulli", link = linktemp, type = type), 
+            class = c("brmsfamily", "family"))
 }
 
 #' @rdname brmsfamily
@@ -102,7 +108,8 @@ negbinomial <- function(link = "log") {
     stop(paste(linktemp, "is not a supported link for family negbinimial.", 
                "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
-  structure(list(family = "negbinomial", link = linktemp), class = "family")
+  structure(list(family = "negbinomial", link = linktemp), 
+            class = c("brmsfamily", "family"))
 }
 
 #' @rdname brmsfamily
@@ -120,7 +127,8 @@ geometric <- function(link = "log") {
     stop(paste(linktemp, "is not a supported link for family geometric.", 
                "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
-  structure(list(family = "geometric", link = linktemp), class = "family")
+  structure(list(family = "geometric", link = linktemp), 
+            class = c("brmsfamily", "family"))
 }
 
 #' @rdname brmsfamily
@@ -138,7 +146,8 @@ exponential <- function(link = "log") {
     stop(paste(linktemp, "is not a supported link for family exponential. ", 
                "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
-  structure(list(family = "exponential", link = linktemp), class = "family")
+  structure(list(family = "exponential", link = linktemp), 
+            class = c("brmsfamily", "family"))
 }
 
 #' @rdname brmsfamily
@@ -156,7 +165,8 @@ weibull <- function(link = "log") {
     stop(paste(linktemp, "is not a supported link for family weibull. ", 
                "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
-  structure(list(family = "weibull", link = linktemp), class = "family")
+  structure(list(family = "weibull", link = linktemp), 
+            class = c("brmsfamily", "family"))
 }
 
 #' @rdname brmsfamily
@@ -174,7 +184,8 @@ Beta <- function(link = "logit") {
     stop(paste(linktemp, "is not a supported link for family beta.", 
                "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
-  structure(list(family = "beta", link = linktemp), class = "family")
+  structure(list(family = "beta", link = linktemp), 
+            class = c("brmsfamily", "family"))
 }
 
 #' @rdname brmsfamily
@@ -192,7 +203,8 @@ hurdle_poisson <- function(link = "log") {
     stop(paste(linktemp, "is not a supported link for family hurdle_poisson. ", 
                "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
-  structure(list(family = "hurdle_poisson", link = linktemp), class = "family")
+  structure(list(family = "hurdle_poisson", link = linktemp), 
+            class = c("brmsfamily", "family"))
 }
 
 #' @rdname brmsfamily
@@ -210,7 +222,8 @@ hurdle_negbinomial <- function(link = "log") {
     stop(paste(linktemp, "is not a supported link for family hurdle_negbinomial. ", 
                "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
-  structure(list(family = "hurdle_negbinomial", link = linktemp), class = "family")
+  structure(list(family = "hurdle_negbinomial", link = linktemp), 
+            class = c("brmsfamily", "family"))
 }
 
 #' @rdname brmsfamily
@@ -228,7 +241,8 @@ hurdle_gamma <- function(link = "log") {
     stop(paste(linktemp, "is not a supported link for family hurdle_gamma. ", 
                "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
-  structure(list(family = "hurdle_gamma", link = linktemp), class = "family")
+  structure(list(family = "hurdle_gamma", link = linktemp), 
+            class = c("brmsfamily", "family"))
 }
 
 #' @rdname brmsfamily
@@ -248,7 +262,7 @@ zero_inflated_poisson <- function(link = "log") {
                "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
   structure(list(family = "zero_inflated_poisson", link = linktemp), 
-            class = "family")
+            class = c("brmsfamily", "family"))
 }
 
 #' @rdname brmsfamily
@@ -268,7 +282,7 @@ zero_inflated_negbinomial <- function(link = "log") {
                "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
   structure(list(family = "zero_inflated_negbinomial", link = linktemp), 
-            class = "family")
+            class = c("brmsfamily", "family"))
 }
 
 #' @rdname brmsfamily
@@ -288,7 +302,7 @@ zero_inflated_binomial <- function(link = "logit") {
                "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
   structure(list(family = "zero_inflated_binomial", link = linktemp), 
-            class = "family")
+            class = c("brmsfamily", "family"))
 }
 
 #' @rdname brmsfamily
@@ -306,7 +320,8 @@ categorical <- function(link = "logit") {
     stop(paste(linktemp, "is not a supported link for family categorical.", 
                "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
-  structure(list(family = "categorical", link = linktemp), class = "family")
+  structure(list(family = "categorical", link = linktemp), 
+            class = c("brmsfamily", "family"))
 }
 
 #' @rdname brmsfamily
@@ -324,7 +339,8 @@ cumulative <- function(link = "logit") {
     stop(paste(linktemp, "is not a supported link for family cumulative.", 
                "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
-  structure(list(family = "cumulative", link = linktemp), class = "family")
+  structure(list(family = "cumulative", link = linktemp), 
+            class = c("brmsfamily", "family"))
 }
 
 #' @rdname brmsfamily
@@ -342,7 +358,8 @@ sratio <- function(link = "logit") {
     stop(paste(linktemp, "is not a supported link for family sratio.",
                "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
-  structure(list(family = "sratio", link = linktemp), class = "family")
+  structure(list(family = "sratio", link = linktemp), 
+            class = c("brmsfamily", "family"))
 }
 
 #' @rdname brmsfamily
@@ -360,7 +377,8 @@ cratio <- function(link = "logit") {
     stop(paste(linktemp, "is not a supported link for family cratio.", 
                "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
-  structure(list(family = "cratio", link = linktemp), class = "family")
+  structure(list(family = "cratio", link = linktemp), 
+            class = c("brmsfamily", "family"))
 }
 
 #' @rdname brmsfamily
@@ -378,7 +396,8 @@ acat <- function(link = "logit") {
     stop(paste(linktemp, "is not a supported link for family acat.", 
                "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
-  structure(list(family = "acat", link = linktemp), class = "family")
+  structure(list(family = "acat", link = linktemp), 
+            class = c("brmsfamily", "family"))
 }
 
 family.character <- function(object, link = NA, ...) {
@@ -447,4 +466,15 @@ check_family <- function(family) {
     stop("family argument is invalid")
   }
   family
+}
+
+#' @export
+print.brmsfamily <- function(x, ...) {
+  cat("\nFamily:", x$family, "\n")
+  cat("Link function:", x$link, "\n")
+  if (!is.null(x$type)) {
+    cat("Type:", x$type, "\n") 
+  }
+  cat("\n")
+  invisible(x)
 }

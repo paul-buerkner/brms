@@ -27,7 +27,7 @@ student(link = "identity")
 
 cauchy(link = "identity")
 
-bernoulli(link = "logit")
+bernoulli(link = "logit", type = NULL)
 
 negbinomial(link = "log")
 
