@@ -64,7 +64,7 @@ extract_effects <- function(formula, ..., family = NA, check_response = TRUE) {
   fun <- c("se", "weights", "trials", "cat", "cens", "trunc")
   add_vars <- list()
   if (!is.na(family)) {
-    add <- unlist(regmatches(formula, gregexpr("\\|[^~]*~", formula)))[1]
+    add <- get_matches("\\|[^~]*~", formula)[1]
     add <- substr(add, 2, nchar(add)-1)
     families <- list(se = c("gaussian", "student", "cauchy"),
                      weights = "all",
@@ -79,7 +79,7 @@ extract_effects <- function(formula, ..., family = NA, check_response = TRUE) {
                                "poisson", "geometric", "negbinomial", 
                                "exponential", "weibull", "gamma"))
     for (f in fun) {
-      x[[f]] <- unlist(regmatches(add, gregexpr(paste0(f,"\\([^\\|]*\\)"), add)))[1]
+      x[[f]] <- get_matches(paste0(f, "\\([^\\|]*\\)"), add)[1]
       add <- gsub(paste0(f,"\\([^~|\\|]*\\)\\|*"), "", add)
       if (is.na(x[[f]])) {
         x[[f]] <- NULL
@@ -145,7 +145,8 @@ extract_time <- function(formula) {
   # extract time and grouping variabels for correlation structure
   # 
   # Args:
-  #   formula: a one sided formula of the form ~ time|group typically taken from a cor_brms object
+  #   formula: a one sided formula of the form ~ time|group 
+  #            typically taken from a cor_brms object
   # 
   # Returns: 
   #   a list with elements time, group, and all, where all contains a 
@@ -285,8 +286,7 @@ update_re_terms <- function(formula, re_formula = NULL) {
                                  "|\\+\\([^(\\||~)]*\\|[^\\)]*\\)",
                                  "|\\([^(\\||~)]*\\|[^\\)]*\\)"), 
                           "", formula)
-    new_re_terms <- gregexpr("\\([^\\|\\)]*\\|[^\\)]*\\)", re_formula)
-    new_re_terms <- unlist(regmatches(re_formula, new_re_terms))
+    new_re_terms <- get_matches("\\([^\\|\\)]*\\|[^\\)]*\\)", re_formula)
     new_formula <- paste(c(fixef_formula, new_re_terms), collapse = "+")
     new_formula <- formula(new_formula)   
   } else if (is.null(re_formula)) {
