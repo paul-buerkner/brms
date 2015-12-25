@@ -165,6 +165,7 @@ cor_arr <- function(formula = ~ 1, r = 1) {
 print.cor_arma <- function(x, ...) {
   cat(paste0("arma(", gsub(" ", "", Reduce(paste, deparse(x$formula))),
              ", ",get_ar(x),", ",get_ma(x),", ",get_arr(x),")"))
+  invisible(x)
 }
 
 has_arma <- function(x) {

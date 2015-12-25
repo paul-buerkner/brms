@@ -874,6 +874,7 @@ print.brmssummary <- function(x, digits = 2, ...) {
                "reduction factor on split chains ",
                "(at convergence, Rhat = 1)."))
   }
+  invisible(x)
 }
 
 #' @export
@@ -932,6 +933,7 @@ print.VarCorr_brmsfit <- function(x, digits = 2, ...) {
   dat[, 4:ncol(dat)] <- round(as.matrix(dat[, 4:ncol(dat)]), digits = digits)
   dat[is.na(dat)] <- ""
   print(dat, row.names = FALSE, ...)
+  invisible(x)
 }
 
 #' @export
@@ -941,10 +943,14 @@ print.brmshypothesis <- function(x, digits = 2, ...) {
   print(x$hypothesis, quote = FALSE)
   cat(paste0("---\n'*': The expected value under the hypothesis lies outside the ",
              (1 - x$alpha) * 100, "% CI."))
+  invisible(x)
 }
 
 #' @export
-print.brmsmodel <- function(x, ...) cat(x)
+print.brmsmodel <- function(x, ...) {
+  cat(x)
+  invisible(x) 
+}
 
 #' @export
 print.ic <- function(x, digits = 2, ...) {
@@ -953,6 +959,7 @@ print.ic <- function(x, digits = 2, ...) {
   mat <- matrix(c(x[[ic]], x[[paste0("se_",ic)]]), ncol = 2, 
                 dimnames = list("", c(toupper(ic), "SE")))
   print(round(mat, digits = digits))
+  invisible(x)
 }
 
 #' @export
@@ -971,4 +978,5 @@ print.iclist <- function(x, digits = 2, ...) {
     mat <- cbind(mat, Weights = weights)
   }
   print(round(mat, digits = digits), na.print = "")
+  invisible(x)
 }
