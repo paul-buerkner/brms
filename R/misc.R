@@ -225,7 +225,7 @@ is.zero_inflated <- function(family) {
                 "zero_inflated_binomial")
 }
 
-is.2pl <- function(family) {
+is.2PL <- function(family) {
   if (!is(family, "brmsfamily")) {
     out <- FALSE
   } else {
@@ -236,7 +236,7 @@ is.2pl <- function(family) {
 
 is.forked <- function(family) {
   # indicate if family has two separate model parts
-  is.hurdle(family) || is.zero_inflated(family)
+  is.hurdle(family) || is.zero_inflated(family) || is.2PL(family)
 }
 
 use_real <- function(family) {
@@ -245,7 +245,7 @@ use_real <- function(family) {
     family <- family$family
   }
   is.linear(family) || is.skewed(family) || 
-    family %in% c("inverse.gaussian", "beta")
+    family %in% c("inverse.gaussian", "beta", "hurdle_gamma")
 }
 
 use_int <- function(family) {
@@ -253,7 +253,9 @@ use_int <- function(family) {
   if (is(family, "family")) {
     family <- family$family
   }
-  is.binary(family) || has_cat(family) || is.count(family)
+  is.binary(family) || has_cat(family) || 
+    is.count(family) || is.zero_inflated(family) || 
+    family %in% c("hurdle_poisson", "hurdle_negbinomial")
 }
 
 has_trials <- function(family) {

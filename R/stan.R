@@ -100,7 +100,7 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
                        trials = is.formula(ee$trials),
                        cens = is.formula(ee$cens),
                        trunc = trunc, autocor = autocor)
-  trait <- ifelse(is_multi || is_hurdle || is_zero_inflated, "_trait", "")
+  trait <- ifelse(is_multi || is.forked(family), "_trait", "")
   if (is.formula(ee$cens) || is.formula(ee$weights) || is.formula(ee$trunc) ||
       is_ordinal || is_categorical || is_hurdle || is_zero_inflated) {
     text_llh <- paste0("  for (n in 1:N",trait,") { \n  ",text_llh,"  } \n")
@@ -115,6 +115,7 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
                                partial = length(paref), 
                                threshold = threshold)  
   text_zi_hu <- stan_zero_inflated_hurdle(family = family)
+  text_2PL <- stan_2PL(family = family)
   text_inv_gaussian <- stan_inv_gaussian(family = family, 
                                          weights = is.formula(ee$weights),
                                          cens = is.formula(ee$cens),
@@ -163,8 +164,10 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
     "  int<lower=1> N;  # number of observations \n", 
     if (is_multi) {
       text_multi$data
-    } else if (is_hurdle || is_zero_inflated) {
-      text_zi_hu$data
+    } else if (is_forked) {
+      paste0("  int<lower=1> N_trait;  # number of obs / 2 \n",
+             "  ", ifelse(use_real(family), "real", "int"),
+             " Y[N_trait];  # response variable \n")
     } else if (use_real(family)) {
       "  vector[N] Y;  # response variable \n"
     } else if (use_int(family)) {
@@ -250,6 +253,7 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
       text_arma$transD, 
       text_ordinal$transD,
       text_multi$transD,
+      text_2PL$transD,
       text_ranef$transD, 
       text_eta$transC1, 
       text_arma$transC1, 
@@ -262,6 +266,7 @@ make_stancode <- function(formula, data = NULL, family = "gaussian",
         text_eta$transC3, 
       text_loop[2],
       text_multi$transC,
+      text_2PL$transC,
     "} \n")
   
   # generate model block
@@ -481,6 +486,7 @@ stan_llh <- function(family, se = FALSE, weights = FALSE,
   # Returns:
   #   a string containing the likelihood of the model in stan language
   link <- family$link
+  type <- family$type
   family <- family$family
   is_linear <- is.linear(family)
   is_catordinal <- is.ordinal(family) || is.categorical(family)
@@ -504,7 +510,8 @@ stan_llh <- function(family, se = FALSE, weights = FALSE,
     # prepare for use of lognormal likelihood
     family <- "lognormal"
     link <- "identity"
-  } 
+  }
+  if (!is.null(type)) family <- paste0(family,"_",type)
   
   simplify <- !is_trunc && !cens && 
     (is_binary && link == "logit" || is_count && link == "log" ||
@@ -530,7 +537,8 @@ stan_llh <- function(family, se = FALSE, weights = FALSE,
                     exponential_log = "exp(-eta[n])",
                     exponential_inverse = "eta[n]",
                     exponential_identity = "inv(eta[n])",
-                    weibull = paste0(ilink,"(eta[n] / shape)"))
+                    weibull = paste0(ilink,"(eta[n] / shape)"),
+                    bernoulli_2PL = paste0(ilink, "(eta_2PL[n])"))
     }
   } else {
     # possible transformations already performed
@@ -547,7 +555,8 @@ stan_llh <- function(family, se = FALSE, weights = FALSE,
       categorical = c("categorical_logit", 
                       "to_vector(append_col(zero, eta[n] + etap[n]))"), 
       binomial = c("binomial_logit", paste0("trials",ns,", eta",n)), 
-      bernoulli = c("bernoulli_logit", paste0("eta",n)))
+      bernoulli = c("bernoulli_logit", paste0("eta",n)),
+      bernoulli_2PL = c("bernoulli_logit", paste0("eta_2PL",n)))
   } else {
     llh_pre <- switch(ifelse(is_catordinal, "categorical", family),
       gaussian = c("normal", paste0(eta,", ",sigma)),
@@ -568,6 +577,7 @@ stan_llh <- function(family, se = FALSE, weights = FALSE,
       geometric = c("neg_binomial_2", paste0(eta,", 1")),
       binomial = c("binomial", paste0("trials",ns,", ",eta)),
       bernoulli = c("bernoulli", eta), 
+      bernoulli_2PL = c("bernoulli", eta), 
       gamma = c("gamma", paste0("shape, ",eta)), 
       exponential = c("exponential", eta),
       weibull = c("weibull", paste0("shape, ",eta)), 
@@ -1049,7 +1059,7 @@ stan_multi <- function(family, response, prior = prior_frame()) {
         "  Rescor <- multiply_lower_tri_self_transpose(Lrescor); \n",
         collapse(ulapply(2:nresp, function(i) lapply(1:(i-1), function(j)
         paste0("  rescor[",(i-1)*(i-2)/2+j,"] <- Rescor[",j,", ",i,"]; \n")))))
-    } else if (!(is.zero_inflated(family) || is.hurdle(family))) {
+    } else if (!is.forked(family)) {
       stop("invalid multivariate model")
     }
   }
@@ -1166,10 +1176,6 @@ stan_zero_inflated_hurdle <- function(family) {
   #   specific for zero-inflated and hurdle models
   out <- list()
   if (is.zero_inflated(family) || is.hurdle(family)) {
-    out$data <- paste0(
-      "  int<lower=1> N_trait;  # number of obs per response \n",
-      "  ", ifelse(family == "hurdle_gamma", "real", "int"),
-      " Y[N_trait];  # response variable \n")
     if (family$family == "zero_inflated_poisson") {
       out$fun <- paste0(out$fun, 
       "  /* zero-inflated poisson log-PDF of a single response \n",
@@ -1293,6 +1299,16 @@ stan_zero_inflated_hurdle <- function(family) {
       "     } \n",
       "   } \n")
     }
+  }
+  out
+}
+
+stan_2PL <- function(family) {
+  out <- list()
+  if (is.2PL(family)) {
+    out$transD <- "  vector[N_trait] eta_2PL;  # 2PL linear predictor \n"
+    out$transC <- paste0("  eta_2PL <- head(eta, N_trait)", 
+                         " .* exp(tail(eta, N_trait)); \n")
   }
   out
 }

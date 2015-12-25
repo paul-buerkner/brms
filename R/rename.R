@@ -47,7 +47,7 @@ model_name <- function(family) {
   if (!is(family, "family")) {
     mn <- "brms-model"
   } else {
-    type <- ifelse(is.null(family$type), "", paste0(" ", family$type))
+    type <- ifelse(is.null(family$type), "", paste(",", family$type))
     mn <- paste0(family$family, "(",family$link, type, ") brms-model")
   }
   mn

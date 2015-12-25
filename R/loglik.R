@@ -151,10 +151,23 @@ loglik_binomial <- function(n, data, samples, link = "logit") {
 }  
 
 loglik_bernoulli <- function(n, data, samples, link = "logit") {
-  args <- list(size = 1, prob = ilink(samples$eta[, n], link))
+  if (!is.null(data$N_trait)) {  # 2PL model
+    eta <- samples$eta[, n] * exp(samples$eta[, n + data$N_trait])
+  } else {
+    eta <- samples$eta[, n]
+  }
+  args <- list(size = 1, prob = ilink(eta, link))
   out <- censor_loglik(dist = "binom", args = args, n = n, data = data)
   # no truncation allowed
-  weight_loglik(out, n = n, data = data)
+  out <- weight_loglik(out, n = n, data = data)
+  is_nan <- is.nan(out)
+  if (any(is_nan)) {
+    # for 2PL models NaN may occure for numerical reasons
+    warning(paste("observation", n, "had", length(which(is_nan)), 
+                  "logLik samples that were NaN"))
+    out[is_nan] <- mean(out[!is_nan])
+  }
+  out
 }
 
 loglik_poisson <- function(n, data, samples, link = "log") {

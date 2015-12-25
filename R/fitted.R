@@ -14,6 +14,10 @@ fitted_response <- function(x, eta, data) {
     family$family <- "lognormal"
     family$link <- "identity"
   }
+  if (is.2PL(family)) {
+    # the second part of eta is the log discriminability
+    eta <- eta[, 1:data$N_trait] * exp(eta[, (data$N_trait + 1):data$N])
+  }
   is_trunc <- !(is.null(data$lb) && is.null(data$ub))
   
   # compute (mean) fitted values

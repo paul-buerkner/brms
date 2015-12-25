@@ -400,7 +400,7 @@ acat <- function(link = "logit") {
             class = c("brmsfamily", "family"))
 }
 
-family.character <- function(object, link = NA, ...) {
+family.character <- function(object, link = NA, type = NULL, ...) {
   # build a family object
   # 
   # Args:
@@ -447,7 +447,7 @@ family.character <- function(object, link = NA, ...) {
   if (!link %in% okLinks)
     stop(paste0(link, " is not a supported link for family ", family, ". ", 
                 "Supported links are: \n", paste(okLinks, collapse = ", ")))
-  structure(nlist(family, link), class = "family")
+  structure(nlist(family, link, type), class = c("brmsfamily", "family"))
 }
 
 check_family <- function(family, link = NULL) {
@@ -462,7 +462,7 @@ check_family <- function(family, link = NULL) {
     family <- family()   
   }
   if (is(family, "family")) {
-    family <- family(family$family, link = family$link)
+    family <- family(family$family, link = family$link, type = family$type)
   } else if (is.character(family)) {
     if (is.null(link)) {
       link <- family[2]

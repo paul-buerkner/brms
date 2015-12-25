@@ -15,9 +15,6 @@ extract_effects <- function(formula, ..., family = NA, check_response = TRUE) {
   #   group: A vector of names of the grouping variables. 
   #   weights, se, cens, trials, cat: information on possible addition arguments
   #   all: A formula that contains every variable mentioned in formula and ...
-  if (is(family, "family")) {
-    family <- family$family
-  }
   term_labels <- rename(attr(terms(formula), "term.labels"), " ", "")
   formula <- formula2string(formula) 
   fixed <- gsub("\\|+[^~]*~", "~", formula)
@@ -35,7 +32,7 @@ extract_effects <- function(formula, ..., family = NA, check_response = TRUE) {
     stop("Random effects terms should be enclosed in brackets")
   }
   fixed <- formula(fixed)
-  if (family %in% c("cumulative", "sratio", "cratio", "acat"))
+  if (is.ordinal(family))
     fixed <- update.formula(fixed, . ~ . + 1)
   if (check_response && length(fixed) < 3) 
     stop("Invalid formula: response variable is missing")
@@ -63,7 +60,7 @@ extract_effects <- function(formula, ..., family = NA, check_response = TRUE) {
   # handle addition arguments
   fun <- c("se", "weights", "trials", "cat", "cens", "trunc")
   add_vars <- list()
-  if (!is.na(family)) {
+  if (!anyNA(family)) {
     add <- get_matches("\\|[^~]*~", formula)[1]
     add <- substr(add, 2, nchar(add)-1)
     families <- list(se = c("gaussian", "student", "cauchy"),
@@ -81,9 +78,11 @@ extract_effects <- function(formula, ..., family = NA, check_response = TRUE) {
     for (f in fun) {
       x[[f]] <- get_matches(paste0(f, "\\([^\\|]*\\)"), add)[1]
       add <- gsub(paste0(f,"\\([^~|\\|]*\\)\\|*"), "", add)
+      add_present <- 
       if (is.na(x[[f]])) {
         x[[f]] <- NULL
-      } else if (family %in% families[[f]] || families[[f]][1] == "all") {
+      } else if (family$family %in% families[[f]] || 
+                 families[[f]][1] == "all") {
         args <- substr(x[[f]], nchar(f) + 2, nchar(x[[f]]) - 1)
         try_numeric <- suppressWarnings(as.numeric(args))
         if (f %in% c("trials", "cat") && !is.na(try_numeric)) {
@@ -96,8 +95,8 @@ extract_effects <- function(formula, ..., family = NA, check_response = TRUE) {
           }
         }
       } else {
-        stop(paste("Argument", f, "in formula", 
-                   "is not supported by family", family))
+        stop(paste("Argument", f, "in formula is not supported", 
+                   "by family", family$family))
       }
     }
     if (nchar(gsub("\\|", "", add)) > 0 && !is.na(add))
@@ -127,6 +126,8 @@ extract_effects <- function(formula, ..., family = NA, check_response = TRUE) {
       x$response <- c(x$response, paste0("hu_", x$response))
     } else if (is.zero_inflated(family)) {
       x$response <- c(x$response, paste0("zi_", x$response))
+    } else if (is.2PL(family)) {
+      x$response <- c(x$response, paste0("logDisc_", x$response))
     }
     if (length(x$response) > 1) {
       if (!(is.null(x$cens) && is.null(x$se) && is.null(x$trunc))
@@ -425,7 +426,7 @@ exclude_pars <- function(formula, ranef = TRUE) {
   # Returns:
   #   a vector of parameters to be excluded
   ee <- extract_effects(formula)
-  out <- c("eta", "etam", "etap", "Eta", "b_Intercept1", 
+  out <- c("eta", "etam", "etap", "eta_2PL", "Eta", "b_Intercept1", 
            "Lrescor", "Rescor", "Sigma", "LSigma",
            "p", "q", "e", "E", "res_cov_matrix", 
            "lp_pre", "hs_local", "hs_global")

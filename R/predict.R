@@ -144,8 +144,12 @@ predict_binomial <- function(n, data, samples, link = "logit", ntrys, ...) {
 
 predict_bernoulli <- function(n, data, samples, link = "logit", ...) {
   # truncation not useful
-  rbinom(nrow(samples$eta), size = 1, 
-         prob = ilink(samples$eta[, n], link))
+  if (!is.null(data$N_trait)) {  # 2PL model
+    eta <- samples$eta[, n] * exp(samples$eta[, n + data$N_trait])
+  } else {
+    eta <- samples$eta[, n]
+  }
+  rbinom(length(eta), size = 1, prob = ilink(eta, link))
 }
 
 predict_poisson <- function(n, data, samples, link = "log", 
