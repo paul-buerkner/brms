@@ -19,21 +19,22 @@ a symbolic description of the model to be fitted.
 The details of model specification are given under 'Details'.}
 
 \item{data}{An optional data frame, list or environment  (or object coercible by 
-\code{as.data.frame} to a data frame) containing the variables in the model. If not found in data, 
-the variables are taken from \code{environment(formula)}, 
+\code{as.data.frame} to a data frame) containing the variables in the model. 
+If not found in data, the variables are taken from \code{environment(formula)}, 
 typically the environment from which \code{brm} is called. 
 Although it is optional, we strongly recommend to supply a data.frame.}
 
-\item{family}{A description of the error distribution and link function to be used in the model. 
-This can be a family function, a call to a family function or a character string naming the family.
+\item{family}{A description of the error distribution and link function 
+to be used in the model. This can be a family function, 
+a call to a family function or a character string naming the family.
 Currently, the following families are supported:
 \code{gaussian}, \code{student}, \code{cauchy}, \code{binomial}, 
-\code{bernoulli}, \code{beta}, \code{categorical}, \code{poisson}, 
-\code{negbinomial}, \code{geometric}, \code{gamma}, \code{inverse.gaussian}, 
+\code{bernoulli}, \code{Beta}, \code{categorical}, \code{poisson}, 
+\code{negbinomial}, \code{geometric}, \code{Gamma}, \code{inverse.gaussian}, 
 \code{exponential}, \code{weibull}, \code{cumulative}, \code{cratio}, 
 \code{sratio}, \code{acat}, \code{hurdle_poisson}, \code{hurdle_negbinomial},
-\code{hurdle_gamma}, \code{zero_inflated_poisson}, 
-and \code{zero_inflated_negbinomial}.
+\code{hurdle_gamma}, \code{zero_inflated_binomial},
+\code{zero_inflated_poisson}, and \code{zero_inflated_negbinomial}.
 Every family function has a \code{link} argument allowing to specify
 the link function to be applied on the response variable.
 If not specified, default links are used.
@@ -95,14 +96,17 @@ If \code{fit} is of class \code{brmsfit}, the compiled model associated
 with the fitted result is re-used and all arguments 
 modifying the model code or data are ignored.}
 
-\item{inits}{Either \code{"random"} or \code{"0"}. If inits is \code{"random"} (the default), 
+\item{inits}{Either \code{"random"} or \code{"0"}. 
+If inits is \code{"random"} (the default), 
 Stan will randomly generate initial values for parameters. 
 If it is \code{"0"}, all parameters are initiliazed to zero. 
-This option is recommended for \code{exponential} and \code{weibull} models, as it
-happens that default (\code{"random"}) inits cause samples to be essentially constant. 
-Generally, setting \code{inits = "0"} is worth a try, if chains do not behave well.
-Alternatively, \code{inits} can be a list of lists containing the initial values, 
-or a function (or function name) generating initial values. 
+This option is recommended for \code{exponential} and \code{weibull} models, 
+as it happens that default (\code{"random"}) inits cause samples 
+to be essentially constant. 
+Generally, setting \code{inits = "0"} is worth a try, 
+if chains do not behave well.
+Alternatively, \code{inits} can be a list of lists containing 
+the initial values, or a function (or function name) generating initial values. 
 The latter options are mainly implemented for internal testing.}
 
 \item{n.chains}{Number of Markov chains (default: 2)}
@@ -122,7 +126,8 @@ Default is 1, that is no thinning.}
 
 \item{cluster_type}{A character string specifying the type of cluster created by 
 \code{\link[parallel:makeCluster]{makeCluster}} when sampling in parallel 
-(i.e. when \code{n.cluster} is greater \code{1}). Default is \code{"PSOCK"} working on all platforms. 
+(i.e. when \code{n.cluster} is greater \code{1}). 
+Default is \code{"PSOCK"} working on all platforms. 
 For OS X and Linux, \code{"FORK"} may be a faster and more stable option, 
 but it does not work on Windows.}
 
@@ -136,7 +141,8 @@ distribution.}
 
 \item{seed}{Positive integer. Used by \code{set.seed} to make results reproducable.}
 
-\item{save.model}{Either \code{NULL} or a character string. In the latter case, the model code is
+\item{save.model}{Either \code{NULL} or a character string. 
+In the latter case, the model code is
 saved in a file named after the string supplied in \code{save.model}, 
 which may also contain the full path where to save the file.
 If only a name is given, the file is save in the current working directory.}
@@ -152,8 +158,10 @@ An object of class \code{brmsfit}, which contains the posterior samples along
 Fit a Bayesian generalized linear or ordinal mixed model using Stan
 }
 \details{
-Fit a generalized linear mixed model, which incorporates both fixed-effects parameters 
-  and random effects in a linear predictor via full bayesian inference using Stan. 
+Fit a generalized linear mixed model, 
+  which incorporates both fixed-effects parameters 
+  and random effects in a linear predictor 
+  via full bayesian inference using Stan. 
   
   \bold{Formula syntax}
   
@@ -186,7 +194,7 @@ Fit a generalized linear mixed model, which incorporates both fixed-effects para
   implements a weighted regression. 
   
   For families \code{binomial} and \code{zero_inflated_binomial}, 
-  addition may contain a variable indicating the number of trials 
+  addition should contain a variable indicating the number of trials 
   underlying each observation. In \code{lme4} syntax, we may write for instance 
   \code{cbind(success, n - success)}, which is equivalent
   to \code{success | trials(n)} in \code{brms} syntax. If the number of trials
@@ -299,7 +307,7 @@ Fit a generalized linear mixed model, which incorporates both fixed-effects para
   allow to estimate zero-inflated and hurdle models. These models 
   can be very helpful when there are many zeros in the data that cannot be explained 
   by the primary distribution of the response. Family \code{hurdle_gamma} is 
-  especially useful, as a traditional \code{gamma} model cannot be reasonably 
+  especially useful, as a traditional \code{Gamma} model cannot be reasonably 
   fitted for data containing zeros in the response. 
   
   In the following, we list all possible links for each family.
@@ -312,7 +320,7 @@ Fit a generalized linear mixed model, which incorporates both fixed-effects para
   the links \code{logit}, \code{probit}, \code{probit_approx}, 
   \code{cloglog}, and \code{cauchit}; 
   family \code{categorical} the link \code{logit}; 
-  families \code{gamma}, \code{weibull}, and \code{exponential} 
+  families \code{Gamma}, \code{weibull}, and \code{exponential} 
   the links \code{log}, \code{identity}, and \code{inverse};
   family \code{inverse.gaussian} the links \code{1/mu^2}, 
   \code{inverse}, \code{identity} and \code{log}; 

@@ -14,21 +14,22 @@ a symbolic description of the model to be fitted.
 The details of model specification are given under 'Details'.}
 
 \item{data}{An optional data frame, list or environment  (or object coercible by 
-\code{as.data.frame} to a data frame) containing the variables in the model. If not found in data, 
-the variables are taken from \code{environment(formula)}, 
+\code{as.data.frame} to a data frame) containing the variables in the model. 
+If not found in data, the variables are taken from \code{environment(formula)}, 
 typically the environment from which \code{brm} is called. 
 Although it is optional, we strongly recommend to supply a data.frame.}
 
-\item{family}{A description of the error distribution and link function to be used in the model. 
-This can be a family function, a call to a family function or a character string naming the family.
+\item{family}{A description of the error distribution and link function 
+to be used in the model. This can be a family function, 
+a call to a family function or a character string naming the family.
 Currently, the following families are supported:
 \code{gaussian}, \code{student}, \code{cauchy}, \code{binomial}, 
-\code{bernoulli}, \code{beta}, \code{categorical}, \code{poisson}, 
-\code{negbinomial}, \code{geometric}, \code{gamma}, \code{inverse.gaussian}, 
+\code{bernoulli}, \code{Beta}, \code{categorical}, \code{poisson}, 
+\code{negbinomial}, \code{geometric}, \code{Gamma}, \code{inverse.gaussian}, 
 \code{exponential}, \code{weibull}, \code{cumulative}, \code{cratio}, 
 \code{sratio}, \code{acat}, \code{hurdle_poisson}, \code{hurdle_negbinomial},
-\code{hurdle_gamma}, \code{zero_inflated_poisson}, 
-and \code{zero_inflated_negbinomial}.
+\code{hurdle_gamma}, \code{zero_inflated_binomial},
+\code{zero_inflated_poisson}, and \code{zero_inflated_negbinomial}.
 Every family function has a \code{link} argument allowing to specify
 the link function to be applied on the response variable.
 If not specified, default links are used.
