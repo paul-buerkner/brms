@@ -27,8 +27,12 @@
 #'   and \code{zero_inflated_negbinomial} the link \code{log}.  
 #'   The first link mentioned for each family is the default.
 #'   A full list of families and link functions supported by \pkg{brms}, 
-#'   is provided in the 'Details' section of \code{\link[brms:brm]{brm}}.   
-
+#'   is provided in the 'Details' section of \code{\link[brms:brm]{brm}}.
+#' @param type An optional character string allowing to specify advanced 
+#'   models implemented through certain families. Currently, 
+#'   only the \code{bernoulli} family uses this argument to define 
+#'   2PL models (applied in IRT) by setting \code{type = "2PL"}.
+#'   Further options will follow in the future.
 #' 
 #' @name brmsfamily
 NULL
@@ -78,7 +82,12 @@ bernoulli <- function(link = "logit", type = NULL) {
   if (!is.character(linktemp)) {
     linktemp <- deparse(linktemp)
   } 
-  okLinks <- c("logit", "probit", "probit_approx", "cloglog", "cauchit")
+  if (!is.null(type)) {
+    type <- match.arg(type, choices = "2PL")
+    okLinks <- "logit"
+  } else {
+    okLinks <- c("logit", "probit", "probit_approx", "cloglog", "cauchit")
+  }
   if (!linktemp %in% okLinks && is.character(link)) {
     linktemp <- link
   }
