@@ -85,21 +85,6 @@ Define priors for specific parameters or classes of parameters
   See the documentation of \code{\link[brms:brm]{brm}} for instructions
   on how to increase \code{adapt_delta}. \cr
   
-  2. Multiplicative effects
-  
-  Every multiplicative effect as defined in the \code{multiply} 
-  argument of \code{\link[brms:brm]{brm}} 
-  has its own regression parameter. 
-  These parameters are internally named as \code{bm_<mult>}, 
-  where \code{<mult>} represents the name of the 
-  corresponding multiplicative effect. 
-  By default, multiplicative effects have an improper flat prior 
-  over the reals but we strongly recommend to define proper priors instead
-  to ensure both, identifiability of the model and sampling efficiency.
-  To set, for instance, a \code{normal(0,1)} prior on all
-  multiplicative effects at once, 
-  use \code{set_prior("normal(0,1)", class = "bm")}.
-  
   3. Autocorrelation parameters
   
   The autocorrelation parameters currently implemented are named 

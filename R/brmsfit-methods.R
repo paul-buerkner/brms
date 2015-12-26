@@ -28,8 +28,6 @@ fixef.brmsfit <-  function(x, estimate = "mean", ...) {
 #' @param correlation logical; if \code{FALSE} (the default), 
 #'   compute the covariance matrix,
 #'   if \code{TRUE}, compute the correlation matrix
-#' @param include_multiply logical; if \code{TRUE} (the default) also 
-#'   compute covariances (or correlations) of multiplicative effects
 #' @param ... Currently ignored
 #' 
 #' @return covariance or correlation matrix of fixed effects parameters
@@ -38,13 +36,11 @@ fixef.brmsfit <-  function(x, estimate = "mean", ...) {
 #'   covariances (correlations) of the posterior samples. 
 #'
 #' @export
-vcov.brmsfit <- function(object, correlation = FALSE, 
-                         include_multiply = TRUE, ...) {
+vcov.brmsfit <- function(object, correlation = FALSE, ...) {
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
   pars <- parnames(object)
-  regex <- ifelse(include_multiply, "^b_|^bm_", "^b_")
-  fpars <- pars[grepl(regex, pars)]
+  fpars <- pars[grepl("^b_", pars)]
   if (!length(fpars)) 
     stop(paste("The model does not contain fixed effects")) 
   samples <- posterior_samples(object, pars = fpars, exact_match = TRUE)
@@ -327,8 +323,7 @@ summary.brmsfit <- function(object, waic = TRUE, ...) {
                      group = names(object$ranef), 
                      nobs = nobs(object), 
                      ngrps = brms::ngrps(object), 
-                     autocor = object$autocor,
-                     multiply = object$multiply)
+                     autocor = object$autocor)
   if (length(object$fit@sim)) {
     out$n.chains <- length(object$fit@sim$samples)
     out$n.iter <- attr(object$fit@sim$samples[[1]],"args")$iter
@@ -370,12 +365,6 @@ summary.brmsfit <- function(object, waic = TRUE, ...) {
     }    
     colnames(out$spec_pars) <- col_names
     rownames(out$spec_pars) <- spec_pars
-    
-    # summary of multiplicative effects
-    mult_pars <- pars[grepl("^bm_", pars)]
-    out$mult_pars <- matrix(fit_summary$summary[mult_pars, -c(2)], ncol = 6)
-    colnames(out$mult_pars) <- col_names
-    rownames(out$mult_pars) <- gsub("^bm_", "", mult_pars)
     
     # summary of ARMA effects
     cor_pars <- pars[grepl("^ar|^ma", pars)]
@@ -451,8 +440,7 @@ standata.brmsfit <- function(object, ...) {
                               family = object$family, 
                               autocor = object$autocor, 
                               cov.ranef = object$cov.ranef, 
-                              partial = object$partial,
-                              multiply = object$multiply, ...)
+                              partial = object$partial, ...)
   } else {
     # brms <= 0.5.0 only stores the data passed to Stan 
     standata <- object$data
@@ -986,7 +974,7 @@ residuals.brmsfit <- function(object, re_formula = NULL,
 update.brmsfit <- function(object, newdata = NULL, ...) {
   dots <- list(...)
   invalid_args <- c("formula", "family", "prior", "autocor", 
-                    "multiply", "partial", "threshold", "cov.ranef", 
+                    "partial", "threshold", "cov.ranef", 
                     "sample.prior", "save.model")
   z <- which(names(dots) %in% invalid_args)
   if (length(z)) {

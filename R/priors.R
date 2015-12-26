@@ -73,21 +73,6 @@
 #'   See the documentation of \code{\link[brms:brm]{brm}} for instructions
 #'   on how to increase \code{adapt_delta}. \cr
 #'   
-#'   2. Multiplicative effects
-#'   
-#'   Every multiplicative effect as defined in the \code{multiply} 
-#'   argument of \code{\link[brms:brm]{brm}} 
-#'   has its own regression parameter. 
-#'   These parameters are internally named as \code{bm_<mult>}, 
-#'   where \code{<mult>} represents the name of the 
-#'   corresponding multiplicative effect. 
-#'   By default, multiplicative effects have an improper flat prior 
-#'   over the reals but we strongly recommend to define proper priors instead
-#'   to ensure both, identifiability of the model and sampling efficiency.
-#'   To set, for instance, a \code{normal(0,1)} prior on all
-#'   multiplicative effects at once, 
-#'   use \code{set_prior("normal(0,1)", class = "bm")}.
-#'   
 #'   3. Autocorrelation parameters
 #'   
 #'   The autocorrelation parameters currently implemented are named 
@@ -262,7 +247,7 @@ set_prior <- function(prior, class = "b", coef = "", group = "") {
 #' 
 #' @export
 get_prior <- function(formula, data = NULL, family = gaussian(),
-                      autocor = NULL, multiply = NULL, partial = NULL, 
+                      autocor = NULL, partial = NULL, 
                       threshold = c("flexible", "equidistant"), 
                       internal = FALSE) {
   # note that default priors are stored in this function
@@ -291,7 +276,7 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
   # initialize output
   prior <- prior_frame(prior = character(0), class = character(0), 
                        coef = character(0), group = character(0))
-  # fixed, multiplicative, and category specific effects
+  # fixed and category specific effects
   fixef <- colnames(get_model_matrix(ee$fixed, data = data))
   if (length(fixef)) {
     prior <- rbind(prior, prior_frame(class = "b", coef = c("", fixef)))
@@ -300,10 +285,6 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
     paref <- colnames(get_model_matrix(partial, data = data, 
                                        rm_intercept = TRUE))
     prior <- rbind(prior, prior_frame(class = "b", coef = paref))
-  }
-  if (is.formula(multiply)) {
-    multef <- colnames(get_model_matrix(multiply, data = data))
-    prior <- rbind(prior, prior_frame(class = "bm", coef = c("", multef)))
   }
   # random effects
   if (length(ee$group)) {
@@ -378,8 +359,8 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
 }
 
 check_prior <- function(prior, formula, data = NULL, family = gaussian(), 
-                        autocor = NULL, multiply = NULL,
-                        partial = NULL, threshold = "flexible") {
+                        autocor = NULL, partial = NULL, 
+                        threshold = "flexible") {
   # check prior input and amend it if needed
   #
   # Args:
@@ -394,8 +375,8 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
   ee <- extract_effects(formula, family = family)  
   all_priors <- get_prior(formula = formula, data = data, 
                           family = family, autocor = autocor, 
-                          multiply = multiply, partial = partial, 
-                          threshold = threshold, internal = TRUE)
+                          partial = partial, threshold = threshold, 
+                          internal = TRUE)
   if (is.null(prior)) {
     prior <- all_priors  
   } else if (is(prior, "brmsprior")) {

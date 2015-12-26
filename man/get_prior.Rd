@@ -5,8 +5,8 @@
 \title{Overview on Priors for \pkg{brms} Models}
 \usage{
 get_prior(formula, data = NULL, family = gaussian(), autocor = NULL,
-  multiply = NULL, partial = NULL, threshold = c("flexible",
-  "equidistant"), internal = FALSE)
+  partial = NULL, threshold = c("flexible", "equidistant"),
+  internal = FALSE)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class): 
@@ -45,10 +45,6 @@ within the response variable (i.e. the 'autocorrelation').
 See the documentation of \code{\link{cor_brms}} for a description 
 of the available correlation structures. Defaults to NULL, 
 corresponding to no correlations.}
-
-\item{multiply}{A one side formula of the form \code{~expression}
-allowing to specify multiplicative effects 
-(e.g., for 2PL item response models)}
 
 \item{partial}{A one sided formula of the form \code{~expression} 
 allowing to specify predictors with category specific effects 

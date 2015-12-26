@@ -246,7 +246,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
 #'          
 #' @export
 make_standata <- function(formula, data = NULL, family = "gaussian", 
-                          autocor = NULL, multiply = NULL, partial = NULL, 
+                          autocor = NULL, partial = NULL, 
                           cov.ranef = NULL, control = NULL, ...) {
   # internal control arguments:
   #   is_newdata: logical; indicating if make_standata is called with new data
@@ -262,7 +262,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   is_forked <- is.forked(family)
   et <- extract_time(autocor$formula)
   ee <- extract_effects(formula = formula, family = family, 
-                        multiply, partial, et$all)
+                        partial, et$all)
   data <- update_data(data, family = family, effects = ee, et$group)
   
   # sort data in case of autocorrelation models
@@ -508,18 +508,6 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     }
   } else if (!is.null(partial)) {
     stop("Argument partial must be a formula")
-  }
-  
-  # get data for multiplicative effects
-  if (is.formula(multiply)) {
-    if (has_cat(family)) {
-      stop(paste("Multiplicative effects not yet implemented",
-                 "for family", family$family))
-    }
-    Xm <- get_model_matrix(multiply, data)
-    standata <- c(standata, list(Km = ncol(Xm), Xm = Xm)) 
-  } else if (!is.null(multiply)) {
-    stop("Argument multiply must be a formula")
   }
   
   # autocorrelation variables

@@ -548,11 +548,6 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
     }
     eta <- etap
   }
-  # include multiplicative effects
-  if (!is.null(data$Xm) && ncol(data$Xm)) {
-    bm <- posterior_samples(x, pars = "^bm_[^\\[]+$", as.matrix = TRUE)
-    eta <- eta * exp(fixef_predictor(X = data$Xm, b = bm)) 
-  }
   eta
 }
 
@@ -861,15 +856,6 @@ print.brmssummary <- function(x, digits = 2, ...) {
       x$fixed[, "Eff.Sample"] <- round(x$fixed[, "Eff.Sample"], 
                                        digits = 0)
       print(round(x$fixed, digits = digits)) 
-      cat("\n")
-    }
-    
-    if (nrow(x$mult_pars)) {
-      cat(paste0("Log Multiplicative Effects (",
-                 Reduce(paste, deparse(x$multiply)), "): \n"))
-      x$mult_pars[, "Eff.Sample"] <- 
-        round(x$mult_pars[, "Eff.Sample"], digits = 0)
-      print(round(x$mult_pars, digits = digits)) 
       cat("\n")
     }
     

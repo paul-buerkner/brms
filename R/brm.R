@@ -43,9 +43,6 @@
 #'   See the documentation of \code{\link{cor_brms}} for a description 
 #'   of the available correlation structures. Defaults to NULL, 
 #'   corresponding to no correlations.
-#' @param multiply A one side formula of the form \code{~expression}
-#'   allowing to specify multiplicative effects 
-#'   (e.g., for 2PL item response models)
 #' @param partial A one sided formula of the form \code{~expression} 
 #'   allowing to specify predictors with category specific effects 
 #'   in non-cumulative ordinal models 
@@ -206,25 +203,8 @@
 #'   In addition, a random effect of \code{trait} was added while the random intercept 
 #'   was removed leading to the estimation of two random effects, 
 #'   one for the zero-inflation / hurdle part and one for the actual response. 
-#'   In the example above, the correlation between the two random effects will also be estimated.
-#'   
-#'   Additionally, \code{brm} allows to define multiplicative effects 
-#'   by using the \code{multiply} argument, which should be a one-sided formula. 
-#'   As the name indicates, these effects will be multiplied 
-#'   with the effects defined in \code{formula}. 
-#'   This way, it is easy to specify, for instance, 2PL item response models.
-#'   Suppose that we have the variables \code{item} and \code{person} and
-#'   want to model fixed effects for items and random effects for persons.
-#'   The discriminality (multiplicative effect) should depend only on the items. 
-#'   We can specify this by setting \code{formula = response ~ 0 + item + (1|person)} 
-#'   and \code{multiply = ~ 0 + item}. The intercept is omitted in both formulas
-#'   so that coefficients represent difficulties and discriminalities
-#'   seperately for each item, instead of differences between items.
-#'   To identify the model, multiplicative effects
-#'   are estimated on the log scale. In addition, we recommend setting 
-#'   proper priors on both fixed and multiplicative effects to increase 
-#'   sampling efficiency 
-#'   (for details on priors see \code{\link[brms:set_prior]{set_prior}}).
+#'   In the example above, the correlation between 
+#'   the two random effects will also be estimated.
 #'   
 #'   \bold{Families and link functions}
 #'   
@@ -360,10 +340,9 @@
 #' @export 
 brm <- function(formula, data = NULL, family = gaussian(), 
                 prior = NULL, addition = NULL, autocor = NULL, 
-                multiply = NULL, partial = NULL, 
-                threshold = c("flexible", "equidistant"), cov.ranef = NULL, 
-                ranef = TRUE, sample.prior = FALSE, fit = NA, 
-                inits = "random", n.chains = 2, n.iter = 2000, 
+                partial = NULL, threshold = c("flexible", "equidistant"), 
+                cov.ranef = NULL, ranef = TRUE, sample.prior = FALSE, 
+                fit = NA, inits = "random", n.chains = 2, n.iter = 2000, 
                 n.warmup = 500, n.thin = 1, n.cluster = 1,
                 cluster_type = "PSOCK", 
                 algorithm = c("sampling", "meanfield", "fullrank"),
@@ -390,17 +369,15 @@ brm <- function(formula, data = NULL, family = gaussian(),
     formula <- update_formula(formula, addition = addition) 
     prior <- check_prior(prior, formula = formula, data = data, 
                          family = family, autocor = autocor,
-                         multiply = multiply, partial = partial, 
-                         threshold = threshold) 
+                         partial = partial, threshold = threshold) 
     et <- extract_time(autocor$formula)  
     ee <- extract_effects(formula, family = family, partial, et$all)
     data.name <- Reduce(paste, deparse(substitute(data)))
     
     # initialize S3 object
     x <- brmsfit(formula = formula, family = family, link = family$link, 
-                 multiply = multiply, partial = partial, 
-                 data.name = data.name, autocor = autocor, 
-                 prior = prior, cov.ranef = cov.ranef)  
+                 partial = partial, data.name = data.name, 
+                 autocor = autocor, prior = prior, cov.ranef = cov.ranef)  
     # see data.R
     x$data <- update_data(data, family = family, effects = ee, et$group) 
     # see validate.R
@@ -411,7 +388,7 @@ brm <- function(formula, data = NULL, family = gaussian(),
     x$model <- make_stancode(formula = formula, data = data, 
                              family = family, prior = prior,  
                              autocor = autocor, partial = partial, 
-                             multiply = multiply, threshold = threshold, 
+                             threshold = threshold, 
                              cov.ranef = cov.ranef, 
                              sample.prior = sample.prior, 
                              save.model = save.model)

@@ -102,14 +102,6 @@ rename_pars <- function(x) {
     change <- c(change, prior_changes(class = "b", pars = pars, names = f))
   }
   
-  if (is.formula(x$multiply)) {
-    m <- colnames(standata$Xm)
-    change <- lc(change, list(pos = grepl("^bm\\[", pars), oldname = "bm", 
-                              pnames = paste0("bm_", m), 
-                              fnames = paste0("bm_", m)))
-    change <- c(change, prior_changes(class = "bm", pars = pars, names = m))
-  }
-  
   if (is.formula(x$partial) || is.categorical(family)) {
     if (is.categorical(family)) {
       p <- colnames(standata$X)

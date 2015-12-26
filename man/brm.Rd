@@ -5,7 +5,7 @@
 \title{Fit Bayesian Generalized Linear and Ordinal Mixed Models}
 \usage{
 brm(formula, data = NULL, family = gaussian(), prior = NULL,
-  addition = NULL, autocor = NULL, multiply = NULL, partial = NULL,
+  addition = NULL, autocor = NULL, partial = NULL,
   threshold = c("flexible", "equidistant"), cov.ranef = NULL,
   ranef = TRUE, sample.prior = FALSE, fit = NA, inits = "random",
   n.chains = 2, n.iter = 2000, n.warmup = 500, n.thin = 1,
@@ -60,10 +60,6 @@ within the response variable (i.e. the 'autocorrelation').
 See the documentation of \code{\link{cor_brms}} for a description 
 of the available correlation structures. Defaults to NULL, 
 corresponding to no correlations.}
-
-\item{multiply}{A one side formula of the form \code{~expression}
-allowing to specify multiplicative effects 
-(e.g., for 2PL item response models)}
 
 \item{partial}{A one sided formula of the form \code{~expression} 
 allowing to specify predictors with category specific effects 
@@ -245,25 +241,8 @@ Fit a generalized linear mixed model, which incorporates both fixed-effects para
   In addition, a random effect of \code{trait} was added while the random intercept 
   was removed leading to the estimation of two random effects, 
   one for the zero-inflation / hurdle part and one for the actual response. 
-  In the example above, the correlation between the two random effects will also be estimated.
-  
-  Additionally, \code{brm} allows to define multiplicative effects 
-  by using the \code{multiply} argument, which should be a one-sided formula. 
-  As the name indicates, these effects will be multiplied 
-  with the effects defined in \code{formula}. 
-  This way, it is easy to specify, for instance, 2PL item response models.
-  Suppose that we have the variables \code{item} and \code{person} and
-  want to model fixed effects for items and random effects for persons.
-  The discriminality (multiplicative effect) should depend only on the items. 
-  We can specify this by setting \code{formula = response ~ 0 + item + (1|person)} 
-  and \code{multiply = ~ 0 + item}. The intercept is omitted in both formulas
-  so that coefficients represent difficulties and discriminalities
-  seperately for each item, instead of differences between items.
-  To identify the model, multiplicative effects
-  are estimated on the log scale. In addition, we recommend setting 
-  proper priors on both fixed and multiplicative effects to increase 
-  sampling efficiency 
-  (for details on priors see \code{\link[brms:set_prior]{set_prior}}).
+  In the example above, the correlation between 
+  the two random effects will also be estimated.
   
   \bold{Families and link functions}
   

@@ -4,8 +4,7 @@
 \alias{vcov.brmsfit}
 \title{Covariance and Correlation Matrix of Fixed Effects}
 \usage{
-\method{vcov}{brmsfit}(object, correlation = FALSE, include_multiply = TRUE,
-  ...)
+\method{vcov}{brmsfit}(object, correlation = FALSE, ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}}
@@ -13,9 +12,6 @@
 \item{correlation}{logical; if \code{FALSE} (the default), 
 compute the covariance matrix,
 if \code{TRUE}, compute the correlation matrix}
-
-\item{include_multiply}{logical; if \code{TRUE} (the default) also 
-compute covariances (or correlations) of multiplicative effects}
 
 \item{...}{Currently ignored}
 }
