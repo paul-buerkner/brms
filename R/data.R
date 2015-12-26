@@ -26,7 +26,9 @@ melt_data <- function(data, family, effects) {
     # prepare the response variable
     temp_mf <- model.frame(effects$resp_formula, data = data)
     model_response <- model.response(temp_mf)
-    if (is.forked(family)) {
+    if (is.linear(family)) {
+      model_response <- as.vector(model_response)
+    } else if (is.forked(family)) {
       reserved <- c(response[2], "main", "spec")
       reserved <- reserved[reserved %in% names(data)]
       if (length(reserved)) {
@@ -38,9 +40,9 @@ melt_data <- function(data, family, effects) {
       new_cols$main <- c(one, zero)
       new_cols$spec <- c(zero, one)
       # dummy responses not actually used in Stan
-      model_response <- cbind(model_response, zero)
+      model_response <- rep(model_response, 2)
     }
-    new_cols$response <- as.numeric(as.matrix(model_response))
+    new_cols$response <- model_response
     data <- replicate(length(response), data, simplify = FALSE)
     data <- cbind(do.call(rbind, data), new_cols)
   } else if (nresp > 1) {
@@ -292,13 +294,19 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   standata <- list(N = nrow(data), Y = unname(model.response(data)))
   check_response <- !isTRUE(control$omit_response)
   if (check_response) {
-    if (!is.numeric(standata$Y) && !(is_ordinal || family$family %in% 
-        c("bernoulli", "categorical")))  {
-      stop(paste("family", family$family, 
-                 "expects numeric response variable"))
+    if (!(is_ordinal || family$family %in% c("bernoulli", "categorical")) && 
+        !is.numeric(standata$Y)) {
+      stop(paste("family", family$family, "expects numeric response variable"))
     }
     # transform and check response variable for different families
-    if (family$family == "binomial" || is_count || is_forked) {
+    if (is_forked) {
+      # the second half of Y is not used because it is only dummy data
+      # that was put into data to make melt_data work correctly
+      standata$Y <- standata$Y[1:(nrow(data) / 2)] 
+      standata$N_trait <- length(standata$Y)
+    }
+    regex_pos_int <- "(^|_)(binomial|poisson|negbinomial|geometric)$"
+    if (grepl(regex_pos_int, family$family)) {
       if (!all(is.wholenumber(standata$Y)) || min(standata$Y) < 0) {
         stop(paste("family", family$family, "expects response variable", 
                    "of non-negative integers"))
@@ -333,17 +341,11 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       }
     } else if (is_linear && length(ee$response) > 1) {
       standata$Y <- matrix(standata$Y, ncol = length(ee$response))
+      NC_trait <- ncol(standata$Y) * (ncol(standata$Y) - 1) / 2
       standata <- c(standata, list(N_trait = nrow(standata$Y), 
                                    K_trait = ncol(standata$Y)),
-                                   NC_trait = ncol(standata$Y) * 
-                                              (ncol(standata$Y) - 1) / 2) 
+                                   NC_trait = NC_trait) 
     }
-  }
-  if (is_forked) {
-    # the second half of Y is not used because it is only dummy data
-    # that was put into data to make melt_data work correctly
-    standata$Y <- standata$Y[1:(nrow(data) / 2)] 
-    standata$N_trait <- length(standata$Y)
   }
   
   # add an offset if present
