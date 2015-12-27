@@ -2,6 +2,7 @@ test_that("stan_prior accepts supported prior classes", {
   prior <- prior_frame(prior = "uniform(0,10)", class = "b")
   expect_equal(stan_prior(class = "b", coef = "x1", prior = prior), 
                "  b ~ uniform(0,10); \n")
+  
   prior <- prior_frame(prior = c("uniform(0,10)", "normal(0,1)"), 
                        class = "b", coef = c("", "x1"))
   expect_equal(stan_prior(class = "b", coef = c("x1","x2"), prior = prior),
@@ -10,9 +11,13 @@ test_that("stan_prior accepts supported prior classes", {
                "  ar ~ uniform(0,1); \n")
   expect_equal(stan_prior("ma", prior = prior_frame("normal(0,5)", class = "ma")),
                "  ma ~ normal(0,5); \n")
+  
   prior <- prior_frame("lkj_corr_cholesky(2)", class = "rescor")
   expect_equal(stan_prior("rescor", prior = prior),
                "  rescor ~ lkj_corr_cholesky(2); \n")
+  
+  prior <- prior_frame("normal(0, 1)", class = "bp")
+  expect_equal(stan_prior(class = "bp", coef = c("x1", "x2"), prior = prior))
 })
 
 test_that("stan_prior returns the correct indices", {
@@ -71,15 +76,23 @@ test_that("Test_that stan_arma returns correct strings (or errors)", {
              set_prior("cauchy(0,1)", class = "ma"))
   
   temp_arma <- stan_arma(family = gaussian(log), prior = prior,
-                         autocor = cor.arma(~visit|patient, q = 1))
-  expect_match(temp_arma$transC2, "E[n + 1, i] <- e[n + 1 - i]", fixed = TRUE)
+                         autocor = cor_arma(~visit|patient, q = 1))
+  expect_match(temp_arma$transC2, "E[n + 1, i] <- e[n + 1 - i]", 
+               fixed = TRUE)
   expect_match(temp_arma$prior, "ma ~ cauchy(0,1)", fixed = TRUE)
   
   temp_arma <- stan_arma(family = gaussian(log), is_multi = TRUE, 
-                         autocor = cor.arma(~visit|patient, p = 1),
+                         autocor = cor_arma(~visit|patient, p = 1),
                          prior = prior)
-  expect_match(temp_arma$transC2, "e[n] <- log(Y[m, k]) - eta[n]", fixed = TRUE)
+  expect_match(temp_arma$transC2, "e[n] <- log(Y[m, k]) - eta[n]", 
+               fixed = TRUE)
   expect_match(temp_arma$prior, "ar ~ normal(0,2)", fixed = TRUE)
+  
+  temp_arma <- stan_arma(family = gaussian(log), prior = prior,
+                         autocor = cor_arr(~visit|patient))
+  expect_match(temp_arma$data, fixed = TRUE,
+               "int<lower=1> Karr; \n  matrix[N, Karr] Yarr;")
+  expect_match(temp_arma$par, "vector[Karr] arr;", fixed = TRUE)
   
   expect_error(stan_arma(family = poisson(),
                          autocor = cor.arma(~visit|patient, p = 1, q = 1)),
@@ -163,7 +176,12 @@ test_that("make_stancode returns expected code for 2PL models", {
 
 test_that("stan_ordinal returns correct strings", {
   expect_match(stan_ordinal(family = sratio())$par, "")
-  
+  out <- stan_ordinal(family = acat(), threshold = "equidistant")
+  expect_match(out$par, "real delta;")
+  expect_match(out$transC1, fixed = TRUE, 
+               "b_Intercept[k] <- b_Intercept1 + (k - 1.0)*delta;")
+  expect_match(stan_ordinal(family = acat("probit_approx"))$transC2, 
+               "Phi_approx")
 })
 
 test_that("stan_llh uses simplifications when possible", {
@@ -251,9 +269,17 @@ test_that("stan_rngprior returns correct sampling statements for priors", {
   expect_equal(stan_rngprior(TRUE, prior = "sigma[2] ~ normal(0,5); \n"),
                list(par = paste0(c1,"  real<lower=0> prior_sigma_2; \n"), 
                     model = paste0(c2,"  prior_sigma_2 ~ normal(0,5); \n")))
-  expect_equal(stan_rngprior(TRUE, prior = "sd_1[1] ~ normal(0,5); \n  sd_1[2] ~ cauchy(0,2); \n"),
-               list(par = paste0(c1,"  real<lower=0> prior_sd_1_1; \n  real<lower=0> prior_sd_1_2; \n"), 
-                    model = paste0(c2,"  prior_sd_1_1 ~ normal(0,5); \n  prior_sd_1_2 ~ cauchy(0,2); \n")))
+  expect_equal(stan_rngprior(TRUE, prior = paste0("sd_1[1] ~ normal(0,5); \n",
+                                                  "  sd_1[2] ~ cauchy(0,2); \n")),
+               list(par = paste0(c1, paste0("  real<lower=0> prior_sd_1_1; \n",
+                                            "  real<lower=0> prior_sd_1_2; \n")), 
+                    model = paste0(c2, paste0("  prior_sd_1_1 ~ normal(0,5); \n",
+                                              "  prior_sd_1_2 ~ cauchy(0,2); \n"))))
+  prior_code <- "b ~ normal(0, hs_local * hs_global); \n"
+  expect_match(stan_rngprior(TRUE, prior = prior_code, hs_df = 3)$genC,
+               "prior_b <- normal_rng(0, prior_hs_local * prior_hs_global);",
+               fixed = TRUE)
+  
 })
 
 test_that("make_stancode returns correct selfmade functions", {
@@ -276,6 +302,9 @@ test_that("make_stancode returns correct selfmade functions", {
   expect_match(make_stancode(count ~ Trt_c, data = epilepsy, 
                              family = "zero_inflated_negbinomial"),
                "real zero_inflated_neg_binomial_2_log(int y", fixed = TRUE)
+  expect_match(make_stancode(count ~ Trt_c, data = epilepsy, 
+                             family = "zero_inflated_binomial"),
+               "real zero_inflated_binomial_log(int y", fixed = TRUE)
   expect_match(make_stancode(count ~ Trt_c, data = epilepsy, 
                              family = hurdle_poisson()),
                "real hurdle_poisson_log(int y", fixed = TRUE)
@@ -310,9 +339,39 @@ test_that("make_stancode returns correct selfmade functions", {
 
 test_that("stan_multi returns correct Stan code (or errors)", {
   expect_equal(stan_multi(gaussian(), "y"), list())
-  expect_error(stan_multi(poisson(), c("y1", "y2")),
-               "invalid multivariate model")
+  expect_match(stan_multi(gaussian(), c("y1", "y2"))$transC, 
+               "LSigma <- diag_pre_multiply(sigma, Lrescor); \n",
+               fixed = TRUE)
   expect_equal(stan_multi(student(), c("y1", "y2"))$transD, 
                "  cov_matrix[K_trait] Sigma; \n")
   expect_equal(stan_multi(hurdle_gamma(), c("y", "huy")), list())
+  expect_error(stan_multi(poisson(), c("y1", "y2")),
+               "invalid multivariate model")
+})
+
+test_that("make_stancode detects invalid combinations of modeling options", {
+  data <- data.frame(y1 = rnorm(10), y2 = rnorm(10), 
+                     wi = 1:10, ci = sample(-1:1, 10, TRUE))
+  expect_error(make_stancode(y1 | cens(ci) ~ y2, data = data,
+                             autocor = cor_ar(cov = TRUE)),
+               "Invalid addition arguments")
+  expect_error(make_stancode(cbind(y1, y2) ~ 1, data = data,
+                             autocor = cor_ar(cov = TRUE)),
+               "multivariate models are not yet allowed")
+  expect_error(make_stancode(y1 | se(wi) ~ y2, data = data,
+                             autocor = cor_ma()),
+               "Please set cov = TRUE", fixed = TRUE)
+  expect_error(make_stancode(y1 | trunc(lb = -50) | weights(wi) ~ y2,
+                             data = data),
+               "truncation is not yet possible")
+})
+
+test_that("make_stancode is silent for multivariate models", {
+  data <- data.frame(y1 = rnorm(10), y2 = rnorm(10), x = 1:10)
+  expect_silent(make_stancode(cbind(y1, y2) ~ x, data = data))
+})
+
+test_that("make_stancode is silent for categorical models", {
+  data <- data.frame(y = sample(1:4, 10, TRUE), x = 1:10)
+  expect_silent(make_stancode(y ~ x, data = data, family = categorical()))
 })

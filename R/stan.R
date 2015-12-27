@@ -955,7 +955,7 @@ stan_arma <- function(family, autocor, prior = prior_frame(),
       }
     } else {
       if (se) {
-        stop(paste("Plese set cov = TRUE in cor_arma / cor_ar / cor_ma",
+        stop(paste("Please set cov = TRUE in cor_arma / cor_ar / cor_ma",
                     "when using meta-analytic standard errors"))
       }
       index <- ifelse(is_multi, "m, k", "n")
