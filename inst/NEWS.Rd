@@ -7,8 +7,8 @@
     \itemize{
       \item implement beta regression models through family
       \code{Beta}
-      \item implement multiplicative effects through argument
-      \code{multiply} of function \code{brm}
+      \item implement multiplicative effects for family
+      \code{bernoulli} to fit (among others) 2PL IRT models
       \item allow to selectively exclude random effects
       in the \code{predict}, \code{fitted}, and \code{residuals}
       methods using argument \code{re_formula}
