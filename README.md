@@ -1,6 +1,5 @@
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-[![Build Status](https://travis-ci.org/paul-buerkner/brms.svg?branch=master)](https://travis-ci.org/paul-buerkner/brms)
-[![CRAN\_Status\_Badge](http://www.r-pkg.org/badges/version/brms)](http://cran.r-project.org/package=brms)
+[![Build Status](https://travis-ci.org/paul-buerkner/brms.svg?branch=master)](https://travis-ci.org/paul-buerkner/brms) [![Coverage](https://img.shields.io/codecov/c/github/paul-buerkner/brms/master.svg)](https://codecov.io/github/paul-buerkner/brms) [![CRAN Version](http://www.r-pkg.org/badges/version/brms)](http://cran.r-project.org/package=brms)
 
 brms
 ====
@@ -84,11 +83,11 @@ For a complete list of methods to apply on <b>brms</b> models see
 methods(class = "brmsfit") 
 #>  [1] family            fitted            fixef             formula          
 #>  [5] hypothesis        launch_shiny      logLik            LOO              
-#>  [9] ngrps             nobs              parnames          plot             
-#> [13] posterior_samples predict           print             prior_samples    
-#> [17] ranef             residuals         stancode          standata         
-#> [21] stanplot          summary           update            VarCorr          
-#> [25] vcov              WAIC             
+#>  [9] model.frame       ngrps             nobs              pairs            
+#> [13] parnames          plot              posterior_samples predict          
+#> [17] print             prior_samples     ranef             residuals        
+#> [21] stancode          standata          stanplot          summary          
+#> [25] update            VarCorr           vcov              WAIC             
 #> see '?methods' for accessing help and source code
 ```
 

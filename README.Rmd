@@ -15,7 +15,8 @@ knitr::opts_chunk$set(
 ```
 
 [![Build Status](https://travis-ci.org/paul-buerkner/brms.svg?branch=master)](https://travis-ci.org/paul-buerkner/brms)
-[![CRAN\_Status\_Badge](http://www.r-pkg.org/badges/version/brms)](http://cran.r-project.org/package=brms)
+[![Coverage](https://img.shields.io/codecov/c/github/paul-buerkner/brms/master.svg)](https://codecov.io/github/paul-buerkner/brms)
+[![CRAN Version](http://www.r-pkg.org/badges/version/brms)](http://cran.r-project.org/package=brms)
 
 # brms
 
