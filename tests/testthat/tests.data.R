@@ -237,7 +237,7 @@ test_that("make_standata rejects incorrect addition arguments", {
   expect_error(make_standata(y | cens(c) ~ 1, data = temp_data))
   expect_error(make_standata(z | trials(t) ~ 1, data = temp_data, 
                              family = "binomial"),
-               "Number of trials is smaller than the response variable would suggest.")
+               "Number of trials is smaller than the response variable")
 })
 
 test_that(paste("make_standata handles addition arguments", 
@@ -250,7 +250,8 @@ test_that(paste("make_standata handles addition arguments",
   expect_equal(make_standata(cbind(y1,y2) | weights(w) ~ x, 
                              family = "gaussian", data = temp_data,
                              autocor = cor_ar(~tim | g:trait))$Y,
-               cbind(c(seq(9,1,-2), seq(10,2,-2)), c(seq(19,11,-2), seq(20,12,-2))))
+               cbind(c(seq(9,1,-2), seq(10,2,-2)), 
+                     c(seq(19,11,-2), seq(20,12,-2))))
   expect_error(make_standata(cbind(y1,y2) | weights(w) ~ x, 
                              family = "gaussian", data = temp_data,
                              autocor = cor.ar(~tim | g)),
@@ -336,6 +337,18 @@ test_that("make_standata computes data for inverse.gaussian models", {
   standata <- make_standata(y | weights(w) ~ x, data = temp_data,
                             family = inverse.gaussian)
   expect_equal(standata$log_Y, log(temp_data$y))                         
+})
+
+test_that("make_standata computes data for 2PL models", {
+  temp_data <- data.frame(y = sample(0:1, 10, TRUE), x = rnorm(10))
+  standata <- make_standata(y ~ x, data = temp_data,
+                            family = bernoulli(type = "2PL"))
+  expect_equal(standata$Y, temp_data$y)
+  expect_equal(standata$N_trait, 10)
+  temp_data$y <- factor(rep(c("N", "Y"), each = 5), levels = c("N", "Y"))
+  standata <- make_standata(y ~ x, data = temp_data,
+                            family = bernoulli(type = "2PL"))
+  expect_equal(standata$Y, rep(0:1, each = 5))
 })
 
 test_that("amend_newdata handles factors correctly", {

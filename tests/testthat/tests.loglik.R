@@ -131,7 +131,7 @@ test_that("loglik for count and survival models works correctly", {
 test_that("loglik for bernoulli and beta models works correctly", {
   ns <- 15
   nobs <- 10
-  s <- list(eta = matrix(rnorm(ns*nobs), ncol = nobs),
+  s <- list(eta = matrix(rnorm(ns * nobs * 2), ncol = nobs * 2),
             phi = rgamma(ns, 4))
   i <- sample(1:nobs, 1)
   data <- list(Y = sample(0:1, nobs, replace = TRUE))
@@ -139,6 +139,12 @@ test_that("loglik for bernoulli and beta models works correctly", {
                     size = 1, log = TRUE)
   ll <- loglik_bernoulli(i, data = data, samples = s)
   expect_equal(ll, ll_bern)
+  
+  ll_bern_2PL <- dbinom(x = data$Y[i], size = 1, log = TRUE,
+                        prob = ilogit(s$eta[, i] * exp(s$eta[, i + nobs])))
+  data$N_trait <- nobs
+  ll <- loglik_bernoulli(i, data = data, samples = s)
+  expect_equal(ll, ll_bern_2PL)
   
   data <- list(Y = rbeta(nobs, 1, 1))
   ll_beta <- dbeta(x = data$Y[i], shape1 = ilogit(s$eta[, i]) * s$phi, 

@@ -106,12 +106,15 @@ test_that("predict for count and survival models runs without errors", {
 test_that("predict for bernoulli and beta models works correctly", {
   ns <- 17
   nobs <- 10
-  s <- list(eta = matrix(rnorm(ns*nobs), ncol = nobs),
+  s <- list(eta = matrix(rnorm(ns * nobs * 2), ncol = 2 * nobs),
             phi = rgamma(ns, 4))
   i <- sample(1:nobs, 1)
   data <- list()
   
   pred <- predict_bernoulli(i, data = data, samples = s)
+  expect_equal(length(pred), ns)
+  
+  pred <- predict_bernoulli(i, data = list(N_trait = nobs), samples = s)
   expect_equal(length(pred), ns)
   
   pred <- predict_beta(i, data = data, samples = s)

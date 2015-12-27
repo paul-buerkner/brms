@@ -133,11 +133,13 @@ test_that("make_stancode handles addition arguments correctly", {
 test_that("make_stancode correctly combines strings of multiple grouping factors", {
   expect_match(make_stancode(count ~ (1|patient) + (1+Trt_c|visit), 
                              data = epilepsy, family = "poisson"), 
-               "  real Z_1[N];  # RE design matrix \n  # data for random effects of visit \n", 
+               paste0("  real Z_1[N];  # RE design matrix \n",
+                      "  # data for random effects of visit \n"), 
                fixed = TRUE)
   expect_match(make_stancode(count ~ (1|visit) + (1+Trt_c|patient), 
                              data = epilepsy, family = "poisson"), 
-               "  int NC_1;  # number of correlations \n  # data for random effects of visit \n", 
+               paste0("  int NC_1;  # number of correlations \n",
+                      "  # data for random effects of visit \n"), 
                fixed = TRUE)
 })
 
@@ -146,6 +148,18 @@ test_that("make_stancode handles models without fixed effects correctly", {
                              data = epilepsy, family = "poisson"), 
                "  eta <- rep_vector(0, N); \n", fixed = TRUE)
 })
+
+test_that("make_stancode returns expected code for 2PL models", {
+  data <- data.frame(y = rep(0:1, each = 5), x = rnorm(10))
+  stancode <- make_stancode(y ~ x, data = data, 
+                            family = bernoulli(type = "2PL"))
+  expect_match(stancode, paste0("eta_2PL <- head(eta, N_trait)", 
+                                " .* exp(tail(eta, N_trait))"),
+               fixed = TRUE)
+  expect_match(stancode, "Y ~ bernoulli_logit(eta_2PL);",
+               fixed = TRUE)
+})
+
 
 test_that("stan_ordinal returns correct strings", {
   expect_match(stan_ordinal(family = sratio())$par, "")
