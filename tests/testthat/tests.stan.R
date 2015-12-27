@@ -17,7 +17,8 @@ test_that("stan_prior accepts supported prior classes", {
                "  rescor ~ lkj_corr_cholesky(2); \n")
   
   prior <- prior_frame("normal(0, 1)", class = "bp")
-  expect_equal(stan_prior(class = "bp", coef = c("x1", "x2"), prior = prior))
+  expect_equal(stan_prior(class = "bp", coef = c("x1", "x2"), prior = prior),
+               "  to_vector(bp) ~ normal(0, 1); \n")
 })
 
 test_that("stan_prior returns the correct indices", {
