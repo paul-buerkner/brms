@@ -784,8 +784,8 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     do.call(predict_fun, list(n = n, data = standata, samples = samples, 
                               link = family$link, ntrys = ntrys))
   }
-  N <- if (!is.null(standata$N_trait)) data$N_trait
-       else if (!is.null(data$N_tg)) standata$N_tg
+  N <- if (!is.null(standata$N_trait)) standata$N_trait
+       else if (!is.null(standata$N_tg)) standata$N_tg
        else standata$N
   out <- do.call(cbind, lapply(1:N, call_predict_fun))
   
