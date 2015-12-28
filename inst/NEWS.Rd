@@ -9,6 +9,10 @@
       \code{Beta}
       \item implement multiplicative effects for family
       \code{bernoulli} to fit (among others) 2PL IRT models
+      \item allow to call the \code{residuals} method with \code{newdata}
+      \item allow new levels of random effects grouping
+      factors in the \code{predict}, \code{fitted}, and \code{residuals}
+      methods using argument \code{allow_new_levels}
       \item allow to selectively exclude random effects
       in the \code{predict}, \code{fitted}, and \code{residuals}
       methods using argument \code{re_formula}
