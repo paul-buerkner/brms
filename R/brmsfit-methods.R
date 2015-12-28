@@ -207,11 +207,13 @@ model.frame.brmsfit <- function(formula, ...) {
   formula$data
 }
 
+#' @rdname posterior_samples
 #' @export
 posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,  
                                       exact_match = FALSE, 
                                       add_chains = FALSE, 
-                                      as.matrix = FALSE, ...) {
+                                      subset = NULL, as.matrix = FALSE, 
+                                      ...) {
   if (is.na(pars[1])) 
     pars <- parameters  
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
@@ -232,6 +234,9 @@ posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,
     if (add_chains) {
       samples$chains <- factor(rep(1:chains, each = final_iter))
       samples$iter <- rep(samples_taken, chains)
+    }
+    if (!is.null(subset)) {
+      samples <- samples[subset, ]
     }
     if (as.matrix) {
       samples <- as.matrix(samples)

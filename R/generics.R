@@ -250,6 +250,9 @@ hypothesis <- function(x, hypothesis, class = "b", group = "",
 #'   Default is \code{FALSE}.
 #' @param add_chains A flag indicating if the returned data.frame 
 #'   should contain information on the chains
+#' @param subset A numeric vector indicating the rows 
+#'        (i.e., posterior samples) to be returned. 
+#'        If \code{NULL} (the default), all  posterior samples are returned.
 #' @param as.matrix Should the output be a \code{matrix} 
 #'   instead of a \code{data.frame}? Defaults to \code{FALSE}
 #' @param ... additional arguments
@@ -275,16 +278,12 @@ hypothesis <- function(x, hypothesis, class = "b", group = "",
 #' }
 #' 
 #' @export 
-posterior_samples <- function(x, pars = NA, parameters = NA, 
-                              exact_match = FALSE, add_chains = FALSE, 
-                              as.matrix = FALSE, ...)
+posterior_samples <- function(x, pars = NA, ...)
   UseMethod("posterior_samples")
 
 # deprecated alias of posterior_samples
 #' @export 
-posterior.samples <- function(x, pars = NA, parameters = NA, 
-                              exact_match = FALSE, add_chains = FALSE, 
-                              as.matrix = FALSE, ...)
+posterior.samples <- function(x, pars = NA, ...)
   UseMethod("posterior_samples")
 
 #' Extract prior samples
