@@ -239,7 +239,7 @@ posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,
       samples$iter <- rep(samples_taken, chains)
     }
     if (!is.null(subset)) {
-      samples <- samples[subset, ]
+      samples <- samples[subset, , drop = FALSE]
     }
     if (as.matrix) {
       samples <- as.matrix(samples)
@@ -658,6 +658,13 @@ pairs.brmsfit <- function(x, pars = NA, exact_match = FALSE, ...) {
 #' @param probs The percentiles to be computed 
 #'  by the \code{quantile} function. 
 #'  Only used if \code{summary} is \code{TRUE}.
+#' @param subset A numeric vector specifying
+#'  the posterior samples to be used. 
+#'  If \code{NULL} (the default), all samples are used.
+#' @param nsamples Positive integer indicating how many 
+#'  posterior samples should be used. 
+#'  If \code{NULL} (the default) all samples are used.
+#'  Ignored if \code{subset != NULL}.
 #' @param ntrys Parameter used in rejection sampling 
 #'   for truncated discrete models only 
 #'   (defaults to \code{5}). See Details for more information.
@@ -725,7 +732,7 @@ pairs.brmsfit <- function(x, pars = NA, exact_match = FALSE, ...) {
 predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                             transform = NULL, allow_new_levels = FALSE,
                             summary = TRUE, probs = c(0.025, 0.975), 
-                            ntrys = 5, ...) {
+                            subset = NULL, nsamples = NULL, ntrys = 5, ...) {
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
   family <- family(object)
@@ -740,19 +747,24 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   }
   
   # compute all necessary samples
+  if (is.null(subset) && !is.null(nsamples)) {
+    subset <- sample(Nsamples(object), nsamples)
+  }
   nresp <- length(ee$response)
-  samples <- list(eta = linear_predictor(object, newdata = data, 
-                                         re_formula = re_formula))
+  eta <- linear_predictor(object, newdata = data, subset = subset,
+                          re_formula = re_formula)
+  samples <- list(eta = eta)
+  args <- list(x = object, as.matrix = TRUE, subset = subset) 
   if (has_sigma(family, se = ee$se, autocor = object$autocor))
-    samples$sigma <- as.matrix(posterior_samples(object, pars = "^sigma_"))
+    samples$sigma <- do.call(posterior_samples, c(args, pars = "^sigma_"))
   if (family$family == "student") 
-    samples$nu <- as.matrix(posterior_samples(object, pars = "^nu$"))
+    samples$nu <- do.call(posterior_samples, c(args, pars = "^nu$"))
   if (family$family == "beta")
-    samples$phi <- as.matrix(posterior_samples(object, pars = "^phi$"))
+    samples$phi <- do.call(posterior_samples, c(args, pars = "^phi$"))
   if (has_shape(family)) 
-    samples$shape <- as.matrix(posterior_samples(object, pars = "^shape$"))
+    samples$shape <- do.call(posterior_samples, c(args, pars = "^shape$"))
   if (is.linear(family) && nresp > 1) {
-    samples$rescor <- as.matrix(posterior_samples(object, pars = "^rescor_"))
+    samples$rescor <- do.call(posterior_samples, c(args, pars = "^rescor_"))
     samples$Sigma <- get_cov_matrix(sd = samples$sigma, cor = samples$rescor)$cov
     message(paste("Computing predicted values of a multivariate model. \n", 
                   "This may take a while."))
@@ -768,8 +780,8 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   } else if (use_cov(autocor) && (get_ar(autocor) || get_ma(autocor))) {
     # special family for ARMA models using residual covariance matrices
     family$family <- paste0(family$family, "_cov")
-    samples$ar <- posterior_samples(object, pars = "^ar\\[", as.matrix = TRUE)
-    samples$ma <- posterior_samples(object, pars = "^ma\\[", as.matrix = TRUE)
+    samples$ar <- do.call(posterior_samples, c(args, pars = "^ar\\["))
+    samples$ma <- do.call(posterior_samples, c(args, pars = "^ma\\["))
   } 
   
   is_catordinal <- is.ordinal(family) || is.categorical(family)
@@ -797,14 +809,14 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (grepl("^multi_", family$family)) {
     reorder <- ulapply(1:data$K_trait, seq, to = data$N, by = data$K_trait)
     # observations in columns
-    out <- out[, reorder]  
+    out <- out[, reorder, drop = FALSE]  
     colnames(out) <- 1:ncol(out) 
   }
   # reorder predicted responses to be in the initial user defined order
   # currently only relevant for autocorrelation models 
   old_order <- attr(data, "old_order")
   if (!is.null(old_order)) {
-    out <- out[, old_order]  
+    out <- out[, old_order, drop = FALSE]  
     colnames(out) <- 1:ncol(out) 
   }
   # transform predicted response samples before summarizing them 
@@ -868,7 +880,8 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                            scale = c("response", "linear"),
                            allow_new_levels = FALSE,
-                           summary = TRUE, probs = c(0.025, 0.975), ...) {
+                           summary = TRUE, probs = c(0.025, 0.975), 
+                           subset = NULL, nsamples = NULL, ...) {
   scale <- match.arg(scale)
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
@@ -882,8 +895,13 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     data <- amend_newdata(newdata, fit = object, re_formula = re_formula,
                           allow_new_levels = allow_new_levels)
   }
+  
+  if (is.null(subset) && !is.null(nsamples)) {
+    subset <- sample(Nsamples(object), nsamples)
+  }
   # get mu and scale it appropriately
-  mu <- linear_predictor(object, newdata = data, re_formula = re_formula)
+  mu <- linear_predictor(object, newdata = data, subset = subset, 
+                         re_formula = re_formula)
   if (scale == "response") {
     # see fitted.R
     mu <- fitted_response(object, eta = mu, data = data)
@@ -892,7 +910,7 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   # currently only relevant for autocorrelation models 
   old_order <- attr(data, "old_order")
   if (!is.null(old_order)) {
-    mu <- mu[, old_order]  
+    mu <- mu[, old_order, drop = FALSE]  
     colnames(mu) <- 1:ncol(mu) 
   }
   if (summary) {
@@ -939,7 +957,7 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 residuals.brmsfit <- function(object, re_formula = NULL, 
                               type = c("ordinary", "pearson"), 
                               summary = TRUE, probs = c(0.025, 0.975), 
-                              ...) {
+                              subset = NULL, nsamples = NULL, ...) {
   type <- match.arg(type)
   family <- family(object)
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
@@ -947,17 +965,21 @@ residuals.brmsfit <- function(object, re_formula = NULL,
   if (is.ordinal(family) || is.categorical(family))
     stop(paste("residuals not yet implemented for family", family$family))
   
+  if (is.null(subset) && !is.null(nsamples)) {
+    subset <- sample(Nsamples(object), nsamples)
+  }
   standata <- standata(object, re_formula = re_formula)
-  mu <- fitted(object, re_formula = re_formula, summary = FALSE)
+  mu <- fitted(object, re_formula = re_formula, summary = FALSE,
+               subset = subset)
   Y <- matrix(rep(as.numeric(standata$Y), nrow(mu)), 
               nrow = nrow(mu), byrow = TRUE)
   res <- Y - mu
   colnames(res) <- NULL
   if (type == "pearson") {
     # get predicted standard deviation for each observation
-    sd <- matrix(rep(predict(object, re_formula = re_formula, 
-                             summary = TRUE)[, 2], nrow(mu)), 
-                 nrow = nrow(mu), byrow = TRUE)
+    sd <- predict(object, re_formula = re_formula, 
+                  summary = TRUE, subset = subset)[, 2]
+    sd <- matrix(rep(sd, nrow(mu)), nrow = nrow(mu), byrow = TRUE)
     res <- res / sd
   }
   if (summary) {

@@ -6,7 +6,8 @@
 \usage{
 \method{fitted}{brmsfit}(object, newdata = NULL, re_formula = NULL,
   scale = c("response", "linear"), allow_new_levels = FALSE,
-  summary = TRUE, probs = c(0.025, 0.975), ...)
+  summary = TRUE, probs = c(0.025, 0.975), subset = NULL,
+  nsamples = NULL, ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}}
@@ -36,6 +37,15 @@ instead of the raw values. Default is \code{TRUE}}
 \item{probs}{The percentiles to be computed 
 by the \code{quantile} function. 
 Only used if \code{summary} is \code{TRUE}.}
+
+\item{subset}{A numeric vector specifying
+the posterior samples to be used. 
+If \code{NULL} (the default), all samples are used.}
+
+\item{nsamples}{Positive integer indicating how many 
+posterior samples should be used. 
+If \code{NULL} (the default) all samples are used.
+Ignored if \code{subset != NULL}.}
 
 \item{...}{Currently ignored}
 }

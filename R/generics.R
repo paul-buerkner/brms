@@ -241,8 +241,8 @@ hypothesis <- function(x, hypothesis, ...)
 #' @param add_chains A flag indicating if the returned data.frame 
 #'   should contain information on the chains
 #' @param subset A numeric vector indicating the rows 
-#'        (i.e., posterior samples) to be returned. 
-#'        If \code{NULL} (the default), all  posterior samples are returned.
+#'   (i.e., posterior samples) to be returned. 
+#'   If \code{NULL} (the default), all  posterior samples are returned.
 #' @param as.matrix Should the output be a \code{matrix} 
 #'   instead of a \code{data.frame}? Defaults to \code{FALSE}
 #' @param ... additional arguments

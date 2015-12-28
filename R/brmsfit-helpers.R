@@ -417,7 +417,8 @@ extract_pars <- function(pars, all_pars, exact_match = FALSE,
   pars
 }
 
-linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
+linear_predictor <- function(x, newdata = NULL, re_formula = NULL,
+                             subset = NULL) {
   # compute the linear predictor (eta) for brms models
   #
   # Args:
@@ -427,6 +428,8 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
   #            to fit the model is applied.
   #   re_formula: formula containing random effects 
   #               to be considered in the prediction
+  #   subset: A numeric vector indicating the posterior samples to be used.
+  #           If NULL, all samples are used.
   #
   # Returns:
   #   usually, an S x N matrix where S is the number of samples
@@ -447,15 +450,20 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
   
   family <- family(x)
   ee <- extract_effects(new_formula, family = family)
-  Nsamples <- Nsamples(x)
-  eta <- matrix(0, nrow = Nsamples, ncol = data$N)
+  args <- list(x = x, as.matrix = TRUE, subset = subset)
+  if (!is.null(subset)) {
+    nsamples <- length(subset)
+  } else {
+    nsamples <- Nsamples(x)
+  }
+  eta <- matrix(0, nrow = nsamples, ncol = data$N)
   X <- data$X
   if (!is.null(X) && ncol(X) && !is.categorical(family)) {
-    b <- posterior_samples(x, pars = "^b_[^\\[]+$", as.matrix = TRUE)
+    b <- do.call(posterior_samples, c(args, pars = "^b_[^\\[]+$"))
     eta <- eta + fixef_predictor(X = X, b = b)  
   }
   if (!is.null(data$offset)) {
-    eta <- eta + matrix(rep(data$offset, Nsamples), 
+    eta <- eta + matrix(rep(data$offset, nsamples), 
                         ncol = data$N, byrow = TRUE)
   }
   
@@ -474,8 +482,8 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
         Z <- as.matrix(get(paste0("Z_",group[i]), data))
         gf <- get(group[i], data)
       }
-      r <- posterior_samples(x, pars = paste0("^r_",group[i],"\\["),
-                             as.matrix = TRUE)
+      r <- do.call(posterior_samples, 
+                   c(args, pars = paste0("^r_",group[i],"\\[")))
       if (is.null(r)) {
         stop(paste("Random effects for each level of grouping factor",
                    group[i], "not found. Please set ranef = TRUE",
@@ -497,11 +505,11 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
     # incorporate ARR effects
     if (old_autocor) {
       Yarr <- as.matrix(data$Yar)
-      arr <- posterior_samples(x, pars = "^ar\\[", as.matrix = TRUE)
+      arr <- do.call(posterior_samples, c(args, pars = "^ar\\["))
     } else {
       # brms > 0.5.0
       Yarr <- as.matrix(data$Yarr)
-      arr <- posterior_samples(x, pars = "^arr\\[", as.matrix = TRUE)
+      arr <- do.call(posterior_samples, c(args, pars = "^arr\\["))
     }
     eta <- eta + fixef_predictor(X = Yarr, b = arr)
   }
@@ -510,19 +518,19 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
     if (old_autocor) {
       ar <- NULL
     } else {
-      ar <- posterior_samples(x, pars = "^ar\\[", as.matrix = TRUE)
+      ar <- do.call(posterior_samples, c(args, pars = "^ar\\["))
     }
-    ma <- posterior_samples(x, pars = "^ma\\[", as.matrix = TRUE)
+    ma <- do.call(posterior_samples, c(args, pars = "^ma\\["))
     eta <- arma_predictor(data = data, ar = ar, ma = ma, 
                           eta = eta, link = x$link)
   }
   
   # transform eta to to etap for ordinal and categorical models
   if (is.ordinal(family)) {
-    Intercept <- posterior_samples(x, "^b_Intercept\\[", as.matrix = TRUE)
+    Intercept <- do.call(posterior_samples, c(args, pars = "^b_Intercept\\["))
     if (!is.null(data$Xp) && ncol(data$Xp)) {
-      p <- posterior_samples(x, paste0("^b_", colnames(data$Xp), "\\["),
-                             as.matrix = TRUE)
+      p <- do.call(posterior_samples, 
+                   c(args, pars = paste0("^b_", colnames(data$Xp), "\\[")))
       etap <- partial_predictor(Xp = data$Xp, p = p, ncat = data$max_obs)
     } else {
       etap <- array(0, dim = c(dim(eta), data$max_obs-1))
@@ -538,7 +546,7 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL) {
     eta <- etap
   } else if (is.categorical(family)) {
     if (!is.null(data$X)) {
-      p <- posterior_samples(x, pars = "^b_", as.matrix = TRUE)
+      p <- do.call(posterior_samples, c(args, pars = "^b_"))
       etap <- partial_predictor(data$X, p, data$max_obs)
     } else {
       etap <- array(0, dim = c(dim(eta), data$max_obs - 1))
