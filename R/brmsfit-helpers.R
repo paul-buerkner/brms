@@ -418,7 +418,7 @@ extract_pars <- function(pars, all_pars, exact_match = FALSE,
 }
 
 linear_predictor <- function(x, newdata = NULL, re_formula = NULL,
-                             subset = NULL) {
+                             allow_new_levels = FALSE, subset = NULL) {
   # compute the linear predictor (eta) for brms models
   #
   # Args:
@@ -469,35 +469,33 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL,
   
   # incorporate random effects
   group <- names(new_ranef)
-  if (length(group)) {
-    for (i in 1:length(group)) {
-      if (any(grepl(paste0("^J_"), names(data)))) {  # implies brms > 0.4.1
-        # create a single RE design matrix for every grouping factor
-        Z <- lapply(which(ee$group == group[i]), 
-                    function(k) get(paste0("Z_",k), data))
-        Z <- do.call(cbind, Z)
-        id <- match(group[i], ee$group)
-        gf <- get(paste0("J_",id), data)
-      } else {  # implies brms <= 0.4.1
-        Z <- as.matrix(get(paste0("Z_",group[i]), data))
-        gf <- get(group[i], data)
-      }
-      r <- do.call(posterior_samples, 
-                   c(args, pars = paste0("^r_",group[i],"\\[")))
-      if (is.null(r)) {
-        stop(paste("Random effects for each level of grouping factor",
-                   group[i], "not found. Please set ranef = TRUE",
-                   "when calling brm."))
-      }
-      # match columns of Z with corresponding RE estimates
-      n_levels <- ngrps(x)[[group[[i]]]]
-      used_re <- ulapply(new_ranef[[group[i]]], match, x$ranef[[group[i]]])
-      used_re_pars <- ulapply(used_re, function(r) 
-                              1:n_levels + (r - 1) * n_levels)
-      r <- r[, used_re_pars, drop = FALSE]
-      # add REs to linear predictor
-      eta <- eta + ranef_predictor(Z = Z, gf = gf, r = r) 
+  for (i in seq_along(group)) {
+    if (any(grepl(paste0("^J_"), names(data)))) {  # implies brms > 0.4.1
+      # create a single RE design matrix for every grouping factor
+      Z <- lapply(which(ee$group == group[i]), 
+                  function(k) get(paste0("Z_",k), data))
+      Z <- do.call(cbind, Z)
+      id <- match(group[i], ee$group)
+      gf <- get(paste0("J_",id), data)
+    } else {  # implies brms <= 0.4.1
+      Z <- as.matrix(get(paste0("Z_",group[i]), data))
+      gf <- get(group[i], data)
     }
+    r <- do.call(posterior_samples, 
+                 c(args, pars = paste0("^r_",group[i],"\\[")))
+    if (is.null(r)) {
+      stop(paste("Random effects for each level of grouping factor",
+                 group[i], "not found. Please set ranef = TRUE",
+                 "when calling brm."))
+    }
+    # match columns of Z with corresponding RE estimates
+    n_levels <- ngrps(x)[[group[[i]]]]
+    used_re <- ulapply(new_ranef[[group[i]]], match, x$ranef[[group[i]]])
+    used_re_pars <- ulapply(used_re, function(j) 
+                            1:n_levels + (j - 1) * n_levels)
+    r <- r[, used_re_pars, drop = FALSE]
+    # add REs to linear predictor
+    eta <- eta + ranef_predictor(Z = Z, gf = gf, r = r) 
   }
   # indicates if the model was fitted with brms <= 0.5.0
   old_autocor <- is.null(x$autocor$r)
@@ -591,19 +589,35 @@ ranef_predictor <- function(Z, gf, r) {
     stop("r must be a matrix")
   nranef <- ncol(Z)
   max_levels <- ncol(r) / nranef
-  Z <- expand_matrix(Z, gf)
-  levels <- unique(gf)
+  has_new_levels <- anyNA(gf)
+  if (has_new_levels) {
+    # if new levels are present (only if allow_new_levels is TRUE)
+    new_r <- matrix(nrow = nrow(r), ncol = nranef)
+    for (k in 1:nranef) {
+      # sample values of the new level for each random effect
+      indices <- ((k - 1) * max_levels + 1):(k * max_levels)
+      new_r[, k] <- apply(r[, indices], MARGIN = 1, FUN = sample, size = 1)
+    }
+    gf[is.na(gf)] <- max_levels + 1
+  } else { 
+    new_r <- matrix(nrow = nrow(r), ncol = 0)
+  }
   # sort levels because we need row major instead of column major order
   sort_levels <- ulapply(1:max_levels, function(l) 
                          seq(l, ncol(r), max_levels))
+  r <- cbind(r[, sort_levels, drop = FALSE], new_r)
+  if (has_new_levels) max_levels <- max_levels + 1
+  # compute RE part of eta
+  Z <- expand_matrix(Z, gf)
+  levels <- unique(gf)
   if (length(levels) < max_levels) {
     # if only a subset of levels is provided (only for newdata)
     take_levels <- ulapply(levels, function(l) 
                            ((l - 1) * nranef + 1):(l * nranef))
-    eta <- r[, sort_levels][, take_levels, drop = FALSE] %*% 
+    eta <- r[, take_levels, drop = FALSE] %*% 
            t(Z[, take_levels, drop = FALSE])
   } else {
-    eta <- r[, sort_levels] %*% t(Z)
+    eta <- r %*% t(Z)
   }
   eta
 }

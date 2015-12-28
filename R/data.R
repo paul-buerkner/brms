@@ -126,10 +126,6 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   #
   # Returns:
   #   updated data.frame being compatible with fit$formula
-  if (allow_new_levels) {
-    # TODO
-    stop("New random effects levels are not yet allowed")
-  }
   if (use_cov(fit$autocor)) {
     stop(paste("predictions with new data are not yet possible", 
                "for ARMA covariance models"))
@@ -199,7 +195,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       new_levels <- unique(gf)
       old_levels <- attr(new_ranef[[i]], "levels")
       unknown_levels <- setdiff(new_levels, old_levels)
-      if (length(unknown_levels)) {
+      if (!allow_new_levels && length(unknown_levels)) {
         stop(paste("levels", paste0(unknown_levels, collapse = ", "), 
                    "of grouping factor", gnames[i], 
                    "not found in the fitted model"))
