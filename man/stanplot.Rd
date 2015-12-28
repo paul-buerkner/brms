@@ -8,7 +8,7 @@
 \method{stanplot}{brmsfit}(object, pars = NA, type = "plot",
   exact_match = FALSE, quiet = FALSE, ...)
 
-stanplot(object, pars, type = "plot", ...)
+stanplot(object, pars, ...)
 }
 \arguments{
 \item{object}{An R object typically of class \code{brmsfit}}
@@ -58,11 +58,6 @@ Instead of using \code{stanplot(<brmsfit-object>)},
   \code{\link[brms:launch_shiny]{launch_shiny}} 
   in \pkg{brms} for flexible and interactive visual analysis.
 }
-\section{Methods (by class)}{
-\itemize{
-\item \code{brmsfit}: A fitted model object returned by function
-\code{\link[brms:brm]{brm}}
-}}
 \examples{
 \dontrun{
 model <- brm(count ~ log_Age_c + log_Base4_c * Trt_c 

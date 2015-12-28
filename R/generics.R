@@ -32,9 +32,6 @@ brmssummary <- function(formula = NULL, family = "", link = "",
 #' 
 #' @aliases fixef.brmsfit
 #' 
-#' @usage ## S3 method for class 'brmsfit'
-#' fixef(x, estimate = "mean", ...) 
-#' 
 #' @param x An object of class \code{brmsfit}
 #' @param estimate A character vector specifying which coefficients 
 #'  (e.g., "mean", "median", "sd", or "quantile") 
@@ -55,7 +52,7 @@ brmssummary <- function(formula = NULL, family = "", link = "",
 #' }
 #' 
 #' @export
-fixef <- function(x, estimate = "mean", ...) 
+fixef <- function(x, ...) 
   UseMethod("fixef")
 
 #' Extract Random Effects for \code{brmsfit} objects
@@ -64,9 +61,6 @@ fixef <- function(x, estimate = "mean", ...)
 #' of each level from a fitted model object. 
 #' 
 #' @aliases ranef.brmsfit
-#' 
-#' @usage ## S3 method for class 'brmsfit'
-#' ranef(x, estimate = "mean", var = FALSE, ...)
 #' 
 #' @param x An object of a class of fitted models with random effects, 
 #'  typically a \code{brmsfit} object.
@@ -95,7 +89,7 @@ fixef <- function(x, estimate = "mean", ...)
 #' }
 #' 
 #' @export
-ranef <- function(x, estimate = "mean", var = FALSE, ...) 
+ranef <- function(x, ...) 
   UseMethod("ranef")
 
 #' Extract variance and correlation components
@@ -107,9 +101,6 @@ ranef <- function(x, estimate = "mean", var = FALSE, ...)
 #' correlations and covariances are also returned. 
 #' 
 #' @aliases VarCorr.brmsfit
-#' 
-#' @usage ## S3 method for class 'brmsfit'
-#' VarCorr(x, estimate = "mean", as.list = TRUE, ...)
 #' 
 #' @param x A fitted model object usually of class \code{brmsift}
 #' @param estimate A character vector specifying which coefficients 
@@ -143,7 +134,7 @@ ranef <- function(x, estimate = "mean", var = FALSE, ...)
 #' }
 #' 
 #' @export
-VarCorr <- function(x, estimate = "mean", as.list = TRUE, ...) 
+VarCorr <- function(x, ...) 
   UseMethod("VarCorr")
 
 #' Number of levels
@@ -230,8 +221,7 @@ ngrps <- function(object, ...)
 #' }
 #' 
 #' @export
-hypothesis <- function(x, hypothesis, class = "b", group = "", 
-                       alpha = 0.05, ...)
+hypothesis <- function(x, hypothesis, ...)
   UseMethod("hypothesis")
 
 #' Extract posterior samples
@@ -325,7 +315,7 @@ posterior.samples <- function(x, pars = NA, ...)
 #' }
 #' 
 #' @export 
-prior_samples <- function(x, pars = NA, parameters = NA, ...)
+prior_samples <- function(x, pars = NA, ...)
   UseMethod("prior_samples")
 
 #' Extract Parameter Names
@@ -575,5 +565,5 @@ standata <- function(object, ...)
 #' }
 #' 
 #' @export
-stanplot <- function(object, pars, type = "plot", ...)
+stanplot <- function(object, pars, ...)
   UseMethod("stanplot")

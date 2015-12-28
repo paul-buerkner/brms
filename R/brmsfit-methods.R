@@ -5,6 +5,7 @@ parnames.brmsfit <- function(x, ...) {
   dimnames(x$fit)$parameters
 }
 
+#' @rdname fixef
 #' @export
 fixef.brmsfit <-  function(x, estimate = "mean", ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
@@ -52,6 +53,7 @@ vcov.brmsfit <- function(object, correlation = FALSE, ...) {
   }
 }
 
+#' @rdname ranef
 #' @export
 ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
@@ -112,6 +114,7 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, ...) {
   ranef 
 } 
 
+#' @rdname VarCorr
 #' @import abind
 #' @export
 VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
@@ -247,6 +250,7 @@ posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,
   samples
 }
 
+#' @rdname prior_samples
 #' @export
 prior_samples.brmsfit <- function(x, pars = NA, parameters = NA, ...) {
   if (is.na(pars[1])) 
@@ -548,8 +552,7 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5,
   }
 }
 
-#' @describeIn stanplot A fitted model object returned by function
-#'                      \code{\link[brms:brm]{brm}} 
+#' @rdname stanplot
 #' @export
 stanplot.brmsfit <- function(object, pars = NA, type = "plot", 
                              exact_match = FALSE, quiet = FALSE, ...) {
@@ -1122,6 +1125,7 @@ logLik.brmsfit <- function(object, ...) {
   loglik
 }
 
+#' @rdname hypothesis
 #' @export
 hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
                                alpha = 0.05, ...) {
