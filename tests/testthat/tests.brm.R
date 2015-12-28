@@ -12,14 +12,18 @@ test_that("all S3 methods have reasonable ouputs", {
   # family
   expect_equal(family(fit), family("poisson", link = "log"))
   # fitted
-  fitted_old <- fitted(fit)
-  expect_equal(dim(fitted_old), c(nrow(epilepsy), 4))
-  expect_equal(colnames(fitted_old), 
+  fitted1 <- fitted(fit)
+  expect_equal(dim(fitted1), c(nrow(epilepsy), 4))
+  expect_equal(colnames(fitted1), 
                c("Estimate", "Est.Error", "2.5%ile", "97.5%ile"))
   newdata <- data.frame(log_Age_c = c(0, -0.2), visit = c(1, 4),
                         Trt_c = c(-0.2, 0.5))
-  fitted_new <- fitted(fit, newdata = newdata)
-  expect_equal(dim(fitted_new), c(2, 4))
+  fitted2 <- fitted(fit, newdata = newdata)
+  expect_equal(dim(fitted2), c(2, 4))
+  newdata$visit <- c(1, 6)
+  fitted3 <- fitted(fit, newdata = newdata, 
+                    allow_new_levels = TRUE)
+  expect_equal(dim(fitted3), c(2, 4))
   # fixef
   fixef <- fixef(fit, estimate = c("mean", "sd"))  
   expect_equal(dimnames(fixef), list(c("Intercept", "Trt_c"),
@@ -69,16 +73,20 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(names(posterior_samples(fit, pars = "^b_")),
                c("b_Intercept", "b_Trt_c"))
   # predict
-  predict_old <- predict(fit)
-  expect_equal(dim(predict_old), c(nrow(epilepsy), 4))
-  expect_equal(colnames(predict_old), 
+  predict1 <- predict(fit)
+  expect_equal(dim(predict1), c(nrow(epilepsy), 4))
+  expect_equal(colnames(predict1), 
                c("Estimate", "Est.Error", "2.5%ile", "97.5%ile"))
   expect_equal(dim(predict(fit, nsamples = 10, probs = 0.5)), 
                c(nrow(epilepsy), 3))
   newdata <- data.frame(log_Age_c = c(0, -0.2), visit = c(1, 4),
                         Trt_c = c(-0.2, 0.5))
-  predict_new <- predict(fit, newdata = newdata)
-  expect_equal(dim(predict_new), c(2, 4))
+  predict2 <- predict(fit, newdata = newdata)
+  expect_equal(dim(predict2), c(2, 4))
+  newdata$visit <- c(1, 6)
+  predict3 <- predict(fit, newdata = newdata, 
+                      allow_new_levels = TRUE)
+  expect_equal(dim(predict3), c(2, 4))
   # print
   expect_silent(capture.output(print(fit)))
   # prior_samples
@@ -94,10 +102,15 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(dim(.ranef$visit), c(4, 2))
   expect_equal(dim(attr(.ranef$visit, "var")), c(2, 2, 4))
   # residuals
-  res <- residuals(fit, type = "pearson", probs = c(0.65))
-  expect_equal(dim(res), c(236, 3))
-  res2 <- residuals(fit, newdata = epilepsy[1:10, ])
+  res1 <- residuals(fit, type = "pearson", probs = c(0.65))
+  expect_equal(dim(res1), c(236, 3))
+  newdata <- epilepsy[1:10, ]
+  res2 <- residuals(fit, newdata = newdata)
   expect_equal(dim(res2), c(10, 4))
+  newdata$visit <- rep(1:5, 2)
+  res3 <- residuals(fit, newdata = newdata,
+                    allow_new_levels = TRUE)
+  expect_equal(dim(res3), c(10, 4))
   # stancode
   expect_true(is.character(stancode(fit)))
   expect_silent(capture.output(print(stancode(fit))))
