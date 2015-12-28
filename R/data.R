@@ -166,11 +166,12 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     # validating is possible (implies brms > 0.5.0)
     list_data <- as.list(fit$data)
     is_factor <- sapply(list_data, is.factor)
-    factors <- list_data[is_factor]
+    is_group <- names(list_data) %in% names(new_ranef)
+    factors <- list_data[is_factor & !is_group]
     if (length(factors)) {
       factor_names <- names(factors)
       factor_levels <- lapply(factors, levels) 
-      for (i in 1:length(factors)) {
+      for (i in seq_along(factors)) {
         new_factor <- newdata[[factor_names[i]]]
         if (!is.null(new_factor)) {
           if (!is.factor(new_factor)) {
@@ -193,7 +194,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   # validate grouping factors
   if (length(new_ranef)) {
     gnames <- names(new_ranef)
-    for (i in 1:length(gnames)) {
+    for (i in seq_along(gnames)) {
       gf <- as.character(get(gnames[i], newdata))
       new_levels <- unique(gf)
       old_levels <- attr(new_ranef[[i]], "levels")
