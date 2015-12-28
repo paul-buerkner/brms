@@ -639,9 +639,8 @@ pairs.brmsfit <- function(x, pars = NA, exact_match = FALSE, ...) {
 #' (posterior predictive checks) or for new data.
 #' 
 #' @param object An object of class \code{brmsfit}
-#' @param newdata An optional data.frame containing 
-#'   new data to make predictions for.
-#'   If \code{NULL} (default), the data used to fit the model is applied.
+#' @param newdata An optional data.frame for which to evaluate predictions.
+#'   If \code{NULL} (default), the orginal data of the model is used.
 #' @param re_formula formula containing random effects 
 #'   to be considered in the prediction. 
 #'   If \code{NULL} (default), include all random effects; 
@@ -737,21 +736,15 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     stop("The model does not contain posterior samples")
   family <- family(object)
   ee <- extract_effects(object$formula, family = family)
-  # use newdata if defined
-  if (is.null(newdata)) {
-    data <- standata(object, re_formula = re_formula,
-                     control = list(keep_intercept = TRUE, save_order = TRUE))
-  } else {
-    data <- amend_newdata(newdata, fit = object, re_formula = re_formula,
-                          allow_new_levels = allow_new_levels)
-  }
-  
+  standata <- amend_newdata(newdata, fit = object, re_formula = re_formula,
+                            allow_new_levels = allow_new_levels)
+
   # compute all necessary samples
   if (is.null(subset) && !is.null(nsamples)) {
     subset <- sample(Nsamples(object), nsamples)
   }
   nresp <- length(ee$response)
-  eta <- linear_predictor(object, newdata = data, subset = subset,
+  eta <- linear_predictor(object, newdata = standata, subset = subset,
                           re_formula = re_formula)
   samples <- list(eta = eta)
   args <- list(x = object, as.matrix = TRUE, subset = subset) 
@@ -788,17 +781,17 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   # see predict.R
   predict_fun <- get(paste0("predict_", family$family), mode = "function")
   call_predict_fun <- function(n) {
-    do.call(predict_fun, list(n = n, data = data, samples = samples, 
+    do.call(predict_fun, list(n = n, data = standata, samples = samples, 
                               link = family$link, ntrys = ntrys))
   }
-  N <- if (!is.null(data$N_trait)) data$N_trait
-       else if (!is.null(data$N_tg)) data$N_tg
-       else data$N
+  N <- if (!is.null(standata$N_trait)) data$N_trait
+       else if (!is.null(data$N_tg)) standata$N_tg
+       else standata$N
   out <- do.call(cbind, lapply(1:N, call_predict_fun))
   
   # percentage of invalid samples for truncated discrete models
   # should always be zero for all other models
-  pct_invalid <- get_pct_invalid(out, data = data)  # see predict.R
+  pct_invalid <- get_pct_invalid(out, data = standata)  # see predict.R
   if (pct_invalid >= 0.01) {
     warning(paste0(round(pct_invalid * 100), "% of all predicted values ", 
                    "were invalid. Increasing argument ntrys may help."))
@@ -807,14 +800,14 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   # reorder predicted responses in case of multivariate models
   # as they are sorted after units first not after traits
   if (grepl("^multi_", family$family)) {
-    reorder <- ulapply(1:data$K_trait, seq, to = data$N, by = data$K_trait)
+    reorder <- with(standata, ulapply(1:K_trait, seq, to = N, by = K_trait))
     # observations in columns
     out <- out[, reorder, drop = FALSE]  
     colnames(out) <- 1:ncol(out) 
   }
   # reorder predicted responses to be in the initial user defined order
   # currently only relevant for autocorrelation models 
-  old_order <- attr(data, "old_order")
+  old_order <- attr(standata, "old_order")
   if (!is.null(old_order)) {
     out <- out[, old_order, drop = FALSE]  
     colnames(out) <- 1:ncol(out) 
@@ -827,7 +820,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     out <- get_summary(out, probs = probs)
   } else if (summary && is_catordinal) { 
     # compute frequencies of categories for categorical and ordinal models
-    out <- get_table(out, levels = 1:max(data$max_obs)) 
+    out <- get_table(out, levels = 1:max(standata$max_obs)) 
   }
   out
 }
@@ -887,28 +880,22 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     stop("The model does not contain posterior samples")
   family <- family(object)
   ee <- extract_effects(object$formula, family = family)
-  # use newdata if defined
-  if (is.null(newdata)) {
-    data <- standata(object, re_formula = re_formula,
-                     control = list(keep_intercept = TRUE, save_order = TRUE))
-  } else {
-    data <- amend_newdata(newdata, fit = object, re_formula = re_formula,
-                          allow_new_levels = allow_new_levels)
-  }
+  standata <- amend_newdata(newdata, fit = object, re_formula = re_formula,
+                            allow_new_levels = allow_new_levels)
   
   if (is.null(subset) && !is.null(nsamples)) {
     subset <- sample(Nsamples(object), nsamples)
   }
   # get mu and scale it appropriately
-  mu <- linear_predictor(object, newdata = data, subset = subset, 
+  mu <- linear_predictor(object, newdata = standata, subset = subset, 
                          re_formula = re_formula)
   if (scale == "response") {
     # see fitted.R
-    mu <- fitted_response(object, eta = mu, data = data)
+    mu <- fitted_response(object, eta = mu, data = standata)
   }
   # reorder fitted values to be in the initial user defined order
   # currently only relevant for autocorrelation models 
-  old_order <- attr(data, "old_order")
+  old_order <- attr(standata, "old_order")
   if (!is.null(old_order)) {
     mu <- mu[, old_order, drop = FALSE]  
     colnames(mu) <- 1:ncol(mu) 
@@ -966,28 +953,23 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (is.ordinal(family) || is.categorical(family))
     stop(paste("residuals not yet implemented for family", family$family))
   
-  # use newdata if defined
-  if (is.null(newdata)) {
-    data <- standata(object, re_formula = re_formula,
-                     control = list(keep_intercept = TRUE, save_order = TRUE))
-  } else {
-    data <- amend_newdata(newdata, fit = object, re_formula = re_formula,
-                          allow_new_levels = allow_new_levels, 
-                          check_response = TRUE)
-  }
-  
+  standata <- amend_newdata(newdata, fit = object, re_formula = re_formula,
+                            allow_new_levels = allow_new_levels, 
+                            check_response = TRUE)
   if (is.null(subset) && !is.null(nsamples)) {
     subset <- sample(Nsamples(object), nsamples)
   }
-  mu <- fitted(object, newdata = newdata, re_formula = re_formula, 
+  mu <- fitted(object, newdata = standata, re_formula = re_formula, 
+               allow_new_levels = allow_new_levels, 
                summary = FALSE, subset = subset)
-  Y <- matrix(rep(as.numeric(data$Y), nrow(mu)), 
+  Y <- matrix(rep(as.numeric(standata$Y), nrow(mu)), 
               nrow = nrow(mu), byrow = TRUE)
   res <- Y - mu
   colnames(res) <- NULL
   if (type == "pearson") {
     # get predicted standard deviation for each observation
-    sd <- predict(object, newdata = newdata, re_formula = re_formula, 
+    sd <- predict(object, newdata = standata, re_formula = re_formula, 
+                  allow_new_levels = allow_new_levels, 
                   summary = TRUE, subset = subset)[, 2]
     sd <- matrix(rep(sd, nrow(mu)), nrow = nrow(mu), byrow = TRUE)
     res <- res / sd

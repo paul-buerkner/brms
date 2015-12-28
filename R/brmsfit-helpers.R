@@ -423,9 +423,8 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL,
   #
   # Args:
   #   x: a brmsfit object
-  #   newdata: optional data.frame containing new data to make predictions for.
-  #            If \code{NULL} (the default), the data used 
-  #            to fit the model is applied.
+  #   newdata: optional list as returned by amend_newdata.
+  #            If NULL, the standata method will be called
   #   re_formula: formula containing random effects 
   #               to be considered in the prediction
   #   subset: A numeric vector indicating the posterior samples to be used.

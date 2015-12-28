@@ -12,9 +12,8 @@
 \arguments{
 \item{object}{An object of class \code{brmsfit}}
 
-\item{newdata}{An optional data.frame containing 
-new data to make predictions for.
-If \code{NULL} (default), the data used to fit the model is applied.}
+\item{newdata}{An optional data.frame for which to evaluate predictions.
+If \code{NULL} (default), the orginal data of the model is used.}
 
 \item{re_formula}{formula containing random effects 
 to be considered in the prediction. 

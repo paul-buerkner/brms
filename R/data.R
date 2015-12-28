@@ -126,6 +126,14 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   #
   # Returns:
   #   updated data.frame being compatible with fit$formula
+  if (is.null(newdata) || is(newdata, "list")) {
+    # to shorten expressions in S3 methods such as predict.brmsfit
+    if (return_standata && is.null(newdata)) {
+      control <- list(keep_intercept = TRUE, save_order = TRUE)
+      newdata <- standata(fit, re_formula = re_formula, control = control)
+    }
+    return(newdata)
+  } 
   if (use_cov(fit$autocor)) {
     stop(paste("predictions with new data are not yet possible", 
                "for ARMA covariance models"))
