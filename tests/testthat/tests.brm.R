@@ -73,6 +73,8 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(dim(predict_old), c(nrow(epilepsy), 4))
   expect_equal(colnames(predict_old), 
                c("Estimate", "Est.Error", "2.5%ile", "97.5%ile"))
+  expect_equal(dim(predict(fit, nsamples = 10, probs = 0.5)), 
+               c(nrow(epilepsy), 3))
   newdata <- data.frame(log_Age_c = c(0, -0.2), visit = c(1, 4),
                         Trt_c = c(-0.2, 0.5))
   predict_new <- predict(fit, newdata = newdata)
@@ -94,6 +96,8 @@ test_that("all S3 methods have reasonable ouputs", {
   # residuals
   res <- residuals(fit, type = "pearson", probs = c(0.65))
   expect_equal(dim(res), c(236, 3))
+  res2 <- residuals(fit, newdata = epilepsy[1:10, ])
+  expect_equal(dim(res2), c(10, 4))
   # stancode
   expect_true(is.character(stancode(fit)))
   expect_silent(capture.output(print(stancode(fit))))

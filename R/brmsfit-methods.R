@@ -731,8 +731,8 @@ pairs.brmsfit <- function(x, pars = NA, exact_match = FALSE, ...) {
 #' @export 
 predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                             transform = NULL, allow_new_levels = FALSE,
-                            summary = TRUE, probs = c(0.025, 0.975), 
-                            subset = NULL, nsamples = NULL, ntrys = 5, ...) {
+                            subset = NULL, nsamples = NULL, ntrys = 5, 
+                            summary = TRUE, probs = c(0.025, 0.975), ...) {
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
   family <- family(object)
@@ -880,8 +880,8 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                            scale = c("response", "linear"),
                            allow_new_levels = FALSE,
-                           summary = TRUE, probs = c(0.025, 0.975), 
-                           subset = NULL, nsamples = NULL, ...) {
+                           subset = NULL, nsamples = NULL, 
+                           summary = TRUE, probs = c(0.025, 0.975), ...) {
   scale <- match.arg(scale)
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
@@ -954,10 +954,11 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' }
 #' 
 #' @export
-residuals.brmsfit <- function(object, re_formula = NULL, 
+residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL, 
                               type = c("ordinary", "pearson"), 
-                              summary = TRUE, probs = c(0.025, 0.975), 
-                              subset = NULL, nsamples = NULL, ...) {
+                              allow_new_levels = FALSE,
+                              subset = NULL, nsamples = NULL,
+                              summary = TRUE, probs = c(0.025, 0.975), ...) {
   type <- match.arg(type)
   family <- family(object)
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
@@ -965,19 +966,28 @@ residuals.brmsfit <- function(object, re_formula = NULL,
   if (is.ordinal(family) || is.categorical(family))
     stop(paste("residuals not yet implemented for family", family$family))
   
+  # use newdata if defined
+  if (is.null(newdata)) {
+    data <- standata(object, re_formula = re_formula,
+                     control = list(keep_intercept = TRUE, save_order = TRUE))
+  } else {
+    data <- amend_newdata(newdata, fit = object, re_formula = re_formula,
+                          allow_new_levels = allow_new_levels, 
+                          check_response = TRUE)
+  }
+  
   if (is.null(subset) && !is.null(nsamples)) {
     subset <- sample(Nsamples(object), nsamples)
   }
-  standata <- standata(object, re_formula = re_formula)
-  mu <- fitted(object, re_formula = re_formula, summary = FALSE,
-               subset = subset)
-  Y <- matrix(rep(as.numeric(standata$Y), nrow(mu)), 
+  mu <- fitted(object, newdata = newdata, re_formula = re_formula, 
+               summary = FALSE, subset = subset)
+  Y <- matrix(rep(as.numeric(data$Y), nrow(mu)), 
               nrow = nrow(mu), byrow = TRUE)
   res <- Y - mu
   colnames(res) <- NULL
   if (type == "pearson") {
     # get predicted standard deviation for each observation
-    sd <- predict(object, re_formula = re_formula, 
+    sd <- predict(object, newdata = newdata, re_formula = re_formula, 
                   summary = TRUE, subset = subset)[, 2]
     sd <- matrix(rep(sd, nrow(mu)), nrow = nrow(mu), byrow = TRUE)
     res <- res / sd

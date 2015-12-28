@@ -6,8 +6,8 @@
 \usage{
 \method{fitted}{brmsfit}(object, newdata = NULL, re_formula = NULL,
   scale = c("response", "linear"), allow_new_levels = FALSE,
-  summary = TRUE, probs = c(0.025, 0.975), subset = NULL,
-  nsamples = NULL, ...)
+  subset = NULL, nsamples = NULL, summary = TRUE, probs = c(0.025,
+  0.975), ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}}
@@ -30,14 +30,6 @@ fitted values are returned on the scale of the linear predictor.}
 (no new levels allowed) is the only option. 
 This will change in future versions of the package.}
 
-\item{summary}{logical. Should summary statistics 
- (i.e. means, sds, and 95\% intervals) be returned
-instead of the raw values. Default is \code{TRUE}}
-
-\item{probs}{The percentiles to be computed 
-by the \code{quantile} function. 
-Only used if \code{summary} is \code{TRUE}.}
-
 \item{subset}{A numeric vector specifying
 the posterior samples to be used. 
 If \code{NULL} (the default), all samples are used.}
@@ -46,6 +38,14 @@ If \code{NULL} (the default), all samples are used.}
 posterior samples should be used. 
 If \code{NULL} (the default) all samples are used.
 Ignored if \code{subset != NULL}.}
+
+\item{summary}{logical. Should summary statistics 
+ (i.e. means, sds, and 95\% intervals) be returned
+instead of the raw values. Default is \code{TRUE}}
+
+\item{probs}{The percentiles to be computed 
+by the \code{quantile} function. 
+Only used if \code{summary} is \code{TRUE}.}
 
 \item{...}{Currently ignored}
 }

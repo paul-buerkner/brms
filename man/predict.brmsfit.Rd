@@ -5,8 +5,8 @@
 \title{Model Predictions of \code{brmsfit} Objects}
 \usage{
 \method{predict}{brmsfit}(object, newdata = NULL, re_formula = NULL,
-  transform = NULL, allow_new_levels = FALSE, summary = TRUE,
-  probs = c(0.025, 0.975), subset = NULL, nsamples = NULL, ntrys = 5,
+  transform = NULL, allow_new_levels = FALSE, subset = NULL,
+  nsamples = NULL, ntrys = 5, summary = TRUE, probs = c(0.025, 0.975),
   ...)
 }
 \arguments{
@@ -29,14 +29,6 @@ before summary statistics are computed.}
 (no new levels allowed) is the only option. 
 This will change in future versions of the package.}
 
-\item{summary}{logical. Should summary statistics 
- (i.e. means, sds, and 95\% intervals) be returned
-instead of the raw values. Default is \code{TRUE}}
-
-\item{probs}{The percentiles to be computed 
-by the \code{quantile} function. 
-Only used if \code{summary} is \code{TRUE}.}
-
 \item{subset}{A numeric vector specifying
 the posterior samples to be used. 
 If \code{NULL} (the default), all samples are used.}
@@ -49,6 +41,14 @@ Ignored if \code{subset != NULL}.}
 \item{ntrys}{Parameter used in rejection sampling 
 for truncated discrete models only 
 (defaults to \code{5}). See Details for more information.}
+
+\item{summary}{logical. Should summary statistics 
+ (i.e. means, sds, and 95\% intervals) be returned
+instead of the raw values. Default is \code{TRUE}}
+
+\item{probs}{The percentiles to be computed 
+by the \code{quantile} function. 
+Only used if \code{summary} is \code{TRUE}.}
 
 \item{...}{Currently ignored}
 }

@@ -4,12 +4,17 @@
 \alias{residuals.brmsfit}
 \title{Extract Model Residuals from brmsfit Objects}
 \usage{
-\method{residuals}{brmsfit}(object, re_formula = NULL, type = c("ordinary",
-  "pearson"), summary = TRUE, probs = c(0.025, 0.975), subset = NULL,
-  nsamples = NULL, ...)
+\method{residuals}{brmsfit}(object, newdata = NULL, re_formula = NULL,
+  type = c("ordinary", "pearson"), allow_new_levels = FALSE,
+  subset = NULL, nsamples = NULL, summary = TRUE, probs = c(0.025,
+  0.975), ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}}
+
+\item{newdata}{An optional data.frame containing 
+new data to make predictions for.
+If \code{NULL} (default), the data used to fit the model is applied.}
 
 \item{re_formula}{formula containing random effects 
 to be considered in the prediction. 
@@ -20,13 +25,9 @@ if \code{NA}, include no random effects.}
 either \code{"ordinary"} or \code{"pearson"}. 
 More information is provided under 'Details'.}
 
-\item{summary}{logical. Should summary statistics 
- (i.e. means, sds, and 95\% intervals) be returned
-instead of the raw values. Default is \code{TRUE}}
-
-\item{probs}{The percentiles to be computed 
-by the \code{quantile} function. 
-Only used if \code{summary} is \code{TRUE}.}
+\item{allow_new_levels}{Currenly, \code{FALSE} 
+(no new levels allowed) is the only option. 
+This will change in future versions of the package.}
 
 \item{subset}{A numeric vector specifying
 the posterior samples to be used. 
@@ -36,6 +37,14 @@ If \code{NULL} (the default), all samples are used.}
 posterior samples should be used. 
 If \code{NULL} (the default) all samples are used.
 Ignored if \code{subset != NULL}.}
+
+\item{summary}{logical. Should summary statistics 
+ (i.e. means, sds, and 95\% intervals) be returned
+instead of the raw values. Default is \code{TRUE}}
+
+\item{probs}{The percentiles to be computed 
+by the \code{quantile} function. 
+Only used if \code{summary} is \code{TRUE}.}
 
 \item{...}{Currently ignored}
 }

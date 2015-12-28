@@ -107,7 +107,8 @@ update_data <- function(data, family, effects, ...,
 
 amend_newdata <- function(newdata, fit, re_formula = NULL, 
                           allow_new_levels = FALSE,
-                          return_standata = TRUE) {
+                          return_standata = TRUE,
+                          check_response = FALSE) {
   # amend newdata passed to predict and fitted methods
   # 
   # Args:
@@ -117,6 +118,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   #   allow_new_levels: are new random effects levels allowed?
   #   return_standata: logical; compute the data to be passed 
   #                    to Stan, or just return the updated newdata?
+  #   check_response: Should response variables be checked
+  #                   for existence and validity?
   #
   # Notes:
   #   used in predict.brmsfit, fitted.brmsfit and linear_predictor.brmsfit
@@ -139,10 +142,10 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   et <- extract_time(fit$autocor$formula)
   resp_vars <- all.vars(ee$resp_formula)
   missing_resp <- setdiff(resp_vars, names(newdata))
-  if (has_arma(fit$autocor) && !use_cov(fit$autocor) 
-      && length(missing_resp)) {
-    stop(paste("response variables must be specified", 
-               "in newdata for autocorrelative models"))
+  check_response <- check_response || 
+                    (has_arma(fit$autocor) && !use_cov(fit$autocor))
+  if (check_response && length(missing_resp)) {
+    stop("response variables must be specified in newdata for this model")
   } else {
     for (resp in missing_resp) {
       # add irrelevant response variables
@@ -197,7 +200,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       unknown_levels <- setdiff(new_levels, old_levels)
       if (length(unknown_levels)) {
         stop(paste("levels", paste0(unknown_levels, collapse = ", "), 
-                   "of grouping factor", gnames[i], "not found in the fitted model"))
+                   "of grouping factor", gnames[i], 
+                   "not found in the fitted model"))
       } 
       # transform grouping factor levels into their corresponding integers
       # to match the output of make_standata
@@ -205,9 +209,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     }
   }
   if (return_standata) {
-    omit_response <- !(has_arma(fit$autocor) && !use_cov(fit$autocor))
     control <- list(is_newdata = TRUE, keep_intercept = TRUE,
-                    save_order = TRUE, omit_response = omit_response)
+                    save_order = TRUE, omit_response = !check_response)
     if (has_trials(fit$family) || has_cat(fit$family)) {
       # if trials or cat are not explicitly part of the formula
       # the will be computed based on the response variable,
