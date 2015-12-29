@@ -4,8 +4,8 @@
 \alias{plot.brmsfit}
 \title{Trace and Density Plots for MCMC Samples}
 \usage{
-\method{plot}{brmsfit}(x, pars = NA, parameters = NA, N = 5, ask = TRUE,
-  do_plot = TRUE, newpage = TRUE, ...)
+\method{plot}{brmsfit}(x, pars = NA, parameters = NA, N = 5,
+  theme = "classic", ask = TRUE, do_plot = TRUE, newpage = TRUE, ...)
 }
 \arguments{
 \item{x}{An object of class \code{brmsfit}.}

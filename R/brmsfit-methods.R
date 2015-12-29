@@ -508,8 +508,8 @@ launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"),
 #' @importFrom grid grid.draw grid.newpage
 #' @export
 plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5, 
-                         ask = TRUE, do_plot = TRUE,
-                         newpage = TRUE, ...) {
+                         theme = "classic", ask = TRUE, 
+                         do_plot = TRUE, newpage = TRUE, ...) {
   dots <- list(...)
   if (is.na(pars[1])) 
     pars <- parameters 
@@ -536,7 +536,7 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5,
   plots <- vector(mode = "list", length = n_plots)
   for (i in 1:n_plots) {
     temp_plot <- lapply(pars[((i - 1) * N + 1):min(i * N, length(pars))], 
-                        td_plot, x = samples)
+                        td_plot, x = samples, theme = theme)
     plots[[i]] <- arrangeGrob(grobs = unlist(temp_plot, recursive = FALSE), 
                               nrow = length(temp_plot), ncol = 2, ...)
     if (do_plot) {
@@ -1224,25 +1224,24 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
     cl <- (1 - alpha) * 100
     colnames(sm) <- c("Estimate", "Est.Error", paste0("l-",cl,"% CI"), 
                       paste0("u-",cl,"% CI"), "Evid.Ratio", "")
-    nlist(summary = sm, post_samples = samples, prior_samples)
+    if (!is.null(prior_samples)) {
+      samples <- c(samples, prior_samples)
+    } else {
+      samples <- c(samples, rep(NA, nrow(samples)))
+    }
+    nlist(summary = sm, samples = samples)
   }
 
   pars <- rename(parnames(x)[grepl("^", class, parnames(x))],
                  symbols = ":", subs = "__")
   hlist <- lapply(hypothesis, hyp_fun)
-  # prepare the output
   hs <- do.call(rbind, lapply(hlist, function(h) h$summary))
-  post_samples <- data.frame(matrix(nrow = Nsamples(x), ncol = length(hlist)))
-  names(post_samples) <- paste0("H", seq_along(hlist))
-  prior_samples <- post_samples
-  for (i in seq_along(post_samples)) {
-    post_samples[, i] <- as.vector(hlist[[i]]$post_samples)
-    if (!is.null(hlist[[i]]$prior_samples)) {
-      prior_samples[, i] <- as.vector(hlist[[i]]$prior_samples)
-    }
-  }
+  samples <- do.call(cbind, lapply(hlist, function(h) h$samples))
+  samples <- as.data.frame(samples) 
+  names(samples) <- paste0("H", seq_along(hlist))
+  samples$Type <- factor(rep(c("posterior", "prior"), each = Nsamples(x)))
   class <- substr(class, 1, nchar(class) - 1)
-  out <- nlist(hypothesis = hs, post_samples, prior_samples, class, alpha)
+  out <- nlist(hypothesis = hs, samples, class, alpha)
   class(out) <- "brmshypothesis"
   out
 }
