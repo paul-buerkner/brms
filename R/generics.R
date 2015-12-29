@@ -102,7 +102,7 @@ ranef <- function(x, ...)
 #' 
 #' @aliases VarCorr.brmsfit
 #' 
-#' @param x A fitted model object usually of class \code{brmsift}
+#' @param x An \code{R} object usually of class \code{brmsift}. 
 #' @param estimate A character vector specifying which coefficients 
 #'  (e.g., "mean", "median", "sd", or "quantile")
 #'  should be calculated for the random effects.
@@ -111,6 +111,7 @@ ranef <- function(x, ...)
 #'  lists of matrices (the default), or as 3-dimensional arrays.
 #' @param ... Further arguments to be passed to the functions 
 #'  specified in \code{estimate}
+#' 
 #' 
 #' @return An object of class \code{VarCorr_brmsfit}, 
 #' which is a list of lists (one per grouping factor), 
@@ -173,7 +174,13 @@ ngrps <- function(object, ...)
 #' @param group Name of a grouping factor to evaluate only 
 #'  random effects parameters related to this grouping factor.
 #'  Ignored if \code{class} is not \code{"sd"} or \code{"cor"}.
-#' @param alpha the alpha-level of the tests (default is 0.05)        
+#' @param alpha the alpha-level of the tests (default is 0.05)
+#' @param ignore_prior A flag indicating if prior distributions 
+#'  should also be plotted. Only used if priors were specified on
+#'  the relevant parameters.
+#' @param theme The ggplot theme to use. For details see
+#'  \code{\link[ggplot2:ggtheme]{ggtheme}}.
+#' @inheritParams plot.brmsfit
 #' @param ... Currently ignored
 #' 
 #' @details Among others, \code{hypothesis} computes an 
@@ -198,26 +205,38 @@ ngrps <- function(object, ...)
 #' 
 #' @examples
 #' \dontrun{
+#' ## define priors
+#' prior <- c(set_prior("normal(0,2)", class = "b"),
+#'            set_prior("student_t(10,0,1)", class = "sigma"),
+#'            set_prior("student_t(10,0,1)", class = "sd"))
+#'            
+#' ## fit a linear mixed effects models
 #' fit <- brm(rating ~ treat + period + carry + (1+treat|subject),
-#'              data = inhaler, family = "gaussian", sample.prior = TRUE,
-#'              prior = set_prior("normal(0,2)", class = "b"), n.cluster = 2)
+#'            data = inhaler, family = gaussian(),
+#'            prior = prior, sample.prior = TRUE)
 #' 
-#' hypothesis(fit, "treat = period + carry")
-#' hypothesis(fit, "exp(treat) - 3 = 0")
+#' ## perform two-sided hypothesis testing
+#' (hyp1 <- hypothesis(fit, "treat = period + carry"))
+#' plot(hyp1)
+#' hypothesis(fit, "exp(treat) - 3 = 0", alpha = 0.01)
 #' 
 #' ## perform one-sided hypothesis testing
 #' hypothesis(fit, "period + carry - 3 < 0")
 #' 
-#' ## compare random effects standard deviations
-#' hypothesis(fit, "treat < Intercept", class = "sd", group  = "subject")
+## compare random effects standard deviations
+#' hypothesis(fit, "treat < Intercept", 
+#'            class = "sd", group  = "subject")
 #' 
 #' ## test the amount of random intercept variance on all variance
 #' h <- paste("sd_subject_Intercept^2 / (sd_subject_Intercept^2 +",
 #'            "sd_subject_treat^2 + sigma_rating^2) = 0")
-#' hypothesis(fit, h, class = NULL)
+#' (hyp2 <- hypothesis(fit, h, class = NULL))
+#' plot(hyp2)
 #' 
 #' ## test more than one hypothesis at once
-#' hypothesis(fit, c("treat = period + carry", "exp(treat) - 3 = 0"))
+#' (hyp3 <- hypothesis(fit, c("treat = period + carry", 
+#'                           "2 * period - treat = 0")))
+#' plot(hyp3, ignore_prior = TRUE)
 #' }
 #' 
 #' @export
