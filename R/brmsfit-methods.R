@@ -1210,28 +1210,39 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
     wsign <- ifelse(sign == "=", "equal", ifelse(sign == "<", "less", "greater"))
     probs <- switch(wsign, equal = c(alpha / 2, 1 - alpha / 2), 
                     less = c(0, 1 - alpha), greater = c(alpha, 1))
-    out <- lapply(c("mean", "sd", "quantile", "evidence_ratio"), 
-                  get_estimate, samples = samples, probs = probs, 
-                  wsign = wsign, prior_samples = prior_samples, ...)
-    out <- as.data.frame(matrix(unlist(out), nrow = 1))
+    sm <- lapply(c("mean", "sd", "quantile", "evidence_ratio"), 
+                 get_estimate, samples = samples, probs = probs, 
+                 wsign = wsign, prior_samples = prior_samples, ...)
+    sm <- as.data.frame(matrix(unlist(sm), nrow = 1))
     if (sign == "<") {
-      out[1, 3] <- -Inf
+      sm[1, 3] <- -Inf
     } else if (sign == ">") {
-      out[1, 4] <- Inf
+      sm[1, 4] <- Inf
     }
-    out <- cbind(out, ifelse(!(out[1, 3] <= 0 && 0 <= out[1, 4]), '*', ''))
-    rownames(out) <- paste(rename(h, "__", ":"), sign, "0")
+    sm <- cbind(sm, ifelse(!(sm[1, 3] <= 0 && 0 <= sm[1, 4]), '*', ''))
+    rownames(sm) <- paste(rename(h, "__", ":"), sign, "0")
     cl <- (1 - alpha) * 100
-    colnames(out) <- c("Estimate", "Est.Error", paste0("l-",cl,"% CI"), 
-                       paste0("u-",cl,"% CI"), "Evid.Ratio", "")
-    out
+    colnames(sm) <- c("Estimate", "Est.Error", paste0("l-",cl,"% CI"), 
+                      paste0("u-",cl,"% CI"), "Evid.Ratio", "")
+    nlist(summary = sm, post_samples = samples, prior_samples)
   }
-  
+
   pars <- rename(parnames(x)[grepl("^", class, parnames(x))],
                  symbols = ":", subs = "__")
-  out <- do.call(rbind, lapply(hypothesis, hyp_fun))
-  out <- list(hypothesis = out, class = substr(class, 1, nchar(class) - 1), 
-              alpha = alpha)
+  hlist <- lapply(hypothesis, hyp_fun)
+  # prepare the output
+  hs <- do.call(rbind, lapply(hlist, function(h) h$summary))
+  post_samples <- data.frame(matrix(nrow = Nsamples(x), ncol = length(hlist)))
+  names(post_samples) <- paste0("H", seq_along(hlist))
+  prior_samples <- post_samples
+  for (i in seq_along(post_samples)) {
+    post_samples[, i] <- as.vector(hlist[[i]]$post_samples)
+    if (!is.null(hlist[[i]]$prior_samples)) {
+      prior_samples[, i] <- as.vector(hlist[[i]]$prior_samples)
+    }
+  }
+  class <- substr(class, 1, nchar(class) - 1)
+  out <- nlist(hypothesis = hs, post_samples, prior_samples, class, alpha)
   class(out) <- "brmshypothesis"
   out
 }
