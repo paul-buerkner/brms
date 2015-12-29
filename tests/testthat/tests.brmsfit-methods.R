@@ -100,7 +100,7 @@ test_that("all S3 methods have reasonable ouputs", {
   
   prs2 <- prior_samples(fit, pars = "b_Trt_c")
   expect_equal(dimnames(prs2), list(as.character(1:80), "b_Trt_c"))
-  expect_equal(prs1$b, prs2$b_Trt_c)
+  expect_equal(sort(prs1$b), sort(prs2$b_Trt_c))
   # ranef
   .ranef <- ranef(fit, estimate = "median", var = TRUE)
   expect_equal(dim(.ranef$visit), c(4, 2))
