@@ -178,8 +178,6 @@ ngrps <- function(object, ...)
 #' @param ignore_prior A flag indicating if prior distributions 
 #'  should also be plotted. Only used if priors were specified on
 #'  the relevant parameters.
-#' @param theme The ggplot theme to use. For details see
-#'  \code{\link[ggplot2:ggtheme]{ggtheme}}.
 #' @inheritParams plot.brmsfit
 #' @param ... Currently ignored
 #' 

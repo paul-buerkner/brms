@@ -18,6 +18,9 @@ are plotted.}
 
 \item{N}{The number of parameters plotted per page.}
 
+\item{theme}{The ggplot theme to use. For details see
+\code{\link[ggplot2:ggtheme]{ggtheme}}.}
+
 \item{ask}{logical; indicates if the user is prompted 
 before a new page is plotted. 
 Only used if \code{do_plot} is \code{TRUE}.}

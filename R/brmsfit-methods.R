@@ -477,6 +477,8 @@ launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"),
 #'   are plotted. 
 #' @param parameters A deprecated alias of \code{pars}   
 #' @param N The number of parameters plotted per page.
+#' @param theme The ggplot theme to use. For details see
+#'  \code{\link[ggplot2:ggtheme]{ggtheme}}.
 #' @param do_plot logical; indicates if plots should be
 #'   plotted directly in the active graphic device.
 #'   Defaults to \code{TRUE}.
