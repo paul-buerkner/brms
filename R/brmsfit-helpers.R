@@ -797,7 +797,7 @@ find_names <- function(x) {
   unlist(regmatches(x, pos_var))
 }
 
-td_plot <- function(par, x) {
+td_plot <- function(par, x, theme = "classic") {
   # trace and density plots for one parameter
   #
   # Args:
@@ -811,16 +811,20 @@ td_plot <- function(par, x) {
   if (!is.data.frame(x))
     stop("x must be a data.frame")
   names(x)[match(par, names(x))] <- "value" 
+  # trace plot
   trace <- ggplot(x, aes_string(x = "iter", y = "value", group = "chains", 
                                 colour = "chains")) +
     geom_line(alpha = 0.7) + 
     xlab("") + ylab("") + ggtitle(paste("Trace of", par)) + 
+    do.call(paste0("theme_", theme), args = list()) + 
     theme(legend.position = "none",
           plot.title = element_text(size = 15, vjust = 1),
           plot.margin = grid::unit(c(0.2, 0, -0.5, -0.5), "lines"))
+  # density plot
   density <- ggplot(x, aes_string(x = "value")) + 
     geom_density(aes_string(fill = "chains"), alpha = 0.5) + 
     xlab("") + ylab("") + ggtitle(paste("Density of", par)) + 
+    do.call(paste0("theme_", theme), args = list()) +
     theme(plot.title = element_text(size = 15, vjust = 1),
           plot.margin = grid::unit(c(0.2, 0, -0.5, -0.5), "lines"))
   list(trace, density)
@@ -958,16 +962,6 @@ print.VarCorr_brmsfit <- function(x, digits = 2, ...) {
 }
 
 #' @export
-print.brmshypothesis <- function(x, digits = 2, ...) {
-  cat(paste0("Hypothesis Tests for class ", x$class, ":\n"))
-  x$hypothesis[, 1:5] <- round(x$hypothesis[, 1:5], digits = digits)
-  print(x$hypothesis, quote = FALSE)
-  cat(paste0("---\n'*': The expected value under the hypothesis lies outside the ",
-             (1 - x$alpha) * 100, "% CI."))
-  invisible(x)
-}
-
-#' @export
 print.brmsmodel <- function(x, ...) {
   cat(x)
   invisible(x) 
@@ -1000,4 +994,60 @@ print.iclist <- function(x, digits = 2, ...) {
   }
   print(round(mat, digits = digits), na.print = "")
   invisible(x)
+}
+
+#' @export
+print.brmshypothesis <- function(x, digits = 2, ...) {
+  cat(paste0("Hypothesis Tests for class ", x$class, ":\n"))
+  x$hypothesis[, 1:5] <- round(x$hypothesis[, 1:5], digits = digits)
+  print(x$hypothesis, quote = FALSE)
+  cat(paste0("---\n'*': The expected value under the hypothesis lies outside the ",
+             (1 - x$alpha) * 100, "% CI."))
+  invisible(x)
+}
+
+#' @export
+plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE, 
+                                theme = "classic", ask = TRUE, 
+                                do_plot = TRUE, newpage = TRUE, ...) {
+  if (!is.data.frame(x$samples)) {
+    stop("No posterior samples found")
+  }
+  .plot_fun <- function(i) {
+    # create the ggplot object for each hypothesis
+    # Args: i: index variable
+    ggplot(x$samples, aes_string(x = hypnames[i])) + 
+      geom_density(aes_string(fill = "Type"), alpha = 0.5, na.rm = TRUE) + 
+      scale_fill_manual(values = c("red", "blue")) + 
+      xlab("") + ylab("") + ggtitle(hyps[i]) + 
+      do.call(paste0("theme_", theme), args = list())
+  }
+  if (ignore_prior) {
+    x$samples <- subset(x$samples, Type == "posterior")
+  }
+  if (do_plot) {
+    default_ask <- devAskNewPage()
+    on.exit(devAskNewPage(default_ask))
+    devAskNewPage(ask = FALSE)
+  }
+  hyps <- rownames(x$hypothesis)
+  hypnames <- names(x$samples)[seq_along(hyps)]
+  n_plots <- ceiling(length(hyps) / N)
+  plots <- vector(mode = "list", length = n_plots)
+  for (i in 1:n_plots) {
+    I <- ((i - 1) * N + 1):min(i * N, length(hyps))
+    temp_plot <- lapply(I, .plot_fun)
+    plots[[i]] <- arrangeGrob(grobs = temp_plot, ncol = 1, 
+                              nrow = length(temp_plot), ...)
+    if (do_plot) {
+      if (newpage || i > 1) grid.newpage()
+      grid.draw(plots[[i]])
+      if (i == 1) devAskNewPage(ask = ask)
+    }
+  }
+  if (do_plot) {
+    invisible(plots) 
+  } else {
+    plots
+  }
 }
