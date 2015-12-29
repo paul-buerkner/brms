@@ -29,12 +29,12 @@ test_that("all S3 methods have reasonable ouputs", {
   # hypothesis
   h1 <- hypothesis(fit, "Intercept > Trt_c")
   expect_equal(dim(h1$hypothesis), c(1, 6))
-  expect_silent(capture.output(print(h1)))
+  expect_output(print(h1), "Intercept-(Trt_c) > 0", fixed = TRUE)
   expect_silent(p <- plot(h1, do_plot = FALSE))
   
   h2 <- hypothesis(fit, "Intercept = 0", class = "sd", group = "visit")
   expect_true(is.numeric(h2$hypothesis$Evid.Ratio[1]))
-  expect_silent(capture.output(print(h2)))
+  expect_output(print(h2), "class sd_visit:", fixed = TRUE)
   expect_silent(p <- plot(h2, ignore_prior = TRUE, do_plot = FALSE))
   expect_error(hypothesis(fit, "Intercept > x"), fixed = TRUE,
                "cannot be found in the model: b_x")
@@ -45,17 +45,17 @@ test_that("all S3 methods have reasonable ouputs", {
   .loo <- suppressWarnings(LOO(fit, cores = 1))
   expect_true(is.numeric(.loo[["looic"]]))
   expect_true(.loo[["se_looic"]] > 0)
-  expect_silent(capture.output(print(.loo)))
+  expect_output(print(.loo), "LOOIC")
   
   loo_compare2 <- suppressWarnings(LOO(fit, fit, cores = 1))
   expect_equal(length(loo_compare2), 2)
   expect_equal(dim(attr(loo_compare2, "compare")), c(1, 2))
-  expect_silent(capture.output(print(loo_compare2)))
+  expect_output(print(loo_compare2), "fit - fit")
   
   loo_compare3 <- suppressWarnings(LOO(fit, fit, fit, cores = 1))
   expect_equal(length(loo_compare3), 3)
   expect_equal(dim(attr(loo_compare3, "compare")), c(3, 2))
-  expect_silent(capture.output(print(loo_compare3)))
+  expect_output(print(loo_compare3), "Weights")
   # model.frame
   expect_equal(model.frame(fit), fit$data)
   # ngrps
@@ -91,7 +91,7 @@ test_that("all S3 methods have reasonable ouputs", {
                       allow_new_levels = TRUE)
   expect_equal(dim(predict3), c(2, 4))
   # print
-  expect_silent(capture.output(print(fit)))
+  expect_output(print(fit), "Random Effects:")
   # prior_samples
   prs1 <- prior_samples(fit)
   expect_equal(dimnames(prs1),
@@ -119,7 +119,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(dim(res3), c(10, 4))
   # stancode
   expect_true(is.character(stancode(fit)))
-  expect_silent(capture.output(print(stancode(fit))))
+  expect_output(print(stancode(fit)), "generated quantities")
   # standata
   expect_equal(names(standata(fit)),
                c("N", "Y", "offset", "K", "X", 
@@ -135,7 +135,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(rownames(.summary$random$visit), 
                c("sd(Intercept)", "sd(Trt_c)", "cor(Intercept,Trt_c)"))
   expect_true(is.numeric(.summary$WAIC))
-  expect_silent(capture.output(print(.summary)))
+  expect_output(print(.summary), "Fixed Effects:")
   # update
   # do not actually refit the model as is causes CRAN checks to fail
   new_data <- data.frame(log_Age_c = c(0, 1, -1), visit = c(3, 2, 4),
@@ -155,7 +155,7 @@ test_that("all S3 methods have reasonable ouputs", {
   Names <- c("Intercept", "Trt_c")
   expect_equivalent(dimnames(vc$visit$cov$mean), 
                     list(Names, Names))
-  expect_silent(capture.output(print(vc)))
+  expect_output(print(vc), "visit")
   data_vc <- as.data.frame(vc)
   expect_equal(dim(data_vc), c(2, 7))
   expect_equal(names(data_vc), c("Estimate", "Group", "Name", 
