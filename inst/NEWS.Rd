@@ -34,6 +34,9 @@
       \item fix a bug in the \code{hypothesis} method 
       that could cause valid model parameters to be falsely 
       reported as invalid
+      \item fix a bug in the \code{prior_samples} method 
+      that could cause prior samples of parameters 
+      of the same class to be artifically correlated
       \item fix Stan code of linear models with 
       moving-average effects and non-identity link functions 
       so that they no longer contain code related solely 
