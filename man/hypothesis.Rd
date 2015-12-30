@@ -11,8 +11,8 @@
 
 hypothesis(x, hypothesis, ...)
 
-plot.brmshypothesis(x, N = 5, ignore_prior = FALSE, theme = "classic",
-  ask = TRUE, do_plot = TRUE, newpage = TRUE, ...)
+\method{plot}{brmshypothesis}(x, N = 5, ignore_prior = FALSE,
+  theme = "classic", ask = TRUE, do_plot = TRUE, newpage = TRUE, ...)
 }
 \arguments{
 \item{x}{An \code{R} object typically of class \code{brmsfit}}

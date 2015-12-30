@@ -176,6 +176,7 @@ print.brmshypothesis <- function(x, digits = 2, ...) {
 }
 
 #' @rdname hypothesis
+#' @method plot brmshypothesis
 #' @export
 plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE, 
                                 theme = "classic", ask = TRUE, 
@@ -193,7 +194,7 @@ plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE,
       do.call(paste0("theme_", theme), args = list())
   }
   if (ignore_prior) {
-    x$samples <- subset(x$samples, Type == "posterior")
+    x$samples <- subset(x$samples, x$samples$Type == "posterior")
   }
   if (do_plot) {
     default_ask <- devAskNewPage()
