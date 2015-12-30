@@ -64,3 +64,8 @@ test_that("check_family rejects invalid families", {
   expect_error(check_family("ordinal"),
                "ordinal is not a supported family")
 })
+
+test_that("print brmsfamily works correctly", {
+  expect_output(weibull(), "Family: weibull \nLink function: log")
+  expect_output(bernoulli(type = "2PL"), "Type: 2PL")
+})

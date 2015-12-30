@@ -21,12 +21,14 @@ test_that("check_prior performs correct renaming", {
                         class = c("Lrescor", "b"), coef = c("", "carry")) 
   expect_true(length(which(duplicated(rbind(prior, target)))) == 2)
   
-  expect_equivalent(check_prior(set_prior("normal(0,1)", class = "b", coef = "Intercept"),
+  expect_equivalent(check_prior(set_prior("normal(0,1)", class = "b", 
+                                          coef = "Intercept"),
                                 formula = rating ~ carry, data = inhaler, 
                                 family = "cumulative")[3, ],
                     prior_frame("normal(0,1)", class = "b_Intercept"))
   
-  expect_equivalent(check_prior(set_prior("normal(0,1)", class = "b", coef = "Intercept"),
+  expect_equivalent(check_prior(set_prior("normal(0,1)", class = "b", 
+                                          coef = "Intercept"),
                                 formula = rating ~ carry, data = inhaler, 
                                 family = "cumulative",
                                 threshold = "equidistant")[3, ],
@@ -54,21 +56,24 @@ test_that("check_prior is backwards compatible", {
 })
 
 test_that("check_prior accepts correct prior names", {
-  expect_equivalent(check_prior(c(set_prior("normal(0,1)", class = "b", coef = "carry"),
-                                  set_prior("gamma(1,1)", class = "b", coef = "treat")),
-                                formula = rating ~ -1 + treat + carry, data = inhaler)[c(2,3), ],
-                    prior_frame(c("normal(0,1)", "gamma(1,1)"), class = "b",
-                                coef = c("carry", "treat")))
+  cp <- check_prior(c(set_prior("normal(0,1)", class = "b", coef = "carry"),
+                      set_prior("gamma(1,1)", class = "b", coef = "treat")),
+                    formula = rating ~ -1 + treat + carry, data = inhaler)
+  expect_equivalent(cp[2:3, ], prior_frame(c("normal(0,1)", "gamma(1,1)"), 
+                                 class = "b", coef = c("carry", "treat")))
   
-  expect_equivalent(check_prior(c(set_prior("p1", class = "sd", coef = "sexfemale", group = "patient"),
-                                  set_prior("p2", class = "sd", coef = "age", group = "patient")),
-                                formula = time ~ age + (sex+age|patient),  
-                                family = "exponential", data = kidney)[11, ],
-                    prior_frame(prior = "p1", class = "sd", 
+  cp <- check_prior(c(set_prior("p1", class = "sd", coef = "sexfemale", 
+                                group = "patient"),
+                      set_prior("p2", class = "sd", coef = "age", 
+                                group = "patient")),
+                    formula = time ~ age + (sex+age|patient),  
+                    family = "exponential", data = kidney)
+  expect_equivalent(cp[11, ], prior_frame(prior = "p1", class = "sd", 
                                 coef = "sexfemale", group = "1")[1, ])
   
   expect_equivalent(check_prior(set_prior("cauchy(0,1)", class = "sigma"), 
-                                formula = rating ~ 1, family = "cauchy", data = inhaler)[4, ],
+                                formula = rating ~ 1, family = "cauchy", 
+                                data = inhaler)[4, ],
                     prior_frame("cauchy(0,1)", class = "sigma"))
   
   expect_equivalent(check_prior(c(set_prior("p1", class = "ar"),
@@ -88,8 +93,8 @@ test_that("check_prior rejects incorrect prior names", {
                              formula = rating ~ treat + (1+treat|subject), 
                              family = "cauchy", data = inhaler))
   expect_message(check_prior(set_prior("normal(0,1)", class = "ar"), 
-                             formula = count ~ log_Base4_c * Trt_c + (1+Trt_c|patient), 
-                             data = epilepsy))
+                             formula = count ~ log_Base4_c * Trt_c 
+                             + (1+Trt_c|patient), data = epilepsy))
 })
 
 test_that("check_prior returns increment_log_prob(.) whithout checking", {
@@ -99,7 +104,21 @@ test_that("check_prior returns increment_log_prob(.) whithout checking", {
                                 data = epilepsy)[c(1,7), ],
                     prior_frame(c("p2", "increment_log_prob(p1)"), 
                                 class = c("b", "")))
-}) 
+})
+
+test_that("check_prior correctly validates priors for random effects", {
+  expect_message(check_prior(set_prior("normal(0,1)", class = "sd", group = "g"),
+                             formula = count ~ (1|visit), data = epilepsy),
+                 "Prior element 1 is invalid and will be removed")
+  cp <- check_prior(set_prior("cauchy(0,1)", class = "sd", group = "visit"),
+                    formula = count ~ Trt_c + (1|visit), 
+                    data = epilepsy)
+  expect_equal(cp$prior[6], "cauchy(0,1)")
+  cp <- check_prior(set_prior("cauchy(0,1)", class = "sd", group = "visit"),
+                    formula = count ~ (1|visit) + (0+Trt_c|visit), 
+                    data = epilepsy)
+  expect_equal(cp$prior[c(5, 8)], rep("cauchy(0,1)", 2))
+})
 
 test_that("handle_special_priors handles horseshoe prior correctly", {
   prior <- set_prior("horseshoe(5)")
@@ -108,7 +127,7 @@ test_that("handle_special_priors handles horseshoe prior correctly", {
   expect_equal(temp$prior$prior[1], "normal(0, hs_local * hs_global)")
   expect_error(handle_special_priors(c(prior, set_prior("dist()", coef = "a"))))
   expect_error(handle_special_priors(c(set_prior("horseshoe(b5)"))),
-               "degrees of freedom of horseshoe prior must be a positive number")
+               "degrees of freedom of horseshoe prior must be a positive")
 })
 
 test_that("get_prior finds all classes for which priors can be specified", {
@@ -129,4 +148,15 @@ test_that("update_prior produces correct prior_frames", {
                         coef = c(rep("", 3), "Intercept", "", "x", "", ""),
                         group = c(rep("", 4), rep("visit", 3), ""))
   expect_equal(update_prior(prior), result)
+})
+
+test_that("print for class brmsprior works correctly", {
+  expect_output(print(set_prior("normal(0,1)")), fixed = TRUE,
+                "Prior: b ~ normal(0,1)")
+  expect_output(print(set_prior("normal(0,1)", coef = "x")), 
+                "Prior: b_x ~ normal(0,1)", fixed = TRUE)
+  expect_output(print(set_prior("cauchy(0,1)", class = "sd", group = "x")), 
+                "Prior: sd_x ~ cauchy(0,1)", fixed = TRUE)
+  expect_output(print(set_prior("increment_log_prob(normal_log(0,1))")), 
+                "Prior: increment_log_prob(normal_log(0,1))", fixed = TRUE)
 })
