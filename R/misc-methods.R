@@ -98,8 +98,7 @@ as.data.frame.VarCorr_brmsfit <- function(x, ...) {
       rows <- pos:(pos + len - 1)
       out[rows, "Std.Dev"] <- x[[i]]$sd[, estimate]
       if (len > 1) {
-        # covariances and correlations present
-        # add correlations
+        # covariances and correlations present; add correlations
         cor_pos <- 4:(2 + len)
         cormat <- x[[i]]$cor[[estimate]][2:len, 1:(len-1), drop = FALSE]
         lt <- lower.tri(cormat, diag = TRUE)

@@ -1,8 +1,8 @@
 test_that("melt_data returns data in long format", {
   data <- data.frame(x = rep(c("a","b"), 5), y1 = 1:10, y2 = 11:20, 
                      y3 = 21:30, z = 100:91)
-  
-  expect_equal(melt_data(data, effects = list(response = "y1"), 
+  effects <- extract_effects(y ~ x, family = "poisson")
+  expect_equal(melt_data(data, effects = effects, 
                          family = "poisson"), data)
   
   target1 <- data.frame(x = rep(c("a","b"), 10), y1 = rep(1:10, 2), 
@@ -11,7 +11,7 @@ test_that("melt_data returns data in long format", {
                         trait = factor(rep(c("y3", "y1"), each = 10),
                                        levels = c("y3", "y1")), 
                         response = c(21:30, 1:10))
-  effects <- list(response = c("y3", "y1"), resp_formula = cbind(y3,y1) ~ 1)
+  effects <- extract_effects(cbind(y3,y1) ~ x, family = "gaussian")
   expect_equal(melt_data(data, effects = effects, family = "gaussian"), 
                target1)
   
@@ -21,8 +21,7 @@ test_that("melt_data returns data in long format", {
                         trait = factor(rep(c("y2", "y1", "y3"), each = 10),
                                        levels = c("y2", "y1", "y3")), 
                         response = c(11:20, 1:10, 21:30))
-  effects <- list(response = c("y2", "y1", "y3"), 
-                  resp_formula = cbind(y2,y1,y3) ~ 1)
+  effects <- extract_effects(cbind(y2,y1,y3) ~ x, family = "gaussian")
   expect_equal(melt_data(data, effects = effects, family = "gaussian"), 
                target2)
 })

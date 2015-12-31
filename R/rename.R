@@ -130,7 +130,7 @@ rename_pars <- function(x) {
                                         names = x$ranef[[i]], 
                                         new_class = paste0("sd_",group[i])))
       
-      if (length(x$ranef[[i]]) > 1 && ee$cor[[i]]) {
+      if (length(x$ranef[[i]]) > 1 && ee$random$cor[[i]]) {
         cor_names <- get_cornames(x$ranef[[i]], type = paste0("cor_",group[i]), 
                                   brackets = FALSE)
         change <- lc(change, list(pos = grepl(paste0("^cor_",i,"(\\[|$)"), pars),
@@ -140,7 +140,7 @@ rename_pars <- function(x) {
                                           new_class = paste0("cor_",group[i])))
       }
       if (any(grepl("^r_", pars))) {
-        if (length(x$ranef[[i]]) == 1 || ee$cor[[i]]) {
+        if (length(x$ranef[[i]]) == 1 || ee$random$cor[[i]]) {
           change <- lc(change, 
             ranef_changes(i = i, group = group, gf = gf, pars = pars,
                           dims_oi = x$fit@sim$dims_oi))

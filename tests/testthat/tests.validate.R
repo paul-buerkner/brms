@@ -6,25 +6,26 @@ test_that("extract_effects finds all variables in very long formulas", {
 })
 
 test_that("extract_effects finds all random effects terms", {
-  expect_equal(extract_effects(y ~ a + (1+x|g1) + x + (1|g2) + z)$random, 
-              list(~1 + x, ~1))
-  expect_equal(extract_effects(y ~ (1+x|g1) + x + (1|g2))$group,
-               c("g1", "g2"))
-  expect_equal(extract_effects(y ~ (1+x|g1:g2) + (1|g1))$group, 
+  random <- extract_effects(y ~ a + (1+x|g1) + x + (1|g2) + z)$random
+  expect_equal(random$form, list(~1 + x, ~1))
+  expect_equal(random$group, c("g1", "g2"))
+  expect_equal(extract_effects(y ~ (1+x|g1:g2) + (1|g1))$random$group, 
                c("g1", "g1:g2"))
-  expect_equal(extract_effects(y ~ (1|g1))$group, c("g1"))
-  expect_equal(extract_effects(y ~ log(x) + (1|g1))$group, c("g1"))
-  expect_equal(extract_effects(y ~ (x+z):v + (1+x|g1))$random, list(~1+x))
+  expect_equal(extract_effects(y ~ (1|g1))$random$group, c("g1"))
+  expect_equal(extract_effects(y ~ log(x) + (1|g1))$random$group, c("g1"))
+  expect_equal(extract_effects(y ~ (x+z):v + (1+x|g1))$random$form, list(~1+x))
   expect_error(extract_effects(y ~ (1+x|g1/g2) + x + (1|g1)))
   expect_error(extract_effects(y ~ 1|g1),
                "Random effects terms should be enclosed in brackets")
 })
 
 test_that("extract_effects accepts || syntax", {
-  expect_equal(extract_effects(y ~ a + (1+x||g1) + (1+z|g2))$cor, c(FALSE,TRUE))
-  expect_equal(extract_effects(y ~ a + (1+x||g2))$random, list(~1 + x))
-  expect_equal(extract_effects(y ~ (1+x||g1) + x + (1||g2))$group, c("g1", "g2"))
-  expect_equal(extract_effects(y ~ (1+x||g1:g2))$group, c("g1:g2"))
+  random <- extract_effects(y ~ a + (1+x||g1) + (1+z|g2))$random
+  target <- data.frame(group = c("g1", "g2"), cor = c(FALSE, TRUE),
+                       stringsAsFactors = FALSE)
+  target$form <- list(~1+x, ~1+z)
+  expect_equal(random, target)
+  expect_equal(extract_effects(y ~ (1+x||g1:g2))$random$group, c("g1:g2"))
   expect_error(extract_effects(y ~ (1+x||g1/g2) + x + (1|g1)))
 })
 
@@ -63,9 +64,9 @@ test_that("extract_effects handles addition arguments correctly", {
 })
 
 test_that("extract_effects accepts complicated random terms", {
-  expect_equal(extract_effects(y ~ x + (I(as.numeric(x)-1) | z))$random,
+  expect_equal(extract_effects(y ~ x + (I(as.numeric(x)-1) | z))$random$form,
                list(~I(as.numeric(x) - 1)))
-  expect_equal(extract_effects(y ~ x + (I(exp(x)-1) + I(x/y) | z))$random,
+  expect_equal(extract_effects(y ~ x + (I(exp(x)-1) + I(x/y) | z))$random$form,
                list(~I(exp(x)-1) + I(x/y)))
 })
 
@@ -159,7 +160,7 @@ test_that("gather_ranef works correctly", {
   attr(target$g, "levels") <- paste(1:10)
   attr(target$g, "group") <- "g"
   attr(target$g, "cor") <- FALSE
-  expect_equal(gather_ranef(extract_effects(y~(1+x||g)), data = data),
+  expect_equal(gather_ranef(extract_effects(y~(1+x||g))$random, data = data),
                target)
   expect_equal(gather_ranef(list()), list())
 })

@@ -3,8 +3,8 @@ melt_data <- function(data, family, effects) {
   #
   # Args:
   #   data: a data.frame
-  #   response: names of the response variables
   #   family: the model family
+  #   effects: a named list as returned by extract_effects
   #
   # Returns:
   #   data in long format 
@@ -24,7 +24,7 @@ melt_data <- function(data, family, effects) {
     trait <- factor(rep(response, each = nobs), levels = response)
     new_cols <- data.frame(trait = trait)
     # prepare the response variable
-    temp_mf <- model.frame(effects$resp_formula, data = data)
+    temp_mf <- model.frame(effects$respform, data = data)
     model_response <- model.response(temp_mf)
     if (is.linear(family)) {
       model_response <- as.vector(model_response)
@@ -99,7 +99,7 @@ update_data <- function(data, family, effects, ...,
                                drop.unused.levels = drop.unused.levels)
     if (any(grepl("__", colnames(data))))
       stop("Variable names may not contain double underscores '__'")
-    data <- combine_groups(data, effects$group, ...)
+    data <- combine_groups(data, effects$random$group, ...)
     class(data) <- c("brms.frame", "data.frame") 
   }
   data
@@ -144,7 +144,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   new_formula <- update_re_terms(fit$formula, re_formula = re_formula)
   ee <- extract_effects(new_formula, family = fit$family)
   et <- extract_time(fit$autocor$formula)
-  resp_vars <- all.vars(ee$resp_formula)
+  resp_vars <- all.vars(ee$respform)
   missing_resp <- setdiff(resp_vars, names(newdata))
   check_response <- check_response || 
                     (has_arma(fit$autocor) && !use_cov(fit$autocor))
@@ -373,9 +373,9 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   } 
   
   # random effects data
-  if (length(ee$random)) {
-    Z <- lapply(ee$random, get_model_matrix, data = data, 
-                is_forked = is_forked)
+  if (nrow(ee$random)) {
+    Z <- lapply(ee$random$form, get_model_matrix, 
+                data = data, is_forked = is_forked)
     r <- lapply(Z, colnames)
     ncolZ <- lapply(Z, ncol)
     # numeric levels passed to Stan
@@ -390,8 +390,8 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       # for newdata only as levels are already defined in amend_newdata
       expr[1] <- expression(get(g, data)) 
     }
-    for (i in 1:length(ee$group)) {
-      g <- ee$group[[i]]
+    for (i in 1:nrow(ee$random)) {
+      g <- ee$random$group[[i]]
       name <- paste0(c("J_", "N_", "K_", "Z_", "NC_"), i)
       if (ncolZ[[i]] == 1) {
         Z[[i]] <- as.vector(Z[[i]])
@@ -418,7 +418,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
           warning(paste("covariance matrix of grouping factor", g, 
                         "may not be positive definite"))
         cov_mat <- cov_mat[order(found_level_names), order(found_level_names)]
-        if (length(r[[i]]) == 1 || !ee$cor[[i]]) {
+        if (length(r[[i]]) == 1 || !ee$random$cor[[i]]) {
           # pivoting ensures that (numerically) semi-definite matrices can be used
           cov_mat <- suppressWarnings(chol(cov_mat, pivot = TRUE))
           cov_mat <- t(cov_mat[, order(attr(cov_mat, "pivot"))])

@@ -413,7 +413,8 @@ nobs.brmsfit <- function(object, ...) {
 #' @export
 ngrps.brmsfit <- function(object, ...) {
   standata <- standata(object)
-  group <- extract_effects(object$formula, family = object$family)$group
+  ee <- extract_effects(object$formula, family = object$family)
+  group <- ee$random$group
   if (length(group)) {
     out <- setNames(lapply(1:length(group), function(i) 
       standata[[paste0("N_",i)]]), group)
@@ -1018,7 +1019,7 @@ update.brmsfit <- function(object, newdata = NULL, ...) {
     object$data <- amend_newdata(newdata, fit = object, 
                                  return_standata = FALSE)
     object$data.name <- Reduce(paste, deparse(substitute(newdata)))
-    object$ranef <- gather_ranef(ee, data = object$data, 
+    object$ranef <- gather_ranef(ee$random, data = object$data, 
                                  is_forked = is.forked(object$family))
     dots$is_newdata <- TRUE
   }

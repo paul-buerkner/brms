@@ -42,24 +42,22 @@ extract_effects <- function(formula, ..., family = NA,
     stop("Invalid formula: response variable is missing")
   
   # extract random effects parts
-  random <- lapply(get_matches("\\([^\\|]*", re_terms), function(r) 
-                   formula(paste0("~ ", substr(r, 2, nchar(r)))))
-  cor <- ulapply(get_matches("\\|[^\\)]*", re_terms), 
-                 function(g) substr(g, 1, 2) != "||")
+  form <- lapply(get_matches("\\([^\\|]*", re_terms), function(r) 
+                 formula(paste0("~ ", substr(r, 2, nchar(r)))))
   group <- get_matches("\\|[^\\)]*", re_terms)
   group_formula <- lapply(group, get_group_formula)
   group <- ulapply(group_formula, function(g) 
                    paste0(all.vars(g), collapse = ":"))
-  
-  # ordering is to ensure that all REs of the same grouping factor 
-  # are next to each other
-  if (length(group)) {
-    ord <- order(group)
-    group <- group[ord]
-    random <- random[ord]
-    cor <- cor[ord]
+  cor <- ulapply(get_matches("\\|[^\\)]*", re_terms), 
+                 function(g) substr(g, 1, 2) != "||")
+  random <- data.frame(group = group, cor = cor, 
+                       stringsAsFactors = FALSE)
+  # ensure that all REs of the same gf are next to each other
+  if (nrow(random)) {
+    random$form <- form
+    random <- random[order(random$group), ]
   }
-  x <- nlist(fixed, random, group, cor)
+  x <- nlist(fixed, random)
   
   # handle addition arguments
   fun <- c("se", "weights", "trials", "cat", "cens", "trunc")
@@ -115,7 +113,7 @@ extract_effects <- function(formula, ..., family = NA,
       paste0("+", Reduce(paste, deparse(x[[2]])))
     } else ""
   }
-  formula_list <- c(random, group_formula, add_vars, ...)
+  formula_list <- c(random$form, group_formula, add_vars, ...)
   new_formula <- ulapply(formula_list, plus_rh)
   new_formula <- paste0("update(",Reduce(paste, deparse(fixed)),
                         ", ~ .", collapse(new_formula), ")")
@@ -124,8 +122,8 @@ extract_effects <- function(formula, ..., family = NA,
   
   # extract response variables
   if (check_response) {
-    x$resp_formula <- update(x$all, . ~ 1)
-    x$response <- gather_response(x$resp_formula)
+    x$respform <- update(x$all, . ~ 1)
+    x$response <- gather_response(x$respform)
     if (is.hurdle(family)) {
       x$response <- c(x$response, paste0("hu_", x$response))
     } else if (is.zero_inflated(family)) {
@@ -245,13 +243,14 @@ check_re_formula <- function(re_formula, old_ranef, data) {
     if (length(all.vars(ee$fixed))) {
       stop("fixed effects are not allowed in re_formula")
     }
-    if (!length(ee$group)) {
+    if (!nrow(ee$random)) {
       # if no RE terms are present in re_formula
       return(NULL)
     }
     # the true family doesn't matter here
     data <- update_data(data, family = NA, effects = ee)
-    new_ranef <- combine_duplicates(gather_ranef(effects = ee, data = data))
+    new_ranef <- gather_ranef(random = ee$random, data = data)
+    new_ranef <- combine_duplicates(new_ranef)
     invalid_gf <- setdiff(names(new_ranef), names(old_ranef))
     if (length(invalid_gf)) {
       stop(paste("Invalid grouping factors detected:", 
@@ -369,7 +368,7 @@ gather_response <- function(formula) {
   response
 }
 
-gather_ranef <- function(effects, data = NULL, ...) {
+gather_ranef <- function(random, data = NULL, ...) {
   # gathers helpful information on the random effects
   #
   # Args:
@@ -379,13 +378,13 @@ gather_ranef <- function(effects, data = NULL, ...) {
   #
   # Returns: 
   #   A named list with one element per grouping factor
-  Z <- lapply(effects$random, get_model_matrix, data = data, ...)
-  ranef <- setNames(lapply(Z, colnames), effects$group)
+  Z <- lapply(random$form, get_model_matrix, data = data, ...)
+  ranef <- setNames(lapply(Z, colnames), random$group)
   for (i in seq_along(ranef)) {
     attr(ranef[[i]], "levels") <- 
-      levels(as.factor(get(effects$group[[i]], data)))
+      levels(as.factor(get(random$group[[i]], data)))
     attr(ranef[[i]], "group") <- names(ranef)[i]
-    attr(ranef[[i]], "cor") <- effects$cor[[i]]
+    attr(ranef[[i]], "cor") <- random$cor[[i]]
   }
   ranef
 }
@@ -434,11 +433,9 @@ exclude_pars <- function(formula, ranef = TRUE) {
            "Lrescor", "Rescor", "Sigma", "LSigma",
            "p", "q", "e", "E", "res_cov_matrix", 
            "lp_pre", "hs_local", "hs_global")
-  if (length(ee$group)) {
-    for (i in 1:length(ee$group)) {
-      out <- c(out, paste0("pre_",i), paste0("L_",i), paste0("Cor_",i))
-      if (!ranef) out <- c(out, paste0("r_",i))
-    }
+  for (i in seq_along(ee$random$group)) {
+    out <- c(out, paste0("pre_",i), paste0("L_",i), paste0("Cor_",i))
+    if (!ranef) out <- c(out, paste0("r_",i))
   }
   out
 }

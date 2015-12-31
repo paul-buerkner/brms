@@ -287,12 +287,12 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
     prior <- rbind(prior, prior_frame(class = "b", coef = paref))
   }
   # random effects
-  if (length(ee$group)) {
+  if (nrow(ee$random)) {
     # global sd class
     prior <- rbind(prior, prior_frame(class = "sd", prior = default_scale_prior))  
-    gs <- unlist(ee$group)
-    for (i in 1:length(gs)) {
-      ranef <- colnames(get_model_matrix(ee$random[[i]], data = data))
+    gs <- ee$random$group
+    for (i in seq_along(gs)) {
+      ranef <- colnames(get_model_matrix(ee$random$form[[i]], data = data))
       # include random effects standard deviations
       prior <- rbind(prior, prior_frame(class = "sd", coef = c("", ranef), 
                                         group = gs[i]))
@@ -303,7 +303,7 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
         stop(paste("Duplicated random effects detected for group", gs[i]))
       }
       # include correlation parameters
-      if (ee$cor[[i]] && length(ranef) > 1) {
+      if (ee$random$cor[[i]] && length(ranef) > 1) {
         if (internal) {
           prior <- rbind(prior, prior_frame(class = "L", group = c("", gs[i]),
                                             prior = c("lkj_corr_cholesky(1)", "")))
@@ -461,15 +461,15 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
   # rename parameter groups
   group_indices <- which(nchar(prior$group) > 0)
   for (i in group_indices) {
-    if (!prior$group[i] %in% ee$group) { 
+    if (!prior$group[i] %in% ee$random$group) { 
       stop(paste("grouping factor", prior$group[i], "not found in the model"))
-    } else if (sum(prior$group[i] == ee$group) == 1) {
+    } else if (sum(prior$group[i] == ee$random$group) == 1) {
       # matches only one grouping factor in the model
-      prior$group[i] <- match(prior$group[i], ee$group)
+      prior$group[i] <- match(prior$group[i], ee$random$group)
     } else {
       # matches multiple grouping factors in the model
       rows2remove <- c(rows2remove, i)
-      which_match <- which(prior$group[i] == ee$group)
+      which_match <- which(prior$group[i] == ee$random$group)
       new_rows <- lapply(which_match, function(j) {
         new_row <- prior[i, ]
         new_row$group <- j

@@ -70,22 +70,19 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
                            has_intercept = has_intercept)
   
   # generate random effects code
-  Z <- lapply(ee$random, get_model_matrix, data = data, is_forked = is_forked)
+  Z <- lapply(ee$random$form, get_model_matrix, 
+              data = data, is_forked = is_forked)
   ranef <- lapply(Z, colnames)
-  if (length(ee$group)) {
-    # call stan_ranef for each random term seperately
-    text_ranef <- lapply(1:length(ee$group), stan_ranef, 
-                         ranef = ranef, group = ee$group, 
-                         cor = ee$cor, prior = prior, 
-                         names_cov_ranef = names(cov.ranef))
-  } else {
-    text_ranef <- list()
-  }
+  # call stan_ranef for each random term seperately
+  text_ranef <- lapply(seq_along(ee$random$group), stan_ranef, 
+                       ranef = ranef, random = ee$random, 
+                       names_cov_ranef = names(cov.ranef),
+                       prior = prior)
   # combine random effects stan code of different grouping factors by names
   text_ranef <- collapse_lists(text_ranef)
   
   # generate other important parts of the stan code
-  eta_re <- stan_eta_re(ranef = ranef, group = ee$group, cor = ee$cor)
+  eta_re <- stan_eta_re(ranef = ranef, random = ee$random)
   text_eta <- stan_eta(family = family, fixef = fixef, 
                        has_intercept = has_intercept, paref = paref, 
                        eta_re = eta_re, autocor = autocor,
@@ -117,7 +114,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
                                          weights = is.formula(ee$weights),
                                          cens = is.formula(ee$cens),
                                          trunc = is.formula(ee$trunc))
-  kronecker <- needs_kronecker(gather_ranef(effects = ee, data = data, 
+  kronecker <- needs_kronecker(gather_ranef(random = ee$random, data = data, 
                                             is_forked = is_forked),
                                names_cov_ranef = names(cov.ranef))
   text_misc_funs <- stan_misc_functions(family = family, kronecker = kronecker)
@@ -234,7 +231,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   # generate transformed parameters block
   # loop over all observations in transformed parameters if necessary
   cumu_logit <- family$family == "cumulative" && family$link == "logit"
-  make_loop <- length(ee$group) || (Kar || Kma) && !is.formula(ee$se) ||  
+  make_loop <- nrow(ee$random) || (Kar || Kma) && !is.formula(ee$se) ||  
                text_eta$transform || (is_ordinal && !cumu_logit)
   if (make_loop && !is_multi) {
     text_loop <- c(paste0("  # if available add REs to linear predictor \n",
@@ -361,7 +358,7 @@ stan_fixef <- function(fixef, paref, family = gaussian(),
   out
 }
 
-stan_ranef <- function(i, ranef, group, cor, prior = prior_frame(), 
+stan_ranef <- function(i, ranef, random, prior = prior_frame(), 
                        names_cov_ranef = NULL) {
   # Random effects in Stan 
   # 
@@ -378,8 +375,8 @@ stan_ranef <- function(i, ranef, group, cor, prior = prior_frame(),
   # Returns:
   #   A vector of strings containing the random effects in stan language
   r <- ranef[[i]]
-  g <- group[[i]]
-  cor <- cor[[i]]
+  g <- random$group[[i]]
+  cor <- random$cor[[i]]
   ccov <- g %in% names_cov_ranef
   out <- list()
   out$data <- paste0(
@@ -619,7 +616,7 @@ stan_llh <- function(family, se = FALSE, weights = FALSE,
   llh
 }
 
-stan_eta_re <- function(ranef, group, cor) {
+stan_eta_re <- function(ranef, random) {
   # Write the random effects part of the linear predictor
   # Args:
   #   ranef: a list of random effects 
@@ -629,7 +626,7 @@ stan_eta_re <- function(ranef, group, cor) {
   #   A string containing the random effects part of the linear predictor
   eta_re <- ""
   for (i in seq_along(ranef)) {
-    if (length(ranef[[i]]) == 1 || cor[[i]]) {
+    if (length(ranef[[i]]) == 1 || random$cor[[i]]) {
       eta_re <- paste0(eta_re, " + Z_",i,"[n] * r_",i,"[J_",i,"[n]]")
     } else {
       k <- seq_along(ranef[[i]])
