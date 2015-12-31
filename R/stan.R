@@ -70,24 +70,24 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
                            has_intercept = has_intercept)
   
   # generate random effects code
-  Z <- lapply(ee$random$form, get_model_matrix, 
-              data = data, is_forked = is_forked)
-  ranef <- lapply(Z, colnames)
+  ranef <- gather_ranef(ee$random, data = data, is_forked = is_forked)
+  #Z <- lapply(ee$random$form, get_model_matrix, 
+  #            data = data, is_forked = is_forked)
+  #ranef <- lapply(Z, colnames)
   # call stan_ranef for each random term seperately
-  text_ranef <- lapply(seq_along(ee$random$group), stan_ranef, 
-                       ranef = ranef, random = ee$random, 
+  text_ranef <- lapply(seq_along(ranef), stan_ranef, 
+                       ranef = ranef, #random = ee$random, 
                        names_cov_ranef = names(cov.ranef),
                        prior = prior)
   # combine random effects stan code of different grouping factors by names
   text_ranef <- collapse_lists(text_ranef)
   
   # generate other important parts of the stan code
-  eta_re <- stan_eta_re(ranef = ranef, random = ee$random)
-  text_eta <- stan_eta(family = family, fixef = fixef, 
+  #eta_re <- stan_eta_re(ranef = ranef, random = ee$random)
+  text_eta <- stan_eta(family = family, fixef = fixef, ranef = ranef,
                        has_intercept = has_intercept, paref = paref, 
-                       eta_re = eta_re, autocor = autocor,
-                       add = is.formula(ee[c("weights", "cens", "trunc")]),
-                       offset = offset, is_multi = is_multi)
+                       autocor = autocor, offset = offset, is_multi = is_multi,
+                       add = is.formula(ee[c("weights", "cens", "trunc")]))
   text_llh <- stan_llh(family, is_multi = is_multi,
                        se = is.formula(ee$se),  
                        weights = is.formula(ee$weights),
@@ -358,13 +358,13 @@ stan_fixef <- function(fixef, paref, family = gaussian(),
   out
 }
 
-stan_ranef <- function(i, ranef, random, prior = prior_frame(), 
+stan_ranef <- function(i, ranef, prior = prior_frame(), 
                        names_cov_ranef = NULL) {
   # Random effects in Stan 
   # 
   # Args:
   #   i: the index of the grouping factor
-  #   ranef: a list of random effects 
+  #   ranef: a list of random effects with attributes 
   #   group: a vector of grouping factors
   #   cor: a logical vector to indicate if correlations should be estimated
   #   prior: a data.frame containing user defined priors 
@@ -375,8 +375,8 @@ stan_ranef <- function(i, ranef, random, prior = prior_frame(),
   # Returns:
   #   A vector of strings containing the random effects in stan language
   r <- ranef[[i]]
-  g <- random$group[[i]]
-  cor <- random$cor[[i]]
+  g <- attr(ranef[[i]], "group")
+  cor <- attr(ranef[[i]], "cor")
   ccov <- g %in% names_cov_ranef
   out <- list()
   out$data <- paste0(
@@ -616,7 +616,7 @@ stan_llh <- function(family, se = FALSE, weights = FALSE,
   llh
 }
 
-stan_eta_re <- function(ranef, random) {
+stan_eta_re <- function(ranef) {
   # Write the random effects part of the linear predictor
   # Args:
   #   ranef: a list of random effects 
@@ -626,7 +626,7 @@ stan_eta_re <- function(ranef, random) {
   #   A string containing the random effects part of the linear predictor
   eta_re <- ""
   for (i in seq_along(ranef)) {
-    if (length(ranef[[i]]) == 1 || random$cor[[i]]) {
+    if (length(ranef[[i]]) == 1 || attr(ranef[[i]], "cor")) {
       eta_re <- paste0(eta_re, " + Z_",i,"[n] * r_",i,"[J_",i,"[n]]")
     } else {
       k <- seq_along(ranef[[i]])
@@ -637,8 +637,8 @@ stan_eta_re <- function(ranef, random) {
   eta_re
 }
 
-stan_eta <- function(family, fixef, has_intercept = TRUE, 
-                     paref = NULL, eta_re = "", autocor = cor_arma(),  
+stan_eta <- function(family, fixef, ranef = list(), has_intercept = TRUE, 
+                     paref = NULL, autocor = cor_arma(),  
                      add = FALSE, offset = FALSE, is_multi = FALSE) {
   # linear predictor in Stan
   #
@@ -710,6 +710,7 @@ stan_eta <- function(family, fixef, has_intercept = TRUE,
   }
   
   # define fixed, random, and autocorrelation effects
+  eta_re <- stan_eta_re(ranef)
   etap <- if (length(paref) || is_cat) {
     paste0("  etap <- ", 
            ifelse(length(paref), "Xp * bp", "rep_matrix(0, Kp, ncat - 1)"),
