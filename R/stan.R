@@ -71,9 +71,6 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   
   # generate random effects code
   ranef <- gather_ranef(ee$random, data = data, is_forked = is_forked)
-  #Z <- lapply(ee$random$form, get_model_matrix, 
-  #            data = data, is_forked = is_forked)
-  #ranef <- lapply(Z, colnames)
   # call stan_ranef for each random term seperately
   text_ranef <- lapply(seq_along(ranef), stan_ranef, 
                        ranef = ranef, #random = ee$random, 
@@ -83,7 +80,6 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   text_ranef <- collapse_lists(text_ranef)
   
   # generate other important parts of the stan code
-  #eta_re <- stan_eta_re(ranef = ranef, random = ee$random)
   text_eta <- stan_eta(family = family, fixef = fixef, ranef = ranef,
                        has_intercept = has_intercept, paref = paref, 
                        autocor = autocor, offset = offset, is_multi = is_multi,
@@ -114,9 +110,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
                                          weights = is.formula(ee$weights),
                                          cens = is.formula(ee$cens),
                                          trunc = is.formula(ee$trunc))
-  kronecker <- needs_kronecker(gather_ranef(random = ee$random, data = data, 
-                                            is_forked = is_forked),
-                               names_cov_ranef = names(cov.ranef))
+  kronecker <- needs_kronecker(ranef, names_cov_ranef = names(cov.ranef))
   text_misc_funs <- stan_misc_functions(family = family, kronecker = kronecker)
     
   # get priors for all parameters in the model
@@ -364,9 +358,7 @@ stan_ranef <- function(i, ranef, prior = prior_frame(),
   # 
   # Args:
   #   i: the index of the grouping factor
-  #   ranef: a list of random effects with attributes 
-  #   group: a vector of grouping factors
-  #   cor: a logical vector to indicate if correlations should be estimated
+  #   ranef: a named list returned by gather_ranef
   #   prior: a data.frame containing user defined priors 
   #          as returned by check_prior
   #   names_cov_ranef: names of the grouping factors 
@@ -458,7 +450,6 @@ stan_llh <- function(family, se = FALSE, weights = FALSE,
   #
   # Args:
   #   family: the model family
-  #   link: the link function
   #   se: logical; user defined SEs present?
   #   weights: logical; weights present?
   #   trials: logical; number of bernoulli trials given per observation?
@@ -619,9 +610,7 @@ stan_llh <- function(family, se = FALSE, weights = FALSE,
 stan_eta_re <- function(ranef) {
   # Write the random effects part of the linear predictor
   # Args:
-  #   ranef: a list of random effects 
-  #   group: a vector of grouping factors
-  #   cor: a logical vector to indicate if correlations should be estimated
+  #   ranef: a named list returned by gather_ranef
   # Returns:
   #   A string containing the random effects part of the linear predictor
   eta_re <- ""
@@ -637,17 +626,17 @@ stan_eta_re <- function(ranef) {
   eta_re
 }
 
-stan_eta <- function(family, fixef, ranef = list(), has_intercept = TRUE, 
-                     paref = NULL, autocor = cor_arma(),  
+stan_eta <- function(family, fixef, ranef = list(), paref = NULL, 
+                     has_intercept = TRUE, autocor = cor_arma(),  
                      add = FALSE, offset = FALSE, is_multi = FALSE) {
   # linear predictor in Stan
   #
   # Args:
   #   family: the model family
-  #   link: the link function
   #   fixef: names of the fixed effects
+  #   ranef: a named list returned by gather_ranef
   #   paref: names of the category specific effects
-  #   group: names of the grouping factors
+  #   has_intercept: has the model a fixed effects intercept?
   #   autocor: autocorrelation structure
   #   add: is the model weighted, censored, or truncated?
   #   offset: is an offset defined?
