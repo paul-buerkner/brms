@@ -87,7 +87,7 @@ fitted_catordinal <- function(eta, max_obs, family) {
   # get probabilities of each category
   get_density <- function(n) {
     do.call(paste0("d", family$family), 
-            nlist(1:ncat, eta = eta[, n, ], ncat, link = family$link))
+            list(1:ncat, eta = eta[, n, ], ncat = ncat, link = family$link))
   }
   aperm(abind(lapply(1:ncol(eta), get_density), along = 3), perm = c(1, 3, 2))
 }
@@ -156,6 +156,7 @@ fitted_trunc_student <- function(mu, lb, ub, x, data) {
 }
 
 fitted_trunc_lognormal <- function(mu, lb, ub, x, data) {
+  # mu has to be on the linear scale
   sigma <- get_sigma(x, data = data, method = "fitted", n = nrow(mu))
   m1 <- exp(mu + sigma^2 / 2) * (pnorm((log(ub) - mu) / sigma - sigma) - 
                                    pnorm((log(lb) - mu) / sigma - sigma))
