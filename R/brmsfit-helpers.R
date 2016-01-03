@@ -829,3 +829,30 @@ td_plot <- function(par, x, theme = "classic") {
           plot.margin = grid::unit(c(0.2, 0, -0.5, -0.5), "lines"))
   list(trace, density)
 }
+
+add_samples <- function(x, newpar, dim = numeric(0), dist = "norm", ...) {
+  # add some random samples to a brmsfit object 
+  # currently only used within tests
+  # Args:
+  #   x: a brmsfit object
+  #   newpar: name of the new parameter to add; 
+  #           a single character vector
+  #   dim: dimension of the new parameter
+  # Returns:
+  #   a brmsfit object with new (standard normal) samples
+  if (!is(x, "brmsfit")) {
+    stop("x must be of class brmsfit")
+  }
+  if (!identical(dim, numeric(0))) {
+    stop("currently dim must be numeric(0)")
+  }
+  args <- attr(x$fit@sim$samples[[1]], "args")
+  for (i in seq_along(x$fit@sim$samples)) {
+    x$fit@sim$samples[[i]][[newpar]] <- 
+      do.call(paste0("r", dist), list(args$iter, ...))
+  }
+  x$fit@sim$fnames_oi <- c(x$fit@sim$fnames_oi, newpar) 
+  x$fit@sim$dims_oi[[newpar]] <- dim
+  x$fit@sim$pars_oi <- names(x$fit@sim$dims_oi)
+  x
+}
