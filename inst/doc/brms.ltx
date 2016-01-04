@@ -156,7 +156,7 @@ fit1 <- brm(formula = time | cens(censored) ~ age + sex + disease
             prior = c(set_prior("normal(0,10)", class = "b"),
                       set_prior("cauchy(0,2)", class = "sd"),
                       set_prior("lkj(2)", class = "cor")),
-            n.warmup = 500, n.iter = 2000, n.chains = 2))
+            n.warmup = 500, n.iter = 2000, n.chains = 2)
 \end{Code}
 
 \subsection[formula: Information on the response, fixed and random effects]{\code{formula}: Information on the response, fixed and random effects}
