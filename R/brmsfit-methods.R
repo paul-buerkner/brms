@@ -421,8 +421,13 @@ ngrps.brmsfit <- function(object, ...) {
   ee <- extract_effects(object$formula, family = object$family)
   group <- ee$random$group
   if (length(group)) {
-    out <- setNames(lapply(1:length(group), function(i) 
-      standata[[paste0("N_",i)]]), group)
+    .fun <- function(i) {
+      out <- standata[[paste0("N_", i)]]
+      if (is.null(out)) {
+        out <- standata[[paste0("N_", group[[i]])]]
+      }
+    }
+    out <- setNames(lapply(1:length(group), .fun), group)
     out <- out[!duplicated(group)]
   } else out <- NULL
   out
