@@ -422,12 +422,13 @@ ngrps.brmsfit <- function(object, ...) {
   group <- ee$random$group
   if (length(group)) {
     .fun <- function(i) {
-      out <- standata[[paste0("N_", i)]]
-      if (is.null(out)) {
-        out <- standata[[paste0("N_", group[[i]])]]
+      n <- standata[[paste0("N_", i)]]
+      if (is.null(n)) {
+        n <- standata[[paste0("N_", group[[i]])]]
       }
+      return(n)
     }
-    out <- setNames(lapply(1:length(group), .fun), group)
+    out <- setNames(lapply(seq_along(group), .fun), group)
     out <- out[!duplicated(group)]
   } else out <- NULL
   out
