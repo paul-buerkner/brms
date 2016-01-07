@@ -21,14 +21,7 @@ Nsamples <- function(x) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) {
     return(0)
   } 
-  sim <- x$fit@sim
-  if (is.null(sim$iter)) {
-    args <- attr(sim[[1]], "args")
-    out <- (args$iter - args$warmup) / args$thin * length(sim)  
-  } else {
-    out <- (sim$iter - sim$warmup) / sim$thin * sim$chains
-  }
-  out
+  (x$fit@sim$iter - x$fit@sim$warmup) / x$fit@sim$thin * x$fit@sim$chains
 }
 
 algorithm <- function(x) {
@@ -859,10 +852,9 @@ add_samples <- function(x, newpar, dim = numeric(0), dist = "norm", ...) {
   if (!identical(dim, numeric(0))) {
     stop("currently dim must be numeric(0)")
   }
-  args <- attr(x$fit@sim$samples[[1]], "args")
   for (i in seq_along(x$fit@sim$samples)) {
     x$fit@sim$samples[[i]][[newpar]] <- 
-      do.call(paste0("r", dist), list(args$iter, ...))
+      do.call(paste0("r", dist), list(x$fit@sim$iter, ...))
   }
   x$fit@sim$fnames_oi <- c(x$fit@sim$fnames_oi, newpar) 
   x$fit@sim$dims_oi[[newpar]] <- dim

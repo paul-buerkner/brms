@@ -225,18 +225,10 @@ posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,
                        exact_match = exact_match, ...)
   
   # get basic information on the samples 
-  if (is.null(x$fit@sim$iter)) {
-    attr_args <- attr(x$fit@sim$samples[[1]], "args")
-    iter <- attr_args$iter
-    warmup <- attr_args$warmup
-    thin <- attr_args$thin
-    chains <- length(x$fit@sim$samples)
-  } else {
-    iter <- x$fit@sim$iter
-    warmup <- x$fit@sim$warmup
-    thin <- x$fit@sim$thin
-    chains <- x$fit@sim$chains
-  }
+  iter <- x$fit@sim$iter
+  warmup <- x$fit@sim$warmup
+  thin <- x$fit@sim$thin
+  chains <- x$fit@sim$chains
   final_iter <- (iter - warmup) / thin
   samples_taken <- seq((warmup + 1), iter, thin)
   
@@ -347,21 +339,12 @@ summary.brmsfit <- function(object, waic = TRUE, ...) {
                      autocor = object$autocor,
                      algorithm = algorithm(object))
   if (length(object$fit@sim)) {
-    if (is.null(object$fit@sim$iter)) {
-      attr_args <- attr(object$fit@sim$samples[[1]], "args")
-      out$n.chains <- length(object$fit@sim$samples)
-      out$n.iter <- attr_args$iter
-      out$n.warmup <- attr_args$warmup
-      out$n.thin <- attr_args$thin
-      out$sampler <- attr_args$sampler_t
-    } else {
-      out$n.chains <- object$fit@sim$chains
-      out$n.iter <- object$fit@sim$iter
-      out$n.warmup <- object$fit@sim$warmup
-      out$n.thin <- object$fit@sim$thin
-      stan_args <- object$fit@stan_args[[1]]
-      out$sampler <- paste0(stan_args$method, "(", stan_args$algorithm, ")")
-    }
+    out$n.chains <- object$fit@sim$chains
+    out$n.iter <- object$fit@sim$iter
+    out$n.warmup <- object$fit@sim$warmup
+    out$n.thin <- object$fit@sim$thin
+    stan_args <- object$fit@stan_args[[1]]
+    out$sampler <- paste0(stan_args$method, "(", stan_args$algorithm, ")")
     
     if (length(object$ranef) && !any(grepl("^r_", parnames(object)))
         || length(ee$response) > 1 && is.linear(family)) {
