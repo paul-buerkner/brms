@@ -637,8 +637,9 @@ arr_design_matrix <- function(Y, r, group)  {
     for (j in 1:N_group) {
       ptsum[j+1] <- ptsum[j] + sum(group == U_group[j])
       for (i in 1:r) {
-        if (ptsum[j]+i+1 <= ptsum[j+1])
-          out[(ptsum[j]+i+1):ptsum[j+1], i] <- Y[(ptsum[j]+1):(ptsum[j+1]-i)]
+        if (ptsum[j] + i + 1 <= ptsum[j + 1])
+          out[(ptsum[j] + i + 1):ptsum[j + 1], i] <- 
+            Y[(ptsum[j] + 1):(ptsum[j + 1] - i)]
       }
     }
   }
@@ -683,9 +684,9 @@ arr_design_matrix <- function(Y, r, group)  {
   # indicator for censoring
   if (is.factor(x)) x <- as.character(x)
   cens <- unname(sapply(x, function(x) {
-    if (grepl(paste0("^",x), "right") || is.logical(x) && isTRUE(x)) x <- 1
-    else if (grepl(paste0("^",x), "none") || is.logical(x) && !isTRUE(x)) x <- 0
-    else if (grepl(paste0("^",x), "left")) x <- -1
+    if (grepl(paste0("^", x), "right") || isTRUE(x)) x <- 1
+    else if (grepl(paste0("^", x), "none") || isFALSE(x)) x <- 0
+    else if (grepl(paste0("^", x), "left")) x <- -1
     else x
   }))
   if (!all(unique(cens) %in% c(-1:1)))
