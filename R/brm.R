@@ -420,8 +420,9 @@ brm <- function(formula, data = NULL, family = gaussian(),
     
     # initialize S3 object
     x <- brmsfit(formula = formula, family = family, link = family$link, 
-                 partial = partial, data.name = data.name, 
-                 autocor = autocor, prior = prior, cov.ranef = cov.ranef)  
+                 partial = partial, data.name = data.name, autocor = autocor, 
+                 prior = prior, cov.ranef = cov.ranef,
+                 algorithm = algorithm)  
     # see data.R
     x$data <- update_data(data, family = family, effects = ee, et$group) 
     # see validate.R
@@ -450,10 +451,12 @@ brm <- function(formula, data = NULL, family = gaussian(),
     inits <- get(inits, mode = "function", envir = parent.frame())
   }
   args <- list(object = x$fit, data = standata, pars = x$exclude, 
-               init = inits,  iter = n.iter, warmup = n.warmup, 
-               thin = n.thin, chains = n.chains, include = FALSE,
-               show_messages = !silent, algorithm = algorithm)  
+               include = FALSE, algorithm = algorithm)  
   args[names(dots)] <- dots 
+  if (algorithm == "sampling") {
+    args <- c(args, init = inits, iter = n.iter, warmup = n.warmup, 
+              thin = n.thin, chains = n.chains, show_messages = !silent)
+  }
   
   set.seed(seed)
   if (n.cluster > 1) {  # sample in parallel
