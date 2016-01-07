@@ -225,10 +225,18 @@ posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,
                        exact_match = exact_match, ...)
   
   # get basic information on the samples 
-  iter <- attr(x$fit@sim$samples[[1]],"args")$iter
-  warmup <- attr(x$fit@sim$samples[[1]],"args")$warmup
-  thin <- attr(x$fit@sim$samples[[1]],"args")$thin
-  chains <- length(x$fit@sim$samples) 
+  if (is.null(x$fit@sim$iter)) {
+    attr_args <- attr(x$fit@sim$samples[[1]], "args")
+    iter <- attr_args$iter
+    warmup <- attr_args$warmup
+    thin <- attr_args$thin
+    chains <- length(x$fit@sim$samples)
+  } else {
+    iter <- x$fit@sim$iter
+    warmup <- x$fit@sim$warmup
+    thin <- x$fit@sim$thin
+    chains <- x$fit@sim$chains
+  }
   final_iter <- (iter - warmup) / thin
   samples_taken <- seq((warmup + 1), iter, thin)
   
@@ -336,13 +344,24 @@ summary.brmsfit <- function(object, waic = TRUE, ...) {
                      group = names(object$ranef), 
                      nobs = nobs(object), 
                      ngrps = brms::ngrps(object), 
-                     autocor = object$autocor)
+                     autocor = object$autocor,
+                     algorithm = algorithm(object))
   if (length(object$fit@sim)) {
-    out$n.chains <- length(object$fit@sim$samples)
-    out$n.iter <- attr(object$fit@sim$samples[[1]],"args")$iter
-    out$n.warmup <- attr(object$fit@sim$samples[[1]],"args")$warmup
-    out$n.thin <- attr(object$fit@sim$samples[[1]],"args")$thin
-    out$sampler <- attr(object$fit@sim$samples[[1]],"args")$sampler_t
+    if (is.null(object$fit@sim$iter)) {
+      attr_args <- attr(object$fit@sim$samples[[1]], "args")
+      out$n.chains <- length(object$fit@sim$samples)
+      out$n.iter <- attr_args$iter
+      out$n.warmup <- attr_args$warmup
+      out$n.thin <- attr_args$thin
+      out$sampler <- attr_args$sampler_t
+    } else {
+      out$n.chains <- object$fit@sim$chains
+      out$n.iter <- object$fit@sim$iter
+      out$n.warmup <- object$fit@sim$warmup
+      out$n.thin <- object$fit@sim$thin
+      stan_args <- object$fit@stan_args[[1]]
+      out$sampler <- paste0(stan_args$method, "(", stan_args$algorithm, ")")
+    }
     
     if (length(object$ranef) && !any(grepl("^r_", parnames(object)))
         || length(ee$response) > 1 && is.linear(family)) {
@@ -356,33 +375,37 @@ summary.brmsfit <- function(object, waic = TRUE, ...) {
     meta_pars <- meta_pars[!apply(sapply(paste0("^", c("r_", "prior_")), 
                                   grepl, x = meta_pars, ...), 1, any)]
     fit_summary <- rstan::summary(object$fit, pars = meta_pars,
-                                  probs = c(0.025, 0.975))
-    col_names <- c("Estimate", "Est.Error", "l-95% CI", 
-                   "u-95% CI", "Eff.Sample", "Rhat")
+                                  probs = c(0.025, 0.975))$summary
+    algorithm <- algorithm(object)
+    if (algorithm == "sampling") {
+      fit_summary <- fit_summary[, -2]
+      colnames(fit_summary) <- c("Estimate", "Est.Error", "l-95% CI", 
+                                 "u-95% CI", "Eff.Sample", "Rhat")
+    } else {
+      colnames(fit_summary) <- c("Estimate", "Est.Error", "l-95% CI", 
+                                 "u-95% CI")
+    }
     
     # fixed effects summary
     fix_pars <- pars[grepl("^b_", pars)]
-    out$fixed <- matrix(fit_summary$summary[fix_pars, -c(2)], ncol = 6)
-    colnames(out$fixed) <- col_names
+    out$fixed <- fit_summary[fix_pars, , drop = FALSE]
     rownames(out$fixed) <- gsub("^b_", "", fix_pars)
     
     # summary of family specific parameters
     spec_pars <- pars[pars %in% c("nu","shape","delta", "phi") | 
       apply(sapply(c("^sigma_", "^rescor_"), grepl, x = pars), 1, any)]
-    out$spec_pars <- matrix(fit_summary$summary[spec_pars,-c(2)], ncol = 6)
+    out$spec_pars <- fit_summary[spec_pars, , drop = FALSE]
     if (is.linear(family)) {
       sigma_names <- paste0("sigma(",ee$response,")")
       rescor_names <- get_cornames(ee$response, type = "rescor")   
       spec_pars[grepl("^sigma_", spec_pars)] <- sigma_names
       spec_pars[grepl("^rescor_", spec_pars)] <- rescor_names 
     }    
-    colnames(out$spec_pars) <- col_names
     rownames(out$spec_pars) <- spec_pars
     
-    # summary of ARMA effects
+    # summary of autocorrelation effects
     cor_pars <- pars[grepl("^ar|^ma", pars)]
-    out$cor_pars <- matrix(fit_summary$summary[cor_pars,-c(2)], ncol = 6)
-    colnames(out$cor_pars) <- col_names
+    out$cor_pars <- fit_summary[cor_pars, , drop = FALSE]
     rownames(out$cor_pars) <- cor_pars
     
     if (length(out$group)) {
@@ -396,8 +419,7 @@ summary.brmsfit <- function(object, waic = TRUE, ...) {
         cor_names <- get_cornames(rnames, subset = cor_pars, 
                                   subtype = out$group[i])
         out$random[[out$group[i]]] <- 
-          matrix(fit_summary$summary[c(sd_pars, cor_pars), -c(2)], ncol = 6)
-        colnames(out$random[[out$group[i]]]) <- col_names
+          fit_summary[c(sd_pars, cor_pars), , drop = FALSE]
         rownames(out$random[[out$group[i]]]) <- c(sd_names, cor_names)
       }
     }

@@ -21,9 +21,22 @@ Nsamples <- function(x) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) {
     return(0)
   } 
-  s <- x$fit@sim$samples
-  args <- attr(s[[1]], "args")
-  (args$iter - args$warmup) / args$thin * length(s)
+  sim <- x$fit@sim
+  if (is.null(sim$iter)) {
+    args <- attr(sim[[1]], "args")
+    out <- (args$iter - args$warmup) / args$thin * length(sim)  
+  } else {
+    out <- (sim$iter - sim$warmup) / sim$thin * sim$chains
+  }
+  out
+}
+
+algorithm <- function(x) {
+  if (!is(x, "brmsfit")) {
+    stop("x must be of class brmsfit")
+  }
+  if (is.null(x$algorithm)) "sampling"
+  else x$algorithm
 }
 
 first_greater <- function(A, target, i = 1) {

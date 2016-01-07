@@ -27,8 +27,10 @@ print.brmssummary <- function(x, digits = 2, ...) {
       for (i in 1:length(x$group)) {
         g <- x$group[i]
         cat(paste0("~",g," (Number of levels: ",x$ngrps[[g]],") \n"))
-        x$random[[g]][, "Eff.Sample"] <- 
-          round(x$random[[g]][, "Eff.Sample"], digits = 0)
+        if (x$algorithm == "sampling") {
+          x$random[[g]][, "Eff.Sample"] <- 
+            round(x$random[[g]][, "Eff.Sample"], digits = 0)
+        }
         print(round(x$random[[g]], digits = digits))
         cat("\n")
       }
@@ -38,34 +40,42 @@ print.brmssummary <- function(x, digits = 2, ...) {
       cat("Correlation Structure: ")
       print(x$autocor)
       cat("\n")
-      x$cor_pars[, "Eff.Sample"] <- round(x$cor_pars[, "Eff.Sample"], 
-                                          digits = 0)
+      if (x$algorithm == "sampling") {
+        x$cor_pars[, "Eff.Sample"] <- 
+          round(x$cor_pars[, "Eff.Sample"], digits = 0)
+      }
       print(round(x$cor_pars, digits = digits))
       cat("\n")
     }
     
     if (nrow(x$fixed)) {
       cat("Fixed Effects: \n")
-      x$fixed[, "Eff.Sample"] <- round(x$fixed[, "Eff.Sample"], 
-                                       digits = 0)
+      if (x$algorithm == "sampling") {
+        x$fixed[, "Eff.Sample"] <- 
+          round(x$fixed[, "Eff.Sample"], digits = 0)
+      }
       print(round(x$fixed, digits = digits)) 
       cat("\n")
     }
     
     if (nrow(x$spec_pars)) {
       cat("Family Specific Parameters: \n")
-      x$spec_pars[, "Eff.Sample"] <- 
-        round(x$spec_pars[, "Eff.Sample"], digits = 0)
+      if (x$algorithm == "sampling") {
+        x$spec_pars[, "Eff.Sample"] <- 
+          round(x$spec_pars[, "Eff.Sample"], digits = 0)
+      }
       print(round(x$spec_pars, digits = digits))
       cat("\n")
     }
     
-    cat(paste0("Samples were drawn using ",x$sampler,". ", 
-               "For each parameter, Eff.Sample is a \n",
-               "crude measure of effective sample size, ", 
-               "and Rhat is the potential scale \n",
-               "reduction factor on split chains ",
-               "(at convergence, Rhat = 1)."))
+    cat(paste0("Samples were drawn using ",x$sampler,". "))
+    if (x$algorithm == "sampling") {
+      cat(paste0("For each parameter, Eff.Sample \n",
+          "is a crude measure of effective sample size, ", 
+          "and Rhat is the potential \n",
+          "scale reduction factor on split chains ",
+          "(at convergence, Rhat = 1)."))
+    }
   }
   invisible(x)
 }
