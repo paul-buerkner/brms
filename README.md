@@ -56,9 +56,9 @@ summary(fit)
 #> Trt_c                -0.34      0.16    -0.66    -0.03       1269    1
 #> log_Base4_c:Trt_c     0.36      0.22    -0.09     0.78       1046    1
 #> 
-#> Samples were drawn using NUTS(diag_e). For each parameter, Eff.Sample is a 
-#> crude measure of effective sample size, and Rhat is the potential scale 
-#> reduction factor on split chains (at convergence, Rhat = 1).
+#> Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
+#> is a crude measure of effective sample size, and Rhat is the potential 
+#> scale reduction factor on split chains (at convergence, Rhat = 1).
 ```
 
 On the top of the output, some general information on the model is given, such as family, formula, number of iterations and chains, as well as the WAIC, which is an information criterion for Bayesian models. Next, random effects are displayed seperately for each grouping factor in terms of standard deviations and (in case of more than one random effect per grouping factor; not displayed here) correlations between random effects. On the bottom of the output, fixed effects are displayed. If incorporated, autocorrelation effects and family specific parameters (e.g., the residual standard deviation 'sigma' in normal models) are also given.
@@ -81,13 +81,14 @@ For a complete list of methods to apply on <b>brms</b> models see
 
 ``` r
 methods(class = "brmsfit") 
-#>  [1] family            fitted            fixef             formula          
-#>  [5] hypothesis        launch_shiny      logLik            LOO              
-#>  [9] model.frame       ngrps             nobs              pairs            
-#> [13] parnames          plot              posterior_samples predict          
-#> [17] print             prior_samples     ranef             residuals        
-#> [21] stancode          standata          stanplot          summary          
-#> [25] update            VarCorr           vcov              WAIC             
+#>  [1] coef              family            fitted            fixef            
+#>  [5] formula           hypothesis        launch_shiny      logLik           
+#>  [9] LOO               model.frame       ngrps             nobs             
+#> [13] pairs             parnames          plot              posterior_samples
+#> [17] predict           print             prior_samples     ranef            
+#> [21] residuals         stancode          standata          stanplot         
+#> [25] summary           update            VarCorr           vcov             
+#> [29] WAIC             
 #> see '?methods' for accessing help and source code
 ```
 
