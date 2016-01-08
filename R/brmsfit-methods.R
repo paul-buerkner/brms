@@ -201,7 +201,7 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
   } 
   VarCorr <- lapply(p, extract)
   names(VarCorr) <- group
-  class(VarCorr) <- "VarCorr_brmsfit"
+  class(VarCorr) <- "brmsVarCorr"
   VarCorr
 }
 

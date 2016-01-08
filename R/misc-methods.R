@@ -82,7 +82,7 @@ print.brmssummary <- function(x, digits = 2, ...) {
 
 #' @rdname VarCorr
 #' @export
-as.data.frame.VarCorr_brmsfit <- function(x, ...) {
+as.data.frame.brmsVarCorr <- function(x, ...) {
   estimates <- colnames(x[[1]]$sd)
   groups <- names(x)
   n_groups <- length(groups)
@@ -131,7 +131,7 @@ as.data.frame.VarCorr_brmsfit <- function(x, ...) {
 }
 
 #' @export
-print.VarCorr_brmsfit <- function(x, digits = 2, ...) {
+print.brmsVarCorr <- function(x, digits = 2, ...) {
   dat <- as.data.frame(x)
   dat[, 4:ncol(dat)] <- round(as.matrix(dat[, 4:ncol(dat)]), digits = digits)
   dat[is.na(dat)] <- ""

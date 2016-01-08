@@ -3,14 +3,14 @@
 \name{VarCorr.brmsfit}
 \alias{VarCorr}
 \alias{VarCorr.brmsfit}
-\alias{as.data.frame.VarCorr_brmsfit}
+\alias{as.data.frame.brmsVarCorr}
 \title{Extract variance and correlation components}
 \usage{
 \method{VarCorr}{brmsfit}(x, estimate = "mean", as.list = TRUE, ...)
 
 VarCorr(x, ...)
 
-\method{as.data.frame}{VarCorr_brmsfit}(x, ...)
+\method{as.data.frame}{brmsVarCorr}(x, ...)
 }
 \arguments{
 \item{x}{An \code{R} object usually of class \code{brmsift}.}
