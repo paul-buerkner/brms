@@ -1,11 +1,11 @@
 brmsfit <- function(formula = NULL, family = "", link = "", data.name = "", 
                     data = data.frame(), model = "", exclude = NULL,
                     prior = list(), ranef = NULL, autocor = NULL,
-                    multiply = NULL, partial = NULL, 
-                    cov.ranef = NULL, fit = NA, algorithm = "sampling") {
+                    partial = NULL, cov.ranef = NULL, fit = NA,
+                    algorithm = "sampling") {
   # brmsfit class
   x <- nlist(formula, family, link, data.name, data, model, exclude, prior, 
-             ranef, autocor, multiply, partial, cov.ranef, fit, algorithm)
+             ranef, autocor, partial, cov.ranef, fit, algorithm)
   class(x) <- "brmsfit"
   x
 }
@@ -14,15 +14,14 @@ brmssummary <- function(formula = NULL, family = "", link = "",
                         data.name = "", group = NULL, nobs = NULL, 
                         ngrps = NULL, n.chains = 1, n.iter = 2000, 
                         n.warmup = 500, n.thin = 1, sampler = "", 
-                        autocor = NULL, multiply = NULL,
-                        fixed = NULL, random = list(), 
+                        autocor = NULL, fixed = NULL, random = list(), 
                         cor_pars = NULL, spec_pars = NULL, 
                         mult_pars = NULL, WAIC = "Not computed",
                         algorithm = "sampling") {
   # brmssummary class
   x <- nlist(formula, family, link, data.name, group, nobs, ngrps, n.chains, 
-             n.iter,  n.warmup, n.thin, sampler, autocor, multiply, 
-             fixed, random, cor_pars, spec_pars, mult_pars, WAIC, algorithm)
+             n.iter,  n.warmup, n.thin, sampler, autocor, fixed, 
+             random, cor_pars, spec_pars, mult_pars, WAIC, algorithm)
   class(x) <- "brmssummary"
   x
 }
