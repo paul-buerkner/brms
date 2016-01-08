@@ -338,6 +338,7 @@ summary.brmsfit <- function(object, waic = TRUE, ...) {
                      ngrps = brms::ngrps(object), 
                      autocor = object$autocor,
                      algorithm = algorithm(object))
+  
   if (length(object$fit@sim)) {
     out$n.chains <- object$fit@sim$chains
     out$n.iter <- object$fit@sim$iter
@@ -345,7 +346,6 @@ summary.brmsfit <- function(object, waic = TRUE, ...) {
     out$n.thin <- object$fit@sim$thin
     stan_args <- object$fit@stan_args[[1]]
     out$sampler <- paste0(stan_args$method, "(", stan_args$algorithm, ")")
-    
     if (length(object$ranef) && !any(grepl("^r_", parnames(object)))
         || length(ee$response) > 1 && is.linear(family)) {
       # if brm(..., ranef = FALSE) or model is multivariate

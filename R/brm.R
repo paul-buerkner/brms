@@ -393,7 +393,7 @@ brm <- function(formula, data = NULL, family = gaussian(),
                 silent = TRUE, seed = 12345, save.model = NULL, ...) {
   
   # some input checks 
-  check_brm_input(nlist(family, n.chains, n.cluster, inits, algorithm))
+  check_brm_input(nlist(family, n.chains, n.cluster, inits))
   autocor <- check_autocor(autocor)
   threshold <- match.arg(threshold)
   algorithm <- match.arg(algorithm)
