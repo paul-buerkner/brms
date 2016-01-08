@@ -123,7 +123,7 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, ...) {
 #'
 #' @return A list of matrices (one per grouping factor), 
 #'  with factor levels as row names and 
-#'  random effects as column names 
+#'  coefficients as column names 
 #'  
 #' @examples
 #' \dontrun{
@@ -145,14 +145,21 @@ coef.brmsfit <- function(x, estimate = "mean", ...) {
     return(fixef)  # no random effects present
   }
   coef <- ranef(x, estimate = estimate, ...)
-  coef_names <- unique(ulapply(coef, colnames))
-  no_fixef <- setdiff(coef_names, rownames(fixef))
-  if (length(no_fixef)) {
-    zeros <- matrix(0, nrow = length(no_fixef))
-    rownames(zeros) <- no_fixef
-    fixef <- rbind(fixef, zeros)
+  ranef_names <- unique(ulapply(coef, colnames))
+  missing_fixef <- setdiff(ranef_names, rownames(fixef))
+  if (length(missing_fixef)) {
+    zero_mat <- matrix(0, nrow = length(missing_fixef))
+    rownames(zero_mat) <- missing_fixef
+    fixef <- rbind(fixef, zero_mat)
   }
   for (i in seq_along(coef)) {
+    missing_ranef <-  setdiff(rownames(fixef), colnames(coef[[i]]))
+    if (length(missing_ranef)) {
+      zero_mat <- matrix(0, nrow = nrow(coef[[i]]), 
+                         ncol = length(missing_ranef))
+      colnames(zero_mat) <- missing_ranef
+      coef[[i]] <- cbind(coef[[i]], zero_mat)
+    }
     for (nm in colnames(coef[[i]])) {
       coef[[i]][, nm] <- coef[[i]][, nm] + fixef[nm, 1]
     }

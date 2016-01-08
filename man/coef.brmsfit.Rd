@@ -19,7 +19,7 @@ specified in \code{estimate}}
 \value{
 A list of matrices (one per grouping factor), 
  with factor levels as row names and 
- random effects as column names
+ coefficients as column names
 }
 \description{
 Extract model coefficients, which are the sum of fixed effects
