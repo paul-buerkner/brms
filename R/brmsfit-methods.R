@@ -114,6 +114,28 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, ...) {
   ranef 
 } 
 
+#' Extract model coefficients
+#'
+#' Extract model coefficients, which are the sum of fixed effects
+#' and corresponding random effects
+#' 
+#' @inheritParams ranef
+#'
+#' @return A list of matrices (one per grouping factor), 
+#'  with factor levels as row names and 
+#'  random effects as column names 
+#'  
+#' @examples
+#' \dontrun{
+#' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
+#'            data = epilepsy, family = "poisson", n.chains = 1)
+#' ## extract fixed and random effects coefficients seperately
+#' fixef(fit)
+#' ranef(fit)
+#' ## extract combined coefficients     
+#' coef(fit)
+#' }
+#' 
 #' @export
 coef.brmsfit <- function(x, estimate = "mean", ...) {
   if (!estimate %in% c("mean","median"))

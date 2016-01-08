@@ -73,8 +73,8 @@ fixef <- function(x, ...)
 #'  specified in \code{estimate}
 #'
 #' @return A list of matrices (one per grouping factor), 
-#'  each with one row per level and one single column 
-#'  for the estimate (either mean or median).
+#'  with factor levels as row names and 
+#'  random effects as column names 
 #'     
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}   
 #'   
