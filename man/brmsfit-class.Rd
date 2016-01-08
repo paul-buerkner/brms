@@ -12,6 +12,7 @@ Models fitted with the \code{\link[brms:brms]{brms}} package are represented as 
 \details{
   Currently, the following S3 methods are available for class \code{brmsfit}: 
   
+  \code{\link[brms:coef.brmsfit]{coef}},
   \code{\link[stats:family]{family}},
   \code{\link[brms:fitted.brmsfit]{fitted}},
   \code{\link[brms:fixef.brmsfit]{fixef}},
@@ -20,12 +21,14 @@ Models fitted with the \code{\link[brms:brms]{brms}} package are represented as 
   \code{\link[brms:launch_shiny.brmsfit]{launch_shiny}},
   \code{\link[brms:logLik.brmsfit]{logLik}},
   \code{\link[brms:LOO.brmsfit]{LOO}},
+  \code{\link[stats:model.frame]{model.frame}},
   \code{\link[brms:ngrps.brmsfit]{ngrps}},
   \code{\link[stats:nobs]{nobs}},
+  \code{\link[brms:pairs]{pairs}},
   \code{\link[brms:parnames]{parnames}},
   \code{\link[brms:plot.brmsfit]{plot}},
   \code{\link[brms:posterior_samples]{posterior_samples}}, 
-  \code{\link[stats:predict]{predict}}, 
+  \code{\link[brms:predict.brmsfit]{predict}}, 
   \code{\link[brms:print.brmsfit]{print}},
   \code{\link[brms:prior_samples]{prior_samples}},
   \code{\link[brms:ranef.brmsfit]{ranef}}, 
@@ -43,16 +46,24 @@ Models fitted with the \code{\link[brms:brms]{brms}} package are represented as 
 \section{Slots}{
   \describe{
     \item{\code{formula}:}{model formula; an object of class \code{formula}} 
-    \item{\code{family}:}{model family; a character string}
-    \item{\code{link}:}{link function; a character string}
+    \item{\code{family}:}{model family; an object of class \code{family}}
+    \item{\code{link}:}{link function; a character string (deprecated)}
     \item{\code{data.name}:}{name of the data frame; a character string} 
     \item{\code{data}:}{data.frame containing all variables used in the model}
     \item{\code{model}:}{model in Stan language; a character string}
-    \item{\code{exclude}:}{parameters for which samples are not saved; a character vector}
-    \item{\code{autocor}:}{an object of class \code{cor_brms} containing the autocorrelation structure}
-    \item{\code{partial}:}{formula of the partial effects applied in categorical and ordinal models}
-    \item{\code{cov.ranef}:}{a list of customized random effects covariance matrices}
-    \item{\code{fit}:}{fitted results including the posterior samples; an object of class \code{stanfit}}
+    \item{\code{exclude}:}{parameters for which samples are not saved; 
+    a character vector}
+    \item{\code{prior}:}{priors applied in the model; a matrix}
+    \item{\code{ranef}:}{random effects structure; a named list}
+    \item{\code{autocor}:}{an object of class \code{cor_brms} 
+    containing the autocorrelation structure}
+    \item{\code{partial}:}{formula of the category specific effects 
+    applied in ordinal models}
+    \item{\code{cov.ranef}:}{a list of customized random effects 
+    covariance matrices}
+    \item{\code{fit}:}{fitted results including the posterior samples; 
+    an object of class \code{stanfit}}
+    \item{\code{algorithm}:}{the name of the algorithm used to fit the model}
   }
 }
 
