@@ -24,9 +24,9 @@ if \code{NA}, include no random effects.}
 a function to be applied on the predicted responses
 before summary statistics are computed.}
 
-\item{allow_new_levels}{Currenly, \code{FALSE} 
-(no new levels allowed) is the only option. 
-This will change in future versions of the package.}
+\item{allow_new_levels}{A flag indicating if new
+levels of random effects are allowed (defaults to \code{FALSE}). 
+Only relevant if \code{newdata} is provided.}
 
 \item{subset}{A numeric vector specifying
 the posterior samples to be used. 
@@ -35,15 +35,15 @@ If \code{NULL} (the default), all samples are used.}
 \item{nsamples}{Positive integer indicating how many 
 posterior samples should be used. 
 If \code{NULL} (the default) all samples are used.
-Ignored if \code{subset != NULL}.}
+Ignored if \code{subset} is not \code{NULL}.}
 
 \item{ntrys}{Parameter used in rejection sampling 
 for truncated discrete models only 
 (defaults to \code{5}). See Details for more information.}
 
-\item{summary}{logical. Should summary statistics 
+\item{summary}{Should summary statistics 
  (i.e. means, sds, and 95\% intervals) be returned
-instead of the raw values. Default is \code{TRUE}}
+instead of the raw values? Default is \code{TRUE}.}
 
 \item{probs}{The percentiles to be computed 
 by the \code{quantile} function. 
@@ -112,7 +112,6 @@ newdata <- data.frame(sex = factor(c("male", "female")),
                       age = c(20, 50),
                       patient = c(1, 1))
 predict(fit, newdata = newdata)
-
 }
 
 }

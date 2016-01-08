@@ -25,9 +25,9 @@ If \code{scale = "response"} results are returned on the scale
 of the response variable. If \code{scale = "linear"} 
 fitted values are returned on the scale of the linear predictor.}
 
-\item{allow_new_levels}{Currenly, \code{FALSE} 
-(no new levels allowed) is the only option. 
-This will change in future versions of the package.}
+\item{allow_new_levels}{A flag indicating if new
+levels of random effects are allowed (defaults to \code{FALSE}). 
+Only relevant if \code{newdata} is provided.}
 
 \item{subset}{A numeric vector specifying
 the posterior samples to be used. 
@@ -36,11 +36,11 @@ If \code{NULL} (the default), all samples are used.}
 \item{nsamples}{Positive integer indicating how many 
 posterior samples should be used. 
 If \code{NULL} (the default) all samples are used.
-Ignored if \code{subset != NULL}.}
+Ignored if \code{subset} is not \code{NULL}.}
 
-\item{summary}{logical. Should summary statistics 
+\item{summary}{Should summary statistics 
  (i.e. means, sds, and 95\% intervals) be returned
-instead of the raw values. Default is \code{TRUE}}
+instead of the raw values? Default is \code{TRUE}.}
 
 \item{probs}{The percentiles to be computed 
 by the \code{quantile} function. 

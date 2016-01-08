@@ -666,12 +666,12 @@ pairs.brmsfit <- function(x, pars = NA, exact_match = FALSE, ...) {
 #' @param transform A function or a character string naming 
 #'   a function to be applied on the predicted responses
 #'   before summary statistics are computed.
-#' @param allow_new_levels Currenly, \code{FALSE} 
-#'   (no new levels allowed) is the only option. 
-#'   This will change in future versions of the package.
-#' @param summary logical. Should summary statistics 
+#' @param allow_new_levels A flag indicating if new
+#'   levels of random effects are allowed (defaults to \code{FALSE}). 
+#'   Only relevant if \code{newdata} is provided.
+#' @param summary Should summary statistics 
 #'   (i.e. means, sds, and 95\% intervals) be returned
-#'  instead of the raw values. Default is \code{TRUE}
+#'  instead of the raw values? Default is \code{TRUE}.
 #' @param probs The percentiles to be computed 
 #'  by the \code{quantile} function. 
 #'  Only used if \code{summary} is \code{TRUE}.
@@ -681,7 +681,7 @@ pairs.brmsfit <- function(x, pars = NA, exact_match = FALSE, ...) {
 #' @param nsamples Positive integer indicating how many 
 #'  posterior samples should be used. 
 #'  If \code{NULL} (the default) all samples are used.
-#'  Ignored if \code{subset != NULL}.
+#'  Ignored if \code{subset} is not \code{NULL}.
 #' @param ntrys Parameter used in rejection sampling 
 #'   for truncated discrete models only 
 #'   (defaults to \code{5}). See Details for more information.
@@ -741,7 +741,6 @@ pairs.brmsfit <- function(x, pars = NA, exact_match = FALSE, ...) {
 #'                       age = c(20, 50),
 #'                       patient = c(1, 1))
 #' predict(fit, newdata = newdata)
-#' 
 #' }
 #' 
 #' @importFrom statmod rinvgauss pinvgauss qinvgauss
@@ -935,8 +934,9 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #'  are of the form \eqn{R = Y - Yp}, where \eqn{Y} is the observed 
 #'  and \eqn{Yp} is the predicted response.
 #'  Residuals of type \code{pearson} are 
-#'  of the form \eqn{R = (Y - Yp) / Var(Y)},
-#'  where \eqn{Var(Y)} is an estimation of the variance of \eqn{Y}. \cr
+#'  of the form \eqn{R = (Y - Yp) / SD(Y)},
+#'  where \eqn{SD(Y)} is an estimation of the standard deviation 
+#'  of \eqn{Y}. \cr
 #'   
 #'  Currently, \code{residuals.brmsfit} does not support 
 #'  \code{categorical} or ordinal models. 

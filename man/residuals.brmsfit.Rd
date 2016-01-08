@@ -24,9 +24,9 @@ if \code{NA}, include no random effects.}
 either \code{"ordinary"} or \code{"pearson"}. 
 More information is provided under 'Details'.}
 
-\item{allow_new_levels}{Currenly, \code{FALSE} 
-(no new levels allowed) is the only option. 
-This will change in future versions of the package.}
+\item{allow_new_levels}{A flag indicating if new
+levels of random effects are allowed (defaults to \code{FALSE}). 
+Only relevant if \code{newdata} is provided.}
 
 \item{subset}{A numeric vector specifying
 the posterior samples to be used. 
@@ -35,11 +35,11 @@ If \code{NULL} (the default), all samples are used.}
 \item{nsamples}{Positive integer indicating how many 
 posterior samples should be used. 
 If \code{NULL} (the default) all samples are used.
-Ignored if \code{subset != NULL}.}
+Ignored if \code{subset} is not \code{NULL}.}
 
-\item{summary}{logical. Should summary statistics 
+\item{summary}{Should summary statistics 
  (i.e. means, sds, and 95\% intervals) be returned
-instead of the raw values. Default is \code{TRUE}}
+instead of the raw values? Default is \code{TRUE}.}
 
 \item{probs}{The percentiles to be computed 
 by the \code{quantile} function. 
@@ -62,8 +62,9 @@ Residuals of type \code{ordinary}
  are of the form \eqn{R = Y - Yp}, where \eqn{Y} is the observed 
  and \eqn{Yp} is the predicted response.
  Residuals of type \code{pearson} are 
- of the form \eqn{R = (Y - Yp) / Var(Y)},
- where \eqn{Var(Y)} is an estimation of the variance of \eqn{Y}. \cr
+ of the form \eqn{R = (Y - Yp) / SD(Y)},
+ where \eqn{SD(Y)} is an estimation of the standard deviation 
+ of \eqn{Y}. \cr
   
  Currently, \code{residuals.brmsfit} does not support 
  \code{categorical} or ordinal models.
