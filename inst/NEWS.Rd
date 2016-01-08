@@ -5,6 +5,9 @@
 \section{CHANGES IN VERSION 0.6.0.9000}{
   \subsection{NEW FEATURES}{
     \itemize{
+      \item allow to use variational inference algorithms
+      as alternative to the NUTS sampler by specifying
+      argument \code{algorithm} in the \code{brm} function
       \item implement beta regression models through family
       \code{Beta}
       \item implement multiplicative effects for family
