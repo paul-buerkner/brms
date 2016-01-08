@@ -26,7 +26,8 @@ test_that("stanplot and pairs works correctly", {
   expect_silent(p <- stanplot(fit, type = "ac", quiet = TRUE))
   expect_identical(pairs(fit, pars = parnames(fit)[1:3]), NULL)
   # warning occurs somewhere in rstan
-  expect_warning(stanplot(fit, type = "par", pars = "^b_Intercept$"))
+  expect_silent(suppressWarnings(stanplot(fit, type = "par", 
+                                          pars = "^b_Intercept$")))
   expect_warning(p <- stanplot(fit, type = "par", pars = "^b_"),
                  "stan_par expects a single parameter name")
   expect_error(stanplot(fit, type = "density"), "Invalid plot type")
