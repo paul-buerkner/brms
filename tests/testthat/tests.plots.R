@@ -7,7 +7,7 @@ test_that("plot doesn't throw errors", {
                "No valid parameters selected")
 })
 
-test_that("stanplot and pairs doesn't throw errors", {
+test_that("stanplot and pairs works correctly", {
   fit <- rename_pars(brmsfit_example)
   # tests for stanplot
   expect_silent(p <- stanplot(fit, quiet = TRUE))
@@ -18,13 +18,16 @@ test_that("stanplot and pairs doesn't throw errors", {
   expect_silent(p <- stanplot(fit, type = "scat", quiet = TRUE,
                               pars = parnames(fit)[2:3], 
                               exact_match = TRUE))
-  #expect_silent(p <- stanplot(fit, type = "pairs", quiet = TRUE,
-  #                            pars = parnames(fit)[2:3]))
   #expect_silent(p <- stanplot(fit, type = "diag", quiet = TRUE))
-  expect_silent(p <- stanplot(fit, type = "rhat", quiet = TRUE))
+  expect_silent(p <- stanplot(fit, type = "rhat", pars = "^b_",
+                              quiet = TRUE))
   expect_silent(p <- stanplot(fit, type = "ess", quiet = TRUE))
   expect_silent(p <- stanplot(fit, type = "mcse", quiet = TRUE))
   expect_silent(p <- stanplot(fit, type = "ac", quiet = TRUE))
-  # tests for pairs (deactivated for the moment)
-  #expect_silent(p <- pairs(fit, pars = parnames(fit)[1:3]))
+  expect_identical(pairs(fit, pars = parnames(fit)[1:3]), NULL)
+  # warning occurs somewhere in rstan
+  expect_warning(stanplot(fit, type = "par", pars = "^b_Intercept$"))
+  expect_warning(p <- stanplot(fit, type = "par", pars = "^b_"),
+                 "stan_par expects a single parameter name")
+  expect_error(stanplot(fit, type = "density"), "Invalid plot type")
 })
