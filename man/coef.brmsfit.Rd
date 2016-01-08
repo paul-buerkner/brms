@@ -4,11 +4,10 @@
 \alias{coef.brmsfit}
 \title{Extract model coefficients}
 \usage{
-\method{coef}{brmsfit}(x, estimate = "mean", ...)
+\method{coef}{brmsfit}(object, estimate = "mean", ...)
 }
 \arguments{
-\item{x}{An object of a class of fitted models with random effects, 
-typically a \code{brmsfit} object.}
+\item{object}{An object of class \code{brmsfit}}
 
 \item{estimate}{The point estimate to be calculated 
 for the random effects, either "mean" or "median".}

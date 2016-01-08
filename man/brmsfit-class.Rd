@@ -24,7 +24,7 @@ Models fitted with the \code{\link[brms:brms]{brms}} package are represented as 
   \code{\link[stats:model.frame]{model.frame}},
   \code{\link[brms:ngrps.brmsfit]{ngrps}},
   \code{\link[stats:nobs]{nobs}},
-  \code{\link[brms:pairs]{pairs}},
+  \code{\link[brms:pairs.brmsfit]{pairs}},
   \code{\link[brms:parnames]{parnames}},
   \code{\link[brms:plot.brmsfit]{plot}},
   \code{\link[brms:posterior_samples]{posterior_samples}}, 

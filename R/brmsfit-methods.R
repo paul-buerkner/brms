@@ -119,6 +119,7 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, ...) {
 #' Extract model coefficients, which are the sum of fixed effects
 #' and corresponding random effects
 #' 
+#' @param object An object of class \code{brmsfit}
 #' @inheritParams ranef
 #'
 #' @return A list of matrices (one per grouping factor), 
@@ -137,14 +138,14 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, ...) {
 #' }
 #' 
 #' @export
-coef.brmsfit <- function(x, estimate = "mean", ...) {
+coef.brmsfit <- function(object, estimate = "mean", ...) {
   if (!estimate %in% c("mean","median"))
     stop("Argument estimate must be either 'mean' or 'median'")
-  fixef <- fixef(x, estimate = estimate, ...)
-  if (!length(x$ranef)) {
+  fixef <- fixef(object, estimate = estimate, ...)
+  if (!length(object$ranef)) {
     return(fixef)  # no random effects present
   }
-  coef <- ranef(x, estimate = estimate, ...)
+  coef <- ranef(object, estimate = estimate, ...)
   ranef_names <- unique(ulapply(coef, colnames))
   missing_fixef <- setdiff(ranef_names, rownames(fixef))
   if (length(missing_fixef)) {
