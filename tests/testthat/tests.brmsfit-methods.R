@@ -1,6 +1,8 @@
 test_that("all S3 methods have reasonable ouputs", {
   fit <- rename_pars(brmsfit_example)
   # test S3 methods in alphabetical order
+  # coef
+  expect_equal(dim(coef(fit)$visit), c(4, 2))
   # family
   expect_equal(family(fit), family("poisson", link = "log"))
   # fitted
