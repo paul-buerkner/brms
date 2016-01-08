@@ -25,6 +25,7 @@ Imports:
 Suggests: 
     testthat (>= 0.9.1),
     mvtnorm,
+    KernSmooth,
     R.rsp,
     knitr,
     rmarkdown
