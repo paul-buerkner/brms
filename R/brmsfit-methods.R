@@ -140,15 +140,15 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, ...) {
 coef.brmsfit <- function(x, estimate = "mean", ...) {
   if (!estimate %in% c("mean","median"))
     stop("Argument estimate must be either 'mean' or 'median'")
-  fixef <- fixef(x, estimate = estimate)
+  fixef <- fixef(x, estimate = estimate, ...)
   if (!length(x$ranef)) {
     return(fixef)  # no random effects present
   }
-  coef <- ranef(x, estimate = estimate)
+  coef <- ranef(x, estimate = estimate, ...)
   coef_names <- unique(ulapply(coef, colnames))
   no_fixef <- setdiff(coef_names, rownames(fixef))
   if (length(no_fixef)) {
-    zeros <- data.frame(rbind(rep(0, length(no_fixef))))
+    zeros <- matrix(0, nrow = length(no_fixef))
     rownames(zeros) <- no_fixef
     fixef <- rbind(fixef, zeros)
   }
