@@ -166,9 +166,9 @@ test_that("gather_ranef works correctly", {
 })
 
 test_that("check_brm_input returns correct warnings and errors", {
-  expect_error(check_brm_input(list(n.chains = 3, n.cluster = 2)), 
-               "n.chains must be a multiple of n.cluster", fixed = TRUE)
-  x <- list(family = weibull(), inits = "random", n.chains = 1, n.cluster = 1,
+  expect_error(check_brm_input(list(chains = 3, cluster = 2)), 
+               "chains must be a multiple of cluster", fixed = TRUE)
+  x <- list(family = weibull(), inits = "random", chains = 1, cluster = 1,
             algorithm = "sampling")
   expect_warning(check_brm_input(x))
   x$family <- inverse.gaussian()
