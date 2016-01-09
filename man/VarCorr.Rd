@@ -13,7 +13,7 @@ VarCorr(x, ...)
 \method{as.data.frame}{brmsVarCorr}(x, ...)
 }
 \arguments{
-\item{x}{An \code{R} object usually of class \code{brmsift}.}
+\item{x}{An object usually of class \code{brmsift}.}
 
 \item{estimate}{A character vector specifying which coefficients 
 (e.g., "mean", "median", "sd", or "quantile")
@@ -21,18 +21,18 @@ should be calculated for the random effects.}
 
 \item{as.list}{logical; Indicates if covariance 
 and correlation matrices should be returned as 
-lists of matrices (the default), or as 3-dimensional arrays.}
+lists of matrices (the default), or as 3-dimensional arrays.
+We recommend not to set \code{as.list} to \code{FALSE}.}
 
 \item{...}{Further arguments to be passed to the functions 
 specified in \code{estimate}}
 }
 \value{
-An object of class \code{VarCorr_brmsfit}, 
+An object of class \code{brmsVarCorr}, 
 which is a list of lists (one per grouping factor), 
 each containing 3 elements: a matrix containing the standard deviations, 
 a list of correlation matrices, and a list of covariance matrices. 
-Can be coerced to a \code{data.frame} 
-by using the \code{as.data.frame} method.
+Can be coerced to a \code{data.frame} by using the \code{as.data.frame} method.
 }
 \description{
 This function calculates the estimated standard deviations, 
