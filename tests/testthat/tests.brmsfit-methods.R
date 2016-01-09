@@ -4,7 +4,7 @@ test_that("all S3 methods have reasonable ouputs", {
   # coef
   expect_equal(dim(coef(fit)$visit), c(4, 2))
   # family
-  expect_equal(family(fit), family("poisson", link = "log"))
+  expect_equal(family(fit), family("gaussian", link = "identity"))
   # fitted
   fitted1 <- fitted(fit)
   expect_equal(dim(fitted1), c(nrow(epilepsy), 4))
@@ -12,8 +12,7 @@ test_that("all S3 methods have reasonable ouputs", {
                c("Estimate", "Est.Error", "2.5%ile", "97.5%ile"))
   
   newdata <- data.frame(log_Age_c = c(0, -0.2), visit = c(1, 4),
-                        Trt_c = c(-0.2, 0.5))
-  
+                        Trt_c = c(-0.2, 0.5), count = c(20, 13))
   fitted2 <- fitted(fit, newdata = newdata)
   expect_equal(dim(fitted2), c(2, 4))
   newdata$visit <- c(1, 6)
@@ -42,7 +41,7 @@ test_that("all S3 methods have reasonable ouputs", {
                "cannot be found in the model: b_x")
   # omit launch_shiny
   # logLik
-  expect_equal(dim(logLik(fit)), c(80, 236))
+  expect_equal(dim(logLik(fit)), c(Nsamples(fit), nobs(fit)))
   # LOO
   .loo <- suppressWarnings(LOO(fit, cores = 1))
   expect_true(is.numeric(.loo[["looic"]]))
@@ -65,13 +64,13 @@ test_that("all S3 methods have reasonable ouputs", {
   # nobs
   expect_equal(nobs(fit), nrow(epilepsy))
   # parnames 
-  expect_equal(parnames(fit)[c(1, 3, 7, 16, 18)],
-               c("b_Intercept", "sd_visit_Intercept", "r_visit[2,1]",
-                 "prior_b", "lp__"))
+  expect_equal(parnames(fit)[c(1, 3, 7, 16, 18, 22)],
+               c("b_Intercept", "ar[1]", "cor_visit_Intercept_Trt_c", 
+                 "r_visit[4,2]", "prior_sigma", "lp__"))
   # plot tested in tests.plots.R
   # posterior_samples
   ps <- posterior_samples(fit)
-  expect_equal(dim(ps), c(80, length(parnames(fit))))
+  expect_equal(dim(ps), c(Nsamples(fit), length(parnames(fit))))
   expect_equal(names(ps), parnames(fit))
   expect_equal(names(posterior_samples(fit, pars = "^b_")),
                c("b_Intercept", "b_Trt_c"))
@@ -84,7 +83,7 @@ test_that("all S3 methods have reasonable ouputs", {
                c(nrow(epilepsy), 3))
   
   newdata <- data.frame(log_Age_c = c(0, -0.2), visit = c(1, 4),
-                        Trt_c = c(-0.2, 0.5))
+                        Trt_c = c(-0.2, 0.5), count = c(2, 10))
   predict2 <- predict(fit, newdata = newdata)
   expect_equal(dim(predict2), c(2, 4))
   
@@ -97,11 +96,11 @@ test_that("all S3 methods have reasonable ouputs", {
   # prior_samples
   prs1 <- prior_samples(fit)
   expect_equal(dimnames(prs1),
-               list(as.character(1:80), 
-                    c("sd_visit", "b_Intercept", "b", "cor_visit")))
+               list(as.character(1:Nsamples(fit)), 
+                    c("sd_visit", "sigma", "b_Intercept", "b", "cor_visit")))
   
   prs2 <- prior_samples(fit, pars = "b_Trt_c")
-  expect_equal(dimnames(prs2), list(as.character(1:80), "b_Trt_c"))
+  expect_equal(dimnames(prs2), list(as.character(1:Nsamples(fit)), "b_Trt_c"))
   expect_equal(sort(prs1$b), sort(prs2$b_Trt_c))
   # ranef
   .ranef <- ranef(fit, estimate = "median", var = TRUE)
@@ -109,7 +108,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(dim(attr(.ranef$visit, "var")), c(2, 2, 4))
   # residuals
   res1 <- residuals(fit, type = "pearson", probs = c(0.65))
-  expect_equal(dim(res1), c(236, 3))
+  expect_equal(dim(res1), c(nobs(fit), 3))
   newdata <- epilepsy[1:10, ]
   
   res2 <- residuals(fit, newdata = newdata)
@@ -125,7 +124,8 @@ test_that("all S3 methods have reasonable ouputs", {
   # standata
   expect_equal(names(standata(fit)),
                c("N", "Y", "offset", "K", "X", 
-                 "J_1", "N_1", "K_1", "Z_1", "NC_1"))
+                 "J_1", "N_1", "K_1", "Z_1", "NC_1",
+                 "tgroup", "E_pre", "Kar", "Kma", "Karma"))
   # stanplot tested in tests.plots.R
   # summary
   .summary <- summary(fit)
@@ -141,7 +141,7 @@ test_that("all S3 methods have reasonable ouputs", {
   # update
   # do not actually refit the model as is causes CRAN checks to fail
   new_data <- data.frame(log_Age_c = c(0, 1, -1), visit = c(3, 2, 4),
-                         Trt_c = c(0, 0.5, -0.5))
+                         Trt_c = c(0, 0.5, -0.5), count = c(5, 17, 28))
   up <- update(fit, newdata = new_data, ranef = FALSE, refit = FALSE)
   expect_true(class(up) == "brmsfit")
   expect_equal(up$data.name, "new_data")
@@ -153,13 +153,13 @@ test_that("all S3 methods have reasonable ouputs", {
                "use argument 'newdata' to update your data")
   # VarCorr
   vc <- VarCorr(fit)
-  expect_equal(names(vc), "visit")
+  expect_equal(names(vc), c("visit", "RESIDUAL"))
   Names <- c("Intercept", "Trt_c")
   expect_equivalent(dimnames(vc$visit$cov$mean), 
                     list(Names, Names))
   expect_output(print(vc), "visit")
   data_vc <- as.data.frame(vc)
-  expect_equal(dim(data_vc), c(2, 7))
+  expect_equal(dim(data_vc), c(3, 7))
   expect_equal(names(data_vc), c("Estimate", "Group", "Name", 
                                  "Std.Dev", "Cor", "Cov", "Cov"))
   # vcov

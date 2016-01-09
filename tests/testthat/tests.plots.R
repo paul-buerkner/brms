@@ -23,7 +23,8 @@ test_that("stanplot and pairs works correctly", {
                               quiet = TRUE))
   expect_silent(p <- stanplot(fit, type = "ess", quiet = TRUE))
   expect_silent(p <- stanplot(fit, type = "mcse", quiet = TRUE))
-  expect_silent(p <- stanplot(fit, type = "ac", quiet = TRUE))
+  # commented out as it fails internally in rstan
+  #expect_silent(p <- stanplot(fit, type = "ac", quiet = TRUE))
   expect_identical(pairs(fit, pars = parnames(fit)[1:3]), NULL)
   # warning occurs somewhere in rstan
   expect_silent(suppressWarnings(stanplot(fit, type = "par", 
