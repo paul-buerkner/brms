@@ -29,30 +29,30 @@ brmssummary <- function(formula = NULL, family = "", link = "",
 #' Extract variance and correlation components
 #' 
 #' This function calculates the estimated standard deviations, 
-#' correlations and covariances of therandom-effects terms 
+#' correlations and covariances of the random-effects terms 
 #' in a mixed-effects model of class \code{brmsfit}. 
 #' For linear models, the residual standard deviations, 
 #' correlations and covariances are also returned. 
 #' 
 #' @aliases VarCorr.brmsfit
 #' 
-#' @param x An \code{R} object usually of class \code{brmsift}. 
+#' @param x An object usually of class \code{brmsift}. 
 #' @param estimate A character vector specifying which coefficients 
 #'  (e.g., "mean", "median", "sd", or "quantile")
 #'  should be calculated for the random effects.
 #' @param as.list logical; Indicates if covariance 
 #'  and correlation matrices should be returned as 
 #'  lists of matrices (the default), or as 3-dimensional arrays.
+#'  We recommend not to set \code{as.list} to \code{FALSE}.
 #' @param ... Further arguments to be passed to the functions 
 #'  specified in \code{estimate}
 #' 
 #' 
-#' @return An object of class \code{VarCorr_brmsfit}, 
+#' @return An object of class \code{brmsVarCorr}, 
 #' which is a list of lists (one per grouping factor), 
 #' each containing 3 elements: a matrix containing the standard deviations, 
 #' a list of correlation matrices, and a list of covariance matrices. 
-#' Can be coerced to a \code{data.frame} 
-#' by using the \code{as.data.frame} method.
+#' Can be coerced to a \code{data.frame} by using the \code{as.data.frame} method.
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 

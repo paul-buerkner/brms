@@ -732,7 +732,7 @@ compute_ic <- function(x, ic = c("waic", "loo"), ...) {
     stop("The model does not contain posterior samples") 
   args <- list(x = logLik(x))
   if (ic == "loo") args <- c(args, ...)
-  IC <- do.call(eval(parse(text = paste0("loo::",ic))), args)
+  IC <- do.call(eval(parse(text = paste0("loo::", ic))), args)
   class(IC) <- c("ic", "loo")
   return(IC)
 }

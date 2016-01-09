@@ -36,7 +36,7 @@ by using the \code{as.data.frame} method.
 }
 \description{
 This function calculates the estimated standard deviations, 
-correlations and covariances of therandom-effects terms 
+correlations and covariances of the random-effects terms 
 in a mixed-effects model of class \code{brmsfit}. 
 For linear models, the residual standard deviations, 
 correlations and covariances are also returned.
