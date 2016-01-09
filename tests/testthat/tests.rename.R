@@ -19,6 +19,13 @@ test_that("rename perform correct renaming", {
                c("acd", "a[23.", "b:"))
 })
 
+test_that("model_names works correctly", {
+  expect_equal(model_name(NA), "brms-model")
+  expect_equal(model_name(gaussian()), "gaussian(identity) brms-model")
+  expect_equal(model_name(bernoulli(type = "2PL")), 
+               "bernoulli(logit, 2PL) brms-model")
+})
+
 test_that("make_group_frame returns correct first and last indices", {
   expect_equal(make_group_frame(list(a = c("x","Int"), b = c("x"))),
                data.frame(g = c("a", "b"), first = c(1, 1), last = c(2, 1)))
