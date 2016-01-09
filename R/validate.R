@@ -393,8 +393,8 @@ check_brm_input <- function(x) {
   # misc checks on brm arguments 
   # Args:
   #   x: A named list
-  if (x$n.chains %% x$n.cluster != 0) {
-    stop("n.chains must be a multiple of n.cluster")
+  if (x$chains %% x$cluster != 0) {
+    stop("chains must be a multiple of cluster")
   }
   family <- check_family(x$family) 
   if (family$family %in% c("exponential", "weibull") && 

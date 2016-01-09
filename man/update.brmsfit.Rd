@@ -14,7 +14,7 @@ to update the model with new data}
 
 \item{...}{other arguments passed to 
 \code{\link[brms:brm]{brm}} such as
-\code{n.iter} or \code{n.chains}.}
+\code{iter} or \code{chains}.}
 }
 \description{
 This method allows to update an existing \code{brmsfit} object 

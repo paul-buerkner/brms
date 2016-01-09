@@ -27,7 +27,7 @@ and corresponding random effects
 \examples{
 \dontrun{
 fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
-           data = epilepsy, family = "poisson", n.chains = 1)
+           data = epilepsy, family = "poisson", chains = 1)
 ## extract fixed and random effects coefficients seperately
 fixef(fit)
 ranef(fit)

@@ -8,10 +8,9 @@ brm(formula, data = NULL, family = gaussian(), prior = NULL,
   addition = NULL, autocor = NULL, partial = NULL,
   threshold = c("flexible", "equidistant"), cov.ranef = NULL,
   ranef = TRUE, sample.prior = FALSE, fit = NA, inits = "random",
-  n.chains = 2, n.iter = 2000, n.warmup = 500, n.thin = 1,
-  n.cluster = 1, cluster_type = "PSOCK", algorithm = c("sampling",
-  "meanfield", "fullrank"), silent = TRUE, seed = 12345,
-  save.model = NULL, ...)
+  chains = 2, iter = 2000, warmup = 500, thin = 1, cluster = 1,
+  cluster_type = "PSOCK", algorithm = c("sampling", "meanfield",
+  "fullrank"), silent = TRUE, seed = 12345, save.model = NULL, ...)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class): 
@@ -109,24 +108,28 @@ Alternatively, \code{inits} can be a list of lists containing
 the initial values, or a function (or function name) generating initial values. 
 The latter options are mainly implemented for internal testing.}
 
-\item{n.chains}{Number of Markov chains (default: 2)}
+\item{chains}{Number of Markov chains (defaults to 2). 
+A deprecated alias is \code{n.chains}.}
 
-\item{n.iter}{Number of total iterations per chain (including burnin; default: 2000)}
+\item{iter}{Number of total iterations per chain (including warmup; defaults to 2000).
+A deprecated alias is \code{n.iter}.}
 
-\item{n.warmup}{A positive integer specifying number of warmup (aka burnin) iterations. 
+\item{warmup}{A positive integer specifying number of warmup (aka burnin) iterations. 
 This also specifies the number of iterations used for stepsize adaptation, 
 so warmup samples should not be used for inference. The number of warmup should not 
-be larger than \code{n.iter} and the default is 500.}
+be larger than \code{iter} and the default is 500.
+A deprecated alias is \code{n.warmup}.}
 
-\item{n.thin}{Thinning rate. Must be a positive integer. 
-Set \code{n.thin > 1} to save memory and computation time if \code{n.iter} is large. 
-Default is 1, that is no thinning.}
+\item{thin}{Thinning rate. Must be a positive integer. 
+Set \code{thin > 1} to save memory and computation time if \code{iter} is large. 
+Default is 1, that is no thinning. A deprecated alias is \code{n.thin}.}
 
-\item{n.cluster}{Number of clusters to use to run parallel chains. Default is 1.}
+\item{cluster}{Number of clusters to use to run parallel chains. Default is 1.
+A deprecated alias is \code{n.cluster}.}
 
 \item{cluster_type}{A character string specifying the type of cluster created by 
 \code{\link[parallel:makeCluster]{makeCluster}} when sampling in parallel 
-(i.e. when \code{n.cluster} is greater \code{1}). 
+(i.e. when \code{cluster} is greater \code{1}). 
 Default is \code{"PSOCK"} working on all platforms. 
 For OS X and Linux, \code{"FORK"} may be a faster and more stable option, 
 but it does not work on Windows.}

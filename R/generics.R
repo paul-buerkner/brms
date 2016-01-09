@@ -12,15 +12,15 @@ brmsfit <- function(formula = NULL, family = "", link = "", data.name = "",
 
 brmssummary <- function(formula = NULL, family = "", link = "", 
                         data.name = "", group = NULL, nobs = NULL, 
-                        ngrps = NULL, n.chains = 1, n.iter = 2000, 
-                        n.warmup = 500, n.thin = 1, sampler = "", 
+                        ngrps = NULL, chains = 1, iter = 2000, 
+                        warmup = 500, thin = 1, sampler = "", 
                         autocor = NULL, fixed = NULL, random = list(), 
                         cor_pars = NULL, spec_pars = NULL, 
                         mult_pars = NULL, WAIC = "Not computed",
                         algorithm = "sampling") {
   # brmssummary class
-  x <- nlist(formula, family, link, data.name, group, nobs, ngrps, n.chains, 
-             n.iter,  n.warmup, n.thin, sampler, autocor, fixed, 
+  x <- nlist(formula, family, link, data.name, group, nobs, ngrps, chains, 
+             iter,  warmup, thin, sampler, autocor, fixed, 
              random, cor_pars, spec_pars, mult_pars, WAIC, algorithm)
   class(x) <- "brmssummary"
   x
@@ -80,7 +80,7 @@ fixef <- function(x, ...)
 #' @examples
 #' \dontrun{
 #' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
-#'              data = epilepsy, family = "poisson", n.chains = 1)
+#'              data = epilepsy, family = "poisson", chains = 1)
 #' ## random effects means with corresponding covariances
 #' rf <- ranef(fit, var = TRUE)
 #' attr(rf, "var")
@@ -125,7 +125,7 @@ ranef <- function(x, ...)
 #' @examples
 #' \dontrun{
 #' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
-#'              data = epilepsy, family = "poisson", n.chains = 1)
+#'              data = epilepsy, family = "poisson", chains = 1)
 #' ## return the means of random effects covariances
 #' (vc <- VarCorr(fit))
 #' as.data.frame(vc)

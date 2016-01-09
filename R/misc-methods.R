@@ -13,12 +13,16 @@ print.brmssummary <- function(x, digits = 2, ...) {
              " (Number of observations: ",x$nobs,") \n"))
   if (x$sampler == "") {
     cat(paste("\nThe model does not contain posterior samples."))
-  }
-  else {
-    final_samples <- (x$n.iter - x$n.warmup) / x$n.thin * x$n.chains
+  } else {
+    if (!is.null(x$n.iter)) {
+      # deprecated names are used
+      args <- c("iter", "warmup", "thin", "chains")
+      x[args] <- x[paste0("n.", args)]
+    }
+    final_samples <- (x$iter - x$warmup) / x$thin * x$chains
     waic <- ifelse(is.numeric(x$WAIC), round(x$WAIC, digits = digits), x$WAIC)
-    cat(paste0("Samples: ", x$n.chains, " chains, each with n.iter = ", x$n.iter, 
-               "; n.warmup = ", x$n.warmup, "; n.thin = ", x$n.thin, "; \n",
+    cat(paste0("Samples: ", x$chains, " chains, each with iter = ", x$iter, 
+               "; warmup = ", x$warmup, "; thin = ", x$thin, "; \n",
                "         total post-warmup samples = ", final_samples, "\n"))
     cat(paste0("   WAIC: ", waic, "\n \n"))
     

@@ -84,19 +84,23 @@
 #'   Alternatively, \code{inits} can be a list of lists containing 
 #'   the initial values, or a function (or function name) generating initial values. 
 #'   The latter options are mainly implemented for internal testing.
-#' @param n.chains Number of Markov chains (default: 2)
-#' @param n.iter Number of total iterations per chain (including burnin; default: 2000)
-#' @param n.warmup A positive integer specifying number of warmup (aka burnin) iterations. 
+#' @param chains Number of Markov chains (defaults to 2). 
+#'   A deprecated alias is \code{n.chains}.
+#' @param iter Number of total iterations per chain (including warmup; defaults to 2000).
+#'   A deprecated alias is \code{n.iter}.
+#' @param warmup A positive integer specifying number of warmup (aka burnin) iterations. 
 #'   This also specifies the number of iterations used for stepsize adaptation, 
 #'   so warmup samples should not be used for inference. The number of warmup should not 
-#'   be larger than \code{n.iter} and the default is 500.
-#' @param n.thin Thinning rate. Must be a positive integer. 
-#'   Set \code{n.thin > 1} to save memory and computation time if \code{n.iter} is large. 
-#'   Default is 1, that is no thinning.
-#' @param n.cluster	Number of clusters to use to run parallel chains. Default is 1.   
+#'   be larger than \code{iter} and the default is 500.
+#'   A deprecated alias is \code{n.warmup}.
+#' @param thin Thinning rate. Must be a positive integer. 
+#'   Set \code{thin > 1} to save memory and computation time if \code{iter} is large. 
+#'   Default is 1, that is no thinning. A deprecated alias is \code{n.thin}.
+#' @param cluster	Number of clusters to use to run parallel chains. Default is 1.  
+#'   A deprecated alias is \code{n.cluster}.
 #' @param cluster_type A character string specifying the type of cluster created by 
 #'   \code{\link[parallel:makeCluster]{makeCluster}} when sampling in parallel 
-#'   (i.e. when \code{n.cluster} is greater \code{1}). 
+#'   (i.e. when \code{cluster} is greater \code{1}). 
 #'   Default is \code{"PSOCK"} working on all platforms. 
 #'   For OS X and Linux, \code{"FORK"} may be a faster and more stable option, 
 #'   but it does not work on Windows.
@@ -386,19 +390,26 @@ brm <- function(formula, data = NULL, family = gaussian(),
                 prior = NULL, addition = NULL, autocor = NULL, 
                 partial = NULL, threshold = c("flexible", "equidistant"), 
                 cov.ranef = NULL, ranef = TRUE, sample.prior = FALSE, 
-                fit = NA, inits = "random", n.chains = 2, n.iter = 2000, 
-                n.warmup = 500, n.thin = 1, n.cluster = 1,
-                cluster_type = "PSOCK", 
+                fit = NA, inits = "random", chains = 2, iter = 2000, 
+                warmup = 500, thin = 1, cluster = 1, cluster_type = "PSOCK", 
                 algorithm = c("sampling", "meanfield", "fullrank"),
                 silent = TRUE, seed = 12345, save.model = NULL, ...) {
   
+  dots <- list(...) 
+  # use deprecated arguments if specified
+  iter <- ifelse(is.null(dots$n.iter), iter, dots$n.iter)
+  warmup <- ifelse(is.null(dots$n.warmup), warmup, dots$n.warmup)
+  thin <- ifelse(is.null(dots$n.thin), thin, dots$n.thin)
+  chains <- ifelse(is.null(dots$n.chains), chains, dots$n.chains)
+  cluster <- ifelse(is.null(dots$n.cluster), cluster, dots$n.cluster)
+  dots[c("n.iter", "n.warmup", "n.thin", "n.chains", "n.cluster")] <- NULL
+  
   # some input checks 
-  check_brm_input(nlist(family, n.chains, n.cluster, inits))
+  check_brm_input(nlist(family, chains, cluster, inits))
   autocor <- check_autocor(autocor)
   threshold <- match.arg(threshold)
   algorithm <- match.arg(algorithm)
   
-  dots <- list(...) 
   rename <- dots$rename
   dots$rename <- NULL
   if (is(fit, "brmsfit")) {  
@@ -451,19 +462,19 @@ brm <- function(formula, data = NULL, family = gaussian(),
     inits <- get(inits, mode = "function", envir = parent.frame())
   }
   args <- list(object = x$fit, data = standata, pars = x$exclude, 
-               include = FALSE, algorithm = algorithm)  
+               include = FALSE, algorithm = algorithm)
   args[names(dots)] <- dots 
   if (algorithm == "sampling") {
-    args <- c(args, init = inits, iter = n.iter, warmup = n.warmup, 
-              thin = n.thin, chains = n.chains, show_messages = !silent)
+    args <- c(args, init = inits, iter = iter, warmup = warmup, 
+              thin = thin, chains = chains, show_messages = !silent)
   }
   
   set.seed(seed)
-  if (n.cluster > 1) {  # sample in parallel
+  if (cluster > 1) {  # sample in parallel
     message("Start sampling")
     if (is.character(args$init) || is.numeric(args$init)) 
-      args$init <- rep(args$init, n.chains)
-    cl <- makeCluster(n.cluster, type = cluster_type)
+      args$init <- rep(args$init, chains)
+    cl <- makeCluster(cluster, type = cluster_type)
     on.exit(stopCluster(cl))  # close all clusters when exiting brm
     clusterExport(cl = cl, varlist = "args", envir = environment())
     clusterEvalQ(cl, require(rstan))
@@ -479,9 +490,9 @@ brm <- function(formula, data = NULL, family = gaussian(),
         do.call(rstan::vb, args = args)
       } 
     }
-    sflist <- parLapply(cl, X = 1:n.chains, run_chain)
+    sflist <- parLapply(cl, X = 1:chains, run_chain)
     # remove chains that failed to run correctly; see validate.R
-    sflist <- rmNULL(lapply(1:length(sflist), remove_chains, sflist = sflist))  
+    sflist <- rmNULL(lapply(seq_along(sflist), remove_chains, sflist = sflist))  
     if (length(sflist) == 0) {
       stop(paste("All chains failed to run correctly." ,
                  "For more detailed error reporting",

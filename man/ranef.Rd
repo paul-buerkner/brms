@@ -34,7 +34,7 @@ of each level from a fitted model object.
 \examples{
 \dontrun{
 fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
-             data = epilepsy, family = "poisson", n.chains = 1)
+             data = epilepsy, family = "poisson", chains = 1)
 ## random effects means with corresponding covariances
 rf <- ranef(fit, var = TRUE)
 attr(rf, "var")

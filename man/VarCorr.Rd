@@ -44,7 +44,7 @@ correlations and covariances are also returned.
 \examples{
 \dontrun{
 fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
-             data = epilepsy, family = "poisson", n.chains = 1)
+             data = epilepsy, family = "poisson", chains = 1)
 ## return the means of random effects covariances
 (vc <- VarCorr(fit))
 as.data.frame(vc)

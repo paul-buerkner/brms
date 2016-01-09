@@ -129,7 +129,7 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, ...) {
 #' @examples
 #' \dontrun{
 #' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
-#'            data = epilepsy, family = "poisson", n.chains = 1)
+#'            data = epilepsy, family = "poisson", chains = 1)
 #' ## extract fixed and random effects coefficients seperately
 #' fixef(fit)
 #' ranef(fit)
@@ -394,10 +394,10 @@ summary.brmsfit <- function(object, waic = TRUE, ...) {
                      algorithm = algorithm(object))
   
   if (length(object$fit@sim)) {
-    out$n.chains <- object$fit@sim$chains
-    out$n.iter <- object$fit@sim$iter
-    out$n.warmup <- object$fit@sim$warmup
-    out$n.thin <- object$fit@sim$thin
+    out$chains <- object$fit@sim$chains
+    out$iter <- object$fit@sim$iter
+    out$warmup <- object$fit@sim$warmup
+    out$thin <- object$fit@sim$thin
     stan_args <- object$fit@stan_args[[1]]
     out$sampler <- paste0(stan_args$method, "(", stan_args$algorithm, ")")
     if (length(object$ranef) && !any(grepl("^r_", parnames(object)))
@@ -1005,7 +1005,7 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' \dontrun{
 #' ## fit a model
 #' fit <- brm(rating ~ treat + period + carry + (1|subject), 
-#'            data = inhaler, n.cluster = 2)
+#'            data = inhaler, cluster = 2)
 #' 
 #' ## extract residuals 
 #' res <- residuals(fit, summary = TRUE)
@@ -1062,7 +1062,7 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #'  to update the model with new data
 #' @param ... other arguments passed to 
 #'  \code{\link[brms:brm]{brm}} such as
-#'  \code{n.iter} or \code{n.chains}.
+#'  \code{iter} or \code{chains}.
 #'
 #' @export
 update.brmsfit <- function(object, newdata = NULL, ...) {
