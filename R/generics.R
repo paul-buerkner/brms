@@ -26,72 +26,6 @@ brmssummary <- function(formula = NULL, family = "", link = "",
   x
 }
 
-#' Extract Fixed Effects Estimates
-#' 
-#' A generic function to extract the fixed effects from a fitted model object. 
-#' 
-#' @aliases fixef.brmsfit
-#' 
-#' @param x An object of class \code{brmsfit}
-#' @param estimate A character vector specifying which coefficients 
-#'  (e.g., "mean", "median", "sd", or "quantile") 
-#'  should be calculated for the fixed effects.
-#' @param ... Further arguments to be passed to the functions 
-#'  specified in \code{estimate}
-#' 
-#' @return A matrix with one row per fixed effect 
-#'   and one column per calculated estimate.
-#' 
-#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
-#' 
-#' @examples
-#' \dontrun{
-#' fit <- brm(time | cens(censored) ~ age + sex + disease, 
-#'            data = kidney, family = "exponential")
-#' fixef(fit, estimate = c("mean", "sd"))
-#' }
-#' 
-#' @export
-fixef <- function(x, ...) 
-  UseMethod("fixef")
-
-#' Extract Random Effects for \code{brmsfit} objects
-#' 
-#' A generic function to extract the random effects 
-#' of each level from a fitted model object. 
-#' 
-#' @aliases ranef.brmsfit
-#' 
-#' @param x An object of a class of fitted models with random effects, 
-#'  typically a \code{brmsfit} object.
-#' @param estimate The point estimate to be calculated 
-#'  for the random effects, either "mean" or "median".
-#' @param var logical; indicating if the covariance matrix 
-#'  for each random effects should be computed.
-#' @param ... Further arguments to be passed to the function 
-#'  specified in \code{estimate}
-#'
-#' @return A list of matrices (one per grouping factor), 
-#'  with factor levels as row names and 
-#'  random effects as column names 
-#'     
-#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}   
-#'   
-#' @examples
-#' \dontrun{
-#' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
-#'              data = epilepsy, family = "poisson", chains = 1)
-#' ## random effects means with corresponding covariances
-#' rf <- ranef(fit, var = TRUE)
-#' attr(rf, "var")
-#' ## random effects medians
-#' ranef(fit, estimate = "median")                                                        
-#' }
-#' 
-#' @export
-ranef <- function(x, ...) 
-  UseMethod("ranef")
-
 #' Extract variance and correlation components
 #' 
 #' This function calculates the estimated standard deviations, 
@@ -137,24 +71,6 @@ ranef <- function(x, ...)
 #' @export
 VarCorr <- function(x, ...) 
   UseMethod("VarCorr")
-
-#' Number of levels
-#' 
-#' Number of levels of one or more grouping factor
-#' 
-#' @aliases ngrps.brmsfit
-#' 
-#' @param object An \code{R} object typically of class \code{brmsfit}.
-#' @param ... Currently ignored.
-#' 
-#' @details Currently there are methods for \code{brmsfit} objects.
-#' @return Number(s) of levels
-#' 
-#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
-#' 
-#' @export
-ngrps <- function(object, ...) 
-  UseMethod("ngrps")
 
 #' Non-linear hypothesis testing
 #' 

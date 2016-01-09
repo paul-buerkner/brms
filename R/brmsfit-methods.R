@@ -5,16 +5,42 @@ parnames.brmsfit <- function(x, ...) {
   dimnames(x$fit)$parameters
 }
 
-#' @rdname fixef
+#' Extract Fixed Effects Estimates
+#' 
+#' Extract the fixed effects from a \code{brmsfit} object. 
+#' 
+#' @aliases fixef
+#' 
+#' @param object An object of class \code{brmsfit}
+#' @param estimate A character vector specifying which coefficients 
+#'  (e.g., "mean", "median", "sd", or "quantile") 
+#'  should be calculated for the fixed effects.
+#' @param ... Further arguments to be passed to the functions 
+#'  specified in \code{estimate}
+#' 
+#' @return A matrix with one row per fixed effect 
+#'   and one column per calculated estimate.
+#' 
+#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
+#' 
+#' @examples
+#' \dontrun{
+#' fit <- brm(time | cens(censored) ~ age + sex + disease, 
+#'            data = kidney, family = "exponential")
+#' fixef(fit, estimate = c("mean", "sd"))
+#' }
+#' 
 #' @export
-fixef.brmsfit <-  function(x, estimate = "mean", ...) {
-  if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
+#' @export fixef
+#' @importFrom lme4 fixef
+fixef.brmsfit <-  function(object, estimate = "mean", ...) {
+  if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
-  pars <- parnames(x)
+  pars <- parnames(object)
   fpars <- pars[grepl("^b_", pars)]
   if (!length(fpars)) 
     stop(paste("The model does not contain fixed effects")) 
-  out <- posterior_samples(x, pars = fpars, exact_match = TRUE)
+  out <- posterior_samples(object, pars = fpars, exact_match = TRUE)
   out <- do.call(cbind, lapply(estimate, get_estimate, samples = out, ...))
   rownames(out) <- gsub("^b_", "", fpars)
   out
@@ -52,18 +78,49 @@ vcov.brmsfit <- function(object, correlation = FALSE, ...) {
     cov(samples)
   }
 }
-
-#' @rdname ranef
+#' Extract Random Effects Estimates
+#' 
+#' Extract the random effects of each level from \code{brmsfit} object. 
+#' 
+#' @aliases ranef
+#' 
+#' @param object An object of class \code{brmsfit}.
+#' @param estimate The point estimate to be calculated 
+#'  for the random effects, either "mean" or "median".
+#' @param var logical; indicating if the covariance matrix 
+#'  for each random effects should be computed.
+#' @param ... Further arguments to be passed to the function 
+#'  specified in \code{estimate}
+#'
+#' @return A list of matrices (one per grouping factor), 
+#'  with factor levels as row names and 
+#'  random effects as column names 
+#'     
+#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}   
+#'   
+#' @examples
+#' \dontrun{
+#' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
+#'              data = epilepsy, family = "poisson", chains = 1)
+#' ## random effects means with corresponding covariances
+#' rf <- ranef(fit, var = TRUE)
+#' attr(rf, "var")
+#' ## random effects medians
+#' ranef(fit, estimate = "median")                                                        
+#' }
+#' 
 #' @export
-ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, ...) {
-  if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
+#' @export ranef
+#' @importFrom lme4 ranef
+ranef.brmsfit <- function(object, estimate = "mean", var = FALSE, ...) {
+  if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
   if (!estimate %in% c("mean","median"))
     stop("Argument estimate must be either 'mean' or 'median'")
-  if (!length(x$ranef))
+  if (!length(object$ranef))
     stop("The model does not contain random effects")
-  group <- names(x$ranef)
-  pars <- parnames(x)
+  group <- names(object$ranef)
+  pars <- parnames(object)
   
   get_ranef <- function(i) {
     # get random effects of a grouping factor
@@ -71,19 +128,19 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, ...) {
     # Args:
     #   i: index of a grouping factor
     g <- group[i]
-    rnames <- x$ranef[[i]]
+    rnames <- object$ranef[[i]]
     rpars <- pars[grepl(paste0("^r_",group[i],"\\["), pars)]
     if (!length(rpars))
       stop(paste0("The model does not contain random effects for group '",g,"'\n",
                   "You should use argument ranef = TRUE in function brm."))
-    rdims <- x$fit@sim$dims_oi[[paste0("r_",group[i])]]
-    levels <- attr(x$ranef[[i]], "levels")
+    rdims <- object$fit@sim$dims_oi[[paste0("r_",group[i])]]
+    levels <- attr(object$ranef[[i]], "levels")
     if (is.null(levels)) {
       # avoid error in dimnames if levels are NULL 
       # for backwards compatibility with brms < 0.5.0 
       levels <- 1:rdims[1]
     }
-    rs <- posterior_samples(x, pars = rpars, exact_match = TRUE)
+    rs <- posterior_samples(object, pars = rpars, exact_match = TRUE)
     ncol <- ifelse(is.na(rdims[2]), 1, rdims[2])
     rs_array <- array(dim = c(rdims[1], ncol, nrow(rs)))
     k <- 0
@@ -120,7 +177,7 @@ ranef.brmsfit <- function(x, estimate = "mean", var = FALSE, ...) {
 #' and corresponding random effects
 #' 
 #' @param object An object of class \code{brmsfit}
-#' @inheritParams ranef
+#' @inheritParams ranef.brmsfit
 #'
 #' @return A list of matrices (one per grouping factor), 
 #'  with factor levels as row names and 
@@ -169,7 +226,7 @@ coef.brmsfit <- function(object, estimate = "mean", ...) {
 }
 
 #' @rdname VarCorr
-#' @import abind
+#' @import abind abind
 #' @export
 VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
@@ -389,7 +446,7 @@ summary.brmsfit <- function(object, waic = TRUE, ...) {
                      data.name = object$data.name, 
                      group = names(object$ranef), 
                      nobs = nobs(object), 
-                     ngrps = brms::ngrps(object), 
+                     ngrps = ngrps(object), 
                      autocor = object$autocor,
                      algorithm = algorithm(object))
   
@@ -468,8 +525,22 @@ summary.brmsfit <- function(object, waic = TRUE, ...) {
 nobs.brmsfit <- function(object, ...) {
   length(standata(object)$Y)
 }
-  
+
+#' Number of levels
+#' 
+#' Number of levels of one or more grouping factors
+#' 
+#' @aliases ngrps
+#' 
+#' @param object An object of class \code{brmsfit}.
+#' @param ... Currently ignored.
+#' 
+#' @return A named list containing the number of levels per
+#'   grouping factor
+#' 
 #' @export
+#' @export ngrps
+#' @importFrom lme4 ngrps
 ngrps.brmsfit <- function(object, ...) {
   standata <- standata(object)
   ee <- extract_effects(object$formula, family = object$family)
