@@ -1178,7 +1178,7 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE) {
   if (length(models) > 1) {
     out <- setNames(lapply(models, compute_ic, ic = "waic"), names)
     class(out) <- c("iclist", "list")
-    if (compare) {
+    if (compare && match_response(models)) {
       comp <- compare_ic(out, ic = "waic")
       attr(out, "compare") <- comp$ic_diffs
       attr(out, "weights") <- comp$weights
@@ -1201,7 +1201,7 @@ LOO.brmsfit <- function(x, ..., compare = TRUE,
     out <- setNames(lapply(models, compute_ic, ic = "loo", wcp = wcp, 
                            wtrunc = wtrunc, cores = cores), names)
     class(out) <- c("iclist", "list")
-    if (compare) {
+    if (compare && match_response(models)) {
       comp <- compare_ic(out, ic = "loo")
       attr(out, "compare") <- comp$ic_diffs
       attr(out, "weights") <- comp$weights

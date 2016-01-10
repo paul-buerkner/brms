@@ -779,6 +779,32 @@ compare_ic <- function(x, ic = c("waic", "loo")) {
   nlist(ic_diffs, weights)
 }
 
+match_response <- function(models) {
+  # compare the response parts of multiple brmsfit objects
+  # Args:
+  #  models: A list of brmsfit objects
+  # Returns:
+  #  TRUE if the response parts of all models match and FALSE else
+  if (length(models) <= 1) return(TRUE)
+  .match_fun <- function(x, y) {
+    # checks if all relevant parts of the response are the same 
+    # Args:
+    #   x, y: named lists as returned by standata
+    to_match <- c("Y", "se", "weights", "cens", "trunc")
+    all(ulapply(to_match, function(v) isTRUE(all.equal(x[[v]], y[[v]]))))
+  } 
+  standatas <- lapply(models, standata)
+  matches <- ulapply(standatas[-1], .match_fun, y = standatas[[1]]) 
+  if (all(matches)) {
+    out <- TRUE
+  } else {
+    out <- FALSE
+    warning(paste("model comparisons are invalid as the response parts", 
+                  "of at least two models do not match"))
+  }
+  out
+}
+
 find_names <- function(x) {
   # find all valid object names in a string 
   # 
