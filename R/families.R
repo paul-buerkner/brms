@@ -429,9 +429,10 @@ family.character <- function(object, link = NA, type = NULL, ...) {
                   "hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma",
                   "zero_inflated_poisson", "zero_inflated_negbinomial",
                   "zero_inflated_binomial", "beta")
-  if (!family %in% okFamilies)
+  if (!family %in% okFamilies) {
     stop(paste(family, "is not a supported family. Supported families are: \n",
                paste(okFamilies, collapse = ", ")))
+  }
   
   # check validity of link
   if (is.linear(family)) {

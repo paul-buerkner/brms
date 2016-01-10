@@ -394,22 +394,31 @@ check_brm_input <- function(x) {
   # Args:
   #   x: A named list
   if (x$chains %% x$cluster != 0) {
-    stop("chains must be a multiple of cluster")
+    stop("chains must be a multiple of cluster", call. = FALSE)
   }
   family <- check_family(x$family) 
   if (family$family %in% c("exponential", "weibull") && 
       x$inits == "random") {
     warning(paste("Families exponential and weibull may not work well",
                   "with default initial values. \n",
-                  " It is thus recommended to set inits = '0'"))
+                  " It is thus recommended to set inits = '0'"), 
+            call. = FALSE)
   }
   if (family$family == "inverse.gaussian") {
     warning(paste("inverse gaussian models require carefully chosen", 
-                  "prior distributions to ensure convergence of the chains"))
+                  "prior distributions to ensure convergence of the chains"),
+            call. = FALSE)
+  }
+  if (family$family == "geometric") {
+    warning(paste("The geometric family fixes the shape parameter",
+                  "of the negative binomial distribution to 1.\n", 
+                  "Its name is misleading as it does not actually",
+                  "implement the geometric distribution."),
+            call. = FALSE)
   }
   if (family$link == "sqrt") {
     warning(paste(family$family, "model with sqrt link may not be", 
-                  "uniquely identified"))
+                  "uniquely identified"), call. = FALSE)
   }
   invisible(NULL)
 }
