@@ -31,7 +31,7 @@ extract_effects <- function(formula, ..., family = NA,
     fixed <- paste0(fixed, "1")
   }
   if (grepl("|", x = fixed, fixed = TRUE)) {
-    stop("Random effects terms should be enclosed in brackets")
+    stop("Random effects terms should be enclosed in brackets", call. = FALSE)
   }
   fixed <- formula(fixed)
   if (!is.na(family[[1]])) 
@@ -39,7 +39,7 @@ extract_effects <- function(formula, ..., family = NA,
   if (is.ordinal(family))
     fixed <- update.formula(fixed, . ~ . + 1)
   if (check_response && length(fixed) < 3) 
-    stop("Invalid formula: response variable is missing")
+    stop("Invalid formula: response variable is missing", call. = FALSE)
   
   # extract random effects parts
   form <- lapply(get_matches("\\([^\\|]*", re_terms), function(r) 
@@ -98,12 +98,13 @@ extract_effects <- function(formula, ..., family = NA,
         }
       } else {
         stop(paste("Argument", f, "in formula is not supported", 
-                   "by family", family$family))
+                   "by family", family$family), call. = FALSE)
       }
     }
     if (nchar(gsub("\\|", "", add)) > 0 && !is.na(add))
       stop(paste("Invalid addition part of formula.", 
-                 "Please see the 'Details' section of help(brm)"))
+                 "Please see the 'Details' section of help(brm)"),
+           call. = FALSE)
   }
   
   # make a formula containing all required variables (element 'all')
@@ -135,7 +136,8 @@ extract_effects <- function(formula, ..., family = NA,
       if (!(is.null(x$cens) && is.null(x$se) && is.null(x$trunc))
           && is.linear(family)) {
         stop(paste("Multivariate models currently allow", 
-                   "only weights as addition arguments"))
+                   "only weights as addition arguments"), 
+             call. = FALSE)
       }
       x$fixed <- update(x$fixed, response ~ .)
       x$all <- update(x$all, response ~ .)
@@ -159,7 +161,8 @@ extract_time <- function(formula) {
   formula <- gsub(" ","",Reduce(paste, deparse(formula))) 
   time <- all.vars(as.formula(paste("~", gsub("~|\\|[[:print:]]*", "", formula))))
   if (length(time) > 1) {
-    stop("Autocorrelation structures may only contain 1 time variable")
+    stop("Autocorrelation structures may only contain 1 time variable", 
+         call. = FALSE)
   }
   x <- list(time = ifelse(length(time), time, ""))
   group <- get_group_formula(sub("~[^\\|]*", "", formula))
@@ -182,7 +185,8 @@ update_formula <- function(formula, addition = NULL, partial = NULL) {
   addition <- lapply(addition, formula2string, rm = 1)
   fnew <- "."
   if (length(addition)) {
-    warning("Argument addition is deprecated. See help(brm) for further details.")
+    warning("Argument addition is deprecated. See help(brm) for further details.",
+            call. = FALSE)
     for (i in 1:length(addition)) {
       fnew <- paste0(fnew, " | ", var_names[i], "(", addition[[i]], ")")
     }
@@ -210,7 +214,8 @@ get_group_formula <- function(g) {
   g <- sub("^\\|*", "", g)
   if (nchar(gsub(":|[^([:digit:]|[:punct:])][[:alnum:]_\\.]*", "", g)))
     stop(paste("Illegal grouping term:", g, "\n",
-               "may contain only variable names combined by the symbol ':'"))
+               "may contain only variable names combined by the symbol ':'"),
+         call. = FALSE)
   if (nchar(g)) {
     return(formula(paste("~", g)))
   } else {
@@ -234,14 +239,15 @@ check_re_formula <- function(re_formula, old_ranef, data) {
     new_ranef <- old_ranef
   } else if (is.formula(re_formula)) {
     if (!is.data.frame(data)) {
-      stop("argument re_formula requires models fitted with brms > 0.5.0")
+      stop("argument re_formula requires models fitted with brms > 0.5.0",
+           call. = FALSE)
     }
     if (length(re_formula) == 3) {
-      stop("re_formula must be one-sided")
+      stop("re_formula must be one-sided", call. = FALSE)
     }
     ee <- extract_effects(re_formula, check_response = FALSE)
     if (length(all.vars(ee$fixed))) {
-      stop("fixed effects are not allowed in re_formula")
+      stop("fixed effects are not allowed in re_formula", call. = FALSE)
     }
     if (!nrow(ee$random)) {
       # if no RE terms are present in re_formula
@@ -254,19 +260,20 @@ check_re_formula <- function(re_formula, old_ranef, data) {
     invalid_gf <- setdiff(names(new_ranef), names(old_ranef))
     if (length(invalid_gf)) {
       stop(paste("Invalid grouping factors detected:", 
-                 paste(invalid_gf, collapse = ", ")))
+                 paste(invalid_gf, collapse = ", ")), call. = FALSE)
     }
     for (gf in names(new_ranef)) {
       invalid_re <- setdiff(new_ranef[[gf]], old_ranef[[gf]])
       if (length(invalid_re)) {
         stop(paste0("Invalid random effects detected for grouping factor ", 
-                    gf, ": ", paste(invalid_re, collapse = ", ")))
+                    gf, ": ", paste(invalid_re, collapse = ", ")),
+             call. = FALSE)
       } 
     }
   } else if (is.na(re_formula)) {
     new_ranef <- NULL
   } else {
-    stop("invalid re_formula argument")
+    stop("invalid re_formula argument", call. = FALSE)
   }
   new_ranef
 }
@@ -296,7 +303,7 @@ update_re_terms <- function(formula, re_formula = NULL) {
   } else if (is.null(re_formula)) {
     new_formula <- formula
   } else {
-    stop("invalid re_formula argument")
+    stop("invalid re_formula argument", call. = FALSE)
   } 
   new_formula
 }
@@ -326,11 +333,13 @@ amend_terms <- function(x, rm_intercept = FALSE, is_forked = FALSE) {
     if (any(grepl("(^|:)(main|spec)($|:)", term_labels))) {
       if (any(grepl("(^|:)trait($|:)", term_labels))) {
         stop(paste("formula may not contain variable 'trait'",
-                   "when using variables 'main' or 'spec'"))
+                   "when using variables 'main' or 'spec'"),
+             call. = FALSE)
       }
       if (attr(x, "intercept")) {
         stop(paste("formula may not contain an intercept",
-                   "when using variables 'main' or 'spec'"))
+                   "when using variables 'main' or 'spec'"),
+             call. = FALSE)
       }
       attr(x, "intercept") <- 1
       attr(x, "rm_intercept") <- TRUE
@@ -348,7 +357,7 @@ gather_response <- function(formula) {
   stopifnot(is.formula(formula))
   all_vars <- all.vars(formula)
   if (length(all_vars) == 0) {
-    stop("formula must contain at least one response variable")
+    stop("formula must contain at least one response variable", call. = FALSE)
   }
   mf <- as.data.frame(setNames(as.list(rep(1, length(all_vars))), 
                                all_vars))

@@ -496,7 +496,8 @@ brm <- function(formula, data = NULL, family = gaussian(),
     if (length(sflist) == 0) {
       stop(paste("All chains failed to run correctly." ,
                  "For more detailed error reporting",
-                 "fit the model in non-parallel mode."))
+                 "fit the model in non-parallel mode."), 
+           call. = FALSE)
     }
     x$fit <- rstan::sflist2stanfit(sflist)
   } else {  # do not sample in parallel

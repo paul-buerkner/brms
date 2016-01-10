@@ -420,7 +420,8 @@ family.character <- function(object, link = NA, type = NULL, ...) {
   if (family == "normal")
     family <- "gaussian"
   if (family == "multigaussian") 
-    stop("family 'multigaussian' is deprecated. Use family 'gaussian' instead")
+    stop("family 'multigaussian' is deprecated. Use family 'gaussian' instead",
+         call. = FALSE)
   okFamilies <- c("gaussian", "student", "cauchy", 
                   "binomial", "bernoulli", "categorical", 
                   "poisson", "negbinomial", "geometric", 
@@ -431,7 +432,7 @@ family.character <- function(object, link = NA, type = NULL, ...) {
                   "zero_inflated_binomial", "beta")
   if (!family %in% okFamilies) {
     stop(paste(family, "is not a supported family. Supported families are: \n",
-               paste(okFamilies, collapse = ", ")))
+               paste(okFamilies, collapse = ", ")), call. = FALSE)
   }
   
   # check validity of link

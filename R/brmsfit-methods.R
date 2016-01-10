@@ -39,7 +39,7 @@ fixef.brmsfit <-  function(object, estimate = "mean", ...) {
   pars <- parnames(object)
   fpars <- pars[grepl("^b_", pars)]
   if (!length(fpars)) 
-    stop(paste("The model does not contain fixed effects")) 
+    stop("The model does not contain fixed effects", call. = FALSE) 
   out <- posterior_samples(object, pars = fpars, exact_match = TRUE)
   out <- do.call(cbind, lapply(estimate, get_estimate, samples = out, ...))
   rownames(out) <- gsub("^b_", "", fpars)
@@ -69,7 +69,7 @@ vcov.brmsfit <- function(object, correlation = FALSE, ...) {
   pars <- parnames(object)
   fpars <- pars[grepl("^b_", pars)]
   if (!length(fpars)) 
-    stop(paste("The model does not contain fixed effects")) 
+    stop("The model does not contain fixed effects", call. = FALSE) 
   samples <- posterior_samples(object, pars = fpars, exact_match = TRUE)
   names(samples) <- sub("^b_", "", names(samples))
   if (correlation) {
@@ -116,9 +116,9 @@ ranef.brmsfit <- function(object, estimate = "mean", var = FALSE, ...) {
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
   if (!estimate %in% c("mean","median"))
-    stop("Argument estimate must be either 'mean' or 'median'")
+    stop("Argument estimate must be either 'mean' or 'median'", call. = FALSE)
   if (!length(object$ranef))
-    stop("The model does not contain random effects")
+    stop("The model does not contain random effects", call. = FALSE)
   group <- names(object$ranef)
   pars <- parnames(object)
   
@@ -132,7 +132,8 @@ ranef.brmsfit <- function(object, estimate = "mean", var = FALSE, ...) {
     rpars <- pars[grepl(paste0("^r_",group[i],"\\["), pars)]
     if (!length(rpars))
       stop(paste0("The model does not contain random effects for group '",g,"'\n",
-                  "You should use argument ranef = TRUE in function brm."))
+                  "You should use argument ranef = TRUE in function brm."),
+           call. = FALSE)
     rdims <- object$fit@sim$dims_oi[[paste0("r_",group[i])]]
     levels <- attr(object$ranef[[i]], "levels")
     if (is.null(levels)) {
@@ -197,7 +198,7 @@ ranef.brmsfit <- function(object, estimate = "mean", var = FALSE, ...) {
 #' @export
 coef.brmsfit <- function(object, estimate = "mean", ...) {
   if (!estimate %in% c("mean","median"))
-    stop("Argument estimate must be either 'mean' or 'median'")
+    stop("Argument estimate must be either 'mean' or 'median'", call. = FALSE)
   fixef <- fixef(object, estimate = estimate, ...)
   if (!length(object$ranef)) {
     return(fixef)  # no random effects present
@@ -232,7 +233,7 @@ VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
   if (!(length(x$ranef) || any(grepl("^sigma_", parnames(x)))))
-    stop("The model does not contain covariance matrices")
+    stop("The model does not contain covariance matrices", call. = FALSE)
 
   # extracts samples for sd, cor and cov
   extract <- function(p) {
@@ -367,7 +368,7 @@ prior_samples.brmsfit <- function(x, pars = NA, parameters = NA, ...) {
   if (is.na(pars[1])) 
     pars <- parameters 
   if (!anyNA(pars) && !is.character(pars)) 
-    stop("pars must be a character vector")
+    stop("pars must be a character vector", call. = FALSE)
   par_names <- parnames(x)
   prior_names <- par_names[grepl("^prior_", par_names)]
   if (length(prior_names)) {
@@ -659,7 +660,7 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5,
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
   if (!is.wholenumber(N) || N < 1) 
-    stop("N must be a positive integer")
+    stop("N must be a positive integer", call. = FALSE)
   if (!is.character(pars)) {
     pars <- c("^b_", "^bm_", "^sd_", "^cor_", "^sigma", "^rescor", 
               "^nu$", "^shape$", "^delta$", "^phi$", "^ar", "^ma", "^arr")
@@ -667,7 +668,7 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5,
   samples <- posterior_samples(x, pars = pars, add_chains = TRUE)
   pars <- names(samples)[which(!names(samples) %in% c("chains", "iter"))] 
   if (length(pars) == 0) {
-    stop("No valid parameters selected")
+    stop("No valid parameters selected", call. = FALSE)
   }
   
   if (do_plot) {
@@ -705,7 +706,8 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
   diag_types <- c("diag", "par", "rhat", "ess", "mcse")
   if (!type %in% c(basic_types, diag_types)) {
     stop(paste("Invalid plot type. Valid plot types are: \n",
-               paste(c(basic_types, diag_types), collapse = ", ")))
+               paste(c(basic_types, diag_types), collapse = ", ")),
+         call. = FALSE)
   }
   dots <- list(...)
   args <- c(object = object$fit, dots)
@@ -1094,7 +1096,8 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
   if (is.ordinal(family) || is.categorical(family))
-    stop(paste("residuals not yet implemented for family", family$family))
+    stop(paste("residuals not yet implemented for family", family$family),
+         call. = FALSE)
   
   standata <- amend_newdata(newdata, fit = object, re_formula = re_formula,
                             allow_new_levels = allow_new_levels, 
@@ -1144,10 +1147,10 @@ update.brmsfit <- function(object, newdata = NULL, ...) {
   z <- which(names(dots) %in% invalid_args)
   if (length(z)) {
     stop(paste("Argument(s)", paste(names(dots)[z], collapse = ", "),
-               "cannot be updated"))
+               "cannot be updated"), call. = FALSE)
   }
   if ("data" %in% names(dots)) {
-    stop("Please use argument 'newdata' to update your data")
+    stop("Please use argument 'newdata' to update your data", call. = FALSE)
   }
   # update arguments if required
   ee <- extract_effects(object$formula)
@@ -1289,16 +1292,16 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
   if (!is.character(hypothesis)) 
-    stop("Argument hypothesis must be a character vector")
+    stop("Argument hypothesis must be a character vector", call. = FALSE)
   if (alpha < 0 || alpha > 1)
-    stop("Argument alpha must be in [0,1]")
+    stop("Argument alpha must be in [0,1]", call. = FALSE)
   
   # process class and group arguments
   if (is.null(class)) class <- ""
   valid_classes <- c("", "b", "r", "sd", "cor", "ar", "ma", "arr", 
                      "sigma", "rescor", "nu", "shape", "delta")
   if (!class %in% valid_classes)
-    stop(paste(class, "is not a valid paramter class"))
+    stop(paste(class, "is not a valid paramter class"), call. = FALSE)
   if (class %in% c("b", "r", "sd", "cor", "sigma", "rescor")) {
     if (class %in% c("sd", "cor") && nchar(group)) {
       class <- paste0(class, "_", group, "_")
@@ -1319,14 +1322,15 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
     sign <- unlist(regmatches(h, gregexpr("=|<|>", h)))
     lr <- unlist(regmatches(h, gregexpr("[^=<>]+", h)))
     if (length(sign) != 1 || length(lr) != 2)
-      stop("Every hypothesis must be of the form 'left (= OR < OR >) right'")
+      stop("Every hypothesis must be of the form 'left (= OR < OR >) right'",
+           call. = FALSE)
     h <- paste0(lr[1], ifelse(lr[2] != "0", paste0("-(",lr[2],")"), ""))
     varsH <- unique(find_names(h))
     parsH <- paste0(class, varsH)
     if (!all(parsH %in% pars)) 
       stop(paste("The following parameters cannot be found in the model:", 
                  paste0(gsub("__", ":", parsH[which(!parsH %in% pars)]), 
-                        collapse = ", ")))
+                        collapse = ", ")), call. = FALSE)
     
     # prepare for renaming of parameters so that h can be evaluated
     parsH <- rename(parsH, "__", ":")

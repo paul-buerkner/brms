@@ -193,13 +193,14 @@ set_prior <- function(prior, class = "b", coef = "", group = "") {
   coef <- as.character(coef)
   if (length(prior) != 1 || length(class) != 1 
       || length(coef) != 1 || length(group) != 1)
-    stop("All arguments of set_prior must be of length 1")
+    stop("All arguments of set_prior must be of length 1", call. = FALSE)
   valid_classes <- c("b", "bm", "sd", "cor", "L", "ar", "ma", "arr", "sigma", 
                      "rescor", "Lrescor", "nu", "shape", "delta", "phi")
   if (!class %in% valid_classes)
-    stop(paste(class, "is not a valid paramter class"))
+    stop(paste(class, "is not a valid paramter class"), call. = FALSE)
   if (nchar(group) && !class %in% c("sd", "cor", "L"))
-    stop(paste("argument group not meaningful for class", class))
+    stop(paste("argument group not meaningful for class", class), 
+         call. = FALSE)
   if (nchar(coef) && !class %in% c("b", "sd", "sigma"))
     stop(paste("argument coef not meaningful for class", class))
   if (grepl("^increment_log_prob\\(", prior)) {
@@ -300,7 +301,8 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
       J <- with(prior, class == "sd" & group == gs[i] & nchar(coef))
       dupli <- duplicated(prior[J, ])
       if (any(dupli)) {
-        stop(paste("Duplicated random effects detected for group", gs[i]))
+        stop(paste("Duplicated random effects detected for group", gs[i]),
+             call. = FALSE)
       }
       # include correlation parameters
       if (ee$random$cor[[i]] && length(ranef) > 1) {
@@ -390,8 +392,8 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
                   "See help(set_prior) for further information."))
     prior <- update_prior(prior)
   } else if (!is(prior, "prior_frame")) {
-    stop(paste("Invalid input for argument prior.", 
-               "See help(set_prior) for further information."))
+    stop(paste("Invalid input for argument prior. See help(set_prior)", 
+               "for further information."), call. = FALSE)
   }
   
   # exclude prior using increment_log_prob to readd the at the end
@@ -403,7 +405,7 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
                         subs = c("L", "Lrescor"), fixed = FALSE)
   duplicated_input <- duplicated(prior[, 2:4])
   if (any(duplicated_input)) {
-    stop("Duplicated prior specifications are not allowed. \n")
+    stop("Duplicated prior specifications are not allowed.", call. = FALSE)
   }
   
   # handle special priors that are not explictly coded as functions in Stan
@@ -462,7 +464,8 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
   group_indices <- which(nchar(prior$group) > 0)
   for (i in group_indices) {
     if (!prior$group[i] %in% ee$random$group) { 
-      stop(paste("grouping factor", prior$group[i], "not found in the model"))
+      stop(paste("grouping factor", prior$group[i], "not found in the model"),
+           call. = FALSE)
     } else if (sum(prior$group[i] == ee$random$group) == 1) {
       # matches only one grouping factor in the model
       prior$group[i] <- match(prior$group[i], ee$random$group)
@@ -515,12 +518,13 @@ handle_special_priors <- function(prior) {
       if (any(nchar(prior$prior[b_coef_indices]))) {
         stop(paste("Defining priors for single fixed effects parameters",
                    "is not allowed when using horseshoe priors",
-                   "(except for the Intercept)"))
+                   "(except for the Intercept)"), call. = FALSE)
       }
       attrib$hs_df <- hs_df
       prior$prior[b_index] <- "normal(0, hs_local * hs_global)"
     } else {
-      stop("degrees of freedom of horseshoe prior must be a positive number")
+      stop("degrees of freedom of horseshoe prior must be a positive number",
+           call. = FALSE)
     }
   }
   # expand lkj correlation prior to full name

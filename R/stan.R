@@ -481,7 +481,7 @@ stan_llh <- function(family, se = FALSE, weights = FALSE,
     # if fitted using a covariance matrix for residuals
     family <- paste0(family, "_cov")
     if (weights || cens || is_trunc) {
-      stop("Invalid addition arguments")
+      stop("Invalid addition arguments", call. = FALSE)
     }
   } else if (is.lognormal(family, link = link)) {
     # prepare for use of lognormal likelihood
@@ -581,7 +581,8 @@ stan_llh <- function(family, se = FALSE, weights = FALSE,
   code_trunc <- ""
   if (is_trunc) {
     if (type %in% c("cens", "weights")) {
-      stop(paste("truncation is not yet possible in censored or weighted models"))
+      stop("truncation is not yet possible in censored or weighted models",
+           call. = FALSE)
     } else {
       lb <- ifelse(trunc$lb > -Inf, "lb", "")
       ub <- ifelse(trunc$ub < Inf, "ub", "")
@@ -746,7 +747,7 @@ stan_arma <- function(family, autocor, prior = prior_frame(),
   if (Kar || Kma) {
     if (!is_linear) {
       stop(paste("ARMA effects for family", family$family, 
-                 "are not yet implemented"))
+                 "are not yet implemented"), call. = FALSE)
     }
     out$data <- paste0(out$data,
       "  # data needed for ARMA effects \n",
@@ -774,7 +775,8 @@ stan_arma <- function(family, autocor, prior = prior_frame(),
       # a covariance matrix for residuals
       if (is_multi) {
         stop(paste("multivariate models are not yet allowed", 
-                   "when using ARMA covariance matrices"))
+                   "when using ARMA covariance matrices"),
+             call. = FALSE)
       }
       out$data <- paste0(out$data,
         "  # see the functions block for details \n",
@@ -943,7 +945,8 @@ stan_arma <- function(family, autocor, prior = prior_frame(),
     } else {
       if (se) {
         stop(paste("Please set cov = TRUE in cor_arma / cor_ar / cor_ma",
-                    "when using meta-analytic standard errors"))
+                    "when using meta-analytic standard errors"),
+             call. = FALSE)
       }
       index <- ifelse(is_multi, "m, k", "n")
       s <- ifelse(is_multi, "  ", "")
@@ -1031,7 +1034,7 @@ stan_multi <- function(family, response, prior = prior_frame()) {
         collapse(ulapply(2:nresp, function(i) lapply(1:(i-1), function(j)
         paste0("  rescor[",(i-1)*(i-2)/2+j,"] <- Rescor[",j,", ",i,"]; \n")))))
     } else if (!is.forked(family)) {
-      stop("invalid multivariate model")
+      stop("invalid multivariate model", call. = FALSE)
     }
   }
   out

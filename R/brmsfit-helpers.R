@@ -491,7 +491,7 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL,
     if (is.null(r)) {
       stop(paste("Random effects for each level of grouping factor",
                  group[i], "not found. Please set ranef = TRUE",
-                 "when calling brm."))
+                 "when calling brm."), call. = FALSE)
     }
     # match columns of Z with corresponding RE estimates
     n_levels <- ngrps(x)[[group[[i]]]]
@@ -800,7 +800,7 @@ match_response <- function(models) {
   } else {
     out <- FALSE
     warning(paste("model comparisons are invalid as the response parts", 
-                  "of at least two models do not match"))
+                  "of at least two models do not match"), call. = FALSE)
   }
   out
 }
