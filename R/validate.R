@@ -418,13 +418,6 @@ check_brm_input <- function(x) {
                   "prior distributions to ensure convergence of the chains"),
             call. = FALSE)
   }
-  if (family$family == "geometric") {
-    warning(paste("The geometric family fixes the shape parameter",
-                  "of the negative binomial distribution to 1.\n", 
-                  "Its name is misleading as it does not actually",
-                  "implement the geometric distribution."),
-            call. = FALSE)
-  }
   if (family$link == "sqrt") {
     warning(paste(family$family, "model with sqrt link may not be", 
                   "uniquely identified"), call. = FALSE)
