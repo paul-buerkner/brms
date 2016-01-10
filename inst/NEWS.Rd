@@ -10,8 +10,12 @@
       argument \code{algorithm} in the \code{brm} function
       \item implement beta regression models through family
       \code{Beta}
+      \item implement zero-inflated binomial models through family
+      \code{zero_inflated_binomial}
       \item implement multiplicative effects for family
       \code{bernoulli} to fit (among others) 2PL IRT models
+      \item allow to combine fixed and random effects estimates using
+      the new \code{coef} method
       \item allow to call the \code{residuals} method with \code{newdata}
       \item allow new levels of random effects grouping
       factors in the \code{predict}, \code{fitted}, and \code{residuals}
@@ -19,6 +23,9 @@
       \item allow to selectively exclude random effects
       in the \code{predict}, \code{fitted}, and \code{residuals}
       methods using argument \code{re_formula}
+      \item add a \code{plot} method for objects returned by
+      method \code{hypothesis} to visualize prior and posterior
+      distributions of the hypotheses being tested
     }
   }
   \subsection{OTHER CHANGES}{
@@ -30,6 +37,13 @@
       \item improve sampling efficiency of models containing
       uncorrelated random effects specified by means
       of \code{(random || group)} terms in \code{formula}
+      \item make sure that model comparisons using \code{LOO} 
+      or \code{WAIC} are only performed when models are 
+      based on the same responses
+      \item use some generic functions of the \pkg{lme4}
+      package to avoid unnecessary function masking
+      \item allow to change the \code{ggplot} theme in the
+      \code{plot} method through argument \code{theme}
     }
   }
   \subsection{BUG FIXES}{
@@ -47,8 +61,8 @@
       \item fix a bug in the evaluation of \code{formula} that
       could cause complicated random effects terms to be 
       falsely treated as fixed effects
-      \item fix several minor bugs when calling the methods
-      \code{fitted} and \code{predict} with \code{newdata}
+      \item fix several bugs when calling the \code{fitted} 
+      and \code{predict} methods with \code{newdata}
     }
   }
 }
