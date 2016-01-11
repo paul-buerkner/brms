@@ -171,11 +171,13 @@ extract_time <- function(formula) {
   x
 }
 
-update_formula <- function(formula, addition = NULL, partial = NULL) {
+update_formula <- function(formula, data = NULL, addition = NULL, 
+                           partial = NULL) {
   # incorporate addition arguments and category specific effects into formula 
   # 
   # Args:
   #   formula: a model formula 
+  #   data: a data.frame or NULL 
   #   addition: a list with one sided formulas taken from the addition arguments in brm
   #   partial: a one sided formula containing category specific effects
   #
@@ -193,9 +195,11 @@ update_formula <- function(formula, addition = NULL, partial = NULL) {
   }
   fnew <- paste(fnew, "~ .")
   if (is.formula(partial)) {
-    partial <- formula2string(partial, rm=1)
+    partial <- formula2string(partial, rm = 1)
     fnew <- paste(fnew, "+ partial(", partial, ")")
   }
+  # to allow the '.' symbol in formula
+  formula <- formula(terms(formula, data = data))
   if (fnew == ". ~ .") {
     formula
   } else {

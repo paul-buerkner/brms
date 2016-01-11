@@ -23,6 +23,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
                           cov.ranef = NULL, sample.prior = FALSE, 
                           save.model = NULL, ...) {
   
+  formula <- update_formula(formula, data = data)
   family <- check_family(family) 
   autocor <- check_autocor(autocor)
   threshold <- match.arg(threshold)

@@ -420,8 +420,8 @@ brm <- function(formula, data = NULL, family = gaussian(),
     dots$is_newdata <- NULL
   } else {  # build new model
     # see validate.R and priors.R for function definitions
-    family <- check_family(family) 
-    formula <- update_formula(formula, addition = addition) 
+    family <- check_family(family)
+    formula <- update_formula(formula, addition = addition, data = data) 
     prior <- check_prior(prior, formula = formula, data = data, 
                          family = family, autocor = autocor,
                          partial = partial, threshold = threshold) 

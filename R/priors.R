@@ -252,9 +252,10 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
                       threshold = c("flexible", "equidistant"), 
                       internal = FALSE) {
   # note that default priors are stored in this function
-  threshold <- match.arg(threshold)
+  formula <- update_formula(formula, data = data)
   family <- check_family(family) 
   link <- family$link
+  threshold <- match.arg(threshold)
   autocor <- check_autocor(autocor)
   ee <- extract_effects(formula, partial, family = family)
   data <- update_data(data, family = family, effects = ee)

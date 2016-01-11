@@ -264,6 +264,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   #                   should be kept in the FE design matrix
   #   save_order: logical; should the initial order of the data be saved?
   dots <- list(...)
+  formula <- update_formula(formula, data = data)
   autocor <- check_autocor(autocor)
   family <- check_family(family)
   is_linear <- is.linear(family)
