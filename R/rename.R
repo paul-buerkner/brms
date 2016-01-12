@@ -100,6 +100,8 @@ rename_pars <- function(x) {
     change <- lc(change, list(pos = grepl("^b\\[", pars), oldname = "b", 
                               pnames = paste0("b_",f), fnames = paste0("b_",f)))
     change <- c(change, prior_changes(class = "b", pars = pars, names = f))
+    change <- c(change, prior_changes(class = "temp_Intercept", pars = pars, 
+                                      new_class = "b_Intercept"))
   }
   
   if (is.formula(x$partial) || is.categorical(family)) {
