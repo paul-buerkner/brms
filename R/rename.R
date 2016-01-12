@@ -103,11 +103,7 @@ rename_pars <- function(x) {
   }
   
   if (is.formula(x$partial) || is.categorical(family)) {
-    if (is.categorical(family)) {
-      p <- colnames(standata$X)
-    } else {
-      p <- colnames(standata$Xp)
-    }
+    p <- colnames(standata$Xp)
     lp <- length(p)
     thres <- max(standata$max_obs) - 1
     pfnames <- paste0("b_",t(outer(p, paste0("[",1:thres,"]"), FUN = paste0)))
