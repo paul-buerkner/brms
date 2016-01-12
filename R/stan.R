@@ -276,9 +276,11 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   # generate generated quantities block
   text_generated_quantities <- paste0(
     "generated quantities { \n",
+      text_fixef$genD,
       text_multi$genD, 
       text_ranef$genD, 
-      text_rngprior$genD, 
+      text_rngprior$genD,
+      text_fixef$genC,
       text_multi$genC, 
       text_ranef$genC, 
       text_rngprior$genC,
@@ -321,21 +323,33 @@ stan_fixef <- function(fixef, paref, family = gaussian(),
   # Returns:
   #   a list containing Stan code related to fixed effects
   out <- list()
-  if (has_intercept && !is.ordinal(family)) {
-    # intercepts for ordinal models are defined in stan_ordinal
+  if (has_intercept) {
     if (is.categorical(family)) {
       out$par <- paste0(out$par,
-        "  row_vector[ncat - 1] b_Intercept;  # fixed effects intercepts \n")
+        "  row_vector[ncat - 1] temp_Intercept;  # temporary intercepts \n")
+      out$genD <- paste0("  row_vector[ncat - 1] b_Intercept;",
+                         "  # fixed effects intercepts \n")
+      out$genC <- paste0("  for (k in 1:(ncat - 1)) { \n", 
+                         "    b_Intercept[k] <- temp_Intercept[k]",
+                         " - dot_product(Xp_means, col(bp, k)); \n",
+                         "  } \n")
+    } else if (is.ordinal(family)) {
+      # temp intercepts for ordinal models are defined in stan_ordinal
+      out$genD <- "  vector[ncat - 1] b_Intercept;  # thresholds \n" 
+      out$genC <- "  b_Intercept <- temp_Intercept - dot_product(X_means, b); \n"
     } else {
       out$par <- paste0(out$par,
-        "  real b_Intercept;  # fixed effects Intercept \n")
+        "  real temp_Intercept;  # temporary Intercept \n")
+      out$genD <- "  real b_Intercept;  # fixed effects intercept \n"
+      out$genC <- "  b_Intercept <- temp_Intercept - dot_product(X_means, b); \n"
     }
-    out$prior <- paste0(out$prior, stan_prior("b_Intercept", prior = prior))
+    out$prior <- paste0(out$prior, stan_prior("temp_Intercept", prior = prior))
   }
   if (length(fixef)) {
     out$data <- paste0(out$data, 
       "  int<lower=1> K;  # number of fixed effects \n", 
-      "  matrix[N, K] X;  # FE design matrix \n")
+      "  matrix[N, K] X;  # FE design matrix \n",
+      "  vector[K] X_means;  # column means of X \n")
     out$par <- paste0(out$par,
       "  vector[K] b;  # fixed effects \n") 
     fixef_prior <- stan_prior(class = "b", coef = fixef, prior = prior)
@@ -344,7 +358,9 @@ stan_fixef <- function(fixef, paref, family = gaussian(),
   if (length(paref)) {
     out$data <- paste0(out$data, 
      "  int<lower=1> Kp;  # number of category specific effects \n",
-     "  matrix[N, Kp] Xp;  # CSE design matrix \n")
+     "  matrix[N, Kp] Xp;  # CSE design matrix \n",
+     if (is.categorical(family)) 
+       "  vector[Kp] Xp_means;  # column means of Xp \n")
     out$par <- paste0(out$par,
      "  matrix[Kp, ncat - 1] bp;  # category specific effects \n")
     paref_prior <- stan_prior(class = "bp", coef = paref, prior = prior)
@@ -529,7 +545,7 @@ stan_llh <- function(family, se = FALSE, weights = FALSE,
       poisson = c("poisson_log", paste0("eta",n)), 
       negbinomial = c("neg_binomial_2_log", paste0("eta",n,", shape")),
       geometric = c("neg_binomial_2_log", paste0("eta",n,", 1")),
-      cumulative = c("ordered_logistic", "eta[n], b_Intercept"),
+      cumulative = c("ordered_logistic", "eta[n], temp_Intercept"),
       categorical = c("categorical_logit", 
                       "to_vector(append_col(zero, eta[n] + etap[n]))"), 
       binomial = c("binomial_logit", paste0("trials",ns,", eta",n)), 
@@ -705,7 +721,7 @@ stan_eta <- function(family, fixef, ranef = list(), paref = NULL,
   etap <- if (length(paref) || is_cat) {
     paste0("  etap <- ", 
            ifelse(length(paref), "Xp * bp", "rep_matrix(0, Kp, ncat - 1)"),
-           if (is_cat && has_intercept) " + rep_matrix(b_Intercept, N)", "; \n")
+           if (is_cat && has_intercept) " + rep_matrix(temp_Intercept, N)", "; \n")
   }
   eta_ma <- ifelse(get_ma(autocor) && !use_cov(autocor), 
                    " + head(E[n], Kma) * ma", "")
@@ -717,7 +733,7 @@ stan_eta <- function(family, fixef, ranef = list(), paref = NULL,
   eta$transC1 <- paste0(
     "  # compute linear predictor \n",
     "  eta <- ", ifelse(length(fixef), "X * b", "rep_vector(0, N)"), 
-    if (has_intercept && !(is_ordinal || is_cat)) " + b_Intercept",
+    if (has_intercept && !(is_ordinal || is_cat)) " + temp_Intercept",
     if (offset) " + offset",
     if (get_arr(autocor)) " + Yarr * arr", 
     "; \n", etap)
@@ -1064,29 +1080,31 @@ stan_ordinal <- function(family, prior = prior_frame(),
       sign <- ifelse(fam %in% c("cumulative", "sratio")," - ", " + ")
       ptl <- ifelse(partial, paste0(sign, "etap[n,k]"), "") 
       if (sign == " - ") {
-        out <- paste0("b_Intercept[",k,"]", ptl, " - eta[n]")
+        out <- paste0("temp_Intercept[",k,"]", ptl, " - eta[n]")
       } else {
-        out <- paste0("eta[n]", ptl, " - b_Intercept[",k,"]")
+        out <- paste0("eta[n]", ptl, " - temp_Intercept[",k,"]")
       }
     } 
     link <- family$link
     family <- family$family
     ilink <- stan_ilink(link)
     type <- ifelse(family == "cumulative", "ordered", "vector")
-    intercept <- paste0("  ", type, "[ncat-1] b_Intercept;  # thresholds \n")
+    intercept <- paste0("  ", type, "[ncat-1] temp_Intercept;",
+                        "  # temporary thresholds \n")
     if (threshold == "flexible") {
       out$par <- intercept
-      out$prior <- stan_prior("b_Intercept", prior = prior) 
+      out$prior <- stan_prior("temp_Intercept", prior = prior) 
     } else if (threshold == "equidistant") {
-      out$par <- paste0("  real b_Intercept1;  # threshold 1 \n",
+      out$par <- paste0("  real temp_Intercept1;  # threshold 1 \n",
                         "  real", if (family == "cumulative") "<lower=0>",
                         " delta;  # distance between thresholds \n")
       out$transD <- intercept
-      out$transC1 <- paste0("  # compute equidistant thresholds \n",
-                            "  for (k in 1:(ncat - 1)) { \n",
-                            "    b_Intercept[k] <- b_Intercept1 + (k - 1.0)*delta; \n",
-                            "  } \n")
-      out$prior <- paste0(stan_prior(class = "b_Intercept1", prior = prior), 
+      out$transC1 <- paste0(
+        "  # compute equidistant thresholds \n",
+        "  for (k in 1:(ncat - 1)) { \n",
+        "    temp_Intercept[k] <- temp_Intercept1 + (k - 1.0)*delta; \n",
+        "  } \n")
+      out$prior <- paste0(stan_prior(class = "temp_Intercept1", prior = prior), 
                           stan_prior(class = "delta", prior = prior))
     }
     

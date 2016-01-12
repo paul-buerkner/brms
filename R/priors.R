@@ -446,7 +446,7 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
     Int_prior <- prior[Int_index, ] 
     # Intercepts have their own internal parameter class
     res_thres <- is.ordinal(family) && threshold == "equidistant"
-    Int_prior$class <- ifelse(res_thres, "b_Intercept1", "b_Intercept")
+    Int_prior$class <- ifelse(res_thres, "temp_Intercept1", "temp_Intercept")
     Int_prior$coef <- ""
     prior <- rbind(prior, Int_prior)
   }

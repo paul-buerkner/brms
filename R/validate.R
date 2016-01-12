@@ -439,7 +439,8 @@ exclude_pars <- function(formula, ranef = TRUE) {
   # Returns:
   #   a vector of parameters to be excluded
   ee <- extract_effects(formula)
-  out <- c("eta", "etap", "eta_2PL", "Eta", "b_Intercept1", 
+  out <- c("eta", "etap", "eta_2PL", "Eta", 
+           "temp_Intercept1", "temp_Intercept", 
            "Lrescor", "Rescor", "Sigma", "LSigma",
            "p", "q", "e", "E", "res_cov_matrix", 
            "lp_pre", "hs_local", "hs_global")

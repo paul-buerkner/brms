@@ -364,13 +364,21 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   }
   
   # fixed effects data
-  rm_Intercept <- is_ordinal || !isTRUE(control$keep_intercept)
-  X <- get_model_matrix(ee$fixed, data, rm_intercept = rm_Intercept,
+  rm_intercept <- is_ordinal || !isTRUE(control$keep_intercept)
+  X <- get_model_matrix(ee$fixed, data, rm_intercept = rm_intercept,
                         is_forked = is_forked)
+  X_means <- colMeans(X)
+  has_intercept <- attr(terms(formula), "intercept")
+  if (!isTRUE(control$keep_intercept) && has_intercept) {
+    # keep_intercept is TRUE when make_standata is called within S3 methods
+    X <- sweep(X, 2, X_means, FUN = "-")
+  }
   if (is.categorical(family)) {
-    standata <- c(standata, list(Kp = ncol(X), Xp = X))
+    standata <- c(standata, 
+                  list(Kp = ncol(X), Xp = X, Xp_means = as.array(X_means)))
   } else {
-    standata <- c(standata, list(K = ncol(X), X = X))
+    standata <- c(standata, 
+                  list(K = ncol(X), X = X, X_means = as.array(X_means)))
   } 
   
   # random effects data
