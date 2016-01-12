@@ -435,16 +435,17 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
   
   rows2remove <- NULL
   # special treatment of fixed effects Intercept(s)
-  Int_index <- which(prior$class == "b" & prior$coef == "Intercept" 
-                     & nchar(prior$prior))
-  rows2remove <- c(rows2remove, Int_index)
-  if (!length(Int_index) && is.null(attrib[["hs_df"]])) {  
-    # take global fixed effects prior
-    Int_index <- which(prior$class == "b" & !nchar(prior$coef))
-  }
+  Int_index <- which(prior$class == "b" & prior$coef == "Intercept")
   if (length(Int_index)) {
-    Int_prior <- prior[Int_index, ] 
-    # Intercepts have their own internal parameter class
+    # if an intercept is present
+    rows2remove <- c(rows2remove, Int_index)
+    Int_prior <- prior[Int_index, ]
+    if (!nchar(Int_prior$prior) && is.null(attrib[["hs_df"]])) {  
+      # take global fixed effects prior
+      Int_prior$prior <- with(prior, prior[which(class == "b" & !nchar(coef))])
+        #prior$prior[which(prior$class == "b" & !nchar(prior$coef))]
+    }
+    # (temporary) Intercepts have their own internal parameter class
     res_thres <- is.ordinal(family) && threshold == "equidistant"
     Int_prior$class <- ifelse(res_thres, "temp_Intercept1", "temp_Intercept")
     Int_prior$coef <- ""
