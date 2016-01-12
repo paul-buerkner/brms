@@ -25,14 +25,14 @@ test_that("check_prior performs correct renaming", {
                                           coef = "Intercept"),
                                 formula = rating ~ carry, data = inhaler, 
                                 family = "cumulative")[3, ],
-                    prior_frame("normal(0,1)", class = "b_Intercept"))
+                    prior_frame("normal(0,1)", class = "temp_Intercept"))
   
   expect_equivalent(check_prior(set_prior("normal(0,1)", class = "b", 
                                           coef = "Intercept"),
                                 formula = rating ~ carry, data = inhaler, 
                                 family = "cumulative",
-                                threshold = "equidistant")[3, ],
-                    prior_frame("normal(0,1)", class = "b_Intercept1"))
+                                threshold = "equidistant")[4, ],
+                    prior_frame("normal(0,1)", class = "temp_Intercept1"))
 })
 
 
@@ -68,18 +68,18 @@ test_that("check_prior accepts correct prior names", {
                                 group = "patient")),
                     formula = time ~ age + (sex+age|patient),  
                     family = "exponential", data = kidney)
-  expect_equivalent(cp[11, ], prior_frame(prior = "p1", class = "sd", 
+  expect_equivalent(cp[9, ], prior_frame(prior = "p1", class = "sd", 
                                 coef = "sexfemale", group = "1")[1, ])
   
   expect_equivalent(check_prior(set_prior("cauchy(0,1)", class = "sigma"), 
                                 formula = rating ~ 1, family = "cauchy", 
-                                data = inhaler)[4, ],
+                                data = inhaler)[2, ],
                     prior_frame("cauchy(0,1)", class = "sigma"))
   
   expect_equivalent(check_prior(c(set_prior("p1", class = "ar"),
                                   set_prior("p2", class = "ma")),
                                 formula = count ~ Trt_c, data = epilepsy, 
-                                autocor = cor.arma(p = 1, q = 2))[c(1, 6), ],
+                                autocor = cor.arma(p = 1, q = 2))[c(1, 4), ],
                     prior_frame(c("p1", "p2"), class = c("ar", "ma")))
 })
 
@@ -101,7 +101,7 @@ test_that("check_prior returns increment_log_prob(.) whithout checking", {
   expect_equivalent(check_prior(c(set_prior("increment_log_prob(p1)"),
                                   set_prior("p2", class = "b")),
                                 formula = count ~ Trt_c, 
-                                data = epilepsy)[c(1,7), ],
+                                data = epilepsy)[c(1, 6), ],
                     prior_frame(c("p2", "increment_log_prob(p1)"), 
                                 class = c("b", "")))
 })
@@ -113,11 +113,11 @@ test_that("check_prior correctly validates priors for random effects", {
   cp <- check_prior(set_prior("cauchy(0,1)", class = "sd", group = "visit"),
                     formula = count ~ Trt_c + (1|visit), 
                     data = epilepsy)
-  expect_equal(cp$prior[6], "cauchy(0,1)")
+  expect_equal(cp$prior[4], "cauchy(0,1)")
   cp <- check_prior(set_prior("cauchy(0,1)", class = "sd", group = "visit"),
                     formula = count ~ (1|visit) + (0+Trt_c|visit), 
                     data = epilepsy)
-  expect_equal(cp$prior[c(5, 8)], rep("cauchy(0,1)", 2))
+  expect_equal(cp$prior[c(3, 6)], rep("cauchy(0,1)", 2))
 })
 
 test_that("handle_special_priors handles horseshoe prior correctly", {

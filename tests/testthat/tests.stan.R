@@ -67,7 +67,7 @@ test_that("stan_eta returns correct strings for autocorrelation models", {
                "eta[n] <- eta[n] + head(E[n], Kma) * ma", fixed = TRUE)
   expect_match(stan_eta(family = poisson(), f = c("Trt_c"),
                         autocor = cor_arma(~visit|patient, r = 3))$transC1,
-               "eta <- X * b + b_Intercept + Yarr * arr", fixed = TRUE)
+               "eta <- X * b + temp_Intercept + Yarr * arr", fixed = TRUE)
 })
 
 test_that("Test_that stan_arma returns correct strings (or errors)", {
@@ -180,7 +180,7 @@ test_that("stan_ordinal returns correct strings", {
   out <- stan_ordinal(family = acat(), threshold = "equidistant")
   expect_match(out$par, "real delta;")
   expect_match(out$transC1, fixed = TRUE, 
-               "b_Intercept[k] <- b_Intercept1 + (k - 1.0)*delta;")
+               "temp_Intercept[k] <- temp_Intercept1 + (k - 1.0)*delta;")
   expect_match(stan_ordinal(family = acat("probit_approx"))$transC2, 
                "Phi_approx")
 })
@@ -195,7 +195,7 @@ test_that("stan_llh uses simplifications when possible", {
   expect_equal(stan_llh(family = poisson()), 
                "  Y ~ poisson_log(eta); \n")
   expect_match(stan_llh(family = cumulative("logit")), fixed = TRUE,
-               "  Y[n] ~ ordered_logistic(eta[n], b_Intercept); \n")
+               "  Y[n] ~ ordered_logistic(eta[n], temp_Intercept); \n")
 })
 
 test_that("stan_llh returns correct llhs under weights and censoring", {

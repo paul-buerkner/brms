@@ -79,17 +79,18 @@ test_that(paste("make_standata returns correct data names",
                 "for fixed and random effects"), {
   expect_equal(names(make_standata(rating ~ treat + period + carry 
                                    + (1|subject), data = inhaler)),
-               c("N","Y","K","X","J_1","N_1","K_1","Z_1","NC_1"))
+               c("N", "Y", "K", "X", "X_means", 
+                 "J_1", "N_1", "K_1", "Z_1", "NC_1"))
   expect_equal(names(make_standata(rating ~ treat + period + carry 
                                    + (1+treat|subject), data = inhaler,
                                    family = "categorical")),
-               c("N","Y","Kp","Xp","J_1","N_1","K_1",
+               c("N","Y","Kp","Xp", "Xp_means", "J_1","N_1","K_1",
                  "Z_1","NC_1", "ncat", "max_obs"))
   temp_data <- data.frame(y = 1:10, g = 1:10, h = 11:10, x = rep(0,10))
   expect_equal(names(make_standata(y ~ x + (1|g) + (1|h), family = "poisson",
                                    data = temp_data)),
-               c("N","Y","K","X","J_1","N_1","K_1","Z_1","NC_1",
-                 "J_2","N_2","K_2","Z_2","NC_2"))
+               c("N", "Y", "K", "X", "X_means", "J_1", "N_1", "K_1",
+                 "Z_1", "NC_1", "J_2", "N_2", "K_2", "Z_2", "NC_2"))
 })
 
 test_that(paste("make_standata handles variables used as fixed effects", 
@@ -109,25 +110,25 @@ test_that(paste("make_standata returns correct data names",
                           c = sample(-1:1,10,TRUE))
   expect_equal(names(make_standata(y | se(w) ~ x, family = "gaussian", 
                                    data = temp_data)), 
-               c("N","Y","K","X","se"))
+               c("N", "Y", "K", "X", "X_means", "se"))
   expect_equal(names(make_standata(y | weights(w) ~ x, family = "gaussian", 
                                    data = temp_data)), 
-               c("N","Y","K","X","weights"))
+               c("N", "Y", "K", "X", "X_means", "weights"))
   expect_equal(names(make_standata(y | cens(c) ~ x, family = "cauchy", 
                                    data = temp_data)), 
-               c("N","Y","K","X","cens"))
+               c("N", "Y", "K", "X", "X_means", "cens"))
   expect_equal(names(make_standata(y | trials(t) ~ x, family = "binomial", 
                                    data = temp_data)), 
-               c("N","Y","K","X","trials","max_obs"))
+               c("N", "Y", "K", "X", "X_means", "trials", "max_obs"))
   expect_equal(names(make_standata(y | trials(10) ~ x, family = "binomial", 
                                    data = temp_data)), 
-               c("N","Y","K","X","trials","max_obs"))
+               c("N", "Y", "K", "X", "X_means", "trials", "max_obs"))
   expect_equal(names(make_standata(y | cat(11) ~ x, family = "acat", 
                                    data = temp_data)), 
-               c("N","Y","K","X","ncat","max_obs"))
+               c("N", "Y", "K", "X", "X_means", "ncat", "max_obs"))
   expect_equal(names(make_standata(y | cat(10) ~ x, family = "cumulative", 
                                    data = temp_data)), 
-               c("N","Y","K","X","ncat","max_obs"))
+               c("N", "Y", "K", "X", "X_means", "ncat", "max_obs"))
   expect_warning(names(make_standata(y | cat(t) ~ x, family = "cumulative", 
                                      data = temp_data)),
                  "no longer have different numbers of categories")
