@@ -329,10 +329,8 @@ stan_fixef <- function(fixef, paref, family = gaussian(),
         "  row_vector[ncat - 1] temp_Intercept;  # temporary intercepts \n")
       out$genD <- paste0("  row_vector[ncat - 1] b_Intercept;",
                          "  # fixed effects intercepts \n")
-      out$genC <- paste0("  for (k in 1:(ncat - 1)) { \n", 
-                         "    b_Intercept[k] <- temp_Intercept[k]",
-                         " - dot_product(Xp_means, col(bp, k)); \n",
-                         "  } \n")
+      out$genC <- paste0("  b_Intercept <- temp_Intercept",
+                         " - to_row_vector(Xp_means) * bp; \n")
     } else if (is.ordinal(family)) {
       # temp intercepts for ordinal models are defined in stan_ordinal
       out$genD <- "  vector[ncat - 1] b_Intercept;  # thresholds \n" 
@@ -572,9 +570,9 @@ stan_llh <- function(family, se = FALSE, weights = FALSE,
       binomial = c("binomial", paste0("trials",ns,", ",eta)),
       bernoulli = c("bernoulli", eta), 
       bernoulli_2PL = c("bernoulli", eta), 
-      gamma = c("gamma", paste0("shape, ",eta)), 
+      gamma = c("gamma", paste0("shape, ", eta)), 
       exponential = c("exponential", eta),
-      weibull = c("weibull", paste0("shape, ",eta)), 
+      weibull = c("weibull", paste0("shape, ", eta)), 
       inverse.gaussian = c("inv_gaussian", 
                            paste0(eta, ", shape, log_Y",n,", sqrt_Y",n)),
       beta = c("beta", paste0(eta, " * phi, (1 - ", eta, ") * phi")),
