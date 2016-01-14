@@ -61,7 +61,7 @@ Summary statistics of the posterior distributions
  related to the hypotheses.
 }
 \description{
-Perform non-linear hypothesis testing of fixed effects parameters
+Perform non-linear hypothesis testing for all model parameters.
 }
 \details{
 Among others, \code{hypothesis} computes an 

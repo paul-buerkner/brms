@@ -74,7 +74,7 @@ VarCorr <- function(x, ...)
 
 #' Non-linear hypothesis testing
 #' 
-#' Perform non-linear hypothesis testing of fixed effects parameters
+#' Perform non-linear hypothesis testing for all model parameters. 
 #' 
 #' @aliases hypothesis.brmsfit
 #' 

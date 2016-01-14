@@ -15,12 +15,12 @@
 #'   a call to a family function or a character string naming the family.
 #'   Currently, the following families are supported:
 #'   \code{gaussian}, \code{student}, \code{cauchy}, \code{binomial}, 
-#'   \code{bernoulli}, \code{Beta}, \code{categorical}, \code{poisson}, 
-#'   \code{negbinomial}, \code{geometric}, \code{Gamma}, \code{inverse.gaussian}, 
-#'   \code{exponential}, \code{weibull}, \code{cumulative}, \code{cratio}, 
-#'   \code{sratio}, \code{acat}, \code{hurdle_poisson}, \code{hurdle_negbinomial},
-#'   \code{hurdle_gamma}, \code{zero_inflated_binomial},
-#'   \code{zero_inflated_poisson}, and \code{zero_inflated_negbinomial}.
+#'   \code{bernoulli}, \code{Beta}, \code{poisson}, \code{negbinomial}, 
+#'   \code{geometric}, \code{Gamma}, \code{inverse.gaussian}, 
+#'   \code{exponential}, \code{weibull}, \code{categorical}, \code{cumulative}, 
+#'   \code{cratio}, \code{sratio}, \code{acat}, \code{hurdle_poisson}, 
+#'   \code{hurdle_negbinomial}, \code{hurdle_gamma}, \code{zero_inflated_binomial},
+#'   \code{zero_inflated_negbinomial}, and \cr \code{zero_inflated_poisson}
 #'   Every family function has a \code{link} argument allowing to specify
 #'   the link function to be applied on the response variable.
 #'   If not specified, default links are used.
@@ -208,24 +208,24 @@
 #'   of the special internal variable \code{trait} having two levels in this case. 
 #'   However, only the actual response must be specified in \code{formula}, 
 #'   as the second response variable used for the zero-inflation / hurdle
-#'   (zi-hu) part is internally generated.
+#'   (ZIH) part is internally generated.
 #'   A \code{formula} for this type of models may, for instance, look like this: \cr
 #'   \code{y ~ 0 + trait * (x1 + x2) + (0 + trait | g)}. In this example, the fixed effects
-#'   \code{x1} and \code{x1} influence the zi-hu part differently
+#'   \code{x1} and \code{x1} influence the ZIH part differently
 #'   than the actual response part as indicated by their interaction with \code{trait}.
 #'   In addition, a random effect of \code{trait} was added while the random intercept 
 #'   was removed leading to the estimation of two random effects, 
-#'   one for the zi-hu part and one for the actual response. 
+#'   one for the ZIH part and one for the actual response. 
 #'   In the example above, the correlation between the two random effects 
 #'   will also be estimated.
-#'   Sometimes, predictors should only influence the zi-hu part
+#'   Sometimes, predictors should only influence the ZIH part
 #'   but not the actual response (or vice versa). As this cannot be modeled
 #'   with the \code{trait} variable, two other internally generated and 
 #'   reserved (numeric) variables, namely \code{main} and \code{spec}, are supported.
 #'   \code{main} is \code{1} for the response part and \code{0} for the
-#'   zi-hu part of the model. For \code{spec} it is the other way round.
+#'   ZIH part of the model. For \code{spec} it is the other way round.
 #'   Suppose that \code{x1} should only influence the actual response,
-#'   and \code{x2} only the zi-hu process. We can write this as follows:
+#'   and \code{x2} only the ZIH process. We can write this as follows:
 #'   \code{formula = y ~ 0 + main + spec + main:x1 + spec:x2}. 
 #'   The main effects of \code{main} or \code{spec} serve as intercepts,
 #'   while the interaction terms \code{main:x1} and \code{spec:x2} ensure

@@ -92,7 +92,8 @@ Define priors for specific parameters or classes of parameters
   and \code{arr} (autoregression of the response).
   The default prior for autocorrelation parameters is an 
   improper flat prior over the reals. 
-  Other priors can be defined by \code{set_prior("<prior>", class = "ar")} 
+  Other priors can be defined by \cr
+  \code{set_prior("<prior>", class = "ar")} 
   for \code{ar} effects and similar for \code{ma} and \code{arr} effects.
   
   4. Standard deviations of random effects
