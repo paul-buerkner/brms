@@ -139,11 +139,11 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   # generate functions block
   text_functions <- paste0(
     "functions { \n",
+      text_misc_funs,
       text_arma$fun,
       text_ordinal$fun,
       text_zi_hu$fun,
       text_inv_gaussian$fun,
-      text_misc_funs,
     "} \n")
   
   # generate data block
