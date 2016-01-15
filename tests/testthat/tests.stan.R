@@ -180,9 +180,18 @@ test_that("stan_ordinal returns correct strings", {
   out <- stan_ordinal(family = acat(), threshold = "equidistant")
   expect_match(out$par, "real delta;")
   expect_match(out$transC1, fixed = TRUE, 
-               "temp_Intercept[k] <- temp_Intercept1 + (k - 1.0)*delta;")
-  expect_match(stan_ordinal(family = acat("probit_approx"))$transC2, 
-               "Phi_approx")
+               "temp_Intercept[k] <- temp_Intercept1 + (k - 1.0) * delta;")
+  expect_match(stan_ordinal(family = cumulative("cloglog"))$fun, 
+               "cumulative_log.*inv_cloglog")
+  expect_match(stan_ordinal(family = sratio("logit"))$fun, 
+               "sratio_log.*inv_logit")
+  expect_match(stan_ordinal(family = cratio("cauchit"))$fun, 
+               "cratio_log.*inv_cauchit")
+  expect_match(stan_ordinal(family = acat("logit"))$fun, 
+               "p[k + 1] <- exp(p[k + 1])", fixed = TRUE)
+  expect_match(stan_ordinal(family = acat("probit_approx"))$fun, 
+               "acat_log.*Phi_approx")
+  
 })
 
 test_that("stan_llh uses simplifications when possible", {
