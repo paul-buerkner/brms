@@ -85,12 +85,13 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
                        has_intercept = has_intercept, paref = paref, 
                        autocor = autocor, offset = offset, is_multi = is_multi,
                        add = is.formula(ee[c("weights", "cens", "trunc")]))
-  text_llh <- stan_llh(family, is_multi = is_multi,
-                       se = is.formula(ee$se),  
+  text_llh <- stan_llh(family, se = is.formula(ee$se),  
                        weights = is.formula(ee$weights),
                        trials = is.formula(ee$trials),
-                       cens = is.formula(ee$cens),
-                       trunc = trunc, autocor = autocor)
+                       cens = is.formula(ee$cens), 
+                       trunc = trunc, autocor = autocor,
+                       partial = is.formula(partial),
+                       is_multi = is_multi)
   trait <- ifelse(is_multi || is.forked(family), "_trait", "")
   if (is.formula(ee$cens) || is.formula(ee$weights) || is.formula(ee$trunc) ||
       is_ordinal || is_categorical || is_hurdle || is_zero_inflated) {
@@ -139,6 +140,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   text_functions <- paste0(
     "functions { \n",
       text_arma$fun,
+      text_ordinal$fun,
       text_zi_hu$fun,
       text_inv_gaussian$fun,
       text_misc_funs,
@@ -225,9 +227,8 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   
   # generate transformed parameters block
   # loop over all observations in transformed parameters if necessary
-  cumu_logit <- family$family == "cumulative" && family$link == "logit"
   make_loop <- nrow(ee$random) || (Kar || Kma) && !is.formula(ee$se) ||  
-               text_eta$transform || (is_ordinal && !cumu_logit)
+               text_eta$transform
   if (make_loop && !is_multi) {
     text_loop <- c(paste0("  # if available add REs to linear predictor \n",
                           "  for (n in 1:N) { \n"), "  } \n")
@@ -331,6 +332,7 @@ stan_fixef <- function(fixef, paref, family = gaussian(),
                          "  # fixed effects intercepts \n")
       out$genC <- paste0("  b_Intercept <- temp_Intercept",
                          " - to_row_vector(Xp_means) * bp; \n")
+      out$prior <- stan_prior("temp_Intercept", prior = prior)
     } else if (is.ordinal(family)) {
       # temp intercepts for ordinal models are defined in stan_ordinal
       out$genD <- "  vector[ncat - 1] b_Intercept;  # thresholds \n" 
@@ -340,8 +342,8 @@ stan_fixef <- function(fixef, paref, family = gaussian(),
         "  real temp_Intercept;  # temporary Intercept \n")
       out$genD <- "  real b_Intercept;  # fixed effects intercept \n"
       out$genC <- "  b_Intercept <- temp_Intercept - dot_product(X_means, b); \n"
+      out$prior <- stan_prior("temp_Intercept", prior = prior)
     }
-    out$prior <- paste0(out$prior, stan_prior("temp_Intercept", prior = prior))
   }
   if (length(fixef)) {
     out$data <- paste0(out$data, 
@@ -458,9 +460,9 @@ stan_ranef <- function(i, ranef, prior = prior_frame(),
   out
 }
 
-stan_llh <- function(family, se = FALSE, weights = FALSE, 
-                     trials = FALSE, cens = FALSE, trunc = .trunc(), 
-                     autocor = cor_arma(), is_multi = FALSE) {
+stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE, 
+                     cens = FALSE, trunc = .trunc(), autocor = cor_arma(), 
+                     partial = FALSE, is_multi = FALSE) {
   # Likelihoods in stan language
   #
   # Args:
@@ -471,7 +473,9 @@ stan_llh <- function(family, se = FALSE, weights = FALSE,
   #   cens: logical; censored data?
   #   trunc: list containing lower and upper truncation boundaries
   #   autocor: autocorrelation structure; an object of classe cor_arma
-  #   multi: is the model multivariate?
+  #   partial: a flag whether catgory specific effects are present
+  #            (for ordinal models only)
+  #   is_multi: is the model multivariate?
   #
   # Returns:
   #   a string containing the likelihood of the model in stan language
@@ -513,6 +517,8 @@ stan_llh <- function(family, se = FALSE, weights = FALSE,
   ns <- ifelse((se || trials) && (cens || weights || is_trunc) 
                || trials && is_zero_inflated, "[n]", "")
   sigma <- paste0(ifelse(se, "se", "sigma"), ns)
+  ordinal_args <- paste0("eta[n], ", if (partial) "etap[n], ", 
+                         "temp_Intercept")
   # use inverse link in likelihood statement only 
   # if it does not prevent vectorization 
   ilink <- ifelse(n == "[n]" && !simplify, stan_ilink(link), "")
@@ -550,7 +556,7 @@ stan_llh <- function(family, se = FALSE, weights = FALSE,
       bernoulli = c("bernoulli_logit", paste0("eta",n)),
       bernoulli_2PL = c("bernoulli_logit", paste0("eta_2PL",n)))
   } else {
-    llh_pre <- switch(ifelse(is_catordinal, "categorical", family),
+    llh_pre <- switch(family,
       gaussian = c("normal", paste0(eta,", ",sigma)),
       gaussian_cov = c("normal_cov", paste0(eta,", squared_se, N_tg, ", 
                        "begin_tg, nrows_tg, res_cov_matrix")),
@@ -577,6 +583,10 @@ stan_llh <- function(family, se = FALSE, weights = FALSE,
                            paste0(eta, ", shape, log_Y",n,", sqrt_Y",n)),
       beta = c("beta", paste0(eta, " * phi, (1 - ", eta, ") * phi")),
       categorical = c("categorical", "p[n]"),
+      cumulative = c("cumulative", ordinal_args),
+      sratio = c("sratio", ordinal_args),
+      cratio = c("cratio", ordinal_args),
+      acat = c("acat", ordinal_args),
       hurdle_poisson = c("hurdle_poisson", "eta[n], eta[n + N_trait]"),
       hurdle_negbinomial = c("hurdle_neg_binomial_2", 
                              "eta[n], eta[n + N_trait], shape"),
@@ -816,7 +826,7 @@ stan_arma <- function(family, autocor, prior = prior_frame(),
       # defined selfmade functions for the functions block
       if (family$family == "gaussian") {
         out$fun <- paste0(out$fun,
-        "  /* multi normal log-PDF for special residual covariance structures \n",
+        "  /* multi-normal log-PDF for special residual covariance structures \n",
         "   * currently only ARMA effects of order 1 are implemented \n",
         "   * Args: \n",
         "   *   y: response vector \n",
@@ -851,7 +861,7 @@ stan_arma <- function(family, autocor, prior = prior_frame(),
         "   } \n")
       } else { # family %in% c("student", "cauchy")
         out$fun <- paste0(out$fun,
-        "  /* multi student-t log-PDF for special residual covariance structures \n",
+        "  /* multi-student-t log-PDF for special residual covariance structures \n",
         "   * currently only ARMA effects of order 1 are implemented \n",
         "   * Args: \n",
         "   *   y: response vector \n",
@@ -1076,11 +1086,11 @@ stan_ordinal <- function(family, prior = prior_frame(),
     th <- function(k, fam = family) {
       # helper function generating stan code inside ilink(.)
       sign <- ifelse(fam %in% c("cumulative", "sratio")," - ", " + ")
-      ptl <- ifelse(partial, paste0(sign, "etap[n,k]"), "") 
+      ptl <- ifelse(partial, paste0(sign, "etap[k]"), "") 
       if (sign == " - ") {
-        out <- paste0("temp_Intercept[",k,"]", ptl, " - eta[n]")
+        out <- paste0("thres[",k,"]", ptl, " - eta")
       } else {
-        out <- paste0("eta[n]", ptl, " - temp_Intercept[",k,"]")
+        out <- paste0("eta", ptl, " - thres[",k,"]")
       }
     } 
     link <- family$link
@@ -1100,7 +1110,7 @@ stan_ordinal <- function(family, prior = prior_frame(),
       out$transC1 <- paste0(
         "  # compute equidistant thresholds \n",
         "  for (k in 1:(ncat - 1)) { \n",
-        "    temp_Intercept[k] <- temp_Intercept1 + (k - 1.0)*delta; \n",
+        "    temp_Intercept[k] <- temp_Intercept1 + (k - 1.0) * delta; \n",
         "  } \n")
       out$prior <- paste0(stan_prior(class = "temp_Intercept1", prior = prior), 
                           stan_prior(class = "delta", prior = prior))
@@ -1108,52 +1118,65 @@ stan_ordinal <- function(family, prior = prior_frame(),
     
     # generate Stan code specific for each ordinal model
     if (!(family == "cumulative" && ilink == "inv_logit")) {
-      # cumulative(logit) family already has a function in Stan itself
-      out$transD <- paste0(out$transD, 
-        "  vector[ncat] p[N]; \n", 
-        if (family != "cumulative") 
-          paste0("  vector[ncat - 1] q[N]; \n"))
-      out$transC2 <- "    # compute probabilities for ordinal models \n"
+      cse_arg <- ifelse(!partial, "", "row_vector etap, ")
+      out$fun <- paste0(
+      "  /* ", family, " log-PDF for a single response \n",
+      "   * Args: \n",
+      "   *   y: response category \n",
+      "   *   eta: linear predictor \n",
+      "   *   etap: optional linear predictor for category specific effects \n",
+      "   *   thres: ordinal thresholds \n",
+      "   * Returns: \n", 
+      "   *   a scalar to be added to the log posterior \n",
+      "   */ \n",
+      "   real ", family, "_log(int y, real eta, ", cse_arg, "vector thres) { \n",
+      "     int ncat; \n",
+      "     vector[num_elements(thres) + 1] p; \n",
+      if (family != "cumulative") "     vector[num_elements(thres)] q; \n",
+      "     ncat <- num_elements(thres) + 1; \n")
+
+      # define actual function content
       if (family == "cumulative") {
-        out$transC2 <- paste0(out$transC2,
-        "    p[n, 1] <- ",ilink,"(",th(1),"); \n",
-        "    for (k in 2:(ncat - 1)) { \n", 
-        "      p[n, k] <- ",ilink,"(",th("k"),") - ",
-                            ilink,"(",th("k - 1"),"); \n", 
-        "    } \n",
-        "    p[n, ncat] <- 1 - ",ilink,"(",th("ncat - 1"),"); \n")
+        out$fun <- paste0(out$fun,
+        "     p[1] <- ", ilink, "(", th(1), "); \n",
+        "     for (k in 2:(ncat - 1)) { \n", 
+        "       p[k] <- ", ilink, "(", th("k"), ") - ",
+                           ilink, "(", th("k - 1"), "); \n", 
+        "     } \n",
+        "     p[ncat] <- 1 - ",ilink, "(", th("ncat - 1"), "); \n")
       } else if (family %in% c("sratio", "cratio")) {
         sc <- ifelse(family == "sratio", "1 - ", "")
-        out$transC2 <- paste0(out$transC2,
-        "    for (k in 1:(ncat - 1)) { \n",
-        "      q[n, k] <- ",sc, ilink,"(",th("k"),"); \n",
-        "      p[n, k] <- 1 - q[n, k]; \n",
-        "      for (kk in 1:(k - 1)) p[n, k] <- p[n, k] * q[n, kk]; \n", 
-        "    } \n",
-        "    p[n, ncat] <- prod(q[n]); \n")
+        out$fun <- paste0(out$fun,
+        "     for (k in 1:(ncat - 1)) { \n",
+        "       q[k] <- ", sc, ilink, "(", th("k"), "); \n",
+        "       p[k] <- 1 - q[k]; \n",
+        "       for (kk in 1:(k - 1)) p[k] <- p[k] * q[kk]; \n", 
+        "     } \n",
+        "     p[ncat] <- prod(q); \n")
       } else if (family == "acat") {
         if (ilink == "inv_logit") {
-          out$transC2 <- paste0(out$transC2,
-          "    p[n, 1] <- 1.0; \n",
-          "    for (k in 1:(ncat - 1)) { \n",
-          "      q[n, k] <- ",th("k"),"; \n",
-          "      p[n, k + 1] <- q[n, 1]; \n",
-          "      for (kk in 2:k) p[n, k + 1] <- p[n, k + 1] + q[n, kk]; \n",
-          "      p[n, k + 1] <- exp(p[n, k + 1]); \n",
-          "    } \n",
-          "    p[n] <- p[n] / sum(p[n]); \n")
+          out$fun <- paste0(out$fun,
+          "     p[1] <- 1.0; \n",
+          "     for (k in 1:(ncat - 1)) { \n",
+          "       q[k] <- ", th("k"), "; \n",
+          "       p[k + 1] <- q[1]; \n",
+          "       for (kk in 2:k) p[k + 1] <- p[k + 1] + q[kk]; \n",
+          "       p[k + 1] <- exp(p[k + 1]); \n",
+          "     } \n",
+          "     p <- p / sum(p); \n")
         } else {
-          out$transC2 <- paste0(out$transC2,                   
-          "    for (k in 1:(ncat - 1)) \n",
-          "      q[n, k] <- ",ilink,"(",th("k"),"); \n",
-          "    for (k in 1:ncat) { \n",     
-          "      p[n, k] <- 1.0; \n",
-          "      for (kk in 1:(k - 1)) p[n, k] <- p[n, k] * q[n, kk]; \n",
-          "      for (kk in k:(ncat - 1)) p[n, k] <- p[n, k] * (1-q[n, kk]); \n",      
-          "    } \n",
-          "    p[n] <- p[n] / sum(p[n]); \n")
+          out$fun <- paste0(out$fun,    
+          "     for (k in 1:(ncat - 1)) \n",
+          "       q[k] <- ", ilink, "(", th("k"), "); \n",
+          "     for (k in 1:ncat) { \n",     
+          "       p[k] <- 1.0; \n",
+          "       for (kk in 1:(k - 1)) p[k] <- p[k] * q[kk]; \n",
+          "       for (kk in k:(ncat - 1)) p[k] <- p[k] * (1 - q[kk]); \n",      
+          "     } \n",
+          "     p <- p / sum(p); \n")
         }
       }
+      out$fun <- paste(out$fun, "    return categorical_log(y, p); \n   } \n")
     }
   }
   out
