@@ -2,7 +2,7 @@
 \title{brms News}
 \encoding{UTF-8}
 
-\section{CHANGES IN VERSION 0.6.0.9000}{
+\section{CHANGES IN VERSION 0.7.0}{
   \subsection{NEW FEATURES}{
     \itemize{
       \item allow to use variational inference algorithms
@@ -35,8 +35,14 @@
       reliably allow terms with more than one variable
       (e.g., \code{y/x ~ 1})
       \item improve sampling efficiency of models containing
+      many fixed effects through centering the fixed effects
+      design matrix
+      \item improve sampling efficiency of models containing
       uncorrelated random effects specified by means
       of \code{(random || group)} terms in \code{formula}
+      \item utilize user-defined functions in the Stan code 
+      of ordinal models to improve readability as well as
+      sampling efficiency
       \item make sure that model comparisons using \code{LOO} 
       or \code{WAIC} are only performed when models are 
       based on the same responses
@@ -44,6 +50,10 @@
       package to avoid unnecessary function masking
       \item allow to change the \code{ggplot} theme in the
       \code{plot} method through argument \code{theme}
+      \item remove the \code{n.} prefix in arguments
+      \code{n.iter}, \code{n.warmup}, \code{n.thin}, \code{n.chains}, 
+      and \code{n.cluster} of the \code{brm} function.
+      The old argument names remain usable as deprecated aliases
     }
   }
   \subsection{BUG FIXES}{
