@@ -107,13 +107,15 @@ rename_pars <- function(x) {
   if (is.formula(x$partial) || is.categorical(family)) {
     p <- colnames(standata$Xp)
     lp <- length(p)
-    thres <- max(standata$max_obs) - 1
-    pfnames <- paste0("b_",t(outer(p, paste0("[",1:thres,"]"), FUN = paste0)))
-    change <- lc(change, list(pos = grepl("^bp\\[", pars), oldname = "bp", 
-                              pnames = paste0("b_",p), fnames = pfnames,
-                              sort = ulapply(1:lp, seq, to = thres*lp, by = lp),
-                              dim = thres))
-    change <- c(change, prior_changes(class = "bp", pars = pars, names = p))
+    if (lp) {
+      thres <- max(standata$max_obs) - 1
+      pfnames <- paste0("b_",t(outer(p, paste0("[",1:thres,"]"), FUN = paste0)))
+      change <- lc(change, list(pos = grepl("^bp\\[", pars), oldname = "bp", 
+                                pnames = paste0("b_",p), fnames = pfnames,
+                                sort = ulapply(1:lp, seq, to = thres*lp, by = lp),
+                                dim = thres))
+      change <- c(change, prior_changes(class = "bp", pars = pars, names = p))
+    }
   } 
   
   if (length(x$ranef)) {
