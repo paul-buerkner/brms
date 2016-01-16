@@ -330,18 +330,20 @@ stan_fixef <- function(fixef, paref, family = gaussian(),
         "  row_vector[ncat - 1] temp_Intercept;  # temporary intercepts \n")
       out$genD <- paste0("  row_vector[ncat - 1] b_Intercept;",
                          "  # fixed effects intercepts \n")
-      out$genC <- paste0("  b_Intercept <- temp_Intercept",
-                         " - to_row_vector(Xp_means) * bp; \n")
+      subtract <- ifelse(length(paref), " - to_row_vector(Xp_means) * bp", "")
+      out$genC <- paste0("  b_Intercept <- temp_Intercept", subtract, "; \n")
       out$prior <- stan_prior("temp_Intercept", prior = prior)
     } else if (is.ordinal(family)) {
       # temp intercepts for ordinal models are defined in stan_ordinal
       out$genD <- "  vector[ncat - 1] b_Intercept;  # thresholds \n" 
-      out$genC <- "  b_Intercept <- temp_Intercept - dot_product(X_means, b); \n"
+      subtract <- ifelse(length(fixef), " - dot_product(X_means, b)", "") 
+      out$genC <- paste0("  b_Intercept <- temp_Intercept", subtract, "; \n")
     } else {
       out$par <- paste0(out$par,
         "  real temp_Intercept;  # temporary Intercept \n")
       out$genD <- "  real b_Intercept;  # fixed effects intercept \n"
-      out$genC <- "  b_Intercept <- temp_Intercept - dot_product(X_means, b); \n"
+      subtract <- ifelse(length(fixef), " - dot_product(X_means, b)", "") 
+      out$genC <- paste0("  b_Intercept <- temp_Intercept", subtract, "; \n")
       out$prior <- stan_prior("temp_Intercept", prior = prior)
     }
   }
@@ -686,7 +688,7 @@ stan_eta <- function(family, fixef, ranef = list(), paref = NULL,
   # initialize eta
   eta$transD <- paste0(
     "  vector[N] eta;  # linear predictor \n", 
-    if (length(paref)) 
+    if (length(paref) || is.categorical(family)) 
       paste0("  matrix[N, ncat - 1] etap;",
              "  # linear predictor for category specific effects \n"),
     if (is_multi) 
@@ -728,7 +730,7 @@ stan_eta <- function(family, fixef, ranef = list(), paref = NULL,
   eta_re <- stan_eta_re(ranef)
   etap <- if (length(paref) || is_cat) {
     paste0("  etap <- ", 
-           ifelse(length(paref), "Xp * bp", "rep_matrix(0, Kp, ncat - 1)"),
+           ifelse(length(paref), "Xp * bp", "rep_matrix(0, N, ncat - 1)"),
            if (is_cat && has_intercept) " + rep_matrix(temp_Intercept, N)", "; \n")
   }
   eta_ma <- ifelse(get_ma(autocor) && !use_cov(autocor), 

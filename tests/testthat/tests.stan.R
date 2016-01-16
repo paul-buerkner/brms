@@ -385,3 +385,12 @@ test_that("make_stancode is silent for categorical models", {
   data <- data.frame(y = sample(1:4, 10, TRUE), x = 1:10)
   expect_silent(make_stancode(y ~ x, data = data, family = categorical()))
 })
+
+test_that("make_stancode returns correct code for intercept only models", {
+  expect_match(make_stancode(rating ~ 1, data = inhaler),
+               "b_Intercept <- temp_Intercept;", fixed = TRUE) 
+  expect_match(make_stancode(rating ~ 1, data = inhaler, family = sratio()),
+               "b_Intercept <- temp_Intercept;", fixed = TRUE) 
+  expect_match(make_stancode(rating ~ 1, data = inhaler, family = categorical()),
+               "b_Intercept <- temp_Intercept;", fixed = TRUE) 
+})
