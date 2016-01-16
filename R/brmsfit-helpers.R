@@ -548,9 +548,9 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL,
     }
     eta <- etap
   } else if (is.categorical(family)) {
-    if (!is.null(data$X)) {
+    if (!is.null(data$Xp)) {
       p <- do.call(posterior_samples, c(args, pars = "^b_"))
-      etap <- partial_predictor(data$X, p, data$max_obs)
+      etap <- partial_predictor(data$Xp, p, data$max_obs)
     } else {
       etap <- array(0, dim = c(dim(eta), data$max_obs - 1))
     }
