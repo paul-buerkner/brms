@@ -85,32 +85,33 @@ Among others, \code{hypothesis} computes an
 prior <- c(set_prior("normal(0,2)", class = "b"),
            set_prior("student_t(10,0,1)", class = "sigma"),
            set_prior("student_t(10,0,1)", class = "sd"))
-           
+
 ## fit a linear mixed effects models
-fit <- brm(rating ~ treat + period + carry + (1+treat|subject),
-           data = inhaler, family = gaussian(),
-           prior = prior, sample.prior = TRUE)
+fit <- brm(time ~ age + sex + disease + (1 + age|patient),
+           data = kidney, family = gaussian("log"),
+           prior = prior, sample.prior = TRUE, 
+           control = list(adapt_delta = 0.95))
 
 ## perform two-sided hypothesis testing
-(hyp1 <- hypothesis(fit, "treat = period + carry"))
+(hyp1 <- hypothesis(fit, "sexfemale = age + diseasePKD"))
 plot(hyp1)
-hypothesis(fit, "exp(treat) - 3 = 0", alpha = 0.01)
+hypothesis(fit, "exp(age) - 3 = 0", alpha = 0.01)
 
 ## perform one-sided hypothesis testing
-hypothesis(fit, "period + carry - 3 < 0")
+hypothesis(fit, "diseasePKD + diseaseGN - 3 < 0")
 
-hypothesis(fit, "treat < Intercept", 
-           class = "sd", group  = "subject")
+hypothesis(fit, "age < Intercept", 
+           class = "sd", group  = "patient")
 
 ## test the amount of random intercept variance on all variance
-h <- paste("sd_subject_Intercept^2 / (sd_subject_Intercept^2 +",
-           "sd_subject_treat^2 + sigma_rating^2) = 0")
+h <- paste("sd_patient_Intercept^2 / (sd_patient_Intercept^2 +",
+           "sd_patient_age^2 + sigma_time^2) = 0")
 (hyp2 <- hypothesis(fit, h, class = NULL))
 plot(hyp2)
 
 ## test more than one hypothesis at once
-(hyp3 <- hypothesis(fit, c("treat = period + carry", 
-                          "2 * period - treat = 0")))
+(hyp3 <- hypothesis(fit, c("diseaseGN = diseaseAN", 
+                           "2 * diseaseGN - diseasePKD = 0")))
 plot(hyp3, ignore_prior = TRUE)
 }
 
