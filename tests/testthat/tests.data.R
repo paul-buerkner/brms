@@ -276,8 +276,8 @@ test_that(paste("make_standata returns correct data",
                c(rep(1,5), rep(2,5)))
   standata <- make_standata(y ~ x, data = temp_data,
                             autocor = cor_ar(~tim|g, cov = TRUE))
-  expect_equal(standata$begin_tg, c(1, 6))
-  expect_equal(standata$nrows_tg, c(5, 5))
+  expect_equal(standata$begin_tg, as.array(c(1, 6)))
+  expect_equal(standata$nrows_tg, as.array(c(5, 5)))
   expect_equal(standata$squared_se, rep(0, 10))
 })
 
