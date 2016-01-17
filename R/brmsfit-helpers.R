@@ -822,7 +822,7 @@ find_names <- function(x) {
     stop("x must be a character string of length 1")
   x <- gsub(" ", "", x)
   reg_all <- paste0("([^([:digit:]|[:punct:])]|\\.)[[:alnum:]_\\.]*", 
-                    "(\\[[[:digit:]]+(,[[:digit:]]+)*\\])?")
+                    "(\\[[^],]+(,[^],]+)*\\])?")
   pos_all <- gregexpr(reg_all, x)[[1]]
   reg_fun <- "([^([:digit:]|[:punct:])]|\\.)[[:alnum:]_\\.]*\\("
   pos_fun <- gregexpr(reg_fun, x)[[1]]
