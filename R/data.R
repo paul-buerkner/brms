@@ -571,8 +571,12 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       standata$Karr <- Karr
     }
   } 
-  if (!is.null(attr(data, "old_order")) && isTRUE(control$save_order)) {
+  if (isTRUE(control$save_order)) {
     attr(standata, "old_order") <- attr(data, "old_order")
+    if (is.null(attr(standata, "old_order"))) {
+      # ensure that the old_order attribute is always defined
+      attr(standata, "old_order") <- 1:nrow(data)
+    }
   }
   standata
 }  
