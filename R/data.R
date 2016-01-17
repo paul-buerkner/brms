@@ -552,14 +552,10 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
         # Modeling ARMA effects using a special covariance matrix
         # requires additional data
         standata$N_tg <- length(unique(standata$tgroup))
-        if (standata$N_tg == 1) {
-          stop(paste("ARMA covariance models require a grouping factor",
-                     "with at least 2 levels"))
-        }
-        standata$begin_tg <- 
-          with(standata, ulapply(unique(tgroup), match, tgroup))
-        standata$nrows_tg <- 
-          with(standata, c(begin_tg[2:N_tg], N + 1) - begin_tg)
+        standata$begin_tg <- as.array(with(standata, 
+          ulapply(unique(tgroup), match, tgroup)))
+        standata$nrows_tg <- as.array(with(standata, 
+          c(if (N_tg > 1) begin_tg[2:N_tg], N + 1) - begin_tg))
         if (!is.null(standata$se)) {
           standata$squared_se <- standata$se^2
         } else {

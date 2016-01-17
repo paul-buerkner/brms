@@ -227,7 +227,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   
   # generate transformed parameters block
   # loop over all observations in transformed parameters if necessary
-  make_loop <- nrow(ee$random) || (Kar || Kma) && !is.formula(ee$se) ||  
+  make_loop <- nrow(ee$random) || (Kar || Kma) && !use_cov(autocor) ||  
                text_eta$transform
   if (make_loop && !is_multi) {
     text_loop <- c(paste0("  # if available add REs to linear predictor \n",
@@ -822,7 +822,7 @@ stan_arma <- function(family, autocor, prior = prior_frame(),
         cov_mat_fun <- "arma1"
         cov_mat_args <- "ar[1], ma[1]"
       }
-      out$transC1 <- paste0("  # compute residual covariance matrix; \n",
+      out$transC1 <- paste0("  # compute residual covariance matrix \n",
                             "  res_cov_matrix <- cov_matrix_", cov_mat_fun, 
                             "(", cov_mat_args, ", sigma, max(nrows_tg)); \n")
       # defined selfmade functions for the functions block
@@ -843,8 +843,8 @@ stan_arma <- function(family, autocor, prior = prior_frame(),
         "   *   sum of the log-PDF values of all observations \n",
         "   */ \n",
         "   real normal_cov_log(vector y, vector eta, vector squared_se, \n", 
-        "                        int N_tg, int[] begin, int[] nrows, \n",
-        "                        matrix res_cov_matrix) { \n",
+        "                       int N_tg, int[] begin, int[] nrows, \n",
+        "                       matrix res_cov_matrix) { \n",
         "     vector[N_tg] log_post; \n",
         "     for (i in 1:N_tg) { \n",
         "       matrix[nrows[i], nrows[i]] Sigma; \n",
