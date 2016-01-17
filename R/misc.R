@@ -52,6 +52,15 @@ ulapply <- function(X, FUN, ...) {
   unlist(lapply(X = X, FUN = FUN, ...))
 }
 
+as_matrix <- function(x, ...) {
+  # wrapper around as.matrix that can handle NULL
+  if (is.null(x)) {
+    NULL
+  } else {
+    as.matrix(x, ...) 
+  }
+}
+
 lc <- function(l, x) {
   # append x to l
   l[[length(l) + 1]] <- x
