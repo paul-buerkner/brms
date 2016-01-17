@@ -54,6 +54,8 @@
       \code{n.iter}, \code{n.warmup}, \code{n.thin}, \code{n.chains}, 
       and \code{n.cluster} of the \code{brm} function.
       The old argument names remain usable as deprecated aliases
+      \item amend names of random effects parameters to simplify
+      matching with their respective grouping factor levels
     }
   }
   \subsection{BUG FIXES}{
