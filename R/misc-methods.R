@@ -84,7 +84,7 @@ print.brmssummary <- function(x, digits = 2, ...) {
   invisible(x)
 }
 
-#' @rdname VarCorr
+#' @rdname VarCorr.brmsfit
 #' @export
 as.data.frame.brmsVarCorr <- function(x, ...) {
   estimates <- colnames(x[[1]]$sd)

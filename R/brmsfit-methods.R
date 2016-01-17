@@ -227,10 +227,54 @@ coef.brmsfit <- function(object, estimate = "mean", ...) {
   coef
 }
 
-#' @rdname VarCorr
+#' Extract variance and correlation components
+#' 
+#' This function calculates the estimated standard deviations, 
+#' correlations and covariances of the random-effects terms 
+#' in a mixed-effects model of class \code{brmsfit}. 
+#' For linear models, the residual standard deviations, 
+#' correlations and covariances are also returned. 
+#' 
+#' @aliases VarCorr
+#' 
+#' @param x An object of class \code{brmsift}. 
+#' @param estimate A character vector specifying which coefficients 
+#'  (e.g., "mean", "median", "sd", or "quantile")
+#'  should be calculated for the random effects.
+#' @param as.list logical; Indicates if covariance 
+#'  and correlation matrices should be returned as 
+#'  lists of matrices (the default), or as 3-dimensional arrays.
+#'  We recommend not to set \code{as.list} to \code{FALSE}.
+#' @param sigma,rdig Ignored (included for compatibility with 
+#'  \code{\link[nlme:VarCorr]{VarCorr}}).
+#' @param ... Further arguments to be passed to the functions 
+#'  specified in \code{estimate}
+#' 
+#' @return An object of class \code{brmsVarCorr}, 
+#' which is a list of lists (one per grouping factor), 
+#' each containing 3 elements: a matrix containing the standard deviations, 
+#' a list of correlation matrices, and a list of covariance matrices. 
+#' Can be coerced to a \code{data.frame} by using the \code{as.data.frame} method.
+#' 
+#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
+#' 
+#' @examples
+#' \dontrun{
+#' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
+#'              data = epilepsy, family = "poisson", chains = 1)
+#' ## return the means of random effects covariances
+#' (vc <- VarCorr(fit))
+#' as.data.frame(vc)
+#' 
+#' ## return 2.5% and 97.5% quantiles of random effects covariances
+#' VarCorr(fit, estimate = "quantile", probs = c(0.025, 0.975))
+#' }
+#' 
 #' @import abind abind
+#' @importFrom nlme VarCorr
 #' @export
-VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, ...) {
+VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, 
+                            sigma = NULL, rdig = NULL, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
   if (!(length(x$ranef) || any(grepl("^sigma_", parnames(x)))))
