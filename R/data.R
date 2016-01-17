@@ -575,7 +575,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     attr(standata, "old_order") <- attr(data, "old_order")
     if (is.null(attr(standata, "old_order"))) {
       # ensure that the old_order attribute is always defined
-      attr(standata, "old_order") <- 1:nrow(data)
+      attr(standata, "old_order") <- 1:nrow(as.matrix(standata$Y))
     }
   }
   standata
