@@ -142,13 +142,13 @@ rename_pars <- function(x) {
       if (any(grepl("^r_", pars))) {
         if (length(x$ranef[[i]]) == 1 || ee$random$cor[[i]]) {
           change <- lc(change, 
-            ranef_changes(i = i, group = group, gf = gf, pars = pars,
+            ranef_changes(i = i, ranef = x$ranef, gf = gf, pars = pars,
                           dims_oi = x$fit@sim$dims_oi))
         } else {
           # multiple uncorrelated random effects
           for (j in seq_along(x$ranef[[i]])) {
             change <- lc(change, 
-              ranef_changes(i = i, group = group, gf = gf, pars = pars,
+              ranef_changes(i = i, ranef = x$ranef, gf = gf, pars = pars,
                             dims_oi = x$fit@sim$dims_oi, j = j))
           }
         }
@@ -207,24 +207,25 @@ make_group_frame <- function(ranef) {
   out
 }
 
-make_indices <- function(rows, cols = NULL, dim = 1) {
-  # make indices in square brackets for indexing stan parameters
+make_index_names <- function(rownames, colnames = NULL, dim = 1) {
+  # compute index names in square brackets for indexing stan parameters
   #
   # Args:
-  #   rows: a vector of rows
-  #   cols: a vector of columns
+  #   rownames: a vector of row names
+  #   colnames: a vector of columns 
   #   dim: The number of dimensions of the output either 1 or 2
   #
   # Returns:
   #   all index pairs of rows and cols
-  if (!dim %in% c(1,2))
+  if (!dim %in% c(1, 2))
     stop("dim must be 1 or 2")
-  if (dim == 1) 
-    indices <- paste0("[",rows,"]")
-  else {
-    indices <- paste0("[", outer(rows, cols, FUN = paste, sep = ","), "]")
+  if (dim == 1) {
+    index_names <- paste0("[", rownames, "]")
+  } else {
+    temp <- outer(rownames, colnames, FUN = paste, sep = ",")
+    index_names <- paste0("[", temp, "]")
   }
-  indices
+  index_names
 }
 
 combine_duplicates <- function(x) {
@@ -255,7 +256,7 @@ combine_duplicates <- function(x) {
   new_list
 }
 
-ranef_changes <- function(i, group, gf, dims_oi, pars, j = NULL)  {
+ranef_changes <- function(i, ranef, gf, dims_oi, pars, j = NULL)  {
   # helps in renaming random effects (r_) parameters
   # Args:
   #  i: the index of the grouping factor under consideration
@@ -265,6 +266,7 @@ ranef_changes <- function(i, group, gf, dims_oi, pars, j = NULL)  {
   #  j: secondary indices used for uncorrelated random effects 
   # Returns:
   #  a list that can be interpreted by rename_pars
+  group <- names(ranef)
   stopifnot(length(j) <= 1)
   r_index <- ifelse(is.null(j), i, paste0(i, "_", j))
   r_parnames <- paste0("^r_", r_index,"(\\[|$)")
@@ -281,12 +283,12 @@ ranef_changes <- function(i, group, gf, dims_oi, pars, j = NULL)  {
     change$dim <- if (n_ranefs == 1) old_dim 
                   else c(old_dim[1], n_ranefs) 
   } 
-  # define indices of new parameter names
-  cols <- gf$first[i]:gf$last[i]
-  if (!is.null(j)) cols <- cols[j]
-  indices <- make_indices(rows = 1:old_dim[1], cols = cols, 
-                          dim = ifelse(n_ranefs == 1, 1, 2))
-  change$fnames <- paste0("r_", group[i], indices)
+  # define index names of new parameter names
+  colnames <- ranef[[i]]
+  if (!is.null(j)) colnames <- colnames[j]
+  index_names <- make_index_names(rownames = attr(ranef[[i]], "levels"),
+                                  colnames = colnames, dim = 2)
+  change$fnames <- paste0("r_", group[i], index_names)
   change
 }
 
