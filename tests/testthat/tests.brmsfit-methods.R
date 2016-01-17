@@ -66,7 +66,7 @@ test_that("all S3 methods have reasonable ouputs", {
   # parnames 
   expect_equal(parnames(fit)[c(1, 3, 7, 16, 18, 22)],
                c("b_Intercept", "ar[1]", "cor_visit_Intercept_Trt_c", 
-                 "r_visit[4,2]", "prior_sigma", "lp__"))
+                 "r_visit[4,Trt_c]", "prior_sigma", "lp__"))
   # plot tested in tests.plots.R
   # posterior_samples
   ps <- posterior_samples(fit)

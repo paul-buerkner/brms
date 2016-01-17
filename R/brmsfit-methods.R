@@ -78,6 +78,7 @@ vcov.brmsfit <- function(object, correlation = FALSE, ...) {
     cov(samples)
   }
 }
+
 #' Extract Random Effects Estimates
 #' 
 #' Extract the random effects of each level from \code{brmsfit} object. 
