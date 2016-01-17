@@ -272,6 +272,7 @@ coef.brmsfit <- function(object, estimate = "mean", ...) {
 #' 
 #' @import abind abind
 #' @importFrom nlme VarCorr
+#' @export VarCorr
 #' @export
 VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, 
                             sigma = NULL, rdig = NULL, ...) {
