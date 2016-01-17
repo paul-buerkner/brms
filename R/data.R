@@ -13,13 +13,15 @@ melt_data <- function(data, family, effects) {
   nobs <- nrow(data)
   if (nresp == 2 && is.forked(family) || nresp > 1 && is.linear(family)) {
     if (!is(data, "data.frame")) {
-      stop("data must be a data.frame for multivariate models")
+      stop("data must be a data.frame for multivariate models", call. = FALSE)
     }
     if ("trait" %in% names(data)) {
-      stop("trait is a resevered variable name in multivariate models")
+      stop("trait is a resevered variable name in multivariate models",
+           call. = FALSE)
     }
     if ("response" %in% names(data)) {
-      stop("response is a resevered variable name in multivariate models")
+      stop("response is a resevered variable name in multivariate models",
+           call. = FALSE)
     }
     trait <- factor(rep(response, each = nobs), levels = response)
     new_cols <- data.frame(trait = trait)
@@ -33,7 +35,8 @@ melt_data <- function(data, family, effects) {
       reserved <- reserved[reserved %in% names(data)]
       if (length(reserved)) {
         stop(paste(paste(reserved, collapse = ", "), 
-                   "is a resevered variable name"))
+                   "is a resevered variable name"),
+             call. = FALSE)
       }
       one <- rep(1, nobs)
       zero <- rep(0, nobs)
@@ -46,7 +49,7 @@ melt_data <- function(data, family, effects) {
     data <- replicate(length(response), data, simplify = FALSE)
     data <- cbind(do.call(rbind, data), new_cols)
   } else if (nresp > 1) {
-    stop("Invalid multivariate model")
+    stop("invalid multivariate model", call. = FALSE)
   }
   data
 }  
@@ -98,7 +101,8 @@ update_data <- function(data, family, effects, ...,
     data <- stats::model.frame(effects$all, data = data, na.action = na.action,
                                drop.unused.levels = drop.unused.levels)
     if (any(grepl("__", colnames(data))))
-      stop("Variable names may not contain double underscores '__'")
+      stop("variable names may not contain double underscores '__'",
+           call. = FALSE)
     data <- combine_groups(data, effects$random$group, ...)
     class(data) <- c("brms.frame", "data.frame") 
   }
@@ -136,7 +140,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   } 
   if (use_cov(fit$autocor)) {
     stop(paste("predictions with new data are not yet possible", 
-               "for ARMA covariance models"))
+               "for ARMA covariance models"), call. = FALSE)
   }
   # standata will be based on an updated formula if re_formula is specified
   new_ranef <- check_re_formula(re_formula, old_ranef = fit$ranef,
@@ -149,7 +153,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   check_response <- check_response || 
                     (has_arma(fit$autocor) && !use_cov(fit$autocor))
   if (check_response && length(missing_resp)) {
-    stop("response variables must be specified in newdata for this model")
+    stop("response variables must be specified in newdata for this model",
+         call. = FALSE)
   } else {
     for (resp in missing_resp) {
       # add irrelevant response variables
@@ -185,7 +190,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
           if (any(!new_levels %in% factor_levels[[i]])) {
             stop(paste("New factor levels are not allowed. \n",
                  "Levels found:", paste(new_levels, collapse = ", ") , "\n",
-                 "Levels allowed:", paste(factor_levels[[i]], collapse = ", ")))
+                 "Levels allowed:", paste(factor_levels[[i]], collapse = ", ")),
+                 call. = FALSE)
           }
           newdata[[factor_names[i]]] <- factor(new_factor, factor_levels[[i]])
         }
@@ -193,7 +199,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     }
   } else {
     warning(paste("Validity of factors cannot be checked for", 
-                  "fitted model objects created with brms <= 0.5.0"))
+                  "fitted model objects created with brms <= 0.5.0"),
+            call. = FALSE)
   }
   # validate grouping factors
   if (length(new_ranef)) {
@@ -206,7 +213,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       if (!allow_new_levels && length(unknown_levels)) {
         stop(paste("levels", paste0(unknown_levels, collapse = ", "), 
                    "of grouping factor", gnames[i], 
-                   "not found in the fitted model"))
+                   "not found in the fitted model"), call. = FALSE)
       } 
       # transform grouping factor levels into their corresponding integers
       # to match the output of make_standata
@@ -286,7 +293,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     if (is_linear && length(ee$response) > 1) {
       if (!grepl("^trait$|:trait$|^trait:|:trait:", et$group)) {
         stop(paste("autocorrelation structures for multiple responses must",
-                   "contain 'trait' as grouping variable"))
+                   "contain 'trait' as grouping variable"), call. = FALSE)
       } else {
         to_order <- rmNULL(list(data[["trait"]], data[[et$group]], 
                                 data[[et$time]]))
@@ -308,7 +315,8 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   if (check_response) {
     if (!(is_ordinal || family$family %in% c("bernoulli", "categorical")) && 
         !is.numeric(standata$Y)) {
-      stop(paste("family", family$family, "expects numeric response variable"))
+      stop(paste("family", family$family, "expects numeric response variable"),
+           call. = FALSE)
     }
     # transform and check response variable for different families
     if (is_forked) {
@@ -321,17 +329,18 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     if (grepl(regex_pos_int, family$family)) {
       if (!all(is.wholenumber(standata$Y)) || min(standata$Y) < 0) {
         stop(paste("family", family$family, "expects response variable", 
-                   "of non-negative integers"))
+                   "of non-negative integers"), call. = FALSE)
       }
     } else if (family$family == "bernoulli") {
       standata$Y <- as.numeric(as.factor(standata$Y)) - 1
       if (any(!standata$Y %in% c(0,1))) {
         stop(paste("family", family$family, "expects response variable", 
-                   "to contain only two different values"))
+                   "to contain only two different values"), call. = FALSE)
       }
     } else if (family$family == "beta") {
       if (any(standata$Y <= 0) || any(standata$Y >= 1)) {
-        stop("beta regression requires responses between 0 and 1")
+        stop("beta regression requires responses between 0 and 1", 
+             call. = FALSE)
       }
     } else if (is.categorical(family)) { 
       standata$Y <- as.numeric(as.factor(standata$Y))
@@ -339,17 +348,17 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       if (is.factor(standata$Y)) {
         if (is.ordered(standata$Y)) standata$Y <- as.numeric(standata$Y)
         else stop(paste("family", family$family, "requires factored", 
-                        "response variables to be ordered"))
+                        "response variables to be ordered"), call. = FALSE)
       } else if (all(is.wholenumber(standata$Y))) {
         standata$Y <- standata$Y - min(standata$Y) + 1
       } else {
         stop(paste("family", family$family, "expects either integers or",
-                   "ordered factors as response variables"))
+                   "ordered factors as response variables"), call. = FALSE)
       }
     } else if (is.skewed(family)) {
       if (min(standata$Y) < 0) {
         stop(paste("family", family$family, "requires response variable", 
-                   "to be non-negative"))
+                   "to be non-negative"), call. = FALSE)
       }
     } else if (is_linear && length(ee$response) > 1) {
       standata$Y <- matrix(standata$Y, ncol = length(ee$response))
@@ -417,18 +426,21 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
         colnames(cov_mat) <- found_level_names
         true_level_names <- sort(as.character(unique(data[[g]])))
         if (is.null(found_level_names)) 
-          stop(paste("rownames are required for covariance matrix of",g))
+          stop(paste("rownames are required for covariance matrix of", g),
+               call. = FALSE)
         if (nrow(cov_mat) != length(true_level_names))
-          stop(paste("dimension of covariance matrix of", g, "is incorrect"))
+          stop(paste("dimension of covariance matrix of", g, "is incorrect"),
+               call. = FALSE)
         if (any(sort(found_level_names) != true_level_names))
           stop(paste("rownames of covariance matrix of", g, 
-                     "do not match names of the grouping levels"))
+                     "do not match names of the grouping levels"),
+               call. = FALSE)
         if (!isSymmetric(unname(cov_mat)))
           stop(paste("covariance matrix of grouping factor", g, 
-                     "is not symmetric"))
+                     "is not symmetric"), call. = FALSE)
         if (min(eigen(cov_mat, symmetric = TRUE, only.values = TRUE)$values) <= 0)
           warning(paste("covariance matrix of grouping factor", g, 
-                        "may not be positive definite"))
+                        "may not be positive definite"), call. = FALSE)
         cov_mat <- cov_mat[order(found_level_names), order(found_level_names)]
         if (length(r[[i]]) == 1 || !ee$random$cor[[i]]) {
           # pivoting ensures that (numerically) semi-definite matrices can be used
@@ -460,7 +472,8 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     standata <- c(standata, .addition(formula = ee$trunc))
     if (check_response && (min(standata$Y) < standata$lb || 
                             max(standata$Y) > standata$ub)) {
-      stop("some responses are outside of the truncation boundaries")
+      stop("some responses are outside of the truncation boundaries",
+           call. = FALSE)
     }
   }
   # data for specific families
@@ -481,7 +494,8 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       message(paste("Only 2 levels detected so that family bernoulli",
                     "might be a more efficient choice."))
     if (check_response && any(standata$Y > standata$trials))
-      stop("Number of trials is smaller than the response variable would suggest.")
+      stop(paste("Number of trials is smaller than the response", 
+                 "variable would suggest."), call. = FALSE)
   } else if (has_cat(family)) {
     if (!length(ee$cat)) {
       if (!is.null(control$ncat)) {
@@ -492,7 +506,8 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     } else if (is.wholenumber(ee$cat)) { 
       standata$ncat <- ee$cat
     } else if (is.formula(ee$cat)) {
-      warning("observations may no longer have different numbers of categories.")
+      warning("observations may no longer have different numbers of categories",
+              call. = FALSE)
       standata$ncat <- max(.addition(formula = ee$cat, data = data))
     } else stop("Response part of formula is invalid.")
     standata$max_obs <- standata$ncat  # for backwards compatibility
@@ -501,8 +516,8 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
                     "might be a more efficient choice."))
     }
     if (check_response && any(standata$Y > standata$ncat)) {
-      stop(paste0("Number of categories is smaller than", 
-                  "the response variable would suggest."))
+      stop(paste0("Number of categories is smaller than the response", 
+                  "variable would suggest."), call. = FALSE)
     }
   } else if (family$family == "inverse.gaussian" && check_response) {
     # save as data to reduce computation time in Stan
@@ -521,12 +536,13 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       standata <- c(standata, list(Kp = ncol(Xp), Xp = Xp))
       fp <- intersect(colnames(X), colnames(Xp))
       if (length(fp))
-        stop(paste("Variables cannot be modeled as fixed and partial effects", 
-                   "at the same time.",
-                   "Error occured for variables:", paste(fp, collapse = ", ")))
+        stop(paste("Variables cannot be modeled as fixed and", 
+                   "category specific effects at the same time.", 
+                   "\nError occured for variables:", 
+                   paste(fp, collapse = ", ")), call. = FALSE)
     } else {
-      stop(paste("partial effects are only meaningful for families", 
-                  "'sratio', 'cratio', and 'acat'"))
+      stop(paste("category specific effects are only meaningful for families", 
+                 "'sratio', 'cratio', and 'acat'"), call. = FALSE)
     }
   } else if (!is.null(partial)) {
     stop("Argument partial must be a formula")
@@ -668,27 +684,29 @@ arr_design_matrix <- function(Y, r, group)  {
 
 .se <- function(x) {
   # standard errors for meta-analysis
-  if (min(x) < 0) stop("standard errors must be non-negative")
+  if (min(x) < 0) 
+    stop("standard errors must be non-negative", call. = FALSE)
   x  
 }
 
 .weights <- function(x) {
   # weights to be applied on any model
-  if (min(x) < 0) stop("weights must be non-negative")
+  if (min(x) < 0) 
+    stop("weights must be non-negative", call. = FALSE)
   x
 }
 
 .trials <- function(x) {
   # trials for binomial models
   if (any(!is.wholenumber(x) || x < 1))
-    stop("number of trials must be positive integers")
+    stop("number of trials must be positive integers", call. = FALSE)
   x
 }
 
 .cat <- function(x) {
   # number of categories for categorical and ordinal models
   if (any(!is.wholenumber(x) || x < 1))
-    stop("number of categories must be positive integers")
+    stop("number of categories must be positive integers", call. = FALSE)
   x
 }
 
@@ -702,9 +720,11 @@ arr_design_matrix <- function(Y, r, group)  {
     else x
   }))
   if (!all(unique(cens) %in% c(-1:1)))
-    stop (paste0("Invalid censoring data. Accepted values are 'left', 'none', and 'right' \n",
-                 "(abbreviations are allowed) or -1, 0, and 1. TRUE and FALSE are also accepted \n",
-                 "and refer to 'right' and 'none' respectively."))
+    stop (paste0("Invalid censoring data. Accepted values are ", 
+                 "'left', 'none', and 'right' \n(abbreviations are allowed) ", 
+                 "or -1, 0, and 1. TRUE and FALSE are also accepted \n",
+                 "and refer to 'right' and 'none' respectively."),
+          call. = FALSE)
   cens
 }
 
@@ -712,7 +732,7 @@ arr_design_matrix <- function(Y, r, group)  {
   lb <- as.numeric(lb)
   ub <- as.numeric(ub)
   if (length(lb) != 1 || length(ub) != 1) {
-    stop("Invalid truncation values")
+    stop("invalid truncation values", call. = FALSE)
   }
   nlist(lb, ub)
 }

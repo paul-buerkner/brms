@@ -48,7 +48,7 @@ test_that("melt_data returns expected errors", {
   ee <- extract_effects(cbind(y1, y2) ~ x)
   data <- data.frame(y1 = rnorm(10), y2 = rnorm(10), x = 1:10)
   expect_error(melt_data(data = data, family = poisson(), effects = ee),
-               "Invalid multivariate model", fixed = TRUE)
+               "invalid multivariate model", fixed = TRUE)
 })
 
 test_that("combine_groups does the expected", {
