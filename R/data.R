@@ -280,6 +280,9 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   if (has_arma(autocor)) {
     # amend if zero-inflated and hurdle models ever get 
     # autocorrelation structures as they are also using 'trait'
+    if (is_forked) {
+      stop("no autocorrelation allowed for this model", call. = FALSE)
+    }
     if (is_linear && length(ee$response) > 1) {
       if (!grepl("^trait$|:trait$|^trait:|:trait:", et$group)) {
         stop(paste("autocorrelation structures for multiple responses must",
