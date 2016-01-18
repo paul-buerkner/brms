@@ -196,8 +196,8 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
   if (length(prior) != 1 || length(class) != 1 || length(coef) != 1 || 
       length(group) != 1 || length(lb) > 1 || length(ub) > 1)
     stop("All arguments of set_prior must be of length 1", call. = FALSE)
-  valid_classes <- c("b", "sd", "cor", "L", "ar", "ma", "arr", "sigma", 
-                     "rescor", "Lrescor", "nu", "shape", "delta", "phi")
+  valid_classes <- c("Intercept", "b", "sd", "cor", "L", "ar", "ma", "arr",
+                     "sigma", "rescor", "Lrescor", "nu", "shape", "delta", "phi")
   if (!class %in% valid_classes)
     stop(paste(class, "is not a valid paramter class"), call. = FALSE)
   if (nchar(group) && !class %in% c("sd", "cor", "L"))
@@ -206,7 +206,7 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
   if (nchar(coef) && !class %in% c("b", "sd", "sigma"))
     stop(paste("argument coef not meaningful for class", class))
   if (length(lb) || length(ub)) {
-    if (class != "b")
+    if (!class %in% c("b"))
       stop("currently boundaries are only allowed for fixed effects")
     if (coef != "")
       stop("coef may not be specified when using boundaries")
@@ -295,7 +295,14 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
   # fixed and category specific effects
   fixef <- colnames(get_model_matrix(ee$fixed, data = data))
   if (length(fixef)) {
-    prior <- rbind(prior, prior_frame(class = "b", coef = c("", fixef)))
+    if ("Intercept" %in% fixef) {
+      prior <- rbind(prior, prior_frame(class = "Intercept"))
+      #fixef <- fixef[fixef != "Intercept"]
+    }
+    if (length(fixef)) {
+      # if fixefs are present even after removal of the Intercept
+      prior <- rbind(prior, prior_frame(class = "b", coef = c("", fixef))) 
+    }
   }
   if (is.formula(partial)) {
     paref <- colnames(get_model_matrix(partial, data = data, 
@@ -449,15 +456,17 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
   
   rows2remove <- NULL
   # special treatment of fixed effects Intercept(s)
-  Int_index <- which(prior$class == "b" & prior$coef == "Intercept")
+  Int_index <- which(prior$class == "Intercept")
   if (length(Int_index)) {
     # if an intercept is present
     rows2remove <- c(rows2remove, Int_index)
     Int_prior <- prior[Int_index, ]
-    if (!nchar(Int_prior$prior) && is.null(attrib[["hs_df"]])) {  
-      # take global fixed effects prior
-      index <- with(prior, which(class == "b" & !nchar(coef)))
-      Int_prior[c("prior", "bound")] <- prior[index, c("prior", "bound")]
+    index_old <- which(prior$class == "b" & prior$coef == "Intercept")
+    if (length(index_old) && nchar(prior$prior[index_old])) {
+      # for backwards compatibility
+      Int_prior$prior <- prior$prior[index_old]
+      warning(paste("Using class = 'b' with coef = 'Intercept' is", "
+                    deprecated. See help(set_prior) for further details."))
     }
     # (temporary) Intercepts have their own internal parameter class
     res_thres <- is.ordinal(family) && threshold == "equidistant"
