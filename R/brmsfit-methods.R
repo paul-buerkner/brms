@@ -274,8 +274,8 @@ coef.brmsfit <- function(object, estimate = "mean", ...) {
 #' @importFrom nlme VarCorr
 #' @export VarCorr
 #' @export
-VarCorr.brmsfit <- function(x, estimate = "mean", as.list = TRUE, 
-                            sigma = NULL, rdig = NULL, ...) {
+VarCorr.brmsfit <- function(x, sigma = NULL, rdig = NULL, 
+                            estimate = "mean", as.list = TRUE, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
   if (!(length(x$ranef) || any(grepl("^sigma_", parnames(x)))))

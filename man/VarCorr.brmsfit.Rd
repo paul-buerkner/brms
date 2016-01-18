@@ -6,13 +6,16 @@
 \alias{as.data.frame.brmsVarCorr}
 \title{Extract variance and correlation components}
 \usage{
-\method{VarCorr}{brmsfit}(x, estimate = "mean", as.list = TRUE,
-  sigma = NULL, rdig = NULL, ...)
+\method{VarCorr}{brmsfit}(x, sigma = NULL, rdig = NULL, estimate = "mean",
+  as.list = TRUE, ...)
 
 \method{as.data.frame}{brmsVarCorr}(x, ...)
 }
 \arguments{
 \item{x}{An object of class \code{brmsift}.}
+
+\item{sigma, rdig}{Ignored (included for compatibility with 
+\code{\link[nlme:VarCorr]{VarCorr}}).}
 
 \item{estimate}{A character vector specifying which coefficients 
 (e.g., "mean", "median", "sd", or "quantile")
@@ -22,9 +25,6 @@ should be calculated for the random effects.}
 and correlation matrices should be returned as 
 lists of matrices (the default), or as 3-dimensional arrays.
 We recommend not to set \code{as.list} to \code{FALSE}.}
-
-\item{sigma, rdig}{Ignored (included for compatibility with 
-\code{\link[nlme:VarCorr]{VarCorr}}).}
 
 \item{...}{Further arguments to be passed to the functions 
 specified in \code{estimate}}
