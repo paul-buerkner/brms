@@ -47,7 +47,9 @@
       or \code{WAIC} are only performed when models are 
       based on the same responses
       \item use some generic functions of the \pkg{lme4}
-      package to avoid unnecessary function masking
+      package to avoid unnecessary function masking. This 
+      leads to a change in the argument order of
+      method \code{VarCorr}
       \item allow to change the \code{ggplot} theme in the
       \code{plot} method through argument \code{theme}
       \item remove the \code{n.} prefix in arguments
