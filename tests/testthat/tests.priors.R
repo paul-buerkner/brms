@@ -21,14 +21,12 @@ test_that("check_prior performs correct renaming", {
                         class = c("Lrescor", "b"), coef = c("", "carry")) 
   expect_true(length(which(duplicated(rbind(prior, target)))) == 2)
   
-  expect_equivalent(check_prior(set_prior("normal(0,1)", class = "b", 
-                                          coef = "Intercept"),
+  expect_equivalent(check_prior(set_prior("normal(0,1)", class = "intercept"),
                                 formula = rating ~ carry, data = inhaler, 
                                 family = "cumulative")[3, ],
                     prior_frame("normal(0,1)", class = "temp_Intercept"))
   
-  expect_equivalent(check_prior(set_prior("normal(0,1)", class = "b", 
-                                          coef = "Intercept"),
+  expect_equivalent(check_prior(set_prior("normal(0,1)", class = "intercept"),
                                 formula = rating ~ carry, data = inhaler, 
                                 family = "cumulative",
                                 threshold = "equidistant")[4, ],
@@ -131,12 +129,14 @@ test_that("handle_special_priors handles horseshoe prior correctly", {
 })
 
 test_that("get_prior finds all classes for which priors can be specified", {
-  expect_equal(get_prior(count ~ log_Base4_c * Trt_c + (1|patient) + (1+Trt_c|visit),
+  expect_equal(get_prior(count ~ log_Base4_c * Trt_c 
+                         + (1|patient) + (1+Trt_c|visit),
                          data = epilepsy, family = "poisson")$class,
-               c(rep("b", 5), c("cor", "cor"), rep("sd", 6)))
-  expect_equal(get_prior(rating ~ treat + period, partial = ~ carry, data = inhaler, 
-                         family = "sratio", threshold = "equidistant")$class,
-               c(rep("b", 5), "delta"))
+               c(rep("b", 5), c("cor", "cor"), "intercept", rep("sd", 6)))
+  expect_equal(get_prior(rating ~ treat + period, partial = ~ carry, 
+                         data = inhaler, family = "sratio", 
+                         threshold = "equidistant")$class,
+               c(rep("b", 5), "delta", "intercept"))
 })
 
 test_that("update_prior produces correct prior_frames", {

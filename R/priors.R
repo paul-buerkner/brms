@@ -470,10 +470,11 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
     # if an intercept is present
     rows2remove <- c(rows2remove, Int_index)
     Int_prior <- prior[Int_index, ]
-    index_old <- which(prior$class == "b" & prior$coef == "Intercept")
-    if (length(index_old) && nchar(prior$prior[index_old])) {
+    old_index <- which(prior$class == "b" & prior$coef == "Intercept")
+    rows2remove <- c(rows2remove, old_index)
+    if (length(old_index) && nchar(prior$prior[old_index])) {
       # for backwards compatibility
-      Int_prior$prior <- prior$prior[index_old]
+      Int_prior$prior <- prior$prior[old_index]
       warning(paste("Using class = 'b' with coef = 'Intercept' is deprecated.", 
                     "See help(set_prior) for further details."), call. = FALSE)
     }
