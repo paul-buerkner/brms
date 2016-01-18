@@ -64,7 +64,7 @@ test_that("all S3 methods have reasonable ouputs", {
   # nobs
   expect_equal(nobs(fit), nrow(epilepsy))
   # parnames 
-  expect_equal(parnames(fit)[c(1, 3, 7, 16, 18, 22)],
+  expect_equal(parnames(fit)[c(1, 3, 7, 16, 18, 21)],
                c("b_Intercept", "ar[1]", "cor_visit_Intercept_Trt_c", 
                  "r_visit[4,Trt_c]", "prior_sigma", "lp__"))
   # plot tested in tests.plots.R
@@ -97,7 +97,7 @@ test_that("all S3 methods have reasonable ouputs", {
   prs1 <- prior_samples(fit)
   expect_equal(dimnames(prs1),
                list(as.character(1:Nsamples(fit)), 
-                    c("sd_visit", "sigma", "b_Intercept", "b", "cor_visit")))
+                    c("sd_visit", "sigma", "b", "cor_visit")))
   
   prs2 <- prior_samples(fit, pars = "b_Trt_c")
   expect_equal(dimnames(prs2), list(as.character(1:Nsamples(fit)), "b_Trt_c"))
