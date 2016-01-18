@@ -308,23 +308,23 @@ test_that("make_standata rejects invalid input for argument partial", {
 test_that("make_standata handles covariance matrices correctly", {
   A <- structure(diag(1, 4), dimnames = list(1:4, NULL))
   expect_equivalent(make_standata(count ~ Trt_c + (1|visit), data = epilepsy,
-                             cov.ranef = list(visit = A))$cov_1, A)
+                             cov_ranef = list(visit = A))$cov_1, A)
   B <- diag(1, 4)
   expect_error(make_standata(count ~ Trt_c + (1|visit), data = epilepsy,
-                             cov.ranef = list(visit = B)),
+                             cov_ranef = list(visit = B)),
                "rownames are required")
   B <- structure(diag(1, 4), dimnames = list(2:5, NULL))
   expect_error(make_standata(count ~ Trt_c + (1|visit), data = epilepsy,
-                             cov.ranef = list(visit = B)),
+                             cov_ranef = list(visit = B)),
                "rownames .* do not match")
   B <- structure(diag(1, 5), dimnames = list(1:5, NULL))
   expect_error(make_standata(count ~ Trt_c + (1|visit), data = epilepsy,
-                             cov.ranef = list(visit = B)),
+                             cov_ranef = list(visit = B)),
                "dimension .* is incorrect")
   B <- A
   B[1,2] <- 0.5
   expect_error(make_standata(count ~ Trt_c + (1|visit), data = epilepsy,
-                             cov.ranef = list(visit = B)),
+                             cov_ranef = list(visit = B)),
                "not symmetric")
 })
 

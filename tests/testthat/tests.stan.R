@@ -115,15 +115,15 @@ test_that("make_stancode accepts supported links", {
 test_that(paste("make_stancode returns correct strings", 
                 "for customized covariances"), {
   expect_match(make_stancode(rating ~ treat + period + carry + (1|subject), 
-                             data = inhaler, cov.ranef = list(subject = 1)), 
+                             data = inhaler, cov_ranef = list(subject = 1)), 
               "r_1 <- sd_1 * (cov_1 * pre_1)", fixed = TRUE)
   expect_match(make_stancode(rating ~ treat + period + carry + (1+carry|subject), 
-                             data = inhaler, cov.ranef = list(subject = 1)),
+                             data = inhaler, cov_ranef = list(subject = 1)),
                paste0("r_1 <- to_array(kronecker_cholesky(cov_1, L_1, sd_1) * ",
                       "to_vector(pre_1), N_1, K_1"),
                fixed = TRUE)
   expect_match(make_stancode(rating ~ treat + period + carry + (1+carry||subject), 
-                             data = inhaler, cov.ranef = list(subject = 1)), 
+                             data = inhaler, cov_ranef = list(subject = 1)), 
                paste0("  r_1_1 <- sd_1[1] * (cov_1 * pre_1[1]);  # scale REs \n",
                       "  r_1_2 <- sd_1[2] * (cov_1 * pre_1[2]);"),
                fixed = TRUE)
@@ -343,7 +343,7 @@ test_that("make_stancode returns correct selfmade functions", {
                "matrix cov_matrix_arma1(real ar, real ma", fixed = TRUE)
   # kronecker matrices
   expect_match(make_stancode(rating ~ treat + period + carry + (1+carry|subject), 
-                             data = inhaler, cov.ranef = list(subject = 1)), 
+                             data = inhaler, cov_ranef = list(subject = 1)), 
                "matrix kronecker_cholesky.*vector\\[\\] to_array")
 })
 

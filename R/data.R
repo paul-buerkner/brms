@@ -264,13 +264,16 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
 #' @export
 make_standata <- function(formula, data = NULL, family = "gaussian", 
                           autocor = NULL, partial = NULL, 
-                          cov.ranef = NULL, control = NULL, ...) {
+                          cov_ranef = NULL, control = NULL, ...) {
   # internal control arguments:
   #   is_newdata: logical; indicating if make_standata is called with new data
   #   keep_intercept: logical; indicating if the Intercept column
   #                   should be kept in the FE design matrix
   #   save_order: logical; should the initial order of the data be saved?
   dots <- list(...)
+  # use deprecated arguments if specified
+  cov_ranef <- use_alias(cov_ranef, dots$cov.ranef, warn = FALSE)
+  # some input checks 
   formula <- update_formula(formula, data = data)
   autocor <- check_autocor(autocor)
   family <- check_family(family)
@@ -420,8 +423,8 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       for (j in 1:length(name)) {
         standata <- c(standata, setNames(list(eval(expr[j])), name[j]))
       }
-      if (g %in% names(cov.ranef)) {
-        cov_mat <- as.matrix(cov.ranef[[g]])
+      if (g %in% names(cov_ranef)) {
+        cov_mat <- as.matrix(cov_ranef[[g]])
         found_level_names <- rownames(cov_mat)
         colnames(cov_mat) <- found_level_names
         true_level_names <- sort(as.character(unique(data[[g]])))
@@ -599,21 +602,21 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
 #' @export
 brmdata <- function(formula, data = NULL, family = "gaussian", 
                     autocor = NULL, partial = NULL, 
-                    cov.ranef = NULL, ...)  {
+                    cov_ranef = NULL, ...)  {
   # deprectated alias of make_standata
   make_standata(formula = formula, data = data, 
                 family = family, autocor = autocor,
-                partial = partial, cov.ranef = cov.ranef, ...)
+                partial = partial, cov_ranef = cov_ranef, ...)
 }
 
 #' @export
 brm.data <- function(formula, data = NULL, family = "gaussian", 
                      autocor = NULL, partial = NULL, 
-                     cov.ranef = NULL, ...)  {
+                     cov_ranef = NULL, ...)  {
   # deprectated alias of make_standata
   make_standata(formula = formula, data = data, 
                 family = family, autocor = autocor,
-                partial = partial, cov.ranef = cov.ranef, ...)
+                partial = partial, cov_ranef = cov_ranef, ...)
 }
 
 get_model_matrix <- function(formula, data = environment(formula), ...) {

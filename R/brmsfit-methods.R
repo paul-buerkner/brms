@@ -640,7 +640,7 @@ standata.brmsfit <- function(object, ...) {
                               data = object$data, 
                               family = object$family, 
                               autocor = object$autocor, 
-                              cov.ranef = object$cov.ranef, 
+                              cov_ranef = object$cov_ranef, 
                               partial = object$partial, ...)
   } else {
     # brms <= 0.5.0 only stores the data passed to Stan 
@@ -1192,8 +1192,8 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 update.brmsfit <- function(object, newdata = NULL, ...) {
   dots <- list(...)
   invalid_args <- c("formula", "family", "prior", "autocor", 
-                    "partial", "threshold", "cov.ranef", 
-                    "sample.prior", "save.model")
+                    "partial", "threshold", "cov_ranef", 
+                    "sample_prior", "save_model")
   z <- which(names(dots) %in% invalid_args)
   if (length(z)) {
     stop(paste("Argument(s)", paste(names(dots)[z], collapse = ", "),

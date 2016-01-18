@@ -53,7 +53,7 @@
 #'   \code{"flexible"} provides the standard unstructured thresholds and 
 #'   \code{"equidistant"} restricts the distance between 
 #'   consecutive thresholds to the same value.
-#' @param cov.ranef A list of matrices that are proportional to the 
+#' @param cov_ranef A list of matrices that are proportional to the 
 #'   (within) covariance structure of the random effects. 
 #'   The names of the matrices should correspond to columns 
 #'   in \code{data} that are used as grouping factors. 
@@ -64,7 +64,7 @@
 #'   should be saved (default is \code{TRUE}). 
 #'   Set to \code{FALSE} to save memory. 
 #'   The argument has no impact on the model fitting itself.
-#' @param sample.prior A flag to indicate if samples from all specified proper priors 
+#' @param sample_prior A flag to indicate if samples from all specified proper priors 
 #'   should be additionally drawn. Among others, these samples can be used to calculate 
 #'   Bayes factors for point hypotheses. Default is \code{FALSE}. 
 #' @param fit An instance of S3 class \code{brmsfit} derived from a previous fit; 
@@ -104,9 +104,9 @@
 #'   Default is \code{"PSOCK"} working on all platforms. 
 #'   For OS X and Linux, \code{"FORK"} may be a faster and more stable option, 
 #'   but it does not work on Windows.
-#' @param save.model Either \code{NULL} or a character string. 
+#' @param save_model Either \code{NULL} or a character string. 
 #'   In the latter case, the model code is
-#'   saved in a file named after the string supplied in \code{save.model}, 
+#'   saved in a file named after the string supplied in \code{save_model}, 
 #'   which may also contain the full path where to save the file.
 #'   If only a name is given, the file is save in the current working directory. 
 #' @param algorithm Character string indicating the estimation approach to use. 
@@ -389,21 +389,24 @@
 brm <- function(formula, data = NULL, family = gaussian(), 
                 prior = NULL, addition = NULL, autocor = NULL, 
                 partial = NULL, threshold = c("flexible", "equidistant"), 
-                cov.ranef = NULL, ranef = TRUE, sample.prior = FALSE, 
+                cov_ranef = NULL, ranef = TRUE, sample_prior = FALSE, 
                 fit = NA, inits = "random", chains = 2, iter = 2000, 
                 warmup = 500, thin = 1, cluster = 1, cluster_type = "PSOCK", 
                 algorithm = c("sampling", "meanfield", "fullrank"),
-                silent = TRUE, seed = 12345, save.model = NULL, ...) {
+                silent = TRUE, seed = 12345, save_model = NULL, ...) {
   
   dots <- list(...) 
   # use deprecated arguments if specified
-  iter <- ifelse(is.null(dots$n.iter), iter, dots$n.iter)
-  warmup <- ifelse(is.null(dots$n.warmup), warmup, dots$n.warmup)
-  thin <- ifelse(is.null(dots$n.thin), thin, dots$n.thin)
-  chains <- ifelse(is.null(dots$n.chains), chains, dots$n.chains)
-  cluster <- ifelse(is.null(dots$n.cluster), cluster, dots$n.cluster)
-  dots[c("n.iter", "n.warmup", "n.thin", "n.chains", "n.cluster")] <- NULL
-  
+  iter <- use_alias(iter, dots$n.iter)
+  warmup <- use_alias(warmup, dots$n.warmup)
+  thin <- use_alias(thin, dots$n.thin)
+  chains <- use_alias(chains, dots$n.chains)
+  cluster <- use_alias(cluster, dots$n.cluster)
+  cov_ranef <- use_alias(cov_ranef, dots$cov.ranef)
+  sample_prior <- use_alias(sample_prior, dots$sample.prior)
+  save_model <- use_alias(save_model, dots$save.model)
+  dots[c("n.iter", "n.warmup", "n.thin", "n.chains", "n.cluster",
+         "cov.ranef", "sample.prior", "save.model")] <- NULL
   # some input checks 
   check_brm_input(nlist(family, chains, cluster, inits))
   autocor <- check_autocor(autocor)
@@ -432,7 +435,7 @@ brm <- function(formula, data = NULL, family = gaussian(),
     # initialize S3 object
     x <- brmsfit(formula = formula, family = family, link = family$link, 
                  partial = partial, data.name = data.name, autocor = autocor, 
-                 prior = prior, cov.ranef = cov.ranef,
+                 prior = prior, cov_ranef = cov_ranef,
                  algorithm = algorithm)  
     # see data.R
     x$data <- update_data(data, family = family, effects = ee, et$group) 
@@ -445,9 +448,9 @@ brm <- function(formula, data = NULL, family = gaussian(),
                              family = family, prior = prior,  
                              autocor = autocor, partial = partial, 
                              threshold = threshold, 
-                             cov.ranef = cov.ranef, 
-                             sample.prior = sample.prior, 
-                             save.model = save.model)
+                             cov_ranef = cov_ranef, 
+                             sample_prior = sample_prior, 
+                             save_model = save_model)
     # generate standata before compiling the model to avoid
     # unnecessary compilations in case that the data is invalid
     standata <- standata(x, newdata = dots$is_newdata)

@@ -6,11 +6,11 @@
 \usage{
 brm(formula, data = NULL, family = gaussian(), prior = NULL,
   addition = NULL, autocor = NULL, partial = NULL,
-  threshold = c("flexible", "equidistant"), cov.ranef = NULL,
-  ranef = TRUE, sample.prior = FALSE, fit = NA, inits = "random",
+  threshold = c("flexible", "equidistant"), cov_ranef = NULL,
+  ranef = TRUE, sample_prior = FALSE, fit = NA, inits = "random",
   chains = 2, iter = 2000, warmup = 500, thin = 1, cluster = 1,
   cluster_type = "PSOCK", algorithm = c("sampling", "meanfield",
-  "fullrank"), silent = TRUE, seed = 12345, save.model = NULL, ...)
+  "fullrank"), silent = TRUE, seed = 12345, save_model = NULL, ...)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class): 
@@ -72,7 +72,7 @@ in non-cumulative ordinal models
 \code{"equidistant"} restricts the distance between 
 consecutive thresholds to the same value.}
 
-\item{cov.ranef}{A list of matrices that are proportional to the 
+\item{cov_ranef}{A list of matrices that are proportional to the 
 (within) covariance structure of the random effects. 
 The names of the matrices should correspond to columns 
 in \code{data} that are used as grouping factors. 
@@ -85,7 +85,7 @@ should be saved (default is \code{TRUE}).
 Set to \code{FALSE} to save memory. 
 The argument has no impact on the model fitting itself.}
 
-\item{sample.prior}{A flag to indicate if samples from all specified proper priors 
+\item{sample_prior}{A flag to indicate if samples from all specified proper priors 
 should be additionally drawn. Among others, these samples can be used to calculate 
 Bayes factors for point hypotheses. Default is \code{FALSE}.}
 
@@ -144,9 +144,9 @@ distribution.}
 
 \item{seed}{Positive integer. Used by \code{set.seed} to make results reproducable.}
 
-\item{save.model}{Either \code{NULL} or a character string. 
+\item{save_model}{Either \code{NULL} or a character string. 
 In the latter case, the model code is
-saved in a file named after the string supplied in \code{save.model}, 
+saved in a file named after the string supplied in \code{save_model}, 
 which may also contain the full path where to save the file.
 If only a name is given, the file is save in the current working directory.}
 

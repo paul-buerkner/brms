@@ -7,7 +7,7 @@
 \title{Data for \pkg{brms} Models}
 \usage{
 make_standata(formula, data = NULL, family = "gaussian", autocor = NULL,
-  partial = NULL, cov.ranef = NULL, control = NULL, ...)
+  partial = NULL, cov_ranef = NULL, control = NULL, ...)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class): 
@@ -53,7 +53,7 @@ allowing to specify predictors with category specific effects
 in non-cumulative ordinal models 
 (i.e. in families \code{cratio}, \code{sratio}, or \code{acat}).}
 
-\item{cov.ranef}{A list of matrices that are proportional to the 
+\item{cov_ranef}{A list of matrices that are proportional to the 
 (within) covariance structure of the random effects. 
 The names of the matrices should correspond to columns 
 in \code{data} that are used as grouping factors. 

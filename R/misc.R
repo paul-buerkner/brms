@@ -349,6 +349,27 @@ get_boundaries <- function(trunc) {
   }
 }
 
+use_alias <- function(arg, alias = NULL, warn = TRUE) {
+  # ensure that deprecated arguments still work
+  # Args:
+  #   arg: input to the new argument
+  #   alias: input to the deprecated argument
+  arg_name <- Reduce(paste, deparse(substitute(arg)))
+  alias_name <- Reduce(paste, deparse(substitute(alias)))
+  if (!is.null(alias)) {
+    arg <- alias
+    if (substr(alias_name, 1, 5) == "dots$") {
+      alias_name <- substr(alias_name, 6, nchar(alias_name))
+    }
+    if (warn) {
+      warning(paste0("Argument '", alias_name, "' is deprecated. ", 
+                     "Please use argument '", arg_name, "' instead."), 
+              call. = FALSE)
+    }
+  }
+  arg
+}
+
 # startup messages for brms
 .onAttach <- function(libname, pkgname) {
   packageStartupMessage(paste0(

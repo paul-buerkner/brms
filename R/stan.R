@@ -20,9 +20,15 @@
 make_stancode <- function(formula, data = NULL, family = gaussian(), 
                           prior = NULL, autocor = NULL, partial = NULL, 
                           threshold = c("flexible", "equidistant"),
-                          cov.ranef = NULL, sample.prior = FALSE, 
-                          save.model = NULL, ...) {
-  
+                          cov_ranef = NULL, sample_prior = FALSE, 
+                          save_model = NULL, ...) {
+  dots <- list(...)
+  # use deprecated arguments if specified
+  cov_ranef <- use_alias(cov_ranef, dots$cov.ranef)
+  sample_prior <- use_alias(sample_prior, dots$sample.prior)
+  save_model <- use_alias(save_model, dots$save.model)
+  dots[c("cov.ranef", "sample.prior", "save.model")] <- NULL
+  # some input checks 
   formula <- update_formula(formula, data = data)
   family <- check_family(family) 
   autocor <- check_autocor(autocor)
@@ -75,7 +81,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   # call stan_ranef for each random term seperately
   text_ranef <- lapply(seq_along(ranef), stan_ranef, 
                        ranef = ranef, #random = ee$random, 
-                       names_cov_ranef = names(cov.ranef),
+                       names_cov_ranef = names(cov_ranef),
                        prior = prior)
   # combine random effects stan code of different grouping factors by names
   text_ranef <- collapse_lists(text_ranef)
@@ -112,7 +118,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
                                          weights = is.formula(ee$weights),
                                          cens = is.formula(ee$cens),
                                          trunc = is.formula(ee$trunc))
-  kronecker <- needs_kronecker(ranef, names_cov_ranef = names(cov.ranef))
+  kronecker <- needs_kronecker(ranef, names_cov_ranef = names(cov_ranef))
   text_misc_funs <- stan_misc_functions(family = family, kronecker = kronecker)
     
   # get priors for all parameters in the model
@@ -131,8 +137,8 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     if (family$family == "beta") 
       stan_prior(class = "phi", prior = prior),
     stan_prior(class = "", prior = prior))
-  # generate code to additionally sample from priors if sample.prior = TRUE
-  text_rngprior <- stan_rngprior(sample.prior = sample.prior, 
+  # generate code to additionally sample from priors if sample_prior = TRUE
+  text_rngprior <- stan_rngprior(sample_prior = sample_prior, 
                                  prior = text_prior, family = family,
                                  hs_df = attr(prior, "hs_df"))
   
@@ -297,10 +303,10 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     text_model,
     text_generated_quantities)
   
-  # write the stan code to a file if save.model is a character string
+  # write the stan code to a file if save_model is a character string
   class(complete_model) <- c("character", "brmsmodel")
-  if (is.character(save.model)) {
-    sink(save.model)
+  if (is.character(save_model)) {
+    sink(save_model)
     cat(complete_model)
     sink()
   }
@@ -1602,12 +1608,12 @@ stan_prior <- function(class, coef = NULL, group = NULL,
   return(collapse(out))
 }
 
-stan_rngprior <- function(sample.prior, prior, family = gaussian(),
+stan_rngprior <- function(sample_prior, prior, family = gaussian(),
                           hs_df = NULL) {
   # stan code to sample from priors seperately
   #
   # Args:
-  #   sample.prior: take samples from priors?
+  #   sample_prior: take samples from priors?
   #   prior: the character string taken from stan_prior
   #   family: the model family
   #   hs_df: hs_df degrees of freedom
@@ -1617,7 +1623,7 @@ stan_rngprior <- function(sample.prior, prior, family = gaussian(),
   if (!is(family, "family"))
     stop("family must be of class family")
   out <- list()
-  if (sample.prior) {
+  if (sample_prior) {
     prior <- gsub(" ", "", paste0("\n",prior))
     pars <- gsub("\\\n|to_vector\\(|\\)", "", 
                  regmatches(prior, gregexpr("\\\n[^~]+", prior))[[1]])

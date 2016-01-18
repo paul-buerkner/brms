@@ -6,8 +6,8 @@
 \usage{
 make_stancode(formula, data = NULL, family = gaussian(), prior = NULL,
   autocor = NULL, partial = NULL, threshold = c("flexible",
-  "equidistant"), cov.ranef = NULL, sample.prior = FALSE,
-  save.model = NULL, ...)
+  "equidistant"), cov_ranef = NULL, sample_prior = FALSE,
+  save_model = NULL, ...)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class): 
@@ -64,20 +64,20 @@ in non-cumulative ordinal models
 \code{"equidistant"} restricts the distance between 
 consecutive thresholds to the same value.}
 
-\item{cov.ranef}{A list of matrices that are proportional to the 
+\item{cov_ranef}{A list of matrices that are proportional to the 
 (within) covariance structure of the random effects. 
 The names of the matrices should correspond to columns 
 in \code{data} that are used as grouping factors. 
 All levels of the grouping factor should appear as rownames 
 of the corresponding matrix.}
 
-\item{sample.prior}{A flag to indicate if samples from all specified proper priors 
+\item{sample_prior}{A flag to indicate if samples from all specified proper priors 
 should be additionally drawn. Among others, these samples can be used to calculate 
 Bayes factors for point hypotheses. Default is \code{FALSE}.}
 
-\item{save.model}{Either \code{NULL} or a character string. 
+\item{save_model}{Either \code{NULL} or a character string. 
 In the latter case, the model code is
-saved in a file named after the string supplied in \code{save.model}, 
+saved in a file named after the string supplied in \code{save_model}, 
 which may also contain the full path where to save the file.
 If only a name is given, the file is save in the current working directory.}
 
