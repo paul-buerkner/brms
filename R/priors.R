@@ -308,10 +308,7 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
     if ("Intercept" %in% fixef) {
       prior <- rbind(prior, prior_frame(class = "intercept"))
     }
-    if (length(fixef)) {
-      # if fixefs are present even after removal of the Intercept
-      prior <- rbind(prior, prior_frame(class = "b", coef = c("", fixef))) 
-    }
+    prior <- rbind(prior, prior_frame(class = "b", coef = c("", fixef))) 
   }
   if (is.formula(partial)) {
     paref <- colnames(get_model_matrix(partial, data = data, 

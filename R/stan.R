@@ -365,8 +365,9 @@ stan_fixef <- function(fixef, paref, family = gaussian(),
      "  matrix[N, Kp] Xp;  # CSE design matrix \n",
      if (is.categorical(family)) 
        "  vector[Kp] Xp_means;  # column means of Xp \n")
+    bound <- with(prior, bound[class == "b" & coef == ""])
     out$par <- paste0(out$par,
-     "  matrix[Kp, ncat - 1] bp;  # category specific effects \n")
+     "  matrix", bound, "[Kp, ncat - 1] bp;  # category specific effects \n")
     paref_prior <- stan_prior(class = "bp", coef = paref, prior = prior)
     out$prior <- paste0(out$prior, paref_prior)
   }
