@@ -174,6 +174,16 @@ test_that("make_stancode returns expected code for 2PL models", {
                fixed = TRUE)
 })
 
+test_that("make_stancode correctly restricts FE parameters", {
+  data <- data.frame(y = rep(0:1, each = 5), x = rnorm(10))
+  sc <- make_stancode(y ~ x, data, prior = set_prior("", lb = 2))
+  expect_match(sc, "vector<lower=2>[K] b", fixed = TRUE)
+  sc <- make_stancode(y ~ x, data, prior = set_prior("p", ub = "4"))
+  expect_match(sc, "vector<upper=4>[K] b", fixed = TRUE)
+  prior <- set_prior("normal(0,5)", lb = "-3", ub = 5)
+  sc <- make_stancode(y ~ x, data, prior = prior)
+  expect_match(sc, "vector<lower=-3,upper=5>[K] b", fixed = TRUE)
+})
 
 test_that("stan_ordinal returns correct strings", {
   expect_match(stan_ordinal(family = sratio())$par, "")
