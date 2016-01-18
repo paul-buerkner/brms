@@ -327,7 +327,8 @@ stan_fixef <- function(fixef, paref, family = gaussian(),
   if (has_intercept) {
     if (is.categorical(family)) {
       out$par <- paste0(out$par,
-        "  row_vector[ncat - 1] temp_Intercept;  # temporary intercepts \n")
+        "  row_vector [ncat - 1] temp_Intercept;",
+        "  # temporary intercepts \n")
       out$genD <- paste0("  row_vector[ncat - 1] b_Intercept;",
                          "  # fixed effects intercepts \n")
       subtract <- ifelse(length(paref), " - to_row_vector(Xp_means) * bp", "")
@@ -352,8 +353,9 @@ stan_fixef <- function(fixef, paref, family = gaussian(),
       "  int<lower=1> K;  # number of fixed effects \n", 
       "  matrix[N, K] X;  # FE design matrix \n",
       "  vector[K] X_means;  # column means of X \n")
+    bound <- with(prior, bound[class == "b" & coef == ""])
     out$par <- paste0(out$par,
-      "  vector[K] b;  # fixed effects \n") 
+      "  vector", bound, "[K] b;  # fixed effects \n") 
     fixef_prior <- stan_prior(class = "b", coef = fixef, prior = prior)
     out$prior <- paste0(out$prior, fixef_prior)
   }

@@ -187,15 +187,16 @@
 #'               prior = set_prior("horseshoe(3)"))
 #'
 #' @export
-set_prior <- function(prior, class = "b", coef = "", group = "") {
+set_prior <- function(prior, class = "b", coef = "", group = "",
+                      lb = NULL, ub = NULL) {
   prior <- as.character(prior)
   class <- as.character(class)
   group <- as.character(group)
   coef <- as.character(coef)
-  if (length(prior) != 1 || length(class) != 1 
-      || length(coef) != 1 || length(group) != 1)
+  if (length(prior) != 1 || length(class) != 1 || length(coef) != 1 || 
+      length(group) != 1 || length(lb) > 1 || length(ub) > 1)
     stop("All arguments of set_prior must be of length 1", call. = FALSE)
-  valid_classes <- c("b", "bm", "sd", "cor", "L", "ar", "ma", "arr", "sigma", 
+  valid_classes <- c("b", "sd", "cor", "L", "ar", "ma", "arr", "sigma", 
                      "rescor", "Lrescor", "nu", "shape", "delta", "phi")
   if (!class %in% valid_classes)
     stop(paste(class, "is not a valid paramter class"), call. = FALSE)
@@ -204,12 +205,23 @@ set_prior <- function(prior, class = "b", coef = "", group = "") {
          call. = FALSE)
   if (nchar(coef) && !class %in% c("b", "sd", "sigma"))
     stop(paste("argument coef not meaningful for class", class))
+  if (length(lb) || length(ub)) {
+    if (class != "b")
+      stop("currently boundaries are only allowed for fixed effects")
+    if (coef != "")
+      stop("coef may not be specified when using boundaries")
+    lb <- if (length(lb)) paste0("lower=", lb)
+    ub <- if (length(ub)) paste0("upper=", ub)
+    bound <- paste0("<", paste(c(lb, ub), collapse = ","), ">")
+  } else {
+    bound <- ""
+  }
   if (grepl("^increment_log_prob\\(", prior)) {
     # increment_log_prob can be used to directly add a term 
     # to the log posterior
     class <- coef <- group <- ""
   }
-  out <- list(prior = prior, class = class, coef = coef, group = group)
+  out <- nlist(prior, class, coef, group, bound)
   class(out) <- c("brmsprior", "list")
   out
 }
@@ -278,7 +290,8 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
   
   # initialize output
   prior <- prior_frame(prior = character(0), class = character(0), 
-                       coef = character(0), group = character(0))
+                       coef = character(0), group = character(0),
+                       bound = character(0))
   # fixed and category specific effects
   fixef <- colnames(get_model_matrix(ee$fixed, data = data))
   if (length(fixef)) {
@@ -443,8 +456,8 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
     Int_prior <- prior[Int_index, ]
     if (!nchar(Int_prior$prior) && is.null(attrib[["hs_df"]])) {  
       # take global fixed effects prior
-      Int_prior$prior <- with(prior, prior[which(class == "b" & !nchar(coef))])
-        #prior$prior[which(prior$class == "b" & !nchar(prior$coef))]
+      index <- with(prior, which(class == "b" & !nchar(coef)))
+      Int_prior[c("prior", "bound")] <- prior[index, c("prior", "bound")]
     }
     # (temporary) Intercepts have their own internal parameter class
     res_thres <- is.ordinal(family) && threshold == "equidistant"
@@ -567,10 +580,11 @@ update_prior <- function(prior) {
               class = class, coef = coef, group = group)
 }
 
-prior_frame <- function(prior = "", class = "", coef = "", group = "") {
+prior_frame <- function(prior = "", class = "", coef = "", 
+                        group = "", bound = "") {
   # helper function to create data.frames containing prior information 
-  out <- data.frame(prior = prior, class = class, 
-                    coef = coef, group = group,
+  out <- data.frame(prior = prior, class = class, coef = coef, 
+                    group = group, bound = bound,
                     stringsAsFactors = FALSE)
   class(out) <- c("prior_frame", "data.frame")
   out
@@ -581,7 +595,8 @@ print.brmsprior <- function(x, ...) {
   group <- ifelse(nchar(x$group), paste0("_", x$group), "")
   coef <- ifelse(nchar(x$coef), paste0("_", x$coef), "")
   tilde <- ifelse(nchar(x$class) + nchar(group) + nchar(coef), " ~ ", "")
-  cat(paste0("Prior: ", x$class, group, coef, tilde, x$prior))
+  bound <- ifelse(nchar(x$bound), paste0(x$bound, " "), "")
+  cat(paste0("Prior: ", bound, x$class, group, coef, tilde, x$prior))
   invisible(x)
 }
 
@@ -590,9 +605,9 @@ c.brmsprior <- function(x, ...) {
   # combines multiple brmsprior objects into one prior_frame
   if(any(!sapply(list(...), is, class2 = "brmsprior")))
     stop("All arguments must be of class brmsprior")
-  prior <- data.frame(matrix(unlist(list(x, ...)), ncol = 4, byrow = TRUE),
+  prior <- data.frame(matrix(unlist(list(x, ...)), ncol = 5, byrow = TRUE),
                       stringsAsFactors = FALSE)
-  names(prior) <- c("prior", "class", "coef", "group") 
+  names(prior) <- c("prior", "class", "coef", "group", "bound") 
   class(prior) <- c("prior_frame", "data.frame")
   prior
 }
