@@ -4,7 +4,8 @@
 \alias{set_prior}
 \title{Prior Definitions for \pkg{brms} Models}
 \usage{
-set_prior(prior, class = "b", coef = "", group = "")
+set_prior(prior, class = "b", coef = "", group = "", lb = NULL,
+  ub = NULL)
 }
 \arguments{
 \item{prior}{A character string defining a distribution in \pkg{Stan} language}
@@ -15,6 +16,12 @@ See 'Details' for other valid parameter classes.}
 \item{coef}{Name of the (fixed, category specific, or random effects) parameter}
 
 \item{group}{Grouping factor for random effects parameters.}
+
+\item{lb}{Lower bound for parameter restriction. Currently only allowed
+if \code{class = "b"}. Defaults to \code{NULL} that is no restriction.}
+
+\item{ub}{Upper bound for parameter restriction. Currently only allowed
+if \code{class = "b"}. Defaults to \code{NULL} that is no restriction.}
 }
 \value{
 An object of class \code{brmsprior} to be used in the \code{prior}
@@ -61,11 +68,17 @@ Define priors for specific parameters or classes of parameters
   This also leads to faster sampling, because priors can be vectorized in this case. 
   Both ways of defining priors can be combined using for instance 
   \code{set_prior("normal(0,2)", class = "b")} and \cr
-  \code{set_prior("normal(0,10)", class = "b", coef = "Intercept")}
+  \code{set_prior("normal(0,10)", class = "b", coef = "x1")}
   at the same time. This will set a \code{normal(0,10)} prior on 
-  the Intercept and a \code{normal(0,2)} prior on all other fixed effects. 
-  The intercept can have a separate prior without breaking vectorization. 
-  However, this is not the case for other fixed effects.
+  the fixed effect of \code{x1} and a \code{normal(0,2)} prior 
+  on all other fixed effects. However, this will break vectorization and
+  may slow down the sampling procedure a bit.
+  
+  The fixed effects intercept has its own parameter class 
+  simply named \code{"intercept"} and priors can thus be 
+  specified via \code{set_prior("<prior>", class = "intercept")}.
+  Setting a prior on the intercept will not break vectorization
+  of the other fixed effects. 
   
   A special shrinkage prior to be applied on fixed effects is the horseshoe prior.
   It is symmetric around zero with fat tails and an infinitely large spike

@@ -7,6 +7,10 @@
 #'   See 'Details' for other valid parameter classes. 
 #' @param coef Name of the (fixed, category specific, or random effects) parameter  
 #' @param group Grouping factor for random effects parameters.
+#' @param lb Lower bound for parameter restriction. Currently only allowed
+#'   if \code{class = "b"}. Defaults to \code{NULL} that is no restriction.
+#' @param ub Upper bound for parameter restriction. Currently only allowed
+#'   if \code{class = "b"}. Defaults to \code{NULL} that is no restriction.
 #' 
 #' @return An object of class \code{brmsprior} to be used in the \code{prior}
 #'   argument of \code{\link[brms:brm]{brm}}.
@@ -49,11 +53,17 @@
 #'   This also leads to faster sampling, because priors can be vectorized in this case. 
 #'   Both ways of defining priors can be combined using for instance 
 #'   \code{set_prior("normal(0,2)", class = "b")} and \cr
-#'   \code{set_prior("normal(0,10)", class = "b", coef = "Intercept")}
+#'   \code{set_prior("normal(0,10)", class = "b", coef = "x1")}
 #'   at the same time. This will set a \code{normal(0,10)} prior on 
-#'   the Intercept and a \code{normal(0,2)} prior on all other fixed effects. 
-#'   The intercept can have a separate prior without breaking vectorization. 
-#'   However, this is not the case for other fixed effects.
+#'   the fixed effect of \code{x1} and a \code{normal(0,2)} prior 
+#'   on all other fixed effects. However, this will break vectorization and
+#'   may slow down the sampling procedure a bit.
+#'   
+#'   The fixed effects intercept has its own parameter class 
+#'   simply named \code{"intercept"} and priors can thus be 
+#'   specified via \code{set_prior("<prior>", class = "intercept")}.
+#'   Setting a prior on the intercept will not break vectorization
+#'   of the other fixed effects. 
 #'   
 #'   A special shrinkage prior to be applied on fixed effects is the horseshoe prior.
 #'   It is symmetric around zero with fat tails and an infinitely large spike
@@ -196,7 +206,7 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
   if (length(prior) != 1 || length(class) != 1 || length(coef) != 1 || 
       length(group) != 1 || length(lb) > 1 || length(ub) > 1)
     stop("All arguments of set_prior must be of length 1", call. = FALSE)
-  valid_classes <- c("Intercept", "b", "sd", "cor", "L", "ar", "ma", "arr",
+  valid_classes <- c("intercept", "b", "sd", "cor", "L", "ar", "ma", "arr",
                      "sigma", "rescor", "Lrescor", "nu", "shape", "delta", "phi")
   if (!class %in% valid_classes)
     stop(paste(class, "is not a valid paramter class"), call. = FALSE)
@@ -296,8 +306,7 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
   fixef <- colnames(get_model_matrix(ee$fixed, data = data))
   if (length(fixef)) {
     if ("Intercept" %in% fixef) {
-      prior <- rbind(prior, prior_frame(class = "Intercept"))
-      #fixef <- fixef[fixef != "Intercept"]
+      prior <- rbind(prior, prior_frame(class = "intercept"))
     }
     if (length(fixef)) {
       # if fixefs are present even after removal of the Intercept
@@ -456,7 +465,7 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
   
   rows2remove <- NULL
   # special treatment of fixed effects Intercept(s)
-  Int_index <- which(prior$class == "Intercept")
+  Int_index <- which(prior$class == "intercept")
   if (length(Int_index)) {
     # if an intercept is present
     rows2remove <- c(rows2remove, Int_index)
@@ -465,8 +474,8 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
     if (length(index_old) && nchar(prior$prior[index_old])) {
       # for backwards compatibility
       Int_prior$prior <- prior$prior[index_old]
-      warning(paste("Using class = 'b' with coef = 'Intercept' is", "
-                    deprecated. See help(set_prior) for further details."))
+      warning(paste("Using class = 'b' with coef = 'Intercept' is deprecated.", 
+                    "See help(set_prior) for further details."), call. = FALSE)
     }
     # (temporary) Intercepts have their own internal parameter class
     res_thres <- is.ordinal(family) && threshold == "equidistant"
