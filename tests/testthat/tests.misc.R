@@ -71,3 +71,14 @@ test_that("check_intercept updates FE names", {
   expect_equal(check_intercept(c("x", "z")),
                list(names = c("x", "z"), has_intercept = FALSE))
 })
+
+test_that("use_alias works correctly", {
+  a <- 2
+  b <- 3
+  expect_warning(use_alias(a, b), fixed = TRUE,
+                 "'b' is deprecated. Please use argument 'a' instead.")
+  dots <- list(c = 1)
+  expect_warning(use_alias(a, dots$c), fixed = TRUE,
+                 "'c' is deprecated. Please use argument 'a' instead.")
+  expect_equal(use_alias(a, dots$c, warn = FALSE), dots$c)
+})
