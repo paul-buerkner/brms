@@ -59,7 +59,7 @@ Models fitted with the \code{\link[brms:brms]{brms}} package are represented as 
     containing the autocorrelation structure}
     \item{\code{partial}:}{formula of the category specific effects 
     applied in ordinal models}
-    \item{\code{cov.ranef}:}{a list of customized random effects 
+    \item{\code{cov_ranef}:}{a list of customized random effects 
     covariance matrices}
     \item{\code{fit}:}{fitted results including the posterior samples; 
     an object of class \code{stanfit}}

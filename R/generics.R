@@ -59,7 +59,7 @@ brmssummary <- function(formula = NULL, family = "", link = "",
 #'  is a Bayes factor between the hypothesis and its alternative.
 #'  In order to calculate this Bayes factor, all parameters related 
 #'  to the hypothesis must have proper priors
-#'  and argument \code{sample.prior} of function \code{brm} 
+#'  and argument \code{sample_prior} of function \code{brm} 
 #'  must be set to \code{TRUE}. 
 #'  When interpreting Bayes factors, make sure 
 #'  that your priors are reasonable and carefully chosen,
@@ -81,7 +81,7 @@ brmssummary <- function(formula = NULL, family = "", link = "",
 #' ## fit a linear mixed effects models
 #' fit <- brm(time ~ age + sex + disease + (1 + age|patient),
 #'            data = kidney, family = gaussian("log"),
-#'            prior = prior, sample.prior = TRUE, 
+#'            prior = prior, sample_prior = TRUE, 
 #'            control = list(adapt_delta = 0.95))
 #' 
 #' ## perform two-sided hypothesis testing
@@ -178,7 +178,7 @@ posterior.samples <- function(x, pars = NA, ...)
 #'   
 #' @details To make use of this function, 
 #'  the model must contain samples of prior distributions.
-#'  This can be ensured by setting \code{sample.prior = TRUE} 
+#'  This can be ensured by setting \code{sample_prior = TRUE} 
 #'  in function \code{brm}.
 #'  Currently there are methods for \code{brmsfit} objects.
 #' @return A data frame containing the prior samples.
@@ -190,7 +190,7 @@ posterior.samples <- function(x, pars = NA, ...)
 #' fit <- brm(rating ~ treat + period + carry + (1|subject), 
 #'            data = inhaler, family = "cumulative", 
 #'            prior = set_prior("normal(0,2)", class = "b"), 
-#'            sample.prior = TRUE)
+#'            sample_prior = TRUE)
 #' 
 #' #extract all prior samples
 #' samples1 <- prior_samples(fit)

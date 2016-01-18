@@ -72,7 +72,7 @@ Among others, \code{hypothesis} computes an
  is a Bayes factor between the hypothesis and its alternative.
  In order to calculate this Bayes factor, all parameters related 
  to the hypothesis must have proper priors
- and argument \code{sample.prior} of function \code{brm} 
+ and argument \code{sample_prior} of function \code{brm} 
  must be set to \code{TRUE}. 
  When interpreting Bayes factors, make sure 
  that your priors are reasonable and carefully chosen,
@@ -89,7 +89,7 @@ prior <- c(set_prior("normal(0,2)", class = "b"),
 ## fit a linear mixed effects models
 fit <- brm(time ~ age + sex + disease + (1 + age|patient),
            data = kidney, family = gaussian("log"),
-           prior = prior, sample.prior = TRUE, 
+           prior = prior, sample_prior = TRUE, 
            control = list(adapt_delta = 0.95))
 
 ## perform two-sided hypothesis testing
