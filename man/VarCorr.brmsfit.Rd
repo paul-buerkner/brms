@@ -6,7 +6,7 @@
 \alias{as.data.frame.brmsVarCorr}
 \title{Extract variance and correlation components}
 \usage{
-\method{VarCorr}{brmsfit}(x, sigma = NULL, rdig = NULL, estimate = "mean",
+\method{VarCorr}{brmsfit}(x, sigma = 1, rdig = 3, estimate = "mean",
   as.list = TRUE, ...)
 
 \method{as.data.frame}{brmsVarCorr}(x, ...)
@@ -17,9 +17,9 @@
 \item{sigma, rdig}{Ignored (included for compatibility with 
 \code{\link[nlme:VarCorr]{VarCorr}}).}
 
-\item{estimate}{A character vector specifying which coefficients 
-(e.g., "mean", "median", "sd", or "quantile")
-should be calculated for the random effects.}
+\item{estimate}{A character vector specifying which summary
+statistics (e.g., "mean", "median", "sd", or "quantile")
+should be calculated for the extracted parameters.}
 
 \item{as.list}{logical; Indicates if covariance 
 and correlation matrices should be returned as 

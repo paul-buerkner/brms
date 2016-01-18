@@ -238,9 +238,9 @@ coef.brmsfit <- function(object, estimate = "mean", ...) {
 #' @aliases VarCorr
 #' 
 #' @param x An object of class \code{brmsift}. 
-#' @param estimate A character vector specifying which coefficients 
-#'  (e.g., "mean", "median", "sd", or "quantile")
-#'  should be calculated for the random effects.
+#' @param estimate A character vector specifying which summary
+#'  statistics (e.g., "mean", "median", "sd", or "quantile")
+#'  should be calculated for the extracted parameters.
 #' @param as.list logical; Indicates if covariance 
 #'  and correlation matrices should be returned as 
 #'  lists of matrices (the default), or as 3-dimensional arrays.
@@ -274,13 +274,17 @@ coef.brmsfit <- function(object, estimate = "mean", ...) {
 #' @importFrom nlme VarCorr
 #' @export VarCorr
 #' @export
-VarCorr.brmsfit <- function(x, sigma = NULL, rdig = NULL, 
-                            estimate = "mean", as.list = TRUE, ...) {
+VarCorr.brmsfit <- function(x, sigma = 1, rdig = 3, estimate = "mean", 
+                            as.list = TRUE, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
   if (!(length(x$ranef) || any(grepl("^sigma_", parnames(x)))))
     stop("The model does not contain covariance matrices", call. = FALSE)
-
+  if (!isTRUE(all.equal(sigma, 1)))
+    warning("argument 'sigma' is unused")
+  if (!isTRUE(all.equal(rdig, 3)))
+    warning("argument 'rdig' is unused")
+  
   # extracts samples for sd, cor and cov
   extract <- function(p) {
     nr <- length(p$sd_pars)
