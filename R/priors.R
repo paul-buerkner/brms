@@ -38,22 +38,22 @@
 #'   \code{b_x1} and \code{b_x2} respectively. 
 #'   The default prior for fixed and category specific effects is an 
 #'   improper flat prior over the reals. Other common options are normal priors 
-#'   or uniform priors over a finite interval.
-#'   If we want to have a normal prior with mean 0 and 
+#'   or student-t priors. If we want to have a normal prior with mean 0 and 
 #'   standard deviation 5 for \code{x1}, 
-#'   and a uniform prior between -10 and 10 for \code{x2}, 
+#'   and a unit student-t prior with 10 degrees of freedom for \code{x2}, 
 #'   we can specify this via
 #'   \code{set_prior("normal(0,5)", class = "b", coef = "x1")} and \cr
-#'   \code{set_prior("uniform(-10,10)", class = "b", coef = "x2")}.
+#'   \code{set_prior("student_t(10,0,1)", class = "b", coef = "x2")}.
 #'   To put the same prior on all fixed effects at once, 
 #'   we may write as a shortcut \code{set_prior("<prior>", class = "b")}. 
 #'   This also leads to faster sampling, because priors can be vectorized in this case. 
-#'   Both ways of defining priors can be combined using for instance \cr
-#'   \code{set_prior("normal(0,10)", class = "b", coef = "Intercept")} and \cr
-#'   \code{set_prior("normal(0,2)", class = "b")} at the same time.
-#'   This will set a \code{normal(0,10)} prior on the Intercept and a \code{normal(0,2)}
-#'   prior on all other fixed effects. Note that the priors are no longer 
-#'   vectorized in this case. 
+#'   Both ways of defining priors can be combined using for instance 
+#'   \code{set_prior("normal(0,2)", class = "b")} and \cr
+#'   \code{set_prior("normal(0,10)", class = "b", coef = "Intercept")}
+#'   at the same time. This will set a \code{normal(0,10)} prior on 
+#'   the Intercept and a \code{normal(0,2)} prior on all other fixed effects. 
+#'   The intercept can have a separate prior without breaking vectorization. 
+#'   However, this is not the case for other fixed effects.
 #'   
 #'   A special shrinkage prior to be applied on fixed effects is the horseshoe prior.
 #'   It is symmetric around zero with fat tails and an infinitely large spike
@@ -69,7 +69,7 @@
 #'   so that slightly higher values may often be a better option. 
 #'   Generally, models with horseshoe priors a more likely than other models
 #'   to have divergent transitions so that increasing \code{adapt_delta} 
-#'   from \code{0.95} to values closer to \code{1} will often be necessary.
+#'   from \code{0.8} to values closer to \code{1} will often be necessary.
 #'   See the documentation of \code{\link[brms:brm]{brm}} for instructions
 #'   on how to increase \code{adapt_delta}. \cr
 #'   
