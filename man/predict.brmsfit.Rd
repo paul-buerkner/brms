@@ -63,9 +63,14 @@ Predicted values of the response variable.
   where S is the number of samples.
 }
 \description{
-Make predictions based on the fitted model parameters. 
+Predict responses based on the fitted model.
 Can be performed for the data used to fit the model 
 (posterior predictive checks) or for new data.
+By definition, these predictions have higher variance than 
+predictions of the fitted values (i.e. the 'regression line')
+performed by the \code{\link[brms:fitted.brmsfit]{fitted}}
+method. This is because the measurement error is incorporated.
+The estimated means of both methods should, however, be very similar.
 }
 \details{
 For truncated discrete models only:

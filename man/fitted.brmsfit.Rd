@@ -21,8 +21,8 @@ If \code{NULL} (default), include all random effects;
 if \code{NA}, include no random effects.}
 
 \item{scale}{Either \code{"response"} or \code{"linear"}. 
-If \code{scale = "response"} results are returned on the scale 
-of the response variable. If \code{scale = "linear"} 
+If \code{"response"} results are returned on the scale 
+of the response variable. If \code{"linear"} 
 fitted values are returned on the scale of the linear predictor.}
 
 \item{allow_new_levels}{A flag indicating if new
@@ -59,7 +59,14 @@ Fitted values extracted from \code{object}.
  C is the number of categories, and E is equal to \code{length(probs) + 2}.
 }
 \description{
-Extract Model Fitted Values of \code{brmsfit} Objects
+Predict fitted values (i.e. the 'regression line') of a fitted model.
+Can be performed for the data used to fit the model 
+(posterior predictive checks) or for new data.
+By definition, these predictions have smaller variance
+than the response predictions performed by
+the \code{\link[brms:predict.brmsfit]{predict}} method. 
+This is because the measurement error is not incorporated.
+The estimated means of both methods should, however, be very similar.
 }
 \details{
 For models fitted with \pkg{brms} <= 0.5.0 only: 

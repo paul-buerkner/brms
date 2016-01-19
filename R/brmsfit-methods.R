@@ -829,9 +829,14 @@ pairs.brmsfit <- function(x, pars = NA, exact_match = FALSE, ...) {
 
 #' Model Predictions of \code{brmsfit} Objects
 #' 
-#' Make predictions based on the fitted model parameters. 
+#' Predict responses based on the fitted model.
 #' Can be performed for the data used to fit the model 
 #' (posterior predictive checks) or for new data.
+#' By definition, these predictions have higher variance than 
+#' predictions of the fitted values (i.e. the 'regression line')
+#' performed by the \code{\link[brms:fitted.brmsfit]{fitted}}
+#' method. This is because the measurement error is incorporated.
+#' The estimated means of both methods should, however, be very similar.
 #' 
 #' @param object An object of class \code{brmsfit}
 #' @param newdata An optional data.frame for which to evaluate predictions.
@@ -1021,10 +1026,19 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 
 #' Extract Model Fitted Values of \code{brmsfit} Objects
 #' 
+#' Predict fitted values (i.e. the 'regression line') of a fitted model.
+#' Can be performed for the data used to fit the model 
+#' (posterior predictive checks) or for new data.
+#' By definition, these predictions have smaller variance
+#' than the response predictions performed by
+#' the \code{\link[brms:predict.brmsfit]{predict}} method. 
+#' This is because the measurement error is not incorporated.
+#' The estimated means of both methods should, however, be very similar.
+#' 
 #' @inheritParams predict.brmsfit
 #' @param scale Either \code{"response"} or \code{"linear"}. 
-#'  If \code{scale = "response"} results are returned on the scale 
-#'  of the response variable. If \code{scale = "linear"} 
+#'  If \code{"response"} results are returned on the scale 
+#'  of the response variable. If \code{"linear"} 
 #'  fitted values are returned on the scale of the linear predictor.
 #'
 #' @return Fitted values extracted from \code{object}. 
