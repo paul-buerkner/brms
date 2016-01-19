@@ -97,7 +97,8 @@
 #'   Set \code{thin > 1} to save memory and computation time if \code{iter} is large. 
 #'   Default is 1, that is no thinning. A deprecated alias is \code{n.thin}.
 #' @param cluster	Number of clusters to use to run parallel chains. Default is 1.  
-#'   A deprecated alias is \code{n.cluster}.
+#'   A deprecated alias is \code{n.cluster}. To use the built-in parallel execution
+#'   of \pkg{rstan}, specify argument \code{cores} instead of \code{cluster}. 
 #' @param cluster_type A character string specifying the type of cluster created by 
 #'   \code{\link[parallel:makeCluster]{makeCluster}} when sampling in parallel 
 #'   (i.e. when \code{cluster} is greater \code{1}). 
