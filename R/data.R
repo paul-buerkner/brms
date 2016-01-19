@@ -137,7 +137,9 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       newdata <- standata(fit, re_formula = re_formula, control = control)
     }
     return(newdata)
-  } 
+  } else {
+    newdata <- as.data.frame(newdata)
+  }
   if (use_cov(fit$autocor)) {
     stop(paste("predictions with new data are not yet possible", 
                "for ARMA covariance models"), call. = FALSE)
