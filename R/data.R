@@ -79,6 +79,12 @@ combine_groups <- function(data, ...) {
   data
 }
 
+is.brmsframe <- function(data) {
+  # check if data was already updated by brms:::update_data
+  # brms.frame class is deprecated as of brms > 0.7.0
+  isTRUE(attr(data, "brmsframe")) || "brms.frame" %in% class(data)
+}
+
 update_data <- function(data, family, effects, ..., 
                         na.action = na.omit,
                         drop.unused.levels = TRUE) {
@@ -96,7 +102,11 @@ update_data <- function(data, family, effects, ...,
   #
   # Returns:
   #   model.frame in long format with combined grouping variables if present
-  if (!"brms.frame" %in% class(data)) {
+  if (is.null(attr(data, "terms")) && "brms.frame" %in% class(data)) {
+    # to avoid error described in #30
+    data <- as.data.frame(data)
+  }
+  if (!is.brmsframe(data)) {
     data <- melt_data(data, family = family, effects = effects)
     data <- stats::model.frame(effects$all, data = data, na.action = na.action,
                                drop.unused.levels = drop.unused.levels)
@@ -104,7 +114,7 @@ update_data <- function(data, family, effects, ...,
       stop("variable names may not contain double underscores '__'",
            call. = FALSE)
     data <- combine_groups(data, effects$random$group, ...)
-    class(data) <- c("brms.frame", "data.frame") 
+    attr(data, "brmsframe") <- TRUE
   }
   data
 }
@@ -137,8 +147,6 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       newdata <- standata(fit, re_formula = re_formula, control = control)
     }
     return(newdata)
-  } else {
-    newdata <- as.data.frame(newdata)
   }
   if (use_cov(fit$autocor)) {
     stop(paste("predictions with new data are not yet possible", 
