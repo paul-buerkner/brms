@@ -79,12 +79,6 @@ combine_groups <- function(data, ...) {
   data
 }
 
-is.brmsframe <- function(data) {
-  # check if data was already updated by brms:::update_data
-  # brms.frame class is deprecated as of brms > 0.7.0
-  isTRUE(attr(data, "brmsframe")) || "brms.frame" %in% class(data)
-}
-
 update_data <- function(data, family, effects, ..., 
                         na.action = na.omit,
                         drop.unused.levels = TRUE) {
@@ -104,9 +98,10 @@ update_data <- function(data, family, effects, ...,
   #   model.frame in long format with combined grouping variables if present
   if (is.null(attr(data, "terms")) && "brms.frame" %in% class(data)) {
     # to avoid error described in #30
+    # brms.frame class is deprecated as of brms > 0.7.0
     data <- as.data.frame(data)
   }
-  if (!is.brmsframe(data)) {
+  if (!(isTRUE(attr(data, "brmsframe")) || "brms.frame" %in% class(data))) {
     data <- melt_data(data, family = family, effects = effects)
     data <- stats::model.frame(effects$all, data = data, na.action = na.action,
                                drop.unused.levels = drop.unused.levels)
