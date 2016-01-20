@@ -8,9 +8,9 @@
 #' @param coef Name of the (fixed, category specific, or random effects) parameter  
 #' @param group Grouping factor for random effects parameters.
 #' @param lb Lower bound for parameter restriction. Currently only allowed
-#'   if \code{class = "b"}. Defaults to \code{NULL} that is no restriction.
+#'   if \code{class = "b"}. Defaults to \code{NULL}, that is no restriction.
 #' @param ub Upper bound for parameter restriction. Currently only allowed
-#'   if \code{class = "b"}. Defaults to \code{NULL} that is no restriction.
+#'   if \code{class = "b"}. Defaults to \code{NULL}, that is no restriction.
 #' 
 #' @return An object of class \code{brmsprior} to be used in the \code{prior}
 #'   argument of \code{\link[brms:brm]{brm}}.
@@ -59,11 +59,13 @@
 #'   on all other fixed effects. However, this will break vectorization and
 #'   may slow down the sampling procedure a bit.
 #'   
-#'   The fixed effects intercept has its own parameter class 
-#'   simply named \code{"intercept"} and priors can thus be 
-#'   specified via \code{set_prior("<prior>", class = "intercept")}.
+#'   In case of the default intercept parameterization 
+#'   (discussed in the 'Details' section of \code{\link[brms:brm]{brm}}),
+#'   the fixed effects intercept has its own parameter class 
+#'   named \code{"Intercept"} and priors can thus be 
+#'   specified via \code{set_prior("<prior>", class = "Intercept")}.
 #'   Setting a prior on the intercept will not break vectorization
-#'   of the other fixed effects. 
+#'   of the other fixed effects.
 #'   
 #'   A special shrinkage prior to be applied on fixed effects is the horseshoe prior.
 #'   It is symmetric around zero with fat tails and an infinitely large spike
@@ -82,6 +84,18 @@
 #'   from \code{0.8} to values closer to \code{1} will often be necessary.
 #'   See the documentation of \code{\link[brms:brm]{brm}} for instructions
 #'   on how to increase \code{adapt_delta}. \cr
+#'   
+#'   If desired, fixed effects parameters can be restricted to fall only 
+#'   within a certain interval using the \code{lb} and \code{ub} arguments
+#'   of \code{set_prior}. This is often required when defining priors
+#'   that are not defined everywhere on the real line, such as uniform
+#'   or gamma priors. When defining a \code{uniform(2,4)} prior, 
+#'   you should write \code{set_prior("uniform(2,4)", lb = 2, ub = 4)}. 
+#'   When using a prior that is defined on the postive reals only 
+#'   (such as a gamma prior) set \code{lb = 0}. 
+#'   In most situations, it is not useful to restrict fixed effects
+#'   parameters through bounded priors, but if you really want to
+#'   this is the way to go.
 #'   
 #'   3. Autocorrelation parameters
 #'   
@@ -306,7 +320,7 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
   fixef <- colnames(get_model_matrix(ee$fixed, data = data))
   if (length(fixef)) {
     if ("Intercept" %in% fixef) {
-      prior <- rbind(prior, prior_frame(class = "intercept"))
+      prior <- rbind(prior, prior_frame(class = "Intercept"))
     }
     prior <- rbind(prior, prior_frame(class = "b", coef = c("", fixef))) 
   }
@@ -462,7 +476,7 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
   
   rows2remove <- NULL
   # special treatment of fixed effects Intercept(s)
-  Int_index <- which(prior$class == "intercept")
+  Int_index <- which(prior$class == "Intercept")
   if (length(Int_index)) {
     # if an intercept is present
     rows2remove <- c(rows2remove, Int_index)
