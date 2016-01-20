@@ -124,7 +124,7 @@ test_that(paste("make_stancode returns correct strings",
                fixed = TRUE)
   expect_match(make_stancode(rating ~ treat + period + carry + (1+carry||subject), 
                              data = inhaler, cov_ranef = list(subject = 1)), 
-               paste0("  r_1_1 <- sd_1[1] * (cov_1 * pre_1[1]);  # scale REs \n",
+               paste0("  r_1_1 <- sd_1[1] * (cov_1 * pre_1[1]);  // scale REs \n",
                       "  r_1_2 <- sd_1[2] * (cov_1 * pre_1[2]);"),
                fixed = TRUE)
 })
@@ -147,13 +147,13 @@ test_that("make_stancode handles addition arguments correctly", {
 test_that("make_stancode correctly combines strings of multiple grouping factors", {
   expect_match(make_stancode(count ~ (1|patient) + (1+Trt_c|visit), 
                              data = epilepsy, family = "poisson"), 
-               paste0("  real Z_1[N];  # RE design matrix \n",
-                      "  # data for random effects of visit \n"), 
+               paste0("  real Z_1[N];  // RE design matrix \n",
+                      "  // data for random effects of visit \n"), 
                fixed = TRUE)
   expect_match(make_stancode(count ~ (1|visit) + (1+Trt_c|patient), 
                              data = epilepsy, family = "poisson"), 
-               paste0("  int NC_1;  # number of correlations \n",
-                      "  # data for random effects of visit \n"), 
+               paste0("  int NC_1;  // number of correlations \n",
+                      "  // data for random effects of visit \n"), 
                fixed = TRUE)
 })
 
@@ -268,8 +268,8 @@ test_that("stan_llh returns correct llhs for multivariate models", {
 })
 
 test_that("stan_rngprior returns correct sampling statements for priors", {
-  c1 <- "  # parameters to store prior samples \n"
-  c2 <- "  # additionally draw samples from priors \n"
+  c1 <- "  // parameters to store prior samples \n"
+  c2 <- "  // additionally draw samples from priors \n"
   expect_equal(stan_rngprior(TRUE, prior = "nu ~ gamma(2,0.1); \n"),
                list(par = paste0(c1,"  real<lower=1> prior_nu; \n"), 
                     model = paste0(c2,"  prior_nu ~ gamma(2,0.1); \n")))

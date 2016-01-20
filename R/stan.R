@@ -160,40 +160,40 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   N_bin <- ifelse(is.formula(ee$trials), "[N]", "")
   text_data <- paste0(
     "data { \n",
-    "  int<lower=1> N;  # number of observations \n", 
+    "  int<lower=1> N;  // number of observations \n", 
     if (is_multi) {
       text_multi$data
     } else if (is_forked) {
-      paste0("  int<lower=1> N_trait;  # number of obs / 2 \n",
+      paste0("  int<lower=1> N_trait;  // number of obs / 2 \n",
              "  ", ifelse(use_real(family), "real", "int"),
-             " Y[N_trait];  # response variable \n")
+             " Y[N_trait];  // response variable \n")
     } else if (use_real(family)) {
-      "  vector[N] Y;  # response variable \n"
+      "  vector[N] Y;  // response variable \n"
     } else if (use_int(family)) {
-      "  int Y[N];  # response variable \n"
+      "  int Y[N];  // response variable \n"
     },
     text_fixef$data,
     text_ranef$data,
     text_arma$data,
     text_inv_gaussian$data,
     if (has_trials(family))
-      paste0("  int trials", N_bin, ";  # number of trials \n"),
+      paste0("  int trials", N_bin, ";  // number of trials \n"),
     if (has_cat(family))
-      paste0("  int ncat;  # number of categories \n"),
+      paste0("  int ncat;  // number of categories \n"),
     if (offset)
-      "  vector[N] offset;  # added to the linear predictor \n",
+      "  vector[N] offset;  // added to the linear predictor \n",
     if (is.formula(ee$se) && !(use_cov(autocor) && (Kar || Kma)))
-      "  vector<lower=0>[N] se;  # SEs for meta-analysis \n",
+      "  vector<lower=0>[N] se;  // SEs for meta-analysis \n",
     if (is.formula(ee$weights))
-      paste0("  vector<lower=0>[N",trait,"] weights;  # model weights \n"),
+      paste0("  vector<lower=0>[N",trait,"] weights;  // model weights \n"),
     if (is.formula(ee$cens))
-      paste0("  vector[N",trait,"] cens;  # indicates censoring \n"),
+      paste0("  vector[N",trait,"] cens;  // indicates censoring \n"),
     if (trunc$lb > -Inf)
       paste0("  ", ifelse(use_int(family), "int", "real"), " lb;",  
-             "  # lower bound for truncation; \n"),
+             "  // lower bound for truncation; \n"),
     if (trunc$ub < Inf)
       paste0("  ", ifelse(use_int(family), "int", "real"), " ub;",  
-             "  # upper bound for truncation; \n"),
+             "  // upper bound for truncation; \n"),
     "} \n")
   
   # generate transformed parameters block
@@ -219,15 +219,15 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     text_arma$par,
     text_multi$par,
     if (has_sigma)
-      "  real<lower=0> sigma;  # residual SD \n",
+      "  real<lower=0> sigma;  // residual SD \n",
     if (family$family == "student") 
-      "  real<lower=1> nu;  # degrees of freedom \n",
+      "  real<lower=1> nu;  // degrees of freedom \n",
     if (has_shape) 
-      "  real<lower=0> shape;  # shape parameter \n",
+      "  real<lower=0> shape;  // shape parameter \n",
     if (family$family == "beta") 
-      "  real<lower=0> phi;  # precision parameter \n",
+      "  real<lower=0> phi;  // precision parameter \n",
     if (!is.null(attr(prior, "hs_df"))) 
-      paste0("  # horseshoe shrinkage parameters \n",
+      paste0("  // horseshoe shrinkage parameters \n",
              "  vector<lower=0>[K] hs_local; \n",
              "  real<lower=0> hs_global; \n"),
     text_rngprior$par,
@@ -238,7 +238,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   make_loop <- nrow(ee$random) || (Kar || Kma) && !use_cov(autocor) ||  
                text_eta$transform
   if (make_loop && !is_multi) {
-    text_loop <- c(paste0("  # if available add REs to linear predictor \n",
+    text_loop <- c(paste0("  // if available add REs to linear predictor \n",
                           "  for (n in 1:N) { \n"), "  } \n")
   } else if (is_multi) {
     text_loop <- text_multi$loop
@@ -273,9 +273,9 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     "model { \n",
       if (lp_pre_needed) 
         paste0("  vector[N",trait,"] lp_pre; \n"),
-      "  # prior specifications \n", 
+      "  // prior specifications \n", 
       text_prior, 
-      "  # likelihood contribution \n",
+      "  // likelihood contribution \n",
       text_llh, 
       if (lp_pre_needed)  
         "  increment_log_prob(dot_product(weights, lp_pre)); \n",
@@ -336,21 +336,21 @@ stan_fixef <- function(fixef, paref, family = gaussian(),
     if (is.categorical(family)) {
       out$par <- paste0(out$par,
         "  row_vector [ncat - 1] temp_Intercept;",
-        "  # temporary intercepts \n")
+        "  // temporary intercepts \n")
       out$genD <- paste0("  row_vector[ncat - 1] b_Intercept;",
-                         "  # fixed effects intercepts \n")
+                         "  // fixed effects intercepts \n")
       subtract <- ifelse(length(paref), " - to_row_vector(Xp_means) * bp", "")
       out$genC <- paste0("  b_Intercept <- temp_Intercept", subtract, "; \n")
       out$prior <- stan_prior("temp_Intercept", prior = prior)
     } else if (is.ordinal(family)) {
       # temp intercepts for ordinal models are defined in stan_ordinal
-      out$genD <- "  vector[ncat - 1] b_Intercept;  # thresholds \n" 
+      out$genD <- "  vector[ncat - 1] b_Intercept;  // thresholds \n" 
       subtract <- ifelse(length(fixef), " - dot_product(X_means, b)", "") 
       out$genC <- paste0("  b_Intercept <- temp_Intercept", subtract, "; \n")
     } else {
       out$par <- paste0(out$par,
-        "  real temp_Intercept;  # temporary Intercept \n")
-      out$genD <- "  real b_Intercept;  # fixed effects intercept \n"
+        "  real temp_Intercept;  // temporary Intercept \n")
+      out$genD <- "  real b_Intercept;  // fixed effects intercept \n"
       subtract <- ifelse(length(fixef), " - dot_product(X_means, b)", "") 
       out$genC <- paste0("  b_Intercept <- temp_Intercept", subtract, "; \n")
       out$prior <- stan_prior("temp_Intercept", prior = prior)
@@ -358,24 +358,24 @@ stan_fixef <- function(fixef, paref, family = gaussian(),
   }
   if (length(fixef)) {
     out$data <- paste0(out$data, 
-      "  int<lower=1> K;  # number of fixed effects \n", 
-      "  matrix[N, K] X;  # FE design matrix \n",
-      "  vector[K] X_means;  # column means of X \n")
+      "  int<lower=1> K;  // number of fixed effects \n", 
+      "  matrix[N, K] X;  // FE design matrix \n",
+      "  vector[K] X_means;  // column means of X \n")
     bound <- with(prior, bound[class == "b" & coef == ""])
     out$par <- paste0(out$par,
-      "  vector", bound, "[K] b;  # fixed effects \n") 
+      "  vector", bound, "[K] b;  // fixed effects \n") 
     fixef_prior <- stan_prior(class = "b", coef = fixef, prior = prior)
     out$prior <- paste0(out$prior, fixef_prior)
   }
   if (length(paref)) {
     out$data <- paste0(out$data, 
-     "  int<lower=1> Kp;  # number of category specific effects \n",
-     "  matrix[N, Kp] Xp;  # CSE design matrix \n",
+     "  int<lower=1> Kp;  // number of category specific effects \n",
+     "  matrix[N, Kp] Xp;  // CSE design matrix \n",
      if (is.categorical(family)) 
-       "  vector[Kp] Xp_means;  # column means of Xp \n")
+       "  vector[Kp] Xp_means;  // column means of Xp \n")
     bound <- with(prior, bound[class == "b" & coef == ""])
     out$par <- paste0(out$par,
-     "  matrix", bound, "[Kp, ncat - 1] bp;  # category specific effects \n")
+     "  matrix", bound, "[Kp, ncat - 1] bp;  // category specific effects \n")
     paref_prior <- stan_prior(class = "bp", coef = paref, prior = prior)
     out$prior <- paste0(out$prior, paref_prior)
   }
@@ -402,47 +402,47 @@ stan_ranef <- function(i, ranef, prior = prior_frame(),
   ccov <- g %in% names_cov_ranef
   out <- list()
   out$data <- paste0(
-    "  # data for random effects of ",g," \n",
-    "  int<lower=1> J_",i,"[N];  # RE levels \n",
-    "  int<lower=1> N_",i,";  # number of levels \n",
-    "  int<lower=1> K_",i,";  # number of REs \n",
+    "  // data for random effects of ",g," \n",
+    "  int<lower=1> J_",i,"[N];  // RE levels \n",
+    "  int<lower=1> N_",i,";  // number of levels \n",
+    "  int<lower=1> K_",i,";  // number of REs \n",
     if (ccov) paste0(
       "  matrix[N_",i,", N_",i,"] cov_",i,";",
-      "  # user defined covariance matrix \n"))
+      "  // user defined covariance matrix \n"))
   
   out$prior <- stan_prior(class = "sd", group = i, coef = r, prior = prior)
   if (length(r) == 1) {  # only one random effect
-    out$data <- paste0(out$data, "  real Z_",i,"[N];  # RE design matrix \n")
-    out$par <- paste0("  vector[N_",i,"] pre_",i,";  # unscaled REs \n",
-                      "  real<lower=0> sd_",i,";  # RE standard deviation \n")
+    out$data <- paste0(out$data, "  real Z_",i,"[N];  // RE design matrix \n")
+    out$par <- paste0("  vector[N_",i,"] pre_",i,";  // unscaled REs \n",
+                      "  real<lower=0> sd_",i,";  // RE standard deviation \n")
     out$prior <- paste0(out$prior,"  pre_",i," ~ normal(0, 1); \n")
-    out$transD <- paste0("  vector[N_",i,"] r_",i,";  # REs \n")
+    out$transD <- paste0("  vector[N_",i,"] r_",i,";  // REs \n")
     out$transC <- paste0("  r_",i, " <- sd_",i," * (", 
                          if (ccov) paste0("cov_",i," * "), "pre_",i,");",
-                         "  # scale REs \n")
+                         "  // scale REs \n")
   } else if (length(r) > 1 && cor) {  
     # multiple correlated random effects
     out$data <- paste0(out$data,  
-      "  row_vector[K_",i,"] Z_",i,"[N];  # RE design matrix \n",  
-      "  int NC_",i,";  # number of correlations \n")
+      "  row_vector[K_",i,"] Z_",i,"[N];  // RE design matrix \n",  
+      "  int NC_",i,";  // number of correlations \n")
     out$par <- paste0(
-      "  matrix[N_",i,", K_",i,"] pre_",i,";  # unscaled REs \n",
-      "  vector<lower=0>[K_",i,"] sd_",i,";  # RE standard deviation \n",
+      "  matrix[N_",i,", K_",i,"] pre_",i,";  // unscaled REs \n",
+      "  vector<lower=0>[K_",i,"] sd_",i,";  // RE standard deviation \n",
       "  cholesky_factor_corr[K_",i,"] L_",i, ";",
-      "  # cholesky factor of correlations matrix \n")
+      "  // cholesky factor of correlations matrix \n")
     out$prior <- paste0(out$prior, 
       stan_prior(class = "L", group = i, prior = prior),
       "  to_vector(pre_",i,") ~ normal(0, 1); \n")
-    out$transD <- paste0("  vector[K_",i,"] r_",i,"[N_",i,"];  # REs \n")
+    out$transD <- paste0("  vector[K_",i,"] r_",i,"[N_",i,"];  // REs \n")
     if (ccov) {  # customized covariance matrix supplied
       out$transC <- paste0(
         "  r_",i," <- to_array(kronecker_cholesky(cov_",i,", L_",i,", sd_",i,") * ",
-        "to_vector(pre_",i,"), N_",i,", K_",i,");  # scale REs \n")
+        "to_vector(pre_",i,"), N_",i,", K_",i,");  // scale REs \n")
     } else { 
       out$transC <- paste0(
         "  for (i in 1:N_",i,") { \n",
         "    r_",i, "[i] <- sd_",i," .* (L_",i," * ", 
-        "to_vector(pre_",i,"[i]));  # scale REs \n  } \n")
+        "to_vector(pre_",i,"[i]));  // scale REs \n  } \n")
     }
     # return correlations above the diagonal only
     cors_genC <- ulapply(2:length(r), function(k) lapply(1:(k-1), function(j)
@@ -451,24 +451,24 @@ stan_ranef <- function(i, ranef, prior = prior_frame(),
       "  corr_matrix[K_",i,"] Cor_",i,"; \n",
       "  vector<lower=-1,upper=1>[NC_",i,"] cor_",i,"; \n")
     out$genC <- paste0(
-      "  # take only relevant parts of correlation matrix \n",
+      "  // take only relevant parts of correlation matrix \n",
       "  Cor_",i," <- multiply_lower_tri_self_transpose(L_",i,"); \n",
       collapse(cors_genC)) 
   } else if (length(r) > 1 && !cor) {
     # multiple uncorrelated random effects
     j <- seq_along(r)
     out$data <- paste0(out$data, "  matrix[N, K_", i, "] Z_", i, ";",
-                       "  # RE design matrix \n")
+                       "  // RE design matrix \n")
     out$par <- paste0("  vector[N_",i,"] pre_",i,"[K_", i, "];",
-                      "  # unscaled REs \n",
+                      "  // unscaled REs \n",
                       "  vector<lower=0>[K_",i,"] sd_", i, ";",
-                      "  # RE standard deviation \n")
+                      "  // RE standard deviation \n")
     out$prior <- paste0(out$prior, 
       collapse("  pre_",i,"[",j,"] ~ normal(0, 1); \n"))
-    out$transD <- collapse("  vector[N_",i,"] r_",i,"_",j,";  # REs \n")
+    out$transD <- collapse("  vector[N_",i,"] r_",i,"_",j,";  // REs \n")
     out$transC <- collapse(
       "  r_",i,"_",j," <- sd_",i,"[",j,"] * (", 
-      if (ccov) paste0("cov_",i," * "), "pre_",i,"[",j,"]);  # scale REs \n")
+      if (ccov) paste0("cov_",i," * "), "pre_",i,"[",j,"]);  // scale REs \n")
   }
   out
 }
@@ -629,7 +629,7 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
   }
   add_weights <- ifelse(weights, "weights[n] * ", "")
   llh <- switch(type, 
-    cens = paste0("  # special treatment of censored data \n",
+    cens = paste0("  // special treatment of censored data \n",
       "    if (cens[n] == 0) ", 
       ifelse(!weights, paste0("Y[n] ~ ", llh_pre[1],"(",llh_pre[2],"); \n"),
              paste0("increment_log_prob(", add_weights, 
@@ -698,13 +698,13 @@ stan_eta <- function(family, fixef, ranef = list(), paref = NULL,
   eta <- list()
   # initialize eta
   eta$transD <- paste0(
-    "  vector[N] eta;  # linear predictor \n", 
+    "  vector[N] eta;  // linear predictor \n", 
     if (length(paref) || is.categorical(family)) 
       paste0("  matrix[N, ncat - 1] etap;",
-             "  # linear predictor for category specific effects \n"),
+             "  // linear predictor for category specific effects \n"),
     if (is_multi) 
       paste0("  vector[K_trait] Eta[N_trait];",
-             "  # multivariate linear predictor matrix \n"))
+             "  // multivariate linear predictor matrix \n"))
   eta_obj <- ifelse(is_multi, "Eta[m, k]", "eta[n]")
   s <- ifelse(is_multi, "  ", "")
   
@@ -752,7 +752,7 @@ stan_eta <- function(family, fixef, ranef = list(), paref = NULL,
     eta_ilink <- rep("", 2)
   }
   eta$transC1 <- paste0(
-    "  # compute linear predictor \n",
+    "  // compute linear predictor \n",
     "  eta <- ", ifelse(length(fixef), "X * b", "rep_vector(0, N)"), 
     if (has_intercept && !(is_ordinal || is_cat)) " + temp_Intercept",
     if (offset) " + offset",
@@ -788,23 +788,23 @@ stan_arma <- function(family, autocor, prior = prior_frame(),
                  "are not yet implemented"), call. = FALSE)
     }
     out$data <- paste0(out$data,
-      "  # data needed for ARMA effects \n",
-      "  int<lower=0> Kar;  # AR order \n",
-      "  int<lower=0> Kma;  # MA order \n",
-      "  int<lower=1> Karma;  # max(Kma, Kar) \n",
-      "  matrix[N, Karma] E_pre; # matrix of zeros \n",
-      "  vector[N] tgroup;  # indicates independent groups \n")
+      "  // data needed for ARMA effects \n",
+      "  int<lower=0> Kar;  // AR order \n",
+      "  int<lower=0> Kma;  // MA order \n",
+      "  int<lower=1> Karma;  // max(Kma, Kar) \n",
+      "  matrix[N, Karma] E_pre; // matrix of zeros \n",
+      "  vector[N] tgroup;  // indicates independent groups \n")
     # restrict ARMA effects to be in [-1,1] when using covariance
     # formulation as they cannot be outside this interval anyway
     restrict <- ifelse(use_cov(autocor), "<lower=-1, upper=1>", "")
     if (Kar) {
       out$par <- paste0(out$par, 
-        "  vector", restrict, "[Kar] ar;  # autoregressive effects \n")
+        "  vector", restrict, "[Kar] ar;  // autoregressive effects \n")
       out$prior <- paste0(out$prior, stan_prior(class = "ar", prior = prior))
     }
     if (Kma) {
       out$par <- paste0(out$par, 
-        "  vector", restrict, "[Kma] ma;  # moving-average effects \n")
+        "  vector", restrict, "[Kma] ma;  // moving-average effects \n")
       out$prior <- paste0(out$prior, stan_prior(class = "ma", prior = prior))
     }
     
@@ -817,7 +817,7 @@ stan_arma <- function(family, autocor, prior = prior_frame(),
              call. = FALSE)
       }
       out$data <- paste0(out$data,
-        "  # see the functions block for details \n",
+        "  // see the functions block for details \n",
         "  int<lower=1> N_tg; \n",   
         "  int<lower=1> begin_tg[N_tg]; \n",
         "  int<lower=1> nrows_tg[N_tg]; \n",
@@ -833,7 +833,7 @@ stan_arma <- function(family, autocor, prior = prior_frame(),
         cov_mat_fun <- "arma1"
         cov_mat_args <- "ar[1], ma[1]"
       }
-      out$transC1 <- paste0("  # compute residual covariance matrix \n",
+      out$transC1 <- paste0("  // compute residual covariance matrix \n",
                             "  res_cov_matrix <- cov_matrix_", cov_mat_fun, 
                             "(", cov_mat_args, ", sigma, max(nrows_tg)); \n")
       # defined selfmade functions for the functions block
@@ -989,11 +989,11 @@ stan_arma <- function(family, autocor, prior = prior_frame(),
       index <- ifelse(is_multi, "m, k", "n")
       s <- ifelse(is_multi, "  ", "")
       link_fun <- c(identity = "", log = "log", inverse = "inv")[family$link]
-      out$transD <- paste0("  matrix[N, Karma] E;  # ARMA design matrix \n",
-                           "  vector[N] e;  # residuals \n") 
+      out$transD <- paste0("  matrix[N, Karma] E;  // ARMA design matrix \n",
+                           "  vector[N] e;  // residuals \n") 
       out$transC1 <- "  E <- E_pre; \n" 
       out$transC2 <- paste0(
-        s,"    # calculation of ARMA effects \n",
+        s,"    // calculation of ARMA effects \n",
         s,"    e[n] <- ",link_fun,"(Y[",index,"]) - eta[n]", "; \n",
         s,"    for (i in 1:Karma) { \n", 
         s,"      if (n + 1 - i > 0 && n < N && tgroup[n + 1] == tgroup[n + 1 - i]) { \n",
@@ -1005,11 +1005,11 @@ stan_arma <- function(family, autocor, prior = prior_frame(),
   if (Karr) {
     # autoregressive effects of the response
     out$data <- paste0(out$data,
-      "  # data needed for ARR effects \n",
+      "  // data needed for ARR effects \n",
       "  int<lower=1> Karr; \n",
-      "  matrix[N, Karr] Yarr;  # ARR design matrix \n")
+      "  matrix[N, Karr] Yarr;  // ARR design matrix \n")
     out$par <- paste0(out$par,
-      "  vector[Karr] arr;  # autoregressive effects of the response \n")
+      "  vector[Karr] arr;  // autoregressive effects of the response \n")
     out$prior <- paste0(out$prior, stan_prior(class = "arr", prior = prior))
   }
   out
@@ -1033,16 +1033,16 @@ stan_multi <- function(family, response, prior = prior_frame()) {
   if (nresp > 1) {
     if (is.linear(family)) {
       out$data <- paste0(
-        "  int<lower=1> N_trait;  # number of observations per response \n",
-        "  int<lower=1> K_trait;  # number of responses \n",  
-        "  int NC_trait;  # number of residual correlations \n",
-        "  vector[K_trait] Y[N_trait];  # response matrix \n")
+        "  int<lower=1> N_trait;  // number of observations per response \n",
+        "  int<lower=1> K_trait;  // number of responses \n",  
+        "  int NC_trait;  // number of residual correlations \n",
+        "  vector[K_trait] Y[N_trait];  // response matrix \n")
       out$par <- paste0(
-        "  # parameters for multivariate linear models \n",
+        "  // parameters for multivariate linear models \n",
         "  vector<lower=0>[K_trait] sigma; \n",
         "  cholesky_factor_corr[K_trait] Lrescor; \n")
       out$loop <- c(paste0(
-        "  # restructure linear predictor and add REs \n",
+        "  // restructure linear predictor and add REs \n",
         "  for (m in 1:N_trait) { \n",  
         "    for (k in 1:K_trait) { \n", 
         "      int n; \n",
@@ -1054,12 +1054,12 @@ stan_multi <- function(family, response, prior = prior_frame()) {
       if (family$family == "gaussian") {
         out$transD <- "  cholesky_factor_cov[K_trait] LSigma; \n"
         out$transC <- paste0(
-          "  # compute cholesky factor of residual covariance matrix \n",
+          "  // compute cholesky factor of residual covariance matrix \n",
           "  LSigma <- diag_pre_multiply(sigma, Lrescor); \n")
       } else if (family$family %in% c("student", "cauchy")) {
         out$transD <- "  cov_matrix[K_trait] Sigma; \n"
         out$transC <- paste0(
-          "  # compute residual covariance matrix \n",
+          "  // compute residual covariance matrix \n",
           "  Sigma <- multiply_lower_tri_self_transpose(", 
           "diag_pre_multiply(sigma, Lrescor)); \n")
       }
@@ -1067,7 +1067,7 @@ stan_multi <- function(family, response, prior = prior_frame()) {
         "  matrix[K_trait,K_trait] Rescor; \n",
         "  vector<lower=-1,upper=1>[NC_trait] rescor; \n")
       out$genC <- paste0(
-        "  # take only relevant parts of residual correlation matrix \n",
+        "  // take only relevant parts of residual correlation matrix \n",
         "  Rescor <- multiply_lower_tri_self_transpose(Lrescor); \n",
         collapse(ulapply(2:nresp, function(i) lapply(1:(i-1), function(j)
         paste0("  rescor[",(i-1)*(i-2)/2+j,"] <- Rescor[",j,", ",i,"]; \n")))))
@@ -1111,17 +1111,17 @@ stan_ordinal <- function(family, prior = prior_frame(),
     ilink <- stan_ilink(link)
     type <- ifelse(family == "cumulative", "ordered", "vector")
     intercept <- paste0("  ", type, "[ncat-1] temp_Intercept;",
-                        "  # temporary thresholds \n")
+                        "  // temporary thresholds \n")
     if (threshold == "flexible") {
       out$par <- intercept
       out$prior <- stan_prior("temp_Intercept", prior = prior) 
     } else if (threshold == "equidistant") {
-      out$par <- paste0("  real temp_Intercept1;  # threshold 1 \n",
+      out$par <- paste0("  real temp_Intercept1;  // threshold 1 \n",
                         "  real", if (family == "cumulative") "<lower=0>",
-                        " delta;  # distance between thresholds \n")
+                        " delta;  // distance between thresholds \n")
       out$transD <- intercept
       out$transC1 <- paste0(
-        "  # compute equidistant thresholds \n",
+        "  // compute equidistant thresholds \n",
         "  for (k in 1:(ncat - 1)) { \n",
         "    temp_Intercept[k] <- temp_Intercept1 + (k - 1.0) * delta; \n",
         "  } \n")
@@ -1340,7 +1340,7 @@ stan_2PL <- function(family) {
     stop("family must be of class family")
   out <- list()
   if (is.2PL(family)) {
-    out$transD <- "  vector[N_trait] eta_2PL;  # 2PL linear predictor \n"
+    out$transD <- "  vector[N_trait] eta_2PL;  // 2PL linear predictor \n"
     out$transC <- paste0("  eta_2PL <- head(eta, N_trait)", 
                          " .* exp(tail(eta, N_trait)); \n")
   }
@@ -1365,10 +1365,10 @@ stan_inv_gaussian <- function(family, weights = FALSE, cens = FALSE,
   out <- list()
   if (family$family == "inverse.gaussian") {
     out$data <- paste0(
-      "  # quantities for the inverse gaussian distribution \n",
-      "  vector[N] sqrt_Y;  # sqrt(Y) \n")
+      "  // quantities for the inverse gaussian distribution \n",
+      "  vector[N] sqrt_Y;  // sqrt(Y) \n")
     if (weights || cens || trunc) {
-      out$data <- paste0(out$data, "  vector[N] log_Y;  # log(Y) \n")
+      out$data <- paste0(out$data, "  vector[N] log_Y;  // log(Y) \n")
       out$fun <- paste0(out$fun,
       "  /* inverse Gaussian log-PDF for a single response (for data only) \n",
       "   * Copyright Stan Development Team 2015 \n",
@@ -1388,7 +1388,7 @@ stan_inv_gaussian <- function(family, weights = FALSE, cens = FALSE,
       "            0.5 * shape * square((y - mu) / (mu * sqrt_y)); \n",
       "   } \n")
     } else {
-      out$data <- paste0(out$data, "  real log_Y;  # sum(log(Y)) \n")
+      out$data <- paste0(out$data, "  real log_Y;  // sum(log(Y)) \n")
       out$fun <- paste0(out$fun, 
       "  /* vectorized inverse Gaussian log-PDF (for data only) \n",
       "   * Copyright Stan Development Team 2015 \n",
@@ -1666,10 +1666,10 @@ stan_rngprior <- function(sample_prior, prior, family = gaussian(),
     if (any(bound)) {  
       # bounded parameters have to be sampled in the model block
       lower_bound <- ifelse(pars[bound] == "nu", 1, 0)
-      out$par <- paste0("  # parameters to store prior samples \n",
+      out$par <- paste0("  // parameters to store prior samples \n",
                         collapse("  real<lower=", lower_bound, "> ", 
                                  "prior_", pars[bound], "; \n"))
-      out$model <- paste0("  # additionally draw samples from priors \n",
+      out$model <- paste0("  // additionally draw samples from priors \n",
                           collapse("  prior_", pars[bound] ," ~ ",
                             dis[bound], args[bound]," \n"))
     }
@@ -1679,7 +1679,7 @@ stan_rngprior <- function(sample_prior, prior, family = gaussian(),
         args[match("b", pars)] <- "(0, prior_hs_local * prior_hs_global);" 
       } 
       out$genD <- collapse("  real prior_", pars[!bound], "; \n")
-      out$genC <- paste0("  # additionally draw samples from priors \n",
+      out$genC <- paste0("  // additionally draw samples from priors \n",
                          collapse("  prior_", pars[!bound], " <- ",
                            dis[!bound], "_rng", args[!bound], " \n"))
     }
