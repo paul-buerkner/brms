@@ -63,7 +63,7 @@ Setting priors on these parameters is not recommended}
 }
 \value{
 A data.frame with columns \code{prior}, \code{class}, \code{coef}, and \code{group}
-  and several rows, each providing information on a paramter (or parameter class) on which
+  and several rows, each providing information on a parameter (or parameter class) on which
   priors can be specified. The prior column is empty except for internal default priors.
 }
 \description{

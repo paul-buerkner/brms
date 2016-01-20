@@ -220,10 +220,10 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
   if (length(prior) != 1 || length(class) != 1 || length(coef) != 1 || 
       length(group) != 1 || length(lb) > 1 || length(ub) > 1)
     stop("All arguments of set_prior must be of length 1", call. = FALSE)
-  valid_classes <- c("intercept", "b", "sd", "cor", "L", "ar", "ma", "arr",
+  valid_classes <- c("Intercept", "b", "sd", "cor", "L", "ar", "ma", "arr",
                      "sigma", "rescor", "Lrescor", "nu", "shape", "delta", "phi")
   if (!class %in% valid_classes)
-    stop(paste(class, "is not a valid paramter class"), call. = FALSE)
+    stop(paste(class, "is not a valid parameter class"), call. = FALSE)
   if (nchar(group) && !class %in% c("sd", "cor", "L"))
     stop(paste("argument group not meaningful for class", class), 
          call. = FALSE)
@@ -260,7 +260,7 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
 #'   Setting priors on these parameters is not recommended
 #' 
 #' @return A data.frame with columns \code{prior}, \code{class}, \code{coef}, and \code{group}
-#'   and several rows, each providing information on a paramter (or parameter class) on which
+#'   and several rows, each providing information on a parameter (or parameter class) on which
 #'   priors can be specified. The prior column is empty except for internal default priors.
 #'   
 #' @seealso \code{\link[brms:set_prior]{set_prior}}
