@@ -307,11 +307,12 @@ Fit a generalized linear mixed model,
   
   This behavior can be avoided by using the reserved 
   (and internally generated) variable \code{intercept}. 
-  Instead of, for instance, \code{y ~ x}, you may write
-  \code{y ~ -1 + intercept + x}. This way, the intercept
-  is treated directly as part of \code{b} and thus priors
-  defined on \code{b} will also applied to it. Note that
-  this parameterization may be a bit less efficient
+  Instead of \code{y ~ x}, you may write
+  \code{y ~ -1 + intercept + x}. This way, priors can be
+  defined on the real intercept, directly. In addition,
+  the intercept is just treated as an ordinary fixed effect
+  and thus priors defined on \code{b} will also apply to it. 
+  Note that this parameterization may be a bit less efficient
   than the default parameterization discussed above.  
   
   \bold{Families and link functions}
