@@ -250,7 +250,32 @@
 #'   are estimated on the log scale. 
 #'   In addition, we strongly recommend setting proper priors 
 #'   on fixed effects in this case to increase sampling efficiency 
-#'   (for details on priors see \code{\link[brms:set_prior]{set_prior}}).          
+#'   (for details on priors see \code{\link[brms:set_prior]{set_prior}}).     
+#'   
+#'   \bold{Parameterization of the fixed effects intercept}
+#'   
+#'   The fixed effects intercept (if incorporated) is estimated separately 
+#'   and not as part of the fixed effects parameter vector \code{b}. 
+#'   This has the side effect that priors on the intercept 
+#'   also have to be specified separately
+#'   (see \code{\link[brms:set_prior]{set_prior}} for more details).
+#'   Furthermore, to increase sampling efficiency, the fixed effects 
+#'   design matrix \code{X} is centered around its column means 
+#'   \code{X_means} if the intercept is incorporated. 
+#'   This leads to a temporary bias in the intercept equal to 
+#'   \code{<X_means, b>}, where \code{<,>} is the scalar product. 
+#'   The bias is corrected after fitting the model, but be aware 
+#'   that you are effectively defining a prior on the temporary
+#'   intercept of the centered design matrix not on the real intercept.
+#'   
+#'   This behavior can be avoided by using the reserved 
+#'   (and internally generated) variable \code{intercept}. 
+#'   Instead of, for instance, \code{y ~ x}, you may write
+#'   \code{y ~ -1 + intercept + x}. This way, the intercept
+#'   is treated directly as part of \code{b} and thus priors
+#'   defined on \code{b} will also applied to it. Note that
+#'   this parameterization may be a bit less efficient
+#'   than the default parameterization discussed above.  
 #'   
 #'   \bold{Families and link functions}
 #'   
