@@ -34,10 +34,13 @@ extract_effects <- function(formula, ..., family = NA,
     stop("Random effects terms should be enclosed in brackets", call. = FALSE)
   }
   fixed <- formula(tfixed)
+  rsv_intercept <- has_rsv_intercept(fixed)
   if (!is.na(family[[1]])) 
     family <- check_family(family)
-  if (is.ordinal(family))
+  if (is.ordinal(family) || rsv_intercept)
     fixed <- update.formula(fixed, . ~ . + 1)
+  if (rsv_intercept)
+    attr(fixed, "rsv_intercept") <- TRUE
   if (check_response && length(fixed) < 3) 
     stop("Invalid formula: response variable is missing", call. = FALSE)
   
@@ -349,6 +352,35 @@ amend_terms <- function(x, rm_intercept = FALSE, is_forked = FALSE) {
     }
   }
   x
+}
+
+check_intercept <- function(names) {
+  # check if model contains fixed effects intercept
+  #
+  # Args:
+  #   names: The names of the design matrix
+  #          to be checked for an intercept
+  # Returns:
+  #   a list containing the updated effect names
+  #   as well as an indicator if the model has an intercept
+  if (!is.null(names)) {
+    has_intercept <- "Intercept" == names[1]
+    if (has_intercept) names <- names[-1]
+  } else {
+    has_intercept <- FALSE
+  }
+  nlist(names, has_intercept)
+}
+
+has_rsv_intercept <- function(formula) {
+  # check if model makes use of the reserved variable 'intercept'
+  # Args:
+  #   formula: a model formula
+  formula <- as.formula(formula)
+  has_intercept <- attr(terms(formula), "intercept")
+  rhs <- if (length(formula) == 2L) formula[[2]]
+         else formula[[3]]
+  !has_intercept && "intercept" %in% all.vars(rhs)
 }
 
 gather_response <- function(formula) {

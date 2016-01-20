@@ -51,6 +51,13 @@ melt_data <- function(data, family, effects) {
   } else if (nresp > 1) {
     stop("invalid multivariate model", call. = FALSE)
   }
+  if (isTRUE(attr(effects$fixed, "rsv_intercept"))) {
+    if ("intercept" %in% names(data)) {
+      stop(paste("intercept is a reserved variable name in models",
+                 "without a fixed effects intercept"), call. = FALSE)
+    }
+    data$intercept <- 1
+  }
   data
 }  
 
@@ -384,7 +391,8 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   }
   
   # fixed effects data
-  rm_intercept <- is_ordinal || !isTRUE(control$keep_intercept)
+  rm_intercept <- is_ordinal || !isTRUE(control$keep_intercept) ||
+                  isTRUE(attr(ee$fixed, "rsv_intercept"))
   X <- get_model_matrix(ee$fixed, data, rm_intercept = rm_intercept,
                         is_forked = is_forked)
   X_means <- colMeans(X)

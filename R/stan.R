@@ -58,14 +58,16 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   trunc <- get_boundaries(ee$trunc)  
   
   # generate fixed effects code
+  rm_intercept <- isTRUE(attr(ee$fixed, "rsv_intercept"))
   if (is_categorical) {
     X <- data.frame()
     fixef <- colnames(X)
-    Xp <- get_model_matrix(ee$fixed, data)
+    Xp <- get_model_matrix(ee$fixed, data, rm_intercept = rm_intercept)
     temp_list <- check_intercept(colnames(Xp))
     paref <- temp_list$names
   } else {
-    X <- get_model_matrix(ee$fixed, data, is_forked = is_forked)
+    X <- get_model_matrix(ee$fixed, data, is_forked = is_forked,
+                          rm_intercept = rm_intercept)
     temp_list <- check_intercept(colnames(X))
     fixef <- temp_list$names
     Xp <- get_model_matrix(partial, data, rm_intercept = TRUE)

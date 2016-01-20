@@ -307,24 +307,6 @@ has_sigma <- function(family, autocor = cor_arma(), se = FALSE,
     (!se || get_ar(autocor) || get_ma(autocor)) 
 }
 
-check_intercept <- function(names) {
-  # check if model contains fixed effects intercept
-  #
-  # Args:
-  #   names: The names of the design matrix
-  #          to be checked for an intercept
-  # Returns:
-  #   a list containing the updated effect names
-  #   as well as an indicator if the model has an intercept
-  if (!is.null(names)) {
-    has_intercept <- "Intercept" == names[1]
-    if (has_intercept) names <- names[-1]
-  } else {
-    has_intercept <- FALSE
-  }
-  nlist(names, has_intercept)
-}
-
 needs_kronecker <- function(ranef, names_cov_ranef) {
   # checks if a model needs the kronecker product
   # Args: 
