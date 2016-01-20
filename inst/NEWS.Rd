@@ -2,6 +2,32 @@
 \title{brms News}
 \encoding{UTF-8}
 
+\section{CHANGES IN VERSION 0.7.0.9000}{
+  \subsection{NEW FEATURES}{
+    \itemize{  
+      \item restrict domain of fixed effects parameters
+      using new arguments \code{lb} and \code{ub}
+      in function \code{set_prior} thanks to the idea
+      of Joel Gombin
+    }
+  }
+  \subsection{OTHER CHANGES}{
+    \itemize{
+      \item optionally define the intercept
+      as an ordinary fixed effect to avoid the
+      reparametrization via centering of the
+      fixed effects design matrix
+    }
+  }
+  \subsection{BUG FIXES}{
+    \itemize{
+      \item fix problems when predicting with \code{newdata}
+      if it is a subset of the data stored in a 
+      \code{brmsfit} object thanks to Ruben Arslan
+    }
+  }
+}
+
 \section{CHANGES IN VERSION 0.7.0}{
   \subsection{NEW FEATURES}{
     \itemize{
