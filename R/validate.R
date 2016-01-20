@@ -18,22 +18,22 @@ extract_effects <- function(formula, ..., family = NA,
   #   weights, se, cens, trials, cat: information on possible addition arguments
   #   all: A formula that contains every variable mentioned in formula and ...
   term_labels <- rename(attr(terms(formula), "term.labels"), " ", "")
-  formula <- formula2string(formula) 
-  fixed <- gsub("\\|+[^~]*~", "~", formula)
+  tformula <- formula2string(formula) 
+  tfixed <- gsub("\\|+[^~]*~", "~", tformula)
   re_terms <- term_labels[grepl("\\|", term_labels)]
   if (length(re_terms)) {
     re_terms <- paste0("(", re_terms, ")")
     # make sure that + before random terms are also removed
     extended_re_terms <- c(paste0("+", re_terms), re_terms)
-    fixed <- rename(fixed, extended_re_terms, "")
+    tfixed <- rename(tfixed, extended_re_terms, "")
   } 
-  if (substr(fixed, nchar(fixed), nchar(fixed)) == "~") {
-    fixed <- paste0(fixed, "1")
+  if (substr(tfixed, nchar(tfixed), nchar(tfixed)) == "~") {
+    tfixed <- paste0(tfixed, "1")
   }
-  if (grepl("|", x = fixed, fixed = TRUE)) {
+  if (grepl("|", x = tfixed, fixed = TRUE)) {
     stop("Random effects terms should be enclosed in brackets", call. = FALSE)
   }
-  fixed <- formula(fixed)
+  fixed <- formula(tfixed)
   if (!is.na(family[[1]])) 
     family <- check_family(family)
   if (is.ordinal(family))
@@ -63,7 +63,7 @@ extract_effects <- function(formula, ..., family = NA,
   fun <- c("se", "weights", "trials", "cat", "cens", "trunc")
   add_vars <- list()
   if (!is.na(family[[1]])) {
-    add <- get_matches("\\|[^~]*~", formula)[1]
+    add <- get_matches("\\|[^~]*~", tformula)[1]
     add <- substr(add, 2, nchar(add)-1)
     families <- list(se = c("gaussian", "student", "cauchy"),
                      weights = "all",
@@ -115,10 +115,9 @@ extract_effects <- function(formula, ..., family = NA,
     } else ""
   }
   formula_list <- c(random$form, group_formula, add_vars, ...)
-  new_formula <- ulapply(formula_list, plus_rh)
-  new_formula <- paste0("update(",Reduce(paste, deparse(fixed)),
-                        ", ~ .", collapse(new_formula), ")")
-  x$all <- eval(parse(text = new_formula))
+  new_formula <- collapse(ulapply(formula_list, plus_rh))
+  x$all <- paste0("update(", tfixed, ", ~ .", new_formula, ")")
+  x$all <- eval(parse(text = x$all))
   environment(x$all) <- globalenv()
   
   # extract response variables
