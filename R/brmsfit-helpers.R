@@ -846,8 +846,8 @@ td_plot <- function(par, x, theme = "classic") {
     stop("x must be a data.frame")
   names(x)[match(par, names(x))] <- "value" 
   # trace plot
-  trace <- ggplot(x, aes_string(x = "iter", y = "value", group = "chains", 
-                                colour = "chains")) +
+  trace <- ggplot(x, aes_string(x = "iter", y = "value", group = "chain", 
+                                colour = "chain")) +
     geom_line(alpha = 0.7) + 
     xlab("") + ylab("") + ggtitle(paste("Trace of", par)) + 
     do.call(paste0("theme_", theme), args = list()) + 
@@ -856,7 +856,7 @@ td_plot <- function(par, x, theme = "classic") {
           plot.margin = grid::unit(c(0.2, 0, -0.5, -0.5), "lines"))
   # density plot
   density <- ggplot(x, aes_string(x = "value")) + 
-    geom_density(aes_string(fill = "chains"), alpha = 0.5) + 
+    geom_density(aes_string(fill = "chain"), alpha = 0.5) + 
     xlab("") + ylab("") + ggtitle(paste("Density of", par)) + 
     do.call(paste0("theme_", theme), args = list()) +
     theme(plot.title = element_text(size = 15, vjust = 1),

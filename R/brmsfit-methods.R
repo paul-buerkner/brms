@@ -376,6 +376,7 @@ model.frame.brmsfit <- function(formula, ...) {
 #' @export
 posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,  
                                       exact_match = FALSE, 
+                                      add_chain = FALSE,
                                       add_chains = FALSE, 
                                       subset = NULL, as.matrix = FALSE, 
                                       ...) {
@@ -396,9 +397,18 @@ posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,
   
   if (length(pars)) {
     samples <- as.data.frame(x$fit, pars = pars)
-    if (add_chains) {
-      samples$chains <- factor(rep(1:chains, each = final_iter))
+    if (add_chain) {
+      # name the column 'chain' not 'chains' (#32)
+      samples$chain <- factor(rep(1:chains, each = final_iter))
       samples$iter <- rep(samples_taken, chains)
+    }
+    if (add_chains) {
+      warning(paste("Argument 'add_chains' is deprecated.",
+                    "Please use argument 'add_chain' instead."))
+      if (!add_chain) {
+        samples$chains <- factor(rep(1:chains, each = final_iter))
+        samples$iter <- rep(samples_taken, chains)
+      }
     }
     if (!is.null(subset)) {
       samples <- samples[subset, , drop = FALSE]
@@ -715,8 +725,8 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5,
     pars <- c("^b_", "^bm_", "^sd_", "^cor_", "^sigma", "^rescor", 
               "^nu$", "^shape$", "^delta$", "^phi$", "^ar", "^ma", "^arr")
   }
-  samples <- posterior_samples(x, pars = pars, add_chains = TRUE)
-  pars <- names(samples)[which(!names(samples) %in% c("chains", "iter"))] 
+  samples <- posterior_samples(x, pars = pars, add_chain = TRUE)
+  pars <- names(samples)[!names(samples) %in% c("chain", "iter")] 
   if (length(pars) == 0) {
     stop("No valid parameters selected", call. = FALSE)
   }

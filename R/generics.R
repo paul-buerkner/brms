@@ -125,8 +125,12 @@ hypothesis <- function(x, hypothesis, ...)
 #' @param exact_match Indicates whether parameter names 
 #'   should be matched exactly or treated as regular expression. 
 #'   Default is \code{FALSE}.
-#' @param add_chains A flag indicating if the returned data.frame 
-#'   should contain information on the chains
+#' @param add_chain A flag indicating if the returned \code{data.frame} 
+#'   should contain two additional columns. The \code{chain} column 
+#'   indicates the chain in which each sample was generated, the \code{iter} 
+#'   column indicates the iteration number within each chain.
+#' @param add_chains A deprecated alias of \code{add_chain}.
+#'   Note that the \code{chain} column will be named \code{chains} instead.
 #' @param subset A numeric vector indicating the rows 
 #'   (i.e., posterior samples) to be returned. 
 #'   If \code{NULL} (the default), all  posterior samples are returned.
