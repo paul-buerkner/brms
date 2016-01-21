@@ -1,4 +1,4 @@
-melt_data <- function(data, family, effects) {
+melt_data <- function(data, family, effects, na.action = na.omit) {
   # melt data frame for multinormal models
   #
   # Args:
@@ -26,7 +26,8 @@ melt_data <- function(data, family, effects) {
     trait <- factor(rep(response, each = nobs), levels = response)
     new_cols <- data.frame(trait = trait)
     # prepare the response variable
-    temp_mf <- model.frame(effects$respform, data = data)
+    temp_mf <- model.frame(effects$respform, data = data, 
+                           na.action = na.action)
     model_response <- model.response(temp_mf)
     if (is.linear(family)) {
       model_response <- as.vector(model_response)
@@ -109,7 +110,8 @@ update_data <- function(data, family, effects, ...,
     data <- as.data.frame(data)
   }
   if (!(isTRUE(attr(data, "brmsframe")) || "brms.frame" %in% class(data))) {
-    data <- melt_data(data, family = family, effects = effects)
+    data <- melt_data(data, family = family, effects = effects, 
+                      na.action = na.action)
     data <- stats::model.frame(effects$all, data = data, na.action = na.action,
                                drop.unused.levels = drop.unused.levels)
     if (any(grepl("__", colnames(data))))
@@ -334,12 +336,6 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
            call. = FALSE)
     }
     # transform and check response variable for different families
-    if (is_forked) {
-      # the second half of Y is not used because it is only dummy data
-      # that was put into data to make melt_data work correctly
-      standata$Y <- standata$Y[1:(nrow(data) / 2)] 
-      standata$N_trait <- length(standata$Y)
-    }
     regex_pos_int <- "(^|_)(binomial|poisson|negbinomial|geometric)$"
     if (grepl(regex_pos_int, family$family)) {
       if (!all(is.wholenumber(standata$Y)) || min(standata$Y) < 0) {
@@ -382,6 +378,12 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
                                    K_trait = ncol(standata$Y)),
                                    NC_trait = NC_trait) 
     }
+  }
+  if (is_forked) {
+    # the second half of Y is not used because it is only dummy data
+    # that was put into data to make melt_data work correctly
+    standata$Y <- standata$Y[1:(nrow(data) / 2)] 
+    standata$N_trait <- length(standata$Y)
   }
   
   # add an offset if present
