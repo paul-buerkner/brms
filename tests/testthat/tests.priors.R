@@ -133,9 +133,6 @@ test_that("get_prior finds all classes for which priors can be specified", {
                               + (1|patient) + (1+Trt_c|visit),
                               data = epilepsy, family = "poisson")$class),
                sort(c(rep("b", 5), c("cor", "cor"), "Intercept", rep("sd", 6))))
-  print(get_prior(rating ~ treat + period, partial = ~ carry, 
-                  data = inhaler, family = "sratio", 
-                  threshold = "equidistant"))
   expect_equal(sort(get_prior(rating ~ treat + period, partial = ~ carry, 
                          data = inhaler, family = "sratio", 
                          threshold = "equidistant")$class),
