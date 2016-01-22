@@ -462,10 +462,9 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL,
     nsamples <- Nsamples(x)
   }
   eta <- matrix(0, nrow = nsamples, ncol = data$N)
-  X <- data$X
-  if (!is.null(X) && ncol(X) && !is.categorical(family)) {
+  if (!is.null(data$X) && ncol(data$X) && !is.categorical(family)) {
     b <- do.call(posterior_samples, c(args, pars = "^b_[^\\[]+$"))
-    eta <- eta + fixef_predictor(X = X, b = b)  
+    eta <- eta + fixef_predictor(X = data$X, b = b)  
   }
   if (!is.null(data$offset)) {
     eta <- eta + matrix(rep(data$offset, nsamples), 
@@ -501,6 +500,7 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL,
     r <- r[, used_re_pars, drop = FALSE]
     # add REs to linear predictor
     eta <- eta + ranef_predictor(Z = Z, gf = gf, r = r) 
+    rm(r)
   }
   # indicates if the model was fitted with brms <= 0.5.0
   old_autocor <- is.null(x$autocor$r)
@@ -534,30 +534,24 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL,
     if (!is.null(data$Xp) && ncol(data$Xp)) {
       p <- do.call(posterior_samples, 
                    c(args, pars = paste0("^b_", colnames(data$Xp), "\\[")))
-      etap <- partial_predictor(Xp = data$Xp, p = p, ncat = data$max_obs)
+      eta <- cse_predictor(Xp = data$Xp, p = p, ncat = data$max_obs, eta = eta)
     } else {
-      etap <- array(0, dim = c(dim(eta), data$max_obs-1))
+      eta <- array(eta, dim = c(dim(eta), data$max_obs - 1))
     } 
-    for (k in 1:(data$max_obs-1)) {
-      etap[, , k] <- etap[, , k] + eta
+    for (k in 1:(data$max_obs - 1)) {
       if (family$family %in% c("cumulative", "sratio")) {
-        etap[, , k] <-  Intercept[, k] - etap[, , k]
+        eta[, , k] <-  Intercept[, k] - eta[, , k]
       } else {
-        etap[, , k] <- etap[, , k] - Intercept[, k]
+        eta[, , k] <- eta[, , k] - Intercept[, k]
       }
     }
-    eta <- etap
   } else if (is.categorical(family)) {
     if (!is.null(data$Xp)) {
       p <- do.call(posterior_samples, c(args, pars = "^b_"))
-      etap <- partial_predictor(data$Xp, p, data$max_obs)
+      eta <- cse_predictor(Xp = data$Xp, p = p, ncat = data$max_obs, eta = eta)
     } else {
-      etap <- array(0, dim = c(dim(eta), data$max_obs - 1))
+      eta <- array(eta, dim = c(dim(eta), data$max_obs - 1))
     }
-    for (k in 1:(data$max_obs-1)) {
-      etap[, , k] <- etap[, , k] + eta
-    }
-    eta <- etap
   }
   eta
 }
@@ -668,27 +662,29 @@ arma_predictor <- function(data, eta, ar = NULL, ma = NULL,
   eta
 }
 
-partial_predictor <- function(Xp, p, ncat) {
-  # compute etap for partial and categorical effects
+cse_predictor <- function(Xp, p, ncat, eta) {
+  # add category specific effects to eta
   # 
   # Args:
-  #   Xp: partial design matrix 
-  #   p: partial effects samples
+  #   Xp: category specific design matrix 
+  #   p: category specific effects samples
   #   ncat: number of categories
+  #   eta: linear predictor matrix
   #
-  # @return linear predictor of partial effects as a 3D array (not as a matrix)
+  # Returns: 
+  #   linear predictor including category specific effects as a 3D array
   if (!is.matrix(Xp))
     stop("Xp must be a matrix")
   if (!is.matrix(p))
     stop("p must be a matrix")
   ncat <- max(ncat)
-  etap <- array(0, dim = c(nrow(p), nrow(Xp), ncat - 1))
+  eta <- array(eta, dim = c(dim(eta), ncat - 1))
   indices <- seq(1, (ncat - 1) * ncol(Xp), ncat - 1) - 1
   Xp <- t(Xp)
-  for (k in 1:(ncat-1)) {
-    etap[, , k] <- p[, indices + k, drop = FALSE] %*% Xp
+  for (k in 1:(ncat - 1)) {
+    eta[, , k] <- eta[, , k] + p[, indices + k, drop = FALSE] %*% Xp
   }
-  etap
+  eta
 }
 
 expand_matrix <- function(A, x) {
@@ -699,10 +695,10 @@ expand_matrix <- function(A, x) {
   #   x: levels to expand the matrix
   # 
   # Notes:
-  #   used in linear_predictor.brmsfit
+  #   used in linear_predictor
   #
   # Returns:
-  #   An expanded matrix of dimensions nrow(A) and ncol(A) * length(unique(x)) 
+  #   A sparse matrix of dimension nrow(A) x (ncol(A) * length(unique(x)))
   if (!is.matrix(A)) 
     stop("A must be a matrix")
   if (length(x) != nrow(A))

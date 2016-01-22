@@ -954,9 +954,9 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     subset <- sample(Nsamples(object), nsamples)
   }
   nresp <- length(ee$response)
-  eta <- linear_predictor(object, newdata = standata, subset = subset,
-                          re_formula = re_formula)
-  samples <- list(eta = eta)
+  samples <- list(eta = linear_predictor(object, newdata = standata, 
+                                         re_formula = re_formula,
+                                         subset = subset))
   args <- list(x = object, as.matrix = TRUE, subset = subset) 
   if (has_sigma(family, se = ee$se, autocor = object$autocor))
     samples$sigma <- do.call(posterior_samples, c(args, pars = "^sigma_"))
@@ -998,6 +998,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
        else if (!is.null(standata$N_tg)) standata$N_tg
        else standata$N
   out <- do.call(cbind, lapply(1:N, call_predict_fun))
+  rm(samples)
   
   # percentage of invalid samples for truncated discrete models
   # should always be zero for all other models
