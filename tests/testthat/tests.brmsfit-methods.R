@@ -128,7 +128,7 @@ test_that("all S3 methods have reasonable ouputs", {
                  "tgroup", "E_pre", "Kar", "Kma", "Karma"))
   # stanplot tested in tests.plots.R
   # summary
-  .summary <- summary(fit)
+  .summary <- summary(fit, waic = TRUE)
   expect_true(is.numeric(.summary$fixed))
   expect_equal(rownames(.summary$fixed), c("Intercept", "Trt_c"))
   expect_equal(colnames(.summary$fixed), 
