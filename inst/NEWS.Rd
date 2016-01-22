@@ -17,6 +17,9 @@
       as an ordinary fixed effect to avoid the
       reparametrization via centering of the
       fixed effects design matrix.
+      \item Do not compute the WAIC in \code{summary}
+      by default anymore to reduce computation time
+      of the method for larger models.
     }
   }
   \subsection{BUG FIXES}{

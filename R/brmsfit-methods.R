@@ -491,14 +491,15 @@ print.brmsfit <- function(x, digits = 2, ...) {
 #'
 #' @param object An object of class \code{brmsfit}
 #' @param waic logical; indicating if the WAIC should be computed
-#'   (this will take some time for larger models)
+#'   (this will take some time for larger models). 
+#'   Default is \code{FALSE}.
 #' @param ... Other potential arguments
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
 #' @method summary brmsfit
 #' @export
-summary.brmsfit <- function(object, waic = TRUE, ...) {
+summary.brmsfit <- function(object, waic = FALSE, ...) {
   family <- family(object)
   ee <- extract_effects(object$formula, family = family)
   formula <- update_formula(object$formula, partial = object$partial)

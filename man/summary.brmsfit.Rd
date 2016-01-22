@@ -4,13 +4,14 @@
 \alias{summary.brmsfit}
 \title{Create a summary of a fitted model represented by a \code{brmsfit} object}
 \usage{
-\method{summary}{brmsfit}(object, waic = TRUE, ...)
+\method{summary}{brmsfit}(object, waic = FALSE, ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}}
 
 \item{waic}{logical; indicating if the WAIC should be computed
-(this will take some time for larger models)}
+(this will take some time for larger models). 
+Default is \code{FALSE}.}
 
 \item{...}{Other potential arguments}
 }
