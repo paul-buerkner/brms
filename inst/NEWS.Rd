@@ -25,11 +25,12 @@
   \subsection{BUG FIXES}{
     \itemize{
       \item Fix problems when predicting with \code{newdata}
-      for zero-inflated and hurdle models thanks to
-      Ruben Arslan.
+      for zero-inflated and hurdle models thanks to Ruben Arslan.
       \item Fix problems when predicting with \code{newdata}
       if it is a subset of the data stored in a 
       \code{brmsfit} object thanks to Ruben Arslan.
+      \item Fix data preparation for multivariate models
+      if some responses are \code{NA} thanks to Raphael Royaute.
     }
   }
 }

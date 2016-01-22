@@ -26,12 +26,18 @@ melt_data <- function(data, family, effects, na.action = na.omit) {
     trait <- factor(rep(response, each = nobs), levels = response)
     new_cols <- data.frame(trait = trait)
     # prepare the response variable
+    # use na.pass as otherwise cbind will complain
+    # when data contains NAs in the response
     temp_mf <- model.frame(effects$respform, data = data, 
-                           na.action = na.action)
+                           na.action = na.pass)
     model_response <- model.response(temp_mf)
+    # allow to remove NA responses later on
+    rows2remove <- which(!complete.cases(model_response))
     if (is.linear(family)) {
+      model_response[rows2remove, ] <- NA
       model_response <- as.vector(model_response)
     } else if (is.forked(family)) {
+      model_response[rows2remove] <- NA
       reserved <- c(response[2], "main", "spec")
       reserved <- reserved[reserved %in% names(data)]
       if (length(reserved)) {
@@ -48,7 +54,7 @@ melt_data <- function(data, family, effects, na.action = na.omit) {
     }
     new_cols$response <- model_response
     data <- replicate(length(response), data, simplify = FALSE)
-    data <- cbind(do.call(rbind, data), new_cols)
+    data <- na.action(cbind(do.call(rbind, data), new_cols))
   } else if (nresp > 1) {
     stop("invalid multivariate model", call. = FALSE)
   }
@@ -70,7 +76,8 @@ combine_groups <- function(data, ...) {
   #   ...: the grouping factors to be combined. 
   #
   # Returns:
-  #   a data.frame containing all old variables and the new combined grouping factors
+  #   a data.frame containing all old variables and 
+  #   the new combined grouping factors
   group <- c(...)
   if (length(group)) {
     for (i in 1:length(group)) {
@@ -110,10 +117,10 @@ update_data <- function(data, family, effects, ...,
     data <- as.data.frame(data)
   }
   if (!(isTRUE(attr(data, "brmsframe")) || "brms.frame" %in% class(data))) {
-    data <- melt_data(data, family = family, effects = effects, 
+    data <- melt_data(data, family = family, effects = effects,
                       na.action = na.action)
-    data <- stats::model.frame(effects$all, data = data, na.action = na.action,
-                               drop.unused.levels = drop.unused.levels)
+    data <- model.frame(effects$all, data = data, na.action = na.action,
+                        drop.unused.levels = drop.unused.levels)
     if (any(grepl("__", colnames(data))))
       stop("variable names may not contain double underscores '__'",
            call. = FALSE)
@@ -371,15 +378,17 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
         stop(paste("family", family$family, "requires response variable", 
                    "to be non-negative"), call. = FALSE)
       }
-    } else if (is_linear && length(ee$response) > 1) {
-      standata$Y <- matrix(standata$Y, ncol = length(ee$response))
-      NC_trait <- ncol(standata$Y) * (ncol(standata$Y) - 1) / 2
-      standata <- c(standata, list(N_trait = nrow(standata$Y), 
-                                   K_trait = ncol(standata$Y)),
-                                   NC_trait = NC_trait) 
     }
   }
-  if (is_forked) {
+  # evaluate even if check_response is FALSE 
+  # to ensure that N_trait is defined
+  if (is_linear && length(ee$response) > 1) {
+    standata$Y <- matrix(standata$Y, ncol = length(ee$response))
+    NC_trait <- ncol(standata$Y) * (ncol(standata$Y) - 1) / 2
+    standata <- c(standata, list(N_trait = nrow(standata$Y), 
+                                 K_trait = ncol(standata$Y),
+                                 NC_trait = NC_trait)) 
+  } else if (is_forked) {
     # the second half of Y is not used because it is only dummy data
     # that was put into data to make melt_data work correctly
     standata$Y <- standata$Y[1:(nrow(data) / 2)] 
