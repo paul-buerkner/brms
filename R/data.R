@@ -54,7 +54,7 @@ melt_data <- function(data, family, effects, na.action = na.omit) {
     }
     new_cols$response <- model_response
     data <- replicate(length(response), data, simplify = FALSE)
-    data <- na.action(cbind(do.call(rbind, data), new_cols))
+    data <- do.call(na.action, list(cbind(do.call(rbind, data), new_cols)))
   } else if (nresp > 1) {
     stop("invalid multivariate model", call. = FALSE)
   }
