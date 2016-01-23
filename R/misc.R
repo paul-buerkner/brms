@@ -222,7 +222,9 @@ is.hurdle <- function(family) {
   if (is(family, "family")) {
     family <- family$family
   }
-  family %in% c("hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma")
+  # zi_beta is technically a hurdle model
+  family %in% c("hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma",
+                "zero_inflated_beta")
 }
 
 is.zero_inflated <- function(family) {
@@ -231,7 +233,7 @@ is.zero_inflated <- function(family) {
     family <- family$family
   }
   family %in% c("zero_inflated_poisson", "zero_inflated_negbinomial",
-                "zero_inflated_binomial", "zero_inflated_beta")
+                "zero_inflated_binomial")
 }
 
 is.2PL <- function(family) {

@@ -242,6 +242,17 @@ predict_hurdle_gamma <- function(n, data, samples, link = "log", ...) {
   ifelse(hu < theta, 0, rgamma(nsamples, shape = samples$shape, scale = scale))
 }
 
+predict_zero_inflated_beta <- function(n, data, samples, link = "logit", ...) {
+  # theta is the bernoulii hurdle parameter
+  theta <- ilink(samples$eta[, n + data$N_trait], "logit")
+  mu <- ilink(samples$eta[, n], link)
+  shape1 <- mu * samples$phi
+  shape2 <- (1 - mu) * samples$phi
+  # compare with theta to incorporate the hurdle process
+  hu <- runif(nsamples, 0, 1)
+  ifelse(hu < theta, 0, rbeta(nsamples, shape1 = shape1, shape2 = shape2))
+}
+
 predict_zero_inflated_poisson <- function(n, data, samples, 
                                           link = "log", ...) {
   # theta is the bernoulii zero-inflation parameter

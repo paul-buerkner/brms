@@ -962,7 +962,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     samples$sigma <- do.call(posterior_samples, c(args, pars = "^sigma_"))
   if (family$family == "student") 
     samples$nu <- do.call(posterior_samples, c(args, pars = "^nu$"))
-  if (family$family == "beta")
+  if (family$family %in% c("beta", "zero_inflated_beta"))
     samples$phi <- do.call(posterior_samples, c(args, pars = "^phi$"))
   if (has_shape(family)) 
     samples$shape <- do.call(posterior_samples, c(args, pars = "^shape$"))
