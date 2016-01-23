@@ -33,7 +33,8 @@ Currently, the following families are supported:
 \code{exponential}, \code{weibull}, \code{categorical}, \code{cumulative}, 
 \code{cratio}, \code{sratio}, \code{acat}, \code{hurdle_poisson}, 
 \code{hurdle_negbinomial}, \code{hurdle_gamma}, \code{zero_inflated_binomial},
-\code{zero_inflated_negbinomial}, and \cr \code{zero_inflated_poisson}
+\code{zero_inflated_beta}, \code{zero_inflated_negbinomial}, 
+and \code{zero_inflated_poisson}.
 Every family function has a \code{link} argument allowing to specify
 the link function to be applied on the response variable.
 If not specified, default links are used.

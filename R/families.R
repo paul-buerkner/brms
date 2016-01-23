@@ -24,7 +24,9 @@
 #'   the links \code{log}, \code{identity}, and \code{inverse};
 #'   families \code{hurdle_poisson}, \code{hurdle_gamma}, 
 #'   \code{hurdle_negbinomial}, \code{zero_inflated_poisson}, 
-#'   and \code{zero_inflated_negbinomial} the link \code{log}.  
+#'   and \code{zero_inflated_negbinomial} the link \code{log};
+#'   families \code{zero_inflated_binomial} and 
+#'   \code{zero_inflated_beta} the link \code{logit}. 
 #'   The first link mentioned for each family is the default.
 #'   A full list of families and link functions supported by \pkg{brms}, 
 #'   is provided in the 'Details' section of \code{\link[brms:brm]{brm}}.
