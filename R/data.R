@@ -355,8 +355,11 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
         stop(paste("family", family$family, "expects response variable", 
                    "to contain only two different values"), call. = FALSE)
       }
-    } else if (family$family == "beta") {
-      if (any(standata$Y <= 0) || any(standata$Y >= 1)) {
+    } else if (family$family %in% c("beta", "zero_inflated_beta")) {
+      lower <- if (family$family == "beta") any(standata$Y <= 0)
+               else any(standata$Y < 0)
+      upper <- any(standata$Y >= 1)
+      if (lower || upper) {
         stop("beta regression requires responses between 0 and 1", 
              call. = FALSE)
       }
