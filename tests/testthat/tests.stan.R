@@ -326,6 +326,9 @@ test_that("make_stancode returns correct selfmade functions", {
                              family = "zero_inflated_binomial"),
                "real zero_inflated_binomial_log(int y", fixed = TRUE)
   expect_match(make_stancode(count ~ Trt_c, data = epilepsy, 
+                             family = "zero_inflated_beta"),
+               "real zero_inflated_beta_log(real y", fixed = TRUE)
+  expect_match(make_stancode(count ~ Trt_c, data = epilepsy, 
                              family = hurdle_poisson()),
                "real hurdle_poisson_log(int y", fixed = TRUE)
   expect_match(make_stancode(count ~ Trt_c, data = epilepsy, 

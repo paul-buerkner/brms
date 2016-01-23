@@ -1,12 +1,17 @@
 test_that("fitted helper functions run without errors", {
   # actually run fitted.brmsfit that call the helper functions
   fit <- rename_pars(brmsfit_example)
-  #fit <- add_samples(fit, "sigma_count", dist = "exp")
   fit <- add_samples(fit, "shape", dist = "exp")
   fit <- add_samples(fit, "nu", dist = "exp")
   eta <- linear_predictor(fit)
   nsamples <- Nsamples(fit)
   nobs <- nobs(fit)
+  # test preparation of truncated models
+  standata <- standata(fit)
+  standata$lb <- -10
+  standata$ub <- 200
+  mu <- fitted_response(x = fit, eta = eta, data = standata)
+  expect_equal(dim(mu), c(nsamples, nobs))
   # pseudo binomial model
   fit$family <- binomial()
   expect_equal(dim(fitted(fit, summary = FALSE)), c(nsamples, nobs))
@@ -28,7 +33,6 @@ test_that("fitted helper functions run without errors", {
   mu <- fitted_catordinal(array(eta, dim = c(dim(eta), 3)), 
                           max_obs = 4, family = cumulative())
   expect_equal(dim(mu), c(nsamples, nobs, 4))
-  # truncated helper functions
   # truncated continous models
   data <- list()
   mu <- fitted_trunc_gaussian(eta, lb = 0, ub = 10, x = fit, data = data)
