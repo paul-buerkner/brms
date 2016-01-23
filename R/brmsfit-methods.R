@@ -1319,7 +1319,7 @@ logLik.brmsfit <- function(object, ...) {
     samples$sigma <- as.matrix(posterior_samples(object, pars = "^sigma_"))
   if (family$family == "student") 
     samples$nu <- as.matrix(posterior_samples(object, pars = "^nu$"))
-  if (family$family == "beta")
+  if (family$family %in% c("beta", "zero_inflated_beta"))
     samples$phi <- as.matrix(posterior_samples(object, pars = "^phi$"))
   if (has_shape(family)) 
     samples$shape <- as.matrix(posterior_samples(object, pars = "^shape$"))

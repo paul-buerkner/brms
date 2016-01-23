@@ -279,6 +279,16 @@ loglik_zero_inflated_binomial <- function(n, data, samples, link = "log") {
   weight_loglik(out, n = n, data = data)
 }
 
+loglik_zero_inflated_beta <- function(n, data, samples, link = "logit") {
+  theta <- ilink(samples$eta[, n + data$N_trait], "logit")
+  mu <- ilink(samples$eta[, n], link)
+  args <- list(shape1 = mu * samples$phi, shape2 = (1 - mu) * samples$phi)
+  # zi_beta is technically a hurdle model
+  out <- hurdle_loglik(pdf = dbeta, theta = theta, 
+                       args = args, n = n, data = data)
+  weight_loglik(out, n = n, data = data)
+}
+
 loglik_categorical <- function(n, data, samples, link = "logit") {
   ncat <- ifelse(length(data$max_obs) > 1, data$max_obs[n], data$max_obs) 
   if (link == "logit") {
