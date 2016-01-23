@@ -15,6 +15,7 @@ Imports:
     gridExtra (>= 2.0.0),
     lme4 (>= 1.1-8),
     nlme (>= 3.1-123),
+    Matrix (>= 1.1.1),
     abind,
     statmod,
     methods,

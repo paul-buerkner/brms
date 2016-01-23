@@ -534,7 +534,7 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL,
     if (!is.null(data$Xp) && ncol(data$Xp)) {
       p <- do.call(posterior_samples, 
                    c(args, pars = paste0("^b_", colnames(data$Xp), "\\[")))
-      eta <- cse_predictor(Xp = data$Xp, p = p, ncat = data$max_obs, eta = eta)
+      eta <- cse_predictor(Xp = data$Xp, p = p, eta = eta, ncat = data$max_obs)
     } else {
       eta <- array(eta, dim = c(dim(eta), data$max_obs - 1))
     } 
@@ -548,7 +548,7 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL,
   } else if (is.categorical(family)) {
     if (!is.null(data$Xp)) {
       p <- do.call(posterior_samples, c(args, pars = "^b_"))
-      eta <- cse_predictor(Xp = data$Xp, p = p, ncat = data$max_obs, eta = eta)
+      eta <- cse_predictor(Xp = data$Xp, p = p, eta = eta, ncat = data$max_obs)
     } else {
       eta <- array(eta, dim = c(dim(eta), data$max_obs - 1))
     }
@@ -614,9 +614,9 @@ ranef_predictor <- function(Z, gf, r) {
     take_levels <- ulapply(levels, function(l) 
                            ((l - 1) * nranef + 1):(l * nranef))
     eta <- r[, take_levels, drop = FALSE] %*% 
-           t(Z[, take_levels, drop = FALSE])
+             Matrix::t(Z[, take_levels, drop = FALSE])
   } else {
-    eta <- r %*% t(Z)
+    eta <- r %*% Matrix::t(Z)
   }
   eta
 }
@@ -662,7 +662,7 @@ arma_predictor <- function(data, eta, ar = NULL, ma = NULL,
   eta
 }
 
-cse_predictor <- function(Xp, p, ncat, eta) {
+cse_predictor <- function(Xp, p, eta, ncat) {
   # add category specific effects to eta
   # 
   # Args:
@@ -698,7 +698,7 @@ expand_matrix <- function(A, x) {
   #   used in linear_predictor
   #
   # Returns:
-  #   A sparse matrix of dimension nrow(A) x (ncol(A) * length(unique(x)))
+  #   A sparse matrix of dimension nrow(A) x (ncol(A) * length(x))
   if (!is.matrix(A)) 
     stop("A must be a matrix")
   if (length(x) != nrow(A))
@@ -706,12 +706,10 @@ expand_matrix <- function(A, x) {
   if (!all(is.wholenumber(x) & x > 0))
     stop("x must contain positive integers only")
   K <- ncol(A)
-  v <- rep(0, K * max(x))
-  .fun <- function(n, v) {
-    v[K * (x[n] - 1) + 1:K] <- A[n, ] 
-    v
-  }
-  do.call(rbind, lapply(1:nrow(A), .fun, v = v))
+  i <- rep(seq_along(x), each = K)
+  make_j <- function(n, K, x) K * (x[n] - 1) + 1:K
+  j <- ulapply(seq_along(x), make_j, K = K, x = x)
+  Matrix::sparseMatrix(i = i, j = j, x = as.vector(t(A)))
 }
 
 compute_ic <- function(x, ic = c("waic", "loo"), ...) {
