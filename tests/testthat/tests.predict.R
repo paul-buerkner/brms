@@ -126,7 +126,7 @@ test_that("predict for zero-inflated and hurdle models runs without erros", {
   nobs <- 8
   trials <- sample(10:30, nobs, replace = TRUE)
   s <- list(eta = matrix(rnorm(ns * nobs * 2), ncol = nobs * 2),
-            shape = rgamma(ns, 4))
+            shape = rgamma(ns, 4), phi = rgamma(ns, 1))
   data <- list(N_trait = nobs, max_obs = trials)
   
   pred <- predict_hurdle_poisson(1, data = data, samples = s)
@@ -145,6 +145,9 @@ test_that("predict for zero-inflated and hurdle models runs without erros", {
   expect_equal(length(pred), ns)
   
   pred <- predict_zero_inflated_negbinomial(6, data = data, samples = s)
+  expect_equal(length(pred), ns)
+  
+  pred <- predict_zero_inflated_beta(8, data = data, samples = s)
   expect_equal(length(pred), ns)
 })
 

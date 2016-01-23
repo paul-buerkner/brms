@@ -157,10 +157,10 @@ test_that("loglik for zero-inflated and hurdle models runs without erros", {
   ns <- 50
   nobs <- 8
   trials <- sample(10:30, nobs, replace = TRUE)
-  resp <- rbinom(nobs - 4, size = trials[1:4], 
-                 prob = rbeta(nobs - 4, 1, 1))
+  resp <- rbinom(nobs / 2, size = trials[1:(nobs / 2)], 
+                 prob = rbeta(nobs / 2, 1, 1))
   s <- list(eta = matrix(rnorm(ns*nobs*2), ncol = nobs*2),
-            shape = rgamma(ns, 4))
+            shape = rgamma(ns, 4), phi = rgamma(ns, 1))
   data <- list(Y = c(resp, rep(0, 4)), N_trait = nobs, max_obs = trials)
   
   ll <- loglik_hurdle_poisson(1, data = data, samples = s)
@@ -179,6 +179,10 @@ test_that("loglik for zero-inflated and hurdle models runs without erros", {
   expect_equal(length(ll), ns)
   
   ll <- loglik_zero_inflated_negbinomial(6, data = data, samples = s)
+  expect_equal(length(ll), ns)
+  
+  data$Y[1:(nobs / 2)] <- rbeta(nobs / 2, 0.5, 4)
+  ll <- loglik_zero_inflated_beta(6, data = data, samples = s)
   expect_equal(length(ll), ns)
 })
 

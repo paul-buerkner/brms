@@ -27,6 +27,8 @@ test_that("family functions returns expected results", {
   expect_equal(zero_inflated_negbinomial("log")$link, "log")
   expect_error(zero_inflated_negbinomial("logit"), 
                "zero_inflated_negbinomial")
+  expect_equal(zero_inflated_beta(logit)$family, 
+               "zero_inflated_beta")
   zi_binom <- list(family = "zero_inflated_binomial", link = "logit")
   class(zi_binom) <- "family"
   expect_equivalent(zero_inflated_binomial(), zi_binom)

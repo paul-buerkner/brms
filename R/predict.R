@@ -248,6 +248,7 @@ predict_zero_inflated_beta <- function(n, data, samples, link = "logit", ...) {
   mu <- ilink(samples$eta[, n], link)
   shape1 <- mu * samples$phi
   shape2 <- (1 - mu) * samples$phi
+  nsamples <- nrow(samples$eta)
   # compare with theta to incorporate the hurdle process
   hu <- runif(nsamples, 0, 1)
   ifelse(hu < theta, 0, rbeta(nsamples, shape1 = shape1, shape2 = shape2))
