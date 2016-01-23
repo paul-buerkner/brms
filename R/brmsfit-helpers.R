@@ -618,12 +618,14 @@ ranef_predictor <- function(Z, gf, r) {
   } else {
     eta <- r %*% Matrix::t(Z)
   }
-  eta
+  # Matrix should currently not be used outside of this function
+  Matrix::as.matrix(eta)
 }
 
 arma_predictor <- function(data, eta, ar = NULL, ma = NULL, 
                            link = "identity") {
   # compute eta for ARMA effects
+  # ToDo: use C++ for this function
   #
   # Args:
   #   data: the data initially passed to Stan
@@ -642,21 +644,28 @@ arma_predictor <- function(data, eta, ar = NULL, ma = NULL,
   Y <- link(data$Y, link)
   N <- length(Y)
   tg <- c(rep(0, K), data$tgroup)
-  E <- array(0, dim = c(S, K, N))
-  e <- matrix(0, nrow = S, ncol = N)
+  E <- array(0, dim = c(S, K, K + 1))
+  e <- matrix(0, nrow = S, ncol = K)
+  zero_mat <- e
+  zero_vec <- rep(0, S)
   for (n in 1:N) {
     if (Kma) {
       # add MA effects
-      eta[, n] <- eta[, n] + rowSums(ma * E[, 1:Kma, n])
+      eta[, n] <- eta[, n] + rowSums(ma * E[, 1:Kma, K])
     }
-    e[, n] <- Y[n] - eta[, n]
+    e[, K] <- Y[n] - eta[, n]
     if (n < N) {
       I <- which(n < N & tg[n + 1 + K] == tg[n + 1 + K - Ks])
-      E[, I, n + 1] <- e[, n + 1 - I]
+      E[, I, K + 1] <- e[, K + 1 - I]
     }
     if (Kar) {
       # add AR effects
-      eta[, n] <- eta[, n] + rowSums(ar * E[, 1:Kar, n])
+      eta[, n] <- eta[, n] + rowSums(ar * E[, 1:Kar, K])
+    }
+    # allows to keep the object size of e and E small
+    E <- abind(E[, , 2:(K + 1), drop = FALSE], zero_mat)
+    if (K > 1) {
+      e <- cbind(e[, 2:K, drop = FALSE], zero_vec)
     }
   }
   eta
