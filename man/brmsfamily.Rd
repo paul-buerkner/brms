@@ -18,6 +18,7 @@
 \alias{sratio}
 \alias{student}
 \alias{weibull}
+\alias{zero_inflated_beta}
 \alias{zero_inflated_binomial}
 \alias{zero_inflated_negbinomial}
 \alias{zero_inflated_poisson}
@@ -44,6 +45,8 @@ hurdle_poisson(link = "log")
 hurdle_negbinomial(link = "log")
 
 hurdle_gamma(link = "log")
+
+zero_inflated_beta(link = "logit")
 
 zero_inflated_poisson(link = "log")
 

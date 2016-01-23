@@ -231,7 +231,7 @@ is.zero_inflated <- function(family) {
     family <- family$family
   }
   family %in% c("zero_inflated_poisson", "zero_inflated_negbinomial",
-                "zero_inflated_binomial")
+                "zero_inflated_binomial", "zero_inflated_beta")
 }
 
 is.2PL <- function(family) {
@@ -254,7 +254,8 @@ use_real <- function(family) {
     family <- family$family
   }
   is.linear(family) || is.skewed(family) || 
-    family %in% c("inverse.gaussian", "beta", "hurdle_gamma")
+    family %in% c("inverse.gaussian", "beta", "zero_inflated_beta", 
+                  "hurdle_gamma")
 }
 
 use_int <- function(family) {

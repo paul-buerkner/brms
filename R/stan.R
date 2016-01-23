@@ -136,7 +136,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
       stan_prior(class = "shape", prior = prior),
     if (family$family == "student") 
       stan_prior(class = "nu", prior = prior),
-    if (family$family == "beta") 
+    if (family$family %in% c("beta", "zero_inflated_beta")) 
       stan_prior(class = "phi", prior = prior),
     stan_prior(class = "", prior = prior))
   # generate code to additionally sample from priors if sample_prior = TRUE
@@ -224,7 +224,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
       "  real<lower=1> nu;  // degrees of freedom \n",
     if (has_shape) 
       "  real<lower=0> shape;  // shape parameter \n",
-    if (family$family == "beta") 
+    if (family$family %in% c("beta", "zero_inflated_beta")) 
       "  real<lower=0> phi;  // precision parameter \n",
     if (!is.null(attr(prior, "hs_df"))) 
       paste0("  // horseshoe shrinkage parameters \n",
@@ -238,8 +238,9 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   make_loop <- nrow(ee$random) || (Kar || Kma) && !use_cov(autocor) ||  
                text_eta$transform
   if (make_loop && !is_multi) {
-    text_loop <- c(paste0("  // if available add REs to linear predictor \n",
-                          "  for (n in 1:N) { \n"), "  } \n")
+    text_loop <- c(paste0(
+      "  // if available add REs to linear predictor \n",
+      "  for (n in 1:N) { \n"), "  } \n")
   } else if (is_multi) {
     text_loop <- text_multi$loop
   } else {
@@ -609,7 +610,9 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
       zero_inflated_negbinomial = c("zero_inflated_neg_binomial_2", 
                                     "eta[n], eta[n + N_trait], shape"),
       zero_inflated_binomial = c("zero_inflated_binomial", 
-        paste0("trials",ns,", eta[n], eta[n + N_trait]")))
+        paste0("trials",ns,", eta[n], eta[n + N_trait]")),
+      zero_inflated_beta = c("zero_inflated_beta", 
+                             "eta[n], eta[n + N_trait], phi"))
   }
   
   # write likelihood code
@@ -715,7 +718,7 @@ stan_eta <- function(family, fixef, ranef = list(), paref = NULL,
                      || is_ordinal || family == "categorical" 
                      || is_count && link == "log" 
                      || is_binary && link == "logit"
-                     || family == "hurdle_gamma")
+                     || family %in% c("hurdle_gamma", "zero_inflated_beta"))
   eta_ilink <- rep("", 2)
   if (eta$transform || (get_ar(autocor) && !use_cov(autocor))) {
     fl <- ifelse(family %in% c("gamma", "exponential"), 
@@ -1260,7 +1263,7 @@ stan_zero_inflated_hurdle <- function(family) {
       "   *   a scalar to be added to the log posterior \n",
       "   */ \n",
       "   real zero_inflated_binomial_log(int y, int trials, real eta, \n",
-      "                                         real eta_zi) { \n",
+      "                                   real eta_zi) { \n",
       "     if (y == 0) { \n",
       "       return log_sum_exp(bernoulli_logit_log(1, eta_zi), \n",
       "                          bernoulli_logit_log(0, eta_zi) + \n",
@@ -1268,6 +1271,31 @@ stan_zero_inflated_hurdle <- function(family) {
       "     } else { \n",
       "       return bernoulli_logit_log(0, eta_zi) + \n", 
       "              binomial_logit_log(y, trials, eta); \n",
+      "     } \n",
+      "   } \n")
+    } else if (family$family == "zero_inflated_beta") {
+      out$fun <- paste0(out$fun, 
+      "  /* zero-inflated beta log-PDF of a single response \n",
+      "   * Args: \n",
+      "   *   y: the response value \n",
+      "   *   eta: linear predictor for beta part \n",
+      "   *   eta_zi: linear predictor for zero-inflated part \n",
+      "   *   phi: precision parameter \n",
+      "   * Returns: \n", 
+      "   *   a scalar to be added to the log posterior \n",
+      "   */ \n",
+      "   real zero_inflated_beta_log(real y, real eta, real eta_zi, \n",
+      "                               real phi) { \n",
+      "     real inv_logit_eta; \n",
+      "     vector[2] shape; \n",
+      "     inv_logit_eta <- inv_logit(eta); \n",
+      "     shape[1] <- inv_logit_eta * phi; \n",
+      "     shape[2] <- (1 - inv_logit_eta) * phi; \n",
+      "     if (y == 0) { \n",
+      "       return bernoulli_logit_log(1, eta_zi); \n",
+      "     } else { \n",
+      "       return bernoulli_logit_log(0, eta_zi) + \n", 
+      "              beta_log(y, shape[1], shape[2]); \n",
       "     } \n",
       "   } \n")
     } else if (family$family == "hurdle_poisson") {
@@ -1321,8 +1349,7 @@ stan_zero_inflated_hurdle <- function(family) {
       "   * Returns: \n", 
       "   *   a scalar to be added to the log posterior \n",
       "   */ \n",
-      "   real hurdle_gamma_log(real y, real shape, real eta, \n", 
-      "                         real eta_hu) { \n",
+      "   real hurdle_gamma_log(real y, real shape, real eta, real eta_hu) { \n",
       "     if (y == 0) { \n",
       "       return bernoulli_logit_log(1, eta_hu); \n",
       "     } else { \n",
@@ -1330,7 +1357,7 @@ stan_zero_inflated_hurdle <- function(family) {
       "              gamma_log(y, shape, shape / exp(eta)); \n",
       "     } \n",
       "   } \n")
-    }
+    } 
   }
   out
 }
