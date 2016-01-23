@@ -82,7 +82,8 @@ test_that("evidence_ratio returns expected results", {
 
 test_that("expand_matrix returns expected results", {
   A <- matrix(1:6, 3, 2); x <- c(1,2,1)
-  expect_equal(expand_matrix(A, x), matrix(c(1,0,3,4,0,6,0,2,0,0,5,0), 3, 4))
+  expect_equivalent(as.matrix(expand_matrix(A, x)), 
+                    rbind(c(1, 4, 0, 0), c(0, 0, 2, 5), c(3, 6, 0, 0)))
 })
 
 test_that("find_names finds all valid variable names in a string", {
@@ -153,10 +154,11 @@ test_that("arma_predictor runs without errors", {
   expect_silent(arma_predictor(data = data, eta = eta, ar = ar, ma = ma))
 })
 
-test_that("partial_predictor runs without errors", {
+test_that("cse_predictor runs without errors", {
   Xp <- matrix(rnorm(300), nrow = 100, ncol = 3)
   p <- matrix(rnorm(30 * 9), nrow = 30, ncol = 9)
-  expect_equal(dim(partial_predictor(Xp = Xp, p = p, ncat = 4)),
+  eta <- matrix(rnorm(3000), nrow = 30, ncol = 100)
+  expect_equal(dim(cse_predictor(Xp = Xp, p = p, eta = eta, ncat = 4)),
                c(30, 100, 3))
 })
 
