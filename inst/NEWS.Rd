@@ -4,7 +4,10 @@
 
 \section{CHANGES IN VERSION 0.7.0.9000}{
   \subsection{NEW FEATURES}{
-    \itemize{  
+    \itemize{ 
+      \item Implement zero-inflated beta models through
+      family \code{zero_inflated_beta} thanks to the 
+      idea of Ali Roshan Ghias.
       \item Restrict domain of fixed effects parameters
       using new arguments \code{lb} and \code{ub}
       in function \code{set_prior} thanks to the idea
@@ -20,6 +23,9 @@
       \item Do not compute the WAIC in \code{summary}
       by default anymore to reduce computation time
       of the method for larger models.
+      \item The \code{cauchy} family is now deprecated 
+      and will be removed soon as it often has convergence 
+      issues and not much practical application anyway.
     }
   }
   \subsection{BUG FIXES}{
