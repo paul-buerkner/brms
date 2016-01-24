@@ -11,8 +11,8 @@
 #' @param link A specification for the model link function. 
 #'   This can be a name/expression or character string. 
 #'   The following list only refers to \pkg{brms} specific family functions.
-#'   Families \code{student}, and \code{cauchy} accept the links (as names) 
-#'   \code{identity}, \code{log}, and \code{inverse};
+#'   Families \code{student}, and \code{cauchy} (deprecated) accept the links 
+#'   (as names) \code{identity}, \code{log}, and \code{inverse};
 #'   families \code{negbinomial}, and \code{geometric} the links 
 #'   \code{log}, \code{identity}, and \code{sqrt}; 
 #'   families \code{bernoulli}, \code{Beta}, \code{cumulative}, 

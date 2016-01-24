@@ -448,9 +448,14 @@ check_brm_input <- function(x) {
                   " It is thus recommended to set inits = '0'"), 
             call. = FALSE)
   }
+  if (family$family == "cauchy") {
+    warning(paste("Family cauchy is deprecated and will be removed soon",
+                  "as it often has convergence issues and not much",
+                  "practical application anyway."), call. = FALSE)
+  }
   if (family$family == "inverse.gaussian") {
-    warning(paste("inverse gaussian models require carefully chosen", 
-                  "prior distributions to ensure convergence of the chains"),
+    warning(paste("Inverse gaussian models require carefully chosen", 
+                  "prior distributions to ensure convergence of the chains."),
             call. = FALSE)
   }
   if (family$link == "sqrt") {
