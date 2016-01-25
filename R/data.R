@@ -158,6 +158,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       newdata <- standata(fit, re_formula = re_formula, control = control)
     }
     return(newdata)
+  } else if (!"data.frame" %in% class(newdata)) {
+    stop("newdata must be a data.frame")
   }
   if (use_cov(fit$autocor)) {
     stop(paste("predictions with new data are not yet possible", 
@@ -186,6 +188,15 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   if (is.formula(ee$cens)) {
     for (cens in setdiff(all.vars(ee$cens), names(newdata))) { 
       newdata[[cens]] <- 0 # add irrelevant censor variables
+    }
+  }
+  if (allow_new_levels) {
+    # random effects grouping factors do not need to be specified 
+    # by the user if new_levels are allowed
+    if (length(new_ranef)) {
+      all_gf <- unique(unlist(strsplit(names(new_ranef), split = ":")))
+      missing_gf <- all_gf[!all_gf %in% names(newdata)]
+      newdata[, missing_gf] <- NA
     }
   }
   newdata <- update_data(newdata, family = fit$family, effects = ee,
