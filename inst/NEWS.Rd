@@ -37,6 +37,10 @@
       \code{brmsfit} object thanks to Ruben Arslan.
       \item Fix data preparation for multivariate models
       if some responses are \code{NA} thanks to Raphael Royaute.
+      \item Fix a bug in the \code{predict} method occurring 
+      for some multivariate models so that it now always 
+      returns the predictions of all response variables, 
+      not just the first one.
     }
   }
 }
