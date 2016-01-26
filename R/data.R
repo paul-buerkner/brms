@@ -169,8 +169,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   new_ranef <- check_re_formula(re_formula, old_ranef = fit$ranef,
                                 data = fit$data)
   new_formula <- update_re_terms(fit$formula, re_formula = re_formula)
-  ee <- extract_effects(new_formula, family = fit$family)
   et <- extract_time(fit$autocor$formula)
+  ee <- extract_effects(new_formula, family = fit$family, et$all)
   resp_vars <- all.vars(ee$respform)
   missing_resp <- setdiff(resp_vars, names(newdata))
   check_response <- check_response || 
@@ -504,7 +504,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     if (is.linear(family) && length(ee$response) > 1 || is_forked) 
       standata$weights <- standata$weights[1:standata$N_trait]
   }
-  if (is.formula(ee$cens)) {
+  if (is.formula(ee$cens) && check_response) {
     standata <- c(standata, list(cens = .addition(formula = ee$cens, 
                                                   data = data)))
     if (is.linear(family) && length(ee$response) > 1 || is_forked)
