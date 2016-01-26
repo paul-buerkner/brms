@@ -433,6 +433,18 @@ gather_ranef <- function(random, data = NULL, ...) {
   ranef
 }
 
+rsv_vars <- function(family, nresp = 1) {
+  # returns reservered variables for the family
+  if (is.forked(family)) {
+    rsv <- c("trait", "main", "spec")
+  } else if (is.linear(family) && nresp > 1) {
+    rsv <- "trait"
+  } else {
+    rsv <- NULL
+  }
+  rsv
+}
+
 check_brm_input <- function(x) {
   # misc checks on brm arguments 
   # Args:

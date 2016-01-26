@@ -199,9 +199,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       newdata[, missing_gf] <- NA
     }
   }
-  newdata <- update_data(newdata, family = fit$family, effects = ee,
-                         et$group, na.action = na.pass,
-                         drop.unused.levels = FALSE)
+  newdata <- combine_groups(newdata, ee$random$group, et$group)
   # try to validate factor levels in newdata
   if (is.data.frame(fit$data)) {
     # validating is possible (implies brms > 0.5.0)
@@ -316,7 +314,10 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   et <- extract_time(autocor$formula)
   ee <- extract_effects(formula = formula, family = family, 
                         partial, et$all)
-  data <- update_data(data, family = family, effects = ee, et$group)
+  na_action <- if (isTRUE(control$is_newdata)) na.pass else na.omit
+  data <- update_data(data, family = family, effects = ee, et$group,
+                      drop.unused.levels = !isTRUE(control$is_newdata),
+                      na.action = na_action)
   
   # sort data in case of autocorrelation models
   if (has_arma(autocor)) {

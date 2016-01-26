@@ -17,7 +17,7 @@ marginal_plot_internal <- function(x, ncol = NULL, theme = "gray",
       # one plot per row of marginal_data
       if (is.null(ncol)) ncol <- max(floor(sqrt(nMargins)), 3) 
       plot_list[[i]] <- plot_list[[i]] + 
-        facet_wrap("MarginalValues", ncol = ncol)
+        facet_wrap("MarginalRow", ncol = ncol)
     }
     if (length(preds) == 2) {
       # differentiate by colour in case of interaction effects

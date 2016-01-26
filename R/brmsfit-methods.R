@@ -845,12 +845,19 @@ marginal_plot.brmsfit <- function(x, predictors = NULL, marginal_data = NULL,
                                   do_plot = TRUE, ...) {
   method <- match.arg(method)
   ee <- extract_effects(x$formula, family = x$family)
+  rsv_vars <- rsv_vars(x$family)
   all_predictors <- strsplit(attr(terms(ee$fixed), "term.labels"), split = ":")
+  all_predictors <- rmNULL(lapply(all_predictors, setdiff, y = rsv_vars))
   if (is.null(predictors)) {
     predictors <- all_predictors
   } else {
     # allow to define interactions in any order
     predictors <- strsplit(predictors, split = ":")
+    if (any(unique(unlist(predictors)) %in% rsv_vars)) {
+      stop(paste("Variables", paste0(rsv_vars, collapse = ", "),
+                 "should not be used as predictors for this model"),
+           call. = FALSE)
+    }
     matches <- match(lapply(all_predictors, sort), 
                      lapply(predictors, sort), 0L)
     predictors <- unique(predictors[sort(matches)])
@@ -871,12 +878,8 @@ marginal_plot.brmsfit <- function(x, predictors = NULL, marginal_data = NULL,
     non_marg_predictors <- used_predictors[is_everywhere]
     # predictors that are present in every predictor term
     # do not need to be defined in marginal_data
-    for (nmp in non_marg_predictors) {
-      if (!nmp %in% names(marginal_data)) {
-        # use any valid value to pass checks in amend_newdata
-        marginal_data[[nmp]] <- x$data[1, nmp] 
-      }
-    }
+    missing_predictors <- setdiff(non_marg_predictors, names(marginal_data)) 
+    marginal_data[, missing_predictors] <- x$data[1, missing_predictors] 
     marginal_data <- amend_newdata(marginal_data, fit = x, 
                                    re_formula = re_formula,
                                    allow_new_levels = TRUE,
@@ -887,39 +890,42 @@ marginal_plot.brmsfit <- function(x, predictors = NULL, marginal_data = NULL,
 
   marginal_results <- list()
   for (i in seq_along(predictors)) {
+    #predictors[[i]] <- setdiff(predictors[[i]], rsv_vars(x$family))
     newdata <- x$data[, predictors[[i]], drop = FALSE]
     pred_types <- ifelse(ulapply(newdata, is.numeric), "numeric", "factor")
     if (length(predictors[[i]]) == 2L) {
       # numeric predictors should come first
-      newdata[, order(pred_types, decreasing = TRUE)]
+      new_order <- order(pred_types, decreasing = TRUE)
+      predictors[[i]] <- predictors[[i]][new_order]
+      pred_types <- pred_types[new_order]
       if (pred_types[1] == "numeric") {
         values <- setNames(vector("list", length = 2), predictors[[i]])
         values[[1]] <- unique(newdata[, predictors[[i]][1]])
         if (pred_types[2] == "numeric") {
           mean2 <- mean(newdata[, predictors[[i]][2]])
           sd2 <- sd(newdata[, predictors[[i]][2]])
-          # allows to plot interaction of 2 numeric predictors
-          # by using only 3 values for the 2nd one
           values[[2]] <- (-1:1) * sd2 + mean2
         } else {
           values[[2]] <- unique(newdata[, predictors[[i]][2]])
         }
         newdata <- do.call(expand.grid, values)
       }
+    } else {
+      newdata <- unique(newdata)
     }
     newdata <- replicate(nrow(marginal_data), simplify = FALSE,
      expr = newdata[do.call(order, as.list(newdata)), , drop = FALSE])
     marginal_vars <- setdiff(names(marginal_data), predictors[[i]])
     for (j in 1:nrow(marginal_data)) {
-      newdata[[j]][["MarginalValues"]] <- j
       newdata[[j]][, marginal_vars] <- marginal_data[j, marginal_vars]
+      newdata[[j]][["MarginalRow"]] <- j
     }
     newdata <- do.call(rbind, newdata)
     marg_res <- do.call(method, list(x, newdata = newdata, 
                                      re_formula = re_formula,
                                      allow_new_levels = TRUE))
     if (length(predictors[[i]]) == 2L && all(pred_types == "numeric")) {
-      # can only be converted to factor after having called fitted or predict
+      # can only be converted to factor after having called method
       labels <- c("Mean - SD", "Mean", "Mean + SD")
       newdata[[predictors[[i]][2]]] <- 
         factor(newdata[[predictors[[i]][2]]], labels = labels)
