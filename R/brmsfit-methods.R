@@ -849,7 +849,7 @@ marginal_plot.brmsfit <- function(x, predictors = NULL, marginal_data = NULL,
   all_predictors <- strsplit(attr(terms(ee$fixed), "term.labels"), split = ":")
   all_predictors <- rmNULL(lapply(all_predictors, setdiff, y = rsv_vars))
   if (is.null(predictors)) {
-    predictors <- all_predictors
+    predictors <- all_predictors[ulapply(all_predictors, length) < 3]
   } else {
     # allow to define interactions in any order
     predictors <- strsplit(predictors, split = ":")
@@ -868,6 +868,12 @@ marginal_plot.brmsfit <- function(x, predictors = NULL, marginal_data = NULL,
   if (any(ulapply(predictors, length) > 2)) {
     stop("Interactions of order higher than 2 are currently not supported.",
          call. = FALSE)
+  }
+  if (is.ordinal(x$family) || is.categorical(x$family)) {
+    warning(paste0("Predictions are treated as continuous variables ", 
+                   "in marginal plots, \nwhich is likely an invalid ", 
+                   "assumption for family ", x$family$family, "."),
+            call. = FALSE)
   }
   
   # prepare marginal data
@@ -926,10 +932,6 @@ marginal_plot.brmsfit <- function(x, predictors = NULL, marginal_data = NULL,
     if (is.ordinal(x$family) || is.categorical(x$family)) {
       args$summary <- FALSE 
       marg_res <- do.call(method, args)
-      warning(paste0("Predictions are treated as continuous variables ", 
-                     "in marginal plots, \nwhich is likely an invalid ", 
-                     "assumption for family ", x$family$family, "."),
-              call. = FALSE)
       if (method == "fitted") {
         for (k in 1:dim(marg_res)[3]) {
           marg_res[, , k] <- marg_res[, , k] * k
