@@ -877,7 +877,25 @@ marginal_plot.brmsfit <- function(x, predictors = NULL, marginal_data = NULL,
   }
   
   # prepare marginal data
-  if (is.data.frame(marginal_data)) {
+  if (is.null(marginal_data)) {
+    if (!isTRUE(all.equal(x$autocor, cor_arma())) || 
+        length(rmNULL(ee[c("se", "trials", "cat")]))) {
+      stop("Please specify marginal_data manually for this model.", 
+           call. = FALSE)
+    }
+    marg_vars <- unique(ulapply(c(ee$fixed[[3]], ee$random$form), all.vars))
+    marg_vars <- setdiff(marg_vars, rsv_vars)
+    marginal_data <- as.data.frame(as.list(rep(NA, length(marg_vars))))
+    names(marginal_data) <- marg_vars
+    for (v in marg_vars) {
+      if (is.numeric(x$data[[v]])) {
+        marginal_data[[v]] <- mean(x$data[[v]])
+      } else {
+        # use reference category
+        marginal_data[[v]] <- attr(as.factor(x$data[[v]]), "levels")[1]
+      }
+    }
+  } else if (is.data.frame(marginal_data)) {
     used_predictors <- unique(unlist(predictors))
     is_everywhere <- ulapply(used_predictors, function(up)
       all(ulapply(predictors, function(pred) up %in% pred)))
@@ -886,13 +904,13 @@ marginal_plot.brmsfit <- function(x, predictors = NULL, marginal_data = NULL,
     # do not need to be defined in marginal_data
     missing_predictors <- setdiff(non_marg_predictors, names(marginal_data)) 
     marginal_data[, missing_predictors] <- x$data[1, missing_predictors] 
-    marginal_data <- amend_newdata(marginal_data, fit = x, 
-                                   re_formula = re_formula,
-                                   allow_new_levels = TRUE,
-                                   return_standata = FALSE)
   } else {
-    stop("marginal_data must be a data.frame")
+    stop("marginal_data must be a data.frame or NULL")
   }
+  marginal_data <- amend_newdata(marginal_data, fit = x, 
+                                 re_formula = re_formula,
+                                 allow_new_levels = TRUE,
+                                 return_standata = FALSE)
 
   marginal_results <- list()
   for (i in seq_along(predictors)) {
