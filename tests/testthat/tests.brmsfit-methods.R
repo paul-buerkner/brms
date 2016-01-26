@@ -12,7 +12,8 @@ test_that("all S3 methods have reasonable ouputs", {
                c("Estimate", "Est.Error", "2.5%ile", "97.5%ile"))
   
   newdata <- data.frame(log_Age_c = c(0, -0.2), visit = c(1, 4),
-                        Trt_c = c(-0.2, 0.5), count = c(20, 13))
+                        Trt_c = c(-0.2, 0.5), count = c(20, 13),
+                        patient = c(1, 42))
   fitted2 <- fitted(fit, newdata = newdata)
   expect_equal(dim(fitted2), c(2, 4))
   newdata$visit <- c(1, 6)
@@ -83,7 +84,8 @@ test_that("all S3 methods have reasonable ouputs", {
                c(nrow(epilepsy), 3))
   
   newdata <- data.frame(log_Age_c = c(0, -0.2), visit = c(1, 4),
-                        Trt_c = c(-0.2, 0.5), count = c(2, 10))
+                        Trt_c = c(-0.2, 0.5), count = c(2, 10),
+                        patient = c(1, 42))
   predict2 <- predict(fit, newdata = newdata)
   expect_equal(dim(predict2), c(2, 4))
   
