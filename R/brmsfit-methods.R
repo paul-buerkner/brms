@@ -921,9 +921,27 @@ marginal_plot.brmsfit <- function(x, predictors = NULL, marginal_data = NULL,
       newdata[[j]][["MarginalRow"]] <- j
     }
     newdata <- do.call(rbind, newdata)
-    marg_res <- do.call(method, list(x, newdata = newdata, 
-                                     re_formula = re_formula,
-                                     allow_new_levels = TRUE))
+    args <-  list(x, newdata = newdata, re_formula = re_formula,
+                  allow_new_levels = TRUE)
+    if (is.ordinal(x$family) || is.categorical(x$family)) {
+      args$summary <- FALSE 
+      marg_res <- do.call(method, args)
+      warning(paste0("Predictions are treated as continuous variables ", 
+                     "in marginal plots, \nwhich is likely an invalid ", 
+                     "assumption for family ", x$family$family, "."),
+              call. = FALSE)
+      if (method == "fitted") {
+        for (k in 1:dim(marg_res)[3]) {
+          marg_res[, , k] <- marg_res[, , k] * k
+        }
+        marg_res <- do.call(cbind, lapply(1:dim(marg_res)[2], 
+                            function(s) rowSums(marg_res[, s, ])))
+      } 
+      marg_res <- get_summary(marg_res)
+    } else {
+      marg_res <- do.call(method, args)
+    }
+     
     if (length(predictors[[i]]) == 2L && all(pred_types == "numeric")) {
       # can only be converted to factor after having called method
       labels <- c("Mean - SD", "Mean", "Mean + SD")
