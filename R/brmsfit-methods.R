@@ -838,6 +838,100 @@ pairs.brmsfit <- function(x, pars = NA, exact_match = FALSE, ...) {
   graphics::pairs(x$fit, pars = pars, ...)
 }
 
+#' @export
+marginal_plot.brmsfit <- function(x, predictors = NULL, marginal_data = NULL,
+                                  re_formula = NA, rug = FALSE, do_plot = TRUE,
+                                  method = c("fitted", "predict"), ...) {
+  method <- match.arg(method)
+  ee <- extract_effects(x$formula, family = x$family)
+  all_predictors <- strsplit(attr(terms(ee$fixed), "term.labels"), split = ":")
+  if (is.null(predictors)) {
+    predictors <- all_predictors
+  } else {
+    # allow to define interactions in any order
+    predictors <- strsplit(predictors, split = ":")
+    matches <- match(lapply(all_predictors, sort), 
+                     lapply(predictors, sort), 0L)
+    predictors <- unique(predictors[sort(matches)])
+  }
+  if (!length(predictors)) {
+    stop("No valid predictors specified.", call. = FALSE)
+  }
+  #predictors <- strsplit(predictors, split = ":")
+  if (any(ulapply(predictors, length) > 2)) {
+    stop("Interactions of order higher than 2 are currently not supported.")
+  }
+  
+  # prepare marginal data
+  if (is.data.frame(marginal_data)) {
+    used_predictors <- unique(unlist(predictors))
+    is_everywhere <- ulapply(used_predictors, function(up)
+      all(ulapply(predictors, function(pred) up %in% pred)))
+    non_marg_predictors <- used_predictors[is_everywhere]
+    # predictors that are present in every predictor term
+    # do not need to be defined in marginal_data
+    for (nmp in non_marg_predictors) {
+      if (!nmp %in% names(marginal_data)) {
+        # use any valid value to pass checks in amend_newdata
+        marginal_data[[nmp]] <- x$data[1, nmp] 
+      }
+    }
+    marginal_data <- amend_newdata(marginal_data, fit = x, 
+                                   re_formula = re_formula,
+                                   allow_new_levels = TRUE,
+                                   return_standata = FALSE)
+  } else {
+    stop("marginal_data must be a data.frame")
+  }
+
+  marginal_results <- list()
+  for (i in seq_along(predictors)) {
+    newdata <- x$data[, predictors[[i]], drop = FALSE]
+    pred_types <- ifelse(ulapply(newdata, is.numeric), "numeric", "factor")
+    if (length(predictors[[i]]) == 2L) {
+      # numeric predictors should come first
+      newdata[, order(pred_types, decreasing = TRUE)]
+      if (pred_types[1] == "numeric") {
+        values <- setNames(vector("list", length = 2), predictors[[i]])
+        values[[1]] <- unique(newdata[, predictors[[i]][1]])
+        if (pred_types[2] == "numeric") {
+          mean2 <- mean(newdata[, predictors[[i]][2]])
+          sd2 <- sd(newdata[, predictors[[i]][2]])
+          # allows to plot interaction of 2 numeric predictors
+          # by using only 3 values for the 2nd one
+          values[[2]] <- (-1:1) * sd2 + mean2
+        } else {
+          values[[2]] <- unique(newdata[, predictors[[i]][2]])
+        }
+        newdata <- do.call(expand.grid, values)
+      }
+    }
+    newdata <- newdata[do.call(order, as.list(newdata)), , drop = FALSE]
+    rownames(newdata) <- 1:nrow(newdata)
+    marginal_vars <- setdiff(names(marginal_data), predictors[[i]])
+    for (mf in marginal_vars) {
+      newdata[[mf]] <- marginal_data[1, mf]
+    }
+    marg_res <- do.call(method, list(x, newdata = newdata, 
+                                     re_formula = re_formula,
+                                     allow_new_levels = TRUE))
+    if (length(predictors[[i]]) == 2L && all(pred_types == "numeric")) {
+      # can only convert to factor after having called fitted or predict
+      labels <- c("Mean - SD", "Mean", "Mean + SD")
+      newdata[[predictors[[i]][2]]] <- 
+        factor(newdata[[predictors[[i]][2]]], labels = labels)
+    }
+    marg_res = cbind(newdata, marg_res)
+    attr(marg_res, "response") <- as.character(x$formula[2])
+    attr(marg_res, "predictors") <- predictors[[i]]
+    if (rug) {
+      attributes(marg_res)$rug = newdata[, predictors[[i]], drop = FALSE]
+    }
+    marginal_results[[paste0(predictors[[i]], collapse = ":")]] <- marg_res
+  }
+  marginal_plot_internal(marginal_results, do_plot = do_plot)
+}
+
 #' Model Predictions of \code{brmsfit} Objects
 #' 
 #' Predict responses based on the fitted model.
