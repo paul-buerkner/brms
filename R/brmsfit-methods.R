@@ -840,8 +840,9 @@ pairs.brmsfit <- function(x, pars = NA, exact_match = FALSE, ...) {
 
 #' @export
 marginal_plot.brmsfit <- function(x, predictors = NULL, marginal_data = NULL,
-                                  re_formula = NA, rug = FALSE, do_plot = TRUE,
-                                  method = c("fitted", "predict"), ...) {
+                                  re_formula = NA, method = c("fitted", "predict"),
+                                  ncol = NULL, rug = FALSE, theme = "gray", 
+                                  do_plot = TRUE, ...) {
   method <- match.arg(method)
   ee <- extract_effects(x$formula, family = x$family)
   all_predictors <- strsplit(attr(terms(ee$fixed), "term.labels"), split = ":")
@@ -857,9 +858,9 @@ marginal_plot.brmsfit <- function(x, predictors = NULL, marginal_data = NULL,
   if (!length(predictors)) {
     stop("No valid predictors specified.", call. = FALSE)
   }
-  #predictors <- strsplit(predictors, split = ":")
   if (any(ulapply(predictors, length) > 2)) {
-    stop("Interactions of order higher than 2 are currently not supported.")
+    stop("Interactions of order higher than 2 are currently not supported.",
+         call. = FALSE)
   }
   
   # prepare marginal data
@@ -906,17 +907,19 @@ marginal_plot.brmsfit <- function(x, predictors = NULL, marginal_data = NULL,
         newdata <- do.call(expand.grid, values)
       }
     }
-    newdata <- newdata[do.call(order, as.list(newdata)), , drop = FALSE]
-    rownames(newdata) <- 1:nrow(newdata)
+    newdata <- replicate(nrow(marginal_data), simplify = FALSE,
+     expr = newdata[do.call(order, as.list(newdata)), , drop = FALSE])
     marginal_vars <- setdiff(names(marginal_data), predictors[[i]])
-    for (mf in marginal_vars) {
-      newdata[[mf]] <- marginal_data[1, mf]
+    for (j in 1:nrow(marginal_data)) {
+      newdata[[j]][["MarginalValues"]] <- j
+      newdata[[j]][, marginal_vars] <- marginal_data[j, marginal_vars]
     }
+    newdata <- do.call(rbind, newdata)
     marg_res <- do.call(method, list(x, newdata = newdata, 
                                      re_formula = re_formula,
                                      allow_new_levels = TRUE))
     if (length(predictors[[i]]) == 2L && all(pred_types == "numeric")) {
-      # can only convert to factor after having called fitted or predict
+      # can only be converted to factor after having called fitted or predict
       labels <- c("Mean - SD", "Mean", "Mean + SD")
       newdata[[predictors[[i]][2]]] <- 
         factor(newdata[[predictors[[i]][2]]], labels = labels)
@@ -929,7 +932,8 @@ marginal_plot.brmsfit <- function(x, predictors = NULL, marginal_data = NULL,
     }
     marginal_results[[paste0(predictors[[i]], collapse = ":")]] <- marg_res
   }
-  marginal_plot_internal(marginal_results, do_plot = do_plot)
+  marginal_plot_internal(marginal_results, ncol = ncol, theme = theme,
+                         do_plot = do_plot)
 }
 
 #' Model Predictions of \code{brmsfit} Objects
