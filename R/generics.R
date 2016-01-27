@@ -460,5 +460,5 @@ stanplot <- function(object, pars, ...)
   UseMethod("stanplot")
 
 #' @export
-marginal_plot <- function(x, ...)
+margins_plot <- function(x, ...)
   UseMethod("marginal_plot")

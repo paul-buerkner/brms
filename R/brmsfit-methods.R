@@ -838,34 +838,36 @@ pairs.brmsfit <- function(x, pars = NA, exact_match = FALSE, ...) {
   graphics::pairs(x$fit, pars = pars, ...)
 }
 
+#' @rdname margins_plot
 #' @export
-marginal_plot.brmsfit <- function(x, predictors = NULL, marginal_data = NULL,
-                                  re_formula = NA, method = c("fitted", "predict"),
-                                  ncol = NULL, rug = FALSE, theme = "gray", 
-                                  do_plot = TRUE, ...) {
+margins_plot.brmsfit <- function(x, effects = NULL, data = NULL, 
+                                 re_formula = NA, ncol = NULL,
+                                 method = c("fitted", "predict"),
+                                 rug = FALSE, theme = "gray", 
+                                 do_plot = TRUE, ...) {
   method <- match.arg(method)
   ee <- extract_effects(x$formula, family = x$family)
   rsv_vars <- rsv_vars(x$family)
-  all_predictors <- strsplit(attr(terms(ee$fixed), "term.labels"), split = ":")
-  all_predictors <- rmNULL(lapply(all_predictors, setdiff, y = rsv_vars))
-  if (is.null(predictors)) {
-    predictors <- all_predictors[ulapply(all_predictors, length) < 3]
+  all_effects <- strsplit(attr(terms(ee$fixed), "term.labels"), split = ":")
+  all_effects <- rmNULL(lapply(all_effects, setdiff, y = rsv_vars))
+  if (is.null(effects)) {
+    effects <- all_effects[ulapply(all_effects, length) < 3]
   } else {
     # allow to define interactions in any order
-    predictors <- strsplit(predictors, split = ":")
-    if (any(unique(unlist(predictors)) %in% rsv_vars)) {
+    effects <- strsplit(effects, split = ":")
+    if (any(unique(unlist(effects)) %in% rsv_vars)) {
       stop(paste("Variables", paste0(rsv_vars, collapse = ", "),
-                 "should not be used as predictors for this model"),
+                 "should not be used as effects for this model"),
            call. = FALSE)
     }
-    matches <- match(lapply(all_predictors, sort), 
-                     lapply(predictors, sort), 0L)
-    predictors <- unique(predictors[sort(matches)])
+    matches <- match(lapply(all_effects, sort), 
+                     lapply(effects, sort), 0L)
+    effects <- unique(effects[sort(matches)])
   }
-  if (!length(predictors)) {
-    stop("No valid predictors specified.", call. = FALSE)
+  if (!length(effects)) {
+    stop("No valid effects specified.", call. = FALSE)
   }
-  if (any(ulapply(predictors, length) > 2)) {
+  if (any(ulapply(effects, length) > 2)) {
     stop("Interactions of order higher than 2 are currently not supported.",
          call. = FALSE)
   }
@@ -877,76 +879,73 @@ marginal_plot.brmsfit <- function(x, predictors = NULL, marginal_data = NULL,
   }
   
   # prepare marginal data
-  if (is.null(marginal_data)) {
+  if (is.null(data)) {
     if (!isTRUE(all.equal(x$autocor, cor_arma())) || 
         length(rmNULL(ee[c("se", "trials", "cat")]))) {
-      stop("Please specify marginal_data manually for this model.", 
+      stop("Please specify argument 'data' manually for this model.", 
            call. = FALSE)
     }
-    marg_vars <- unique(ulapply(c(ee$fixed[[3]], ee$random$form), all.vars))
-    marg_vars <- setdiff(marg_vars, rsv_vars)
-    marginal_data <- as.data.frame(as.list(rep(NA, length(marg_vars))))
-    names(marginal_data) <- marg_vars
-    for (v in marg_vars) {
+    vars <- unique(ulapply(c(ee$fixed[[3]], ee$random$form), all.vars))
+    vars <- setdiff(vars, rsv_vars)
+    data <- as.data.frame(as.list(rep(NA, length(vars))))
+    names(data) <- vars
+    for (v in vars) {
       if (is.numeric(x$data[[v]])) {
-        marginal_data[[v]] <- mean(x$data[[v]])
+        data[[v]] <- mean(x$data[[v]])
       } else {
         # use reference category
-        marginal_data[[v]] <- attr(as.factor(x$data[[v]]), "levels")[1]
+        data[[v]] <- attr(as.factor(x$data[[v]]), "levels")[1]
       }
     }
-  } else if (is.data.frame(marginal_data)) {
-    used_predictors <- unique(unlist(predictors))
-    is_everywhere <- ulapply(used_predictors, function(up)
-      all(ulapply(predictors, function(pred) up %in% pred)))
-    non_marg_predictors <- used_predictors[is_everywhere]
-    # predictors that are present in every predictor term
-    # do not need to be defined in marginal_data
-    missing_predictors <- setdiff(non_marg_predictors, names(marginal_data)) 
-    marginal_data[, missing_predictors] <- x$data[1, missing_predictors] 
+  } else if (is.data.frame(data)) {
+    used_effects <- unique(unlist(effects))
+    is_everywhere <- ulapply(used_effects, function(up)
+      all(ulapply(effects, function(pred) up %in% pred)))
+    non_marg_effects <- used_effects[is_everywhere]
+    # effects that are present in every effect term
+    # do not need to be defined in data
+    missing_effects <- setdiff(non_marg_effects, names(data)) 
+    data[, missing_effects] <- x$data[1, missing_effects] 
   } else {
-    stop("marginal_data must be a data.frame or NULL")
+    stop("data must be a data.frame or NULL")
   }
-  marginal_data <- amend_newdata(marginal_data, fit = x, 
-                                 re_formula = re_formula,
-                                 allow_new_levels = TRUE,
-                                 return_standata = FALSE)
+  data <- amend_newdata(data, fit = x, re_formula = re_formula,
+                        allow_new_levels = TRUE, return_standata = FALSE)
 
-  marginal_results <- list()
-  for (i in seq_along(predictors)) {
-    #predictors[[i]] <- setdiff(predictors[[i]], rsv_vars(x$family))
-    newdata <- x$data[, predictors[[i]], drop = FALSE]
-    pred_types <- ifelse(ulapply(newdata, is.numeric), "numeric", "factor")
-    if (length(predictors[[i]]) == 2L) {
-      # numeric predictors should come first
+  results <- list()
+  for (i in seq_along(effects)) {
+    marg_data <- x$data[, effects[[i]], drop = FALSE]
+    pred_types <- ifelse(ulapply(marg_data, is.numeric), "numeric", "factor")
+    if (length(effects[[i]]) == 2L) {
+      # numeric effects should come first
       new_order <- order(pred_types, decreasing = TRUE)
-      predictors[[i]] <- predictors[[i]][new_order]
+      effects[[i]] <- effects[[i]][new_order]
       pred_types <- pred_types[new_order]
       if (pred_types[1] == "numeric") {
-        values <- setNames(vector("list", length = 2), predictors[[i]])
-        values[[1]] <- unique(newdata[, predictors[[i]][1]])
+        values <- setNames(vector("list", length = 2), effects[[i]])
+        values[[1]] <- unique(marg_data[, effects[[i]][1]])
         if (pred_types[2] == "numeric") {
-          mean2 <- mean(newdata[, predictors[[i]][2]])
-          sd2 <- sd(newdata[, predictors[[i]][2]])
+          mean2 <- mean(marg_data[, effects[[i]][2]])
+          sd2 <- sd(marg_data[, effects[[i]][2]])
           values[[2]] <- (-1:1) * sd2 + mean2
         } else {
-          values[[2]] <- unique(newdata[, predictors[[i]][2]])
+          values[[2]] <- unique(marg_data[, effects[[i]][2]])
         }
-        newdata <- do.call(expand.grid, values)
+        marg_data <- do.call(expand.grid, values)
       }
     } else {
-      newdata <- unique(newdata)
+      marg_data <- unique(marg_data)
     }
-    newdata <- replicate(nrow(marginal_data), simplify = FALSE,
-     expr = newdata[do.call(order, as.list(newdata)), , drop = FALSE])
-    marginal_vars <- setdiff(names(marginal_data), predictors[[i]])
-    for (j in 1:nrow(marginal_data)) {
-      newdata[[j]][, marginal_vars] <- marginal_data[j, marginal_vars]
-      newdata[[j]][["MarginalRow"]] <- j
+    marg_data <- replicate(nrow(data), simplify = FALSE,
+     expr = marg_data[do.call(order, as.list(marg_data)), , drop = FALSE])
+    marg_vars <- setdiff(names(data), effects[[i]])
+    for (j in 1:nrow(data)) {
+      marg_data[[j]][, marg_vars] <- data[j, marg_vars]
+      marg_data[[j]][["MargRow"]] <- j
     }
-    newdata <- do.call(rbind, newdata)
-    args <-  list(x, newdata = newdata, re_formula = re_formula,
-                  allow_new_levels = TRUE)
+    marg_data <- do.call(rbind, marg_data)
+    args <- list(x, newdata = marg_data, re_formula = re_formula,
+                 allow_new_levels = TRUE)
     if (is.ordinal(x$family) || is.categorical(x$family)) {
       args$summary <- FALSE 
       marg_res <- do.call(method, args)
@@ -962,22 +961,21 @@ marginal_plot.brmsfit <- function(x, predictors = NULL, marginal_data = NULL,
       marg_res <- do.call(method, args)
     }
      
-    if (length(predictors[[i]]) == 2L && all(pred_types == "numeric")) {
+    if (length(effects[[i]]) == 2L && all(pred_types == "numeric")) {
       # can only be converted to factor after having called method
       labels <- c("Mean - SD", "Mean", "Mean + SD")
-      newdata[[predictors[[i]][2]]] <- 
-        factor(newdata[[predictors[[i]][2]]], labels = labels)
+      marg_data[[effects[[i]][2]]] <- 
+        factor(marg_data[[effects[[i]][2]]], labels = labels)
     }
-    marg_res = cbind(newdata, marg_res)
+    marg_res = cbind(marg_data, marg_res)
     attr(marg_res, "response") <- as.character(x$formula[2])
-    attr(marg_res, "predictors") <- predictors[[i]]
+    attr(marg_res, "effects") <- effects[[i]]
     if (rug) {
-      attributes(marg_res)$rug = newdata[, predictors[[i]], drop = FALSE]
+      attributes(marg_res)$rug <- marg_data[, effects[[i]], drop = FALSE]
     }
-    marginal_results[[paste0(predictors[[i]], collapse = ":")]] <- marg_res
+    results[[paste0(effects[[i]], collapse = ":")]] <- marg_res
   }
-  marginal_plot_internal(marginal_results, ncol = ncol, theme = theme,
-                         do_plot = do_plot)
+  margins_plot_internal(results, ncol = ncol, theme = theme, do_plot = do_plot)
 }
 
 #' Model Predictions of \code{brmsfit} Objects
