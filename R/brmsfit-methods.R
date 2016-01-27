@@ -847,7 +847,11 @@ margins_plot.brmsfit <- function(x, effects = NULL, data = NULL,
                                  do_plot = TRUE, ...) {
   method <- match.arg(method)
   ee <- extract_effects(x$formula, family = x$family)
-  rsv_vars <- rsv_vars(x$family)
+  if (is.linear(x$family) && length(ee$response) > 1) {
+    stop("Marginal plots are not yet implemented for multivariate models.",
+         call. = FALSE)
+  }
+  rsv_vars <- rsv_vars(x$family, nresp = length(ee$response))
   all_effects <- strsplit(attr(terms(ee$fixed), "term.labels"), split = ":")
   all_effects <- rmNULL(lapply(all_effects, setdiff, y = rsv_vars))
   if (is.null(effects)) {
