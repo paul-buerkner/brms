@@ -58,6 +58,19 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(length(loo_compare3), 3)
   expect_equal(dim(attr(loo_compare3, "compare")), c(3, 2))
   expect_output(print(loo_compare3), "Weights")
+  # margins_plot (margins_plot_internal is tested separately in tests.plots)
+  mdata = data.frame(log_Age_c = c(-0.3, 0, 0.3), count = c(10, 20, 30), 
+                     visit = 1:3, patient = 1)
+  exp_nrow <- nrow(mdata) * nobs(fit)
+  expect_equal(nrow(margins_plot(fit, data = mdata, testmode = TRUE)[[1]]),
+               exp_nrow)
+  expect_equal(nrow(margins_plot(fit, effects = "Trt_c",  data = mdata, 
+                                 testmode = TRUE)[[1]]), exp_nrow)
+  expect_equal(nrow(margins_plot(fit, re_formula = NULL, data = mdata, 
+                                 testmode = TRUE)[[1]]), exp_nrow)
+  expect_error(margins_plot(fit), "Please specify argument 'data' manually")
+  expect_error(margins_plot(fit, effects = "Trt_cc"), 
+               "No valid effects specified")
   # model.frame
   expect_equal(model.frame(fit), fit$data)
   # ngrps

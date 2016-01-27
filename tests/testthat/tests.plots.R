@@ -1,10 +1,9 @@
-test_that("plot doesn't throw errors", {
+test_that("plot doesn't throw unexpected errors", {
   fit <- rename_pars(brmsfit_example)
   expect_silent(p <- plot(fit, do_plot = FALSE))
   expect_silent(p <- plot(fit, pars = "^b", do_plot = FALSE))
   expect_silent(p <- plot(fit, pars = "^sd", do_plot = FALSE))
-  expect_error(p <- plot(fit, pars = "123", do_plot = FALSE),
-               "No valid parameters selected")
+  expect_error(plot(fit, pars = "123"),  "No valid parameters selected")
 })
 
 test_that("stanplot and pairs works correctly", {
@@ -31,4 +30,29 @@ test_that("stanplot and pairs works correctly", {
   expect_warning(p <- stanplot(fit, type = "par", pars = "^b_"),
                  "stan_par expects a single parameter name")
   expect_error(stanplot(fit, type = "density"), "Invalid plot type")
+})
+
+test_that("margins_plot_internal doesn't throw errors", {
+  N <- 90
+  marg_results <- data.frame(P1 = rpois(N, 20), 
+                             P2 = factor(rep(1:3, each = N / 3)),
+                             Estimate = rnorm(N, sd = 5), 
+                             Est.Error = rt(N, df = 10), 
+                             MargRow = rep(1:2, each = N / 2))
+  marg_results[["2.5%ile"]] <- marg_results$Estimate - 2
+  marg_results[["97.5%ile"]] <- marg_results$Estimate + 2
+  marg_results <- list(marg_results[order(marg_results$P1), ])
+  attr(marg_results[[1]], "response") <- "count"
+  # test with 1 numeric predictor
+  attr(marg_results[[1]], "effects") <- "P1"
+  marg_plot <- margins_plot_internal(marg_results, do_plot = FALSE)
+  expect_true(is(marg_plot[[1]], "ggplot"))
+  # test with 1 categorical predictor
+  attr(marg_results[[1]], "effects") <- "P2"
+  marg_plot <- margins_plot_internal(marg_results, do_plot = FALSE)
+  expect_true(is(marg_plot[[1]], "ggplot"))
+  # test with 1 numeric and 1 categorical predictor
+  attr(marg_results[[1]], "effects") <- c("P1", "P2")
+  marg_plot <- margins_plot_internal(marg_results, do_plot = FALSE)
+  expect_true(is(marg_plot[[1]], "ggplot"))
 })
