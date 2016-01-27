@@ -741,7 +741,7 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5,
   plots <- vector(mode = "list", length = n_plots)
   for (i in 1:n_plots) {
     temp_plot <- lapply(pars[((i - 1) * N + 1):min(i * N, length(pars))], 
-                        td_plot, x = samples, theme = theme)
+                        trace_density_plot, x = samples, theme = theme)
     plots[[i]] <- arrangeGrob(grobs = unlist(temp_plot, recursive = FALSE), 
                               nrow = length(temp_plot), ncol = 2, ...)
     if (do_plot) {
