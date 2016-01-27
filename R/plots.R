@@ -12,7 +12,7 @@ marginal_plot_internal <- function(x, ncol = NULL, theme = "gray",
       aes_string(x = preds, y = "Estimate", ymin = "`2.5%ile`",
                  ymax = "`97.5%ile`") + ylab(response) +
       do.call(paste0("theme_", theme), args = list())
-    nMargins <- length(unique(x[[i]]$MarginalValues))
+    nMargins <- length(unique(x[[i]]$MarginalRow))
     if (nMargins > 1) {
       # one plot per row of marginal_data
       if (is.null(ncol)) ncol <- max(floor(sqrt(nMargins)), 3) 
