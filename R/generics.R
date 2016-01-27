@@ -487,7 +487,7 @@ stanplot <- function(object, pars, ...)
 #'   values should be added via \code{\link[ggplot2:geom_rug]{geom_rug}}.
 #'   Default is \code{FALSE}.
 #' @inheritParams plot.brmsfit
-#' @param ... Currently ignored.
+#' @param ... Currently for internal use only.
 #' 
 #' @return A list of ggplot objects one for each effect.
 #' 

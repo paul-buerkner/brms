@@ -975,7 +975,12 @@ margins_plot.brmsfit <- function(x, effects = NULL, data = NULL,
     }
     results[[paste0(effects[[i]], collapse = ":")]] <- marg_res
   }
-  margins_plot_internal(results, ncol = ncol, theme = theme, do_plot = do_plot)
+  if (isTRUE(list(...)$testmode)) {
+    results
+  } else {
+    margins_plot_internal(results, ncol = ncol, theme = theme, 
+                          do_plot = do_plot)
+  }
 }
 
 #' Model Predictions of \code{brmsfit} Objects
