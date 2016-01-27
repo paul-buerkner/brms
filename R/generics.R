@@ -459,6 +459,55 @@ standata <- function(object, ...)
 stanplot <- function(object, pars, ...)
   UseMethod("stanplot")
 
+#' Display marginal effects of predictors
+#' 
+#' Display marginal effects of one or more numeric and/or categorical 
+#' predictors including interaction effects of order 2.
+#' 
+#' @param x An object usually of class \code{brmsfit}
+#' @param effects An optional character vector naming effects
+#'   (main effects or interactions) for which to compute marginal plots.
+#'   If \code{NULL} (the default), plots for all effects are generated.
+#' @param data An optional \code{data.frame} containing variable values
+#'   to marginalize on. Each effect defined in \code{effects} will
+#'   be plotted for each row of \code{data}. It is recommended
+#'   to only define a few rows in order to keep the plots clear.
+#'   If \code{NULL} (the default), numeric variables will be marginalized
+#'   by using their means and factors will get their reference level assigned.   
+#' @param re_formula A formula containing random effects to be considered 
+#'   in the marginal predictions. If \code{NULL}, include all random effects; 
+#'   if \code{NA} (default), include no random effects.
+#' @param method Either \code{"fitted"} or \code{"predict"}. 
+#'   If \code{"fitted"}, plot marginal predictions of the regression curve. 
+#'   If \code{"predict"}, plot marginal predictions of the responses.
+#' @param ncol Number of plots to display per column for each effect.
+#'   If \code{NULL} (default), \code{ncol} is computed internally based
+#'   on the number of rows of \code{data}.
+#' @param rug Logical; indicating whether a rug representation of predictor
+#'   values should be added via \code{\link[ggplot2:geom_rug]{geom_rug}}.
+#'   Default is \code{FALSE}.
+#' @inheritParams plot.brmsfit
+#' @param ... Currently ignored.
+#' 
+#' @return A list of ggplot objects one for each effect.
+#' 
+#' @examples 
+#' \dontrun{
+#' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1 | patient),
+#'            data = epilepsy, family = poisson()) 
+#' ## plot all marginal effects
+#' margins_plot(fit)
+#' ## only plot the marginal interaction effect of 'log_Base4_c:Trt_c'
+#' ## for different values for 'log_Age_c'
+#' mdata <- data.frame(log_Age_c = c(-0.3, 0, 0.3))
+#' margins_plot(fit, effects = "log_Base4_c:Trt_c", 
+#'              data = mdata)
+#' ## also incorporate random effects variance over patients
+#' ## and add a rug representation of predictor values
+#' margins_plot(fit, effects = "log_Base4_c:Trt_c", 
+#'              data = mdata, re_formula = NULL, rug = TRUE)
+#' }
+#' 
 #' @export
 margins_plot <- function(x, ...)
-  UseMethod("marginal_plot")
+  UseMethod("margins_plot")
