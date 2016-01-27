@@ -1,5 +1,5 @@
 margins_plot_internal <- function(x, ncol = NULL, theme = "gray",
-                                   do_plot = TRUE) {
+                                  do_plot = TRUE) {
   # Compute marginal plots using ggplot2
   # Args:
   #   x: A list of marginal predictions computed by margins_plot

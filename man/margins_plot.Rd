@@ -48,7 +48,7 @@ Default is \code{FALSE}.}
 plotted directly in the active graphic device.
 Defaults to \code{TRUE}.}
 
-\item{...}{Currently ignored.}
+\item{...}{Currently for internal use only.}
 }
 \value{
 A list of ggplot objects one for each effect.
