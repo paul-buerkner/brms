@@ -197,7 +197,7 @@ get_table <- function(samples, levels = sort(unique(as.numeric(samples)))) {
   if (!is.matrix(samples)) 
     stop("samples must be a matrix")
   out <- do.call(rbind, lapply(1:ncol(samples), function(n) 
-    table(factor(samples[,n], levels = levels))))
+    table(factor(samples[, n], levels = levels))))
   rownames(out) <- 1:nrow(out)
   colnames(out) <- paste0("N(Y = ", 1:ncol(out), ")")
   out

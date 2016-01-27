@@ -795,7 +795,7 @@ stan_arma <- function(family, autocor, prior = prior_frame(),
       "  int<lower=0> Kar;  // AR order \n",
       "  int<lower=0> Kma;  // MA order \n",
       "  int<lower=1> Karma;  // max(Kma, Kar) \n",
-      "  matrix[N, Karma] E_pre; // matrix of zeros \n",
+      "  matrix[N, Karma] E_pre;  // matrix of zeros \n",
       "  vector[N] tgroup;  // indicates independent groups \n")
     # restrict ARMA effects to be in [-1,1] when using covariance
     # formulation as they cannot be outside this interval anyway
