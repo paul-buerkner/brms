@@ -392,6 +392,11 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
                    "ordered factors as response variables"), call. = FALSE)
       }
     } else if (is.skewed(family)) {
+      if (min(standata$Y) <= 0) {
+        stop(paste("family", family$family, "requires response variable", 
+                   "to be positive"), call. = FALSE)
+      }
+    } else if (is.zero_inflated(family) || is.hurdle(family)) {
       if (min(standata$Y) < 0) {
         stop(paste("family", family$family, "requires response variable", 
                    "to be non-negative"), call. = FALSE)
