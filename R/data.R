@@ -14,6 +14,9 @@ melt_data <- function(data, family, effects, na.action = na.omit) {
     if (!is(data, "data.frame")) {
       stop("data must be a data.frame for multivariate models", call. = FALSE)
     }
+    # only keep variables that are relevant for the model
+    rel_vars <- c(all.vars(effects$all), all.vars(effects$respform))
+    data <- data[, which(names(data) %in% rel_vars)]
     if ("trait" %in% names(data)) {
       stop("trait is a resevered variable name in multivariate models",
            call. = FALSE)
@@ -22,9 +25,6 @@ melt_data <- function(data, family, effects, na.action = na.omit) {
       stop("response is a resevered variable name in multivariate models",
            call. = FALSE)
     }
-    # only keep variables that are relevant for the model
-    rel_vars <- c(all.vars(effects$all), all.vars(effects$respform))
-    data <- data[, which(names(data) %in% rel_vars)]
     nobs <- nrow(data)
     trait <- factor(rep(response, each = nobs), levels = response)
     new_cols <- data.frame(trait = trait)
