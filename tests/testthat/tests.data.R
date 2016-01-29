@@ -13,7 +13,7 @@ test_that("melt_data returns data in long format", {
                         response = c(21:30, 1:10))
   effects <- extract_effects(cbind(y3,y1) ~ x, family = "gaussian")
   expect_equal(melt_data(data, effects = effects, family = "gaussian"), 
-               target1)
+               target1[, c("x", "y1", "y3", "trait", "response")])
   
   target2 <- data.frame(x = rep(c("a","b"), 15), y1 = rep(1:10, 3), 
                         y2 = rep(11:20, 3), y3 = rep(21:30, 3),
@@ -23,11 +23,11 @@ test_that("melt_data returns data in long format", {
                         response = c(11:20, 1:10, 21:30))
   effects <- extract_effects(cbind(y2,y1,y3) ~ x, family = "gaussian")
   expect_equal(melt_data(data, effects = effects, family = "gaussian"), 
-               target2)
+               target2[, c("x", "y1", "y2", "y3", "trait", "response")])
 })
 
 test_that("melt_data returns expected errors", {
-  ee <- extract_effects(y1 ~ x, family = hurdle_poisson())
+  ee <- extract_effects(y1 ~ x:main, family = hurdle_poisson())
   data <- data.frame(y1 = rnorm(10), y2 = rnorm(10), x = 1:10)
   expect_error(melt_data(data = NULL, family = hurdle_poisson(), effects = ee),
                "data must be a data.frame for multivariate models", 
@@ -37,10 +37,12 @@ test_that("melt_data returns expected errors", {
                "main is a resevered variable name", 
                fixed = TRUE)
   data$response <- 1:10 
+  ee <- extract_effects(response ~ x:main, family = hurdle_poisson())
   expect_error(melt_data(data = data, family = hurdle_poisson(), effects = ee),
                "response is a resevered variable name in multivariate models", 
                fixed = TRUE)
   data$trait <- 1:10 
+  ee <- extract_effects(y ~ 0 + x*trait, family = hurdle_poisson())
   expect_error(melt_data(data = data, family = hurdle_poisson(), effects = ee),
                "trait is a resevered variable name in multivariate models", 
                fixed = TRUE)
@@ -160,8 +162,8 @@ test_that(paste("make_standata accepts correct response variables",
   temp_data <- data.frame(y = factor(rep(-4:5,5), order = TRUE))
   expect_equal(make_standata(y ~ 1, data = temp_data, family = "acat")$Y, 
                rep(1:10,5))
-  expect_equal(make_standata(y ~ 1, data = data.frame(y = seq(0,10,0.1)), 
-                             family = "exponential")$Y, seq(0,10,0.1))
+  expect_equal(make_standata(y ~ 1, data = data.frame(y = seq(1,10,0.1)), 
+                             family = "exponential")$Y, seq(1,10,0.1))
   temp_data <- data.frame(y1 = 1:10, y2 = 11:20, w = 1:10, x = rep(0,10))
   expect_equal(make_standata(cbind(y1,y2) | weights(w) ~ x, family = "gaussian",
                              data = temp_data)$Y, 
@@ -188,7 +190,7 @@ test_that(paste("make_standata rejects incorrect response variables",
                      "as response variables"))
   expect_error(make_standata(y ~ 1, data = data.frame(y = rep(-7.5:7.5), 2), 
                              family = "gamma"),
-               "family gamma requires response variable to be non-negative")
+               "family gamma requires response variable to be positive")
 })
 
 test_that("make_standata suggests using family bernoulli if appropriate", {
