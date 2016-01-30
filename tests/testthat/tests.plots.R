@@ -32,27 +32,28 @@ test_that("stanplot and pairs works correctly", {
   expect_error(stanplot(fit, type = "density"), "Invalid plot type")
 })
 
-test_that("margins_plot_internal doesn't throw errors", {
+test_that("plot.brmsMarginalEffects doesn't throw errors", {
   N <- 90
   marg_results <- data.frame(P1 = rpois(N, 20), 
                              P2 = factor(rep(1:3, each = N / 3)),
                              Estimate = rnorm(N, sd = 5), 
                              Est.Error = rt(N, df = 10), 
                              MargRow = rep(1:2, each = N / 2))
-  marg_results[["2.5%ile"]] <- marg_results$Estimate - 2
-  marg_results[["97.5%ile"]] <- marg_results$Estimate + 2
+  marg_results[["lowerCI"]] <- marg_results$Estimate - 2
+  marg_results[["upperCI"]] <- marg_results$Estimate + 2
   marg_results <- list(marg_results[order(marg_results$P1), ])
+  class(marg_results) <- "brmsMarginalEffects"
   attr(marg_results[[1]], "response") <- "count"
   # test with 1 numeric predictor
   attr(marg_results[[1]], "effects") <- "P1"
-  marg_plot <- margins_plot_internal(marg_results, do_plot = FALSE)
+  marg_plot <- plot(marg_results, do_plot = FALSE)
   expect_true(is(marg_plot[[1]], "ggplot"))
   # test with 1 categorical predictor
   attr(marg_results[[1]], "effects") <- "P2"
-  marg_plot <- margins_plot_internal(marg_results, do_plot = FALSE)
+  marg_plot <- plot(marg_results, do_plot = FALSE)
   expect_true(is(marg_plot[[1]], "ggplot"))
   # test with 1 numeric and 1 categorical predictor
   attr(marg_results[[1]], "effects") <- c("P1", "P2")
-  marg_plot <- margins_plot_internal(marg_results, do_plot = FALSE)
+  marg_plot <- plot(marg_results, do_plot = FALSE)
   expect_true(is(marg_plot[[1]], "ggplot"))
 })
