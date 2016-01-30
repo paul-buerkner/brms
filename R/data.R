@@ -16,7 +16,7 @@ melt_data <- function(data, family, effects, na.action = na.omit) {
     }
     # only keep variables that are relevant for the model
     rel_vars <- c(all.vars(effects$all), all.vars(effects$respform))
-    data <- data[, which(names(data) %in% rel_vars)]
+    data <- data[, which(names(data) %in% rel_vars), drop = FALSE]
     if ("trait" %in% names(data)) {
       stop("trait is a resevered variable name in multivariate models",
            call. = FALSE)
