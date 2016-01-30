@@ -187,3 +187,9 @@ print.brmshypothesis <- function(x, digits = 2, ...) {
              (1 - x$alpha) * 100, "% CI."))
   invisible(x)
 }
+
+#' @export
+print.brmsMarginalEffects <- function(x, ...) {
+  plot(x, ...)
+}
+  

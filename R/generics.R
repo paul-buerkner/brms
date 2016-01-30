@@ -496,18 +496,18 @@ stanplot <- function(object, pars, ...)
 #' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1 | patient),
 #'            data = epilepsy, family = poisson()) 
 #' ## plot all marginal effects
-#' margins_plot(fit)
+#' plot(marginal_effects(fit), ask = FALSE)
 #' ## only plot the marginal interaction effect of 'log_Base4_c:Trt_c'
 #' ## for different values for 'log_Age_c'
 #' mdata <- data.frame(log_Age_c = c(-0.3, 0, 0.3))
-#' margins_plot(fit, effects = "log_Base4_c:Trt_c", 
-#'              data = mdata)
+#' plot(marginal_effects(fit, effects = "log_Base4_c:Trt_c", 
+#'                       data = mdata))
 #' ## also incorporate random effects variance over patients
 #' ## and add a rug representation of predictor values
-#' margins_plot(fit, effects = "log_Base4_c:Trt_c", 
-#'              data = mdata, re_formula = NULL, rug = TRUE)
+#' plot(marginal_effects(fit, effects = "log_Base4_c:Trt_c", 
+#'                       data = mdata, re_formula = NULL), rug = TRUE)
 #' }
 #' 
 #' @export
-margins_plot <- function(x, ...)
-  UseMethod("margins_plot")
+marginal_effects <- function(x, ...)
+  UseMethod("marginal_effects")

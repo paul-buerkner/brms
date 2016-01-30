@@ -838,13 +838,11 @@ pairs.brmsfit <- function(x, pars = NA, exact_match = FALSE, ...) {
   graphics::pairs(x$fit, pars = pars, ...)
 }
 
-#' @rdname margins_plot
+#' @rdname marginal_effects
 #' @export
-margins_plot.brmsfit <- function(x, effects = NULL, data = NULL, 
-                                 re_formula = NA, ncol = NULL,
-                                 method = c("fitted", "predict"),
-                                 rug = FALSE, theme = "gray", 
-                                 do_plot = TRUE, ...) {
+marginal_effects.brmsfit <- function(x, effects = NULL, data = NULL, 
+                                     re_formula = NA, 
+                                     method = c("fitted", "predict"), ...) {
   method <- match.arg(method)
   ee <- extract_effects(x$formula, family = x$family)
   if (is.linear(x$family) && length(ee$response) > 1) {
@@ -974,17 +972,11 @@ margins_plot.brmsfit <- function(x, effects = NULL, data = NULL,
     marg_res = cbind(marg_data, marg_res)
     attr(marg_res, "response") <- as.character(x$formula[2])
     attr(marg_res, "effects") <- effects[[i]]
-    if (rug) {
-      attributes(marg_res)$rug <- marg_data[, effects[[i]], drop = FALSE]
-    }
+    attr(marg_res, "rug") <- marg_data[, effects[[i]], drop = FALSE]
     results[[paste0(effects[[i]], collapse = ":")]] <- marg_res
   }
-  if (isTRUE(list(...)$testmode)) {
-    results
-  } else {
-    margins_plot_internal(results, ncol = ncol, theme = theme, 
-                          do_plot = do_plot)
-  }
+  class(results) <- "brmsMarginalEffects"
+  results
 }
 
 #' Model Predictions of \code{brmsfit} Objects
