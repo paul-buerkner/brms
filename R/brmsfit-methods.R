@@ -750,11 +750,7 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5,
       if (i == 1) devAskNewPage(ask = ask)
     }
   }
-  if (do_plot) {
-    invisible(plots) 
-  } else {
-    plots
-  }
+  invisible(plots) 
 }
 
 #' @rdname stanplot
