@@ -50,8 +50,8 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, rug = FALSE,
     response <- attributes(x[[i]])$response
     effects <- attributes(x[[i]])$effects
     plots[[i]] <- ggplot(data = x[[i]]) + 
-      aes_string(x = effects, y = "Estimate", ymin = "`2.5%ile`",
-                 ymax = "`97.5%ile`") + ylab(response) +
+      aes_string(x = effects, y = "Estimate", ymin = "lowerCI",
+                 ymax = "upperCI") + ylab(response) +
       do.call(paste0("theme_", theme), args = list())
     nMargins <- length(unique(x[[i]]$MargRow))
     if (nMargins > 1) {

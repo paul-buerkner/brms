@@ -841,7 +841,7 @@ pairs.brmsfit <- function(x, pars = NA, exact_match = FALSE, ...) {
 #' @rdname marginal_effects
 #' @export
 marginal_effects.brmsfit <- function(x, effects = NULL, data = NULL, 
-                                     re_formula = NA, 
+                                     re_formula = NA, probs = c(0.025, 0.975),
                                      method = c("fitted", "predict"), ...) {
   method <- match.arg(method)
   ee <- extract_effects(x$formula, family = x$family)
@@ -872,6 +872,9 @@ marginal_effects.brmsfit <- function(x, effects = NULL, data = NULL,
   if (any(ulapply(effects, length) > 2)) {
     stop("Interactions of order higher than 2 are currently not supported.",
          call. = FALSE)
+  }
+  if (length(probs) != 2L) {
+    stop("Arguments 'probs' must be of length 2.", call. = FALSE)
   }
   if (is.ordinal(x$family) || is.categorical(x$family)) {
     warning(paste0("Predictions are treated as continuous variables ", 
@@ -947,7 +950,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, data = NULL,
     }
     marg_data <- do.call(rbind, marg_data)
     args <- list(x, newdata = marg_data, re_formula = re_formula,
-                 allow_new_levels = TRUE)
+                 allow_new_levels = TRUE, probs = probs)
     if (is.ordinal(x$family) || is.categorical(x$family)) {
       args$summary <- FALSE 
       marg_res <- do.call(method, args)
@@ -958,10 +961,11 @@ marginal_effects.brmsfit <- function(x, effects = NULL, data = NULL,
         marg_res <- do.call(cbind, lapply(1:dim(marg_res)[2], 
                             function(s) rowSums(marg_res[, s, ])))
       } 
-      marg_res <- get_summary(marg_res)
+      marg_res <- get_summary(marg_res, probs = probs)
     } else {
       marg_res <- do.call(method, args)
     }
+    colnames(marg_res)[3:4] <- c("lowerCI", "upperCI")
      
     if (length(effects[[i]]) == 2L && all(pred_types == "numeric")) {
       # can only be converted to factor after having called method

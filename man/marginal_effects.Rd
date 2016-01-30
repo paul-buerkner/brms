@@ -7,7 +7,8 @@
 \title{Display marginal effects of predictors}
 \usage{
 \method{marginal_effects}{brmsfit}(x, effects = NULL, data = NULL,
-  re_formula = NA, method = c("fitted", "predict"), ...)
+  re_formula = NA, probs = c(0.025, 0.975), method = c("fitted",
+  "predict"), ...)
 
 marginal_effects(x, ...)
 
@@ -32,11 +33,14 @@ by using their means and factors will get their reference level assigned.}
 in the marginal predictions. If \code{NULL}, include all random effects; 
 if \code{NA} (default), include no random effects.}
 
+\item{probs}{The quantiles to be used in the computation of credible
+intervals (defaults to 2.5 and 97.5 percent quantiles)}
+
 \item{method}{Either \code{"fitted"} or \code{"predict"}. 
 If \code{"fitted"}, plot marginal predictions of the regression curve. 
 If \code{"predict"}, plot marginal predictions of the responses.}
 
-\item{...}{Currently for internal use only.}
+\item{...}{Currently ignored.}
 
 \item{ncol}{Number of plots to display per column for each effect.
 If \code{NULL} (default), \code{ncol} is computed internally based

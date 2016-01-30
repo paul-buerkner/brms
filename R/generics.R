@@ -477,6 +477,8 @@ stanplot <- function(object, pars, ...)
 #' @param re_formula A formula containing random effects to be considered 
 #'   in the marginal predictions. If \code{NULL}, include all random effects; 
 #'   if \code{NA} (default), include no random effects.
+#' @param probs The quantiles to be used in the computation of credible
+#'   intervals (defaults to 2.5 and 97.5 percent quantiles)
 #' @param method Either \code{"fitted"} or \code{"predict"}. 
 #'   If \code{"fitted"}, plot marginal predictions of the regression curve. 
 #'   If \code{"predict"}, plot marginal predictions of the responses.
@@ -487,7 +489,7 @@ stanplot <- function(object, pars, ...)
 #'   values should be added via \code{\link[ggplot2:geom_rug]{geom_rug}}.
 #'   Default is \code{FALSE}.
 #' @inheritParams plot.brmsfit
-#' @param ... Currently for internal use only.
+#' @param ... Currently ignored.
 #' 
 #' @return A list of ggplot objects one for each effect.
 #' 
