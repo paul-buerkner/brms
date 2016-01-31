@@ -83,7 +83,6 @@ extract_effects <- function(formula, ..., family = NA,
     for (f in fun) {
       x[[f]] <- get_matches(paste0(f, "\\([^\\|]*\\)"), add)[1]
       add <- gsub(paste0(f,"\\([^~|\\|]*\\)\\|*"), "", add)
-      add_present <- 
       if (is.na(x[[f]])) {
         x[[f]] <- NULL
       } else if (family$family %in% families[[f]] || 
@@ -119,9 +118,10 @@ extract_effects <- function(formula, ..., family = NA,
     else ""
   }
   formula_list <- c(paste(all.vars(fixed), collapse = "+"), 
-                    random$form, group_formula, add_vars, ...)
+                    random$form, group_formula, add_vars, 
+                    get_offset(fixed), ...)
   new_formula <- collapse(ulapply(formula_list, plus_rh))
-  x$all <- paste0("update(", tfixed, ", ~ .", new_formula, ")")
+  x$all <- paste0("update(", tfixed, ", ~ ", new_formula, ")")
   x$all <- eval(parse(text = x$all))
   environment(x$all) <- globalenv()
   
@@ -162,7 +162,7 @@ extract_time <- function(formula) {
   #   formula with all variables in formula
   if (is.null(formula)) 
     return(NULL)
-  formula <- gsub(" ","",Reduce(paste, deparse(formula))) 
+  formula <- gsub(" ", "", Reduce(paste, deparse(formula))) 
   time <- all.vars(as.formula(paste("~", gsub("~|\\|[[:print:]]*", "", formula))))
   if (length(time) > 1) {
     stop("Autocorrelation structures may only contain 1 time variable", 
@@ -314,6 +314,20 @@ update_re_terms <- function(formula, re_formula = NULL) {
     stop("invalid re_formula argument", call. = FALSE)
   } 
   new_formula
+}
+
+get_offset <- function(x) {
+  # extract offset terms from a formula
+  x <- terms(as.formula(x))
+  offset_pos <- attr(x, "offset")
+  if (!is.null(offset_pos)) {
+    vars <- attr(x, "variables")
+    offset <- ulapply(offset_pos, function(i) deparse(vars[[i+1]]))
+    offset <- paste(offset, collapse = "+")
+  } else {
+    offset <- NULL
+  }
+  offset
 }
 
 amend_terms <- function(x, rm_intercept = FALSE, is_forked = FALSE) {
