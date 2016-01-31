@@ -113,11 +113,13 @@ extract_effects <- function(formula, ..., family = NA,
   # make a formula containing all required variables (element 'all')
   plus_rh <- function(x) {
     # take the right hand side of a formula and add a +
-    if (is.formula(x)) {
-      paste0("+", Reduce(paste, deparse(x[[2]])))
-    } else ""
+    if (is.formula(x)) 
+      x <- Reduce(paste, deparse(x[[2]]))
+    if (nchar(x)) paste("+", x)
+    else ""
   }
-  formula_list <- c(random$form, group_formula, add_vars, ...)
+  formula_list <- c(paste(all.vars(fixed), collapse = "+"), 
+                    random$form, group_formula, add_vars, ...)
   new_formula <- collapse(ulapply(formula_list, plus_rh))
   x$all <- paste0("update(", tfixed, ", ~ .", new_formula, ")")
   x$all <- eval(parse(text = x$all))
