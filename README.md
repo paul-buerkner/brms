@@ -33,7 +33,7 @@ summary(fit)
 #>    Data: epilepsy (Number of observations: 236) 
 #> Samples: 2 chains, each with iter = 2000; warmup = 500; thin = 1; 
 #>          total post-warmup samples = 3000
-#>    WAIC: 1143.12
+#>    WAIC: Not computed
 #>  
 #> Random Effects: 
 #> ~obs (Number of levels: 236) 
@@ -77,18 +77,46 @@ An even more detailed investigation can be achieved by applying the shinystan pa
 launch_shiny(fit) 
 ```
 
+There are sevaral methods to compute and visualize model predictions. Suppose that we want to predict responses (i.e. seizure counts) of a person in the treatment group (`Trt_c = 0.5`) and in the control group (`Trt_c = -0.5`) with average age and average number of previous seizures at the fourth visit. Than we can use
+
+``` r
+newdata <- data.frame(Trt_c = c(0.5, -0.5), log_Age_c = 0, 
+                      log_Base4_c = 0, visit = 4)
+predict(fit, newdata = newdata, allow_new_levels = TRUE, probs = c(0.05, 0.95))
+#>   Estimate Est.Error 5%ile 95%ile
+#> 1 4.668333  3.997790     0     12
+#> 2 6.612000  5.354532     1     16
+```
+
+We need to set `allow_new_levels = TRUE` because we want to predict responses of a person that was not present in the data used to fit the model. While the `predict` method returns predictions of the responses, the `fitted` method returns predictions of the regression line.
+
+``` r
+fitted(fit, newdata = newdata, allow_new_levels = TRUE, probs = c(0.05, 0.95))
+#>   Estimate Est.Error    5%ile   95%ile
+#> 1 4.801817  3.416538 1.345616 11.51614
+#> 2 6.709388  4.784165 1.892104 15.95629
+```
+
+Both methods return the same etimate (up to random error), while the latter has smaller variance, because the uncertainty in the regression line is smaller than the uncertainty in each response. If we want to predict values of the original data, we can just leave the `newdata` argument empty.
+
+A related feature is the computation and visualization of marginal effects, which can help in better understanding the influence of the predictors on the response.
+
+``` r
+plot(marginal_effects(fit, probs = c(0.05, 0.95)))
+```
+
 For a complete list of methods to apply on <b>brms</b> models see
 
 ``` r
 methods(class = "brmsfit") 
 #>  [1] coef              family            fitted            fixef            
 #>  [5] formula           hypothesis        launch_shiny      logLik           
-#>  [9] LOO               model.frame       ngrps             nobs             
-#> [13] pairs             parnames          plot              posterior_samples
-#> [17] predict           print             prior_samples     ranef            
-#> [21] residuals         stancode          standata          stanplot         
-#> [25] summary           update            VarCorr           vcov             
-#> [29] WAIC             
+#>  [9] LOO               marginal_effects  model.frame       ngrps            
+#> [13] nobs              pairs             parnames          plot             
+#> [17] posterior_samples predict           print             prior_samples    
+#> [21] ranef             residuals         stancode          standata         
+#> [25] stanplot          summary           update            VarCorr          
+#> [29] vcov              WAIC             
 #> see '?methods' for accessing help and source code
 ```
 
