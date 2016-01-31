@@ -1,7 +1,7 @@
 test_that("extract_effects finds all variables in very long formulas", {
   expect_equal(extract_effects(t2_brand_recall ~ psi_expsi + psi_api_probsolv + 
                                  psi_api_ident + psi_api_intere + psi_api_groupint)$all, 
-               t2_brand_recall ~ psi_expsi + psi_api_probsolv + psi_api_ident + 
+               t2_brand_recall ~ t2_brand_recall + psi_expsi + psi_api_probsolv + psi_api_ident + 
                  psi_api_intere + psi_api_groupint)
 })
 
@@ -45,7 +45,7 @@ test_that("extract_effects handles addition arguments correctly", {
   expect_equal(extract_effects(y | se(I(a+2)) ~ x, family = gaussian())$se, 
                ~ .se(I(a+2)))
   expect_equal(extract_effects(y | se(I(a+2)) ~ x, family = gaussian())$all, 
-               y ~ x + a)
+               y ~ y + x + a)
   expect_equal(extract_effects(y | weights(1/n) ~ x, 
                                family = gaussian())$weights, 
                ~ .weights(1/n))
@@ -60,7 +60,7 @@ test_that("extract_effects handles addition arguments correctly", {
                ~ .cens(cens^2))
   expect_equal(extract_effects(y | cens(cens^2) ~ z + (x|patient), 
                                family = weibull())$all, 
-               y ~ z + x + patient + cens)
+               y ~ y + z + x + patient + cens)
 })
 
 test_that("extract_effects accepts complicated random terms", {
