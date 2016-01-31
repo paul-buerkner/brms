@@ -1,5 +1,5 @@
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-[![Build Status](https://travis-ci.org/paul-buerkner/brms.svg?branch=master)](https://travis-ci.org/paul-buerkner/brms) [![Coverage](https://img.shields.io/codecov/c/github/paul-buerkner/brms/master.svg)](https://codecov.io/github/paul-buerkner/brms) [![CRAN Version](http://www.r-pkg.org/badges/version/brms)](http://cran.r-project.org/package=brms)
+[![Build Status](https://travis-ci.org/paul-buerkner/brms.svg?branch=master)](https://travis-ci.org/paul-buerkner/brms) [![Coverage Status](https://codecov.io/github/paul-buerkner/brms/coverage.svg?branch=master)](https://codecov.io/github/paul-buerkner/brms?branch=master) [![CRAN Version](http://www.r-pkg.org/badges/version/brms)](http://cran.r-project.org/package=brms)
 
 brms
 ====
@@ -27,13 +27,13 @@ fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient) + (1|visit) + (
 The results (i.e. posterior samples) can be investigated using
 
 ``` r
-summary(fit) 
+summary(fit, waic = TRUE) 
 #>  Family: poisson (log) 
 #> Formula: count ~ log_Age_c + log_Base4_c * Trt_c + (1 | patient) + (1 | visit) + (1 | obs) 
 #>    Data: epilepsy (Number of observations: 236) 
 #> Samples: 2 chains, each with iter = 2000; warmup = 500; thin = 1; 
 #>          total post-warmup samples = 3000
-#>    WAIC: Not computed
+#>    WAIC: 1143.12
 #>  
 #> Random Effects: 
 #> ~obs (Number of levels: 236) 
@@ -77,7 +77,7 @@ An even more detailed investigation can be achieved by applying the shinystan pa
 launch_shiny(fit) 
 ```
 
-There are sevaral methods to compute and visualize model predictions. Suppose that we want to predict responses (i.e. seizure counts) of a person in the treatment group (`Trt_c = 0.5`) and in the control group (`Trt_c = -0.5`) with average age and average number of previous seizures at the fourth visit. Than we can use
+There are several methods to compute and visualize model predictions. Suppose that we want to predict responses (i.e. seizure counts) of a person in the treatment group (`Trt_c = 0.5`) and in the control group (`Trt_c = -0.5`) with average age and average number of previous seizures at the fourth visit. Than we can use
 
 ``` r
 newdata <- data.frame(Trt_c = c(0.5, -0.5), log_Age_c = 0, 

@@ -15,7 +15,7 @@ knitr::opts_chunk$set(
 ```
 
 [![Build Status](https://travis-ci.org/paul-buerkner/brms.svg?branch=master)](https://travis-ci.org/paul-buerkner/brms)
-[![Coverage](https://img.shields.io/codecov/c/github/paul-buerkner/brms/master.svg)](https://codecov.io/github/paul-buerkner/brms)
+[![Coverage Status](https://codecov.io/github/paul-buerkner/brms/coverage.svg?branch=master)](https://codecov.io/github/paul-buerkner/brms?branch=master) 
 [![CRAN Version](http://www.r-pkg.org/badges/version/brms)](http://cran.r-project.org/package=brms)
 
 # brms
@@ -41,7 +41,7 @@ fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient) + (1|visit) + (
 
 The results (i.e. posterior samples) can be investigated using
 ```{r summary}
-summary(fit) 
+summary(fit, waic = TRUE) 
 ```
 
 On the top of the output, some general information on the model is given, such as family, formula, number of iterations and chains, as well as the WAIC, which is an information criterion for Bayesian models. Next, random effects are displayed seperately for each grouping factor in terms of standard deviations and (in case of more than one random effect per grouping factor; not displayed here) correlations between random effects. On the bottom of the output, fixed effects are displayed. If incorporated, autocorrelation effects and family specific parameters (e.g., the residual standard deviation 'sigma' in normal models) are also given.
@@ -57,7 +57,7 @@ An even more detailed investigation can be achieved by applying the shinystan pa
 launch_shiny(fit) 
 ``` 
 
-There are sevaral methods to compute and visualize model predictions. Suppose that we want to predict responses (i.e. seizure counts) of a person in the treatment group (`Trt_c = 0.5`) and in the control group (`Trt_c = -0.5`) with average age and average number of previous seizures at the fourth visit. Than we can use
+There are several methods to compute and visualize model predictions. Suppose that we want to predict responses (i.e. seizure counts) of a person in the treatment group (`Trt_c = 0.5`) and in the control group (`Trt_c = -0.5`) with average age and average number of previous seizures at the fourth visit. Than we can use
 ```{r predict}
 newdata <- data.frame(Trt_c = c(0.5, -0.5), log_Age_c = 0, 
                       log_Base4_c = 0, visit = 4)
