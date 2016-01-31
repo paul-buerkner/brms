@@ -12,6 +12,9 @@
       using new arguments \code{lb} and \code{ub}
       in function \code{set_prior} thanks to the idea
       of Joel Gombin.
+      \item Compute and plot marginal effects using the
+      \code{marginal_effects} method thanks to the help 
+      of Ruben Arslan.
     }
   }
   \subsection{OTHER CHANGES}{
