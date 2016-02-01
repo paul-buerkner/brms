@@ -205,8 +205,8 @@ nonlinear_effects <- function(x, model = ~ 1) {
       if (length(nlresp) != 1) {
         stop("RHS of non-linear formula must contain exactly one variable.")
       }
-      if (grepl(".", nlresp, fixed = TRUE)) {
-        stop("Non-linear parameters should not contain the '.' symbol.")
+      if (any(ulapply(c(".", "_"), grepl, x = nlresp, fixed = TRUE))) {
+        stop("Non-linear parameters should not contain dots or underscores.")
       }
       x[[i]] <- delete.response(terms(x[[i]]))
       nleffects[[i]] <- extract_effects(x[[i]], check_response = FALSE)
@@ -482,7 +482,7 @@ gather_ranef <- function(random, data = NULL, ...) {
   # gathers helpful information on the random effects
   #
   # Args:
-  #   effects: output of extract_effects
+  #   random: output of extract_effects()$random
   #   data: data passed to brm after updating
   #   ...: Further arguments passed to get_model_matrix
   #
