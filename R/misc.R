@@ -124,6 +124,15 @@ incgamma <- function(x, a) {
   pgamma(x, shape = a) * gamma(a)
 }
 
+wsp <- function(x, nsp = 1) {
+  # add leading and trailing whitespaces
+  # Args:
+  #   x: object accepted by paste
+  #   nsp: number of whitespaces to add
+  sp <- paste(rep(" ", nsp), collapse = "")
+  paste0(sp, x, sp)
+}
+
 is.formula <- function(x, or = TRUE) {
   # checks if x is formula (or list of formulas)
   #
