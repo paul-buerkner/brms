@@ -1,4 +1,4 @@
-extract_effects <- function(formula, ..., family = NA, 
+extract_effects <- function(formula, ..., family = NA, nonlinear = NULL, 
                             check_response = TRUE) {
   # Extract fixed and random effects from a formula
   # 
@@ -7,6 +7,7 @@ extract_effects <- function(formula, ..., family = NA,
   #            of the \code{lme4} package
   #   ...: Additional objects of class "formula"
   #   family: the model family
+  #   nonlinear: a list of formulas specifying non-linear effects
   #   check_response: check if the response part is non-empty?
   # 
   # Returns: 
@@ -22,6 +23,10 @@ extract_effects <- function(formula, ..., family = NA,
   tfixed <- gsub("\\|+[^~]*~", "~", tformula)
   re_terms <- term_labels[grepl("\\|", term_labels)]
   if (length(re_terms)) {
+    if (length(nonlinear)) {
+      stop(paste("Random effects in non-linear models should be specified", 
+                 "in the 'nonlinear' argument."), call. = FALSE)
+    }
     re_terms <- paste0("(", re_terms, ")")
     # make sure that + before random terms are also removed
     extended_re_terms <- c(paste0("+", re_terms), re_terms)
@@ -61,6 +66,7 @@ extract_effects <- function(formula, ..., family = NA,
     random <- random[order(random$group), ]
   }
   x <- nlist(fixed, random)
+  x$nonlinear <- nonlinear_effects(nonlinear, model = x$fixed)
   
   # handle addition arguments
   fun <- c("se", "weights", "trials", "cat", "cens", "trunc")
@@ -114,12 +120,14 @@ extract_effects <- function(formula, ..., family = NA,
     # take the right hand side of a formula and add a +
     if (is.formula(x)) 
       x <- Reduce(paste, deparse(x[[2]]))
-    if (nchar(x)) paste("+", x)
-    else ""
+    if (!is.null(x) && nchar(x)) paste("+", x)
+    else "1"
   }
-  formula_list <- c(paste(all.vars(fixed), collapse = "+"), 
-                    random$form, group_formula, add_vars, 
-                    get_offset(fixed), ...)
+  vars_fixed <- setdiff(all.vars(x$fixed), names(x$nonlinear))
+  formula_list <- c(paste(vars_fixed, collapse = "+"), 
+                    x$random$form, group_formula, add_vars, 
+                    lapply(x$nonlinear, function(nl) nl$all),
+                    get_offset(x$fixed), ...)
   new_formula <- collapse(ulapply(formula_list, plus_rh))
   x$all <- paste0("update(", tfixed, ", ~ ", new_formula, ")")
   x$all <- eval(parse(text = x$all))
@@ -173,6 +181,48 @@ extract_time <- function(formula) {
   x$group <- paste0(all.vars(group), collapse = ":")
   x$all <- formula(paste("~",paste(c("1", time, all.vars(group)), collapse = "+")))
   x
+}
+
+nonlinear_effects <- function(x, model = ~ 1) {
+  # prepare nonlinear formulas
+  # Args:
+  #   x: a list for formulas specifying linear predictors for 
+  #     non-linear parameters
+  #   model: formula of the non-linear model
+  # Returns:
+  #   A list of objects each returned by extract_effects
+  if (is(x, "formula")) x <- list(x)
+  if (length(x)) {
+    nleffects <- vector("list", length = length(x))
+    for (i in seq_along(x)) {
+      if (!is.formula(x[[i]])) {
+        stop("Argument 'nonlinear' must be a list of formulas.")
+      }
+      if (length(x[[i]]) != 3) {
+        stop("Non-linear formulas must be two-sided.")
+      }
+      nlresp <- all.vars(x[[i]][[2]])
+      if (length(nlresp) != 1) {
+        stop("RHS of non-linear formula must contain exactly one variable.")
+      }
+      if (grepl(".", nlresp, fixed = TRUE)) {
+        stop("Non-linear parameters should not contain the '.' symbol.")
+      }
+      x[[i]] <- delete.response(terms(x[[i]]))
+      nleffects[[i]] <- extract_effects(x[[i]], check_response = FALSE)
+      nleffects[[i]]$nonlinear <- NULL
+      names(nleffects)[[i]] <- nlresp
+    }
+    model_vars <- all.vars(delete.response(terms(model)))
+    missing_pars <- setdiff(names(nleffects), model_vars)
+    if (length(missing_pars)) {
+      stop(paste("Some non-linear parameters are missing in formula:", 
+                 paste(missing_pars, collapse = ", ")), call. = FALSE)
+    }
+  } else {
+    nleffects <- NULL 
+  }
+  nleffects
 }
 
 update_formula <- function(formula, data = NULL, addition = NULL, 
