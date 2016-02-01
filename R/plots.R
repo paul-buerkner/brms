@@ -74,10 +74,9 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, rug = FALSE,
                    data = attributes(x[[i]])$rug, inherit.aes = FALSE)
       }
     } else {
-      # barplots for factors
+      # pointrange for factors
       plots[[i]] <- plots[[i]] + 
-        geom_bar(stat = "identity", position = "dodge") +
-        geom_errorbar(position = position_dodge(0.9), colour = "black")
+        geom_pointrange(position = position_dodge(width = 0.4), fatten = 7)
     }
     if (do_plot) {
       plot(plots[[i]])
