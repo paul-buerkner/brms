@@ -81,10 +81,8 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   # generate random effects code
   ranef <- gather_ranef(ee$random, data = data, is_forked = is_forked)
   # call stan_ranef for each random term seperately
-  text_ranef <- lapply(seq_along(ranef), stan_ranef, 
-                       ranef = ranef, #random = ee$random, 
-                       names_cov_ranef = names(cov_ranef),
-                       prior = prior)
+  text_ranef <- lapply(seq_along(ranef), stan_ranef, ranef = ranef, 
+                       names_cov_ranef = names(cov_ranef), prior = prior)
   # combine random effects stan code of different grouping factors by names
   text_ranef <- collapse_lists(text_ranef)
   
