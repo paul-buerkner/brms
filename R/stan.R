@@ -649,25 +649,6 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
   llh
 }
 
-stan_eta_re <- function(ranef) {
-  # Write the random effects part of the linear predictor
-  # Args:
-  #   ranef: a named list returned by gather_ranef
-  # Returns:
-  #   A string containing the random effects part of the linear predictor
-  eta_re <- ""
-  for (i in seq_along(ranef)) {
-    if (length(ranef[[i]]) == 1 || attr(ranef[[i]], "cor")) {
-      eta_re <- paste0(eta_re, " + Z_",i,"[n] * r_",i,"[J_",i,"[n]]")
-    } else {
-      k <- seq_along(ranef[[i]])
-      eta_re <- paste0(eta_re, collapse(" + Z_",i,"[n, ",k, "]",
-                                        " * r_",i,"_",k,"[J_",i,"[n]]"))
-    }
-  }
-  eta_re
-}
-
 stan_eta <- function(family, fixef, ranef = list(), paref = NULL, 
                      has_intercept = TRUE, autocor = cor_arma(),  
                      add = FALSE, offset = FALSE, is_multi = FALSE) {
@@ -690,16 +671,10 @@ stan_eta <- function(family, fixef, ranef = list(), paref = NULL,
     stop("family must be of class family")
   link <- family$link
   family <- family$family
-  is_linear <- is.linear(family)
   is_ordinal <- is.ordinal(family)
   is_cat <- is.categorical(family)
-  is_skewed <- is.skewed(family)
-  is_count <- is.count(family) || is.zero_inflated(family) ||
-              family %in% c("hurdle_poisson", "hurdle_negbinomial")
-  is_binary <- is.binary(family) || family == "zero_inflated_binomial"
-  
-  eta <- list()
   # initialize eta
+  eta <- list()
   eta$transD <- paste0(
     "  vector[N] eta;  // linear predictor \n", 
     if (length(paref) || is.categorical(family)) 
@@ -712,25 +687,10 @@ stan_eta <- function(family, fixef, ranef = list(), paref = NULL,
   s <- ifelse(is_multi, "  ", "")
   
   # transform eta before it is passed to the likelihood
-  ilink <- stan_ilink(link)
-  eta$transform <- !(add || link == "identity"
-                     || family == "gaussian" && link == "log"
-                     || is_ordinal || family == "categorical" 
-                     || is_count && link == "log" 
-                     || is_binary && link == "logit"
-                     || family %in% c("hurdle_gamma", "zero_inflated_beta"))
+  eta$transform <- stan_eta_transform(family, link, add = add)
   eta_ilink <- rep("", 2)
   if (eta$transform || (get_ar(autocor) && !use_cov(autocor))) {
-    fl <- ifelse(family %in% c("gamma", "exponential"), 
-                 paste0(family,"_",link), family)
-    eta_ilink <- switch(fl, c(paste0(ilink,"("), ")"),
-                        gamma_log = c("shape * exp(-(", "))"),
-                        gamma_inverse = c("shape * (", ")"),
-                        gamma_identity = c("shape / (", ")"),
-                        exponential_log = c("exp(-(", "))"),
-                        exponential_inverse = c("(", ")"),
-                        exponential_identity = c("inv(", ")"),
-                        weibull = c(paste0(ilink,"(("), ") / shape)"))
+    eta_ilink <- stan_eta_ilink(family, link)
     if (get_ar(autocor)) {
       eta_ar <- ifelse(!use_cov(autocor), " + head(E[n], Kar) * ar", "")
       eta$transC3 <- paste0("    ", s, eta_obj," <- ", eta_ilink[1], 
@@ -762,6 +722,45 @@ stan_eta <- function(family, fixef, ranef = list(), paref = NULL,
     if (get_arr(autocor)) " + Yarr * arr", 
     "; \n", etap)
   eta
+}
+
+stan_nonlinear <- function(effects, data, family = gaussian(), add = FALSE) {
+  # prepare Stan code for non-linear models
+  out <- list()
+  nlpars <- names(effects$nonlinear)
+  ranef <- lapply(effects$nonlinear, function(x, ...) 
+    gather_ranef(x$random, ...), data = data)
+  if (length(effects$nonlinear)) {
+    for (i in seq_along(effects$nonlinear)) {
+      p <- nlpars[i]
+      eta <- paste0("eta_", p)
+      out$transD <- paste0(out$transD, "  vector[N] ", eta, "; \n")
+      out$transC1 <- paste0(out$transC1, 
+        "  ", eta, " <- X_", p, " * b_", p, "; \n")
+      if (length(ranef[[i]])) {
+        out$transC2 <- paste0(out$transC2, "  ", eta, "[n] <- ", eta, "[n]", 
+          stan_eta_re(ranef[[i]], p = paste0(p, "_")), "; \n") 
+      }
+    }
+    # prepare 
+    nlpars <- wsp(names(effects$nonlinear))
+    nlvars <- wsp(setdiff(all.vars(effects$fixed[[3]]), 
+                          names(effects$nonlinear)))
+    new_nlpars <- paste0(" eta_", names(effects$nonlinear), "[n] ")
+    new_nlvars <- paste0(" C[n, ", seq_along(nlvars), "] ")
+    meta_sym <- c("+", "-", "*", "/", "^", ")", "(")
+    nlmodel <- gsub(" ", "", deparse(effects$fixed[[3]]))
+    nlmodel <- wsp(rename(nlmodel, meta_sym, wsp(meta_sym))) 
+    nlmodel <- rename(nlmodel, c(nlpars, nlvars, " ( ", " ) "), 
+                      c(new_nlpars, new_nlvars, "(", ")"))
+    out$transform <- stan_eta_transform(family$family, family$link, add = add)
+    if (out$transform) {
+      eta_ilink <- stan_eta_ilink(family$family, family$link)
+    } else eta_ilink <- rep("", 2)
+    out$transC2 <- paste0(out$transC2, "  eta[n] <- ", eta_ilink[1],
+                          trimws(nlmodel), eta_ilink[2], "; \n")
+  }
+  out
 }
 
 stan_arma <- function(family, autocor, prior = prior_frame(),
@@ -1727,4 +1726,54 @@ stan_ilink <- function(link) {
          logit = "inv_logit", probit = "Phi", 
          probit_approx = "Phi_approx", cloglog = "inv_cloglog", 
          cauchit = "inv_cauchit")
+}
+
+stan_eta_re <- function(ranef, p = "") {
+  # Write the random effects part of the linear predictor
+  # Args:
+  #   ranef: a named list returned by gather_ranef
+  #   p: an optional character string to add to the variable names
+  #      (used for non-linear models)
+  # Returns:
+  #   A string containing the random effects part of the linear predictor
+  eta_re <- ""
+  for (i in seq_along(ranef)) {
+    if (length(ranef[[i]]) == 1 || attr(ranef[[i]], "cor")) {
+      eta_re <- paste0(eta_re, 
+                       " + Z_", p, i,"[n] * r_", p, i,"[J_", p, i,"[n]]")
+    } else {
+      k <- seq_along(ranef[[i]])
+      eta_re <- paste0(eta_re, 
+                       collapse(" + Z_", p, i, "[n, ", k, "]",
+                                " * r_", p, i, "_" , k, "[J_", p, i,"[n]]"))
+    }
+  }
+  eta_re
+}
+
+stan_eta_transform <- function(family, link, add = FALSE) {
+  # indicate whether eta needs to be transformed
+  # Args:
+  #   add: is the model weighted, censored, or truncated?
+  !(add || link == "identity"
+    || family == "gaussian" && link == "log"
+    || is.ordinal(family) || is.categorical(family) 
+    || is.count(family) && link == "log" 
+    || is.binary(family) && link == "logit"
+    || is.zero_inflated(family) || is.hurdle(family))
+}
+
+stan_eta_ilink <- function(family, link) {
+  # correctly apply inverse link to eta
+  ilink <- stan_ilink(link)
+  fl <- ifelse(family %in% c("gamma", "exponential"), 
+               paste0(family,"_",link), family)
+  switch(fl, c(paste0(ilink,"("), ")"),
+               gamma_log = c("shape * exp(-(", "))"),
+               gamma_inverse = c("shape * (", ")"),
+               gamma_identity = c("shape / (", ")"),
+               exponential_log = c("exp(-(", "))"),
+               exponential_inverse = c("(", ")"),
+               exponential_identity = c("inv(", ")"),
+               weibull = c(paste0(ilink,"(("), ") / shape)"))
 }
