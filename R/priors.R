@@ -319,7 +319,6 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
                        bound = character(0))
   if (length(nonlinear)) {
     # FIXME
-    random <- do.call(rbind, lapply(ee$nonlinear, function(par) par$random))
   } else {
     # fixed and category specific effects 
     fixef <- colnames(get_model_matrix(ee$fixed, data = data))
@@ -334,9 +333,9 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
                                          rm_intercept = TRUE))
       prior <- rbind(prior, prior_frame(class = "b", coef = paref))
     }
-    random <- ee$random
   }
   # random effects
+  random <- get_random(ee)
   if (nrow(random)) {
     # global sd class
     prior <- rbind(prior, prior_frame(class = "sd", prior = default_scale_prior))  
@@ -516,9 +515,7 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
     prior <- rbind(prior, partial_prior)
   }
   # rename group parameter
-  if (length(nonlinear)) {
-    random <- do.call(rbind, lapply(ee$nonlinear, function(par) par$random))
-  } else random <- ee$random
+  random <- get_random(ee)
   group_indices <- which(nchar(prior$group) > 0)
   for (i in group_indices) {
     if (!prior$group[i] %in% random$group) { 

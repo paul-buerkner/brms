@@ -170,7 +170,6 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
            call. = FALSE)
     }
     standata <- c(standata, list(KC = ncol(C), C = C)) 
-    random <- do.call(rbind, lapply(ee$nonlinear, function(par) par$random))
   } else {
     rm_intercept <- is_ordinal || !isTRUE(control$keep_intercept) ||
       isTRUE(attr(ee$fixed, "rsv_intercept"))
@@ -189,9 +188,9 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       standata <- c(standata, 
                     list(K = ncol(X), X = X, X_means = as.array(X_means)))
     }
-    random <- ee$random
   }
   # random effects data
+  random <- get_random(ee)
   if (nrow(random)) {
     Z <- lapply(random$form, get_model_matrix, 
                 data = data, is_forked = is_forked)

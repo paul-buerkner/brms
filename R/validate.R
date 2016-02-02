@@ -306,7 +306,7 @@ check_re_formula <- function(re_formula, old_ranef, data) {
     }
     # the true family doesn't matter here
     data <- update_data(data, family = NA, effects = ee)
-    new_ranef <- gather_ranef(ee$random, data = data)
+    new_ranef <- gather_ranef(ee, data = data)
     new_ranef <- combine_duplicates(new_ranef)
     invalid_gf <- setdiff(names(new_ranef), names(old_ranef))
     if (length(invalid_gf)) {
@@ -364,6 +364,17 @@ plus_rhs <- function(x) {
   if (is.formula(x)) x <- Reduce(paste, deparse(x[[2]]))
   if (!is.null(x) && nchar(x)) paste("+", paste(x, collapse = "+"))
   else "+ 1"
+}
+
+get_random <- function(effects) {
+  # get random effecta data.frame
+  # Args:
+  #   effects: object returneed by extract_effects
+  if (!is.null(effects$nonlinear)) {
+    do.call(rbind, lapply(effects$nonlinear, function(par) par$random))
+  } else {
+    effects$random
+  }
 }
 
 get_offset <- function(x) {
@@ -478,28 +489,24 @@ gather_response <- function(formula) {
   response
 }
 
-gather_ranef <- function(x, data = NULL, ...) {
+gather_ranef <- function(effects, data = NULL, ...) {
   # gathers helpful information on the random effects
-  #
+  # 
   # Args:
-  #   x: output of extract_effects()$random
-  #      or extract_effects()$nonlinear
+  #   effects: output of extract_effects
   #   data: data passed to brm after updating
   #   ...: Further arguments passed to get_model_matrix
   #
   # Returns: 
   #   A named list with one element per grouping factor
-  if (is.null(x$form)) {
-    # for nonlinear models
-    x <- do.call(rbind, lapply(x, function(par) par$random))
-  }
-  Z <- lapply(x$form, get_model_matrix, data = data, ...)
-  ranef <- setNames(lapply(Z, colnames), x$group)
+  random <- get_random(effects)
+  Z <- lapply(random$form, get_model_matrix, data = data, ...)
+  ranef <- setNames(lapply(Z, colnames), random$group)
   for (i in seq_along(ranef)) {
     attr(ranef[[i]], "levels") <- 
-      levels(as.factor(get(x$group[[i]], data)))
+      levels(as.factor(get(random$group[[i]], data)))
     attr(ranef[[i]], "group") <- names(ranef)[i]
-    attr(ranef[[i]], "cor") <- x$cor[[i]]
+    attr(ranef[[i]], "cor") <- random$cor[[i]]
   }
   ranef
 }

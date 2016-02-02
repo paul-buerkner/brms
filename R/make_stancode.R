@@ -61,11 +61,11 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   trunc <- get_boundaries(ee$trunc)  
   add <- is.formula(ee[c("weights", "cens", "trunc")])
   
+  ranef <- gather_ranef(ee, data = data, is_forked = is_forked)
   if (length(nonlinear)) {
     text_nonlinear <- stan_nonlinear(ee, data = data, family = family, 
                                      add = add, cov_ranef = cov_ranef,
                                      prior = prior)
-    ranef <- gather_ranef(ee$nonlinear, data = data)
     text_fixef <- text_ranef <- text_eta <- list()
   } else {
     # generate fixed effects code
@@ -90,7 +90,6 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
                              has_intercept = has_intercept)
     
     # generate random effects code
-    ranef <- gather_ranef(ee$random, data = data, is_forked = is_forked)
     # call stan_ranef for each random term seperately
     text_ranef <- lapply(seq_along(ranef), stan_ranef, ranef = ranef, 
                          names_cov_ranef = names(cov_ranef), prior = prior)

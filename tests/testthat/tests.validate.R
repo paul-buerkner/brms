@@ -160,7 +160,7 @@ test_that("gather_ranef works correctly", {
   attr(target$g, "levels") <- paste(1:10)
   attr(target$g, "group") <- "g"
   attr(target$g, "cor") <- FALSE
-  expect_equal(gather_ranef(extract_effects(y~(1+x||g))$random, data = data),
+  expect_equal(gather_ranef(extract_effects(y~(1+x||g)), data = data),
                target)
   expect_equal(gather_ranef(list()), list())
 })

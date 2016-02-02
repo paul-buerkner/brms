@@ -437,7 +437,7 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
           "  ", eta, " <- rep_vector(0, N); \n")  
       }
       # include random effects
-      ranef <- gather_ranef(effects$nonlinear[[i]]$random, data = data)
+      ranef <- gather_ranef(effects$nonlinear[[i]], data = data)
       if (length(ranef)) {
         text_ranef <- lapply(seq_along(ranef), stan_ranef, ranef = ranef, 
                              names_cov_ranef = names(cov_ranef), 
