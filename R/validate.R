@@ -555,7 +555,7 @@ check_brm_input <- function(x) {
   invisible(NULL)
 }
 
-exclude_pars <- function(formula, ranef = TRUE) {
+exclude_pars <- function(effects, ranef = TRUE) {
   # list irrelevant parameters NOT to be saved by Stan
   # 
   # Args:
@@ -564,15 +564,26 @@ exclude_pars <- function(formula, ranef = TRUE) {
   #
   # Returns:
   #   a vector of parameters to be excluded
-  ee <- extract_effects(formula)
   out <- c("eta", "etap", "eta_2PL", "Eta", 
            "temp_Intercept1", "temp_Intercept", 
            "Lrescor", "Rescor", "Sigma", "LSigma",
            "p", "q", "e", "E", "res_cov_matrix", 
            "lp_pre", "hs_local", "hs_global")
-  for (i in seq_along(ee$random$group)) {
-    out <- c(out, paste0("pre_",i), paste0("L_",i), paste0("Cor_",i))
-    if (!ranef) out <- c(out, paste0("r_",i))
+  #ee <- extract_effects(formula)
+  #random <- get_random(ee)
+  rm_re_pars <- c("pre", "L", "Cor", if (!ranef) "r")
+  if (length(effects$nonlinear)) {
+    nlpars <- paste0(names(effects$nonlinear)) 
+    out <- c(out, paste0("eta_", nlpars))
+    for (k in seq_along(nlpars)) {
+      for (i in seq_along(effects$nonlinear[[k]]$random$group)) {
+        out <- c(out, paste0(rm_re_pars, "_", nlpars[k], "_", i))
+      }
+    }
+  } else {
+    for (i in seq_along(effects$random$group)) {
+      out <- c(out, paste0(rm_re_pars, "_", i))
+    }
   }
   out
 }
