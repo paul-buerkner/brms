@@ -285,7 +285,7 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
 #' 
 #' @export
 get_prior <- function(formula, data = NULL, family = gaussian(),
-                      autocor = NULL, partial = NULL, 
+                      autocor = NULL, nonlinear = NULL, partial = NULL, 
                       threshold = c("flexible", "equidistant"), 
                       internal = FALSE) {
   # note that default priors are stored in this function
@@ -294,7 +294,8 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
   link <- family$link
   threshold <- match.arg(threshold)
   autocor <- check_autocor(autocor)
-  ee <- extract_effects(formula, partial, family = family)
+  ee <- extract_effects(formula, partial, family = family,
+                        nonlinear = nonlinear)
   data <- update_data(data, family = family, effects = ee)
   
   # ensure that RE and residual SDs only have a weakly informative prior by default
@@ -316,26 +317,32 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
   prior <- prior_frame(prior = character(0), class = character(0), 
                        coef = character(0), group = character(0),
                        bound = character(0))
-  # fixed and category specific effects
-  fixef <- colnames(get_model_matrix(ee$fixed, data = data))
-  if (length(fixef)) {
-    if ("Intercept" %in% fixef) {
-      prior <- rbind(prior, prior_frame(class = "Intercept"))
+  if (length(nonlinear)) {
+    # FIXME
+    random <- do.call(rbind, lapply(ee$nonlinear, function(par) par$random))
+  } else {
+    # fixed and category specific effects 
+    fixef <- colnames(get_model_matrix(ee$fixed, data = data))
+    if (length(fixef)) {
+      if ("Intercept" %in% fixef) {
+        prior <- rbind(prior, prior_frame(class = "Intercept"))
+      }
+      prior <- rbind(prior, prior_frame(class = "b", coef = c("", fixef))) 
     }
-    prior <- rbind(prior, prior_frame(class = "b", coef = c("", fixef))) 
-  }
-  if (is.formula(partial)) {
-    paref <- colnames(get_model_matrix(partial, data = data, 
-                                       rm_intercept = TRUE))
-    prior <- rbind(prior, prior_frame(class = "b", coef = paref))
+    if (is.formula(partial)) {
+      paref <- colnames(get_model_matrix(partial, data = data, 
+                                         rm_intercept = TRUE))
+      prior <- rbind(prior, prior_frame(class = "b", coef = paref))
+    }
+    random <- ee$random
   }
   # random effects
-  if (nrow(ee$random)) {
+  if (nrow(random)) {
     # global sd class
     prior <- rbind(prior, prior_frame(class = "sd", prior = default_scale_prior))  
-    gs <- ee$random$group
+    gs <- random$group
     for (i in seq_along(gs)) {
-      ranef <- colnames(get_model_matrix(ee$random$form[[i]], data = data))
+      ranef <- colnames(get_model_matrix(random$form[[i]], data = data))
       # include random effects standard deviations
       prior <- rbind(prior, prior_frame(class = "sd", coef = c("", ranef), 
                                         group = gs[i]))
@@ -347,13 +354,15 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
              call. = FALSE)
       }
       # include correlation parameters
-      if (ee$random$cor[[i]] && length(ranef) > 1) {
+      if (random$cor[[i]] && length(ranef) > 1) {
         if (internal) {
-          prior <- rbind(prior, prior_frame(class = "L", group = c("", gs[i]),
-                                            prior = c("lkj_corr_cholesky(1)", "")))
+          prior <- rbind(prior, 
+            prior_frame(class = "L", group = c("", gs[i]),
+                        prior = c("lkj_corr_cholesky(1)", "")))
         } else {
-          prior <- rbind(prior, prior_frame(class = "cor", group = c("", gs[i]),
-                                            prior = c("lkj(1)", "")))
+          prior <- rbind(prior, 
+            prior_frame(class = "cor", group = c("", gs[i]),
+                        prior = c("lkj(1)", "")))
         }
       }
     }
@@ -403,7 +412,7 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
 }
 
 check_prior <- function(prior, formula, data = NULL, family = gaussian(), 
-                        autocor = NULL, partial = NULL, 
+                        autocor = NULL,  nonlinear = NULL, partial = NULL, 
                         threshold = "flexible") {
   # check prior input and amend it if needed
   #
@@ -416,11 +425,11 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
     # prior has already been checked; no need to do it twice
     return(prior)
   }
-  ee <- extract_effects(formula, family = family)  
+  ee <- extract_effects(formula, family = family, nonlinear = nonlinear)  
   all_priors <- get_prior(formula = formula, data = data, 
                           family = family, autocor = autocor, 
                           partial = partial, threshold = threshold, 
-                          internal = TRUE)
+                          internal = TRUE, nonlinear = nonlinear)
   if (is.null(prior)) {
     prior <- all_priors  
   } else if (is(prior, "brmsprior")) {
@@ -507,18 +516,21 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
     prior <- rbind(prior, partial_prior)
   }
   # rename parameter groups
+  if (length(nonlinear)) {
+    random <- do.call(rbind, lapply(ee$nonlinear, function(par) par$random))
+  } else random <- ee$random
   group_indices <- which(nchar(prior$group) > 0)
   for (i in group_indices) {
-    if (!prior$group[i] %in% ee$random$group) { 
+    if (!prior$group[i] %in% random$group) { 
       stop(paste("grouping factor", prior$group[i], "not found in the model"),
            call. = FALSE)
-    } else if (sum(prior$group[i] == ee$random$group) == 1) {
+    } else if (sum(prior$group[i] == random$group) == 1) {
       # matches only one grouping factor in the model
-      prior$group[i] <- match(prior$group[i], ee$random$group)
+      prior$group[i] <- match(prior$group[i], random$group)
     } else {
       # matches multiple grouping factors in the model
       rows2remove <- c(rows2remove, i)
-      which_match <- which(prior$group[i] == ee$random$group)
+      which_match <- which(prior$group[i] == random$group)
       new_rows <- lapply(which_match, function(j) {
         new_row <- prior[i, ]
         new_row$group <- j
