@@ -4,8 +4,8 @@
 \alias{set_prior}
 \title{Prior Definitions for \pkg{brms} Models}
 \usage{
-set_prior(prior, class = "b", coef = "", group = "", lb = NULL,
-  ub = NULL)
+set_prior(prior, class = "b", coef = "", group = "", nlpar = "",
+  lb = NULL, ub = NULL)
 }
 \arguments{
 \item{prior}{A character string defining a distribution in \pkg{Stan} language}

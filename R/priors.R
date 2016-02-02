@@ -212,13 +212,15 @@
 #'
 #' @export
 set_prior <- function(prior, class = "b", coef = "", group = "",
-                      lb = NULL, ub = NULL) {
+                      nlpar = "", lb = NULL, ub = NULL) {
   prior <- as.character(prior)
   class <- as.character(class)
   group <- as.character(group)
   coef <- as.character(coef)
+  nlpar <- as.character(nlpar)
   if (length(prior) != 1 || length(class) != 1 || length(coef) != 1 || 
-      length(group) != 1 || length(lb) > 1 || length(ub) > 1)
+      length(group) != 1 || length(nlpar) != 1 || length(lb) > 1 || 
+      length(ub) > 1)
     stop("All arguments of set_prior must be of length 1", call. = FALSE)
   valid_classes <- c("Intercept", "b", "sd", "cor", "L", "ar", "ma", "arr",
                      "sigma", "rescor", "Lrescor", "nu", "shape", "delta", "phi")
@@ -229,6 +231,8 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
          call. = FALSE)
   if (nchar(coef) && !class %in% c("b", "sd", "sigma"))
     stop(paste("argument coef not meaningful for class", class))
+  if (nchar(nlpar) && !class %in% valid_classes[1:5])
+    stop(paste("argument nlpar not meaningful for class", class))
   if (length(lb) || length(ub)) {
     if (!class %in% c("b"))
       stop("currently boundaries are only allowed for fixed effects")
@@ -243,9 +247,9 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
   if (grepl("^increment_log_prob\\(", prior)) {
     # increment_log_prob can be used to directly add a term 
     # to the log posterior
-    class <- coef <- group <- ""
+    class <- coef <- group <- nlpar <- ""
   }
-  out <- nlist(prior, class, coef, group, bound)
+  out <- nlist(prior, class, coef, group, nlpar, bound)
   class(out) <- c("brmsprior", "list")
   out
 }
@@ -311,14 +315,19 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
       prior_scale <- max(prior_scale, suggested_scale, na.rm = TRUE)
     } 
   }
-  default_scale_prior <- paste0("cauchy(0, ", prior_scale, ")")
+  def_scale_prior <- paste0("cauchy(0, ", prior_scale, ")")
   
   # initialize output
   prior <- prior_frame(prior = character(0), class = character(0), 
                        coef = character(0), group = character(0),
-                       bound = character(0))
+                       nlpar = character(0), bound = character(0))
   if (length(nonlinear)) {
-    # FIXME
+    prior <- rbind(prior, prior_frame(class = "b"))
+    for (i in seq_along(nonlinear)) {
+      fixef <- colnames(get_model_matrix(ee$nonlinear[[i]]$fixed, data = data))
+      prior <- rbind(prior, prior_frame(class = "b", coef = c("", fixef), 
+                                        nlpar = names(ee$nonlinear)[i])) 
+    }
   } else {
     # fixed and category specific effects 
     fixef <- colnames(get_model_matrix(ee$fixed, data = data))
@@ -338,13 +347,15 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
   random <- get_random(ee)
   if (nrow(random)) {
     # global sd class
-    prior <- rbind(prior, prior_frame(class = "sd", prior = default_scale_prior))  
+    prior <- rbind(prior, prior_frame(class = "sd", prior = def_scale_prior))  
     gs <- random$group
+    nlpars <- if (length(nonlinear)) colnames(random) 
+              else rep("", ncol(random))
     for (i in seq_along(gs)) {
       ranef <- colnames(get_model_matrix(random$form[[i]], data = data))
       # include random effects standard deviations
       prior <- rbind(prior, prior_frame(class = "sd", coef = c("", ranef), 
-                                        group = gs[i]))
+                                        group = gs[i], nlpar = nlpars[i]))
       # detect duplicated random effects
       J <- with(prior, class == "sd" & group == gs[i] & nchar(coef))
       dupli <- duplicated(prior[J, ])
@@ -356,12 +367,12 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
       if (random$cor[[i]] && length(ranef) > 1) {
         if (internal) {
           prior <- rbind(prior, 
-            prior_frame(class = "L", group = c("", gs[i]),
+            prior_frame(class = "L", group = c("", gs[i]), nlpar = nlpars[i],
                         prior = c("lkj_corr_cholesky(1)", "")))
         } else {
           prior <- rbind(prior, 
             prior_frame(class = "cor", group = c("", gs[i]),
-                        prior = c("lkj(1)", "")))
+                        nlpar = nlpars[i], prior = c("lkj(1)", "")))
         }
       }
     }
@@ -378,7 +389,7 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
     prior <- rbind(prior, prior_frame(class = "arr"))
   if (has_sigma(family, se = is.formula(ee$se), autocor = autocor)) {
     sigma_prior <- prior_frame(class = "sigma", coef = c("", ee$response),
-                               prior = c(default_scale_prior, rep("", nresp)))
+                               prior = c(def_scale_prior, rep("", nresp)))
     prior <- rbind(prior, sigma_prior)
   }
   if (is_linear && nresp > 1) {
@@ -399,7 +410,7 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
   }
   if (has_shape(family)) {
     prior <- rbind(prior, prior_frame(class = "shape", 
-                                      prior = default_scale_prior))
+                                      prior = def_scale_prior))
   }
   if (is_ordinal && threshold == "equidistant") {
     prior <- rbind(prior, prior_frame(class = "delta"))
@@ -620,10 +631,10 @@ update_prior <- function(prior) {
 }
 
 prior_frame <- function(prior = "", class = "", coef = "", 
-                        group = "", bound = "") {
+                        group = "", nlpars = "", bound = "") {
   # helper function to create data.frames containing prior information 
   out <- data.frame(prior = prior, class = class, coef = coef, 
-                    group = group, bound = bound,
+                    group = group, nlpars = nlpars, bound = bound,
                     stringsAsFactors = FALSE)
   class(out) <- c("prior_frame", "data.frame")
   out
@@ -633,9 +644,10 @@ prior_frame <- function(prior = "", class = "", coef = "",
 print.brmsprior <- function(x, ...) {
   group <- ifelse(nchar(x$group), paste0("_", x$group), "")
   coef <- ifelse(nchar(x$coef), paste0("_", x$coef), "")
+  nlpar <- ifelse(nchar(x$nlpar), paste0("_", x$nlpar), "")
   tilde <- ifelse(nchar(x$class) + nchar(group) + nchar(coef), " ~ ", "")
   bound <- ifelse(nchar(x$bound), paste0(x$bound, " "), "")
-  cat(paste0("Prior: ", bound, x$class, group, coef, tilde, x$prior))
+  cat(paste0("Prior: ", bound, x$class, nlpar, group, coef, tilde, x$prior))
   invisible(x)
 }
 
@@ -644,9 +656,9 @@ c.brmsprior <- function(x, ...) {
   # combines multiple brmsprior objects into one prior_frame
   if(any(!sapply(list(...), is, class2 = "brmsprior")))
     stop("All arguments must be of class brmsprior")
-  prior <- data.frame(matrix(unlist(list(x, ...)), ncol = 5, byrow = TRUE),
+  prior <- data.frame(matrix(unlist(list(x, ...)), ncol = 6, byrow = TRUE),
                       stringsAsFactors = FALSE)
-  names(prior) <- c("prior", "class", "coef", "group", "bound") 
+  names(prior) <- c("prior", "class", "coef", "group", "nlpar", "bound") 
   class(prior) <- c("prior_frame", "data.frame")
   prior
 }
