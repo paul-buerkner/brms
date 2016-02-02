@@ -115,27 +115,20 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
            call. = FALSE)
   }
   
+  covars <- setdiff(all.vars(rhs(x$fixed)), names(x$nonlinear))
+  x$covars <- formula(paste("~", paste(c("1", covars), collapse = "+")))
   # make a formula containing all required variables (element 'all')
-  plus_rh <- function(x) {
-    # take the right hand side of a formula and add a +
-    if (is.formula(x)) 
-      x <- Reduce(paste, deparse(x[[2]]))
-    if (!is.null(x) && nchar(x)) paste("+", x)
-    else "1"
-  }
-  vars_fixed <- setdiff(all.vars(x$fixed), names(x$nonlinear))
-  formula_list <- c(paste(vars_fixed, collapse = "+"), 
-                    x$random$form, group_formula, add_vars, 
-                    lapply(x$nonlinear, function(nl) nl$all),
-                    get_offset(x$fixed), ...)
-  new_formula <- collapse(ulapply(formula_list, plus_rh))
+  formula_list <- c(all.vars(lhs(x$fixed)), x$covars, x$random$form, 
+                    group_formula, add_vars, get_offset(x$fixed), 
+                    lapply(x$nonlinear, function(nl) nl$all), ...)
+  new_formula <- collapse(ulapply(formula_list, plus_rhs))
   x$all <- paste0("update(", tfixed, ", ~ ", new_formula, ")")
   x$all <- eval(parse(text = x$all))
   environment(x$all) <- globalenv()
   
   # extract response variables
   if (check_response) {
-    x$respform <- update(x$all, . ~ 1)
+    x$respform <- lhs(x$all)
     x$response <- gather_response(x$respform)
     if (is.hurdle(family)) {
       x$response <- c(x$response, paste0("hu_", x$response))
@@ -364,6 +357,13 @@ update_re_terms <- function(formula, re_formula = NULL) {
     stop("invalid re_formula argument", call. = FALSE)
   } 
   new_formula
+}
+
+plus_rhs <- function(x) {
+  # take the right hand side of a formula and add a +
+  if (is.formula(x)) x <- Reduce(paste, deparse(x[[2]]))
+  if (!is.null(x) && nchar(x)) paste("+", paste(x, collapse = "+"))
+  else "+ 1"
 }
 
 get_offset <- function(x) {

@@ -104,6 +104,18 @@ nlist <- function(...) {
   dots
 }
 
+rhs <- function(x) {
+  # return the righthand side of a formula
+  x <- as.formula(x)
+  if (length(x) == 3) x[-2] else x
+}
+
+lhs <- function(x) {
+  # return the lefthand side of a formula
+  x <- as.formula(x)
+  if (length(x) == 3) update(x, . ~ 1) else NULL
+}
+
 get_matches <- function(pattern, text, ...) {
   # get pattern matches in text as vector
   unlist(regmatches(text, gregexpr(pattern, text, ...)))
