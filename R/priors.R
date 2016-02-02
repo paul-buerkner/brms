@@ -356,13 +356,6 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
       # include random effects standard deviations
       prior <- rbind(prior, prior_frame(class = "sd", coef = c("", ranef), 
                                         group = gs[i], nlpar = nlpars[i]))
-      # detect duplicated random effects
-      J <- with(prior, class == "sd" & group == gs[i] & nchar(coef))
-      dupli <- duplicated(prior[J, ])
-      if (any(dupli)) {
-        stop(paste("Duplicated random effects detected for group", gs[i]),
-             call. = FALSE)
-      }
       # include correlation parameters
       if (random$cor[[i]] && length(ranef) > 1) {
         if (internal) {
@@ -464,7 +457,7 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
   
   prior$class <- rename(prior$class, symbols = c("^cor$", "^rescor$"), 
                         subs = c("L", "Lrescor"), fixed = FALSE)
-  duplicated_input <- duplicated(prior[, 2:4])
+  duplicated_input <- duplicated(prior[, 2:5])
   if (any(duplicated_input)) {
     stop("Duplicated prior specifications are not allowed.", call. = FALSE)
   }
@@ -476,7 +469,7 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
   
   # check if parameters in prior are valid
   if (nrow(prior)) {
-    valid <- which(duplicated(rbind(all_priors[, 2:4], prior[, 2:4])))
+    valid <- which(duplicated(rbind(all_priors[, 2:5], prior[, 2:5])))
     invalid <- which(!1:nrow(prior) %in% (valid - nrow(all_priors)))
     if (length(invalid)) {
       message(paste("Prior element", paste(invalid, collapse = ", "),
@@ -487,7 +480,7 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
   
   # merge prior with all_priors
   prior <- rbind(prior, all_priors)
-  rm <- which(duplicated(prior[, 2:4]))
+  rm <- which(duplicated(prior[, 2:5]))
   if (length(rm)) { 
     # else it may happen that all rows a removed...
     prior <- prior[-rm, ]
