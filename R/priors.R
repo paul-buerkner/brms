@@ -118,9 +118,9 @@
 #'   The corresponding standard deviation parameters are named as 
 #'   \code{sd_g_Intercept} and \code{sd_g_x1} respectively. 
 #'   These parameters are restriced to be non-negative and, by default, 
-#'   have a half cauchy prior with a scale parameter that depends on the 
-#'   standard deviation of the response after applying the link function.
-#'   Minimally, the scale parameter is 5. 
+#'   have a half student-t prior with 3 degrees of freedom and a 
+#'   scale parameter that depends on the standard deviation of the response 
+#'   after applying the link function. Minimally, the scale parameter is 5. 
 #'   To define a prior distribution only for standard deviations 
 #'   of a specific grouping factor,
 #'   use \cr \code{set_prior("<prior>", class = "sd", group = "<group>")}. 
@@ -153,7 +153,7 @@
 #'   Families \code{gaussian}, \code{student}, and \code{cauchy} 
 #'   need the parameter \code{sigma} 
 #'   to account for the residual standard deviation.
-#'   By default, \code{sigma} has a half cauchy prior that scales 
+#'   By default, \code{sigma} has a half student-t prior that scales 
 #'   in the same way as the random effects standard deviations. 
 #'   Furthermore, family \code{student} needs the parameter 
 #'   \code{nu} representing the degrees of freedom of students t distribution. 
@@ -161,7 +161,7 @@
 #'   and a fixed lower bound of \code{1}.
 #'   Families \code{gamma}, \code{weibull}, \code{inverse.gaussian}, and
 #'   \code{negbinomial} need a \code{shape} parameter that has a 
-#'   \code{"cauchy(0,5)"} prior by default. 
+#'   \code{"student_t(3,0,5)"} prior by default. 
 #'   For families \code{cumulative}, \code{cratio}, \code{sratio}, 
 #'   and \code{acat}, and only if \code{threshold = "equidistant"}, 
 #'   the parameter \code{delta} is used to model the distance between 
@@ -315,7 +315,7 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
       prior_scale <- max(prior_scale, suggested_scale, na.rm = TRUE)
     } 
   }
-  def_scale_prior <- paste0("cauchy(0, ", prior_scale, ")")
+  def_scale_prior <- paste0("student_t(3, 0, ", prior_scale, ")")
   
   # initialize output
   prior <- prior_frame(prior = character(0), class = character(0), 
