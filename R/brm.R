@@ -468,7 +468,7 @@ brm <- function(formula, data = NULL, family = gaussian(),
     # see data.R
     x$data <- update_data(data, family = family, effects = ee, et$group) 
     # see validate.R
-    x$ranef <- gather_ranef(random = ee$random, data = x$data, 
+    x$ranef <- gather_ranef(ee$random, data = x$data, 
                             is_forked = is.forked(family))  
     x$exclude <- exclude_pars(formula, ranef = ranef)
     # see stan.R

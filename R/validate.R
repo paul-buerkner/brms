@@ -313,7 +313,7 @@ check_re_formula <- function(re_formula, old_ranef, data) {
     }
     # the true family doesn't matter here
     data <- update_data(data, family = NA, effects = ee)
-    new_ranef <- gather_ranef(random = ee$random, data = data)
+    new_ranef <- gather_ranef(ee$random, data = data)
     new_ranef <- combine_duplicates(new_ranef)
     invalid_gf <- setdiff(names(new_ranef), names(old_ranef))
     if (length(invalid_gf)) {
@@ -478,23 +478,28 @@ gather_response <- function(formula) {
   response
 }
 
-gather_ranef <- function(random, data = NULL, ...) {
+gather_ranef <- function(x, data = NULL, ...) {
   # gathers helpful information on the random effects
   #
   # Args:
-  #   random: output of extract_effects()$random
+  #   x: output of extract_effects()$random
+  #      or extract_effects()$nonlinear
   #   data: data passed to brm after updating
   #   ...: Further arguments passed to get_model_matrix
   #
   # Returns: 
   #   A named list with one element per grouping factor
-  Z <- lapply(random$form, get_model_matrix, data = data, ...)
-  ranef <- setNames(lapply(Z, colnames), random$group)
+  if (is.null(x$form)) {
+    # for nonlinear models
+    x <- do.call(rbind, lapply(x, function(par) par$random))
+  }
+  Z <- lapply(x$form, get_model_matrix, data = data, ...)
+  ranef <- setNames(lapply(Z, colnames), x$group)
   for (i in seq_along(ranef)) {
     attr(ranef[[i]], "levels") <- 
-      levels(as.factor(get(random$group[[i]], data)))
+      levels(as.factor(get(x$group[[i]], data)))
     attr(ranef[[i]], "group") <- names(ranef)[i]
-    attr(ranef[[i]], "cor") <- random$cor[[i]]
+    attr(ranef[[i]], "cor") <- x$cor[[i]]
   }
   ranef
 }
