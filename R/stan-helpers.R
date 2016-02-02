@@ -427,9 +427,9 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
       if (length(fixef)) {
         out$data <- paste0(out$data, 
           "  int<lower=1> K_", p, ";  // number of fixed effects \n", 
-          "  matrix[N, K] X_", p, ";  // FE design matrix \n")
+          "  matrix[N, K_", p, "] X_", p, ";  // FE design matrix \n")
         out$par <- paste0(out$par,
-         "  vector[K] b_", p, ";  // fixed effects \n")
+         "  vector[K_", p, "] b_", p, ";  // fixed effects \n")
         out$transC1 <- paste0(out$transC1, 
           "  ", eta, " <- X_", p, " * b_", p, "; \n")        
       } else {
@@ -448,27 +448,39 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
         out$par <- paste0(out$par, text_ranef$par)
         out$transD <- paste0(out$transD, text_ranef$transD)
         out$transC1 <- paste0(out$transC1, text_ranef$transC)
-        out$transC2 <- paste0(out$transC2, "  ", eta, "[n] <- ", eta, "[n]", 
-                              stan_eta_re(ranef, par = p), "; \n") 
+        out$transC2 <- paste0(out$transC2, 
+          "    ", eta, "[n] <- ", eta, "[n]", 
+          stan_eta_re(ranef, par = p), "; \n") 
+        out$genD <- paste0(out$genD, text_ranef$genD)
+        out$genC <- paste0(out$genC, text_ranef$genC)
       }
     }
     # prepare non-linear model of eta 
     nlpars <- wsp(names(effects$nonlinear))
+    new_nlpars <- paste0(" eta_", names(effects$nonlinear), "[n] ")
+    # covariates in the nonlinear model
     nlvars <- wsp(setdiff(all.vars(effects$fixed[[3]]), 
                           names(effects$nonlinear)))
-    new_nlpars <- paste0(" eta_", names(effects$nonlinear), "[n] ")
-    new_nlvars <- paste0(" C[n, ", seq_along(nlvars), "] ")
+    if (length(nlvars)) {
+      out$data <- paste0(out$data, 
+        "  int<lower=1> KC;  // number of covariates \n",
+        "  matrix[N, KC] C;  // covariate matrix \n")
+      new_nlvars <- paste0(" C[n, ", seq_along(nlvars), "] ")
+    } else new_nlvars <- NULL
+    # add whitespaces to be able to replace parameters and covariates
     meta_sym <- c("+", "-", "*", "/", "^", ")", "(")
     nlmodel <- gsub(" ", "", deparse(effects$fixed[[3]]))
     nlmodel <- wsp(rename(nlmodel, meta_sym, wsp(meta_sym))) 
     nlmodel <- rename(nlmodel, c(nlpars, nlvars, " ( ", " ) "), 
                       c(new_nlpars, new_nlvars, "(", ")"))
-    out$transform <- stan_eta_transform(family$family, family$link, add = add)
-    if (out$transform) {
+    # possibly transform eta in the transformed params block
+    transform <- stan_eta_transform(family$family, family$link, add = add)
+    if (transform) {
       eta_ilink <- stan_eta_ilink(family$family, family$link)
     } else eta_ilink <- rep("", 2)
-    out$transC2 <- paste0(out$transC2, "  eta[n] <- ", eta_ilink[1],
-                          trimws(nlmodel), eta_ilink[2], "; \n")
+    out$transD <- paste0(out$transD, "  vector[N] eta; \n")
+    out$transC2 <- paste0(out$transC2, 
+      "    eta[n] <- ", eta_ilink[1], trimws(nlmodel), eta_ilink[2], "; \n")
   }
   out
 }

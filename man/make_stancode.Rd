@@ -5,9 +5,9 @@
 \title{Stan Code for \pkg{brms} Models}
 \usage{
 make_stancode(formula, data = NULL, family = gaussian(), prior = NULL,
-  autocor = NULL, partial = NULL, threshold = c("flexible",
-  "equidistant"), cov_ranef = NULL, sample_prior = FALSE,
-  save_model = NULL, ...)
+  autocor = NULL, nonlinear = NULL, partial = NULL,
+  threshold = c("flexible", "equidistant"), cov_ranef = NULL,
+  sample_prior = FALSE, save_model = NULL, ...)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class): 

@@ -18,7 +18,8 @@
 #'
 #' @export
 make_stancode <- function(formula, data = NULL, family = gaussian(), 
-                          prior = NULL, autocor = NULL, partial = NULL, 
+                          prior = NULL, autocor = NULL, 
+                          nonlinear = NULL, partial = NULL, 
                           threshold = c("flexible", "equidistant"),
                           cov_ranef = NULL, sample_prior = FALSE, 
                           save_model = NULL, ...) {
@@ -35,9 +36,11 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   threshold <- match.arg(threshold)
   prior <- check_prior(prior, formula = formula, data = data, 
                        family = family, autocor = autocor, 
-                       partial = partial, threshold = threshold) 
+                       partial = partial, threshold = threshold,
+                       nonlinear = nonlinear) 
   et <- extract_time(autocor$formula)  
-  ee <- extract_effects(formula, family = family, partial, et$all)
+  ee <- extract_effects(formula, family = family, partial, et$all, 
+                        nonlinear = nonlinear)
   data <- update_data(data, family = family, effects = ee, et$group)
   
   # flags to indicate of which type family is
@@ -56,41 +59,51 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   has_shape <- has_shape(family)
   offset <- !is.null(model.offset(data)) 
   trunc <- get_boundaries(ee$trunc)  
+  add <- is.formula(ee[c("weights", "cens", "trunc")])
   
-  # generate fixed effects code
-  rm_intercept <- isTRUE(attr(ee$fixed, "rsv_intercept"))
-  if (is_categorical) {
-    X <- data.frame()
-    fixef <- colnames(X)
-    Xp <- get_model_matrix(ee$fixed, data, rm_intercept = rm_intercept)
-    temp_list <- check_intercept(colnames(Xp))
-    paref <- temp_list$names
+  if (length(nonlinear)) {
+    text_nonlinear <- stan_nonlinear(ee, data = data, family = family, 
+                                     add = add, cov_ranef = cov_ranef,
+                                     prior = prior)
+    ranef <- gather_ranef(ee$nonlinear, data = data)
+    text_fixef <- text_ranef <- text_eta <- list()
   } else {
-    X <- get_model_matrix(ee$fixed, data, is_forked = is_forked,
-                          rm_intercept = rm_intercept)
-    temp_list <- check_intercept(colnames(X))
-    fixef <- temp_list$names
-    Xp <- get_model_matrix(partial, data, rm_intercept = TRUE)
-    paref <- colnames(Xp)
+    # generate fixed effects code
+    rm_intercept <- isTRUE(attr(ee$fixed, "rsv_intercept"))
+    if (is_categorical) {
+      X <- data.frame()
+      fixef <- colnames(X)
+      Xp <- get_model_matrix(ee$fixed, data, rm_intercept = rm_intercept)
+      temp_list <- check_intercept(colnames(Xp))
+      paref <- temp_list$names
+    } else {
+      X <- get_model_matrix(ee$fixed, data, is_forked = is_forked,
+                            rm_intercept = rm_intercept)
+      temp_list <- check_intercept(colnames(X))
+      fixef <- temp_list$names
+      Xp <- get_model_matrix(partial, data, rm_intercept = TRUE)
+      paref <- colnames(Xp)
+    }
+    has_intercept <- temp_list$has_intercept
+    text_fixef <- stan_fixef(fixef = fixef, paref = paref, family = family, 
+                             prior = prior, threshold = threshold,
+                             has_intercept = has_intercept)
+    
+    # generate random effects code
+    ranef <- gather_ranef(ee$random, data = data, is_forked = is_forked)
+    # call stan_ranef for each random term seperately
+    text_ranef <- lapply(seq_along(ranef), stan_ranef, ranef = ranef, 
+                         names_cov_ranef = names(cov_ranef), prior = prior)
+    # combine random effects stan code of different grouping factors by names
+    text_ranef <- collapse_lists(text_ranef)
+    # generate stan code for the linear predictor
+    text_eta <- stan_eta(family = family, fixef = fixef, ranef = ranef,
+                         has_intercept = has_intercept, paref = paref, 
+                         autocor = autocor, offset = offset, 
+                         is_multi = is_multi, add = add)
+    text_nonlinear <- list()
   }
-  has_intercept <- temp_list$has_intercept
-  text_fixef <- stan_fixef(fixef = fixef, paref = paref, family = family, 
-                           prior = prior, threshold = threshold,
-                           has_intercept = has_intercept)
-  
-  # generate random effects code
-  ranef <- gather_ranef(ee$random, data = data, is_forked = is_forked)
-  # call stan_ranef for each random term seperately
-  text_ranef <- lapply(seq_along(ranef), stan_ranef, ranef = ranef, 
-                       names_cov_ranef = names(cov_ranef), prior = prior)
-  # combine random effects stan code of different grouping factors by names
-  text_ranef <- collapse_lists(text_ranef)
-  
-  # generate other important parts of the stan code
-  text_eta <- stan_eta(family = family, fixef = fixef, ranef = ranef,
-                       has_intercept = has_intercept, paref = paref, 
-                       autocor = autocor, offset = offset, is_multi = is_multi,
-                       add = is.formula(ee[c("weights", "cens", "trunc")]))
+  # generate stan code for the likelihood
   text_llh <- stan_llh(family, se = is.formula(ee$se),  
                        weights = is.formula(ee$weights),
                        trials = is.formula(ee$trials),
@@ -126,6 +139,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     text_fixef$prior,
     text_ordinal$prior,
     text_ranef$prior,
+    text_nonlinear$prior,
     text_arma$prior,
     text_multi$prior,
     if (has_sigma) 
@@ -172,6 +186,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     },
     text_fixef$data,
     text_ranef$data,
+    text_nonlinear$data,
     text_arma$data,
     text_inv_gaussian$data,
     if (has_trials(family))
@@ -214,6 +229,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     text_fixef$par,
     text_ordinal$par,
     text_ranef$par,
+    text_nonlinear$par,
     text_arma$par,
     text_multi$par,
     if (has_sigma)
@@ -234,7 +250,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   # generate transformed parameters block
   # loop over all observations in transformed parameters if necessary
   make_loop <- nrow(ee$random) || (Kar || Kma) && !use_cov(autocor) ||  
-               text_eta$transform
+               isTRUE(text_eta$transform) || length(nonlinear)
   if (make_loop && !is_multi) {
     text_loop <- c(paste0(
       "  // if available add REs to linear predictor \n",
@@ -247,6 +263,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   text_transformed_parameters <- paste0(
     "transformed parameters { \n",
       text_eta$transD, 
+      text_nonlinear$transD,
       text_arma$transD, 
       text_ordinal$transD,
       text_multi$transD,
@@ -256,8 +273,10 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
       text_arma$transC1, 
       text_ordinal$transC1, 
       text_ranef$transC, 
+      text_nonlinear$transC1,
       text_loop[1],
         text_eta$transC2, 
+        text_nonlinear$transC2,
         text_arma$transC2, 
         text_ordinal$transC2, 
         text_eta$transC3, 
@@ -287,10 +306,12 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
       text_fixef$genD,
       text_multi$genD, 
       text_ranef$genD, 
+      text_nonlinear$genD,
       text_rngprior$genD,
       text_fixef$genC,
       text_multi$genC, 
       text_ranef$genC, 
+      text_nonlinear$genC,
       text_rngprior$genC,
     "} \n")
 
