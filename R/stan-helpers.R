@@ -419,19 +419,21 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
   out <- list()
   if (length(effects$nonlinear)) {
     for (i in seq_along(effects$nonlinear)) {
-      p <- names(effects$nonlinear)[i]
-      eta <- paste0("eta_", p)
+      nlp <- names(effects$nonlinear)[i]
+      eta <- paste0("eta_", nlp)
       out$transD <- paste0(out$transD, "  vector[N] ", eta, "; \n")
       # include fixed effects
       fixef <- colnames(get_model_matrix(effects$nonlinear[[i]]$fixed, data))
       if (length(fixef)) {
         out$data <- paste0(out$data, 
-          "  int<lower=1> K_", p, ";  // number of fixed effects \n", 
-          "  matrix[N, K_", p, "] X_", p, ";  // FE design matrix \n")
+          "  int<lower=1> K_", nlp, ";  // number of fixed effects \n", 
+          "  matrix[N, K_", nlp, "] X_", nlp, ";  // FE design matrix \n")
         out$par <- paste0(out$par,
-         "  vector[K_", p, "] b_", p, ";  // fixed effects \n")
+         "  vector[K_", nlp, "] b_", nlp, ";  // fixed effects \n")
         out$transC1 <- paste0(out$transC1, 
-          "  ", eta, " <- X_", p, " * b_", p, "; \n")        
+          "  ", eta, " <- X_", nlp, " * b_", nlp, "; \n")  
+        out$prior <- paste0(out$prior,
+          stan_prior(class = "b", coef = fixef, nlpar = nlp, prior = prior))
       } else {
         out$transC1 <- paste0(out$transC1, 
           "  ", eta, " <- rep_vector(0, N); \n")  
@@ -441,7 +443,7 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
       if (length(ranef)) {
         text_ranef <- lapply(seq_along(ranef), stan_ranef, ranef = ranef, 
                              names_cov_ranef = names(cov_ranef), 
-                             prior = prior, par = p)
+                             prior = prior, par = nlp)
         text_ranef <- collapse_lists(text_ranef)
         out$data <- paste0(out$data, text_ranef$data)
         out$prior <- paste0(out$prior, text_ranef$prior)
@@ -450,7 +452,7 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
         out$transC1 <- paste0(out$transC1, text_ranef$transC)
         out$transC2 <- paste0(out$transC2, 
           "    ", eta, "[n] <- ", eta, "[n]", 
-          stan_eta_re(ranef, par = p), "; \n") 
+          stan_eta_re(ranef, par = nlp), "; \n") 
         out$genD <- paste0(out$genD, text_ranef$genD)
         out$genC <- paste0(out$genC, text_ranef$genC)
       }
@@ -1266,7 +1268,7 @@ stan_misc_functions <- function(family = gaussian(), kronecker = FALSE) {
   out
 }
 
-stan_prior <- function(class, coef = NULL, group = NULL,
+stan_prior <- function(class, coef = NULL, group = NULL, nlpar = NULL,
                        prior = prior_frame(), s = 2) {
   # Define priors for parameters in Stan language
   # 
@@ -1274,6 +1276,7 @@ stan_prior <- function(class, coef = NULL, group = NULL,
   #   class: the parameter class
   #   coef: the coefficients of this class
   #   group: the name of a grouping factor
+  #   nlpar: the name of a non-linear parameter
   #   prior: a data.frame containing user defined priors 
   #          as returned by check_prior
   #   s: an integer >= 0 defining the number of spaces 
@@ -1289,8 +1292,12 @@ stan_prior <- function(class, coef = NULL, group = NULL,
   keep <- which(prior$class == class & (prior$coef %in% coef | !nchar(prior$coef)))
   user_prior <- prior[keep, ]
   if (!is.null(group)) {
-    keep2 <- which(user_prior$group == group | !nchar(user_prior$group))
-    user_prior <- user_prior[keep2, ]
+    keep_group <- which(user_prior$group == group | !nchar(user_prior$group))
+    user_prior <- user_prior[keep_group, ]
+  }
+  if (!is.null(nlpar)) {
+    keep_nlpar <- which(user_prior$nlpar == nlpar | !nchar(user_prior$nlpar))
+    user_prior <- user_prior[keep_nlpar, ]
   }
   if (!nchar(class) && nrow(user_prior)) {
     # increment_log_prob statements are directly put into the Stan code
@@ -1299,10 +1306,13 @@ stan_prior <- function(class, coef = NULL, group = NULL,
   
   # get base prior
   igroup <- which(with(user_prior, !nchar(coef) & nchar(group) & nchar(prior)))
+  inlpar <- which(with(user_prior, !nchar(coef) & nchar(nlpar) & nchar(prior)))
   iclass <- which(with(user_prior, !nchar(coef) & !nchar(group) & nchar(prior)))
   if (length(igroup)) {  
     # if there is a global prior for this group
     base_prior <- user_prior[igroup, "prior"]
+  } else if (length(inlpar)) {
+    base_prior <- user_prior[inlpar, "prior"]
   } else if (length(iclass)) {  
     # if there is a global prior for this class
     base_prior <- user_prior[iclass, "prior"]
@@ -1333,9 +1343,10 @@ stan_prior <- function(class, coef = NULL, group = NULL,
     }
   }
   
-  if (!is.null(group)) {
+  if (!is.null(nlpar))
+    class <- paste0(class, "_", nlpar)
+  if (!is.null(group)) 
     class <- paste0(class, "_", group)
-  }
   # generate stan prior statements
   if (any(with(user_prior, nchar(coef) & nchar(prior)))) {
     # generate a prior for each coefficient
