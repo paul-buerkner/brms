@@ -287,7 +287,7 @@ get_model_matrix <- function(formula, data = environment(formula), ...) {
   X <- stats::model.matrix(terms, data)
   new_colnames <- rename(colnames(X), check_dup = TRUE)
   if (isTRUE(attr(terms, "rm_intercept")) && "Intercept" %in% new_colnames) {
-    X <- as.matrix(X[, -(1)])
+    X <- X[, -1, drop = FALSE]
     if (ncol(X)) {
       colnames(X) <- new_colnames[2:length(new_colnames)]
     }

@@ -7,7 +7,8 @@
 \title{Data for \pkg{brms} Models}
 \usage{
 make_standata(formula, data = NULL, family = "gaussian", autocor = NULL,
-  partial = NULL, cov_ranef = NULL, control = NULL, ...)
+  nonlinear = NULL, partial = NULL, cov_ranef = NULL, control = NULL,
+  ...)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class): 

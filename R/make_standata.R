@@ -25,7 +25,7 @@
 #'          
 #' @export
 make_standata <- function(formula, data = NULL, family = "gaussian", 
-                          autocor = NULL, partial = NULL, 
+                          autocor = NULL, nonlinear = NULL, partial = NULL, 
                           cov_ranef = NULL, control = NULL, ...) {
   # internal control arguments:
   #   is_newdata: logical; indicating if make_standata is called with new data
@@ -45,7 +45,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   is_forked <- is.forked(family)
   et <- extract_time(autocor$formula)
   ee <- extract_effects(formula = formula, family = family, 
-                        partial, et$all)
+                        partial, et$all, nonlinear = nonlinear)
   na_action <- if (isTRUE(control$is_newdata)) na.pass else na.omit
   data <- update_data(data, family = family, effects = ee, et$group,
                       drop.unused.levels = !isTRUE(control$is_newdata),
@@ -154,27 +154,46 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   }
   
   # fixed effects data
-  rm_intercept <- is_ordinal || !isTRUE(control$keep_intercept) ||
-    isTRUE(attr(ee$fixed, "rsv_intercept"))
-  X <- get_model_matrix(ee$fixed, data, rm_intercept = rm_intercept,
-                        is_forked = is_forked)
-  X_means <- colMeans(X)
-  has_intercept <- attr(terms(formula), "intercept")
-  if (!isTRUE(control$keep_intercept) && has_intercept) {
-    # keep_intercept is TRUE when make_standata is called within S3 methods
-    X <- sweep(X, 2, X_means, FUN = "-")
-  }
-  if (is.categorical(family)) {
-    standata <- c(standata, 
-                  list(Kp = ncol(X), Xp = X, Xp_means = as.array(X_means)))
+  if (length(nonlinear)) {
+    # fixed effects design matrices
+    nlpars <- names(ee$nonlinear)
+    fixed_list <- lapply(ee$nonlinear, function(par) par$fixed)
+    X <- lapply(fixed_list, get_model_matrix, data = data)
+    for (i in seq_along(nlpars)) {
+      standata <- c(standata, setNames(list(ncol(X[[i]]), X[[i]]),
+                                       paste0(c("K_", "X_"), nlpars[i])))
+    }
+    # matrix of covariances
+    C <- get_model_matrix(ee$covars, data = data, rm_intercept = TRUE)
+    if (length(all.vars(ee$covars)) != ncol(C)) {
+      stop("Factors with more than two levels are not allowed as covariates",
+           call. = FALSE)
+    }
+    standata <- c(standata, list(KC = ncol(C), C = C)) 
+    random <- do.call(rbind, lapply(ee$nonlinear, function(par) par$random))
   } else {
-    standata <- c(standata, 
-                  list(K = ncol(X), X = X, X_means = as.array(X_means)))
-  } 
-  
+    rm_intercept <- is_ordinal || !isTRUE(control$keep_intercept) ||
+      isTRUE(attr(ee$fixed, "rsv_intercept"))
+    X <- get_model_matrix(ee$fixed, data, rm_intercept = rm_intercept,
+                          is_forked = is_forked)
+    X_means <- colMeans(X)
+    has_intercept <- attr(terms(formula), "intercept")
+    if (!isTRUE(control$keep_intercept) && has_intercept) {
+      # keep_intercept is TRUE when make_standata is called within S3 methods
+      X <- sweep(X, 2, X_means, FUN = "-")
+    }
+    if (is.categorical(family)) {
+      standata <- c(standata, 
+                    list(Kp = ncol(X), Xp = X, Xp_means = as.array(X_means)))
+    } else {
+      standata <- c(standata, 
+                    list(K = ncol(X), X = X, X_means = as.array(X_means)))
+    }
+    random <- ee$random
+  }
   # random effects data
-  if (nrow(ee$random)) {
-    Z <- lapply(ee$random$form, get_model_matrix, 
+  if (nrow(random)) {
+    Z <- lapply(random$form, get_model_matrix, 
                 data = data, is_forked = is_forked)
     r <- lapply(Z, colnames)
     ncolZ <- lapply(Z, ncol)
@@ -185,14 +204,17 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
                        ncolZ[[i]],  # number of random effects
                        Z[[i]],  # random effects design matrix
                        #  number of correlations
-                       ncolZ[[i]] * (ncolZ[[i]]-1) / 2) 
+                       ncolZ[[i]] * (ncolZ[[i]] - 1) / 2) 
     if (isTRUE(control$is_newdata)) {
       # for newdata only as levels are already defined in amend_newdata
       expr[1] <- expression(get(g, data)) 
     }
-    for (i in 1:nrow(ee$random)) {
-      g <- ee$random$group[[i]]
-      name <- paste0(c("J_", "N_", "K_", "Z_", "NC_"), i)
+    for (i in 1:nrow(random)) {
+      g <- random$group[[i]]
+      if (length(nonlinear)) {
+        pi <- paste0(rownames(random)[i], "_", i)
+      } else pi <- i 
+      name <- paste0(c("J_", "N_", "K_", "Z_", "NC_"), pi)
       if (ncolZ[[i]] == 1) {
         Z[[i]] <- as.vector(Z[[i]])
       }
@@ -221,7 +243,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
           warning(paste("covariance matrix of grouping factor", g, 
                         "may not be positive definite"), call. = FALSE)
         cov_mat <- cov_mat[order(found_level_names), order(found_level_names)]
-        if (length(r[[i]]) == 1 || !ee$random$cor[[i]]) {
+        if (length(r[[i]]) == 1 || !random$cor[[i]]) {
           # pivoting ensures that (numerically) semi-definite matrices can be used
           cov_mat <- suppressWarnings(chol(cov_mat, pivot = TRUE))
           cov_mat <- t(cov_mat[, order(attr(cov_mat, "pivot"))])
