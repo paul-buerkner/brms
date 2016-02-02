@@ -631,10 +631,10 @@ update_prior <- function(prior) {
 }
 
 prior_frame <- function(prior = "", class = "", coef = "", 
-                        group = "", nlpars = "", bound = "") {
+                        group = "", nlpar = "", bound = "") {
   # helper function to create data.frames containing prior information 
   out <- data.frame(prior = prior, class = class, coef = coef, 
-                    group = group, nlpars = nlpars, bound = bound,
+                    group = group, nlpar = nlpar, bound = bound,
                     stringsAsFactors = FALSE)
   class(out) <- c("prior_frame", "data.frame")
   out
