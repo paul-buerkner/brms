@@ -5,7 +5,7 @@
 \title{Fit Bayesian Generalized Linear and Ordinal Mixed Models}
 \usage{
 brm(formula, data = NULL, family = gaussian(), prior = NULL,
-  addition = NULL, autocor = NULL, partial = NULL,
+  addition = NULL, autocor = NULL, nonlinear = NULL, partial = NULL,
   threshold = c("flexible", "equidistant"), cov_ranef = NULL,
   ranef = TRUE, sample_prior = FALSE, fit = NA, inits = "random",
   chains = 2, iter = 2000, warmup = 500, thin = 1, cluster = 1,

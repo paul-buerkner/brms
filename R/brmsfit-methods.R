@@ -651,6 +651,7 @@ standata.brmsfit <- function(object, ...) {
                               data = object$data, 
                               family = object$family, 
                               autocor = object$autocor, 
+                              nonlinear = object$nonlinear,
                               cov_ranef = object$cov_ranef, 
                               partial = object$partial, ...)
   } else {

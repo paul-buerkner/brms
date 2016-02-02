@@ -515,7 +515,7 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
     partial_prior$class <- "bp"  # the category specific effects class
     prior <- rbind(prior, partial_prior)
   }
-  # rename parameter groups
+  # rename group parameter
   if (length(nonlinear)) {
     random <- do.call(rbind, lapply(ee$nonlinear, function(par) par$random))
   } else random <- ee$random

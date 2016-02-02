@@ -1,11 +1,11 @@
 brmsfit <- function(formula = NULL, family = "", link = "", data.name = "", 
                     data = data.frame(), model = "", exclude = NULL,
                     prior = list(), ranef = NULL, autocor = NULL,
-                    partial = NULL, cov_ranef = NULL, fit = NA,
-                    algorithm = "sampling") {
+                    nonlinear = NULL, partial = NULL, cov_ranef = NULL, 
+                    fit = NA, algorithm = "sampling") {
   # brmsfit class
   x <- nlist(formula, family, link, data.name, data, model, exclude, prior, 
-             ranef, autocor, partial, cov_ranef, fit, algorithm)
+             ranef, autocor, nonlinear, partial, cov_ranef, fit, algorithm)
   class(x) <- "brmsfit"
   x
 }

@@ -416,7 +416,8 @@
 #' @export 
 brm <- function(formula, data = NULL, family = gaussian(), 
                 prior = NULL, addition = NULL, autocor = NULL, 
-                partial = NULL, threshold = c("flexible", "equidistant"), 
+                nonlinear = NULL, partial = NULL, 
+                threshold = c("flexible", "equidistant"), 
                 cov_ranef = NULL, ranef = TRUE, sample_prior = FALSE, 
                 fit = NA, inits = "random", chains = 2, iter = 2000, 
                 warmup = 500, thin = 1, cluster = 1, cluster_type = "PSOCK", 
@@ -455,15 +456,17 @@ brm <- function(formula, data = NULL, family = gaussian(),
     formula <- update_formula(formula, addition = addition, data = data) 
     prior <- check_prior(prior, formula = formula, data = data, 
                          family = family, autocor = autocor,
-                         partial = partial, threshold = threshold) 
+                         nonlinear = nonlinear, partial = partial, 
+                         threshold = threshold) 
     et <- extract_time(autocor$formula)  
-    ee <- extract_effects(formula, family = family, partial, et$all)
+    ee <- extract_effects(formula, family = family, partial, et$all,
+                          nonlinear = nonlinear)
     data.name <- Reduce(paste, deparse(substitute(data)))
     
     # initialize S3 object
     x <- brmsfit(formula = formula, family = family, link = family$link, 
                  partial = partial, data.name = data.name, autocor = autocor, 
-                 prior = prior, cov_ranef = cov_ranef,
+                 prior = prior, nonlinear = nonlinear, cov_ranef = cov_ranef,
                  algorithm = algorithm)  
     # see data.R
     x$data <- update_data(data, family = family, effects = ee, et$group) 
@@ -474,7 +477,8 @@ brm <- function(formula, data = NULL, family = gaussian(),
     # see stan.R
     x$model <- make_stancode(formula = formula, data = data, 
                              family = family, prior = prior,  
-                             autocor = autocor, partial = partial, 
+                             autocor = autocor, partial = partial,
+                             nonlinear = nonlinear,
                              threshold = threshold, 
                              cov_ranef = cov_ranef, 
                              sample_prior = sample_prior, 
