@@ -130,12 +130,13 @@ ranef.brmsfit <- function(object, estimate = "mean", var = FALSE, ...) {
     #   i: index of a grouping factor
     g <- group[i]
     rnames <- object$ranef[[i]]
-    rpars <- pars[grepl(paste0("^r_",group[i],"\\["), pars)]
+    nlpar <- get_nlpar(object$ranef[[i]], suffix = "_")
+    rpars <- pars[grepl(paste0("^r_", nlpar, group[i],"\\["), pars)]
     if (!length(rpars))
       stop(paste0("The model does not contain random effects for group '",g,"'\n",
                   "You should use argument ranef = TRUE in function brm."),
            call. = FALSE)
-    rdims <- object$fit@sim$dims_oi[[paste0("r_",group[i])]]
+    rdims <- object$fit@sim$dims_oi[[paste0("r_", nlpar, group[i])]]
     levels <- attr(object$ranef[[i]], "levels")
     if (is.null(levels)) {
       # avoid error in dimnames if levels are NULL 
@@ -147,9 +148,9 @@ ranef.brmsfit <- function(object, estimate = "mean", var = FALSE, ...) {
     rs_array <- array(dim = c(rdims[1], ncol, nrow(rs)))
     k <- 0
     for (j in 1:ncol) {
-      for (i in 1:rdims[1]) {
+      for (l in 1:rdims[1]) {
         k <- k + 1
-        rs_array[i, j, ] <- rs[, k]
+        rs_array[l, j, ] <- rs[, k]
       }
     }
     out <- get_estimate(estimate, samples = rs_array, margin = 1:2, ...)
@@ -157,14 +158,16 @@ ranef.brmsfit <- function(object, estimate = "mean", var = FALSE, ...) {
     if(var) {
       Var <- array(dim = c(rep(ncol, 2), rdims[1]), 
                    dimnames = list(rnames, rnames, 1:rdims[1]))
-      for (i in 1:rdims[1]) {
-        if (is.na(rdims[2])) Var[, , i] <- var(rs_array[i, 1, ]) 
-        else Var[, , i] <- cov(t(rs_array[i, , ])) 
+      for (j in 1:rdims[1]) {
+        if (is.na(rdims[2])) Var[, , j] <- var(rs_array[j, 1, ]) 
+        else Var[, , j] <- cov(t(rs_array[j, , ])) 
       }
       dimnames(Var)[[3]] <- levels
       attr(out, "var") <- Var
     }
     rownames(out) <- levels
+    if (nchar(nlpar)) 
+      attr(out, "nlpar") <- get_nlpar(object$ranef[[i]])
     return(out)
   }
   
