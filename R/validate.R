@@ -507,6 +507,8 @@ gather_ranef <- function(effects, data = NULL, ...) {
       levels(as.factor(get(random$group[[i]], data)))
     attr(ranef[[i]], "group") <- names(ranef)[i]
     attr(ranef[[i]], "cor") <- random$cor[[i]]
+    if (length(effects$nonlinear))
+      attr(ranef[[i]], "nlpar") <- rownames(random)[i]
   }
   ranef
 }
