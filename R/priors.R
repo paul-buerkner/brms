@@ -356,6 +356,14 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
       # include random effects standard deviations
       prior <- rbind(prior, prior_frame(class = "sd", coef = c("", ranef), 
                                         group = gs[i], nlpar = nlpars[i]))
+      # detect duplicated random effects
+      J <- with(prior, class == "sd" & group == gs[i] & 
+                       nlpar == nlpars[i] & nchar(coef))
+      dupli <- duplicated(prior[J, ])
+      if (any(dupli)) {
+        stop(paste("Duplicated random effects detected for group", gs[i]),
+             call. = FALSE)
+      }
       # include correlation parameters
       if (random$cor[[i]] && length(ranef) > 1) {
         if (internal) {
