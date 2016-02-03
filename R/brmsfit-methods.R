@@ -571,15 +571,14 @@ summary.brmsfit <- function(object, waic = FALSE, ...) {
       nlp_ <- ifelse(nchar(nlp), paste0(nlp, "_"), nlp)
       rnames <- object$ranef[[i]]
       sd_pars <- paste0("sd_", nlp_, out$group[i], "_", rnames)
-      sd_type <- ifelse(nchar(nlp), paste0("sd_", nlp), "sd")
-      sd_names <- paste0(sd_type, "(", rnames,")")
-      all_cor_pars <- get_cornames(rnames, brackets = FALSE,
-                                   type = paste0("cor_", nlp_, out$group[i]))
-      cor_pars <- intersect(all_cor_pars, parnames(object))
-      cor_type <- ifelse(nchar(nlp), paste0("cor_", nlp), "cor") 
-      cor_names <- get_cornames(rnames, type = cor_type,
-                                subset = cor_pars, 
-                                subtype = out$group[i])
+      sd_names <- paste0("sd", "(", nlp_, rnames,")")
+      # construct correlation names
+      full_type <- paste0("cor_", nlp_, out$group[i])
+      all_cor_pars <- get_cornames(rnames, brackets = FALSE, type = full_type)
+      take <- all_cor_pars %in% parnames(object)
+      cor_pars <- all_cor_pars[take]
+      cor_names <- get_cornames(paste0(nlp_, rnames))[take]
+      # extract sd and cor parameters from the summary
       out$random[[out$group[i]]] <- 
         fit_summary[c(sd_pars, cor_pars), , drop = FALSE]
       rownames(out$random[[out$group[i]]]) <- c(sd_names, cor_names)
