@@ -23,8 +23,6 @@ test_that("get_cornames returns desired correlation names", {
                c("cor_Intercept_x", "cor_Intercept_y", "cor_x_y"))
   expect_equal(get_cornames(names, type = "rescor"),
                c("rescor(Intercept,x)", "rescor(Intercept,y)", "rescor(x,y)"))
-  expect_equal(get_cornames(names, subset = c("cor_Intercept_x", "cor_Intercept_y")), 
-               c("cor(Intercept,x)", "cor(Intercept,y)"))
 })
 
 test_that("get_cov_matrix returns appropriate dimensions", {

@@ -90,8 +90,7 @@ ilink <- function(x, link) {
   else stop(paste("Link", link, "not supported"))
 }
 
-get_cornames <- function(names, type = "cor", brackets = TRUE, 
-                         subset = NULL, subtype = "") {
+get_cornames <- function(names, type = "cor", brackets = TRUE) {
   # get correlation names as combinations of variable names
   #
   # Args:
@@ -99,15 +98,11 @@ get_cornames <- function(names, type = "cor", brackets = TRUE,
   #  type: of the correlation to be put in front of the returned strings
   #  brackets: should the correlation names contain brackets 
   #            or underscores as seperators
-  #  subset: subset of correlation parameters to be returned. 
-  #          Currently only used in summary.brmsfit (s3.methods.R)
-  #  subtype: the subtype of the correlation (e.g., g1 in cor_g1_x_y). 
-  #           Only used when subset is not NULL
   #
   # Returns: 
   #  correlation names based on the variable names passed to the names argument
   cornames <- NULL
-  if (is.null(subset) && length(names) > 1) {
+  if (length(names) > 1) {
     for (i in 2:length(names)) {
       for (j in 1:(i-1)) {
         if (brackets) {
@@ -117,12 +112,6 @@ get_cornames <- function(names, type = "cor", brackets = TRUE,
         }
       }
     }
-  } else if (!is.null(subset)) {
-    possible_values <- get_cornames(names = names, type = "", brackets = FALSE)
-    subset <- rename(subset, paste0("^",type, if (nchar(subtype)) paste0("_",subtype)),
-                     "", fixed = FALSE)
-    matches <- which(possible_values %in% subset)
-    cornames <- get_cornames(names = names, type = type)[matches]
   }
   cornames
 }
