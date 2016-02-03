@@ -1487,8 +1487,7 @@ stan_eta_transform <- function(family, link, add = FALSE) {
   # indicate whether eta needs to be transformed
   # Args:
   #   add: is the model weighted, censored, or truncated?
-  !(add || link == "identity"
-    || family == "gaussian" && link == "log"
+  !(add || family == "gaussian" && link == "log"
     || is.ordinal(family) || is.categorical(family) 
     || is.count(family) && link == "log" 
     || is.binary(family) && link == "logit"
