@@ -501,7 +501,8 @@ print.brmsfit <- function(x, digits = 2, ...) {
 #' @export
 summary.brmsfit <- function(object, waic = FALSE, ...) {
   family <- family(object)
-  ee <- extract_effects(object$formula, family = family)
+  ee <- extract_effects(object$formula, family = family,
+                        nonlinear = object$nonlinear)
   formula <- update_formula(object$formula, partial = object$partial)
   out <- brmssummary(formula = formula,
                      family = family, 
@@ -564,20 +565,23 @@ summary.brmsfit <- function(object, waic = FALSE, ...) {
     out$cor_pars <- fit_summary[cor_pars, , drop = FALSE]
     rownames(out$cor_pars) <- cor_pars
     
-    if (length(out$group)) {
-      for (i in 1:length(out$group)) {
-        rnames <- object$ranef[[i]]
-        sd_pars <- paste0("sd_", out$group[i],"_",rnames)
-        all_cor_pars <- get_cornames(rnames, brackets = FALSE,
-                                     type = paste0("cor_",out$group[i]))
-        cor_pars <- intersect(all_cor_pars, parnames(object))
-        sd_names <- paste0("sd(",rnames,")")
-        cor_names <- get_cornames(rnames, subset = cor_pars, 
-                                  subtype = out$group[i])
-        out$random[[out$group[i]]] <- 
-          fit_summary[c(sd_pars, cor_pars), , drop = FALSE]
-        rownames(out$random[[out$group[i]]]) <- c(sd_names, cor_names)
-      }
+    for (i in seq_along(out$group)) {
+      nlp <- get_nlpar(object$ranef[[i]])
+      nlp_ <- ifelse(nchar(nlp), paste0(nlp, "_"), nlp)
+      rnames <- object$ranef[[i]]
+      sd_pars <- paste0("sd_", nlp_, out$group[i], "_", rnames)
+      sd_type <- ifelse(nchar(nlp), paste0("sd_", nlp), "sd")
+      sd_names <- paste0(sd_type, "(", rnames,")")
+      all_cor_pars <- get_cornames(rnames, brackets = FALSE,
+                                   type = paste0("cor_", nlp_, out$group[i]))
+      cor_pars <- intersect(all_cor_pars, parnames(object))
+      cor_type <- ifelse(nchar(nlp), paste0("cor_", nlp), "cor") 
+      cor_names <- get_cornames(rnames, type = cor_type,
+                                subset = cor_pars, 
+                                subtype = out$group[i])
+      out$random[[out$group[i]]] <- 
+        fit_summary[c(sd_pars, cor_pars), , drop = FALSE]
+      rownames(out$random[[out$group[i]]]) <- c(sd_names, cor_names)
     }
   }  
   out
@@ -605,11 +609,15 @@ nobs.brmsfit <- function(object, ...) {
 #' @importFrom lme4 ngrps
 ngrps.brmsfit <- function(object, ...) {
   standata <- standata(object)
-  ee <- extract_effects(object$formula, family = object$family)
-  group <- ee$random$group
+  ee <- extract_effects(object$formula, family = object$family,
+                        nonlinear = object$nonlinear)
+  rand <- get_random(ee)
+  group <- rand$group
   if (length(group)) {
+    nlp <- if (length(ee$nonlinear)) paste0(rownames(rand), "_") 
+           else rep("", nrow(rand))
     .fun <- function(i) {
-      n <- standata[[paste0("N_", i)]]
+      n <- standata[[paste0("N_", nlp[i], i)]]
       if (is.null(n)) {
         n <- standata[[paste0("N_", group[[i]])]]
       }
