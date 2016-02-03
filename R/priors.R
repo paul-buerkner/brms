@@ -485,7 +485,6 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
       prior <- prior[-invalid, ]
     }
   }
-  
   # merge prior with all_priors
   prior <- rbind(prior, all_priors)
   rm <- which(duplicated(prior[, 2:5]))
@@ -526,7 +525,20 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
     partial_prior$class <- "bp"  # the category specific effects class
     prior <- rbind(prior, partial_prior)
   }
-  # rename group parameter
+  # check if priors for non-linear parameters are defined
+  if (length(nonlinear)) {
+    nlpars <- names(ee$nonlinear)
+    for (nlp in nlpars) {
+      nlp_prior <- prior$prior[with(prior, nlpar == nlp & class == "b")]
+      if (!any(as.logical(nchar(nlp_prior)))) {
+        stop(paste0("Priors for non-linear parameters are required, ",
+                    "but no prior found for parameter '", nlp, "'. \n",
+                    "See help(set_prior) for more details."), 
+             call. = FALSE)
+      }
+    }
+  }
+  # rename random effects priors to match names in Stan code
   random <- get_random(ee)
   group_indices <- which(nchar(prior$group) > 0)
   for (i in group_indices) {
