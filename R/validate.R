@@ -578,7 +578,7 @@ exclude_pars <- function(effects, ranef = TRUE) {
   # list irrelevant parameters NOT to be saved by Stan
   # 
   # Args:
-  #   formula: a model formula
+  #   effects: output of extract_effects
   #   ranef: logical; should random effects of each level be saved?
   #
   # Returns:

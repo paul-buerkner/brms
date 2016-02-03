@@ -1379,7 +1379,7 @@ update.brmsfit <- function(object, newdata = NULL, ...) {
     stop("Please use argument 'newdata' to update your data", call. = FALSE)
   }
   # update arguments if required
-  ee <- extract_effects(object$formula)
+  ee <- extract_effects(object$formula, nonlinear = object$nonlinear)
   if (!is.null(newdata)) {
     object$data <- amend_newdata(newdata, fit = object, 
                                  return_standata = FALSE)
@@ -1389,7 +1389,7 @@ update.brmsfit <- function(object, newdata = NULL, ...) {
     dots$is_newdata <- TRUE
   }
   if (!is.null(dots$ranef)) {
-    object$exclude <- exclude_pars(object$formula, ranef = dots$ranef)
+    object$exclude <- exclude_pars(ee, ranef = dots$ranef)
   }
   if (!isFALSE(dots$refit)) {
     # allows test 'update' without having to fit a Stan model
