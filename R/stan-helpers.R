@@ -418,6 +418,8 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
   # prepare Stan code for non-linear models
   out <- list()
   if (length(effects$nonlinear)) {
+    out$data <- "  // data for non-linear fixed effects \n"
+    out$par <- "  // non-linear fixed effects \n"
     for (i in seq_along(effects$nonlinear)) {
       nlp <- names(effects$nonlinear)[i]
       eta <- paste0("eta_", nlp)
@@ -426,10 +428,10 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
       fixef <- colnames(get_model_matrix(effects$nonlinear[[i]]$fixed, data))
       if (length(fixef)) {
         out$data <- paste0(out$data, 
-          "  int<lower=1> K_", nlp, ";  // number of fixed effects \n", 
-          "  matrix[N, K_", nlp, "] X_", nlp, ";  // FE design matrix \n")
+          "  int<lower=1> K_", nlp, "; \n", 
+          "  matrix[N, K_", nlp, "] X_", nlp, "; \n")
         out$par <- paste0(out$par,
-         "  vector[K_", nlp, "] b_", nlp, ";  // fixed effects \n")
+         "  vector[K_", nlp, "] b_", nlp, "; \n")
         out$transC1 <- paste0(out$transC1, 
           "  ", eta, " <- X_", nlp, " * b_", nlp, "; \n")  
         out$prior <- paste0(out$prior,
