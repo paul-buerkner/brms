@@ -127,11 +127,10 @@ get_cornames <- function(names, type = "cor", brackets = TRUE,
   cornames
 }
 
-get_nlpar <- function(x) {
+get_nlpar <- function(x, suffix = "") {
   # extract name of a non-linear parameter
   nlpar <- attr(x, "nlpar")
-  if (is.null(nlpar)) nlpar <- ""
-  nlpar
+  if (!is.null(nlpar)) paste0(nlpar, suffix) else ""
 }
 
 get_estimate <- function(coef, samples, margin = 2, to.array = FALSE, ...) {

@@ -136,9 +136,8 @@ rename_pars <- function(x) {
   if (length(x$ranef)) {
     group <- names(x$ranef)
     gf <- make_group_frame(x$ranef)
-    if (length(x$nonlinear)) {
-      nlpar <- paste0(ulapply(x$ranef, function(y) attr(y, "nlpar")), "_")
-    } else nlpar <- rep("", length(x$ranef))
+    random <- get_random(ee)
+    nlpar <- ulapply(x$ranef, get_nlpar, suffix = "_")
     for (i in seq_along(x$ranef)) {
       sd <- paste0("sd_", nlpar[i])
       rfnames <- paste0(sd, group[i], "_", x$ranef[[i]])
@@ -151,10 +150,10 @@ rename_pars <- function(x) {
                       new_class = paste0(sd, group[i]),
                       names = x$ranef[[i]]))
       # rename random effects correlations
-      if (length(x$ranef[[i]]) > 1 && ee$random$cor[[i]]) {
+      if (length(x$ranef[[i]]) > 1 && random$cor[[i]]) {
         cor <- paste0("cor_", nlpar[i])
-        cor_names <- get_cornames(x$ranef[[i]], type = paste0(cor, group[i]), 
-                                  brackets = FALSE)
+        cor_names <- get_cornames(x$ranef[[i]], brackets = FALSE,
+                                  type = paste0(cor, group[i]))
         change <- lc(change, 
           list(pos = grepl(paste0("^", cor, i, "(\\[|$)"), pars),
                oldname = paste0(cor, i), pnames = cor_names,
@@ -164,7 +163,7 @@ rename_pars <- function(x) {
                         new_class = paste0(cor, group[i])))
       }
       if (any(grepl("^r_", pars))) {
-        if (length(x$ranef[[i]]) == 1 || ee$random$cor[[i]]) {
+        if (length(x$ranef[[i]]) == 1 || random$cor[[i]]) {
           change <- lc(change, 
             ranef_changes(i = i, ranef = x$ranef, gf = gf, pars = pars,
                           dims_oi = x$fit@sim$dims_oi))
