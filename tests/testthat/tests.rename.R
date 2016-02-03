@@ -28,15 +28,21 @@ test_that("model_names works correctly", {
 
 test_that("make_group_frame returns correct first and last indices", {
   expect_equal(make_group_frame(list(a = c("x","Int"), b = c("x"))),
-               data.frame(g = c("a", "b"), first = c(1, 1), last = c(2, 1)))
+               data.frame(g = c("a", "b"), nlp = "", first = c(1, 1), 
+                          last = c(2, 1)))
   expect_equal(make_group_frame(list(a = c("x","Int"), b = c("x"), 
-                                     a = list("y","z"), b = list("b"))),
-               data.frame(g = c("a", "b", "a", "b"), first = c(1, 1, 3, 2),
-                          last = c(2, 1, 4, 2)))
+                                     a = c("y","z"), b = c("b"))),
+               data.frame(g = c("a", "b", "a", "b"), nlp = "", 
+                          first = c(1, 1, 3, 2), last = c(2, 1, 4, 2)))
   expect_equal(make_group_frame(list(a = c("x","Int"), b = c("x"), 
-                                     a = list("y","z"), a = list("b"))),
-               data.frame(g = c("a", "b", "a", "a"), first = c(1, 1, 3, 5), 
-                          last = c(2, 1, 4, 5)))
+                                     a = c("y","z"), a = c("b"))),
+               data.frame(g = c("a", "b", "a", "a"), nlp = "", 
+                          first = c(1, 1, 3, 5), last = c(2, 1, 4, 5)))
+  # test in case of a non-linear model
+  ranef <- list(a = structure(c("x","Int"), nlpar = "U"), 
+                b = structure(c("x"), nlpar = "U"), 
+                a = structure(c("y","z"), nlpar = "V"))
+  
 })
 
 test_that("make_index_names returns correct 1 and 2 dimensional indices", {
