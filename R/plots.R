@@ -45,7 +45,7 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, rug = FALSE,
     on.exit(devAskNewPage(default_ask))
     devAskNewPage(ask = FALSE)
   }
-  plots <- list()
+  plots <- setNames(vector("list", length(x)), names(x))
   for (i in seq_along(x)) {
     response <- attributes(x[[i]])$response
     effects <- attributes(x[[i]])$effects
