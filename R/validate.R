@@ -18,25 +18,30 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   #   group: A vector of names of the grouping variables. 
   #   weights, se, cens, trials, cat: information on possible addition arguments
   #   all: A formula that contains every variable mentioned in formula and ...
-  term_labels <- rename(attr(terms(formula), "term.labels"), " ", "")
   tformula <- formula2string(formula) 
   tfixed <- gsub("\\|+[^~]*~", "~", tformula)
-  re_terms <- term_labels[grepl("\\|", term_labels)]
-  if (length(re_terms)) {
-    if (length(nonlinear)) {
+  if (length(nonlinear)) {
+    if (grepl("|", tfixed, fixed = TRUE)) {
       stop(paste("Random effects in non-linear models should be specified", 
                  "in the 'nonlinear' argument."), call. = FALSE)
     }
-    re_terms <- paste0("(", re_terms, ")")
-    # make sure that + before random terms are also removed
-    extended_re_terms <- c(paste0("+", re_terms), re_terms)
-    tfixed <- rename(tfixed, extended_re_terms, "")
-  } 
-  if (substr(tfixed, nchar(tfixed), nchar(tfixed)) == "~") {
-    tfixed <- paste0(tfixed, "1")
-  }
-  if (grepl("|", x = tfixed, fixed = TRUE)) {
-    stop("Random effects terms should be enclosed in brackets", call. = FALSE)
+    re_terms <- NULL
+  } else {
+    # terms() doesn't like non-linear formulas
+    term_labels <- rename(attr(terms(formula), "term.labels"), " ", "")
+    re_terms <- term_labels[grepl("\\|", term_labels)]
+    if (length(re_terms)) {
+      re_terms <- paste0("(", re_terms, ")")
+      # make sure that + before random terms are also removed
+      extended_re_terms <- c(paste0("+", re_terms), re_terms)
+      tfixed <- rename(tfixed, extended_re_terms, "")
+    } 
+    if (substr(tfixed, nchar(tfixed), nchar(tfixed)) == "~") {
+      tfixed <- paste0(tfixed, "1")
+    }
+    if (grepl("|", x = tfixed, fixed = TRUE)) {
+      stop("Random effects terms should be enclosed in brackets", call. = FALSE)
+    }
   }
   fixed <- formula(tfixed)
   rsv_intercept <- has_rsv_intercept(fixed)
@@ -201,12 +206,12 @@ nonlinear_effects <- function(x, model = ~ 1) {
       if (any(ulapply(c(".", "_"), grepl, x = nlresp, fixed = TRUE))) {
         stop("Non-linear parameters should not contain dots or underscores.")
       }
-      x[[i]] <- delete.response(terms(x[[i]]))
+      x[[i]] <- rhs(x[[i]])
       nleffects[[i]] <- extract_effects(x[[i]], check_response = FALSE)
       nleffects[[i]]$nonlinear <- NULL
       names(nleffects)[[i]] <- nlresp
     }
-    model_vars <- all.vars(delete.response(terms(model)))
+    model_vars <- all.vars(rhs(model))
     missing_pars <- setdiff(names(nleffects), model_vars)
     if (length(missing_pars)) {
       stop(paste("Some non-linear parameters are missing in formula:", 
@@ -246,7 +251,10 @@ update_formula <- function(formula, data = NULL, addition = NULL,
     fnew <- paste(fnew, "+ partial(", partial, ")")
   }
   # to allow the '.' symbol in formula
-  formula <- formula(terms(formula, data = data))
+  try_terms <- try(terms(formula, data = data), silent = TRUE)
+  if (!is(try_terms, "try-error")) {
+    formula <- formula(try_terms)
+  }
   if (fnew == ". ~ .") {
     formula
   } else {
@@ -379,14 +387,19 @@ get_random <- function(effects) {
 
 get_offset <- function(x) {
   # extract offset terms from a formula
-  x <- terms(as.formula(x))
-  offset_pos <- attr(x, "offset")
-  if (!is.null(offset_pos)) {
-    vars <- attr(x, "variables")
-    offset <- ulapply(offset_pos, function(i) deparse(vars[[i+1]]))
-    offset <- paste(offset, collapse = "+")
-  } else {
+  x <- try(terms(as.formula(x)), silent = TRUE)
+  if (is(x, "try-error")) {
+    # terms doesn't like non-linear formulas
     offset <- NULL
+  } else {
+    offset_pos <- attr(x, "offset")
+    if (!is.null(offset_pos)) {
+      vars <- attr(x, "variables")
+      offset <- ulapply(offset_pos, function(i) deparse(vars[[i+1]]))
+      offset <- paste(offset, collapse = "+")
+    } else {
+      offset <- NULL
+    }
   }
   offset
 }
@@ -454,10 +467,14 @@ has_rsv_intercept <- function(formula) {
   # Args:
   #   formula: a model formula
   formula <- as.formula(formula)
-  has_intercept <- attr(terms(formula), "intercept")
-  rhs <- if (length(formula) == 2L) formula[[2]]
-         else formula[[3]]
-  !has_intercept && "intercept" %in% all.vars(rhs)
+  try_terms <- try(terms(formula), silent = TRUE)
+  if (is(try_terms, "try-error")) {
+    out <- FALSE
+  } else {
+    has_intercept <- attr(try_terms, "intercept")
+    out <- !has_intercept && "intercept" %in% all.vars(rhs(formula))
+  }
+  out
 }
 
 gather_response <- function(formula) {
