@@ -91,7 +91,7 @@ as.data.frame.brmsVarCorr <- function(x, ...) {
   groups <- names(x)
   n_groups <- length(groups)
   names_coef <- lapply(x, function(y) rownames(y$sd))
-  groups_col <- ulapply(1:n_groups, function(i) 
+  groups_col <- ulapply(seq_along(n_groups), function(i) 
     c(groups[i], rep("", length(names_coef[[i]]) - 1)))
   max_cor <- max(ulapply(names_coef, length)) - 1
   # basic data.frame to be used in fill_base_frame
@@ -107,7 +107,7 @@ as.data.frame.brmsVarCorr <- function(x, ...) {
     #   estimate: The estimate being applied on the SD and COR parameters
     out <- base_frame
     pos <- 1
-    for (i in 1:n_groups) {
+    for (i in seq_along(n_groups)) {
       len <- length(names_coef[[i]])
       rows <- pos:(pos + len - 1)
       out[rows, "Std.Dev"] <- x[[i]]$sd[, estimate]

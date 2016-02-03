@@ -339,19 +339,17 @@ VarCorr.brmsfit <- function(x, sigma = 1, rdig = 3, estimate = "mean",
   }
   
   family <- family(x)
-  ee <- extract_effects(x$formula, family = family)
+  ee <- extract_effects(x$formula, family = family, nonlinear = x$nonlinear)
   if (length(x$ranef)) {
     gather_names <- function(i) {
       # gather names of random effects parameters
-      cor_type <- paste0("cor_",group[i])
-      list(rnames = x$ranef[[i]],
-           type = paste0("cor_",group[i]),
-           sd_pars = paste0("sd_",group[i],"_",x$ranef[[i]]),
-           cor_pars = get_cornames(x$ranef[[i]], type = cor_type, 
-                                   brackets = FALSE))
+      cor_type <- paste0("cor_", group[i])
+      sd_pars <- paste0("sd_", group[i], "_", x$ranef[[i]])
+      cor_pars <- get_cornames(x$ranef[[i]], type = cor_type, brackets = FALSE)
+      nlist(rnames = x$ranef[[i]], type = cor_type, sd_pars, cor_pars)
     }
-    group <- names(x$ranef)
-    p <- lapply(1:length(group), gather_names)
+    group <- paste0(ulapply(x$ranef, get_nlpar, suffix = "_"), names(x$ranef))
+    p <- lapply(seq_along(group), gather_names)
   } else {
     p <- group <- NULL
   } 
