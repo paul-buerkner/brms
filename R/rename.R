@@ -90,21 +90,36 @@ rename_pars <- function(x) {
   # some variables generally needed
   pars <- parnames(x)
   family <- family(x)
-  ee <- extract_effects(x$formula, family = family)
+  ee <- extract_effects(x$formula, family = family, nonlinear = x$nonlinear)
   change <- list()
   standata <- standata(x)
   
   # find positions of parameters and define new names
-  f <- colnames(standata$X)
-  if (length(f) && !is.categorical(family)) {
-    change <- lc(change, list(pos = grepl("^b\\[", pars), oldname = "b", 
-                              pnames = paste0("b_",f), fnames = paste0("b_",f)))
-    change <- c(change, prior_changes(class = "b", pars = pars, names = f))
-    change <- c(change, prior_changes(class = "temp_Intercept", pars = pars, 
-                                      new_class = "b_Intercept"))
+  if (!is.categorical(family)) {
+    if (length(x$nonlinear)) {
+      nlpars <- paste0("_", names(ee$nonlinear))
+      X_list <- standata[paste0("X", nlpars)]
+    } else {
+      nlpars <- ""
+      X_list <- list(standata$X)
+    }
+    f <- lapply(X_list, colnames)
+    for (i in seq_along(f)) {
+      if (length(f[[i]])) {
+        b <- paste0("b", nlpars[i])
+        change <- lc(change, list(pos = grepl(paste0("^", b, "\\["), pars), 
+                                  oldname = b, pnames = paste0(b, "_", f[[i]]), 
+                                  fnames = paste0(b, "_", f[[i]])))
+        # FIXME (non-linear models)
+        change <- c(change, prior_changes(class = "b", pars = pars, names = f))
+        change <- c(change, prior_changes(class = "temp_Intercept", pars = pars, 
+                                          new_class = "b_Intercept"))
+      }
+    }
   }
   
   if (is.formula(x$partial) || is.categorical(family)) {
+    # FIXME (non-linear models)
     p <- colnames(standata$Xp)
     lp <- length(p)
     if (lp) {
@@ -121,23 +136,32 @@ rename_pars <- function(x) {
   if (length(x$ranef)) {
     group <- names(x$ranef)
     gf <- make_group_frame(x$ranef)
+    if (length(x$nonlinear)) {
+      nlpar <- paste0(ulapply(x$ranef, function(y) attr(y, "nlpar")), "_")
+    } else nlpar <- rep("", length(x$ranef))
     for (i in seq_along(x$ranef)) {
-      rfnames <- paste0("sd_", group[i],"_", x$ranef[[i]])
-      change <- lc(change, list(pos = grepl(paste0("^sd_",i,"(\\[|$)"), pars),
-                                oldname = paste0("sd_",i), pnames = rfnames, 
-                                fnames = rfnames))
-      change <- c(change, prior_changes(class = paste0("sd_",i), pars = pars, 
-                                        names = x$ranef[[i]], 
-                                        new_class = paste0("sd_",group[i])))
-      
+      sd <- paste0("sd_", nlpar[i])
+      rfnames <- paste0(sd, group[i], "_", x$ranef[[i]])
+      change <- lc(change, 
+        list(pos = grepl(paste0("^", sd, i,"(\\[|$)"), pars),
+             oldname = paste0(sd, i), pnames = rfnames, 
+             fnames = rfnames))
+      change <- c(change, 
+        prior_changes(class = paste0(sd ,i), pars = pars, 
+                      new_class = paste0(sd, group[i]),
+                      names = x$ranef[[i]]))
+      # rename random effects correlations
       if (length(x$ranef[[i]]) > 1 && ee$random$cor[[i]]) {
-        cor_names <- get_cornames(x$ranef[[i]], type = paste0("cor_",group[i]), 
+        cor <- paste0("cor_", nlpar[i])
+        cor_names <- get_cornames(x$ranef[[i]], type = paste0(cor, group[i]), 
                                   brackets = FALSE)
-        change <- lc(change, list(pos = grepl(paste0("^cor_",i,"(\\[|$)"), pars),
-                                  oldname = paste0("cor_",i), pnames = cor_names,
-                                  fnames = cor_names)) 
-        change <- c(change, prior_changes(class = paste0("cor_",i), pars = pars, 
-                                          new_class = paste0("cor_",group[i])))
+        change <- lc(change, 
+          list(pos = grepl(paste0("^", cor, i, "(\\[|$)"), pars),
+               oldname = paste0(cor, i), pnames = cor_names,
+               fnames = cor_names)) 
+        change <- c(change, 
+          prior_changes(class = paste0(cor, i), pars = pars, 
+                        new_class = paste0(cor, group[i])))
       }
       if (any(grepl("^r_", pars))) {
         if (length(x$ranef[[i]]) == 1 || ee$random$cor[[i]]) {
@@ -189,19 +213,25 @@ make_group_frame <- function(ranef) {
   #
   # Returns: 
   #   A data.frame with length(ranef) rows and 3 columns: 
-  #     g: the grouping factor of each terms 
-  #     first: a number corresponding to the first column for this term in the final r_<gf> matrices
-  #     last: a number corresponding to the last column for this term in the final r_<gf> matrices
+  #     g: the grouping factor of each terms
+  #     nlpars: the non-linear parameter of each term (if present)
+  #     first: a number corresponding to the first column for this term 
+  #            in the final r_<gf> matrices
+  #     last: a number corresponding to the last column for this term 
+  #           in the final r_<gf> matrices
   group <- names(ranef)
-  out <- data.frame(g = group, first = NA, last = NA)
-  out[1, 2:3] <- c(1, length(ranef[[1]]))
+  nlpar <- ulapply(ranef, function(y) attr(y, "nlpar"))
+  if (is.null(nlpar)) nlpar <- rep("", length(ranef))
+  out <- data.frame(g = group, nlp = nlpar, first = NA, last = NA)
+  out[1, 3:4] <- c(1, length(ranef[[1]]))
   if (length(group) > 1) {
     for (i in 2:length(group)) {
-      matches <- which(out$g[1:(i-1)] == group[i])
+      matches <- which(out$g[1:(i-1)] == group[i] & 
+                       out$nlp[1:(i-1)] == nlpar[i])
       if (length(matches))
-        out[i, 2:3] <- c(out$last[max(matches)] + 1, 
-                        out$last[max(matches)] + length(ranef[[i]]))
-      else out[i, 2:3] <- c(1, length(ranef[[i]]))
+        out[i, 3:4] <- c(out$last[max(matches)] + 1, 
+                         out$last[max(matches)] + length(ranef[[i]]))
+      else out[i, 3:4] <- c(1, length(ranef[[i]]))
     }
   }
   out
@@ -250,8 +280,9 @@ combine_duplicates <- function(x) {
   for (i in 1:length(unique_names)) {
     pos <- which(names(x) %in% unique_names[i])
     new_list[[unique_names[i]]] <- unname(unlist(x[pos]))
-    # keep levels attribute
+    # keep important attributes
     attr(new_list[[unique_names[i]]], "levels") <- attr(x[[pos[1]]], "levels")
+    attr(new_list[[unique_names[i]]], "nlpar") <- attr(x[[pos[1]]], "nlpar")
   }
   new_list
 }
@@ -260,6 +291,7 @@ ranef_changes <- function(i, ranef, gf, dims_oi, pars, j = NULL)  {
   # helps in renaming random effects (r_) parameters
   # Args:
   #  i: the index of the grouping factor under consideration
+  #  ranef: output of gather_ranef
   #  group: a vector of names of all grouping factors
   #  gf: matrix as constructed by make_group_frame
   #  dims_oi: named list containing parameter dimensions
@@ -268,18 +300,23 @@ ranef_changes <- function(i, ranef, gf, dims_oi, pars, j = NULL)  {
   #  a list that can be interpreted by rename_pars
   group <- names(ranef)
   stopifnot(length(j) <= 1)
+  r <- "r_"
+  nlpar <- attr(ranef[[i]], "nlpar")
+  if (!is.null(nlpar)) {
+    r <- paste0(r, nlpar, "_")
+  } else nlpar <- ""
   r_index <- ifelse(is.null(j), i, paste0(i, "_", j))
-  r_parnames <- paste0("^r_", r_index,"(\\[|$)")
+  r_parnames <- paste0("^", r, r_index,"(\\[|$)")
   change <- list(pos = grepl(r_parnames, pars),
-                 oldname = paste0("r_", r_index))
+                 oldname = paste0(r, r_index))
   
   # prepare for removal of redundant parameters r_<i>
   # and for combining random effects into one paramater matrix
   # number of total REs for this grouping factor
-  n_ranefs <- max(gf$last[which(gf$g == group[i])]) 
+  n_ranefs <- max(gf$last[which(gf$g == group[i] & gf$nlp == nlpar)]) 
   old_dim <- dims_oi[[change$oldname]]
   if (match(gf$g[i], group) == i && (is.null(j) || j == 1)) {
-    change$pnames <- paste0("r_",group[i])
+    change$pnames <- paste0(r, group[i])
     change$dim <- if (n_ranefs == 1) old_dim 
                   else c(old_dim[1], n_ranefs) 
   } 
@@ -288,7 +325,7 @@ ranef_changes <- function(i, ranef, gf, dims_oi, pars, j = NULL)  {
   if (!is.null(j)) colnames <- colnames[j]
   index_names <- make_index_names(rownames = attr(ranef[[i]], "levels"),
                                   colnames = colnames, dim = 2)
-  change$fnames <- paste0("r_", group[i], index_names)
+  change$fnames <- paste0(r, group[i], index_names)
   change
 }
 
