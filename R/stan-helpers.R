@@ -430,8 +430,9 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
         out$data <- paste0(out$data, 
           "  int<lower=1> K_", nlp, "; \n", 
           "  matrix[N, K_", nlp, "] X_", nlp, "; \n")
+        bound <- with(prior, bound[class == "b" & coef == "" & nlpar == nlp])
         out$par <- paste0(out$par,
-         "  vector[K_", nlp, "] b_", nlp, "; \n")
+         "  vector", bound, "[K_", nlp, "] b_", nlp, "; \n")
         out$transC1 <- paste0(out$transC1, 
           "  ", eta, " <- X_", nlp, " * b_", nlp, "; \n")  
         out$prior <- paste0(out$prior,
