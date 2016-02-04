@@ -142,7 +142,8 @@ wsp <- function(x, nsp = 1) {
   #   x: object accepted by paste
   #   nsp: number of whitespaces to add
   sp <- paste(rep(" ", nsp), collapse = "")
-  paste0(sp, x, sp)
+  if (length(x)) paste0(sp, x, sp)
+  else NULL
 }
 
 is.formula <- function(x, or = TRUE) {
