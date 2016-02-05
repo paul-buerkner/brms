@@ -1,5 +1,5 @@
-linear_predictor <- function(x, newdata = NULL, re_formula = NULL,
-                             allow_new_levels = FALSE, subset = NULL) {
+linear_predictor <- function(x, newdata = NULL, re_formula = NULL, 
+                             subset = NULL, nlpar = "") {
   # compute the linear predictor (eta) for brms models
   #
   # Args:
@@ -10,6 +10,8 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL,
   #               to be considered in the prediction
   #   subset: A numeric vector indicating the posterior samples to be used.
   #           If NULL, all samples are used.
+  #   nlpar: optional non-linear parameter for which to compute
+  #          the linear predictor
   #
   # Returns:
   #   usually, an S x N matrix where S is the number of samples
@@ -29,16 +31,16 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL,
   }
   
   family <- family(x)
+  # do not call the nonlinear argument here
   ee <- extract_effects(new_formula, family = family)
   args <- list(x = x, as.matrix = TRUE, subset = subset)
-  if (!is.null(subset)) {
-    nsamples <- length(subset)
-  } else {
-    nsamples <- Nsamples(x)
-  }
+  nsamples <- if (!is.null(subset)) length(subset) else Nsamples(x)
+  nlpar <- if (nchar(nlpar)) paste0(nlpar, "_")
+  
   eta <- matrix(0, nrow = nsamples, ncol = data$N)
   if (!is.null(data$X) && ncol(data$X) && !is.categorical(family)) {
-    b <- do.call(posterior_samples, c(args, pars = "^b_[^\\[]+$"))
+    b_pars <- paste0("^b_", nlpar, "[^\\[]+$")
+    b <- do.call(posterior_samples, c(args, pars = b_pars))
     eta <- eta + fixef_predictor(X = data$X, b = b)  
   }
   if (!is.null(data$offset)) {
@@ -52,16 +54,16 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL,
     if (any(grepl(paste0("^J_"), names(data)))) {  # implies brms > 0.4.1
       # create a single RE design matrix for every grouping factor
       Z <- lapply(which(ee$random$group == group[i]), 
-                  function(k) get(paste0("Z_",k), data))
+                  function(k) get(paste0("Z_", nlpar, k), data))
       Z <- do.call(cbind, Z)
       id <- match(group[i], ee$random$group)
-      gf <- get(paste0("J_",id), data)
+      gf <- get(paste0("J_", nlpar, id), data)
     } else {  # implies brms <= 0.4.1
-      Z <- as.matrix(get(paste0("Z_",group[i]), data))
+      Z <- as.matrix(get(paste0("Z_", nlpar, group[i]), data))
       gf <- get(group[i], data)
     }
     r <- do.call(posterior_samples, 
-                 c(args, pars = paste0("^r_",group[i],"\\[")))
+                 c(args, pars = paste0("^r_", nlpar, group[i],"\\[")))
     if (is.null(r)) {
       stop(paste("Random effects for each level of grouping factor",
                  group[i], "not found. Please set ranef = TRUE",
@@ -129,6 +131,62 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL,
     }
   }
   eta
+}
+
+nonlinear_predictor <- function(x, newdata = NULL, re_formula = NULL,
+                                allow_new_levels = FALSE, subset = NULL) {
+  # compute the non-linear predictor (eta) for brms models
+  #
+  # Args:
+  #   x: a brmsfit object
+  #   newdata: optional list as returned by amend_newdata.
+  #            If NULL, the standata method will be called
+  #   re_formula: formula containing random effects 
+  #               to be considered in the prediction
+  #   subset: A numeric vector indicating the posterior samples to be used.
+  #           If NULL, all samples are used.
+  #
+  # Returns:
+  #   usually, an S x N matrix where S is the number of samples
+  #   and N is the number of observations in the data.
+  if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
+    stop("The model does not contain posterior samples")
+  # the nonlinear predictor will be based on an updated formula 
+  # if re_formula is specified
+  new_ranef <- check_re_formula(re_formula, old_ranef = x$ranef, 
+                                data = x$data)
+  new_formula <- update_re_terms(x$formula, re_formula = re_formula)
+  family <- family(x)
+  ee <- extract_effects(new_formula, family = family, nonlinear = x$nonlinear)
+  args <- list(x = x, as.matrix = TRUE, subset = subset)
+  nsamples <- if (!is.null(subset)) length(subset) else Nsamples(x)
+  
+  # prepare non-linear model of eta 
+  nlmodel_list <- list()
+  nlpars <- names(ee$nonlinear)
+  for (i in seq_along(nlpars)) {
+    nlfit <- x
+    # call linear_predictor for each non-linear parameter
+    nlfit$formula <- update(x$formula, rhs(x$nonlinear[[i]]))
+    nlfit$nonlinear <- NULL
+    nlfit$ranef <- gather_ranef(extract_effects(nlfit$formula), data = x$data)
+    nlnewdata <- amend_newdata(newdata, fit = nlfit, re_formula = re_formula, 
+                               allow_new_levels = allow_new_levels)
+    nlmodel_list[[nlpars[i]]] <- 
+      linear_predictor(x = nlfit, newdata = nlnewdata, re_formula = re_formula, 
+                       subset = subset, nlpar = nlpars[i])
+  }
+  covars <- all.vars(rhs(ee$covars))
+  newdata <- amend_newdata(newdata, fit = x, re_formula = re_formula, 
+                           allow_new_levels = allow_new_levels,
+                           return_standata = FALSE)
+  C <- get_model_matrix(ee$covars, data = newdata, rm_intercept = TRUE)
+  for (i in seq_along(covars)) {
+    nlmodel_list[[covars[i]]] <- matrix(C[, covars[i]], nrow = nsamples, 
+                                        ncol = nrow(C), byrow = TRUE)
+  }
+  # evaluate non-linear predictor
+  with(nlmodel_list, eval(ee$fixed[[3]]))
 }
 
 fixef_predictor <- function(X, b) {
