@@ -1,11 +1,11 @@
-linear_predictor <- function(x, newdata = NULL, re_formula = NULL, 
+linear_predictor <- function(x, standata, re_formula = NULL,
                              subset = NULL, nlpar = "") {
   # compute the linear predictor (eta) for brms models
   #
   # Args:
   #   x: a brmsfit object
-  #   newdata: optional list as returned by amend_newdata.
-  #            If NULL, the standata method will be called
+  #   standata: a list containing the output of make_standata
+  #             which was possibly called with newdata
   #   re_formula: formula containing random effects 
   #               to be considered in the prediction
   #   subset: A numeric vector indicating the posterior samples to be used.
@@ -23,12 +23,6 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL,
   new_ranef <- check_re_formula(re_formula, old_ranef = x$ranef, 
                                 data = x$data)
   new_formula <- update_re_terms(x$formula, re_formula = re_formula)
-  if (is.null(newdata)) { 
-    data <- standata(x, re_formula = re_formula,
-                     control = list(keep_intercept = TRUE))
-  } else {
-    data <- newdata
-  }
   
   family <- family(x)
   # do not call the nonlinear argument here
@@ -37,30 +31,30 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL,
   nsamples <- if (!is.null(subset)) length(subset) else Nsamples(x)
   nlpar <- if (nchar(nlpar)) paste0(nlpar, "_")
   
-  eta <- matrix(0, nrow = nsamples, ncol = data$N)
-  if (!is.null(data$X) && ncol(data$X) && !is.categorical(family)) {
+  eta <- matrix(0, nrow = nsamples, ncol = standata$N)
+  if (!is.null(standata$X) && ncol(standata$X) && !is.categorical(family)) {
     b_pars <- paste0("^b_", nlpar, "[^\\[]+$")
     b <- do.call(posterior_samples, c(args, pars = b_pars))
-    eta <- eta + fixef_predictor(X = data$X, b = b)  
+    eta <- eta + fixef_predictor(X = standata$X, b = b)  
   }
-  if (!is.null(data$offset)) {
-    eta <- eta + matrix(rep(data$offset, nsamples), 
-                        ncol = data$N, byrow = TRUE)
+  if (!is.null(standata$offset)) {
+    eta <- eta + matrix(rep(standata$offset, nsamples), 
+                        ncol = standata$N, byrow = TRUE)
   }
   
   # incorporate random effects
   group <- names(new_ranef)
   for (i in seq_along(group)) {
-    if (any(grepl(paste0("^J_"), names(data)))) {  # implies brms > 0.4.1
+    if (any(grepl(paste0("^J_"), names(standata)))) {  # implies brms > 0.4.1
       # create a single RE design matrix for every grouping factor
       Z <- lapply(which(ee$random$group == group[i]), 
-                  function(k) get(paste0("Z_", nlpar, k), data))
+                  function(k) get(paste0("Z_", nlpar, k), standata))
       Z <- do.call(cbind, Z)
       id <- match(group[i], ee$random$group)
-      gf <- get(paste0("J_", nlpar, id), data)
+      gf <- get(paste0("J_", nlpar, id), standata)
     } else {  # implies brms <= 0.4.1
-      Z <- as.matrix(get(paste0("Z_", nlpar, group[i]), data))
-      gf <- get(group[i], data)
+      Z <- as.matrix(get(paste0("Z_", nlpar, group[i]), standata))
+      gf <- get(group[i], standata)
     }
     r <- do.call(posterior_samples, 
                  c(args, pars = paste0("^r_", nlpar, group[i],"\\[")))
@@ -84,11 +78,11 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL,
   if (get_arr(x$autocor)) {
     # incorporate ARR effects
     if (old_autocor) {
-      Yarr <- as.matrix(data$Yar)
+      Yarr <- as.matrix(standata$Yar)
       arr <- do.call(posterior_samples, c(args, pars = "^ar\\["))
     } else {
       # brms > 0.5.0
-      Yarr <- as.matrix(data$Yarr)
+      Yarr <- as.matrix(standata$Yarr)
       arr <- do.call(posterior_samples, c(args, pars = "^arr\\["))
     }
     eta <- eta + fixef_predictor(X = Yarr, b = arr)
@@ -101,21 +95,22 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL,
       ar <- do.call(posterior_samples, c(args, pars = "^ar\\["))
     }
     ma <- do.call(posterior_samples, c(args, pars = "^ma\\["))
-    eta <- arma_predictor(data = data, ar = ar, ma = ma, 
+    eta <- arma_predictor(standata = standata, ar = ar, ma = ma, 
                           eta = eta, link = x$link)
   }
   
   # transform eta to to etap for ordinal and categorical models
   if (is.ordinal(family)) {
     Intercept <- do.call(posterior_samples, c(args, pars = "^b_Intercept\\["))
-    if (!is.null(data$Xp) && ncol(data$Xp)) {
+    if (!is.null(standata$Xp) && ncol(standata$Xp)) {
       p <- do.call(posterior_samples, 
-                   c(args, pars = paste0("^b_", colnames(data$Xp), "\\[")))
-      eta <- cse_predictor(Xp = data$Xp, p = p, eta = eta, ncat = data$max_obs)
+                   c(args, pars = paste0("^b_", colnames(standata$Xp), "\\[")))
+      eta <- cse_predictor(Xp = standata$Xp, p = p, eta = eta, 
+                           ncat = standata$max_obs)
     } else {
-      eta <- array(eta, dim = c(dim(eta), data$max_obs - 1))
+      eta <- array(eta, dim = c(dim(eta), standata$max_obs - 1))
     } 
-    for (k in 1:(data$max_obs - 1)) {
+    for (k in 1:(standata$max_obs - 1)) {
       if (family$family %in% c("cumulative", "sratio")) {
         eta[, , k] <-  Intercept[, k] - eta[, , k]
       } else {
@@ -123,11 +118,12 @@ linear_predictor <- function(x, newdata = NULL, re_formula = NULL,
       }
     }
   } else if (is.categorical(family)) {
-    if (!is.null(data$Xp)) {
+    if (!is.null(standata$Xp)) {
       p <- do.call(posterior_samples, c(args, pars = "^b_"))
-      eta <- cse_predictor(Xp = data$Xp, p = p, eta = eta, ncat = data$max_obs)
+      eta <- cse_predictor(Xp = standata$Xp, p = p, eta = eta, 
+                           ncat = standata$max_obs)
     } else {
-      eta <- array(eta, dim = c(dim(eta), data$max_obs - 1))
+      eta <- array(eta, dim = c(dim(eta), standata$max_obs - 1))
     }
   }
   eta
@@ -170,11 +166,11 @@ nonlinear_predictor <- function(x, newdata = NULL, re_formula = NULL,
     nlfit$formula <- update(x$formula, rhs(x$nonlinear[[i]]))
     nlfit$nonlinear <- NULL
     nlfit$ranef <- gather_ranef(extract_effects(nlfit$formula), data = x$data)
-    nlnewdata <- amend_newdata(newdata, fit = nlfit, re_formula = re_formula, 
-                               allow_new_levels = allow_new_levels)
+    nlstandata <- amend_newdata(newdata, fit = nlfit, re_formula = re_formula, 
+                                allow_new_levels = allow_new_levels)
     nlmodel_list[[nlpars[i]]] <- 
-      linear_predictor(x = nlfit, newdata = nlnewdata, re_formula = re_formula, 
-                       subset = subset, nlpar = nlpars[i])
+      linear_predictor(x = nlfit, standata = nlstandata, nlpar = nlpars[i],
+                       re_formula = re_formula, subset = subset)
   }
   covars <- all.vars(rhs(ee$covars))
   newdata <- amend_newdata(newdata, fit = x, re_formula = re_formula, 
@@ -255,13 +251,13 @@ ranef_predictor <- function(Z, gf, r) {
   Matrix::as.matrix(eta)
 }
 
-arma_predictor <- function(data, eta, ar = NULL, ma = NULL, 
+arma_predictor <- function(standata, eta, ar = NULL, ma = NULL, 
                            link = "identity") {
   # compute eta for ARMA effects
   # ToDo: use C++ for this function
   #
   # Args:
-  #   data: the data initially passed to Stan
+  #   standata: the data initially passed to Stan
   #   eta: previous linear predictor samples
   #   ar: autoregressive samples (can be NULL)
   #   ma: moving average samples (can be NULL)
@@ -274,9 +270,9 @@ arma_predictor <- function(data, eta, ar = NULL, ma = NULL,
   Kma <- ifelse(is.null(ma), 0, ncol(ma))
   K <- max(Kar, Kma, 1)
   Ks <- 1:K
-  Y <- link(data$Y, link)
+  Y <- link(standata$Y, link)
   N <- length(Y)
-  tg <- c(rep(0, K), data$tgroup)
+  tg <- c(rep(0, K), standata$tgroup)
   E <- array(0, dim = c(S, K, K + 1))
   e <- matrix(0, nrow = S, ncol = K)
   zero_mat <- e
