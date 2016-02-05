@@ -48,12 +48,12 @@ linear_predictor <- function(x, standata, re_formula = NULL,
     if (any(grepl(paste0("^J_"), names(standata)))) {  # implies brms > 0.4.1
       # create a single RE design matrix for every grouping factor
       Z <- lapply(which(ee$random$group == group[i]), 
-                  function(k) get(paste0("Z_", nlpar, k), standata))
+                  function(k) get(paste0("Z_", k), standata))
       Z <- do.call(cbind, Z)
       id <- match(group[i], ee$random$group)
-      gf <- get(paste0("J_", nlpar, id), standata)
+      gf <- get(paste0("J_", id), standata)
     } else {  # implies brms <= 0.4.1
-      Z <- as.matrix(get(paste0("Z_", nlpar, group[i]), standata))
+      Z <- as.matrix(get(paste0("Z_", group[i]), standata))
       gf <- get(group[i], standata)
     }
     r <- do.call(posterior_samples, 
