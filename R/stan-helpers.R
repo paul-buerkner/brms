@@ -464,20 +464,20 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
     nlpars <- wsp(names(effects$nonlinear))
     new_nlpars <- paste0(" eta_", names(effects$nonlinear), "[n] ")
     # covariates in the nonlinear model
-    nlvars <- wsp(setdiff(all.vars(effects$fixed[[3]]), 
+    covars <- wsp(setdiff(all.vars(effects$fixed[[3]]), 
                           names(effects$nonlinear)))
-    if (length(nlvars)) {
+    if (length(covars)) {
       out$data <- paste0(out$data, 
         "  int<lower=1> KC;  // number of covariates \n",
         "  matrix[N, KC] C;  // covariate matrix \n")
-      new_nlvars <- paste0(" C[n, ", seq_along(nlvars), "] ")
-    } else new_nlvars <- NULL
+      new_covars <- paste0(" C[n, ", seq_along(covars), "] ")
+    } else new_covars <- NULL
     # add whitespaces to be able to replace parameters and covariates
     meta_sym <- c("+", "-", "*", "/", "^", ")", "(")
     nlmodel <- gsub(" ", "", deparse(effects$fixed[[3]]))
     nlmodel <- wsp(rename(nlmodel, meta_sym, wsp(meta_sym))) 
-    nlmodel <- rename(nlmodel, c(nlpars, nlvars, " ( ", " ) "), 
-                      c(new_nlpars, new_nlvars, "(", ")"))
+    nlmodel <- rename(nlmodel, c(nlpars, covars, " ( ", " ) "), 
+                      c(new_nlpars, new_covars, "(", ")"))
     # possibly transform eta in the transformed params block
     transform <- stan_eta_transform(family$family, family$link, add = add)
     if (transform) {
