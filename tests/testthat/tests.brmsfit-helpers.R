@@ -146,10 +146,10 @@ test_that("arma_predictor runs without errors", {
   ar <- matrix(rnorm(ns * nobs), nrow = ns, ncol = nobs)
   ma <- matrix(rnorm(ns * nobs), nrow = ns, ncol = nobs)
   eta <- matrix(rnorm(ns * nobs), nrow = ns, ncol = nobs)
-  expect_equal(arma_predictor(data = data, eta = eta), eta)
-  expect_silent(arma_predictor(data = data, eta = eta, ar = ar))
-  expect_silent(arma_predictor(data = data, eta = eta, ma = ma))
-  expect_silent(arma_predictor(data = data, eta = eta, ar = ar, ma = ma))
+  expect_equal(arma_predictor(standata = data, eta = eta), eta)
+  expect_silent(arma_predictor(standata = data, eta = eta, ar = ar))
+  expect_silent(arma_predictor(standata = data, eta = eta, ma = ma))
+  expect_silent(arma_predictor(standata = data, eta = eta, ar = ar, ma = ma))
 })
 
 test_that("cse_predictor runs without errors", {

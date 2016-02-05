@@ -3,7 +3,8 @@ test_that("fitted helper functions run without errors", {
   fit <- rename_pars(brmsfit_example)
   fit <- add_samples(fit, "shape", dist = "exp")
   fit <- add_samples(fit, "nu", dist = "exp")
-  eta <- linear_predictor(fit)
+  standata <- standata(fit, control = list(keep_intercept = TRUE))
+  eta <- linear_predictor(fit, standata = standata)
   nsamples <- Nsamples(fit)
   nobs <- nobs(fit)
   # test preparation of truncated models
