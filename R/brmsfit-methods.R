@@ -849,14 +849,23 @@ marginal_effects.brmsfit <- function(x, effects = NULL, data = NULL,
                                      re_formula = NA, probs = c(0.025, 0.975),
                                      method = c("fitted", "predict"), ...) {
   method <- match.arg(method)
-  ee <- extract_effects(x$formula, family = x$family)
+  ee <- extract_effects(x$formula, family = x$family, nonlinear = x$nonlinear)
   if (is.linear(x$family) && length(ee$response) > 1) {
     stop("Marginal plots are not yet implemented for multivariate models.",
          call. = FALSE)
   }
   rsv_vars <- rsv_vars(x$family, nresp = length(ee$response))
-  all_effects <- strsplit(attr(terms(ee$fixed), "term.labels"), split = ":")
-  all_effects <- rmNULL(lapply(all_effects, setdiff, y = rsv_vars))
+  if (length(x$nonlinear)) {
+    # allow covariates as well as fixed effects of non-linear parameters
+    covars <- setdiff(all.vars(rhs(ee$fixed)), names(ee$nonlinear))
+    nlpar_effects <- unlist(lapply(ee$nonlinear, function(nl)
+      strsplit(attr(terms(nl$fixed), "term.labels"), split = ":")),
+      recursive = FALSE)
+    all_effects <- unique(c(list(covars), nlpar_effects))
+  } else {
+    all_effects <- strsplit(attr(terms(ee$fixed), "term.labels"), split = ":") 
+    all_effects <- rmNULL(lapply(all_effects, setdiff, y = rsv_vars))
+  }
   if (is.null(effects)) {
     effects <- all_effects[ulapply(all_effects, length) < 3]
   } else {
@@ -895,8 +904,8 @@ marginal_effects.brmsfit <- function(x, effects = NULL, data = NULL,
       stop("Please specify argument 'data' manually for this model.", 
            call. = FALSE)
     }
-    vars <- unique(ulapply(c(ee$fixed[[3]], ee$random$form), all.vars))
-    vars <- setdiff(vars, rsv_vars)
+    vars <- unique(ulapply(c(rhs(ee$fixed), get_random(ee)$form), all.vars))
+    vars <- setdiff(vars, c(rsv_vars, names(ee$nonlinear)))
     data <- as.data.frame(as.list(rep(NA, length(vars))))
     names(data) <- vars
     for (v in vars) {
@@ -1095,7 +1104,8 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
   family <- family(object)
-  ee <- extract_effects(object$formula, family = family)
+  ee <- extract_effects(object$formula, family = family, 
+                        nonlinear = object$nonlinear)
   standata <- amend_newdata(newdata, fit = object, re_formula = re_formula,
                             allow_new_levels = allow_new_levels)
 
@@ -1249,7 +1259,8 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
   family <- family(object)
-  ee <- extract_effects(object$formula, family = family)
+  ee <- extract_effects(object$formula, family = family,
+                        nonlinear = object$nonlinear)
   standata <- amend_newdata(newdata, fit = object, re_formula = re_formula,
                             allow_new_levels = allow_new_levels)
   
@@ -1458,7 +1469,8 @@ logLik.brmsfit <- function(object, ...) {
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
   family <- family(object)
-  ee <- extract_effects(object$formula, family = family)
+  ee <- extract_effects(object$formula, family = family,
+                        nonlinear = object$nonlinear)
   nresp <- length(ee$response)
   data <- standata(object, control = list(save_order = TRUE))
   N <- ifelse(is.null(data$N_tg), nrow(as.matrix(data$Y)), data$N_tg)

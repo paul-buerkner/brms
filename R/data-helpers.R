@@ -173,7 +173,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
                                 data = fit$data)
   new_formula <- update_re_terms(fit$formula, re_formula = re_formula)
   et <- extract_time(fit$autocor$formula)
-  ee <- extract_effects(new_formula, family = fit$family, et$all)
+  ee <- extract_effects(new_formula, family = fit$family, 
+                        nonlinear = fit$nonlinear, et$all)
   resp_vars <- all.vars(ee$respform)
   missing_resp <- setdiff(resp_vars, names(newdata))
   check_response <- check_response || 
@@ -262,8 +263,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       # which should be avoided for newdata
       control[c("trials", "ncat")] <- standata(fit)[c("trials", "ncat")]
     }
-    newdata <- make_standata(new_formula, data = newdata, 
-                             family = fit$family, autocor = fit$autocor, 
+    newdata <- make_standata(new_formula, data = newdata, family = fit$family, 
+                             autocor = fit$autocor, nonlinear = fit$nonlinear,
                              partial = fit$partial, control = control)
   }
   newdata
