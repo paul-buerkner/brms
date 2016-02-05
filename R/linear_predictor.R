@@ -25,7 +25,7 @@ linear_predictor <- function(x, standata, re_formula = NULL,
   new_formula <- update_re_terms(x$formula, re_formula = re_formula)
   
   family <- family(x)
-  # do not call the nonlinear argument here
+  # do not use the nonlinear argument here
   ee <- extract_effects(new_formula, family = family)
   args <- list(x = x, as.matrix = TRUE, subset = subset)
   nsamples <- if (!is.null(subset)) length(subset) else Nsamples(x)

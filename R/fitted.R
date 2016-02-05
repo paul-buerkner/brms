@@ -8,7 +8,8 @@ fitted_response <- function(x, eta, data) {
   #   (usually) an S x N matrix containing samples of 
   #   the response distribution's mean 
   family <- family(x)
-  nresp <- length(extract_effects(x$formula, family = family)$response)
+  ee <- extract_effects(x$formula, family = family, nonlinear = x$nonlinear)
+  nresp <- length(ee$response)
   is_catordinal <- is.ordinal(family) || is.categorical(family)
   if (is.lognormal(family, nresp = nresp)) {
     family$family <- "lognormal"

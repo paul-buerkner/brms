@@ -1113,10 +1113,16 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (is.null(subset) && !is.null(nsamples)) {
     subset <- sample(Nsamples(object), nsamples)
   }
+  eta_args <- list(object, re_formula = re_formula, subset = subset)
+  if (is.null(object$nonlinear)) {
+    eta_args$standata <- standata
+    samples <- list(eta = do.call(linear_predictor, eta_args))
+  } else {
+    eta_args$newdata <- newdata
+    eta_args$allow_new_levels <- allow_new_levels
+    samples <- list(eta = do.call(nonlinear_predictor, eta_args))
+  }
   nresp <- length(ee$response)
-  samples <- list(eta = linear_predictor(object, newdata = standata, 
-                                         re_formula = re_formula,
-                                         subset = subset))
   args <- list(x = object, as.matrix = TRUE, subset = subset) 
   if (has_sigma(family, se = ee$se, autocor = object$autocor))
     samples$sigma <- do.call(posterior_samples, c(args, pars = "^sigma_"))
@@ -1268,8 +1274,15 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     subset <- sample(Nsamples(object), nsamples)
   }
   # get mu and scale it appropriately
-  mu <- linear_predictor(object, newdata = standata, subset = subset, 
-                         re_formula = re_formula)
+  eta_args <- list(object, re_formula = re_formula, subset = subset)
+  if (is.null(object$nonlinear)) {
+    eta_args$standata <- standata
+    mu <- do.call(linear_predictor, eta_args)
+  } else {
+    eta_args$newdata <- newdata
+    eta_args$allow_new_levels <- allow_new_levels
+    mu <- do.call(nonlinear_predictor, eta_args)
+  }
   if (scale == "response") {
     # see fitted.R
     mu <- fitted_response(object, eta = mu, data = standata)
@@ -1342,7 +1355,7 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (is.null(subset) && !is.null(nsamples)) {
     subset <- sample(Nsamples(object), nsamples)
   }
-  mu <- fitted(object, newdata = standata, re_formula = re_formula, 
+  mu <- fitted(object, newdata = newdata, re_formula = re_formula, 
                allow_new_levels = allow_new_levels, 
                summary = FALSE, subset = subset)
   Y <- matrix(rep(as.numeric(standata$Y), nrow(mu)), 
@@ -1351,7 +1364,7 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   colnames(res) <- NULL
   if (type == "pearson") {
     # get predicted standard deviation for each observation
-    sd <- predict(object, newdata = standata, re_formula = re_formula, 
+    sd <- predict(object, newdata = newdata, re_formula = re_formula, 
                   allow_new_levels = allow_new_levels, 
                   summary = TRUE, subset = subset)[, 2]
     sd <- matrix(rep(sd, nrow(mu)), nrow = nrow(mu), byrow = TRUE)
@@ -1472,11 +1485,17 @@ logLik.brmsfit <- function(object, ...) {
   ee <- extract_effects(object$formula, family = family,
                         nonlinear = object$nonlinear)
   nresp <- length(ee$response)
-  data <- standata(object, control = list(save_order = TRUE))
-  N <- ifelse(is.null(data$N_tg), nrow(as.matrix(data$Y)), data$N_tg)
+  control <- list(keep_intercept = TRUE, save_order = TRUE)
+  standata <- standata(object, control = control)
+  N <- ifelse(is.null(standata$N_tg), nrow(as.matrix(standata$Y)), 
+              standata$N_tg)
   
   # extract relevant samples
-  samples <- list(eta = linear_predictor(object))
+  if (is.null(object$nonlinear)) {
+    samples <- list(eta = linear_predictor(object, standata = standata))
+  } else {
+    samples <- list(eta = nonlinear_predictor(object))
+  }
   if (has_sigma(family, se = ee$se, autocor = object$autocor))
     samples$sigma <- as.matrix(posterior_samples(object, pars = "^sigma_"))
   if (family$family == "student") 
@@ -1508,14 +1527,14 @@ logLik.brmsfit <- function(object, ...) {
 
   loglik_fun <- get(paste0("loglik_", family$family), mode = "function")
   call_loglik_fun <- function(n) {
-    do.call(loglik_fun, list(n = n, data = data, samples = samples, 
+    do.call(loglik_fun, list(n = n, data = standata, samples = samples, 
                              link = family$link)) 
   }
   loglik <- do.call(cbind, lapply(1:N, call_loglik_fun))
   # reorder loglik values to be in the initial user defined order
   # currently only relevant for autocorrelation models
   # that are not using covariance formulation
-  old_order <- attr(data, "old_order")
+  old_order <- attr(standata, "old_order")
   if (!isTRUE(all.equal(old_order[1:N], 1:N)) && !isTRUE(autocor$cov)) {
     loglik <- loglik[, old_order[1:N]]  
   }
