@@ -172,9 +172,11 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   new_ranef <- check_re_formula(re_formula, old_ranef = fit$ranef,
                                 data = fit$data)
   new_formula <- update_re_terms(fit$formula, re_formula = re_formula)
+  new_nonlinear <- lapply(fit$nonlinear, update_re_terms, 
+                          re_formula = re_formula)
   et <- extract_time(fit$autocor$formula)
   ee <- extract_effects(new_formula, family = fit$family, 
-                        nonlinear = fit$nonlinear, et$all)
+                        nonlinear = new_nonlinear, et$all)
   resp_vars <- all.vars(ee$respform)
   missing_resp <- setdiff(resp_vars, names(newdata))
   check_response <- check_response || 
@@ -203,7 +205,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       newdata[, missing_gf] <- NA
     }
   }
-  newdata <- combine_groups(newdata, ee$random$group, et$group)
+  newdata <- combine_groups(newdata, get_random(ee)$group, et$group)
   # try to validate factor levels in newdata
   if (is.data.frame(fit$data)) {
     # validating is possible (implies brms > 0.5.0)
@@ -264,7 +266,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       control[c("trials", "ncat")] <- standata(fit)[c("trials", "ncat")]
     }
     newdata <- make_standata(new_formula, data = newdata, family = fit$family, 
-                             autocor = fit$autocor, nonlinear = fit$nonlinear,
+                             autocor = fit$autocor, nonlinear = new_nonlinear,
                              partial = fit$partial, control = control)
   }
   newdata
