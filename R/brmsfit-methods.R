@@ -886,7 +886,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, data = NULL,
                      lapply(effects, sort), 0L)
     effects <- unique(effects[sort(matches)])
   }
-  if (!length(effects)) {
+  if (!length(unlist(effects))) {
     stop("No valid effects specified.", call. = FALSE)
   }
   if (any(ulapply(effects, length) > 2)) {
@@ -959,9 +959,9 @@ marginal_effects.brmsfit <- function(x, effects = NULL, data = NULL,
         }
         marg_data <- do.call(expand.grid, values)
       }
-    } else {
-      marg_data <- unique(marg_data)
     }
+    # no need to have the same value combination more than once
+    marg_data <- unique(marg_data)
     marg_data <- replicate(nrow(data), simplify = FALSE,
      expr = marg_data[do.call(order, as.list(marg_data)), , drop = FALSE])
     marg_vars <- setdiff(names(data), effects[[i]])
