@@ -44,6 +44,8 @@
       for some multivariate models so that it now always 
       returns the predictions of all response variables, 
       not just the first one.
+      \item Fix some backwards compatibility issues of models fitted 
+      with version <= 0.5.0 thanks to Ulf Koether.
     }
   }
 }
