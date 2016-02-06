@@ -370,7 +370,11 @@ VarCorr.brmsfit <- function(x, sigma = 1, rdig = 3, estimate = "mean",
 
 #' @export
 model.frame.brmsfit <- function(formula, ...) {
-  formula$data
+  if (!is.data.frame(formula$data)) {
+    stop("Cannot extract model.frame for models fitted with brms <= 0.5.0.",
+         call. = FALSE)
+  }
+  formula$data 
 }
 
 #' @rdname posterior_samples
@@ -900,6 +904,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, data = NULL,
   }
   
   # prepare marginal data
+  mf <- model.frame(x)
   if (is.null(data)) {
     if (!isTRUE(all.equal(x$autocor, cor_arma())) || 
         length(rmNULL(ee[c("se", "trials", "cat")]))) {
@@ -911,11 +916,11 @@ marginal_effects.brmsfit <- function(x, effects = NULL, data = NULL,
     data <- as.data.frame(as.list(rep(NA, length(vars))))
     names(data) <- vars
     for (v in vars) {
-      if (is.numeric(x$data[[v]])) {
-        data[[v]] <- mean(x$data[[v]])
+      if (is.numeric(mf[[v]])) {
+        data[[v]] <- mean(mf[[v]])
       } else {
         # use reference category
-        data[[v]] <- attr(as.factor(x$data[[v]]), "levels")[1]
+        data[[v]] <- attr(as.factor(mf[[v]]), "levels")[1]
       }
     }
   } else if (is.data.frame(data)) {
@@ -926,7 +931,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, data = NULL,
     # effects that are present in every effect term
     # do not need to be defined in data
     missing_effects <- setdiff(non_marg_effects, names(data)) 
-    data[, missing_effects] <- x$data[1, missing_effects] 
+    data[, missing_effects] <- mf[1, missing_effects] 
   } else {
     stop("data must be a data.frame or NULL")
   }
@@ -935,7 +940,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, data = NULL,
 
   results <- list()
   for (i in seq_along(effects)) {
-    marg_data <- x$data[, effects[[i]], drop = FALSE]
+    marg_data <- mf[, effects[[i]], drop = FALSE]
     pred_types <- ifelse(ulapply(marg_data, is.numeric), "numeric", "factor")
     if (length(effects[[i]]) == 2L) {
       # numeric effects should come first
@@ -1118,6 +1123,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   eta_args <- list(object, re_formula = re_formula, subset = subset)
   if (length(object$nonlinear)) {
     eta_args$newdata <- newdata
+    eta_args$C <- standata$C
     eta_args$allow_new_levels <- allow_new_levels
     samples <- list(eta = do.call(nonlinear_predictor, eta_args))
   } else {
@@ -1279,6 +1285,7 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   eta_args <- list(object, re_formula = re_formula, subset = subset)
   if (length(object$nonlinear)) {
     eta_args$newdata <- newdata
+    eta_args$C <- standata$C
     eta_args$allow_new_levels <- allow_new_levels
     mu <- do.call(nonlinear_predictor, eta_args)
   } else {
@@ -1494,7 +1501,7 @@ logLik.brmsfit <- function(object, ...) {
   
   # extract relevant samples
   if (length(object$nonlinear)) {
-    samples <- list(eta = nonlinear_predictor(object))
+    samples <- list(eta = nonlinear_predictor(object, C = standata$C))
   } else {
     samples <- list(eta = linear_predictor(object, standata = standata))
   }

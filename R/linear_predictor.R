@@ -129,14 +129,16 @@ linear_predictor <- function(x, standata, re_formula = NULL,
   eta
 }
 
-nonlinear_predictor <- function(x, newdata = NULL, re_formula = NULL,
-                                allow_new_levels = FALSE, subset = NULL) {
+nonlinear_predictor <- function(x, newdata = NULL, C = NULL, 
+                                re_formula = NULL, subset = NULL,
+                                allow_new_levels = FALSE) {
   # compute the non-linear predictor (eta) for brms models
   #
   # Args:
   #   x: a brmsfit object
   #   newdata: optional list as returned by amend_newdata.
   #            If NULL, the standata method will be called
+  #   C: matrix containing values of the covariates
   #   re_formula: formula containing random effects 
   #               to be considered in the prediction
   #   subset: A numeric vector indicating the posterior samples to be used.
@@ -173,8 +175,8 @@ nonlinear_predictor <- function(x, newdata = NULL, re_formula = NULL,
                        re_formula = re_formula, subset = subset)
   }
   covars <- all.vars(rhs(ee$covars))
-  C <- amend_newdata(newdata, fit = x, re_formula = re_formula, 
-                     allow_new_levels = allow_new_levels)$C
+  if (!all(covars %in% colnames(C))) 
+    stop("Covariate matrix is invalid. Please report a bug.")
   for (i in seq_along(covars)) {
     nlmodel_list[[covars[i]]] <- matrix(C[, covars[i]], nrow = nsamples, 
                                         ncol = nrow(C), byrow = TRUE)
