@@ -1478,6 +1478,7 @@ LOO.brmsfit <- function(x, ..., compare = TRUE,
 #' Compute the pointwise log-likelihood
 #' 
 #' @param object A fitted model object of class \code{brmsfit}. 
+#' @inheritParams predict.brmsfit
 #' @param ... Currently ignored
 #' 
 #' @return Usually, an S x N matrix containing 
@@ -1487,34 +1488,47 @@ LOO.brmsfit <- function(x, ..., compare = TRUE,
 #' 
 #' @importFrom statmod dinvgauss
 #' @export
-logLik.brmsfit <- function(object, ...) {
+logLik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
+                           allow_new_levels = FALSE, subset = NULL,
+                           nsamples = NULL, ...) {
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
+  standata <- amend_newdata(newdata, fit = object, re_formula = re_formula,
+                            allow_new_levels = allow_new_levels,
+                            check_response = TRUE)
+  N <- ifelse(is.null(standata$N_tg), nrow(as.matrix(standata$Y)), 
+              standata$N_tg)
+  
+  # compute all necessary samples
+  if (is.null(subset) && !is.null(nsamples)) {
+    subset <- sample(Nsamples(object), nsamples)
+  }
+  eta_args <- list(object, re_formula = re_formula, subset = subset)
+  if (length(object$nonlinear)) {
+    eta_args$newdata <- newdata
+    eta_args$C <- standata$C
+    eta_args$allow_new_levels <- allow_new_levels
+    samples <- list(eta = do.call(nonlinear_predictor, eta_args))
+  } else {
+    eta_args$standata <- standata
+    samples <- list(eta = do.call(linear_predictor, eta_args))
+  }
+  
   family <- family(object)
   ee <- extract_effects(object$formula, family = family,
                         nonlinear = object$nonlinear)
   nresp <- length(ee$response)
-  control <- list(keep_intercept = TRUE, save_order = TRUE)
-  standata <- standata(object, control = control)
-  N <- ifelse(is.null(standata$N_tg), nrow(as.matrix(standata$Y)), 
-              standata$N_tg)
-  
-  # extract relevant samples
-  if (length(object$nonlinear)) {
-    samples <- list(eta = nonlinear_predictor(object, C = standata$C))
-  } else {
-    samples <- list(eta = linear_predictor(object, standata = standata))
-  }
+  args <- list(x = object, as.matrix = TRUE, subset = subset) 
   if (has_sigma(family, se = ee$se, autocor = object$autocor))
-    samples$sigma <- as.matrix(posterior_samples(object, pars = "^sigma_"))
+    samples$sigma <- do.call(posterior_samples, c(args, pars = "^sigma_"))
   if (family$family == "student") 
-    samples$nu <- as.matrix(posterior_samples(object, pars = "^nu$"))
+    samples$nu <- do.call(posterior_samples, c(args, pars = "^nu$"))
   if (family$family %in% c("beta", "zero_inflated_beta"))
-    samples$phi <- as.matrix(posterior_samples(object, pars = "^phi$"))
+    samples$phi <- do.call(posterior_samples, c(args, pars = "^phi$"))
   if (has_shape(family)) 
-    samples$shape <- as.matrix(posterior_samples(object, pars = "^shape$"))
+    samples$shape <- do.call(posterior_samples, c(args, pars = "^shape$"))
   if (is.linear(family) && nresp > 1) {
-    samples$rescor <- as.matrix(posterior_samples(object, pars = "^rescor_"))
+    samples$rescor <- do.call(posterior_samples, c(args, pars = "^rescor_"))
     samples$Sigma <- get_cov_matrix(sd = samples$sigma, cor = samples$rescor)$cov
     message(paste("Computing pointwise log-likelihood of a", 
                   "multivariate model.\n This may take a while."))
@@ -1530,10 +1544,11 @@ logLik.brmsfit <- function(object, ...) {
   } else if (use_cov(autocor) && (get_ar(autocor) || get_ma(autocor))) {
     # special family for ARMA models using residual covariance matrices
     family$family <- paste0(family$family, "_cov")
-    samples$ar <- posterior_samples(object, pars = "^ar\\[", as.matrix = TRUE)
-    samples$ma <- posterior_samples(object, pars = "^ma\\[", as.matrix = TRUE)
+    samples$ar <- do.call(posterior_samples, c(args, pars = "^ar\\["))
+    samples$ma <- do.call(posterior_samples, c(args, pars = "^ma\\["))
   } 
 
+  # call loglik functions
   loglik_fun <- get(paste0("loglik_", family$family), mode = "function")
   call_loglik_fun <- function(n) {
     do.call(loglik_fun, list(n = n, data = standata, samples = samples, 

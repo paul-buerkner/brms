@@ -4,10 +4,32 @@
 \alias{logLik.brmsfit}
 \title{Compute the pointwise log-likelihood}
 \usage{
-\method{logLik}{brmsfit}(object, ...)
+\method{logLik}{brmsfit}(object, newdata = NULL, re_formula = NULL,
+  allow_new_levels = FALSE, subset = NULL, nsamples = NULL, ...)
 }
 \arguments{
 \item{object}{A fitted model object of class \code{brmsfit}.}
+
+\item{newdata}{An optional data.frame for which to evaluate predictions.
+If \code{NULL} (default), the orginal data of the model is used.}
+
+\item{re_formula}{formula containing random effects 
+to be considered in the prediction. 
+If \code{NULL} (default), include all random effects; 
+if \code{NA}, include no random effects.}
+
+\item{allow_new_levels}{A flag indicating if new
+levels of random effects are allowed (defaults to \code{FALSE}). 
+Only relevant if \code{newdata} is provided.}
+
+\item{subset}{A numeric vector specifying
+the posterior samples to be used. 
+If \code{NULL} (the default), all samples are used.}
+
+\item{nsamples}{Positive integer indicating how many 
+posterior samples should be used. 
+If \code{NULL} (the default) all samples are used.
+Ignored if \code{subset} is not \code{NULL}.}
 
 \item{...}{Currently ignored}
 }
