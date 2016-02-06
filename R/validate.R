@@ -350,15 +350,26 @@ update_re_terms <- function(formula, re_formula = NULL) {
     re_formula <- ~ 1
   }
   if (is.formula(re_formula)) {
-    formula <- formula2string(formula)  
-    re_formula <- formula2string(re_formula)
-    fixef_formula <- gsub(paste0("\\([^(\\||~)]*\\|[^\\)]*\\)\\+",
-                                 "|\\+\\([^(\\||~)]*\\|[^\\)]*\\)",
-                                 "|\\([^(\\||~)]*\\|[^\\)]*\\)"), 
-                          "", formula)
-    new_re_terms <- get_matches("\\([^\\|\\)]*\\|[^\\)]*\\)", re_formula)
-    new_formula <- paste(c(fixef_formula, new_re_terms), collapse = "+")
-    new_formula <- formula(new_formula)   
+    new_formula <- formula2string(formula)
+    old_term_labels <- rename(attr(terms(formula), "term.labels"), " ", "")
+    old_re_terms <- old_term_labels[grepl("\\|", old_term_labels)]
+    if (length(old_re_terms)) {
+      old_re_terms <- paste0("(", old_re_terms, ")")
+      # make sure that + before random terms are also removed
+      old_re_terms <- c(paste0("+", old_re_terms), old_re_terms)
+      new_formula <- rename(new_formula, old_re_terms, "")
+      if (grepl("~$", new_formula)) {
+        # lhs only formulas are not allowed
+        new_formula <- paste(new_formula, "1")
+      }
+    }
+    new_term_labels <- rename(attr(terms(re_formula), "term.labels"),  " ", "")
+    new_re_terms <- new_term_labels[grepl("\\|", new_term_labels)]
+    if (length(new_re_terms)) {
+      new_re_terms <- paste0("(", new_re_terms, ")")
+      new_formula <- paste(c(new_formula, new_re_terms), collapse = "+")
+    }
+    new_formula <- formula(new_formula)
   } else if (is.null(re_formula)) {
     new_formula <- formula
   } else {

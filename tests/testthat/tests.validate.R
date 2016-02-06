@@ -139,6 +139,9 @@ test_that("update_re_terms works correctly", {
                     y ~ x)
   expect_equivalent(update_re_terms(y ~ x + (1+visit|patient), NULL), 
                     y ~ x + (1+visit|patient))
+  expect_equivalent(update_re_terms(y ~ (1|patient), NA), y ~ 1)
+  expect_equivalent(update_re_terms(y ~ x + (1+x|visit), ~ (1|visit)), 
+                    y ~ x + (1|visit))
 })
 
 test_that("amend_terms performs expected changes to terms objects", {
