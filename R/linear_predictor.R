@@ -173,7 +173,8 @@ nonlinear_predictor <- function(x, newdata = NULL, re_formula = NULL,
                        re_formula = re_formula, subset = subset)
   }
   covars <- all.vars(rhs(ee$covars))
-  C <- amend_newdata(newdata, fit = x)$C
+  C <- amend_newdata(newdata, fit = x, re_formula = re_formula, 
+                     allow_new_levels = allow_new_levels)$C
   for (i in seq_along(covars)) {
     nlmodel_list[[covars[i]]] <- matrix(C[, covars[i]], nrow = nsamples, 
                                         ncol = nrow(C), byrow = TRUE)
