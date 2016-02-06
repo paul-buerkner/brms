@@ -473,7 +473,7 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
       new_covars <- paste0(" C[n, ", seq_along(covars), "] ")
     } else new_covars <- NULL
     # add whitespaces to be able to replace parameters and covariates
-    meta_sym <- c("+", "-", "*", "/", "^", ")", "(")
+    meta_sym <- c("+", "-", "*", "/", "^", ")", "(", ",")
     nlmodel <- gsub(" ", "", deparse(effects$fixed[[3]]))
     nlmodel <- wsp(rename(nlmodel, meta_sym, wsp(meta_sym))) 
     nlmodel <- rename(nlmodel, c(nlpars, covars, " ( ", " ) "), 
