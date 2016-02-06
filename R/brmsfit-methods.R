@@ -665,6 +665,8 @@ standata.brmsfit <- function(object, ...) {
   } else {
     # brms <= 0.5.0 only stores the data passed to Stan 
     standata <- object$data
+    # for a short period in 0.4.1.9000, "lev" was used instead of "J"
+    names(standata) <- sub("^lev_", "J_", names(standata))
   }
   standata
 }

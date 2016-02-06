@@ -45,7 +45,7 @@ linear_predictor <- function(x, standata, re_formula = NULL,
   # incorporate random effects
   group <- names(new_ranef)
   for (i in seq_along(group)) {
-    if (any(grepl(paste0("^J_"), names(standata)))) {  # implies brms > 0.4.1
+    if (any(grepl("^J_", names(standata)))) {  # implies brms > 0.4.1
       # create a single RE design matrix for every grouping factor
       Z <- lapply(which(ee$random$group == group[i]), 
                   function(k) get(paste0("Z_", k), standata))
