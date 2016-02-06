@@ -45,6 +45,14 @@
 #'   See the documentation of \code{\link{cor_brms}} for a description 
 #'   of the available correlation structures. Defaults to NULL, 
 #'   corresponding to no correlations.
+#' @param nonlinear An optional list of formuluae, specifying 
+#'   linear models for non-linear parameters. If \code{NULL} (the default)
+#'   \code{formula} is treated as an ordinary linear formula. 
+#'   If not \code{NULL}, \code{formula} is treated as a non-linear model
+#'   and \code{nonlinear} should contain a formula for each non-linear 
+#'   parameter, which has the parameter on the left hand side and its
+#'   linear predictor (including fixed and random effects) on the right hand side. 
+#'   More information is given under 'Details'.
 #' @param partial A one sided formula of the form \code{~expression} 
 #'   allowing to specify predictors with category specific effects 
 #'   in non-cumulative ordinal models 

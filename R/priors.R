@@ -7,6 +7,7 @@
 #'   See 'Details' for other valid parameter classes. 
 #' @param coef Name of the (fixed, category specific, or random effects) parameter  
 #' @param group Grouping factor for random effects parameters.
+#' @param nlpar Name of a non-linear parameter. Only used in non-linear models.
 #' @param lb Lower bound for parameter restriction. Currently only allowed
 #'   if \code{class = "b"}. Defaults to \code{NULL}, that is no restriction.
 #' @param ub Upper bound for parameter restriction. Currently only allowed

@@ -17,6 +17,8 @@ See 'Details' for other valid parameter classes.}
 
 \item{group}{Grouping factor for random effects parameters.}
 
+\item{nlpar}{Name of a non-linear parameter. Only used in non-linear models.}
+
 \item{lb}{Lower bound for parameter restriction. Currently only allowed
 if \code{class = "b"}. Defaults to \code{NULL}, that is no restriction.}
 
