@@ -1185,7 +1185,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   # reorder predicted responses to be in the initial user defined order
   # currently only relevant for autocorrelation models 
   old_order <- attr(standata, "old_order")
-  if (!is.null(old_order) && !isTRUE(all.equal(old_order, 1:ncol(out)))) {
+  if (!is.null(old_order)) {
     out <- out[, old_order, drop = FALSE]  
     colnames(out) <- 1:ncol(out) 
   }
@@ -1290,7 +1290,7 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   # reorder fitted values to be in the initial user defined order
   # currently only relevant for autocorrelation models 
   old_order <- attr(standata, "old_order")
-  if (!is.null(old_order) && !isTRUE(all.equal(old_order, 1:ncol(mu)))) {
+  if (!is.null(old_order)) {
     mu <- mu[, old_order, drop = FALSE]  
     colnames(mu) <- 1:ncol(mu) 
   }
@@ -1535,8 +1535,7 @@ logLik.brmsfit <- function(object, ...) {
   # currently only relevant for autocorrelation models
   # that are not using covariance formulation
   old_order <- attr(standata, "old_order")
-  if (!is.null(old_order) && !isTRUE(autocor$cov) && 
-      !isTRUE(all.equal(old_order[1:N], 1:N))) {
+  if (!is.null(old_order) && !isTRUE(autocor$cov)) {
     loglik <- loglik[, old_order[1:N]]  
   }
   colnames(loglik) <- 1:ncol(loglik)

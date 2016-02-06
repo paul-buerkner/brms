@@ -387,10 +387,6 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     }
   } 
   if (isTRUE(control$save_order)) {
-    if (is.null(attr(data, "old_order"))) {
-      # make sure that old_order attribute is always defined
-      attr(data, "old_order") <- 1:prod(dim(as.matrix(standata$Y)))
-    }
     attr(standata, "old_order") <- attr(data, "old_order")
   }
   standata

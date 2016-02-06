@@ -157,7 +157,7 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
 } 
 
 extract_time <- function(formula) {
-  # extract time and grouping variabels for correlation structure
+  # extract time and grouping variables for autocorrelation structures
   # 
   # Args:
   #   formula: a one sided formula of the form ~ time|group 
