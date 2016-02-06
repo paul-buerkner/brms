@@ -1114,13 +1114,13 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     subset <- sample(Nsamples(object), nsamples)
   }
   eta_args <- list(object, re_formula = re_formula, subset = subset)
-  if (is.null(object$nonlinear)) {
-    eta_args$standata <- standata
-    samples <- list(eta = do.call(linear_predictor, eta_args))
-  } else {
+  if (length(object$nonlinear)) {
     eta_args$newdata <- newdata
     eta_args$allow_new_levels <- allow_new_levels
     samples <- list(eta = do.call(nonlinear_predictor, eta_args))
+  } else {
+    eta_args$standata <- standata
+    samples <- list(eta = do.call(linear_predictor, eta_args))
   }
   nresp <- length(ee$response)
   args <- list(x = object, as.matrix = TRUE, subset = subset) 
@@ -1185,7 +1185,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   # reorder predicted responses to be in the initial user defined order
   # currently only relevant for autocorrelation models 
   old_order <- attr(standata, "old_order")
-  if (!isTRUE(all.equal(old_order, 1:ncol(out)))) {
+  if (!is.null(old_order) && !isTRUE(all.equal(old_order, 1:ncol(out)))) {
     out <- out[, old_order, drop = FALSE]  
     colnames(out) <- 1:ncol(out) 
   }
@@ -1275,13 +1275,13 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   }
   # get mu and scale it appropriately
   eta_args <- list(object, re_formula = re_formula, subset = subset)
-  if (is.null(object$nonlinear)) {
-    eta_args$standata <- standata
-    mu <- do.call(linear_predictor, eta_args)
-  } else {
+  if (length(object$nonlinear)) {
     eta_args$newdata <- newdata
     eta_args$allow_new_levels <- allow_new_levels
     mu <- do.call(nonlinear_predictor, eta_args)
+  } else {
+    eta_args$standata <- standata
+    mu <- do.call(linear_predictor, eta_args)
   }
   if (scale == "response") {
     # see fitted.R
@@ -1290,7 +1290,7 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   # reorder fitted values to be in the initial user defined order
   # currently only relevant for autocorrelation models 
   old_order <- attr(standata, "old_order")
-  if (!isTRUE(all.equal(old_order, 1:ncol(mu)))) {
+  if (!is.null(old_order) && !isTRUE(all.equal(old_order, 1:ncol(mu)))) {
     mu <- mu[, old_order, drop = FALSE]  
     colnames(mu) <- 1:ncol(mu) 
   }
@@ -1491,10 +1491,10 @@ logLik.brmsfit <- function(object, ...) {
               standata$N_tg)
   
   # extract relevant samples
-  if (is.null(object$nonlinear)) {
-    samples <- list(eta = linear_predictor(object, standata = standata))
-  } else {
+  if (length(object$nonlinear)) {
     samples <- list(eta = nonlinear_predictor(object))
+  } else {
+    samples <- list(eta = linear_predictor(object, standata = standata))
   }
   if (has_sigma(family, se = ee$se, autocor = object$autocor))
     samples$sigma <- as.matrix(posterior_samples(object, pars = "^sigma_"))
@@ -1535,7 +1535,8 @@ logLik.brmsfit <- function(object, ...) {
   # currently only relevant for autocorrelation models
   # that are not using covariance formulation
   old_order <- attr(standata, "old_order")
-  if (!isTRUE(all.equal(old_order[1:N], 1:N)) && !isTRUE(autocor$cov)) {
+  if (!is.null(old_order) && !isTRUE(autocor$cov) && 
+      !isTRUE(all.equal(old_order[1:N], 1:N))) {
     loglik <- loglik[, old_order[1:N]]  
   }
   colnames(loglik) <- 1:ncol(loglik)
