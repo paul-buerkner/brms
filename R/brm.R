@@ -156,17 +156,22 @@
 #'   
 #'   For families \code{gaussian}, \code{student}, and \code{cauchy} it is possible to specify
 #'   standard errors of the observation, thus allowing to perform meta-analysis. 
-#'   Suppose that the variable \code{yi} contains the effect sizes from the studies and \code{sei} the 
-#'   corresponding standard errors. Then, fixed and random effects meta-analyses can be conducted
-#'   using the formulae \code{yi | se(sei) ~ 1} and \code{yi | se(sei) ~ 1 + (1|study)}, respectively, where 
+#'   Suppose that the variable \code{yi} contains the effect sizes from the studies 
+#'   and \code{sei} the corresponding standard errors. 
+#'   Then, fixed and random effects meta-analyses can be conducted
+#'   using the formulae \code{yi | se(sei) ~ 1} and 
+#'   \code{yi | se(sei) ~ 1 + (1|study)}, respectively, where 
 #'   \code{study} is a variable uniquely identifying every study.
-#'   If desired, meta-regressen can be performed via \code{yi | se(sei) ~ 1 + mod1 + mod2 + (1|study)} 
+#'   If desired, meta-regressen can be performed via 
+#'   \code{yi | se(sei) ~ 1 + mod1 + mod2 + (1|study)} 
 #'   or \cr \code{yi | se(sei) ~ 1 + mod1 + mod2 + (1 + mod1 + mod2|study)}, where
 #'   \code{mod1} and \code{mod2} represent moderator variables. 
 #'   
 #'   For all families, weighted regression may be performed using
-#'   \code{weights} in the addition part. Suppose that variable \code{wei} contains the weights 
-#'   and that \code{yi} is the response variable. Then, formula \code{yi | weights(wei) ~ predictors} 
+#'   \code{weights} in the addition part. 
+#'   Suppose that variable \code{wei} contains the weights 
+#'   and that \code{yi} is the response variable. 
+#'   Then, formula \code{yi | weights(wei) ~ predictors} 
 #'   implements a weighted regression. 
 #'   
 #'   For families \code{binomial} and \code{zero_inflated_binomial}, 
@@ -174,7 +179,8 @@
 #'   underlying each observation. In \code{lme4} syntax, we may write for instance 
 #'   \code{cbind(success, n - success)}, which is equivalent
 #'   to \code{success | trials(n)} in \code{brms} syntax. If the number of trials
-#'   is constant across all observation (say \code{10}), we may also write \code{success | trials(10)}. 
+#'   is constant across all observation (say \code{10}), 
+#'   we may also write \code{success | trials(10)}. 
 #'   
 #'   For family \code{categorical} and all ordinal families, 
 #'   \code{addition} may contain a term \code{cat(number)} to
@@ -194,8 +200,9 @@
 #'   \code{yi | trunc(lb = 0, ub = 100) ~ predictors}. Defining only one of the two arguments 
 #'   in \code{trunc} leads to one-sided truncation.
 #' 
-#'   Mutiple \code{addition} terms may be specified at the same time, for instance \cr 
-#'   \code{formula = yi | se(sei) | cens(censored) ~ 1} for a censored meta-analytic model. \cr
+#'   Mutiple \code{addition} terms may be specified at the same time using 
+#'   the \code{+} operator, for instance \code{formula = yi | se(sei) + cens(censored) ~ 1} 
+#'   for a censored meta-analytic model. \cr
 #'   
 #'   For families \code{gaussian}, \code{student}, and \code{cauchy} 
 #'   multivariate models may be specified using \code{cbind} notation. 

@@ -52,6 +52,9 @@ test_that("extract_effects handles addition arguments correctly", {
   expect_equal(extract_effects(y | se(a+2) | cens(log(b)) ~ x, 
                                family = gaussian())$cens, 
                ~ .cens(log(b)))
+  expect_equal(extract_effects(y | se(a+2) + cens(log(b)) ~ x, 
+                               family = gaussian())$se, 
+               ~ .se(a+2))
   expect_equal(extract_effects(y | trials(10) ~ x, family = binomial())$trials, 
                10)
   expect_equal(extract_effects(y | cat(cate) ~ x, family = cumulative())$cat, 

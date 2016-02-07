@@ -77,47 +77,42 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   fun <- c("se", "weights", "trials", "cat", "cens", "trunc")
   add_vars <- list()
   if (!is.na(family[[1]])) {
-    add <- get_matches("\\|[^~]*~", tformula)[1]
-    add <- substr(add, 2, nchar(add)-1)
-    families <- list(se = c("gaussian", "student", "cauchy"),
-                     weights = "all",
-                     trials = c("binomial", "zero_inflated_binomial"),
-                     cat = c("categorical", "cumulative", 
-                             "cratio", "sratio", "acat"), 
-                     cens = c("gaussian", "student", "cauchy", 
-                              "inverse.gaussian", "binomial",
-                              "poisson", "geometric", "negbinomial", 
-                              "exponential", "weibull", "gamma"),
-                     trunc = c("gaussian", "student", "cauchy", "binomial",
-                               "poisson", "geometric", "negbinomial", 
-                               "exponential", "weibull", "gamma"))
-    for (f in fun) {
-      x[[f]] <- get_matches(paste0(f, "\\([^\\|]*\\)"), add)[1]
-      add <- gsub(paste0(f,"\\([^~|\\|]*\\)\\|*"), "", add)
-      if (is.na(x[[f]])) {
-        x[[f]] <- NULL
-      } else if (family$family %in% families[[f]] || 
-                 families[[f]][1] == "all") {
-        args <- substr(x[[f]], nchar(f) + 2, nchar(x[[f]]) - 1)
-        try_numeric <- suppressWarnings(as.numeric(args))
-        if (f %in% c("trials", "cat") && !is.na(try_numeric)) {
-          x[[f]] <- try_numeric
-        } else {
-          x[[f]] <- as.formula(paste0("~ .", x[[f]]))
-          if (length(all.vars(x[[f]]))) {
-            form <- paste("~", paste(all.vars(x[[f]]), collapse = "+"))
-            add_vars[[f]] <- as.formula(form)
-          }
-        }
-      } else {
-        stop(paste("Argument", f, "in formula is not supported", 
-                   "by family", family$family), call. = FALSE)
+    add <- get_matches("\\|[^~]*~", tformula)
+    if (length(add)) {
+      # replace deprecated '|' by '+'
+      add <- paste("~", rename(substr(add, 2, nchar(add) - 1), "|", "+"))
+      add_terms <- attr(terms(formula(add)), "term.labels")
+      for (f in fun) {
+        matches <- grep(paste0("^", f, "\\(.+\\)$"), add_terms)
+        if (length(matches) == 1) {
+          x[[f]] <- add_terms[matches]
+          add_terms <- add_terms[-matches]
+          if (!is.na(x[[f]]) && (add_families(f)[1] == "all" ||
+              family$family %in% add_families(f))) {
+            args <- substr(x[[f]], nchar(f) + 2, nchar(x[[f]]) - 1)
+            try_numeric <- suppressWarnings(as.numeric(args))
+            if (f %in% c("trials", "cat") && !is.na(try_numeric)) {
+              x[[f]] <- try_numeric
+            } else {
+              x[[f]] <- as.formula(paste0("~ .", x[[f]]))
+              if (length(all.vars(x[[f]]))) {
+                form <- paste("~", paste(all.vars(x[[f]]), collapse = "+"))
+                add_vars[[f]] <- as.formula(form)
+              }
+            }
+          } else {
+            stop(paste("Argument", f, "in formula is not supported", 
+                       "by family", family$family), call. = FALSE)
+          } 
+        } else if (length(matches) > 1) {
+          stop("Addition arguments may be only defined once.", call. = FALSE)
+        } 
       }
+      if (length(add_terms))
+        stop(paste("Invalid addition part of formula.", 
+                   "Please see the 'Details' section of help(brm)"),
+             call. = FALSE)
     }
-    if (nchar(gsub("\\|", "", add)) > 0 && !is.na(add))
-      stop(paste("Invalid addition part of formula.", 
-                 "Please see the 'Details' section of help(brm)"),
-           call. = FALSE)
   }
   
   covars <- setdiff(all.vars(rhs(x$fixed)), names(x$nonlinear))
@@ -556,6 +551,23 @@ rsv_vars <- function(family, nresp = 1) {
     rsv <- NULL
   }
   rsv
+}
+
+add_families <- function(x) {
+  # return names of valid families for addition argument x
+  switch(x, weights = "all",
+         se = c("gaussian", "student", "cauchy"),
+         trials = c("binomial", "zero_inflated_binomial"),
+         cat = c("categorical", "cumulative", 
+               "cratio", "sratio", "acat"), 
+         cens = c("gaussian", "student", "cauchy", 
+                "inverse.gaussian", "binomial",
+                "poisson", "geometric", "negbinomial", 
+                "exponential", "weibull", "gamma"),
+         trunc = c("gaussian", "student", "cauchy", "binomial",
+                 "poisson", "geometric", "negbinomial", 
+                 "exponential", "weibull", "gamma"),
+         stop(paste("addition argument", x, "is not supported")))
 }
 
 check_brm_input <- function(x) {
