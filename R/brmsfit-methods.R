@@ -1461,8 +1461,7 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
 LOO.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL, 
                         re_formula = NULL, allow_new_levels = FALSE, 
                         subset = NULL, nsamples = NULL,
-                        cores = getOption("loo.cores", parallel::detectCores()),
-                        wcp = 0.2, wtrunc = 3/4) {
+                        cores = 1, wcp = 0.2, wtrunc = 3/4) {
   models <- list(x, ...)
   names <- c(deparse(substitute(x)), sapply(substitute(list(...))[-1], 
                                             deparse))

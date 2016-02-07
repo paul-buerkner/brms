@@ -293,9 +293,7 @@ WAIC <- function(x, ..., compare = TRUE)
 #' 
 #' @inheritParams WAIC
 #' @param cores The number of cores to use for parallelization. 
-#'  This can be set for an entire R session 
-#'  by \code{options(loo.cores = NUMBER)}. 
-#'  The default is \code{\link[parallel:detectCores]{detectCores()}}.
+#'  Default is \code{1}.
 #' @param wcp,wtrunc Parameters used for 
 #'  the Pareto smoothed importance sampling. 
 #'  See \code{\link[loo:loo]{loo}} for details.

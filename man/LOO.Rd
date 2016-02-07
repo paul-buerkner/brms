@@ -7,8 +7,7 @@
 \usage{
 \method{LOO}{brmsfit}(x, ..., compare = TRUE, newdata = NULL,
   re_formula = NULL, allow_new_levels = FALSE, subset = NULL,
-  nsamples = NULL, cores = getOption("loo.cores", parallel::detectCores()),
-  wcp = 0.2, wtrunc = 3/4)
+  nsamples = NULL, cores = 1, wcp = 0.2, wtrunc = 3/4)
 
 LOO(x, ..., compare = TRUE)
 }
@@ -42,9 +41,7 @@ If \code{NULL} (the default) all samples are used.
 Ignored if \code{subset} is not \code{NULL}.}
 
 \item{cores}{The number of cores to use for parallelization. 
-This can be set for an entire R session 
-by \code{options(loo.cores = NUMBER)}. 
-The default is \code{\link[parallel:detectCores]{detectCores()}}.}
+Default is \code{1}.}
 
 \item{wcp, wtrunc}{Parameters used for 
 the Pareto smoothed importance sampling. 
