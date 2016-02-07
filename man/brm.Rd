@@ -8,9 +8,10 @@ brm(formula, data = NULL, family = gaussian(), prior = NULL,
   addition = NULL, autocor = NULL, nonlinear = NULL, partial = NULL,
   threshold = c("flexible", "equidistant"), cov_ranef = NULL,
   ranef = TRUE, sample_prior = FALSE, fit = NA, inits = "random",
-  chains = 2, iter = 2000, warmup = 500, thin = 1, cluster = 1,
-  cluster_type = "PSOCK", algorithm = c("sampling", "meanfield",
-  "fullrank"), silent = TRUE, seed = 12345, save_model = NULL, ...)
+  chains = 4, iter = 2000, warmup = floor(iter/2), thin = 1,
+  cluster = 1, cluster_type = "PSOCK", algorithm = c("sampling",
+  "meanfield", "fullrank"), silent = TRUE, seed = 12345,
+  save_model = NULL, ...)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class): 
@@ -118,7 +119,7 @@ Alternatively, \code{inits} can be a list of lists containing
 the initial values, or a function (or function name) generating initial values. 
 The latter options are mainly implemented for internal testing.}
 
-\item{chains}{Number of Markov chains (defaults to 2). 
+\item{chains}{Number of Markov chains (defaults to 4). 
 A deprecated alias is \code{n.chains}.}
 
 \item{iter}{Number of total iterations per chain (including warmup; defaults to 2000).
@@ -127,7 +128,7 @@ A deprecated alias is \code{n.iter}.}
 \item{warmup}{A positive integer specifying number of warmup (aka burnin) iterations. 
 This also specifies the number of iterations used for stepsize adaptation, 
 so warmup samples should not be used for inference. The number of warmup should not 
-be larger than \code{iter} and the default is 500.
+be larger than \code{iter} and the default is \code{iter/2}.
 A deprecated alias is \code{n.warmup}.}
 
 \item{thin}{Thinning rate. Must be a positive integer. 
