@@ -182,11 +182,3 @@ test_that("check_brm_input returns correct warnings and errors", {
   x$family <- poisson("sqrt")
   expect_warning(check_brm_input(x))
 })
-
-test_that("remove_chains runs without errors", {
-  fit <- rename_pars(brmsfit_example)
-  expect_silent(remove_chains(1, list(fit$fit)))
-  fit$fit@sim$samples <- NULL
-  expect_warning(remove_chains(1, list(fit$fit)),
-                 "chain 1 did not contain samples")
-})
