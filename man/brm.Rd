@@ -62,9 +62,9 @@ See the documentation of \code{\link{cor_brms}} for a description
 of the available correlation structures. Defaults to NULL, 
 corresponding to no correlations.}
 
-\item{nonlinear}{An optional list of formuluae, specifying 
+\item{nonlinear}{An optional list of formuluas, specifying 
 linear models for non-linear parameters. If \code{NULL} (the default)
-\code{formula} is treated as an ordinary linear formula. 
+\code{formula} is treated as an ordinary formula. 
 If not \code{NULL}, \code{formula} is treated as a non-linear model
 and \code{nonlinear} should contain a formula for each non-linear 
 parameter, which has the parameter on the left hand side and its
@@ -177,7 +177,7 @@ Fit a generalized linear mixed model,
   and random effects in a linear predictor 
   via full bayesian inference using Stan. 
   
-  \bold{Formula syntax}
+  \bold{Formula syntax for generalized linear mixed models}
   
   The \code{formula} argument accepts formulas of the following syntax: 
   
@@ -331,6 +331,38 @@ Fit a generalized linear mixed model,
   and thus priors defined on \code{b} will also apply to it. 
   Note that this parameterization may be a bit less efficient
   than the default parameterization discussed above.  
+  
+  \bold{Formula syntax for non-linear mixed models}
+  
+  Using the \code{nonlinear} argument, it is possible to specify
+  non-linear models in \pkg{brms}. Contrary to what the name might suggest,
+  \code{nonlinear} should not contain the non-linear model itself
+  but rather information on the non-linear parameters. 
+  The non-linear model will just be specified within the \code{formula}
+  argument. Suppose, that we want to predict the response \code{y}
+  through the predictor \code{x}, where \code{x} is linked to \code{y}
+  through \code{y = alpha - beta * lambda^x}, with parameters
+  \code{alpha}, \code{beta}, and \code{lambda}. This is certainly a
+  non-linear model, which is readily defined via
+  \code{formula = y ~ alpha - beta * lambda^x} (addition arguments 
+  can be added in the same way as for ordinary formulas).
+  Now we have to tell \pkg{brms} the names of the non-linear parameters 
+  and specfiy a (linear mixed) model for each of them using the \code{nonlinear}
+  argument. Let's say we just want to estimate those three parameters
+  with not further covariates or random effects. Then we can write
+  \code{nonlinear = list(alpha ~ 1, beta ~ 1, lambda ~ 1)}. This can,
+  of course, be extended. If we have another predictor \code{z} and 
+  observations nested within the grouping factor \code{g}, we may write for 
+  instance \code{nonlinear = list(alpha ~ 1, beta ~ 1 + z + (1|g), lambda ~ 1)}.
+  The formula syntax of fixed and random effects described above applies here as well.
+  In this example, we are using \code{z} and \code{g} only for the 
+  prediction of \code{beta}, but we might also use them for the other
+  non-linear parameters (provided that the resulting model is still 
+  scientifically reasonable). 
+  
+  Non-linear models may not be uniquely identified and / or show bad convergence.
+  For this reason it is mandatory to specify priors on the non-linear parameters.
+  For instructions on how to do that, see \code{\link[brms:set_prior]{set_prior}}.
   
   \bold{Families and link functions}
   

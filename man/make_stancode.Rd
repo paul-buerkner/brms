@@ -54,9 +54,9 @@ See the documentation of \code{\link{cor_brms}} for a description
 of the available correlation structures. Defaults to NULL, 
 corresponding to no correlations.}
 
-\item{nonlinear}{An optional list of formuluae, specifying 
+\item{nonlinear}{An optional list of formuluas, specifying 
 linear models for non-linear parameters. If \code{NULL} (the default)
-\code{formula} is treated as an ordinary linear formula. 
+\code{formula} is treated as an ordinary formula. 
 If not \code{NULL}, \code{formula} is treated as a non-linear model
 and \code{nonlinear} should contain a formula for each non-linear 
 parameter, which has the parameter on the left hand side and its

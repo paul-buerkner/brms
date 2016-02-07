@@ -102,6 +102,16 @@ Define priors for specific parameters or classes of parameters
   See the documentation of \code{\link[brms:brm]{brm}} for instructions
   on how to increase \code{adapt_delta}. \cr
   
+  In non-linear models, fixed effects are defined separately for each
+  non-linear parameter. Accordingly, it is necessary to specify
+  the corresponding non-linear parameter in \code{set_prior} so that priors
+  we can be assigned correctly. 
+  If, for instance, \code{alpha} is the parameter and \code{x} the predictor
+  for which we want to define the prior, we can write
+  \code{set_prior("<prior>", coef = "x", nlpar = "alpha")}. 
+  As a shortcut we can use \code{set_prior("<prior>", nlpar = "alpha")}
+  to set the same prior on all fixed effects of \code{alpha} at once.
+  
   If desired, fixed effects parameters can be restricted to fall only 
   within a certain interval using the \code{lb} and \code{ub} arguments
   of \code{set_prior}. This is often required when defining priors
@@ -146,6 +156,10 @@ Define priors for specific parameters or classes of parameters
   \code{set_prior("<prior>", class = "sd", group = "<group>", coef = "<coef>")}. 
   Recommendations on useful prior distributions for 
   standard deviations are given in Gelman (2006). \cr
+  
+  When defining priors on random effects parameters in non-linear models, 
+  please make sure to specify the corresponding non-linear parameter 
+  through the \code{nlpar} argument in the same way as for fixed effects.
   
   5. Correlations of random effects 
   
