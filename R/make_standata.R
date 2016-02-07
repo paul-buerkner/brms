@@ -36,7 +36,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   # use deprecated arguments if specified
   cov_ranef <- use_alias(cov_ranef, dots$cov.ranef, warn = FALSE)
   # some input checks 
-  formula <- update_formula(formula, data = data)
+  formula <- update_formula(formula, data = data, nonlinear = nonlinear)
   autocor <- check_autocor(autocor)
   family <- check_family(family)
   is_linear <- is.linear(family)

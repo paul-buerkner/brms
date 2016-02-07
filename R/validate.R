@@ -224,7 +224,7 @@ nonlinear_effects <- function(x, model = ~ 1) {
 }
 
 update_formula <- function(formula, data = NULL, addition = NULL, 
-                           partial = NULL) {
+                           partial = NULL, nonlinear = NULL) {
   # incorporate addition arguments and category specific effects into formula 
   # 
   # Args:
@@ -255,11 +255,11 @@ update_formula <- function(formula, data = NULL, addition = NULL,
   if (!is(try_terms, "try-error")) {
     formula <- formula(try_terms)
   }
-  if (fnew == ". ~ .") {
-    formula
-  } else {
-    update.formula(formula, formula(fnew))
+  if (fnew != ". ~ .") {
+    formula <- update.formula(formula, formula(fnew))
   }
+  attr(formula, "nonlinear") <- length(nonlinear) > 0
+  formula
 }
 
 get_group_formula <- function(g) {
@@ -346,6 +346,11 @@ update_re_terms <- function(formula, re_formula = NULL) {
   #
   # Returns:
   #  a formula with updated RE terms
+  if (isTRUE(attr(formula, "nonlinear"))) {
+    # non-linear formulae may cause errors when passed to terms
+    # and do not contain random effects anyway
+    return(formula)
+  }
   if (suppressWarnings(anyNA(re_formula))) {
     re_formula <- ~ 1
   }

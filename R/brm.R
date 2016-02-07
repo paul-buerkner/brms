@@ -461,7 +461,8 @@ brm <- function(formula, data = NULL, family = gaussian(),
   } else {  # build new model
     # see validate.R and priors.R for function definitions
     family <- check_family(family)
-    formula <- update_formula(formula, addition = addition, data = data) 
+    formula <- update_formula(formula, addition = addition, data = data,
+                              nonlinear = nonlinear) 
     prior <- check_prior(prior, formula = formula, data = data, 
                          family = family, autocor = autocor,
                          nonlinear = nonlinear, partial = partial, 

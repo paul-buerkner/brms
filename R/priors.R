@@ -294,7 +294,7 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
                       threshold = c("flexible", "equidistant"), 
                       internal = FALSE) {
   # note that default priors are stored in this function
-  formula <- update_formula(formula, data = data)
+  formula <- update_formula(formula, data = data, nonlinear = nonlinear)
   family <- check_family(family) 
   link <- family$link
   threshold <- match.arg(threshold)

@@ -30,7 +30,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   save_model <- use_alias(save_model, dots$save.model)
   dots[c("cov.ranef", "sample.prior", "save.model")] <- NULL
   # some input checks 
-  formula <- update_formula(formula, data = data)
+  formula <- update_formula(formula, data = data, nonlinear = nonlinear)
   family <- check_family(family) 
   autocor <- check_autocor(autocor)
   threshold <- match.arg(threshold)
