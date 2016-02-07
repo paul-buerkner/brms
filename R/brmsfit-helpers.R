@@ -430,6 +430,9 @@ compute_ic <- function(x, ic = c("waic", "loo"), ll_args = list(), ...) {
   # Returns:
   #   output of the loo package with amended class attribute
   ic <- match.arg(ic)
+  if (!is(x, "brmsfit")) 
+    stop(paste("Cannot compute information criteria for", 
+               "an object of class", class(x)), call. = FALSE)
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples") 
   args <- list(x = do.call(logLik, c(list(x), ll_args)))
