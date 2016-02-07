@@ -29,6 +29,12 @@
       \item The \code{cauchy} family is now deprecated 
       and will be removed soon as it often has convergence 
       issues and not much practical application anyway.
+      \item Change the default settings of the number of 
+      chains and warmup samples to the defaults of \pkg{rstan}
+      (i.e., \code{chains = 4} and \code{warmup = iter / 2}).
+      \item Do not remove bad behaving chains anymore as
+      they may point to general convergence problems that 
+      are dangerous to ignore.
     }
   }
   \subsection{BUG FIXES}{
