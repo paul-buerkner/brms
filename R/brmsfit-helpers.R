@@ -418,19 +418,21 @@ extract_pars <- function(pars, all_pars, exact_match = FALSE,
   pars
 }
 
-compute_ic <- function(x, ic = c("waic", "loo"), ...) {
+compute_ic <- function(x, ic = c("waic", "loo"), ll_args = list(), ...) {
   # compute WAIC and LOO using the 'loo' package
   #
   # Args:
   #   x: an object of class brmsfit
   #   ic: the information criterion to be computed
+  #   ll_args: a list of additional arguments passed to logLik
+  #   ...: passed to the loo package
   #
   # Returns:
   #   output of the loo package with amended class attribute
   ic <- match.arg(ic)
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples") 
-  args <- list(x = logLik(x))
+  args <- list(x = do.call(logLik, c(list(x), ll_args)))
   if (ic == "loo") args <- c(args, ...)
   IC <- do.call(eval(parse(text = paste0("loo::", ic))), args)
   class(IC) <- c("ic", "loo")

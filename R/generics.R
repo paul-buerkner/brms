@@ -244,6 +244,7 @@ par.names <- function(x, ...)
 #' @param ... Optionally more fitted model objects.
 #' @param compare A flag indicating if the WAICs 
 #'  of the models should be compared to each other.
+#' @inheritParams predict.brmsfit
 #' 
 #' @details When comparing models fitted to the same data, 
 #'  the smaller the WAIC, the better the fit.

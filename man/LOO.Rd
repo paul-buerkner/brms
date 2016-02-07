@@ -5,8 +5,10 @@
 \alias{LOO.brmsfit}
 \title{Compute LOO}
 \usage{
-\method{LOO}{brmsfit}(x, ..., compare = TRUE, cores = getOption("loo.cores",
-  parallel::detectCores()), wcp = 0.2, wtrunc = 3/4)
+\method{LOO}{brmsfit}(x, ..., compare = TRUE, newdata = NULL,
+  re_formula = NULL, allow_new_levels = FALSE, subset = NULL,
+  nsamples = NULL, cores = getOption("loo.cores", parallel::detectCores()),
+  wcp = 0.2, wtrunc = 3/4)
 
 LOO(x, ..., compare = TRUE)
 }
@@ -17,6 +19,27 @@ LOO(x, ..., compare = TRUE)
 
 \item{compare}{A flag indicating if the WAICs 
 of the models should be compared to each other.}
+
+\item{newdata}{An optional data.frame for which to evaluate predictions.
+If \code{NULL} (default), the orginal data of the model is used.}
+
+\item{re_formula}{formula containing random effects 
+to be considered in the prediction. 
+If \code{NULL} (default), include all random effects; 
+if \code{NA}, include no random effects.}
+
+\item{allow_new_levels}{A flag indicating if new
+levels of random effects are allowed (defaults to \code{FALSE}). 
+Only relevant if \code{newdata} is provided.}
+
+\item{subset}{A numeric vector specifying
+the posterior samples to be used. 
+If \code{NULL} (the default), all samples are used.}
+
+\item{nsamples}{Positive integer indicating how many 
+posterior samples should be used. 
+If \code{NULL} (the default) all samples are used.
+Ignored if \code{subset} is not \code{NULL}.}
 
 \item{cores}{The number of cores to use for parallelization. 
 This can be set for an entire R session 

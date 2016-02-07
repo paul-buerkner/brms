@@ -1433,12 +1433,17 @@ update.brmsfit <- function(object, newdata = NULL, ...) {
 }
 
 #' @export
-WAIC.brmsfit <- function(x, ..., compare = TRUE) {
+#' @describeIn WAIC method for class \code{brmsfit}
+WAIC.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL, 
+                         re_formula = NULL, allow_new_levels = FALSE, 
+                         subset = NULL, nsamples = NULL) {
   models <- list(x, ...)
   names <- c(deparse(substitute(x)), sapply(substitute(list(...))[-1], 
                                             deparse))
+  ll_args = nlist(newdata, re_formula, allow_new_levels, subset, nsamples)
   if (length(models) > 1) {
-    out <- setNames(lapply(models, compute_ic, ic = "waic"), names)
+    args <- nlist(X = models, FUN = compute_ic, ic = "waic", ll_args)
+    out <- setNames(do.call(lapply, args), names)
     class(out) <- c("iclist", "list")
     if (compare && match_response(models)) {
       comp <- compare_ic(out, ic = "waic")
@@ -1446,22 +1451,26 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE) {
       attr(out, "weights") <- comp$weights
     }
   } else { 
-    out <- compute_ic(x, ic = "waic")
+    out <- do.call(compute_ic, nlist(x, ic = "waic", ll_args))
   }
   out
 }
 
 #' @export
 #' @describeIn LOO method for class \code{brmsfit}
-LOO.brmsfit <- function(x, ..., compare = TRUE,
+LOO.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL, 
+                        re_formula = NULL, allow_new_levels = FALSE, 
+                        subset = NULL, nsamples = NULL,
                         cores = getOption("loo.cores", parallel::detectCores()),
                         wcp = 0.2, wtrunc = 3/4) {
   models <- list(x, ...)
   names <- c(deparse(substitute(x)), sapply(substitute(list(...))[-1], 
                                             deparse))
+  ll_args = nlist(newdata, re_formula, allow_new_levels, subset, nsamples)
   if (length(models) > 1) {
-    out <- setNames(lapply(models, compute_ic, ic = "loo", wcp = wcp, 
-                           wtrunc = wtrunc, cores = cores), names)
+    args <- nlist(X = models, FUN = compute_ic, ic = "loo", 
+                  ll_args, wcp, wtrunc, cores)
+    out <- setNames(do.call(lapply, args), names)
     class(out) <- c("iclist", "list")
     if (compare && match_response(models)) {
       comp <- compare_ic(out, ic = "loo")
@@ -1469,8 +1478,8 @@ LOO.brmsfit <- function(x, ..., compare = TRUE,
       attr(out, "weights") <- comp$weights
     }
   } else {
-    out <- compute_ic(x, ic = "loo", wcp = wcp, wtrunc = wtrunc, 
-                      cores = cores)
+    out <- do.call(compute_ic, nlist(x, ic = "loo", ll_args, 
+                                     wcp, wtrunc, cores))
   }
   out
 }
