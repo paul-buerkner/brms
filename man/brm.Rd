@@ -9,9 +9,9 @@ brm(formula, data = NULL, family = gaussian(), prior = NULL,
   threshold = c("flexible", "equidistant"), cov_ranef = NULL,
   ranef = TRUE, sample_prior = FALSE, fit = NA, inits = "random",
   chains = 4, iter = 2000, warmup = floor(iter/2), thin = 1,
-  cluster = 1, cluster_type = "PSOCK", algorithm = c("sampling",
-  "meanfield", "fullrank"), silent = TRUE, seed = 12345,
-  save_model = NULL, ...)
+  cluster = 1, cluster_type = "PSOCK", control = NULL,
+  algorithm = c("sampling", "meanfield", "fullrank"), silent = TRUE,
+  seed = 12345, save_model = NULL, ...)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class): 
@@ -145,6 +145,11 @@ of \pkg{rstan}, specify argument \code{cores} instead of \code{cluster}.}
 Default is \code{"PSOCK"} working on all platforms. 
 For OS X and Linux, \code{"FORK"} may be a faster and more stable option, 
 but it does not work on Windows.}
+
+\item{control}{A named \code{list} of parameters to control the sampler's behavior. 
+It defaults to \code{NULL} so all the default values are used. 
+The most important control parameters are discussed in the 'Details'
+section below. For a comprehensive overview see \code{\link[rstan:stan]{stan}}.}
 
 \item{algorithm}{Character string indicating the estimation approach to use. 
 Can be \code{"sampling"} for MCMC (the default), \code{"meanfield"} for
@@ -409,8 +414,8 @@ Fit a generalized linear mixed model,
   \code{zero_inflated_negbinomial} the link \code{log}. 
   The first link mentioned for each family is the default.     
   
-  Please note that when calling the \code{\link[stats:family]{Gamma}} family function, 
-  the default link will be \code{inverse} not \code{log}. 
+  Please note that when calling the \code{\link[stats:family]{Gamma}} 
+  family function, the default link will be \code{inverse} not \code{log}. 
   Also, the \code{probit_approx} link cannot be used when calling the
   \code{\link[stats:family]{binomial}} family function. 
   
@@ -442,11 +447,20 @@ Fit a generalized linear mixed model,
   "There were x divergent transitions after warmup. 
   Increasing adapt_delta may help." 
   you should really think about increasing \code{adapt_delta}.
-  To do this, write \code{control = list(adapt_delta = <x>)}, where \code{<x>}
-  should usually be value between \code{0.8} (default) and \code{1}.
-  Increasing \code{adapt_delta} will slow down the sampler but will 
-  decrease the number of divergent transitions threatening
-  the validity of your posterior samples. 
+  To do this, write \code{control = list(adapt_delta = <x>)}, 
+  where \code{<x>} should usually be value between \code{0.8} 
+  (current default) and \code{1}. Increasing \code{adapt_delta} 
+  will slow down the sampler but will decrease the number of 
+  divergent transitions threatening the validity of your 
+  posterior samples.
+  
+  Another problem arises when the depth of the tree being evaluated
+  in each iteration is exceeded. This is less common than having
+  divergent transitions, but may also bias the posterior samples.
+  When it happens, \pkg{Stan} will throw out a warning suggesting
+  to increase \code{max_treedepth}, which is \code{10} by default. 
+  You can do that by specifying \code{control = list(max_treedepth = <x>)},
+  where \code{<x>} should be a positive integer.
   For more details on the \code{control} argument see 
   \code{\link[rstan:stan]{stan}}.
 }
