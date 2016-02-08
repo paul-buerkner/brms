@@ -324,13 +324,19 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     text_model,
     text_generated_quantities)
   
-  # write the stan code to a file if save_model is a character string
-  class(complete_model) <- "brmsmodel"
+  # expand '#include' statements by calling stanc_builder
+  temp_file <- tempfile(fileext = ".stan")
+  cat(complete_model, file = temp_file) 
+  isystem <- system.file("chunks", package = "brms")
+  complete_model <- rstan::stanc_builder(file = temp_file, isystem = isystem,
+                                         obfuscate_model_name = TRUE)
+  complete_model$model_name <- model_name(family)
+  class(complete_model$model_code) <- c("character", "brmsmodel")
   if (is.character(save_model)) {
-    cat(complete_model, file = save_model)
+    cat(complete_model$model_code, file = save_model)
   }
-  if (is.character(dots$temp_file)) {
-    cat(complete_model, file = dots$temp_file)  
+  if (!isTRUE(dots$brm_call)) {
+    complete_model <- complete_model$model_code
   }
   complete_model
 }

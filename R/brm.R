@@ -522,8 +522,7 @@ brm <- function(formula, data = NULL, family = gaussian(),
     # see validate.R
     x$ranef <- gather_ranef(ee, data = x$data, is_forked = is.forked(family))  
     x$exclude <- exclude_pars(ee, ranef = ranef)
-    # see stan.R
-    temp_file <- tempfile(fileext = ".stan")
+    # see make_stancode.R
     x$model <- make_stancode(formula = formula, data = data, 
                              family = family, prior = prior,  
                              autocor = autocor, partial = partial,
@@ -532,18 +531,13 @@ brm <- function(formula, data = NULL, family = gaussian(),
                              cov_ranef = cov_ranef, 
                              sample_prior = sample_prior, 
                              save_model = save_model,
-                             temp_file = temp_file)
+                             brm_call = TRUE)
     # generate standata before compiling the model to avoid
     # unnecessary compilations in case that the data is invalid
     standata <- standata(x, newdata = dots$is_newdata)
-    isystem <- system.file("chunks", package = "brms")
-    x$fit <- rstan::stanc_builder(file = temp_file, isystem = isystem,
-                                  obfuscate_model_name = TRUE)
-    x$fit$model_name <- model_name(family)
-    # model code including expanded '#include' statements
-    x$model <- structure(x$fit$model_code, class = "brmsmodel")
     message("Compiling the C++ model")
-    x$fit <- rstan::stan_model(stanc_ret = x$fit) 
+    x$fit <- rstan::stan_model(stanc_ret = x$model)
+    x$model <- x$model$model_code
   }
   
   # arguments to be passed to stan
