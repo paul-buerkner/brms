@@ -1,4 +1,4 @@
-# Uncomment the code below to enable automated unit tests of S3 methods
+# Uncomment the code below to enable unit tests of S3 methods
 
 brmsfit_example <- brm(count ~ Trt_c + offset(log_Age_c) + (1+Trt_c|visit),
                        data = data.frame(count = rpois(236, lambda = 20),
