@@ -199,7 +199,8 @@ get_table <- function(samples, levels = sort(unique(as.numeric(samples)))) {
 }
 
 get_cov_matrix <- function(sd, cor = NULL) {
-  # compute covariance and correlation matrices based on correlation and sd samples
+  # compute covariance and correlation matrices based 
+  # on correlation and sd samples
   #
   # Args:
   #   sd: samples of standard deviations
@@ -210,7 +211,8 @@ get_cov_matrix <- function(sd, cor = NULL) {
   # 
   # Returns: 
   #   samples of covariance and correlation matrices
-  if (any(sd < 0)) stop("standard deviations must be non negative")
+  if (any(sd < 0)) 
+    stop("standard deviations must be non negative")
   if (!is.null(cor)) {
     if (ncol(cor) != ncol(sd) * (ncol(sd) - 1) / 2 || nrow(sd) != nrow(cor))
       stop("dimensions of standard deviations and corrrelations do not match")

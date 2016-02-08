@@ -106,7 +106,7 @@ test_that("make_stancode returns correct selfmade functions", {
   expect_match(temp_stancode, "real inv_gaussian_cdf_log(real y", fixed = TRUE)
   expect_match(temp_stancode, "real inv_gaussian_ccdf_log(real y", fixed = TRUE)
   expect_match(make_stancode(time ~ 1, data = kidney, family = inverse.gaussian),
-               "real inv_gaussian_log(vector y", fixed = TRUE)
+               "real inv_gaussian_vector_log(vector y", fixed = TRUE)
   # zero-inflated and hurdle models
   expect_match(make_stancode(count ~ Trt_c, data = epilepsy, 
                              family = "zero_inflated_poisson"),
