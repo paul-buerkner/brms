@@ -1207,6 +1207,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     # compute frequencies of categories for categorical and ordinal models
     out <- get_table(out, levels = 1:max(standata$max_obs)) 
   }
+  rownames(out) <- 1:nrow(out)
   out
 }
 
