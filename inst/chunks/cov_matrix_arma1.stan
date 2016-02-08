@@ -21,4 +21,3 @@
      } 
      return sigma^2 / (1 - ar^2) * mat; 
    }
-  

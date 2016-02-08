@@ -17,4 +17,3 @@
               binomial_logit_log(y, trials, eta); 
      } 
    }
-  

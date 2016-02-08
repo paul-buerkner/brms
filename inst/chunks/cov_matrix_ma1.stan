@@ -19,4 +19,3 @@
      } 
      return sigma^2 * mat; 
    }
-  

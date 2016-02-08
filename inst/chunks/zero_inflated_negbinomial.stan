@@ -17,4 +17,3 @@
               neg_binomial_2_log_log(y, eta, shape); 
      } 
    } 
-  
