@@ -325,11 +325,12 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     text_generated_quantities)
   
   # write the stan code to a file if save_model is a character string
-  class(complete_model) <- c("character", "brmsmodel")
+  class(complete_model) <- "brmsmodel"
   if (is.character(save_model)) {
-    sink(save_model)
-    cat(complete_model)
-    sink()
+    cat(complete_model, file = save_model)
+  }
+  if (is.character(dots$temp_file)) {
+    cat(complete_model, file = dots$temp_file)  
   }
   complete_model
 }

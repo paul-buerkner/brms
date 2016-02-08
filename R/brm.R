@@ -467,7 +467,7 @@ brm <- function(formula, data = NULL, family = gaussian(),
                 threshold = c("flexible", "equidistant"), 
                 cov_ranef = NULL, ranef = TRUE, sample_prior = FALSE, 
                 fit = NA, inits = "random", chains = 4, iter = 2000, 
-                warmup = floor(iter/2), thin = 1, cluster = 1, 
+                warmup = floor(iter / 2), thin = 1, cluster = 1, 
                 cluster_type = "PSOCK", 
                 algorithm = c("sampling", "meanfield", "fullrank"),
                 silent = TRUE, seed = 12345, save_model = NULL, ...) {
@@ -523,6 +523,7 @@ brm <- function(formula, data = NULL, family = gaussian(),
     x$ranef <- gather_ranef(ee, data = x$data, is_forked = is.forked(family))  
     x$exclude <- exclude_pars(ee, ranef = ranef)
     # see stan.R
+    temp_file <- tempfile(fileext = ".stan")
     x$model <- make_stancode(formula = formula, data = data, 
                              family = family, prior = prior,  
                              autocor = autocor, partial = partial,
@@ -530,13 +531,18 @@ brm <- function(formula, data = NULL, family = gaussian(),
                              threshold = threshold, 
                              cov_ranef = cov_ranef, 
                              sample_prior = sample_prior, 
-                             save_model = save_model)
+                             save_model = save_model,
+                             temp_file = temp_file)
     # generate standata before compiling the model to avoid
     # unnecessary compilations in case that the data is invalid
     standata <- standata(x, newdata = dots$is_newdata)
+    isystem <- system.file("chunks", package = "brms")
+    x$fit <- rstan::stanc_builder(file = temp_file, isystem = isystem,
+                                  obfuscate_model_name = TRUE)
+    x$fit$model_name <- model_name(family)
+    # model code including expanded '#include' statements
+    x$model <- structure(x$fit$model_code, class = "brmsmodel")
     message("Compiling the C++ model")
-    x$fit <- rstan::stanc(model_code = x$model, 
-                          model_name = model_name(family))
     x$fit <- rstan::stan_model(stanc_ret = x$fit) 
   }
   
