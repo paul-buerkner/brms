@@ -12,3 +12,23 @@ brmsfit_example <- brm(count ~ Trt_c + offset(log_Age_c) + (1+Trt_c|visit),
                                  set_prior("cauchy(0,2)", class = "sd")),
                        warmup = 10, iter = 40, testmode = TRUE)
 brmsfit_example$fit@stanmodel <- new("stanmodel")
+
+
+# Uncomment the code below to enable unit tests for new stan functions
+
+new_stan_functions <- function() {
+  # copy all new stan functions into a single .stan file and compile it 
+  chunk_filenames <- list.files(system.file("chunks", package = "brms"))
+  ordinal_funs <- ulapply(list(cumulative(), sratio(), cratio(), acat()),
+    function(fam) stan_ordinal(fam, partial = TRUE)$fun)
+  temp_file <- tempfile()
+  cat(paste0("functions { \n",
+             collapse("  #include '", chunk_filenames, "' \n"),
+             collapse(ordinal_funs), "} \nmodel {} \n"), 
+      file = temp_file)
+  isystem <- system.file("chunks", package = "brms")
+  model <- rstan::stanc_builder(file = temp_file, isystem = isystem,
+                                obfuscate_model_name = TRUE)
+  rstan::stan_model(stanc_ret = model)
+}
+new_stan_functions <- new_stan_functions()
