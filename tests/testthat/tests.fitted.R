@@ -9,7 +9,7 @@ test_that("fitted helper functions run without errors", {
   nobs <- nobs(fit)
   # test preparation of truncated models
   standata <- standata(fit)
-  standata$lb <- -10
+  standata$lb <- 0
   standata$ub <- 200
   mu <- fitted_response(x = fit, eta = eta, data = standata)
   expect_equal(dim(mu), c(nsamples, nobs))
