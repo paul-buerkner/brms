@@ -1,4 +1,5 @@
 test_that("self-defined Stan functions work correctly", {
+  skip_on_cran()
   rstan::expose_stan_functions(brms:::new_stan_functions)
   # arma covariance matrices 
   cov_ar1_R <- get_cov_matrix_ar1(ar = matrix(0.5), sigma = 2, 
