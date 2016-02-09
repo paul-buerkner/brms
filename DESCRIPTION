@@ -14,7 +14,7 @@ Imports:
     shinystan (>= 2.1.0),
     gridExtra (>= 2.0.0),
     lme4 (>= 1.1-8),
-    nlme (>= 3.1-123),
+    nlme (>= 3.1-124),
     Matrix (>= 1.1.1),
     abind,
     statmod,
