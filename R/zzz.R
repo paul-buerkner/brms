@@ -19,8 +19,11 @@ brmsfit_example$fit@stanmodel <- new("stanmodel")
 new_stan_functions <- function() {
   # copy all new stan functions into a single .stan file and compile it 
   chunk_filenames <- list.files(system.file("chunks", package = "brms"))
-  ordinal_funs <- ulapply(list(cumulative(), sratio(), cratio(), acat()),
-    function(fam) stan_ordinal(fam, partial = TRUE)$fun)
+  families <- list(cumulative("probit"), sratio("logit"), 
+                   cratio("cloglog"), acat("cauchit"))
+  partial <- c(rep(FALSE, 2), rep(TRUE, 2))
+  ordinal_funs <- ulapply(seq_along(families), function(i) 
+    stan_ordinal(families[[i]], partial = partial[i])$fun)
   temp_file <- tempfile()
   cat(paste0("functions { \n",
              collapse("  #include '", chunk_filenames, "' \n"),
