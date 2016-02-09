@@ -45,7 +45,7 @@ test_that("extract_effects handles addition arguments correctly", {
   expect_equal(extract_effects(y | se(I(a+2)) ~ x, family = gaussian())$se, 
                ~ .se(I(a+2)))
   expect_equal(extract_effects(y | se(I(a+2)) ~ x, family = gaussian())$all, 
-               y ~ y + x + a)
+               y ~ y + a + x)
   expect_equal(extract_effects(y | weights(1/n) ~ x, 
                                family = gaussian())$weights, 
                ~ .weights(1/n))
@@ -63,7 +63,7 @@ test_that("extract_effects handles addition arguments correctly", {
                ~ .cens(cens^2))
   expect_equal(extract_effects(y | cens(cens^2) ~ z + (x|patient), 
                                family = weibull())$all, 
-               y ~ y + z + x + patient + cens)
+               y ~ y + cens + z + x + patient)
 })
 
 test_that("extract_effects accepts complicated random terms", {
@@ -71,6 +71,11 @@ test_that("extract_effects accepts complicated random terms", {
                list(~I(as.numeric(x) - 1)))
   expect_equal(extract_effects(y ~ x + (I(exp(x)-1) + I(x/y) | z))$random$form,
                list(~I(exp(x)-1) + I(x/y)))
+})
+
+test_that("extract_effects accepts calls to the poly function", {
+  expect_equal(extract_effects(y ~ z + poly(x, 3))$all,
+               y ~ y + z + x + poly(x, 3))
 })
 
 test_that("extract_time returns all desired variables", {

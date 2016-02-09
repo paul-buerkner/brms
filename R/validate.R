@@ -118,8 +118,9 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   covars <- setdiff(all.vars(rhs(x$fixed)), names(x$nonlinear))
   x$covars <- formula(paste("~", paste(c("1", covars), collapse = "+")))
   # make a formula containing all required variables (element 'all')
-  formula_list <- c(all.vars(lhs(x$fixed)), x$covars, x$random$form, 
-                    group_formula, add_vars, get_offset(x$fixed), 
+  formula_list <- c(all.vars(lhs(x$fixed)), add_vars, x$covars, 
+                    if (!length(x$nonlinear)) rhs(x$fixed), 
+                    x$random$form, group_formula, get_offset(x$fixed), 
                     lapply(x$nonlinear, function(nl) nl$all), ...)
   new_formula <- collapse(ulapply(formula_list, plus_rhs))
   x$all <- paste0("update(", tfixed, ", ~ ", new_formula, ")")
