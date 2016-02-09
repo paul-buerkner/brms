@@ -232,16 +232,16 @@ loglik_beta <- function(n, data, samples, link = "logit") {
 loglik_hurdle_poisson <- function(n, data, samples, link = "log") {
   theta <- ilink(samples$eta[, n + data$N_trait], "logit")
   args <- list(lambda = ilink(samples$eta[, n], link))
-  out <- hurdle_loglik(pdf = dpois, theta = theta, 
-                       args = args, n = n, data = data)
+  out <- hurdle_loglik_discrete(pdf = dpois, theta = theta, 
+                                args = args, n = n, data = data)
   weight_loglik(out, n = n, data = data)
 }
 
 loglik_hurdle_negbinomial <- function(n, data, samples, link = "log") {
   theta <- ilink(samples$eta[, n + data$N_trait], "logit")
   args <- list(mu = ilink(samples$eta[, n], link), size = samples$shape)
-  out <- hurdle_loglik(pdf = dnbinom, theta = theta, 
-                       args = args, n = n, data = data)
+  out <- hurdle_loglik_discrete(pdf = dnbinom, theta = theta, 
+                                args = args, n = n, data = data)
   weight_loglik(out, n = n, data = data)
 }
 
@@ -249,8 +249,8 @@ loglik_hurdle_gamma <- function(n, data, samples, link = "log") {
   theta <- ilink(samples$eta[, n + data$N_trait], "logit")
   args <- list(shape = samples$shape, 
                scale = ilink(samples$eta[, n], link) / samples$shape)
-  out <- hurdle_loglik(pdf = dgamma, theta = theta, 
-                       args = args, n = n, data = data)
+  out <- hurdle_loglik_continuous(pdf = dgamma, theta = theta, 
+                                  args = args, n = n, data = data)
   weight_loglik(out, n = n, data = data)
 }
 
@@ -284,8 +284,8 @@ loglik_zero_inflated_beta <- function(n, data, samples, link = "logit") {
   mu <- ilink(samples$eta[, n], link)
   args <- list(shape1 = mu * samples$phi, shape2 = (1 - mu) * samples$phi)
   # zi_beta is technically a hurdle model
-  out <- hurdle_loglik(pdf = dbeta, theta = theta, 
-                       args = args, n = n, data = data)
+  out <- hurdle_loglik_continuous(pdf = dbeta, theta = theta, 
+                                  args = args, n = n, data = data)
   weight_loglik(out, n = n, data = data)
 }
 
@@ -428,8 +428,8 @@ weight_loglik <- function(x, n, data) {
   }
 }
 
-hurdle_loglik <- function(pdf, theta, args, n, data) {
-  # loglik values for hurdle modles
+hurdle_loglik_discrete <- function(pdf, theta, args, n, data) {
+  # loglik values for discrete hurdle models
   # Args:
   #  pdf: a probability density function 
   #  theta: bernoulli hurdle parameter
@@ -443,6 +443,19 @@ hurdle_loglik <- function(pdf, theta, args, n, data) {
     dbinom(0, size = 1, prob = theta, log = TRUE) + 
       do.call(pdf, c(data$Y[n], args, log = TRUE)) -
       log(1 - do.call(pdf, c(0, args)))
+  }
+}
+
+hurdle_loglik_continuous <- function(pdf, theta, args, n, data) {
+  # loglik values for continuous hurdle models
+  # does not call log(1 - do.call(pdf, c(0, args)))
+  # Args:
+  #   same as hurdle_loglik_discrete
+  if (data$Y[n] == 0) {
+    dbinom(1, size = 1, prob = theta, log = TRUE)
+  } else {
+    dbinom(0, size = 1, prob = theta, log = TRUE) + 
+      do.call(pdf, c(data$Y[n], args, log = TRUE))
   }
 }
 
