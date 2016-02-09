@@ -967,7 +967,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, data = NULL,
     marg_vars <- setdiff(names(data), effects[[i]])
     for (j in 1:nrow(data)) {
       marg_data[[j]][, marg_vars] <- data[j, marg_vars]
-      marg_data[[j]][["MargRow"]] <- j
+      marg_data[[j]][["MargRow"]] <- rownames(data)[j]
     }
     marg_data <- do.call(rbind, marg_data)
     args <- list(x, newdata = marg_data, re_formula = re_formula,
