@@ -1,6 +1,6 @@
 test_that("self-defined Stan functions work correctly", {
   skip_on_cran()
-  rstan::expose_stan_functions(brms:::new_stan_functions)
+  rstan::expose_stan_functions(new_stan_functions)
   
   # ARMA matrix generating functions
   cov_ar1_R <- get_cov_matrix_ar1(ar = matrix(0.5), sigma = 2, 
@@ -9,7 +9,7 @@ test_that("self-defined Stan functions work correctly", {
   cov_ma1_R <- matrix(get_cov_matrix_ma1(ma = matrix(-0.3), sigma = 3, 
                                          sq_se = 0, nrows = 1)[1, , ])
   expect_equal(cov_matrix_ma1(-0.3, 3, 1), cov_ma1_R)
-  cov_arma1_R <- brms:::get_cov_matrix_arma1(ar = matrix(-0.5), ma = matrix(0.7), 
+  cov_arma1_R <- get_cov_matrix_arma1(ar = matrix(-0.5), ma = matrix(0.7), 
                                       sigma = 4, sq_se = 0, nrows = 5)[1, , ]
   expect_equal(cov_matrix_arma1(-0.5, 0.7, 4, 5), cov_arma1_R)
   
@@ -54,27 +54,27 @@ test_that("self-defined Stan functions work correctly", {
     # zero-inflated
     args <- list(y = dat$Y[i], eta = samp$eta[i], eta_zi = samp$eta[i+2])
     expect_equal(do.call(zero_inflated_poisson_log, args),
-                 brms:::loglik_zero_inflated_poisson(i, dat, samp))
+                 loglik_zero_inflated_poisson(i, dat, samp))
     expect_equal(do.call(zero_inflated_neg_binomial_2_log, 
                          c(args, shape = samp$shape)),
-                 brms:::loglik_zero_inflated_negbinomial(i, dat, samp))
+                 loglik_zero_inflated_negbinomial(i, dat, samp))
     expect_equal(do.call(zero_inflated_binomial_log, 
                          c(args, trials = dat$max_obs)),
-                 brms:::loglik_zero_inflated_binomial(i, dat, samp))
+                 loglik_zero_inflated_binomial(i, dat, samp))
     # zero_inflated_beta requires Y to be in (0,1)
     args <- list(y = dat2$Y[i], eta = samp$eta[i], eta_zi = samp$eta[i+2])
     expect_equal(do.call(zero_inflated_beta_log, c(args, phi = samp$phi)),
-                 brms:::loglik_zero_inflated_beta(i, dat2, samp))
+                 loglik_zero_inflated_beta(i, dat2, samp))
     # hurdle
     args <- list(y = dat$Y[i], eta = samp$eta[i], eta_hu = samp$eta[i+2])
     expect_equal(do.call(hurdle_poisson_log, args),
-                 brms:::loglik_hurdle_poisson(i, dat, samp))
+                 loglik_hurdle_poisson(i, dat, samp))
     expect_equal(do.call(hurdle_neg_binomial_2_log, 
                          c(args, shape = samp$shape)),
-                 brms:::loglik_hurdle_negbinomial(i, dat, samp))
+                 loglik_hurdle_negbinomial(i, dat, samp))
     expect_equal(do.call(hurdle_gamma_log, 
                          c(args, shape = samp$shape)),
-                 brms:::loglik_hurdle_gamma(i, dat, samp))
+                 loglik_hurdle_gamma(i, dat, samp))
   }
   
   # ordinal log-densities
@@ -85,16 +85,16 @@ test_that("self-defined Stan functions work correctly", {
   # cumulative and sratio require thres - eta
   samp <- list(eta = rep(thres, each = 2) - array(eta, dim = c(2, 1, 3)))
   expect_equal(cumulative_log(dat$Y, eta, thres),
-               brms:::loglik_cumulative(1, dat, samp, link = "probit")[1])
+               loglik_cumulative(1, dat, samp, link = "probit")[1])
   expect_equal(sratio_log(dat$Y, eta, thres),
-               brms:::loglik_sratio(1, dat, samp, link = "logit")[1])
+               loglik_sratio(1, dat, samp, link = "logit")[1])
   # acat and cratio require eta - thres
   # also category specific effects are included here
   samp <- list(eta = eta + etap - rep(thres, each = 2))
   expect_equal(cratio_log(dat$Y, eta, etap[1, , ], thres),
-               brms:::loglik_cratio(1, dat, samp, link = "cloglog")[1])
+               loglik_cratio(1, dat, samp, link = "cloglog")[1])
   expect_equal(acat_log(dat$Y, eta, etap[1, , ], thres),
-               brms:::loglik_acat(1, dat, samp, link = "cauchit")[1])
+               loglik_acat(1, dat, samp, link = "cauchit")[1])
  
   # kronecker product
   A <- matrix(c(3, 2, 1, 2, 4, 1, 1, 1, 5), nrow = 3)
