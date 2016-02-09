@@ -270,7 +270,7 @@ loglik_zero_inflated_negbinomial <- function(n, data, samples, link = "log") {
   weight_loglik(out, n = n, data = data)
 }
 
-loglik_zero_inflated_binomial <- function(n, data, samples, link = "log") {
+loglik_zero_inflated_binomial <- function(n, data, samples, link = "logit") {
   trials <- ifelse(length(data$max_obs) > 1, data$max_obs[n], data$max_obs) 
   theta <- ilink(samples$eta[, n + data$N_trait], "logit")
   args <- list(size = trials, prob = ilink(samples$eta[, n], link))
