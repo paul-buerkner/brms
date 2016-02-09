@@ -441,7 +441,8 @@ hurdle_loglik <- function(pdf, theta, args, n, data) {
     dbinom(1, size = 1, prob = theta, log = TRUE)
   } else {
     dbinom(0, size = 1, prob = theta, log = TRUE) + 
-      do.call(pdf, c(data$Y[n], args, log = TRUE))
+      do.call(pdf, c(data$Y[n], args, log = TRUE)) -
+      log(1 - do.call(pdf, c(0, args)))
   }
 }
 

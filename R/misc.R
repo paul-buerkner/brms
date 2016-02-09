@@ -128,7 +128,7 @@ logit <- function(p) {
 
 ilogit <- function(x) { 
   # compute the inverse of logit
-  exp(x) / (1 + exp(x))
+  1 / (1 + exp(-x))
 }
 
 incgamma <- function(x, a) {
