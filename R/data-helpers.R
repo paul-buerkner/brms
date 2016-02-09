@@ -251,9 +251,11 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
                    "of grouping factor", gnames[i], 
                    "not found in the fitted model"), call. = FALSE)
       } 
-      # transform grouping factor levels into their corresponding integers
-      # to match the output of make_standata
-      newdata[[gnames[i]]] <- sapply(gf, match, table = old_levels)
+      if (return_standata) {
+        # transform grouping factor levels into their corresponding integers
+        # to match the output of make_standata
+        newdata[[gnames[i]]] <- sapply(gf, match, table = old_levels)
+      }
     }
   }
   if (return_standata) {
