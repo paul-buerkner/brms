@@ -1,4 +1,4 @@
-trace_density_plot <- function(par, x, theme = "classic") {
+trace_density_plot <- function(par, x, theme = ggplot2::theme_get()) {
   # trace and density plots for one parameter
   #
   # Args:
@@ -16,16 +16,14 @@ trace_density_plot <- function(par, x, theme = "classic") {
   trace <- ggplot(x, aes_string(x = "iter", y = "value", group = "chain", 
                                 colour = "chain")) +
     geom_line(alpha = 0.7) + 
-    xlab("") + ylab("") + ggtitle(paste("Trace of", par)) + 
-    do.call(paste0("theme_", theme), args = list()) + 
+    xlab("") + ylab("") + ggtitle(paste("Trace of", par)) + theme + 
     theme(legend.position = "none",
           plot.title = element_text(size = 15, vjust = 1),
           plot.margin = grid::unit(c(0.2, 0, -0.5, -0.5), "lines"))
   # density plot
   density <- ggplot(x, aes_string(x = "value")) + 
     geom_density(aes_string(fill = "chain"), alpha = 0.5) + 
-    xlab("") + ylab("") + ggtitle(paste("Density of", par)) + 
-    do.call(paste0("theme_", theme), args = list()) +
+    xlab("") + ylab("") + ggtitle(paste("Density of", par)) + theme + 
     theme(plot.title = element_text(size = 15, vjust = 1),
           plot.margin = grid::unit(c(0.2, 0, -0.5, -0.5), "lines"))
   list(trace, density)
@@ -35,8 +33,8 @@ trace_density_plot <- function(par, x, theme = "classic") {
 #' @method plot brmsMarginalEffects
 #' @export 
 plot.brmsMarginalEffects <- function(x, ncol = NULL, rug = FALSE,
-                                     theme = "gray", ask = TRUE,
-                                     do_plot = TRUE, ...) {
+                                     theme = ggplot2::theme_get(), 
+                                     ask = TRUE, do_plot = TRUE, ...) {
   # Compute marginal effects plots using ggplot2
   # Returns:
   #   A list of ggplot objects
@@ -51,8 +49,7 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, rug = FALSE,
     effects <- attributes(x[[i]])$effects
     plots[[i]] <- ggplot(data = x[[i]]) + 
       aes_string(x = effects, y = "Estimate", ymin = "lowerCI",
-                 ymax = "upperCI") + ylab(response) +
-      do.call(paste0("theme_", theme), args = list())
+                 ymax = "upperCI") + ylab(response) + theme
     nMargins <- length(unique(x[[i]]$MargRow))
     if (nMargins > 1) {
       # one plot per row of marginal_data
@@ -90,7 +87,7 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, rug = FALSE,
 #' @method plot brmshypothesis
 #' @export
 plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE, 
-                                theme = "classic", ask = TRUE, 
+                                theme = ggplot2::theme_get(), ask = TRUE, 
                                 do_plot = TRUE, newpage = TRUE, ...) {
   if (!is.data.frame(x$samples)) {
     stop("No posterior samples found")
@@ -101,8 +98,7 @@ plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE,
     ggplot(x$samples, aes_string(x = hypnames[i])) + 
       geom_density(aes_string(fill = "Type"), alpha = 0.5, na.rm = TRUE) + 
       scale_fill_manual(values = c("red", "blue")) + 
-      xlab("") + ylab("") + ggtitle(hyps[i]) + 
-      do.call(paste0("theme_", theme), args = list())
+      xlab("") + ylab("") + ggtitle(hyps[i]) + theme
   }
   if (ignore_prior) {
     x$samples <- subset(x$samples, x$samples$Type == "posterior")

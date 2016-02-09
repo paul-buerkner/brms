@@ -5,7 +5,8 @@
 \title{Trace and Density Plots for MCMC Samples}
 \usage{
 \method{plot}{brmsfit}(x, pars = NA, parameters = NA, N = 5,
-  theme = "classic", ask = TRUE, do_plot = TRUE, newpage = TRUE, ...)
+  theme = ggplot2::theme_get(), ask = TRUE, do_plot = TRUE,
+  newpage = TRUE, ...)
 }
 \arguments{
 \item{x}{An object of class \code{brmsfit}.}
@@ -18,8 +19,11 @@ are plotted.}
 
 \item{N}{The number of parameters plotted per page.}
 
-\item{theme}{The ggplot theme to use. For details see
-\code{\link[ggplot2:ggtheme]{ggtheme}}.}
+\item{theme}{A \code{\link[ggplot2:theme]{theme}} object 
+specifying the overall appearance of the plots. 
+For some basic themes see \code{\link[ggplot2:ggtheme]{ggtheme}}. 
+Can be defined globally for the current session, via
+\code{\link[ggplot2:theme_update]{theme_set}}.}
 
 \item{ask}{logical; indicates if the user is prompted 
 before a new page is plotted. 

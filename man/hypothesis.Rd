@@ -12,7 +12,8 @@
 hypothesis(x, hypothesis, ...)
 
 \method{plot}{brmshypothesis}(x, N = 5, ignore_prior = FALSE,
-  theme = "classic", ask = TRUE, do_plot = TRUE, newpage = TRUE, ...)
+  theme = ggplot2::theme_get(), ask = TRUE, do_plot = TRUE,
+  newpage = TRUE, ...)
 }
 \arguments{
 \item{x}{An \code{R} object typically of class \code{brmsfit}}
@@ -41,8 +42,11 @@ Ignored if \code{class} is not \code{"sd"} or \code{"cor"}.}
 should also be plotted. Only used if priors were specified on
 the relevant parameters.}
 
-\item{theme}{The ggplot theme to use. For details see
-\code{\link[ggplot2:ggtheme]{ggtheme}}.}
+\item{theme}{A \code{\link[ggplot2:theme]{theme}} object 
+specifying the overall appearance of the plots. 
+For some basic themes see \code{\link[ggplot2:ggtheme]{ggtheme}}. 
+Can be defined globally for the current session, via
+\code{\link[ggplot2:theme_update]{theme_set}}.}
 
 \item{ask}{logical; indicates if the user is prompted 
 before a new page is plotted. 
