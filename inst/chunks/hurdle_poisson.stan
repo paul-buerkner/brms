@@ -12,6 +12,6 @@
      } else { 
        return bernoulli_logit_log(0, eta_hu) +  
               poisson_log_log(y, eta) - 
-              log(1 - exp(-exp(eta))); 
+              log1m_exp(-exp(eta)); 
      } 
    }
