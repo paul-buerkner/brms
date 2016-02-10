@@ -181,18 +181,10 @@ nonlinear_effects <- function(x, model = ~ 1) {
   # prepare nonlinear formulas
   # Args:
   #   x: a list for formulas specifying linear predictors for 
-  #     non-linear parameters
+  #      non-linear parameters
   #   model: formula of the non-linear model
   # Returns:
   #   A list of objects each returned by extract_effects
-  if (is(x, "formula")) {
-    # convert a single formula into a list of formulas
-    if (length(x) != 3) {
-      stop("Non-linear formulas must be two-sided.")
-    }
-    nlpars <- all.vars(lhs(x))
-    x <- lapply(nlpars, function(nlp) update(x, paste(nlp, " ~ .")))
-  }
   if (length(x)) {
     nleffects <- vector("list", length = length(x))
     for (i in seq_along(x)) {
@@ -224,6 +216,21 @@ nonlinear_effects <- function(x, model = ~ 1) {
     nleffects <- NULL 
   }
   nleffects
+}
+
+nonlinear2list <- function(x) {
+  # convert a single formula into a list of formulas
+  # one for each non-linear parameter
+  if (is(x, "formula")) {
+    if (length(x) != 3) {
+      stop("Non-linear formulas must be two-sided.")
+    }
+    nlpars <- all.vars(lhs(x))
+    x <- lapply(nlpars, function(nlp) update(x, paste(nlp, " ~ .")))
+  } else if (!(is.list(x) || is.null(x))) {
+    stop("Invalid 'nonlinear' argument", call. = FALSE)
+  }
+  x
 }
 
 update_formula <- function(formula, data = NULL, addition = NULL, 
