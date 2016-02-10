@@ -185,7 +185,14 @@ nonlinear_effects <- function(x, model = ~ 1) {
   #   model: formula of the non-linear model
   # Returns:
   #   A list of objects each returned by extract_effects
-  if (is(x, "formula")) x <- list(x)
+  if (is(x, "formula")) {
+    # convert a single formula into a list of formulas
+    if (length(x) != 3) {
+      stop("Non-linear formulas must be two-sided.")
+    }
+    nlpars <- all.vars(lhs(x))
+    x <- lapply(nlpars, function(nlp) update(x, paste(nlp, " ~ .")))
+  }
   if (length(x)) {
     nleffects <- vector("list", length = length(x))
     for (i in seq_along(x)) {
