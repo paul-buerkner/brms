@@ -927,6 +927,9 @@ marginal_effects.brmsfit <- function(x, effects = NULL, data = NULL,
       }
     }
   } else if (is.data.frame(data)) {
+    if (any(duplicated(rownames(data)))) {
+      stop("Row names of 'data' should be unique.", call. = FALSE)
+    }
     used_effects <- unique(unlist(effects))
     is_everywhere <- ulapply(used_effects, function(up)
       all(ulapply(effects, function(pred) up %in% pred)))
@@ -973,6 +976,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, data = NULL,
       marg_data[[j]][["MargRow"]] <- rownames(data)[j]
     }
     marg_data <- do.call(rbind, marg_data)
+    marg_data$MargRow <- factor(marg_data$MargRow, levels = rownames(data))
     args <- list(x, newdata = marg_data, re_formula = re_formula,
                  allow_new_levels = TRUE, probs = probs)
     if (is.ordinal(x$family) || is.categorical(x$family)) {
