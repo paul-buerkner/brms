@@ -51,7 +51,10 @@
 #'   If not \code{NULL}, \code{formula} is treated as a non-linear model
 #'   and \code{nonlinear} should contain a formula for each non-linear 
 #'   parameter, which has the parameter on the left hand side and its
-#'   linear predictor (including fixed and random effects) on the right hand side. 
+#'   linear predictor on the right hand side.
+#'   Alternatively, it can be a single formula with all non-linear
+#'   parameters on the left hand side (separated by a \code{+}) and a
+#'   common linear predictor on the right hand side.
 #'   More information is given under 'Details'.
 #' @param partial A one sided formula of the form \code{~expression} 
 #'   allowing to specify predictors with category specific effects 
@@ -316,8 +319,9 @@
 #'   and specfiy a (linear mixed) model for each of them using the \code{nonlinear}
 #'   argument. Let's say we just want to estimate those three parameters
 #'   with not further covariates or random effects. Then we can write
-#'   \code{nonlinear = list(alpha ~ 1, beta ~ 1, lambda ~ 1)}. This can,
-#'   of course, be extended. If we have another predictor \code{z} and 
+#'   \code{nonlinear = alpha + beta + lambda ~ 1} or equivalently
+#'   (and more flexible) \code{nonlinear = list(alpha ~ 1, beta ~ 1, lambda ~ 1)}. 
+#'   This can, of course, be extended. If we have another predictor \code{z} and 
 #'   observations nested within the grouping factor \code{g}, we may write for 
 #'   instance \code{nonlinear = list(alpha ~ 1, beta ~ 1 + z + (1|g), lambda ~ 1)}.
 #'   The formula syntax of fixed and random effects described above applies here as well.
