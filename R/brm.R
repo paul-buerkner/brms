@@ -471,6 +471,16 @@
 #' fit4 <- brm(success | trials(n) ~ x, 
 #'             family = binomial("probit"))
 #' summary(fit4)
+#' 
+#' ## Simple non-linear gaussian model
+#' x <- rnorm(100)
+#' y <- rnorm(100, mean = 2 - 1.5^x, sd = 1)
+#' fit5 <- brm(y ~ a1 - a2^x, nonlinear = a1 + a2 ~ 1,
+#'             prior = c(set_prior("normal(0, 2)", nlpar = "a1"),
+#'                       set_prior("normal(0, 2)", nlpar = "a2")))
+#' summary(fit5)
+#' plot(fit5)
+#' marginal_effects(fit5)
 #' }
 #' 
 #' @import rstan
@@ -517,9 +527,10 @@ brm <- function(formula, data = NULL, family = gaussian(),
     dots$is_newdata <- NULL
   } else {  # build new model
     # see validate.R and priors.R for function definitions
-    family <- check_family(family)
+    nonlinear <- nonlinear2list(nonlinear) 
     formula <- update_formula(formula, addition = addition, data = data,
                               nonlinear = nonlinear) 
+    family <- check_family(family)
     prior <- check_prior(prior, formula = formula, data = data, 
                          family = family, autocor = autocor,
                          nonlinear = nonlinear, partial = partial, 
