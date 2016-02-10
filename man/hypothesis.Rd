@@ -12,8 +12,8 @@
 hypothesis(x, hypothesis, ...)
 
 \method{plot}{brmshypothesis}(x, N = 5, ignore_prior = FALSE,
-  theme = ggplot2::theme_get(), ask = TRUE, do_plot = TRUE,
-  newpage = TRUE, ...)
+  theme = ggplot2::theme(), ask = TRUE, do_plot = TRUE, newpage = TRUE,
+  ...)
 }
 \arguments{
 \item{x}{An \code{R} object typically of class \code{brmsfit}}
@@ -43,7 +43,7 @@ should also be plotted. Only used if priors were specified on
 the relevant parameters.}
 
 \item{theme}{A \code{\link[ggplot2:theme]{theme}} object 
-specifying the overall appearance of the plots. 
+modifying the appearance of the plots. 
 For some basic themes see \code{\link[ggplot2:ggtheme]{ggtheme}}. 
 Can be defined globally for the current session, via
 \code{\link[ggplot2:theme_update]{theme_set}}.}

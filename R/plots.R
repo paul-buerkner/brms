@@ -1,4 +1,4 @@
-trace_density_plot <- function(par, x, theme = ggplot2::theme_get()) {
+trace_density_plot <- function(par, x, theme = ggplot2::theme()) {
   # trace and density plots for one parameter
   #
   # Args:
@@ -33,7 +33,7 @@ trace_density_plot <- function(par, x, theme = ggplot2::theme_get()) {
 #' @method plot brmsMarginalEffects
 #' @export 
 plot.brmsMarginalEffects <- function(x, ncol = NULL, rug = FALSE,
-                                     theme = ggplot2::theme_get(), 
+                                     theme = ggplot2::theme(), 
                                      ask = TRUE, do_plot = TRUE, ...) {
   # Compute marginal effects plots using ggplot2
   # Returns:
@@ -87,7 +87,7 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, rug = FALSE,
 #' @method plot brmshypothesis
 #' @export
 plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE, 
-                                theme = ggplot2::theme_get(), ask = TRUE, 
+                                theme = ggplot2::theme(), ask = TRUE, 
                                 do_plot = TRUE, newpage = TRUE, ...) {
   if (!is.data.frame(x$samples)) {
     stop("No posterior samples found")

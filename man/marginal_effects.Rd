@@ -13,7 +13,7 @@
 marginal_effects(x, ...)
 
 \method{plot}{brmsMarginalEffects}(x, ncol = NULL, rug = FALSE,
-  theme = ggplot2::theme_get(), ask = TRUE, do_plot = TRUE, ...)
+  theme = ggplot2::theme(), ask = TRUE, do_plot = TRUE, ...)
 }
 \arguments{
 \item{x}{An object usually of class \code{brmsfit}}
@@ -52,7 +52,7 @@ values should be added via \code{\link[ggplot2:geom_rug]{geom_rug}}.
 Default is \code{FALSE}.}
 
 \item{theme}{A \code{\link[ggplot2:theme]{theme}} object 
-specifying the overall appearance of the plots. 
+modifying the appearance of the plots. 
 For some basic themes see \code{\link[ggplot2:ggtheme]{ggtheme}}. 
 Can be defined globally for the current session, via
 \code{\link[ggplot2:theme_update]{theme_set}}.}

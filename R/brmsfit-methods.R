@@ -692,7 +692,7 @@ launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"),
 #' @param parameters A deprecated alias of \code{pars}   
 #' @param N The number of parameters plotted per page.
 #' @param theme A \code{\link[ggplot2:theme]{theme}} object 
-#'   specifying the overall appearance of the plots. 
+#'   modifying the appearance of the plots. 
 #'   For some basic themes see \code{\link[ggplot2:ggtheme]{ggtheme}}. 
 #'   Can be defined globally for the current session, via
 #'   \code{\link[ggplot2:theme_update]{theme_set}}.
@@ -731,7 +731,7 @@ launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"),
 #' @importFrom grid grid.draw grid.newpage
 #' @export
 plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5, 
-                         theme = ggplot2::theme_get(), ask = TRUE, 
+                         theme = ggplot2::theme(), ask = TRUE, 
                          do_plot = TRUE, newpage = TRUE, ...) {
   dots <- list(...)
   if (is.na(pars[1])) 
