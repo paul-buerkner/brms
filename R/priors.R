@@ -308,6 +308,7 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
                       threshold = c("flexible", "equidistant"), 
                       internal = FALSE) {
   # note that default priors are stored in this function
+  nonlinear <- nonlinear2list(nonlinear) 
   formula <- update_formula(formula, data = data, nonlinear = nonlinear)
   family <- check_family(family) 
   link <- family$link
@@ -338,7 +339,7 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
                        nlpar = character(0), bound = character(0))
   if (length(nonlinear)) {
     prior <- rbind(prior, prior_frame(class = "b"))
-    for (i in seq_along(nonlinear)) {
+    for (i in seq_along(ee$nonlinear)) {
       fixef <- colnames(get_model_matrix(ee$nonlinear[[i]]$fixed, data = data))
       prior <- rbind(prior, prior_frame(class = "b", coef = c("", fixef), 
                                         nlpar = names(ee$nonlinear)[i])) 
@@ -438,7 +439,7 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
 }
 
 check_prior <- function(prior, formula, data = NULL, family = gaussian(), 
-                        autocor = NULL,  nonlinear = NULL, partial = NULL, 
+                        autocor = NULL, nonlinear = NULL, partial = NULL, 
                         threshold = "flexible") {
   # check prior input and amend it if needed
   #
