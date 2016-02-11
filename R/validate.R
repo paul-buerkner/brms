@@ -25,6 +25,10 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
       stop(paste("Random effects in non-linear models should be specified", 
                  "in the 'nonlinear' argument."), call. = FALSE)
     }
+    if (is.ordinal(family) || is.categorical(family) || is.forked(family)) {
+      stop("Non-linear effects are not yet allowed for this family.", 
+           call. = FALSE)
+    }
     re_terms <- NULL
   } else {
     # terms() doesn't like non-linear formulas

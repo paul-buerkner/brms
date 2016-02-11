@@ -15,10 +15,6 @@ melt_data <- function(data, family, effects, na.action = na.omit) {
       stop("data must be a data.frame for multivariate models", 
            call. = FALSE)
     }
-    if (length(effects$nonlinear) && is.forked(family)) {
-      stop("Non-linear effects are not yet allowed for this family.", 
-           call. = FALSE)
-    }
     # only keep variables that are relevant for the model
     rel_vars <- c(all.vars(effects$all), all.vars(effects$respform))
     data <- data[, which(names(data) %in% rel_vars), drop = FALSE]
