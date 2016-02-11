@@ -429,7 +429,7 @@ posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,
 
 #' Extract posterior samples for use with the \pkg{coda} package
 #' 
-#' @aliases as.mcmc.brmsfit
+#' @aliases as.mcmc.brmsfit as.mcmc as.mcmc.list
 #' 
 #' @inheritParams posterior_samples
 #' @param inc_warmup Indicates if the warmup samples should be included.
