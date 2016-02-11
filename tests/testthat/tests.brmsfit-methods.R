@@ -65,7 +65,7 @@ test_that("all S3 methods have reasonable ouputs", {
   loo_compare3 <- suppressWarnings(LOO(fit, fit, fit, cores = 1))
   expect_equal(length(loo_compare3), 3)
   expect_equal(dim(attr(loo_compare3, "compare")), c(3, 2))
-  expect_output(print(loo_compare3), "Weights")
+  #expect_output(print(loo_compare3), "Weights")
   # marginal_effects (the related plot method is tested in tests.plots)
   mdata = data.frame(log_Age_c = c(-0.3, 0, 0.3), count = c(10, 20, 30), 
                      visit = 1:3, patient = 1)

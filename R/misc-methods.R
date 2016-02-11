@@ -172,7 +172,10 @@ print.iclist <- function(x, digits = 2, ...) {
     # models were compared using the compare_ic function
     mat <- rbind(mat, attr(x, "compare"))
     weights <- c(attr(x, "weights"), rep(NA, nrow(attr(x, "compare")))) 
-    mat <- cbind(mat, Weights = weights)
+    if (length(na.omit(weights))) {
+      # no need to show the weights column if all weights are NA
+      mat <- cbind(mat, Weights = weights)
+    }
   }
   print(round(mat, digits = digits), na.print = "")
   invisible(x)

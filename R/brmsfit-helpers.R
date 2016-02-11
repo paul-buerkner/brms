@@ -481,7 +481,12 @@ compare_ic <- function(x, ic = c("waic", "loo")) {
       # mimic the way loo::compare defines model names
       as.character(match.call())[-1L]
     }
-    weights <- unname(all_compare[do.call(get_input_names, x), "weights"])
+    if ("weights" %in% colnames(all_compare)) {
+      weights <- unname(all_compare[do.call(get_input_names, x), "weights"])
+    } else {
+      # weights have been temporarily removed in loo 0.1.5
+      weights <- rep(NA, n_models)
+    }
   }
   nlist(ic_diffs, weights)
 }
