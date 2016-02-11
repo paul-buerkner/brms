@@ -1,6 +1,14 @@
 test_that("all S3 methods have reasonable ouputs", {
   fit <- rename_pars(brmsfit_example)
   # test S3 methods in alphabetical order
+  # as.mcmc
+  chains <-fit$fit@sim$chains
+  mc <- as.mcmc(fit)
+  expect_equal(length(mc), chains)
+  expect_equal(dim(mc[[1]]), c(Nsamples(fit) / chains, length(parnames(fit))))
+  # test assumes thin = 1
+  expect_equal(dim(as.mcmc(fit, inc_warmup = TRUE)[[1]]), 
+               c(fit$fit@sim$iter, length(parnames(fit))))
   # coef
   expect_equal(dim(coef(fit)$visit), c(4, 2))
   # family
