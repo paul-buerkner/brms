@@ -188,7 +188,7 @@ nonlinear_effects <- function(x, model = ~ 1) {
   if (length(x)) {
     nleffects <- vector("list", length = length(x))
     for (i in seq_along(x)) {
-      if (!is.formula(x[[i]])) {
+      if (!is(x[[i]], "formula")) {
         stop("Argument 'nonlinear' must be a list of formulas.")
       }
       if (length(x[[i]]) != 3) {

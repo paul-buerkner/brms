@@ -78,6 +78,50 @@ test_that("extract_effects accepts calls to the poly function", {
                y ~ y + z + x + poly(x, 3))
 })
 
+test_that("extract_effects finds all variables in non-linear models", {
+  nonlinear <- list(a ~ z1 + (1|g1), b ~ z2 + (z3|g2))
+  ee <- extract_effects(y ~ a - b^x, nonlinear = nonlinear)
+  expect_equal(ee$all, y ~ y + x + z1 + g1 + z2 + z3 + g2)
+})
+
+test_that("extract_effects rejects REs in non-linear formulas", {
+  expect_error(extract_effects(y ~ exp(-x/a) + (1|g), nonlinear = a ~ 1),
+               "Random effects in non-linear models", fixed = TRUE)
+})
+
+test_that("nonlinear_effects rejects invalid non-linear models", {
+  expect_error(nonlinear_effects(list(a ~ 1, b ~ 1), model = y ~ a^x),
+               "missing in formula: b")
+  expect_error(nonlinear_effects(a~1, model = y ~ a^x),
+               "Argument 'nonlinear' must be a list of formulas")
+  expect_error(nonlinear_effects(list( ~ 1, a ~ 1), model = y ~ a),
+               "Non-linear formulas must be two-sided")
+  expect_error(nonlinear_effects(list(a + b ~ 1), model = y ~ exp(-x)),
+               "RHS of non-linear formula must contain exactly one variable")
+  expect_error(nonlinear_effects(list(a.b ~ 1), model = y ~ a^x),
+               "not contain dots or underscores")
+  expect_error(nonlinear_effects(list(a_b ~ 1), model = y ~ a^(x+b)),
+               "not contain dots or underscores")
+})
+
+test_that("nonlinear_effect accepts valid non-linear models", {
+  nle <- nonlinear_effects(list(a ~ 1 + (1+x|origin), b ~ 1 + z), y ~ b - a^x)
+  expect_equal(names(nle), c("a", "b"))
+  expect_equal(nle[["a"]]$all, ~x + origin)
+  expect_equal(nle[["b"]]$all, ~z)
+  expect_equal(nle[["a"]]$random$form[[1]], ~1+x)
+})
+
+test_that("nonlinear2list works correctly", {
+  expect_equal(nonlinear2list(a ~ 1), list(a ~ 1))
+  expect_equal(nonlinear2list(a + alpha ~ x + (x|g)), 
+               list(a ~ x + (x|g), alpha ~ x + (x|g)))
+  expect_equal(nonlinear2list(list(a ~ 1, b ~ 1 + z)),
+               list(a ~ 1, b ~ 1 + z))
+  expect_equal(nonlinear2list(NULL), NULL)
+  expect_error(nonlineat2list(1), "Invalid 'nonlinear' argument")
+})
+
 test_that("extract_time returns all desired variables", {
   expect_equal(extract_time(~1), list(time = "", group = "", all = ~1))
   expect_equal(extract_time(~tt), list(time = "tt", group = "", all = ~1 + tt)) 
