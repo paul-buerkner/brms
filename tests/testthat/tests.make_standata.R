@@ -299,3 +299,14 @@ test_that("brmdata and brm.data are backwards compatible", {
                    make_standata(y ~ 1, data = temp_data, 
                                  family = "acat", partial = ~ x))
 })
+
+test_that("make_standata correctly prepares data for non-linear models", {
+  nonlinear <- list(a ~ x, b ~ z + (1|g))
+  data <- data.frame(y = rnorm(9), x = rnorm(9), z = rnorm(9), g = rep(1:3, 3))
+  standata <- make_standata(y ~ a - b^z, data = data, nonlinear = nonlinear)
+  expect_equal(names(standata), c("N", "Y", "K_a", "X_a", "K_b", "X_b", "KC", "C",     
+                                  "J_b_1", "N_b_1", "K_b_1", "Z_b_1", "NC_b_1"))
+  expect_equal(colnames(standata$X_a), c("Intercept", "x"))
+  expect_equal(colnames(standata$C), "z")
+  expect_equal(standata$J_b_1, data$g)
+})
