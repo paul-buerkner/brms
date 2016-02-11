@@ -25,7 +25,7 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
       stop(paste("Random effects in non-linear models should be specified", 
                  "in the 'nonlinear' argument."), call. = FALSE)
     }
-    if (is.ordinal(family) || is.categorical(family) || is.forked(family)) {
+    if (is.ordinal(family) || is.categorical(family)) {
       stop("Non-linear effects are not yet allowed for this family.", 
            call. = FALSE)
     }
@@ -149,7 +149,8 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
                    "only weights as addition arguments"), 
              call. = FALSE)
       }
-      x$fixed <- update(x$fixed, response ~ .)
+      # don't use update on a formula that is possibly non-linear
+      x$fixed[[2]] <- quote(response)
       x$all <- update(x$all, response ~ .)
     }  
   }
