@@ -398,7 +398,7 @@ posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,
   thin <- x$fit@sim$thin
   chains <- x$fit@sim$chains
   final_iter <- (iter - warmup) / thin
-  samples_taken <- seq((warmup + 1), iter, thin)
+  samples_taken <- seq(warmup + 1, iter, thin)
   
   if (length(pars)) {
     samples <- as.data.frame(x$fit, pars = pars)
@@ -425,6 +425,51 @@ posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,
     samples <- NULL 
   }
   samples
+}
+
+#' Extract posterior samples for use with the \pkg{coda} package
+#' 
+#' @aliases as.mcmc.brmsfit
+#' 
+#' @inheritParams posterior_samples
+#' @param inc_warmup Indicates if the warmup samples should be included.
+#'   Default is \code{FALSE}.
+#'   
+#' @note \code{as.mcmc.brmsfit} is used as an alias for 
+#'   \code{as.mcmc.list.brmsfit}, because users may be more familiar
+#'   with the former name. This implies, however, that \code{as.mcmc.brmsfit} 
+#'   actually returns a \code{list} of \code{mcmc} objects 
+#'   (not an \code{mcmc} object itself) contrary to what the name suggests.
+#' 
+#' @method as.mcmc.list brmsfit
+#' @export
+#' @export as.mcmc.list
+#' @importFrom coda as.mcmc.list
+as.mcmc.list.brmsfit <- function(x, pars = NA, exact_match = FALSE,
+                                 inc_warmup = FALSE, ...) {
+  if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
+    stop("The model does not contain posterior samples")
+  pars <- extract_pars(pars, all_pars = parnames(x),
+                       exact_match = exact_match, ...)
+  ps <- extract(x$fit, pars = pars, permuted = FALSE, 
+                inc_warmup = inc_warmup)
+  first <- if (inc_warmup) 1 else x$fit@sim$warmup + 1
+  out <- vector("list", length = dim(ps)[2])
+  for (i in seq_along(out)) {
+    out[[i]] <- ps[, i, ]
+    attr(out[[i]], "mcpar") <- c(first, x$fit@sim$iter, x$fit@sim$thin)
+    class(out[[i]]) <- "mcmc" 
+  }
+  class(out) <- "mcmc.list"
+  out
+}
+
+#' @method as.mcmc brmsfit
+#' @export
+#' @export as.mcmc 
+#' @importFrom coda as.mcmc
+as.mcmc.brmsfit <- function(x, ...) {
+  as.mcmc.list(x, ...)
 }
 
 #' @rdname prior_samples
