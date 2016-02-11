@@ -37,6 +37,8 @@
       \item Do not remove bad behaving chains anymore as
       they may point to general convergence problems that 
       are dangerous to ignore.
+      \item Make sure that \pkg{brms} is fully compatible 
+      with \pkg{loo} version 0.1.5.
     }
   }
   \subsection{BUG FIXES}{
