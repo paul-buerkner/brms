@@ -433,7 +433,8 @@ posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,
 #' 
 #' @inheritParams posterior_samples
 #' @param inc_warmup Indicates if the warmup samples should be included.
-#'   Default is \code{FALSE}.
+#'   Default is \code{FALSE}. Warmup samples are used to tune the 
+#'   parameters of the sampling algorithm and should not be analyzed.
 #'   
 #' @return A \code{list} of \code{mcmc} objects (not an \code{mcmc} object itself).
 #' 

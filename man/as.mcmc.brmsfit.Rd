@@ -20,7 +20,8 @@ should be matched exactly or treated as regular expression.
 Default is \code{FALSE}.}
 
 \item{inc_warmup}{Indicates if the warmup samples should be included.
-Default is \code{FALSE}.}
+Default is \code{FALSE}. Warmup samples are used to tune the 
+parameters of the sampling algorithm and should not be analyzed.}
 
 \item{...}{additional arguments}
 }
