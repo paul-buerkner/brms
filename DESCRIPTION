@@ -8,7 +8,8 @@ Authors@R: person("Paul-Christian", "Buerkner", email = "paul.buerkner@gmail.com
 Depends: 
     R (>= 3.1.0),
     rstan (>= 2.9.0),
-    ggplot2 (>= 2.0.0)
+    ggplot2 (>= 2.0.0),
+    methods
 Imports: 
     loo (>= 0.1.4),
     shinystan (>= 2.1.0),
@@ -16,9 +17,9 @@ Imports:
     lme4 (>= 1.1-8),
     nlme (>= 3.1-124),
     Matrix (>= 1.1.1),
+    coda,
     abind,
     statmod,
-    methods,
     stats,
     graphics,
     utils,
