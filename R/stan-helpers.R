@@ -417,6 +417,13 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
                            add = FALSE, cov_ranef = NULL, 
                            prior = prior_frame()) {
   # prepare Stan code for non-linear models
+  # Args:
+  #   effects: a list returned by extract_effects()
+  #   data: data.frame supplied by the user
+  #   family: the model family
+  #   add: Is the model weighted, censored, or truncated?
+  #   cov_ranef: a list of user-defined covariance matrices
+  #   prior: a prior_frame object
   out <- list()
   if (length(effects$nonlinear)) {
     out$data <- "  // data for non-linear fixed effects \n"
