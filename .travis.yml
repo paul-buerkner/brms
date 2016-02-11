@@ -3,8 +3,8 @@ sudo: required
 
 warnings_are_errors: TRUE
 
-r_packages:
-  - covr
+r_github_packages:
+  - jimhester/covr
 
 r_binary_packages:
   - rstan
@@ -13,5 +13,3 @@ r_binary_packages:
   
 after_success:
   - Rscript -e 'library(covr); codecov()'
-  
-cran: https://cran.rstudio.com  
