@@ -187,3 +187,26 @@ test_that("make_stancode returns correct code for intercept only models", {
   expect_match(make_stancode(rating ~ 1, data = inhaler, family = categorical()),
                "b_Intercept <- temp_Intercept;", fixed = TRUE) 
 })
+
+test_that("make_stancode generate correct code for non-linear models", {
+  nonlinear <- list(a ~ x, b ~ z + (1|g))
+  data <- data.frame(y = rgamma(9, 1, 1), x = rnorm(9), z = rnorm(9), 
+                     g = rep(1:3, 3))
+  prior <- c(set_prior("normal(0,5)", nlpar = "a"),
+             set_prior("normal(0,1)", nlpar = "b"))
+  # syntactic validity is already checked within make_stancode
+  stancode <- make_stancode(y ~ a - exp(b^z), data = data, prior = prior,
+                            nonlinear = nonlinear)
+  expect_match(stancode, "eta[n] <- (eta_a[n] - exp(eta_b[n] ^ C[n, 1]));",
+                fixed = TRUE)
+  
+  nonlinear <- list(a1 ~ 1, a2 ~ z + (x|g))
+  prior <- c(set_prior("beta(1,1)", nlpar = "a1", lb = 0, ub = 1),
+             set_prior("normal(0,1)", nlpar = "a2"))
+  stancode <- make_stancode(y ~ a1 * exp(-x/(a2 + z)), data = data, 
+                            family = Gamma("log"), prior = prior, 
+                            nonlinear = nonlinear)
+  expect_match(stancode, fixed = TRUE,
+    paste("eta[n] <- shape * exp(-(eta_a1[n] *", 
+          "exp( - C[n, 1] / (eta_a2[n] + C[n, 2]))));"))
+})
