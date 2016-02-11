@@ -429,23 +429,19 @@ posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,
 
 #' Extract posterior samples for use with the \pkg{coda} package
 #' 
-#' @aliases as.mcmc.brmsfit as.mcmc as.mcmc.list
+#' @aliases as.mcmc
 #' 
 #' @inheritParams posterior_samples
 #' @param inc_warmup Indicates if the warmup samples should be included.
 #'   Default is \code{FALSE}.
 #'   
-#' @note \code{as.mcmc.brmsfit} is used as an alias for 
-#'   \code{as.mcmc.list.brmsfit}, because users may be more familiar
-#'   with the former name. This implies, however, that \code{as.mcmc.brmsfit} 
-#'   actually returns a \code{list} of \code{mcmc} objects 
-#'   (not an \code{mcmc} object itself) contrary to what the name suggests.
+#' @return A \code{list} of \code{mcmc} objects (not an \code{mcmc} object itself).
 #' 
-#' @method as.mcmc.list brmsfit
+#' @method as.mcmc brmsfit
 #' @export
-#' @export as.mcmc.list
-#' @importFrom coda as.mcmc.list
-as.mcmc.list.brmsfit <- function(x, pars = NA, exact_match = FALSE,
+#' @export as.mcmc
+#' @importFrom coda as.mcmc
+as.mcmc.brmsfit <- function(x, pars = NA, exact_match = FALSE,
                                  inc_warmup = FALSE, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
@@ -462,14 +458,6 @@ as.mcmc.list.brmsfit <- function(x, pars = NA, exact_match = FALSE,
   }
   class(out) <- "mcmc.list"
   out
-}
-
-#' @method as.mcmc brmsfit
-#' @export
-#' @export as.mcmc 
-#' @importFrom coda as.mcmc
-as.mcmc.brmsfit <- function(x, ...) {
-  as.mcmc.list(x, ...)
 }
 
 #' @rdname prior_samples
