@@ -119,7 +119,7 @@ test_that("nonlinear2list works correctly", {
   expect_equal(nonlinear2list(list(a ~ 1, b ~ 1 + z)),
                list(a ~ 1, b ~ 1 + z))
   expect_equal(nonlinear2list(NULL), NULL)
-  expect_error(nonlineat2list(1), "Invalid 'nonlinear' argument")
+  expect_error(nonlinear2list(1), "Invalid 'nonlinear' argument")
 })
 
 test_that("extract_time returns all desired variables", {
