@@ -253,7 +253,6 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
                isTRUE(text_eta$transform) || length(nonlinear)
   if (make_loop && !is_multi) {
     text_loop <- c(paste0(
-      "  // if available add REs to linear predictor \n",
       "  for (n in 1:N) { \n"), "  } \n")
   } else if (is_multi) {
     text_loop <- text_multi$loop

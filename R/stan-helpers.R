@@ -114,8 +114,8 @@ stan_ranef <- function(i, ranef, prior = prior_frame(),
     out$par <- paste0(
       "  matrix[N_", pi, ", K_", pi, "] pre_", pi, ";  // unscaled REs \n",
       "  vector<lower=0>[K_", pi, "] sd_", pi, ";  // RE standard deviation \n",
-      "  cholesky_factor_corr[K_", pi, "] L_", pi, ";",
-      "  // cholesky factor of correlations matrix \n")
+      "  // cholesky factor of correlation matrix \n",
+      "  cholesky_factor_corr[K_", pi, "] L_", pi, ";")
     out$prior <- paste0(out$prior, 
                         stan_prior(class = "L", group = pi,  prior = prior),
                         "  to_vector(pre_", pi, ") ~ normal(0, 1); \n")
@@ -493,6 +493,7 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
     } else eta_ilink <- rep("", 2)
     out$transD <- paste0(out$transD, "  vector[N] eta; \n")
     out$transC2 <- paste0(out$transC2, 
+      "    // compute non-linear predictor \n",
       "    eta[n] <- ", eta_ilink[1], trimws(nlmodel), eta_ilink[2], "; \n")
   }
   out
@@ -648,7 +649,7 @@ stan_multi <- function(family, response, prior = prior_frame()) {
         "  vector<lower=0>[K_trait] sigma; \n",
         "  cholesky_factor_corr[K_trait] Lrescor; \n")
       out$loop <- c(paste0(
-        "  // restructure linear predictor and add REs \n",
+        "  // restructure linear predictor \n",
         "  for (m in 1:N_trait) { \n",  
         "    for (k in 1:K_trait) { \n", 
         "      int n; \n",
