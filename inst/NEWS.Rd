@@ -15,6 +15,8 @@
       \item Compute and plot marginal effects using the
       \code{marginal_effects} method thanks to the help 
       of Ruben Arslan.
+      \item Add an \code{as.mcmc} method for compatibility 
+      with the \code{coda} package.
     }
   }
   \subsection{OTHER CHANGES}{
