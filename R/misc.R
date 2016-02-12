@@ -13,6 +13,10 @@ isFALSE <- function(x) {
   identical(FALSE, x)
 }
 
+is_equal <- function(x, y, ...) {
+  isTRUE(all.equal(x, y, ...))
+}
+
 rmNum <- function(x) {
   # remove all numeric elements from an object
   x[sapply(x, Negate(is.numeric))]

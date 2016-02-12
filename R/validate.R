@@ -416,6 +416,20 @@ get_random <- function(effects) {
   }
 }
 
+get_re_index <- function(i, random) {
+  # get random effects index for the ith row of random
+  # Args:
+  #   i: an index
+  #   random: data.frame returned by get_random
+  rn <- rownames(random)
+  if (!identical(rn, as.character(1:nrow(random)))) {
+    # each non-linear parameter may have its own random effects
+    # starting at index 1
+    i <- which(which(rn == rn[i]) == i)
+  }
+  i
+}
+
 get_offset <- function(x) {
   # extract offset terms from a formula
   x <- try(terms(as.formula(x)), silent = TRUE)
