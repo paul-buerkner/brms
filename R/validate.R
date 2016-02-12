@@ -405,10 +405,22 @@ plus_rhs <- function(x) {
   else "+ 1"
 }
 
-get_random <- function(effects) {
-  # get random effecta data.frame
+get_fixed <- function(effects) {
+  # get fixed effects formulas in a list
   # Args:
-  #   effects: object returneed by extract_effects
+  #   effects: object returned by extract_effects
+  out <- list(effects$fixed)
+  if (!is.null(effects$nonlinear)) {
+    out <- c(out, lapply(effects$nonlinear, function(par) par$fixed))
+    attr(out, "nonlinear") <- TRUE
+  }
+  out
+}
+
+get_random <- function(effects) {
+  # get random effects information in a data.frame
+  # Args:
+  #   effects: object returned by extract_effects
   if (!is.null(effects$nonlinear)) {
     out <- do.call(rbind, lapply(effects$nonlinear, function(par) par$random))
     attr(out, "nonlinear") <- TRUE

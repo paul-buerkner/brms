@@ -143,6 +143,13 @@ test_that("update_formula returns correct formulas", {
   expect_equal(update_formula(y~x+z, partial = ~ a + I(a^2)), y ~ x+z+partial(a + I(a^2)))
 })
 
+test_that("get_fixed works correctly", {
+  effects <- extract_effects(y ~ a - b^x, nonlinear = list(a ~ z, b ~ z + v))
+  expect_equivalent(get_fixed(effects), list(y ~ a - b^x, ~ z, ~ z + v))
+  effects <- extract_effects(y ~ x + z + (1|g))
+  expect_equivalent(get_fixed(effects), list(y ~ x + z))
+})
+
 test_that("get_group_formula rejects incorrect grouping terms", {
   expect_error(get_group_formula("|g1/g2"), 
                paste("Illegal grouping term: g1/g2 \n",
