@@ -410,10 +410,12 @@ get_random <- function(effects) {
   # Args:
   #   effects: object returneed by extract_effects
   if (!is.null(effects$nonlinear)) {
-    do.call(rbind, lapply(effects$nonlinear, function(par) par$random))
+    out <- do.call(rbind, lapply(effects$nonlinear, function(par) par$random))
+    attr(out, "nonlinear") <- TRUE
   } else {
-    effects$random
+    out <- effects$random
   }
+  out
 }
 
 get_re_index <- function(i, random) {
@@ -422,9 +424,8 @@ get_re_index <- function(i, random) {
   #   i: an index
   #   random: data.frame returned by get_random
   rn <- rownames(random)
-  if (!identical(rn, as.character(1:nrow(random)))) {
+  if (isTRUE(attr(random, "nonlinear"))) {
     # each non-linear parameter may have its own random effects
-    # starting at index 1
     i <- which(which(rn == rn[i]) == i)
   }
   i
