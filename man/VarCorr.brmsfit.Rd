@@ -6,16 +6,16 @@
 \alias{as.data.frame.brmsVarCorr}
 \title{Extract variance and correlation components}
 \usage{
-\method{VarCorr}{brmsfit}(x, sigma = 1, rdig = 3, estimate = "mean",
-  as.list = TRUE, ...)
+\method{VarCorr}{brmsfit}(x, sigma = 1, estimate = "mean", as.list = TRUE,
+  ...)
 
 \method{as.data.frame}{brmsVarCorr}(x, ...)
 }
 \arguments{
 \item{x}{An object of class \code{brmsift}.}
 
-\item{sigma, rdig}{Ignored (included for compatibility with 
-\code{\link[nlme:VarCorr]{VarCorr}}).}
+\item{sigma}{Ignored (included for compatibility with 
+\code{\link[lme4:VarCorr]{VarCorr}}).}
 
 \item{estimate}{A character vector specifying which summary
 statistics (e.g., "mean", "median", "sd", or "quantile")
