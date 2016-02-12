@@ -26,10 +26,10 @@ print.brmssummary <- function(x, digits = 2, ...) {
                "         total post-warmup samples = ", final_samples, "\n"))
     cat(paste0("   WAIC: ", waic, "\n \n"))
     
-    if (length(x$group)) {
+    if (length(x$random)) {
       cat("Random Effects: \n")
-      for (i in 1:length(x$group)) {
-        g <- x$group[i]
+      for (i in seq_along(x$random)) {
+        g <- names(x$random)[i]
         cat(paste0("~",g," (Number of levels: ",x$ngrps[[g]],") \n"))
         if (x$algorithm == "sampling") {
           x$random[[g]][, "Eff.Sample"] <- 

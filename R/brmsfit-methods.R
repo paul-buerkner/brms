@@ -604,6 +604,7 @@ summary.brmsfit <- function(object, waic = FALSE, ...) {
     out$cor_pars <- fit_summary[cor_pars, , drop = FALSE]
     rownames(out$cor_pars) <- cor_pars
     
+    # summary of random effects
     for (i in seq_along(out$group)) {
       nlp <- get_nlpar(object$ranef[[i]])
       nlp_ <- ifelse(nchar(nlp), paste0(nlp, "_"), nlp)
@@ -617,9 +618,10 @@ summary.brmsfit <- function(object, waic = FALSE, ...) {
       cor_pars <- all_cor_pars[take]
       cor_names <- get_cornames(paste0(nlp_, rnames))[take]
       # extract sd and cor parameters from the summary
+      new_random <- fit_summary[c(sd_pars, cor_pars), , drop = FALSE]
+      rownames(new_random) <- c(sd_names, cor_names)
       out$random[[out$group[i]]] <- 
-        fit_summary[c(sd_pars, cor_pars), , drop = FALSE]
-      rownames(out$random[[out$group[i]]]) <- c(sd_names, cor_names)
+        rbind(out$random[[out$group[i]]], new_random)
     }
   }  
   out
