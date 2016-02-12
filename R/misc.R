@@ -201,7 +201,7 @@ is.lognormal <- function(family, link = "identity", nresp = 1) {
     link <- family$link
     family <- family$family
   }
-  family == "gaussian" && link == "log" && nresp == 1
+  family %in% "gaussian" && link == "log" && nresp == 1
 }
 
 is.binary <- function(family) {
@@ -224,7 +224,7 @@ is.categorical <- function(family) {
   if (is(family, "family")) {
     family <- family$family
   }
-  family == "categorical" 
+  family %in% "categorical" 
 }
 
 is.skewed <- function(family) {
@@ -266,7 +266,7 @@ is.2PL <- function(family) {
   if (!is(family, "brmsfamily")) {
     out <- FALSE
   } else {
-    out <- family$family == "bernoulli" && identical(family$type, "2PL")
+    out <- family$family %in% "bernoulli" && identical(family$type, "2PL")
   }
   out
 }
@@ -309,7 +309,7 @@ has_cat <- function(family) {
   if (is(family, "family")) {
     family <- family$family
   }
-  family == "categorical" || is.ordinal(family)
+  is.categorical(family) || is.ordinal(family)
 }
 
 has_shape <- function(family) {
