@@ -792,10 +792,11 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5,
   n_plots <- ceiling(length(pars) / N)
   plots <- vector(mode = "list", length = n_plots)
   for (i in 1:n_plots) {
-    temp_plot <- lapply(pars[((i - 1) * N + 1):min(i * N, length(pars))], 
-                        trace_density_plot, x = samples, theme = theme)
-    plots[[i]] <- arrangeGrob(grobs = unlist(temp_plot, recursive = FALSE), 
-                              nrow = length(temp_plot), ncol = 2, ...)
+    rel_pars <- pars[((i - 1) * N + 1):min(i * N, length(pars))]
+    sub_samples <- cbind(stack(samples[, rel_pars, drop = FALSE]),
+                         samples[, c("chain", "iter")])
+    td_plot <- trace_density_plot(sub_samples, theme = theme)
+    plots[[i]] <- arrangeGrob(grobs = td_plot, nrow = 1, ncol = 2, ...)
     if (do_plot) {
       if (newpage || i > 1) grid.newpage()
       grid.draw(plots[[i]])
