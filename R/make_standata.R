@@ -374,6 +374,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
            ulapply(unique(tgroup), match, tgroup)))
         standata$nrows_tg <- as.array(with(standata, 
            c(if (N_tg > 1) begin_tg[2:N_tg], N + 1) - begin_tg))
+        standata$end_tg <- with(standata, begin_tg + nrows_tg - 1)
         if (!is.null(standata$se)) {
           standata$squared_se <- standata$se^2
         } else {

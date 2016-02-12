@@ -17,14 +17,14 @@ test_that("self-defined Stan functions work correctly", {
   y <- rnorm(9)
   eta <- rnorm(9)
   ll_stan <- normal_cov_log(y, eta = eta, squared_se = 1:9, 
-                            N_tg = 2, begin = c(1, 5), nrows = c(4, 5), 
-                            res_cov_matrix = cov_arma1_R)
+                            N_tg = 2, begin = c(1, 5), end = c(4, 9),
+                            nrows = c(4, 5), res_cov_matrix = cov_arma1_R)
   ll_R <- c(dmulti_normal(y[1:4], eta[1:4], cov_arma1_R[1:4, 1:4] + diag(1:4)),
             dmulti_normal(y[5:9], eta[5:9], cov_arma1_R[1:5, 1:5] + diag(5:9)))
   expect_equal(ll_stan, sum(ll_R))
   ll_stan <- student_t_cov_log(y, nu = 10, eta = eta, squared_se = 1:9, 
-                               N_tg = 2, begin = c(1, 5), nrows = c(4, 5), 
-                               res_cov_matrix = cov_arma1_R)
+                               N_tg = 2, begin = c(1, 5), end = c(4, 9),
+                               nrows = c(4, 5), res_cov_matrix = cov_arma1_R)
   ll_R <- c(dmulti_student(y[1:4], df = 10, mu = eta[1:4], 
                            Sigma = cov_arma1_R[1:4, 1:4] + diag(1:4)),
             dmulti_student(y[5:9], df = 10, mu = eta[5:9], 

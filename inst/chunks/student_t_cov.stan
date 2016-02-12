@@ -13,21 +13,16 @@
    * Returns: 
    *   sum of the log-PDF values of all observations 
    */ 
-   real student_t_cov_log(vector y, real nu, vector eta,  
-                          vector squared_se, int N_tg, int[] begin, 
-                          int[] nrows, matrix res_cov_matrix) { 
-     vector[N_tg] log_post; 
+   real student_t_cov_log(vector y, real nu, vector eta, vector squared_se, 
+                          int N_tg, int[] begin, int[] end, int[] nrows, 
+                          matrix res_cov_matrix) { 
+     vector[N_tg] lp; 
      for (i in 1:N_tg) { 
        matrix[nrows[i], nrows[i]] Sigma; 
-       vector[nrows[i]] y_part; 
-       vector[nrows[i]] eta_part; 
-       vector[nrows[i]] squared_se_part; 
-       y_part <- segment(y, begin[i], nrows[i]); 
-       eta_part <- segment(eta, begin[i], nrows[i]); 
-       squared_se_part <- segment(squared_se, begin[i], nrows[i]); 
-       Sigma <- block(res_cov_matrix, 1, 1, nrows[i], nrows[i]) 
-                + diag_matrix(squared_se_part); 
-       log_post[i] <- multi_student_t_log(y_part, nu, eta_part, Sigma); 
+       Sigma <- res_cov_matrix[1:nrows[i], 1:nrows[i]] 
+                + diag_matrix(squared_se[begin[i]:end[i]]); 
+       lp[i] <- multi_student_t_log(y[begin[i]:end[i]], nu, 
+                                    eta[begin[i]:end[i]], Sigma); 
      }                        
-     return sum(log_post); 
+     return sum(lp); 
    }
