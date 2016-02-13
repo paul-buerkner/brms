@@ -1651,7 +1651,7 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
     # 
     # Args:
     #   h: A string containing a hypothesis
-    h <- rename(h, symbols = c(" ", ":"), subs = c("", "__"))
+    h <- rename(h, c("[ \t\r\n]", ":"), c("", "__"), fixed = FALSE)
     sign <- unlist(regmatches(h, gregexpr("=|<|>", h)))
     lr <- unlist(regmatches(h, gregexpr("[^=<>]+", h)))
     if (length(sign) != 1 || length(lr) != 2)
