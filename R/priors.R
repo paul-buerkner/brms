@@ -74,12 +74,13 @@
 #'   many regression coefficients,although only a minority of them is non-zero. 
 #'   For more details see Carvalho et al. (2009).
 #'   The horseshoe prior can be applied on all fixed effects at once 
-#'   (excluding the intercept) by using \code{set_prior("horseshoe(<df>)")}.
-#'   Replace \code{<df>} with the desired degrees of freedom of the student-t prior
-#'   of the local shrinkage parameters. 
-#'   In their paper, Carvalho et al. (2009) use one degrees of freedom, but this
-#'   my lead to an increased number of divergent transition in \pkg{Stan}
-#'   so that slightly higher values may often be a better option. 
+#'   (excluding the intercept) by using \code{set_prior("horseshoe(1)")}.
+#'   The \code{1} implies that the student-t prior of the local shrinkage 
+#'   parameters has 1 degrees of freedom. This may, however, lead to an 
+#'   increased number of divergent transition in \pkg{Stan}.
+#'   Accordingly, increasing the degrees of freedom to slightly higher values 
+#'   (e.g., \code{3}) may often be a better option, although the prior 
+#'   no longer resembles a horseshoe in this case. 
 #'   Generally, models with horseshoe priors a more likely than other models
 #'   to have divergent transitions so that increasing \code{adapt_delta} 
 #'   from \code{0.8} to values closer to \code{1} will often be necessary.
