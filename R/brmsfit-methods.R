@@ -944,7 +944,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, data = NULL,
   # prepare marginal data
   mf <- model.frame(x)
   if (is.null(data)) {
-    if (!isTRUE(all.equal(x$autocor, cor_arma())) || 
+    if (!is_equal(x$autocor, cor_arma()) || 
         length(rmNULL(ee[c("se", "trials", "cat")]))) {
       stop("Please specify argument 'data' manually for this model.", 
            call. = FALSE)
