@@ -481,13 +481,15 @@ fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt_c
 ## generate a summary of the results
 summary(fit1)
 ## plot the MCMC chains as well as the posterior distributions
-plot(fit1)
+plot(fit1, ask = FALSE)
 ## extract random effects standard devations and covariance matrices
 VarCorr(fit1)
-## extract random effects for each level
+## extract group specific effects of each level
 ranef(fit1)
 ## predict responses based on the fitted model
 head(predict(fit1))  
+## plot marginal effects of each predictor
+plot(marginal_effects(fit1), ask = FALSE)
  
 ## Ordinal regression modeling patient's rating 
 ## of inhaler instructions with normal priors on fixed effects
@@ -495,14 +497,15 @@ fit2 <- brm(rating ~ treat + period + carry,
             data = inhaler, family = sratio("cloglog"), 
             prior = set_prior("normal(0,5)"))
 summary(fit2)
-plot(fit2)    
+plot(fit2, ask = FALSE)    
 
-## Surivival regression (with family 'weibull') modeling time between 
-## first and second recurrence of an infection in kidney patients.
-fit3 <- brm(time | cens(censored) ~ age + sex + disease + (1|patient), 
-            data = kidney, family = weibull(), inits = "0")
+## Survival regression modeling the time between the first 
+## and second recurrence of an infection in kidney patients.
+fit3 <- brm(time | cens(censored) ~ age*sex + disease + (1|patient), 
+            data = kidney, family = exponential(), inits = 0)
 summary(fit3) 
-plot(fit3)    
+plot(fit3, ask = FALSE)
+plot(marginal_effects(fit3), ask = FALSE)   
 
 ## Probit regression using the binomial family
 n <- sample(1:10, 100, TRUE)  # number of trials
@@ -519,8 +522,7 @@ fit5 <- brm(y ~ a1 - a2^x, nonlinear = a1 + a2 ~ 1,
             prior = c(set_prior("normal(0, 2)", nlpar = "a1"),
                       set_prior("normal(0, 2)", nlpar = "a2")))
 summary(fit5)
-plot(fit5)
-marginal_effects(fit5)
+plot(marginal_effects(fit5), ask = FALSE)
 }
 
 }
