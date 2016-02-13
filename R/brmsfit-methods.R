@@ -1700,6 +1700,9 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
       sm[1, 4] <- Inf
     }
     sm <- cbind(sm, ifelse(!(sm[1, 3] <= 0 && 0 <= sm[1, 4]), '*', ''))
+    # make sure rownames are not too long
+    lr <- ifelse(nchar(lr) > 20, paste0(substr(lr, 1, 17), "..."), lr)
+    h <- paste0(lr[1], ifelse(lr[2] != "0", paste0("-(", lr[2], ")"), ""))
     rownames(sm) <- paste(rename(h, "__", ":"), sign, "0")
     cl <- (1 - alpha) * 100
     colnames(sm) <- c("Estimate", "Est.Error", paste0("l-",cl,"% CI"), 
