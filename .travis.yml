@@ -3,12 +3,16 @@ sudo: required
 
 warnings_are_errors: TRUE
 
-r_github_packages:
-  - jimhester/covr
-
 r_binary_packages:
   - rstan
   - ggplot2
+  - loo
+  - shinystan
+  - gridExtra
+  - lme4
+  - Matrix
+  - KernSmooth
+  - covr
   - testthat
   
 after_success:
