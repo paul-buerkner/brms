@@ -6,9 +6,6 @@ warnings_are_errors: TRUE
 r_binary_packages:
   - rstan
   - ggplot2
-  - loo
-  - shinystan
-  - gridExtra
   - lme4
   - Matrix
   - KernSmooth
