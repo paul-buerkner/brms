@@ -272,7 +272,7 @@ arma_predictor <- function(standata, eta, ar = NULL, ma = NULL,
   Ks <- 1:K
   Y <- link(standata$Y, link)
   N <- length(Y)
-  tg <- c(rep(0, K), standata$tgroup)
+  tg <- c(rep(0, K), standata$tg)
   E <- array(0, dim = c(S, K, K + 1))
   e <- matrix(0, nrow = S, ncol = K)
   zero_mat <- e

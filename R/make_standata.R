@@ -361,7 +361,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     Karr <- get_arr(autocor)
     if (Kar || Kma) {
       # ARMA effects (of residuals)
-      standata$tgroup <- as.numeric(as.factor(tgroup))
+      standata$tg <- as.numeric(as.factor(tgroup))
       standata$E_pre <- matrix(0, nrow = standata$N, ncol = max(Kar, Kma))
       standata$Kar <- Kar
       standata$Kma <- Kma
@@ -369,7 +369,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       if (use_cov(autocor)) {
         # Modeling ARMA effects using a special covariance matrix
         # requires additional data
-        standata$N_tg <- length(unique(standata$tgroup))
+        standata$N_tg <- length(unique(standata$tg))
         standata$begin_tg <- as.array(with(standata, 
            ulapply(unique(tgroup), match, tgroup)))
         standata$nrows_tg <- as.array(with(standata, 
