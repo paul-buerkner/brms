@@ -1,6 +1,6 @@
-#' Fit Bayesian Generalized Linear and Ordinal Mixed Models
+#' Fit Bayesian Generalized (Non-)Linear and Ordinal Mixed Models
 #' 
-#' Fit a Bayesian generalized linear or ordinal mixed model using Stan
+#' Fit a Bayesian generalized (non-)linear or ordinal mixed model using Stan
 #' 
 #' @param formula An object of class "formula" (or one that can be coerced to that class): 
 #'   a symbolic description of the model to be fitted. 
@@ -400,16 +400,14 @@
 #'   
 #'   \bold{Adjusting the sampling behavior of \pkg{Stan}}
 #'   
-#'   Despite choosing the number of iterations, chains, etc., 
-#'   users can directly change the sampling behavior of the NUTS sampler, 
-#'   by using the \code{control} argument (a named list), 
-#'   which is passed directly to \pkg{Stan} when specified in \code{brm}. 
+#'   In addition to choosing the number of iterations, warmup samples, 
+#'   and chains, users can control the behavior of the NUTS sampler, 
+#'   by using the \code{control} argument.
 #'   The most important reason to use \code{control} is to decrease 
 #'   (or eliminate at best) the number of divergent transitions
 #'   that cause a bias in the obtained posterior samples. 
 #'   Whenever you see the warning
-#'   "There were x divergent transitions after warmup. 
-#'   Increasing adapt_delta may help." 
+#'   "There were x divergent transitions after warmup." 
 #'   you should really think about increasing \code{adapt_delta}.
 #'   To do this, write \code{control = list(adapt_delta = <x>)}, 
 #'   where \code{<x>} should usually be value between \code{0.8} 
@@ -418,15 +416,15 @@
 #'   divergent transitions threatening the validity of your 
 #'   posterior samples.
 #'   
-#'   Another problem arises when the depth of the tree being evaluated
-#'   in each iteration is exceeded. This is less common than having
+#'   Another problem arises when the depth of the tree being evaluated 
+#'   in each iteration is exceeded. This is less common than having 
 #'   divergent transitions, but may also bias the posterior samples.
-#'   When it happens, \pkg{Stan} will throw out a warning suggesting
-#'   to increase \code{max_treedepth}, which is \code{10} by default. 
-#'   You can do that by specifying \code{control = list(max_treedepth = <x>)},
-#'   where \code{<x>} should be a positive integer.
-#'   For more details on the \code{control} argument see 
-#'   \code{\link[rstan:stan]{stan}}.
+#'   When it happens, \pkg{Stan} will throw out a warning suggesting 
+#'   to increase \code{max_treedepth}, which can be accomplished by 
+#'   writing \code{control = list(max_treedepth = <x>)} with a positive 
+#'   integer \code{<x>} that should usually be larger than the current 
+#'   default of \code{10}. For more details on the \code{control} argument 
+#'   see \code{\link[rstan:stan]{stan}}.
 #'   
 #' @examples
 #' \dontrun{ 

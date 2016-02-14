@@ -6,7 +6,7 @@
 Bayesian Regression Models using Stan
 }
 \description{
-The \pkg{brms} package provides an interface to fit Bayesian generalized linear mixed models using Stan,
+The \pkg{brms} package provides an interface to fit Bayesian generalized (non)-linear mixed models using Stan,
 which is a C++ package for obtaining Bayesian inference using the No-U-turn sampler (see \url{http://mc-stan.org/}). The formula syntax is very similar to that of the package \pkg{lme4} to provide a familiar and simple interface for performing regression analyses.
 }
 
