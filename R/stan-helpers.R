@@ -581,12 +581,12 @@ stan_arma <- function(family, autocor, prior = prior_frame(),
     } else {
       if (has_se) {
         stop(paste("Please set cov = TRUE in cor_arma / cor_ar / cor_ma",
-                   "when using meta-analytic standard errors"), 
+                   "when using meta-analytic standard errors."), 
              call. = FALSE)
       }
       if (length(nonlinear)) {
         stop(paste("Please set cov = TRUE in cor_arma / cor_ar / cor_ma",
-                   "in non-linear models"), call. = FALSE)
+                   "for non-linear models."), call. = FALSE)
       }
       index <- ifelse(is_multi, "m, k", "n")
       s <- ifelse(is_multi, "      ", "    ")
