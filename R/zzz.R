@@ -18,7 +18,8 @@ brmsfit_example$fit@stanmodel <- new("stanmodel")
 
 new_stan_functions <- function() {
   # copy all new stan functions into a single .stan file and compile it 
-  chunk_filenames <- list.files(system.file("chunks", package = "brms"))
+  chunk_filenames <- list.files(system.file("chunks", package = "brms"),
+                                pattern = "^fun_")
   families <- list(cumulative("probit"), sratio("logit"), 
                    cratio("cloglog"), acat("cauchit"))
   partial <- c(rep(FALSE, 2), rep(TRUE, 2))
