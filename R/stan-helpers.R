@@ -634,11 +634,7 @@ stan_multi <- function(family, response, prior = prior_frame()) {
   nresp <- length(response)
   if (nresp > 1) {
     if (is.linear(family)) {
-      out$data <- paste0(
-        "  int<lower=1> N_trait;  // number of observations per response \n",
-        "  int<lower=1> K_trait;  // number of responses \n",  
-        "  int NC_trait;  // number of residual correlations \n",
-        "  vector[K_trait] Y[N_trait];  // response matrix \n")
+      out$data <- "  #include 'data_multi.stan' \n"
       out$par <- paste0(
         "  // parameters for multivariate linear models \n",
         "  vector<lower=0>[K_trait] sigma; \n",
