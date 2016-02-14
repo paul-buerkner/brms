@@ -76,56 +76,51 @@ predict_multi_cauchy <- function(n, data, samples,
 
 predict_gaussian_cov <- function(n, data, samples, link = "identity", ...) {
   # currently, only ARMA1 processes are implemented
-  rows <- with(data, begin_tg[n]:(begin_tg[n] + nrows_tg[n] - 1))
-  eta_part <- samples$eta[, rows, drop = FALSE]
-  squared_se_part <- data$squared_se[rows]
-  # different functions for different residucal cov matrices
+  obs <- with(data, begin_tg[n]:(begin_tg[n] + nobs_tg[n] - 1))
+  args <- list(sigma = samples$sigma, se2 = data$se2[obs], 
+               nrows = length(obs))
   if (!is.null(samples$ar) && is.null(samples$ma)) {
     # AR1 process
-    Sigma <- get_cov_matrix_ar1(ar = samples$ar, sigma = samples$sigma, 
-                                sq_se = squared_se_part, nrows = length(rows)) 
+    args$ar <- samples$ar
+    Sigma <- do.call(get_cov_matrix_ar1, args)
   } else if (is.null(samples$ar) && !is.null(samples$ma)) {
     # MA1 process
-    Sigma <- get_cov_matrix_ma1(ma = samples$ma, sigma = samples$sigma, 
-                                sq_se = squared_se_part, nrows = length(rows)) 
+    args$ma <- samples$ma
+    Sigma <- do.call(get_cov_matrix_ma1, args)
   } else {
     # ARMA1 process
-    Sigma <- get_cov_matrix_arma1(ar = samples$ar, ma = samples$ma, 
-                                  sigma = samples$sigma, 
-                                  sq_se = squared_se_part, 
-                                  nrows = length(rows))
+    args[c("ar", "ma")] <- samples[c("ar", "ma")]
+    Sigma <- do.call(get_cov_matrix_ma1, args)
   }
   .fun <- function(i) {
-    rmulti_normal(1, mu = ilink(eta_part[i, ], link), 
-                 Sigma = Sigma[i, , ])
+    rmulti_normal(1, mu = ilink(samples$eta[i, obs], link), 
+                  Sigma = Sigma[i, , ])
   }
   do.call(rbind, lapply(1:nrow(samples$eta), .fun))
 }
 
 predict_student_cov <- function(n, data, samples, link = "identity", ...) {
   # currently, only ARMA1 processes are implemented
-  rows <- with(data, begin_tg[n]:(begin_tg[n] + nrows_tg[n] - 1))
-  eta_part <- samples$eta[, rows, drop = FALSE]
-  squared_se_part <- data$squared_se[rows]
-  # different functions for different residucal cov matrices
+  obs <- with(data, begin_tg[n]:(begin_tg[n] + nobs_tg[n] - 1))
+  args <- list(sigma = samples$sigma, se2 = data$se2[obs], 
+               nrows = length(obs))
   if (!is.null(samples$ar) && is.null(samples$ma)) {
     # AR1 process
-    Sigma <- get_cov_matrix_ar1(ar = samples$ar, sigma = samples$sigma, 
-                                sq_se = squared_se_part, nrows = length(rows)) 
+    args$ar <- samples$ar
+    Sigma <- do.call(get_cov_matrix_ar1, args)
   } else if (is.null(samples$ar) && !is.null(samples$ma)) {
     # MA1 process
-    Sigma <- get_cov_matrix_ma1(ma = samples$ma, sigma = samples$sigma, 
-                                sq_se = squared_se_part, nrows = length(rows)) 
+    args$ma <- samples$ma
+    Sigma <- do.call(get_cov_matrix_ma1, args)
   } else {
     # ARMA1 process
-    Sigma <- get_cov_matrix_arma1(ar = samples$ar, ma = samples$ma, 
-                                  sigma = samples$sigma, 
-                                  sq_se = squared_se_part, 
-                                  nrows = length(rows))
+    args[c("ar", "ma")] <- samples[c("ar", "ma")]
+    Sigma <- do.call(get_cov_matrix_ma1, args)
   }
   .fun <- function(i) {
-    rmulti_student(1, df = samples$nu[i, ], mu = ilink(eta_part[i, ], link), 
-                  Sigma = Sigma[i, , ])
+    rmulti_student(1, df = samples$nu[i, ], 
+                   mu = ilink(samples$eta[i, obs], link), 
+                   Sigma = Sigma[i, , ])
   }
   do.call(rbind, lapply(1:nrow(samples$eta), .fun))
 }

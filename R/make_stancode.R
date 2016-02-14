@@ -119,7 +119,8 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   
   # generate stan code specific to certain models
   text_arma <- stan_arma(family = family, autocor = autocor, prior = prior,
-                         se = is.formula(ee$se), is_multi = is_multi)
+                         has_se = is.formula(ee$se), is_multi = is_multi,
+                         nonlinear = nonlinear)
   text_multi <- stan_multi(family = family, response = ee$response,
                            prior = prior)
   text_ordinal <- stan_ordinal(family = family, prior = prior, 

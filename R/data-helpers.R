@@ -165,10 +165,6 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   } else if (!"data.frame" %in% class(newdata)) {
     stop("newdata must be a data.frame")
   }
-  if (use_cov(fit$autocor)) {
-    stop(paste("predictions with new data are not yet possible", 
-               "for ARMA covariance models"), call. = FALSE)
-  }
   # standata will be based on an updated formula if re_formula is specified
   new_ranef <- check_re_formula(re_formula, old_ranef = fit$ranef,
                                 data = fit$data)

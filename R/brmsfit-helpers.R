@@ -239,16 +239,16 @@ get_cov_matrix <- function(sd, cor = NULL) {
   list(cor = cor_matrix, cov = cov_matrix)
 }
 
-get_cov_matrix_ar1 <- function(ar, sigma, sq_se, nrows) {
+get_cov_matrix_ar1 <- function(ar, sigma, se2, nrows) {
   # compute the covariance matrix for an AR1 process
   # Args: 
   #   ar: AR1 autocorrelation samples
   #   sigma: standard deviation samples of the AR1 process
-  #   sq_se: user defined standard errors (may be 0)
+  #   se2: square of user defined standard errors (may be 0)
   #   nrows: number of rows of the covariance matrix
   # Returns:
   #   An nsamples x nrows x nrows AR1 covariance array (!)
-  mat <- aperm(array(diag(sq_se, nrows), dim = c(nrows, nrows, nrow(ar))),
+  mat <- aperm(array(diag(se2, nrows), dim = c(nrows, nrows, nrow(ar))),
                perm = c(3, 1, 2))
   sigma2_adjusted <- sigma^2 / (1 - ar^2)
   pow_ar <- as.list(rep(1, nrows + 1))
@@ -265,16 +265,16 @@ get_cov_matrix_ar1 <- function(ar, sigma, sq_se, nrows) {
   mat 
 }
 
-get_cov_matrix_ma1 <- function(ma, sigma, sq_se, nrows) {
+get_cov_matrix_ma1 <- function(ma, sigma, se2, nrows) {
   # compute the covariance matrix for an MA1 process
   # Args: 
   #   ma: MA1 autocorrelation samples
   #   sigma: standard deviation samples of the AR1 process
-  #   sq_se: user defined standard errors (may be 0)
+  #   se2: square of user defined standard errors (may be 0)
   #   nrows: number of rows of the covariance matrix
   # Returns:
   #   An nsamples x nrows x nrows MA1 covariance array (!)
-  mat <- aperm(array(diag(sq_se, nrows), dim = c(nrows, nrows, nrow(ma))),
+  mat <- aperm(array(diag(se2, nrows), dim = c(nrows, nrows, nrow(ma))),
                perm = c(3, 1, 2))
   sigma2 <- sigma^2
   sigma2_adjusted <- sigma2 * (1 + ma^2)
@@ -291,17 +291,17 @@ get_cov_matrix_ma1 <- function(ma, sigma, sq_se, nrows) {
   mat 
 }
 
-get_cov_matrix_arma1 <- function(ar, ma, sigma, sq_se, nrows) {
+get_cov_matrix_arma1 <- function(ar, ma, sigma, se2, nrows) {
   # compute the covariance matrix for an AR1 process
   # Args: 
   #   ar: AR1 autocorrelation sample
   #   ma: MA1 autocorrelation sample
   #   sigma: standard deviation samples of the AR1 process
-  #   sq_se: user defined standard errors (may be 0)
+  #   se2: square of user defined standard errors (may be 0)
   #   nrows: number of rows of the covariance matrix
   # Returns:
   #   An nsamples x nrows x nrows ARMA1 covariance array (!)
-  mat <- aperm(array(diag(sq_se, nrows), dim = c(nrows, nrows, nrow(ar))),
+  mat <- aperm(array(diag(se2, nrows), dim = c(nrows, nrows, nrow(ar))),
                perm = c(3, 1, 2))
   sigma2_adjusted <- sigma^2 / (1 - ar^2)
   gamma0 <- 1 + ma^2 + 2 * ar * ma

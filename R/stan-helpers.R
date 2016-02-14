@@ -260,14 +260,14 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
   } else {
     llh_pre <- switch(family,
       gaussian = c("normal", paste0(eta,", ",sigma)),
-      gaussian_cov = c("normal_cov", paste0(eta,", squared_se, N_tg, ", 
-                       "begin_tg, end_tg, nrows_tg, res_cov_matrix")),
+      gaussian_cov = c("normal_cov", paste0(eta,", se2, N_tg, ", 
+                       "begin_tg, end_tg, nobs_tg, res_cov_matrix")),
       student = c("student_t",  paste0("nu, ",eta,", ",sigma)),
-      student_cov = c("student_t_cov", paste0("nu, ",eta,", squared_se, N_tg, ", 
-                      "begin_tg, end_tg, nrows_tg, res_cov_matrix")),
+      student_cov = c("student_t_cov", paste0("nu, ",eta,", se2, N_tg, ", 
+                      "begin_tg, end_tg, nobs_tg, res_cov_matrix")),
       cauchy = c("cauchy", paste0(eta,", ", sigma)),
-      cauchy_cov = c("student_t_cov", paste0("1, ",eta,", squared_se, N_tg, ", 
-                     "begin_tg, end_tg, nrows_tg, res_cov_matrix")),
+      cauchy_cov = c("student_t_cov", paste0("1, ",eta,", se2, N_tg, ", 
+                     "begin_tg, end_tg, nobs_tg, res_cov_matrix")),
       lognormal = c("lognormal", paste0(eta,", sigma",ns)),
       multi_gaussian = c("multi_normal_cholesky", paste0("Eta",n,", LSigma")),
       multi_student = c("multi_student_t", paste0("nu, Eta",n,", Sigma")),
@@ -500,7 +500,8 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
 }
 
 stan_arma <- function(family, autocor, prior = prior_frame(),
-                      se = FALSE, is_multi = FALSE) {
+                      has_se = FALSE, is_multi = FALSE,
+                      nonlinear = NULL) {
   # AR(R)MA autocorrelation in Stan
   # 
   # Args:
@@ -508,8 +509,9 @@ stan_arma <- function(family, autocor, prior = prior_frame(),
   #   autocor: autocorrelation structure; object of class cor_arma
   #   prior: a data.frame containing user defined priors 
   #          as returned by check_prior
-  #   se: user defined standard errors present?
+  #   has_se: user defined standard errors present?
   #   is_multi: is the model multivariate?
+  #   nonlinear: optional list of nonlinear formulas
   #
   # Returns:
   #   stan code for computing AR(R)MA effects
@@ -525,13 +527,7 @@ stan_arma <- function(family, autocor, prior = prior_frame(),
       stop(paste("ARMA effects for family", family$family, 
                  "are not yet implemented"), call. = FALSE)
     }
-    out$data <- paste0(out$data,
-      "  // data needed for ARMA effects \n",
-      "  int<lower=0> Kar;  // AR order \n",
-      "  int<lower=0> Kma;  // MA order \n",
-      "  int<lower=1> Karma;  // max(Kma, Kar) \n",
-      "  matrix[N, Karma] E_pre;  // matrix of zeros \n",
-      "  vector[N] tg;  // indicates independent groups \n")
+    out$data <- paste0(out$data, "  #include 'data_arma.stan' \n")
     # restrict ARMA effects to be in [-1,1] when using covariance
     # formulation as they cannot be outside this interval anyway
     restrict <- ifelse(use_cov(autocor), "<lower=-1, upper=1>", "")
@@ -554,14 +550,8 @@ stan_arma <- function(family, autocor, prior = prior_frame(),
                    "when using ARMA covariance matrices"),
              call. = FALSE)
       }
-      out$data <- paste0(out$data,
-        "  // see the functions block for details \n",
-        "  int<lower=1> N_tg; \n",   
-        "  int<lower=1> begin_tg[N_tg]; \n",
-        "  int<lower=1> end_tg[N_tg]; \n",
-        "  int<lower=1> nrows_tg[N_tg]; \n",
-        "  vector[N] squared_se; \n")
-      out$transD <- "  matrix[max(nrows_tg), max(nrows_tg)] res_cov_matrix; \n"
+      out$data <- paste0(out$data, "  #include 'data_arma_cov.stan' \n")
+      out$transD <- "  matrix[max(nobs_tg), max(nobs_tg)] res_cov_matrix; \n"
       if (Kar && !Kma) {
         cov_mat_fun <- "ar1"
         cov_mat_args <- "ar[1]"
@@ -574,7 +564,7 @@ stan_arma <- function(family, autocor, prior = prior_frame(),
       }
       out$transC1 <- paste0("  // compute residual covariance matrix \n",
                             "  res_cov_matrix <- cov_matrix_", cov_mat_fun, 
-                            "(", cov_mat_args, ", sigma, max(nrows_tg)); \n")
+                            "(", cov_mat_args, ", sigma, max(nobs_tg)); \n")
       # defined selfmade functions for the functions block
       if (family$family == "gaussian") {
         out$fun <- paste0(out$fun, "  #include 'normal_cov.stan' \n")
@@ -589,25 +579,29 @@ stan_arma <- function(family, autocor, prior = prior_frame(),
         out$fun <- paste0(out$fun, "  #include 'cov_matrix_arma1.stan' \n")
       }
     } else {
-      if (se) {
+      if (has_se) {
         stop(paste("Please set cov = TRUE in cor_arma / cor_ar / cor_ma",
-                   "when using meta-analytic standard errors"),
+                   "when using meta-analytic standard errors"), 
              call. = FALSE)
       }
+      if (length(nonlinear)) {
+        stop(paste("Please set cov = TRUE in cor_arma / cor_ar / cor_ma",
+                   "in non-linear models"), call. = FALSE)
+      }
       index <- ifelse(is_multi, "m, k", "n")
-      s <- ifelse(is_multi, "  ", "")
-      link_fun <- c(identity = "", log = "log", inverse = "inv")[family$link]
+      s <- ifelse(is_multi, "      ", "    ")
+      link <- c(identity = "", log = "log", inverse = "inv")[family$link]
       out$transD <- paste0("  matrix[N, Karma] E;  // ARMA design matrix \n",
                            "  vector[N] e;  // residuals \n") 
       out$transC1 <- "  E <- E_pre; \n" 
       out$transC2 <- paste0(
-        s,"    // calculation of ARMA effects \n",
-        s,"    e[n] <- ",link_fun,"(Y[",index,"]) - eta[n]", "; \n",
-        s,"    for (i in 1:Karma) { \n", 
-        s,"      if (n + 1 - i > 0 && n < N && tg[n + 1] == tg[n + 1 - i]) { \n",
-        s,"        E[n + 1, i] <- e[n + 1 - i]; \n",
-        s,"      } \n",
-        s,"    } \n")
+        s, "// calculation of ARMA effects \n",
+        s, "e[n] <- ", link, "(Y[", index, "]) - eta[n]", "; \n",
+        s, "for (i in 1:Karma) { \n", 
+        s, "  if (n + 1 - i > 0 && n < N && tg[n + 1] == tg[n + 1 - i]) { \n",
+        s, "     E[n + 1, i] <- e[n + 1 - i]; \n",
+        s, "  } \n",
+        s, "} \n")
     } 
   }
   if (Karr) {

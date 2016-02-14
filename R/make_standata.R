@@ -372,13 +372,13 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
         standata$N_tg <- length(unique(standata$tg))
         standata$begin_tg <- as.array(with(standata, 
            ulapply(unique(tgroup), match, tgroup)))
-        standata$nrows_tg <- as.array(with(standata, 
+        standata$nobs_tg <- as.array(with(standata, 
            c(if (N_tg > 1) begin_tg[2:N_tg], N + 1) - begin_tg))
-        standata$end_tg <- with(standata, begin_tg + nrows_tg - 1)
+        standata$end_tg <- with(standata, begin_tg + nobs_tg - 1)
         if (!is.null(standata$se)) {
-          standata$squared_se <- standata$se^2
+          standata$se2 <- standata$se^2
         } else {
-          standata$squared_se <- rep(0, standata$N)
+          standata$se2 <- rep(0, standata$N)
         }
       } 
     }
