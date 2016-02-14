@@ -90,7 +90,7 @@ predict_gaussian_cov <- function(n, data, samples, link = "identity", ...) {
   } else {
     # ARMA1 process
     args[c("ar", "ma")] <- samples[c("ar", "ma")]
-    Sigma <- do.call(get_cov_matrix_ma1, args)
+    Sigma <- do.call(get_cov_matrix_arma1, args)
   }
   .fun <- function(i) {
     rmulti_normal(1, mu = ilink(samples$eta[i, obs], link), 
@@ -115,7 +115,7 @@ predict_student_cov <- function(n, data, samples, link = "identity", ...) {
   } else {
     # ARMA1 process
     args[c("ar", "ma")] <- samples[c("ar", "ma")]
-    Sigma <- do.call(get_cov_matrix_ma1, args)
+    Sigma <- do.call(get_cov_matrix_arma1, args)
   }
   .fun <- function(i) {
     rmulti_student(1, df = samples$nu[i, ], 
