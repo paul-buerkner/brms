@@ -206,8 +206,8 @@ test_that(paste("make_standata returns correct data",
   standata <- make_standata(y ~ x, data = temp_data,
                             autocor = cor_ar(~tim|g, cov = TRUE))
   expect_equal(standata$begin_tg, as.array(c(1, 6)))
-  expect_equal(standata$nrows_tg, as.array(c(5, 5)))
-  expect_equal(standata$squared_se, rep(0, 10))
+  expect_equal(standata$nobs_tg, as.array(c(5, 5)))
+  expect_equal(standata$se2, rep(0, 10))
 })
 
 test_that("make_standata allows to retrieve the initial data order", {

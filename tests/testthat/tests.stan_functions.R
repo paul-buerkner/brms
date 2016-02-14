@@ -4,27 +4,27 @@ test_that("self-defined Stan functions work correctly", {
   
   # ARMA matrix generating functions
   cov_ar1_R <- get_cov_matrix_ar1(ar = matrix(0.5), sigma = 2, 
-                                  sq_se = 0, nrows = 3)[1, , ]
+                                  se2 = 0, nrows = 3)[1, , ]
   expect_equal(cov_matrix_ar1(0.5, 2, 3), cov_ar1_R)
   cov_ma1_R <- matrix(get_cov_matrix_ma1(ma = matrix(-0.3), sigma = 3, 
-                                         sq_se = 0, nrows = 1)[1, , ])
+                                         se2 = 0, nrows = 1)[1, , ])
   expect_equal(cov_matrix_ma1(-0.3, 3, 1), cov_ma1_R)
   cov_arma1_R <- get_cov_matrix_arma1(ar = matrix(-0.5), ma = matrix(0.7), 
-                                      sigma = 4, sq_se = 0, nrows = 5)[1, , ]
+                                      sigma = 4, se2 = 0, nrows = 5)[1, , ]
   expect_equal(cov_matrix_arma1(-0.5, 0.7, 4, 5), cov_arma1_R)
   
   # log-likelihood functions for covariance models
   y <- rnorm(9)
   eta <- rnorm(9)
-  ll_stan <- normal_cov_log(y, eta = eta, squared_se = 1:9, 
-                            N_tg = 2, begin = c(1, 5), end = c(4, 9),
-                            nrows = c(4, 5), res_cov_matrix = cov_arma1_R)
+  ll_stan <- normal_cov_log(y, eta = eta, se2 = 1:9, I = 2, 
+                            begin = c(1, 5), end = c(4, 9), nobs = c(4, 5), 
+                            res_cov_matrix = cov_arma1_R)
   ll_R <- c(dmulti_normal(y[1:4], eta[1:4], cov_arma1_R[1:4, 1:4] + diag(1:4)),
             dmulti_normal(y[5:9], eta[5:9], cov_arma1_R[1:5, 1:5] + diag(5:9)))
   expect_equal(ll_stan, sum(ll_R))
-  ll_stan <- student_t_cov_log(y, nu = 10, eta = eta, squared_se = 1:9, 
-                               N_tg = 2, begin = c(1, 5), end = c(4, 9),
-                               nrows = c(4, 5), res_cov_matrix = cov_arma1_R)
+  ll_stan <- student_t_cov_log(y, nu = 10, eta = eta, se2 = 1:9, I = 2, 
+                               begin = c(1, 5), end = c(4, 9), nobs = c(4, 5),
+                               res_cov_matrix = cov_arma1_R)
   ll_R <- c(dmulti_student(y[1:4], df = 10, mu = eta[1:4], 
                            Sigma = cov_arma1_R[1:4, 1:4] + diag(1:4)),
             dmulti_student(y[5:9], df = 10, mu = eta[5:9], 

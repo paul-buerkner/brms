@@ -96,7 +96,7 @@ loglik_gaussian_cov <- function(n, data, samples, link = "identity") {
   } else {
     # ARMA1 process
     args[c("ar", "ma")] <- samples[c("ar", "ma")]
-    Sigma <- do.call(get_cov_matrix_ma1, args)
+    Sigma <- do.call(get_cov_matrix_arma1, args)
   }
   out <- sapply(1:nrow(samples$eta), function(i)
     dmulti_normal(data$Y[obs], Sigma = Sigma[i, , ], log = TRUE,
@@ -121,7 +121,7 @@ loglik_student_cov <- function(n, data, samples, link = "identity") {
   } else {
     # ARMA1 process
     args[c("ar", "ma")] <- samples[c("ar", "ma")]
-    Sigma <- do.call(get_cov_matrix_ma1, args)
+    Sigma <- do.call(get_cov_matrix_arma1, args)
   }
   out <- sapply(1:nrow(samples$eta), function(i)
     dmulti_student(data$Y[obs], df = samples$nu[i, ], 

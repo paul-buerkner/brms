@@ -66,8 +66,8 @@ test_that("loglik for ARMA covariance models runs without errors", {
             nu = matrix(rgamma(ns, 5)),
             ar = matrix(rbeta(ns, 0.5, 0.5), ncol = 1),
             ma = matrix(rnorm(ns, 0.2, 1), ncol = 1))
-  data <- list(Y = rnorm(nobs), begin_tg = 2, nrows_tg = 4,
-               squared_se = rgamma(ns, 10))
+  data <- list(Y = rnorm(nobs), begin_tg = 2, nobs_tg = 4,
+               se2 = rgamma(ns, 10))
   
   ll <- loglik_gaussian_cov(1, data = data, samples = s, link = "inverse")
   expect_equal(length(ll), ns)

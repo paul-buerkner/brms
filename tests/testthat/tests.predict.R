@@ -55,8 +55,8 @@ test_that("predict for ARMA covariance models runs without errors", {
             nu = matrix(rgamma(ns, 5)),
             ar = matrix(rbeta(ns, 0.5, 0.5), ncol = 1),
             ma = matrix(rnorm(ns, 0.2, 1), ncol = 1))
-  data <- list(begin_tg = c(1, 5, 12), nrows_tg = c(4, 7, 3),
-               squared_se = rgamma(ns, 10))
+  data <- list(begin_tg = c(1, 5, 12), nobs_tg = c(4, 7, 3),
+               se2 = rgamma(ns, 10))
   
   pred <- predict_gaussian_cov(1, data = data, samples = s, link = "inverse")
   expect_equal(length(pred), ns * 4)
