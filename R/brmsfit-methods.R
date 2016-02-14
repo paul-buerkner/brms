@@ -963,6 +963,9 @@ marginal_effects.brmsfit <- function(x, effects = NULL, data = NULL,
       }
     }
   } else if (is.data.frame(data)) {
+    if (!nrow(data)) {
+      stop("data must have a least one row", call. = FALSE)
+    }
     if (any(duplicated(rownames(data)))) {
       stop("Row names of 'data' should be unique.", call. = FALSE)
     }
