@@ -78,7 +78,8 @@ test_that("check_prior accepts correct prior names", {
                                   set_prior("p2", class = "ma")),
                                 formula = count ~ Trt_c, data = epilepsy, 
                                 autocor = cor.arma(p = 1, q = 2))[c(1, 4), ],
-                    prior_frame(c("p1", "p2"), class = c("ar", "ma")))
+                    prior_frame(c("p1", "p2"), class = c("ar", "ma"),
+                                bound = "<lower=-1,upper=1>"))
 })
 
 test_that("check_prior rejects incorrect prior names", {

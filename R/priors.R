@@ -114,11 +114,12 @@
 #'   The autocorrelation parameters currently implemented are named 
 #'   \code{ar} (autoregression), \code{ma} (moving average),
 #'   and \code{arr} (autoregression of the response).
-#'   The default prior for autocorrelation parameters is an 
-#'   improper flat prior over the reals. 
-#'   Other priors can be defined by \cr
-#'   \code{set_prior("<prior>", class = "ar")} 
-#'   for \code{ar} effects and similar for \code{ma} and \code{arr} effects.
+#'   Priors can be defined by \code{set_prior("<prior>", class = "ar")} 
+#'   for \code{ar} and similar for \code{ma} and \code{arr} effects.
+#'   By default, \code{ar} and \code{ma} are bounded between \code{-1} 
+#'   and \code{1} and \code{arr} is unbounded (you may change this 
+#'   by using the arguments \code{lb} and \code{ub}). The default
+#'   prior is flat over the definition area.
 #'   
 #'   4. Standard deviations of random effects
 #'   
@@ -234,10 +235,12 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
   group <- as.character(group)
   coef <- as.character(coef)
   nlpar <- as.character(nlpar)
+  lb <- as.numeric(lb)
+  ub <- as.numeric(ub)
   if (length(prior) != 1 || length(class) != 1 || length(coef) != 1 || 
       length(group) != 1 || length(nlpar) != 1 || length(lb) > 1 || 
       length(ub) > 1)
-    stop("All arguments of set_prior must be of length 1", call. = FALSE)
+    stop("All arguments of set_prior must be of length 1.", call. = FALSE)
   valid_classes <- c("Intercept", "b", "sd", "cor", "L", "ar", "ma", "arr",
                      "sigma", "rescor", "Lrescor", "nu", "shape", "delta", "phi")
   if (!class %in% valid_classes)
@@ -249,11 +252,21 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
     stop(paste("argument coef not meaningful for class", class))
   if (nchar(nlpar) && !class %in% valid_classes[1:5])
     stop(paste("argument nlpar not meaningful for class", class))
-  if (length(lb) || length(ub)) {
-    if (!class %in% c("b"))
-      stop("currently boundaries are only allowed for fixed effects")
+  is_arma <- class %in% c("ar", "ma")
+  if (length(lb) || length(ub) || is_arma) {
+    if (!(class %in% c("b", "arr") || is_arma))
+      stop(paste("Currently boundaries are only allowed", 
+                 "for fixed and ARMA effects."), call. = FALSE)
     if (coef != "")
       stop("coef may not be specified when using boundaries")
+    if (is_arma) {
+      lb <- ifelse(length(lb), lb, -1)
+      ub <- ifelse(length(ub), ub, 1) 
+      if (abs(lb) > 1 || abs(ub) > 1) {
+        warning(paste("Setting boundaries of ARMA parameters outside of", 
+                      "[-1,1] may not be appropriate."), call. = FALSE)
+      }
+    }
     lb <- if (length(lb)) paste0("lower=", lb)
     ub <- if (length(ub)) paste0("upper=", ub)
     bound <- paste0("<", paste(c(lb, ub), collapse = ","), ">")
@@ -399,10 +412,11 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
   is_ordinal <- is.ordinal(family)
   is_linear <- is.linear(family)
   nresp <- length(ee$response)
+  cbound <- "<lower=-1,upper=1>"
   if (get_ar(autocor)) 
-    prior <- rbind(prior, prior_frame(class = "ar"))
+    prior <- rbind(prior, prior_frame(class = "ar", bound = cbound))
   if (get_ma(autocor)) 
-    prior <- rbind(prior, prior_frame(class = "ma"))
+    prior <- rbind(prior, prior_frame(class = "ma", bound = cbound))
   if (get_arr(autocor)) 
     prior <- rbind(prior, prior_frame(class = "arr"))
   if (has_sigma(family, se = is.formula(ee$se), autocor = autocor)) {

@@ -130,11 +130,12 @@ Define priors for specific parameters or classes of parameters
   The autocorrelation parameters currently implemented are named 
   \code{ar} (autoregression), \code{ma} (moving average),
   and \code{arr} (autoregression of the response).
-  The default prior for autocorrelation parameters is an 
-  improper flat prior over the reals. 
-  Other priors can be defined by \cr
-  \code{set_prior("<prior>", class = "ar")} 
-  for \code{ar} effects and similar for \code{ma} and \code{arr} effects.
+  Priors can be defined by \code{set_prior("<prior>", class = "ar")} 
+  for \code{ar} and similar for \code{ma} and \code{arr} effects.
+  By default, \code{ar} and \code{ma} are bounded between \code{-1} 
+  and \code{1} and \code{arr} is unbounded (you may change this 
+  by using the arguments \code{lb} and \code{ub}). The default
+  prior is flat over the definition area.
   
   4. Standard deviations of random effects
   

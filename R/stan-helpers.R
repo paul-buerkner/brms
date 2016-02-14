@@ -530,15 +530,16 @@ stan_arma <- function(family, autocor, prior = prior_frame(),
     out$data <- paste0(out$data, "  #include 'data_arma.stan' \n")
     # restrict ARMA effects to be in [-1,1] when using covariance
     # formulation as they cannot be outside this interval anyway
-    restrict <- ifelse(use_cov(autocor), "<lower=-1, upper=1>", "")
     if (Kar) {
+      ar_bound <- with(prior, bound[class == "ar"])
       out$par <- paste0(out$par, 
-        "  vector", restrict, "[Kar] ar;  // autoregressive effects \n")
+        "  vector", ar_bound, "[Kar] ar;  // autoregressive effects \n")
       out$prior <- paste0(out$prior, stan_prior(class = "ar", prior = prior))
     }
     if (Kma) {
+      ma_bound <- with(prior, bound[class == "ma"])
       out$par <- paste0(out$par, 
-        "  vector", restrict, "[Kma] ma;  // moving-average effects \n")
+        "  vector", ma_bound, "[Kma] ma;  // moving-average effects \n")
       out$prior <- paste0(out$prior, stan_prior(class = "ma", prior = prior))
     }
     
@@ -611,7 +612,8 @@ stan_arma <- function(family, autocor, prior = prior_frame(),
       "  int<lower=1> Karr; \n",
       "  matrix[N, Karr] Yarr;  // ARR design matrix \n")
     out$par <- paste0(out$par,
-      "  vector[Karr] arr;  // autoregressive effects of the response \n")
+      "  vector", with(prior, bound[class == "arr"]), "[Karr] arr;",
+      "  // autoregressive effects of the response \n")
     out$prior <- paste0(out$prior, stan_prior(class = "arr", prior = prior))
   }
   out
