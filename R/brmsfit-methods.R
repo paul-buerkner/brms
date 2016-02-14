@@ -795,6 +795,8 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5,
     rel_pars <- pars[((i - 1) * N + 1):min(i * N, length(pars))]
     sub_samples <- cbind(stack(samples[, rel_pars, drop = FALSE]),
                          samples[, c("chain", "iter")])
+    # make sure that parameters appear in the original order
+    sub_samples$ind <- with(sub_samples, factor(ind, levels = unique(ind)))
     td_plot <- trace_density_plot(sub_samples, theme = theme)
     plots[[i]] <- arrangeGrob(grobs = td_plot, nrow = 1, ncol = 2, ...)
     if (do_plot) {
