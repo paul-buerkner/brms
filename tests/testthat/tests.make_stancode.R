@@ -94,7 +94,7 @@ test_that("make_stancode correctly restricts FE parameters", {
   expect_match(sc, "vector<lower=-3,upper=5>[K] b", fixed = TRUE)
 })
 
-test_that("make_stancode returns correct selfmade functions", {
+test_that("make_stancode returns correct self-defined functions", {
   # cauchit link
   expect_match(make_stancode(rating ~ treat, data = inhaler,
                              family = cumulative("cauchit")),
@@ -148,8 +148,8 @@ test_that("make_stancode returns correct selfmade functions", {
                "matrix cov_matrix_arma1(real ar, real ma", fixed = TRUE)
   # kronecker matrices
   expect_match(make_stancode(rating ~ treat + period + carry + (1+carry|subject), 
-                             data = inhaler, cov_ranef = list(subject = 1)), 
-               "matrix kronecker_cholesky.*vector\\[\\] to_array")
+                            data = inhaler, cov_ranef = list(subject = 1)), 
+              "vector\\[\\] to_array.*matrix kronecker_cholesky")
 })
 
 test_that("make_stancode detects invalid combinations of modeling options", {

@@ -567,16 +567,16 @@ stan_arma <- function(family, autocor, prior = prior_frame(),
                             "(", cov_mat_args, ", sigma, max(nobs_tg)); \n")
       # defined selfmade functions for the functions block
       if (family$family == "gaussian") {
-        out$fun <- paste0(out$fun, "  #include 'normal_cov.stan' \n")
+        out$fun <- paste0(out$fun, "  #include 'fun_normal_cov.stan' \n")
       } else { # family %in% c("student", "cauchy")
-        out$fun <- paste0(out$fun, "  #include 'student_t_cov.stan' \n")
+        out$fun <- paste0(out$fun, "  #include 'fun_student_t_cov.stan' \n")
       }
       if (Kar && !Kma) {
-        out$fun <- paste0(out$fun, "  #include 'cov_matrix_ar1.stan' \n")
+        out$fun <- paste0(out$fun, "  #include 'fun_cov_matrix_ar1.stan' \n")
       } else if (!Kar && Kma) {
-        out$fun <- paste0(out$fun, "  #include 'cov_matrix_ma1.stan' \n")
+        out$fun <- paste0(out$fun, "  #include 'fun_cov_matrix_ma1.stan' \n")
       } else {
-        out$fun <- paste0(out$fun, "  #include 'cov_matrix_arma1.stan' \n")
+        out$fun <- paste0(out$fun, "  #include 'fun_cov_matrix_arma1.stan' \n")
       }
     } else {
       if (has_se) {
@@ -812,25 +812,25 @@ stan_zero_inflated_hurdle <- function(family) {
   if (is.zero_inflated(family) || is.hurdle(family)) {
     if (family$family == "zero_inflated_poisson") {
       out$fun <- paste0(out$fun, 
-        "  #include 'zero_inflated_poisson.stan' \n")
+        "  #include 'fun_zero_inflated_poisson.stan' \n")
     } else if (family$family == "zero_inflated_negbinomial") {
       out$fun <- paste0(out$fun, 
-        "  #include 'zero_inflated_negbinomial.stan' \n")
+        "  #include 'fun_zero_inflated_negbinomial.stan' \n")
     } else if (family$family == "zero_inflated_binomial") {
       out$fun <- paste0(out$fun, 
-        "  #include 'zero_inflated_binomial.stan' \n")
+        "  #include 'fun_zero_inflated_binomial.stan' \n")
     } else if (family$family == "zero_inflated_beta") {
       out$fun <- paste0(out$fun, 
-        "  #include 'zero_inflated_beta.stan' \n")
+        "  #include 'fun_zero_inflated_beta.stan' \n")
     } else if (family$family == "hurdle_poisson") {
       out$fun <- paste0(out$fun, 
-        "  #include 'hurdle_poisson.stan' \n")
+        "  #include 'fun_hurdle_poisson.stan' \n")
     } else if (family$family == "hurdle_negbinomial") {
       out$fun <- paste0(out$fun, 
-        "  #include 'hurdle_negbinomial.stan' \n")
+        "  #include 'fun_hurdle_negbinomial.stan' \n")
     } else if (family$family == "hurdle_gamma") {
       out$fun <- paste0(out$fun, 
-        "  #include 'hurdle_gamma.stan' \n")
+        "  #include 'fun_hurdle_gamma.stan' \n")
     } 
   }
   out
@@ -870,13 +870,17 @@ stan_inv_gaussian <- function(family, weights = FALSE, cens = FALSE,
       "  vector[N] sqrt_Y;  // sqrt(Y) \n")
     if (weights || cens || trunc) {
       out$data <- paste0(out$data, "  vector[N] log_Y;  // log(Y) \n")
-      out$fun <- paste0(out$fun, "  #include 'inv_gaussian_pw.stan' \n")
+      out$fun <- paste0(out$fun, 
+        "  #include 'fun_inv_gaussian_pw.stan' \n")
     } else {
       out$data <- paste0(out$data, "  real log_Y;  // sum(log(Y)) \n")
-      out$fun <- paste0(out$fun, "  #include 'inv_gaussian_vector.stan' \n")
+      out$fun <- paste0(out$fun, 
+        "  #include 'fun_inv_gaussian_vector.stan' \n")
     } 
     if (cens || trunc) {
-      out$fun <- paste0(out$fun, "  #include 'inv_gaussian_cdf.stan' \n")
+      out$fun <- paste0(out$fun, 
+        "  #include 'fun_inv_gaussian_cdf.stan' \n",
+        "  #include 'fun_inv_gaussian_ccdf.stan' \n")
     }
   }
   out
@@ -895,10 +899,11 @@ stan_misc_functions <- function(family = gaussian(), kronecker = FALSE) {
     stop("family must be of class family")
   out <- NULL
   if (family$link == "cauchit") {
-    out <- paste0(out, "  #include 'cauchit.stan' \n")
+    out <- paste0(out, "  #include 'fun_cauchit.stan' \n")
   }
   if (kronecker) {
-    out <- paste0(out, "  #include 'kronecker_cholesky.stan' \n")
+    out <- paste0(out, "  #include 'fun_to_array.stan' \n",
+                  "  #include 'fun_kronecker_cholesky.stan' \n")
   }
   out
 }
