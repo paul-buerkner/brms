@@ -109,14 +109,14 @@ For a complete list of methods to apply on <b>brms</b> models see
 
 ``` r
 methods(class = "brmsfit") 
-#>  [1] coef              family            fitted            fixef            
-#>  [5] formula           hypothesis        launch_shiny      logLik           
-#>  [9] LOO               marginal_effects  model.frame       ngrps            
-#> [13] nobs              pairs             parnames          plot             
-#> [17] posterior_samples predict           print             prior_samples    
-#> [21] ranef             residuals         stancode          standata         
-#> [25] stanplot          summary           update            VarCorr          
-#> [29] vcov              WAIC             
+#>  [1] as.mcmc           coef              family            fitted           
+#>  [5] fixef             formula           hypothesis        launch_shiny     
+#>  [9] logLik            LOO               marginal_effects  model.frame      
+#> [13] ngrps             nobs              pairs             parnames         
+#> [17] plot              posterior_samples predict           print            
+#> [21] prior_samples     ranef             residuals         stancode         
+#> [25] standata          stanplot          summary           update           
+#> [29] VarCorr           vcov              WAIC             
 #> see '?methods' for accessing help and source code
 ```
 
