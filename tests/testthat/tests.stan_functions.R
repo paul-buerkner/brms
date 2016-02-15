@@ -1,5 +1,5 @@
 test_that("self-defined Stan functions work correctly", {
-  skip_on_cran()
+  skip("expose_stan_functions doesn't work within R CMD CHECK")
   rstan::expose_stan_functions(new_stan_functions)
   
   # ARMA matrix generating functions
