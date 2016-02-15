@@ -2,25 +2,32 @@
 \title{brms News}
 \encoding{UTF-8}
 
-\section{CHANGES IN VERSION 0.7.0.9000}{
+\section{CHANGES IN VERSION 0.8.0}{
   \subsection{NEW FEATURES}{
     \itemize{ 
-      \item Implement zero-inflated beta models through
-      family \code{zero_inflated_beta} thanks to the 
-      idea of Ali Roshan Ghias.
-      \item Restrict domain of fixed effects parameters
-      using new arguments \code{lb} and \code{ub}
-      in function \code{set_prior} thanks to the idea
-      of Joel Gombin.
+      \item Implement generalized non-linear models, which
+      can be specified with the help of the \code{nonlinear} 
+      argument in \code{brm}.
       \item Compute and plot marginal effects using the
       \code{marginal_effects} method thanks to the help 
       of Ruben Arslan.
+      \item Implement zero-inflated beta models through
+      family \code{zero_inflated_beta} thanks to the 
+      idea of Ali Roshan Ghias.
+      \item Allow to restrict domain of fixed effects and
+      autocorrelation parameters using new arguments 
+      \code{lb} and \code{ub} in function \code{set_prior}
+      thanks to the idea of Joel Gombin.
       \item Add an \code{as.mcmc} method for compatibility 
       with the \pkg{coda} package.
+      \item Allow to call the \code{WAIC}, \code{LOO}, 
+      and \code{logLik} methods with new data.
     }
   }
   \subsection{OTHER CHANGES}{
     \itemize{
+      \item Make sure that \pkg{brms} is fully compatible 
+      with \pkg{loo} version 0.1.5.
       \item Optionally define the intercept
       as an ordinary fixed effect to avoid the
       reparametrization via centering of the
@@ -37,8 +44,14 @@
       \item Do not remove bad behaving chains anymore as
       they may point to general convergence problems that 
       are dangerous to ignore.
-      \item Make sure that \pkg{brms} is fully compatible 
-      with \pkg{loo} version 0.1.5.
+      \item Improve flexibility of the \code{theme} argument
+      in all plotting functions.
+      \item Only show the legend once per page, when computing
+      trace and density plots with the \code{plot} method.
+      \item Move code of self-defined \pkg{Stan} functions
+      to \code{inst/chunks} and incorporate them into the
+      models using \code{rstan::stanc_builder}.
+      Also, add unit tests for these functions.
     }
   }
   \subsection{BUG FIXES}{
@@ -54,6 +67,10 @@
       for some multivariate models so that it now always 
       returns the predictions of all response variables, 
       not just the first one.
+      \item Fix a bug in the log-likelihood computation of
+      \code{hurdle_poisson} and \code{hurdle_negbinomial} models.
+      This may lead to minor changes in the values obtained by
+      \code{WAIC} and \code{LOO} for these models.
       \item Fix some backwards compatibility issues of models fitted 
       with version <= 0.5.0 thanks to Ulf Koether.
     }
