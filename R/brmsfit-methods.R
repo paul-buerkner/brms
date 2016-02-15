@@ -793,7 +793,7 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5,
   plots <- vector(mode = "list", length = n_plots)
   for (i in 1:n_plots) {
     rel_pars <- pars[((i - 1) * N + 1):min(i * N, length(pars))]
-    sub_samples <- cbind(stack(samples[, rel_pars, drop = FALSE]),
+    sub_samples <- cbind(utils::stack(samples[, rel_pars, drop = FALSE]),
                          samples[, c("chain", "iter")])
     # make sure that parameters appear in the original order
     sub_samples$ind <- with(sub_samples, factor(ind, levels = unique(ind)))
