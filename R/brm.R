@@ -157,8 +157,8 @@
 #'   to prevent random effects correlations from being modeled.
 #'   With the exception of \code{addition}, this is basically \code{lme4} syntax. 
 #'   The optional \code{addition} term may contain multiple terms of the form \code{fun(variable)} 
-#'   seperated by \code{|} each providing special information on the response variable. 
-#'   \code{fun} can be replaced with either \code{se}, \code{weights}, \code{trials},
+#'   seperated by \code{+} each providing special information on the response variable. 
+#'   \code{fun} can be replaced with either \code{se}, \code{weights}, \code{disp}, \code{trials},
 #'   \code{cat}, \code{cens}, or \code{trunc}. Their meanings are explained below. 
 #'   
 #'   For families \code{gaussian}, \code{student}, and \code{cauchy} it is possible to specify
@@ -175,11 +175,26 @@
 #'   \code{mod1} and \code{mod2} represent moderator variables. 
 #'   
 #'   For all families, weighted regression may be performed using
-#'   \code{weights} in the addition part. 
+#'   \code{weights} in the addition part. Internally, this is 
+#'   implemented by multiplying the log-posterior values of each 
+#'   observation by their corresponding weights.
 #'   Suppose that variable \code{wei} contains the weights 
 #'   and that \code{yi} is the response variable. 
 #'   Then, formula \code{yi | weights(wei) ~ predictors} 
 #'   implements a weighted regression. 
+#'   
+#'   The addition argument \code{disp} (short for dispersion) serves a
+#'   similar purpose than \code{weight}. However, it has a different 
+#'   implementation and is less general as it is only usable for the
+#'   families \code{gaussian}, \code{student}, \code{cauchy},
+#'   \code{Gamma}, \code{weibull}, and \code{negbinomial}.
+#'   For the former three families, the residual standard deviation 
+#'   \code{sigma} is multiplied by the values given in 
+#'   \code{disp}, so that higher values lead to lower weights.
+#'   Contrariwise, for the latter three families, the parameter \code{shape}
+#'   is multiplied by the values given in \code{disp}. As \code{shape}
+#'   can be understood as a precision parameter (inverse of the variance),
+#'   higher values will lead to higher weights in this case.
 #'   
 #'   For families \code{binomial} and \code{zero_inflated_binomial}, 
 #'   addition should contain a variable indicating the number of trials 
