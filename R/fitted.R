@@ -35,13 +35,13 @@ fitted_response <- function(x, eta, data) {
       eta <- eta * trials 
     }
   } else if (family$family == "lognormal") {
-    sigma <- get_sigma(x, data = data, method = "fitted", n = nrow(eta))
+    sigma <- get_sigma(x, data = data, n = nrow(eta))
     if (!is_trunc) {
       # compute untruncated lognormal mean
       eta <- ilink(eta + sigma^2 / 2, family$link)  
     }
   } else if (family$family == "weibull") {
-    shape <- posterior_samples(x, "^shape$")$shape
+    shape <- get_shape(x, data = data)
     eta <- ilink(eta / shape, family$link)
     if (!is_trunc) {
       # compute untruncated weibull mean

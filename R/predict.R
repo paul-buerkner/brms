@@ -156,7 +156,8 @@ predict_poisson <- function(n, data, samples, link = "log",
 
 predict_negbinomial <- function(n, data, samples, link = "log",
                                 ntrys = 5, ...) {
-  args <- list(mu = ilink(samples$eta[, n], link), size = samples$shape)
+  shape <- get_shape(samples$shape, data = data, method = "predict", n = n)
+  args <- list(mu = ilink(samples$eta[, n], link), size = shape)
   rng_discrete(nrng = nrow(samples$eta), dist = "nbinom",
                args = args, data = data, ntrys = ntrys)
 }
@@ -175,15 +176,15 @@ predict_exponential <-  function(n, data, samples, link = "log", ...) {
 }
 
 predict_gamma <- function(n, data, samples, link = "inverse", ...) {
-  args <- list(shape = samples$shape,
-               scale = ilink(samples$eta[, n], link) / samples$shape)
+  shape <- get_shape(samples$shape, data = data, method = "predict", n = n)
+  args <- list(shape = shape, scale = ilink(samples$eta[, n], link) / shape)
   rng_continuous(nrng = nrow(samples$eta), dist = "gamma",
                  args = args, data = data)
 }
 
 predict_weibull <- function(n, data, samples, link = "log", ...) {
-  args <- list(shape = samples$shape,
-               scale = ilink(samples$eta[, n] / samples$shape, link))
+  shape <- get_shape(samples$shape, data = data, method = "predict", n = n)
+  args <- list(shape = shape, scale = ilink(samples$eta[, n] / shape, link))
   rng_continuous(nrng = nrow(samples$eta), dist = "weibull",
                  args = args, data = data)
 }

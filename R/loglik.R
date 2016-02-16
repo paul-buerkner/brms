@@ -172,7 +172,8 @@ loglik_poisson <- function(n, data, samples, link = "log") {
 }
 
 loglik_negbinomial <- function(n, data, samples, link = "log") {
-  args <- list(mu = ilink(samples$eta[, n], link), size = samples$shape)
+  shape <- get_shape(samples$shape, data = data, method = "logLik", n = n)
+  args <- list(mu = ilink(samples$eta[, n], link), size = shape)
   out <- censor_loglik(dist = "nbinom", args = args, n = n, data = data)
   out <- truncate_loglik(out, cdf = pnbinom, args = args, data = data)
   weight_loglik(out, n = n, data = data)
@@ -193,16 +194,16 @@ loglik_exponential <-  function(n, data, samples, link = "log") {
 }
 
 loglik_gamma <- function(n, data, samples, link = "inverse") {
-  args <- list(shape = samples$shape,
-               scale = ilink(samples$eta[, n], link) / samples$shape)
+  shape <- get_shape(samples$shape, data = data, method = "logLik", n = n)
+  args <- list(shape = shape, scale = ilink(samples$eta[, n], link) / shape)
   out <- censor_loglik(dist = "gamma", args = args, n = n, data = data)
   out <- truncate_loglik(out, cdf = pgamma, args = args, data = data)
   weight_loglik(out, n = n, data = data)
 }
 
 loglik_weibull <- function(n, data, samples, link = "log") {
-  args <- list(shape = samples$shape,
-               scale = ilink(samples$eta[, n] / samples$shape, link))
+  shape <- get_shape(samples$shape, data = data, method = "logLik", n = n)
+  args <- list(shape = shape, scale = ilink(samples$eta[, n] / shape, link))
   out <- censor_loglik(dist = "weibull", args = args, n = n, data = data)
   out <- truncate_loglik(out, cdf = pweibull, args = args, data = data)
   weight_loglik(out, n = n, data = data)
