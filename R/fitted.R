@@ -29,42 +29,41 @@ fitted_response <- function(x, eta, data) {
     } else {
       trials <- data$max_obs
     }
-    mu <- ilink(eta, family$link) 
+    eta <- ilink(eta, family$link) 
     if (!is_trunc) {
       # scale eta from [0,1] to [0,max_obs]
-      mu <- mu * trials 
+      eta <- eta * trials 
     }
   } else if (family$family == "lognormal") {
     sigma <- get_sigma(x, data = data, method = "fitted", n = nrow(eta))
-    mu <- eta
     if (!is_trunc) {
       # compute untruncated lognormal mean
-      mu <- ilink(mu + sigma^2 / 2, family$link)  
+      eta <- ilink(eta + sigma^2 / 2, family$link)  
     }
   } else if (family$family == "weibull") {
     shape <- posterior_samples(x, "^shape$")$shape
-    mu <- ilink(eta / shape, family$link)
+    eta <- ilink(eta / shape, family$link)
     if (!is_trunc) {
       # compute untruncated weibull mean
-      mu <- mu * gamma(1 + 1 / shape) 
+      eta <- eta * gamma(1 + 1 / shape) 
     }
   } else if (is_catordinal) {
-    mu <- fitted_catordinal(eta, max_obs = data$max_obs, family = family)
+    eta <- fitted_catordinal(eta, max_obs = data$max_obs, family = family)
   } else if (is.hurdle(family)) {
     shape <- posterior_samples(x, "^shape$")$shape 
-    mu <- fitted_hurdle(eta, shape = shape, N_trait = data$N_trait,
-                        family = family)
+    eta <- fitted_hurdle(eta, shape = shape, N_trait = data$N_trait,
+                         family = family)
   } else if (is.zero_inflated(family)) {
-    mu <- fitted_zero_inflated(eta, N_trait = data$N_trait, family = family)
+    eta <- fitted_zero_inflated(eta, N_trait = data$N_trait, family = family)
     if (family$family == "zero_inflated_binomial") {
       trials <- data$max_obs[1:ceiling(length(data$max_obs) / 2)]
       trials <- matrix(rep(trials, nrow(eta)), nrow = nrow(eta), 
                        byrow = TRUE)
-      mu <- mu * trials
+      eta <- eta * trials
     }
   } else {
     # for any other distribution, ilink(eta) is already the mean fitted value
-    mu <- ilink(eta, family$link)
+    eta <- ilink(eta, family$link)
   }
   # fitted values for truncated models
   if (is_trunc) {
@@ -76,10 +75,10 @@ fitted_response <- function(x, eta, data) {
       stop(paste("fitted values on the respone scale not implemented",
                  "for truncated", family, "models"))
     } else {
-      mu <- fitted_trunc_fun(x = x, mu = mu, lb = lb, ub = ub, data = data)
+      eta <- fitted_trunc_fun(x = x, mu = eta, lb = lb, ub = ub, data = data)
     }
   } 
-  mu
+  eta
 }
 
 fitted_catordinal <- function(eta, max_obs, family) {
