@@ -216,10 +216,11 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
        family %in% c("cumulative", "categorical") && link == "logit") 
   n <- ifelse(cens || weights || is_trunc || is_catordinal ||
                 is_hurdle || is_zero_inflated, "[n]", "")
-  ns <- ifelse((se || trials) && (cens || weights || is_trunc) 
-               || trials && is_zero_inflated, "[n]", "")
+  ns <- ifelse((se || trials || disp) && (cens || weights || is_trunc) 
+               || (trials && is_zero_inflated), "[n]", "")
   disp <- ifelse(disp, "disp_", "")
   sigma <- paste0(ifelse(se, "se", paste0(disp, "sigma")), ns)
+  shape <- paste0(disp, "shape", ns)
   ordinal_args <- paste0("eta[n], ", if (partial) "etap[n], ", 
                          "temp_Intercept")
   # use inverse link in likelihood statement only 
@@ -232,13 +233,13 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
       fl <- ifelse(family %in% c("gamma", "exponential"), 
                    paste0(family,"_",link), family)
       eta <- switch(fl, paste0(ilink,"(eta[n])"),
-                    gamma_log = "shape * exp(-eta[n])",
-                    gamma_inverse = "shape * eta[n]",
-                    gamma_identity = "shape / eta[n]",
+                    gamma_log = paste(shape, "* exp(-eta[n])"),
+                    gamma_inverse = paste(shape, "* eta[n]"),
+                    gamma_identity =  paste(shape, "/ eta[n]"),
                     exponential_log = "exp(-eta[n])",
                     exponential_inverse = "eta[n]",
                     exponential_identity = "inv(eta[n])",
-                    weibull = paste0(ilink,"(eta[n] / shape)"),
+                    weibull = paste0(ilink, "(eta[n] / ", shape, ")"),
                     bernoulli_2PL = paste0(ilink, "(eta_2PL[n])"))
     }
   } else {
@@ -274,14 +275,14 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
       multi_student = c("multi_student_t", paste0("nu, Eta",n,", Sigma")),
       multi_cauchy = c("multi_student_t", paste0("1.0, Eta",n,", Sigma")),
       poisson = c("poisson", eta),
-      negbinomial = c("neg_binomial_2", paste0(eta,", shape")),
+      negbinomial = c("neg_binomial_2", paste0(eta, ", ", shape)),
       geometric = c("neg_binomial_2", paste0(eta,", 1")),
       binomial = c("binomial", paste0("trials",ns,", ",eta)),
       bernoulli = c("bernoulli", eta), 
       bernoulli_2PL = c("bernoulli", eta), 
-      gamma = c("gamma", paste0("shape, ", eta)), 
+      gamma = c("gamma", paste0(shape, ", ", eta)), 
       exponential = c("exponential", eta),
-      weibull = c("weibull", paste0("shape, ", eta)), 
+      weibull = c("weibull", paste0(shape, ", ", eta)), 
       inverse.gaussian = c(paste0("inv_gaussian", if (!nchar(n)) "_vector"), 
                            paste0(eta, ", shape, log_Y",n,", sqrt_Y",n)),
       beta = c("beta", paste0(eta, " * phi, (1 - ", eta, ") * phi")),
