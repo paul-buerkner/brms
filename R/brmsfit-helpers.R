@@ -384,12 +384,19 @@ get_sigma <- function(x, data, n, method = c("fitted", "predict", "logLik")) {
       sigma <- data$sigma
     }
     if (is.null(sigma)) {
-      stop("No residual standard deviation(s) found")
+      stop("no residual standard deviation(s) found")
     }
     if (method %in% c("predict", "logLik")) {
       sigma <- sigma[n]
     } else {
       sigma <- matrix(rep(sigma, n), ncol = data$N, byrow = TRUE)
+    }
+  } else if (!is.null(data$disp)) {
+    if (method %in% c("predict", "logLik")) {
+      sigma <- sigma * data$disp[n]
+    } else {
+      # results in a Nsamples x Nobs matrix
+      sigma <- sigma %*% matrix(data$disp, nrow = 1)
     }
   }
   sigma
