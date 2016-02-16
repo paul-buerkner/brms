@@ -502,8 +502,8 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
 }
 
 stan_arma <- function(family, autocor, prior = prior_frame(),
-                      has_se = FALSE, is_multi = FALSE,
-                      nonlinear = NULL) {
+                      has_se = FALSE, has_disp = FALSE, 
+                      is_multi = FALSE, nonlinear = NULL) {
   # AR(R)MA autocorrelation in Stan
   # 
   # Args:
@@ -548,10 +548,12 @@ stan_arma <- function(family, autocor, prior = prior_frame(),
     if (use_cov(autocor)) {
       # if the user wants ARMA effects to be estimated using
       # a covariance matrix for residuals
+      err_msg <- "ARMA covariance matrices are not yet allowed"
       if (is_multi) {
-        stop(paste("multivariate models are not yet allowed", 
-                   "when using ARMA covariance matrices"),
-             call. = FALSE)
+        stop(paste(err_msg, "in multivariate models."), call. = FALSE)
+      }
+      if (has_disp) {
+        stop(paste(err_msg, "when specifying 'disp'."), call. = FALSE)
       }
       out$data <- paste0(out$data, "  #include 'data_arma_cov.stan' \n")
       out$transD <- "  matrix[max(nobs_tg), max(nobs_tg)] res_cov_matrix; \n"
@@ -582,14 +584,12 @@ stan_arma <- function(family, autocor, prior = prior_frame(),
         out$fun <- paste0(out$fun, "  #include 'fun_cov_matrix_arma1.stan' \n")
       }
     } else {
+      err_msg <- "Please set cov = TRUE in cor_arma / cor_ar / cor_ma"
       if (has_se) {
-        stop(paste("Please set cov = TRUE in cor_arma / cor_ar / cor_ma",
-                   "when using meta-analytic standard errors."), 
-             call. = FALSE)
+        stop(paste(err_msg, "when specifying 'se'."), call. = FALSE)
       }
       if (length(nonlinear)) {
-        stop(paste("Please set cov = TRUE in cor_arma / cor_ar / cor_ma",
-                   "for non-linear models."), call. = FALSE)
+        stop(paste(err_msg, "for non-linear models."), call. = FALSE)
       }
       index <- ifelse(is_multi, "m, k", "n")
       s <- ifelse(is_multi, "      ", "    ")

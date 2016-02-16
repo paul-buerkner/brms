@@ -120,8 +120,8 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   
   # generate stan code specific to certain models
   text_arma <- stan_arma(family = family, autocor = autocor, prior = prior,
-                         has_se = is.formula(ee$se), is_multi = is_multi,
-                         nonlinear = nonlinear)
+                         has_se = is.formula(ee$se), nonlinear = nonlinear,
+                         has_disp = is.formula(ee$disp), is_multi = is_multi)
   text_multi <- stan_multi(family = family, response = ee$response,
                            prior = prior)
   text_ordinal <- stan_ordinal(family = family, prior = prior, 
@@ -267,13 +267,14 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     "transformed parameters { \n",
       text_eta$transD, 
       text_nonlinear$transD,
+      text_disp$transD,
       text_arma$transD, 
       text_ordinal$transD,
       text_multi$transD,
       text_2PL$transD,
       text_ranef$transD, 
-      text_disp$transD,
-      text_eta$transC1, 
+      text_eta$transC1,
+      text_disp$transC,
       text_arma$transC1, 
       text_ordinal$transC1, 
       text_ranef$transC, 
@@ -287,7 +288,6 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
       text_loop[2],
       text_multi$transC,
       text_2PL$transC,
-      text_disp$transC,
     "} \n")
   
   # generate model block
