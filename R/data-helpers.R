@@ -172,19 +172,18 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   new_nonlinear <- lapply(fit$nonlinear, update_re_terms, 
                           re_formula = re_formula)
   et <- extract_time(fit$autocor$formula)
-  ee <- extract_effects(new_formula, family = fit$family, 
-                        nonlinear = new_nonlinear, et$all)
-  resp_vars <- all.vars(ee$respform)
-  missing_resp <- setdiff(resp_vars, names(newdata))
+  ee <- extract_effects(new_formula, et$all, family = fit$family,
+                        nonlinear = new_nonlinear, resp_rhs_all = FALSE)
+  resp_only_vars <- setdiff(all.vars(ee$respform), all.vars(rhs(ee$all)))
+  missing_resp <- setdiff(resp_only_vars, names(newdata))
   check_response <- check_response || 
                     (has_arma(fit$autocor) && !use_cov(fit$autocor))
   if (check_response && length(missing_resp)) {
-    stop("response variables must be specified in newdata for this model",
+    stop("Response variables must be specified in newdata for this model.",
          call. = FALSE)
   } else {
     for (resp in missing_resp) {
-      # add irrelevant response variables
-      # but make sure they pass all checks
+      # add irrelevant response variables but make sure they pass all checks
       newdata[[resp]] <- NA 
     }
   }

@@ -1,5 +1,5 @@
 extract_effects <- function(formula, ..., family = NA, nonlinear = NULL, 
-                            check_response = TRUE) {
+                            check_response = TRUE, resp_rhs_all = TRUE) {
   # Extract fixed and random effects from a formula
   # 
   # Args:
@@ -9,6 +9,7 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   #   family: the model family
   #   nonlinear: a list of formulas specifying non-linear effects
   #   check_response: check if the response part is non-empty?
+  #   resp_rhs_all: include response variables on the RHS of $all? 
   # 
   # Returns: 
   #   A named list of the following elements: 
@@ -126,8 +127,8 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   covars <- setdiff(all.vars(rhs(x$fixed)), names(x$nonlinear))
   x$covars <- formula(paste("~", paste(c("1", covars), collapse = "+")))
   # make a formula containing all required variables (element 'all')
-  formula_list <- c(all.vars(lhs(x$fixed)), add_vars, x$covars, 
-                    if (!length(x$nonlinear)) rhs(x$fixed), 
+  formula_list <- c(if (resp_rhs_all) all.vars(lhs(x$fixed)), add_vars, 
+                    x$covars, if (!length(x$nonlinear)) rhs(x$fixed), 
                     x$random$form, group_formula, get_offset(x$fixed), 
                     lapply(x$nonlinear, function(nl) nl$all), ...)
   new_formula <- collapse(ulapply(formula_list, plus_rhs))
