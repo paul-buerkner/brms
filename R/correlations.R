@@ -218,7 +218,7 @@ use_cov <- function(x) {
   if (!(is(x, "cor_arma") || is(x, "cor.arma"))) {
     stop("x must be of class cor_arma")
   }
-  if (!is.null(x$cov)) {
+  if (!is.null(x$cov) && sum(x$p, x$q) > 0) {
     x$cov
   } else {
     FALSE
