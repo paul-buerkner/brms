@@ -402,6 +402,32 @@ get_sigma <- function(x, data, n, method = c("fitted", "predict", "logLik")) {
   sigma
 }
 
+get_shape <- function(x, data, n = NULL, 
+                      method = c("fitted", "predict", "logLik")) {
+  # get residual standard devation of linear models
+  # Args:
+  #   x: a brmsfit object or posterior samples of sigma (can be NULL)
+  #   data: data initially passed to Stan
+  #   method: S3 method from which get_sigma is called
+  #   n: only used for "predict" and "logLik": 
+  #      the current observation number
+  method <- match.arg(method)
+  if (is(x, "brmsfit")) {
+    shape <- posterior_samples(x, pars = "^shape$")$shape
+  } else {
+    shape <- x
+  }
+  if (!is.null(data$disp)) {
+    if (method %in% c("predict", "logLik")) {
+      shape <- shape * data$disp[n]
+    } else {
+      # results in a Nsamples x Nobs matrix
+      shape <- shape %*% matrix(data$disp, nrow = 1)
+    }
+  }
+  shape
+}
+
 extract_pars <- function(pars, all_pars, exact_match = FALSE,
                          na_value = all_pars, ...) {
   # extract all valid parameter names that match pars
