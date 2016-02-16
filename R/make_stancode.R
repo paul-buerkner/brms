@@ -107,7 +107,8 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   text_llh <- stan_llh(family, se = is.formula(ee$se),  
                        weights = is.formula(ee$weights),
                        trials = is.formula(ee$trials),
-                       cens = is.formula(ee$cens), 
+                       cens = is.formula(ee$cens),
+                       disp = is.formula(ee$disp),
                        trunc = trunc, autocor = autocor,
                        partial = is.formula(partial),
                        is_multi = is_multi)
@@ -132,6 +133,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
                                          weights = is.formula(ee$weights),
                                          cens = is.formula(ee$cens),
                                          trunc = is.formula(ee$trunc))
+  text_disp <- stan_disp(is.formula(ee$disp), family = family)
   kronecker <- needs_kronecker(ranef, names_cov_ranef = names(cov_ranef))
   text_misc_funs <- stan_misc_functions(family = family, kronecker = kronecker)
     
@@ -190,13 +192,14 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     text_nonlinear$data,
     text_arma$data,
     text_inv_gaussian$data,
+    text_disp$data,
     if (has_trials(family))
       paste0("  int trials", N_bin, ";  // number of trials \n"),
     if (has_cat(family))
       paste0("  int ncat;  // number of categories \n"),
     if (offset)
       "  vector[N] offset;  // added to the linear predictor \n",
-    if (is.formula(ee$se) && !(use_cov(autocor) && (Kar || Kma)))
+    if (is.formula(ee$se) && !use_cov(autocor))
       "  vector<lower=0>[N] se;  // SEs for meta-analysis \n",
     if (is.formula(ee$weights))
       paste0("  vector<lower=0>[N",trait,"] weights;  // model weights \n"),
@@ -269,6 +272,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
       text_multi$transD,
       text_2PL$transD,
       text_ranef$transD, 
+      text_disp$transD,
       text_eta$transC1, 
       text_arma$transC1, 
       text_ordinal$transC1, 
@@ -283,6 +287,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
       text_loop[2],
       text_multi$transC,
       text_2PL$transC,
+      text_disp$transC,
     "} \n")
   
   # generate model block

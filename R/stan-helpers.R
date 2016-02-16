@@ -163,8 +163,8 @@ stan_ranef <- function(i, ranef, prior = prior_frame(),
 }
 
 stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE, 
-                     cens = FALSE, trunc = .trunc(), autocor = cor_arma(), 
-                     partial = FALSE, is_multi = FALSE) {
+                     cens = FALSE, disp = FALSE, trunc = .trunc(), 
+                     autocor = cor_arma(), partial = FALSE, is_multi = FALSE) {
   # Likelihoods in stan language
   #
   # Args:
@@ -218,7 +218,8 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
                 is_hurdle || is_zero_inflated, "[n]", "")
   ns <- ifelse((se || trials) && (cens || weights || is_trunc) 
                || trials && is_zero_inflated, "[n]", "")
-  sigma <- paste0(ifelse(se, "se", "sigma"), ns)
+  disp <- ifelse(disp, "disp_", "")
+  sigma <- paste0(ifelse(se, "se", paste0(disp, "sigma")), ns)
   ordinal_args <- paste0("eta[n], ", if (partial) "etap[n], ", 
                          "temp_Intercept")
   # use inverse link in likelihood statement only 
@@ -259,10 +260,10 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
       bernoulli_2PL = c("bernoulli_logit", paste0("eta_2PL",n)))
   } else {
     llh_pre <- switch(family,
-      gaussian = c("normal", paste0(eta,", ",sigma)),
+      gaussian = c("normal", paste0(eta, ", ", sigma)),
       gaussian_cov = c("normal_cov", paste0(eta,", se2, N_tg, ", 
                        "begin_tg, end_tg, nobs_tg, res_cov_matrix")),
-      student = c("student_t",  paste0("nu, ",eta,", ",sigma)),
+      student = c("student_t",  paste0("nu, ",eta, ", ", sigma)),
       student_cov = c("student_t_cov", paste0("nu, ",eta,", se2, N_tg, ", 
                       "begin_tg, end_tg, nobs_tg, res_cov_matrix")),
       cauchy = c("cauchy", paste0(eta,", ", sigma)),
@@ -880,6 +881,20 @@ stan_inv_gaussian <- function(family, weights = FALSE, cens = FALSE,
         "  #include 'fun_inv_gaussian_cdf.stan' \n",
         "  #include 'fun_inv_gaussian_ccdf.stan' \n")
     }
+  }
+  out
+}
+
+stan_disp <- function(disp, family = gaussian()) {
+  out <- list()
+  if (disp) {
+    par <- if (has_sigma(family)) "sigma"
+           else if (has_shape(family)) "shape"
+           else stop("invalid family for addition argument disp")
+    out$data <- "  vector<lower=0>[N] disp;  // FIXME \n"
+    out$transD <- paste0("  vector<lower=0>[N] disp_", par, ";",
+                         "  // dispersion vector \n")
+    out$transC <- paste0("  disp_", par, " <- ", par, " * disp; \n")
   }
   out
 }

@@ -351,6 +351,13 @@ arr_design_matrix <- function(Y, r, group)  {
   x
 }
 
+.disp <- function(x) {
+  # dispersion factors
+  if (min(x) < 0) 
+    stop("dispersion factors must be non-negative", call. = FALSE)
+  x  
+}
+
 .trials <- function(x) {
   # trials for binomial models
   if (any(!is.wholenumber(x) || x < 1))

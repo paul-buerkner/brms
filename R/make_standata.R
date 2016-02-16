@@ -259,19 +259,20 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     standata <- c(standata, list(se = .addition(formula = ee$se, data = data)))
   }
   if (is.formula(ee$weights)) {
-    standata <- c(standata, list(weights = .addition(formula = ee$weights, 
-                                                     data = data)))
+    standata <- c(standata, list(weights = .addition(ee$weights, data = data)))
     if (is.linear(family) && length(ee$response) > 1 || is_forked) 
       standata$weights <- standata$weights[1:standata$N_trait]
   }
+  if (is.formula(ee$disp)) {
+    standata <- c(standata, list(disp = .addition(ee$disp, data = data)))
+  }
   if (is.formula(ee$cens) && check_response) {
-    standata <- c(standata, list(cens = .addition(formula = ee$cens, 
-                                                  data = data)))
+    standata <- c(standata, list(cens = .addition(ee$cens, data = data)))
     if (is.linear(family) && length(ee$response) > 1 || is_forked)
       standata$cens <- standata$cens[1:standata$N_trait]
   }
   if (is.formula(ee$trunc)) {
-    standata <- c(standata, .addition(formula = ee$trunc))
+    standata <- c(standata, .addition(ee$trunc))
     if (check_response && (min(standata$Y) < standata$lb || 
                            max(standata$Y) > standata$ub)) {
       stop("some responses are outside of the truncation boundaries",

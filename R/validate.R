@@ -78,7 +78,7 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   x$nonlinear <- nonlinear_effects(nonlinear, model = x$fixed)
   
   # handle addition arguments
-  fun <- c("se", "weights", "trials", "cat", "cens", "trunc")
+  fun <- c("se", "weights", "trials", "cat", "cens", "trunc", "disp")
   add_vars <- list()
   if (!is.na(family[[1]])) {
     add <- get_matches("\\|[^~]*~", tformula)
@@ -116,6 +116,10 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
         stop(paste("Invalid addition part of formula.", 
                    "Please see the 'Details' section of help(brm)"),
              call. = FALSE)
+      if (is.formula(x$se) && is.formula(x$disp)) {
+        stop(paste("Addition arguments 'se' and 'disp' cannot be used", 
+                   "at the same time."), call. = FALSE)
+      }
     }
   }
   
@@ -614,6 +618,8 @@ add_families <- function(x) {
          trunc = c("gaussian", "student", "cauchy", "binomial",
                  "poisson", "geometric", "negbinomial", 
                  "exponential", "weibull", "gamma"),
+         disp = c("gaussian", "student", "cauchy", "gamma",
+                  "weibull", "negbinomial"),
          stop(paste("addition argument", x, "is not supported")))
 }
 
