@@ -1,15 +1,17 @@
 language: r
-sudo: required
+r: devel
+sudo: false
+cache: packages
 
 warnings_are_errors: TRUE
 
-r_binary_packages:
-  - rstan
-  - lme4
-  - Matrix
-  - KernSmooth
-  - covr
-  - testthat
+#r_binary_packages:
+#  - rstan
+#  - lme4
+#  - Matrix
+#  - KernSmooth
+#  - covr
+#  - testthat
   
 after_success:
   - Rscript -e 'library(covr); codecov()'
