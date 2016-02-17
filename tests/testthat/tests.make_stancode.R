@@ -222,14 +222,26 @@ test_that("no loop in trans-par is defined for simple 'identity' models", {
 test_that("make_stancode returns correct 'disp' code", {
   stancode <- make_stancode(time | disp(sqrt(age)) ~ sex + age, data = kidney)
   expect_match(stancode, "disp_sigma <- sigma \\* disp;.*normal\\(eta, disp_sigma\\)")
+  
+  stancode <- make_stancode(time | disp(1/age) ~ sex + age, 
+                            data = kidney, family = gaussian("log"))
+  expect_match(stancode, "Y ~ lognormal(eta, disp_sigma);", fixed = TRUE)
+  
   stancode <- make_stancode(time | disp(1/age) ~ sex + age + (1|patient), 
                             data = kidney, family = Gamma())
   expect_match(stancode, paste0("eta\\[n\\] <- disp_shape\\[n\\] \\* \\(.*",
                                 "gamma\\(disp_shape, eta\\)"))
+  
   stancode <- make_stancode(time | disp(1/age) ~ sex + age, 
                             data = kidney, family = weibull())
-  expect_match(stancode, "eta[n] <- exp((eta[n]) / disp_shape[n]);", fixed = TRUE)
-  # non-linear model
+  expect_match(stancode, "eta[n] <- exp((eta[n]) / disp_shape[n]);", 
+               fixed = TRUE)
+  
+  stancode <- make_stancode(time | disp(1/age) ~ sex + age, 
+                            data = kidney, family = negbinomial())
+  expect_match(stancode, "Y ~ neg_binomial_2_log(eta, disp_shape);", 
+               fixed = TRUE)
+  
   stancode <- make_stancode(y | disp(y) ~ a - b^x, family = weibull(),
                             data = data.frame(y = rpois(10, 10), x = rnorm(10)),
                             nonlinear = a + b ~ 1,
