@@ -160,7 +160,7 @@ test_that("make_stancode detects invalid combinations of modeling options", {
                "Invalid addition arguments")
   expect_error(make_stancode(cbind(y1, y2) ~ 1, data = data,
                              autocor = cor_ar(cov = TRUE)),
-               "multivariate models are not yet allowed")
+               "ARMA covariance matrices are not yet allowed")
   expect_error(make_stancode(y1 | se(wi) ~ y2, data = data,
                              autocor = cor_ma()),
                "Please set cov = TRUE", fixed = TRUE)
@@ -197,8 +197,8 @@ test_that("make_stancode generate correct code for non-linear models", {
   # syntactic validity is already checked within make_stancode
   stancode <- make_stancode(y ~ a - exp(b^z), data = data, prior = prior,
                             nonlinear = nonlinear)
-  expect_match(stancode, "eta[n] <- (eta_a[n] - exp(eta_b[n] ^ C[n, 1]));",
-                fixed = TRUE)
+  expect_match(stancode, "eta[n] <- eta_a[n] - exp(eta_b[n] ^ C[n, 1]);",
+               fixed = TRUE)
   
   nonlinear <- list(a1 ~ 1, a2 ~ z + (x|g))
   prior <- c(set_prior("beta(1,1)", nlpar = "a1", lb = 0, ub = 1),
