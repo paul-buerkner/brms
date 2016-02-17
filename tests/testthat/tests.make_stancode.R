@@ -218,3 +218,23 @@ test_that("no loop in trans-par is defined for simple 'identity' models", {
                                    family = poisson("identity")), 
                      "eta[n] <- (eta[n]);", fixed = TRUE))
 })
+
+test_that("make_stancode returns correct 'disp' code", {
+  stancode <- make_stancode(time | disp(sqrt(age)) ~ sex + age, data = kidney)
+  expect_match(stancode, "disp_sigma <- sigma \\* disp;.*normal\\(eta, disp_sigma\\)")
+  stancode <- make_stancode(time | disp(1/age) ~ sex + age + (1|patient), 
+                            data = kidney, family = Gamma())
+  expect_match(stancode, paste0("eta\\[n\\] <- disp_shape\\[n\\] \\* \\(.*",
+                                "gamma\\(disp_shape, eta\\)"))
+  stancode <- make_stancode(time | disp(1/age) ~ sex + age, 
+                            data = kidney, family = weibull())
+  expect_match(stancode, "eta[n] <- exp((eta[n]) / disp_shape[n]);", fixed = TRUE)
+  # non-linear model
+  stancode <- make_stancode(y | disp(y) ~ a - b^x, family = weibull(),
+                            data = data.frame(y = rpois(10, 10), x = rnorm(10)),
+                            nonlinear = a + b ~ 1,
+                            prior = c(set_prior("normal(0,1)", nlpar = "a"),
+                                      set_prior("normal(0,1)", nlpar = "b")))
+  expect_match(stancode, fixed = TRUE,
+               "eta[n] <- exp((eta_a[n] - eta_b[n] ^ C[n, 1]) / disp_shape[n]);")
+})

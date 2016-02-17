@@ -64,6 +64,9 @@ test_that("extract_effects handles addition arguments correctly", {
   expect_equal(extract_effects(y | cens(cens^2) ~ z + (x|patient), 
                                family = weibull())$all, 
                y ~ y + cens + z + x + patient)
+  expect_equal(extract_effects(resp | disp(a + b) ~ x, 
+                               family = gaussian())$disp,
+               ~.disp(a + b))
 })
 
 test_that("extract_effects accepts complicated random terms", {

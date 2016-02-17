@@ -140,6 +140,8 @@ test_that("make_standata returns correct values for addition arguments", {
                1:9)
   expect_equal(make_standata(y | weights(w) ~ 1, data = temp_data)$weights, 
                1:9)
+  expect_equal(make_standata(y | disp(w) ~ 1, data = temp_data)$disp, 
+               1:9)
   expect_equal(make_standata(y | cens(c1) ~ 1, data = temp_data)$cens, 
                rep(-1:1, 3))
   expect_equal(make_standata(y | cens(c2) ~ 1, data = temp_data)$cens,
