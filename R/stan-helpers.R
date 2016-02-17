@@ -1142,12 +1142,14 @@ stan_eta_re <- function(ranef, par = "") {
 
 stan_eta_transform <- function(family, link, add = FALSE) {
   # indicate whether eta needs to be transformed
+  # in the transformed parameters block
   # Args:
   #   add: is the model weighted, censored, or truncated?
-  !(add || family == "gaussian" && link == "log"
-    || is.ordinal(family) || is.categorical(family) 
+  !(add || !is.skewed(family) && link == "identity" 
+    || family %in% "gaussian" && link == "log"
     || is.count(family) && link == "log" 
     || is.binary(family) && link == "logit"
+    || is.ordinal(family) || is.categorical(family) 
     || is.zero_inflated(family) || is.hurdle(family))
 }
 
