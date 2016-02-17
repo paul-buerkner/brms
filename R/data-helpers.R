@@ -338,6 +338,8 @@ arr_design_matrix <- function(Y, r, group)  {
 
 .se <- function(x) {
   # standard errors for meta-analysis
+  if (!is.numeric(x)) 
+    stop("SEs must be numeric")
   if (min(x) < 0) 
     stop("standard errors must be non-negative", call. = FALSE)
   x  
@@ -345,6 +347,8 @@ arr_design_matrix <- function(Y, r, group)  {
 
 .weights <- function(x) {
   # weights to be applied on any model
+  if (!is.numeric(x)) 
+    stop("weights must be numeric")
   if (min(x) < 0) 
     stop("weights must be non-negative", call. = FALSE)
   x
@@ -352,6 +356,8 @@ arr_design_matrix <- function(Y, r, group)  {
 
 .disp <- function(x) {
   # dispersion factors
+  if (!is.numeric(x)) 
+    stop("dispersion factors must be numeric")
   if (min(x) < 0) 
     stop("dispersion factors must be non-negative", call. = FALSE)
   x  
