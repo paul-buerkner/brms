@@ -897,7 +897,7 @@ stan_disp <- function(disp, family = gaussian()) {
            else if (has_shape(family)) "shape"
            else stop("invalid family for addition argument 'disp'")
     out$data <- "  vector<lower=0>[N] disp;  // dispersion factors \n"
-    out$transD <- paste0("  vector<lower=0>[N] disp_", par, ";")
+    out$transD <- paste0("  vector<lower=0>[N] disp_", par, "; \n")
     out$transC <- paste0("  disp_", par, " <- ", par, " * disp; \n")
   }
   out
