@@ -186,11 +186,8 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
   link <- family$link
   type <- family$type
   family <- family$family
-  is_linear <- is.linear(family)
-  is_catordinal <- is.ordinal(family) || is.categorical(family)
-  is_count <- is.count(family)
-  is_skewed <- is.skewed(family)
-  is_binary <- is.binary(family)
+  is_categorical <- is.categorical(family)
+  is_ordinal <- is.ordinal(family)
   is_hurdle <- is.hurdle(family)
   is_zero_inflated <- is.zero_inflated(family)
   is_trunc <- trunc$lb > -Inf || trunc$ub < Inf
@@ -209,13 +206,10 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
     family <- "lognormal"
     link <- "identity"
   }
-  if (!is.null(type)) family <- paste0(family,"_",type)
   
-  simplify <- !is_trunc && !cens && 
-    (is_binary && link == "logit" || is_count && link == "log" ||
-       family %in% c("cumulative", "categorical") && link == "logit") 
-  n <- ifelse(cens || weights || is_trunc || is_catordinal ||
-                is_hurdle || is_zero_inflated, "[n]", "")
+  simplify <- !is_trunc && !cens && has_build_in_fun(family, link)
+  n <- ifelse(cens || weights || is_trunc || is_categorical ||
+              is_ordinal || is_hurdle || is_zero_inflated, "[n]", "")
   ns <- ifelse((se || trials || disp) && (cens || weights || is_trunc) 
                || (trials && is_zero_inflated), "[n]", "")
   disp <- ifelse(disp, "disp_", "")
@@ -223,6 +217,7 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
   shape <- paste0(disp, "shape", ns)
   ordinal_args <- paste0("eta[n], ", if (partial) "etap[n], ", 
                          "temp_Intercept")
+  
   # use inverse link in likelihood statement only 
   # if it does not prevent vectorization 
   ilink <- ifelse(n == "[n]" && !simplify, stan_ilink(link), "")
@@ -232,6 +227,7 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
     } else {
       fl <- ifelse(family %in% c("gamma", "exponential"), 
                    paste0(family,"_",link), family)
+      fl <- ifelse(!is.null(type), paste0(fl,"_",type), fl)
       eta <- switch(fl, paste0(ilink,"(eta[n])"),
                     gamma_log = paste(shape, "* exp(-eta[n])"),
                     gamma_inverse = paste(shape, "* eta[n]"),
@@ -242,10 +238,9 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
                     weibull = paste0(ilink, "(eta[n] / ", shape, ")"),
                     bernoulli_2PL = paste0(ilink, "(eta_2PL[n])"))
     }
-  } else {
+  } else {  
     # possible transformations already performed
-    # in the transformed parameters block
-    eta <- "eta"
+    eta <- paste0("eta", if (!is.null(type)) paste0("_",type))
   }
   
   if (simplify) { 
@@ -257,8 +252,7 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
       categorical = c("categorical_logit", 
                       "to_vector(append_col(zero, eta[n] + etap[n]))"), 
       binomial = c("binomial_logit", paste0("trials",ns,", ",eta)), 
-      bernoulli = c("bernoulli_logit", eta),
-      bernoulli_2PL = c("bernoulli_logit", paste0("eta_2PL",n)))
+      bernoulli = c("bernoulli_logit", eta))
   } else {
     llh_pre <- switch(family,
       gaussian = c("normal", paste0(eta,", ",sigma)),
@@ -278,8 +272,7 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
       negbinomial = c("neg_binomial_2", paste0(eta,", ",shape)),
       geometric = c("neg_binomial_2", paste0(eta,", 1")),
       binomial = c("binomial", paste0("trials",ns,", ",eta)),
-      bernoulli = c("bernoulli", eta), 
-      bernoulli_2PL = c("bernoulli", eta), 
+      bernoulli = c("bernoulli", eta),
       gamma = c("gamma", paste0(shape,", ",eta)), 
       exponential = c("exponential", eta),
       weibull = c("weibull", paste0(shape,", ",eta)), 
@@ -1171,4 +1164,11 @@ stan_eta_ilink <- function(family, link, disp = FALSE) {
          exponential_identity = c("inv(", ")"),
          weibull = c(paste0(ilink,"(("), 
                      paste0(") / ", shape, ")")))
+}
+
+has_build_in_fun <- function(family, link) {
+  # indicates if a family-link combination has a build in 
+  # function in Stan (such as binomial_logit)
+  (family %in% c("binomial", "bernoulli", "cumulative", "categorical")
+   && link == "logit" || is.count(family) && link == "log")
 }
