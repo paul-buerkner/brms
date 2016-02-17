@@ -217,8 +217,3 @@ test_that("stan_multi returns correct Stan code (or errors)", {
   expect_error(stan_multi(poisson(), c("y1", "y2")),
                "invalid multivariate model")
 })
-
-test_that("stan_eta_transform is FALSE for simple models with identity link", {
-  expect_equal(stan_eta_transform(gaussian(), link = "identity"), FALSE)
-  expect_equal(stan_eta_transform(poisson(), link = "identity"), FALSE)
-})

@@ -210,3 +210,11 @@ test_that("make_stancode generate correct code for non-linear models", {
     paste("eta[n] <- shape * exp(-(eta_a1[n] *", 
           "exp( - C[n, 1] / (eta_a2[n] + C[n, 2]))));"))
 })
+
+test_that("no loop in trans-par is defined for simple 'identity' models", {
+  expect_true(!grepl(make_stancode(time ~ age, data = kidney), 
+                     "eta[n] <- (eta[n]);", fixed = TRUE))
+  expect_true(!grepl(make_stancode(time ~ age, data = kidney, 
+                                   family = poisson("identity")), 
+                     "eta[n] <- (eta[n]);", fixed = TRUE))
+})
