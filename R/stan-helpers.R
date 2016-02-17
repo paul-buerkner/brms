@@ -228,7 +228,7 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
   ilink <- ifelse(n == "[n]" && !simplify, stan_ilink(link), "")
   if (n == "[n]") {
     if (is_hurdle || is_zero_inflated) {
-      eta <- paste0(ilink,"(eta[n]), ",ilink,"(eta[n + N_trait])")
+      eta <- paste0(ilink,"(eta[n]), ", ilink,"(eta[n + N_trait])")
     } else {
       fl <- ifelse(family %in% c("gamma", "exponential"), 
                    paste0(family,"_",link), family)
@@ -250,21 +250,21 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
   
   if (simplify) { 
     llh_pre <- switch(family,
-      poisson = c("poisson_log", paste0("eta",n)), 
-      negbinomial = c("neg_binomial_2_log", paste0("eta",n,", ",shape)),
-      geometric = c("neg_binomial_2_log", paste0("eta",n,", 1")),
+      poisson = c("poisson_log", eta), 
+      negbinomial = c("neg_binomial_2_log", paste0(eta,", ",shape)),
+      geometric = c("neg_binomial_2_log", paste0(eta,", 1")),
       cumulative = c("ordered_logistic", "eta[n], temp_Intercept"),
       categorical = c("categorical_logit", 
                       "to_vector(append_col(zero, eta[n] + etap[n]))"), 
-      binomial = c("binomial_logit", paste0("trials",ns,", eta",n)), 
-      bernoulli = c("bernoulli_logit", paste0("eta",n)),
+      binomial = c("binomial_logit", paste0("trials",ns,", ",eta)), 
+      bernoulli = c("bernoulli_logit", eta),
       bernoulli_2PL = c("bernoulli_logit", paste0("eta_2PL",n)))
   } else {
     llh_pre <- switch(family,
-      gaussian = c("normal", paste0(eta, ", ", sigma)),
+      gaussian = c("normal", paste0(eta,", ",sigma)),
       gaussian_cov = c("normal_cov", paste0(eta,", se2, N_tg, ", 
                        "begin_tg, end_tg, nobs_tg, res_cov_matrix")),
-      student = c("student_t",  paste0("nu, ",eta, ", ", sigma)),
+      student = c("student_t",  paste0("nu, ",eta,", ",sigma)),
       student_cov = c("student_t_cov", paste0("nu, ",eta,", se2, N_tg, ", 
                       "begin_tg, end_tg, nobs_tg, res_cov_matrix")),
       cauchy = c("cauchy", paste0(eta,", ", sigma)),
@@ -275,14 +275,14 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
       multi_student = c("multi_student_t", paste0("nu, Eta",n,", Sigma")),
       multi_cauchy = c("multi_student_t", paste0("1.0, Eta",n,", Sigma")),
       poisson = c("poisson", eta),
-      negbinomial = c("neg_binomial_2", paste0(eta, ", ", shape)),
+      negbinomial = c("neg_binomial_2", paste0(eta,", ",shape)),
       geometric = c("neg_binomial_2", paste0(eta,", 1")),
       binomial = c("binomial", paste0("trials",ns,", ",eta)),
       bernoulli = c("bernoulli", eta), 
       bernoulli_2PL = c("bernoulli", eta), 
-      gamma = c("gamma", paste0(shape, ", ", eta)), 
+      gamma = c("gamma", paste0(shape,", ",eta)), 
       exponential = c("exponential", eta),
-      weibull = c("weibull", paste0(shape, ", ", eta)), 
+      weibull = c("weibull", paste0(shape,", ",eta)), 
       inverse.gaussian = c(paste0("inv_gaussian", if (!nchar(n)) "_vector"), 
                            paste0(eta, ", shape, log_Y",n,", sqrt_Y",n)),
       beta = c("beta", paste0(eta, " * phi, (1 - ", eta, ") * phi")),
