@@ -5,6 +5,9 @@ cache: packages
 
 warnings_are_errors: TRUE
 
+r_github_packages:
+  - jimhester/covr
+
 #r_binary_packages:
 #  - rstan
 #  - lme4
@@ -14,4 +17,4 @@ warnings_are_errors: TRUE
 #  - testthat
   
 after_success:
-  - Rscript -e 'library(covr); codecov()'
+  - Rscript -e 'covr::codecov()'
