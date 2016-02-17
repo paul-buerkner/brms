@@ -66,7 +66,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   if (length(nonlinear)) {
     text_nonlinear <- stan_nonlinear(ee, data = data, family = family, 
                                      add = add, cov_ranef = cov_ranef,
-                                     prior = prior)
+                                     prior = prior, disp = is.formula(ee$disp))
     text_fixef <- text_ranef <- text_eta <- list()
   } else {
     # generate fixed effects code
@@ -99,8 +99,8 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     # generate stan code for the linear predictor
     text_eta <- stan_eta(family = family, fixef = fixef, ranef = ranef,
                          has_intercept = has_intercept, paref = paref, 
-                         autocor = autocor, offset = offset, 
-                         is_multi = is_multi, add = add)
+                         autocor = autocor, offset = offset, add = add,
+                         disp = is.formula(ee$disp), is_multi = is_multi)
     text_nonlinear <- list()
   }
   # generate stan code for the likelihood

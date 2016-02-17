@@ -342,7 +342,8 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
 
 stan_eta <- function(family, fixef, ranef = list(), paref = NULL, 
                      has_intercept = TRUE, autocor = cor_arma(),  
-                     add = FALSE, offset = FALSE, is_multi = FALSE) {
+                     add = FALSE, disp = FALSE, offset = FALSE, 
+                     is_multi = FALSE) {
   # linear predictor in Stan
   #
   # Args:
@@ -353,6 +354,7 @@ stan_eta <- function(family, fixef, ranef = list(), paref = NULL,
   #   has_intercept: has the model a fixed effects intercept?
   #   autocor: autocorrelation structure
   #   add: is the model weighted, censored, or truncated?
+  #   disp: is the 'disp' addition argument specified?
   #   offset: is an offset defined?
   #   is_multi: is the model multivariate?
   # 
@@ -381,7 +383,7 @@ stan_eta <- function(family, fixef, ranef = list(), paref = NULL,
   eta$transform <- stan_eta_transform(family, link, add = add)
   eta_ilink <- rep("", 2)
   if (eta$transform || (get_ar(autocor) && !use_cov(autocor))) {
-    eta_ilink <- stan_eta_ilink(family, link)
+    eta_ilink <- stan_eta_ilink(family, link, disp = disp)
     if (get_ar(autocor)) {
       eta_ar <- ifelse(!use_cov(autocor), " + head(E[n], Kar) * ar", "")
       eta$transC3 <- paste0("    ", s, eta_obj," <- ", eta_ilink[1], 
@@ -417,7 +419,7 @@ stan_eta <- function(family, fixef, ranef = list(), paref = NULL,
 
 stan_nonlinear <- function(effects, data, family = gaussian(), 
                            add = FALSE, cov_ranef = NULL, 
-                           prior = prior_frame()) {
+                           prior = prior_frame(), disp = FALSE) {
   # prepare Stan code for non-linear models
   # Args:
   #   effects: a list returned by extract_effects()
@@ -426,6 +428,7 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
   #   add: Is the model weighted, censored, or truncated?
   #   cov_ranef: a list of user-defined covariance matrices
   #   prior: a prior_frame object
+  #   disp: is the 'disp' addition argument specified?
   out <- list()
   if (length(effects$nonlinear)) {
     out$data <- "  // data for non-linear fixed effects \n"
@@ -491,7 +494,7 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
     # possibly transform eta in the transformed params block
     transform <- stan_eta_transform(family$family, family$link, add = add)
     if (transform) {
-      eta_ilink <- stan_eta_ilink(family$family, family$link)
+      eta_ilink <- stan_eta_ilink(family$family, family$link, disp = disp)
     } else eta_ilink <- rep("", 2)
     out$transD <- paste0(out$transD, "  vector[N] eta; \n")
     out$transC2 <- paste0(out$transC2, 
@@ -1153,17 +1156,19 @@ stan_eta_transform <- function(family, link, add = FALSE) {
     || is.zero_inflated(family) || is.hurdle(family))
 }
 
-stan_eta_ilink <- function(family, link) {
+stan_eta_ilink <- function(family, link, disp = FALSE) {
   # correctly apply inverse link to eta
   ilink <- stan_ilink(link)
+  shape <- ifelse(disp, "disp_shape[n]", "shape")
   fl <- ifelse(family %in% c("gamma", "exponential"), 
                paste0(family,"_",link), family)
   switch(fl, c(paste0(ilink,"("), ")"),
-         gamma_log = c("shape * exp(-(", "))"),
-         gamma_inverse = c("shape * (", ")"),
-         gamma_identity = c("shape / (", ")"),
+         gamma_log = c(paste0(shape, " * exp(-("), "))"),
+         gamma_inverse = c(paste0(shape, " * ("), ")"),
+         gamma_identity = c(paste0(shape, " / ("), ")"),
          exponential_log = c("exp(-(", "))"),
          exponential_inverse = c("(", ")"),
          exponential_identity = c("inv(", ")"),
-         weibull = c(paste0(ilink,"(("), ") / shape)"))
+         weibull = c(paste0(ilink,"(("), 
+                     paste0(") / ", shape, ")")))
 }
