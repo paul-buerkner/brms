@@ -125,11 +125,11 @@ test_that("stan_llh returns correct llhs under weights and censoring", {
   expect_equal(stan_llh(family = cauchy("inverse"), weights = TRUE),
                "  lp_pre[n] <- cauchy_log(Y[n], inv(eta[n]), sigma); \n")
   expect_equal(stan_llh(family = poisson(), weights = TRUE),
-               "  lp_pre[n] <- poisson_log_log(Y[n], eta[n]); \n")
+               "  lp_pre[n] <- poisson_log_log(Y[n], (eta[n])); \n")
   expect_match(stan_llh(family = poisson(), cens = TRUE),
                "Y[n] ~ poisson(exp(eta[n])); \n", fixed = TRUE)
   expect_equal(stan_llh(family = binomial(logit), trials = TRUE, weights = TRUE),
-               "  lp_pre[n] <- binomial_logit_log(Y[n], trials[n], eta[n]); \n")
+               "  lp_pre[n] <- binomial_logit_log(Y[n], trials[n], (eta[n])); \n")
   expect_match(stan_llh(family = weibull("log"), cens = TRUE), fixed = TRUE,
                paste("increment_log_prob(weibull_ccdf_log(Y[n],", 
                      "shape, exp(eta[n] / shape))); \n"))
