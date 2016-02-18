@@ -221,26 +221,23 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
   # use inverse link in likelihood statement only 
   # if it does not prevent vectorization 
   ilink <- ifelse(n == "[n]" && !simplify, stan_ilink(link), "")
+  eta <- paste0("eta", if (!is.null(type)) paste0("_", type))
   if (n == "[n]") {
     if (is_hurdle || is_zero_inflated) {
       eta <- paste0(ilink,"(eta[n]), ", ilink,"(eta[n + N_trait])")
     } else {
+      eta <- paste0(eta, "[n]")
       fl <- ifelse(family %in% c("gamma", "exponential"), 
                    paste0(family,"_",link), family)
-      fl <- ifelse(!is.null(type), paste0(fl,"_",type), fl)
-      eta <- switch(fl, paste0(ilink,"(eta[n])"),
-                    gamma_log = paste(shape, "* exp(-eta[n])"),
-                    gamma_inverse = paste(shape, "* eta[n]"),
-                    gamma_identity =  paste(shape, "/ eta[n]"),
-                    exponential_log = "exp(-eta[n])",
-                    exponential_inverse = "eta[n]",
-                    exponential_identity = "inv(eta[n])",
-                    weibull = paste0(ilink, "(eta[n] / ", shape, ")"),
-                    bernoulli_2PL = paste0(ilink, "(eta_2PL[n])"))
+      eta <- switch(fl, paste0(ilink,"(",eta,")"),
+                    gamma_log = paste0(shape, " * exp(-",eta,")"),
+                    gamma_inverse = paste0(shape, " * ", eta),
+                    gamma_identity =  paste0(shape, " / ", eta),
+                    exponential_log = paste0("exp(-",eta,")"),
+                    exponential_inverse = eta,
+                    exponential_identity = paste0("inv(",eta,")"),
+                    weibull = paste0(ilink, "(",eta, " / ", shape,")"))
     }
-  } else {  
-    # possible transformations already performed
-    eta <- paste0("eta", if (!is.null(type)) paste0("_",type))
   }
   
   if (simplify) { 
