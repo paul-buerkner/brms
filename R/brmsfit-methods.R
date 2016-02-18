@@ -995,8 +995,10 @@ marginal_effects.brmsfit <- function(x, effects = NULL, data = NULL,
       effects[[i]] <- effects[[i]][new_order]
       pred_types <- pred_types[new_order]
       if (pred_types[1] == "numeric") {
-        values <- setNames(vector("list", length = 2), effects[[i]])
-        values[[1]] <- unique(marg_data[, effects[[i]][1]])
+        values <- setNames(vector("list", length = 2L), effects[[i]])
+        values[[1]] <- seq(min(marg_data[, effects[[i]][1]]), 
+                           max(marg_data[, effects[[i]][1]]),
+                           length.out = 100)
         if (pred_types[2] == "numeric") {
           mean2 <- mean(marg_data[, effects[[i]][2]])
           sd2 <- sd(marg_data[, effects[[i]][2]])
@@ -1006,6 +1008,11 @@ marginal_effects.brmsfit <- function(x, effects = NULL, data = NULL,
         }
         marg_data <- do.call(expand.grid, values)
       }
+    } else if (pred_types == "numeric") {
+      # a single numeric predictor
+      values <- seq(min(marg_data[, 1]), max(marg_data[, 1]),
+                    length.out = 100)
+      marg_data <- structure(data.frame(values), names = effects[[i]])
     }
     # no need to have the same value combination more than once
     marg_data <- unique(marg_data)
