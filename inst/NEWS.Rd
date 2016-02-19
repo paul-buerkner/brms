@@ -3,13 +3,19 @@
 \encoding{UTF-8}
 
 \section{CHANGES IN VERSION 0.8.0.9000}{
-   \subsection{NEW FEATURES}{
+  \subsection{NEW FEATURES}{
     \itemize{ 
       \item Add the addition argument \code{disp} to define 
       multiplicative factors on dispersion parameters. 
       For linear models, \code{disp} applies to the residual
       standard deviaton \code{sigma} so that it can be
       used to weight observations.
+    }
+  }
+  \subsection{OTHER CHANGES}{
+    \itemize{
+      \item Make sure that regression curves computed by
+      the \code{marginal_effects} method are always smooth.
     }
   }
 }
