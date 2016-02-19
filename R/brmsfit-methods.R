@@ -961,7 +961,8 @@ marginal_effects.brmsfit <- function(x, effects = NULL, data = NULL,
         data[[v]] <- mean(mf[[v]])
       } else {
         # use reference category
-        data[[v]] <- attr(as.factor(mf[[v]]), "levels")[1]
+        lev <- attr(as.factor(mf[[v]]), "levels")
+        data[[v]] <- factor(lev[1], levels = lev)
       }
     }
   } else if (is.data.frame(data)) {
