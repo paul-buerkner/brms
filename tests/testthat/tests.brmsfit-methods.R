@@ -69,7 +69,7 @@ test_that("all S3 methods have reasonable ouputs", {
   # marginal_effects (the related plot method is tested in tests.plots)
   mdata = data.frame(log_Age_c = c(-0.3, 0, 0.3), count = c(10, 20, 30), 
                      visit = 1:3, patient = 1)
-  exp_nrow <- nrow(mdata) * nobs(fit)
+  exp_nrow <- nrow(mdata) * 100
   expect_equal(nrow(marginal_effects(fit, data = mdata)[[1]]),
                exp_nrow)
   expect_equal(nrow(marginal_effects(fit, effects = "Trt_c", data = mdata)[[1]]), 
