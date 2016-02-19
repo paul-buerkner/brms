@@ -205,7 +205,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   # try to validate factor levels in newdata
   if (is.data.frame(fit$data)) {
     # validating is possible (implies brms > 0.5.0)
-    list_data <- as.list(fit$data)
+    list_data <- lapply(as.list(fit$data), function(x)
+      if (is.numeric(x)) x else as.factor(x))
     is_factor <- sapply(list_data, is.factor)
     is_group <- names(list_data) %in% names(new_ranef)
     factors <- list_data[is_factor & !is_group]
