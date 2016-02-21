@@ -211,6 +211,15 @@ test_that("make_stancode generate correct code for non-linear models", {
           "exp( - C[n, 1] / (eta_a2[n] + C[n, 2]))));"))
 })
 
+test_that("make_stancode accepts very long non-linear formulas", {
+  data <- data.frame(y = rnorm(10), this_is_a_very_long_predictor = rnorm(10))
+  expect_silent(make_stancode(y ~ b0 + this_is_a_very_long_predictor + 
+                              this_is_a_very_long_predictor +
+                              this_is_a_very_long_predictor,
+                data = data, nonlinear = b0 ~ 1,
+                prior = set_prior("normal(0,1)", nlpar = "b0")))
+})
+
 test_that("no loop in trans-par is defined for simple 'identity' models", {
   expect_true(!grepl(make_stancode(time ~ age, data = kidney), 
                      "eta[n] <- (eta[n]);", fixed = TRUE))
