@@ -108,7 +108,7 @@ test_that("check_prior returns increment_log_prob(.) whithout checking", {
 test_that("check_prior correctly validates priors for random effects", {
   expect_message(check_prior(set_prior("normal(0,1)", class = "sd", group = "g"),
                              formula = count ~ (1|visit), data = epilepsy),
-                 "Prior element 1 is invalid and will be removed")
+                 "Prior elements 1 don't correspond")
   cp <- check_prior(set_prior("cauchy(0,1)", class = "sd", group = "visit"),
                     formula = count ~ Trt_c + (1|visit), 
                     data = epilepsy)
