@@ -18,6 +18,12 @@
       the \code{marginal_effects} method are always smooth.
     }
   }
+  \subsection{BUG FIXES}{
+    \itemize{
+      \item Fix problems in the generated \pkg{Stan} code
+      when using very long non-linear model formulas.
+    }
+  }
 }
 
 \section{CHANGES IN VERSION 0.8.0}{
