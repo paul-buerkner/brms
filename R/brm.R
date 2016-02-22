@@ -547,11 +547,11 @@ brm <- function(formula, data = NULL, family = gaussian(),
     et <- extract_time(autocor$formula)  
     ee <- extract_effects(formula, family = family, partial, et$all,
                           nonlinear = nonlinear)
-    if (is.null(dots$data_name)) {
+    if (is.null(dots$data.name)) {
       data.name <- Reduce(paste, deparse(substitute(data)))
     } else {
-      data.name <- dots$data_name
-      dots$data_name <- NULL
+      data.name <- dots$data.name
+      dots$data.name <- NULL
     }
     
     # initialize S3 object
