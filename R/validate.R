@@ -243,29 +243,18 @@ nonlinear2list <- function(x) {
   x
 }
 
-update_formula <- function(formula, data = NULL, addition = NULL, 
-                           partial = NULL, nonlinear = NULL) {
+update_formula <- function(formula, data = NULL, partial = NULL, 
+                           nonlinear = NULL) {
   # incorporate addition arguments and category specific effects into formula 
   # 
   # Args:
   #   formula: a model formula 
   #   data: a data.frame or NULL 
-  #   addition: a list with one sided formulas taken from the addition arguments in brm
   #   partial: a one sided formula containing category specific effects
   #
   # Returns:
   #   an updated formula containing the addition and category specific effects
-  var_names <- names(addition)
-  addition <- lapply(addition, formula2string, rm = 1)
-  fnew <- "."
-  if (length(addition)) {
-    warning("Argument addition is deprecated. See help(brm) for further details.",
-            call. = FALSE)
-    for (i in 1:length(addition)) {
-      fnew <- paste0(fnew, " | ", var_names[i], "(", addition[[i]], ")")
-    }
-  }
-  fnew <- paste(fnew, "~ .")
+  fnew <- ". ~ ."
   if (is.formula(partial)) {
     partial <- formula2string(partial, rm = 1)
     fnew <- paste(fnew, "+ partial(", partial, ")")

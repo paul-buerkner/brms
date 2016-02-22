@@ -5,7 +5,7 @@
 \title{Fit Bayesian Generalized (Non-)Linear and Ordinal Mixed Models}
 \usage{
 brm(formula, data = NULL, family = gaussian(), prior = NULL,
-  addition = NULL, autocor = NULL, nonlinear = NULL, partial = NULL,
+  autocor = NULL, nonlinear = NULL, partial = NULL,
   threshold = c("flexible", "equidistant"), cov_ranef = NULL,
   ranef = TRUE, sample_prior = FALSE, fit = NA, inits = "random",
   chains = 4, iter = 2000, warmup = floor(iter/2), thin = 1,
@@ -50,11 +50,6 @@ Further information is provided under 'Details'.}
 \code{\link[brms:set_prior]{set_prior}} and combined using the \code{c} method. 
 A single \code{brmsprior} object may be passed without \code{c()} surrounding it. 
 See also  \code{\link[brms:get_prior]{get_prior}} for more help.}
-
-\item{addition}{Deprecated.
-All additional information on the response variable should be incorporated 
-directly into \code{formula}. 
-See 'Formula Syntax' under 'Details' for further information.}
 
 \item{autocor}{An optional \code{\link{cor_brms}} object describing 
 the correlation structure 
