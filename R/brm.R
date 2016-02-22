@@ -547,7 +547,12 @@ brm <- function(formula, data = NULL, family = gaussian(),
     et <- extract_time(autocor$formula)  
     ee <- extract_effects(formula, family = family, partial, et$all,
                           nonlinear = nonlinear)
-    data.name <- Reduce(paste, deparse(substitute(data)))
+    if (is.null(dots$data_name)) {
+      data.name <- Reduce(paste, deparse(substitute(data)))
+    } else {
+      data.name <- dots$data_name
+      dots$data_name <- NULL
+    }
     
     # initialize S3 object
     x <- brmsfit(formula = formula, family = family, link = family$link, 
