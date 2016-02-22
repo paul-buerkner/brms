@@ -485,7 +485,7 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
                   "See help(set_prior) for further information."))
     prior <- update_prior(prior)
   } else if (!is(prior, "prior_frame")) {
-    stop(paste("Invalid input for argument prior. See help(set_prior)", 
+    stop(paste("Invalid prior argument. See help(set_prior)", 
                "for further information."), call. = FALSE)
   }
   
@@ -511,8 +511,9 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
     valid <- which(duplicated(rbind(all_priors[, 2:5], prior[, 2:5])))
     invalid <- which(!1:nrow(prior) %in% (valid - nrow(all_priors)))
     if (length(invalid)) {
-      message(paste("Prior element", paste(invalid, collapse = ", "),
-                    "is invalid and will be removed."))
+      message(paste("Prior elements", paste(invalid, collapse = ", "),
+                    "don't correspond to any model parameter \nand will", 
+                    "thus not affect the results"))
       prior <- prior[-invalid, ]
     }
   }
