@@ -551,8 +551,9 @@ brm <- function(formula, data = NULL, family = gaussian(),
     
     # initialize S3 object
     x <- brmsfit(formula = formula, family = family, link = family$link, 
-                 partial = partial, data.name = data.name, autocor = autocor, 
-                 prior = prior, nonlinear = nonlinear, cov_ranef = cov_ranef,
+                 data.name = data.name, prior = prior, autocor = autocor,
+                 nonlinear = nonlinear, partial = partial, 
+                 cov_ranef = cov_ranef, threshold = threshold,
                  algorithm = algorithm)  
     # see data.R
     x$data <- update_data(data, family = family, effects = ee, et$group) 
