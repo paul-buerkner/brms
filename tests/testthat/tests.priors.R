@@ -11,7 +11,7 @@ test_that("check_prior performs correct renaming", {
                        formula = rating ~ treat + (0 + treat +  carry | subject), 
                        data = inhaler)
   target <- prior_frame(prior = c("normal(0,1)", "lkj_corr_cholesky(0.5)"),
-                        class = c("b", "L"), group = c("", "1"))
+                        class = c("b", "L"), group = c("", "subject"))
   expect_true(length(which(duplicated(rbind(prior, target)))) == 2)
   
   prior <- check_prior(c(set_prior("lkj(5)", class = "rescor"),
@@ -49,7 +49,7 @@ test_that("check_prior is backwards compatible", {
     data = inhaler, family = "gaussian"))
   target <- prior_frame(prior = c("normal(0,1)", "lkj_corr_cholesky(1)"),
                         class = c("sd", "Lrescor"), coef = c("treat", ""),
-                        group = c("1", ""))
+                        group = c("subject", ""))
   expect_true(length(which(duplicated(rbind(prior, target)))) == 2)
 })
 
@@ -67,7 +67,7 @@ test_that("check_prior accepts correct prior names", {
                     formula = time ~ age + (sex+age|patient),  
                     family = "exponential", data = kidney)
   expect_equivalent(cp[9, ], prior_frame(prior = "p1", class = "sd", 
-                                coef = "sexfemale", group = "1")[1, ])
+                                coef = "sexfemale", group = "patient")[1, ])
   
   expect_equivalent(check_prior(set_prior("cauchy(0,1)", class = "sigma"), 
                                 formula = rating ~ 1, family = "cauchy", 
@@ -116,7 +116,17 @@ test_that("check_prior correctly validates priors for random effects", {
   cp <- check_prior(set_prior("cauchy(0,1)", class = "sd", group = "visit"),
                     formula = count ~ (1|visit) + (0+Trt_c|visit), 
                     data = epilepsy)
-  expect_equal(cp$prior[c(3, 6)], rep("cauchy(0,1)", 2))
+  expect_equal(cp$prior[3], "cauchy(0,1)")
+})
+
+test_that("check_prior correctly validates prior for category specific effects", {
+  prior <- c(set_prior("normal(0,1)", class = "b", coef = "carry"),
+             set_prior("gamma(1,1)", class = "b", coef = "treat"))
+  cp <- check_prior(prior, formula = rating ~ 1, data = inhaler, 
+                    family = "cumulative", partial = ~ treat + carry)
+  target <- prior_frame(prior = c("normal(0,1)", "gamma(1,1)"),
+                        class = "bp", coef = c("carry", "treat"))
+  expect_equivalent(cp[3:4, ], target)
 })
 
 test_that("handle_special_priors handles horseshoe prior correctly", {
