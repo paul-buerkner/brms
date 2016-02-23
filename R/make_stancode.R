@@ -35,13 +35,14 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   family <- check_family(family) 
   autocor <- check_autocor(autocor)
   threshold <- match.arg(threshold)
+  et <- extract_time(autocor$formula)  
+  ee <- extract_effects(formula, family = family, partial, et$all, 
+                        nonlinear = nonlinear)
   prior <- check_prior(prior, formula = formula, data = data, 
                        family = family, autocor = autocor, 
                        partial = partial, threshold = threshold,
                        nonlinear = nonlinear) 
-  et <- extract_time(autocor$formula)  
-  ee <- extract_effects(formula, family = family, partial, et$all, 
-                        nonlinear = nonlinear)
+  prior <- rename_group_priors(prior, effects = ee)
   data <- update_data(data, family = family, effects = ee, et$group)
   
   # flags to indicate of which type family is
