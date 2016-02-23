@@ -375,6 +375,13 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
     if (is.formula(partial)) {
       paref <- colnames(get_model_matrix(partial, data = data, 
                                          rm_intercept = TRUE))
+      fp <- intersect(fixef, paref)
+      if (length(fp)) {
+        stop(paste("Variables cannot be modeled as fixed and", 
+                   "category specific effects at the same time.", 
+                   "\nError occured for variables:", 
+                   paste(fp, collapse = ", ")), call. = FALSE)
+      }
       prior <- rbind(prior, prior_frame(class = "b", coef = paref))
       if (internal) {
         prior <- rbind(prior, prior_frame(class = "bp", coef = c("", paref)))

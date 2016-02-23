@@ -337,12 +337,6 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     if (family$family %in% c("sratio","cratio","acat")) {
       Xp <- get_model_matrix(partial, data, rm_intercept = TRUE)
       standata <- c(standata, list(Kp = ncol(Xp), Xp = Xp))
-      fp <- intersect(colnames(X), colnames(Xp))
-      if (length(fp))
-        stop(paste("Variables cannot be modeled as fixed and", 
-                   "category specific effects at the same time.", 
-                   "\nError occured for variables:", 
-                   paste(fp, collapse = ", ")), call. = FALSE)
     } else {
       stop(paste("category specific effects are only meaningful for families", 
                  "'sratio', 'cratio', and 'acat'"), call. = FALSE)
