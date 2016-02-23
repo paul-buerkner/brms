@@ -4,7 +4,7 @@
 \alias{update.brmsfit}
 \title{Update \pkg{brms} models}
 \usage{
-\method{update}{brmsfit}(object, newdata = NULL, ...)
+\method{update}{brmsfit}(object, formula., newdata = NULL, ...)
 }
 \arguments{
 \item{object}{object of class \code{brmsfit}}
@@ -13,11 +13,9 @@
 to update the model with new data}
 
 \item{...}{other arguments passed to 
-\code{\link[brms:brm]{brm}} such as
-\code{iter} or \code{chains}.}
+\code{\link[brms:brm]{brm}}}
 }
 \description{
-This method allows to update an existing \code{brmsfit} object 
-with new data as well as changed configuration of the chains.
+This method allows to update an existing \code{brmsfit} object
 }
 

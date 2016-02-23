@@ -1444,47 +1444,93 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 
 #' Update \pkg{brms} models
 #' 
-#' This method allows to update an existing \code{brmsfit} object 
-#' with new data as well as changed configuration of the chains.
+#' This method allows to update an existing \code{brmsfit} object
 #' 
 #' @param object object of class \code{brmsfit}
+#' @param formula. changes to the formula; for details see 
+#'   \code{\link[stats:update.formula]{update.formula}
 #' @param newdata optional \code{data.frame} 
 #'  to update the model with new data
 #' @param ... other arguments passed to 
-#'  \code{\link[brms:brm]{brm}} such as
-#'  \code{iter} or \code{chains}.
+#'  \code{\link[brms:brm]{brm}}
 #'
 #' @export
-update.brmsfit <- function(object, newdata = NULL, ...) {
+update.brmsfit <- function(object, formula., newdata = NULL, ...) {
   dots <- list(...)
-  invalid_args <- c("formula", "family", "prior", "autocor", 
-                    "partial", "threshold", "cov_ranef", 
-                    "sample_prior", "save_model")
-  z <- which(names(dots) %in% invalid_args)
-  if (length(z)) {
-    stop(paste("Argument(s)", paste(names(dots)[z], collapse = ", "),
-               "cannot be updated"), call. = FALSE)
+  if (!missing(formula.)) {
+    dots$formula <- as.formula(formula.)
+    if (length(object$nonlinear)) {
+      warning(paste("Argument 'formula.' will completely replace the", 
+                    "original formula in non-linear models.", call. = FALSE))
+    } else {
+      dots$formula <- update.formula(object$formula, dots$formula)
+    }
   }
   if ("data" %in% names(dots)) {
-    stop("Please use argument 'newdata' to update your data", call. = FALSE)
+    # otherwise the data name cannot be found by substitute 
+    stop("Please use argument 'newdata' to update the data", 
+         call. = FALSE)
   }
-  # update arguments if required
-  ee <- extract_effects(object$formula, nonlinear = object$nonlinear)
-  if (!is.null(newdata)) {
-    object$data <- amend_newdata(newdata, fit = object, 
-                                 return_standata = FALSE)
-    object$data.name <- Reduce(paste, deparse(substitute(newdata)))
-    object$ranef <- gather_ranef(ee, data = object$data, 
-                                 is_forked = is.forked(object$family))
-    dots$is_newdata <- TRUE
-  }
-  if (!is.null(dots$ranef)) {
-    object$exclude <- exclude_pars(ee, ranef = dots$ranef)
-  }
-  if (!isFALSE(dots$refit)) {
-    # allows test 'update' without having to fit a Stan model
-    dots$refit <- NULL
-    object <- do.call(brm, c(list(fit = object), dots))
+  
+  rc_args <- c("formula", "family", "prior", "autocor", 
+               "nonlinear", "partial", "threshold", 
+               "cov_ranef", "sample_prior")
+  new_args <- intersect(rc_args, names(dots))
+  if (length(new_args)) {
+    # the model needs to be compiled again
+    message(paste("Changing argument(s)", 
+                  paste0("'", new_args, "'", collapse = ", "),
+                  "requires recompiling the model"))
+    old_args <- setdiff(rc_args, new_args)
+    dots[old_args] <- object[old_args]
+    if (!is.null(newdata)) {
+      dots$data <- newdata
+      dots$data.name <- Reduce(paste, deparse(substitute(newdata)))
+    } else  {
+      dots$data <- object$data
+      dots$data.name <- object$data.name
+    }
+    if (is.null(dots$threshold)) {
+      # for backwards compatibility with brms <= 0.8.0
+      if (grepl("(k - 1.0) * delta", object$model, fixed = TRUE)) {
+        dots$threshold <- "equidistant"
+      } else dots$threshold <- "flexible"
+    }
+    if (!is_equal(dots$prior, object$prior)) {
+      if (is(dots$prior, "brmsprior")) { 
+        dots$prior <- c(dots$prior)
+      } else if (!is(prior, "prior_frame")) {
+        stop("invalid prior argument")
+      }
+      dots$prior <- rbind(dots$prior, object$prior)
+      dots$prior <- dots$prior[!duplicated(dots$prior[, 2:5]), ]
+    }
+    pnames <- parnames(object)
+    if (is.null(dots$sample_prior)) {
+      dots$sample_prior <- any(grepl("^prior_", pnames))
+    }
+    if (is.null(dots$ranef)) {
+      dots$ranef <- any(grepl("^r_", pnames)) || !length(object$ranef)
+    }
+    if (!isTRUE(dots$testmode)) {
+      object <- do.call(brm, dots)
+    }
+  } else {
+    # refit the model without compiling it again
+    ee <- extract_effects(object$formula, nonlinear = object$nonlinear)
+    if (!is.null(newdata)) {
+      object$data <- newdata
+      object$data.name <- Reduce(paste, deparse(substitute(newdata)))
+      object$ranef <- gather_ranef(ee, data = object$data, 
+                                   is_forked = is.forked(object$family))
+      dots$is_newdata <- TRUE
+    }
+    if (!is.null(dots$ranef)) {
+      object$exclude <- exclude_pars(ee, ranef = dots$ranef)
+    }
+    if (!isTRUE(dots$testmode)) {
+      object <- do.call(brm, c(list(fit = object), dots))
+    }
   }
   object
 }
