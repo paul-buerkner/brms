@@ -33,26 +33,6 @@ test_that("check_prior performs correct renaming", {
                     prior_frame("normal(0,1)", class = "temp_Intercept1"))
 })
 
-
-test_that("check_prior is backwards compatible", { 
-  prior <- suppressWarnings(check_prior(
-    list(b_carry = "normal(0,1)", nu = "gamma(1,1)"), 
-    family = "student", formula = rating ~ carry + (1+treat|subject), 
-    data = inhaler))
-  target <- prior_frame(prior = c("normal(0,1)", "gamma(1,1)"),
-                        class = c("b", "nu"), coef = c("carry", ""))
-  expect_true(length(which(duplicated(rbind(prior, target)))) == 2)
-  
-  prior <- suppressWarnings(check_prior(
-    list(sd_subject_treat = "normal(0,1)", Lrescor = "lkj_corr_cholesky(1)"), 
-    formula = cbind(rating, carry) ~ treat + (1+treat|subject), 
-    data = inhaler, family = "gaussian"))
-  target <- prior_frame(prior = c("normal(0,1)", "lkj_corr_cholesky(1)"),
-                        class = c("sd", "Lrescor"), coef = c("treat", ""),
-                        group = c("subject", ""))
-  expect_true(length(which(duplicated(rbind(prior, target)))) == 2)
-})
-
 test_that("check_prior accepts correct prior names", {
   cp <- check_prior(c(set_prior("normal(0,1)", class = "b", coef = "carry"),
                       set_prior("gamma(1,1)", class = "b", coef = "treat")),
@@ -148,17 +128,6 @@ test_that("get_prior finds all classes for which priors can be specified", {
                          data = inhaler, family = "sratio", 
                          threshold = "equidistant")$class),
                sort(c(rep("b", 5), "delta", "Intercept")))
-})
-
-test_that("update_prior produces correct prior_frames", {
-  prior <- list(b = "p1", sd = "p2", cor = "p3", b_Intercept = "p4",
-                cor_visit = "p5", sd_visit_x = "p6", sd_visit = "p7", 
-                sigma = "p8")
-  result <- prior_frame(prior = paste0("p",1:8), 
-                        class = c("b", "sd", "cor", "b", "cor", "sd", "sd", "sigma"),
-                        coef = c(rep("", 3), "Intercept", "", "x", "", ""),
-                        group = c(rep("", 4), rep("visit", 3), ""))
-  expect_equal(update_prior(prior), result)
 })
 
 test_that("print for class brmsprior works correctly", {

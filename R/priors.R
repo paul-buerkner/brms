@@ -486,19 +486,12 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
   all_priors <- get_prior(formula = formula, data = data, 
                           family = family, autocor = autocor, 
                           partial = partial, threshold = threshold, 
-                          internal = TRUE, nonlinear = nonlinear)
+                          nonlinear = nonlinear, internal = TRUE)
   if (is.null(prior)) {
     prior <- all_priors  
   } else if (is(prior, "brmsprior")) {
     # a single prior may be specified without c(.)
     prior <- c(prior)
-  } else if (!is(prior, "prior_frame") && is.list(prior) 
-             && !is.null(names(prior))) {
-    # deprecated prior specification brms < 0.5.0
-    warning(paste("Specifying priors using a named list is deprecated. \n",
-                  "We strongly recommend to use the set_prior function instead. \n",
-                  "See help(set_prior) for further information."))
-    prior <- update_prior(prior)
   } else if (!is(prior, "prior_frame")) {
     stop(paste("Invalid prior argument. See help(set_prior)", 
                "for further information."), call. = FALSE)
@@ -531,12 +524,7 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
   }
   # merge prior with all_priors
   prior <- rbind(prior, all_priors)
-  rm <- which(duplicated(prior[, 2:5]))
-  if (length(rm)) { 
-    # else it may happen that all rows a removed...
-    prior <- prior[-rm, ]
-  }
-  
+  prior <- prior[!duplicated(prior[, 2:5]), ]
   rows2remove <- NULL
   # special treatment of fixed effects Intercept(s)
   int_index <- which(prior$class == "Intercept")
@@ -584,7 +572,6 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
       }
     }
   }
-  # remove unnecessary rows
   if (length(rows2remove)) {   
     prior <- prior[-rows2remove, ]
   }
@@ -672,38 +659,6 @@ handle_special_priors <- function(prior) {
   # expand lkj correlation prior to full name
   prior$prior <- sub("^lkj\\(", "lkj_corr_cholesky(", prior$prior)
   list(prior = prior, attrib = attrib)
-}
-
-update_prior <- function(prior) {
-  # update deprecated prior specifications from brms < 0.5.0
-  #
-  # Args:
-  #   prior: A named list
-  #
-  # Returns:
-  #   a data.frame compatible with check_prior of brms >= 0.5.0
-  if (!is.list(prior) || is.null(names(prior))) {
-    stop("Only named lists can be updated")
-  }
-  prior_names <- names(prior)
-  class <- regmatches(prior_names, regexpr("^[^_]+", prior_names))
-  
-  # try to separate group from coef
-  group_coef <- substr(prior_names, nchar(class) + 2, nchar(prior_names))
-  group <- rep("", length(prior))
-  for (i in 1:length(prior)) {
-    if (class[i] == "sd" && prior_names[i] != "sd") {
-      s <- regmatches(group_coef[i], regexpr("^[^_]+", group_coef[i]))
-      group[i] <- ifelse(length(s), s, "")
-    } else if (class[i] == "cor") {
-      group[i] <- group_coef[i]
-    }
-  }
-  coef <- substr(group_coef, nchar(group) + ifelse(nchar(group), 2, 1), 
-                 nchar(group_coef))
-  
-  prior_frame(prior = unlist(prior, use.names = FALSE),
-              class = class, coef = coef, group = group)
 }
 
 prior_frame <- function(prior = "", class = "", coef = "", 
