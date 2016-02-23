@@ -455,7 +455,7 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
   if (is_ordinal && threshold == "equidistant") {
     prior <- rbind(prior, prior_frame(class = "delta"))
   }
-  prior <- prior[order(prior$class), ]
+  prior <- prior[with(prior, order(class, group, coef)), ]
   rownames(prior) <- 1:nrow(prior)
   prior
 }
@@ -555,10 +555,14 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
     paref <- colnames(get_model_matrix(partial, data = data, 
                                        rm_intercept = TRUE))
     b_index <- which(prior$class == "b" & !nchar(prior$coef))
-    partial_index <- which(prior$class == "b" & prior$coef %in% paref)
-    rows2remove <- c(rows2remove, partial_index)
-    partial_prior <- prior[c(b_index, partial_index), "prior"]
-    prior[which(prior$class %in% "bp"), "prior"] <- partial_prior
+    p_index <- which(prior$class == "b" & prior$coef %in% paref)
+    rows2remove <- c(rows2remove, p_index)
+    p_prior <- prior[c(b_index, p_index), ]
+    for (i in 1:nrow(p_prior)) {
+      # ensure that priors are correctly assigned to their parameters
+      take <- with(prior, class == "bp" & coef == p_prior$coef[i])
+      prior[take, "prior"] <- p_prior$prior[i]  
+    }
   }
   # check if priors for non-linear parameters are defined
   if (length(nonlinear)) {
@@ -577,7 +581,7 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
   if (length(rows2remove)) {   
     prior <- prior[-rows2remove, ]
   }
-  prior <- prior[order(prior$class), ]
+  prior <- prior[with(prior, order(class, group, coef)), ]
   prior <- rbind(prior, prior_incr_lp)
   rownames(prior) <- 1:nrow(prior)
   # add attributes to prior generated in handle_special_priors
