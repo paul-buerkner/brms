@@ -364,6 +364,11 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
     if (length(fixef)) {
       if ("Intercept" %in% fixef) {
         prior <- rbind(prior, prior_frame(class = "Intercept"))
+        if (internal) {
+          res_thres <- is.ordinal(family) && threshold == "equidistant"
+          int_class <- ifelse(res_thres, "temp_Intercept1", "temp_Intercept")
+          prior <- rbind(prior, prior_frame(class = int_class))
+        }
       }
       prior <- rbind(prior, prior_frame(class = "b", coef = c("", fixef))) 
     }
@@ -371,6 +376,9 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
       paref <- colnames(get_model_matrix(partial, data = data, 
                                          rm_intercept = TRUE))
       prior <- rbind(prior, prior_frame(class = "b", coef = paref))
+      if (internal) {
+        prior <- rbind(prior, prior_frame(class = "bp", coef = c("", paref)))
+      }
     }
   }
   # random effects
@@ -447,19 +455,19 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
   if (is_ordinal && threshold == "equidistant") {
     prior <- rbind(prior, prior_frame(class = "delta"))
   }
-  prior <- unique(prior)
-  prior <- prior[with(prior, order(class, group, coef)), ]
+  prior <- prior[order(prior$class), ]
   rownames(prior) <- 1:nrow(prior)
   prior
 }
 
 check_prior <- function(prior, formula, data = NULL, family = gaussian(), 
                         autocor = NULL, nonlinear = NULL, partial = NULL, 
-                        threshold = "flexible") {
+                        threshold = "flexible", check_rows = NULL) {
   # check prior input and amend it if needed
   #
   # Args:
   #   same as the respective parameters in brm
+  #   check_rows: if not NULL, check only the rows given in check_rows
   #
   # Returns:
   #   a data.frame of prior specifications to be used in stan_prior (see stan.R)
@@ -488,24 +496,21 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
     stop(paste("Invalid prior argument. See help(set_prior)", 
                "for further information."), call. = FALSE)
   }
-  
-  # exclude prior using increment_log_prob to readd the at the end
+  # exclude priors using increment_log_prob to readd them at the end
   has_incr_lp <- grepl("^increment_log_prob\\(", prior$prior)
   prior_incr_lp <- prior[has_incr_lp, ]
   prior <- prior[!has_incr_lp, ]
-  
+  # check for duplicated priors
   prior$class <- rename(prior$class, symbols = c("^cor$", "^rescor$"), 
                         subs = c("L", "Lrescor"), fixed = FALSE)
   duplicated_input <- duplicated(prior[, 2:5])
   if (any(duplicated_input)) {
     stop("Duplicated prior specifications are not allowed.", call. = FALSE)
   }
-  
   # handle special priors that are not explictly coded as functions in Stan
   temp <- handle_special_priors(prior)  
   prior <- temp$prior
   attrib <- temp$attrib 
-  
   # check if parameters in prior are valid
   if (nrow(prior)) {
     valid <- which(duplicated(rbind(all_priors[, 2:5], prior[, 2:5])))
@@ -527,24 +532,23 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
   
   rows2remove <- NULL
   # special treatment of fixed effects Intercept(s)
-  Int_index <- which(prior$class == "Intercept")
-  if (length(Int_index)) {
+  int_index <- which(prior$class == "Intercept")
+  if (length(int_index)) {
     # if an intercept is present
-    rows2remove <- c(rows2remove, Int_index)
-    Int_prior <- prior[Int_index, ]
+    rows2remove <- c(rows2remove, int_index)
+    int_prior <- prior[int_index, "prior"]
     old_index <- which(prior$class == "b" & prior$coef == "Intercept")
     rows2remove <- c(rows2remove, old_index)
     if (length(old_index) && nchar(prior$prior[old_index])) {
       # for backwards compatibility
-      Int_prior$prior <- prior$prior[old_index]
+      int_prior <- prior$prior[old_index]
       warning(paste("Using class = 'b' with coef = 'Intercept' is deprecated.", 
                     "See help(set_prior) for further details."), call. = FALSE)
     }
     # (temporary) Intercepts have their own internal parameter class
     res_thres <- is.ordinal(family) && threshold == "equidistant"
-    Int_prior$class <- ifelse(res_thres, "temp_Intercept1", "temp_Intercept")
-    Int_prior$coef <- ""
-    prior <- rbind(prior, Int_prior)
+    int_class <- ifelse(res_thres, "temp_Intercept1", "temp_Intercept")
+    prior[which(prior$class %in% int_class), "prior"] <- int_prior 
   }
   # get category specific priors out of fixef priors
   if (is.categorical(family) || is.formula(partial)) {
@@ -553,9 +557,8 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
     b_index <- which(prior$class == "b" & !nchar(prior$coef))
     partial_index <- which(prior$class == "b" & prior$coef %in% paref)
     rows2remove <- c(rows2remove, partial_index)
-    partial_prior <- prior[c(b_index, partial_index), ]
-    partial_prior$class <- "bp"  # the category specific effects class
-    prior <- rbind(prior, partial_prior)
+    partial_prior <- prior[c(b_index, partial_index), "prior"]
+    prior[which(prior$class %in% "bp"), "prior"] <- partial_prior
   }
   # check if priors for non-linear parameters are defined
   if (length(nonlinear)) {
@@ -570,13 +573,33 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
       }
     }
   }
+  # remove unnecessary rows
+  if (length(rows2remove)) {   
+    prior <- prior[-rows2remove, ]
+  }
+  prior <- prior[order(prior$class), ]
+  prior <- rbind(prior, prior_incr_lp)
+  rownames(prior) <- 1:nrow(prior)
+  # add attributes to prior generated in handle_special_priors
+  for (i in seq_along(attrib)) {
+    attr(prior, names(attrib)[i]) <- attrib[[i]]
+  }
+  attr(prior, "checked") <- TRUE
+  prior
+}
+
+rename_group_priors <- function(prior, effects) {
   # rename random effects priors to match names in Stan code
-  random <- get_random(ee)
+  # Args:
+  #   prior: an object of class prior_frame
+  #   effects: a list returned by extract_effects
+  rows2remove <- NULL
+  random <- get_random(effects)
   group_indices <- which(nchar(prior$group) > 0)
   for (i in group_indices) {
     if (!prior$group[i] %in% random$group) { 
-      stop(paste("grouping factor", prior$group[i], "not found in the model"),
-           call. = FALSE)
+      stop(paste("grouping factor", prior$group[i], 
+                 "not found in the model"), call. = FALSE)
     } else if (sum(prior$group[i] == random$group) == 1) {
       # matches only one grouping factor in the model
       prior$group[i] <- match(prior$group[i], random$group)
@@ -589,21 +612,14 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
         new_row$group <- j
         new_row
       })
-      prior <- rbind(prior, do.call(rbind, new_rows))  # add new rows
+      # add new rows
+      prior <- rbind(prior, do.call(rbind, new_rows))  
     }
   }
   # remove unnecessary rows
   if (length(rows2remove)) {   
     prior <- prior[-rows2remove, ]
   }
-  prior <- prior[with(prior, order(class, group, coef)), ]
-  prior <- rbind(prior, prior_incr_lp)
-  rownames(prior) <- 1:nrow(prior)
-  # add attributes to prior generated in handle_special_priors
-  for (i in seq_along(attrib)) {
-    attr(prior, names(attrib)[i]) <- attrib[[i]]
-  }
-  attr(prior, "checked") <- TRUE
   prior
 }
 
