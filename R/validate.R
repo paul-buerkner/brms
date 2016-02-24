@@ -654,10 +654,9 @@ exclude_pars <- function(effects, ranef = TRUE) {
   #
   # Returns:
   #   a vector of parameters to be excluded
-  out <- c("eta", "etap", "eta_2PL", "Eta", 
-           "temp_Intercept1", "temp_Intercept", 
-           "Lrescor", "Rescor", "Sigma", "LSigma",
-           "p", "q", "e", "E", "res_cov_matrix", 
+  out <- c("eta", "etap", "eta_2PL", "Eta", "temp_Intercept1", 
+           "temp_Intercept",  "Lrescor", "Rescor", "Sigma", "LSigma",
+           "disp_sigma", "p", "q", "e", "E", "res_cov_matrix", 
            "lp_pre", "hs_local", "hs_global")
   #ee <- extract_effects(formula)
   #random <- get_random(ee)
