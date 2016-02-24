@@ -1448,39 +1448,77 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' 
 #' @param object object of class \code{brmsfit}
 #' @param formula. changes to the formula; for details see 
-#'   \code{\link[stats:update.formula]{update.formula}
+#'   \code{\link[stats:update.formula]{update.formula}}
 #' @param newdata optional \code{data.frame} 
 #'  to update the model with new data
 #' @param ... other arguments passed to 
 #'  \code{\link[brms:brm]{brm}}
+#'  
+#' @examples 
+#' \dontrun{
+#' fit1 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient), 
+#'             data = kidney, family = gaussian("log"))
+#' summary(fit1)
+#' 
+#' ## remove effects of 'disease'
+#' fit2 <- update(fit1, formula. = ~ . - disease)
+#' summary(fit2)
+#' 
+#' ## remove the group specific term of 'patient' and
+#' ## change the data (just take a subset in this example)
+#' fit3 <- update(fit1, formula. = ~ . - (1|patient), 
+#'                newdata = kidney[1:38, ])
+#' summary(fit3)
+#' 
+#' ## use another family and add fixed effects priors
+#' fit4 <- update(fit1, family = weibull(), inits = "0",
+#'                prior = set_prior("normal(0,5)"))
+#' summary(fit4)
+#' }
 #'
 #' @export
 update.brmsfit <- function(object, formula., newdata = NULL, ...) {
   dots <- list(...)
-  if (!missing(formula.)) {
-    dots$formula <- as.formula(formula.)
-    if (length(object$nonlinear)) {
-      warning(paste("Argument 'formula.' will completely replace the", 
-                    "original formula in non-linear models.", call. = FALSE))
-    } else {
-      dots$formula <- update.formula(object$formula, dots$formula)
-    }
-  }
   if ("data" %in% names(dots)) {
     # otherwise the data name cannot be found by substitute 
     stop("Please use argument 'newdata' to update the data", 
          call. = FALSE)
   }
-  
-  rc_args <- c("formula", "family", "prior", "autocor", 
-               "nonlinear", "partial", "threshold", 
-               "cov_ranef", "sample_prior")
+  recompile <- FALSE
+  if (missing(formula.)) {
+    dots$formula <- object$formula
+  } else {
+    dots$formula <- as.formula(formula.)
+    if (length(object$nonlinear)) {
+      warning(paste("Argument 'formula.' will completely replace the", 
+                    "original formula in non-linear models.", call. = FALSE))
+      recompile <- TRUE
+    } else {
+      dots$formula <- update.formula(object$formula, dots$formula)
+      ee_old <- extract_effects(object$formula, family = object$family)
+      family <- get_arg("family", dots, object)
+      ee_new <- extract_effects(dots$formula, family = family)
+      # no need to recompile the model when changing fixed effects only
+      recompile <- !(is_equal(names(ee_old), names(ee_new)) && 
+        is_equal(nrow(ee_old$random), nrow(ee_new$random)) &&
+        is_equal(length(ee_old$response), length(ee_new$response)))
+    }
+    if (recompile) {
+      message("The desired formula changes require recompling the model")
+    }
+  }
+
+  object$prior <- update.prior_frame(object$prior, ranef = object$ranef)
+  rc_args <- c("family", "prior", "autocor", "nonlinear", 
+               "partial", "threshold", "cov_ranef", "sample_prior")
   new_args <- intersect(rc_args, names(dots))
-  if (length(new_args)) {
-    # the model needs to be compiled again
-    message(paste("Changing argument(s)", 
-                  paste0("'", new_args, "'", collapse = ", "),
-                  "requires recompiling the model"))
+  recompile <- recompile || length(new_args)
+  if (recompile) {
+    if (length(new_args)) {
+      message(paste("Changing argument(s)", 
+                    paste0("'", new_args, "'", collapse = ", "),
+                    "requires recompiling the model"))
+    }
     old_args <- setdiff(rc_args, new_args)
     dots[old_args] <- object[old_args]
     if (!is.null(newdata)) {
@@ -1496,7 +1534,7 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
         dots$threshold <- "equidistant"
       } else dots$threshold <- "flexible"
     }
-    if (!is_equal(dots$prior, object$prior)) {
+    if ("prior" %in% new_args) {
       if (is(dots$prior, "brmsprior")) { 
         dots$prior <- c(dots$prior)
       } else if (!is(prior, "prior_frame")) {
@@ -1517,6 +1555,10 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
     }
   } else {
     # refit the model without compiling it again
+    if (!is.null(dots$formula)) {
+      object$formula <- dots$formula
+      dots$formula <- NULL
+    }
     ee <- extract_effects(object$formula, nonlinear = object$nonlinear)
     if (!is.null(newdata)) {
       object$data <- newdata
