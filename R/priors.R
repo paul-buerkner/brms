@@ -649,11 +649,11 @@ update.prior_frame <- function(object, ranef = list(), ...) {
       warning(paste("Priors for standard deviation and correlation", 
                     "parameters of group specific terms cannot be upated.", 
                     "\nReturning to default priors."), call. = FALSE)
-      attr(object, "checked") <- NULL
     } else {
       object$group[has_group] <- names(ranef)[num_group]
     }
   }
+  attr(object, "checked") <- NULL
   object
 } 
 
