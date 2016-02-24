@@ -566,9 +566,9 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
     for (nlp in nlpars) {
       nlp_prior <- prior$prior[with(prior, nlpar == nlp & class == "b")]
       if (!any(as.logical(nchar(nlp_prior)))) {
-        stop(paste0("Priors for non-linear parameters are required, ",
-                    "but no prior found for parameter '", nlp, "'. \n",
-                    "See help(set_prior) for more details."), 
+        stop(paste0("Priors on fixed effects are required in non-linear ", 
+                    "models, but none were found for parameter '", nlp, 
+                    "'. \nSee help(set_prior) for more details."), 
              call. = FALSE)
       }
     }
