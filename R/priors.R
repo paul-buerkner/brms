@@ -586,41 +586,6 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
   prior
 }
 
-rename_group_priors <- function(prior, effects) {
-  # rename random effects priors to match names in Stan code
-  # Args:
-  #   prior: an object of class prior_frame
-  #   effects: a list returned by extract_effects
-  rows2remove <- NULL
-  random <- get_random(effects)
-  group_indices <- which(nchar(prior$group) > 0)
-  for (i in group_indices) {
-    if (!prior$group[i] %in% random$group) { 
-      stop(paste("grouping factor", prior$group[i], 
-                 "not found in the model"), call. = FALSE)
-    } else if (sum(prior$group[i] == random$group) == 1) {
-      # matches only one grouping factor in the model
-      prior$group[i] <- match(prior$group[i], random$group)
-    } else {
-      # matches multiple grouping factors in the model
-      rows2remove <- c(rows2remove, i)
-      which_match <- which(prior$group[i] == random$group)
-      new_rows <- lapply(which_match, function(j) {
-        new_row <- prior[i, ]
-        new_row$group <- j
-        new_row
-      })
-      # add new rows
-      prior <- rbind(prior, do.call(rbind, new_rows))  
-    }
-  }
-  # remove unnecessary rows
-  if (length(rows2remove)) {   
-    prior <- prior[-rows2remove, ]
-  }
-  prior
-}
-
 handle_special_priors <- function(prior) {
   # look for special priors such as horseshoe and process them appropriately
   #

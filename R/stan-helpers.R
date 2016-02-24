@@ -96,7 +96,8 @@ stan_ranef <- function(i, ranef, prior = prior_frame(),
       "  matrix[N_", pi, ", N_", pi,"] cov_", pi,";",
       "  // user defined covariance matrix \n"))
   
-  out$prior <- stan_prior(class = "sd", group = pi, coef = r, prior = prior)
+  out$prior <- stan_prior(class = "sd", group = g, gi = pi, 
+                          coef = r, prior = prior)
   if (length(r) == 1) {  # only one random effect
     out$data <- paste0(out$data, "  real Z_", pi, "[N];  // RE design matrix \n")
     out$par <- paste0("  vector[N_", pi, "] pre_", pi, ";  // unscaled REs \n",
@@ -117,8 +118,8 @@ stan_ranef <- function(i, ranef, prior = prior_frame(),
       "  // cholesky factor of correlation matrix \n",
       "  cholesky_factor_corr[K_", pi, "] L_", pi, ";")
     out$prior <- paste0(out$prior, 
-                        stan_prior(class = "L", group = pi,  prior = prior),
-                        "  to_vector(pre_", pi, ") ~ normal(0, 1); \n")
+      stan_prior(class = "L", group = g, gi = pi, prior = prior),
+      "  to_vector(pre_", pi, ") ~ normal(0, 1); \n")
     out$transD <- paste0("  vector[K_", pi, "] r_", pi, "[N_", pi, "];  // REs \n")
     if (ccov) {  # customized covariance matrix supplied
       out$transC <- paste0("  r_", pi, 
@@ -918,14 +919,15 @@ stan_misc_functions <- function(family = gaussian(), kronecker = FALSE) {
   out
 }
 
-stan_prior <- function(class, coef = NULL, group = NULL, nlpar = NULL,
-                       prior = prior_frame(), s = 2) {
+stan_prior <- function(class, coef = NULL, group = NULL, gi = NULL,
+                       nlpar = NULL, prior = prior_frame(), s = 2) {
   # Define priors for parameters in Stan language
   # 
   # Args:
   #   class: the parameter class
   #   coef: the coefficients of this class
   #   group: the name of a grouping factor
+  #   gi: index of the grouping factor
   #   nlpar: the name of a non-linear parameter
   #   prior: a data.frame containing user defined priors 
   #          as returned by check_prior
@@ -995,8 +997,10 @@ stan_prior <- function(class, coef = NULL, group = NULL, nlpar = NULL,
   
   if (!is.null(nlpar))
     class <- paste0(class, "_", nlpar)
-  if (!is.null(group)) 
-    class <- paste0(class, "_", group)
+  if (!is.null(group)) {
+    if (is.null(gi)) stop("gi must be defined")
+    class <- paste0(class, "_", gi)
+  }
   # generate stan prior statements
   if (any(with(user_prior, nchar(coef) & nchar(prior)))) {
     # generate a prior for each coefficient

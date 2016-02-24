@@ -42,7 +42,6 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
                        family = family, autocor = autocor, 
                        partial = partial, threshold = threshold,
                        nonlinear = nonlinear) 
-  prior <- rename_group_priors(prior, effects = ee)
   data <- update_data(data, family = family, effects = ee, et$group)
   
   # flags to indicate of which type family is

@@ -36,7 +36,7 @@ test_that("stan_prior can remove default priors", {
   prior <- prior_frame(prior = "", class = c("sigma", "sd", "shape"), 
                        group = c("", "g", ""))
   expect_equal(stan_prior("sigma", prior = prior), "")
-  expect_equal(stan_prior("sd", group = "g", prior = prior), "")
+  expect_equal(stan_prior("sd", group = "g", gi = 1, prior = prior), "")
   expect_equal(stan_prior("shape", prior = prior), "")
 })
 
