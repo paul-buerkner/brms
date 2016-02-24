@@ -108,6 +108,22 @@ nlist <- function(...) {
   dots
 }
 
+get_arg <- function(x, ...) {
+  # find first occurrence of x in ... objects
+  # Args:
+  #  x: The name of the required element
+  #  ...: R objects that may contain x
+  dots <- list(...)
+  i <- 1
+  out <- NULL
+  while(i <= length(dots) && is.null(out)) {
+    if (!is.null(dots[[i]][[x]])) {
+      out <- dots[[i]][[x]]
+    } else i <- i + 1
+  }
+  out
+}
+
 rhs <- function(x) {
   # return the righthand side of a formula
   x <- as.formula(x)
