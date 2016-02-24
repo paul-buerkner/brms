@@ -12,8 +12,7 @@
 hypothesis(x, hypothesis, ...)
 
 \method{plot}{brmshypothesis}(x, N = 5, ignore_prior = FALSE,
-  theme = ggplot2::theme(), ask = TRUE, do_plot = TRUE, newpage = TRUE,
-  ...)
+  theme = ggplot2::theme(), ask = TRUE, do_plot = TRUE, ...)
 }
 \arguments{
 \item{x}{An \code{R} object typically of class \code{brmsfit}}
@@ -55,10 +54,6 @@ Only used if \code{do_plot} is \code{TRUE}.}
 \item{do_plot}{logical; indicates if plots should be
 plotted directly in the active graphic device.
 Defaults to \code{TRUE}.}
-
-\item{newpage}{logical; indicates if the first set of plots
-should be plotted to a new page. 
-Only used if \code{do_plot} is \code{TRUE}.}
 }
 \value{
 Summary statistics of the posterior distributions 
