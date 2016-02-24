@@ -2,6 +2,5 @@
 .Rhistory
 .RData
 brm.stan
-brms.Rproj
 tests/testthat/Rplots.pdf
 cran-comments.md
