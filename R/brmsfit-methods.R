@@ -1500,7 +1500,7 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
       ee_new <- extract_effects(dots$formula, family = family)
       # no need to recompile the model when changing fixed effects only
       recompile <- !(is_equal(names(ee_old), names(ee_new)) && 
-        is_equal(nrow(ee_old$random), nrow(ee_new$random)) &&
+        is_equal(ee_old$random, ee_new$random) &&
         is_equal(length(ee_old$response), length(ee_new$response)))
     }
     if (recompile) {
