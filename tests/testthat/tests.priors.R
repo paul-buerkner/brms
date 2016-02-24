@@ -88,7 +88,7 @@ test_that("check_prior returns increment_log_prob(.) whithout checking", {
 test_that("check_prior correctly validates priors for random effects", {
   expect_message(check_prior(set_prior("normal(0,1)", class = "sd", group = "g"),
                              formula = count ~ (1|visit), data = epilepsy),
-                 "Prior elements 1 don't correspond")
+                 "The following priors don't correspond")
   cp <- check_prior(set_prior("cauchy(0,1)", class = "sd", group = "visit"),
                     formula = count ~ Trt_c + (1|visit), 
                     data = epilepsy)
@@ -142,11 +142,11 @@ test_that("update.prior_frame works correctly", {
 
 test_that("print for class brmsprior works correctly", {
   expect_output(print(set_prior("normal(0,1)")), fixed = TRUE,
-                "Prior: b ~ normal(0,1)")
+                "b ~ normal(0,1)")
   expect_output(print(set_prior("normal(0,1)", coef = "x")), 
-                "Prior: b_x ~ normal(0,1)", fixed = TRUE)
+                "b_x ~ normal(0,1)", fixed = TRUE)
   expect_output(print(set_prior("cauchy(0,1)", class = "sd", group = "x")), 
-                "Prior: sd_x ~ cauchy(0,1)", fixed = TRUE)
+                "sd_x ~ cauchy(0,1)", fixed = TRUE)
   expect_output(print(set_prior("increment_log_prob(normal_log(0,1))")), 
-                "Prior: increment_log_prob(normal_log(0,1))", fixed = TRUE)
+                "increment_log_prob(normal_log(0,1))", fixed = TRUE)
 })

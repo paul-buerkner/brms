@@ -516,9 +516,10 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
     valid <- which(duplicated(rbind(all_priors[, 2:5], prior[, 2:5])))
     invalid <- which(!1:nrow(prior) %in% (valid - nrow(all_priors)))
     if (length(invalid)) {
-      message(paste("Prior elements", paste(invalid, collapse = ", "),
-                    "don't correspond to any model parameter \nand will", 
-                    "thus not affect the results"))
+      msg_priors <- lapply(as_brmsprior(prior[invalid, ]), .print_prior)
+      message(paste("The following priors don't correspond to any", 
+                    "model parameter \nand will thus not affect the results:",
+                    collapse("  \n", msg_priors)), "\n")
       prior <- prior[-invalid, ]
     }
   }
@@ -655,17 +656,23 @@ update.prior_frame <- function(object, ranef = list(), ...) {
   }
   attr(object, "checked") <- NULL
   object
-} 
+}
 
 #' @export
 print.brmsprior <- function(x, ...) {
+  cat(.print_prior(x))
+  invisible(x)
+}
+
+.print_prior <- function(x) {
+  # prepare text for print.brmsprior
   group <- ifelse(nchar(x$group), paste0("_", x$group), "")
   coef <- ifelse(nchar(x$coef), paste0("_", x$coef), "")
   nlpar <- ifelse(nchar(x$nlpar), paste0("_", x$nlpar), "")
-  tilde <- ifelse(nchar(x$class) + nchar(group) + nchar(coef), " ~ ", "")
   bound <- ifelse(nchar(x$bound), paste0(x$bound, " "), "")
-  cat(paste0("Prior: ", bound, x$class, nlpar, group, coef, tilde, x$prior))
-  invisible(x)
+  tilde <- ifelse(nchar(x$class) + nchar(group) + nchar(coef), " ~ ", "")
+  prior <- ifelse(nchar(x$prior), x$prior, "(no prior)")
+  paste0(bound, x$class, nlpar, group, coef, tilde, prior)
 }
 
 #' @export
@@ -679,3 +686,14 @@ c.brmsprior <- function(x, ...) {
   class(prior) <- c("prior_frame", "data.frame")
   prior
 }
+
+as_brmsprior <- function(prior) {
+  # convert a prior_frame into a list of brmsprior objects
+  # Args:
+  #   prior: an object of class prior_frame
+  stopifnot(is(prior, "prior_frame"))
+  .convert <- function(x) {
+    structure(as.list(x), class = c("brmsprior", "list"))
+  } 
+  unname(apply(prior, MARGIN = 1, FUN = .convert))
+} 
