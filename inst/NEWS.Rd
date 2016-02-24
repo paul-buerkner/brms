@@ -8,8 +8,10 @@
       \item Add the addition argument \code{disp} to define 
       multiplicative factors on dispersion parameters. 
       For linear models, \code{disp} applies to the residual
-      standard deviaton \code{sigma} so that it can be
+      standard deviation \code{sigma} so that it can be
       used to weight observations.
+      \item Extend the functionality of the \code{update} 
+      method to allow all model parts to be updated.
     }
   }
   \subsection{OTHER CHANGES}{
@@ -21,7 +23,8 @@
   \subsection{BUG FIXES}{
     \itemize{
       \item Fix problems in the generated \pkg{Stan} code
-      when using very long non-linear model formulas.
+      when using very long non-linear model formulas
+      thanks to Emmanuel Charpentier.
     }
   }
 }
