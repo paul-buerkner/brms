@@ -1053,7 +1053,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, data = NULL,
     marg_res = cbind(marg_data, marg_res)
     attr(marg_res, "response") <- as.character(x$formula[2])
     attr(marg_res, "effects") <- effects[[i]]
-    attr(marg_res, "rug") <- marg_data[, effects[[i]], drop = FALSE]
+    attr(marg_res, "rug") <- mf[, effects[[i]][1], drop = FALSE]
     results[[paste0(effects[[i]], collapse = ":")]] <- marg_res
   }
   class(results) <- "brmsMarginalEffects"
