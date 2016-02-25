@@ -72,7 +72,8 @@ in non-cumulative ordinal models
 The names of the matrices should correspond to columns 
 in \code{data} that are used as grouping factors. 
 All levels of the grouping factor should appear as rownames 
-of the corresponding matrix.}
+of the corresponding matrix. This argument can be used,
+among others, to model pedigrees and phylogenetic effects.}
 
 \item{control}{A named list currently for internal usage only}
 

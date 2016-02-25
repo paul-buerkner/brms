@@ -259,3 +259,11 @@ test_that("make_stancode returns correct 'disp' code", {
   expect_match(stancode, fixed = TRUE,
                "eta[n] <- exp((eta_a[n] - eta_b[n] ^ C[n, 1]) / disp_shape[n]);")
 })
+
+test_that("functions defined in 'stan_funs' appear in the functions block", {
+  test_fun <- paste0("  real test_fun(real a, real b) { \n",
+                     "    return a + b; \n",
+                     "  } \n")
+  expect_match(make_stancode(time ~ age, data = kidney, stan_funs = test_fun),
+               test_fun, fixed = TRUE)
+})

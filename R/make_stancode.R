@@ -22,7 +22,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
                           nonlinear = NULL, partial = NULL, 
                           threshold = c("flexible", "equidistant"),
                           cov_ranef = NULL, sample_prior = FALSE, 
-                          save_model = NULL, ...) {
+                          stan_funs = NULL, save_model = NULL, ...) {
   dots <- list(...)
   # use deprecated arguments if specified
   cov_ranef <- use_alias(cov_ranef, dots$cov.ranef)
@@ -167,6 +167,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
       text_ordinal$fun,
       text_zi_hu$fun,
       text_inv_gaussian$fun,
+      stan_funs,
     "} \n")
   
   # generate data block

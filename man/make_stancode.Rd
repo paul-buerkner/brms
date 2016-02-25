@@ -7,7 +7,7 @@
 make_stancode(formula, data = NULL, family = gaussian(), prior = NULL,
   autocor = NULL, nonlinear = NULL, partial = NULL,
   threshold = c("flexible", "equidistant"), cov_ranef = NULL,
-  sample_prior = FALSE, save_model = NULL, ...)
+  sample_prior = FALSE, stan_funs = NULL, save_model = NULL, ...)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class): 
@@ -82,11 +82,17 @@ consecutive thresholds to the same value.}
 The names of the matrices should correspond to columns 
 in \code{data} that are used as grouping factors. 
 All levels of the grouping factor should appear as rownames 
-of the corresponding matrix.}
+of the corresponding matrix. This argument can be used,
+among others, to model pedigrees and phylogenetic effects.}
 
-\item{sample_prior}{A flag to indicate if samples from all specified proper priors 
-should be additionally drawn. Among others, these samples can be used to calculate 
-Bayes factors for point hypotheses. Default is \code{FALSE}.}
+\item{sample_prior}{A flag to indicate if samples from all specified 
+proper priors should be additionally drawn. Among others, 
+these samples can be used to calculate Bayes factors for 
+point hypotheses. Default is \code{FALSE}.}
+
+\item{stan_funs}{An optional character string containing self-defined 
+\pkg{Stan} functions, which will be included in the functions block 
+of the generated \pkg{Stan} code.}
 
 \item{save_model}{Either \code{NULL} or a character string. 
 In the latter case, the model code is

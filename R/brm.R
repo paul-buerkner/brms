@@ -66,15 +66,20 @@
 #'   The names of the matrices should correspond to columns 
 #'   in \code{data} that are used as grouping factors. 
 #'   All levels of the grouping factor should appear as rownames 
-#'   of the corresponding matrix. 
+#'   of the corresponding matrix. This argument can be used,
+#'   among others, to model pedigrees and phylogenetic effects.
 #' @param ranef A flag to indicate if random effects 
 #'   for each level of the grouping factor(s) 
 #'   should be saved (default is \code{TRUE}). 
 #'   Set to \code{FALSE} to save memory. 
 #'   The argument has no impact on the model fitting itself.
-#' @param sample_prior A flag to indicate if samples from all specified proper priors 
-#'   should be additionally drawn. Among others, these samples can be used to calculate 
-#'   Bayes factors for point hypotheses. Default is \code{FALSE}. 
+#' @param sample_prior A flag to indicate if samples from all specified 
+#'   proper priors should be additionally drawn. Among others, 
+#'   these samples can be used to calculate Bayes factors for 
+#'   point hypotheses. Default is \code{FALSE}. 
+#' @param stan_funs An optional character string containing self-defined 
+#'   \pkg{Stan} functions, which will be included in the functions block 
+#'   of the generated \pkg{Stan} code. 
 #' @param fit An instance of S3 class \code{brmsfit} derived from a previous fit; 
 #'   defaults to \code{NA}. 
 #'   If \code{fit} is of class \code{brmsfit}, the compiled model associated 
@@ -503,9 +508,9 @@ brm <- function(formula, data = NULL, family = gaussian(),
                 prior = NULL, autocor = NULL, nonlinear = NULL, 
                 partial = NULL, threshold = c("flexible", "equidistant"), 
                 cov_ranef = NULL, ranef = TRUE, sample_prior = FALSE, 
-                fit = NA, inits = "random", chains = 4, iter = 2000, 
-                warmup = floor(iter / 2), thin = 1, cluster = 1, 
-                cluster_type = "PSOCK", control = NULL, 
+                stan_funs = NULL, fit = NA, inits = "random", 
+                chains = 4, iter = 2000, warmup = floor(iter / 2), thin = 1, 
+                cluster = 1, cluster_type = "PSOCK", control = NULL, 
                 algorithm = c("sampling", "meanfield", "fullrank"),
                 silent = TRUE, seed = 12345, save_model = NULL, ...) {
   
@@ -573,6 +578,7 @@ brm <- function(formula, data = NULL, family = gaussian(),
                              threshold = threshold, 
                              cov_ranef = cov_ranef, 
                              sample_prior = sample_prior, 
+                             stan_funs = stan_funs,
                              save_model = save_model,
                              brm_call = TRUE)
     # generate standata before compiling the model to avoid
