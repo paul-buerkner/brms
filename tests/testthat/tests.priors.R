@@ -150,3 +150,10 @@ test_that("print for class brmsprior works correctly", {
   expect_output(print(set_prior("increment_log_prob(normal_log(0,1))")), 
                 "increment_log_prob(normal_log(0,1))", fixed = TRUE)
 })
+
+test_that("get_prior returns correct nlpar names for random effects pars", {
+  # reported in issue #47
+  data <- data.frame(y = rnorm(10), x = rnorm(10), g = rep(1:2, 5))
+  gp <- get_prior(y ~ a - b^x, data = data, nonlinear = a + b ~ (1+x|g))
+  expect_equal(unique(gp$nlpar), c("", "a", "b"))
+})

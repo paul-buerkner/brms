@@ -25,6 +25,9 @@
       \item Fix problems in the generated \pkg{Stan} code
       when using very long non-linear model formulas
       thanks to Emmanuel Charpentier.
+      \item Fix a bug that prohibited to change priors
+      on single standard deviation parameters
+      in non-linear models thanks to Emmanuel Charpentier.
     }
   }
 }

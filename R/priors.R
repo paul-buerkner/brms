@@ -394,7 +394,7 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
     # global sd class
     prior <- rbind(prior, prior_frame(class = "sd", prior = def_scale_prior))  
     gs <- random$group
-    nlpars <- if (length(nonlinear)) colnames(random) 
+    nlpars <- if (length(nonlinear)) rownames(random) 
               else rep("", ncol(random))
     for (i in seq_along(gs)) {
       ranef <- colnames(get_model_matrix(random$form[[i]], data = data))
