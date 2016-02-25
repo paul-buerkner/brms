@@ -116,7 +116,7 @@ stan_ranef <- function(i, ranef, prior = prior_frame(),
       "  matrix[N_", pi, ", K_", pi, "] pre_", pi, ";  // unscaled REs \n",
       "  vector<lower=0>[K_", pi, "] sd_", pi, ";  // RE standard deviation \n",
       "  // cholesky factor of correlation matrix \n",
-      "  cholesky_factor_corr[K_", pi, "] L_", pi, ";")
+      "  cholesky_factor_corr[K_", pi, "] L_", pi, "; \n")
     out$prior <- paste0(out$prior, 
       stan_prior(class = "L", group = g, gi = pi, prior = prior),
       "  to_vector(pre_", pi, ") ~ normal(0, 1); \n")
