@@ -1829,3 +1829,9 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
   class(out) <- "brmshypothesis"
   out
 }
+
+#' @rdname expose_functions
+#' @export
+expose_functions.brmsfit <- function(x, ...) {
+  expose_stan_functions(x$fit)
+}

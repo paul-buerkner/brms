@@ -512,5 +512,21 @@ stanplot <- function(object, pars, ...)
 #' }
 #' 
 #' @export
-marginal_effects <- function(x, ...)
+marginal_effects <- function(x, ...) {
   UseMethod("marginal_effects")
+}
+
+#' Expose user-defined \pkg{Stan} functions
+#' 
+#' Export user-defined \pkg{Stan} function to the 
+#' \code{\link[base:environment]{.GlobalEnv}}.
+#' For more details see 
+#' \code{\link[rstan:expose_stan_functions]{expose_stan_functions}}.
+#' 
+#' @param x An \code{R} object
+#' @param ... Further arguments
+#' 
+#' @export
+expose_functions <- function(x, ...) {
+  UseMethod("expose_functions")
+}
