@@ -27,7 +27,7 @@ print.brmssummary <- function(x, digits = 2, ...) {
     cat(paste0("   WAIC: ", waic, "\n \n"))
     
     if (length(x$random)) {
-      cat("Random Effects: \n")
+      cat("Group-Level Effects: \n")
       for (i in seq_along(x$random)) {
         g <- names(x$random)[i]
         cat(paste0("~",g," (Number of levels: ",x$ngrps[[g]],") \n"))
@@ -53,7 +53,7 @@ print.brmssummary <- function(x, digits = 2, ...) {
     }
     
     if (nrow(x$fixed)) {
-      cat("Fixed Effects: \n")
+      cat("Population-Level Effects: \n")
       if (x$algorithm == "sampling") {
         x$fixed[, "Eff.Sample"] <- 
           round(x$fixed[, "Eff.Sample"], digits = 0)
