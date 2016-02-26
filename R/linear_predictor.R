@@ -182,7 +182,22 @@ nonlinear_predictor <- function(x, newdata = NULL, C = NULL,
                                         ncol = nrow(C), byrow = TRUE)
   }
   # evaluate non-linear predictor
-  with(nlmodel_list, eval(ee$fixed[[3]]))
+  out <- try(with(nlmodel_list, eval(ee$fixed[[3]])), silent = TRUE)
+  if (is(out, "try-error")) {
+    if (grepl("could not find function", out)) {
+      out <- rename(out, "Error in eval(expr, envir, enclos) : ", "")
+      stop(paste0(out, "Most likely this is because you used a Stan ",
+                  "function in the non-linear model formula that ",
+                  "is not defined in R. Currently, you have to write ",
+                  "this function yourself making sure that it is ",
+                  "vectorized. I apologize for the inconvenience."),
+           call. = FALSE)
+    } else {
+      out <- rename(out, "^Error :", "", fixed = FALSE)
+      stop(out, call. = FALSE)
+    }
+  }
+  out
 }
 
 fixef_predictor <- function(X, b) {
