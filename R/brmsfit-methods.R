@@ -1537,7 +1537,7 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
     if ("prior" %in% new_args) {
       if (is(dots$prior, "brmsprior")) { 
         dots$prior <- c(dots$prior)
-      } else if (!is(prior, "prior_frame")) {
+      } else if (!is(dots$prior, "prior_frame")) {
         stop("invalid prior argument")
       }
       dots$prior <- rbind(dots$prior, object$prior)
