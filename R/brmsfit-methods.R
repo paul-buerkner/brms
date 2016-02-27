@@ -1508,7 +1508,7 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
     }
   }
 
-  object$prior <- update.prior_frame(object$prior, ranef = object$ranef)
+  object$prior <- update_prior_frame(object$prior, ranef = object$ranef)
   rc_args <- c("family", "prior", "autocor", "nonlinear", 
                "partial", "threshold", "cov_ranef", "sample_prior")
   new_args <- intersect(rc_args, names(dots))
