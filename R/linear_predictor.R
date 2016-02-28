@@ -210,10 +210,8 @@ fixef_predictor <- function(X, b) {
   # 
   # Returns:
   #   linear predictor for fixed effects
-  if (!is.matrix(X))
-    stop("X must be a matrix")
-  if (!is.matrix(b))
-    stop("b must be a matrix")
+  stopifnot(is.matrix(X))
+  stopifnot(is.matrix(b))
   b %*% t(X)
 }
 
@@ -227,10 +225,8 @@ ranef_predictor <- function(Z, gf, r) {
   #
   # Returns: 
   #   linear predictor for random effects
-  if (!is.matrix(Z))
-    stop("Z must be a matrix")
-  if (!is.matrix(r))
-    stop("r must be a matrix")
+  stopifnot(is.matrix(Z))
+  stopifnot(is.matrix(r))
   nranef <- ncol(Z)
   max_levels <- ncol(r) / nranef
   has_new_levels <- anyNA(gf)
@@ -327,10 +323,8 @@ cse_predictor <- function(Xp, p, eta, ncat) {
   #
   # Returns: 
   #   linear predictor including category specific effects as a 3D array
-  if (!is.matrix(Xp))
-    stop("Xp must be a matrix")
-  if (!is.matrix(p))
-    stop("p must be a matrix")
+  stopifnot(is.matrix(Xp))
+  stopifnot(is.matrix(p))
   ncat <- max(ncat)
   eta <- array(eta, dim = c(dim(eta), ncat - 1))
   indices <- seq(1, (ncat - 1) * ncol(Xp), ncat - 1) - 1
@@ -353,12 +347,9 @@ expand_matrix <- function(A, x) {
   #
   # Returns:
   #   A sparse matrix of dimension nrow(A) x (ncol(A) * length(x))
-  if (!is.matrix(A)) 
-    stop("A must be a matrix")
-  if (length(x) != nrow(A))
-    stop("x must have nrow(A) elements")
-  if (!all(is.wholenumber(x) & x > 0))
-    stop("x must contain positive integers only")
+  stopifnot(is.matrix(A))
+  stopifnot(length(x) == nrow(A))
+  stopifnot(all(is.wholenumber(x) & x > 0))
   K <- ncol(A)
   i <- rep(seq_along(x), each = K)
   make_j <- function(n, K, x) K * (x[n] - 1) + 1:K

@@ -246,19 +246,19 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
   if (!class %in% valid_classes)
     stop(paste(class, "is not a valid parameter class"), call. = FALSE)
   if (nchar(group) && !class %in% c("sd", "cor", "L"))
-    stop(paste("argument group not meaningful for class", class), 
+    stop(paste("argument 'group' not meaningful for class", class), 
          call. = FALSE)
   if (nchar(coef) && !class %in% c("b", "sd", "sigma"))
-    stop(paste("argument coef not meaningful for class", class))
+    stop(paste("argument 'coef' not meaningful for class", class))
   if (nchar(nlpar) && !class %in% valid_classes[1:5])
-    stop(paste("argument nlpar not meaningful for class", class))
+    stop(paste("argument 'nlpar' not meaningful for class", class))
   is_arma <- class %in% c("ar", "ma")
   if (length(lb) || length(ub) || is_arma) {
     if (!(class %in% c("b", "arr") || is_arma))
       stop(paste("Currently boundaries are only allowed", 
                  "for fixed and ARMA effects."), call. = FALSE)
     if (coef != "")
-      stop("coef may not be specified when using boundaries")
+      stop("'coef' may not be specified when using boundaries")
     if (is_arma) {
       lb <- ifelse(length(lb), lb, -1)
       ub <- ifelse(length(ub), ub, 1) 

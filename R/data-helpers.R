@@ -312,8 +312,7 @@ arr_design_matrix <- function(Y, r, group)  {
   # 
   # Returns:
   #   the design matrix for ARR effects
-  if (length(Y) != length(group)) 
-    stop("Y and group must have the same length")
+  stopifnot(length(Y) == length(group))
   if (r > 0) {
     U_group <- unique(group)
     N_group <- length(U_group)

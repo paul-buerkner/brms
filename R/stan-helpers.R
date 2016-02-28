@@ -182,8 +182,7 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
   #
   # Returns:
   #   a string containing the likelihood of the model in stan language
-  if (!is(family, "family"))
-    stop("family must be of class family")
+  stopifnot(is(family, "family"))
   link <- family$link
   type <- family$type
   family <- family$family
@@ -351,8 +350,7 @@ stan_eta <- function(family, fixef, ranef = list(), paref = NULL,
   # 
   # Return:
   #   the linear predictor in stan language
-  if (!is(family, "family"))
-    stop("family must be of class family")
+  stopifnot(is(family, "family"))
   link <- family$link
   family <- family$family
   is_ordinal <- is.ordinal(family)
@@ -511,8 +509,7 @@ stan_arma <- function(family, autocor, prior = prior_frame(),
   #
   # Returns:
   #   stan code for computing AR(R)MA effects
-  if (!is(family, "family"))
-    stop("family must be of class family")
+  stopifnot(is(family, "family"))
   is_linear <- is.linear(family)
   Kar <- get_ar(autocor)
   Kma <- get_ma(autocor)
@@ -626,8 +623,7 @@ stan_multi <- function(family, response, prior = prior_frame()) {
   # 
   # Returns: 
   #   list containing Stan code specific for multivariate models
-  if (!is(family, "family"))
-    stop("family must be of class family")
+  stopifnot(is(family, "family"))
   out <- list()
   nresp <- length(response)
   if (nresp > 1) {
@@ -687,8 +683,7 @@ stan_ordinal <- function(family, prior = prior_frame(),
   #
   # Returns:
   #   A vector of strings containing the ordinal effects in stan language
-  if (!is(family, "family"))
-    stop("family must be of class family")
+  stopifnot(is(family, "family"))
   out <- list()
   if (is.ordinal(family)) {
     # define Stan code similar for all ordinal models
@@ -800,8 +795,7 @@ stan_zero_inflated_hurdle <- function(family) {
   # Returns:
   #   a list of character strings defining the stan code
   #   specific for zero-inflated and hurdle models
-  if (!is(family, "family"))
-    stop("family must be of class family")
+  stopifnot(is(family, "family"))
   out <- list()
   if (is.zero_inflated(family) || is.hurdle(family)) {
     if (family$family == "zero_inflated_poisson") {
@@ -831,8 +825,7 @@ stan_zero_inflated_hurdle <- function(family) {
 }
 
 stan_2PL <- function(family) {
-  if (!is(family, "family"))
-    stop("family must be of class family")
+  stopifnot(is(family, "family"))
   out <- list()
   if (is.2PL(family)) {
     out$transD <- "  vector[N_trait] eta_2PL;  // 2PL linear predictor \n"
@@ -855,8 +848,7 @@ stan_inv_gaussian <- function(family, weights = FALSE, cens = FALSE,
   # Returns:
   #   a list of character strings defining the stan code
   #   specific for inverse gaussian models
-  if (!is(family, "family"))
-    stop("family must be of class family")
+  stopifnot(is(family, "family"))
   out <- list()
   if (family$family == "inverse.gaussian") {
     out$data <- paste0(
@@ -885,6 +877,7 @@ stan_disp <- function(disp, family = gaussian()) {
   # Args:
   #   disp: logical; are dispersion factors specified?
   #   family: the model family
+  stopifnot(is(family, "family"))
   out <- list()
   if (disp) {
     par <- if (has_sigma(family)) "sigma"
@@ -906,8 +899,7 @@ stan_misc_functions <- function(family = gaussian(), kronecker = FALSE) {
   #
   # Returns:
   #   a string containing defined functions in stan code
-  if (!is(family, "family"))
-    stop("family must be of class family")
+  stopifnot(is(family, "family"))
   out <- NULL
   if (family$link == "cauchit") {
     out <- paste0(out, "  #include 'fun_cauchit.stan' \n")
@@ -1035,8 +1027,7 @@ stan_rngprior <- function(sample_prior, prior, family = gaussian(),
   #
   # Returns:
   #   a character string containing the priors to be sampled from in stan code
-  if (!is(family, "family"))
-    stop("family must be of class family")
+  stopifnot(is(family, "family"))
   out <- list()
   if (sample_prior) {
     prior <- gsub(" ", "", paste0("\n",prior))
