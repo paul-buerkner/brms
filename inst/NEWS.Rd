@@ -28,6 +28,11 @@
       \item Fix a bug that prohibited to change priors
       on single standard deviation parameters
       in non-linear models thanks to Emmanuel Charpentier.
+      \item Fix a bug in the linear predictor computation
+      within \code{R}, occuring for ordinal models 
+      with multiple category specific effects. This
+      could lead to incorrect outputs of \code{predict},
+      \code{fitted}, and \code{logLik} for these models.
     }
   }
 }
