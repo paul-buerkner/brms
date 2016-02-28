@@ -12,7 +12,7 @@ melt_data <- function(data, family, effects, na.action = na.omit) {
   nresp <- length(response)
   if (nresp == 2 && is.forked(family) || nresp > 1 && is.linear(family)) {
     if (!is(data, "data.frame")) {
-      stop("data must be a data.frame for multivariate models", 
+      stop("argument 'data' must be a data.frame for this model", 
            call. = FALSE)
     }
     # only keep variables that are relevant for the model
@@ -63,11 +63,13 @@ melt_data <- function(data, family, effects, na.action = na.omit) {
     stop("invalid multivariate model", call. = FALSE)
   }
   if (isTRUE(attr(effects$fixed, "rsv_intercept"))) {
+    if (is.null(data)) 
+      stop("argument 'data' must be a data.frame or list", call. = FALSE)
     if ("intercept" %in% names(data)) {
       stop(paste("intercept is a reserved variable name in models",
                  "without a fixed effects intercept"), call. = FALSE)
     }
-    data$intercept <- 1
+    data$intercept <- rep(1, length(data[[1]]))
   }
   data
 }  

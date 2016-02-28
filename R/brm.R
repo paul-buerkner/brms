@@ -527,6 +527,8 @@ brm <- function(formula, data = NULL, family = gaussian(),
   dots[c("n.iter", "n.warmup", "n.thin", "n.chains", "n.cluster",
          "cov.ranef", "sample.prior", "save.model")] <- NULL
   # some input checks 
+  if (!(is.null(data) || is.list(data)))
+    stop("argument 'data' must be a data.frame or list", call. = FALSE)
   check_brm_input(nlist(family, chains, cluster, inits))
   autocor <- check_autocor(autocor)
   threshold <- match.arg(threshold)

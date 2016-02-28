@@ -322,6 +322,8 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
                       threshold = c("flexible", "equidistant"), 
                       internal = FALSE) {
   # note that default priors are stored in this function
+  if (!(is.null(data) || is.list(data)))
+    stop("argument 'data' must be a data.frame or list", call. = FALSE)
   nonlinear <- nonlinear2list(nonlinear) 
   formula <- update_formula(formula, data = data, nonlinear = nonlinear)
   family <- check_family(family) 
