@@ -115,7 +115,7 @@ test_that("all S3 methods have reasonable ouputs", {
                       allow_new_levels = TRUE)
   expect_equal(dim(predict3), c(2, 4))
   # print
-  expect_output(print(fit), "Random Effects:")
+  expect_output(print(fit), "Group-Level Effects:")
   # prior_samples
   prs1 <- prior_samples(fit)
   expect_equal(dimnames(prs1),
@@ -160,7 +160,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(rownames(.summary$random$visit), 
                c("sd(Intercept)", "sd(Trt_c)", "cor(Intercept,Trt_c)"))
   expect_true(is.numeric(.summary$WAIC))
-  expect_output(print(.summary), "Fixed Effects:")
+  expect_output(print(.summary), "Population-Level Effects:")
   # update
   # do not actually refit the model as is causes CRAN checks to fail
   new_data <- data.frame(log_Age_c = c(0, 1, -1), visit = c(3, 2, 4),
