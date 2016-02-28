@@ -34,7 +34,7 @@ linear_predictor <- function(x, standata, re_formula = NULL,
   eta <- matrix(0, nrow = nsamples, ncol = standata$N)
   if (!is.null(standata$X) && ncol(standata$X) && !is.categorical(family)) {
     b_pars <- paste0("^b_", nlpar, "[^\\[]+$")
-    b <- do.call(posterior_samples, c(args, pars = b_pars))
+    b <- do.call(posterior_samples, c(args, list(pars = b_pars)))
     eta <- eta + fixef_predictor(X = standata$X, b = b)  
   }
   if (!is.null(standata$offset)) {
@@ -56,8 +56,8 @@ linear_predictor <- function(x, standata, re_formula = NULL,
       Z <- as.matrix(get(paste0("Z_", group[i]), standata))
       gf <- get(group[i], standata)
     }
-    r <- do.call(posterior_samples, 
-                 c(args, pars = paste0("^r_", nlpar, group[i],"\\[")))
+    r_pars <- paste0("^r_", nlpar, group[i],"\\[")
+    r <- do.call(posterior_samples, c(args, list(pars = r_pars)))
     if (is.null(r)) {
       stop(paste("Random effects for each level of grouping factor",
                  group[i], "not found. Please set ranef = TRUE",
@@ -79,11 +79,11 @@ linear_predictor <- function(x, standata, re_formula = NULL,
     # incorporate ARR effects
     if (old_autocor) {
       Yarr <- as.matrix(standata$Yar)
-      arr <- do.call(posterior_samples, c(args, pars = "^ar\\["))
+      arr <- do.call(posterior_samples, c(args, list(pars = "^ar\\[")))
     } else {
       # brms > 0.5.0
       Yarr <- as.matrix(standata$Yarr)
-      arr <- do.call(posterior_samples, c(args, pars = "^arr\\["))
+      arr <- do.call(posterior_samples, c(args, list(pars = "^arr\\[")))
     }
     eta <- eta + fixef_predictor(X = Yarr, b = arr)
   }
@@ -92,19 +92,20 @@ linear_predictor <- function(x, standata, re_formula = NULL,
     if (old_autocor) {
       ar <- NULL
     } else {
-      ar <- do.call(posterior_samples, c(args, pars = "^ar\\["))
+      ar <- do.call(posterior_samples, c(args, list(pars = "^ar\\[")))
     }
-    ma <- do.call(posterior_samples, c(args, pars = "^ma\\["))
+    ma <- do.call(posterior_samples, c(args, list(pars = "^ma\\[")))
     eta <- arma_predictor(standata = standata, ar = ar, ma = ma, 
                           eta = eta, link = x$link)
   }
   
   # transform eta to to etap for ordinal and categorical models
   if (is.ordinal(family)) {
-    Intercept <- do.call(posterior_samples, c(args, pars = "^b_Intercept\\["))
+    Intercept <- do.call(posterior_samples, 
+                         c(args, list(pars = "^b_Intercept\\[")))
     if (!is.null(standata$Xp) && ncol(standata$Xp)) {
-      p <- do.call(posterior_samples, 
-                   c(args, pars = paste0("^b_", colnames(standata$Xp), "\\[")))
+      cse_pars <- paste0("^b_", colnames(standata$Xp), "\\[")
+      p <- do.call(posterior_samples, c(args, list(pars = cse_pars)))
       eta <- cse_predictor(Xp = standata$Xp, p = p, eta = eta, 
                            ncat = standata$max_obs)
     } else {
@@ -119,7 +120,7 @@ linear_predictor <- function(x, standata, re_formula = NULL,
     }
   } else if (is.categorical(family)) {
     if (!is.null(standata$Xp)) {
-      p <- do.call(posterior_samples, c(args, pars = "^b_"))
+      p <- do.call(posterior_samples, c(args, list(pars = "^b_")))
       eta <- cse_predictor(Xp = standata$Xp, p = p, eta = eta, 
                            ncat = standata$max_obs)
     } else {
