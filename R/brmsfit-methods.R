@@ -909,7 +909,11 @@ marginal_effects.brmsfit <- function(x, effects = NULL, data = NULL,
       recursive = FALSE)
     all_effects <- unique(c(list(covars), nlpar_effects))
   } else {
-    all_effects <- strsplit(attr(terms(ee$fixed), "term.labels"), split = ":") 
+    all_effects <- attr(terms(ee$fixed), "term.labels") 
+    if (!is.null(x$partial)) {
+      all_effects <- c(all_effects, attr(terms(x$partial), "term.labels"))
+    }
+    all_effects <- strsplit(all_effects, split = ":") 
   }
   all_effects <- rmNULL(lapply(all_effects, setdiff, y = rsv_vars))
   if (is.null(effects)) {
@@ -951,7 +955,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, data = NULL,
       stop("Please specify argument 'data' manually for this model.", 
            call. = FALSE)
     }
-    vars <- c(lapply(get_fixed(ee), rhs), get_random(ee)$form)
+    vars <- c(lapply(get_fixed(ee), rhs), get_random(ee)$form, x$partial)
     vars <- unique(ulapply(vars, all.vars))
     vars <- setdiff(vars, c(rsv_vars, names(ee$nonlinear)))
     data <- as.data.frame(as.list(rep(NA, length(vars))))
