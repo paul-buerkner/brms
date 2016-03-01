@@ -1564,9 +1564,10 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
       object$formula <- dots$formula
       dots$formula <- NULL
     }
-    ee <- extract_effects(object$formula, nonlinear = object$nonlinear)
+    ee <- extract_effects(object$formula, family = object$family, 
+                          nonlinear = object$nonlinear)
     if (!is.null(newdata)) {
-      object$data <- newdata
+      object$data <- update_data(newdata, family = object$family, effects = ee)
       object$data.name <- Reduce(paste, deparse(substitute(newdata)))
       object$ranef <- gather_ranef(ee, data = object$data, 
                                    is_forked = is.forked(object$family))
