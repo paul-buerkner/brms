@@ -1527,7 +1527,8 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
     dots[old_args] <- object[old_args]
     if (!is.null(newdata)) {
       dots$data <- newdata
-      dots$data.name <- Reduce(paste, deparse(substitute(newdata)))
+      data$data.name <- Reduce(paste, deparse(substitute(newdata)))
+      dots$data.name <- substr(dots$data.name, 1, 50)
     } else  {
       dots$data <- object$data
       dots$data.name <- object$data.name

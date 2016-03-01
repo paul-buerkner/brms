@@ -555,7 +555,7 @@ brm <- function(formula, data = NULL, family = gaussian(),
     ee <- extract_effects(formula, family = family, partial, et$all,
                           nonlinear = nonlinear)
     if (is.null(dots$data.name)) {
-      data.name <- Reduce(paste, deparse(substitute(data)))
+      data.name <- substr(Reduce(paste, deparse(substitute(data))), 1, 50)
     } else {
       data.name <- dots$data.name
       dots$data.name <- NULL
