@@ -905,7 +905,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, data = NULL,
     # allow covariates as well as fixed effects of non-linear parameters
     covars <- setdiff(all.vars(rhs(ee$fixed)), names(ee$nonlinear))
     nlpar_effects <- unlist(lapply(ee$nonlinear, function(nl)
-      strsplit(attr(terms(nl$fixed), "term.labels"), split = ":")),
+      get_var_combs(attr(terms(nl$fixed), "term.labels"))),
       recursive = FALSE)
     all_effects <- unique(c(list(covars), nlpar_effects))
   } else {
@@ -913,7 +913,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, data = NULL,
     if (!is.null(x$partial)) {
       all_effects <- c(all_effects, attr(terms(x$partial), "term.labels"))
     }
-    all_effects <- strsplit(all_effects, split = ":") 
+    all_effects <- get_var_combs(all_effects)
   }
   all_effects <- rmNULL(lapply(all_effects, setdiff, y = rsv_vars))
   if (is.null(effects)) {
@@ -976,14 +976,14 @@ marginal_effects.brmsfit <- function(x, effects = NULL, data = NULL,
     if (any(duplicated(rownames(data)))) {
       stop("Row names of 'data' should be unique.", call. = FALSE)
     }
-    used_effects <- unique(unlist(effects))
-    is_everywhere <- ulapply(used_effects, function(up)
-      all(ulapply(effects, function(pred) up %in% pred)))
-    non_marg_effects <- used_effects[is_everywhere]
-    # effects that are present in every effect term
+    vars <- lapply(effects, function(e) all.vars(parse(text = e)))
+    unique_vars <- unique(unlist(vars))
+    is_everywhere <- ulapply(unique_vars, function(uv)
+      all(ulapply(vars, function(vs) uv %in% vs)))
+    # variables that are present in every effect term
     # do not need to be defined in data
-    missing_effects <- setdiff(non_marg_effects, names(data)) 
-    data[, missing_effects] <- mf[1, missing_effects] 
+    missing_vars <- setdiff(unique_vars[is_everywhere], names(data)) 
+    data[, missing_vars] <- mf[1, missing_vars] 
   } else {
     stop("data must be a data.frame or NULL")
   }

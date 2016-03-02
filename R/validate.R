@@ -456,6 +456,14 @@ get_offset <- function(x) {
   offset
 }
 
+get_var_combs <- function(x) {
+  # get all variable combinations occuring in elements of x
+  # Args:
+  #   x: a character vector
+  stopifnot(is.character(x))
+  unique(lapply(x, function(y) all.vars(parse(text = y))))
+}
+
 amend_terms <- function(x, rm_intercept = FALSE, is_forked = FALSE) {
   # amend a terms object (or one that can be coerced to it)
   # to be used in get_model_matrix
