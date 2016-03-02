@@ -229,6 +229,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
                  call. = FALSE)
           }
           newdata[[factor_names[i]]] <- factor(new_factor, factor_levels[[i]])
+          contrasts(newdata[[factor_names[i]]]) <- contrasts(factors[[i]])
         }
       }
     }
