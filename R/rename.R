@@ -343,7 +343,9 @@ ranef_changes <- function(i, ranef, gf, dims_oi, pars, k = i, j = 0)  {
   # define index names of new parameter names
   colnames <- ranef[[i]]
   if (j > 0) colnames <- colnames[j]
-  index_names <- make_index_names(rownames = attr(ranef[[i]], "levels"),
+  # rstan doesn't like whitespaces in parameter names
+  level_names <- gsub("[ \t\r\n]", ".", attr(ranef[[i]], "levels"))
+  index_names <- make_index_names(rownames = level_names,
                                   colnames = colnames, dim = 2)
   change$fnames <- paste0(r, group[i], index_names)
   change
