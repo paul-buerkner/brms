@@ -151,3 +151,16 @@ test_that("get_prior returns correct nlpar names for random effects pars", {
   gp <- get_prior(y ~ a - b^x, data = data, nonlinear = a + b ~ (1+x|g))
   expect_equal(unique(gp$nlpar), c("", "a", "b"))
 })
+
+test_that("check_prior_content returns expected errors and warnings", {
+  prior <- c(set_prior("", lb = 0), set_prior("gamma(0,1)", coef = "x"))
+  expect_silent(check_prior_content(prior))
+  prior <- c(set_prior("gamma(1,1)", class = "delta"))
+  expect_silent(check_prior_content(prior, family = cumulative()))
+  expect_warning(check_prior_content(prior, family = acat()),
+                 "no natural lower bound")
+  prior <- c(set_prior("uniform(0,5)", class = "sd"))
+  expect_warning(check_prior_content(prior), "no natural upper bound")
+  prior <- c(set_prior("normal(0,2)", class = "ar", lb = "0"))
+  expect_warning(check_prior_content(prior), "autocorrelation parameters")
+})
