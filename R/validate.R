@@ -30,17 +30,27 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
       stop("Non-linear effects are not yet allowed for this family.", 
            call. = FALSE)
     }
-    re_terms <- NULL
+    re_terms <- cse_terms <- NULL
   } else {
     # terms() doesn't like non-linear formulas
     term_labels <- rename(attr(terms(formula), "term.labels"), " ", "")
     re_terms <- term_labels[grepl("\\|", term_labels)]
     if (length(re_terms)) {
       re_terms <- paste0("(", re_terms, ")")
-      # make sure that + before random terms are also removed
-      extended_re_terms <- c(paste0("+", re_terms), re_terms)
-      tfixed <- rename(tfixed, extended_re_terms, "")
+      tfixed <- rename(tfixed, c(paste0("+", re_terms), re_terms), "")
     } 
+    # category specific effects in ordinal models
+    cse_terms <- term_labels[grepl("^cse\\(", term_labels)]
+    if (length(cse_terms)) {
+      if (!is.na(family[[1]]) && !allows_cse(family)) {
+        stop(paste("Category specific effects are only meaningful for", 
+                   "families 'sratio', 'cratio', and 'acat'."), 
+             call. = FALSE)
+      }
+      tfixed <- rename(tfixed, c(paste0("+", cse_terms), cse_terms), "")
+      cse_terms <- substr(cse_terms, 5, nchar(cse_terms) - 1)
+      cse_terms <- formula(paste("~", paste(cse_terms, collapse = "+")))
+    }
     if (substr(tfixed, nchar(tfixed), nchar(tfixed)) == "~") {
       tfixed <- paste0(tfixed, "1")
     }
@@ -76,8 +86,10 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
     random <- random[order(random$group), ]
   }
   x <- nlist(fixed, random)
+  if (length(cse_terms)) x$cse <- cse_terms
   x$nonlinear <- nonlinear_effects(nonlinear, model = x$fixed)
   
+    
   # handle addition arguments
   fun <- c("se", "weights", "trials", "cat", "cens", "trunc", "disp")
   add_vars <- list()
@@ -128,7 +140,7 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   x$covars <- formula(paste("~", paste(c("1", covars), collapse = "+")))
   # make a formula containing all required variables (element 'all')
   formula_list <- c(if (resp_rhs_all) all.vars(lhs(x$fixed)), add_vars, 
-                    x$covars, if (!length(x$nonlinear)) rhs(x$fixed), 
+                    x$covars, x$cse, if (!length(x$nonlinear)) rhs(x$fixed), 
                     x$random$form, group_formula, get_offset(x$fixed), 
                     lapply(x$nonlinear, function(nl) nl$all), ...)
   new_formula <- collapse(ulapply(formula_list, plus_rhs))
@@ -256,8 +268,13 @@ update_formula <- function(formula, data = NULL, partial = NULL,
   #   an updated formula containing the addition and category specific effects
   fnew <- ". ~ ."
   if (is.formula(partial)) {
+    warning(paste("Argument 'partial' is deprecated. Please use the 'cse'", 
+                  "function inside the model formula instead.",
+                  "For more details see help(brm)."))
     partial <- formula2string(partial, rm = 1)
-    fnew <- paste(fnew, "+ partial(", partial, ")")
+    fnew <- paste(fnew, "+ cse(", partial, ")")
+  } else if (!is.null(partial)) {
+    stop("argument 'partial' must be of class formula")
   }
   # to allow the '.' symbol in formula
   try_terms <- try(terms(formula, data = data), silent = TRUE)
@@ -600,6 +617,10 @@ rsv_vars <- function(family, nresp = 1) {
     rsv <- NULL
   }
   rsv
+}
+
+cse <- function(...) {
+  stop("inappropriate use of function 'cse'", call. = FALSE)
 }
 
 add_families <- function(x) {

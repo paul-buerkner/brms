@@ -352,6 +352,14 @@ has_sigma <- function(family, autocor = cor_arma(), se = FALSE,
     (!se || get_ar(autocor) || get_ma(autocor)) 
 }
 
+allows_cse <- function(family) {
+  # checks if category specific effects are allowed
+  if (is(family, "family")) {
+    family <- family$family
+  }
+  family %in% c("sratio", "cratio", "acat")
+}
+
 needs_kronecker <- function(ranef, names_cov_ranef) {
   # checks if a model needs the kronecker product
   # Args: 
