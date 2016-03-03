@@ -525,7 +525,7 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
       prior <- prior[-invalid, ]
     }
   }
-  is_reasonable(prior, family = family)
+  check_prior_content(prior, family = family)
   # merge prior with all_priors
   prior <- rbind(prior, all_priors)
   prior <- prior[!duplicated(prior[, 2:5]), ]
@@ -630,8 +630,8 @@ handle_special_priors <- function(prior) {
   list(prior = prior, attrib = attrib)
 }
 
-is_reasonable <- function(prior, family = gaussian()) {
-  # try to check if priors are reasonable
+check_prior_content <- function(prior, family = gaussian()) {
+  # try to check if prior distributions are reasonable
   # Args:
   #  prior: A prior_frame
   #  family: the model family
@@ -663,20 +663,24 @@ is_reasonable <- function(prior, family = gaussian()) {
       msg_prior <- .print_prior(as_brmsprior(prior[i, , drop = FALSE])[[1]])
       has_lb_prior <- grepl(lb_priors_reg, prior$prior[i])
       has_ulb_prior <- grepl(ulb_priors_reg, prior$prior[i])
-      has_lb <- !is.null(prior$bound[i]) && grepl("lower", prior$bound[i])
-      has_ub <- !is.null(prior$bound[i]) && grepl("upper", prior$bound[i])
+      # coefs inherit their boundaries 
+      j <- with(prior, which(class == class[i] & group == group[i] & 
+                             nlpar == nlpar[i] & !nchar(coef)))
+      bound <- if (length(j)) prior$bound[j] else ""
+      has_lb <- grepl("lower", bound)
+      has_ub <- grepl("upper", bound)
       if (prior$class[i] %in% nb_pars) {
         if ((has_lb_prior || has_ulb_prior) && !has_lb) {
-          warning(paste(lb_warning, "\nOccured for", msg_prior), 
+          warning(paste(lb_warning, "\noccurred for", msg_prior), 
                   call. = FALSE)
         } 
         if (has_ulb_prior && !has_ub) {
-          warning(paste(ub_warning, "\nOccured for", msg_prior), 
+          warning(paste(ub_warning, "\noccurred for", msg_prior), 
                   call. = FALSE)
         }
       } else if (prior$class[i] %in% lb_pars) {
         if (has_ulb_prior && !has_ub) {
-          warning(paste(ub_warning, "\nOccured for", msg_prior),
+          warning(paste(ub_warning, "\noccurred for", msg_prior),
                   call. = FALSE)
         }
       } else if (prior$class[i] %in% cor_pars) {
