@@ -194,7 +194,7 @@ Define priors for specific parameters or classes of parameters
   and a fixed lower bound of \code{1}.
   Families \code{gamma}, \code{weibull}, \code{inverse.gaussian}, and
   \code{negbinomial} need a \code{shape} parameter that has a 
-  \code{"student_t(3,0,5)"} prior by default. 
+  \code{"gamma(0.01,0.01)"} prior by default. 
   For families \code{cumulative}, \code{cratio}, \code{sratio}, 
   and \code{acat}, and only if \code{threshold = "equidistant"}, 
   the parameter \code{delta} is used to model the distance between 

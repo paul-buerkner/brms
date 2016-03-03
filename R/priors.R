@@ -178,7 +178,7 @@
 #'   and a fixed lower bound of \code{1}.
 #'   Families \code{gamma}, \code{weibull}, \code{inverse.gaussian}, and
 #'   \code{negbinomial} need a \code{shape} parameter that has a 
-#'   \code{"student_t(3,0,5)"} prior by default. 
+#'   \code{"gamma(0.01,0.01)"} prior by default. 
 #'   For families \code{cumulative}, \code{cratio}, \code{sratio}, 
 #'   and \code{acat}, and only if \code{threshold = "equidistant"}, 
 #'   the parameter \code{delta} is used to model the distance between 
@@ -450,8 +450,7 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
     }
   }
   if (family$family == "student") {
-    prior <- rbind(prior, prior_frame(class = "nu", 
-                                      prior = "gamma(2, 0.1)"))
+    prior <- rbind(prior, prior_frame(class = "nu", prior = "gamma(2, 0.1)"))
   }
   if (family$family == "beta") {
     prior <- rbind(prior, prior_frame(class = "phi", 
@@ -459,7 +458,7 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
   }
   if (has_shape(family)) {
     prior <- rbind(prior, prior_frame(class = "shape", 
-                                      prior = def_scale_prior))
+                                      prior = "gamma(0.01, 0.01)"))
   }
   if (is_ordinal && threshold == "equidistant") {
     prior <- rbind(prior, prior_frame(class = "delta"))
