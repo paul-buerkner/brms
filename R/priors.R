@@ -590,6 +590,84 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
   prior
 }
 
+check_prior_content <- function(prior, family = gaussian()) {
+  # try to check if prior distributions are reasonable
+  # Args:
+  #  prior: A prior_frame
+  #  family: the model family
+  stopifnot(is(prior, "prior_frame"))
+  stopifnot(is(family, "family"))
+  family <- family$family
+  if (nrow(prior)) {
+    lb_priors <- c("lognormal", "chi_square", "inv_chi_square",
+                   "scaled_inv_chi_square", "exponential", "gamma",
+                   "inv_gamma", "weibull", "frechet", "rayleigh",
+                   "pareto", "pareto_type_2")
+    lb_priors_reg <- paste0("^(", paste0(lb_priors, collapse = "|"), ")")
+    ulb_priors <- c("beta", "uniform", "von_mises")
+    ulb_priors_reg <- paste0("^(", paste0(ulb_priors, collapse = "|"), ")")
+    nb_pars <- c("b", "Intercept", if (!family %in% "cumulative") "delta")
+    lb_pars <- c("sd", "sigma", "nu", "shape", "phi",
+                 if (family %in% "cumulative") "delta")
+    cor_pars <- c("cor", "L", "rescor", "Lrescor")
+    autocor_pars <- c("ar", "ma", "arr")
+    lb_warning <- ub_warning <- ""
+    autocor_warning <- FALSE
+    for (i in 1:nrow(prior)) {
+      msg_prior <- .print_prior(as_brmsprior(prior[i, , drop = FALSE])[[1]])
+      has_lb_prior <- grepl(lb_priors_reg, prior$prior[i])
+      has_ulb_prior <- grepl(ulb_priors_reg, prior$prior[i])
+      # priors with nchar(coef) inherit their boundaries 
+      j <- with(prior, which(class == class[i] & group == group[i] & 
+                               nlpar == nlpar[i] & !nchar(coef)))
+      bound <- if (length(j)) prior$bound[j] else ""
+      has_lb <- grepl("lower", bound)
+      has_ub <- grepl("upper", bound)
+      if (prior$class[i] %in% nb_pars) {
+        if ((has_lb_prior || has_ulb_prior) && !has_lb) {
+          lb_warning <- paste0(lb_warning, msg_prior, "\n")
+        } 
+        if (has_ulb_prior && !has_ub) {
+          ub_warning <- paste0(ub_warning, msg_prior, "\n")
+        }
+      } else if (prior$class[i] %in% lb_pars) {
+        if (has_ulb_prior && !has_ub) {
+          ub_warning <- paste0(ub_warning, msg_prior, "\n")
+        }
+      } else if (prior$class[i] %in% cor_pars) {
+        if (nchar(prior$prior[i]) && !grepl("^lkj", prior$prior[i])) {
+          stop(paste("Currently 'lkj' is the only valid prior",
+                     "for group-level correlations. See help(set_prior)",
+                     "for more details."), call. = FALSE)
+        }
+      } else if (prior$class[i] %in% autocor_pars) {
+        if (prior$bound[i] != "<lower=-1,upper=1>") {
+          autocor_warning <- TRUE
+        } 
+      }
+    }  # end for  
+    if (nchar(lb_warning)) {
+      warning(paste0("It appears that you have specified a lower bounded ", 
+                     "prior on a parameter that has no natural lower bound.",
+                     "\nIf this is really what you want, please specify ",
+                     "argument 'lb' of 'set_prior' appropriately.",
+                     "\nWarning occurred for prior \n", lb_warning), call. = FALSE)
+    }
+    if (nchar(ub_warning)) {
+      warning(paste0("It appears that you have specified an upper bounded ", 
+                     "prior on a parameter that has no natural upper bound.",
+                     "\nIf this is really what you want, please specify ",
+                     "argument 'ub' of 'set_prior' appropriately.",
+                     "\nWarning occurred for prior \n", ub_warning), call. = FALSE)
+    }
+    if (autocor_warning) {
+      warning(paste("Changing the boundaries of autocorrelation", 
+                    "parameters is not recommended."), call. = FALSE)
+    }
+  }
+  invisible(NULL)
+}
+
 handle_special_priors <- function(prior) {
   # look for special priors such as horseshoe and process them appropriately
   #
@@ -628,77 +706,6 @@ handle_special_priors <- function(prior) {
   # expand lkj correlation prior to full name
   prior$prior <- sub("^(lkj\\(|lkj_corr\\()", "lkj_corr_cholesky(", prior$prior)
   list(prior = prior, attrib = attrib)
-}
-
-check_prior_content <- function(prior, family = gaussian()) {
-  # try to check if prior distributions are reasonable
-  # Args:
-  #  prior: A prior_frame
-  #  family: the model family
-  stopifnot(is(prior, "prior_frame"))
-  stopifnot(is(family, "family"))
-  family <- family$family
-  if (nrow(prior)) {
-    lb_priors <- c("lognormal", "chi_square", "inv_chi_square",
-                   "scaled_inv_chi_square", "exponential", "gamma",
-                   "inv_gamma", "weibull", "frechet", "rayleigh",
-                   "pareto", "pareto_type_2")
-    lb_priors_reg <- paste0("^(", paste0(lb_priors, collapse = "|"), ")")
-    ulb_priors <- c("beta", "uniform", "von_mises")
-    ulb_priors_reg <- paste0("^(", paste0(ulb_priors, collapse = "|"), ")")
-    nb_pars <- c("b", "Intercept", if (!family %in% "cumulative") "delta")
-    lb_pars <- c("sd", "sigma", "nu", "shape", "phi",
-                 if (family %in% "cumulative") "delta")
-    cor_pars <- c("cor", "L", "rescor", "Lrescor")
-    autocor_pars <- c("ar", "ma", "arr")
-    lb_warning <- paste0("It appears that you have specified a lower bounded ", 
-                         "prior on a parameter that has no natural lower bound.",
-                         "\nIf this is really what you want, please specify ",
-                         "argument 'lb' of 'set_prior' appropriately.")
-    ub_warning <- paste0("It appears that you have specified an upper bounded ", 
-                         "prior on a parameter that has no natural upper bound.",
-                         "\nIf this is really what you want, please specify ",
-                         "argument 'ub' of 'set_prior' appropriately.")
-    for (i in 1:nrow(prior)) {
-      msg_prior <- .print_prior(as_brmsprior(prior[i, , drop = FALSE])[[1]])
-      has_lb_prior <- grepl(lb_priors_reg, prior$prior[i])
-      has_ulb_prior <- grepl(ulb_priors_reg, prior$prior[i])
-      # coefs inherit their boundaries 
-      j <- with(prior, which(class == class[i] & group == group[i] & 
-                             nlpar == nlpar[i] & !nchar(coef)))
-      bound <- if (length(j)) prior$bound[j] else ""
-      has_lb <- grepl("lower", bound)
-      has_ub <- grepl("upper", bound)
-      if (prior$class[i] %in% nb_pars) {
-        if ((has_lb_prior || has_ulb_prior) && !has_lb) {
-          warning(paste(lb_warning, "\noccurred for", msg_prior), 
-                  call. = FALSE)
-        } 
-        if (has_ulb_prior && !has_ub) {
-          warning(paste(ub_warning, "\noccurred for", msg_prior), 
-                  call. = FALSE)
-        }
-      } else if (prior$class[i] %in% lb_pars) {
-        if (has_ulb_prior && !has_ub) {
-          warning(paste(ub_warning, "\noccurred for", msg_prior),
-                  call. = FALSE)
-        }
-      } else if (prior$class[i] %in% cor_pars) {
-        if (nchar(prior$prior[i]) && !grepl("^lkj", prior$prior[i])) {
-          stop(paste("Currently 'lkj' is the only valid prior",
-                     "for group-level correlations. See help(set_prior)",
-                     "for more details."), call. = FALSE)
-        }
-      } else if (prior$class[i] %in% autocor_pars) {
-        if (prior$bound[i] != "<lower=-1,upper=1>") {
-          warning(paste("Changing the boundaries of autocorrelation", 
-                        "parameters is not recommended."),
-                  call. = FALSE)
-        } 
-      }
-    }  
-  }
-  invisible(NULL)
 }
 
 prior_frame <- function(prior = "", class = "", coef = "", 
