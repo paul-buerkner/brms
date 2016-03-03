@@ -133,7 +133,7 @@
 #'   These parameters are restriced to be non-negative and, by default, 
 #'   have a half student-t prior with 3 degrees of freedom and a 
 #'   scale parameter that depends on the standard deviation of the response 
-#'   after applying the link function. Minimally, the scale parameter is 5. 
+#'   after applying the link function. Minimally, the scale parameter is 10. 
 #'   To define a prior distribution only for standard deviations 
 #'   of a specific grouping factor,
 #'   use \cr \code{set_prior("<prior>", class = "sd", group = "<group>")}. 
@@ -336,7 +336,7 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
   
   # ensure that RE and residual SDs only have a weakly informative prior by default
   Y <- unname(model.response(data))
-  prior_scale <- 5
+  prior_scale <- 10
   if (link %in% c("identity", "log", "inverse", "sqrt", "1/mu^2")) {
     if (link %in% c("log", "inverse", "1/mu^2")) {
       # avoid Inf in link(Y)

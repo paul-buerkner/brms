@@ -149,7 +149,7 @@ Define priors for specific parameters or classes of parameters
   These parameters are restriced to be non-negative and, by default, 
   have a half student-t prior with 3 degrees of freedom and a 
   scale parameter that depends on the standard deviation of the response 
-  after applying the link function. Minimally, the scale parameter is 5. 
+  after applying the link function. Minimally, the scale parameter is 10. 
   To define a prior distribution only for standard deviations 
   of a specific grouping factor,
   use \cr \code{set_prior("<prior>", class = "sd", group = "<group>")}. 
