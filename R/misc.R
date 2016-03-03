@@ -136,6 +136,11 @@ lhs <- function(x) {
   if (length(x) == 3) update(x, . ~ 1) else NULL
 }
 
+SW <- function(expr) {
+  # just a short form for suppressWarnings
+  base::suppressWarnings(expr)
+}
+
 get_matches <- function(pattern, text, ...) {
   # get pattern matches in text as vector
   unlist(regmatches(text, gregexpr(pattern, text, ...)))
