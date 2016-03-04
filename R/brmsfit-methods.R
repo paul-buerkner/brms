@@ -575,6 +575,12 @@ summary.brmsfit <- function(object, waic = FALSE, ...) {
       fit_summary <- fit_summary[, -2]
       colnames(fit_summary) <- c("Estimate", "Est.Error", "l-95% CI", 
                                  "u-95% CI", "Eff.Sample", "Rhat")
+      if (any(fit_summary[, "Rhat"] > 1.1)) {
+        msg <- paste("The model has not converged (some Rhats are > 1.1).",
+                     "Do not analyse the results! \nWe recommend running", 
+                     "more iterations and/or setting stronger priors.")
+        warning(msg, call. = FALSE)
+      }
     } else {
       colnames(fit_summary) <- c("Estimate", "Est.Error", "l-95% CI", 
                                  "u-95% CI")
