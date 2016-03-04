@@ -1,6 +1,6 @@
 extract_effects <- function(formula, ..., family = NA, nonlinear = NULL, 
                             check_response = TRUE, resp_rhs_all = TRUE) {
-  # Extract fixed and random effects from a formula
+  # Parse the model formula and related arguments
   # 
   # Args:
   #   formula: An object of class "formula" using mostly the syntax 
@@ -12,13 +12,7 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   #   resp_rhs_all: include response variables on the RHS of $all? 
   # 
   # Returns: 
-  #   A named list of the following elements: 
-  #   fixed: An object of class "formula" that contains the fixed effects 
-  #          including the dependent variable. 
-  #   random: A list of formulas containing the random effects per grouping variable. 
-  #   group: A vector of names of the grouping variables. 
-  #   weights, se, cens, trials, cat: information on possible addition arguments
-  #   all: A formula that contains every variable mentioned in formula and ...
+  #   A named list whose elements depend on the formula input 
   tformula <- formula2string(formula) 
   tfixed <- gsub("\\|+[^~]*~", "~", tformula)
   if (length(nonlinear)) {
@@ -92,7 +86,6 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   if (length(cse_terms)) x$cse <- cse_terms
   x$nonlinear <- nonlinear_effects(nonlinear, model = x$fixed)
   
-    
   # handle addition arguments
   fun <- c("se", "weights", "trials", "cat", "cens", "trunc", "disp")
   add_vars <- list()
@@ -270,7 +263,7 @@ update_formula <- function(formula, data = NULL, partial = NULL,
   # Returns:
   #   an updated formula containing the addition and category specific effects
   fnew <- ". ~ ."
-  if (is.formula(partial)) {
+  if (is(partial, "formula")) {
     warning(paste("Argument 'partial' is deprecated. Please use the 'cse'", 
                   "function inside the model formula instead."), 
             call. = FALSE)
@@ -645,6 +638,52 @@ add_families <- function(x) {
          stop(paste("addition argument", x, "is not supported")))
 }
 
+is.formula <- function(x, or = TRUE) {
+  # checks if x is formula (or list of formulas)
+  #
+  # Returns:
+  #   x: a formula or a list of formulas
+  #   or: logical; indicates if any element must be a formula (or = TRUE) 
+  #       or if all elements must be formulas
+  if (!is.list(x)) x <- list(x)
+  out <- sapply(x, function(y) is(y, "formula"))
+  if (or) {
+    out <- any(out)
+  } else out <- all(out)
+  out
+}
+
+formula2string <- function(formula, rm = c(0, 0)) {
+  # converts formula to string
+  #
+  # Args:
+  #   formula: a model formula
+  #   rm: a vector of to elements indicating how many characters 
+  #       should be removed at the beginning
+  #       and end of the string respectively
+  #
+  # Returns:
+  #    the formula as string 
+  if (!is.formula(formula))
+    stop(paste(deparse(substitute(formula)), "must be of class formula"))
+  if (is.na(rm[2])) rm[2] <- 0
+  x <- gsub(" ","", Reduce(paste, deparse(formula)))
+  x <- substr(x, 1 + rm[1], nchar(x) - rm[2])
+  x
+} 
+
+get_boundaries <- function(trunc) {
+  # extract truncation boundaries out of a formula
+  # that is known to contain the .trunc function
+  # Returns:
+  #   a list containing two numbers named lb and ub
+  if (is.formula(trunc)) {
+    .addition(trunc)
+  } else {
+    .trunc()
+  }
+}
+
 check_brm_input <- function(x) {
   # misc checks on brm arguments 
   # Args:
@@ -690,8 +729,6 @@ exclude_pars <- function(effects, ranef = TRUE) {
            "temp_Intercept",  "Lrescor", "Rescor", "Sigma", "LSigma",
            "disp_sigma", "p", "q", "e", "E", "res_cov_matrix", 
            "lp_pre", "hs_local", "hs_global")
-  #ee <- extract_effects(formula)
-  #random <- get_random(ee)
   rm_re_pars <- c("pre", "L", "Cor", if (!ranef) "r")
   if (length(effects$nonlinear)) {
     nlpars <- paste0(names(effects$nonlinear)) 

@@ -1164,3 +1164,16 @@ has_build_in_fun <- function(family, link) {
   (family %in% c("binomial", "bernoulli", "cumulative", "categorical")
    && link == "logit" || is.count(family) && link == "log")
 }
+
+needs_kronecker <- function(ranef, names_cov_ranef) {
+  # checks if a model needs the kronecker product
+  # Args: 
+  #   ranef: named list returned by gather_ranef
+  #   names_cov_ranef: names of the grouping factors that
+  #                    have a cov.ranef matrix 
+  .fun <- function(x, names) {
+    length(x) > 1 && attr(x, "group") %in% names && attr(x, "cor")
+  }
+  any(sapply(ranef, .fun, names = names_cov_ranef))
+}
+
