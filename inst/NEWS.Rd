@@ -18,6 +18,9 @@
     \itemize{
       \item Make sure that regression curves computed by
       the \code{marginal_effects} method are always smooth.
+      \item Allow to define category specific effects in
+      ordinal models directly within the \code{formula}
+      argument.
     }
   }
   \subsection{BUG FIXES}{
