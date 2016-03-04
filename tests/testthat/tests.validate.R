@@ -142,7 +142,7 @@ test_that("extract_time returns all desired variables", {
 
 test_that("update_formula returns correct formulas", {
   expect_equal(update_formula(y ~ x + z, partial = ~ a + I(a^2)), 
-               y ~ x + z + partial(a + I(a^2)))
+               y ~ x + z + cse(a + I(a^2)))
 })
 
 test_that("get_fixed works correctly", {

@@ -28,7 +28,7 @@ test_that(paste("make_standata handles variables used as fixed effects",
 })
 
 test_that(paste("make_standata returns correct data names", 
-                "for addition and partial variables"), {
+                "for addition and cse variables"), {
   temp_data <- data.frame(y = 1:10, w = 1:10, t = 1:10, x = rep(0,10), 
                           c = sample(-1:1,10,TRUE))
   expect_equal(names(make_standata(y | se(w) ~ x, family = "gaussian", 
@@ -229,11 +229,11 @@ test_that("make_standata allows to retrieve the initial data order", {
                sdata2$Y[attr(sdata2, "old_order")])
 })
 
-test_that("make_standata rejects invalid input for argument partial", {
-  expect_error(make_standata(rating ~ 1, data = inhaler,
-                             partial = ~treat, family = "gaussian"))
-  expect_error(make_standata(rating ~ 1, data = inhaler,
-                             partial = 1, family = "acat"))
+test_that("make_standata rejects invalid input for cse effects", {
+  expect_error(make_standata(rating ~ 1 + cse(treat), data = inhaler,
+                             family = "gaussian"), "only meaningful")
+  expect_error(make_standata(rating ~ 1 + cse(1), data = inhaler,
+                             family = "acat"), "invalid input")
 })
 
 test_that("make_standata handles covariance matrices correctly", {
@@ -288,10 +288,10 @@ test_that("brmdata and brm.data are backwards compatible", {
                            family = "poisson"), 
                    make_standata(y ~ x + (1|x), data = temp_data, 
                                  family = "poisson"))
-  expect_identical(brmdata(y ~ 1, data = temp_data, 
-                           family = "acat", partial = ~ x), 
-                   make_standata(y ~ 1, data = temp_data, 
-                                 family = "acat", partial = ~ x))
+  expect_identical(SW(brmdata(y ~ 1, data = temp_data, 
+                              family = "acat", partial = ~ x)), 
+                   SW(make_standata(y ~ 1, data = temp_data, 
+                                    family = "acat", partial = ~ x)))
   expect_identical(brm.data(y ~ x + (1|x), data = temp_data, 
                             family = "poisson"), 
                    make_standata(y ~ x + (1|x), data = temp_data, 

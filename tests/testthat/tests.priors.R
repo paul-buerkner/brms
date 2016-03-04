@@ -96,8 +96,8 @@ test_that("check_prior correctly validates priors for random effects", {
 test_that("check_prior correctly validates prior for category specific effects", {
   prior <- c(set_prior("normal(0,1)", class = "b", coef = "carry"),
              set_prior("cauchy(1,1)", class = "b", coef = "treat"))
-  cp <- check_prior(prior, formula = rating ~ 1, data = inhaler, 
-                    family = cumulative(), partial = ~ treat + carry)
+  cp <- check_prior(prior, formula = rating ~ 1 + cse(treat + carry), 
+                    data = inhaler, family = cratio())
   target <- prior_frame(prior = c("normal(0,1)", "cauchy(1,1)"),
                         class = "bp", coef = c("carry", "treat"))
   expect_equivalent(cp[3:4, ], target)
