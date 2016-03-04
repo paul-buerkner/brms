@@ -217,9 +217,9 @@
 #'            set_prior("uniform(-5,5)", class = "delta"))
 #'               
 #' ## verify that the priors indeed found their way into Stan's model code
-#' make_stancode(rating ~ period + carry + (1|subject),
+#' make_stancode(rating ~ period + carry + cse(treat) + (1|subject),
 #'               data = inhaler, family = sratio(), 
-#'               partial = ~ treat, threshold = "equidistant",
+#'               threshold = "equidistant",
 #'               prior = prior)
 #'               
 #' ## use horseshoe priors to model sparsity in fixed effects parameters
@@ -325,12 +325,13 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
   if (!(is.null(data) || is.list(data)))
     stop("argument 'data' must be a data.frame or list", call. = FALSE)
   nonlinear <- nonlinear2list(nonlinear) 
-  formula <- update_formula(formula, data = data, nonlinear = nonlinear)
+  formula <- update_formula(formula, data = data, partial = partial,
+                            nonlinear = nonlinear)
   family <- check_family(family) 
   link <- family$link
   threshold <- match.arg(threshold)
   autocor <- check_autocor(autocor)
-  ee <- extract_effects(formula, partial, family = family,
+  ee <- extract_effects(formula, family = family,
                         nonlinear = nonlinear)
   data <- update_data(data, family = family, effects = ee)
   
@@ -374,19 +375,19 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
       }
       prior <- rbind(prior, prior_frame(class = "b", coef = c("", fixef))) 
     }
-    if (is.formula(partial)) {
-      paref <- colnames(get_model_matrix(partial, data = data, 
+    if (is.formula(ee$cse)) {
+      csef <- colnames(get_model_matrix(ee$cse, data = data, 
                                          rm_intercept = TRUE))
-      fp <- intersect(fixef, paref)
+      fp <- intersect(fixef, csef)
       if (length(fp)) {
         stop(paste("Variables cannot be modeled as fixed and", 
                    "category specific effects at the same time.", 
                    "\nError occured for variables:", 
                    paste(fp, collapse = ", ")), call. = FALSE)
       }
-      prior <- rbind(prior, prior_frame(class = "b", coef = paref))
+      prior <- rbind(prior, prior_frame(class = "b", coef = csef))
       if (internal) {
-        prior <- rbind(prior, prior_frame(class = "bp", coef = c("", paref)))
+        prior <- rbind(prior, prior_frame(class = "bp", coef = c("", csef)))
       }
     }
   }
@@ -469,7 +470,7 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
 }
 
 check_prior <- function(prior, formula, data = NULL, family = gaussian(), 
-                        autocor = NULL, nonlinear = NULL, partial = NULL, 
+                        autocor = NULL, nonlinear = NULL, 
                         threshold = "flexible", check_rows = NULL) {
   # check prior input and amend it if needed
   #
@@ -486,8 +487,8 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
   ee <- extract_effects(formula, family = family, nonlinear = nonlinear)  
   all_priors <- get_prior(formula = formula, data = data, 
                           family = family, autocor = autocor, 
-                          partial = partial, threshold = threshold, 
-                          nonlinear = nonlinear, internal = TRUE)
+                          threshold = threshold, nonlinear = nonlinear, 
+                          internal = TRUE)
   if (is.null(prior)) {
     prior <- all_priors  
   } else if (is(prior, "brmsprior")) {
@@ -549,11 +550,11 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
     prior[which(prior$class %in% int_class), "prior"] <- int_prior 
   }
   # get category specific priors out of fixef priors
-  if (is.categorical(family) || is.formula(partial)) {
-    paref <- colnames(get_model_matrix(partial, data = data, 
-                                       rm_intercept = TRUE))
+  if (is.categorical(family) || is.formula(ee$cse)) {
+    csef <- colnames(get_model_matrix(ee$cse, data = data, 
+                                      rm_intercept = TRUE))
     b_index <- which(prior$class == "b" & !nchar(prior$coef))
-    p_index <- which(prior$class == "b" & prior$coef %in% paref)
+    p_index <- which(prior$class == "b" & prior$coef %in% csef)
     rows2remove <- c(rows2remove, p_index)
     p_prior <- prior[c(b_index, p_index), ]
     for (i in 1:nrow(p_prior)) {

@@ -33,17 +33,17 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   if (!(is.null(data) || is.list(data)))
     stop("argument 'data' must be a data.frame or list", call. = FALSE)
   nonlinear <- nonlinear2list(nonlinear) 
-  formula <- update_formula(formula, data = data, nonlinear = nonlinear)
+  formula <- update_formula(formula, data = data, partial = partial,
+                            nonlinear = nonlinear)
   family <- check_family(family) 
   autocor <- check_autocor(autocor)
   threshold <- match.arg(threshold)
   et <- extract_time(autocor$formula)  
-  ee <- extract_effects(formula, family = family, partial, et$all, 
+  ee <- extract_effects(formula, family = family, et$all, 
                         nonlinear = nonlinear)
   prior <- check_prior(prior, formula = formula, data = data, 
                        family = family, autocor = autocor, 
-                       partial = partial, threshold = threshold,
-                       nonlinear = nonlinear) 
+                       threshold = threshold, nonlinear = nonlinear) 
   data <- update_data(data, family = family, effects = ee, et$group)
   
   # flags to indicate of which type family is
@@ -78,17 +78,17 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
       fixef <- colnames(X)
       Xp <- get_model_matrix(ee$fixed, data, rm_intercept = rm_intercept)
       temp_list <- check_intercept(colnames(Xp))
-      paref <- temp_list$names
+      csef <- temp_list$names
     } else {
       X <- get_model_matrix(ee$fixed, data, is_forked = is_forked,
                             rm_intercept = rm_intercept)
       temp_list <- check_intercept(colnames(X))
       fixef <- temp_list$names
-      Xp <- get_model_matrix(partial, data, rm_intercept = TRUE)
-      paref <- colnames(Xp)
+      Xp <- get_model_matrix(ee$cse, data, rm_intercept = TRUE)
+      csef <- colnames(Xp)
     }
     has_intercept <- temp_list$has_intercept
-    text_fixef <- stan_fixef(fixef = fixef, paref = paref, family = family, 
+    text_fixef <- stan_fixef(fixef = fixef, csef = csef, family = family, 
                              prior = prior, threshold = threshold,
                              has_intercept = has_intercept)
     
@@ -100,7 +100,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     text_ranef <- collapse_lists(text_ranef)
     # generate stan code for the linear predictor
     text_eta <- stan_eta(family = family, fixef = fixef, ranef = ranef,
-                         has_intercept = has_intercept, paref = paref, 
+                         has_intercept = has_intercept, csef = csef, 
                          autocor = autocor, offset = offset, add = add,
                          disp = is.formula(ee$disp), is_multi = is_multi)
     text_nonlinear <- list()
@@ -112,7 +112,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
                        cens = is.formula(ee$cens),
                        disp = is.formula(ee$disp),
                        trunc = trunc, autocor = autocor,
-                       partial = is.formula(partial),
+                       cse = is.formula(ee$cse),
                        is_multi = is_multi)
   trait <- ifelse(is_multi || is.forked(family), "_trait", "")
   if (is.formula(ee$cens) || is.formula(ee$weights) || is.formula(ee$trunc) ||
@@ -127,7 +127,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   text_multi <- stan_multi(family = family, response = ee$response,
                            prior = prior)
   text_ordinal <- stan_ordinal(family = family, prior = prior, 
-                               partial = length(paref), 
+                               cse = length(csef), 
                                threshold = threshold)  
   text_zi_hu <- stan_zero_inflated_hurdle(family)
   text_2PL <- stan_2PL(family)

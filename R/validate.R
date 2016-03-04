@@ -269,8 +269,8 @@ update_formula <- function(formula, data = NULL, partial = NULL,
   fnew <- ". ~ ."
   if (is.formula(partial)) {
     warning(paste("Argument 'partial' is deprecated. Please use the 'cse'", 
-                  "function inside the model formula instead.",
-                  "For more details see help(brm)."))
+                  "function inside the model formula instead."), 
+            call. = FALSE)
     partial <- formula2string(partial, rm = 1)
     fnew <- paste(fnew, "+ cse(", partial, ")")
   } else if (!is.null(partial)) {

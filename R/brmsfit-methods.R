@@ -475,9 +475,9 @@ prior_samples.brmsfit <- function(x, pars = NA, parameters = NA, ...) {
     if (!anyNA(pars)) {
       get_samples <- function(par) {
         # get prior samples for parameter par 
-        is_partial <- grepl("^b_", par) && grepl("\\[[[:digit:]]+\\]", par)
-        # ensures correct parameter to prior mapping for partial effects
-        par_internal <- ifelse(is_partial, sub("^b_", "bp_", par), par)
+        is_cse <- grepl("^b_", par) && grepl("\\[[[:digit:]]+\\]", par)
+        # ensures correct parameter to prior mapping for cse effects
+        par_internal <- ifelse(is_cse, sub("^b_", "bp_", par), par)
         matches <- lapply(paste0("^",sub("^prior_", "", prior_names)), 
                           regexpr, text = par_internal)
         matches <- ulapply(matches, attr, which = "match.length")
@@ -540,7 +540,7 @@ summary.brmsfit <- function(object, waic = FALSE, ...) {
   family <- family(object)
   ee <- extract_effects(object$formula, family = family,
                         nonlinear = object$nonlinear)
-  formula <- update_formula(object$formula, partial = object$partial)
+  formula <- SW(update_formula(object$formula, partial = object$partial))
   out <- brmssummary(formula = formula,
                      family = family, 
                      data.name = object$data.name, 
@@ -693,13 +693,14 @@ standata.brmsfit <- function(object, ...) {
   if (is.data.frame(object$data)) {
     # brms > 0.5.0 stores the original model.frame
     new_formula <- update_re_terms(object$formula, dots$re_formula)
+    new_formula <- SW(update_formula(new_formula, partial = object$partial))
     standata <- make_standata(new_formula,  
                               data = object$data, 
                               family = object$family, 
                               autocor = object$autocor, 
                               nonlinear = object$nonlinear,
                               cov_ranef = object$cov_ranef, 
-                              partial = object$partial, ...)
+                              ...)
   } else {
     # brms <= 0.5.0 only stores the data passed to Stan 
     standata <- object$data
@@ -895,6 +896,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, data = NULL,
                                      re_formula = NA, probs = c(0.025, 0.975),
                                      method = c("fitted", "predict"), ...) {
   method <- match.arg(method)
+  x$formula <- SW(update_formula(x$formula, partial = x$partial))
   ee <- extract_effects(x$formula, family = x$family, nonlinear = x$nonlinear)
   if (is.linear(x$family) && length(ee$response) > 1) {
     stop("Marginal plots are not yet implemented for multivariate models.",
@@ -910,8 +912,8 @@ marginal_effects.brmsfit <- function(x, effects = NULL, data = NULL,
     all_effects <- unique(c(list(covars), nlpar_effects))
   } else {
     all_effects <- attr(terms(ee$fixed), "term.labels") 
-    if (!is.null(x$partial)) {
-      all_effects <- c(all_effects, attr(terms(x$partial), "term.labels"))
+    if (is.formula(ee$cse)) {
+      all_effects <- c(all_effects, attr(terms(ee$cse), "term.labels"))
     }
     all_effects <- get_var_combs(all_effects)
   }
@@ -955,7 +957,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, data = NULL,
       stop("Please specify argument 'data' manually for this model.", 
            call. = FALSE)
     }
-    vars <- c(lapply(get_fixed(ee), rhs), get_random(ee)$form, x$partial)
+    vars <- c(lapply(get_fixed(ee), rhs), get_random(ee)$form, ee$cse)
     vars <- unique(ulapply(vars, all.vars))
     vars <- setdiff(vars, c(rsv_vars, names(ee$nonlinear)))
     data <- as.data.frame(as.list(rep(NA, length(vars))))

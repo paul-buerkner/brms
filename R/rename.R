@@ -118,7 +118,7 @@ rename_pars <- function(x) {
     }
   }
   
-  if (is.formula(x$partial) || is.categorical(family)) {
+  if (is.formula(ee$cse) || is.categorical(family)) {
     # FIXME (non-linear models not yet implemented)
     p <- colnames(standata$Xp)
     lp <- length(p)

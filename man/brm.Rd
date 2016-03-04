@@ -70,10 +70,12 @@ parameters on the left hand side (separated by a \code{+}) and a
 common linear predictor on the right hand side.
 More information is given under 'Details'.}
 
-\item{partial}{A one sided formula of the form \code{~expression} 
-allowing to specify predictors with category specific effects 
-in non-cumulative ordinal models 
-(i.e. in families \code{cratio}, \code{sratio}, or \code{acat}).}
+\item{partial}{(Deprecated) A one sided formula of the form 
+\code{~expression} allowing to specify predictors with 
+category specific effects in non-cumulative ordinal models 
+(i.e. in families \code{cratio}, \code{sratio}, or \code{acat}).
+As of \pkg{brms} > 0.8.0 category specific effects should be 
+specified directly within \code{formula} using function \code{cse}.}
 
 \item{threshold}{A character string indicating the type of thresholds 
 (i.e. intercepts) used in an ordinal model. 
@@ -169,7 +171,7 @@ distribution.}
 In the latter case, the model code is
 saved in a file named after the string supplied in \code{save_model}, 
 which may also contain the full path where to save the file.
-If only a name is given, the file is save in the current working directory.}
+If only a name is given, the file is saved in the current working directory.}
 
 \item{...}{Further arguments to be passed to Stan.}
 }
@@ -505,11 +507,11 @@ head(predict(fit1))
 ## plot marginal effects of each predictor
 plot(marginal_effects(fit1), ask = FALSE)
  
-## Ordinal regression modeling patient's rating 
-## of inhaler instructions with normal priors on fixed effects
-fit2 <- brm(rating ~ treat + period + carry, 
+## Ordinal regression modeling patient's rating of inhaler instructions 
+## category specific effects are estimated for variable 'treat'
+fit2 <- brm(rating ~ period + carry + cse(treat), 
             data = inhaler, family = sratio("cloglog"), 
-            prior = set_prior("normal(0,5)"))
+            prior = set_prior("normal(0,5)"), chains = 2)
 summary(fit2)
 plot(fit2, ask = FALSE)    
 

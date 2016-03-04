@@ -1,11 +1,11 @@
-stan_fixef <- function(fixef, paref, family = gaussian(), 
+stan_fixef <- function(fixef, csef, family = gaussian(), 
                        prior = prior_frame(), has_intercept = TRUE, 
                        threshold = "flexible") {
   # Stan code for fixec effects
   #
   # Args:
   #   fixef: names of the fixed effects
-  #   paref: names of the category specific effects
+  #   csef: names of the category specific effects
   #   family: the model family
   #   prior: a data.frame containing user defined priors 
   #          as returned by check_prior 
@@ -22,7 +22,7 @@ stan_fixef <- function(fixef, paref, family = gaussian(),
                         "  // temporary intercepts \n")
       out$genD <- paste0("  row_vector[ncat - 1] b_Intercept;",
                          "  // fixed effects intercepts \n")
-      subtract <- ifelse(length(paref), " - to_row_vector(Xp_means) * bp", "")
+      subtract <- ifelse(length(csef), " - to_row_vector(Xp_means) * bp", "")
       out$genC <- paste0("  b_Intercept <- temp_Intercept", subtract, "; \n")
       out$prior <- stan_prior("temp_Intercept", prior = prior)
     } else if (is.ordinal(family)) {
@@ -50,7 +50,7 @@ stan_fixef <- function(fixef, paref, family = gaussian(),
     fixef_prior <- stan_prior(class = "b", coef = fixef, prior = prior)
     out$prior <- paste0(out$prior, fixef_prior)
   }
-  if (length(paref)) {
+  if (length(csef)) {
     out$data <- paste0(out$data, 
       "  int<lower=1> Kp;  // number of category specific effects \n",
       "  matrix[N, Kp] Xp;  // CSE design matrix \n",
@@ -59,8 +59,8 @@ stan_fixef <- function(fixef, paref, family = gaussian(),
     bound <- with(prior, bound[class == "b" & coef == ""])
     out$par <- paste0(out$par,
       "  matrix", bound, "[Kp, ncat - 1] bp;  // category specific effects \n")
-    paref_prior <- stan_prior(class = "bp", coef = paref, prior = prior)
-    out$prior <- paste0(out$prior, paref_prior)
+    csef_prior <- stan_prior(class = "bp", coef = csef, prior = prior)
+    out$prior <- paste0(out$prior, csef_prior)
   }
   out
 }
@@ -165,7 +165,7 @@ stan_ranef <- function(i, ranef, prior = prior_frame(),
 
 stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE, 
                      cens = FALSE, disp = FALSE, trunc = .trunc(), 
-                     autocor = cor_arma(), partial = FALSE, is_multi = FALSE) {
+                     autocor = cor_arma(), cse = FALSE, is_multi = FALSE) {
   # Likelihoods in stan language
   #
   # Args:
@@ -176,8 +176,8 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
   #   cens: logical; censored data?
   #   trunc: list containing lower and upper truncation boundaries
   #   autocor: autocorrelation structure; an object of classe cor_arma
-  #   partial: a flag whether catgory specific effects are present
-  #            (for ordinal models only)
+  #   cse: a flag indicating if category specific effects are present
+  #        (for ordinal models only)
   #   is_multi: is the model multivariate?
   #
   # Returns:
@@ -215,7 +215,7 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
   disp <- ifelse(disp, "disp_", "")
   sigma <- paste0(ifelse(se, "se", paste0(disp, "sigma")), ns)
   shape <- paste0(disp, "shape", ns)
-  ordinal_args <- paste0("eta[n], ", if (partial) "etap[n], ", 
+  ordinal_args <- paste0("eta[n], ", if (cse) "etap[n], ", 
                          "temp_Intercept")
   
   # use inverse link in likelihood statement only 
@@ -330,7 +330,7 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
   llh
 }
 
-stan_eta <- function(family, fixef, ranef = list(), paref = NULL, 
+stan_eta <- function(family, fixef, ranef = list(), csef = NULL, 
                      has_intercept = TRUE, autocor = cor_arma(),  
                      add = FALSE, disp = FALSE, offset = FALSE, 
                      is_multi = FALSE) {
@@ -340,7 +340,7 @@ stan_eta <- function(family, fixef, ranef = list(), paref = NULL,
   #   family: the model family
   #   fixef: names of the fixed effects
   #   ranef: a named list returned by gather_ranef
-  #   paref: names of the category specific effects
+  #   csef: names of the category specific effects
   #   has_intercept: has the model a fixed effects intercept?
   #   autocor: autocorrelation structure
   #   add: is the model weighted, censored, or truncated?
@@ -359,7 +359,7 @@ stan_eta <- function(family, fixef, ranef = list(), paref = NULL,
   eta <- list()
   eta$transD <- paste0(
     "  vector[N] eta;  // linear predictor \n", 
-    if (length(paref) || is.categorical(family)) 
+    if (length(csef) || is.categorical(family)) 
       paste0("  matrix[N, ncat - 1] etap;",
              "  // linear predictor for category specific effects \n"),
     if (is_multi) 
@@ -384,9 +384,9 @@ stan_eta <- function(family, fixef, ranef = list(), paref = NULL,
   
   # define fixed, random, and autocorrelation effects
   eta_re <- stan_eta_re(ranef)
-  etap <- if (length(paref) || is_cat) {
+  etap <- if (length(csef) || is_cat) {
     paste0("  etap <- ", 
-           ifelse(length(paref), "Xp * bp", "rep_matrix(0, N, ncat - 1)"),
+           ifelse(length(csef), "Xp * bp", "rep_matrix(0, N, ncat - 1)"),
            if (is_cat && has_intercept) " + rep_matrix(temp_Intercept, N)", "; \n")
   }
   eta_ma <- ifelse(get_ma(autocor) && !use_cov(autocor), 
@@ -671,14 +671,14 @@ stan_multi <- function(family, response, prior = prior_frame()) {
 }
 
 stan_ordinal <- function(family, prior = prior_frame(), 
-                         partial = FALSE, threshold = "flexible") {
+                         cse = FALSE, threshold = "flexible") {
   # Ordinal effects in Stan
   #
   # Args:
   #   family: the model family
   #   prior: a data.frame containing user defined priors 
   #          as returned by check_prior
-  #   partial: logical; are there partial effects?
+  #   cse: logical; are there category specific effects?
   #   threshold: either "flexible" or "equidistant" 
   #
   # Returns:
@@ -690,7 +690,7 @@ stan_ordinal <- function(family, prior = prior_frame(),
     th <- function(k, fam = family) {
       # helper function generating stan code inside ilink(.)
       sign <- ifelse(fam %in% c("cumulative", "sratio")," - ", " + ")
-      ptl <- ifelse(partial, paste0(sign, "etap[k]"), "") 
+      ptl <- ifelse(cse, paste0(sign, "etap[k]"), "") 
       if (sign == " - ") {
         out <- paste0("thres[",k,"]", ptl, " - eta")
       } else {
@@ -722,7 +722,7 @@ stan_ordinal <- function(family, prior = prior_frame(),
     
     # generate Stan code specific for each ordinal model
     if (!(family == "cumulative" && ilink == "inv_logit")) {
-      cse_arg <- ifelse(!partial, "", "row_vector etap, ")
+      cse_arg <- ifelse(!cse, "", "row_vector etap, ")
       out$fun <- paste0(
         "  /* ", family, " log-PDF for a single response \n",
         "   * Args: \n",

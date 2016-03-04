@@ -223,9 +223,9 @@ prior <- c(set_prior("normal(0,10)", class = "b"),
            set_prior("uniform(-5,5)", class = "delta"))
               
 ## verify that the priors indeed found their way into Stan's model code
-make_stancode(rating ~ period + carry + (1|subject),
+make_stancode(rating ~ period + carry + cse(treat) + (1|subject),
               data = inhaler, family = sratio(), 
-              partial = ~ treat, threshold = "equidistant",
+              threshold = "equidistant",
               prior = prior)
               
 ## use horseshoe priors to model sparsity in fixed effects parameters

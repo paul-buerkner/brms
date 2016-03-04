@@ -6,7 +6,7 @@
 #' @param control A named list currently for internal usage only
 #' @param ... Other potential arguments
 #' 
-#' @aliases brmdata brm.data
+#' @aliases brmdata brm.dafa
 #' 
 #' @return A named list of objects containing the required data 
 #'   to fit a \pkg{brms} model with \pkg{Stan}. 
@@ -39,7 +39,8 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   if (!(is.null(data) || is.list(data)))
     stop("argument 'data' must be a data.frame or list", call. = FALSE)
   nonlinear <- nonlinear2list(nonlinear) 
-  formula <- update_formula(formula, data = data, nonlinear = nonlinear)
+  formula <- update_formula(formula, data = data, partial = partial,
+                            nonlinear = nonlinear)
   autocor <- check_autocor(autocor)
   family <- check_family(family)
   is_linear <- is.linear(family)
@@ -47,8 +48,8 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   is_count <- is.count(family)
   is_forked <- is.forked(family)
   et <- extract_time(autocor$formula)
-  ee <- extract_effects(formula = formula, family = family, 
-                        partial, et$all, nonlinear = nonlinear)
+  ee <- extract_effects(formula, family = family, et$all, 
+                        nonlinear = nonlinear)
   na_action <- if (isTRUE(control$is_newdata)) na.pass else na.omit
   data <- update_data(data, family = family, effects = ee, et$group,
                       drop.unused.levels = !isTRUE(control$is_newdata),
@@ -335,18 +336,10 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   } 
   
   # get data for category specific effects
-  if (is.formula(partial)) {
-    if (family$family %in% c("sratio","cratio","acat")) {
-      Xp <- get_model_matrix(partial, data, rm_intercept = TRUE)
-      standata <- c(standata, list(Kp = ncol(Xp), Xp = Xp))
-    } else {
-      stop(paste("category specific effects are only meaningful for families", 
-                 "'sratio', 'cratio', and 'acat'"), call. = FALSE)
-    }
-  } else if (!is.null(partial)) {
-    stop("Argument partial must be a formula")
+  if (is.formula(ee$cse)) {
+    Xp <- get_model_matrix(ee$cse, data, rm_intercept = TRUE)
+    standata <- c(standata, list(Kp = ncol(Xp), Xp = Xp))
   }
-  
   # autocorrelation variables
   if (has_arma(autocor)) {
     tgroup <- data[[et$group]]

@@ -52,10 +52,12 @@
 #'   parameters on the left hand side (separated by a \code{+}) and a
 #'   common linear predictor on the right hand side.
 #'   More information is given under 'Details'.
-#' @param partial A one sided formula of the form \code{~expression} 
-#'   allowing to specify predictors with category specific effects 
-#'   in non-cumulative ordinal models 
+#' @param partial (Deprecated) A one sided formula of the form 
+#'   \code{~expression} allowing to specify predictors with 
+#'   category specific effects in non-cumulative ordinal models 
 #'   (i.e. in families \code{cratio}, \code{sratio}, or \code{acat}).
+#'   As of \pkg{brms} > 0.8.0 category specific effects should be 
+#'   specified directly within \code{formula} using function \code{cse}.
 #' @param threshold A character string indicating the type of thresholds 
 #'   (i.e. intercepts) used in an ordinal model. 
 #'   \code{"flexible"} provides the standard unstructured thresholds and 
@@ -122,7 +124,7 @@
 #'   In the latter case, the model code is
 #'   saved in a file named after the string supplied in \code{save_model}, 
 #'   which may also contain the full path where to save the file.
-#'   If only a name is given, the file is save in the current working directory. 
+#'   If only a name is given, the file is saved in the current working directory. 
 #' @param algorithm Character string indicating the estimation approach to use. 
 #'   Can be \code{"sampling"} for MCMC (the default), \code{"meanfield"} for
 #'   variational inference with independent normal distributions, or
@@ -465,11 +467,11 @@
 #' ## plot marginal effects of each predictor
 #' plot(marginal_effects(fit1), ask = FALSE)
 #'  
-#' ## Ordinal regression modeling patient's rating 
-#' ## of inhaler instructions with normal priors on fixed effects
-#' fit2 <- brm(rating ~ treat + period + carry, 
+#' ## Ordinal regression modeling patient's rating of inhaler instructions 
+#' ## category specific effects are estimated for variable 'treat'
+#' fit2 <- brm(rating ~ period + carry + cse(treat), 
 #'             data = inhaler, family = sratio("cloglog"), 
-#'             prior = set_prior("normal(0,5)"))
+#'             prior = set_prior("normal(0,5)"), chains = 2)
 #' summary(fit2)
 #' plot(fit2, ask = FALSE)    
 #' 
@@ -545,14 +547,14 @@ brm <- function(formula, data = NULL, family = gaussian(),
   } else {  # build new model
     # see validate.R and priors.R for function definitions
     nonlinear <- nonlinear2list(nonlinear) 
-    formula <- update_formula(formula, data = data, nonlinear = nonlinear)
+    formula <- update_formula(formula, data = data, partial = partial,
+                              nonlinear = nonlinear)
     family <- check_family(family)
     prior <- check_prior(prior, formula = formula, data = data, 
                          family = family, autocor = autocor,
-                         nonlinear = nonlinear, partial = partial, 
-                         threshold = threshold) 
+                         nonlinear = nonlinear, threshold = threshold) 
     et <- extract_time(autocor$formula)  
-    ee <- extract_effects(formula, family = family, partial, et$all,
+    ee <- extract_effects(formula, family = family, et$all,
                           nonlinear = nonlinear)
     if (is.null(dots$data.name)) {
       data.name <- substr(Reduce(paste, deparse(substitute(data))), 1, 50)
@@ -564,9 +566,8 @@ brm <- function(formula, data = NULL, family = gaussian(),
     # initialize S3 object
     x <- brmsfit(formula = formula, family = family, link = family$link, 
                  data.name = data.name, prior = prior, autocor = autocor,
-                 nonlinear = nonlinear, partial = partial, 
-                 cov_ranef = cov_ranef, threshold = threshold,
-                 algorithm = algorithm)  
+                 nonlinear = nonlinear, cov_ranef = cov_ranef, 
+                 threshold = threshold, algorithm = algorithm)  
     # see data.R
     x$data <- update_data(data, family = family, effects = ee, et$group) 
     # see validate.R
@@ -575,14 +576,10 @@ brm <- function(formula, data = NULL, family = gaussian(),
     # see make_stancode.R
     x$model <- make_stancode(formula = formula, data = data, 
                              family = family, prior = prior,  
-                             autocor = autocor, partial = partial,
-                             nonlinear = nonlinear,
-                             threshold = threshold, 
-                             cov_ranef = cov_ranef, 
-                             sample_prior = sample_prior, 
-                             stan_funs = stan_funs,
-                             save_model = save_model,
-                             brm_call = TRUE)
+                             autocor = autocor, nonlinear = nonlinear,
+                             threshold = threshold, cov_ranef = cov_ranef, 
+                             sample_prior = sample_prior, brm_call = TRUE,
+                             stan_funs = stan_funs, save_model = save_model)
     # generate standata before compiling the model to avoid
     # unnecessary compilations in case that the data is invalid
     standata <- standata(x, newdata = dots$is_newdata)

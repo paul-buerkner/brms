@@ -60,10 +60,12 @@ parameters on the left hand side (separated by a \code{+}) and a
 common linear predictor on the right hand side.
 More information is given under 'Details'.}
 
-\item{partial}{A one sided formula of the form \code{~expression} 
-allowing to specify predictors with category specific effects 
-in non-cumulative ordinal models 
-(i.e. in families \code{cratio}, \code{sratio}, or \code{acat}).}
+\item{partial}{(Deprecated) A one sided formula of the form 
+\code{~expression} allowing to specify predictors with 
+category specific effects in non-cumulative ordinal models 
+(i.e. in families \code{cratio}, \code{sratio}, or \code{acat}).
+As of \pkg{brms} > 0.8.0 category specific effects should be 
+specified directly within \code{formula} using function \code{cse}.}
 
 \item{threshold}{A character string indicating the type of thresholds 
 (i.e. intercepts) used in an ordinal model. 
