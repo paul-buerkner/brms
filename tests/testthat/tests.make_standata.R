@@ -282,7 +282,7 @@ test_that("make_standata computes data for 2PL models", {
   expect_equal(standata$Y, rep(0:1, each = 5))
 })
 
-test_that("brmdata and brm.data are backwards compatible", {
+test_that("brmdata is backwards compatible", {
   temp_data <- data.frame(y = 1:10, x = sample(1:5, 10, TRUE))
   expect_identical(brmdata(y ~ x + (1|x), data = temp_data, 
                            family = "poisson"), 
@@ -292,14 +292,6 @@ test_that("brmdata and brm.data are backwards compatible", {
                               family = "acat", partial = ~ x)), 
                    SW(make_standata(y ~ 1, data = temp_data, 
                                     family = "acat", partial = ~ x)))
-  expect_identical(brm.data(y ~ x + (1|x), data = temp_data, 
-                            family = "poisson"), 
-                   make_standata(y ~ x + (1|x), data = temp_data, 
-                                 family = "poisson"))
-  expect_identical(brm.data(y ~ 1, data = temp_data, 
-                            family = "acat", partial = ~ x), 
-                   make_standata(y ~ 1, data = temp_data, 
-                                 family = "acat", partial = ~ x))
 })
 
 test_that("make_standata correctly prepares data for non-linear models", {

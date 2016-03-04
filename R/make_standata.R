@@ -394,13 +394,3 @@ brmdata <- function(formula, data = NULL, family = "gaussian",
                 family = family, autocor = autocor,
                 partial = partial, cov_ranef = cov_ranef, ...)
 }
-
-#' @export
-brm.data <- function(formula, data = NULL, family = "gaussian", 
-                     autocor = NULL, partial = NULL, 
-                     cov_ranef = NULL, ...)  {
-  # deprectated alias of make_standata
-  make_standata(formula = formula, data = data, 
-                family = family, autocor = autocor,
-                partial = partial, cov_ranef = cov_ranef, ...)
-}
