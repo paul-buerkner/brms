@@ -50,6 +50,9 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
       tfixed <- rename(tfixed, c(paste0("+", cse_terms), cse_terms), "")
       cse_terms <- substr(cse_terms, 5, nchar(cse_terms) - 1)
       cse_terms <- formula(paste("~", paste(cse_terms, collapse = "+")))
+      if (!length(all.vars(cse_terms))) {
+        stop("invalid input to function 'cse'", call. = FALSE)
+      }
     }
     if (substr(tfixed, nchar(tfixed), nchar(tfixed)) == "~") {
       tfixed <- paste0(tfixed, "1")
