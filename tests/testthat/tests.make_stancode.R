@@ -25,15 +25,15 @@ test_that(paste("make_stancode returns correct strings",
                 "for customized covariances"), {
   expect_match(make_stancode(rating ~ treat + period + carry + (1|subject), 
                              data = inhaler, cov_ranef = list(subject = 1)), 
-               "r_1 <- sd_1 * (cov_1 * pre_1)", fixed = TRUE)
+               "r_1 <- sd_1 * (Lcov_1 * pre_1)", fixed = TRUE)
   expect_match(make_stancode(rating ~ treat + period + carry + (1+carry|subject), 
                              data = inhaler, cov_ranef = list(subject = 1)),
                "kronecker(Lcov_1, diag_pre_multiply(sd_1, L_1)) * to_vector(pre_1)",
                fixed = TRUE)
   expect_match(make_stancode(rating ~ treat + period + carry + (1+carry||subject), 
                              data = inhaler, cov_ranef = list(subject = 1)), 
-               paste0("  r_1_1 <- sd_1[1] * (cov_1 * pre_1[1]);  // scale REs \n",
-                      "  r_1_2 <- sd_1[2] * (cov_1 * pre_1[2]);"),
+               paste0("  r_1_1 <- sd_1[1] * (Lcov_1 * pre_1[1]);  // scale REs \n",
+                      "  r_1_2 <- sd_1[2] * (Lcov_1 * pre_1[2]);"),
                fixed = TRUE)
 })
 
@@ -148,7 +148,7 @@ test_that("make_stancode returns correct self-defined functions", {
   # kronecker matrices
   expect_match(make_stancode(rating ~ treat + period + carry + (1+carry|subject), 
                             data = inhaler, cov_ranef = list(subject = 1)), 
-              "vector\\[\\] to_array.*matrix kronecker_cholesky")
+              "matrix as_matrix.*matrix kronecker")
 })
 
 test_that("make_stancode detects invalid combinations of modeling options", {

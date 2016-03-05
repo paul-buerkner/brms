@@ -239,7 +239,7 @@ test_that("make_standata rejects invalid input for cse effects", {
 test_that("make_standata handles covariance matrices correctly", {
   A <- structure(diag(1, 4), dimnames = list(1:4, NULL))
   expect_equivalent(make_standata(count ~ Trt_c + (1|visit), data = epilepsy,
-                                  cov_ranef = list(visit = A))$cov_1, A)
+                                  cov_ranef = list(visit = A))$Lcov_1, A)
   B <- diag(1, 4)
   expect_error(make_standata(count ~ Trt_c + (1|visit), data = epilepsy,
                              cov_ranef = list(visit = B)),
