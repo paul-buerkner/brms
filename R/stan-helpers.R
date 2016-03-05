@@ -109,26 +109,29 @@ stan_ranef <- function(i, ranef, prior = prior_frame(),
   } else if (length(r) > 1L && cor) {  
     # multiple correlated random effects
     out$data <- paste0(out$data,  
-      "  row_vector[K_", pi, "] Z_", pi, "[N];  // RE design matrix \n",  
+      "  vector[K_", pi, "] Z_", pi, "[N];  // RE design matrix \n",  
       "  int NC_", pi, ";  // number of correlations \n")
     out$par <- paste0(
-      "  matrix[N_", pi, ", K_", pi, "] pre_", pi, ";  // unscaled REs \n",
+      "  matrix[K_", pi, ", N_", pi, "] pre_", pi, ";  // unscaled REs \n",
       "  vector<lower=0>[K_", pi, "] sd_", pi, ";  // RE standard deviation \n",
       "  // cholesky factor of correlation matrix \n",
       "  cholesky_factor_corr[K_", pi, "] L_", pi, "; \n")
     out$prior <- paste0(out$prior, 
       stan_prior(class = "L", group = g, gi = pi, prior = prior),
       "  to_vector(pre_", pi, ") ~ normal(0, 1); \n")
-    out$transD <- paste0("  vector[K_", pi, "] r_", pi, "[N_", pi, "];  // REs \n")
+    #out$transD <- paste0("  vector[K_", pi, "] r_", pi, "[N_", pi, "];  // REs \n")
+    out$transD <- paste0("  matrix[N_", pi, ", K_", pi, "] r_", pi, ";  // REs \n")
     if (ccov) {  # customized covariance matrix supplied
       out$transC <- paste0("  r_", pi," <- to_array(kronecker(Lcov_", pi, ",", 
         " diag_pre_multiply(sd_", pi,", L_", pi,")) *",
         " to_vector(pre_", pi, "), N_", pi, ", K_", pi, "); \n")
     } else { 
-      out$transC <- paste0(
-        "  for (i in 1:N_", pi, ") { \n",
-        "    r_", pi,  "[i] <- sd_", pi, " .* (L_", pi, " * ", 
-        "to_vector(pre_", pi, "[i])); \n  } \n")
+      #out$transC <- paste0(
+      #  "  for (i in 1:N_", pi, ") { \n",
+      #  "    r_", pi,  "[i] <- sd_", pi, " .* (L_", pi, " * ", 
+      #  "to_vector(pre_", pi, "[i])); \n  } \n")
+      out$transC <- paste0("  r_", pi, " <- ", 
+        "(diag_pre_multiply(sd_", pi, ", L_", pi,") * pre_", pi, ")'; \n")
     }
     # return correlations above the diagonal only
     cors_genC <- ulapply(2:length(r), function(k) 
@@ -1117,7 +1120,7 @@ stan_eta_re <- function(ranef, par = "") {
   for (i in seq_along(ranef)) {
     pi <- if (nchar(par)) paste0(par, "_", i) else i
     if (length(ranef[[i]]) == 1 || attr(ranef[[i]], "cor")) {
-      eta_re <- paste0(eta_re, " + Z_", pi,"[n] * r_", pi,"[J_", pi,"[n]]")
+      eta_re <- paste0(eta_re, " + r_", pi,"[J_", pi,"[n]] * Z_", pi,"[n]")
     } else {
       k <- seq_along(ranef[[i]])
       eta_re <- paste0(eta_re, collapse(" + Z_", pi, "[n, ", k, "]",
