@@ -93,21 +93,20 @@ stan_ranef <- function(i, ranef, prior = prior_frame(),
     "  int<lower=1> N_", pi, ";  // number of levels \n",
     "  int<lower=1> K_", pi, ";  // number of REs \n",
     if (ccov) paste0(
-      "  matrix[N_", pi, ", N_", pi,"] cov_", pi,";",
-      "  // user defined covariance matrix \n"))
+      "  // cholesky factor of known covariance matrix \n",
+      "  matrix[N_", pi, ", N_", pi,"] Lcov_", pi,"; \n"))
   
   out$prior <- stan_prior(class = "sd", group = g, gi = pi, 
                           coef = r, prior = prior)
-  if (length(r) == 1) {  # only one random effect
+  if (length(r) == 1L) {  # only one random effect
     out$data <- paste0(out$data, "  real Z_", pi, "[N];  // RE design matrix \n")
     out$par <- paste0("  vector[N_", pi, "] pre_", pi, ";  // unscaled REs \n",
                       "  real<lower=0> sd_", pi, ";  // RE standard deviation \n")
     out$prior <- paste0(out$prior,"  pre_", pi, " ~ normal(0, 1); \n")
     out$transD <- paste0("  vector[N_", pi, "] r_", pi, ";  // REs \n")
     out$transC <- paste0("  r_", pi,  " <- sd_", pi, " * (", 
-                         if (ccov) paste0("cov_", pi, " * "), "pre_", pi, ");",
-                         "  // scale REs \n")
-  } else if (length(r) > 1 && cor) {  
+                         if (ccov) paste0("Lcov_", pi, " * "), "pre_", pi, ");\n")
+  } else if (length(r) > 1L && cor) {  
     # multiple correlated random effects
     out$data <- paste0(out$data,  
       "  row_vector[K_", pi, "] Z_", pi, "[N];  // RE design matrix \n",  
@@ -122,14 +121,14 @@ stan_ranef <- function(i, ranef, prior = prior_frame(),
       "  to_vector(pre_", pi, ") ~ normal(0, 1); \n")
     out$transD <- paste0("  vector[K_", pi, "] r_", pi, "[N_", pi, "];  // REs \n")
     if (ccov) {  # customized covariance matrix supplied
-      out$transC <- paste0("  r_", pi, 
-        " <- to_array(kronecker_cholesky(cov_", pi, ", L_", pi, ", sd_", pi, ") * ",
-        "to_vector(pre_", pi, "), N_", pi, ", K_", pi, ");  // scale REs \n")
+      out$transC <- paste0("  r_", pi," <- to_array(kronecker(Lcov_", pi, ",", 
+        " diag_pre_multiply(sd_", pi,", L_", pi,")) *",
+        " to_vector(pre_", pi, "), N_", pi, ", K_", pi, "); \n")
     } else { 
       out$transC <- paste0(
         "  for (i in 1:N_", pi, ") { \n",
         "    r_", pi,  "[i] <- sd_", pi, " .* (L_", pi, " * ", 
-        "to_vector(pre_", pi, "[i]));  // scale REs \n  } \n")
+        "to_vector(pre_", pi, "[i])); \n  } \n")
     }
     # return correlations above the diagonal only
     cors_genC <- ulapply(2:length(r), function(k) 
@@ -143,7 +142,7 @@ stan_ranef <- function(i, ranef, prior = prior_frame(),
       "  // take only relevant parts of correlation matrix \n",
       "  Cor_", pi, " <- multiply_lower_tri_self_transpose(L_", pi, "); \n",
       collapse(cors_genC)) 
-  } else if (length(r) > 1 && !cor) {
+  } else if (length(r) > 1L && !cor) {
     # multiple uncorrelated random effects
     j <- seq_along(r)
     out$data <- paste0(out$data, "  matrix[N, K_", pi, "] Z_", pi, ";",
@@ -157,7 +156,7 @@ stan_ranef <- function(i, ranef, prior = prior_frame(),
     out$transD <- collapse("  vector[N_", pi, "] r_", pi, "_", j, ";  // REs \n")
     out$transC <- collapse(
       "  r_", pi, "_",j," <- sd_", pi, "[", j, "] * (", 
-      if (ccov) paste0("cov_", pi, " * "), "pre_", pi, "[", j, "]);",
+      if (ccov) paste0("Lcov_", pi, " * "), "pre_", pi, "[", j, "]);",
       "  // scale REs \n")
   }
   out
@@ -906,7 +905,7 @@ stan_misc_functions <- function(family = gaussian(), kronecker = FALSE) {
   }
   if (kronecker) {
     out <- paste0(out, "  #include 'fun_to_array.stan' \n",
-                  "  #include 'fun_kronecker_cholesky.stan' \n")
+                  "  #include 'fun_kronecker.stan' \n")
   }
   out
 }

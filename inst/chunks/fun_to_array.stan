@@ -8,7 +8,8 @@
    */ 
   vector[] to_array(vector X, int N, int K) { 
     vector[K] Y[N]; 
-    for (i in 1:N) 
+    for (i in 1:N) {
       Y[i] <- X[((i - 1) * K + 1):(i * K)]; 
+    }
     return Y; 
   } 

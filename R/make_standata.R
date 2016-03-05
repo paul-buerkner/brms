@@ -247,12 +247,10 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
           warning(paste("covariance matrix of grouping factor", g, 
                         "may not be positive definite"), call. = FALSE)
         cov_mat <- cov_mat[order(found_level_names), order(found_level_names)]
-        if (length(r[[i]]) == 1 || !random$cor[[i]]) {
-          # pivoting ensures that (numerically) semi-definite matrices can be used
-          cov_mat <- suppressWarnings(chol(cov_mat, pivot = TRUE))
-          cov_mat <- t(cov_mat[, order(attr(cov_mat, "pivot"))])
-        } 
-        standata <- c(standata, setNames(list(cov_mat), paste0("cov_",i)))
+        # pivoting ensures that semi-definite matrices can be used
+        cov_mat <- SW(chol(cov_mat, pivot = TRUE))
+        cov_mat <- t(cov_mat[, order(attr(cov_mat, "pivot"))])
+        standata <- c(standata, setNames(list(cov_mat), paste0("Lcov_",i)))
       }
     }
   }

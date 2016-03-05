@@ -100,8 +100,8 @@ test_that("self-defined Stan functions work correctly", {
   A <- matrix(c(3, 2, 1, 2, 4, 1, 1, 1, 5), nrow = 3)
   B <- matrix(c(3, 2, 2, 4), nrow = 2)
   sd <- c(2, 7)
-  expect_equal(t(kronecker_cholesky(A, t(chol(B)), sd)),
-               chol(kronecker(A, diag(sd) %*% B %*% diag(sd))))
+  expect_equal(t(chol(base::kronecker(A, diag(sd) %*% B %*% diag(sd)))),
+               kronecker(t(chol(A)), diag(sd) %*% t(chol(B))))
   
   # to_array
   expect_equal(to_array(1:28, 4, 7), list(1:7, 8:14, 15:21, 22:28))

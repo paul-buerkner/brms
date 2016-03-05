@@ -28,8 +28,7 @@ test_that(paste("make_stancode returns correct strings",
                "r_1 <- sd_1 * (cov_1 * pre_1)", fixed = TRUE)
   expect_match(make_stancode(rating ~ treat + period + carry + (1+carry|subject), 
                              data = inhaler, cov_ranef = list(subject = 1)),
-               paste0("r_1 <- to_array(kronecker_cholesky(cov_1, L_1, sd_1) * ",
-                      "to_vector(pre_1), N_1, K_1"),
+               "kronecker(Lcov_1, diag_pre_multiply(sd_1, L_1)) * to_vector(pre_1)",
                fixed = TRUE)
   expect_match(make_stancode(rating ~ treat + period + carry + (1+carry||subject), 
                              data = inhaler, cov_ranef = list(subject = 1)), 
