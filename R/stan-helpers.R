@@ -119,17 +119,12 @@ stan_ranef <- function(i, ranef, prior = prior_frame(),
     out$prior <- paste0(out$prior, 
       stan_prior(class = "L", group = g, gi = pi, prior = prior),
       "  to_vector(pre_", pi, ") ~ normal(0, 1); \n")
-    #out$transD <- paste0("  vector[K_", pi, "] r_", pi, "[N_", pi, "];  // REs \n")
     out$transD <- paste0("  matrix[N_", pi, ", K_", pi, "] r_", pi, ";  // REs \n")
     if (ccov) {  # customized covariance matrix supplied
       out$transC <- paste0("  r_", pi," <- as_matrix(kronecker(Lcov_", pi, ",", 
         " diag_pre_multiply(sd_", pi,", L_", pi,")) *",
         " to_vector(pre_", pi, "), N_", pi, ", K_", pi, "); \n")
     } else { 
-      #out$transC <- paste0(
-      #  "  for (i in 1:N_", pi, ") { \n",
-      #  "    r_", pi,  "[i] <- sd_", pi, " .* (L_", pi, " * ", 
-      #  "to_vector(pre_", pi, "[i])); \n  } \n")
       out$transC <- paste0("  r_", pi, " <- ", 
         "(diag_pre_multiply(sd_", pi, ", L_", pi,") * pre_", pi, ")'; \n")
     }
