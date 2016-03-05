@@ -122,7 +122,7 @@ stan_ranef <- function(i, ranef, prior = prior_frame(),
     #out$transD <- paste0("  vector[K_", pi, "] r_", pi, "[N_", pi, "];  // REs \n")
     out$transD <- paste0("  matrix[N_", pi, ", K_", pi, "] r_", pi, ";  // REs \n")
     if (ccov) {  # customized covariance matrix supplied
-      out$transC <- paste0("  r_", pi," <- to_array(kronecker(Lcov_", pi, ",", 
+      out$transC <- paste0("  r_", pi," <- as_matrix(kronecker(Lcov_", pi, ",", 
         " diag_pre_multiply(sd_", pi,", L_", pi,")) *",
         " to_vector(pre_", pi, "), N_", pi, ", K_", pi, "); \n")
     } else { 
@@ -907,7 +907,7 @@ stan_misc_functions <- function(family = gaussian(), kronecker = FALSE) {
     out <- paste0(out, "  #include 'fun_cauchit.stan' \n")
   }
   if (kronecker) {
-    out <- paste0(out, "  #include 'fun_to_array.stan' \n",
+    out <- paste0(out, "  #include 'fun_as_matrix.stan' \n",
                   "  #include 'fun_kronecker.stan' \n")
   }
   out
