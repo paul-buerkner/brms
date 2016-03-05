@@ -7,7 +7,7 @@ test_that("family functions returns expected results", {
   expect_equal(bernoulli(logit)$link, "logit")
   expect_error(bernoulli("identity"), "bernoulli")
   expect_equal(negbinomial(sqrt)$link, "sqrt")
-  expect_error(negbinomial(inverse), "negbinomial")
+  expect_error(negbinomial(inverse), "inverse")
   expect_equal(geometric(identity)$link, "identity")
   expect_error(geometric("inv"), "geometric")
   expect_equal(exponential(log)$link, "log")
@@ -34,7 +34,7 @@ test_that("family functions returns expected results", {
   expect_equivalent(zero_inflated_binomial(), zi_binom)
   expect_error(zero_inflated_binomial(y~x), "zero_inflated_binomial")
   expect_equal(categorical()$link, "logit")
-  expect_error(categorical(probit), "categorical")
+  expect_error(categorical(probit), "probit")
   expect_equal(cumulative(cauchit)$family, "cumulative")
   expect_equal(sratio(probit_approx)$link, "probit_approx")
   expect_equal(cratio("cloglog")$family, "cratio")
@@ -68,6 +68,6 @@ test_that("check_family rejects invalid families", {
 })
 
 test_that("print brmsfamily works correctly", {
-  expect_output(weibull(), "Family: weibull \nLink function: log")
-  expect_output(bernoulli(type = "2PL"), "Type: 2PL")
+  expect_output(print(weibull()), "Family: weibull \nLink function: log")
+  expect_output(print(bernoulli(type = "2PL")), "Type: 2PL")
 })

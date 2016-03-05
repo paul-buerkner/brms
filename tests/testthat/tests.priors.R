@@ -57,11 +57,11 @@ test_that("check_prior accepts correct prior names", {
 })
 
 test_that("check_prior rejects incorrect prior names", {
-  expect_message(check_prior(c(set_prior("p1", class = "b", coef = "Intercept"),
+  expect_message(check_prior(c(set_prior("p1", class = "Intercept"),
                                set_prior("p2", class = "b", coef = "age")),
                              family = acat(), data = inhaler,
                              formula = rating ~ treat + (1+treat|subject)))
-  expect_message(check_prior(c(set_prior("p1", class = "b", coef = "Intercept"),
+  expect_message(check_prior(c(set_prior("p1", class = "Intercept"),
                                set_prior("", class = "sd", group = "patient")),
                              formula = rating ~ treat + (1+treat|subject), 
                              family = cauchy(), data = inhaler))

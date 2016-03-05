@@ -136,8 +136,7 @@ test_that("extract_time returns all desired variables", {
   expect_error(extract_time(~t1+t2|g1), 
                "Autocorrelation structures may only contain 1 time variable")
   expect_error(extract_time(~1|g1/g2), 
-               paste("Illegal grouping term: g1/g2 \n",
-                     "may contain only variable names combined by the symbol ':'\n"))
+               paste("Illegal grouping term: g1/g2"))
 })
 
 test_that("update_formula returns correct formulas", {
