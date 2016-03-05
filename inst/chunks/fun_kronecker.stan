@@ -6,13 +6,9 @@
    */ 
   matrix kronecker(matrix A, matrix B) { 
     matrix[rows(A)*rows(B), cols(A)*cols(B)] kron; 
-    for (i in 1:rows(A)) { 
-      for (j in 1:rows(B)) { 
-        for (k in 1:rows(A)) { 
-          for (l in 1:rows(B)) { 
-            kron[(k-1) * rows(B)+l, (i-1) * rows(B)+j] <- A[k,i] * B[l,j]; 
-          } 
-        } 
+    for (i in 1:cols(A)) { 
+      for (j in 1:rows(A)) { 
+        kron[((j-1)*rows(B)+1):(j*rows(B)), ((i-1)*cols(B)+1):(i*cols(B))] <- A[j,i] * B;
       } 
     } 
     return kron; 
