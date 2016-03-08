@@ -216,7 +216,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       g <- random$group[[i]]
       if (length(nonlinear)) {
         # REs have to be prepared separately for each non-linear parameter
-        pi <- paste0(rownames(random)[i], "_", get_re_index(i, random))
+        pi <- paste0(random$nlpar[i], "_", get_re_index(i, random))
       } else pi <- i 
       name <- paste0(c("J_", "N_", "K_", "Z_", "NC_"), pi)
       if (ncolZ[[i]] == 1) {

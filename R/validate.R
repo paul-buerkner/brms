@@ -214,7 +214,7 @@ nonlinear_effects <- function(x, model = ~ 1) {
       }
       nlresp <- all.vars(x[[i]][[2]])
       if (length(nlresp) != 1) {
-        stop("RHS of non-linear formula must contain exactly one variable.")
+        stop("LHS of non-linear formula must contain exactly one variable.")
       }
       if (any(ulapply(c(".", "_"), grepl, x = nlresp, fixed = TRUE))) {
         stop("Non-linear parameters should not contain dots or underscores.")
@@ -280,7 +280,9 @@ update_formula <- function(formula, data = NULL, partial = NULL,
   if (fnew != ". ~ .") {
     formula <- update.formula(formula, formula(fnew))
   }
-  attr(formula, "nonlinear") <- length(nonlinear) > 0
+  if (!isTRUE(attr(formula, "nonlinear"))) {
+    attr(formula, "nonlinear") <- length(nonlinear) > 0
+  }
   formula
 }
 
@@ -430,6 +432,8 @@ get_random <- function(effects) {
   #   effects: object returned by extract_effects
   if (!is.null(effects$nonlinear)) {
     out <- do.call(rbind, lapply(effects$nonlinear, function(par) par$random))
+    # R does not allow duplicated rownames and adds "." causing Stan to fail
+    out$nlpar <- get_matches("^[^\\.]+", rownames(out))
     attr(out, "nonlinear") <- TRUE
   } else {
     out <- effects$random
@@ -442,9 +446,9 @@ get_re_index <- function(i, random) {
   # Args:
   #   i: an index
   #   random: data.frame returned by get_random
-  rn <- rownames(random)
+  rn <- random$nlpar
   if (isTRUE(attr(random, "nonlinear"))) {
-    # each non-linear parameter may have its own random effects
+    # each non-linear parameter may has its own random effects
     i <- which(which(rn == rn[i]) == i)
   }
   i
@@ -598,7 +602,7 @@ gather_ranef <- function(effects, data = NULL, ...) {
     attr(ranef[[i]], "group") <- names(ranef)[i]
     attr(ranef[[i]], "cor") <- random$cor[[i]]
     if (length(effects$nonlinear))
-      attr(ranef[[i]], "nlpar") <- rownames(random)[i]
+      attr(ranef[[i]], "nlpar") <- random$nlpar[i]
   }
   ranef
 }
