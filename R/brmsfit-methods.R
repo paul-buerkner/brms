@@ -898,18 +898,23 @@ pairs.brmsfit <- function(x, pars = NA, exact_match = FALSE, ...) {
 
 #' @rdname marginal_effects
 #' @export
-marginal_effects.brmsfit <- function(x, effects = NULL, data = NULL, 
+marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL, 
                                      re_formula = NA, probs = c(0.025, 0.975),
                                      method = c("fitted", "predict"), ...) {
   method <- match.arg(method)
+  dots <- list(...)
+  conditions <- use_alias(conditions, dots$data)
   x$formula <- SW(update_formula(x$formula, partial = x$partial))
-  ee <- extract_effects(x$formula, family = x$family, nonlinear = x$nonlinear)
+  new_formula <- update_re_terms(x$formula, re_formula = re_formula)
+  new_nonlinear <- lapply(x$nonlinear, update_re_terms, re_formula = re_formula)
+  ee <- extract_effects(new_formula, family = x$family, 
+                        nonlinear = new_nonlinear)
   if (is.linear(x$family) && length(ee$response) > 1) {
     stop("Marginal plots are not yet implemented for multivariate models.",
          call. = FALSE)
   }
   rsv_vars <- rsv_vars(x$family, nresp = length(ee$response))
-  if (length(x$nonlinear)) {
+  if (length(ee$nonlinear)) {
     # allow covariates as well as fixed effects of non-linear parameters
     covars <- setdiff(all.vars(rhs(ee$fixed)), names(ee$nonlinear))
     nlpar_effects <- unlist(lapply(ee$nonlinear, function(nl)
@@ -941,7 +946,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, data = NULL,
   if (!length(unlist(effects))) {
     stop("No valid effects specified.", call. = FALSE)
   }
-  if (any(ulapply(effects, length) > 2)) {
+  if (any(ulapply(effects, length) > 2L)) {
     stop("Interactions of order higher than 2 are currently not supported.",
          call. = FALSE)
   }
@@ -955,48 +960,49 @@ marginal_effects.brmsfit <- function(x, effects = NULL, data = NULL,
             call. = FALSE)
   }
   
-  # prepare marginal data
+  # prepare marginal conditions
   mf <- model.frame(x)
-  if (is.null(data)) {
+  if (is.null(conditions)) {
     if (!is_equal(x$autocor, cor_arma()) || 
         length(rmNULL(ee[c("se", "trials", "cat")]))) {
-      stop("Please specify argument 'data' manually for this model.", 
+      stop("Please specify argument 'conditions' manually for this model.", 
            call. = FALSE)
     }
-    vars <- c(lapply(get_fixed(ee), rhs), get_random(ee)$form, ee$cse)
-    vars <- unique(ulapply(vars, all.vars))
-    vars <- setdiff(vars, c(rsv_vars, names(ee$nonlinear)))
-    data <- as.data.frame(as.list(rep(NA, length(vars))))
-    names(data) <- vars
-    for (v in vars) {
+    req_vars <- c(lapply(get_fixed(ee), rhs), get_random(ee)$form, ee$cse)
+    req_vars <- unique(ulapply(req_vars, all.vars))
+    req_vars <- setdiff(req_vars, c(rsv_vars, names(ee$nonlinear)))
+    conditions <- as.data.frame(as.list(rep(NA, length(req_vars))))
+    names(conditions) <- req_vars
+    for (v in req_vars) {
       if (is.numeric(mf[[v]])) {
-        data[[v]] <- mean(mf[[v]])
+        conditions[[v]] <- mean(mf[[v]])
       } else {
         # use reference category
         lev <- attr(as.factor(mf[[v]]), "levels")
-        data[[v]] <- factor(lev[1], levels = lev)
+        conditions[[v]] <- factor(lev[1], levels = lev)
       }
     }
-  } else if (is.data.frame(data)) {
-    if (!nrow(data)) {
-      stop("data must have a least one row", call. = FALSE)
+  } else if (is.data.frame(conditions)) {
+    if (!nrow(conditions)) {
+      stop("'conditions' must have a least one row", call. = FALSE)
     }
-    if (any(duplicated(rownames(data)))) {
-      stop("Row names of 'data' should be unique.", call. = FALSE)
+    if (any(duplicated(rownames(conditions)))) {
+      stop("Row names of 'conditions' should be unique.", call. = FALSE)
     }
-    vars <- lapply(effects, function(e) all.vars(parse(text = e)))
-    unique_vars <- unique(unlist(vars))
-    is_everywhere <- ulapply(unique_vars, function(uv)
-      all(ulapply(vars, function(vs) uv %in% vs)))
+    conditions <- unique(conditions)
+    eff_vars <- lapply(effects, function(e) all.vars(parse(text = e)))
+    uni_eff_vars <- unique(unlist(eff_vars))
+    is_everywhere <- ulapply(uni_eff_vars, function(uv)
+      all(ulapply(eff_vars, function(vs) uv %in% vs)))
     # variables that are present in every effect term
-    # do not need to be defined in data
-    missing_vars <- setdiff(unique_vars[is_everywhere], names(data)) 
-    data[, missing_vars] <- mf[1, missing_vars] 
+    # do not need to be defined in conditions
+    missing_vars <- setdiff(uni_eff_vars[is_everywhere], names(conditions)) 
+    conditions[, missing_vars] <- mf[1, missing_vars] 
   } else {
-    stop("data must be a data.frame or NULL")
+    stop("conditions must be a data.frame or NULL")
   }
-  data <- amend_newdata(data, fit = x, re_formula = re_formula,
-                        allow_new_levels = TRUE, return_standata = FALSE)
+  conditions <- amend_newdata(conditions, fit = x, re_formula = re_formula,
+                              allow_new_levels = TRUE, return_standata = FALSE)
 
   results <- list()
   for (i in seq_along(effects)) {
@@ -1029,15 +1035,15 @@ marginal_effects.brmsfit <- function(x, effects = NULL, data = NULL,
     }
     # no need to have the same value combination more than once
     marg_data <- unique(marg_data)
-    marg_data <- replicate(nrow(data), simplify = FALSE,
+    marg_data <- replicate(nrow(conditions), simplify = FALSE,
      expr = marg_data[do.call(order, as.list(marg_data)), , drop = FALSE])
-    marg_vars <- setdiff(names(data), effects[[i]])
-    for (j in 1:nrow(data)) {
-      marg_data[[j]][, marg_vars] <- data[j, marg_vars]
-      marg_data[[j]][["MargRow"]] <- rownames(data)[j]
+    marg_vars <- setdiff(names(conditions), effects[[i]])
+    for (j in 1:nrow(conditions)) {
+      marg_data[[j]][, marg_vars] <- conditions[j, marg_vars]
+      marg_data[[j]][["MargCond"]] <- rownames(conditions)[j]
     }
     marg_data <- do.call(rbind, marg_data)
-    marg_data$MargRow <- factor(marg_data$MargRow, levels = rownames(data))
+    marg_data$MargCond <- factor(marg_data$MargCond, rownames(conditions))
     args <- list(x, newdata = marg_data, re_formula = re_formula,
                  allow_new_levels = TRUE, probs = probs)
     if (is.ordinal(x$family) || is.categorical(x$family)) {
@@ -1065,7 +1071,10 @@ marginal_effects.brmsfit <- function(x, effects = NULL, data = NULL,
     marg_res = cbind(marg_data, marg_res)
     attr(marg_res, "response") <- as.character(x$formula[2])
     attr(marg_res, "effects") <- effects[[i]]
-    attr(marg_res, "rug") <- mf[, effects[[i]][1], drop = FALSE]
+    point_args <- nlist(mf, effects = effects[[i]], conditions,
+                        groups = get_random(ee)$group)
+    # see brmsfit-helpers.R
+    attr(marg_res, "points") <- do.call(make_point_frame, point_args)
     results[[paste0(effects[[i]], collapse = ":")]] <- marg_res
   }
   class(results) <- "brmsMarginalEffects"

@@ -6,14 +6,15 @@
 \alias{plot.brmsMarginalEffects}
 \title{Display marginal effects of predictors}
 \usage{
-\method{marginal_effects}{brmsfit}(x, effects = NULL, data = NULL,
+\method{marginal_effects}{brmsfit}(x, effects = NULL, conditions = NULL,
   re_formula = NA, probs = c(0.025, 0.975), method = c("fitted",
   "predict"), ...)
 
 marginal_effects(x, ...)
 
-\method{plot}{brmsMarginalEffects}(x, ncol = NULL, rug = FALSE,
-  theme = ggplot2::theme(), ask = TRUE, do_plot = TRUE, ...)
+\method{plot}{brmsMarginalEffects}(x, ncol = NULL, points = FALSE,
+  rug = FALSE, theme = ggplot2::theme(), ask = TRUE, do_plot = TRUE,
+  ...)
 }
 \arguments{
 \item{x}{An object usually of class \code{brmsfit}}
@@ -22,7 +23,7 @@ marginal_effects(x, ...)
 (main effects or interactions) for which to compute marginal plots.
 If \code{NULL} (the default), plots for all effects are generated.}
 
-\item{data}{An optional \code{data.frame} containing variable values
+\item{conditions}{An optional \code{data.frame} containing variable values
 to marginalize on. Each effect defined in \code{effects} will
 be plotted separately for each row of \code{data}. 
 The row names of \code{data} will be treated as titles of the subplots. 
@@ -46,6 +47,11 @@ If \code{"predict"}, plot marginal predictions of the responses.}
 \item{ncol}{Number of plots to display per column for each effect.
 If \code{NULL} (default), \code{ncol} is computed internally based
 on the number of rows of \code{data}.}
+
+\item{points}{Logical; indicating whether the original data points
+should be added via \code{\link[ggplot2:geom_point]{geom_point}}.
+Default is \code{FALSE}. Note that only those data points will be added
+that match the specified conditions defined in \code{conditions}.}
 
 \item{rug}{Logical; indicating whether a rug representation of predictor
 values should be added via \code{\link[ggplot2:geom_rug]{geom_rug}}.

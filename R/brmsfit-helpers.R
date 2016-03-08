@@ -576,6 +576,45 @@ find_names <- function(x) {
   unlist(regmatches(x, pos_var))
 }
 
+make_point_frame <- function(mf, effects, conditions, groups) {
+  # helper function for marginal_effects.brmsfit
+  # allowing add data points to the marginal plots
+  # Args:
+  #   mf: the original model.frame
+  #   effects: see argument 'effects' of marginal_effects
+  #   conditions: see argument 'conditions' of marginal_effects
+  #   groups: names of the grouping factors
+  # Returns:
+  #   a data.frame containing the data points to be plotted
+  points <- mf[, effects[1], drop = FALSE]
+  points$.RESP <- model.response(mf)
+  # get required variables i.e. (grouping) factors
+  list_mf <- lapply(as.list(mf), function(x)
+    if (is.numeric(x)) x else as.factor(x))
+  req_vars <- names(mf)[sapply(list_mf, is.factor)]
+  if (length(groups)) {
+    req_vars <- c(req_vars, unlist(strsplit(groups, ":")))
+  }
+  req_vars <- unique(setdiff(req_vars, effects))
+  if (length(req_vars)) {
+    # find out which data point is valid for which condition
+    mf <- mf[, req_vars, drop = FALSE]
+    conditions <- conditions[, req_vars, drop = FALSE]
+    points$MargCond <- NA
+    points <- replicate(nrow(conditions), points, simplify = FALSE)
+    for (i in seq_along(points)) {
+      # do it like base::duplicated
+      K <- do.call("paste", c(mf, sep = "\r")) %in% 
+           do.call("paste", c(conditions[i, , drop = FALSE], sep = "\r"))
+      points[[i]]$MargCond[K] <- rownames(conditions)[i] 
+    }
+    points <- do.call(rbind, points)
+    # MargCond allows to assign points to conditions
+    points$MargCond <- factor(points$MargCond, rownames(conditions))
+  }
+  na.omit(points)
+}
+
 add_samples <- function(x, newpar, dim = numeric(0), dist = "norm", ...) {
   # add some random samples to a brmsfit object 
   # currently only used within tests

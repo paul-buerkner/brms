@@ -468,7 +468,7 @@ stanplot <- function(object, pars, ...)
 #' @param effects An optional character vector naming effects
 #'   (main effects or interactions) for which to compute marginal plots.
 #'   If \code{NULL} (the default), plots for all effects are generated.
-#' @param data An optional \code{data.frame} containing variable values
+#' @param conditions An optional \code{data.frame} containing variable values
 #'   to marginalize on. Each effect defined in \code{effects} will
 #'   be plotted separately for each row of \code{data}. 
 #'   The row names of \code{data} will be treated as titles of the subplots. 
@@ -486,6 +486,10 @@ stanplot <- function(object, pars, ...)
 #' @param ncol Number of plots to display per column for each effect.
 #'   If \code{NULL} (default), \code{ncol} is computed internally based
 #'   on the number of rows of \code{data}.
+#' @param points Logical; indicating whether the original data points
+#'   should be added via \code{\link[ggplot2:geom_point]{geom_point}}.
+#'   Default is \code{FALSE}. Note that only those data points will be added
+#'   that match the specified conditions defined in \code{conditions}.
 #' @param rug Logical; indicating whether a rug representation of predictor
 #'   values should be added via \code{\link[ggplot2:geom_rug]{geom_rug}}.
 #'   Default is \code{FALSE}.

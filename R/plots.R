@@ -33,8 +33,8 @@ trace_density_plot <- function(x, theme = ggplot2::theme()) {
 #' @rdname marginal_effects
 #' @method plot brmsMarginalEffects
 #' @export 
-plot.brmsMarginalEffects <- function(x, ncol = NULL, rug = FALSE,
-                                     theme = ggplot2::theme(), 
+plot.brmsMarginalEffects <- function(x, ncol = NULL, points = FALSE, 
+                                     rug = FALSE, theme = ggplot2::theme(), 
                                      ask = TRUE, do_plot = TRUE, ...) {
   # Compute marginal effects plots using ggplot2
   # Returns:
@@ -51,12 +51,12 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, rug = FALSE,
     plots[[i]] <- ggplot(data = x[[i]]) + 
       aes_string(x = effects, y = "Estimate", ymin = "lowerCI",
                  ymax = "upperCI") + ylab(response) + theme
-    nMargins <- length(unique(x[[i]]$MargRow))
+    nMargins <- length(unique(x[[i]]$MargCond))
     if (nMargins > 1) {
       # one plot per row of marginal_data
       if (is.null(ncol)) ncol <- max(floor(sqrt(nMargins)), 3) 
       plots[[i]] <- plots[[i]] + 
-        facet_wrap("MargRow", ncol = ncol)
+        facet_wrap("MargCond", ncol = ncol)
     }
     if (length(effects) == 2) {
       # differentiate by colour in case of interaction effects
@@ -69,12 +69,17 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, rug = FALSE,
       if (rug) {
         plots[[i]] <- plots[[i]] + 
           geom_rug(aes_string(x = effects[1]), sides = "b", 
-                   data = attributes(x[[i]])$rug, inherit.aes = FALSE)
+                   data = attr(x[[i]], "points"), inherit.aes = FALSE)
       }
     } else {
       # pointrange for factors
       plots[[i]] <- plots[[i]] + 
         geom_pointrange(position = position_dodge(width = 0.4), fatten = 7)
+    }
+    if (points) {
+      plots[[i]] <- plots[[i]] + 
+        geom_point(aes_string(x = effects[1], y = ".RESP"), shape = 1,
+                   data = attr(x[[i]], "points"), inherit.aes = FALSE)
     }
     if (do_plot) {
       plot(plots[[i]])
