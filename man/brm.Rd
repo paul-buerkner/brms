@@ -212,7 +212,7 @@ Fit a generalized linear mixed model,
   using the formulae \code{yi | se(sei) ~ 1} and 
   \code{yi | se(sei) ~ 1 + (1|study)}, respectively, where 
   \code{study} is a variable uniquely identifying every study.
-  If desired, meta-regressen can be performed via 
+  If desired, meta-regression can be performed via 
   \code{yi | se(sei) ~ 1 + mod1 + mod2 + (1|study)} 
   or \cr \code{yi | se(sei) ~ 1 + mod1 + mod2 + (1 + mod1 + mod2|study)}, where
   \code{mod1} and \code{mod2} represent moderator variables. 

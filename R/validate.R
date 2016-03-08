@@ -246,7 +246,7 @@ nonlinear2list <- function(x) {
     nlpars <- all.vars(lhs(x))
     x <- lapply(nlpars, function(nlp) update(x, paste(nlp, " ~ .")))
   } else if (!(is.list(x) || is.null(x))) {
-    stop("Invalid 'nonlinear' argument", call. = FALSE)
+    stop("invalid 'nonlinear' argument", call. = FALSE)
   }
   x
 }
