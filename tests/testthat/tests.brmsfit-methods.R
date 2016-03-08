@@ -70,13 +70,15 @@ test_that("all S3 methods have reasonable ouputs", {
   mdata = data.frame(log_Age_c = c(-0.3, 0, 0.3), count = c(10, 20, 30), 
                      visit = 1:3, patient = 1)
   exp_nrow <- nrow(mdata) * 100
-  expect_equal(nrow(marginal_effects(fit, data = mdata)[[1]]),
+  expect_equal(nrow(marginal_effects(fit, conditions = mdata)[[1]]),
                exp_nrow)
-  expect_equal(nrow(marginal_effects(fit, effects = "Trt_c", data = mdata)[[1]]), 
+  expect_equal(nrow(marginal_effects(fit, effects = "Trt_c", 
+                                     conditions = mdata)[[1]]), 
                exp_nrow)
-  expect_equal(nrow(marginal_effects(fit, re_formula = NULL, data = mdata)[[1]]), 
+  expect_equal(nrow(marginal_effects(fit, re_formula = NULL, 
+                                     conditions = mdata)[[1]]), 
                exp_nrow)
-  expect_error(marginal_effects(fit), "Please specify argument 'data' manually")
+  expect_error(marginal_effects(fit), "Please specify argument 'conditions' manually")
   expect_error(marginal_effects(fit, effects = "Trt_cc"), 
                "No valid effects specified")
   # model.frame

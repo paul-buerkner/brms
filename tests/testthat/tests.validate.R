@@ -100,7 +100,7 @@ test_that("nonlinear_effects rejects invalid non-linear models", {
   expect_error(nonlinear_effects(list( ~ 1, a ~ 1), model = y ~ a),
                "Non-linear formulas must be two-sided")
   expect_error(nonlinear_effects(list(a + b ~ 1), model = y ~ exp(-x)),
-               "RHS of non-linear formula must contain exactly one variable")
+               "LHS of non-linear formula must contain exactly one variable")
   expect_error(nonlinear_effects(list(a.b ~ 1), model = y ~ a^x),
                "not contain dots or underscores")
   expect_error(nonlinear_effects(list(a_b ~ 1), model = y ~ a^(x+b)),
@@ -122,7 +122,7 @@ test_that("nonlinear2list works correctly", {
   expect_equal(nonlinear2list(list(a ~ 1, b ~ 1 + z)),
                list(a ~ 1, b ~ 1 + z))
   expect_equal(nonlinear2list(NULL), NULL)
-  expect_error(nonlinear2list(1), "Invalid 'nonlinear' argument")
+  expect_error(nonlinear2list(1), "invalid 'nonlinear' argument")
 })
 
 test_that("extract_time returns all desired variables", {
