@@ -596,6 +596,7 @@ make_point_frame <- function(mf, effects, conditions, groups) {
     req_vars <- c(req_vars, unlist(strsplit(groups, ":")))
   }
   req_vars <- unique(setdiff(req_vars, effects))
+  req_vars <- intersect(req_vars, names(conditions))
   if (length(req_vars)) {
     # find out which data point is valid for which condition
     mf <- mf[, req_vars, drop = FALSE]
@@ -603,9 +604,11 @@ make_point_frame <- function(mf, effects, conditions, groups) {
     points$MargCond <- NA
     points <- replicate(nrow(conditions), points, simplify = FALSE)
     for (i in seq_along(points)) {
+      cond <- conditions[i, , drop = FALSE]
+      not_na <- c(!is.na(cond))
       # do it like base::duplicated
-      K <- do.call("paste", c(mf, sep = "\r")) %in% 
-           do.call("paste", c(conditions[i, , drop = FALSE], sep = "\r"))
+      K <- do.call("paste", c(mf[, not_na, drop = FALSE], sep = "\r")) %in% 
+           do.call("paste", c(cond[, not_na, drop = FALSE], sep = "\r"))
       points[[i]]$MargCond[K] <- rownames(conditions)[i] 
     }
     points <- do.call(rbind, points)
