@@ -51,10 +51,10 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, points = FALSE,
     plots[[i]] <- ggplot(data = x[[i]]) + 
       aes_string(x = effects, y = "Estimate", ymin = "lowerCI",
                  ymax = "upperCI") + ylab(response) + theme
-    nMargins <- length(unique(x[[i]]$MargCond))
-    if (nMargins > 1) {
+    nCond <- length(unique(x[[i]]$MargCond))
+    if (nCond > 1) {
       # one plot per row of marginal_data
-      if (is.null(ncol)) ncol <- max(floor(sqrt(nMargins)), 3) 
+      if (is.null(ncol)) ncol <- max(floor(sqrt(nCond)), 3) 
       plots[[i]] <- plots[[i]] + 
         facet_wrap("MargCond", ncol = ncol)
     }
@@ -74,12 +74,14 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, points = FALSE,
     } else {
       # pointrange for factors
       plots[[i]] <- plots[[i]] + 
-        geom_pointrange(position = position_dodge(width = 0.4), fatten = 7)
+        geom_pointrange(position = position_dodge(width = 0.4), 
+                        fatten = 8 / nCond^0.25)
     }
     if (points) {
       plots[[i]] <- plots[[i]] + 
         geom_point(aes_string(x = effects[1], y = ".RESP"), shape = 1,
-                   data = attr(x[[i]], "points"), inherit.aes = FALSE)
+                   size = 4 / nCond^0.25, data = attr(x[[i]], "points"), 
+                   inherit.aes = FALSE)
     }
     if (do_plot) {
       plot(plots[[i]])
