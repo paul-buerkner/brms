@@ -964,11 +964,12 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   mf <- model.frame(x)
   if (is.null(conditions)) {
     if (!is_equal(x$autocor, cor_arma()) || 
-        length(rmNULL(ee[c("se", "trials", "cat")]))) {
+        length(rmNULL(ee[c("trials", "cat")]))) {
       stop("Please specify argument 'conditions' manually for this model.", 
            call. = FALSE)
     }
-    req_vars <- c(lapply(get_fixed(ee), rhs), get_random(ee)$form, ee$cse)
+    req_vars <- c(lapply(get_fixed(ee), rhs), get_random(ee)$form, 
+                  ee$cse, ee$se, ee$disp)
     req_vars <- unique(ulapply(req_vars, all.vars))
     req_vars <- setdiff(req_vars, c(rsv_vars, names(ee$nonlinear)))
     conditions <- as.data.frame(as.list(rep(NA, length(req_vars))))
