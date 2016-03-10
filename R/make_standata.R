@@ -237,7 +237,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
                call. = FALSE)
         }
         colnames(cov_mat) <- found_level_names
-        true_level_names <- sort(as.character(unique(data[[g]])))
+        true_level_names <- levels(as.factor(get(g, data)))
         found <- true_level_names %in% found_level_names
         if (any(!found)) {
           stop(paste("rownames of covariance matrix of", g, 
