@@ -250,7 +250,8 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
           warning(paste("covariance matrix of grouping factor", g, 
                         "may not be positive definite"), call. = FALSE)
         }
-        standata <- c(standata, setNames(list(chol(cov_mat)), paste0("Lcov_",i)))
+        standata <- c(standata, setNames(list(t(chol(cov_mat))), 
+                                         paste0("Lcov_",i)))
       }
     }
   }
