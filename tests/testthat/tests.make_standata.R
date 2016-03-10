@@ -248,10 +248,10 @@ test_that("make_standata handles covariance matrices correctly", {
   expect_error(make_standata(count ~ Trt_c + (1|visit), data = epilepsy,
                              cov_ranef = list(visit = B)),
                "rownames .* do not match")
-  B <- structure(diag(1, 5), dimnames = list(1:5, NULL))
-  expect_error(make_standata(count ~ Trt_c + (1|visit), data = epilepsy,
-                             cov_ranef = list(visit = B)),
-               "dimension .* is incorrect")
+  B <- structure(diag(1:5), dimnames = list(c(1,5,2,4,3), NULL))
+  expect_equivalent(make_standata(count ~ Trt_c + (1|visit), data = epilepsy,
+                             cov_ranef = list(visit = B))$Lcov_1,
+                    chol(B[c(1,3,5,4), c(1,3,5,4)]))
   B <- A
   B[1,2] <- 0.5
   expect_error(make_standata(count ~ Trt_c + (1|visit), data = epilepsy,

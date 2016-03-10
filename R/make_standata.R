@@ -227,26 +227,29 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       }
       if (g %in% names(cov_ranef)) {
         cov_mat <- as.matrix(cov_ranef[[g]])
+        if (!isSymmetric(unname(cov_mat))) {
+          stop(paste("covariance matrix of grouping factor", g, 
+                     "is not symmetric"), call. = FALSE)
+        }
         found_level_names <- rownames(cov_mat)
-        colnames(cov_mat) <- found_level_names
-        true_level_names <- sort(as.character(unique(data[[g]])))
-        if (is.null(found_level_names)) 
+        if (is.null(found_level_names)) {
           stop(paste("rownames are required for covariance matrix of", g),
                call. = FALSE)
-        if (nrow(cov_mat) != length(true_level_names))
-          stop(paste("dimension of covariance matrix of", g, "is incorrect"),
-               call. = FALSE)
-        if (any(sort(found_level_names) != true_level_names))
+        }
+        colnames(cov_mat) <- found_level_names
+        true_level_names <- sort(as.character(unique(data[[g]])))
+        found <- true_level_names %in% found_level_names
+        if (any(!found)) {
           stop(paste("rownames of covariance matrix of", g, 
                      "do not match names of the grouping levels"),
                call. = FALSE)
-        if (!isSymmetric(unname(cov_mat)))
-          stop(paste("covariance matrix of grouping factor", g, 
-                     "is not symmetric"), call. = FALSE)
-        if (min(eigen(cov_mat, symmetric = TRUE, only.values = TRUE)$values) <= 0)
+        }
+        cov_mat <- cov_mat[true_level_names, true_level_names, drop = FALSE]
+        if (min(eigen(cov_mat, symmetric = TRUE, 
+                      only.values = TRUE)$values) <= 0) {
           warning(paste("covariance matrix of grouping factor", g, 
                         "may not be positive definite"), call. = FALSE)
-        cov_mat <- cov_mat[order(found_level_names), order(found_level_names)]
+        }
         # pivoting ensures that semi-definite matrices can be used
         cov_mat <- SW(chol(cov_mat, pivot = TRUE))
         cov_mat <- t(cov_mat[, order(attr(cov_mat, "pivot"))])
