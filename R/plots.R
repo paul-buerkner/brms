@@ -96,7 +96,7 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, points = FALSE,
 #' @export
 plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE, 
                                 theme = ggplot2::theme(), ask = TRUE, 
-                                do_plot = TRUE, ...) {
+                                do_plot = TRUE, chars = 20, ...) {
   if (!is.data.frame(x$samples)) {
     stop("No posterior samples found")
   }
@@ -116,7 +116,11 @@ plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE,
     on.exit(devAskNewPage(default_ask))
     devAskNewPage(ask = FALSE)
   }
-  hyps <- rownames(x$hypothesis)
+  hyps <- sub(" = 0", "", rownames(x$hypothesis))
+  if (is.null(chars)) chars <- max(nchar(hyps))
+  hyps <- ifelse(nchar(hyps) <= chars, hyps,
+                 paste0(substr(hyps, 1, chars - 3), "..."))
+  hyps <- paste(hyps, "= 0")
   names(x$samples)[seq_along(hyps)] <- hyps
   n_plots <- ceiling(length(hyps) / N)
   plots <- vector(mode = "list", length = n_plots)

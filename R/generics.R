@@ -49,6 +49,9 @@ brmssummary <- function(formula = NULL, family = "", link = "",
 #' @param ignore_prior A flag indicating if prior distributions 
 #'  should also be plotted. Only used if priors were specified on
 #'  the relevant parameters.
+#' @param chars Maximum number of characters of each hypothesis
+#'  to print or plot. If \code{NULL}, print the full hypotheses.
+#'  Defaults to \code{20}.
 #' @inheritParams plot.brmsfit
 #' @param ... Currently ignored
 #' 

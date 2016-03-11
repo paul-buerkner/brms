@@ -181,8 +181,15 @@ print.iclist <- function(x, digits = 2, ...) {
   invisible(x)
 }
 
+#' @rdname hypothesis
 #' @export
-print.brmshypothesis <- function(x, digits = 2, ...) {
+print.brmshypothesis <- function(x, digits = 2, chars = 20, ...) {
+  # make sure rownames are not too long
+  hyps <- sub(" = 0", "", rownames(x$hypothesis))
+  if (is.null(chars)) chars <- max(nchar(hyps))
+  hyps <- ifelse(nchar(hyps) <= chars, hyps,
+                 paste0(substr(hyps, 1, chars - 3), "..."))
+  rownames(x$hypothesis) <- paste(hyps, "= 0")
   cat(paste0("Hypothesis Tests for class ", x$class, ":\n"))
   x$hypothesis[, 1:5] <- round(x$hypothesis[, 1:5], digits = digits)
   print(x$hypothesis, quote = FALSE)
