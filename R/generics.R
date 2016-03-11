@@ -109,8 +109,9 @@ brmssummary <- function(formula = NULL, family = "", link = "",
 #' }
 #' 
 #' @export
-hypothesis <- function(x, hypothesis, ...)
+hypothesis <- function(x, hypothesis, ...) {
   UseMethod("hypothesis")
+}
 
 #' Extract posterior samples
 #' 
@@ -160,13 +161,15 @@ hypothesis <- function(x, hypothesis, ...)
 #' }
 #' 
 #' @export 
-posterior_samples <- function(x, pars = NA, ...)
+posterior_samples <- function(x, pars = NA, ...) {
   UseMethod("posterior_samples")
+}
 
 # deprecated alias of posterior_samples
 #' @export 
-posterior.samples <- function(x, pars = NA, ...)
+posterior.samples <- function(x, pars = NA, ...) {
   UseMethod("posterior_samples")
+}
 
 #' Extract prior samples
 #' 
@@ -207,8 +210,9 @@ posterior.samples <- function(x, pars = NA, ...)
 #' }
 #' 
 #' @export 
-prior_samples <- function(x, pars = NA, ...)
+prior_samples <- function(x, pars = NA, ...) {
   UseMethod("prior_samples")
+}
 
 #' Extract Parameter Names
 #' 
@@ -226,13 +230,9 @@ prior_samples <- function(x, pars = NA, ...)
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
 #' @export
-parnames <- function(x, ...)
+parnames <- function(x, ...) {
   UseMethod("parnames")
-
-# deprecated alias of parnames
-#' @export
-par.names <- function(x, ...)
-  UseMethod("parnames")
+}
 
 #' Compute the WAIC
 #' 
@@ -282,8 +282,9 @@ par.names <- function(x, ...)
 #' The Journal of Machine Learning Research, 11, 3571-3594.
 #' 
 #' @export
-WAIC <- function(x, ..., compare = TRUE)
+WAIC <- function(x, ..., compare = TRUE) {
   UseMethod("WAIC")
+}
 
 #' Compute LOO
 #' 
@@ -334,8 +335,9 @@ WAIC <- function(x, ..., compare = TRUE)
 #' The Journal of Machine Learning Research, 11, 3571-3594.
 #' 
 #' @export
-LOO <- function(x, ..., compare = TRUE)
+LOO <- function(x, ..., compare = TRUE) {
   UseMethod("LOO")
+}
 
 #' Interface to \pkg{shinystan}
 #' 
@@ -363,8 +365,9 @@ LOO <- function(x, ..., compare = TRUE)
 #' @seealso \code{\link[shinystan:launch_shinystan]{launch_shinystan}}
 #' 
 #' @export
-launch_shiny <- function(x, rstudio = getOption("shinystan.rstudio"), ...)
+launch_shiny <- function(x, rstudio = getOption("shinystan.rstudio"), ...) {
   UseMethod("launch_shiny")
+}
 
 #' Extract Stan Model Code
 #' 
@@ -378,8 +381,9 @@ launch_shiny <- function(x, rstudio = getOption("shinystan.rstudio"), ...)
 #' @return model code in stan language for further processing.
 #' 
 #' @export
-stancode <- function(object, ...)
+stancode <- function(object, ...) {
   UseMethod("stancode")
+}
 
 #' Extract Data passed to Stan
 #' 
@@ -393,8 +397,9 @@ stancode <- function(object, ...)
 #' @return A named list containing the data passed to Stan
 #' 
 #' @export
-standata <- function(object, ...)
+standata <- function(object, ...) {
   UseMethod("standata")
+}
 
 #' Various Plotting Functions implemented in \pkg{rstan} 
 #' 
@@ -456,8 +461,9 @@ standata <- function(object, ...)
 #' }
 #' 
 #' @export
-stanplot <- function(object, pars, ...)
+stanplot <- function(object, pars, ...) {
   UseMethod("stanplot")
+}
 
 #' Display marginal effects of predictors
 #' 
