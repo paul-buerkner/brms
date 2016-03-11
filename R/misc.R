@@ -176,11 +176,13 @@ limit_chars <- function(x, chars = NULL, lsuffix = 4) {
   # Args:
   #   x: a character vector
   #   chars: maximum number of characters to show
-  #   lsuffix: number of characters at the end to keep
+  #   lsuffix: number of characters to keep 
+  #            at the end of the strings
+  stopifnot(is.character(x))
   if (!is.null(chars)) {
-    chars_x <- nchar(x)
-    suffix <- substr(x, chars_x - lsuffix + 1, chars_x)
-    x <- substr(x, 1, chars_x - lsuffix)
+    chars_x <- nchar(x) - lsuffix
+    suffix <- substr(x, chars_x + 1, chars_x + lsuffix)
+    x <- substr(x, 1, chars_x)
     x <- ifelse(chars_x <= chars, x, paste0(substr(x, 1, chars - 3), "..."))
     x <- paste0(x, suffix)
   }
