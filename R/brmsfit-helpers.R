@@ -607,8 +607,12 @@ make_point_frame <- function(mf, effects, conditions, groups) {
       cond <- conditions[i, , drop = FALSE]
       not_na <- c(!is.na(cond))
       # do it like base::duplicated
-      K <- do.call("paste", c(mf[, not_na, drop = FALSE], sep = "\r")) %in% 
-           do.call("paste", c(cond[, not_na, drop = FALSE], sep = "\r"))
+      if (any(not_na)) {
+        K <- do.call("paste", c(mf[, not_na, drop = FALSE], sep = "\r")) %in% 
+             do.call("paste", c(cond[, not_na, drop = FALSE], sep = "\r"))
+      } else {
+        K <- 1:nrow(mf)
+      }
       points[[i]]$MargCond[K] <- rownames(conditions)[i] 
     }
     points <- do.call(rbind, points)
