@@ -18,10 +18,10 @@ hypothesis(x, hypothesis, ...)
   theme = ggplot2::theme(), ask = TRUE, do_plot = TRUE, chars = 20, ...)
 }
 \arguments{
-\item{x}{An \code{R} object typically of class \code{brmsfit}}
+\item{x}{An \code{R} object typically of class \code{brmsfit}.}
 
 \item{hypothesis}{A character vector specifying one or more 
-non-linear hypothesis concerning parameters of the model}
+non-linear hypothesis concerning parameters of the model.}
 
 \item{class}{A string specifying the class of parameters being tested. 
 Default is "b" for fixed effects. 
@@ -34,9 +34,12 @@ against each other, but have to be specified with their full name
 random effects parameters related to this grouping factor.
 Ignored if \code{class} is not \code{"sd"} or \code{"cor"}.}
 
-\item{alpha}{the alpha-level of the tests (default is 0.05)}
+\item{alpha}{The alpha-level of the tests (default is 0.05).}
 
-\item{...}{Currently ignored}
+\item{...}{Currently ignored.}
+
+\item{digits}{Minimal number of significant digits, 
+see \code{\link[base:print.default]{print.default}}.}
 
 \item{chars}{Maximum number of characters of each hypothesis
 to print or plot. If \code{NULL}, print the full hypotheses.

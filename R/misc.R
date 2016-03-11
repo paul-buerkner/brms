@@ -171,6 +171,22 @@ wsp <- function(x, nsp = 1) {
   else NULL
 }
 
+limit_chars <- function(x, chars = NULL, lsuffix = 4) {
+  # limit the number of characters of a vector
+  # Args:
+  #   x: a character vector
+  #   chars: maximum number of characters to show
+  #   lsuffix: number of characters at the end to keep
+  if (!is.null(chars)) {
+    chars_x <- nchar(x)
+    suffix <- substr(x, chars_x - lsuffix + 1, chars_x)
+    x <- substr(x, 1, chars_x - lsuffix)
+    x <- ifelse(chars_x <= chars, x, paste0(substr(x, 1, chars - 3), "..."))
+    x <- paste0(x, suffix)
+  }
+  x
+}
+
 use_alias <- function(arg, alias = NULL, warn = TRUE) {
   # ensure that deprecated arguments still work
   # Args:

@@ -116,11 +116,7 @@ plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE,
     on.exit(devAskNewPage(default_ask))
     devAskNewPage(ask = FALSE)
   }
-  hyps <- sub(" = 0", "", rownames(x$hypothesis))
-  if (is.null(chars)) chars <- max(nchar(hyps))
-  hyps <- ifelse(nchar(hyps) <= chars, hyps,
-                 paste0(substr(hyps, 1, chars - 3), "..."))
-  hyps <- paste(hyps, "= 0")
+  hyps <- limit_chars(rownames(x$hypothesis), chars = chars)
   names(x$samples)[seq_along(hyps)] <- hyps
   n_plots <- ceiling(length(hyps) / N)
   plots <- vector(mode = "list", length = n_plots)

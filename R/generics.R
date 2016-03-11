@@ -33,9 +33,9 @@ brmssummary <- function(formula = NULL, family = "", link = "",
 #' 
 #' @aliases hypothesis.brmsfit
 #' 
-#' @param x An \code{R} object typically of class \code{brmsfit}
+#' @param x An \code{R} object typically of class \code{brmsfit}.
 #' @param hypothesis A character vector specifying one or more 
-#'  non-linear hypothesis concerning parameters of the model
+#'  non-linear hypothesis concerning parameters of the model.
 #' @param class A string specifying the class of parameters being tested. 
 #'  Default is "b" for fixed effects. 
 #'  Other typical options are "sd" or "cor". 
@@ -45,15 +45,17 @@ brmssummary <- function(formula = NULL, family = "", link = "",
 #' @param group Name of a grouping factor to evaluate only 
 #'  random effects parameters related to this grouping factor.
 #'  Ignored if \code{class} is not \code{"sd"} or \code{"cor"}.
-#' @param alpha the alpha-level of the tests (default is 0.05)
+#' @param alpha The alpha-level of the tests (default is 0.05).
 #' @param ignore_prior A flag indicating if prior distributions 
 #'  should also be plotted. Only used if priors were specified on
 #'  the relevant parameters.
+#' @param digits Minimal number of significant digits, 
+#'   see \code{\link[base:print.default]{print.default}}.
 #' @param chars Maximum number of characters of each hypothesis
 #'  to print or plot. If \code{NULL}, print the full hypotheses.
 #'  Defaults to \code{20}.
 #' @inheritParams plot.brmsfit
-#' @param ... Currently ignored
+#' @param ... Currently ignored.
 #' 
 #' @details Among others, \code{hypothesis} computes an 
 #'  evidence ratio for each hypothesis. 
