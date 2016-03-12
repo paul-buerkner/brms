@@ -1073,7 +1073,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     attr(marg_res, "response") <- as.character(x$formula[2])
     attr(marg_res, "effects") <- effects[[i]]
     point_args <- nlist(mf, effects = effects[[i]], conditions,
-                        groups = get_random(ee)$group)
+                        groups = get_random(ee)$group, family = x$family)
     # see brmsfit-helpers.R
     attr(marg_res, "points") <- do.call(make_point_frame, point_args)
     results[[paste0(effects[[i]], collapse = ":")]] <- marg_res

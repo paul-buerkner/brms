@@ -576,7 +576,7 @@ find_names <- function(x) {
   unlist(regmatches(x, pos_var))
 }
 
-make_point_frame <- function(mf, effects, conditions, groups) {
+make_point_frame <- function(mf, effects, conditions, groups, family) {
   # helper function for marginal_effects.brmsfit
   # allowing add data points to the marginal plots
   # Args:
@@ -584,6 +584,7 @@ make_point_frame <- function(mf, effects, conditions, groups) {
   #   effects: see argument 'effects' of marginal_effects
   #   conditions: see argument 'conditions' of marginal_effects
   #   groups: names of the grouping factors
+  #   family: the model family
   # Returns:
   #   a data.frame containing the data points to be plotted
   points <- mf[, effects[1], drop = FALSE]
@@ -618,6 +619,12 @@ make_point_frame <- function(mf, effects, conditions, groups) {
     points <- do.call(rbind, points)
     # MargCond allows to assign points to conditions
     points$MargCond <- factor(points$MargCond, rownames(conditions))
+  }
+  if (!is.numeric(points$.RESP)) {
+    points$.RESP <- as.numeric(as.factor(points$.RESP))
+    if (is.binary(family)) {
+      points$.RESP <- points$.RESP - 1
+    }
   }
   na.omit(points)
 }
