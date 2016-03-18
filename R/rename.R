@@ -167,14 +167,7 @@ rename_pars <- function(x) {
       if (any(grepl("^r_", pars))) {
         rc_args <- nlist(i, k, gf, pars, ranef = x$ranef, 
                          dims_oi = x$fit@sim$dims_oi)
-        if (length(x$ranef[[i]]) == 1 || random$cor[[i]]) {
-          change <- lc(change, do.call(ranef_changes, rc_args))
-        } else {
-          # multiple uncorrelated random effects
-          for (j in seq_along(x$ranef[[i]])) {
-            change <- lc(change, do.call(ranef_changes, c(rc_args, j = j)))
-          }
-        }
+        change <- lc(change, do.call(ranef_changes, rc_args))
       }  
     }
   }
@@ -303,30 +296,25 @@ matching_rows <- function(i, data, check.attributes = FALSE, ...) {
           check.attributes = check.attributes, ...)
 }
 
-ranef_changes <- function(i, ranef, gf, dims_oi, pars, k = i, j = 0)  {
+ranef_changes <- function(i, ranef, gf, dims_oi, pars, k = i)  {
   # helps in renaming random effects (r_) parameters
   # Args:
   #  i: the global index of the grouping factor under consideration
   #  ranef: output of gather_ranef
-  #  group: a vector of names of all grouping factors
   #  gf: matrix as constructed by make_group_frame
   #  dims_oi: named list containing parameter dimensions
   #  k: the index in the Stan parameter names 
   #     may differ from i only for non-linear models
-  #  j: secondary indices used for uncorrelated random effects 
   # Returns:
   #  a list that can be interpreted by rename_pars
   group <- names(ranef)
-  stopifnot(length(j) <= 1)
   r <- "r_"
   nlpar <- attr(ranef[[i]], "nlpar")
   if (!is.null(nlpar)) {
     r <- paste0(r, nlpar, "_")
   } else nlpar <- ""
-  r_index <- ifelse(j == 0, k, paste0(k, "_", j))
-  r_parnames <- paste0("^", r, r_index,"(\\[|$)")
-  change <- list(pos = grepl(r_parnames, pars),
-                 oldname = paste0(r, r_index))
+  r_parnames <- paste0("^", r, k, "(\\[|$)")
+  change <- list(pos = grepl(r_parnames, pars), oldname = paste0(r, k))
   
   # prepare for removal of redundant parameters r_<i>
   # and for combining random effects into one paramater matrix
@@ -334,19 +322,16 @@ ranef_changes <- function(i, ranef, gf, dims_oi, pars, k = i, j = 0)  {
   gf_matches <- which(gf$g == group[i] & gf$nlp == nlpar)
   n_ranefs <- max(gf$last[gf_matches]) 
   old_dim <- dims_oi[[change$oldname]]
-  if (gf_matches[1] == i && (j <= 1)) {
+  if (gf_matches[1] == i) {
     # if this is the first RE term of this group
     # counted separately for each non-linear parameter
     change$pnames <- paste0(r, group[i])
     change$dim <- if (n_ranefs == 1) old_dim else c(old_dim[1], n_ranefs) 
   } 
-  # define index names of new parameter names
-  colnames <- ranef[[i]]
-  if (j > 0) colnames <- colnames[j]
   # rstan doesn't like whitespaces in parameter names
   level_names <- gsub("[ \t\r\n]", ".", attr(ranef[[i]], "levels"))
   index_names <- make_index_names(rownames = level_names,
-                                  colnames = colnames, dim = 2)
+                                  colnames = ranef[[i]], dim = 2)
   change$fnames <- paste0(r, group[i], index_names)
   change
 }
