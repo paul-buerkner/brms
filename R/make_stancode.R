@@ -333,19 +333,21 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     text_model,
     text_generated_quantities)
   
-  # expand '#include' statements by calling stanc_builder
-  temp_file <- tempfile(fileext = ".stan")
-  cat(complete_model, file = temp_file) 
-  isystem <- system.file("chunks", package = "brms")
-  complete_model <- rstan::stanc_builder(file = temp_file, isystem = isystem,
-                                         obfuscate_model_name = TRUE)
-  complete_model$model_name <- model_name(family)
-  class(complete_model$model_code) <- c("character", "brmsmodel")
-  if (is.character(save_model)) {
-    cat(complete_model$model_code, file = save_model)
-  }
-  if (!isTRUE(dots$brm_call)) {
-    complete_model <- complete_model$model_code
+  # expand '#include' statements by calling rstan::stanc_builder
+  if (!isTRUE(dots$testmode)) { 
+    temp_file <- tempfile(fileext = ".stan")
+    cat(complete_model, file = temp_file) 
+    isystem <- system.file("chunks", package = "brms")
+    complete_model <- rstan::stanc_builder(file = temp_file, isystem = isystem,
+                                           obfuscate_model_name = TRUE)
+    complete_model$model_name <- model_name(family)
+    class(complete_model$model_code) <- c("character", "brmsmodel")
+    if (is.character(save_model)) {
+      cat(complete_model$model_code, file = save_model)
+    }
+    if (!isTRUE(dots$brm_call)) {
+      complete_model <- complete_model$model_code
+    }
   }
   complete_model
 }
