@@ -99,63 +99,70 @@ stan_ranef <- function(i, ranef, prior = prior_frame(),
   out$prior <- stan_prior(class = "sd", group = g, gi = pi, 
                           coef = r, prior = prior)
   if (length(r) == 1L) {  # only one random effect
-    out$data <- paste0(out$data, "  real Z_", pi, "[N];  // RE design matrix \n")
+    out$data <- paste0(out$data, "  vector[N] Z_", pi, ";  // RE design matrix \n")
     out$par <- paste0("  vector[N_", pi, "] pre_", pi, ";  // unscaled REs \n",
                       "  real<lower=0> sd_", pi, ";  // RE standard deviation \n")
     out$prior <- paste0(out$prior,"  pre_", pi, " ~ normal(0, 1); \n")
     out$transD <- paste0("  vector[N_", pi, "] r_", pi, ";  // REs \n")
     out$transC <- paste0("  r_", pi,  " <- sd_", pi, " * (", 
                          if (ccov) paste0("Lcov_", pi, " * "), "pre_", pi, ");\n")
-  } else if (length(r) > 1L && cor) {  
-    # multiple correlated random effects
-    out$data <- paste0(out$data,  
-      "  vector[K_", pi, "] Z_", pi, "[N];  // RE design matrix \n",  
-      "  int NC_", pi, ";  // number of correlations \n")
-    out$par <- paste0(
-      "  matrix[K_", pi, ", N_", pi, "] pre_", pi, ";  // unscaled REs \n",
-      "  vector<lower=0>[K_", pi, "] sd_", pi, ";  // RE standard deviation \n",
-      "  // cholesky factor of correlation matrix \n",
-      "  cholesky_factor_corr[K_", pi, "] L_", pi, "; \n")
-    out$prior <- paste0(out$prior, 
-      stan_prior(class = "L", group = g, gi = pi, prior = prior),
-      "  to_vector(pre_", pi, ") ~ normal(0, 1); \n")
-    out$transD <- paste0("  matrix[N_", pi, ", K_", pi, "] r_", pi, ";  // REs \n")
-    if (ccov) {  # customized covariance matrix supplied
-      out$transC <- paste0("  r_", pi," <- as_matrix(kronecker(Lcov_", pi, ",", 
-        " diag_pre_multiply(sd_", pi,", L_", pi,")) *",
-        " to_vector(pre_", pi, "), N_", pi, ", K_", pi, "); \n")
-    } else { 
-      out$transC <- paste0("  r_", pi, " <- ", 
-        "(diag_pre_multiply(sd_", pi, ", L_", pi,") * pre_", pi, ")'; \n")
-    }
-    # return correlations above the diagonal only
-    cors_genC <- ulapply(2:length(r), function(k) 
-      lapply(1:(k - 1), function(j) paste0(
-        "  cor_", pi, "[", (k - 1) * (k - 2) / 2 + j, 
-        "] <- Cor_", pi, "[", j, ",", k, "]; \n")))
-    out$genD <- paste0(
-      "  corr_matrix[K_", pi, "] Cor_", pi, "; \n",
-      "  vector<lower=-1,upper=1>[NC_", pi, "] cor_", pi, "; \n")
-    out$genC <- paste0(
-      "  // take only relevant parts of correlation matrix \n",
-      "  Cor_", pi, " <- multiply_lower_tri_self_transpose(L_", pi, "); \n",
-      collapse(cors_genC)) 
-  } else if (length(r) > 1L && !cor) {
-    # multiple uncorrelated random effects
+  } else if (length(r) > 1L) {
     j <- seq_along(r)
-    out$data <- paste0(out$data, "  matrix[N, K_", pi, "] Z_", pi, ";",
-                       "  // RE design matrix \n")
-    out$par <- paste0("  vector[N_", pi, "] pre_", pi, "[K_", pi, "];",
-                      "  // unscaled REs \n",
-                      "  vector<lower=0>[K_", pi, "] sd_", pi, ";",
-                      "  // RE standard deviation \n")
-    out$prior <- paste0(out$prior, 
-                        collapse("  pre_", pi, "[", j, "] ~ normal(0, 1); \n"))
-    out$transD <- collapse("  vector[N_", pi, "] r_", pi, "_", j, ";  // REs \n")
-    out$transC <- collapse(
-      "  r_", pi, "_",j," <- sd_", pi, "[", j, "] * (", 
-      if (ccov) paste0("Lcov_", pi, " * "), "pre_", pi, "[", j, "]);",
-      "  // scale REs \n")
+    out$data <- paste0(out$data, collapse(
+      "  vector[N] Z_", pi, "_", j, ";  \n"))
+    out$par <- paste0("  vector<lower=0>[K_", pi, "] sd_", pi, ";",
+                      "  // RE standard deviations \n")
+    if (cor) {  
+      # multiple correlated random effects
+      out$data <- paste0(out$data,  
+        "  int NC_", pi, ";  // number of correlations \n")
+      out$par <- paste0(out$par,
+        "  matrix[K_", pi, ", N_", pi, "] pre_", pi, ";  // unscaled REs \n",
+        "  // cholesky factor of correlation matrix \n",
+        "  cholesky_factor_corr[K_", pi, "] L_", pi, "; \n")
+      out$prior <- paste0(out$prior, 
+        stan_prior(class = "L", group = g, gi = pi, prior = prior),
+        "  to_vector(pre_", pi, ") ~ normal(0, 1); \n")
+      out$transD <- paste0(
+        "  matrix[N_", pi, ", K_", pi, "] r_", pi, ";  // REs \n")
+      if (ccov) {  # customized covariance matrix supplied
+        out$transC <- paste0("  r_", pi," <- as_matrix(kronecker(Lcov_", pi, ",", 
+          " diag_pre_multiply(sd_", pi,", L_", pi,")) *",
+          " to_vector(pre_", pi, "), N_", pi, ", K_", pi, "); \n")
+      } else { 
+        out$transC <- paste0("  r_", pi, " <- ", 
+          "(diag_pre_multiply(sd_", pi, ", L_", pi,") * pre_", pi, ")'; \n")
+      }
+      out$transC <- paste0(out$transC, 
+        collapse("  r_", pi, "_", j, " <- r_", pi, "[, ",j,"];  \n"))
+      # return correlations above the diagonal only
+      cors_genC <- ulapply(2:length(r), function(k) 
+        lapply(1:(k - 1), function(j) paste0(
+          "  cor_", pi, "[", (k - 1) * (k - 2) / 2 + j, 
+          "] <- Cor_", pi, "[", j, ",", k, "]; \n")))
+      out$genD <- paste0(
+        "  corr_matrix[K_", pi, "] Cor_", pi, "; \n",
+        "  vector<lower=-1,upper=1>[NC_", pi, "] cor_", pi, "; \n")
+      out$genC <- paste0(
+        "  // take only relevant parts of correlation matrix \n",
+        "  Cor_", pi, " <- multiply_lower_tri_self_transpose(L_", pi, "); \n",
+        collapse(cors_genC)) 
+    } else {
+      # multiple uncorrelated random effects
+      out$data <- paste0(out$data, "  matrix[N, K_", pi, "] Z_", pi, ";",
+                         "  // RE design matrix \n")
+      out$par <- paste0(out$par,
+        "  vector[N_", pi, "] pre_", pi, "[K_", pi, "];",
+        "  // unscaled REs \n")
+      out$prior <- paste0(out$prior, collapse(
+        "  pre_", pi, "[", j, "] ~ normal(0, 1); \n"))
+      out$transC <- collapse(
+        "  r_", pi, "_",j," <- sd_", pi, "[", j, "] * (", 
+        if (ccov) paste0("Lcov_", pi, " * "), "pre_", pi, "[", j, "]);",
+        "  // scale REs \n")
+    }
+    out$transD <- paste0(out$transD, collapse(
+      "  vector[N_", pi, "] r_", pi, "_", j, "; \n"))
   }
   out
 }
@@ -1114,12 +1121,12 @@ stan_eta_re <- function(ranef, par = "") {
   eta_re <- ""
   for (i in seq_along(ranef)) {
     pi <- if (nchar(par)) paste0(par, "_", i) else i
-    if (length(ranef[[i]]) == 1 || attr(ranef[[i]], "cor")) {
+    if (length(ranef[[i]]) == 1L) {
       eta_re <- paste0(eta_re, " + r_", pi,"[J_", pi,"[n]] * Z_", pi,"[n]")
     } else {
-      k <- seq_along(ranef[[i]])
-      eta_re <- paste0(eta_re, collapse(" + Z_", pi, "[n, ", k, "]",
-                                        " * r_", pi, "_" , k, "[J_", pi,"[n]]"))
+      j <- seq_along(ranef[[i]])
+      eta_re <- paste0(eta_re, collapse(" + r_", pi, "_", j, "[J_", pi,"[n]]",
+                                        " * Z_", pi, "_", j, "[n]"))
     }
   }
   eta_re

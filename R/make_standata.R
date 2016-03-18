@@ -205,7 +205,6 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
                        # number of levels
                        length(unique(get(g, data))),  
                        ncolZ[[i]],  # number of random effects
-                       Z[[i]],  # random effects design matrix
                        #  number of correlations
                        ncolZ[[i]] * (ncolZ[[i]] - 1) / 2) 
     if (isTRUE(control$is_newdata)) {
@@ -218,12 +217,24 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
         # REs have to be prepared separately for each non-linear parameter
         pi <- paste0(random$nlpar[i], "_", get_re_index(i, random))
       } else pi <- i 
-      name <- paste0(c("J_", "N_", "K_", "Z_", "NC_"), pi)
-      if (ncolZ[[i]] == 1) {
-        Z[[i]] <- as.vector(Z[[i]])
-      }
+      name <- paste0(c("J_", "N_", "K_", "NC_"), pi)
       for (j in 1:length(name)) {
         standata <- c(standata, setNames(list(eval(expr[j])), name[j]))
+      }
+      Zname <- paste0("Z_", pi)
+      if (isTRUE(control$keep_intercept)) {
+        # for internal use in S3 methods
+        if (ncolZ[[i]] == 1L) {
+          Z[[i]] <- as.vector(Z[[i]])
+        }
+        standata <- c(standata, setNames(Z[i], Zname))
+      } else {
+        if (ncolZ[[i]] > 1L) {
+          Zname <- paste0(Zname, "_", 1:ncolZ[[i]])
+        }
+        for (j in 1:ncolZ[[i]]) {
+          standata <- c(standata, setNames(list(Z[[i]][, j]), Zname[j]))
+        }
       }
       if (g %in% names(cov_ranef)) {
         cov_mat <- as.matrix(cov_ranef[[g]])
