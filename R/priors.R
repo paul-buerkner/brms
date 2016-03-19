@@ -324,11 +324,11 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
   # note that default priors are stored in this function
   if (!(is.null(data) || is.list(data)))
     stop("argument 'data' must be a data.frame or list", call. = FALSE)
+  family <- check_family(family) 
+  link <- family$link
   nonlinear <- nonlinear2list(nonlinear) 
   formula <- update_formula(formula, data = data, family = family, 
                             partial = partial, nonlinear = nonlinear)
-  family <- check_family(family) 
-  link <- family$link
   threshold <- match.arg(threshold)
   autocor <- check_autocor(autocor)
   ee <- extract_effects(formula, family = family,

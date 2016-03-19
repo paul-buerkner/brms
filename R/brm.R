@@ -553,10 +553,10 @@ brm <- function(formula, data = NULL, family = gaussian(),
     dots$is_newdata <- NULL
   } else {  # build new model
     # see validate.R and priors.R for function definitions
+    family <- check_family(family)
     nonlinear <- nonlinear2list(nonlinear) 
     formula <- update_formula(formula, data = data, family = family, 
                               partial = partial, nonlinear = nonlinear)
-    family <- check_family(family)
     prior <- check_prior(prior, formula = formula, data = data, 
                          family = family, autocor = autocor,
                          nonlinear = nonlinear, threshold = threshold) 

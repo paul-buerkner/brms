@@ -38,11 +38,11 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   # some input checks 
   if (!(is.null(data) || is.list(data)))
     stop("argument 'data' must be a data.frame or list", call. = FALSE)
+  family <- check_family(family)
   nonlinear <- nonlinear2list(nonlinear) 
   formula <- update_formula(formula, data = data, family = family, 
                             partial = partial, nonlinear = nonlinear)
   autocor <- check_autocor(autocor)
-  family <- check_family(family)
   is_linear <- is.linear(family)
   is_ordinal <- is.ordinal(family)
   is_count <- is.count(family)
