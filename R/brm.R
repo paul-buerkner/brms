@@ -236,15 +236,23 @@
 #'   Then \code{cbind(y1,y2) ~ x} specifies a multivariate model, 
 #'   where \code{x} has the same effect on \code{y1} and \code{y2}.
 #'   To indicate different effects on each response variable, 
-#'   the variable \code{trait} (which is reserved in multivariate models) 
-#'   can be used as an additional categorical predictor. 
-#'   For instance, \code{cbind(y1,y2) ~ 0 + x:trait} leads to seperate effects
-#'   of \code{x} on \code{y1} and \code{y2}. 
+#'   the factor \code{trait} (which is reserved in multivariate models) 
+#'   can be used as an additional predictor. 
+#'   For instance, \code{cbind(y1,y2) ~ 0 + trait + x:trait} leads to seperate effects
+#'   of \code{x} on \code{y1} and \code{y2} as well as to separate intercepts. 
 #'   In this case, \code{trait} has two levels, namely \code{"y1"} and \code{"y2"}. 
-#'   By default, \code{trait} is dummy-coded. 
 #'   It may also be used within random effects terms, both as grouping factor or 
 #'   as random effect within a grouping factor. Note that variable \code{trait} is generated 
 #'   internally and may not be specified in the data passed to \code{brm}. \cr
+#'   
+#'   As of \pkg{brms} 0.9.0, categorical models use the same syntax as multivariate
+#'   models, but in this case, \code{trait} differentiates between the response 
+#'   categories. As in most other implementations of categorical models,
+#'   values of one category are fixed to identify the model. 
+#'   Accordingly, \code{trait} has \code{K - 1} levels, 
+#'   where \code{K} is the number of categories. 
+#'   Usually, it is most useful to specify \code{formula} as follows:
+#'   \code{formula = <response> ~ 0 + trait + trait:(<predictors>)}.
 #'   
 #'   Zero-inflated and hurdle families are bivariate and also make use 
 #'   of the special internal variable \code{trait} having two levels in this case. 
@@ -252,7 +260,7 @@
 #'   as the second response variable used for the zero-inflation / hurdle
 #'   (ZIH) part is internally generated.
 #'   A \code{formula} for this type of models may, for instance, look like this: \cr
-#'   \code{y ~ 0 + trait * (x1 + x2) + (0 + trait | g)}. In this example, the fixed effects
+#'   \code{y ~ 0 + trait + trait:(x1 + x2) + (0 + trait | g)}. In this example, the fixed effects
 #'   \code{x1} and \code{x1} influence the ZIH part differently
 #'   than the actual response part as indicated by their interaction with \code{trait}.
 #'   In addition, a random effect of \code{trait} was added while the random intercept 
@@ -287,8 +295,7 @@
 #'   not influence discriminalities. Of course it is possible
 #'   to predict only discriminalities by using
 #'   variable \code{spec} in the model formulation. 
-#'   To identify the model, multiplicative effects
-#'   are estimated on the log scale. 
+#'   To identify the model, multiplicative effects are estimated on the log scale. 
 #'   In addition, we strongly recommend setting proper priors 
 #'   on fixed effects in this case to increase sampling efficiency 
 #'   (for details on priors see \code{\link[brms:set_prior]{set_prior}}).     
