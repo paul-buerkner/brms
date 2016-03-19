@@ -76,8 +76,8 @@ rename_pars <- function(x) {
   ordered <- order(factor(class, levels = all_classes))
   x$fit@sim$fnames_oi <- x$fit@sim$fnames_oi[ordered]
   for (i in 1:chains) {
-    # keep_attr ensures that attributes are not removed
-    x$fit@sim$samples[[i]] <- keep_attr(x$fit@sim$samples[[i]], ordered)
+    # subset_attr ensures that attributes are not removed
+    x$fit@sim$samples[[i]] <- subset_attr(x$fit@sim$samples[[i]], ordered)
   }
   mclass <- regmatches(x$fit@sim$pars_oi, regexpr("^[^_]+", x$fit@sim$pars_oi))
   # make sure that the fixed effects intercept comes first

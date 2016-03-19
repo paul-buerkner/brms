@@ -32,7 +32,7 @@ rmMatch <- function(x, ...) {
   x
 }
 
-keep_attr <- function(x, y) {
+subset_attr <- function(x, y) {
   # take a subset of vector, list, etc. 
   # while keeping all attributes except for names
   att <- attributes(x)
