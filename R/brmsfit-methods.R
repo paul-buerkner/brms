@@ -909,9 +909,17 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   new_nonlinear <- lapply(x$nonlinear, update_re_terms, re_formula = re_formula)
   ee <- extract_effects(new_formula, family = x$family, 
                         nonlinear = new_nonlinear)
-  if (is.linear(x$family) && length(ee$response) > 1) {
+  if (is.linear(x$family) && length(ee$response) > 1L) {
     stop("Marginal plots are not yet implemented for multivariate models.",
          call. = FALSE)
+  } else if (is.categorical(x$family)) {
+    stop("Marginal plots are not yet implemented for categorical models.",
+         call. = FALSE)
+  } else if (is.ordinal(x$family)) {
+    warning(paste0("Predictions are treated as continuous variables ", 
+                   "in marginal plots, \nwhich is likely an invalid ", 
+                   "assumption for family ", x$family$family, "."),
+            call. = FALSE)
   }
   rsv_vars <- rsv_vars(x$family, nresp = length(ee$response))
   if (length(ee$nonlinear)) {
@@ -952,12 +960,6 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   }
   if (length(probs) != 2L) {
     stop("Arguments 'probs' must be of length 2.", call. = FALSE)
-  }
-  if (is.ordinal(x$family) || is.categorical(x$family)) {
-    warning(paste0("Predictions are treated as continuous variables ", 
-                   "in marginal plots, \nwhich is likely an invalid ", 
-                   "assumption for family ", x$family$family, "."),
-            call. = FALSE)
   }
   
   # prepare marginal conditions
