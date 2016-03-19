@@ -102,10 +102,10 @@ stan_ranef <- function(i, ranef, prior = prior_frame(),
     out$data <- paste0(out$data, 
       "  vector[N] Z_", pi, "; \n")
     out$par <- paste0(
-      "  vector[N_", pi, "] z_", pi, ";",
-      "  // unscaled group-specific effects \n",
       "  real<lower=0> sd_", pi, ";",
-      "  // group-specific standard deviation \n")
+      "  // group-specific standard deviation \n",
+      "  vector[N_", pi, "] z_", pi, ";",
+      "  // unscaled group-specific effects \n")
     out$prior <- paste0(out$prior,"  z_", pi, " ~ normal(0, 1); \n")
     out$transD <- paste0(
       "  // group-specific effects \n",
