@@ -733,24 +733,26 @@ exclude_pars <- function(ranef = list(), save_ranef = TRUE) {
            "temp_Intercept",  "Lrescor", "Rescor", "Sigma", "LSigma",
            "disp_sigma", "e", "E", "res_cov_matrix", 
            "lp_pre", "hs_local", "hs_global")
-  rm_re_pars <- c("z", "L", "Cor", if (!save_ranef) "r")
-  if (!is.null(attr(ranef[[1]], "nlpar"))) {
-    nlpars <- ulapply(ranef, function(r) attr(r, "nlpar"))
-    out <- c(out, unique(paste0("eta_", nlpars)))
-    for (k in seq_along(ranef)) {
-      i <- which(which(nlpars == nlpars[k]) == k)
-      out <- c(out, paste0(rm_re_pars, "_", nlpars[k], "_", i))
-      neff <- length(ranef[[k]])
-      if (neff > 1L) {
-        out <- c(out, paste0("r_", nlpars[k], "_", i, "_", 1:neff))
+  if (length(ranef)) {
+    rm_re_pars <- c("z", "L", "Cor", if (!save_ranef) "r")
+    if (!is.null(attr(ranef[[1]], "nlpar"))) {
+      nlpars <- ulapply(ranef, function(r) attr(r, "nlpar"))
+      out <- c(out, unique(paste0("eta_", nlpars)))
+      for (k in seq_along(ranef)) {
+        i <- which(which(nlpars == nlpars[k]) == k)
+        out <- c(out, paste0(rm_re_pars, "_", nlpars[k], "_", i))
+        neff <- length(ranef[[k]])
+        if (neff > 1L) {
+          out <- c(out, paste0("r_", nlpars[k], "_", i, "_", 1:neff))
+        }
       }
-    }
-  } else {
-    for (k in seq_along(ranef)) {
-      out <- c(out, paste0(rm_re_pars, "_", k))
-      neff <- length(ranef[[k]])
-      if (neff > 1L) {
-        out <- c(out, paste0("r_", k, "_", 1:neff))
+    } else {
+      for (k in seq_along(ranef)) {
+        out <- c(out, paste0(rm_re_pars, "_", k))
+        neff <- length(ranef[[k]])
+        if (neff > 1L) {
+          out <- c(out, paste0("r_", k, "_", 1:neff))
+        }
       }
     }
   }
