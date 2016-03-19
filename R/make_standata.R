@@ -147,7 +147,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   if (!is.null(model_offset)) {
     standata$offset <- model_offset
   }
-  # fixed effects data
+  # data for fixed effects
   if (length(nonlinear)) {
     # fixed effects design matrices
     nlpars <- names(ee$nonlinear)
@@ -176,7 +176,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     }
     standata <- c(standata, list(K = ncol(X), X = X, X_means = as.array(X_means)))
   }
-  # random effects data
+  # data for random effects
   random <- get_random(ee)
   if (nrow(random)) {
     Z <- lapply(random$form, get_model_matrix, 
@@ -249,32 +249,6 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       }
     }
   }
-  
-  # addition variables
-  if (is.formula(ee$se)) {
-    standata <- c(standata, list(se = .addition(formula = ee$se, data = data)))
-  }
-  if (is.formula(ee$weights)) {
-    standata <- c(standata, list(weights = .addition(ee$weights, data = data)))
-    if (is.linear(family) && length(ee$response) > 1 || is_forked) 
-      standata$weights <- standata$weights[1:standata$N_trait]
-  }
-  if (is.formula(ee$disp)) {
-    standata <- c(standata, list(disp = .addition(ee$disp, data = data)))
-  }
-  if (is.formula(ee$cens) && check_response) {
-    standata <- c(standata, list(cens = .addition(ee$cens, data = data)))
-    if (is.linear(family) && length(ee$response) > 1 || is_forked)
-      standata$cens <- standata$cens[1:standata$N_trait]
-  }
-  if (is.formula(ee$trunc)) {
-    standata <- c(standata, .addition(ee$trunc))
-    if (check_response && (min(standata$Y) < standata$lb || 
-                           max(standata$Y) > standata$ub)) {
-      stop("Some responses are outside of the truncation boundaries.",
-           call. = FALSE)
-    }
-  }
   # data for specific families
   if (has_trials(family)) {
     if (!length(ee$trials)) {
@@ -345,7 +319,32 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     standata$Y <- standata$Y[1L:standata$N_trait] 
     standata$J_trait <- matrix(1L:standata$N, ncol = standata$ncat - 1L)
   }
-  # get data for category specific effects
+  # data for addition arguments
+  if (is.formula(ee$se)) {
+    standata <- c(standata, list(se = .addition(formula = ee$se, data = data)))
+  }
+  if (is.formula(ee$weights)) {
+    standata <- c(standata, list(weights = .addition(ee$weights, data = data)))
+    if (is.linear(family) && length(ee$response) > 1 || is_forked) 
+      standata$weights <- standata$weights[1:standata$N_trait]
+  }
+  if (is.formula(ee$disp)) {
+    standata <- c(standata, list(disp = .addition(ee$disp, data = data)))
+  }
+  if (is.formula(ee$cens) && check_response) {
+    standata <- c(standata, list(cens = .addition(ee$cens, data = data)))
+    if (is.linear(family) && length(ee$response) > 1 || is_forked)
+      standata$cens <- standata$cens[1:standata$N_trait]
+  }
+  if (is.formula(ee$trunc)) {
+    standata <- c(standata, .addition(ee$trunc))
+    if (check_response && (min(standata$Y) < standata$lb || 
+                           max(standata$Y) > standata$ub)) {
+      stop("Some responses are outside of the truncation boundaries.",
+           call. = FALSE)
+    }
+  }
+  # data for category specific effects
   if (is.formula(ee$cse)) {
     Xp <- get_model_matrix(ee$cse, data, rm_intercept = TRUE)
     standata <- c(standata, list(Kp = ncol(Xp), Xp = Xp))
