@@ -3,7 +3,7 @@ test_that("fitted helper functions run without errors", {
   fit <- rename_pars(brmsfit_example)
   fit <- add_samples(fit, "shape", dist = "exp")
   fit <- add_samples(fit, "nu", dist = "exp")
-  standata <- standata(fit, control = list(keep_intercept = TRUE))
+  standata <- standata(fit, control = list(not4stan = TRUE))
   eta <- linear_predictor(fit, standata = standata)
   nsamples <- Nsamples(fit)
   nobs <- nobs(fit)

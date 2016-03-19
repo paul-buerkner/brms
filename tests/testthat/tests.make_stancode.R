@@ -25,15 +25,15 @@ test_that(paste("make_stancode returns correct strings",
                 "for customized covariances"), {
   expect_match(make_stancode(rating ~ treat + period + carry + (1|subject), 
                              data = inhaler, cov_ranef = list(subject = 1)), 
-               "r_1 <- sd_1 * (Lcov_1 * pre_1)", fixed = TRUE)
+               "r_1 <- sd_1 * (Lcov_1 * z_1)", fixed = TRUE)
   expect_match(make_stancode(rating ~ treat + period + carry + (1+carry|subject), 
                              data = inhaler, cov_ranef = list(subject = 1)),
-               "kronecker(Lcov_1, diag_pre_multiply(sd_1, L_1)) * to_vector(pre_1)",
+               "kronecker(Lcov_1, diag_pre_multiply(sd_1, L_1)) * to_vector(z_1)",
                fixed = TRUE)
   expect_match(make_stancode(rating ~ treat + period + carry + (1+carry||subject), 
                              data = inhaler, cov_ranef = list(subject = 1)), 
-               paste0("  r_1_1 <- sd_1[1] * (Lcov_1 * pre_1[1]);  // scale REs \n",
-                      "  r_1_2 <- sd_1[2] * (Lcov_1 * pre_1[2]);"),
+               paste0("  r_1_1 <- sd_1[1] * (Lcov_1 * z_1[1]); \n",
+                      "  r_1_2 <- sd_1[2] * (Lcov_1 * z_1[2]);"),
                fixed = TRUE)
 })
 
@@ -55,13 +55,13 @@ test_that("make_stancode handles addition arguments correctly", {
 test_that("make_stancode correctly combines strings of multiple grouping factors", {
   expect_match(make_stancode(count ~ (1|patient) + (1+Trt_c|visit), 
                              data = epilepsy, family = "poisson"), 
-               paste0("  real Z_1[N];  // RE design matrix \n",
-                      "  // data for random effects of visit \n"), 
+               paste0("  vector[N] Z_1; \n",
+                      "  // data for group-specific effects of visit \n"), 
                fixed = TRUE)
   expect_match(make_stancode(count ~ (1|visit) + (1+Trt_c|patient), 
                              data = epilepsy, family = "poisson"), 
-               paste0("  int NC_1;  // number of correlations \n",
-                      "  // data for random effects of visit \n"), 
+               paste0("  int<lower=1> NC_1; \n",
+                      "  // data for group-specific effects of visit \n"), 
                fixed = TRUE)
 })
 

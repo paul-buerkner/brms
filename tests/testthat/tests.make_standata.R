@@ -3,17 +3,22 @@ test_that(paste("make_standata returns correct data names",
   expect_equal(names(make_standata(rating ~ treat + period + carry 
                                    + (1|subject), data = inhaler)),
                c("N", "Y", "K", "X", "X_means", 
-                 "J_1", "N_1", "K_1", "Z_1", "NC_1"))
+                 "J_1", "N_1", "K_1", "NC_1", "Z_1"))
   expect_equal(names(make_standata(rating ~ treat + period + carry 
                                    + (1+treat|subject), data = inhaler,
                                    family = "categorical")),
-               c("N","Y","Kp","Xp", "Xp_means", "J_1","N_1","K_1",
-                 "Z_1","NC_1", "ncat", "max_obs"))
+               c("N", "Y", "Kp","Xp", "Xp_means", "J_1", "N_1", "K_1",
+                 "NC_1", "Z_1_1", "Z_1_2", "ncat", "max_obs"))
+  expect_equal(names(make_standata(rating ~ treat + period + carry 
+                                   + (1+treat|subject), data = inhaler,
+                                   control = list(not4stan = TRUE))),
+               c("N", "Y", "K", "X", "X_means", "J_1", "N_1", "K_1",
+                 "NC_1", "Z_1"))
   temp_data <- data.frame(y = 1:10, g = 1:10, h = 11:10, x = rep(0,10))
   expect_equal(names(make_standata(y ~ x + (1|g) + (1|h), family = "poisson",
                                    data = temp_data)),
                c("N", "Y", "K", "X", "X_means", "J_1", "N_1", "K_1",
-                 "Z_1", "NC_1", "J_2", "N_2", "K_2", "Z_2", "NC_2"))
+                 "NC_1", "Z_1", "J_2", "N_2", "K_2", "NC_2", "Z_2"))
 })
 
 test_that(paste("make_standata handles variables used as fixed effects", 
@@ -23,7 +28,7 @@ test_that(paste("make_standata handles variables used as fixed effects",
   expect_equal(colnames(standata$X), c("xb", "xc"))
   expect_equal(standata$J_1, rep(1:3, 3))
   standata2 <- make_standata(y ~ x + (1|x), data = data, 
-                             control = list(keep_intercept = TRUE))
+                             control = list(not4stan = TRUE))
   expect_equal(colnames(standata2$X), c("Intercept", "xb", "xc"))
 })
 
@@ -299,8 +304,8 @@ test_that("make_standata correctly prepares data for non-linear models", {
   data <- data.frame(y = rnorm(9), x = rnorm(9), z = rnorm(9), g = rep(1:3, 3))
   standata <- make_standata(y ~ a - b^z, data = data, nonlinear = nonlinear)
   expect_equal(names(standata), c("N", "Y", "K_a", "X_a", "K_b", "X_b", "KC", "C", 
-                                  "J_a_1", "N_a_1", "K_a_1", "Z_a_1", "NC_a_1",
-                                  "J_b_1", "N_b_1", "K_b_1", "Z_b_1", "NC_b_1"))
+                                  "J_a_1", "N_a_1", "K_a_1", "NC_a_1", "Z_a_1",
+                                  "J_b_1", "N_b_1", "K_b_1", "NC_b_1", "Z_b_1"))
   expect_equal(colnames(standata$X_a), c("Intercept", "x"))
   expect_equal(colnames(standata$C), "z")
   expect_equal(standata$J_b_1, data$g)
