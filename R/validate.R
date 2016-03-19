@@ -147,17 +147,20 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   # extract response variables
   if (check_response) {
     x$respform <- lhs(x$all)
-    x$response <- gather_response(x$respform)
+    if (!is.null(attr(formula, "response"))) {
+      x$response <- attr(formula, "response")
+    } else { 
+      x$response <- gather_response(x$respform)
+    }
     if (is.hurdle(family)) {
       x$response <- c(x$response, paste0("hu_", x$response))
     } else if (is.zero_inflated(family)) {
       x$response <- c(x$response, paste0("zi_", x$response))
     } else if (is.2PL(family)) {
       x$response <- c(x$response, paste0("logDisc_", x$response))
-    }
-    if (length(x$response) > 1) {
-      if (!(is.null(x$cens) && is.null(x$se) && is.null(x$trunc))
-          && is.linear(family)) {
+    } 
+    if (length(x$response) > 1L) {
+      if (is.linear(family) && length(rmNULL(x[c("se", "cens", "trunc")]))) {
         stop(paste("Multivariate models currently allow", 
                    "only weights as addition arguments"), 
              call. = FALSE)
@@ -251,8 +254,8 @@ nonlinear2list <- function(x) {
   x
 }
 
-update_formula <- function(formula, data = NULL, partial = NULL, 
-                           nonlinear = NULL) {
+update_formula <- function(formula, data = NULL, family = gaussian(),
+                           partial = NULL, nonlinear = NULL) {
   # incorporate addition arguments and category specific effects into formula 
   # 
   # Args:
@@ -262,6 +265,7 @@ update_formula <- function(formula, data = NULL, partial = NULL,
   #
   # Returns:
   #   an updated formula containing the addition and category specific effects
+  old_attributes <- attributes(formula)
   fnew <- ". ~ ."
   if (is(partial, "formula")) {
     warning(paste("Argument 'partial' is deprecated. Please use the 'cse'", 
@@ -280,8 +284,17 @@ update_formula <- function(formula, data = NULL, partial = NULL,
   if (fnew != ". ~ .") {
     formula <- update.formula(formula, formula(fnew))
   }
+  attributes(formula) <- old_attributes
   if (!isTRUE(attr(formula, "nonlinear"))) {
     attr(formula, "nonlinear") <- length(nonlinear) > 0
+  }
+  if (is.categorical(family) && is.null(attr(formula, "response"))) {
+    model_response <- model.response(model.frame(lhs(formula), data = data))
+    response <- levels(as.factor(model_response))
+    if (length(response) <= 1L) {
+      stop("At least 2 response categories are required.", call. = FALSE)
+    }
+    attr(formula, "response") <- response
   }
   formula
 }
@@ -405,6 +418,7 @@ update_re_terms <- function(formula, re_formula = NULL) {
   } else {
     stop("invalid re_formula argument", call. = FALSE)
   } 
+  attributes(new_formula) <- attributes(formula)
   new_formula
 }
 
@@ -612,7 +626,7 @@ rsv_vars <- function(family, nresp = 1) {
   # returns reservered variables for the family
   if (is.forked(family)) {
     rsv <- c("trait", "main", "spec")
-  } else if (is.linear(family) && nresp > 1) {
+  } else if (is.linear(family) && nresp > 1L || is.categorical(family)) {
     rsv <- "trait"
   } else {
     rsv <- NULL

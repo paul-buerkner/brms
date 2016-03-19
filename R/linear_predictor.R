@@ -31,8 +31,11 @@ linear_predictor <- function(x, standata, re_formula = NULL,
   nsamples <- if (!is.null(subset)) length(subset) else Nsamples(x)
   nlpar <- if (nchar(nlpar)) paste0(nlpar, "_")
   
+  # until brms 0.8.0 categorical models were 
+  # implemented via category specific effects
+  old_cat <- is.categorical(family) && grepl("^b_.+\\[", parnames(x))
   eta <- matrix(0, nrow = nsamples, ncol = standata$N)
-  if (!is.null(standata$X) && ncol(standata$X) && !is.categorical(family)) {
+  if (!is.null(standata$X) && ncol(standata$X) && !old_cat) {
     b_pars <- paste0("^b_", nlpar, "[^\\[]+$")
     b <- do.call(posterior_samples, c(args, list(pars = b_pars)))
     eta <- eta + fixef_predictor(X = standata$X, b = b)  
@@ -119,12 +122,17 @@ linear_predictor <- function(x, standata, re_formula = NULL,
       }
     }
   } else if (is.categorical(family)) {
-    if (!is.null(standata$Xp)) {
-      p <- do.call(posterior_samples, c(args, list(pars = "^b_")))
-      eta <- cse_predictor(Xp = standata$Xp, p = p, eta = eta, 
-                           ncat = standata$max_obs)
+    if (old_cat) {
+      if (!is.null(standata$Xp)) {
+        p <- do.call(posterior_samples, c(args, list(pars = "^b_")))
+        eta <- cse_predictor(Xp = standata$Xp, p = p, eta = eta, 
+                             ncat = standata$max_obs)
+      } else {
+        eta <- array(eta, dim = c(dim(eta), standata$max_obs - 1))
+      }
     } else {
-      eta <- array(eta, dim = c(dim(eta), standata$max_obs - 1))
+      ncat1 <- standata$ncat - 1 
+      eta <- array(eta, dim = c(nrow(eta), ncol(eta) / ncat1, ncat1))
     }
   }
   eta

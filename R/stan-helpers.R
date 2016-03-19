@@ -666,7 +666,7 @@ stan_multi <- function(family, response, prior = prior_frame()) {
         "  Rescor <- multiply_lower_tri_self_transpose(Lrescor); \n",
         collapse(ulapply(2:nresp, function(i) lapply(1:(i-1), function(j)
           paste0("  rescor[",(i-1)*(i-2)/2+j,"] <- Rescor[",j,", ",i,"]; \n")))))
-    } else if (!is.forked(family)) {
+    } else if (!is.forked(family) && !is.categorical(family)) {
       stop("invalid multivariate model", call. = FALSE)
     }
   }

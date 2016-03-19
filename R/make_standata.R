@@ -6,7 +6,7 @@
 #' @param control A named list currently for internal usage only
 #' @param ... Other potential arguments
 #' 
-#' @aliases brmdata brm.dafa
+#' @aliases brmdata
 #' 
 #' @return A named list of objects containing the required data 
 #'   to fit a \pkg{brms} model with \pkg{Stan}. 
@@ -39,8 +39,8 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   if (!(is.null(data) || is.list(data)))
     stop("argument 'data' must be a data.frame or list", call. = FALSE)
   nonlinear <- nonlinear2list(nonlinear) 
-  formula <- update_formula(formula, data = data, partial = partial,
-                            nonlinear = nonlinear)
+  formula <- update_formula(formula, data = data, family = family, 
+                            partial = partial, nonlinear = nonlinear)
   autocor <- check_autocor(autocor)
   family <- check_family(family)
   is_linear <- is.linear(family)

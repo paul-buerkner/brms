@@ -23,20 +23,18 @@ melt_data <- function(data, family, effects, na.action = na.omit) {
       stop("'trait' and 'response' are a resevered variable names.",
            call. = FALSE)
     }
+    if (is.categorical(family)) {
+      # no parameters are modeled for the reference category
+      response <- response[-1]
+    }
     # prepare the response variable
     # use na.pass as otherwise cbind will complain
     # when data contains NAs in the response
     nobs <- nrow(data)
-    model_response <- model.response(
-      model.frame(effects$respform, data = data, na.action = na.pass))
-    if (is.categorical(family)) {
-      response <- levels(as.factor(model_response))[-1]
-      if (!length(response)) {
-        stop("At least 2 response categories are required.", call. = FALSE)
-      }
-    }
     trait <- factor(rep(response, each = nobs), levels = response)
     new_cols <- data.frame(trait = trait)
+    model_response <- model.response(model.frame(
+      effects$respform, data = data, na.action = na.pass))
     # allow to remove NA responses later on
     rows2remove <- which(!complete.cases(model_response))
     if (is.linear(family)) {
@@ -266,11 +264,9 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     control <- list(is_newdata = TRUE, not4stan = TRUE,
                     save_order = TRUE, omit_response = !check_response)
     if (has_trials(fit$family) || has_cat(fit$family)) {
-      # if trials or cat are not explicitly part of the formula
-      # the will be computed based on the response variable,
-      # which should be avoided for newdata
+      # trials or ncat should not be computed based on newdata
       control[c("trials", "ncat")] <- standata(fit)[c("trials", "ncat")]
-    }
+    } 
     newdata <- make_standata(new_formula, data = newdata, family = fit$family, 
                              autocor = fit$autocor, nonlinear = new_nonlinear,
                              partial = fit$partial, control = control)
