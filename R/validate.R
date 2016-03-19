@@ -352,6 +352,7 @@ check_re_formula <- function(re_formula, old_ranef, data) {
                     gf, ": ", paste(invalid_re, collapse = ", ")),
              call. = FALSE)
       } 
+      attributes(new_ranef[[gf]]) <- attributes(old_ranef[[gf]])
     }
   } else if (is.na(re_formula)) {
     new_ranef <- NULL
