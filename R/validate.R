@@ -289,7 +289,8 @@ update_formula <- function(formula, data = NULL, family = gaussian(),
     attr(formula, "nonlinear") <- length(nonlinear) > 0
   }
   if (is.categorical(family) && is.null(attr(formula, "response"))) {
-    model_response <- model.response(model.frame(lhs(formula), data = data))
+    respform <- extract_effects(formula)$respform
+    model_response <- model.response(model.frame(respform, data = data))
     response <- levels(as.factor(model_response))
     if (length(response) <= 1L) {
       stop("At least 2 response categories are required.", call. = FALSE)
