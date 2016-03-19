@@ -572,7 +572,7 @@ brm <- function(formula, data = NULL, family = gaussian(),
     x$data <- update_data(data, family = family, effects = ee, et$group) 
     # see validate.R
     x$ranef <- gather_ranef(ee, data = x$data, is_forked = is.forked(family))  
-    x$exclude <- exclude_pars(ee, ranef = ranef)
+    x$exclude <- exclude_pars(ranef = x$ranef, save_ranef = ranef)
     # see make_stancode.R
     x$model <- make_stancode(formula = formula, data = data, 
                              family = family, prior = prior,  

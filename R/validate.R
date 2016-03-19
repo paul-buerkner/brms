@@ -720,31 +720,38 @@ check_brm_input <- function(x) {
   invisible(NULL)
 }
 
-exclude_pars <- function(effects, ranef = TRUE) {
+exclude_pars <- function(ranef = list(), save_ranef = TRUE) {
   # list irrelevant parameters NOT to be saved by Stan
   # 
   # Args:
-  #   effects: output of extract_effects
-  #   ranef: logical; should random effects of each level be saved?
+  #   ranef: output of gather_ranef
+  #   save_ranef: should random effects of each level be saved?
   #
   # Returns:
   #   a vector of parameters to be excluded
   out <- c("eta", "etap", "eta_2PL", "Eta", "temp_Intercept1", 
            "temp_Intercept",  "Lrescor", "Rescor", "Sigma", "LSigma",
-           "disp_sigma", "p", "q", "e", "E", "res_cov_matrix", 
+           "disp_sigma", "e", "E", "res_cov_matrix", 
            "lp_pre", "hs_local", "hs_global")
-  rm_re_pars <- c("pre", "L", "Cor", if (!ranef) "r")
-  if (length(effects$nonlinear)) {
-    nlpars <- paste0(names(effects$nonlinear)) 
-    out <- c(out, paste0("eta_", nlpars))
-    for (k in seq_along(nlpars)) {
-      for (i in seq_along(effects$nonlinear[[k]]$random$group)) {
-        out <- c(out, paste0(rm_re_pars, "_", nlpars[k], "_", i))
+  rm_re_pars <- c("z", "L", "Cor", if (!save_ranef) "r")
+  if (!is.null(attr(ranef[[1]], "nlpar"))) {
+    nlpars <- ulapply(ranef, function(r) attr(r, "nlpar"))
+    out <- c(out, unique(paste0("eta_", nlpars)))
+    for (k in seq_along(ranef)) {
+      i <- which(which(nlpars == nlpars[k]) == k)
+      out <- c(out, paste0(rm_re_pars, "_", nlpars[k], "_", i))
+      neff <- length(ranef[[k]])
+      if (neff > 1L) {
+        out <- c(out, paste0("r_", nlpars[k], "_", i, "_", 1:neff))
       }
     }
   } else {
-    for (i in seq_along(effects$random$group)) {
-      out <- c(out, paste0(rm_re_pars, "_", i))
+    for (k in seq_along(ranef)) {
+      out <- c(out, paste0(rm_re_pars, "_", k))
+      neff <- length(ranef[[k]])
+      if (neff > 1L) {
+        out <- c(out, paste0("r_", k, "_", 1:neff))
+      }
     }
   }
   out
