@@ -160,7 +160,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   if (is.null(newdata) || is(newdata, "list")) {
     # to shorten expressions in S3 methods such as predict.brmsfit
     if (return_standata && is.null(newdata)) {
-      control <- list(keep_intercept = TRUE, save_order = TRUE)
+      control <- list(not4stan = TRUE, save_order = TRUE)
       newdata <- standata(fit, re_formula = re_formula, control = control)
     }
     return(newdata)
@@ -259,7 +259,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     }
   }
   if (return_standata) {
-    control <- list(is_newdata = TRUE, keep_intercept = TRUE,
+    control <- list(is_newdata = TRUE, not4stan = TRUE,
                     save_order = TRUE, omit_response = !check_response)
     if (has_trials(fit$family) || has_cat(fit$family)) {
       # if trials or cat are not explicitly part of the formula

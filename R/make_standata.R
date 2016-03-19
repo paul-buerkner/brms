@@ -28,10 +28,10 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
                           autocor = NULL, nonlinear = NULL, partial = NULL, 
                           cov_ranef = NULL, control = NULL, ...) {
   # internal control arguments:
-  #   is_newdata: logical; indicating if make_standata is called with new data
-  #   keep_intercept: logical; indicating if the Intercept column
-  #                   should be kept in the FE design matrix
-  #   save_order: logical; should the initial order of the data be saved?
+  #   is_newdata: is make_standata is called with new data?
+  #   not4stan: is make_standata called for use in S3 methods?
+  #   save_order: should the initial order of the data be saved?
+  #   omit_response: omit checking of the response?
   dots <- list(...)
   # use deprecated arguments if specified
   cov_ranef <- use_alias(cov_ranef, dots$cov.ranef, warn = FALSE)
@@ -175,14 +175,13 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     }
     standata <- c(standata, list(KC = ncol(C), C = C)) 
   } else {
-    rm_intercept <- is_ordinal || !isTRUE(control$keep_intercept) ||
+    rm_intercept <- is_ordinal || !isTRUE(control$not4stan) ||
       isTRUE(attr(ee$fixed, "rsv_intercept"))
     X <- get_model_matrix(ee$fixed, data, rm_intercept = rm_intercept,
                           is_forked = is_forked)
     X_means <- colMeans(X)
     has_intercept <- attr(terms(formula), "intercept")
-    if (!isTRUE(control$keep_intercept) && has_intercept) {
-      # keep_intercept is TRUE when make_standata is called within S3 methods
+    if (!isTRUE(control$not4stan) && has_intercept) {
       X <- sweep(X, 2, X_means, FUN = "-")
     }
     if (is.categorical(family)) {
@@ -222,7 +221,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
         standata <- c(standata, setNames(list(eval(expr[j])), name[j]))
       }
       Zname <- paste0("Z_", pi)
-      if (isTRUE(control$keep_intercept)) {
+      if (isTRUE(control$not4stan)) {
         # for internal use in S3 methods
         if (ncolZ[[i]] == 1L) {
           Z[[i]] <- as.vector(Z[[i]])
