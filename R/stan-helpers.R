@@ -21,7 +21,7 @@ stan_fixef <- function(fixef, csef, family = gaussian(),
                         "  row_vector [ncat - 1] temp_Intercept;",
                         "  // temporary intercepts \n")
       out$genD <- paste0("  row_vector[ncat - 1] b_Intercept;",
-                         "  // fixed effects intercepts \n")
+                         "  // population-level intercepts \n")
       subtract <- ifelse(length(csef), " - to_row_vector(Xp_means) * bp", "")
       out$genC <- paste0("  b_Intercept <- temp_Intercept", subtract, "; \n")
       out$prior <- stan_prior("temp_Intercept", prior = prior)
@@ -33,7 +33,7 @@ stan_fixef <- function(fixef, csef, family = gaussian(),
     } else {
       out$par <- paste0(out$par,
                         "  real temp_Intercept;  // temporary Intercept \n")
-      out$genD <- "  real b_Intercept;  // fixed effects intercept \n"
+      out$genD <- "  real b_Intercept;  // population-level intercept \n"
       subtract <- ifelse(length(fixef), " - dot_product(X_means, b)", "") 
       out$genC <- paste0("  b_Intercept <- temp_Intercept", subtract, "; \n")
       out$prior <- stan_prior("temp_Intercept", prior = prior)
@@ -41,12 +41,12 @@ stan_fixef <- function(fixef, csef, family = gaussian(),
   }
   if (length(fixef)) {
     out$data <- paste0(out$data, 
-      "  int<lower=1> K;  // number of fixed effects \n", 
-      "  matrix[N, K] X;  // FE design matrix \n",
-      "  vector[K] X_means;  // column means of X \n")
+      "  int<lower=1> K;  // number of population-level effects \n", 
+      "  matrix[N, K] X;  // population-level design matrix \n",
+      "  vector[K] X_means; \n")
     bound <- with(prior, bound[class == "b" & coef == ""])
     out$par <- paste0(out$par,
-      "  vector", bound, "[K] b;  // fixed effects \n") 
+      "  vector", bound, "[K] b;  // population-level effects \n") 
     fixef_prior <- stan_prior(class = "b", coef = fixef, prior = prior)
     out$prior <- paste0(out$prior, fixef_prior)
   }
@@ -435,12 +435,14 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
   #   disp: is the 'disp' addition argument specified?
   out <- list()
   if (length(effects$nonlinear)) {
-    out$data <- "  // data for non-linear fixed effects \n"
-    out$par <- "  // non-linear fixed effects \n"
     for (i in seq_along(effects$nonlinear)) {
       nlp <- names(effects$nonlinear)[i]
       eta <- paste0("eta_", nlp)
       out$transD <- paste0(out$transD, "  vector[N] ", eta, "; \n")
+      out$data <- paste0(out$data, 
+        "  // data for non-linear effects of ", nlp, "\n")
+      out$par <- paste0(out$par, 
+        "  // non-linear effects of ", nlp, "\n")
       # include fixed effects
       fixef <- colnames(get_model_matrix(effects$nonlinear[[i]]$fixed, data))
       if (length(fixef)) {
@@ -476,6 +478,7 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
         out$genD <- paste0(out$genD, text_ranef$genD)
         out$genC <- paste0(out$genC, text_ranef$genC)
       }
+      
     }
     # prepare non-linear model of eta 
     nlpars <- wsp(names(effects$nonlinear))
@@ -1139,8 +1142,6 @@ stan_eta_re <- function(ranef, par = "") {
       eta_re <- paste0(eta_re, collapse(
         " + r_", pi, "_", j, "[J_", pi,"[n]]",
         " * Z_", pi, "_", j, "[n]"))
-       #collapse(" + r_", pi, "[J_", pi,"[n]]",
-       #             " * Z_", pi, "[n]"))
     }
   }
   eta_re
