@@ -88,10 +88,10 @@ stan_ranef <- function(i, ranef, prior = prior_frame(),
   pi <- if (nchar(par)) paste0(par, "_", i) else i
   out <- list()
   out$data <- paste0(
-    "  // data for random effects of ", g, " \n",
-    "  int<lower=1> J_", pi, "[N];  // RE levels \n",
-    "  int<lower=1> N_", pi, ";  // number of levels \n",
-    "  int<lower=1> K_", pi, ";  // number of REs \n",
+    "  // data for group-specific effects of ", g, " \n",
+    "  int<lower=1> J_", pi, "[N]; \n",
+    "  int<lower=1> N_", pi, "; \n",
+    "  int<lower=1> K_", pi, "; \n",
     if (ccov) paste0(
       "  // cholesky factor of known covariance matrix \n",
       "  matrix[N_", pi, ", N_", pi,"] Lcov_", pi,"; \n"))
@@ -99,39 +99,49 @@ stan_ranef <- function(i, ranef, prior = prior_frame(),
   out$prior <- stan_prior(class = "sd", group = g, gi = pi, 
                           coef = r, prior = prior)
   if (length(r) == 1L) {  # only one random effect
-    out$data <- paste0(out$data, "  vector[N] Z_", pi, ";  // RE design matrix \n")
-    out$par <- paste0("  vector[N_", pi, "] pre_", pi, ";  // unscaled REs \n",
-                      "  real<lower=0> sd_", pi, ";  // RE standard deviation \n")
-    out$prior <- paste0(out$prior,"  pre_", pi, " ~ normal(0, 1); \n")
-    out$transD <- paste0("  vector[N_", pi, "] r_", pi, ";  // REs \n")
+    out$data <- paste0(out$data, 
+      "  vector[N] Z_", pi, "; \n")
+    out$par <- paste0(
+      "  vector[N_", pi, "] z_", pi, ";",
+      "  // unscaled group-specific effects \n",
+      "  real<lower=0> sd_", pi, ";",
+      "  // group-specific standard deviation \n")
+    out$prior <- paste0(out$prior,"  z_", pi, " ~ normal(0, 1); \n")
+    out$transD <- paste0(
+      "  // group-specific effects \n",
+      "  vector[N_", pi, "] r_", pi, "; \n")
     out$transC <- paste0("  r_", pi,  " <- sd_", pi, " * (", 
-                         if (ccov) paste0("Lcov_", pi, " * "), "pre_", pi, ");\n")
+                         if (ccov) paste0("Lcov_", pi, " * "), "z_", pi, ");\n")
   } else if (length(r) > 1L) {
     j <- seq_along(r)
-    out$data <- paste0(out$data, collapse(
-      "  vector[N] Z_", pi, "_", j, ";  \n"))
-    out$par <- paste0("  vector<lower=0>[K_", pi, "] sd_", pi, ";",
-                      "  // RE standard deviations \n")
+    out$data <- paste0(out$data, 
+      collapse("  vector[N] Z_", pi, "_", j, ";  \n"))
+    out$par <- paste0(
+      "  vector<lower=0>[K_", pi, "] sd_", pi, ";",
+      "  // group-specific standard deviations \n")
     if (cor) {  
       # multiple correlated random effects
       out$data <- paste0(out$data,  
-        "  int NC_", pi, ";  // number of correlations \n")
+        "  int<lower=1> NC_", pi, "; \n")
       out$par <- paste0(out$par,
-        "  matrix[K_", pi, ", N_", pi, "] pre_", pi, ";  // unscaled REs \n",
+        "  matrix[K_", pi, ", N_", pi, "] z_", pi, ";",
+        "  // unscaled group-specific effects \n",    
         "  // cholesky factor of correlation matrix \n",
         "  cholesky_factor_corr[K_", pi, "] L_", pi, "; \n")
       out$prior <- paste0(out$prior, 
         stan_prior(class = "L", group = g, gi = pi, prior = prior),
-        "  to_vector(pre_", pi, ") ~ normal(0, 1); \n")
+        "  to_vector(z_", pi, ") ~ normal(0, 1); \n")
       out$transD <- paste0(
-        "  matrix[N_", pi, ", K_", pi, "] r_", pi, ";  // REs \n")
+        "  // group-specific effects \n",
+        "  matrix[N_", pi, ", K_", pi, "] r_", pi, "; \n",
+        collapse("  vector[N_", pi, "] r_", pi, "_", j, "; \n"))
       if (ccov) {  # customized covariance matrix supplied
         out$transC <- paste0("  r_", pi," <- as_matrix(kronecker(Lcov_", pi, ",", 
           " diag_pre_multiply(sd_", pi,", L_", pi,")) *",
-          " to_vector(pre_", pi, "), N_", pi, ", K_", pi, "); \n")
+          " to_vector(z_", pi, "), N_", pi, ", K_", pi, "); \n")
       } else { 
         out$transC <- paste0("  r_", pi, " <- ", 
-          "(diag_pre_multiply(sd_", pi, ", L_", pi,") * pre_", pi, ")'; \n")
+          "(diag_pre_multiply(sd_", pi, ", L_", pi,") * z_", pi, ")'; \n")
       }
       out$transC <- paste0(out$transC, 
         collapse("  r_", pi, "_", j, " <- r_", pi, "[, ",j,"];  \n"))
@@ -149,20 +159,21 @@ stan_ranef <- function(i, ranef, prior = prior_frame(),
         collapse(cors_genC)) 
     } else {
       # multiple uncorrelated random effects
-      out$data <- paste0(out$data, "  matrix[N, K_", pi, "] Z_", pi, ";",
-                         "  // RE design matrix \n")
       out$par <- paste0(out$par,
-        "  vector[N_", pi, "] pre_", pi, "[K_", pi, "];",
-        "  // unscaled REs \n")
+        "  vector[N_", pi, "] z_", pi, "[K_", pi, "];",
+        "  // unscaled group-specific effects \n")
       out$prior <- paste0(out$prior, collapse(
-        "  pre_", pi, "[", j, "] ~ normal(0, 1); \n"))
+        "  z_", pi, "[", j, "] ~ normal(0, 1); \n"))
+      out$transD <- paste0("  // group-specific effects \n", 
+        collapse("  vector[N_", pi, "] r_", pi, "_", j, "; \n"))
       out$transC <- collapse(
-        "  r_", pi, "_",j," <- sd_", pi, "[", j, "] * (", 
-        if (ccov) paste0("Lcov_", pi, " * "), "pre_", pi, "[", j, "]);",
-        "  // scale REs \n")
+        "  r_", pi, "_", j, " <- sd_", pi, "[", j, "] * (", 
+        if (ccov) paste0("Lcov_", pi, " * "), "z_", pi, "[", j, "]); \n")
+      out$genD <- paste0(
+        "  matrix[N_", pi, ", K_", pi, "] r_", pi, "; \n")
+      out$genC <- collapse(
+        "  r_", pi, "[, ", j, "] <- r_", pi, "_", j, "; \n")
     }
-    out$transD <- paste0(out$transD, collapse(
-      "  vector[N_", pi, "] r_", pi, "_", j, "; \n"))
   }
   out
 }
@@ -1125,8 +1136,11 @@ stan_eta_re <- function(ranef, par = "") {
       eta_re <- paste0(eta_re, " + r_", pi,"[J_", pi,"[n]] * Z_", pi,"[n]")
     } else {
       j <- seq_along(ranef[[i]])
-      eta_re <- paste0(eta_re, collapse(" + r_", pi, "_", j, "[J_", pi,"[n]]",
-                                        " * Z_", pi, "_", j, "[n]"))
+      eta_re <- paste0(eta_re, collapse(
+        " + r_", pi, "_", j, "[J_", pi,"[n]]",
+        " * Z_", pi, "_", j, "[n]"))
+       #collapse(" + r_", pi, "[J_", pi,"[n]]",
+       #             " * Z_", pi, "[n]"))
     }
   }
   eta_re
