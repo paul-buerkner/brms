@@ -47,6 +47,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   is_ordinal <- is.ordinal(family)
   is_count <- is.count(family)
   is_forked <- is.forked(family)
+  is_categorical <- is.categorical(family)
   et <- extract_time(autocor$formula)
   ee <- extract_effects(formula, family = family, et$all, 
                         nonlinear = nonlinear)
@@ -111,18 +112,22 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
         stop("beta regression requires responses between 0 and 1", 
              call. = FALSE)
       }
-    } else if (is.categorical(family)) { 
+    } else if (is_categorical) { 
       standata$Y <- as.numeric(as.factor(standata$Y))
+      if (length(unique(standata$Y)) < 2L) {
+        stop("At least two response categories are required.", call. = FALSE)
+      }
     } else if (is_ordinal) {
-      if (is.factor(standata$Y)) {
-        if (is.ordered(standata$Y)) standata$Y <- as.numeric(standata$Y)
-        else stop(paste("family", family$family, "requires factored", 
-                        "response variables to be ordered"), call. = FALSE)
+      if (is.ordered(standata$Y)) {
+        standata$Y <- as.numeric(standata$Y)
       } else if (all(is.wholenumber(standata$Y))) {
         standata$Y <- standata$Y - min(standata$Y) + 1
       } else {
         stop(paste("family", family$family, "expects either integers or",
                    "ordered factors as response variables"), call. = FALSE)
+      }
+      if (length(unique(standata$Y)) < 2L) {
+        stop("At least two response categories are required.", call. = FALSE)
       }
     } else if (is.skewed(family)) {
       if (min(standata$Y) <= 0) {
@@ -136,27 +141,12 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       }
     }
   }
-  # evaluate even if check_response is FALSE 
-  # to ensure that N_trait is defined
-  if (is_linear && length(ee$response) > 1) {
-    standata$Y <- matrix(standata$Y, ncol = length(ee$response))
-    NC_trait <- ncol(standata$Y) * (ncol(standata$Y) - 1) / 2
-    standata <- c(standata, list(N_trait = nrow(standata$Y), 
-                                 K_trait = ncol(standata$Y),
-                                 NC_trait = NC_trait)) 
-  } else if (is_forked) {
-    # the second half of Y is not used because it is only dummy data
-    # that was put into data to make melt_data work correctly
-    standata$Y <- standata$Y[1:(nrow(data) / 2)] 
-    standata$N_trait <- length(standata$Y)
-  }
   
   # add an offset if present
   model_offset <- model.offset(data)
   if (!is.null(model_offset)) {
     standata$offset <- model_offset
   }
-  
   # fixed effects data
   if (length(nonlinear)) {
     # fixed effects design matrices
@@ -184,13 +174,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     if (!isTRUE(control$not4stan) && has_intercept) {
       X <- sweep(X, 2, X_means, FUN = "-")
     }
-    if (is.categorical(family)) {
-      standata <- c(standata, 
-                    list(Kp = ncol(X), Xp = X, Xp_means = as.array(X_means)))
-    } else {
-      standata <- c(standata, 
-                    list(K = ncol(X), X = X, X_means = as.array(X_means)))
-    }
+    standata <- c(standata, list(K = ncol(X), X = X, X_means = as.array(X_means)))
   }
   # random effects data
   random <- get_random(ee)
@@ -266,7 +250,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     }
   }
   
-  # addition and category specific variables
+  # addition variables
   if (is.formula(ee$se)) {
     standata <- c(standata, list(se = .addition(formula = ee$se, data = data)))
   }
@@ -287,7 +271,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     standata <- c(standata, .addition(ee$trunc))
     if (check_response && (min(standata$Y) < standata$lb || 
                            max(standata$Y) > standata$ub)) {
-      stop("some responses are outside of the truncation boundaries",
+      stop("Some responses are outside of the truncation boundaries.",
            call. = FALSE)
     }
   }
@@ -305,13 +289,14 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       standata$trials <- .addition(formula = ee$trials, data = data)
     } else stop("Response part of formula is invalid.")
     standata$max_obs <- standata$trials  # for backwards compatibility
-    if (max(standata$trials) == 1 && family$family == "binomial") 
+    if (max(standata$trials) == 1L && family$family == "binomial") 
       message(paste("Only 2 levels detected so that family bernoulli",
                     "might be a more efficient choice."))
     if (check_response && any(standata$Y > standata$trials))
       stop(paste("Number of trials is smaller than the response", 
                  "variable would suggest."), call. = FALSE)
-  } else if (has_cat(family)) {
+  }
+  if (has_cat(family)) {
     if (!length(ee$cat)) {
       if (!is.null(control$ncat)) {
         standata$ncat <- control$ncat
@@ -320,13 +305,9 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       }
     } else if (is.wholenumber(ee$cat)) { 
       standata$ncat <- ee$cat
-    } else if (is.formula(ee$cat)) {
-      warning("observations may no longer have different numbers of categories",
-              call. = FALSE)
-      standata$ncat <- max(.addition(formula = ee$cat, data = data))
-    } else stop("Response part of formula is invalid.")
+    } else stop("Addition argument 'cat' is misspecified.", call. = FALSE)
     standata$max_obs <- standata$ncat  # for backwards compatibility
-    if (max(standata$ncat) == 2) {
+    if (max(standata$ncat) == 2L) {
       message(paste("Only 2 levels detected so that family bernoulli", 
                     "might be a more efficient choice."))
     }
@@ -334,7 +315,8 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       stop(paste0("Number of categories is smaller than the response", 
                   "variable would suggest."), call. = FALSE)
     }
-  } else if (family$family == "inverse.gaussian" && check_response) {
+  } 
+  if (family$family == "inverse.gaussian" && check_response) {
     # save as data to reduce computation time in Stan
     if (is.formula(ee[c("weights", "cens")])) {
       standata$log_Y <- log(standata$Y) 
@@ -342,8 +324,27 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       standata$log_Y <- sum(log(standata$Y))
     }
     standata$sqrt_Y <- sqrt(standata$Y)
-  } 
-  
+  }  
+  # evaluate even if check_response is FALSE 
+  # to ensure that N_trait is defined
+  if (is_linear && length(ee$response) > 1L) {
+    standata$Y <- matrix(standata$Y, ncol = length(ee$response))
+    NC_trait <- ncol(standata$Y) * (ncol(standata$Y) - 1L) / 2L
+    standata <- c(standata, list(N_trait = nrow(standata$Y), 
+                                 K_trait = ncol(standata$Y),
+                                 NC_trait = NC_trait)) 
+  }
+  if (is_forked) {
+    # the second half of Y is only dummy data
+    # that was put into data to make melt_data work correctly
+    standata$N_trait <- nrow(data) / 2L
+    standata$Y <- standata$Y[1L:standata$N_trait] 
+  }
+  if (is_categorical) {
+    standata$N_trait <- nrow(data) / (standata$ncat - 1L)
+    standata$Y <- standata$Y[1L:standata$N_trait] 
+    standata$J_trait <- matrix(1L:standata$N, ncol = standata$ncat - 1L)
+  }
   # get data for category specific effects
   if (is.formula(ee$cse)) {
     Xp <- get_model_matrix(ee$cse, data, rm_intercept = TRUE)
@@ -372,7 +373,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
         standata$begin_tg <- as.array(with(standata, 
            ulapply(unique(tgroup), match, tgroup)))
         standata$nobs_tg <- as.array(with(standata, 
-           c(if (N_tg > 1) begin_tg[2:N_tg], N + 1) - begin_tg))
+           c(if (N_tg > 1L) begin_tg[2:N_tg], N + 1) - begin_tg))
         standata$end_tg <- with(standata, begin_tg + nobs_tg - 1)
         if (!is.null(standata$se)) {
           standata$se2 <- standata$se^2

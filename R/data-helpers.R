@@ -10,7 +10,8 @@ melt_data <- function(data, family, effects, na.action = na.omit) {
   #   data in long format 
   response <- effects$response
   nresp <- length(response)
-  if (nresp == 2 && is.forked(family) || nresp > 1 && is.linear(family)) {
+  if (nresp > 1L && is.linear(family) || is.categorical(family) || 
+      nresp == 2L && is.forked(family)) {
     if (!is(data, "data.frame")) {
       stop("argument 'data' must be a data.frame for this model", 
            call. = FALSE)
@@ -18,35 +19,38 @@ melt_data <- function(data, family, effects, na.action = na.omit) {
     # only keep variables that are relevant for the model
     rel_vars <- c(all.vars(effects$all), all.vars(effects$respform))
     data <- data[, which(names(data) %in% rel_vars), drop = FALSE]
-    if ("trait" %in% names(data)) {
-      stop("trait is a resevered variable name in multivariate models",
+    if (any(c("trait", "response") %in% names(data))) {
+      stop("'trait' and 'response' are a resevered variable names.",
            call. = FALSE)
     }
-    if ("response" %in% names(data)) {
-      stop("response is a resevered variable name in multivariate models",
-           call. = FALSE)
-    }
-    nobs <- nrow(data)
-    trait <- factor(rep(response, each = nobs), levels = response)
-    new_cols <- data.frame(trait = trait)
     # prepare the response variable
     # use na.pass as otherwise cbind will complain
     # when data contains NAs in the response
-    temp_mf <- model.frame(effects$respform, data = data, 
-                           na.action = na.pass)
-    model_response <- model.response(temp_mf)
+    nobs <- nrow(data)
+    model_response <- model.response(
+      model.frame(effects$respform, data = data, na.action = na.pass))
+    if (is.categorical(family)) {
+      response <- levels(as.factor(model_response))[-1]
+      if (!length(response)) {
+        stop("At least 2 response categories are required.", call. = FALSE)
+      }
+    }
+    trait <- factor(rep(response, each = nobs), levels = response)
+    new_cols <- data.frame(trait = trait)
     # allow to remove NA responses later on
     rows2remove <- which(!complete.cases(model_response))
     if (is.linear(family)) {
       model_response[rows2remove, ] <- NA
       model_response <- as.vector(model_response)
+    } else if (is.categorical(family)) {
+      model_response[rows2remove] <- NA
     } else if (is.forked(family)) {
       model_response[rows2remove] <- NA
       reserved <- c(response[2], "main", "spec")
       reserved <- reserved[reserved %in% names(data)]
       if (length(reserved)) {
         stop(paste(paste(reserved, collapse = ", "), 
-                   "is a resevered variable name"),
+                   "is a resevered variable name"), 
              call. = FALSE)
       }
       one <- rep(1, nobs)
@@ -59,7 +63,7 @@ melt_data <- function(data, family, effects, na.action = na.omit) {
     new_cols$response <- model_response
     data <- replicate(length(response), data, simplify = FALSE)
     data <- do.call(na.action, list(cbind(do.call(rbind, data), new_cols)))
-  } else if (nresp > 1) {
+  } else if (nresp > 1L) {
     stop("invalid multivariate model", call. = FALSE)
   }
   if (isTRUE(attr(effects$fixed, "rsv_intercept"))) {

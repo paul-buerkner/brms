@@ -16,16 +16,7 @@ stan_fixef <- function(fixef, csef, family = gaussian(),
   #   a list containing Stan code related to fixed effects
   out <- list()
   if (has_intercept) {
-    if (is.categorical(family)) {
-      out$par <- paste0(out$par,
-                        "  row_vector [ncat - 1] temp_Intercept;",
-                        "  // temporary intercepts \n")
-      out$genD <- paste0("  row_vector[ncat - 1] b_Intercept;",
-                         "  // population-level intercepts \n")
-      subtract <- ifelse(length(csef), " - to_row_vector(Xp_means) * bp", "")
-      out$genC <- paste0("  b_Intercept <- temp_Intercept", subtract, "; \n")
-      out$prior <- stan_prior("temp_Intercept", prior = prior)
-    } else if (is.ordinal(family)) {
+    if (is.ordinal(family)) {
       # temp intercepts for ordinal models are defined in stan_ordinal
       out$genD <- "  vector[ncat - 1] b_Intercept;  // thresholds \n" 
       subtract <- ifelse(length(fixef), " - dot_product(X_means, b)", "") 
@@ -261,8 +252,7 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
       negbinomial = c("neg_binomial_2_log", paste0(eta,", ",shape)),
       geometric = c("neg_binomial_2_log", paste0(eta,", 1")),
       cumulative = c("ordered_logistic", "eta[n], temp_Intercept"),
-      categorical = c("categorical_logit", 
-                      "to_vector(append_col(zero, eta[n] + etap[n]))"), 
+      categorical = c("categorical_logit", "append_row(zero, eta[J_trait[n]])"), 
       binomial = c("binomial_logit", paste0("trials",ns,", ",eta)), 
       bernoulli = c("bernoulli_logit", eta))
   } else {
@@ -291,7 +281,6 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
       inverse.gaussian = c(paste0("inv_gaussian", if (!nchar(n)) "_vector"), 
                            paste0(eta, ", shape, log_Y",n,", sqrt_Y",n)),
       beta = c("beta", paste0(eta, " * phi, (1 - ", eta, ") * phi")),
-      categorical = c("categorical", "p[n]"),
       cumulative = c("cumulative", ordinal_args),
       sratio = c("sratio", ordinal_args),
       cratio = c("cratio", ordinal_args),
@@ -374,7 +363,7 @@ stan_eta <- function(family, fixef, ranef = list(), csef = NULL,
   eta <- list()
   eta$transD <- paste0(
     "  vector[N] eta;  // linear predictor \n", 
-    if (length(csef) || is.categorical(family)) 
+    if (length(csef)) 
       paste0("  matrix[N, ncat - 1] etap;",
              "  // linear predictor for category specific effects \n"),
     if (is_multi) 
@@ -399,11 +388,7 @@ stan_eta <- function(family, fixef, ranef = list(), csef = NULL,
   
   # define fixed, random, and autocorrelation effects
   eta_re <- stan_eta_re(ranef)
-  etap <- if (length(csef) || is_cat) {
-    paste0("  etap <- ", 
-           ifelse(length(csef), "Xp * bp", "rep_matrix(0, N, ncat - 1)"),
-           if (is_cat && has_intercept) " + rep_matrix(temp_Intercept, N)", "; \n")
-  }
+  etap <- if (length(csef)) "  etap <- Xp * bp; \n"
   eta_ma <- ifelse(get_ma(autocor) && !use_cov(autocor), 
                    " + head(E[n], Kma) * ma", "")
   if (nchar(eta_re) || nchar(eta_ma) || is_multi || nchar(eta_ilink[1])) {
@@ -414,7 +399,7 @@ stan_eta <- function(family, fixef, ranef = list(), csef = NULL,
   eta$transC1 <- paste0(
     "  // compute linear predictor \n",
     "  eta <- ", ifelse(length(fixef), "X * b", "rep_vector(0, N)"), 
-    if (has_intercept && !(is_ordinal || is_cat)) " + temp_Intercept",
+    if (has_intercept && !is_ordinal) " + temp_Intercept",
     if (offset) " + offset",
     if (get_arr(autocor)) " + Yarr * arr", 
     "; \n", etap)
@@ -644,7 +629,7 @@ stan_multi <- function(family, response, prior = prior_frame()) {
   stopifnot(is(family, "family"))
   out <- list()
   nresp <- length(response)
-  if (nresp > 1) {
+  if (nresp > 1L) {
     if (is.linear(family)) {
       out$data <- "  #include 'data_multi.stan' \n"
       out$par <- paste0(
@@ -705,6 +690,7 @@ stan_ordinal <- function(family, prior = prior_frame(),
   out <- list()
   if (is.ordinal(family)) {
     # define Stan code similar for all ordinal models
+    out$data <- "  int ncat;  // number of categories \n"
     th <- function(k, fam = family) {
       # helper function generating stan code inside ilink(.)
       sign <- ifelse(fam %in% c("cumulative", "sratio")," - ", " + ")
@@ -804,12 +790,27 @@ stan_ordinal <- function(family, prior = prior_frame(),
   out
 }
 
+stan_categorical <- function(family) {
+  # Stan code specific to categorical models
+  # Args:
+  #  family: the model family
+  # Returns:
+  #   a list of character strings defining the stan code
+  #   specific for categorical models
+  stopifnot(is(family, "family"))
+  out <- list()
+  if (is.categorical(family)) {
+    out$data <- "  #include 'data_categorical.stan' \n" 
+    out$tdataD <- "  vector[1] zero; \n"
+    out$tdataC <- "  zero[1] <- 0; \n"
+  }
+  out
+}
+
 stan_zero_inflated_hurdle <- function(family) {
-  # stan code for zero-inflated and hurdle models
-  #
+  # Stan code for zero-inflated and hurdle models
   # Args:
   #   family: the model family
-  #
   # Returns:
   #   a list of character strings defining the stan code
   #   specific for zero-inflated and hurdle models

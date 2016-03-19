@@ -95,31 +95,28 @@ rename_pars <- function(x) {
   standata <- standata(x)
   
   # find positions of parameters and define new names
-  if (!is.categorical(family)) {
-    if (length(x$nonlinear)) {
-      nlpars <- paste0("_", names(ee$nonlinear))
-      X_list <- standata[paste0("X", nlpars)]
-    } else {
-      nlpars <- ""
-      X_list <- list(standata$X)
-    }
-    f <- lapply(X_list, colnames)
-    for (i in seq_along(f)) {
-      if (length(f[[i]])) {
-        b <- paste0("b", nlpars[i])
-        change <- lc(change, list(pos = grepl(paste0("^", b, "\\["), pars), 
-                                  oldname = b, pnames = paste0(b, "_", f[[i]]), 
-                                  fnames = paste0(b, "_", f[[i]])))
-        change <- c(change, prior_changes(class = "b", pars = pars, names = f))
-        # currently not used in non-linear models
-        change <- c(change, prior_changes(class = "temp_Intercept", pars = pars, 
-                                          new_class = "b_Intercept"))
-      }
+  if (length(x$nonlinear)) {
+    nlpars <- paste0("_", names(ee$nonlinear))
+    X_list <- standata[paste0("X", nlpars)]
+  } else {
+    nlpars <- ""
+    X_list <- list(standata$X)
+  }
+  f <- lapply(X_list, colnames)
+  for (i in seq_along(f)) {
+    if (length(f[[i]])) {
+      b <- paste0("b", nlpars[i])
+      change <- lc(change, list(pos = grepl(paste0("^", b, "\\["), pars), 
+                                oldname = b, pnames = paste0(b, "_", f[[i]]), 
+                                fnames = paste0(b, "_", f[[i]])))
+      change <- c(change, prior_changes(class = "b", pars = pars, names = f))
+      # currently not used in non-linear models
+      change <- c(change, prior_changes(class = "temp_Intercept", pars = pars, 
+                                        new_class = "b_Intercept"))
     }
   }
   
-  if (is.formula(ee$cse) || is.categorical(family)) {
-    # FIXME (non-linear models not yet implemented)
+  if (is.formula(ee$cse)) {
     p <- colnames(standata$Xp)
     lp <- length(p)
     if (lp) {

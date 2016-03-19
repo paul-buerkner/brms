@@ -73,20 +73,12 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   } else {
     # generate fixed effects code
     rm_intercept <- isTRUE(attr(ee$fixed, "rsv_intercept"))
-    if (is_categorical) {
-      X <- data.frame()
-      fixef <- colnames(X)
-      Xp <- get_model_matrix(ee$fixed, data, rm_intercept = rm_intercept)
-      temp_list <- check_intercept(colnames(Xp))
-      csef <- temp_list$names
-    } else {
-      X <- get_model_matrix(ee$fixed, data, is_forked = is_forked,
-                            rm_intercept = rm_intercept)
-      temp_list <- check_intercept(colnames(X))
-      fixef <- temp_list$names
-      Xp <- get_model_matrix(ee$cse, data, rm_intercept = TRUE)
-      csef <- colnames(Xp)
-    }
+    X <- get_model_matrix(ee$fixed, data, is_forked = is_forked,
+                          rm_intercept = rm_intercept)
+    temp_list <- check_intercept(colnames(X))
+    fixef <- temp_list$names
+    Xp <- get_model_matrix(ee$cse, data, rm_intercept = TRUE)
+    csef <- colnames(Xp)
     has_intercept <- temp_list$has_intercept
     text_fixef <- stan_fixef(fixef = fixef, csef = csef, family = family, 
                              prior = prior, threshold = threshold,
@@ -114,25 +106,23 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
                        trunc = trunc, autocor = autocor,
                        cse = is.formula(ee$cse),
                        is_multi = is_multi)
-  trait <- ifelse(is_multi || is.forked(family), "_trait", "")
+  trait <- ifelse(is_multi || is_forked || is_categorical, "_trait", "")
   if (is.formula(ee$cens) || is.formula(ee$weights) || is.formula(ee$trunc) ||
       is_ordinal || is_categorical || is_hurdle || is_zero_inflated) {
     text_llh <- paste0("  for (n in 1:N",trait,") { \n  ",text_llh,"  } \n")
   }
   
   # generate stan code specific to certain models
-  text_arma <- stan_arma(family = family, autocor = autocor, prior = prior,
+  text_arma <- stan_arma(family, autocor = autocor, prior = prior,
                          has_se = is.formula(ee$se), nonlinear = nonlinear,
                          has_disp = is.formula(ee$disp), is_multi = is_multi)
-  text_multi <- stan_multi(family = family, response = ee$response,
-                           prior = prior)
-  text_ordinal <- stan_ordinal(family = family, prior = prior, 
-                               cse = length(csef), 
-                               threshold = threshold)  
+  text_multi <- stan_multi(family, response = ee$response, prior = prior)
+  text_ordinal <- stan_ordinal(family, prior = prior, cse = length(csef), 
+                               threshold = threshold)
+  text_categorical <- stan_categorical(family)
   text_zi_hu <- stan_zero_inflated_hurdle(family)
   text_2PL <- stan_2PL(family)
-  text_inv_gaussian <- stan_inv_gaussian(family = family, 
-                                         weights = is.formula(ee$weights),
+  text_inv_gaussian <- stan_inv_gaussian(family, weights = is.formula(ee$weights),
                                          cens = is.formula(ee$cens),
                                          trunc = is.formula(ee$trunc))
   text_disp <- stan_disp(is.formula(ee$disp), family = family)
@@ -181,8 +171,10 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     "  int<lower=1> N;  // number of observations \n", 
     if (is_multi) {
       text_multi$data
+    } else if (is_categorical) {
+      text_categorical$data
     } else if (is_forked) {
-      paste0("  int<lower=1> N_trait;  // number of obs / 2 \n",
+      paste0("  int<lower=1> N_trait; \n",
              "  ", ifelse(use_real(family), "real", "int"),
              " Y[N_trait];  // response variable \n")
     } else if (use_real(family)) {
@@ -193,13 +185,12 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     text_fixef$data,
     text_ranef$data,
     text_nonlinear$data,
+    text_ordinal$data,
     text_arma$data,
     text_inv_gaussian$data,
     text_disp$data,
     if (has_trials(family))
       paste0("  int trials", N_bin, ";  // number of trials \n"),
-    if (has_cat(family))
-      paste0("  int ncat;  // number of categories \n"),
     if (offset)
       "  vector[N] offset;  // added to the linear predictor \n",
     if (is.formula(ee$se) && !use_cov(autocor))
@@ -217,16 +208,11 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     "} \n")
   
   # generate transformed parameters block
-  zero <- list()
-  if (is_categorical) {
-    zero$tdataD <- "  row_vector[1] zero; \n"
-    zero$tdataC <- "  zero[1] <- 0; \n"
-  }
   text_transformed_data <- paste0(
     "transformed data { \n",
-       zero$tdataD,
+       text_categorical$tdataD,
        text_ranef$tdataD, 
-       zero$tdataC,
+       text_categorical$tdataC,
        text_ranef$tdataC,
     "} \n")
   
