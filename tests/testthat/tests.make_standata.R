@@ -156,7 +156,7 @@ test_that("make_standata returns correct values for addition arguments", {
   expect_equal(make_standata(s | trials(t) ~ 1, data = temp_data, 
                              family = "binomial")$max_obs, 11:19)
   expect_equal(make_standata(s | cat(19) ~ 1, data = temp_data, 
-                             family = "categorical")$max_obs, 19)
+                             family = "cumulative")$ncat, 19)
 })
 
 test_that("make_standata rejects incorrect addition arguments", {
