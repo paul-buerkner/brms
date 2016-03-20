@@ -19,9 +19,10 @@ melt_data <- function(data, family, effects, na.action = na.omit) {
     # only keep variables that are relevant for the model
     rel_vars <- c(all.vars(effects$all), all.vars(effects$respform))
     data <- data[, which(names(data) %in% rel_vars), drop = FALSE]
-    if (any(c("trait", "response") %in% names(data))) {
-      stop("'trait' and 'response' are a resevered variable names.",
-           call. = FALSE)
+    rsv_vars <- intersect(c("trait", "response"), names(data))
+    if (length(rsv_vars)) {
+      rsv_vars <- paste0("'", rsv_vars, "'", collapse = ", ")
+      stop(paste(rsv_vars, "is a reserved variable name"), call. = FALSE)
     }
     if (is.categorical(family)) {
       # no parameters are modeled for the reference category
@@ -44,12 +45,10 @@ melt_data <- function(data, family, effects, na.action = na.omit) {
       model_response[rows2remove] <- NA
     } else if (is.forked(family)) {
       model_response[rows2remove] <- NA
-      reserved <- c(response[2], "main", "spec")
-      reserved <- reserved[reserved %in% names(data)]
-      if (length(reserved)) {
-        stop(paste(paste(reserved, collapse = ", "), 
-                   "is a resevered variable name"), 
-             call. = FALSE)
+      rsv_vars <- intersect(c(response[2], "main", "spec"), names(data))
+      if (length(rsv_vars)) {
+        rsv_vars <- paste0("'", rsv_vars, "'", collapse = ", ")
+        stop(paste(rsv_vars, "is a reserved variable name"), call. = FALSE)
       }
       one <- rep(1, nobs)
       zero <- rep(0, nobs)
