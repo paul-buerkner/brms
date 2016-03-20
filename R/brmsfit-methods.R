@@ -1,7 +1,5 @@
 #' @export
 parnames.brmsfit <- function(x, ...) {
-  if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
-    stop("The model does not contain posterior samples")
   dimnames(x$fit)$parameters
 }
 
@@ -558,7 +556,7 @@ summary.brmsfit <- function(object, waic = FALSE, ...) {
     stan_args <- object$fit@stan_args[[1]]
     out$sampler <- paste0(stan_args$method, "(", stan_args$algorithm, ")")
     if (length(object$ranef) && !any(grepl("^r_", parnames(object)))
-        || length(ee$response) > 1 && is.linear(family)) {
+        || length(ee$response) > 1L && is.linear(family)) {
       # if brm(..., ranef = FALSE) or model is multivariate
       waic <- FALSE
     }
@@ -700,13 +698,11 @@ standata.brmsfit <- function(object, ...) {
     # brms > 0.5.0 stores the original model.frame
     new_formula <- update_re_terms(object$formula, dots$re_formula)
     new_formula <- SW(update_formula(new_formula, partial = object$partial))
-    standata <- make_standata(new_formula,  
-                              data = object$data, 
-                              family = object$family, 
-                              autocor = object$autocor, 
-                              nonlinear = object$nonlinear,
-                              cov_ranef = object$cov_ranef, 
-                              ...)
+    dots$control$old_cat <- is.old_categorical(object)
+    args <- list(formula = new_formula, data = object$data, 
+                 family = object$family, nonlinear = object$nonlinear,
+                 autocor = object$autocor, cov_ranef = object$cov_ranef)
+    standata <- do.call(make_standata, c(args, dots))
   } else {
     # brms <= 0.5.0 only stores the data passed to Stan 
     standata <- object$data

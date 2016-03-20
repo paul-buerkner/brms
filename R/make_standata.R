@@ -167,8 +167,8 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   } else {
     rm_intercept <- is_ordinal || !isTRUE(control$not4stan) ||
       isTRUE(attr(ee$fixed, "rsv_intercept"))
-    X <- get_model_matrix(ee$fixed, data, rm_intercept = rm_intercept,
-                          is_forked = is_forked)
+    X <- get_model_matrix(rhs(ee$fixed), data, is_forked = is_forked,
+                          rm_intercept = rm_intercept)
     X_means <- colMeans(X)
     has_intercept <- attr(terms(formula), "intercept")
     if (!isTRUE(control$not4stan) && has_intercept) {
@@ -314,7 +314,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     standata$N_trait <- nrow(data) / 2L
     standata$Y <- standata$Y[1L:standata$N_trait] 
   }
-  if (is_categorical) {
+  if (is_categorical && !isTRUE(control$old_cat)) {
     standata$N_trait <- nrow(data) / (standata$ncat - 1L)
     standata$Y <- standata$Y[1L:standata$N_trait] 
     standata$J_trait <- matrix(1L:standata$N, ncol = standata$ncat - 1L)

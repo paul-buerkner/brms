@@ -263,6 +263,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   if (return_standata) {
     control <- list(is_newdata = TRUE, not4stan = TRUE,
                     save_order = TRUE, omit_response = !check_response)
+    control$old_cat <- is.old_categorical(fit)
     if (has_trials(fit$family) || has_cat(fit$family)) {
       # trials or ncat should not be computed based on newdata
       control[c("trials", "ncat")] <- standata(fit)[c("trials", "ncat")]

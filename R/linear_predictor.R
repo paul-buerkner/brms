@@ -23,7 +23,6 @@ linear_predictor <- function(x, standata, re_formula = NULL,
   new_ranef <- check_re_formula(re_formula, old_ranef = x$ranef, 
                                 data = x$data)
   new_formula <- update_re_terms(x$formula, re_formula = re_formula)
-  
   family <- family(x)
   # do not use the nonlinear argument here
   ee <- extract_effects(new_formula, family = family)
@@ -31,9 +30,7 @@ linear_predictor <- function(x, standata, re_formula = NULL,
   nsamples <- if (!is.null(subset)) length(subset) else Nsamples(x)
   nlpar <- if (nchar(nlpar)) paste0(nlpar, "_")
   
-  # until brms 0.8.0 categorical models were 
-  # implemented via category specific effects
-  old_cat <- is.categorical(family) && grepl("^b_.+\\[", parnames(x))
+  old_cat <- is.old_categorical(x)
   eta <- matrix(0, nrow = nsamples, ncol = standata$N)
   if (!is.null(standata$X) && ncol(standata$X) && !old_cat) {
     b_pars <- paste0("^b_", nlpar, "[^\\[]+$")
@@ -123,9 +120,10 @@ linear_predictor <- function(x, standata, re_formula = NULL,
     }
   } else if (is.categorical(family)) {
     if (old_cat) {
-      if (!is.null(standata$Xp)) {
+      # deprecated as of brms > 0.8.0
+      if (!is.null(standata$X)) {
         p <- do.call(posterior_samples, c(args, list(pars = "^b_")))
-        eta <- cse_predictor(Xp = standata$Xp, p = p, eta = eta, 
+        eta <- cse_predictor(Xp = standata$X, p = p, eta = eta, 
                              ncat = standata$max_obs)
       } else {
         eta <- array(eta, dim = c(dim(eta), standata$max_obs - 1))
