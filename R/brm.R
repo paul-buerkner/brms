@@ -547,10 +547,11 @@ brm <- function(formula, data = NULL, family = gaussian(),
   dots$testmode <- NULL
   if (is(fit, "brmsfit")) {  
     x <- fit  # re-use existing model
-    x$fit <- rstan::get_stanmodel(x$fit)  # extract the compiled model
     # compute data to be passed to Stan
     standata <- standata(x, is_newdata = dots$is_newdata)
     dots$is_newdata <- NULL
+    # extract the compiled model
+    x$fit <- rstan::get_stanmodel(x$fit)  
   } else {  # build new model
     # see validate.R and priors.R for function definitions
     family <- check_family(family)
