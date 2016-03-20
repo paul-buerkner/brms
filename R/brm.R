@@ -251,8 +251,8 @@
 #'   values of one category are fixed to identify the model. 
 #'   Accordingly, \code{trait} has \code{K - 1} levels, 
 #'   where \code{K} is the number of categories. 
-#'   Usually, it is most useful to specify \code{formula} as follows:
-#'   \code{formula = <response> ~ 0 + trait + trait:(<predictors>)}.
+#'   Usually, it makes most sense to use terms of the structure
+#'   \code{0 + trait + trait:(<predictors>)}.
 #'   
 #'   Zero-inflated and hurdle families are bivariate and also make use 
 #'   of the special internal variable \code{trait} having two levels in this case. 
