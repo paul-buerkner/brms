@@ -678,3 +678,9 @@ allows_cse <- function(family) {
   }
   family %in% c("sratio", "cratio", "acat")
 }
+
+is.old_categorical <- function(x) {
+  # indicate if the model is categorical fitted with brms <= 0.8.0
+  stopifnot(is(x, "brmsfit"))
+  is.categorical(x$family) && any(grepl("^b_.+\\[", parnames(x)))
+}
