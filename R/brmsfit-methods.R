@@ -555,12 +555,8 @@ summary.brmsfit <- function(object, waic = FALSE, ...) {
     out$thin <- object$fit@sim$thin
     stan_args <- object$fit@stan_args[[1]]
     out$sampler <- paste0(stan_args$method, "(", stan_args$algorithm, ")")
-    if (length(object$ranef) && !any(grepl("^r_", parnames(object)))
-        || length(ee$response) > 1L && is.linear(family)) {
-      # if brm(..., ranef = FALSE) or model is multivariate
-      waic <- FALSE
-    }
-    if (waic) out$WAIC <- WAIC(object)$waic
+    allow_waic <- !length(object$ranef) || any(grepl("^r_", parnames(object)))
+    if (waic && allow_waic) out$WAIC <- WAIC(object)$waic
     
     pars <- parnames(object)
     meta_pars <- object$fit@sim$pars_oi
