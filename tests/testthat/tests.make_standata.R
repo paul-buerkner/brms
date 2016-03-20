@@ -7,8 +7,8 @@ test_that(paste("make_standata returns correct data names",
   expect_equal(names(make_standata(rating ~ treat + period + carry 
                                    + (1+treat|subject), data = inhaler,
                                    family = "categorical")),
-               c("N", "Y", "Kp","Xp", "Xp_means", "J_1", "N_1", "K_1",
-                 "NC_1", "Z_1_1", "Z_1_2", "ncat", "max_obs"))
+               c("N", "Y", "K", "X", "X_means", "J_1", "N_1", "K_1", "NC_1", 
+                 "Z_1_1", "Z_1_2", "ncat", "max_obs", "N_trait", "J_trait"))
   expect_equal(names(make_standata(rating ~ treat + period + carry 
                                    + (1+treat|subject), data = inhaler,
                                    control = list(not4stan = TRUE))),
@@ -57,9 +57,6 @@ test_that(paste("make_standata returns correct data names",
   expect_equal(names(make_standata(y | cat(10) ~ x, family = "cumulative", 
                                    data = temp_data)), 
                c("N", "Y", "K", "X", "X_means", "ncat", "max_obs"))
-  expect_warning(names(make_standata(y | cat(t) ~ x, family = "cumulative", 
-                                     data = temp_data)),
-                 "no longer have different numbers of categories")
   standata <- make_standata(y | trunc(0,20) ~ x, family = "gaussian", 
                             data = temp_data)
   expect_true(standata$lb == 0 && standata$ub == 20)
@@ -109,11 +106,10 @@ test_that(paste("make_standata rejects incorrect response variables",
                "family bernoulli expects response variable to contain only two different values")
   expect_error(make_standata(y ~ 1, data = data.frame(y = factor(-1:1)), 
                              family = "cratio"),
-               "family cratio requires factored response variables to be ordered")
+               "family cratio expects either integers or ordered factors")
   expect_error(make_standata(y ~ 1, data = data.frame(y = rep(0.5:7.5), 2), 
                              family = "sratio"),
-               paste("family sratio expects either integers or ordered factors", 
-                     "as response variables"))
+               "family sratio expects either integers or ordered factors")
   expect_error(make_standata(y ~ 1, data = data.frame(y = rep(-7.5:7.5), 2), 
                              family = "gamma"),
                "family gamma requires response variable to be positive")

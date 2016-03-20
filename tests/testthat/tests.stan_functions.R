@@ -103,9 +103,9 @@ test_that("self-defined Stan functions work correctly", {
   expect_equal(t(chol(base::kronecker(A, diag(sd) %*% B %*% diag(sd)))),
                kronecker(t(chol(A)), diag(sd) %*% t(chol(B))))
   
-  # to_array
-  expect_equal(to_array(1:28, 4, 7), list(1:7, 8:14, 15:21, 22:28))
-  expect_equal(to_array(1:28, 3, 4), list(1:4, 5:8, 9:12))
+  # as_matrix
+  expect_equal(as_matrix(1:28, 4, 7), rbind(1:7, 8:14, 15:21, 22:28))
+  expect_equal(as_matrix(1:28, 3, 4), rbind(1:4, 5:8, 9:12))
   
   # cauchit link
   expect_equal(inv_cauchit(1.5), pcauchy(1.5)) 
