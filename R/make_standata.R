@@ -63,7 +63,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     if (is_forked) {
       stop("no autocorrelation allowed for this model", call. = FALSE)
     }
-    if (is_linear && length(ee$response) > 1) {
+    if (is_linear && length(ee$response) > 1L) {
       if (!grepl("^trait$|:trait$|^trait:|:trait:", et$group)) {
         stop(paste("autocorrelation structures for multiple responses must",
                    "contain 'trait' as grouping variable"), call. = FALSE)
@@ -142,6 +142,13 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     }
   }
   
+  #if (is_categorical && !isTRUE(control$not4stan)) {
+    # allows to use more effective indexing of eta in Stan
+    # this has to come after the computation of standata$Y to make sure
+    # that it doesn't affect the ordering of the response variable
+  #  ncat1m <- length(ee$response) - 1
+  #  data <- data[order(rep(1:(nrow(data) / ncat1m), ncat1m)), , drop = FALSE]
+  #}
   # add an offset if present
   model_offset <- model.offset(data)
   if (!is.null(model_offset)) {
@@ -315,9 +322,12 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     standata$Y <- standata$Y[1L:standata$N_trait] 
   }
   if (is_categorical && !isTRUE(control$old_cat)) {
-    standata$N_trait <- nrow(data) / (standata$ncat - 1L)
+    ncat1m <- standata$ncat - 1L
+    standata$N_trait <- nrow(data) / ncat1m
     standata$Y <- standata$Y[1L:standata$N_trait] 
-    standata$J_trait <- matrix(1L:standata$N, ncol = standata$ncat - 1L)
+    standata$J_trait <- matrix(1L:standata$N, ncol = ncat1m)
+    #lower_index <- seq(1, nrow(data), ncat1m)
+    #standata$J_trait <- cbind(lower_index, lower_index + ncat1m - 1)
   }
   # data for addition arguments
   if (is.formula(ee$se)) {

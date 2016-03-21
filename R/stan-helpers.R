@@ -262,7 +262,8 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
       negbinomial = c("neg_binomial_2_log", paste0(eta,", ",shape)),
       geometric = c("neg_binomial_2_log", paste0(eta,", 1")),
       cumulative = c("ordered_logistic", "eta[n], temp_Intercept"),
-      categorical = c("categorical_logit", "append_row(zero, eta[J_trait[n]])"), 
+      categorical = c("categorical_logit", "append_row(zero, eta[J_trait[n]])"),
+        #"append_row(zero, eta[J_trait[n, 1]:J_trait[n, 2]])"),
       binomial = c("binomial_logit", paste0("trials",ns,", ",eta)), 
       bernoulli = c("bernoulli_logit", eta))
   } else {
