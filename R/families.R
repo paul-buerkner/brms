@@ -682,5 +682,5 @@ allows_cse <- function(family) {
 is.old_categorical <- function(x) {
   # indicate if the model is categorical fitted with brms <= 0.8.0
   stopifnot(is(x, "brmsfit"))
-  is.categorical(x$family) && any(grepl("^b_.+\\[", parnames(x)))
+  is(x$fit, "stanfit") && is.categorical(x$family) && "bp" %in% x$fit@model_pars
 }

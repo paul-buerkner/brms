@@ -1,5 +1,7 @@
 #' @export
 parnames.brmsfit <- function(x, ...) {
+  if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
+    stop("The model does not contain posterior samples")
   dimnames(x$fit)$parameters
 }
 
