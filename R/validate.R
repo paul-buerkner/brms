@@ -24,7 +24,7 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
       stop("Non-linear effects are not yet allowed for this family.", 
            call. = FALSE)
     }
-    re_terms <- cse_terms <- NULL
+    re_terms <- cse_terms <- mono_terms <- NULL
   } else {
     # terms() doesn't like non-linear formulas
     term_labels <- rename(attr(terms(formula), "term.labels"), " ", "")
@@ -46,6 +46,16 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
       cse_terms <- formula(paste("~", paste(cse_terms, collapse = "+")))
       if (!length(all.vars(cse_terms))) {
         stop("invalid input to function 'cse'", call. = FALSE)
+      }
+    }
+    # monotonous effects
+    mono_terms <- term_labels[grepl("^monotonous\\(", term_labels)]
+    if (length(mono_terms)) {
+      tfixed <- rename(tfixed, c(paste0("+", mono_terms), mono_terms), "")
+      mono_terms <- substr(mono_terms, 5, nchar(mono_terms) - 1)
+      mono_terms <- formula(paste("~", paste(mono_terms, collapse = "+")))
+      if (!length(all.vars(mono_terms))) {
+        stop("invalid input to function 'mononotonous'", call. = FALSE)
       }
     }
     if (substr(tfixed, nchar(tfixed), nchar(tfixed)) == "~") {
@@ -84,6 +94,7 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   }
   x <- nlist(fixed, random)
   if (length(cse_terms)) x$cse <- cse_terms
+  if (length(mono_terms)) x$monotonous <- mono_terms
   x$nonlinear <- nonlinear_effects(nonlinear, model = x$fixed)
   
   # handle addition arguments
@@ -136,7 +147,8 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   x$covars <- formula(paste("~", paste(c("1", covars), collapse = "+")))
   # make a formula containing all required variables (element 'all')
   formula_list <- c(if (resp_rhs_all) all.vars(lhs(x$fixed)), add_vars, 
-                    x$covars, x$cse, if (!length(x$nonlinear)) rhs(x$fixed), 
+                    rmNULL(x[c("covars", "cse", "monotonous")]), 
+                    if (!length(x$nonlinear)) rhs(x$fixed), 
                     x$random$form, group_formula, get_offset(x$fixed), 
                     lapply(x$nonlinear, function(nl) nl$all), ...)
   new_formula <- collapse(ulapply(formula_list, plus_rhs))
