@@ -63,6 +63,14 @@
 #'   \code{"flexible"} provides the standard unstructured thresholds and 
 #'   \code{"equidistant"} restricts the distance between 
 #'   consecutive thresholds to the same value.
+#' @param sparse Logical; indicates whether the fixed effects design matrix
+#'   should be treated as sparse (defaults to \code{FALSE}). 
+#'   For design matrices with many zeros, this can considerably improve 
+#'   sampling efficiency and reduce required memory.
+#'   For all models using multivariate syntax 
+#'   (i.e. multivariate linear models, zero-inflated and hurdle models 
+#'   as well as categorical models), setting \code{sparse = TRUE}, 
+#'   is generally worth a try to increase the efficiency of the model.
 #' @param cov_ranef A list of matrices that are proportional to the 
 #'   (within) covariance structure of the random effects. 
 #'   The names of the matrices should correspond to columns 
@@ -516,10 +524,11 @@
 brm <- function(formula, data = NULL, family = gaussian(), 
                 prior = NULL, autocor = NULL, nonlinear = NULL, 
                 partial = NULL, threshold = c("flexible", "equidistant"), 
-                cov_ranef = NULL, ranef = TRUE, sample_prior = FALSE, 
-                stan_funs = NULL, fit = NA, inits = "random", 
-                chains = 4, iter = 2000, warmup = floor(iter / 2), thin = 1, 
-                cluster = 1, cluster_type = "PSOCK", control = NULL, 
+                cov_ranef = NULL, ranef = TRUE, sparse = FALSE,
+                sample_prior = FALSE, stan_funs = NULL, fit = NA, 
+                inits = "random", chains = 4, iter = 2000, 
+                warmup = floor(iter / 2), thin = 1, cluster = 1, 
+                cluster_type = "PSOCK", control = NULL, 
                 algorithm = c("sampling", "meanfield", "fullrank"),
                 silent = TRUE, seed = 12345, save_model = NULL, ...) {
   
@@ -585,9 +594,10 @@ brm <- function(formula, data = NULL, family = gaussian(),
     x$model <- make_stancode(formula = formula, data = data, 
                              family = family, prior = prior,  
                              autocor = autocor, nonlinear = nonlinear,
-                             threshold = threshold, cov_ranef = cov_ranef, 
-                             sample_prior = sample_prior, brm_call = TRUE,
-                             stan_funs = stan_funs, save_model = save_model)
+                             threshold = threshold, sparse = sparse,
+                             cov_ranef = cov_ranef, sample_prior = sample_prior, 
+                             brm_call = TRUE, stan_funs = stan_funs, 
+                             save_model = save_model)
     # generate standata before compiling the model to avoid
     # unnecessary compilations in case that the data is invalid
     standata <- standata(x, newdata = dots$is_newdata)

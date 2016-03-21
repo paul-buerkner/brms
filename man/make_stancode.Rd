@@ -6,8 +6,9 @@
 \usage{
 make_stancode(formula, data = NULL, family = gaussian(), prior = NULL,
   autocor = NULL, nonlinear = NULL, partial = NULL,
-  threshold = c("flexible", "equidistant"), cov_ranef = NULL,
-  sample_prior = FALSE, stan_funs = NULL, save_model = NULL, ...)
+  threshold = c("flexible", "equidistant"), sparse = FALSE,
+  cov_ranef = NULL, sample_prior = FALSE, stan_funs = NULL,
+  save_model = NULL, ...)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class): 
@@ -78,6 +79,15 @@ specified directly within \code{formula} using function \code{cse}.}
 \code{"flexible"} provides the standard unstructured thresholds and 
 \code{"equidistant"} restricts the distance between 
 consecutive thresholds to the same value.}
+
+\item{sparse}{Logical; indicates whether the fixed effects design matrix
+should be treated as sparse (defaults to \code{FALSE}). 
+For design matrices with many zeros, this can considerably improve 
+sampling efficiency and reduce required memory.
+For all models using multivariate syntax 
+(i.e. multivariate linear models, zero-inflated and hurdle models 
+as well as categorical models), setting \code{sparse = TRUE}, 
+is generally worth a try to increase the efficiency of the model.}
 
 \item{cov_ranef}{A list of matrices that are proportional to the 
 (within) covariance structure of the random effects. 

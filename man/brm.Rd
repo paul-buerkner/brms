@@ -7,11 +7,11 @@
 brm(formula, data = NULL, family = gaussian(), prior = NULL,
   autocor = NULL, nonlinear = NULL, partial = NULL,
   threshold = c("flexible", "equidistant"), cov_ranef = NULL,
-  ranef = TRUE, sample_prior = FALSE, stan_funs = NULL, fit = NA,
-  inits = "random", chains = 4, iter = 2000, warmup = floor(iter/2),
-  thin = 1, cluster = 1, cluster_type = "PSOCK", control = NULL,
-  algorithm = c("sampling", "meanfield", "fullrank"), silent = TRUE,
-  seed = 12345, save_model = NULL, ...)
+  ranef = TRUE, sparse = FALSE, sample_prior = FALSE, stan_funs = NULL,
+  fit = NA, inits = "random", chains = 4, iter = 2000,
+  warmup = floor(iter/2), thin = 1, cluster = 1, cluster_type = "PSOCK",
+  control = NULL, algorithm = c("sampling", "meanfield", "fullrank"),
+  silent = TRUE, seed = 12345, save_model = NULL, ...)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class): 
@@ -96,6 +96,15 @@ for each level of the grouping factor(s)
 should be saved (default is \code{TRUE}). 
 Set to \code{FALSE} to save memory. 
 The argument has no impact on the model fitting itself.}
+
+\item{sparse}{Logical; indicates whether the fixed effects design matrix
+should be treated as sparse (defaults to \code{FALSE}). 
+For design matrices with many zeros, this can considerably improve 
+sampling efficiency and reduce required memory.
+For all models using multivariate syntax 
+(i.e. multivariate linear models, zero-inflated and hurdle models 
+as well as categorical models), setting \code{sparse = TRUE}, 
+is generally worth a try to increase the efficiency of the model.}
 
 \item{sample_prior}{A flag to indicate if samples from all specified 
 proper priors should be additionally drawn. Among others, 

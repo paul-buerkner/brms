@@ -21,8 +21,9 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
                           prior = NULL, autocor = NULL, 
                           nonlinear = NULL, partial = NULL, 
                           threshold = c("flexible", "equidistant"),
-                          cov_ranef = NULL, sample_prior = FALSE, 
-                          stan_funs = NULL, save_model = NULL, ...) {
+                          sparse = FALSE,  cov_ranef = NULL, 
+                          sample_prior = FALSE, stan_funs = NULL, 
+                          save_model = NULL, ...) {
   dots <- list(...)
   # use deprecated arguments if specified
   cov_ranef <- use_alias(cov_ranef, dots$cov.ranef)
@@ -82,7 +83,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     has_intercept <- temp_list$has_intercept
     text_fixef <- stan_fixef(fixef = fixef, csef = csef, family = family, 
                              prior = prior, threshold = threshold,
-                             has_intercept = has_intercept)
+                             sparse = sparse, has_intercept = has_intercept)
     
     # generate random effects code
     # call stan_ranef for each random term seperately
@@ -93,8 +94,8 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     # generate stan code for the linear predictor
     text_eta <- stan_eta(family = family, fixef = fixef, ranef = ranef,
                          has_intercept = has_intercept, csef = csef, 
-                         autocor = autocor, offset = offset, add = add,
-                         disp = is.formula(ee$disp), is_multi = is_multi)
+                         autocor = autocor, offset = offset, sparse = sparse,
+                         add = add, disp = is.formula(ee$disp), is_multi = is_multi)
     text_nonlinear <- list()
   }
   # generate stan code for the likelihood
@@ -211,8 +212,10 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   text_transformed_data <- paste0(
     "transformed data { \n",
        text_categorical$tdataD,
+       text_fixef$tdataD,
        text_ranef$tdataD, 
        text_categorical$tdataC,
+       text_fixef$tdataC,
        text_ranef$tdataC,
     "} \n")
   

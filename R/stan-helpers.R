@@ -1,6 +1,6 @@
 stan_fixef <- function(fixef, csef, family = gaussian(), 
                        prior = prior_frame(), has_intercept = TRUE, 
-                       threshold = "flexible") {
+                       sparse = FALSE, threshold = "flexible") {
   # Stan code for fixec effects
   #
   # Args:
@@ -35,6 +35,16 @@ stan_fixef <- function(fixef, csef, family = gaussian(),
       "  int<lower=1> K;  // number of population-level effects \n", 
       "  matrix[N, K] X;  // population-level design matrix \n",
       "  vector[K] X_means; \n")
+    if (sparse) {
+      out$tdataD <- paste0( 
+        "  vector[rows(csr_extract_w(X))] wX; \n",
+        "  int vX[size(csr_extract_v(X))]; \n",
+        "  int uX[size(csr_extract_u(X))]; \n")
+      out$tdataC <- paste0(
+        "  wX <- csr_extract_w(X); \n",
+        "  vX <- csr_extract_v(X); \n",
+        "  uX <- csr_extract_u(X); \n")
+    }
     bound <- with(prior, bound[class == "b" & coef == ""])
     out$par <- paste0(out$par,
       "  vector", bound, "[K] b;  // population-level effects \n") 
@@ -336,8 +346,8 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
 
 stan_eta <- function(family, fixef, ranef = list(), csef = NULL, 
                      has_intercept = TRUE, autocor = cor_arma(),  
-                     add = FALSE, disp = FALSE, offset = FALSE, 
-                     is_multi = FALSE) {
+                     sparse = FALSE, add = FALSE, disp = FALSE, 
+                     offset = FALSE, is_multi = FALSE) {
   # linear predictor in Stan
   #
   # Args:
@@ -396,9 +406,18 @@ stan_eta <- function(family, fixef, ranef = list(), csef = NULL,
                           "eta[n]", eta_ma, eta_re, eta_ilink[2],"; \n")
     eta_ilink <- rep("", 2)
   }
+  if (length(fixef)) {
+    if (sparse) {
+      eta_fixef <- "csr_matrix_times_vector(rows(X), cols(X), wX, vX, uX, b)"
+    } else {
+      eta_fixef <- "X * b"
+    }
+  } else { 
+    eta_fixef <- "rep_vector(0, N)"
+  }
   eta$transC1 <- paste0(
     "  // compute linear predictor \n",
-    "  eta <- ", ifelse(length(fixef), "X * b", "rep_vector(0, N)"), 
+    "  eta <- ", eta_fixef, 
     if (has_intercept && !is_ordinal) " + temp_Intercept",
     if (offset) " + offset",
     if (get_arr(autocor)) " + Yarr * arr", 
