@@ -304,8 +304,9 @@ update_formula <- function(formula, data = NULL, family = gaussian(),
     respform <- extract_effects(formula)$respform
     model_response <- model.response(model.frame(respform, data = data))
     response <- levels(as.factor(model_response))
-    if (length(response) <= 1L) {
-      stop("At least 2 response categories are required.", call. = FALSE)
+    if (length(response) <= 2L) {
+      stop(paste("At least 3 response categories are required",
+                 "for categorical models"), call. = FALSE)
     }
     attr(formula, "response") <- response
   }
