@@ -2,22 +2,22 @@ test_that(paste("make_standata returns correct data names",
                 "for fixed and random effects"), {
   expect_equal(names(make_standata(rating ~ treat + period + carry 
                                    + (1|subject), data = inhaler)),
-               c("N", "Y", "K", "X", "X_means", 
+               c("N", "Y",  "K", "X_means", "X", 
                  "J_1", "N_1", "K_1", "NC_1", "Z_1"))
   expect_equal(names(make_standata(rating ~ treat + period + carry 
                                    + (1+treat|subject), data = inhaler,
                                    family = "categorical")),
-               c("N", "Y", "K", "X", "X_means", "J_1", "N_1", "K_1", "NC_1", 
+               c("N", "Y", "K", "X_means", "X", "J_1", "N_1", "K_1", "NC_1", 
                  "Z_1_1", "Z_1_2", "ncat", "max_obs", "N_trait", "J_trait"))
   expect_equal(names(make_standata(rating ~ treat + period + carry 
                                    + (1+treat|subject), data = inhaler,
                                    control = list(not4stan = TRUE))),
-               c("N", "Y", "K", "X", "X_means", "J_1", "N_1", "K_1",
+               c("N", "Y", "K", "X", "J_1", "N_1", "K_1",
                  "NC_1", "Z_1"))
   temp_data <- data.frame(y = 1:10, g = 1:10, h = 11:10, x = rep(0,10))
   expect_equal(names(make_standata(y ~ x + (1|g) + (1|h), family = "poisson",
                                    data = temp_data)),
-               c("N", "Y", "K", "X", "X_means", "J_1", "N_1", "K_1",
+               c("N", "Y", "K", "X_means", "X", "J_1", "N_1", "K_1",
                  "NC_1", "Z_1", "J_2", "N_2", "K_2", "NC_2", "Z_2"))
 })
 
@@ -38,25 +38,25 @@ test_that(paste("make_standata returns correct data names",
                           c = sample(-1:1,10,TRUE))
   expect_equal(names(make_standata(y | se(w) ~ x, family = "gaussian", 
                                    data = temp_data)), 
-               c("N", "Y", "K", "X", "X_means", "se"))
+               c("N", "Y", "K", "X_means", "X", "se"))
   expect_equal(names(make_standata(y | weights(w) ~ x, family = "gaussian", 
                                    data = temp_data)), 
-               c("N", "Y", "K", "X", "X_means", "weights"))
+               c("N", "Y", "K", "X_means", "X", "weights"))
   expect_equal(names(make_standata(y | cens(c) ~ x, family = "cauchy", 
                                    data = temp_data)), 
-               c("N", "Y", "K", "X", "X_means", "cens"))
+               c("N", "Y", "K", "X_means", "X", "cens"))
   expect_equal(names(make_standata(y | trials(t) ~ x, family = "binomial", 
                                    data = temp_data)), 
-               c("N", "Y", "K", "X", "X_means", "trials", "max_obs"))
+               c("N", "Y", "K", "X_means", "X", "trials", "max_obs"))
   expect_equal(names(make_standata(y | trials(10) ~ x, family = "binomial", 
                                    data = temp_data)), 
-               c("N", "Y", "K", "X", "X_means", "trials", "max_obs"))
+               c("N", "Y", "K", "X_means", "X", "trials", "max_obs"))
   expect_equal(names(make_standata(y | cat(11) ~ x, family = "acat", 
                                    data = temp_data)), 
-               c("N", "Y", "K", "X", "X_means", "ncat", "max_obs"))
+               c("N", "Y", "K", "X_means", "X", "ncat", "max_obs"))
   expect_equal(names(make_standata(y | cat(10) ~ x, family = "cumulative", 
                                    data = temp_data)), 
-               c("N", "Y", "K", "X", "X_means", "ncat", "max_obs"))
+               c("N", "Y", "K", "X_means", "X", "ncat", "max_obs"))
   standata <- make_standata(y | trunc(0,20) ~ x, family = "gaussian", 
                             data = temp_data)
   expect_true(standata$lb == 0 && standata$ub == 20)
@@ -124,12 +124,13 @@ test_that(paste("make_standata rejects incorrect response variables",
 test_that("make_standata suggests using family bernoulli if appropriate", {
   expect_message(make_standata(y ~ 1, data = data.frame(y = rep(0:1,5)), 
                                family = "binomial"),
-                 paste("Only 2 levels detected so that family bernoulli", 
-                       "might be a more efficient choice."))
+                 paste("family bernoulli might be a more efficient choice."))
   expect_message(make_standata(y ~ 1, data = data.frame(y = rep(0:1,5)), 
-                               family = "categorical"),
-                 paste("Only 2 levels detected so that family bernoulli", 
-                       "might be a more efficient choice."))
+                               family = "acat"),
+                 paste("family bernoulli might be a more efficient choice."))
+  expect_error(make_standata(y ~ 1, data = data.frame(y = rep(0:1,5)), 
+                             family = "categorical"),
+                 paste("At least 3 response categories are required"))
 })
 
 test_that("make_standata returns correct values for addition arguments", {
