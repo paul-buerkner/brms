@@ -1,5 +1,5 @@
 stan_fixef <- function(fixef, csef, family = gaussian(), 
-                       prior = prior_frame(), has_intercept = TRUE, 
+                       prior = prior_frame(), nint = 1, 
                        sparse = FALSE, threshold = "flexible") {
   # Stan code for fixec effects
   #
@@ -15,26 +15,10 @@ stan_fixef <- function(fixef, csef, family = gaussian(),
   # Returns:
   #   a list containing Stan code related to fixed effects
   out <- list()
-  if (has_intercept) {
-    if (is.ordinal(family)) {
-      # temp intercepts for ordinal models are defined in stan_ordinal
-      out$genD <- "  vector[ncat - 1] b_Intercept;  // thresholds \n" 
-      subtract <- ifelse(length(fixef), " - dot_product(X_means, b)", "") 
-      out$genC <- paste0("  b_Intercept <- temp_Intercept", subtract, "; \n")
-    } else {
-      out$par <- paste0(out$par,
-                        "  real temp_Intercept;  // temporary Intercept \n")
-      out$genD <- "  real b_Intercept;  // population-level intercept \n"
-      subtract <- ifelse(length(fixef), " - dot_product(X_means, b)", "") 
-      out$genC <- paste0("  b_Intercept <- temp_Intercept", subtract, "; \n")
-      out$prior <- stan_prior("temp_Intercept", prior = prior)
-    }
-  }
   if (length(fixef)) {
     out$data <- paste0(out$data, 
       "  int<lower=1> K;  // number of population-level effects \n", 
-      "  matrix[N, K] X;  // population-level design matrix \n",
-      "  vector[K] X_means; \n")
+      "  matrix[N, K] X;  // population-level design matrix \n")
     if (sparse) {
       out$tdataD <- paste0( 
         "  vector[rows(csr_extract_w(X))] wX; \n",
@@ -50,6 +34,43 @@ stan_fixef <- function(fixef, csef, family = gaussian(),
       "  vector", bound, "[K] b;  // population-level effects \n") 
     fixef_prior <- stan_prior(class = "b", coef = fixef, prior = prior)
     out$prior <- paste0(out$prior, fixef_prior)
+  }
+  if (nint) {
+    if (length(fixef)) {
+      # X_means is not defined in intercept only models
+      def_X_means <- paste0("  vector[K] X_means", 
+                            if (nint > 1L) "[nint]", "; \n")
+      sub_X_means <- paste0(" - dot_product(X_means", 
+                            if (nint > 1L) "[i]", ", b)")
+    } else {
+      def_X_means <- sub_X_means <- ""
+    }
+    if (is.ordinal(family)) {
+      # temp intercepts for ordinal models are defined in stan_ordinal
+      out$data <- paste0(out$data, def_X_means)
+      out$genD <- "  vector[ncat - 1] b_Intercept;  // thresholds \n" 
+      out$genC <- paste0("  b_Intercept <- temp_Intercept", sub_X_means, "; \n")
+    } else {
+      if (nint == 1L) {
+        out$data <- paste0(out$data, def_X_means)
+        out$par <- paste0(out$par, 
+          "  real temp_Intercept;  // temporary Intercept \n")
+        out$genD <- "  real b_Intercept;  // population-level intercept \n"
+        out$genC <- paste0("  b_Intercept <- temp_Intercept", sub_X_means, "; \n")
+      } else if (nint > 1L) {
+        out$data <- paste0(out$data,
+          "  int nint;  // number of population-level intercepts \n",
+          "  int J_int[N]; \n", def_X_means)
+        out$par <- paste0(out$par, 
+          "  vector[nint] temp_Intercept;  // temporary Intercepts \n")
+        out$genD <- "  vector[nint] b_Intercept;  // population-level intercepts \n"
+        out$genC <- paste0(
+          "  for (i in 1:nint) { \n",
+          "    b_Intercept[i] <- temp_Intercept[i]", sub_X_means, "; \n",
+          "  } \n")
+      }
+      out$prior <- paste0(out$prior, stan_prior("temp_Intercept", prior = prior))
+    }
   }
   if (length(csef)) {
     out$data <- paste0(out$data, 
@@ -346,7 +367,7 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
 }
 
 stan_eta <- function(family, fixef, ranef = list(), csef = NULL, 
-                     has_intercept = TRUE, autocor = cor_arma(),  
+                     nint = 1, autocor = cor_arma(),  
                      sparse = FALSE, add = FALSE, disp = FALSE, 
                      offset = FALSE, is_multi = FALSE) {
   # linear predictor in Stan
@@ -368,8 +389,6 @@ stan_eta <- function(family, fixef, ranef = list(), csef = NULL,
   stopifnot(is(family, "family"))
   link <- family$link
   family <- family$family
-  is_ordinal <- is.ordinal(family)
-  is_cat <- is.categorical(family)
   # initialize eta
   eta <- list()
   eta$transD <- paste0(
@@ -392,20 +411,18 @@ stan_eta <- function(family, fixef, ranef = list(), csef = NULL,
       eta_ar <- ifelse(!use_cov(autocor), " + head(E[n], Kar) * ar", "")
       eta$transC3 <- paste0("    ", s, eta_obj," <- ", eta_ilink[1], 
                             eta_obj, eta_ar, eta_ilink[2], "; \n")
-      # don't apply link function twice
-      eta_ilink <- rep("", 2)
+      eta_ilink <- rep("", 2)  # don't apply the link function twice
     }
   }
   
   # define fixed, random, and autocorrelation effects
+  eta_int <- if (nint > 1L) " + temp_Intercept[J_int[n]]"
   eta_re <- stan_eta_re(ranef)
-  etap <- if (length(csef)) "  etap <- Xp * bp; \n"
   eta_ma <- ifelse(get_ma(autocor) && !use_cov(autocor), 
                    " + head(E[n], Kma) * ma", "")
-  if (nchar(eta_re) || nchar(eta_ma) || is_multi || nchar(eta_ilink[1])) {
-    eta$transC2 <- paste0("    ",s, eta_obj," <- ", eta_ilink[1], 
-                          "eta[n]", eta_ma, eta_re, eta_ilink[2],"; \n")
-    eta_ilink <- rep("", 2)
+  if (nchar(paste0(eta_int, eta_re, eta_ma, eta_ilink[1])) || is_multi) {
+    eta$transC2 <- paste0("    ", s, eta_obj," <- ", eta_ilink[1], 
+                          "eta[n]", eta_int, eta_ma, eta_re, eta_ilink[2],"; \n")
   }
   if (length(fixef)) {
     if (sparse) {
@@ -416,13 +433,14 @@ stan_eta <- function(family, fixef, ranef = list(), csef = NULL,
   } else { 
     eta_fixef <- "rep_vector(0, N)"
   }
+  eta_cse <- if (length(csef)) "  etap <- Xp * bp; \n"
   eta$transC1 <- paste0(
     "  // compute linear predictor \n",
     "  eta <- ", eta_fixef, 
-    if (has_intercept && !is_ordinal) " + temp_Intercept",
+    if (nint == 1L && !is.ordinal(family)) " + temp_Intercept",
     if (offset) " + offset",
     if (get_arr(autocor)) " + Yarr * arr", 
-    "; \n", etap)
+    "; \n", eta_cse)
   eta
 }
 

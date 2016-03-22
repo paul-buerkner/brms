@@ -165,23 +165,36 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
                                        paste0(c("K_", "X_"), nlpars[i])))
     }
     # matrix of covariances
-    C <- get_model_matrix(ee$covars, data = data, rm_intercept = TRUE)
+    C <- get_model_matrix(ee$covars, data = data, intercepts = "Intercept")
     if (length(all.vars(ee$covars)) != ncol(C)) {
       stop("Factors with more than two levels are not allowed as covariates",
            call. = FALSE)
     }
     standata <- c(standata, list(KC = ncol(C), C = C)) 
   } else {
-    rm_intercept <- is_ordinal || !isTRUE(control$not4stan) ||
-      isTRUE(attr(ee$fixed, "rsv_intercept"))
+    intercepts <- get_intercepts(ee, data = data, family = family,
+                                 not4stan = isTRUE(control$not4stan)) 
     X <- get_model_matrix(rhs(ee$fixed), data, is_forked = is_forked,
-                          rm_intercept = rm_intercept)
-    X_means <- colMeans(X)
-    has_intercept <- attr(terms(formula), "intercept")
-    if (!isTRUE(control$not4stan) && has_intercept) {
-      X <- sweep(X, 2, X_means, FUN = "-")
+                          intercepts = names(intercepts))
+    standata$K <- ncol(X)
+    if (length(intercepts)) {
+      if (length(intercepts) == 1L) {
+        X_means <- colMeans(X)
+        X <- sweep(X, 2, X_means, FUN = "-")
+      } else {
+        # multiple intercepts
+        X_means <- matrix(0, nrow = length(intercepts), ncol = ncol(X))
+        for (i in seq_along(intercepts)) {
+          X_part <- X[intercepts[[i]], , drop = FALSE]
+          X_means[i, ] <- colMeans(X_part)
+          X[intercepts[[i]], ] <- sweep(X_part, 2L, X_means[i, ], FUN = "-")
+        }
+        standata$nint <- length(intercepts)
+        standata$J_int <- attr(intercepts, "J_int")
+      }
+      standata$X_means <- as.array(X_means)
     }
-    standata <- c(standata, list(K = ncol(X), X = X, X_means = as.array(X_means)))
+    standata$X <- X
   }
   # data for random effects
   random <- get_random(ee)
@@ -356,7 +369,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   }
   # data for category specific effects
   if (is.formula(ee$cse)) {
-    Xp <- get_model_matrix(ee$cse, data, rm_intercept = TRUE)
+    Xp <- get_model_matrix(ee$cse, data, intercepts = "Intercept")
     standata <- c(standata, list(Kp = ncol(Xp), Xp = Xp))
   }
   # autocorrelation variables

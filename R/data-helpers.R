@@ -10,8 +10,7 @@ melt_data <- function(data, family, effects, na.action = na.omit) {
   #   data in long format 
   response <- effects$response
   nresp <- length(response)
-  if (nresp > 1L && is.linear(family) || is.categorical(family) || 
-      nresp == 2L && is.forked(family)) {
+  if (is.mv(family, response = response)) {
     if (!is(data, "data.frame")) {
       stop("argument 'data' must be a data.frame for this model", 
            call. = FALSE)
@@ -60,8 +59,6 @@ melt_data <- function(data, family, effects, na.action = na.omit) {
     new_cols$response <- model_response
     data <- replicate(length(response), data, simplify = FALSE)
     data <- do.call(na.action, list(cbind(do.call(rbind, data), new_cols)))
-  } else if (nresp > 1L) {
-    stop("invalid multivariate model", call. = FALSE)
   }
   if (isTRUE(attr(effects$fixed, "rsv_intercept"))) {
     if (is.null(data)) 
@@ -274,30 +271,70 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   newdata
 }
 
-get_model_matrix <- function(formula, data = environment(formula), ...) {
+get_model_matrix <- function(formula, data = environment(formula),
+                             intercepts = NULL, ...) {
   # Construct Design Matrices for \code{brms} models
   # 
   # Args:
   #   formula: An object of class formula
   #   data: A data frame created with model.frame. 
   #         If another sort of object, model.frame is called first.
+  #   intercepts: names of the intercept columns to remove 
+  #               from the model matrix
   #   ...: Further arguments passed to amend_terms
   # 
   # Returns:
   #   The design matrix for a regression-like model 
   #   with the specified formula and data. 
   #   For details see the documentation of \code{model.matrix}.
-  terms <- amend_terms(formula, ...)
+  terms <- amend_terms(formula, rm_intercept = length(intercepts), ...)
   if (is.null(terms)) return(NULL)
   X <- stats::model.matrix(terms, data)
-  new_colnames <- rename(colnames(X), check_dup = TRUE)
-  if (isTRUE(attr(terms, "rm_intercept")) && "Intercept" %in% new_colnames) {
-    X <- X[, -1, drop = FALSE]
-    if (ncol(X)) {
-      colnames(X) <- new_colnames[2:length(new_colnames)]
-    }
-  } else colnames(X) <- new_colnames
+  colnames(X) <- rename(colnames(X), check_dup = TRUE)
+  if (length(intercepts)) {
+    X <- X[, - which(colnames(X) %in% intercepts), drop = FALSE]
+  }
   X   
+}
+
+get_intercepts <- function(effects, data, family = gaussian(),
+                           not4stan = FALSE) {
+  terms <- terms(rhs(effects$fixed))
+  if (is.ordinal(family) || isTRUE(attr(effects$fixed, "rsv_intercept"))) {
+    int_names <- "Intercept"
+  } else if (not4stan || length(effects$nonlinear)) {
+    int_names <- NULL
+  } else if (is.mv(family, response = effects$response)) {
+    term_labels <- attr(terms, "term.labels")
+    if (attr(terms, "intercept")) {
+      int_names <- "Intercept"
+    } else {
+      if ("trait" %in% term_labels) {
+        int_names <- paste0("trait", levels(data$trait))
+      } else if (is.forked(family) && all(c("main", "spec") %in% term_labels)) {
+        int_names <- c("main", "spec")
+      } else {
+        int_names <- NULL
+      }
+    }
+  } else {
+    if (attr(terms, "intercept")) {
+      int_names <- "Intercept"
+    } else {
+      int_names <- NULL
+    }
+  }
+  if (length(int_names)) {
+    mm <- stats::model.matrix(terms, data)
+    colnames(mm) <- rename(colnames(mm), check_dup = TRUE)
+    out <- lapply(int_names, function(x) which(mm[, x] != 0))
+    J_int <- rep(0, nrow(data))
+    for (i in seq_along(out)) J_int[out[[i]]] <- i
+    out <- structure(out, names = int_names, J_int = J_int)
+  } else {
+    out <- list()
+  }
+  out
 }
 
 arr_design_matrix <- function(Y, r, group)  { 

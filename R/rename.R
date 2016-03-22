@@ -110,10 +110,17 @@ rename_pars <- function(x) {
                                 oldname = b, pnames = paste0(b, "_", f[[i]]), 
                                 fnames = paste0(b, "_", f[[i]])))
       change <- c(change, prior_changes(class = "b", pars = pars, names = f))
-      # currently not used in non-linear models
       change <- c(change, prior_changes(class = "temp_Intercept", pars = pars, 
                                         new_class = "b_Intercept"))
     }
+  }
+  intercepts <- names(get_intercepts(ee, data = x$data, family = family))
+  if (length(intercepts) && !is_equal(intercepts, "Intercept")) {
+    # for intercepts in models using multivariate formula syntax
+    change <- lc(change, list(pos = grepl("^b_Intercept\\[", pars), 
+                              oldname = "b_Intercept", 
+                              pnames = paste0("b_", intercepts), 
+                              fnames = paste0("b_", intercepts)))
   }
   
   if (is.formula(ee$cse)) {

@@ -70,21 +70,16 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     text_nonlinear <- stan_nonlinear(ee, data = data, family = family, 
                                      add = add, cov_ranef = cov_ranef,
                                      prior = prior, disp = is.formula(ee$disp))
-    text_fixef <- text_ranef <- text_eta <- list()
+    text_fixef <- text_ranef <- text_eta <- intercepts <- list()
   } else {
     # generate fixed effects code
-    rm_intercept <- isTRUE(attr(ee$fixed, "rsv_intercept"))
-    X <- get_model_matrix(ee$fixed, data, is_forked = is_forked,
-                          rm_intercept = rm_intercept)
-    temp_list <- check_intercept(colnames(X))
-    fixef <- temp_list$names
-    Xp <- get_model_matrix(ee$cse, data, rm_intercept = TRUE)
-    csef <- colnames(Xp)
-    has_intercept <- temp_list$has_intercept
+    intercepts <- names(get_intercepts(ee, family = family, data = data))
+    fixef <- colnames(get_model_matrix(ee$fixed, data, is_forked = is_forked,
+                                       intercepts = intercepts))
+    csef <- colnames(get_model_matrix(ee$cse, data, intercepts = "Intercept"))
     text_fixef <- stan_fixef(fixef = fixef, csef = csef, family = family, 
                              prior = prior, threshold = threshold,
-                             sparse = sparse, has_intercept = has_intercept)
-    
+                             sparse = sparse, nint = length(intercepts))
     # generate random effects code
     # call stan_ranef for each random term seperately
     text_ranef <- lapply(seq_along(ranef), stan_ranef, ranef = ranef, 
@@ -93,7 +88,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     text_ranef <- collapse_lists(text_ranef)
     # generate stan code for the linear predictor
     text_eta <- stan_eta(family = family, fixef = fixef, ranef = ranef,
-                         has_intercept = has_intercept, csef = csef, 
+                         nint = length(intercepts), csef = csef, 
                          autocor = autocor, offset = offset, sparse = sparse,
                          add = add, disp = is.formula(ee$disp), is_multi = is_multi)
     text_nonlinear <- list()
@@ -246,10 +241,10 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   # generate transformed parameters block
   # loop over all observations in transformed parameters if necessary
   make_loop <- nrow(ee$random) || (Kar || Kma) && !use_cov(autocor) ||  
-               isTRUE(text_eta$transform) || length(nonlinear)
+               length(intercepts) > 1L || isTRUE(text_eta$transform) || 
+               length(nonlinear)
   if (make_loop && !is_multi) {
-    text_loop <- c(paste0(
-      "  for (n in 1:N) { \n"), "  } \n")
+    text_loop <- c("  for (n in 1:N) { \n", "  } \n")
   } else if (is_multi) {
     text_loop <- text_multi$loop
   } else {

@@ -365,7 +365,8 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
     # fixed and category specific effects 
     fixef <- colnames(get_model_matrix(ee$fixed, data = data))
     if (length(fixef)) {
-      if ("Intercept" %in% fixef) {
+      intercepts <- get_intercepts(ee, data = data, family = family)
+      if (length(intercepts)) {
         prior <- rbind(prior, prior_frame(class = "Intercept"))
         if (internal) {
           res_thres <- is.ordinal(family) && threshold == "equidistant"
@@ -377,7 +378,7 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
     }
     if (is.formula(ee$cse)) {
       csef <- colnames(get_model_matrix(ee$cse, data = data, 
-                                         rm_intercept = TRUE))
+                                        intercepts = "Intercept"))
       fp <- intersect(fixef, csef)
       if (length(fp)) {
         stop(paste("Variables cannot be modeled as fixed and", 
@@ -551,9 +552,9 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
     prior[which(prior$class %in% int_class), "prior"] <- int_prior 
   }
   # get category specific priors out of fixef priors
-  if (is.categorical(family) || is.formula(ee$cse)) {
+  if (is.formula(ee$cse)) {
     csef <- colnames(get_model_matrix(ee$cse, data = data, 
-                                      rm_intercept = TRUE))
+                                      intercepts = "Intercept"))
     b_index <- which(prior$class == "b" & !nchar(prior$coef))
     p_index <- which(prior$class == "b" & prior$coef %in% csef)
     rows2remove <- c(rows2remove, p_index)
