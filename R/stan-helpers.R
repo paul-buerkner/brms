@@ -20,14 +20,8 @@ stan_fixef <- function(fixef, csef, family = gaussian(),
       "  int<lower=1> K;  // number of population-level effects \n", 
       "  matrix[N, K] X;  // population-level design matrix \n")
     if (sparse) {
-      out$tdataD <- paste0( 
-        "  vector[rows(csr_extract_w(X))] wX; \n",
-        "  int vX[size(csr_extract_v(X))]; \n",
-        "  int uX[size(csr_extract_u(X))]; \n")
-      out$tdataC <- paste0(
-        "  wX <- csr_extract_w(X); \n",
-        "  vX <- csr_extract_v(X); \n",
-        "  uX <- csr_extract_u(X); \n")
+      out$tdataD <- "  #include tdata_def_sparse_X.stan \n"
+      out$tdataC <- "  #include tdata_calc_sparse_X.stan \n"
     }
     bound <- with(prior, bound[class == "b" & coef == ""])
     out$par <- paste0(out$par,
@@ -39,7 +33,8 @@ stan_fixef <- function(fixef, csef, family = gaussian(),
     if (length(fixef)) {
       # X_means is not defined in intercept only models
       def_X_means <- paste0("  vector[K] X_means", 
-                            if (nint > 1L) "[nint]", "; \n")
+                            if (nint > 1L) "[nint]", 
+                            ";  // column means of X before centering \n")
       sub_X_means <- paste0(" - dot_product(X_means", 
                             if (nint > 1L) "[i]", ", b)")
     } else {
@@ -60,7 +55,8 @@ stan_fixef <- function(fixef, csef, family = gaussian(),
       } else if (nint > 1L) {
         out$data <- paste0(out$data,
           "  int nint;  // number of population-level intercepts \n",
-          "  int J_int[N]; \n", def_X_means)
+          "  int J_int[N];  // assigns intercepts to observations \n", 
+          def_X_means)
         out$par <- paste0(out$par, 
           "  vector[nint] temp_Intercept;  // temporary Intercepts \n")
         out$genD <- "  vector[nint] b_Intercept;  // population-level intercepts \n"
