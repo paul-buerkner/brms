@@ -413,7 +413,7 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
              call. = FALSE)
       }
       # include correlation parameters
-      if (random$cor[[i]] && length(ranef) > 1) {
+      if (random$cor[[i]] && length(ranef) > 1L) {
         if (internal) {
           prior <- rbind(prior, 
             prior_frame(class = "L", group = c("", gs[i]), nlpar = nlpars[i],
@@ -442,7 +442,7 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
                                prior = c(def_scale_prior, rep("", nresp)))
     prior <- rbind(prior, sigma_prior)
   }
-  if (is_linear && nresp > 1) {
+  if (is_linear && nresp > 1L) {
     if (internal) {
       prior <- rbind(prior, prior_frame(class = "Lrescor", 
                                         prior = "lkj_corr_cholesky(1)"))
@@ -464,7 +464,8 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
   if (is_ordinal && threshold == "equidistant") {
     prior <- rbind(prior, prior_frame(class = "delta"))
   }
-  prior <- prior[with(prior, order(class, group, coef)), ]
+  # do not remove unique(.)
+  prior <- unique(prior[with(prior, order(class, group, coef)), ])
   rownames(prior) <- 1:nrow(prior)
   prior
 }
