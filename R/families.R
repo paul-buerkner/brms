@@ -611,6 +611,17 @@ is.forked <- function(family) {
   is.hurdle(family) || is.zero_inflated(family) || is.2PL(family)
 }
 
+is.mv <- function(family, response = NULL) {
+  # indicate if the model uses multivariate formula syntax
+  nresp <- length(response)
+  is_mv <- nresp > 1L && is.linear(family) || is.categorical(family) || 
+           nresp == 2L && is.forked(family)
+  if (nresp > 1L && !is_mv) {
+    stop("invalid multivariate model", call. = FALSE)
+  }
+  is_mv
+}
+
 use_real <- function(family) {
   # indicate if family uses real responses
   if (is(family, "family")) {
