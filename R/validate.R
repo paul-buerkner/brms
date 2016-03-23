@@ -55,7 +55,7 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
       mono_terms <- substr(mono_terms, 5, nchar(mono_terms) - 1)
       mono_terms <- formula(paste("~", paste(mono_terms, collapse = "+")))
       if (!length(all.vars(mono_terms))) {
-        stop("invalid input to function 'mononotonous'", call. = FALSE)
+        stop("invalid input to function 'monotonous'", call. = FALSE)
       }
     }
     if (substr(tfixed, nchar(tfixed), nchar(tfixed)) == "~") {
@@ -650,6 +650,10 @@ rsv_vars <- function(family, nresp = 1) {
 
 cse <- function(...) {
   stop("inappropriate use of function 'cse'", call. = FALSE)
+}
+
+monotonous <- function(...) {
+  stop("inappropriate use of function 'monotonous'", call. = FALSE)
 }
 
 add_families <- function(x) {
