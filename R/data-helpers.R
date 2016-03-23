@@ -288,7 +288,12 @@ get_model_matrix <- function(formula, data = environment(formula),
   #   with the specified formula and data. 
   #   For details see the documentation of \code{model.matrix}.
   terms <- amend_terms(formula, rm_intercept = length(intercepts), ...)
-  if (is.null(terms)) return(NULL)
+  if (is.null(terms)) {
+    return(NULL)
+  }
+  if (attr(terms, "rm_intercept")) {
+    intercepts <- union(intercepts, "Intercept")
+  }
   X <- stats::model.matrix(terms, data)
   colnames(X) <- rename(colnames(X), check_dup = TRUE)
   if (length(intercepts)) {
