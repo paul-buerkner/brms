@@ -99,12 +99,13 @@ The argument has no impact on the model fitting itself.}
 
 \item{sparse}{Logical; indicates whether the fixed effects design matrix
 should be treated as sparse (defaults to \code{FALSE}). 
-For design matrices with many zeros, this can considerably improve 
-sampling efficiency and reduce required memory.
-For all models using multivariate syntax 
+For design matrices with many zeros, this can considerably 
+reduce required memory. For all models using multivariate syntax 
 (i.e. multivariate linear models, zero-inflated and hurdle models 
 as well as categorical models), setting \code{sparse = TRUE}, 
-is generally worth a try to increase the efficiency of the model.}
+is generally worth a try to decrease memory requirements.
+However, sampling speed is currently not improved or even
+slightly decreased.}
 
 \item{sample_prior}{A flag to indicate if samples from all specified 
 proper priors should be additionally drawn. Among others, 
