@@ -373,8 +373,9 @@ stan_eta <- function(family, fixef, ranef = list(), csef = NULL,
   #   fixef: names of the fixed effects
   #   ranef: a named list returned by gather_ranef
   #   csef: names of the category specific effects
-  #   has_intercept: has the model a fixed effects intercept?
+  #   nint: number of fixed effects intercepts
   #   autocor: autocorrelation structure
+  #   sparse: is the fixed effects design matrix sparse?
   #   add: is the model weighted, censored, or truncated?
   #   disp: is the 'disp' addition argument specified?
   #   offset: is an offset defined?
@@ -413,22 +414,14 @@ stan_eta <- function(family, fixef, ranef = list(), csef = NULL,
   
   # define fixed, random, and autocorrelation effects
   eta_int <- if (nint > 1L) " + temp_Intercept[Jint[n]]"
-  eta_re <- stan_eta_re(ranef)
+  eta_ranef <- stan_eta_ranef(ranef)
   eta_ma <- ifelse(get_ma(autocor) && !use_cov(autocor), 
                    " + head(E[n], Kma) * ma", "")
-  if (nchar(paste0(eta_int, eta_re, eta_ma, eta_ilink[1])) || is_multi) {
-    eta$transC2 <- paste0("    ", s, eta_obj," <- ", eta_ilink[1], 
-                          "eta[n]", eta_int, eta_ma, eta_re, eta_ilink[2],"; \n")
+  if (nchar(paste0(eta_int, eta_ranef, eta_ma, eta_ilink[1])) || is_multi) {
+    eta$transC2 <- paste0("    ", s, eta_obj," <- ", eta_ilink[1], "eta[n]", 
+                          eta_int, eta_ma, eta_ranef, eta_ilink[2],"; \n")
   }
-  if (length(fixef)) {
-    if (sparse) {
-      eta_fixef <- "csr_matrix_times_vector(rows(X), cols(X), wX, vX, uX, b)"
-    } else {
-      eta_fixef <- "X * b"
-    }
-  } else { 
-    eta_fixef <- "rep_vector(0, N)"
-  }
+  eta_fixef <- stan_eta_fixef(fixef, sparse = sparse)
   eta_cse <- if (length(csef)) "  etap <- Xp * bp; \n"
   eta$transC1 <- paste0(
     "  // compute linear predictor \n",
@@ -493,7 +486,7 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
         out$transC1 <- paste0(out$transC1, text_ranef$transC)
         out$transC2 <- paste0(out$transC2, 
           "    ", eta, "[n] <- ", eta, "[n]", 
-          stan_eta_re(ranef, par = nlp), "; \n") 
+          stan_eta_ranef(ranef, par = nlp), "; \n") 
         out$genD <- paste0(out$genD, text_ranef$genD)
         out$genC <- paste0(out$genC, text_ranef$genC)
       }
@@ -1159,7 +1152,24 @@ stan_ilink <- function(link) {
          cauchit = "inv_cauchit")
 }
 
-stan_eta_re <- function(ranef, par = "") {
+stan_eta_fixef <- function(fixef, sparse = FALSE) {
+  # define Stan code to compute the fixef part of eta
+  # Args:
+  #   fixef: names of the fixed effects
+  #   sparse: logical; use sparse matrix multiplication?
+  if (length(fixef)) {
+    if (sparse) {
+      eta_fixef <- "csr_matrix_times_vector(rows(X), cols(X), wX, vX, uX, b)"
+    } else {
+      eta_fixef <- "X * b"
+    }
+  } else { 
+    eta_fixef <- "rep_vector(0, N)"
+  }
+  eta_fixef
+}
+
+stan_eta_ranef <- function(ranef, par = "") {
   # Write the random effects part of the linear predictor
   # Args:
   #   ranef: a named list returned by gather_ranef
@@ -1167,19 +1177,19 @@ stan_eta_re <- function(ranef, par = "") {
   #        (used for non-linear models)
   # Returns:
   #   A string containing the random effects part of the linear predictor
-  eta_re <- ""
+  eta_ranef <- ""
   for (i in seq_along(ranef)) {
     pi <- if (nchar(par)) paste0(par, "_", i) else i
     if (length(ranef[[i]]) == 1L) {
-      eta_re <- paste0(eta_re, " + r_", pi,"[J_", pi,"[n]] * Z_", pi,"[n]")
+      eta_ranef <- paste0(eta_ranef, " + r_", pi,"[J_", pi,"[n]] * Z_", pi,"[n]")
     } else {
       j <- seq_along(ranef[[i]])
-      eta_re <- paste0(eta_re, collapse(
+      eta_ranef <- paste0(eta_ranef, collapse(
         " + r_", pi, "_", j, "[J_", pi,"[n]]",
         " * Z_", pi, "_", j, "[n]"))
     }
   }
-  eta_re
+  eta_ranef
 }
 
 stan_eta_transform <- function(family, link, add = FALSE) {
