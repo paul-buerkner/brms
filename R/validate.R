@@ -515,39 +515,42 @@ amend_terms <- function(x, rm_intercept = FALSE, is_forked = FALSE) {
   # to be used in get_model_matrix
   # Args:
   #   x: any R object; if not a formula or terms, NULL is returned
-  #   rm_intercept: a flag indicating if the intercept column 
-  #                 should be removed from the model.matrix. 
-  #                 Primarily useful for ordinal models
+  #   rm_intercept: a flag indicating if the intercept column
+  #                 should be removed.
   #   is_forked: a flag indicating if the model is forked into
-  #              two parts (e.g., a hurdle model)
+  #              two parts (e.g., a hurdle model).
   # Returns:
   #   a (possibly amended) terms object or NULL
   if (is.formula(x) || is(x, "terms")) {
-    x <- terms(x)
+    y <- terms(x)
   } else {
     return(NULL)
   }
-  attr(x, "rm_intercept") <- as.logical(rm_intercept)
+  attr(y, "rm_intercept") <- as.logical(rm_intercept)
   if (is_forked) {
     # ensure that interactions with main and spec won't
     # cause automatic cell mean coding of factors
-    term_labels <- attr(x, "term.labels")
+    term_labels <- attr(y, "term.labels")
     if (any(grepl("(^|:)(main|spec)($|:)", term_labels))) {
       if (any(grepl("(^|:)trait($|:)", term_labels))) {
         stop(paste("formula may not contain variable 'trait'",
                    "when using variables 'main' or 'spec'"),
              call. = FALSE)
       }
-      if (attr(x, "intercept")) {
+      if (attr(y, "intercept")) {
         stop(paste("formula may not contain an intercept",
                    "when using variables 'main' or 'spec'"),
              call. = FALSE)
       }
-      attr(x, "intercept") <- 1
-      attr(x, "rm_intercept") <- TRUE
+      attr(y, "intercept") <- 1
+      attr(y, "rm_intercept") <- TRUE
     }
   }
-  x
+  if (isTRUE(attr(x, "rsv_intercept"))) {
+    attr(y, "intercept") <- 1
+    attr(y, "rm_intercept") <- TRUE
+  }
+  y
 }
 
 check_intercept <- function(names) {

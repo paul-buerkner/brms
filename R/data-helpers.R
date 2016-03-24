@@ -305,9 +305,10 @@ get_model_matrix <- function(formula, data = environment(formula),
 get_intercepts <- function(effects, data, family = gaussian(),
                            not4stan = FALSE) {
   terms <- terms(rhs(effects$fixed))
-  if (is.ordinal(family) || isTRUE(attr(effects$fixed, "rsv_intercept"))) {
+  if (is.ordinal(family)) {
     int_names <- "Intercept"
-  } else if (not4stan || length(effects$nonlinear)) {
+  } else if (not4stan || length(effects$nonlinear) ||
+             isTRUE(attr(effects$fixed, "rsv_intercept"))) {
     int_names <- NULL
   } else if (is.mv(family, response = effects$response)) {
     term_labels <- attr(terms, "term.labels")
@@ -333,9 +334,9 @@ get_intercepts <- function(effects, data, family = gaussian(),
     mm <- stats::model.matrix(terms, data)
     colnames(mm) <- rename(colnames(mm), check_dup = TRUE)
     out <- lapply(int_names, function(x) which(mm[, x] != 0))
-    J_int <- rep(0, nrow(data))
-    for (i in seq_along(out)) J_int[out[[i]]] <- i
-    out <- structure(out, names = int_names, J_int = J_int)
+    Jint <- rep(0, nrow(data))
+    for (i in seq_along(out)) Jint[out[[i]]] <- i
+    out <- structure(out, names = int_names, Jint = Jint)
   } else {
     out <- list()
   }
