@@ -126,8 +126,10 @@ get_arg <- function(x, ...) {
 
 rhs <- function(x) {
   # return the righthand side of a formula
+  attri <- attributes(x)
   x <- as.formula(x)
-  if (length(x) == 3) x[-2] else x
+  x <- if (length(x) == 3) x[-2] else x
+  do.call(structure, c(list(x), attri))
 }
 
 lhs <- function(x) {

@@ -82,3 +82,8 @@ test_that("use_alias works correctly", {
                  "'c' is deprecated. Please use argument 'a' instead.")
   expect_equal(use_alias(a, dots$c, warn = FALSE), dots$c)
 })
+
+test_that("rhs keeps attributes", {
+  form <- structure(y~x, test = TRUE)
+  expect_equal(attributes(form), attributes(rhs(form)))
+})
