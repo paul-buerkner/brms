@@ -175,7 +175,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
         X_means <- colMeans(X)
         X <- sweep(X, 2, X_means, FUN = "-")
       } else {
-        # multiple intercepts
+        # multiple intercepts for 'multivariate' models
         X_means <- matrix(0, nrow = length(intercepts), ncol = ncol(X))
         for (i in seq_along(intercepts)) {
           X_part <- X[intercepts[[i]], , drop = FALSE]
@@ -183,7 +183,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
           X[intercepts[[i]], ] <- sweep(X_part, 2L, X_means[i, ], FUN = "-")
         }
         standata$nint <- length(intercepts)
-        standata$J_int <- attr(intercepts, "J_int")
+        standata$Jint <- attr(intercepts, "Jint")
       }
       standata$X_means <- as.array(X_means)
     }
@@ -198,11 +198,9 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     ncolZ <- lapply(Z, ncol)
     # numeric levels passed to Stan
     expr <- expression(as.numeric(as.factor(get(g, data))), 
-                       # number of levels
-                       length(unique(get(g, data))),  
+                       length(unique(get(g, data))), # number of levels 
                        ncolZ[[i]],  # number of random effects
-                       #  number of correlations
-                       ncolZ[[i]] * (ncolZ[[i]] - 1) / 2) 
+                       ncolZ[[i]] * (ncolZ[[i]] - 1) / 2)  # number of correlations
     if (isTRUE(control$is_newdata)) {
       # for newdata only as levels are already defined in amend_newdata
       expr[1] <- expression(get(g, data)) 
@@ -312,8 +310,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     }
     standata$sqrt_Y <- sqrt(standata$Y)
   }  
-  # evaluate even if check_response is FALSE 
-  # to ensure that N_trait is defined
+  # evaluate even if check_response is FALSE to ensure that N_trait is defined
   if (is_linear && length(ee$response) > 1L) {
     standata$Y <- matrix(standata$Y, ncol = length(ee$response))
     NC_trait <- ncol(standata$Y) * (ncol(standata$Y) - 1L) / 2L
