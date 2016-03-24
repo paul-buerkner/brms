@@ -52,7 +52,7 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
     mono_terms <- term_labels[grepl("^monotonous\\(", term_labels)]
     if (length(mono_terms)) {
       tfixed <- rename(tfixed, c(paste0("+", mono_terms), mono_terms), "")
-      mono_terms <- substr(mono_terms, 5, nchar(mono_terms) - 1)
+      mono_terms <- substr(mono_terms, 12, nchar(mono_terms) - 1)
       mono_terms <- formula(paste("~", paste(mono_terms, collapse = "+")))
       if (!length(all.vars(mono_terms))) {
         stop("invalid input to function 'monotonous'", call. = FALSE)
@@ -94,7 +94,7 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   }
   x <- nlist(fixed, random)
   if (length(cse_terms)) x$cse <- cse_terms
-  if (length(mono_terms)) x$monotonous <- mono_terms
+  if (length(mono_terms)) x$mono <- mono_terms
   x$nonlinear <- nonlinear_effects(nonlinear, model = x$fixed)
   
   # handle addition arguments
@@ -147,7 +147,7 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   x$covars <- formula(paste("~", paste(c("1", covars), collapse = "+")))
   # make a formula containing all required variables (element 'all')
   formula_list <- c(if (resp_rhs_all) all.vars(lhs(x$fixed)), add_vars, 
-                    rmNULL(x[c("covars", "cse", "monotonous")]), 
+                    rmNULL(x[c("covars", "cse", "mono")]), 
                     if (!length(x$nonlinear)) rhs(x$fixed), 
                     x$random$form, group_formula, get_offset(x$fixed), 
                     lapply(x$nonlinear, function(nl) nl$all), ...)
