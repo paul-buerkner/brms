@@ -149,6 +149,8 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   
   # generate functions block
   text_functions <- paste0(
+    "// This Stan code was generated with the R package 'brms'. \n",
+    "// We recommend generating the data with the 'make_standata' function. \n",
     "functions { \n",
       text_misc_funs,
       text_arma$fun,
@@ -164,13 +166,13 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   N_bin <- ifelse(is.formula(ee$trials), "[N]", "")
   text_data <- paste0(
     "data { \n",
-    "  int<lower=1> N;  // number of observations \n", 
+    "  int<lower=1> N;  // total number of observations \n", 
     if (is_multi) {
       text_multi$data
     } else if (is_categorical) {
       text_categorical$data
     } else if (is_forked) {
-      paste0("  int<lower=1> N_trait; \n",
+      paste0("  int<lower=1> N_trait;  // number of observation per trait \n",
              "  ", ifelse(use_real(family), "real", "int"),
              " Y[N_trait];  // response variable \n")
     } else if (use_real(family)) {

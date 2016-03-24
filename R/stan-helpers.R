@@ -9,16 +9,17 @@ stan_fixef <- function(fixef, csef, family = gaussian(),
   #   family: the model family
   #   prior: a data.frame containing user defined priors 
   #          as returned by check_prior 
-  #   has_intercept: logical; fixed effects intercept present?
+  #   nint: number of fixed effects intercepts
   #   threshold: either "flexible" or "equidistant" 
   #
   # Returns:
   #   a list containing Stan code related to fixed effects
   out <- list()
   if (length(fixef)) {
+    centered <- ifelse(nint > 0, "centered", "")
     out$data <- paste0(out$data, 
       "  int<lower=1> K;  // number of population-level effects \n", 
-      "  matrix[N, K] X;  // population-level design matrix \n")
+      "  matrix[N, K] X;  // ", centered, "population-level design matrix \n")
     if (sparse) {
       out$tdataD <- "  #include tdata_def_sparse_X.stan \n"
       out$tdataC <- "  #include tdata_calc_sparse_X.stan \n"
@@ -55,7 +56,7 @@ stan_fixef <- function(fixef, csef, family = gaussian(),
       } else if (nint > 1L) {
         out$data <- paste0(out$data,
           "  int nint;  // number of population-level intercepts \n",
-          "  int J_int[N];  // assigns intercepts to observations \n", 
+          "  int Jint[N];  // assigns intercepts to observations \n", 
           def_X_means)
         out$par <- paste0(out$par, 
           "  vector[nint] temp_Intercept;  // temporary Intercepts \n")
@@ -411,7 +412,7 @@ stan_eta <- function(family, fixef, ranef = list(), csef = NULL,
   }
   
   # define fixed, random, and autocorrelation effects
-  eta_int <- if (nint > 1L) " + temp_Intercept[J_int[n]]"
+  eta_int <- if (nint > 1L) " + temp_Intercept[Jint[n]]"
   eta_re <- stan_eta_re(ranef)
   eta_ma <- ifelse(get_ma(autocor) && !use_cov(autocor), 
                    " + head(E[n], Kma) * ma", "")
