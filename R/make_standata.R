@@ -269,26 +269,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   # data for monotonous effects
   if (is.formula(ee$mono)) {
     mmf <- model.frame(ee$mono, data)
-    mvars <- names(mmf)
-    for (i in seq_along(mvars)) {
-      # validate predictors to be modeled as monotonous effects
-      if (is.ordered(mmf[[mvars[i]]])) {
-        # counting starts at zero
-        mmf[[mvars[i]]] <- as.numeric(mmf[[mvars[i]]]) - 1 
-      } else if (all(is.wholenumber(mmf[[mvars[i]]]))) {
-        mmf[[mvars[i]]] <- mmf[[mvars[i]]] - min(mmf[[mvars[i]]])
-      } else {
-        stop(paste("Monotonous predictors must be either integers or",
-                   "ordered factors. Error occured for variable", mvars[i]), 
-             call. = FALSE)
-      }
-      if (max(mmf[[mvars[i]]]) < 2L) {
-        stop(paste("Monotonous predictors must have at least 3 different", 
-                   "values. Error occured for variable", mvars[i]),
-             call. = FALSE)
-      }
-    }
-    Xm <- get_model_matrix(ee$mono, mmf)
+    Xm <- get_model_matrix(ee$mono, prepare_monotonous(mmf, names(mmf)))
     Jm <- as.array(apply(Xm, 2, max))
     standata <- c(standata, nlist(Km = ncol(Xm), Xm, Jm))
     # validate and assign vectors for dirichlet prior

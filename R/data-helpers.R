@@ -340,6 +340,37 @@ get_intercepts <- function(effects, data, family = gaussian()) {
   out
 }
 
+prepare_monotonous <- function(data, vars) {
+  # prepare monotonous variables for use in Stan
+  # Args:
+  #   data: a data.frame or named list
+  #   vars: names of monotonous variables
+  # Returns:
+  #   'data' with amended monotonous variables
+  stopifnot(is.list(data))
+  stopifnot(is.atomic(vars))
+  vars <- intersect(vars, names(data))
+  for (i in seq_along(vars)) {
+    # validate predictors to be modeled as monotonous effects
+    if (is.ordered(data[[vars[i]]])) {
+      # counting starts at zero
+      data[[vars[i]]] <- as.numeric(data[[vars[i]]]) - 1 
+    } else if (all(is.wholenumber(data[[vars[i]]]))) {
+      data[[vars[i]]] <- data[[vars[i]]] - min(data[[vars[i]]])
+    } else {
+      stop(paste("Monotonous predictors must be either integers or",
+                 "ordered factors. Error occured for variable", vars[i]), 
+           call. = FALSE)
+    }
+    if (max(data[[vars[i]]]) < 2L) {
+      stop(paste("Monotonous predictors must have at least 3 different", 
+                 "values. Error occured for variable", vars[i]),
+           call. = FALSE)
+    }
+  }
+  data
+}
+
 arr_design_matrix <- function(Y, r, group)  { 
   # calculate design matrix for autoregressive effects of the response
   #
