@@ -363,18 +363,20 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
     }
   } else {
     # fixed and category specific effects 
-    fixef <- colnames(get_model_matrix(ee$fixed, data = data))
+    # don't remove the intercept columns here!
+    fixef <- colnames(get_model_matrix(rhs(ee$fixed), data = data,
+                                       forked = is.forked(family)))
     if (length(fixef)) {
-      intercepts <- get_intercepts(ee, data = data, family = family)
-      if (length(intercepts)) {
-        prior <- rbind(prior, prior_frame(class = "Intercept"))
-        if (internal) {
-          res_thres <- is.ordinal(family) && threshold == "equidistant"
-          int_class <- ifelse(res_thres, "temp_Intercept1", "temp_Intercept")
-          prior <- rbind(prior, prior_frame(class = int_class))
-        }
-      }
       prior <- rbind(prior, prior_frame(class = "b", coef = c("", fixef))) 
+    }
+    intercepts <- names(get_intercepts(ee, data = data, family = family))
+    if (length(intercepts)) {
+      prior <- rbind(prior, prior_frame(class = "Intercept"))
+      if (internal) {
+        res_thres <- is.ordinal(family) && threshold == "equidistant"
+        int_class <- ifelse(res_thres, "temp_Intercept1", "temp_Intercept")
+        prior <- rbind(prior, prior_frame(class = int_class))
+      }
     }
     if (is.formula(ee$cse)) {
       csef <- colnames(get_model_matrix(ee$cse, data = data, 

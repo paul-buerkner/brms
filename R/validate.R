@@ -509,15 +509,13 @@ get_var_combs <- function(x) {
   unique(lapply(x, function(y) all.vars(parse(text = y))))
 }
 
-amend_terms <- function(x, rm_intercept = FALSE, is_forked = FALSE) {
+amend_terms <- function(x, forked = FALSE) {
   # amend a terms object (or one that can be coerced to it)
   # to be used in get_model_matrix
   # Args:
   #   x: any R object; if not a formula or terms, NULL is returned
-  #   rm_intercept: a flag indicating if the intercept column
-  #                 should be removed.
-  #   is_forked: a flag indicating if the model is forked into
-  #              two parts (e.g., a hurdle model).
+  #   forked: a flag indicating if the model is forked into
+  #           two parts (e.g., a hurdle model).
   # Returns:
   #   a (possibly amended) terms object or NULL
   if (is.formula(x) || is(x, "terms")) {
@@ -525,8 +523,7 @@ amend_terms <- function(x, rm_intercept = FALSE, is_forked = FALSE) {
   } else {
     return(NULL)
   }
-  attr(y, "rm_intercept") <- as.logical(rm_intercept)
-  if (is_forked) {
+  if (forked) {
     # ensure that interactions with main and spec won't
     # cause automatic cell mean coding of factors
     term_labels <- attr(y, "term.labels")
@@ -541,8 +538,7 @@ amend_terms <- function(x, rm_intercept = FALSE, is_forked = FALSE) {
                    "when using variables 'main' or 'spec'"),
              call. = FALSE)
       }
-      attr(y, "intercept") <- 1
-      attr(y, "rm_intercept") <- TRUE
+      attr(x, "rsv_intercept") <- TRUE
     }
   }
   if (isTRUE(attr(x, "rsv_intercept"))) {

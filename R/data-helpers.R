@@ -272,43 +272,40 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
 }
 
 get_model_matrix <- function(formula, data = environment(formula),
-                             intercepts = NULL, ...) {
+                             cols2remove = NULL, ...) {
   # Construct Design Matrices for \code{brms} models
   # 
   # Args:
   #   formula: An object of class formula
   #   data: A data frame created with model.frame. 
   #         If another sort of object, model.frame is called first.
-  #   intercepts: names of the intercept columns to remove 
-  #               from the model matrix
+  #   cols2remove: names of the columns to remove from 
+  #                the model matrix (mainly used for intercepts)
   #   ...: Further arguments passed to amend_terms
   # 
   # Returns:
   #   The design matrix for a regression-like model 
   #   with the specified formula and data. 
   #   For details see the documentation of \code{model.matrix}.
-  terms <- amend_terms(formula, rm_intercept = length(intercepts), ...)
+  stopifnot(is.atomic(cols2remove))
+  terms <- amend_terms(formula, ...)
   if (is.null(terms)) {
     return(NULL)
   }
-  if (attr(terms, "rm_intercept")) {
-    intercepts <- union(intercepts, "Intercept")
+  if (isTRUE(attr(terms, "rm_intercept"))) {
+    cols2remove <- union(cols2remove, "Intercept")
   }
   X <- stats::model.matrix(terms, data)
   colnames(X) <- rename(colnames(X), check_dup = TRUE)
-  if (length(intercepts)) {
-    X <- X[, - which(colnames(X) %in% intercepts), drop = FALSE]
+  if (length(cols2remove)) {
+    X <- X[, - which(colnames(X) %in% cols2remove), drop = FALSE]
   }
   X   
 }
 
-get_intercepts <- function(effects, data, family = gaussian(),
-                           not4stan = FALSE) {
+get_intercepts <- function(effects, data, family = gaussian()) {
   terms <- terms(rhs(effects$fixed))
-  if (is.ordinal(family)) {
-    int_names <- "Intercept"
-  } else if (not4stan || length(effects$nonlinear) ||
-             isTRUE(attr(effects$fixed, "rsv_intercept"))) {
+  if (length(effects$nonlinear)) {
     int_names <- NULL
   } else if (is.mv(family, response = effects$response)) {
     term_labels <- attr(terms, "term.labels")

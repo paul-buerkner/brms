@@ -158,22 +158,25 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
                                        paste0(c("K_", "X_"), nlpars[i])))
     }
     # matrix of covariances
-    C <- get_model_matrix(ee$covars, data = data, intercepts = "Intercept")
+    C <- get_model_matrix(ee$covars, data = data)
     if (length(all.vars(ee$covars)) != ncol(C)) {
       stop("Factors with more than two levels are not allowed as covariates",
            call. = FALSE)
     }
     standata <- c(standata, list(KC = ncol(C), C = C)) 
   } else {
-    intercepts <- get_intercepts(ee, data = data, family = family,
-                                 not4stan = isTRUE(control$not4stan)) 
-    X <- get_model_matrix(rhs(ee$fixed), data, is_forked = is_forked,
-                          intercepts = names(intercepts))
+    if (isTRUE(control$not4stan) && !is_ordinal) {
+      intercepts <- NULL  # don't remove any intercept columns
+    } else {
+      intercepts <- get_intercepts(ee, data = data, family = family)  
+    }
+    X <- get_model_matrix(rhs(ee$fixed), data, forked = is_forked,
+                          cols2remove = names(intercepts))
     standata$K <- ncol(X)
     if (length(intercepts)) {
       if (length(intercepts) == 1L) {
         X_means <- colMeans(X)
-        X <- sweep(X, 2, X_means, FUN = "-")
+        X <- sweep(X, 2L, X_means, FUN = "-")
       } else {
         # multiple intercepts for 'multivariate' models
         X_means <- matrix(0, nrow = length(intercepts), ncol = ncol(X))
@@ -193,7 +196,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   random <- get_random(ee)
   if (nrow(random)) {
     Z <- lapply(random$form, get_model_matrix, 
-                data = data, is_forked = is_forked)
+                data = data, forked = is_forked)
     r <- lapply(Z, colnames)
     ncolZ <- lapply(Z, ncol)
     # numeric levels passed to Stan
@@ -259,6 +262,11 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
                                          paste0("Lcov_",i)))
       }
     }
+  }
+  # data for category specific effects
+  if (is.formula(ee$cse)) {
+    Xp <- get_model_matrix(ee$cse, data)
+    standata <- c(standata, list(Kp = ncol(Xp), Xp = Xp))
   }
   # data for specific families
   if (has_trials(family)) {
@@ -354,11 +362,6 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       stop("Some responses are outside of the truncation boundaries.",
            call. = FALSE)
     }
-  }
-  # data for category specific effects
-  if (is.formula(ee$cse)) {
-    Xp <- get_model_matrix(ee$cse, data, intercepts = "Intercept")
-    standata <- c(standata, list(Kp = ncol(Xp), Xp = Xp))
   }
   # autocorrelation variables
   if (has_arma(autocor)) {

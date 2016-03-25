@@ -65,7 +65,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   trunc <- get_boundaries(ee$trunc)  
   add <- is.formula(ee[c("weights", "cens", "trunc")])
   
-  ranef <- gather_ranef(ee, data = data, is_forked = is_forked)
+  ranef <- gather_ranef(ee, data = data, forked = is_forked)
   if (length(nonlinear)) {
     text_nonlinear <- stan_nonlinear(ee, data = data, family = family, 
                                      add = add, cov_ranef = cov_ranef,
@@ -74,9 +74,9 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   } else {
     # generate fixed effects code
     intercepts <- names(get_intercepts(ee, family = family, data = data))
-    fixef <- colnames(get_model_matrix(ee$fixed, data, is_forked = is_forked,
-                                       intercepts = intercepts))
-    csef <- colnames(get_model_matrix(ee$cse, data, intercepts = "Intercept"))
+    fixef <- colnames(get_model_matrix(rhs(ee$fixed), data, forked = is_forked,
+                                       cols2remove = intercepts))
+    csef <- colnames(get_model_matrix(ee$cse, data))
     text_fixef <- stan_fixef(fixef = fixef, csef = csef, family = family, 
                              prior = prior, threshold = threshold,
                              sparse = sparse, nint = length(intercepts))
