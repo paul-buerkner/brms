@@ -263,6 +263,34 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       }
     }
   }
+  # data for monotonous effects
+  if (is.formula(ee$mono)) {
+    mmf <- model.frame(ee$mono, data)
+    mvars <- names(mmf)
+    Jm <- rep(NA, length(mvars))
+    for (i in seq_along(mvars)) {
+      if (is.ordered(mmf[[mvars[i]]])) {
+        # counting starts at zero
+        mmf[[mvars[i]]] <- as.numeric(mmf[[mvars[i]]]) - 1 
+      } else if (all(is.wholenumber(mmf[[mvars[i]]]))) {
+        mmf[[mvars[i]]] <- mmf[[mvars[i]]] - min(mmf[[mvars[i]]])
+      } else {
+        stop(paste("Monotonous predictors must be either integers or",
+                   "ordered factors. Error occured for variable", mvars[i]), 
+             call. = FALSE)
+      }
+      if (max(mmf[[mvars[i]]]) < 2L) {
+        stop(paste("Monotonous predictors must have at least 3 different", 
+                   "values. Error occured for variable", mvars[i]),
+             call. = FALSE)
+      }
+      Jm[i] <- max(mmf[[mvars[i]]])
+      # FIXME
+      standata[[paste0("prior_simplex_", i)]] <- rep(1 / Jm[i], Jm[i]) 
+    }
+    Xm <- get_model_matrix(ee$mono, mmf)
+    standata <- c(standata, list(Km = ncol(Xm), Xm = Xm, Jm = as.array(Jm)))
+  }
   # data for category specific effects
   if (is.formula(ee$cse)) {
     Xp <- get_model_matrix(ee$cse, data)

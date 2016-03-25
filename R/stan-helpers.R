@@ -19,7 +19,7 @@ stan_fixef <- function(fixef, csef, family = gaussian(),
     centered <- ifelse(nint > 0, "centered", "")
     out$data <- paste0(out$data, 
       "  int<lower=1> K;  // number of population-level effects \n", 
-      "  matrix[N, K] X;  // ", centered, "population-level design matrix \n")
+      "  matrix[N, K] X;  // ", centered, " population-level design matrix \n")
     if (sparse) {
       out$tdataD <- "  #include tdata_def_sparse_X.stan \n"
       out$tdataC <- "  #include tdata_calc_sparse_X.stan \n"
@@ -192,6 +192,26 @@ stan_ranef <- function(i, ranef, prior = prior_frame(),
         "  matrix[N_", pi, ", K_", pi, "] r_", pi, "; \n")
       out$genC <- collapse(
         "  r_", pi, "[, ", j, "] <- r_", pi, "_", j, "; \n")
+stan_monef <- function(monef, prior = prior_frame()) {
+  out <- list()
+  if (length(monef)) {
+    out$fun <- "  #include fun_monotonous.stan \n"
+    out$data <- paste0(
+      "  int<lower=1> Km; \n",
+      "  int Xm[N, Km]; \n",
+      "  int<lower=2> Jm[Km]; \n")
+    bound <- with(prior, bound[class == "b" & coef == ""])
+    out$par <- paste0("  vector[Km]", bound, " bm; \n") 
+    out$prior <- stan_prior(class = "b", coef = monef, 
+                            prior = prior, suffix = "m")
+    for (i in seq_along(monef)) {
+      out$data <- paste0(out$data,
+        "  vector[Jm[", i, "]] prior_simplex_", i, "; \n")
+      out$par <- paste0(out$par,
+        "  simplex[Jm[", i, "]] simplex_", i, "; \n")
+      simplex_prior <- stan_prior(class = "simplex", coef = monef[i], 
+                                  prior = prior, suffix = paste0("_", i))
+      out$prior <- paste0(out$prior, simplex_prior)
     }
   }
   out
@@ -363,7 +383,7 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
 }
 
 stan_eta <- function(family, fixef, ranef = list(), csef = NULL, 
-                     nint = 1, autocor = cor_arma(),  
+                     monef = NULL, nint = 1, autocor = cor_arma(),  
                      sparse = FALSE, add = FALSE, disp = FALSE, 
                      offset = FALSE, is_multi = FALSE) {
   # linear predictor in Stan
@@ -397,7 +417,7 @@ stan_eta <- function(family, fixef, ranef = list(), csef = NULL,
       paste0("  vector[K_trait] Eta[N_trait];",
              "  // multivariate linear predictor matrix \n"))
   eta_obj <- ifelse(is_multi, "Eta[m, k]", "eta[n]")
-  s <- ifelse(is_multi, "  ", "")
+  wsp <- ifelse(is_multi, "  ", "")
   
   # transform eta before it is passed to the likelihood
   eta$transform <- stan_eta_transform(family, link, add = add)
@@ -406,7 +426,7 @@ stan_eta <- function(family, fixef, ranef = list(), csef = NULL,
     eta_ilink <- stan_eta_ilink(family, link, disp = disp)
     if (get_ar(autocor)) {
       eta_ar <- ifelse(!use_cov(autocor), " + head(E[n], Kar) * ar", "")
-      eta$transC3 <- paste0("    ", s, eta_obj," <- ", eta_ilink[1], 
+      eta$transC3 <- paste0("    ", wsp, eta_obj," <- ", eta_ilink[1], 
                             eta_obj, eta_ar, eta_ilink[2], "; \n")
       eta_ilink <- rep("", 2)  # don't apply the link function twice
     }
@@ -415,11 +435,14 @@ stan_eta <- function(family, fixef, ranef = list(), csef = NULL,
   # define fixed, random, and autocorrelation effects
   eta_int <- if (nint > 1L) " + temp_Intercept[Jint[n]]"
   eta_ranef <- stan_eta_ranef(ranef)
+  eta_monef <- stan_eta_monef(monef)
   eta_ma <- ifelse(get_ma(autocor) && !use_cov(autocor), 
                    " + head(E[n], Kma) * ma", "")
-  if (nchar(paste0(eta_int, eta_ranef, eta_ma, eta_ilink[1])) || is_multi) {
-    eta$transC2 <- paste0("    ", s, eta_obj," <- ", eta_ilink[1], "eta[n]", 
-                          eta_int, eta_ma, eta_ranef, eta_ilink[2],"; \n")
+  add2eta <- any(nchar(c(eta_int, eta_monef, eta_ma, eta_ranef, eta_ilink[1])))
+  if (add2eta || is_multi) {
+    eta$transC2 <- paste0(
+      "    ", wsp, eta_obj," <- ", eta_ilink[1], "eta[n]", 
+      eta_int, eta_monef, eta_ranef, eta_ma, eta_ilink[2],"; \n")
   }
   eta_fixef <- stan_eta_fixef(fixef, sparse = sparse)
   eta_cse <- if (length(csef)) "  etap <- Xp * bp; \n"
@@ -613,19 +636,19 @@ stan_arma <- function(family, autocor, prior = prior_frame(),
         stop(paste(err_msg, "for non-linear models."), call. = FALSE)
       }
       index <- ifelse(is_multi, "m, k", "n")
-      s <- ifelse(is_multi, "      ", "    ")
+      wsp <- ifelse(is_multi, "      ", "    ")
       link <- c(identity = "", log = "log", inverse = "inv")[family$link]
       out$transD <- paste0("  matrix[N, Karma] E;  // ARMA design matrix \n",
                            "  vector[N] e;  // residuals \n") 
       out$transC1 <- "  E <- E_pre; \n" 
       out$transC2 <- paste0(
-        s, "// calculation of ARMA effects \n",
-        s, "e[n] <- ", link, "(Y[", index, "]) - eta[n]", "; \n",
-        s, "for (i in 1:Karma) { \n", 
-        s, "  if (n + 1 - i > 0 && n < N && tg[n + 1] == tg[n + 1 - i]) { \n",
-        s, "     E[n + 1, i] <- e[n + 1 - i]; \n",
-        s, "  } \n",
-        s, "} \n")
+        wsp, "// calculation of ARMA effects \n",
+        wsp, "e[n] <- ", link, "(Y[", index, "]) - eta[n]", "; \n",
+        wsp, "for (i in 1:Karma) { \n", 
+        wsp, "  if (n + 1 - i > 0 && n < N && tg[n + 1] == tg[n + 1 - i]) { \n",
+        wsp, "     E[n + 1, i] <- e[n + 1 - i]; \n",
+        wsp, "  } \n",
+        wsp, "} \n")
     } 
   }
   if (Karr) {
@@ -1190,6 +1213,15 @@ stan_eta_ranef <- function(ranef, par = "") {
     }
   }
   eta_ranef
+}
+
+stan_eta_monef <- function(monef) {
+  eta_monef <- ""
+  for (i in seq_along(monef)) {
+    eta_monef <- paste0(eta_monef,
+      " + bm[", i, "] * monotonous(simplex_", i, ", Xm[n, ", i, "])")
+  }
+  eta_monef
 }
 
 stan_eta_transform <- function(family, link, add = FALSE) {

@@ -95,6 +95,7 @@ rename_pars <- function(x) {
   standata <- standata(x)
   
   # find positions of parameters and define new names
+  # fixed effects
   if (length(x$nonlinear)) {
     nlpars <- paste0("_", names(ee$nonlinear))
     X_list <- standata[paste0("X", nlpars)]
@@ -114,6 +115,7 @@ rename_pars <- function(x) {
                                         new_class = "b_Intercept"))
     }
   }
+  # non-linear models currently don't use any special intercept handling
   intercepts <- names(get_intercepts(ee, data = x$data, family = family))
   if (length(intercepts) && !is_equal(intercepts, "Intercept")) {
     # for intercepts in models using multivariate formula syntax
@@ -122,21 +124,34 @@ rename_pars <- function(x) {
                               pnames = paste0("b_", intercepts), 
                               fnames = paste0("b_", intercepts)))
   }
-  
-  if (is.formula(ee$cse)) {
-    p <- colnames(standata$Xp)
-    lp <- length(p)
-    if (lp) {
-      thres <- max(standata$max_obs) - 1
-      pfnames <- paste0("b_",t(outer(p, paste0("[",1:thres,"]"), FUN = paste0)))
-      change <- lc(change, list(pos = grepl("^bp\\[", pars), oldname = "bp", 
-                                pnames = paste0("b_",p), fnames = pfnames,
-                                sort = ulapply(1:lp, seq, to = thres*lp, by = lp),
-                                dim = thres))
-      change <- c(change, prior_changes(class = "bp", pars = pars, names = p))
+  # monotonous effects
+  if (is.formula(ee$mono)) {
+    monef <- colnames(standata$Xm)
+    if (length(monef)) {
+      change <- lc(change, list(pos = grepl("^bm\\[", pars), oldname = "bm", 
+                                pnames = paste0("b_", monef), 
+                                fnames = paste0("b_", monef)))
+      change <- c(change, prior_changes(class = "bm", pars = pars, 
+                                        names = monef))
     }
   } 
-  
+  # category specific effects
+  if (is.formula(ee$cse)) {
+    csef <- colnames(standata$Xp)
+    ncse <- length(csef)
+    if (ncse) {
+      thres <- max(standata$ncat) - 1
+      csenames <- t(outer(csef, paste0("[",1:thres,"]"), FUN = paste0))
+      csenames <- paste0("b_", csenames)
+      sort_cse <- ulapply(1:ncse, seq, to = thres * ncse, by = ncse)
+      change <- lc(change, list(pos = grepl("^bp\\[", pars), oldname = "bp", 
+                                pnames = paste0("b_", csef), fnames = csenames,
+                                sort = sort_cse, dim = thres))
+      change <- c(change, prior_changes(class = "bp", pars = pars, 
+                                        names = csef))
+    }
+  } 
+  # random effects
   if (length(x$ranef)) {
     group <- names(x$ranef)
     gf <- make_group_frame(x$ranef)
@@ -347,7 +362,7 @@ prior_changes <- function(class, pars, names = NULL, new_class = class) {
   #   class: the class of the parameters for which prior names should be changed
   #   pars: all parameters in the model
   #   names: names to replace digits at the end of parameter names
-  #   new_class: replacment of the orginal class name
+  #   new_class: replacement of the orginal class name
   #
   # Return:
   #   a list whose elements can be interpreted by rename_pars

@@ -70,7 +70,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     text_nonlinear <- stan_nonlinear(ee, data = data, family = family, 
                                      add = add, cov_ranef = cov_ranef,
                                      prior = prior, disp = is.formula(ee$disp))
-    text_fixef <- text_ranef <- text_eta <- intercepts <- list()
+    text_fixef <- text_monef <- text_ranef <- text_eta <- intercepts <- list()
   } else {
     # generate fixed effects code
     intercepts <- names(get_intercepts(ee, family = family, data = data))
@@ -80,6 +80,9 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     text_fixef <- stan_fixef(fixef = fixef, csef = csef, family = family, 
                              prior = prior, threshold = threshold,
                              sparse = sparse, nint = length(intercepts))
+    # generate code for monotonous effects
+    monef <- colnames(get_model_matrix(ee$mono, data))
+    text_monef <- stan_monef(monef)
     # generate random effects code
     # call stan_ranef for each random term seperately
     text_ranef <- lapply(seq_along(ranef), stan_ranef, ranef = ranef, 
@@ -88,7 +91,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     text_ranef <- collapse_lists(text_ranef)
     # generate stan code for the linear predictor
     text_eta <- stan_eta(family = family, fixef = fixef, ranef = ranef,
-                         nint = length(intercepts), csef = csef, 
+                         nint = length(intercepts), monef = monef, csef = csef, 
                          autocor = autocor, offset = offset, sparse = sparse,
                          add = add, disp = is.formula(ee$disp), is_multi = is_multi)
     text_nonlinear <- list()
@@ -153,6 +156,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     "// We recommend generating the data with the 'make_standata' function. \n",
     "functions { \n",
       text_misc_funs,
+      text_monef$fun,
       text_arma$fun,
       text_ordinal$fun,
       text_zi_hu$fun,
@@ -181,6 +185,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
       "  int Y[N];  // response variable \n"
     },
     text_fixef$data,
+    text_monef$data,
     text_ranef$data,
     text_nonlinear$data,
     text_ordinal$data,
@@ -221,6 +226,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     "parameters { \n",
     text_fixef$par,
     text_ordinal$par,
+    text_monef$par,
     text_ranef$par,
     text_nonlinear$par,
     text_arma$par,
@@ -243,8 +249,8 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   # generate transformed parameters block
   # loop over all observations in transformed parameters if necessary
   make_loop <- nrow(ee$random) || (Kar || Kma) && !use_cov(autocor) ||  
-               length(intercepts) > 1L || isTRUE(text_eta$transform) || 
-               length(nonlinear)
+               length(intercepts) > 1L || length(ee$mono) ||
+               isTRUE(text_eta$transform) || length(nonlinear)
   if (make_loop && !is_multi) {
     text_loop <- c("  for (n in 1:N) { \n", "  } \n")
   } else if (is_multi) {

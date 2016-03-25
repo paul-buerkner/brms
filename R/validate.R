@@ -39,6 +39,22 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
       re_terms <- paste0("(", re_terms, ")")
       tfixed <- rename(tfixed, c(paste0("+", re_terms), re_terms), "")
     } 
+    # monotonous effects
+    mono_terms <- term_labels[grepl("^monotonous\\(", term_labels)]
+    if (length(mono_terms)) {
+      tfixed <- rename(tfixed, c(paste0("+", mono_terms), mono_terms), "")
+      mono_terms <- substr(mono_terms, 12, nchar(mono_terms) - 1)
+      mono_terms <- formula(paste("~", paste(mono_terms, collapse = "+")))
+      attr(mono_terms, "rsv_intercept") <- TRUE
+      if (!length(all.vars(mono_terms))) {
+        stop("invalid input to function 'monotonous'", call. = FALSE)
+      }
+      if (any(grepl(":", attr(terms(mono_terms), "term.labels")))) {
+        stop("interactions cannot be modeled as monotonous effects",
+             call. = FALSE)
+      }
+      x$mono <- mono_terms
+    }
     # category specific effects in ordinal models
     cse_terms <- term_labels[grepl("^cse\\(", term_labels)]
     if (length(cse_terms)) {
