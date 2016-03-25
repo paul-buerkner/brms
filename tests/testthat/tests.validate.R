@@ -207,13 +207,13 @@ test_that("update_re_terms works correctly", {
 test_that("amend_terms performs expected changes to terms objects", {
   expect_equal(amend_terms("a"), NULL)
   expect_equal(amend_terms(y~x), terms(y~x))
-  t <- amend_terms(y~x, rm_intercept = TRUE)
-  expect_equal(attr(t, "rm_intercept"), TRUE)
-  t <- amend_terms(y ~ 0 + main + main:x + spec + spec:z, is_forked = TRUE)
+  form <- structure(y~x, rsv_intercept = TRUE)
+  expect_equal(attr(amend_terms(form), "rm_intercept"), TRUE)
+  t <- amend_terms(y ~ 0 + main + main:x + spec + spec:z, forked = TRUE)
   expect_equal(attr(t, "intercept"), 1)
   expect_equal(attr(t, "rm_intercept"), TRUE)
-  expect_error(amend_terms(y ~ main, is_forked = TRUE), "intercept")
-  expect_error(amend_terms(y ~ 0 + main + trait, is_forked = TRUE), 
+  expect_error(amend_terms(y ~ main, forked = TRUE), "intercept")
+  expect_error(amend_terms(y ~ 0 + main + trait, forked = TRUE), 
                "trait")
 })
 

@@ -16,8 +16,9 @@ test_that("stan_prior accepts supported prior classes", {
   expect_equal(stan_prior("rescor", prior = prior),
                "  rescor ~ lkj_corr_cholesky(2); \n")
   
-  prior <- prior_frame("normal(0, 1)", class = "bp")
-  expect_equal(stan_prior(class = "bp", coef = c("x1", "x2"), prior = prior),
+  prior <- prior_frame("normal(0, 1)", class = "b")
+  expect_equal(stan_prior(class = "b", coef = c("x1", "x2"), suffix = "p", 
+                          matrix = TRUE, prior = prior),
                "  to_vector(bp) ~ normal(0, 1); \n")
 })
 
@@ -28,7 +29,7 @@ test_that("stan_prior returns the correct indices", {
                "  sd ~ cauchy(0,5); \n")
   expect_equal(stan_prior(class = "sd", coef = c("x1", "x2"), prior = prior), 
                "  sd[1] ~ cauchy(0,5); \n  sd[2] ~ normal(0,1); \n")
-  expect_equal(stan_prior("bp", coef = "z", prior = prior),
+  expect_equal(stan_prior("bp", coef = "z", prior = prior, matrix = TRUE),
                "  bp[1] ~ normal(0,1); \n")
 })
 
@@ -36,7 +37,7 @@ test_that("stan_prior can remove default priors", {
   prior <- prior_frame(prior = "", class = c("sigma", "sd", "shape"), 
                        group = c("", "g", ""))
   expect_equal(stan_prior("sigma", prior = prior), "")
-  expect_equal(stan_prior("sd", group = "g", gi = 1, prior = prior), "")
+  expect_equal(stan_prior("sd", group = "g", suffix = "_1", prior = prior), "")
   expect_equal(stan_prior("shape", prior = prior), "")
 })
 

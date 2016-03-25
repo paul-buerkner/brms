@@ -60,7 +60,7 @@ test_that("combine_groups does the expected", {
 
 test_that("get_model_matrix removes intercepts correctly", {
   data <- data.frame(x = factor(rep(1:2, 5)), y = 11:20)
-  expect_equal(get_model_matrix(y ~ x, data, intercepts = "Intercept"),
+  expect_equal(get_model_matrix(y ~ x, data, cols2remove = "Intercept"),
                structure(matrix(rep(0:1, 5)), dimnames = list(1:10, "x2")))
 })
 
