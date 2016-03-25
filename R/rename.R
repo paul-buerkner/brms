@@ -67,8 +67,8 @@ rename_pars <- function(x) {
   # order parameter samples after parameter class
   chains <- length(x$fit@sim$samples) 
   all_classes <- c("b_Intercept", "b", "bm", "bp", "ar", "ma", "arr", 
-                 "sd", "cor", "sigma", "rescor", "nu", "shape", "phi",
-                 "delta", "r", "prior", "lp")
+                   "sd", "cor", "sigma", "rescor", "nu", "shape", "phi",
+                   "delta", "simplex", "r", "prior", "lp")
   class <- regmatches(x$fit@sim$fnames_oi, regexpr("^[^_\\[]+", x$fit@sim$fnames_oi))
   # make sure that the fixed effects intercept comes first
   pos_intercept <- which(grepl("^b_Intercept($|\\[)", x$fit@sim$fnames_oi))
@@ -111,8 +111,6 @@ rename_pars <- function(x) {
                                 oldname = b, pnames = paste0(b, "_", f[[i]]), 
                                 fnames = paste0(b, "_", f[[i]])))
       change <- c(change, prior_changes(class = "b", pars = pars, names = f))
-      change <- c(change, prior_changes(class = "temp_Intercept", pars = pars, 
-                                        new_class = "b_Intercept"))
     }
   }
   # non-linear models currently don't use any special intercept handling
@@ -123,6 +121,8 @@ rename_pars <- function(x) {
                               oldname = "b_Intercept", 
                               pnames = paste0("b_", intercepts), 
                               fnames = paste0("b_", intercepts)))
+    change <- c(change, prior_changes(class = "temp_Intercept", pars = pars, 
+                                      new_class = "b_Intercept"))
   }
   # monotonous effects
   if (is.formula(ee$mono)) {
@@ -133,6 +133,16 @@ rename_pars <- function(x) {
                                 fnames = paste0("b_", monef)))
       change <- c(change, prior_changes(class = "bm", pars = pars, 
                                         names = monef))
+      for (i in seq_along(monef)) {
+        simplex <- paste0("simplex_", c(i, monef[i]))
+        pos <- grepl(paste0("^", simplex[1], "\\["), pars)
+        change <- lc(change, 
+          list(pos = pos, oldname = simplex[1], pnames = simplex[2], 
+               fnames = paste0(simplex[2], "[", 1:sum(pos), "]"), 
+               dim = sum(pos)))
+        change <- c(change, prior_changes(class = simplex[1], pars = pars, 
+                                          new_class = simplex[2]))
+      }
     }
   } 
   # category specific effects
@@ -140,7 +150,7 @@ rename_pars <- function(x) {
     csef <- colnames(standata$Xp)
     ncse <- length(csef)
     if (ncse) {
-      thres <- max(standata$ncat) - 1
+      thres <- max(standata$max_obs) - 1
       csenames <- t(outer(csef, paste0("[",1:thres,"]"), FUN = paste0))
       csenames <- paste0("b_", csenames)
       sort_cse <- ulapply(1:ncse, seq, to = thres * ncse, by = ncse)
