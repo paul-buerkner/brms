@@ -52,9 +52,8 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   et <- extract_time(autocor$formula)
   ee <- extract_effects(formula, family = family, et$all, 
                         nonlinear = nonlinear)
-  prior <- check_prior(prior, formula = formula, data = data, 
-                       family = family, autocor = autocor, 
-                       nonlinear = nonlinear) 
+  prior <- as.prior_frame(prior)
+  check_prior_content(prior, family = family)
   na_action <- if (isTRUE(control$is_newdata)) na.pass else na.omit
   data <- update_data(data, family = family, effects = ee, et$group,
                       drop.unused.levels = !isTRUE(control$is_newdata),

@@ -494,8 +494,7 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
   # Returns:
   #   a data.frame of prior specifications to be used in stan_prior (see stan.R)
   if (isTRUE(attr(prior, "checked"))) {
-    # prior has already been checked; no need to do it twice
-    return(prior)
+    return(prior)  # prior has already been checked; no need to do it twice
   }
   ee <- extract_effects(formula, family = family, nonlinear = nonlinear)  
   all_priors <- get_prior(formula = formula, data = data, 
@@ -504,12 +503,8 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
                           internal = TRUE)
   if (is.null(prior)) {
     prior <- all_priors  
-  } else if (is(prior, "brmsprior")) {
-    # a single prior may be specified without c(.)
-    prior <- c(prior)
-  } else if (!is(prior, "prior_frame")) {
-    stop(paste("Invalid prior argument. See help(set_prior)", 
-               "for further information."), call. = FALSE)
+  } else {
+    prior <- as.prior_frame(prior)
   }
   # exclude priors using increment_log_prob to readd them at the end
   has_incr_lp <- grepl("^increment_log_prob\\(", prior$prior)
@@ -531,7 +526,7 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
     valid <- which(duplicated(rbind(all_priors[, 2:5], prior[, 2:5])))
     invalid <- which(!1:nrow(prior) %in% (valid - nrow(all_priors)))
     if (length(invalid)) {
-      msg_priors <- lapply(as_brmsprior(prior[invalid, ]), .print_prior)
+      msg_priors <- lapply(as.brmsprior(prior[invalid, ]), .print_prior)
       message(paste("The following priors don't correspond to any", 
                     "model parameter \nand will thus not affect the results:",
                     collapse("  \n", msg_priors)), "\n")
@@ -635,11 +630,11 @@ check_prior_content <- function(prior, family = gaussian()) {
     lb_pars <- c("sd", "sigma", "nu", "shape", "phi",
                  if (family %in% "cumulative") "delta")
     cor_pars <- c("cor", "L", "rescor", "Lrescor")
-    autocor_pars <- c("ar", "ma", "arr")
+    autocor_pars <- c("ar", "ma")
     lb_warning <- ub_warning <- ""
     autocor_warning <- FALSE
     for (i in 1:nrow(prior)) {
-      msg_prior <- .print_prior(as_brmsprior(prior[i, , drop = FALSE])[[1]])
+      msg_prior <- .print_prior(as.brmsprior(prior[i, , drop = FALSE])[[1]])
       has_lb_prior <- grepl(lb_priors_reg, prior$prior[i])
       has_ulb_prior <- grepl(ulb_priors_reg, prior$prior[i])
       # priors with nchar(coef) inherit their boundaries 
@@ -799,16 +794,34 @@ c.brmsprior <- function(x, ...) {
   prior
 }
 
-as_brmsprior <- function(prior) {
+as.brmsprior <- function(prior) {
   # convert a prior_frame into a list of brmsprior objects
   # Args:
-  #   prior: an object of class prior_frame
-  stopifnot(is(prior, "prior_frame"))
-  .convert <- function(x) {
-    structure(as.list(x), class = c("brmsprior", "list"))
-  } 
-  unname(apply(prior, MARGIN = 1, FUN = .convert))
-} 
+  #   prior: an object of class 'prior_frame' or 'brmsprior'
+  stopifnot(is(prior, "prior_frame") || is(prior, "brmsprior"))
+  if (is(prior, "prior_frame")) {
+    .convert <- function(x) {
+      structure(as.list(x), class = c("brmsprior", "list"))
+    } 
+    prior <- unname(apply(prior, MARGIN = 1, FUN = .convert))
+  }
+  prior
+}
+
+as.prior_frame <- function(prior) {
+  # convert a brmsprior object into a prior_frame object
+  # Args:
+  #   prior: an object of class 'prior_frame' or 'brmsprior'
+  if (is.null(prior)) {
+    prior <- prior_frame()
+  } else if (is(prior, "brmsprior")) {
+    prior <- c(prior)
+  } else if (!is(prior, "prior_frame")) {
+    stop(paste("Invalid 'prior' argument. See help(set_prior)", 
+               "for further information."), call. = FALSE)
+  }
+  prior
+}
 
 .dirichlet <- function(...) {
   # helper function for dirichlet priors of simplex parameters
