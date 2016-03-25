@@ -687,8 +687,9 @@ family.brmsfit <- function(object, ...) {
 }
 
 #' @export
-stancode.brmsfit <- function(object, ...)
+stancode.brmsfit <- function(object, ...) {
   object$model
+}
 
 #' @export
 standata.brmsfit <- function(object, ...) {
@@ -699,8 +700,9 @@ standata.brmsfit <- function(object, ...) {
     new_formula <- SW(update_formula(new_formula, partial = object$partial))
     dots$control$old_cat <- is.old_categorical(object)
     args <- list(formula = new_formula, data = object$data, 
-                 family = object$family, nonlinear = object$nonlinear,
-                 autocor = object$autocor, cov_ranef = object$cov_ranef)
+                 family = object$family, prior = object$prior, 
+                 nonlinear = object$nonlinear, autocor = object$autocor, 
+                 cov_ranef = object$cov_ranef)
     standata <- do.call(make_standata, c(args, dots))
   } else {
     # brms <= 0.5.0 only stores the data passed to Stan 
@@ -778,7 +780,8 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5,
     stop("N must be a positive integer", call. = FALSE)
   if (!is.character(pars)) {
     pars <- c("^b_", "^bm_", "^sd_", "^cor_", "^sigma", "^rescor", 
-              "^nu$", "^shape$", "^delta$", "^phi$", "^ar", "^ma", "^arr")
+              "^nu$", "^shape$", "^delta$", "^phi$", "^ar", "^ma", 
+              "^arr", "^simplex_")
   }
   samples <- posterior_samples(x, pars = pars, add_chain = TRUE)
   pars <- names(samples)[!names(samples) %in% c("chain", "iter")] 

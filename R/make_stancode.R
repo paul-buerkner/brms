@@ -82,7 +82,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
                              sparse = sparse, nint = length(intercepts))
     # generate code for monotonous effects
     monef <- colnames(get_model_matrix(ee$mono, data))
-    text_monef <- stan_monef(monef)
+    text_monef <- stan_monef(monef, prior = prior)
     # generate random effects code
     # call stan_ranef for each random term seperately
     text_ranef <- lapply(seq_along(ranef), stan_ranef, ranef = ranef, 
@@ -131,6 +131,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   # get priors for all parameters in the model
   text_prior <- paste0(
     text_fixef$prior,
+    text_monef$prior,
     text_ordinal$prior,
     text_ranef$prior,
     text_nonlinear$prior,

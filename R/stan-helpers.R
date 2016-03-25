@@ -202,24 +202,20 @@ stan_ranef <- function(i, ranef, prior = prior_frame(),
 stan_monef <- function(monef, prior = prior_frame()) {
   out <- list()
   if (length(monef)) {
+    I <- seq_along(monef)
     out$fun <- "  #include fun_monotonous.stan \n"
     out$data <- paste0(
       "  int<lower=1> Km; \n",
       "  int Xm[N, Km]; \n",
-      "  int<lower=2> Jm[Km]; \n")
+      "  int<lower=2> Jm[Km]; \n",
+      collapse("  vector[Jm[", I, "]] prior_simplex_", I, "; \n"))
     bound <- with(prior, bound[class == "b" & coef == ""])
-    out$par <- paste0("  vector[Km]", bound, " bm; \n") 
-    out$prior <- stan_prior(class = "b", coef = monef, 
-                            prior = prior, suffix = "m")
-    for (i in seq_along(monef)) {
-      out$data <- paste0(out$data,
-        "  vector[Jm[", i, "]] prior_simplex_", i, "; \n")
-      out$par <- paste0(out$par,
-        "  simplex[Jm[", i, "]] simplex_", i, "; \n")
-      simplex_prior <- stan_prior(class = "simplex", coef = monef[i], 
-                                  prior = prior, suffix = paste0("_", i))
-      out$prior <- paste0(out$prior, simplex_prior)
-    }
+    out$par <- paste0(
+      "  vector[Km]", bound, " bm; \n",
+      collapse("  simplex[Jm[", I, "]] simplex_", I, "; \n")) 
+    out$prior <- paste0(
+      stan_prior(class = "b", coef = monef, prior = prior, suffix = "m"),
+      collapse("  simplex_", I, " ~ dirichlet(prior_simplex_", I, "); \n"))
   }
   out
 }

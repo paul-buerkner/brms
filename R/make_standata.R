@@ -25,8 +25,9 @@
 #'          
 #' @export
 make_standata <- function(formula, data = NULL, family = "gaussian", 
-                          autocor = NULL, nonlinear = NULL, partial = NULL, 
-                          cov_ranef = NULL, control = NULL, ...) {
+                          prior = NULL, autocor = NULL, nonlinear = NULL, 
+                          partial = NULL, cov_ranef = NULL, control = NULL, 
+                          ...) {
   # internal control arguments:
   #   is_newdata: is make_standata is called with new data?
   #   not4stan: is make_standata called for use in S3 methods?
@@ -51,6 +52,9 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   et <- extract_time(autocor$formula)
   ee <- extract_effects(formula, family = family, et$all, 
                         nonlinear = nonlinear)
+  prior <- check_prior(prior, formula = formula, data = data, 
+                       family = family, autocor = autocor, 
+                       nonlinear = nonlinear) 
   na_action <- if (isTRUE(control$is_newdata)) na.pass else na.omit
   data <- update_data(data, family = family, effects = ee, et$group,
                       drop.unused.levels = !isTRUE(control$is_newdata),
@@ -267,8 +271,8 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   if (is.formula(ee$mono)) {
     mmf <- model.frame(ee$mono, data)
     mvars <- names(mmf)
-    Jm <- rep(NA, length(mvars))
     for (i in seq_along(mvars)) {
+      # validate predictors to be modeled as monotonous effects
       if (is.ordered(mmf[[mvars[i]]])) {
         # counting starts at zero
         mmf[[mvars[i]]] <- as.numeric(mmf[[mvars[i]]]) - 1 
@@ -284,12 +288,27 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
                    "values. Error occured for variable", mvars[i]),
              call. = FALSE)
       }
-      Jm[i] <- max(mmf[[mvars[i]]])
-      # FIXME
-      standata[[paste0("prior_simplex_", i)]] <- rep(1 / Jm[i], Jm[i]) 
     }
     Xm <- get_model_matrix(ee$mono, mmf)
-    standata <- c(standata, list(Km = ncol(Xm), Xm = Xm, Jm = as.array(Jm)))
+    Jm <- as.array(apply(Xm, 2, max))
+    standata <- c(standata, nlist(Km = ncol(Xm), Xm, Jm))
+    # validate and assign vectors for dirichlet prior
+    monef <- colnames(Xm)
+    for (i in seq_along(monef)) {
+      take <- with(prior, class == "simplex" & coef == monef[i])
+      sprior <- paste0(".", prior$prior[take])
+      if (nchar(sprior) > 1L) {
+        sprior <- as.numeric(eval(parse(text = sprior)))
+        if (length(sprior) != Jm[i]) {
+          stop(paste0("Invalid dirichlet prior for the simplex of ", 
+                      monef[i], ". Expected input of length ", Jm[i], 
+                      " but found ", paste(sprior, collapse = ",")))
+        }
+        standata[[paste0("prior_simplex_", i)]] <- sprior
+      } else {
+        standata[[paste0("prior_simplex_", i)]] <- rep(1, Jm[i]) 
+      }
+    }
   }
   # data for category specific effects
   if (is.formula(ee$cse)) {

@@ -5,9 +5,9 @@
 \alias{make_standata}
 \title{Data for \pkg{brms} Models}
 \usage{
-make_standata(formula, data = NULL, family = "gaussian", autocor = NULL,
-  nonlinear = NULL, partial = NULL, cov_ranef = NULL, control = NULL,
-  ...)
+make_standata(formula, data = NULL, family = "gaussian", prior = NULL,
+  autocor = NULL, nonlinear = NULL, partial = NULL, cov_ranef = NULL,
+  control = NULL, ...)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class): 
@@ -41,6 +41,11 @@ specific to the \pkg{brms} package.
 For backwards compatibility, \code{family} may also be a vector of two
 character strings, the first naming the family and the second naming the link.
 Further information is provided under 'Details'.}
+
+\item{prior}{One or more \code{brmsprior} objects created by function 
+\code{\link[brms:set_prior]{set_prior}} and combined using the \code{c} method. 
+A single \code{brmsprior} object may be passed without \code{c()} surrounding it. 
+See also  \code{\link[brms:get_prior]{get_prior}} for more help.}
 
 \item{autocor}{An optional \code{\link{cor_brms}} object describing 
 the correlation structure 

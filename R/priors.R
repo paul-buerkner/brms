@@ -241,14 +241,15 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
       length(group) != 1 || length(nlpar) != 1 || length(lb) > 1 || 
       length(ub) > 1)
     stop("All arguments of set_prior must be of length 1.", call. = FALSE)
-  valid_classes <- c("Intercept", "b", "sd", "cor", "L", "ar", "ma", "arr",
-                     "sigma", "rescor", "Lrescor", "nu", "shape", "delta", "phi")
+  valid_classes <- c("Intercept", "b", "sd", "cor", "L", "ar", "ma", "arr", 
+                     "simplex", "sigma", "rescor", "Lrescor", "nu", "shape", 
+                     "delta", "phi")
   if (!class %in% valid_classes)
     stop(paste(class, "is not a valid parameter class"), call. = FALSE)
   if (nchar(group) && !class %in% c("sd", "cor", "L"))
     stop(paste("argument 'group' not meaningful for class", class), 
          call. = FALSE)
-  if (nchar(coef) && !class %in% c("b", "sd", "sigma"))
+  if (nchar(coef) && !class %in% c("b", "sd", "sigma", "simplex"))
     stop(paste("argument 'coef' not meaningful for class", class))
   if (nchar(nlpar) && !class %in% valid_classes[1:5])
     stop(paste("argument 'nlpar' not meaningful for class", class))
@@ -379,19 +380,27 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
       }
     }
     if (is.formula(ee$cse)) {
-      csef <- colnames(get_model_matrix(ee$cse, data = data, 
-                                        intercepts = "Intercept"))
-      fp <- intersect(fixef, csef)
-      if (length(fp)) {
+      csef <- colnames(get_model_matrix(ee$cse, data = data))
+      invalid <- intersect(fixef, csef)
+      if (length(invalid)) {
         stop(paste("Variables cannot be modeled as fixed and", 
                    "category specific effects at the same time.", 
                    "\nError occured for variables:", 
-                   paste(fp, collapse = ", ")), call. = FALSE)
+                   paste(invalid, collapse = ", ")), call. = FALSE)
       }
-      prior <- rbind(prior, prior_frame(class = "b", coef = csef))
-      if (internal) {
-        prior <- rbind(prior, prior_frame(class = "bp", coef = c("", csef)))
+      prior <- rbind(prior, prior_frame(class = "b", coef = c("", csef)))
+    }
+    if (is.formula(ee$mono)) {
+      monef <- colnames(get_model_matrix(ee$mono, data = data))
+      invalid <- intersect(fixef, monef)
+      if (length(invalid)) {
+        stop(paste("Variables cannot be modeled as fixed and", 
+                   "monotonous effects at the same time.", 
+                   "\nError occured for variables:", 
+                   paste(invalid, collapse = ", ")), call. = FALSE)
       }
+      prior <- rbind(prior, prior_frame(class = "b", coef = c("", monef)),
+                     prior_frame(class = "simplex", coef = monef))
     }
   }
   # random effects
@@ -553,20 +562,32 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
     int_class <- ifelse(res_thres, "temp_Intercept1", "temp_Intercept")
     prior[which(prior$class %in% int_class), "prior"] <- int_prior 
   }
-  # get category specific priors out of fixef priors
-  if (is.formula(ee$cse)) {
-    csef <- colnames(get_model_matrix(ee$cse, data = data, 
-                                      intercepts = "Intercept"))
-    b_index <- which(prior$class == "b" & !nchar(prior$coef))
-    p_index <- which(prior$class == "b" & prior$coef %in% csef)
-    rows2remove <- c(rows2remove, p_index)
-    p_prior <- prior[c(b_index, p_index), ]
-    for (i in 1:nrow(p_prior)) {
-      # ensure that priors are correctly assigned to their parameters
-      take <- with(prior, class == "bp" & coef == p_prior$coef[i])
-      prior[take, "prior"] <- p_prior$prior[i]  
+  if (is.formula(ee$mono)) {
+    monef <- colnames(get_model_matrix(ee$mono, data = data))
+    for (i in seq_along(monef)) {
+      take <- with(prior, class == "simplex" & coef == monef[i])
+      simplex_prior <- paste0(".", prior$prior[take])
+      if (nchar(simplex_prior) > 1L) {
+        simplex_prior <- paste(eval(parse(text = simplex_prior)),
+                               collapse = ",")
+        prior$prior[take] <- paste0("dirichlet(c(", simplex_prior, "))")
+      }
     }
   }
+  # get category specific priors out of fixef priors
+  #if (is.formula(ee$cse)) {
+  #  csef <- colnames(get_model_matrix(ee$cse, data = data, 
+  #                                    intercepts = "Intercept"))
+  #  b_index <- which(prior$class == "b" & !nchar(prior$coef))
+  #  p_index <- which(prior$class == "b" & prior$coef %in% csef)
+  #  rows2remove <- c(rows2remove, p_index)
+  #  p_prior <- prior[c(b_index, p_index), ]
+  #  for (i in 1:nrow(p_prior)) {
+  #    # ensure that priors are correctly assigned to their parameters
+  #    take <- with(prior, class == "bp" & coef == p_prior$coef[i])
+  #    prior[take, "prior"] <- p_prior$prior[i]  
+  #  }
+  #}
   # check if priors for non-linear parameters are defined
   if (length(nonlinear)) {
     nlpars <- names(ee$nonlinear)
@@ -648,6 +669,12 @@ check_prior_content <- function(prior, family = gaussian()) {
         if (prior$bound[i] != "<lower=-1,upper=1>") {
           autocor_warning <- TRUE
         } 
+      } else if (prior$class[i] == "simplex") {
+        if (!grepl("^dirichlet\\(", prior$prior[i])) {
+          stop(paste("Currently 'dirichlet' is the only valid prior",
+                     "for simplex parameters. See help(set_prior)",
+                     "for more details."), call. = FALSE)
+        }
       }
     }  # end for  
     if (nchar(lb_warning)) {
@@ -782,3 +809,12 @@ as_brmsprior <- function(prior) {
   } 
   unname(apply(prior, MARGIN = 1, FUN = .convert))
 } 
+
+.dirichlet <- function(...) {
+  # helper function for dirichlet priors of simplex parameters
+  out <- as.numeric(c(...))
+  if (any(out <= 0)) {
+    stop("The dirichlet prior expects positive values.", call. = FALSE)
+  }
+  out
+}
