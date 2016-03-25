@@ -932,6 +932,9 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     if (is.formula(ee$cse)) {
       all_effects <- c(all_effects, attr(terms(ee$cse), "term.labels"))
     }
+    if (is.formula(ee$mono)) {
+      all_effects <- c(all_effects, attr(terms(ee$mono), "term.labels"))
+    }
     all_effects <- get_var_combs(all_effects)
   }
   all_effects <- rmNULL(lapply(all_effects, setdiff, y = rsv_vars))
@@ -960,22 +963,28 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     stop("Arguments 'probs' must be of length 2.", call. = FALSE)
   }
   
-  # prepare marginal conditions
   mf <- model.frame(x)
+  mono_vars <- all.vars(ee$mono)
+  mf <- prepare_mono_vars(mf, vars = mono_vars)
+  # prepare marginal conditions
   if (is.null(conditions)) {
     if (!is_equal(x$autocor, cor_arma()) || 
         length(rmNULL(ee[c("trials", "cat")]))) {
       stop("Please specify argument 'conditions' manually for this model.", 
            call. = FALSE)
     }
+    # list all required variables
     req_vars <- c(lapply(get_fixed(ee), rhs), get_random(ee)$form, 
-                  ee$cse, ee$se, ee$disp)
+                  ee$mono, ee$cse, ee$se, ee$disp)
     req_vars <- unique(ulapply(req_vars, all.vars))
     req_vars <- setdiff(req_vars, c(rsv_vars, names(ee$nonlinear)))
     conditions <- as.data.frame(as.list(rep(NA, length(req_vars))))
     names(conditions) <- req_vars
     for (v in req_vars) {
-      if (is.numeric(mf[[v]])) {
+      if (v %in% mono_vars) {
+        # monotonous predictors must be integer valued
+        conditions[[v]] <- round(median(mf[[v]]))
+      } else if (is.numeric(mf[[v]])) {
         conditions[[v]] <- mean(mf[[v]])
       } else {
         # use reference category
@@ -1009,29 +1018,40 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   for (i in seq_along(effects)) {
     marg_data <- mf[, effects[[i]], drop = FALSE]
     pred_types <- ifelse(ulapply(marg_data, is.numeric), "numeric", "factor")
+    is_mono <- effects[[i]] %in% mono_vars
+    if (pred_types[1] == "numeric") {
+      min1 <- min(marg_data[, effects[[i]][1]])
+      max1 <- max(marg_data[, effects[[i]][1]])
+      if (is_mono[1]) {
+        values <- seq(min1, max1, by = 1)
+      } else {
+        values <- seq(min1, max1, length.out = 100)
+      }
+    }
     if (length(effects[[i]]) == 2L) {
       # numeric effects should come first
       new_order <- order(pred_types, decreasing = TRUE)
       effects[[i]] <- effects[[i]][new_order]
       pred_types <- pred_types[new_order]
       if (pred_types[1] == "numeric") {
-        values <- setNames(vector("list", length = 2L), effects[[i]])
-        values[[1]] <- seq(min(marg_data[, effects[[i]][1]]), 
-                           max(marg_data[, effects[[i]][1]]),
-                           length.out = 100)
+        values <- setNames(list(values, NA), effects[[i]])
         if (pred_types[2] == "numeric") {
-          mean2 <- mean(marg_data[, effects[[i]][2]])
-          sd2 <- sd(marg_data[, effects[[i]][2]])
-          values[[2]] <- (-1:1) * sd2 + mean2
+          if (is_mono[2]) {
+            median2 <- median(marg_data[, effects[[i]][2]])
+            mad2 <- mad(marg_data[, effects[[i]][2]])
+            values[[2]] <- round((-1:1) * mad2 + median2)
+          } else {
+            mean2 <- mean(marg_data[, effects[[i]][2]])
+            sd2 <- sd(marg_data[, effects[[i]][2]])
+            values[[2]] <- (-1:1) * sd2 + mean2
+          }
         } else {
           values[[2]] <- unique(marg_data[, effects[[i]][2]])
         }
         marg_data <- do.call(expand.grid, values)
       }
     } else if (pred_types == "numeric") {
-      # a single numeric predictor
-      values <- seq(min(marg_data[, 1]), max(marg_data[, 1]),
-                    length.out = 100)
+      # just a single numeric predictor
       marg_data <- structure(data.frame(values), names = effects[[i]])
     }
     # no need to have the same value combination more than once
@@ -1065,7 +1085,11 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
      
     if (length(effects[[i]]) == 2L && all(pred_types == "numeric")) {
       # can only be converted to factor after having called method
-      labels <- c("Mean - SD", "Mean", "Mean + SD")
+      if (is_mono[2]) {
+        labels <- c("Median - MAD", "Median", "Median + MAD")
+      } else {
+        labels <- c("Mean - SD", "Mean", "Mean + SD") 
+      }
       marg_data[[effects[[i]][2]]] <- 
         factor(marg_data[[effects[[i]][2]]], labels = labels)
     }

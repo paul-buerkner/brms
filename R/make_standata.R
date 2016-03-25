@@ -33,6 +33,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   #   not4stan: is make_standata called for use in S3 methods?
   #   save_order: should the initial order of the data be saved?
   #   omit_response: omit checking of the response?
+  #   ntrials, ncat, Jm: standata based on the original data
   dots <- list(...)
   # use deprecated arguments if specified
   cov_ranef <- use_alias(cov_ranef, dots$cov.ranef, warn = FALSE)
@@ -269,8 +270,13 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   # data for monotonous effects
   if (is.formula(ee$mono)) {
     mmf <- model.frame(ee$mono, data)
-    Xm <- get_model_matrix(ee$mono, prepare_monotonous(mmf, names(mmf)))
-    Jm <- as.array(apply(Xm, 2, max))
+    mmf <- prepare_mono_vars(mmf, vars = names(mmf), max_values = control$Jm)
+    Xm <- get_model_matrix(ee$mono, mmf)
+    if (!is.null(control$Jm)) {
+      Jm <- control$Jm
+    } else {
+      Jm <- as.array(apply(Xm, 2, max))
+    }
     standata <- c(standata, nlist(Km = ncol(Xm), Xm, Jm))
     # validate and assign vectors for dirichlet prior
     monef <- colnames(Xm)

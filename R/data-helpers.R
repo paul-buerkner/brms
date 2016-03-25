@@ -260,9 +260,10 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     control <- list(is_newdata = TRUE, not4stan = TRUE,
                     save_order = TRUE, omit_response = !check_response)
     control$old_cat <- is.old_categorical(fit)
-    if (has_trials(fit$family) || has_cat(fit$family)) {
-      # trials or ncat should not be computed based on newdata
-      control[c("trials", "ncat")] <- standata(fit)[c("trials", "ncat")]
+    if (has_trials(fit$family) || has_cat(fit$family) || is.formula(ee$mono)) {
+      # some components should not be computed based on newdata
+      comp <- c("trials", "ncat", "Jm")
+      control[comp] <- standata(fit)[comp]
     } 
     newdata <- make_standata(new_formula, data = newdata, family = fit$family, 
                              autocor = fit$autocor, nonlinear = new_nonlinear,
@@ -340,11 +341,13 @@ get_intercepts <- function(effects, data, family = gaussian()) {
   out
 }
 
-prepare_monotonous <- function(data, vars) {
+prepare_mono_vars <- function(data, vars, max_values = NULL) {
   # prepare monotonous variables for use in Stan
   # Args:
   #   data: a data.frame or named list
   #   vars: names of monotonous variables
+  #   max_values: named vector of maximal values 
+  #     if NULL maximal values of the data are used
   # Returns:
   #   'data' with amended monotonous variables
   stopifnot(is.list(data))
@@ -356,13 +359,21 @@ prepare_monotonous <- function(data, vars) {
       # counting starts at zero
       data[[vars[i]]] <- as.numeric(data[[vars[i]]]) - 1 
     } else if (all(is.wholenumber(data[[vars[i]]]))) {
-      data[[vars[i]]] <- data[[vars[i]]] - min(data[[vars[i]]])
+      if (!is.null(max_values[vars[i]])) {
+        if (max_values[vars[i]] < max(data[[vars[i]]])) {
+          stop(paste("invalid values detected in variable", vars[i]),
+               call. = FALSE)
+        }
+        # no need to amend the variable
+      } else {
+        data[[vars[i]]] <- data[[vars[i]]] - min(data[[vars[i]]])
+      }
     } else {
       stop(paste("Monotonous predictors must be either integers or",
                  "ordered factors. Error occured for variable", vars[i]), 
            call. = FALSE)
     }
-    if (max(data[[vars[i]]]) < 2L) {
+    if (is.null(max_values[vars[i]]) && max(data[[vars[i]]]) < 2L) {
       stop(paste("Monotonous predictors must have at least 3 different", 
                  "values. Error occured for variable", vars[i]),
            call. = FALSE)
