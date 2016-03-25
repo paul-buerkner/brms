@@ -33,13 +33,28 @@ linear_predictor <- function(x, standata, re_formula = NULL,
   old_cat <- is.old_categorical(x)
   eta <- matrix(0, nrow = nsamples, ncol = standata$N)
   if (!is.null(standata$X) && ncol(standata$X) && !old_cat) {
-    b_pars <- paste0("^b_", nlpar, "[^\\[]+$")
-    b <- do.call(posterior_samples, c(args, list(pars = b_pars)))
+    b_pars <- paste0("b_", nlpar, colnames(standata$X))
+    b <- do.call(posterior_samples, 
+                 c(args, list(pars = b_pars, exact = TRUE)))
     eta <- eta + fixef_predictor(X = standata$X, b = b)  
   }
   if (!is.null(standata$offset)) {
     eta <- eta + matrix(rep(standata$offset, nsamples), 
                         ncol = standata$N, byrow = TRUE)
+  }
+  # incorporate monotonous effects
+  if (!is.null(standata$Xm) && ncol(standata$Xm)) {
+    monef <- colnames(standata$Xm)
+    for (i in 1:ncol(standata$Xm)) {
+      bm_par <- paste0("b_", monef[i])
+      bm <- do.call(posterior_samples, 
+                    c(args, list(pars = bm_par, exact = TRUE)))
+      simplex_par <- paste0("simplex_", monef[i], "[", 1:standata$Jm[i], "]")
+      simplex <- do.call(posterior_samples, 
+                         c(args, list(pars = simplex_par, exact = TRUE)))
+      eta <- eta + monef_predictor(Xm = standata$Xm[, i], bm = as.vector(bm), 
+                                   simplex = simplex)
+    }
   }
   
   # incorporate random effects
@@ -219,6 +234,19 @@ fixef_predictor <- function(X, b) {
   stopifnot(is.matrix(X))
   stopifnot(is.matrix(b))
   b %*% t(X)
+}
+
+monef_predictor <- function(Xm, bm, simplex) {
+  stopifnot(is.vector(Xm))
+  stopifnot(is.vector(bm))
+  stopifnot(is.matrix(simplex))
+  bm <- as.vector(bm)
+  for (i in 2:ncol(simplex)) {
+    # compute the cumulative representation of the simplex 
+    simplex[, i] <- simplex[, i] + simplex[, i - 1]
+  }
+  simplex <- cbind(0, simplex)
+  bm * simplex[, Xm + 1]
 }
 
 ranef_predictor <- function(Z, gf, r) {
