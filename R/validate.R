@@ -13,18 +13,24 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   # 
   # Returns: 
   #   A named list whose elements depend on the formula input 
+  if (!is.na(family[[1]])) {
+    family <- check_family(family)
+  }
   tformula <- formula2string(formula) 
   tfixed <- gsub("\\|+[^~]*~", "~", tformula)
+  x <- list()
   if (length(nonlinear)) {
     if (grepl("|", tfixed, fixed = TRUE)) {
       stop(paste("Random effects in non-linear models should be specified", 
                  "in the 'nonlinear' argument."), call. = FALSE)
     }
-    if (is.ordinal(family) || is.categorical(family)) {
+    if (is.ordinal(family) || is.categorical(family) || is.forked(family)) {
       stop("Non-linear effects are not yet allowed for this family.", 
            call. = FALSE)
     }
-    re_terms <- cse_terms <- mono_terms <- NULL
+    x$fixed <- formula(tfixed)
+    x$nonlinear <- nonlinear_effects(nonlinear, model = x$fixed)
+    re_terms <- NULL
   } else {
     # terms() doesn't like non-linear formulas
     term_labels <- rename(attr(terms(formula), "term.labels"), " ", "")
@@ -44,19 +50,11 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
       tfixed <- rename(tfixed, c(paste0("+", cse_terms), cse_terms), "")
       cse_terms <- substr(cse_terms, 5, nchar(cse_terms) - 1)
       cse_terms <- formula(paste("~", paste(cse_terms, collapse = "+")))
+      attr(cse_terms, "rsv_intercept") <- TRUE
       if (!length(all.vars(cse_terms))) {
         stop("invalid input to function 'cse'", call. = FALSE)
       }
-    }
-    # monotonous effects
-    mono_terms <- term_labels[grepl("^monotonous\\(", term_labels)]
-    if (length(mono_terms)) {
-      tfixed <- rename(tfixed, c(paste0("+", mono_terms), mono_terms), "")
-      mono_terms <- substr(mono_terms, 12, nchar(mono_terms) - 1)
-      mono_terms <- formula(paste("~", paste(mono_terms, collapse = "+")))
-      if (!length(all.vars(mono_terms))) {
-        stop("invalid input to function 'monotonous'", call. = FALSE)
-      }
+      x$cse <- cse_terms
     }
     if (substr(tfixed, nchar(tfixed), nchar(tfixed)) == "~") {
       tfixed <- paste0(tfixed, "1")
@@ -64,17 +62,22 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
     if (grepl("|", x = tfixed, fixed = TRUE)) {
       stop("Random effects terms should be enclosed in brackets", call. = FALSE)
     }
+    x$fixed <- formula(tfixed)
+    if (is.ordinal(family)) {
+      x$fixed <- update.formula(x$fixed, . ~ . + 1)
+    }
+    rsv_intercept <- has_rsv_intercept(x$fixed)
+    if (rsv_intercept) {
+      attr(x$fixed, "rsv_intercept") <- TRUE
+    }
   }
-  fixed <- formula(tfixed)
-  rsv_intercept <- has_rsv_intercept(fixed)
-  if (!is.na(family[[1]])) 
-    family <- check_family(family)
-  if (is.ordinal(family) || rsv_intercept)
-    fixed <- update.formula(fixed, . ~ . + 1)
-  if (rsv_intercept)
-    attr(fixed, "rsv_intercept") <- TRUE
-  if (check_response && length(fixed) < 3) 
+  if (check_response && length(x$fixed) < 3L) { 
     stop("Invalid formula: response variable is missing", call. = FALSE)
+  }
+  # make sure to store the plain names of all predictors
+  covars <- setdiff(all.vars(rhs(x$fixed)), names(x$nonlinear))
+  x$covars <- formula(paste("~", paste(c("1", covars), collapse = "+")))
+  attr(x$covars, "rsv_intercept") <- TRUE
   
   # extract random effects parts
   form <- lapply(get_matches("\\([^\\|]*", re_terms), function(r) 
@@ -87,15 +90,13 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
                  function(g) substr(g, 1, 2) != "||")
   random <- data.frame(group = group, cor = cor, 
                        stringsAsFactors = FALSE)
-  # ensure that all REs of the same gf are next to each other
   if (nrow(random)) {
     random$form <- form
+    # ensure that all REs of the same gf are next to each other
+    # to allow combining them in rename_pars later on
     random <- random[order(random$group), ]
   }
-  x <- nlist(fixed, random)
-  if (length(cse_terms)) x$cse <- cse_terms
-  if (length(mono_terms)) x$mono <- mono_terms
-  x$nonlinear <- nonlinear_effects(nonlinear, model = x$fixed)
+  x$random <- random
   
   # handle addition arguments
   fun <- c("se", "weights", "trials", "cat", "cens", "trunc", "disp")
@@ -128,7 +129,7 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
             stop(paste("Argument", f, "in formula is not supported", 
                        "by family", family$family), call. = FALSE)
           } 
-        } else if (length(matches) > 1) {
+        } else if (length(matches) > 1L) {
           stop("Addition arguments may be only defined once.", call. = FALSE)
         } 
       }
@@ -143,8 +144,6 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
     }
   }
   
-  covars <- setdiff(all.vars(rhs(x$fixed)), names(x$nonlinear))
-  x$covars <- formula(paste("~", paste(c("1", covars), collapse = "+")))
   # make a formula containing all required variables (element 'all')
   formula_list <- c(if (resp_rhs_all) all.vars(lhs(x$fixed)), add_vars, 
                     rmNULL(x[c("covars", "cse", "mono")]), 
