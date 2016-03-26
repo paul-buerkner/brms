@@ -963,10 +963,9 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     stop("Arguments 'probs' must be of length 2.", call. = FALSE)
   }
   
+  # prepare marginal conditions
   mf <- model.frame(x)
   mono_vars <- all.vars(ee$mono)
-  mf <- prepare_mono_vars(mf, vars = mono_vars)
-  # prepare marginal conditions
   if (is.null(conditions)) {
     if (!is_equal(x$autocor, cor_arma()) || 
         length(rmNULL(ee[c("trials", "cat")]))) {
@@ -981,11 +980,12 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     conditions <- as.data.frame(as.list(rep(NA, length(req_vars))))
     names(conditions) <- req_vars
     for (v in req_vars) {
-      if (v %in% mono_vars) {
-        # monotonous predictors must be integer valued
-        conditions[[v]] <- round(median(mf[[v]]))
-      } else if (is.numeric(mf[[v]])) {
-        conditions[[v]] <- mean(mf[[v]])
+      if (is.numeric(mf[[v]])) {
+        if (v %in% mono_vars) {
+          conditions[[v]] <- round(median(mf[[v]]))
+        } else {
+          conditions[[v]] <- mean(mf[[v]])
+        }
       } else {
         # use reference category
         lev <- attr(as.factor(mf[[v]]), "levels")
