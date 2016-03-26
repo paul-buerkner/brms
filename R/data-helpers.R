@@ -231,6 +231,25 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
         }
       }
     }
+    # validate monotonous variables
+    if (is.formula(ee$mono)) {
+      take_num <- !is_factor & names(list_data) %in% all.vars(ee$mono)
+      # factors have already been checked
+      num_mono_vars <- names(list_data)[take_num]
+      for (v in num_mono_vars) {
+        min_value <- min(list_data[[v]])
+        invalid <- newdata[[v]] < min_value | 
+                   newdata[[v]] > max(list_data[[v]]) |
+                   !is.wholenumber(newdata[[v]])
+        if (sum(invalid)) {
+          stop(paste0("Invalid values in variable '", v, "': ",
+                      paste(newdata[[v]][invalid], collapse = ",")),
+               call. = FALSE)
+        }
+        attr(newdata[[v]], "min") <- min_value
+        #newdata[[v]] <- structure(newdata[[v]] - min_value) 
+      }
+    }
   } else {
     warning(paste("Validity of factors cannot be checked for", 
                   "fitted model objects created with brms <= 0.5.0"),
@@ -341,13 +360,12 @@ get_intercepts <- function(effects, data, family = gaussian()) {
   out
 }
 
-prepare_mono_vars <- function(data, vars, max_values = NULL) {
+prepare_mono_vars <- function(data, vars, check = TRUE) {
   # prepare monotonous variables for use in Stan
   # Args:
   #   data: a data.frame or named list
   #   vars: names of monotonous variables
-  #   max_values: named vector of maximal values 
-  #     if NULL maximal values of the data are used
+  #   check: check the number of levels? 
   # Returns:
   #   'data' with amended monotonous variables
   stopifnot(is.list(data))
@@ -359,21 +377,17 @@ prepare_mono_vars <- function(data, vars, max_values = NULL) {
       # counting starts at zero
       data[[vars[i]]] <- as.numeric(data[[vars[i]]]) - 1 
     } else if (all(is.wholenumber(data[[vars[i]]]))) {
-      if (!is.null(max_values[vars[i]])) {
-        if (max_values[vars[i]] < max(data[[vars[i]]])) {
-          stop(paste("invalid values detected in variable", vars[i]),
-               call. = FALSE)
-        }
-        # no need to amend the variable
-      } else {
-        data[[vars[i]]] <- data[[vars[i]]] - min(data[[vars[i]]])
+      min_value <- attr(data[[vars[i]]], "min")
+      if (is.null(min_value)) {
+        min_value <- min(data[[vars[i]]])
       }
+      data[[vars[i]]] <- data[[vars[i]]] - min_value
     } else {
       stop(paste("Monotonous predictors must be either integers or",
                  "ordered factors. Error occured for variable", vars[i]), 
            call. = FALSE)
     }
-    if (is.null(max_values[vars[i]]) && max(data[[vars[i]]]) < 2L) {
+    if (check && max(data[[vars[i]]]) < 2L) {
       stop(paste("Monotonous predictors must have at least 3 different", 
                  "values. Error occured for variable", vars[i]),
            call. = FALSE)

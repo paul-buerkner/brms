@@ -270,7 +270,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   # data for monotonous effects
   if (is.formula(ee$mono)) {
     mmf <- model.frame(ee$mono, data)
-    mmf <- prepare_mono_vars(mmf, vars = names(mmf), max_values = control$Jm)
+    mmf <- prepare_mono_vars(mmf, names(mmf), check = is.null(control$Jm))
     Xm <- get_model_matrix(ee$mono, mmf)
     if (!is.null(control$Jm)) {
       Jm <- control$Jm
