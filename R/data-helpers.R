@@ -247,7 +247,6 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
                call. = FALSE)
         }
         attr(newdata[[v]], "min") <- min_value
-        #newdata[[v]] <- structure(newdata[[v]] - min_value) 
       }
     }
   } else {
