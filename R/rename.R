@@ -121,8 +121,6 @@ rename_pars <- function(x) {
                               oldname = "b_Intercept", 
                               pnames = paste0("b_", intercepts), 
                               fnames = paste0("b_", intercepts)))
-    change <- c(change, prior_changes(class = "temp_Intercept", pars = pars, 
-                                      new_class = "b_Intercept"))
   }
   # monotonous effects
   if (is.formula(ee$mono)) {

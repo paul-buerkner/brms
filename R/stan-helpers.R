@@ -1104,7 +1104,7 @@ stan_rngprior <- function(sample_prior, prior, family = gaussian(),
     prior <- gsub(" ", "", paste0("\n",prior))
     pars <- gsub("\\\n|to_vector\\(|\\)", "", 
                  regmatches(prior, gregexpr("\\\n[^~]+", prior))[[1]])
-    take <- !grepl("^z_|^increment_log_prob\\(", pars)
+    take <- !grepl("^(z|temp)_|^increment_log_prob\\(", pars)
     pars <- rename(pars[take], symbols = c("^L_", "^Lrescor"), 
                    subs = c("cor_", "rescor"), 
                    fixed = FALSE)
