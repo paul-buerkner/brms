@@ -664,7 +664,7 @@ check_prior_content <- function(prior, family = gaussian()) {
           autocor_warning <- TRUE
         } 
       } else if (prior$class[i] == "simplex") {
-        if (!grepl("^dirichlet\\(", prior$prior[i])) {
+        if (nchar(prior$prior[i]) && !grepl("^dirichlet\\(", prior$prior[i])) {
           stop(paste("Currently 'dirichlet' is the only valid prior",
                      "for simplex parameters. See help(set_prior)",
                      "for more details."), call. = FALSE)
