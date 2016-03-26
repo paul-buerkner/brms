@@ -1616,7 +1616,12 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
       dots$is_newdata <- TRUE
     }
     if (!is.null(dots$ranef)) {
-      object$exclude <- exclude_pars(ranef = object$ranef, save_ranef = dots$ranef)
+      object$exclude <- exclude_pars(ranef = object$ranef, 
+                                     save_ranef = dots$ranef)
+    }
+    if (!is.null(dots$algorithm)) {
+      object$algorithm <- match.arg(dots$algorithm, 
+                                    c("sampling", "meanfield", "fullrank"))
     }
     if (!isTRUE(dots$testmode)) {
       object <- do.call(brm, c(list(fit = object), dots))
