@@ -79,7 +79,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     csef <- colnames(get_model_matrix(ee$cse, data))
     text_fixef <- stan_fixef(fixef = fixef, csef = csef, family = family, 
                              prior = prior, threshold = threshold,
-                             sparse = sparse, nint = length(intercepts))
+                             sparse = sparse, intercepts = intercepts)
     # generate code for monotonous effects
     monef <- colnames(get_model_matrix(ee$mono, data))
     text_monef <- stan_monef(monef, prior = prior)

@@ -1,5 +1,5 @@
 stan_fixef <- function(fixef, csef, family = gaussian(), 
-                       prior = prior_frame(), nint = 1, 
+                       prior = prior_frame(), intercepts = "Intercept", 
                        sparse = FALSE, threshold = "flexible") {
   # Stan code for fixec effects
   #
@@ -14,6 +14,7 @@ stan_fixef <- function(fixef, csef, family = gaussian(),
   #
   # Returns:
   #   a list containing Stan code related to fixed effects
+  nint <- length(intercepts)
   out <- list()
   if (length(fixef)) {
     centered <- ifelse(nint > 0, "centered", "")
@@ -66,7 +67,8 @@ stan_fixef <- function(fixef, csef, family = gaussian(),
           "    b_Intercept[i] <- temp_Intercept[i]", sub_X_means, "; \n",
           "  } \n")
       }
-      out$prior <- paste0(out$prior, stan_prior("temp_Intercept", prior = prior))
+      out$prior <- paste0(out$prior, 
+        stan_prior("temp_Intercept", coef = intercepts, prior = prior))
     }
   }
   if (length(csef)) {

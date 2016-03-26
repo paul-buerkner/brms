@@ -249,10 +249,12 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
   if (nchar(group) && !class %in% c("sd", "cor", "L"))
     stop(paste("argument 'group' not meaningful for class", class), 
          call. = FALSE)
-  if (nchar(coef) && !class %in% c("b", "sd", "sigma", "simplex"))
-    stop(paste("argument 'coef' not meaningful for class", class))
+  if (nchar(coef) && !class %in% c("Intercept", "b", "sd", "sigma", "simplex"))
+    stop(paste("argument 'coef' not meaningful for class", class),
+         call. = FALSE)
   if (nchar(nlpar) && !class %in% valid_classes[1:5])
-    stop(paste("argument 'nlpar' not meaningful for class", class))
+    stop(paste("argument 'nlpar' not meaningful for class", class),
+         call. = FALSE)
   is_arma <- class %in% c("ar", "ma")
   if (length(lb) || length(ub) || is_arma) {
     if (!(class %in% c("b", "arr") || is_arma))
@@ -372,11 +374,16 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
     }
     intercepts <- names(get_intercepts(ee, data = data, family = family))
     if (length(intercepts)) {
-      prior <- rbind(prior, prior_frame(class = "Intercept"))
+      if (is_equal(intercepts, "Intercept")) {
+        int_coefs <- "" 
+      } else {
+        int_coefs <- c("", intercepts)
+      }
+      prior <- rbind(prior, prior_frame(class = "Intercept", coef = int_coefs))
       if (internal) {
         res_thres <- is.ordinal(family) && threshold == "equidistant"
         int_class <- ifelse(res_thres, "temp_Intercept1", "temp_Intercept")
-        prior <- rbind(prior, prior_frame(class = int_class))
+        prior <- rbind(prior, prior_frame(class = int_class, coef = int_coefs))
       }
     }
     if (is.formula(ee$cse)) {
@@ -538,24 +545,30 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
   prior <- rbind(prior, all_priors)
   prior <- prior[!duplicated(prior[, 2:5]), ]
   rows2remove <- NULL
-  # special treatment of fixed effects Intercept(s)
+  # special treatment of fixed effects Intercepts
   int_index <- which(prior$class == "Intercept")
   if (length(int_index)) {
-    # if an intercept is present
-    rows2remove <- c(rows2remove, int_index)
-    int_prior <- prior[int_index, "prior"]
-    old_index <- which(prior$class == "b" & prior$coef == "Intercept")
-    rows2remove <- c(rows2remove, old_index)
-    if (length(old_index) && nchar(prior$prior[old_index])) {
-      # for backwards compatibility
-      int_prior <- prior$prior[old_index]
-      warning(paste("Using class = 'b' with coef = 'Intercept' is deprecated.", 
-                    "See help(set_prior) for further details."), call. = FALSE)
-    }
-    # (temporary) Intercepts have their own internal parameter class
+    int_prior <- prior[int_index, ]
+    if (length(int_index) > 1L) {
+      intercepts <- prior$coef[int_index]
+      intercepts <- intercepts[nchar(intercepts) > 0]
+    } else intercepts <- "Intercept"
+    bint_index <- which(prior$class == "b" & prior$coef %in% intercepts)
+    bint_prior <- prior[bint_index, ]
     res_thres <- is.ordinal(family) && threshold == "equidistant"
     int_class <- ifelse(res_thres, "temp_Intercept1", "temp_Intercept")
-    prior[which(prior$class %in% int_class), "prior"] <- int_prior 
+    for (t in which(prior$class %in% int_class)) {
+      ti <- int_prior$coef == prior$coef[t]
+      tb <- bint_prior$coef %in% c(prior$coef[t], "Intercept")
+      if (sum(ti) && nchar(int_prior$prior[ti]) > 0) {
+        # take 'Intercept' priors first if specified
+        prior$prior[t] <- int_prior$prior[ti]
+      } else if (sum(tb) && nchar(bint_prior$prior[tb]) > 0) {
+        # fall back to 'b' (fixed effects) priors
+        prior$prior[t] <- bint_prior$prior[tb]
+      }
+    }
+    rows2remove <- c(rows2remove, int_index, bint_index)
   }
   if (is.formula(ee$mono)) {
     monef <- colnames(get_model_matrix(ee$mono, data = data))
@@ -569,20 +582,6 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
       }
     }
   }
-  # get category specific priors out of fixef priors
-  #if (is.formula(ee$cse)) {
-  #  csef <- colnames(get_model_matrix(ee$cse, data = data, 
-  #                                    intercepts = "Intercept"))
-  #  b_index <- which(prior$class == "b" & !nchar(prior$coef))
-  #  p_index <- which(prior$class == "b" & prior$coef %in% csef)
-  #  rows2remove <- c(rows2remove, p_index)
-  #  p_prior <- prior[c(b_index, p_index), ]
-  #  for (i in 1:nrow(p_prior)) {
-  #    # ensure that priors are correctly assigned to their parameters
-  #    take <- with(prior, class == "bp" & coef == p_prior$coef[i])
-  #    prior[take, "prior"] <- p_prior$prior[i]  
-  #  }
-  #}
   # check if priors for non-linear parameters are defined
   if (length(nonlinear)) {
     nlpars <- names(ee$nonlinear)
