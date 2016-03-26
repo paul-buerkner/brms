@@ -70,16 +70,20 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     text_nonlinear <- stan_nonlinear(ee, data = data, family = family, 
                                      add = add, cov_ranef = cov_ranef,
                                      prior = prior, disp = is.formula(ee$disp))
-    text_fixef <- text_monef <- text_ranef <- text_eta <- intercepts <- list()
+    # currently unused objects in non-linear models
+    text_fixef <- text_monef <- text_ranef <- text_csef <- 
+      text_eta <- intercepts <- NULL
   } else {
     # generate fixed effects code
     intercepts <- names(get_intercepts(ee, family = family, data = data))
     fixef <- colnames(get_model_matrix(rhs(ee$fixed), data, forked = is_forked,
                                        cols2remove = intercepts))
+    text_fixef <- stan_fixef(fixef = fixef, intercepts = intercepts, 
+                             family = family, prior = prior, 
+                             sparse = sparse, threshold = threshold)
+    # generate code for category specific effects
     csef <- colnames(get_model_matrix(ee$cse, data))
-    text_fixef <- stan_fixef(fixef = fixef, csef = csef, family = family, 
-                             prior = prior, threshold = threshold,
-                             sparse = sparse, intercepts = intercepts)
+    text_csef <- stan_csef(csef = csef, prior = prior)
     # generate code for monotonous effects
     monef <- colnames(get_model_matrix(ee$mono, data))
     text_monef <- stan_monef(monef, prior = prior)
@@ -132,6 +136,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   text_prior <- paste0(
     text_fixef$prior,
     text_monef$prior,
+    text_csef$prior,
     text_ordinal$prior,
     text_ranef$prior,
     text_nonlinear$prior,
@@ -187,6 +192,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     },
     text_fixef$data,
     text_monef$data,
+    text_csef$data,
     text_ranef$data,
     text_nonlinear$data,
     text_ordinal$data,
@@ -228,6 +234,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     text_fixef$par,
     text_ordinal$par,
     text_monef$par,
+    text_csef$par,
     text_ranef$par,
     text_nonlinear$par,
     text_arma$par,

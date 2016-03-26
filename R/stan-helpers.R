@@ -1,7 +1,7 @@
-stan_fixef <- function(fixef, csef, family = gaussian(), 
-                       prior = prior_frame(), intercepts = "Intercept", 
+stan_fixef <- function(fixef, intercepts = "Intercept", 
+                       family = gaussian(), prior = prior_frame(), 
                        sparse = FALSE, threshold = "flexible") {
-  # Stan code for fixec effects
+  # Stan code for fixed effects
   #
   # Args:
   #   fixef: names of the fixed effects
@@ -70,17 +70,6 @@ stan_fixef <- function(fixef, csef, family = gaussian(),
       out$prior <- paste0(out$prior, 
         stan_prior("temp_Intercept", coef = intercepts, prior = prior))
     }
-  }
-  if (length(csef)) {
-    out$data <- paste0(out$data, 
-      "  int<lower=1> Kp;  // number of category specific effects \n",
-      "  matrix[N, Kp] Xp;  // CSE design matrix \n")
-    bound <- with(prior, bound[class == "b" & coef == ""])
-    out$par <- paste0(out$par,
-      "  matrix", bound, "[Kp, ncat - 1] bp;  // category specific effects \n")
-    csef_prior <- stan_prior(class = "b", coef = csef, prior = prior, 
-                             suffix = "p", matrix = TRUE)
-    out$prior <- paste0(out$prior, csef_prior)
   }
   out
 }
@@ -221,6 +210,26 @@ stan_monef <- function(monef, prior = prior_frame()) {
   }
   out
 }
+
+stan_csef <- function(csef, prior = prior_frame()) {
+  # Stan code for category specific effects
+  # Args:
+  #   csef: names of the category specific effects
+  #   prior: a data.frame containing user defined priors 
+  #          as returned by check_prior
+  out <- list()
+  if (length(csef)) {
+    out$data <- paste0(
+      "  int<lower=1> Kp;  // number of category specific effects \n",
+      "  matrix[N, Kp] Xp;  // CSE design matrix \n")
+    bound <- with(prior, bound[class == "b" & coef == ""])
+    out$par <- paste0(
+      "  matrix", bound, "[Kp, ncat - 1] bp;  // category specific effects \n")
+    out$prior <- stan_prior(class = "b", coef = csef, prior = prior, 
+                             suffix = "p", matrix = TRUE)
+  }
+  out
+} 
 
 stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE, 
                      cens = FALSE, disp = FALSE, trunc = .trunc(), 
