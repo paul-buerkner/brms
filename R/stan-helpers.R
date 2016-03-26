@@ -67,9 +67,12 @@ stan_fixef <- function(fixef, intercepts = "Intercept",
           "    b_Intercept[i] <- temp_Intercept[i]", sub_X_means, "; \n",
           "  } \n")
       }
-      out$prior <- paste0(out$prior, 
-        stan_prior("temp_Intercept", coef = intercepts, prior = prior))
     }
+    # for equidistant thresholds only temp_Intercept1 is a parameter
+    suffix <- ifelse(threshold == "equidistant", "1", "")
+    int_prior <- stan_prior("temp_Intercept", coef = intercepts, 
+                            prior = prior, suffix = suffix)
+    out$prior <- paste0(out$prior, int_prior)
   }
   out
 }

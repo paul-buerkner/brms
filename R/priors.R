@@ -381,9 +381,8 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
       }
       prior <- rbind(prior, prior_frame(class = "Intercept", coef = int_coefs))
       if (internal) {
-        res_thres <- is.ordinal(family) && threshold == "equidistant"
-        int_class <- ifelse(res_thres, "temp_Intercept1", "temp_Intercept")
-        prior <- rbind(prior, prior_frame(class = int_class, coef = int_coefs))
+        prior <- rbind(prior, prior_frame(class = "temp_Intercept",
+                                          coef = int_coefs))
       }
     }
     if (is.formula(ee$cse)) {
@@ -555,9 +554,7 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
     } else intercepts <- "Intercept"
     bint_index <- which(prior$class == "b" & prior$coef %in% intercepts)
     bint_prior <- prior[bint_index, ]
-    res_thres <- is.ordinal(family) && threshold == "equidistant"
-    int_class <- ifelse(res_thres, "temp_Intercept1", "temp_Intercept")
-    for (t in which(prior$class %in% int_class)) {
+    for (t in which(prior$class %in% "temp_Intercept")) {
       ti <- int_prior$coef == prior$coef[t]
       tb <- bint_prior$coef %in% c(prior$coef[t], "Intercept")
       if (sum(ti) && nchar(int_prior$prior[ti]) > 0) {
@@ -676,14 +673,16 @@ check_prior_content <- function(prior, family = gaussian()) {
                      "prior on a parameter that has no natural lower bound.",
                      "\nIf this is really what you want, please specify ",
                      "argument 'lb' of 'set_prior' appropriately.",
-                     "\nWarning occurred for prior \n", lb_warning), call. = FALSE)
+                     "\nWarning occurred for prior \n", lb_warning), 
+              call. = FALSE)
     }
     if (nchar(ub_warning)) {
       warning(paste0("It appears that you have specified an upper bounded ", 
                      "prior on a parameter that has no natural upper bound.",
                      "\nIf this is really what you want, please specify ",
                      "argument 'ub' of 'set_prior' appropriately.",
-                     "\nWarning occurred for prior \n", ub_warning), call. = FALSE)
+                     "\nWarning occurred for prior \n", ub_warning), 
+              call. = FALSE)
     }
     if (autocor_warning) {
       warning(paste("Changing the boundaries of autocorrelation", 

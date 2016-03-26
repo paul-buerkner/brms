@@ -288,7 +288,8 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
         if (length(sprior) != Jm[i]) {
           stop(paste0("Invalid dirichlet prior for the simplex of ", 
                       monef[i], ". Expected input of length ", Jm[i], 
-                      " but found ", paste(sprior, collapse = ",")))
+                      " but found ", paste(sprior, collapse = ",")),
+               call. = FALSE)
         }
         standata[[paste0("prior_simplex_", i)]] <- sprior
       } else {
