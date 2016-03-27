@@ -1035,6 +1035,7 @@ stan_prior <- function(class, coef = NULL, group = NULL, nlpar = NULL,
   
   # only consider user defined priors related to this class and group
   wsp <- collapse(rep(" ", wsp))
+  prior_only <- isTRUE(attr(prior, "prior_only"))
   keep <- which(prior$class == class & (prior$coef %in% coef | !nchar(prior$coef)))
   user_prior <- prior[keep, ]
   if (!is.null(group)) {
@@ -1110,7 +1111,14 @@ stan_prior <- function(class, coef = NULL, group = NULL, nlpar = NULL,
       "  hs_global ~ cauchy(0, 1); \n")
     out <- c(hs_shrinkage_priors, out)
   }
-  return(collapse(out))
+  out <- collapse(out)
+  if (prior_only && nchar(class) && !nchar(out)) {
+    stop(paste0("Sampling from priors is not possible because ", 
+                "not all parameters have proper priors. \n",
+                "Error occured for class '", class, "'."), 
+         call. = FALSE)
+  }
+  out
 }
 
 stan_rngprior <- function(sample_prior, prior, family = gaussian(),

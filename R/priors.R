@@ -489,7 +489,7 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
 }
 
 check_prior <- function(prior, formula, data = NULL, family = gaussian(), 
-                        autocor = NULL, nonlinear = NULL, 
+                        sample_prior = FALSE, autocor = NULL, nonlinear = NULL, 
                         threshold = "flexible", check_rows = NULL) {
   # check prior input and amend it if needed
   #
@@ -602,6 +602,7 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
   for (i in seq_along(attrib)) {
     attr(prior, names(attrib)[i]) <- attrib[[i]]
   }
+  attr(prior, "prior_only") <- identical(sample_prior, "only")
   attr(prior, "checked") <- TRUE
   prior
 }

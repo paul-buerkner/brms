@@ -7,7 +7,7 @@
 \usage{
 make_standata(formula, data = NULL, family = "gaussian", prior = NULL,
   autocor = NULL, nonlinear = NULL, partial = NULL, cov_ranef = NULL,
-  control = NULL, ...)
+  sample_prior = FALSE, control = NULL, ...)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class): 
@@ -80,6 +80,14 @@ in \code{data} that are used as grouping factors.
 All levels of the grouping factor should appear as rownames 
 of the corresponding matrix. This argument can be used,
 among others, to model pedigrees and phylogenetic effects.}
+
+\item{sample_prior}{A flag to indicate if samples from all specified 
+proper priors should be drawn additionally to the posterior samples
+(defaults to \code{FALSE}). Among others, these samples can be used 
+to calculate Bayes factors for point hypotheses. 
+Alternatively, \code{sample_prior} can be set to \code{"only"} to
+sample solely from the priors. In this case, all parameters must 
+have proper priors.}
 
 \item{control}{A named list currently for internal usage only}
 

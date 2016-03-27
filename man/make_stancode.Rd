@@ -99,9 +99,12 @@ of the corresponding matrix. This argument can be used,
 among others, to model pedigrees and phylogenetic effects.}
 
 \item{sample_prior}{A flag to indicate if samples from all specified 
-proper priors should be additionally drawn. Among others, 
-these samples can be used to calculate Bayes factors for 
-point hypotheses. Default is \code{FALSE}.}
+proper priors should be drawn additionally to the posterior samples
+(defaults to \code{FALSE}). Among others, these samples can be used 
+to calculate Bayes factors for point hypotheses. 
+Alternatively, \code{sample_prior} can be set to \code{"only"} to
+sample solely from the priors. In this case, all parameters must 
+have proper priors.}
 
 \item{stan_funs}{An optional character string containing self-defined 
 \pkg{Stan} functions, which will be included in the functions block 

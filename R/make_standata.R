@@ -26,8 +26,8 @@
 #' @export
 make_standata <- function(formula, data = NULL, family = "gaussian", 
                           prior = NULL, autocor = NULL, nonlinear = NULL, 
-                          partial = NULL, cov_ranef = NULL, control = NULL, 
-                          ...) {
+                          partial = NULL, cov_ranef = NULL, 
+                          sample_prior = FALSE, control = NULL, ...) {
   # internal control arguments:
   #   is_newdata: is make_standata is called with new data?
   #   not4stan: is make_standata called for use in S3 methods?
@@ -291,9 +291,9 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
                       " but found ", paste(sprior, collapse = ",")),
                call. = FALSE)
         }
-        standata[[paste0("prior_simplex_", i)]] <- sprior
+        standata[[paste0("con_simplex_", i)]] <- sprior
       } else {
-        standata[[paste0("prior_simplex_", i)]] <- rep(1, Jm[i]) 
+        standata[[paste0("con_simplex_", i)]] <- rep(1, Jm[i]) 
       }
     }
   }
@@ -436,6 +436,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       standata$Karr <- Karr
     }
   } 
+  standata$prior_only <- ifelse(identical(sample_prior, "only"), 1L, 0L)
   if (isTRUE(control$save_order)) {
     attr(standata, "old_order") <- attr(data, "old_order")
   }

@@ -85,9 +85,12 @@
 #'   Set to \code{FALSE} to save memory. 
 #'   The argument has no impact on the model fitting itself.
 #' @param sample_prior A flag to indicate if samples from all specified 
-#'   proper priors should be additionally drawn. Among others, 
-#'   these samples can be used to calculate Bayes factors for 
-#'   point hypotheses. Default is \code{FALSE}. 
+#'   proper priors should be drawn additionally to the posterior samples
+#'   (defaults to \code{FALSE}). Among others, these samples can be used 
+#'   to calculate Bayes factors for point hypotheses. 
+#'   Alternatively, \code{sample_prior} can be set to \code{"only"} to
+#'   sample solely from the priors. In this case, all parameters must 
+#'   have proper priors.
 #' @param stan_funs An optional character string containing self-defined 
 #'   \pkg{Stan} functions, which will be included in the functions block 
 #'   of the generated \pkg{Stan} code. 
@@ -569,8 +572,9 @@ brm <- function(formula, data = NULL, family = gaussian(),
     formula <- update_formula(formula, data = data, family = family, 
                               partial = partial, nonlinear = nonlinear)
     prior <- check_prior(prior, formula = formula, data = data, 
-                         family = family, autocor = autocor,
-                         nonlinear = nonlinear, threshold = threshold) 
+                         family = family, sample_prior = sample_prior, 
+                         autocor = autocor, nonlinear = nonlinear, 
+                         threshold = threshold)
     et <- extract_time(autocor$formula)  
     ee <- extract_effects(formula, family = family, et$all,
                           nonlinear = nonlinear)
@@ -597,8 +601,8 @@ brm <- function(formula, data = NULL, family = gaussian(),
                              autocor = autocor, nonlinear = nonlinear,
                              threshold = threshold, sparse = sparse,
                              cov_ranef = cov_ranef, sample_prior = sample_prior, 
-                             brm_call = TRUE, stan_funs = stan_funs, 
-                             save_model = save_model)
+                             stan_funs = stan_funs, save_model = save_model, 
+                             brm_call = TRUE)
     # generate standata before compiling the model to avoid
     # unnecessary compilations in case that the data is invalid
     standata <- standata(x, newdata = dots$is_newdata)

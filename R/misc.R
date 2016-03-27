@@ -168,7 +168,7 @@ wsp <- function(x, nsp = 1) {
   # Args:
   #   x: object accepted by paste
   #   nsp: number of whitespaces to add
-  sp <- paste(rep(" ", nsp), collapse = "")
+  sp <- collapse(rep(" ", nsp))
   if (length(x)) paste0(sp, x, sp)
   else NULL
 }

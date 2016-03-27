@@ -44,7 +44,9 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
                         nonlinear = nonlinear)
   prior <- check_prior(prior, formula = formula, data = data, 
                        family = family, autocor = autocor, 
-                       threshold = threshold, nonlinear = nonlinear) 
+                       threshold = threshold, nonlinear = nonlinear)
+  prior_only <- identical(sample_prior, "only")
+  sample_prior <- if (prior_only) FALSE else sample_prior
   data <- update_data(data, family = family, effects = ee, et$group)
   
   # flags to indicate of which type family is
@@ -210,6 +212,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     if (trunc$ub < Inf)
       paste0("  ", ifelse(use_int(family), "int", "real"), " ub;",  
              "  // upper bound for truncation; \n"),
+    "  int prior_only;  // should the likelihood be ignored? \n",
     "} \n")
   
   # generate transformed parameters block
@@ -289,17 +292,19 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     "} \n")
   
   # generate model block
-  lp_pre_needed <- is.formula(ee$weights) && !is.formula(ee$cens)
+  needs_lp_pre <- is.formula(ee$weights) && !is.formula(ee$cens)
   text_model <- paste0(
     "model { \n",
-      if (lp_pre_needed) 
-        paste0("  vector[N",trait,"] lp_pre; \n"),
+      if (needs_lp_pre) 
+        paste0("  vector[N", trait,"] lp_pre; \n"),
       "  // prior specifications \n", 
       text_prior, 
       "  // likelihood contribution \n",
+      "  if (!prior_only) { \n  ",
       text_llh, 
-      if (lp_pre_needed)  
-        "  increment_log_prob(dot_product(weights, lp_pre)); \n",
+      if (needs_lp_pre)
+        "    increment_log_prob(dot_product(weights, lp_pre)); \n",
+      "  } \n", 
       text_rngprior$model,
     "} \n")
   

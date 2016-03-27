@@ -699,10 +699,12 @@ standata.brmsfit <- function(object, ...) {
     new_formula <- update_re_terms(object$formula, dots$re_formula)
     new_formula <- SW(update_formula(new_formula, partial = object$partial))
     dots$control$old_cat <- is.old_categorical(object)
+    prior_only <- attr(object$prior, "prior_only")
+    sample_prior <- ifelse(isTRUE(prior_only), "only", FALSE)
     args <- list(formula = new_formula, data = object$data, 
                  family = object$family, prior = object$prior, 
                  nonlinear = object$nonlinear, autocor = object$autocor, 
-                 cov_ranef = object$cov_ranef)
+                 cov_ranef = object$cov_ranef, sample_prior = sample_prior)
     standata <- do.call(make_standata, c(args, dots))
   } else {
     # brms <= 0.5.0 only stores the data passed to Stan 
