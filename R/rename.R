@@ -138,8 +138,9 @@ rename_pars <- function(x) {
           list(pos = pos, oldname = simplex[1], pnames = simplex[2], 
                fnames = paste0(simplex[2], "[", 1:sum(pos), "]"), 
                dim = sum(pos)))
-        change <- c(change, prior_changes(class = simplex[1], pars = pars, 
-                                          new_class = simplex[2]))
+        change <- c(change,
+          prior_changes(class = simplex[1], new_class = simplex[2],
+                        pars = pars, is_vector = TRUE))
       }
     }
   } 
@@ -363,7 +364,8 @@ ranef_changes <- function(i, ranef, gf, dims_oi, pars, k = i)  {
   change
 }
 
-prior_changes <- function(class, pars, names = NULL, new_class = class) {
+prior_changes <- function(class, pars, names = NULL, new_class = class,
+                          is_vector = FALSE) {
   # helps in renaming prior parameters
   #
   # Args: 
@@ -371,30 +373,39 @@ prior_changes <- function(class, pars, names = NULL, new_class = class) {
   #   pars: all parameters in the model
   #   names: names to replace digits at the end of parameter names
   #   new_class: replacement of the orginal class name
+  #   is_vector: indicate if the prior parameter is a vector
   #
   # Return:
   #   a list whose elements can be interpreted by rename_pars
   change <- list()
-  pos_priors <- which(grepl(paste0("^prior_",class,"(_|$)"), pars))
+  pos_priors <- which(grepl(paste0("^prior_", class, "(_|$|\\[)"), pars))
   if (length(pos_priors)) {
-    priors <- gsub(paste0("^prior_",class), paste0("prior_",new_class), 
+    priors <- gsub(paste0("^prior_", class), paste0("prior_", new_class), 
                    pars[pos_priors])
-    digits <- sapply(priors, function(prior) {
-      d <- regmatches(prior, gregexpr("_[[:digit:]]+$", prior))[[1]]
-      if (length(d)) 
-        as.numeric(substr(d, 2, nchar(d))) 
-      else 0
-    })
-    if (sum(abs(digits)) > 0 && is.null(names)) 
-      stop("argument names is missing")
-    for (i in 1:length(priors)) {
-      if (digits[i]) 
-        priors[i] <- gsub("[[:digit:]]+$", names[digits[i]], priors[i])
-      if (pars[pos_priors[i]] != priors[i])
-        change <- lc(change, list(pos = pos_priors[i], 
-                                  oldname = pars[pos_priors[i]],
-                                  pnames = priors[i],
-                                  fnames = priors[i]))
+    if (is_vector) {
+      change <- lc(change, 
+        list(pos = pos_priors, oldname = paste0("prior_", class),
+             pnames = priors, fnames = priors))
+    } else {
+      digits <- sapply(priors, function(prior) {
+        d <- regmatches(prior, gregexpr("_[[:digit:]]+$", prior))[[1]]
+        if (length(d)) 
+          as.numeric(substr(d, 2, nchar(d))) 
+        else 0
+      })
+      if (sum(abs(digits)) > 0 && is.null(names)) {
+        stop("argument 'names' is missing")
+      }
+      for (i in 1:length(priors)) {
+        if (digits[i]) {
+          priors[i] <- gsub("[[:digit:]]+$", names[digits[i]], priors[i])
+        }
+        if (pars[pos_priors[i]] != priors[i]) {
+          change <- lc(change, 
+            list(pos = pos_priors[i], oldname = pars[pos_priors[i]],
+                 pnames = priors[i], fnames = priors[i]))
+        }
+      }
     }
   }
   change

@@ -207,14 +207,14 @@ stan_monef <- function(monef, prior = prior_frame()) {
       "  int<lower=1> Km; \n",
       "  int Xm[N, Km]; \n",
       "  int<lower=2> Jm[Km]; \n",
-      collapse("  vector[Jm[", I, "]] prior_simplex_", I, "; \n"))
+      collapse("  vector[Jm[", I, "]] con_simplex_", I, "; \n"))
     bound <- with(prior, bound[class == "b" & coef == ""])
     out$par <- paste0(
       "  vector[Km]", bound, " bm; \n",
       collapse("  simplex[Jm[", I, "]] simplex_", I, "; \n")) 
     out$prior <- paste0(
       stan_prior(class = "b", coef = monef, prior = prior, suffix = "m"),
-      collapse("  simplex_", I, " ~ dirichlet(prior_simplex_", I, "); \n"))
+      collapse("  simplex_", I, " ~ dirichlet(con_simplex_", I, "); \n"))
   }
   out
 }
@@ -1136,7 +1136,7 @@ stan_rngprior <- function(sample_prior, prior, family = gaussian(),
   stopifnot(is(family, "family"))
   out <- list()
   if (sample_prior) {
-    prior <- gsub(" ", "", paste0("\n",prior))
+    prior <- gsub(" ", "", paste0("\n", prior))
     pars <- gsub("\\\n|to_vector\\(|\\)", "", 
                  regmatches(prior, gregexpr("\\\n[^~]+", prior))[[1]])
     take <- !grepl("^(z|temp)_|^increment_log_prob\\(", pars)
@@ -1145,6 +1145,7 @@ stan_rngprior <- function(sample_prior, prior, family = gaussian(),
                    fixed = FALSE)
     dis <- gsub("~", "", regmatches(prior, gregexpr("~[^\\(]+", prior))[[1]])[take]
     args <- regmatches(prior, gregexpr("\\([^;~]+\\);", prior))[[1]][take]
+    type <- rep("real", length(pars))
     
     # rename parameters containing indices
     has_ind <- grepl("\\[[[:digit:]]+\\]", pars)
@@ -1169,6 +1170,12 @@ stan_rngprior <- function(sample_prior, prior, family = gaussian(),
                    args)
     dis <- sub("corr_cholesky$", "corr", dis)
     
+    # special treatment of simplex parameters
+    which_simplex <- which(grepl("^simplex_", pars))
+    for (i in seq_along(which_simplex)) {
+      type[which_simplex[i]] <- paste0("vector[rows(con_simplex_", i, ")]")
+    }
+    
     # distinguish between bounded and unbounded parameters
     # do not change | to ||
     bound <- grepl("^sd|^sigma|^shape$|^nu$|^hs_local$|^hs_global$", pars) |  
@@ -1188,7 +1195,7 @@ stan_rngprior <- function(sample_prior, prior, family = gaussian(),
       if (!is.null(hs_df)) {
         args[match("b", pars)] <- "(0, prior_hs_local * prior_hs_global);" 
       } 
-      out$genD <- collapse("  real prior_", pars[!bound], "; \n")
+      out$genD <- collapse("  ", type[!bound], " prior_", pars[!bound], "; \n")
       out$genC <- paste0("  // additionally draw samples from priors \n",
                          collapse("  prior_", pars[!bound], " <- ",
                                   dis[!bound], "_rng", args[!bound], " \n"))
