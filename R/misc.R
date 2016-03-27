@@ -143,9 +143,11 @@ SW <- function(expr) {
   base::suppressWarnings(expr)
 }
 
-get_matches <- function(pattern, text, ...) {
+get_matches <- function(pattern, text, simplify = TRUE, ...) {
   # get pattern matches in text as vector
-  unlist(regmatches(text, gregexpr(pattern, text, ...)))
+  x <- regmatches(text, gregexpr(pattern, text, ...))
+  if (simplify) x <- unlist(x)
+  x
 }
 
 logit <- function(p) {

@@ -147,10 +147,6 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     if (family$family %in% c("beta", "zero_inflated_beta")) 
       stan_prior(class = "phi", prior = prior),
     stan_prior(class = "", prior = prior))
-  # generate code to additionally sample from priors if sample_prior = TRUE
-  text_rngprior <- stan_rngprior(sample_prior = sample_prior, 
-                                 prior = text_prior, family = family,
-                                 hs_df = attr(prior, "hs_df"))
   
   # generate functions block
   text_functions <- paste0(
@@ -228,7 +224,6 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   
   # generate parameters block
   text_parameters <- paste0(
-    "parameters { \n",
     text_fixef$par,
     text_ordinal$par,
     text_monef$par,
@@ -248,7 +243,15 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     if (!is.null(attr(prior, "hs_df"))) 
       paste0("  // horseshoe shrinkage parameters \n",
              "  vector<lower=0>[K] hs_local; \n",
-             "  real<lower=0> hs_global; \n"),
+             "  real<lower=0> hs_global; \n"))
+  # generate code to additionally sample from priors
+  text_rngprior <- stan_rngprior(sample_prior = sample_prior, 
+                                 par_declars = text_parameters,
+                                 prior = text_prior, family = family,
+                                 hs_df = attr(prior, "hs_df"))
+  text_parameters <- paste0(
+    "parameters { \n",
+    text_parameters,
     text_rngprior$par,
     "} \n")
   

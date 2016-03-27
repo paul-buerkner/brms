@@ -210,7 +210,7 @@ stan_monef <- function(monef, prior = prior_frame()) {
       collapse("  vector[Jm[", I, "]] con_simplex_", I, "; \n"))
     bound <- with(prior, bound[class == "b" & coef == ""])
     out$par <- paste0(
-      "  vector[Km]", bound, " bm; \n",
+      "  vector", bound, "[Km] bm; \n",
       collapse("  simplex[Jm[", I, "]] simplex_", I, "; \n")) 
     out$prior <- paste0(
       stan_prior(class = "b", coef = monef, prior = prior, suffix = "m"),
@@ -1121,13 +1121,15 @@ stan_prior <- function(class, coef = NULL, group = NULL, nlpar = NULL,
   out
 }
 
-stan_rngprior <- function(sample_prior, prior, family = gaussian(),
-                          hs_df = NULL) {
+stan_rngprior <- function(sample_prior, prior, par_declars = "",
+                          family = gaussian(), hs_df = NULL) {
   # stan code to sample from priors seperately
   #
   # Args:
   #   sample_prior: take samples from priors?
-  #   prior: the character string taken from stan_prior
+  #   prior: character string taken from stan_prior
+  #   par_declars: the parameters block of the Stan code
+  #                requied to extract boundaries
   #   family: the model family
   #   hs_df: hs_df degrees of freedom
   #
@@ -1137,12 +1139,10 @@ stan_rngprior <- function(sample_prior, prior, family = gaussian(),
   out <- list()
   if (sample_prior) {
     prior <- gsub(" ", "", paste0("\n", prior))
-    pars <- gsub("\\\n|to_vector\\(|\\)", "", 
-                 regmatches(prior, gregexpr("\\\n[^~]+", prior))[[1]])
+    pars <- gsub("\\\n|to_vector\\(|\\)", "", get_matches("\\\n[^~]+", prior))
     take <- !grepl("^(z|temp)_|^increment_log_prob\\(", pars)
     pars <- rename(pars[take], symbols = c("^L_", "^Lrescor"), 
-                   subs = c("cor_", "rescor"), 
-                   fixed = FALSE)
+                   subs = c("cor_", "rescor"), fixed = FALSE)
     dis <- gsub("~", "", regmatches(prior, gregexpr("~[^\\(]+", prior))[[1]])[take]
     args <- regmatches(prior, gregexpr("\\([^;~]+\\);", prior))[[1]][take]
     type <- rep("real", length(pars))
@@ -1176,29 +1176,44 @@ stan_rngprior <- function(sample_prior, prior, family = gaussian(),
       type[which_simplex[i]] <- paste0("vector[rows(con_simplex_", i, ")]")
     }
     
-    # distinguish between bounded and unbounded parameters
-    # do not change | to ||
-    bound <- grepl("^sd|^sigma|^shape$|^nu$|^hs_local$|^hs_global$", pars) |  
-      family$family == "cumulative" & grepl("^delta$", pars)
-    if (any(bound)) {  
-      # bounded parameters have to be sampled in the model block
-      lower_bound <- ifelse(pars[bound] == "nu", 1, 0)
-      out$par <- paste0("  // parameters to store prior samples \n",
-                        collapse("  real<lower=", lower_bound, "> ", 
-                                 "prior_", pars[bound], "; \n"))
-      out$model <- paste0("  // additionally draw samples from priors \n",
-                          collapse("  prior_", pars[bound] ," ~ ",
-                                   dis[bound], args[bound]," \n"))
+    # extract possible boundaries
+    par_declars <- unlist(strsplit(par_declars, "\n", fixed = TRUE))
+    all_pars <- get_matches(" [^[:blank:]]+;", par_declars) 
+    all_pars <- substr(all_pars, 2, nchar(all_pars) - 1)
+    all_bounds <- get_matches("<.+>", par_declars, simplify = FALSE)
+    all_bounds <- ulapply(all_bounds, function(x) if (length(x)) x else "")
+    bounds <- rep("", length(pars))
+    for (i in seq_along(all_pars)) {
+      k <- which(grepl(paste0("^", all_pars[i]), pars))
+      bounds[k] <- all_bounds[i]
     }
-    if (any(!bound)) {  
+    has_bounds <- as.logical(nchar(bounds))
+    
+    # distinguish between bounded and unbounded parameters
+    #bound <- grepl("^sd|^sigma|^shape$|^nu$|^hs_local$|^hs_global$", pars) |  
+    #  family$family == "cumulative" & grepl("^delta$", pars)
+    if (any(has_bounds)) {  
+      # bounded parameters have to be sampled in the model block
+      #lower_bound <- ifelse(pars[bound] == "nu", 1, 0)
+      out$par <- paste0("  // parameters to store prior samples \n",
+                        collapse("  real", bounds[has_bounds], 
+                                 " prior_", pars[has_bounds], "; \n"))
+      out$model <- paste0("  // additionally draw samples from priors \n",
+                          collapse("  prior_", pars[has_bounds] ," ~ ",
+                                   dis[has_bounds], args[has_bounds]," \n"))
+    }
+    no_bounds <- !has_bounds
+    if (any(no_bounds)) {  
       # unbounded parameters can be sampled in the generatated quantities block
       if (!is.null(hs_df)) {
         args[match("b", pars)] <- "(0, prior_hs_local * prior_hs_global);" 
       } 
-      out$genD <- collapse("  ", type[!bound], " prior_", pars[!bound], "; \n")
-      out$genC <- paste0("  // additionally draw samples from priors \n",
-                         collapse("  prior_", pars[!bound], " <- ",
-                                  dis[!bound], "_rng", args[!bound], " \n"))
+      out$genD <- collapse(
+        "  ", type[no_bounds], " prior_", pars[no_bounds], "; \n")
+      out$genC <- paste0(
+        "  // additionally draw samples from priors \n",
+        collapse("  prior_", pars[no_bounds], " <- ",
+                 dis[no_bounds], "_rng", args[no_bounds], " \n"))
     }
   }
   out
