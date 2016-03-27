@@ -150,7 +150,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(names(standata(fit)),
                c("N", "Y", "offset", "K", "X_means", "X", 
                  "J_1", "N_1", "K_1", "NC_1", "Z_1_1", "Z_1_2",
-                 "tg", "E_pre", "Kar", "Kma", "Karma"))
+                 "tg", "E_pre", "Kar", "Kma", "Karma", "prior_only"))
   # stanplot tested in tests.plots.R
   # summary
   .summary <- SW(summary(fit, waic = TRUE))

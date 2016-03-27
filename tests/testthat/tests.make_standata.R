@@ -3,22 +3,24 @@ test_that(paste("make_standata returns correct data names",
   expect_equal(names(make_standata(rating ~ treat + period + carry 
                                    + (1|subject), data = inhaler)),
                c("N", "Y",  "K", "X_means", "X", 
-                 "J_1", "N_1", "K_1", "NC_1", "Z_1"))
+                 "J_1", "N_1", "K_1", "NC_1", "Z_1", "prior_only"))
   expect_equal(names(make_standata(rating ~ treat + period + carry 
                                    + (1+treat|subject), data = inhaler,
                                    family = "categorical")),
                c("N", "Y", "K", "X_means", "X", "J_1", "N_1", "K_1", "NC_1", 
-                 "Z_1_1", "Z_1_2", "ncat", "max_obs", "N_trait", "J_trait"))
+                 "Z_1_1", "Z_1_2", "ncat", "max_obs", "N_trait", "J_trait",
+                 "prior_only"))
   expect_equal(names(make_standata(rating ~ treat + period + carry 
                                    + (1+treat|subject), data = inhaler,
                                    control = list(not4stan = TRUE))),
                c("N", "Y", "K", "X", "J_1", "N_1", "K_1",
-                 "NC_1", "Z_1"))
+                 "NC_1", "Z_1", "prior_only"))
   temp_data <- data.frame(y = 1:10, g = 1:10, h = 11:10, x = rep(0,10))
   expect_equal(names(make_standata(y ~ x + (1|g) + (1|h), family = "poisson",
                                    data = temp_data)),
                c("N", "Y", "K", "X_means", "X", "J_1", "N_1", "K_1",
-                 "NC_1", "Z_1", "J_2", "N_2", "K_2", "NC_2", "Z_2"))
+                 "NC_1", "Z_1", "J_2", "N_2", "K_2", "NC_2", "Z_2", 
+                 "prior_only"))
 })
 
 test_that(paste("make_standata handles variables used as fixed effects", 
@@ -38,25 +40,29 @@ test_that(paste("make_standata returns correct data names",
                           c = sample(-1:1,10,TRUE))
   expect_equal(names(make_standata(y | se(w) ~ x, family = "gaussian", 
                                    data = temp_data)), 
-               c("N", "Y", "K", "X_means", "X", "se"))
+               c("N", "Y", "K", "X_means", "X", "se", "prior_only"))
   expect_equal(names(make_standata(y | weights(w) ~ x, family = "gaussian", 
                                    data = temp_data)), 
-               c("N", "Y", "K", "X_means", "X", "weights"))
+               c("N", "Y", "K", "X_means", "X", "weights", "prior_only"))
   expect_equal(names(make_standata(y | cens(c) ~ x, family = "cauchy", 
                                    data = temp_data)), 
-               c("N", "Y", "K", "X_means", "X", "cens"))
+               c("N", "Y", "K", "X_means", "X", "cens", "prior_only"))
   expect_equal(names(make_standata(y | trials(t) ~ x, family = "binomial", 
                                    data = temp_data)), 
-               c("N", "Y", "K", "X_means", "X", "trials", "max_obs"))
+               c("N", "Y", "K", "X_means", "X", "trials", "max_obs", 
+                 "prior_only"))
   expect_equal(names(make_standata(y | trials(10) ~ x, family = "binomial", 
                                    data = temp_data)), 
-               c("N", "Y", "K", "X_means", "X", "trials", "max_obs"))
+               c("N", "Y", "K", "X_means", "X", "trials", "max_obs", 
+                 "prior_only"))
   expect_equal(names(make_standata(y | cat(11) ~ x, family = "acat", 
                                    data = temp_data)), 
-               c("N", "Y", "K", "X_means", "X", "ncat", "max_obs"))
+               c("N", "Y", "K", "X_means", "X", "ncat", "max_obs",
+                 "prior_only"))
   expect_equal(names(make_standata(y | cat(10) ~ x, family = "cumulative", 
                                    data = temp_data)), 
-               c("N", "Y", "K", "X_means", "X", "ncat", "max_obs"))
+               c("N", "Y", "K", "X_means", "X", "ncat", "max_obs", 
+                 "prior_only"))
   standata <- make_standata(y | trunc(0,20) ~ x, family = "gaussian", 
                             data = temp_data)
   expect_true(standata$lb == 0 && standata$ub == 20)
@@ -103,7 +109,7 @@ test_that(paste("make_standata rejects incorrect response variables",
                "family geometric expects response variable of non-negative integers")
   expect_error(make_standata(y ~ 1, data = data.frame(y = -1:1), 
                              family = "bernoulli"),
-               "family bernoulli expects response variable to contain only two different values")
+               "contain only two different values")
   expect_error(make_standata(y ~ 1, data = data.frame(y = factor(-1:1)), 
                              family = "cratio"),
                "family cratio expects either integers or ordered factors")
@@ -302,7 +308,8 @@ test_that("make_standata correctly prepares data for non-linear models", {
   standata <- make_standata(y ~ a - b^z, data = data, nonlinear = nonlinear)
   expect_equal(names(standata), c("N", "Y", "K_a", "X_a", "K_b", "X_b", "KC", "C", 
                                   "J_a_1", "N_a_1", "K_a_1", "NC_a_1", "Z_a_1",
-                                  "J_b_1", "N_b_1", "K_b_1", "NC_b_1", "Z_b_1"))
+                                  "J_b_1", "N_b_1", "K_b_1", "NC_b_1", "Z_b_1",
+                                  "prior_only"))
   expect_equal(colnames(standata$X_a), c("Intercept", "x"))
   expect_equal(colnames(standata$C), "z")
   expect_equal(standata$J_b_1, data$g)
