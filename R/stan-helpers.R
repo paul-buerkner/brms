@@ -194,6 +194,11 @@ stan_ranef <- function(i, ranef, prior = prior_frame(),
 }
 
 stan_monef <- function(monef, prior = prior_frame()) {
+  # Stan code for monotonous effects
+  # Args:
+  #   csef: names of the monotonous effects
+  #   prior: a data.frame containing user defined priors 
+  #          as returned by check_prior
   out <- list()
   if (length(monef)) {
     I <- seq_along(monef)
@@ -236,7 +241,7 @@ stan_csef <- function(csef, prior = prior_frame()) {
 
 stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE, 
                      cens = FALSE, disp = FALSE, trunc = .trunc(), 
-                     autocor = cor_arma(), cse = FALSE, is_multi = FALSE) {
+                     autocor = cor_arma(), cse = FALSE, nresp = 1L) {
   # Likelihoods in stan language
   #
   # Args:
@@ -249,7 +254,7 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
   #   autocor: autocorrelation structure; an object of classe cor_arma
   #   cse: a flag indicating if category specific effects are present
   #        (for ordinal models only)
-  #   is_multi: is the model multivariate?
+  #   nresp: number of response variables
   #
   # Returns:
   #   a string containing the likelihood of the model in stan language
@@ -261,6 +266,8 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
   is_ordinal <- is.ordinal(family)
   is_hurdle <- is.hurdle(family)
   is_zero_inflated <- is.zero_inflated(family)
+  is_forked <- is.forked(family)
+  is_multi <- is.linear(family) && nresp > 1L
   is_trunc <- trunc$lb > -Inf || trunc$ub < Inf
   if (is_multi) {
     # prepare for use of a multivariate likelihood
@@ -383,19 +390,25 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
   llh <- switch(type, 
     cens = paste0("  // special treatment of censored data \n",
       "    if (cens[n] == 0) ", 
-      ifelse(!weights, paste0("Y[n] ~ ", llh_pre[1],"(",llh_pre[2],"); \n"),
+      ifelse(!weights, paste0("Y[n] ~ ", llh_pre[1],"(", llh_pre[2],"); \n"),
              paste0("increment_log_prob(", add_weights, 
-                    llh_pre[1], "_log(Y[n], ",llh_pre[2],")); \n")),
+                    llh_pre[1], "_log(Y[n], ", llh_pre[2],")); \n")),
       "    else { \n",         
       "      if (cens[n] == 1) increment_log_prob(", add_weights, 
-      llh_pre[1], "_ccdf_log(Y[n], ",llh_pre[2],")); \n",
+      llh_pre[1], "_ccdf_log(Y[n], ", llh_pre[2],")); \n",
       "      else increment_log_prob(", add_weights, 
-      llh_pre[1], "_cdf_log(Y[n], ",llh_pre[2],")); \n",
+      llh_pre[1], "_cdf_log(Y[n], ", llh_pre[2],")); \n",
       "    } \n"),
     weights = paste0("  lp_pre[n] <- ", llh_pre[1], "_log(Y[n], ",
                      llh_pre[2],"); \n"),
-    general = paste0("  Y", n, " ~ ", llh_pre[1],"(",llh_pre[2],")", 
+    general = paste0("  Y", n, " ~ ", llh_pre[1],"(", llh_pre[2],")", 
                      code_trunc, "; \n")) 
+  # loop over likelihood if it cannot be vectorized
+  trait <- ifelse(is_multi || is_forked || is_categorical, "_trait", "")
+  if (weights || cens || is_trunc || is_ordinal || is_categorical || 
+      is_hurdle || is_zero_inflated) {
+    llh <- paste0("  for (n in 1:N", trait, ") { \n  ", llh, "  } \n")
+  }
   llh
 }
 

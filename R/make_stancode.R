@@ -56,7 +56,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   is_hurdle <- is.hurdle(family)
   is_zero_inflated <- is.zero_inflated(family)
   is_categorical <- is.categorical(family)
-  is_multi <- is_linear && length(ee$response) > 1
+  is_multi <- is_linear && length(ee$response) > 1L
   is_forked <- is.forked(family)
   has_sigma <- has_sigma(family, autocor = autocor, se = ee$se, 
                          is_multi = is_multi)
@@ -107,14 +107,8 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
                        cens = is.formula(ee$cens),
                        disp = is.formula(ee$disp),
                        trunc = trunc, autocor = autocor,
-                       cse = is.formula(ee$cse),
-                       is_multi = is_multi)
-  trait <- ifelse(is_multi || is_forked || is_categorical, "_trait", "")
-  if (is.formula(ee$cens) || is.formula(ee$weights) || is.formula(ee$trunc) ||
-      is_ordinal || is_categorical || is_hurdle || is_zero_inflated) {
-    text_llh <- paste0("  for (n in 1:N",trait,") { \n  ",text_llh,"  } \n")
-  }
-  
+                       cse = is.formula(ee$cse), 
+                       nresp = length(ee$response))
   # generate stan code specific to certain models
   text_arma <- stan_arma(family, autocor = autocor, prior = prior,
                          has_se = is.formula(ee$se), nonlinear = nonlinear,
@@ -174,6 +168,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   Kar <- get_ar(autocor)
   Kma <- get_ma(autocor)
   N_bin <- ifelse(is.formula(ee$trials), "[N]", "")
+  trait <- ifelse(is_multi || is_forked || is_categorical, "_trait", "")
   text_data <- paste0(
     "data { \n",
     "  int<lower=1> N;  // total number of observations \n", 
@@ -206,9 +201,9 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     if (is.formula(ee$se) && !use_cov(autocor))
       "  vector<lower=0>[N] se;  // SEs for meta-analysis \n",
     if (is.formula(ee$weights))
-      paste0("  vector<lower=0>[N",trait,"] weights;  // model weights \n"),
+      paste0("  vector<lower=0>[N", trait, "] weights;  // model weights \n"),
     if (is.formula(ee$cens))
-      paste0("  vector[N",trait,"] cens;  // indicates censoring \n"),
+      paste0("  vector[N", trait, "] cens;  // indicates censoring \n"),
     if (trunc$lb > -Inf)
       paste0("  ", ifelse(use_int(family), "int", "real"), " lb;",  
              "  // lower bound for truncation; \n"),
