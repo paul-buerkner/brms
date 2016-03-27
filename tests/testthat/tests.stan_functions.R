@@ -109,5 +109,9 @@ test_that("self-defined Stan functions work correctly", {
   
   # cauchit link
   expect_equal(inv_cauchit(1.5), pcauchy(1.5)) 
+  
+  # monotonous
+  expect_equal(monotonous(1:10, 4), sum(1:4))
+  expect_equal(monotonous(rnorm(5), 0), 0)
 })
 

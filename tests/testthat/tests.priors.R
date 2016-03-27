@@ -24,7 +24,12 @@ test_that("check_prior performs correct renaming", {
                                 formula = rating ~ carry, data = inhaler, 
                                 family = cumulative(),
                                 threshold = "equidistant")[4, ],
-                    prior_frame("normal(0,1)", class = "temp_Intercept1"))
+                    prior_frame("normal(0,1)", class = "temp_Intercept"))
+  
+  expect_equivalent(check_prior(set_prior("normal(0,2)", "b", coef = "Intercept"),
+                                formula = rating ~ carry, data = inhaler, 
+                                family = student())[6, ],
+                    prior_frame("normal(0,2)", class = "temp_Intercept"))
 })
 
 test_that("check_prior accepts correct prior names", {
