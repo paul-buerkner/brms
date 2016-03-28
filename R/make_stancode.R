@@ -159,6 +159,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
       text_ordinal$fun,
       text_zi_hu$fun,
       text_inv_gaussian$fun,
+      text_nonlinear$fun,
       stan_funs,
     "} \n")
   

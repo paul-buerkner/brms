@@ -25,7 +25,7 @@ stan_fixef <- function(fixef, intercepts = "Intercept",
       out$tdataD <- "  #include tdata_def_sparse_X.stan \n"
       out$tdataC <- "  #include tdata_calc_sparse_X.stan \n"
     }
-    bound <- with(prior, bound[class == "b" & coef == ""])
+    bound <- get_bound(prior, class = "b")
     out$par <- paste0(out$par,
       "  vector", bound, "[K] b;  // population-level effects \n") 
     fixef_prior <- stan_prior(class = "b", coef = fixef, prior = prior)
@@ -193,28 +193,33 @@ stan_ranef <- function(i, ranef, prior = prior_frame(),
   out
 }
 
-stan_monef <- function(monef, prior = prior_frame()) {
+stan_monef <- function(monef, prior = prior_frame(), nlpar = "") {
   # Stan code for monotonous effects
   # Args:
   #   csef: names of the monotonous effects
   #   prior: a data.frame containing user defined priors 
   #          as returned by check_prior
+  if (nchar(nlpar)) nlpar <- paste0("_", nlpar)
   out <- list()
   if (length(monef)) {
     I <- seq_along(monef)
     out$fun <- "  #include fun_monotonous.stan \n"
     out$data <- paste0(
-      "  int<lower=1> Km; \n",
-      "  int Xm[N, Km]; \n",
-      "  int<lower=2> Jm[Km]; \n",
-      collapse("  vector[Jm[", I, "]] con_simplex_", I, "; \n"))
-    bound <- with(prior, bound[class == "b" & coef == ""])
+      "  int<lower=1> Km", nlpar, "; \n",
+      "  int Xm", nlpar, "[N, Km", nlpar, "]; \n",
+      "  int<lower=2> Jm", nlpar, "[Km", nlpar, "]; \n",
+      collapse("  vector[Jm", nlpar, "[", I, "]]", 
+               " con_simplex", nlpar, "_", I, "; \n"))
+    bound <- get_bound(prior, class = "b", nlpar = nlpar)
     out$par <- paste0(
-      "  vector", bound, "[Km] bm; \n",
-      collapse("  simplex[Jm[", I, "]] simplex_", I, "; \n")) 
+      "  vector", bound, "[Km", nlpar, "] bm", nlpar, "; \n",
+      collapse("  simplex[Jm", nlpar, "[", I, "]]", 
+               " simplex", nlpar, "_", I, "; \n")) 
     out$prior <- paste0(
-      stan_prior(class = "b", coef = monef, prior = prior, suffix = "m"),
-      collapse("  simplex_", I, " ~ dirichlet(con_simplex_", I, "); \n"))
+      stan_prior(class = "b", coef = monef, prior = prior, 
+                 nlpar = nlpar, suffix = "m"),
+      collapse("  simplex", nlpar, "_", I, 
+               " ~ dirichlet(con_simplex", nlpar, "_", I, "); \n"))
   }
   out
 }
@@ -225,12 +230,13 @@ stan_csef <- function(csef, prior = prior_frame()) {
   #   csef: names of the category specific effects
   #   prior: a data.frame containing user defined priors 
   #          as returned by check_prior
+  # Not implemented for non-linear models
   out <- list()
   if (length(csef)) {
     out$data <- paste0(
       "  int<lower=1> Kp;  // number of category specific effects \n",
       "  matrix[N, Kp] Xp;  // CSE design matrix \n")
-    bound <- with(prior, bound[class == "b" & coef == ""])
+    bound <- get_bound(prior, class = "b")
     out$par <- paste0(
       "  matrix", bound, "[Kp, ncat - 1] bp;  // category specific effects \n")
     out$prior <- stan_prior(class = "b", coef = csef, prior = prior, 
@@ -501,50 +507,57 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
   out <- list()
   if (length(effects$nonlinear)) {
     for (i in seq_along(effects$nonlinear)) {
-      nlp <- names(effects$nonlinear)[i]
-      eta <- paste0("eta_", nlp)
+      nlpar <- names(effects$nonlinear)[i]
+      eta <- paste0("eta_", nlpar)
       out$transD <- paste0(out$transD, "  vector[N] ", eta, "; \n")
       out$data <- paste0(out$data, 
-        "  // data for non-linear effects of ", nlp, "\n")
+        "  // data for non-linear effects of ", nlpar, "\n")
       out$par <- paste0(out$par, 
-        "  // non-linear effects of ", nlp, "\n")
+        "  // non-linear effects of ", nlpar, "\n")
       # include fixed effects
       fixef <- colnames(get_model_matrix(effects$nonlinear[[i]]$fixed, data))
       if (length(fixef)) {
         out$data <- paste0(out$data, 
-          "  int<lower=1> K_", nlp, "; \n", 
-          "  matrix[N, K_", nlp, "] X_", nlp, "; \n")
-        bound <- with(prior, bound[class == "b" & coef == "" & nlpar == nlp])
+          "  int<lower=1> K_", nlpar, "; \n", 
+          "  matrix[N, K_", nlpar, "] X_", nlpar, "; \n")
+        bound <- get_bound(prior, class = "b", nlpar = nlpar)
         out$par <- paste0(out$par,
-         "  vector", bound, "[K_", nlp, "] b_", nlp, "; \n")
+         "  vector", bound, "[K_", nlpar, "] b_", nlpar, "; \n")
         out$transC1 <- paste0(out$transC1, 
-          "  ", eta, " <- X_", nlp, " * b_", nlp, "; \n")  
+          "  ", eta, " <- X_", nlpar, " * b_", nlpar, "; \n")  
         out$prior <- paste0(out$prior,
-          stan_prior(class = "b", coef = fixef, nlpar = nlp, 
-                     suffix = paste0("_", nlp), prior = prior))
+          stan_prior(class = "b", coef = fixef, nlpar = nlpar, 
+                     suffix = paste0("_", nlpar), prior = prior))
       } else {
         out$transC1 <- paste0(out$transC1, 
           "  ", eta, " <- rep_vector(0, N); \n")  
+      }
+      eta_loop <- ""
+      # include monotonous effects
+      monef <- colnames(get_model_matrix(effects$nonlinear[[i]]$mono, data))
+      if (length(monef)) {
+        text_monef <- stan_monef(monef, prior = prior, nlpar = nlpar)
+        if (length(out$fun) && grepl("#include fun_monotonous", out$fun)) {
+          text_monef$fun <- NULL
+        }
+        out <- collapse_lists(list(out, text_monef))
+        eta_loop <- paste0(eta_loop, stan_eta_monef(monef, nlpar = nlpar)) 
       }
       # include random effects
       ranef <- gather_ranef(effects$nonlinear[[i]], data = data)
       if (length(ranef)) {
         text_ranef <- lapply(seq_along(ranef), stan_ranef, ranef = ranef, 
                              names_cov_ranef = names(cov_ranef), 
-                             prior = prior, nlpar = nlp)
+                             prior = prior, nlpar = nlpar)
         text_ranef <- collapse_lists(text_ranef)
-        out$data <- paste0(out$data, text_ranef$data)
-        out$prior <- paste0(out$prior, text_ranef$prior)
-        out$par <- paste0(out$par, text_ranef$par)
-        out$transD <- paste0(out$transD, text_ranef$transD)
-        out$transC1 <- paste0(out$transC1, text_ranef$transC)
-        out$transC2 <- paste0(out$transC2, 
-          "    ", eta, "[n] <- ", eta, "[n]", 
-          stan_eta_ranef(ranef, nlpar = nlp), "; \n") 
-        out$genD <- paste0(out$genD, text_ranef$genD)
-        out$genC <- paste0(out$genC, text_ranef$genC)
+        names(text_ranef)[names(text_ranef) == "transC"] <- "transC1"
+        out <- collapse_lists(list(out, text_ranef))
+        eta_loop <- paste0(eta_loop, stan_eta_ranef(ranef, nlpar = nlpar)) 
       }
-      
+      if (nchar(eta_loop)) {
+        out$transC2 <- paste0(out$transC2,
+          "    ", eta, "[n] <- ", eta, "[n]", eta_loop, "; \n")
+      }
     }
     # prepare non-linear model of eta 
     nlpars <- wsp(names(effects$nonlinear))
@@ -1169,26 +1182,30 @@ stan_rngprior <- function(sample_prior, prior, par_declars = "",
                    paste0("(2,", substr(args, 2, nchar(args)-1), "[1,2];"), 
                    args)
     dis <- sub("corr_cholesky$", "corr", dis)
-    # special treatment of simplex parameters
-    which_simplex <- which(grepl("^simplex_", pars))
-    for (i in seq_along(which_simplex)) {
-      type[which_simplex[i]] <- paste0("vector[Jm[", i, "]]")
-    }
     
-    # extract possible boundaries
+    # extract information from the initial parameter definition
     par_declars <- unlist(strsplit(par_declars, "\n", fixed = TRUE))
-    par_declars <- par_declars[!grepl("^[[:blank:]]*//", par_declars)]
+    par_declars <- gsub("^[[:blank:]]*", "", par_declars)
+    par_declars <- par_declars[!grepl("//", par_declars)]
     all_pars <- get_matches(" [^[:blank:]]+;", par_declars) 
     all_pars <- substr(all_pars, 2, nchar(all_pars) - 1)
     all_bounds <- get_matches("<.+>", par_declars, simplify = FALSE)
     all_bounds <- ulapply(all_bounds, function(x) if (length(x)) x else "")
+    all_types <- get_matches("^[^[:blank:]]+", par_declars)
+    
+    # define parameter types and boundaries
     bounds <- rep("", length(pars))
+    types <- rep("real", length(pars))
     for (i in seq_along(all_pars)) {
       k <- which(grepl(paste0("^", all_pars[i]), pars))
       bounds[k] <- all_bounds[i]
+      if (grepl("^simplex", all_pars[i])) {
+        types[k] <- all_types[i]
+      }
     }
-    has_bounds <- as.logical(nchar(bounds))
+    
     # distinguish between bounded and unbounded parameters
+    has_bounds <- as.logical(nchar(bounds))
     if (any(has_bounds)) {  
       # bounded parameters have to be sampled in the model block
       out$par <- paste0("  // parameters to store prior samples \n",
@@ -1205,7 +1222,7 @@ stan_rngprior <- function(sample_prior, prior, par_declars = "",
         args[grepl("^b(m|p|_|$)", pars)] <- "(0, prior_hs_local * prior_hs_global);" 
       } 
       out$genD <- collapse(
-        "  ", type[no_bounds], " prior_", pars[no_bounds], "; \n")
+        "  ", types[no_bounds], " prior_", pars[no_bounds], "; \n")
       out$genC <- paste0(
         "  // additionally draw samples from priors \n",
         collapse("  prior_", pars[no_bounds], " <- ",
@@ -1271,11 +1288,13 @@ stan_eta_ranef <- function(ranef, nlpar = NULL) {
   eta_ranef
 }
 
-stan_eta_monef <- function(monef) {
+stan_eta_monef <- function(monef, nlpar = "") {
+  if (nchar(nlpar)) nlpar <- paste0("_", nlpar)
   eta_monef <- ""
   for (i in seq_along(monef)) {
     eta_monef <- paste0(eta_monef,
-      " + bm[", i, "] * monotonous(simplex_", i, ", Xm[n, ", i, "])")
+      " + bm", nlpar, "[", i, "] * monotonous(",
+      "simplex", nlpar, "_", i, ", Xm", nlpar, "[n, ", i, "])")
   }
   eta_monef
 }
