@@ -270,6 +270,7 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
                       "[-1,1] may not be appropriate."), call. = FALSE)
       }
     }
+    # don't put spaces in boundary declarations
     lb <- if (length(lb)) paste0("lower=", lb)
     ub <- if (length(ub)) paste0("upper=", ub)
     bound <- paste0("<", paste(c(lb, ub), collapse = ","), ">")
@@ -358,7 +359,6 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
                        coef = character(0), group = character(0),
                        nlpar = character(0), bound = character(0))
   if (length(nonlinear)) {
-    prior <- rbind(prior, prior_frame(class = "b"))
     for (i in seq_along(ee$nonlinear)) {
       fixef <- colnames(get_model_matrix(ee$nonlinear[[i]]$fixed, data = data))
       prior <- rbind(prior, prior_frame(class = "b", coef = c("", fixef), 
@@ -731,6 +731,20 @@ handle_special_priors <- function(prior) {
   # expand lkj correlation prior to full name
   prior$prior <- sub("^(lkj\\(|lkj_corr\\()", "lkj_corr_cholesky(", prior$prior)
   list(prior = prior, attrib = attrib)
+}
+
+get_bound <- function(prior, class = "b", coef = "", 
+                      group = "", nlpar = "") {
+  # extract the boundaries of a parameter described by class etc.
+  # Args:
+  #   prior: object of class prior_frame5
+  #   class, coef, group, nlpar: strings of length 1
+  take <- prior$class == class & prior$coef == coef & 
+          prior$group == group & prior$nlpar == nlpar
+  if (sum(take) > 1L) {
+    stop("extracted more than one boundary at once")
+  }
+  prior$bound[take]
 }
 
 prior_frame <- function(prior = "", class = "", coef = "", 
