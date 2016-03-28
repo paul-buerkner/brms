@@ -49,58 +49,24 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   sample_prior <- if (prior_only) FALSE else sample_prior
   data <- update_data(data, family = family, effects = ee, et$group)
   
-  # flags to indicate of which type family is
-  # see misc.R for details
-  is_linear <- is.linear(family)
-  is_ordinal <- is.ordinal(family)
-  is_skewed <- is.skewed(family)
-  is_count <- is.count(family)
-  is_hurdle <- is.hurdle(family)
-  is_zero_inflated <- is.zero_inflated(family)
+  # flags to indicate the family type
   is_categorical <- is.categorical(family)
-  is_multi <- is_linear && length(ee$response) > 1L
+  is_multi <- is.linear(family) && length(ee$response) > 1L
   is_forked <- is.forked(family)
   has_sigma <- has_sigma(family, autocor = autocor, se = ee$se, 
                          is_multi = is_multi)
   has_shape <- has_shape(family)
-  offset <- !is.null(model.offset(data)) 
-  trunc <- get_boundaries(ee$trunc)  
-  add <- is.formula(ee[c("weights", "cens", "trunc")])
+  trunc <- get_boundaries(ee$trunc)
   
-  ranef <- gather_ranef(ee, data = data, forked = is_forked)
+  intercepts <- names(get_intercepts(ee, family = family, data = data))
   if (length(nonlinear)) {
-    text_nonlinear <- stan_nonlinear(ee, data = data, family = family, 
-                                     add = add, cov_ranef = cov_ranef,
-                                     prior = prior, disp = is.formula(ee$disp))
-    # currently unused objects in non-linear models
-    text_fixef <- text_monef <- text_ranef <- text_csef <- 
-      text_eta <- intercepts <- NULL
+    text_pred <- stan_nonlinear(ee, data = data, family = family, 
+                                prior = prior, cov_ranef = cov_ranef)
   } else {
-    # generate fixed effects code
-    intercepts <- names(get_intercepts(ee, family = family, data = data))
-    fixef <- colnames(get_model_matrix(rhs(ee$fixed), data, forked = is_forked,
-                                       cols2remove = intercepts))
-    text_fixef <- stan_fixef(fixef = fixef, intercepts = intercepts, 
-                             family = family, prior = prior, 
-                             sparse = sparse, threshold = threshold)
-    # generate code for category specific effects
-    csef <- colnames(get_model_matrix(ee$cse, data))
-    text_csef <- stan_csef(csef = csef, prior = prior)
-    # generate code for monotonous effects
-    monef <- colnames(get_model_matrix(ee$mono, data))
-    text_monef <- stan_monef(monef, prior = prior)
-    # generate random effects code
-    # call stan_ranef for each random term seperately
-    text_ranef <- lapply(seq_along(ranef), stan_ranef, ranef = ranef, 
-                         names_cov_ranef = names(cov_ranef), prior = prior)
-    # combine random effects stan code of different grouping factors by names
-    text_ranef <- collapse_lists(text_ranef)
-    # generate stan code for the linear predictor
-    text_eta <- stan_eta(family = family, fixef = fixef, ranef = ranef,
-                         nint = length(intercepts), monef = monef, csef = csef, 
-                         autocor = autocor, offset = offset, sparse = sparse,
-                         add = add, disp = is.formula(ee$disp), is_multi = is_multi)
-    text_nonlinear <- list()
+    text_pred <- stan_linear(ee, data = data, family = family, 
+                             prior = prior, intercepts, autocor = autocor,
+                             threshold = threshold, sparse = sparse, 
+                             cov_ranef = cov_ranef)
   }
   # generate stan code for the likelihood
   text_llh <- stan_llh(family, se = is.formula(ee$se),  
@@ -116,26 +82,22 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
                          has_se = is.formula(ee$se), nonlinear = nonlinear,
                          has_disp = is.formula(ee$disp), is_multi = is_multi)
   text_multi <- stan_multi(family, response = ee$response, prior = prior)
-  text_ordinal <- stan_ordinal(family, prior = prior, cse = length(csef), 
+  text_ordinal <- stan_ordinal(family, prior = prior, cse = is.formula(ee$cse), 
                                threshold = threshold)
   text_categorical <- stan_categorical(family)
-  text_zi_hu <- stan_zero_inflated_hurdle(family)
-  text_2PL <- stan_2PL(family)
+  text_forked <- stan_forked(family)
   text_inv_gaussian <- stan_inv_gaussian(family, weights = is.formula(ee$weights),
                                          cens = is.formula(ee$cens),
                                          trunc = is.formula(ee$trunc))
   text_disp <- stan_disp(is.formula(ee$disp), family = family)
-  kronecker <- needs_kronecker(ranef, names_cov_ranef = names(cov_ranef))
+  ranef <- gather_ranef(ee, data = data, forked = is_forked)
+  kronecker <- stan_needs_kronecker(ranef, names_cov_ranef = names(cov_ranef))
   text_misc_funs <- stan_misc_functions(family = family, kronecker = kronecker)
     
   # get priors for all parameters in the model
   text_prior <- paste0(
-    text_fixef$prior,
-    text_monef$prior,
-    text_csef$prior,
+    text_pred$prior,
     text_ordinal$prior,
-    text_ranef$prior,
-    text_nonlinear$prior,
     text_arma$prior,
     text_multi$prior,
     if (has_sigma) 
@@ -154,12 +116,11 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     "// We recommend generating the data with the 'make_standata' function. \n",
     "functions { \n",
       text_misc_funs,
-      text_monef$fun,
+      text_pred$fun,
       text_arma$fun,
       text_ordinal$fun,
-      text_zi_hu$fun,
+      text_forked$fun,
       text_inv_gaussian$fun,
-      text_nonlinear$fun,
       stan_funs,
     "} \n")
   
@@ -176,27 +137,19 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     } else if (is_categorical) {
       text_categorical$data
     } else if (is_forked) {
-      paste0("  int<lower=1> N_trait;  // number of observation per trait \n",
-             "  ", ifelse(use_real(family), "real", "int"),
-             " Y[N_trait];  // response variable \n")
+      text_forked$data
     } else if (use_real(family)) {
       "  vector[N] Y;  // response variable \n"
     } else if (use_int(family)) {
       "  int Y[N];  // response variable \n"
     },
-    text_fixef$data,
-    text_monef$data,
-    text_csef$data,
-    text_ranef$data,
-    text_nonlinear$data,
+    text_pred$data,
     text_ordinal$data,
     text_arma$data,
     text_inv_gaussian$data,
     text_disp$data,
     if (has_trials(family))
       paste0("  int trials", N_bin, ";  // number of trials \n"),
-    if (offset)
-      "  vector[N] offset;  // added to the linear predictor \n",
     if (is.formula(ee$se) && !use_cov(autocor))
       "  vector<lower=0>[N] se;  // SEs for meta-analysis \n",
     if (is.formula(ee$weights))
@@ -216,21 +169,15 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   text_transformed_data <- paste0(
     "transformed data { \n",
        text_categorical$tdataD,
-       text_fixef$tdataD,
-       text_ranef$tdataD, 
+       text_pred$tdataD,
        text_categorical$tdataC,
-       text_fixef$tdataC,
-       text_ranef$tdataC,
+       text_pred$tdataC,
     "} \n")
   
   # generate parameters block
   text_parameters <- paste0(
-    text_fixef$par,
+    text_pred$par,
     text_ordinal$par,
-    text_monef$par,
-    text_csef$par,
-    text_ranef$par,
-    text_nonlinear$par,
     text_arma$par,
     text_multi$par,
     if (has_sigma)
@@ -240,11 +187,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     if (has_shape) 
       "  real<lower=0> shape;  // shape parameter \n",
     if (family$family %in% c("beta", "zero_inflated_beta")) 
-      "  real<lower=0> phi;  // precision parameter \n",
-    if (!is.null(attr(prior, "hs_df"))) 
-      paste0("  // horseshoe shrinkage parameters \n",
-             "  vector<lower=0>[K] hs_local; \n",
-             "  real<lower=0> hs_global; \n"))
+      "  real<lower=0> phi;  // precision parameter \n")
   # generate code to additionally sample from priors
   text_rngprior <- stan_rngprior(sample_prior = sample_prior, 
                                  par_declars = text_parameters,
@@ -260,7 +203,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   # loop over all observations in transformed parameters if necessary
   make_loop <- nrow(ee$random) || (Kar || Kma) && !use_cov(autocor) ||  
                length(intercepts) > 1L || length(ee$mono) ||
-               isTRUE(text_eta$transform) || length(nonlinear)
+               isTRUE(text_pred$transform) || length(nonlinear)
   if (make_loop && !is_multi) {
     text_loop <- c("  for (n in 1:N) { \n", "  } \n")
   } else if (is_multi) {
@@ -270,29 +213,24 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   }
   text_transformed_parameters <- paste0(
     "transformed parameters { \n",
-      text_eta$transD, 
-      text_nonlinear$transD,
+      text_pred$transD,
       text_disp$transD,
       text_arma$transD, 
       text_ordinal$transD,
       text_multi$transD,
-      text_2PL$transD,
-      text_ranef$transD, 
-      text_eta$transC1,
-      text_disp$transC,
+      text_forked$transD,
+      text_pred$transC1,
+      text_disp$transC1,
       text_arma$transC1, 
       text_ordinal$transC1, 
-      text_ranef$transC, 
-      text_nonlinear$transC1,
       text_loop[1],
-        text_eta$transC2, 
-        text_nonlinear$transC2,
+        text_pred$transC2, 
         text_arma$transC2, 
         text_ordinal$transC2, 
-        text_eta$transC3, 
+        text_pred$transC3,
       text_loop[2],
-      text_multi$transC,
-      text_2PL$transC,
+      text_multi$transC1,
+      text_forked$transC1,
     "} \n")
   
   # generate model block
@@ -315,15 +253,11 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   # generate generated quantities block
   text_generated_quantities <- paste0(
     "generated quantities { \n",
-      text_fixef$genD,
+      text_pred$genD,
       text_multi$genD, 
-      text_ranef$genD, 
-      text_nonlinear$genD,
       text_rngprior$genD,
-      text_fixef$genC,
+      text_pred$genC,
       text_multi$genC, 
-      text_ranef$genC, 
-      text_nonlinear$genC,
       text_rngprior$genC,
     "} \n")
 
