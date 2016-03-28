@@ -739,6 +739,10 @@ get_bound <- function(prior, class = "b", coef = "",
   # Args:
   #   prior: object of class prior_frame5
   #   class, coef, group, nlpar: strings of length 1
+  stopifnot(length(class) == 1L)
+  if (!length(coef)) coef <- ""
+  if (!length(group)) group <- ""
+  if (!length(nlpar)) nlpar <- ""
   take <- prior$class == class & prior$coef == coef & 
           prior$group == group & prior$nlpar == nlpar
   if (sum(take) > 1L) {
