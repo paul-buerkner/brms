@@ -431,78 +431,185 @@ arr_design_matrix <- function(Y, r, group)  {
   out
 }
 
-.addition <- function(formula, data = NULL) {
-  # computes data for addition arguments
-  if (!is.formula(formula))
-    formula <- as.formula(formula)
-  eval(formula[[2]], data, environment(formula))
-}
-
-.se <- function(x) {
-  # standard errors for meta-analysis
-  if (!is.numeric(x)) 
-    stop("SEs must be numeric")
-  if (min(x) < 0) 
-    stop("standard errors must be non-negative", call. = FALSE)
-  x  
-}
-
-.weights <- function(x) {
-  # weights to be applied on any model
-  if (!is.numeric(x)) 
-    stop("weights must be numeric")
-  if (min(x) < 0) 
-    stop("weights must be non-negative", call. = FALSE)
-  x
-}
-
-.disp <- function(x) {
-  # dispersion factors
-  if (!is.numeric(x)) 
-    stop("dispersion factors must be numeric")
-  if (min(x) < 0) 
-    stop("dispersion factors must be non-negative", call. = FALSE)
-  x  
-}
-
-.trials <- function(x) {
-  # trials for binomial models
-  if (any(!is.wholenumber(x) || x < 1))
-    stop("number of trials must be positive integers", call. = FALSE)
-  x
-}
-
-.cat <- function(x) {
-  # number of categories for categorical and ordinal models
-  if (any(!is.wholenumber(x) || x < 1))
-    stop("number of categories must be positive integers", call. = FALSE)
-  x
-}
-
-.cens <- function(x) {
-  # indicator for censoring
-  if (is.factor(x)) x <- as.character(x)
-  cens <- unname(sapply(x, function(x) {
-    if (grepl(paste0("^", x), "right") || isTRUE(x)) x <- 1
-    else if (grepl(paste0("^", x), "none") || isFALSE(x)) x <- 0
-    else if (grepl(paste0("^", x), "left")) x <- -1
-    else x
-  }))
-  if (!all(unique(cens) %in% c(-1:1)))
-    stop (paste0("Invalid censoring data. Accepted values are ", 
-                 "'left', 'none', and 'right' \n(abbreviations are allowed) ", 
-                 "or -1, 0, and 1. TRUE and FALSE are also accepted \n",
-                 "and refer to 'right' and 'none' respectively."),
-          call. = FALSE)
-  cens
-}
-
-.trunc <- function(lb = -Inf, ub = Inf) {
-  lb <- as.numeric(lb)
-  ub <- as.numeric(ub)
-  if (length(lb) != 1 || length(ub) != 1) {
-    stop("invalid truncation values", call. = FALSE)
+data_fixef <- function(effects, data, family = gaussian(),
+                       nlpar = "", not4stan = FALSE) {
+  # prepare data for fixed effects for use in Stan 
+  # Args:
+  #   effects: a list returned by extract_effects
+  #   data: the data passed by the user
+  #   family: the model family
+  #   nlpar: optional character string naming a non-linear parameter
+  #   not4stan: is the data for use in S3 methods only?
+  stopifnot(length(nlpar) == 1L)
+  p <- if (nchar(nlpar)) paste0("_", nlpar) else ""
+  out <- list()
+  if (not4stan && !is.ordinal(family) || nchar(nlpar)) {
+    intercepts <- NULL  # don't remove any intercept columns
+  } else {
+    intercepts <- get_intercepts(effects, data = data, family = family)  
   }
-  nlist(lb, ub)
+  X <- get_model_matrix(rhs(effects$fixed), data, 
+                        forked = is.forked(family),
+                        cols2remove = names(intercepts))
+  out[[paste0("K", p)]] <- ncol(X)
+  if (length(intercepts)) {
+    if (length(intercepts) == 1L) {
+      X_means <- colMeans(X)
+      X <- sweep(X, 2L, X_means, FUN = "-")
+    } else {
+      # multiple intercepts for 'multivariate' models
+      X_means <- matrix(0, nrow = length(intercepts), ncol = ncol(X))
+      for (i in seq_along(intercepts)) {
+        X_part <- X[intercepts[[i]], , drop = FALSE]
+        X_means[i, ] <- colMeans(X_part)
+        X[intercepts[[i]], ] <- sweep(X_part, 2L, X_means[i, ], FUN = "-")
+      }
+      out[[paste0("nint", p)]] <- length(intercepts)
+      out[[paste0("Jint", p)]] <- attr(intercepts, "Jint")
+    }
+    out[[paste0("X_means", p)]] <- as.array(X_means)
+  }
+  out[[paste0("X", p)]] <- X
+  out
 }
-  
+
+data_monef <- function(effects, data, prior = prior_frame(), 
+                       nlpar = "", Jm = NULL) {
+  # prepare data for monotonous effects for use in Stan 
+  # Args:
+  #   effects: a list returned by extract_effects
+  #   data: the data passed by the user
+  #   prior: an object of class prior_frame
+  #   nlpar: optional character string naming a non-linear parameter
+  #   Jm: optional precomputed values of Jm
+  stopifnot(length(nlpar) == 1L)
+  p <- if (nchar(nlpar)) paste0("_", nlpar) else ""
+  out <- list()
+  if (is.formula(effects$mono)) {
+    mmf <- model.frame(effects$mono, data)
+    mmf <- prepare_mono_vars(mmf, names(mmf), check = is.null(Jm))
+    Xm <- get_model_matrix(effects$mono, mmf)
+    if (is.null(Jm)) {
+      Jm <- as.array(apply(Xm, 2, max))
+    }
+    out <- c(out, setNames(list(ncol(Xm), Xm, Jm), 
+                           paste0(c("Km", "Xm", "Jm"), p)))
+    # validate and assign vectors for dirichlet prior
+    monef <- colnames(Xm)
+    for (i in seq_along(monef)) {
+      take <- prior$class == "simplex" & coef == prior$monef[i] & 
+              prior$nlpar == nlpar  
+      #take <- with(prior, class == "simplex" & coef == monef[i] & nlpar )
+      sprior <- paste0(".", prior$prior[take])
+      if (nchar(sprior) > 1L) {
+        sprior <- as.numeric(eval(parse(text = sprior)))
+        if (length(sprior) != Jm[i]) {
+          stop(paste0("Invalid dirichlet prior for the simplex of ", 
+                      monef[i], ". Expected input of length ", Jm[i], 
+                      " but found ", paste(sprior, collapse = ",")),
+               call. = FALSE)
+        }
+        out[[paste0("con_simplex", p, "_", i)]] <- sprior
+      } else {
+        out[[paste0("con_simplex", p, "_", i)]] <- rep(1, Jm[i]) 
+      }
+    }
+  }
+  out
+}
+
+data_csef <- function(effects, data) {
+  # prepare data for fixed effects for use in Stan 
+  # Args:
+  #   effects: a list returned by extract_effects
+  #   data: the data passed by the user
+  out <- list()
+  if (is.formula(effects$cse)) {
+    Xp <- get_model_matrix(effects$cse, data)
+    out <- c(out, list(Kp = ncol(Xp), Xp = Xp))
+  }
+  out
+}
+
+data_ranef <- function(effects, data, family = gaussian(),
+                       nlpar = "", cov_ranef = NULL,
+                       is_newdata = FALSE, not4stan = FALSE) {
+  # prepare data for random effects for use in Stan 
+  # Args:
+  #   effects: a list returned by extract_effects
+  #   data: the data passed by the user
+  #   family: the model family
+  #   nlpar: optional character string naming a non-linear parameter
+  #   cov_ranef: name list of user-defined covariance matrices
+  #   is_newdata: was new data passed to the 'data' argument?
+  #   not4stan: is the data for use in S3 methods only?
+  stopifnot(length(nlpar) == 1L)
+  out <- list()
+  random <- effects$random
+  if (nrow(random)) {
+    Z <- lapply(random$form, get_model_matrix, data = data, 
+                forked = is.forked(family))
+    r <- lapply(Z, colnames)
+    ncolZ <- lapply(Z, ncol)
+    # numeric levels passed to Stan
+    expr <- expression(as.numeric(as.factor(get(g, data))), 
+                       length(unique(get(g, data))), # number of levels 
+                       ncolZ[[i]],  # number of random effects
+                       ncolZ[[i]] * (ncolZ[[i]] - 1) / 2)  # number of correlations
+    if (is_newdata) {
+      # for newdata only as levels are already defined in amend_newdata
+      expr[1] <- expression(get(g, data)) 
+    }
+    for (i in 1:nrow(random)) {
+      g <- random$group[[i]]
+      p <- if (nchar(nlpar)) paste0(nlpar, "_", i) else i
+      name <- paste0(c("J_", "N_", "K_", "NC_"), p)
+      for (j in 1:length(name)) {
+        out <- c(out, setNames(list(eval(expr[j])), name[j]))
+      }
+      Zname <- paste0("Z_", p)
+      if (isTRUE(not4stan)) {
+        # for internal use in S3 methods
+        if (ncolZ[[i]] == 1L) {
+          Z[[i]] <- as.vector(Z[[i]])
+        }
+        out <- c(out, setNames(Z[i], Zname))
+      } else {
+        if (ncolZ[[i]] > 1L) {
+          Zname <- paste0(Zname, "_", 1:ncolZ[[i]])
+        }
+        for (j in 1:ncolZ[[i]]) {
+          out <- c(out, setNames(list(Z[[i]][, j]), Zname[j]))
+        }
+      }
+      if (g %in% names(cov_ranef)) {
+        cov_mat <- as.matrix(cov_ranef[[g]])
+        if (!isSymmetric(unname(cov_mat))) {
+          stop(paste("covariance matrix of grouping factor", g, 
+                     "is not symmetric"), call. = FALSE)
+        }
+        found_level_names <- rownames(cov_mat)
+        if (is.null(found_level_names)) {
+          stop(paste("rownames are required for covariance matrix of", g),
+               call. = FALSE)
+        }
+        colnames(cov_mat) <- found_level_names
+        true_level_names <- levels(as.factor(get(g, data)))
+        found <- true_level_names %in% found_level_names
+        if (any(!found)) {
+          stop(paste("rownames of covariance matrix of", g, 
+                     "do not match names of the grouping levels"),
+               call. = FALSE)
+        }
+        cov_mat <- cov_mat[true_level_names, true_level_names, drop = FALSE]
+        if (min(eigen(cov_mat, symmetric = TRUE, 
+                      only.values = TRUE)$values) <= 0) {
+          warning(paste("covariance matrix of grouping factor", g, 
+                        "may not be positive definite"), call. = FALSE)
+        }
+        out <- c(out, setNames(list(t(chol(cov_mat))), paste0("Lcov_", p)))
+      }
+    }
+  }
+  out
+}

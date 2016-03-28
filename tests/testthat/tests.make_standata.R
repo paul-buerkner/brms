@@ -303,13 +303,15 @@ test_that("brmdata is backwards compatible", {
 })
 
 test_that("make_standata correctly prepares data for non-linear models", {
-  nonlinear <- list(a ~ x + (1|g), b ~ z + (1|g))
-  data <- data.frame(y = rnorm(9), x = rnorm(9), z = rnorm(9), g = rep(1:3, 3))
+  nonlinear <- list(a ~ x + (1|g), b ~ monotonous(z) + (1|g))
+  data <- data.frame(y = rnorm(9), x = rnorm(9), z = sample(1:4, 9, TRUE), 
+                     g = rep(1:3, 3))
   standata <- make_standata(y ~ a - b^z, data = data, nonlinear = nonlinear)
-  expect_equal(names(standata), c("N", "Y", "K_a", "X_a", "K_b", "X_b", "KC", "C", 
-                                  "J_a_1", "N_a_1", "K_a_1", "NC_a_1", "Z_a_1",
-                                  "J_b_1", "N_b_1", "K_b_1", "NC_b_1", "Z_b_1",
-                                  "prior_only"))
+  expect_equal(names(standata), c("N", "Y", "KC", "C", "K_a", "X_a", "J_a_1", 
+                                  "N_a_1", "K_a_1", "NC_a_1", "Z_a_1","K_b", 
+                                  "X_b", "Km_b", "Xm_b", "Jm_b", 
+                                  "con_simplex_b_1", "J_b_1", "N_b_1",
+                                  "K_b_1", "NC_b_1", "Z_b_1", "prior_only"))
   expect_equal(colnames(standata$X_a), c("Intercept", "x"))
   expect_equal(colnames(standata$C), "z")
   expect_equal(standata$J_b_1, data$g)

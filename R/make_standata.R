@@ -145,162 +145,42 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       }
     }
   }
-  
-  # add an offset if present
-  model_offset <- model.offset(data)
-  if (!is.null(model_offset)) {
-    standata$offset <- model_offset
-  }
-  # data for fixed effects
+  # data for various kinds of effects
   if (length(nonlinear)) {
-    # fixed effects design matrices
     nlpars <- names(ee$nonlinear)
-    fixed_list <- lapply(ee$nonlinear, function(par) par$fixed)
-    X <- lapply(fixed_list, get_model_matrix, data = data)
-    for (i in seq_along(nlpars)) {
-      standata <- c(standata, setNames(list(ncol(X[[i]]), X[[i]]),
-                                       paste0(c("K_", "X_"), nlpars[i])))
-    }
-    # matrix of covariances
+    # matrix of covariates appearing in the non-linear formula
     C <- get_model_matrix(ee$covars, data = data)
     if (length(all.vars(ee$covars)) != ncol(C)) {
       stop("Factors with more than two levels are not allowed as covariates",
            call. = FALSE)
     }
     standata <- c(standata, list(KC = ncol(C), C = C)) 
+    for (i in seq_along(nlpars)) {
+      data_fixef <- data_fixef(ee$nonlinear[[i]], data = data, 
+                               family = family, nlpar = nlpars[i],
+                               not4stan = isTRUE(control$not4stan))
+      data_monef <- data_monef(ee$nonlinear[[i]], data = data, prior = prior, 
+                               Jm = control[[paste0("Jm_", nlpars[i])]],
+                               nlpar = nlpars[i])
+      data_ranef <- data_ranef(ee$nonlinear[[i]], data = data, 
+                               family = family, cov_ranef = cov_ranef,
+                               is_newdata = isTRUE(control$is_newdata),
+                               not4stan = isTRUE(control$not4stan),
+                               nlpar = nlpars[i])
+      standata <- c(standata, data_fixef, data_monef, data_ranef)
+    }
   } else {
-    if (isTRUE(control$not4stan) && !is_ordinal) {
-      intercepts <- NULL  # don't remove any intercept columns
-    } else {
-      intercepts <- get_intercepts(ee, data = data, family = family)  
-    }
-    X <- get_model_matrix(rhs(ee$fixed), data, forked = is_forked,
-                          cols2remove = names(intercepts))
-    standata$K <- ncol(X)
-    if (length(intercepts)) {
-      if (length(intercepts) == 1L) {
-        X_means <- colMeans(X)
-        X <- sweep(X, 2L, X_means, FUN = "-")
-      } else {
-        # multiple intercepts for 'multivariate' models
-        X_means <- matrix(0, nrow = length(intercepts), ncol = ncol(X))
-        for (i in seq_along(intercepts)) {
-          X_part <- X[intercepts[[i]], , drop = FALSE]
-          X_means[i, ] <- colMeans(X_part)
-          X[intercepts[[i]], ] <- sweep(X_part, 2L, X_means[i, ], FUN = "-")
-        }
-        standata$nint <- length(intercepts)
-        standata$Jint <- attr(intercepts, "Jint")
-      }
-      standata$X_means <- as.array(X_means)
-    }
-    standata$X <- X
-  }
-  # data for random effects
-  random <- get_random(ee)
-  if (nrow(random)) {
-    Z <- lapply(random$form, get_model_matrix, 
-                data = data, forked = is_forked)
-    r <- lapply(Z, colnames)
-    ncolZ <- lapply(Z, ncol)
-    # numeric levels passed to Stan
-    expr <- expression(as.numeric(as.factor(get(g, data))), 
-                       length(unique(get(g, data))), # number of levels 
-                       ncolZ[[i]],  # number of random effects
-                       ncolZ[[i]] * (ncolZ[[i]] - 1) / 2)  # number of correlations
-    if (isTRUE(control$is_newdata)) {
-      # for newdata only as levels are already defined in amend_newdata
-      expr[1] <- expression(get(g, data)) 
-    }
-    for (i in 1:nrow(random)) {
-      g <- random$group[[i]]
-      if (length(nonlinear)) {
-        # REs have to be prepared separately for each non-linear parameter
-        pi <- paste0(random$nlpar[i], "_", get_re_index(i, random))
-      } else pi <- i 
-      name <- paste0(c("J_", "N_", "K_", "NC_"), pi)
-      for (j in 1:length(name)) {
-        standata <- c(standata, setNames(list(eval(expr[j])), name[j]))
-      }
-      Zname <- paste0("Z_", pi)
-      if (isTRUE(control$not4stan)) {
-        # for internal use in S3 methods
-        if (ncolZ[[i]] == 1L) {
-          Z[[i]] <- as.vector(Z[[i]])
-        }
-        standata <- c(standata, setNames(Z[i], Zname))
-      } else {
-        if (ncolZ[[i]] > 1L) {
-          Zname <- paste0(Zname, "_", 1:ncolZ[[i]])
-        }
-        for (j in 1:ncolZ[[i]]) {
-          standata <- c(standata, setNames(list(Z[[i]][, j]), Zname[j]))
-        }
-      }
-      if (g %in% names(cov_ranef)) {
-        cov_mat <- as.matrix(cov_ranef[[g]])
-        if (!isSymmetric(unname(cov_mat))) {
-          stop(paste("covariance matrix of grouping factor", g, 
-                     "is not symmetric"), call. = FALSE)
-        }
-        found_level_names <- rownames(cov_mat)
-        if (is.null(found_level_names)) {
-          stop(paste("rownames are required for covariance matrix of", g),
-               call. = FALSE)
-        }
-        colnames(cov_mat) <- found_level_names
-        true_level_names <- levels(as.factor(get(g, data)))
-        found <- true_level_names %in% found_level_names
-        if (any(!found)) {
-          stop(paste("rownames of covariance matrix of", g, 
-                     "do not match names of the grouping levels"),
-               call. = FALSE)
-        }
-        cov_mat <- cov_mat[true_level_names, true_level_names, drop = FALSE]
-        if (min(eigen(cov_mat, symmetric = TRUE, 
-                      only.values = TRUE)$values) <= 0) {
-          warning(paste("covariance matrix of grouping factor", g, 
-                        "may not be positive definite"), call. = FALSE)
-        }
-        standata <- c(standata, setNames(list(t(chol(cov_mat))), 
-                                         paste0("Lcov_",i)))
-      }
-    }
-  }
-  # data for monotonous effects
-  if (is.formula(ee$mono)) {
-    mmf <- model.frame(ee$mono, data)
-    mmf <- prepare_mono_vars(mmf, names(mmf), check = is.null(control$Jm))
-    Xm <- get_model_matrix(ee$mono, mmf)
-    if (!is.null(control$Jm)) {
-      Jm <- control$Jm
-    } else {
-      Jm <- as.array(apply(Xm, 2, max))
-    }
-    standata <- c(standata, nlist(Km = ncol(Xm), Xm, Jm))
-    # validate and assign vectors for dirichlet prior
-    monef <- colnames(Xm)
-    for (i in seq_along(monef)) {
-      take <- with(prior, class == "simplex" & coef == monef[i])
-      sprior <- paste0(".", prior$prior[take])
-      if (nchar(sprior) > 1L) {
-        sprior <- as.numeric(eval(parse(text = sprior)))
-        if (length(sprior) != Jm[i]) {
-          stop(paste0("Invalid dirichlet prior for the simplex of ", 
-                      monef[i], ". Expected input of length ", Jm[i], 
-                      " but found ", paste(sprior, collapse = ",")),
-               call. = FALSE)
-        }
-        standata[[paste0("con_simplex_", i)]] <- sprior
-      } else {
-        standata[[paste0("con_simplex_", i)]] <- rep(1, Jm[i]) 
-      }
-    }
-  }
-  # data for category specific effects
-  if (is.formula(ee$cse)) {
-    Xp <- get_model_matrix(ee$cse, data)
-    standata <- c(standata, list(Kp = ncol(Xp), Xp = Xp))
+    data_fixef <- data_fixef(ee, data = data, family = family, 
+                             not4stan = isTRUE(control$not4stan))
+    data_monef <- data_monef(ee, data = data, prior = prior, Jm = control$Jm)
+    data_csef <- data_csef(ee, data = data)
+    data_ranef <- data_ranef(ee, data = data, family = family, 
+                             cov_ranef = cov_ranef,
+                             is_newdata = isTRUE(control$is_newdata),
+                             not4stan = isTRUE(control$not4stan))
+    standata <- c(standata, data_fixef, data_monef, data_csef, data_ranef)
+    # offsets are not yet implemented for non-linear models
+    standata$offset <- model.offset(data)
   }
   # data for specific families
   if (has_trials(family)) {

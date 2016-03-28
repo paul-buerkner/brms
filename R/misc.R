@@ -214,6 +214,81 @@ use_alias <- function(arg, alias = NULL, warn = TRUE) {
   arg
 }
 
+.addition <- function(formula, data = NULL) {
+  # computes data for addition arguments
+  if (!is.formula(formula))
+    formula <- as.formula(formula)
+  eval(formula[[2]], data, environment(formula))
+}
+
+.se <- function(x) {
+  # standard errors for meta-analysis
+  if (!is.numeric(x)) 
+    stop("SEs must be numeric")
+  if (min(x) < 0) 
+    stop("standard errors must be non-negative", call. = FALSE)
+  x  
+}
+
+.weights <- function(x) {
+  # weights to be applied on any model
+  if (!is.numeric(x)) 
+    stop("weights must be numeric")
+  if (min(x) < 0) 
+    stop("weights must be non-negative", call. = FALSE)
+  x
+}
+
+.disp <- function(x) {
+  # dispersion factors
+  if (!is.numeric(x)) 
+    stop("dispersion factors must be numeric")
+  if (min(x) < 0) 
+    stop("dispersion factors must be non-negative", call. = FALSE)
+  x  
+}
+
+.trials <- function(x) {
+  # trials for binomial models
+  if (any(!is.wholenumber(x) || x < 1))
+    stop("number of trials must be positive integers", call. = FALSE)
+  x
+}
+
+.cat <- function(x) {
+  # number of categories for categorical and ordinal models
+  if (any(!is.wholenumber(x) || x < 1))
+    stop("number of categories must be positive integers", call. = FALSE)
+  x
+}
+
+.cens <- function(x) {
+  # indicator for censoring
+  if (is.factor(x)) x <- as.character(x)
+  cens <- unname(sapply(x, function(x) {
+    if (grepl(paste0("^", x), "right") || isTRUE(x)) x <- 1
+    else if (grepl(paste0("^", x), "none") || isFALSE(x)) x <- 0
+    else if (grepl(paste0("^", x), "left")) x <- -1
+    else x
+  }))
+  if (!all(unique(cens) %in% c(-1:1)))
+    stop (paste0("Invalid censoring data. Accepted values are ", 
+                 "'left', 'none', and 'right' \n(abbreviations are allowed) ", 
+                 "or -1, 0, and 1. TRUE and FALSE are also accepted \n",
+                 "and refer to 'right' and 'none' respectively."),
+          call. = FALSE)
+  cens
+}
+
+.trunc <- function(lb = -Inf, ub = Inf) {
+  lb <- as.numeric(lb)
+  ub <- as.numeric(ub)
+  if (length(lb) != 1 || length(ub) != 1) {
+    stop("invalid truncation values", call. = FALSE)
+  }
+  nlist(lb, ub)
+}
+
 # startup messages for brms
 .onAttach <- function(libname, pkgname) {
   packageStartupMessage(paste0(
