@@ -88,7 +88,8 @@ bernoulli <- function(link = "logit", type = NULL) {
     type <- match.arg(type, choices = "2PL")
     okLinks <- "logit"
   } else {
-    okLinks <- c("logit", "probit", "probit_approx", "cloglog", "cauchit")
+    okLinks <- c("logit", "probit", "probit_approx", 
+                 "cloglog", "cauchit", "identity")
   }
   if (!linktemp %in% okLinks && is.character(link)) {
     linktemp <- link
@@ -187,7 +188,8 @@ Beta <- function(link = "logit") {
   if (!is.character(linktemp)) {
     linktemp <- deparse(linktemp)
   } 
-  okLinks <- c("logit", "probit", "probit_approx", "cloglog", "cauchit")
+  okLinks <- c("logit", "probit", "probit_approx", "cloglog", 
+               "cauchit", "identity")
   if (!linktemp %in% okLinks && is.character(link)) {
     linktemp <- link
   }
@@ -464,9 +466,11 @@ family.character <- function(object, link = NA, type = NULL, ...) {
     okLinks <- c("1/mu^2", "inverse", "identity", "log")
   } else if (is.count(family)) {
     okLinks <- c("log", "identity", "sqrt")
-  } else if (is.binary(family) || is.ordinal(family) || 
-             family %in% c("beta", "zero_inflated_beta")) {
+  } else if (is.ordinal(family) || family %in% "zero_inflated_beta") {
     okLinks <- c("logit", "probit", "probit_approx", "cloglog", "cauchit")
+  } else if (is.binary(family) || family %in% "beta") {
+    okLinks <- c("logit", "probit", "probit_approx", 
+                 "cloglog", "cauchit", "identity")
   } else if (family %in% c("categorical", "zero_inflated_binomial")) {
     okLinks <- c("logit")
   } else if (is.skewed(family)) {
