@@ -2,7 +2,7 @@
 % Please edit documentation in R/brm.R
 \name{brm}
 \alias{brm}
-\title{Fit Bayesian Generalized (Non-)Linear and Ordinal Mixed Models}
+\title{Fit Bayesian Generalized (Non-)Linear Multilevel Models}
 \usage{
 brm(formula, data = NULL, family = gaussian(), prior = NULL,
   autocor = NULL, nonlinear = NULL, partial = NULL,
@@ -194,23 +194,24 @@ An object of class \code{brmsfit}, which contains the posterior samples along
   Use \code{methods(class = "brmsfit")} for an overview on available methods.
 }
 \description{
-Fit a Bayesian generalized (non-)linear or ordinal mixed model using Stan
+Fit a Bayesian generalized (non-)linear Multilevel model using Stan
 }
 \details{
-Fit a generalized linear mixed model, 
-  which incorporates both fixed-effects parameters 
-  and random effects in a linear predictor 
-  via full bayesian inference using Stan. 
+Fit a generalized (non-)linear multilevel model, 
+  which incorporates both population-level parameters 
+  (also known as fixed-effects) and group-level parameters
+  (also known as random effects) in a (non-)linear predictor 
+  via full Bayesian inference using Stan. 
   
-  \bold{Formula syntax for generalized linear mixed models}
+  \bold{Formula syntax for multilevel models}
   
   The \code{formula} argument accepts formulas of the following syntax: 
   
   \code{response | addition ~ fixed + (random | group)} 
   
-  Multiple grouping factors each with multiple random effects are possible. 
-  Instead of | you may use || in random effects terms
-  to prevent random effects correlations from being modeled.
+  Multiple grouping factors each with multiple group-specific effects 
+  are possible. Instead of | you may use || in grouping terms
+  to prevent correlations from being modeled.
   With the exception of \code{addition}, this is basically \code{lme4} syntax. 
   The optional \code{addition} term may contain multiple terms of the form \code{fun(variable)} 
   seperated by \code{+} each providing special information on the response variable. 
@@ -313,13 +314,14 @@ Fit a generalized linear mixed model,
   as the second response variable used for the zero-inflation / hurdle
   (ZIH) part is internally generated.
   A \code{formula} for this type of models may, for instance, look like this: \cr
-  \code{y ~ 0 + trait + trait:(x1 + x2) + (0 + trait | g)}. In this example, the fixed effects
-  \code{x1} and \code{x1} influence the ZIH part differently
-  than the actual response part as indicated by their interaction with \code{trait}.
-  In addition, a random effect of \code{trait} was added while the random intercept 
-  was removed leading to the estimation of two random effects, 
-  one for the ZIH part and one for the actual response. 
-  In the example above, the correlation between the two random effects 
+  \code{y ~ 0 + trait + trait:(x1 + x2) + (0 + trait | g)}. 
+  In this example, the predictors \code{x1} and \code{x1} influence the ZIH part 
+  differentlythan the actual response part as indicated by their 
+  interaction with \code{trait}.
+  In addition, a group-specific effect of \code{trait} was added while 
+  the group-specific intercept was removed leading to the estimation of 
+  two effects, one for the ZIH part and one for the actual response. 
+  In the example above, the correlation between the two effects
   will also be estimated.
   Sometimes, predictors should only influence the ZIH part
   but not the actual response (or vice versa). As this cannot be modeled
@@ -353,10 +355,10 @@ Fit a generalized linear mixed model,
   on fixed effects in this case to increase sampling efficiency 
   (for details on priors see \code{\link[brms:set_prior]{set_prior}}).     
   
-  \bold{Parameterization of the fixed effects intercept}
+  \bold{Parameterization of the population-level intercept}
   
-  The fixed effects intercept (if incorporated) is estimated separately 
-  and not as part of the fixed effects parameter vector \code{b}. 
+  The population-level intercept (if incorporated) is estimated separately 
+  and not as part of population-level parameter vector \code{b}. 
   This has the side effect that priors on the intercept 
   also have to be specified separately
   (see \code{\link[brms:set_prior]{set_prior}} for more details).
@@ -379,7 +381,7 @@ Fit a generalized linear mixed model,
   Note that this parameterization may be a bit less efficient
   than the default parameterization discussed above.  
   
-  \bold{Formula syntax for non-linear mixed models}
+  \bold{Formula syntax for non-linear multilevel models}
   
   Using the \code{nonlinear} argument, it is possible to specify
   non-linear models in \pkg{brms}. Contrary to what the name might suggest,
@@ -396,13 +398,13 @@ Fit a generalized linear mixed model,
   Now we have to tell \pkg{brms} the names of the non-linear parameters 
   and specfiy a (linear mixed) model for each of them using the \code{nonlinear}
   argument. Let's say we just want to estimate those three parameters
-  with not further covariates or random effects. Then we can write
+  with no further covariates or random effects. Then we can write
   \code{nonlinear = alpha + beta + lambda ~ 1} or equivalently
   (and more flexible) \code{nonlinear = list(alpha ~ 1, beta ~ 1, lambda ~ 1)}. 
   This can, of course, be extended. If we have another predictor \code{z} and 
   observations nested within the grouping factor \code{g}, we may write for 
   instance \code{nonlinear = list(alpha ~ 1, beta ~ 1 + z + (1|g), lambda ~ 1)}.
-  The formula syntax of fixed and random effects described above applies here as well.
+  The formula syntax described above applies here as well.
   In this example, we are using \code{z} and \code{g} only for the 
   prediction of \code{beta}, but we might also use them for the other
   non-linear parameters (provided that the resulting model is still 
@@ -507,8 +509,8 @@ Fit a generalized linear mixed model,
 \examples{
 \dontrun{ 
 ## Poisson regression for the number of seizures in epileptic patients
-## using student_t priors for fixed effects 
-## and half cauchy priors for standard deviations of random effects 
+## using student_t priors for population-level effects 
+## and half cauchy priors for standard deviations of group-level effects 
 fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt_c 
             + (1|patient) + (1|visit) + (1|obs), 
             data = epilepsy, family = poisson(), 
