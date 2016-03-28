@@ -237,17 +237,24 @@ nonlinear_effects <- function(x, model = ~ 1) {
     nleffects <- vector("list", length = length(x))
     for (i in seq_along(x)) {
       if (!is(x[[i]], "formula")) {
-        stop("Argument 'nonlinear' must be a list of formulas.")
+        stop("Argument 'nonlinear' must be a list of formulas.",
+             call. = FALSE)
       }
       if (length(x[[i]]) != 3) {
-        stop("Non-linear formulas must be two-sided.")
+        stop("Non-linear formulas must be two-sided.", call. = FALSE)
       }
       nlresp <- all.vars(x[[i]][[2]])
       if (length(nlresp) != 1) {
-        stop("LHS of non-linear formula must contain exactly one variable.")
+        stop("LHS of non-linear formula must contain exactly one variable.",
+             call. = FALSE)
       }
       if (any(ulapply(c(".", "_"), grepl, x = nlresp, fixed = TRUE))) {
-        stop("Non-linear parameters should not contain dots or underscores.")
+        stop("Non-linear parameters should not contain dots or underscores.",
+             call. = FALSE)
+      }
+      if (!is.null(attr(terms(x[[i]]), "offset"))) {
+        stop("Offsets are currently not allowed in non-linear models.",
+             call. = FALSE)
       }
       x[[i]] <- rhs(x[[i]])
       nleffects[[i]] <- extract_effects(x[[i]], check_response = FALSE)
