@@ -323,27 +323,31 @@ get_model_matrix <- function(formula, data = environment(formula),
 }
 
 get_intercepts <- function(effects, data, family = gaussian()) {
-  terms <- terms(rhs(effects$fixed))
+  # create a named list with one element per intercept
+  # each containing observation numbers corresponding to it
   if (length(effects$nonlinear)) {
     int_names <- NULL
-  } else if (is.mv(family, response = effects$response)) {
-    term_labels <- attr(terms, "term.labels")
-    if (attr(terms, "intercept")) {
-      int_names <- "Intercept"
+  } else {
+    terms <- terms(rhs(effects$fixed))
+    if (is.mv(family, response = effects$response)) {
+      term_labels <- attr(terms, "term.labels")
+      if (attr(terms, "intercept")) {
+        int_names <- "Intercept"
+      } else {
+        if ("trait" %in% term_labels) {
+          int_names <- paste0("trait", levels(data$trait))
+        } else if (is.forked(family) && all(c("main", "spec") %in% term_labels)) {
+          int_names <- c("main", "spec")
+        } else {
+          int_names <- NULL
+        }
+      }
     } else {
-      if ("trait" %in% term_labels) {
-        int_names <- paste0("trait", levels(data$trait))
-      } else if (is.forked(family) && all(c("main", "spec") %in% term_labels)) {
-        int_names <- c("main", "spec")
+      if (attr(terms, "intercept")) {
+        int_names <- "Intercept"
       } else {
         int_names <- NULL
       }
-    }
-  } else {
-    if (attr(terms, "intercept")) {
-      int_names <- "Intercept"
-    } else {
-      int_names <- NULL
     }
   }
   if (length(int_names)) {
