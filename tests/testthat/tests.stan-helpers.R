@@ -216,7 +216,7 @@ test_that("stan_rngprior returns correct sampling statements for priors", {
   
   expect_equal(stan_rngprior(TRUE, 
                  prior = "simplex_1 ~ dirichlet(con_simplex_1); \n"),
-    list(genD = "  vector[rows(con_simplex_1)] prior_simplex_1; \n", 
+    list(genD = "  vector[Jm[1]] prior_simplex_1; \n", 
          genC = paste0(c2, "  prior_simplex_1 <- dirichlet_rng(con_simplex_1); \n")))
   
   expect_equal(stan_rngprior(TRUE, prior = paste("sd_1[1] ~ normal(0,5); \n",

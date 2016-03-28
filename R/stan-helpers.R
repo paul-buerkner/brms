@@ -1149,7 +1149,7 @@ stan_rngprior <- function(sample_prior, prior, par_declars = "",
     
     # rename parameters containing indices
     has_ind <- grepl("\\[[[:digit:]]+\\]", pars)
-    pars[has_ind] <- sapply(pars[has_ind], function(par) {
+    pars[has_ind] <- ulapply(pars[has_ind], function(par) {
       ind <- regmatches(par, gregexpr("\\[[[:digit:]]+\\]", par))
       ind <- as.numeric(substr(ind, 2, nchar(ind) - 1))
       if (grepl("^b\\[", par)) {
@@ -1169,15 +1169,15 @@ stan_rngprior <- function(sample_prior, prior, par_declars = "",
                    paste0("(2,", substr(args, 2, nchar(args)-1), "[1,2];"), 
                    args)
     dis <- sub("corr_cholesky$", "corr", dis)
-    
     # special treatment of simplex parameters
     which_simplex <- which(grepl("^simplex_", pars))
     for (i in seq_along(which_simplex)) {
-      type[which_simplex[i]] <- paste0("vector[rows(con_simplex_", i, ")]")
+      type[which_simplex[i]] <- paste0("vector[Jm[", i, "]]")
     }
     
     # extract possible boundaries
     par_declars <- unlist(strsplit(par_declars, "\n", fixed = TRUE))
+    par_declars <- par_declars[!grepl("^[[:blank:]]*//", par_declars)]
     all_pars <- get_matches(" [^[:blank:]]+;", par_declars) 
     all_pars <- substr(all_pars, 2, nchar(all_pars) - 1)
     all_bounds <- get_matches("<.+>", par_declars, simplify = FALSE)
@@ -1188,13 +1188,9 @@ stan_rngprior <- function(sample_prior, prior, par_declars = "",
       bounds[k] <- all_bounds[i]
     }
     has_bounds <- as.logical(nchar(bounds))
-    
     # distinguish between bounded and unbounded parameters
-    #bound <- grepl("^sd|^sigma|^shape$|^nu$|^hs_local$|^hs_global$", pars) |  
-    #  family$family == "cumulative" & grepl("^delta$", pars)
     if (any(has_bounds)) {  
       # bounded parameters have to be sampled in the model block
-      #lower_bound <- ifelse(pars[bound] == "nu", 1, 0)
       out$par <- paste0("  // parameters to store prior samples \n",
                         collapse("  real", bounds[has_bounds], 
                                  " prior_", pars[has_bounds], "; \n"))
@@ -1206,7 +1202,7 @@ stan_rngprior <- function(sample_prior, prior, par_declars = "",
     if (any(no_bounds)) {  
       # unbounded parameters can be sampled in the generatated quantities block
       if (!is.null(hs_df)) {
-        args[match("b", pars)] <- "(0, prior_hs_local * prior_hs_global);" 
+        args[grepl("^b(m|p|_|$)", pars)] <- "(0, prior_hs_local * prior_hs_global);" 
       } 
       out$genD <- collapse(
         "  ", type[no_bounds], " prior_", pars[no_bounds], "; \n")
