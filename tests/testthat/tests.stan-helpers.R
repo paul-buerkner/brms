@@ -49,14 +49,15 @@ test_that("stan_prior passes increment_log_prob statements without changes", {
 })
 
 test_that("stan_eta returns correct strings for autocorrelation models", {
-  expect_match(stan_eta(family = student(log), f = c("Trt_c"),
-                        autocor = cor_arma(~visit|patient, p = 2))$transC3,
+  ee <- extract_effects(count ~ Trt_c)
+  expect_match(stan_linear(ee, data = epilepsy, family = student(log),
+                           autocor = cor_arma(~visit|patient, p = 2))$transC3,
                "eta[n] <- exp(eta[n] + head(E[n], Kar) * ar)", fixed = TRUE)
-  expect_match(stan_eta(family = gaussian(log), f = c("Trt_c"),
-                        autocor = cor_arma(~visit|patient, q = 1))$transC2,
+  expect_match(stan_linear(ee, data = epilepsy, family = gaussian(log),
+                           autocor = cor_arma(~visit|patient, q = 1))$transC2,
                "eta[n] <- eta[n] + head(E[n], Kma) * ma", fixed = TRUE)
-  expect_match(stan_eta(family = poisson(), f = c("Trt_c"),
-                        autocor = cor_arma(~visit|patient, r = 3))$transC1,
+  expect_match(stan_linear(ee, data = epilepsy, family = poisson(),
+                           autocor = cor_arma(~visit|patient, r = 3))$transC1,
                "eta <- X * b + temp_Intercept + Yarr * arr", fixed = TRUE)
 })
 
@@ -215,7 +216,8 @@ test_that("stan_rngprior returns correct sampling statements for priors", {
                     model = paste0(c2,"  prior_sigma_2 ~ normal(0,5); \n")))
   
   expect_equal(stan_rngprior(TRUE, 
-                 prior = "simplex_1 ~ dirichlet(con_simplex_1); \n"),
+                 prior = "simplex_1 ~ dirichlet(con_simplex_1); \n",
+                 par_declars = "vector[Jm[1]] simplex_1;"),
     list(genD = "  vector[Jm[1]] prior_simplex_1; \n", 
          genC = paste0(c2, "  prior_simplex_1 <- dirichlet_rng(con_simplex_1); \n")))
   

@@ -154,7 +154,7 @@ test_that("get_prior returns correct nlpar names for random effects pars", {
   # reported in issue #47
   data <- data.frame(y = rnorm(10), x = rnorm(10), g = rep(1:2, 5))
   gp <- get_prior(y ~ a - b^x, data = data, nonlinear = a + b ~ (1+x|g))
-  expect_equal(unique(gp$nlpar), c("", "a", "b"))
+  expect_equal(sort(unique(gp$nlpar)), c("", "a", "b"))
 })
 
 test_that("check_prior_content returns expected errors and warnings", {

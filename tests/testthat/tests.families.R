@@ -5,7 +5,7 @@ test_that("family functions returns expected results", {
   expect_equal(cauchy(log)$family, "cauchy")
   expect_error(cauchy("inv"), "cauchy")
   expect_equal(bernoulli(logit)$link, "logit")
-  expect_error(bernoulli("identity"), "bernoulli")
+  expect_error(bernoulli("sqrt"), "bernoulli")
   expect_equal(negbinomial(sqrt)$link, "sqrt")
   expect_error(negbinomial(inverse), "inverse")
   expect_equal(geometric(identity)$link, "identity")
