@@ -82,9 +82,9 @@ ilink <- function(x, link) {
   else if (link == "inverse") 1/x
   else if (link == "sqrt") x^2
   else if (link == "1/mu^2") 1 / sqrt(x)
-  else if (link == "logit") ilogit(x)
+  else if (link == "logit") inv_logit(x)
   else if (link == "probit") pnorm(x)
-  else if (link == "probit_approx") ilogit(0.07056*x^3 + 1.5976*x)
+  else if (link == "probit_approx") inv_logit(0.07056*x^3 + 1.5976*x)
   else if (link == "cloglog") 1 - exp(-exp(x))
   else if (link == "cauchit") pcauchy(x)
   else stop(paste("Link", link, "not supported"))

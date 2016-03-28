@@ -155,7 +155,7 @@ logit <- function(p) {
   log(p / (1 - p))
 }
 
-ilogit <- function(x) { 
+inv_logit <- function(x) { 
   # compute the inverse of logit
   1 / (1 + exp(-x))
 }
