@@ -499,7 +499,7 @@ get_re_index <- function(i, random) {
   #   random: data.frame returned by get_random
   rn <- random$nlpar
   if (isTRUE(attr(random, "nonlinear"))) {
-    # each non-linear parameter may has its own random effects
+    # each non-linear parameter may have its own random effects
     i <- which(which(rn == rn[i]) == i)
   }
   i
@@ -773,7 +773,8 @@ check_brm_input <- function(x) {
   invisible(NULL)
 }
 
-exclude_pars <- function(ranef = list(), save_ranef = TRUE) {
+exclude_pars <- function(ranef = list(), save_ranef = TRUE, 
+                         nlpars = NULL) {
   # list irrelevant parameters NOT to be saved by Stan
   # 
   # Args:
@@ -786,11 +787,12 @@ exclude_pars <- function(ranef = list(), save_ranef = TRUE) {
            "temp_Intercept",  "Lrescor", "Rescor", "Sigma", "LSigma",
            "disp_sigma", "e", "E", "res_cov_matrix", 
            "lp_pre", "hs_local", "hs_global")
+  if (length(nlpars)) {
+    out <- c(out, unique(paste0("eta_", nlpars)))
+  }
   if (length(ranef)) {
     rm_re_pars <- c("z", "L", "Cor", if (!save_ranef) "r")
-    if (!is.null(attr(ranef[[1]], "nlpar"))) {
-      nlpars <- ulapply(ranef, function(r) attr(r, "nlpar"))
-      out <- c(out, unique(paste0("eta_", nlpars)))
+    if (length(nlpars)) {
       for (k in seq_along(ranef)) {
         i <- which(which(nlpars == nlpars[k]) == k)
         out <- c(out, paste0(rm_re_pars, "_", nlpars[k], "_", i))

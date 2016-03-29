@@ -239,3 +239,11 @@ test_that("check_brm_input returns correct warnings and errors", {
   x$family <- poisson("sqrt")
   expect_warning(check_brm_input(x))
 })
+
+test_that("exclude_pars returns expected parameter names", {
+  expect_true("eta_a" %in% exclude_pars(list(), nlpars = "a"))
+  ranef <- list(g = structure(c("x", "z"), cor = TRUE))
+  expect_true(all(c("r_1_1", "r_1_2") %in% exclude_pars(ranef)))
+  expect_true("r_a_1_1" %in% exclude_pars(ranef, nlpars = "a"))
+  expect_true("r_1" %in% exclude_pars(ranef, save_ranef = FALSE))
+})
