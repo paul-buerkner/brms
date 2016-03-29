@@ -60,19 +60,25 @@ test_that("combine_duplicates works as expected", {
                list(a = c(2,2,4,2), b = c("a", "c")))
 })
 
-test_that("prior_changes returns correct lists to be understood by rename_pars", {
+test_that("change_prior returns correct lists to be understood by rename_pars", {
   pars <- c("b", "b_1", "bp", "bp_1", "prior_b", "prior_b_1", 
             "prior_b_3", "sd_x[1]", "prior_bp_1")
-  expect_equal(prior_changes(class = "b", pars = pars, 
+  expect_equal(change_prior(class = "b", pars = pars, 
                            names = c("x1", "x3", "x2")),
                list(list(pos = 6, oldname = "prior_b_1", 
                          pnames = "prior_b_x1", fnames = "prior_b_x1"),
                     list(pos = 7, oldname = "prior_b_3", 
                          pnames = "prior_b_x2", fnames = "prior_b_x2")))
-  expect_equal(prior_changes(class = "bp", pars = pars, 
+  expect_equal(change_prior(class = "bp", pars = pars, 
                            names = c("x1", "x2"), new_class = "b"),
                list(list(pos = 9, oldname = "prior_bp_1", 
                          pnames = "prior_b_x1", fnames = "prior_b_x1")))
 })
 
-
+test_that("change_fixef suggests renaming of fixed effects intercepts", {
+  pars <- c("b[1]", "b_Intercept[1]", "b_Intercept[2]", "sigma_y")
+  expect_equal(change_fixef(fixef = "x", intercepts = c("main", "spec"), 
+                            pars = pars)[[2]],
+               list(pos = c(FALSE, TRUE, TRUE, FALSE), oldname = "b_Intercept",
+                    pnames = c("b_main", "b_spec"), fnames = c("b_main", "b_spec")))
+})
