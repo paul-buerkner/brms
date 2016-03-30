@@ -46,10 +46,11 @@ linear_predictor <- function(x, standata, re_formula = NULL,
   if (!is.null(standata$Xm) && ncol(standata$Xm)) {
     monef <- colnames(standata$Xm)
     for (i in 1:ncol(standata$Xm)) {
-      bm_par <- paste0("b_", monef[i])
+      bm_par <- paste0("b_", nlpar, monef[i])
       bm <- do.call(posterior_samples, 
                     c(args, list(pars = bm_par, exact = TRUE)))
-      simplex_par <- paste0("simplex_", monef[i], "[", 1:standata$Jm[i], "]")
+      simplex_par <- paste0("simplex_", nlpar, monef[i], 
+                            "[", 1:standata$Jm[i], "]")
       simplex <- do.call(posterior_samples, 
                          c(args, list(pars = simplex_par, exact = TRUE)))
       eta <- eta + monef_predictor(Xm = standata$Xm[, i], bm = as.vector(bm), 
