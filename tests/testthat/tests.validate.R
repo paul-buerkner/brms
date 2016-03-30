@@ -144,11 +144,13 @@ test_that("update_formula returns correct formulas", {
   expect_equal(uf, y ~ x + z + cse(a + I(a^2)))
 })
 
-test_that("get_fixed works correctly", {
-  effects <- extract_effects(y ~ a - b^x, nonlinear = list(a ~ z, b ~ z + v))
-  expect_equivalent(get_fixed(effects), list(y ~ a - b^x, ~ z, ~ z + v))
+test_that("get_effect works correctly", {
+  effects <- extract_effects(y ~ a - b^x, 
+               nonlinear = list(a ~ z, b ~ v + monotonous(z)))
+  expect_equivalent(get_effect(effects), list(y ~ a - b^x, ~ z, ~ v))
+  expect_equivalent(get_effect(effects, "mono"), list(NULL, NULL, ~ z))
   effects <- extract_effects(y ~ x + z + (1|g))
-  expect_equivalent(get_fixed(effects), list(y ~ x + z))
+  expect_equivalent(get_effect(effects), list(y ~ x + z))
 })
 
 test_that("get_group_formula rejects incorrect grouping terms", {

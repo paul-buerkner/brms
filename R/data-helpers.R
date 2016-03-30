@@ -278,9 +278,11 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     control <- list(is_newdata = TRUE, not4stan = TRUE,
                     save_order = TRUE, omit_response = !check_response)
     control$old_cat <- is.old_categorical(fit)
-    if (has_trials(fit$family) || has_cat(fit$family) || is.formula(ee$mono)) {
+    has_mono <- length(rmNULL(get_effect(ee, "mono")))
+    p <- if (length(ee$nonlinear)) paste0("_", names(ee$nonlinear)) else ""
+    if (has_trials(fit$family) || has_cat(fit$family) || has_mono) {
       # some components should not be computed based on newdata
-      comp <- c("trials", "ncat", "Jm")
+      comp <- c("trials", "ncat", paste0("Jm", p))
       control[comp] <- standata(fit)[comp]
     } 
     newdata <- make_standata(new_formula, data = newdata, family = fit$family, 

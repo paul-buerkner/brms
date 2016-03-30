@@ -927,7 +927,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     # allow covariates as well as fixed effects of non-linear parameters
     covars <- setdiff(all.vars(rhs(ee$fixed)), names(ee$nonlinear))
     nlpar_effects <- unlist(lapply(ee$nonlinear, function(nl)
-      get_var_combs(attr(terms(nl$fixed), "term.labels"))),
+      c(get_var_combs(nl$fixed), get_var_combs(nl$mono))),
       recursive = FALSE)
     all_effects <- unique(c(list(covars), nlpar_effects))
   } else {
@@ -968,7 +968,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   
   # prepare marginal conditions
   mf <- model.frame(x)
-  mono_vars <- all.vars(ee$mono)
+  mono_vars <- unique(ulapply(get_effect(ee, "mono"), all.vars))
   if (is.null(conditions)) {
     if (!is_equal(x$autocor, cor_arma()) || 
         length(rmNULL(ee[c("trials", "cat")]))) {
@@ -976,8 +976,8 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
            call. = FALSE)
     }
     # list all required variables
-    req_vars <- c(lapply(get_fixed(ee), rhs), get_random(ee)$form, 
-                  ee$mono, ee$cse, ee$se, ee$disp)
+    req_vars <- c(lapply(get_effect(ee), rhs), get_random(ee)$form, 
+                  get_effect(ee, "mono"), ee$cse, ee$se, ee$disp)
     req_vars <- unique(ulapply(req_vars, all.vars))
     req_vars <- setdiff(req_vars, c(rsv_vars, names(ee$nonlinear)))
     conditions <- as.data.frame(as.list(rep(NA, length(req_vars))))

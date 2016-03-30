@@ -465,13 +465,14 @@ plus_rhs <- function(x) {
   else "+ 1"
 }
 
-get_fixed <- function(effects) {
+get_effect <- function(effects, target = c("fixed", "mono", "cse")) {
   # get fixed effects formulas in a list
   # Args:
   #   effects: object returned by extract_effects
-  out <- list(effects$fixed)
+  target <- match.arg(target)
+  out <- list(effects[[target]])
   if (!is.null(effects$nonlinear)) {
-    out <- c(out, lapply(effects$nonlinear, function(par) par$fixed))
+    out <- c(out, lapply(effects$nonlinear, function(par) par[[target]]))
     attr(out, "nonlinear") <- TRUE
   }
   out
@@ -527,8 +528,10 @@ get_offset <- function(x) {
 get_var_combs <- function(x) {
   # get all variable combinations occuring in elements of x
   # Args:
-  #   x: a character vector
-  stopifnot(is.character(x))
+  #   x: a character vector or formula
+  if (is(x, "formula")) {
+    x <- attr(terms(x), "term.labels")
+  }
   unique(lapply(x, function(y) all.vars(parse(text = y))))
 }
 
