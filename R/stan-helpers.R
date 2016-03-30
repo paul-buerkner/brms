@@ -604,16 +604,14 @@ stan_misc_functions <- function(family = gaussian(), kronecker = FALSE) {
   out
 }
 
-stan_prior <- function(class, coef = NULL, group = NULL, nlpar = NULL, 
-                       suffix = "", matrix = FALSE, prior = prior_frame(), 
-                       wsp = 2) {
+stan_prior <- function(class, coef = "", group = "", nlpar = "", suffix = "",
+                       prior = prior_frame(), matrix = FALSE, wsp = 2) {
   # Define priors for parameters in Stan language
   # 
   # Args:
   #   class: the parameter class
   #   coef: the coefficients of this class
   #   group: the name of a grouping factor
-  #   gi: index of the grouping factor
   #   nlpar: the name of a non-linear parameter
   #   prior: a data.frame containing user defined priors 
   #          as returned by check_prior
@@ -622,40 +620,37 @@ stan_prior <- function(class, coef = NULL, group = NULL, nlpar = NULL,
   #      in front of the output string
   # 
   # Returns:
-  #   A character strings in stan language that defines priors for a given class of parameters
-  #   If a parameter has has no corresponding prior in prior 
-  #   and also no internal default in stan_prior, an empty string is returned.
+  #   A character strings in stan language that defines priors 
+  #   for a given class of parameters. If a parameter has has 
+  #   no corresponding prior in prior, an empty string is returned.
   
   # only consider user defined priors related to this class and group
   wsp <- collapse(rep(" ", wsp))
   prior_only <- isTRUE(attr(prior, "prior_only"))
-  keep <- which(prior$class == class & (prior$coef %in% coef | !nchar(prior$coef)))
-  user_prior <- prior[keep, ]
-  if (!is.null(group)) {
-    keep_group <- which(user_prior$group == group | !nchar(user_prior$group))
-    user_prior <- user_prior[keep_group, ]
-  }
-  if (!is.null(nlpar)) {
-    keep_nlpar <- which(user_prior$nlpar == nlpar | !nchar(user_prior$nlpar))
-    user_prior <- user_prior[keep_nlpar, ]
-  }
-  if (!nchar(class) && nrow(user_prior)) {
+  hs_df <- attr(prior, "hs_df")
+  keep <- prior$class == class & 
+          (prior$coef %in% coef | !nchar(prior$coef)) &
+          (prior$group == group | !nchar(prior$group)) & 
+          (prior$nlpar == nlpar | !nchar(prior$nlpar))
+  prior <- prior[keep, ]
+  if (!nchar(class) && nrow(prior)) {
     # increment_log_prob statements are directly put into the Stan code
-    return(collapse(wsp, user_prior$prior, "; \n"))
+    return(collapse(wsp, prior$prior, "; \n"))
   } 
   
   # get base prior
-  igroup <- which(with(user_prior, !nchar(coef) & nchar(group) & nchar(prior)))
-  inlpar <- which(with(user_prior, !nchar(coef) & nchar(nlpar) & nchar(prior)))
-  iclass <- which(with(user_prior, !nchar(coef) & !nchar(group) & nchar(prior)))
+  igroup <- which(with(prior, !nchar(coef) & nchar(group) & nchar(prior)))
+  inlpar <- which(with(prior, !nchar(coef) & nchar(nlpar) & nchar(prior)))
+  iclass <- which(with(prior, !nchar(coef) & !nchar(group) & nchar(prior)))
   if (length(igroup)) {  
     # if there is a global prior for this group
-    base_prior <- user_prior[igroup, "prior"]
+    base_prior <- prior[igroup, "prior"]
   } else if (length(inlpar)) {
-    base_prior <- user_prior[inlpar, "prior"]
+    # if there is a global prior for this non-linear parameter
+    base_prior <- prior[inlpar, "prior"]
   } else if (length(iclass)) {  
     # if there is a global prior for this class
-    base_prior <- user_prior[iclass, "prior"]
+    base_prior <- prior[iclass, "prior"]
   } else {  
     # no proper prior for this class
     base_prior <- ""
@@ -668,12 +663,11 @@ stan_prior <- function(class, coef = NULL, group = NULL, nlpar = NULL,
     } else {
       index <- ""
     }
-    uc_prior <- user_prior$prior[match(coef[i], user_prior$coef)]
+    uc_prior <- prior$prior[match(coef[i], prior$coef)]
     if (!is.na(uc_prior) & nchar(uc_prior)) { 
       # user defined prior for this parameter
       coef_prior <- uc_prior
-    } else {
-      # base prior for this parameter
+    } else { # base prior for this parameter
       coef_prior <- base_prior  
     }  
     if (nchar(coef_prior) > 0) {  # implies a proper prior
@@ -686,7 +680,7 @@ stan_prior <- function(class, coef = NULL, group = NULL, nlpar = NULL,
   
   # generate stan prior statements
   class <- paste0(class, suffix)
-  if (any(with(user_prior, nchar(coef) & nchar(prior)))) {
+  if (any(with(prior, nchar(coef) & nchar(prior)))) {
     # generate a prior for each coefficient
     out <- sapply(1:length(coef), individual_prior, max_index = length(coef))
   } else if (nchar(base_prior) > 0) {
@@ -697,7 +691,7 @@ stan_prior <- function(class, coef = NULL, group = NULL, nlpar = NULL,
   } else {
     out <- ""
   }
-  if (class == "b" && !is.null(attr(prior, "hs_df"))) {
+  if (class == "b" && !is.null(hs_df)) {
     # add horseshoe shrinkage priors
     hs_shrinkage_priors <- paste0(
       "  hs_local ~ student_t(", attr(prior, "hs_df"), ", 0, 1); \n",
