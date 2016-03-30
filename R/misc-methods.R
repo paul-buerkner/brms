@@ -7,8 +7,12 @@ print.brmssummary <- function(x, digits = 2, ...) {
   } else {
     cat(paste0(x$family, " (", x$link, ") \n"))  
   }
-  cat(paste("Formula:", 
-            gsub(" {1,}", " ", Reduce(paste, deparse(x$formula))), "\n"))
+  cat("Formula:", gsub(" {1,}", " ", Reduce(paste, deparse(x$formula))), "\n")
+  if (!is.null(x$nonlinear)) {
+    nl <- ulapply(x$nonlinear, function(y) 
+      gsub(" {1,}", " ", Reduce(paste, deparse(y))))
+    cat("        ", paste(nl, collapse = "; "), "\n")
+  }
   cat(paste0("   Data: ", x$data.name, 
              " (Number of observations: ",x$nobs,") \n"))
   if (x$sampler == "") {
@@ -30,7 +34,7 @@ print.brmssummary <- function(x, digits = 2, ...) {
       cat("Group-Level Effects: \n")
       for (i in seq_along(x$random)) {
         g <- names(x$random)[i]
-        cat(paste0("~",g," (Number of levels: ",x$ngrps[[g]],") \n"))
+        cat(paste0("~", g, " (Number of levels: ", x$ngrps[[g]], ") \n"))
         if (x$algorithm == "sampling") {
           x$random[[g]][, "Eff.Sample"] <- 
             round(x$random[[g]][, "Eff.Sample"], digits = 0)

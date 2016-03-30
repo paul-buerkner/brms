@@ -548,6 +548,7 @@ summary.brmsfit <- function(object, waic = FALSE, ...) {
                      nobs = nobs(object), 
                      ngrps = ngrps(object), 
                      autocor = object$autocor,
+                     nonlinear = object$nonlinear,
                      algorithm = algorithm(object))
   
   if (length(object$fit@sim)) {

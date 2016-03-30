@@ -15,13 +15,13 @@ brmssummary <- function(formula = NULL, family = "", link = "",
                         data.name = "", group = NULL, nobs = NULL, 
                         ngrps = NULL, chains = 1, iter = 2000, 
                         warmup = 500, thin = 1, sampler = "", 
-                        autocor = NULL, fixed = NULL, random = list(), 
-                        cor_pars = NULL, spec_pars = NULL, 
+                        nonlinear = NULL, autocor = NULL, fixed = NULL, 
+                        random = list(), cor_pars = NULL, spec_pars = NULL, 
                         mult_pars = NULL, WAIC = "Not computed",
                         algorithm = "sampling") {
   # brmssummary class
   x <- nlist(formula, family, link, data.name, group, nobs, ngrps, chains, 
-             iter,  warmup, thin, sampler, autocor, fixed, 
+             iter,  warmup, thin, sampler, nonlinear, autocor, fixed, 
              random, cor_pars, spec_pars, mult_pars, WAIC, algorithm)
   class(x) <- "brmssummary"
   x
