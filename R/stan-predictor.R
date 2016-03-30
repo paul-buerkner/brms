@@ -186,7 +186,7 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
 
 stan_fixef <- function(fixef, intercepts = "Intercept", 
                        family = gaussian(), prior = prior_frame(), 
-                       nlpar = NULL, sparse = FALSE, 
+                       nlpar = "", sparse = FALSE, 
                        threshold = "flexible") {
   # Stan code for fixed effects
   #
@@ -202,7 +202,7 @@ stan_fixef <- function(fixef, intercepts = "Intercept",
   # Returns:
   #   a list containing Stan code related to fixed effects
   nint <- length(intercepts)
-  p <- if (length(nlpar)) paste0("_", nlpar) else ""
+  p <- if (nchar(nlpar)) paste0("_", nlpar) else ""
   out <- list()
   if (length(fixef)) {
     centered <- ifelse(nint > 0, "centered", "")
@@ -212,7 +212,7 @@ stan_fixef <- function(fixef, intercepts = "Intercept",
       "  matrix[N, K", p, "] X", p, ";",
       "  // ", centered, " population-level design matrix \n")
     if (sparse) {
-      if (length(nlpar)) {
+      if (nchar(nlpar)) {
         stop("Sparse matrices are not yet implemented for non-linear models.",
              call. = FALSE)
       }
@@ -232,7 +232,7 @@ stan_fixef <- function(fixef, intercepts = "Intercept",
     out$prior <- paste0(out$prior, fixef_prior)
   }
   if (nint) {
-    if (length(nlpar)) {
+    if (nchar(nlpar)) {
       stop("no special treatment of intercepts in non-linear models")
     }  
     if (length(fixef)) {
@@ -281,7 +281,7 @@ stan_fixef <- function(fixef, intercepts = "Intercept",
 }
 
 stan_ranef <- function(i, ranef, prior = prior_frame(), 
-                       names_cov_ranef = NULL, nlpar = NULL) {
+                       names_cov_ranef = NULL, nlpar = "") {
   # Random effects in Stan 
   # 
   # Args:
@@ -300,7 +300,7 @@ stan_ranef <- function(i, ranef, prior = prior_frame(),
   g <- attr(ranef[[i]], "group")
   cor <- attr(ranef[[i]], "cor")
   ccov <- g %in% names_cov_ranef
-  p <- if (length(nlpar)) paste0(nlpar, "_", i) else i
+  p <- if (nchar(nlpar)) paste0(nlpar, "_", i) else i
   out <- list()
   out$data <- paste0(
     "  // data for group-specific effects of ", g, " \n",
@@ -391,13 +391,13 @@ stan_ranef <- function(i, ranef, prior = prior_frame(),
   out
 }
 
-stan_monef <- function(monef, prior = prior_frame(), nlpar = NULL) {
+stan_monef <- function(monef, prior = prior_frame(), nlpar = "") {
   # Stan code for monotonous effects
   # Args:
   #   csef: names of the monotonous effects
   #   prior: a data.frame containing user defined priors 
   #          as returned by check_prior
-  p <- if (length(nlpar)) paste0("_", nlpar) else ""
+  p <- if (nchar(nlpar)) paste0("_", nlpar) else ""
   out <- list()
   if (length(monef)) {
     I <- seq_along(monef)
@@ -444,17 +444,17 @@ stan_csef <- function(csef, prior = prior_frame()) {
   out
 } 
 
-stan_eta_fixef <- function(fixef, sparse = FALSE, nlpar = NULL) {
+stan_eta_fixef <- function(fixef, sparse = FALSE, nlpar = "") {
   # define Stan code to compute the fixef part of eta
   # Args:
   #   fixef: names of the fixed effects
   #   nlpar: an optional character string to add to the variable names
   #         (used for non-linear models)
   #   sparse: logical; use sparse matrix multiplication?
-  p <- if (length(nlpar)) paste0("_", nlpar) else ""
+  p <- if (nchar(nlpar)) paste0("_", nlpar) else ""
   if (length(fixef)) {
     if (sparse) {
-      stopifnot(length(nlpar) == 0L)
+      stopifnot(nchar(nlpar) == 0L)
       eta_fixef <- "csr_matrix_times_vector(rows(X), cols(X), wX, vX, uX, b)"
     } else {
       eta_fixef <- paste0("X", p, " * b", p)
@@ -465,7 +465,7 @@ stan_eta_fixef <- function(fixef, sparse = FALSE, nlpar = NULL) {
   eta_fixef
 }
 
-stan_eta_ranef <- function(ranef, nlpar = NULL) {
+stan_eta_ranef <- function(ranef, nlpar = "") {
   # Write the random effects part of the linear predictor
   # Args:
   #   ranef: a named list returned by gather_ranef
@@ -475,7 +475,7 @@ stan_eta_ranef <- function(ranef, nlpar = NULL) {
   #   A string containing the random effects part of the linear predictor
   eta_ranef <- ""
   for (i in seq_along(ranef)) {
-    p <- if (length(nlpar)) paste0(nlpar, "_", i) else i
+    p <- if (nchar(nlpar)) paste0(nlpar, "_", i) else i
     if (length(ranef[[i]]) == 1L) {
       eta_ranef <- paste0(eta_ranef, 
         " + r_", p, "[J_", p, "[n]] * Z_", p, "[n]")
@@ -489,13 +489,13 @@ stan_eta_ranef <- function(ranef, nlpar = NULL) {
   eta_ranef
 }
 
-stan_eta_monef <- function(monef, nlpar = NULL) {
+stan_eta_monef <- function(monef, nlpar = "") {
   # write the linear predictor for monotonous effects
   # Args:
   #   monef: names of the monotonous effects
   #   nlpar: an optional character string to add to the variable names
   #         (used for non-linear models)
-  p <- if (length(nlpar)) paste0("_", nlpar) else ""
+  p <- if (nchar(nlpar)) paste0("_", nlpar) else ""
   eta_monef <- ""
   for (i in seq_along(monef)) {
     eta_monef <- paste0(eta_monef,
