@@ -233,7 +233,7 @@ fixef_predictor <- function(X, b) {
   #   linear predictor for fixed effects
   stopifnot(is.matrix(X))
   stopifnot(is.matrix(b))
-  b %*% t(X)
+  tcrossprod(b, X)
 }
 
 monef_predictor <- function(Xm, bm, simplex) {
@@ -291,7 +291,7 @@ ranef_predictor <- function(Z, gf, r) {
     eta <- r[, take_levels, drop = FALSE] %*% 
       Matrix::t(Z[, take_levels, drop = FALSE])
   } else {
-    eta <- r %*% Matrix::t(Z)
+    eta <- Matrix::tcrossprod(r, Z)
   }
   # Matrix should currently not be used outside of this function
   Matrix::as.matrix(eta)
