@@ -338,14 +338,14 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
   ee <- extract_effects(formula, family = family,
                         nonlinear = nonlinear)
   data <- update_data(data, family = family, effects = ee)
+  ranef <- gather_ranef(ee, data = data, forked = is.forked(family))  
   
   # ensure that RE and residual SDs only have a weakly informative prior by default
   Y <- unname(model.response(data))
   prior_scale <- 10
   if (link %in% c("identity", "log", "inverse", "sqrt", "1/mu^2")) {
     if (link %in% c("log", "inverse", "1/mu^2")) {
-      # avoid Inf in link(Y)
-      Y <- ifelse(Y == 0, Y + 0.1, Y)
+      Y <- ifelse(Y == 0, Y + 0.1, Y)  # avoid Inf in link(Y)
     }
     suggested_scale <- round(sd(link(Y, link = link)))
     if (!is.nan(suggested_scale)) {
@@ -355,94 +355,33 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
   def_scale_prior <- paste0("student_t(3, 0, ", prior_scale, ")")
   
   # initialize output
-  prior <- prior_frame(prior = character(0), class = character(0), 
-                       coef = character(0), group = character(0),
-                       nlpar = character(0), bound = character(0))
+  prior <- empty_prior_frame()
   if (length(nonlinear)) {
-    for (i in seq_along(ee$nonlinear)) {
-      fixef <- colnames(get_model_matrix(ee$nonlinear[[i]]$fixed, data = data))
-      prior <- rbind(prior, prior_frame(class = "b", coef = c("", fixef), 
-                                        nlpar = names(ee$nonlinear)[i])) 
+    nlpars <- names(ee$nonlinear)
+    for (i in seq_along(nlpars)) {
+      fixef <- colnames(get_model_matrix(ee$nonlinear[[i]]$fixed, data))
+      prior_fixef <- get_prior_fixef(fixef, nlpar = nlpars[i],
+                                     internal = internal)
+      monef <- colnames(get_model_matrix(ee$nonlinear[[i]]$mono, data))
+      prior_monef <- get_prior_monef(monef, fixef = fixef, nlpar = nlpars[i])
+      prior_ranef <- get_prior_ranef(ranef, def_scale_prior, nlpar = nlpars[i], 
+                                     internal = internal)
+      prior <- rbind(prior, prior_fixef, prior_monef, prior_ranef)
     }
   } else {
-    # fixed and category specific effects 
     # don't remove the intercept columns here!
     fixef <- colnames(get_model_matrix(rhs(ee$fixed), data = data,
                                        forked = is.forked(family)))
-    if (length(fixef)) {
-      prior <- rbind(prior, prior_frame(class = "b", coef = c("", fixef))) 
-    }
     intercepts <- names(get_intercepts(ee, data = data, family = family))
-    if (length(intercepts)) {
-      if (is_equal(intercepts, "Intercept")) {
-        int_coefs <- "" 
-      } else {
-        int_coefs <- c("", intercepts)
-      }
-      prior <- rbind(prior, prior_frame(class = "Intercept", coef = int_coefs))
-      if (internal) {
-        prior <- rbind(prior, prior_frame(class = "temp_Intercept",
-                                          coef = int_coefs))
-      }
-    }
-    if (is.formula(ee$cse)) {
-      csef <- colnames(get_model_matrix(ee$cse, data = data))
-      invalid <- intersect(fixef, csef)
-      if (length(invalid)) {
-        stop(paste("Variables cannot be modeled as fixed and", 
-                   "category specific effects at the same time.", 
-                   "\nError occured for variables:", 
-                   paste(invalid, collapse = ", ")), call. = FALSE)
-      }
-      prior <- rbind(prior, prior_frame(class = "b", coef = c("", csef)))
-    }
-    if (is.formula(ee$mono)) {
-      monef <- colnames(get_model_matrix(ee$mono, data = data))
-      invalid <- intersect(fixef, monef)
-      if (length(invalid)) {
-        stop(paste("Variables cannot be modeled as fixed and", 
-                   "monotonous effects at the same time.", 
-                   "\nError occured for variables:", 
-                   paste(invalid, collapse = ", ")), call. = FALSE)
-      }
-      prior <- rbind(prior, prior_frame(class = "b", coef = c("", monef)),
-                     prior_frame(class = "simplex", coef = monef))
-    }
-  }
-  # random effects
-  random <- get_random(ee)
-  if (nrow(random)) {
-    # global sd class
-    prior <- rbind(prior, prior_frame(class = "sd", prior = def_scale_prior))  
-    gs <- random$group
-    nlpars <- if (length(nonlinear)) rownames(random) 
-              else rep("", ncol(random))
-    for (i in seq_along(gs)) {
-      ranef <- colnames(get_model_matrix(random$form[[i]], data = data))
-      # include random effects standard deviations
-      prior <- rbind(prior, prior_frame(class = "sd", coef = c("", ranef), 
-                                        group = gs[i], nlpar = nlpars[i]))
-      # detect duplicated random effects
-      J <- with(prior, class == "sd" & group == gs[i] & 
-                       nlpar == nlpars[i] & nchar(coef))
-      dupli <- duplicated(prior[J, ])
-      if (any(dupli)) {
-        stop(paste("Duplicated random effects detected for group", gs[i]),
-             call. = FALSE)
-      }
-      # include correlation parameters
-      if (random$cor[[i]] && length(ranef) > 1L) {
-        if (internal) {
-          prior <- rbind(prior, 
-            prior_frame(class = "L", group = c("", gs[i]), nlpar = nlpars[i],
-                        prior = c("lkj_corr_cholesky(1)", "")))
-        } else {
-          prior <- rbind(prior, 
-            prior_frame(class = "cor", group = c("", gs[i]),
-                        nlpar = nlpars[i], prior = c("lkj(1)", "")))
-        }
-      }
-    }
+    prior_fixef <- get_prior_fixef(fixef, intercepts = intercepts,
+                                   internal = internal)
+    monef <- colnames(get_model_matrix(ee$mono, data = data))
+    prior_monef <- get_prior_monef(monef, fixef = fixef)
+    csef <- colnames(get_model_matrix(ee$cse, data = data))
+    prior_csef <- get_prior_csef(csef, fixef = fixef)
+    prior_ranef <- get_prior_ranef(ranef, def_scale_prior, 
+                                   internal = internal)
+    prior <- rbind(prior, prior_fixef, prior_monef, prior_csef, prior_ranef)
   }
   # handle additional parameters
   is_ordinal <- is.ordinal(family)
@@ -483,8 +422,133 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
     prior <- rbind(prior, prior_frame(class = "delta"))
   }
   # do not remove unique(.)
-  prior <- unique(prior[with(prior, order(class, group, coef)), ])
+  prior <- unique(prior[with(prior, order(nlpar, class, group, coef)), ])
   rownames(prior) <- 1:nrow(prior)
+  prior
+}
+
+get_prior_fixef <- function(fixef, intercepts = "Intercept", 
+                            nlpar = "", internal = FALSE) {
+  # priors for fixed effects parameters
+  # Args:
+  #   fixef: names of the fixed effects
+  #   intercepts: names of the fixed effects Intercept(s)
+  #   nlpar: optional name of a non-linear parameter
+  #   internal: see get_prior
+  # Returns:
+  #   an object of class prior_frame
+  prior <- empty_prior_frame()
+  if (length(fixef)) {
+    prior <- rbind(prior, prior_frame(class = "b", coef = c("", fixef),
+                                      nlpar = nlpar)) 
+  }
+  if (length(intercepts)) {
+    int_coefs <- "" 
+    if (!is_equal(intercepts, "Intercept")) {
+      int_coefs <- c(int_coefs, intercepts)
+    }
+    prior <- rbind(prior, prior_frame(class = "Intercept", coef = int_coefs,
+                                      nlpar = nlpar))
+    if (internal) {
+      prior <- rbind(prior, prior_frame(class = "temp_Intercept",
+                                        coef = int_coefs, nlpar = nlpar))
+    }
+  }
+  prior
+}
+
+get_prior_monef <- function(monef, fixef = NULL, nlpar = "") {
+  # priors for monotonous effects parameters
+  # Args:
+  #   monef: names of the monotonous effects
+  #   fixef: names of the fixed effects
+  #   nlpar: optional name of a non-linear parameter
+  # Returns:
+  #   an object of class prior_frame
+  prior <- empty_prior_frame()
+  if (length(monef)) {
+    invalid <- intersect(fixef, monef)
+    if (length(invalid)) {
+      stop(paste("Variables cannot be modeled as fixed and", 
+                 "monotonous effects at the same time.", 
+                 "\nError occured for variables:", 
+                 paste(invalid, collapse = ", ")), call. = FALSE)
+    }
+    prior <- rbind(prior_frame(class = "b", coef = c("", monef), nlpar = nlpar),
+                   prior_frame(class = "simplex", coef = monef, nlpar = nlpar))
+  }
+  prior
+}
+
+get_prior_csef <- function(csef, fixef = NULL) {
+  # priors for category spcific effects parameters
+  # Args:
+  #   csef: names of the category specific effects
+  #   fixef: names of the fixed effects
+  # Returns:
+  #   an object of class prior_frame
+  prior <- empty_prior_frame()
+  if (length(csef)) {
+    invalid <- intersect(fixef, csef)
+    if (length(invalid)) {
+      stop(paste("Variables cannot be modeled as fixed and", 
+                 "category specific effects at the same time.", 
+                 "\nError occured for variables:", 
+                 paste(invalid, collapse = ", ")), call. = FALSE)
+    }
+    prior <- prior_frame(class = "b", coef = c("", csef))
+  }
+  prior
+}
+
+get_prior_ranef <- function(ranef, def_scale_prior, nlpar = "", 
+                            internal = FALSE) {
+  # priors for random effects parameters
+  # Args:
+  #   ranef: a list returned by gather_ranef
+  #   def_scale_prior: a character string defining the default
+  #                    prior for random effects SDs
+  #   nlpar: optional name of a non-linear parameter
+  #   internal: see get_prior
+  # Returns:
+  #   an object of class prior_frame
+  if (nchar(nlpar)) {
+    # extract only the relevant random effects
+    ranef <- rmNULL(lapply(ranef, function(y) 
+      if (identical(attr(y, "nlpar"), nlpar)) y else NULL))
+  }
+  prior <- empty_prior_frame()
+  if (length(ranef)) {
+    # global sd class
+    prior <- rbind(prior, prior_frame(class = "sd", nlpar = nlpar,
+                                      prior = def_scale_prior))
+    gs <- names(ranef)
+    for (i in seq_along(ranef)) {
+      # include random effects standard deviations
+      prior <- rbind(prior, prior_frame(class = "sd", coef = c("", ranef[[i]]),
+                                        group = gs[i], nlpar = nlpar))
+      # detect duplicated random effects
+      J <- with(prior, class == "sd" & group == gs[i] & 
+                       nlpar == nlpar & nchar(coef))
+      dupli <- duplicated(prior[J, ])
+      if (any(dupli)) {
+        stop(paste("Duplicated random effects detected for group", gs[i]),
+             call. = FALSE)
+      }
+      # include correlation parameters
+      if (attr(ranef[[i]], "cor") && length(ranef[[i]]) > 1L) {
+        if (internal) {
+          prior <- rbind(prior, 
+            prior_frame(class = "L", group = c("", gs[i]), nlpar = nlpar,
+                        prior = c("lkj_corr_cholesky(1)", "")))
+        } else {
+          prior <- rbind(prior, 
+            prior_frame(class = "cor", group = c("", gs[i]),
+                        nlpar = nlpar, prior = c("lkj(1)", "")))
+        }
+      }
+    }
+  } 
   prior
 }
 
@@ -524,7 +588,8 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
     stop("Duplicated prior specifications are not allowed.", call. = FALSE)
   }
   # handle special priors that are not explictly coded as functions in Stan
-  temp <- handle_special_priors(prior)  
+  has_specef <- is.formula(ee[c("mono", "cse")])
+  temp <- handle_special_priors(prior, has_specef = has_specef)  
   prior <- temp$prior
   attrib <- temp$attrib 
   # check if parameters in prior are valid
@@ -693,11 +758,12 @@ check_prior_content <- function(prior, family = gaussian()) {
   invisible(NULL)
 }
 
-handle_special_priors <- function(prior) {
+handle_special_priors <- function(prior, has_specef = FALSE) {
   # look for special priors such as horseshoe and process them appropriately
   #
   # Args:
   #   prior: an object of class prior_frame
+  #   has_specef: are monotonous or category specific effects present?
   #
   # Returns:
   #   an named list of two objects: 
@@ -709,6 +775,11 @@ handle_special_priors <- function(prior) {
     # horseshoe prior for fixed effects parameters
     if (any(nchar(prior$nlpar))) {
       stop("Horseshoe priors are not yet allowed in non-linear models.",
+           call. = FALSE)
+    }
+    if (has_specef) {
+      stop(paste("Horseshoe priors are not yet allowed in models with", 
+                 "monotonous or category specific effects."), 
            call. = FALSE)
     }
     hs_df <- gsub("^horseshoe\\(|\\)$", "", prior$prior[b_index])
@@ -759,6 +830,13 @@ prior_frame <- function(prior = "", class = "", coef = "",
                     stringsAsFactors = FALSE)
   class(out) <- c("prior_frame", "data.frame")
   out
+}
+
+empty_prior_frame <- function() {
+  # define a prior_frame with zero rows
+  prior_frame(prior = character(0), class = character(0), 
+              coef = character(0), group = character(0),
+              nlpar = character(0), bound = character(0))
 }
 
 update_prior_frame <- function(object, ranef = list(), ...) {
