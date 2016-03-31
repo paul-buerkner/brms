@@ -243,12 +243,13 @@ change_ranef <- function(ranef, pars, dims, nlpar = "") {
     # extract only the relevant random effects
     ranef <- rmNULL(lapply(ranef, function(y) 
       if (identical(attr(y, "nlpar"), nlpar)) y else NULL))
+    nlpar <- paste0(nlpar, "_")
   }
   if (length(ranef)) {
     group <- names(ranef)
     gf <- make_group_frame(ranef)
     for (i in seq_along(ranef)) {
-      sd <- paste0("sd_", ifelse(nchar(nlpar), paste0(nlpar, "_"), ""))
+      sd <- paste0("sd_", nlpar)
       rfnames <- paste0(sd, group[i], "_", ranef[[i]])
       change <- lc(change, 
         list(pos = grepl(paste0("^", sd, i, "(\\[|$)"), pars),
@@ -260,7 +261,7 @@ change_ranef <- function(ranef, pars, dims, nlpar = "") {
                       names = ranef[[i]]))
       # rename random effects correlations
       if (length(ranef[[i]]) > 1L && isTRUE(attr(ranef[[i]], "cor"))) {
-        cor <- paste0("cor_", nlpar[i])
+        cor <- paste0("cor_", nlpar)
         cor_names <- get_cornames(ranef[[i]], brackets = FALSE,
                                   type = paste0(cor, group[i]))
         change <- lc(change, 
