@@ -941,6 +941,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     all_effects <- get_var_combs(all_effects)
   }
   all_effects <- rmNULL(lapply(all_effects, setdiff, y = rsv_vars))
+  ae_collapsed <- ulapply(all_effects, function(e) paste(e, collapse = ":"))
   if (is.null(effects)) {
     effects <- all_effects[ulapply(all_effects, length) < 3]
   } else {
@@ -951,12 +952,21 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
                  "should not be used as effects for this model"),
            call. = FALSE)
     }
-    matches <- match(lapply(all_effects, sort), 
-                     lapply(effects, sort), 0L)
+    matches <- match(lapply(all_effects, sort), lapply(effects, sort), 0L)
+    if (sum(matches) > 0 && sum(matches > 0) < length(effects)) {
+      invalid <- effects[setdiff(1:length(effects), sort(matches))]  
+      invalid <- ulapply(invalid, function(e) paste(e, collapse = ":"))
+      warning(paste0("Some specified effects are invalid for this model: ",
+                     paste(invalid, collapse = ", "), "\nValid effects are: ", 
+                     paste(ae_collapsed, collapse = ", ")),
+              call. = FALSE)
+    }
     effects <- unique(effects[sort(matches)])
   }
   if (!length(unlist(effects))) {
-    stop("No valid effects specified.", call. = FALSE)
+    stop(paste0("All specified effects are invalid for this model.\n", 
+                "Valid effects are: ", paste(ae_collapsed, collapse = ", ")), 
+         call. = FALSE)
   }
   if (any(ulapply(effects, length) > 2L)) {
     stop("Interactions of order higher than 2 are currently not supported.",

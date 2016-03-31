@@ -80,7 +80,7 @@ test_that("all S3 methods have reasonable ouputs", {
                exp_nrow)
   expect_error(marginal_effects(fit), "Please specify argument 'conditions' manually")
   expect_error(marginal_effects(fit, effects = "Trt_cc"), 
-               "No valid effects specified")
+               "All specified effects are invalid for this model")
   # model.frame
   expect_equal(model.frame(fit), fit$data)
   # ngrps
