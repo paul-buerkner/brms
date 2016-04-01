@@ -187,7 +187,26 @@ test_that("make_stancode returns correct code for intercept only models", {
                "b_Intercept <- temp_Intercept;", fixed = TRUE) 
 })
 
-test_that("make_stancode generate correct code for non-linear models", {
+test_that("make_stancode generates correct code for category specific effects", {
+  scode <- make_stancode(rating ~ period + carry + cse(treat), 
+                         data = inhaler, family = sratio())
+  expect_match(scode, "matrix[N, Kp] Xp;", fixed = TRUE)
+  expect_match(scode, "matrix[Kp, ncat - 1] bp;", fixed = TRUE)
+  expect_match(scode, "etap <- Xp * bp;", fixed = TRUE)
+  expect_match(scode, "sratio(eta[n], etap[n], temp_Intercept);", fixed = TRUE)
+})
+
+test_that("make_stancode generates correct code for monotonous effects", {
+  data <- data.frame(y = rpois(120, 10), x1 = rep(1:4, 30), 
+                     x2 = factor(rep(c("a", "b", "c"), 40), ordered = TRUE))
+  scode <- make_stancode(y ~ monotonous(x1 + x2), data = data)
+  expect_match(scode, "int Xm[N, Km];", fixed = TRUE)
+  expect_match(scode, "simplex[Jm[1]] simplex_1;", fixed = TRUE)
+  expect_match(scode, "bm[2] * monotonous(simplex_2, Xm[n, 2]);", fixed = TRUE)
+  expect_match(scode, "simplex_1 ~ dirichlet(con_simplex_1);", fixed = TRUE)
+})
+
+test_that("make_stancode generates correct code for non-linear models", {
   nonlinear <- list(a ~ x, b ~ z + (1|g))
   data <- data.frame(y = rgamma(9, 1, 1), x = rnorm(9), z = rnorm(9), 
                      g = rep(1:3, 3))

@@ -98,7 +98,7 @@ test_that("check_prior correctly validates priors for random effects", {
   expect_equal(cp$prior[3], "cauchy(0,1)")
 })
 
-test_that("check_prior correctly validates prior for category specific effects", {
+test_that("check_prior correctly validates priors for category specific effects", {
   prior <- c(set_prior("normal(0,1)", class = "b", coef = "carry"),
              set_prior("cauchy(1,1)", class = "b", coef = "treat"))
   cp <- check_prior(prior, formula = rating ~ 1 + cse(treat + carry), 
@@ -106,6 +106,20 @@ test_that("check_prior correctly validates prior for category specific effects",
   target <- prior_frame(prior = c("normal(0,1)", "cauchy(1,1)"),
                         class = "b", coef = c("carry", "treat"))
   expect_equivalent(cp[2:3, ], target)
+})
+
+test_that("check_prior correctly validates priors for monotonous effects", {
+  data <- data.frame(y = rpois(100, 10), x = rep(1:4, 25))
+  prior <- c(set_prior("normal(0,1)", class = "b", coef = "x"),
+             set_prior("dirichlet(c(1,0.5,2))", class = "simplex", coef = "x"))
+  cp <- brms:::check_prior(prior, formula = y ~ monotonous(x), data = data,
+                           family = poisson())
+  target <- brms:::prior_frame(prior = c("normal(0,1)", "dirichlet(c(1,0.5,2))"),
+                        class = c("b", "simplex"), coef = c("x", "x"))
+  expect_equivalent(cp[2:3, ], target)
+  expect_error(check_prior(set_prior("beta(1,1)", class = "simplex", coef = "x"), 
+                           formula = y ~ monotonous(x), data = data),
+               "'dirichlet' is the only valid prior for simplex parameters")
 })
 
 test_that("handle_special_priors handles horseshoe prior correctly", {

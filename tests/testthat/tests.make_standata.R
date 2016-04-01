@@ -316,3 +316,21 @@ test_that("make_standata correctly prepares data for non-linear models", {
   expect_equal(colnames(standata$C), "z")
   expect_equal(standata$J_b_1, data$g)
 })
+
+test_that("make_standata correctly prepares data for monotonous effects", {
+  data <- data.frame(y = rpois(120, 10), x1 = rep(1:4, 30), 
+                     x2 = factor(rep(c("a", "b", "c"), 40), ordered = TRUE))
+  sdata <- make_standata(y ~ monotonous(x1 + x2), data = data)
+  expect_true(all(c("Xm", "Jm", "con_simplex_1", "con_simplex_2") %in% names(sdata)))
+  expect_equivalent(sdata$Xm, cbind(data$x1 - 1, as.numeric(data$x2) - 1))
+  expect_equal(as.vector(unname(sdata$Jm)), 
+               c(max(data$x1) - 1, length(unique(data$x2)) - 1))
+  expect_equal(sdata$con_simplex_1, rep(1, 3))
+  prior <- c(set_prior("normal(0,1)", class = "b", coef = "x"),
+             set_prior("dirichlet(c(1,0.5,2))", class = "simplex", coef = "x1"))
+  sdata <- make_standata(y ~ monotonous(x1 + x2), data = data, prior = prior)
+  expect_equal(sdata$con_simplex_1, c(1,0.5,2))
+  prior <- c(set_prior("dirichlet(c(1,0.5,2))", class = "simplex", coef = "x2"))
+  expect_error(make_standata(y ~ monotonous(x1 + x2), data = data, prior = prior),
+               "Invalid dirichlet prior for the simplex of x2", fixed = TRUE)
+})
