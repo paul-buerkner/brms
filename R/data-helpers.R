@@ -499,9 +499,8 @@ data_monef <- function(effects, data, prior = prior_frame(),
     # validate and assign vectors for dirichlet prior
     monef <- colnames(Xm)
     for (i in seq_along(monef)) {
-      take <- prior$class == "simplex" & coef == prior$monef[i] & 
+      take <- prior$class == "simplex" & prior$coef == monef[i] & 
               prior$nlpar == nlpar  
-      #take <- with(prior, class == "simplex" & coef == monef[i] & nlpar )
       sprior <- paste0(".", prior$prior[take])
       if (nchar(sprior) > 1L) {
         sprior <- as.numeric(eval(parse(text = sprior)))
