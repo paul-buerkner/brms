@@ -1002,7 +1002,8 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
       } else {
         # use reference category
         lev <- attr(as.factor(mf[[v]]), "levels")
-        conditions[[v]] <- factor(lev[1], levels = lev)
+        conditions[[v]] <- factor(lev[1], levels = lev, 
+                                  ordered = is.ordered(mf[[v]]))
       }
     }
   } else if (is.data.frame(conditions)) {
