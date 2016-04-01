@@ -237,7 +237,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       # factors have already been checked
       num_mono_vars <- names(list_data)[take_num]
       for (v in num_mono_vars) {
-        # use 'get' to make sure that v is defined in newdata
+        # use 'get' to check whether v is defined in newdata
         new_values <- get(v, newdata)
         min_value <- min(list_data[[v]])
         invalid <- new_values < min_value | 
