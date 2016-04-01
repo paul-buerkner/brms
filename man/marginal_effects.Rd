@@ -72,7 +72,11 @@ plotted directly in the active graphic device.
 Defaults to \code{TRUE}.}
 }
 \value{
-A list of ggplot objects one for each effect.
+An object of class \code{brmsMarginalEffects}, which is a named list
+  with one element per effect containing all information required to generate
+  marginal effects plots. The corresponding \code{plot} method returns a named 
+  list of \code{\link[ggplot2:ggplot]{ggplot}} objects, which can be further 
+  customized using the \pkg{ggplot2} package.
 }
 \description{
 Display marginal effects of one or more numeric and/or categorical 
