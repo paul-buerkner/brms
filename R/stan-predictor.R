@@ -29,7 +29,7 @@ stan_linear <- function(effects, data, family = gaussian(),
   csef <- colnames(get_model_matrix(effects$cse, data))
   text_csef <- stan_csef(csef = csef, prior = prior)
   # monotonous effects
-  monef <- colnames(get_model_matrix(effects$mono, data))
+  monef <- colnames(data_monef(effects, data)$Xm)
   text_monef <- stan_monef(monef, prior = prior)
   # group-specific effects
   ranef <- gather_ranef(effects, data = data, forked = is.forked(family))
@@ -125,7 +125,7 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
                               stan_eta_fixef(fixef, nlpar = nlpar), "; \n") 
       }
       # include monotonous effects
-      monef <- colnames(get_model_matrix(effects$nonlinear[[i]]$mono, data))
+      monef <- colnames(data_monef(effects$nonlinear[[i]], data)$Xm)
       if (length(monef)) {
         text_monef <- stan_monef(monef, prior = prior, nlpar = nlpar)
         if (length(out$fun) && grepl("#include fun_monotonous", out$fun)) {
