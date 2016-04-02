@@ -91,10 +91,10 @@ may be specified including default priors.
                     + (1|patient) + (1|visit),
                     data = epilepsy, family = poisson()))   
          
-## define a prior on all fixed effects a once
+## define a prior on all population-level effects a once
 prior$prior[1] <- "normal(0,10)"
 
-## define a specific prior on the fixed effect of Trt_c
+## define a specific prior on the population-level effect of Trt_c
 prior$prior[5] <- "student_t(10, 0, 5)"       
 
 ## verify that the priors indeed found their way into Stan's model code

@@ -209,12 +209,42 @@ Fit a generalized (non-)linear multilevel model,
   
   \code{response | addition ~ fixed + (random | group)} 
   
-  Multiple grouping factors each with multiple group-specific effects 
+  The \code{fixed} term contains effects that are assumend to be the 
+  same across obervations. We call them 'population-level' effects
+  or (adopting frequentist vocabulary) 'fixed' effects. The optional
+  \code{random} terms may contain effects that are assumed to vary
+  accross grouping variables specified in \code{group}. We
+  call them 'group-level' effects or (adopting frequentist 
+  vocabulary) 'random' effects, although the latter name is misleading
+  in a Bayesian context (for more details type \code{vignette("brms")}).
+  Multiple grouping factors each with multiple group-level effects 
   are possible. Instead of | you may use || in grouping terms
-  to prevent correlations from being modeled.
-  With the exception of \code{addition}, this is basically \code{lme4} syntax. 
-  The optional \code{addition} term may contain multiple terms of the form \code{fun(variable)} 
-  seperated by \code{+} each providing special information on the response variable. 
+  to prevent correlations from being modeled. With two exceptions, 
+  this is basically \code{lme4} syntax. 
+  
+  The first exception is that \code{fixed} may contain two non-standard types
+  of population-level effects namely monotonous and category specific effects,
+  which can be specified using terms of the form \code{monotonous(<predictors>)} 
+  and \code{cse(<predictors>)} respectively. The latter can only be applied in
+  ordinal models and is explained in more detail in the package's vignette
+  (type \code{vignette("brms")}). The former effect type is explained here.
+  A monotonous predictor must either be integer valued or an ordered factor, 
+  which is the first difference to an ordinary continuous predictor. 
+  More importantly, predictor categories (or integers) are not assumend to be 
+  equidistant with respect to their effect on the response variable. 
+  Instead, the distance between adjacent predictor categories (or integers) 
+  is estimated from the data and may vary across categories. 
+  This is realized by parameterizing as follows: 
+  One parameter takes care of the direction and size of the effect similar 
+  to an ordinary regression parameter, while an additional parameter vector 
+  estimates the normalized distances between consecutive predictor categories.     
+  A main application of monotonous effects are ordinal predictors that
+  can this way be modeled without (falsely) treating them as continuous
+  or as unordered categorical predictors.
+  
+  The second eception is the optional \code{addition} term, which may contain 
+  multiple terms of the form \code{fun(variable)} seperated by \code{+} each 
+  providing special information on the response variable. 
   \code{fun} can be replaced with either \code{se}, \code{weights}, \code{disp}, \code{trials},
   \code{cat}, \code{cens}, or \code{trunc}. Their meanings are explained below. 
   
@@ -318,8 +348,8 @@ Fit a generalized (non-)linear multilevel model,
   In this example, the predictors \code{x1} and \code{x1} influence the ZIH part 
   differentlythan the actual response part as indicated by their 
   interaction with \code{trait}.
-  In addition, a group-specific effect of \code{trait} was added while 
-  the group-specific intercept was removed leading to the estimation of 
+  In addition, a group-level effect of \code{trait} was added while 
+  the group-level intercept was removed leading to the estimation of 
   two effects, one for the ZIH part and one for the actual response. 
   In the example above, the correlation between the two effects
   will also be estimated.

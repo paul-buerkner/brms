@@ -13,17 +13,11 @@ set_prior(prior, class = "b", coef = "", group = "", nlpar = "",
 \item{class}{The parameter class. Defaults to \code{"b"} (fixed effects). 
 See 'Details' for other valid parameter classes.}
 
-\item{coef}{Name of the (fixed, category specific, or random effects) parameter}
+\item{coef}{Name of the (population- or group-level) parameter}
 
-\item{group}{Grouping factor for random effects parameters.}
+\item{group}{Grouping factor of group-level parameters.}
 
 \item{nlpar}{Name of a non-linear parameter. Only used in non-linear models.}
-
-\item{lb}{Lower bound for parameter restriction. Currently only allowed
-if \code{class = "b"}. Defaults to \code{NULL}, that is no restriction.}
-
-\item{ub}{Upper bound for parameter restriction. Currently only allowed
-if \code{class = "b"}. Defaults to \code{NULL}, that is no restriction.}
 }
 \value{
 An object of class \code{brmsprior} to be used in the \code{prior}
@@ -41,28 +35,30 @@ Define priors for specific parameters or classes of parameters
   
   To combine multiple priors, use \code{c(...)}, 
   e.g., \code{c(set_prior(...), set_prior(...))}.
-  \pkg{brms} performs no checks if the priors are written in 
-  correct Stan language. Instead, Stan will check their correctness 
-  when the model is parsed to C++ and returns an error if they are not.
-  Currently, there are five types of parameters in \pkg{brms} models, 
+  \pkg{brms} does not check if the priors are written in correct \pkg{Stan} language. 
+  Instead, \pkg{Stan} will check their syntactical correctness when the model 
+  is parsed to \proglang{C++} and returns an error if they are not. 
+  This, however, does not imply that priors are always meaningful if they are 
+  accepted by \pkg{Stan}. Although \pkg{brms} trys to find common problems 
+  (e.g., setting bounded priors on unbounded parameters), there is no guarantee 
+  that the defined priors are reasonable for the model.
+  Currently, there are six types of parameters in \pkg{brms} models, 
   for which the user can specify prior distributions. \cr
   
-  1. Fixed and category specific effects 
+  1. Population-level ('fixed') effects
   
-  Every fixed (and category specific) effect has its own regression parameter. 
-  These parameters are internally named as \code{b_<fixed>}, 
-  where \code{<fixed>} represents 
-  the name of the corresponding fixed effect. 
+  Every Population-level effect has its own regression parameter 
+  represents the name of the corresponding population-level effect. 
   Suppose, for instance, that \code{y} is predicted by \code{x1} and \code{x2} 
   (i.e. \code{y ~ x1+x2} in formula syntax). 
   Then, \code{x1} and \code{x2} have regression parameters 
   \code{b_x1} and \code{b_x2} respectively. 
-  The default prior for fixed and category specific effects is an 
-  improper flat prior over the reals. Other common options are normal priors 
-  or student-t priors. If we want to have a normal prior with mean 0 and 
-  standard deviation 5 for \code{x1}, 
-  and a unit student-t prior with 10 degrees of freedom for \code{x2}, 
-  we can specify this via
+  The default prior for population-level effects (including monotonous and 
+  category specific effects) is an improper flat prior over the reals. 
+  Other common options are normal priors or student-t priors. 
+  If we want to have a normal prior with mean 0 and 
+  standard deviation 5 for \code{x1}, and a unit student-t prior with 10 
+  degrees of freedom for \code{x2}, we can specify this via
   \code{set_prior("normal(0,5)", class = "b", coef = "x1")} and \cr
   \code{set_prior("student_t(10,0,1)", class = "b", coef = "x2")}.
   To put the same prior on all fixed effects at once, 
@@ -82,14 +78,15 @@ Define priors for specific parameters or classes of parameters
   named \code{"Intercept"} and priors can thus be 
   specified via \code{set_prior("<prior>", class = "Intercept")}.
   Setting a prior on the intercept will not break vectorization
-  of the other fixed effects.
+  of the other population-level effects.
   
-  A special shrinkage prior to be applied on fixed effects is the horseshoe prior.
+  A special shrinkage prior to be applied on population-level effects 
+  is the horseshoe prior.
   It is symmetric around zero with fat tails and an infinitely large spike
   at zero. This makes it ideal for sparse models that have 
   many regression coefficients,although only a minority of them is non-zero. 
   For more details see Carvalho et al. (2009).
-  The horseshoe prior can be applied on all fixed effects at once 
+  The horseshoe prior can be applied on all population-level effects at once 
   (excluding the intercept) by using \code{set_prior("horseshoe(1)")}.
   The \code{1} implies that the student-t prior of the local shrinkage 
   parameters has 1 degrees of freedom. This may, however, lead to an 
@@ -103,17 +100,17 @@ Define priors for specific parameters or classes of parameters
   See the documentation of \code{\link[brms:brm]{brm}} for instructions
   on how to increase \code{adapt_delta}. \cr
   
-  In non-linear models, fixed effects are defined separately for each
-  non-linear parameter. Accordingly, it is necessary to specify
+  In non-linear models, population-level effects are defined separately 
+  for each non-linear parameter. Accordingly, it is necessary to specify
   the corresponding non-linear parameter in \code{set_prior} so that priors
   we can be assigned correctly. 
   If, for instance, \code{alpha} is the parameter and \code{x} the predictor
   for which we want to define the prior, we can write
   \code{set_prior("<prior>", coef = "x", nlpar = "alpha")}. 
   As a shortcut we can use \code{set_prior("<prior>", nlpar = "alpha")}
-  to set the same prior on all fixed effects of \code{alpha} at once.
+  to set the same prior on all population-level effects of \code{alpha} at once.
   
-  If desired, fixed effects parameters can be restricted to fall only 
+  If desired, population-level effects can be restricted to fall only 
   within a certain interval using the \code{lb} and \code{ub} arguments
   of \code{set_prior}. This is often required when defining priors
   that are not defined everywhere on the real line, such as uniform
@@ -121,28 +118,17 @@ Define priors for specific parameters or classes of parameters
   you should write \code{set_prior("uniform(2,4)", lb = 2, ub = 4)}. 
   When using a prior that is defined on the postive reals only 
   (such as a gamma prior) set \code{lb = 0}. 
-  In most situations, it is not useful to restrict fixed effects
-  parameters through bounded priors, but if you really want to
-  this is the way to go.
+  In most situations, it is not useful to restrict population-level
+  parameters through bounded priors 
+  (non-linear models are an important exception), 
+  but if you really want to this is the way to go.
   
-  3. Autocorrelation parameters
+  2. Standard deviations of group-level ('random') effects
   
-  The autocorrelation parameters currently implemented are named 
-  \code{ar} (autoregression), \code{ma} (moving average),
-  and \code{arr} (autoregression of the response).
-  Priors can be defined by \code{set_prior("<prior>", class = "ar")} 
-  for \code{ar} and similar for \code{ma} and \code{arr} effects.
-  By default, \code{ar} and \code{ma} are bounded between \code{-1} 
-  and \code{1} and \code{arr} is unbounded (you may change this 
-  by using the arguments \code{lb} and \code{ub}). The default
-  prior is flat over the definition area.
-  
-  4. Standard deviations of random effects
-  
-  Each random effect of each grouping factor has a standard deviation named
+  Each group-level effect of each grouping factor has a standard deviation named
   \code{sd_<group>_<random>}. Consider, for instance, the formula 
   \code{y ~ x1+x2+(1+x1|g)}.
-  We see that the intercept as well as \code{x1} are random effects 
+  We see that the intercept as well as \code{x1} are group-level effects
   nested in the grouping factor \code{g}. 
   The corresponding standard deviation parameters are named as 
   \code{sd_g_Intercept} and \code{sd_g_x1} respectively. 
@@ -159,15 +145,15 @@ Define priors for specific parameters or classes of parameters
   Recommendations on useful prior distributions for 
   standard deviations are given in Gelman (2006). \cr
   
-  When defining priors on random effects parameters in non-linear models, 
+  When defining priors on group-level effects parameters in non-linear models, 
   please make sure to specify the corresponding non-linear parameter 
-  through the \code{nlpar} argument in the same way as for fixed effects.
+  through the \code{nlpar} argument in the same way as 
+  for population-level effects.
   
-  5. Correlations of random effects 
+  3. Correlations of group-level ('random') effects 
   
-  If there is more than one random effect per grouping factor, 
-  the correlations between those random
-  effects have to be estimated. 
+  If there is more than one group-level effect per grouping factor, 
+  the correlations between those effects have to be estimated. 
   The prior \code{"lkj_corr_cholesky(eta)"} or in short 
   \code{"lkj(eta)"} with \code{eta > 0} 
   is essentially the only prior for (choelsky factors) of correlation matrices. 
@@ -179,6 +165,39 @@ Define priors for specific parameters or classes of parameters
   \code{cor_(group)}, (e.g., \code{cor_g} if \code{g} is the grouping factor).
   To set the same prior on every correlation matrix, 
   use for instance \code{set_prior("lkj(2)", class = "cor")}.
+  
+  4. Autocorrelation parameters
+  
+  The autocorrelation parameters currently implemented are named 
+  \code{ar} (autoregression), \code{ma} (moving average),
+  and \code{arr} (autoregression of the response).
+  Priors can be defined by \code{set_prior("<prior>", class = "ar")} 
+  for \code{ar} and similar for \code{ma} and \code{arr} effects.
+  By default, \code{ar} and \code{ma} are bounded between \code{-1} 
+  and \code{1} and \code{arr} is unbounded (you may change this 
+  by using the arguments \code{lb} and \code{ub}). The default
+  prior is flat over the definition area.
+  
+  5. Distance parameters of monotonous effects
+  
+  As explained in the details section of \code{\link[brms:brm]{brm}},
+  monotonous effects make use of a special parameter vector to
+  estimate the 'normalized distances' between consecutive predictor 
+  categories. This is realized in \pkg{Stan} using the \code{simplex}
+  parameter type and thus this class is also named \code{"simplex"} in
+  \pkg{brms}. The only valid prior for simplex parameters is the
+  dirichlet prior, which accepts a vector of length \code{K - 1}
+  (K = number of predictor categories) as input defining the
+  'concentration' of the distribution. Explaining the dirichlet prior 
+  is beyond the scope of this documentation, but we want to describe
+  how to define this prior syntactically correct.
+  If a predictor \code{x} with \code{K} categories is modeled as monotonous, 
+  we can defined a prior on its corresponding simplex via
+  \code{set_prior("dirichlet(<vector>)", class = "simplex", coef = "x")}.
+  For \code{<vector>}, we can put in any \code{R} expression
+  defining a vector of length \code{K - 1}. The default is a uniform 
+  prior (i.e. \code{<vector> = rep(1, K-1)}) over all simplexes
+  of respective dimension.   
   
   6. Parameters for specific families 
   
@@ -228,7 +247,7 @@ make_stancode(rating ~ period + carry + cse(treat) + (1|subject),
               threshold = "equidistant",
               prior = prior)
               
-## use horseshoe priors to model sparsity in fixed effects parameters
+## use horseshoe priors to model sparsity in population-level effects parameters
 make_stancode(count ~ log_Age_c + log_Base4_c * Trt_c,
               data = epilepsy, family = poisson(),
               prior = set_prior("horseshoe(3)"))
