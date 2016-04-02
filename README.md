@@ -33,28 +33,28 @@ summary(fit, waic = TRUE)
 #>    Data: epilepsy (Number of observations: 236) 
 #> Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1; 
 #>          total post-warmup samples = 4000
-#>    WAIC: 1149.34
+#>    WAIC: 1145.78
 #>  
-#> Random Effects: 
+#> Group-Level Effects: 
 #> ~obs (Number of levels: 236) 
 #>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> sd(Intercept)     0.37      0.04     0.29     0.45       1433    1
+#> sd(Intercept)     0.37      0.04     0.29     0.46       1279    1
 #> 
 #> ~patient (Number of levels: 59) 
 #>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> sd(Intercept)     0.51      0.07     0.38     0.66       1154    1
+#> sd(Intercept)     0.51      0.07     0.38     0.66        979    1
 #> 
 #> ~visit (Number of levels: 4) 
 #>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> sd(Intercept)     0.11      0.11        0     0.41       1129    1
+#> sd(Intercept)     0.11      0.11        0     0.42        769    1
 #> 
-#> Fixed Effects: 
+#> Population-Level Effects: 
 #>                   Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> Intercept             1.56      0.10     1.37     1.76       1790    1
-#> log_Age_c             0.48      0.36    -0.24     1.20       1520    1
-#> log_Base4_c           1.06      0.11     0.85     1.28       1640    1
-#> Trt_c                -0.34      0.16    -0.65    -0.03       1724    1
-#> log_Base4_c:Trt_c     0.35      0.22    -0.09     0.77       1600    1
+#> Intercept             1.56      0.10     1.35     1.78        851    1
+#> log_Age_c             0.46      0.36    -0.25     1.18        953    1
+#> log_Base4_c           1.07      0.11     0.85     1.29        956    1
+#> Trt_c                -0.33      0.16    -0.66    -0.01        848    1
+#> log_Base4_c:Trt_c     0.36      0.21    -0.06     0.78       1080    1
 #> 
 #> Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 #> is a crude measure of effective sample size, and Rhat is the potential 
@@ -84,8 +84,8 @@ newdata <- data.frame(Trt_c = c(0.5, -0.5), log_Age_c = 0,
                       log_Base4_c = 0, visit = 4)
 predict(fit, newdata = newdata, allow_new_levels = TRUE, probs = c(0.05, 0.95))
 #>   Estimate Est.Error 5%ile 95%ile
-#> 1  4.75325  3.938558     0     12
-#> 2  6.66450  5.346362     1     17
+#> 1  4.71100  3.861503     0     12
+#> 2  6.54625  5.355327     1     16
 ```
 
 We need to set `allow_new_levels = TRUE` because we want to predict responses of a person that was not present in the data used to fit the model. While the `predict` method returns predictions of the responses, the `fitted` method returns predictions of the regression line.
@@ -93,8 +93,8 @@ We need to set `allow_new_levels = TRUE` because we want to predict responses of
 ``` r
 fitted(fit, newdata = newdata, allow_new_levels = TRUE, probs = c(0.05, 0.95))
 #>   Estimate Est.Error    5%ile   95%ile
-#> 1 4.770850  3.246336 1.363647 11.01045
-#> 2 6.678924  4.605785 1.939766 15.40695
+#> 1 4.736238  3.273596 1.347698 10.97859
+#> 2 6.603166  4.560335 1.868479 15.71147
 ```
 
 Both methods return the same etimate (up to random error), while the latter has smaller variance, because the uncertainty in the regression line is smaller than the uncertainty in each response. If we want to predict values of the original data, we can just leave the `newdata` argument empty.
@@ -109,14 +109,14 @@ For a complete list of methods to apply on <b>brms</b> models see
 
 ``` r
 methods(class = "brmsfit") 
-#>  [1] as.mcmc           coef              family            fitted           
-#>  [5] fixef             formula           hypothesis        launch_shiny     
-#>  [9] logLik            LOO               marginal_effects  model.frame      
-#> [13] ngrps             nobs              pairs             parnames         
-#> [17] plot              posterior_samples predict           print            
-#> [21] prior_samples     ranef             residuals         stancode         
-#> [25] standata          stanplot          summary           update           
-#> [29] VarCorr           vcov              WAIC             
+#>  [1] as.mcmc           coef              expose_functions  family           
+#>  [5] fitted            fixef             formula           hypothesis       
+#>  [9] launch_shiny      logLik            LOO               marginal_effects 
+#> [13] model.frame       ngrps             nobs              pairs            
+#> [17] parnames          plot              posterior_samples predict          
+#> [21] print             prior_samples     ranef             residuals        
+#> [25] stancode          standata          stanplot          summary          
+#> [29] update            VarCorr           vcov              WAIC             
 #> see '?methods' for accessing help and source code
 ```
 
@@ -132,8 +132,11 @@ More instructions on how to use <b>brms</b> are given in the package's vignette.
 vignette("brms") 
 ```
 
-How to install brms
-===================
+FAQ
+===
+
+How do I install brms?
+----------------------
 
 To install the latest release version from CRAN use
 
@@ -148,4 +151,19 @@ library(devtools)
 install_github("paul-buerkner/brms")
 ```
 
-Because <b>brms</b> is based on Stan, a C++ compiler is required. The program Rtools (available on <https://cran.r-project.org/bin/windows/Rtools/>) comes with a C++ compiler for Windows. On Mac, you should use Xcode. For further instructions on how to get the compilers running, see the prerequisites section on <https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started>.
+Because <b>brms</b> is based on Stan, a C++ compiler is required. The program Rtools (available on <https://cran.r-project.org/bin/windows/Rtools/>) comes with a C++ compiler for Windows. On Mac, you should install Xcode. For further instructions on how to get the compilers running, see the prerequisites section on <https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started>.
+
+Can I avoid compiling models?
+-----------------------------
+
+When you fit your model for the first time with <b>brms</b>, there is currently no way to avoid compilation. However, if you have already fitted your model and want to run it again, for instance with more samples, you can do this without recompilation by using the `update` method (type `help(update.brmsfit)` in R for more details).
+
+What is the difference between brms and rstanarm?
+-------------------------------------------------
+
+<b>rstanarm</b> is an R package similar to <b>brms</b> that also allows to fit regression models using <b>Stan</b> for the backend estimation. Contrary to <b>brms</b>, <b>rstanarm</b> comes with precompiled code to save the compilation time (and the need for a C++ compiler) when fitting a model. However, this reduces modeling flexibility so that <b>brms</b> is more general in the type of models that can be specified. Also, multilevel models are currently fitted a bit more efficiently in <b>brms</b>. For a detailed comparison of <b>brms</b> with other common R packages implementing multilevel models, type `vignette("brms")` in R.
+
+What is the best way to ask a question or propose a new feature?
+----------------------------------------------------------------
+
+You can either open an issue on [github](https://github.com/paul-buerkner/brms) or write me an email (<paul.buerkner@gmail.com>).
