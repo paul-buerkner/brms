@@ -18,6 +18,14 @@ See 'Details' for other valid parameter classes.}
 \item{group}{Grouping factor of group-level parameters.}
 
 \item{nlpar}{Name of a non-linear parameter. Only used in non-linear models.}
+
+\item{lb}{Lower bound for parameter restriction. Currently only allowed
+for classes \code{"b"}, \code{"ar"}, \code{"ma"}, and \code{"arr"}.
+Defaults to \code{NULL}, that is no restriction.}
+
+\item{ub}{Upper bound for parameter restriction. Currently only allowed
+for classes \code{"b"}, \code{"ar"}, \code{"ma"}, and \code{"arr"}.
+Defaults to \code{NULL}, that is no restriction.}
 }
 \value{
 An object of class \code{brmsprior} to be used in the \code{prior}
@@ -192,12 +200,12 @@ Define priors for specific parameters or classes of parameters
   is beyond the scope of this documentation, but we want to describe
   how to define this prior syntactically correct.
   If a predictor \code{x} with \code{K} categories is modeled as monotonous, 
-  we can defined a prior on its corresponding simplex via
+  we can define a prior on its corresponding simplex via
   \code{set_prior("dirichlet(<vector>)", class = "simplex", coef = "x")}.
   For \code{<vector>}, we can put in any \code{R} expression
   defining a vector of length \code{K - 1}. The default is a uniform 
   prior (i.e. \code{<vector> = rep(1, K-1)}) over all simplexes
-  of respective dimension.   
+  of the respective dimension.   
   
   6. Parameters for specific families 
   
