@@ -8,7 +8,7 @@ print.brmssummary <- function(x, digits = 2, ...) {
     cat(paste0(x$family, " (", x$link, ") \n"))  
   }
   cat("Formula:", gsub(" {1,}", " ", Reduce(paste, deparse(x$formula))), "\n")
-  if (!is.null(x$nonlinear)) {
+  if (length(x$nonlinear)) {
     nl <- ulapply(x$nonlinear, function(y) 
       gsub(" {1,}", " ", Reduce(paste, deparse(y))))
     cat("        ", paste(nl, collapse = "; "), "\n")
