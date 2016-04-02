@@ -37,7 +37,7 @@ Define priors for specific parameters or classes of parameters
   e.g., \code{c(set_prior(...), set_prior(...))}.
   \pkg{brms} does not check if the priors are written in correct \pkg{Stan} language. 
   Instead, \pkg{Stan} will check their syntactical correctness when the model 
-  is parsed to \proglang{C++} and returns an error if they are not. 
+  is parsed to \code{C++} and returns an error if they are not. 
   This, however, does not imply that priors are always meaningful if they are 
   accepted by \pkg{Stan}. Although \pkg{brms} trys to find common problems 
   (e.g., setting bounded priors on unbounded parameters), there is no guarantee 
