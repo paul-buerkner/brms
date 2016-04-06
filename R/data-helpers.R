@@ -128,7 +128,7 @@ update_data <- function(data, family, effects, ...,
     if (any(grepl("__", colnames(data))))
       stop("variable names may not contain double underscores '__'",
            call. = FALSE)
-    data <- combine_groups(data, effects$random$group, ...)
+    data <- combine_groups(data, get_random(effects)$group, ...)
     attr(data, "brmsframe") <- TRUE
   }
   data
