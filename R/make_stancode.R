@@ -61,7 +61,8 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   intercepts <- names(get_intercepts(ee, family = family, data = data))
   if (length(nonlinear)) {
     text_pred <- stan_nonlinear(ee, data = data, family = family, 
-                                prior = prior, cov_ranef = cov_ranef)
+                                prior = prior, autocor = autocor,
+                                cov_ranef = cov_ranef)
   } else {
     text_pred <- stan_linear(ee, data = data, family = family, 
                              prior = prior, intercepts, autocor = autocor,

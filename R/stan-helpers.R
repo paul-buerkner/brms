@@ -301,7 +301,7 @@ stan_arma <- function(family, autocor, prior = prior_frame(),
                  family$family, "are not yet implemented"), 
            call. = FALSE)
     }
-    out$data <- "  matrix[N, N] V; \n"
+    out$data <- "  matrix[N, N] V;  // known residual covariance matrix \n"
     if (family$family %in% "gaussian") {
       out$tdataD <- "  matrix[N, N] LV; \n"
       out$tdataC <- "  LV <- cholesky_decompose(V); \n"

@@ -96,7 +96,8 @@ stan_linear <- function(effects, data, family = gaussian(),
 }
 
 stan_nonlinear <- function(effects, data, family = gaussian(), 
-                           prior = prior_frame(), cov_ranef = NULL) {
+                           prior = prior_frame(), autocor = cor_arma(),
+                           cov_ranef = NULL) {
   # prepare Stan code for non-linear models
   # Args:
   #   effects: a list returned by extract_effects()
