@@ -37,13 +37,13 @@ test_that("predict for multivariate linear models runs without errors", {
             nu = matrix(rgamma(ns, 5)))
   data <- list(N = nobs, N_trait = ncols)
   
-  pred <- predict_multi_gaussian(1, data = data, samples = s)
+  pred <- predict_gaussian_multi(1, data = data, samples = s)
   expect_equal(dim(pred), c(ns, nvars))
   
-  pred <- predict_multi_student(2, data = data, samples = s)
+  pred <- predict_student_multi(2, data = data, samples = s)
   expect_equal(dim(pred), c(ns, nvars))
   
-  pred <- predict_multi_cauchy(3, data = data, samples = s)
+  pred <- predict_cauchy_multi(3, data = data, samples = s)
   expect_equal(dim(pred), c(ns, nvars))
 })
 

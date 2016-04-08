@@ -1269,13 +1269,15 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     family$family <- "lognormal"
     family$link <- "identity"
   } else if (is.linear(family) && nresp > 1) {
-    family$family <- paste0("multi_", family$family)
+    family$family <- paste0(family$family, "_multi")
   } else if (use_cov(autocor) && (get_ar(autocor) || get_ma(autocor))) {
     # special family for ARMA models using residual covariance matrices
     family$family <- paste0(family$family, "_cov")
     samples$ar <- do.call(posterior_samples, c(args, pars = "^ar\\["))
     samples$ma <- do.call(posterior_samples, c(args, pars = "^ma\\["))
-  } 
+  } else if (is(autocor, "cor_fixed")) {
+    family$family <- paste0(family$family, "_fixed")
+  }
   
   is_catordinal <- is.ordinal(family) || is.categorical(family)
   # see predict.R
@@ -1286,6 +1288,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   }
   N <- if (!is.null(standata$N_trait)) standata$N_trait
        else if (!is.null(standata$N_tg)) standata$N_tg
+       else if (is(autocor, "cor_fixed")) 1
        else standata$N
   out <- do.call(cbind, lapply(1:N, call_predict_fun))
   rm(samples)
@@ -1716,8 +1719,6 @@ logLik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   standata <- amend_newdata(newdata, fit = object, re_formula = re_formula,
                             allow_new_levels = allow_new_levels,
                             check_response = TRUE)
-  N <- ifelse(is.null(standata$N_tg), nrow(as.matrix(standata$Y)), 
-              standata$N_tg)
   
   # compute all necessary samples
   if (is.null(subset) && !is.null(nsamples)) {
@@ -1760,13 +1761,15 @@ logLik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     family$family <- "lognormal"
     family$link <- "identity"
   } else if (is.linear(family) && nresp > 1) {
-    family$family <- paste0("multi_", family$family)
+    family$family <- paste0(family$family, "_multi")
   } else if (use_cov(autocor) && (get_ar(autocor) || get_ma(autocor))) {
     # special family for ARMA models using residual covariance matrices
     family$family <- paste0(family$family, "_cov")
     samples$ar <- do.call(posterior_samples, c(args, pars = "^ar\\["))
     samples$ma <- do.call(posterior_samples, c(args, pars = "^ma\\["))
-  } 
+  } else if (is(autocor, "cor_fixed")) {
+    family$family <- paste0(family$family, "_fixed")
+  }
 
   # call loglik functions
   loglik_fun <- get(paste0("loglik_", family$family), mode = "function")
@@ -1774,6 +1777,9 @@ logLik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     do.call(loglik_fun, list(n = n, data = standata, samples = samples, 
                              link = family$link)) 
   }
+  N <- if (!is.null(standata$N_tg)) standata$N_tg
+       else if (is(autocor, "cor_fixed")) 1
+       else nrow(as.matrix(standata$Y))
   loglik <- do.call(cbind, lapply(1:N, call_loglik_fun))
   # reorder loglik values to be in the initial user defined order
   # currently only relevant for autocorrelation models

@@ -40,18 +40,18 @@ predict_lognormal <- function(n, data, samples, link = "identity", ...) {
                  args = args, data = data)
 }
 
-predict_multi_gaussian <- function(n, data, samples, 
+predict_gaussian_multi <- function(n, data, samples, 
                                    link = "identity", ...) {
   # currently no truncation available
   obs <- seq(n, data$N, data$N_trait)
   .fun <- function(i) {
     rmulti_normal(1, Sigma = samples$Sigma[i, , ],
-                 mu = ilink(samples$eta[i, obs], link))
+                  mu = ilink(samples$eta[i, obs], link))
   }
   do.call(rbind, lapply(1:nrow(samples$eta), .fun))
 }
 
-predict_multi_student <- function(n, data, samples, 
+predict_student_multi <- function(n, data, samples, 
                                   link = "identity", ...) {
   # currently no truncation available
   obs <- seq(n, data$N, data$N_trait)
@@ -63,7 +63,7 @@ predict_multi_student <- function(n, data, samples,
   do.call(rbind, lapply(1:nrow(samples$eta), .fun))
 }
 
-predict_multi_cauchy <- function(n, data, samples, 
+predict_cauchy_multi <- function(n, data, samples, 
                                  link = "identity", ...) {
   # currently no truncation available
   obs <- seq(n, data$N, data$N_trait)
@@ -128,6 +128,29 @@ predict_student_cov <- function(n, data, samples, link = "identity", ...) {
 predict_cauchy_cov <- function(n, data, samples, link = "identity", ...) {
   samples$nu <- matrix(rep(1, nrow(samples$eta)))
   predict_student_cov(n = n, data = data, samples = samples, link = link, ...) 
+}
+
+predict_gaussian_fixed <- function(n, data, samples, link = "identity", ...) {
+  stopifnot(n == 1)
+  .fun <- function(i) {
+    rmulti_normal(1, mu = ilink(samples$eta[i, ], link), Sigma = data$V)
+  }
+  do.call(rbind, lapply(1:nrow(samples$eta), .fun))
+}
+
+predict_student_fixed <- function(n, data, samples, link = "identity", ...) {
+  stopifnot(n == 1)
+  .fun <- function(i) {
+    rmulti_normal(1, df = samples$nu[i, ], Sigma = data$V,
+                  mu = ilink(samples$eta[i, ], link))
+  }
+  do.call(rbind, lapply(1:nrow(samples$eta), .fun))
+}
+
+predict_cauchy_fixed <- function(n, data, samples, link = "identity", ...) {
+  stopifnot(n == 1)
+  samples$nu <- matrix(rep(1, nrow(samples$eta)))
+  predict_student_fixed(n, data = data, samples = samples, link = link, ...)
 }
 
 predict_binomial <- function(n, data, samples, link = "logit", ntrys, ...) {

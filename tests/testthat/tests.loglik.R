@@ -48,13 +48,13 @@ test_that("loglik for multivariate linear models runs without errors", {
   data <- list(Y = matrix(rnorm(nobs), ncol = nvars), 
                N_trait = ncols, K_trait = nvars)
   
-  ll <- loglik_multi_gaussian(1, data = data, samples = s)
+  ll <- loglik_gaussian_multi(1, data = data, samples = s)
   expect_equal(length(ll), ns)
   
-  ll <- loglik_multi_student(2, data = data, samples = s)
+  ll <- loglik_student_multi(2, data = data, samples = s)
   expect_equal(length(ll), ns)
   
-  ll <- loglik_multi_cauchy(2, data = data, samples = s)
+  ll <- loglik_cauchy_multi(2, data = data, samples = s)
   expect_equal(length(ll), ns)
 })
 
