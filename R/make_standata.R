@@ -289,7 +289,6 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     if (Kar || Kma) {
       # ARMA effects (of residuals)
       standata$tg <- as.numeric(as.factor(tgroup))
-      standata$E_pre <- matrix(0, nrow = standata$N, ncol = max(Kar, Kma))
       standata$Kar <- Kar
       standata$Kma <- Kma
       standata$Karma <- max(Kar, Kma)

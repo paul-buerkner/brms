@@ -69,7 +69,7 @@ cor_arma <- function(formula = ~ 1, p = 0, q = 0, r = 0, cov = FALSE) {
 
 #' @export
 cor.arma <- function(formula = ~ 1, p = 0, q = 0, r = 0, cov = FALSE) {
-  # deprecated alias of cor_carma
+  # deprecated alias of cor_arma
   cor_arma(formula = formula, p = p, q = q, r = r, cov = cov)
 }
 
@@ -178,45 +178,33 @@ has_arma <- function(x) {
 
 get_ar <- function(x) {
   # get AR (autoregressive effects of residuals) order 
-  # and ensure backwards compatibility with old models (brms <= 0.5.0),
   # for which AR effects were not implemented in the present form
-  if (!(is(x, "cor_arma") || is(x, "cor.arma"))) {
-    stop("x must be of class cor_arma")
+  if (!(is(x, "cor_brms") || is(x, "cor.brms"))) {
+    stop("x must be of class cor_brms")
   }
-  if (is.null(x$r)) {
-    # for models fitted with brms <= 0.5.0
-    0
-  } else {
-    x$p
-  }
+  ifelse(is.null(x$p), 0, x$p)
 }
 
 get_ma <- function(x) {
   # get MA (moving-average) order
-  if (!(is(x, "cor_arma") || is(x, "cor.arma"))) {
-    stop("x must be of class cor_arma")
+  if (!(is(x, "cor_brms") || is(x, "cor.brms"))) {
+    stop("x must be of class cor_brms")
   }
-  x$q
+  ifelse(is.null(x$q), 0, x$q)
 }
 
 get_arr <- function(x) {
   # get ARR (autoregressive effects of the response) order 
-  # and ensure backwards compatibility with old models (brms <= 0.5.0),
   # for which ARR was labled as AR
-  if (!(is(x, "cor_arma") || is(x, "cor.arma"))) {
-    stop("x must be of class cor_arma")
+  if (!(is(x, "cor_brms") || is(x, "cor.brms"))) {
+    stop("x must be of class cor_brms")
   }
-  if (is.null(x$r)) {
-    # for models fitted with brms <= 0.5.0
-    x$p
-  } else {
-    x$r
-  }
+  ifelse(is.null(x$r), 0, x$r)
 }
 
 use_cov <- function(x) {
-  if (!(is(x, "cor_arma") || is(x, "cor.arma"))) {
-    stop("x must be of class cor_arma")
+  if (!(is(x, "cor_brms") || is(x, "cor.brms"))) {
+    stop("x must be of class cor_brms")
   }
   if (!is.null(x$cov) && sum(x$p, x$q) > 0) {
     x$cov

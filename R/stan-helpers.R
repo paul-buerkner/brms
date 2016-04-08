@@ -265,7 +265,7 @@ stan_arma <- function(family, autocor, prior = prior_frame(),
       link <- c(identity = "", log = "log", inverse = "inv")[family$link]
       out$transD <- paste0("  matrix[N, Karma] E;  // ARMA design matrix \n",
                            "  vector[N] e;  // residuals \n") 
-      out$transC1 <- "  E <- E_pre; \n" 
+      out$transC1 <- "  E <- rep_matrix(0.0, N, Karma); \n" 
       out$transC2 <- paste0(
         wsp, "// calculation of ARMA effects \n",
         wsp, "e[n] <- ", link, "(Y[", index, "]) - eta[n]", "; \n",
