@@ -288,3 +288,17 @@ test_that("functions defined in 'stan_funs' appear in the functions block", {
   expect_match(make_stancode(time ~ age, data = kidney, stan_funs = test_fun),
                test_fun, fixed = TRUE)
 })
+
+test_that("fixed residual covariance matrices appear in the Stan code", {
+  data <- data.frame(y = 1:5)
+  V <- diag(5)
+  expect_match(make_stancode(y~1, data = data, family = gaussian(), 
+                             autocor = cor_fixed(V)),
+               "Y ~ multi_normal_cholesky(eta, LV)", fixed = TRUE)
+  expect_match(make_stancode(y~1, data = data, family = student(),
+                             autocor = cor_fixed(V)),
+               "Y ~ multi_student_t(nu, eta, V)", fixed = TRUE)
+  expect_match(make_stancode(y~1, data = data, family = cauchy(),
+                             autocor = cor_fixed(V)),
+               "Y ~ multi_student_t(1.0, eta, V)", fixed = TRUE)
+})

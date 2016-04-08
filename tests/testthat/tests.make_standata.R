@@ -334,3 +334,11 @@ test_that("make_standata correctly prepares data for monotonous effects", {
   expect_error(make_standata(y ~ monotonous(x1 + x2), data = data, prior = prior),
                "Invalid dirichlet prior for the simplex of x2", fixed = TRUE)
 })
+
+test_that("make_standata returns fixed residual covariance matrices", {
+  data <- data.frame(y = 1:5)
+  V <- diag(5)
+  expect_equal(make_standata(y~1, data, autocor = cor_fixed(V))$V, V)
+  expect_error(make_standata(y~1, data, autocor = cor_fixed(diag(2))),
+               "'V' must have the same number of rows as 'data'")
+})

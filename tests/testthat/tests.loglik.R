@@ -79,6 +79,18 @@ test_that("loglik for ARMA covariance models runs without errors", {
   expect_equal(length(ll), ns)
 })
 
+test_that("loglik for 'cor_fixed' models runs without errors", {
+  data <- list(Y = rnorm(10), V = diag(10))
+  samples <- list(eta = matrix(rnorm(30), nrow = 3),
+                  nu = matrix(rep(2, 3)))
+  ll <- loglik_gaussian_fixed(1, data = data, samples = samples)
+  expect_equal(length(ll), 3)
+  ll <- loglik_student_fixed(1, data = data, samples = samples)
+  expect_equal(length(ll), 3)
+  ll <- loglik_cauchy_fixed(1, data = data, samples = samples)
+  expect_equal(length(ll), 3)
+})
+
 test_that("loglik for count and survival models works correctly", {
   ns <- 25
   nobs <- 10
