@@ -141,8 +141,8 @@ predict_gaussian_fixed <- function(n, data, samples, link = "identity", ...) {
 predict_student_fixed <- function(n, data, samples, link = "identity", ...) {
   stopifnot(n == 1)
   .fun <- function(i) {
-    rmulti_normal(1, df = samples$nu[i, ], Sigma = data$V,
-                  mu = ilink(samples$eta[i, ], link))
+    rmulti_student(1, df = samples$nu[i, ], Sigma = data$V,
+                   mu = ilink(samples$eta[i, ], link))
   }
   do.call(rbind, lapply(1:nrow(samples$eta), .fun))
 }

@@ -161,12 +161,36 @@ cor_arr <- function(formula = ~ 1, r = 1) {
   cor_arma(formula = formula, p = 0, q = 0, r = r)
 }
 
+#' Fixed residual covariance matrices
+#' 
+#' Define fixed residual covariance matrices for instance
+#' to model multivariate effect sizes in meta-analysis.
+#' 
+#' @param V Known residual covariance matrix.
+#'   If a vector is passed, it will be used as diagonal entries 
+#'   (variances) and covariances will be set to zero.
+#'
+#' @return An object of class \code{cor_fixed}.
+#' 
+#' @examples 
+#' \dontrun{
+#' dat <- data.frame(y = rnorm(3))
+#' V <- cbind(c(0.5, 0.3, 0.2), c(0.3, 1, 0.1), c(0.2, 0.1, 0.2))
+#' fit <- brm(y~1, data = dat, autocor = cor_fixed(V))
+#' }
+#' 
 #' @export
 cor_fixed <- function(V) {
   if (is.vector(V)) {
     V <- diag(V)
   } else {
     V <- as.matrix(V)
+  }
+  if (!isSymmetric(unname(V))) {
+    stop("'V' must be symmetric", call. = FALSE)
+  }
+  if (min(eigen(V)$values <= 0)) {
+    stop("'V' must be positive definite", call. = FALSE)
   }
   structure(list(V = V), class = c("cor_fixed", "cor_brms"))
 }
