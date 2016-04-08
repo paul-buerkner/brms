@@ -165,11 +165,6 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   } else if (!"data.frame" %in% class(newdata)) {
     stop("newdata must be a data.frame")
   }
-  if (is(fit$autocor, "cor_fixed")) {
-    stop(paste("'newdata' cannot be specified in models with",
-               "a fixed residual covariance matrix"),
-         call. = FALSE)
-  }
   # standata will be based on an updated formula if re_formula is specified
   new_ranef <- check_re_formula(re_formula, old_ranef = fit$ranef,
                                 data = fit$data)
@@ -292,6 +287,9 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       comp <- c("trials", "ncat", paste0("Jm", p))
       control[comp] <- standata(fit)[comp]
     } 
+    if (is(fit$autocor, "cor_fixed")) {
+      fit$autocor$V <- diag(median(diag(fit$autocor$V)), nrow(newdata))
+    }
     newdata <- make_standata(new_formula, data = newdata, family = fit$family, 
                              autocor = fit$autocor, nonlinear = new_nonlinear,
                              partial = fit$partial, control = control)

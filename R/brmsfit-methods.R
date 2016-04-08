@@ -980,8 +980,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   mf <- model.frame(x)
   mono_vars <- unique(ulapply(get_effect(ee, "mono"), all.vars))
   if (is.null(conditions)) {
-    if (!is_equal(x$autocor, cor_arma()) || 
-        length(rmNULL(ee[c("trials", "cat")]))) {
+    if (has_arma(x$autocor) || length(rmNULL(ee[c("trials", "cat")]))) {
       stop("Please specify argument 'conditions' manually for this model.", 
            call. = FALSE)
     }
