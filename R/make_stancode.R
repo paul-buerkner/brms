@@ -170,8 +170,10 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     "transformed data { \n",
        text_categorical$tdataD,
        text_pred$tdataD,
+       text_arma$tdataD,
        text_categorical$tdataC,
        text_pred$tdataC,
+       text_arma$tdataC,
     "} \n")
   
   # generate parameters block

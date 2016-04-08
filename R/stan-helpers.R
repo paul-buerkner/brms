@@ -30,14 +30,19 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
   is_trunc <- trunc$lb > -Inf || trunc$ub < Inf
   if (is_multi) {
     # prepare for use of a multivariate likelihood
-    family <- paste0("multi_", family)
+    family <- paste0(family, "_multi")
   } else if (use_cov(autocor) && (get_ar(autocor) || get_ma(autocor))) {
     # ARMA effects have a special formulation
     # if fitted using a covariance matrix for residuals
-    family <- paste0(family, "_cov")
     if (weights || cens || is_trunc) {
       stop("Invalid addition arguments", call. = FALSE)
     }
+    family <- paste0(family, "_cov")
+  } else if (is(autocor, "cor_fixed")) {
+    if (se || weights || cens || is_trunc) {
+      stop("Invalid addition arguments", call. = FALSE)
+    }
+    family <- paste0(family, "_fixed")
   } else if (is.lognormal(family, link = link)) {
     # prepare for use of lognormal likelihood
     family <- "lognormal"
@@ -91,16 +96,19 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
       gaussian = c("normal", paste0(eta,", ",sigma)),
       gaussian_cov = c("normal_cov", paste0(eta,", se2, N_tg, ", 
                        "begin_tg, end_tg, nobs_tg, res_cov_matrix")),
+      gaussian_multi = c("multi_normal_cholesky", paste0("Eta",n,", LSigma")),
+      gaussian_fixed = c("multi_normal_cholesky", paste0(eta,", LV")),
       student = c("student_t",  paste0("nu, ",eta,", ",sigma)),
       student_cov = c("student_t_cov", paste0("nu, ",eta,", se2, N_tg, ", 
                       "begin_tg, end_tg, nobs_tg, res_cov_matrix")),
+      student_multi = c("multi_student_t", paste0("nu, Eta",n,", Sigma")),
+      student_fixed = c("multi_student_t", paste0("nu, ",eta,", V")),
       cauchy = c("cauchy", paste0(eta,", ", sigma)),
       cauchy_cov = c("student_t_cov", paste0("1, ",eta,", se2, N_tg, ", 
                      "begin_tg, end_tg, nobs_tg, res_cov_matrix")),
+      cauchy_multi = c("multi_student_t", paste0("1.0, Eta",n,", Sigma")),
+      cauchy_fixed = c("multi_student_t", paste0("1.0, ",eta,", V")),
       lognormal = c("lognormal", paste0(eta,", ",sigma)),
-      multi_gaussian = c("multi_normal_cholesky", paste0("Eta",n,", LSigma")),
-      multi_student = c("multi_student_t", paste0("nu, Eta",n,", Sigma")),
-      multi_cauchy = c("multi_student_t", paste0("1.0, Eta",n,", Sigma")),
       poisson = c("poisson", eta),
       negbinomial = c("neg_binomial_2", paste0(eta,", ",shape)),
       geometric = c("neg_binomial_2", paste0(eta,", 1")),
@@ -286,6 +294,18 @@ stan_arma <- function(family, autocor, prior = prior_frame(),
       "  vector", with(prior, bound[class == "arr"]), "[Karr] arr;",
       "  // autoregressive effects of the response \n")
     out$prior <- paste0(out$prior, stan_prior(class = "arr", prior = prior))
+  }
+  if (is(autocor, "cor_fixed")) {
+    if (!is_linear) {
+      stop(paste("Fixed residual covariance matrices for family", 
+                 family$family, "are not yet implemented"), 
+           call. = FALSE)
+    }
+    out$data <- "  matrix[N, N] V; \n"
+    if (family$family %in% "gaussian") {
+      out$tdataD <- "  matrix[N, N] LV; \n"
+      out$tdataC <- "  LV <- cholesky_decompose(V); \n"
+    }
   }
   out
 }

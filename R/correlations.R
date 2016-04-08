@@ -162,6 +162,16 @@ cor_arr <- function(formula = ~ 1, r = 1) {
 }
 
 #' @export
+cor_fixed <- function(V) {
+  if (is.vector(V)) {
+    V <- diag(V)
+  } else {
+    V <- as.matrix(V)
+  }
+  structure(list(V = V), class = c("cor_fixed", "cor_brms"))
+}
+
+#' @export
 print.cor_arma <- function(x, ...) {
   cat(paste0("arma(", gsub(" ", "", Reduce(paste, deparse(x$formula))),
              ", ",get_ar(x),", ",get_ma(x),", ",get_arr(x),")"))

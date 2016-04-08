@@ -682,7 +682,7 @@ has_sigma <- function(family, autocor = cor_arma(), se = FALSE,
   #  is_multi: is the model multivariate?
   if (is.null(se)) se <- FALSE
   if (is.formula(se)) se <- TRUE
-  is.linear(family) && !is_multi && 
+  is.linear(family) && !is_multi && !is(autocor, "cor_fixed") &&
     (!se || get_ar(autocor) || get_ma(autocor)) 
 }
 

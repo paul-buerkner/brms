@@ -315,6 +315,13 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       standata$Karr <- Karr
     }
   } 
+  if (is(autocor, "cor_fixed")) {
+    if (nrow(autocor$V) != nrow(data)) {
+      stop(paste("'V' must have the same number of rows as 'data'",
+                 "after removing NAs"), call. = FALSE)
+    }
+    standata$V <- autocor$V
+  }
   standata$prior_only <- ifelse(identical(sample_prior, "only"), 1L, 0L)
   if (isTRUE(control$save_order)) {
     attr(standata, "old_order") <- attr(data, "old_order")
