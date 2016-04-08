@@ -19,6 +19,9 @@ test_that("make_stancode accepts supported links", {
   expect_match(make_stancode(rating ~ treat + period + carry, 
                              data = inhaler, family = "poisson"), 
                "log")
+  expect_match(make_stancode(cbind(rating, rating + 1) ~ 1, 
+                             data = inhaler, family = gaussian("log")), 
+               "Eta[m, k] <- exp(eta[n])", fixed = TRUE)
 })
 
 test_that(paste("make_stancode returns correct strings", 
