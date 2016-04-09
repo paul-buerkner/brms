@@ -316,11 +316,19 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     }
   } 
   if (is(autocor, "cor_fixed")) {
-    if (nrow(autocor$V) != nrow(data)) {
+    V <- autocor$V
+    rmd_rows <- attr(data, "na.action")
+    if (!is.null(rmd_rows)) {
+      V <- V[-rmd_rows, -rmd_rows, drop = FALSE]
+    }
+    if (nrow(V) != nrow(data)) {
       stop(paste("'V' must have the same number of rows as 'data'",
                  "after removing NAs"), call. = FALSE)
     }
-    standata$V <- autocor$V
+    if (min(eigen(V)$values <= 0)) {
+      stop("'V' must be positive definite", call. = FALSE)
+    }
+    standata$V <- V
   }
   standata$prior_only <- ifelse(identical(sample_prior, "only"), 1L, 0L)
   if (isTRUE(control$save_order)) {

@@ -288,7 +288,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       control[comp] <- standata(fit)[comp]
     } 
     if (is(fit$autocor, "cor_fixed")) {
-      fit$autocor$V <- diag(median(diag(fit$autocor$V)), nrow(newdata))
+      fit$autocor$V <- diag(median(diag(fit$autocor$V), na.rm = TRUE), 
+                            nrow(newdata))
     }
     newdata <- make_standata(new_formula, data = newdata, family = fit$family, 
                              autocor = fit$autocor, nonlinear = new_nonlinear,

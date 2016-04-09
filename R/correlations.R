@@ -189,9 +189,6 @@ cor_fixed <- function(V) {
   if (!isSymmetric(unname(V))) {
     stop("'V' must be symmetric", call. = FALSE)
   }
-  if (min(eigen(V)$values <= 0)) {
-    stop("'V' must be positive definite", call. = FALSE)
-  }
   structure(list(V = V), class = c("cor_fixed", "cor_brms"))
 }
 
