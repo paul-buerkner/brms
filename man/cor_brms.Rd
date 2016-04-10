@@ -3,7 +3,7 @@
 \alias{cor_brms-class}
 
 \title{
-Correlation structure classes
+Correlation structure classes for the \pkg{brms} package
 }
 
 \description{
@@ -15,15 +15,17 @@ but the class common to all correlation structures implemented in \pkg{brms}.
 \value{
 Avaiblable correlation structures
 \describe{
-  \item{cor_ar}{autoregressive process of arbitrary order.}
+  \item{cor_ar}{autoregressive process of arbitrary order}
   \item{cor_arma}{autoregressive-moving average process, with arbitrary orders for the 
-                  autoregressive and moving average components.}
-  \item{cor_arr}{autoregressive process of the response (instead of residuals) of arbitrary order.} 
-  \item{cor_ma}{moving average process of arbitrary order.} 
+                  autoregressive and moving average components}
+  \item{cor_arr}{autoregressive process of the response (instead of residuals) of arbitrary order} 
+  \item{cor_ma}{moving average process of arbitrary order} 
+  \item{cor_fixed}{fixed user-defined covariance structure}
 }
 }
 
 \seealso{
 \code{\link[brms:cor_ar]{cor_ar}, \link[brms:cor_arma]{cor_arma}, 
-      \link[brms:cor_arr]{cor_arr}, \link[brms:cor_ma]{cor_ma}}
+      \link[brms:cor_arr]{cor_arr}, \link[brms:cor_ma]{cor_ma},
+      \link[brms:cor_fixed]{cor_fixed}}
 }

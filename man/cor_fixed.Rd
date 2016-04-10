@@ -2,12 +2,12 @@
 % Please edit documentation in R/correlations.R
 \name{cor_fixed}
 \alias{cor_fixed}
-\title{Fixed residual covariance matrices}
+\title{Fixed user-defined covariance matrices}
 \usage{
 cor_fixed(V)
 }
 \arguments{
-\item{V}{Known residual covariance matrix.
+\item{V}{Known covariance matrix of the response variable.
 If a vector is passed, it will be used as diagonal entries 
 (variances) and covariances will be set to zero.}
 }
@@ -15,8 +15,8 @@ If a vector is passed, it will be used as diagonal entries
 An object of class \code{cor_fixed}.
 }
 \description{
-Define fixed residual covariance matrices for instance
-to model multivariate effect sizes in meta-analysis.
+Define a fixed covariance matrix of the response variable
+for instance to model multivariate effect sizes in meta-analysis.
 }
 \examples{
 \dontrun{

@@ -161,12 +161,12 @@ cor_arr <- function(formula = ~ 1, r = 1) {
   cor_arma(formula = formula, p = 0, q = 0, r = r)
 }
 
-#' Fixed residual covariance matrices
+#' Fixed user-defined covariance matrices 
 #' 
-#' Define fixed residual covariance matrices for instance
-#' to model multivariate effect sizes in meta-analysis.
+#' Define a fixed covariance matrix of the response variable
+#' for instance to model multivariate effect sizes in meta-analysis.
 #' 
-#' @param V Known residual covariance matrix.
+#' @param V Known covariance matrix of the response variable.
 #'   If a vector is passed, it will be used as diagonal entries 
 #'   (variances) and covariances will be set to zero.
 #'
