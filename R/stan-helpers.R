@@ -179,14 +179,14 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
   llh
 }
 
-stan_arma <- function(family, autocor, prior = prior_frame(),
+stan_autocor <- function(family, autocor, prior = prior_frame(),
                       has_se = FALSE, has_disp = FALSE, 
                       is_multi = FALSE, nonlinear = NULL) {
-  # AR(R)MA autocorrelation in Stan
+  # Stan code related to autocorrelation structures
   # 
   # Args:
   #   family: the model family
-  #   autocor: autocorrelation structure; object of class cor_arma
+  #   autocor: autocorrelation structure; object of class cor_brms
   #   prior: a data.frame containing user defined priors 
   #          as returned by check_prior
   #   has_se: user defined standard errors present?

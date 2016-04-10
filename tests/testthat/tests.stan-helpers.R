@@ -61,33 +61,33 @@ test_that("stan_eta returns correct strings for autocorrelation models", {
                "eta <- X * b + temp_Intercept + Yarr * arr", fixed = TRUE)
 })
 
-test_that("stan_arma returns correct strings (or errors)", {
-  expect_equal(stan_arma(family = gaussian(log), 
-                         autocor = cor.arma()), list())
+test_that("stan_autocor returns correct strings (or errors)", {
+  expect_equal(stan_autocor(family = gaussian(log), 
+                            autocor = cor.arma()), list())
   prior <- c(set_prior("normal(0,2)", class = "ar"),
              set_prior("cauchy(0,1)", class = "ma"))
   
-  temp_arma <- stan_arma(family = gaussian(log), prior = prior,
-                         autocor = cor_arma(~visit|patient, q = 1))
+  temp_arma <- stan_autocor(family = gaussian(log), prior = prior,
+                            autocor = cor_arma(~visit|patient, q = 1))
   expect_match(temp_arma$transC2, "E[n + 1, i] <- e[n + 1 - i]", 
                fixed = TRUE)
   expect_match(temp_arma$prior, "ma ~ cauchy(0,1)", fixed = TRUE)
   
-  temp_arma <- stan_arma(family = gaussian(log), is_multi = TRUE, 
-                         autocor = cor_arma(~visit|patient, p = 1),
-                         prior = prior)
+  temp_arma <- stan_autocor(family = gaussian(log), is_multi = TRUE, 
+                            autocor = cor_arma(~visit|patient, p = 1),
+                            prior = prior)
   expect_match(temp_arma$transC2, "e[n] <- log(Y[m, k]) - eta[n]", 
                fixed = TRUE)
   expect_match(temp_arma$prior, "ar ~ normal(0,2)", fixed = TRUE)
   
-  temp_arma <- stan_arma(family = gaussian(log), prior = prior,
-                         autocor = cor_arr(~visit|patient))
+  temp_arma <- stan_autocor(family = gaussian(log), prior = prior,
+                            autocor = cor_arr(~visit|patient))
   expect_match(temp_arma$data, fixed = TRUE,
                "int<lower=1> Karr; \n  matrix[N, Karr] Yarr;")
   expect_match(temp_arma$par, "vector[Karr] arr;", fixed = TRUE)
   
-  expect_error(stan_arma(family = poisson(),
-                         autocor = cor.arma(~visit|patient, p = 1, q = 1)),
+  expect_error(stan_autocor(family = poisson(),
+                            autocor = cor.arma(~visit|patient, p = 1, q = 1)),
                "ARMA effects for family poisson are not yet implemented")
 })  
 
