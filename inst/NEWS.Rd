@@ -5,17 +5,40 @@
 \section{CHANGES IN VERSION 0.8.0.9000}{
   \subsection{NEW FEATURES}{
     \itemize{ 
+      \item Add support for \code{monotonous} effects
+      allowing to use ordinal predictors without 
+      assuming their categories to be equidistant.
+      \item Apply multivariate formula syntax in categorical 
+      models to considerably increase modeling flexibility. 
       \item Add the addition argument \code{disp} to define 
       multiplicative factors on dispersion parameters. 
       For linear models, \code{disp} applies to the residual
       standard deviation \code{sigma} so that it can be
       used to weight observations.
+      \item Treat the fixed effects design matrix as sparse
+      by using the \code{sparse} argument of \code{brm}. 
+      This can considerably reduce working memory 
+      requirements if the predictors contain many zeros.
+      \item Add the \code{cor_fixed} correlation structure to
+      allow for fixed user-defined covariance matrices of the 
+      response variable.
+      \item Allow to pass self-defined \pkg{Stan} functions
+      via argument \code{stan_funs} of \code{brm}. 
+      \item Add the \code{expose_functions} method allowing to
+      expose self-defined \pkg{Stan} functions in \code{R}.
       \item Extend the functionality of the \code{update} 
       method to allow all model parts to be updated.
+      \item Center the fixed effects design matrix also 
+      in multivariate models. This may lead to increased
+      sampling speed in models with many predictors.
     }
   }
   \subsection{OTHER CHANGES}{
     \itemize{
+      \item Refactor \pkg{Stan} code and data generating 
+      functions to be more consistent and easier to extent.
+      \item Improve checks of user-define prior specifications.
+      \item Warn about models that have not converged.
       \item Make sure that regression curves computed by
       the \code{marginal_effects} method are always smooth.
       \item Allow to define category specific effects in
@@ -31,6 +54,9 @@
       \item Fix a bug that prohibited to change priors
       on single standard deviation parameters
       in non-linear models thanks to Emmanuel Charpentier.
+      \item Fix a bug that prohibited to use nested
+      grouping factors in non-linear models thanks to
+      Tom Wallis.
       \item Fix a bug in the linear predictor computation
       within \code{R}, occuring for ordinal models 
       with multiple category specific effects. This
