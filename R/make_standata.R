@@ -322,8 +322,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       V <- V[-rmd_rows, -rmd_rows, drop = FALSE]
     }
     if (nrow(V) != nrow(data)) {
-      stop(paste("'V' must have the same number of rows as 'data'",
-                 "after removing NAs"), call. = FALSE)
+      stop("'V' must have the same number of rows as 'data'", call. = FALSE)
     }
     if (min(eigen(V)$values <= 0)) {
       stop("'V' must be positive definite", call. = FALSE)
