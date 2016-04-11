@@ -151,18 +151,107 @@ get_matches <- function(pattern, text, simplify = TRUE, ...) {
 }
 
 logit <- function(p) {
-  # compute the logit
+  # logit link
   log(p / (1 - p))
 }
 
 inv_logit <- function(x) { 
-  # compute the inverse of logit
+  # inverse of logit link
   1 / (1 + exp(-x))
+}
+
+cloglog <- function(x) {
+  # cloglog link
+  log(-log(1-x))
+}
+
+inv_cloglog <- function(x) {
+  # inverse of the cloglog link
+  1 - exp(-exp(x))
+}
+
+Phi <- function(x) {
+  pnorm(x)
 }
 
 incgamma <- function(x, a) {
   # incomplete gamma funcion
   pgamma(x, shape = a) * gamma(a)
+}
+
+square <- function(x) {
+  x^2
+}
+
+cbrt <- function(x) {
+  x^(1/3)
+}
+
+exp2 <- function(x) {
+  2^x
+}
+
+pow <- function(x, y) {
+  x^y
+}
+
+inv <- function(x) {
+  1/x
+}
+
+inv_sqrt <- function(x) {
+  1/sqrt(x)
+}
+
+inv_square <- function(x) {
+  1/x^2
+}
+
+hypot <- function(x, y) {
+  stopifnot(all(x >= 0))
+  stopifnot(all(y >= 0))
+  sqrt(x^2 + y^2)
+}
+
+log1p <- function(x) {
+  log(1 + x)
+}
+
+log1m <- function(x) {
+  log(1 - x)
+}
+
+expm1 <- function(x) {
+  exp(x) - 1
+}
+
+multiply_log <- function(x) {
+  ifelse(x == y & x == 0, 0, x * log(y))
+}
+
+log1p_exp <- function(x) {
+  log(1 + exp(x))
+}
+
+log1m_exp <- function(x) {
+  ifelse(x < 0, log(1 - exp(x)), NaN)
+}
+
+log_diff_exp <- function(x, y) {
+  stopifnot(length(x) == length(y))
+  ifelse(x > y, log(exp(x) - exp(y)), NaN)
+}
+
+log_sum_exp <- function(x, y) {
+  log(exp(x) + exp(y))
+}
+
+log_inv_logit <- function(x) {
+  log(inv_logit(x))
+}
+
+log1m_inv_logit <- function(x) {
+  log(1 - inv_logit(x))
 }
 
 wsp <- function(x, nsp = 1) {
