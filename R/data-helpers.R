@@ -12,8 +12,7 @@ melt_data <- function(data, family, effects, na.action = na.omit) {
   nresp <- length(response)
   if (is.mv(family, response = response)) {
     if (!is(data, "data.frame")) {
-      stop("argument 'data' must be a data.frame for this model", 
-           call. = FALSE)
+      stop("'data' must be a data.frame for this model", call. = FALSE)
     }
     # only keep variables that are relevant for the model
     rel_vars <- c(all.vars(effects$all), all.vars(effects$respform))
@@ -62,9 +61,9 @@ melt_data <- function(data, family, effects, na.action = na.omit) {
   }
   if (isTRUE(attr(effects$fixed, "rsv_intercept"))) {
     if (is.null(data)) 
-      stop("argument 'data' must be a data.frame or list", call. = FALSE)
+      stop("'data' must be a data.frame or list", call. = FALSE)
     if ("intercept" %in% names(data)) {
-      stop(paste("intercept is a reserved variable name in models",
+      stop(paste("'intercept' is a reserved variable name in models",
                  "without a fixed effects intercept"), call. = FALSE)
     }
     data$intercept <- rep(1, length(data[[1]]))
