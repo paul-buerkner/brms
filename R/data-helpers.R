@@ -97,6 +97,19 @@ combine_groups <- function(data, ...) {
   data
 }
 
+fix_factor_contrasts <- function(data) {
+  # hard code factor contrasts to be independent
+  # of the global "contrasts" option
+  stopifnot(is(data, "data.frame"))
+  for (i in seq_along(data)) {
+    if (is.factor(data[[i]])) {
+      # hard code current global "contrasts" option
+      contrasts(data[[i]]) <- contrasts(data[[i]])
+    }
+  }
+  data
+}
+
 update_data <- function(data, family, effects, ..., 
                         na.action = na.omit,
                         drop.unused.levels = TRUE) {
@@ -128,6 +141,7 @@ update_data <- function(data, family, effects, ...,
       stop("variable names may not contain double underscores '__'",
            call. = FALSE)
     data <- combine_groups(data, get_random(effects)$group, ...)
+    data <- fix_factor_contrasts(data)
     attr(data, "brmsframe") <- TRUE
   }
   data

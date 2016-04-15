@@ -62,6 +62,8 @@
       with multiple category specific effects. This
       could lead to incorrect outputs of \code{predict},
       \code{fitted}, and \code{logLik} for these models.
+      \item Make sure that the global \code{"contrasts"} option 
+      is not used when post-processing a model.
     }
   }
 }
