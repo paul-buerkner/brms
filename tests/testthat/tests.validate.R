@@ -243,9 +243,11 @@ test_that("check_brm_input returns correct warnings and errors", {
 })
 
 test_that("exclude_pars returns expected parameter names", {
-  expect_true("eta_a" %in% exclude_pars(list(), nlpars = "a"))
-  ranef <- list(g = structure(c("x", "z"), cor = TRUE))
+  ranef <- list(g1 = structure(c("x", "z"), cor = TRUE),
+                g2 = structure(c("x"), cor = FALSE))
   expect_true(all(c("r_1_1", "r_1_2") %in% exclude_pars(ranef)))
-  expect_true("r_a_1_1" %in% exclude_pars(ranef, nlpars = "a"))
   expect_true("r_1" %in% exclude_pars(ranef, save_ranef = FALSE))
+  nlranef <- list(g1 = structure(c("x", "z"), cor = TRUE, nlpar = "a"),
+                g2 = structure(c("x"), cor = FALSE, nlpar = "a"))
+  expect_true(all(c("r_a_1_1", "r_a_1_2") %in% exclude_pars(nlranef)))
 })

@@ -776,8 +776,7 @@ check_brm_input <- function(x) {
   invisible(NULL)
 }
 
-exclude_pars <- function(ranef = list(), save_ranef = TRUE, 
-                         nlpars = NULL) {
+exclude_pars <- function(ranef = list(), save_ranef = TRUE) {
   # list irrelevant parameters NOT to be saved by Stan
   # 
   # Args:
@@ -790,6 +789,7 @@ exclude_pars <- function(ranef = list(), save_ranef = TRUE,
            "temp_Intercept",  "Lrescor", "Rescor", "Sigma", "LSigma",
            "disp_sigma", "e", "E", "res_cov_matrix", 
            "lp_pre", "hs_local", "hs_global")
+  nlpars <- ulapply(ranef, function(x) attr(x, "nlpar"))
   if (length(nlpars)) {
     out <- c(out, unique(paste0("eta_", nlpars)))
   }
