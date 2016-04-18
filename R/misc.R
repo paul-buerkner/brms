@@ -225,7 +225,7 @@ expm1 <- function(x) {
   exp(x) - 1
 }
 
-multiply_log <- function(x) {
+multiply_log <- function(x, y) {
   ifelse(x == y & x == 0, 0, x * log(y))
 }
 
