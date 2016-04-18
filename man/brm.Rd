@@ -34,7 +34,7 @@ Currently, the following families are supported:
 \code{exponential}, \code{weibull}, \code{categorical}, \code{cumulative}, 
 \code{cratio}, \code{sratio}, \code{acat}, \code{hurdle_poisson}, 
 \code{hurdle_negbinomial}, \code{hurdle_gamma}, \code{zero_inflated_binomial},
-\code{zero_inflated_beta}, \code{zero_inflated_negbinomial}, 
+\code{zero_inflated_beta}, \cr \code{zero_inflated_negbinomial}, 
 and \code{zero_inflated_poisson}.
 Every family function has a \code{link} argument allowing to specify
 the link function to be applied on the response variable.
@@ -422,7 +422,7 @@ Fit a generalized (non-)linear multilevel model,
   through the predictor \code{x}, where \code{x} is linked to \code{y}
   through \code{y = alpha - beta * lambda^x}, with parameters
   \code{alpha}, \code{beta}, and \code{lambda}. This is certainly a
-  non-linear model, which is readily defined via
+  non-linear model being defined via
   \code{formula = y ~ alpha - beta * lambda^x} (addition arguments 
   can be added in the same way as for ordinary formulas).
   Now we have to tell \pkg{brms} the names of the non-linear parameters 
@@ -433,7 +433,7 @@ Fit a generalized (non-)linear multilevel model,
   (and more flexible) \code{nonlinear = list(alpha ~ 1, beta ~ 1, lambda ~ 1)}. 
   This can, of course, be extended. If we have another predictor \code{z} and 
   observations nested within the grouping factor \code{g}, we may write for 
-  instance \code{nonlinear = list(alpha ~ 1, beta ~ 1 + z + (1|g), lambda ~ 1)}.
+  instance \cr \code{nonlinear = list(alpha ~ 1, beta ~ 1 + z + (1|g), lambda ~ 1)}.
   The formula syntax described above applies here as well.
   In this example, we are using \code{z} and \code{g} only for the 
   prediction of \code{beta}, but we might also use them for the other

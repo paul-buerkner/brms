@@ -110,7 +110,7 @@ Define priors for specific parameters or classes of parameters
   
   In non-linear models, population-level effects are defined separately 
   for each non-linear parameter. Accordingly, it is necessary to specify
-  the corresponding non-linear parameter in \code{set_prior} so that priors
+  the non-linear parameter in \code{set_prior} so that priors
   we can be assigned correctly. 
   If, for instance, \code{alpha} is the parameter and \code{x} the predictor
   for which we want to define the prior, we can write
@@ -179,6 +179,7 @@ Define priors for specific parameters or classes of parameters
   The autocorrelation parameters currently implemented are named 
   \code{ar} (autoregression), \code{ma} (moving average),
   and \code{arr} (autoregression of the response).
+  
   Priors can be defined by \code{set_prior("<prior>", class = "ar")} 
   for \code{ar} and similar for \code{ma} and \code{arr} effects.
   By default, \code{ar} and \code{ma} are bounded between \code{-1} 
@@ -200,7 +201,7 @@ Define priors for specific parameters or classes of parameters
   is beyond the scope of this documentation, but we want to describe
   how to define this prior syntactically correct.
   If a predictor \code{x} with \code{K} categories is modeled as monotonous, 
-  we can define a prior on its corresponding simplex via
+  we can define a prior on its corresponding simplex via \cr
   \code{set_prior("dirichlet(<vector>)", class = "simplex", coef = "x")}.
   For \code{<vector>}, we can put in any \code{R} expression
   defining a vector of length \code{K - 1}. The default is a uniform 
