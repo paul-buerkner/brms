@@ -537,8 +537,8 @@ match_response <- function(models) {
     #   x, y: named lists as returned by standata
     to_match <- c("Y", "se", "weights", "cens", "trunc")
     all(ulapply(to_match, function(v) 
-      is_equal(as_matrix(x[[v]])[attr(x, "old_order"), ], 
-               as_matrix(y[[v]])[attr(y, "old_order"), ])))
+      is_equal(as.vector(x[[v]])[attr(x, "old_order")], 
+               as.vector(y[[v]])[attr(y, "old_order")])))
   } 
   standatas <- lapply(models, standata, control = list(save_order = TRUE))
   matches <- ulapply(standatas[-1], .match_fun, y = standatas[[1]]) 
