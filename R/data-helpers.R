@@ -440,15 +440,15 @@ arr_design_matrix <- function(Y, r, group)  {
     out <- matrix(0, nrow = length(Y), ncol = r)
     ptsum <- rep(0, N_group + 1)
     for (j in 1:N_group) {
-      ptsum[j+1] <- ptsum[j] + sum(group == U_group[j])
+      ptsum[j + 1] <- ptsum[j] + sum(group == U_group[j])
       for (i in 1:r) {
-        if (ptsum[j] + i + 1 <= ptsum[j + 1])
+        if (ptsum[j] + i + 1 <= ptsum[j + 1]) {
           out[(ptsum[j] + i + 1):ptsum[j + 1], i] <- 
             Y[(ptsum[j] + 1):(ptsum[j + 1] - i)]
+        }
       }
     }
-  }
-  else out <- NULL
+  } else out <- NULL
   out
 }
 
