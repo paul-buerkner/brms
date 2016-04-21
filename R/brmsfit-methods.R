@@ -1031,6 +1031,10 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   for (i in seq_along(effects)) {
     marg_data <- mf[, effects[[i]], drop = FALSE]
     pred_types <- ifelse(ulapply(marg_data, is.numeric), "numeric", "factor")
+    # numeric effects should come first
+    new_order <- order(pred_types, decreasing = TRUE)
+    effects[[i]] <- effects[[i]][new_order]
+    pred_types <- pred_types[new_order]
     is_mono <- effects[[i]] %in% mono_vars
     if (pred_types[1] == "numeric") {
       min1 <- min(marg_data[, effects[[i]][1]])
@@ -1042,10 +1046,6 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
       }
     }
     if (length(effects[[i]]) == 2L) {
-      # numeric effects should come first
-      new_order <- order(pred_types, decreasing = TRUE)
-      effects[[i]] <- effects[[i]][new_order]
-      pred_types <- pred_types[new_order]
       if (pred_types[1] == "numeric") {
         values <- setNames(list(values, NA), effects[[i]])
         if (pred_types[2] == "numeric") {
