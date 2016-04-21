@@ -72,12 +72,15 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, points = FALSE,
                    data = attr(x[[i]], "points"), inherit.aes = FALSE)
       }
     } else {
-      # pointrange for factors
+      # points and errorbars for factors
       plots[[i]] <- plots[[i]] + 
-        geom_pointrange(position = position_dodge(width = 0.4), 
-                        fatten = 8 / nCond^0.25)
+        geom_point(position = position_dodge(width = 0.4),
+                   size = 4 / nCond^0.25) + 
+        geom_errorbar(position = position_dodge(width = 0.4),
+                      width = 0.3)
     }
     if (points) {
+      # show the data as points in the plot
       plots[[i]] <- plots[[i]] + 
         geom_point(aes_string(x = effects[1], y = ".RESP"), shape = 1,
                    size = 4 / nCond^0.25, data = attr(x[[i]], "points"), 
