@@ -1613,6 +1613,9 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
     if (is.null(dots$ranef)) {
       dots$ranef <- any(grepl("^r_", pnames)) || !length(object$ranef)
     }
+    if (is.null(dots$sparse)) {
+      dots$sparse <- grepl("sparse matrix", stancode(object))
+    }
     if (!isTRUE(dots$testmode)) {
       object <- do.call(brm, dots)
     }
