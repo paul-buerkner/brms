@@ -2,6 +2,25 @@
 \title{brms News}
 \encoding{UTF-8}
 
+\section{CHANGES IN VERSION 0.9.0.9000}{
+  \subsection{OTHER CHANGES}{
+    \itemize{ 
+      \item Add horizontal lines to the errorbars in 
+      \code{marginal_effects} plots for factors.
+    }
+  }
+  \subsection{BUG FIXES}{
+    \itemize{
+      \item Fix a bug that could lead to a cryptic error
+      message when changing some parts of the model 
+      \code{formula} using the \code{update} method.
+      \item Allow interactions of numeric and categorical
+      predictors in \code{marginal_effects} to be passed 
+      to the \code{effects} argument in any order.
+    }
+  }
+}
+
 \section{CHANGES IN VERSION 0.9.0}{
   \subsection{NEW FEATURES}{
     \itemize{ 
