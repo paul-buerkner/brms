@@ -12,6 +12,7 @@ Models fitted with the \code{\link[brms:brms]{brms}} package are represented as 
 \details{
   Currently, the following S3 methods are available for class \code{brmsfit}: 
   
+  \code{\link[brms:as.mcmc.brmsfit]{as.mcmc}},
   \code{\link[brms:coef.brmsfit]{coef}},
   \code{\link[stats:family]{family}},
   \code{\link[brms:fitted.brmsfit]{fitted}},
@@ -21,6 +22,7 @@ Models fitted with the \code{\link[brms:brms]{brms}} package are represented as 
   \code{\link[brms:launch_shiny.brmsfit]{launch_shiny}},
   \code{\link[brms:logLik.brmsfit]{logLik}},
   \code{\link[brms:LOO.brmsfit]{LOO}},
+  \code{\link[brms:marginal_effects.brmsfit]{marginal_effects}},
   \code{\link[stats:model.frame]{model.frame}},
   \code{\link[brms:ngrps.brmsfit]{ngrps}},
   \code{\link[stats:nobs]{nobs}},
@@ -40,7 +42,11 @@ Models fitted with the \code{\link[brms:brms]{brms}} package are represented as 
   \code{\link[brms:update.brmsfit]{update}},   
   \code{\link[brms:VarCorr.brmsfit]{VarCorr}}, 
   \code{\link[brms:vcov.brmsfit]{vcov}}, 
-  \code{\link[brms:WAIC.brmsfit]{WAIC}}
+  \code{\link[brms:WAIC.brmsfit]{WAIC}}.
+  
+  \code{brmsfit} objects do not have their own \code{tidy} method yet,
+  but you may use \code{broom::tidyMCMC(<brmsfit>$fit)} to
+  apply the \code{tidy} method for \code{stanfit} objects.
 }
 
 \section{Slots}{
