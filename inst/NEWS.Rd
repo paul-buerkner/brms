@@ -2,7 +2,7 @@
 \title{brms News}
 \encoding{UTF-8}
 
-\section{CHANGES IN VERSION 0.8.0.9000}{
+\section{CHANGES IN VERSION 0.9.0}{
   \subsection{NEW FEATURES}{
     \itemize{ 
       \item Add support for \code{monotonous} effects
