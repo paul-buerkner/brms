@@ -117,7 +117,7 @@ test_that("all S3 methods have reasonable ouputs", {
                       allow_new_levels = TRUE)
   expect_equal(dim(predict3), c(2, 4))
   # print
-  expect_output(print(fit), "Group-Level Effects:")
+  expect_output(SW(print(fit)), "Group-Level Effects:")
   # prior_samples
   prs1 <- prior_samples(fit)
   prior_names <- c("sd_visit", "sigma", "b", "bm", 

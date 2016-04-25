@@ -3,6 +3,13 @@
 \encoding{UTF-8}
 
 \section{CHANGES IN VERSION 0.9.0.9000}{
+  \subsection{NEW FEATURES}{
+    \itemize{ 
+      \item Allow the '/' symbol in group-level terms in 
+      the \code{formula} argument to indicate nested 
+      grouping structures.
+    }
+  }
   \subsection{OTHER CHANGES}{
     \itemize{ 
       \item Add horizontal lines to the errorbars in 

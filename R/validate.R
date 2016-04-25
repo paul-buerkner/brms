@@ -94,25 +94,8 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   covars <- setdiff(all.vars(rhs(x$fixed)), names(x$nonlinear))
   x$covars <- formula(paste("~", paste(c("1", covars), collapse = "+")))
   attr(x$covars, "rsv_intercept") <- TRUE
-  
   # extract random effects parts
-  form <- lapply(get_matches("\\([^\\|]*", re_terms), function(r) 
-                 formula(paste0("~ ", substr(r, 2, nchar(r)))))
-  group <- get_matches("\\|[^\\)]*", re_terms)
-  group_formula <- lapply(group, get_group_formula)
-  group <- ulapply(group_formula, function(g) 
-                   paste0(all.vars(g), collapse = ":"))
-  cor <- ulapply(get_matches("\\|[^\\)]*", re_terms), 
-                 function(g) substr(g, 1, 2) != "||")
-  random <- data.frame(group = group, cor = cor, 
-                       stringsAsFactors = FALSE)
-  if (nrow(random)) {
-    random$form <- form
-    # ensure that all REs of the same gf are next to each other
-    # to allow combining them in rename_pars later on
-    random <- random[order(random$group), ]
-  }
-  x$random <- random
+  x$random <- extract_random(re_terms)
   
   # handle addition arguments
   fun <- c("se", "weights", "trials", "cat", "cens", "trunc", "disp")
@@ -164,7 +147,7 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   formula_list <- c(if (resp_rhs_all) all.vars(lhs(x$fixed)), add_vars, 
                     rmNULL(x[c("covars", "cse", "mono")]), 
                     if (!length(x$nonlinear)) rhs(x$fixed), 
-                    x$random$form, group_formula, get_offset(x$fixed), 
+                    x$random$form, x$random$group, get_offset(x$fixed), 
                     lapply(x$nonlinear, function(nl) nl$all), ...)
   new_formula <- collapse(ulapply(formula_list, plus_rhs))
   x$all <- paste0("update(", tfixed, ", ~ ", new_formula, ")")
@@ -219,9 +202,16 @@ extract_time <- function(formula) {
          call. = FALSE)
   }
   x <- list(time = ifelse(length(time), time, ""))
-  group <- get_group_formula(sub("~[^\\|]*", "", formula))
+  group <- sub("^\\|*", "", sub("~[^\\|]*", "", formula))
+  if (illegal_group_expr(group, bs_valid = FALSE)) {
+    stop(paste("Illegal grouping term:", group, "\n may contain only", 
+               "variable names combined by the symbols ':'"),
+         call. = FALSE)
+  }
+  group <- formula(paste("~", ifelse(nchar(group), group, "1")))
   x$group <- paste0(all.vars(group), collapse = ":")
-  x$all <- formula(paste("~",paste(c("1", time, all.vars(group)), collapse = "+")))
+  x$all <- formula(paste("~", paste(c("1", time, all.vars(group)), 
+                                    collapse = "+")))
   x
 }
 
@@ -335,24 +325,57 @@ update_formula <- function(formula, data = NULL, family = gaussian(),
   formula
 }
 
-get_group_formula <- function(g) {
-  # transform grouping term in formula
-  # 
-  # Args: 
-  #   g: a grouping term 
-  #
-  # Returns:
-  #   the formula ~ g if g is valid and else an error
-  g <- sub("^\\|*", "", g)
-  if (nchar(gsub(":|[^([:digit:]|[:punct:])][[:alnum:]_\\.]*", "", g)))
-    stop(paste("Illegal grouping term:", g, "\n",
-               "may contain only variable names combined by the symbol ':'"),
-         call. = FALSE)
-  if (nchar(g)) {
-    return(formula(paste("~", g)))
-  } else {
-    return(~1)
+extract_random <- function(re_terms) {
+  # generate a data.frame with all information about the group-level terms
+  # Args:
+  #   re_terms: A vector of random effects terms in lme4 syntax
+  stopifnot(!length(re_terms) || is.character(re_terms))
+  lhs_terms <- get_matches("\\([^\\|]*", re_terms)
+  rhs_terms <- get_matches("\\|[^\\)]*", re_terms)
+  random <- vector("list", length(re_terms))
+  for (i in seq_along(re_terms)) {
+    form <- formula(paste("~", substring(lhs_terms[i], 2)))
+    groups <- unlist(strsplit(sub("^\\|*", "", rhs_terms[i]), "/", 
+                              fixed = TRUE))
+    cor <- substr(rhs_terms[i], 1, 2) != "||"
+    new_groups <- c(groups[1], rep("", length(groups) - 1L))
+    for (j in seq_along(groups)) {
+      if (illegal_group_expr(groups[j])) {
+        stop(paste("Illegal grouping term:", rhs_terms[i], "\n may contain",
+                   "only variable names combined by the symbols ':' or '/'"),
+             call. = FALSE)
+      }
+      if (j > 1L) {
+        new_groups[j] <- paste0(new_groups[j - 1], ":", groups[j])
+      }
+    }
+    random[[i]] <- data.frame(group = new_groups, 
+                              cor = rep(cor, length(groups)),
+                              stringsAsFactors = FALSE)
+    random[[i]]$form <- replicate(length(new_groups), form)
   }
+  if (length(random)) {
+    random <- do.call(rbind, random)
+    # ensure that all REs of the same gf are next to each other
+    # to allow combining them in rename_pars later on
+    random <- random[order(random$group), ]
+  } else {
+    random <- data.frame(group = character(0), 
+                         cor = logical(0), 
+                         form = character(0))
+  }
+  random
+}
+
+illegal_group_expr <- function(group, bs_valid = TRUE) {
+  # check if the group part of a group-level term is invalid
+  # Args:
+  #  g: the group part of a group-level term
+  #  bs_valid: is '/' valid? 
+  valid_expr <- ":|[^([:digit:]|[:punct:])][[:alnum:]_\\.]*"
+  rsv_signs <- c(".", "+", "*", "|", "?", "::", "\\", if (!bs_valid) "/")
+  nchar(gsub(valid_expr, "", group)) ||
+    any(ulapply(rsv_signs, grepl, x = group, fixed = TRUE))
 }
 
 check_re_formula <- function(re_formula, old_ranef, data) {
