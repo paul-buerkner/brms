@@ -18,6 +18,8 @@ test_that("extract_effects finds all random effects terms", {
                c("g1", "g1:g2", "g1:g2:g3"))
   expect_equal(extract_effects(y ~ v + (1+x|g1/g2) + (1|g3))$random$form, 
                list(~1+x, ~1+x, ~1))
+  expect_equal(extract_effects(y ~ (1+x||g1/g2) + (1|g3))$random$cor, 
+               c(FALSE, FALSE, TRUE))
   expect_error(extract_effects(y ~ (1+x|g1+g2) + x + (1|g1)))
   expect_error(extract_effects(y ~ 1|g1),
                "Random effects terms should be enclosed in brackets")
