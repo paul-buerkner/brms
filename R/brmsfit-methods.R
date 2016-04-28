@@ -1019,8 +1019,10 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
       all(ulapply(eff_vars, function(vs) uv %in% vs)))
     # variables that are present in every effect term
     # do not need to be defined in conditions
-    missing_vars <- setdiff(uni_eff_vars[is_everywhere], names(conditions)) 
-    conditions[, missing_vars] <- mf[1, missing_vars] 
+    missing_vars <- setdiff(uni_eff_vars[is_everywhere], names(conditions))
+    for (v in missing_vars) {
+      conditions[, v] <- mf[[v]][1]
+    }
   } else {
     stop("conditions must be a data.frame or NULL")
   }
