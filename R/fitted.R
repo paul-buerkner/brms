@@ -35,7 +35,7 @@ fitted_response <- function(x, eta, data) {
       eta <- eta * trials 
     }
   } else if (family$family == "lognormal") {
-    sigma <- get_sigma(x, data = data, n = nrow(eta))
+    sigma <- get_sigma(x, data = data, i = nrow(eta))
     if (!is_trunc) {
       # compute untruncated lognormal mean
       eta <- ilink(eta + sigma^2 / 2, family$link)  
@@ -85,9 +85,9 @@ fitted_catordinal <- function(eta, max_obs, family) {
   # compute fitted values for categorical and ordinal families
   ncat <- max(max_obs)
   # get probabilities of each category
-  get_density <- function(n) {
+  get_density <- function(s) {
     do.call(paste0("d", family$family), 
-            list(1:ncat, eta = eta[, n, ], ncat = ncat, link = family$link))
+            list(1:ncat, eta = eta[, s, ], ncat = ncat, link = family$link))
   }
   aperm(abind(lapply(1:ncol(eta), get_density), along = 3), perm = c(1, 3, 2))
 }
@@ -133,7 +133,7 @@ fitted_zero_inflated <- function(eta, N_trait, family) {
 # Returns:
 #   samples of the truncated mean parameter
 fitted_trunc_gaussian <- function(mu, lb, ub, x, data) {
-  sigma <- get_sigma(x, data = data, method = "fitted", n = nrow(mu))
+  sigma <- get_sigma(x, data = data, method = "fitted", i = nrow(mu))
   zlb <- (lb - mu) / sigma
   zub <- (ub - mu) / sigma
   # truncated mean of standard normal; see Wikipedia
@@ -142,7 +142,7 @@ fitted_trunc_gaussian <- function(mu, lb, ub, x, data) {
 }
 
 fitted_trunc_student <- function(mu, lb, ub, x, data) {
-  sigma <- get_sigma(x, data = data, method = "fitted", n = nrow(mu))
+  sigma <- get_sigma(x, data = data, method = "fitted", i = nrow(mu))
   nu <- posterior_samples(x, pars = "^nu$")$nu
   zlb <- (lb - mu) / sigma
   zub <- (ub - mu) / sigma
@@ -157,7 +157,7 @@ fitted_trunc_student <- function(mu, lb, ub, x, data) {
 
 fitted_trunc_lognormal <- function(mu, lb, ub, x, data) {
   # mu has to be on the linear scale
-  sigma <- get_sigma(x, data = data, method = "fitted", n = nrow(mu))
+  sigma <- get_sigma(x, data = data, method = "fitted", i = nrow(mu))
   m1 <- exp(mu + sigma^2 / 2) * (pnorm((log(ub) - mu) / sigma - sigma) - 
                                    pnorm((log(lb) - mu) / sigma - sigma))
   m1 / (plnorm(ub, meanlog = mu, sdlog = sigma) - 

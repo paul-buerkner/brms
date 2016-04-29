@@ -144,6 +144,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
                    "to be non-negative"), call. = FALSE)
       }
     }
+    standata$Y <- as.array(standata$Y)
   }
   # data for various kinds of effects
   if (length(nonlinear)) {
@@ -244,13 +245,13 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     # the second half of Y is only dummy data
     # that was put into data to make melt_data work correctly
     standata$N_trait <- nrow(data) / 2L
-    standata$Y <- standata$Y[1L:standata$N_trait] 
+    standata$Y <- as.array(standata$Y[1L:standata$N_trait]) 
   }
   if (is_categorical && !isTRUE(control$old_cat)) {
     ncat1m <- standata$ncat - 1L
     standata$N_trait <- nrow(data) / ncat1m
-    standata$Y <- standata$Y[1L:standata$N_trait] 
-    standata$J_trait <- matrix(1L:standata$N, ncol = ncat1m)
+    standata$Y <- as.array(standata$Y[1L:standata$N_trait])
+    standata$J_trait <- as.array(matrix(1L:standata$N, ncol = ncat1m))
   }
   # data for addition arguments
   if (is.formula(ee$se)) {
@@ -266,7 +267,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   }
   if (is.formula(ee$cens) && check_response) {
     standata <- c(standata, list(cens = .addition(ee$cens, data = data)))
-    if (is.linear(family) && length(ee$response) > 1 || is_forked)
+    if (is.linear(family) && length(ee$response) > 1L || is_forked)
       standata$cens <- standata$cens[1:standata$N_trait]
   }
   if (is.formula(ee$trunc)) {
