@@ -5,7 +5,8 @@
 \title{Compute the pointwise log-likelihood}
 \usage{
 \method{logLik}{brmsfit}(object, newdata = NULL, re_formula = NULL,
-  allow_new_levels = FALSE, subset = NULL, nsamples = NULL, ...)
+  allow_new_levels = FALSE, subset = NULL, nsamples = NULL,
+  pointwise = FALSE, ...)
 }
 \arguments{
 \item{object}{A fitted model object of class \code{brmsfit}.}
@@ -31,13 +32,24 @@ posterior samples should be used.
 If \code{NULL} (the default) all samples are used.
 Ignored if \code{subset} is not \code{NULL}.}
 
+\item{pointwise}{A flag indicating whether to compute the full
+log-likelihood matrix at once (the default), or just return
+the likelihood function along with all data and samples
+required to compute the log-likelihood separately for each
+observation. The latter option is rarely useful when
+calling \code{logLik} directly, but rather when computing
+\code{\link[brms:WAIC]{WAIC}} or \code{\link[brms:LOO]{LOO}}.}
+
 \item{...}{Currently ignored}
 }
 \value{
 Usually, an S x N matrix containing 
  the pointwise log-likelihood samples, 
  where S is the number of samples and N is the number 
- of observations in the data.
+ of observations in the data. 
+ If \code{pointwise = TRUE}, the output is a function
+ with a \code{draws} attribute containing all relevant
+ data and posterior samples.
 }
 \description{
 Compute the pointwise log-likelihood

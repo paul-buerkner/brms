@@ -427,13 +427,11 @@ extract_pars <- function(pars, all_pars, exact_match = FALSE,
 
 compute_ic <- function(x, ic = c("waic", "loo"), ll_args = list(), ...) {
   # compute WAIC and LOO using the 'loo' package
-  #
   # Args:
   #   x: an object of class brmsfit
   #   ic: the information criterion to be computed
   #   ll_args: a list of additional arguments passed to logLik
   #   ...: passed to the loo package
-  #
   # Returns:
   #   output of the loo package with amended class attribute
   ic <- match.arg(ic)
@@ -441,9 +439,18 @@ compute_ic <- function(x, ic = c("waic", "loo"), ll_args = list(), ...) {
     stop(paste("Cannot compute information criteria for", 
                "an object of class", class(x)), call. = FALSE)
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
-    stop("The model does not contain posterior samples") 
+    stop("The model does not contain posterior samples")
   args <- list(x = do.call(logLik, c(list(x), ll_args)))
-  if (ic == "loo") args <- c(args, ...)
+  if (ll_args$pointwise) {
+    args$args$draws <- attr(args$x, "draws")
+    args$args$data <- data.frame()
+    args$args$N <- attr(args$x, "N")
+    args$args$S <- Nsamples(x, subset = ll_args$subset)
+    attr(args$x, "draws") <- NULL
+  }
+  if (ic == "loo") {
+    args <- c(args, ...)
+  }
   IC <- do.call(eval(parse(text = paste0("loo::", ic))), args)
   class(IC) <- c("ic", "loo")
   return(IC)
@@ -451,11 +458,9 @@ compute_ic <- function(x, ic = c("waic", "loo"), ll_args = list(), ...) {
 
 compare_ic <- function(x, ic = c("waic", "loo")) {
   # compare information criteria of different models
-  #
   # Args:
   #   x: A list containing loo objects
   #   ic: the information criterion to be computed
-  #
   # Returns:
   #   A matrix with differences in the ICs 
   #   as well as corresponding standard errors
