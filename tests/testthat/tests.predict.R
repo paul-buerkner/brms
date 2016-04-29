@@ -1,27 +1,30 @@
 test_that("predict for location shift models runs without errors", {
   ns <- 30
   nobs <- 10
-  s <- list(eta = matrix(rnorm(ns * nobs), ncol = nobs),
-            sigma = rchisq(ns, 3), nu = rgamma(ns, 4))
-  data <- list()
+  draws <- list(eta = matrix(rnorm(ns * nobs), ncol = nobs),
+            sigma = rchisq(ns, 3), nu = rgamma(ns, 4),
+            nsamples = ns)
   i <- sample(nobs, 1)
   
-  pred <- predict_gaussian(i, data = data, samples = s)
+  draws$f$link <- "identity"
+  pred <- predict_gaussian(i, draws = draws)
   expect_equal(length(pred), ns)
   
-  pred <- predict_student(i, data = data, samples = s, link = "log")
+  draws$f$link <- "log"
+  pred <- predict_student(i, draws = draws)
   expect_equal(length(pred), ns)
   
-  pred <- predict_cauchy(i, data = data, samples = s, link = "inverse")
+  draws$f$link <- "inverse"
+  pred <- predict_cauchy(i, draws = draws)
   expect_equal(length(pred), ns)
 })
 
 test_that("predict for lognormal models runs without errors", {
   ns <- 50
   nobs <- 2
-  s <- list(sigma = rchisq(ns, 3), 
-            eta = matrix(rnorm(ns * nobs), ncol = nobs))
-  pred <- predict_lognormal(1, data = list(), samples = s)
+  draws <- list(sigma = rchisq(ns, 3), nsamples = ns,
+                eta = matrix(rnorm(ns * nobs), ncol = nobs))
+  pred <- predict_lognormal(1, draws = draws)
   expect_equal(length(pred), ns)
 })
 
@@ -32,51 +35,58 @@ test_that("predict for multivariate linear models runs without errors", {
   nobs <- nvars * ncols
   Sigma = array(cov(matrix(rnorm(300), ncol = 3)), 
                 dim = c(3, 3, 10))
-  s <- list(eta = matrix(rnorm(ns*nobs), ncol = nobs),
+  draws <- list(eta = matrix(rnorm(ns*nobs), ncol = nobs),
             Sigma = aperm(Sigma, c(3, 1, 2)), 
-            nu = matrix(rgamma(ns, 5)))
-  data <- list(N = nobs, N_trait = ncols)
+            nu = matrix(rgamma(ns, 5)),
+            nsamples = ns)
+  draws$data <- list(N = nobs, N_trait = ncols)
+  draws$f$link <- "identity"
   
-  pred <- predict_gaussian_multi(1, data = data, samples = s)
+  pred <- predict_gaussian_multi(1, draws = draws)
   expect_equal(dim(pred), c(ns, nvars))
   
-  pred <- predict_student_multi(2, data = data, samples = s)
+  pred <- predict_student_multi(2, draws = draws)
   expect_equal(dim(pred), c(ns, nvars))
   
-  pred <- predict_cauchy_multi(3, data = data, samples = s)
+  pred <- predict_cauchy_multi(3, draws = draws)
   expect_equal(dim(pred), c(ns, nvars))
 })
 
 test_that("predict for ARMA covariance models runs without errors", {
   ns <- 20
   nobs <- 15
-  s <- list(eta = matrix(rnorm(ns*nobs), ncol = nobs),
-            sigma = matrix(rchisq(ns, 3)),
-            nu = matrix(rgamma(ns, 5)),
-            ar = matrix(rbeta(ns, 0.5, 0.5), ncol = 1),
-            ma = matrix(rnorm(ns, 0.2, 1), ncol = 1))
-  data <- list(begin_tg = c(1, 5, 12), nobs_tg = c(4, 7, 3),
+  draws <- list(eta = matrix(rnorm(ns*nobs), ncol = nobs),
+                sigma = matrix(rchisq(ns, 3)),
+                nu = matrix(rgamma(ns, 5)),
+                ar = matrix(rbeta(ns, 0.5, 0.5), ncol = 1),
+                ma = matrix(rnorm(ns, 0.2, 1), ncol = 1),
+                nsamples = ns)
+  draws$data <- list(begin_tg = c(1, 5, 12), nobs_tg = c(4, 7, 3),
                se2 = rgamma(ns, 10))
   
-  pred <- predict_gaussian_cov(1, data = data, samples = s, link = "inverse")
+  draws$f$link <- "inverse"
+  pred <- predict_gaussian_cov(1, draws = draws)
   expect_equal(length(pred), ns * 4)
   
-  pred <- predict_student_cov(2, data = data, samples = s[-4], link = "log")
+  draws$f$link <- "log"
+  pred <- predict_student_cov(2, draws = draws[-4])
   expect_equal(length(pred), ns * 7)
   
-  pred <- predict_cauchy_cov(3, data = data, samples = s[-5])
+  draws$f$link <- "identity" 
+  pred <- predict_cauchy_cov(3, draws = draws[-5])
   expect_equal(length(pred), ns * 3)
 })
 
 test_that("predict for 'cor_fixed' models runs without errors", {
-  data <- list(V = diag(10))
-  samples <- list(eta = matrix(rnorm(30), nrow = 3),
-                  nu = matrix(rep(2, 3)))
-  pred <- predict_gaussian_fixed(1, data = data, samples = samples)
+  draws <- list(eta = matrix(rnorm(30), nrow = 3),
+                nu = matrix(rep(2, 3)), nsamples = 3)
+  draws$data <- list(V = diag(10))
+  draws$f$link <- "identity"
+  pred <- predict_gaussian_fixed(1, draws = draws)
   expect_equal(dim(pred), c(3, 10))
-  pred <- predict_student_fixed(1, data = data, samples = samples)
+  pred <- predict_student_fixed(1, draws = draws)
   expect_equal(dim(pred), c(3, 10))
-  pred <- predict_cauchy_fixed(1, data = data, samples = samples)
+  pred <- predict_cauchy_fixed(1, draws = draws)
   expect_equal(dim(pred), c(3, 10))
 })
 
@@ -84,52 +94,54 @@ test_that("predict for count and survival models runs without errors", {
   ns <- 25
   nobs <- 10
   trials <- sample(10:30, nobs, replace = TRUE)
-  s <- list(eta = matrix(rnorm(ns*nobs), ncol = nobs),
-            shape = rgamma(ns, 4))
-  data <- list(max_obs = trials)
+  draws <- list(eta = matrix(rnorm(ns*nobs), ncol = nobs),
+                shape = rgamma(ns, 4), nsamples = ns)
+  draws$data <- list(max_obs = trials)
   i <- sample(nobs, 1)
   
-  pred <- predict_binomial(i, data = data, samples = s)
+  draws$f$link <- "cloglog"
+  pred <- predict_binomial(i, data = data, draws = draws)
   expect_equal(length(pred), ns)
   
-  pred <- predict_poisson(i, data = data, samples = s)
+  draws$f$link <- "log"
+  pred <- predict_poisson(i, data = data, draws = draws)
   expect_equal(length(pred), ns)
   
-  pred <- predict_negbinomial(i, data = data, samples = s)
+  pred <- predict_negbinomial(i, data = data, draws = draws)
   expect_equal(length(pred), ns)
   
-  pred <- predict_geometric(i, data = data, samples = s)
+  pred <- predict_geometric(i, data = data, draws = draws)
   expect_equal(length(pred), ns)
   
-  pred <- predict_exponential(i, data = data, samples = s)
+  pred <- predict_exponential(i, data = data, draws = draws)
   expect_equal(length(pred), ns)
   
-  pred <- predict_gamma(i, data = data, samples = s, link = "log")
+  pred <- predict_gamma(i, data = data, draws = draws)
   expect_equal(length(pred), ns)
   
-  pred <- predict_weibull(i, data = data, samples = s)
+  pred <- predict_weibull(i, data = data, draws = draws)
   expect_equal(length(pred), ns)
   
-  pred <- predict_inverse.gaussian(i, data = data, samples = s, 
-                                   link = "log")
+  pred <- predict_inverse.gaussian(i, data = data, draws = draws)
   expect_equal(length(pred), ns)
 })
 
 test_that("predict for bernoulli and beta models works correctly", {
   ns <- 17
   nobs <- 10
-  s <- list(eta = matrix(rnorm(ns * nobs * 2), ncol = 2 * nobs),
-            phi = rgamma(ns, 4))
+  draws <- list(eta = matrix(rnorm(ns * nobs * 2), ncol = 2 * nobs),
+                phi = rgamma(ns, 4), nsamples = ns)
   i <- sample(1:nobs, 1)
-  data <- list()
+  draws$f$link <- "logit"
   
-  pred <- predict_bernoulli(i, data = data, samples = s)
+  pred <- predict_bernoulli(i, draws = draws)
   expect_equal(length(pred), ns)
   
-  pred <- predict_bernoulli(i, data = list(N_trait = nobs), samples = s)
+  draws$data <- list(N_trait = nobs)
+  pred <- predict_bernoulli(i, draws = draws)
   expect_equal(length(pred), ns)
   
-  pred <- predict_beta(i, data = data, samples = s)
+  pred <- predict_beta(i, draws = draws)
   expect_equal(length(pred), ns)
 })
 
@@ -137,29 +149,32 @@ test_that("predict for zero-inflated and hurdle models runs without erros", {
   ns <- 50
   nobs <- 8
   trials <- sample(10:30, nobs, replace = TRUE)
-  s <- list(eta = matrix(rnorm(ns * nobs * 2), ncol = nobs * 2),
-            shape = rgamma(ns, 4), phi = rgamma(ns, 1))
-  data <- list(N_trait = nobs, max_obs = trials)
+  draws <- list(eta = matrix(rnorm(ns * nobs * 2), ncol = nobs * 2),
+                shape = rgamma(ns, 4), phi = rgamma(ns, 1),
+                nsamples = ns)
+  draws$data <- list(N_trait = nobs, max_obs = trials)
+  draws$f$link <- "log"
   
-  pred <- predict_hurdle_poisson(1, data = data, samples = s)
+  pred <- predict_hurdle_poisson(1, draws = draws)
   expect_equal(length(pred), ns)
   
-  pred <- predict_hurdle_negbinomial(2, data = data, samples = s)
+  pred <- predict_hurdle_negbinomial(2, draws = draws)
   expect_equal(length(pred), ns)
   
-  pred <- predict_hurdle_gamma(5, data = data, samples = s)
+  pred <- predict_hurdle_gamma(5, draws = draws)
   expect_equal(length(pred), ns)
   
-  pred <- predict_zero_inflated_poisson(3, data = data, samples = s)
+  pred <- predict_zero_inflated_poisson(3, draws = draws)
   expect_equal(length(pred), ns)
   
-  pred <- predict_zero_inflated_binomial(4, data = data, samples = s)
+  pred <- predict_zero_inflated_negbinomial(6, draws = draws)
   expect_equal(length(pred), ns)
   
-  pred <- predict_zero_inflated_negbinomial(6, data = data, samples = s)
+  draws$f$link <- "logit"
+  pred <- predict_zero_inflated_binomial(4, draws = draws)
   expect_equal(length(pred), ns)
   
-  pred <- predict_zero_inflated_beta(8, data = data, samples = s)
+  pred <- predict_zero_inflated_beta(8, draws = draws)
   expect_equal(length(pred), ns)
 })
 
@@ -167,44 +182,48 @@ test_that("predict for categorical and ordinal models runs without erros", {
   ns <- 50
   nobs <- 8
   ncat <- 4
-  s <- list(eta = array(rnorm(ns*nobs), dim = c(ns, nobs, ncat)))
-  data <- list(Y = rep(1:ncat, 2), max_obs = ncat)
+  draws <- list(eta = array(rnorm(ns*nobs), dim = c(ns, nobs, ncat)),
+                nsamples = ns)
+  draws$data <- list(Y = rep(1:ncat, 2), max_obs = ncat)
   
-  pred <- sapply(1:nobs, predict_categorical, data = data, samples = s)
+  draws$f$link <- "logit"
+  pred <- sapply(1:nobs, predict_categorical, draws = draws)
   expect_equal(dim(pred), c(ns, nobs))
   
-  pred <- sapply(1:nobs, predict_cumulative, data = data, samples = s)
+  pred <- sapply(1:nobs, predict_cumulative, draws = draws)
   expect_equal(dim(pred), c(ns, nobs))
   
-  pred <- sapply(1:nobs, predict_sratio, data = data, samples = s)
+  pred <- sapply(1:nobs, predict_sratio, draws = draws)
   expect_equal(dim(pred), c(ns, nobs))
   
-  pred <- sapply(1:nobs, predict_cratio, data = data, samples = s)
+  pred <- sapply(1:nobs, predict_cratio, draws = draws)
   expect_equal(dim(pred), c(ns, nobs))
   
-  pred <- sapply(1:nobs, predict_acat, data = data, samples = s)
+  pred <- sapply(1:nobs, predict_acat, draws = draws)
   expect_equal(dim(pred), c(ns, nobs))
   
-  pred <- sapply(1:nobs, predict_acat, data = data, samples = s,
-               link = "probit")
+  draws$f$link <- "probit"
+  pred <- sapply(1:nobs, predict_acat, draws = draws)
   expect_equal(dim(pred), c(ns, nobs))
 })
 
 test_that("truncated predict run without errors", {
   ns <- 30
   nobs <- 15
-  s <- list(eta = matrix(rnorm(ns * nobs), ncol = nobs),
-            sigma = rchisq(ns, 3))
+  draws <- list(eta = matrix(rnorm(ns * nobs), ncol = nobs),
+                sigma = rchisq(ns, 3), nsamples = ns)
   
-  data <- list(lb = -4)
-  pred <- sapply(1:nobs, predict_gaussian, data = data, samples = s)
+  draws$f$link <- "identity"
+  draws$data <- list(lb = -4)
+  pred <- sapply(1:nobs, predict_gaussian, draws = draws)
   expect_equal(dim(pred), c(ns, nobs))
   
-  data <- list(ub = 70)
-  pred <- sapply(1:nobs, predict_poisson, data = data, samples = s)
+  draws$f$link <- "log"
+  draws$data <- list(ub = 70)
+  pred <- sapply(1:nobs, predict_poisson, draws = draws)
   expect_equal(dim(pred), c(ns, nobs))
   
-  data <- list(lb = 0, ub = 70)
-  pred <- sapply(1:nobs, predict_poisson, data = data, samples = s)
+  draws$data <- list(lb = 0, ub = 70)
+  pred <- sapply(1:nobs, predict_poisson, draws = draws)
   expect_equal(dim(pred), c(ns, nobs))
 })

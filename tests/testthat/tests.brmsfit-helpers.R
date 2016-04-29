@@ -128,14 +128,14 @@ test_that("evidence_ratio runs without errors", {
 
 test_that("get_sigma correctly extract residual SDs", {
   fit <- rename_pars(brmsfit_example)
-  expect_equal(length(get_sigma(fit, data = standata(fit), n = 2)), 
+  expect_equal(length(get_sigma(fit, data = standata(fit), i = 2)), 
                Nsamples(fit))
   expect_equal(length(get_sigma(fit, data = list(se = 2:11), 
-                                method = "logLik", n = 3)), 
+                                method = "logLik", i = 3)), 
                Nsamples(fit))
-  expect_equal(dim(get_sigma(NULL, data = list(se = 2:11, N = 10), n = 5)), 
+  expect_equal(dim(get_sigma(NULL, data = list(se = 2:11, N = 10), i = 5)), 
                c(5, 10))
-  expect_equal(get_sigma(NULL, data = list(sigma = 2:11), method = "predict", n = 5), 
+  expect_equal(get_sigma(NULL, data = list(sigma = 2:11), method = "predict", i = 5), 
                6)
 })
 

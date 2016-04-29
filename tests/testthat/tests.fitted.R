@@ -1,29 +1,29 @@
 test_that("fitted helper functions run without errors", {
   # actually run fitted.brmsfit that call the helper functions
-  fit <- rename_pars(brmsfit_example)
-  fit <- add_samples(fit, "shape", dist = "exp")
-  fit <- add_samples(fit, "nu", dist = "exp")
-  standata <- standata(fit, control = list(not4stan = TRUE))
-  eta <- linear_predictor(fit, standata = standata)
-  nsamples <- Nsamples(fit)
+  fit <- brms:::rename_pars(brmsfit_example)
+  fit <- brms:::add_samples(fit, "shape", dist = "exp")
+  fit <- brms:::add_samples(fit, "nu", dist = "exp")
+  draws <- brms:::extract_draws(fit)
+  eta <- brms:::linear_predictor(draws)
+  nsamples <- brms:::Nsamples(fit)
   nobs <- nobs(fit)
   # test preparation of truncated models
   standata <- standata(fit)
   standata$lb <- 0
   standata$ub <- 200
-  mu <- fitted_response(x = fit, eta = eta, data = standata)
+  mu <- brms:::fitted_response(x = fit, eta = eta, data = standata)
   expect_equal(dim(mu), c(nsamples, nobs))
-  # pseudo binomial model
-  fit$family <- binomial()
-  expect_equal(dim(fitted(fit, summary = FALSE)), c(nsamples, nobs))
   # pseudo log-normal model
   fit$family <- gaussian("log")
   expect_equal(dim(fitted(fit, summary = FALSE)), c(nsamples, nobs))
   # pseudo weibull model
   fit$family <- weibull()
   expect_equal(dim(fitted(fit, summary = FALSE)), c(nsamples, nobs))
-  # pseudo hurdle poisson model
+  # pseudo binomial model
   fit$autocor <- cor_arma()
+  fit$family <- binomial()
+  expect_equal(dim(fitted(fit, summary = FALSE)), c(nsamples, nobs))
+  # pseudo hurdle poisson model
   names(fit$data)[1] <- "response"
   fit$family <- hurdle_poisson()
   expect_equal(dim(fitted(fit, summary = FALSE)), c(nsamples, nobs(fit)))

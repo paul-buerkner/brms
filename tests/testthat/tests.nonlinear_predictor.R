@@ -8,11 +8,12 @@ test_that("nonlinear_predictor runs without errors", {
   fit$nonlinear <- list(alpha ~ 1, beta ~ 1)
   fit <- add_samples(fit, "b_alpha_Intercept")
   fit <- add_samples(fit, "b_beta_Intercept")
-  C <- model.frame(fit)[, "Trt_c", drop = FALSE]
-  expect_equal(dim(nonlinear_predictor(fit, C = C)), 
+  draws <- extract_draws(fit)
+  expect_equal(dim(nonlinear_predictor(draws)), 
                c(Nsamples(fit), nobs(fit)))
-  newdata <- data.frame(count = rpois(3, 10), visit = 1:3, patient = 10)
-  C <- structure(matrix(rnorm(3)), dimnames = list(NULL, "Trt_c"))
-  expect_equal(dim(nonlinear_predictor(fit, C = C, newdata = newdata)), 
+  newdata <- data.frame(count = rpois(3, 10), visit = 1:3, patient = 10,
+                        Trt_c = rnorm(3))
+  draws <- extract_draws(fit, newdata = newdata)
+  expect_equal(dim(nonlinear_predictor(draws)), 
                c(Nsamples(fit), nrow(newdata)))
 })

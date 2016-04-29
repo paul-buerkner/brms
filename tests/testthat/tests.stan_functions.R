@@ -1,6 +1,6 @@
 test_that("self-defined Stan functions work correctly", {
   skip("expose_stan_functions doesn't work within R CMD CHECK")
-  rstan::expose_stan_functions(new_stan_functions)
+  rstan::expose_stan_functions(brms:::new_stan_functions)
   
   # ARMA matrix generating functions
   cov_ar1_R <- get_cov_matrix_ar1(ar = matrix(0.5), sigma = 2, 
@@ -47,54 +47,63 @@ test_that("self-defined Stan functions work correctly", {
                sum(dinvgauss(y, mean = mu, shape = shape, log = TRUE)))
   
   # zero-inflated and hurdle log-densities
-  dat <- list(Y = c(0, 10), N_trait = 2, max_obs = 15)
-  dat2 <- list(Y = c(0, 0.5), N_trait = 2)
-  samp <- list(eta = matrix(rnorm(4), ncol = 4), shape = 2, phi = 2)
-  for (i in seq_along(dat$Y)) {
-    # zero-inflated
-    args <- list(y = dat$Y[i], eta = samp$eta[i], eta_zi = samp$eta[i+2])
-    expect_equal(do.call(zero_inflated_poisson_log, args),
-                 loglik_zero_inflated_poisson(i, dat, samp))
+  draws <- draws2 <- list(eta = matrix(rnorm(4), ncol = 4), shape = 2, phi = 2)
+  draws$data <- list(Y = c(0, 10), N_trait = 2, max_obs = 15)
+  draws2$data <- list(Y = c(0, 0.5), N_trait = 2)
+  for (i in seq_along(draws$data$Y)) {
+    zi_args <- list(y = draws$data$Y[i], eta = draws$eta[i], 
+                    eta_zi = draws$eta[i+2])
+    hu_args <- list(y = draws$data$Y[i], eta = draws$eta[i], 
+                    eta_hu = draws$eta[i+2])
+    draws$f$link <- "log"
+    expect_equal(do.call(zero_inflated_poisson_log, zi_args),
+                 loglik_zero_inflated_poisson(i, draws))
     expect_equal(do.call(zero_inflated_neg_binomial_2_log, 
-                         c(args, shape = samp$shape)),
-                 loglik_zero_inflated_negbinomial(i, dat, samp))
-    expect_equal(do.call(zero_inflated_binomial_log, 
-                         c(args, trials = dat$max_obs)),
-                 loglik_zero_inflated_binomial(i, dat, samp))
-    # zero_inflated_beta requires Y to be in (0,1)
-    args <- list(y = dat2$Y[i], eta = samp$eta[i], eta_zi = samp$eta[i+2])
-    expect_equal(do.call(zero_inflated_beta_log, c(args, phi = samp$phi)),
-                 loglik_zero_inflated_beta(i, dat2, samp))
-    # hurdle
-    args <- list(y = dat$Y[i], eta = samp$eta[i], eta_hu = samp$eta[i+2])
-    expect_equal(do.call(hurdle_poisson_log, args),
-                 loglik_hurdle_poisson(i, dat, samp))
+                         c(zi_args, shape = draws$shape)),
+                 loglik_zero_inflated_negbinomial(i, draws))
+    expect_equal(do.call(hurdle_poisson_log, hu_args),
+                 loglik_hurdle_poisson(i, draws))
     expect_equal(do.call(hurdle_neg_binomial_2_log, 
-                         c(args, shape = samp$shape)),
-                 loglik_hurdle_negbinomial(i, dat, samp))
+                         c(hu_args, shape = draws$shape)),
+                 loglik_hurdle_negbinomial(i, draws))
     expect_equal(do.call(hurdle_gamma_log, 
-                         c(args, shape = samp$shape)),
-                 loglik_hurdle_gamma(i, dat, samp))
+                         c(hu_args, shape = draws$shape)),
+                 loglik_hurdle_gamma(i, draws))
+    draws$f$link <- "logit"
+    expect_equal(do.call(zero_inflated_binomial_log, 
+                         c(zi_args, trials = draws$data$max_obs)),
+                 loglik_zero_inflated_binomial(i, draws))
+    # zero_inflated_beta requires Y to be in (0,1)
+    draws2$f$link <- "logit"
+    zi_args <- list(y = draws2$data$Y[i], eta = draws$eta[i], 
+                    eta_zi = draws$eta[i+2])
+    expect_equal(do.call(zero_inflated_beta_log, 
+                         c(zi_args, phi = draws$phi)),
+                 loglik_zero_inflated_beta(i, draws2))
   }
   
   # ordinal log-densities
-  dat <- list(Y = 2, max_obs = 4)
   eta <- rnorm(1)
   etap <- array(rnorm(6), dim = c(2, 1, 3))
   thres <- sort(rnorm(3))
   # cumulative and sratio require thres - eta
-  samp <- list(eta = rep(thres, each = 2) - array(eta, dim = c(2, 1, 3)))
-  expect_equal(cumulative_log(dat$Y, eta, thres),
-               loglik_cumulative(1, dat, samp, link = "probit")[1])
-  expect_equal(sratio_log(dat$Y, eta, thres),
-               loglik_sratio(1, dat, samp, link = "logit")[1])
+  draws <- list(eta = rep(thres, each = 2) - array(eta, dim = c(2, 1, 3)))
+  draws$data <- list(Y = 2, max_obs = 4)
+  draws$f$link <- "probit"
+  expect_equal(cumulative_log(draws$data$Y, eta, thres),
+               loglik_cumulative(1, draws)[1])
+  draws$f$link <- "logit"
+  expect_equal(sratio_log(draws$data$Y, eta, thres),
+               loglik_sratio(1, draws)[1])
   # acat and cratio require eta - thres
   # also category specific effects are included here
-  samp <- list(eta = eta + etap - rep(thres, each = 2))
-  expect_equal(cratio_log(dat$Y, eta, etap[1, , ], thres),
-               loglik_cratio(1, dat, samp, link = "cloglog")[1])
-  expect_equal(acat_log(dat$Y, eta, etap[1, , ], thres),
-               loglik_acat(1, dat, samp, link = "cauchit")[1])
+  draws$eta <- eta + etap - rep(thres, each = 2)
+  draws$f$link <- "cloglog"
+  expect_equal(cratio_log(draws$data$Y, eta, etap[1, , ], thres),
+               loglik_cratio(1, draws)[1])
+  draws$f$link <- "cauchit"
+  expect_equal(acat_log(draws$data$Y, eta, etap[1, , ], thres),
+               loglik_acat(1, draws)[1])
  
   # kronecker product
   A <- matrix(c(3, 2, 1, 2, 4, 1, 1, 1, 5), nrow = 3)

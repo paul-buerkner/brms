@@ -28,7 +28,7 @@ test_that(paste("make_standata handles variables used as fixed effects",
   data <- data.frame(y = 1:9, x = factor(rep(c("a","b","c"), 3)))
   standata <- make_standata(y ~ x + (1|x), data = data)
   expect_equal(colnames(standata$X), c("xb", "xc"))
-  expect_equal(standata$J_1, rep(1:3, 3))
+  expect_equal(standata$J_1, as.array(rep(1:3, 3)))
   standata2 <- make_standata(y ~ x + (1|x), data = data, 
                              control = list(not4stan = TRUE))
   expect_equal(colnames(standata2$X), c("Intercept", "xb", "xc"))
@@ -71,32 +71,32 @@ test_that(paste("make_standata returns correct data names",
 test_that(paste("make_standata accepts correct response variables", 
                 "depending on the family"), {
   expect_equal(make_standata(y ~ 1, data = data.frame(y = seq(-9.9,0,0.1)), 
-                             family = "student")$Y, seq(-9.9,0,0.1))
+                             family = "student")$Y, as.array(seq(-9.9,0,0.1)))
   expect_equal(make_standata(y ~ 1, data = data.frame(y = 1:10), 
-                             family = "binomial")$Y, 1:10)
+                             family = "binomial")$Y, as.array(1:10))
   expect_equal(make_standata(y ~ 1, data = data.frame(y = 10:20), 
-                             family = "poisson")$Y, 10:20)
+                             family = "poisson")$Y, as.array(10:20))
   expect_equal(make_standata(y ~ 1, data = data.frame(y = rep(-c(1:2),5)), 
-                             family = "bernoulli")$Y, rep(1:0,5))
+                             family = "bernoulli")$Y, as.array(rep(1:0,5)))
   expect_equal(make_standata(y ~ 1, data = data.frame(y = rep(c(TRUE, FALSE),5)),
-                             family = "bernoulli")$Y, rep(1:0,5))
+                             family = "bernoulli")$Y, as.array(rep(1:0,5)))
   expect_equal(make_standata(y ~ 1, data = data.frame(y = rep(1:10,5)), 
-                             family = "categorical")$Y, rep(1:10,5))
+                             family = "categorical")$Y, as.array(rep(1:10,5)))
   expect_equal(make_standata(y ~ 1, data = data.frame(y = rep(-4:5,5)), 
-                             family = "categorical")$Y, rep(1:10,5))
+                             family = "categorical")$Y, as.array(rep(1:10,5)))
   expect_equal(make_standata(y ~ 1, data = data.frame(y = factor(rep(-4:5,5))), 
-                             family = "categorical")$Y, rep(1:10,5))
+                             family = "categorical")$Y, as.array(rep(1:10,5)))
   expect_equal(make_standata(y ~ 1, data = data.frame(y = rep(1:10,5)), 
-                             family = "cumulative")$Y, rep(1:10,5))
+                             family = "cumulative")$Y, as.array(rep(1:10,5)))
   temp_data <- data.frame(y = factor(rep(-4:5,5), order = TRUE))
   expect_equal(make_standata(y ~ 1, data = temp_data, family = "acat")$Y, 
-               rep(1:10,5))
+               as.array(rep(1:10,5)))
   expect_equal(make_standata(y ~ 1, data = data.frame(y = seq(1,10,0.1)), 
-                             family = "exponential")$Y, seq(1,10,0.1))
+                             family = "exponential")$Y, as.array(seq(1,10,0.1)))
   temp_data <- data.frame(y1 = 1:10, y2 = 11:20, w = 1:10, x = rep(0,10))
   expect_equal(make_standata(cbind(y1,y2) | weights(w) ~ x, family = "gaussian",
                              data = temp_data)$Y, 
-               cbind(1:10,11:20))
+               cbind(1:10, 11:20))
 })
 
 test_that(paste("make_standata rejects incorrect response variables", 
@@ -228,13 +228,13 @@ test_that("make_standata allows to retrieve the initial data order", {
   sdata1 <- make_standata(y1 ~ 1, data = temp_data, 
                           autocor = cor_ar(~time|id),
                           control = list(save_order = TRUE))
-  expect_equal(temp_data$y1, sdata1$Y[attr(sdata1, "old_order")])
+  expect_equal(temp_data$y1, as.numeric(sdata1$Y[attr(sdata1, "old_order")]))
   # multivariate model
   sdata2 <- make_standata(cbind(y1, y2) ~ 1, data = temp_data, 
                           autocor = cor_ma(~time|id:trait),
                           control = list(save_order = TRUE))
   expect_equal(c(temp_data$y1, temp_data$y2), 
-               sdata2$Y[attr(sdata2, "old_order")])
+               as.numeric(sdata2$Y[attr(sdata2, "old_order")]))
 })
 
 test_that("make_standata rejects invalid input for cse effects", {
@@ -272,22 +272,22 @@ test_that("make_standata computes data for inverse.gaussian models", {
   standata <- make_standata(y ~ x, data = temp_data, 
                             family = inverse.gaussian)
   expect_equal(standata$log_Y, sum(log(temp_data$y)))
-  expect_equal(standata$sqrt_Y, sqrt(temp_data$y))
+  expect_equal(as.numeric(standata$sqrt_Y), sqrt(temp_data$y))
   standata <- make_standata(y | weights(w) ~ x, data = temp_data,
                             family = inverse.gaussian)
-  expect_equal(standata$log_Y, log(temp_data$y))                         
+  expect_equal(as.numeric(standata$log_Y), log(temp_data$y))                         
 })
 
 test_that("make_standata computes data for 2PL models", {
   temp_data <- data.frame(y = sample(0:1, 10, TRUE), x = rnorm(10))
   standata <- make_standata(y ~ x, data = temp_data,
                             family = bernoulli(type = "2PL"))
-  expect_equal(standata$Y, temp_data$y)
+  expect_equal(standata$Y, as.array(temp_data$y))
   expect_equal(standata$N_trait, 10)
   temp_data$y <- factor(rep(c("N", "Y"), each = 5), levels = c("N", "Y"))
   standata <- make_standata(y ~ x, data = temp_data,
                             family = bernoulli(type = "2PL"))
-  expect_equal(standata$Y, rep(0:1, each = 5))
+  expect_equal(standata$Y, as.array(rep(0:1, each = 5)))
 })
 
 test_that("brmdata is backwards compatible", {
@@ -314,7 +314,7 @@ test_that("make_standata correctly prepares data for non-linear models", {
                                   "K_b_1", "NC_b_1", "Z_b_1", "prior_only"))
   expect_equal(colnames(standata$X_a), c("Intercept", "x"))
   expect_equal(colnames(standata$C), "z")
-  expect_equal(standata$J_b_1, data$g)
+  expect_equal(standata$J_b_1, as.array(data$g))
 })
 
 test_that("make_standata correctly prepares data for monotonous effects", {
