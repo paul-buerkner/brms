@@ -496,12 +496,36 @@ compare_ic <- function(x, ic = c("waic", "loo")) {
   nlist(ic_diffs, weights)
 }
 
+set_pointwise <- function(x, newdata = NULL, subset = NULL, thres = 1e+07) {
+  # set the pointwise argument based on the model size
+  # Args:
+  #   x: a brmsfit object
+  #   newdata: optional data.frame containing new data
+  #   subset: a vector to indicate a subset of the posterior samples
+  #   thres: threshold above which pointwise is set to TRUE
+  # Returns:
+  #   TRUE or FALSE
+  nsamples <- Nsamples(x, subset = subset)
+  if (is.data.frame(newdata)) {
+    nobs <- nrow(newdata)
+  } else {
+    nobs <- nobs(x)
+  }
+  pointwise <- nsamples * nobs > thres
+  if (pointwise) {
+    message(paste0("Switching to pointwise evaluation to reduce ",  
+                   "RAM requirements.\nThis will likely increase ",
+                   "computation time."))
+  }
+  pointwise
+}
+
 match_response <- function(models) {
   # compare the response parts of multiple brmsfit objects
   # Args:
-  #  models: A list of brmsfit objects
+  #   models: A list of brmsfit objects
   # Returns:
-  #  TRUE if the response parts of all models match and FALSE else
+  #   TRUE if the response parts of all models match and FALSE else
   if (length(models) <= 1) return(TRUE)
   .match_fun <- function(x, y) {
     # checks if all relevant parts of the response are the same 
