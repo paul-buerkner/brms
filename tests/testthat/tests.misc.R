@@ -1,3 +1,12 @@
+test_that("p performs correct indexing", {
+  expect_equal(p(1:10), 1:10)
+  x <- rnorm(10)
+  expect_equal(p(x, i = 3), x[3])
+  A <- matrix(x, nrow = 5)
+  expect_equal(p(A, i = 3), A[3, , drop = FALSE]) 
+  expect_equal(p(A, i = 2, row = FALSE), A[, 2, drop = FALSE]) 
+})
+
 test_that("is.formula is TRUE for formulas and otherwise FALSE", {
   expect_equal(is.formula(y~1), TRUE)
   expect_equal(is.formula("a"), FALSE)
