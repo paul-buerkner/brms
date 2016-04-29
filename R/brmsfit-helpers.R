@@ -16,12 +16,25 @@ array2list <- function(x) {
   l
 }
 
-Nsamples <- function(x) {
+Nsamples <- function(x, subset = NULL) {
   # compute the number of posterior samples
+  # Args:
+  #   x: a brmsfit object
+  #   subset: a vector defining a subset of samples to be considered
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) {
     return(0)
-  } 
-  (x$fit@sim$iter - x$fit@sim$warmup) / x$fit@sim$thin * x$fit@sim$chains
+  }
+  ntsamples <- (x$fit@sim$iter - x$fit@sim$warmup) /
+                 x$fit@sim$thin * x$fit@sim$chains
+  if (length(subset)) {
+    out <- length(subset)
+    if (out > ntsamples || max(subset) > ntsamples) {
+      stop("invalid 'subset' argument", call. = FALSE)
+    }
+  } else {
+    out <- ntsamples
+  }
+  out
 }
 
 algorithm <- function(x) {
