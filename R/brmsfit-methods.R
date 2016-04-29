@@ -980,13 +980,15 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   mf <- model.frame(x)
   mono_vars <- unique(ulapply(get_effect(ee, "mono"), all.vars))
   if (is.null(conditions)) {
-    if (has_arma(x$autocor) || length(rmNULL(ee[c("trials", "cat")]))) {
+    if (has_arma(x$autocor) && !use_cov(x$autocor) || 
+        length(rmNULL(ee[c("trials", "cat")]))) {
       stop("Please specify argument 'conditions' manually for this model.", 
            call. = FALSE)
     }
     # list all required variables
     req_vars <- c(lapply(get_effect(ee), rhs), get_random(ee)$form, 
-                  get_effect(ee, "mono"), ee$cse, ee$se, ee$disp)
+                  get_effect(ee, "mono"), ee$cse, ee$se, ee$disp, 
+                  extract_time(x$autocor$formula)$all)
     req_vars <- unique(ulapply(req_vars, all.vars))
     req_vars <- setdiff(req_vars, c(rsv_vars, names(ee$nonlinear)))
     conditions <- as.data.frame(as.list(rep(NA, length(req_vars))))
