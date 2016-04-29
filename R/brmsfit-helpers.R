@@ -234,7 +234,7 @@ get_cov_matrix <- function(sd, cor = NULL) {
   list(cor = cor_matrix, cov = cov_matrix)
 }
 
-get_cov_matrix_ar1 <- function(ar, sigma, se2, nrows) {
+get_cov_matrix_ar1 <- function(ar, sigma, nrows, se2 = 0) {
   # compute the covariance matrix for an AR1 process
   # Args: 
   #   ar: AR1 autocorrelation samples
@@ -260,7 +260,7 @@ get_cov_matrix_ar1 <- function(ar, sigma, se2, nrows) {
   mat 
 }
 
-get_cov_matrix_ma1 <- function(ma, sigma, se2, nrows) {
+get_cov_matrix_ma1 <- function(ma, sigma, nrows, se2 = 0) {
   # compute the covariance matrix for an MA1 process
   # Args: 
   #   ma: MA1 autocorrelation samples
@@ -286,7 +286,7 @@ get_cov_matrix_ma1 <- function(ma, sigma, se2, nrows) {
   mat 
 }
 
-get_cov_matrix_arma1 <- function(ar, ma, sigma, se2, nrows) {
+get_cov_matrix_arma1 <- function(ar, ma, sigma, nrows, se2 = 0) {
   # compute the covariance matrix for an AR1 process
   # Args: 
   #   ar: AR1 autocorrelation sample

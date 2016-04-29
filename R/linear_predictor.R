@@ -42,7 +42,7 @@ linear_predictor <- function(draws, i = NULL) {
   if ((!is.null(draws$ar) || !is.null(draws$ma)) && !use_cov(draws$autocor)) {
     # only run when ARMA effects were modeled as part of eta
     if (!is.null(i)) {
-      stop("Pointwise evaluaion is not yet implemented for ARMA models.",
+      stop("Pointwise evaluation is not yet implemented for ARMA models.",
            call. = FALSE)
     }
     eta <- arma_predictor(standata = draws$data, ar = draws$ar, 
