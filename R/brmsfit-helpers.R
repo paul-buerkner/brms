@@ -428,6 +428,24 @@ get_shape <- function(x, data, n = NULL,
   shape
 }
 
+prepare_family <- function(x) {
+  # prepare for calling family specific loglik / predict functions
+  family <- family(x)
+  nresp <- length(extract_effects(x$formula, family = family,
+                                  nonlinear = x$nonlinear)$response)
+  if (is.lognormal(family, nresp = nresp)) {
+    family$family <- "lognormal"
+    family$link <- "identity"
+  } else if (is.linear(family) && nresp > 1L) {
+    family$family <- paste0(family$family, "_multi")
+  } else if (use_cov(x$autocor) && sum(x$autocor$p, x$autocor$q) > 0) {
+    family$family <- paste0(family$family, "_cov")
+  } else if (is(x$autocor, "cor_fixed")) {
+    family$family <- paste0(family$family, "_fixed")
+  }
+  family
+}
+
 extract_pars <- function(pars, all_pars, exact_match = FALSE,
                          na_value = all_pars, ...) {
   # extract all valid parameter names that match pars
