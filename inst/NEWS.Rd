@@ -8,6 +8,9 @@
       \item Allow the '/' symbol in group-level terms in 
       the \code{formula} argument to indicate nested 
       grouping structures.
+      \item Allow to compute \code{WAIC} and \code{LOO}
+      based on the pointwise log-likelihood using argument 
+      \code{pointwise} to substantially reduce memory requirements.
     }
   }
   \subsection{OTHER CHANGES}{
@@ -21,6 +24,10 @@
       \item Fix a bug that could lead to a cryptic error
       message when changing some parts of the model 
       \code{formula} using the \code{update} method.
+      \item Fix a bug that could lead to an error when
+      calling \code{marginal_effects} for predictors
+      that were generated with the \code{base::scale} 
+      function thanks to Tom Wallis.
       \item Allow interactions of numeric and categorical
       predictors in \code{marginal_effects} to be passed 
       to the \code{effects} argument in any order.
