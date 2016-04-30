@@ -104,7 +104,7 @@ loglik_gaussian_cov <- function(i, draws, data = data.frame()) {
   out
 }
 
-loglik_student_cov <- function(i, draws, data = data.fram()) {
+loglik_student_cov <- function(i, draws, data = data.frame()) {
   # currently, only ARMA1 processes are implemented
   obs <- with(draws$data, begin_tg[i]:(begin_tg[i] + nobs_tg[i] - 1))
   args <- list(sigma = draws$sigma, se2 = draws$data$se2[obs], 
