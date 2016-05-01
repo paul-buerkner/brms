@@ -1682,9 +1682,6 @@ logLik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                            nsamples = NULL, pointwise = FALSE, ...) {
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
-  #standata <- amend_newdata(newdata, fit = object, re_formula = re_formula,
-  #                          allow_new_levels = allow_new_levels,
-  #                          check_response = TRUE)
   draws <- extract_draws(x = object, newdata = newdata, 
                          re_formula = re_formula, subset = subset,
                          allow_new_levels = allow_new_levels,
