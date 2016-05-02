@@ -29,6 +29,20 @@ rmNULL <- function(x) {
   lapply(x, function(x) if (is.list(x)) rmNULL(x) else x)
 }
 
+first_not_null <- function(...) {
+  # find the first argument that is not NULL
+  dots <- list(...)
+  out <- NULL
+  i <- 1L
+  while(isNULL(out) && i <= length(dots)) {
+    if (!isNULL(dots[[i]])) {
+      out <- dots[[i]]
+    }
+    i <- i + 1L
+  }
+  out
+}
+
 isFALSE <- function(x) {
   identical(FALSE, x)
 }
