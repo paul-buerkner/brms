@@ -5,20 +5,21 @@ parnames.brmsfit <- function(x, ...) {
   dimnames(x$fit)$parameters
 }
 
-#' Extract Fixed Effects Estimates
+#' Extract Population-Level Estimates
 #' 
-#' Extract the fixed effects from a \code{brmsfit} object. 
+#' Extract the population-level ('fixed') effects 
+#' from a \code{brmsfit} object. 
 #' 
 #' @aliases fixef
 #' 
 #' @param object An object of class \code{brmsfit}
 #' @param estimate A character vector specifying which coefficients 
 #'  (e.g., "mean", "median", "sd", or "quantile") 
-#'  should be calculated for the fixed effects.
+#'  should be calculated for the population-level effects.
 #' @param ... Further arguments to be passed to the functions 
 #'  specified in \code{estimate}
 #' 
-#' @return A matrix with one row per fixed effect 
+#' @return A matrix with one row per population-level effect 
 #'   and one column per calculated estimate.
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
@@ -46,10 +47,10 @@ fixef.brmsfit <-  function(object, estimate = "mean", ...) {
   out
 }
 
-#' Covariance and Correlation Matrix of Fixed Effects
+#' Covariance and Correlation Matrix of Population-Level Effects
 #' 
 #' Get a point estimate of the covariance or 
-#' correlation matrix of fixed effects parameters
+#' correlation matrix of population-level parameters
 #' 
 #' @param object An object of class \code{brmsfit}
 #' @param correlation logical; if \code{FALSE} (the default), 
@@ -57,7 +58,7 @@ fixef.brmsfit <-  function(object, estimate = "mean", ...) {
 #'   if \code{TRUE}, compute the correlation matrix
 #' @param ... Currently ignored
 #' 
-#' @return covariance or correlation matrix of fixed effects parameters
+#' @return covariance or correlation matrix of population-level parameters
 #' 
 #' @details Estimates are obtained by calculating the maximum likelihood 
 #'   covariances (correlations) of the posterior samples. 
@@ -79,9 +80,10 @@ vcov.brmsfit <- function(object, correlation = FALSE, ...) {
   }
 }
 
-#' Extract Random Effects Estimates
+#' Extract Group-Level Estimates
 #' 
-#' Extract the random effects of each level from \code{brmsfit} object. 
+#' Extract the group-level ('random') effects of each level 
+#' from a \code{brmsfit} object. 
 #' 
 #' @aliases ranef
 #' 
@@ -95,7 +97,7 @@ vcov.brmsfit <- function(object, correlation = FALSE, ...) {
 #'
 #' @return A list of matrices (one per grouping factor), 
 #'  with factor levels as row names and 
-#'  random effects as column names 
+#'  group-level effects as column names.
 #'     
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}   
 #'   
@@ -103,10 +105,10 @@ vcov.brmsfit <- function(object, correlation = FALSE, ...) {
 #' \dontrun{
 #' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
 #'              data = epilepsy, family = "poisson", chains = 1)
-#' ## random effects means with corresponding covariances
+#' ## group-level means with corresponding covariances
 #' rf <- ranef(fit, var = TRUE)
 #' attr(rf, "var")
-#' ## random effects medians
+#' ## group-level medians
 #' ranef(fit, estimate = "median")                                                        
 #' }
 #' 
@@ -178,8 +180,8 @@ ranef.brmsfit <- function(object, estimate = "mean", var = FALSE, ...) {
 
 #' Extract model coefficients
 #'
-#' Extract model coefficients, which are the sum of fixed effects
-#' and corresponding random effects
+#' Extract model coefficients, which are the sum of population-level 
+#' effects and corresponding group-level effects
 #' 
 #' @param object An object of class \code{brmsfit}
 #' @inheritParams ranef.brmsfit
@@ -848,7 +850,7 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
     if (type %in% c("rhat", "ess", "msce") && !anyNA(pars)) {
       args <- c(args, list(pars = pars))
     } else if (type == "par") {
-      if (length(pars) > 1) {
+      if (length(pars) > 1L) {
         warning(paste("stan_par expects a single parameter name",
                       "so that only the first one will be used"))
       }

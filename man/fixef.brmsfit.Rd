@@ -3,7 +3,7 @@
 \name{fixef.brmsfit}
 \alias{fixef}
 \alias{fixef.brmsfit}
-\title{Extract Fixed Effects Estimates}
+\title{Extract Population-Level Estimates}
 \usage{
 \method{fixef}{brmsfit}(object, estimate = "mean", ...)
 }
@@ -12,17 +12,18 @@
 
 \item{estimate}{A character vector specifying which coefficients 
 (e.g., "mean", "median", "sd", or "quantile") 
-should be calculated for the fixed effects.}
+should be calculated for the population-level effects.}
 
 \item{...}{Further arguments to be passed to the functions 
 specified in \code{estimate}}
 }
 \value{
-A matrix with one row per fixed effect 
+A matrix with one row per population-level effect 
   and one column per calculated estimate.
 }
 \description{
-Extract the fixed effects from a \code{brmsfit} object.
+Extract the population-level ('fixed') effects 
+from a \code{brmsfit} object.
 }
 \examples{
 \dontrun{

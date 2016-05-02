@@ -3,7 +3,7 @@
 \name{ranef.brmsfit}
 \alias{ranef}
 \alias{ranef.brmsfit}
-\title{Extract Random Effects Estimates}
+\title{Extract Group-Level Estimates}
 \usage{
 \method{ranef}{brmsfit}(object, estimate = "mean", var = FALSE, ...)
 }
@@ -22,19 +22,20 @@ specified in \code{estimate}}
 \value{
 A list of matrices (one per grouping factor), 
  with factor levels as row names and 
- random effects as column names
+ group-level effects as column names.
 }
 \description{
-Extract the random effects of each level from \code{brmsfit} object.
+Extract the group-level ('random') effects of each level 
+from a \code{brmsfit} object.
 }
 \examples{
 \dontrun{
 fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
              data = epilepsy, family = "poisson", chains = 1)
-## random effects means with corresponding covariances
+## group-level means with corresponding covariances
 rf <- ranef(fit, var = TRUE)
 attr(rf, "var")
-## random effects medians
+## group-level medians
 ranef(fit, estimate = "median")                                                        
 }
 

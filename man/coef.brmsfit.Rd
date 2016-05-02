@@ -21,8 +21,8 @@ A list of matrices (one per grouping factor),
  coefficients as column names
 }
 \description{
-Extract model coefficients, which are the sum of fixed effects
-and corresponding random effects
+Extract model coefficients, which are the sum of population-level 
+effects and corresponding group-level effects
 }
 \examples{
 \dontrun{

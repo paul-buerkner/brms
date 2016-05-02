@@ -2,7 +2,7 @@
 % Please edit documentation in R/brmsfit-methods.R
 \name{vcov.brmsfit}
 \alias{vcov.brmsfit}
-\title{Covariance and Correlation Matrix of Fixed Effects}
+\title{Covariance and Correlation Matrix of Population-Level Effects}
 \usage{
 \method{vcov}{brmsfit}(object, correlation = FALSE, ...)
 }
@@ -16,11 +16,11 @@ if \code{TRUE}, compute the correlation matrix}
 \item{...}{Currently ignored}
 }
 \value{
-covariance or correlation matrix of fixed effects parameters
+covariance or correlation matrix of population-level parameters
 }
 \description{
 Get a point estimate of the covariance or 
-correlation matrix of fixed effects parameters
+correlation matrix of population-level parameters
 }
 \details{
 Estimates are obtained by calculating the maximum likelihood 
