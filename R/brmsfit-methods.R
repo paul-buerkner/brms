@@ -1511,7 +1511,14 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
       message("The desired formula changes require recompling the model")
     }
   }
-
+  
+  dots$iter <- ifelse(is.null(dots$iter), object$fit@sim$iter, dots$iter)
+  dots$warmup <- ifelse(is.null(dots$warmup), object$fit@sim$warmup, 
+                        dots$warmup)
+  dots$chains <- ifelse(is.null(dots$chains), object$fit@sim$chains,
+                        dots$chains)
+  dots$thin <- ifelse(is.null(dots$thin), object$fit@sim$thin, dots$thin)
+  
   object$prior <- update_prior_frame(object$prior, ranef = object$ranef)
   rc_args <- c("family", "prior", "autocor", "nonlinear", "partial", 
                "threshold", "cov_ranef", "sparse", "sample_prior")
