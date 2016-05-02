@@ -102,7 +102,7 @@ fix_factor_contrasts <- function(data) {
   # of the global "contrasts" option
   stopifnot(is(data, "data.frame"))
   for (i in seq_along(data)) {
-    if (is.factor(data[[i]])) {
+    if (is.factor(data[[i]]) && is.null(attr(data[[i]], "contrasts"))) {
       # hard code current global "contrasts" option
       contrasts(data[[i]]) <- contrasts(data[[i]])
     }
@@ -233,14 +233,24 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
             new_factor <- factor(new_factor)
           }
           new_levels <- levels(new_factor)
-          if (any(!new_levels %in% factor_levels[[i]])) {
+          old_levels <- factor_levels[[i]]
+          old_contrasts <- contrasts(factors[[i]])
+          to_zero <- is.na(new_factor) | new_factor %in% ".ZERO"
+          if (any(to_zero)) {
+            levels(new_factor) <- c(new_levels, ".ZERO")
+            new_factor[to_zero] <- ".ZERO"
+            old_levels <- c(old_levels, ".ZERO")
+            old_contrasts <- rbind(old_contrasts, .ZERO = 0)
+          }
+          if (any(!new_levels %in% old_levels)) {
             stop(paste("New factor levels are not allowed. \n",
                  "Levels found:", paste(new_levels, collapse = ", ") , "\n",
-                 "Levels allowed:", paste(factor_levels[[i]], collapse = ", ")),
+                 "Levels allowed:", paste(old_levels, collapse = ", ")),
                  call. = FALSE)
           }
-          newdata[[factor_names[i]]] <- factor(new_factor, factor_levels[[i]])
-          contrasts(newdata[[factor_names[i]]]) <- contrasts(factors[[i]])
+          newdata[[factor_names[i]]] <- factor(new_factor, old_levels)
+          # don't use contrasts(.) here to avoid dimension checks
+          attr(newdata[[factor_names[i]]], "contrasts") <- old_contrasts
         }
       }
     }
