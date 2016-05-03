@@ -82,6 +82,12 @@ An object of class \code{brmsMarginalEffects}, which is a named list
 Display marginal effects of one or more numeric and/or categorical 
 predictors including interaction effects of order 2.
 }
+\details{
+\code{NA} values within factors in \code{conditions}, 
+  are interpreted as if all dummy variables of this factor are 
+  zero. This allows, for instance, to make predictions of the grand mean 
+  when using sum coding.
+}
 \examples{
 \dontrun{
 fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1 | patient),

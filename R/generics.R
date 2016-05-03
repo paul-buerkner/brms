@@ -519,6 +519,11 @@ stanplot <- function(object, pars, ...) {
 #'   marginal effects plots. The corresponding \code{plot} method returns a named 
 #'   list of \code{\link[ggplot2:ggplot]{ggplot}} objects, which can be further 
 #'   customized using the \pkg{ggplot2} package.
+#'   
+#' @details \code{NA} values within factors in \code{conditions}, 
+#'   are interpreted as if all dummy variables of this factor are 
+#'   zero. This allows, for instance, to make predictions of the grand mean 
+#'   when using sum coding. 
 #' 
 #' @examples 
 #' \dontrun{

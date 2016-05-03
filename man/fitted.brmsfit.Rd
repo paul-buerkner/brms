@@ -69,7 +69,12 @@ This is because the measurement error is not incorporated.
 The estimated means of both methods should, however, be very similar.
 }
 \details{
-For models fitted with \pkg{brms} <= 0.5.0 only: 
+\code{NA} values within factors in \code{newdata}, 
+  are interpreted as if all dummy variables of this factor are 
+  zero. This allows, for instance, to make predictions of the grand mean 
+  when using sum coding.  
+
+  For models fitted with \pkg{brms} <= 0.5.0 only: 
   Be careful when using \code{newdata} with factors 
   in fixed or random effects. The predicted results are only valid 
   if all factor levels present in the initial 

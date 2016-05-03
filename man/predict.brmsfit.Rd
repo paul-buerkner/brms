@@ -73,7 +73,12 @@ method. This is because the measurement error is incorporated.
 The estimated means of both methods should, however, be very similar.
 }
 \details{
-For truncated discrete models only:
+\code{NA} values within factors in \code{newdata}, 
+  are interpreted as if all dummy variables of this factor are 
+  zero. This allows, for instance, to make predictions of the grand mean 
+  when using sum coding.  
+
+  For truncated discrete models only:
   In the absence of any general algorithm to sample 
   from truncated discrete distributions,
   rejection sampling is applied in this special case. 
