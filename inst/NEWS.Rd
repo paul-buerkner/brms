@@ -31,6 +31,10 @@
       \item Allow interactions of numeric and categorical
       predictors in \code{marginal_effects} to be passed 
       to the \code{effects} argument in any order.
+      \item Fix a bug that could lead to incorrect results
+      of \code{predict} and related methods when called with
+      \code{newdata} in models using the \code{poly} function
+      thanks to Brock Ferguson.
     }
   }
 }

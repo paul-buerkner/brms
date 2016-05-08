@@ -112,9 +112,9 @@ fix_factor_contrasts <- function(data) {
 
 update_data <- function(data, family, effects, ..., 
                         na.action = na.omit,
-                        drop.unused.levels = TRUE) {
-  # update data for use in brm
-  #
+                        drop.unused.levels = TRUE,
+                        terms_attr = NULL) {
+  # Update data for use in brms functions
   # Args:
   #   data: the original data.frame
   #   family: the model family
@@ -124,7 +124,11 @@ update_data <- function(data, family, effects, ...,
   #   na.action: function defining how to treat NAs
   #   drop.unused.levels: indicates if unused factor levels
   #                       should be removed
-  #
+  #   terms_attr: a list of attributes of the terms object of 
+  #     the original model.frame; only used with newdata;
+  #     this ensures that (1) calls to 'poly' work correctly
+  #     and (2) that the number of variables matches the number 
+  #     of variable names; fixes issue #73; 
   # Returns:
   #   model.frame in long format with combined grouping variables if present
   if (is.null(attr(data, "terms")) && "brms.frame" %in% class(data)) {
@@ -135,7 +139,9 @@ update_data <- function(data, family, effects, ...,
   if (!(isTRUE(attr(data, "brmsframe")) || "brms.frame" %in% class(data))) {
     data <- melt_data(data, family = family, effects = effects,
                       na.action = na.action)
-    data <- model.frame(effects$all, data = data, na.action = na.action,
+    terms <- terms(effects$all)
+    attributes(terms)[names(terms_attr)] <- terms_attr
+    data <- model.frame(terms, data = data, na.action = na.action,
                         drop.unused.levels = drop.unused.levels)
     if (any(grepl("__", colnames(data))))
       stop("variable names may not contain double underscores '__'",
@@ -176,11 +182,11 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     }
     return(newdata)
   } else if (!"data.frame" %in% class(newdata)) {
-    stop("newdata must be a data.frame")
+    stop("newdata must be a data.frame", call. = FALSE)
   }
   # standata will be based on an updated formula if re_formula is specified
   new_ranef <- check_re_formula(re_formula, old_ranef = fit$ranef,
-                                data = fit$data)
+                                data = model.frame(fit))
   new_formula <- update_re_terms(fit$formula, re_formula = re_formula)
   new_nonlinear <- lapply(fit$nonlinear, update_re_terms, 
                           re_formula = re_formula)
@@ -205,13 +211,24 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       newdata[[cens]] <- 0 # add irrelevant censor variables
     }
   }
-  if (allow_new_levels) {
-    # random effects grouping factors do not need to be specified 
-    # by the user if new_levels are allowed
+  if (length(fit$ranef)) {
     if (length(new_ranef)) {
-      all_gf <- unique(unlist(strsplit(names(new_ranef), split = ":")))
-      missing_gf <- all_gf[!all_gf %in% names(newdata)]
-      newdata[, missing_gf] <- NA
+      all_new_gf <- unique(unlist(strsplit(names(new_ranef), split = ":")))
+      if (allow_new_levels) {
+        # random effects grouping factors do not need to be specified 
+        # by the user if new_levels are allowed
+        missing_gf <- setdiff(all_new_gf, names(newdata))
+        newdata[, missing_gf] <- NA
+      }
+    } else {
+      all_new_gf <- ""
+    }
+    all_old_gf <- unique(unlist(strsplit(names(fit$ranef), split = ":")))
+    unused_gf <- setdiff(all_old_gf, union(all_new_gf, names(newdata)))
+    if (length(unused_gf)) {
+      # brms:::update_data expects all original variables to be present
+      # even if not actually used later on
+      newdata[, unused_gf] <- NA
     }
   }
   newdata <- combine_groups(newdata, get_random(ee)$group, et$group)
@@ -221,7 +238,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     list_data <- lapply(as.list(fit$data), function(x)
       if (is.numeric(x)) x else as.factor(x))
     is_factor <- sapply(list_data, is.factor)
-    is_group <- names(list_data) %in% names(new_ranef)
+    is_group <- names(list_data) %in% names(fit$ranef)
     factors <- list_data[is_factor & !is_group]
     if (length(factors)) {
       factor_names <- names(factors)
@@ -303,6 +320,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     control <- list(is_newdata = TRUE, not4stan = TRUE,
                     save_order = TRUE, omit_response = !check_response)
     control$old_cat <- is.old_categorical(fit)
+    old_terms <- attr(model.frame(fit), "terms")
+    control$terms_attr <- attributes(old_terms)[c("variables", "predvars")]
     has_mono <- length(rmNULL(get_effect(ee, "mono")))
     p <- if (length(ee$nonlinear)) paste0("_", names(ee$nonlinear)) else ""
     if (has_trials(fit$family) || has_cat(fit$family) || has_mono) {
