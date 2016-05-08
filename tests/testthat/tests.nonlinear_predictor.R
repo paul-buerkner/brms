@@ -12,7 +12,7 @@ test_that("nonlinear_predictor runs without errors", {
   expect_equal(dim(nonlinear_predictor(draws)), 
                c(Nsamples(fit), nobs(fit)))
   newdata <- data.frame(count = rpois(3, 10), visit = 1:3, patient = 10,
-                        Trt_c = rnorm(3))
+                        Trt_c = rnorm(3), log_Age_c = 0, Exp = 1)
   draws <- extract_draws(fit, newdata = newdata)
   expect_equal(dim(nonlinear_predictor(draws)), 
                c(Nsamples(fit), nrow(newdata)))
