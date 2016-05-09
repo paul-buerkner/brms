@@ -2,7 +2,7 @@
 \title{brms News}
 \encoding{UTF-8}
 
-\section{CHANGES IN VERSION 0.9.0.9000}{
+\section{CHANGES IN VERSION 0.9.1}{
   \subsection{NEW FEATURES}{
     \itemize{ 
       \item Allow the '/' symbol in group-level terms in 
