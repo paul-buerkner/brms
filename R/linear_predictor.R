@@ -9,8 +9,9 @@ linear_predictor <- function(draws, i = NULL) {
   # Returns:
   #   Usually an S x N matrix where S is the number of samples
   #   and N is the number of observations or length of i if specified. 
-  if (length(i) == 1L && is.categorical(draws$f) && !draws$old_cat) {
+  if (length(i) == 1L && is.categorical(draws$f) && !isTRUE(draws$old_cat)) {
     # new categorical models are using multivariate syntax
+    # isTRUE(.) is mandatory as draws$old_cat may be NULL
     nobs <- draws$data$N_trait * (draws$data$ncat - 1)
     i <- seq(i, nobs, draws$data$N_trait)
   }

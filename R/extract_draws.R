@@ -21,7 +21,7 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   standata <- amend_newdata(newdata, fit = x, re_formula = re_formula,
                             allow_new_levels = allow_new_levels, ...)
   draws <- nlist(f = prepare_family(x), data = standata, nsamples = nsamples, 
-                 autocor = x$autocor, old_cat = is.old_categorical(x))
+                 autocor = x$autocor)
   
   nlpars <- names(ee$nonlinear)
   if (length(nlpars)) {
@@ -97,8 +97,8 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   nlpar <- ifelse(nchar(nlpar), paste0(nlpar, "_"), "")
   args <- list(x = x, as.matrix = TRUE, subset = subset)
   
-  draws <- list()
-  if (!is.null(standata$X) && ncol(standata$X) && !is.categorical(family(x))) {
+  draws <- list(old_cat = is.old_categorical(x))
+  if (!is.null(standata$X) && ncol(standata$X) && !draws$old_cat) {
     b_pars <- paste0("b_", nlpar, colnames(standata$X))
     draws$b <- do.call(posterior_samples, 
                        c(args, list(pars = b_pars, exact = TRUE)))
@@ -125,12 +125,10 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
       cse_pars <- paste0("^b_", colnames(standata$Xp), "\\[")
       draws$p <- do.call(posterior_samples, c(args, list(pars = cse_pars)))
     }
-  } else if (is.categorical(family(x))) {
-    if (draws$old_cat) {
-      # deprecated as of brms > 0.8.0
-      if (!is.null(standata$X)) {
-        draws$p <- do.call(posterior_samples, c(args, list(pars = "^b_")))
-      }
+  } else if (draws$old_cat) {
+    # old categorical models deprecated as of brms > 0.8.0
+    if (!is.null(standata$X)) {
+      draws$p <- do.call(posterior_samples, c(args, list(pars = "^b_")))
     }
   }
   group <- names(new_ranef)
