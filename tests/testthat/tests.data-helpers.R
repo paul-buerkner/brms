@@ -2,7 +2,7 @@ test_that("melt_data returns data in long format", {
   data <- data.frame(x = rep(c("a","b"), 5), y1 = 1:10, y2 = 11:20, 
                      y3 = 21:30, z = 100:91)
   effects <- extract_effects(y ~ x, family = "poisson")
-  expect_equal(melt_data(data, effects = effects, 
+  expect_equivalent(melt_data(data, effects = effects, 
                          family = "poisson"), data)
   
   target1 <- data.frame(x = rep(c("a","b"), 10), y1 = rep(1:10, 2), 
@@ -12,7 +12,7 @@ test_that("melt_data returns data in long format", {
                                        levels = c("y3", "y1")), 
                         response = c(21:30, 1:10))
   effects <- extract_effects(cbind(y3,y1) ~ x, family = "gaussian")
-  expect_equal(melt_data(data, effects = effects, family = "gaussian"), 
+  expect_equivalent(melt_data(data, effects = effects, family = "gaussian"), 
                target1[, c("x", "y1", "y3", "trait", "response")])
   
   target2 <- data.frame(x = rep(c("a","b"), 15), y1 = rep(1:10, 3), 
@@ -22,8 +22,17 @@ test_that("melt_data returns data in long format", {
                                        levels = c("y2", "y1", "y3")), 
                         response = c(11:20, 1:10, 21:30))
   effects <- extract_effects(cbind(y2,y1,y3) ~ x, family = "gaussian")
-  expect_equal(melt_data(data, effects = effects, family = "gaussian"), 
+  expect_equivalent(melt_data(data, effects = effects, family = "gaussian"), 
                target2[, c("x", "y1", "y2", "y3", "trait", "response")])
+})
+
+test_that("melt_data keeps factor contrasts", {
+  data <- data.frame(y1 = rnorm(10), y2 = rnorm(10),
+                     x = factor(rep(1:2, each = 5)))
+  contrasts(data$x) <- contr.sum(2)
+  effects <- extract_effects(cbind(y1,y2) ~ x)
+  newdata <- melt_data(data, family = "gaussian", effects = effects)
+  expect_equal(attr(newdata$x, "contrasts"), attr(data$x, "contrasts"))
 })
 
 test_that("melt_data returns expected errors", {

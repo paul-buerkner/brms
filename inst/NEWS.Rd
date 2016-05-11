@@ -35,6 +35,8 @@
       of \code{predict} and related methods when called with
       \code{newdata} in models using the \code{poly} function
       thanks to Brock Ferguson.
+      \item Make sure that user-specified factor contrasts 
+      are always applied in multivariate models.
     }
   }
 }

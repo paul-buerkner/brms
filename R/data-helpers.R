@@ -56,8 +56,10 @@ melt_data <- function(data, family, effects, na.action = na.omit) {
       model_response <- rep(model_response, 2)
     }
     new_cols$response <- model_response
-    data <- replicate(length(response), data, simplify = FALSE)
+    old_data <- data
+    data <- replicate(length(response), old_data, simplify = FALSE)
     data <- do.call(na.action, list(cbind(do.call(rbind, data), new_cols)))
+    data <- fix_factor_contrasts(data, optdata = old_data)
   }
   if (isTRUE(attr(effects$fixed, "rsv_intercept"))) {
     if (is.null(data)) 
@@ -97,14 +99,26 @@ combine_groups <- function(data, ...) {
   data
 }
 
-fix_factor_contrasts <- function(data) {
+fix_factor_contrasts <- function(data, optdata = NULL) {
   # hard code factor contrasts to be independent
   # of the global "contrasts" option
+  # Args:
+  #   data: a data.frame
+  #   optdata: optional data.frame from which contrasts
+  #            are taken if present
+  # Returns:
+  #   a data.frame with amended contrasts attributes
   stopifnot(is(data, "data.frame"))
+  stopifnot(is.null(optdata) || is.list(optdata))
   for (i in seq_along(data)) {
     if (is.factor(data[[i]]) && is.null(attr(data[[i]], "contrasts"))) {
-      # hard code current global "contrasts" option
-      contrasts(data[[i]]) <- contrasts(data[[i]])
+      if (!is.null(attr(optdata[[names(data)[i]]], "contrasts"))) {
+        # take contrasts from optdata
+        contrasts(data[[i]]) <- attr(optdata[[names(data)[i]]], "contrasts")
+      } else {
+        # hard code current global "contrasts" option
+        contrasts(data[[i]]) <- contrasts(data[[i]])
+      }
     }
   }
   data
