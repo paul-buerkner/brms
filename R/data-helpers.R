@@ -205,7 +205,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   new_nonlinear <- lapply(fit$nonlinear, update_re_terms, 
                           re_formula = re_formula)
   et <- extract_time(fit$autocor$formula)
-  ee <- extract_effects(new_formula, et$all, family = fit$family,
+  ee <- extract_effects(new_formula, et$all, family = family(fit),
                         nonlinear = new_nonlinear, resp_rhs_all = FALSE)
   resp_only_vars <- setdiff(all.vars(ee$respform), all.vars(rhs(ee$all)))
   missing_resp <- setdiff(resp_only_vars, names(newdata))
@@ -227,22 +227,28 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   }
   if (length(fit$ranef)) {
     if (length(new_ranef)) {
-      all_new_gf <- unique(unlist(strsplit(names(new_ranef), split = ":")))
+      new_gf <- unique(unlist(strsplit(names(new_ranef), split = ":")))
       if (allow_new_levels) {
         # random effects grouping factors do not need to be specified 
         # by the user if new_levels are allowed
-        missing_gf <- setdiff(all_new_gf, names(newdata))
+        missing_gf <- setdiff(new_gf, names(newdata))
         newdata[, missing_gf] <- NA
       }
     } else {
-      all_new_gf <- ""
+      new_gf <- NULL
     }
-    all_old_gf <- unique(unlist(strsplit(names(fit$ranef), split = ":")))
-    unused_gf <- setdiff(all_old_gf, union(all_new_gf, names(newdata)))
-    if (length(unused_gf)) {
-      # brms:::update_data expects all original variables to be present
-      # even if not actually used later on
-      newdata[, unused_gf] <- NA
+    # brms:::update_data expects all original variables to be present
+    # even if not actually used later on
+    new_slopes <- unique(ulapply(ee$random$form, all.vars))
+    used_vars <- unique(c(new_gf, new_slopes, names(newdata),
+                          rsv_vars(family(fit), length(ee$response))))
+    old_gf <- unique(unlist(strsplit(names(fit$ranef), split = ":")))
+    old_ee <- extract_effects(formula(fit), et$all, family = family(fit),
+                              nonlinear = fit$nonlinear)
+    old_slopes <- unique(ulapply(old_ee$random$form, all.vars))
+    unused_vars <- setdiff(union(old_gf, old_slopes), used_vars)
+    if (length(unused_vars)) {
+      newdata[, unused_vars] <- NA
     }
   }
   newdata <- combine_groups(newdata, get_random(ee)$group, et$group)
