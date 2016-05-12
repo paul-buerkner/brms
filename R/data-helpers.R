@@ -239,13 +239,13 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     }
     # brms:::update_data expects all original variables to be present
     # even if not actually used later on
-    new_slopes <- unique(ulapply(ee$random$form, all.vars))
+    new_slopes <- unique(ulapply(get_random(ee)$form, all.vars))
     used_vars <- unique(c(new_gf, new_slopes, names(newdata),
                           rsv_vars(family(fit), length(ee$response))))
     old_gf <- unique(unlist(strsplit(names(fit$ranef), split = ":")))
     old_ee <- extract_effects(formula(fit), et$all, family = family(fit),
                               nonlinear = fit$nonlinear)
-    old_slopes <- unique(ulapply(old_ee$random$form, all.vars))
+    old_slopes <- unique(ulapply(get_random(old_ee)$form, all.vars))
     unused_vars <- setdiff(union(old_gf, old_slopes), used_vars)
     if (length(unused_vars)) {
       newdata[, unused_vars] <- NA
