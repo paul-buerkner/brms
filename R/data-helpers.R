@@ -15,8 +15,7 @@ melt_data <- function(data, family, effects, na.action = na.omit) {
       stop("'data' must be a data.frame for this model", call. = FALSE)
     }
     # only keep variables that are relevant for the model
-    effects$all <- terms(effects$all)
-    rel_vars <- c(all.vars(attr(effects$all, "variables")), 
+    rel_vars <- c(all.vars(attr(terms(effects$all), "variables")), 
                   all.vars(effects$respform))
     data <- data[, which(names(data) %in% rel_vars), drop = FALSE]
     rsv_vars <- intersect(c("trait", "response"), names(data))
