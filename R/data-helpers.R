@@ -252,7 +252,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       newdata[, unused_vars] <- NA
     }
   }
-  newdata <- combine_groups(newdata, get_random(ee)$group, et$group)
+  newdata <- combine_groups(newdata, get_random(ee)$group)
   # try to validate factor levels in newdata
   if (is.data.frame(fit$data)) {
     # validating is possible (implies brms > 0.5.0)
