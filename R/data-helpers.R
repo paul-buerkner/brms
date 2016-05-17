@@ -15,7 +15,9 @@ melt_data <- function(data, family, effects, na.action = na.omit) {
       stop("'data' must be a data.frame for this model", call. = FALSE)
     }
     # only keep variables that are relevant for the model
-    rel_vars <- c(all.vars(effects$all), all.vars(effects$respform))
+    effects$all <- terms(effects$all)
+    rel_vars <- c(all.vars(attr(effects$all, "variables")), 
+                  all.vars(effects$respform))
     data <- data[, which(names(data) %in% rel_vars), drop = FALSE]
     rsv_vars <- intersect(c("trait", "response"), names(data))
     if (length(rsv_vars)) {
@@ -151,11 +153,11 @@ update_data <- function(data, family, effects, ...,
     data <- as.data.frame(data)
   }
   if (!(isTRUE(attr(data, "brmsframe")) || "brms.frame" %in% class(data))) {
+    effects$all <- terms(effects$all)
+    attributes(effects$all)[names(terms_attr)] <- terms_attr
     data <- melt_data(data, family = family, effects = effects,
                       na.action = na.action)
-    terms <- terms(effects$all)
-    attributes(terms)[names(terms_attr)] <- terms_attr
-    data <- model.frame(terms, data = data, na.action = na.action,
+    data <- model.frame(effects$all, data = data, na.action = na.action,
                         drop.unused.levels = drop.unused.levels)
     if (any(grepl("__", colnames(data))))
       stop("variable names may not contain double underscores '__'",
