@@ -40,6 +40,6 @@ License: GPL (>= 3)
 URL: http://github.com/paul-buerkner/brms
 BugReports: http://github.com/paul-buerkner/brms/issues
 VignetteBuilder: 
-    R.rsp,
-    knitr
+    knitr,
+    R.rsp
 RoxygenNote: 5.0.1
