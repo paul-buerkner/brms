@@ -150,7 +150,7 @@ Variable \code{time} represents the recurrence time of the infection,
 
 \subsection[Fitting models with brms]{Fitting models with \pkg{brms}}
 
-The core of the \pkg{brms} package is the \code{brm} function and we will explain its argument structure using the example above. Suppose we want to predict the (possibly censored) recurrence time using a log-normal model, in which the intercept as well as the effect4 of \code{age} is nested within patients. Then, we may use the following code:
+The core of the \pkg{brms} package is the \code{brm} function and we will explain its argument structure using the example above. Suppose we want to predict the (possibly censored) recurrence time using a log-normal model, in which the intercept as well as the effect of \code{age} is nested within patients. Then, we may use the following code:
 \begin{Code}
 fit1 <- brm(formula = time | cens(censored) ~ age * sex + disease 
             + (1 + age|patient), 
