@@ -739,19 +739,18 @@ is.formula <- function(x, or = TRUE) {
 
 formula2string <- function(formula, rm = c(0, 0)) {
   # converts formula to string
-  #
   # Args:
   #   formula: a model formula
   #   rm: a vector of to elements indicating how many characters 
   #       should be removed at the beginning
   #       and end of the string respectively
-  #
   # Returns:
   #    the formula as string 
-  if (!is.formula(formula))
+  if (!is(formula, "formula")) {
     stop(paste(deparse(substitute(formula)), "must be of class formula"))
+  }
   if (is.na(rm[2])) rm[2] <- 0
-  x <- gsub(" ","", Reduce(paste, deparse(formula)))
+  x <- gsub(" ", "", Reduce(paste, deparse(formula)))
   x <- substr(x, 1 + rm[1], nchar(x) - rm[2])
   x
 } 
