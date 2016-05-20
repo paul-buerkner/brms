@@ -205,9 +205,10 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   
   # generate transformed parameters block
   # loop over all observations in transformed parameters if necessary
-  make_loop <- nrow(ee$random) || (Kar || Kma) && !use_cov(autocor) ||  
-               length(intercepts) > 1L || length(ee$mono) ||
-               isTRUE(text_pred$transform) || length(nonlinear)
+  make_loop <- nrow(ee$random) || (Kar || Kma) && !use_cov(autocor) || 
+               is(autocor, "cor_bsts") || length(intercepts) > 1L || 
+               length(ee$mono) || isTRUE(text_pred$transform) || 
+               length(nonlinear)
   if (make_loop && !is_multi) {
     text_loop <- c("  for (n in 1:N) { \n", "  } \n")
   } else if (is_multi) {

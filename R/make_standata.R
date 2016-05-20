@@ -59,6 +59,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   data <- update_data(data, family = family, effects = ee, et$group,
                       drop.unused.levels = !isTRUE(control$is_newdata),
                       na.action = na_action, terms_attr = control$terms_attr)
+  not4stan <- isTRUE(control$not4stan)
   
   # sort data in case of autocorrelation models
   if (has_arma(autocor)) {
@@ -159,26 +160,24 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     for (i in seq_along(nlpars)) {
       data_fixef <- data_fixef(ee$nonlinear[[i]], data = data, 
                                family = family, nlpar = nlpars[i],
-                               not4stan = isTRUE(control$not4stan))
+                               not4stan = not4stan)
       data_monef <- data_monef(ee$nonlinear[[i]], data = data, prior = prior, 
                                Jm = control[[paste0("Jm_", nlpars[i])]],
                                nlpar = nlpars[i])
       data_ranef <- data_ranef(ee$nonlinear[[i]], data = data, 
                                family = family, cov_ranef = cov_ranef,
                                is_newdata = isTRUE(control$is_newdata),
-                               not4stan = isTRUE(control$not4stan),
-                               nlpar = nlpars[i])
+                               not4stan = not4stan, nlpar = nlpars[i])
       standata <- c(standata, data_fixef, data_monef, data_ranef)
     }
   } else {
     data_fixef <- data_fixef(ee, data = data, family = family, 
-                             not4stan = isTRUE(control$not4stan))
+                             autocor = autocor, not4stan = not4stan)
     data_monef <- data_monef(ee, data = data, prior = prior, Jm = control$Jm)
     data_csef <- data_csef(ee, data = data)
     data_ranef <- data_ranef(ee, data = data, family = family, 
-                             cov_ranef = cov_ranef,
-                             is_newdata = isTRUE(control$is_newdata),
-                             not4stan = isTRUE(control$not4stan))
+                             cov_ranef = cov_ranef, not4stan = not4stan,
+                             is_newdata = isTRUE(control$is_newdata))
     standata <- c(standata, data_fixef, data_monef, data_csef, data_ranef)
     # offsets are not yet implemented for non-linear models
     standata$offset <- model.offset(data)
@@ -280,8 +279,9 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   }
   # autocorrelation variables
   if (has_arma(autocor)) {
-    tgroup <- data[[et$group]]
-    if (is.null(tgroup)) {
+    if (nchar(et$group)) {
+      tgroup <- data[[et$group]]
+    } else {
       tgroup <- rep(1, standata$N) 
     }
     Kar <- get_ar(autocor)
@@ -329,6 +329,14 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       stop("'V' must be positive definite", call. = FALSE)
     }
     standata$V <- V
+  }
+  if (is(autocor, "cor_bsts")) {
+    if (nchar(et$group)) {
+      tgroup <- data[[et$group]]
+    } else {
+      tgroup <- rep(1, standata$N) 
+    }
+    standata$tg <- as.numeric(as.factor(tgroup))
   }
   standata$prior_only <- ifelse(identical(sample_prior, "only"), 1L, 0L)
   if (isTRUE(control$save_order)) {

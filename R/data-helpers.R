@@ -503,18 +503,22 @@ arr_design_matrix <- function(Y, r, group)  {
 }
 
 data_fixef <- function(effects, data, family = gaussian(),
-                       nlpar = "", not4stan = FALSE) {
+                       autocor = cor_arma(), nlpar = "", 
+                       not4stan = FALSE) {
   # prepare data for fixed effects for use in Stan 
   # Args:
   #   effects: a list returned by extract_effects
   #   data: the data passed by the user
   #   family: the model family
+  #   autocor: object of class 'cor_brms'
   #   nlpar: optional character string naming a non-linear parameter
   #   not4stan: is the data for use in S3 methods only?
   stopifnot(length(nlpar) == 1L)
   p <- if (nchar(nlpar)) paste0("_", nlpar) else ""
+  is_ordinal <- is.ordinal(family)
+  is_bsts <- is(autocor, "cor_bsts")
   out <- list()
-  if (not4stan && !is.ordinal(family) || nchar(nlpar)) {
+  if (not4stan && !is_ordinal && !is_bsts || nchar(nlpar)) {
     intercepts <- NULL  # don't remove any intercept columns
   } else {
     intercepts <- get_intercepts(effects, data = data, family = family)  
@@ -523,7 +527,8 @@ data_fixef <- function(effects, data, family = gaussian(),
                         forked = is.forked(family),
                         cols2remove = names(intercepts))
   out[[paste0("K", p)]] <- ncol(X)
-  if (length(intercepts)) {
+  center_X <- length(intercepts) && !is_bsts && !(is_ordinal && not4stan)
+  if (center_X) {
     if (length(intercepts) == 1L) {
       X_means <- colMeans(X)
       X <- sweep(X, 2L, X_means, FUN = "-")

@@ -49,6 +49,9 @@ linear_predictor <- function(draws, i = NULL) {
     eta <- arma_predictor(standata = draws$data, ar = draws$ar, 
                           ma = draws$ma, eta = eta, link = draws$f$link)
   }
+  if (!is.null(draws$loclev)) {
+    eta <- eta + p(draws$loclev, i, row = FALSE)
+  }
   if (is.ordinal(draws$f)) {
     if (!is.null(draws$p)) {
       eta <- cse_predictor(Xp = p(draws$data$Xp, i), p = draws$p, 

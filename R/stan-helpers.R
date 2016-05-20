@@ -174,7 +174,7 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
   trait <- ifelse(is_multi || is_forked || is_categorical, "_trait", "")
   if (weights || cens || is_trunc || is_ordinal || is_categorical || 
       is_hurdle || is_zero_inflated) {
-    llh <- paste0("  for (n in 1:N", trait, ") { \n  ", llh, "  } \n")
+    llh <- paste0("  for (n in 1:N", trait, ") { \n    ", llh, "    } \n")
   }
   llh
 }
@@ -306,6 +306,13 @@ stan_autocor <- function(family, autocor, prior = prior_frame(),
       out$tdataD <- "  matrix[N, N] LV; \n"
       out$tdataC <- "  LV <- cholesky_decompose(V); \n"
     }
+  }
+  if (is(autocor, "cor_bsts")) {
+    out$data <- "  vector[N] tg;  // indicates independent groups \n"
+    out$par <- paste0("  vector[N] loclev;  // local level terms \n",
+                      "  real<lower=0> sigmaLL;  // SD of local level terms \n")
+    out$prior <- paste0(out$prior, "  #include 'model_bsts.stan' \n",
+      stan_prior(class = "sigmaLL", prior = prior))
   }
   out
 }
@@ -633,6 +640,7 @@ stan_prior <- function(class, coef = "", group = "", nlpar = "", suffix = "",
   #   coef: the coefficients of this class
   #   group: the name of a grouping factor
   #   nlpar: the name of a non-linear parameter
+  #   suffix: a suffix to put at the parameter class
   #   prior: a data.frame containing user defined priors 
   #          as returned by check_prior
   #   matrix: logical; corresponds the class to a parameter matrix?

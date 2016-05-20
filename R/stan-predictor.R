@@ -22,6 +22,8 @@ stan_linear <- function(effects, data, family = gaussian(),
   fixef <- colnames(get_model_matrix(rhs(effects$fixed), data = data, 
                                      forked = is.forked(family),
                                      cols2remove = intercepts))
+  # local level terms replace the intercepts in bsts models
+  if (is(autocor, "cor_bsts")) intercepts <- NULL
   text_fixef <- stan_fixef(fixef = fixef, intercepts = intercepts, 
                            family = family, prior = prior, 
                            sparse = sparse, threshold = threshold)
@@ -77,11 +79,13 @@ stan_linear <- function(effects, data, family = gaussian(),
   eta_monef <- stan_eta_monef(monef)
   eta_ma <- ifelse(get_ma(autocor) && !use_cov(autocor), 
                    " + head(E[n], Kma) * ma", "")
-  add2eta <- any(nchar(c(eta_int, eta_monef, eta_ma, eta_ranef, eta_ilink[1])))
+  eta_bsts <- stan_eta_bsts(autocor)
+  add2eta <- any(nchar(c(eta_int, eta_monef, eta_ma, eta_ranef, 
+                         eta_bsts, eta_ilink[1])))
   if (add2eta || is_multi) {
     out$transC2 <- paste0(out$transC2,
       "    ", wsp, eta_obj," <- ", eta_ilink[1], "eta[n]", 
-      eta_int, eta_monef, eta_ranef, eta_ma, eta_ilink[2],"; \n")
+      eta_int, eta_bsts, eta_monef, eta_ranef, eta_ma, eta_ilink[2],"; \n")
   }
   eta_fixef <- stan_eta_fixef(fixef, sparse = sparse)
   eta_cse <- if (length(csef)) "  etap <- Xp * bp; \n"
@@ -209,7 +213,7 @@ stan_fixef <- function(fixef, intercepts = "Intercept",
   p <- if (nchar(nlpar)) paste0("_", nlpar) else ""
   out <- list()
   if (length(fixef)) {
-    centered <- ifelse(nint > 0, "centered", "")
+    centered <- ifelse(nint > 0L, "centered", "")
     out$data <- paste0(out$data, 
       "  int<lower=1> K", p, ";",
       "  // number of population-level effects \n", 
@@ -507,6 +511,14 @@ stan_eta_monef <- function(monef, nlpar = "") {
       "simplex", p, "_", i, ", Xm", p, "[n, ", i, "])")
   }
   eta_monef
+}
+
+stan_eta_bsts <- function(autocor) {
+  eta_bsts <- ""
+  if (is(autocor, "cor_bsts")) {
+    eta_bsts <- " + loclev[n]"
+  }
+  eta_bsts
 }
 
 stan_eta_transform <- function(family, link, add = FALSE, 

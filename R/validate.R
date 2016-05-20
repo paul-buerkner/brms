@@ -186,19 +186,19 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
 
 extract_time <- function(formula) {
   # extract time and grouping variables for autocorrelation structures
-  # 
   # Args:
   #   formula: a one sided formula of the form ~ time|group 
   #            typically taken from a cor_brms object
-  # 
   # Returns: 
   #   a list with elements time, group, and all, where all contains a 
   #   formula with all variables in formula
-  if (is.null(formula)) 
-    return(NULL)
-  formula <- gsub(" ", "", Reduce(paste, deparse(formula))) 
+  if (is.null(formula)) return(NULL)
+  if (!is.null(lhs(formula))) {
+    stop("autocorrelation formula must be one-sided", call. = FALSE)
+  }
+  formula <- formula2string(formula)
   time <- all.vars(as.formula(paste("~", gsub("~|\\|[[:print:]]*", "", formula))))
-  if (length(time) > 1) {
+  if (length(time) > 1L) {
     stop("Autocorrelation structures may only contain 1 time variable", 
          call. = FALSE)
   }

@@ -271,8 +271,8 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
       length(ub) > 1)
     stop("All arguments of set_prior must be of length 1.", call. = FALSE)
   valid_classes <- c("Intercept", "b", "sd", "cor", "L", "ar", "ma", "arr", 
-                     "simplex", "sigma", "rescor", "Lrescor", "nu", "shape", 
-                     "delta", "phi")
+                     "simplex", "sigma", "sigmaLL", "rescor", "Lrescor", 
+                     "nu", "shape", "delta", "phi")
   if (!class %in% valid_classes)
     stop(paste(class, "is not a valid parameter class"), call. = FALSE)
   if (nchar(group) && !class %in% c("sd", "cor", "L"))
@@ -417,12 +417,19 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
   is_linear <- is.linear(family)
   nresp <- length(ee$response)
   cbound <- "<lower=-1,upper=1>"
-  if (get_ar(autocor)) 
+  if (get_ar(autocor)) {
     prior <- rbind(prior, prior_frame(class = "ar", bound = cbound))
-  if (get_ma(autocor)) 
+  }
+  if (get_ma(autocor)) {
     prior <- rbind(prior, prior_frame(class = "ma", bound = cbound))
-  if (get_arr(autocor)) 
+  }
+  if (get_arr(autocor)) {
     prior <- rbind(prior, prior_frame(class = "arr"))
+  }
+  if (is(autocor, "cor_bsts")) {
+    prior <- rbind(prior, prior_frame(class = "sigmaLL", 
+                                      prior = def_scale_prior))
+  }
   if (has_sigma(family, se = is.formula(ee$se), autocor = autocor)) {
     sigma_prior <- prior_frame(class = "sigma", coef = c("", ee$response),
                                prior = c(def_scale_prior, rep("", nresp)))

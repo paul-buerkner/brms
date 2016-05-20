@@ -77,6 +77,14 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   if (get_arr(x$autocor)) {
     draws$arr <- do.call(posterior_samples, c(args, pars = "^arr\\["))
   }
+  if (is(x$autocor, "cor_bsts")) {
+    if (is.null(newdata)) {
+      draws$loclev <- do.call(posterior_samples, c(args, pars = "^loclev\\["))
+    } else {
+      warning("Local level terms are ignored if 'newdata' is specified.",
+              call. = FALSE)
+    }
+  }
   draws
 }
 

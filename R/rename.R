@@ -66,9 +66,9 @@ rename_pars <- function(x) {
   if (!length(x$fit@sim)) return(x) 
   # order parameter samples after parameter class
   chains <- length(x$fit@sim$samples) 
-  all_classes <- c("b_Intercept", "b", "bm", "bp", "ar", "ma", "arr", 
-                   "sd", "cor", "sigma", "rescor", "nu", "shape", "phi",
-                   "delta", "simplex", "r", "prior", "lp")
+  all_classes <- c("b_Intercept", "b", "bm", "bp", "ar", "ma", "arr", "sd", 
+                   "cor", "sigma", "sigmaLL", "rescor", "nu", "shape", "phi",
+                   "delta", "simplex", "r", "loclev", "prior", "lp")
   class <- get_matches("^[^_\\[]+", x$fit@sim$fnames_oi)
   # make sure that the fixed effects intercept comes first
   pos_intercept <- which(grepl("^b_Intercept($|\\[)", x$fit@sim$fnames_oi))
@@ -120,8 +120,8 @@ rename_pars <- function(x) {
   }
   
   if (has_sigma(family, se = is.formula(ee$se), autocor = x$autocor)) {
-    corfnames <- paste0("sigma_",ee$response)
-    change <- lc(change, list(pos = grepl("^sigma", pars), oldname = "sigma",
+    corfnames <- paste0("sigma_", ee$response)
+    change <- lc(change, list(pos = grepl("^sigma$", pars), oldname = "sigma",
                               pnames = corfnames, fnames = corfnames))
     change <- c(change, change_prior(class = "sigma", pars = pars, 
                                       names = ee$response))

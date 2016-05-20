@@ -592,7 +592,7 @@ summary.brmsfit <- function(object, waic = FALSE, ...) {
     rownames(out$fixed) <- gsub("^b_", "", fix_pars)
     
     # summary of family specific parameters
-    spec_pars <- pars[pars %in% c("nu","shape","delta", "phi") | 
+    spec_pars <- pars[pars %in% c("nu", "shape", "delta", "phi") | 
       apply(sapply(c("^sigma_", "^rescor_"), grepl, x = pars), 1, any)]
     out$spec_pars <- fit_summary[spec_pars, , drop = FALSE]
     if (is.linear(family)) {
@@ -604,7 +604,7 @@ summary.brmsfit <- function(object, waic = FALSE, ...) {
     rownames(out$spec_pars) <- spec_pars
     
     # summary of autocorrelation effects
-    cor_pars <- pars[grepl("^ar|^ma", pars)]
+    cor_pars <- pars[grepl("^ar|^ma|^sigmaLL$", pars)]
     out$cor_pars <- fit_summary[cor_pars, , drop = FALSE]
     rownames(out$cor_pars) <- cor_pars
     

@@ -192,10 +192,57 @@ cor_fixed <- function(V) {
   structure(list(V = V), class = c("cor_fixed", "cor_brms"))
 }
 
+#' Basic Bayesian Structural Time Series
+#' 
+#' Add a basic Bayesian structural time series component to a brms model
+#' 
+#' @aliases cor_bsts-class
+#' 
+#' @inheritParams cor_arma
+#' 
+#' @return An object of class \code{cor_bsts}.
+#' 
+#' @details Bayesian structural time series models offer an alternative 
+#'   to classical AR(I)MA models (they are in fact a generalization).
+#'   The basic version currently implemented in \pkg{brms} introduces
+#'   local level terms for each observation, whereas each local level term 
+#'   depends on the former local level term:
+#'   \deqn{LL_t ~ N(LL_{t-1}, sigmaLL)}
+#'   A simple introduction can be found in this blogpost: 
+#'   \url{http://multithreaded.stitchfix.com/blog/2016/04/21/forget-arima/}.
+#'   More complicated Bayesian structural time series models may follow
+#'   in the future.
+#'   
+#' @examples 
+#' \dontrun{
+#' dat <- data.frame(y = rnorm(100), x = rnorm(100))
+#' fit <- brm(y~x, data = dat, autocor = cor_bsts())
+#' }   
+#' 
+#' @export
+cor_bsts <- function(formula = ~1) {
+  x <- nlist(formula)
+  class(x) <- c("cor_bsts", "cor_brms")
+  x
+}
+
 #' @export
 print.cor_arma <- function(x, ...) {
-  cat(paste0("arma(", gsub(" ", "", Reduce(paste, deparse(x$formula))),
-             ", ",get_ar(x),", ",get_ma(x),", ",get_arr(x),")"))
+  cat(paste0("arma(", formula2string(x$formula), ", ", 
+             get_ar(x), ", ", get_ma(x), ", ", get_arr(x),")"))
+  invisible(x)
+}
+
+#' @export
+print.cor_bsts <- function(x, ...) {
+  cat(paste0("bsts(", formula2string(x$formula), ")"))
+  invisible(x)
+}
+
+#' @export
+print.cor_fixed <- function(x, ...) {
+  cat("Fixed covariance matrix: \n")
+  print(x$V)
   invisible(x)
 }
 
