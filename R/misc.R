@@ -288,6 +288,10 @@ log1m_inv_logit <- function(x) {
   log(1 - inv_logit(x))
 }
 
+fabs <- function(x) {
+  abs(x)
+}
+
 wsp <- function(x, nsp = 1) {
   # add leading and trailing whitespaces
   # Args:
