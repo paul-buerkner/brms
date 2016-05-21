@@ -834,19 +834,24 @@ stan_rngprior <- function(sample_prior, prior, par_declars = "",
   out
 }
 
-stan_ilink <- function(link) {
-  # find the inverse link to a given link function
-  # 
+stan_link <- function(link) {
+  # find the link in Stan language
   # Args:
   #   link: the link function
-  #
-  # Returns: 
-  #   the inverse link function for stan; a character string
+  switch(link, identity = "", log = "log", inverse = "inv",
+         sqrt = "sqrt", "1/mu^2" = "inv_square", logit = "logit", 
+         probit = "inv_Phi", probit_approx = "inv_Phi", 
+         cloglog = "cloglog", cauchit = "cauchit")
+}
+
+stan_ilink <- function(link) {
+  # find the inverse link in Stan language
+  # Args:
+  #   link: the link function
   switch(link, identity = "", log = "exp", inverse = "inv", 
-         sqrt = "square", "1/mu^2" = "inv_sqrt",
-         logit = "inv_logit", probit = "Phi", 
-         probit_approx = "Phi_approx", cloglog = "inv_cloglog", 
-         cauchit = "inv_cauchit")
+         sqrt = "square", "1/mu^2" = "inv_sqrt", logit = "inv_logit", 
+         probit = "Phi", probit_approx = "Phi_approx", 
+         cloglog = "inv_cloglog", cauchit = "inv_cauchit")
 }
 
 stan_has_build_in_fun <- function(family, link) {
