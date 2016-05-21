@@ -197,6 +197,7 @@ stan_autocor <- function(family, autocor, prior = prior_frame(),
   #   stan code for computing AR(R)MA effects
   stopifnot(is(family, "family"))
   is_linear <- is.linear(family)
+  link <- stan_link(family$link)
   Kar <- get_ar(autocor)
   Kma <- get_ma(autocor)
   Karr <- get_arr(autocor)
@@ -270,7 +271,6 @@ stan_autocor <- function(family, autocor, prior = prior_frame(),
       }
       index <- ifelse(is_multi, "m, k", "n")
       wsp <- ifelse(is_multi, "      ", "    ")
-      link <- c(identity = "", log = "log", inverse = "inv")[family$link]
       out$transD <- paste0("  matrix[N, Karma] E;  // ARMA design matrix \n",
                            "  vector[N] e;  // residuals \n") 
       out$transC1 <- "  E <- rep_matrix(0.0, N, Karma); \n" 
@@ -308,11 +308,29 @@ stan_autocor <- function(family, autocor, prior = prior_frame(),
     }
   }
   if (is(autocor, "cor_bsts")) {
+    if (is.forked(family) || family$family %in% c("bernoulli", "categorical")) {
+      stop("The bsts structure is not yet implemented for this family.",
+           call. = FALSE)
+    }
     out$data <- "  vector[N] tg;  // indicates independent groups \n"
     out$par <- paste0("  vector[N] loclev;  // local level terms \n",
                       "  real<lower=0> sigmaLL;  // SD of local level terms \n")
-    out$prior <- paste0(out$prior, "  #include 'model_bsts.stan' \n",
-      stan_prior(class = "sigmaLL", prior = prior))
+    if (is_linear && !is_multi) {
+      # this often helps with convergence
+      center <- paste0(link, "(Y[", c("1", "n"), "])")
+    } else {
+      center <- c("0", "0")
+    }
+    out$prior <- paste0(out$prior, 
+      stan_prior(class = "sigmaLL", prior = prior),
+      "  loclev[1] ~ normal(", center[1], ", sigmaLL); \n",
+      "  for (n in 2:N) { \n",
+      "    if (tg[n] == tg[n - 1]) { \n",
+      "      loclev[n] ~ normal(loclev[n - 1], sigmaLL); \n",
+      "    } else { \n",
+      "      loclev[n] ~ normal(", center[2], ", sigmaLL); \n",
+      "    } \n",
+      "  } \n")
   }
   out
 }

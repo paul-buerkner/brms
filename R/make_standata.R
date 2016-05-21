@@ -62,7 +62,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   not4stan <- isTRUE(control$not4stan)
   
   # sort data in case of autocorrelation models
-  if (has_arma(autocor)) {
+  if (has_arma(autocor) || is(autocor, "cor_bsts")) {
     # amend if zero-inflated and hurdle models ever get 
     # autocorrelation structures as they are also using 'trait'
     if (is_forked) {
