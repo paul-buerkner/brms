@@ -59,6 +59,11 @@ test_that("check_prior accepts correct prior names", {
                                 autocor = cor.arma(p = 1, q = 2))[c(1, 4), ],
                     prior_frame(c("p1", "p2"), class = c("ar", "ma"),
                                 bound = "<lower=-1,upper=1>"))
+  
+  expect_equivalent(check_prior(set_prior("cauchy(0,1)", class = "sigmaLL"),
+                                formula = count ~ Trt_c, data = epilepsy,
+                                autocor = cor_bsts())[5, ],
+                    prior_frame("cauchy(0,1)", class = "sigmaLL"))
 })
 
 test_that("check_prior rejects incorrect prior names", {

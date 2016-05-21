@@ -342,3 +342,9 @@ test_that("make_standata returns fixed residual covariance matrices", {
   expect_error(make_standata(y~1, data, autocor = cor_fixed(diag(2))),
                "'V' must have the same number of rows as 'data'")
 })
+
+test_that("make_standata returns data for bsts models", {
+  dat <- data.frame(y = 1:5, g = sample(1:3, 5, TRUE), t = 1:5)
+  expect_equal(make_standata(y~1, data = dat, autocor = cor_bsts(~t|g))$tg,
+               sort(dat$g))
+})
