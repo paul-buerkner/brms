@@ -612,17 +612,17 @@ stan_disp <- function(disp, family = gaussian()) {
 
 stan_misc_functions <- function(family = gaussian(), kronecker = FALSE) {
   # stan code for user defined functions
-  #
   # Args:
   #   family: the model family
   #   kronecker: logical; is the kronecker product needed?
-  #
   # Returns:
   #   a string containing defined functions in stan code
   stopifnot(is(family, "family"))
   out <- NULL
   if (family$link == "cauchit") {
     out <- paste0(out, "  #include 'fun_cauchit.stan' \n")
+  } else if (family$link == "cloglog") {
+    out <- paste0(out, "  #include 'fun_cloglog.stan' \n")
   }
   if (kronecker) {
     out <- paste0(out, "  #include 'fun_as_matrix.stan' \n",
