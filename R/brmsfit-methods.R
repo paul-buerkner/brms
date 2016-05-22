@@ -870,7 +870,7 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
 #' Perform posterior predictive checks with the help
 #' of the \pkg{ppcheck} package.
 #' 
-#' @param x An object of class \code{brmsfit}.
+#' @param object An object of class \code{brmsfit}.
 #' @param type Type of the ppc plot as given by a character string. 
 #'   Currently, the following plots (as names) are implemented:
 #'   \code{dens_overlay}, \code{hist}, \code{resid}, 
