@@ -4,8 +4,8 @@
 \alias{ppc.brmsfit}
 \title{Posterior Predictive Checks for \code{brmsfit} Objects}
 \usage{
-\method{ppc}{brmsfit}(x, type, nsamples, re_formula = NULL,
-  allow_new_levels = FALSE, subset = NULL, ntrys = 5, ...)
+\method{ppc}{brmsfit}(x, type, nsamples, re_formula = NULL, subset = NULL,
+  ntrys = 5, ...)
 }
 \arguments{
 \item{x}{An object of class \code{brmsfit}.}
@@ -26,10 +26,6 @@ Ignored if \code{subset} is not \code{NULL}.}
 to be considered in the prediction. 
 If \code{NULL} (default), include all random effects; 
 if \code{NA}, include no random effects.}
-
-\item{allow_new_levels}{A flag indicating if new
-levels of random effects are allowed (defaults to \code{FALSE}). 
-Only relevant if \code{newdata} is provided.}
 
 \item{subset}{A numeric vector specifying
 the posterior samples to be used. 

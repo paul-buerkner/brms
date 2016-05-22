@@ -910,8 +910,7 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
 #' 
 #' @export
 ppc.brmsfit <- function(x, type, nsamples, re_formula = NULL,
-                        allow_new_levels = FALSE, subset = NULL, 
-                        ntrys = 5, ...) {
+                        subset = NULL, ntrys = 5, ...) {
   if (missing(type)) {
     type <- "dens_overlay"
   }
@@ -955,7 +954,7 @@ ppc.brmsfit <- function(x, type, nsamples, re_formula = NULL,
     }
   }
   args <- nlist(object = x, nsamples, subset, re_formula, 
-                allow_new_levels, ntrys, summary = FALSE)
+                ntrys, summary = FALSE)
   yrep <- as.matrix(do.call(method, args))
   standata <- standata(x)
   y <- as.vector(standata$Y)
