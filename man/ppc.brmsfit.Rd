@@ -4,10 +4,69 @@
 \alias{ppc.brmsfit}
 \title{Posterior Predictive Checks for \code{brmsfit} Objects}
 \usage{
-\method{ppc}{brmsfit}(x, type = "dens_overlay", nsamples = 10,
-  subset = NULL, ...)
+\method{ppc}{brmsfit}(x, type, nsamples, re_formula = NULL,
+  allow_new_levels = FALSE, subset = NULL, ntrys = 5, ...)
+}
+\arguments{
+\item{x}{An object of class \code{brmsfit}.}
+
+\item{type}{Type of the ppc plot as given by a character string. 
+Currently, the following plots (as names) are implemented:
+\code{dens_overlay}, \code{hist}, \code{resid}, 
+\code{resid_binned}, \code{scatter_average}, 
+\code{scatter_multiple}, \code{stat}, and \code{stat_2d}.}
+
+\item{nsamples}{Positive integer indicating how many 
+posterior samples should be used. 
+If \code{NULL} all samples are used. If not specified, 
+the number of posterior samples is chosen automatically.
+Ignored if \code{subset} is not \code{NULL}.}
+
+\item{re_formula}{formula containing random effects 
+to be considered in the prediction. 
+If \code{NULL} (default), include all random effects; 
+if \code{NA}, include no random effects.}
+
+\item{allow_new_levels}{A flag indicating if new
+levels of random effects are allowed (defaults to \code{FALSE}). 
+Only relevant if \code{newdata} is provided.}
+
+\item{subset}{A numeric vector specifying
+the posterior samples to be used. 
+If \code{NULL} (the default), all samples are used.}
+
+\item{ntrys}{Parameter used in rejection sampling 
+for truncated discrete models only 
+(defaults to \code{5}). For more details see
+\code{\link[brms:predict.brmsfit]{predict.brmsfit}}.}
+
+\item{...}{Further arguments passed to the ppc functions
+of the \pkg{ppcheck} package.}
+}
+\value{
+A ggplot object that can be further 
+ customized using the \pkg{ggplot2} package.
 }
 \description{
-Posterior Predictive Checks for \code{brmsfit} Objects
+Perform posterior predictive checks with the help
+of the \pkg{ppcheck} package.
+}
+\details{
+For a detailed explanation of each of the
+ppc functions, see the documentation of the 
+\code{\link[ppcheck:ppcheck-package]{ppcheck}} package.
+}
+\examples{
+\dontrun{
+fit <-  brm(count ~ log_Age_c + log_Base4_c * Trt_c 
+            + (1|patient) + (1|visit),
+            data = epilepsy, family = poisson())
+
+ppc(fit) # shows dens_overlay plot by default             
+ppc(fit, type = "resid", nsamples = 12)
+ppc(fit, type = "scatter_average", nsamples = 100)  
+ppc(fit, type = "stat_2d")
+} 
+
 }
 

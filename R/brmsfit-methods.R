@@ -867,11 +867,56 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
 
 #' Posterior Predictive Checks for \code{brmsfit} Objects
 #' 
+#' Perform posterior predictive checks with the help
+#' of the \pkg{ppcheck} package.
+#' 
+#' @param x An object of class \code{brmsfit}.
+#' @param type Type of the ppc plot as given by a character string. 
+#'   Currently, the following plots (as names) are implemented:
+#'   \code{dens_overlay}, \code{hist}, \code{resid}, 
+#'   \code{resid_binned}, \code{scatter_average}, 
+#'   \code{scatter_multiple}, \code{stat}, and \code{stat_2d}.
+#' @param nsamples Positive integer indicating how many 
+#'  posterior samples should be used. 
+#'  If \code{NULL} all samples are used. If not specified, 
+#'  the number of posterior samples is chosen automatically.
+#'  Ignored if \code{subset} is not \code{NULL}.
+#' @param ntrys Parameter used in rejection sampling 
+#'  for truncated discrete models only 
+#'  (defaults to \code{5}). For more details see
+#'  \code{\link[brms:predict.brmsfit]{predict.brmsfit}}.
+#' @param ... Further arguments passed to the ppc functions
+#'   of the \pkg{ppcheck} package.
+#' @inheritParams predict.brmsfit
+#' 
+#' @return A ggplot object that can be further 
+#'  customized using the \pkg{ggplot2} package.
+#'  
+#' @details For a detailed explanation of each of the
+#' ppc functions, see the documentation of the 
+#' \code{\link[ppcheck:ppcheck-package]{ppcheck}} package.
+#' 
+#' @examples
+#' \dontrun{
+#' fit <-  brm(count ~ log_Age_c + log_Base4_c * Trt_c 
+#'             + (1|patient) + (1|visit),
+#'             data = epilepsy, family = poisson())
+#' 
+#' ppc(fit) # shows dens_overlay plot by default             
+#' ppc(fit, type = "resid", nsamples = 12)
+#' ppc(fit, type = "scatter_average", nsamples = 100)  
+#' ppc(fit, type = "stat_2d")
+#' } 
+#' 
 #' @export
-ppc.brmsfit <- function(x, type = "dens_overlay", nsamples = 10, 
-                        subset = NULL, ...) {
+ppc.brmsfit <- function(x, type, nsamples, re_formula = NULL,
+                        allow_new_levels = FALSE, subset = NULL, 
+                        ntrys = 5, ...) {
+  if (missing(type)) {
+    type <- "dens_overlay"
+  }
   if (length(type) != 1L) {
-    stop("arugment 'type' must be of length 1", call. = FALSE)
+    stop("argument 'type' must be of length 1", call. = FALSE)
   }
   if (!requireNamespace("ppcheck", quietly = TRUE)) {
     stop(paste0("please install the ppcheck package via\n",
@@ -896,15 +941,31 @@ ppc.brmsfit <- function(x, type = "dens_overlay", nsamples = 10,
   } else {
     method <- "predict"
   }
-  y <- standata(x)$Y
-  if (is.matrix(y)) {
-    warning(paste("Posterior predictive checks for multivariate", 
-                  "models are still work in progress."), 
-            call. = FALSE)
+  if (missing(nsamples)) {
+    if (!is.null(subset)) {
+      nsamples <- NULL
+    } else if (type %in% c("scatter_average", "stat", "stat_2d")) {
+      nsamples <- NULL
+      message(paste0("Using all posterior samples for ppc type '", 
+                     type, "'."))
+    } else {
+      nsamples <- 10
+      message(paste0("Using 10 posterior samples for ppc type '", 
+                     type, "'."))
+    }
   }
-  args <- nlist(object = x, nsamples, subset, summary = FALSE)
-  yrep <- do.call(method, args)
-  ppc_fun(as.vector(y), as.matrix(yrep), ...)
+  args <- nlist(object = x, nsamples, subset, re_formula, 
+                allow_new_levels, ntrys, summary = FALSE)
+  yrep <- as.matrix(do.call(method, args))
+  standata <- standata(x)
+  y <- as.vector(standata$Y)
+  if (family(x)$family %in% "binomial") {
+    # use success proportions following Gelman and Hill (2006)
+    y <- y / standata$trials
+    yrep <- yrep / matrix(standata$trials, nrow = nrow(yrep),
+                       ncol = ncol(yrep), byrow = TRUE)
+  }
+  ppc_fun(y, yrep, ...)
 }
 
 #' Create a matrix of output plots from a \code{brmsfit} object
