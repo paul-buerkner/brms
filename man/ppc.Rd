@@ -6,7 +6,13 @@
 \usage{
 ppc(x, ...)
 }
+\arguments{
+\item{x}{an R object}
+
+\item{...}{further arguments}
+}
 \description{
-temporary ppc generic function
+will be removed as soon as the \pkg{ppcheck} package
+has its own generic function
 }
 
