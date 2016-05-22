@@ -909,7 +909,7 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
 #' } 
 #' 
 #' @export
-ppc.brmsfit <- function(x, type, nsamples, re_formula = NULL,
+ppc.brmsfit <- function(object, type, nsamples, re_formula = NULL,
                         subset = NULL, ntrys = 5, ...) {
   if (missing(type)) {
     type <- "dens_overlay"
@@ -932,7 +932,7 @@ ppc.brmsfit <- function(x, type, nsamples, re_formula = NULL,
   }
   ppc_fun <- get(paste0("ppc_", type), pos = asNamespace("ppcheck"))
   if (names(formals(ppc_fun))[2] == "Ey") {
-    if (is.ordinal(x$family)) {
+    if (is.ordinal(object$family)) {
       stop(paste0("ppc type '", type, "' is not available", 
                   "for ordinal models"), call. = FALSE)
     }
@@ -953,12 +953,12 @@ ppc.brmsfit <- function(x, type, nsamples, re_formula = NULL,
                      type, "'."))
     }
   }
-  args <- nlist(object = x, nsamples, subset, re_formula, 
+  args <- nlist(object, nsamples, subset, re_formula, 
                 ntrys, summary = FALSE)
   yrep <- as.matrix(do.call(method, args))
-  standata <- standata(x)
+  standata <- standata(object)
   y <- as.vector(standata$Y)
-  if (family(x)$family %in% "binomial") {
+  if (family(object)$family %in% "binomial") {
     # use success proportions following Gelman and Hill (2006)
     y <- y / standata$trials
     yrep <- yrep / matrix(standata$trials, nrow = nrow(yrep),

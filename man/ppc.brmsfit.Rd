@@ -4,11 +4,11 @@
 \alias{ppc.brmsfit}
 \title{Posterior Predictive Checks for \code{brmsfit} Objects}
 \usage{
-\method{ppc}{brmsfit}(x, type, nsamples, re_formula = NULL, subset = NULL,
-  ntrys = 5, ...)
+\method{ppc}{brmsfit}(object, type, nsamples, re_formula = NULL,
+  subset = NULL, ntrys = 5, ...)
 }
 \arguments{
-\item{x}{An object of class \code{brmsfit}.}
+\item{object}{An object of class \code{brmsfit}}
 
 \item{type}{Type of the ppc plot as given by a character string. 
 Currently, the following plots (as names) are implemented:
@@ -38,6 +38,8 @@ for truncated discrete models only
 
 \item{...}{Further arguments passed to the ppc functions
 of the \pkg{ppcheck} package.}
+
+\item{x}{An object of class \code{brmsfit}.}
 }
 \value{
 A ggplot object that can be further 

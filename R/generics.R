@@ -567,10 +567,10 @@ expose_functions <- function(x, ...) {
 #' will be removed as soon as the \pkg{ppcheck} package
 #' has its own generic function
 #' 
-#' @param x an R object
+#' @param object an \code{R} object
 #' @param ... further arguments 
 #' 
 #' @export
-ppc <- function(x, ...) {
+ppc <- function(object, ...) {
   UseMethod("ppc")
 }

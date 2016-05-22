@@ -4,10 +4,10 @@
 \alias{ppc}
 \title{temporary ppc generic function}
 \usage{
-ppc(x, ...)
+ppc(object, ...)
 }
 \arguments{
-\item{x}{an R object}
+\item{object}{an \code{R} object}
 
 \item{...}{further arguments}
 }
