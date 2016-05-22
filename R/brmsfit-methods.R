@@ -865,6 +865,48 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
   }
 }
 
+#' Posterior Predictive Checks for \code{brmsfit} Objects
+#' 
+#' @export
+ppc.brmsfit <- function(x, type = "dens_overlay", nsamples = 10, 
+                        subset = NULL, ...) {
+  if (length(type) != 1L) {
+    stop("arugment 'type' must be of length 1", call. = FALSE)
+  }
+  if (!requireNamespace("ppcheck", quietly = TRUE)) {
+    stop(paste0("please install the ppcheck package via\n",
+                "devtools::install_github('jgabry/ppcheck')"),
+         call. = FALSE)
+  }
+  ppc_funs <- lsp("ppcheck", what = "exports", pattern = "^ppc_")
+  valid_ppc_types <- sub("^ppc_", "", ppc_funs)
+  if (!type %in% valid_ppc_types) {
+    stop(paste0("Type '", type, "' is not a valid ppc type. ",
+                "Valid types are: \n", 
+                paste(valid_ppc_types, collapse = ", ")),
+         call. = FALSE)
+  }
+  ppc_fun <- get(paste0("ppc_", type), pos = asNamespace("ppcheck"))
+  if (names(formals(ppc_fun))[2] == "Ey") {
+    if (is.ordinal(x$family)) {
+      stop(paste0("ppc type '", type, "' is not available", 
+                  "for ordinal models"), call. = FALSE)
+    }
+    method <- "fitted"
+  } else {
+    method <- "predict"
+  }
+  y <- standata(x)$Y
+  if (is.matrix(y)) {
+    warning(paste("Posterior predictive checks for multivariate", 
+                  "models are still work in progress."), 
+            call. = FALSE)
+  }
+  args <- nlist(object = x, nsamples, subset, summary = FALSE)
+  yrep <- do.call(method, args)
+  ppc_fun(as.vector(y), as.matrix(yrep), ...)
+}
+
 #' Create a matrix of output plots from a \code{brmsfit} object
 #'
 #' A \code{\link[graphics:pairs]{pairs}} 

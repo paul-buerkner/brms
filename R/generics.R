@@ -561,3 +561,9 @@ marginal_effects <- function(x, ...) {
 expose_functions <- function(x, ...) {
   UseMethod("expose_functions")
 }
+
+#' temporary ppc generic function
+#' @export
+ppc <- function(x, ...) {
+  UseMethod("ppc")
+}
