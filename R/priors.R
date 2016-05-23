@@ -289,20 +289,25 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
     if (!(class %in% c("b", "arr") || is_arma))
       stop(paste("Currently boundaries are only allowed", 
                  "for population-level and ARMA effects."), call. = FALSE)
-    if (coef != "")
+    if (nchar(coef)) {
       stop("'coef' may not be specified when using boundaries")
+    }
     if (is_arma) {
       lb <- ifelse(length(lb), lb, -1)
       ub <- ifelse(length(ub), ub, 1) 
-      if (abs(lb) > 1 || abs(ub) > 1) {
+      if (is.na(lb) || is.na(ub) || abs(lb) > 1 || abs(ub) > 1) {
         warning(paste("Setting boundaries of ARMA parameters outside of", 
                       "[-1,1] may not be appropriate."), call. = FALSE)
       }
     }
     # don't put spaces in boundary declarations
-    lb <- if (length(lb)) paste0("lower=", lb)
-    ub <- if (length(ub)) paste0("upper=", ub)
-    bound <- paste0("<", paste(c(lb, ub), collapse = ","), ">")
+    lb <- if (length(lb) && !is.na(lb)) paste0("lower=", lb)
+    ub <- if (length(ub) && !is.na(ub)) paste0("upper=", ub)
+    if (!is.null(lb) || !is.null(ub)) {
+      bound <- paste0("<", paste(c(lb, ub), collapse = ","), ">")
+    } else {
+      bound <- ""
+    }
   } else {
     bound <- ""
   }
