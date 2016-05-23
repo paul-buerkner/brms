@@ -964,7 +964,7 @@ ppc.brmsfit <- function(object, type, nsamples, re_formula = NULL,
     yrep <- yrep / matrix(standata$trials, nrow = nrow(yrep),
                        ncol = ncol(yrep), byrow = TRUE)
   }
-  ppc_fun(y, yrep, ...)
+  rstan::quietgg(ppc_fun(y, yrep, ...))
 }
 
 #' Create a matrix of output plots from a \code{brmsfit} object
