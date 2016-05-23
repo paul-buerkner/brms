@@ -562,7 +562,7 @@ expose_functions <- function(x, ...) {
   UseMethod("expose_functions")
 }
 
-#' temporary ppc generic function
+#' temporary pp_check generic function
 #' 
 #' will be removed as soon as the \pkg{ppcheck} package
 #' has its own generic function
@@ -571,6 +571,6 @@ expose_functions <- function(x, ...) {
 #' @param ... further arguments 
 #' 
 #' @export
-ppc <- function(object, ...) {
-  UseMethod("ppc")
+pp_check <- function(object, ...) {
+  UseMethod("pp_check")
 }

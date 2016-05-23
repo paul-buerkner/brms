@@ -902,15 +902,15 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
 #'             + (1|patient) + (1|visit),
 #'             data = epilepsy, family = poisson())
 #' 
-#' ppc(fit) # shows dens_overlay plot by default             
-#' ppc(fit, type = "resid", nsamples = 12)
-#' ppc(fit, type = "scatter_average", nsamples = 100)  
-#' ppc(fit, type = "stat_2d")
+#' pp_check(fit) # shows dens_overlay plot by default             
+#' pp_check(fit, type = "resid", nsamples = 12)
+#' pp_check(fit, type = "scatter_average", nsamples = 100)  
+#' pp_check(fit, type = "stat_2d")
 #' } 
 #' 
 #' @export
-ppc.brmsfit <- function(object, type, nsamples, re_formula = NULL,
-                        subset = NULL, ntrys = 5, ...) {
+pp_check.brmsfit <- function(object, type, nsamples, re_formula = NULL,
+                             subset = NULL, ntrys = 5, ...) {
   if (missing(type)) {
     type <- "dens_overlay"
   }
@@ -962,7 +962,7 @@ ppc.brmsfit <- function(object, type, nsamples, re_formula = NULL,
     # use success proportions following Gelman and Hill (2006)
     y <- y / standata$trials
     yrep <- yrep / matrix(standata$trials, nrow = nrow(yrep),
-                       ncol = ncol(yrep), byrow = TRUE)
+                          ncol = ncol(yrep), byrow = TRUE)
   }
   rstan::quietgg(ppc_fun(y, yrep, ...))
 }
