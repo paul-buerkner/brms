@@ -20,8 +20,8 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   nsamples <- Nsamples(x, subset = subset)
   standata <- amend_newdata(newdata, fit = x, re_formula = re_formula,
                             allow_new_levels = allow_new_levels, ...)
-  draws <- nlist(f = prepare_family(x), data = standata, nsamples = nsamples, 
-                 autocor = x$autocor)
+  draws <- nlist(f = prepare_family(x), data = standata, 
+                 nsamples = nsamples, autocor = x$autocor)
   
   nlpars <- names(ee$nonlinear)
   if (length(nlpars)) {
@@ -59,11 +59,11 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   if (has_sigma(family(x), se = ee$se, autocor = x$autocor))
     draws$sigma <- do.call(posterior_samples, c(args, pars = "^sigma_"))
   if (family(x)$family == "student") 
-    draws$nu <- do.call(posterior_samples, c(args, pars = "^nu$"))
+    draws$nu <- c(do.call(posterior_samples, c(args, pars = "^nu$")))
   if (family(x)$family %in% c("beta", "zero_inflated_beta"))
-    draws$phi <- do.call(posterior_samples, c(args, pars = "^phi$"))
+    draws$phi <- c(do.call(posterior_samples, c(args, pars = "^phi$")))
   if (has_shape(family(x))) 
-    draws$shape <- do.call(posterior_samples, c(args, pars = "^shape$"))
+    draws$shape <- c(do.call(posterior_samples, c(args, pars = "^shape$")))
   if (is.linear(family(x)) && length(ee$response) > 1L) {
     draws$rescor <- do.call(posterior_samples, c(args, pars = "^rescor_"))
     draws$Sigma <- get_cov_matrix(sd = draws$sigma, cor = draws$rescor)$cov

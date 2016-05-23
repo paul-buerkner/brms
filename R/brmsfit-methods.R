@@ -1468,8 +1468,7 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     mu <- linear_predictor(draws)
   }
   if (scale == "response") {
-    # see fitted.R
-    mu <- fitted_response(object, eta = mu, data = draws$data)
+    mu <- fitted_response(draws = draws, mu = mu)  # see fitted.R
   }
   # reorder fitted values to be in the initial user defined order
   # currently only relevant for autocorrelation models 

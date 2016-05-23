@@ -330,6 +330,7 @@ get_sigma <- function(x, data, i, method = c("fitted", "predict", "logLik")) {
   } else {
     sigma <- x
   }
+  sigma <- as.vector(sigma)
   if (is.null(sigma)) {
     # user defined standard errors were applied
     sigma <- data$se
@@ -356,11 +357,11 @@ get_sigma <- function(x, data, i, method = c("fitted", "predict", "logLik")) {
   sigma
 }
 
-get_shape <- function(x, data, i = NULL, 
+get_shape <- function(x, data, i = NULL,
                       method = c("fitted", "predict", "logLik")) {
-  # get residual standard devation of linear models
+  # get the shape parameter of gamma, weibull and negbinomial models
   # Args:
-  #   x: a brmsfit object or posterior samples of sigma (can be NULL)
+  #   x: a brmsfit object or posterior samples of shape (can be NULL)
   #   data: data initially passed to Stan
   #   method: S3 method from which get_sigma is called
   #   i: only used for "predict" and "logLik": 
@@ -371,6 +372,7 @@ get_shape <- function(x, data, i = NULL,
   } else {
     shape <- x
   }
+  shape <- as.vector(shape)
   if (!is.null(data$disp)) {
     if (method %in% c("predict", "logLik")) {
       shape <- shape * data$disp[i]
