@@ -4,8 +4,8 @@
 \alias{pp_check.brmsfit}
 \title{Posterior Predictive Checks for \code{brmsfit} Objects}
 \usage{
-\method{pp_check}{brmsfit}(object, type, nsamples, re_formula = NULL,
-  subset = NULL, ntrys = 5, ...)
+\method{pp_check}{brmsfit}(object, type, nsamples, group = NULL,
+  re_formula = NULL, subset = NULL, ntrys = 5, ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
@@ -21,6 +21,9 @@ posterior samples should be used.
 If \code{NULL} all samples are used. If not specified, 
 the number of posterior samples is chosen automatically.
 Ignored if \code{subset} is not \code{NULL}.}
+
+\item{group}{Name of a grouping factor in the model.
+This argument is required for ppc \code{*_grouped} types.}
 
 \item{re_formula}{formula containing random effects 
 to be considered in the prediction. 

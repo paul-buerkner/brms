@@ -885,6 +885,8 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
 #'  for truncated discrete models only 
 #'  (defaults to \code{5}). For more details see
 #'  \code{\link[brms:predict.brmsfit]{predict.brmsfit}}.
+#' @param group Name of a grouping factor in the model.
+#'  This argument is required for ppc \code{*_grouped} types.
 #' @param ... Further arguments passed to the ppc functions
 #'   of the \pkg{ppcheck} package.
 #' @inheritParams predict.brmsfit
@@ -909,18 +911,24 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
 #' } 
 #' 
 #' @export
-pp_check.brmsfit <- function(object, type, nsamples, re_formula = NULL,
-                             subset = NULL, ntrys = 5, ...) {
+pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
+                             re_formula = NULL, subset = NULL, 
+                             ntrys = 5, ...) {
+  if (!requireNamespace("ppcheck", quietly = TRUE)) {
+    # remove check as soon as ppcheck is on CRAN
+    stop(paste0("please install the ppcheck package via\n",
+                "devtools::install_github('jgabry/ppcheck')"),
+         call. = FALSE)
+  }
   if (missing(type)) {
     type <- "dens_overlay"
   }
   if (length(type) != 1L) {
     stop("argument 'type' must be of length 1", call. = FALSE)
   }
-  if (!requireNamespace("ppcheck", quietly = TRUE)) {
-    stop(paste0("please install the ppcheck package via\n",
-                "devtools::install_github('jgabry/ppcheck')"),
-         call. = FALSE)
+  if (!is.null(group) && length(group) != 1L) {
+    stop("argument 'group' must be of length 1", call. = FALSE)
+    
   }
   ppc_funs <- lsp("ppcheck", what = "exports", pattern = "^ppc_")
   valid_ppc_types <- sub("^ppc_", "", ppc_funs)
@@ -929,6 +937,25 @@ pp_check.brmsfit <- function(object, type, nsamples, re_formula = NULL,
                 "Valid types are: \n", 
                 paste(valid_ppc_types, collapse = ", ")),
          call. = FALSE)
+  }
+  valid_groups <- names(object$ranef)
+  time_group <- extract_time(object$autocor$formula)$group
+  if (nchar(time_group)) {
+    valid_groups <- unique(c(valid_groups, time_group)) 
+  }
+  if (!is.null(group) && !group %in% valid_groups) {
+    stop(paste0("Group '", group, "' is not a valid grouping factor. ",
+                "Valid groups are: \n", paste(valid_groups, collapse = ", ")),
+         call. = FALSE)
+  }
+  group_type <- grepl("_grouped$", type)
+  if (is.null(group) && group_type) {
+    stop(paste0("Argument 'group' is required for ppc type '", type, "'."), 
+         call. = FALSE)
+  }
+  if (!is.null(group) && !group_type) {
+    warning(paste0("Argument 'group' is ignored for ppc type '", type, "'."), 
+            call. = FALSE)
   }
   ppc_fun <- get(paste0("ppc_", type), pos = asNamespace("ppcheck"))
   if (names(formals(ppc_fun))[2] == "Ey") {
@@ -941,9 +968,11 @@ pp_check.brmsfit <- function(object, type, nsamples, re_formula = NULL,
     method <- "predict"
   }
   if (missing(nsamples)) {
+    aps_types <- c("scatter_avg", "scatter_avg_grouped", "stat", "stat_2d", 
+                   "stat_grouped", "ts", "ts_grouped", "violin_grouped")
     if (!is.null(subset)) {
       nsamples <- NULL
-    } else if (type %in% c("scatter_average", "stat", "stat_2d")) {
+    } else if (type %in% aps_types) {
       nsamples <- NULL
       message(paste0("Using all posterior samples for ppc type '", 
                      type, "'."))
@@ -954,9 +983,9 @@ pp_check.brmsfit <- function(object, type, nsamples, re_formula = NULL,
     }
   }
   args <- nlist(object, nsamples, subset, re_formula, 
-                ntrys, summary = FALSE)
+                ntrys, sort = TRUE, summary = FALSE)
   yrep <- as.matrix(do.call(method, args))
-  standata <- standata(object)
+  standata <- standata(object, control = list(save_order = TRUE))
   y <- as.vector(standata$Y)
   if (family(object)$family %in% "binomial") {
     # use success proportions following Gelman and Hill (2006)
@@ -964,7 +993,13 @@ pp_check.brmsfit <- function(object, type, nsamples, re_formula = NULL,
     yrep <- yrep / matrix(standata$trials, nrow = nrow(yrep),
                           ncol = ncol(yrep), byrow = TRUE)
   }
-  rstan::quietgg(ppc_fun(y, yrep, ...))
+  if (!is.null(group)) {
+    group <- model.frame(object)[[group]]
+    if (!is.null(attr(standata, "old_order"))) {
+      group <- group[order(attr(standata, "old_order"))]
+    }
+  }
+  rstan::quietgg(ppc_fun(y, yrep, group = group, ...))
 }
 
 #' Create a matrix of output plots from a \code{brmsfit} object
