@@ -1264,6 +1264,10 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
 #'  posterior samples should be used. 
 #'  If \code{NULL} (the default) all samples are used.
 #'  Ignored if \code{subset} is not \code{NULL}.
+#' @param sort Logical. Only relevant for time series models. 
+#'  Indicating whether to return predicted values in the original 
+#'  order (\code{FALSE}; default) or in the order of the 
+#'  time series (\code{TRUE}). 
 #' @param ntrys Parameter used in rejection sampling 
 #'   for truncated discrete models only 
 #'   (defaults to \code{5}). See Details for more information.
@@ -1334,8 +1338,9 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
 #' @export 
 predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                             transform = NULL, allow_new_levels = FALSE,
-                            subset = NULL, nsamples = NULL, ntrys = 5, 
-                            summary = TRUE, probs = c(0.025, 0.975), ...) {
+                            subset = NULL, nsamples = NULL, sort = FALSE,
+                            ntrys = 5, summary = TRUE, 
+                            probs = c(0.025, 0.975), ...) {
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
   draws <- extract_draws(x = object, newdata = newdata, 
@@ -1371,7 +1376,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   # reorder predicted responses to be in the initial user defined order
   # currently only relevant for autocorrelation models 
   old_order <- attr(draws$data, "old_order")
-  if (!is.null(old_order)) {
+  if (!is.null(old_order) && !sort) {
     out <- out[, old_order, drop = FALSE]  
     colnames(out) <- 1:ncol(out) 
   }
@@ -1380,11 +1385,13 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (!is.null(transform) && !is_catordinal) {
     out <- do.call(transform, list(out))
   }
-  if (summary && !is_catordinal) {
-    out <- get_summary(out, probs = probs)
-  } else if (summary && is_catordinal) { 
-    # compute frequencies of categories for categorical and ordinal models
-    out <- get_table(out, levels = 1:max(draws$data$max_obs)) 
+  if (summary) {
+    if (is_catordinal) {
+      # compute frequencies of categories 
+      out <- get_table(out, levels = 1:max(draws$data$max_obs)) 
+    } else {
+      out <- get_summary(out, probs = probs)
+    }
   }
   rownames(out) <- 1:nrow(out)
   out
@@ -1451,9 +1458,10 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' @export 
 fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                            scale = c("response", "linear"),
-                           allow_new_levels = FALSE,
-                           subset = NULL, nsamples = NULL, 
-                           summary = TRUE, probs = c(0.025, 0.975), ...) {
+                           allow_new_levels = FALSE, subset = NULL, 
+                           nsamples = NULL, sort = FALSE,
+                           summary = TRUE, probs = c(0.025, 0.975), 
+                           ...) {
   scale <- match.arg(scale)
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
@@ -1473,7 +1481,7 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   # reorder fitted values to be in the initial user defined order
   # currently only relevant for autocorrelation models 
   old_order <- attr(draws$data, "old_order")
-  if (!is.null(old_order)) {
+  if (!is.null(old_order) && !sort) {
     mu <- mu[, old_order, drop = FALSE]  
     colnames(mu) <- 1:ncol(mu) 
   }
@@ -1521,9 +1529,10 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' @export
 residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL, 
                               type = c("ordinary", "pearson"), 
-                              allow_new_levels = FALSE,
-                              subset = NULL, nsamples = NULL,
-                              summary = TRUE, probs = c(0.025, 0.975), ...) {
+                              allow_new_levels = FALSE, subset = NULL, 
+                              nsamples = NULL, sort = FALSE,
+                              summary = TRUE, probs = c(0.025, 0.975), 
+                              ...) {
   type <- match.arg(type)
   family <- family(object)
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
@@ -1540,7 +1549,7 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   }
   mu <- fitted(object, newdata = newdata, re_formula = re_formula, 
                allow_new_levels = allow_new_levels, 
-               summary = FALSE, subset = subset)
+               summary = FALSE, subset = subset, sort = sort)
   Y <- matrix(rep(as.numeric(standata$Y), nrow(mu)), 
               nrow = nrow(mu), byrow = TRUE)
   res <- Y - mu
@@ -1549,7 +1558,7 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     # get predicted standard deviation for each observation
     sd <- predict(object, newdata = newdata, re_formula = re_formula, 
                   allow_new_levels = allow_new_levels, 
-                  summary = TRUE, subset = subset)[, 2]
+                  summary = TRUE, subset = subset, sort = sort)[, 2]
     sd <- matrix(rep(sd, nrow(mu)), nrow = nrow(mu), byrow = TRUE)
     res <- res / sd
   }

@@ -6,8 +6,8 @@
 \usage{
 \method{predict}{brmsfit}(object, newdata = NULL, re_formula = NULL,
   transform = NULL, allow_new_levels = FALSE, subset = NULL,
-  nsamples = NULL, ntrys = 5, summary = TRUE, probs = c(0.025, 0.975),
-  ...)
+  nsamples = NULL, sort = FALSE, ntrys = 5, summary = TRUE,
+  probs = c(0.025, 0.975), ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}}
@@ -36,6 +36,11 @@ If \code{NULL} (the default), all samples are used.}
 posterior samples should be used. 
 If \code{NULL} (the default) all samples are used.
 Ignored if \code{subset} is not \code{NULL}.}
+
+\item{sort}{Logical. Only relevant for time series models. 
+Indicating whether to return predicted values in the original 
+order (\code{FALSE}; default) or in the order of the 
+time series (\code{TRUE}).}
 
 \item{ntrys}{Parameter used in rejection sampling 
 for truncated discrete models only 

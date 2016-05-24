@@ -6,8 +6,8 @@
 \usage{
 \method{fitted}{brmsfit}(object, newdata = NULL, re_formula = NULL,
   scale = c("response", "linear"), allow_new_levels = FALSE,
-  subset = NULL, nsamples = NULL, summary = TRUE, probs = c(0.025,
-  0.975), ...)
+  subset = NULL, nsamples = NULL, sort = FALSE, summary = TRUE,
+  probs = c(0.025, 0.975), ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}}
@@ -37,6 +37,11 @@ If \code{NULL} (the default), all samples are used.}
 posterior samples should be used. 
 If \code{NULL} (the default) all samples are used.
 Ignored if \code{subset} is not \code{NULL}.}
+
+\item{sort}{Logical. Only relevant for time series models. 
+Indicating whether to return predicted values in the original 
+order (\code{FALSE}; default) or in the order of the 
+time series (\code{TRUE}).}
 
 \item{summary}{Should summary statistics 
  (i.e. means, sds, and 95\% intervals) be returned
