@@ -606,7 +606,7 @@ brm <- function(formula, data = NULL, family = gaussian(),
     prior <- check_prior(prior, formula = formula, data = data, 
                          family = family, sample_prior = sample_prior, 
                          autocor = autocor, nonlinear = nonlinear, 
-                         threshold = threshold)
+                         threshold = threshold, warn = TRUE)
     et <- extract_time(autocor$formula)  
     ee <- extract_effects(formula, family = family, et$all,
                           nonlinear = nonlinear)

@@ -595,13 +595,13 @@ get_prior_ranef <- function(ranef, def_scale_prior, nlpar = "",
 
 check_prior <- function(prior, formula, data = NULL, family = gaussian(), 
                         sample_prior = FALSE, autocor = NULL, nonlinear = NULL, 
-                        threshold = "flexible", check_rows = NULL) {
+                        threshold = "flexible", check_rows = NULL, 
+                        warn = FALSE) {
   # check prior input and amend it if needed
-  #
   # Args:
   #   same as the respective parameters in brm
   #   check_rows: if not NULL, check only the rows given in check_rows
-  #
+  #   warn: passed to check_prior_content
   # Returns:
   #   a data.frame of prior specifications to be used in stan_prior (see stan.R)
   if (isTRUE(attr(prior, "checked"))) {
@@ -645,7 +645,7 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
       prior <- prior[-invalid, ]
     }
   }
-  check_prior_content(prior, family = family)
+  check_prior_content(prior, family = family, warn = warn)
   # merge prior with all_priors
   prior <- rbind(prior, all_priors)
   prior <- prior[!duplicated(prior[, 2:5]), ]
@@ -713,11 +713,12 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
   prior
 }
 
-check_prior_content <- function(prior, family = gaussian()) {
+check_prior_content <- function(prior, family = gaussian(), warn = TRUE) {
   # try to check if prior distributions are reasonable
   # Args:
   #  prior: A prior_frame
   #  family: the model family
+  #  warn: logical; print boundary warnings?
   stopifnot(is(prior, "prior_frame"))
   stopifnot(is(family, "family"))
   family <- family$family
@@ -775,7 +776,7 @@ check_prior_content <- function(prior, family = gaussian()) {
         }
       }
     }  # end for  
-    if (nchar(lb_warning)) {
+    if (nchar(lb_warning) && warn) {
       warning(paste0("It appears that you have specified a lower bounded ", 
                      "prior on a parameter that has no natural lower bound.",
                      "\nIf this is really what you want, please specify ",
@@ -783,7 +784,7 @@ check_prior_content <- function(prior, family = gaussian()) {
                      "\nWarning occurred for prior \n", lb_warning), 
               call. = FALSE)
     }
-    if (nchar(ub_warning)) {
+    if (nchar(ub_warning) && warn) {
       warning(paste0("It appears that you have specified an upper bounded ", 
                      "prior on a parameter that has no natural upper bound.",
                      "\nIf this is really what you want, please specify ",
@@ -791,7 +792,7 @@ check_prior_content <- function(prior, family = gaussian()) {
                      "\nWarning occurred for prior \n", ub_warning), 
               call. = FALSE)
     }
-    if (autocor_warning) {
+    if (autocor_warning && warn) {
       warning(paste("Changing the boundaries of autocorrelation", 
                     "parameters is not recommended."), call. = FALSE)
     }
