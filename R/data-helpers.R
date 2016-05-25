@@ -227,27 +227,20 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     }
   }
   if (length(fit$ranef)) {
-    if (length(new_ranef)) {
+    if (length(new_ranef) && allow_new_levels) {
+      # random effects grouping factors do not need to be specified 
+      # by the user if new_levels are allowed
       new_gf <- unique(unlist(strsplit(names(new_ranef), split = ":")))
-      if (allow_new_levels) {
-        # random effects grouping factors do not need to be specified 
-        # by the user if new_levels are allowed
-        missing_gf <- setdiff(new_gf, names(newdata))
-        newdata[, missing_gf] <- NA
-      }
-    } else {
-      new_gf <- NULL
+      missing_gf <- setdiff(new_gf, names(newdata))
+      newdata[, missing_gf] <- NA
     }
     # brms:::update_data expects all original variables to be present
     # even if not actually used later on
-    new_slopes <- unique(ulapply(get_random(ee)$form, all.vars))
-    used_vars <- unique(c(new_gf, new_slopes, names(newdata),
-                          rsv_vars(family(fit), length(ee$response))))
     old_gf <- unique(unlist(strsplit(names(fit$ranef), split = ":")))
     old_ee <- extract_effects(formula(fit), et$all, family = family(fit),
                               nonlinear = fit$nonlinear)
     old_slopes <- unique(ulapply(get_random(old_ee)$form, all.vars))
-    unused_vars <- setdiff(union(old_gf, old_slopes), used_vars)
+    unused_vars <- setdiff(union(old_gf, old_slopes), all.vars(ee$all))
     if (length(unused_vars)) {
       newdata[, unused_vars] <- NA
     }
