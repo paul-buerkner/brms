@@ -1413,7 +1413,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   old_order <- attr(draws$data, "old_order")
   if (!is.null(old_order) && !sort) {
     out <- out[, old_order, drop = FALSE]  
-    colnames(out) <- 1:ncol(out) 
+    colnames(out) <- NULL
   }
   # transform predicted response samples before summarizing them 
   is_catordinal <- is.ordinal(object$family) || is.categorical(object$family)
@@ -1428,7 +1428,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
       out <- get_summary(out, probs = probs)
     }
   }
-  rownames(out) <- 1:nrow(out)
+  rownames(out) <- NULL
   out
 }
 
@@ -1518,7 +1518,7 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   old_order <- attr(draws$data, "old_order")
   if (!is.null(old_order) && !sort) {
     mu <- mu[, old_order, drop = FALSE]  
-    colnames(mu) <- 1:ncol(mu) 
+    colnames(mu) <- NULL
   }
   if (summary) {
     mu <- get_summary(mu, probs = probs)
@@ -1867,7 +1867,7 @@ logLik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     if (!is.null(old_order) && !isTRUE(object$autocor$cov)) {
       loglik <- loglik[, old_order[1:N]]  
     }
-    colnames(loglik) <- 1:ncol(loglik)
+    colnames(loglik) <- NULL
   }
   loglik
 }
