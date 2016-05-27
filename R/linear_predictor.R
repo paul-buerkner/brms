@@ -80,7 +80,7 @@ linear_predictor <- function(draws, i = NULL) {
       eta <- array(eta, dim = c(nrow(eta), ncol(eta) / ncat1, ncat1))
     }
   }
-  eta
+  unname(eta)
 }
 
 nonlinear_predictor <- function(draws, i = NULL) {
@@ -117,7 +117,7 @@ nonlinear_predictor <- function(draws, i = NULL) {
       stop(out, call. = FALSE)
     }
   }
-  out
+  unname(out)
 }
 
 fixef_predictor <- function(X, b) {
