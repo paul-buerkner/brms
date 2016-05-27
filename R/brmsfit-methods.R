@@ -652,24 +652,15 @@ nobs.brmsfit <- function(object, ...) {
 #' @export ngrps
 #' @importFrom lme4 ngrps
 ngrps.brmsfit <- function(object, ...) {
-  standata <- standata(object)
-  ee <- extract_effects(object$formula, family = object$family,
-                        nonlinear = object$nonlinear)
-  rand <- get_random(ee)
-  group <- rand$group
-  if (length(group)) {
-    nlp <- if (length(ee$nonlinear)) paste0(rownames(rand), "_") 
-           else rep("", nrow(rand))
-    .fun <- function(i) {
-      n <- standata[[paste0("N_", nlp[i], i)]]
-      if (is.null(n)) {
-        n <- standata[[paste0("N_", group[[i]])]]
-      }
-      return(n)
-    }
-    out <- setNames(lapply(seq_along(group), .fun), group)
-    out <- out[!duplicated(group)]
-  } else out <- NULL
+  if (length(object$ranef)) {
+    out <- named_list(names(object$ranef))
+    for (i in seq_along(out)) {
+      out[[i]] <- length(attr(object$ranef[[i]], "levels"))
+    } 
+    out <- out[!duplicated(names(out))]
+  } else {
+    out <- NULL
+  }
   out
 }
 

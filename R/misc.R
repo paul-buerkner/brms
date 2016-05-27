@@ -142,6 +142,11 @@ nlist <- function(...) {
   dots
 }
 
+named_list <- function(names) {
+  # initialize a named list
+  setNames(vector("list", length(names)), names)
+} 
+
 get_arg <- function(x, ...) {
   # find first occurrence of x in ... objects
   # Args:

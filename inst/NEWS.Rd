@@ -2,6 +2,15 @@
 \title{brms News}
 \encoding{UTF-8}
 
+\section{CHANGES IN VERSION 0.9.1.9000}{
+  \subsection{BUG FIXES}{
+    \itemize{ 
+      \item The \code{ngrps} method should now always
+      return the correct result for non-linear models.
+    }
+  }
+}  
+
 \section{CHANGES IN VERSION 0.9.1}{
   \subsection{NEW FEATURES}{
     \itemize{ 
