@@ -270,20 +270,25 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
       length(group) != 1 || length(nlpar) != 1 || length(lb) > 1 || 
       length(ub) > 1)
     stop("All arguments of set_prior must be of length 1.", call. = FALSE)
-  valid_classes <- c("Intercept", "b", "sd", "cor", "L", "ar", "ma", "arr", 
-                     "simplex", "sigma", "sigmaLL", "rescor", "Lrescor", 
-                     "nu", "shape", "delta", "phi")
-  if (!class %in% valid_classes)
+  valid_classes <- c("Intercept", "b", "sd", "cor", "L", "sds", "simplex",
+                     "ar", "ma", "arr", "sigma", "sigmaLL", "rescor", 
+                     "Lrescor", "nu", "shape", "delta", "phi")
+  if (!class %in% valid_classes) {
     stop(paste(class, "is not a valid parameter class"), call. = FALSE)
-  if (nchar(group) && !class %in% c("sd", "cor", "L"))
+  }
+  if (nchar(group) && !class %in% c("sd", "cor", "L")) {
     stop(paste("argument 'group' not meaningful for class", class), 
          call. = FALSE)
-  if (nchar(coef) && !class %in% c("Intercept", "b", "sd", "sigma", "simplex"))
+  }
+  coef_classes <- c("Intercept", "b", "sd", "sds", "sigma", "simplex")
+  if (nchar(coef) && !class %in% coef_classes) {
     stop(paste("argument 'coef' not meaningful for class", class),
          call. = FALSE)
-  if (nchar(nlpar) && !class %in% valid_classes[1:5])
+  }
+  if (nchar(nlpar) && !class %in% valid_classes[1:7]) {
     stop(paste("argument 'nlpar' not meaningful for class", class),
          call. = FALSE)
+  }
   is_arma <- class %in% c("ar", "ma")
   if (length(lb) || length(ub) || is_arma) {
     if (!(class %in% c("b", "arr") || is_arma))
@@ -393,19 +398,25 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
   if (length(nonlinear)) {
     nlpars <- names(ee$nonlinear)
     for (i in seq_along(nlpars)) {
-      fixef <- colnames(get_model_matrix(ee$nonlinear[[i]]$fixed, data))
+      # use nlpar = "1" just to keep intercept columns
+      fixef <- colnames(data_fixef(ee$nonlinear[[i]], data, family = family, 
+                                   autocor = autocor, nlpar = "1")$X_1)
       prior_fixef <- get_prior_fixef(fixef, nlpar = nlpars[i],
                                      internal = internal)
       monef <- colnames(get_model_matrix(ee$nonlinear[[i]]$mono, data))
       prior_monef <- get_prior_monef(monef, fixef = fixef, nlpar = nlpars[i])
       prior_ranef <- get_prior_ranef(ranef, def_scale_prior, nlpar = nlpars[i], 
                                      internal = internal)
-      prior <- rbind(prior, prior_fixef, prior_monef, prior_ranef)
+      splines <- get_spline_labels(ee$nonlinear[[i]])
+      prior_splines <- get_prior_splines(splines, def_scale_prior, 
+                                         nlpar = nlpars[i])
+      prior <- rbind(prior, prior_fixef, prior_monef, 
+                     prior_ranef, prior_splines)
     }
   } else {
-    # don't remove the intercept columns here!
-    fixef <- colnames(get_model_matrix(rhs(ee$fixed), data = data,
-                                       forked = is.forked(family)))
+    # use nlpar = "1" just to keep intercept columns
+    fixef <- colnames(data_fixef(ee, data, family = family, 
+                                 autocor = autocor, nlpar = "1")$X_1)
     intercepts <- names(get_intercepts(ee, data = data, family = family))
     prior_fixef <- get_prior_fixef(fixef, intercepts = intercepts,
                                    internal = internal)
@@ -415,7 +426,10 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
     prior_csef <- get_prior_csef(csef, fixef = fixef)
     prior_ranef <- get_prior_ranef(ranef, def_scale_prior, 
                                    internal = internal)
-    prior <- rbind(prior, prior_fixef, prior_monef, prior_csef, prior_ranef)
+    prior_splines <- get_prior_splines(get_spline_labels(ee), 
+                                       def_scale_prior)
+    prior <- rbind(prior, prior_fixef, prior_monef, prior_csef, 
+                   prior_ranef, prior_splines)
   }
   # handle additional parameters
   is_ordinal <- is.ordinal(family)
@@ -590,6 +604,24 @@ get_prior_ranef <- function(ranef, def_scale_prior, nlpar = "",
       }
     }
   } 
+  prior
+}
+
+get_prior_splines <- function(splines, def_scale_prior, nlpar = "") {
+  # priors for GAMM models
+  # Args:
+  #   splines: names of the spline terms
+  #   def_scale_prior: a character string defining the default
+  #                    prior for spline SDs
+  #   nlpar: optional name of a non-linear parameter
+  if (length(splines)) {
+    splines <- rename(splines)
+    prior_strings <- c(def_scale_prior, rep("", length(splines)))
+    prior <- prior_frame(class = "sds", coef = c("", splines), 
+                         prior = prior_strings, nlpar = nlpar)
+  } else {
+    prior <- empty_prior_frame()
+  }
   prior
 }
 
