@@ -208,6 +208,10 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   et <- extract_time(fit$autocor$formula)
   ee <- extract_effects(new_formula, et$all, family = family(fit),
                         nonlinear = new_nonlinear, resp_rhs_all = FALSE)
+  if (has_splines(ee)) {
+    stop(paste("Predictions with 'newdata' are not yet possible", 
+               "for models using splines."), call. = FALSE)
+  }
   resp_only_vars <- setdiff(all.vars(ee$respform), all.vars(rhs(ee$all)))
   missing_resp <- setdiff(resp_only_vars, names(newdata))
   check_response <- check_response || 
@@ -519,6 +523,19 @@ data_fixef <- function(effects, data, family = gaussian(),
   X <- get_model_matrix(rhs(effects$fixed), data, 
                         forked = is.forked(family),
                         cols2remove = names(intercepts))
+  if (length(effects$gam)) {
+    # define inside data_fixef to amend the FE design matrix X
+    # possibly switch to calling mgcv directly at some point
+    G <- gamm4:::gamm4.setup(effects$gam, pterms = terms(effects$respform),
+                             data = data)
+    Zs <- G$random
+    knots <- list(length(effects$gam$smooth.spec), 
+                  as.array(ulapply(Zs, ncol)))
+    knots <- setNames(knots, paste0(c("ns", "knots"), p))  
+    out <- c(out, knots, setNames(Zs, paste0("Zs", p, "_", seq_along(Zs))))
+    colnames(G$X) <- rename(colnames(G$X))
+    X <- cbind(X, G$X[, -1, drop = FALSE])
+  }
   out[[paste0("K", p)]] <- ncol(X)
   center_X <- length(intercepts) && !is_bsts && !(is_ordinal && not4stan)
   if (center_X) {

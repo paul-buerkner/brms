@@ -179,7 +179,6 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
                              cov_ranef = cov_ranef, not4stan = not4stan,
                              is_newdata = isTRUE(control$is_newdata))
     standata <- c(standata, data_fixef, data_monef, data_csef, data_ranef)
-    # offsets are not yet implemented for non-linear models
     standata$offset <- model.offset(data)
   }
   # data for specific families
