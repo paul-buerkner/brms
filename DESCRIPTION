@@ -16,6 +16,8 @@ Imports:
     gridExtra (>= 2.0.0),
     lme4 (>= 1.1-11),
     Matrix (>= 1.1.1),
+    mgcv (>= 1.7-23),
+    gamm4 (>= 0.2-3),
     coda,
     abind,
     statmod,
