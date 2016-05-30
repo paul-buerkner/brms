@@ -581,6 +581,13 @@ get_var_combs <- function(x) {
   unique(lapply(x, function(y) all.vars(parse(text = y))))
 }
 
+get_spline_labels <- function(effects) {
+  # extract labels of splines for GAMMs
+  # Args:
+  #   effects: output of extract_effects
+  ulapply(effects$gam$smooth.spec, "[[", "label")
+}
+
 amend_terms <- function(x, forked = FALSE) {
   # amend a terms object (or one that can be coerced to it)
   # to be used in get_model_matrix
@@ -680,6 +687,19 @@ gather_response <- function(formula) {
     }
   }
   response
+}
+
+has_splines <- function(effects) {
+  # check if splines are present in the model
+  # Args:
+  #   effects: output of extract_effects
+  if (length(effects$nonlinear)) {
+    out <- any(ulapply(effects$nonlinear, 
+                       function(x) !is.null(x[["gam"]])))
+  } else {
+    out <- !is.null(effects[["gam"]])
+  }
+  out
 }
 
 gather_ranef <- function(effects, data = NULL, ...) {
