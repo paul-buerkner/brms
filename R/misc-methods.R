@@ -30,6 +30,16 @@ print.brmssummary <- function(x, digits = 2, ...) {
                "         total post-warmup samples = ", final_samples, "\n"))
     cat(paste0("   WAIC: ", waic, "\n \n"))
     
+    if (length(x$splines)) {
+      cat("Spline Effects: \n")
+      if (x$algorithm == "sampling") {
+        x$splines[, "Eff.Sample"] <- 
+          round(x$splines[, "Eff.Sample"], digits = 0)
+      }
+      print(round(x$splines, digits = digits)) 
+      cat("\n")
+    }
+    
     if (length(x$random)) {
       cat("Group-Level Effects: \n")
       for (i in seq_along(x$random)) {
