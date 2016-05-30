@@ -841,32 +841,46 @@ check_brm_input <- function(x) {
   invisible(NULL)
 }
 
-exclude_pars <- function(ranef = list(), save_ranef = TRUE) {
+exclude_pars <- function(effects, ranef = list(), 
+                         save_ranef = TRUE) {
   # list irrelevant parameters NOT to be saved by Stan
-  # 
   # Args:
+  #   effects: output of extract_effects
   #   ranef: output of gather_ranef
   #   save_ranef: should random effects of each level be saved?
-  #
   # Returns:
   #   a vector of parameters to be excluded
   out <- c("eta", "etap", "eta_2PL", "Eta", "temp_Intercept1", 
-           "temp_Intercept",  "Lrescor", "Rescor", "Sigma", "LSigma",
-           "disp_sigma", "e", "E", "res_cov_matrix", 
+           "temp_Intercept",  "Lrescor", "Rescor", "Sigma", 
+           "LSigma", "disp_sigma", "e", "E", "res_cov_matrix", 
            "lp_pre", "hs_local", "hs_global")
-  nlpars <- ulapply(ranef, function(x) attr(x, "nlpar"))
+  nlpars <- names(effects$nonlinear)
   if (length(nlpars)) {
     out <- c(out, unique(paste0("eta_", nlpars)))
+    for (i in seq_along(nlpars)) {
+      splines <- get_spline_labels(effects$nonlinear[[i]])
+      if (length(splines)) {
+        out <- c(out, paste0("zs_", nlpars[i], "_", seq_along(splines)))
+      }
+    }
+  } else {
+    splines <- get_spline_labels(effects)
+    if (length(splines)) {
+      out <- c(out, paste0("zs_", seq_along(splines)))
+    }
   }
   if (length(ranef)) {
     rm_re_pars <- c("z", "L", "Cor", if (!save_ranef) "r")
-    if (length(nlpars)) {
+    # names of NL-parameters must be computed based on ranef here
+    nlp_ranef <- ulapply(ranef, attr, "nlpar")
+    if (length(nlp_ranef)) {
+      stopifnot(length(nlp_ranef) == length(ranef))
       for (k in seq_along(ranef)) {
-        i <- which(which(nlpars == nlpars[k]) == k)
-        out <- c(out, paste0(rm_re_pars, "_", nlpars[k], "_", i))
+        i <- which(which(nlp_ranef == nlp_ranef[k]) == k)
+        out <- c(out, paste0(rm_re_pars, "_", nlp_ranef[k], "_", i))
         neff <- length(ranef[[k]])
         if (neff > 1L) {
-          out <- c(out, paste0("r_", nlpars[k], "_", i, "_", 1:neff))
+          out <- c(out, paste0("r_", nlp_ranef[k], "_", i, "_", 1:neff))
         }
       }
     } else {
