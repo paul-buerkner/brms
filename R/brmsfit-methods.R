@@ -1736,7 +1736,7 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
       dots$is_newdata <- TRUE
     }
     if (!is.null(dots$ranef)) {
-      object$exclude <- exclude_pars(ranef = object$ranef, 
+      object$exclude <- exclude_pars(ee, ranef = object$ranef, 
                                      save_ranef = dots$ranef)
     }
     if (!is.null(dots$algorithm)) {
