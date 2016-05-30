@@ -19,9 +19,8 @@ stan_linear <- function(effects, data, family = gaussian(),
   #   the linear predictor in stan language
   stopifnot(is(family, "family"))
   # generate code for different types of effects
-  fixef <- colnames(get_model_matrix(rhs(effects$fixed), data = data, 
-                                     forked = is.forked(family),
-                                     cols2remove = intercepts))
+  fixef <- colnames(data_fixef(effects, data, family = family,
+                               autocor = autocor)$X)
   # local level terms replace the intercepts in bsts models
   if (is(autocor, "cor_bsts")) intercepts <- NULL
   text_fixef <- stan_fixef(fixef = fixef, intercepts = intercepts, 
@@ -38,7 +37,11 @@ stan_linear <- function(effects, data, family = gaussian(),
   text_ranef <- collapse_lists(
     lapply(seq_along(ranef), stan_ranef, ranef = ranef, 
            names_cov_ranef = names(cov_ranef), prior = prior))
-  out <- collapse_lists(list(text_fixef, text_csef, text_monef, text_ranef))
+  # spline terms 
+  splines <- get_spline_labels(effects) 
+  text_splines <- stan_splines(splines, prior = prior)
+  out <- collapse_lists(list(text_fixef, text_csef, text_monef, 
+                             text_ranef, text_splines))
   
   # generate Stan code for the linear predictor 'eta'
   is_multi <- is.linear(family) && length(effects$response) > 1L
@@ -77,6 +80,7 @@ stan_linear <- function(effects, data, family = gaussian(),
   eta_int <- if (nint > 1L) " + temp_Intercept[Jint[n]]"
   eta_ranef <- stan_eta_ranef(ranef)
   eta_monef <- stan_eta_monef(monef)
+  eta_splines <- stan_eta_splines(splines)
   eta_ma <- ifelse(get_ma(autocor) && !use_cov(autocor), 
                    " + head(E[n], Kma) * ma", "")
   eta_bsts <- stan_eta_bsts(autocor)
@@ -88,13 +92,14 @@ stan_linear <- function(effects, data, family = gaussian(),
       eta_int, eta_bsts, eta_monef, eta_ranef, eta_ma, eta_ilink[2],"; \n")
   }
   eta_fixef <- stan_eta_fixef(fixef, sparse = sparse)
+  eta_splines <- stan_eta_splines(splines)
   eta_cse <- if (length(csef)) "  etap <- Xp * bp; \n"
   out$transC1 <- paste0(out$transC1,
     "  // compute linear predictor \n",
-    "  eta <- ", eta_fixef, 
+    "  eta <- ", eta_fixef, eta_splines,
     if (nint == 1L && !is.ordinal(family)) " + temp_Intercept",
     if (has_offset) " + offset",
-    if (get_arr(autocor)) " + Yarr * arr", 
+    if (get_arr(autocor)) " + Yarr * arr",
     "; \n", eta_cse)
   out
 }
@@ -123,14 +128,22 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
         "  // non-linear effects of ", nlpar, "\n")
       eta_loop <- ""
       # include fixed effects
-      fixef <- colnames(get_model_matrix(effects$nonlinear[[i]]$fixed, data))
+      fixef <- colnames(data_fixef(effects$nonlinear[[i]], data = data,
+                                   nlpar = nlpar)[[paste0("X_", nlpar)]])
       if (length(fixef)) {
         text_fixef <- stan_fixef(fixef, intercepts = NULL, family = family,
                                  prior = prior, nlpar = nlpar)
         out <- collapse_lists(list(out, text_fixef))
-        out$transC1 <- paste0(out$transC1, "  ", eta, " <- ",
-                              stan_eta_fixef(fixef, nlpar = nlpar), "; \n") 
       }
+      # include spline terms
+      splines <- get_spline_labels(effects$nonlinear[[i]])
+      text_splines <- stan_splines(splines, prior = prior, nlpar = nlpar)
+      out <- collapse_lists(list(out, text_splines))
+      # initialize eta_<nlpar>
+      out$transC1 <- paste0(out$transC1, "  ", eta, " <- ",
+                            stan_eta_fixef(fixef, nlpar = nlpar), 
+                            stan_eta_splines(splines, nlpar = nlpar), 
+                            "; \n") 
       # include monotonous effects
       monef <- colnames(data_monef(effects$nonlinear[[i]], data)$Xm)
       if (length(monef)) {
@@ -363,10 +376,10 @@ stan_ranef <- function(i, ranef, prior = prior_frame(),
           " to_vector(z_", p, "), N_", p, ", K_", p, "); \n")
       } else { 
         out$transC1 <- paste0("  r_", p, " <- ", 
-                              "(diag_pre_multiply(sd_", p, ", L_", p,") * z_", p, ")'; \n")
+          "(diag_pre_multiply(sd_", p, ", L_", p,") * z_", p, ")'; \n")
       }
       out$transC1 <- paste0(out$transC1, 
-                            collapse("  r_", p, "_", j, " <- r_", p, "[, ",j,"];  \n"))
+        collapse("  r_", p, "_", j, " <- r_", p, "[, ",j,"];  \n"))
       # return correlations above the diagonal only
       cors_genC <- ulapply(2:length(r), function(k) 
         lapply(1:(k - 1), function(j) paste0(
@@ -395,6 +408,36 @@ stan_ranef <- function(i, ranef, prior = prior_frame(),
       out$genC <- collapse(
         "  r_", p, "[, ", j, "] <- r_", p, "_", j, "; \n")
     }
+  }
+  out
+}
+
+stan_splines <- function(splines, prior = prior_frame(), nlpar = "") {
+  out <- list()
+  p <- if (nchar(nlpar)) paste0("_", nlpar) else ""
+  if (length(splines)) {
+    out$data <- paste0(
+      "  int ns", p, ";  // number of splines terms \n",
+      "  int knots", p, "[ns", p, "];",
+      "  // number of knots per spline \n")
+  }
+  for (i in seq_along(splines)) {
+    pi <- paste0(p, "_", i)
+    out$data <- paste0(out$data, 
+      "  // design matrix of spline ", splines[i], "\n",  
+      "  matrix[N, knots", p, "[", i, "]] Zs", pi, "; \n")
+    out$par <- paste0(out$par,
+      "  // parameters of spline ", splines[i], "\n", 
+      "  vector[knots", p, "[", i, "]] zs", pi, "; \n",
+      "  real<lower=0> sds", pi, "; \n")
+    out$transD <- paste0(out$transD,
+      "  vector[knots", p, "[", i, "]] s", pi, "; \n")
+    out$transC1 <- paste0(out$transC1,
+      "  s", pi, " <- sds", pi, " * zs", pi, "; \n")
+    out$prior <- paste0(out$prior, 
+      "  zs", pi, " ~ normal(0, 1); \n",
+      stan_prior(class = "sds", coef = rename(splines[i]), 
+                 nlpar = nlpar, suffix = pi, prior = prior))
   }
   out
 }
@@ -511,6 +554,16 @@ stan_eta_monef <- function(monef, nlpar = "") {
       "simplex", p, "_", i, ", Xm", p, "[n, ", i, "])")
   }
   eta_monef
+}
+
+stan_eta_splines <- function(splines, nlpar = "") {
+  p <- if (nchar(nlpar)) paste0("_", nlpar) else ""
+  eta_splines <- ""
+  for (i in seq_along(splines)) {
+    eta_splines <- paste0(eta_splines, 
+      " + Zs", p, "_", i, " * s", p, "_", i)
+  }
+  eta_splines
 }
 
 stan_eta_bsts <- function(autocor) {
