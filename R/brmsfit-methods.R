@@ -627,6 +627,13 @@ summary.brmsfit <- function(object, waic = FALSE, ...) {
       out$random[[out$group[i]]] <- 
         rbind(out$random[[out$group[i]]], new_random)
     }
+    
+    # summary of splines
+    spline_pars <- pars[grepl("^sds_", pars)]
+    if (length(spline_pars)) {
+      out$splines <- fit_summary[spline_pars, , drop = FALSE]
+      rownames(out$splines) <- paste0(gsub("^sds_", "sds(", spline_pars), ")")
+    }
   }  
   out
 }
@@ -777,7 +784,7 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5,
   if (!is.character(pars)) {
     pars <- c("^b_", "^bm_", "^sd_", "^cor_", "^sigma", "^rescor", 
               "^nu$", "^shape$", "^delta$", "^phi$", "^ar", "^ma", 
-              "^arr", "^simplex_")
+              "^arr", "^simplex_", "^sds_")
   }
   samples <- posterior_samples(x, pars = pars, add_chain = TRUE)
   pars <- names(samples)[!names(samples) %in% c("chain", "iter")] 
