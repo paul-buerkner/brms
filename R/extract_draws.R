@@ -139,9 +139,18 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
       draws$p <- do.call(posterior_samples, c(args, list(pars = "^b_")))
     }
   }
+  # splines
+  splines <- rename(get_spline_labels(ee))
+  for (i in seq_along(splines)) {
+    draws$Zs[[splines[i]]] <- draws$data[[paste0("Zs_", i)]]
+    s_pars <- paste0("^s_", nlpar, splines[i], "\\[")
+    draws$s[[splines[i]]] <- do.call(posterior_samples,
+                                     c(args, list(pars = s_pars)))
+  }
+  # random effects
   group <- names(new_ranef)
   # requires initialization to assign S4 objects of the Matrix package
-  draws[["Z"]] <- setNames(vector("list", length(group)), group)
+  draws[["Z"]] <- named_list(group)
   for (i in seq_along(group)) {
     # create a single RE design matrix for every grouping factor
     Z <- lapply(which(ee$random$group == group[i]), 

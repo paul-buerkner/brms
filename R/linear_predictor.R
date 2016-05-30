@@ -37,6 +37,12 @@ linear_predictor <- function(draws, i = NULL) {
     eta <- eta + ranef_predictor(Z = p(draws$Z[[group[j]]], i), 
                                  r = draws$r[[group[j]]]) 
   }
+  # incorporate splines
+  splines <- names(draws$s)
+  for (j in seq_along(splines)) {
+    eta <- eta + fixef_predictor(X = p(draws$data[[paste0("Zs_", j)]], i),
+                                 b = draws$s[[splines[j]]])
+  }
   if (!is.null(draws$arr)) {
     eta <- eta + fixef_predictor(X = p(draws$data$Yarr, i), b = draws$arr)
   }
