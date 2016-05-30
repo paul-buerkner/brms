@@ -67,8 +67,8 @@ rename_pars <- function(x) {
   # order parameter samples after parameter class
   chains <- length(x$fit@sim$samples) 
   all_classes <- c("b_Intercept", "b", "bm", "bp", "ar", "ma", "arr", "sd", 
-                   "cor", "sigma", "sigmaLL", "rescor", "nu", "shape", "phi",
-                   "delta", "simplex", "r", "loclev", "prior", "lp")
+                   "cor", "sds", "sigma", "sigmaLL", "rescor", "nu", "shape", 
+                   "phi", "delta", "simplex", "r", "s", "loclev", "prior", "lp")
   class <- get_matches("^[^_\\[]+", x$fit@sim$fnames_oi)
   # make sure that the fixed effects intercept comes first
   pos_intercept <- which(grepl("^b_Intercept($|\\[)", x$fit@sim$fnames_oi))
@@ -104,7 +104,10 @@ rename_pars <- function(x) {
                                    pars = pars, nlpar = p)
       change_ranef <- change_ranef(ranef = x$ranef, pars = pars, 
                                    dims = x$fit@sim$dims_oi, nlpar = p)
-      change <- c(change, change_fixef, change_monef, change_ranef)
+      splines <- get_spline_labels(ee$nonlinear[[p]])
+      change_splines <- change_splines(splines, pars = pars, nlpar = p)
+      change <- c(change, change_fixef, change_monef, change_ranef,
+                  change_splines)
     }
   } else {
     intercepts <- names(get_intercepts(ee, data = x$data, family = family))
@@ -115,7 +118,9 @@ rename_pars <- function(x) {
                                ncat = standata$ncat)
     change_ranef <- change_ranef(ranef = x$ranef, pars = pars,
                                  dims = x$fit@sim$dims_oi)
-    change <- c(change, change_fixef, change_monef, change_csef, change_ranef)
+    change_splines <- change_splines(get_spline_labels(ee), pars = pars)
+    change <- c(change, change_fixef, change_monef, change_csef, 
+                change_ranef, change_splines)
     
   }
   
@@ -229,6 +234,34 @@ change_csef <- function(csef, pars, ncat) {
   change
 }
 
+change_splines <- function(splines, pars, nlpar = "") {
+  change <- list()
+  if (length(splines)) {
+    splines <- rename(splines)
+    sds <- paste0("sds", ifelse(nchar(nlpar), paste0("_", nlpar), ""))
+    sds_names <- paste0(sds, "_", splines)
+    s <- paste0("s", ifelse(nchar(nlpar), paste0("_", nlpar), ""))
+    s_names <- paste0(s, "_", splines)
+    for (i in seq_along(splines)) {
+      sds_pos <- grepl(paste0("^", sds, "_", i), pars)
+      change <- lc(change, 
+        list(pos = sds_pos, oldname = paste0(sds, "_", i), 
+             pnames = sds_names[i], fnames = sds_names[i]))
+      s_pos <- grepl(paste0("^", s, "_", i), pars)
+      s_fnames <- paste0(s_names[i], "[", 1:sum(s_pos), "]")
+      change <- lc(change, 
+        list(pos = s_pos, oldname = paste0(s, "_", i), 
+             pnames = s_names[i], fnames = s_fnames, 
+             dim = as.numeric(sum(s_pos))))
+      change <- c(change, 
+        change_prior(class = paste0(sds, "_", i), 
+                     pars = pars, names = splines[i])) 
+    }
+  }
+  change
+}
+  
+
 change_ranef <- function(ranef, pars, dims, nlpar = "") {
   # helps in renaming random effects parameters
   # Args:
@@ -257,8 +290,8 @@ change_ranef <- function(ranef, pars, dims, nlpar = "") {
              fnames = rfnames))
       change <- c(change, 
         change_prior(class = paste0(sd, i), pars = pars, 
-                      new_class = paste0(sd, group[i]),
-                      names = ranef[[i]]))
+                     new_class = paste0(sd, group[i]),
+                     names = ranef[[i]]))
       # rename random effects correlations
       if (length(ranef[[i]]) > 1L && isTRUE(attr(ranef[[i]], "cor"))) {
         cor <- paste0("cor_", nlpar)
