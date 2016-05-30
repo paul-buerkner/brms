@@ -176,6 +176,17 @@ test_that("get_prior returns correct nlpar names for random effects pars", {
   expect_equal(sort(unique(gp$nlpar)), c("", "a", "b"))
 })
 
+test_that("get_prior returnes correct fixed effect names for GAMMs", {
+  dat <- data.frame(y = rnorm(10), x = rnorm(10), 
+                    z = rnorm(10), g = rep(1:2, 5))
+  priors <- get_prior(y ~ z + s(x) + (1|g), data = dat)
+  expect_equal(priors[priors$class == "b", ]$coef, 
+               c("", "Intercept", "sxFx1", "z"))
+  priors <- get_prior(y ~ lp, nonlinear = lp ~ z + s(x) + (1|g), data = dat)
+  expect_equal(priors[priors$class == "b", ]$coef, 
+               c("", "Intercept", "sxFx1", "z"))
+})
+
 test_that("check_prior_content returns expected errors and warnings", {
   prior <- c(set_prior("", lb = 0), set_prior("gamma(0,1)", coef = "x"))
   expect_silent(check_prior_content(prior))

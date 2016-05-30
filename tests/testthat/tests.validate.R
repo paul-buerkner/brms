@@ -103,6 +103,15 @@ test_that("extract_effects rejects REs in non-linear formulas", {
                "Random effects in non-linear models", fixed = TRUE)
 })
 
+test_that("extract_effects finds all spline terms", {
+  ee <- extract_effects(y ~ s(x) + t2(z) + v)
+  expect_equal(all.vars(ee$fixed), c("y", "v"))
+  expect_equal(length(ee$gam$smooth.spec), 2)
+  ee <- extract_effects(y ~ lp , nonlinear = list(lp ~ s(x) + t2(z) + v))
+  expect_equal(all.vars(ee$nonlinear[[1]]$fixed), "v")
+  expect_equal(length(ee$nonlinear[[1]]$gam$smooth.spec), 2)
+})
+
 test_that("nonlinear_effects rejects invalid non-linear models", {
   expect_error(nonlinear_effects(list(a ~ 1, b ~ 1), model = y ~ a^x),
                "missing in formula: b")
@@ -247,9 +256,16 @@ test_that("check_brm_input returns correct warnings and errors", {
 test_that("exclude_pars returns expected parameter names", {
   ranef <- list(g1 = structure(c("x", "z"), cor = TRUE),
                 g2 = structure(c("x"), cor = FALSE))
-  expect_true(all(c("r_1_1", "r_1_2") %in% exclude_pars(ranef)))
-  expect_true("r_1" %in% exclude_pars(ranef, save_ranef = FALSE))
+  ep <- exclude_pars(list(), ranef = ranef)
+  expect_true(all(c("r_1_1", "r_1_2") %in% ep))
+  ep <- exclude_pars(list(), ranef = ranef, save_ranef = FALSE)
+  expect_true("r_1" %in% ep)
   nlranef <- list(g1 = structure(c("x", "z"), cor = TRUE, nlpar = "a"),
-                g2 = structure(c("x"), cor = FALSE, nlpar = "a"))
-  expect_true(all(c("r_a_1_1", "r_a_1_2") %in% exclude_pars(nlranef)))
+                  g2 = structure(c("x"), cor = FALSE, nlpar = "a"))
+  ep <- exclude_pars(list(), ranef = nlranef)
+  expect_true(all(c("r_a_1_1", "r_a_1_2") %in% ep))
+  effects <- extract_effects(y ~ x + s(z))
+  expect_true("zs_1" %in% exclude_pars(effects = effects))
+  effects <- extract_effects(y ~ eta, nonlinear = list(eta ~ x + s(z)))
+  expect_true("zs_eta_1" %in% exclude_pars(effects = effects))
 })
