@@ -1,5 +1,6 @@
 extract_effects <- function(formula, ..., family = NA, nonlinear = NULL, 
-                            check_response = TRUE, resp_rhs_all = TRUE) {
+                            check_response = TRUE, resp_rhs_all = TRUE,
+                            lhs_char = "") {
   # Parse the model formula and related arguments
   # 
   # Args:
@@ -8,8 +9,10 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   #   ...: Additional objects of class "formula"
   #   family: the model family
   #   nonlinear: a list of formulas specifying non-linear effects
-  #   check_response: check if the response part is non-empty?
+  #   check_response: check if the response part is non-empty
   #   resp_rhs_all: include response variables on the RHS of $all? 
+  #   lhs_char: the response part of the model as a character string;
+  #             currently only used for splines in non-linear models
   # 
   # Returns: 
   #   A named list whose elements depend on the formula input 
@@ -71,6 +74,21 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
         stop("invalid input to function 'cse'", call. = FALSE)
       }
       x$cse <- cse_terms
+    }
+    # parse spline expression for GAMMs
+    sterms <- term_labels[grepl("^(s|t2|te|ti)\\(", term_labels)]
+    if (length(sterms)) {
+      if (is.mv(family) || is.forked(family)) {
+        stop("Splines are not yet implemented for this family.", 
+             call. = FALSE)
+      }
+      tfixed <- rename(tfixed, c(paste0("+", sterms), sterms), "")
+      if (!nchar(lhs_char)) {
+        lhs_char <- get_matches("^[^~]*", tfixed)
+      }
+      stopifnot(nchar(lhs_char) > 0L)
+      sformula <- formula(paste(lhs_char, "~", paste(sterms, collapse = "+")))
+      x$gam <- mgcv::interpret.gam(sformula)
     }
     if (substr(tfixed, nchar(tfixed), nchar(tfixed)) == "~") {
       tfixed <- paste0(tfixed, "1")
@@ -146,7 +164,7 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   # make a formula containing all required variables (element 'all')
   formula_list <- c(
     if (resp_rhs_all) all.vars(lhs(x$fixed)), 
-    add_vars, x[c("covars", "cse", "mono")],  
+    add_vars, x[c("covars", "cse", "mono")], x$gam$pred.formula,  
     if (!length(x$nonlinear)) c(rhs(x$fixed), all.vars(rhs(x$fixed))), 
     x$random$form, lapply(x$random$form, all.vars), x$random$group, 
     get_offset(x$fixed), lapply(x$nonlinear, function(nl) nl$all), ...)
@@ -158,6 +176,10 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   # extract response variables
   if (check_response) {
     x$respform <- lhs(x$all)
+    for (i in seq_along(x$nonlinear)) {
+      # currently only required for GAMMs
+      x$nonlinear[[i]]$respform <- x$respform
+    }
     if (!is.null(attr(formula, "response"))) {
       x$response <- attr(formula, "response")
     } else { 
@@ -248,8 +270,8 @@ nonlinear_effects <- function(x, model = ~ 1) {
              call. = FALSE)
       }
       x[[i]] <- rhs(x[[i]])
-      nleffects[[i]] <- extract_effects(x[[i]], check_response = FALSE)
-      nleffects[[i]]$nonlinear <- NULL
+      nleffects[[i]] <- extract_effects(x[[i]], check_response = FALSE,
+                                        lhs_char = as.character(model[[2]]))
       names(nleffects)[[i]] <- nlresp
     }
     model_vars <- all.vars(rhs(model))
