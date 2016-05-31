@@ -78,7 +78,7 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
     # parse spline expression for GAMMs
     sterms <- term_labels[grepl("^(s|t2|te|ti)\\(", term_labels)]
     if (length(sterms)) {
-      if (is.mv(family) || is.forked(family)) {
+      if (is.mv(family) || is.forked(family) || is.categorical(family)) {
         stop("Splines are not yet implemented for this family.", 
              call. = FALSE)
       }
