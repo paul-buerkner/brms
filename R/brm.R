@@ -91,6 +91,9 @@
 #'   Alternatively, \code{sample_prior} can be set to \code{"only"} to
 #'   sample solely from the priors. In this case, all parameters must 
 #'   have proper priors.
+#' @param knots Optional list containing user specified knot values to be 
+#'   used for basis construction of smoothing terms. For details see
+#'   \code{\link[mgcv:gamm]{gamm}}.
 #' @param stan_funs An optional character string containing self-defined 
 #'   \pkg{Stan} functions, which will be included in the functions block 
 #'   of the generated \pkg{Stan} code. 
@@ -561,8 +564,8 @@ brm <- function(formula, data = NULL, family = gaussian(),
                 prior = NULL, autocor = NULL, nonlinear = NULL, 
                 partial = NULL, threshold = c("flexible", "equidistant"), 
                 cov_ranef = NULL, ranef = TRUE, sparse = FALSE,
-                sample_prior = FALSE, stan_funs = NULL, fit = NA, 
-                inits = "random", chains = 4, iter = 2000, 
+                sample_prior = FALSE, knots = NULL, stan_funs = NULL, 
+                fit = NA, inits = "random", chains = 4, iter = 2000, 
                 warmup = floor(iter / 2), thin = 1, cluster = 1, 
                 cluster_type = "PSOCK", control = NULL, 
                 algorithm = c("sampling", "meanfield", "fullrank"),
@@ -633,8 +636,8 @@ brm <- function(formula, data = NULL, family = gaussian(),
                              autocor = autocor, nonlinear = nonlinear,
                              threshold = threshold, sparse = sparse,
                              cov_ranef = cov_ranef, sample_prior = sample_prior, 
-                             stan_funs = stan_funs, save_model = save_model, 
-                             brm_call = TRUE)
+                             knots = knots, stan_funs = stan_funs, 
+                             save_model = save_model, brm_call = TRUE)
     # generate standata before compiling the model to avoid
     # unnecessary compilations in case that the data is invalid
     standata <- standata(x, newdata = dots$is_newdata)

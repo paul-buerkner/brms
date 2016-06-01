@@ -7,11 +7,12 @@
 brm(formula, data = NULL, family = gaussian(), prior = NULL,
   autocor = NULL, nonlinear = NULL, partial = NULL,
   threshold = c("flexible", "equidistant"), cov_ranef = NULL,
-  ranef = TRUE, sparse = FALSE, sample_prior = FALSE, stan_funs = NULL,
-  fit = NA, inits = "random", chains = 4, iter = 2000,
-  warmup = floor(iter/2), thin = 1, cluster = 1, cluster_type = "PSOCK",
-  control = NULL, algorithm = c("sampling", "meanfield", "fullrank"),
-  silent = TRUE, seed = 12345, save_model = NULL, ...)
+  ranef = TRUE, sparse = FALSE, sample_prior = FALSE, knots = NULL,
+  stan_funs = NULL, fit = NA, inits = "random", chains = 4,
+  iter = 2000, warmup = floor(iter/2), thin = 1, cluster = 1,
+  cluster_type = "PSOCK", control = NULL, algorithm = c("sampling",
+  "meanfield", "fullrank"), silent = TRUE, seed = 12345,
+  save_model = NULL, ...)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class): 
@@ -114,6 +115,10 @@ to calculate Bayes factors for point hypotheses.
 Alternatively, \code{sample_prior} can be set to \code{"only"} to
 sample solely from the priors. In this case, all parameters must 
 have proper priors.}
+
+\item{knots}{Optional list containing user specified knot values to be 
+used for basis construction of smoothing terms. For details see
+\code{\link[mgcv:gamm]{gamm}}.}
 
 \item{stan_funs}{An optional character string containing self-defined 
 \pkg{Stan} functions, which will be included in the functions block 

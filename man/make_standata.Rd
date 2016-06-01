@@ -7,7 +7,7 @@
 \usage{
 make_standata(formula, data = NULL, family = "gaussian", prior = NULL,
   autocor = NULL, nonlinear = NULL, partial = NULL, cov_ranef = NULL,
-  sample_prior = FALSE, control = NULL, ...)
+  sample_prior = FALSE, knots = NULL, control = NULL, ...)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class): 
@@ -88,6 +88,10 @@ to calculate Bayes factors for point hypotheses.
 Alternatively, \code{sample_prior} can be set to \code{"only"} to
 sample solely from the priors. In this case, all parameters must 
 have proper priors.}
+
+\item{knots}{Optional list containing user specified knot values to be 
+used for basis construction of smoothing terms. For details see
+\code{\link[mgcv:gamm]{gamm}}.}
 
 \item{control}{A named list currently for internal usage only}
 

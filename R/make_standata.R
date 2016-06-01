@@ -27,7 +27,8 @@
 make_standata <- function(formula, data = NULL, family = "gaussian", 
                           prior = NULL, autocor = NULL, nonlinear = NULL, 
                           partial = NULL, cov_ranef = NULL, 
-                          sample_prior = FALSE, control = NULL, ...) {
+                          sample_prior = FALSE, knots = NULL, 
+                          control = NULL, ...) {
   # internal control arguments:
   #   is_newdata: is make_standata is called with new data?
   #   not4stan: is make_standata called for use in S3 methods?
@@ -160,7 +161,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     for (i in seq_along(nlpars)) {
       data_fixef <- data_fixef(ee$nonlinear[[i]], data = data, 
                                family = family, nlpar = nlpars[i],
-                               not4stan = not4stan)
+                               knots = knots, not4stan = not4stan)
       data_monef <- data_monef(ee$nonlinear[[i]], data = data, prior = prior, 
                                Jm = control[[paste0("Jm_", nlpars[i])]],
                                nlpar = nlpars[i])
@@ -172,7 +173,8 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     }
   } else {
     data_fixef <- data_fixef(ee, data = data, family = family, 
-                             autocor = autocor, not4stan = not4stan)
+                             autocor = autocor, knots = knots,
+                             not4stan = not4stan)
     data_monef <- data_monef(ee, data = data, prior = prior, Jm = control$Jm)
     data_csef <- data_csef(ee, data = data)
     data_ranef <- data_ranef(ee, data = data, family = family, 

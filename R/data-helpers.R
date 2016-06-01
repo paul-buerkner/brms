@@ -500,8 +500,8 @@ arr_design_matrix <- function(Y, r, group)  {
 }
 
 data_fixef <- function(effects, data, family = gaussian(),
-                       autocor = cor_arma(), nlpar = "", 
-                       not4stan = FALSE) {
+                       autocor = cor_arma(), knots = NULL,
+                       nlpar = "", not4stan = FALSE) {
   # prepare data for fixed effects for use in Stan 
   # Args:
   #   effects: a list returned by extract_effects
