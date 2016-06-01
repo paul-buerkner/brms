@@ -523,18 +523,30 @@ data_fixef <- function(effects, data, family = gaussian(),
   X <- get_model_matrix(rhs(effects$fixed), data, 
                         forked = is.forked(family),
                         cols2remove = names(intercepts))
-  if (length(effects$gam)) {
-    # define inside data_fixef to amend the FE design matrix X
-    # possibly switch to calling mgcv directly at some point
-    G <- gamm4:::gamm4.setup(effects$gam, pterms = terms(effects$respform),
-                             data = data)
-    Zs <- G$random
-    knots <- list(length(effects$gam$smooth.spec), 
-                  as.array(ulapply(Zs, ncol)))
-    knots <- setNames(knots, paste0(c("ns", "knots"), p))  
+  splines <- get_spline_labels(effects)
+  if (length(splines)) {
+    # having to fit the model first it a little bit arkward
+    # but it currently appears to be the only way to avoid
+    # calling internal functions of mgcv...
+    control <- list(msMaxEval = 0, returnObject = TRUE)
+    G <- SW(mgcv::gamm(effects$gam, data = data, 
+                       knots = knots, control = control))
+    G <- G$gam$model
+    Xs <- G[grepl("^X(\\.[[:digit:]]+$|$)", names(G))]
+    Xs <- rmNULL(lapply(Xs, function(v) if (is.matrix(v)) v else NULL))
+    Zs <- G[grepl("^Xr(\\.[[:digit:]]+$|$)", names(G))]
+    Zs <- rmNULL(lapply(Zs, function(v) if (is.matrix(v)) v else NULL))
+    if (length(Xs) != 1L || length(Zs) != length(splines)) {
+      stop(paste("Spline matrices are invalid. Did you name", 
+                 "some of your variables 'X' or 'Xr'?"),
+           call. = FALSE)
+    }
+    Xs <- Xs[[1]]
+    knots <- list(length(splines), as.array(ulapply(Zs, ncol)))
+    knots <- setNames(knots, paste0(c("ns", "knots"), p))
     out <- c(out, knots, setNames(Zs, paste0("Zs", p, "_", seq_along(Zs))))
-    colnames(G$X) <- rename(colnames(G$X))
-    X <- cbind(X, G$X[, -1, drop = FALSE])
+    colnames(Xs) <- rename(colnames(Xs))
+    X <- cbind(X, Xs[, -1, drop = FALSE])
   }
   out[[paste0("K", p)]] <- ncol(X)
   center_X <- length(intercepts) && !is_bsts && !(is_ordinal && not4stan)

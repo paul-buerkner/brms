@@ -76,19 +76,23 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
       x$cse <- cse_terms
     }
     # parse spline expression for GAMMs
-    sterms <- term_labels[grepl("^(s|t2|te|ti)\\(", term_labels)]
-    if (length(sterms)) {
+    splines <- term_labels[grepl("^(s|t2|te|ti)\\(", term_labels)]
+    if (length(splines)) {
       if (is.mv(family) || is.forked(family) || is.categorical(family)) {
         stop("Splines are not yet implemented for this family.", 
              call. = FALSE)
       }
-      tfixed <- rename(tfixed, c(paste0("+", sterms), sterms), "")
+      if (any(grepl("^(te|ti)\\(", splines))) {
+        stop(paste("Tensor product splines 'te' and 'ti' are not yet", 
+                   "implemented in brms. Consider using 't2' instead."),
+             call. = FALSE)
+      }
+      tfixed <- rename(tfixed, c(paste0("+", splines), splines), "")
       if (!nchar(lhs_char)) {
         lhs_char <- get_matches("^[^~]*", tfixed)
       }
       stopifnot(nchar(lhs_char) > 0L)
-      sformula <- formula(paste(lhs_char, "~", paste(sterms, collapse = "+")))
-      x$gam <- mgcv::interpret.gam(sformula)
+      x$gam <- formula(paste(lhs_char, "~", paste(splines, collapse = "+")))
     }
     if (substr(tfixed, nchar(tfixed), nchar(tfixed)) == "~") {
       tfixed <- paste0(tfixed, "1")
@@ -164,7 +168,7 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   # make a formula containing all required variables (element 'all')
   formula_list <- c(
     if (resp_rhs_all) all.vars(lhs(x$fixed)), 
-    add_vars, x[c("covars", "cse", "mono")], x$gam$pred.formula,  
+    add_vars, x[c("covars", "cse", "mono")], all.vars(rhs(x$gam)),  
     if (!length(x$nonlinear)) c(rhs(x$fixed), all.vars(rhs(x$fixed))), 
     x$random$form, lapply(x$random$form, all.vars), x$random$group, 
     get_offset(x$fixed), lapply(x$nonlinear, function(nl) nl$all), ...)
@@ -581,11 +585,14 @@ get_var_combs <- function(x) {
   unique(lapply(x, function(y) all.vars(parse(text = y))))
 }
 
-get_spline_labels <- function(effects) {
+get_spline_labels <- function(x) {
   # extract labels of splines for GAMMs
   # Args:
-  #   effects: output of extract_effects
-  ulapply(effects$gam$smooth.spec, "[[", "label")
+  #   x: either a formula or a list containing an element "gam"
+  if (is.list(x)) x <- x$gam
+  if (is.null(x)) return(NULL)
+  term_labels <- rename(attr(terms(x), "term.labels"), " ", "")
+  term_labels[grepl("^(s|t2|te|ti)\\(", term_labels)]
 }
 
 amend_terms <- function(x, forked = FALSE) {
