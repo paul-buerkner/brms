@@ -43,10 +43,10 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
       tfixed <- rename(tfixed, c(paste0("+", re_terms), re_terms), "")
     } 
     # monotonic effects
-    mono_terms <- term_labels[grepl("^(mono|monotonic)\\(", term_labels)]
+    mono_terms <- term_labels[grepl("^mono(|tonic|tonous)\\(", term_labels)]
     if (length(mono_terms)) {
       tfixed <- rename(tfixed, c(paste0("+", mono_terms), mono_terms), "")
-      mono_terms <- sub("^mono\\(", "monotonic(", mono_terms)
+      mono_terms <- sub("^mono(|tonous)\\(", "monotonic(", mono_terms)
       mono_terms <- substr(mono_terms, 11, nchar(mono_terms) - 1)
       mono_terms <- formula(paste("~", paste(mono_terms, collapse = "+")))
       attr(mono_terms, "rsv_intercept") <- TRUE
