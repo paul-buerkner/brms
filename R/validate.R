@@ -42,18 +42,19 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
       re_terms <- paste0("(", re_terms, ")")
       tfixed <- rename(tfixed, c(paste0("+", re_terms), re_terms), "")
     } 
-    # monotonous effects
-    mono_terms <- term_labels[grepl("^monotonous\\(", term_labels)]
+    # monotonic effects
+    mono_terms <- term_labels[grepl("^(mono|monotonic)\\(", term_labels)]
     if (length(mono_terms)) {
       tfixed <- rename(tfixed, c(paste0("+", mono_terms), mono_terms), "")
-      mono_terms <- substr(mono_terms, 12, nchar(mono_terms) - 1)
+      mono_terms <- sub("^mono\\(", "monotonic(", mono_terms)
+      mono_terms <- substr(mono_terms, 11, nchar(mono_terms) - 1)
       mono_terms <- formula(paste("~", paste(mono_terms, collapse = "+")))
       attr(mono_terms, "rsv_intercept") <- TRUE
       if (!length(all.vars(mono_terms))) {
-        stop("invalid input to function 'monotonous'", call. = FALSE)
+        stop("invalid input to function 'monotonic'", call. = FALSE)
       }
       if (any(grepl(":", attr(terms(mono_terms), "term.labels")))) {
-        stop("interactions cannot be modeled as monotonous effects",
+        stop("Interactions cannot be modeled as monotonic effects.",
              call. = FALSE)
       }
       x$mono <- mono_terms
@@ -749,8 +750,18 @@ cse <- function(...) {
   stop("inappropriate use of function 'cse'", call. = FALSE)
 }
 
+monotonic <- function(...) {
+  stop("inappropriate use of function 'monotonic'", call. = FALSE)
+}
+
+mono <- function(...) {
+  # abbreviation of monotonic
+  stop("inappropriate use of function 'monotonic'", call. = FALSE)
+}
+
 monotonous <- function(...) {
-  stop("inappropriate use of function 'monotonous'", call. = FALSE)
+  # abbreviation of monotonic
+  stop("please use function 'monotonic' instead", call. = FALSE)
 }
 
 add_families <- function(x) {

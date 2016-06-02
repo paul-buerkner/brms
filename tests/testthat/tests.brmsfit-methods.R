@@ -35,7 +35,7 @@ test_that("all S3 methods have reasonable ouputs", {
                                      c("mean", "sd")))
   # formula
   expect_equal(formula(fit), 
-     count ~ Trt_c + monotonous(Exp) + offset(log_Age_c) + (1+Trt_c|visit))
+     count ~ Trt_c + mono(Exp) + offset(log_Age_c) + (1+Trt_c|visit))
   # hypothesis
   h1 <- hypothesis(fit, "Intercept > Trt_c")
   expect_equal(dim(h1$hypothesis), c(1, 6))

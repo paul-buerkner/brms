@@ -29,7 +29,7 @@ stan_linear <- function(effects, data, family = gaussian(),
   # category specific effects
   csef <- colnames(get_model_matrix(effects$cse, data))
   text_csef <- stan_csef(csef = csef, prior = prior)
-  # monotonous effects
+  # monotonic effects
   monef <- colnames(data_monef(effects, data)$Xm)
   text_monef <- stan_monef(monef, prior = prior)
   # group-specific effects
@@ -144,11 +144,11 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
                             stan_eta_fixef(fixef, nlpar = nlpar), 
                             stan_eta_splines(splines, nlpar = nlpar), 
                             "; \n") 
-      # include monotonous effects
+      # include monotonic effects
       monef <- colnames(data_monef(effects$nonlinear[[i]], data)$Xm)
       if (length(monef)) {
         text_monef <- stan_monef(monef, prior = prior, nlpar = nlpar)
-        if (length(out$fun) && grepl("#include fun_monotonous", out$fun)) {
+        if (length(out$fun) && grepl("#include fun_monotonic", out$fun)) {
           text_monef$fun <- NULL
         }
         out <- collapse_lists(list(out, text_monef))
@@ -443,25 +443,25 @@ stan_splines <- function(splines, prior = prior_frame(), nlpar = "") {
 }
 
 stan_monef <- function(monef, prior = prior_frame(), nlpar = "") {
-  # Stan code for monotonous effects
+  # Stan code for monotonic effects
   # Args:
-  #   csef: names of the monotonous effects
+  #   csef: names of the monotonic effects
   #   prior: a data.frame containing user defined priors 
   #          as returned by check_prior
   p <- if (nchar(nlpar)) paste0("_", nlpar) else ""
   out <- list()
   if (length(monef)) {
     I <- seq_along(monef)
-    out$fun <- "  #include fun_monotonous.stan \n"
+    out$fun <- "  #include fun_monotonic.stan \n"
     out$data <- paste0(
-      "  int<lower=1> Km", p, ";  // number of monotonous effects \n",
-      "  int Xm", p, "[N, Km", p, "];  // monotonous design matrix \n",
+      "  int<lower=1> Km", p, ";  // number of monotonic effects \n",
+      "  int Xm", p, "[N, Km", p, "];  // monotonic design matrix \n",
       "  int<lower=2> Jm", p, "[Km", p, "];  // length of simplexes \n",
       collapse("  vector[Jm", p, "[", I, "]]", 
                " con_simplex", p, "_", I, "; \n"))
     bound <- get_bound(prior, class = "b", nlpar = nlpar)
     out$par <- paste0(
-      "  // monotonous effects \n", 
+      "  // monotonic effects \n", 
       "  vector", bound, "[Km", p, "] bm", p, "; \n",
       collapse("  simplex[Jm", p, "[", I, "]]", 
                " simplex", p, "_", I, "; \n")) 
@@ -541,16 +541,16 @@ stan_eta_ranef <- function(ranef, nlpar = "") {
 }
 
 stan_eta_monef <- function(monef, nlpar = "") {
-  # write the linear predictor for monotonous effects
+  # write the linear predictor for monotonic effects
   # Args:
-  #   monef: names of the monotonous effects
+  #   monef: names of the monotonic effects
   #   nlpar: an optional character string to add to the variable names
   #         (used for non-linear models)
   p <- if (nchar(nlpar)) paste0("_", nlpar) else ""
   eta_monef <- ""
   for (i in seq_along(monef)) {
     eta_monef <- paste0(eta_monef,
-      " + bm", p, "[", i, "] * monotonous(",
+      " + bm", p, "[", i, "] * monotonic(",
       "simplex", p, "_", i, ", Xm", p, "[n, ", i, "])")
   }
   eta_monef

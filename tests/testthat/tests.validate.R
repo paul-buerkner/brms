@@ -168,7 +168,7 @@ test_that("update_formula returns correct formulas", {
 
 test_that("get_effect works correctly", {
   effects <- extract_effects(y ~ a - b^x, 
-               nonlinear = list(a ~ z, b ~ v + monotonous(z)))
+               nonlinear = list(a ~ z, b ~ v + mono(z)))
   expect_equivalent(get_effect(effects), list(y ~ a - b^x, ~ z, ~ v))
   expect_equivalent(get_effect(effects, "mono"), list(NULL, NULL, ~ z))
   effects <- extract_effects(y ~ x + z + (1|g))

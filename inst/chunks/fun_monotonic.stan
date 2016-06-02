@@ -1,4 +1,4 @@
-  real monotonous(vector scale, int i) {
+  real monotonic(vector scale, int i) {
     if (i == 0) {
       return 0;
     } else {

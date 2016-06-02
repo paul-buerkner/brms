@@ -228,12 +228,12 @@ Fit a generalized (non-)linear multilevel model,
   this is basically \code{lme4} syntax. 
   
   The first exception is that \code{fixed} may contain two non-standard types
-  of population-level effects namely monotonous and category specific effects,
-  which can be specified using terms of the form \code{monotonous(<predictors>)} 
+  of population-level effects namely monotonic and category specific effects,
+  which can be specified using terms of the form \code{monotonic(<predictors>)} 
   and \code{cse(<predictors>)} respectively. The latter can only be applied in
   ordinal models and is explained in more detail in the package's vignette
   (type \code{vignette("brms")}). The former effect type is explained here.
-  A monotonous predictor must either be integer valued or an ordered factor, 
+  A monotonic predictor must either be integer valued or an ordered factor, 
   which is the first difference to an ordinary continuous predictor. 
   More importantly, predictor categories (or integers) are not assumend to be 
   equidistant with respect to their effect on the response variable. 
@@ -243,7 +243,7 @@ Fit a generalized (non-)linear multilevel model,
   One parameter takes care of the direction and size of the effect similar 
   to an ordinary regression parameter, while an additional parameter vector 
   estimates the normalized distances between consecutive predictor categories.     
-  A main application of monotonous effects are ordinal predictors that
+  A main application of monotonic effects are ordinal predictors that
   can this way be modeled without (falsely) treating them as continuous
   or as unordered categorical predictors.
   

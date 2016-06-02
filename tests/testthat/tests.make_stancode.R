@@ -199,13 +199,13 @@ test_that("make_stancode generates correct code for category specific effects", 
   expect_match(scode, "sratio(eta[n], etap[n], temp_Intercept);", fixed = TRUE)
 })
 
-test_that("make_stancode generates correct code for monotonous effects", {
+test_that("make_stancode generates correct code for monotonic effects", {
   data <- data.frame(y = rpois(120, 10), x1 = rep(1:4, 30), 
                      x2 = factor(rep(c("a", "b", "c"), 40), ordered = TRUE))
-  scode <- make_stancode(y ~ monotonous(x1 + x2), data = data)
+  scode <- make_stancode(y ~ monotonic(x1 + x2), data = data)
   expect_match(scode, "int Xm[N, Km];", fixed = TRUE)
   expect_match(scode, "simplex[Jm[1]] simplex_1;", fixed = TRUE)
-  expect_match(scode, "bm[2] * monotonous(simplex_2, Xm[n, 2]);", fixed = TRUE)
+  expect_match(scode, "bm[2] * monotonic(simplex_2, Xm[n, 2]);", fixed = TRUE)
   expect_match(scode, "simplex_1 ~ dirichlet(con_simplex_1);", fixed = TRUE)
 })
 

@@ -46,7 +46,7 @@
 #'   (i.e. \code{y ~ x1+x2} in formula syntax). 
 #'   Then, \code{x1} and \code{x2} have regression parameters 
 #'   \code{b_x1} and \code{b_x2} respectively. 
-#'   The default prior for population-level effects (including monotonous and 
+#'   The default prior for population-level effects (including monotonic and 
 #'   category specific effects) is an improper flat prior over the reals. 
 #'   Other common options are normal priors or student-t priors. 
 #'   If we want to have a normal prior with mean 0 and 
@@ -172,10 +172,10 @@
 #'   by using the arguments \code{lb} and \code{ub}). The default
 #'   prior is flat over the definition area.
 #'   
-#'   5. Distance parameters of monotonous effects
+#'   5. Distance parameters of monotonic effects
 #'   
 #'   As explained in the details section of \code{\link[brms:brm]{brm}},
-#'   monotonous effects make use of a special parameter vector to
+#'   monotonic effects make use of a special parameter vector to
 #'   estimate the 'normalized distances' between consecutive predictor 
 #'   categories. This is realized in \pkg{Stan} using the \code{simplex}
 #'   parameter type and thus this class is also named \code{"simplex"} in
@@ -185,7 +185,7 @@
 #'   'concentration' of the distribution. Explaining the dirichlet prior 
 #'   is beyond the scope of this documentation, but we want to describe
 #'   how to define this prior syntactically correct.
-#'   If a predictor \code{x} with \code{K} categories is modeled as monotonous, 
+#'   If a predictor \code{x} with \code{K} categories is modeled as monotonic, 
 #'   we can define a prior on its corresponding simplex via \cr
 #'   \code{set_prior("dirichlet(<vector>)", class = "simplex", coef = "x")}.
 #'   For \code{<vector>}, we can put in any \code{R} expression
@@ -513,9 +513,9 @@ get_prior_fixef <- function(fixef, intercepts = "Intercept",
 }
 
 get_prior_monef <- function(monef, fixef = NULL, nlpar = "") {
-  # priors for monotonous effects parameters
+  # priors for monotonic effects parameters
   # Args:
-  #   monef: names of the monotonous effects
+  #   monef: names of the monotonic effects
   #   fixef: names of the fixed effects
   #   nlpar: optional name of a non-linear parameter
   # Returns:
@@ -525,7 +525,7 @@ get_prior_monef <- function(monef, fixef = NULL, nlpar = "") {
     invalid <- intersect(fixef, monef)
     if (length(invalid)) {
       stop(paste("Variables cannot be modeled as fixed and", 
-                 "monotonous effects at the same time.", 
+                 "monotonic effects at the same time.", 
                  "\nError occured for variables:", 
                  paste(invalid, collapse = ", ")), call. = FALSE)
     }
@@ -837,7 +837,7 @@ handle_special_priors <- function(prior, has_specef = FALSE) {
   #
   # Args:
   #   prior: an object of class prior_frame
-  #   has_specef: are monotonous or category specific effects present?
+  #   has_specef: are monotonic or category specific effects present?
   #
   # Returns:
   #   an named list of two objects: 
@@ -853,7 +853,7 @@ handle_special_priors <- function(prior, has_specef = FALSE) {
     }
     if (has_specef) {
       stop(paste("Horseshoe priors are not yet allowed in models with", 
-                 "monotonous or category specific effects."), 
+                 "monotonic or category specific effects."), 
            call. = FALSE)
     }
     hs_df <- gsub("^horseshoe\\(|\\)$", "", prior$prior[b_index])

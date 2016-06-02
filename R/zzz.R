@@ -1,6 +1,6 @@
 # Uncomment the code below to enable unit tests of S3 methods
 
-brmsfit_example <- brm(count ~ Trt_c + monotonous(Exp) +
+brmsfit_example <- brm(count ~ Trt_c + mono(Exp) +
                          offset(log_Age_c) + (1+Trt_c|visit),
                        data = data.frame(count = rpois(236, lambda = 20),
                                          visit = rep(1:4, each = 59),
