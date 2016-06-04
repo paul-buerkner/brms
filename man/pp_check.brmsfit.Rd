@@ -12,9 +12,11 @@
 
 \item{type}{Type of the ppc plot as given by a character string. 
 Currently, the following plots (as names) are implemented:
-\code{dens_overlay}, \code{hist}, \code{resid}, 
-\code{resid_binned}, \code{scatter_average}, 
-\code{scatter_multiple}, \code{stat}, and \code{stat_2d}.}
+\code{dens} \code{dens_overlay}, \code{hist}, \code{resid}, 
+\code{resid_binned}, \code{scatter}, \code{scatter_avg}, 
+\code{scatter_avg_grouped}, \code{stat}, \code{stat_2d},
+\code{stat_grouped}, \code{ts}, \code{ts_grouped}, and
+\code{violin_grouped}.}
 
 \item{nsamples}{Positive integer indicating how many 
 posterior samples should be used. 
@@ -22,8 +24,9 @@ If \code{NULL} all samples are used. If not specified,
 the number of posterior samples is chosen automatically.
 Ignored if \code{subset} is not \code{NULL}.}
 
-\item{group}{Name of a grouping factor in the model.
-This argument is required for ppc \code{*_grouped} types.}
+\item{group}{Optional name of a grouping factor in the model
+by which to stratify the ppc plot. This argument is required for 
+ppc \code{*_grouped} types and ignored otherwise.}
 
 \item{re_formula}{formula containing random effects 
 to be considered in the prediction. 
