@@ -7,6 +7,9 @@
     \itemize{ 
       \item The \code{ngrps} method should now always
       return the correct result for non-linear models.
+      \item Fix problems in \code{marginal_effects} for
+      models using the reserved variable \code{intercept}
+      thanks to Frederik Aust.
     }
   }
 }  

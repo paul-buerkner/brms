@@ -734,14 +734,21 @@ gather_ranef <- function(effects, data = NULL, ...) {
   ranef
 }
 
-rsv_vars <- function(family, nresp = 1) {
-  # returns reservered variables for the family
+rsv_vars <- function(family, nresp = 1, rsv_intercept = NULL) {
+  # returns names of reserved variables
+  # Args:
+  #   family: the model family
+  #   nresp: number of response variables
+  #   rsv_intercept: is the reserved variable "intercept" used?
   if (is.forked(family)) {
     rsv <- c("trait", "main", "spec")
   } else if (is.linear(family) && nresp > 1L || is.categorical(family)) {
     rsv <- "trait"
   } else {
     rsv <- NULL
+  }
+  if (isTRUE(rsv_intercept)) {
+    rsv <- c(rsv, "intercept")
   }
   rsv
 }
