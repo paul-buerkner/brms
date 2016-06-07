@@ -224,10 +224,18 @@ Fit a generalized (non-)linear multilevel model,
   in a Bayesian context (for more details type \code{vignette("brms")}).
   Multiple grouping factors each with multiple group-level effects 
   are possible. Instead of | you may use || in grouping terms
-  to prevent correlations from being modeled. With two exceptions, 
+  to prevent correlations from being modeled. With three exceptions, 
   this is basically \code{lme4} syntax. 
   
-  The first exception is that \code{fixed} may contain two non-standard types
+  First, smoothing terms can modeled using the \code{\link[mgcv:s]{s}}
+  and \code{\link[mgcv:t2]{t2}} functions of the \pkg{mgcv} package 
+  in the \code{fixed} part of the model formula.
+  This allows to fit generalized additive mixed models (GAMMs) with \pkg{brms}. 
+  The implementation is similar to that used in the \pkg{gamm4} package.
+  For more details on this model class see \code{\link[mgcv:gam]{gam}} 
+  and \code{\link[mgcv:gamm]{gamm}}.
+  
+  Second, \code{fixed} may contain two non-standard types
   of population-level effects namely monotonic and category specific effects,
   which can be specified using terms of the form \code{monotonic(<predictors>)} 
   and \code{cse(<predictors>)} respectively. The latter can only be applied in
@@ -247,16 +255,16 @@ Fit a generalized (non-)linear multilevel model,
   can this way be modeled without (falsely) treating them as continuous
   or as unordered categorical predictors.
   
-  The second eception is the optional \code{addition} term, which may contain 
+  The third exception is the optional \code{addition} term, which may contain 
   multiple terms of the form \code{fun(variable)} seperated by \code{+} each 
-  providing special information on the response variable. 
-  \code{fun} can be replaced with either \code{se}, \code{weights}, \code{disp}, \code{trials},
+  providing special information on the response variable. \code{fun} can be 
+  replaced with either \code{se}, \code{weights}, \code{disp}, \code{trials},
   \code{cat}, \code{cens}, or \code{trunc}. Their meanings are explained below. 
   
-  For families \code{gaussian}, \code{student}, and \code{cauchy} it is possible to specify
-  standard errors of the observation, thus allowing to perform meta-analysis. 
-  Suppose that the variable \code{yi} contains the effect sizes from the studies 
-  and \code{sei} the corresponding standard errors. 
+  For families \code{gaussian}, \code{student}, and \code{cauchy} it is 
+  possible to specify standard errors of the observation, thus allowing 
+  to perform meta-analysis. Suppose that the variable \code{yi} contains 
+  the effect sizes from the studies and \code{sei} the corresponding standard errors. 
   Then, fixed and random effects meta-analyses can be conducted
   using the formulae \code{yi | se(sei) ~ 1} and 
   \code{yi | se(sei) ~ 1 + (1|study)}, respectively, where 

@@ -304,7 +304,6 @@ stan_fixef <- function(fixef, intercepts = "Intercept",
 stan_ranef <- function(i, ranef, prior = prior_frame(), 
                        names_cov_ranef = NULL, nlpar = "") {
   # Random effects in Stan 
-  # 
   # Args:
   #   i: the index of the grouping factor
   #   ranef: a named list returned by gather_ranef
@@ -314,9 +313,8 @@ stan_ranef <- function(i, ranef, prior = prior_frame(),
   #                    for which custom covariance matrices are specified.
   #   par: an optional character string to add to the variable names
   #        (used for non-linear models)
-  #
   # Returns:
-  #   A vector of strings containing the random effects in stan language
+  #   A list of strings containing Stan code
   r <- ranef[[i]]
   g <- attr(ranef[[i]], "group")
   cor <- attr(ranef[[i]], "cor")
@@ -413,6 +411,13 @@ stan_ranef <- function(i, ranef, prior = prior_frame(),
 }
 
 stan_splines <- function(splines, prior = prior_frame(), nlpar = "") {
+  # Stan code of spline terms for GAMMs
+  # Args:
+  #   splines: names of the spline terms
+  #   prior: object of class prior_frame
+  #   nlpar: optional name of a non-linear parameter
+  # Returns:
+  #   A list of strings containing Stan code
   out <- list()
   p <- if (nchar(nlpar)) paste0("_", nlpar) else ""
   if (length(splines)) {
@@ -544,7 +549,7 @@ stan_eta_monef <- function(monef, nlpar = "") {
   # write the linear predictor for monotonic effects
   # Args:
   #   monef: names of the monotonic effects
-  #   nlpar: an optional character string to add to the variable names
+  #   nlpar: an optional character string to add to the varnames
   #         (used for non-linear models)
   p <- if (nchar(nlpar)) paste0("_", nlpar) else ""
   eta_monef <- ""
@@ -557,6 +562,11 @@ stan_eta_monef <- function(monef, nlpar = "") {
 }
 
 stan_eta_splines <- function(splines, nlpar = "") {
+  # write the linear predictor for spline terms
+  # Args:
+  #   splines: names of the spline terms
+  #   nlpar: an optional character string to add to the varnames
+  #         (used for non-linear models)
   p <- if (nchar(nlpar)) paste0("_", nlpar) else ""
   eta_splines <- ""
   for (i in seq_along(splines)) {
@@ -567,6 +577,9 @@ stan_eta_splines <- function(splines, nlpar = "") {
 }
 
 stan_eta_bsts <- function(autocor) {
+  # write the linear predictor for bsts terms
+  # Args:
+  #   autocor: object of class cor_brms
   eta_bsts <- ""
   if (is(autocor, "cor_bsts")) {
     eta_bsts <- " + loclev[n]"

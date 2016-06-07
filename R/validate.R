@@ -2,7 +2,6 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
                             check_response = TRUE, resp_rhs_all = TRUE,
                             lhs_char = "") {
   # Parse the model formula and related arguments
-  # 
   # Args:
   #   formula: An object of class "formula" using mostly the syntax 
   #            of the \code{lme4} package
@@ -13,7 +12,6 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   #   resp_rhs_all: include response variables on the RHS of $all? 
   #   lhs_char: the response part of the model as a character string;
   #             currently only used for splines in non-linear models
-  # 
   # Returns: 
   #   A named list whose elements depend on the formula input 
   if (!is.na(family[[1]])) {
