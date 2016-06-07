@@ -615,7 +615,6 @@ get_prior_splines <- function(splines, def_scale_prior, nlpar = "") {
   #                    prior for spline SDs
   #   nlpar: optional name of a non-linear parameter
   if (length(splines)) {
-    splines <- rename(splines)
     prior_strings <- c(def_scale_prior, rep("", length(splines)))
     prior <- prior_frame(class = "sds", coef = c("", splines), 
                          prior = prior_strings, nlpar = nlpar)
@@ -705,6 +704,7 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
     }
     rows2remove <- c(rows2remove, int_index, bint_index)
   }
+  # prepare priors of monotonic effects
   if (is.formula(ee$mono)) {
     monef <- colnames(get_model_matrix(ee$mono, data = data))
     for (i in seq_along(monef)) {

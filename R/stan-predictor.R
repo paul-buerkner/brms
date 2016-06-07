@@ -436,7 +436,7 @@ stan_splines <- function(splines, prior = prior_frame(), nlpar = "") {
       "  s", pi, " <- sds", pi, " * zs", pi, "; \n")
     out$prior <- paste0(out$prior, 
       "  zs", pi, " ~ normal(0, 1); \n",
-      stan_prior(class = "sds", coef = rename(splines[i]), 
+      stan_prior(class = "sds", coef = splines[i], 
                  nlpar = nlpar, suffix = pi, prior = prior))
   }
   out
