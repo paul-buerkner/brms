@@ -174,7 +174,7 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   new_formula <- collapse(ulapply(formula_list, plus_rhs))
   x$all <- paste0("update(", tfixed, ", ~ ", new_formula, ")")
   x$all <- eval(parse(text = x$all))
-  environment(x$all) <- globalenv()
+  environment(x$all) <- environment(formula)
   
   # extract response variables
   if (check_response) {
