@@ -3,6 +3,13 @@
 \encoding{UTF-8}
 
 \section{CHANGES IN VERSION 0.9.1.9000}{
+  \subsection{NEW FEATURES}{
+    \itemize{ 
+      \item Add support for generalized additive mixed models
+      (GAMMs). Smoothing terms can be specified using
+      the \code{s} and \code{t2} functions in the model formula. 
+    }
+  }
   \subsection{BUG FIXES}{
     \itemize{ 
       \item The \code{ngrps} method should now always
