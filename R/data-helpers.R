@@ -525,28 +525,34 @@ data_fixef <- function(effects, data, family = gaussian(),
                         cols2remove = names(intercepts))
   splines <- get_spline_labels(effects)
   if (length(splines)) {
-    # having to fit the model first it a little bit arkward
-    # but it currently appears to be the only way to avoid
-    # calling internal functions of mgcv...
-    control <- list(msMaxEval = 0, returnObject = TRUE)
-    G <- SW(mgcv::gamm(effects$gam, data = data, 
-                       knots = knots, control = control))
-    G <- G$gam$model
-    Xs <- G[grepl("^X(\\.[[:digit:]]+$|$)", names(G))]
-    Xs <- rmNULL(lapply(Xs, function(v) if (is.matrix(v)) v else NULL))
-    Zs <- G[grepl("^Xr(\\.[[:digit:]]+$|$)", names(G))]
-    Zs <- rmNULL(lapply(Zs, function(v) if (is.matrix(v)) v else NULL))
-    if (length(Xs) != 1L || length(Zs) != length(splines)) {
-      stop(paste("Spline matrices are invalid. Did you name", 
-                 "some of your variables 'X' or 'Xr'?"),
-           call. = FALSE)
+    # avoid R CMD CHECK warnings when using the ::: operator
+    gam.setup <- eval(parse(text = "mgcv:::gam.setup"))
+    smooth2random <- eval(parse(text = "mgcv:::smooth2random"))
+    # parse it like mgcv:::gamm.setup
+    G <- gam.setup(mgcv::interpret.gam(effects$gam), terms(effects$respform), 
+                   data = data, knots = knots, sp = NULL, min.sp = NULL, 
+                   H = NULL, absorb.cons = TRUE, sparse.cons = 0, 
+                   gamm.call = TRUE)
+    Xs <- Zs <- vector("list", length(G$smooth))
+    for (i in seq_along(G$smooth)) {
+      sm <- G$smooth[[i]]
+      sm$X <- G$X[, sm$first.para:sm$last.para, drop = FALSE]
+      rasm <- smooth2random(sm, names(data))
+      # mgcv:::gamm.setup loops over rasm$rand 
+      # although it should have only one element anyway
+      # if it has more elements the current brms implementation will fail
+      stopifnot(length(rasm$rand) <= 1L)
+      Xs[[i]] <- rasm$Xf
+      if (ncol(Xs[[i]])) {
+        colnames(Xs[[i]]) <- paste0(sm$label, "Fx", 1:ncol(Xs[[i]]))
+      }
+      Zs[[i]] <- attr(rasm$rand[[1]], "Xr")
     }
-    Xs <- Xs[[1]]
     knots <- list(length(splines), as.array(ulapply(Zs, ncol)))
     knots <- setNames(knots, paste0(c("ns", "knots"), p))
     out <- c(out, knots, setNames(Zs, paste0("Zs", p, "_", seq_along(Zs))))
-    colnames(Xs) <- rename(colnames(Xs))
-    X <- cbind(X, Xs[, -1, drop = FALSE])
+    X <- cbind(X, do.call(cbind, Xs))
+    colnames(X) <- rename(colnames(X))
   }
   out[[paste0("K", p)]] <- ncol(X)
   center_X <- length(intercepts) && !is_bsts && !(is_ordinal && not4stan)
