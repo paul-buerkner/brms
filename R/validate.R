@@ -514,7 +514,7 @@ plus_rhs <- function(x) {
   else "+ 1"
 }
 
-get_effect <- function(effects, target = c("fixed", "mono", "cse")) {
+get_effect <- function(effects, target = c("fixed", "mono", "cse", "gam")) {
   # get fixed effects formulas in a list
   # Args:
   #   effects: object returned by extract_effects

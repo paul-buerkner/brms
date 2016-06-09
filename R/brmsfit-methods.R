@@ -1068,18 +1068,10 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     # allow covariates as well as fixed effects of non-linear parameters
     covars <- setdiff(all.vars(rhs(ee$fixed)), names(ee$nonlinear))
     nlpar_effects <- unlist(lapply(ee$nonlinear, function(nl)
-      c(get_var_combs(nl$fixed), get_var_combs(nl$mono))),
-      recursive = FALSE)
+      get_var_combs(nl$fixed, nl$mono, nl$gam)), recursive = FALSE)
     all_effects <- unique(c(list(covars), nlpar_effects))
   } else {
-    all_effects <- attr(terms(ee$fixed), "term.labels") 
-    if (is.formula(ee$cse)) {
-      all_effects <- c(all_effects, attr(terms(ee$cse), "term.labels"))
-    }
-    if (is.formula(ee$mono)) {
-      all_effects <- c(all_effects, attr(terms(ee$mono), "term.labels"))
-    }
-    all_effects <- get_var_combs(all_effects)
+    all_effects <- get_var_combs(ee$fixed, ee$cse, ee$mono, ee$gam)
   }
   all_effects <- rmNULL(lapply(all_effects, setdiff, y = rsv_vars))
   ae_collapsed <- ulapply(all_effects, function(e) paste(e, collapse = ":"))
@@ -1128,8 +1120,8 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     }
     # list all required variables
     req_vars <- c(lapply(get_effect(ee), rhs), get_random(ee)$form, 
-                  get_effect(ee, "mono"), ee$cse, ee$se, ee$disp, 
-                  extract_time(x$autocor$formula)$all)
+                  get_effect(ee, "mono"), get_effect(ee, "gam"), ee$cse,
+                  ee$se, ee$disp, extract_time(x$autocor$formula)$all)
     req_vars <- unique(ulapply(req_vars, all.vars))
     req_vars <- setdiff(req_vars, c(rsv_vars, names(ee$nonlinear)))
     conditions <- as.data.frame(as.list(rep(NA, length(req_vars))))
