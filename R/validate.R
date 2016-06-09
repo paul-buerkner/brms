@@ -574,14 +574,20 @@ get_offset <- function(x) {
   offset
 }
 
-get_var_combs <- function(x) {
-  # get all variable combinations occuring in elements of x
+get_var_combs <- function(..., alist = list()) {
+  # get all variable combinations occuring in elements of ...
   # Args:
-  #   x: a character vector or formula
-  if (is(x, "formula")) {
-    x <- attr(terms(x), "term.labels")
+  #   ...: character vectors or formulas
+  #   alist: a list of character vectors or formulas
+  dots <- c(list(...), alist)
+  for (i in seq_along(dots)) {
+    if (is(dots[[i]], "formula")) {
+      dots[[i]] <- attr(terms(dots[[i]]), "term.labels")
+    }
+    dots[[i]] <- lapply(dots[[i]], function(y) 
+      all.vars(parse(text = y)))
   }
-  unique(lapply(x, function(y) all.vars(parse(text = y))))
+  unique(unlist(dots, recursive = FALSE))
 }
 
 get_spline_labels <- function(x) {
