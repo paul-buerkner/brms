@@ -171,8 +171,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
                                nlpar = nlpars[i])
       data_ranef <- data_ranef(nle, data = data, family = family, 
                                cov_ranef = cov_ranef, nlpar = nlpars[i], 
-                               is_newdata = is_newdata,
-                               nlpar = nlpars[i])
+                               is_newdata = is_newdata, not4stan = not4stan)
       standata <- c(standata, data_fixef, data_monef, data_ranef)
     }
   } else {
