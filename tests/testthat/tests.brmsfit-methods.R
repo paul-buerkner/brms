@@ -1,6 +1,14 @@
 test_that("all S3 methods have reasonable ouputs", {
   fit <- rename_pars(brmsfit_example)
   # test S3 methods in alphabetical order
+  # as.data.frame
+  ps <- as.data.frame(fit)
+  expect_true(is(ps, "data.frame"))
+  expect_equal(dim(ps), c(Nsamples(fit), length(parnames(fit))))
+  # as.matrix
+  ps <- as.matrix(fit)
+  expect_true(is(ps, "matrix"))
+  expect_equal(dim(ps), c(Nsamples(fit), length(parnames(fit))))
   # as.mcmc
   chains <- fit$fit@sim$chains
   mc <- as.mcmc(fit)

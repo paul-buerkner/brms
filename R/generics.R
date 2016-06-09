@@ -142,11 +142,16 @@ hypothesis <- function(x, hypothesis, ...) {
 #'   (i.e., posterior samples) to be returned. 
 #'   If \code{NULL} (the default), all  posterior samples are returned.
 #' @param as.matrix Should the output be a \code{matrix} 
-#'   instead of a \code{data.frame}? Defaults to \code{FALSE}
-#' @param ... additional arguments
+#'   instead of a \code{data.frame}? Defaults to \code{FALSE}.
+#' @param row.names,optional See \code{\link[base:as.data.frame]{as.data.frame}}.
+#' @param ... For \code{as.data.frame} and \code{as.matrix}:
+#'   Further arguments to be passed to \code{posterior_samples}.
 #'   
 #' @details Currently there are methods for \code{brmsfit} objects.
-#' @return A data frame containing the posterior samples, 
+#'   \code{as.data.frame.brmsfit} and \code{as.matrix.brmsfit} are basically 
+#'   just aliases of \code{posterior_samples.brmsfit} and differ from
+#'   each other only in type of the returend object.
+#' @return A data frame (or matrix) containing the posterior samples, 
 #'   with one column per parameter.
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}

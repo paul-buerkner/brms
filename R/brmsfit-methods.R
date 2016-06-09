@@ -427,11 +427,25 @@ posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,
   samples
 }
 
+#' @rdname posterior_samples
+#' @export
+as.data.frame.brmsfit <- function(x, row.names = NULL, optional = FALSE, ...) {
+  out <- posterior_samples(x, ..., as.matrix = FALSE)
+  data.frame(out, row.names = row.names, check.names = !optional)
+}
+
+#' @rdname posterior_samples
+#' @export
+as.matrix.brmsfit <- function(x, ...) {
+  posterior_samples(x, ..., as.matrix = TRUE)
+}
+
 #' Extract posterior samples for use with the \pkg{coda} package
 #' 
 #' @aliases as.mcmc
 #' 
 #' @inheritParams posterior_samples
+#' @param ... currently unused
 #' @param inc_warmup Indicates if the warmup samples should be included.
 #'   Default is \code{FALSE}. Warmup samples are used to tune the 
 #'   parameters of the sampling algorithm and should not be analyzed.

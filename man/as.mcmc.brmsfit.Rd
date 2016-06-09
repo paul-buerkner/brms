@@ -23,7 +23,7 @@ Default is \code{FALSE}.}
 Default is \code{FALSE}. Warmup samples are used to tune the 
 parameters of the sampling algorithm and should not be analyzed.}
 
-\item{...}{additional arguments}
+\item{...}{currently unused}
 }
 \value{
 A \code{list} of \code{mcmc} objects (not an \code{mcmc} object itself).
