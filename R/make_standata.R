@@ -36,6 +36,8 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   #   omit_response: omit checking of the response?
   #   ntrials, ncat, Jm: standata based on the original data
   dots <- list(...)
+  not4stan <- isTRUE(control$not4stan)
+  is_newdata <- isTRUE(control$is_newdata)
   # use deprecated arguments if specified
   cov_ranef <- use_alias(cov_ranef, dots$cov.ranef, warn = FALSE)
   # some input checks 
@@ -56,11 +58,11 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
                         nonlinear = nonlinear)
   prior <- as.prior_frame(prior)
   check_prior_content(prior, family = family, warn = FALSE)
-  na_action <- if (isTRUE(control$is_newdata)) na.pass else na.omit
+  na_action <- if (is_newdata) na.pass else na.omit
   data <- update_data(data, family = family, effects = ee, et$group,
-                      drop.unused.levels = !isTRUE(control$is_newdata),
-                      na.action = na_action, terms_attr = control$terms_attr)
-  not4stan <- isTRUE(control$not4stan)
+                      drop.unused.levels = !is_newdata, 
+                      na.action = na_action, 
+                      terms_attr = control$terms_attr)
   
   # sort data in case of autocorrelation models
   if (has_arma(autocor) || is(autocor, "cor_bsts")) {
@@ -159,27 +161,29 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     }
     standata <- c(standata, list(KC = ncol(C), C = C)) 
     for (i in seq_along(nlpars)) {
-      data_fixef <- data_fixef(ee$nonlinear[[i]], data = data, 
-                               family = family, nlpar = nlpars[i],
-                               knots = knots, not4stan = not4stan)
-      data_monef <- data_monef(ee$nonlinear[[i]], data = data, prior = prior, 
+      nle <- ee$nonlinear[[i]]
+      data_fixef <- data_fixef(nle, data = data, family = family, 
+                               nlpar = nlpars[i], knots = knots, 
+                               not4stan = not4stan, 
+                               gamfit = control$gamfit[[i]])
+      data_monef <- data_monef(nle, data = data, prior = prior, 
                                Jm = control[[paste0("Jm_", nlpars[i])]],
                                nlpar = nlpars[i])
-      data_ranef <- data_ranef(ee$nonlinear[[i]], data = data, 
-                               family = family, cov_ranef = cov_ranef,
-                               is_newdata = isTRUE(control$is_newdata),
-                               not4stan = not4stan, nlpar = nlpars[i])
+      data_ranef <- data_ranef(nle, data = data, family = family, 
+                               cov_ranef = cov_ranef, nlpar = nlpars[i], 
+                               is_newdata = is_newdata,
+                               nlpar = nlpars[i])
       standata <- c(standata, data_fixef, data_monef, data_ranef)
     }
   } else {
     data_fixef <- data_fixef(ee, data = data, family = family, 
                              autocor = autocor, knots = knots,
-                             not4stan = not4stan)
+                             not4stan = not4stan, gamfit = control$gamfit)
     data_monef <- data_monef(ee, data = data, prior = prior, Jm = control$Jm)
     data_csef <- data_csef(ee, data = data)
     data_ranef <- data_ranef(ee, data = data, family = family, 
                              cov_ranef = cov_ranef, not4stan = not4stan,
-                             is_newdata = isTRUE(control$is_newdata))
+                             is_newdata = is_newdata)
     standata <- c(standata, data_fixef, data_monef, data_csef, data_ranef)
     standata$offset <- model.offset(data)
   }

@@ -208,10 +208,6 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   et <- extract_time(fit$autocor$formula)
   ee <- extract_effects(new_formula, et$all, family = family(fit),
                         nonlinear = new_nonlinear, resp_rhs_all = FALSE)
-  if (has_splines(ee)) {
-    stop(paste("Predictions with 'newdata' are not yet possible", 
-               "for models using splines."), call. = FALSE)
-  }
   resp_only_vars <- setdiff(all.vars(ee$respform), all.vars(rhs(ee$all)))
   missing_resp <- setdiff(resp_only_vars, names(newdata))
   check_response <- check_response || 
@@ -346,7 +342,25 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       # some components should not be computed based on newdata
       comp <- c("trials", "ncat", paste0("Jm", p))
       control[comp] <- standata(fit)[comp]
-    } 
+    }
+    if (has_splines(ee)) {
+      # save time when calling mgcv::gamm
+      gamm_ctrl <- list(msMaxEval = 0, returnObject = TRUE)
+      if (length(ee$nonlinear)) {
+        gamfit <- vector("list", length(ee$nonlinear))
+        for (i in seq_along(gamfit)) {
+          nle <- ee$nonlinear[[i]]
+          if (has_splines(nle)) {
+            gamfit[[i]] <- SW(mgcv::gamm(nle$gam, data = model.frame(fit), 
+                                      knots = knots, control = gamm_ctrl))$gam
+          }
+        }
+      } else {
+        gamfit <- SW(mgcv::gamm(ee$gam, data = model.frame(fit), 
+                                knots = NULL, control = gamm_ctrl))$gam
+      }
+      control$gamfit <- gamfit
+    }
     if (is(fit$autocor, "cor_fixed")) {
       fit$autocor$V <- diag(median(diag(fit$autocor$V), na.rm = TRUE), 
                             nrow(newdata))
@@ -501,7 +515,8 @@ arr_design_matrix <- function(Y, r, group)  {
 
 data_fixef <- function(effects, data, family = gaussian(),
                        autocor = cor_arma(), knots = NULL,
-                       nlpar = "", not4stan = FALSE) {
+                       nlpar = "", not4stan = FALSE, 
+                       gamfit = NULL) {
   # prepare data for fixed effects for use in Stan 
   # Args:
   #   effects: a list returned by extract_effects
@@ -510,6 +525,8 @@ data_fixef <- function(effects, data, family = gaussian(),
   #   autocor: object of class 'cor_brms'
   #   nlpar: optional character string naming a non-linear parameter
   #   not4stan: is the data for use in S3 methods only?
+  #   gamfit: optional fitted gam model based on the original data
+  #           used only to compute smoothing terms for new data
   stopifnot(length(nlpar) == 1L)
   p <- if (nchar(nlpar)) paste0("_", nlpar) else ""
   is_ordinal <- is.ordinal(family)
@@ -528,11 +545,19 @@ data_fixef <- function(effects, data, family = gaussian(),
     # avoid R CMD CHECK warnings when using the ::: operator
     gam.setup <- eval(parse(text = "mgcv:::gam.setup"))
     smooth2random <- eval(parse(text = "mgcv:::smooth2random"))
-    # parse it like mgcv:::gamm.setup
-    G <- gam.setup(mgcv::interpret.gam(effects$gam), terms(effects$respform), 
-                   data = data, knots = knots, sp = NULL, min.sp = NULL, 
-                   H = NULL, absorb.cons = TRUE, sparse.cons = 0, 
-                   gamm.call = TRUE)
+    if (inherits(gamfit, "gam")) {
+      # compute smoothing terms for newdata
+      G <- gamfit
+      G$X <- mgcv::predict.gam(gamfit, rm_attr(data, "terms"), 
+                               type = "lpmatrix")
+    } else {
+      # parse it like mgcv:::gamm.setup
+      G <- gam.setup(mgcv::interpret.gam(effects$gam), 
+                     pterms = terms(effects$respform), 
+                     data = data, knots = knots, sp = NULL, 
+                     min.sp = NULL, H = NULL, absorb.cons = TRUE, 
+                     sparse.cons = 0, gamm.call = TRUE)
+    }
     Xs <- Zs <- vector("list", length(G$smooth))
     for (i in seq_along(G$smooth)) {
       sm <- G$smooth[[i]]

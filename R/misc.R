@@ -66,6 +66,12 @@ rmMatch <- function(x, ...) {
   x
 }
 
+rm_attr <- function(x, attr) {
+  # remove certain attributes
+  attributes(x)[attr] <- NULL
+  x
+}
+
 subset_attr <- function(x, y) {
   # take a subset of vector, list, etc. 
   # while keeping all attributes except for names
