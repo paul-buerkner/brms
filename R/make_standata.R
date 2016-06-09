@@ -61,7 +61,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   na_action <- if (is_newdata) na.pass else na.omit
   data <- update_data(data, family = family, effects = ee, et$group,
                       drop.unused.levels = !is_newdata, 
-                      na.action = na_action, 
+                      na.action = na_action, knots = knots,
                       terms_attr = control$terms_attr)
   
   # sort data in case of autocorrelation models

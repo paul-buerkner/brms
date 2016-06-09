@@ -702,10 +702,11 @@ standata.brmsfit <- function(object, ...) {
     dots$control$old_cat <- is.old_categorical(object)
     prior_only <- attr(object$prior, "prior_only")
     sample_prior <- ifelse(isTRUE(prior_only), "only", FALSE)
-    args <- list(formula = new_formula, data = object$data, 
+    args <- list(formula = new_formula, data = model.frame(object), 
                  family = object$family, prior = object$prior, 
                  nonlinear = object$nonlinear, autocor = object$autocor, 
-                 cov_ranef = object$cov_ranef, sample_prior = sample_prior)
+                 cov_ranef = object$cov_ranef, sample_prior = sample_prior,
+                 knots = attr(model.frame(object), "knots"))
     standata <- do.call(make_standata, c(args, dots))
   } else {
     # brms <= 0.5.0 only stores the data passed to Stan 

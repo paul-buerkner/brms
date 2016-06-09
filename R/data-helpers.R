@@ -128,7 +128,7 @@ fix_factor_contrasts <- function(data, optdata = NULL) {
 update_data <- function(data, family, effects, ..., 
                         na.action = na.omit,
                         drop.unused.levels = TRUE,
-                        terms_attr = NULL) {
+                        terms_attr = NULL, knots = NULL) {
   # Update data for use in brms functions
   # Args:
   #   data: the original data.frame
@@ -143,7 +143,8 @@ update_data <- function(data, family, effects, ...,
   #     the original model.frame; only used with newdata;
   #     this ensures that (1) calls to 'poly' work correctly
   #     and (2) that the number of variables matches the number 
-  #     of variable names; fixes issue #73; 
+  #     of variable names; fixes issue #73
+  #   knots: a list of knot values for GAMMS
   # Returns:
   #   model.frame in long format with combined grouping variables if present
   if (is.null(attr(data, "terms")) && "brms.frame" %in% class(data)) {
@@ -163,6 +164,7 @@ update_data <- function(data, family, effects, ...,
            call. = FALSE)
     data <- combine_groups(data, get_random(effects)$group, ...)
     data <- fix_factor_contrasts(data)
+    attr(data, "knots") <- knots
     attr(data, "brmsframe") <- TRUE
   }
   data
@@ -343,6 +345,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       comp <- c("trials", "ncat", paste0("Jm", p))
       control[comp] <- standata(fit)[comp]
     }
+    knots <- attr(model.frame(fit), "knots")
     if (has_splines(ee)) {
       # save time when calling mgcv::gamm
       gamm_ctrl <- list(msMaxEval = 0, returnObject = TRUE)
@@ -357,7 +360,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
         }
       } else {
         gamfit <- SW(mgcv::gamm(ee$gam, data = model.frame(fit), 
-                                knots = NULL, control = gamm_ctrl))$gam
+                                knots = knots, control = gamm_ctrl))$gam
       }
       control$gamfit <- gamfit
     }
@@ -367,7 +370,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     }
     newdata <- make_standata(new_formula, data = newdata, family = fit$family, 
                              autocor = fit$autocor, nonlinear = new_nonlinear,
-                             partial = fit$partial, control = control)
+                             partial = fit$partial, knots = knots,
+                             control = control)
   }
   newdata
 }
