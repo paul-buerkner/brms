@@ -181,10 +181,10 @@ test_that("get_prior returnes correct fixed effect names for GAMMs", {
                     z = rnorm(10), g = rep(1:2, 5))
   priors <- get_prior(y ~ z + s(x) + (1|g), data = dat)
   expect_equal(priors[priors$class == "b", ]$coef, 
-               c("", "Intercept", "sxFx1", "z"))
+               c("", "Intercept", "sx_1", "z"))
   priors <- get_prior(y ~ lp, nonlinear = lp ~ z + s(x) + (1|g), data = dat)
   expect_equal(priors[priors$class == "b", ]$coef, 
-               c("", "Intercept", "sxFx1", "z"))
+               c("", "Intercept", "sx_1", "z"))
 })
 
 test_that("check_prior_content returns expected errors and warnings", {
