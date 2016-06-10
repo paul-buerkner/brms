@@ -554,6 +554,10 @@ data_fixef <- function(effects, data, family = gaussian(),
       G <- gamfit
       G$X <- mgcv::predict.gam(gamfit, rm_attr(data, "terms"), 
                                type = "lpmatrix")
+      if (any(ulapply(G$smooth, is, "t2.smooth"))) {
+        warning(paste("Prediction of t2 smoothing terms with", 
+                      "new data is still experimental."), call. = FALSE)
+      }
     } else {
       # parse it like mgcv:::gamm.setup
       G <- gam.setup(mgcv::interpret.gam(effects$gam), 
@@ -573,7 +577,7 @@ data_fixef <- function(effects, data, family = gaussian(),
       stopifnot(length(rasm$rand) <= 1L)
       Xs[[i]] <- rasm$Xf
       if (ncol(Xs[[i]])) {
-        colnames(Xs[[i]]) <- paste0(sm$label, "Fx", 1:ncol(Xs[[i]]))
+        colnames(Xs[[i]]) <- paste0(sm$label, "_", 1:ncol(Xs[[i]]))
       }
       Zs[[i]] <- attr(rasm$rand[[1]], "Xr")
     }
