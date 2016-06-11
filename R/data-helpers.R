@@ -347,22 +347,28 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     }
     knots <- attr(model.frame(fit), "knots")
     if (has_splines(ee)) {
-      # save time when calling mgcv::gamm
-      gamm_ctrl <- list(msMaxEval = 0, returnObject = TRUE)
+      gam.setup <- eval(parse(text = "mgcv:::gam.setup"))
+      olddata <- rm_attr(model.frame(fit), "terms")
       if (length(ee$nonlinear)) {
-        gamfit <- vector("list", length(ee$nonlinear))
-        for (i in seq_along(gamfit)) {
+        G <- named_list(names(ee$nonlinear))
+        for (i in seq_along(G)) {
           nle <- ee$nonlinear[[i]]
           if (has_splines(nle)) {
-            gamfit[[i]] <- SW(mgcv::gamm(nle$gam, data = model.frame(fit), 
-                                      knots = knots, control = gamm_ctrl))$gam
+            G[[i]] <- gam.setup(mgcv::interpret.gam(nle$gam),
+                                pterms = terms(ee$respform),
+                                data = olddata, knots = knots, sp = NULL,
+                                min.sp = NULL, H = NULL, absorb.cons = TRUE,
+                                sparse.cons = 0, gamm.call = TRUE)
           }
         }
       } else {
-        gamfit <- SW(mgcv::gamm(ee$gam, data = model.frame(fit), 
-                                knots = knots, control = gamm_ctrl))$gam
+        G <- gam.setup(mgcv::interpret.gam(ee$gam),
+                       pterms = terms(ee$respform),
+                       data = olddata, knots = knots, sp = NULL,
+                       min.sp = NULL, H = NULL, absorb.cons = TRUE,
+                       sparse.cons = 0, gamm.call = TRUE)
       }
-      control$gamfit <- gamfit
+      control$G <- G
     }
     if (is(fit$autocor, "cor_fixed")) {
       fit$autocor$V <- diag(median(diag(fit$autocor$V), na.rm = TRUE), 
@@ -519,8 +525,7 @@ arr_design_matrix <- function(Y, r, group)  {
 
 data_fixef <- function(effects, data, family = gaussian(),
                        autocor = cor_arma(), knots = NULL,
-                       nlpar = "", not4stan = FALSE, 
-                       gamfit = NULL) {
+                       nlpar = "", not4stan = FALSE, G = NULL) {
   # prepare data for fixed effects for use in Stan 
   # Args:
   #   effects: a list returned by extract_effects
@@ -529,8 +534,8 @@ data_fixef <- function(effects, data, family = gaussian(),
   #   autocor: object of class 'cor_brms'
   #   nlpar: optional character string naming a non-linear parameter
   #   not4stan: is the data for use in S3 methods only?
-  #   gamfit: optional fitted gam model based on the original data
-  #           used only to compute smoothing terms for new data
+  #   G: optional list returned by gam.setup based on the original data
+  #      used only to compute smoothing terms for new data
   stopifnot(length(nlpar) == 1L)
   p <- if (nchar(nlpar)) paste0("_", nlpar) else ""
   is_ordinal <- is.ordinal(family)
@@ -549,14 +554,17 @@ data_fixef <- function(effects, data, family = gaussian(),
     # avoid R CMD CHECK warnings when using the ::: operator
     gam.setup <- eval(parse(text = "mgcv:::gam.setup"))
     smooth2random <- eval(parse(text = "mgcv:::smooth2random"))
-    if (inherits(gamfit, "gam")) {
+    if (!is.null(G)) {
       # compute smoothing terms for newdata
-      G <- gamfit
-      G$X <- mgcv::predict.gam(gamfit, rm_attr(data, "terms"), 
-                               type = "lpmatrix")
+      Xl <- vector("list", length(G$smooth))
+      for (i in seq_along(G$smooth)) {
+        Xl[[i]] <- PredictMat(G$smooth[[i]], rm_attr(data, "terms"))
+      }
+      G$X <- cbind(1, do.call(cbind, Xl))
       if (any(ulapply(G$smooth, is, "t2.smooth"))) {
-        warning(paste("Prediction of t2 smoothing terms with", 
-                      "new data is still experimental."), call. = FALSE)
+        stop(paste("Prediction of t2 smoothing terms with", 
+                   "new data is not yet working correctly."), 
+                call. = FALSE)
       }
     } else {
       # parse it like mgcv:::gamm.setup
