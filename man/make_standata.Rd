@@ -26,7 +26,7 @@ a call to a family function or a character string naming the family.
 Currently, the following families are supported:
 \code{gaussian}, \code{student}, \code{cauchy} (deprecated), \code{binomial}, 
 \code{bernoulli}, \code{Beta}, \code{poisson}, \code{negbinomial}, 
-\code{geometric}, \code{Gamma}, \code{inverse.gaussian}, 
+\code{geometric}, \code{Gamma}, \code{lognormal}, \code{inverse.gaussian}, 
 \code{exponential}, \code{weibull}, \code{categorical}, \code{cumulative}, 
 \code{cratio}, \code{sratio}, \code{acat}, \code{hurdle_poisson}, 
 \code{hurdle_negbinomial}, \code{hurdle_gamma}, \code{zero_inflated_binomial},

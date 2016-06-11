@@ -16,7 +16,7 @@
 #'   Currently, the following families are supported:
 #'   \code{gaussian}, \code{student}, \code{cauchy} (deprecated), \code{binomial}, 
 #'   \code{bernoulli}, \code{Beta}, \code{poisson}, \code{negbinomial}, 
-#'   \code{geometric}, \code{Gamma}, \code{inverse.gaussian}, 
+#'   \code{geometric}, \code{Gamma}, \code{lognormal}, \code{inverse.gaussian}, 
 #'   \code{exponential}, \code{weibull}, \code{categorical}, \code{cumulative}, 
 #'   \code{cratio}, \code{sratio}, \code{acat}, \code{hurdle_poisson}, 
 #'   \code{hurdle_negbinomial}, \code{hurdle_gamma}, \code{zero_inflated_binomial},
@@ -225,9 +225,9 @@
 #'   For families \code{gaussian}, \code{student}, and \code{cauchy} it is 
 #'   possible to specify standard errors of the observation, thus allowing 
 #'   to perform meta-analysis. Suppose that the variable \code{yi} contains 
-#'   the effect sizes from the studies and \code{sei} the corresponding standard errors. 
-#'   Then, fixed and random effects meta-analyses can be conducted
-#'   using the formulae \code{yi | se(sei) ~ 1} and 
+#'   the effect sizes from the studies and \code{sei} the corresponding 
+#'   standard errors. Then, fixed and random effects meta-analyses can 
+#'   be conducted using the formulae \code{yi | se(sei) ~ 1} and 
 #'   \code{yi | se(sei) ~ 1 + (1|study)}, respectively, where 
 #'   \code{study} is a variable uniquely identifying every study.
 #'   If desired, meta-regression can be performed via 
@@ -248,8 +248,8 @@
 #'   similar purpose than \code{weight}. However, it has a different 
 #'   implementation and is less general as it is only usable for the
 #'   families \code{gaussian}, \code{student}, \code{cauchy},
-#'   \code{Gamma}, \code{weibull}, and \code{negbinomial}.
-#'   For the former three families, the residual standard deviation 
+#'   \code{lognormal}, \code{Gamma}, \code{weibull}, and \code{negbinomial}.
+#'   For the former four families, the residual standard deviation 
 #'   \code{sigma} is multiplied by the values given in 
 #'   \code{disp}, so that higher values lead to lower weights.
 #'   Contrariwise, for the latter three families, the parameter \code{shape}
@@ -270,8 +270,9 @@
 #'   specify the number categories (e.g, \code{cat(7)}). 
 #'   If not given, the number of categories is calculated from the data.
 #'   
-#'   With the expection of \code{categorical} and ordinal families, left and right censoring 
-#'   can be modeled through \code{yi | cens(censored) ~ predictors}.
+#'   With the expection of \code{categorical} and ordinal families, 
+#'   left and right censoring can be modeled through 
+#'   \code{yi | cens(censored) ~ predictors}.
 #'   The censoring variable (named \code{censored} in this example) should 
 #'   contain the values \code{'left'}, \code{'none'}, and \code{'right'}  
 #'   (or equivalenty -1, 0, and 1) to indicate that the corresponding observation is 
@@ -431,8 +432,8 @@
 #'   Families \code{cumulative}, \code{cratio} ('contiuation ratio'), 
 #'   \code{sratio} ('stopping ratio'), and \code{acat} ('adjacent category') 
 #'   leads to ordinal regression. Families \code{Gamma}, \code{weibull}, 
-#'   \code{exponential}, and \code{inverse.gaussian} can be used (among others) 
-#'   for survival regression when combined with the \code{log} link. 
+#'   \code{exponential}, \code{lognormal}, and \code{inverse.gaussian} can be used 
+#'   (among others) for survival regression.
 #'   Families \code{hurdle_poisson}, \code{hurdle_negbinomial}, \code{hurdle_gamma}, 
 #'   \code{zero_inflated_poisson}, and \cr
 #'   \code{zero_inflated_negbinomial} combined with the 
@@ -455,6 +456,7 @@
 #'   family \code{categorical} the link \code{logit}; 
 #'   families \code{Gamma}, \code{weibull}, and \code{exponential} 
 #'   the links \code{log}, \code{identity}, and \code{inverse};
+#'   family \code{lognormal} the links \code{identity} and \code{inverse};
 #'   family \code{inverse.gaussian} the links \code{1/mu^2}, 
 #'   \code{inverse}, \code{identity} and \code{log}; 
 #'   families \code{hurdle_poisson}, \code{hurdle_negbinomial},
