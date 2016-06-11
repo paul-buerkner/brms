@@ -558,7 +558,7 @@ data_fixef <- function(effects, data, family = gaussian(),
       # compute smoothing terms for newdata
       Xl <- vector("list", length(G$smooth))
       for (i in seq_along(G$smooth)) {
-        Xl[[i]] <- PredictMat(G$smooth[[i]], rm_attr(data, "terms"))
+        Xl[[i]] <- mgcv::PredictMat(G$smooth[[i]], rm_attr(data, "terms"))
       }
       G$X <- cbind(1, do.call(cbind, Xl))
       if (any(ulapply(G$smooth, is, "t2.smooth"))) {
