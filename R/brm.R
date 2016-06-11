@@ -615,15 +615,11 @@ brm <- function(formula, data = NULL, family = gaussian(),
     # extract the compiled model
     x$fit <- rstan::get_stanmodel(x$fit)  
   } else {  # build new model
-    # see validate.R and priors.R for function definitions
+    # see validate.R for function definitions
     family <- check_family(family)
     nonlinear <- nonlinear2list(nonlinear) 
     formula <- update_formula(formula, data = data, family = family, 
                               partial = partial, nonlinear = nonlinear)
-    prior <- check_prior(prior, formula = formula, data = data, 
-                         family = family, sample_prior = sample_prior, 
-                         autocor = autocor, nonlinear = nonlinear, 
-                         threshold = threshold, warn = TRUE)
     et <- extract_time(autocor$formula)  
     ee <- extract_effects(formula, family = family, et$all,
                           nonlinear = nonlinear)
@@ -633,14 +629,19 @@ brm <- function(formula, data = NULL, family = gaussian(),
       data.name <- dots$data.name
       dots$data.name <- NULL
     }
-    
+    # see data-helpers.R
+    data <- update_data(data, family = family, effects = ee, et$group) 
+    # see priors.R
+    prior <- check_prior(prior, formula = formula, data = data, 
+                         family = family, sample_prior = sample_prior, 
+                         autocor = autocor, nonlinear = nonlinear, 
+                         threshold = threshold, warn = TRUE)
     # initialize S3 object
     x <- brmsfit(formula = formula, family = family, link = family$link, 
-                 data.name = data.name, prior = prior, autocor = autocor,
-                 nonlinear = nonlinear, cov_ranef = cov_ranef, 
-                 threshold = threshold, algorithm = algorithm)  
-    # see data.R
-    x$data <- update_data(data, family = family, effects = ee, et$group) 
+                 data = data, data.name = data.name, prior = prior, 
+                 autocor = autocor, nonlinear = nonlinear, 
+                 cov_ranef = cov_ranef, threshold = threshold, 
+                 algorithm = algorithm)
     # see validate.R
     x$ranef <- gather_ranef(ee, data = x$data, forked = is.forked(family))  
     x$exclude <- exclude_pars(ee, ranef = x$ranef, save_ranef = ranef)

@@ -98,17 +98,21 @@ test_that("amend_newdata handles factors correctly", {
 
 test_that("update_data handles NAs correctly", {
   data <- data.frame(y1 = c(1, NA, 3), y2 = 4:6, x = 10:12, z = NA)
-  effects <- extract_effects(cbind(y1, y2) ~ x, family = "gaussian")
-  expect_equivalent(update_data(data, family = "gaussian", effects = effects),
-                    data.frame(response = c(1, 3, 4, 6), y1 = c(1, 3, 1, 3), 
-                               y2 = c(4, 6, 4, 6), x = c(10, 12, 10, 12)))
-  effects <- extract_effects(y1 ~ x, family = "hurdle_gamma")
-  expect_equivalent(update_data(data, family = "hurdle_gamma", effects = effects),
-                    data.frame(response = c(1, 3, 1, 3), y1 = c(1, 3, 1, 3),
-                               x = c(10, 12, 10, 12)))
-  effects <- extract_effects(y2 ~ x, family = "zero_inflated_poisson")
-  expect_equivalent(update_data(data, family = "zero_inflated_poisson", 
-                                effects = effects),
-                    data.frame(response = c(4:6, 4:6), y2 = c(4:6, 4:6),
-                               x = c(10:12, 10:12)))
+  ee <- extract_effects(cbind(y1, y2) ~ x, family = "gaussian")
+  expect_warning(mf <- update_data(data, family = "gaussian", effects = ee),
+                 "NAs were excluded")
+  expect_equivalent(mf, data.frame(response = c(1, 3, 4, 6), y1 = c(1, 3, 1, 3), 
+                                   y2 = c(4, 6, 4, 6), x = c(10, 12, 10, 12)))
+  
+  ee <- extract_effects(y1 ~ x, family = "hurdle_gamma")
+  expect_warning(mf <- update_data(data, family = "hurdle_gamma", effects = ee),
+                 "NAs were excluded")
+  expect_equivalent(mf, data.frame(response = c(1, 3, 1, 3), y1 = c(1, 3, 1, 3),
+                                   x = c(10, 12, 10, 12)))
+  
+  ee <- extract_effects(y1 ~ x, family = "zero_inflated_poisson")
+  expect_warning(mf <- update_data(data, family = "zero_inflated_poisson", 
+                                   effects = ee), "NAs were excluded")
+  expect_equivalent(mf, data.frame(response = c(1, 3, 1, 3), y1 = c(1, 3, 1, 3),
+                                   x = c(10, 12, 10, 12)))
 })

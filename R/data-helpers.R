@@ -1,4 +1,4 @@
-melt_data <- function(data, family, effects, na.action = na.omit) {
+melt_data <- function(data, family, effects) {
   # melt data frame for multinormal models
   #
   # Args:
@@ -59,7 +59,7 @@ melt_data <- function(data, family, effects, na.action = na.omit) {
     new_cols$response <- model_response
     old_data <- data
     data <- replicate(length(response), old_data, simplify = FALSE)
-    data <- do.call(na.action, list(cbind(do.call(rbind, data), new_cols)))
+    data <- cbind(do.call(rbind, data), new_cols)
     data <- fix_factor_contrasts(data, optdata = old_data)
   }
   if (isTRUE(attr(effects$fixed, "rsv_intercept"))) {
@@ -155,10 +155,15 @@ update_data <- function(data, family, effects, ...,
   if (!(isTRUE(attr(data, "brmsframe")) || "brms.frame" %in% class(data))) {
     effects$all <- terms(effects$all)
     attributes(effects$all)[names(terms_attr)] <- terms_attr
-    data <- melt_data(data, family = family, effects = effects,
-                      na.action = na.action)
-    data <- model.frame(effects$all, data = data, na.action = na.action,
+    data <- melt_data(data, family = family, effects = effects)
+    data <- model.frame(effects$all, data = data, na.action = na.pass,
                         drop.unused.levels = drop.unused.levels)
+    nrow_with_NA <- nrow(data)
+    data <- na.action(data)
+    if (nrow(data) != nrow_with_NA) {
+      warning("Rows containing NAs were excluded from the model",
+              call. = FALSE)
+    }
     if (any(grepl("__", colnames(data))))
       stop("variable names may not contain double underscores '__'",
            call. = FALSE)
