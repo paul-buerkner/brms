@@ -61,9 +61,7 @@ stan_linear <- function(effects, data, family = gaussian(),
   wsp <- ifelse(is_multi, "  ", "")
   # transform eta before it is passed to the likelihood
   add <- is.formula(effects[c("weights", "cens", "trunc")])
-  simplify_log <- !(is_multi || is(autocor, "cor_fixed"))
-  out$transform <- stan_eta_transform(family$family, family$link, add = add,
-                                      simplify_log = simplify_log)
+  out$transform <- stan_eta_transform(family$family, family$link, add = add)
   eta_ilink <- rep("", 2)
   if (out$transform || (get_ar(autocor) && !use_cov(autocor))) {
     eta_ilink <- stan_eta_ilink(family$family, family$link, 
@@ -191,8 +189,7 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
                       c(new_nlpars, new_covars, "(", ")"))
     # possibly transform eta in the transformed params block
     add <- is.formula(effects[c("weights", "cens", "trunc")])
-    transform <- stan_eta_transform(family$family, family$link, add = add,
-                                    simplify_log = !is(autocor, "cor_fixed"))
+    transform <- stan_eta_transform(family$family, family$link, add = add)
     if (transform) {
       eta_ilink <- stan_eta_ilink(family$family, family$link, 
                                   disp = is.formula(effects$disp))
@@ -587,19 +584,16 @@ stan_eta_bsts <- function(autocor) {
   eta_bsts
 }
 
-stan_eta_transform <- function(family, link, add = FALSE, 
-                               simplify_log = TRUE) {
+stan_eta_transform <- function(family, link, add = FALSE) {
   # indicate whether eta needs to be transformed
   # in the transformed parameters block
   # Args:
   #   add: is the model weighted, censored, truncated?
-  #   simplify_log: convert gaussian(log) to lognormal? 
-  !(add || !is.skewed(family) && link == "identity" 
-    || family %in% "gaussian" && link == "log" && simplify_log
-    || is.count(family) && link == "log" 
-    || is.binary(family) && link == "logit"
-    || is.ordinal(family) || is.categorical(family) 
-    || is.zero_inflated(family) || is.hurdle(family))
+  !(add || !is.skewed(family) && link == "identity" ||
+    is.count(family) && link == "log" ||
+    is.binary(family) && link == "logit" ||
+    is.ordinal(family) || is.categorical(family) ||
+    is.zero_inflated(family) || is.hurdle(family))
 }
 
 stan_eta_ilink <- function(family, link, disp = FALSE) {

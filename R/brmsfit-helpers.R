@@ -389,9 +389,8 @@ prepare_family <- function(x) {
   family <- family(x)
   nresp <- length(extract_effects(x$formula, family = family,
                                   nonlinear = x$nonlinear)$response)
-  if (is.lognormal(family, nresp = nresp)) {
-    family$family <- "lognormal"
-    family$link <- "identity"
+  if (is.old_lognormal(family, nresp = nresp, version = x$version)) {
+    family <- lognormal()
   } else if (is.linear(family) && nresp > 1L) {
     family$family <- paste0(family$family, "_multi")
   } else if (use_cov(x$autocor) && sum(x$autocor$p, x$autocor$q) > 0) {

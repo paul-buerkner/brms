@@ -38,7 +38,7 @@ loglik_cauchy <- function(i, draws, data = data.frame()) {
 
 loglik_lognormal <- function(i, draws, data = data.frame()) {
   sigma <- get_sigma(draws$sigma, data = draws$data, method = "logLik", i = i)
-  args <- list(meanlog = get_eta(i, draws), sdlog = sigma)
+  args <- list(meanlog = ilink(get_eta(i, draws), draws$f$link), sdlog = sigma)
   out <- censor_loglik(dist = "lnorm", args = args, i = i, data = draws$data)
   out <- truncate_loglik(out, cdf = plnorm, args = args, data = draws$data)
   weight_loglik(out, i = i, data = draws$data)

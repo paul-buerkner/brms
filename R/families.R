@@ -22,6 +22,7 @@
 #'   family \code{categorical}, the link \code{logit}; 
 #'   families \code{weibull}, and \code{exponential} 
 #'   the links \code{log}, \code{identity}, and \code{inverse};
+#'   family \code{lognormal} the links \code{identity} and \code{inverse};
 #'   families \code{hurdle_poisson}, \code{hurdle_gamma}, 
 #'   \code{hurdle_negbinomial}, \code{zero_inflated_poisson}, 
 #'   and \code{zero_inflated_negbinomial} the link \code{log};
@@ -140,6 +141,25 @@ geometric <- function(link = "log") {
                "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
   structure(list(family = "geometric", link = linktemp), 
+            class = c("brmsfamily", "family"))
+}
+
+#' @rdname brmsfamily
+#' @export
+lognormal <- function(link = "identity") {
+  linktemp <- substitute(link)
+  if (!is.character(linktemp)) {
+    linktemp <- deparse(linktemp)
+  } 
+  okLinks <- c("identity", "inverse")
+  if (!linktemp %in% okLinks && is.character(link)) {
+    linktemp <- link
+  }
+  if (!linktemp %in% okLinks) {
+    stop(paste(linktemp, "is not a supported link for family lognormal.", 
+               "Supported links are: \n", paste(okLinks, collapse = ", ")))
+  }
+  structure(list(family = "lognormal", link = linktemp), 
             class = c("brmsfamily", "family"))
 }
 
@@ -446,7 +466,7 @@ family.character <- function(object, link = NA, type = NULL, ...) {
   if (family == "multigaussian") 
     stop("family 'multigaussian' is deprecated. Use family 'gaussian' instead",
          call. = FALSE)
-  okFamilies <- c("gaussian", "student", "cauchy", 
+  okFamilies <- c("gaussian", "student", "cauchy", "lognormal", 
                   "binomial", "bernoulli", "categorical", "beta",
                   "poisson", "negbinomial", "geometric", 
                   "gamma", "weibull", "exponential", "inverse.gaussian", 
@@ -475,6 +495,8 @@ family.character <- function(object, link = NA, type = NULL, ...) {
     okLinks <- c("logit")
   } else if (is.skewed(family)) {
     okLinks <- c("log", "identity", "inverse")
+  } else if (family %in% "lognormal") {
+    okLinks <- c("identity", "inverse")
   } else if (is.hurdle(family) || is.zero_inflated(family)) {
     # does not include zi_binomial or zi_beta
     okLinks <- c("log")
@@ -531,18 +553,6 @@ is.linear <- function(family) {
   family %in% c("gaussian", "student", "cauchy")
 }
 
-is.lognormal <- function(family, link = "identity", nresp = 1) {
-  # indicate transformation to lognormal model
-  # Args:
-  #   link: A character string
-  #   nresp: number of response variables
-  if (is(family, "family")) {
-    link <- family$link
-    family <- family$family
-  }
-  family %in% "gaussian" && link == "log" && nresp == 1
-}
-
 is.binary <- function(family) {
   # indicate if family is bernoulli or binomial
   if (is(family, "family")) {
@@ -572,6 +582,14 @@ is.skewed <- function(family) {
     family <- family$family
   }
   family %in% c("gamma", "weibull", "exponential")
+}
+
+is.lognormal <- function(family) {
+  # indicate if family is lognormal
+  if (is(family, "family")) {
+    family <- family$family
+  }
+  family %in% "lognormal"
 }
 
 is.count <- function(family) {
@@ -632,8 +650,8 @@ use_real <- function(family) {
     family <- family$family
   }
   is.linear(family) || is.skewed(family) || 
-    family %in% c("inverse.gaussian", "beta", "zero_inflated_beta", 
-                  "hurdle_gamma")
+    family %in% c("lognormal", "inverse.gaussian", "beta", 
+                  "zero_inflated_beta", "hurdle_gamma")
 }
 
 use_int <- function(family) {
@@ -682,8 +700,8 @@ has_sigma <- function(family, autocor = cor_arma(), se = FALSE,
   #  is_multi: is the model multivariate?
   if (is.null(se)) se <- FALSE
   if (is.formula(se)) se <- TRUE
-  is.linear(family) && !is_multi && !is(autocor, "cor_fixed") &&
-    (!se || get_ar(autocor) || get_ma(autocor)) 
+  (is.linear(family) || is.lognormal(family)) && !is_multi && 
+   !is(autocor, "cor_fixed") && (!se || get_ar(autocor) || get_ma(autocor))
 }
 
 allows_cse <- function(family) {
@@ -692,6 +710,21 @@ allows_cse <- function(family) {
     family <- family$family
   }
   family %in% c("sratio", "cratio", "acat")
+}
+
+is.old_lognormal <- function(family, link = "identity", nresp = 1,
+                             version = utils::packageVersion("brms")) {
+  # indicate transformation to lognormal models
+  # Args:
+  #   link: A character string; ignored if family is of class family
+  #   nresp: number of response variables
+  #   version: brms version with which the model was fitted
+  if (is(family, "family")) {
+    link <- family$link
+    family <- family$family
+  }
+  family %in% "gaussian" && link == "log" && nresp == 1 &&
+    (is.null(version) || version <= "0.9.1")
 }
 
 is.old_categorical <- function(x) {

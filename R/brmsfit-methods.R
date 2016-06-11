@@ -1678,6 +1678,12 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
       message("The desired formula changes require recompling the model")
     }
   }
+  # update gaussian("log") to lognormal() family
+  resp <- extract_effects(object$formula, family = object$family)$response
+  if (is.old_lognormal(object$family, nresp = length(resp),
+                       version = object$version)) {
+    object$family <- lognormal()
+  }
   
   dots$iter <- first_not_null(dots$iter, object$fit@sim$iter)
   # brm computes warmup automatically based on iter 

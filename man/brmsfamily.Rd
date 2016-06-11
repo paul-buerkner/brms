@@ -14,6 +14,7 @@
 \alias{hurdle_gamma}
 \alias{hurdle_negbinomial}
 \alias{hurdle_poisson}
+\alias{lognormal}
 \alias{negbinomial}
 \alias{sratio}
 \alias{student}
@@ -33,6 +34,8 @@ bernoulli(link = "logit", type = NULL)
 negbinomial(link = "log")
 
 geometric(link = "log")
+
+lognormal(link = "identity")
 
 exponential(link = "log")
 
@@ -79,6 +82,7 @@ the links \code{logit}, \code{probit}, \code{probit_approx},
 family \code{categorical}, the link \code{logit}; 
 families \code{weibull}, and \code{exponential} 
 the links \code{log}, \code{identity}, and \code{inverse};
+family \code{lognormal} the links \code{identity} and \code{inverse};
 families \code{hurdle_poisson}, \code{hurdle_gamma}, 
 \code{hurdle_negbinomial}, \code{zero_inflated_poisson}, 
 and \code{zero_inflated_negbinomial} the link \code{log};

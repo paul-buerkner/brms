@@ -6,7 +6,7 @@ brmsfit <- function(formula = NULL, family = "", link = "", data.name = "",
   # brmsfit class
   x <- nlist(formula, family, link, data.name, data, model, exclude, prior, 
              ranef, autocor, nonlinear, partial, threshold, cov_ranef, fit, 
-             algorithm)
+             algorithm, version = utils::packageVersion("brms"))
   class(x) <- "brmsfit"
   x
 }

@@ -254,7 +254,7 @@ test_that("make_stancode returns correct 'disp' code", {
   expect_match(stancode, "disp_sigma <- sigma \\* disp;.*normal\\(eta, disp_sigma\\)")
   
   stancode <- make_stancode(time | disp(1/age) ~ sex + age, 
-                            data = kidney, family = gaussian("log"))
+                            data = kidney, family = lognormal())
   expect_match(stancode, "Y ~ lognormal(eta, disp_sigma);", fixed = TRUE)
   
   stancode <- make_stancode(time | disp(1/age) ~ sex + age + (1|patient), 

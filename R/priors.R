@@ -394,11 +394,12 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
   # ensure that RE and residual SDs only have a weakly informative prior by default
   Y <- unname(model.response(data))
   prior_scale <- 10
+  if (is.lognormal(family)) link <- "log"
   if (link %in% c("identity", "log", "inverse", "sqrt", "1/mu^2")) {
     if (link %in% c("log", "inverse", "1/mu^2")) {
       Y <- ifelse(Y == 0, Y + 0.1, Y)  # avoid Inf in link(Y)
     }
-    suggested_scale <- round(sd(link(Y, link = link)))
+    suggested_scale <- SW(round(link(sd(Y), link = link)))
     if (!is.nan(suggested_scale)) {
       prior_scale <- max(prior_scale, suggested_scale, na.rm = TRUE)
     } 

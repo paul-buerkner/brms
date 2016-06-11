@@ -43,10 +43,6 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
       stop("Invalid addition arguments", call. = FALSE)
     }
     family <- paste0(family, "_fixed")
-  } else if (is.lognormal(family, link = link)) {
-    # prepare for use of lognormal likelihood
-    family <- "lognormal"
-    link <- "identity"
   }
   
   simplify <- !is_trunc && !cens && stan_has_build_in_fun(family, link)

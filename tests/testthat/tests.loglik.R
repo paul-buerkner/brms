@@ -31,7 +31,8 @@ test_that("loglik for location shift models works as expected", {
 
 test_that("loglik for lognormal models works as expected", {
   ns <- 50
-  draws <- list(sigma = rchisq(ns, 3), eta = matrix(rnorm(ns*2), ncol = 2))
+  draws <- list(sigma = rchisq(ns, 3), eta = matrix(rnorm(ns*2), ncol = 2),
+                f = lognormal())
   draws$data <- list(Y = rlnorm(ns))
   ll_lognormal <- dlnorm(x = draws$data$Y[1], mean = draws$eta[, 1], 
                          sd = draws$sigma, log = TRUE)

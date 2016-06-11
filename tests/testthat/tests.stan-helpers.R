@@ -55,7 +55,7 @@ test_that("stan_eta returns correct strings for autocorrelation models", {
                "eta[n] <- exp(eta[n] + head(E[n], Kar) * ar)", fixed = TRUE)
   expect_match(stan_linear(ee, data = epilepsy, family = gaussian(log),
                            autocor = cor_arma(~visit|patient, q = 1))$transC2,
-               "eta[n] <- eta[n] + head(E[n], Kma) * ma", fixed = TRUE)
+               "eta[n] <- exp(eta[n] + head(E[n], Kma) * ma)", fixed = TRUE)
   expect_match(stan_linear(ee, data = epilepsy, family = poisson(),
                            autocor = cor_arma(~visit|patient, r = 3))$transC1,
                "eta <- X * b + temp_Intercept + Yarr * arr", fixed = TRUE)
@@ -113,9 +113,7 @@ test_that("stan_ordinal returns correct strings", {
 test_that("stan_llh uses simplifications when possible", {
   expect_equal(stan_llh(family = bernoulli("logit")), 
                "  Y ~ bernoulli_logit(eta); \n")
-  expect_equal(stan_llh(family = gaussian("log")), 
-               "  Y ~ lognormal(eta, sigma); \n")
-  expect_match(stan_llh(family = gaussian("log"), weights = TRUE), 
+  expect_match(stan_llh(family = lognormal(), weights = TRUE), 
                "lognormal_log(Y[n], (eta[n]), sigma); \n", fixed = TRUE)
   expect_equal(stan_llh(family = poisson()), 
                "  Y ~ poisson_log(eta); \n")

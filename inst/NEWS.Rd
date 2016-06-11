@@ -10,6 +10,15 @@
       the \code{s} and \code{t2} functions in the model formula. 
     }
   }
+  \subsection{OTHER CHANGES}{
+    \itemize{
+      \item The \code{gaussian("log")} family no longer implies
+      a log-normal distribution, but a normal distribution with 
+      log-link to match the behavior of \code{glm}. 
+      The log-normal distribution can now be specified via
+      family \code{lognormal}.
+    }
+  }
   \subsection{BUG FIXES}{
     \itemize{ 
       \item The \code{ngrps} method should now always

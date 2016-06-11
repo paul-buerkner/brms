@@ -28,6 +28,7 @@ fitted_response <- function(draws, mu) {
     }
   } else if (draws$f$family == "lognormal") {
     sigma <- get_sigma(draws$sigma, data = draws$data, i = nrow(mu))
+    mu <- ilink(mu, draws$f$link)
     if (!is_trunc) {
       # compute untruncated lognormal mean
       mu <- exp(mu + sigma^2 / 2)  

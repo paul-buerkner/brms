@@ -32,7 +32,7 @@ predict_cauchy <- function(i, draws, ...) {
 
 predict_lognormal <- function(i, draws, ...) {
   sigma <- get_sigma(draws$sigma, data = draws$data, method = "predict", i = i)
-  args <- list(meanlog = get_eta(i, draws), sdlog = sigma)
+  args <- list(meanlog = ilink(get_eta(i, draws), draws$f$link), sdlog = sigma)
   rng_continuous(nrng = draws$nsamples, dist = "lnorm",
                  args = args, data = draws$data)
 }

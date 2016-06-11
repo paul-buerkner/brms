@@ -23,7 +23,8 @@ test_that("predict for lognormal models runs without errors", {
   ns <- 50
   nobs <- 2
   draws <- list(sigma = rchisq(ns, 3), nsamples = ns,
-                eta = matrix(rnorm(ns * nobs), ncol = nobs))
+                eta = matrix(rnorm(ns * nobs), ncol = nobs),
+                f = lognormal())
   pred <- predict_lognormal(1, draws = draws)
   expect_equal(length(pred), ns)
 })

@@ -587,7 +587,7 @@ plot(fit2, ask = FALSE)
 ## Survival regression modeling the time between the first 
 ## and second recurrence of an infection in kidney patients.
 fit3 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient), 
-            data = kidney, family = gaussian("log"))
+            data = kidney, family = lognormal())
 summary(fit3) 
 plot(fit3, ask = FALSE)
 plot(marginal_effects(fit3), ask = FALSE)   

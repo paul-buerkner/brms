@@ -137,7 +137,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       if (length(unique(standata$Y)) < 2L) {
         stop("At least two response categories are required.", call. = FALSE)
       }
-    } else if (is.skewed(family)) {
+    } else if (is.skewed(family) || is.lognormal(family)) {
       if (min(standata$Y) <= 0) {
         stop(paste("family", family$family, "requires response variable", 
                    "to be positive"), call. = FALSE)

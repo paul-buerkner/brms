@@ -778,18 +778,18 @@ monotonous <- function(...) {
 add_families <- function(x) {
   # return names of valid families for addition argument x
   switch(x, weights = "all",
-         se = c("gaussian", "student", "cauchy"),
+         se = c("gaussian", "student", "cauchy", "lognormal"),
          trials = c("binomial", "zero_inflated_binomial"),
          cat = c("cumulative", "cratio", "sratio", "acat"), 
-         cens = c("gaussian", "student", "cauchy", 
-                  "inverse.gaussian", "binomial",
-                  "poisson", "geometric", "negbinomial", 
-                  "exponential", "weibull", "gamma"),
-         trunc = c("gaussian", "student", "cauchy", "binomial",
-                   "poisson", "geometric", "negbinomial", 
+         cens = c("gaussian", "student", "cauchy", "lognormal",
+                  "inverse.gaussian", "binomial", "poisson", 
+                  "geometric", "negbinomial", "exponential", 
+                  "weibull", "gamma"),
+         trunc = c("gaussian", "student", "cauchy", "lognormal", 
+                   "binomial", "poisson", "geometric", "negbinomial",
                    "exponential", "weibull", "gamma"),
-         disp = c("gaussian", "student", "cauchy", "gamma",
-                  "weibull", "negbinomial"),
+         disp = c("gaussian", "student", "cauchy", "lognormal", 
+                  "gamma", "weibull", "negbinomial"),
          stop(paste("addition argument", x, "is not supported")))
 }
 

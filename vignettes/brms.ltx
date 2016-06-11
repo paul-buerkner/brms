@@ -154,7 +154,7 @@ The core of the \pkg{brms} package is the \code{brm} function and we will explai
 \begin{Code}
 fit1 <- brm(formula = time | cens(censored) ~ age * sex + disease 
             + (1 + age|patient), 
-            data = kidney, family = gaussian("log"),
+            data = kidney, family = lognormal(),
             prior = c(set_prior("normal(0,5)", class = "b"),
                       set_prior("cauchy(0,2)", class = "sd"),
                       set_prior("lkj(2)", class = "cor")),
@@ -170,11 +170,11 @@ Everything on the right side of $\sim$ specifies predictors. Here, the syntax ex
 
 \subsection[family: Distribution of the response variable]{\code{family}: Distribution of the response variable}
 
-Argument \code{family} should usually be a family function, a call to a family function or a character string naming the family. If not otherwise specified, default link functions are applied. \pkg{brms} comes with a large variety of families. Linear and robust linear regression can be performed using the \code{gaussian} or \code{student} family combined with the \code{identity} link. For dichotomous and categorical data, families \code{bernoulli}, \code{binomial}, and \code{categorical} combined with the \code{logit} link, by default, are perfectly suited. Families \code{poisson}, \code{negbinomial}, and \code{geometric} allow for modeling count data.  Families \code{gaussian}, \code{gamma}, \code{exponential}, and \code{weibull} can be used (among others) for survival regression when combined with the \code{log} link. Ordinal regression can be performed using the families \code{cumulative}, \code{cratio}, \code{sratio}, and \code{acat}. Finally, families \code{zero_inflated_poisson}, \code{zero_inflated_negbinomial}, \code{zero_inflated_binomial}, \code{zero_inflated_beta}, \code{hurdle_poisson}, \code{hurdle_negbinomial}, and \code{hurdle_gamma} can be used to adequately model excess zeros in the response. In our example, we use \code{family = gaussian("log")} implying a log-normal\footnote{For reasons of numerical efficiency and stability of the sampling algorithm, family \code{gaussian} with link \code{log} is interpreted as a log-normal distribution with identity link.} ``survival'' model for the response variable \code{time}.
+Argument \code{family} should usually be a family function, a call to a family function or a character string naming the family. If not otherwise specified, default link functions are applied. \pkg{brms} comes with a large variety of families. Linear and robust linear regression can be performed using the \code{gaussian} or \code{student} family combined with the \code{identity} link. For dichotomous and categorical data, families \code{bernoulli}, \code{binomial}, and \code{categorical} combined with the \code{logit} link, by default, are perfectly suited. Families \code{poisson}, \code{negbinomial}, and \code{geometric} allow for modeling count data.  Families \code{gaussian}, \code{gamma}, \code{exponential}, and \code{weibull} can be used (among others) for survival regression when combined with the \code{log} link. Ordinal regression can be performed using the families \code{cumulative}, \code{cratio}, \code{sratio}, and \code{acat}. Finally, families \code{zero_inflated_poisson}, \code{zero_inflated_negbinomial}, \code{zero_inflated_binomial}, \code{zero_inflated_beta}, \code{hurdle_poisson}, \code{hurdle_negbinomial}, and \code{hurdle_gamma} can be used to adequately model excess zeros in the response. In our example, we use \code{family = lognormal()} implying a log-normal ``survival'' model for the response variable \code{time}.
 
 \subsection[prior: Prior distributions of model parameters]{\code{prior}: Prior distributions of model parameters}
 
-Every population-level effect has its corresponding regression parameter. These parameters are named as \code{b\_<coef>}, where \code{<coef>} represents the name of the corresponding population-level effect. The default prior is an improper flat prior over the reals. Suppose, for instance, that we want to set a normal prior with mean \code{0} and standard deviation \code{10} on the effect of \code{age} and a Cauchy prior with location \code{1} and scale \code{2} on \code{sexfemale}\footnote{When factors are used as predictors, parameter names will depend on the factor levels. To get an overview of all parameters and parameter classes for which priors can be specified, use function \code{get\_prior}. For the present example, \code{get\_prior(time | cens(censored) $\sim$ age * sex + disease + (1 + age|patient), data = kidney)} does the desired.}. Then, we may write 
+Every population-level effect has its corresponding regression parameter. These parameters are named as \code{b\_<coef>}, where \code{<coef>} represents the name of the corresponding population-level effect. The default prior is an improper flat prior over the reals. Suppose, for instance, that we want to set a normal prior with mean \code{0} and standard deviation \code{10} on the effect of \code{age} and a Cauchy prior with location \code{1} and scale \code{2} on \code{sexfemale}\footnote{When factors are used as predictors, parameter names will depend on the factor levels. To get an overview of all parameters and parameter classes for which priors can be specified, use function \code{get\_prior}. For the present example, \code{get\_prior(time | cens(censored) $\sim$ age * sex + disease + (1 + age|patient), data = kidney, family = lognormal())} does the desired.}. Then, we may write 
 \begin{Code}
 prior <- c(set_prior("normal(0,10)", class = "b", coef = "age"),
            set_prior("cauchy(1,2)", class = "b", coef = "sexfemale"))
@@ -204,7 +204,7 @@ After the posterior samples have been computed, the \code{brm} function returns 
 
 \begin{Code}
 R> summary(fit1, waic = TRUE)
- Family: gaussian (log) 
+ Family: lognormal (identity) 
 Formula: time | cens(censored) ~ age * sex + disease + (1 + age | patient) 
    Data: kidney (Number of observations: 76) 
 Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1; 
