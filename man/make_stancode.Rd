@@ -80,10 +80,14 @@ specified directly within \code{formula} using function \code{cse}.}
 \code{"equidistant"} restricts the distance between 
 consecutive thresholds to the same value.}
 
-\item{sparse}{Logical; indicates whether the fixed effects design matrix
-should be treated as sparse (defaults to \code{FALSE}). 
+\item{sparse}{Logical; indicates whether the population-level 
+design matrix should be treated as sparse (defaults to \code{FALSE}). 
 For design matrices with many zeros, this can considerably 
-reduce required memory. For all models using multivariate syntax 
+reduce required memory. For univariate sparse models, it may be
+sensible to prevent the design matrix from being centered
+(see 'Details' for more information), as centering may
+reduce sparsity. 
+For all models using multivariate syntax 
 (i.e. multivariate linear models, zero-inflated and hurdle models 
 as well as categorical models), setting \code{sparse = TRUE}, 
 is generally worth a try to decrease memory requirements.
