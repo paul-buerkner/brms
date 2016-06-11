@@ -1436,8 +1436,8 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     } else {
       out <- get_summary(out, probs = probs)
     }
+    rownames(out) <- 1:nrow(out)
   }
-  rownames(out) <- NULL
   out
 }
 
@@ -1531,6 +1531,7 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   }
   if (summary) {
     mu <- get_summary(mu, probs = probs)
+    rownames(mu) <- 1:nrow(mu)
   }
   mu
 }
