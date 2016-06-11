@@ -8,6 +8,8 @@
       \item Add support for generalized additive mixed models
       (GAMMs). Smoothing terms can be specified using
       the \code{s} and \code{t2} functions in the model formula. 
+      \item Introduce \code{as.data.frame} and \code{as.matrix}
+      methods for \code{brmsfit} objects.
     }
   }
   \subsection{OTHER CHANGES}{
@@ -72,7 +74,7 @@
 \section{CHANGES IN VERSION 0.9.0}{
   \subsection{NEW FEATURES}{
     \itemize{ 
-      \item Add support for \code{monotonous} effects
+      \item Add support for \code{monotonic} effects
       allowing to use ordinal predictors without 
       assuming their categories to be equidistant.
       \item Apply multivariate formula syntax in categorical 
