@@ -778,7 +778,7 @@ monotonous <- function(...) {
 add_families <- function(x) {
   # return names of valid families for addition argument x
   switch(x, weights = "all",
-         se = c("gaussian", "student", "cauchy", "lognormal"),
+         se = c("gaussian", "student", "cauchy"),
          trials = c("binomial", "zero_inflated_binomial"),
          cat = c("cumulative", "cratio", "sratio", "acat"), 
          cens = c("gaussian", "student", "cauchy", "lognormal",
