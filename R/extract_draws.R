@@ -43,8 +43,9 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
       stop("Covariate matrix is invalid. Please report a bug.")
     }
     for (i in seq_along(covars)) {
-      draws$C[[covars[i]]] <- matrix(standata$C[, covars[i]], nrow = nsamples, 
-                                     ncol = nrow(standata$C), byrow = TRUE)
+      draws[["C"]][[covars[i]]] <- 
+        matrix(standata$C[, covars[i]], nrow = nsamples, 
+               ncol = nrow(standata$C), byrow = TRUE)
     }
     draws$nlform <- ee$fixed[[3]]
     # remove redudant information to save working memory
@@ -57,29 +58,31 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   
   args <- list(x = x, as.matrix = TRUE, subset = subset)
   if (has_sigma(family(x), se = ee$se, autocor = x$autocor))
-    draws$sigma <- do.call(posterior_samples, c(args, pars = "^sigma_"))
+    draws[["sigma"]] <- do.call(posterior_samples, c(args, pars = "^sigma_"))
   if (family(x)$family == "student") 
-    draws$nu <- c(do.call(posterior_samples, c(args, pars = "^nu$")))
+    draws[["nu"]] <- c(do.call(posterior_samples, c(args, pars = "^nu$")))
   if (family(x)$family %in% c("beta", "zero_inflated_beta"))
-    draws$phi <- c(do.call(posterior_samples, c(args, pars = "^phi$")))
+    draws[["phi"]] <- c(do.call(posterior_samples, c(args, pars = "^phi$")))
   if (has_shape(family(x))) 
-    draws$shape <- c(do.call(posterior_samples, c(args, pars = "^shape$")))
+    draws[["shape"]] <- c(do.call(posterior_samples, c(args, pars = "^shape$")))
   if (is.linear(family(x)) && length(ee$response) > 1L) {
-    draws$rescor <- do.call(posterior_samples, c(args, pars = "^rescor_"))
-    draws$Sigma <- get_cov_matrix(sd = draws$sigma, cor = draws$rescor)$cov
+    draws[["rescor"]] <- do.call(posterior_samples, c(args, pars = "^rescor_"))
+    draws[["Sigma"]] <- get_cov_matrix(sd = draws$sigma, 
+                                       cor = draws$rescor)$cov
   }
   if (get_ar(x$autocor)) {
-    draws$ar <- do.call(posterior_samples, c(args, pars = "^ar\\["))
+    draws[["ar"]] <- do.call(posterior_samples, c(args, pars = "^ar\\["))
   }
   if (get_ma(x$autocor)) {
-    draws$ma <- do.call(posterior_samples, c(args, pars = "^ma\\["))
+    draws[["ma"]] <- do.call(posterior_samples, c(args, pars = "^ma\\["))
   }
   if (get_arr(x$autocor)) {
-    draws$arr <- do.call(posterior_samples, c(args, pars = "^arr\\["))
+    draws[["arr"]] <- do.call(posterior_samples, c(args, pars = "^arr\\["))
   }
   if (is(x$autocor, "cor_bsts")) {
     if (is.null(newdata)) {
-      draws$loclev <- do.call(posterior_samples, c(args, pars = "^loclev\\["))
+      draws[["loclev"]] <- do.call(posterior_samples, 
+                                   c(args, pars = "^loclev\\["))
     } else {
       warning("Local level terms are ignored if 'newdata' is specified.",
               call. = FALSE)
@@ -108,44 +111,44 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   draws <- list(old_cat = is.old_categorical(x))
   if (!is.null(standata$X) && ncol(standata$X) && !draws$old_cat) {
     b_pars <- paste0("b_", nlpar, colnames(standata$X))
-    draws$b <- do.call(posterior_samples, 
-                       c(args, list(pars = b_pars, exact = TRUE)))
+    draws[["b"]] <- do.call(posterior_samples, 
+                            c(args, list(pars = b_pars, exact = TRUE)))
   }
   if (!is.null(standata$Xm) && ncol(standata$Xm)) {
     monef <- colnames(standata$Xm)
-    draws$bm <- draws$simplex <- vector("list", length(monef))
+    draws[["bm"]] <- draws$simplex <- vector("list", length(monef))
     for (i in 1:length(monef)) {
       bm_par <- paste0("b_", nlpar, monef[i])
-      draws$bm[[i]] <- do.call(posterior_samples, 
-                               c(args, list(pars = bm_par, exact = TRUE)))
+      draws[["bm"]][[i]] <- do.call(posterior_samples, 
+                              c(args, list(pars = bm_par, exact = TRUE)))
       simplex_par <- paste0("simplex_", nlpar, monef[i], 
                             "[", 1:standata$Jm[i], "]")
-      draws$simplex[[i]] <- do.call(posterior_samples, 
-                                    c(args, list(pars = simplex_par, 
-                                                 exact = TRUE)))
+      draws[["simplex"]][[i]] <- do.call(posterior_samples, 
+                                         c(args, list(pars = simplex_par, 
+                                                      exact = TRUE)))
       
     }
   }
   if (is.ordinal(family(x))) {
-    draws$Intercept <- do.call(posterior_samples, 
-                               c(args, list(pars = "^b_Intercept\\[")))
+    draws[["Intercept"]] <- do.call(posterior_samples, 
+                                    c(args, list(pars = "^b_Intercept\\[")))
     if (!is.null(standata$Xp) && ncol(standata$Xp)) {
       cse_pars <- paste0("^b_", colnames(standata$Xp), "\\[")
-      draws$p <- do.call(posterior_samples, c(args, list(pars = cse_pars)))
+      draws[["p"]] <- do.call(posterior_samples, c(args, list(pars = cse_pars)))
     }
   } else if (draws$old_cat) {
     # old categorical models deprecated as of brms > 0.8.0
     if (!is.null(standata$X)) {
-      draws$p <- do.call(posterior_samples, c(args, list(pars = "^b_")))
+      draws[["p"]] <- do.call(posterior_samples, c(args, list(pars = "^b_")))
     }
   }
   # splines
   splines <- rename(get_spline_labels(ee))
   for (i in seq_along(splines)) {
-    draws$Zs[[splines[i]]] <- draws$data[[paste0("Zs_", i)]]
+    draws[["Zs"]][[splines[i]]] <- draws$data[[paste0("Zs_", i)]]
     s_pars <- paste0("^s_", nlpar, splines[i], "\\[")
-    draws$s[[splines[i]]] <- do.call(posterior_samples,
-                                     c(args, list(pars = s_pars)))
+    draws[["s"]][[splines[i]]] <- do.call(posterior_samples,
+                                          c(args, list(pars = s_pars)))
   }
   # random effects
   group <- names(new_ranef)
