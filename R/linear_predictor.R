@@ -25,7 +25,7 @@ linear_predictor <- function(draws, i = NULL) {
     eta <- eta + matrix(rep(p(draws$data$offset, i), draws$nsamples), 
                         ncol = N, byrow = TRUE)
   }
-  # incorporate monotonous effects
+  # incorporate monotonic effects
   for (j in seq_along(draws$bm)) {
     eta <- eta + monef_predictor(Xm = p(draws$data$Xm[, j], i), 
                                  bm = as.vector(draws$bm[[j]]), 
@@ -137,9 +137,9 @@ fixef_predictor <- function(X, b) {
 }
 
 monef_predictor <- function(Xm, bm, simplex) {
-  # compute eta for monotonous effects
+  # compute eta for monotonic effects
   # Args:
-  #   Xm: a vector of data for the monotonous effect
+  #   Xm: a vector of data for the monotonic effect
   #   bm: montonous effects samples
   #   simplex: matrix of samples of the simplex
   #            corresponding to bm

@@ -11,8 +11,6 @@ lsp <- function(package, what = "all", pattern = ".*") {
   if (!is.character(substitute(package)))
     package <- deparse(substitute(package))
   ns <- asNamespace(package)
-  if (missing(pattern))
-    pattern <- '.*'
   
   ## base package does not have NAMESPACE
   if (isBaseNamespace(ns)) {

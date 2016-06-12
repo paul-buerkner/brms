@@ -292,7 +292,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
         }
       }
     }
-    # validate monotonous variables
+    # validate monotonic variables
     if (is.formula(ee$mono)) {
       take_num <- !is_factor & names(list_data) %in% all.vars(ee$mono)
       # factors have already been checked
@@ -461,18 +461,18 @@ get_intercepts <- function(effects, data, family = gaussian()) {
 }
 
 prepare_mono_vars <- function(data, vars, check = TRUE) {
-  # prepare monotonous variables for use in Stan
+  # prepare monotonic variables for use in Stan
   # Args:
   #   data: a data.frame or named list
-  #   vars: names of monotonous variables
+  #   vars: names of monotonic variables
   #   check: check the number of levels? 
   # Returns:
-  #   'data' with amended monotonous variables
+  #   'data' with amended monotonic variables
   stopifnot(is.list(data))
   stopifnot(is.atomic(vars))
   vars <- intersect(vars, names(data))
   for (i in seq_along(vars)) {
-    # validate predictors to be modeled as monotonous effects
+    # validate predictors to be modeled as monotonic effects
     if (is.ordered(data[[vars[i]]])) {
       # counting starts at zero
       data[[vars[i]]] <- as.numeric(data[[vars[i]]]) - 1 
@@ -483,12 +483,12 @@ prepare_mono_vars <- function(data, vars, check = TRUE) {
       }
       data[[vars[i]]] <- data[[vars[i]]] - min_value
     } else {
-      stop(paste("Monotonous predictors must be either integers or",
+      stop(paste("monotonic predictors must be either integers or",
                  "ordered factors. Error occured for variable", vars[i]), 
            call. = FALSE)
     }
     if (check && max(data[[vars[i]]]) < 2L) {
-      stop(paste("Monotonous predictors must have at least 3 different", 
+      stop(paste("monotonic predictors must have at least 3 different", 
                  "values. Error occured for variable", vars[i]),
            call. = FALSE)
     }
@@ -625,7 +625,7 @@ data_fixef <- function(effects, data, family = gaussian(),
 
 data_monef <- function(effects, data, prior = prior_frame(), 
                        nlpar = "", Jm = NULL) {
-  # prepare data for monotonous effects for use in Stan 
+  # prepare data for monotonic effects for use in Stan 
   # Args:
   #   effects: a list returned by extract_effects
   #   data: the data passed by the user
