@@ -29,6 +29,7 @@ Imports:
 Suggests: 
     testthat (>= 0.9.1),
     ppcheck,
+    arm,
     mvtnorm,
     KernSmooth,
     R.rsp,
