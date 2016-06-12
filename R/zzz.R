@@ -1,12 +1,11 @@
 # Uncomment the code below to enable unit tests of S3 methods
 
-brmsfit_example <- brm(count ~ Trt_c + mono(Exp) +
-                         offset(log_Age_c) + (1+Trt_c|visit),
+brmsfit_example <- brm(count ~ Trt*Age + mono(Exp) + s(Age) +
+                         offset(Age) + (1+Trt|visit),
                        data = data.frame(count = rpois(236, lambda = 20),
                                          visit = rep(1:4, each = 59),
                                          patient = rep(1:59, 4),
-                                         log_Age_c = rnorm(236),
-                                         Trt_c = rnorm(236),
+                                         Age = rnorm(236), Trt = rnorm(236),
                                          Exp = sample(1:5, 236, TRUE)),
                        family = gaussian(), sample_prior = TRUE,
                        autocor = cor_arma(~visit|patient, 1, 1),

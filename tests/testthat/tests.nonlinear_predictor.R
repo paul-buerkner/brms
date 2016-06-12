@@ -4,7 +4,7 @@ test_that("nonlinear_predictor runs without errors", {
   # more complicated non-linear models are only tested locally
   # to keep the installation time of brms short
   fit <- rename_pars(brmsfit_example)
-  fit$formula <- count ~ alpha - exp(Trt_c / beta)
+  fit$formula <- count ~ alpha - exp(Trt / beta)
   fit$nonlinear <- list(alpha ~ 1, beta ~ 1)
   fit <- add_samples(fit, "b_alpha_Intercept")
   fit <- add_samples(fit, "b_beta_Intercept")
@@ -12,7 +12,7 @@ test_that("nonlinear_predictor runs without errors", {
   expect_equal(dim(nonlinear_predictor(draws)), 
                c(Nsamples(fit), nobs(fit)))
   newdata <- data.frame(count = rpois(3, 10), visit = 1:3, patient = 10,
-                        Trt_c = rnorm(3), log_Age_c = 0, Exp = 1)
+                        Trt = rnorm(3), Age = 0, Exp = 1)
   draws <- extract_draws(fit, newdata = newdata)
   expect_equal(dim(nonlinear_predictor(draws)), 
                c(Nsamples(fit), nrow(newdata)))

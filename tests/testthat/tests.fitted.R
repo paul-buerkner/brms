@@ -25,6 +25,7 @@ test_that("fitted helper functions run without errors", {
   # pseudo hurdle poisson model
   names(fit$data)[1] <- "response"
   fit$family <- hurdle_poisson()
+  fit$formula <- count ~ Trt*Age + mono(Exp) + offset(Age) + (1+Trt|visit)
   expect_equal(dim(fitted(fit, summary = FALSE)), c(nsamples, nobs(fit)))
   # pseudo zero-inflated poisson model
   fit$family <- zero_inflated_poisson()

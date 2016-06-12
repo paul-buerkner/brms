@@ -344,7 +344,7 @@ test_that("make_standata returns fixed residual covariance matrices", {
 })
 
 test_that("make_standata returns data for bsts models", {
-  dat <- data.frame(y = 1:5, g = sample(1:3, 5, TRUE), t = 1:5)
+  dat <- data.frame(y = 1:5, g = c(1:3, sample(1:3, 2, TRUE)), t = 1:5)
   expect_equal(make_standata(y~1, data = dat, autocor = cor_bsts(~t|g))$tg,
                sort(dat$g))
 })
