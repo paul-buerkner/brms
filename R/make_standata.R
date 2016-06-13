@@ -292,7 +292,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     Karr <- get_arr(autocor)
     if (Kar || Kma) {
       # ARMA effects (of residuals)
-      standata$tg <- as.numeric(as.factor(tgroup))
+      standata$tg <- as.numeric(factor(tgroup))
       standata$Kar <- Kar
       standata$Kma <- Kma
       standata$Karma <- max(Kar, Kma)
@@ -339,7 +339,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     } else {
       tgroup <- rep(1, standata$N) 
     }
-    standata$tg <- as.numeric(as.factor(tgroup))
+    standata$tg <- as.numeric(factor(tgroup))
   }
   standata$prior_only <- ifelse(identical(sample_prior, "only"), 1L, 0L)
   if (isTRUE(control$save_order)) {

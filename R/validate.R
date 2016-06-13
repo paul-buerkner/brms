@@ -729,7 +729,7 @@ gather_ranef <- function(effects, data = NULL, ...) {
   ranef <- setNames(lapply(Z, colnames), random$group)
   for (i in seq_along(ranef)) {
     attr(ranef[[i]], "levels") <- 
-      levels(as.factor(get(random$group[[i]], data)))
+      levels(factor(get(random$group[[i]], data)))
     attr(ranef[[i]], "group") <- names(ranef)[i]
     attr(ranef[[i]], "cor") <- random$cor[[i]]
     if (length(effects$nonlinear))
