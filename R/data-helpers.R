@@ -701,7 +701,7 @@ data_ranef <- function(effects, data, family = gaussian(),
     r <- lapply(Z, colnames)
     ncolZ <- lapply(Z, ncol)
     # numeric levels passed to Stan
-    expr <- expression(as.array(as.numeric(as.factor(get(g, data)))), 
+    expr <- expression(as.array(as.numeric(factor(get(g, data)))), 
                        length(unique(get(g, data))), # number of levels 
                        ncolZ[[i]],  # number of random effects
                        ncolZ[[i]] * (ncolZ[[i]] - 1) / 2)  # number of correlations
