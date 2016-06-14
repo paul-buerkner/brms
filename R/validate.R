@@ -19,7 +19,7 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   }
   tformula <- formula2string(formula) 
   tfixed <- gsub("\\|+[^~]*~", "~", tformula)
-  x <- list()
+  x <- nlist(formula)
   if (length(nonlinear)) {
     if (grepl("|", tfixed, fixed = TRUE)) {
       stop(paste("Random effects in non-linear models should be specified", 
@@ -755,6 +755,26 @@ rsv_vars <- function(family, nresp = 1, rsv_intercept = NULL) {
     rsv <- c(rsv, "intercept")
   }
   rsv
+}
+
+check_mv_formula <- function(family, effects) {
+  # check if reserved mv variables were (correctly) used
+  # TODO: add more / better checks
+  # Args:
+  #   family: the model family
+  #   effects: output of extract effects
+  rsv_vars <- rsv_vars(family, nresp = length(effects$response))
+  if (!is.null(rsv_vars)) {
+    if (!any(rsv_vars %in% all.vars(rhs(effects$formula)))) {
+      warning(paste(
+        "Apparently, you did not use any of the variables specific",
+        "to multivariate models. \nThis will lead to parameter",
+        "estimates which are pooled over all model parts, \nwhich is",
+        "probably not what you wanted. \nPlease see the Details section",
+        "of help(brm) for more information."), call. = FALSE)
+    }
+  } 
+  invisible(NULL)
 }
 
 cse <- function(...) {

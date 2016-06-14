@@ -255,6 +255,17 @@ test_that("check_brm_input returns correct warnings and errors", {
   expect_warning(check_brm_input(x))
 })
 
+test_that("check_mv_formula works correctly", {
+  effects <- extract_effects(cbind(y1,y2) ~ x)
+  expect_warning(check_mv_formula(gaussian(), effects),
+                 "did not use any of the variables")
+  effects <- extract_effects(y ~ x)
+  expect_warning(check_mv_formula(hurdle_gamma(), effects),
+                 "did not use any of the variables")
+  effects <- extract_effects(y ~ 0 + trait + trait:x)
+  expect_silent(check_mv_formula(hurdle_gamma(), effects))
+})
+
 test_that("exclude_pars returns expected parameter names", {
   ranef <- list(g1 = structure(c("x", "z"), cor = TRUE),
                 g2 = structure(c("x"), cor = FALSE))
