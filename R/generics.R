@@ -501,6 +501,8 @@ stanplot <- function(object, pars, ...) {
 #' @param re_formula A formula containing random effects to be considered 
 #'   in the marginal predictions. If \code{NULL}, include all random effects; 
 #'   if \code{NA} (default), include no random effects.
+#' @param robust If \code{FALSE} (the default) the mean is used as the 
+#'   measure of central tendency. If \code{TRUE} the median is used instead.
 #' @param probs The quantiles to be used in the computation of credible
 #'   intervals (defaults to 2.5 and 97.5 percent quantiles)
 #' @param method Either \code{"fitted"} or \code{"predict"}. 

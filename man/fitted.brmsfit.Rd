@@ -7,7 +7,7 @@
 \method{fitted}{brmsfit}(object, newdata = NULL, re_formula = NULL,
   scale = c("response", "linear"), allow_new_levels = FALSE,
   subset = NULL, nsamples = NULL, sort = FALSE, summary = TRUE,
-  probs = c(0.025, 0.975), ...)
+  robust = FALSE, probs = c(0.025, 0.975), ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}}
@@ -47,9 +47,14 @@ time series (\code{TRUE}).}
  (i.e. means, sds, and 95\% intervals) be returned
 instead of the raw values? Default is \code{TRUE}.}
 
-\item{probs}{The percentiles to be computed 
-by the \code{quantile} function. 
+\item{robust}{If \code{FALSE} (the default) the mean is used as 
+the measure of central tendency and the standard deviation as 
+the measure of variability. If \code{TRUE}, the median and the 
+median absolute deivation (MAD) are applied instead.
 Only used if \code{summary} is \code{TRUE}.}
+
+\item{probs}{The percentiles to be computed by the \code{quantile} 
+function. Only used if \code{summary} is \code{TRUE}.}
 
 \item{...}{Currently ignored}
 }

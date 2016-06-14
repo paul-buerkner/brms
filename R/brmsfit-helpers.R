@@ -155,7 +155,8 @@ get_estimate <- function(coef, samples, margin = 2, to.array = FALSE, ...) {
   x 
 }
 
-get_summary <- function(samples, probs = c(0.025, 0.975)) {
+get_summary <- function(samples, probs = c(0.025, 0.975),
+                        robust = FALSE) {
   # summarizes parameter samples based on mean, sd, and quantiles
   # Args: 
   #   samples: a matrix or data.frame containing the samples to be summarized. 
@@ -164,13 +165,18 @@ get_summary <- function(samples, probs = c(0.025, 0.975)) {
   # Returns:
   #   a N x C matric where N is the number of observations and C 
   #   is equal to \code{length(probs) + 2}.
+  if (robust) {
+    coefs <- c("median", "mad", "quantile")
+  } else {
+    coefs <- c("mean", "sd", "quantile")
+  }
   if (length(dim(samples)) == 2) {
-    out <- do.call(cbind, lapply(c("mean", "sd", "quantile"), get_estimate, 
-                                 samples = samples, probs = probs, na.rm = TRUE))
+    out <- do.call(cbind, lapply(coefs, get_estimate, samples = samples,
+                                 probs = probs, na.rm = TRUE))
   } else if (length(dim(samples)) == 3) {
     out <- abind(lapply(1:dim(samples)[3], function(i)
-      do.call(cbind, lapply(c("mean", "sd", "quantile"), get_estimate, 
-                            samples = samples[, , i], probs = probs))), along = 3)
+      do.call(cbind, lapply(coefs, get_estimate, samples = samples[, , i],
+                            probs = probs))), along = 3)
     dimnames(out) <- list(NULL, NULL, paste0("P(Y = ", 1:dim(out)[3], ")")) 
   } else { 
     stop("dimension of samples must be either 2 or 3") 

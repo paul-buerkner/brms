@@ -1077,7 +1077,8 @@ pairs.brmsfit <- function(x, pars = NA, exact_match = FALSE, ...) {
 #' @rdname marginal_effects
 #' @export
 marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL, 
-                                     re_formula = NA, probs = c(0.025, 0.975),
+                                     re_formula = NA, robust = FALSE, 
+                                     probs = c(0.025, 0.975),
                                      method = c("fitted", "predict"), ...) {
   method <- match.arg(method)
   dots <- list(...)
@@ -1253,7 +1254,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     marg_data <- do.call(rbind, marg_data)
     marg_data$MargCond <- factor(marg_data$MargCond, rownames(conditions))
     args <- list(x, newdata = marg_data, re_formula = re_formula,
-                 allow_new_levels = TRUE, probs = probs)
+                 allow_new_levels = TRUE, probs = probs, robust = robust)
     if (is.ordinal(x$family) || is.categorical(x$family)) {
       args$summary <- FALSE 
       marg_res <- do.call(method, args)
@@ -1264,7 +1265,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
         marg_res <- do.call(cbind, lapply(1:dim(marg_res)[2], 
                             function(s) rowSums(marg_res[, s, ])))
       } 
-      marg_res <- get_summary(marg_res, probs = probs)
+      marg_res <- get_summary(marg_res, probs = probs, robust = robust)
     } else {
       marg_res <- do.call(method, args)
     }
@@ -1320,9 +1321,13 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
 #' @param summary Should summary statistics 
 #'   (i.e. means, sds, and 95\% intervals) be returned
 #'  instead of the raw values? Default is \code{TRUE}.
-#' @param probs The percentiles to be computed 
-#'  by the \code{quantile} function. 
+#' @param robust If \code{FALSE} (the default) the mean is used as 
+#'  the measure of central tendency and the standard deviation as 
+#'  the measure of variability. If \code{TRUE}, the median and the 
+#'  median absolute deivation (MAD) are applied instead.
 #'  Only used if \code{summary} is \code{TRUE}.
+#' @param probs  The percentiles to be computed by the \code{quantile} 
+#'  function. Only used if \code{summary} is \code{TRUE}. 
 #' @param subset A numeric vector specifying
 #'  the posterior samples to be used. 
 #'  If \code{NULL} (the default), all samples are used.
@@ -1405,7 +1410,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
 predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                             transform = NULL, allow_new_levels = FALSE,
                             subset = NULL, nsamples = NULL, sort = FALSE,
-                            ntrys = 5, summary = TRUE, 
+                            ntrys = 5, summary = TRUE, robust = FALSE,
                             probs = c(0.025, 0.975), ...) {
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
@@ -1456,7 +1461,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
       # compute frequencies of categories 
       out <- get_table(out, levels = 1:max(draws$data$max_obs)) 
     } else {
-      out <- get_summary(out, probs = probs)
+      out <- get_summary(out, probs = probs, robust = robust)
     }
     rownames(out) <- 1:nrow(out)
   }
@@ -1526,8 +1531,8 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                            scale = c("response", "linear"),
                            allow_new_levels = FALSE, subset = NULL, 
                            nsamples = NULL, sort = FALSE,
-                           summary = TRUE, probs = c(0.025, 0.975), 
-                           ...) {
+                           summary = TRUE, robust = FALSE,
+                           probs = c(0.025, 0.975), ...) {
   scale <- match.arg(scale)
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
@@ -1552,7 +1557,7 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     colnames(mu) <- NULL
   }
   if (summary) {
-    mu <- get_summary(mu, probs = probs)
+    mu <- get_summary(mu, probs = probs, robust = robust)
     rownames(mu) <- 1:nrow(mu)
   }
   mu
@@ -1598,8 +1603,8 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                               type = c("ordinary", "pearson"), 
                               allow_new_levels = FALSE, subset = NULL, 
                               nsamples = NULL, sort = FALSE,
-                              summary = TRUE, probs = c(0.025, 0.975), 
-                              ...) {
+                              summary = TRUE, robust = FALSE, 
+                              probs = c(0.025, 0.975), ...) {
   type <- match.arg(type)
   family <- family(object)
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
@@ -1630,7 +1635,7 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     res <- res / sd
   }
   if (summary) {
-    res <- get_summary(res, probs = probs)
+    res <- get_summary(res, probs = probs, robust = robust)
   }
   res
 }
