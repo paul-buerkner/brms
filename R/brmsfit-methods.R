@@ -903,6 +903,9 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
 #' @param group Optional name of a grouping factor in the model
 #'  by which to stratify the ppc plot. This argument is required for 
 #'  ppc \code{*_grouped} types and ignored otherwise.
+#' @param time Optional name of a time variable in the model by
+#'  which to order time-series plots. Only used for
+#'  ppc \code{ts*} types and ignored otherwise.
 #' @param ... Further arguments passed to the ppc functions
 #'   of the \pkg{ppcheck} package.
 #' @inheritParams predict.brmsfit
@@ -928,8 +931,8 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
 #' 
 #' @export
 pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
-                             re_formula = NULL, subset = NULL, 
-                             ntrys = 5, ...) {
+                             time = NULL, re_formula = NULL, 
+                             subset = NULL, ntrys = 5, ...) {
   if (!requireNamespace("ppcheck", quietly = TRUE)) {
     # remove check as soon as ppcheck is on CRAN
     stop(paste0("please install the ppcheck package via\n",
@@ -946,6 +949,10 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     stop("argument 'group' must be of length 1", call. = FALSE)
     
   }
+  if (!is.null(time) && length(time) != 1L) {
+    stop("argument 'time' must be of length 1", call. = FALSE)
+    
+  }
   ppc_funs <- lsp("ppcheck", what = "exports", pattern = "^ppc_")
   valid_ppc_types <- sub("^ppc_", "", ppc_funs)
   if (!type %in% valid_ppc_types) {
@@ -954,6 +961,8 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
                 paste(valid_ppc_types, collapse = ", ")),
          call. = FALSE)
   }
+  ppc_fun <- get(paste0("ppc_", type), pos = asNamespace("ppcheck"))
+  # validate argument "group"
   valid_groups <- names(object$ranef)
   time_group <- extract_time(object$autocor$formula)$group
   if (nchar(time_group)) {
@@ -964,16 +973,20 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
                 "Valid groups are: \n", paste(valid_groups, collapse = ", ")),
          call. = FALSE)
   }
-  group_type <- grepl("_grouped$", type)
-  if (is.null(group) && group_type) {
+  is_group_type <- "group" %in% names(formals(ppc_fun))
+  if (is.null(group) && is_group_type) {
     stop(paste0("Argument 'group' is required for ppc type '", type, "'."), 
          call. = FALSE)
   }
-  if (!is.null(group) && !group_type) {
+  if (!is.null(group) && !is_group_type) {
     warning(paste0("Argument 'group' is ignored for ppc type '", type, "'."), 
             call. = FALSE)
   }
-  ppc_fun <- get(paste0("ppc_", type), pos = asNamespace("ppcheck"))
+  is_ts_type <- "time" %in% names(formals(ppc_fun))
+  if (!is.null(time) && !is_ts_type) {
+    warning(paste0("Argument 'time' is ignored for ppc type '", type, "'."), 
+            call. = FALSE)
+  }
   if (names(formals(ppc_fun))[2] == "Ey") {
     if (is.ordinal(object$family)) {
       stop(paste0("ppc type '", type, "' is not available", 
@@ -991,11 +1004,11 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     } else if (type %in% aps_types) {
       nsamples <- NULL
       message(paste0("Using all posterior samples for ppc type '", 
-                     type, "'."))
+                     type, "'"))
     } else {
       nsamples <- 10
       message(paste0("Using 10 posterior samples for ppc type '", 
-                     type, "'."))
+                     type, "'"))
     }
   }
   args <- nlist(object, nsamples, subset, re_formula, 
@@ -1009,13 +1022,22 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     yrep <- yrep / matrix(standata$trials, nrow = nrow(yrep),
                           ncol = ncol(yrep), byrow = TRUE)
   }
+  ppc_args <- list(y, yrep, ...)
   if (!is.null(group)) {
     group <- model.frame(object)[[group]]
     if (!is.null(attr(standata, "old_order"))) {
       group <- group[order(attr(standata, "old_order"))]
     }
+    ppc_args$group <- group
   }
-  rstan::quietgg(ppc_fun(y, yrep, group = group, ...))
+  if (!is.null(time)) {
+    time <- model.frame(object)[[time]]
+    if (!is.null(attr(standata, "old_order"))) {
+      time <- time[order(attr(standata, "old_order"))]
+    }
+    ppc_args$time <- as.numeric(time)
+  }
+  rstan::quietgg(do.call(ppc_fun, ppc_args))
 }
 
 #' Create a matrix of output plots from a \code{brmsfit} object

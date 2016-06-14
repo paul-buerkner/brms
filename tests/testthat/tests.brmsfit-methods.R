@@ -113,7 +113,8 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_true(is(pp_check(fit), "ggplot"))
   expect_true(is(pp_check(fit, "stat", nsamples = 5), "ggplot"))
   expect_true(is(pp_check(fit, "resid_binned"), "ggplot"))
-  expect_true(is(pp_check(fit, "ts_grouped", group = "visit"),  "ggplot"))
+  ts_plot <- pp_check(fit, "ts_grouped", group = "patient", time = "visit")
+  expect_true(is(ts_plot, "ggplot"))
   expect_error(pp_check(fit, "wrong_type"))
   expect_error(pp_check(fit, "violin_grouped"), "group")
   expect_error(pp_check(fit, "stat_grouped", group = "g"), 
