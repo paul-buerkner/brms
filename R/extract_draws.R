@@ -1,9 +1,10 @@
 extract_draws <- function(x, newdata = NULL, re_formula = NULL, 
-                          allow_new_levels = FALSE, subset = NULL, 
-                          nsamples = NULL, ...) {
+                          allow_new_levels = FALSE, incl_autocor = TRUE, 
+                          subset = NULL, nsamples = NULL, ...) {
   # extract all data and posterior samples required in (non)linear_predictor
   # Args:
   #   x: an object of class brmsfit
+  #   incl_autocor: include autocorrelation parameters in the output?
   #   other arguments: see doc of logLik.brmsfit
   # Returns:
   #   A named list to be understood by linear_predictor.
@@ -70,22 +71,24 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
     draws[["Sigma"]] <- get_cov_matrix(sd = draws$sigma, 
                                        cor = draws$rescor)$cov
   }
-  if (get_ar(x$autocor)) {
-    draws[["ar"]] <- do.call(posterior_samples, c(args, pars = "^ar\\["))
-  }
-  if (get_ma(x$autocor)) {
-    draws[["ma"]] <- do.call(posterior_samples, c(args, pars = "^ma\\["))
-  }
-  if (get_arr(x$autocor)) {
-    draws[["arr"]] <- do.call(posterior_samples, c(args, pars = "^arr\\["))
-  }
-  if (is(x$autocor, "cor_bsts")) {
-    if (is.null(newdata)) {
-      draws[["loclev"]] <- do.call(posterior_samples, 
-                                   c(args, pars = "^loclev\\["))
-    } else {
-      warning("Local level terms are ignored if 'newdata' is specified.",
-              call. = FALSE)
+  if (incl_autocor) {
+    if (get_ar(x$autocor)) {
+      draws[["ar"]] <- do.call(posterior_samples, c(args, pars = "^ar\\["))
+    }
+    if (get_ma(x$autocor)) {
+      draws[["ma"]] <- do.call(posterior_samples, c(args, pars = "^ma\\["))
+    }
+    if (get_arr(x$autocor)) {
+      draws[["arr"]] <- do.call(posterior_samples, c(args, pars = "^arr\\["))
+    }
+    if (is(x$autocor, "cor_bsts")) {
+      if (is.null(newdata)) {
+        draws[["loclev"]] <- do.call(posterior_samples, 
+                                     c(args, pars = "^loclev\\["))
+      } else {
+        warning(paste("Local level terms are currently ignored when", 
+                      "'newdata' is specified."), call. = FALSE)
+      }
     }
   }
   draws

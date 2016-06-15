@@ -5,9 +5,9 @@
 \title{Model Predictions of \code{brmsfit} Objects}
 \usage{
 \method{predict}{brmsfit}(object, newdata = NULL, re_formula = NULL,
-  transform = NULL, allow_new_levels = FALSE, subset = NULL,
-  nsamples = NULL, sort = FALSE, ntrys = 5, summary = TRUE,
-  robust = FALSE, probs = c(0.025, 0.975), ...)
+  transform = NULL, allow_new_levels = FALSE, incl_autocor = TRUE,
+  subset = NULL, nsamples = NULL, sort = FALSE, ntrys = 5,
+  summary = TRUE, robust = FALSE, probs = c(0.025, 0.975), ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}}
@@ -27,6 +27,10 @@ before summary statistics are computed.}
 \item{allow_new_levels}{A flag indicating if new
 levels of random effects are allowed (defaults to \code{FALSE}). 
 Only relevant if \code{newdata} is provided.}
+
+\item{incl_autocor}{A flag indicating if autocorrelation
+parameters should be included in the predictions. 
+Defaults to \code{TRUE}.}
 
 \item{subset}{A numeric vector specifying
 the posterior samples to be used. 

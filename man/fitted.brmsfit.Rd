@@ -6,8 +6,8 @@
 \usage{
 \method{fitted}{brmsfit}(object, newdata = NULL, re_formula = NULL,
   scale = c("response", "linear"), allow_new_levels = FALSE,
-  subset = NULL, nsamples = NULL, sort = FALSE, summary = TRUE,
-  robust = FALSE, probs = c(0.025, 0.975), ...)
+  incl_autocor = TRUE, subset = NULL, nsamples = NULL, sort = FALSE,
+  summary = TRUE, robust = FALSE, probs = c(0.025, 0.975), ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}}
@@ -28,6 +28,10 @@ fitted values are returned on the scale of the linear predictor.}
 \item{allow_new_levels}{A flag indicating if new
 levels of random effects are allowed (defaults to \code{FALSE}). 
 Only relevant if \code{newdata} is provided.}
+
+\item{incl_autocor}{A flag indicating if autocorrelation
+parameters should be included in the predictions. 
+Defaults to \code{TRUE}.}
 
 \item{subset}{A numeric vector specifying
 the posterior samples to be used. 

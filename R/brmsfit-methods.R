@@ -1409,15 +1409,15 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
 #' @export 
 predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                             transform = NULL, allow_new_levels = FALSE,
-                            subset = NULL, nsamples = NULL, sort = FALSE,
+                            incl_autocor = TRUE, subset = NULL, 
+                            nsamples = NULL, sort = FALSE,
                             ntrys = 5, summary = TRUE, robust = FALSE,
                             probs = c(0.025, 0.975), ...) {
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
-  draws <- extract_draws(x = object, newdata = newdata, 
-                         re_formula = re_formula, subset = subset,
-                         allow_new_levels = allow_new_levels,
-                         nsamples = nsamples)
+  draws_args <- nlist(x = object, newdata, re_formula, incl_autocor, 
+                      allow_new_levels, subset, nsamples)
+  draws <- do.call(extract_draws, draws_args)
   if (length(object$nonlinear)) {
     draws$eta <- nonlinear_predictor(draws)
   } else {
@@ -1529,17 +1529,16 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' @export 
 fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                            scale = c("response", "linear"),
-                           allow_new_levels = FALSE, subset = NULL, 
-                           nsamples = NULL, sort = FALSE,
+                           allow_new_levels = FALSE, incl_autocor = TRUE,
+                           subset = NULL, nsamples = NULL, sort = FALSE,
                            summary = TRUE, robust = FALSE,
                            probs = c(0.025, 0.975), ...) {
   scale <- match.arg(scale)
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
-  draws <- extract_draws(x = object, newdata = newdata, 
-                         re_formula = re_formula, subset = subset,
-                         allow_new_levels = allow_new_levels,
-                         nsamples = nsamples)
+  draws_args <- nlist(x = object, newdata, re_formula, incl_autocor, 
+                      allow_new_levels, subset, nsamples)
+  draws <- do.call(extract_draws, draws_args)
   # get mu and scale it appropriately
   if (length(object$nonlinear)) {
     mu <- nonlinear_predictor(draws)
@@ -1601,7 +1600,8 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' @export
 residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL, 
                               type = c("ordinary", "pearson"), 
-                              allow_new_levels = FALSE, subset = NULL, 
+                              allow_new_levels = FALSE, 
+                              incl_autocor = TRUE, subset = NULL, 
                               nsamples = NULL, sort = FALSE,
                               summary = TRUE, robust = FALSE, 
                               probs = c(0.025, 0.975), ...) {
@@ -1619,18 +1619,17 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (is.null(subset) && !is.null(nsamples)) {
     subset <- sample(Nsamples(object), nsamples)
   }
-  mu <- fitted(object, newdata = newdata, re_formula = re_formula, 
-               allow_new_levels = allow_new_levels, 
-               summary = FALSE, subset = subset, sort = sort)
+  pred_args <- nlist(object, newdata, re_formula, allow_new_levels,
+                     incl_autocor, subset, sort, summary = FALSE)
+  mu <- do.call(fitted, pred_args)
   Y <- matrix(rep(as.numeric(standata$Y), nrow(mu)), 
               nrow = nrow(mu), byrow = TRUE)
   res <- Y - mu
   colnames(res) <- NULL
   if (type == "pearson") {
     # get predicted standard deviation for each observation
-    sd <- predict(object, newdata = newdata, re_formula = re_formula, 
-                  allow_new_levels = allow_new_levels, 
-                  summary = TRUE, subset = subset, sort = sort)[, 2]
+    pred_args$summary <- TRUE
+    sd <- do.call(predict, pred_args)[, 2]
     sd <- matrix(rep(sd, nrow(mu)), nrow = nrow(mu), byrow = TRUE)
     res <- res / sd
   }
