@@ -340,6 +340,11 @@
 #'   The main effects of \code{main} or \code{spec} serve as intercepts,
 #'   while the interaction terms \code{main:x1} and \code{spec:x2} ensure
 #'   that \code{x1} and \code{x2} only predict one part of the model, respectively.
+#'   Please note that in \pkg{brms} the ZIH part models the probability 
+#'   of the response being zero, while in some other packages it models 
+#'   the probability of the response being non-zero. Thus, coefficients 
+#'   of the ZIH part may have opposite signs depending on which package 
+#'   you use.
 #'   
 #'   Using the same syntax as for zero-inflated and hurdle models, it is
 #'   possible to specify multiplicative effects in family \code{bernoulli}
