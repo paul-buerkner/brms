@@ -85,10 +85,13 @@ predict_gaussian_cov <- function(i, draws, ...) {
     # MA1 process
     args$ma <- draws$ma
     Sigma <- do.call(get_cov_matrix_ma1, args)
-  } else {
+  } else if (!is.null(draws$ar) && !is.null(draws$ma)) {
     # ARMA1 process
     args[c("ar", "ma")] <- draws[c("ar", "ma")]
     Sigma <- do.call(get_cov_matrix_arma1, args)
+  } else {
+    # identity matrix
+    Sigma <- do.call(get_cov_matrix_ident, args)
   }
   .fun <- function(s) {
     rmulti_normal(1, mu = ilink(eta[s, ], draws$f$link), 
@@ -111,10 +114,13 @@ predict_student_cov <- function(i, draws, ...) {
     # MA1 process
     args$ma <- draws$ma
     Sigma <- do.call(get_cov_matrix_ma1, args)
-  } else {
+  } else if (!is.null(draws$ar) && !is.null(draws$ma)) {
     # ARMA1 process
     args[c("ar", "ma")] <- draws[c("ar", "ma")]
     Sigma <- do.call(get_cov_matrix_arma1, args)
+  } else {
+    # identity matrix
+    Sigma <- do.call(get_cov_matrix_ident, args)
   }
   .fun <- function(s) {
     rmulti_student(1, df = draws$nu[s, ], 

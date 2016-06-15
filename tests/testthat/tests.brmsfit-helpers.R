@@ -69,6 +69,11 @@ test_that("ARMA covariance matrices are computed correctly", {
                              c(g1 * ar^2, g1 * ar, g1, g0))
   expected_arma_mat <- expected_arma_mat + diag(se2)
   expect_equal(arma_mat[1, , ], expected_arma_mat)
+  # test for identity matrix
+  ident_mat <- get_cov_matrix_ident(sigma = matrix(sigma), 
+                                    se2 = se2, nrows = length(se2))
+  expected_ident_mat <- diag(sigma^2 + se2)
+  expect_equal(ident_mat[1, , ], expected_ident_mat)
 })
 
 test_that("evidence_ratio returns expected results", {

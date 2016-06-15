@@ -321,6 +321,24 @@ get_cov_matrix_arma1 <- function(ar, ma, sigma, nrows, se2 = 0) {
   mat 
 }
 
+get_cov_matrix_ident <- function(sigma, nrows, se2 = 0) {
+  # compute a variance matrix without including ARMA parameters
+  # only used for ARMA covariance models when incl_autor = FALSE
+  # Args:
+  #   sigma: standard deviation samples of the AR1 process
+  #   se2: square of user defined standard errors (may be 0)
+  #   nrows: number of rows of the covariance matrix
+  # Returns:
+  #   An nsamples x nrows x nrows sigma array
+  mat <- aperm(array(diag(se2, nrows), dim = c(nrows, nrows, nrow(sigma))),
+               perm = c(3, 1, 2))
+  sigma2 <- sigma^2
+  for (i in 1:nrows) {
+    mat[, i, i] <- mat[, i, i] + sigma2
+  }
+  mat
+}
+
 get_sigma <- function(x, data, i, method = c("fitted", "predict", "logLik")) {
   # get the residual standard devation of linear models
   # Args:
