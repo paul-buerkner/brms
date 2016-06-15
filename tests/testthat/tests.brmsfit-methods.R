@@ -76,6 +76,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(dim(attr(loo_compare3, "compare")), c(3, 2))
   #expect_output(print(loo_compare3), "Weights")
   # marginal_effects (the related plot method is tested in tests.plots)
+  expect_equal(nrow(marginal_effects(fit)[[2]]), 100)
   mdata = data.frame(Age = c(-0.3, 0, 0.3), count = c(10, 20, 30), 
                      visit = 1:3, patient = 1, Trt = 0, Exp = c(1,3,5))
   exp_nrow <- nrow(mdata) * 100
@@ -87,7 +88,6 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(nrow(marginal_effects(fit, re_formula = NULL, 
                                      conditions = mdata)[[1]]), 
                exp_nrow)
-  expect_error(marginal_effects(fit), "Please specify argument 'conditions' manually")
   expect_error(marginal_effects(fit, effects = "Trtc"), 
                "All specified effects are invalid for this model")
   # model.frame

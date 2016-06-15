@@ -1151,8 +1151,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   mf <- model.frame(x)
   mono_vars <- unique(ulapply(get_effect(ee, "mono"), all.vars))
   if (is.null(conditions)) {
-    if (has_arma(x$autocor) && !use_cov(x$autocor) || 
-        length(rmNULL(ee[c("trials", "cat")]))) {
+    if (length(rmNULL(ee[c("trials", "cat")]))) {
       stop("Please specify argument 'conditions' manually for this model.", 
            call. = FALSE)
     }
@@ -1254,7 +1253,8 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     marg_data <- do.call(rbind, marg_data)
     marg_data$MargCond <- factor(marg_data$MargCond, rownames(conditions))
     args <- list(x, newdata = marg_data, re_formula = re_formula,
-                 allow_new_levels = TRUE, probs = probs, robust = robust)
+                 allow_new_levels = TRUE, incl_autocor = FALSE,
+                 probs = probs, robust = robust)
     if (is.ordinal(x$family) || is.categorical(x$family)) {
       args$summary <- FALSE 
       marg_res <- do.call(method, args)
@@ -1318,6 +1318,9 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
 #' @param allow_new_levels A flag indicating if new
 #'   levels of random effects are allowed (defaults to \code{FALSE}). 
 #'   Only relevant if \code{newdata} is provided.
+#' @param incl_autocor A flag indicating if autocorrelation
+#'  parameters should be included in the predictions. 
+#'  Defaults to \code{TRUE}.
 #' @param summary Should summary statistics 
 #'   (i.e. means, sds, and 95\% intervals) be returned
 #'  instead of the raw values? Default is \code{TRUE}.
