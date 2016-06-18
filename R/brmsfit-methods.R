@@ -965,7 +965,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
   # validate argument "group"
   valid_groups <- names(object$ranef)
   time_group <- extract_time(object$autocor$formula)$group
-  if (nchar(time_group)) {
+  if (!is.null(time_group) && nchar(time_group)) {
     valid_groups <- unique(c(valid_groups, time_group)) 
   }
   if (!is.null(group) && !group %in% valid_groups) {
