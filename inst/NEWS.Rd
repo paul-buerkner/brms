@@ -28,6 +28,9 @@
       \item Fix problems in \code{marginal_effects} for
       models using the reserved variable \code{intercept}
       thanks to Frederik Aust.
+      \item Fix a bug in the \code{print} method of
+      \code{brmshypothesis} objects that could lead to 
+      duplicated and thus invalid row names.
     }
   }
 }  

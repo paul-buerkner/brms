@@ -199,7 +199,8 @@ print.iclist <- function(x, digits = 2, ...) {
 #' @export
 print.brmshypothesis <- function(x, digits = 2, chars = 20, ...) {
   # make sure rownames are not too long
-  rownames(x$hypothesis) <- limit_chars(rownames(x$hypothesis), chars = chars)
+  rnames <- limit_chars(rownames(x$hypothesis), chars = chars)
+  rownames(x$hypothesis) <- make.unique(rnames, sep = " #")
   cat(paste0("Hypothesis Tests for class ", x$class, ":\n"))
   x$hypothesis[, 1:5] <- round(x$hypothesis[, 1:5], digits = digits)
   print(x$hypothesis, quote = FALSE)
