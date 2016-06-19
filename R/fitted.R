@@ -48,9 +48,13 @@ fitted_response <- function(draws, mu) {
   } else if (is.zero_inflated(draws$f)) {
     mu <- fitted_zero_inflated(mu, N_trait = data$N_trait, family = draws$f)
     if (draws$f$family == "zero_inflated_binomial") {
-      trials <- data$max_obs[1:ceiling(length(data$max_obs) / 2)]
-      trials <- matrix(rep(trials, nrow(mu)), nrow = nrow(mu), 
+      if (length(data$max_obs) > 1L) {
+        trials <- data$max_obs[1:ceiling(length(data$max_obs) / 2)]
+        trials <- matrix(rep(trials, nrow(mu)), nrow = nrow(mu), 
                        byrow = TRUE)
+      } else {
+        trials <- data$max_obs
+      }
       mu <- mu * trials
     }
   } else {
