@@ -9,7 +9,7 @@
   matrix as_matrix(vector X, int N, int K) { 
     matrix[N, K] Y; 
     for (i in 1:N) {
-      Y[i] <- to_row_vector(X[((i - 1) * K + 1):(i * K)]); 
+      Y[i] = to_row_vector(X[((i - 1) * K + 1):(i * K)]); 
     }
     return Y; 
   } 

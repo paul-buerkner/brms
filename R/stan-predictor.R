@@ -69,7 +69,7 @@ stan_linear <- function(effects, data, family = gaussian(),
     if (get_ar(autocor)) {
       eta_ar <- ifelse(!use_cov(autocor), " + head(E[n], Kar) * ar", "")
       out$transC3 <- paste0(out$transC3,  "    ", wsp, 
-        eta_obj," <- ", eta_ilink[1], eta_obj, eta_ar, eta_ilink[2], "; \n")
+        eta_obj," = ", eta_ilink[1], eta_obj, eta_ar, eta_ilink[2], "; \n")
       eta_ilink <- rep("", 2)  # don't apply the link function twice
     }
   }
@@ -86,15 +86,15 @@ stan_linear <- function(effects, data, family = gaussian(),
                          eta_bsts, eta_ilink[1])))
   if (add2eta || is_multi) {
     out$transC2 <- paste0(out$transC2,
-      "    ", wsp, eta_obj," <- ", eta_ilink[1], "eta[n]", 
+      "    ", wsp, eta_obj," = ", eta_ilink[1], "eta[n]", 
       eta_int, eta_bsts, eta_monef, eta_ranef, eta_ma, eta_ilink[2],"; \n")
   }
   eta_fixef <- stan_eta_fixef(fixef, sparse = sparse)
   eta_splines <- stan_eta_splines(splines)
-  eta_cse <- if (length(csef)) "  etap <- Xp * bp; \n"
+  eta_cse <- if (length(csef)) "  etap = Xp * bp; \n"
   out$transC1 <- paste0(out$transC1,
     "  // compute linear predictor \n",
-    "  eta <- ", eta_fixef, eta_splines,
+    "  eta = ", eta_fixef, eta_splines,
     if (nint == 1L && !is.ordinal(family)) " + temp_Intercept",
     if (has_offset) " + offset",
     if (get_arr(autocor)) " + Yarr * arr",
@@ -138,7 +138,7 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
       text_splines <- stan_splines(splines, prior = prior, nlpar = nlpar)
       out <- collapse_lists(list(out, text_splines))
       # initialize eta_<nlpar>
-      out$transC1 <- paste0(out$transC1, "  ", eta, " <- ",
+      out$transC1 <- paste0(out$transC1, "  ", eta, " = ",
                             stan_eta_fixef(fixef, nlpar = nlpar), 
                             stan_eta_splines(splines, nlpar = nlpar), 
                             "; \n") 
@@ -165,7 +165,7 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
       }
       if (nchar(eta_loop)) {
         out$transC2 <- paste0(out$transC2,
-          "    ", eta, "[n] <- ", eta, "[n]", eta_loop, "; \n")
+          "    ", eta, "[n] = ", eta, "[n]", eta_loop, "; \n")
       }
     }
     
@@ -197,7 +197,7 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
     out$transD <- paste0(out$transD, "  vector[N] eta; \n")
     out$transC2 <- paste0(out$transC2, 
       "    // compute non-linear predictor \n",
-      "    eta[n] <- ", eta_ilink[1], trimws(nlmodel), eta_ilink[2], "; \n")
+      "    eta[n] = ", eta_ilink[1], trimws(nlmodel), eta_ilink[2], "; \n")
   }
   out
 }
@@ -267,14 +267,14 @@ stan_fixef <- function(fixef, intercepts = "Intercept",
       # temp intercepts for ordinal models are defined in stan_ordinal
       out$data <- paste0(out$data, def_X_means)
       out$genD <- "  vector[ncat - 1] b_Intercept;  // thresholds \n" 
-      out$genC <- paste0("  b_Intercept <- temp_Intercept", sub_X_means, "; \n")
+      out$genC <- paste0("  b_Intercept = temp_Intercept", sub_X_means, "; \n")
     } else {
       if (nint == 1L) {
         out$data <- paste0(out$data, def_X_means)
         out$par <- paste0(out$par, 
           "  real temp_Intercept;  // temporary Intercept \n")
         out$genD <- "  real b_Intercept;  // population-level intercept \n"
-        out$genC <- paste0("  b_Intercept <- temp_Intercept", sub_X_means, "; \n")
+        out$genC <- paste0("  b_Intercept = temp_Intercept", sub_X_means, "; \n")
       } else if (nint > 1L) {
         out$data <- paste0(out$data,
           "  int nint;  // number of population-level intercepts \n",
@@ -285,7 +285,7 @@ stan_fixef <- function(fixef, intercepts = "Intercept",
         out$genD <- "  vector[nint] b_Intercept;  // population-level intercepts \n"
         out$genC <- paste0(
           "  for (i in 1:nint) { \n",
-          "    b_Intercept[i] <- temp_Intercept[i]", sub_X_means, "; \n",
+          "    b_Intercept[i] = temp_Intercept[i]", sub_X_means, "; \n",
           "  } \n")
       }
     }
@@ -340,7 +340,7 @@ stan_ranef <- function(i, ranef, prior = prior_frame(),
     out$transD <- paste0(
       "  // group-specific effects \n",
       "  vector[N_", p, "] r_", p, "; \n")
-    out$transC1 <- paste0("  r_", p,  " <- sd_", p, " * (", 
+    out$transC1 <- paste0("  r_", p,  " = sd_", p, " * (", 
                           if (ccov) paste0("Lcov_", p, " * "), "z_", p, ");\n")
   } else if (length(r) > 1L) {
     j <- seq_along(r)
@@ -366,26 +366,26 @@ stan_ranef <- function(i, ranef, prior = prior_frame(),
         collapse("  vector[N_", p, "] r_", p, "_", j, "; \n"))
       if (ccov) {  # customized covariance matrix supplied
         out$transC1 <- paste0(
-          "  r_", p," <- as_matrix(kronecker(Lcov_", p, ",", 
+          "  r_", p," = as_matrix(kronecker(Lcov_", p, ",", 
           " diag_pre_multiply(sd_", p,", L_", p,")) *",
           " to_vector(z_", p, "), N_", p, ", K_", p, "); \n")
       } else { 
-        out$transC1 <- paste0("  r_", p, " <- ", 
+        out$transC1 <- paste0("  r_", p, " = ", 
           "(diag_pre_multiply(sd_", p, ", L_", p,") * z_", p, ")'; \n")
       }
       out$transC1 <- paste0(out$transC1, 
-        collapse("  r_", p, "_", j, " <- r_", p, "[, ",j,"];  \n"))
+        collapse("  r_", p, "_", j, " = r_", p, "[, ",j,"];  \n"))
       # return correlations above the diagonal only
       cors_genC <- ulapply(2:length(r), function(k) 
         lapply(1:(k - 1), function(j) paste0(
           "  cor_", p, "[", (k - 1) * (k - 2) / 2 + j, 
-          "] <- Cor_", p, "[", j, ",", k, "]; \n")))
+          "] = Cor_", p, "[", j, ",", k, "]; \n")))
       out$genD <- paste0(
         "  corr_matrix[K_", p, "] Cor_", p, "; \n",
         "  vector<lower=-1,upper=1>[NC_", p, "] cor_", p, "; \n")
       out$genC <- paste0(
         "  // take only relevant parts of correlation matrix \n",
-        "  Cor_", p, " <- multiply_lower_tri_self_transpose(L_", p, "); \n",
+        "  Cor_", p, " = multiply_lower_tri_self_transpose(L_", p, "); \n",
         collapse(cors_genC)) 
     } else {  # multiple uncorrelated random effects
       out$par <- paste0(out$par,
@@ -396,12 +396,12 @@ stan_ranef <- function(i, ranef, prior = prior_frame(),
       out$transD <- paste0("  // group-specific effects \n", 
                            collapse("  vector[N_", p, "] r_", p, "_", j, "; \n"))
       out$transC1 <- collapse(
-        "  r_", p, "_", j, " <- sd_", p, "[", j, "] * (", 
+        "  r_", p, "_", j, " = sd_", p, "[", j, "] * (", 
         if (ccov) paste0("Lcov_", p, " * "), "z_", p, "[", j, "]); \n")
       out$genD <- paste0(
         "  matrix[N_", p, ", K_", p, "] r_", p, "; \n")
       out$genC <- collapse(
-        "  r_", p, "[, ", j, "] <- r_", p, "_", j, "; \n")
+        "  r_", p, "[, ", j, "] = r_", p, "_", j, "; \n")
     }
   }
   out
@@ -435,7 +435,7 @@ stan_splines <- function(splines, prior = prior_frame(), nlpar = "") {
     out$transD <- paste0(out$transD,
       "  vector[knots", p, "[", i, "]] s", pi, "; \n")
     out$transC1 <- paste0(out$transC1,
-      "  s", pi, " <- sds", pi, " * zs", pi, "; \n")
+      "  s", pi, " = sds", pi, " * zs", pi, "; \n")
     out$prior <- paste0(out$prior, 
       "  zs", pi, " ~ normal(0, 1); \n",
       stan_prior(class = "sds", coef = splines[i], 
