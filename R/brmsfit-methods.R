@@ -881,7 +881,7 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
 #' Posterior Predictive Checks for \code{brmsfit} Objects
 #' 
 #' Perform posterior predictive checks with the help
-#' of the \pkg{ppcheck} package.
+#' of the \pkg{bayesplot} package.
 #' 
 #' @param object An object of class \code{brmsfit}.
 #' @param type Type of the ppc plot as given by a character string. 
@@ -907,15 +907,14 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
 #'  which to order time-series plots. Only used for
 #'  ppc \code{ts*} types and ignored otherwise.
 #' @param ... Further arguments passed to the ppc functions
-#'   of the \pkg{ppcheck} package.
+#'   of the \pkg{bayesplot} package.
 #' @inheritParams predict.brmsfit
 #' 
 #' @return A ggplot object that can be further 
 #'  customized using the \pkg{ggplot2} package.
 #'  
 #' @details For a detailed explanation of each of the
-#' ppc functions, see the documentation of the 
-#' \code{\link[ppcheck:ppcheck-package]{ppcheck}} package.
+#' ppc functions, see \code{\link[bayesplot:PPC-overview]{PPC-overview}}.
 #' 
 #' @examples
 #' \dontrun{
@@ -933,10 +932,10 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
 pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
                              time = NULL, re_formula = NULL, 
                              subset = NULL, ntrys = 5, ...) {
-  if (!requireNamespace("ppcheck", quietly = TRUE)) {
-    # remove check as soon as ppcheck is on CRAN
-    stop(paste0("please install the ppcheck package via\n",
-                "devtools::install_github('jgabry/ppcheck')"),
+  if (!requireNamespace("bayesplot", quietly = TRUE)) {
+    # remove check as soon as bayesplot is on CRAN
+    stop(paste0("please install the bayesplot package via\n",
+                "devtools::install_github('jgabry/bayesplot')"),
          call. = FALSE)
   }
   if (missing(type)) {
@@ -953,7 +952,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     stop("argument 'time' must be of length 1", call. = FALSE)
     
   }
-  ppc_funs <- lsp("ppcheck", what = "exports", pattern = "^ppc_")
+  ppc_funs <- lsp("bayesplot", what = "exports", pattern = "^ppc_")
   valid_ppc_types <- sub("^ppc_", "", ppc_funs)
   if (!type %in% valid_ppc_types) {
     stop(paste0("Type '", type, "' is not a valid ppc type. ",
@@ -961,7 +960,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
                 paste(valid_ppc_types, collapse = ", ")),
          call. = FALSE)
   }
-  ppc_fun <- get(paste0("ppc_", type), pos = asNamespace("ppcheck"))
+  ppc_fun <- get(paste0("ppc_", type), pos = asNamespace("bayesplot"))
   # validate argument "group"
   valid_groups <- names(object$ranef)
   time_group <- extract_time(object$autocor$formula)$group

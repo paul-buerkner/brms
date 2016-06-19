@@ -47,7 +47,7 @@ for truncated discrete models only
 \code{\link[brms:predict.brmsfit]{predict.brmsfit}}.}
 
 \item{...}{Further arguments passed to the ppc functions
-of the \pkg{ppcheck} package.}
+of the \pkg{bayesplot} package.}
 }
 \value{
 A ggplot object that can be further 
@@ -55,12 +55,11 @@ A ggplot object that can be further
 }
 \description{
 Perform posterior predictive checks with the help
-of the \pkg{ppcheck} package.
+of the \pkg{bayesplot} package.
 }
 \details{
 For a detailed explanation of each of the
-ppc functions, see the documentation of the 
-\code{\link[ppcheck:ppcheck-package]{ppcheck}} package.
+ppc functions, see \code{\link[bayesplot:PPC-overview]{PPC-overview}}.
 }
 \examples{
 \dontrun{
