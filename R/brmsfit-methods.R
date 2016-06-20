@@ -820,13 +820,14 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5,
   for (i in 1:n_plots) {
     sub_pars <- pars[((i - 1) * N + 1):min(i * N, length(pars))]
     sub_samples <- samples[, c(sub_pars, "chain"), drop = FALSE]
-    bp_args <- list(sub_samples, facet_args = list(ncol = 1), plot = FALSE)
+    bp_args <- list(sub_samples, plot = FALSE, 
+                    facet_args = list(ncol = 1, scales = "free"))
     trace <- do.call(mcmc_trace, bp_args) + xlab("") + ylab("") + 
       theme + theme(legend.position = "none")
     dens <- do.call(mcmc_dens_overlay, bp_args) + xlab("") + ylab("") + 
       theme + theme(legend.position = "right")
-    ge_args <- list(trace, dens, nrow = 1, ncol = 2, widths = c(1, 1.2))
-    plots[[i]] <- do.call(arrangeGrob, c(ge_args, dots))
+    ag_args <- list(trace, dens, nrow = 1, ncol = 2, widths = c(1, 1.2))
+    plots[[i]] <- do.call(arrangeGrob, c(ag_args, dots))
     if (plot) {
       if (newpage || i > 1) grid.newpage()
       grid.draw(plots[[i]])
