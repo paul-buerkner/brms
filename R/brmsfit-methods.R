@@ -800,9 +800,7 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5,
   if (!is.wholenumber(N) || N < 1)
     stop("N must be a positive integer", call. = FALSE)
   if (!is.character(pars)) {
-    pars <- c("^b_", "^bm_", "^sd_", "^cor_", "^sigma", "^rescor", 
-              "^nu$", "^shape$", "^delta$", "^phi$", "^ar", "^ma", 
-              "^arr", "^simplex_", "^sds_")
+    pars <- default_plot_pars()
   }
   samples <- posterior_samples(x, pars = pars, add_chain = TRUE)
   pars <- names(samples)[!names(samples) %in% c("chain", "iter")] 
