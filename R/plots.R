@@ -1,45 +1,16 @@
-trace_density_plot <- function(x, theme = ggplot2::theme()) {
-  # trace and density plots for one parameter
-  #
-  # Args:
-  #   x: a data.frame containing the samples
-  #   theme: a ggplot2 theme object
-  #
-  # Returns:
-  #   a list containing trace and density plots 
-  if (!is.data.frame(x))
-    stop("x must be a data.frame")
-  out <- list()
-  out$trace <- ggplot(x, aes_string(x = "iter", y = "values", 
-                                    colour = "chain")) +
-    geom_line(alpha = 0.7) +
-    facet_wrap("ind", ncol = 1, scales = "free") +
-    xlab("") + ylab("") + ggtitle(paste("Trace")) + theme + 
-    theme(legend.position = "none",
-          plot.title = element_text(size = 16),
-          strip.text.x = element_text(size = 15),
-          plot.margin = grid::unit(c(0.2, 0.2, -0.5, -0.5), "lines"))
-  
-  out$density <- ggplot(x, aes_string(x = "values")) + 
-    geom_density(aes_string(fill = "chain"), alpha = 0.5) +
-    facet_wrap("ind", ncol = 1, scales = "free") + 
-    xlab("") + ylab("") + ggtitle(paste("Density")) + theme +
-    theme(plot.title = element_text(size = 16),
-          strip.text.x = element_text(size = 15),
-          plot.margin = grid::unit(c(0.2, 0, -0.5, -0.5), "lines"))
-  out
-}
-
 #' @rdname marginal_effects
 #' @method plot brmsMarginalEffects
 #' @export 
 plot.brmsMarginalEffects <- function(x, ncol = NULL, points = FALSE, 
                                      rug = FALSE, theme = ggplot2::theme(), 
-                                     ask = TRUE, do_plot = TRUE, ...) {
+                                     ask = TRUE, plot = TRUE, ...) {
   # Compute marginal effects plots using ggplot2
   # Returns:
   #   A list of ggplot objects
-  if (do_plot) {
+  dots <- list(...)
+  plot <- use_alias(plot, dots$do_plot)
+  dots$do_plot <- NULL
+  if (plot) {
     default_ask <- devAskNewPage()
     on.exit(devAskNewPage(default_ask))
     devAskNewPage(ask = FALSE)
@@ -86,7 +57,7 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, points = FALSE,
                    size = 4 / nCond^0.25, data = attr(x[[i]], "points"), 
                    inherit.aes = FALSE)
     }
-    if (do_plot) {
+    if (plot) {
       plot(plots[[i]])
       if (i == 1) devAskNewPage(ask = ask)
     }
@@ -99,7 +70,10 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, points = FALSE,
 #' @export
 plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE, 
                                 theme = ggplot2::theme(), ask = TRUE, 
-                                do_plot = TRUE, chars = 20, ...) {
+                                plot = TRUE, chars = 20, ...) {
+  dots <- list(...)
+  plot <- use_alias(plot, dots$do_plot)
+  dots$do_plot <- NULL
   if (!is.data.frame(x$samples)) {
     stop("No posterior samples found")
   }
@@ -114,7 +88,7 @@ plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE,
   if (ignore_prior) {
     x$samples[x$samples$Type == "prior", ] <- NA
   }
-  if (do_plot) {
+  if (plot) {
     default_ask <- devAskNewPage()
     on.exit(devAskNewPage(default_ask))
     devAskNewPage(ask = FALSE)
@@ -130,7 +104,7 @@ plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE,
     # make sure that parameters appear in the original order
     sub_samples$ind <- with(sub_samples, factor(ind, levels = unique(ind)))
     plots[[i]] <- .plot_fun(sub_samples)
-    if (do_plot) {
+    if (plot) {
       plot(plots[[i]])
       if (i == 1) devAskNewPage(ask = ask)
     }
