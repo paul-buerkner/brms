@@ -1044,22 +1044,20 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
 }
 
 #' Create a matrix of output plots from a \code{brmsfit} object
-#'
-#' A \code{\link[graphics:pairs]{pairs}} 
-#' method that is customized for MCMC output
 #' 
-#' @param x An object of class \code{stanfit}
+#' @param x An object of class \code{brmsfit}
 #' @param pars Names of the parameters to plot, as given by 
 #'  a character vector or a regular expression. 
-#'  By default, all parameters are plotted. 
+#'  By default, all parameters are plotted 
+#'  that are also visible in the summary. 
 #' @param exact_match Indicates whether parameter names 
 #'   should be matched exactly or treated as regular expression. 
 #'   Default is \code{FALSE}.
 #' @param ... Further arguments to be passed to 
-#'  \code{\link[rstan:pairs.stanfit]{pairs.stanfit}}.
+#'  \code{\link[bayesplot:mcmc_pairs]{mcmc_pairs}}.
 #'  
 #' @details For a detailed description see 
-#'  \code{\link[rstan:pairs.stanfit]{pairs.stanfit}}.
+#'  \code{\link[bayesplot:mcmc_pairs]{mcmc_pairs}}.
 #'  
 #' @examples 
 #' \dontrun{
@@ -1072,9 +1070,13 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
 #'
 #' @export
 pairs.brmsfit <- function(x, pars = NA, exact_match = FALSE, ...) {
-  pars <- extract_pars(pars, all_pars = parnames(x),
-                       exact_match = exact_match, na_value = NULL)
-  graphics::pairs(x$fit, pars = pars, ...)
+  if (!is.character(pars)) {
+    pars <- default_plot_pars()
+  }
+  samples <- posterior_samples(x, pars = pars, exact_match = exact_match)
+  # GGally apparently doesn't like 'invalid' names
+  colnames(samples) <- make.names(colnames(samples))
+  rstan::quietgg(bayesplot::mcmc_pairs(samples, ...))
 }
 
 #' @rdname marginal_effects

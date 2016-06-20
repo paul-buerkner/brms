@@ -7,26 +7,26 @@
 \method{pairs}{brmsfit}(x, pars = NA, exact_match = FALSE, ...)
 }
 \arguments{
-\item{x}{An object of class \code{stanfit}}
+\item{x}{An object of class \code{brmsfit}}
 
 \item{pars}{Names of the parameters to plot, as given by 
 a character vector or a regular expression. 
-By default, all parameters are plotted.}
+By default, all parameters are plotted 
+that are also visible in the summary.}
 
 \item{exact_match}{Indicates whether parameter names 
 should be matched exactly or treated as regular expression. 
 Default is \code{FALSE}.}
 
 \item{...}{Further arguments to be passed to 
-\code{\link[rstan:pairs.stanfit]{pairs.stanfit}}.}
+\code{\link[bayesplot:mcmc_pairs]{mcmc_pairs}}.}
 }
 \description{
-A \code{\link[graphics:pairs]{pairs}} 
-method that is customized for MCMC output
+Create a matrix of output plots from a \code{brmsfit} object
 }
 \details{
 For a detailed description see 
- \code{\link[rstan:pairs.stanfit]{pairs.stanfit}}.
+ \code{\link[bayesplot:mcmc_pairs]{mcmc_pairs}}.
 }
 \examples{
 \dontrun{
