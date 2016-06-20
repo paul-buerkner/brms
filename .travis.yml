@@ -7,7 +7,7 @@ warnings_are_errors: TRUE
 
 r_github_packages:
   - jimhester/covr
-  - jgabry/ppcheck
+  - jgabry/bayesplot
 
 #r_binary_packages:
 #  - rstan
