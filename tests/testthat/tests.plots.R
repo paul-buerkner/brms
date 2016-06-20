@@ -17,13 +17,13 @@ test_that("stanplot and pairs works correctly", {
   expect_silent(p <- stanplot(fit, type = "scat", quiet = TRUE,
                               pars = parnames(fit)[2:3], 
                               exact_match = TRUE))
-  #expect_silent(p <- stanplot(fit, type = "diag", quiet = TRUE))
+  # expect_silent(p <- stanplot(fit, type = "diag", quiet = TRUE))
   expect_silent(p <- stanplot(fit, type = "rhat", pars = "^b_",
                               quiet = TRUE))
   expect_silent(p <- stanplot(fit, type = "ess", quiet = TRUE))
   expect_silent(p <- stanplot(fit, type = "mcse", quiet = TRUE))
   expect_silent(p <- stanplot(fit, type = "ac", quiet = TRUE))
-  expect_identical(SW(pairs(fit, pars = parnames(fit)[1:3])), NULL)
+  # expect_identical(SW(pairs(fit, pars = parnames(fit)[1:3])), NULL)
   # warning occurs somewhere in rstan
   expect_silent(suppressWarnings(stanplot(fit, type = "par", 
                                           pars = "^b_Intercept$")))
