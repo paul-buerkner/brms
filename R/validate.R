@@ -600,6 +600,10 @@ get_spline_labels <- function(x) {
   term_labels[grepl("^(s|t2|te|ti)\\(", term_labels)]
 }
 
+eval_spline <- function(spline) {
+  eval(parse(text = paste0("mgcv::", spline)))
+}
+
 amend_terms <- function(x, forked = FALSE) {
   # amend a terms object (or one that can be coerced to it)
   # to be used in get_model_matrix

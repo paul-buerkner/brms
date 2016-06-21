@@ -360,7 +360,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
         for (j in seq_along(smooth)) {
           splines <- get_spline_labels(ee$nonlinear[[j]])
           for (i in seq_along(splines)) {
-            sc_args <- c(list(eval(parse(text = splines[i]))), gam_args)
+            sc_args <- c(list(eval_spline(splines[i])), gam_args)
             smooth[[j]][[i]] <- do.call(mgcv::smoothCon, sc_args)[[1]]
           }
         }
@@ -368,7 +368,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
         splines <- get_spline_labels(ee)
         smooth <- vector("list", length(splines))
         for (i in seq_along(splines)) {
-          sc_args <- c(list(eval(parse(text = splines[i]))), gam_args)
+          sc_args <- c(list(eval_spline(splines[i])), gam_args)
           smooth[[i]] <- do.call(mgcv::smoothCon, sc_args)[[1]]
         }
       }
@@ -560,9 +560,8 @@ data_fixef <- function(effects, data, family = gaussian(),
     Xs <- Zs <- vector("list", length(splines))
     for (i in seq_along(splines)) {
       if (is.null(smooth[[i]])) {
-        eval_spline <- eval(parse(text = splines[i]))
-        sm <- mgcv::smoothCon(eval_spline, data = data, knots = knots,
-                              absorb.cons = TRUE)[[1]]
+        sm <- mgcv::smoothCon(eval_spline(splines[i]), data = data, 
+                              knots = knots, absorb.cons = TRUE)[[1]]
       } else {
         sm <- smooth[[i]]
         sm$X <- mgcv::PredictMat(sm, rm_attr(data, "terms"))
