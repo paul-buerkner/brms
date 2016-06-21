@@ -164,7 +164,8 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       nle <- ee$nonlinear[[i]]
       data_fixef <- data_fixef(nle, data = data, family = family, 
                                nlpar = nlpars[i], knots = knots, 
-                               not4stan = not4stan, G = control$G[[i]])
+                               not4stan = not4stan, 
+                               smooth = control$smooth[[i]])
       data_monef <- data_monef(nle, data = data, prior = prior, 
                                Jm = control[[paste0("Jm_", nlpars[i])]],
                                nlpar = nlpars[i])
@@ -176,7 +177,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   } else {
     data_fixef <- data_fixef(ee, data = data, family = family, 
                              autocor = autocor, knots = knots,
-                             not4stan = not4stan, G = control$G)
+                             not4stan = not4stan, smooth = control$smooth)
     data_monef <- data_monef(ee, data = data, prior = prior, Jm = control$Jm)
     data_csef <- data_csef(ee, data = data)
     data_ranef <- data_ranef(ee, data = data, family = family, 
