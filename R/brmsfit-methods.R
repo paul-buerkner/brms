@@ -1653,6 +1653,12 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' @param ... other arguments passed to 
 #'  \code{\link[brms:brm]{brm}}
 #'  
+#' @details Sometimes, when updating the model formula, 
+#'  it may happen that \R complains about a mismatch
+#'  between \code{model frame} and \code{formula}.
+#'  This error can be avoided by supplying your orginal data
+#'  again via argument \code{newdata}.
+#'  
 #' @examples 
 #' \dontrun{
 #' fit1 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient), 
@@ -1693,6 +1699,12 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
                     "original formula in non-linear models.", call. = FALSE))
       recompile <- TRUE
     } else {
+      mvars <- setdiff(all.vars(dots$formula), c(names(object$data), "."))
+      if (length(mvars) && is.null(newdata)) {
+        stop(paste0("New variables found: ", paste(mvars, collapse = ", ")),
+             "\nPlease supply your data again via argument 'newdata'",
+             call. = FALSE)
+      }
       dots$formula <- update.formula(object$formula, dots$formula)
       ee_old <- extract_effects(object$formula, family = object$family)
       family <- get_arg("family", dots, object)

@@ -197,12 +197,14 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(attr(up$ranef$visit, "levels"), c("2", "3", "4"))
   expect_true("r_1" %in% up$exclude)
   expect_error(update(fit, data = new_data), "use argument 'newdata'")
-  up <- update(fit, formula = ~ . + log(Trt_c), testmode = TRUE,
+  up <- update(fit, formula = ~ . + log(Trt), testmode = TRUE,
                prior = set_prior("normal(0,10)"))
   expect_true(is(up, "brmsfit"))
-  up <- update(fit, formula = ~ . + log(Trt_c), newdata = new_data,
+  up <- update(fit, formula = ~ . + log(Trt), newdata = new_data,
                sample_prior = FALSE, testmode = TRUE)
   expect_true(is(up, "brmsfit"))
+  expect_error(update(fit, formula. = ~ . + wrong_var),
+               "New variables found: wrong_var")
   # VarCorr
   vc <- VarCorr(fit)
   expect_equal(names(vc), c("visit", "RESIDUAL"))

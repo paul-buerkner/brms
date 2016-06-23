@@ -21,6 +21,13 @@ to update the model with new data}
 \description{
 This method allows to update an existing \code{brmsfit} object
 }
+\details{
+Sometimes, when updating the model formula, 
+ it may happen that \R complains about a mismatch
+ between \code{model frame} and \code{formula}.
+ This error can be avoided by supplying your orginal data
+ again via argument \code{newdata}.
+}
 \examples{
 \dontrun{
 fit1 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient), 
