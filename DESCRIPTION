@@ -11,8 +11,8 @@ Depends:
     ggplot2 (>= 2.0.0),
     methods
 Imports: 
-    loo (>= 0.1.4),
-    shinystan (>= 2.1.0),
+    loo (>= 0.1.6),
+    shinystan (>= 2.2.0),
     gridExtra (>= 2.0.0),
     lme4 (>= 1.1-11),
     Matrix (>= 1.1.1),
