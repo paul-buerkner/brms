@@ -19,6 +19,8 @@
       log-link to match the behavior of \code{glm}. 
       The log-normal distribution can now be specified via
       family \code{lognormal}.
+      \item Update syntax of \pkg{Stan} models to match the 
+      recommended syntax of \pkg{Stan} 2.10.
     }
   }
   \subsection{BUG FIXES}{

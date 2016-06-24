@@ -9,7 +9,7 @@
    * Returns:  
    *   a scalar to be added to the log posterior 
    */ 
-   real inv_gaussian_vector_log(vector y, vector mu, real shape,  
+   real inv_gaussian_vector_lpdf(vector y, vector mu, real shape,  
                                 real sum_log_y, vector sqrt_y) { 
      return 0.5 * rows(y) * log(shape / (2 * pi())) -  
             1.5 * sum_log_y - 

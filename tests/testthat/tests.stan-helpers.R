@@ -52,13 +52,13 @@ test_that("stan_eta returns correct strings for autocorrelation models", {
   ee <- extract_effects(count ~ Trt_c)
   expect_match(stan_linear(ee, data = epilepsy, family = student(log),
                            autocor = cor_arma(~visit|patient, p = 2))$transC3,
-               "eta[n] <- exp(eta[n] + head(E[n], Kar) * ar)", fixed = TRUE)
+               "eta[n] = exp(eta[n] + head(E[n], Kar) * ar)", fixed = TRUE)
   expect_match(stan_linear(ee, data = epilepsy, family = gaussian(log),
                            autocor = cor_arma(~visit|patient, q = 1))$transC2,
-               "eta[n] <- exp(eta[n] + head(E[n], Kma) * ma)", fixed = TRUE)
+               "eta[n] = exp(eta[n] + head(E[n], Kma) * ma)", fixed = TRUE)
   expect_match(stan_linear(ee, data = epilepsy, family = poisson(),
                            autocor = cor_arma(~visit|patient, r = 3))$transC1,
-               "eta <- X * b + temp_Intercept + Yarr * arr", fixed = TRUE)
+               "eta = X * b + temp_Intercept + Yarr * arr", fixed = TRUE)
 })
 
 test_that("stan_autocor returns correct strings (or errors)", {
@@ -69,14 +69,14 @@ test_that("stan_autocor returns correct strings (or errors)", {
   
   temp_arma <- stan_autocor(family = gaussian(log), prior = prior,
                             autocor = cor_arma(~visit|patient, q = 1))
-  expect_match(temp_arma$transC2, "E[n + 1, i] <- e[n + 1 - i]", 
+  expect_match(temp_arma$transC2, "E[n + 1, i] = e[n + 1 - i]", 
                fixed = TRUE)
   expect_match(temp_arma$prior, "ma ~ cauchy(0,1)", fixed = TRUE)
   
   temp_arma <- stan_autocor(family = gaussian(log), is_multi = TRUE, 
                             autocor = cor_arma(~visit|patient, p = 1),
                             prior = prior)
-  expect_match(temp_arma$transC2, "e[n] <- log(Y[m, k]) - eta[n]", 
+  expect_match(temp_arma$transC2, "e[n] = log(Y[m, k]) - eta[n]", 
                fixed = TRUE)
   expect_match(temp_arma$prior, "ar ~ normal(0,2)", fixed = TRUE)
   
@@ -96,17 +96,17 @@ test_that("stan_ordinal returns correct strings", {
   out <- stan_ordinal(family = acat(), threshold = "equidistant")
   expect_match(out$par, "real delta;")
   expect_match(out$transC1, fixed = TRUE, 
-               "temp_Intercept[k] <- temp_Intercept1 + (k - 1.0) * delta;")
+               "temp_Intercept[k] = temp_Intercept1 + (k - 1.0) * delta;")
   expect_match(stan_ordinal(family = cumulative("cloglog"))$fun, 
-               "cumulative_log.*inv_cloglog")
+               "cumulative_lpmf.*inv_cloglog")
   expect_match(stan_ordinal(family = sratio("logit"))$fun, 
-               "sratio_log.*inv_logit")
+               "sratio_lpmf.*inv_logit")
   expect_match(stan_ordinal(family = cratio("cauchit"))$fun, 
-               "cratio_log.*inv_cauchit")
+               "cratio_lpmf.*inv_cauchit")
   expect_match(stan_ordinal(family = acat("logit"))$fun, 
-               "p[k + 1] <- exp(p[k + 1])", fixed = TRUE)
+               "p[k + 1] = exp(p[k + 1])", fixed = TRUE)
   expect_match(stan_ordinal(family = acat("probit_approx"))$fun, 
-               "acat_log.*Phi_approx")
+               "acat_lpmf.*Phi_approx")
   
 })
 
@@ -114,7 +114,7 @@ test_that("stan_llh uses simplifications when possible", {
   expect_equal(stan_llh(family = bernoulli("logit")), 
                "  Y ~ bernoulli_logit(eta); \n")
   expect_match(stan_llh(family = lognormal(), weights = TRUE), 
-               "lognormal_log(Y[n], (eta[n]), sigma); \n", fixed = TRUE)
+               "lognormal_lpdf(Y[n] | (eta[n]), sigma); \n", fixed = TRUE)
   expect_equal(stan_llh(family = poisson()), 
                "  Y ~ poisson_log(eta); \n")
   expect_match(stan_llh(family = cumulative("logit")), fixed = TRUE,
@@ -123,22 +123,21 @@ test_that("stan_llh uses simplifications when possible", {
 
 test_that("stan_llh returns correct llhs under weights and censoring", {
   expect_match(stan_llh(family = cauchy("inverse"), weights = TRUE),
-               "  lp_pre[n] <- cauchy_log(Y[n], inv(eta[n]), sigma); \n",
+               "  lp_pre[n] = cauchy_lpdf(Y[n] | inv(eta[n]), sigma); \n",
                fixed = TRUE)
   expect_match(stan_llh(family = poisson(), weights = TRUE),
-               "  lp_pre[n] <- poisson_log_log(Y[n], (eta[n])); \n",
+               "  lp_pre[n] = poisson_log_lpmf(Y[n] | (eta[n])); \n",
                fixed = TRUE)
   expect_match(stan_llh(family = poisson(), cens = TRUE),
                "Y[n] ~ poisson(exp(eta[n])); \n", fixed = TRUE)
   expect_match(stan_llh(family = binomial(logit), trials = TRUE, weights = TRUE),
-               "  lp_pre[n] <- binomial_logit_log(Y[n], trials[n], (eta[n])); \n",
+               "  lp_pre[n] = binomial_logit_lpmf(Y[n] | trials[n], (eta[n])); \n",
                fixed = TRUE)
   expect_match(stan_llh(family = weibull("log"), cens = TRUE), fixed = TRUE,
-               paste("increment_log_prob(weibull_ccdf_log(Y[n],", 
-                     "shape, exp(eta[n] / shape))); \n"))
+               "target += weibull_lccdf(Y[n] | shape, exp(eta[n] / shape)); \n")
   expect_match(stan_llh(family = weibull("inverse"), cens = TRUE, weights = TRUE),
-               paste("increment_log_prob(weights[n] * weibull_ccdf_log(Y[n],", 
-                     "shape, inv(eta[n] / shape))); \n"), fixed = TRUE)
+               paste("target += weights[n] * weibull_lccdf(Y[n] |", 
+                     "shape, inv(eta[n] / shape)); \n"), fixed = TRUE)
 })
 
 test_that("stan_llh returns correct llhs under truncation", {
@@ -173,7 +172,7 @@ test_that("stan_llh returns correct llhs for multivariate models", {
   expect_match(stan_llh(family = student(), nresp = 3),
                "  Y ~ multi_student_t(nu, Eta, Sigma); \n", fixed = TRUE)
   expect_match(stan_llh(family = cauchy(), nresp = 4, weights = TRUE),
-               "  lp_pre[n] <- multi_student_t_log(Y[n], 1.0, Eta[n], Sigma);",
+               "  lp_pre[n] = multi_student_t_lpdf(Y[n] | 1.0, Eta[n], Sigma);",
                fixed = TRUE)
 })
 
@@ -195,17 +194,17 @@ test_that("stan_rngprior returns correct sampling statements for priors", {
                              par_declars = paste("vector[K] b; \n",  
                                                  "real<lower=0> sigma;")),
                list(genD = "  real prior_b; \n", 
-                    genC = paste0(c2,"  prior_b <- normal_rng(0,5); \n")))
+                    genC = paste0(c2,"  prior_b = normal_rng(0,5); \n")))
   
   expect_equal(stan_rngprior(TRUE, prior = "b[1] ~ normal(0,5); \n",
                              par_declars = "vector[K] b; \n"),
                list(genD = "  real prior_b_1; \n", 
-                    genC = paste0(c2,"  prior_b_1 <- normal_rng(0,5); \n")))
+                    genC = paste0(c2,"  prior_b_1 = normal_rng(0,5); \n")))
   
   expect_equal(stan_rngprior(TRUE, prior = "bp[1] ~ normal(0,5); \n",
                              par_declars = paste("vector[K] b; \n")),
                list(genD = "  real prior_bp_1; \n", 
-                    genC = paste0(c2,"  prior_bp_1 <- normal_rng(0,5); \n")))
+                    genC = paste0(c2,"  prior_bp_1 = normal_rng(0,5); \n")))
   
   expect_equal(stan_rngprior(TRUE, prior = "sigma[2] ~ normal(0,5); \n",
                              par_declars = paste("vector[K] b; \n",  
@@ -217,7 +216,7 @@ test_that("stan_rngprior returns correct sampling statements for priors", {
                  prior = "simplex_1 ~ dirichlet(con_simplex_1); \n",
                  par_declars = "vector[Jm[1]] simplex_1;"),
     list(genD = "  vector[Jm[1]] prior_simplex_1; \n", 
-         genC = paste0(c2, "  prior_simplex_1 <- dirichlet_rng(con_simplex_1); \n")))
+         genC = paste0(c2, "  prior_simplex_1 = dirichlet_rng(con_simplex_1); \n")))
   
   expect_equal(stan_rngprior(TRUE, prior = paste("sd_1[1] ~ normal(0,5); \n",
                                                  "sd_1[2] ~ cauchy(0,2); \n"),
@@ -229,7 +228,7 @@ test_that("stan_rngprior returns correct sampling statements for priors", {
   
   prior_code <- "b ~ normal(0, hs_local * hs_global); \n"
   expect_match(stan_rngprior(TRUE, prior = prior_code, hs_df = 3)$genC,
-               "prior_b <- normal_rng(0, prior_hs_local * prior_hs_global);",
+               "prior_b = normal_rng(0, prior_hs_local * prior_hs_global);",
                fixed = TRUE)
   
 })
@@ -237,7 +236,7 @@ test_that("stan_rngprior returns correct sampling statements for priors", {
 test_that("stan_multi returns correct Stan code (or errors)", {
   expect_equal(stan_multi(gaussian(), "y"), list())
   expect_match(stan_multi(gaussian(), c("y1", "y2"))$transC, 
-               "LSigma <- diag_pre_multiply(sigma, Lrescor); \n",
+               "LSigma = diag_pre_multiply(sigma, Lrescor); \n",
                fixed = TRUE)
   expect_equal(stan_multi(student(), c("y1", "y2"))$transD, 
                "  cov_matrix[K_trait] Sigma; \n")

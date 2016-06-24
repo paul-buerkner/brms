@@ -8,8 +8,8 @@
    * Returns: 
    *   log(P(Y <= y)) 
    */ 
-  real inv_gaussian_cdf_log(real y, real mu, real shape,  
-                            real log_y, real sqrt_y) { 
+  real inv_gaussian_lcdf(real y, real mu, real shape,  
+                         real log_y, real sqrt_y) { 
     return log(Phi(sqrt(shape) / sqrt_y * (y / mu - 1)) + 
                exp(2 * shape / mu) * Phi(-sqrt(shape) / sqrt_y * (y / mu + 1))); 
   } 

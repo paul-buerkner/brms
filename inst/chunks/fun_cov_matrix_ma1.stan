@@ -8,14 +8,14 @@
    */ 
    matrix cov_matrix_ma1(real ma, real sigma, int nrows) { 
      matrix[nrows, nrows] mat; 
-     mat <- diag_matrix(rep_vector(1 + ma^2, nrows)); 
+     mat = diag_matrix(rep_vector(1 + ma^2, nrows)); 
      if (nrows > 1) { 
-       mat[1, 2] <- ma; 
+       mat[1, 2] = ma; 
        for (i in 2:(nrows - 1)) { 
-         mat[i, i - 1] <- ma; 
-         mat[i, i + 1] <- ma; 
+         mat[i, i - 1] = ma; 
+         mat[i, i + 1] = ma; 
        } 
-       mat[nrows, nrows - 1] <- ma; 
+       mat[nrows, nrows - 1] = ma; 
      } 
      return sigma^2 * mat; 
    }

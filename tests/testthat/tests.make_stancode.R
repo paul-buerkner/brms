@@ -21,22 +21,22 @@ test_that("make_stancode accepts supported links", {
                "log")
   expect_match(make_stancode(cbind(rating, rating + 1) ~ 1, 
                              data = inhaler, family = gaussian("log")), 
-               "Eta[m, k] <- exp(eta[n])", fixed = TRUE)
+               "Eta[m, k] = exp(eta[n])", fixed = TRUE)
 })
 
 test_that(paste("make_stancode returns correct strings", 
                 "for customized covariances"), {
   expect_match(make_stancode(rating ~ treat + period + carry + (1|subject), 
                              data = inhaler, cov_ranef = list(subject = 1)), 
-               "r_1 <- sd_1 * (Lcov_1 * z_1)", fixed = TRUE)
+               "r_1 = sd_1 * (Lcov_1 * z_1)", fixed = TRUE)
   expect_match(make_stancode(rating ~ treat + period + carry + (1+carry|subject), 
                              data = inhaler, cov_ranef = list(subject = 1)),
                "kronecker(Lcov_1, diag_pre_multiply(sd_1, L_1)) * to_vector(z_1)",
                fixed = TRUE)
   expect_match(make_stancode(rating ~ treat + period + carry + (1+carry||subject), 
                              data = inhaler, cov_ranef = list(subject = 1)), 
-               paste0("  r_1_1 <- sd_1[1] * (Lcov_1 * z_1[1]); \n",
-                      "  r_1_2 <- sd_1[2] * (Lcov_1 * z_1[2]);"),
+               paste0("  r_1_1 = sd_1[1] * (Lcov_1 * z_1[1]); \n",
+                      "  r_1_2 = sd_1[2] * (Lcov_1 * z_1[2]);"),
                fixed = TRUE)
 })
 
@@ -71,14 +71,14 @@ test_that("make_stancode correctly combines strings of multiple grouping factors
 test_that("make_stancode handles models without fixed effects correctly", {
   expect_match(make_stancode(count ~ 0 + (1|patient) + (1+Trt_c|visit), 
                              data = epilepsy, family = "poisson"), 
-               "  eta <- rep_vector(0, N); \n", fixed = TRUE)
+               "  eta = rep_vector(0, N); \n", fixed = TRUE)
 })
 
 test_that("make_stancode returns expected code for 2PL models", {
   data <- data.frame(y = rep(0:1, each = 5), x = rnorm(10))
   stancode <- make_stancode(y ~ x, data = data, 
                             family = bernoulli(type = "2PL"))
-  expect_match(stancode, paste0("eta_2PL <- head(eta, N_trait)", 
+  expect_match(stancode, paste0("eta_2PL = head(eta, N_trait)", 
                                 " .* exp(tail(eta, N_trait))"),
                fixed = TRUE)
   expect_match(stancode, "Y ~ bernoulli_logit(eta_2PL);",
@@ -104,40 +104,40 @@ test_that("make_stancode returns correct self-defined functions", {
   # inverse gaussian models
   temp_stancode <- make_stancode(time | cens(censored) ~ age, data = kidney,
                                  family = inverse.gaussian)
-  expect_match(temp_stancode, "real inv_gaussian_log(real y", fixed = TRUE)
-  expect_match(temp_stancode, "real inv_gaussian_cdf_log(real y", fixed = TRUE)
-  expect_match(temp_stancode, "real inv_gaussian_ccdf_log(real y", fixed = TRUE)
+  expect_match(temp_stancode, "real inv_gaussian_lpdf(real y", fixed = TRUE)
+  expect_match(temp_stancode, "real inv_gaussian_lcdf(real y", fixed = TRUE)
+  expect_match(temp_stancode, "real inv_gaussian_lccdf(real y", fixed = TRUE)
   expect_match(make_stancode(time ~ 1, data = kidney, family = inverse.gaussian),
-               "real inv_gaussian_vector_log(vector y", fixed = TRUE)
+               "real inv_gaussian_vector_lpdf(vector y", fixed = TRUE)
   # zero-inflated and hurdle models
   expect_match(make_stancode(count ~ Trt_c, data = epilepsy, 
                              family = "zero_inflated_poisson"),
-               "real zero_inflated_poisson_log(int y", fixed = TRUE)
+               "real zero_inflated_poisson_lpmf(int y", fixed = TRUE)
   expect_match(make_stancode(count ~ Trt_c, data = epilepsy, 
                              family = "zero_inflated_negbinomial"),
-               "real zero_inflated_neg_binomial_2_log(int y", fixed = TRUE)
+               "real zero_inflated_neg_binomial_2_lpmf(int y", fixed = TRUE)
   expect_match(make_stancode(count ~ Trt_c, data = epilepsy, 
                              family = "zero_inflated_binomial"),
-               "real zero_inflated_binomial_log(int y", fixed = TRUE)
+               "real zero_inflated_binomial_lpmf(int y", fixed = TRUE)
   expect_match(make_stancode(count ~ Trt_c, data = epilepsy, 
                              family = "zero_inflated_beta"),
-               "real zero_inflated_beta_log(real y", fixed = TRUE)
+               "real zero_inflated_beta_lpdf(real y", fixed = TRUE)
   expect_match(make_stancode(count ~ Trt_c, data = epilepsy, 
                              family = hurdle_poisson()),
-               "real hurdle_poisson_log(int y", fixed = TRUE)
+               "real hurdle_poisson_lpmf(int y", fixed = TRUE)
   expect_match(make_stancode(count ~ Trt_c, data = epilepsy, 
                              family = hurdle_negbinomial),
-               "real hurdle_neg_binomial_2_log(int y", fixed = TRUE)
+               "real hurdle_neg_binomial_2_lpmf(int y", fixed = TRUE)
   expect_match(make_stancode(count ~ Trt_c, data = epilepsy, 
                              family = hurdle_gamma("log")),
-               "real hurdle_gamma_log(real y", fixed = TRUE)
+               "real hurdle_gamma_lpdf(real y", fixed = TRUE)
   # linear models with special covariance structures
   expect_match(make_stancode(rating ~ treat, data = inhaler, 
                              autocor = cor_ma(cov = TRUE)),
-               "real normal_cov_log(vector y", fixed = TRUE)
+               "real normal_cov_lpdf(vector y", fixed = TRUE)
   expect_match(make_stancode(time ~ age, data = kidney, family = "student", 
                              autocor = cor_ar(cov = TRUE)),
-               "real student_t_cov_log(vector y", fixed = TRUE)
+               "real student_t_cov_lpdf(vector y", fixed = TRUE)
   # ARMA covariance matrices
   expect_match(make_stancode(rating ~ treat, data = inhaler, 
                              autocor = cor_ar(cov = TRUE)),
@@ -183,11 +183,11 @@ test_that("make_stancode is silent for categorical models", {
 
 test_that("make_stancode returns correct code for intercept only models", {
   expect_match(make_stancode(rating ~ 1, data = inhaler),
-               "b_Intercept <- temp_Intercept;", fixed = TRUE) 
+               "b_Intercept = temp_Intercept;", fixed = TRUE) 
   expect_match(make_stancode(rating ~ 1, data = inhaler, family = sratio()),
-               "b_Intercept <- temp_Intercept;", fixed = TRUE) 
+               "b_Intercept = temp_Intercept;", fixed = TRUE) 
   expect_match(make_stancode(rating ~ 1, data = inhaler, family = categorical()),
-               "b_Intercept <- temp_Intercept;", fixed = TRUE) 
+               "b_Intercept = temp_Intercept;", fixed = TRUE) 
 })
 
 test_that("make_stancode generates correct code for category specific effects", {
@@ -195,7 +195,7 @@ test_that("make_stancode generates correct code for category specific effects", 
                          data = inhaler, family = sratio())
   expect_match(scode, "matrix[N, Kp] Xp;", fixed = TRUE)
   expect_match(scode, "matrix[Kp, ncat - 1] bp;", fixed = TRUE)
-  expect_match(scode, "etap <- Xp * bp;", fixed = TRUE)
+  expect_match(scode, "etap = Xp * bp;", fixed = TRUE)
   expect_match(scode, "sratio(eta[n], etap[n], temp_Intercept);", fixed = TRUE)
 })
 
@@ -218,7 +218,7 @@ test_that("make_stancode generates correct code for non-linear models", {
   # syntactic validity is already checked within make_stancode
   stancode <- make_stancode(y ~ a - exp(b^z), data = data, prior = prior,
                             nonlinear = nonlinear)
-  expect_match(stancode, "eta[n] <- eta_a[n] - exp(eta_b[n] ^ C[n, 1]);",
+  expect_match(stancode, "eta[n] = eta_a[n] - exp(eta_b[n] ^ C[n, 1]);",
                fixed = TRUE)
   
   nonlinear <- list(a1 ~ 1, a2 ~ z + (x|g))
@@ -228,7 +228,7 @@ test_that("make_stancode generates correct code for non-linear models", {
                             family = Gamma("log"), prior = prior, 
                             nonlinear = nonlinear)
   expect_match(stancode, fixed = TRUE,
-    paste("eta[n] <- shape * exp(-(eta_a1[n] *", 
+    paste("eta[n] = shape * exp(-(eta_a1[n] *", 
           "exp( - C[n, 1] / (eta_a2[n] + C[n, 2]))));"))
 })
 
@@ -251,7 +251,7 @@ test_that("no loop in trans-par is defined for simple 'identity' models", {
 
 test_that("make_stancode returns correct 'disp' code", {
   stancode <- make_stancode(time | disp(sqrt(age)) ~ sex + age, data = kidney)
-  expect_match(stancode, "disp_sigma <- sigma \\* disp;.*normal\\(eta, disp_sigma\\)")
+  expect_match(stancode, "disp_sigma = sigma \\* disp;.*normal\\(eta, disp_sigma\\)")
   
   stancode <- make_stancode(time | disp(1/age) ~ sex + age, 
                             data = kidney, family = lognormal())
@@ -259,12 +259,12 @@ test_that("make_stancode returns correct 'disp' code", {
   
   stancode <- make_stancode(time | disp(1/age) ~ sex + age + (1|patient), 
                             data = kidney, family = Gamma())
-  expect_match(stancode, paste0("eta\\[n\\] <- disp_shape\\[n\\] \\* \\(.*",
+  expect_match(stancode, paste0("eta\\[n\\] = disp_shape\\[n\\] \\* \\(.*",
                                 "gamma\\(disp_shape, eta\\)"))
   
   stancode <- make_stancode(time | disp(1/age) ~ sex + age, 
                             data = kidney, family = weibull())
-  expect_match(stancode, "eta[n] <- exp((eta[n]) / disp_shape[n]);", 
+  expect_match(stancode, "eta[n] = exp((eta[n]) / disp_shape[n]);", 
                fixed = TRUE)
   
   stancode <- make_stancode(time | disp(1/age) ~ sex + age, 
@@ -278,7 +278,7 @@ test_that("make_stancode returns correct 'disp' code", {
                             prior = c(set_prior("normal(0,1)", nlpar = "a"),
                                       set_prior("normal(0,1)", nlpar = "b")))
   expect_match(stancode, fixed = TRUE,
-               "eta[n] <- exp((eta_a[n] - eta_b[n] ^ C[n, 1]) / disp_shape[n]);")
+               "eta[n] = exp((eta_a[n] - eta_b[n] ^ C[n, 1]) / disp_shape[n]);")
 })
 
 test_that("functions defined in 'stan_funs' appear in the functions block", {

@@ -250,7 +250,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
       "  if (!prior_only) { \n  ",
       text_llh, 
       if (needs_lp_pre)
-        "    increment_log_prob(dot_product(weights, lp_pre)); \n",
+        "    target += dot_product(weights, lp_pre); \n",
       "  } \n", 
       text_rngprior$model,
     "} \n")

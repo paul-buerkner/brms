@@ -872,7 +872,7 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
   }
   # make the plot
   if (quiet) {
-    suppressMessages(do.call(plot_fun, args))
+    rstan::quietgg(do.call(plot_fun, args))
   } else {
     do.call(plot_fun, args)
   }

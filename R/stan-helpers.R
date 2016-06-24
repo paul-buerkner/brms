@@ -150,21 +150,22 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
     }
   }
   add_weights <- ifelse(weights, "weights[n] * ", "")
+  .lpdf <- ifelse(use_int(family), "_lpmf", "_lpdf")
   llh <- switch(type, 
     cens = paste0("  // special treatment of censored data \n",
-      "    if (cens[n] == 0) ", 
-      ifelse(!weights, paste0("Y[n] ~ ", llh_pre[1],"(", llh_pre[2],"); \n"),
-             paste0("increment_log_prob(", add_weights, 
-                    llh_pre[1], "_log(Y[n], ", llh_pre[2],")); \n")),
-      "    else { \n",         
-      "      if (cens[n] == 1) increment_log_prob(", add_weights, 
-      llh_pre[1], "_ccdf_log(Y[n], ", llh_pre[2],")); \n",
-      "      else increment_log_prob(", add_weights, 
-      llh_pre[1], "_cdf_log(Y[n], ", llh_pre[2],")); \n",
-      "    } \n"),
-    weights = paste0("  lp_pre[n] <- ", llh_pre[1], "_log(Y[n], ",
+      "      if (cens[n] == 0) ", 
+      ifelse(!weights, paste0("Y[n] ~ ", llh_pre[1], "(", llh_pre[2],"); \n"),
+             paste0("target += ", add_weights, 
+                    llh_pre[1], .lpdf, "(Y[n] | ", llh_pre[2],"); \n")),
+      "      else { \n",         
+      "        if (cens[n] == 1) target += ", add_weights, 
+      llh_pre[1], "_lccdf(Y[n] | ", llh_pre[2],"); \n",
+      "        else target += ", add_weights, 
+      llh_pre[1], "_lcdf(Y[n] | ", llh_pre[2],"); \n",
+      "      } \n"),
+    weights = paste0("  lp_pre[n] = ", llh_pre[1], .lpdf, "(Y[n] | ",
                      llh_pre[2],"); \n"),
-    general = paste0("  Y", n, " ~ ", llh_pre[1],"(", llh_pre[2],")", 
+    general = paste0("  Y", n, " ~ ", llh_pre[1], "(", llh_pre[2], ")", 
                      code_trunc, "; \n")) 
   # loop over likelihood if it cannot be vectorized
   trait <- ifelse(is_multi || is_forked || is_categorical, "_trait", "")
@@ -242,7 +243,7 @@ stan_autocor <- function(family, autocor, prior = prior_frame(),
         cov_mat_args <- "ar[1], ma[1]"
       }
       out$transC1 <- paste0("  // compute residual covariance matrix \n",
-                            "  res_cov_matrix <- cov_matrix_", cov_mat_fun, 
+                            "  res_cov_matrix = cov_matrix_", cov_mat_fun, 
                             "(", cov_mat_args, ", sigma, max(nobs_tg)); \n")
       # defined selfmade functions for the functions block
       if (family$family == "gaussian") {
@@ -269,13 +270,13 @@ stan_autocor <- function(family, autocor, prior = prior_frame(),
       wsp <- ifelse(is_multi, "      ", "    ")
       out$transD <- paste0("  matrix[N, Karma] E;  // ARMA design matrix \n",
                            "  vector[N] e;  // residuals \n") 
-      out$transC1 <- "  E <- rep_matrix(0.0, N, Karma); \n" 
+      out$transC1 <- "  E = rep_matrix(0.0, N, Karma); \n" 
       out$transC2 <- paste0(
         wsp, "// calculation of ARMA effects \n",
-        wsp, "e[n] <- ", link, "(Y[", index, "]) - eta[n]", "; \n",
+        wsp, "e[n] = ", link, "(Y[", index, "]) - eta[n]", "; \n",
         wsp, "for (i in 1:Karma) { \n", 
         wsp, "  if (n + 1 - i > 0 && n < N && tg[n + 1] == tg[n + 1 - i]) { \n",
-        wsp, "     E[n + 1, i] <- e[n + 1 - i]; \n",
+        wsp, "     E[n + 1, i] = e[n + 1 - i]; \n",
         wsp, "  } \n",
         wsp, "} \n")
     } 
@@ -300,7 +301,7 @@ stan_autocor <- function(family, autocor, prior = prior_frame(),
     out$data <- "  matrix[N, N] V;  // known residual covariance matrix \n"
     if (family$family %in% "gaussian") {
       out$tdataD <- "  matrix[N, N] LV; \n"
-      out$tdataC <- "  LV <- cholesky_decompose(V); \n"
+      out$tdataC <- "  LV = cholesky_decompose(V); \n"
     }
   }
   if (is(autocor, "cor_bsts")) {
@@ -357,7 +358,7 @@ stan_multi <- function(family, response, prior = prior_frame()) {
         "  for (m in 1:N_trait) { \n",  
         "    for (k in 1:K_trait) { \n", 
         "      int n; \n",
-        "      n <- (k - 1) * N_trait + m; \n"), 
+        "      n = (k - 1) * N_trait + m; \n"), 
         "    } \n  } \n")
       out$prior <- paste0(
         stan_prior(class = "sigma", coef = response, prior = prior),
@@ -366,12 +367,12 @@ stan_multi <- function(family, response, prior = prior_frame()) {
         out$transD <- "  cholesky_factor_cov[K_trait] LSigma; \n"
         out$transC1 <- paste0(
           "  // compute cholesky factor of residual covariance matrix \n",
-          "  LSigma <- diag_pre_multiply(sigma, Lrescor); \n")
+          "  LSigma = diag_pre_multiply(sigma, Lrescor); \n")
       } else if (family$family %in% c("student", "cauchy")) {
         out$transD <- "  cov_matrix[K_trait] Sigma; \n"
         out$transC1 <- paste0(
           "  // compute residual covariance matrix \n",
-          "  Sigma <- multiply_lower_tri_self_transpose(", 
+          "  Sigma = multiply_lower_tri_self_transpose(", 
           "diag_pre_multiply(sigma, Lrescor)); \n")
       }
       out$genD <- paste0(
@@ -379,9 +380,9 @@ stan_multi <- function(family, response, prior = prior_frame()) {
         "  vector<lower=-1,upper=1>[NC_trait] rescor; \n")
       out$genC <- paste0(
         "  // take only relevant parts of residual correlation matrix \n",
-        "  Rescor <- multiply_lower_tri_self_transpose(Lrescor); \n",
+        "  Rescor = multiply_lower_tri_self_transpose(Lrescor); \n",
         collapse(ulapply(2:nresp, function(i) lapply(1:(i-1), function(j)
-          paste0("  rescor[",(i-1)*(i-2)/2+j,"] <- Rescor[",j,", ",i,"]; \n")))))
+          paste0("  rescor[",(i-1)*(i-2)/2+j,"] = Rescor[",j,", ",i,"]; \n")))))
     } else if (!is.forked(family) && !is.categorical(family)) {
       stop("invalid multivariate model", call. = FALSE)
     }
@@ -434,7 +435,7 @@ stan_ordinal <- function(family, prior = prior_frame(),
       out$transC1 <- paste0(
         "  // compute equidistant thresholds \n",
         "  for (k in 1:(ncat - 1)) { \n",
-        "    temp_Intercept[k] <- temp_Intercept1 + (k - 1.0) * delta; \n",
+        "    temp_Intercept[k] = temp_Intercept1 + (k - 1.0) * delta; \n",
         "  } \n")
       out$prior <- paste0(stan_prior(class = "temp_Intercept1", prior = prior), 
                           stan_prior(class = "delta", prior = prior))
@@ -453,54 +454,54 @@ stan_ordinal <- function(family, prior = prior_frame(),
         "   * Returns: \n", 
         "   *   a scalar to be added to the log posterior \n",
         "   */ \n",
-        "   real ", family, "_log(int y, real eta, ", cse_arg, "vector thres) { \n",
+        "   real ", family, "_lpmf(int y, real eta, ", cse_arg, "vector thres) { \n",
         "     int ncat; \n",
         "     vector[num_elements(thres) + 1] p; \n",
         if (family != "cumulative") "     vector[num_elements(thres)] q; \n",
-        "     ncat <- num_elements(thres) + 1; \n")
+        "     ncat = num_elements(thres) + 1; \n")
       
       # define actual function content
       if (family == "cumulative") {
         out$fun <- paste0(out$fun,
-        "     p[1] <- ", ilink, "(", th(1), "); \n",
+        "     p[1] = ", ilink, "(", th(1), "); \n",
         "     for (k in 2:(ncat - 1)) { \n", 
-        "       p[k] <- ", ilink, "(", th("k"), ") - ",
+        "       p[k] = ", ilink, "(", th("k"), ") - ",
         ilink, "(", th("k - 1"), "); \n", 
         "     } \n",
-        "     p[ncat] <- 1 - ",ilink, "(", th("ncat - 1"), "); \n")
+        "     p[ncat] = 1 - ",ilink, "(", th("ncat - 1"), "); \n")
       } else if (family %in% c("sratio", "cratio")) {
         sc <- ifelse(family == "sratio", "1 - ", "")
         out$fun <- paste0(out$fun,
         "     for (k in 1:(ncat - 1)) { \n",
-        "       q[k] <- ", sc, ilink, "(", th("k"), "); \n",
-        "       p[k] <- 1 - q[k]; \n",
-        "       for (kk in 1:(k - 1)) p[k] <- p[k] * q[kk]; \n", 
+        "       q[k] = ", sc, ilink, "(", th("k"), "); \n",
+        "       p[k] = 1 - q[k]; \n",
+        "       for (kk in 1:(k - 1)) p[k] = p[k] * q[kk]; \n", 
         "     } \n",
-        "     p[ncat] <- prod(q); \n")
+        "     p[ncat] = prod(q); \n")
       } else if (family == "acat") {
         if (ilink == "inv_logit") {
           out$fun <- paste0(out$fun,
-          "     p[1] <- 1.0; \n",
+          "     p[1] = 1.0; \n",
           "     for (k in 1:(ncat - 1)) { \n",
-          "       q[k] <- ", th("k"), "; \n",
-          "       p[k + 1] <- q[1]; \n",
-          "       for (kk in 2:k) p[k + 1] <- p[k + 1] + q[kk]; \n",
-          "       p[k + 1] <- exp(p[k + 1]); \n",
+          "       q[k] = ", th("k"), "; \n",
+          "       p[k + 1] = q[1]; \n",
+          "       for (kk in 2:k) p[k + 1] = p[k + 1] + q[kk]; \n",
+          "       p[k + 1] = exp(p[k + 1]); \n",
           "     } \n",
-          "     p <- p / sum(p); \n")
+          "     p = p / sum(p); \n")
         } else {
           out$fun <- paste0(out$fun,    
           "     for (k in 1:(ncat - 1)) \n",
-          "       q[k] <- ", ilink, "(", th("k"), "); \n",
+          "       q[k] = ", ilink, "(", th("k"), "); \n",
           "     for (k in 1:ncat) { \n",     
-          "       p[k] <- 1.0; \n",
-          "       for (kk in 1:(k - 1)) p[k] <- p[k] * q[kk]; \n",
-          "       for (kk in k:(ncat - 1)) p[k] <- p[k] * (1 - q[kk]); \n",      
+          "       p[k] = 1.0; \n",
+          "       for (kk in 1:(k - 1)) p[k] = p[k] * q[kk]; \n",
+          "       for (kk in k:(ncat - 1)) p[k] = p[k] * (1 - q[kk]); \n",      
           "     } \n",
-          "     p <- p / sum(p); \n")
+          "     p = p / sum(p); \n")
         }
       }
-      out$fun <- paste(out$fun, "    return categorical_log(y, p); \n   } \n")
+      out$fun <- paste(out$fun, "    return categorical_lpmf(y | p); \n   } \n")
     }
   }
   out
@@ -518,7 +519,7 @@ stan_categorical <- function(family) {
   if (is.categorical(family)) {
     out$data <- "  #include 'data_categorical.stan' \n" 
     out$tdataD <- "  vector[1] zero; \n"
-    out$tdataC <- "  zero[1] <- 0; \n"
+    out$tdataC <- "  zero[1] = 0; \n"
   }
   out
 }
@@ -562,7 +563,7 @@ stan_forked <- function(family) {
       } 
     } else if (is.2PL(family)) {
       out$transD <- "  vector[N_trait] eta_2PL;  // 2PL linear predictor \n"
-      out$transC1 <- paste0("  eta_2PL <- head(eta, N_trait)", 
+      out$transC1 <- paste0("  eta_2PL = head(eta, N_trait)", 
                             " .* exp(tail(eta, N_trait)); \n")
     }
   }
@@ -619,7 +620,7 @@ stan_disp <- function(disp, family = gaussian()) {
            else stop("invalid family for addition argument 'disp'")
     out$data <- "  vector<lower=0>[N] disp;  // dispersion factors \n"
     out$transD <- paste0("  vector<lower=0>[N] disp_", par, "; \n")
-    out$transC1 <- paste0("  disp_", par, " <- ", par, " * disp; \n")
+    out$transC1 <- paste0("  disp_", par, " = ", par, " * disp; \n")
   }
   out
 }
@@ -841,7 +842,7 @@ stan_rngprior <- function(sample_prior, prior, par_declars = "",
         "  ", types[no_bounds], " prior_", pars[no_bounds], "; \n")
       out$genC <- paste0(
         "  // additionally draw samples from priors \n",
-        collapse("  prior_", pars[no_bounds], " <- ",
+        collapse("  prior_", pars[no_bounds], " = ",
                  dis[no_bounds], "_rng", args[no_bounds], " \n"))
     }
   }
