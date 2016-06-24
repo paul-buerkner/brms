@@ -7,7 +7,10 @@
     \itemize{ 
       \item Add support for generalized additive mixed models
       (GAMMs). Smoothing terms can be specified using
-      the \code{s} and \code{t2} functions in the model formula. 
+      the \code{s} and \code{t2} functions in the model formula.
+      \item Introduce the \code{pp_check} method for \code{brmsfit} 
+      objects to perform various posterior predictive checks 
+      using the \pkg{bayesplot} package. 
       \item Introduce \code{as.data.frame} and \code{as.matrix}
       methods for \code{brmsfit} objects.
     }
@@ -19,6 +22,9 @@
       log-link to match the behavior of \code{glm}. 
       The log-normal distribution can now be specified via
       family \code{lognormal}.
+      \item The \code{plot} and \code{pairs} methods of
+      \code{brmsfit} objects now internally use the 
+      \code{bayesplot} package.
     }
   }
   \subsection{BUG FIXES}{

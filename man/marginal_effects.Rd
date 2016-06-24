@@ -13,8 +13,7 @@
 marginal_effects(x, ...)
 
 \method{plot}{brmsMarginalEffects}(x, ncol = NULL, points = FALSE,
-  rug = FALSE, theme = ggplot2::theme(), ask = TRUE, do_plot = TRUE,
-  ...)
+  rug = FALSE, theme = ggplot2::theme(), ask = TRUE, plot = TRUE, ...)
 }
 \arguments{
 \item{x}{An object usually of class \code{brmsfit}}
@@ -68,9 +67,9 @@ Can be defined globally for the current session, via
 
 \item{ask}{logical; indicates if the user is prompted 
 before a new page is plotted. 
-Only used if \code{do_plot} is \code{TRUE}.}
+Only used if \code{plot} is \code{TRUE}.}
 
-\item{do_plot}{logical; indicates if plots should be
+\item{plot}{logical; indicates if plots should be
 plotted directly in the active graphic device.
 Defaults to \code{TRUE}.}
 }

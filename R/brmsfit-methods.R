@@ -752,19 +752,19 @@ launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"),
 #'   For some basic themes see \code{\link[ggplot2:ggtheme]{ggtheme}}. 
 #'   Can be defined globally for the current session, via
 #'   \code{\link[ggplot2:theme_update]{theme_set}}.
-#' @param do_plot logical; indicates if plots should be
+#' @param plot logical; indicates if plots should be
 #'   plotted directly in the active graphic device.
 #'   Defaults to \code{TRUE}.
 #' @param ask logical; indicates if the user is prompted 
 #'   before a new page is plotted. 
-#'   Only used if \code{do_plot} is \code{TRUE}.
+#'   Only used if \code{plot} is \code{TRUE}.
 #' @param newpage logical; indicates if the first set of plots
 #'   should be plotted to a new page. 
-#'   Only used if \code{do_plot} is \code{TRUE}.
+#'   Only used if \code{plot} is \code{TRUE}.
 #' @param ... Further arguments passed to 
 #'   \code{\link[gridExtra:arrangeGrob]{arrangeGrob}}.
 #' 
-#' @return A (possibly invisible) list of 
+#' @return An invisible list of 
 #'   \code{\link[gtable:gtable]{gtable}} objects.
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
@@ -785,21 +785,22 @@ launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"),
 #' @importFrom gridExtra arrangeGrob
 #' @importFrom grDevices devAskNewPage
 #' @importFrom grid grid.draw grid.newpage
+#' @importFrom bayesplot mcmc_trace mcmc_dens_overlay
 #' @export
 plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5, 
-                         theme = ggplot2::theme(), ask = TRUE, 
-                         do_plot = TRUE, newpage = TRUE, ...) {
+                         theme = bayesplot::theme_ppc(), ask = TRUE, 
+                         plot = TRUE, newpage = TRUE, ...) {
   dots <- list(...)
+  plot <- use_alias(plot, dots$do_plot)
+  dots$do_plot <- NULL
   if (is.na(pars[1])) 
     pars <- parameters 
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
-  if (!is.wholenumber(N) || N < 1) 
+  if (!is.wholenumber(N) || N < 1)
     stop("N must be a positive integer", call. = FALSE)
   if (!is.character(pars)) {
-    pars <- c("^b_", "^bm_", "^sd_", "^cor_", "^sigma", "^rescor", 
-              "^nu$", "^shape$", "^delta$", "^phi$", "^ar", "^ma", 
-              "^arr", "^simplex_", "^sds_")
+    pars <- default_plot_pars()
   }
   samples <- posterior_samples(x, pars = pars, add_chain = TRUE)
   pars <- names(samples)[!names(samples) %in% c("chain", "iter")] 
@@ -807,7 +808,7 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5,
     stop("No valid parameters selected", call. = FALSE)
   }
   
-  if (do_plot) {
+  if (plot) {
     default_ask <- devAskNewPage()
     on.exit(devAskNewPage(default_ask))
     devAskNewPage(ask = FALSE)
@@ -815,14 +816,17 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5,
   n_plots <- ceiling(length(pars) / N)
   plots <- vector(mode = "list", length = n_plots)
   for (i in 1:n_plots) {
-    rel_pars <- pars[((i - 1) * N + 1):min(i * N, length(pars))]
-    sub_samples <- cbind(utils::stack(samples[, rel_pars, drop = FALSE]),
-                         samples[, c("chain", "iter")])
-    # make sure that parameters appear in the original order
-    sub_samples$ind <- with(sub_samples, factor(ind, levels = unique(ind)))
-    td_plot <- trace_density_plot(sub_samples, theme = theme)
-    plots[[i]] <- arrangeGrob(grobs = td_plot, nrow = 1, ncol = 2, ...)
-    if (do_plot) {
+    sub_pars <- pars[((i - 1) * N + 1):min(i * N, length(pars))]
+    sub_samples <- samples[, c(sub_pars, "chain"), drop = FALSE]
+    bp_args <- list(sub_samples, plot = FALSE, 
+                    facet_args = list(ncol = 1, scales = "free"))
+    trace <- do.call(mcmc_trace, bp_args) + xlab("") + ylab("") + 
+      theme + theme(legend.position = "none")
+    dens <- do.call(mcmc_dens_overlay, bp_args) + xlab("") + ylab("") + 
+      theme + theme(legend.position = "right")
+    ag_args <- list(trace, dens, nrow = 1, ncol = 2, widths = c(1, 1.2))
+    plots[[i]] <- do.call(arrangeGrob, c(ag_args, dots))
+    if (plot) {
       if (newpage || i > 1) grid.newpage()
       grid.draw(plots[[i]])
       if (i == 1) devAskNewPage(ask = ask)
@@ -1040,22 +1044,20 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
 }
 
 #' Create a matrix of output plots from a \code{brmsfit} object
-#'
-#' A \code{\link[graphics:pairs]{pairs}} 
-#' method that is customized for MCMC output
 #' 
-#' @param x An object of class \code{stanfit}
+#' @param x An object of class \code{brmsfit}
 #' @param pars Names of the parameters to plot, as given by 
 #'  a character vector or a regular expression. 
-#'  By default, all parameters are plotted. 
+#'  By default, all parameters are plotted 
+#'  that are also visible in the summary. 
 #' @param exact_match Indicates whether parameter names 
 #'   should be matched exactly or treated as regular expression. 
 #'   Default is \code{FALSE}.
 #' @param ... Further arguments to be passed to 
-#'  \code{\link[rstan:pairs.stanfit]{pairs.stanfit}}.
+#'  \code{\link[bayesplot:mcmc_pairs]{mcmc_pairs}}.
 #'  
 #' @details For a detailed description see 
-#'  \code{\link[rstan:pairs.stanfit]{pairs.stanfit}}.
+#'  \code{\link[bayesplot:mcmc_pairs]{mcmc_pairs}}.
 #'  
 #' @examples 
 #' \dontrun{
@@ -1068,9 +1070,13 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
 #'
 #' @export
 pairs.brmsfit <- function(x, pars = NA, exact_match = FALSE, ...) {
-  pars <- extract_pars(pars, all_pars = parnames(x),
-                       exact_match = exact_match, na_value = NULL)
-  graphics::pairs(x$fit, pars = pars, ...)
+  if (!is.character(pars)) {
+    pars <- default_plot_pars()
+  }
+  samples <- posterior_samples(x, pars = pars, exact_match = exact_match)
+  # GGally apparently doesn't like 'invalid' names
+  colnames(samples) <- make.names(colnames(samples))
+  rstan::quietgg(bayesplot::mcmc_pairs(samples, ...))
 }
 
 #' @rdname marginal_effects

@@ -17,6 +17,7 @@ Imports:
     lme4 (>= 1.1-11),
     Matrix (>= 1.1.1),
     mgcv (>= 1.7-23),
+    bayesplot,
     coda,
     abind,
     statmod,
@@ -28,7 +29,6 @@ Imports:
     grid
 Suggests: 
     testthat (>= 0.9.1),
-    bayesplot,
     arm,
     mvtnorm,
     KernSmooth,
