@@ -17,7 +17,7 @@ test_that("fitted helper functions run without errors", {
   expect_equal(dim(fitted(fit, summary = FALSE)), c(nsamples, nobs))
   # pseudo weibull model
   fit$family <- weibull()
-  expect_equal(dim(fitted(fit, summary = FALSE)), c(nsamples, nobs))
+  expect_equal(dim(SW(fitted(fit, summary = FALSE))), c(nsamples, nobs))
   # pseudo binomial model
   fit$autocor <- cor_arma()
   fit$family <- binomial()
@@ -48,7 +48,7 @@ test_that("fitted helper functions run without errors", {
   expect_equal(dim(mu), c(nsamples, nobs))
   mu <- fitted_trunc_exponential(exp_eta, lb = 0, ub = Inf, draws = draws)
   expect_equal(dim(mu), c(nsamples, nobs))
-  mu <- fitted_trunc_weibull(exp_eta, lb = -Inf, ub = Inf, draws = draws)
+  mu <- SW(fitted_trunc_weibull(exp_eta, lb = -Inf, ub = Inf, draws = draws))
   expect_equal(dim(mu), c(nsamples, nobs))
   # truncated discrete models
   data <- list(Y = sample(100, 10), trials = 1:10, N = 10)
