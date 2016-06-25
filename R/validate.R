@@ -361,9 +361,9 @@ extract_random <- function(re_terms) {
   random <- vector("list", length(re_terms))
   for (i in seq_along(re_terms)) {
     form <- formula(paste("~", substring(lhs_terms[i], 2)))
-    groups <- unlist(strsplit(sub("^\\|*", "", rhs_terms[i]), "/", 
-                              fixed = TRUE))
     cor <- substr(rhs_terms[i], 1, 2) != "||"
+    rhs_terms[i] <- sub("^\\|*", "", rhs_terms[i])
+    groups <- unlist(strsplit(rhs_terms[i], "/", fixed = TRUE))
     new_groups <- c(groups[1], rep("", length(groups) - 1L))
     for (j in seq_along(groups)) {
       if (illegal_group_expr(groups[j])) {
