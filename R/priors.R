@@ -463,8 +463,14 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
                                       prior = def_scale_prior))
   }
   if (has_sigma(family, se = is.formula(ee$se), autocor = autocor)) {
-    sigma_prior <- prior_frame(class = "sigma", coef = c("", ee$response),
-                               prior = c(def_scale_prior, rep("", nresp)))
+    sigma_coef <- ""
+    sigma_prior <- def_scale_prior
+    if (length(ee$response) > 1L) {
+      sigma_coef <- c(sigma_coef, ee$response)
+      sigma_prior <- c(sigma_prior, rep("", nresp))
+    }
+    sigma_prior <- prior_frame(class = "sigma", coef = sigma_coef,
+                               prior = sigma_prior)
     prior <- rbind(prior, sigma_prior)
   }
   if (is_linear && nresp > 1L) {

@@ -33,6 +33,9 @@
       \item Fix a bug in the \code{print} method of
       \code{brmshypothesis} objects that could lead to 
       duplicated and thus invalid row names.
+      \item Residual standard deviation parameters of 
+      multivariate models are again correctly displayed 
+      in the output of the \code{summary} method.
     }
   }
 }  

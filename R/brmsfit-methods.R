@@ -283,7 +283,7 @@ VarCorr.brmsfit <- function(x, sigma = 1, estimate = "mean",
                             as.list = TRUE, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
-  if (!(length(x$ranef) || any(grepl("^sigma_", parnames(x)))))
+  if (!(length(x$ranef) || any(grepl("^sigma($|_)", parnames(x)))))
     stop("The model does not contain covariance matrices", call. = FALSE)
   if (!is_equal(sigma, 1))
     warning("argument 'sigma' is unused")
@@ -357,9 +357,8 @@ VarCorr.brmsfit <- function(x, sigma = 1, estimate = "mean",
   if (has_sigma(family, se = ee$se, autocor = x$autocor)) {
     cor_pars <- get_cornames(ee$response, type = "rescor", 
                              brackets = FALSE)
-    p <- lc(p, list(rnames = ee$response, 
-                    sd_pars = paste0("sigma_", ee$response),
-                    cor_pars = cor_pars))
+    p <- lc(p, list(rnames = ee$response, cor_pars = cor_pars,
+                    sd_pars = c("sigma", paste0("sigma_", ee$response))))
     group <- c(group, "RESIDUAL")
   } 
   VarCorr <- lapply(p, extract)
@@ -607,10 +606,10 @@ summary.brmsfit <- function(object, waic = FALSE, ...) {
     
     # summary of family specific parameters
     spec_pars <- pars[pars %in% c("nu", "shape", "delta", "phi") | 
-      apply(sapply(c("^sigma_", "^rescor_"), grepl, x = pars), 1, any)]
+      apply(sapply(c("^sigma($|_)", "^rescor_"), grepl, x = pars), 1, any)]
     out$spec_pars <- fit_summary[spec_pars, , drop = FALSE]
-    if (is.linear(family)) {
-      sigma_names <- paste0("sigma(",ee$response,")")
+    if (is.linear(family) && length(ee$response) > 1L) {
+      sigma_names <- paste0("sigma(", ee$response, ")")
       rescor_names <- get_cornames(ee$response, type = "rescor")   
       spec_pars[grepl("^sigma_", spec_pars)] <- sigma_names
       spec_pars[grepl("^rescor_", spec_pars)] <- rescor_names 
@@ -1441,7 +1440,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   }
   # reorder predicted responses in case of multivariate models
   # as they are sorted after units first not after traits
-  if (grepl("^multi_", draws$f$family)) {
+  if (grepl("_multi$", draws$f$family)) {
     reorder <- with(draws$data, ulapply(1:K_trait, seq, to = N, by = K_trait))
     out <- out[, reorder, drop = FALSE]
     colnames(out) <- 1:ncol(out) 

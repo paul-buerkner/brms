@@ -350,7 +350,7 @@ get_sigma <- function(x, data, i, method = c("fitted", "predict", "logLik")) {
   #      for fitted this is the number of samples
   method <- match.arg(method)
   if (is(x, "brmsfit")) {
-    sigma <- posterior_samples(x, pars = "^sigma_")$sigma
+    sigma <- posterior_samples(x, pars = "^sigma($|_)")$sigma
   } else {
     sigma <- x
   }
@@ -387,7 +387,7 @@ get_shape <- function(x, data, i = NULL,
   # Args:
   #   x: a brmsfit object or posterior samples of shape (can be NULL)
   #   data: data initially passed to Stan
-  #   method: S3 method from which get_sigma is called
+  #   method: S3 method from which get_shape is called
   #   i: only used for "predict" and "logLik": 
   #      the current observation number
   method <- match.arg(method)

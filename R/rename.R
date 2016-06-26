@@ -125,18 +125,19 @@ rename_pars <- function(x) {
   }
   
   if (has_sigma(family, se = is.formula(ee$se), autocor = x$autocor)) {
-    corfnames <- paste0("sigma_", ee$response)
-    change <- lc(change, list(pos = grepl("^sigma$", pars), oldname = "sigma",
-                              pnames = corfnames, fnames = corfnames))
-    change <- c(change, change_prior(class = "sigma", pars = pars, 
-                                      names = ee$response))
-    # residual correlation parameters
-    if (is.linear(family) && length(ee$response) > 1) {
-       rescor_names <- get_cornames(ee$response, type = "rescor", 
+    if (is.linear(family) && length(ee$response) > 1L) {
+      # rename residual parameters of multivariate linear models
+      corfnames <- paste0("sigma_", ee$response)
+      change <- lc(change, 
+        list(pos = grepl("^sigma\\[", pars), oldname = "sigma",
+             pnames = corfnames, fnames = corfnames))
+      change <- c(change, change_prior(class = "sigma", pars = pars, 
+                                       names = ee$response))
+      rescor_names <- get_cornames(ee$response, type = "rescor", 
                                     brackets = FALSE)
-       change <- lc(change, list(pos = grepl("^rescor\\[", pars), 
-                                 oldname = "rescor", pnames = rescor_names, 
-                                 fnames = rescor_names))
+      change <- lc(change, list(pos = grepl("^rescor\\[", pars), 
+                                oldname = "rescor", pnames = rescor_names,
+                                fnames = rescor_names))
     }
   } 
   

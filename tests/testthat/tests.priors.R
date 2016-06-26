@@ -28,7 +28,7 @@ test_that("check_prior performs correct renaming", {
   
   expect_equivalent(check_prior(set_prior("normal(0,2)", "b", coef = "Intercept"),
                                 formula = rating ~ carry, data = inhaler, 
-                                family = student())[6, ],
+                                family = student())[5, ],
                     prior_frame("normal(0,2)", class = "temp_Intercept"))
 })
 
@@ -62,7 +62,7 @@ test_that("check_prior accepts correct prior names", {
   
   expect_equivalent(check_prior(set_prior("cauchy(0,1)", class = "sigmaLL"),
                                 formula = count ~ Trt_c, data = epilepsy,
-                                autocor = cor_bsts())[5, ],
+                                autocor = cor_bsts())[4, ],
                     prior_frame("cauchy(0,1)", class = "sigmaLL"))
 })
 
@@ -84,7 +84,7 @@ test_that("check_prior returns increment_log_prob(.) whithout checking", {
   expect_equivalent(check_prior(c(set_prior("increment_log_prob(p1)"),
                                   set_prior("p2", class = "b")),
                                 formula = count ~ Trt_c, 
-                                data = epilepsy)[c(1, 6), ],
+                                data = epilepsy)[c(1, 5), ],
                     prior_frame(c("p2", "increment_log_prob(p1)"), 
                                 class = c("b", "")))
 })
