@@ -3,8 +3,7 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
                             lhs_char = "") {
   # Parse the model formula and related arguments
   # Args:
-  #   formula: An object of class "formula" using mostly the syntax 
-  #            of the \code{lme4} package
+  #   formula: An object of class 'formula' or 'brmsformula'
   #   ...: Additional objects of class "formula"
   #   family: the model family
   #   nonlinear: a list of formulas specifying non-linear effects
@@ -14,6 +13,8 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   #             currently only used for splines in non-linear models
   # Returns: 
   #   A named list whose elements depend on the formula input 
+  formula <- bf(formula, nonlinear = nonlinear)
+  nonlinear <- attr(formula, "nonlinear")
   if (!is.na(family[[1]])) {
     family <- check_family(family)
   }
@@ -30,11 +31,12 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
            call. = FALSE)
     }
     x$fixed <- formula(tfixed)
-    x$nonlinear <- nonlinear_effects(nonlinear, model = x$fixed)
+    x$nonlinear <- nonlinear_effects(nonlinear, model = x$fixed,
+                                     rsv_pars = names(sformula(formula)))
     re_terms <- NULL
   } else {
     # terms() doesn't like non-linear formulas
-    term_labels <- rename(attr(terms(formula), "term.labels"), " ", "")
+    term_labels <- gsub(" ", "", attr(terms(formula), "term.labels"))
     re_terms <- term_labels[grepl("\\|", term_labels)]
     if (length(re_terms)) {
       re_terms <- paste0("(", re_terms, ")")
@@ -241,7 +243,7 @@ extract_time <- function(formula) {
   x
 }
 
-nonlinear_effects <- function(x, model = ~ 1) {
+nonlinear_effects <- function(x, model = ~1, rsv_pars = NULL) {
   # prepare nonlinear formulas
   # Args:
   #   x: a list for formulas specifying linear predictors for 
@@ -250,6 +252,7 @@ nonlinear_effects <- function(x, model = ~ 1) {
   # Returns:
   #   A list of objects each returned by extract_effects
   if (length(x)) {
+    lhs_char <- as.character(model[[2]])
     nleffects <- vector("list", length = length(x))
     for (i in seq_along(x)) {
       if (!is(x[[i]], "formula")) {
@@ -268,13 +271,17 @@ nonlinear_effects <- function(x, model = ~ 1) {
         stop("Non-linear parameters should not contain dots or underscores.",
              call. = FALSE)
       }
+      if (nlresp %in% rsv_pars) {
+        stop("Parameter name '", nlresp, "' is reserved for this model.",
+             call. = FALSE)
+      }
       if (!is.null(attr(terms(x[[i]]), "offset"))) {
         stop("Offsets are currently not allowed in non-linear models.",
              call. = FALSE)
       }
       x[[i]] <- rhs(x[[i]])
       nleffects[[i]] <- extract_effects(x[[i]], check_response = FALSE,
-                                        lhs_char = as.character(model[[2]]))
+                                        lhs_char = lhs_char)
       names(nleffects)[[i]] <- nlresp
     }
     model_vars <- all.vars(rhs(model))
