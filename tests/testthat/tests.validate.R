@@ -217,6 +217,13 @@ test_that("update_re_terms works correctly", {
   expect_equivalent(update_re_terms(y ~ (1|patient), NA), y ~ 1)
   expect_equivalent(update_re_terms(y ~ x + (1+x|visit), ~ (1|visit)), 
                     y ~ x + (1|visit))
+  expect_equivalent(update_re_terms(y ~ x + (1|visit), ~ (1|visit) + (x|visit),
+                                    allow_new_terms = FALSE),
+                    y ~ x + (1|visit))
+  expect_equal(update_re_terms(bf(y ~ x, sigma = ~ x + (x|g)), ~ (1|g)),
+               bf(y ~ x + (1|g), sigma = ~ x + (1|g)))
+  expect_equal(update_re_terms(bf(y ~ x, nonlinear = x ~ z + (1|g)), ~ (1|g)),
+               bf(y ~ x, nonlinear = x ~ z + (1|g)))
 })
 
 test_that("amend_terms performs expected changes to terms objects", {

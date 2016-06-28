@@ -525,50 +525,63 @@ check_re_formula <- function(re_formula, old_ranef, data) {
   new_ranef
 }
 
-update_re_terms <- function(formula, re_formula = NULL) {
+update_re_terms <- function(formula, re_formula = NULL, 
+                            allow_new_terms = TRUE) {
   # remove RE terms in formula and add RE terms of re_formula
   #
   # Args:
   #   formula: model formula to be updated
   #   re_formula: formula containing new RE terms
+  #   allow_new_terms: allow new RE terms to be added? 
   #
   # Returns:
   #  a formula with updated RE terms
-  if (isTRUE(attr(formula, "nonlinear"))) {
+  spars <- sformula(formula)
+  for (p in setdiff(names(spars), "nonlinear")) {
+    spars[[p]] <- update_re_terms(spars[[p]], re_formula = re_formula)
+  }
+  if (!is.null(spars$nonlinear)) {
     # non-linear formulae may cause errors when passed to terms
     # and do not contain random effects anyway
-    return(formula)
-  }
-  if (suppressWarnings(anyNA(re_formula))) {
-    re_formula <- ~ 1
-  }
-  if (is.formula(re_formula)) {
-    new_formula <- formula2string(formula)
-    old_term_labels <- rename(attr(terms(formula), "term.labels"), " ", "")
-    old_re_terms <- old_term_labels[grepl("\\|", old_term_labels)]
-    if (length(old_re_terms)) {
-      old_re_terms <- paste0("(", old_re_terms, ")")
-      # make sure that + before random terms are also removed
-      old_re_terms <- c(paste0("+", old_re_terms), old_re_terms)
-      new_formula <- rename(new_formula, old_re_terms, "")
-      if (grepl("~$", new_formula)) {
-        # lhs only formulas are not allowed
-        new_formula <- paste(new_formula, "1")
-      }
-    }
-    new_term_labels <- rename(attr(terms(re_formula), "term.labels"),  " ", "")
-    new_re_terms <- new_term_labels[grepl("\\|", new_term_labels)]
-    if (length(new_re_terms)) {
-      new_re_terms <- paste0("(", new_re_terms, ")")
-      new_formula <- paste(c(new_formula, new_re_terms), collapse = "+")
-    }
-    new_formula <- formula(new_formula)
-  } else if (is.null(re_formula)) {
     new_formula <- formula
+    spars$nonlinear <- lapply(spars$nonlinear, update_re_terms, 
+                              re_formula = re_formula)
   } else {
-    stop("invalid re_formula argument", call. = FALSE)
-  } 
-  attributes(new_formula) <- attributes(formula)
+    if (suppressWarnings(anyNA(re_formula))) {
+      re_formula <- ~ 1
+    }
+    if (is.formula(re_formula)) {
+      new_formula <- formula2string(formula)
+      old_term_labels <- rename(attr(terms(formula), "term.labels"), " ", "")
+      old_re_terms <- old_term_labels[grepl("\\|", old_term_labels)]
+      if (length(old_re_terms)) {
+        rm_terms <- paste0("(", old_re_terms, ")")
+        # make sure that + before random terms are also removed
+        rm_terms <- c(paste0("+", rm_terms), rm_terms)
+        new_formula <- rename(new_formula, rm_terms, "")
+        if (grepl("~$", new_formula)) {
+          # lhs only formulas are not allowed
+          new_formula <- paste(new_formula, "1")
+        }
+      }
+      new_term_labels <- gsub(" ", "", attr(terms(re_formula), "term.labels"))
+      new_re_terms <- new_term_labels[grepl("\\|", new_term_labels)]
+      if (!allow_new_terms) {
+        new_re_terms <- intersect(old_re_terms, new_re_terms) 
+      }
+      if (length(new_re_terms)) {
+        add_terms <- paste0("(", new_re_terms, ")")
+        new_formula <- paste(c(new_formula, add_terms), collapse = "+")
+      }
+      new_formula <- formula(new_formula)
+    } else if (is.null(re_formula)) {
+      new_formula <- formula
+    } else {
+      stop("invalid re_formula argument", call. = FALSE)
+    } 
+  }
+  attributes(new_formula)[names(spars)] <- spars
+  environment(new_formula) <- environment(formula)
   new_formula
 }
 
