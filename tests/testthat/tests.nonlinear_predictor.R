@@ -4,8 +4,8 @@ test_that("nonlinear_predictor runs without errors", {
   # more complicated non-linear models are only tested locally
   # to keep the installation time of brms short
   fit <- rename_pars(brmsfit_example)
-  fit$formula <- count ~ alpha - exp(Trt / beta)
-  fit$nonlinear <- list(alpha ~ 1, beta ~ 1)
+  fit$formula <- bf(count ~ alpha - exp(Trt / beta),
+                    nonlinear = list(alpha ~ 1, beta ~ 1))
   fit <- add_samples(fit, "b_alpha_Intercept")
   fit <- add_samples(fit, "b_beta_Intercept")
   draws <- extract_draws(fit)
