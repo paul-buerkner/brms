@@ -301,7 +301,7 @@ nonlinear2list <- function(x) {
   # one for each non-linear parameter
   if (is(x, "formula")) {
     if (length(x) != 3) {
-      stop("Non-linear formulas must be two-sided.")
+      stop("Non-linear formulas must be two-sided.", call. = FALSE)
     }
     nlpars <- all.vars(lhs(x))
     x <- lapply(nlpars, function(nlp) update(x, paste(nlp, " ~ .")))
@@ -312,7 +312,7 @@ nonlinear2list <- function(x) {
 }
 
 update_formula <- function(formula, data = NULL, family = gaussian(),
-                           partial = NULL, nonlinear = NULL) {
+                           nonlinear = NULL, partial = NULL) {
   # incorporate addition arguments and category specific effects into formula 
   # 
   # Args:
@@ -322,6 +322,7 @@ update_formula <- function(formula, data = NULL, family = gaussian(),
   #
   # Returns:
   #   an updated formula containing the addition and category specific effects
+  formula <- bf(formula, nonlinear = nonlinear)
   old_attributes <- attributes(formula)
   fnew <- ". ~ ."
   if (is(partial, "formula")) {
@@ -342,9 +343,6 @@ update_formula <- function(formula, data = NULL, family = gaussian(),
     formula <- update.formula(formula, formula(fnew))
   }
   attributes(formula) <- old_attributes
-  if (!isTRUE(attr(formula, "nonlinear"))) {
-    attr(formula, "nonlinear") <- length(nonlinear) > 0
-  }
   if (is.categorical(family) && is.null(attr(formula, "response"))) {
     respform <- extract_effects(formula)$respform
     model_response <- model.response(model.frame(respform, data = data))
@@ -929,7 +927,7 @@ formula2string <- function(formula, rm = c(0, 0)) {
   x <- gsub(" ", "", Reduce(paste, deparse(formula)))
   x <- substr(x, 1 + rm[1], nchar(x) - rm[2])
   x
-} 
+}
 
 get_boundaries <- function(trunc) {
   # extract truncation boundaries out of a formula
