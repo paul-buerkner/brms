@@ -36,11 +36,20 @@ Nsamples <- function(x, subset = NULL) {
 }
 
 algorithm <- function(x) {
-  if (!is(x, "brmsfit")) {
-    stop("x must be of class brmsfit")
-  }
+  stopifnot(is(x, "brmsfit"))
   if (is.null(x$algorithm)) "sampling"
   else x$algorithm
+}
+
+restructure <- function(x) {
+  # restructure old brmsfit objects to work with the latest brms version
+  stopifnot(is(x, "brmsfit"))
+  # x$nonlinear deprecated as of brms > 0.9.1
+  # X$partial deprecated as of brms > 0.8.0
+  x$formula <- SW(update_formula(x$formula, partial = x$partial, 
+                                 nonlinear = x$nonlinear))
+  x$nonlinear <- x$partial <- NULL
+  x
 }
 
 first_greater <- function(A, target, i = 1) {

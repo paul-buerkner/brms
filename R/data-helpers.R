@@ -210,11 +210,9 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   new_ranef <- check_re_formula(re_formula, old_ranef = fit$ranef,
                                 data = model.frame(fit))
   new_formula <- update_re_terms(fit$formula, re_formula = re_formula)
-  new_nonlinear <- lapply(fit$nonlinear, update_re_terms, 
-                          re_formula = re_formula)
   et <- extract_time(fit$autocor$formula)
   ee <- extract_effects(new_formula, et$all, family = family(fit),
-                        nonlinear = new_nonlinear, resp_rhs_all = FALSE)
+                        resp_rhs_all = FALSE)
   resp_only_vars <- setdiff(all.vars(ee$respform), all.vars(rhs(ee$all)))
   missing_resp <- setdiff(resp_only_vars, names(newdata))
   if (check_response && length(missing_resp)) {
@@ -242,8 +240,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     # brms:::update_data expects all original variables to be present
     # even if not actually used later on
     old_gf <- unique(unlist(strsplit(names(fit$ranef), split = ":")))
-    old_ee <- extract_effects(formula(fit), et$all, family = family(fit),
-                              nonlinear = fit$nonlinear)
+    old_ee <- extract_effects(formula(fit), et$all, family = family(fit))
     old_slopes <- unique(ulapply(get_random(old_ee)$form, all.vars))
     unused_vars <- setdiff(union(old_gf, old_slopes), all.vars(ee$all))
     if (length(unused_vars)) {
@@ -378,8 +375,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
                             nrow(newdata))
     }
     newdata <- make_standata(new_formula, data = newdata, family = fit$family, 
-                             autocor = fit$autocor, nonlinear = new_nonlinear,
-                             partial = fit$partial, knots = knots,
+                             autocor = fit$autocor, knots = knots, 
                              control = control)
   }
   newdata
