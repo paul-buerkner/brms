@@ -13,8 +13,7 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   new_ranef <- check_re_formula(re_formula, old_ranef = x$ranef, 
                                 data = x$data)
   new_formula <- update_re_terms(x$formula, re_formula = re_formula)
-  ee <- extract_effects(new_formula, family = family(x),
-                        nonlinear = x$nonlinear)
+  ee <- extract_effects(new_formula, family = family(x))
   if (is.null(subset) && !is.null(nsamples)) {
     subset <- sample(Nsamples(x), nsamples)
   }
@@ -26,10 +25,10 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   
   nlpars <- names(ee$nonlinear)
   if (length(nlpars)) {
-    for (i in 1:length(nlpars)) {
+    for (i in seq_along(nlpars)) {
       nlfit <- x
-      nlfit$formula <- update(x$formula, rhs(x$nonlinear[[i]]))
-      nlfit$nonlinear <- NULL
+      nlfit$formula <- update.formula(x$formula, 
+                         rhs(attr(x$formula, "nonlinear")[[i]]))
       nlfit$ranef <- gather_ranef(extract_effects(nlfit$formula), data = x$data)
       nlstandata <- amend_newdata(newdata, fit = nlfit, re_formula = re_formula, 
                                   allow_new_levels = allow_new_levels)

@@ -44,8 +44,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   if (!(is.null(data) || is.list(data)))
     stop("argument 'data' must be a data.frame or list", call. = FALSE)
   family <- check_family(family)
-  nonlinear <- nonlinear2list(nonlinear) 
-  formula <- update_formula(formula, data = data, family = family, 
+  formula <- update_formula(formula, data = data, family = family,
                             partial = partial, nonlinear = nonlinear)
   autocor <- check_autocor(autocor)
   is_linear <- is.linear(family)
@@ -54,8 +53,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   is_forked <- is.forked(family)
   is_categorical <- is.categorical(family)
   et <- extract_time(autocor$formula)
-  ee <- extract_effects(formula, family = family, et$all, 
-                        nonlinear = nonlinear)
+  ee <- extract_effects(formula, family = family, et$all)
   prior <- as.prior_frame(prior)
   check_prior_content(prior, family = family, warn = FALSE)
   na_action <- if (is_newdata) na.pass else na.omit
@@ -151,7 +149,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     standata$Y <- as.array(standata$Y)
   }
   # data for various kinds of effects
-  if (length(nonlinear)) {
+  if (length(ee$nonlinear)) {
     nlpars <- names(ee$nonlinear)
     # matrix of covariates appearing in the non-linear formula
     C <- get_model_matrix(ee$covars, data = data)

@@ -381,13 +381,11 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
     stop("argument 'data' must be a data.frame or list", call. = FALSE)
   family <- check_family(family) 
   link <- family$link
-  nonlinear <- nonlinear2list(nonlinear) 
   formula <- update_formula(formula, data = data, family = family, 
                             partial = partial, nonlinear = nonlinear)
   threshold <- match.arg(threshold)
   autocor <- check_autocor(autocor)
-  ee <- extract_effects(formula, family = family,
-                        nonlinear = nonlinear)
+  ee <- extract_effects(formula, family = family)
   data <- update_data(data, family = family, effects = ee)
   ranef <- gather_ranef(ee, data = data, forked = is.forked(family))  
   
@@ -408,7 +406,7 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
   
   # initialize output
   prior <- empty_prior_frame()
-  if (length(nonlinear)) {
+  if (length(ee$nonlinear)) {
     nlpars <- names(ee$nonlinear)
     for (i in seq_along(nlpars)) {
       # use nlpar = "1" just to keep intercept columns
@@ -644,12 +642,13 @@ get_prior_splines <- function(splines, def_scale_prior, nlpar = "") {
 }
 
 check_prior <- function(prior, formula, data = NULL, family = gaussian(), 
-                        sample_prior = FALSE, autocor = NULL, nonlinear = NULL, 
+                        sample_prior = FALSE, autocor = NULL, 
                         threshold = "flexible", check_rows = NULL, 
                         warn = FALSE) {
   # check prior input and amend it if needed
   # Args:
   #   same as the respective parameters in brm
+  #   (nonlinear is expected to be an attribute of formula)
   #   check_rows: if not NULL, check only the rows given in check_rows
   #   warn: passed to check_prior_content
   # Returns:
@@ -657,11 +656,11 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
   if (isTRUE(attr(prior, "checked"))) {
     return(prior)  # prior has already been checked; no need to do it twice
   }
-  ee <- extract_effects(formula, family = family, nonlinear = nonlinear)  
+  stopifnot(is(formula, "brmsformula"))
+  ee <- extract_effects(formula, family = family)  
   all_priors <- get_prior(formula = formula, data = data, 
                           family = family, autocor = autocor, 
-                          threshold = threshold, nonlinear = nonlinear, 
-                          internal = TRUE)
+                          threshold = threshold, internal = TRUE)
   if (is.null(prior)) {
     prior <- all_priors  
   } else {
@@ -737,7 +736,7 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
     }
   }
   # check if priors for non-linear parameters are defined
-  if (length(nonlinear)) {
+  if (length(ee$nonlinear)) {
     nlpars <- names(ee$nonlinear)
     for (nlp in nlpars) {
       nlp_prior <- prior$prior[with(prior, nlpar == nlp & class == "b")]

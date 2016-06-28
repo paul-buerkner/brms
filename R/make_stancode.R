@@ -33,18 +33,16 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   # some input checks 
   if (!(is.null(data) || is.list(data)))
     stop("argument 'data' must be a data.frame or list", call. = FALSE)
-  family <- check_family(family) 
-  nonlinear <- nonlinear2list(nonlinear) 
-  formula <- update_formula(formula, data = data, family = family, 
+  family <- check_family(family)
+  formula <- update_formula(formula, data = data, family = family,
                             partial = partial, nonlinear = nonlinear)
   autocor <- check_autocor(autocor)
   threshold <- match.arg(threshold)
   et <- extract_time(autocor$formula)  
-  ee <- extract_effects(formula, family = family, et$all, 
-                        nonlinear = nonlinear)
+  ee <- extract_effects(formula, family = family, et$all)
   prior <- check_prior(prior, formula = formula, data = data, 
                        family = family, autocor = autocor, 
-                       threshold = threshold, nonlinear = nonlinear)
+                       threshold = threshold)
   prior_only <- identical(sample_prior, "only")
   sample_prior <- if (prior_only) FALSE else sample_prior
   data <- update_data(data, family = family, effects = ee, et$group)
@@ -59,7 +57,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   trunc <- get_boundaries(ee$trunc)
   
   intercepts <- names(get_intercepts(ee, family = family, data = data))
-  if (length(nonlinear)) {
+  if (length(ee$nonlinear)) {
     text_pred <- stan_nonlinear(ee, data = data, family = family, 
                                 prior = prior, autocor = autocor,
                                 cov_ranef = cov_ranef)
@@ -80,7 +78,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
                        nresp = length(ee$response))
   # generate stan code specific to certain models
   text_autocor <- stan_autocor(family, autocor = autocor, prior = prior,
-                               nonlinear = nonlinear, is_multi = is_multi,
+                               nonlinear = ee$nonlinear, is_multi = is_multi,
                                has_disp = is.formula(ee$disp),
                                has_se = is.formula(ee$se))
   text_multi <- stan_multi(family, response = ee$response, prior = prior)
@@ -208,7 +206,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   make_loop <- nrow(ee$random) || (Kar || Kma) && !use_cov(autocor) || 
                is(autocor, "cor_bsts") || length(intercepts) > 1L || 
                length(ee$mono) || isTRUE(text_pred$transform) || 
-               length(nonlinear)
+               length(ee$nonlinear)
   if (make_loop && !is_multi) {
     text_loop <- c("  for (n in 1:N) { \n", "  } \n")
   } else if (is_multi) {

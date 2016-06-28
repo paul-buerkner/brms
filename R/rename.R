@@ -90,12 +90,12 @@ rename_pars <- function(x) {
   # some variables generally needed
   pars <- parnames(x)
   family <- family(x)
-  ee <- extract_effects(x$formula, family = family, nonlinear = x$nonlinear)
+  ee <- extract_effects(x$formula, family = family)
   standata <- standata(x)
   
   # find positions of parameters and define new names
   change <- list()
-  if (length(x$nonlinear)) {
+  if (length(ee$nonlinear)) {
     nlpars <- names(ee$nonlinear)
     for (p in nlpars) {
       change_fixef <- change_fixef(colnames(standata[[paste0("X_", p)]]), 

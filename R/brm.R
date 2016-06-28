@@ -622,12 +622,10 @@ brm <- function(formula, data = NULL, family = gaussian(),
   } else {  # build new model
     # see validate.R for function definitions
     family <- check_family(family)
-    nonlinear <- nonlinear2list(nonlinear) 
     formula <- update_formula(formula, data = data, family = family, 
-                              partial = partial, nonlinear = nonlinear)
+                              nonlinear = nonlinear, partial = partial)
     et <- extract_time(autocor$formula)  
-    ee <- extract_effects(formula, family = family, et$all,
-                          nonlinear = nonlinear)
+    ee <- extract_effects(formula, family = family, et$all)
     check_mv_formula(family, effects = ee)
     if (is.null(dots$data.name)) {
       data.name <- substr(Reduce(paste, deparse(substitute(data))), 1, 50)
@@ -640,25 +638,24 @@ brm <- function(formula, data = NULL, family = gaussian(),
     # see priors.R
     prior <- check_prior(prior, formula = formula, data = data, 
                          family = family, sample_prior = sample_prior, 
-                         autocor = autocor, nonlinear = nonlinear, 
-                         threshold = threshold, warn = TRUE)
+                         autocor = autocor,  threshold = threshold, 
+                         warn = TRUE)
     # initialize S3 object
     x <- brmsfit(formula = formula, family = family, link = family$link, 
                  data = data, data.name = data.name, prior = prior, 
-                 autocor = autocor, nonlinear = nonlinear, 
-                 cov_ranef = cov_ranef, threshold = threshold, 
-                 algorithm = algorithm)
+                 autocor = autocor, cov_ranef = cov_ranef, 
+                 threshold = threshold, algorithm = algorithm)
     # see validate.R
     x$ranef <- gather_ranef(ee, data = x$data, forked = is.forked(family))  
     x$exclude <- exclude_pars(ee, ranef = x$ranef, save_ranef = ranef)
     # see make_stancode.R
     x$model <- make_stancode(formula = formula, data = data, 
                              family = family, prior = prior,  
-                             autocor = autocor, nonlinear = nonlinear,
-                             threshold = threshold, sparse = sparse,
-                             cov_ranef = cov_ranef, sample_prior = sample_prior, 
-                             knots = knots, stan_funs = stan_funs, 
-                             save_model = save_model, brm_call = TRUE)
+                             autocor = autocor, threshold = threshold, 
+                             sparse = sparse, cov_ranef = cov_ranef, 
+                             sample_prior = sample_prior, knots = knots, 
+                             stan_funs = stan_funs, save_model = save_model, 
+                             brm_call = TRUE)
     # generate standata before compiling the model to avoid
     # unnecessary compilations in case that the data is invalid
     standata <- standata(x, newdata = dots$is_newdata)
