@@ -351,6 +351,71 @@ update_formula <- function(formula, data = NULL, family = gaussian(),
   formula
 }
 
+#' @export
+bf <- function(formula, nonlinear = NULL, zi = NULL, hu = NULL, 
+               sigma = NULL, shape = NULL, nu = NULL, phi = NULL) {
+  all_args <- names(formals(bf))[-1]
+  old_att <- rmNULL(attributes(formula)[all_args])
+  formula <- as.formula(formula)
+  if (is.logical(attr(formula, "nonlinear"))) {
+    # avoid problems due to the brms < 0.10.0 usage
+    # of the nonlinear attribute
+    attr(formula, "nonlinear") <- NULL
+  }
+  nonlinear <- nonlinear2list(nonlinear)
+  new_att <- rmNULL(nlist(nonlinear, zi, hu, sigma, shape, nu, phi))
+  dupl_args <- intersect(names(new_att), names(old_att))
+  if (length(dupl_args)) {
+    warning("Duplicated definitions of arguments ", 
+            paste0("'", dupl_args, "'", collapse = ", "),
+            "\nIgnoring definitions outside the formula",
+            call. = FALSE)
+  }
+  null_args <- setdiff(all_args, names(old_att))
+  new_args <- intersect(names(new_att), null_args)
+  att <- c(old_att, new_att[new_args])
+  attributes(formula)[names(att)] <- att
+  class(formula) <- c("brmsformula", "formula")
+  formula
+}
+
+sformula <- function(x, incl_nl = TRUE, ...) {
+  # special formulas stored in brmsformula objects
+  # Args:
+  #   x: coerced to a 'brmsformula' object
+  #   incl_nl: include the 'nonlinear' argument in the output?
+  rm <- if (incl_nl) -1 else -(1:2)
+  rmNULL(attributes(bf(x))[names(formals(bf))[rm]])
+}
+
+#' @export
+update.brmsformula <- function(object, formula., 
+                               mode = c("update", "replace", "keep"), 
+                               ...) {
+  # update a brmsformula and / or its attributes
+  # Args:
+  #   object: an object of class 'brmsformula'
+  #   formula.: formula to update object
+  #   mode: "update": apply update.formula
+  #         "replace": replace old formula
+  #         "keep": keep old formula
+  #   ...: currently unused
+  mode <- match.arg(mode)
+  new_att <- sformula(formula.)
+  old_att <- sformula(object)
+  if (mode == "update") {
+    new_formula <- update.formula(object, formula., ...)
+  } else if (mode == "replace") {
+    new_formula <- formula.
+  } else {
+    new_formula <- object
+  }
+  attributes(new_formula)[union(names(new_att), names(old_att))] <- NULL
+  new_formula <- do.call(bf, c(new_formula, new_att))
+  new_formula <- SW(do.call(bf, c(new_formula, old_att)))
+  new_formula
+}
+
 extract_random <- function(re_terms) {
   # generate a data.frame with all information about the group-level terms
   # Args:
