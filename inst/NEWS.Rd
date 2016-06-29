@@ -2,7 +2,7 @@
 \title{brms News}
 \encoding{UTF-8}
 
-\section{CHANGES IN VERSION 0.9.1.9000}{
+\section{CHANGES IN VERSION 0.10.0}{
   \subsection{NEW FEATURES}{
     \itemize{ 
       \item Add support for generalized additive mixed models
