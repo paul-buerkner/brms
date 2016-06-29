@@ -672,11 +672,12 @@ brm <- function(formula, data = NULL, family = gaussian(),
     inits <- get(inits, mode = "function", envir = parent.frame())
   }
   args <- list(object = x$fit, data = standata, pars = x$exclude, 
-               include = FALSE, algorithm = algorithm, control = control)
+               include = FALSE, algorithm = algorithm)
   args[names(dots)] <- dots 
   if (algorithm == "sampling") {
-    args <- c(args, init = inits, iter = iter, warmup = warmup, 
-              thin = thin, chains = chains, show_messages = !silent)
+    args <- c(args, list(init = inits, iter = iter, warmup = warmup, 
+              thin = thin, chains = chains, control = control,
+              show_messages = !silent))
   }
   
   set.seed(seed)
