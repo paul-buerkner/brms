@@ -356,6 +356,31 @@ update_formula <- function(formula, data = NULL, family = gaussian(),
   formula
 }
 
+#' Set up a model formula for use in the \pkg{brms} package
+#' 
+#' Set up a model formula for use in the \pkg{brms} package
+#' allowing to define additive multilevel models for all parameters
+#' of the assumed distribution of the response.
+#' 
+#' @inheritParams brm
+#' @param zi A one-sided formula to specfiy predictors for 
+#'  the zero-inflation part of zero-inflated families.
+#' @param hu A one-sided formula to specfiy predictors for 
+#'  the hurdle part of hurdle families.
+#' @param sigma A one-sided formula to specfiy predictors for 
+#'  the residual standard deviation \code{sigma} of 
+#'  the \code{gaussian} and \code{student} families.
+#' @param shape A one-sided formula to specfiy predictors for 
+#'   the \code{shape} parameter of the \code{Gamma}, 
+#'   \code{weibull}, \code{negbinomial} and related 
+#'   zero-inflated / hurdle families.
+#' @param nu A one-sided formula to specfiy predictors for 
+#'   the degrees of freedom parameter \code{nu} of
+#'   the \code{student} family.
+#' @param phi A one-sided formula to specfiy predictors for 
+#'   the precision parameter \code{phi} of
+#'   the \code{beta} and \code{zero_inflated_beta} families.
+#' 
 #' @export
 bf <- function(formula, nonlinear = NULL, zi = NULL, hu = NULL, 
                sigma = NULL, shape = NULL, nu = NULL, phi = NULL) {
@@ -363,11 +388,14 @@ bf <- function(formula, nonlinear = NULL, zi = NULL, hu = NULL,
   old_att <- rmNULL(attributes(formula)[all_args])
   formula <- as.formula(formula)
   if (is.logical(attr(formula, "nonlinear"))) {
-    # avoid problems due to the brms < 0.10.0 usage
-    # of the nonlinear attribute
+    # In brms < 0.10.0 the nonlinear attribute was used differently
     attr(formula, "nonlinear") <- NULL
   }
   nonlinear <- nonlinear2list(nonlinear)
+  if (!is.null(zi) || !is.null(hu)) {
+    stop("arguments 'zi' and 'hu' are currently placeholders only", 
+         call. = FALSE)
+  }
   new_att <- rmNULL(nlist(nonlinear, zi, hu, sigma, shape, nu, phi))
   dupl_args <- intersect(names(new_att), names(old_att))
   if (length(dupl_args)) {
