@@ -36,6 +36,10 @@
       \item Residual standard deviation parameters of 
       multivariate models are again correctly displayed 
       in the output of the \code{summary} method.
+      \item Fix problems when using variational Bayes
+      algorithms with \pkg{brms} while having 
+      \pkg{rstan} >= 2.10.0 installed thanks to the 
+      Github user cwerner87.
     }
   }
 }  
