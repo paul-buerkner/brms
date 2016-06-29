@@ -877,166 +877,165 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
   }
 }
 
-#' Posterior Predictive Checks for \code{brmsfit} Objects
-#' 
-#' Perform posterior predictive checks with the help
-#' of the \pkg{bayesplot} package.
-#' 
-#' @param object An object of class \code{brmsfit}.
-#' @param type Type of the ppc plot as given by a character string. 
-#'   Currently, the following plots (as names) are implemented:
-#'   \code{dens} \code{dens_overlay}, \code{hist}, \code{resid}, 
-#'   \code{resid_binned}, \code{scatter}, \code{scatter_avg}, 
-#'   \code{scatter_avg_grouped}, \code{stat}, \code{stat_2d},
-#'   \code{stat_grouped}, \code{ts}, \code{ts_grouped}, and
-#'   \code{violin_grouped}.
-#' @param nsamples Positive integer indicating how many 
-#'  posterior samples should be used. 
-#'  If \code{NULL} all samples are used. If not specified, 
-#'  the number of posterior samples is chosen automatically.
-#'  Ignored if \code{subset} is not \code{NULL}.
-#' @param ntrys Parameter used in rejection sampling 
-#'  for truncated discrete models only 
-#'  (defaults to \code{5}). For more details see
-#'  \code{\link[brms:predict.brmsfit]{predict.brmsfit}}.
-#' @param group Optional name of a grouping factor in the model
-#'  by which to stratify the ppc plot. This argument is required for 
-#'  ppc \code{*_grouped} types and ignored otherwise.
-#' @param time Optional name of a time variable in the model by
-#'  which to order time-series plots. Only used for
-#'  ppc \code{ts*} types and ignored otherwise.
-#' @param ... Further arguments passed to the ppc functions
-#'   of the \pkg{bayesplot} package.
-#' @inheritParams predict.brmsfit
-#' 
-#' @return A ggplot object that can be further 
-#'  customized using the \pkg{ggplot2} package.
-#'  
-#' @details For a detailed explanation of each of the
-#' ppc functions, see \code{\link[bayesplot:PPC-overview]{PPC-overview}}.
-#' 
-#' @examples
-#' \dontrun{
-#' fit <-  brm(count ~ log_Age_c + log_Base4_c * Trt_c 
-#'             + (1|patient) + (1|visit),
-#'             data = epilepsy, family = poisson())
-#' 
-#' pp_check(fit) # shows dens_overlay plot by default             
-#' pp_check(fit, type = "resid", nsamples = 12)
-#' pp_check(fit, type = "scatter_average", nsamples = 100)  
-#' pp_check(fit, type = "stat_2d")
-#' } 
-#' 
-#' @export
-pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
-                             time = NULL, re_formula = NULL, 
-                             subset = NULL, ntrys = 5, ...) {
-  if (!requireNamespace("bayesplot", quietly = TRUE)) {
-    # remove check as soon as bayesplot is on CRAN
-    stop(paste0("please install the bayesplot package via\n",
-                "devtools::install_github('jgabry/bayesplot')"),
-         call. = FALSE)
-  }
-  if (missing(type)) {
-    type <- "dens_overlay"
-  }
-  if (length(type) != 1L) {
-    stop("argument 'type' must be of length 1", call. = FALSE)
-  }
-  if (!is.null(group) && length(group) != 1L) {
-    stop("argument 'group' must be of length 1", call. = FALSE)
-    
-  }
-  if (!is.null(time) && length(time) != 1L) {
-    stop("argument 'time' must be of length 1", call. = FALSE)
-    
-  }
-  ppc_funs <- lsp("bayesplot", what = "exports", pattern = "^ppc_")
-  valid_ppc_types <- sub("^ppc_", "", ppc_funs)
-  if (!type %in% valid_ppc_types) {
-    stop(paste0("Type '", type, "' is not a valid ppc type. ",
-                "Valid types are: \n", 
-                paste(valid_ppc_types, collapse = ", ")),
-         call. = FALSE)
-  }
-  ppc_fun <- get(paste0("ppc_", type), pos = asNamespace("bayesplot"))
-  # validate argument "group"
-  valid_groups <- names(object$ranef)
-  time_group <- extract_time(object$autocor$formula)$group
-  if (!is.null(time_group) && nchar(time_group)) {
-    valid_groups <- unique(c(valid_groups, time_group)) 
-  }
-  if (!is.null(group) && !group %in% valid_groups) {
-    stop(paste0("Group '", group, "' is not a valid grouping factor. ",
-                "Valid groups are: \n", paste(valid_groups, collapse = ", ")),
-         call. = FALSE)
-  }
-  is_group_type <- "group" %in% names(formals(ppc_fun))
-  if (is.null(group) && is_group_type) {
-    stop(paste0("Argument 'group' is required for ppc type '", type, "'."), 
-         call. = FALSE)
-  }
-  if (!is.null(group) && !is_group_type) {
-    warning(paste0("Argument 'group' is ignored for ppc type '", type, "'."), 
-            call. = FALSE)
-  }
-  is_ts_type <- "time" %in% names(formals(ppc_fun))
-  if (!is.null(time) && !is_ts_type) {
-    warning(paste0("Argument 'time' is ignored for ppc type '", type, "'."), 
-            call. = FALSE)
-  }
-  if (names(formals(ppc_fun))[2] == "Ey") {
-    if (is.ordinal(object$family)) {
-      stop(paste0("ppc type '", type, "' is not available", 
-                  "for ordinal models"), call. = FALSE)
-    }
-    method <- "fitted"
-  } else {
-    method <- "predict"
-  }
-  if (missing(nsamples)) {
-    aps_types <- c("scatter_avg", "scatter_avg_grouped", "stat", "stat_2d", 
-                   "stat_grouped", "ts", "ts_grouped", "violin_grouped")
-    if (!is.null(subset)) {
-      nsamples <- NULL
-    } else if (type %in% aps_types) {
-      nsamples <- NULL
-      message(paste0("Using all posterior samples for ppc type '", 
-                     type, "'"))
-    } else {
-      nsamples <- 10
-      message(paste0("Using 10 posterior samples for ppc type '", 
-                     type, "'"))
-    }
-  }
-  args <- nlist(object, nsamples, subset, re_formula, 
-                ntrys, sort = TRUE, summary = FALSE)
-  yrep <- as.matrix(do.call(method, args))
-  standata <- standata(object, control = list(save_order = TRUE))
-  y <- as.vector(standata$Y)
-  if (family(object)$family %in% "binomial") {
-    # use success proportions following Gelman and Hill (2006)
-    y <- y / standata$trials
-    yrep <- yrep / matrix(standata$trials, nrow = nrow(yrep),
-                          ncol = ncol(yrep), byrow = TRUE)
-  }
-  ppc_args <- list(y, yrep, ...)
-  if (!is.null(group)) {
-    group <- model.frame(object)[[group]]
-    if (!is.null(attr(standata, "old_order"))) {
-      group <- group[order(attr(standata, "old_order"))]
-    }
-    ppc_args$group <- group
-  }
-  if (!is.null(time)) {
-    time <- model.frame(object)[[time]]
-    if (!is.null(attr(standata, "old_order"))) {
-      time <- time[order(attr(standata, "old_order"))]
-    }
-    ppc_args$time <- as.numeric(time)
-  }
-  rstan::quietgg(do.call(ppc_fun, ppc_args))
-}
+# Posterior Predictive Checks for \code{brmsfit} Objects
+# 
+# Perform posterior predictive checks with the help
+# of the \pkg{bayesplot} package.
+# 
+# @param object An object of class \code{brmsfit}.
+# @param type Type of the ppc plot as given by a character string.
+#   Currently, the following plots (as names) are implemented:
+#   \code{dens} \code{dens_overlay}, \code{hist}, \code{resid},
+#   \code{resid_binned}, \code{scatter}, \code{scatter_avg},
+#   \code{scatter_avg_grouped}, \code{stat}, \code{stat_2d},
+#   \code{stat_grouped}, \code{ts}, \code{ts_grouped}, and
+#   \code{violin_grouped}.
+# @param nsamples Positive integer indicating how many
+#  posterior samples should be used.
+#  If \code{NULL} all samples are used. If not specified,
+#  the number of posterior samples is chosen automatically.
+#  Ignored if \code{subset} is not \code{NULL}.
+# @param ntrys Parameter used in rejection sampling
+#  for truncated discrete models only
+#  (defaults to \code{5}). For more details see
+#  \code{\link[brms:predict.brmsfit]{predict.brmsfit}}.
+# @param group Optional name of a grouping factor in the model
+#  by which to stratify the ppc plot. This argument is required for
+#  ppc \code{*_grouped} types and ignored otherwise.
+# @param time Optional name of a time variable in the model by
+#  which to order time-series plots. Only used for
+#  ppc \code{ts*} types and ignored otherwise.
+# @param ... Further arguments passed to the ppc functions
+#   of the \pkg{bayesplot} package.
+# @inheritParams predict.brmsfit
+# 
+# @return A ggplot object that can be further
+#  customized using the \pkg{ggplot2} package.
+# 
+# @details For a detailed explanation of each of the
+# ppc functions, see \code{\link[bayesplot:PPC-overview]{PPC-overview}}.
+# 
+# @examples
+# \dontrun{
+# fit <-  brm(count ~ log_Age_c + log_Base4_c * Trt_c
+#             + (1|patient) + (1|visit),
+#             data = epilepsy, family = poisson())
+# 
+# pp_check(fit) # shows dens_overlay plot by default
+# pp_check(fit, type = "resid", nsamples = 12)
+# pp_check(fit, type = "scatter_average", nsamples = 100)
+# pp_check(fit, type = "stat_2d")
+# }
+# @export
+# pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
+#                              time = NULL, re_formula = NULL, 
+#                              subset = NULL, ntrys = 5, ...) {
+#   if (!requireNamespace("bayesplot", quietly = TRUE)) {
+#     # remove check as soon as bayesplot is on CRAN
+#     stop(paste0("please install the bayesplot package via\n",
+#                 "devtools::install_github('jgabry/bayesplot')"),
+#          call. = FALSE)
+#   }
+#   if (missing(type)) {
+#     type <- "dens_overlay"
+#   }
+#   if (length(type) != 1L) {
+#     stop("argument 'type' must be of length 1", call. = FALSE)
+#   }
+#   if (!is.null(group) && length(group) != 1L) {
+#     stop("argument 'group' must be of length 1", call. = FALSE)
+#     
+#   }
+#   if (!is.null(time) && length(time) != 1L) {
+#     stop("argument 'time' must be of length 1", call. = FALSE)
+#     
+#   }
+#   ppc_funs <- lsp("bayesplot", what = "exports", pattern = "^ppc_")
+#   valid_ppc_types <- sub("^ppc_", "", ppc_funs)
+#   if (!type %in% valid_ppc_types) {
+#     stop(paste0("Type '", type, "' is not a valid ppc type. ",
+#                 "Valid types are: \n", 
+#                 paste(valid_ppc_types, collapse = ", ")),
+#          call. = FALSE)
+#   }
+#   ppc_fun <- get(paste0("ppc_", type), pos = asNamespace("bayesplot"))
+#   # validate argument "group"
+#   valid_groups <- names(object$ranef)
+#   time_group <- extract_time(object$autocor$formula)$group
+#   if (!is.null(time_group) && nchar(time_group)) {
+#     valid_groups <- unique(c(valid_groups, time_group)) 
+#   }
+#   if (!is.null(group) && !group %in% valid_groups) {
+#     stop(paste0("Group '", group, "' is not a valid grouping factor. ",
+#                 "Valid groups are: \n", paste(valid_groups, collapse = ", ")),
+#          call. = FALSE)
+#   }
+#   is_group_type <- "group" %in% names(formals(ppc_fun))
+#   if (is.null(group) && is_group_type) {
+#     stop(paste0("Argument 'group' is required for ppc type '", type, "'."), 
+#          call. = FALSE)
+#   }
+#   if (!is.null(group) && !is_group_type) {
+#     warning(paste0("Argument 'group' is ignored for ppc type '", type, "'."), 
+#             call. = FALSE)
+#   }
+#   is_ts_type <- "time" %in% names(formals(ppc_fun))
+#   if (!is.null(time) && !is_ts_type) {
+#     warning(paste0("Argument 'time' is ignored for ppc type '", type, "'."), 
+#             call. = FALSE)
+#   }
+#   if (names(formals(ppc_fun))[2] == "Ey") {
+#     if (is.ordinal(object$family)) {
+#       stop(paste0("ppc type '", type, "' is not available", 
+#                   "for ordinal models"), call. = FALSE)
+#     }
+#     method <- "fitted"
+#   } else {
+#     method <- "predict"
+#   }
+#   if (missing(nsamples)) {
+#     aps_types <- c("scatter_avg", "scatter_avg_grouped", "stat", "stat_2d", 
+#                    "stat_grouped", "ts", "ts_grouped", "violin_grouped")
+#     if (!is.null(subset)) {
+#       nsamples <- NULL
+#     } else if (type %in% aps_types) {
+#       nsamples <- NULL
+#       message(paste0("Using all posterior samples for ppc type '", 
+#                      type, "'"))
+#     } else {
+#       nsamples <- 10
+#       message(paste0("Using 10 posterior samples for ppc type '", 
+#                      type, "'"))
+#     }
+#   }
+#   args <- nlist(object, nsamples, subset, re_formula, 
+#                 ntrys, sort = TRUE, summary = FALSE)
+#   yrep <- as.matrix(do.call(method, args))
+#   standata <- standata(object, control = list(save_order = TRUE))
+#   y <- as.vector(standata$Y)
+#   if (family(object)$family %in% "binomial") {
+#     # use success proportions following Gelman and Hill (2006)
+#     y <- y / standata$trials
+#     yrep <- yrep / matrix(standata$trials, nrow = nrow(yrep),
+#                           ncol = ncol(yrep), byrow = TRUE)
+#   }
+#   ppc_args <- list(y, yrep, ...)
+#   if (!is.null(group)) {
+#     group <- model.frame(object)[[group]]
+#     if (!is.null(attr(standata, "old_order"))) {
+#       group <- group[order(attr(standata, "old_order"))]
+#     }
+#     ppc_args$group <- group
+#   }
+#   if (!is.null(time)) {
+#     time <- model.frame(object)[[time]]
+#     if (!is.null(attr(standata, "old_order"))) {
+#       time <- time[order(attr(standata, "old_order"))]
+#     }
+#     ppc_args$time <- as.numeric(time)
+#   }
+#   rstan::quietgg(do.call(ppc_fun, ppc_args))
+# }
 
 #' Create a matrix of output plots from a \code{brmsfit} object
 #'
