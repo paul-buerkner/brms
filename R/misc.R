@@ -23,10 +23,13 @@ isNULL <- function(x) {
   is.null(x) || ifelse(is.vector(x), all(sapply(x, is.null)), FALSE)
 }
 
-rmNULL <- function(x) {
+rmNULL <- function(x, recursive = TRUE) {
   # recursively removes NULL entries from an object
   x <- Filter(Negate(isNULL), x)
-  lapply(x, function(x) if (is.list(x)) rmNULL(x) else x)
+  if (recursive) {
+    x <- lapply(x, function(x) if (is.list(x)) rmNULL(x) else x)
+  }
+  x
 }
 
 first_not_null <- function(...) {

@@ -134,10 +134,11 @@ ranef.brmsfit <- function(object, estimate = "mean", var = FALSE, ...) {
     rnames <- object$ranef[[i]]
     nlpar <- get_nlpar(object$ranef[[i]], suffix = "_")
     rpars <- pars[grepl(paste0("^r_", nlpar, group[i],"\\["), pars)]
-    if (!length(rpars))
+    if (!length(rpars)) {
       stop(paste0("The model does not contain random effects for group '",g,"'\n",
                   "You should use argument ranef = TRUE in function brm."),
            call. = FALSE)
+    }
     rdims <- object$fit@sim$dims_oi[[paste0("r_", nlpar, group[i])]]
     levels <- attr(object$ranef[[i]], "levels")
     if (is.null(levels)) {
@@ -355,7 +356,7 @@ VarCorr.brmsfit <- function(x, sigma = 1, estimate = "mean",
     p <- group <- NULL
   } 
   # special treatment of residuals variances in linear models
-  if (has_sigma(family, se = ee$se, autocor = x$autocor)) {
+  if (has_sigma(family, effects = ee, autocor = x$autocor)) {
     cor_pars <- get_cornames(ee$response, type = "rescor", 
                              brackets = FALSE)
     p <- lc(p, list(rnames = ee$response, cor_pars = cor_pars,
