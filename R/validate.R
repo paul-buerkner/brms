@@ -259,19 +259,17 @@ nonlinear_effects <- function(x, model = ~1, rsv_pars = NULL) {
   #   model: formula of the non-linear model
   # Returns:
   #   A list of objects each returned by extract_effects
+  stopifnot(is.list(x), is(model, "formula"))
   if (length(x)) {
     lhs_char <- as.character(model[[2]])
     nleffects <- vector("list", length = length(x))
     for (i in seq_along(x)) {
-      if (!is(x[[i]], "formula")) {
-        stop("Argument 'nonlinear' must be a list of formulas.",
-             call. = FALSE)
-      }
-      if (length(x[[i]]) != 3) {
+      x[[i]] <- as.formula(x[[i]])
+      if (length(x[[i]]) != 3L) {
         stop("Non-linear formulas must be two-sided.", call. = FALSE)
       }
       nlresp <- all.vars(x[[i]][[2]])
-      if (length(nlresp) != 1) {
+      if (length(nlresp) != 1L) {
         stop("LHS of non-linear formula must contain exactly one variable.",
              call. = FALSE)
       }
@@ -307,14 +305,15 @@ nonlinear_effects <- function(x, model = ~1, rsv_pars = NULL) {
 nonlinear2list <- function(x) {
   # convert a single formula into a list of formulas
   # one for each non-linear parameter
+  if (!(is.list(x) || is.null(x))) {
+    x <- as.formula(x)
+  }
   if (is(x, "formula")) {
-    if (length(x) != 3) {
+    if (length(x) != 3L) {
       stop("Non-linear formulas must be two-sided.", call. = FALSE)
     }
     nlpars <- all.vars(lhs(x))
     x <- lapply(nlpars, function(nlp) update(x, paste(nlp, " ~ .")))
-  } else if (!(is.list(x) || is.null(x))) {
-    stop("invalid 'nonlinear' argument", call. = FALSE)
   }
   x
 }
