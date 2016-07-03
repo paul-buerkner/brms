@@ -120,6 +120,13 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   # extract random effects parts
   x$random <- extract_random(re_terms)
   
+  # evaluate formulas for auxiliary parameters
+  # TODO include validity checks
+  auxpars <- sformula(formula, incl_nl = FALSE)
+  for (ap in names(auxpars)) {
+    x[[ap]] <- extract_effects(auxpars[[ap]], check_response = FALSE)
+  }
+  
   # handle addition arguments
   fun <- c("se", "weights", "trials", "cat", "cens", "trunc", "disp")
   add_vars <- list()
@@ -172,7 +179,8 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
     add_vars, x[c("covars", "cse", "mono")], all.vars(rhs(x$gam)),  
     if (!length(x$nonlinear)) c(rhs(x$fixed), all.vars(rhs(x$fixed))), 
     x$random$form, lapply(x$random$form, all.vars), x$random$group, 
-    get_offset(x$fixed), lapply(x$nonlinear, function(nl) nl$all), ...)
+    get_offset(x$fixed), lapply(x$nonlinear, function(e) e$all),
+    lapply(x[auxpars()], function(e) e$all), ...)
   new_formula <- collapse(ulapply(formula_list, plus_rhs))
   x$all <- paste0("update(", tfixed, ", ~ ", new_formula, ")")
   x$all <- eval(parse(text = x$all))

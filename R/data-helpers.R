@@ -522,19 +522,43 @@ arr_design_matrix <- function(Y, r, group)  {
   out
 }
 
-data_fixef <- function(effects, data, family = gaussian(),
-                       autocor = cor_arma(), knots = NULL,
-                       nlpar = "", not4stan = FALSE, G = NULL) {
-  # prepare data for fixed effects for use in Stan 
+data_effects <- function(effects, data, family = gaussian(),
+                         prior = prior_frame(), autocor = cor_arma(),
+                         cov_ranef = NULL, knots = NULL, nlpar = "", 
+                         not4stan = FALSE, is_newdata = FALSE, 
+                         G = NULL, Jm = NULL) {
+  # combine data for all types of effects
   # Args:
   #   effects: a list returned by extract_effects
   #   data: the data passed by the user
   #   family: the model family
+  #   prior: an object of class prior_frame
   #   autocor: object of class 'cor_brms'
+  #   cov_ranef: name list of user-defined covariance matrices
+  #   knots: optional knot values for smoothing terms
   #   nlpar: optional character string naming a non-linear parameter
   #   not4stan: is the data for use in S3 methods only?
   #   G: optional list returned by gam.setup based on the original data
   #      used only to compute smoothing terms for new data
+  #   Jm: optional precomputed values of Jm for monotonic effects
+  # Returns:
+  #   A named list of data to be passed to Stan
+  data_fixef <- data_fixef(effects, data = data, family = family, 
+                           nlpar = nlpar, knots = knots, 
+                           not4stan = not4stan, G = G)
+  data_monef <- data_monef(effects, data = data, prior = prior, 
+                           Jm = Jm, nlpar = nlpar)
+  data_ranef <- data_ranef(effects, data = data, family = family, 
+                           cov_ranef = cov_ranef, nlpar = nlpar, 
+                           is_newdata = is_newdata, not4stan = not4stan)
+  c(data_fixef, data_monef, data_ranef)
+}
+
+data_fixef <- function(effects, data, family = gaussian(),
+                       autocor = cor_arma(), knots = NULL,
+                       nlpar = "", not4stan = FALSE, G = NULL) {
+  # prepare data for fixed effects for use in Stan 
+  # Args: see data_effects
   stopifnot(length(nlpar) == 1L)
   p <- if (nchar(nlpar)) paste0("_", nlpar) else ""
   is_ordinal <- is.ordinal(family)
@@ -594,6 +618,7 @@ data_fixef <- function(effects, data, family = gaussian(),
     X <- cbind(X, do.call(cbind, Xs))
     colnames(X) <- rename(colnames(X))
   }
+  avoid_auxpars(colnames(X), effects = effects)
   out[[paste0("K", p)]] <- ncol(X)
   center_X <- length(intercepts) && !is_bsts && !(is_ordinal && not4stan)
   if (center_X) {
@@ -619,20 +644,16 @@ data_fixef <- function(effects, data, family = gaussian(),
 
 data_monef <- function(effects, data, prior = prior_frame(), 
                        nlpar = "", Jm = NULL) {
-  # prepare data for monotonic effects for use in Stan 
-  # Args:
-  #   effects: a list returned by extract_effects
-  #   data: the data passed by the user
-  #   prior: an object of class prior_frame
-  #   nlpar: optional character string naming a non-linear parameter
-  #   Jm: optional precomputed values of Jm
+  # prepare data for monotonic effects for use in Stan
+  # Args: see data_effects
   stopifnot(length(nlpar) == 1L)
   p <- if (nchar(nlpar)) paste0("_", nlpar) else ""
   out <- list()
-  if (is.formula(effects$mono)) {
+  if (is.formula(effects[["mono"]])) {
     mmf <- model.frame(effects$mono, data)
     mmf <- prepare_mono_vars(mmf, names(mmf), check = is.null(Jm))
     Xm <- get_model_matrix(effects$mono, mmf)
+    avoid_auxpars(colnames(Xm), effects = effects)
     if (is.null(Jm)) {
       Jm <- as.array(apply(Xm, 2, max))
     }
@@ -661,31 +682,11 @@ data_monef <- function(effects, data, prior = prior_frame(),
   out
 }
 
-data_csef <- function(effects, data) {
-  # prepare data for fixed effects for use in Stan 
-  # Args:
-  #   effects: a list returned by extract_effects
-  #   data: the data passed by the user
-  out <- list()
-  if (is.formula(effects$cse)) {
-    Xp <- get_model_matrix(effects$cse, data)
-    out <- c(out, list(Kp = ncol(Xp), Xp = Xp))
-  }
-  out
-}
-
 data_ranef <- function(effects, data, family = gaussian(),
                        nlpar = "", cov_ranef = NULL,
                        is_newdata = FALSE, not4stan = FALSE) {
-  # prepare data for random effects for use in Stan 
-  # Args:
-  #   effects: a list returned by extract_effects
-  #   data: the data passed by the user
-  #   family: the model family
-  #   nlpar: optional character string naming a non-linear parameter
-  #   cov_ranef: name list of user-defined covariance matrices
-  #   is_newdata: was new data passed to the 'data' argument?
-  #   not4stan: is the data for use in S3 methods only?
+  # prepare data for random effects for use in Stan
+  # Args: see data_effects
   stopifnot(length(nlpar) == 1L)
   out <- list()
   random <- effects$random
@@ -693,6 +694,7 @@ data_ranef <- function(effects, data, family = gaussian(),
     Z <- lapply(random$form, get_model_matrix, data = data, 
                 forked = is.forked(family))
     r <- lapply(Z, colnames)
+    lapply(r, avoid_auxpars, effects = effects)
     ncolZ <- lapply(Z, ncol)
     # numeric levels passed to Stan
     expr <- expression(as.array(as.numeric(factor(get(g, data)))), 
@@ -753,6 +755,20 @@ data_ranef <- function(effects, data, family = gaussian(),
         out <- c(out, setNames(list(t(chol(cov_mat))), paste0("Lcov_", p)))
       }
     }
+  }
+  out
+}
+
+data_csef <- function(effects, data) {
+  # prepare data for category specific effects for use in Stan
+  # Args:
+  #   effects: a list returned by extract_effects
+  #   data: the data passed by the user
+  out <- list()
+  if (is.formula(effects[["cse"]])) {
+    Xp <- get_model_matrix(effects$cse, data)
+    avoid_auxpars(colnames(Xp), effects = effects)
+    out <- c(out, list(Kp = ncol(Xp), Xp = Xp))
   }
   out
 }

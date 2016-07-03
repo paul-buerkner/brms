@@ -57,7 +57,7 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   }
   
   args <- list(x = x, as.matrix = TRUE, subset = subset)
-  if (has_sigma(family(x), se = ee$se, autocor = x$autocor))
+  if (has_sigma(family(x), effects = ee, autocor = x$autocor))
     draws[["sigma"]] <- do.call(posterior_samples, c(args, pars = "^sigma($|_)"))
   if (family(x)$family == "student") 
     draws[["nu"]] <- c(do.call(posterior_samples, c(args, pars = "^nu$")))

@@ -51,22 +51,23 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   is_categorical <- is.categorical(family)
   is_multi <- is.linear(family) && length(ee$response) > 1L
   is_forked <- is.forked(family)
-  has_sigma <- has_sigma(family, autocor = autocor, se = ee$se, 
-                         is_multi = is_multi)
   has_shape <- has_shape(family)
   trunc <- get_boundaries(ee$trunc)
   
   intercepts <- names(get_intercepts(ee, family = family, data = data))
   if (length(ee$nonlinear)) {
     text_pred <- stan_nonlinear(ee, data = data, family = family, 
-                                prior = prior, autocor = autocor,
-                                cov_ranef = cov_ranef)
+                                prior = prior, cov_ranef = cov_ranef)
   } else {
     text_pred <- stan_linear(ee, data = data, family = family, 
-                             prior = prior, intercepts, autocor = autocor,
-                             threshold = threshold, sparse = sparse, 
-                             cov_ranef = cov_ranef)
+                             prior = prior, intercepts = intercepts, 
+                             autocor = autocor, threshold = threshold, 
+                             sparse = sparse, cov_ranef = cov_ranef)
   }
+  text_auxpars <- stan_auxpars(ee, data = data, family = family, 
+                               prior = prior, cov_ranef = cov_ranef)
+  text_pred <- collapse_lists(list(text_pred, text_auxpars))
+  
   # generate stan code for the likelihood
   text_llh <- stan_llh(family, se = is.formula(ee$se),  
                        weights = is.formula(ee$weights),
@@ -181,8 +182,6 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     text_ordinal$par,
     text_autocor$par,
     text_multi$par,
-    if (has_sigma)
-      "  real<lower=0> sigma;  // residual SD \n",
     if (family$family == "student") 
       "  real<lower=1> nu;  // degrees of freedom \n",
     if (has_shape) 
@@ -231,6 +230,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
         text_ordinal$transC2, 
         text_pred$transC3,
       text_loop[2],
+      text_pred$transC4,
       text_multi$transC1,
       text_forked$transC1,
     "} \n")

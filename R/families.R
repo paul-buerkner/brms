@@ -690,18 +690,23 @@ has_shape <- function(family) {
                 "hurdle_gamma", "zero_inflated_negbinomial")
 }
 
-has_sigma <- function(family, autocor = cor_arma(), se = FALSE,
-                      is_multi = FALSE) {
+has_sigma <- function(family, effects = NULL, autocor = cor_arma(),
+                      incl_multi = TRUE) {
   # indicate if the model needs a sigma parameter
   # Args:
   #  family: model family
-  #  se: does the model contain user defined SEs?
+  #  effects: list returned by extract_effects
   #  autocor: object of class cor_arma
-  #  is_multi: is the model multivariate?
-  if (is.null(se)) se <- FALSE
-  if (is.formula(se)) se <- TRUE
-  (is.linear(family) || is.lognormal(family)) && !is_multi && 
-   !is(autocor, "cor_fixed") && (!se || get_ar(autocor) || get_ma(autocor))
+  #  incl_multi: should MV (linear) models be treated as having sigma? 
+  has_se <- !is.null(effects$se)
+  out <- (is.linear(family) || is.lognormal(family)) && 
+           (!has_se || get_ar(autocor) || get_ma(autocor)) &&
+           !is(autocor, "cor_fixed")
+  if (!incl_multi) {
+    is_multi <- is.linear(family) && length(effects$response) > 1L
+    out <- out && !is_multi
+  }
+  out
 }
 
 allows_cse <- function(family) {

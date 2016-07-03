@@ -460,7 +460,7 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
     prior <- rbind(prior, prior_frame(class = "sigmaLL", 
                                       prior = def_scale_prior))
   }
-  if (has_sigma(family, se = is.formula(ee$se), autocor = autocor)) {
+  if (has_sigma(family, effects = ee, autocor = autocor)) {
     sigma_coef <- ""
     sigma_prior <- def_scale_prior
     if (length(ee$response) > 1L) {

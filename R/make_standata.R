@@ -148,7 +148,10 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     }
     standata$Y <- as.array(standata$Y)
   }
+  
   # data for various kinds of effects
+  args_eff <- nlist(data, family, prior, autocor, cov_ranef, 
+                    knots, not4stan, is_newdata)
   if (length(ee$nonlinear)) {
     nlpars <- names(ee$nonlinear)
     # matrix of covariates appearing in the non-linear formula
@@ -159,30 +162,26 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     }
     standata <- c(standata, list(KC = ncol(C), C = C)) 
     for (i in seq_along(nlpars)) {
-      nle <- ee$nonlinear[[i]]
-      data_fixef <- data_fixef(nle, data = data, family = family, 
-                               nlpar = nlpars[i], knots = knots, 
-                               not4stan = not4stan, G = control$G[[i]])
-      data_monef <- data_monef(nle, data = data, prior = prior, 
-                               Jm = control[[paste0("Jm_", nlpars[i])]],
-                               nlpar = nlpars[i])
-      data_ranef <- data_ranef(nle, data = data, family = family, 
-                               cov_ranef = cov_ranef, nlpar = nlpars[i], 
-                               is_newdata = is_newdata, not4stan = not4stan)
-      standata <- c(standata, data_fixef, data_monef, data_ranef)
+      args_eff_spec <- list(effects = ee$nonlinear[[i]], nlpar = nlpars[i],
+                            Jm = control[[paste0("Jm_", nlpars[i])]],
+                            G = control$G[[i]])
+      data_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
+      standata <- c(standata, data_eff)
     }
   } else {
-    data_fixef <- data_fixef(ee, data = data, family = family, 
-                             autocor = autocor, knots = knots,
-                             not4stan = not4stan, G = control$G)
-    data_monef <- data_monef(ee, data = data, prior = prior, Jm = control$Jm)
-    data_csef <- data_csef(ee, data = data)
-    data_ranef <- data_ranef(ee, data = data, family = family, 
-                             cov_ranef = cov_ranef, not4stan = not4stan,
-                             is_newdata = is_newdata)
-    standata <- c(standata, data_fixef, data_monef, data_csef, data_ranef)
+    args_eff_spec <- list(effects = ee, G = control$G, Jm = control$Jm)
+    data_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
+    standata <- c(standata, data_eff, data_csef(ee, data = data))
     standata$offset <- model.offset(data)
   }
+  # data for predictors of scale / shape parameters
+  for (ap in intersect(auxpars(), names(ee))) {
+    # TODO handle smooths and monotonic effects for newdata
+    args_eff_spec <- list(effects = ee[[ap]], nlpar = ap)
+    data_aux_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
+    standata <- c(standata, data_aux_eff)
+  }
+  
   # data for specific families
   if (has_trials(family)) {
     if (!length(ee$trials)) {

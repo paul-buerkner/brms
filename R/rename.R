@@ -98,33 +98,37 @@ rename_pars <- function(x) {
   if (length(ee$nonlinear)) {
     nlpars <- names(ee$nonlinear)
     for (p in nlpars) {
-      change_fixef <- change_fixef(colnames(standata[[paste0("X_", p)]]), 
-                                   pars = pars, nlpar = p)
-      change_monef <- change_monef(colnames(standata[[paste0("Xm_", p)]]),
-                                   pars = pars, nlpar = p)
-      change_ranef <- change_ranef(ranef = x$ranef, pars = pars, 
-                                   dims = x$fit@sim$dims_oi, nlpar = p)
-      splines <- get_spline_labels(ee$nonlinear[[p]])
-      change_splines <- change_splines(splines, pars = pars, nlpar = p)
-      change <- c(change, change_fixef, change_monef, change_ranef,
-                  change_splines)
+      change_eff <- change_effects(
+        pars = pars, dims = x$fit@sim$dims_oi,
+        fixef = colnames(standata[[paste0("X_", p)]]),
+        monef = colnames(standata[[paste0("Xm_", p)]]),
+        splines = get_spline_labels(ee$nonlinear[[p]]),
+        ranef = x$ranef, nlpar = p)
+      change <- c(change, change_eff)
     }
   } else {
     intercepts <- names(get_intercepts(ee, data = x$data, family = family))
-    change_fixef <- change_fixef(colnames(standata$X), pars = pars,
-                                 intercepts = intercepts)
-    change_monef <- change_monef(colnames(standata$Xm), pars = pars)
+    change_eff <- change_effects(
+      pars = pars, dims = x$fit@sim$dims_oi, intercept = intercepts,
+      fixef = colnames(standata$X), monef = colnames(standata$Xm),
+      splines = get_spline_labels(ee), ranef = x$ranef)
     change_csef <- change_csef(colnames(standata$Xp), pars = pars,
                                ncat = standata$ncat)
-    change_ranef <- change_ranef(ranef = x$ranef, pars = pars,
-                                 dims = x$fit@sim$dims_oi)
-    change_splines <- change_splines(get_spline_labels(ee), pars = pars)
-    change <- c(change, change_fixef, change_monef, change_csef, 
-                change_ranef, change_splines)
-    
+    change <- c(change, change_eff, change_csef)
   }
   
-  if (has_sigma(family, se = is.formula(ee$se), autocor = x$autocor)) {
+  # rename parameters related to scale / shape parameters
+  for (ap in intersect(auxpars(), names(ee))) {
+    change_eff <- change_effects(
+      pars = pars, dims = x$fit@sim$dims_oi,
+      fixef = colnames(standata[[paste0("X_", ap)]]),
+      monef = colnames(standata[[paste0("Xm_", ap)]]),
+      splines = get_spline_labels(ee[[ap]]),
+      ranef = x$ranef, nlpar = ap)
+    change <- c(change, change_eff)
+  }
+  
+  if (has_sigma(family, effects = ee, autocor = x$autocor)) {
     if (is.linear(family) && length(ee$response) > 1L) {
       # rename residual parameters of multivariate linear models
       corfnames <- paste0("sigma_", ee$response)
@@ -151,6 +155,19 @@ rename_pars <- function(x) {
     x$ranef <- combine_duplicates(x$ranef, sep = c("nlpar", "levels"))
   }
   x
+}
+
+change_effects <- function(pars, dims, fixef = NULL, monef = NULL, 
+                           splines = NULL, ranef = list(), 
+                           intercepts = NULL, nlpar = "") {
+  # helps in renaming various kinds of effects
+  change_fixef <- change_fixef(fixef, pars = pars, nlpar = nlpar,  
+                               intercepts = intercepts)
+  change_monef <- change_monef(monef, pars = pars, nlpar = nlpar)
+  change_splines <- change_splines(splines, pars = pars, nlpar = nlpar)
+  change_ranef <- change_ranef(ranef = ranef, pars = pars, dims = dims, 
+                               nlpar = nlpar)
+  c(change_fixef, change_monef, change_splines, change_ranef)
 }
 
 change_fixef <- function(fixef, pars, intercepts = NULL, nlpar = "") {
@@ -272,13 +289,16 @@ change_ranef <- function(ranef, pars, dims, nlpar = "") {
   #   nlpar: optional string naming a non-linear parameter
   # Returns:
   #   a list that can be interpreted by rename_pars
-  change <- list()
-  if (nchar(nlpar)) {
-    # extract only the relevant random effects
+  # extract only the relevant random effects
+  if (!is.null(ulapply(ranef, function(y) attr(y, "nlpar")))) {
+    # used for all models as of brms > 0.10.0
     ranef <- rmNULL(lapply(ranef, function(y) 
       if (identical(attr(y, "nlpar"), nlpar)) y else NULL))
-    nlpar <- paste0(nlpar, "_")
   }
+  if (nchar(nlpar)) {
+    nlpar <- paste0(nlpar, "_") 
+  }
+  change <- list()
   if (length(ranef)) {
     group <- names(ranef)
     gf <- make_group_frame(ranef)
@@ -327,7 +347,7 @@ change_ranef_levels <- function(i, ranef, gf, dims, pars)  {
   group <- names(ranef)
   r <- "r_"
   nlpar <- attr(ranef[[i]], "nlpar")
-  if (!is.null(nlpar)) {
+  if (isTRUE(nchar(nlpar) > 0L)) {
     r <- paste0(r, nlpar, "_")
   } else nlpar <- ""
   r_parnames <- paste0("^", r, i, "(\\[|$)")
