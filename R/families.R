@@ -690,6 +690,22 @@ has_shape <- function(family) {
                 "hurdle_gamma", "zero_inflated_negbinomial")
 }
 
+has_nu <- function(family) {
+  # indicate if family needs a nu parameter
+  if (is(family, "family")) {
+    family <- family$family
+  }
+  family %in% c("student")
+}
+
+has_phi <- function(family) {
+  # indicate if family needs a phi parameter
+  if (is(family, "family")) {
+    family <- family$family
+  }
+  family %in% c("beta", "zero_inflated_beta")
+}
+
 has_sigma <- function(family, effects = NULL, autocor = cor_arma(),
                       incl_multi = TRUE) {
   # indicate if the model needs a sigma parameter
