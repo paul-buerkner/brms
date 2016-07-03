@@ -111,68 +111,64 @@ test_that("stan_ordinal returns correct strings", {
 })
 
 test_that("stan_llh uses simplifications when possible", {
-  expect_equal(stan_llh(family = bernoulli("logit")), 
+  expect_equal(stan_llh(bernoulli("logit")), 
                "  Y ~ bernoulli_logit(eta); \n")
-  expect_match(stan_llh(family = lognormal(), weights = TRUE), 
+  expect_match(stan_llh(lognormal(), effects = list(weights = ~x)), 
                "lognormal_lpdf(Y[n] | (eta[n]), sigma); \n", fixed = TRUE)
-  expect_equal(stan_llh(family = poisson()), 
-               "  Y ~ poisson_log(eta); \n")
-  expect_match(stan_llh(family = cumulative("logit")), fixed = TRUE,
+  expect_equal(stan_llh(poisson()), "  Y ~ poisson_log(eta); \n")
+  expect_match(stan_llh(cumulative("logit")), fixed = TRUE,
                "  Y[n] ~ ordered_logistic(eta[n], temp_Intercept); \n")
 })
 
 test_that("stan_llh returns correct llhs under weights and censoring", {
-  expect_match(stan_llh(family = cauchy("inverse"), weights = TRUE),
+  expect_match(stan_llh(cauchy("inverse"), effects = list(weights = ~x)),
                "  lp_pre[n] = cauchy_lpdf(Y[n] | inv(eta[n]), sigma); \n",
                fixed = TRUE)
-  expect_match(stan_llh(family = poisson(), weights = TRUE),
+  expect_match(stan_llh(poisson(), effects = list(weights = ~x)),
                "  lp_pre[n] = poisson_log_lpmf(Y[n] | (eta[n])); \n",
                fixed = TRUE)
-  expect_match(stan_llh(family = poisson(), cens = TRUE),
+  expect_match(stan_llh(poisson(), effects = list(cens = ~x)),
                "Y[n] ~ poisson(exp(eta[n])); \n", fixed = TRUE)
-  expect_match(stan_llh(family = binomial(logit), trials = TRUE, weights = TRUE),
+  expect_match(stan_llh(binomial(logit), list(weights = ~x, trials = ~x)),
                "  lp_pre[n] = binomial_logit_lpmf(Y[n] | trials[n], (eta[n])); \n",
                fixed = TRUE)
-  expect_match(stan_llh(family = weibull("log"), cens = TRUE), fixed = TRUE,
+  expect_match(stan_llh(weibull("log"), effects = list(cens = ~x)), fixed = TRUE,
                "target += weibull_lccdf(Y[n] | shape, exp(eta[n] / shape)); \n")
-  expect_match(stan_llh(family = weibull("inverse"), cens = TRUE, weights = TRUE),
+  expect_match(stan_llh(weibull("inverse"), list(cens = ~x, weights = ~x)),
                paste("target += weights[n] * weibull_lccdf(Y[n] |", 
                      "shape, inv(eta[n] / shape)); \n"), fixed = TRUE)
 })
 
 test_that("stan_llh returns correct llhs under truncation", {
-  expect_match(stan_llh(family = cauchy(inverse), trunc = .trunc(0)),
+  
+  expect_match(stan_llh(cauchy(inverse), list(trunc = ~.trunc(0))),
                "  Y[n] ~ cauchy(inv(eta[n]), sigma) T[lb, ];", fixed = TRUE)
-  expect_match(stan_llh(family = poisson(), trunc = .trunc(ub = 100)),
+  expect_match(stan_llh(poisson(), list(trunc = ~.trunc(ub = 100))),
                "  Y[n] ~ poisson(exp(eta[n])) T[, ub]; \n", fixed = TRUE)
-  expect_match(stan_llh(family = gaussian(), 
-                        se = TRUE, trunc = .trunc(0, 100)),
+  expect_match(stan_llh(gaussian(), list(se = ~x, trunc = ~.trunc(0, 100))),
                "  Y[n] ~ normal((eta[n]), se[n]) T[lb, ub];", fixed = TRUE)
-  expect_match(stan_llh(family = binomial(), trials = TRUE, 
-                        trunc = .trunc(0, 100)),
+  expect_match(stan_llh(binomial(), list(trials = ~x, trunc = ~.trunc(0, 100))),
                "  Y[n] ~ binomial(trials[n], inv_logit(eta[n])) T[lb, ub];",
                fixed = TRUE)
 })
 
 test_that("stan_llh returns correct llhs for zero-inflated an hurdle models", {
-  expect_match(stan_llh(family = zero_inflated_poisson()),
-               "  Y[n] ~ zero_inflated_poisson(eta[n], eta[n + N_trait]);",
-               fixed = TRUE)
-  expect_match(stan_llh(family = hurdle_negbinomial()),
-               "  Y[n] ~ hurdle_neg_binomial_2(eta[n], eta[n + N_trait], shape);",
-               fixed = TRUE)
-  expect_match(stan_llh(family = hurdle_gamma()),
-               "  Y[n] ~ hurdle_gamma(shape, eta[n], eta[n + N_trait]);",
-               fixed = TRUE)
+  expect_match(stan_llh(zero_inflated_poisson()), fixed = TRUE,
+               "  Y[n] ~ zero_inflated_poisson(eta[n], eta[n + N_trait]);")
+               
+  expect_match(stan_llh(hurdle_negbinomial()), fixed = TRUE,
+               "  Y[n] ~ hurdle_neg_binomial_2(eta[n], eta[n + N_trait], shape);")
+  expect_match(stan_llh(hurdle_gamma()), fixed = TRUE,
+               "  Y[n] ~ hurdle_gamma(shape, eta[n], eta[n + N_trait]);")
 })
 
 test_that("stan_llh returns correct llhs for multivariate models", {
-  expect_match(stan_llh(family = gaussian(), nresp = 2),
+  expect_match(stan_llh(gaussian(), list(response = c("y1", "y2"))),
                "  Y ~ multi_normal_cholesky(Eta, LSigma); \n", fixed = TRUE)
-  expect_match(stan_llh(family = student(), nresp = 3),
+  expect_match(stan_llh(student(), list(response = c("y1", "y2", "y3"))),
                "  Y ~ multi_student_t(nu, Eta, Sigma); \n", fixed = TRUE)
-  expect_match(stan_llh(family = cauchy(), nresp = 4, weights = TRUE),
-               "  lp_pre[n] = multi_student_t_lpdf(Y[n] | 1.0, Eta[n], Sigma);",
+  expect_match(stan_llh(cauchy(), list(response = c("y1", "y2"), weights = ~x)),
+               "  lp_pre[n] = multi_student_t_lpdf(Y[n] | 1.0, (Eta[n]), Sigma);",
                fixed = TRUE)
 })
 

@@ -1,22 +1,9 @@
-stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE, 
-                     cens = FALSE, disp = FALSE, trunc = .trunc(), 
-                     autocor = cor_arma(), cse = FALSE, nresp = 1L) {
-  # Likelihoods in stan language
-  #
+stan_llh <- function(family, effects = list(), autocor = cor_arma()) {
+  # Likelihood in Stan language
   # Args:
   #   family: the model family
-  #   se: logical; user defined SEs present?
-  #   weights: logical; weights present?
-  #   trials: logical; number of bernoulli trials given per observation?
-  #   cens: logical; censored data?
-  #   trunc: list containing lower and upper truncation boundaries
-  #   autocor: autocorrelation structure; an object of classe cor_arma
-  #   cse: a flag indicating if category specific effects are present
-  #        (for ordinal models only)
-  #   nresp: number of response variables
-  #
-  # Returns:
-  #   a string containing the likelihood of the model in stan language
+  #   effects: output of extract_effects
+  #   autocor: object of classe cor_brms
   stopifnot(is(family, "family"))
   link <- family$link
   type <- family$type
@@ -26,142 +13,162 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
   is_hurdle <- is.hurdle(family)
   is_zero_inflated <- is.zero_inflated(family)
   is_forked <- is.forked(family)
-  is_multi <- is.linear(family) && nresp > 1L
-  is_trunc <- trunc$lb > -Inf || trunc$ub < Inf
+  is_multi <- is.linear(family) && length(effects$response) > 1L
+  
+  has_se <- is.formula(effects$se)
+  has_weights <- is.formula(effects$weights)
+  has_cens <- is.formula(effects$cens)
+  has_disp <- is.formula(effects$disp)
+  has_trials <- is.formula(effects$trials)
+  has_cse <- is.formula(effects$cse)
+  trunc <- get_boundaries(effects$trunc)
+  has_trunc <- trunc$lb > -Inf || trunc$ub < Inf
+  ll_adj <- has_cens || has_weights || has_trunc
+
   if (is_multi) {
     # prepare for use of a multivariate likelihood
     family <- paste0(family, "_multi")
-  } else if (use_cov(autocor) && (get_ar(autocor) || get_ma(autocor))) {
-    # ARMA effects have a special formulation
-    # if fitted using a covariance matrix for residuals
-    if (weights || cens || is_trunc) {
+  } else if (use_cov(autocor)) {
+    # ARMA effects in covariance matrix formulation
+    if (ll_adj) {
       stop("Invalid addition arguments", call. = FALSE)
     }
     family <- paste0(family, "_cov")
   } else if (is(autocor, "cor_fixed")) {
-    if (se || weights || cens || is_trunc) {
+    if (has_se || ll_adj) {
       stop("Invalid addition arguments", call. = FALSE)
     }
     family <- paste0(family, "_fixed")
   }
   
-  simplify <- !is_trunc && !cens && stan_has_build_in_fun(family, link)
-  n <- ifelse(cens || weights || is_trunc || is_categorical ||
-              is_ordinal || is_hurdle || is_zero_inflated, "[n]", "")
-  ns <- ifelse((se || trials || disp) && (cens || weights || is_trunc) 
-               || (trials && is_zero_inflated), "[n]", "")
-  disp <- ifelse(disp, "disp_", "")
-  sigma <- paste0(ifelse(se, "se", paste0(disp, "sigma")), ns)
-  shape <- paste0(disp, "shape", ns)
-  ordinal_args <- paste0("eta[n], ", if (cse) "etap[n], ", 
-                         "temp_Intercept")
+  reqn <- ll_adj || is_categorical || is_ordinal || 
+          is_hurdle || is_zero_inflated
+  n <- ifelse(reqn, "[n]", "")
+  # prepare auxiliary parameters
+  auxpars <- intersect(auxpars(), names(effects))
+  disp <- ifelse(has_disp, "disp_", "")
+  reqn_sigma <- (ll_adj && (has_se || has_disp)) || 
+                (reqn && "sigma" %in% auxpars)
+  sigma <- paste0(ifelse(has_se, "se", paste0(disp, "sigma")), 
+                  if (reqn_sigma) "[n]")
+  reqn_shape <- (ll_adj && has_disp) || (reqn && "shape" %in% auxpars)
+  shape <- paste0(disp, "shape", if (reqn_shape) "[n]")
+  nu <- paste0("nu", if (reqn && "nu" %in% auxpars) "[n]")
+  phi <- paste0("phi", if (reqn && "phi" %in% auxpars) "[n]")
+  reqn_trials <- has_trials && (ll_adj || is_zero_inflated)
+  trials <- ifelse(reqn_trials, "trials[n]", "trials")
+  ordinal_args <- paste("eta[n],", if (has_cse) "etap[n],", "temp_Intercept")
   
   # use inverse link in likelihood statement only 
   # if it does not prevent vectorization 
+  simplify <- !has_trunc && !has_cens && stan_has_build_in_fun(family, link)
   ilink <- ifelse(n == "[n]" && !simplify, stan_ilink(link), "")
-  eta <- paste0("eta", if (!is.null(type)) paste0("_", type))
+  eta <- paste0(ifelse(is_multi, "Eta", "eta"), 
+                if (!is.null(type)) paste0("_", type))
   if (n == "[n]") {
     if (is_hurdle || is_zero_inflated) {
       eta <- paste0(ilink,"(eta[n]), ", ilink,"(eta[n + N_trait])")
     } else {
       eta <- paste0(eta, "[n]")
       fl <- ifelse(family %in% c("gamma", "exponential"), 
-                   paste0(family,"_",link), family)
-      eta <- switch(fl, paste0(ilink,"(",eta,")"),
-                    gamma_log = paste0(shape, " * exp(-",eta,")"),
-                    gamma_inverse = paste0(shape, " * ", eta),
-                    gamma_identity =  paste0(shape, " / ", eta),
-                    exponential_log = paste0("exp(-",eta,")"),
-                    exponential_inverse = eta,
-                    exponential_identity = paste0("inv(",eta,")"),
-                    weibull = paste0(ilink, "(",eta, " / ", shape,")"))
+                   paste0(family, "_", link), family)
+      eta <- switch(fl, 
+        paste0(ilink,"(",eta,")"),
+        gamma_log = paste0(shape, " * exp(-", eta, ")"),
+        gamma_inverse = paste0(shape, " * ", eta),
+        gamma_identity =  paste0(shape, " / ", eta),
+        exponential_log = paste0("exp(-", eta, ")"),
+        exponential_inverse = eta,
+        exponential_identity = paste0("inv(", eta, ")"),
+        weibull = paste0(ilink, "(", eta, " / ", shape,")"))
     }
   }
   
   if (simplify) { 
     llh_pre <- switch(family,
       poisson = c("poisson_log", eta), 
-      negbinomial = c("neg_binomial_2_log", paste0(eta,", ",shape)),
-      geometric = c("neg_binomial_2_log", paste0(eta,", 1")),
+      negbinomial = c("neg_binomial_2_log", paste0(eta, ", ", shape)),
+      geometric = c("neg_binomial_2_log", paste0(eta, ", 1")),
       cumulative = c("ordered_logistic", "eta[n], temp_Intercept"),
       categorical = c("categorical_logit", "append_row(zero, eta[J_trait[n]])"),
-      binomial = c("binomial_logit", paste0("trials",ns,", ",eta)), 
+      binomial = c("binomial_logit", paste0(trials, ", ", eta)), 
       bernoulli = c("bernoulli_logit", eta))
   } else {
     llh_pre <- switch(family,
-      gaussian = c("normal", paste0(eta,", ",sigma)),
+      gaussian = c("normal", paste0(eta, ", ", sigma)),
       gaussian_cov = c("normal_cov", paste0(eta,", se2, N_tg, ", 
                        "begin_tg, end_tg, nobs_tg, res_cov_matrix")),
-      gaussian_multi = c("multi_normal_cholesky", paste0("Eta",n,", LSigma")),
-      gaussian_fixed = c("multi_normal_cholesky", paste0(eta,", LV")),
-      student = c("student_t",  paste0("nu, ",eta,", ",sigma)),
-      student_cov = c("student_t_cov", paste0("nu, ",eta,", se2, N_tg, ", 
+      gaussian_multi = c("multi_normal_cholesky", paste0(eta, ", LSigma")),
+      gaussian_fixed = c("multi_normal_cholesky", paste0(eta, ", LV")),
+      student = c("student_t",  paste0(nu, ", ", eta, ", ", sigma)),
+      student_cov = c("student_t_cov", paste0(nu, ", ", eta, ", se2, N_tg, ", 
                       "begin_tg, end_tg, nobs_tg, res_cov_matrix")),
-      student_multi = c("multi_student_t", paste0("nu, Eta",n,", Sigma")),
-      student_fixed = c("multi_student_t", paste0("nu, ",eta,", V")),
-      cauchy = c("cauchy", paste0(eta,", ", sigma)),
-      cauchy_cov = c("student_t_cov", paste0("1, ",eta,", se2, N_tg, ", 
+      student_multi = c("multi_student_t", paste0(nu, ", ", eta, ", Sigma")),
+      student_fixed = c("multi_student_t", paste0(nu, ", ", eta, ", V")),
+      cauchy = c("cauchy", paste0(eta, ", ", sigma)),
+      cauchy_cov = c("student_t_cov", paste0("1, ", eta, ", se2, N_tg, ", 
                      "begin_tg, end_tg, nobs_tg, res_cov_matrix")),
-      cauchy_multi = c("multi_student_t", paste0("1.0, Eta",n,", Sigma")),
-      cauchy_fixed = c("multi_student_t", paste0("1.0, ",eta,", V")),
-      lognormal = c("lognormal", paste0(eta,", ",sigma)),
+      cauchy_multi = c("multi_student_t", paste0("1.0, ", eta, ", Sigma")),
+      cauchy_fixed = c("multi_student_t", paste0("1.0, ", eta,", V")),
+      lognormal = c("lognormal", paste0(eta, ", ", sigma)),
       poisson = c("poisson", eta),
-      negbinomial = c("neg_binomial_2", paste0(eta,", ",shape)),
-      geometric = c("neg_binomial_2", paste0(eta,", 1")),
-      binomial = c("binomial", paste0("trials",ns,", ",eta)),
+      negbinomial = c("neg_binomial_2", paste0(eta, ", ", shape)),
+      geometric = c("neg_binomial_2", paste0(eta, ", 1")),
+      binomial = c("binomial", paste0(trials, ", ", eta)),
       bernoulli = c("bernoulli", eta),
-      gamma = c("gamma", paste0(shape,", ",eta)), 
+      gamma = c("gamma", paste0(shape, ", ", eta)), 
       exponential = c("exponential", eta),
-      weibull = c("weibull", paste0(shape,", ",eta)), 
+      weibull = c("weibull", paste0(shape,", ", eta)), 
       inverse.gaussian = c(paste0("inv_gaussian", if (!nchar(n)) "_vector"), 
-                           paste0(eta, ", shape, log_Y",n,", sqrt_Y",n)),
-      beta = c("beta", paste0(eta, " * phi, (1 - ", eta, ") * phi")),
+                           paste0(eta, ", shape, log_Y", n, ", sqrt_Y", n)),
+      beta = c("beta", paste0(eta, " * ", phi, ", (1 - ", eta, ") * ", phi)),
       cumulative = c("cumulative", ordinal_args),
       sratio = c("sratio", ordinal_args),
       cratio = c("cratio", ordinal_args),
       acat = c("acat", ordinal_args),
       hurdle_poisson = c("hurdle_poisson", "eta[n], eta[n + N_trait]"),
       hurdle_negbinomial = c("hurdle_neg_binomial_2", 
-                             "eta[n], eta[n + N_trait], shape"),
+                             paste("eta[n], eta[n + N_trait],", shape)),
       hurdle_gamma = c("hurdle_gamma", "shape, eta[n], eta[n + N_trait]"),
       zero_inflated_poisson = c("zero_inflated_poisson", 
                                 "eta[n], eta[n + N_trait]"),
       zero_inflated_negbinomial = c("zero_inflated_neg_binomial_2", 
-                                    "eta[n], eta[n + N_trait], shape"),
+                                    paste("eta[n], eta[n + N_trait],", shape)),
       zero_inflated_binomial = c("zero_inflated_binomial", 
-         paste0("trials",ns,", eta[n], eta[n + N_trait]")),
+         paste0(trials, ", eta[n], eta[n + N_trait]")),
       zero_inflated_beta = c("zero_inflated_beta", 
-                             "eta[n], eta[n + N_trait], phi"))
+                             paste("eta[n], eta[n + N_trait],", phi)))
   }
   
   # write likelihood code
-  type <- c("cens", "weights")[match(TRUE, c(cens, weights))]
+  type <- c("cens", "weights")[match(TRUE, c(has_cens, has_weights))]
   if (is.na(type)) type <- "general"
   # prepare for possible truncation
   code_trunc <- ""
-  if (is_trunc) {
+  if (has_trunc) {
     if (type %in% c("cens", "weights")) {
-      stop("truncation is not yet possible in censored or weighted models",
-           call. = FALSE)
+      stop("truncation is not yet possible in censored ", 
+           "or weighted models", call. = FALSE)
     } else {
       lb <- ifelse(trunc$lb > -Inf, "lb", "")
       ub <- ifelse(trunc$ub < Inf, "ub", "")
-      code_trunc <- paste0(" T[",lb,", ",ub,"]")
+      code_trunc <- paste0(" T[", lb, ", ", ub, "]")
     }
   }
-  add_weights <- ifelse(weights, "weights[n] * ", "")
+  weights <- ifelse(has_weights, "weights[n] * ", "")
   .lpdf <- ifelse(use_int(family), "_lpmf", "_lpdf")
   llh <- switch(type, 
     cens = paste0("  // special treatment of censored data \n",
       "      if (cens[n] == 0) ", 
-      ifelse(!weights, paste0("Y[n] ~ ", llh_pre[1], "(", llh_pre[2],"); \n"),
-             paste0("target += ", add_weights, 
-                    llh_pre[1], .lpdf, "(Y[n] | ", llh_pre[2],"); \n")),
+      ifelse(!has_weights, 
+        paste0("Y[n] ~ ", llh_pre[1], "(", llh_pre[2],"); \n"),
+        paste0("target += ", weights, llh_pre[1], .lpdf, 
+               "(Y[n] | ", llh_pre[2],"); \n")),
       "      else { \n",         
-      "        if (cens[n] == 1) target += ", add_weights, 
-      llh_pre[1], "_lccdf(Y[n] | ", llh_pre[2],"); \n",
-      "        else target += ", add_weights, 
-      llh_pre[1], "_lcdf(Y[n] | ", llh_pre[2],"); \n",
+      "        if (cens[n] == 1) target += ",
+      weights, llh_pre[1], "_lccdf(Y[n] | ", llh_pre[2],"); \n",
+      "        else target += ", 
+      weights, llh_pre[1], "_lcdf(Y[n] | ", llh_pre[2],"); \n",
       "      } \n"),
     weights = paste0("  lp_pre[n] = ", llh_pre[1], .lpdf, "(Y[n] | ",
                      llh_pre[2],"); \n"),
@@ -169,8 +176,7 @@ stan_llh <- function(family, se = FALSE, weights = FALSE, trials = FALSE,
                      code_trunc, "; \n")) 
   # loop over likelihood if it cannot be vectorized
   trait <- ifelse(is_multi || is_forked || is_categorical, "_trait", "")
-  if (weights || cens || is_trunc || is_ordinal || is_categorical || 
-      is_hurdle || is_zero_inflated) {
+  if (reqn) {
     llh <- paste0("  for (n in 1:N", trait, ") { \n    ", llh, "    } \n")
   }
   llh

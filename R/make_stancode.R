@@ -68,16 +68,9 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
                                prior = prior, cov_ranef = cov_ranef)
   text_pred <- collapse_lists(list(text_pred, text_auxpars))
   
-  # generate stan code for the likelihood
-  text_llh <- stan_llh(family, se = is.formula(ee$se),  
-                       weights = is.formula(ee$weights),
-                       trials = is.formula(ee$trials),
-                       cens = is.formula(ee$cens),
-                       disp = is.formula(ee$disp),
-                       trunc = trunc, autocor = autocor,
-                       cse = is.formula(ee$cse), 
-                       nresp = length(ee$response))
-  # generate stan code specific to certain models
+  # generate Stan code of the likelihood
+  text_llh <- stan_llh(family, effects = ee, autocor = autocor)
+  # generate Stan code specific to certain models
   text_autocor <- stan_autocor(family, autocor = autocor, prior = prior,
                                nonlinear = ee$nonlinear, is_multi = is_multi,
                                has_disp = is.formula(ee$disp),
