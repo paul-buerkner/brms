@@ -611,20 +611,21 @@ stan_inv_gaussian <- function(family, weights = FALSE, cens = FALSE,
   out
 }
 
-stan_disp <- function(disp, family = gaussian()) {
+stan_disp <- function(effects, family = gaussian()) {
   # stan code for models with addition argument 'disp'
   # Args:
   #   disp: logical; are dispersion factors specified?
   #   family: the model family
   stopifnot(is(family, "family"))
   out <- list()
-  if (disp) {
+  if (is(effects$disp, "formula")) {
     par <- if (has_sigma(family)) "sigma"
            else if (has_shape(family)) "shape"
            else stop("invalid family for addition argument 'disp'")
+    times <- if(is.null(effects[[par]])) " * " else " .* "
     out$data <- "  vector<lower=0>[N] disp;  // dispersion factors \n"
     out$transD <- paste0("  vector<lower=0>[N] disp_", par, "; \n")
-    out$transC1 <- paste0("  disp_", par, " = ", par, " * disp; \n")
+    out$transC1 <- paste0("  disp_", par, " = ", par, times, "disp; \n")
   }
   out
 }

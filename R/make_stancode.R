@@ -90,7 +90,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   text_inv_gaussian <- stan_inv_gaussian(family, weights = is.formula(ee$weights),
                                          cens = is.formula(ee$cens),
                                          trunc = is.formula(ee$trunc))
-  text_disp <- stan_disp(is.formula(ee$disp), family = family)
+  text_disp <- stan_disp(ee, family = family)
   ranef <- gather_ranef(ee, data = data, forked = is_forked)
   kronecker <- stan_needs_kronecker(ranef, names_cov_ranef = names(cov_ranef))
   text_misc_funs <- stan_misc_functions(family = family, kronecker = kronecker)
