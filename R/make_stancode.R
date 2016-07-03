@@ -95,12 +95,6 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     text_ordinal$prior,
     text_autocor$prior,
     text_multi$prior,
-    if (has_shape) 
-      stan_prior(class = "shape", prior = prior),
-    if (family$family == "student") 
-      stan_prior(class = "nu", prior = prior),
-    if (family$family %in% c("beta", "zero_inflated_beta")) 
-      stan_prior(class = "phi", prior = prior),
     stan_prior(class = "", prior = prior))
   
   # generate functions block
@@ -120,7 +114,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   # generate data block
   Kar <- get_ar(autocor)
   Kma <- get_ma(autocor)
-  N_bin <- ifelse(is.formula(ee$trials), "[N]", "")
+  Nbin <- ifelse(is.formula(ee$trials), "[N]", "")
   trait <- ifelse(is_multi || is_forked || is_categorical, "_trait", "")
   text_data <- paste0(
     "data { \n",
@@ -142,7 +136,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     text_inv_gaussian$data,
     text_disp$data,
     if (has_trials(family))
-      paste0("  int trials", N_bin, ";  // number of trials \n"),
+      paste0("  int trials", Nbin, ";  // number of trials \n"),
     if (is.formula(ee$se) && !use_cov(autocor))
       "  vector<lower=0>[N] se;  // SEs for meta-analysis \n",
     if (is.formula(ee$weights))
@@ -174,22 +168,15 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     text_pred$par,
     text_ordinal$par,
     text_autocor$par,
-    text_multi$par,
-    if (family$family == "student") 
-      "  real<lower=1> nu;  // degrees of freedom \n",
-    if (has_shape) 
-      "  real<lower=0> shape;  // shape parameter \n",
-    if (family$family %in% c("beta", "zero_inflated_beta")) 
-      "  real<lower=0> phi;  // precision parameter \n")
-  # generate code to additionally sample from priors
+    text_multi$par)
   text_rngprior <- stan_rngprior(sample_prior = sample_prior, 
                                  par_declars = text_parameters,
                                  prior = text_prior, family = family,
                                  hs_df = attr(prior, "hs_df"))
   text_parameters <- paste0(
     "parameters { \n",
-    text_parameters,
-    text_rngprior$par,
+      text_parameters,
+      text_rngprior$par,
     "} \n")
   
   # generate transformed parameters block

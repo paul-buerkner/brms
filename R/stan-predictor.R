@@ -157,22 +157,33 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
 stan_auxpars <- function(effects, data, family = gaussian(),
                          prior = prior_frame(), autocor = cor_arma(),
                          cov_ranef = NULL) {
-  out <- list()
+  # Stan code for auxiliary parameters
+  # Args:
+  #   effects: output of extract_effects
+  #   other arguments: same as make_stancode
+  has_auxpar <- c(
+    sigma = has_sigma(family, effects = effects, 
+                      autocor = autocor, incl_multi = FALSE),
+    shape = has_shape(family), nu = has_nu(family), 
+    phi = has_phi(family))
+  default_def <- c(
+    sigma = "  real<lower=0> sigma;  // residual SD \n",
+    shape = "  real<lower=0> shape;  // shape parameter \n",
+    nu = "  real<lower=0> nu;  // degrees of freedom \n",
+    phi = "  real<lower=0> phi;  // precision parameter \n")
+  link <- c(sigma = "exp", shape = "exp", nu = "exp", phi = "exp") 
   args <- nlist(data, family, prior, cov_ranef, prefix = "")
-  has_sigma <- has_sigma(family, effects = effects, 
-                         autocor = autocor, incl_multi = FALSE)
-  if (has_sigma) {
-    if (!is.null(effects[["sigma"]])) {
-      sigma_args <- c(list("sigma", effects = effects[["sigma"]]), args)
-      out[["sigma"]] <- c(do.call(stan_effects, sigma_args),
-                          transC4 = "  sigma = exp(sigma); \n")
+  out <- list()
+  for (ap in names(has_auxpar[has_auxpar])) {
+    if (!is.null(effects[[ap]])) {
+      ap_args <- c(list(ap, effects = effects[[ap]]), args)
+      ap_link <- paste0("  ", ap, " = ", link[[ap]], "(", ap, "); \n")
+      out[[ap]] <- c(do.call(stan_effects, ap_args), transC4 = ap_link)
     } else {
-      out[["sigma"]] <- list(
-        par = "  real<lower=0> sigma;  // residual SD \n",
-        prior = stan_prior(class = "sigma", coef = effects$response, 
-                           prior = prior))
+      out[[ap]] <- list(par = default_def[[ap]],
+        prior = stan_prior(class = ap, prior = prior))
     }
-  }
+  }  
   collapse_lists(out)
 } 
 
