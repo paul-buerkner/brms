@@ -33,7 +33,8 @@ stan_linear <- function(effects, data, family = gaussian(),
   monef <- colnames(data_monef(effects, data)$Xm)
   text_monef <- stan_monef(monef, prior = prior)
   # group-specific effects
-  ranef <- gather_ranef(effects, data = data, forked = is.forked(family))
+  ranef <- gather_ranef(effects, data = data, all = FALSE,
+                        forked = is.forked(family))
   text_ranef <- collapse_lists(
     lapply(seq_along(ranef), stan_ranef, ranef = ranef, 
            names_cov_ranef = names(cov_ranef), prior = prior))

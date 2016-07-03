@@ -684,17 +684,27 @@ get_effect <- function(effects, target = c("fixed", "mono", "cse", "gam")) {
   out
 }
 
-get_random <- function(effects) {
+get_random <- function(effects, all = TRUE) {
   # get random effects information in a data.frame
   # Args:
   #   effects: object returned by extract_effects
-  if (!is.null(effects$nonlinear)) {
-    out <- do.call(rbind, lapply(effects$nonlinear, function(par) par$random))
-    # R does not allow duplicated rownames and adds "." causing Stan to fail
-    out$nlpar <- get_matches("^[^\\.]+", rownames(out))
-    attr(out, "nonlinear") <- TRUE
-  } else {
+  #   all: logical; include ranefs of nl and aux parameters?
+  if (!is.null(effects$random)) {
+    stopifnot(is.data.frame(effects$random))
     out <- effects$random
+    out$nlpar <- rep("", nrow(out))
+  } else {
+    out <- NULL
+  }
+  if (all) {
+    el <- rmNULL(c(effects[auxpars()], effects$nonlinear), recursive = FALSE)
+    if (length(el)) {
+      rand <- do.call(rbind, lapply(el, function(par) par$random))
+      # R does not allow duplicated rownames and adds "." causing Stan to fail
+      rand$nlpar <- get_matches("^[^\\.]+", rownames(rand))
+      out <- rbind(out, rand)
+      attr(out, "nonlinear") <- TRUE
+    } 
   }
   out
 }
@@ -871,7 +881,7 @@ has_splines <- function(effects) {
   out
 }
 
-gather_ranef <- function(effects, data = NULL, ...) {
+gather_ranef <- function(effects, data = NULL, all = TRUE, ...) {
   # gathers helpful information on the random effects
   # 
   # Args:
@@ -881,7 +891,7 @@ gather_ranef <- function(effects, data = NULL, ...) {
   #
   # Returns: 
   #   A named list with one element per grouping factor
-  random <- get_random(effects)
+  random <- get_random(effects, all = all)
   Z <- lapply(random$form, get_model_matrix, data = data, ...)
   ranef <- setNames(lapply(Z, colnames), random$group)
   for (i in seq_along(ranef)) {
@@ -889,8 +899,7 @@ gather_ranef <- function(effects, data = NULL, ...) {
       levels(factor(get(random$group[[i]], data)))
     attr(ranef[[i]], "group") <- names(ranef)[i]
     attr(ranef[[i]], "cor") <- random$cor[[i]]
-    if (length(effects$nonlinear))
-      attr(ranef[[i]], "nlpar") <- random$nlpar[i]
+    attr(ranef[[i]], "nlpar") <- random$nlpar[i]
   }
   ranef
 }
@@ -1078,15 +1087,16 @@ exclude_pars <- function(effects, ranef = list(),
   if (length(ranef)) {
     rm_re_pars <- c("z", "L", "Cor", if (!save_ranef) "r")
     # names of NL-parameters must be computed based on ranef here
-    nlp_ranef <- ulapply(ranef, attr, "nlpar")
-    if (length(nlp_ranef)) {
-      stopifnot(length(nlp_ranef) == length(ranef))
+    nlp <- ulapply(ranef, attr, "nlpar")
+    if (length(nlp)) {
+      stopifnot(length(nlp) == length(ranef))
+      nlp <- ifelse(nchar(nlp), paste0(nlp, "_"), nlp)
       for (k in seq_along(ranef)) {
-        i <- which(which(nlp_ranef == nlp_ranef[k]) == k)
-        out <- c(out, paste0(rm_re_pars, "_", nlp_ranef[k], "_", i))
+        i <- which(which(nlp == nlp[k]) == k)
+        out <- c(out, paste0(rm_re_pars, "_", nlp[k], i))
         neff <- length(ranef[[k]])
         if (neff > 1L) {
-          out <- c(out, paste0("r_", nlp_ranef[k], "_", i, "_", 1:neff))
+          out <- c(out, paste0("r_", nlp[k], i, "_", 1:neff))
         }
       }
     } else {

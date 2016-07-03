@@ -131,7 +131,7 @@ get_cornames <- function(names, type = "cor", brackets = TRUE) {
 get_nlpar <- function(x, suffix = "") {
   # extract name of a non-linear parameter
   nlpar <- attr(x, "nlpar")
-  if (!is.null(nlpar)) paste0(nlpar, suffix) else ""
+  if (length(nlpar) && nchar(nlpar)) paste0(nlpar, suffix) else ""
 }
 
 get_estimate <- function(coef, samples, margin = 2, to.array = FALSE, ...) {
