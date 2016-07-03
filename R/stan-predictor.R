@@ -62,9 +62,9 @@ stan_linear <- function(effects, data, family = gaussian(),
   wsp <- ifelse(is_multi, "  ", "")
   # transform eta before it is passed to the likelihood
   add <- is.formula(effects[c("weights", "cens", "trunc")])
-  out$transform <- stan_eta_transform(family$family, family$link, add = add)
+  transform <- stan_eta_transform(family$family, family$link, add = add)
   eta_ilink <- rep("", 2)
-  if (out$transform || (get_ar(autocor) && !use_cov(autocor))) {
+  if (transform || (get_ar(autocor) && !use_cov(autocor))) {
     eta_ilink <- stan_eta_ilink(family$family, family$link, 
                                 disp = is.formula(effects$disp))
     if (get_ar(autocor)) {
