@@ -447,14 +447,13 @@ stan_splines <- function(splines, prior = prior_frame(), nlpar = "") {
 stan_monef <- function(monef, prior = prior_frame(), nlpar = "") {
   # Stan code for monotonic effects
   # Args:
-  #   csef: names of the monotonic effects
+  #   monef: names of the monotonic effects
   #   prior: a data.frame containing user defined priors 
   #          as returned by check_prior
   p <- if (nchar(nlpar)) paste0("_", nlpar) else ""
   out <- list()
   if (length(monef)) {
     I <- seq_along(monef)
-    out$fun <- "  #include fun_monotonic.stan \n"
     out$data <- paste0(
       "  int<lower=1> Km", p, ";  // number of monotonic effects \n",
       "  int Xm", p, "[N, Km", p, "];  // monotonic design matrix \n",

@@ -93,6 +93,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   ranef <- gather_ranef(ee, data = data, forked = is_forked)
   kronecker <- stan_needs_kronecker(ranef, names_cov_ranef = names(cov_ranef))
   text_misc_funs <- stan_misc_functions(family = family, kronecker = kronecker)
+  text_monotonic <- stan_monotonic(text_pred)
     
   # get priors for all parameters in the model
   text_prior <- paste0(
@@ -100,8 +101,6 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     text_ordinal$prior,
     text_autocor$prior,
     text_multi$prior,
-    if (has_sigma) 
-      stan_prior(class = "sigma", coef = ee$response, prior = prior), 
     if (has_shape) 
       stan_prior(class = "shape", prior = prior),
     if (family$family == "student") 
@@ -116,7 +115,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     "// We recommend generating the data with the 'make_standata' function. \n",
     "functions { \n",
       text_misc_funs,
-      text_pred$fun,
+      text_monotonic,
       text_autocor$fun,
       text_ordinal$fun,
       text_forked$fun,

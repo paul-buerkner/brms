@@ -629,6 +629,13 @@ stan_disp <- function(disp, family = gaussian()) {
   out
 }
 
+stan_monotonic <- function(x) {
+  # add the monotonic function to Stan's functions block
+  if (grepl("[^[:alnum:]]monotonic\\(", collapse(x))) {
+    "  #include fun_monotonic.stan \n"
+  } else NULL
+}
+
 stan_misc_functions <- function(family = gaussian(), kronecker = FALSE) {
   # stan code for user defined functions
   # Args:
