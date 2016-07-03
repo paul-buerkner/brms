@@ -117,9 +117,7 @@ test_that("extract_effects finds all spline terms", {
 test_that("nonlinear_effects rejects invalid non-linear models", {
   expect_error(nonlinear_effects(list(a ~ 1, b ~ 1), model = y ~ a^x),
                "missing in formula: b")
-  expect_error(nonlinear_effects(a~1, model = y ~ a^x),
-               "Argument 'nonlinear' must be a list of formulas")
-  expect_error(nonlinear_effects(list( ~ 1, a ~ 1), model = y ~ a),
+  expect_error(nonlinear_effects(list(~ 1, a ~ 1), model = y ~ a),
                "Non-linear formulas must be two-sided")
   expect_error(nonlinear_effects(list(a + b ~ 1), model = y ~ exp(-x)),
                "LHS of non-linear formula must contain exactly one variable")
@@ -144,7 +142,7 @@ test_that("nonlinear2list works correctly", {
   expect_equal(nonlinear2list(list(a ~ 1, b ~ 1 + z)),
                list(a ~ 1, b ~ 1 + z))
   expect_equal(nonlinear2list(NULL), NULL)
-  expect_error(nonlinear2list(1), "invalid 'nonlinear' argument")
+  expect_error(nonlinear2list(1), "invalid formula")
 })
 
 test_that("extract_time returns all desired variables", {
@@ -242,9 +240,8 @@ test_that("amend_terms performs expected changes to terms objects", {
 test_that("gather_ranef works correctly", {
   data <- data.frame(g = 1:10, x = 11:20, y = 1:10)
   target <- list(g = c("Intercept", "x"))
-  attr(target$g, "levels") <- paste(1:10)
-  attr(target$g, "group") <- "g"
-  attr(target$g, "cor") <- FALSE
+  attributes(target$g)[c("levels", "group", "cor", "nlpar")] <-
+    list(paste(1:10), "g", FALSE, "")
   expect_equal(gather_ranef(extract_effects(y~(1+x||g)), data = data),
                target)
   expect_equal(gather_ranef(list()), list())
