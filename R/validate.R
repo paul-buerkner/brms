@@ -1075,7 +1075,8 @@ exclude_pars <- function(effects, ranef = list(),
   out <- c("eta", "etap", "eta_2PL", "Eta", "temp_Intercept1", 
            "temp_Intercept",  "Lrescor", "Rescor", "Sigma", 
            "LSigma", "disp_sigma", "e", "E", "res_cov_matrix", 
-           "lp_pre", "hs_local", "hs_global")
+           "lp_pre", "hs_local", "hs_global",
+           intersect(auxpars(), names(effects)))
   nlpars <- names(effects$nonlinear)
   if (length(nlpars)) {
     out <- c(out, unique(paste0("eta_", nlpars)))
