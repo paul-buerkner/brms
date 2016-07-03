@@ -4,13 +4,26 @@
 \alias{bf}
 \title{Set up a model formula for use in the \pkg{brms} package}
 \usage{
-bf(formula, nonlinear = NULL, zi = NULL, hu = NULL, sigma = NULL,
-  shape = NULL, nu = NULL, phi = NULL)
+bf(formula, ..., nonlinear = NULL)
 }
 \arguments{
 \item{formula}{An object of class "formula" (or one that can be coerced to that class): 
 a symbolic description of the model to be fitted. 
 The details of model specification are given under 'Details'.}
+
+\item{...}{Additional \code{formula} objects to specify 
+predictors of special model parts and auxiliary parameters. 
+Formulas can either be named directly or contain
+names on their left-hand side. Currently, the following
+names corresponding are accepted: 
+\code{sigma} (residual standard deviation of
+the \code{gaussian} and \code{student} families);
+\code{shape} (shape parameter of the \code{Gamma},
+\code{weibull}, \code{negbinomial} and related
+zero-inflated / hurdle families); \code{nu}
+(degrees of freedom parameter of the \code{student} family);
+\code{phi} (precision parameter of the \code{beta} 
+and \code{zero_inflated_beta} families).}
 
 \item{nonlinear}{An optional list of formuluas, specifying 
 linear models for non-linear parameters. If \code{NULL} (the default)
@@ -23,29 +36,6 @@ Alternatively, it can be a single formula with all non-linear
 parameters on the left hand side (separated by a \code{+}) and a
 common linear predictor on the right hand side.
 More information is given under 'Details'.}
-
-\item{zi}{A one-sided formula to specfiy predictors for 
-the zero-inflation part of zero-inflated families.}
-
-\item{hu}{A one-sided formula to specfiy predictors for 
-the hurdle part of hurdle families.}
-
-\item{sigma}{A one-sided formula to specfiy predictors for 
-the residual standard deviation \code{sigma} of 
-the \code{gaussian} and \code{student} families.}
-
-\item{shape}{A one-sided formula to specfiy predictors for 
-the \code{shape} parameter of the \code{Gamma}, 
-\code{weibull}, \code{negbinomial} and related 
-zero-inflated / hurdle families.}
-
-\item{nu}{A one-sided formula to specfiy predictors for 
-the degrees of freedom parameter \code{nu} of
-the \code{student} family.}
-
-\item{phi}{A one-sided formula to specfiy predictors for 
-the precision parameter \code{phi} of
-the \code{beta} and \code{zero_inflated_beta} families.}
 }
 \description{
 Set up a model formula for use in the \pkg{brms} package

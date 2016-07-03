@@ -363,40 +363,60 @@ update_formula <- function(formula, data = NULL, family = gaussian(),
 #' of the assumed distribution of the response.
 #' 
 #' @inheritParams brm
-#' @param zi A one-sided formula to specfiy predictors for 
-#'  the zero-inflation part of zero-inflated families.
-#' @param hu A one-sided formula to specfiy predictors for 
-#'  the hurdle part of hurdle families.
-#' @param sigma A one-sided formula to specfiy predictors for 
-#'  the residual standard deviation \code{sigma} of 
-#'  the \code{gaussian} and \code{student} families.
-#' @param shape A one-sided formula to specfiy predictors for 
-#'   the \code{shape} parameter of the \code{Gamma}, 
-#'   \code{weibull}, \code{negbinomial} and related 
-#'   zero-inflated / hurdle families.
-#' @param nu A one-sided formula to specfiy predictors for 
-#'   the degrees of freedom parameter \code{nu} of
-#'   the \code{student} family.
-#' @param phi A one-sided formula to specfiy predictors for 
-#'   the precision parameter \code{phi} of
-#'   the \code{beta} and \code{zero_inflated_beta} families.
+#' @param ... Additional \code{formula} objects to specify 
+#'   predictors of special model parts and auxiliary parameters. 
+#'   Formulas can either be named directly or contain
+#'   names on their left-hand side. Currently, the following
+#'   names corresponding are accepted: 
+#'   \code{sigma} (residual standard deviation of
+#'   the \code{gaussian} and \code{student} families);
+#'   \code{shape} (shape parameter of the \code{Gamma},
+#'   \code{weibull}, \code{negbinomial} and related
+#'   zero-inflated / hurdle families); \code{nu}
+#'   (degrees of freedom parameter of the \code{student} family);
+#'   \code{phi} (precision parameter of the \code{beta} 
+#'   and \code{zero_inflated_beta} families).
 #' 
 #' @export
-bf <- function(formula, nonlinear = NULL, zi = NULL, hu = NULL, 
-               sigma = NULL, shape = NULL, nu = NULL, phi = NULL) {
-  all_args <- names(formals(bf))[-1]
-  old_att <- rmNULL(attributes(formula)[all_args])
+bf <- function(formula, ..., nonlinear = NULL) {
+  dots <- list(...)
+  parnames <- names(dots)
+  if (is.null(parnames)) {
+    parnames <- rep("", length(dots))
+  }
+  for (i in seq_along(dots)) {
+    dots[[i]] <- as.formula(dots[[i]])
+    if (length(dots[[i]]) == 3L && !nchar(parnames[i])) {
+      resp_par <- all.vars(dots[[i]][[2]])
+      if (length(resp_par) != 1L) {
+        stop("LHS of additional formulas must contain exactly one variable.",
+             call. = FALSE)
+      }
+      parnames[i] <- resp_par
+    }
+    if (!is.null(attr(terms(dots[[i]]), "offset"))) {
+      stop("Offsets are currently not allowed.", call. = FALSE)
+    }
+    dots[[i]] <- rhs(dots[[i]])
+  }
+  names(dots) <- parnames
+  if (any(!nchar(names(dots)))) {
+    stop("Function 'bf' requires named arguments.", call. = FALSE)
+  }
+  invalid_names <- setdiff(names(dots), auxpars())
+  if (length(invalid_names)) {
+    stop("The following argument names were invalid: ",
+         paste(invalid_names, collapse = ", "), call. = FALSE)
+  }
+  auxpars <- auxpars(incl_nl = TRUE)
+  old_att <- rmNULL(attributes(formula)[auxpars])
   formula <- as.formula(formula)
   if (is.logical(attr(formula, "nonlinear"))) {
     # In brms < 0.10.0 the nonlinear attribute was used differently
     attr(formula, "nonlinear") <- NULL
   }
   nonlinear <- nonlinear2list(nonlinear)
-  if (!is.null(zi) || !is.null(hu)) {
-    stop("arguments 'zi' and 'hu' are currently placeholders only", 
-         call. = FALSE)
-  }
-  new_att <- rmNULL(nlist(nonlinear, zi, hu, sigma, shape, nu, phi))
+  new_att <- rmNULL(c(nlist(nonlinear), dots))
   dupl_args <- intersect(names(new_att), names(old_att))
   if (length(dupl_args)) {
     warning("Duplicated definitions of arguments ", 
@@ -404,9 +424,9 @@ bf <- function(formula, nonlinear = NULL, zi = NULL, hu = NULL,
             "\nIgnoring definitions outside the formula",
             call. = FALSE)
   }
-  null_args <- setdiff(all_args, names(old_att))
-  new_args <- intersect(names(new_att), null_args)
-  att <- c(old_att, new_att[new_args])
+  null_pars <- setdiff(auxpars, names(old_att))
+  new_pars <- intersect(names(new_att), null_pars)
+  att <- c(old_att, new_att[new_pars])
   attributes(formula)[names(att)] <- att
   class(formula) <- c("brmsformula", "formula")
   formula
@@ -417,8 +437,34 @@ sformula <- function(x, incl_nl = TRUE, ...) {
   # Args:
   #   x: coerced to a 'brmsformula' object
   #   incl_nl: include the 'nonlinear' argument in the output?
-  rm <- if (incl_nl) -1 else -(1:2)
-  rmNULL(attributes(bf(x))[names(formals(bf))[rm]])
+  rmNULL(attributes(bf(x))[auxpars(incl_nl = incl_nl)])
+}
+
+auxpars <- function(incl_nl = FALSE) {
+  auxpars <- c("sigma", "shape", "nu", "phi")
+  if (incl_nl) {
+    auxpars <- c(auxpars, "nonlinear")
+  }
+  auxpars
+}
+
+avoid_auxpars <- function(names, effects) {
+  # avoid ambiguous parameter names
+  # Args:
+  #   names: names to check for ambiguity
+  #   effects: output of extract_effects
+  auxpars <- intersect(auxpars(), names(effects))
+  if (length(auxpars)) {
+    auxpars_prefix <- paste0("^", auxpars, "_")
+    invalid <- any(ulapply(auxpars_prefix, grepl, names))
+    if (invalid) {
+      auxpars <- paste0(auxpars, "_", collapse = ", ")
+      stop("Variable names starting with ", auxpars,
+           " are not allowed for this model.", 
+           call. = FALSE)
+    }
+  }
+  invisible(NULL)
 }
 
 #' @export
