@@ -309,6 +309,10 @@ stan_autocor <- function(family, autocor, prior = prior_frame(),
       stop("The bsts structure is not yet implemented for this family.",
            call. = FALSE)
     }
+    if (length(nonlinear)) {
+      stop("The bsts structure is not yet implemented for non-linear models",
+           call. = FALSE)
+    }
     out$data <- "  vector[N] tg;  // indicates independent groups \n"
     out$par <- paste0("  vector[N] loclev;  // local level terms \n",
                       "  real<lower=0> sigmaLL;  // SD of local level terms \n")
