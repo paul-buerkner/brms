@@ -405,46 +405,56 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
   
   # initialize output
   prior <- empty_prior_frame()
+  # priors for primary regression effects
   if (length(ee$nonlinear)) {
     nlpars <- names(ee$nonlinear)
     for (i in seq_along(nlpars)) {
-      # use nlpar = "1" just to keep intercept columns
-      fixef <- colnames(data_fixef(ee$nonlinear[[i]], data, family = family, 
-                                   autocor = autocor, nlpar = "1")$X_1)
-      prior_fixef <- get_prior_fixef(fixef, nlpar = nlpars[i],
-                                     internal = internal)
-      monef <- colnames(get_model_matrix(ee$nonlinear[[i]]$mono, data))
-      prior_monef <- get_prior_monef(monef, fixef = fixef, nlpar = nlpars[i])
-      prior_ranef <- get_prior_ranef(ranef, def_scale_prior, nlpar = nlpars[i], 
-                                     internal = internal)
-      splines <- get_spline_labels(ee$nonlinear[[i]])
-      prior_splines <- get_prior_splines(splines, def_scale_prior, 
-                                         nlpar = nlpars[i])
-      prior <- rbind(prior, prior_fixef, prior_monef, 
-                     prior_ranef, prior_splines)
+      prior_eff <- get_prior_effects(ee$nonlinear[[i]], data = data, 
+                                     family = family, autocor = autocor, 
+                                     nlpar = nlpars[i], internal = internal,
+                                     def_scale_prior = def_scale_prior)
+      prior <- rbind(prior, prior_eff)
     }
   } else {
-    # use nlpar = "1" just to keep intercept columns
-    fixef <- colnames(data_fixef(ee, data, family = family, 
-                                 autocor = autocor, nlpar = "1")$X_1)
-    intercepts <- names(get_intercepts(ee, data = data, family = family))
-    prior_fixef <- get_prior_fixef(fixef, intercepts = intercepts,
-                                   internal = internal)
-    monef <- colnames(get_model_matrix(ee$mono, data = data))
-    prior_monef <- get_prior_monef(monef, fixef = fixef)
-    csef <- colnames(get_model_matrix(ee$cse, data = data))
-    prior_csef <- get_prior_csef(csef, fixef = fixef)
-    prior_ranef <- get_prior_ranef(ranef, def_scale_prior, 
-                                   internal = internal)
-    prior_splines <- get_prior_splines(get_spline_labels(ee), 
-                                       def_scale_prior)
-    prior <- rbind(prior, prior_fixef, prior_monef, prior_csef, 
-                   prior_ranef, prior_splines)
+    prior_eff <- get_prior_effects(ee, data = data, family = family,
+                                   autocor = autocor, internal = internal,
+                                   def_scale_prior = def_scale_prior)
+    prior <- rbind(prior, prior_eff)
   }
-  # handle additional parameters
-  is_ordinal <- is.ordinal(family)
-  is_linear <- is.linear(family)
-  nresp <- length(ee$response)
+  # priors for auxiliary parameters
+  def_auxprior <- c(sigma = def_scale_prior, shape = "gamma(0.01, 0.01)",
+                    nu = "gamma(2, 0.1)", phi = "gamma(0.01, 0.01)")#
+  valid_auxpars <- valid_auxpars(family, effects = ee, autocor = autocor)
+  for (ap in valid_auxpars) {
+    if (!is.null(ee[[ap]])) {
+      auxprior <- get_prior_effects(ee[[ap]], data = data, family = family,
+                                    autocor = autocor, nlpar = ap,
+                                    def_scale_prior = def_scale_prior,
+                                    internal = internal)
+    } else {
+      auxprior <- prior_frame(class = ap, prior = def_auxprior[[ap]])
+    }
+    prior <- rbind(prior, auxprior)
+  }
+  # prior for the delta parameter for equidistant thresholds
+  if (is.ordinal(family) && threshold == "equidistant") {
+    prior <- rbind(prior, prior_frame(class = "delta"))
+  }
+  # priors for MV models
+  if (is.linear(family) &&  length(ee$response) > 1L) {
+    sigma_coef <- c("", ee$response)
+    sigma_prior <- c(def_scale_prior, rep("", length(ee$response)))
+    sigma_prior <- prior_frame(class = "sigma", coef = sigma_coef,
+                               prior = sigma_prior)
+    prior <- rbind(prior, sigma_prior)
+    if (internal) {
+      prior <- rbind(prior, prior_frame(class = "Lrescor", 
+                                        prior = "lkj_corr_cholesky(1)"))
+    } else {
+      prior <- rbind(prior, prior_frame(class = "rescor", prior = "lkj(1)"))
+    }
+  }
+  # priors for autocor parameters
   cbound <- "<lower=-1,upper=1>"
   if (get_ar(autocor)) {
     prior <- rbind(prior, prior_frame(class = "ar", bound = cbound))
@@ -459,43 +469,37 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
     prior <- rbind(prior, prior_frame(class = "sigmaLL", 
                                       prior = def_scale_prior))
   }
-  if (has_sigma(family, effects = ee, autocor = autocor)) {
-    sigma_coef <- ""
-    sigma_prior <- def_scale_prior
-    if (length(ee$response) > 1L) {
-      sigma_coef <- c(sigma_coef, ee$response)
-      sigma_prior <- c(sigma_prior, rep("", nresp))
-    }
-    sigma_prior <- prior_frame(class = "sigma", coef = sigma_coef,
-                               prior = sigma_prior)
-    prior <- rbind(prior, sigma_prior)
-  }
-  if (is_linear && nresp > 1L) {
-    if (internal) {
-      prior <- rbind(prior, prior_frame(class = "Lrescor", 
-                                        prior = "lkj_corr_cholesky(1)"))
-    } else {
-      prior <- rbind(prior, prior_frame(class = "rescor", prior = "lkj(1)"))
-    }
-  }
-  if (family$family == "student") {
-    prior <- rbind(prior, prior_frame(class = "nu", prior = "gamma(2, 0.1)"))
-  }
-  if (family$family == "beta") {
-    prior <- rbind(prior, prior_frame(class = "phi", 
-                                      prior = "gamma(0.01, 0.01)"))
-  }
-  if (has_shape(family)) {
-    prior <- rbind(prior, prior_frame(class = "shape", 
-                                      prior = "gamma(0.01, 0.01)"))
-  }
-  if (is_ordinal && threshold == "equidistant") {
-    prior <- rbind(prior, prior_frame(class = "delta"))
-  }
   # do not remove unique(.)
   prior <- unique(prior[with(prior, order(nlpar, class, group, coef)), ])
   rownames(prior) <- 1:nrow(prior)
   prior
+}
+
+get_prior_effects <- function(effects, data, family = gaussian(), 
+                              autocor = cor_arma(), nlpar = "", 
+                              def_scale_prior = "", internal = FALSE) {
+  # wrapper function to get priors for various kindes of effects
+  # use nlpar = "1" just to keep intercept columns
+  fixef <- colnames(data_fixef(effects, data, family = family, 
+                               autocor = autocor, nlpar = "1")[["X_1"]])
+  if (nchar(nlpar)) {  
+    # no special treatment of intercepts in non-linear models
+    intercepts <- prior_csef <- NULL
+  } else {
+    intercepts <- names(get_intercepts(effects, data, family = family))
+  }
+  prior_fixef <- get_prior_fixef(fixef, intercepts = intercepts,
+                                 nlpar = nlpar, internal = internal)
+  monef <- colnames(get_model_matrix(effects$mono, data))
+  prior_monef <- get_prior_monef(monef, fixef = fixef, nlpar = nlpar)
+  ranef <- gather_ranef(effects, data = data, all = FALSE)
+  prior_ranef <- get_prior_ranef(ranef, def_scale_prior, nlpar = nlpar, 
+                                 internal = internal)
+  splines <- get_spline_labels(effects)
+  prior_splines <- get_prior_splines(splines, def_scale_prior, nlpar = nlpar)
+  csef <- colnames(get_model_matrix(effects$cse, data = data))
+  prior_csef <- get_prior_csef(csef, fixef = fixef)
+  rbind(prior_fixef, prior_monef, prior_ranef, prior_splines, prior_csef)
 }
 
 get_prior_fixef <- function(fixef, intercepts = "Intercept", 
