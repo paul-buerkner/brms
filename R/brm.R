@@ -646,7 +646,7 @@ brm <- function(formula, data = NULL, family = gaussian(),
                  autocor = autocor, cov_ranef = cov_ranef, 
                  threshold = threshold, algorithm = algorithm)
     # see validate.R
-    x$ranef <- gather_ranef(ee, data = x$data, forked = is.forked(family))  
+    x$ranef <- gather_ranef(ee, data = x$data)  
     x$exclude <- exclude_pars(ee, ranef = x$ranef, save_ranef = ranef)
     # see make_stancode.R
     x$model <- make_stancode(formula = formula, data = data, 

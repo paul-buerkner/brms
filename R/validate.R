@@ -105,9 +105,11 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
     if (is.ordinal(family)) {
       x$fixed <- update.formula(x$fixed, . ~ . + 1)
     }
-    rsv_intercept <- has_rsv_intercept(x$fixed)
-    if (rsv_intercept) {
+    if (has_rsv_intercept(x$fixed)) {
       attr(x$fixed, "rsv_intercept") <- TRUE
+    }
+    if (is.forked(family)) {
+      attr(x$fixed, "forked") <- TRUE
     }
   }
   if (check_response && length(x$fixed) < 3L) { 
@@ -124,7 +126,8 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   # TODO include validity checks
   auxpars <- sformula(formula, incl_nl = FALSE)
   for (ap in names(auxpars)) {
-    x[[ap]] <- extract_effects(auxpars[[ap]], check_response = FALSE)
+    x[[ap]] <- extract_effects(auxpars[[ap]], family = family,
+                               check_response = FALSE)
   }
   
   # handle addition arguments
@@ -251,7 +254,7 @@ extract_time <- function(formula) {
   x
 }
 
-nonlinear_effects <- function(x, model = ~1, rsv_pars = NULL) {
+nonlinear_effects <- function(x, model = ~1, family = NA, rsv_pars = NULL) {
   # prepare nonlinear formulas
   # Args:
   #   x: a list for formulas specifying linear predictors for 
@@ -286,7 +289,8 @@ nonlinear_effects <- function(x, model = ~1, rsv_pars = NULL) {
              call. = FALSE)
       }
       x[[i]] <- rhs(x[[i]])
-      nleffects[[i]] <- extract_effects(x[[i]], check_response = FALSE,
+      nleffects[[i]] <- extract_effects(x[[i]], family = family, 
+                                        check_response = FALSE,
                                         lhs_char = lhs_char)
       names(nleffects)[[i]] <- nlresp
     }
@@ -815,7 +819,6 @@ amend_terms <- function(x, forked = FALSE) {
 
 check_intercept <- function(names) {
   # check if model contains fixed effects intercept
-  #
   # Args:
   #   names: The names of the design matrix
   #          to be checked for an intercept
@@ -888,18 +891,18 @@ has_splines <- function(effects) {
   out
 }
 
-gather_ranef <- function(effects, data = NULL, all = TRUE, ...) {
+gather_ranef <- function(effects, data = NULL, all = TRUE,
+                         combine = FALSE) {
   # gathers helpful information on the random effects
-  # 
   # Args:
   #   effects: output of extract_effects
   #   data: data passed to brm after updating
-  #   ...: Further arguments passed to get_model_matrix
-  #
+  #   all: include REs of non-linear and auxiliary parameters?
   # Returns: 
   #   A named list with one element per grouping factor
   random <- get_random(effects, all = all)
-  Z <- lapply(random$form, get_model_matrix, data = data, ...)
+  Z <- lapply(random$form, get_model_matrix, data = data, 
+              forked = isTRUE(attr(effects$fixed, "forked")))
   ranef <- setNames(lapply(Z, colnames), random$group)
   for (i in seq_along(ranef)) {
     attr(ranef[[i]], "levels") <- 
@@ -907,6 +910,9 @@ gather_ranef <- function(effects, data = NULL, all = TRUE, ...) {
     attr(ranef[[i]], "group") <- names(ranef)[i]
     attr(ranef[[i]], "cor") <- random$cor[[i]]
     attr(ranef[[i]], "nlpar") <- random$nlpar[i]
+  }
+  if (combine) {
+    ranef <- combine_duplicates(ranef)
   }
   ranef
 }

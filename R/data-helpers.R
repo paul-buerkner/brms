@@ -207,9 +207,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     stop("newdata must be a data.frame", call. = FALSE)
   }
   # standata will be based on an updated formula if re_formula is specified
-  new_ranef <- check_re_formula(re_formula, old_ranef = fit$ranef,
-                                data = model.frame(fit))
-  new_formula <- update_re_terms(fit$formula, re_formula = re_formula)
+  new_formula <- update_re_terms(formula(fit), re_formula = re_formula)
   et <- extract_time(fit$autocor$formula)
   ee <- extract_effects(new_formula, et$all, family = family(fit),
                         resp_rhs_all = FALSE)
@@ -229,6 +227,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       newdata[[cens]] <- 0 # add irrelevant censor variables
     }
   }
+  new_ranef <- gather_ranef(ee, data = model.frame(fit))
   if (length(fit$ranef)) {
     if (length(new_ranef) && allow_new_levels) {
       # random effects grouping factors do not need to be specified 

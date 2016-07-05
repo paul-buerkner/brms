@@ -33,8 +33,7 @@ stan_linear <- function(effects, data, family = gaussian(),
   monef <- colnames(data_monef(effects, data)$Xm)
   text_monef <- stan_monef(monef, prior = prior)
   # group-specific effects
-  ranef <- gather_ranef(effects, data = data, all = FALSE,
-                        forked = is.forked(family))
+  ranef <- gather_ranef(effects, data = data, all = FALSE)
   text_ranef <- collapse_lists(
     lapply(seq_along(ranef), stan_ranef, ranef = ranef, 
            names_cov_ranef = names(cov_ranef), prior = prior))
@@ -222,8 +221,7 @@ stan_effects <- function(nlpar, effects, data, family = gaussian(),
     eta_loop <- paste0(eta_loop, stan_eta_monef(monef, nlpar = nlpar)) 
   }
   # include random effects
-  ranef <- gather_ranef(effects, data = data, 
-                        forked = is.forked(family))
+  ranef <- gather_ranef(effects, data = data, all = FALSE)
   if (length(ranef)) {
     text_ranef <- lapply(seq_along(ranef), stan_ranef, ranef = ranef, 
                          names_cov_ranef = names(cov_ranef), 

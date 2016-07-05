@@ -84,7 +84,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
                                          cens = is.formula(ee$cens),
                                          trunc = is.formula(ee$trunc))
   text_disp <- stan_disp(ee, family = family)
-  ranef <- gather_ranef(ee, data = data, forked = is_forked)
+  ranef <- gather_ranef(ee, data = data)
   kronecker <- stan_needs_kronecker(ranef, names_cov_ranef = names(cov_ranef))
   text_misc_funs <- stan_misc_functions(family = family, kronecker = kronecker)
   text_monotonic <- stan_monotonic(text_pred)

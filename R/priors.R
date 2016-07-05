@@ -387,7 +387,6 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
   autocor <- check_autocor(autocor)
   ee <- extract_effects(formula, family = family)
   data <- update_data(data, family = family, effects = ee)
-  ranef <- gather_ranef(ee, data = data, forked = is.forked(family))  
   
   # ensure that RE and residual SDs only have a weakly informative prior by default
   Y <- unname(model.response(data))
@@ -584,11 +583,6 @@ get_prior_ranef <- function(ranef, def_scale_prior, nlpar = "",
   #   internal: see get_prior
   # Returns:
   #   an object of class prior_frame
-  if (nchar(nlpar)) {
-    # extract only the relevant random effects
-    ranef <- rmNULL(lapply(ranef, function(y) 
-      if (identical(attr(y, "nlpar"), nlpar)) y else NULL))
-  }
   prior <- empty_prior_frame()
   if (length(ranef)) {
     # global sd class
