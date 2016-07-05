@@ -8,25 +8,25 @@ test_that("loglik for location shift models works as expected", {
   ll_gaussian <- dnorm(x = draws$data$Y[1], mean = draws$eta[, 1], 
                        sd = draws$sigma, log = TRUE)
   ll <- loglik_gaussian(1, draws = draws)
-  expect_equal(ll, ll_gaussian)
+  expect_equal(ll, as.matrix(ll_gaussian))
   
   ll_cauchy <- dstudent(x = draws$data$Y[2], df = 1, mu = draws$eta[, 2], 
                         sigma = draws$sigma, log = TRUE)
   ll <- loglik_cauchy(2, draws = draws)
-  expect_equal(ll, ll_cauchy)
+  expect_equal(ll, as.matrix(ll_cauchy))
   
   ll_student <- dstudent(x = draws$data$Y[2], df = draws$nu, 
                          mu = 1 / draws$eta[, 2], 
                          sigma = draws$sigma, log = TRUE)
   draws$f$link <- "inverse"
   ll <- loglik_student(2, draws = draws)
-  expect_equal(ll, ll_student)
+  expect_equal(ll, as.matrix(ll_student))
   
   # also test weighting
   draws$f$link <- "identity"
   draws$data$weights <- sample(1:10, ns, replace = TRUE)
   ll <- loglik_gaussian(1, draws = draws)
-  expect_equal(ll, ll_gaussian * draws$data$weights[1])
+  expect_equal(ll, as.matrix(ll_gaussian * draws$data$weights[1]))
 })
 
 test_that("loglik for lognormal models works as expected", {
@@ -37,7 +37,7 @@ test_that("loglik for lognormal models works as expected", {
   ll_lognormal <- dlnorm(x = draws$data$Y[1], mean = draws$eta[, 1], 
                          sd = draws$sigma, log = TRUE)
   ll <- loglik_lognormal(1, draws = draws)
-  expect_equal(ll, ll_lognormal)
+  expect_equal(ll, as.matrix(ll_lognormal))
 })
 
 test_that("loglik for multivariate linear models runs without errors", {
@@ -109,7 +109,7 @@ test_that("loglik for count and survival models works correctly", {
   nobs <- 10
   trials <- sample(10:30, nobs, replace = TRUE)
   draws <- list(eta = matrix(rnorm(ns*nobs), ncol = nobs),
-            shape = rgamma(ns, 4), nsamples = ns)
+                shape = matrix(rgamma(ns, 4)), nsamples = ns)
   draws$data <- list(Y = rbinom(nobs, size = trials, 
                                 prob = rbeta(nobs, 1, 1)), 
                      max_obs = trials)
@@ -120,38 +120,38 @@ test_that("loglik for count and survival models works correctly", {
   ll_binom <- dbinom(x = draws$data$Y[i], prob = inv_logit(draws$eta[, i]), 
                      size = draws$data$max_obs[i], log = TRUE)
   ll <- loglik_binomial(i, draws = draws)
-  expect_equal(ll, ll_binom)
+  expect_equal(ll, as.matrix(ll_binom))
   
   draws$f$link <- "log"
   ll_pois <- dpois(x = draws$data$Y[i], lambda = exp(draws$eta[, i]), 
                    log = TRUE)
   ll <- loglik_poisson(i, draws = draws)
-  expect_equal(ll, ll_pois)
+  expect_equal(ll, as.matrix(ll_pois))
   
   ll_nbinom <- dnbinom(x = draws$data$Y[i], mu = exp(draws$eta[, i]), 
                        size = draws$shape, log = TRUE)
   ll <- loglik_negbinomial(i, draws = draws)
-  expect_equal(ll, ll_nbinom)
+  expect_equal(ll, as.matrix(ll_nbinom))
   
   ll_geo <- dnbinom(x = draws$data$Y[i], mu = exp(draws$eta[, i]), 
                     size = 1, log = TRUE)
   ll <- loglik_geometric(i, draws = draws)
-  expect_equal(ll, ll_geo)
+  expect_equal(ll, as.matrix(ll_geo))
   
   ll_exp <- dexp(x = draws$data$Y[i], rate = 1 / exp(draws$eta[, i]), 
                  log = TRUE)
   ll <- loglik_exponential(i, draws = draws)
-  expect_equal(ll, ll_exp)
+  expect_equal(ll, as.matrix(ll_exp))
   
   ll_gamma <- dgamma(x = draws$data$Y[i], shape = draws$shape,
                      scale = exp(draws$eta[, i]) / draws$shape, log = TRUE)
   ll <- loglik_gamma(i, draws = draws)
-  expect_equal(ll, ll_gamma)
+  expect_equal(ll, as.matrix(ll_gamma))
   
   ll_weibull <- dweibull(x = draws$data$Y[i], shape = draws$shape,
                          scale = exp(draws$eta[, i] / draws$shape), log = TRUE)
   ll <- loglik_weibull(i, draws = draws)
-  expect_equal(ll, ll_weibull)
+  expect_equal(ll, as.matrix(ll_weibull))
   
   ll_invgauss <- dinvgauss(x = draws$data$Y[i], shape = draws$shape,
                            mean = exp(draws$eta[, i]), log = TRUE)
@@ -163,26 +163,26 @@ test_that("loglik for bernoulli and beta models works correctly", {
   ns <- 15
   nobs <- 10
   draws <- list(eta = matrix(rnorm(ns * nobs * 2), ncol = nobs * 2),
-                phi = rgamma(ns, 4))
+                phi = matrix(rgamma(ns, 4)))
   draws$data <- list(Y = sample(0:1, nobs, replace = TRUE))
   draws$f$link <- "logit"
   i <- sample(1:nobs, 1)
   ll_bern <- dbinom(x = draws$data$Y[i], prob = inv_logit(draws$eta[, i]),
                     size = 1, log = TRUE)
   ll <- loglik_bernoulli(i, draws = draws)
-  expect_equal(ll, ll_bern)
+  expect_equal(ll, as.matrix(ll_bern))
   
   ll_bern_2PL <- dbinom(x = draws$data$Y[i], size = 1, log = TRUE,
                         prob = inv_logit(draws$eta[, i] * exp(draws$eta[, i + nobs])))
   draws$data$N_trait <- nobs
   ll <- loglik_bernoulli(i, draws = draws)
-  expect_equal(ll, ll_bern_2PL)
+  expect_equal(ll, as.matrix(ll_bern_2PL))
   
   draws$data <- list(Y = rbeta(nobs, 1, 1))
   ll_beta <- dbeta(x = draws$data$Y[i], shape1 = inv_logit(draws$eta[, i]) * draws$phi, 
                    shape2 = (1 - inv_logit(draws$eta[, i])) * draws$phi, log = TRUE)
   ll <- loglik_beta(i, draws = draws)
-  expect_equal(ll, ll_beta)
+  expect_equal(ll, as.matrix(ll_beta))
 })
 
 test_that("loglik for zero-inflated and hurdle models runs without erros", {
@@ -192,7 +192,8 @@ test_that("loglik for zero-inflated and hurdle models runs without erros", {
   resp <- rbinom(nobs / 2, size = trials[1:(nobs / 2)], 
                  prob = rbeta(nobs / 2, 1, 1))
   draws <- list(eta = matrix(rnorm(ns*nobs*2), ncol = nobs*2),
-                shape = rgamma(ns, 4), phi = rgamma(ns, 1))
+                shape = matrix(rgamma(ns, 4)), 
+                phi = matrix(rgamma(ns, 1)))
   draws$data <- list(Y = c(resp, rep(0, 4)), N_trait = nobs, 
                      max_obs = trials)
   draws$f$link <- "log"
@@ -253,7 +254,7 @@ test_that("censored and truncated loglik run without errors", {
   ns <- 30
   nobs <- 3
   draws <- list(eta = matrix(rnorm(ns * nobs), ncol = nobs),
-                sigma = rchisq(ns, 3))
+                sigma = matrix(rchisq(ns, 3)))
   draws$data <- list(Y = rnorm(ns), cens = c(-1,0,1))
   draws$f$link <- "identity"
   ll <- sapply(1:nobs, loglik_gaussian, draws = draws)

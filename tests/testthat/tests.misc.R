@@ -72,7 +72,8 @@ test_that("convenience functions for model families work correctly", {
   expect_true(has_sigma(student()))
   effects <- list(se = TRUE)
   expect_true(!has_sigma("cauchy", effects = effects))
-  expect_true(has_sigma("cauchy", effects = effects, autocor = cor_ar()))
+  expect_true(has_sigma("cauchy", effects = effects, 
+                        autocor = cor_ar(cov = TRUE)))
 })
 
 test_that("check_intercept updates FE names", {

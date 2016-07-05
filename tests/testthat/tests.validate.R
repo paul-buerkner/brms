@@ -174,38 +174,20 @@ test_that("get_effect works correctly", {
 })
 
 test_that("check_re_formula returns correct REs", {
-  old_ranef = list(patient = c("Intercept"), visit = c("Trt_c", "Intercept"))
-  expect_equivalent(check_re_formula(~(1|visit), old_ranef = old_ranef, 
-                                data = epilepsy),
-                    list(visit = "Intercept"))
-  expect_equivalent(check_re_formula(~(1+Trt_c|visit), old_ranef = old_ranef, 
-                                data = epilepsy),
-                    list(visit = c("Intercept", "Trt_c")))
-  expect_equivalent(check_re_formula(~(0+Trt_c|visit) + (1|patient), 
-                                     old_ranef = old_ranef, data = epilepsy),
-                    list(patient = "Intercept", visit = "Trt_c"))
-})
-
-test_that("check_re_formula rejects invalid re_formulae", {
-  old_ranef = list(patient = c("Intercept"), visit = c("Trt_c", "Intercept"))
-  expect_error(check_re_formula(~ visit + (1|visit), old_ranef = old_ranef, 
-                                data = epilepsy),
-               "fixed effects are not allowed in re_formula")
-  expect_error(check_re_formula(count ~ (1+Trt_c|visit), old_ranef = old_ranef, 
-                                data = epilepsy),
-               "re_formula must be one-sided")
-  expect_error(check_re_formula(~(1|Trt_c), old_ranef = old_ranef, 
-                                data = epilepsy),
-               "Invalid grouping factors detected: Trt_c")
-  expect_error(check_re_formula(~(1+Trt_c|patient), old_ranef = old_ranef, 
-                                data = epilepsy),
-               "Invalid random effects detected for grouping factor patient: Trt_c")
+  #old_ranef = list(patient = c("Intercept"), visit = c("Trt_c", "Intercept"))
+  old_form <- y ~ x + (1|patient) + (Trt_c|visit)
+  form <- check_re_formula(~(1|visit), old_form)
+  expect_equivalent(form, ~(1|visit))
+  form <- check_re_formula(~(1+Trt_c|visit), old_form)
+  expect_equivalent(form, ~(1+Trt_c|visit))
+  form <- check_re_formula(~(0+Trt_c|visit) + (1|patient), old_form)
+  expect_equivalent(form, ~ (1|patient) + (0+Trt_c | visit))
 })
 
 test_that("update_re_terms works correctly", {
-  expect_equivalent(update_re_terms(y ~ x, ~ (1|visit)), y ~ x + (1|visit))
-  expect_equivalent(update_re_terms(y ~ x + (1|patient), ~ (1|visit)), 
-                    y ~ x + (1|visit))
+  expect_equivalent(update_re_terms(y ~ x, ~ (1|visit)), y ~ x)
+  expect_equivalent(update_re_terms(y ~ x + (1+Trt_c|patient), ~ (1|patient)), 
+                    y ~ x + (1|patient))
   expect_equivalent(update_re_terms(y ~ x + (1|patient), ~ 1), 
                     y ~ x)
   expect_equivalent(update_re_terms(y ~ x + (1+visit|patient), NA), 
@@ -215,11 +197,10 @@ test_that("update_re_terms works correctly", {
   expect_equivalent(update_re_terms(y ~ (1|patient), NA), y ~ 1)
   expect_equivalent(update_re_terms(y ~ x + (1+x|visit), ~ (1|visit)), 
                     y ~ x + (1|visit))
-  expect_equivalent(update_re_terms(y ~ x + (1|visit), ~ (1|visit) + (x|visit),
-                                    allow_new_terms = FALSE),
+  expect_equivalent(update_re_terms(y ~ x + (1|visit), ~ (1|visit) + (x|visit)),
                     y ~ x + (1|visit))
   expect_equal(update_re_terms(bf(y ~ x, sigma = ~ x + (x|g)), ~ (1|g)),
-               bf(y ~ x + (1|g), sigma = ~ x + (1|g)))
+               bf(y ~ x, sigma = ~ x + (1|g)))
   expect_equal(update_re_terms(bf(y ~ x, nonlinear = x ~ z + (1|g)), ~ (1|g)),
                bf(y ~ x, nonlinear = x ~ z + (1|g)))
 })

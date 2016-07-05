@@ -1,5 +1,5 @@
 test_that("all S3 methods have reasonable ouputs", {
-  fit <- rename_pars(brmsfit_example)
+  fit <- brms:::rename_pars(brmsfit_example)
   # test S3 methods in alphabetical order
   # as.data.frame
   ps <- as.data.frame(fit)
