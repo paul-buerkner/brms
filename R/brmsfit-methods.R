@@ -1075,7 +1075,7 @@ pairs.brmsfit <- function(x, pars = NA, exact_match = FALSE, ...) {
 #' @rdname marginal_effects
 #' @export
 marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL, 
-                                     re_formula = NA, robust = FALSE, 
+                                     re_formula = NA, robust = TRUE, 
                                      probs = c(0.025, 0.975),
                                      method = c("fitted", "predict"), ...) {
   method <- match.arg(method)
