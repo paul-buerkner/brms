@@ -31,18 +31,18 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
            call. = FALSE)
     }
     x$fixed <- formula(tfixed)
+    rsv_pars <- names(sformula(formula))
     x$nonlinear <- nonlinear_effects(nonlinear, model = x$fixed,
-                                     rsv_pars = names(sformula(formula)))
+                                     family = family, rsv_pars = rsv_pars)
     re_terms <- NULL
   } else {
     # terms() doesn't like non-linear formulas
-    term_labels <- gsub(" ", "", attr(terms(formula), "term.labels"))
-    re_terms <- term_labels[grepl("\\|", term_labels)]
+    re_terms <- get_re_terms(formula)
     if (length(re_terms)) {
-      re_terms <- paste0("(", re_terms, ")")
       tfixed <- rename(tfixed, c(paste0("+", re_terms), re_terms), "")
     } 
     # monotonic effects
+    term_labels <- gsub(" ", "", attr(terms(formula), "term.labels"))
     mono_terms <- term_labels[grepl("^mono(|tonic|tonous)\\(", term_labels)]
     if (length(mono_terms)) {
       tfixed <- rename(tfixed, c(paste0("+", mono_terms), mono_terms), "")
@@ -559,76 +559,85 @@ illegal_group_expr <- function(group, bs_valid = TRUE) {
     any(ulapply(rsv_signs, grepl, x = group, fixed = TRUE))
 }
 
-check_re_formula <- function(re_formula, old_ranef, data) {
-  # validate the re_formula argument as passed to predict and fitted
-  #
+get_re_terms <- function(x, formula = FALSE) {
+  # extract RE terms from a formula of character vector
   # Args:
-  #   re_formula: see predict.brmsfit for documentation
-  #   old_ranef: named list containing the RE names 
-  #              of each grouping factor in the original model
-  #   data: data supplied by the user
-  #
-  # Returns:
-  #   named list containing the RE names of each grouping factor
-  #   as defined in re_formula; or NULL if re_formula is NA or ~ 1
-  if (is.null(re_formula)) {
-    new_ranef <- old_ranef
-  } else if (is.formula(re_formula)) {
-    if (!is.data.frame(data)) {
-      stop("argument re_formula requires models fitted with brms > 0.5.0",
-           call. = FALSE)
-    }
-    if (length(re_formula) == 3) {
-      stop("re_formula must be one-sided", call. = FALSE)
-    }
-    ee <- extract_effects(re_formula, check_response = FALSE)
-    if (length(all.vars(ee$fixed))) {
-      stop("fixed effects are not allowed in re_formula", call. = FALSE)
-    }
-    if (!nrow(ee$random)) {
-      # if no RE terms are present in re_formula
-      return(NULL)
-    }
-    # the true family doesn't matter here
-    data <- update_data(data, family = NA, effects = ee)
-    new_ranef <- gather_ranef(ee, data = data)
-    new_ranef <- combine_duplicates(new_ranef)
-    invalid_gf <- setdiff(names(new_ranef), names(old_ranef))
-    if (length(invalid_gf)) {
-      stop(paste("Invalid grouping factors detected:", 
-                 paste(invalid_gf, collapse = ", ")), call. = FALSE)
-    }
-    for (gf in names(new_ranef)) {
-      invalid_re <- setdiff(new_ranef[[gf]], old_ranef[[gf]])
-      if (length(invalid_re)) {
-        stop(paste0("Invalid random effects detected for grouping factor ", 
-                    gf, ": ", paste(invalid_re, collapse = ", ")),
-             call. = FALSE)
-      } 
-      attributes(new_ranef[[gf]]) <- attributes(old_ranef[[gf]])
-    }
-  } else if (is.na(re_formula)) {
-    new_ranef <- NULL
-  } else {
-    stop("invalid re_formula argument", call. = FALSE)
+  #   x: formula or character vector
+  #   formula: return a formula containing only ranefs?
+  if (is(x, "formula")) {
+    x <- gsub(" ", "", attr(terms(x), "term.labels"))
   }
-  new_ranef
+  re_terms <- x[grepl("\\|", x)]
+  if (length(re_terms)) {
+    re_terms <- paste0("(", re_terms, ")")
+  } 
+  if (formula) {
+    if (length(re_terms)) {
+      re_terms <- formula(paste("~ 1", collapse("+", re_terms)))
+    } else {
+      re_terms <- ~ 1
+    }
+  }
+  re_terms
 }
 
-update_re_terms <- function(formula, re_formula = NULL, 
-                            allow_new_terms = TRUE) {
-  # remove RE terms in formula and add RE terms of re_formula
-  #
+check_re_formula <- function(re_formula, formula) {
+  # validate the re_formula argument as passed to predict and fitted
+  # Args:
+  #   re_formula: see predict.brmsfit for documentation
+  #   formula: formula to match re_formula with
+  # Returns:
+  #   updated re_formula containign only terms existent in formula
+  old_re_formula <- get_re_terms(formula, formula = TRUE)
+  if (is.null(re_formula)) {
+    re_formula <- old_re_formula
+  } else if (SW(anyNA(re_formula))) {
+    re_formula <- ~ 1
+  } else {
+    re_formula <- get_re_terms(as.formula(re_formula), formula = TRUE)
+    new <- extract_effects(re_formula, check_response = FALSE)$random
+    old <- extract_effects(old_re_formula, check_response = FALSE)$random
+    if (nrow(new)) {
+      new_terms <- lapply(new$form, terms)
+      found <- rep(FALSE, nrow(new))
+      for (i in 1:nrow(new)) {
+        group <- new$group[[i]]
+        old_terms <- lapply(old$form[old$group == group], terms)
+        j <- 1
+        while (!found[i] && j <= length(old_terms)) {
+          found[i] <- all(attr(new_terms[[i]], "term.labels") %in% 
+                       attr(old_terms[[j]], "term.labels")) &&
+                      attr(new_terms[[i]], "intercept") <=
+                       attr(old_terms[[j]], "intercept")
+          j <- j + 1
+        }
+      }  
+      new <- new[found, ]
+      if (nrow(new)) {
+        forms <- ulapply(new$form, formula2string, rm = 1)
+        re_terms <- paste("(", forms, "|", new$group, ")")
+        re_formula <- formula(paste("~", paste(re_terms, collapse = "+")))
+      } else {
+        re_formula <- ~ 1
+      }
+    } else {
+      re_formula <- ~ 1
+    }
+  }
+  re_formula
+}
+
+update_re_terms <- function(formula, re_formula = NULL) {
+  # remove RE terms in formula and add valid RE terms of re_formula
+  # can handle brmsformula objects
   # Args:
   #   formula: model formula to be updated
   #   re_formula: formula containing new RE terms
-  #   allow_new_terms: allow new RE terms to be added? 
-  #
   # Returns:
   #  a formula with updated RE terms
   spars <- sformula(formula)
-  for (p in setdiff(names(spars), "nonlinear")) {
-    spars[[p]] <- update_re_terms(spars[[p]], re_formula = re_formula)
+  for (ap in setdiff(names(spars), "nonlinear")) {
+    spars[[ap]] <- update_re_terms(spars[[ap]], re_formula = re_formula)
   }
   if (!is.null(spars$nonlinear)) {
     # non-linear formulae may cause errors when passed to terms
@@ -637,38 +646,21 @@ update_re_terms <- function(formula, re_formula = NULL,
     spars$nonlinear <- lapply(spars$nonlinear, update_re_terms, 
                               re_formula = re_formula)
   } else {
-    if (suppressWarnings(anyNA(re_formula))) {
-      re_formula <- ~ 1
+    re_formula <- check_re_formula(re_formula, formula)
+    new_formula <- formula2string(formula)
+    old_re_terms <- get_re_terms(formula)
+    if (length(old_re_terms)) {
+      # make sure that + before random terms are also removed
+      rm_terms <- c(paste0("+", old_re_terms), old_re_terms)
+      new_formula <- rename(new_formula, rm_terms, "")
+      if (grepl("~$", new_formula)) {
+        # lhs only formulas are not allowed
+        new_formula <- paste(new_formula, "1")
+      }
     }
-    if (is.formula(re_formula)) {
-      new_formula <- formula2string(formula)
-      old_term_labels <- rename(attr(terms(formula), "term.labels"), " ", "")
-      old_re_terms <- old_term_labels[grepl("\\|", old_term_labels)]
-      if (length(old_re_terms)) {
-        rm_terms <- paste0("(", old_re_terms, ")")
-        # make sure that + before random terms are also removed
-        rm_terms <- c(paste0("+", rm_terms), rm_terms)
-        new_formula <- rename(new_formula, rm_terms, "")
-        if (grepl("~$", new_formula)) {
-          # lhs only formulas are not allowed
-          new_formula <- paste(new_formula, "1")
-        }
-      }
-      new_term_labels <- gsub(" ", "", attr(terms(re_formula), "term.labels"))
-      new_re_terms <- new_term_labels[grepl("\\|", new_term_labels)]
-      if (!allow_new_terms) {
-        new_re_terms <- intersect(old_re_terms, new_re_terms) 
-      }
-      if (length(new_re_terms)) {
-        add_terms <- paste0("(", new_re_terms, ")")
-        new_formula <- paste(c(new_formula, add_terms), collapse = "+")
-      }
-      new_formula <- formula(new_formula)
-    } else if (is.null(re_formula)) {
-      new_formula <- formula
-    } else {
-      stop("invalid re_formula argument", call. = FALSE)
-    } 
+    new_re_terms <- get_re_terms(re_formula)
+    new_formula <- paste(c(new_formula, new_re_terms), collapse = "+")
+    new_formula <- formula(new_formula)
   }
   attributes(new_formula)[names(spars)] <- spars
   environment(new_formula) <- environment(formula)
@@ -912,7 +904,7 @@ gather_ranef <- function(effects, data = NULL, all = TRUE,
     attr(ranef[[i]], "nlpar") <- random$nlpar[i]
   }
   if (combine) {
-    ranef <- combine_duplicates(ranef)
+    ranef <- combine_duplicates(ranef, sep = c("nlpar", "levels"))
   }
   ranef
 }
@@ -994,7 +986,6 @@ add_families <- function(x) {
 
 is.formula <- function(x, or = TRUE) {
   # checks if x is formula (or list of formulas)
-  #
   # Returns:
   #   x: a formula or a list of formulas
   #   or: logical; indicates if any element must be a formula (or = TRUE) 
