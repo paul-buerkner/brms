@@ -18,49 +18,49 @@ linear_predictor <- function(draws, i = NULL) {
   N <- ifelse(!is.null(i), length(i), draws$data$N) 
   
   eta <- matrix(0, nrow = draws$nsamples, ncol = N)
-  if (!is.null(draws$b)) {
-    eta <- eta + fixef_predictor(X = p(draws$data$X, i), b = draws$b)  
+  if (!is.null(draws[["b"]])) {
+    eta <- eta + fixef_predictor(X = p(draws$data$X, i), b = draws[["b"]])  
   }
   if (!is.null(draws$data$offset)) {
     eta <- eta + matrix(rep(p(draws$data$offset, i), draws$nsamples), 
                         ncol = N, byrow = TRUE)
   }
   # incorporate monotonic effects
-  for (j in seq_along(draws$bm)) {
+  for (j in seq_along(draws[["bm"]])) {
     eta <- eta + monef_predictor(Xm = p(draws$data$Xm[, j], i), 
-                                 bm = as.vector(draws$bm[[j]]), 
+                                 bm = as.vector(draws[["bm"]][[j]]), 
                                  simplex = draws$simplex[[j]])
   }
   # incorporate random effects
-  group <- names(draws$r)
+  group <- names(draws[["r"]])
   for (j in seq_along(group)) {
-    eta <- eta + ranef_predictor(Z = p(draws$Z[[group[j]]], i), 
-                                 r = draws$r[[group[j]]]) 
+    eta <- eta + ranef_predictor(Z = p(draws[["Z"]][[group[j]]], i), 
+                                 r = draws[["r"]][[group[j]]]) 
   }
   # incorporate splines
-  splines <- names(draws$s)
+  splines <- names(draws[["s"]])
   for (j in seq_along(splines)) {
     eta <- eta + fixef_predictor(X = p(draws$data[[paste0("Zs_", j)]], i),
-                                 b = draws$s[[splines[j]]])
+                                 b = draws[["s"]][[splines[j]]])
   }
-  if (!is.null(draws$arr)) {
-    eta <- eta + fixef_predictor(X = p(draws$data$Yarr, i), b = draws$arr)
+  if (!is.null(draws[["arr"]])) {
+    eta <- eta + fixef_predictor(X = p(draws$data$Yarr, i), b = draws[["arr"]])
   }
-  if ((!is.null(draws$ar) || !is.null(draws$ma)) && !use_cov(draws$autocor)) {
+  if (length(rmNULL(draws[c("ar", "ma")])) && !use_cov(draws$autocor)) {
     # only run when ARMA effects were modeled as part of eta
     if (!is.null(i)) {
       stop("Pointwise evaluation is not yet implemented for ARMA models.",
            call. = FALSE)
     }
-    eta <- arma_predictor(standata = draws$data, ar = draws$ar, 
-                          ma = draws$ma, eta = eta, link = draws$f$link)
+    eta <- arma_predictor(standata = draws$data, ar = draws[["ar"]], 
+                          ma = draws[["ma"]], eta = eta, link = draws$f$link)
   }
   if (!is.null(draws$loclev)) {
     eta <- eta + p(draws$loclev, i, row = FALSE)
   }
   if (is.ordinal(draws$f)) {
-    if (!is.null(draws$p)) {
-      eta <- cse_predictor(Xp = p(draws$data$Xp, i), p = draws$p, 
+    if (!is.null(draws[["p"]])) {
+      eta <- cse_predictor(Xp = p(draws$data$Xp, i), p = draws[["p"]], 
                            eta = eta, ncat = draws$data$max_obs)
     } else {
       eta <- array(eta, dim = c(dim(eta), draws$data$max_obs - 1))
@@ -75,8 +75,8 @@ linear_predictor <- function(draws, i = NULL) {
   } else if (is.categorical(draws$f)) {
     if (isTRUE(draws$old_cat)) {
       # deprecated as of brms > 0.8.0
-      if (!is.null(draws$p)) {
-        eta <- cse_predictor(Xp = p(draws$data$X, i), p = draws$p, 
+      if (!is.null(draws[["p"]])) {
+        eta <- cse_predictor(Xp = p(draws$data$X, i), p = draws[["p"]], 
                              eta = eta, ncat = draws$data$max_obs)
       } else {
         eta <- array(eta, dim = c(dim(eta), draws$data$max_obs - 1))
