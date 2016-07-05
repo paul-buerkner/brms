@@ -51,7 +51,6 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   is_categorical <- is.categorical(family)
   is_multi <- is.linear(family) && length(ee$response) > 1L
   is_forked <- is.forked(family)
-  has_shape <- has_shape(family)
   trunc <- get_boundaries(ee$trunc)
   
   intercepts <- names(get_intercepts(ee, family = family, data = data))
@@ -65,7 +64,8 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
                              sparse = sparse, cov_ranef = cov_ranef)
   }
   text_auxpars <- stan_auxpars(ee, data = data, family = family, 
-                               prior = prior, cov_ranef = cov_ranef)
+                               prior = prior, autocor = autocor, 
+                               cov_ranef = cov_ranef)
   text_pred <- collapse_lists(list(text_pred, text_auxpars))
   
   # generate Stan code of the likelihood
