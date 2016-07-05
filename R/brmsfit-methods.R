@@ -1807,8 +1807,7 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
     if (!is.null(newdata)) {
       object$data <- update_data(newdata, family = object$family, effects = ee)
       object$data.name <- Reduce(paste, deparse(substitute(newdata)))
-      object$ranef <- gather_ranef(ee, data = object$data, 
-                                   forked = is.forked(object$family))
+      object$ranef <- gather_ranef(ee, data = object$data)
       dots$is_newdata <- TRUE
     } else {
       object$data <- rm_attr(object$data, c("terms", "brmsframe"))
