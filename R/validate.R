@@ -219,6 +219,17 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
       x$all <- update(x$all, response ~ .)
     }  
   }
+  # check validity of auxiliary parameters
+  if (!is.na(family[[1]])) {
+    # don't do this earlier to allow exlusion of MV models
+    inv_auxpars <- setdiff(auxpars(), valid_auxpars(family, effects = x))
+    inv_auxpars <- intersect(inv_auxpars, names(x))
+    if (length(inv_auxpars)) {
+      stop("Prediction of the parameter(s) ", 
+           paste0("'", inv_auxpars, "'", collapse = ", "),
+           " is not allowed for this model.", call. = FALSE)
+    }
+  }
   x
 } 
 
@@ -390,6 +401,7 @@ update_formula <- function(formula, data = NULL, family = gaussian(),
 #' 
 #' @export
 bf <- function(formula, ..., nonlinear = NULL) {
+  # parse and validate dots arguments
   dots <- list(...)
   parnames <- names(dots)
   if (is.null(parnames)) {
@@ -419,13 +431,14 @@ bf <- function(formula, ..., nonlinear = NULL) {
     stop("The following argument names were invalid: ",
          paste(invalid_names, collapse = ", "), call. = FALSE)
   }
-  auxpars <- auxpars(incl_nl = TRUE)
-  old_att <- rmNULL(attributes(formula)[auxpars])
-  formula <- as.formula(formula)
+  # add attributes to formula
   if (is.logical(attr(formula, "nonlinear"))) {
     # In brms < 0.10.0 the nonlinear attribute was used differently
     attr(formula, "nonlinear") <- NULL
   }
+  auxpars <- auxpars(incl_nl = TRUE)
+  old_att <- rmNULL(attributes(formula)[auxpars])
+  formula <- as.formula(formula)
   nonlinear <- nonlinear2list(nonlinear)
   new_att <- rmNULL(c(nlist(nonlinear), dots))
   dupl_args <- intersect(names(new_att), names(old_att))
@@ -457,6 +470,13 @@ auxpars <- function(incl_nl = FALSE) {
     auxpars <- c(auxpars, "nonlinear")
   }
   auxpars
+}
+
+valid_auxpars <- function(family, effects = list(), autocor = cor_arma()) {
+  # convenience function to find relevant auxiliary parameters
+  x <- c(sigma = has_sigma(family, effects = effects, autocor = autocor),
+         shape = has_shape(family), nu = has_nu(family), phi = has_phi(family))
+  names(x)[x]
 }
 
 avoid_auxpars <- function(names, effects) {
