@@ -895,12 +895,12 @@ has_splines <- function(effects) {
   # Args:
   #   effects: output of extract_effects
   if (length(effects$nonlinear)) {
-    out <- any(ulapply(effects$nonlinear, 
-                       function(x) !is.null(x[["gam"]])))
+    out <- any(ulapply(effects$nonlinear, has_splines))
   } else {
     out <- !is.null(effects[["gam"]])
   }
-  out
+  ee_auxpars <- rmNULL(effects[auxpars()], recursive = FALSE)
+  out || any(ulapply(ee_auxpars, has_splines))
 }
 
 gather_ranef <- function(effects, data = NULL, all = TRUE,
