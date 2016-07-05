@@ -707,18 +707,17 @@ has_phi <- function(family) {
 }
 
 has_sigma <- function(family, effects = NULL, autocor = cor_arma(),
-                      incl_multi = TRUE) {
+                      incmv = FALSE) {
   # indicate if the model needs a sigma parameter
   # Args:
   #  family: model family
   #  effects: list returned by extract_effects
   #  autocor: object of class cor_arma
-  #  incl_multi: should MV (linear) models be treated as having sigma? 
+  #  incmv: should MV (linear) models be treated as having sigma? 
   has_se <- !is.null(effects$se)
   out <- (is.linear(family) || is.lognormal(family)) && 
-           (!has_se || get_ar(autocor) || get_ma(autocor)) &&
-           !is(autocor, "cor_fixed")
-  if (!incl_multi) {
+         (!has_se || use_cov(autocor)) && !is(autocor, "cor_fixed")
+  if (!incmv) {
     is_multi <- is.linear(family) && length(effects$response) > 1L
     out <- out && !is_multi
   }
