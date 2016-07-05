@@ -1418,16 +1418,18 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   draws_args <- nlist(x = object, newdata, re_formula, incl_autocor, 
                       allow_new_levels, subset, nsamples)
   draws <- do.call(extract_draws, draws_args)
-  if (length(attr(object$formula, "nonlinear"))) {
-    draws$eta <- nonlinear_predictor(draws)
-  } else {
-    draws$eta <- linear_predictor(draws)
+  draws$eta <- get_eta(i = NULL, draws = draws)
+  for (ap in intersect(auxpars(), names(draws))) {
+    if (is(draws[[ap]], "list")) {
+      link <- get(draws[[ap]][["link"]], mode = "function")
+      draws[[ap]] <- link(get_eta(i = NULL, draws = draws[[ap]]))
+    }
   }
   # see predict.R
   predict_fun <- get(paste0("predict_", draws$f$family), mode = "function")
   N <- if (!is.null(draws$data$N_trait)) draws$data$N_trait
        else if (!is.null(draws$data$N_tg)) draws$data$N_tg
-       else if (is(object$autocor, "cor_fixed")) 1
+       else if (is(draws$autocor, "cor_fixed")) 1
        else draws$data$N
   out <- do.call(cbind, lapply(1:N, predict_fun, draws = draws, ntrys = ntrys))
   # percentage of invalid samples for truncated discrete models
@@ -1452,7 +1454,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     colnames(out) <- NULL
   }
   # transform predicted response samples before summarizing them 
-  is_catordinal <- is.ordinal(object$family) || is.categorical(object$family)
+  is_catordinal <- is.ordinal(draws$f) || is.categorical(draws$f)
   if (!is.null(transform) && !is_catordinal) {
     out <- do.call(transform, list(out))
   }
@@ -1541,10 +1543,12 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                       allow_new_levels, subset, nsamples)
   draws <- do.call(extract_draws, draws_args)
   # get mu and scale it appropriately
-  if (length(attr(object$formula, "nonlinear"))) {
-    mu <- nonlinear_predictor(draws)
-  } else {
-    mu <- linear_predictor(draws)
+  mu <- get_eta(i = NULL, draws = draws)
+  for (ap in intersect(auxpars(), names(draws))) {
+    if (is(draws[[ap]], "list")) {
+      link <- get(draws[[ap]][["link"]], mode = "function")
+      draws[[ap]] <- link(get_eta(i = NULL, draws = draws[[ap]]))
+    }
   }
   if (scale == "response") {
     mu <- fitted_response(draws = draws, mu = mu)  # see fitted.R
