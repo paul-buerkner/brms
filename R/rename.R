@@ -109,7 +109,7 @@ rename_pars <- function(x) {
   } else {
     intercepts <- names(get_intercepts(ee, data = x$data, family = family))
     change_eff <- change_effects(
-      pars = pars, dims = x$fit@sim$dims_oi, intercept = intercepts,
+      pars = pars, dims = x$fit@sim$dims_oi, intercepts = intercepts,
       fixef = colnames(standata$X), monef = colnames(standata$Xm),
       splines = get_spline_labels(ee), ranef = x$ranef)
     change_csef <- change_csef(colnames(standata$Xp), pars = pars,

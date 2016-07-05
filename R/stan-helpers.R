@@ -183,8 +183,8 @@ stan_llh <- function(family, effects = list(), autocor = cor_arma()) {
 }
 
 stan_autocor <- function(family, autocor, prior = prior_frame(),
-                      has_se = FALSE, has_disp = FALSE, 
-                      is_multi = FALSE, nonlinear = NULL) {
+                         has_se = FALSE, has_disp = FALSE, 
+                         is_multi = FALSE, nonlinear = NULL) {
   # Stan code related to autocorrelation structures
   # 
   # Args:

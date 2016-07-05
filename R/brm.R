@@ -706,6 +706,8 @@ brm <- function(formula, data = NULL, family = gaussian(),
       x$fit <- do.call(rstan::vb, args = args)
     } 
   }
-  if (!isTRUE(testmode)) x <- rename_pars(x) # see rename.R
+  if (!isTRUE(testmode)) {
+    x <- rename_pars(x) # see rename.R
+  }
   x
 }
