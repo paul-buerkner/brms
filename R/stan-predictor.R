@@ -168,10 +168,11 @@ stan_auxpars <- function(effects, data, family = gaussian(),
     phi = "  real<lower=0> phi;  // precision parameter \n")
   links <- c(sigma = "exp", shape = "exp", nu = "exp", phi = "exp") 
   valid_auxpars <- valid_auxpars(family, effects, autocor = autocor)
-  args <- nlist(data, family, prior, cov_ranef, prefix = "")
+  args <- nlist(data, family, cov_ranef, prefix = "")
   for (ap in valid_auxpars) {
     if (!is.null(effects[[ap]])) {
-      ap_args <- c(list(ap, effects = effects[[ap]]), args)
+      ap_prior <- prior[prior$nlpar == ap, ]
+      ap_args <- c(list(ap, effects = effects[[ap]], prior = ap_prior), args)
       ap_link <- paste0("  ", ap, " = ", links[[ap]], "(", ap, "); \n")
       out[[ap]] <- c(do.call(stan_effects, ap_args), transC4 = ap_link)
     } else {
