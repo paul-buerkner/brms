@@ -128,22 +128,20 @@ rename_pars <- function(x) {
     change <- c(change, change_eff)
   }
   
-  if (has_sigma(family, effects = ee, autocor = x$autocor)) {
-    if (is.linear(family) && length(ee$response) > 1L) {
-      # rename residual parameters of multivariate linear models
-      corfnames <- paste0("sigma_", ee$response)
-      change <- lc(change, 
-        list(pos = grepl("^sigma\\[", pars), oldname = "sigma",
-             pnames = corfnames, fnames = corfnames))
-      change <- c(change, change_prior(class = "sigma", pars = pars, 
-                                       names = ee$response))
-      rescor_names <- get_cornames(ee$response, type = "rescor", 
-                                    brackets = FALSE)
-      change <- lc(change, list(pos = grepl("^rescor\\[", pars), 
-                                oldname = "rescor", pnames = rescor_names,
-                                fnames = rescor_names))
-    }
-  } 
+  if (is.linear(family) && length(ee$response) > 1L) {
+    # rename residual parameters of multivariate linear models
+    corfnames <- paste0("sigma_", ee$response)
+    change <- lc(change, 
+      list(pos = grepl("^sigma\\[", pars), oldname = "sigma",
+           pnames = corfnames, fnames = corfnames))
+    change <- c(change, change_prior(class = "sigma", pars = pars, 
+                                     names = ee$response))
+    rescor_names <- get_cornames(ee$response, type = "rescor", 
+                                  brackets = FALSE)
+    change <- lc(change, list(pos = grepl("^rescor\\[", pars), 
+                              oldname = "rescor", pnames = rescor_names,
+                              fnames = rescor_names))
+  }
   
   # perform the actual renaming in x$fit@sim
   for (i in seq_along(change)) {
