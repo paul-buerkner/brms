@@ -86,7 +86,7 @@ brmssummary <- function(formula = NULL, family = "", link = "",
 #' 
 #' ## fit a linear mixed effects models
 #' fit <- brm(time ~ age + sex + disease + (1 + age|patient),
-#'            data = kidney, family = gaussian("log"),
+#'            data = kidney, family = lognormal(),
 #'            prior = prior, sample_prior = TRUE, 
 #'            control = list(adapt_delta = 0.95))
 #' 
@@ -103,7 +103,7 @@ brmssummary <- function(formula = NULL, family = "", link = "",
 #' 
 #' ## test the amount of random intercept variance on all variance
 #' h <- paste("sd_patient_Intercept^2 / (sd_patient_Intercept^2 +",
-#'            "sd_patient_age^2 + sigma_time^2) = 0")
+#'            "sd_patient_age^2 + sigma^2) = 0")
 #' (hyp2 <- hypothesis(fit, h, class = NULL))
 #' plot(hyp2)
 #' 
