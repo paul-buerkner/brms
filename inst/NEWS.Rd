@@ -2,6 +2,18 @@
 \title{brms News}
 \encoding{UTF-8}
 
+\section{CHANGES IN VERSION 0.10.0.9000}{
+  \subsection{NEW FEATURES}{
+    \itemize{ 
+      \item Implement distributional regression models
+      allowing to fully predict auxiliary parameters 
+      of the response distribution. Among many other 
+      possibilities, this can be used to model 
+      heterogeneity of variances.
+    }
+  }
+}
+
 \section{CHANGES IN VERSION 0.10.0}{
   \subsection{NEW FEATURES}{
     \itemize{ 
