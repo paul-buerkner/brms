@@ -1767,7 +1767,7 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
       dots$data.name <- Reduce(paste, deparse(substitute(newdata)))
       dots$data.name <- substr(dots$data.name, 1, 50)
     } else  {
-      dots$data <- rm_attr(object$data, c("terms", "brmsframe"))
+      dots$data <- object$data
       dots$data.name <- object$data.name
     }
     if (is.null(dots$threshold)) {
@@ -1811,9 +1811,7 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
       object$ranef <- gather_ranef(ee, data = object$data)
       dots$is_newdata <- TRUE
     } else {
-      object$data <- rm_attr(object$data, c("terms", "brmsframe"))
-      object$data <- update_data(object$data, family = object$family, 
-                                 effects = ee)
+      object$data <- object$data
     }
     if (!is.null(dots$ranef)) {
       object$exclude <- exclude_pars(ee, ranef = object$ranef, 
