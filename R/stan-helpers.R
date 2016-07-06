@@ -182,24 +182,18 @@ stan_llh <- function(family, effects = list(), autocor = cor_arma()) {
   llh
 }
 
-stan_autocor <- function(family, autocor, prior = prior_frame(),
-                         has_se = FALSE, has_disp = FALSE, 
-                         is_multi = FALSE, nonlinear = NULL) {
+stan_autocor <- function(autocor, effects = list(), family = gaussian(),
+                         prior = prior_frame()) {
   # Stan code related to autocorrelation structures
-  # 
   # Args:
-  #   family: the model family
   #   autocor: autocorrelation structure; object of class cor_brms
+  #   effects: output of extract_effects
+  #   family: the model family
   #   prior: a data.frame containing user defined priors 
   #          as returned by check_prior
-  #   has_se: user defined standard errors present?
-  #   is_multi: is the model multivariate?
-  #   nonlinear: optional list of nonlinear formulas
-  #
-  # Returns:
-  #   stan code for computing AR(R)MA effects
   stopifnot(is(family, "family"))
   is_linear <- is.linear(family)
+  is_multi <- is_linear && length(effects$response) > 1L
   link <- stan_link(family$link)
   Kar <- get_ar(autocor)
   Kma <- get_ma(autocor)
@@ -229,12 +223,15 @@ stan_autocor <- function(family, autocor, prior = prior_frame(),
     if (use_cov(autocor)) {
       # if the user wants ARMA effects to be estimated using
       # a covariance matrix for residuals
-      err_msg <- "ARMA covariance matrices are not yet allowed"
+      err_msg <- "ARMA covariance matrices are not yet working"
       if (is_multi) {
-        stop(paste(err_msg, "in multivariate models."), call. = FALSE)
+        stop(err_msg, " in multivariate models", call. = FALSE)
       }
-      if (has_disp) {
-        stop(paste(err_msg, "when specifying 'disp'."), call. = FALSE)
+      if (is.formula(effects$disp)) {
+        stop(err_msg, " when specifying 'disp'", call. = FALSE)
+      }
+      if ("sigma" %in% names(effects)) {
+        stop(err_msg, " when predicting 'sigma'")
       }
       out$data <- paste0(out$data, "  #include 'data_arma_cov.stan' \n")
       out$transD <- "  matrix[max(nobs_tg), max(nobs_tg)] res_cov_matrix; \n"
@@ -266,11 +263,11 @@ stan_autocor <- function(family, autocor, prior = prior_frame(),
       }
     } else {
       err_msg <- "Please set cov = TRUE in cor_arma / cor_ar / cor_ma"
-      if (has_se) {
-        stop(paste(err_msg, "when specifying 'se'."), call. = FALSE)
+      if (is.formula(effects$se)) {
+        stop(err_msg, " when specifying 'se'", call. = FALSE)
       }
-      if (length(nonlinear)) {
-        stop(paste(err_msg, "for non-linear models."), call. = FALSE)
+      if (length(effects$nonlinear)) {
+        stop(err_msg, " for non-linear models", call. = FALSE)
       }
       index <- ifelse(is_multi, "m, k", "n")
       wsp <- ifelse(is_multi, "      ", "    ")
@@ -315,7 +312,7 @@ stan_autocor <- function(family, autocor, prior = prior_frame(),
       stop("The bsts structure is not yet implemented for this family.",
            call. = FALSE)
     }
-    if (length(nonlinear)) {
+    if (length(effects$nonlinear)) {
       stop("The bsts structure is not yet implemented for non-linear models",
            call. = FALSE)
     }

@@ -71,10 +71,8 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   # generate Stan code of the likelihood
   text_llh <- stan_llh(family, effects = ee, autocor = autocor)
   # generate Stan code specific to certain models
-  text_autocor <- stan_autocor(family, autocor = autocor, prior = prior,
-                               nonlinear = ee$nonlinear, is_multi = is_multi,
-                               has_disp = is.formula(ee$disp),
-                               has_se = is.formula(ee$se))
+  text_autocor <- stan_autocor(autocor, effects = ee, family = family,
+                               prior = prior)
   text_multi <- stan_multi(family, response = ee$response, prior = prior)
   text_ordinal <- stan_ordinal(family, prior = prior, cse = is.formula(ee$cse), 
                                threshold = threshold)

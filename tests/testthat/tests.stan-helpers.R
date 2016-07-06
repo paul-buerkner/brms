@@ -73,7 +73,8 @@ test_that("stan_autocor returns correct strings (or errors)", {
                fixed = TRUE)
   expect_match(temp_arma$prior, "ma ~ cauchy(0,1)", fixed = TRUE)
   
-  temp_arma <- stan_autocor(family = gaussian(log), is_multi = TRUE, 
+  effects <- list(response = c("y1", "y2"))
+  temp_arma <- stan_autocor(family = gaussian(log), effects = effects, 
                             autocor = cor_arma(~visit|patient, p = 1),
                             prior = prior)
   expect_match(temp_arma$transC2, "e[n] = log(Y[m, k]) - eta[n]", 
