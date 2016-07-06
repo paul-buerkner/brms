@@ -85,18 +85,16 @@ combine_groups <- function(data, ...) {
   #   a data.frame containing all old variables and 
   #   the new combined grouping factors
   group <- c(...)
-  if (length(group)) {
-    for (i in 1:length(group)) {
-      sgroup <- unlist(strsplit(group[[i]], ":"))
-      if (length(sgroup) > 1) {
-        new.var <- get(sgroup[1], data)
-        for (j in 2:length(sgroup)) {
-          new.var <- paste0(new.var, "_", get(sgroup[j], data))
-        }
-        data[[group[[i]]]] <- new.var
+  for (i in seq_along(group)) {
+    sgroup <- unlist(strsplit(group[[i]], ":"))
+    if (length(sgroup) > 1) {
+      new.var <- get(sgroup[1], data)
+      for (j in 2:length(sgroup)) {
+        new.var <- paste0(new.var, "_", get(sgroup[j], data))
       }
-    } 
-  }
+      data[[group[[i]]]] <- new.var
+    }
+  } 
   data
 }
 
@@ -227,7 +225,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       newdata[[cens]] <- 0 # add irrelevant censor variables
     }
   }
-  new_ranef <- gather_ranef(ee, data = model.frame(fit))
+  new_ranef <- gather_ranef(ee, data = model.frame(fit), combine = TRUE)
   if (length(fit$ranef)) {
     if (length(new_ranef) && allow_new_levels) {
       # random effects grouping factors do not need to be specified 
@@ -312,29 +310,24 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
             call. = FALSE)
   }
   # validate grouping factors
-  if (length(new_ranef)) {
-    gnames <- names(new_ranef)
-    for (i in seq_along(gnames)) {
-      gf <- as.character(get(gnames[i], newdata))
-      new_levels <- unique(gf)
-      old_levels <- attr(new_ranef[[i]], "levels")
-      unknown_levels <- setdiff(new_levels, old_levels)
-      if (!allow_new_levels && length(unknown_levels)) {
-        stop(paste("levels", paste0(unknown_levels, collapse = ", "), 
-                   "of grouping factor", gnames[i], 
-                   "not found in the fitted model"), call. = FALSE)
-      } 
-      if (return_standata) {
-        # transform grouping factor levels into their corresponding integers
-        # to match the output of make_standata
-        newdata[[gnames[i]]] <- sapply(gf, match, table = old_levels)
-      }
+  gnames <- names(new_ranef)
+  old_levels <- named_list(gnames)
+  for (i in seq_along(gnames)) {
+    gf <- as.character(get(gnames[i], newdata))
+    new_levels <- unique(gf)
+    old_levels[[i]] <- attr(new_ranef[[i]], "levels")
+    unknown_levels <- setdiff(new_levels, old_levels[[i]])
+    if (!allow_new_levels && length(unknown_levels)) {
+      stop(paste("levels", paste0(unknown_levels, collapse = ", "), 
+                 "of grouping factor", gnames[i], 
+                 "not found in the fitted model"), call. = FALSE)
     }
   }
   if (return_standata) {
-    control <- list(is_newdata = TRUE, not4stan = TRUE,
-                    save_order = TRUE, omit_response = !check_response)
-    control$old_cat <- is.old_categorical(fit)
+    control <- list(is_newdata = TRUE, not4stan = TRUE, 
+                    old_levels = old_levels, save_order = TRUE, 
+                    omit_response = !check_response,
+                    old_cat <- is.old_categorical(fit))
     old_terms <- attr(model.frame(fit), "terms")
     control$terms_attr <- attributes(old_terms)[c("variables", "predvars")]
     has_mono <- length(rmNULL(get_effect(ee, "mono")))
@@ -525,7 +518,7 @@ data_effects <- function(effects, data, family = gaussian(),
                          prior = prior_frame(), autocor = cor_arma(),
                          cov_ranef = NULL, knots = NULL, nlpar = "", 
                          not4stan = FALSE, is_newdata = FALSE, 
-                         G = NULL, Jm = NULL) {
+                         old_levels = NULL, G = NULL, Jm = NULL) {
   # combine data for all types of effects
   # Args:
   #   effects: a list returned by extract_effects
@@ -537,6 +530,7 @@ data_effects <- function(effects, data, family = gaussian(),
   #   knots: optional knot values for smoothing terms
   #   nlpar: optional character string naming a non-linear parameter
   #   not4stan: is the data for use in S3 methods only?
+  #   old_levels: original levels of grouping factors
   #   G: optional list returned by gam.setup based on the original data
   #      used only to compute smoothing terms for new data
   #   Jm: optional precomputed values of Jm for monotonic effects
@@ -549,7 +543,8 @@ data_effects <- function(effects, data, family = gaussian(),
                            Jm = Jm, nlpar = nlpar)
   data_ranef <- data_ranef(effects, data = data, family = family, 
                            cov_ranef = cov_ranef, nlpar = nlpar, 
-                           is_newdata = is_newdata, not4stan = not4stan)
+                           is_newdata = is_newdata, not4stan = not4stan,
+                           old_levels = old_levels)
   c(data_fixef, data_monef, data_ranef)
 }
 
@@ -683,7 +678,8 @@ data_monef <- function(effects, data, prior = prior_frame(),
 
 data_ranef <- function(effects, data, family = gaussian(),
                        nlpar = "", cov_ranef = NULL,
-                       is_newdata = FALSE, not4stan = FALSE) {
+                       is_newdata = FALSE, old_levels = NULL,
+                       not4stan = FALSE) {
   # prepare data for random effects for use in Stan
   # Args: see data_effects
   stopifnot(length(nlpar) == 1L)
@@ -699,10 +695,10 @@ data_ranef <- function(effects, data, family = gaussian(),
     expr <- expression(as.array(as.numeric(factor(get(g, data)))), 
                        length(unique(get(g, data))), # number of levels 
                        ncolZ[[i]],  # number of random effects
-                       ncolZ[[i]] * (ncolZ[[i]] - 1) / 2)  # number of correlations
+                       ncolZ[[i]] * (ncolZ[[i]] - 1) / 2)  # number of cors
     if (is_newdata) {
-      # for newdata only as levels are already defined in amend_newdata
-      expr[1] <- expression(get(g, data)) 
+      # for newdata numeration has to depend on the original levels
+      expr[1] <- expression(ulapply(get(g, data), match, old_levels[[g]]))
     }
     for (i in 1:nrow(random)) {
       g <- random$group[[i]]

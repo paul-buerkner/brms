@@ -150,8 +150,8 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   }
   
   # data for various kinds of effects
-  args_eff <- nlist(data, family, prior, autocor, cov_ranef, 
-                    knots, not4stan, is_newdata)
+  args_eff <- nlist(data, family, prior, autocor, cov_ranef, knots, 
+                    not4stan, is_newdata, old_levels = control$old_levels)
   if (length(ee$nonlinear)) {
     nlpars <- names(ee$nonlinear)
     # matrix of covariates appearing in the non-linear formula
