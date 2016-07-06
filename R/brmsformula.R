@@ -14,7 +14,7 @@
 #'   predictors of special model parts and auxiliary parameters. 
 #'   Formulas can either be named directly or contain
 #'   names on their left-hand side. Currently, the following
-#'   names corresponding are accepted: 
+#'   names are accepted: 
 #'   \code{sigma} (residual standard deviation of
 #'   the \code{gaussian} and \code{student} families);
 #'   \code{shape} (shape parameter of the \code{Gamma},
@@ -23,6 +23,9 @@
 #'   (degrees of freedom parameter of the \code{student} family);
 #'   \code{phi} (precision parameter of the \code{beta} 
 #'   and \code{zero_inflated_beta} families).
+#'   All auxiliary parameters are modeled 
+#'   on the log-scale to ensure their positivity after
+#'   back transformation.
 #' @inheritParams brm
 #' 
 #' @return An object of class \code{brmsformula}, which inherits

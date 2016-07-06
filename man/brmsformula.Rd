@@ -17,7 +17,7 @@ The details of model specification are given under 'Details'.}
 predictors of special model parts and auxiliary parameters. 
 Formulas can either be named directly or contain
 names on their left-hand side. Currently, the following
-names corresponding are accepted: 
+names are accepted: 
 \code{sigma} (residual standard deviation of
 the \code{gaussian} and \code{student} families);
 \code{shape} (shape parameter of the \code{Gamma},
@@ -25,7 +25,10 @@ the \code{gaussian} and \code{student} families);
 zero-inflated / hurdle families); \code{nu}
 (degrees of freedom parameter of the \code{student} family);
 \code{phi} (precision parameter of the \code{beta} 
-and \code{zero_inflated_beta} families).}
+and \code{zero_inflated_beta} families).
+All auxiliary parameters are modeled 
+on the log-scale to ensure their positivity after
+back transformation.}
 
 \item{nonlinear}{An optional list of formuluas, specifying 
 linear models for non-linear parameters. If \code{NULL} (the default)
