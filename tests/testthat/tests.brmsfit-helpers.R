@@ -133,7 +133,8 @@ test_that("evidence_ratio runs without errors", {
 
 test_that("get_sigma correctly extract residual SDs", {
   fit <- rename_pars(brmsfit_example)
-  sigma <- as.matrix(fit, pars = "^sigma$")
+  # use nu on purpose because sigma is predicted in the testing model
+  sigma <- as.matrix(fit, pars = "^nu$")
   expect_equal(length(get_sigma(sigma, data = standata(fit), i = 2)), 
                Nsamples(fit))
   expect_equal(length(get_sigma(sigma, data = list(se = 2:11), i = 3)), 

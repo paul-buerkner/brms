@@ -201,10 +201,13 @@ test_that("loglik for zero-inflated and hurdle models runs without erros", {
   ll <- loglik_hurdle_poisson(1, draws = draws)
   expect_equal(length(ll), ns)
   
-  ll <- loglik_hurdle_negbinomial(2, draws = draws)
+  ll <- loglik_hurdle_negbinomial(5, draws = draws)
   expect_equal(length(ll), ns)
   
-  ll <- loglik_hurdle_gamma(5, draws = draws)
+  ll <- loglik_hurdle_gamma(2, draws = draws)
+  expect_equal(length(ll), ns)
+  
+  ll <- loglik_hurdle_gamma(8, draws = draws)
   expect_equal(length(ll), ns)
   
   ll <- loglik_zero_inflated_poisson(3, draws = draws)
@@ -259,7 +262,7 @@ test_that("censored and truncated loglik run without errors", {
   draws$f$link <- "identity"
   ll <- sapply(1:nobs, loglik_gaussian, draws = draws)
   expect_equal(dim(ll), c(ns, nobs))
-  data <- list(Y = sample(-3:3, nobs), lb = -4, ub = 5)
+  draws$data <- list(Y = sample(-3:3, nobs), lb = -4, ub = 5)
   ll <- sapply(1:nobs, loglik_gaussian, draws = draws)
   expect_equal(dim(ll), c(ns, nobs))
 })

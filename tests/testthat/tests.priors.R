@@ -177,15 +177,27 @@ test_that("get_prior returns correct nlpar names for random effects pars", {
   expect_equal(sort(unique(gp$nlpar)), c("", "a", "b"))
 })
 
-test_that("get_prior returnes correct fixed effect names for GAMMs", {
+test_that("get_prior returns correct fixed effect names for GAMMs", {
   dat <- data.frame(y = rnorm(10), x = rnorm(10), 
                     z = rnorm(10), g = rep(1:2, 5))
-  priors <- get_prior(y ~ z + s(x) + (1|g), data = dat)
-  expect_equal(priors[priors$class == "b", ]$coef, 
+  prior <- get_prior(y ~ z + s(x) + (1|g), data = dat)
+  expect_equal(prior[prior$class == "b", ]$coef, 
                c("", "Intercept", "sx_1", "z"))
-  priors <- get_prior(y ~ lp, nonlinear = lp ~ z + s(x) + (1|g), data = dat)
-  expect_equal(priors[priors$class == "b", ]$coef, 
+  prior <- get_prior(y ~ lp, nonlinear = lp ~ z + s(x) + (1|g), data = dat)
+  expect_equal(prior[prior$class == "b", ]$coef, 
                c("", "Intercept", "sx_1", "z"))
+})
+
+test_that("get_prior returns correct prior names for auxiliary parameters", {
+  dat <- data.frame(y = rnorm(10), x = rnorm(10), 
+                    z = rnorm(10), g = rep(1:2, 5))
+  prior <- get_prior(bf(y ~ 1, phi ~ z + (1|g)), data = dat, family = Beta())
+  prior <- prior[prior$nlpar == "phi", ]
+  pdata <- data.frame(class = rep(c("b", "sd"), each = 3), 
+                      coef = c("", "Intercept", "z", "", "", "Intercept"),
+                      group = c(rep("", 4), "g", "g"),
+                      stringsAsFactors = FALSE)
+  expect_equivalent(prior[, c("class", "coef", "group")], pdata)
 })
 
 test_that("check_prior_content returns expected errors and warnings", {
