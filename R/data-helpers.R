@@ -239,7 +239,9 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     old_gf <- unique(unlist(strsplit(names(fit$ranef), split = ":")))
     old_ee <- extract_effects(formula(fit), et$all, family = family(fit))
     old_slopes <- unique(ulapply(get_random(old_ee)$form, all.vars))
-    unused_vars <- setdiff(union(old_gf, old_slopes), all.vars(ee$all))
+    rsv_vars <- rsv_vars(family(fit), nresp = length(ee$response))
+    unused_vars <- setdiff(union(old_gf, old_slopes), 
+                           union(all.vars(ee$all), rsv_vars))
     if (length(unused_vars)) {
       newdata[, unused_vars] <- NA
     }
