@@ -11,9 +11,12 @@ make_stancode(formula, data = NULL, family = gaussian(), prior = NULL,
   save_model = NULL, ...)
 }
 \arguments{
-\item{formula}{An object of class "formula" (or one that can be coerced to that class): 
+\item{formula}{An object of class 
+\code{\link[brms:brmsformula]{brmsformula}}
+(or one that can be coerced to that class): 
 a symbolic description of the model to be fitted. 
-The details of model specification are given under 'Details'.}
+The details of model specification are explained in 
+\code{\link[brms:brmsformula]{brmsformula}}.}
 
 \item{data}{An optional data frame, list or environment  (or object coercible by 
 \code{as.data.frame} to a data frame) containing the variables in the model. 

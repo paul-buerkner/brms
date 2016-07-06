@@ -162,7 +162,7 @@ test_that("make_stancode detects invalid combinations of modeling options", {
                "Invalid addition arguments")
   expect_error(make_stancode(cbind(y1, y2) ~ 1, data = data,
                              autocor = cor_ar(cov = TRUE)),
-               "ARMA covariance matrices are not yet allowed")
+               "ARMA covariance matrices are not yet working")
   expect_error(make_stancode(y1 | se(wi) ~ y2, data = data,
                              autocor = cor_ma()),
                "Please set cov = TRUE", fixed = TRUE)

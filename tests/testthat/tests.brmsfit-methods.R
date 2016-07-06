@@ -1,5 +1,5 @@
 test_that("all S3 methods have reasonable ouputs", {
-  fit <- rename_pars(brmsfit_example)
+  fit <- brms:::rename_pars(brmsfit_example)
   # test S3 methods in alphabetical order
   # as.data.frame
   ps <- as.data.frame(fit)
@@ -18,9 +18,9 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(dim(as.mcmc(fit, inc_warmup = TRUE)[[1]]), 
                c(fit$fit@sim$iter, length(parnames(fit))))
   # coef
-  expect_equal(dim(coef(fit)$visit), c(4, 6))
+  expect_equal(dim(coef(fit)$visit), c(4, 8))
   # family
-  expect_equal(family(fit), family("gaussian", link = "identity"))
+  expect_equal(family(fit), family("student", link = "identity"))
   # fitted
   fitted1 <- fitted(fit)
   expect_equal(dim(fitted1), c(nrow(epilepsy), 4))
@@ -40,7 +40,8 @@ test_that("all S3 methods have reasonable ouputs", {
   # fixef
   fixef <- fixef(fit, estimate = c("mean", "sd"))  
   expect_equal(dimnames(fixef), 
-               list(c("Intercept", "Trt", "Age", "Trt:Age", "sAge_1", "Exp"),
+               list(c("Intercept", "Trt", "Age", "Trt:Age", "sAge_1", 
+                      "sigma_Intercept", "sigma_Trt", "Exp"),
                     c("mean", "sd")))
   # formula
   expect_equal(formula(fit), 
@@ -90,6 +91,8 @@ test_that("all S3 methods have reasonable ouputs", {
                exp_nrow)
   expect_error(marginal_effects(fit, effects = "Trtc"), 
                "All specified effects are invalid for this model")
+  expect_warning(marginal_effects(fit, effects = c("Trtc", "Trt")), 
+                 "Some specified effects are invalid for this model")
   # model.frame
   expect_equal(model.frame(fit), fit$data)
   # ngrps
@@ -97,10 +100,10 @@ test_that("all S3 methods have reasonable ouputs", {
   # nobs
   expect_equal(nobs(fit), nrow(epilepsy))
   # parnames 
-  expect_equal(parnames(fit)[c(1, 6, 7, 11, 15, 25, 33, 36, 44)],
+  expect_equal(parnames(fit)[c(1, 8, 9, 13, 15, 17, 27, 35, 38, 46)],
                c("b_Intercept", "b_Exp", "ar[1]", "cor_visit_Intercept_Trt", 
-                 "simplex_Exp[2]", "r_visit[4,Trt]", "s_sAge[8]", 
-                 "prior_sigma", "lp__"))
+                 "nu", "simplex_Exp[2]", "r_visit[4,Trt]", "s_sAge[8]", 
+                 "prior_nu", "lp__"))
   # plot tested in tests.plots.R
   # posterior_samples
   ps <- posterior_samples(fit)
@@ -108,7 +111,8 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(names(ps), parnames(fit))
   expect_equal(names(posterior_samples(fit, pars = "^b_")),
                c("b_Intercept", "b_Trt", "b_Age", 
-                 "b_Trt:Age", "b_sAge_1", "b_Exp"))
+                 "b_Trt:Age", "b_sAge_1", "b_sigma_Intercept",
+                 "b_sigma_Trt", "b_Exp"))
   # pp_check
   # expect_true(is(pp_check(fit), "ggplot"))
   # expect_true(is(pp_check(fit, "stat", nsamples = 5), "ggplot"))
@@ -141,7 +145,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_output(SW(print(fit)), "Group-Level Effects:")
   # prior_samples
   prs1 <- prior_samples(fit)
-  prior_names <- c("sd_visit", "sds_sAge", "sigma", "b", "bm", 
+  prior_names <- c("sd_visit", "sds_sAge", "nu", "b", "bm", 
                    paste0("simplex_Exp[", 1:4, "]"), "cor_visit")
   expect_equal(dimnames(prs1),
                list(as.character(1:Nsamples(fit)), prior_names))
@@ -171,14 +175,15 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(names(standata(fit)),
                c("N", "Y", "ns", "knots", "Zs_1", "K", "X_means", "X", 
                  "Km", "Xm", "Jm", "con_simplex_1", "J_1", "N_1", "K_1", 
-                 "NC_1", "Z_1_1", "Z_1_2", "offset", "tg", "Kar", "Kma", 
-                 "Karma", "prior_only"))
+                 "NC_1", "Z_1_1", "Z_1_2", "offset", "K_sigma", "X_sigma", 
+                 "tg", "Kar", "Kma", "Karma", "prior_only"))
   # stanplot tested in tests.plots.R
   # summary
   .summary <- SW(summary(fit, waic = TRUE))
   expect_true(is.numeric(.summary$fixed))
   expect_equal(rownames(.summary$fixed), 
-               c("Intercept", "Trt", "Age", "Trt:Age", "sAge_1", "Exp"))
+               c("Intercept", "Trt", "Age", "Trt:Age", "sAge_1", 
+                 "sigma_Intercept", "sigma_Trt", "Exp"))
   expect_equal(colnames(.summary$fixed), 
                c("Estimate", "Est.Error", "l-95% CI", 
                  "u-95% CI", "Eff.Sample", "Rhat"))
@@ -188,6 +193,8 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_output(print(.summary), "Population-Level Effects:")
   # update
   # do not actually refit the model as is causes CRAN checks to fail
+  up <- update(fit, testmode = TRUE)
+  expect_true(is(up, "brmsfit"))
   new_data <- data.frame(Age = c(0, 1, -1), visit = c(3, 2, 4),
                          Trt = c(0, 0.5, -0.5), count = c(5, 17, 28),
                          patient = 1, Exp = 4)
@@ -207,17 +214,18 @@ test_that("all S3 methods have reasonable ouputs", {
                "New variables found: wrong_var")
   # VarCorr
   vc <- VarCorr(fit)
-  expect_equal(names(vc), c("visit", "RESIDUAL"))
+  expect_equal(names(vc), c("visit"))
   Names <- c("Intercept", "Trt")
   expect_equivalent(dimnames(vc$visit$cov$mean), 
                     list(Names, Names))
   expect_output(print(vc), "visit")
   data_vc <- as.data.frame(vc)
-  expect_equal(dim(data_vc), c(3, 7))
+  expect_equal(dim(data_vc), c(2, 7))
   expect_equal(names(data_vc), c("Estimate", "Group", "Name", 
                                  "Std.Dev", "Cor", "Cov", "Cov"))
   # vcov
-  expect_equal(dim(vcov(fit)), c(6, 6))
+  expect_equal(dim(vcov(fit)), c(8, 8))
+  expect_equal(dim(vcov(fit, cor = TRUE)), c(8, 8))
   # WAIC
   .waic <- WAIC(fit)
   expect_true(is.numeric(.waic[["waic"]]))

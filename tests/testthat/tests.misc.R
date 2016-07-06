@@ -70,8 +70,10 @@ test_that("convenience functions for model families work correctly", {
   expect_true(has_trials("zero_inflated_binomial"))
   expect_true(has_cat("acat"))
   expect_true(has_sigma(student()))
-  expect_true(!has_sigma("cauchy", se = TRUE))
-  expect_true(has_sigma("cauchy", se = TRUE, autocor = cor_ar()))
+  effects <- list(se = TRUE)
+  expect_true(!has_sigma("cauchy", effects = effects))
+  expect_true(has_sigma("cauchy", effects = effects, 
+                        autocor = cor_ar(cov = TRUE)))
 })
 
 test_that("check_intercept updates FE names", {

@@ -16,6 +16,7 @@ test_that("fitted helper functions run without errors", {
   fit$family <- gaussian("log")
   expect_equal(dim(fitted(fit, summary = FALSE)), c(nsamples, nobs))
   # pseudo weibull model
+  fit$formula <- rm_attr(fit$formula, "sigma")
   fit$family <- weibull()
   expect_equal(dim(SW(fitted(fit, summary = FALSE))), c(nsamples, nobs))
   # pseudo binomial model

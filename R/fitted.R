@@ -27,14 +27,16 @@ fitted_response <- function(draws, mu) {
       mu <- mu * trials 
     }
   } else if (draws$f$family == "lognormal") {
-    sigma <- get_sigma(draws$sigma, data = draws$data, i = nrow(mu))
+    sigma <- get_sigma(draws$sigma, data = draws$data, 
+                       i = nrow(mu), sobs = FALSE)
     mu <- ilink(mu, draws$f$link)
     if (!is_trunc) {
       # compute untruncated lognormal mean
       mu <- exp(mu + sigma^2 / 2)  
     }
   } else if (draws$f$family == "weibull") {
-    shape <- get_shape(draws$shape, data = draws$data)
+    shape <- get_shape(draws$shape, data = draws$data,
+                       i = nrow(mu), sobs = FALSE)
     mu <- ilink(mu / shape, draws$f$link)
     if (!is_trunc) {
       # compute untruncated weibull mean
@@ -43,7 +45,9 @@ fitted_response <- function(draws, mu) {
   } else if (is.ordinal(draws$f) || is.categorical(draws$f)) {
     mu <- fitted_catordinal(mu, max_obs = data$max_obs, family = draws$f)
   } else if (is.hurdle(draws$f)) {
-    mu <- fitted_hurdle(mu, shape = draws$shape, N_trait = data$N_trait,
+    shape <- get_shape(draws$shape, data = draws$data,
+                       i = nrow(mu), sobs = FALSE)
+    mu <- fitted_hurdle(mu, shape = shape, N_trait = data$N_trait,
                         family = draws$f)
   } else if (is.zero_inflated(draws$f)) {
     mu <- fitted_zero_inflated(mu, N_trait = data$N_trait, family = draws$f)
@@ -127,7 +131,8 @@ fitted_zero_inflated <- function(mu, N_trait, family) {
 # Returns:
 #   samples of the truncated mean parameter
 fitted_trunc_gaussian <- function(mu, lb, ub, draws) {
-  sigma <- get_sigma(draws$sigma, data = draws$data, i = nrow(mu))
+  sigma <- get_sigma(draws$sigma, data = draws$data, 
+                     i = nrow(mu), sobs = FALSE)
   zlb <- (lb - mu) / sigma
   zub <- (ub - mu) / sigma
   # truncated mean of standard normal; see Wikipedia
@@ -136,8 +141,9 @@ fitted_trunc_gaussian <- function(mu, lb, ub, draws) {
 }
 
 fitted_trunc_student <- function(mu, lb, ub, draws) {
-  sigma <- get_sigma(draws$sigma, data = draws$data, i = nrow(mu))
-  nu <- draws$nu
+  sigma <- get_sigma(draws$sigma, data = draws$data, 
+                     i = nrow(mu), sobs = FALSE)
+  nu <- get_auxpar(draws$nu, i = nrow(mu), sobs = FALSE)
   zlb <- (lb - mu) / sigma
   zub <- (ub - mu) / sigma
   # see Kim 2008: Moments of truncated Student-t distribution
@@ -151,7 +157,8 @@ fitted_trunc_student <- function(mu, lb, ub, draws) {
 
 fitted_trunc_lognormal <- function(mu, lb, ub, draws) {
   # mu has to be on the linear scale
-  sigma <- get_sigma(draws$sigma, data = draws$data, i = nrow(mu))
+  sigma <- get_sigma(draws$sigma, data = draws$data, 
+                     i = nrow(mu), sobs = FALSE)
   m1 <- exp(mu + sigma^2 / 2) * (pnorm((log(ub) - mu) / sigma - sigma) - 
                                    pnorm((log(lb) - mu) / sigma - sigma))
   m1 / (plnorm(ub, meanlog = mu, sdlog = sigma) - 
@@ -159,7 +166,8 @@ fitted_trunc_lognormal <- function(mu, lb, ub, draws) {
 }
 
 fitted_trunc_gamma <- function(mu, lb, ub, draws) {
-  shape <- get_shape(draws$shape, data = draws$data)
+  shape <- get_shape(draws$shape, data = draws$data, 
+                     i = nrow(mu), sobs = FALSE)
   scale <- mu / shape
   # see Jawitz 2004: Moments of truncated continuous univariate distributions
   m1 <- scale / gamma(shape) * 
@@ -178,7 +186,8 @@ fitted_trunc_exponential <- function(mu, lb, ub, ...) {
 fitted_trunc_weibull <- function(mu, lb, ub, draws) {
   # see Jawitz 2004: Moments of truncated continuous univariate distributions
   # mu is already the scale parameter
-  shape <- get_shape(draws$shape, data = draws$data)
+  shape <- get_shape(draws$shape, data = draws$data,
+                     i = nrow(mu), sobs = FALSE)
   a <- 1 + 1 / shape
   m1 <- mu * (incgamma((ub / mu)^shape, a) - incgamma((lb / mu)^shape, a))
   m1 / (pweibull(ub, shape, scale = mu) - pweibull(lb, shape, scale = mu))
@@ -209,7 +218,8 @@ fitted_trunc_poisson <- function(mu, lb, ub, draws) {
 fitted_trunc_negbinomial <- function(mu, lb, ub, draws) {
   lb <- max(lb, -1)
   ub <- min(ub, 3 * max(draws$data$Y))
-  shape <- get_shape(draws$shape, data = draws$data)
+  shape <- get_shape(draws$shape, data = draws$data,
+                     i = nrow(mu), sobs = FALSE)
   args <- list(mu = mu, size = shape)
   message(paste("Computing fitted values for a truncated negbinomial model.",
                 "This may take a while."))

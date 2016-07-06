@@ -36,11 +36,20 @@ Nsamples <- function(x, subset = NULL) {
 }
 
 algorithm <- function(x) {
-  if (!is(x, "brmsfit")) {
-    stop("x must be of class brmsfit")
-  }
+  stopifnot(is(x, "brmsfit"))
   if (is.null(x$algorithm)) "sampling"
   else x$algorithm
+}
+
+restructure <- function(x) {
+  # restructure old brmsfit objects to work with the latest brms version
+  stopifnot(is(x, "brmsfit"))
+  # x$nonlinear deprecated as of brms > 0.9.1
+  # X$partial deprecated as of brms > 0.8.0
+  x$formula <- SW(update_formula(x$formula, partial = x$partial, 
+                                 nonlinear = x$nonlinear))
+  x$nonlinear <- x$partial <- NULL
+  x
 }
 
 first_greater <- function(A, target, i = 1) {
@@ -122,7 +131,7 @@ get_cornames <- function(names, type = "cor", brackets = TRUE) {
 get_nlpar <- function(x, suffix = "") {
   # extract name of a non-linear parameter
   nlpar <- attr(x, "nlpar")
-  if (!is.null(nlpar)) paste0(nlpar, suffix) else ""
+  if (length(nlpar) && nchar(nlpar)) paste0(nlpar, suffix) else ""
 }
 
 get_estimate <- function(coef, samples, margin = 2, to.array = FALSE, ...) {
@@ -339,73 +348,84 @@ get_cov_matrix_ident <- function(sigma, nrows, se2 = 0) {
   mat
 }
 
-get_sigma <- function(x, data, i, method = c("fitted", "predict", "logLik")) {
+get_sigma <- function(x, data, i, sobs = TRUE) {
   # get the residual standard devation of linear models
   # Args:
-  #   x: a brmsfit object or posterior samples of sigma (can be NULL)
+  #   x: object to extract postarior samples from
   #   data: data initially passed to Stan
-  #   method: S3 method from which get_sigma is called
-  #   i: meaning depends on the method argument:
-  #      for predict and logLik this is the current observation number
-  #      for fitted this is the number of samples
-  method <- match.arg(method)
-  if (is(x, "brmsfit")) {
-    sigma <- posterior_samples(x, pars = "^sigma($|_)")$sigma
+  #   sobs: (single_obs) defines the meaning of i
+  #   i: meaning depends on sobs:
+  #      if TRUE: the current observation number
+  #      if FALSE: the number of samples
+  stopifnot(is.atomic(x) || is.list(x))
+  if (is.null(x)) {
+    x <- get_se(data = data, i = i, sobs = sobs)
   } else {
-    sigma <- x
+    x <- get_auxpar(x, i = i, sobs = sobs)
   }
-  sigma <- as.vector(sigma)
-  if (is.null(sigma)) {
-    # user defined standard errors were applied
-    sigma <- data$se
-    if (is.null(sigma)) {
-      # for backwards compatibility with brms <= 0.5.0
-      sigma <- data$sigma
-    }
-    if (is.null(sigma)) {
-      stop("no residual standard deviation(s) found")
-    }
-    if (method %in% c("predict", "logLik")) {
-      sigma <- sigma[i]
-    } else {
-      sigma <- matrix(rep(sigma, i), ncol = data$N, byrow = TRUE)
-    }
-  } else if (!is.null(data$disp)) {
-    if (method %in% c("predict", "logLik")) {
-      sigma <- sigma * data$disp[i]
-    } else {
-      # results in a Nsamples x Nobs matrix
-      sigma <- sigma %*% matrix(data$disp, nrow = 1)
-    }
-  }
-  sigma
+  mult_disp(x, data = data, i = i, sobs = sobs)
 }
 
-get_shape <- function(x, data, i = NULL,
-                      method = c("fitted", "predict", "logLik")) {
+get_shape <- function(x, data, i, sobs = TRUE) {
   # get the shape parameter of gamma, weibull and negbinomial models
-  # Args:
-  #   x: a brmsfit object or posterior samples of shape (can be NULL)
-  #   data: data initially passed to Stan
-  #   method: S3 method from which get_shape is called
-  #   i: only used for "predict" and "logLik": 
-  #      the current observation number
-  method <- match.arg(method)
-  if (is(x, "brmsfit")) {
-    shape <- posterior_samples(x, pars = "^shape$")$shape
+  # Args: see get_sigma
+  stopifnot(is.atomic(x) || is.list(x))
+  x <- get_auxpar(x, i = i, sobs = sobs)
+  mult_disp(x, data = data, i = i, sobs = sobs)
+}
+
+get_auxpar <- function(x, i, sobs = TRUE) {
+  # get samples of an auxiliary parameter
+  # Args: see get_sigma
+  if (is.list(x)) {
+    # compute auxpar in distributional regression models
+    link <- get(x[["link"]], mode = "function")
+    x <- link(get_eta(i = if (sobs) i else NULL, draws = x))
   } else {
-    shape <- x
-  }
-  shape <- as.vector(shape)
-  if (!is.null(data$disp)) {
-    if (method %in% c("predict", "logLik")) {
-      shape <- shape * data$disp[i]
-    } else {
-      # results in a Nsamples x Nobs matrix
-      shape <- shape %*% matrix(data$disp, nrow = 1)
+    if (sobs && isTRUE(ncol(x) > 1L)) {
+      x <- x[, i, drop = FALSE]
     }
   }
-  shape
+  if (!sobs && isTRUE(ncol(x) == 1L)) {
+    # for compatibility with fitted helper functions
+    x <- as.vector(x)
+  }
+  x
+}
+
+get_se <- function(data, i, sobs = TRUE) {
+  # extract user-defined standard errors
+  # Args: see get_sigma
+  se <- data$se
+  if (is.null(se)) {
+    # for backwards compatibility with brms <= 0.5.0
+    se <- data$sigma
+  }
+  if (sobs) {
+    se <- se[i]
+  } else {
+    se <- matrix(rep(se, i), ncol = data$N, byrow = TRUE)
+  }
+  se
+}
+
+mult_disp <- function(x, data, i, sobs = TRUE) {
+  # multiply existing samples by 'disp' data
+  # Args: see get_sigma
+  if (!is.null(data$disp)) {
+    if (sobs) {
+      x <- x * data$disp[i]
+    } else {
+      # results in a Nsamples x Nobs matrix
+      if (is.matrix(x)) {
+        disp <- matrix(rep(disp, i), ncol = data$N, byrow = TRUE)
+        x <- x * disp
+      } else {
+        x <- x %*% matrix(data$disp, nrow = 1) 
+      }
+    }
+  }
+  x
 }
 
 prepare_family <- function(x) {

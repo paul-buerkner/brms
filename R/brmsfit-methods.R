@@ -134,10 +134,11 @@ ranef.brmsfit <- function(object, estimate = "mean", var = FALSE, ...) {
     rnames <- object$ranef[[i]]
     nlpar <- get_nlpar(object$ranef[[i]], suffix = "_")
     rpars <- pars[grepl(paste0("^r_", nlpar, group[i],"\\["), pars)]
-    if (!length(rpars))
+    if (!length(rpars)) {
       stop(paste0("The model does not contain random effects for group '",g,"'\n",
                   "You should use argument ranef = TRUE in function brm."),
            call. = FALSE)
+    }
     rdims <- object$fit@sim$dims_oi[[paste0("r_", nlpar, group[i])]]
     levels <- attr(object$ranef[[i]], "levels")
     if (is.null(levels)) {
@@ -287,6 +288,7 @@ VarCorr.brmsfit <- function(x, sigma = 1, estimate = "mean",
     stop("The model does not contain covariance matrices", call. = FALSE)
   if (!is_equal(sigma, 1))
     warning("argument 'sigma' is unused")
+  x <- restructure(x)
   
   # extracts samples for sd, cor and cov
   extract <- function(p) {
@@ -339,7 +341,7 @@ VarCorr.brmsfit <- function(x, sigma = 1, estimate = "mean",
   }
   
   family <- family(x)
-  ee <- extract_effects(x$formula, family = family, nonlinear = x$nonlinear)
+  ee <- extract_effects(x$formula, family = family)
   if (length(x$ranef)) {
     gather_names <- function(i) {
       # gather names of random effects parameters
@@ -354,7 +356,8 @@ VarCorr.brmsfit <- function(x, sigma = 1, estimate = "mean",
     p <- group <- NULL
   } 
   # special treatment of residuals variances in linear models
-  if (has_sigma(family, se = ee$se, autocor = x$autocor)) {
+  has_sigma <- has_sigma(family, ee, autocor = x$autocor, incmv = TRUE)
+  if (has_sigma && !"sigma" %in% names(ee)) {
     cor_pars <- get_cornames(ee$response, type = "rescor", 
                              brackets = FALSE)
     p <- lc(p, list(rnames = ee$response, cor_pars = cor_pars,
@@ -390,6 +393,7 @@ posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,
     stop("The model does not contain posterior samples")
   pars <- extract_pars(pars, all_pars = parnames(x), 
                        exact_match = exact_match, ...)
+  x <- restructure(x)
   
   # get basic information on the samples 
   iter <- x$fit@sim$iter
@@ -552,18 +556,15 @@ print.brmsfit <- function(x, digits = 2, ...) {
 #' @method summary brmsfit
 #' @export
 summary.brmsfit <- function(object, waic = FALSE, ...) {
-  family <- family(object)
-  ee <- extract_effects(object$formula, family = family,
-                        nonlinear = object$nonlinear)
-  formula <- SW(update_formula(object$formula, partial = object$partial))
-  out <- brmssummary(formula = formula,
-                     family = family, 
+  object <- restructure(object)
+  ee <- extract_effects(formula(object), family = family(object))
+  out <- brmssummary(formula = formula(object), 
+                     family = family(object), 
                      data.name = object$data.name, 
                      group = names(object$ranef), 
                      nobs = nobs(object), 
                      ngrps = ngrps(object), 
                      autocor = object$autocor,
-                     nonlinear = object$nonlinear,
                      algorithm = algorithm(object))
   
   if (length(object$fit@sim)) {
@@ -608,7 +609,7 @@ summary.brmsfit <- function(object, waic = FALSE, ...) {
     spec_pars <- pars[pars %in% c("nu", "shape", "delta", "phi") | 
       apply(sapply(c("^sigma($|_)", "^rescor_"), grepl, x = pars), 1, any)]
     out$spec_pars <- fit_summary[spec_pars, , drop = FALSE]
-    if (is.linear(family) && length(ee$response) > 1L) {
+    if (is.linear(family(object)) && length(ee$response) > 1L) {
       sigma_names <- paste0("sigma(", ee$response, ")")
       rescor_names <- get_cornames(ee$response, type = "rescor")   
       spec_pars[grepl("^sigma_", spec_pars)] <- sigma_names
@@ -710,16 +711,16 @@ standata.brmsfit <- function(object, ...) {
   dots <- list(...)
   if (is.data.frame(object$data)) {
     # brms > 0.5.0 stores the original model.frame
+    object <- restructure(object)
     new_formula <- update_re_terms(object$formula, dots$re_formula)
-    new_formula <- SW(update_formula(new_formula, partial = object$partial))
     dots$control$old_cat <- is.old_categorical(object)
     prior_only <- attr(object$prior, "prior_only")
     sample_prior <- ifelse(isTRUE(prior_only), "only", FALSE)
     args <- list(formula = new_formula, data = model.frame(object), 
                  family = object$family, prior = object$prior, 
-                 nonlinear = object$nonlinear, autocor = object$autocor, 
-                 cov_ranef = object$cov_ranef, sample_prior = sample_prior,
-                 knots = attr(model.frame(object), "knots"))
+                 autocor = object$autocor, cov_ranef = object$cov_ranef, 
+                 knots = attr(model.frame(object), "knots"),
+                 sample_prior = sample_prior)
     standata <- do.call(make_standata, c(args, dots))
   } else {
     # brms <= 0.5.0 only stores the data passed to Stan 
@@ -1074,17 +1075,15 @@ pairs.brmsfit <- function(x, pars = NA, exact_match = FALSE, ...) {
 #' @rdname marginal_effects
 #' @export
 marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL, 
-                                     re_formula = NA, robust = FALSE, 
+                                     re_formula = NA, robust = TRUE, 
                                      probs = c(0.025, 0.975),
                                      method = c("fitted", "predict"), ...) {
   method <- match.arg(method)
   dots <- list(...)
   conditions <- use_alias(conditions, dots$data)
-  x$formula <- SW(update_formula(x$formula, partial = x$partial))
+  x <- restructure(x)
   new_formula <- update_re_terms(x$formula, re_formula = re_formula)
-  new_nonlinear <- lapply(x$nonlinear, update_re_terms, re_formula = re_formula)
-  ee <- extract_effects(new_formula, family = x$family, 
-                        nonlinear = new_nonlinear)
+  ee <- extract_effects(new_formula, family = x$family)
   if (is.linear(x$family) && length(ee$response) > 1L) {
     stop("Marginal plots are not yet implemented for multivariate models.",
          call. = FALSE)
@@ -1415,19 +1414,22 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                             probs = c(0.025, 0.975), ...) {
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
+  object <- restructure(object)
   draws_args <- nlist(x = object, newdata, re_formula, incl_autocor, 
                       allow_new_levels, subset, nsamples)
   draws <- do.call(extract_draws, draws_args)
-  if (length(object$nonlinear)) {
-    draws$eta <- nonlinear_predictor(draws)
-  } else {
-    draws$eta <- linear_predictor(draws)
+  draws$eta <- get_eta(i = NULL, draws = draws)
+  for (ap in intersect(auxpars(), names(draws))) {
+    if (is(draws[[ap]], "list")) {
+      link <- get(draws[[ap]][["link"]], mode = "function")
+      draws[[ap]] <- link(get_eta(i = NULL, draws = draws[[ap]]))
+    }
   }
   # see predict.R
   predict_fun <- get(paste0("predict_", draws$f$family), mode = "function")
   N <- if (!is.null(draws$data$N_trait)) draws$data$N_trait
        else if (!is.null(draws$data$N_tg)) draws$data$N_tg
-       else if (is(object$autocor, "cor_fixed")) 1
+       else if (is(draws$autocor, "cor_fixed")) 1
        else draws$data$N
   out <- do.call(cbind, lapply(1:N, predict_fun, draws = draws, ntrys = ntrys))
   # percentage of invalid samples for truncated discrete models
@@ -1452,7 +1454,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     colnames(out) <- NULL
   }
   # transform predicted response samples before summarizing them 
-  is_catordinal <- is.ordinal(object$family) || is.categorical(object$family)
+  is_catordinal <- is.ordinal(draws$f) || is.categorical(draws$f)
   if (!is.null(transform) && !is_catordinal) {
     out <- do.call(transform, list(out))
   }
@@ -1536,14 +1538,17 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   scale <- match.arg(scale)
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
+  object <- restructure(object)
   draws_args <- nlist(x = object, newdata, re_formula, incl_autocor, 
                       allow_new_levels, subset, nsamples)
   draws <- do.call(extract_draws, draws_args)
   # get mu and scale it appropriately
-  if (length(object$nonlinear)) {
-    mu <- nonlinear_predictor(draws)
-  } else {
-    mu <- linear_predictor(draws)
+  mu <- get_eta(i = NULL, draws = draws)
+  for (ap in intersect(auxpars(), names(draws))) {
+    if (is(draws[[ap]], "list")) {
+      link <- get(draws[[ap]][["link"]], mode = "function")
+      draws[[ap]] <- link(get_eta(i = NULL, draws = draws[[ap]]))
+    }
   }
   if (scale == "response") {
     mu <- fitted_response(draws = draws, mu = mu)  # see fitted.R
@@ -1606,12 +1611,15 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                               summary = TRUE, robust = FALSE, 
                               probs = c(0.025, 0.975), ...) {
   type <- match.arg(type)
-  family <- family(object)
-  if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
+  if (!is(object$fit, "stanfit") || !length(object$fit@sim)) {
     stop("The model does not contain posterior samples")
-  if (is.ordinal(family) || is.categorical(family))
-    stop(paste("residuals not yet implemented for family", family$family),
+  }
+  object <- restructure(object)
+  family <- family(object)
+  if (is.ordinal(family) || is.categorical(family)) {
+    stop(paste("residuals not implemented for family", family$family),
          call. = FALSE)
+  }
   
   standata <- amend_newdata(newdata, fit = object, re_formula = re_formula,
                             allow_new_levels = allow_new_levels, 
@@ -1687,35 +1695,48 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
     stop("Please use argument 'newdata' to update the data", 
          call. = FALSE)
   }
+  object <- restructure(object)
   recompile <- FALSE
   if (missing(formula.)) {
     dots$formula <- object$formula
   } else {
-    dots$formula <- as.formula(formula.)
-    if (length(object$nonlinear)) {
-      warning(paste("Argument 'formula.' will completely replace the", 
-                    "original formula in non-linear models.", call. = FALSE))
-      recompile <- TRUE
+    recompile <- length(sformula(formula.)) > 0L
+    if (length(attr(object$formula, "nonlinear"))) {
+      if (length(setdiff(all.vars(dots$formula), ".")) == 0L) {
+        dots$formula <- update(object$formula, formula., mode = "keep")
+      } else {
+        dots$formula <- update(object$formula, formula., mode = "replace")
+        message("Argument 'formula.' will completely replace the ", 
+                "original formula in non-linear models.")
+        recompile <- TRUE
+      }
     } else {
+      dots$formula <- as.formula(formula.)
       mvars <- setdiff(all.vars(dots$formula), c(names(object$data), "."))
       if (length(mvars) && is.null(newdata)) {
         stop(paste0("New variables found: ", paste(mvars, collapse = ", ")),
              "\nPlease supply your data again via argument 'newdata'",
              call. = FALSE)
       }
-      dots$formula <- update.formula(object$formula, dots$formula)
+      dots$formula <- update(object$formula, dots$formula)
       ee_old <- extract_effects(object$formula, family = object$family)
       family <- get_arg("family", dots, object)
       ee_new <- extract_effects(dots$formula, family = family)
       # no need to recompile the model when changing fixed effects only
-      recompile <- !(is_equal(names(ee_old), names(ee_new)) && 
-        is_equal(ee_old$random, ee_new$random) &&
-        is_equal(length(ee_old$response), length(ee_new$response)))
+      recompile <- recompile ||
+        !(is_equal(names(ee_old), names(ee_new)) && 
+          is_equal(ee_old$random, ee_new$random) &&
+          is_equal(length(ee_old$response), length(ee_new$response)) &&
+          length(sformula(formula.)) == 0L)
     }
     if (recompile) {
       message("The desired formula changes require recompling the model")
     }
   }
+  # allow to change the non-linear part via argument 'nonlinear'
+  take_nl <- !is.null(dots$nonlinear) && 
+    (missing(formula.) || is.null(attr(formula., "nonlinear")))
+  if (take_nl) attr(dots$formula, "nonlinear") <- NULL
   # update gaussian("log") to lognormal() family
   resp <- extract_effects(object$formula, family = object$family)$response
   if (is.old_lognormal(object$family, nresp = length(resp),
@@ -1782,14 +1803,14 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
       object$formula <- dots$formula
       dots$formula <- NULL
     }
-    ee <- extract_effects(object$formula, family = object$family, 
-                          nonlinear = object$nonlinear)
+    ee <- extract_effects(object$formula, family = object$family)
     if (!is.null(newdata)) {
       object$data <- update_data(newdata, family = object$family, effects = ee)
       object$data.name <- Reduce(paste, deparse(substitute(newdata)))
-      object$ranef <- gather_ranef(ee, data = object$data, 
-                                   forked = is.forked(object$family))
+      object$ranef <- gather_ranef(ee, data = object$data)
       dots$is_newdata <- TRUE
+    } else {
+      object$data <- object$data
     }
     if (!is.null(dots$ranef)) {
       object$exclude <- exclude_pars(ee, ranef = object$ranef, 
@@ -1897,6 +1918,7 @@ logLik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                            nsamples = NULL, pointwise = FALSE, ...) {
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
+  object <- restructure(object)
   draws <- extract_draws(x = object, newdata = newdata, 
                          re_formula = re_formula, subset = subset,
                          allow_new_levels = allow_new_levels,
@@ -1908,7 +1930,7 @@ logLik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (pointwise) {
     loglik <- structure(loglik_fun, draws = draws, N = N)
   } else {
-    if (length(object$nonlinear)) {
+    if (length(attr(object$formula, "nonlinear"))) {
       draws$eta <- nonlinear_predictor(draws)
     } else {
       draws$eta <- linear_predictor(draws)
@@ -1936,6 +1958,7 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
     stop("Argument hypothesis must be a character vector", call. = FALSE)
   if (alpha < 0 || alpha > 1)
     stop("Argument alpha must be in [0,1]", call. = FALSE)
+  x <- restructure(x)
   
   # process class and group arguments
   if (is.null(class)) class <- ""

@@ -1,12 +1,12 @@
 brmsfit <- function(formula = NULL, family = "", link = "", data.name = "", 
                     data = data.frame(), model = "", exclude = NULL,
                     prior = prior_frame(), ranef = TRUE, autocor = NULL,
-                    nonlinear = NULL, partial = NULL, threshold = "", 
-                    cov_ranef = NULL, fit = NA, algorithm = "sampling") {
+                    threshold = "", cov_ranef = NULL, fit = NA, 
+                    algorithm = "sampling") {
   # brmsfit class
   x <- nlist(formula, family, link, data.name, data, model, exclude, prior, 
-             ranef, autocor, nonlinear, partial, threshold, cov_ranef, fit, 
-             algorithm, version = utils::packageVersion("brms"))
+             ranef, autocor, threshold, cov_ranef, fit, algorithm, 
+             version = utils::packageVersion("brms"))
   class(x) <- "brmsfit"
   x
 }
@@ -15,14 +15,14 @@ brmssummary <- function(formula = NULL, family = "", link = "",
                         data.name = "", group = NULL, nobs = NULL, 
                         ngrps = NULL, chains = 1, iter = 2000, 
                         warmup = 500, thin = 1, sampler = "", 
-                        nonlinear = NULL, autocor = NULL, fixed = NULL, 
-                        random = list(), cor_pars = NULL, spec_pars = NULL, 
+                        autocor = NULL, fixed = NULL, random = list(), 
+                        cor_pars = NULL, spec_pars = NULL, 
                         mult_pars = NULL, WAIC = "Not computed",
                         algorithm = "sampling") {
   # brmssummary class
   x <- nlist(formula, family, link, data.name, group, nobs, ngrps, chains, 
-             iter,  warmup, thin, sampler, nonlinear, autocor, fixed, 
-             random, cor_pars, spec_pars, mult_pars, WAIC, algorithm)
+             iter,  warmup, thin, sampler, autocor, fixed, random, cor_pars, 
+             spec_pars, mult_pars, WAIC, algorithm)
   class(x) <- "brmssummary"
   x
 }
@@ -86,7 +86,7 @@ brmssummary <- function(formula = NULL, family = "", link = "",
 #' 
 #' ## fit a linear mixed effects models
 #' fit <- brm(time ~ age + sex + disease + (1 + age|patient),
-#'            data = kidney, family = gaussian("log"),
+#'            data = kidney, family = lognormal(),
 #'            prior = prior, sample_prior = TRUE, 
 #'            control = list(adapt_delta = 0.95))
 #' 
@@ -103,7 +103,7 @@ brmssummary <- function(formula = NULL, family = "", link = "",
 #' 
 #' ## test the amount of random intercept variance on all variance
 #' h <- paste("sd_patient_Intercept^2 / (sd_patient_Intercept^2 +",
-#'            "sd_patient_age^2 + sigma_time^2) = 0")
+#'            "sd_patient_age^2 + sigma^2) = 0")
 #' (hyp2 <- hypothesis(fit, h, class = NULL))
 #' plot(hyp2)
 #' 
@@ -501,8 +501,8 @@ stanplot <- function(object, pars, ...) {
 #' @param re_formula A formula containing random effects to be considered 
 #'   in the marginal predictions. If \code{NULL}, include all random effects; 
 #'   if \code{NA} (default), include no random effects.
-#' @param robust If \code{FALSE} (the default) the mean is used as the 
-#'   measure of central tendency. If \code{TRUE} the median is used instead.
+#' @param robust If \code{TRUE} (the default) the median is used as the 
+#'   measure of central tendency. If \code{FALSE} the mean is used instead.
 #' @param probs The quantiles to be used in the computation of credible
 #'   intervals (defaults to 2.5 and 97.5 percent quantiles)
 #' @param method Either \code{"fitted"} or \code{"predict"}. 

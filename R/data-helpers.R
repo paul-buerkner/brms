@@ -85,18 +85,16 @@ combine_groups <- function(data, ...) {
   #   a data.frame containing all old variables and 
   #   the new combined grouping factors
   group <- c(...)
-  if (length(group)) {
-    for (i in 1:length(group)) {
-      sgroup <- unlist(strsplit(group[[i]], ":"))
-      if (length(sgroup) > 1) {
-        new.var <- get(sgroup[1], data)
-        for (j in 2:length(sgroup)) {
-          new.var <- paste0(new.var, "_", get(sgroup[j], data))
-        }
-        data[[group[[i]]]] <- new.var
+  for (i in seq_along(group)) {
+    sgroup <- unlist(strsplit(group[[i]], ":"))
+    if (length(sgroup) > 1) {
+      new.var <- get(sgroup[1], data)
+      for (j in 2:length(sgroup)) {
+        new.var <- paste0(new.var, "_", get(sgroup[j], data))
       }
-    } 
-  }
+      data[[group[[i]]]] <- new.var
+    }
+  } 
   data
 }
 
@@ -207,14 +205,10 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     stop("newdata must be a data.frame", call. = FALSE)
   }
   # standata will be based on an updated formula if re_formula is specified
-  new_ranef <- check_re_formula(re_formula, old_ranef = fit$ranef,
-                                data = model.frame(fit))
-  new_formula <- update_re_terms(fit$formula, re_formula = re_formula)
-  new_nonlinear <- lapply(fit$nonlinear, update_re_terms, 
-                          re_formula = re_formula)
+  new_formula <- update_re_terms(formula(fit), re_formula = re_formula)
   et <- extract_time(fit$autocor$formula)
   ee <- extract_effects(new_formula, et$all, family = family(fit),
-                        nonlinear = new_nonlinear, resp_rhs_all = FALSE)
+                        resp_rhs_all = FALSE)
   resp_only_vars <- setdiff(all.vars(ee$respform), all.vars(rhs(ee$all)))
   missing_resp <- setdiff(resp_only_vars, names(newdata))
   if (check_response && length(missing_resp)) {
@@ -231,6 +225,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       newdata[[cens]] <- 0 # add irrelevant censor variables
     }
   }
+  new_ranef <- gather_ranef(ee, data = model.frame(fit), combine = TRUE)
   if (length(fit$ranef)) {
     if (length(new_ranef) && allow_new_levels) {
       # random effects grouping factors do not need to be specified 
@@ -242,10 +237,11 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     # brms:::update_data expects all original variables to be present
     # even if not actually used later on
     old_gf <- unique(unlist(strsplit(names(fit$ranef), split = ":")))
-    old_ee <- extract_effects(formula(fit), et$all, family = family(fit),
-                              nonlinear = fit$nonlinear)
+    old_ee <- extract_effects(formula(fit), et$all, family = family(fit))
     old_slopes <- unique(ulapply(get_random(old_ee)$form, all.vars))
-    unused_vars <- setdiff(union(old_gf, old_slopes), all.vars(ee$all))
+    rsv_vars <- rsv_vars(family(fit), nresp = length(ee$response))
+    unused_vars <- setdiff(union(old_gf, old_slopes), 
+                           union(all.vars(ee$all), rsv_vars))
     if (length(unused_vars)) {
       newdata[, unused_vars] <- NA
     }
@@ -316,29 +312,24 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
             call. = FALSE)
   }
   # validate grouping factors
-  if (length(new_ranef)) {
-    gnames <- names(new_ranef)
-    for (i in seq_along(gnames)) {
-      gf <- as.character(get(gnames[i], newdata))
-      new_levels <- unique(gf)
-      old_levels <- attr(new_ranef[[i]], "levels")
-      unknown_levels <- setdiff(new_levels, old_levels)
-      if (!allow_new_levels && length(unknown_levels)) {
-        stop(paste("levels", paste0(unknown_levels, collapse = ", "), 
-                   "of grouping factor", gnames[i], 
-                   "not found in the fitted model"), call. = FALSE)
-      } 
-      if (return_standata) {
-        # transform grouping factor levels into their corresponding integers
-        # to match the output of make_standata
-        newdata[[gnames[i]]] <- sapply(gf, match, table = old_levels)
-      }
+  gnames <- names(new_ranef)
+  old_levels <- named_list(gnames)
+  for (i in seq_along(gnames)) {
+    gf <- as.character(get(gnames[i], newdata))
+    new_levels <- unique(gf)
+    old_levels[[i]] <- attr(new_ranef[[i]], "levels")
+    unknown_levels <- setdiff(new_levels, old_levels[[i]])
+    if (!allow_new_levels && length(unknown_levels)) {
+      stop(paste("levels", paste0(unknown_levels, collapse = ", "), 
+                 "of grouping factor", gnames[i], 
+                 "not found in the fitted model"), call. = FALSE)
     }
   }
   if (return_standata) {
-    control <- list(is_newdata = TRUE, not4stan = TRUE,
-                    save_order = TRUE, omit_response = !check_response)
-    control$old_cat <- is.old_categorical(fit)
+    control <- list(is_newdata = TRUE, not4stan = TRUE, 
+                    old_levels = old_levels, save_order = TRUE, 
+                    omit_response = !check_response,
+                    old_cat <- is.old_categorical(fit))
     old_terms <- attr(model.frame(fit), "terms")
     control$terms_attr <- attributes(old_terms)[c("variables", "predvars")]
     has_mono <- length(rmNULL(get_effect(ee, "mono")))
@@ -378,8 +369,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
                             nrow(newdata))
     }
     newdata <- make_standata(new_formula, data = newdata, family = fit$family, 
-                             autocor = fit$autocor, nonlinear = new_nonlinear,
-                             partial = fit$partial, knots = knots,
+                             autocor = fit$autocor, knots = knots, 
                              control = control)
   }
   newdata
@@ -526,19 +516,45 @@ arr_design_matrix <- function(Y, r, group)  {
   out
 }
 
-data_fixef <- function(effects, data, family = gaussian(),
-                       autocor = cor_arma(), knots = NULL,
-                       nlpar = "", not4stan = FALSE, G = NULL) {
-  # prepare data for fixed effects for use in Stan 
+data_effects <- function(effects, data, family = gaussian(),
+                         prior = prior_frame(), autocor = cor_arma(),
+                         cov_ranef = NULL, knots = NULL, nlpar = "", 
+                         not4stan = FALSE, is_newdata = FALSE, 
+                         old_levels = NULL, G = NULL, Jm = NULL) {
+  # combine data for all types of effects
   # Args:
   #   effects: a list returned by extract_effects
   #   data: the data passed by the user
   #   family: the model family
+  #   prior: an object of class prior_frame
   #   autocor: object of class 'cor_brms'
+  #   cov_ranef: name list of user-defined covariance matrices
+  #   knots: optional knot values for smoothing terms
   #   nlpar: optional character string naming a non-linear parameter
   #   not4stan: is the data for use in S3 methods only?
+  #   old_levels: original levels of grouping factors
   #   G: optional list returned by gam.setup based on the original data
   #      used only to compute smoothing terms for new data
+  #   Jm: optional precomputed values of Jm for monotonic effects
+  # Returns:
+  #   A named list of data to be passed to Stan
+  data_fixef <- data_fixef(effects, data = data, family = family, 
+                           nlpar = nlpar, knots = knots, 
+                           not4stan = not4stan, G = G)
+  data_monef <- data_monef(effects, data = data, prior = prior, 
+                           Jm = Jm, nlpar = nlpar)
+  data_ranef <- data_ranef(effects, data = data, family = family, 
+                           cov_ranef = cov_ranef, nlpar = nlpar, 
+                           is_newdata = is_newdata, not4stan = not4stan,
+                           old_levels = old_levels)
+  c(data_fixef, data_monef, data_ranef)
+}
+
+data_fixef <- function(effects, data, family = gaussian(),
+                       autocor = cor_arma(), knots = NULL,
+                       nlpar = "", not4stan = FALSE, G = NULL) {
+  # prepare data for fixed effects for use in Stan 
+  # Args: see data_effects
   stopifnot(length(nlpar) == 1L)
   p <- if (nchar(nlpar)) paste0("_", nlpar) else ""
   is_ordinal <- is.ordinal(family)
@@ -598,6 +614,7 @@ data_fixef <- function(effects, data, family = gaussian(),
     X <- cbind(X, do.call(cbind, Xs))
     colnames(X) <- rename(colnames(X))
   }
+  avoid_auxpars(colnames(X), effects = effects)
   out[[paste0("K", p)]] <- ncol(X)
   center_X <- length(intercepts) && !is_bsts && !(is_ordinal && not4stan)
   if (center_X) {
@@ -623,20 +640,16 @@ data_fixef <- function(effects, data, family = gaussian(),
 
 data_monef <- function(effects, data, prior = prior_frame(), 
                        nlpar = "", Jm = NULL) {
-  # prepare data for monotonic effects for use in Stan 
-  # Args:
-  #   effects: a list returned by extract_effects
-  #   data: the data passed by the user
-  #   prior: an object of class prior_frame
-  #   nlpar: optional character string naming a non-linear parameter
-  #   Jm: optional precomputed values of Jm
+  # prepare data for monotonic effects for use in Stan
+  # Args: see data_effects
   stopifnot(length(nlpar) == 1L)
   p <- if (nchar(nlpar)) paste0("_", nlpar) else ""
   out <- list()
-  if (is.formula(effects$mono)) {
+  if (is.formula(effects[["mono"]])) {
     mmf <- model.frame(effects$mono, data)
     mmf <- prepare_mono_vars(mmf, names(mmf), check = is.null(Jm))
     Xm <- get_model_matrix(effects$mono, mmf)
+    avoid_auxpars(colnames(Xm), effects = effects)
     if (is.null(Jm)) {
       Jm <- as.array(apply(Xm, 2, max))
     }
@@ -665,31 +678,12 @@ data_monef <- function(effects, data, prior = prior_frame(),
   out
 }
 
-data_csef <- function(effects, data) {
-  # prepare data for fixed effects for use in Stan 
-  # Args:
-  #   effects: a list returned by extract_effects
-  #   data: the data passed by the user
-  out <- list()
-  if (is.formula(effects$cse)) {
-    Xp <- get_model_matrix(effects$cse, data)
-    out <- c(out, list(Kp = ncol(Xp), Xp = Xp))
-  }
-  out
-}
-
 data_ranef <- function(effects, data, family = gaussian(),
                        nlpar = "", cov_ranef = NULL,
-                       is_newdata = FALSE, not4stan = FALSE) {
-  # prepare data for random effects for use in Stan 
-  # Args:
-  #   effects: a list returned by extract_effects
-  #   data: the data passed by the user
-  #   family: the model family
-  #   nlpar: optional character string naming a non-linear parameter
-  #   cov_ranef: name list of user-defined covariance matrices
-  #   is_newdata: was new data passed to the 'data' argument?
-  #   not4stan: is the data for use in S3 methods only?
+                       is_newdata = FALSE, old_levels = NULL,
+                       not4stan = FALSE) {
+  # prepare data for random effects for use in Stan
+  # Args: see data_effects
   stopifnot(length(nlpar) == 1L)
   out <- list()
   random <- effects$random
@@ -697,15 +691,16 @@ data_ranef <- function(effects, data, family = gaussian(),
     Z <- lapply(random$form, get_model_matrix, data = data, 
                 forked = is.forked(family))
     r <- lapply(Z, colnames)
+    lapply(r, avoid_auxpars, effects = effects)
     ncolZ <- lapply(Z, ncol)
     # numeric levels passed to Stan
     expr <- expression(as.array(as.numeric(factor(get(g, data)))), 
                        length(unique(get(g, data))), # number of levels 
                        ncolZ[[i]],  # number of random effects
-                       ncolZ[[i]] * (ncolZ[[i]] - 1) / 2)  # number of correlations
+                       ncolZ[[i]] * (ncolZ[[i]] - 1) / 2)  # number of cors
     if (is_newdata) {
-      # for newdata only as levels are already defined in amend_newdata
-      expr[1] <- expression(get(g, data)) 
+      # for newdata numeration has to depend on the original levels
+      expr[1] <- expression(ulapply(get(g, data), match, old_levels[[g]]))
     }
     for (i in 1:nrow(random)) {
       g <- random$group[[i]]
@@ -757,6 +752,20 @@ data_ranef <- function(effects, data, family = gaussian(),
         out <- c(out, setNames(list(t(chol(cov_mat))), paste0("Lcov_", p)))
       }
     }
+  }
+  out
+}
+
+data_csef <- function(effects, data) {
+  # prepare data for category specific effects for use in Stan
+  # Args:
+  #   effects: a list returned by extract_effects
+  #   data: the data passed by the user
+  out <- list()
+  if (is.formula(effects[["cse"]])) {
+    Xp <- get_model_matrix(effects$cse, data)
+    avoid_auxpars(colnames(Xp), effects = effects)
+    out <- c(out, list(Kp = ncol(Xp), Xp = Xp))
   }
   out
 }

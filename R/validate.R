@@ -3,8 +3,7 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
                             lhs_char = "") {
   # Parse the model formula and related arguments
   # Args:
-  #   formula: An object of class "formula" using mostly the syntax 
-  #            of the \code{lme4} package
+  #   formula: An object of class 'formula' or 'brmsformula'
   #   ...: Additional objects of class "formula"
   #   family: the model family
   #   nonlinear: a list of formulas specifying non-linear effects
@@ -14,6 +13,8 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   #             currently only used for splines in non-linear models
   # Returns: 
   #   A named list whose elements depend on the formula input 
+  formula <- bf(formula, nonlinear = nonlinear)
+  nonlinear <- attr(formula, "nonlinear")
   if (!is.na(family[[1]])) {
     family <- check_family(family)
   }
@@ -30,17 +31,18 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
            call. = FALSE)
     }
     x$fixed <- formula(tfixed)
-    x$nonlinear <- nonlinear_effects(nonlinear, model = x$fixed)
+    rsv_pars <- names(sformula(formula))
+    x$nonlinear <- nonlinear_effects(nonlinear, model = x$fixed,
+                                     family = family, rsv_pars = rsv_pars)
     re_terms <- NULL
   } else {
     # terms() doesn't like non-linear formulas
-    term_labels <- rename(attr(terms(formula), "term.labels"), " ", "")
-    re_terms <- term_labels[grepl("\\|", term_labels)]
+    re_terms <- get_re_terms(formula)
     if (length(re_terms)) {
-      re_terms <- paste0("(", re_terms, ")")
       tfixed <- rename(tfixed, c(paste0("+", re_terms), re_terms), "")
     } 
     # monotonic effects
+    term_labels <- gsub(" ", "", attr(terms(formula), "term.labels"))
     mono_terms <- term_labels[grepl("^mono(|tonic|tonous)\\(", term_labels)]
     if (length(mono_terms)) {
       tfixed <- rename(tfixed, c(paste0("+", mono_terms), mono_terms), "")
@@ -103,9 +105,11 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
     if (is.ordinal(family)) {
       x$fixed <- update.formula(x$fixed, . ~ . + 1)
     }
-    rsv_intercept <- has_rsv_intercept(x$fixed)
-    if (rsv_intercept) {
+    if (has_rsv_intercept(x$fixed)) {
       attr(x$fixed, "rsv_intercept") <- TRUE
+    }
+    if (is.forked(family)) {
+      attr(x$fixed, "forked") <- TRUE
     }
   }
   if (check_response && length(x$fixed) < 3L) { 
@@ -117,6 +121,14 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   attr(x$covars, "rsv_intercept") <- TRUE
   # extract random effects parts
   x$random <- extract_random(re_terms)
+  
+  # evaluate formulas for auxiliary parameters
+  # TODO include validity checks
+  auxpars <- sformula(formula, incl_nl = FALSE)
+  for (ap in names(auxpars)) {
+    x[[ap]] <- extract_effects(auxpars[[ap]], family = family,
+                               check_response = FALSE)
+  }
   
   # handle addition arguments
   fun <- c("se", "weights", "trials", "cat", "cens", "trunc", "disp")
@@ -170,7 +182,8 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
     add_vars, x[c("covars", "cse", "mono")], all.vars(rhs(x$gam)),  
     if (!length(x$nonlinear)) c(rhs(x$fixed), all.vars(rhs(x$fixed))), 
     x$random$form, lapply(x$random$form, all.vars), x$random$group, 
-    get_offset(x$fixed), lapply(x$nonlinear, function(nl) nl$all), ...)
+    get_offset(x$fixed), lapply(x$nonlinear, function(e) e$all),
+    lapply(x[auxpars()], function(e) e$all), ...)
   new_formula <- collapse(ulapply(formula_list, plus_rhs))
   x$all <- paste0("update(", tfixed, ", ~ ", new_formula, ")")
   x$all <- eval(parse(text = x$all))
@@ -205,6 +218,17 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
       x$fixed[[2]] <- quote(response)
       x$all <- update(x$all, response ~ .)
     }  
+  }
+  # check validity of auxiliary parameters
+  if (!is.na(family[[1]])) {
+    # don't do this earlier to allow exlusion of MV models
+    inv_auxpars <- setdiff(auxpars(), valid_auxpars(family, effects = x))
+    inv_auxpars <- intersect(inv_auxpars, names(x))
+    if (length(inv_auxpars)) {
+      stop("Prediction of the parameter(s) ", 
+           paste0("'", inv_auxpars, "'", collapse = ", "),
+           " is not allowed for this model.", call. = FALSE)
+    }
   }
   x
 } 
@@ -241,7 +265,7 @@ extract_time <- function(formula) {
   x
 }
 
-nonlinear_effects <- function(x, model = ~ 1) {
+nonlinear_effects <- function(x, model = ~1, family = NA, rsv_pars = NULL) {
   # prepare nonlinear formulas
   # Args:
   #   x: a list for formulas specifying linear predictors for 
@@ -249,18 +273,17 @@ nonlinear_effects <- function(x, model = ~ 1) {
   #   model: formula of the non-linear model
   # Returns:
   #   A list of objects each returned by extract_effects
+  stopifnot(is.list(x), is(model, "formula"))
   if (length(x)) {
+    lhs_char <- as.character(model[[2]])
     nleffects <- vector("list", length = length(x))
     for (i in seq_along(x)) {
-      if (!is(x[[i]], "formula")) {
-        stop("Argument 'nonlinear' must be a list of formulas.",
-             call. = FALSE)
-      }
-      if (length(x[[i]]) != 3) {
+      x[[i]] <- as.formula(x[[i]])
+      if (length(x[[i]]) != 3L) {
         stop("Non-linear formulas must be two-sided.", call. = FALSE)
       }
       nlresp <- all.vars(x[[i]][[2]])
-      if (length(nlresp) != 1) {
+      if (length(nlresp) != 1L) {
         stop("LHS of non-linear formula must contain exactly one variable.",
              call. = FALSE)
       }
@@ -268,13 +291,18 @@ nonlinear_effects <- function(x, model = ~ 1) {
         stop("Non-linear parameters should not contain dots or underscores.",
              call. = FALSE)
       }
+      if (nlresp %in% rsv_pars) {
+        stop("Parameter name '", nlresp, "' is reserved for this model.",
+             call. = FALSE)
+      }
       if (!is.null(attr(terms(x[[i]]), "offset"))) {
         stop("Offsets are currently not allowed in non-linear models.",
              call. = FALSE)
       }
       x[[i]] <- rhs(x[[i]])
-      nleffects[[i]] <- extract_effects(x[[i]], check_response = FALSE,
-                                        lhs_char = as.character(model[[2]]))
+      nleffects[[i]] <- extract_effects(x[[i]], family = family, 
+                                        check_response = FALSE,
+                                        lhs_char = lhs_char)
       names(nleffects)[[i]] <- nlresp
     }
     model_vars <- all.vars(rhs(model))
@@ -292,20 +320,21 @@ nonlinear_effects <- function(x, model = ~ 1) {
 nonlinear2list <- function(x) {
   # convert a single formula into a list of formulas
   # one for each non-linear parameter
+  if (!(is.list(x) || is.null(x))) {
+    x <- as.formula(x)
+  }
   if (is(x, "formula")) {
-    if (length(x) != 3) {
-      stop("Non-linear formulas must be two-sided.")
+    if (length(x) != 3L) {
+      stop("Non-linear formulas must be two-sided.", call. = FALSE)
     }
     nlpars <- all.vars(lhs(x))
     x <- lapply(nlpars, function(nlp) update(x, paste(nlp, " ~ .")))
-  } else if (!(is.list(x) || is.null(x))) {
-    stop("invalid 'nonlinear' argument", call. = FALSE)
   }
   x
 }
 
 update_formula <- function(formula, data = NULL, family = gaussian(),
-                           partial = NULL, nonlinear = NULL) {
+                           nonlinear = NULL, partial = NULL) {
   # incorporate addition arguments and category specific effects into formula 
   # 
   # Args:
@@ -315,6 +344,7 @@ update_formula <- function(formula, data = NULL, family = gaussian(),
   #
   # Returns:
   #   an updated formula containing the addition and category specific effects
+  formula <- bf(formula, nonlinear = nonlinear)
   old_attributes <- attributes(formula)
   fnew <- ". ~ ."
   if (is(partial, "formula")) {
@@ -335,9 +365,6 @@ update_formula <- function(formula, data = NULL, family = gaussian(),
     formula <- update.formula(formula, formula(fnew))
   }
   attributes(formula) <- old_attributes
-  if (!isTRUE(attr(formula, "nonlinear"))) {
-    attr(formula, "nonlinear") <- length(nonlinear) > 0
-  }
   if (is.categorical(family) && is.null(attr(formula, "response"))) {
     respform <- extract_effects(formula)$respform
     model_response <- model.response(model.frame(respform, data = data))
@@ -349,6 +376,76 @@ update_formula <- function(formula, data = NULL, family = gaussian(),
     attr(formula, "response") <- response
   }
   formula
+}
+
+sformula <- function(x, incl_nl = TRUE, ...) {
+  # special formulas stored in brmsformula objects
+  # Args:
+  #   x: coerced to a 'brmsformula' object
+  #   incl_nl: include the 'nonlinear' argument in the output?
+  rmNULL(attributes(bf(x))[auxpars(incl_nl = incl_nl)])
+}
+
+auxpars <- function(incl_nl = FALSE) {
+  auxpars <- c("sigma", "shape", "nu", "phi")
+  if (incl_nl) {
+    auxpars <- c(auxpars, "nonlinear")
+  }
+  auxpars
+}
+
+valid_auxpars <- function(family, effects = list(), autocor = cor_arma()) {
+  # convenience function to find relevant auxiliary parameters
+  x <- c(sigma = has_sigma(family, effects = effects, autocor = autocor),
+         shape = has_shape(family), nu = has_nu(family), phi = has_phi(family))
+  names(x)[x]
+}
+
+avoid_auxpars <- function(names, effects) {
+  # avoid ambiguous parameter names
+  # Args:
+  #   names: names to check for ambiguity
+  #   effects: output of extract_effects
+  auxpars <- intersect(auxpars(), names(effects))
+  if (length(auxpars)) {
+    auxpars_prefix <- paste0("^", auxpars, "_")
+    invalid <- any(ulapply(auxpars_prefix, grepl, names))
+    if (invalid) {
+      auxpars <- paste0(auxpars, "_", collapse = ", ")
+      stop("Variable names starting with ", auxpars,
+           " are not allowed for this model.", 
+           call. = FALSE)
+    }
+  }
+  invisible(NULL)
+}
+
+#' @export
+update.brmsformula <- function(object, formula., 
+                               mode = c("update", "replace", "keep"), 
+                               ...) {
+  # update a brmsformula and / or its attributes
+  # Args:
+  #   object: an object of class 'brmsformula'
+  #   formula.: formula to update object
+  #   mode: "update": apply update.formula
+  #         "replace": replace old formula
+  #         "keep": keep old formula
+  #   ...: currently unused
+  mode <- match.arg(mode)
+  new_att <- sformula(formula.)
+  old_att <- sformula(object)
+  if (mode == "update") {
+    new_formula <- update.formula(object, formula., ...)
+  } else if (mode == "replace") {
+    new_formula <- formula.
+  } else {
+    new_formula <- object
+  }
+  attributes(new_formula)[union(names(new_att), names(old_att))] <- NULL
+  new_formula <- do.call(bf, c(new_formula, new_att))
+  new_formula <- SW(do.call(bf, c(new_formula, old_att)))
+  new_formula
 }
 
 extract_random <- function(re_terms) {
@@ -404,106 +501,111 @@ illegal_group_expr <- function(group, bs_valid = TRUE) {
     any(ulapply(rsv_signs, grepl, x = group, fixed = TRUE))
 }
 
-check_re_formula <- function(re_formula, old_ranef, data) {
+get_re_terms <- function(x, formula = FALSE) {
+  # extract RE terms from a formula of character vector
+  # Args:
+  #   x: formula or character vector
+  #   formula: return a formula containing only ranefs?
+  if (is(x, "formula")) {
+    x <- gsub(" ", "", attr(terms(x), "term.labels"))
+  }
+  re_terms <- x[grepl("\\|", x)]
+  if (length(re_terms)) {
+    re_terms <- paste0("(", re_terms, ")")
+  } 
+  if (formula) {
+    if (length(re_terms)) {
+      re_terms <- formula(paste("~ 1", collapse("+", re_terms)))
+    } else {
+      re_terms <- ~ 1
+    }
+  }
+  re_terms
+}
+
+check_re_formula <- function(re_formula, formula) {
   # validate the re_formula argument as passed to predict and fitted
-  #
   # Args:
   #   re_formula: see predict.brmsfit for documentation
-  #   old_ranef: named list containing the RE names 
-  #              of each grouping factor in the original model
-  #   data: data supplied by the user
-  #
+  #   formula: formula to match re_formula with
   # Returns:
-  #   named list containing the RE names of each grouping factor
-  #   as defined in re_formula; or NULL if re_formula is NA or ~ 1
+  #   updated re_formula containign only terms existent in formula
+  old_re_formula <- get_re_terms(formula, formula = TRUE)
   if (is.null(re_formula)) {
-    new_ranef <- old_ranef
-  } else if (is.formula(re_formula)) {
-    if (!is.data.frame(data)) {
-      stop("argument re_formula requires models fitted with brms > 0.5.0",
-           call. = FALSE)
-    }
-    if (length(re_formula) == 3) {
-      stop("re_formula must be one-sided", call. = FALSE)
-    }
-    ee <- extract_effects(re_formula, check_response = FALSE)
-    if (length(all.vars(ee$fixed))) {
-      stop("fixed effects are not allowed in re_formula", call. = FALSE)
-    }
-    if (!nrow(ee$random)) {
-      # if no RE terms are present in re_formula
-      return(NULL)
-    }
-    # the true family doesn't matter here
-    data <- update_data(data, family = NA, effects = ee)
-    new_ranef <- gather_ranef(ee, data = data)
-    new_ranef <- combine_duplicates(new_ranef)
-    invalid_gf <- setdiff(names(new_ranef), names(old_ranef))
-    if (length(invalid_gf)) {
-      stop(paste("Invalid grouping factors detected:", 
-                 paste(invalid_gf, collapse = ", ")), call. = FALSE)
-    }
-    for (gf in names(new_ranef)) {
-      invalid_re <- setdiff(new_ranef[[gf]], old_ranef[[gf]])
-      if (length(invalid_re)) {
-        stop(paste0("Invalid random effects detected for grouping factor ", 
-                    gf, ": ", paste(invalid_re, collapse = ", ")),
-             call. = FALSE)
-      } 
-      attributes(new_ranef[[gf]]) <- attributes(old_ranef[[gf]])
-    }
-  } else if (is.na(re_formula)) {
-    new_ranef <- NULL
+    re_formula <- old_re_formula
+  } else if (SW(anyNA(re_formula))) {
+    re_formula <- ~ 1
   } else {
-    stop("invalid re_formula argument", call. = FALSE)
+    re_formula <- get_re_terms(as.formula(re_formula), formula = TRUE)
+    new <- extract_effects(re_formula, check_response = FALSE)$random
+    old <- extract_effects(old_re_formula, check_response = FALSE)$random
+    if (nrow(new)) {
+      new_terms <- lapply(new$form, terms)
+      found <- rep(FALSE, nrow(new))
+      for (i in 1:nrow(new)) {
+        group <- new$group[[i]]
+        old_terms <- lapply(old$form[old$group == group], terms)
+        j <- 1
+        while (!found[i] && j <= length(old_terms)) {
+          found[i] <- all(attr(new_terms[[i]], "term.labels") %in% 
+                       attr(old_terms[[j]], "term.labels")) &&
+                      attr(new_terms[[i]], "intercept") <=
+                       attr(old_terms[[j]], "intercept")
+          j <- j + 1
+        }
+      }  
+      new <- new[found, ]
+      if (nrow(new)) {
+        forms <- ulapply(new$form, formula2string, rm = 1)
+        re_terms <- paste("(", forms, "|", new$group, ")")
+        re_formula <- formula(paste("~", paste(re_terms, collapse = "+")))
+      } else {
+        re_formula <- ~ 1
+      }
+    } else {
+      re_formula <- ~ 1
+    }
   }
-  new_ranef
+  re_formula
 }
 
 update_re_terms <- function(formula, re_formula = NULL) {
-  # remove RE terms in formula and add RE terms of re_formula
-  #
+  # remove RE terms in formula and add valid RE terms of re_formula
+  # can handle brmsformula objects
   # Args:
   #   formula: model formula to be updated
   #   re_formula: formula containing new RE terms
-  #
   # Returns:
   #  a formula with updated RE terms
-  if (isTRUE(attr(formula, "nonlinear"))) {
+  spars <- sformula(formula)
+  for (ap in setdiff(names(spars), "nonlinear")) {
+    spars[[ap]] <- update_re_terms(spars[[ap]], re_formula = re_formula)
+  }
+  if (!is.null(spars$nonlinear)) {
     # non-linear formulae may cause errors when passed to terms
     # and do not contain random effects anyway
-    return(formula)
-  }
-  if (suppressWarnings(anyNA(re_formula))) {
-    re_formula <- ~ 1
-  }
-  if (is.formula(re_formula)) {
+    new_formula <- formula
+    spars$nonlinear <- lapply(spars$nonlinear, update_re_terms, 
+                              re_formula = re_formula)
+  } else {
+    re_formula <- check_re_formula(re_formula, formula)
     new_formula <- formula2string(formula)
-    old_term_labels <- rename(attr(terms(formula), "term.labels"), " ", "")
-    old_re_terms <- old_term_labels[grepl("\\|", old_term_labels)]
+    old_re_terms <- get_re_terms(formula)
     if (length(old_re_terms)) {
-      old_re_terms <- paste0("(", old_re_terms, ")")
       # make sure that + before random terms are also removed
-      old_re_terms <- c(paste0("+", old_re_terms), old_re_terms)
-      new_formula <- rename(new_formula, old_re_terms, "")
+      rm_terms <- c(paste0("+", old_re_terms), old_re_terms)
+      new_formula <- rename(new_formula, rm_terms, "")
       if (grepl("~$", new_formula)) {
         # lhs only formulas are not allowed
         new_formula <- paste(new_formula, "1")
       }
     }
-    new_term_labels <- rename(attr(terms(re_formula), "term.labels"),  " ", "")
-    new_re_terms <- new_term_labels[grepl("\\|", new_term_labels)]
-    if (length(new_re_terms)) {
-      new_re_terms <- paste0("(", new_re_terms, ")")
-      new_formula <- paste(c(new_formula, new_re_terms), collapse = "+")
-    }
+    new_re_terms <- get_re_terms(re_formula)
+    new_formula <- paste(c(new_formula, new_re_terms), collapse = "+")
     new_formula <- formula(new_formula)
-  } else if (is.null(re_formula)) {
-    new_formula <- formula
-  } else {
-    stop("invalid re_formula argument", call. = FALSE)
-  } 
-  attributes(new_formula) <- attributes(formula)
+  }
+  attributes(new_formula)[names(spars)] <- spars
+  environment(new_formula) <- environment(formula)
   new_formula
 }
 
@@ -527,17 +629,27 @@ get_effect <- function(effects, target = c("fixed", "mono", "cse", "gam")) {
   out
 }
 
-get_random <- function(effects) {
+get_random <- function(effects, all = TRUE) {
   # get random effects information in a data.frame
   # Args:
   #   effects: object returned by extract_effects
-  if (!is.null(effects$nonlinear)) {
-    out <- do.call(rbind, lapply(effects$nonlinear, function(par) par$random))
-    # R does not allow duplicated rownames and adds "." causing Stan to fail
-    out$nlpar <- get_matches("^[^\\.]+", rownames(out))
-    attr(out, "nonlinear") <- TRUE
-  } else {
+  #   all: logical; include ranefs of nl and aux parameters?
+  if (!is.null(effects$random)) {
+    stopifnot(is.data.frame(effects$random))
     out <- effects$random
+    out$nlpar <- rep("", nrow(out))
+  } else {
+    out <- NULL
+  }
+  if (all) {
+    el <- rmNULL(c(effects[auxpars()], effects$nonlinear), recursive = FALSE)
+    if (length(el)) {
+      rand <- do.call(rbind, lapply(el, function(par) par$random))
+      # R does not allow duplicated rownames and adds "." causing Stan to fail
+      rand$nlpar <- get_matches("^[^\\.]+", rownames(rand))
+      out <- rbind(out, rand)
+      attr(out, "nonlinear") <- TRUE
+    } 
   }
   out
 }
@@ -641,7 +753,6 @@ amend_terms <- function(x, forked = FALSE) {
 
 check_intercept <- function(names) {
   # check if model contains fixed effects intercept
-  #
   # Args:
   #   names: The names of the design matrix
   #          to be checked for an intercept
@@ -706,34 +817,36 @@ has_splines <- function(effects) {
   # Args:
   #   effects: output of extract_effects
   if (length(effects$nonlinear)) {
-    out <- any(ulapply(effects$nonlinear, 
-                       function(x) !is.null(x[["gam"]])))
+    out <- any(ulapply(effects$nonlinear, has_splines))
   } else {
     out <- !is.null(effects[["gam"]])
   }
-  out
+  ee_auxpars <- rmNULL(effects[auxpars()], recursive = FALSE)
+  out || any(ulapply(ee_auxpars, has_splines))
 }
 
-gather_ranef <- function(effects, data = NULL, ...) {
+gather_ranef <- function(effects, data = NULL, all = TRUE,
+                         combine = FALSE) {
   # gathers helpful information on the random effects
-  # 
   # Args:
   #   effects: output of extract_effects
   #   data: data passed to brm after updating
-  #   ...: Further arguments passed to get_model_matrix
-  #
+  #   all: include REs of non-linear and auxiliary parameters?
   # Returns: 
   #   A named list with one element per grouping factor
-  random <- get_random(effects)
-  Z <- lapply(random$form, get_model_matrix, data = data, ...)
+  random <- get_random(effects, all = all)
+  Z <- lapply(random$form, get_model_matrix, data = data, 
+              forked = isTRUE(attr(effects$fixed, "forked")))
   ranef <- setNames(lapply(Z, colnames), random$group)
   for (i in seq_along(ranef)) {
     attr(ranef[[i]], "levels") <- 
       levels(factor(get(random$group[[i]], data)))
     attr(ranef[[i]], "group") <- names(ranef)[i]
     attr(ranef[[i]], "cor") <- random$cor[[i]]
-    if (length(effects$nonlinear))
-      attr(ranef[[i]], "nlpar") <- random$nlpar[i]
+    attr(ranef[[i]], "nlpar") <- random$nlpar[i]
+  }
+  if (combine) {
+    ranef <- combine_duplicates(ranef, sep = c("nlpar", "levels"))
   }
   ranef
 }
@@ -815,7 +928,6 @@ add_families <- function(x) {
 
 is.formula <- function(x, or = TRUE) {
   # checks if x is formula (or list of formulas)
-  #
   # Returns:
   #   x: a formula or a list of formulas
   #   or: logical; indicates if any element must be a formula (or = TRUE) 
@@ -844,7 +956,7 @@ formula2string <- function(formula, rm = c(0, 0)) {
   x <- gsub(" ", "", Reduce(paste, deparse(formula)))
   x <- substr(x, 1 + rm[1], nchar(x) - rm[2])
   x
-} 
+}
 
 get_boundaries <- function(trunc) {
   # extract truncation boundaries out of a formula
@@ -902,7 +1014,8 @@ exclude_pars <- function(effects, ranef = list(),
   out <- c("eta", "etap", "eta_2PL", "Eta", "temp_Intercept1", 
            "temp_Intercept",  "Lrescor", "Rescor", "Sigma", 
            "LSigma", "disp_sigma", "e", "E", "res_cov_matrix", 
-           "lp_pre", "hs_local", "hs_global")
+           "lp_pre", "hs_local", "hs_global",
+           intersect(auxpars(), names(effects)))
   nlpars <- names(effects$nonlinear)
   if (length(nlpars)) {
     out <- c(out, unique(paste0("eta_", nlpars)))
@@ -921,15 +1034,16 @@ exclude_pars <- function(effects, ranef = list(),
   if (length(ranef)) {
     rm_re_pars <- c("z", "L", "Cor", if (!save_ranef) "r")
     # names of NL-parameters must be computed based on ranef here
-    nlp_ranef <- ulapply(ranef, attr, "nlpar")
-    if (length(nlp_ranef)) {
-      stopifnot(length(nlp_ranef) == length(ranef))
+    nlp <- ulapply(ranef, attr, "nlpar")
+    if (length(nlp)) {
+      stopifnot(length(nlp) == length(ranef))
+      nlp <- ifelse(nchar(nlp), paste0(nlp, "_"), nlp)
       for (k in seq_along(ranef)) {
-        i <- which(which(nlp_ranef == nlp_ranef[k]) == k)
-        out <- c(out, paste0(rm_re_pars, "_", nlp_ranef[k], "_", i))
+        i <- which(which(nlp == nlp[k]) == k)
+        out <- c(out, paste0(rm_re_pars, "_", nlp[k], i))
         neff <- length(ranef[[k]])
         if (neff > 1L) {
-          out <- c(out, paste0("r_", nlp_ranef[k], "_", i, "_", 1:neff))
+          out <- c(out, paste0("r_", nlp[k], i, "_", 1:neff))
         }
       }
     } else {
