@@ -291,7 +291,8 @@ log_diff_exp <- function(x, y) {
 }
 
 log_sum_exp <- function(x, y) {
-  log(exp(x) + exp(y))
+  max <- max(x, y)
+  max + log(exp(x - max) + exp(y - max))
 }
 
 log_inv_logit <- function(x) {
