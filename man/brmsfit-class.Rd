@@ -12,8 +12,11 @@ Models fitted with the \code{\link[brms:brms]{brms}} package are represented as 
 \details{
   Currently, the following S3 methods are available for class \code{brmsfit}: 
   
+  \code{\link[brms:posterior_samples]{as.data.frame}},
+  \code{\link[brms:posterior_samples]{as.matrix}},
   \code{\link[brms:as.mcmc.brmsfit]{as.mcmc}},
   \code{\link[brms:coef.brmsfit]{coef}},
+  \code{\link[brms:expose_functions]{expose_functions}},
   \code{\link[stats:family]{family}},
   \code{\link[brms:fitted.brmsfit]{fitted}},
   \code{\link[brms:fixef.brmsfit]{fixef}},
@@ -43,10 +46,6 @@ Models fitted with the \code{\link[brms:brms]{brms}} package are represented as 
   \code{\link[brms:VarCorr.brmsfit]{VarCorr}}, 
   \code{\link[brms:vcov.brmsfit]{vcov}}, 
   \code{\link[brms:WAIC.brmsfit]{WAIC}}.
-  
-  \code{brmsfit} objects do not have their own \code{tidy} method yet,
-  but you may use \code{broom::tidyMCMC(<brmsfit>$fit)} to
-  apply the \code{tidy} method for \code{stanfit} objects.
 }
 
 \section{Slots}{
@@ -63,13 +62,15 @@ Models fitted with the \code{\link[brms:brms]{brms}} package are represented as 
     \item{\code{ranef}:}{random effects structure; a named list}
     \item{\code{autocor}:}{an object of class \code{cor_brms} 
     containing the autocorrelation structure}
-    \item{\code{partial}:}{formula of the category specific effects 
-    applied in ordinal models}
+    \item{\code{threshold}:}{character string defining the threshold
+    type used in ordinal models}
     \item{\code{cov_ranef}:}{a list of customized random effects 
     covariance matrices}
     \item{\code{fit}:}{fitted results including the posterior samples; 
     an object of class \code{stanfit}}
     \item{\code{algorithm}:}{the name of the algorithm used to fit the model}
+     \item{\code{version}:}{the version of \pkg{brms} with which the
+     model was fitted}
   }
 }
 
