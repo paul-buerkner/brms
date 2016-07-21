@@ -20,9 +20,8 @@ test_that("extract_effects finds all random effects terms", {
                list(~1+x, ~1+x, ~1))
   expect_equal(extract_effects(y ~ (1+x||g1/g2) + (1|g3))$random$cor, 
                c(FALSE, FALSE, TRUE))
+  expect_equal(extract_effects(y ~ 1|g1)$random$group, "g1")
   expect_error(extract_effects(y ~ (1+x|g1+g2) + x + (1|g1)))
-  expect_error(extract_effects(y ~ 1|g1),
-               "Random effects terms should be enclosed in brackets")
 })
 
 test_that("extract_effects accepts || syntax", {
@@ -114,6 +113,15 @@ test_that("extract_effects finds all spline terms", {
                "splines 'te' and 'ti' are not yet implemented")
 })
 
+test_that("extract_effects handles very long RE terms", {
+  # tests issue #100
+  covariate_vector <- paste0("xxxxx", 1:80, collapse = "+")
+  formula <- paste(sprintf("y ~ 0 + trait + trait:(%s)", covariate_vector),
+                   sprintf("(1+%s|id)", covariate_vector), sep = " + ")
+  ee <- extract_effects(formula = as.formula(formula))
+  expect_equal(ee$random$group, "id")
+})
+
 test_that("nonlinear_effects rejects invalid non-linear models", {
   expect_error(nonlinear_effects(list(a ~ 1, b ~ 1), model = y ~ a^x),
                "missing in formula: b")
@@ -167,10 +175,10 @@ test_that("update_formula returns correct formulas", {
 test_that("get_effect works correctly", {
   effects <- extract_effects(y ~ a - b^x, 
                nonlinear = list(a ~ z, b ~ v + mono(z)))
-  expect_equivalent(get_effect(effects), list(y ~ a - b^x, ~ z, ~ v))
+  expect_equivalent(get_effect(effects), list(y ~ a - b^x, ~1 + z, ~ 1 + v))
   expect_equivalent(get_effect(effects, "mono"), list(NULL, NULL, ~ z))
   effects <- extract_effects(y ~ x + z + (1|g))
-  expect_equivalent(get_effect(effects), list(y ~ x + z))
+  expect_equivalent(get_effect(effects), list(y ~ 1 + x + z))
 })
 
 test_that("check_re_formula returns correct REs", {

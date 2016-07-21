@@ -37,15 +37,15 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
     re_terms <- NULL
   } else {
     # terms() doesn't like non-linear formulas
-    re_terms <- get_re_terms(formula)
-    if (length(re_terms)) {
-      tfixed <- rename(tfixed, c(paste0("+", re_terms), re_terms), "")
-    } 
+    terms <- terms(formula)
+    all_terms <- gsub("[ \t\r\n]+", "", perl = TRUE,
+                      x = attr(terms, "term.labels"))
+    pos_re_terms <- grep("\\|", all_terms)
+    re_terms <- all_terms[pos_re_terms]
     # monotonic effects
-    term_labels <- gsub(" ", "", attr(terms(formula), "term.labels"))
-    mono_terms <- term_labels[grepl("^mono(|tonic|tonous)\\(", term_labels)]
+    pos_mono_terms <- grep("^mono(|tonic|tonous)\\(", all_terms)
+    mono_terms <- all_terms[pos_mono_terms]
     if (length(mono_terms)) {
-      tfixed <- rename(tfixed, c(paste0("+", mono_terms), mono_terms), "")
       mono_terms <- sub("^mono(|tonous)\\(", "monotonic(", mono_terms)
       mono_terms <- substr(mono_terms, 11, nchar(mono_terms) - 1)
       mono_terms <- formula(paste("~", paste(mono_terms, collapse = "+")))
@@ -60,14 +60,14 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
       x$mono <- mono_terms
     }
     # category specific effects in ordinal models
-    cse_terms <- term_labels[grepl("^cse\\(", term_labels)]
+    pos_cse_terms <- grep("^cse\\(", all_terms)
+    cse_terms <- all_terms[pos_cse_terms]
     if (length(cse_terms)) {
       if (!is.na(family[[1]]) && !allows_cse(family)) {
         stop(paste("Category specific effects are only meaningful for", 
                    "families 'sratio', 'cratio', and 'acat'."), 
              call. = FALSE)
       }
-      tfixed <- rename(tfixed, c(paste0("+", cse_terms), cse_terms), "")
       cse_terms <- substr(cse_terms, 5, nchar(cse_terms) - 1)
       cse_terms <- formula(paste("~", paste(cse_terms, collapse = "+")))
       attr(cse_terms, "rsv_intercept") <- TRUE
@@ -77,30 +77,35 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
       x$cse <- cse_terms
     }
     # parse spline expression for GAMMs
-    splines <- term_labels[grepl("^(s|t2|te|ti)\\(", term_labels)]
-    if (length(splines)) {
+    pos_spline_terms <- grep("^(s|t2|te|ti)\\(", all_terms)
+    spline_terms <- all_terms[pos_spline_terms]
+    if (length(spline_terms)) {
       if (is.mv(family) || is.forked(family) || is.categorical(family)) {
         stop("Splines are not yet implemented for this family.", 
              call. = FALSE)
       }
-      if (any(grepl("^(te|ti)\\(", splines))) {
+      if (any(grepl("^(te|ti)\\(", spline_terms))) {
         stop(paste("Tensor product splines 'te' and 'ti' are not yet", 
                    "implemented in brms. Consider using 't2' instead."),
              call. = FALSE)
       }
-      tfixed <- rename(tfixed, c(paste0("+", splines), splines), "")
       if (!nchar(lhs_char)) {
         lhs_char <- get_matches("^[^~]*", tfixed)
       }
       stopifnot(nchar(lhs_char) > 0L)
-      x$gam <- formula(paste(lhs_char, "~", paste(splines, collapse = "+")))
+      x$gam <- formula(paste(lhs_char, "~", 
+                             paste(spline_terms, collapse = "+")))
     }
-    if (substr(tfixed, nchar(tfixed), nchar(tfixed)) == "~") {
-      tfixed <- paste0(tfixed, "1")
+    rm_terms <- c(pos_re_terms, pos_mono_terms, 
+                  pos_cse_terms, pos_spline_terms)
+    fe_terms <- all_terms
+    if (length(rm_terms)) {
+      fe_terms <- fe_terms[-rm_terms]
     }
-    if (grepl("|", x = tfixed, fixed = TRUE)) {
-      stop("Random effects terms should be enclosed in brackets", call. = FALSE)
-    }
+    int_term <- ifelse(attr(terms, "intercept") == 1, "1", "0")
+    fe_terms <- paste(c(int_term, fe_terms, get_offset(formula)), 
+                      collapse = "+")
+    tfixed <- paste(sub("~.*", "", tfixed), "~", fe_terms)
     x$fixed <- formula(tfixed)
     if (is.ordinal(family)) {
       x$fixed <- update.formula(x$fixed, . ~ . + 1)
@@ -453,11 +458,11 @@ extract_random <- function(re_terms) {
   # Args:
   #   re_terms: A vector of random effects terms in lme4 syntax
   stopifnot(!length(re_terms) || is.character(re_terms))
-  lhs_terms <- get_matches("\\([^\\|]*", re_terms)
-  rhs_terms <- get_matches("\\|[^\\)]*", re_terms)
+  lhs_terms <- get_matches("^[^\\|]*", re_terms)
+  rhs_terms <- get_matches("\\|.*$", re_terms)
   random <- vector("list", length(re_terms))
   for (i in seq_along(re_terms)) {
-    form <- formula(paste("~", substring(lhs_terms[i], 2)))
+    form <- formula(paste("~", lhs_terms[i]))
     cor <- substr(rhs_terms[i], 1, 2) != "||"
     rhs_terms[i] <- sub("^\\|*", "", rhs_terms[i])
     groups <- unlist(strsplit(rhs_terms[i], "/", fixed = TRUE))
@@ -501,16 +506,16 @@ illegal_group_expr <- function(group, bs_valid = TRUE) {
     any(ulapply(rsv_signs, grepl, x = group, fixed = TRUE))
 }
 
-get_re_terms <- function(x, formula = FALSE) {
+get_re_terms <- function(x, formula = FALSE, brackets = TRUE) {
   # extract RE terms from a formula of character vector
   # Args:
   #   x: formula or character vector
   #   formula: return a formula containing only ranefs?
   if (is(x, "formula")) {
-    x <- gsub(" ", "", attr(terms(x), "term.labels"))
+    x <- gsub("[ \t\r\n]+", "", attr(terms(x), "term.labels"), perl = TRUE)
   }
   re_terms <- x[grepl("\\|", x)]
-  if (length(re_terms)) {
+  if (brackets && length(re_terms)) {
     re_terms <- paste0("(", re_terms, ")")
   } 
   if (formula) {
@@ -678,7 +683,6 @@ get_offset <- function(x) {
     if (!is.null(offset_pos)) {
       vars <- attr(x, "variables")
       offset <- ulapply(offset_pos, function(i) deparse(vars[[i+1]]))
-      offset <- paste(offset, collapse = "+")
     } else {
       offset <- NULL
     }
@@ -953,7 +957,7 @@ formula2string <- function(formula, rm = c(0, 0)) {
     stop(paste(deparse(substitute(formula)), "must be of class formula"))
   }
   if (is.na(rm[2])) rm[2] <- 0
-  x <- gsub(" ", "", Reduce(paste, deparse(formula)))
+  x <- gsub("[ \t\r\n]+", "", Reduce(paste, deparse(formula)), perl = TRUE)
   x <- substr(x, 1 + rm[1], nchar(x) - rm[2])
   x
 }
