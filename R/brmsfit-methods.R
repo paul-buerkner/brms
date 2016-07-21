@@ -1152,9 +1152,11 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
            call. = FALSE)
     }
     # list all required variables
-    req_vars <- c(lapply(get_effect(ee), rhs), get_random(ee)$form, 
-                  get_effect(ee, "mono"), get_effect(ee, "gam"), ee$cse,
-                  ee$se, ee$disp, extract_time(x$autocor$formula)$all)
+    req_vars <- c(lapply(get_effect(ee), rhs), get_random(ee)$form,
+                  lapply(get_effect(ee, "mono"), rhs), 
+                  lapply(get_effect(ee, "gam"), rhs), 
+                  ee$cse, ee$se, ee$disp, 
+                  extract_time(x$autocor$formula)$all)
     req_vars <- unique(ulapply(req_vars, all.vars))
     req_vars <- setdiff(req_vars, c(rsv_vars, names(ee$nonlinear)))
     conditions <- as.data.frame(as.list(rep(NA, length(req_vars))))

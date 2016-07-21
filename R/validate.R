@@ -621,15 +621,21 @@ plus_rhs <- function(x) {
   else "+ 1"
 }
 
-get_effect <- function(effects, target = c("fixed", "mono", "cse", "gam")) {
-  # get fixed effects formulas in a list
+get_effect <- function(effects, target = c("fixed", "mono", "cse", "gam"),
+                       all = TRUE) {
+  # get formulas of certain effects in a list
   # Args:
   #   effects: object returned by extract_effects
+  #   target: type of effects to return
+  #   all: logical; include effects of nl and auxpars?
   target <- match.arg(target)
   out <- list(effects[[target]])
-  if (!is.null(effects$nonlinear)) {
-    out <- c(out, lapply(effects$nonlinear, function(par) par[[target]]))
-    attr(out, "nonlinear") <- TRUE
+  if (all) {
+    el <- rmNULL(c(effects[auxpars()], effects$nonlinear), recursive = FALSE)
+    if (length(el)) {
+      out <- c(out, lapply(el, function(par) par[[target]]))
+      attr(out, "nonlinear") <- TRUE
+    }
   }
   out
 }
