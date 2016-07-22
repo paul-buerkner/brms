@@ -178,7 +178,6 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
                           return_standata = TRUE,
                           check_response = FALSE) {
   # amend newdata passed to predict and fitted methods
-  # 
   # Args:
   #   newdata: a data.frame containing new data for prediction 
   #   fit: an object of class brmsfit
@@ -188,10 +187,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   #                    to Stan, or just return the updated newdata?
   #   check_response: Should response variables be checked
   #                   for existence and validity?
-  #
   # Notes:
   #   used in predict.brmsfit, fitted.brmsfit and linear_predictor.brmsfit
-  #
   # Returns:
   #   updated data.frame being compatible with fit$formula
   if (is.null(newdata) || is(newdata, "list")) {
@@ -342,31 +339,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       control[comp] <- standata(fit)[comp]
     }
     knots <- attr(model.frame(fit), "knots")
-    if (has_splines(ee)) {
-      # compute smoothing terms for the original data
-      # as the basis for doing predictions with new data
-      olddata <- rm_attr(model.frame(fit), "terms")
-      gam_args <- list(data = olddata, knots = knots, 
-                       absorb.cons = TRUE, modCon = 3)
-      if (length(ee$nonlinear)) {
-        smooth <- named_list(names(ee$nonlinear))
-        for (j in seq_along(smooth)) {
-          splines <- get_spline_labels(ee$nonlinear[[j]])
-          for (i in seq_along(splines)) {
-            sc_args <- c(list(eval_spline(splines[i])), gam_args)
-            smooth[[j]][[i]] <- do.call(mgcv::smoothCon, sc_args)[[1]]
-          }
-        }
-      } else {
-        splines <- get_spline_labels(ee)
-        smooth <- vector("list", length(splines))
-        for (i in seq_along(splines)) {
-          sc_args <- c(list(eval_spline(splines[i])), gam_args)
-          smooth[[i]] <- do.call(mgcv::smoothCon, sc_args)[[1]]
-        }
-      }
-      control$smooth <- smooth
-    }
+    control$smooth <- make_smooth_list(ee, model.frame(fit), knots = knots)
     if (is(fit$autocor, "cor_fixed")) {
       fit$autocor$V <- diag(median(diag(fit$autocor$V), na.rm = TRUE), 
                             nrow(newdata))
@@ -485,6 +458,52 @@ prepare_mono_vars <- function(data, vars, check = TRUE) {
     }
   }
   data
+}
+
+make_smooth_list <- function(effects, data, knots = NULL) {
+  # compute smoothing objects based on the original data
+  # as the basis for doing predictions with new data
+  # Args:
+  #   effects: output of extract_effects
+  #   data: the original data frame
+  #   knots: optional list of knot values
+  # Returns:
+  #   A named list of lists of smoothing objects
+  #   one element per (non-linear) parameter    
+  if (has_splines(effects)) {
+    data <- rm_attr(data, "terms")
+    gam_args <- list(data = data, knots = knots, 
+                     absorb.cons = TRUE, modCon = 3)
+    if (length(effects$nonlinear)) {
+      smooth <- named_list(names(effects$nonlinear))
+      for (nlp in names(smooth)) {
+        splines <- get_spline_labels(effects$nonlinear[[nlp]])
+        for (i in seq_along(splines)) {
+          sc_args <- c(list(eval_spline(splines[i])), gam_args)
+          smooth[[nlp]][[i]] <- do.call(mgcv::smoothCon, sc_args)[[1]]
+        }
+      }
+    } else {
+      smooth <- named_list("mu")
+      splines <- get_spline_labels(effects)
+      for (i in seq_along(splines)) {
+        sc_args <- c(list(eval_spline(splines[i])), gam_args)
+        smooth[["mu"]][[i]] <- do.call(mgcv::smoothCon, sc_args)[[1]]
+      }
+    }
+    auxpars <- intersect(auxpars(), names(effects))
+    smooth <- c(smooth, named_list(auxpars))
+    for (ap in auxpars) {
+      splines <- get_spline_labels(effects[[ap]])
+      for (i in seq_along(splines)) {
+        sc_args <- c(list(eval_spline(splines[i])), gam_args)
+        smooth[[ap]][[i]] <- do.call(mgcv::smoothCon, sc_args)[[1]]
+      }
+    }
+  } else {
+    smooth <- list()
+  }
+  smooth
 }
 
 arr_design_matrix <- function(Y, r, group)  { 

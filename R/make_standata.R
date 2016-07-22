@@ -161,24 +161,25 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
            call. = FALSE)
     }
     standata <- c(standata, list(KC = ncol(C), C = C)) 
-    for (i in seq_along(nlpars)) {
-      args_eff_spec <- list(effects = ee$nonlinear[[i]], nlpar = nlpars[i],
-                            Jm = control[[paste0("Jm_", nlpars[i])]],
-                            smooth = control$smooth[[i]])
+    for (nlp in nlpars) {
+      args_eff_spec <- list(effects = ee$nonlinear[[nlp]], nlpar = nlp,
+                            Jm = control[[paste0("Jm_", nlp)]],
+                            smooth = control$smooth[[nlp]])
       data_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
       standata <- c(standata, data_eff)
     }
   } else {
-    args_eff_spec <- list(effects = ee, smooth = control$smooth, 
-                          Jm = control$Jm)
+    args_eff_spec <- list(effects = ee, Jm = control$Jm,
+                          smooth = control$smooth[["mu"]])
     data_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
     standata <- c(standata, data_eff, data_csef(ee, data = data))
     standata$offset <- model.offset(data)
   }
   # data for predictors of scale / shape parameters
   for (ap in intersect(auxpars(), names(ee))) {
-    # TODO handle smooths and monotonic effects for newdata
-    args_eff_spec <- list(effects = ee[[ap]], nlpar = ap)
+    # TODO handle monotonic effects for newdata
+    args_eff_spec <- list(effects = ee[[ap]], nlpar = ap,
+                          smooth = control$smooth[[ap]])
     data_aux_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
     standata <- c(standata, data_aux_eff)
   }
