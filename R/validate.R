@@ -1,6 +1,5 @@
 extract_effects <- function(formula, ..., family = NA, nonlinear = NULL, 
-                            check_response = TRUE, resp_rhs_all = TRUE,
-                            lhs_char = "") {
+                            check_response = TRUE, resp_rhs_all = TRUE) {
   # Parse the model formula and related arguments
   # Args:
   #   formula: An object of class 'formula' or 'brmsformula'
@@ -9,8 +8,6 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   #   nonlinear: a list of formulas specifying non-linear effects
   #   check_response: check if the response part is non-empty
   #   resp_rhs_all: include response variables on the RHS of $all? 
-  #   lhs_char: the response part of the model as a character string;
-  #             currently only used for splines in non-linear models
   # Returns: 
   #   A named list whose elements depend on the formula input 
   formula <- bf(formula, nonlinear = nonlinear)
@@ -89,12 +86,7 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
                    "implemented in brms. Consider using 't2' instead."),
              call. = FALSE)
       }
-      if (!nchar(lhs_char)) {
-        lhs_char <- get_matches("^[^~]*", tfixed)
-      }
-      stopifnot(nchar(lhs_char) > 0L)
-      x$gam <- formula(paste(lhs_char, "~", 
-                             paste(spline_terms, collapse = "+")))
+      x$gam <- formula(paste("~", paste(spline_terms, collapse = "+")))
     }
     rm_terms <- c(pos_re_terms, pos_mono_terms, 
                   pos_cse_terms, pos_spline_terms)
@@ -280,7 +272,6 @@ nonlinear_effects <- function(x, model = ~1, family = NA, rsv_pars = NULL) {
   #   A list of objects each returned by extract_effects
   stopifnot(is.list(x), is(model, "formula"))
   if (length(x)) {
-    lhs_char <- as.character(model[[2]])
     nleffects <- vector("list", length = length(x))
     for (i in seq_along(x)) {
       x[[i]] <- as.formula(x[[i]])
@@ -306,8 +297,7 @@ nonlinear_effects <- function(x, model = ~1, family = NA, rsv_pars = NULL) {
       }
       x[[i]] <- rhs(x[[i]])
       nleffects[[i]] <- extract_effects(x[[i]], family = family, 
-                                        check_response = FALSE,
-                                        lhs_char = lhs_char)
+                                        check_response = FALSE)
       names(nleffects)[[i]] <- nlresp
     }
     model_vars <- all.vars(rhs(model))
