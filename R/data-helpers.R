@@ -268,7 +268,9 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
           old_levels <- factor_levels[[i]]
           old_contrasts <- contrasts(factors[[i]])
           to_zero <- is.na(new_factor) | new_factor %in% ".ZERO"
-          if (any(to_zero)) {
+          # don't add the '.ZERO' level to response variables
+          is_resp <- factor_names[i] %in% all.vars(ee$respform)
+          if (!is_resp && any(to_zero)) {
             levels(new_factor) <- c(new_levels, ".ZERO")
             new_factor[to_zero] <- ".ZERO"
             old_levels <- c(old_levels, ".ZERO")
