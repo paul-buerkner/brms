@@ -162,42 +162,17 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     }
     standata <- c(standata, list(KC = ncol(C), C = C)) 
     for (i in seq_along(nlpars)) {
-<<<<<<< HEAD
       args_eff_spec <- list(effects = ee$nonlinear[[i]], nlpar = nlpars[i],
                             Jm = control[[paste0("Jm_", nlpars[i])]],
-                            G = control$G[[i]])
+                            smooth = control$smooth[[i]])
       data_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
       standata <- c(standata, data_eff)
     }
   } else {
-    args_eff_spec <- list(effects = ee, G = control$G, Jm = control$Jm)
+    args_eff_spec <- list(effects = ee, smooth = control$smooth, 
+                          Jm = control$Jm)
     data_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
     standata <- c(standata, data_eff, data_csef(ee, data = data))
-=======
-      nle <- ee$nonlinear[[i]]
-      data_fixef <- data_fixef(nle, data = data, family = family, 
-                               nlpar = nlpars[i], knots = knots, 
-                               not4stan = not4stan, 
-                               smooth = control$smooth[[i]])
-      data_monef <- data_monef(nle, data = data, prior = prior, 
-                               Jm = control[[paste0("Jm_", nlpars[i])]],
-                               nlpar = nlpars[i])
-      data_ranef <- data_ranef(nle, data = data, family = family, 
-                               cov_ranef = cov_ranef, nlpar = nlpars[i], 
-                               is_newdata = is_newdata, not4stan = not4stan)
-      standata <- c(standata, data_fixef, data_monef, data_ranef)
-    }
-  } else {
-    data_fixef <- data_fixef(ee, data = data, family = family, 
-                             autocor = autocor, knots = knots,
-                             not4stan = not4stan, smooth = control$smooth)
-    data_monef <- data_monef(ee, data = data, prior = prior, Jm = control$Jm)
-    data_csef <- data_csef(ee, data = data)
-    data_ranef <- data_ranef(ee, data = data, family = family, 
-                             cov_ranef = cov_ranef, not4stan = not4stan,
-                             is_newdata = is_newdata)
-    standata <- c(standata, data_fixef, data_monef, data_csef, data_ranef)
->>>>>>> refs/remotes/origin/improve_spline_implementation
     standata$offset <- model.offset(data)
   }
   # data for predictors of scale / shape parameters

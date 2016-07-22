@@ -519,20 +519,12 @@ arr_design_matrix <- function(Y, r, group)  {
   out
 }
 
-<<<<<<< HEAD
 data_effects <- function(effects, data, family = gaussian(),
                          prior = prior_frame(), autocor = cor_arma(),
                          cov_ranef = NULL, knots = NULL, nlpar = "", 
                          not4stan = FALSE, is_newdata = FALSE, 
-                         old_levels = NULL, G = NULL, Jm = NULL) {
+                         old_levels = NULL, smooth = NULL, Jm = NULL) {
   # combine data for all types of effects
-=======
-data_fixef <- function(effects, data, family = gaussian(),
-                       autocor = cor_arma(), knots = NULL,
-                       nlpar = "", not4stan = FALSE, 
-                       smooth = NULL) {
-  # prepare data for fixed effects for use in Stan 
->>>>>>> refs/remotes/origin/improve_spline_implementation
   # Args:
   #   effects: a list returned by extract_effects
   #   data: the data passed by the user
@@ -544,14 +536,14 @@ data_fixef <- function(effects, data, family = gaussian(),
   #   nlpar: optional character string naming a non-linear parameter
   #   not4stan: is the data for use in S3 methods only?
   #   old_levels: original levels of grouping factors
-  #   G: optional list returned by gam.setup based on the original data
-  #      used only to compute smoothing terms for new data
+  #   smooth: optional list of smoothing objects based on 
+  #           the original data
   #   Jm: optional precomputed values of Jm for monotonic effects
   # Returns:
   #   A named list of data to be passed to Stan
   data_fixef <- data_fixef(effects, data = data, family = family, 
                            nlpar = nlpar, knots = knots, 
-                           not4stan = not4stan, G = G)
+                           not4stan = not4stan, smooth = smooth)
   data_monef <- data_monef(effects, data = data, prior = prior, 
                            Jm = Jm, nlpar = nlpar)
   data_ranef <- data_ranef(effects, data = data, family = family, 
@@ -563,7 +555,8 @@ data_fixef <- function(effects, data, family = gaussian(),
 
 data_fixef <- function(effects, data, family = gaussian(),
                        autocor = cor_arma(), knots = NULL,
-                       nlpar = "", not4stan = FALSE, G = NULL) {
+                       nlpar = "", not4stan = FALSE, 
+                       smooth = NULL) {
   # prepare data for fixed effects for use in Stan 
   # Args: see data_effects
   stopifnot(length(nlpar) == 1L)
