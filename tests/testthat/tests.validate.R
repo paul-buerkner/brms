@@ -105,10 +105,10 @@ test_that("extract_effects rejects REs in non-linear formulas", {
 test_that("extract_effects finds all spline terms", {
   ee <- extract_effects(y ~ s(x) + t2(z) + v)
   expect_equal(all.vars(ee$fixed), c("y", "v"))
-  expect_equivalent(ee$gam, y ~ s(x) + t2(z))
+  expect_equivalent(ee$gam, ~ s(x) + t2(z))
   ee <- extract_effects(y ~ lp , nonlinear = list(lp ~ s(x) + t2(z) + v))
   expect_equal(all.vars(ee$nonlinear[[1]]$fixed), "v")
-  expect_equivalent(ee$nonlinear[[1]]$gam, y ~ s(x) + t2(z))
+  expect_equivalent(ee$nonlinear[[1]]$gam, ~ s(x) + t2(z))
   expect_error(extract_effects(y ~ s(x) + te(z) + v), 
                "splines 'te' and 'ti' are not yet implemented")
 })
