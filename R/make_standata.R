@@ -163,13 +163,13 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     standata <- c(standata, list(KC = ncol(C), C = C)) 
     for (nlp in nlpars) {
       args_eff_spec <- list(effects = ee$nonlinear[[nlp]], nlpar = nlp,
-                            Jm = control[[paste0("Jm_", nlp)]],
-                            smooth = control$smooth[[nlp]])
+                            smooth = control$smooth[[nlp]],
+                            Jm = control$Jm[[nlp]])
       data_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
       standata <- c(standata, data_eff)
     }
   } else {
-    args_eff_spec <- list(effects = ee, Jm = control$Jm,
+    args_eff_spec <- list(effects = ee, Jm = control$Jm[["mu"]],
                           smooth = control$smooth[["mu"]])
     data_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
     standata <- c(standata, data_eff, data_csef(ee, data = data))
@@ -179,7 +179,8 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   for (ap in intersect(auxpars(), names(ee))) {
     # TODO handle monotonic effects for newdata
     args_eff_spec <- list(effects = ee[[ap]], nlpar = ap,
-                          smooth = control$smooth[[ap]])
+                          smooth = control$smooth[[ap]],
+                          Jm = control$Jm[[ap]])
     data_aux_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
     standata <- c(standata, data_aux_eff)
   }

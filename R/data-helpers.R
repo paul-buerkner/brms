@@ -332,18 +332,22 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     old_terms <- attr(model.frame(fit), "terms")
     control$terms_attr <- attributes(old_terms)[c("variables", "predvars")]
     has_mono <- length(rmNULL(get_effect(ee, "mono")))
-    p <- if (length(ee$nonlinear)) paste0("_", names(ee$nonlinear)) else ""
     if (has_trials(fit$family) || has_cat(fit$family) || has_mono) {
       # some components should not be computed based on newdata
-      comp <- c("trials", "ncat", paste0("Jm", p))
-      control[comp] <- standata(fit)[comp]
+      pars <- c(names(ee$nonlinear), intersect(auxpars(), names(ee)))
+      comp <- c("trials", "ncat", paste0("Jm", c("", paste0("_", pars))))
+      old_standata <- rmNULL(standata(fit)[comp])
+      control[c("trials", "ncat")] <- old_standata[c("trials", "ncat")]
+      Jm <- old_standata[grepl("^Jm", names(old_standata))]
+      names(Jm) <- sub("^Jm$", "mu", sub("^Jm_", "", names(Jm)))
+      control[["Jm"]] <- Jm 
     }
-    knots <- attr(model.frame(fit), "knots")
-    control$smooth <- make_smooth_list(ee, model.frame(fit), knots = knots)
+    control$smooth <- make_smooth_list(ee, model.frame(fit))
     if (is(fit$autocor, "cor_fixed")) {
       fit$autocor$V <- diag(median(diag(fit$autocor$V), na.rm = TRUE), 
                             nrow(newdata))
     }
+    knots <- attr(model.frame(fit), "knots")
     newdata <- make_standata(new_formula, data = newdata, family = fit$family, 
                              autocor = fit$autocor, knots = knots, 
                              control = control)
@@ -460,17 +464,17 @@ prepare_mono_vars <- function(data, vars, check = TRUE) {
   data
 }
 
-make_smooth_list <- function(effects, data, knots = NULL) {
+make_smooth_list <- function(effects, data) {
   # compute smoothing objects based on the original data
   # as the basis for doing predictions with new data
   # Args:
   #   effects: output of extract_effects
-  #   data: the original data frame
-  #   knots: optional list of knot values
+  #   data: the original model.frame
   # Returns:
   #   A named list of lists of smoothing objects
   #   one element per (non-linear) parameter    
   if (has_splines(effects)) {
+    knots <- attr(data, "knots")
     data <- rm_attr(data, "terms")
     gam_args <- list(data = data, knots = knots, 
                      absorb.cons = TRUE, modCon = 3)
