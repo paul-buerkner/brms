@@ -343,28 +343,29 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     }
     knots <- attr(model.frame(fit), "knots")
     if (has_splines(ee)) {
-      gam.setup <- eval(parse(text = "mgcv:::gam.setup"))
+      # compute smoothing terms for the original data
+      # as the basis for doing predictions with new data
       olddata <- rm_attr(model.frame(fit), "terms")
+      gam_args <- list(data = olddata, knots = knots, 
+                       absorb.cons = TRUE, modCon = 3)
       if (length(ee$nonlinear)) {
-        G <- named_list(names(ee$nonlinear))
-        for (i in seq_along(G)) {
-          nle <- ee$nonlinear[[i]]
-          if (has_splines(nle)) {
-            G[[i]] <- gam.setup(mgcv::interpret.gam(nle$gam),
-                                pterms = terms(ee$respform),
-                                data = olddata, knots = knots, sp = NULL,
-                                min.sp = NULL, H = NULL, absorb.cons = TRUE,
-                                sparse.cons = 0, gamm.call = TRUE)
+        smooth <- named_list(names(ee$nonlinear))
+        for (j in seq_along(smooth)) {
+          splines <- get_spline_labels(ee$nonlinear[[j]])
+          for (i in seq_along(splines)) {
+            sc_args <- c(list(eval_spline(splines[i])), gam_args)
+            smooth[[j]][[i]] <- do.call(mgcv::smoothCon, sc_args)[[1]]
           }
         }
       } else {
-        G <- gam.setup(mgcv::interpret.gam(ee$gam),
-                       pterms = terms(ee$respform),
-                       data = olddata, knots = knots, sp = NULL,
-                       min.sp = NULL, H = NULL, absorb.cons = TRUE,
-                       sparse.cons = 0, gamm.call = TRUE)
+        splines <- get_spline_labels(ee)
+        smooth <- vector("list", length(splines))
+        for (i in seq_along(splines)) {
+          sc_args <- c(list(eval_spline(splines[i])), gam_args)
+          smooth[[i]] <- do.call(mgcv::smoothCon, sc_args)[[1]]
+        }
       }
-      control$G <- G
+      control$smooth <- smooth
     }
     if (is(fit$autocor, "cor_fixed")) {
       fit$autocor$V <- diag(median(diag(fit$autocor$V), na.rm = TRUE), 
@@ -518,12 +519,20 @@ arr_design_matrix <- function(Y, r, group)  {
   out
 }
 
+<<<<<<< HEAD
 data_effects <- function(effects, data, family = gaussian(),
                          prior = prior_frame(), autocor = cor_arma(),
                          cov_ranef = NULL, knots = NULL, nlpar = "", 
                          not4stan = FALSE, is_newdata = FALSE, 
                          old_levels = NULL, G = NULL, Jm = NULL) {
   # combine data for all types of effects
+=======
+data_fixef <- function(effects, data, family = gaussian(),
+                       autocor = cor_arma(), knots = NULL,
+                       nlpar = "", not4stan = FALSE, 
+                       smooth = NULL) {
+  # prepare data for fixed effects for use in Stan 
+>>>>>>> refs/remotes/origin/improve_spline_implementation
   # Args:
   #   effects: a list returned by extract_effects
   #   data: the data passed by the user
@@ -572,37 +581,20 @@ data_fixef <- function(effects, data, family = gaussian(),
                         cols2remove = names(intercepts))
   splines <- get_spline_labels(effects)
   if (length(splines)) {
-    # avoid R CMD CHECK warnings when using the ::: operator
-    gam.setup <- eval(parse(text = "mgcv:::gam.setup"))
-    smooth2random <- eval(parse(text = "mgcv:::smooth2random"))
-    if (!is.null(G)) {
-      # compute smoothing terms for newdata
-      Xl <- vector("list", length(G$smooth))
-      for (i in seq_along(G$smooth)) {
-        Xl[[i]] <- mgcv::PredictMat(G$smooth[[i]], rm_attr(data, "terms"))
+    stopifnot(is.null(smooth) || length(smooth) == length(splines))
+    Xs <- Zs <- vector("list", length(splines))
+    for (i in seq_along(splines)) {
+      if (is.null(smooth[[i]])) {
+        sm <- mgcv::smoothCon(eval_spline(splines[i]), data = data, 
+                              knots = knots, absorb.cons = TRUE)[[1]]
+      } else {
+        sm <- smooth[[i]]
+        sm$X <- mgcv::PredictMat(sm, rm_attr(data, "terms"))
       }
-      G$X <- cbind(1, do.call(cbind, Xl))
-      if (any(ulapply(G$smooth, is, "t2.smooth"))) {
-        stop(paste("Prediction of t2 smoothing terms with", 
-                   "new data is not yet working correctly."), 
-                call. = FALSE)
-      }
-    } else {
-      # parse it like mgcv:::gamm.setup
-      G <- gam.setup(mgcv::interpret.gam(effects$gam), 
-                     pterms = terms(effects$respform), 
-                     data = data, knots = knots, sp = NULL, 
-                     min.sp = NULL, H = NULL, absorb.cons = TRUE, 
-                     sparse.cons = 0, gamm.call = TRUE)
-    }
-    Xs <- Zs <- vector("list", length(G$smooth))
-    for (i in seq_along(G$smooth)) {
-      sm <- G$smooth[[i]]
-      sm$X <- G$X[, sm$first.para:sm$last.para, drop = FALSE]
-      rasm <- smooth2random(sm, names(data))
+      rasm <- mgcv::smooth2random(sm, names(data))
       # mgcv:::gamm.setup loops over rasm$rand 
       # although it should have only one element anyway
-      # if it has more elements the current brms implementation will fail
+      # if it has more elements the brms implementation will fail
       stopifnot(length(rasm$rand) <= 1L)
       Xs[[i]] <- rasm$Xf
       if (ncol(Xs[[i]])) {
