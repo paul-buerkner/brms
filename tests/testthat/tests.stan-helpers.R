@@ -51,13 +51,13 @@ test_that("stan_prior passes increment_log_prob statements without changes", {
 test_that("stan_eta returns correct strings for autocorrelation models", {
   ee <- extract_effects(count ~ Trt_c)
   expect_match(stan_linear(ee, data = epilepsy, family = student(log),
-                           autocor = cor_arma(~visit|patient, p = 2))$transC3,
+                           autocor = cor_arma(~visit|patient, p = 2))$modelC3,
                "eta[n] = exp(eta[n] + head(E[n], Kar) * ar)", fixed = TRUE)
   expect_match(stan_linear(ee, data = epilepsy, family = gaussian(log),
-                           autocor = cor_arma(~visit|patient, q = 1))$transC2,
+                           autocor = cor_arma(~visit|patient, q = 1))$modelC2,
                "eta[n] = exp(eta[n] + head(E[n], Kma) * ma)", fixed = TRUE)
   expect_match(stan_linear(ee, data = epilepsy, family = poisson(),
-                           autocor = cor_arma(~visit|patient, r = 3))$transC1,
+                           autocor = cor_arma(~visit|patient, r = 3))$modelC1,
                "eta = X * b + temp_Intercept + Yarr * arr", fixed = TRUE)
 })
 
@@ -69,7 +69,7 @@ test_that("stan_autocor returns correct strings (or errors)", {
   
   temp_arma <- stan_autocor(family = gaussian(log), prior = prior,
                             autocor = cor_arma(~visit|patient, q = 1))
-  expect_match(temp_arma$transC2, "E[n + 1, i] = e[n + 1 - i]", 
+  expect_match(temp_arma$modelC2, "E[n + 1, i] = e[n + 1 - i]", 
                fixed = TRUE)
   expect_match(temp_arma$prior, "ma ~ cauchy(0,1)", fixed = TRUE)
   
@@ -77,7 +77,7 @@ test_that("stan_autocor returns correct strings (or errors)", {
   temp_arma <- stan_autocor(family = gaussian(log), effects = effects, 
                             autocor = cor_arma(~visit|patient, p = 1),
                             prior = prior)
-  expect_match(temp_arma$transC2, "e[n] = log(Y[m, k]) - eta[n]", 
+  expect_match(temp_arma$modelC2, "e[n] = log(Y[m, k]) - eta[n]", 
                fixed = TRUE)
   expect_match(temp_arma$prior, "ar ~ normal(0,2)", fixed = TRUE)
   

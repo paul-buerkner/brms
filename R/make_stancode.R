@@ -179,8 +179,8 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   
   # generate transformed parameters block
   # loop over all observations in transformed parameters if necessary
-  make_loop <- any(nzchar(c(text_pred$transC2, text_autocor$transC2, 
-                            text_ordinal$transC2, text_pred$transC3)))
+  make_loop <- any(nzchar(c(text_pred$modelC2, text_pred$modelC3,
+                            text_autocor$modelC2)))
   if (make_loop && !is_multi) {
     text_loop <- c("  for (n in 1:N) { \n", "  } \n")
   } else if (is_multi) {
@@ -191,32 +191,35 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   text_transformed_parameters <- paste0(
     "transformed parameters { \n",
       text_pred$transD,
-      text_disp$transD,
       text_autocor$transD, 
       text_ordinal$transD,
       text_multi$transD,
-      text_forked$transD,
       text_pred$transC1,
-      text_disp$transC1,
       text_autocor$transC1, 
       text_ordinal$transC1, 
-      text_loop[1],
-        text_pred$transC2, 
-        text_autocor$transC2, 
-        text_ordinal$transC2, 
-        text_pred$transC3,
-      text_loop[2],
-      text_pred$transC4,
       text_multi$transC1,
-      text_forked$transC1,
     "} \n")
   
   # generate model block
   needs_lp_pre <- is.formula(ee$weights) && !is.formula(ee$cens)
   text_model <- paste0(
     "model { \n",
+      text_pred$modelD,
+      text_disp$modelD,
+      text_autocor$modelD,
+      text_forked$modelD,
       if (needs_lp_pre) 
         paste0("  vector[N", trait,"] lp_pre; \n"),
+      text_pred$modelC1,
+      text_disp$modelC1,
+      text_autocor$modelC1, 
+      text_loop[1],
+        text_pred$modelC2, 
+        text_autocor$modelC2,
+        text_pred$modelC3,
+      text_loop[2],
+      text_pred$modelC4,
+      text_forked$modelC1,
       "  // prior specifications \n", 
       text_prior, 
       "  // likelihood contribution \n",

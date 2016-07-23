@@ -49,7 +49,7 @@ stan_linear <- function(effects, data, family = gaussian(),
   if (has_offset) {
     out$data <- paste0(out$data, "  vector[N] offset; \n")
   }
-  out$transD <- paste0(out$transD,
+  out$modelD <- paste0(out$modelD,
     "  vector[N] eta;  // linear predictor \n", 
     if (length(csef)) 
       paste0("  matrix[N, ncat - 1] etap;",
@@ -68,7 +68,7 @@ stan_linear <- function(effects, data, family = gaussian(),
                                 disp = is.formula(effects$disp))
     if (get_ar(autocor)) {
       eta_ar <- ifelse(!use_cov(autocor), " + head(E[n], Kar) * ar", "")
-      out$transC3 <- paste0(out$transC3,  "    ", wsp, 
+      out$modelC3 <- paste0(out$modelC3,  "    ", wsp, 
         eta_obj," = ", eta_ilink[1], eta_obj, eta_ar, eta_ilink[2], "; \n")
       eta_ilink <- rep("", 2)  # don't apply the link function twice
     }
@@ -85,14 +85,14 @@ stan_linear <- function(effects, data, family = gaussian(),
   add2eta <- any(nchar(c(eta_int, eta_monef, eta_ma, eta_ranef, 
                          eta_bsts, eta_ilink[1])))
   if (add2eta || is_multi) {
-    out$transC2 <- paste0(out$transC2,
+    out$modelC2 <- paste0(out$modelC2,
       "    ", wsp, eta_obj," = ", eta_ilink[1], "eta[n]", 
       eta_int, eta_bsts, eta_monef, eta_ranef, eta_ma, eta_ilink[2],"; \n")
   }
   eta_fixef <- stan_eta_fixef(fixef, sparse = sparse)
   eta_splines <- stan_eta_splines(splines)
   eta_cse <- if (length(csef)) "  etap = Xp * bp; \n"
-  out$transC1 <- paste0(out$transC1,
+  out$modelC1 <- paste0(out$modelC1,
     "  // compute linear predictor \n",
     "  eta = ", eta_fixef, eta_splines,
     if (nint == 1L && !is.ordinal(family)) " + temp_Intercept",
@@ -145,8 +145,8 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
       eta_ilink <- stan_eta_ilink(family$family, family$link, 
                                   disp = is.formula(effects$disp))
     } else eta_ilink <- rep("", 2)
-    out$transD <- paste0(out$transD, "  vector[N] eta; \n")
-    out$transC2 <- paste0(out$transC2, 
+    out$modelD <- paste0(out$modelD, "  vector[N] eta; \n")
+    out$modelC2 <- paste0(out$modelC2, 
       "    // compute non-linear predictor \n",
       "    eta[n] = ", eta_ilink[1], trimws(nlmodel), eta_ilink[2], "; \n")
   }
@@ -174,7 +174,7 @@ stan_auxpars <- function(effects, data, family = gaussian(),
       ap_prior <- prior[prior$nlpar == ap, ]
       ap_args <- c(list(ap, effects = effects[[ap]], prior = ap_prior), args)
       ap_link <- paste0("  ", ap, " = ", links[[ap]], "(", ap, "); \n")
-      out[[ap]] <- c(do.call(stan_effects, ap_args), transC4 = ap_link)
+      out[[ap]] <- c(do.call(stan_effects, ap_args), modelC4 = ap_link)
     } else {
       out[[ap]] <- list(par = default_defs[[ap]],
         prior = stan_prior(class = ap, prior = prior))
@@ -189,7 +189,7 @@ stan_effects <- function(nlpar, effects, data, family = gaussian(),
   # combine effects for the predictiob of a single (nonlinear-)parameter
   eta <- paste0(prefix, nlpar)
   out <- list()
-  out$transD <- paste0(out$transD, "  // effects of ", nlpar, "\n",
+  out$modelD <- paste0(out$modelD, "  // effects of ", nlpar, "\n",
                        "  vector[N] ", eta, "; \n")
   out$data <- paste0(out$data, "  // data for effects of ", nlpar, "\n")
   eta_loop <- ""
@@ -206,7 +206,7 @@ stan_effects <- function(nlpar, effects, data, family = gaussian(),
   text_splines <- stan_splines(splines, prior = prior, nlpar = nlpar)
   out <- collapse_lists(list(out, text_splines))
   # initialize eta_<nlpar>
-  out$transC1 <- paste0(out$transC1, "  ", eta, " = ",
+  out$modelC1 <- paste0(out$modelC1, "  ", eta, " = ",
                         stan_eta_fixef(fixef, nlpar = nlpar), 
                         stan_eta_splines(splines, nlpar = nlpar), 
                         "; \n") 
@@ -228,7 +228,7 @@ stan_effects <- function(nlpar, effects, data, family = gaussian(),
     eta_loop <- paste0(eta_loop, stan_eta_ranef(ranef, nlpar = nlpar)) 
   }
   if (nchar(eta_loop)) {
-    out$transC2 <- paste0(out$transC2,
+    out$modelC2 <- paste0(out$modelC2,
                           "    ", eta, "[n] = ", eta, "[n]", eta_loop, "; \n")
   }
   out

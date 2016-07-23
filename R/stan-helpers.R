@@ -271,10 +271,10 @@ stan_autocor <- function(autocor, effects = list(), family = gaussian(),
       }
       index <- ifelse(is_multi, "m, k", "n")
       wsp <- ifelse(is_multi, "      ", "    ")
-      out$transD <- paste0("  matrix[N, Karma] E;  // ARMA design matrix \n",
+      out$modelD <- paste0("  matrix[N, Karma] E;  // ARMA design matrix \n",
                            "  vector[N] e;  // residuals \n") 
-      out$transC1 <- "  E = rep_matrix(0.0, N, Karma); \n" 
-      out$transC2 <- paste0(
+      out$modelC1 <- "  E = rep_matrix(0.0, N, Karma); \n" 
+      out$modelC2 <- paste0(
         wsp, "// calculation of ARMA effects \n",
         wsp, "e[n] = ", link, "(Y[", index, "]) - eta[n]", "; \n",
         wsp, "for (i in 1:Karma) { \n", 
@@ -569,8 +569,8 @@ stan_forked <- function(family) {
                           "  #include 'fun_hurdle_gamma.stan' \n")
       } 
     } else if (is.2PL(family)) {
-      out$transD <- "  vector[N_trait] eta_2PL;  // 2PL linear predictor \n"
-      out$transC1 <- paste0("  eta_2PL = head(eta, N_trait)", 
+      out$modelD <- "  vector[N_trait] eta_2PL;  // 2PL linear predictor \n"
+      out$modelC1 <- paste0("  eta_2PL = head(eta, N_trait)", 
                             " .* exp(tail(eta, N_trait)); \n")
     }
   }
@@ -627,8 +627,8 @@ stan_disp <- function(effects, family = gaussian()) {
            else stop("invalid family for addition argument 'disp'")
     times <- if(is.null(effects[[par]])) " * " else " .* "
     out$data <- "  vector<lower=0>[N] disp;  // dispersion factors \n"
-    out$transD <- paste0("  vector<lower=0>[N] disp_", par, "; \n")
-    out$transC1 <- paste0("  disp_", par, " = ", par, times, "disp; \n")
+    out$modelD <- paste0("  vector[N] disp_", par, "; \n")
+    out$modelC1 <- paste0("  disp_", par, " = ", par, times, "disp; \n")
   }
   out
 }
