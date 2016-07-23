@@ -10,6 +10,26 @@
       of the response distribution. Among many other 
       possibilities, this can be used to model 
       heterogeneity of variances.
+      \item Allow predictions of \code{t2} smoothing
+      terms for new data.
+    }
+  }
+  \subsection{OTHER CHANGES}{
+    \itemize{
+      \item Compute the linear predictor in the model
+      block of the Stan program instead of in the
+      transformed parameters block. This avoids saving
+      samples of unnecessary parameters to disk.
+      Thanks goes to Rick Arrano for pointing me 
+      to this issue.
+      \item Set the default of the \code{robust} argument 
+      to \code{TRUE} in \code{marginal_effects.brmsfit}.
+    }
+  }
+  \subsection{BUG FIXES}{
+    \itemize{ 
+      \item Fix an error that could occur when predicting             factorial response variables for new data.
+      Only affects categorical and ordinal models.
     }
   }
 }
