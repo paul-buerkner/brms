@@ -176,7 +176,7 @@ test_that("get_effect works correctly", {
   effects <- extract_effects(y ~ a - b^x, 
                nonlinear = list(a ~ z, b ~ v + mono(z)))
   expect_equivalent(get_effect(effects), list(y ~ a - b^x, ~1 + z, ~ 1 + v))
-  expect_equivalent(get_effect(effects, "mono"), list(NULL, NULL, ~ z))
+  expect_equivalent(get_effect(effects, "mono"), list(b = ~ z))
   effects <- extract_effects(y ~ x + z + (1|g))
   expect_equivalent(get_effect(effects), list(y ~ 1 + x + z))
 })

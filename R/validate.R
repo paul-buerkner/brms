@@ -627,7 +627,7 @@ get_effect <- function(effects, target = c("fixed", "mono", "cse", "gam"),
       attr(out, "nonlinear") <- TRUE
     }
   }
-  out
+  rmNULL(out)
 }
 
 get_random <- function(effects, all = TRUE) {

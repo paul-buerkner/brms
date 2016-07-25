@@ -331,7 +331,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
                     old_cat <- is.old_categorical(fit))
     old_terms <- attr(model.frame(fit), "terms")
     control$terms_attr <- attributes(old_terms)[c("variables", "predvars")]
-    has_mono <- length(rmNULL(get_effect(ee, "mono")))
+    has_mono <- length(get_effect(ee, "mono")) > 0L
     if (has_trials(fit$family) || has_cat(fit$family) || has_mono) {
       # some components should not be computed based on newdata
       pars <- c(names(ee$nonlinear), intersect(auxpars(), names(ee)))
