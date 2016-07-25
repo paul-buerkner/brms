@@ -326,10 +326,18 @@ test_that("make_standata correctly prepares data for monotonic effects", {
   expect_equal(as.vector(unname(sdata$Jm)), 
                c(max(data$x1) - 1, length(unique(data$x2)) - 1))
   expect_equal(sdata$con_simplex_1, rep(1, 3))
+  
+  prior <- set_prior("dirichlet(1:3)", coef = "x1", 
+                     class = "simplex", nlpar = "sigma")
+  sdata <- make_standata(bf(y ~ 1, sigma ~ mono(x1)), 
+                         data = data, prior = prior)
+  expect_equal(sdata$con_simplex_sigma_1, 1:3)
+  
   prior <- c(set_prior("normal(0,1)", class = "b", coef = "x"),
              set_prior("dirichlet(c(1,0.5,2))", class = "simplex", coef = "x1"))
   sdata <- make_standata(y ~ monotonic(x1 + x2), data = data, prior = prior)
   expect_equal(sdata$con_simplex_1, c(1,0.5,2))
+  
   prior <- c(set_prior("dirichlet(c(1,0.5,2))", class = "simplex", coef = "x2"))
   expect_error(make_standata(y ~ monotonic(x1 + x2), data = data, prior = prior),
                "Invalid dirichlet prior for the simplex of x2", fixed = TRUE)

@@ -721,10 +721,12 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
     rows2remove <- c(rows2remove, int_index, bint_index)
   }
   # prepare priors of monotonic effects
-  if (is.formula(ee$mono)) {
-    monef <- colnames(get_model_matrix(ee$mono, data = data))
+  mono_forms <- get_effect(ee, "mono")
+  for (k in seq_along(mono_forms)) {
+    monef <- colnames(get_model_matrix(mono_forms[[k]], data = data))
     for (i in seq_along(monef)) {
-      take <- with(prior, class == "simplex" & coef == monef[i])
+      take <- with(prior, class == "simplex" & coef == monef[i] &
+                          nlpar == names(mono_forms)[k])
       simplex_prior <- paste0(".", prior$prior[take])
       if (nchar(simplex_prior) > 1L) {
         simplex_prior <- paste(eval(parse(text = simplex_prior)),
