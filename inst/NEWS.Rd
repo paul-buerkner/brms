@@ -30,7 +30,8 @@
   }
   \subsection{BUG FIXES}{
     \itemize{ 
-      \item Fix an error that could occur when predicting             factorial response variables for new data.
+      \item Fix an error that could occur when predicting             
+      factorial response variables for new data.
       Only affects categorical and ordinal models.
     }
   }
