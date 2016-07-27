@@ -48,28 +48,26 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, points = FALSE,
   for (i in seq_along(x)) {
     response <- attributes(x[[i]])$response
     effects <- attributes(x[[i]])$effects
+    gvar <- if (length(effects) == 2L) effects[2]
     plots[[i]] <- ggplot(data = x[[i]]) + 
       aes_string(x = effects, y = "Estimate", ymin = "lowerCI",
-                 ymax = "upperCI") + ylab(response) + theme
+                 ymax = "upperCI", colour = gvar, fill = gvar) + 
+      ylab(response) + theme
     nCond <- length(unique(x[[i]]$MargCond))
-    if (nCond > 1) {
+    if (nCond > 1L) {
       # one plot per row of marginal_data
       if (is.null(ncol)) ncol <- max(floor(sqrt(nCond)), 3) 
       plots[[i]] <- plots[[i]] + 
         facet_wrap("MargCond", ncol = ncol)
-    }
-    if (length(effects) == 2) {
-      # differentiate by colour in case of interaction effects
-      plots[[i]] <- plots[[i]] + 
-        aes_string(colour = effects[2], fill = effects[2])
     }
     if (is.numeric(x[[i]][, effects[1]])) {
       # smooth plots for numeric predictors
       plots[[i]] <- plots[[i]] + geom_smooth(stat = "identity")
       if (rug) {
         plots[[i]] <- plots[[i]] + 
-          geom_rug(aes_string(x = effects[1]), sides = "b", 
-                   data = attr(x[[i]], "points"), inherit.aes = FALSE)
+          geom_rug(aes_string(x = effects[1], colour = gvar), 
+                   sides = "b", data = attr(x[[i]], "points"), 
+                   inherit.aes = FALSE)
       }
     } else {
       # points and errorbars for factors
@@ -82,9 +80,9 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, points = FALSE,
     if (points) {
       # show the data as points in the plot
       plots[[i]] <- plots[[i]] + 
-        geom_point(aes_string(x = effects[1], y = ".RESP"), shape = 1,
-                   size = 4 / nCond^0.25, data = attr(x[[i]], "points"), 
-                   inherit.aes = FALSE)
+        geom_point(aes_string(x = effects[1], y = ".RESP", colour = gvar),
+                   shape = 1, size = 4 / nCond^0.25, inherit.aes = FALSE,
+                   data = attr(x[[i]], "points"))
     }
     if (do_plot) {
       plot(plots[[i]])

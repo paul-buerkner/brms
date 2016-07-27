@@ -22,6 +22,8 @@
       samples of unnecessary parameters to disk.
       Thanks goes to Rick Arrano for pointing me 
       to this issue.
+      \item Colour points in \code{marginal_effects} plots if 
+      sensible.
       \item Set the default of the \code{robust} argument 
       to \code{TRUE} in \code{marginal_effects.brmsfit}.
     }

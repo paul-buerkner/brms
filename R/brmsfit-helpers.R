@@ -673,7 +673,7 @@ make_point_frame <- function(mf, effects, conditions, groups, family) {
   #   family: the model family
   # Returns:
   #   a data.frame containing the data points to be plotted
-  points <- mf[, effects[1], drop = FALSE]
+  points <- mf[, effects, drop = FALSE]
   points$.RESP <- model.response(mf)
   # get required variables i.e. (grouping) factors
   list_mf <- lapply(as.list(mf), function(x)
