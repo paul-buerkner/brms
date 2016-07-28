@@ -30,10 +30,13 @@
   }
   \subsection{BUG FIXES}{
     \itemize{ 
-      \item Fix an error that could occur when predicting             
+      \item Fix a bug that could occur when predicting             
       factorial response variables for new data.
       Only affects categorical and ordinal models.
-      \item Fix an error when trying to pointwise 
+      \item Fix a bug that could lead to duplicated  
+      variable names in the Stan code when sampling 
+      from priors in non-linear models thanks to Tom Wallis.
+      \item Fix problems when trying to pointwise 
       evaluate non-linear formulae in 
       \code{logLik.brmsfit} thanks to Tom Wallis.
     }

@@ -198,6 +198,11 @@ test_that("stan_rngprior returns correct sampling statements for priors", {
                list(genD = "  real prior_b_1; \n", 
                     genC = paste0(c2,"  prior_b_1 = normal_rng(0,5); \n")))
   
+  expect_equal(stan_rngprior(TRUE, prior = "b_m[1] ~ normal(0,5); \n",
+                             par_declars = "vector[K] b_m; \n"),
+               list(genD = "  real prior_b_m_1; \n", 
+                    genC = paste0(c2,"  prior_b_m_1 = normal_rng(0,5); \n")))
+  
   expect_equal(stan_rngprior(TRUE, prior = "bp[1] ~ normal(0,5); \n",
                              par_declars = paste("vector[K] b; \n")),
                list(genD = "  real prior_bp_1; \n", 

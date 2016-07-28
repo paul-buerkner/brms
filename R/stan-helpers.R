@@ -797,16 +797,7 @@ stan_rngprior <- function(sample_prior, prior, par_declars = "",
     pars[has_ind] <- ulapply(pars[has_ind], function(par) {
       ind <- regmatches(par, gregexpr("\\[[[:digit:]]+\\]", par))
       ind <- as.numeric(substr(ind, 2, nchar(ind) - 1))
-      if (grepl("^b\\[", par)) {
-        par <- paste0("b_",ind)
-      } else if (grepl("^bp\\[", par)) {
-        par <- paste0("bp_",ind)
-      } else if (grepl("^sigma\\[", par)) {
-        par <- paste0("sigma_",ind)
-      } else if (grepl("^sd_", par)) {
-        par <- gsub("\\[[[:digit:]]+\\]", paste0("_",ind), par)
-      }
-      return(par)
+      gsub("\\[[[:digit:]]+\\]", paste0("_", ind), par)
     })
     
     # special treatment of lkj_corr_cholesky priors
