@@ -33,6 +33,9 @@
       \item Fix an error that could occur when predicting             
       factorial response variables for new data.
       Only affects categorical and ordinal models.
+      \item Fix an error when trying to pointwise 
+      evaluate non-linear formulae in 
+      \code{logLik.brmsfit} thanks to Tom Wallis.
     }
   }
 }

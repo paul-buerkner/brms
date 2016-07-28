@@ -102,11 +102,12 @@ nonlinear_predictor <- function(draws, i = NULL) {
   #   and N is the number of observations or length of i if specified. 
   nlmodel_list <- list()
   nlpars <- names(draws$nonlinear)
-  for (j in seq_along(nlpars)) {
-    nlmodel_list[[nlpars[j]]] <- 
-      linear_predictor(draws$nonlinear[[nlpars[j]]], i = i)
+  for (nlp in nlpars) {
+    nlmodel_list[[nlp]] <- linear_predictor(draws$nonlinear[[nlp]], i = i)
   }
-  nlmodel_list[names(draws$C)] <- p(draws$C, i, row = FALSE)
+  for (cov in names(draws$C)) {
+    nlmodel_list[[cov]] <- p(draws$C[[cov]], i, row = FALSE)  
+  }
   # evaluate non-linear predictor
   out <- try(with(nlmodel_list, eval(draws$nlform)), silent = TRUE)
   if (is(out, "try-error")) {
