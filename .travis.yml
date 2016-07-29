@@ -1,21 +1,14 @@
 language: r
 r: devel
 sudo: false
-#cache: packages
+cache: packages
 
 warnings_are_errors: TRUE
 
 r_github_packages:
+  - HenrikBengtsson/matrixStats@develop
   - jimhester/covr
   - jgabry/bayesplot
-
-#r_binary_packages:
-#  - rstan
-#  - lme4
-#  - Matrix
-#  - KernSmooth
-#  - covr
-#  - testthat
   
 after_success:
   - Rscript -e 'covr::codecov()'
