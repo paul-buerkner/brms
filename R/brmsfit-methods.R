@@ -1113,7 +1113,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     effects <- all_effects[ulapply(all_effects, length) < 3]
   } else {
     # allow to define interactions in any order
-    effects <- strsplit(effects, split = ":")
+    effects <- strsplit(as.character(effects), split = ":")
     if (any(unique(unlist(effects)) %in% rsv_vars)) {
       stop(paste("Variables", paste0(rsv_vars, collapse = ", "),
                  "should not be used as effects for this model"),
