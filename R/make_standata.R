@@ -177,7 +177,6 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   }
   # data for predictors of scale / shape parameters
   for (ap in intersect(auxpars(), names(ee))) {
-    # TODO handle monotonic effects for newdata
     args_eff_spec <- list(effects = ee[[ap]], nlpar = ap,
                           smooth = control$smooth[[ap]],
                           Jm = control$Jm[[ap]])
