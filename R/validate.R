@@ -28,9 +28,7 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
            call. = FALSE)
     }
     x$fixed <- formula(tfixed)
-    rsv_pars <- names(sformula(formula))
-    x$nonlinear <- nonlinear_effects(nonlinear, model = x$fixed,
-                                     family = family, rsv_pars = rsv_pars)
+    x$nonlinear <- nonlinear_effects(nonlinear, x$fixed, family = family)
     re_terms <- NULL
   } else {
     # terms() doesn't like non-linear formulas
@@ -120,10 +118,9 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   x$random <- extract_random(re_terms)
   
   # evaluate formulas for auxiliary parameters
-  # TODO include validity checks
   auxpars <- sformula(formula, incl_nl = FALSE)
   for (ap in names(auxpars)) {
-    x[[ap]] <- extract_effects(auxpars[[ap]], family = family,
+    x[[ap]] <- extract_effects(rhs(auxpars[[ap]]), family = family,
                                check_response = FALSE)
   }
   
@@ -243,7 +240,8 @@ extract_time <- function(formula) {
     stop("autocorrelation formula must be one-sided", call. = FALSE)
   }
   formula <- formula2string(formula)
-  time <- all.vars(as.formula(paste("~", gsub("~|\\|[[:print:]]*", "", formula))))
+  time <- as.formula(paste("~", gsub("~|\\|[[:print:]]*", "", formula)))
+  time <- all.vars(time)
   if (length(time) > 1L) {
     stop("Autocorrelation structures may only contain 1 time variable", 
          call. = FALSE)
@@ -262,7 +260,7 @@ extract_time <- function(formula) {
   x
 }
 
-nonlinear_effects <- function(x, model = ~1, family = NA, rsv_pars = NULL) {
+nonlinear_effects <- function(x, model = ~1, family = NA) {
   # prepare nonlinear formulas
   # Args:
   #   x: a list for formulas specifying linear predictors for 
@@ -272,33 +270,10 @@ nonlinear_effects <- function(x, model = ~1, family = NA, rsv_pars = NULL) {
   #   A list of objects each returned by extract_effects
   stopifnot(is.list(x), is(model, "formula"))
   if (length(x)) {
-    nleffects <- vector("list", length = length(x))
+    nleffects <- named_list(names(x))
     for (i in seq_along(x)) {
-      x[[i]] <- as.formula(x[[i]])
-      if (length(x[[i]]) != 3L) {
-        stop("Non-linear formulas must be two-sided.", call. = FALSE)
-      }
-      nlresp <- all.vars(x[[i]][[2]])
-      if (length(nlresp) != 1L) {
-        stop("LHS of non-linear formula must contain exactly one variable.",
-             call. = FALSE)
-      }
-      if (any(ulapply(c(".", "_"), grepl, x = nlresp, fixed = TRUE))) {
-        stop("Non-linear parameters should not contain dots or underscores.",
-             call. = FALSE)
-      }
-      if (nlresp %in% rsv_pars) {
-        stop("Parameter name '", nlresp, "' is reserved for this model.",
-             call. = FALSE)
-      }
-      if (!is.null(attr(terms(x[[i]]), "offset"))) {
-        stop("Offsets are currently not allowed in non-linear models.",
-             call. = FALSE)
-      }
-      x[[i]] <- rhs(x[[i]])
-      nleffects[[i]] <- extract_effects(x[[i]], family = family, 
+      nleffects[[i]] <- extract_effects(rhs(x[[i]]), family = family, 
                                         check_response = FALSE)
-      names(nleffects)[[i]] <- nlresp
     }
     model_vars <- all.vars(rhs(model))
     missing_pars <- setdiff(names(nleffects), model_vars)
@@ -312,31 +287,39 @@ nonlinear_effects <- function(x, model = ~1, family = NA, rsv_pars = NULL) {
   nleffects
 }
 
-nonlinear2list <- function(x) {
-  # convert a single formula into a list of formulas
-  # one for each non-linear parameter
-  if (!(is.list(x) || is.null(x))) {
-    x <- as.formula(x)
-  }
-  if (is(x, "formula")) {
-    if (length(x) != 3L) {
-      stop("Non-linear formulas must be two-sided.", call. = FALSE)
+valid_auxpars <- function(family, effects = list(), autocor = cor_arma()) {
+  # convenience function to find relevant auxiliary parameters
+  x <- c(sigma = has_sigma(family, effects = effects, autocor = autocor),
+         shape = has_shape(family), nu = has_nu(family), phi = has_phi(family))
+  names(x)[x]
+}
+
+avoid_auxpars <- function(names, effects) {
+  # avoid ambiguous parameter names
+  # Args:
+  #   names: names to check for ambiguity
+  #   effects: output of extract_effects
+  auxpars <- intersect(auxpars(), names(effects))
+  if (length(auxpars)) {
+    auxpars_prefix <- paste0("^", auxpars, "_")
+    invalid <- any(ulapply(auxpars_prefix, grepl, names))
+    if (invalid) {
+      auxpars <- paste0(auxpars, "_", collapse = ", ")
+      stop("Variable names starting with ", auxpars,
+           " are not allowed for this model.", 
+           call. = FALSE)
     }
-    nlpars <- all.vars(lhs(x))
-    x <- lapply(nlpars, function(nlp) update(x, paste(nlp, " ~ .")))
   }
-  x
+  invisible(NULL)
 }
 
 update_formula <- function(formula, data = NULL, family = gaussian(),
                            nonlinear = NULL, partial = NULL) {
   # incorporate addition arguments and category specific effects into formula 
-  # 
   # Args:
   #   formula: a model formula 
   #   data: a data.frame or NULL 
   #   partial: a one sided formula containing category specific effects
-  #
   # Returns:
   #   an updated formula containing the addition and category specific effects
   formula <- bf(formula, nonlinear = nonlinear)
@@ -371,48 +354,6 @@ update_formula <- function(formula, data = NULL, family = gaussian(),
     attr(formula, "response") <- response
   }
   formula
-}
-
-sformula <- function(x, incl_nl = TRUE, ...) {
-  # special formulas stored in brmsformula objects
-  # Args:
-  #   x: coerced to a 'brmsformula' object
-  #   incl_nl: include the 'nonlinear' argument in the output?
-  rmNULL(attributes(bf(x))[auxpars(incl_nl = incl_nl)])
-}
-
-auxpars <- function(incl_nl = FALSE) {
-  auxpars <- c("sigma", "shape", "nu", "phi")
-  if (incl_nl) {
-    auxpars <- c(auxpars, "nonlinear")
-  }
-  auxpars
-}
-
-valid_auxpars <- function(family, effects = list(), autocor = cor_arma()) {
-  # convenience function to find relevant auxiliary parameters
-  x <- c(sigma = has_sigma(family, effects = effects, autocor = autocor),
-         shape = has_shape(family), nu = has_nu(family), phi = has_phi(family))
-  names(x)[x]
-}
-
-avoid_auxpars <- function(names, effects) {
-  # avoid ambiguous parameter names
-  # Args:
-  #   names: names to check for ambiguity
-  #   effects: output of extract_effects
-  auxpars <- intersect(auxpars(), names(effects))
-  if (length(auxpars)) {
-    auxpars_prefix <- paste0("^", auxpars, "_")
-    invalid <- any(ulapply(auxpars_prefix, grepl, names))
-    if (invalid) {
-      auxpars <- paste0(auxpars, "_", collapse = ", ")
-      stop("Variable names starting with ", auxpars,
-           " are not allowed for this model.", 
-           call. = FALSE)
-    }
-  }
-  invisible(NULL)
 }
 
 #' @export

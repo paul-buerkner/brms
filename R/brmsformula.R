@@ -337,28 +337,13 @@
 brmsformula <- function(formula, ..., nonlinear = NULL) {
   # parse and validate dots arguments
   dots <- list(...)
-  parnames <- names(dots)
-  if (is.null(parnames)) {
-    parnames <- rep("", length(dots))
-  }
   for (i in seq_along(dots)) {
-    dots[[i]] <- as.formula(dots[[i]])
-    if (length(dots[[i]]) == 3L && !nchar(parnames[i])) {
-      resp_par <- all.vars(dots[[i]][[2]])
-      if (length(resp_par) != 1L) {
-        stop("LHS of additional formulas must contain exactly one variable.",
-             call. = FALSE)
-      }
-      parnames[i] <- resp_par
-    }
-    if (!is.null(attr(terms(dots[[i]]), "offset"))) {
-      stop("Offsets are currently not allowed.", call. = FALSE)
-    }
-    dots[[i]] <- rhs(dots[[i]])
+    dots[[i]] <- prepare_auxformula(dots[[i]], par = names(dots)[i])
+    names(dots)[i] <- attr(dots[[i]], "par")
+    attr(dots[[i]], "par") <- NULL
   }
-  names(dots) <- parnames
-  if (any(!nchar(names(dots)))) {
-    stop("Function 'bf' requires named arguments.", call. = FALSE)
+  if (any(!nzchar(names(dots)))) {
+    stop("'brmsformula' requires named arguments.", call. = FALSE)
   }
   invalid_names <- setdiff(names(dots), auxpars())
   if (length(invalid_names)) {
@@ -373,7 +358,7 @@ brmsformula <- function(formula, ..., nonlinear = NULL) {
   auxpars <- auxpars(incl_nl = TRUE)
   old_att <- rmNULL(attributes(formula)[auxpars])
   formula <- as.formula(formula)
-  nonlinear <- nonlinear2list(nonlinear)
+  nonlinear <- nonlinear2list(nonlinear, rsv_pars = names(dots))
   new_att <- rmNULL(c(nlist(nonlinear), dots))
   dupl_args <- intersect(names(new_att), names(old_att))
   if (length(dupl_args)) {
@@ -394,4 +379,92 @@ brmsformula <- function(formula, ..., nonlinear = NULL) {
 bf <- function(formula, ..., nonlinear = NULL) {
   # alias of brmsformula
   brmsformula(formula, ..., nonlinear = nonlinear)
+}
+
+nonlinear2list <- function(x, rsv_pars = NULL) {
+  # convert a single formula into a list of formulas
+  # one for each non-linear parameter
+  # Args:
+  #   x: a formula or a list of formulas
+  #   rsv_pars: optional character vector of reserved parameter names
+  if (!(is.list(x) || is.null(x))) {
+    x <- as.formula(x)
+  }
+  if (is(x, "formula")) {
+    if (length(x) != 3L) {
+      stop("Non-linear formulas must be two-sided.", call. = FALSE)
+    }
+    nlpars <- all.vars(lhs(x))
+    x <- lapply(nlpars, function(nlp) update(x, paste(nlp, " ~ .")))
+  }
+  for (i in seq_along(x)) {
+    x[[i]] <- prepare_auxformula(x[[i]], par = names(x)[i],
+                                 rsv_pars = rsv_pars)
+    names(x)[i] <- attr(x[[i]], "par")
+    attr(x[[i]], "par") <- NULL
+  }
+  x
+}
+
+prepare_auxformula <- function(formula, par = NULL, rsv_pars = NULL) {
+  # validate and prepare a formula of an auxiliary parameter
+  # Args:
+  #   formula: an object of class formula
+  #   par: optional name of the parameter; if not specified
+  #        the parameter name will be inferred from the formula
+  #   rsv_pars: optional character vector of reserved parameter names
+  stopifnot(length(par) <= 1L)
+  formula <- as.formula(formula)
+  if (!is.null(lhs(formula))) {
+    resp_pars <- all.vars(formula[[2]])
+    if (length(resp_pars) != 1L) {
+      stop("LHS of additional formulas must contain exactly one variable.",
+           call. = FALSE)
+    }
+    par <- resp_pars
+    formula[[2]] <- eval(parse(text = paste("quote(", par, ")")))
+  } else {
+    if (!isTRUE(nzchar(par))) {
+      stop("Additional formulas must be named.", call. = FALSE)
+    }
+    formula <- formula(paste(par, formula2string(formula)))
+  }
+  if (any(ulapply(c(".", "_"), grepl, x = par, fixed = TRUE))) {
+    stop("Parameter names should not contain dots or underscores.",
+         call. = FALSE)
+  }
+  if (par %in% rsv_pars) {
+    stop("Parameter name '", par, "' is reserved for this model.",
+         call. = FALSE)
+  }
+  if (!is.null(attr(terms(formula), "offset"))) {
+    stop("Offsets in additional formulas are currently not allowed.", 
+         call. = FALSE)
+  }
+  structure(formula, par = par)
+}
+
+auxpars <- function(incl_nl = FALSE) {
+  # names of auxiliary parameters
+  auxpars <- c("sigma", "shape", "nu", "phi")
+  if (incl_nl) {
+    auxpars <- c(auxpars, "nonlinear")
+  }
+  auxpars
+}
+
+sformula <- function(x, incl_nl = TRUE, flatten = FALSE, ...) {
+  # extract special formulas stored in brmsformula objects
+  # Args:
+  #   x: coerced to a 'brmsformula' object
+  #   incl_nl: include the 'nonlinear' argument in the output?
+  #   flatten: should non-linear formulas be put on the first
+  #            level of the returned list?
+  out <- rmNULL(attributes(bf(x))[auxpars(incl_nl = incl_nl)])
+  if (flatten) {
+    nonlinear <- out$nonlinear
+    out$nonlinear <- NULL
+    out <- c(out, nonlinear)
+  }
+  out
 }
