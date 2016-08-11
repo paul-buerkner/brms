@@ -290,6 +290,15 @@
 #'   distribution such as the residual standard deviation \code{sigma} 
 #'   in gaussian models. The syntax closely resembles that of a non-linear 
 #'   parameter, for instance: \code{sigma ~ x + s(z) + (1+x|g)}.
+#'   
+#'   All auxiliary parameters currently supported by \code{brmsformula}
+#'   have to positive (a negative standard deviation or precision parameter 
+#'   doesn't make any sense). 
+#'   However, linear predictors can be positive or negative, and thus
+#'   the log-link is used to ensure positivity of the auxiliary parameters.
+#'   This implies that effects for auxiliary parameters are estimated on the
+#'   log-scale and one has to exponentiate them to get to the effects on
+#'   the original scale.
 #' 
 #' @examples 
 #' # multilevel model with smoothing terms

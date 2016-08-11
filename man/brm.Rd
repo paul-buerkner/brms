@@ -369,6 +369,19 @@ fit5 <- brm(y ~ a1 - a2^x, nonlinear = a1 + a2 ~ 1,
                       set_prior("normal(0, 2)", nlpar = "a2")))
 summary(fit5)
 plot(marginal_effects(fit5), ask = FALSE)
+
+## Normal model with heterogeneous variances
+data_het <- data.frame(y = c(rnorm(50), rnorm(50, 1, 2)),
+                       x = factor(rep(c("a", "b"), each = 50)))
+fit6 <- brm(bf(y ~ x, sigma ~ 0 + x), data = data_het)
+summary(fit6)
+plot(fit6)
+marginal_effects(fit6)
+# extract residual SDs of both groups
+sigmas <- exp(posterior_samples(fit6, "^b_sigma_"))
+colMeans(sigmas)
+hist(sigmas[, 1])
+hist(sigmas[, 2])
 }
 
 }
