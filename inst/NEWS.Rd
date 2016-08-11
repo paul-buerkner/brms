@@ -39,6 +39,9 @@
       \item Fix problems when trying to pointwise 
       evaluate non-linear formulae in 
       \code{logLik.brmsfit} thanks to Tom Wallis.
+      \item Fix problems that occasionally occured when
+      handling \pkg{dplyr} datasets thanks to the
+      GitHub user Atan1988.
     }
   }
 }
@@ -80,7 +83,7 @@
       \item Fix problems when using variational Bayes
       algorithms with \pkg{brms} while having 
       \pkg{rstan} >= 2.10.0 installed thanks to the 
-      Github user cwerner87.
+      GitHub user cwerner87.
     }
   }
 }  

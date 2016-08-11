@@ -109,6 +109,7 @@ fix_factor_contrasts <- function(data, optdata = NULL) {
   #   a data.frame with amended contrasts attributes
   stopifnot(is(data, "data.frame"))
   stopifnot(is.null(optdata) || is.list(optdata))
+  optdata <- as.data.frame(optdata)  # fixes issue #105
   for (i in seq_along(data)) {
     if (is.factor(data[[i]]) && is.null(attr(data[[i]], "contrasts"))) {
       if (!is.null(attr(optdata[[names(data)[i]]], "contrasts"))) {
