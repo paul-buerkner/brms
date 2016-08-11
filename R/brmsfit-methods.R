@@ -1145,17 +1145,18 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   
   # prepare marginal conditions
   mf <- model.frame(x)
-  mono_vars <- unique(ulapply(get_effect(ee, "mono"), all.vars))
+  int_effects <- c(get_effect(ee, "mono"), rmNULL(ee[c("trials", "cat")]))
+  int_vars <- unique(ulapply(int_effects, all.vars))
   if (is.null(conditions)) {
-    if (length(rmNULL(ee[c("trials", "cat")]))) {
-      stop("Please specify argument 'conditions' manually for this model.", 
-           call. = FALSE)
+    if (!is.null(ee$trials)) {
+      message("Using the median number of trials by default")
     }
     # list all required variables
-    req_vars <- c(lapply(get_effect(ee), rhs), get_random(ee)$form,
+    req_vars <- c(lapply(get_effect(ee), rhs), 
+                  get_random(ee)$form,
                   lapply(get_effect(ee, "mono"), rhs), 
                   lapply(get_effect(ee, "gam"), rhs), 
-                  ee$cse, ee$se, ee$disp, 
+                  ee[c("cse", "se", "disp", "trials", "cat")], 
                   extract_time(x$autocor$formula)$all)
     req_vars <- unique(ulapply(req_vars, all.vars))
     req_vars <- setdiff(req_vars, c(rsv_vars, names(ee$nonlinear)))
@@ -1163,7 +1164,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     names(conditions) <- req_vars
     for (v in req_vars) {
       if (is.numeric(mf[[v]])) {
-        if (v %in% mono_vars) {
+        if (v %in% int_vars) {
           conditions[[v]] <- round(median(mf[[v]]))
         } else {
           conditions[[v]] <- mean(mf[[v]])
@@ -1207,7 +1208,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     new_order <- order(pred_types, decreasing = TRUE)
     effects[[i]] <- effects[[i]][new_order]
     pred_types <- pred_types[new_order]
-    is_mono <- effects[[i]] %in% mono_vars
+    is_mono <- effects[[i]] %in% int_vars
     if (pred_types[1] == "numeric") {
       min1 <- min(marg_data[, effects[[i]][1]])
       max1 <- max(marg_data[, effects[[i]][1]])
