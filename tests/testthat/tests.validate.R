@@ -122,35 +122,18 @@ test_that("extract_effects handles very long RE terms", {
   expect_equal(ee$random$group, "id")
 })
 
-test_that("nonlinear_effects rejects invalid non-linear models", {
-  expect_error(nonlinear_effects(list(a ~ 1, b ~ 1), model = y ~ a^x),
+test_that("nonlinear_effects finds missing parameters", {
+  expect_error(nonlinear_effects(list(a = a ~ 1, b = b ~ 1), model = y ~ a^x),
                "missing in formula: b")
-  expect_error(nonlinear_effects(list(~ 1, a ~ 1), model = y ~ a),
-               "Non-linear formulas must be two-sided")
-  expect_error(nonlinear_effects(list(a + b ~ 1), model = y ~ exp(-x)),
-               "LHS of non-linear formula must contain exactly one variable")
-  expect_error(nonlinear_effects(list(a.b ~ 1), model = y ~ a^x),
-               "not contain dots or underscores")
-  expect_error(nonlinear_effects(list(a_b ~ 1), model = y ~ a^(x+b)),
-               "not contain dots or underscores")
 })
 
-test_that("nonlinear_effect accepts valid non-linear models", {
-  nle <- nonlinear_effects(list(a ~ 1 + (1+x|origin), b ~ 1 + z), y ~ b - a^x)
+test_that("nonlinear_effects accepts valid non-linear models", {
+  nle <- nonlinear_effects(list(a = a ~ 1 + (1+x|origin), b = b ~ 1 + z), 
+                           model = y ~ b - a^x)
   expect_equal(names(nle), c("a", "b"))
   expect_equal(nle[["a"]]$all, ~x + origin)
   expect_equal(nle[["b"]]$all, ~z)
   expect_equal(nle[["a"]]$random$form[[1]], ~1+x)
-})
-
-test_that("nonlinear2list works correctly", {
-  expect_equal(nonlinear2list(a ~ 1), list(a ~ 1))
-  expect_equal(nonlinear2list(a + alpha ~ x + (x|g)), 
-               list(a ~ x + (x|g), alpha ~ x + (x|g)))
-  expect_equal(nonlinear2list(list(a ~ 1, b ~ 1 + z)),
-               list(a ~ 1, b ~ 1 + z))
-  expect_equal(nonlinear2list(NULL), NULL)
-  expect_error(nonlinear2list(1), "invalid formula")
 })
 
 test_that("extract_time returns all desired variables", {
