@@ -8,10 +8,11 @@ print.brmssummary <- function(x, digits = 2, ...) {
     cat(paste0(x$family, " (", x$link, ") \n"))  
   }
   cat("Formula:", gsub(" {1,}", " ", Reduce(paste, deparse(x$formula))), "\n")
-  if (length(attr(x$formula, "nonlinear"))) {
-    nl <- ulapply(attr(x$formula, "nonlinear"), function(y) 
-      gsub(" {1,}", " ", Reduce(paste, deparse(y))))
-    cat("        ", paste(nl, collapse = "; "), "\n")
+  sformulas <- sformula(x$formula, incl_nl = TRUE, flatten = TRUE)
+  if (length(sformulas)) {
+    sformulas <- ulapply(sformulas, function(form) 
+      gsub(" {1,}", " ", Reduce(paste, deparse(form))))
+    cat("        ", paste(sformulas, collapse = "; "), "\n")
   }
   cat(paste0("   Data: ", x$data.name, 
              " (Number of observations: ",x$nobs,") \n"))
