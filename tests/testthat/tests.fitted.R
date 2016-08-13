@@ -53,14 +53,17 @@ test_that("fitted helper functions run without errors", {
   expect_equal(dim(mu), c(nsamples, nobs))
   # truncated discrete models
   data <- list(Y = sample(100, 10), trials = 1:10, N = 10)
-  mu <- fitted_trunc_poisson(exp_eta, lb = 0, ub = 100, draws = draws)
+  lb <- matrix(0, nrow = nsamples, ncol = nobs)
+  ub <- matrix(100, nrow = nsamples, ncol = nobs)
+  mu <- fitted_trunc_poisson(exp_eta, lb = lb, ub = ub, draws = draws)
   expect_equal(dim(mu), c(nsamples, nobs))
-  mu <- fitted_trunc_negbinomial(exp_eta, lb = 0, ub = 100, draws = draws)
+  mu <- fitted_trunc_negbinomial(exp_eta, lb = lb, ub = ub,draws = draws)
   expect_equal(dim(mu), c(nsamples, nobs))
-  mu <- fitted_trunc_geometric(exp_eta, lb = 0, ub = 100, draws = draws)
+  mu <- fitted_trunc_geometric(exp_eta, lb = lb, ub = ub, draws = draws)
   expect_equal(dim(mu), c(nsamples, nobs))
   draws$data$trials <- 120
-  mu <- fitted_trunc_binomial(ilink(eta, "logit"), lb = -Inf, ub = 100, 
+  lb <- matrix(-Inf, nrow = nsamples, ncol = nobs)
+  mu <- fitted_trunc_binomial(ilink(eta, "logit"), lb = lb, ub = ub,
                               draws = draws)
   expect_equal(dim(mu), c(nsamples, nobs))
 })

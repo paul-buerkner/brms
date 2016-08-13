@@ -65,7 +65,10 @@ test_that(paste("make_standata returns correct data names",
                  "prior_only"))
   standata <- make_standata(y | trunc(0,20) ~ x, family = "gaussian", 
                             data = temp_data)
-  expect_true(standata$lb == 0 && standata$ub == 20)
+  expect_true(all(standata$lb == 0) && all(standata$ub == 20))
+  standata <- make_standata(y | trunc(ub = 21:30) ~ x, family = "gaussian", 
+                            data = temp_data)
+  expect_true(all(all(standata$ub == 21:30)))
 })
 
 test_that(paste("make_standata accepts correct response variables", 

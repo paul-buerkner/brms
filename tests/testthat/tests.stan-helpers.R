@@ -142,14 +142,16 @@ test_that("stan_llh returns correct llhs under weights and censoring", {
 
 test_that("stan_llh returns correct llhs under truncation", {
   
-  expect_match(stan_llh(cauchy(inverse), list(trunc = ~.trunc(0))),
-               "  Y[n] ~ cauchy(inv(eta[n]), sigma) T[lb, ];", fixed = TRUE)
-  expect_match(stan_llh(poisson(), list(trunc = ~.trunc(ub = 100))),
-               "  Y[n] ~ poisson(exp(eta[n])) T[, ub]; \n", fixed = TRUE)
-  expect_match(stan_llh(gaussian(), list(se = ~x, trunc = ~.trunc(0, 100))),
-               "  Y[n] ~ normal((eta[n]), se[n]) T[lb, ub];", fixed = TRUE)
-  expect_match(stan_llh(binomial(), list(trials = ~x, trunc = ~.trunc(0, 100))),
-               "  Y[n] ~ binomial(trials[n], inv_logit(eta[n])) T[lb, ub];",
+  expect_match(stan_llh(cauchy(inverse), trunc_bounds = list(lb = 0)),
+               "  Y[n] ~ cauchy(inv(eta[n]), sigma) T[lb[n], ];", fixed = TRUE)
+  expect_match(stan_llh(poisson(), trunc_bounds = list(ub = 100)),
+               "  Y[n] ~ poisson(exp(eta[n])) T[, ub[n]]; \n", fixed = TRUE)
+  expect_match(stan_llh(gaussian(), effects = list(se = ~x),
+                        trunc_bounds = list(lb = 0, ub = 100)),
+               "  Y[n] ~ normal((eta[n]), se[n]) T[lb[n], ub[n]];", fixed = TRUE)
+  expect_match(stan_llh(binomial(), effects = list(trials = ~x),
+                        trunc_bounds = list(lb = 0, ub = 100)),
+               "  Y[n] ~ binomial(trials[n], inv_logit(eta[n])) T[lb[n], ub[n]];",
                fixed = TRUE)
 })
 

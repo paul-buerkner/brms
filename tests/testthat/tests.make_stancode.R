@@ -46,13 +46,13 @@ test_that("make_stancode handles addition arguments correctly", {
                "vector[N] cens;", fixed = TRUE)
   expect_match(make_stancode(time | trunc(0) ~ age + sex + disease,
                              data = kidney, family = "gamma"), 
-               "T[lb, ];", fixed = TRUE)
+               "T[lb[n], ];", fixed = TRUE)
   expect_match(make_stancode(time | trunc(ub = 100) ~ age + sex + disease, 
                              data = kidney, family = cauchy("log")), 
-               "T[, ub];", fixed = TRUE)
+               "T[, ub[n]];", fixed = TRUE)
   expect_match(make_stancode(count | trunc(0, 150) ~ Trt_c, 
                              data = epilepsy, family = "poisson"), 
-               "T[lb, ub];", fixed = TRUE)
+               "T[lb[n], ub[n]];", fixed = TRUE)
 })
 
 test_that("make_stancode correctly combines strings of multiple grouping factors", {

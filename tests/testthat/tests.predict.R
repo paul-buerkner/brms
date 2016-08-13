@@ -215,16 +215,16 @@ test_that("truncated predict run without errors", {
                 sigma = rchisq(ns, 3), nsamples = ns)
   
   draws$f$link <- "identity"
-  draws$data <- list(lb = -4)
+  draws$data <- list(lb = sample(-(4:7), nobs, TRUE))
   pred <- sapply(1:nobs, predict_gaussian, draws = draws)
   expect_equal(dim(pred), c(ns, nobs))
   
   draws$f$link <- "log"
-  draws$data <- list(ub = 70)
+  draws$data <- list(ub = sample(70:80, nobs, TRUE))
   pred <- sapply(1:nobs, predict_poisson, draws = draws)
   expect_equal(dim(pred), c(ns, nobs))
   
-  draws$data <- list(lb = 0, ub = 70)
+  draws$data <- list(lb = rep(0, nobs), ub = sample(70:75, nobs, TRUE))
   pred <- sapply(1:nobs, predict_poisson, draws = draws)
   expect_equal(dim(pred), c(ns, nobs))
 })
