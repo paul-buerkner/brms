@@ -66,8 +66,8 @@ fitted_response <- function(draws, mu) {
   }
   # fitted values for truncated models
   if (is_trunc) {
-    lb <- ifelse(is.null(data$lb), -Inf, data$lb)
-    ub <- ifelse(is.null(data$ub), Inf, data$ub)
+    lb <- matrix(data$lb, nrow = nrow(mu), ncol = ncol(mu), byrow = TRUE)
+    ub <- matrix(data$ub, nrow = nrow(mu), ncol = ncol(mu), byrow = TRUE)
     fitted_trunc_fun <- try(get(paste0("fitted_trunc_", draws$f$family), 
                                 mode = "function"))
     if (is(fitted_trunc_fun, "try-error")) {
@@ -194,8 +194,9 @@ fitted_trunc_weibull <- function(mu, lb, ub, draws) {
 }
 
 fitted_trunc_binomial <- function(mu, lb, ub, draws) {
-  lb <- max(lb, -1)
-  ub <- min(ub, max(draws$data$trials))
+  lb <- ifelse(lb < -1, -1, lb)
+  max_value <- max(draws$data$trials)
+  ub <- ifelse(ub > max_value, max_value, ub)
   trials <- draws$data$trials
   if (length(trials) > 1) {
     trials <- matrix(rep(trials, nrow(mu)), ncol = draws$data$N, byrow = TRUE)
@@ -207,8 +208,9 @@ fitted_trunc_binomial <- function(mu, lb, ub, draws) {
 }
 
 fitted_trunc_poisson <- function(mu, lb, ub, draws) {
-  lb <- max(lb, -1)
-  ub <- min(ub, 3 * max(draws$data$Y))
+  lb <- ifelse(lb < -1, -1, lb)
+  max_value <- 3 * max(draws$data$Y)
+  ub <- ifelse(ub > max_value, max_value, ub)
   args <- list(lambda = mu)
   message(paste("Computing fitted values for a truncated poisson model.",
                 "This may take a while."))
@@ -216,8 +218,9 @@ fitted_trunc_poisson <- function(mu, lb, ub, draws) {
 }
 
 fitted_trunc_negbinomial <- function(mu, lb, ub, draws) {
-  lb <- max(lb, -1)
-  ub <- min(ub, 3 * max(draws$data$Y))
+  lb <- ifelse(lb < -1, -1, lb)
+  max_value <- 3 * max(draws$data$Y)
+  ub <- ifelse(ub > max_value, max_value, ub)
   shape <- get_shape(draws$shape, data = draws$data,
                      i = nrow(mu), sobs = FALSE)
   args <- list(mu = mu, size = shape)
@@ -227,8 +230,9 @@ fitted_trunc_negbinomial <- function(mu, lb, ub, draws) {
 }
 
 fitted_trunc_geometric <- function(mu, lb, ub, draws) {
-  lb <- max(lb, -1)
-  ub <- min(ub, 3 * max(draws$data$Y))
+  lb <- ifelse(lb < -1, -1, lb)
+  max_value <- 3 * max(draws$data$Y)
+  ub <- ifelse(ub > max_value, max_value, ub)
   args <- list(mu = mu, size = 1)
   message(paste("Computing fitted values for a truncated geometric model.",
                 "This may take a while."))
@@ -236,6 +240,7 @@ fitted_trunc_geometric <- function(mu, lb, ub, draws) {
 }
 
 fitted_trunc_discrete <- function(dist, args, lb, ub) {
+  stopifnot(is.matrix(lb), is.matrix(ub))
   pdf <- get(paste0("d", dist), mode = "function")
   cdf <- get(paste0("p", dist), mode = "function")
   get_mean_kernel <- function(x, args) {
@@ -245,9 +250,20 @@ fitted_trunc_discrete <- function(dist, args, lb, ub) {
   if (any(is.infinite(c(lb, ub)))) {
     stop("lb and ub must be finite")
   }
-  # array of dimension S x N x length(lg:ub)
-  mean_kernel <- lapply((lb + 1):ub, get_mean_kernel, args = args)
-  mean_kernel <- do.call(abind, c(mean_kernel, along = 3))
-  m1 <- apply(mean_kernel, MARGIN = 2, FUN = rowSums)
-  m1 / (do.call(cdf, c(ub, args)) - do.call(cdf, c(lb, args)))
+  # simplify lb and ub back to vector format 
+  vec_lb <- lb[1, ]
+  vec_ub <- ub[1, ]
+  min_lb <- min(vec_lb)
+  # array of dimension S x N x length((lb+1):ub)
+  mk <- lapply((min_lb + 1):max(vec_ub), get_mean_kernel, args = args)
+  mk <- do.call(abind, c(mk, along = 3))
+  m1 <- vector("list", ncol(mk))
+  for (n in seq_along(m1)) {
+    # summarize only over non-truncated values for this observation
+    J <- (vec_lb[n] - min_lb + 1):(vec_ub[n] - min_lb)
+    m1[[n]] <- rowSums(mk[, n, ][, J, drop = FALSE])
+  }
+  rm(mk)
+  m1 <- do.call(cbind, m1)
+  m1 / (do.call(cdf, c(list(ub), args)) - do.call(cdf, c(list(lb), args)))
 }

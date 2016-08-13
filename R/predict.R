@@ -12,30 +12,30 @@
 predict_gaussian <- function(i, draws, ...) {
   args <- list(mean = ilink(get_eta(draws, i), draws$f$link), 
                sd = get_sigma(draws$sigma, data = draws$data, i = i))
-  rng_continuous(nrng = draws$nsamples, dist = "norm",
-                 args = args, data = draws$data)
+  rng_continuous(nrng = draws$nsamples, dist = "norm", args = args, 
+                 lb = draws$data$lb[i], ub = draws$data$ub[i])
 }
 
 predict_student <- function(i, draws, ...) {
   args <- list(df = get_auxpar(draws$nu, i = i), 
                mu = ilink(get_eta(draws, i), draws$f$link), 
                sigma = get_sigma(draws$sigma, data = draws$data, i = i))
-  rng_continuous(nrng = draws$nsamples, dist = "student",
-                 args = args, data = draws$data)
+  rng_continuous(nrng = draws$nsamples, dist = "student", args = args, 
+                 lb = draws$data$lb[i], ub = draws$data$ub[i])
 }
 
 predict_cauchy <- function(i, draws, ...) {
   args <- list(df = 1, mu = ilink(get_eta(draws, i), draws$f$link), 
                sigma = get_sigma(draws$sigma, data = draws$data, i = i))
-  rng_continuous(nrng = draws$nsamples, dist = "student",
-                 args = args, data = draws$data)
+  rng_continuous(nrng = draws$nsamples, dist = "student", args = args,
+                 lb = draws$data$lb[i], ub = draws$data$ub[i])
 }
 
 predict_lognormal <- function(i, draws, ...) {
   args <- list(meanlog = ilink(get_eta(draws, i), draws$f$link), 
                sdlog = get_sigma(draws$sigma, data = draws$data, i = i))
-  rng_continuous(nrng = draws$nsamples, dist = "lnorm",
-                 args = args, data = draws$data)
+  rng_continuous(nrng = draws$nsamples, dist = "lnorm", args = args, 
+                 lb = draws$data$lb[i], ub = draws$data$ub[i])
 }
 
 predict_gaussian_multi <- function(i, draws, ...) {
@@ -163,8 +163,9 @@ predict_binomial <- function(i, draws, ntrys = 5, ...) {
   trials <- ifelse(length(draws$data$max_obs) > 1, 
                    draws$data$max_obs[i], draws$data$max_obs) 
   args <- list(size = trials, prob = ilink(get_eta(draws, i), draws$f$link))
-  rng_discrete(nrng = draws$nsamples, dist = "binom",
-               args = args, data = draws$data, ntrys = ntrys)
+  rng_discrete(nrng = draws$nsamples, dist = "binom", args = args, 
+               lb = draws$data$lb[i], ub = draws$data$ub[i], 
+               ntrys = ntrys)
 }
 
 predict_bernoulli <- function(i, draws, ...) {
@@ -179,58 +180,61 @@ predict_bernoulli <- function(i, draws, ...) {
 
 predict_poisson <- function(i, draws, ntrys = 5, ...) {
   args <- list(lambda = ilink(get_eta(draws, i), draws$f$link))
-  rng_discrete(nrng = draws$nsamples, dist = "pois",
-               args = args, data = draws$data, ntrys = ntrys)
+  rng_discrete(nrng = draws$nsamples, dist = "pois", args = args, 
+               lb = draws$data$lb[i], ub = draws$data$ub[i],
+               ntrys = ntrys)
 }
 
 predict_negbinomial <- function(i, draws, ntrys = 5, ...) {
   args <- list(mu = ilink(get_eta(draws, i), draws$f$link), 
                size = get_shape(draws$shape, data = draws$data, i = i))
-  rng_discrete(nrng = draws$nsamples, dist = "nbinom",
-               args = args, data = draws$data, ntrys = ntrys)
+  rng_discrete(nrng = draws$nsamples, dist = "nbinom", args = args, 
+               lb = draws$data$lb[i], ub = draws$data$ub[i],
+               ntrys = ntrys)
 }
 
 predict_geometric <- function(i, draws, ntrys = 5, ...) {
   args <- list(mu = ilink(get_eta(draws, i), draws$f$link), size = 1)
-  rng_discrete(nrng = draws$nsamples, dist = "nbinom",
-               args = args, data = draws$data, ntrys = ntrys)
+  rng_discrete(nrng = draws$nsamples, dist = "nbinom", args = args, 
+               lb = draws$data$lb[i], ub = draws$data$ub[i], 
+               ntrys = ntrys)
 }
 
 predict_exponential <- function(i, draws, ...) {
   args <- list(rate = 1 / ilink(get_eta(draws, i), draws$f$link))
-  rng_continuous(nrng = draws$nsamples, dist = "exp",
-                 args = args, data = draws$data)
+  rng_continuous(nrng = draws$nsamples, dist = "exp", args = args, 
+                 lb = draws$data$lb[i], ub = draws$data$ub[i])
 }
 
 predict_gamma <- function(i, draws, ...) {
   shape <- get_shape(draws$shape, data = draws$data, i = i)
   args <- list(shape = shape, 
                scale = ilink(get_eta(draws, i), draws$f$link) / shape)
-  rng_continuous(nrng = draws$nsamples, dist = "gamma",
-                 args = args, data = draws$data)
+  rng_continuous(nrng = draws$nsamples, dist = "gamma", args = args, 
+                 lb = draws$data$lb[i], ub = draws$data$ub[i])
 }
 
 predict_weibull <- function(i, draws, ...) {
   shape <- get_shape(draws$shape, data = draws$data, i = i)
   args <- list(shape = shape, 
                scale = ilink(get_eta(draws, i) / shape, draws$f$link))
-  rng_continuous(nrng = draws$nsamples, dist = "weibull",
-                 args = args, data = draws$data)
+  rng_continuous(nrng = draws$nsamples, dist = "weibull", args = args, 
+                 lb = draws$data$lb[i], ub = draws$data$ub[i])
 }
 
 predict_inverse.gaussian <- function(i, draws, ...) {
   args <- list(mean = ilink(get_eta(draws, i), draws$f$link), 
                shape = get_shape(draws$shape, data = draws$data, i = i))
-  rng_continuous(nrng = draws$nsamples, dist = "invgauss",
-                 args = args, data = draws$data)
+  rng_continuous(nrng = draws$nsamples, dist = "invgauss", args = args, 
+                 lb = draws$data$lb[i], ub = draws$data$ub[i])
 }
 
 predict_beta <- function(i, draws, ...) {
   mu <- ilink(get_eta(draws, i), draws$f$link)
   phi <- get_auxpar(draws$phi, i = i)
   args <- list(shape1 = mu * phi, shape2 = (1 - mu) * phi)
-  rng_continuous(nrng = draws$nsamples, dist = "beta",
-                 args = args, data = draws$data)
+  rng_continuous(nrng = draws$nsamples, dist = "beta", args = args, 
+                 lb = draws$data$lb[i], ub = draws$data$ub[i])
 }
 
 predict_hurdle_poisson <- function(i, draws, ...) {
@@ -349,28 +353,27 @@ predict_ordinal <- function(i, draws, family, ...) {
 
 #---------------predict helper-functions----------------------------
 
-rng_continuous <- function(nrng, dist, args, data) {
+rng_continuous <- function(nrng, dist, args, lb = NULL, ub = NULL) {
   # random numbers from (possibly truncated) continuous distributions
   # Args:
   #   nrng: number of random values to generate
   #   dist: name of a distribution for which the functions
   #         p<dist>, q<dist>, and r<dist> are available
   #   args: dditional arguments passed to the distribution functions
-  #   data: data initially passed to Stan
   # Returns:
   #   a vector of random values draws from the distribution
-  if (is.null(data$lb) && is.null(data$ub)) {
+  if (is.null(lb) && is.null(ub)) {
     # sample as usual
-    rdist <- paste0("r",dist)
+    rdist <- paste0("r", dist)
     out <- do.call(rdist, c(nrng, args))
   } else {
     # sample from truncated distribution
-    lb <- ifelse(is.null(data$lb), -Inf, data$lb)
-    ub <- ifelse(is.null(data$ub), Inf, data$ub)
-    pdist <- paste0("p",dist)
-    qdist <- paste0("q",dist)
-    plb <- do.call(pdist, c(lb, args))
-    pub <- do.call(pdist, c(ub, args))
+    if (is.null(lb)) lb <- -Inf
+    if (is.null(ub)) ub <- Inf
+    pdist <- paste0("p", dist)
+    qdist <- paste0("q", dist)
+    plb <- do.call(pdist, c(list(lb), args))
+    pub <- do.call(pdist, c(list(ub), args))
     rng <- list(runif(nrng, min = plb, max = pub))
     out <- do.call(qdist, c(rng, args))
     # remove infinte values caused by numerical imprecision
@@ -379,7 +382,7 @@ rng_continuous <- function(nrng, dist, args, data) {
   out
 }
 
-rng_discrete <- function(nrng, dist, args, data, ntrys) {
+rng_discrete <- function(nrng, dist, args, lb = NULL, ub = NULL, ntrys = 5) {
   # random numbers from (possibly truncated) discrete distributions
   # currently rejection sampling is used for truncated distributions
   # Args:
@@ -387,18 +390,19 @@ rng_discrete <- function(nrng, dist, args, data, ntrys) {
   #   dist: name of a distribution for which the functions
   #         p<dist>, q<dist>, and r<dist> are available
   #   args: dditional arguments passed to the distribution functions
-  #   data: data initially passed to Stan
-  #   number of trys in rejection sampling for truncated models
+  #   lb: optional lower truncation bound
+  #   ub: optional upper truncation bound
+  #   ntrys: number of trys in rejection sampling for truncated models
   # Returns:
   #   a vector of random values draws from the distribution
-  rdist <- get(paste0("r",dist), mode = "function")
-  if (is.null(data$lb) && is.null(data$ub)) {
+  rdist <- get(paste0("r", dist), mode = "function")
+  if (is.null(lb) && is.null(ub)) {
     # sample as usual
     do.call(rdist, c(nrng, args))
   } else {
     # sample from truncated distribution via rejection sampling
-    lb <- ifelse(is.null(data$lb), -Inf, data$lb)
-    ub <- ifelse(is.null(data$ub), Inf, data$ub)
+    if (is.null(lb)) lb <- -Inf
+    if (is.null(ub)) ub <- Inf
     rng <- matrix(do.call(rdist, c(nrng * ntrys, args)), ncol = ntrys)
     apply(rng, 1, extract_valid_sample, lb = lb, ub = ub)
   }
@@ -424,16 +428,18 @@ extract_valid_sample <- function(rng, lb, ub) {
   }
 }
 
-get_pct_invalid <- function(x, data) {
+get_pct_invalid <- function(x, lb = NULL, ub = NULL) {
   # percentage of invalid predictions of truncated discrete models
   # Args:
   #   x: matrix of predicted values
-  #   data: data initially passed to Stan
-  if (!(is.null(data$lb) && is.null(data$ub))) {
-    lb <- ifelse(is.null(data$lb), -Inf, data$lb)
-    ub <- ifelse(is.null(data$ub), Inf, data$ub)
-    x <- c(x)[!is.na(c(x))]
-    sum(x < (lb + 1) | x > ub) / length(x) 
+  #   lb: optional lower truncation bound
+  #   ub: optional upper truncation bound
+  if (!(is.null(lb) && is.null(ub))) {
+    if (is.null(lb)) lb <- -Inf
+    if (is.null(ub)) ub <- Inf
+    # ensures correct comparison with vector bounds
+    x <- c(t(x))
+    sum(x <= lb | x > ub, na.rm = TRUE) / length(x[!is.na(x)]) 
   } else {
     0
   }
