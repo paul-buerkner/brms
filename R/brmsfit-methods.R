@@ -1436,8 +1436,8 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
        else draws$data$N
   out <- do.call(cbind, lapply(1:N, predict_fun, draws = draws, ntrys = ntrys))
   # percentage of invalid samples for truncated discrete models
-  # should always be zero for all other models
-  pct_invalid <- get_pct_invalid(out, data = draws$data)  # see predict.R
+  # should always be zero for all other models; see predict.R
+  pct_invalid <- get_pct_invalid(out, lb = draws$data$lb, ub = draws$data$ub) 
   if (pct_invalid >= 0.01) {
     warning(paste0(round(pct_invalid * 100), "% of all predicted values ", 
                    "were invalid. Increasing argument ntrys may help."))
