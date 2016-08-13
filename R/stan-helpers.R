@@ -1,4 +1,5 @@
-stan_llh <- function(family, effects = list(), autocor = cor_arma()) {
+stan_llh <- function(family, effects = list(), autocor = cor_arma(),
+                     trunc_bounds = NULL) {
   # Likelihood in Stan language
   # Args:
   #   family: the model family
@@ -21,8 +22,7 @@ stan_llh <- function(family, effects = list(), autocor = cor_arma()) {
   has_disp <- is.formula(effects$disp)
   has_trials <- is.formula(effects$trials)
   has_cse <- is.formula(effects$cse)
-  trunc <- get_boundaries(effects$trunc)
-  has_trunc <- trunc$lb > -Inf || trunc$ub < Inf
+  has_trunc <- any(trunc_bounds$lb > -Inf) || any(trunc_bounds$ub < Inf)
   ll_adj <- has_cens || has_weights || has_trunc
 
   if (is_multi) {
@@ -150,8 +150,8 @@ stan_llh <- function(family, effects = list(), autocor = cor_arma()) {
       stop("truncation is not yet possible in censored ", 
            "or weighted models", call. = FALSE)
     } else {
-      lb <- ifelse(trunc$lb > -Inf, "lb", "")
-      ub <- ifelse(trunc$ub < Inf, "ub", "")
+      lb <- ifelse(any(trunc_bounds$lb > -Inf), "lb[n]", "")
+      ub <- ifelse(any(trunc_bounds$ub < Inf), "ub[n]", "")
       code_trunc <- paste0(" T[", lb, ", ", ub, "]")
     }
   }

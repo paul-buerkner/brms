@@ -272,10 +272,20 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       standata$cens <- standata$cens[1:standata$N_trait]
   }
   if (is.formula(ee$trunc)) {
-    standata <- c(standata, .addition(ee$trunc))
-    if (check_response && (min(standata$Y) < standata$lb || 
-                           max(standata$Y) > standata$ub)) {
-      stop("Some responses are outside of the truncation boundaries.",
+    standata <- c(standata, .addition(ee$trunc, data = data))
+    if (length(standata$lb) == 1L) {
+      standata$lb <- rep(standata$lb, standata$N)
+    }
+    if (length(standata$ub) == 1L) {
+      standata$ub <- rep(standata$ub, standata$N)
+    }
+    if (length(standata$lb) != standata$N || 
+        length(standata$ub) != standata$N) {
+      stop("Invalid truncation bounds", call. = FALSE)
+    }
+    if (check_response && any(standata$Y < standata$lb | 
+                              standata$Y > standata$ub)) {
+      stop("Some responses are outside of the truncation bounds.",
            call. = FALSE)
     }
   }

@@ -51,7 +51,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   is_categorical <- is.categorical(family)
   is_multi <- is.linear(family) && length(ee$response) > 1L
   is_forked <- is.forked(family)
-  trunc <- get_boundaries(ee$trunc)
+  trunc_bounds <- get_bounds(ee$trunc, data = data)
   
   intercepts <- names(get_intercepts(ee, family = family, data = data))
   if (length(ee$nonlinear)) {
@@ -69,7 +69,8 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   text_pred <- collapse_lists(list(text_pred, text_auxpars))
   
   # generate Stan code of the likelihood
-  text_llh <- stan_llh(family, effects = ee, autocor = autocor)
+  text_llh <- stan_llh(family, effects = ee, autocor = autocor,
+                       trunc_bounds = trunc_bounds)
   # generate Stan code specific to certain models
   text_autocor <- stan_autocor(autocor, effects = ee, family = family,
                                prior = prior)
@@ -141,12 +142,12 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
       paste0("  vector<lower=0>[N", trait, "] weights;  // model weights \n"),
     if (is.formula(ee$cens))
       paste0("  vector[N", trait, "] cens;  // indicates censoring \n"),
-    if (trunc$lb > -Inf)
-      paste0("  ", ifelse(use_int(family), "int", "real"), " lb;",  
-             "  // lower bound for truncation; \n"),
-    if (trunc$ub < Inf)
-      paste0("  ", ifelse(use_int(family), "int", "real"), " ub;",  
-             "  // upper bound for truncation; \n"),
+    if (any(trunc_bounds$lb > -Inf))
+      paste0("  ", ifelse(use_int(family), "int", "real"), " lb[N];",  
+             "  // lower bounds for truncation; \n"),
+    if (any(trunc_bounds$ub < Inf))
+      paste0("  ", ifelse(use_int(family), "int", "real"), " ub[N];",  
+             "  // upper bounds for truncation; \n"),
     "  int prior_only;  // should the likelihood be ignored? \n",
     "} \n")
   

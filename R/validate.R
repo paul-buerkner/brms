@@ -159,10 +159,11 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
           stop("Addition arguments may be only defined once.", call. = FALSE)
         } 
       }
-      if (length(add_terms))
+      if (length(add_terms)) {
         stop(paste("Invalid addition part of formula.", 
                    "Please see the 'Details' section of help(brm)"),
              call. = FALSE)
+      }
       if (is.formula(x$se) && is.formula(x$disp)) {
         stop(paste("Addition arguments 'se' and 'disp' cannot be used", 
                    "at the same time."), call. = FALSE)
@@ -903,17 +904,17 @@ formula2string <- function(formula, rm = c(0, 0)) {
   x
 }
 
-get_boundaries <- function(trunc) {
-  # extract truncation boundaries out of a formula
-  # that is known to contain the .trunc function
-  # Returns:
-  #   a list containing two numbers named lb and ub
-  if (is.formula(trunc)) {
-    .addition(trunc)
-  } else {
-    .trunc()
-  }
-}
+get_bounds <- function(trunc, data = NULL) {
+   # extract truncation boundaries out of a formula
+   # that is known to contain the .trunc function
+   # Returns:
+   #   a list containing two numbers named lb and ub
+   if (is(trunc, "formula")) {
+     .addition(trunc, data = data)
+   } else {
+     .trunc()
+   }
+ }
 
 check_brm_input <- function(x) {
   # misc checks on brm arguments 

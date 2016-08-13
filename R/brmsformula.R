@@ -141,8 +141,10 @@
 #'   With the expection of \code{categorical} and ordinal families, the response 
 #'   distribution can be truncated using the \code{trunc} function in the addition part.
 #'   If the response variable is truncated between, say, 0 and 100, we can specify this via
-#'   \code{yi | trunc(lb = 0, ub = 100) ~ predictors}. Defining only one of the two arguments 
-#'   in \code{trunc} leads to one-sided truncation.
+#'   \code{yi | trunc(lb = 0, ub = 100) ~ predictors}. 
+#'   Instead of numbers, variables in the data set can also be passed allowing 
+#'   for varying truncation points across observations. 
+#'   Defining only one of the two arguments in \code{trunc} leads to one-sided truncation.
 #' 
 #'   Mutiple \code{addition} terms may be specified at the same time using 
 #'   the \code{+} operator, for instance \code{formula = yi | se(sei) + cens(censored) ~ 1} 

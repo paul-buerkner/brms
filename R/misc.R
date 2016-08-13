@@ -358,8 +358,9 @@ use_alias <- function(arg, alias = NULL, warn = TRUE) {
 
 .addition <- function(formula, data = NULL) {
   # computes data for addition arguments
-  if (!is.formula(formula))
+  if (!is.formula(formula)) {
     formula <- as.formula(formula)
+  }
   eval(formula[[2]], data, environment(formula))
 }
 
@@ -425,8 +426,8 @@ use_alias <- function(arg, alias = NULL, warn = TRUE) {
 .trunc <- function(lb = -Inf, ub = Inf) {
   lb <- as.numeric(lb)
   ub <- as.numeric(ub)
-  if (length(lb) != 1 || length(ub) != 1) {
-    stop("invalid truncation values", call. = FALSE)
+  if (any(lb >= ub)) {
+    stop("Invalid truncation bounds", call. = FALSE)
   }
   nlist(lb, ub)
 }
