@@ -12,6 +12,9 @@
       heterogeneity of variances.
       \item Allow predictions of \code{t2} smoothing
       terms for new data.
+      \item Feature vectors as arguments for the addition 
+      argument \code{trunc} in order to model varying
+      truncation points.
     }
   }
   \subsection{OTHER CHANGES}{
