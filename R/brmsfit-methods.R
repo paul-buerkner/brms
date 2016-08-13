@@ -1081,6 +1081,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   method <- match.arg(method)
   dots <- list(...)
   conditions <- use_alias(conditions, dots$data)
+  dots$data <- NULL
   x <- restructure(x)
   new_formula <- update_re_terms(x$formula, re_formula = re_formula)
   ee <- extract_effects(new_formula, family = x$family)
@@ -1251,9 +1252,9 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     }
     marg_data <- do.call(rbind, marg_data)
     marg_data$MargCond <- factor(marg_data$MargCond, rownames(conditions))
-    args <- list(x, newdata = marg_data, re_formula = re_formula,
-                 allow_new_levels = TRUE, incl_autocor = FALSE,
-                 probs = probs, robust = robust)
+    args <- c(list(x, newdata = marg_data, re_formula = re_formula,
+                   allow_new_levels = TRUE, incl_autocor = FALSE,
+                   probs = probs, robust = robust), dots)
     if (is.ordinal(x$family) || is.categorical(x$family)) {
       args$summary <- FALSE 
       marg_res <- do.call(method, args)
