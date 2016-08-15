@@ -391,12 +391,21 @@ extract_random <- function(re_terms) {
   #   re_terms: A vector of random effects terms in lme4 syntax
   stopifnot(!length(re_terms) || is.character(re_terms))
   lhs_terms <- get_matches("^[^\\|]*", re_terms)
-  rhs_terms <- get_matches("\\|.*$", re_terms)
+  mid_terms <- get_matches("\\|([^\\|]*\\||)", re_terms)
+  rhs_terms <- sub("^\\|", "", get_matches("\\|[^\\|]*$", re_terms))
   random <- vector("list", length(re_terms))
   for (i in seq_along(re_terms)) {
     form <- formula(paste("~", lhs_terms[i]))
-    cor <- substr(rhs_terms[i], 1, 2) != "||"
-    rhs_terms[i] <- sub("^\\|*", "", rhs_terms[i])
+    cor <- substr(mid_terms[i], 1, 2) != "||"
+    id <- gsub("\\|", "", mid_terms[i])
+    if (nchar(id)) {
+      id <- SW(as.numeric(id))
+      if (is.na(id)) {
+        stop("Invalid grouping term: ", re_terms[i], call. = FALSE)
+      }
+    } else {
+      id <- NA
+    }
     groups <- unlist(strsplit(rhs_terms[i], "/", fixed = TRUE))
     new_groups <- c(groups[1], rep("", length(groups) - 1L))
     for (j in seq_along(groups)) {
@@ -409,7 +418,7 @@ extract_random <- function(re_terms) {
         new_groups[j] <- paste0(new_groups[j - 1], ":", groups[j])
       }
     }
-    random[[i]] <- data.frame(group = new_groups, 
+    random[[i]] <- data.frame(group = new_groups, gn = i, id = id,
                               cor = rep(cor, length(groups)),
                               stringsAsFactors = FALSE)
     random[[i]]$form <- replicate(length(new_groups), form)
@@ -417,11 +426,10 @@ extract_random <- function(re_terms) {
   if (length(random)) {
     random <- do.call(rbind, random)
     # ensure that all REs of the same gf are next to each other
-    # to allow combining them in rename_pars later on
     random <- random[order(random$group), ]
   } else {
-    random <- data.frame(group = character(0), 
-                         cor = logical(0), 
+    random <- data.frame(group = character(0), gn = numeric(0),
+                         id = numeric(0), cor = logical(0), 
                          form = character(0))
   }
   random
