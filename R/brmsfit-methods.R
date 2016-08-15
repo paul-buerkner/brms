@@ -118,29 +118,27 @@ vcov.brmsfit <- function(object, correlation = FALSE, ...) {
 ranef.brmsfit <- function(object, estimate = "mean", var = FALSE, ...) {
   if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
     stop("The model does not contain posterior samples")
+  object <- restructure(object)
   if (!estimate %in% c("mean","median"))
     stop("Argument estimate must be either 'mean' or 'median'", call. = FALSE)
   if (!length(object$ranef))
     stop("The model does not contain random effects", call. = FALSE)
-  group <- names(object$ranef)
   pars <- parnames(object)
   
-  get_ranef <- function(i) {
+  get_ranef <- function(group, nlpar = "") {
     # get random effects of a grouping factor
-    #
     # Args:
-    #   i: index of a grouping factor
-    g <- group[i]
-    rnames <- object$ranef[[i]]
-    nlpar <- get_nlpar(object$ranef[[i]], suffix = "_")
-    rpars <- pars[grepl(paste0("^r_", nlpar, group[i],"\\["), pars)]
+    #   group: name of a grouping factor
+    #   nlpar: name of a non-linear parameter
+    rnames <- object$ranef[object$ranef$group == group & 
+                           object$ranef$nlpar == nlpar, "coef"]
+    usc_nlpar <- usc(nlpar, "prefix")
+    rpars <- pars[grepl(paste0("^r_", group, usc_nlpar, "\\["), pars)]
     if (!length(rpars)) {
-      stop(paste0("The model does not contain random effects for group '",g,"'\n",
-                  "You should use argument ranef = TRUE in function brm."),
-           call. = FALSE)
+      return(NULL)
     }
-    rdims <- object$fit@sim$dims_oi[[paste0("r_", nlpar, group[i])]]
-    levels <- attr(object$ranef[[i]], "levels")
+    rdims <- object$fit@sim$dims_oi[[paste0("r_", group, usc_nlpar)]]
+    levels <- attr(object$ranef, "levels")[[group]]
     if (is.null(levels)) {
       # avoid error in dimnames if levels are NULL 
       # for backwards compatibility with brms < 0.5.0 
@@ -169,14 +167,19 @@ ranef.brmsfit <- function(object, estimate = "mean", var = FALSE, ...) {
       attr(out, "var") <- Var
     }
     rownames(out) <- levels
-    if (nchar(nlpar)) 
-      attr(out, "nlpar") <- get_nlpar(object$ranef[[i]])
+    if (nchar(nlpar)) {
+      attr(out, "nlpar") <- nlpar
+    }
     return(out)
   }
   
-  ranef <- lapply(seq_along(group), get_ranef)
-  names(ranef) <- group
-  ranef 
+  group_nlpar <- unique(object$ranef[, c("group", "nlpar")])
+  ranef <- named_list(group_nlpar$group)
+  for (i in seq_along(ranef)) {
+    ranef[[i]] <- get_ranef(group = group_nlpar$group[i], 
+                            nlpar = group_nlpar$nlpar[i])
+  }
+  rmNULL(ranef) 
 } 
 
 #' Extract model coefficients
@@ -212,6 +215,7 @@ coef.brmsfit <- function(object, estimate = "mean", ...) {
   }
   coef <- ranef(object, estimate = estimate, ...)
   ranef_names <- unique(ulapply(coef, colnames))
+  # FIXME: non-linear parameters are not correctly handled!
   missing_fixef <- setdiff(ranef_names, rownames(fixef))
   if (length(missing_fixef)) {
     zero_mat <- matrix(0, nrow = length(missing_fixef))
@@ -219,7 +223,7 @@ coef.brmsfit <- function(object, estimate = "mean", ...) {
     fixef <- rbind(fixef, zero_mat)
   }
   for (i in seq_along(coef)) {
-    missing_ranef <-  setdiff(rownames(fixef), colnames(coef[[i]]))
+    missing_ranef <- setdiff(rownames(fixef), colnames(coef[[i]]))
     if (length(missing_ranef)) {
       zero_mat <- matrix(0, nrow = nrow(coef[[i]]), 
                          ncol = length(missing_ranef))
@@ -284,6 +288,7 @@ VarCorr.brmsfit <- function(x, sigma = 1, estimate = "mean",
                             as.list = TRUE, ...) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
     stop("The model does not contain posterior samples")
+  x <- restructure(x)
   if (!(length(x$ranef) || any(grepl("^sigma($|_)", parnames(x)))))
     stop("The model does not contain covariance matrices", call. = FALSE)
   if (!is_equal(sigma, 1))
@@ -342,16 +347,18 @@ VarCorr.brmsfit <- function(x, sigma = 1, estimate = "mean",
   
   family <- family(x)
   ee <- extract_effects(x$formula, family = family)
-  if (length(x$ranef)) {
-    gather_names <- function(i) {
-      # gather names of random effects parameters
-      cor_type <- paste0("cor_", group[i])
-      sd_pars <- paste0("sd_", group[i], "_", x$ranef[[i]])
-      cor_pars <- get_cornames(x$ranef[[i]], type = cor_type, brackets = FALSE)
-      nlist(rnames = x$ranef[[i]], type = cor_type, sd_pars, cor_pars)
+  if (nrow(x$ranef)) {
+    gather_names <- function(group) {
+      # gather names of group-level parameters
+      r <- x$ranef[x$ranef$group == group, ]
+      rnames <- paste0(usc(r$nlpar, "suffix"), r$coef)
+      cor_type <- paste0("cor_", group)
+      sd_pars <- paste0("sd_", group, "_", rnames)
+      cor_pars <- get_cornames(rnames, type = cor_type, brackets = FALSE)
+      nlist(rnames = rnames, type = cor_type, sd_pars, cor_pars)
     }
-    group <- paste0(ulapply(x$ranef, get_nlpar, suffix = "_"), names(x$ranef))
-    p <- lapply(seq_along(group), gather_names)
+    group <- unique(x$ranef$group)
+    p <- lapply(group, gather_names)
   } else {
     p <- group <- NULL
   } 
@@ -561,7 +568,7 @@ summary.brmsfit <- function(object, waic = FALSE, ...) {
   out <- brmssummary(formula = formula(object), 
                      family = family(object), 
                      data.name = object$data.name, 
-                     group = names(object$ranef), 
+                     group = unique(object$ranef$group), 
                      nobs = nobs(object), 
                      ngrps = ngrps(object), 
                      autocor = object$autocor,
@@ -623,24 +630,42 @@ summary.brmsfit <- function(object, waic = FALSE, ...) {
     rownames(out$cor_pars) <- cor_pars
     
     # summary of random effects
-    for (i in seq_along(out$group)) {
-      nlp <- get_nlpar(object$ranef[[i]])
-      nlp_ <- ifelse(nchar(nlp), paste0(nlp, "_"), nlp)
-      rnames <- object$ranef[[i]]
-      sd_pars <- paste0("sd_", nlp_, out$group[i], "_", rnames)
-      sd_names <- paste0("sd", "(", nlp_, rnames,")")
+    for (g in out$group) {
+      r <- object$ranef[object$ranef$group == g, ]
+      nlpar_usc <- ifelse(nchar(r$nlpar), paste0(r$nlpar, "_"), "")
+      #nlp <- get_nlpar(object$ranef[[i]])
+      #nlp_ <- ifelse(nchar(nlp), paste0(nlp, "_"), nlp)
+      rnames <- paste0(nlpar_usc, r$coef)
+      sd_pars <- paste0("sd_", g, "_", rnames)
+      sd_names <- paste0("sd", "(", rnames ,")")
       # construct correlation names
-      full_type <- paste0("cor_", nlp_, out$group[i])
-      all_cor_pars <- get_cornames(rnames, brackets = FALSE, type = full_type)
+      type <- paste0("cor_", g)
+      all_cor_pars <- get_cornames(rnames, brackets = FALSE, type = type)
       take <- all_cor_pars %in% parnames(object)
       cor_pars <- all_cor_pars[take]
-      cor_names <- get_cornames(paste0(nlp_, rnames))[take]
+      cor_names <- get_cornames(rnames)[take]
       # extract sd and cor parameters from the summary
-      new_random <- fit_summary[c(sd_pars, cor_pars), , drop = FALSE]
-      rownames(new_random) <- c(sd_names, cor_names)
-      out$random[[out$group[i]]] <- 
-        rbind(out$random[[out$group[i]]], new_random)
+      out$random[[g]] <- fit_summary[c(sd_pars, cor_pars), , drop = FALSE]
+      rownames(out$random[[g]]) <- c(sd_names, cor_names)
     }
+    # for (i in seq_along(out$group)) {
+    #   nlp <- get_nlpar(object$ranef[[i]])
+    #   nlp_ <- ifelse(nchar(nlp), paste0(nlp, "_"), nlp)
+    #   rnames <- object$ranef[[i]]
+    #   sd_pars <- paste0("sd_", nlp_, out$group[i], "_", rnames)
+    #   sd_names <- paste0("sd", "(", nlp_, rnames,")")
+    #   # construct correlation names
+    #   full_type <- paste0("cor_", nlp_, out$group[i])
+    #   all_cor_pars <- get_cornames(rnames, brackets = FALSE, type = full_type)
+    #   take <- all_cor_pars %in% parnames(object)
+    #   cor_pars <- all_cor_pars[take]
+    #   cor_names <- get_cornames(paste0(nlp_, rnames))[take]
+    #   # extract sd and cor parameters from the summary
+    #   new_random <- fit_summary[c(sd_pars, cor_pars), , drop = FALSE]
+    #   rownames(new_random) <- c(sd_names, cor_names)
+    #   out$random[[out$group[i]]] <- 
+    #     rbind(out$random[[out$group[i]]], new_random)
+    # }
     
     # summary of splines
     spline_pars <- pars[grepl("^sds_", pars)]
@@ -673,12 +698,13 @@ nobs.brmsfit <- function(object, ...) {
 #' @export ngrps
 #' @importFrom lme4 ngrps
 ngrps.brmsfit <- function(object, ...) {
-  if (length(object$ranef)) {
-    out <- named_list(names(object$ranef))
-    for (i in seq_along(out)) {
-      out[[i]] <- length(attr(object$ranef[[i]], "levels"))
-    } 
-    out <- out[!duplicated(names(out))]
+  if (nrow(object$ranef)) {
+    out <- lapply(attr(object$ranef, "levels"), length)
+    # out <- named_list(names(object$ranef))
+    # for (i in seq_along(out)) {
+    #   out[[i]] <- length(attr(object$ranef[[i]], "levels"))
+    # } 
+    # out <- out[!duplicated(names(out))]
   } else {
     out <- NULL
   }
