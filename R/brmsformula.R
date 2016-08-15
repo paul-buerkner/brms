@@ -44,9 +44,16 @@
 #'   vocabulary) 'random' effects, although the latter name is misleading
 #'   in a Bayesian context (for more details type \code{vignette("brms")}).
 #'   Multiple grouping factors each with multiple group-level effects 
-#'   are possible. Instead of | you may use || in grouping terms
-#'   to prevent correlations from being modeled. With three exceptions, 
-#'   this is basically \code{lme4} syntax. 
+#'   are possible. Instead of \code{|} you may use \code{||} in grouping terms
+#'   to prevent correlations from being modeled. 
+#'   Alternatively, it is possible to model different group-level terms of 
+#'   the same grouping factor as correlated (even across different formulae,
+#'   e.g. in non-linear models) by using \code{|<ID>|} instead of \code{|}.
+#'   All group-level terms sharing the same ID will be modeled as correlated.
+#'   If, for instance, one specifies the terms \code{(1+x|2|g)} and 
+#'   \code{(1+z|2|g)} somewhere in the formulae passed to \code{brmsformula},
+#'   correlations between the corresponding group-level effects 
+#'   will be estimated.
 #'   
 #'   First, smoothing terms can modeled using the \code{\link[mgcv:s]{s}}
 #'   and \code{\link[mgcv:t2]{t2}} functions of the \pkg{mgcv} package 
@@ -320,7 +327,10 @@
 #' bf(y | cens(censor_variable) ~ predictors)
 #' 
 #' # define a non-linear model
-#' bf(y ~ a1 - a2^x, nonlinear = list(a1 ~ x, a2 ~ x + (x|g)))
+#' bf(y ~ a1 - a2^x, nonlinear = list(a1 ~ 1, a2 ~ x + (x|g)))
+#' 
+#' # correlated group-level effects across parameters
+#' bf(y ~ a1 - a2^x, nonlinear = list(a1 ~ 1 + (1|2|g), a2 ~ x + (x|2|g)))
 #' 
 #' # define a multivariate model
 #' bf(cbind(y1, y2) ~ 0 + trait + trait:(x*z) + (0+trait|g))

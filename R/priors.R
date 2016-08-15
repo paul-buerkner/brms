@@ -282,7 +282,7 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
       length(group) != 1 || length(nlpar) != 1 || length(lb) > 1 || 
       length(ub) > 1)
     stop("All arguments of set_prior must be of length 1.", call. = FALSE)
-  valid_classes <- c("Intercept", "b", "sd", "cor", "L", "sds", "simplex",
+  valid_classes <- c("Intercept", "b", "sd", "sds", "simplex", "cor", "L", 
                      "ar", "ma", "arr", "sigma", "sigmaLL", "rescor", 
                      "Lrescor", "nu", "shape", "delta", "phi")
   if (!class %in% valid_classes) {
@@ -297,7 +297,7 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
     stop(paste("argument 'coef' not meaningful for class", class),
          call. = FALSE)
   }
-  if (nchar(nlpar) && !class %in% valid_classes[1:7]) {
+  if (nchar(nlpar) && !class %in% valid_classes[1:5]) {
     stop(paste("argument 'nlpar' not meaningful for class", class),
          call. = FALSE)
   }
@@ -436,6 +436,12 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
     }
     prior <- rbind(prior, auxprior)
   }
+  # priors of group-level parameters
+  ranef <- gather_ranef(ee, data)
+  prior_ranef <- get_prior_ranef(ranef, internal = internal,
+                                 def_scale_prior = def_scale_prior)
+  prior <- rbind(prior, prior_ranef)
+  
   # prior for the delta parameter for equidistant thresholds
   if (is.ordinal(family) && threshold == "equidistant") {
     prior <- rbind(prior, prior_frame(class = "delta"))
@@ -492,14 +498,12 @@ get_prior_effects <- function(effects, data, family = gaussian(),
                                  nlpar = nlpar, internal = internal)
   monef <- colnames(get_model_matrix(effects$mono, data))
   prior_monef <- get_prior_monef(monef, fixef = fixef, nlpar = nlpar)
-  ranef <- gather_ranef(effects, data = data, all = FALSE)
-  prior_ranef <- get_prior_ranef(ranef, def_scale_prior, nlpar = nlpar, 
-                                 internal = internal)
+  # group-level priors are prepared separately
   splines <- get_spline_labels(effects)
   prior_splines <- get_prior_splines(splines, def_scale_prior, nlpar = nlpar)
   csef <- colnames(get_model_matrix(effects$cse, data = data))
   prior_csef <- get_prior_csef(csef, fixef = fixef)
-  rbind(prior_fixef, prior_monef, prior_ranef, prior_splines, prior_csef)
+  rbind(prior_fixef, prior_monef, prior_splines, prior_csef)
 }
 
 get_prior_fixef <- function(fixef, intercepts = "Intercept", 
@@ -588,33 +592,37 @@ get_prior_ranef <- function(ranef, def_scale_prior, nlpar = "",
   # Returns:
   #   an object of class prior_frame
   prior <- empty_prior_frame()
-  if (length(ranef)) {
+  if (nrow(ranef)) {
     # global sd class
-    prior <- rbind(prior, prior_frame(class = "sd", nlpar = nlpar,
-                                      prior = def_scale_prior))
-    gs <- names(ranef)
-    for (i in seq_along(ranef)) {
-      # include random effects standard deviations
-      prior <- rbind(prior, prior_frame(class = "sd", coef = c("", ranef[[i]]),
-                                        group = gs[i], nlpar = nlpar))
-      # detect duplicated random effects
-      J <- with(prior, class == "sd" & group == gs[i] & 
-                       nlpar == nlpar & nchar(coef))
+    prior <- rbind(prior, 
+      prior_frame(class = "sd", nlpar = unique(ranef$nlpar),
+                  prior = def_scale_prior))
+    for (id in unique(ranef$id)) {
+      r <- ranef[ranef$id == id, ]
+      group <- r$group[1]
+      # include group-level standard deviations
+      prior <- rbind(prior,
+        prior_frame(class = "sd", group = group, 
+                    nlpar = unique(r$nlpar)),
+        prior_frame(class = "sd", coef = r$coef, 
+                    group = group, nlpar = r$nlpar))
+      # detect duplicated group-level effects
+      J <- with(prior, class == "sd" & nchar(coef))
       dupli <- duplicated(prior[J, ])
       if (any(dupli)) {
-        stop(paste("Duplicated random effects detected for group", gs[i]),
-             call. = FALSE)
+        stop("Duplicated group-level effects detected for group ", 
+             group, call. = FALSE)
       }
       # include correlation parameters
-      if (attr(ranef[[i]], "cor") && length(ranef[[i]]) > 1L) {
+      if (isTRUE(r$cor[1]) && nrow(r) > 1L) {
         if (internal) {
           prior <- rbind(prior, 
-            prior_frame(class = "L", group = c("", gs[i]), nlpar = nlpar,
+            prior_frame(class = "L", group = c("", group),
                         prior = c("lkj_corr_cholesky(1)", "")))
         } else {
           prior <- rbind(prior, 
-            prior_frame(class = "cor", group = c("", gs[i]),
-                        nlpar = nlpar, prior = c("lkj(1)", "")))
+            prior_frame(class = "cor", group = c("", group),
+                        prior = c("lkj(1)", "")))
         }
       }
     }
@@ -751,7 +759,7 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
   if (length(rows2remove)) {   
     prior <- prior[-rows2remove, ]
   }
-  prior <- prior[with(prior, order(class, group, coef)), ]
+  prior <- prior[with(prior, order(nlpar, class, group, coef)), ]
   prior <- rbind(prior, prior_incr_lp)
   rownames(prior) <- 1:nrow(prior)
   # add attributes to prior generated in handle_special_priors

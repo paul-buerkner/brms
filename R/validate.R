@@ -391,12 +391,21 @@ extract_random <- function(re_terms) {
   #   re_terms: A vector of random effects terms in lme4 syntax
   stopifnot(!length(re_terms) || is.character(re_terms))
   lhs_terms <- get_matches("^[^\\|]*", re_terms)
-  rhs_terms <- get_matches("\\|.*$", re_terms)
+  mid_terms <- get_matches("\\|([^\\|]*\\||)", re_terms)
+  rhs_terms <- sub("^\\|", "", get_matches("\\|[^\\|]*$", re_terms))
   random <- vector("list", length(re_terms))
   for (i in seq_along(re_terms)) {
     form <- formula(paste("~", lhs_terms[i]))
-    cor <- substr(rhs_terms[i], 1, 2) != "||"
-    rhs_terms[i] <- sub("^\\|*", "", rhs_terms[i])
+    cor <- substr(mid_terms[i], 1, 2) != "||"
+    id <- gsub("\\|", "", mid_terms[i])
+    if (nchar(id)) {
+      id <- SW(as.numeric(id))
+      if (is.na(id)) {
+        stop("Invalid grouping term: ", re_terms[i], call. = FALSE)
+      }
+    } else {
+      id <- NA
+    }
     groups <- unlist(strsplit(rhs_terms[i], "/", fixed = TRUE))
     new_groups <- c(groups[1], rep("", length(groups) - 1L))
     for (j in seq_along(groups)) {
@@ -409,7 +418,7 @@ extract_random <- function(re_terms) {
         new_groups[j] <- paste0(new_groups[j - 1], ":", groups[j])
       }
     }
-    random[[i]] <- data.frame(group = new_groups, 
+    random[[i]] <- data.frame(group = new_groups, gn = i, id = id,
                               cor = rep(cor, length(groups)),
                               stringsAsFactors = FALSE)
     random[[i]]$form <- replicate(length(new_groups), form)
@@ -417,11 +426,10 @@ extract_random <- function(re_terms) {
   if (length(random)) {
     random <- do.call(rbind, random)
     # ensure that all REs of the same gf are next to each other
-    # to allow combining them in rename_pars later on
     random <- random[order(random$group), ]
   } else {
-    random <- data.frame(group = character(0), 
-                         cor = logical(0), 
+    random <- data.frame(group = character(0), gn = numeric(0),
+                         id = numeric(0), cor = logical(0), 
                          form = character(0))
   }
   random
@@ -771,30 +779,70 @@ has_splines <- function(effects) {
   out || any(ulapply(ee_auxpars, has_splines))
 }
 
-gather_ranef <- function(effects, data = NULL, all = TRUE,
-                         combine = FALSE) {
+gather_ranef <- function(effects, data = NULL, all = TRUE) {
   # gathers helpful information on the random effects
   # Args:
   #   effects: output of extract_effects
   #   data: data passed to brm after updating
   #   all: include REs of non-linear and auxiliary parameters?
+  #   combined: should 
   # Returns: 
   #   A named list with one element per grouping factor
+  is_forked <- isTRUE(attr(effects$fixed, "forked"))
   random <- get_random(effects, all = all)
-  Z <- lapply(random$form, get_model_matrix, data = data, 
-              forked = isTRUE(attr(effects$fixed, "forked")))
-  ranef <- setNames(lapply(Z, colnames), random$group)
-  for (i in seq_along(ranef)) {
-    attr(ranef[[i]], "levels") <- 
-      levels(factor(get(random$group[[i]], data)))
-    attr(ranef[[i]], "group") <- names(ranef)[i]
-    attr(ranef[[i]], "cor") <- random$cor[[i]]
-    attr(ranef[[i]], "nlpar") <- random$nlpar[i]
+  ranef <- vector("list", nrow(random))
+  used_ids <- new_ids <- id_groups <- NULL
+  j <- 1
+  for (i in seq_len(nrow(random))) {
+    Z <- get_model_matrix(random$form[[i]], data = data,
+                          forked = is_forked)
+    rdat <- data.frame(id = random$id[[i]], 
+                       group = random$group[[i]], 
+                       gn = random$gn[[i]],
+                       coef = colnames(Z), cn = NA,
+                       nlpar = random$nlpar[[i]],
+                       cor = random$cor[[i]], 
+                       stringsAsFactors = FALSE)
+    rdat$form <- replicate(nrow(rdat), random$form[[i]])
+    id <- random$id[[i]]
+    if (is.na(id)) {
+      rdat$id <- j
+      j <- j + 1
+    } else {
+      if (id %in% used_ids) {
+        k <- match(id, used_ids)
+        rdat$id <- new_ids[k]
+        if (!identical(random$group[[i]], id_groups[k])) {
+          stop("Can only combine group-level terms of the ",
+               "same grouping factor.", call. = FALSE)
+        }
+      } else {
+        used_ids <- c(used_ids, id)
+        k <- length(used_ids)
+        rdat$id <- new_ids[k] <- j
+        id_groups[k] <- random$group[[i]]
+        j <- j + 1
+      }
+    }
+    ranef[[i]] <- rdat 
   }
-  if (combine) {
-    ranef <- combine_duplicates(ranef, sep = c("nlpar", "levels"))
+  ranef <- do.call(rbind, c(list(empty_ranef()), ranef))
+  if (nrow(ranef)) {
+    for (id in unique(ranef$id)) {
+      ranef$cn[ranef$id == id] <- seq_len(sum(ranef$id == id))
+    }
+    levels <- lapply(unique(random$group), function(g) 
+      levels(factor(get(g, data))))
+    names(levels) <- unique(random$group)
+    attr(ranef, "levels") <- levels
   }
   ranef
+}
+
+empty_ranef <- function() {
+  data.frame(id = numeric(0), group = character(0), gn = numeric(0),
+             coef = character(0), cn = numeric(0), nlpar = character(0),
+             cor = logical(0), form = character(0), stringsAsFactors = FALSE)
 }
 
 rsv_vars <- function(family, nresp = 1, rsv_intercept = NULL) {
@@ -948,7 +996,7 @@ check_brm_input <- function(x) {
   invisible(NULL)
 }
 
-exclude_pars <- function(effects, ranef = list(), 
+exclude_pars <- function(effects, ranef = empty_ranef(),
                          save_ranef = TRUE) {
   # list irrelevant parameters NOT to be saved by Stan
   # Args:
@@ -957,10 +1005,9 @@ exclude_pars <- function(effects, ranef = list(),
   #   save_ranef: should random effects of each level be saved?
   # Returns:
   #   a vector of parameters to be excluded
-  out <- c("eta", "etap", "eta_2PL", "Eta", "temp_Intercept1", 
-           "temp_Intercept",  "Lrescor", "Rescor", "Sigma", 
-           "LSigma", "disp_sigma", "e", "E", "res_cov_matrix", 
-           "lp_pre", "hs_local", "hs_global",
+  out <- c("temp_Intercept1", "temp_Intercept", "Lrescor", 
+           "Rescor", "Sigma", "LSigma", "res_cov_matrix", 
+           "hs_local", "hs_global",
            intersect(auxpars(), names(effects)))
   nlpars <- names(effects$nonlinear)
   if (length(nlpars)) {
@@ -977,29 +1024,14 @@ exclude_pars <- function(effects, ranef = list(),
       out <- c(out, paste0("zs_", seq_along(splines)))
     }
   }
-  if (length(ranef)) {
-    rm_re_pars <- c("z", "L", "Cor", if (!save_ranef) "r")
-    # names of NL-parameters must be computed based on ranef here
-    nlp <- ulapply(ranef, attr, "nlpar")
-    if (length(nlp)) {
-      stopifnot(length(nlp) == length(ranef))
-      nlp <- ifelse(nchar(nlp), paste0(nlp, "_"), nlp)
-      for (k in seq_along(ranef)) {
-        i <- which(which(nlp == nlp[k]) == k)
-        out <- c(out, paste0(rm_re_pars, "_", nlp[k], i))
-        neff <- length(ranef[[k]])
-        if (neff > 1L) {
-          out <- c(out, paste0("r_", nlp[k], i, "_", 1:neff))
-        }
-      }
-    } else {
-      for (k in seq_along(ranef)) {
-        out <- c(out, paste0(rm_re_pars, "_", k))
-        neff <- length(ranef[[k]])
-        if (neff > 1L) {
-          out <- c(out, paste0("r_", k, "_", 1:neff))
-        }
-      }
+  if (nrow(ranef)) {
+    rm_re_pars <- c("z", "L", "Cor", "r")
+    for (id in unique(ranef$id)) {
+      out <- c(out, paste0(rm_re_pars, "_", id))
+    }
+    if (!save_ranef) {
+      usc_nlpar <- usc(ranef$nlpar, "prefix")
+      out <- c(out, paste0("r_", ranef$gn, usc_nlpar, "_", ranef$cn))
     }
   }
   out

@@ -198,6 +198,21 @@ get_matches <- function(pattern, text, simplify = TRUE, ...) {
   x
 }
 
+usc <- function(x, pos = c("prefix", "suffix")) {
+  # add an underscore to non-empty character strings
+  # Args:
+  #   x: a character vector
+  #   pos: position of the underscore
+  pos <- match.arg(pos)
+  x <- as.character(x)
+  if (pos == "prefix") {
+    x <- ifelse(nzchar(x), paste0("_", x), "")
+  } else {
+    x <- ifelse(nzchar(x), paste0(x, "_"), "")
+  }
+  x
+}
+
 logit <- function(p) {
   # logit link
   log(p / (1 - p))

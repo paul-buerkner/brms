@@ -29,7 +29,7 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
       auxfit <- x
       auxfit$formula <- update.formula(x$formula, rhs(attr(x$formula, ap)))
       auxfit$ranef <- gather_ranef(extract_effects(auxfit$formula), 
-                                   data = x$data, combine = TRUE)
+                                   data = model.frame(x))
       auxstandata <- amend_newdata(newdata, fit = auxfit, 
                                    re_formula = re_formula,
                                    allow_new_levels = allow_new_levels)
@@ -76,7 +76,7 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
       nlfit$formula <- update.formula(x$formula, 
                          rhs(attr(x$formula, "nonlinear")[[i]]))
       nlfit$ranef <- gather_ranef(extract_effects(nlfit$formula), 
-                                  data = x$data, combine = TRUE)
+                                  data = model.frame(x))
       nlstandata <- amend_newdata(newdata, fit = nlfit, re_formula = re_formula, 
                                   allow_new_levels = allow_new_levels)
       draws$nonlinear[[nlpars[i]]] <- 
@@ -101,7 +101,7 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   } else {
     x$formula <- rm_attr(formula(x), auxpars())
     x$ranef <- gather_ranef(extract_effects(formula(x)), 
-                            data = x$data, combine = TRUE)
+                            data = model.frame(x))
     draws <- c(draws, 
       .extract_draws(x, standata = standata, subset = subset,
                      re_formula = re_formula))
@@ -121,12 +121,12 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   #   a named list
   new_formula <- update_re_terms(formula(x), re_formula = re_formula)
   ee <- extract_effects(new_formula, family = family(x))
-  nlpar <- ifelse(nchar(nlpar), paste0(nlpar, "_"), "")
+  nlpar_usc <- ifelse(nchar(nlpar), paste0(nlpar, "_"), "")
   args <- list(x = x, subset = subset)
   
   draws <- list(old_cat = is.old_categorical(x))
   if (!is.null(standata$X) && ncol(standata$X) && !draws$old_cat) {
-    b_pars <- paste0("b_", nlpar, colnames(standata$X))
+    b_pars <- paste0("b_", nlpar_usc, colnames(standata$X))
     draws[["b"]] <- 
       do.call(as.matrix, c(args, list(pars = b_pars, exact = TRUE)))
   }
@@ -134,10 +134,10 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
     monef <- colnames(standata$Xm)
     draws[["bm"]] <- draws$simplex <- vector("list", length(monef))
     for (i in 1:length(monef)) {
-      bm_par <- paste0("b_", nlpar, monef[i])
+      bm_par <- paste0("b_", nlpar_usc, monef[i])
       draws[["bm"]][[i]] <- 
         do.call(as.matrix, c(args, list(pars = bm_par, exact = TRUE)))
-      simplex_par <- paste0("simplex_", nlpar, monef[i], 
+      simplex_par <- paste0("simplex_", nlpar_usc, monef[i], 
                             "[", 1:standata$Jm[i], "]")
       draws[["simplex"]][[i]] <- 
         do.call(as.matrix, c(args, list(pars = simplex_par, exact = TRUE)))
@@ -161,32 +161,34 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   splines <- rename(get_spline_labels(ee))
   for (i in seq_along(splines)) {
     draws[["Zs"]][[splines[i]]] <- draws$data[[paste0("Zs_", i)]]
-    s_pars <- paste0("^s_", nlpar, splines[i], "\\[")
+    s_pars <- paste0("^s_", nlpar_usc, splines[i], "\\[")
     draws[["s"]][[splines[i]]] <- 
       do.call(as.matrix, c(args, list(pars = s_pars)))
   }
-  # random effects
-  new_ranef <- gather_ranef(ee, data = x$data, combine = TRUE)
-  group <- names(new_ranef)
+  # group-level effects
+  usc_nlpar <- usc(nlpar, "prefix")
+  new_ranef <- gather_ranef(ee, model.frame(x))
+  groups <- unique(new_ranef$group)
   # requires initialization to assign S4 objects of the Matrix package
-  draws[["Z"]] <- named_list(group)
-  for (i in seq_along(group)) {
+  draws[["Z"]] <- named_list(groups)
+  for (g in groups) {
+    new_r <- new_ranef[new_ranef$group == g, ]
     # create a single RE design matrix for every grouping factor
-    Z <- lapply(which(ee$random$group == group[i]), 
+    Z <- lapply(unique(new_r$gn), 
                 function(k) get(paste0("Z_", k), standata))
     Z <- do.call(cbind, Z)
-    id <- match(group[i], ee$random$group)
-    gf <- get(paste0("J_", id), standata)
-    r_pars <- paste0("^r_", nlpar, group[i], "\\[")
+    gf <- get(paste0("J_", new_r$id[1]), standata)
+    r_pars <- paste0("^r_", g, usc_nlpar, "\\[")
     r <- do.call(as.matrix, c(args, list(pars = r_pars)))
     if (is.null(r)) {
-      stop(paste("Random effects for each level of grouping factor",
-                 group[i], "not found. Please set ranef = TRUE",
+      stop(paste0("Group-level effects for each level of group '",
+                 g, "' not found. Please set ranef = TRUE ",
                  "when calling brm."), call. = FALSE)
     }
     # match columns of Z with corresponding RE estimates
-    n_levels <- ngrps(x)[[group[[i]]]]
-    used_re <- ulapply(new_ranef[[group[i]]], match, x$ranef[[group[i]]])
+    n_levels <- ngrps(x)[[g]]
+    old_r <- x$ranef[x$ranef$group == g, ]
+    used_re <- ulapply(new_r$coef, match, old_r$coef)
     used_re_pars <- ulapply(used_re, function(k) 
       1:n_levels + (k - 1) * n_levels)
     r <- r[, used_re_pars, drop = FALSE]
@@ -219,8 +221,8 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
       r <- r[, take_levels, drop = FALSE]
       Z <- Z[, take_levels, drop = FALSE]
     }
-    draws[["Z"]][[group[i]]] <- Z
-    draws[["r"]][[group[i]]] <- r
+    draws[["Z"]][[g]] <- Z
+    draws[["r"]][[g]] <- r
   }
   draws
 }

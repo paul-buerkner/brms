@@ -40,8 +40,8 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   threshold <- match.arg(threshold)
   et <- extract_time(autocor$formula)  
   ee <- extract_effects(formula, family = family, et$all)
-  prior <- check_prior(prior, formula = formula, data = data, 
-                       family = family, autocor = autocor, 
+  prior <- check_prior(prior, formula = formula, data = data,
+                       family = family, autocor = autocor,
                        threshold = threshold)
   prior_only <- identical(sample_prior, "only")
   sample_prior <- if (prior_only) FALSE else sample_prior
@@ -54,19 +54,24 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   trunc_bounds <- get_bounds(ee$trunc, data = data)
   
   intercepts <- names(get_intercepts(ee, family = family, data = data))
+  ranef <- gather_ranef(ee, data = data)
   if (length(ee$nonlinear)) {
     text_pred <- stan_nonlinear(ee, data = data, family = family, 
-                                prior = prior, cov_ranef = cov_ranef)
+                                ranef = ranef, prior = prior)
   } else {
     text_pred <- stan_linear(ee, data = data, family = family, 
                              prior = prior, intercepts = intercepts, 
-                             autocor = autocor, threshold = threshold, 
-                             sparse = sparse, cov_ranef = cov_ranef)
+                             ranef = ranef, autocor = autocor, 
+                             threshold = threshold, sparse = sparse)
   }
   text_auxpars <- stan_auxpars(ee, data = data, family = family, 
-                               prior = prior, autocor = autocor, 
-                               cov_ranef = cov_ranef)
-  text_pred <- collapse_lists(list(text_pred, text_auxpars))
+                               ranef = ranef, prior = prior, 
+                               autocor = autocor)
+  # due to the ID syntax, group-level effects are evaluated separately
+  text_ranef <- lapply(unique(ranef$id), stan_ranef, ranef = ranef, 
+                       prior = prior, cov_ranef = cov_ranef)
+  # combine all code related to predictors
+  text_pred <- collapse_lists(c(list(text_pred, text_auxpars), text_ranef))
   
   # generate Stan code of the likelihood
   text_llh <- stan_llh(family, effects = ee, autocor = autocor,

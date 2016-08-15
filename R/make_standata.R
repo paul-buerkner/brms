@@ -150,8 +150,8 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   }
   
   # data for various kinds of effects
-  args_eff <- nlist(data, family, prior, autocor, cov_ranef, knots, 
-                    not4stan, is_newdata, old_levels = control$old_levels)
+  ranef <- gather_ranef(ee, data)
+  args_eff <- nlist(data, family, ranef, prior, autocor, knots, not4stan)
   if (length(ee$nonlinear)) {
     nlpars <- names(ee$nonlinear)
     # matrix of covariates appearing in the non-linear formula
@@ -183,6 +183,10 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     data_aux_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
     standata <- c(standata, data_aux_eff)
   }
+  # data for grouping factors separated after group-ID
+  data_group <- data_group(ranef, data, cov_ranef = cov_ranef,
+                           old_levels = control$old_levels)
+  standata <- c(standata, data_group)
   
   # data for specific families
   if (has_trials(family)) {

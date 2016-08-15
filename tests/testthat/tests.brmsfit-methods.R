@@ -103,7 +103,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(parnames(fit)[c(1, 8, 9, 13, 15, 17, 27, 35, 38, 46)],
                c("b_Intercept", "b_Exp", "ar[1]", "cor_visit_Intercept_Trt", 
                  "nu", "simplex_Exp[2]", "r_visit[4,Trt]", "s_sAge[8]", 
-                 "prior_nu", "lp__"))
+                 "prior_sd_visit", "lp__"))
   # plot tested in tests.plots.R
   # posterior_samples
   ps <- posterior_samples(fit)
@@ -145,7 +145,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_output(SW(print(fit)), "Group-Level Effects:")
   # prior_samples
   prs1 <- prior_samples(fit)
-  prior_names <- c("sd_visit", "sds_sAge", "nu", "b", "bm", 
+  prior_names <- c("sds_sAge", "nu", "sd_visit", "b", "bm", 
                    paste0("simplex_Exp[", 1:4, "]"), "cor_visit")
   expect_equal(dimnames(prs1),
                list(as.character(1:Nsamples(fit)), prior_names))
@@ -174,9 +174,9 @@ test_that("all S3 methods have reasonable ouputs", {
   # standata
   expect_equal(names(standata(fit)),
                c("N", "Y", "ns", "knots", "Zs_1", "K", "X_means", "X", 
-                 "Km", "Xm", "Jm", "con_simplex_1", "J_1", "N_1", "K_1", 
-                 "NC_1", "Z_1_1", "Z_1_2", "offset", "K_sigma", "X_sigma", 
-                 "tg", "Kar", "Kma", "Karma", "prior_only"))
+                 "Km", "Xm", "Jm", "con_simplex_1", "Z_1_1", "Z_1_2", 
+                 "offset", "K_sigma", "X_sigma", "J_1", "N_1", "K_1", 
+                 "NC_1", "tg", "Kar", "Kma", "Karma", "prior_only"))
   # stanplot tested in tests.plots.R
   # summary
   .summary <- SW(summary(fit, waic = TRUE))
@@ -201,7 +201,7 @@ test_that("all S3 methods have reasonable ouputs", {
   up <- update(fit, newdata = new_data, ranef = FALSE, testmode = TRUE)
   expect_true(is(up, "brmsfit"))
   expect_equal(up$data.name, "new_data")
-  expect_equal(attr(up$ranef$visit, "levels"), c("2", "3", "4"))
+  expect_equal(attr(up$ranef, "levels")$visit, c("2", "3", "4"))
   expect_true("r_1" %in% up$exclude)
   expect_error(update(fit, data = new_data), "use argument 'newdata'")
   up <- update(fit, formula = ~ . + log(Trt), testmode = TRUE,

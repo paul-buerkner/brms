@@ -25,9 +25,9 @@ test_that("extract_effects finds all random effects terms", {
 })
 
 test_that("extract_effects accepts || syntax", {
-  random <- extract_effects(y ~ a + (1+x||g1) + (1+z|g2))$random
-  target <- data.frame(group = c("g1", "g2"), cor = c(FALSE, TRUE),
-                       stringsAsFactors = FALSE)
+  random <- brms:::extract_effects(y ~ a + (1+x||g1) + (1+z|g2))$random
+  target <- data.frame(group = c("g1", "g2"), gn = 1:2, id = c(NA, NA),
+                       cor = c(FALSE, TRUE), stringsAsFactors = FALSE)
   target$form <- list(~1+x, ~1+z)
   expect_equal(random, target)
   expect_equal(extract_effects(y ~ (1+x||g1:g2))$random$group, c("g1:g2"))
@@ -111,6 +111,23 @@ test_that("extract_effects finds all spline terms", {
   expect_equivalent(ee$nonlinear[[1]]$gam, ~ s(x) + t2(z))
   expect_error(extract_effects(y ~ s(x) + te(z) + v), 
                "splines 'te' and 'ti' are not yet implemented")
+})
+
+test_that("extract_effects correctly handles group IDs", {
+  form <- bf(y ~ x + (1+x|3|g) + (1|g2),
+             sigma = ~ (x|3|g) + (1||g2))
+  target <- data.frame(group = c("g", "g2"), gn = 1:2, id = c(3, NA),
+                       cor = c(TRUE, TRUE), stringsAsFactors = FALSE)
+  target$form <- list(~1+x, ~1)
+  expect_equal(extract_effects(form)$random, target)
+  
+  form <- bf(y ~ a, nonlinear = a ~ x + (1+x|3|g) + (1|g2),
+             sigma = ~ (x|3|g) + (1||g2))
+  target <- data.frame(group = c("g", "g2"), gn = 1:2, id = c(3, NA),
+                       cor = c(TRUE, FALSE), stringsAsFactors = FALSE)
+  target$form <- list(~x, ~1)
+  expect_equal(extract_effects(form)$sigma$random, target)
+  
 })
 
 test_that("extract_effects handles very long RE terms", {
@@ -211,12 +228,15 @@ test_that("amend_terms performs expected changes to terms objects", {
 
 test_that("gather_ranef works correctly", {
   data <- data.frame(g = 1:10, x = 11:20, y = 1:10)
-  target <- list(g = c("Intercept", "x"))
-  attributes(target$g)[c("levels", "group", "cor", "nlpar")] <-
-    list(paste(1:10), "g", FALSE, "")
-  expect_equal(gather_ranef(extract_effects(y~(1+x||g)), data = data),
-               target)
-  expect_equal(gather_ranef(list()), list())
+  target <- data.frame(id = 1, group = "g", gn = 1, 
+                       coef = c("Intercept", "x"), cn = 1:2,
+                       nlpar = "", cor = FALSE, 
+                       stringsAsFactors = FALSE)
+  target$form <- replicate(2, ~1+x)
+  expect_equivalent(gather_ranef(extract_effects(y~(1+x||g)), data = data),
+                    target)
+  expect_equivalent(gather_ranef(extract_effects(y~x), data = data), 
+                    empty_ranef())
 })
 
 test_that("check_brm_input returns correct warnings and errors", {
@@ -243,17 +263,19 @@ test_that("check_mv_formula works correctly", {
 })
 
 test_that("exclude_pars returns expected parameter names", {
-  ranef <- list(g1 = structure(c("x", "z"), cor = TRUE),
-                g2 = structure(c("x"), cor = FALSE))
+  ranef <- data.frame(id = c(1, 1, 2), group = c("g1", "g1", "g2"),
+                       gn = c(1, 1, 2), coef = c("x", "z", "x"), 
+                       cn = c(1, 2, 1), nlpar = "", 
+                       cor = c(TRUE, TRUE, FALSE))
   ep <- exclude_pars(list(), ranef = ranef)
-  expect_true(all(c("r_1_1", "r_1_2") %in% ep))
+  expect_true(all(c("r_1", "r_2") %in% ep))
   ep <- exclude_pars(list(), ranef = ranef, save_ranef = FALSE)
-  expect_true("r_1" %in% ep)
-  nlranef <- list(g1 = structure(c("x", "z"), cor = TRUE, nlpar = "a"),
-                  g2 = structure(c("x"), cor = FALSE, nlpar = "a"))
-  ep <- exclude_pars(list(), ranef = nlranef)
-  expect_true(all(c("r_a_1_1", "r_a_1_2") %in% ep))
-  effects <- extract_effects(y ~ x + s(z))
+  expect_true("r_1_1" %in% ep)
+  
+  ranef$nlpar <- c("a", "a", "")
+  ep <- exclude_pars(list(), ranef = ranef, save_ranef = FALSE)
+  expect_true(all(c("r_1_a_1", "r_1_a_2") %in% ep))
+  effects <- brms:::extract_effects(y ~ x + s(z))
   expect_true("zs_1" %in% exclude_pars(effects = effects))
   effects <- extract_effects(y ~ eta, nonlinear = list(eta ~ x + s(z)))
   expect_true("zs_eta_1" %in% exclude_pars(effects = effects))

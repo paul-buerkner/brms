@@ -661,10 +661,9 @@ stan_misc_functions <- function(family = gaussian(), kronecker = FALSE) {
   out
 }
 
-stan_prior <- function(class, coef = "", group = "", nlpar = "", suffix = "",
-                       prior = prior_frame(), matrix = FALSE, wsp = 2) {
+stan_prior <- function(class, coef = "", group = "", nlpar = "", suffix = "", 
+                       prior = prior_frame(), wsp = 2, matrix = FALSE) {
   # Define priors for parameters in Stan language
-  # 
   # Args:
   #   class: the parameter class
   #   coef: the coefficients of this class
@@ -675,13 +674,11 @@ stan_prior <- function(class, coef = "", group = "", nlpar = "", suffix = "",
   #          as returned by check_prior
   #   matrix: logical; corresponds the class to a parameter matrix?
   #   wsp: an integer >= 0 defining the number of spaces 
-  #      in front of the output string
-  # 
+  #        in front of the output string
   # Returns:
   #   A character strings in stan language that defines priors 
   #   for a given class of parameters. If a parameter has has 
   #   no corresponding prior in prior, an empty string is returned.
-  
   # only consider user defined priors related to this class and group
   wsp <- collapse(rep(" ", wsp))
   prior_only <- isTRUE(attr(prior, "prior_only"))
@@ -689,30 +686,30 @@ stan_prior <- function(class, coef = "", group = "", nlpar = "", suffix = "",
   keep <- prior$class == class & 
           (prior$coef %in% coef | !nchar(prior$coef)) &
           (prior$group == group | !nchar(prior$group)) & 
-          (prior$nlpar == nlpar | !nchar(prior$nlpar))
+          (prior$nlpar %in% nlpar | !nchar(prior$nlpar))
   prior <- prior[keep, ]
   if (!nchar(class) && nrow(prior)) {
     # increment_log_prob statements are directly put into the Stan code
     return(collapse(wsp, prior$prior, "; \n"))
   } 
   
-  # get base prior
-  igroup <- which(with(prior, !nchar(coef) & nchar(group) & nchar(prior)))
-  inlpar <- which(with(prior, !nchar(coef) & nchar(nlpar) & nchar(prior)))
-  iclass <- which(with(prior, !nchar(coef) & !nchar(group) & nchar(prior)))
-  if (length(igroup)) {  
-    # if there is a global prior for this group
-    base_prior <- prior[igroup, "prior"]
-  } else if (length(inlpar)) {
-    # if there is a global prior for this non-linear parameter
-    base_prior <- prior[inlpar, "prior"]
-  } else if (length(iclass)) {  
-    # if there is a global prior for this class
-    base_prior <- prior[iclass, "prior"]
-  } else {  
-    # no proper prior for this class
-    base_prior <- ""
-  } 
+  unlpar <- unique(nlpar)
+  if (length(unlpar) > 1L) {
+    # can only happen for SD parameters of the same ID
+    base_prior <- rep(NA, length(unlpar))
+    for (i in seq_along(unlpar)) {
+      base_prior[i] <- stan_base_prior(prior[prior$nlpar == unlpar[i], ])
+    }
+    if (length(unique(base_prior)) > 1L) {
+      # define prior for single coefficients manually
+      # as there is not single base_prior anymore
+      take <- match(prior[nzchar(prior$coef), "nlpar"], unlpar)
+      prior[nzchar(prior$coef), "prior"] <- base_prior[take]
+    }
+    base_prior <- base_prior[1]
+  } else {
+    base_prior <- stan_base_prior(prior)
+  }
   
   individual_prior <- function(i, max_index) {
     # individual priors for each parameter of a class
@@ -721,12 +718,15 @@ stan_prior <- function(class, coef = "", group = "", nlpar = "", suffix = "",
     } else {
       index <- ""
     }
+    if (length(nlpar) > 1L) {
+      prior <- prior[prior$nlpar == nlpar[i], ]
+    }
     uc_prior <- prior$prior[match(coef[i], prior$coef)]
     if (!is.na(uc_prior) & nchar(uc_prior)) { 
       # user defined prior for this parameter
       coef_prior <- uc_prior
     } else { # base prior for this parameter
-      coef_prior <- base_prior  
+      coef_prior <- base_prior 
     }  
     if (nchar(coef_prior) > 0) {  # implies a proper prior
       out <- paste0(wsp, class, index, " ~ ", coef_prior, "; \n")
@@ -740,7 +740,8 @@ stan_prior <- function(class, coef = "", group = "", nlpar = "", suffix = "",
   class <- paste0(class, suffix)
   if (any(with(prior, nchar(coef) & nchar(prior)))) {
     # generate a prior for each coefficient
-    out <- sapply(1:length(coef), individual_prior, max_index = length(coef))
+    out <- sapply(seq_along(coef), individual_prior, 
+                  max_index = length(coef))
   } else if (nchar(base_prior) > 0) {
     if (matrix) {
       class <- paste0("to_vector(", class, ")")
@@ -764,6 +765,31 @@ stan_prior <- function(class, coef = "", group = "", nlpar = "", suffix = "",
          call. = FALSE)
   }
   out
+}
+
+stan_base_prior <- function(prior) {
+  # get base (highest level) prior of all priors
+  # Args:
+  #   prior: a prior.frame
+  stopifnot(length(unique(prior$class)) <= 1L) 
+  igroup <- which(with(prior, !nchar(coef) & nchar(group) & nchar(prior)))
+  inlpar <- which(with(prior, !nchar(coef) & nchar(nlpar) & nchar(prior)))
+  iclass <- which(with(prior, !nchar(coef) & !nchar(group) & nchar(prior)))
+  if (length(igroup)) {  
+    # if there is a global prior for this group
+    base_prior <- prior[igroup, "prior"]
+  } else if (length(inlpar)) {
+    # if there is a global prior for this non-linear parameter
+    base_prior <- prior[inlpar, "prior"]
+  } else if (length(iclass)) {  
+    # if there is a global prior for this class
+    base_prior <- prior[iclass, "prior"]
+  } else {  
+    # no proper prior for this class
+    base_prior <- ""
+  }
+  stopifnot(length(base_prior) == 1L)
+  base_prior
 }
 
 stan_rngprior <- function(sample_prior, prior, par_declars = "",
@@ -888,7 +914,12 @@ stan_needs_kronecker <- function(ranef, names_cov_ranef) {
   #   ranef: named list returned by gather_ranef
   #   names_cov_ranef: names of the grouping factors that
   #                    have a cov.ranef matrix 
-  any(ulapply(ranef, function(x, names)
-    length(x) > 1 && attr(x, "group") %in% names && attr(x, "cor"),
-    names = names_cov_ranef))
+  ids <- unique(ranef$id)
+  out <- FALSE
+  for (id in ids) {
+    id_ranef <- subset(ranef, id == id)
+    out <- out || nrow(id_ranef) > 1L && id_ranef$cor[1] &&
+      id_ranef$group[1] %in% names_cov_ranef
+  }
+  out
 }
