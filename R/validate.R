@@ -996,7 +996,7 @@ check_brm_input <- function(x) {
   invisible(NULL)
 }
 
-exclude_pars <- function(effects, ranef = list(), 
+exclude_pars <- function(effects, ranef = empty_ranef(),
                          save_ranef = TRUE) {
   # list irrelevant parameters NOT to be saved by Stan
   # Args:
@@ -1005,10 +1005,9 @@ exclude_pars <- function(effects, ranef = list(),
   #   save_ranef: should random effects of each level be saved?
   # Returns:
   #   a vector of parameters to be excluded
-  out <- c("eta", "etap", "eta_2PL", "Eta", "temp_Intercept1", 
-           "temp_Intercept",  "Lrescor", "Rescor", "Sigma", 
-           "LSigma", "disp_sigma", "e", "E", "res_cov_matrix", 
-           "lp_pre", "hs_local", "hs_global",
+  out <- c("temp_Intercept1", "temp_Intercept", "Lrescor", 
+           "Rescor", "Sigma", "LSigma", "res_cov_matrix", 
+           "hs_local", "hs_global",
            intersect(auxpars(), names(effects)))
   nlpars <- names(effects$nonlinear)
   if (length(nlpars)) {
@@ -1025,29 +1024,14 @@ exclude_pars <- function(effects, ranef = list(),
       out <- c(out, paste0("zs_", seq_along(splines)))
     }
   }
-  if (length(ranef)) {
-    rm_re_pars <- c("z", "L", "Cor", if (!save_ranef) "r")
-    # names of NL-parameters must be computed based on ranef here
-    nlp <- ulapply(ranef, attr, "nlpar")
-    if (length(nlp)) {
-      stopifnot(length(nlp) == length(ranef))
-      nlp <- ifelse(nchar(nlp), paste0(nlp, "_"), nlp)
-      for (k in seq_along(ranef)) {
-        i <- which(which(nlp == nlp[k]) == k)
-        out <- c(out, paste0(rm_re_pars, "_", nlp[k], i))
-        neff <- length(ranef[[k]])
-        if (neff > 1L) {
-          out <- c(out, paste0("r_", nlp[k], i, "_", 1:neff))
-        }
-      }
-    } else {
-      for (k in seq_along(ranef)) {
-        out <- c(out, paste0(rm_re_pars, "_", k))
-        neff <- length(ranef[[k]])
-        if (neff > 1L) {
-          out <- c(out, paste0("r_", k, "_", 1:neff))
-        }
-      }
+  if (nrow(ranef)) {
+    rm_re_pars <- c("z", "L", "Cor", "r")
+    for (id in unique(ranef$id)) {
+      out <- c(out, paste0(rm_re_pars, "_", id))
+    }
+    if (!save_ranef) {
+      usc_nlpar <- usc(ranef$nlpar, "prefix")
+      out <- c(out, paste0("r_", ranef$gn, usc_nlpar, "_", ranef$cn))
     }
   }
   out
