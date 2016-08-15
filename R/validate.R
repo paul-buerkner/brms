@@ -779,30 +779,70 @@ has_splines <- function(effects) {
   out || any(ulapply(ee_auxpars, has_splines))
 }
 
-gather_ranef <- function(effects, data = NULL, all = TRUE,
-                         combine = FALSE) {
+gather_ranef <- function(effects, data = NULL, all = TRUE) {
   # gathers helpful information on the random effects
   # Args:
   #   effects: output of extract_effects
   #   data: data passed to brm after updating
   #   all: include REs of non-linear and auxiliary parameters?
+  #   combined: should 
   # Returns: 
   #   A named list with one element per grouping factor
+  is_forked <- isTRUE(attr(effects$fixed, "forked"))
   random <- get_random(effects, all = all)
-  Z <- lapply(random$form, get_model_matrix, data = data, 
-              forked = isTRUE(attr(effects$fixed, "forked")))
-  ranef <- setNames(lapply(Z, colnames), random$group)
-  for (i in seq_along(ranef)) {
-    attr(ranef[[i]], "levels") <- 
-      levels(factor(get(random$group[[i]], data)))
-    attr(ranef[[i]], "group") <- names(ranef)[i]
-    attr(ranef[[i]], "cor") <- random$cor[[i]]
-    attr(ranef[[i]], "nlpar") <- random$nlpar[i]
+  ranef <- vector("list", nrow(random))
+  used_ids <- new_ids <- id_groups <- NULL
+  j <- 1
+  for (i in seq_len(nrow(random))) {
+    Z <- get_model_matrix(random$form[[i]], data = data,
+                          forked = is_forked)
+    rdat <- data.frame(id = random$id[[i]], 
+                       group = random$group[[i]], 
+                       gn = random$gn[[i]],
+                       coef = colnames(Z), cn = NA,
+                       nlpar = random$nlpar[[i]],
+                       cor = random$cor[[i]], 
+                       stringsAsFactors = FALSE)
+    rdat$form <- replicate(nrow(rdat), random$form[[i]])
+    id <- random$id[[i]]
+    if (is.na(id)) {
+      rdat$id <- j
+      j <- j + 1
+    } else {
+      if (id %in% used_ids) {
+        k <- match(id, used_ids)
+        rdat$id <- new_ids[k]
+        if (!identical(random$group[[i]], id_groups[k])) {
+          stop("Can only combine group-level terms of the ",
+               "same grouping factor.", call. = FALSE)
+        }
+      } else {
+        used_ids <- c(used_ids, id)
+        k <- length(used_ids)
+        rdat$id <- new_ids[k] <- j
+        id_groups[k] <- random$group[[i]]
+        j <- j + 1
+      }
+    }
+    ranef[[i]] <- rdat 
   }
-  if (combine) {
-    ranef <- combine_duplicates(ranef, sep = c("nlpar", "levels"))
+  ranef <- do.call(rbind, c(list(empty_ranef()), ranef))
+  if (nrow(ranef)) {
+    for (id in unique(ranef$id)) {
+      ranef$cn[ranef$id == id] <- seq_len(sum(ranef$id == id))
+    }
+    levels <- lapply(unique(random$group), function(g) 
+      levels(factor(get(g, data))))
+    names(levels) <- unique(random$group)
+    attr(ranef, "levels") <- levels
   }
   ranef
+}
+
+empty_ranef <- function() {
+  data.frame(id = numeric(0), group = character(0), gn = numeric(0),
+             coef = character(0), cn = numeric(0), nlpar = character(0),
+             cor = logical(0), form = character(0), stringsAsFactors = FALSE)
 }
 
 rsv_vars <- function(family, nresp = 1, rsv_intercept = NULL) {
