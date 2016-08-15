@@ -76,11 +76,9 @@ melt_data <- function(data, family, effects) {
 
 combine_groups <- function(data, ...) {
   # combine grouping factors
-  #
   # Args:
   #   data: a data.frame
   #   ...: the grouping factors to be combined. 
-  #
   # Returns:
   #   a data.frame containing all old variables and 
   #   the new combined grouping factors
@@ -223,18 +221,18 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       newdata[[cens]] <- 0 # add irrelevant censor variables
     }
   }
-  new_ranef <- gather_ranef(ee, data = model.frame(fit), combine = TRUE)
-  if (length(fit$ranef)) {
+  new_ranef <- gather_ranef(ee, data = model.frame(fit))
+  if (nrow(fit$ranef)) {
     if (length(new_ranef) && allow_new_levels) {
       # random effects grouping factors do not need to be specified 
       # by the user if new_levels are allowed
-      new_gf <- unique(unlist(strsplit(names(new_ranef), split = ":")))
+      new_gf <- unique(unlist(strsplit(new_ranef$group, split = ":")))
       missing_gf <- setdiff(new_gf, names(newdata))
       newdata[, missing_gf] <- NA
     }
     # brms:::update_data expects all original variables to be present
     # even if not actually used later on
-    old_gf <- unique(unlist(strsplit(names(fit$ranef), split = ":")))
+    old_gf <- unique(unlist(strsplit(fit$ranef$group, split = ":")))
     old_ee <- extract_effects(formula(fit), et$all, family = family(fit))
     old_slopes <- unique(ulapply(get_random(old_ee)$form, all.vars))
     rsv_vars <- rsv_vars(family(fit), nresp = length(ee$response))
@@ -312,12 +310,11 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
             call. = FALSE)
   }
   # validate grouping factors
-  gnames <- names(new_ranef)
+  gnames <- unique(new_ranef$group)
   old_levels <- named_list(gnames)
   for (i in seq_along(gnames)) {
-    gf <- as.character(get(gnames[i], newdata))
-    new_levels <- unique(gf)
-    old_levels[[i]] <- attr(new_ranef[[i]], "levels")
+    new_levels <- unique(as.character(get(gnames[i], newdata)))
+    old_levels[[i]] <- attr(new_ranef, "levels")[[gnames[i]]]
     unknown_levels <- setdiff(new_levels, old_levels[[i]])
     if (!allow_new_levels && length(unknown_levels)) {
       stop(paste("levels", paste0(unknown_levels, collapse = ", "), 
@@ -544,10 +541,9 @@ arr_design_matrix <- function(Y, r, group)  {
 }
 
 data_effects <- function(effects, data, family = gaussian(),
-                         prior = prior_frame(), autocor = cor_arma(),
-                         cov_ranef = NULL, knots = NULL, nlpar = "", 
-                         not4stan = FALSE, is_newdata = FALSE, 
-                         old_levels = NULL, smooth = NULL, Jm = NULL) {
+                         ranef = empty_ranef(), prior = prior_frame(), 
+                         autocor = cor_arma(), knots = NULL, nlpar = "", 
+                         not4stan = FALSE, smooth = NULL, Jm = NULL) {
   # combine data for all types of effects
   # Args:
   #   effects: a list returned by extract_effects
@@ -570,10 +566,8 @@ data_effects <- function(effects, data, family = gaussian(),
                            not4stan = not4stan, smooth = smooth)
   data_monef <- data_monef(effects, data = data, prior = prior, 
                            Jm = Jm, nlpar = nlpar)
-  data_ranef <- data_ranef(effects, data = data, family = family, 
-                           cov_ranef = cov_ranef, nlpar = nlpar, 
-                           is_newdata = is_newdata, not4stan = not4stan,
-                           old_levels = old_levels)
+  data_ranef <- data_ranef(ranef, data = data, family = family, 
+                           nlpar = nlpar, not4stan = not4stan)
   c(data_fixef, data_monef, data_ranef)
 }
 
@@ -689,79 +683,92 @@ data_monef <- function(effects, data, prior = prior_frame(),
   out
 }
 
-data_ranef <- function(effects, data, family = gaussian(),
-                       nlpar = "", cov_ranef = NULL,
-                       is_newdata = FALSE, old_levels = NULL,
-                       not4stan = FALSE) {
-  # prepare data for random effects for use in Stan
+data_ranef <- function(ranef, data, family = gaussian(),
+                       nlpar = "", not4stan = FALSE) {
+  # prepare data for group-level effects for use in Stan
   # Args: see data_effects
   stopifnot(length(nlpar) == 1L)
   out <- list()
-  random <- effects$random
-  if (nrow(random)) {
-    Z <- lapply(random$form, get_model_matrix, data = data, 
-                forked = is.forked(family))
-    r <- lapply(Z, colnames)
-    lapply(r, avoid_auxpars, effects = effects)
-    ncolZ <- lapply(Z, ncol)
-    # numeric levels passed to Stan
-    expr <- expression(as.array(as.numeric(factor(get(g, data)))), 
-                       length(unique(get(g, data))), # number of levels 
-                       ncolZ[[i]],  # number of random effects
-                       ncolZ[[i]] * (ncolZ[[i]] - 1) / 2)  # number of cors
-    if (is_newdata) {
-      # for newdata numeration has to depend on the original levels
-      expr[1] <- expression(ulapply(get(g, data), match, old_levels[[g]]))
-    }
-    for (i in 1:nrow(random)) {
-      g <- random$group[[i]]
-      p <- if (nchar(nlpar)) paste0(nlpar, "_", i) else i
-      name <- paste0(c("J_", "N_", "K_", "NC_"), p)
-      for (j in 1:length(name)) {
-        out <- c(out, setNames(list(eval(expr[j])), name[j]))
-      }
-      Zname <- paste0("Z_", p)
+  ranef <- ranef[ranef$nlpar == nlpar, ]
+  if (nrow(ranef)) {
+    Z <- lapply(ranef[!duplicated(ranef$gn), ]$form, get_model_matrix,
+                data = data, forked = is.forked(family))
+    # TODO: move to gather_ranef?
+    lapply(lapply(Z, colnames), avoid_auxpars, effects = effects)
+    gn <- unique(ranef$gn)
+    for (i in seq_along(gn)) {
+      r <- ranef[ranef$gn == gn[i], ]
+      idp <- paste0(r$id[1], usc(nlpar, "prefix"))
       if (isTRUE(not4stan)) {
         # for internal use in S3 methods
-        if (ncolZ[[i]] == 1L) {
+        if (ncol(Z[[i]]) == 1L) {
           Z[[i]] <- as.vector(Z[[i]])
         }
+        Zname <- paste0("Z_", gn[i])
         out <- c(out, setNames(Z[i], Zname))
       } else {
-        if (ncolZ[[i]] > 1L) {
-          Zname <- paste0(Zname, "_", 1:ncolZ[[i]])
-        }
-        for (j in 1:ncolZ[[i]]) {
+        Zname <- paste0("Z_", idp, "_", r$cn)
+        for (j in seq_len(ncol(Z[[i]]))) {
           out <- c(out, setNames(list(as.array(Z[[i]][, j])), Zname[j]))
         }
       }
-      if (g %in% names(cov_ranef)) {
-        cov_mat <- as.matrix(cov_ranef[[g]])
-        if (!isSymmetric(unname(cov_mat))) {
-          stop(paste("covariance matrix of grouping factor", g, 
-                     "is not symmetric"), call. = FALSE)
-        }
-        found_level_names <- rownames(cov_mat)
-        if (is.null(found_level_names)) {
-          stop(paste("rownames are required for covariance matrix of", g),
-               call. = FALSE)
-        }
-        colnames(cov_mat) <- found_level_names
-        true_level_names <- levels(factor(get(g, data)))
-        found <- true_level_names %in% found_level_names
-        if (any(!found)) {
-          stop(paste("rownames of covariance matrix of", g, 
-                     "do not match names of the grouping levels"),
-               call. = FALSE)
-        }
-        cov_mat <- cov_mat[true_level_names, true_level_names, drop = FALSE]
-        if (min(eigen(cov_mat, symmetric = TRUE, 
-                      only.values = TRUE)$values) <= 0) {
-          warning(paste("covariance matrix of grouping factor", g, 
-                        "may not be positive definite"), call. = FALSE)
-        }
-        out <- c(out, setNames(list(t(chol(cov_mat))), paste0("Lcov_", p)))
+    }
+  }
+  out
+}
+
+data_group <- function(ranef, data, cov_ranef = NULL, old_levels = NULL) {
+  # compute data specific for each group-level-ID
+  # Args:
+  #   ranef: data.frame returned by gather_ranef
+  #   data: the model.frame
+  #   cov_ranef: name list of user-defined covariance matrices
+  #   old_levels: original levels of grouping factors
+  #               only relevant for newdata
+  expr <- expression(as.array(as.numeric(factor(get(g, data)))), 
+                     length(unique(get(g, data))), # number of levels 
+                     nranef,  # number of group-level effects
+                     nranef * (nranef - 1) / 2)  # number of cors
+  if (length(old_levels)) {
+    # for newdata numeration has to depend on the original levels
+    expr[1] <- expression(ulapply(get(g, data), match, old_levels[[g]]))
+  }
+  out <- list()
+  ids <- unique(ranef$id)
+  for (id in ids) {
+    id_ranef <- ranef[ranef$id == id, ]
+    nranef <- nrow(id_ranef)
+    g <- id_ranef$group[1]
+    name <- paste0(c("J_", "N_", "K_", "NC_"), id)
+    for (j in seq_along(name)) {
+      out <- c(out, setNames(list(eval(expr[j])), name[j]))
+    }
+    if (g %in% names(cov_ranef)) {
+      cov_mat <- as.matrix(cov_ranef[[g]])
+      if (!isSymmetric(unname(cov_mat))) {
+        stop(paste("covariance matrix of grouping factor", g, 
+                   "is not symmetric"), call. = FALSE)
       }
+      found_level_names <- rownames(cov_mat)
+      if (is.null(found_level_names)) {
+        stop(paste("rownames are required for covariance matrix of", g),
+             call. = FALSE)
+      }
+      colnames(cov_mat) <- found_level_names
+      true_level_names <- levels(factor(get(g, data)))
+      found <- true_level_names %in% found_level_names
+      if (any(!found)) {
+        stop(paste("rownames of covariance matrix of", g, 
+                   "do not match names of the grouping levels"),
+             call. = FALSE)
+      }
+      cov_mat <- cov_mat[true_level_names, true_level_names, drop = FALSE]
+      if (min(eigen(cov_mat, symmetric = TRUE, 
+                    only.values = TRUE)$values) <= 0) {
+        warning(paste("covariance matrix of grouping factor", g, 
+                      "may not be positive definite"), call. = FALSE)
+      }
+      out <- c(out, setNames(list(t(chol(cov_mat))), paste0("Lcov_", id)))
     }
   }
   out
