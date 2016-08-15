@@ -2,24 +2,24 @@ test_that(paste("make_standata returns correct data names",
                 "for fixed and random effects"), {
   expect_equal(names(make_standata(rating ~ treat + period + carry 
                                    + (1|subject), data = inhaler)),
-               c("N", "Y",  "K", "X_means", "X", 
-                 "J_1", "N_1", "K_1", "NC_1", "Z_1", "prior_only"))
+               c("N", "Y",  "K", "X_means", "X", "Z_1_1",
+                 "J_1", "N_1", "K_1", "NC_1", "prior_only"))
   expect_equal(names(make_standata(rating ~ treat + period + carry 
                                    + (1+treat|subject), data = inhaler,
                                    family = "categorical")),
-               c("N", "Y", "K", "X_means", "X", "J_1", "N_1", "K_1", "NC_1", 
-                 "Z_1_1", "Z_1_2", "ncat", "max_obs", "N_trait", "J_trait",
+               c("N", "Y", "K", "X_means", "X", "Z_1_1", "Z_1_2", "J_1", "N_1", 
+                 "K_1", "NC_1", "ncat", "max_obs", "N_trait", "J_trait", 
                  "prior_only"))
   expect_equal(names(make_standata(rating ~ treat + period + carry 
                                    + (1+treat|subject), data = inhaler,
                                    control = list(not4stan = TRUE))),
-               c("N", "Y", "K", "X", "J_1", "N_1", "K_1",
-                 "NC_1", "Z_1", "prior_only"))
+               c("N", "Y", "K", "X", "Z_1", "J_1", "N_1", "K_1",
+                 "NC_1", "prior_only"))
   temp_data <- data.frame(y = 1:10, g = 1:10, h = 11:10, x = rep(0,10))
   expect_equal(names(make_standata(y ~ x + (1|g) + (1|h), family = "poisson",
                                    data = temp_data)),
-               c("N", "Y", "K", "X_means", "X", "J_1", "N_1", "K_1",
-                 "NC_1", "Z_1", "J_2", "N_2", "K_2", "NC_2", "Z_2", 
+               c("N", "Y", "K", "X_means", "X", "Z_1_1", "Z_2_1",
+                 "J_1", "N_1", "K_1", "NC_1", "J_2", "N_2", "K_2", "NC_2", 
                  "prior_only"))
 })
 
@@ -306,18 +306,17 @@ test_that("brmdata is backwards compatible", {
 })
 
 test_that("make_standata correctly prepares data for non-linear models", {
-  nonlinear <- list(a ~ x + (1|g), b ~ mono(z) + (1|g))
+  nonlinear <- list(a ~ x + (1|1|g), b ~ mono(z) + (1|1|g))
   data <- data.frame(y = rnorm(9), x = rnorm(9), z = sample(1:4, 9, TRUE), 
                      g = rep(1:3, 3))
   standata <- make_standata(y ~ a - b^z, data = data, nonlinear = nonlinear)
-  expect_equal(names(standata), c("N", "Y", "KC", "C", "K_a", "X_a", "J_a_1", 
-                                  "N_a_1", "K_a_1", "NC_a_1", "Z_a_1","K_b", 
-                                  "X_b", "Km_b", "Xm_b", "Jm_b", 
-                                  "con_simplex_b_1", "J_b_1", "N_b_1",
-                                  "K_b_1", "NC_b_1", "Z_b_1", "prior_only"))
+  expect_equal(names(standata), c("N", "Y", "KC", "C", "K_a", "X_a", "Z_1_a_1", 
+                                  "K_b", "X_b", "Km_b", "Xm_b", "Jm_b", 
+                                  "con_simplex_b_1", "Z_1_b_2", "J_1", "N_1", 
+                                  "K_1", "NC_1", "prior_only"))
   expect_equal(colnames(standata$X_a), c("Intercept", "x"))
   expect_equal(colnames(standata$C), "z")
-  expect_equal(standata$J_b_1, as.array(data$g))
+  expect_equal(standata$J_1, as.array(data$g))
 })
 
 test_that("make_standata correctly prepares data for monotonic effects", {
@@ -378,4 +377,18 @@ test_that("make_standata returns data for GAMMs", {
   expect_equal(as.vector(standata$knots_lp), c(8, 8))
   expect_equal(dim(standata$Zs_lp_1), c(10, 8))
   expect_equal(dim(standata$Zs_lp_2), c(10, 8))
+})
+
+test_that("make_standata returns correct group ID data", {
+  form <- bf(count ~ Trt_c + (1+Trt_c|3|visit) + (1|patient), 
+             shape ~ (1|3|visit) + (Trt_c||patient))
+  sdata <- make_standata(form, data = epilepsy, family = negbinomial())
+  expect_true(all(c("Z_1_1", "Z_2_2", "Z_3_shape_1", "Z_2_shape_3") %in% 
+                    names(sdata)))
+  
+  form <- bf(count ~ a, sigma ~ (1|3|visit) + (Trt_c||patient),
+             nonlinear = a ~ Trt_c + (1+Trt_c|3|visit) + (1|patient))
+  sdata <- make_standata(form, data = epilepsy, family = student())
+  expect_true(all(c("Z_1_sigma_1", "Z_2_a_3", "Z_2_sigma_1",  
+                    "Z_3_a_1") %in% names(sdata)))
 })

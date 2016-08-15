@@ -28,7 +28,7 @@ test_that(paste("make_stancode returns correct strings",
                 "for customized covariances"), {
   expect_match(make_stancode(rating ~ treat + period + carry + (1|subject), 
                              data = inhaler, cov_ranef = list(subject = 1)), 
-               "r_1 = sd_1 * (Lcov_1 * z_1)", fixed = TRUE)
+               "r_1_1 = sd_1 * (Lcov_1 * z_1)", fixed = TRUE)
   expect_match(make_stancode(rating ~ treat + period + carry + (1+carry|subject), 
                              data = inhaler, cov_ranef = list(subject = 1)),
                "kronecker(Lcov_1, diag_pre_multiply(sd_1, L_1)) * to_vector(z_1)",
@@ -56,15 +56,15 @@ test_that("make_stancode handles addition arguments correctly", {
 })
 
 test_that("make_stancode correctly combines strings of multiple grouping factors", {
-  expect_match(make_stancode(count ~ (1|patient) + (1+Trt_c|visit), 
+  expect_match(make_stancode(count ~ (1|patient) + (1 + Trt_c | visit), 
                              data = epilepsy, family = "poisson"), 
-               paste0("  vector[N] Z_1; \n",
-                      "  // data for group-specific effects of visit \n"), 
+               paste0("  vector[N] Z_1_1; \n",
+                      "  // data for group-specific effects of ID 2 \n"), 
                fixed = TRUE)
   expect_match(make_stancode(count ~ (1|visit) + (1+Trt_c|patient), 
                              data = epilepsy, family = "poisson"), 
                paste0("  int<lower=1> NC_1; \n",
-                      "  // data for group-specific effects of visit \n"), 
+                      "  // data for group-specific effects of ID 2 \n"), 
                fixed = TRUE)
 })
 
@@ -333,4 +333,19 @@ test_that("make_stancode correctly generates code for GAMMs", {
   expect_match(stancode, "matrix[N, knots_lp[1]] Zs_lp_1", fixed = TRUE)
   expect_match(stancode, "zs_lp_1 ~ normal(0, 1)", fixed = TRUE)
   expect_match(stancode, "sds_lp_1 ~ normal(0,2)", fixed = TRUE)
+})
+
+test_that("make_stancode correctly handles the group ID syntax", {
+  form <- bf(count ~ Trt_c + (1+Trt_c|3|visit) + (1|patient), 
+             shape ~ (1|3|visit) + (Trt_c||patient))
+  sc <- make_stancode(form, data = epilepsy, family = negbinomial())
+  expect_match(sc, "r_2_1 = r_2[, 1]", fixed = TRUE)
+  expect_match(sc, "r_2_shape_3 = r_2[, 3]", fixed = TRUE)
+  
+  form <- bf(count ~ a, sigma ~ (1|3|visit) + (Trt_c||patient),
+             nonlinear = a ~ Trt_c + (1+Trt_c|3|visit) + (1|patient))
+  sc <- make_stancode(form, data = epilepsy, family = student(),
+                      prior = set_prior("normal(0,5)", nlpar = "a"))
+  expect_match(sc, "r_2_a_3 = r_2[, 3];", fixed = TRUE)
+  expect_match(sc, "r_1_sigma_2 = sd_1[2] * (z_1[2]);", fixed = TRUE)
 })
