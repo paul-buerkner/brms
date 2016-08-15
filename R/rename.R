@@ -395,8 +395,8 @@ change_prior <- function(class, pars, names = NULL, new_class = class,
         }
         if (pars[pos_priors[i]] != priors[i]) {
           change <- lc(change, 
-                       list(pos = pos_priors[i], oldname = pars[pos_priors[i]],
-                            pnames = priors[i], fnames = priors[i]))
+            list(pos = pos_priors[i], oldname = pars[pos_priors[i]],
+                 pnames = priors[i], fnames = priors[i]))
         }
       }
     }
@@ -404,47 +404,64 @@ change_prior <- function(class, pars, names = NULL, new_class = class,
   change
 }
 
-make_group_frame <- function(ranef) {
-  # make a little data.frame helping to rename and combine random effects
-  # 
+change_old_ranef <- function(ranef, pars, dims) {
+  # prepare for renaming of group-level parameters of models 
+  # fitted with brms <= 0.10.0.9000
+  # only relevant for non-linear models
   # Args:
-  #   ranef: a named list containing the random effects. 
-  #          The names are taken as grouping factors
-  #
-  # Returns: 
-  #   A data.frame with length(ranef) rows and 3 columns: 
-  #     g: the grouping factor of each terms
-  #     nlpars: the non-linear parameter of each term (if present)
-  #     first: a number corresponding to the first column for this term 
-  #            in the final r_<gf> matrices
-  #     last: a number corresponding to the last column for this term 
-  #           in the final r_<gf> matrices
-  group <- names(ranef)
-  nlpar <- ulapply(ranef, function(y) attr(y, "nlpar"))
-  if (is.null(nlpar)) nlpar <- rep("", length(ranef))
-  out <- data.frame(g = group, nlp = nlpar, first = NA, last = NA)
-  out[1, 3:4] <- c(1, length(ranef[[1]]))
-  if (length(group) > 1) {
-    for (i in 2:length(group)) {
-      matches <- which(out$g[1:(i-1)] == group[i] & 
-                       out$nlp[1:(i-1)] == nlpar[i])
-      if (length(matches))
-        out[i, 3:4] <- c(out$last[max(matches)] + 1, 
-                         out$last[max(matches)] + length(ranef[[i]]))
-      else out[i, 3:4] <- c(1, length(ranef[[i]]))
+  #   ranef: output of gather_ranef
+  #   pars: names of all parameters in the model
+  change_simple <- function(oldname, fnames, pnames = fnames) {
+    # helper function for very simple renaming
+    pos <- grepl(paste0("^", oldname), pars)
+    if (any(pos)) {
+      out <- nlist(pos, oldname, pnames, fnames,
+                   dims = dims[[oldname]])
+    } else {
+      out <- NULL
     }
+    return(out)
   }
-  out
+  
+  change <- list()
+  for (id in unique(ranef$id)) {
+    r <- ranef[ranef$id == id, ]
+    g <- r$group[1]
+    nlpar <- r$nlpar[1]
+    # rename sd-parameters
+    old_sd_names <- paste0("sd_", nlpar, "_", g, "_", r$coef)
+    new_sd_names <- paste0("sd_", g, "_", nlpar, "_", r$coef)
+    for (i in seq_len(length(old_sd_names))) {
+      change <- lc(change, 
+        change_simple(old_sd_names[i], new_sd_names[i]))
+    }
+    # rename cor-parameters
+    new_cor_names <- get_cornames(paste0(nlpar, "_", r$coef),
+                                  type = paste0("cor_", g),
+                                  brackets = FALSE)
+    old_cor_names <- get_cornames(r$coef, brackets = FALSE,
+                                  type = paste0("cor_", nlpar, "_", g))
+    for (i in seq_len(length(old_cor_names))) {
+      change <- lc(change, 
+        change_simple(old_cor_names[i], new_cor_names[i]))
+    } 
+    # rename r-parameters
+    old_r_name <- paste0("r_", nlpar, "_", g)
+    new_r_name <- paste0("r_", g, "_", nlpar)
+    levels <- gsub("[ \t\r\n]", ".", attr(ranef, "levels")[[g]])
+    index_names <- make_index_names(levels, r$coef, dim = 2)
+    new_r_names <- paste0(new_r_name, index_names)
+    change <- lc(change, change_simple(old_r_name, new_r_names, new_r_name))
+  }
+  change
 }
 
 make_index_names <- function(rownames, colnames = NULL, dim = 1) {
   # compute index names in square brackets for indexing stan parameters
-  #
   # Args:
   #   rownames: a vector of row names
   #   colnames: a vector of columns 
   #   dim: The number of dimensions of the output either 1 or 2
-  #
   # Returns:
   #   all index pairs of rows and cols
   if (!dim %in% c(1, 2))

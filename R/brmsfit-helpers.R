@@ -49,6 +49,18 @@ restructure <- function(x) {
   x$formula <- SW(update_formula(x$formula, partial = x$partial, 
                                  nonlinear = x$nonlinear))
   x$nonlinear <- x$partial <- NULL
+  if (is.null(x$version) || x$version <= "0.10.0.9000") {
+    ee <- extract_effects(formula(x), family = family(x))
+    x$ranef <- gather_ranef(ee, model.frame(x))
+    if (length(ee$nonlinear)) {
+      # nlpar and group have changed positions
+      change <- change_old_ranef(x$ranef, pars = parnames(x),
+                                 dims = x$fit@sim$dims_oi)
+      for (i in seq_along(change)) {
+        x <- do_renaming(change = change[[i]], x = x)
+      }
+    }
+  }
   x
 }
 
