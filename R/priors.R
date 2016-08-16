@@ -423,7 +423,8 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
   }
   # priors for auxiliary parameters
   def_auxprior <- c(sigma = def_scale_prior, shape = "gamma(0.01, 0.01)",
-                    nu = "gamma(2, 0.1)", phi = "gamma(0.01, 0.01)")#
+                    nu = "gamma(2, 0.1)", phi = "gamma(0.01, 0.01)",
+                    zi = "beta(1, 1)", hu = "beta(1, 1)")
   valid_auxpars <- valid_auxpars(family, effects = ee, autocor = autocor)
   for (ap in valid_auxpars) {
     if (!is.null(ee[[ap]])) {
@@ -432,7 +433,7 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
                                     def_scale_prior = def_scale_prior,
                                     internal = internal)
     } else {
-      auxprior <- prior_frame(class = ap, prior = def_auxprior[[ap]])
+      auxprior <- prior_frame(class = ap, prior = def_auxprior[ap])
     }
     prior <- rbind(prior, auxprior)
   }
