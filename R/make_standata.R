@@ -64,11 +64,9 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   
   # sort data in case of autocorrelation models
   if (has_arma(autocor) || is(autocor, "cor_bsts")) {
+    # FIXME (removal of the mv syntax)
     # amend if zero-inflated and hurdle models ever get 
     # autocorrelation structures as they are also using 'trait'
-    if (is_forked) {
-      stop("no autocorrelation allowed for this model", call. = FALSE)
-    }
     if (is_linear && length(ee$response) > 1L) {
       if (!grepl("^trait$|:trait$|^trait:|:trait:", et$group)) {
         stop(paste("autocorrelation structures for multiple responses must",
@@ -237,27 +235,33 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       standata$log_Y <- sum(log(standata$Y))
     }
     standata$sqrt_Y <- sqrt(standata$Y)
-  }  
-  # evaluate even if check_response is FALSE to ensure that N_trait is defined
-  if (is_linear && length(ee$response) > 1L) {
-    standata$Y <- matrix(standata$Y, ncol = length(ee$response))
-    NC_trait <- ncol(standata$Y) * (ncol(standata$Y) - 1L) / 2L
-    standata <- c(standata, list(N_trait = nrow(standata$Y), 
-                                 K_trait = ncol(standata$Y),
-                                 NC_trait = NC_trait)) 
   }
-  if (is_forked) {
-    # the second half of Y is only dummy data
-    # that was put into data to make melt_data work correctly
-    standata$N_trait <- nrow(data) / 2L
-    standata$Y <- as.array(standata$Y[1L:standata$N_trait]) 
+  
+  if (isTRUE(attr(ee$formula, "old_mv"))) {
+    # deprecated as of brms 1.0.0
+    # evaluate even if check_response is FALSE to ensure 
+    # that N_trait is defined
+    if (is_linear && length(ee$response) > 1L) {
+      standata$Y <- matrix(standata$Y, ncol = length(ee$response))
+      NC_trait <- ncol(standata$Y) * (ncol(standata$Y) - 1L) / 2L
+      standata <- c(standata, list(N_trait = nrow(standata$Y), 
+                                   K_trait = ncol(standata$Y),
+                                   NC_trait = NC_trait)) 
+    }
+    if (is_forked) {
+      # the second half of Y is only dummy data
+      # that was put into data to make melt_data work correctly
+      standata$N_trait <- nrow(data) / 2L
+      standata$Y <- as.array(standata$Y[1L:standata$N_trait]) 
+    }
+    if (is_categorical && !isTRUE(control$old_cat)) {
+      ncat1m <- standata$ncat - 1L
+      standata$N_trait <- nrow(data) / ncat1m
+      standata$Y <- as.array(standata$Y[1L:standata$N_trait])
+      standata$J_trait <- as.array(matrix(1L:standata$N, ncol = ncat1m))
+    }
   }
-  if (is_categorical && !isTRUE(control$old_cat)) {
-    ncat1m <- standata$ncat - 1L
-    standata$N_trait <- nrow(data) / ncat1m
-    standata$Y <- as.array(standata$Y[1L:standata$N_trait])
-    standata$J_trait <- as.array(matrix(1L:standata$N, ncol = ncat1m))
-  }
+  
   # data for addition arguments
   if (is.formula(ee$se)) {
     standata <- c(standata, list(se = .addition(formula = ee$se, data = data)))

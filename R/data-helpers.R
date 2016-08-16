@@ -1,16 +1,16 @@
 melt_data <- function(data, family, effects) {
   # melt data frame for multinormal models
-  #
   # Args:
   #   data: a data.frame
   #   family: the model family
   #   effects: a named list as returned by extract_effects
-  #
   # Returns:
   #   data in long format 
   response <- effects$response
   nresp <- length(response)
-  if (is.mv(family, response = response)) {
+  if (isTRUE(attr(effects$formula, "old_mv"))) {
+    # prepare data for compatibility with the deprecated 
+    # multivariate syntax
     if (!is(data, "data.frame")) {
       stop("'data' must be a data.frame for this model", call. = FALSE)
     }
@@ -235,7 +235,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     old_gf <- unique(unlist(strsplit(fit$ranef$group, split = ":")))
     old_ee <- extract_effects(formula(fit), et$all, family = family(fit))
     old_slopes <- unique(ulapply(get_random(old_ee)$form, all.vars))
-    rsv_vars <- rsv_vars(family(fit), nresp = length(ee$response))
+    rsv_vars <- rsv_vars(family(fit), nresp = length(ee$response),
+                         old_mv = attr(ee$formula, "old_mv"))
     unused_vars <- setdiff(union(old_gf, old_slopes), 
                            union(all.vars(ee$all), rsv_vars))
     if (length(unused_vars)) {
@@ -346,7 +347,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
                             nrow(newdata))
     }
     knots <- attr(model.frame(fit), "knots")
-    newdata <- make_standata(new_formula, data = newdata, family = fit$family, 
+    newdata <- make_standata(new_formula, data = newdata, family = fit$family,
                              autocor = fit$autocor, knots = knots, 
                              control = control)
   }
