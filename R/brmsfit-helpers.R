@@ -50,6 +50,7 @@ restructure <- function(x) {
                                  nonlinear = x$nonlinear))
   x$nonlinear <- x$partial <- NULL
   if (is.null(x$version) || x$version <= "0.10.0.9000") {
+    attr(x$formula, "old_mv") <- is.old_mv(x)
     ee <- extract_effects(formula(x), family = family(x))
     x$ranef <- gather_ranef(ee, model.frame(x))
     if (length(ee$nonlinear)) {

@@ -65,8 +65,6 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   # sort data in case of autocorrelation models
   if (has_arma(autocor) || is(autocor, "cor_bsts")) {
     # FIXME (removal of the mv syntax)
-    # amend if zero-inflated and hurdle models ever get 
-    # autocorrelation structures as they are also using 'trait'
     if (is_linear && length(ee$response) > 1L) {
       if (!grepl("^trait$|:trait$|^trait:|:trait:", et$group)) {
         stop(paste("autocorrelation structures for multiple responses must",

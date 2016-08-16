@@ -1125,7 +1125,8 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
             call. = FALSE)
   }
   rsv_vars <- rsv_vars(x$family, nresp = length(ee$response),
-                       rsv_intercept = attr(ee$fixed, "rsv_intercept"))
+                       rsv_intercept = attr(ee$fixed, "rsv_intercept"),
+                       old_mv = attr(ee$formula, "old_mv"))
   if (length(ee$nonlinear)) {
     # allow covariates as well as fixed effects of non-linear parameters
     covars <- setdiff(all.vars(rhs(ee$fixed)), names(ee$nonlinear))

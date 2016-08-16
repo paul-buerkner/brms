@@ -9,7 +9,8 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   #   check_response: check if the response part is non-empty
   #   resp_rhs_all: include response variables on the RHS of $all? 
   # Returns: 
-  #   A named list whose elements depend on the formula input 
+  #   A named list whose elements depend on the formula input
+  old_mv <- isTRUE(attr(formula, "old_mv"))
   formula <- bf(formula, nonlinear = nonlinear)
   nonlinear <- attr(formula, "nonlinear")
   if (!is.na(family[[1]])) {
@@ -524,6 +525,7 @@ update_re_terms <- function(formula, re_formula = NULL) {
   #   re_formula: formula containing new RE terms
   # Returns:
   #  a formula with updated RE terms
+  old_mv <- attr(formula, "old_mv")
   spars <- sformula(formula)
   for (ap in setdiff(names(spars), "nonlinear")) {
     spars[[ap]] <- update_re_terms(spars[[ap]], re_formula = re_formula)
@@ -552,6 +554,7 @@ update_re_terms <- function(formula, re_formula = NULL) {
     new_formula <- formula(new_formula)
   }
   attributes(new_formula)[names(spars)] <- spars
+  attr(new_formula, "old_mv") <- old_mv
   environment(new_formula) <- environment(formula)
   new_formula
 }
