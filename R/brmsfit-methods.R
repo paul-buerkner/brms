@@ -613,7 +613,7 @@ summary.brmsfit <- function(object, waic = FALSE, ...) {
     rownames(out$fixed) <- gsub("^b_", "", fix_pars)
     
     # summary of family specific parameters
-    spec_pars <- pars[pars %in% c("nu", "shape", "delta", "phi") | 
+    spec_pars <- pars[pars %in% c("nu", "shape", "delta", "phi", "zi", "hu") | 
       apply(sapply(c("^sigma($|_)", "^rescor_"), grepl, x = pars), 1, any)]
     out$spec_pars <- fit_summary[spec_pars, , drop = FALSE]
     if (is.linear(family(object)) && length(ee$response) > 1L) {
@@ -739,6 +739,7 @@ standata.brmsfit <- function(object, ...) {
     # brms > 0.5.0 stores the original model.frame
     object <- restructure(object)
     new_formula <- update_re_terms(object$formula, dots$re_formula)
+    # TODO: remove old_categorical?
     dots$control$old_cat <- is.old_categorical(object)
     prior_only <- attr(object$prior, "prior_only")
     sample_prior <- ifelse(isTRUE(prior_only), "only", FALSE)
@@ -824,8 +825,8 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5,
     stop("N must be a positive integer", call. = FALSE)
   if (!is.character(pars)) {
     pars <- c("^b_", "^bm_", "^sd_", "^cor_", "^sigma", "^rescor", 
-              "^nu$", "^shape$", "^delta$", "^phi$", "^ar", "^ma", 
-              "^arr", "^simplex_", "^sds_")
+              "^nu$", "^shape$", "^delta$", "^phi$", "^zi$", "^hu$",
+              "^ar", "^ma", "^arr", "^simplex_", "^sds_")
   }
   samples <- posterior_samples(x, pars = pars, add_chain = TRUE)
   pars <- names(samples)[!names(samples) %in% c("chain", "iter")] 

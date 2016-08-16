@@ -22,7 +22,8 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   
   # extract draws of auxiliary parameters
   args <- list(x = x, subset = subset)
-  links <- c(sigma = "exp", shape = "exp", nu = "exp", phi = "exp") 
+  links <- c(sigma = "exp", shape = "exp", nu = "exp", 
+             phi = "exp", zi = "inv_logit", hu = "inv_logit") 
   valid_auxpars <- valid_auxpars(family(x), effects = ee, autocor = x$autocor)
   for (ap in valid_auxpars) {
     if (!is.null(ee[[ap]])) {
@@ -36,7 +37,7 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
       draws[[ap]] <- .extract_draws(auxfit, standata = auxstandata, nlpar = ap,
                                     re_formula = re_formula, subset = subset)
       draws[[ap]][c("f", "data", "nsamples", "link")] <- 
-        list(draws$f, auxstandata, draws$nsamples, links[[ap]])
+        list(draws$f, auxstandata, draws$nsamples, links[ap])
     } else {
       regex <- paste0("^", ap, "$|_)")
       draws[[ap]] <- do.call(as.matrix, c(args, pars = regex))

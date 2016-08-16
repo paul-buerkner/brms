@@ -175,23 +175,12 @@ loglik_binomial <- function(i, draws, data = data.frame()) {
 }  
 
 loglik_bernoulli <- function(i, draws, data = data.frame()) {
-  if (!is.null(draws$data$N_trait)) {  # 2PL model
-    eta <- get_eta(draws, i) * exp(get_eta(draws, i + draws$data$N_trait))
-  } else {
-    eta <-  get_eta(draws, i)
-  }
+  eta <-  get_eta(draws, i)
   args <- list(size = 1, prob = ilink(eta, draws$f$link))
-  out <- censor_loglik(dist = "binom", args = args, i = i, data = draws$data)
+  out <- censor_loglik(dist = "binom", args = args, i = i, 
+                       data = draws$data)
   # no truncation allowed
-  out <- weight_loglik(out, i = i, data = draws$data)
-  is_nan <- is.nan(out)
-  if (any(is_nan)) {
-    # for 2PL models NaN may occure for numerical reasons
-    warning(paste("observation", i, "had", length(which(is_nan)), 
-                  "logLik draws that were NaN"))
-    out[is_nan] <- mean(out[!is_nan])
-  }
-  out
+  weight_loglik(out, i = i, data = draws$data)
 }
 
 loglik_poisson <- function(i, draws, data = data.frame()) {
@@ -268,7 +257,7 @@ loglik_beta <- function(i, draws, data = data.frame()) {
 }
 
 loglik_hurdle_poisson <- function(i, draws, data = data.frame()) {
-  theta <- ilink(get_eta(draws, i + draws$data$N_trait), "logit")
+  theta <- get_theta(draws, i, par = "hu")
   args <- list(lambda = ilink(get_eta(draws, i), draws$f$link))
   out <- hurdle_loglik_discrete(pdf = dpois, theta = theta, 
                                 args = args, i = i, data = draws$data)
@@ -276,7 +265,7 @@ loglik_hurdle_poisson <- function(i, draws, data = data.frame()) {
 }
 
 loglik_hurdle_negbinomial <- function(i, draws, data = data.frame()) {
-  theta <- ilink(get_eta(draws, i + draws$data$N_trait), "logit")
+  theta <- get_theta(draws, i, par = "hu")
   args <- list(mu = ilink(get_eta(draws, i), draws$f$link), 
                size = get_shape(draws$shape, data = draws$data, i = i))
   out <- hurdle_loglik_discrete(pdf = dnbinom, theta = theta, 
@@ -285,7 +274,7 @@ loglik_hurdle_negbinomial <- function(i, draws, data = data.frame()) {
 }
 
 loglik_hurdle_gamma <- function(i, draws, data = data.frame()) {
-  theta <- ilink(get_eta(draws, i + draws$data$N_trait), "logit")
+  theta <- get_theta(draws, i, par = "hu")
   shape <- get_shape(draws$shape, data = draws$data, i = i)
   args <- list(shape = shape, 
                scale = ilink(get_eta(draws, i), draws$f$link) / shape)
@@ -295,7 +284,7 @@ loglik_hurdle_gamma <- function(i, draws, data = data.frame()) {
 }
 
 loglik_zero_inflated_poisson <- function(i, draws, data = data.frame()) {
-  theta <- ilink(get_eta(draws, i + draws$data$N_trait), "logit")
+  theta <- get_theta(draws, i, par = "zi")
   args <- list(lambda = ilink(get_eta(draws, i), draws$f$link))
   out <- zero_inflated_loglik(pdf = dpois, theta = theta, 
                               args = args, i = i, data = draws$data)
@@ -303,7 +292,7 @@ loglik_zero_inflated_poisson <- function(i, draws, data = data.frame()) {
 }
 
 loglik_zero_inflated_negbinomial <- function(i, draws, data = data.frame()) {
-  theta <- ilink(get_eta(draws, i + draws$data$N_trait), "logit")
+  theta <- get_theta(draws, i, par = "zi")
   args <- list(mu = ilink(get_eta(draws, i), draws$f$link), 
                size = get_shape(draws$shape, data = draws$data, i = i))
   out <- zero_inflated_loglik(pdf = dnbinom, theta = theta, 
@@ -314,7 +303,7 @@ loglik_zero_inflated_negbinomial <- function(i, draws, data = data.frame()) {
 loglik_zero_inflated_binomial <- function(i, draws, data = data.frame()) {
   trials <- ifelse(length(draws$data$max_obs) > 1, 
                    draws$data$max_obs[i], draws$data$max_obs) 
-  theta <- ilink(get_eta(draws, i + draws$data$N_trait), "logit")
+  theta <- get_theta(draws, i, par = "zi")
   args <- list(size = trials, prob = ilink(get_eta(draws, i), draws$f$link))
   out <- zero_inflated_loglik(pdf = dbinom, theta = theta, 
                               args = args, i = i, data = draws$data)
@@ -322,7 +311,7 @@ loglik_zero_inflated_binomial <- function(i, draws, data = data.frame()) {
 }
 
 loglik_zero_inflated_beta <- function(i, draws, data = data.frame()) {
-  theta <- ilink(get_eta(draws, i + draws$data$N_trait), "logit")
+  theta <- get_theta(draws, i, par = "zi")
   mu <- ilink(get_eta(draws, i), draws$f$link)
   phi <- get_auxpar(draws$phi, i)
   args <- list(shape1 = mu * phi, shape2 = (1 - mu) * phi)

@@ -7,17 +7,13 @@ fitted_response <- function(draws, mu) {
   #   (usually) an S x N matrix containing samples of 
   #   the response distribution's mean 
   data <- draws$data
-  if (is.2PL(draws$f)) {
-    # the second part of mu is the log discriminability
-    mu <- mu[, 1:data$N_trait] * exp(mu[, (data$N_trait + 1):data$N])
-  }
   is_trunc <- !(is.null(data$lb) && is.null(data$ub))
-  
   # compute (mean) fitted values
+  dim <- c(nrow(mu), draws$data$N)
   if (draws$f$family == "binomial") {
     if (length(data$max_obs) > 1L) {
-      trials <- matrix(rep(data$max_obs, nrow(mu)), 
-                       nrow = nrow(mu), byrow = TRUE)
+      trials <- matrix(data$max_obs, nrow = dim[1], 
+                       ncol = dim[2], byrow = TRUE)
     } else {
       trials <- data$max_obs
     }
@@ -27,16 +23,14 @@ fitted_response <- function(draws, mu) {
       mu <- mu * trials 
     }
   } else if (draws$f$family == "lognormal") {
-    sigma <- get_sigma(draws$sigma, data = draws$data, 
-                       i = nrow(mu), sobs = FALSE)
+    sigma <- get_sigma(draws$sigma, data = draws$data, dim = dim)
     mu <- ilink(mu, draws$f$link)
     if (!is_trunc) {
       # compute untruncated lognormal mean
       mu <- exp(mu + sigma^2 / 2)  
     }
   } else if (draws$f$family == "weibull") {
-    shape <- get_shape(draws$shape, data = draws$data,
-                       i = nrow(mu), sobs = FALSE)
+    shape <- get_shape(draws$shape, data = draws$data, dim = dim)
     mu <- ilink(mu / shape, draws$f$link)
     if (!is_trunc) {
       # compute untruncated weibull mean
@@ -45,17 +39,22 @@ fitted_response <- function(draws, mu) {
   } else if (is.ordinal(draws$f) || is.categorical(draws$f)) {
     mu <- fitted_catordinal(mu, max_obs = data$max_obs, family = draws$f)
   } else if (is.hurdle(draws$f)) {
-    shape <- get_shape(draws$shape, data = draws$data,
-                       i = nrow(mu), sobs = FALSE)
-    mu <- fitted_hurdle(mu, shape = shape, N_trait = data$N_trait,
-                        family = draws$f)
+    shape <- get_shape(draws$shape, data = draws$data, dim = dim)
+    hu <- get_theta(draws, dim = dim, par = "hu")
+    mu <- fitted_hurdle(mu, hu = hu, shape = shape, family = draws$f)
   } else if (is.zero_inflated(draws$f)) {
-    mu <- fitted_zero_inflated(mu, N_trait = data$N_trait, family = draws$f)
+    zi <- get_theta(draws, dim = dim, par = "zi")
+    mu <- fitted_zero_inflated(mu, zi = zi, family = draws$f)
     if (draws$f$family == "zero_inflated_binomial") {
       if (length(data$max_obs) > 1L) {
-        trials <- data$max_obs[1:ceiling(length(data$max_obs) / 2)]
-        trials <- matrix(rep(trials, nrow(mu)), nrow = nrow(mu), 
-                         byrow = TRUE)
+        if (!is.null(draws$data$N_trait)) {
+          # deprecated as of brms 1.0.0
+          J <- seq_len(ceiling(length(data$max_obs) / 2))
+          trials <- data$max_obs[J]
+        } else {
+          trials <- data$max_obs
+        }
+        trials <- matrix(trials, nrow = dim[1], ncol = dim[2], byrow = TRUE)
       } else {
         trials <- data$max_obs
       }
@@ -74,7 +73,8 @@ fitted_response <- function(draws, mu) {
       stop(paste("fitted values on the respone scale not implemented",
                  "for truncated", family, "models"))
     } else {
-      mu <- fitted_trunc_fun(mu = mu, lb = lb, ub = ub, draws = draws)
+      trunc_args <- nlist(mu, lb, ub, draws, dim)
+      mu <- do.call(fitted_trunc_fun, trunc_args)
     }
   } 
   mu
@@ -91,14 +91,17 @@ fitted_catordinal <- function(mu, max_obs, family) {
   aperm(abind(lapply(1:ncol(mu), get_density), along = 3), perm = c(1, 3, 2))
 }
 
-fitted_hurdle <- function(mu, shape, N_trait, family) {
+fitted_hurdle <- function(mu, hu, shape, family) {
   # Args:
   #   mu: linear predictor matrix
+  #   hu: hurdle probability samples
   #   shape: shape parameter samples
-  #   N_trait: Number of observations of the main response variable
-  n_base <- 1:N_trait
-  n_hu <- n_base + N_trait
-  pre_mu <- ilink(mu[, n_base], family$link)
+  #   family: the model family
+  if (isTRUE(ncol(mu) == 2 * ncol(hu))) {
+    # old multivariate syntax model
+    mu <- mu[, seq_len(ncol(mu) / 2)]
+  }
+  pre_mu <- ilink(mu, family$link)
   # adjust pre_mu as it is no longer the mean of the truncated distributions
   if (family$family == "hurdle_poisson") {
     adjusted_mu <- pre_mu / (1 - exp(-pre_mu))
@@ -108,17 +111,19 @@ fitted_hurdle <- function(mu, shape, N_trait, family) {
     adjusted_mu <- pre_mu
   }
   # incorporate hurdle part
-  pre_mu * (1 - ilink(mu[, n_hu], "logit")) 
+  pre_mu * (1 - ilink(hu, "logit")) 
 }
 
-fitted_zero_inflated <- function(mu, N_trait, family) {
+fitted_zero_inflated <- function(mu, zi, family) {
   # Args:
   #   mu: linear predictor matrix
-  #   N_trait: Number of observations of the main response variable
-  n_base <- 1:N_trait
-  n_zi <- n_base + N_trait
-  # incorporate zero-inflation part
-  ilink(mu[, n_base], family$link) * (1 - ilink(mu[, n_zi], "logit")) 
+  #   zi: zero-inflation probability samples
+  #   family: the model family
+  if (isTRUE(ncol(mu) == 2 * ncol(zi))) {
+    # old multivariate syntax model
+    mu <- mu[, seq_len(ncol(mu) / 2)]
+  }
+  ilink(mu, family$link) * (1 - ilink(zi, "logit")) 
 }
 
 #------------- helper functions for truncated models ----------------
@@ -127,12 +132,12 @@ fitted_zero_inflated <- function(mu, N_trait, family) {
 #   lb: lower truncation bound
 #   ub: upper truncation bound
 #   draws: output of extract_draws
+#   dim: vector of length 2: c(Nsamples, Nobs)
 #   ...: ignored arguments
 # Returns:
 #   samples of the truncated mean parameter
-fitted_trunc_gaussian <- function(mu, lb, ub, draws) {
-  sigma <- get_sigma(draws$sigma, data = draws$data, 
-                     i = nrow(mu), sobs = FALSE)
+fitted_trunc_gaussian <- function(mu, lb, ub, draws, dim) {
+  sigma <- get_sigma(draws$sigma, data = draws$data, dim = dim)
   zlb <- (lb - mu) / sigma
   zub <- (ub - mu) / sigma
   # truncated mean of standard normal; see Wikipedia
@@ -140,10 +145,9 @@ fitted_trunc_gaussian <- function(mu, lb, ub, draws) {
   mu + trunc_zmean * sigma  
 }
 
-fitted_trunc_student <- function(mu, lb, ub, draws) {
-  sigma <- get_sigma(draws$sigma, data = draws$data, 
-                     i = nrow(mu), sobs = FALSE)
-  nu <- get_auxpar(draws$nu, i = nrow(mu), sobs = FALSE)
+fitted_trunc_student <- function(mu, lb, ub, draws, dim) {
+  sigma <- get_sigma(draws$sigma, data = draws$data, dim = dim)
+  nu <- get_auxpar(draws$nu, dim = dim)
   zlb <- (lb - mu) / sigma
   zub <- (ub - mu) / sigma
   # see Kim 2008: Moments of truncated Student-t distribution
@@ -155,19 +159,17 @@ fitted_trunc_student <- function(mu, lb, ub, draws) {
   mu + trunc_zmean * sigma 
 }
 
-fitted_trunc_lognormal <- function(mu, lb, ub, draws) {
+fitted_trunc_lognormal <- function(mu, lb, ub, draws, dim) {
   # mu has to be on the linear scale
-  sigma <- get_sigma(draws$sigma, data = draws$data, 
-                     i = nrow(mu), sobs = FALSE)
+  sigma <- get_sigma(draws$sigma, data = draws$data, dim = dim)
   m1 <- exp(mu + sigma^2 / 2) * (pnorm((log(ub) - mu) / sigma - sigma) - 
                                    pnorm((log(lb) - mu) / sigma - sigma))
   m1 / (plnorm(ub, meanlog = mu, sdlog = sigma) - 
           plnorm(lb, meanlog = mu, sdlog = sigma))
 }
 
-fitted_trunc_gamma <- function(mu, lb, ub, draws) {
-  shape <- get_shape(draws$shape, data = draws$data, 
-                     i = nrow(mu), sobs = FALSE)
+fitted_trunc_gamma <- function(mu, lb, ub, draws, dim) {
+  shape <- get_shape(draws$shape, data = draws$data, dim = dim)
   scale <- mu / shape
   # see Jawitz 2004: Moments of truncated continuous univariate distributions
   m1 <- scale / gamma(shape) * 
@@ -183,23 +185,22 @@ fitted_trunc_exponential <- function(mu, lb, ub, ...) {
   m1 / (pexp(ub, rate = inv_mu) - pexp(lb, rate = inv_mu))
 }
 
-fitted_trunc_weibull <- function(mu, lb, ub, draws) {
+fitted_trunc_weibull <- function(mu, lb, ub, draws, dim) {
   # see Jawitz 2004: Moments of truncated continuous univariate distributions
   # mu is already the scale parameter
-  shape <- get_shape(draws$shape, data = draws$data,
-                     i = nrow(mu), sobs = FALSE)
+  shape <- get_shape(draws$shape, data = draws$data, dim = dim)
   a <- 1 + 1 / shape
   m1 <- mu * (incgamma((ub / mu)^shape, a) - incgamma((lb / mu)^shape, a))
   m1 / (pweibull(ub, shape, scale = mu) - pweibull(lb, shape, scale = mu))
 }
 
-fitted_trunc_binomial <- function(mu, lb, ub, draws) {
+fitted_trunc_binomial <- function(mu, lb, ub, draws, dim) {
   lb <- ifelse(lb < -1, -1, lb)
   max_value <- max(draws$data$trials)
   ub <- ifelse(ub > max_value, max_value, ub)
   trials <- draws$data$trials
   if (length(trials) > 1) {
-    trials <- matrix(rep(trials, nrow(mu)), ncol = draws$data$N, byrow = TRUE)
+    trials <- matrix(trials, nrow = dim[1], ncol = dim[2], byrow = TRUE)
   }
   args <- list(size = trials, prob = mu)
   message(paste("Computing fitted values for a truncated binomial model.",
@@ -207,7 +208,7 @@ fitted_trunc_binomial <- function(mu, lb, ub, draws) {
   fitted_trunc_discrete(dist = "binom", args = args, lb = lb, ub = ub)
 }
 
-fitted_trunc_poisson <- function(mu, lb, ub, draws) {
+fitted_trunc_poisson <- function(mu, lb, ub, draws, ...) {
   lb <- ifelse(lb < -1, -1, lb)
   max_value <- 3 * max(draws$data$Y)
   ub <- ifelse(ub > max_value, max_value, ub)
@@ -217,19 +218,18 @@ fitted_trunc_poisson <- function(mu, lb, ub, draws) {
   fitted_trunc_discrete(dist = "pois", args = args, lb = lb, ub = ub)
 }
 
-fitted_trunc_negbinomial <- function(mu, lb, ub, draws) {
+fitted_trunc_negbinomial <- function(mu, lb, ub, draws, dim) {
   lb <- ifelse(lb < -1, -1, lb)
   max_value <- 3 * max(draws$data$Y)
   ub <- ifelse(ub > max_value, max_value, ub)
-  shape <- get_shape(draws$shape, data = draws$data,
-                     i = nrow(mu), sobs = FALSE)
+  shape <- get_shape(draws$shape, data = draws$data, dim = dim)
   args <- list(mu = mu, size = shape)
   message(paste("Computing fitted values for a truncated negbinomial model.",
                 "This may take a while."))
   fitted_trunc_discrete(dist = "nbinom", args = args, lb = lb, ub = ub)
 }
 
-fitted_trunc_geometric <- function(mu, lb, ub, draws) {
+fitted_trunc_geometric <- function(mu, lb, ub, draws, ...) {
   lb <- ifelse(lb < -1, -1, lb)
   max_value <- 3 * max(draws$data$Y)
   ub <- ifelse(ub > max_value, max_value, ub)

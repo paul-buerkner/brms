@@ -170,11 +170,7 @@ predict_binomial <- function(i, draws, ntrys = 5, ...) {
 
 predict_bernoulli <- function(i, draws, ...) {
   # truncation not useful
-  if (!is.null(draws$data$N_trait)) {  # 2PL model
-    eta <- get_eta(draws, i) * exp(get_eta(draws, i + draws$data$N_trait))
-  } else {
-    eta <- get_eta(draws, i)
-  }
+  eta <- get_eta(draws, i)
   rbinom(length(eta), size = 1, prob = ilink(eta, draws$f$link))
 }
 
@@ -238,8 +234,8 @@ predict_beta <- function(i, draws, ...) {
 }
 
 predict_hurdle_poisson <- function(i, draws, ...) {
-  # theta is the bernoulii hurdle parameter
-  theta <- ilink(get_eta(draws, i + draws$data$N_trait), "logit")
+  # theta is the bernoulli hurdle parameter
+  theta <- get_theta(draws, i, par = "hu")
   lambda <- ilink(get_eta(draws, i), draws$f$link)
   ndraws <- draws$nsamples
   # compare with theta to incorporate the hurdle process
@@ -251,8 +247,8 @@ predict_hurdle_poisson <- function(i, draws, ...) {
 }
 
 predict_hurdle_negbinomial <- function(i, draws, ...) {
-  # theta is the bernoulii hurdle parameter
-  theta <- ilink(get_eta(draws, i + draws$data$N_trait), "logit")
+  # theta is the bernoulli hurdle parameter
+  theta <- get_theta(draws, i, par = "hu")
   mu <- ilink(get_eta(draws, i), draws$f$link)
   ndraws <- draws$nsamples
   # compare with theta to incorporate the hurdle process
@@ -265,8 +261,8 @@ predict_hurdle_negbinomial <- function(i, draws, ...) {
 }
 
 predict_hurdle_gamma <- function(i, draws, ...) {
-  # theta is the bernoulii hurdle parameter
-  theta <- ilink(get_eta(draws, i + draws$data$N_trait), "logit")
+  # theta is the bernoulli hurdle parameter
+  theta <- get_theta(draws, i, par = "hu")
   shape <- get_shape(draws$shape, data = draws$data, i = i)
   scale <- ilink(get_eta(draws, i), draws$f$link) / shape
   ndraws <- draws$nsamples
@@ -276,8 +272,8 @@ predict_hurdle_gamma <- function(i, draws, ...) {
 }
 
 predict_zero_inflated_beta <- function(i, draws, ...) {
-  # theta is the bernoulii hurdle parameter
-  theta <- ilink(get_eta(draws, i + draws$data$N_trait), "logit")
+  # theta is the bernoulli hurdle parameter
+  theta <- get_theta(draws, i, par = "zi")
   mu <- ilink(get_eta(draws, i), draws$f$link)
   phi <- get_auxpar(draws$phi, i = i)
   # compare with theta to incorporate the hurdle process
@@ -287,8 +283,8 @@ predict_zero_inflated_beta <- function(i, draws, ...) {
 }
 
 predict_zero_inflated_poisson <- function(i, draws, ...) {
-  # theta is the bernoulii zero-inflation parameter
-  theta <- ilink(get_eta(draws, i + draws$data$N_trait), "logit")
+  # theta is the bernoulli zero-inflation parameter
+  theta <- get_theta(draws, i, par = "zi")
   lambda <- ilink(get_eta(draws, i), draws$f$link)
   ndraws <- draws$nsamples
   # compare with theta to incorporate the zero-inflation process
@@ -297,8 +293,8 @@ predict_zero_inflated_poisson <- function(i, draws, ...) {
 }
 
 predict_zero_inflated_negbinomial <- function(i, draws, ...) {
-  # theta is the bernoulii zero-inflation parameter
-  theta <- ilink(get_eta(draws, i + draws$data$N_trait), "logit")
+  # theta is the bernoulli zero-inflation parameter
+  theta <- get_theta(draws, i, par = "zi")
   mu <- ilink(get_eta(draws, i), draws$f$link)
   shape <- get_shape(draws$shape, data = draws$data, i = i)
   ndraws <- draws$nsamples
@@ -309,7 +305,7 @@ predict_zero_inflated_negbinomial <- function(i, draws, ...) {
 
 predict_zero_inflated_binomial <- function(i, draws, ...) {
   # theta is the bernoulii zero-inflation parameter
-  theta <- ilink(get_eta(draws, i + draws$data$N_trait), "logit")
+  theta <- get_theta(draws, i, par = "zi")
   trials <- ifelse(length(draws$data$max_obs) > 1, 
                    draws$data$max_obs[i], draws$data$max_obs)
   prob <- ilink(get_eta(draws, i), draws$f$link)
