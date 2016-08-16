@@ -162,18 +162,23 @@ stan_auxpars <- function(effects, data, family = gaussian(),
     sigma = "  real<lower=0> sigma;  // residual SD \n",
     shape = "  real<lower=0> shape;  // shape parameter \n",
     nu = "  real<lower=0> nu;  // degrees of freedom \n",
-    phi = "  real<lower=0> phi;  // precision parameter \n")
-  links <- c(sigma = "exp", shape = "exp", nu = "exp", phi = "exp") 
+    phi = "  real<lower=0> phi;  // precision parameter \n",
+    zi = "  real<lower=0,upper=1> zi;  // zero-inflation probability \n", 
+    hu = "  real<lower=0,upper=1> hu;  // hurdle probability \n")
+  links <- c(sigma = "exp", shape = "exp", nu = "exp", 
+             phi = "exp", zi = "", hu = "") 
   valid_auxpars <- valid_auxpars(family, effects, autocor = autocor)
   args <- nlist(data, family, ranef, prefix = "")
   for (ap in valid_auxpars) {
     if (!is.null(effects[[ap]])) {
       ap_prior <- prior[prior$nlpar == ap, ]
       ap_args <- c(list(ap, effects = effects[[ap]], prior = ap_prior), args)
-      ap_link <- paste0("  ", ap, " = ", links[[ap]], "(", ap, "); \n")
+      if (nzchar(links[ap])) {
+        ap_link <- paste0("  ", ap, " = ", links[ap], "(", ap, "); \n") 
+      } else ap_link <- ""
       out[[ap]] <- c(do.call(stan_effects, ap_args), modelC4 = ap_link)
     } else {
-      out[[ap]] <- list(par = default_defs[[ap]],
+      out[[ap]] <- list(par = default_defs[ap],
         prior = stan_prior(class = ap, prior = prior))
     }
   }  

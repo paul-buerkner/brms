@@ -458,7 +458,7 @@ prepare_auxformula <- function(formula, par = NULL, rsv_pars = NULL) {
 
 auxpars <- function(incl_nl = FALSE) {
   # names of auxiliary parameters
-  auxpars <- c("sigma", "shape", "nu", "phi")
+  auxpars <- c("sigma", "shape", "nu", "phi", "zi", "hu")
   if (incl_nl) {
     auxpars <- c(auxpars, "nonlinear")
   }

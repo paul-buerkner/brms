@@ -119,7 +119,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   Kar <- get_ar(autocor)
   Kma <- get_ma(autocor)
   Nbin <- ifelse(is.formula(ee$trials), "[N]", "")
-  trait <- ifelse(is_multi || is_forked || is_categorical, "_trait", "")
+  trait <- ifelse(is_multi || is_categorical, "_trait", "")
   text_data <- paste0(
     "data { \n",
     "  int<lower=1> N;  // total number of observations \n", 
@@ -127,8 +127,6 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
       text_multi$data
     } else if (is_categorical) {
       text_categorical$data
-    } else if (is_forked) {
-      text_forked$data
     } else if (use_real(family)) {
       "  vector[N] Y;  // response variable \n"
     } else if (use_int(family)) {

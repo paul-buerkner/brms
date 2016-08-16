@@ -55,6 +55,9 @@ stan_llh <- function(family, effects = list(), autocor = cor_arma(),
   shape <- paste0(disp, "shape", if (reqn_shape) "[n]")
   nu <- paste0("nu", if (reqn && "nu" %in% auxpars) "[n]")
   phi <- paste0("phi", if (reqn && "phi" %in% auxpars) "[n]")
+  zi <- paste0("zi", if ("zi" %in% auxpars) "[n]")
+  hu <- paste0("hu", if ("hu" %in% auxpars) "[n]")
+  .logit <- ifelse(any(c("zi", "hu") %in% auxpars), "_logit", "")
   reqn_trials <- has_trials && (ll_adj || is_zero_inflated)
   trials <- ifelse(reqn_trials, "trials[n]", "trials")
   ordinal_args <- paste("eta[n],", if (has_cse) "etap[n],", "temp_Intercept")
@@ -67,7 +70,7 @@ stan_llh <- function(family, effects = list(), autocor = cor_arma(),
                 if (!is.null(type)) paste0("_", type))
   if (n == "[n]") {
     if (is_hurdle || is_zero_inflated) {
-      eta <- paste0(ilink,"(eta[n]), ", ilink,"(eta[n + N_trait])")
+      eta <- "eta[n]"
     } else {
       eta <- paste0(eta, "[n]")
       fl <- ifelse(family %in% c("gamma", "exponential"), 
@@ -126,18 +129,21 @@ stan_llh <- function(family, effects = list(), autocor = cor_arma(),
       sratio = c("sratio", ordinal_args),
       cratio = c("cratio", ordinal_args),
       acat = c("acat", ordinal_args),
-      hurdle_poisson = c("hurdle_poisson", "eta[n], eta[n + N_trait]"),
-      hurdle_negbinomial = c("hurdle_neg_binomial_2", 
-                             paste("eta[n], eta[n + N_trait],", shape)),
-      hurdle_gamma = c("hurdle_gamma", "shape, eta[n], eta[n + N_trait]"),
-      zero_inflated_poisson = c("zero_inflated_poisson", 
-                                "eta[n], eta[n + N_trait]"),
-      zero_inflated_negbinomial = c("zero_inflated_neg_binomial_2", 
-                                    paste("eta[n], eta[n + N_trait],", shape)),
-      zero_inflated_binomial = c("zero_inflated_binomial", 
-         paste0(trials, ", eta[n], eta[n + N_trait]")),
-      zero_inflated_beta = c("zero_inflated_beta", 
-                             paste("eta[n], eta[n + N_trait],", phi)))
+      hurdle_poisson = c(paste0("hurdle_poisson", .logit), 
+                         paste0(eta, ", ", hu)),
+      hurdle_negbinomial = c(paste0("hurdle_neg_binomial", .logit), 
+                             paste0(eta, ", ", hu, ", ", shape)),
+      hurdle_gamma = c(paste0("hurdle_gamma", .logit), 
+                       paste0("shape, ", eta, ", ", hu)),
+      zero_inflated_poisson = c(paste0("zero_inflated_poisson", .logit), 
+                                paste0(eta, ", ", zi)),
+      zero_inflated_negbinomial = 
+        c(paste0("zero_inflated_neg_binomial", .logit),
+          paste0(eta, ", ", zi, ", ", shape)),
+      zero_inflated_binomial = c(paste0("zero_inflated_binomial", .logit), 
+                                 paste0(trials, ", ", eta, ", ", zi)),
+      zero_inflated_beta = c(paste0("zero_inflated_beta", .logit), 
+                             paste0(eta, ", ", zi, ", ", phi)))
   }
   
   # write likelihood code
@@ -175,7 +181,7 @@ stan_llh <- function(family, effects = list(), autocor = cor_arma(),
     general = paste0("  Y", n, " ~ ", llh_pre[1], "(", llh_pre[2], ")", 
                      code_trunc, "; \n")) 
   # loop over likelihood if it cannot be vectorized
-  trait <- ifelse(is_multi || is_forked || is_categorical, "_trait", "")
+  trait <- ifelse(is_multi || is_categorical, "_trait", "")
   if (reqn) {
     llh <- paste0("  for (n in 1:N", trait, ") { \n    ", llh, "    } \n")
   }
@@ -353,6 +359,7 @@ stan_multi <- function(family, response, prior = prior_frame()) {
   stopifnot(is(family, "family"))
   out <- list()
   nresp <- length(response)
+  # TODO: remove 'trait' syntax
   if (nresp > 1L) {
     if (is.linear(family)) {
       out$data <- "  #include 'data_multi.stan' \n"
@@ -532,7 +539,7 @@ stan_categorical <- function(family) {
 }
 
 stan_forked <- function(family) {
-  # Stan code for forked models: zero-inflated, hurdle, and 2PL
+  # Stan code for forked models i.e. zero-inflated / hurdle models
   # Args:
   #   family: the model family
   # Returns:
@@ -541,38 +548,28 @@ stan_forked <- function(family) {
   stopifnot(is(family, "family"))
   out <- list()
   if (is.forked(family)) {
-    out$data <- paste0(
-      "  int<lower=1> N_trait;  // number of observation per trait \n",
-      "  ", ifelse(use_real(family), "real", "int"),
-      " Y[N_trait];  // response variable \n")
-    if (is.zero_inflated(family) || is.hurdle(family)) {
-      if (family$family == "zero_inflated_poisson") {
-        out$fun <- paste0(out$fun, 
-                          "  #include 'fun_zero_inflated_poisson.stan' \n")
-      } else if (family$family == "zero_inflated_negbinomial") {
-        out$fun <- paste0(out$fun, 
-                          "  #include 'fun_zero_inflated_negbinomial.stan' \n")
-      } else if (family$family == "zero_inflated_binomial") {
-        out$fun <- paste0(out$fun, 
-                          "  #include 'fun_zero_inflated_binomial.stan' \n")
-      } else if (family$family == "zero_inflated_beta") {
-        out$fun <- paste0(out$fun, 
-                          "  #include 'fun_zero_inflated_beta.stan' \n")
-      } else if (family$family == "hurdle_poisson") {
-        out$fun <- paste0(out$fun, 
-                          "  #include 'fun_hurdle_poisson.stan' \n")
-      } else if (family$family == "hurdle_negbinomial") {
-        out$fun <- paste0(out$fun, 
-                          "  #include 'fun_hurdle_negbinomial.stan' \n")
-      } else if (family$family == "hurdle_gamma") {
-        out$fun <- paste0(out$fun, 
-                          "  #include 'fun_hurdle_gamma.stan' \n")
-      } 
-    } else if (is.2PL(family)) {
-      out$modelD <- "  vector[N_trait] eta_2PL;  // 2PL linear predictor \n"
-      out$modelC1 <- paste0("  eta_2PL = head(eta, N_trait)", 
-                            " .* exp(tail(eta, N_trait)); \n")
-    }
+    if (family$family == "zero_inflated_poisson") {
+      out$fun <- paste0(out$fun, 
+        "  #include 'fun_zero_inflated_poisson.stan' \n")
+    } else if (family$family == "zero_inflated_negbinomial") {
+      out$fun <- paste0(out$fun, 
+        "  #include 'fun_zero_inflated_negbinomial.stan' \n")
+    } else if (family$family == "zero_inflated_binomial") {
+      out$fun <- paste0(out$fun, 
+        "  #include 'fun_zero_inflated_binomial.stan' \n")
+    } else if (family$family == "zero_inflated_beta") {
+      out$fun <- paste0(out$fun, 
+        "  #include 'fun_zero_inflated_beta.stan' \n")
+    } else if (family$family == "hurdle_poisson") {
+      out$fun <- paste0(out$fun, 
+        "  #include 'fun_hurdle_poisson.stan' \n")
+    } else if (family$family == "hurdle_negbinomial") {
+      out$fun <- paste0(out$fun, 
+        "  #include 'fun_hurdle_negbinomial.stan' \n")
+    } else if (family$family == "hurdle_gamma") {
+      out$fun <- paste0(out$fun, 
+        "  #include 'fun_hurdle_gamma.stan' \n")
+    } 
   }
   out
 }
