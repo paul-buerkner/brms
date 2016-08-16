@@ -75,7 +75,7 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
     pos_spline_terms <- grep("^(s|t2|te|ti)\\(", all_terms)
     spline_terms <- all_terms[pos_spline_terms]
     if (length(spline_terms)) {
-      if (is.mv(family) || is.forked(family) || is.categorical(family)) {
+      if (is.mv(family) || is.categorical(family)) {
         stop("Splines are not yet implemented for this family.", 
              call. = FALSE)
       }
@@ -187,32 +187,32 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   # extract response variables
   if (check_response) {
     x$respform <- lhs(x$all)
-    for (i in seq_along(x$nonlinear)) {
-      # currently only required for GAMMs
-      x$nonlinear[[i]]$respform <- x$respform
-    }
     if (!is.null(attr(formula, "response"))) {
       x$response <- attr(formula, "response")
     } else { 
       x$response <- gather_response(x$respform)
     }
-    if (is.hurdle(family)) {
-      x$response <- c(x$response, paste0("hu_", x$response))
-    } else if (is.zero_inflated(family)) {
-      x$response <- c(x$response, paste0("zi_", x$response))
-    } else if (is.2PL(family)) {
-      x$response <- c(x$response, paste0("logDisc_", x$response))
-    } 
-    if (length(x$response) > 1L) {
-      if (is.linear(family) && length(rmNULL(x[c("se", "cens", "trunc")]))) {
-        stop(paste("Multivariate models currently allow", 
-                   "only weights as addition arguments"), 
-             call. = FALSE)
-      }
-      # don't use update on a formula that is possibly non-linear
-      x$fixed[[2]] <- quote(response)
-      x$all <- update(x$all, response ~ .)
-    }  
+    if (old_mv) {
+      # multivariate ('trait') syntax is deprecated as of brms 1.0.0
+      if (is.hurdle(family)) {
+        x$response <- c(x$response, paste0("hu_", x$response))
+      } else if (is.zero_inflated(family)) {
+        x$response <- c(x$response, paste0("zi_", x$response))
+      } else if (is.2PL(family)) {
+        x$response <- c(x$response, paste0("logDisc_", x$response))
+      } 
+      if (length(x$response) > 1L) {
+        if (is.linear(family) && length(rmNULL(x[c("se", "cens", "trunc")]))) {
+          stop(paste("Multivariate models currently allow", 
+                     "only weights as addition arguments"), 
+               call. = FALSE)
+        }
+        # don't use update on a formula that is possibly non-linear
+        x$fixed[[2]] <- quote(response)
+        x$all <- update(x$all, response ~ .)
+        attr(x$formula, "old_mv") <- TRUE
+      }   
+    }
   }
   # check validity of auxiliary parameters
   if (!is.na(family[[1]])) {
@@ -291,7 +291,9 @@ nonlinear_effects <- function(x, model = ~1, family = NA) {
 valid_auxpars <- function(family, effects = list(), autocor = cor_arma()) {
   # convenience function to find relevant auxiliary parameters
   x <- c(sigma = has_sigma(family, effects = effects, autocor = autocor),
-         shape = has_shape(family), nu = has_nu(family), phi = has_phi(family))
+         shape = has_shape(family), nu = has_nu(family), phi = has_phi(family),
+         zi = is.zero_inflated(family, zi_beta = TRUE), 
+         hu = is.hurdle(family, zi_beta = FALSE))
   names(x)[x]
 }
 
@@ -845,16 +847,17 @@ empty_ranef <- function() {
              cor = logical(0), form = character(0), stringsAsFactors = FALSE)
 }
 
-rsv_vars <- function(family, nresp = 1, rsv_intercept = NULL) {
+rsv_vars <- function(family, nresp = 1, rsv_intercept = FALSE,
+                     old_mv = FALSE) {
   # returns names of reserved variables
   # Args:
   #   family: the model family
   #   nresp: number of response variables
   #   rsv_intercept: is the reserved variable "intercept" used?
-  if (is.forked(family)) {
-    rsv <- c("trait", "main", "spec")
-  } else if (is.linear(family) && nresp > 1L || is.categorical(family)) {
+  if (is.linear(family) && nresp > 1L || is.categorical(family)) {
     rsv <- "trait"
+  } else if (is.forked(family) && isTRUE(old_mv)) {
+    rsv <- c("trait", "main", "spec")
   } else {
     rsv <- NULL
   }
