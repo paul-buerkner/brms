@@ -58,15 +58,30 @@ rename_pars <- function(x) {
   #   x: a brmsfit obejct
   # Returns:
   #   a brmfit object with adjusted parameter names and dimensions
-  if (!length(x$fit@sim)) return(x) 
+  if (!length(x$fit@sim)) {
+    return(x) 
+  }
+  # some variables generally needed
+  family <- family(x)
+  ee <- extract_effects(x$formula, family = family)
+  standata <- standata(x)
+  
   # order parameter samples after parameter class
   chains <- length(x$fit@sim$samples) 
   all_classes <- c("b_Intercept", "b", "bm", "bp", "ar", "ma", "arr", "sd", 
-                   "cor", "sds", "sigma", "sigmaLL", "rescor", "nu", "shape", 
-                   "phi", "delta", "simplex", "r", "s", "loclev", "prior", "lp")
+                   "cor", "sds", "sigma", "sigmaLL", "rescor", "nu", "shape",
+                   "phi", "zi", "hu", "delta", "simplex", "r", "s", "loclev", 
+                   "prior", "lp")
   class <- get_matches("^[^_\\[]+", x$fit@sim$fnames_oi)
   # make sure that the fixed effects intercept comes first
-  pos_intercept <- which(grepl("^b_Intercept($|\\[)", x$fit@sim$fnames_oi))
+  if (length(ee$response) > 1L) {
+    regex_resp <- paste0(usc(ee$response , "suffix"), collapse  = "|")
+    regex_resp <- paste0("(", regex_resp, ")")
+  } else {
+    regex_resp <- ""
+  }
+  regex_intercept <- paste0("^b_", regex_resp, "Intercept($|\\[)")
+  pos_intercept <- which(grepl(regex_intercept, x$fit@sim$fnames_oi))
   class[pos_intercept] <- "b_Intercept"
   ordered <- order(factor(class, levels = all_classes))
   x$fit@sim$fnames_oi <- x$fit@sim$fnames_oi[ordered]
@@ -75,18 +90,12 @@ rename_pars <- function(x) {
     x$fit@sim$samples[[i]] <- subset_attr(x$fit@sim$samples[[i]], ordered)
   }
   mclass <- regmatches(x$fit@sim$pars_oi, regexpr("^[^_]+", x$fit@sim$pars_oi))
-  # make sure that the fixed effects intercept comes first
-  pos_intercept <- which(grepl("^b_Intercept($|\\[)", x$fit@sim$pars_oi))
+  pos_intercept <- which(grepl(regex_intercept, x$fit@sim$pars_oi))
   mclass[pos_intercept] <- "b_Intercept"
   ordered <- order(factor(mclass, levels = all_classes))
   x$fit@sim$dims_oi <- x$fit@sim$dims_oi[ordered]
   x$fit@sim$pars_oi <- names(x$fit@sim$dims_oi)
-  
-  # some variables generally needed
   pars <- parnames(x)
-  family <- family(x)
-  ee <- extract_effects(x$formula, family = family)
-  standata <- standata(x)
   
   # find positions of parameters and define new names
   change <- list()
@@ -98,18 +107,30 @@ rename_pars <- function(x) {
         fixef = colnames(standata[[paste0("X_", p)]]),
         monef = colnames(standata[[paste0("Xm_", p)]]),
         splines = get_spline_labels(ee$nonlinear[[p]]),
-        ranef = x$ranef, nlpar = p)
+        nlpar = p)
       change <- c(change, change_eff)
     }
   } else {
-    intercepts <- names(get_intercepts(ee, data = x$data, family = family))
-    change_eff <- change_effects(
-      pars = pars, dims = x$fit@sim$dims_oi, intercepts = intercepts,
-      fixef = colnames(standata$X), monef = colnames(standata$Xm),
-      splines = get_spline_labels(ee), ranef = x$ranef)
-    change_csef <- change_csef(colnames(standata$Xp), pars = pars,
-                               ncat = standata$ncat)
-    change <- c(change, change_eff, change_csef)
+    resp <- ee$response
+    if (length(resp) > 1L) {
+      for (r in resp) {
+        change_eff <- change_effects(
+          pars = pars, dims = x$fit@sim$dims_oi,
+          fixef = colnames(standata[[paste0("X_", r)]]), 
+          monef = colnames(standata[[paste0("Xm_", r)]]),
+          splines = get_spline_labels(ee), nlpar = r)
+        change <- c(change, change_eff)
+      }
+    } else {
+      change_eff <- change_effects(
+        pars = pars, dims = x$fit@sim$dims_oi,
+        fixef = colnames(standata$X), 
+        monef = colnames(standata$Xm),
+        splines = get_spline_labels(ee))
+      change_csef <- change_csef(colnames(standata$Xp), 
+                                 pars = pars, ncat = standata$ncat)
+      change <- c(change, change_eff, change_csef)
+    }
   }
   # rename parameters related to auxilliary parameters
   for (ap in intersect(auxpars(), names(ee))) {
@@ -118,7 +139,7 @@ rename_pars <- function(x) {
       fixef = colnames(standata[[paste0("X_", ap)]]),
       monef = colnames(standata[[paste0("Xm_", ap)]]),
       splines = get_spline_labels(ee[[ap]]),
-      ranef = x$ranef, nlpar = ap)
+      nlpar = ap)
     change <- c(change, change_eff)
   }
   # rename group-level parameters separately
@@ -150,19 +171,15 @@ rename_pars <- function(x) {
 }
 
 change_effects <- function(pars, dims, fixef = NULL, monef = NULL, 
-                           splines = NULL, ranef = list(), 
-                           intercepts = NULL, nlpar = "") {
+                           splines = NULL, nlpar = "") {
   # helps in renaming various kinds of effects
-  change_fixef <- change_fixef(fixef, pars = pars, nlpar = nlpar,  
-                               intercepts = intercepts)
+  change_fixef <- change_fixef(fixef, pars = pars, nlpar = nlpar)
   change_monef <- change_monef(monef, pars = pars, nlpar = nlpar)
   change_splines <- change_splines(splines, pars = pars, nlpar = nlpar)
-  # change_ranef <- change_ranef(ranef = ranef, pars = pars, dims = dims, 
-  #                              nlpar = nlpar)
   c(change_fixef, change_monef, change_splines)
 }
 
-change_fixef <- function(fixef, pars, intercepts = NULL, nlpar = "") {
+change_fixef <- function(fixef, pars, nlpar = "") {
   # helps in renaming fixed effects parameters
   # Args:
   #   fixef: names of the fixed effects
@@ -172,18 +189,11 @@ change_fixef <- function(fixef, pars, intercepts = NULL, nlpar = "") {
   #  a list that can be interpreted by rename_pars
   change <- list()
   if (length(fixef)) {
-    b <- paste0("b", ifelse(nchar(nlpar), paste0("_", nlpar), ""))
+    b <- paste0("b", usc(nlpar, "prefix"))
     change <- lc(change, list(pos = grepl(paste0("^", b, "\\["), pars), 
                               oldname = b, pnames = paste0(b, "_", fixef), 
                               fnames = paste0(b, "_", fixef)))
     change <- c(change, change_prior(class = b, pars = pars, names = fixef))
-  }
-  if (length(intercepts) && !is_equal(intercepts, "Intercept")) {
-    # for intercepts in models using multivariate formula syntax
-    change <- lc(change, list(pos = grepl("^b_Intercept\\[", pars), 
-                              oldname = "b_Intercept", 
-                              pnames = paste0("b_", intercepts), 
-                              fnames = paste0("b_", intercepts)))
   }
   change
 }
@@ -198,7 +208,7 @@ change_monef <- function(monef, pars, nlpar = "") {
   #  a list that can be interpreted by rename_pars
   change <- list()
   if (length(monef)) {
-    p <- ifelse(nchar(nlpar), paste0("_", nlpar), "")
+    p <- usc(nlpar, "prefix")
     bm <- paste0("bm", p)
     newnames <- paste0("b", p, "_", monef)
     change <- lc(change, list(pos = grepl(paste0("^", bm, "\\["), pars), 
@@ -252,10 +262,11 @@ change_splines <- function(splines, pars, nlpar = "") {
   #   nlpar: optional string naming a non-linear parameter
   change <- list()
   if (length(splines)) {
+    p <- usc(nlpar, "prefix")
     splines <- rename(splines)
-    sds <- paste0("sds", ifelse(nchar(nlpar), paste0("_", nlpar), ""))
+    sds <- paste0("sds", p)
     sds_names <- paste0(sds, "_", splines)
-    s <- paste0("s", ifelse(nchar(nlpar), paste0("_", nlpar), ""))
+    s <- paste0("s", p)
     s_names <- paste0(s, "_", splines)
     for (i in seq_along(splines)) {
       sds_pos <- grepl(paste0("^", sds, "_", i), pars)
