@@ -7,14 +7,13 @@ stan_llh <- function(family, effects = list(), autocor = cor_arma(),
   #   autocor: object of classe cor_brms
   stopifnot(is(family, "family"))
   link <- family$link
-  type <- family$type
   family <- family$family
   is_categorical <- is.categorical(family)
   is_ordinal <- is.ordinal(family)
   is_hurdle <- is.hurdle(family)
   is_zero_inflated <- is.zero_inflated(family)
   is_forked <- is.forked(family)
-  is_multi <- is.linear(family) && length(effects$response) > 1L
+  is_mv <- is.linear(family) && length(effects$response) > 1L
   
   has_se <- is.formula(effects$se)
   has_weights <- is.formula(effects$weights)
@@ -25,9 +24,9 @@ stan_llh <- function(family, effects = list(), autocor = cor_arma(),
   has_trunc <- any(trunc_bounds$lb > -Inf) || any(trunc_bounds$ub < Inf)
   ll_adj <- has_cens || has_weights || has_trunc
 
-  if (is_multi) {
+  if (is_mv) {
     # prepare for use of a multivariate likelihood
-    family <- paste0(family, "_multi")
+    family <- paste0(family, "_mv")
   } else if (use_cov(autocor)) {
     # ARMA effects in covariance matrix formulation
     if (ll_adj) {
@@ -66,8 +65,7 @@ stan_llh <- function(family, effects = list(), autocor = cor_arma(),
   # if it does not prevent vectorization 
   simplify <- !has_trunc && !has_cens && stan_has_build_in_fun(family, link)
   ilink <- ifelse(n == "[n]" && !simplify, stan_ilink(link), "")
-  eta <- paste0(ifelse(is_multi, "Eta", "eta"), 
-                if (!is.null(type)) paste0("_", type))
+  eta <- ifelse(is_mv, "Eta", "eta")
   if (n == "[n]") {
     if (is_hurdle || is_zero_inflated) {
       eta <- "eta[n]"
@@ -93,7 +91,7 @@ stan_llh <- function(family, effects = list(), autocor = cor_arma(),
       negbinomial = c("neg_binomial_2_log", paste0(eta, ", ", shape)),
       geometric = c("neg_binomial_2_log", paste0(eta, ", 1")),
       cumulative = c("ordered_logistic", "eta[n], temp_Intercept"),
-      categorical = c("categorical_logit", "append_row(zero, eta[J_trait[n]])"),
+      categorical = c("categorical_logit", "append_row(zero, Eta[n])"),
       binomial = c("binomial_logit", paste0(trials, ", ", eta)), 
       bernoulli = c("bernoulli_logit", eta))
   } else {
@@ -101,17 +99,17 @@ stan_llh <- function(family, effects = list(), autocor = cor_arma(),
       gaussian = c("normal", paste0(eta, ", ", sigma)),
       gaussian_cov = c("normal_cov", paste0(eta,", se2, N_tg, ", 
                        "begin_tg, end_tg, nobs_tg, res_cov_matrix")),
-      gaussian_multi = c("multi_normal_cholesky", paste0(eta, ", LSigma")),
+      gaussian_mv = c("multi_normal_cholesky", paste0(eta, ", LSigma")),
       gaussian_fixed = c("multi_normal_cholesky", paste0(eta, ", LV")),
       student = c("student_t",  paste0(nu, ", ", eta, ", ", sigma)),
       student_cov = c("student_t_cov", paste0(nu, ", ", eta, ", se2, N_tg, ", 
                       "begin_tg, end_tg, nobs_tg, res_cov_matrix")),
-      student_multi = c("multi_student_t", paste0(nu, ", ", eta, ", Sigma")),
+      student_mv = c("multi_student_t", paste0(nu, ", ", eta, ", Sigma")),
       student_fixed = c("multi_student_t", paste0(nu, ", ", eta, ", V")),
       cauchy = c("cauchy", paste0(eta, ", ", sigma)),
       cauchy_cov = c("student_t_cov", paste0("1, ", eta, ", se2, N_tg, ", 
                      "begin_tg, end_tg, nobs_tg, res_cov_matrix")),
-      cauchy_multi = c("multi_student_t", paste0("1.0, ", eta, ", Sigma")),
+      cauchy_mv = c("multi_student_t", paste0("1.0, ", eta, ", Sigma")),
       cauchy_fixed = c("multi_student_t", paste0("1.0, ", eta,", V")),
       lognormal = c("lognormal", paste0(eta, ", ", sigma)),
       poisson = c("poisson", eta),
@@ -181,9 +179,8 @@ stan_llh <- function(family, effects = list(), autocor = cor_arma(),
     general = paste0("  Y", n, " ~ ", llh_pre[1], "(", llh_pre[2], ")", 
                      code_trunc, "; \n")) 
   # loop over likelihood if it cannot be vectorized
-  trait <- ifelse(is_multi || is_categorical, "_trait", "")
   if (reqn) {
-    llh <- paste0("  for (n in 1:N", trait, ") { \n    ", llh, "    } \n")
+    llh <- paste0("  for (n in 1:N) { \n    ", llh, "    } \n")
   }
   llh
 }
@@ -199,7 +196,8 @@ stan_autocor <- function(autocor, effects = list(), family = gaussian(),
   #          as returned by check_prior
   stopifnot(is(family, "family"))
   is_linear <- is.linear(family)
-  is_multi <- is_linear && length(effects$response) > 1L
+  resp <- effects$response
+  is_mv <- is_linear && length(resp) > 1L
   link <- stan_link(family$link)
   Kar <- get_ar(autocor)
   Kma <- get_ma(autocor)
@@ -230,7 +228,7 @@ stan_autocor <- function(autocor, effects = list(), family = gaussian(),
       # if the user wants ARMA effects to be estimated using
       # a covariance matrix for residuals
       err_msg <- "ARMA covariance matrices are not yet working"
-      if (is_multi) {
+      if (is_mv) {
         stop(err_msg, " in multivariate models", call. = FALSE)
       }
       if (is.formula(effects$disp)) {
@@ -275,19 +273,27 @@ stan_autocor <- function(autocor, effects = list(), family = gaussian(),
       if (length(effects$nonlinear)) {
         stop(err_msg, " for non-linear models", call. = FALSE)
       }
-      index <- ifelse(is_multi, "m, k", "n")
-      wsp <- ifelse(is_multi, "      ", "    ")
-      out$modelD <- paste0("  matrix[N, Karma] E;  // ARMA design matrix \n",
-                           "  vector[N] e;  // residuals \n") 
-      out$modelC1 <- "  E = rep_matrix(0.0, N, Karma); \n" 
+      if (is_mv) {
+        rs <- usc(resp, "prefix")
+        index <- paste0("n, ", seq_along(rs))
+      } else {
+        rs <- ""
+        index <- "n"
+      }
+      out$modelD <- paste0(
+        "  // objects storing residuals \n",
+        collapse("  matrix[N, Karma] E", rs, "; \n",
+                 "  vector[N] e", rs, "; \n"))
+      out$modelC1 <- collapse("  E", rs, " = rep_matrix(0.0, N, Karma); \n")
       out$modelC2 <- paste0(
-        wsp, "// calculation of ARMA effects \n",
-        wsp, "e[n] = ", link, "(Y[", index, "]) - eta[n]", "; \n",
-        wsp, "for (i in 1:Karma) { \n", 
-        wsp, "  if (n + 1 - i > 0 && n < N && tg[n + 1] == tg[n + 1 - i]) { \n",
-        wsp, "     E[n + 1, i] = e[n + 1 - i]; \n",
-        wsp, "  } \n",
-        wsp, "} \n")
+        "    // computation of ARMA effects \n",
+        collapse("    e", rs, "[n] = ", link, "(Y[", index, "])", 
+                 " - eta", rs, "[n]", "; \n"),
+        "    for (i in 1:Karma) { \n", 
+        "      if (n + 1 - i > 0 && n < N && tg[n + 1] == tg[n + 1 - i]) { \n",
+        collapse("        E", rs, "[n + 1, i] = e", rs, "[n + 1 - i]; \n"),
+        "      } \n",
+        "    } \n")
     } 
   }
   if (Karr) {
@@ -314,7 +320,7 @@ stan_autocor <- function(autocor, effects = list(), family = gaussian(),
     }
   }
   if (is(autocor, "cor_bsts")) {
-    if (is.forked(family) || family$family %in% c("bernoulli", "categorical")) {
+    if (is_mv || family$family %in% c("bernoulli", "categorical")) {
       stop("The bsts structure is not yet implemented for this family.",
            call. = FALSE)
     }
@@ -325,7 +331,7 @@ stan_autocor <- function(autocor, effects = list(), family = gaussian(),
     out$data <- "  vector[N] tg;  // indicates independent groups \n"
     out$par <- paste0("  vector[N] loclev;  // local level terms \n",
                       "  real<lower=0> sigmaLL;  // SD of local level terms \n")
-    if (is_linear && !is_multi) {
+    if (is_linear && !is_mv) {
       # this often helps with convergence
       center <- paste0(link, "(Y[", c("1", "n"), "])")
     } else {
@@ -345,53 +351,43 @@ stan_autocor <- function(autocor, effects = list(), family = gaussian(),
   out
 }
 
-stan_multi <- function(family, response, prior = prior_frame()) {
+stan_mv <- function(family, response, prior = prior_frame()) {
   # some Stan code for multivariate models
-  #
   # Args:
   #   family: model family
   #   response: names of the response variables
   #   prior: a data.frame containing user defined priors 
   #          as returned by check_prior
-  # 
   # Returns: 
   #   list containing Stan code specific for multivariate models
   stopifnot(is(family, "family"))
   out <- list()
   nresp <- length(response)
-  # TODO: remove 'trait' syntax
   if (nresp > 1L) {
     if (is.linear(family)) {
-      out$data <- "  #include 'data_multi.stan' \n"
+      out$data <- "  #include 'data_mv.stan' \n"
       out$par <- paste0(
         "  // parameters for multivariate linear models \n",
-        "  vector<lower=0>[K_trait] sigma; \n",
-        "  cholesky_factor_corr[K_trait] Lrescor; \n")
-      out$loop <- c(paste0(
-        "  // restructure linear predictor \n",
-        "  for (m in 1:N_trait) { \n",  
-        "    for (k in 1:K_trait) { \n", 
-        "      int n; \n",
-        "      n = (k - 1) * N_trait + m; \n"), 
-        "    } \n  } \n")
+        "  vector<lower=0>[nresp] sigma; \n",
+        "  cholesky_factor_corr[nresp] Lrescor; \n")
       out$prior <- paste0(
         stan_prior(class = "sigma", coef = response, prior = prior),
         stan_prior(class = "Lrescor", prior = prior))
       if (family$family == "gaussian") {
-        out$transD <- "  cholesky_factor_cov[K_trait] LSigma; \n"
+        out$transD <- "  cholesky_factor_cov[nresp] LSigma; \n"
         out$transC1 <- paste0(
           "  // compute cholesky factor of residual covariance matrix \n",
           "  LSigma = diag_pre_multiply(sigma, Lrescor); \n")
       } else if (family$family %in% c("student", "cauchy")) {
-        out$transD <- "  cov_matrix[K_trait] Sigma; \n"
+        out$transD <- "  cov_matrix[nresp] Sigma; \n"
         out$transC1 <- paste0(
           "  // compute residual covariance matrix \n",
           "  Sigma = multiply_lower_tri_self_transpose(", 
           "diag_pre_multiply(sigma, Lrescor)); \n")
       }
       out$genD <- paste0(
-        "  matrix[K_trait,K_trait] Rescor; \n",
-        "  vector<lower=-1,upper=1>[NC_trait] rescor; \n")
+        "  matrix[nresp, nresp] Rescor; \n",
+        "  vector<lower=-1,upper=1>[nrescor] rescor; \n")
       out$genC <- paste0(
         "  // take only relevant parts of residual correlation matrix \n",
         "  Rescor = multiply_lower_tri_self_transpose(Lrescor); \n",
@@ -531,7 +527,7 @@ stan_categorical <- function(family) {
   stopifnot(is(family, "family"))
   out <- list()
   if (is.categorical(family)) {
-    out$data <- "  #include 'data_categorical.stan' \n" 
+    out$data <- "  int<lower=2> ncat;  // number of categories' \n" 
     out$tdataD <- "  vector[1] zero; \n"
     out$tdataC <- "  zero[1] = 0; \n"
   }
