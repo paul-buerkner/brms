@@ -470,7 +470,7 @@ sformula <- function(x, incl_nl = TRUE, flatten = FALSE, ...) {
   # Args:
   #   x: coerced to a 'brmsformula' object
   #   incl_nl: include the 'nonlinear' argument in the output?
-  #   flatten: should non-linear formulas be put on the first
+  #   flatten: should formulas stored in lists be put on the first
   #            level of the returned list?
   out <- rmNULL(attributes(bf(x))[auxpars(incl_nl = incl_nl)])
   if (flatten) {
