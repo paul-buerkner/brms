@@ -48,15 +48,15 @@ test_that("stan_prior passes increment_log_prob statements without changes", {
                "  increment_log_prob(a); \n  increment_log_prob(b); \n")
 })
 
-test_that("stan_eta returns correct strings for autocorrelation models", {
-  ee <- extract_effects(count ~ Trt_c)
-  expect_match(stan_linear(ee, data = epilepsy, family = student(log),
+test_that("stan_effects returns correct strings for autocorrelation models", {
+  ee <- brms:::extract_effects(count ~ Trt_c)
+  expect_match(stan_effects(ee, data = epilepsy, family = student(log),
                            autocor = cor_arma(~visit|patient, p = 2))$modelC3,
                "eta[n] = exp(eta[n] + head(E[n], Kar) * ar)", fixed = TRUE)
-  expect_match(stan_linear(ee, data = epilepsy, family = gaussian(log),
+  expect_match(stan_effects(ee, data = epilepsy, family = gaussian(log),
                            autocor = cor_arma(~visit|patient, q = 1))$modelC2,
-               "eta[n] = exp(eta[n] + head(E[n], Kma) * ma)", fixed = TRUE)
-  expect_match(stan_linear(ee, data = epilepsy, family = poisson(),
+               "eta[n] = eta[n] + head(E[n], Kma) * ma", fixed = TRUE)
+  expect_match(stan_effects(ee, data = epilepsy, family = poisson(),
                            autocor = cor_arma(~visit|patient, r = 3))$modelC1,
                "eta = X * b + temp_Intercept + Yarr * arr", fixed = TRUE)
 })
@@ -77,7 +77,7 @@ test_that("stan_autocor returns correct strings (or errors)", {
   temp_arma <- stan_autocor(family = gaussian(log), effects = effects, 
                             autocor = cor_arma(~visit|patient, p = 1),
                             prior = prior)
-  expect_match(temp_arma$modelC2, "e[n] = log(Y[m, k]) - eta[n]", 
+  expect_match(temp_arma$modelC2, "e_y2[n] = log(Y[n, 2]) - eta_y2[n]", 
                fixed = TRUE)
   expect_match(temp_arma$prior, "ar ~ normal(0,2)", fixed = TRUE)
   
@@ -157,12 +157,12 @@ test_that("stan_llh returns correct llhs under truncation", {
 
 test_that("stan_llh returns correct llhs for zero-inflated an hurdle models", {
   expect_match(stan_llh(zero_inflated_poisson()), fixed = TRUE,
-               "  Y[n] ~ zero_inflated_poisson(eta[n], eta[n + N_trait]);")
+               "  Y[n] ~ zero_inflated_poisson(eta[n], zi);")
                
   expect_match(stan_llh(hurdle_negbinomial()), fixed = TRUE,
-               "  Y[n] ~ hurdle_neg_binomial_2(eta[n], eta[n + N_trait], shape);")
+               "  Y[n] ~ hurdle_neg_binomial(eta[n], hu, shape);")
   expect_match(stan_llh(hurdle_gamma()), fixed = TRUE,
-               "  Y[n] ~ hurdle_gamma(shape, eta[n], eta[n + N_trait]);")
+               "  Y[n] ~ hurdle_gamma(shape, eta[n], hu);")
 })
 
 test_that("stan_llh returns correct llhs for multivariate models", {
@@ -237,14 +237,14 @@ test_that("stan_rngprior returns correct sampling statements for priors", {
   
 })
 
-test_that("stan_multi returns correct Stan code (or errors)", {
-  expect_equal(stan_multi(gaussian(), "y"), list())
-  expect_match(stan_multi(gaussian(), c("y1", "y2"))$transC, 
+test_that("stan_mv returns correct Stan code (or errors)", {
+  expect_equal(stan_mv(gaussian(), "y"), list())
+  expect_match(stan_mv(gaussian(), c("y1", "y2"))$transC, 
                "LSigma = diag_pre_multiply(sigma, Lrescor); \n",
                fixed = TRUE)
-  expect_equal(stan_multi(student(), c("y1", "y2"))$transD, 
-               "  cov_matrix[K_trait] Sigma; \n")
-  expect_equal(stan_multi(hurdle_gamma(), c("y", "huy")), list())
-  expect_error(stan_multi(poisson(), c("y1", "y2")),
+  expect_equal(stan_mv(student(), c("y1", "y2"))$transD, 
+               "  cov_matrix[nresp] Sigma; \n")
+  expect_equal(stan_mv(hurdle_gamma(), c("y", "huy")), list())
+  expect_error(stan_mv(poisson(), c("y1", "y2")),
                "invalid multivariate model")
 })

@@ -43,13 +43,13 @@ test_that("predict for multivariate linear models runs without errors", {
   draws$data <- list(N = nobs, N_trait = ncols)
   draws$f$link <- "identity"
   
-  pred <- predict_gaussian_multi(1, draws = draws)
+  pred <- predict_gaussian_mv(1, draws = draws)
   expect_equal(dim(pred), c(ns, nvars))
   
-  pred <- predict_student_multi(2, draws = draws)
+  pred <- predict_student_mv(2, draws = draws)
   expect_equal(dim(pred), c(ns, nvars))
   
-  pred <- predict_cauchy_multi(3, draws = draws)
+  pred <- predict_cauchy_mv(3, draws = draws)
   expect_equal(dim(pred), c(ns, nvars))
 })
 

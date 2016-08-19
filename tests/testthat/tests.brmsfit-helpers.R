@@ -140,7 +140,7 @@ test_that("get_sigma correctly extract residual SDs", {
   expect_equal(length(get_sigma(sigma, data = list(se = 2:11), i = 3)), 
                Nsamples(fit))
   expect_equal(dim(get_sigma(NULL, data = list(se = 2:11, N = 10), 
-                             i = 5, sobs = FALSE)), c(5, 10))
+                             dim = c(5, 10))), c(5, 10))
   expect_equal(get_sigma(NULL, data = list(sigma = 2:11), i = 5), 6)
 })
 

@@ -3,23 +3,25 @@ test_that(paste("make_standata returns correct data names",
   expect_equal(names(make_standata(rating ~ treat + period + carry 
                                    + (1|subject), data = inhaler)),
                c("N", "Y",  "K", "X_means", "X", "Z_1_1",
-                 "J_1", "N_1", "K_1", "NC_1", "prior_only"))
+                 "J_1", "N_1", "M_1", "NC_1", "prior_only"))
   expect_equal(names(make_standata(rating ~ treat + period + carry 
-                                   + (1+treat|subject), data = inhaler,
+                                   + (1+treat|id|subject), data = inhaler,
                                    family = "categorical")),
-               c("N", "Y", "K", "X_means", "X", "Z_1_1", "Z_1_2", "J_1", "N_1", 
-                 "K_1", "NC_1", "ncat", "max_obs", "N_trait", "J_trait", 
+               c("N", "Y", "K_2", "X_means_2", "X_2", "Z_1_2_1", "Z_1_2_2", 
+                 "K_3", "X_means_3", "X_3", "Z_1_3_3", "Z_1_3_4",
+                 "K_4", "X_means_4", "X_4", "Z_1_4_5", "Z_1_4_6",
+                 "J_1", "N_1", "M_1", "NC_1", "ncat", "max_obs", 
                  "prior_only"))
   expect_equal(names(make_standata(rating ~ treat + period + carry 
                                    + (1+treat|subject), data = inhaler,
                                    control = list(not4stan = TRUE))),
-               c("N", "Y", "K", "X", "Z_1", "J_1", "N_1", "K_1",
+               c("N", "Y", "K", "X", "Z_1", "J_1", "N_1", "M_1",
                  "NC_1", "prior_only"))
   temp_data <- data.frame(y = 1:10, g = 1:10, h = 11:10, x = rep(0,10))
   expect_equal(names(make_standata(y ~ x + (1|g) + (1|h), family = "poisson",
                                    data = temp_data)),
                c("N", "Y", "K", "X_means", "X", "Z_1_1", "Z_2_1",
-                 "J_1", "N_1", "K_1", "NC_1", "J_2", "N_2", "K_2", "NC_2", 
+                 "J_1", "N_1", "M_1", "NC_1", "J_2", "N_2", "M_2", "NC_2", 
                  "prior_only"))
 })
 
@@ -191,14 +193,9 @@ test_that(paste("make_standata handles addition arguments",
                1:10)
   expect_equal(make_standata(cbind(y1,y2) | weights(w) ~ x, 
                              family = "gaussian", data = temp_data,
-                             autocor = cor_ar(~tim | g:trait))$Y,
+                             autocor = cor_ar(~tim | g))$Y,
                cbind(c(seq(9,1,-2), seq(10,2,-2)), 
                      c(seq(19,11,-2), seq(20,12,-2))))
-  expect_error(make_standata(cbind(y1,y2) | weights(w) ~ x, 
-                             family = "gaussian", data = temp_data,
-                             autocor = cor.ar(~tim | g)),
-               paste("autocorrelation structures for multiple responses", 
-                     "must contain 'trait' as grouping variable"))
 })
 
 test_that(paste("make_standata returns correct data", 
@@ -234,10 +231,10 @@ test_that("make_standata allows to retrieve the initial data order", {
   expect_equal(temp_data$y1, as.numeric(sdata1$Y[attr(sdata1, "old_order")]))
   # multivariate model
   sdata2 <- make_standata(cbind(y1, y2) ~ 1, data = temp_data, 
-                          autocor = cor_ma(~time|id:trait),
+                          autocor = cor_ma(~time|id),
                           control = list(save_order = TRUE))
   expect_equal(c(temp_data$y1, temp_data$y2), 
-               as.numeric(sdata2$Y[attr(sdata2, "old_order")]))
+               as.numeric(sdata2$Y[attr(sdata2, "old_order"), ]))
 })
 
 test_that("make_standata rejects invalid input for cse effects", {
@@ -281,18 +278,6 @@ test_that("make_standata computes data for inverse.gaussian models", {
   expect_equal(as.numeric(standata$log_Y), log(temp_data$y))                         
 })
 
-test_that("make_standata computes data for 2PL models", {
-  temp_data <- data.frame(y = sample(0:1, 10, TRUE), x = rnorm(10))
-  standata <- make_standata(y ~ x, data = temp_data,
-                            family = bernoulli(type = "2PL"))
-  expect_equal(standata$Y, as.array(temp_data$y))
-  expect_equal(standata$N_trait, 10)
-  temp_data$y <- factor(rep(c("N", "Y"), each = 5), levels = c("N", "Y"))
-  standata <- make_standata(y ~ x, data = temp_data,
-                            family = bernoulli(type = "2PL"))
-  expect_equal(standata$Y, as.array(rep(0:1, each = 5)))
-})
-
 test_that("brmdata is backwards compatible", {
   temp_data <- data.frame(y = 1:10, x = sample(1:5, 10, TRUE))
   expect_identical(brmdata(y ~ x + (1|x), data = temp_data, 
@@ -313,7 +298,7 @@ test_that("make_standata correctly prepares data for non-linear models", {
   expect_equal(names(standata), c("N", "Y", "KC", "C", "K_a", "X_a", "Z_1_a_1", 
                                   "K_b", "X_b", "Km_b", "Xm_b", "Jm_b", 
                                   "con_simplex_b_1", "Z_1_b_2", "J_1", "N_1", 
-                                  "K_1", "NC_1", "prior_only"))
+                                  "M_1", "NC_1", "prior_only"))
   expect_equal(colnames(standata$X_a), c("Intercept", "x"))
   expect_equal(colnames(standata$C), "z")
   expect_equal(standata$J_1, as.array(data$g))

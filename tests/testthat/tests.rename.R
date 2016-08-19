@@ -22,8 +22,6 @@ test_that("rename perform correct renaming", {
 test_that("model_names works correctly", {
   expect_equal(model_name(NA), "brms-model")
   expect_equal(model_name(gaussian()), "gaussian(identity) brms-model")
-  expect_equal(model_name(bernoulli(type = "2PL")), 
-               "bernoulli(logit, 2PL) brms-model")
 })
 
 test_that("make_index_names returns correct 1 and 2 dimensional indices", {
@@ -56,10 +54,10 @@ test_that("change_prior returns correct lists to be understood by rename_pars", 
                          pnames = "prior_b_x1", fnames = "prior_b_x1")))
 })
 
-test_that("change_fixef suggests renaming of fixed effects intercepts", {
-  pars <- c("b[1]", "b_Intercept[1]", "b_Intercept[2]", "sigma_y")
-  expect_equal(change_fixef(fixef = "x", intercepts = c("main", "spec"), 
-                            pars = pars)[[2]],
-               list(pos = c(FALSE, TRUE, TRUE, FALSE), oldname = "b_Intercept",
-                    pnames = c("b_main", "b_spec"), fnames = c("b_main", "b_spec")))
-})
+# test_that("change_fixef suggests renaming of fixed effects intercepts", {
+#   pars <- c("b[1]", "b_Intercept[1]", "b_Intercept[2]", "sigma_y")
+#   expect_equal(change_fixef(fixef = "x", intercepts = c("main", "spec"), 
+#                             pars = pars)[[2]],
+#                list(pos = c(FALSE, TRUE, TRUE, FALSE), oldname = "b_Intercept",
+#                     pnames = c("b_main", "b_spec"), fnames = c("b_main", "b_spec")))
+# })

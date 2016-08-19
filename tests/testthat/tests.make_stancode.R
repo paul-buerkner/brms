@@ -21,7 +21,7 @@ test_that("make_stancode accepts supported links", {
                "log")
   expect_match(make_stancode(cbind(rating, rating + 1) ~ 1, 
                              data = inhaler, family = gaussian("log")), 
-               "Eta[m, k] = exp(eta[n])", fixed = TRUE)
+               "eta_rating[n] = exp(eta_rating[n])", fixed = TRUE)
 })
 
 test_that(paste("make_stancode returns correct strings", 
@@ -74,17 +74,6 @@ test_that("make_stancode handles models without fixed effects correctly", {
                "  eta = rep_vector(0, N); \n", fixed = TRUE)
 })
 
-test_that("make_stancode returns expected code for 2PL models", {
-  data <- data.frame(y = rep(0:1, each = 5), x = rnorm(10))
-  stancode <- make_stancode(y ~ x, data = data, 
-                            family = bernoulli(type = "2PL"))
-  expect_match(stancode, paste0("eta_2PL = head(eta, N_trait)", 
-                                " .* exp(tail(eta, N_trait))"),
-               fixed = TRUE)
-  expect_match(stancode, "Y ~ bernoulli_logit(eta_2PL);",
-               fixed = TRUE)
-})
-
 test_that("make_stancode correctly restricts FE parameters", {
   data <- data.frame(y = rep(0:1, each = 5), x = rnorm(10))
   sc <- make_stancode(y ~ x, data, prior = set_prior("", lb = 2))
@@ -115,7 +104,7 @@ test_that("make_stancode returns correct self-defined functions", {
                "real zero_inflated_poisson_lpmf(int y", fixed = TRUE)
   expect_match(make_stancode(count ~ Trt_c, data = epilepsy, 
                              family = "zero_inflated_negbinomial"),
-               "real zero_inflated_neg_binomial_2_lpmf(int y", fixed = TRUE)
+               "real zero_inflated_neg_binomial_lpmf(int y", fixed = TRUE)
   expect_match(make_stancode(count ~ Trt_c, data = epilepsy, 
                              family = "zero_inflated_binomial"),
                "real zero_inflated_binomial_lpmf(int y", fixed = TRUE)
@@ -127,7 +116,7 @@ test_that("make_stancode returns correct self-defined functions", {
                "real hurdle_poisson_lpmf(int y", fixed = TRUE)
   expect_match(make_stancode(count ~ Trt_c, data = epilepsy, 
                              family = hurdle_negbinomial),
-               "real hurdle_neg_binomial_2_lpmf(int y", fixed = TRUE)
+               "real hurdle_neg_binomial_lpmf(int y", fixed = TRUE)
   expect_match(make_stancode(count ~ Trt_c, data = epilepsy, 
                              family = hurdle_gamma("log")),
                "real hurdle_gamma_lpdf(real y", fixed = TRUE)
@@ -187,7 +176,7 @@ test_that("make_stancode returns correct code for intercept only models", {
   expect_match(make_stancode(rating ~ 1, data = inhaler, family = sratio()),
                "b_Intercept = temp_Intercept;", fixed = TRUE) 
   expect_match(make_stancode(rating ~ 1, data = inhaler, family = categorical()),
-               "b_Intercept = temp_Intercept;", fixed = TRUE) 
+               "b_3_Intercept = temp_3_Intercept;", fixed = TRUE) 
 })
 
 test_that("make_stancode generates correct code for category specific effects", {
