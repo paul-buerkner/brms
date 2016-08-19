@@ -393,7 +393,6 @@ brm <- function(formula, data = NULL, family = gaussian(),
                               nonlinear = nonlinear, partial = partial)
     et <- extract_time(autocor$formula)  
     ee <- extract_effects(formula, family = family, et$all)
-    check_mv_formula(family, effects = ee)
     if (is.null(dots$data.name)) {
       data.name <- substr(Reduce(paste, deparse(substitute(data))), 1, 50)
     } else {
