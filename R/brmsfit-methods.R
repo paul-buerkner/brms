@@ -679,7 +679,7 @@ summary.brmsfit <- function(object, waic = FALSE, ...) {
 
 #' @export
 nobs.brmsfit <- function(object, ...) {
-  length(standata(object)$Y)
+  nrow(model.frame(object))
 }
 
 #' Number of levels
@@ -1576,6 +1576,10 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   draws <- do.call(extract_draws, draws_args)
   # get mu and scale it appropriately
   mu <- get_eta(i = NULL, draws = draws)
+  if (is.linear(draws$f) && !is.null(draws[["mv"]])) {
+    # collapse over responses in linear MV models
+    dim(mu) <- c(dim(mu)[1], prod(dim(mu)[2:3])) 
+  }
   for (ap in intersect(auxpars(), names(draws))) {
     if (is(draws[[ap]], "list")) {
       link <- get(draws[[ap]][["link"]], mode = "function")
@@ -1962,11 +1966,7 @@ logLik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (pointwise) {
     loglik <- structure(loglik_fun, draws = draws, N = N)
   } else {
-    if (length(attr(object$formula, "nonlinear"))) {
-      draws$eta <- nonlinear_predictor(draws)
-    } else {
-      draws$eta <- linear_predictor(draws)
-    }
+    draws$eta <- get_eta(i = NULL, draws = draws)
     loglik <- do.call(cbind, lapply(1:N, loglik_fun, draws = draws))
     # reorder loglik values to be in the initial user defined order
     # currently only relevant for autocorrelation models

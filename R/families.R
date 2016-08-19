@@ -625,12 +625,12 @@ is.forked <- function(family) {
 }
 
 is.mv <- function(family, response = NULL) {
-  # indicate if the model uses multivariate formula syntax
+  # indicate if the model uses multiple responses
   nresp <- length(response)
   is_mv <- nresp > 1L && is.linear(family) || is.categorical(family) || 
            nresp == 2L && is.forked(family)
   if (nresp > 1L && !is_mv) {
-    stop("invalid multivariate model", call. = FALSE)
+    stop("Invalid multivariate model", call. = FALSE)
   }
   is_mv
 }
@@ -739,9 +739,22 @@ is.old_lognormal <- function(family, link = "identity", nresp = 1,
 }
 
 is.old_categorical <- function(x) {
-  # indicate if the model is categorical fitted with brms <= 0.8.0
+  # indicate if the model is and old categorical model
   stopifnot(is(x, "brmsfit"))
-  is(x$fit, "stanfit") && is.categorical(x$family) && "bp" %in% x$fit@model_pars
+  if (is(x$fit, "stanfit") && is.categorical(x$family)) {
+    if ("bp" %in% x$fit@model_pars) {
+      # fitted with brms <= 0.8.0
+      out <- 1L
+    } else if (is.old_mv(x)) {
+      # fitted with brms <= 1.0.0
+      out <- 2L
+    } else {
+      out <- 0L
+    }
+  } else {
+    out <- 0L
+  }
+  out
 }
 
 is.old_mv <- function(x) {

@@ -36,10 +36,11 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
                                    allow_new_levels = allow_new_levels)
       draws[[ap]] <- .extract_draws(auxfit, standata = auxstandata, nlpar = ap,
                                     re_formula = re_formula, subset = subset)
+      rm(auxfit)
       draws[[ap]][c("f", "data", "nsamples", "link")] <- 
         list(draws$f, auxstandata, draws$nsamples, links[ap])
     } else {
-      regex <- paste0("^", ap, "$|_)")
+      regex <- paste0("^", ap, "($|_)")
       draws[[ap]] <- do.call(as.matrix, c(args, pars = regex))
     }
   }
@@ -83,6 +84,7 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
       draws$nonlinear[[nlpars[i]]] <- 
         .extract_draws(nlfit, standata = nlstandata, nlpar = nlpars[i], 
                        re_formula = re_formula, subset = subset)
+      rm(nlfit)
       draws$nonlinear[[nlpars[i]]][c("f", "data", "nsamples")] <- 
         list(f = draws$f, data = nlstandata, draws$nsamples)
     }
@@ -103,9 +105,29 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
     x$formula <- rm_attr(formula(x), auxpars())
     x$ranef <- gather_ranef(extract_effects(formula(x)), 
                             data = model.frame(x))
-    draws <- c(draws, 
-      .extract_draws(x, standata = standata, subset = subset,
-                     re_formula = re_formula))
+    resp <- ee$response
+    if (length(resp) > 1L && !isTRUE(attr(formula(x), "old_mv"))) {
+      # new multivariate models
+      draws[["mv"]] <- named_list(resp)
+      for (r in resp) {
+        mvfit <- x
+        attr(mvfit$formula, "response") <- r
+        mvstandata <- amend_newdata(newdata, fit = mvfit, 
+                                    re_formula = re_formula, 
+                                    allow_new_levels = allow_new_levels)
+        draws[["mv"]][[r]] <- 
+          .extract_draws(mvfit, standata = mvstandata, subset = subset,
+                         re_formula = re_formula, nlpar = r)
+        rm(mvfit)
+        draws[["mv"]][[r]][c("f", "data", "nsamples")] <- 
+          list(draws$f, mvstandata, draws$nsamples)
+      }
+    } else {
+      # univariate models
+      draws <- c(draws, 
+        .extract_draws(x, standata = standata, subset = subset,
+                       re_formula = re_formula))  
+    }
   }
   draws
 }

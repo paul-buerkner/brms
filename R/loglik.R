@@ -47,10 +47,13 @@ loglik_lognormal <- function(i, draws, data = data.frame()) {
   weight_loglik(out, i = i, data = draws$data)
 }
 
-loglik_gaussian_multi <- function(i, draws, data = data.frame()) {
-  nobs <- draws$data$N_trait * draws$data$K_trait
-  obs <- seq(i, nobs, draws$data$N_trait)
-  mu <- ilink(get_eta(draws, obs), draws$f$link)
+loglik_gaussian_mv <- function(i, draws, data = data.frame()) {
+  if (!is.null(draws$data$N_trait)) {
+    obs <- seq(i, draws$data$N, draws$data$N_trait)
+    mu <- ilink(get_eta(draws, obs), draws$f$link)
+  } else {
+    mu <- ilink(get_eta(draws, i), draws$f$link)[, 1, ]
+  }
   out <- sapply(1:draws$nsamples, function(s) 
     dmulti_normal(draws$data$Y[i, ], Sigma = draws$Sigma[s, , ], 
                   mu = mu[s, ], log = TRUE))
@@ -58,10 +61,13 @@ loglik_gaussian_multi <- function(i, draws, data = data.frame()) {
   weight_loglik(out, i = i, data = draws$data)
 }
 
-loglik_student_multi <- function(i, draws, data = data.frame()) {
-  nobs <- draws$data$N_trait * draws$data$K_trait
-  obs <- seq(i, nobs, draws$data$N_trait)
-  mu <- ilink(get_eta(draws, obs), draws$f$link)
+loglik_student_mv <- function(i, draws, data = data.frame()) {
+  if (!is.null(draws$data$N_trait)) {
+    obs <- seq(i, draws$data$N, draws$data$N_trait)
+    mu <- ilink(get_eta(draws, obs), draws$f$link)
+  } else {
+    mu <- ilink(get_eta(draws, i), draws$f$link)[, 1, ]
+  }
   nu <- get_auxpar(draws$nu, obs)
   out <- sapply(1:draws$nsamples, function(s) 
     dmulti_student(draws$data$Y[i, ], df = nu[s, ], mu = mu[s, ],
@@ -70,10 +76,13 @@ loglik_student_multi <- function(i, draws, data = data.frame()) {
   weight_loglik(out, i = i, data = draws$data)
 }
 
-loglik_cauchy_multi <- function(i, draws, data = data.frame()) {
-  nobs <- draws$data$N_trait * draws$data$K_trait
-  obs <- seq(i, nobs, draws$data$N_trait)
-  mu <- ilink(get_eta(draws, obs), draws$f$link)
+loglik_cauchy_mv <- function(i, draws, data = data.frame()) {
+  if (!is.null(draws$data$N_trait)) {
+    obs <- seq(i, draws$data$N, draws$data$N_trait)
+    mu <- ilink(get_eta(draws, obs), draws$f$link)
+  } else {
+    mu <- ilink(get_eta(draws, i), draws$f$link)[, 1, ]
+  }
   out <- sapply(1:draws$nsamples, function(s) 
     dmulti_student(draws$data$Y[i, ], df = 1, mu = mu[s, ],
                    Sigma = draws$Sigma[s, , ], log = TRUE))
@@ -325,10 +334,11 @@ loglik_categorical <- function(i, draws, data = data.frame()) {
   ncat <- ifelse(length(draws$data$max_obs) > 1, draws$data$max_obs[i], 
                  draws$data$max_obs) 
   if (draws$f$link == "logit") {
-    p <- cbind(rep(0, draws$nsamples), 
-               get_eta(draws, i)[, 1, ])
+    p <- cbind(rep(0, draws$nsamples), get_eta(draws, i)[, 1, ])
     out <- p[, draws$data$Y[i]] - log(rowSums(exp(p)))
-  } else stop(paste("Link", draws$f$link, "not supported"))
+  } else {
+    stop(paste("Link", draws$f$link, "not supported"))
+  }
   weight_loglik(out, i = i, data = draws$data)
 }
 

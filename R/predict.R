@@ -38,20 +38,28 @@ predict_lognormal <- function(i, draws, ...) {
                  lb = draws$data$lb[i], ub = draws$data$ub[i])
 }
 
-predict_gaussian_multi <- function(i, draws, ...) {
+predict_gaussian_mv <- function(i, draws, ...) {
   # currently no truncation available
-  obs <- seq(i, draws$data$N, draws$data$N_trait)
-  mu <- ilink(get_eta(draws, obs), draws$f$link) 
+  if (!is.null(draws$data$N_trait)) {
+    obs <- seq(i, draws$data$N, draws$data$N_trait)
+    mu <- ilink(get_eta(draws, obs), draws$f$link)
+  } else {
+    mu <- ilink(get_eta(draws, i), draws$f$link)[, 1, ]
+  }
   .fun <- function(s) {
     rmulti_normal(1, mu = mu[s, ], Sigma = draws$Sigma[s, , ])
   }
   do.call(rbind, lapply(1:draws$nsamples, .fun))
 }
 
-predict_student_multi <- function(i, draws, ...) {
+predict_student_mv <- function(i, draws, ...) {
   # currently no truncation available
-  obs <- seq(i, draws$data$N, draws$data$N_trait)
-  mu <- ilink(get_eta(draws, obs), draws$f$link) 
+  if (!is.null(draws$data$N_trait)) {
+    obs <- seq(i, draws$data$N, draws$data$N_trait)
+    mu <- ilink(get_eta(draws, obs), draws$f$link)
+  } else {
+    mu <- ilink(get_eta(draws, i), draws$f$link)[, 1, ]
+  }
   nu <- get_auxpar(draws$nu, i = i)
   .fun <- function(s) {
     rmulti_student(1, df = nu[s, ], mu = mu[s, ], 
@@ -60,10 +68,14 @@ predict_student_multi <- function(i, draws, ...) {
   do.call(rbind, lapply(1:draws$nsamples, .fun))
 }
 
-predict_cauchy_multi <- function(i, draws, ...) {
+predict_cauchy_mv <- function(i, draws, ...) {
   # currently no truncation available
-  obs <- seq(i, draws$data$N, draws$data$N_trait)
-  mu <- ilink(get_eta(draws, obs), draws$f$link)
+  if (!is.null(draws$data$N_trait)) {
+    obs <- seq(i, draws$data$N, draws$data$N_trait)
+    mu <- ilink(get_eta(draws, obs), draws$f$link)
+  } else {
+    mu <- ilink(get_eta(draws, i), draws$f$link)[, 1, ]
+  }
   .fun <- function(s) {
     rmulti_student(1, df = 1, mu = mu[s, ],
                    Sigma = draws$Sigma[s, , ])

@@ -361,8 +361,8 @@ get_cov_matrix_ident <- function(sigma, nrows, se2 = 0) {
   mat
 }
 
-get_sigma <- function(x, data, i = NULL, dim = NULL) {
-  # get the residual standard devation of linear models
+get_auxpar <- function(x, i = NULL, dim = NULL) {
+  # get samples of an auxiliary parameter
   # Args:
   #   x: object to extract postarior samples from
   #   data: data initially passed to Stan
@@ -370,26 +370,6 @@ get_sigma <- function(x, data, i = NULL, dim = NULL) {
   #      (used in predict and logLik)
   #   dim: target dimension of output matrices 
   #        (used in fitted)
-  stopifnot(is.atomic(x) || is.list(x))
-  if (is.null(x)) {
-    x <- get_se(data = data, i = i, dim = dim)
-  } else {
-    x <- get_auxpar(x, i = i, dim = dim)
-  }
-  mult_disp(x, data = data, i = i, dim = dim)
-}
-
-get_shape <- function(x, data, i = NULL, dim = NULL) {
-  # get the shape parameter of gamma, weibull and negbinomial models
-  # Args: see get_sigma
-  stopifnot(is.atomic(x) || is.list(x))
-  x <- get_auxpar(x, i = i, dim = dim)
-  mult_disp(x, data = data, i = i, dim = dim)
-}
-
-get_auxpar <- function(x, i = NULL, dim = NULL) {
-  # get samples of an auxiliary parameter
-  # Args: see get_sigma
   if (is.list(x)) {
     # compute auxpar in distributional regression models
     link <- get(x[["link"]], mode = "function")
@@ -407,12 +387,32 @@ get_auxpar <- function(x, i = NULL, dim = NULL) {
   x
 }
 
+get_sigma <- function(x, data, i = NULL, dim = NULL) {
+  # get the residual standard devation of linear models
+  # Args: see get_auxpar
+  stopifnot(is.atomic(x) || is.list(x))
+  if (is.null(x)) {
+    x <- get_se(data = data, i = i, dim = dim)
+  } else {
+    x <- get_auxpar(x, i = i, dim = dim)
+  }
+  mult_disp(x, data = data, i = i, dim = dim)
+}
+
+get_shape <- function(x, data, i = NULL, dim = NULL) {
+  # get the shape parameter of gamma, weibull and negbinomial models
+  # Args: see get_auxpar
+  stopifnot(is.atomic(x) || is.list(x))
+  x <- get_auxpar(x, i = i, dim = dim)
+  mult_disp(x, data = data, i = i, dim = dim)
+}
+
 get_theta <- function(draws, i = NULL, dim = NULL, par = c("zi", "hu")) {
   # convenience function to extract zi / hu parameters
   # also works with deprecated models fitted with brms < 1.0.0 
   # which were using multivariate syntax
   # Args:
-  #   see get_sigma
+  #   see get_auxpar
   #   par: parameter to extract; either 'zi' or 'hu'
   par <- match.arg(par)
   if (!is.null(draws$data$N_trait)) {
@@ -426,7 +426,7 @@ get_theta <- function(draws, i = NULL, dim = NULL, par = c("zi", "hu")) {
 
 get_se <- function(data, i = NULL, dim = NULL) {
   # extract user-defined standard errors
-  # Args: see get_sigma
+  # Args: see get_auxpar
   se <- data$se
   if (is.null(se)) {
     # for backwards compatibility with brms <= 0.5.0
@@ -443,7 +443,7 @@ get_se <- function(data, i = NULL, dim = NULL) {
 
 mult_disp <- function(x, data, i = NULL, dim = NULL) {
   # multiply existing samples by 'disp' data
-  # Args: see get_sigma
+  # Args: see get_auxpar
   if (!is.null(data$disp)) {
     if (!is.null(i)) {
       x <- x * data$disp[i]
@@ -469,7 +469,7 @@ prepare_family <- function(x) {
   if (is.old_lognormal(family, nresp = nresp, version = x$version)) {
     family <- lognormal()
   } else if (is.linear(family) && nresp > 1L) {
-    family$family <- paste0(family$family, "_multi")
+    family$family <- paste0(family$family, "_mv")
   } else if (use_cov(x$autocor) && sum(x$autocor$p, x$autocor$q) > 0) {
     family$family <- paste0(family$family, "_cov")
   } else if (is(x$autocor, "cor_fixed")) {
