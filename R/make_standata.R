@@ -64,15 +64,9 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   
   # sort data in case of autocorrelation models
   if (has_arma(autocor) || is(autocor, "cor_bsts")) {
-    # FIXME (removal of the mv syntax)
-    if (is_linear && length(ee$response) > 1L) {
-      if (!grepl("^trait$|:trait$|^trait:|:trait:", et$group)) {
-        stop(paste("autocorrelation structures for multiple responses must",
-                   "contain 'trait' as grouping variable"), call. = FALSE)
-      } else {
-        to_order <- rmNULL(list(data[["trait"]], data[[et$group]], 
-                                data[[et$time]]))
-      }
+    if (isTRUE(attr(formula, "old_mv"))) {
+      to_order <- rmNULL(list(data[["trait"]], data[[et$group]], 
+                              data[[et$time]]))
     } else {
       to_order <- rmNULL(list(data[[et$group]], data[[et$time]]))
     }
@@ -160,22 +154,41 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     for (nlp in nlpars) {
       args_eff_spec <- list(effects = ee$nonlinear[[nlp]], nlpar = nlp,
                             smooth = control$smooth[[nlp]],
-                            Jm = control$Jm[[nlp]])
+                            Jm = control$Jm[[nlp]],
+                            rm_intercept = FALSE)
       data_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
       standata <- c(standata, data_eff)
     }
   } else {
-    args_eff_spec <- list(effects = ee, Jm = control$Jm[["mu"]],
-                          smooth = control$smooth[["mu"]])
-    data_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
-    standata <- c(standata, data_eff, data_csef(ee, data = data))
-    standata$offset <- model.offset(data)
+    resp <- ee$response
+    if (length(resp) > 1L) {
+      args_eff_spec <- list(effects = ee, Jm = control$Jm[["mu"]],
+                            smooth = control$smooth[["mu"]])
+      for (r in resp) {
+        data_eff <- do.call(data_effects, 
+                            c(args_eff_spec, args_eff, nlpar = r))
+        standata <- c(standata, data_eff)
+        standata[[paste0("offset_", r)]] <- model.offset(data)
+      }
+      if (is.linear(family)) {
+        standata$nresp <- length(resp) 
+        standata$nrescor <- length(resp) * (length(resp) - 1) / 2 
+      }
+    } else {
+      args_eff_spec <- list(effects = ee, Jm = control$Jm[["mu"]],
+                            smooth = control$smooth[["mu"]])
+      data_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
+      standata <- c(standata, data_eff, data_csef(ee, data = data))
+      standata$offset <- model.offset(data)
+    }
+   
   }
   # data for predictors of scale / shape parameters
   for (ap in intersect(auxpars(), names(ee))) {
     args_eff_spec <- list(effects = ee[[ap]], nlpar = ap,
                           smooth = control$smooth[[ap]],
-                          Jm = control$Jm[[ap]])
+                          Jm = control$Jm[[ap]],
+                          rm_intercept = FALSE)
     data_aux_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
     standata <- c(standata, data_aux_eff)
   }
@@ -227,7 +240,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   } 
   if (family$family == "inverse.gaussian" && check_response) {
     # save as data to reduce computation time in Stan
-    if (is.formula(ee[c("weights", "cens")])) {
+    if (is.formula(ee$weights) || is.formula(ee$cens)) {
       standata$log_Y <- log(standata$Y) 
     } else {
       standata$log_Y <- sum(log(standata$Y))
@@ -266,16 +279,18 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   }
   if (is.formula(ee$weights)) {
     standata <- c(standata, list(weights = .addition(ee$weights, data = data)))
-    if (is.linear(family) && length(ee$response) > 1 || is_forked) 
+    if (isTRUE(attr(ee$formula, "old_mv"))) {
       standata$weights <- standata$weights[1:standata$N_trait]
+    }
   }
   if (is.formula(ee$disp)) {
     standata <- c(standata, list(disp = .addition(ee$disp, data = data)))
   }
   if (is.formula(ee$cens) && check_response) {
     standata <- c(standata, list(cens = .addition(ee$cens, data = data)))
-    if (is.linear(family) && length(ee$response) > 1L || is_forked)
+    if (isTRUE(attr(ee$formula, "old_mv"))) {
       standata$cens <- standata$cens[1:standata$N_trait]
+    }
   }
   if (is.formula(ee$trunc)) {
     standata <- c(standata, .addition(ee$trunc, data = data))
@@ -328,6 +343,10 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       } 
     }
     if (Karr) {
+      if (length(ee$response) > 1L) {
+        stop("ARR structure not yet implemented for multivariate models.",
+             call. = FALSE)
+      }
       # ARR effects (autoregressive effects of the response)
       standata$Yarr <- arr_design_matrix(Y = standata$Y, r = Karr, 
                                          group = tgroup)
@@ -349,6 +368,10 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     standata$V <- V
   }
   if (is(autocor, "cor_bsts")) {
+    if (length(ee$response) > 1L) {
+      stop("BSTS structure not yet implemented for multivariate models.",
+           call. = FALSE)
+    }
     if (nchar(et$group)) {
       tgroup <- data[[et$group]]
     } else {
