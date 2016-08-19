@@ -410,15 +410,17 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
     nlpars <- names(ee$nonlinear)
     for (i in seq_along(nlpars)) {
       prior_eff <- get_prior_effects(ee$nonlinear[[i]], data = data, 
-                                     family = family, autocor = autocor, 
-                                     nlpar = nlpars[i], internal = internal,
-                                     def_scale_prior = def_scale_prior)
+                                     autocor = autocor, nlpar = nlpars[i],
+                                     spec_intercept = FALSE,
+                                     def_scale_prior = def_scale_prior,
+                                     internal = internal)
       prior <- rbind(prior, prior_eff)
     }
   } else {
-    prior_eff <- get_prior_effects(ee, data = data, family = family,
-                                   autocor = autocor, internal = internal,
-                                   def_scale_prior = def_scale_prior)
+    # TODO: handle multivariate models
+    prior_eff <- get_prior_effects(ee, data = data, autocor = autocor,
+                                   def_scale_prior = def_scale_prior,
+                                   internal = internal)
     prior <- rbind(prior, prior_eff)
   }
   # priors for auxiliary parameters
@@ -428,8 +430,9 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
   valid_auxpars <- valid_auxpars(family, effects = ee, autocor = autocor)
   for (ap in valid_auxpars) {
     if (!is.null(ee[[ap]])) {
-      auxprior <- get_prior_effects(ee[[ap]], data = data, family = family,
+      auxprior <- get_prior_effects(ee[[ap]], data = data,
                                     autocor = autocor, nlpar = ap,
+                                    spec_intercept = FALSE,
                                     def_scale_prior = def_scale_prior,
                                     internal = internal)
     } else {
@@ -482,20 +485,18 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
   prior
 }
 
-get_prior_effects <- function(effects, data, family = gaussian(), 
-                              autocor = cor_arma(), nlpar = "", 
+get_prior_effects <- function(effects, data, autocor = cor_arma(), 
+                              nlpar = "", spec_intercept = TRUE,
                               def_scale_prior = "", internal = FALSE) {
-  # wrapper function to get priors for various kindes of effects
-  # use nlpar = "1" just to keep intercept columns
-  fixef <- colnames(data_fixef(effects, data, family = family, 
-                               autocor = autocor, nlpar = "1")[["X_1"]])
-  if (nchar(nlpar)) {  
-    # no special treatment of intercepts in non-linear models
-    intercepts <- prior_csef <- NULL
-  } else {
-    intercepts <- names(get_intercepts(effects, data, family = family))
-  }
-  prior_fixef <- get_prior_fixef(fixef, intercepts = intercepts,
+  # wrapper function to get priors for various kinds of effects
+  # don't use the family argument here to avoid
+  # removal of the intercept for ordinal models
+  # Args:
+  #   spec_intercept: special parameter class for the FE Intercept? 
+  fixef <- colnames(data_fixef(effects, data, autocor = autocor, 
+                               rm_intercept = FALSE)$X)
+  spec_intercept <- has_intercept(effects$fixed) && spec_intercept
+  prior_fixef <- get_prior_fixef(fixef, spec_intercept = spec_intercept,
                                  nlpar = nlpar, internal = internal)
   monef <- colnames(get_model_matrix(effects$mono, data))
   prior_monef <- get_prior_monef(monef, fixef = fixef, nlpar = nlpar)
@@ -507,13 +508,12 @@ get_prior_effects <- function(effects, data, family = gaussian(),
   rbind(prior_fixef, prior_monef, prior_splines, prior_csef)
 }
 
-get_prior_fixef <- function(fixef, intercepts = "Intercept", 
+get_prior_fixef <- function(fixef, spec_intercept = TRUE, 
                             nlpar = "", internal = FALSE) {
   # priors for fixed effects parameters
   # Args:
   #   fixef: names of the fixed effects
-  #   intercepts: names of the fixed effects Intercept(s)
-  #   nlpar: optional name of a non-linear parameter
+  #   spec_intercept: special parameter class for the Intercept? 
   #   internal: see get_prior
   # Returns:
   #   an object of class prior_frame
@@ -522,16 +522,12 @@ get_prior_fixef <- function(fixef, intercepts = "Intercept",
     prior <- rbind(prior, prior_frame(class = "b", coef = c("", fixef),
                                       nlpar = nlpar)) 
   }
-  if (length(intercepts)) {
-    int_coefs <- "" 
-    if (!is_equal(intercepts, "Intercept")) {
-      int_coefs <- c(int_coefs, intercepts)
-    }
-    prior <- rbind(prior, prior_frame(class = "Intercept", coef = int_coefs,
+  if (spec_intercept) {
+    prior <- rbind(prior, prior_frame(class = "Intercept", coef = "",
                                       nlpar = nlpar))
     if (internal) {
       prior <- rbind(prior, prior_frame(class = "temp_Intercept",
-                                        coef = int_coefs, nlpar = nlpar))
+                                        coef = "", nlpar = nlpar))
     }
   }
   prior
