@@ -3,7 +3,6 @@
 \encoding{UTF-8}
 
 \section{CHANGES IN VERSION 0.10.0.9000}{
-  \subsection{SUMMARY}
   This is one of the largest updates of \code{brms} since its 
   initial release. In addition to many new features, 
   the multivariate \code{'trait'} syntax has been removed 
