@@ -1,8 +1,8 @@
 #' Set up a model formula for use in the \pkg{brms} package
 #' 
 #' Set up a model formula for use in the \pkg{brms} package
-#' allowing to define additive multilevel models for all parameters
-#' of the assumed response distribution.
+#' allowing to define (potentially non-linear) additive multilevel 
+#' models for all parameters of the assumed response distribution.
 #' 
 #' @aliases bf
 #' 
@@ -22,10 +22,12 @@
 #'   zero-inflated / hurdle families); \code{nu}
 #'   (degrees of freedom parameter of the \code{student} family);
 #'   \code{phi} (precision parameter of the \code{beta} 
-#'   and \code{zero_inflated_beta} families).
+#'   and \code{zero_inflated_beta} families);
+#'   \code{zi} (zero-inflation probability); 
+#'   \code{hu} (hurdle probability).
 #'   All auxiliary parameters are modeled 
-#'   on the log-scale to ensure their positivity after
-#'   back transformation.
+#'   on the log or logit scale to ensure correct definition
+#'   intervals after transformation.
 #' @inheritParams brm
 #' 
 #' @return An object of class \code{brmsformula}, which inherits
@@ -33,12 +35,12 @@
 #'   
 #' @details The \code{formula} argument accepts formulae of the following syntax:
 #'   
-#'   \code{response | addition ~ fixed + (random | group)} 
+#'   \code{response | addition ~ Pterms + (Gterms | group)} 
 #'   
-#'   The \code{fixed} term contains effects that are assumend to be the 
+#'   The \code{Pterms} part contains effects that are assumed to be the 
 #'   same across obervations. We call them 'population-level' effects
 #'   or (adopting frequentist vocabulary) 'fixed' effects. The optional
-#'   \code{random} terms may contain effects that are assumed to vary
+#'   \code{Gterms} part may contain effects that are assumed to vary
 #'   accross grouping variables specified in \code{group}. We
 #'   call them 'group-level' effects or (adopting frequentist 
 #'   vocabulary) 'random' effects, although the latter name is misleading
@@ -55,15 +57,15 @@
 #'   correlations between the corresponding group-level effects 
 #'   will be estimated.
 #'   
-#'   First, smoothing terms can modeled using the \code{\link[mgcv:s]{s}}
+#'   Smoothing terms can modeled using the \code{\link[mgcv:s]{s}}
 #'   and \code{\link[mgcv:t2]{t2}} functions of the \pkg{mgcv} package 
-#'   in the \code{fixed} part of the model formula.
+#'   in the \code{Pterms} part of the model formula.
 #'   This allows to fit generalized additive mixed models (GAMMs) with \pkg{brms}. 
 #'   The implementation is similar to that used in the \pkg{gamm4} package.
 #'   For more details on this model class see \code{\link[mgcv:gam]{gam}} 
 #'   and \code{\link[mgcv:gamm]{gamm}}.
 #'   
-#'   Second, \code{fixed} may contain two non-standard types
+#'   The \code{Pterms} part may contain two non-standard types
 #'   of population-level effects namely monotonic and category specific effects,
 #'   which can be specified using terms of the form \code{monotonic(<predictors>)} 
 #'   and \code{cse(<predictors>)} respectively. The latter can only be applied in
@@ -132,9 +134,8 @@
 #'   is constant across all observation (say \code{10}), 
 #'   we may also write \code{success | trials(10)}. 
 #'   
-#'   For family \code{categorical} and all ordinal families, 
-#'   \code{addition} may contain a term \code{cat(number)} to
-#'   specify the number categories (e.g, \code{cat(7)}). 
+#'   For all ordinal families, \code{addition} may contain a term 
+#'   \code{cat(number)} to specify the number categories (e.g, \code{cat(7)}). 
 #'   If not given, the number of categories is calculated from the data.
 #'   
 #'   With the expection of \code{categorical} and ordinal families, 
@@ -159,86 +160,50 @@
 #'   
 #'   For families \code{gaussian}, \code{student}, and \code{cauchy} 
 #'   multivariate models may be specified using \code{cbind} notation. 
+#'   In \pkg{brms} 1.0.0, the multvariate 'trait' syntax was removed 
+#'   from the package as it repeatedly confused users, required much 
+#'   special case coding, and was hard to maintain. Below the new 
+#'   syntax is described. 
 #'   Suppose that \code{y1} and \code{y2} are response variables 
-#'   and \code{x} is a predictor.
-#'   Then \code{cbind(y1,y2) ~ x} specifies a multivariate model, 
-#'   where \code{x} has the same effect on \code{y1} and \code{y2}.
-#'   To indicate different effects on each response variable, 
-#'   the factor \code{trait} (which is reserved in multivariate models) 
-#'   can be used as an additional predictor. 
-#'   For instance, \code{cbind(y1,y2) ~ 0 + trait + x:trait} leads to seperate effects
-#'   of \code{x} on \code{y1} and \code{y2} as well as to separate intercepts. 
-#'   In this case, \code{trait} has two levels, namely \code{"y1"} and \code{"y2"}. 
-#'   It may also be used within random effects terms, both as grouping factor or 
-#'   as random effect within a grouping factor. Note that variable \code{trait} is generated 
-#'   internally and may not be specified in the data passed to \code{brm}. \cr
+#'   and \code{x} is a predictor. 
+#'   Then \code{cbind(y1,y2) ~ x} specifies a multivariate model,
+#'   The effects of all terms specified at the RHS of the formula 
+#'   are assumed to vary across response variables (this was not the
+#'   case by default in \pkg{brms} < 1.0.0). For instance, two parameters will
+#'   be estimated for \code{x}, one for the effect
+#'   on \code{y1} and another for the effect on \code{y2}.
+#'   This is also true for group-level effects. When writing, for instance,
+#'   \code{cbind(y1,y2) ~ x + (1+x|g)}, group-level effects will be
+#'   estimated separately for each response. To model these effects
+#'   as correlated across responses, use the ID syntax (see above).
+#'   For the present example, this would look as follows:
+#'   \code{cbind(y1,y2) ~ x + (1+x|2|g)}. Of course, you could also use
+#'   any value other than \code{2} as ID. It is not yet possible
+#'   to model terms as only affecting certain responses (and not others),
+#'   but this will comebe implemented in the future.
+#'    
+#'   Categorical models use the same syntax as multivariate
+#'   models. As in most other implementations of categorical models,
+#'   values of one category (the first in \pkg{brms}) are fixed 
+#'   to identify the model. Thus, all terms on the RHS of 
+#'   the formula correspond to \code{K - 1} effects 
+#'   (\code{K} = number of categories), one for each non-fixed category.
+#'   Group-level effects may be specified as correlated across
+#'   categories using the ID syntax.
 #'   
-#'   As of \pkg{brms} 0.9.0, categorical models use the same syntax as multivariate
-#'   models, but in this case, \code{trait} differentiates between the response 
-#'   categories. As in most other implementations of categorical models,
-#'   values of one category are fixed to identify the model. 
-#'   Accordingly, \code{trait} has \code{K - 1} levels, 
-#'   where \code{K} is the number of categories. 
-#'   Usually, it makes most sense to use terms of the structure
-#'   \code{0 + trait + trait:(<predictors>)}.
-#'   
-#'   Zero-inflated and hurdle families are bivariate and also make use 
-#'   of the special internal variable \code{trait} having two levels in this case. 
-#'   However, only the actual response must be specified in \code{formula}, 
-#'   as the second response variable used for the zero-inflation / hurdle
-#'   (ZIH) part is internally generated.
-#'   A \code{formula} for this type of models may, for instance, look like this: \cr
-#'   \code{y ~ 0 + trait + trait:(x1 + x2) + (0 + trait | g)}. 
-#'   In this example, the predictors \code{x1} and \code{x1} influence the ZIH part 
-#'   differentlythan the actual response part as indicated by their 
-#'   interaction with \code{trait}.
-#'   In addition, a group-level effect of \code{trait} was added while 
-#'   the group-level intercept was removed leading to the estimation of 
-#'   two effects, one for the ZIH part and one for the actual response. 
-#'   In the example above, the correlation between the two effects
-#'   will also be estimated.
-#'   Sometimes, predictors should only influence the ZIH part
-#'   but not the actual response (or vice versa). As this cannot be modeled
-#'   with the \code{trait} variable, two other internally generated and 
-#'   reserved (numeric) variables, namely \code{main} and \code{spec}, are supported.
-#'   \code{main} is \code{1} for the response part and \code{0} for the
-#'   ZIH part of the model. For \code{spec} it is the other way round.
-#'   Suppose that \code{x1} should only influence the actual response,
-#'   and \code{x2} only the ZIH process. We can write this as follows:
-#'   \code{formula = y ~ 0 + main + spec + main:x1 + spec:x2}. 
-#'   The main effects of \code{main} or \code{spec} serve as intercepts,
-#'   while the interaction terms \code{main:x1} and \code{spec:x2} ensure
-#'   that \code{x1} and \code{x2} only predict one part of the model, respectively.
-#'   Please note that in \pkg{brms} the ZIH part models the probability 
-#'   of the response being zero, while in some other packages it models 
-#'   the probability of the response being non-zero. Thus, coefficients 
-#'   of the ZIH part may have opposite signs depending on which package 
-#'   you use.
-#'   
-#'   Using the same syntax as for zero-inflated and hurdle models, it is
-#'   possible to specify multiplicative effects in family \code{bernoulli}
-#'   (make sure to set argument \code{type} to \code{"2PL"}; 
-#'   see \code{\link[brms:brmsfamily]{brmsfamily}} for more details).
-#'   In Item Response Theory (IRT), these models are known as 2PL models.
-#'   Suppose that we have the variables \code{item} and \code{person} and
-#'   want to model fixed effects for items and random effects for persons.
-#'   The discriminality (multiplicative effect) should depend only on the items. 
-#'   We can specify this by setting
-#'   \code{formula = response ~ 0 + (main + spec):item + (0 + main|person)}. 
-#'   The random term \code{0 + main} ensures that \code{person} does 
-#'   not influence discriminalities. Of course it is possible
-#'   to predict only discriminalities by using
-#'   variable \code{spec} in the model formulation. 
-#'   To identify the model, multiplicative effects are estimated on the log scale. 
-#'   In addition, we strongly recommend setting proper priors 
-#'   on fixed effects in this case to increase sampling efficiency 
-#'   (for details on priors see \code{\link[brms:set_prior]{set_prior}}).     
+#'   As of \pkg{brms} 1.0.0, zero-inflated and hurdle models are specfied 
+#'   in the same way as as their non-inflated counterparts. 
+#'   However, they have additional auxiliary parameters 
+#'   (named \code{zi} and \code{hu} respectively)
+#'   modeling the zero-inflation / hurdle probability depending on which 
+#'   model you choose. These parameters can also be affected by predictors
+#'   in the same way the response variable itself. See the end of the
+#'   Details section for information on how to accomplish that.
 #'   
 #'   \bold{Parameterization of the population-level intercept}
 #'   
 #'   The population-level intercept (if incorporated) is estimated separately 
 #'   and not as part of population-level parameter vector \code{b}. 
-#'   This has the side effect that priors on the intercept 
 #'   also have to be specified separately
 #'   (see \code{\link[brms:set_prior]{set_prior}} for more details).
 #'   Furthermore, to increase sampling efficiency, the fixed effects 
@@ -260,7 +225,7 @@
 #'   Note that this parameterization may be a bit less efficient
 #'   than the default parameterization discussed above.  
 #'   
-#'   \bold{Formula syntax for non-linear multilevel models}
+#'   \bold{Formula syntax for non-linear models}
 #'   
 #'   Using the \code{nonlinear} argument, it is possible to specify
 #'   non-linear models in \pkg{brms}. Contrary to what the name might suggest,
@@ -297,17 +262,20 @@
 #'   
 #'   It is also possible to predict auxiliary parameters of the response
 #'   distribution such as the residual standard deviation \code{sigma} 
-#'   in gaussian models. The syntax closely resembles that of a non-linear 
-#'   parameter, for instance: \code{sigma ~ x + s(z) + (1+x|g)}.
+#'   in gaussian models or the hurdle probability \code{hu} in hurdle models. 
+#'   The syntax closely resembles that of a non-linear 
+#'   parameter, for instance \code{sigma ~ x + s(z) + (1+x|g)}.
 #'   
 #'   All auxiliary parameters currently supported by \code{brmsformula}
 #'   have to positive (a negative standard deviation or precision parameter 
-#'   doesn't make any sense). 
+#'   doesn't make any sense) or are bounded between 0 and 1 (for zero-inflated / 
+#'   hurdle proabilities). 
 #'   However, linear predictors can be positive or negative, and thus
-#'   the log-link is used to ensure positivity of the auxiliary parameters.
+#'   the log link (for positive parameters) or logit link (for probability parameters) 
+#'   are used to ensure that auxiliary parameters are within their valid intervals.
 #'   This implies that effects for auxiliary parameters are estimated on the
-#'   log-scale and one has to exponentiate them to get to the effects on
-#'   the original scale.
+#'   log / logit scale and one has to apply the inverse link function to get 
+#'   to the effects on the original scale.
 #' 
 #' @examples 
 #' # multilevel model with smoothing terms
@@ -333,10 +301,11 @@
 #' bf(y ~ a1 - a2^x, nonlinear = list(a1 ~ 1 + (1|2|g), a2 ~ x + (x|2|g)))
 #' 
 #' # define a multivariate model
-#' bf(cbind(y1, y2) ~ 0 + trait + trait:(x*z) + (0+trait|g))
+#' bf(cbind(y1, y2) ~ x * z + (1|g))
 #' 
-#' # define a zero-inflated or hurdle model
-#' bf(y ~ 0 + main + spec + main:(x*z) + spec:x + (0+main+spec|g))
+#' # define a zero-inflated model 
+#' # also predicting the zero-inflation part
+#' bf(y ~ x * z + (1+x|ID1|g), zi ~ x + (1|ID1|g))
 #' 
 #' # specify a predictor as monotonic
 #' bf(y ~ mono(x) + more_predictors)
