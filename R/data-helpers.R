@@ -1,3 +1,59 @@
+update_data <- function(data, family, effects, ..., 
+                        na.action = na.omit,
+                        drop.unused.levels = TRUE,
+                        terms_attr = NULL, knots = NULL) {
+  # Update data for use in brms functions
+  # Args:
+  #   data: the original data.frame
+  #   family: the model family
+  #   effects: output of extract_effects (see validate.R)
+  #   ...: More formulae passed to combine_groups
+  #        Currently only used for autocorrelation structures
+  #   na.action: function defining how to treat NAs
+  #   drop.unused.levels: indicates if unused factor levels
+  #                       should be removed
+  #   terms_attr: a list of attributes of the terms object of 
+  #     the original model.frame; only used with newdata;
+  #     this ensures that (1) calls to 'poly' work correctly
+  #     and (2) that the number of variables matches the number 
+  #     of variable names; fixes issue #73
+  #   knots: a list of knot values for GAMMS
+  # Returns:
+  #   model.frame in long format with combined grouping variables if present
+  if (is.null(attr(data, "terms")) && "brms.frame" %in% class(data)) {
+    # to avoid error described in #30
+    # brms.frame class is deprecated as of brms > 0.7.0
+    data <- as.data.frame(data)
+  }
+  if (!(isTRUE(attr(data, "brmsframe")) || "brms.frame" %in% class(data))) {
+    effects$all <- terms(effects$all)
+    attributes(effects$all)[names(terms_attr)] <- terms_attr
+    if (isTRUE(attr(effects$formula, "old_mv"))) {
+      data <- melt_data(data, family = family, effects = effects)
+    } else {
+      check_data_old_mv(data, family = family, effects = effects)
+    }
+    data <- data_rsv_intercept(data, effects = effects)
+    data <- model.frame(effects$all, data = data, na.action = na.pass,
+                        drop.unused.levels = drop.unused.levels)
+    nrow_with_NA <- nrow(data)
+    data <- na.action(data)
+    if (nrow(data) != nrow_with_NA) {
+      warning("Rows containing NAs were excluded from the model",
+              call. = FALSE)
+    }
+    if (any(grepl("__", colnames(data)))) {
+      stop("Variable names may not contain double underscores.",
+           call. = FALSE)
+    }
+    data <- combine_groups(data, get_random(effects)$group, ...)
+    data <- fix_factor_contrasts(data)
+    attr(data, "knots") <- knots
+    attr(data, "brmsframe") <- TRUE
+  }
+  data
+}
+
 melt_data <- function(data, family, effects) {
   # add reserved variables to the data
   # and transform it into long format for mv models
@@ -9,7 +65,6 @@ melt_data <- function(data, family, effects) {
   response <- effects$response
   nresp <- length(response)
   if (is.mv(family, response = response)) {
-    # TODO: add error when old mv syntax is used on new models
     if (!is(data, "data.frame")) {
       stop("Argument 'data' must be a data.frame for this model", 
            call. = FALSE)
@@ -63,6 +118,29 @@ melt_data <- function(data, family, effects) {
     data <- fix_factor_contrasts(data, optdata = old_data)
   }
   data
+}
+
+check_data_old_mv <- function(data, family, effects) {
+  # check if the deprecated MV syntax was used in a new model
+  # Args:
+  #   see update_data
+  is_mv <- is.mv(family, effects$response) 
+  is_forked <- is.forked(family)
+  if (is_mv || is_forked) {
+    if (is_mv) {
+      rsv_vars <- c("trait")
+    } else if (is_forked) {
+      rsv_vars <- c("trait", "main", "spec")
+    }
+    rsv_vars <- setdiff(rsv_vars, names(data))
+    used_rsv_vars <- intersect(rsv_vars, all.vars(effects$all))
+    if (length(used_rsv_vars)) {
+      warning("It is no longer necessary (and possible) to specify models ", 
+              "using the multivariate 'trait' syntax. See help(brmsformula) ",
+              "for details on the new syntax.", call. = FALSE)
+    }
+  }
+  invisible(NULL)
 }
 
 data_rsv_intercept <- function(data, effects) {
@@ -129,62 +207,6 @@ fix_factor_contrasts <- function(data, optdata = NULL) {
         contrasts(data[[i]]) <- contrasts(data[[i]])
       }
     }
-  }
-  data
-}
-
-update_data <- function(data, family, effects, ..., 
-                        na.action = na.omit,
-                        drop.unused.levels = TRUE,
-                        terms_attr = NULL, knots = NULL) {
-  # Update data for use in brms functions
-  # Args:
-  #   data: the original data.frame
-  #   family: the model family
-  #   effects: output of extract_effects (see validate.R)
-  #   ...: More formulae passed to combine_groups
-  #        Currently only used for autocorrelation structures
-  #   na.action: function defining how to treat NAs
-  #   drop.unused.levels: indicates if unused factor levels
-  #                       should be removed
-  #   terms_attr: a list of attributes of the terms object of 
-  #     the original model.frame; only used with newdata;
-  #     this ensures that (1) calls to 'poly' work correctly
-  #     and (2) that the number of variables matches the number 
-  #     of variable names; fixes issue #73
-  #   knots: a list of knot values for GAMMS
-  # Returns:
-  #   model.frame in long format with combined grouping variables if present
-  if (is.null(attr(data, "terms")) && "brms.frame" %in% class(data)) {
-    # to avoid error described in #30
-    # brms.frame class is deprecated as of brms > 0.7.0
-    data <- as.data.frame(data)
-  }
-  if (!(isTRUE(attr(data, "brmsframe")) || "brms.frame" %in% class(data))) {
-    effects$all <- terms(effects$all)
-    attributes(effects$all)[names(terms_attr)] <- terms_attr
-    if (isTRUE(attr(effects$formula, "old_mv"))) {
-      data <- melt_data(data, family = family, effects = effects)
-    } else {
-      # TODO: check for deprecated MV synatx in new models
-    }
-    data <- data_rsv_intercept(data, effects = effects)
-    data <- model.frame(effects$all, data = data, na.action = na.pass,
-                        drop.unused.levels = drop.unused.levels)
-    nrow_with_NA <- nrow(data)
-    data <- na.action(data)
-    if (nrow(data) != nrow_with_NA) {
-      warning("Rows containing NAs were excluded from the model",
-              call. = FALSE)
-    }
-    if (any(grepl("__", colnames(data)))) {
-      stop("Variable names may not contain double underscores.",
-           call. = FALSE)
-    }
-    data <- combine_groups(data, get_random(effects)$group, ...)
-    data <- fix_factor_contrasts(data)
-    attr(data, "knots") <- knots
-    attr(data, "brmsframe") <- TRUE
   }
   data
 }
