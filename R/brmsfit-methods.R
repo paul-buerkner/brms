@@ -629,12 +629,10 @@ summary.brmsfit <- function(object, waic = FALSE, ...) {
     out$cor_pars <- fit_summary[cor_pars, , drop = FALSE]
     rownames(out$cor_pars) <- cor_pars
     
-    # summary of random effects
+    # summary of group-level effects
     for (g in out$group) {
       r <- object$ranef[object$ranef$group == g, ]
-      nlpar_usc <- ifelse(nchar(r$nlpar), paste0(r$nlpar, "_"), "")
-      #nlp <- get_nlpar(object$ranef[[i]])
-      #nlp_ <- ifelse(nchar(nlp), paste0(nlp, "_"), nlp)
+      nlpar_usc <- usc(r$nlpar, "suffix")
       rnames <- paste0(nlpar_usc, r$coef)
       sd_pars <- paste0("sd_", g, "_", rnames)
       sd_names <- paste0("sd", "(", rnames ,")")
@@ -648,24 +646,6 @@ summary.brmsfit <- function(object, waic = FALSE, ...) {
       out$random[[g]] <- fit_summary[c(sd_pars, cor_pars), , drop = FALSE]
       rownames(out$random[[g]]) <- c(sd_names, cor_names)
     }
-    # for (i in seq_along(out$group)) {
-    #   nlp <- get_nlpar(object$ranef[[i]])
-    #   nlp_ <- ifelse(nchar(nlp), paste0(nlp, "_"), nlp)
-    #   rnames <- object$ranef[[i]]
-    #   sd_pars <- paste0("sd_", nlp_, out$group[i], "_", rnames)
-    #   sd_names <- paste0("sd", "(", nlp_, rnames,")")
-    #   # construct correlation names
-    #   full_type <- paste0("cor_", nlp_, out$group[i])
-    #   all_cor_pars <- get_cornames(rnames, brackets = FALSE, type = full_type)
-    #   take <- all_cor_pars %in% parnames(object)
-    #   cor_pars <- all_cor_pars[take]
-    #   cor_names <- get_cornames(paste0(nlp_, rnames))[take]
-    #   # extract sd and cor parameters from the summary
-    #   new_random <- fit_summary[c(sd_pars, cor_pars), , drop = FALSE]
-    #   rownames(new_random) <- c(sd_names, cor_names)
-    #   out$random[[out$group[i]]] <- 
-    #     rbind(out$random[[out$group[i]]], new_random)
-    # }
     
     # summary of splines
     spline_pars <- pars[grepl("^sds_", pars)]
