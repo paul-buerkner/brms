@@ -559,8 +559,9 @@ get_random <- function(effects, all = TRUE) {
     stopifnot(is.data.frame(effects$random))
     out <- effects$random
     nresp <- length(effects$response)
-    if (nresp > 1L && nrow(out)) {
-      # mv models are also using the 'nlpar' argument
+    old_mv <- isTRUE(attr(effects$formula, "old_mv"))
+    if (!old_mv && nresp > 1L && nrow(out)) {
+      # new MV models are also using the 'nlpar' argument
       out <- replicate(nresp, out, simplify = FALSE)
       for (i in seq_len(nresp)) {
         out[[i]]$nlpar <- rep(effects$response[i], nrow(out[[i]]))

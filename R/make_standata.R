@@ -46,6 +46,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   family <- check_family(family)
   formula <- update_formula(formula, data = data, family = family,
                             partial = partial, nonlinear = nonlinear)
+  old_mv <- isTRUE(attr(formula, "old_mv"))
   autocor <- check_autocor(autocor)
   is_linear <- is.linear(family)
   is_ordinal <- is.ordinal(family)
@@ -64,7 +65,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   
   # sort data in case of autocorrelation models
   if (has_arma(autocor) || is(autocor, "cor_bsts")) {
-    if (isTRUE(attr(formula, "old_mv"))) {
+    if (old_mv) {
       to_order <- rmNULL(list(data[["trait"]], data[[et$group]], 
                               data[[et$time]]))
     } else {
@@ -161,7 +162,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     }
   } else {
     resp <- ee$response
-    if (length(resp) > 1L) {
+    if (length(resp) > 1L && !old_mv) {
       args_eff_spec <- list(effects = ee, Jm = control$Jm[["mu"]],
                             smooth = control$smooth[["mu"]])
       for (r in resp) {
@@ -248,7 +249,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     standata$sqrt_Y <- sqrt(standata$Y)
   }
   
-  if (isTRUE(attr(ee$formula, "old_mv"))) {
+  if (old_mv) {
     # deprecated as of brms 1.0.0
     # evaluate even if check_response is FALSE to ensure 
     # that N_trait is defined
@@ -265,7 +266,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       standata$N_trait <- nrow(data) / 2L
       standata$Y <- as.array(standata$Y[1L:standata$N_trait]) 
     }
-    if (is_categorical && !isTRUE(control$old_cat)) {
+    if (is_categorical && !isTRUE(control$old_cat == 1L)) {
       ncat1m <- standata$ncat - 1L
       standata$N_trait <- nrow(data) / ncat1m
       standata$Y <- as.array(standata$Y[1L:standata$N_trait])
@@ -279,7 +280,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   }
   if (is.formula(ee$weights)) {
     standata <- c(standata, list(weights = .addition(ee$weights, data = data)))
-    if (isTRUE(attr(ee$formula, "old_mv"))) {
+    if (old_mv) {
       standata$weights <- standata$weights[1:standata$N_trait]
     }
   }
@@ -288,7 +289,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   }
   if (is.formula(ee$cens) && check_response) {
     standata <- c(standata, list(cens = .addition(ee$cens, data = data)))
-    if (isTRUE(attr(ee$formula, "old_mv"))) {
+    if (old_mv) {
       standata$cens <- standata$cens[1:standata$N_trait]
     }
   }

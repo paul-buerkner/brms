@@ -148,7 +148,7 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   args <- list(x = x, subset = subset)
   
   draws <- list(old_cat = is.old_categorical(x))
-  if (!is.null(standata$X) && ncol(standata$X) && !draws$old_cat) {
+  if (!is.null(standata$X) && ncol(standata$X) && draws$old_cat != 1L) {
     b_pars <- paste0("b_", nlpar_usc, colnames(standata$X))
     draws[["b"]] <- 
       do.call(as.matrix, c(args, list(pars = b_pars, exact = TRUE)))
@@ -174,7 +174,7 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
       cse_pars <- paste0("^b_", colnames(standata$Xp), "\\[")
       draws[["p"]] <- do.call(as.matrix, c(args, list(pars = cse_pars)))
     }
-  } else if (draws$old_cat) {
+  } else if (draws$old_cat == 1L) {
     # old categorical models deprecated as of brms > 0.8.0
     if (!is.null(standata$X)) {
       draws[["p"]] <- do.call(as.matrix, c(args, list(pars = "^b_")))
