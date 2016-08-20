@@ -6,15 +6,17 @@ test_that("check_prior performs correct renaming", {
                        data = inhaler)
   target <- prior_frame(prior = c("normal(0,1)", "lkj_corr_cholesky(0.5)"),
                         class = c("b", "L"), group = c("", "subject"))
-  expect_true(length(which(duplicated(rbind(prior, target)))) == 2)
+  expect_true(length(which(duplicated(rbind(prior, target)))) == 2L)
   
   prior <- check_prior(c(set_prior("lkj(5)", class = "rescor"),
-                         set_prior("normal(0,1)", class = "b", coef = "carry")),
+                         set_prior("normal(0,1)", class = "b", 
+                                   coef = "carry", nlpar = "rating")),
                        formula = bf(cbind(treat, rating) ~ 0 + carry), 
                        data = inhaler)
   target <- prior_frame(prior = c("lkj_corr_cholesky(5)", "normal(0,1)"),
-                        class = c("Lrescor", "b"), coef = c("", "carry")) 
-  expect_true(length(which(duplicated(rbind(prior, target)))) == 2)
+                        class = c("Lrescor", "b"), coef = c("", "carry"),
+                        nlpar = c("", "rating")) 
+  expect_true(length(which(duplicated(rbind(prior, target)))) == 2L)
   
   expect_equivalent(check_prior(set_prior("normal(0,1)", class = "Intercept"),
                                 formula = bf(rating ~ carry), data = inhaler, 

@@ -7,7 +7,11 @@
 #'   See 'Details' for other valid parameter classes. 
 #' @param coef Name of the (population- or group-level) parameter  
 #' @param group Grouping factor of group-level parameters.
-#' @param nlpar Name of a non-linear parameter. Only used in non-linear models.
+#' @param nlpar Name of a non-linear / auxiliary parameter. 
+#'   Only used in non-linear / distributional models.
+#' @param resp Name of the response variable / category.
+#'   Only used in multivariate and categorical models.
+#'   Is internally handled as an alias of \code{nlpar}.
 #' @param lb Lower bound for parameter restriction. Currently only allowed
 #'   for classes \code{"b"}, \code{"ar"}, \code{"ma"}, and \code{"arr"}.
 #'   Defaults to \code{NULL}, that is no restriction.
@@ -270,12 +274,12 @@
 #'
 #' @export
 set_prior <- function(prior, class = "b", coef = "", group = "",
-                      nlpar = "", lb = NULL, ub = NULL) {
+                      nlpar = "", resp = NULL, lb = NULL, ub = NULL) {
   prior <- as.character(prior)
   class <- as.character(class)
   group <- as.character(group)
   coef <- as.character(coef)
-  nlpar <- as.character(nlpar)
+  nlpar <- as.character(use_alias(nlpar, resp, warn = FALSE))
   lb <- as.numeric(lb)
   ub <- as.numeric(ub)
   if (length(prior) != 1 || length(class) != 1 || length(coef) != 1 || 
@@ -417,11 +421,21 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
       prior <- rbind(prior, prior_eff)
     }
   } else {
-    # TODO: handle multivariate models
-    prior_eff <- get_prior_effects(ee, data = data, autocor = autocor,
-                                   def_scale_prior = def_scale_prior,
-                                   internal = internal)
-    prior <- rbind(prior, prior_eff)
+    if (length(ee$response) > 1L) {
+      # priors for effects in multivariate models
+      for (r in ee$response) {
+        prior_eff <- get_prior_effects(ee, data = data, autocor = autocor,
+                                       def_scale_prior = def_scale_prior,
+                                       internal = internal, nlpar = r)
+        prior <- rbind(prior, prior_eff)
+      }
+    } else {
+      # priors for effects in univariate models
+      prior_eff <- get_prior_effects(ee, data = data, autocor = autocor,
+                                     def_scale_prior = def_scale_prior,
+                                     internal = internal)
+      prior <- rbind(prior, prior_eff)
+    }
   }
   # priors for auxiliary parameters
   def_auxprior <- c(sigma = def_scale_prior, shape = "gamma(0.01, 0.01)",
@@ -450,8 +464,8 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
   if (is.ordinal(family) && threshold == "equidistant") {
     prior <- rbind(prior, prior_frame(class = "delta"))
   }
-  # priors for MV models
-  if (is.linear(family) &&  length(ee$response) > 1L) {
+  # priors for auxiliary parameters of multivariate models
+  if (is.linear(family) && length(ee$response) > 1L) {
     sigma_coef <- c("", ee$response)
     sigma_prior <- c(def_scale_prior, rep("", length(ee$response)))
     sigma_prior <- prior_frame(class = "sigma", coef = sigma_coef,
@@ -550,8 +564,10 @@ get_prior_monef <- function(monef, fixef = NULL, nlpar = "") {
                  "\nError occured for variables:", 
                  paste(invalid, collapse = ", ")), call. = FALSE)
     }
-    prior <- rbind(prior_frame(class = "b", coef = c("", monef), nlpar = nlpar),
-                   prior_frame(class = "simplex", coef = monef, nlpar = nlpar))
+    prior <- rbind(prior_frame(class = "b", coef = c("", monef), 
+                               nlpar = nlpar),
+                   prior_frame(class = "simplex", coef = monef, 
+                               nlpar = nlpar))
   }
   prior
 }
@@ -919,11 +935,11 @@ get_bound <- function(prior, class = "b", coef = "",
   prior$bound[take]
 }
 
-prior_frame <- function(prior = "", class = "", coef = "", 
-                        group = "", nlpar = "", bound = "") {
+prior_frame <- function(prior = "", class = "", coef = "", group = "", 
+                        nlpar = "", bound = "") {
   # helper function to create data.frames containing prior information 
   out <- data.frame(prior = prior, class = class, coef = coef, 
-                    group = group, nlpar = nlpar, bound = bound,
+                    group = group, nlpar = nlpar, bound = bound, 
                     stringsAsFactors = FALSE)
   class(out) <- c("prior_frame", "data.frame")
   out
@@ -965,9 +981,9 @@ print.brmsprior <- function(x, ...) {
 
 .print_prior <- function(x) {
   # prepare text for print.brmsprior
-  group <- ifelse(nchar(x$group), paste0("_", x$group), "")
-  coef <- ifelse(nchar(x$coef), paste0("_", x$coef), "")
-  nlpar <- ifelse(nchar(x$nlpar), paste0("_", x$nlpar), "")
+  group <-  usc(x$group, "prefix")
+  coef <- usc(x$coef, "prefix")
+  nlpar <- usc(x$nlpar, "prefix")
   bound <- ifelse(nchar(x$bound), paste0(x$bound, " "), "")
   tilde <- ifelse(nchar(x$class) + nchar(group) + nchar(coef), " ~ ", "")
   prior <- ifelse(nchar(x$prior), x$prior, "(no prior)")

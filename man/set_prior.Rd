@@ -5,7 +5,7 @@
 \title{Prior Definitions for \pkg{brms} Models}
 \usage{
 set_prior(prior, class = "b", coef = "", group = "", nlpar = "",
-  lb = NULL, ub = NULL)
+  resp = NULL, lb = NULL, ub = NULL)
 }
 \arguments{
 \item{prior}{A character string defining a distribution in \pkg{Stan} language}
@@ -17,7 +17,12 @@ See 'Details' for other valid parameter classes.}
 
 \item{group}{Grouping factor of group-level parameters.}
 
-\item{nlpar}{Name of a non-linear parameter. Only used in non-linear models.}
+\item{nlpar}{Name of a non-linear / auxiliary parameter. 
+Only used in non-linear / distributional models.}
+
+\item{resp}{Name of the response variable / category.
+Only used in multivariate and categorical models.
+Is internally handled as an alias of \code{nlpar}.}
 
 \item{lb}{Lower bound for parameter restriction. Currently only allowed
 for classes \code{"b"}, \code{"ar"}, \code{"ma"}, and \code{"arr"}.
