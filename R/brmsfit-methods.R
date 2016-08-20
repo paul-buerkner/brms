@@ -1453,7 +1453,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   }
   # reorder predicted responses in case of multivariate models
   # as they are sorted after units first not after traits
-  if (grepl("_multi$", draws$f$family)) {
+  if (grepl("_mv$", draws$f$family)) {
     reorder <- with(draws$data, ulapply(1:K_trait, seq, to = N, by = K_trait))
     out <- out[, reorder, drop = FALSE]
     colnames(out) <- 1:ncol(out) 
