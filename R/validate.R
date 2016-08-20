@@ -361,34 +361,6 @@ update_formula <- function(formula, data = NULL, family = gaussian(),
   formula
 }
 
-#' @export
-update.brmsformula <- function(object, formula., 
-                               mode = c("update", "replace", "keep"), 
-                               ...) {
-  # update a brmsformula and / or its attributes
-  # Args:
-  #   object: an object of class 'brmsformula'
-  #   formula.: formula to update object
-  #   mode: "update": apply update.formula
-  #         "replace": replace old formula
-  #         "keep": keep old formula
-  #   ...: currently unused
-  mode <- match.arg(mode)
-  new_att <- sformula(formula.)
-  old_att <- sformula(object)
-  if (mode == "update") {
-    new_formula <- update.formula(object, formula., ...)
-  } else if (mode == "replace") {
-    new_formula <- formula.
-  } else {
-    new_formula <- object
-  }
-  attributes(new_formula)[union(names(new_att), names(old_att))] <- NULL
-  new_formula <- do.call(bf, c(new_formula, new_att))
-  new_formula <- SW(do.call(bf, c(new_formula, old_att)))
-  new_formula
-}
-
 extract_random <- function(re_terms) {
   # generate a data.frame with all information about the group-level terms
   # Args:
