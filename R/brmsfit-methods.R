@@ -613,7 +613,7 @@ summary.brmsfit <- function(object, waic = FALSE, ...) {
     rownames(out$fixed) <- gsub("^b_", "", fix_pars)
     
     # summary of family specific parameters
-    spec_pars <- pars[pars %in% c("nu", "shape", "delta", "phi") | 
+    spec_pars <- pars[pars %in% c("nu", "shape", "delta", "phi", "zi", "hu") | 
       apply(sapply(c("^sigma($|_)", "^rescor_"), grepl, x = pars), 1, any)]
     out$spec_pars <- fit_summary[spec_pars, , drop = FALSE]
     if (is.linear(family(object)) && length(ee$response) > 1L) {
@@ -629,12 +629,10 @@ summary.brmsfit <- function(object, waic = FALSE, ...) {
     out$cor_pars <- fit_summary[cor_pars, , drop = FALSE]
     rownames(out$cor_pars) <- cor_pars
     
-    # summary of random effects
+    # summary of group-level effects
     for (g in out$group) {
       r <- object$ranef[object$ranef$group == g, ]
-      nlpar_usc <- ifelse(nchar(r$nlpar), paste0(r$nlpar, "_"), "")
-      #nlp <- get_nlpar(object$ranef[[i]])
-      #nlp_ <- ifelse(nchar(nlp), paste0(nlp, "_"), nlp)
+      nlpar_usc <- usc(r$nlpar, "suffix")
       rnames <- paste0(nlpar_usc, r$coef)
       sd_pars <- paste0("sd_", g, "_", rnames)
       sd_names <- paste0("sd", "(", rnames ,")")
@@ -648,24 +646,6 @@ summary.brmsfit <- function(object, waic = FALSE, ...) {
       out$random[[g]] <- fit_summary[c(sd_pars, cor_pars), , drop = FALSE]
       rownames(out$random[[g]]) <- c(sd_names, cor_names)
     }
-    # for (i in seq_along(out$group)) {
-    #   nlp <- get_nlpar(object$ranef[[i]])
-    #   nlp_ <- ifelse(nchar(nlp), paste0(nlp, "_"), nlp)
-    #   rnames <- object$ranef[[i]]
-    #   sd_pars <- paste0("sd_", nlp_, out$group[i], "_", rnames)
-    #   sd_names <- paste0("sd", "(", nlp_, rnames,")")
-    #   # construct correlation names
-    #   full_type <- paste0("cor_", nlp_, out$group[i])
-    #   all_cor_pars <- get_cornames(rnames, brackets = FALSE, type = full_type)
-    #   take <- all_cor_pars %in% parnames(object)
-    #   cor_pars <- all_cor_pars[take]
-    #   cor_names <- get_cornames(paste0(nlp_, rnames))[take]
-    #   # extract sd and cor parameters from the summary
-    #   new_random <- fit_summary[c(sd_pars, cor_pars), , drop = FALSE]
-    #   rownames(new_random) <- c(sd_names, cor_names)
-    #   out$random[[out$group[i]]] <- 
-    #     rbind(out$random[[out$group[i]]], new_random)
-    # }
     
     # summary of splines
     spline_pars <- pars[grepl("^sds_", pars)]
@@ -679,7 +659,7 @@ summary.brmsfit <- function(object, waic = FALSE, ...) {
 
 #' @export
 nobs.brmsfit <- function(object, ...) {
-  length(standata(object)$Y)
+  nrow(model.frame(object))
 }
 
 #' Number of levels
@@ -739,6 +719,7 @@ standata.brmsfit <- function(object, ...) {
     # brms > 0.5.0 stores the original model.frame
     object <- restructure(object)
     new_formula <- update_re_terms(object$formula, dots$re_formula)
+    # TODO: remove old_categorical?
     dots$control$old_cat <- is.old_categorical(object)
     prior_only <- attr(object$prior, "prior_only")
     sample_prior <- ifelse(isTRUE(prior_only), "only", FALSE)
@@ -824,8 +805,8 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5,
     stop("N must be a positive integer", call. = FALSE)
   if (!is.character(pars)) {
     pars <- c("^b_", "^bm_", "^sd_", "^cor_", "^sigma", "^rescor", 
-              "^nu$", "^shape$", "^delta$", "^phi$", "^ar", "^ma", 
-              "^arr", "^simplex_", "^sds_")
+              "^nu$", "^shape$", "^delta$", "^phi$", "^zi$", "^hu$",
+              "^ar", "^ma", "^arr", "^simplex_", "^sds_")
   }
   samples <- posterior_samples(x, pars = pars, add_chain = TRUE)
   pars <- names(samples)[!names(samples) %in% c("chain", "iter")] 
@@ -1124,7 +1105,8 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
             call. = FALSE)
   }
   rsv_vars <- rsv_vars(x$family, nresp = length(ee$response),
-                       rsv_intercept = attr(ee$fixed, "rsv_intercept"))
+                       rsv_intercept = attr(ee$fixed, "rsv_intercept"),
+                       old_mv = attr(ee$formula, "old_mv"))
   if (length(ee$nonlinear)) {
     # allow covariates as well as fixed effects of non-linear parameters
     covars <- setdiff(all.vars(rhs(ee$fixed)), names(ee$nonlinear))
@@ -1471,7 +1453,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   }
   # reorder predicted responses in case of multivariate models
   # as they are sorted after units first not after traits
-  if (grepl("_multi$", draws$f$family)) {
+  if (grepl("_mv$", draws$f$family)) {
     reorder <- with(draws$data, ulapply(1:K_trait, seq, to = N, by = K_trait))
     out <- out[, reorder, drop = FALSE]
     colnames(out) <- 1:ncol(out) 
@@ -1574,6 +1556,10 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   draws <- do.call(extract_draws, draws_args)
   # get mu and scale it appropriately
   mu <- get_eta(i = NULL, draws = draws)
+  if (is.linear(draws$f) && !is.null(draws[["mv"]])) {
+    # collapse over responses in linear MV models
+    dim(mu) <- c(dim(mu)[1], prod(dim(mu)[2:3])) 
+  }
   for (ap in intersect(auxpars(), names(draws))) {
     if (is(draws[[ap]], "list")) {
       link <- get(draws[[ap]][["link"]], mode = "function")
@@ -1960,11 +1946,7 @@ logLik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (pointwise) {
     loglik <- structure(loglik_fun, draws = draws, N = N)
   } else {
-    if (length(attr(object$formula, "nonlinear"))) {
-      draws$eta <- nonlinear_predictor(draws)
-    } else {
-      draws$eta <- linear_predictor(draws)
-    }
+    draws$eta <- get_eta(i = NULL, draws = draws)
     loglik <- do.call(cbind, lapply(1:N, loglik_fun, draws = draws))
     # reorder loglik values to be in the initial user defined order
     # currently only relevant for autocorrelation models

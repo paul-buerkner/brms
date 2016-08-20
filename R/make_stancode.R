@@ -49,20 +49,25 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   
   # flags to indicate the family type
   is_categorical <- is.categorical(family)
-  is_multi <- is.linear(family) && length(ee$response) > 1L
+  is_mv <- is.linear(family) && length(ee$response) > 1L
   is_forked <- is.forked(family)
   trunc_bounds <- get_bounds(ee$trunc, data = data)
   
-  intercepts <- names(get_intercepts(ee, family = family, data = data))
   ranef <- gather_ranef(ee, data = data)
   if (length(ee$nonlinear)) {
     text_pred <- stan_nonlinear(ee, data = data, family = family, 
                                 ranef = ranef, prior = prior)
   } else {
-    text_pred <- stan_linear(ee, data = data, family = family, 
-                             prior = prior, intercepts = intercepts, 
-                             ranef = ranef, autocor = autocor, 
-                             threshold = threshold, sparse = sparse)
+    if (length(ee$response) > 1L) {
+      text_pred <- stan_effects_mv(ee, data = data, family = family,
+                                   prior = prior, ranef = ranef, 
+                                   autocor = autocor)
+    } else {
+      text_pred <- stan_effects(ee, data = data, family = family,
+                                prior = prior, ranef = ranef, 
+                                autocor = autocor, sparse = sparse,
+                                threshold = threshold)
+    }
   }
   text_auxpars <- stan_auxpars(ee, data = data, family = family, 
                                ranef = ranef, prior = prior, 
@@ -79,7 +84,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   # generate Stan code specific to certain models
   text_autocor <- stan_autocor(autocor, effects = ee, family = family,
                                prior = prior)
-  text_multi <- stan_multi(family, response = ee$response, prior = prior)
+  text_mv <- stan_mv(family, response = ee$response, prior = prior)
   text_ordinal <- stan_ordinal(family, prior = prior, cse = is.formula(ee$cse), 
                                threshold = threshold)
   text_categorical <- stan_categorical(family)
@@ -98,7 +103,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     text_pred$prior,
     text_ordinal$prior,
     text_autocor$prior,
-    text_multi$prior,
+    text_mv$prior,
     stan_prior(class = "", prior = prior))
   
   # generate functions block
@@ -119,16 +124,11 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   Kar <- get_ar(autocor)
   Kma <- get_ma(autocor)
   Nbin <- ifelse(is.formula(ee$trials), "[N]", "")
-  trait <- ifelse(is_multi || is_forked || is_categorical, "_trait", "")
   text_data <- paste0(
     "data { \n",
     "  int<lower=1> N;  // total number of observations \n", 
-    if (is_multi) {
-      text_multi$data
-    } else if (is_categorical) {
-      text_categorical$data
-    } else if (is_forked) {
-      text_forked$data
+    if (is_mv) {
+      text_mv$data
     } else if (use_real(family)) {
       "  vector[N] Y;  // response variable \n"
     } else if (use_int(family)) {
@@ -136,6 +136,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     },
     text_pred$data,
     text_ordinal$data,
+    text_categorical$data,
     text_autocor$data,
     text_inv_gaussian$data,
     text_disp$data,
@@ -144,9 +145,9 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     if (is.formula(ee$se) && !use_cov(autocor))
       "  vector<lower=0>[N] se;  // SEs for meta-analysis \n",
     if (is.formula(ee$weights))
-      paste0("  vector<lower=0>[N", trait, "] weights;  // model weights \n"),
+      paste0("  vector<lower=0>[N] weights;  // model weights \n"),
     if (is.formula(ee$cens))
-      paste0("  vector[N", trait, "] cens;  // indicates censoring \n"),
+      paste0("  vector[N] cens;  // indicates censoring \n"),
     if (any(trunc_bounds$lb > -Inf))
       paste0("  ", ifelse(use_int(family), "int", "real"), " lb[N];",  
              "  // lower bounds for truncation; \n"),
@@ -172,7 +173,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     text_pred$par,
     text_ordinal$par,
     text_autocor$par,
-    text_multi$par)
+    text_mv$par)
   text_rngprior <- stan_rngprior(sample_prior = sample_prior, 
                                  par_declars = text_parameters,
                                  prior = text_prior, family = family,
@@ -187,10 +188,8 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   # loop over all observations in transformed parameters if necessary
   make_loop <- any(nzchar(c(text_pred$modelC2, text_pred$modelC3,
                             text_autocor$modelC2)))
-  if (make_loop && !is_multi) {
+  if (make_loop) {
     text_loop <- c("  for (n in 1:N) { \n", "  } \n")
-  } else if (is_multi) {
-    text_loop <- text_multi$loop
   } else {
     text_loop <- rep("", 2)
   }
@@ -199,11 +198,11 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
       text_pred$transD,
       text_autocor$transD, 
       text_ordinal$transD,
-      text_multi$transD,
+      text_mv$transD,
       text_pred$transC1,
       text_autocor$transC1, 
       text_ordinal$transC1, 
-      text_multi$transC1,
+      text_mv$transC1,
     "} \n")
   
   # generate model block
@@ -215,7 +214,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
       text_autocor$modelD,
       text_forked$modelD,
       if (needs_lp_pre) 
-        paste0("  vector[N", trait,"] lp_pre; \n"),
+        paste0("  vector[N] lp_pre; \n"),
       text_pred$modelC1,
       text_disp$modelC1,
       text_autocor$modelC1, 
@@ -241,10 +240,10 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   text_generated_quantities <- paste0(
     "generated quantities { \n",
       text_pred$genD,
-      text_multi$genD, 
+      text_mv$genD, 
       text_rngprior$genD,
       text_pred$genC,
-      text_multi$genC, 
+      text_mv$genC, 
       text_rngprior$genC,
     "} \n")
 

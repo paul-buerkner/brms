@@ -72,8 +72,8 @@ linear_predictor <- function(draws, i = NULL) {
         eta[, , k] <- eta[, , k] - draws$Intercept[, k]
       }
     }
-  } else if (is.categorical(draws$f)) {
-    if (isTRUE(draws$old_cat)) {
+  } else if (isTRUE(draws$old_cat > 0L)) {
+    if (draws$old_cat == 1L) {
       # deprecated as of brms > 0.8.0
       if (!is.null(draws[["p"]])) {
         eta <- cse_predictor(Xp = p(draws$data$X, i), p = draws[["p"]], 
@@ -81,12 +81,24 @@ linear_predictor <- function(draws, i = NULL) {
       } else {
         eta <- array(eta, dim = c(dim(eta), draws$data$max_obs - 1))
       }
-    } else {
+    } else if (draws$old_cat == 2L) {
       ncat1 <- draws$data$ncat - 1 
       eta <- array(eta, dim = c(nrow(eta), ncol(eta) / ncat1, ncat1))
     }
   }
   unname(eta)
+}
+
+linear_predictor_mv <- function(draws, i = NULL) {
+  # compute the linear predictor Eta for multivariate models
+  # Returns:
+  #   An array of dimension Nsamples (or length(i)) x Nobs x Nresp
+  resp <- names(draws[["mv"]])
+  tmp <- named_list(resp)
+  for (r in resp) {
+    tmp[[r]] <- linear_predictor(draws[["mv"]][[r]], i = i)
+  }
+  aperm(do.call(abind::abind, c(tmp, along = 0)), perm = c(2, 3, 1))
 }
 
 nonlinear_predictor <- function(draws, i = NULL) {
@@ -249,6 +261,8 @@ get_eta <- function(draws, i) {
     }
   } else if (!is.null(draws$nonlinear)) {
     eta <- nonlinear_predictor(draws, i = i)
+  } else if (!is.null(draws[["mv"]])) {
+    eta <- linear_predictor_mv(draws, i = i)
   } else {
     eta <- linear_predictor(draws, i = i)
   }

@@ -151,9 +151,21 @@ nlist <- function(...) {
   dots
 }
 
-named_list <- function(names) {
+named_list <- function(names, values = NULL) {
   # initialize a named list
-  setNames(vector("list", length(names)), names)
+  # Args:
+  #   names: names of the elements
+  #   values: values of the elements
+  if (length(values)) {
+    if (length(values) == 1L) {
+      values <- replicate(length(names), values)
+    }
+    values <- as.list(values)
+    stopifnot(length(values) == length(names))
+  } else {
+    values <- vector("list", length(names))
+  }
+  setNames(values, names)
 } 
 
 get_arg <- function(x, ...) {
@@ -184,6 +196,10 @@ lhs <- function(x) {
   # return the lefthand side of a formula
   x <- as.formula(x)
   if (length(x) == 3) update(x, . ~ 1) else NULL
+}
+
+is.formula <- function(x) {
+  is(x, "formula")
 }
 
 SW <- function(expr) {
@@ -445,6 +461,24 @@ use_alias <- function(arg, alias = NULL, warn = TRUE) {
     stop("Invalid truncation bounds", call. = FALSE)
   }
   nlist(lb, ub)
+}
+
+cse <- function(...) {
+  stop("inappropriate use of function 'cse'", call. = FALSE)
+}
+
+monotonic <- function(...) {
+  stop("inappropriate use of function 'monotonic'", call. = FALSE)
+}
+
+mono <- function(...) {
+  # abbreviation of monotonic
+  stop("inappropriate use of function 'monotonic'", call. = FALSE)
+}
+
+monotonous <- function(...) {
+  # abbreviation of monotonic
+  stop("please use function 'monotonic' instead", call. = FALSE)
 }
 
 # startup messages for brms

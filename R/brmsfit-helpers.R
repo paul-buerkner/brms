@@ -50,6 +50,7 @@ restructure <- function(x) {
                                  nonlinear = x$nonlinear))
   x$nonlinear <- x$partial <- NULL
   if (is.null(x$version) || x$version <= "0.10.0.9000") {
+    attr(x$formula, "old_mv") <- is.old_mv(x)
     ee <- extract_effects(formula(x), family = family(x))
     x$ranef <- gather_ranef(ee, model.frame(x))
     if (length(ee$nonlinear)) {
@@ -360,77 +361,97 @@ get_cov_matrix_ident <- function(sigma, nrows, se2 = 0) {
   mat
 }
 
-get_sigma <- function(x, data, i, sobs = TRUE) {
-  # get the residual standard devation of linear models
+get_auxpar <- function(x, i = NULL, dim = NULL) {
+  # get samples of an auxiliary parameter
   # Args:
   #   x: object to extract postarior samples from
   #   data: data initially passed to Stan
-  #   sobs: (single_obs) defines the meaning of i
-  #   i: meaning depends on sobs:
-  #      if TRUE: the current observation number
-  #      if FALSE: the number of samples
-  stopifnot(is.atomic(x) || is.list(x))
-  if (is.null(x)) {
-    x <- get_se(data = data, i = i, sobs = sobs)
-  } else {
-    x <- get_auxpar(x, i = i, sobs = sobs)
-  }
-  mult_disp(x, data = data, i = i, sobs = sobs)
-}
-
-get_shape <- function(x, data, i, sobs = TRUE) {
-  # get the shape parameter of gamma, weibull and negbinomial models
-  # Args: see get_sigma
-  stopifnot(is.atomic(x) || is.list(x))
-  x <- get_auxpar(x, i = i, sobs = sobs)
-  mult_disp(x, data = data, i = i, sobs = sobs)
-}
-
-get_auxpar <- function(x, i, sobs = TRUE) {
-  # get samples of an auxiliary parameter
-  # Args: see get_sigma
+  #   i: the current observation number
+  #      (used in predict and logLik)
+  #   dim: target dimension of output matrices 
+  #        (used in fitted)
   if (is.list(x)) {
     # compute auxpar in distributional regression models
     link <- get(x[["link"]], mode = "function")
-    x <- link(get_eta(i = if (sobs) i else NULL, draws = x))
+    x <- link(get_eta(i = if (!is.null(i)) i else NULL, draws = x))
   } else {
-    if (sobs && isTRUE(ncol(x) > 1L)) {
+    if (!is.null(i) && isTRUE(ncol(x) > 1L)) {
       x <- x[, i, drop = FALSE]
     }
   }
-  if (!sobs && isTRUE(ncol(x) == 1L)) {
+  if (is.null(i) && isTRUE(ncol(x) == 1L)) {
     # for compatibility with fitted helper functions
-    x <- as.vector(x)
+    stopifnot(!is.null(dim))
+    x <- matrix(as.vector(x), nrow = dim[1], ncol = dim[2], byrow = TRUE)
   }
   x
 }
 
-get_se <- function(data, i, sobs = TRUE) {
+get_sigma <- function(x, data, i = NULL, dim = NULL) {
+  # get the residual standard devation of linear models
+  # Args: see get_auxpar
+  stopifnot(is.atomic(x) || is.list(x))
+  if (is.null(x)) {
+    x <- get_se(data = data, i = i, dim = dim)
+  } else {
+    x <- get_auxpar(x, i = i, dim = dim)
+  }
+  mult_disp(x, data = data, i = i, dim = dim)
+}
+
+get_shape <- function(x, data, i = NULL, dim = NULL) {
+  # get the shape parameter of gamma, weibull and negbinomial models
+  # Args: see get_auxpar
+  stopifnot(is.atomic(x) || is.list(x))
+  x <- get_auxpar(x, i = i, dim = dim)
+  mult_disp(x, data = data, i = i, dim = dim)
+}
+
+get_theta <- function(draws, i = NULL, dim = NULL, par = c("zi", "hu")) {
+  # convenience function to extract zi / hu parameters
+  # also works with deprecated models fitted with brms < 1.0.0 
+  # which were using multivariate syntax
+  # Args:
+  #   see get_auxpar
+  #   par: parameter to extract; either 'zi' or 'hu'
+  par <- match.arg(par)
+  if (!is.null(draws$data$N_trait)) {
+    j <- if (!is.null(i)) i else seq_len(draws$data$N_trait)
+    theta <- ilink(get_eta(draws, j + draws$data$N_trait), "logit")
+  } else {
+    theta <- get_auxpar(draws[[par]], i = i, dim = dim)
+  }
+  theta
+}
+
+get_se <- function(data, i = NULL, dim = NULL) {
   # extract user-defined standard errors
-  # Args: see get_sigma
+  # Args: see get_auxpar
   se <- data$se
   if (is.null(se)) {
     # for backwards compatibility with brms <= 0.5.0
     se <- data$sigma
   }
-  if (sobs) {
+  if (!is.null(i)) {
     se <- se[i]
   } else {
-    se <- matrix(rep(se, i), ncol = data$N, byrow = TRUE)
+    stopifnot(!is.null(dim))
+    se <- matrix(se, nrow = dim[1], ncol = dim[2], byrow = TRUE)
   }
   se
 }
 
-mult_disp <- function(x, data, i, sobs = TRUE) {
+mult_disp <- function(x, data, i = NULL, dim = NULL) {
   # multiply existing samples by 'disp' data
-  # Args: see get_sigma
+  # Args: see get_auxpar
   if (!is.null(data$disp)) {
-    if (sobs) {
+    if (!is.null(i)) {
       x <- x * data$disp[i]
     } else {
       # results in a Nsamples x Nobs matrix
       if (is.matrix(x)) {
-        disp <- matrix(rep(disp, i), ncol = data$N, byrow = TRUE)
+        stopifnot(!is.null(dim))
+        disp <- matrix(disp, nrow = dim[1], ncol = dim[2], byrow = TRUE)
         x <- x * disp
       } else {
         x <- x %*% matrix(data$disp, nrow = 1) 
@@ -448,7 +469,7 @@ prepare_family <- function(x) {
   if (is.old_lognormal(family, nresp = nresp, version = x$version)) {
     family <- lognormal()
   } else if (is.linear(family) && nresp > 1L) {
-    family$family <- paste0(family$family, "_multi")
+    family$family <- paste0(family$family, "_mv")
   } else if (use_cov(x$autocor) && sum(x$autocor$p, x$autocor$q) > 0) {
     family$family <- paste0(family$family, "_cov")
   } else if (is(x$autocor, "cor_fixed")) {

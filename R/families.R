@@ -31,11 +31,6 @@
 #'   The first link mentioned for each family is the default.
 #'   A full list of families and link functions supported by \pkg{brms}, 
 #'   is provided in the 'Details' section of \code{\link[brms:brm]{brm}}.
-#' @param type An optional character string allowing to specify advanced 
-#'   models implemented through certain families. Currently, 
-#'   only the \code{bernoulli} family uses this argument to define 
-#'   2PL models (applied in IRT) by setting \code{type = "2PL"}.
-#'   Further options will follow in the future.
 #' 
 #' @name brmsfamily
 NULL
@@ -80,18 +75,13 @@ cauchy <- function(link = "identity") {
 
 #' @rdname brmsfamily
 #' @export
-bernoulli <- function(link = "logit", type = NULL) {
+bernoulli <- function(link = "logit") {
   linktemp <- substitute(link)
   if (!is.character(linktemp)) {
     linktemp <- deparse(linktemp)
   } 
-  if (!is.null(type)) {
-    type <- match.arg(type, choices = "2PL")
-    okLinks <- "logit"
-  } else {
-    okLinks <- c("logit", "probit", "probit_approx", 
-                 "cloglog", "cauchit", "identity")
-  }
+  okLinks <- c("logit", "probit", "probit_approx", 
+               "cloglog", "cauchit", "identity")
   if (!linktemp %in% okLinks && is.character(link)) {
     linktemp <- link
   }
@@ -99,10 +89,7 @@ bernoulli <- function(link = "logit", type = NULL) {
     stop(paste(linktemp, "is not a supported link for family bernoulli.", 
                "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
-  if (!is.null(type)) {
-    type <- match.arg(type, c("2PL"))
-  }
-  structure(list(family = "bernoulli", link = linktemp, type = type), 
+  structure(list(family = "bernoulli", link = linktemp), 
             class = c("brmsfamily", "family"))
 }
 
@@ -453,7 +440,7 @@ acat <- function(link = "logit") {
             class = c("brmsfamily", "family"))
 }
 
-family.character <- function(object, link = NA, type = NULL, ...) {
+family.character <- function(object, link = NA, ...) {
   # build a family object
   # 
   # Args:
@@ -461,11 +448,9 @@ family.character <- function(object, link = NA, type = NULL, ...) {
   #   link: A character string defining the link
   family <- tolower(object)
   # check validity of family
-  if (family == "normal")
+  if (family == "normal") {
     family <- "gaussian"
-  if (family == "multigaussian") 
-    stop("family 'multigaussian' is deprecated. Use family 'gaussian' instead",
-         call. = FALSE)
+  }
   okFamilies <- c("gaussian", "student", "cauchy", "lognormal", 
                   "binomial", "bernoulli", "categorical", "beta",
                   "poisson", "negbinomial", "geometric", 
@@ -507,7 +492,7 @@ family.character <- function(object, link = NA, type = NULL, ...) {
   if (!link %in% okLinks)
     stop(paste0(link, " is not a supported link for family ", family, ". ", 
                 "Supported links are: \n", paste(okLinks, collapse = ", ")))
-  structure(nlist(family, link, type), class = c("brmsfamily", "family"))
+  structure(nlist(family, link), class = c("brmsfamily", "family"))
 }
 
 check_family <- function(family, link = NULL) {
@@ -522,7 +507,7 @@ check_family <- function(family, link = NULL) {
     family <- family()   
   }
   if (is(family, "family")) {
-    family <- family(family$family, link = family$link, type = family$type)
+    family <- family(family$family, link = family$link)
   } else if (is.character(family)) {
     if (is.null(link)) {
       link <- family[2]
@@ -600,23 +585,24 @@ is.count <- function(family) {
   family %in% c("poisson", "negbinomial", "geometric")
 }
 
-is.hurdle <- function(family) {
+is.hurdle <- function(family, zi_beta = TRUE) {
   # indicate if family is for a hurdle model
   if (is(family, "family")) {
     family <- family$family
   }
   # zi_beta is technically a hurdle model
   family %in% c("hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma",
-                "zero_inflated_beta")
+                if (zi_beta) "zero_inflated_beta")
 }
 
-is.zero_inflated <- function(family) {
+is.zero_inflated <- function(family, zi_beta = FALSE) {
   # indicate if family is for a zero inflated model
   if (is(family, "family")) {
     family <- family$family
   }
+  # zi_beta is technically a hurdle model
   family %in% c("zero_inflated_poisson", "zero_inflated_negbinomial",
-                "zero_inflated_binomial")
+                "zero_inflated_binomial", if (zi_beta) "zero_inflated_beta")
 }
 
 is.2PL <- function(family) {
@@ -624,6 +610,11 @@ is.2PL <- function(family) {
     out <- FALSE
   } else {
     out <- family$family %in% "bernoulli" && identical(family$type, "2PL")
+  }
+  if (out) {
+    stop("The special implementation of 2PL models has been removed.\n",
+         "You can now use argument 'nonlinear' to fit such models.",
+         call. = FALSE)
   }
   out
 }
@@ -634,12 +625,12 @@ is.forked <- function(family) {
 }
 
 is.mv <- function(family, response = NULL) {
-  # indicate if the model uses multivariate formula syntax
+  # indicate if the model uses multiple responses
   nresp <- length(response)
   is_mv <- nresp > 1L && is.linear(family) || is.categorical(family) || 
            nresp == 2L && is.forked(family)
   if (nresp > 1L && !is_mv) {
-    stop("invalid multivariate model", call. = FALSE)
+    stop("Invalid multivariate model", call. = FALSE)
   }
   is_mv
 }
@@ -748,7 +739,29 @@ is.old_lognormal <- function(family, link = "identity", nresp = 1,
 }
 
 is.old_categorical <- function(x) {
-  # indicate if the model is categorical fitted with brms <= 0.8.0
+  # indicate if the model is and old categorical model
   stopifnot(is(x, "brmsfit"))
-  is(x$fit, "stanfit") && is.categorical(x$family) && "bp" %in% x$fit@model_pars
+  if (is(x$fit, "stanfit") && is.categorical(x$family)) {
+    if ("bp" %in% x$fit@model_pars) {
+      # fitted with brms <= 0.8.0
+      out <- 1L
+    } else if (is.old_mv(x)) {
+      # fitted with brms <= 1.0.0
+      out <- 2L
+    } else {
+      out <- 0L
+    }
+  } else {
+    out <- 0L
+  }
+  out
+}
+
+is.old_mv <- function(x) {
+  # indicate if the model uses the old multivariate syntax 
+  # from brms < 1.0.0
+  stopifnot(is(x, "brmsfit"))
+  ee <- extract_effects(formula(x), family = family(x))
+  (is.null(x$version) || x$version <= "0.10.0.9000") &&
+    (is.mv(family(x), ee$response) || is.forked(family(x)))
 }

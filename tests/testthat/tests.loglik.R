@@ -55,13 +55,13 @@ test_that("loglik for multivariate linear models runs without errors", {
                      N_trait = ncols, K_trait = nvars)
   draws$f$link <- "identity"
   
-  ll <- loglik_gaussian_multi(1, draws = draws)
+  ll <- loglik_gaussian_mv(1, draws = draws)
   expect_equal(length(ll), ns)
   
-  ll <- loglik_student_multi(2, draws = draws)
+  ll <- loglik_student_mv(2, draws = draws)
   expect_equal(length(ll), ns)
   
-  ll <- loglik_cauchy_multi(2, draws = draws)
+  ll <- loglik_cauchy_mv(2, draws = draws)
   expect_equal(length(ll), ns)
 })
 
@@ -171,12 +171,6 @@ test_that("loglik for bernoulli and beta models works correctly", {
                     size = 1, log = TRUE)
   ll <- loglik_bernoulli(i, draws = draws)
   expect_equal(ll, as.matrix(ll_bern))
-  
-  ll_bern_2PL <- dbinom(x = draws$data$Y[i], size = 1, log = TRUE,
-                        prob = inv_logit(draws$eta[, i] * exp(draws$eta[, i + nobs])))
-  draws$data$N_trait <- nobs
-  ll <- loglik_bernoulli(i, draws = draws)
-  expect_equal(ll, as.matrix(ll_bern_2PL))
   
   draws$data <- list(Y = rbeta(nobs, 1, 1))
   ll_beta <- dbeta(x = draws$data$Y[i], shape1 = inv_logit(draws$eta[, i]) * draws$phi, 

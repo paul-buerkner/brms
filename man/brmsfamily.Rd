@@ -29,7 +29,7 @@ student(link = "identity")
 
 cauchy(link = "identity")
 
-bernoulli(link = "logit", type = NULL)
+bernoulli(link = "logit")
 
 negbinomial(link = "log")
 
@@ -91,12 +91,6 @@ families \code{zero_inflated_binomial} and
 The first link mentioned for each family is the default.
 A full list of families and link functions supported by \pkg{brms}, 
 is provided in the 'Details' section of \code{\link[brms:brm]{brm}}.}
-
-\item{type}{An optional character string allowing to specify advanced 
-models implemented through certain families. Currently, 
-only the \code{bernoulli} family uses this argument to define 
-2PL models (applied in IRT) by setting \code{type = "2PL"}.
-Further options will follow in the future.}
 }
 \description{
 Family objects provide a convenient way to specify the details of the models 

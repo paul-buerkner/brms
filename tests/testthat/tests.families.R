@@ -62,12 +62,11 @@ test_that("check_family return an error on wrong links", {
 
 test_that("check_family rejects invalid families", {
   expect_error(check_family("multigaussian"),
-               "family 'multigaussian' is deprecated. Use family 'gaussian' instead")
+               "multigaussian is not a supported family")
   expect_error(check_family("ordinal"),
                "ordinal is not a supported family")
 })
 
 test_that("print brmsfamily works correctly", {
   expect_output(print(weibull()), "Family: weibull \nLink function: log")
-  expect_output(print(bernoulli(type = "2PL")), "Type: 2PL")
 })

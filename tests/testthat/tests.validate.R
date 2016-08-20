@@ -39,7 +39,7 @@ test_that("extract_effects finds all response variables", {
   expect_equal(extract_effects(cbind(y1,y2)~x)$response, 
                c("y1", "y2")) 
   expect_equal(extract_effects(cbind(y1,y2,y2)~x)$response, 
-               c("y1", "y2", "y2")) 
+               c("y1", "y2", "y21")) 
   expect_equal(extract_effects(y1+y2+y3~x)$response, "y1") 
   expect_equal(extract_effects(y1/y2 ~ (1|g))$response, "y1")
   expect_equal(extract_effects(cbind(y1/y2,y2,y3*3) ~ (1|g))$response,
@@ -116,18 +116,17 @@ test_that("extract_effects finds all spline terms", {
 test_that("extract_effects correctly handles group IDs", {
   form <- bf(y ~ x + (1+x|3|g) + (1|g2),
              sigma = ~ (x|3|g) + (1||g2))
-  target <- data.frame(group = c("g", "g2"), gn = 1:2, id = c(3, NA),
+  target <- data.frame(group = c("g", "g2"), gn = 1:2, id = c("3", NA),
                        cor = c(TRUE, TRUE), stringsAsFactors = FALSE)
   target$form <- list(~1+x, ~1)
   expect_equal(extract_effects(form)$random, target)
   
   form <- bf(y ~ a, nonlinear = a ~ x + (1+x|3|g) + (1|g2),
              sigma = ~ (x|3|g) + (1||g2))
-  target <- data.frame(group = c("g", "g2"), gn = 1:2, id = c(3, NA),
+  target <- data.frame(group = c("g", "g2"), gn = 1:2, id = c("3", NA),
                        cor = c(TRUE, FALSE), stringsAsFactors = FALSE)
   target$form <- list(~x, ~1)
   expect_equal(extract_effects(form)$sigma$random, target)
-  
 })
 
 test_that("extract_effects handles very long RE terms", {
@@ -218,12 +217,6 @@ test_that("amend_terms performs expected changes to terms objects", {
   expect_equal(amend_terms(y~x), terms(y~x))
   form <- structure(y~x, rsv_intercept = TRUE)
   expect_equal(attr(amend_terms(form), "rm_intercept"), TRUE)
-  t <- amend_terms(y ~ 0 + main + main:x + spec + spec:z, forked = TRUE)
-  expect_equal(attr(t, "intercept"), 1)
-  expect_equal(attr(t, "rm_intercept"), TRUE)
-  expect_error(amend_terms(y ~ main, forked = TRUE), "intercept")
-  expect_error(amend_terms(y ~ 0 + main + trait, forked = TRUE), 
-               "trait")
 })
 
 test_that("gather_ranef works correctly", {
@@ -249,17 +242,6 @@ test_that("check_brm_input returns correct warnings and errors", {
   expect_warning(check_brm_input(x))
   x$family <- poisson("sqrt")
   expect_warning(check_brm_input(x))
-})
-
-test_that("check_mv_formula works correctly", {
-  effects <- extract_effects(cbind(y1,y2) ~ x)
-  expect_warning(check_mv_formula(gaussian(), effects),
-                 "did not use any of the variables")
-  effects <- extract_effects(y ~ x)
-  expect_warning(check_mv_formula(hurdle_gamma(), effects),
-                 "did not use any of the variables")
-  effects <- extract_effects(y ~ 0 + trait + trait:x)
-  expect_silent(check_mv_formula(hurdle_gamma(), effects))
 })
 
 test_that("exclude_pars returns expected parameter names", {

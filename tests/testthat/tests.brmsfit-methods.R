@@ -175,7 +175,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(names(standata(fit)),
                c("N", "Y", "ns", "knots", "Zs_1", "K", "X_means", "X", 
                  "Km", "Xm", "Jm", "con_simplex_1", "Z_1_1", "Z_1_2", 
-                 "offset", "K_sigma", "X_sigma", "J_1", "N_1", "K_1", 
+                 "offset", "K_sigma", "X_sigma", "J_1", "N_1", "M_1", 
                  "NC_1", "tg", "Kar", "Kma", "Karma", "prior_only"))
   # stanplot tested in tests.plots.R
   # summary
