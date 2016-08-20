@@ -3,13 +3,29 @@
 \encoding{UTF-8}
 
 \section{CHANGES IN VERSION 0.10.0.9000}{
+  \subsection{SUMMARY}
+  This is one of the largest updates of \code{brms} since its 
+  initial release. In addition to many new features, 
+  the multivariate \code{'trait'} syntax has been removed 
+  from the package as it was confusing for users, required 
+  much special case coding, and was hard to maintain.
+  See \code{help(brmsformula)} for details of the formula
+  syntax applied in \pkg{brms}.
   \subsection{NEW FEATURES}{
     \itemize{ 
+      \item Allow estimating correlations between 
+      group-level effects defined across multiple formulae 
+      (e.g., in non-linear models) by specifying IDs in
+      each grouping term via an extended \pkg{lme4} syntax.
       \item Implement distributional regression models
       allowing to fully predict auxiliary parameters 
       of the response distribution. Among many other 
       possibilities, this can be used to model 
       heterogeneity of variances.
+      \item Zero-inflated and hurdle models do not use
+      multivariate syntax anymore but instead have
+      special auxiliary parameters named \code{zi} and 
+      \code{hu} defining zero-inflation / hurdle probabilities.
       \item Allow predictions of \code{t2} smoothing
       terms for new data.
       \item Feature vectors as arguments for the addition 
