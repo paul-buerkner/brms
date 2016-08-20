@@ -53,7 +53,6 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   is_forked <- is.forked(family)
   trunc_bounds <- get_bounds(ee$trunc, data = data)
   
-  intercepts <- names(get_intercepts(ee, family = family, data = data))
   ranef <- gather_ranef(ee, data = data)
   if (length(ee$nonlinear)) {
     text_pred <- stan_nonlinear(ee, data = data, family = family, 

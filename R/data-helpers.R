@@ -424,47 +424,6 @@ get_model_matrix <- function(formula, data = environment(formula),
   X   
 }
 
-get_intercepts <- function(effects, data, family = gaussian()) {
-  # create a named list with one element per intercept
-  # each containing observation numbers corresponding to it
-  if (length(effects$nonlinear)) {
-    int_names <- NULL
-  } else {
-    terms <- terms(rhs(effects$fixed))
-    if (is.mv(family, response = effects$response)) {
-      term_labels <- attr(terms, "term.labels")
-      if (attr(terms, "intercept")) {
-        int_names <- "Intercept"
-      } else {
-        if ("trait" %in% term_labels) {
-          int_names <- paste0("trait", levels(data$trait))
-        } else if (is.forked(family) && all(c("main", "spec") %in% term_labels)) {
-          int_names <- c("main", "spec")
-        } else {
-          int_names <- NULL
-        }
-      }
-    } else {
-      if (attr(terms, "intercept")) {
-        int_names <- "Intercept"
-      } else {
-        int_names <- NULL
-      }
-    }
-  }
-  if (length(int_names)) {
-    mm <- stats::model.matrix(terms, data)
-    colnames(mm) <- rename(colnames(mm), check_dup = TRUE)
-    out <- lapply(int_names, function(x) which(mm[, x] != 0))
-    Jint <- rep(0, nrow(data))
-    for (i in seq_along(out)) Jint[out[[i]]] <- i
-    out <- structure(out, names = int_names, Jint = Jint)
-  } else {
-    out <- list()
-  }
-  out
-}
-
 prepare_mono_vars <- function(data, vars, check = TRUE) {
   # prepare monotonic variables for use in Stan
   # Args:
@@ -554,10 +513,8 @@ arr_design_matrix <- function(Y, r, group)  {
   #   Y: a vector containing the response variable
   #   r: ARR order
   #   group: vector containing the grouping variable for each observation
-  #
   # Notes: 
   #   expects Y to be sorted after group already
-  # 
   # Returns:
   #   the design matrix for ARR effects
   stopifnot(length(Y) == length(group))
