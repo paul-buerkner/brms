@@ -11,7 +11,7 @@
 #' @param link A specification for the model link function. 
 #'   This can be a name/expression or character string. 
 #'   The following list only refers to \pkg{brms} specific family functions.
-#'   Families \code{student}, and \code{cauchy} (deprecated) accept the links 
+#'   Familiy \code{student} accept the links 
 #'   (as names) \code{identity}, \code{log}, and \code{inverse};
 #'   families \code{negbinomial}, and \code{geometric} the links 
 #'   \code{log}, \code{identity}, and \code{sqrt}; 
@@ -51,25 +51,6 @@ student <- function(link = "identity") {
                "Supported links are: \n", paste(okLinks, collapse = ", ")))
   }
   structure(list(family = "student", link = linktemp), 
-            class = c("brmsfamily", "family"))
-}
-
-#' @rdname brmsfamily
-#' @export
-cauchy <- function(link = "identity") {
-  linktemp <- substitute(link)
-  if (!is.character(linktemp)) {
-    linktemp <- deparse(linktemp)
-  } 
-  okLinks <- c("identity", "log", "inverse")
-  if (!linktemp %in% okLinks && is.character(link)) {
-    linktemp <- link
-  }
-  if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family cauchy.", 
-               "Supported links are: \n", paste(okLinks, collapse = ", ")))
-  }
-  structure(list(family = "cauchy", link = linktemp), 
             class = c("brmsfamily", "family"))
 }
 
@@ -442,7 +423,6 @@ acat <- function(link = "logit") {
 
 family.character <- function(object, link = NA, ...) {
   # build a family object
-  # 
   # Args:
   #   object: A character string defining the family
   #   link: A character string defining the link
@@ -451,7 +431,7 @@ family.character <- function(object, link = NA, ...) {
   if (family == "normal") {
     family <- "gaussian"
   }
-  okFamilies <- c("gaussian", "student", "cauchy", "lognormal", 
+  okFamilies <- c("gaussian", "student", "lognormal", 
                   "binomial", "bernoulli", "categorical", "beta",
                   "poisson", "negbinomial", "geometric", 
                   "gamma", "weibull", "exponential", "inverse.gaussian", 
@@ -497,7 +477,6 @@ family.character <- function(object, link = NA, ...) {
 
 check_family <- function(family, link = NULL) {
   # checks and corrects validity of the model family
-  #
   # Args:
   #   family: Either a function, an object of class 'family' 
   #   or a character string

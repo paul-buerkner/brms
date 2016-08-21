@@ -32,7 +32,7 @@ Although it is optional, we strongly recommend to supply a data.frame.}
 to be used in the model. This can be a family function, 
 a call to a family function or a character string naming the family.
 Currently, the following families are supported:
-\code{gaussian}, \code{student}, \code{cauchy} (deprecated), \code{binomial}, 
+\code{gaussian}, \code{student}, \code{binomial}, 
 \code{bernoulli}, \code{Beta}, \code{poisson}, \code{negbinomial}, 
 \code{geometric}, \code{Gamma}, \code{lognormal}, \code{inverse.gaussian}, 
 \code{exponential}, \code{weibull}, \code{categorical}, \code{cumulative}, 
@@ -224,7 +224,7 @@ Fit a generalized (non-)linear multilevel model,
   \bold{Families and link functions}
   
   Family \code{gaussian} with \code{identity} link leads to linear regression. 
-  Families \code{student}, and \code{cauchy} with \code{identity} link leads to 
+  Family \code{student} with \code{identity} link leads to 
   robust linear regression that is less influenced by outliers. 
   Families \code{poisson}, \code{negbinomial}, and \code{geometric} 
   with \code{log} link lead to regression models for count data. 
@@ -247,7 +247,7 @@ Fit a generalized (non-)linear multilevel model,
   fitted for data containing zeros in the response. 
   
   In the following, we list all possible links for each family.
-  The families \code{gaussian}, \code{student}, and \code{cauchy} 
+  The families \code{gaussian}, and \code{student},
   accept the links (as names) \code{identity}, \code{log}, and \code{inverse};
   families \code{poisson}, \code{negbinomial}, and \code{geometric} the links 
   \code{log}, \code{identity}, and \code{sqrt}; 

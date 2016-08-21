@@ -6,7 +6,6 @@
 \alias{bernoulli}
 \alias{brmsfamily}
 \alias{categorical}
-\alias{cauchy}
 \alias{cratio}
 \alias{cumulative}
 \alias{exponential}
@@ -26,8 +25,6 @@
 \title{Special Family Functions for \pkg{brms} Models}
 \usage{
 student(link = "identity")
-
-cauchy(link = "identity")
 
 bernoulli(link = "logit")
 
@@ -71,7 +68,7 @@ acat(link = "logit")
 \item{link}{A specification for the model link function. 
 This can be a name/expression or character string. 
 The following list only refers to \pkg{brms} specific family functions.
-Families \code{student}, and \code{cauchy} (deprecated) accept the links 
+Familiy \code{student} accept the links 
 (as names) \code{identity}, \code{log}, and \code{inverse};
 families \code{negbinomial}, and \code{geometric} the links 
 \code{log}, \code{identity}, and \code{sqrt}; 

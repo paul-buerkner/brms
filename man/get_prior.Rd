@@ -26,7 +26,7 @@ Although it is optional, we strongly recommend to supply a data.frame.}
 to be used in the model. This can be a family function, 
 a call to a family function or a character string naming the family.
 Currently, the following families are supported:
-\code{gaussian}, \code{student}, \code{cauchy} (deprecated), \code{binomial}, 
+\code{gaussian}, \code{student}, \code{binomial}, 
 \code{bernoulli}, \code{Beta}, \code{poisson}, \code{negbinomial}, 
 \code{geometric}, \code{Gamma}, \code{lognormal}, \code{inverse.gaussian}, 
 \code{exponential}, \code{weibull}, \code{categorical}, \code{cumulative}, 

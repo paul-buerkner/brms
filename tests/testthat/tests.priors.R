@@ -52,7 +52,7 @@ test_that("check_prior accepts correct prior names", {
                                 coef = "sexfemale", group = "patient")[1, ])
   
   expect_equivalent(check_prior(set_prior("cauchy(0,1)", class = "sigma"), 
-                                formula = bf(rating ~ 1), family = cauchy(), 
+                                formula = bf(rating ~ 1), family = gaussian(), 
                                 data = inhaler)[2, ],
                     prior_frame("cauchy(0,1)", class = "sigma"))
   
@@ -77,7 +77,7 @@ test_that("check_prior rejects incorrect prior names", {
   expect_message(check_prior(c(set_prior("p1", class = "Intercept"),
                                set_prior("", class = "sd", group = "patient")),
                              formula = bf(rating ~ treat + (1+treat|subject)), 
-                             family = cauchy(), data = inhaler))
+                             family = student(), data = inhaler))
   expect_message(check_prior(set_prior("normal(0,1)", class = "ar"), 
                              formula = bf(count ~ log_Base4_c * Trt_c 
                              + (1+Trt_c|patient)), data = epilepsy))

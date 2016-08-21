@@ -48,7 +48,7 @@ test_that("make_stancode handles addition arguments correctly", {
                              data = kidney, family = "gamma"), 
                "T[lb[n], ];", fixed = TRUE)
   expect_match(make_stancode(time | trunc(ub = 100) ~ age + sex + disease, 
-                             data = kidney, family = cauchy("log")), 
+                             data = kidney, family = student("log")), 
                "T[, ub[n]];", fixed = TRUE)
   expect_match(make_stancode(count | trunc(0, 150) ~ Trt_c, 
                              data = epilepsy, family = "poisson"), 
@@ -134,7 +134,7 @@ test_that("make_stancode returns correct self-defined functions", {
   expect_match(make_stancode(time ~ age, data = kidney, family = "student", 
                              autocor = cor_ma(cov = TRUE)),
                "matrix cov_matrix_ma1(real ma", fixed = TRUE)
-  expect_match(make_stancode(time ~ age, data = kidney, family = "cauchy", 
+  expect_match(make_stancode(time ~ age, data = kidney, family = "student", 
                              autocor = cor_arma(p = 1, q = 1, cov = TRUE)),
                "matrix cov_matrix_arma1(real ar, real ma", fixed = TRUE)
   # kronecker matrices
@@ -287,9 +287,9 @@ test_that("fixed residual covariance matrices appear in the Stan code", {
   expect_match(make_stancode(y~1, data = data, family = student(),
                              autocor = cor_fixed(V)),
                "Y ~ multi_student_t(nu, eta, V)", fixed = TRUE)
-  expect_match(make_stancode(y~1, data = data, family = cauchy(),
+  expect_match(make_stancode(y~1, data = data, family = student(),
                              autocor = cor_fixed(V)),
-               "Y ~ multi_student_t(1.0, eta, V)", fixed = TRUE)
+               "Y ~ multi_student_t(nu, eta, V)", fixed = TRUE)
 })
 
 test_that("make_stancode correctly generates code for bsts models", {

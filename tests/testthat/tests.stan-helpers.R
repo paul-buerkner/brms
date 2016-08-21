@@ -122,8 +122,8 @@ test_that("stan_llh uses simplifications when possible", {
 })
 
 test_that("stan_llh returns correct llhs under weights and censoring", {
-  expect_match(stan_llh(cauchy("inverse"), effects = list(weights = ~x)),
-               "  lp_pre[n] = cauchy_lpdf(Y[n] | inv(eta[n]), sigma); \n",
+  expect_match(stan_llh(student("inverse"), effects = list(weights = ~x)),
+               "  lp_pre[n] = student_t_lpdf(Y[n] | nu, inv(eta[n]), sigma); \n",
                fixed = TRUE)
   expect_match(stan_llh(poisson(), effects = list(weights = ~x)),
                "  lp_pre[n] = poisson_log_lpmf(Y[n] | (eta[n])); \n",
@@ -142,8 +142,8 @@ test_that("stan_llh returns correct llhs under weights and censoring", {
 
 test_that("stan_llh returns correct llhs under truncation", {
   
-  expect_match(stan_llh(cauchy(inverse), trunc_bounds = list(lb = 0)),
-               "  Y[n] ~ cauchy(inv(eta[n]), sigma) T[lb[n], ];", fixed = TRUE)
+  expect_match(stan_llh(student(inverse), trunc_bounds = list(lb = 0)),
+               "  Y[n] ~ student_t(nu, inv(eta[n]), sigma) T[lb[n], ];", fixed = TRUE)
   expect_match(stan_llh(poisson(), trunc_bounds = list(ub = 100)),
                "  Y[n] ~ poisson(exp(eta[n])) T[, ub[n]]; \n", fixed = TRUE)
   expect_match(stan_llh(gaussian(), effects = list(se = ~x),
@@ -170,8 +170,8 @@ test_that("stan_llh returns correct llhs for multivariate models", {
                "  Y ~ multi_normal_cholesky(Eta, LSigma); \n", fixed = TRUE)
   expect_match(stan_llh(student(), list(response = c("y1", "y2", "y3"))),
                "  Y ~ multi_student_t(nu, Eta, Sigma); \n", fixed = TRUE)
-  expect_match(stan_llh(cauchy(), list(response = c("y1", "y2"), weights = ~x)),
-               "  lp_pre[n] = multi_student_t_lpdf(Y[n] | 1.0, (Eta[n]), Sigma);",
+  expect_match(stan_llh(student(), list(response = c("y1", "y2"), weights = ~x)),
+               "  lp_pre[n] = multi_student_t_lpdf(Y[n] | nu, (Eta[n]), Sigma);",
                fixed = TRUE)
 })
 

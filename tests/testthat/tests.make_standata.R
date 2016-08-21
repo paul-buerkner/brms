@@ -46,7 +46,7 @@ test_that(paste("make_standata returns correct data names",
   expect_equal(names(make_standata(y | weights(w) ~ x, family = "gaussian", 
                                    data = temp_data)), 
                c("N", "Y", "K", "X_means", "X", "weights", "prior_only"))
-  expect_equal(names(make_standata(y | cens(c) ~ x, family = "cauchy", 
+  expect_equal(names(make_standata(y | cens(c) ~ x, family = "student", 
                                    data = temp_data)), 
                c("N", "Y", "K", "X_means", "X", "cens", "prior_only"))
   expect_equal(names(make_standata(y | trials(t) ~ x, family = "binomial", 
@@ -107,8 +107,8 @@ test_that(paste("make_standata accepts correct response variables",
 test_that(paste("make_standata rejects incorrect response variables", 
                 "depending on the family"), {
   expect_error(make_standata(y ~ 1, data = data.frame(y = factor(1:10)), 
-                             family = "cauchy"),
-               "family cauchy expects numeric response variable")
+                             family = "student"),
+               "family student expects numeric response variable")
   expect_error(make_standata(y ~ 1, data = data.frame(y = -5:5), 
                              family = "geometric"),
                "family geometric expects response variable of non-negative integers")

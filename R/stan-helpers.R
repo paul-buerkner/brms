@@ -106,11 +106,6 @@ stan_llh <- function(family, effects = list(), autocor = cor_arma(),
                       "begin_tg, end_tg, nobs_tg, res_cov_matrix")),
       student_mv = c("multi_student_t", paste0(nu, ", ", eta, ", Sigma")),
       student_fixed = c("multi_student_t", paste0(nu, ", ", eta, ", V")),
-      cauchy = c("cauchy", paste0(eta, ", ", sigma)),
-      cauchy_cov = c("student_t_cov", paste0("1, ", eta, ", se2, N_tg, ", 
-                     "begin_tg, end_tg, nobs_tg, res_cov_matrix")),
-      cauchy_mv = c("multi_student_t", paste0("1.0, ", eta, ", Sigma")),
-      cauchy_fixed = c("multi_student_t", paste0("1.0, ", eta,", V")),
       lognormal = c("lognormal", paste0(eta, ", ", sigma)),
       poisson = c("poisson", eta),
       negbinomial = c("neg_binomial_2", paste0(eta, ", ", shape)),
@@ -255,7 +250,7 @@ stan_autocor <- function(autocor, effects = list(), family = gaussian(),
       # defined selfmade functions for the functions block
       if (family$family == "gaussian") {
         out$fun <- paste0(out$fun, "  #include 'fun_normal_cov.stan' \n")
-      } else { # family %in% c("student", "cauchy")
+      } else {  # family == "student"
         out$fun <- paste0(out$fun, "  #include 'fun_student_t_cov.stan' \n")
       }
       if (Kar && !Kma) {
@@ -378,7 +373,7 @@ stan_mv <- function(family, response, prior = prior_frame()) {
         out$transC1 <- paste0(
           "  // compute cholesky factor of residual covariance matrix \n",
           "  LSigma = diag_pre_multiply(sigma, Lrescor); \n")
-      } else if (family$family %in% c("student", "cauchy")) {
+      } else if (family$family == "student") {
         out$transD <- "  cov_matrix[nresp] Sigma; \n"
         out$transC1 <- paste0(
           "  // compute residual covariance matrix \n",

@@ -34,6 +34,8 @@
   }
   \subsection{OTHER CHANGES}{
     \itemize{
+      \item Remove the \code{cauchy} family
+      after several months of deprecation.
       \item Compute the linear predictor in the model
       block of the Stan program instead of in the
       transformed parameters block. This avoids saving

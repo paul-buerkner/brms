@@ -91,7 +91,7 @@
 #'   replaced with either \code{se}, \code{weights}, \code{disp}, \code{trials},
 #'   \code{cat}, \code{cens}, or \code{trunc}. Their meanings are explained below. 
 #'   
-#'   For families \code{gaussian}, \code{student}, and \code{cauchy} it is 
+#'   For families \code{gaussian} and \code{student}, it is 
 #'   possible to specify standard errors of the observation, thus allowing 
 #'   to perform meta-analysis. Suppose that the variable \code{yi} contains 
 #'   the effect sizes from the studies and \code{sei} the corresponding 
@@ -116,7 +116,7 @@
 #'   The addition argument \code{disp} (short for dispersion) serves a
 #'   similar purpose than \code{weight}. However, it has a different 
 #'   implementation and is less general as it is only usable for the
-#'   families \code{gaussian}, \code{student}, \code{cauchy},
+#'   families \code{gaussian}, \code{student},
 #'   \code{lognormal}, \code{Gamma}, \code{weibull}, and \code{negbinomial}.
 #'   For the former four families, the residual standard deviation 
 #'   \code{sigma} is multiplied by the values given in 
@@ -158,7 +158,7 @@
 #'   the \code{+} operator, for instance \code{formula = yi | se(sei) + cens(censored) ~ 1} 
 #'   for a censored meta-analytic model. \cr
 #'   
-#'   For families \code{gaussian}, \code{student}, and \code{cauchy} 
+#'   For families \code{gaussian} and \code{student},
 #'   multivariate models may be specified using \code{cbind} notation. 
 #'   In \pkg{brms} 1.0.0, the multvariate 'trait' syntax was removed 
 #'   from the package as it repeatedly confused users, required much 
