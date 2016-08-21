@@ -1110,16 +1110,24 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   if (length(ee$nonlinear)) {
     # allow covariates as well as fixed effects of non-linear parameters
     covars <- setdiff(all.vars(rhs(ee$fixed)), names(ee$nonlinear))
-    nlpar_effects <- unlist(lapply(ee$nonlinear, function(nl)
+    nl_effects <- unlist(lapply(ee$nonlinear, function(nl)
       get_var_combs(nl$fixed, nl$mono, nl$gam)), recursive = FALSE)
-    all_effects <- unique(c(list(covars), nlpar_effects))
+    all_effects <- unique(c(list(covars), nl_effects))
   } else {
     all_effects <- get_var_combs(ee$fixed, ee$cse, ee$mono, ee$gam)
   }
+  # make sure to also include effects only present in auxpars
+  ee_auxpars <- rmNULL(ee[auxpars()])
+  if (length(ee_auxpars)) {
+    ap_effects <- unlist(lapply(ee_auxpars, function(ap)
+      get_var_combs(ap$fixed, ap$mono, ap$gam)), recursive = FALSE)
+    all_effects <- unique(c(all_effects, ap_effects))
+  }
   all_effects <- rmNULL(lapply(all_effects, setdiff, y = rsv_vars))
+  all_effects <- all_effects[ulapply(all_effects, length) < 3L]
   ae_collapsed <- ulapply(all_effects, function(e) paste(e, collapse = ":"))
   if (is.null(effects)) {
-    effects <- all_effects[ulapply(all_effects, length) < 3]
+    effects <- all_effects
   } else {
     # allow to define interactions in any order
     effects <- strsplit(as.character(effects), split = ":")
