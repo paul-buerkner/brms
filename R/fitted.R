@@ -40,10 +40,10 @@ fitted_response <- function(draws, mu) {
     mu <- fitted_catordinal(mu, max_obs = data$max_obs, family = draws$f)
   } else if (is.hurdle(draws$f)) {
     shape <- get_shape(draws$shape, data = draws$data, dim = dim)
-    hu <- get_theta(draws, dim = dim, par = "hu")
+    hu <- get_theta(draws, par = "hu")
     mu <- fitted_hurdle(mu, hu = hu, shape = shape, family = draws$f)
   } else if (is.zero_inflated(draws$f)) {
-    zi <- get_theta(draws, dim = dim, par = "zi")
+    zi <- get_theta(draws, par = "zi")
     mu <- fitted_zero_inflated(mu, zi = zi, family = draws$f)
     if (draws$f$family == "zero_inflated_binomial") {
       if (length(data$max_obs) > 1L) {
@@ -147,7 +147,7 @@ fitted_trunc_gaussian <- function(mu, lb, ub, draws, dim) {
 
 fitted_trunc_student <- function(mu, lb, ub, draws, dim) {
   sigma <- get_sigma(draws$sigma, data = draws$data, dim = dim)
-  nu <- get_auxpar(draws$nu, dim = dim)
+  nu <- get_auxpar(draws$nu)
   zlb <- (lb - mu) / sigma
   zub <- (ub - mu) / sigma
   # see Kim 2008: Moments of truncated Student-t distribution

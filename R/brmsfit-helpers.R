@@ -361,15 +361,13 @@ get_cov_matrix_ident <- function(sigma, nrows, se2 = 0) {
   mat
 }
 
-get_auxpar <- function(x, i = NULL, dim = NULL) {
+get_auxpar <- function(x, i = NULL) {
   # get samples of an auxiliary parameter
   # Args:
   #   x: object to extract postarior samples from
   #   data: data initially passed to Stan
   #   i: the current observation number
   #      (used in predict and logLik)
-  #   dim: target dimension of output matrices 
-  #        (used in fitted)
   if (is.list(x)) {
     # compute auxpar in distributional regression models
     link <- get(x[["link"]], mode = "function")
@@ -381,20 +379,21 @@ get_auxpar <- function(x, i = NULL, dim = NULL) {
   }
   if (is.null(i) && isTRUE(ncol(x) == 1L)) {
     # for compatibility with fitted helper functions
-    stopifnot(!is.null(dim))
-    x <- matrix(as.vector(x), nrow = dim[1], ncol = dim[2], byrow = TRUE)
+    x <- as.vector(x)
   }
   x
 }
 
 get_sigma <- function(x, data, i = NULL, dim = NULL) {
   # get the residual standard devation of linear models
-  # Args: see get_auxpar
+  # Args: 
+  #    see get_auxpar
+  #    dim: target dimension of output matrices (used in fitted)
   stopifnot(is.atomic(x) || is.list(x))
   if (is.null(x)) {
     x <- get_se(data = data, i = i, dim = dim)
   } else {
-    x <- get_auxpar(x, i = i, dim = dim)
+    x <- get_auxpar(x, i = i)
   }
   mult_disp(x, data = data, i = i, dim = dim)
 }
@@ -403,11 +402,11 @@ get_shape <- function(x, data, i = NULL, dim = NULL) {
   # get the shape parameter of gamma, weibull and negbinomial models
   # Args: see get_auxpar
   stopifnot(is.atomic(x) || is.list(x))
-  x <- get_auxpar(x, i = i, dim = dim)
+  x <- get_auxpar(x, i = i)
   mult_disp(x, data = data, i = i, dim = dim)
 }
 
-get_theta <- function(draws, i = NULL, dim = NULL, par = c("zi", "hu")) {
+get_theta <- function(draws, i = NULL, par = c("zi", "hu")) {
   # convenience function to extract zi / hu parameters
   # also works with deprecated models fitted with brms < 1.0.0 
   # which were using multivariate syntax
@@ -419,7 +418,7 @@ get_theta <- function(draws, i = NULL, dim = NULL, par = c("zi", "hu")) {
     j <- if (!is.null(i)) i else seq_len(draws$data$N_trait)
     theta <- ilink(get_eta(draws, j + draws$data$N_trait), "logit")
   } else {
-    theta <- get_auxpar(draws[[par]], i = i, dim = dim)
+    theta <- get_auxpar(draws[[par]], i = i)
   }
   theta
 }
