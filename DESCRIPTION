@@ -28,6 +28,7 @@ Imports:
     grid
 Suggests: 
     testthat (>= 0.9.1),
+    bayesplot,
     arm,
     mvtnorm,
     KernSmooth,
