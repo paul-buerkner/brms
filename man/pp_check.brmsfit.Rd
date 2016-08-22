@@ -5,7 +5,8 @@
 \title{Posterior Predictive Checks for \code{brmsfit} Objects}
 \usage{
 \method{pp_check}{brmsfit}(object, type, nsamples, group = NULL,
-  time = NULL, re_formula = NULL, subset = NULL, ntrys = 5, ...)
+  time = NULL, x = NULL, re_formula = NULL, subset = NULL, ntrys = 5,
+  ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
@@ -31,6 +32,9 @@ ppc \code{*_grouped} types and ignored otherwise.}
 \item{time}{Optional name of a time variable in the model by
 which to order time-series plots. Only used for
 ppc \code{ts*} types and ignored otherwise.}
+
+\item{x}{Optional name of a variable in the model. 
+Only used for ppc \code{vs_x*} types and ignored otherwise.}
 
 \item{re_formula}{formula containing random effects 
 to be considered in the prediction. 
