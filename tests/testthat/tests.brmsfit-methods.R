@@ -114,15 +114,15 @@ test_that("all S3 methods have reasonable ouputs", {
                  "b_Trt:Age", "b_sAge_1", "b_sigma_Intercept",
                  "b_sigma_Trt", "b_Exp"))
   # pp_check
-  # expect_true(is(pp_check(fit), "ggplot"))
-  # expect_true(is(pp_check(fit, "stat", nsamples = 5), "ggplot"))
-  # expect_true(is(pp_check(fit, "resid_binned"), "ggplot"))
-  # ts_plot <- pp_check(fit, "ts_grouped", group = "patient", time = "visit")
-  # expect_true(is(ts_plot, "ggplot"))
-  # expect_error(pp_check(fit, "wrong_type"))
-  # expect_error(pp_check(fit, "violin_grouped"), "group")
-  # expect_error(pp_check(fit, "stat_grouped", group = "g"), 
-  #              "not a valid grouping factor")
+  expect_true(is(pp_check(fit), "ggplot"))
+  expect_true(is(pp_check(fit, "stat", nsamples = 5), "ggplot"))
+  expect_true(is(pp_check(fit, "resid_binned"), "ggplot"))
+  ts_plot <- pp_check(fit, "ts_grouped", group = "patient", time = "visit")
+  expect_true(is(ts_plot, "ggplot"))
+  expect_error(pp_check(fit, "wrong_type"))
+  expect_error(pp_check(fit, "violin_grouped"), "group")
+  expect_error(pp_check(fit, "stat_grouped", group = "g"),
+               "not a valid grouping factor")
   # predict
   predict1 <- predict(fit)
   expect_equal(dim(predict1), c(nrow(epilepsy), 4))

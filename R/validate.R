@@ -619,6 +619,37 @@ get_var_combs <- function(..., alist = list()) {
   unique(unlist(dots, recursive = FALSE))
 }
 
+get_all_effects <- function(effects, rsv_vars = NULL) {
+  # get all effects for use in marginal_effects
+  # Args:
+  #   effects: output of extract_effects
+  #   rsv_vars: character vector of reserved variables
+  # Returns:
+  #   a list with one element per valid effect / effects combination
+  #   excludes all 3-way or higher interactions
+  stopifnot(is.list(effects))
+  stopifnot(is.atomic(rsv_vars))
+  if (length(effects$nonlinear)) {
+    # allow covariates as well as fixed effects of non-linear parameters
+    covars <- setdiff(all.vars(rhs(effects$fixed)), names(effects$nonlinear))
+    nl_effects <- unlist(lapply(effects$nonlinear, function(nl)
+      get_var_combs(nl$fixed, nl$mono, nl$gam)), recursive = FALSE)
+    all_effects <- unique(c(list(covars), nl_effects))
+  } else {
+    all_effects <- get_var_combs(effects$fixed, effects$cse, 
+                                 effects$mono, effects$gam)
+  }
+  # make sure to also include effects only present in auxpars
+  effects_auxpars <- rmNULL(effects[auxpars()])
+  if (length(effects_auxpars)) {
+    ap_effects <- unlist(lapply(effects_auxpars, function(ap)
+      get_var_combs(ap$fixed, ap$mono, ap$gam)), recursive = FALSE)
+    all_effects <- unique(c(all_effects, ap_effects))
+  }
+  all_effects <- rmNULL(lapply(all_effects, setdiff, y = rsv_vars))
+  all_effects[ulapply(all_effects, length) < 3L]
+}
+
 get_spline_labels <- function(x) {
   # extract labels of splines for GAMMs
   # Args:
