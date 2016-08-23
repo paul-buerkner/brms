@@ -191,7 +191,7 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
     if (!is.null(attr(formula, "response"))) {
       x$response <- attr(formula, "response")
     } else { 
-      x$response <- gather_response(x$respform)
+      x$response <- extract_response(x$respform)
     }
     if (old_mv) {
       # multivariate ('trait') syntax is deprecated as of brms 1.0.0
@@ -732,8 +732,8 @@ has_rsv_intercept <- function(formula) {
   out
 }
 
-gather_response <- function(formula) {
-  # gather response variable names
+extract_response <- function(formula) {
+  # extract response variable names
   # Args:
   #   formula: a formula containing only the model response
   # Returns:
