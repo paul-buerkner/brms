@@ -5,7 +5,8 @@
 \alias{ranef.brmsfit}
 \title{Extract Group-Level Estimates}
 \usage{
-\method{ranef}{brmsfit}(object, estimate = "mean", var = FALSE, ...)
+\method{ranef}{brmsfit}(object, estimate = c("mean", "median"), var = FALSE,
+  ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
