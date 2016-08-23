@@ -35,6 +35,14 @@ Nsamples <- function(x, subset = NULL) {
   out
 }
 
+contains_samples <- function(x) {
+  if (!is(x$fit, "stanfit") || !length(x$fit@sim)) {
+    stop("The model does not contain posterior samples",
+         call. = FALSE)
+  }
+  invisible(TRUE)
+}
+
 algorithm <- function(x) {
   stopifnot(is(x, "brmsfit"))
   if (is.null(x$algorithm)) "sampling"
@@ -192,16 +200,16 @@ get_summary <- function(samples, probs = c(0.025, 0.975),
   } else {
     coefs <- c("mean", "sd", "quantile")
   }
-  if (length(dim(samples)) == 2) {
+  if (length(dim(samples)) == 2L) {
     out <- do.call(cbind, lapply(coefs, get_estimate, samples = samples,
                                  probs = probs, na.rm = TRUE))
-  } else if (length(dim(samples)) == 3) {
+  } else if (length(dim(samples)) == 3L) {
     out <- abind(lapply(1:dim(samples)[3], function(i)
       do.call(cbind, lapply(coefs, get_estimate, samples = samples[, , i],
                             probs = probs))), along = 3)
     dimnames(out) <- list(NULL, NULL, paste0("P(Y = ", 1:dim(out)[3], ")")) 
   } else { 
-    stop("dimension of samples must be either 2 or 3") 
+    stop("dimension of 'samples' must be either 2 or 3") 
   }
   rownames(out) <- 1:nrow(out)
   colnames(out) <- c("Estimate", "Est.Error", paste0(probs * 100, "%ile"))
@@ -512,11 +520,7 @@ compute_ic <- function(x, ic = c("waic", "loo"), ll_args = list(), ...) {
   # Returns:
   #   output of the loo package with amended class attribute
   ic <- match.arg(ic)
-  if (!is(x, "brmsfit")) 
-    stop(paste("Cannot compute information criteria for", 
-               "an object of class", class(x)), call. = FALSE)
-  if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
-    stop("The model does not contain posterior samples")
+  contains_samples(x)
   args <- list(x = do.call(logLik, c(list(x), ll_args)))
   if (ll_args$pointwise) {
     args$args$draws <- attr(args$x, "draws")

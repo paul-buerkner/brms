@@ -1,7 +1,6 @@
 #' @export
 parnames.brmsfit <- function(x, ...) {
-  if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
-    stop("The model does not contain posterior samples")
+  contains_samples(x)
   dimnames(x$fit)$parameters
 }
 
@@ -35,12 +34,13 @@ parnames.brmsfit <- function(x, ...) {
 #' @export fixef
 #' @importFrom lme4 fixef
 fixef.brmsfit <-  function(object, estimate = "mean", ...) {
-  if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
-    stop("The model does not contain posterior samples")
+  contains_samples(object)
   pars <- parnames(object)
   fpars <- pars[grepl("^b_", pars)]
-  if (!length(fpars)) 
-    stop("The model does not contain fixed effects", call. = FALSE) 
+  if (!length(fpars)) {
+    stop("The model does not contain population-level effects", 
+         call. = FALSE) 
+  }
   out <- posterior_samples(object, pars = fpars, exact_match = TRUE)
   out <- do.call(cbind, lapply(estimate, get_estimate, samples = out, ...))
   rownames(out) <- gsub("^b_", "", fpars)
@@ -65,12 +65,13 @@ fixef.brmsfit <-  function(object, estimate = "mean", ...) {
 #'
 #' @export
 vcov.brmsfit <- function(object, correlation = FALSE, ...) {
-  if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
-    stop("The model does not contain posterior samples")
+  contains_samples(object)
   pars <- parnames(object)
   fpars <- pars[grepl("^b_", pars)]
-  if (!length(fpars)) 
-    stop("The model does not contain fixed effects", call. = FALSE) 
+  if (!length(fpars)) {
+    stop("The model does not contain population-level effects", 
+         call. = FALSE) 
+  }
   samples <- posterior_samples(object, pars = fpars, exact_match = TRUE)
   names(samples) <- sub("^b_", "", names(samples))
   if (correlation) {
@@ -115,14 +116,14 @@ vcov.brmsfit <- function(object, correlation = FALSE, ...) {
 #' @export
 #' @export ranef
 #' @importFrom lme4 ranef
-ranef.brmsfit <- function(object, estimate = "mean", var = FALSE, ...) {
-  if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
-    stop("The model does not contain posterior samples")
+ranef.brmsfit <- function(object, estimate = c("mean", "median"), 
+                          var = FALSE, ...) {
+  contains_samples(object)
   object <- restructure(object)
-  if (!estimate %in% c("mean","median"))
-    stop("Argument estimate must be either 'mean' or 'median'", call. = FALSE)
-  if (!length(object$ranef))
-    stop("The model does not contain random effects", call. = FALSE)
+  estimate <- match.arg(estimate)
+  if (!nrow(object$ranef)) {
+    stop("The model does not contain group-level effects", call. = FALSE)
+  }
   pars <- parnames(object)
   
   get_ranef <- function(group, nlpar = "") {
@@ -206,11 +207,12 @@ ranef.brmsfit <- function(object, estimate = "mean", var = FALSE, ...) {
 #' }
 #' 
 #' @export
-coef.brmsfit <- function(object, estimate = "mean", ...) {
-  if (!estimate %in% c("mean","median"))
-    stop("Argument estimate must be either 'mean' or 'median'", call. = FALSE)
+coef.brmsfit <- function(object, estimate = c("mean", "median"), ...) {
+  contains_samples(object)
+  object <- restructure(object)
+  estimate <- match.arg(estimate)
   fixef <- fixef(object, estimate = estimate, ...)
-  if (!length(object$ranef)) {
+  if (!nrow(object$ranef)) {
     return(fixef)  # no random effects present
   }
   coef <- ranef(object, estimate = estimate, ...)
@@ -286,13 +288,14 @@ coef.brmsfit <- function(object, estimate = "mean", ...) {
 #' @export
 VarCorr.brmsfit <- function(x, sigma = 1, estimate = "mean", 
                             as.list = TRUE, ...) {
-  if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
-    stop("The model does not contain posterior samples")
+  contains_samples(x)
   x <- restructure(x)
-  if (!(length(x$ranef) || any(grepl("^sigma($|_)", parnames(x)))))
+  if (!(length(x$ranef) || any(grepl("^sigma($|_)", parnames(x))))) {
     stop("The model does not contain covariance matrices", call. = FALSE)
-  if (!is_equal(sigma, 1))
-    warning("argument 'sigma' is unused")
+  }
+  if (!is_equal(sigma, 1)) {
+    warning("argument 'sigma' is unused", call. = FALSE)
+  }
   x <- restructure(x)
   
   # extracts samples for sd, cor and cov
@@ -380,7 +383,7 @@ VarCorr.brmsfit <- function(x, sigma = 1, estimate = "mean",
 #' @export
 model.frame.brmsfit <- function(formula, ...) {
   if (!is.data.frame(formula$data)) {
-    stop("Cannot extract model.frame for models fitted with brms <= 0.5.0.",
+    stop("Cannot extract the model.frame for this model",
          call. = FALSE)
   }
   formula$data 
@@ -394,10 +397,10 @@ posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,
                                       add_chains = FALSE, 
                                       subset = NULL, as.matrix = FALSE, 
                                       ...) {
-  if (is.na(pars[1])) 
+  if (is.na(pars[1])) {
     pars <- parameters  
-  if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
-    stop("The model does not contain posterior samples")
+  }
+  contains_samples(x)
   pars <- extract_pars(pars, all_pars = parnames(x), 
                        exact_match = exact_match, ...)
   x <- restructure(x)
@@ -468,8 +471,7 @@ as.matrix.brmsfit <- function(x, ...) {
 #' @importFrom coda as.mcmc
 as.mcmc.brmsfit <- function(x, pars = NA, exact_match = FALSE,
                                  inc_warmup = FALSE, ...) {
-  if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
-    stop("The model does not contain posterior samples")
+  contains_samples(x)
   pars <- extract_pars(pars, all_pars = parnames(x),
                        exact_match = exact_match, ...)
   ps <- extract(x$fit, pars = pars, permuted = FALSE, 
@@ -488,10 +490,12 @@ as.mcmc.brmsfit <- function(x, pars = NA, exact_match = FALSE,
 #' @rdname prior_samples
 #' @export
 prior_samples.brmsfit <- function(x, pars = NA, parameters = NA, ...) {
-  if (is.na(pars[1])) 
+  if (is.na(pars[1])) {
     pars <- parameters 
-  if (!anyNA(pars) && !is.character(pars)) 
-    stop("pars must be a character vector", call. = FALSE)
+  }
+  if (!anyNA(pars) && !is.character(pars)) {
+    stop("Argument 'pars' must be a character vector", call. = FALSE)
+  }
   par_names <- parnames(x)
   prior_names <- par_names[grepl("^prior_", par_names)]
   if (length(prior_names)) {
@@ -680,11 +684,6 @@ nobs.brmsfit <- function(object, ...) {
 ngrps.brmsfit <- function(object, ...) {
   if (nrow(object$ranef)) {
     out <- lapply(attr(object$ranef, "levels"), length)
-    # out <- named_list(names(object$ranef))
-    # for (i in seq_along(out)) {
-    #   out[[i]] <- length(attr(object$ranef[[i]], "levels"))
-    # } 
-    # out <- out[!duplicated(names(out))]
   } else {
     out <- NULL
   }
@@ -719,7 +718,6 @@ standata.brmsfit <- function(object, ...) {
     # brms > 0.5.0 stores the original model.frame
     object <- restructure(object)
     new_formula <- update_re_terms(object$formula, dots$re_formula)
-    # TODO: remove old_categorical?
     dots$control$old_cat <- is.old_categorical(object)
     prior_only <- attr(object$prior, "prior_only")
     sample_prior <- ifelse(isTRUE(prior_only), "only", FALSE)
@@ -797,12 +795,13 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5,
                          theme = ggplot2::theme(), ask = TRUE, 
                          do_plot = TRUE, newpage = TRUE, ...) {
   dots <- list(...)
-  if (is.na(pars[1])) 
+  if (is.na(pars[1])) {
     pars <- parameters 
-  if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
-    stop("The model does not contain posterior samples")
-  if (!is.wholenumber(N) || N < 1) 
+  }
+  contains_samples(x)
+  if (!is.wholenumber(N) || N < 1) {
     stop("N must be a positive integer", call. = FALSE)
+  }
   if (!is.character(pars)) {
     pars <- c("^b_", "^bm_", "^sd_", "^cor_", "^sigma", "^rescor", 
               "^nu$", "^shape$", "^delta$", "^phi$", "^zi$", "^hu$",
@@ -810,7 +809,7 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5,
   }
   samples <- posterior_samples(x, pars = pars, add_chain = TRUE)
   pars <- names(samples)[!names(samples) %in% c("chain", "iter")] 
-  if (length(pars) == 0) {
+  if (!length(pars)) {
     stop("No valid parameters selected", call. = FALSE)
   }
   
@@ -856,8 +855,7 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
   plot_fun <- get(paste0("stan_", type), mode = "function")
   
   # ensure that only desired parameters are plotted
-  if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
-    stop("The model does not contain posterior samples")
+  contains_samples(object)
   pars <- extract_pars(pars, all_pars = parnames(object),
                        exact_match = exact_match, 
                        na_value = NA)
@@ -1115,6 +1113,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   dots <- list(...)
   conditions <- use_alias(conditions, dots$data)
   dots$data <- NULL
+  contains_samples(x)
   x <- restructure(x)
   new_formula <- update_re_terms(x$formula, re_formula = re_formula)
   ee <- extract_effects(new_formula, family = x$family)
@@ -1221,7 +1220,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
       conditions[, v] <- mf[[v]][1]
     }
   } else {
-    stop("conditions must be a data.frame or NULL")
+    stop("conditions must be a data.frame or NULL", call. = FALSE)
   }
   conditions <- amend_newdata(conditions, fit = x, re_formula = re_formula,
                               allow_new_levels = TRUE, return_standata = FALSE)
@@ -1441,8 +1440,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                             nsamples = NULL, sort = FALSE,
                             ntrys = 5, summary = TRUE, robust = FALSE,
                             probs = c(0.025, 0.975), ...) {
-  if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
-    stop("The model does not contain posterior samples")
+  contains_samples(object)
   object <- restructure(object)
   draws_args <- nlist(x = object, newdata, re_formula, incl_autocor, 
                       allow_new_levels, subset, nsamples)
@@ -1565,8 +1563,7 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                            summary = TRUE, robust = FALSE,
                            probs = c(0.025, 0.975), ...) {
   scale <- match.arg(scale)
-  if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
-    stop("The model does not contain posterior samples")
+  contains_samples(object)
   object <- restructure(object)
   draws_args <- nlist(x = object, newdata, re_formula, incl_autocor, 
                       allow_new_levels, subset, nsamples)
@@ -1644,9 +1641,7 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                               summary = TRUE, robust = FALSE, 
                               probs = c(0.025, 0.975), ...) {
   type <- match.arg(type)
-  if (!is(object$fit, "stanfit") || !length(object$fit@sim)) {
-    stop("The model does not contain posterior samples")
-  }
+  contains_samples(object)
   object <- restructure(object)
   family <- family(object)
   if (is.ordinal(family) || is.categorical(family)) {
@@ -1726,6 +1721,10 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
   if ("data" %in% names(dots)) {
     # otherwise the data name cannot be found by substitute 
     stop("Please use argument 'newdata' to update the data", 
+         call. = FALSE)
+  }
+  if (is.null(object$version) || object$version <= "0.10.0") {
+    stop("Cannot update models fitted with brms < 1.0.0 anymore.",
          call. = FALSE)
   }
   object <- restructure(object)
@@ -1949,8 +1948,7 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
 logLik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                            allow_new_levels = FALSE, subset = NULL,
                            nsamples = NULL, pointwise = FALSE, ...) {
-  if (!is(object$fit, "stanfit") || !length(object$fit@sim)) 
-    stop("The model does not contain posterior samples")
+  contains_samples(object)
   object <- restructure(object)
   draws <- extract_draws(x = object, newdata = newdata, 
                          re_formula = re_formula, subset = subset,
@@ -1981,12 +1979,14 @@ logLik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' @export
 hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
                                alpha = 0.05, ...) {
-  if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
-    stop("The model does not contain posterior samples")
-  if (!is.character(hypothesis)) 
-    stop("Argument hypothesis must be a character vector", call. = FALSE)
-  if (alpha < 0 || alpha > 1)
-    stop("Argument alpha must be in [0,1]", call. = FALSE)
+  if (!is.character(hypothesis)) {
+    stop("Argument 'hypothesis' must be a character vector", 
+         call. = FALSE)
+  }
+  if (alpha < 0 || alpha > 1) {
+    stop("Argument 'alpha' must be in [0,1]", call. = FALSE)
+  }
+  contains_samples(x)
   x <- restructure(x)
   
   # process class and group arguments
