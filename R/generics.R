@@ -569,13 +569,15 @@ expose_functions <- function(x, ...) {
   UseMethod("expose_functions")
 }
 
-#' temporary pp_check generic function
+#' Temporary pp_check generic function
 #' 
-#' will be removed as soon as the \pkg{ppcheck} package
-#' has its own generic function
+#' Will be removed as soon as the \pkg{bayesplot} package is on CRAN.
 #' 
 #' @param object an \code{R} object
 #' @param ... further arguments
+#' 
+#' @details 
+#' See \code{\link[brms:pp_check.brmsfit]{pp_check.brmsfit}} for details.
 #' 
 #' @export
 pp_check <- function(object, ...) {

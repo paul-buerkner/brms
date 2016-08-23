@@ -2,7 +2,7 @@
 % Please edit documentation in R/generics.R
 \name{pp_check}
 \alias{pp_check}
-\title{temporary pp_check generic function}
+\title{Temporary pp_check generic function}
 \usage{
 pp_check(object, ...)
 }
@@ -12,7 +12,9 @@ pp_check(object, ...)
 \item{...}{further arguments}
 }
 \description{
-will be removed as soon as the \pkg{ppcheck} package
-has its own generic function
+Will be removed as soon as the \pkg{bayesplot} package is on CRAN.
+}
+\details{
+See \code{\link[brms:pp_check.brmsfit]{pp_check.brmsfit}} for details.
 }
 
