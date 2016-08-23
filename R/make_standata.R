@@ -141,7 +141,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   }
   
   # data for various kinds of effects
-  ranef <- gather_ranef(ee, data)
+  ranef <- tidy_ranef(ee, data)
   args_eff <- nlist(data, family, ranef, prior, autocor, knots, not4stan)
   if (length(ee$nonlinear)) {
     nlpars <- names(ee$nonlinear)

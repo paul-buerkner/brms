@@ -29,8 +29,8 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
     if (!is.null(ee[[ap]])) {
       auxfit <- x
       auxfit$formula <- update.formula(x$formula, rhs(attr(x$formula, ap)))
-      auxfit$ranef <- gather_ranef(extract_effects(auxfit$formula), 
-                                   data = model.frame(x))
+      auxfit$ranef <- tidy_ranef(extract_effects(auxfit$formula), 
+                                 data = model.frame(x))
       auxstandata <- amend_newdata(newdata, fit = auxfit, 
                                    re_formula = re_formula,
                                    allow_new_levels = allow_new_levels)
@@ -77,8 +77,8 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
       nlfit <- x
       nlfit$formula <- update.formula(x$formula, 
                          rhs(attr(x$formula, "nonlinear")[[i]]))
-      nlfit$ranef <- gather_ranef(extract_effects(nlfit$formula), 
-                                  data = model.frame(x))
+      nlfit$ranef <- tidy_ranef(extract_effects(nlfit$formula), 
+                               data = model.frame(x))
       nlstandata <- amend_newdata(newdata, fit = nlfit, re_formula = re_formula, 
                                   allow_new_levels = allow_new_levels)
       draws$nonlinear[[nlpars[i]]] <- 
@@ -103,7 +103,7 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
     draws$data <- subset_attr(draws$data, keep)
   } else {
     x$formula <- rm_attr(formula(x), auxpars())
-    x$ranef <- gather_ranef(extract_effects(formula(x)), 
+    x$ranef <- tidy_ranef(extract_effects(formula(x)), 
                             data = model.frame(x))
     resp <- ee$response
     if (length(resp) > 1L && !isTRUE(attr(formula(x), "old_mv"))) {
@@ -190,7 +190,7 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   }
   # group-level effects
   usc_nlpar <- usc(nlpar, "prefix")
-  new_ranef <- gather_ranef(ee, model.frame(x))
+  new_ranef <- tidy_ranef(ee, model.frame(x))
   groups <- unique(new_ranef$group)
   # requires initialization to assign S4 objects of the Matrix package
   draws[["Z"]] <- named_list(groups)

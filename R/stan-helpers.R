@@ -899,7 +899,7 @@ stan_has_build_in_fun <- function(family, link) {
 stan_needs_kronecker <- function(ranef, names_cov_ranef) {
   # checks if a model needs the kronecker product
   # Args: 
-  #   ranef: named list returned by gather_ranef
+  #   ranef: named list returned by tidy_ranef
   #   names_cov_ranef: names of the grouping factors that
   #                    have a cov.ranef matrix 
   ids <- unique(ranef$id)

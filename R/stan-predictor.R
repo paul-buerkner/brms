@@ -289,7 +289,7 @@ stan_ranef <- function(id, ranef, prior = prior_frame(),
   # group-level effects in Stan 
   # Args:
   #   i: the index of the grouping factor
-  #   ranef: a data.frame returned by gather_ranef
+  #   ranef: a data.frame returned by tidy_ranef
   #   prior: a data.frame containing user defined priors 
   #          as returned by check_prior
   #   cov_ranef: a list of custom covariance matrices 
@@ -499,7 +499,7 @@ stan_eta_fixef <- function(fixef, sparse = FALSE, nlpar = "") {
 stan_eta_ranef <- function(ranef, nlpar = "") {
   # write the group-level part of the linear predictor
   # Args:
-  #   ranef: a named list returned by gather_ranef
+  #   ranef: a named list returned by tidy_ranef
   #   nlpar: currently unused
   eta_ranef <- ""
   for (id in unique(ranef$id)) {

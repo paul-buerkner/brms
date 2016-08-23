@@ -351,8 +351,8 @@ VarCorr.brmsfit <- function(x, sigma = 1, estimate = "mean",
   family <- family(x)
   ee <- extract_effects(x$formula, family = family)
   if (nrow(x$ranef)) {
-    gather_names <- function(group) {
-      # gather names of group-level parameters
+    get_names <- function(group) {
+      # get names of group-level parameters
       r <- x$ranef[x$ranef$group == group, ]
       rnames <- paste0(usc(r$nlpar, "suffix"), r$coef)
       cor_type <- paste0("cor_", group)
@@ -361,7 +361,7 @@ VarCorr.brmsfit <- function(x, sigma = 1, estimate = "mean",
       nlist(rnames = rnames, type = cor_type, sd_pars, cor_pars)
     }
     group <- unique(x$ranef$group)
-    p <- lapply(group, gather_names)
+    p <- lapply(group, get_names)
   } else {
     p <- group <- NULL
   } 
@@ -1839,7 +1839,7 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
     if (!is.null(newdata)) {
       object$data <- update_data(newdata, family = object$family, effects = ee)
       object$data.name <- Reduce(paste, deparse(substitute(newdata)))
-      object$ranef <- gather_ranef(ee, data = object$data)
+      object$ranef <- tidy_ranef(ee, data = object$data)
       dots$is_newdata <- TRUE
     } else {
       object$data <- object$data

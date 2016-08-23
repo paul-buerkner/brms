@@ -260,7 +260,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       newdata[[cens]] <- 0 # add irrelevant censor variables
     }
   }
-  new_ranef <- gather_ranef(ee, data = model.frame(fit))
+  new_ranef <- tidy_ranef(ee, data = model.frame(fit))
   if (nrow(fit$ranef)) {
     if (length(new_ranef) && allow_new_levels) {
       # random effects grouping factors do not need to be specified 
@@ -679,7 +679,7 @@ data_ranef <- function(ranef, data, nlpar = "", not4stan = FALSE) {
   if (nrow(ranef)) {
     Z <- lapply(ranef[!duplicated(ranef$gn), ]$form, 
                 get_model_matrix, data = data)
-    # TODO: move to gather_ranef?
+    # TODO: move to tidy_ranef?
     lapply(lapply(Z, colnames), avoid_auxpars, effects = effects)
     gn <- unique(ranef$gn)
     for (i in seq_along(gn)) {
@@ -706,7 +706,7 @@ data_ranef <- function(ranef, data, nlpar = "", not4stan = FALSE) {
 data_group <- function(ranef, data, cov_ranef = NULL, old_levels = NULL) {
   # compute data specific for each group-level-ID
   # Args:
-  #   ranef: data.frame returned by gather_ranef
+  #   ranef: data.frame returned by tidy_ranef
   #   data: the model.frame
   #   cov_ranef: name list of user-defined covariance matrices
   #   old_levels: original levels of grouping factors

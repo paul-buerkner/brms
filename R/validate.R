@@ -775,15 +775,23 @@ has_splines <- function(effects) {
   out || any(ulapply(ee_auxpars, has_splines))
 }
 
-gather_ranef <- function(effects, data = NULL, all = TRUE) {
-  # gathers helpful information on the random effects
+tidy_ranef <- function(effects, data = NULL, all = TRUE) {
+  # combines helpful information on the group-level effects
   # Args:
   #   effects: output of extract_effects
   #   data: data passed to brm after updating
   #   all: include REs of non-linear and auxiliary parameters?
   #   combined: should 
   # Returns: 
-  #   A named list with one element per grouping factor
+  #   A tidy data.frame with the following columns:
+  #     id: ID of the group-level effect 
+  #     group: name of the grouping factor
+  #     gn: number of the grouping term within the respective formula
+  #     coef: name of the group-level effect
+  #     cn: number of the effect within the ID
+  #     nlpar: name of the corresponding non-linear parameter
+  #     cor: are correlations modeled for this effect?
+  #     form: formula used to compute the effects
   random <- get_random(effects, all = all)
   ranef <- vector("list", nrow(random))
   used_ids <- new_ids <- id_groups <- NULL
@@ -948,7 +956,7 @@ exclude_pars <- function(effects, ranef = empty_ranef(),
   # list irrelevant parameters NOT to be saved by Stan
   # Args:
   #   effects: output of extract_effects
-  #   ranef: output of gather_ranef
+  #   ranef: output of tidy_ranef
   #   save_ranef: should random effects of each level be saved?
   # Returns:
   #   a vector of parameters to be excluded

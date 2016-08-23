@@ -291,7 +291,7 @@ change_splines <- function(splines, pars, nlpar = "") {
 change_ranef <- function(ranef, pars, dims) {
   # helps in renaming group-level parameters
   # Args:
-  #   ranef: list returned by gather_ranef
+  #   ranef: list returned by tidy_ranef
   #   pars: names of all model parameters
   #   dims: named list containing parameter dimensions
   #   nlpar: optional string naming a non-linear parameter
@@ -336,7 +336,7 @@ change_ranef <- function(ranef, pars, dims) {
 change_ranef_levels <- function(ranef, pars, dims)  {
   # helps in renaming random effects 'r_.' parameters
   # Args:
-  #   ranef: output of gather_ranef
+  #   ranef: output of tidy_ranef
   #   pars: names of all model parameters
   #   dims: named list containing parameter dimensions
   # Returns:
@@ -420,7 +420,7 @@ change_old_ranef <- function(ranef, pars, dims) {
   # fitted with brms <= 0.10.0.9000
   # only relevant for non-linear models
   # Args:
-  #   ranef: output of gather_ranef
+  #   ranef: output of tidy_ranef
   #   pars: names of all parameters in the model
   change_simple <- function(oldname, fnames, pnames = fnames) {
     # helper function for very simple renaming

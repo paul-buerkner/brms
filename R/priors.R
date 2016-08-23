@@ -455,7 +455,7 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
     prior <- rbind(prior, auxprior)
   }
   # priors of group-level parameters
-  ranef <- gather_ranef(ee, data)
+  ranef <- tidy_ranef(ee, data)
   prior_ranef <- get_prior_ranef(ranef, internal = internal,
                                  def_scale_prior = def_scale_prior)
   prior <- rbind(prior, prior_ranef)
@@ -597,7 +597,7 @@ get_prior_ranef <- function(ranef, def_scale_prior, nlpar = "",
                             internal = FALSE) {
   # priors for random effects parameters
   # Args:
-  #   ranef: a list returned by gather_ranef
+  #   ranef: a list returned by tidy_ranef
   #   def_scale_prior: a character string defining the default
   #                    prior for random effects SDs
   #   nlpar: optional name of a non-linear parameter

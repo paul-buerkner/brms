@@ -53,7 +53,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   is_forked <- is.forked(family)
   trunc_bounds <- get_bounds(ee$trunc, data = data)
   
-  ranef <- gather_ranef(ee, data = data)
+  ranef <- tidy_ranef(ee, data = data)
   if (length(ee$nonlinear)) {
     text_pred <- stan_nonlinear(ee, data = data, family = family, 
                                 ranef = ranef, prior = prior)
@@ -93,7 +93,6 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
                                          cens = is.formula(ee$cens),
                                          trunc = is.formula(ee$trunc))
   text_disp <- stan_disp(ee, family = family)
-  ranef <- gather_ranef(ee, data = data)
   kronecker <- stan_needs_kronecker(ranef, names_cov_ranef = names(cov_ranef))
   text_misc_funs <- stan_misc_functions(family = family, kronecker = kronecker)
   text_monotonic <- stan_monotonic(text_pred)

@@ -219,16 +219,16 @@ test_that("amend_terms performs expected changes to terms objects", {
   expect_equal(attr(amend_terms(form), "rm_intercept"), TRUE)
 })
 
-test_that("gather_ranef works correctly", {
+test_that("tidy_ranef works correctly", {
   data <- data.frame(g = 1:10, x = 11:20, y = 1:10)
   target <- data.frame(id = 1, group = "g", gn = 1, 
                        coef = c("Intercept", "x"), cn = 1:2,
                        nlpar = "", cor = FALSE, 
                        stringsAsFactors = FALSE)
   target$form <- replicate(2, ~1+x)
-  expect_equivalent(gather_ranef(extract_effects(y~(1+x||g)), data = data),
+  expect_equivalent(tidy_ranef(extract_effects(y~(1+x||g)), data = data),
                     target)
-  expect_equivalent(gather_ranef(extract_effects(y~x), data = data), 
+  expect_equivalent(tidy_ranef(extract_effects(y~x), data = data), 
                     empty_ranef())
 })
 
