@@ -595,8 +595,8 @@ stan_inv_gaussian <- function(family, weights = FALSE, cens = FALSE,
     } 
     if (cens || trunc) {
       out$fun <- paste0(out$fun, 
-        "  #include 'fun_inv_gaussian_cdf.stan' \n",
-        "  #include 'fun_inv_gaussian_ccdf.stan' \n")
+        "  #include 'fun_inv_gaussian_lcdf.stan' \n",
+        "  #include 'fun_inv_gaussian_lccdf.stan' \n")
     }
   }
   out

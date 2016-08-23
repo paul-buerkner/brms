@@ -35,9 +35,9 @@ test_that("self-defined Stan functions work correctly", {
   shape <- rgamma(1, 20, 1)
   mu <- 20
   y <- statmod::rinvgauss(1, mean = mu, shape = shape)
-  expect_equal(inv_gaussian_cdf_lpdf(y, mu, shape, log(y), sqrt(y)),
+  expect_equal(inv_gaussian_lcdf(y, mu, shape, log(y), sqrt(y)),
                pinvgauss(y, mean = mu, shape = shape, log = TRUE))
-  expect_equal(inv_gaussian_ccdf_lpdf(y, mu, shape, log(y), sqrt(y)),
+  expect_equal(inv_gaussian_lccdf(y, mu, shape, log(y), sqrt(y)),
                log(1 - pinvgauss(y, mean = mu, shape = shape))) 
   expect_equal(inv_gaussian_lpdf(y, mu, shape, log(y), sqrt(y)),
                dinvgauss(y, mean = mu, shape = shape, log = TRUE))
@@ -51,34 +51,66 @@ test_that("self-defined Stan functions work correctly", {
   draws$data <- list(Y = c(0, 10), N_trait = 2, max_obs = 15)
   draws2$data <- list(Y = c(0, 0.5), N_trait = 2)
   for (i in seq_along(draws$data$Y)) {
-    zi_args <- list(y = draws$data$Y[i], eta = draws$eta[i], 
-                    eta_zi = draws$eta[i+2])
-    hu_args <- list(y = draws$data$Y[i], eta = draws$eta[i], 
+    eta_zi_args <- list(y = draws$data$Y[i], eta = draws$eta[i], 
+                        eta_zi = draws$eta[i+2])
+    zi_args <- list(y = draws$data$Y[i], eta = draws$eta[i],
+                    zi = inv_logit(eta_zi_args$eta_zi))
+    eta_hu_args <- list(y = draws$data$Y[i], eta = draws$eta[i], 
                     eta_hu = draws$eta[i+2])
+    hu_args <- list(y = draws$data$Y[i], eta = draws$eta[i],
+                    hu = inv_logit(eta_hu_args$eta_hu))
     draws$f$link <- "log"
+    
     expect_equal(do.call(zero_inflated_poisson_lpmf, zi_args),
                  loglik_zero_inflated_poisson(i, draws))
-    expect_equal(do.call(zero_inflated_neg_binomial_2_lpmf, 
+    expect_equal(do.call(zero_inflated_poisson_logit_lpmf, eta_zi_args),
+                 loglik_zero_inflated_poisson(i, draws))
+    
+    expect_equal(do.call(zero_inflated_neg_binomial_lpmf, 
                          c(zi_args, shape = draws$shape)),
                  loglik_zero_inflated_negbinomial(i, draws))
+    expect_equal(do.call(zero_inflated_neg_binomial_logit_lpmf, 
+                         c(eta_zi_args, shape = draws$shape)),
+                 loglik_zero_inflated_negbinomial(i, draws))
+    
     expect_equal(do.call(hurdle_poisson_lpmf, hu_args),
                  loglik_hurdle_poisson(i, draws))
-    expect_equal(do.call(hurdle_neg_binomial_2_lpmf, 
+    expect_equal(do.call(hurdle_poisson_logit_lpmf, eta_hu_args),
+                 loglik_hurdle_poisson(i, draws))
+    
+    expect_equal(do.call(hurdle_neg_binomial_lpmf, 
                          c(hu_args, shape = draws$shape)),
                  loglik_hurdle_negbinomial(i, draws))
+    expect_equal(do.call(hurdle_neg_binomial_logit_lpmf, 
+                         c(eta_hu_args, shape = draws$shape)),
+                 loglik_hurdle_negbinomial(i, draws))
+    
     expect_equal(do.call(hurdle_gamma_lpdf, 
                          c(hu_args, shape = draws$shape)),
                  loglik_hurdle_gamma(i, draws))
+    expect_equal(do.call(hurdle_gamma_logit_lpdf, 
+                         c(eta_hu_args, shape = draws$shape)),
+                 loglik_hurdle_gamma(i, draws))
+    
     draws$f$link <- "logit"
     expect_equal(do.call(zero_inflated_binomial_lpmf, 
                          c(zi_args, trials = draws$data$max_obs)),
                  loglik_zero_inflated_binomial(i, draws))
+    expect_equal(do.call(zero_inflated_binomial_logit_lpmf, 
+                         c(eta_zi_args, trials = draws$data$max_obs)),
+                 loglik_zero_inflated_binomial(i, draws))
+    
     # zero_inflated_beta requires Y to be in (0,1)
     draws2$f$link <- "logit"
-    zi_args <- list(y = draws2$data$Y[i], eta = draws$eta[i], 
-                    eta_zi = draws$eta[i+2])
+    eta_zi_args <- list(y = draws2$data$Y[i], eta = draws$eta[i], 
+                        eta_zi = draws$eta[i+2])
+    zi_args <- list(y = draws2$data$Y[i], eta = draws$eta[i],
+                    zi = inv_logit(eta_zi_args$eta_zi))
     expect_equal(do.call(zero_inflated_beta_lpdf, 
                          c(zi_args, phi = draws$phi)),
+                 loglik_zero_inflated_beta(i, draws2))
+    expect_equal(do.call(zero_inflated_beta_logit_lpdf, 
+                         c(eta_zi_args, phi = draws$phi)),
                  loglik_zero_inflated_beta(i, draws2))
   }
   
@@ -122,7 +154,7 @@ test_that("self-defined Stan functions work correctly", {
   expect_equal(cloglog(0.2), link(0.2, "cloglog"))
   
   # monotonic
-  expect_equal(monotononic(1:10, 4), sum(1:4))
-  expect_equal(monotononic(rnorm(5), 0), 0)
+  expect_equal(monotonic(1:10, 4), sum(1:4))
+  expect_equal(monotonic(rnorm(5), 0), 0)
 })
 
