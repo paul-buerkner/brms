@@ -574,8 +574,6 @@ expose_functions <- function(x, ...) {
 
 #' Temporary pp_check generic function
 #' 
-#' Will be removed as soon as the \pkg{bayesplot} package is on CRAN.
-#' 
 #' @param object an \code{R} object
 #' @param ... further arguments
 #' 
@@ -584,5 +582,6 @@ expose_functions <- function(x, ...) {
 #' 
 #' @export
 pp_check <- function(object, ...) {
+  # NOTE: remove as soon as the bayesplot package is on CRAN
   UseMethod("pp_check")
 }

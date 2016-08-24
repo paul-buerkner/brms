@@ -12,7 +12,7 @@ pp_check(object, ...)
 \item{...}{further arguments}
 }
 \description{
-Will be removed as soon as the \pkg{bayesplot} package is on CRAN.
+Temporary pp_check generic function
 }
 \details{
 See \code{\link[brms:pp_check.brmsfit]{pp_check.brmsfit}} for details.
