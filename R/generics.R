@@ -175,9 +175,12 @@ posterior_samples <- function(x, pars = NA, ...) {
   UseMethod("posterior_samples")
 }
 
-# deprecated alias of posterior_samples
 #' @export 
 posterior.samples <- function(x, pars = NA, ...) {
+  # deprecated alias of posterior_samples
+  warning("Method 'posterior.samples' is deprecated. ", 
+          "Please use method 'posterior_samples' instead.", 
+          call. = FALSE)
   UseMethod("posterior_samples")
 }
 
