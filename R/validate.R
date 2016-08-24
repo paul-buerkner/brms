@@ -960,18 +960,16 @@ exclude_pars <- function(effects, ranef = empty_ranef(),
   #   save_ranef: should random effects of each level be saved?
   # Returns:
   #   a vector of parameters to be excluded
-  out <- c("temp_Intercept1", "temp_Intercept", "Lrescor", 
-           "Rescor", "Sigma", "LSigma", "res_cov_matrix", 
-           "hs_local", "hs_global",
+  out <- c("temp_Intercept1", "temp_Intercept", "Lrescor", "Rescor", 
+           "Sigma", "LSigma", "res_cov_matrix", "hs_local", "hs_global",
            intersect(auxpars(), names(effects)))
-  # TODO: correctly remove spline helper parameters
-  # TODO: correctly remove temporary intercepts
-  nlpars <- names(effects$nonlinear)
-  # exclude spline helper parameters
-  for (i in seq_along(nlpars)) {
-    splines <- get_spline_labels(effects$nonlinear[[i]])
+  # exclude spline helper parameters and temporary Intercepts
+  par_effects <- rmNULL(c(effects[auxpars()], effects$nonlinear))
+  for (par in names(par_effects)) {
+    out <- c(out, paste0("temp_", par, "_Intercept"))
+    splines <- get_spline_labels(par_effects[[par]])
     if (length(splines)) {
-      out <- c(out, paste0("zs_", nlpars[i], "_", seq_along(splines)))
+      out <- c(out, paste0("zs_", par, "_", seq_along(splines)))
     }
   }
   splines <- get_spline_labels(effects)
