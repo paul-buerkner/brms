@@ -354,7 +354,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       standata$Karr <- Karr
     }
   } 
-  if (is(autocor, "cor_fixed")) {
+  if (is(autocor, "cov_fixed")) {
     V <- autocor$V
     rmd_rows <- attr(data, "na.action")
     if (!is.null(rmd_rows)) {

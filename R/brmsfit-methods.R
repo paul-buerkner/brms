@@ -1456,7 +1456,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   predict_fun <- get(paste0("predict_", draws$f$family), mode = "function")
   N <- if (!is.null(draws$data$N_trait)) draws$data$N_trait
        else if (!is.null(draws$data$N_tg)) draws$data$N_tg
-       else if (is(draws$autocor, "cor_fixed")) 1
+       else if (is(draws$autocor, "cov_fixed")) 1
        else draws$data$N
   out <- do.call(cbind, lapply(1:N, predict_fun, draws = draws, ntrys = ntrys))
   # percentage of invalid samples for truncated discrete models
@@ -1955,7 +1955,7 @@ logLik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                          allow_new_levels = allow_new_levels,
                          nsamples = nsamples, check_response = TRUE)
   N <- if (!is.null(draws$data$N_tg)) draws$data$N_tg
-       else if (is(object$autocor, "cor_fixed")) 1
+       else if (is(object$autocor, "cov_fixed")) 1
        else nrow(as.matrix(draws$data$Y))
   loglik_fun <- get(paste0("loglik_", draws$f$family), mode = "function")
   if (pointwise) {

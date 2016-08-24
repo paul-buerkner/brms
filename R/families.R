@@ -686,7 +686,7 @@ has_sigma <- function(family, effects = NULL, autocor = cor_arma(),
   #  incmv: should MV (linear) models be treated as having sigma? 
   has_se <- !is.null(effects$se)
   out <- (is.linear(family) || is.lognormal(family)) && 
-         (!has_se || use_cov(autocor)) && !is(autocor, "cor_fixed")
+         (!has_se || use_cov(autocor)) && !is(autocor, "cov_fixed")
   if (!incmv) {
     is_multi <- is.linear(family) && length(effects$response) > 1L
     out <- out && !is_multi

@@ -33,7 +33,7 @@ stan_llh <- function(family, effects = list(), autocor = cor_arma(),
       stop("Invalid addition arguments", call. = FALSE)
     }
     family <- paste0(family, "_cov")
-  } else if (is(autocor, "cor_fixed")) {
+  } else if (is(autocor, "cov_fixed")) {
     if (has_se || ll_adj) {
       stop("Invalid addition arguments", call. = FALSE)
     }
@@ -302,7 +302,7 @@ stan_autocor <- function(autocor, effects = list(), family = gaussian(),
       "  // autoregressive effects of the response \n")
     out$prior <- paste0(out$prior, stan_prior(class = "arr", prior = prior))
   }
-  if (is(autocor, "cor_fixed")) {
+  if (is(autocor, "cov_fixed")) {
     if (!is_linear) {
       stop(paste("Fixed residual covariance matrices for family", 
                  family$family, "are not yet implemented"), 

@@ -166,21 +166,23 @@ cor_arr <- function(formula = ~ 1, r = 1) {
 #' Define a fixed covariance matrix of the response variable
 #' for instance to model multivariate effect sizes in meta-analysis.
 #' 
+#' @aliases cor_fixed
+#' 
 #' @param V Known covariance matrix of the response variable.
 #'   If a vector is passed, it will be used as diagonal entries 
 #'   (variances) and covariances will be set to zero.
 #'
-#' @return An object of class \code{cor_fixed}.
+#' @return An object of class \code{cov_fixed}.
 #' 
 #' @examples 
 #' \dontrun{
 #' dat <- data.frame(y = rnorm(3))
 #' V <- cbind(c(0.5, 0.3, 0.2), c(0.3, 1, 0.1), c(0.2, 0.1, 0.2))
-#' fit <- brm(y~1, data = dat, autocor = cor_fixed(V))
+#' fit <- brm(y~1, data = dat, autocor = cov_fixed(V))
 #' }
 #' 
 #' @export
-cor_fixed <- function(V) {
+cov_fixed <- function(V) {
   if (is.vector(V)) {
     V <- diag(V)
   } else {
@@ -189,7 +191,17 @@ cor_fixed <- function(V) {
   if (!isSymmetric(unname(V))) {
     stop("'V' must be symmetric", call. = FALSE)
   }
-  structure(list(V = V), class = c("cor_fixed", "cor_brms"))
+  structure(list(V = V), class = c("cov_fixed", "cor_brms"))
+}
+
+
+#' @export
+cor_fixed <- function(V) {
+  # deprecated alias of cov_fixed
+  warning("Function 'cor_fixed' is deprecated. ", 
+          "Please use function 'cov_fixed' instead.", 
+          call. = FALSE)
+  cov_fixed(V)
 }
 
 #' Basic Bayesian Structural Time Series
@@ -240,10 +252,16 @@ print.cor_bsts <- function(x, ...) {
 }
 
 #' @export
-print.cor_fixed <- function(x, ...) {
+print.cov_fixed <- function(x, ...) {
   cat("Fixed covariance matrix: \n")
   print(x$V)
   invisible(x)
+}
+
+#' @export
+print.cor_fixed <- function(x, ...) {
+  class(x) <- "cov_fixed"
+  print.cov_fixed(x)
 }
 
 has_arma <- function(x) {

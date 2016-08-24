@@ -381,7 +381,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       control[["Jm"]] <- Jm 
     }
     control$smooth <- make_smooth_list(ee, model.frame(fit))
-    if (is(fit$autocor, "cor_fixed")) {
+    if (is(fit$autocor, "cov_fixed")) {
       fit$autocor$V <- diag(median(diag(fit$autocor$V), na.rm = TRUE), 
                             nrow(newdata))
     }

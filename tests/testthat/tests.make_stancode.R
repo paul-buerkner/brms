@@ -282,13 +282,13 @@ test_that("fixed residual covariance matrices appear in the Stan code", {
   data <- data.frame(y = 1:5)
   V <- diag(5)
   expect_match(make_stancode(y~1, data = data, family = gaussian(), 
-                             autocor = cor_fixed(V)),
+                             autocor = cov_fixed(V)),
                "Y ~ multi_normal_cholesky(eta, LV)", fixed = TRUE)
   expect_match(make_stancode(y~1, data = data, family = student(),
-                             autocor = cor_fixed(V)),
+                             autocor = cov_fixed(V)),
                "Y ~ multi_student_t(nu, eta, V)", fixed = TRUE)
   expect_match(make_stancode(y~1, data = data, family = student(),
-                             autocor = cor_fixed(V)),
+                             autocor = cov_fixed(V)),
                "Y ~ multi_student_t(nu, eta, V)", fixed = TRUE)
 })
 

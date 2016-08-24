@@ -57,6 +57,10 @@ restructure <- function(x) {
   x$formula <- SW(update_formula(x$formula, partial = x$partial, 
                                  nonlinear = x$nonlinear))
   x$nonlinear <- x$partial <- NULL
+  if (is(x$autocor, "cor_fixed")) {
+    # deprecated as of brms 1.0.0
+    class(x$autocor) <- "cov_fixed"
+  }
   if (is.null(x$version) || x$version <= "0.10.0.9000") {
     attr(x$formula, "old_mv") <- is.old_mv(x)
     ee <- extract_effects(formula(x), family = family(x))
@@ -479,7 +483,7 @@ prepare_family <- function(x) {
     family$family <- paste0(family$family, "_mv")
   } else if (use_cov(x$autocor) && sum(x$autocor$p, x$autocor$q) > 0) {
     family$family <- paste0(family$family, "_cov")
-  } else if (is(x$autocor, "cor_fixed")) {
+  } else if (is(x$autocor, "cov_fixed")) {
     family$family <- paste0(family$family, "_fixed")
   }
   family
