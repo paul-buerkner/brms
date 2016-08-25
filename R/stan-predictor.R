@@ -213,16 +213,15 @@ stan_fixef <- function(fixef, temp_intercept = TRUE, family = gaussian(),
   # Stan code for fixed effects
   # Args:
   #   fixef: names of the fixed effects
+  #   temp_intercept: is a temporary intercept required
+  #                   due to centering of the design matrix?
   #   csef: names of the category specific effects
   #   family: the model family
   #   prior: a data.frame containing user defined priors 
   #          as returned by check_prior 
-  #   rm_intercept: should the intercept be removed /
-  #                 the design matrix be centered?
   #   threshold: either "flexible" or "equidistant" 
   # Returns:
   #   a list containing Stan code related to fixed effects
-  #nint <- length(intercepts)
   p <- usc(nlpar, "prefix")
   out <- list()
   if (length(fixef)) {

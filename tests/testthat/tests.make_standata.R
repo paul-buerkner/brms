@@ -377,3 +377,9 @@ test_that("make_standata returns correct group ID data", {
   expect_true(all(c("Z_1_sigma_1", "Z_2_a_3", "Z_2_sigma_1",  
                     "Z_3_a_1") %in% names(sdata)))
 })
+
+test_that("make_standata does not center X in models without an intercept", {
+  dat <- data.frame(y = rnorm(10), x = 1:10)
+  sdata <- make_standata(y~0+x, data = dat)
+  expect_equal(unname(sdata$X[, 1]), dat$x)
+})

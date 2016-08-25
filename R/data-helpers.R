@@ -582,7 +582,8 @@ data_fixef <- function(effects, data, family = gaussian(),
   is_ordinal <- is.ordinal(family)
   is_bsts <- is(autocor, "cor_bsts")
   out <- list()
-  if (rm_intercept && !not4stan || is_ordinal || is_bsts) {
+  rm_intercept <- rm_intercept && has_intercept(effects$fixed) && !not4stan
+  if (rm_intercept || is_ordinal || is_bsts) {
     intercept <- "Intercept"
   } else {
     intercept <- NULL  # don't remove the intercept column
@@ -619,8 +620,7 @@ data_fixef <- function(effects, data, family = gaussian(),
   }
   avoid_auxpars(colnames(X), effects = effects)
   out[[paste0("K", p)]] <- ncol(X)
-  center_X <- rm_intercept && !not4stan && !is_bsts
-  if (center_X) {
+  if (rm_intercept && !is_bsts) {
     # centered design matrices lead to faster sampling in Stan
     X_means <- colMeans(X)
     X <- sweep(X, 2L, X_means, FUN = "-")
