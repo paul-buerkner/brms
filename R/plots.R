@@ -54,6 +54,14 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, points = FALSE,
                  ymax = "upperCI", colour = gvar, fill = gvar) + 
       ylab(response) + theme
     nCond <- length(unique(x[[i]]$MargCond))
+    if (points) {
+      # show the data as points in the plot
+      # add points first so that they appear behind the regression lines
+      plots[[i]] <- plots[[i]] + 
+        geom_point(aes_string(x = effects[1], y = ".RESP", colour = gvar),
+                   shape = 1, size = 4 / nCond^0.25, inherit.aes = FALSE,
+                   data = attr(x[[i]], "points"))
+    }
     if (nCond > 1L) {
       # one plot per row of marginal_data
       if (is.null(ncol)) ncol <- max(floor(sqrt(nCond)), 3) 
@@ -76,13 +84,6 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, points = FALSE,
                    size = 4 / nCond^0.25) + 
         geom_errorbar(position = position_dodge(width = 0.4),
                       width = 0.3)
-    }
-    if (points) {
-      # show the data as points in the plot
-      plots[[i]] <- plots[[i]] + 
-        geom_point(aes_string(x = effects[1], y = ".RESP", colour = gvar),
-                   shape = 1, size = 4 / nCond^0.25, inherit.aes = FALSE,
-                   data = attr(x[[i]], "points"))
     }
     if (do_plot) {
       plot(plots[[i]])

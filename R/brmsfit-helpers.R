@@ -732,13 +732,13 @@ make_point_frame <- function(mf, effects, conditions, groups, family) {
     points <- replicate(nrow(conditions), points, simplify = FALSE)
     for (i in seq_along(points)) {
       cond <- conditions[i, , drop = FALSE]
-      not_na <- c(!is.na(cond))
+      not_na <- which(!(is.na(cond) | cond == ".ZERO"))
       # do it like base::duplicated
       if (any(not_na)) {
         K <- do.call("paste", c(mf[, not_na, drop = FALSE], sep = "\r")) %in% 
              do.call("paste", c(cond[, not_na, drop = FALSE], sep = "\r"))
       } else {
-        K <- 1:nrow(mf)
+        K <- seq_len(nrow(mf))
       }
       points[[i]]$MargCond[K] <- rownames(conditions)[i] 
     }

@@ -1005,7 +1005,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
                             function(e) paste(e, collapse = ":"))
     if (!x %in% ae_collapsed) {
       stop("Variable '", x, "' is not a valid variable for this model. ",
-           "Valid variables are: \n", paste(ae_collapsed, collapse = ", "),
+           "Valid variables are: ", paste(ae_collapsed, collapse = ", "),
            call. = FALSE)
     }
   }
