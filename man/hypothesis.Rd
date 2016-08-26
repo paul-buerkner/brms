@@ -24,14 +24,14 @@ hypothesis(x, hypothesis, ...)
 non-linear hypothesis concerning parameters of the model.}
 
 \item{class}{A string specifying the class of parameters being tested. 
-Default is "b" for fixed effects. 
+Default is "b" for population-level effects. 
 Other typical options are "sd" or "cor". 
 If \code{class = NULL}, all parameters can be tested
 against each other, but have to be specified with their full name 
 (see also \code{\link[brms:parnames]{parnames}})}
 
 \item{group}{Name of a grouping factor to evaluate only 
-random effects parameters related to this grouping factor.
+group-level effects parameters related to this grouping factor.
 Ignored if \code{class} is not \code{"sd"} or \code{"cor"}.}
 
 \item{alpha}{The alpha-level of the tests (default is 0.05).}
@@ -74,7 +74,7 @@ Perform non-linear hypothesis testing for all model parameters.
 }
 \details{
 Among others, \code{hypothesis} computes an 
- evidence ratio for each hypothesis. 
+ evidence ratio (\code{Evid.Ratio}) for each hypothesis. 
  For a directed hypothesis, this is just the posterior probability 
  under the hypothesis against its alternative.
  For an undirected (i.e. point) hypothesis the evidence ratio 
