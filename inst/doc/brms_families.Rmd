@@ -16,16 +16,16 @@ vignette("brms")
 
 ## Notation
 
-Throughout this vignette, we use $y$ to refer to the response variable and $\eta$ to refer to the linear predictor consisting of fixed and random effects. We write $y_i$ and $\eta_i$ for the response and linear predictor of observation $i$. Furthermore, we use $f$ for a density function and $g$ for an inverse link function.
+Throughout this vignette, we use $y$ to refer to the response variable and $\eta$ to refer to the (non-)linear predictor (see `help(brmsformula)` for details on supported predictor terms). We write $y_i$ and $\eta_i$ for the response and linear predictor of observation $i$. Furthermore, we use $f$ for a density function and $g$ for an inverse link function.
 
 ## Location shift models
 
 The density of the **gaussian** family is given by
-$$f(y_i) = \frac{1}{\sqrt{2\pi}\sigma} \exp\left(\frac{1}{2}\left(\frac{y_i - g(\eta_i)}{\sigma}\right)^2\right)$$ 
+$$f(y_i) = \frac{1}{\sqrt{2\pi}\sigma} \exp\left(-\frac{1}{2}\left(\frac{y_i - g(\eta_i)}{\sigma}\right)^2\right)$$ 
 where $\sigma$ is the residual standard deviation. The density of the **student** family is given by
 $$f(y_i) = \frac{\Gamma((\nu + 1)/2)}{\Gamma(\nu/2)} \frac{1}{\sqrt{\nu\pi}\sigma}
 \left(1 + \frac{1}{\nu} \left(\frac{y_i - g(\eta_i)}{\sigma}\right)^2\right)^{-(\nu+1)/2}$$
-$\Gamma$ denotes the gamma function and $\nu$ are the degrees of freedom. The **cauchy** family arises from the **student** family $\nu$ is set to $1$. As $\nu \rightarrow \infty$, the student distribution becomes the gaussian distribution. For location shift models, $y_i$ can be any real value.
+$\Gamma$ denotes the gamma function and $\nu$ are the degrees of freedom. As $\nu \rightarrow \infty$, the student distribution becomes the gaussian distribution. For location shift models, $y_i$ can be any real value.
 
 ## Binary and count data models
 
@@ -42,7 +42,10 @@ where $\phi$ is a positive precision parameter. For $\phi \rightarrow \infty$, t
 
 ## Survival models
 
-With survival models we mean all models that are defined on the positive reals only, that is $y_i \in \mathbb{R}^+$. The density of the **gamma** family is given by
+With survival models we mean all models that are defined on the positive reals only, that is $y_i \in \mathbb{R}^+$. The density of the **lognormal** family is given by 
+$$f(y_i) = \frac{1}{\sqrt{2\pi}\sigma x} \exp\left(-\frac{1}{2}\left(\frac{\log(y_i) - g(\eta_i)}{\sigma}\right)^2\right)$$ 
+where $\sigma$ is the residual standard deviation on the log-scale.
+The density of the **Gamma** family is given by
 $$f(y_i) = \frac{(\alpha / g(\eta_i))^\alpha}{\Gamma(\alpha)} y_i^{\alpha-1} 
 \exp\left(-\frac{\alpha y_i}{g(\eta_i)}\right)$$
 where $\alpha$ is a positive shape parameter. The density of the **weibull** family is given by
@@ -83,8 +86,8 @@ Note that $\eta$ does also depend on the category $k$. For reasons of identifiab
 **Zero-inflated** and **hurdle** families extend existing families by adding special processes for responses that are zero. The densitiy of a **zero-inflated** family is given by
 $$f_z(y_i) = g_z(\eta_{zi}) + (1 - g_z(\eta_{zi})) f(y_i) \quad \text{if } y_i = 0 \\
   f_z(y_i) = (1 - g_z(\eta_{zi}) f(y_i) \quad \text{if } y_i > 0$$
-The zero-inflation part has its own linear predictor $\eta_{zi}$ combined with the logit link $g_z$. Currently implemented families are **zero_inflated_poisson**, **zero_inflated_binomial** and **zero_inflated_negbinomial**.
+The zero-inflation part has its own linear predictor $\eta_{zi}$ combined with the logit link $g_z$. Currently implemented families are **zero_inflated_poisson**, **zero_inflated_binomial**, **zero_inflated_negbinomial**, and **zero_inflated_beta**.
 The density of a **hurdle** family is given by 
 $$f_z(y_i) = g_z(\eta_{zi}) \quad \text{if } y_i = 0 \\
   f_z(y_i) = (1 - g_z(\eta_{zi})) f(y_i) / (1 - f(0)) \quad \text{if } y_i > 0$$
-Currently implemented families are **hurdle_poisson**, **hurdle_negbinomial**, and **hurdle_gamma**. Both linear predictors (i.e., $\eta$ and $\eta_z$) can be specified in one formula argument. See help(brm) for instructions on how to do that.
+Currently implemented families are **hurdle_poisson**, **hurdle_negbinomial**, and **hurdle_gamma**. Both linear predictors (i.e., $\eta$ and $\eta_z$) can be specified within the `formula` argument. See `help(brmsformula)` for instructions on how to do that.
