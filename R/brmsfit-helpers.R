@@ -733,8 +733,8 @@ make_point_frame <- function(mf, effects, conditions, groups, family) {
     for (i in seq_along(points)) {
       cond <- conditions[i, , drop = FALSE]
       not_na <- which(!(is.na(cond) | cond == ".ZERO"))
-      # do it like base::duplicated
-      if (any(not_na)) {
+      if (length(not_na)) {
+        # do it like base::duplicated
         K <- do.call("paste", c(mf[, not_na, drop = FALSE], sep = "\r")) %in% 
              do.call("paste", c(cond[, not_na, drop = FALSE], sep = "\r"))
       } else {
