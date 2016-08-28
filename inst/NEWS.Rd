@@ -25,6 +25,8 @@
       multivariate syntax anymore but instead have
       special auxiliary parameters named \code{zi} and 
       \code{hu} defining zero-inflation / hurdle probabilities.
+      \item Implement the \code{von_mises} family to model
+      circular responses.
       \item Allow predictions of \code{t2} smoothing
       terms for new data.
       \item Feature vectors as arguments for the addition 
