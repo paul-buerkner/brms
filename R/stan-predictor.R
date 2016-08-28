@@ -71,8 +71,8 @@ stan_effects <- function(effects, data, family = gaussian(),
   }
   
   # possibly transform eta before it is passed to the likelihood
-  add <- is.formula(effects[c("weights", "cens", "trunc")])
-  transform <- stan_eta_transform(family$family, family$link, add = add)
+  ll_adj <- any(ulapply(effects[c("cens", "trunc")], is.formula))
+  transform <- stan_eta_transform(family$family, family$link, ll_adj = ll_adj)
   if (transform) {
     eta_ilink <- stan_eta_ilink(family$family, family$link, 
                                 disp = is.formula(effects$disp))
@@ -80,7 +80,6 @@ stan_effects <- function(effects, data, family = gaussian(),
     eta_ilink <- rep("", 2)
   }
   # include autoregressive effects
-  # TODO: allow arma effects in MV models again
   eta_ar <- ifelse(get_ar(autocor) && !use_cov(autocor), 
                    paste0(" + head(E", p, "[n], Kar) * ar"), "")
   if (sum(nzchar(c(eta_ilink, eta_ar)))) {
@@ -132,10 +131,11 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
   if (length(effects$nonlinear)) {
     for (i in seq_along(effects$nonlinear)) {
       nlpar <- names(effects$nonlinear)[i]
+      # do not pass 'family' here to avoid inverse link transformations
       nl_text <- stan_effects(effects = effects$nonlinear[[i]],
-                              data = data, family = family, 
-                              ranef = ranef, prior = prior,
-                              nlpar = nlpar, rm_intercept = FALSE)
+                              data = data, ranef = ranef, 
+                              prior = prior, nlpar = nlpar, 
+                              rm_intercept = FALSE)
       out <- collapse_lists(list(out, nl_text))
     }
     # prepare non-linear model of eta 
@@ -157,8 +157,8 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
     nlmodel <- rename(nlmodel, c(nlpars, covars, " ( ", " ) "), 
                       c(new_nlpars, new_covars, "(", ")"))
     # possibly transform eta in the transformed params block
-    add <- is.formula(effects[c("weights", "cens", "trunc")])
-    transform <- stan_eta_transform(family$family, family$link, add = add)
+    ll_adj <- any(ulapply(effects[c("cens", "trunc")], is.formula))
+    transform <- stan_eta_transform(family$family, family$link, ll_adj = ll_adj)
     if (transform) {
       eta_ilink <- stan_eta_ilink(family$family, family$link, 
                                   disp = is.formula(effects$disp))
@@ -553,16 +553,15 @@ stan_eta_bsts <- function(autocor) {
   eta_bsts
 }
 
-stan_eta_transform <- function(family, link, add = FALSE) {
+stan_eta_transform <- function(family, link, ll_adj = FALSE) {
   # indicate whether eta needs to be transformed
   # in the transformed parameters block
   # Args:
-  #   add: is the model weighted, censored, truncated?
-  !(add || !is.skewed(family) && link == "identity" ||
-    is.count(family) && link == "log" ||
-    is.binary(family) && link == "logit" ||
+  #   ll_adj: is the model censored or truncated?
+  !(!is.skewed(family) && link == "identity" ||
     is.ordinal(family) || is.categorical(family) ||
-    is.zero_inflated(family) || is.hurdle(family))
+    is.zero_inflated(family) || is.hurdle(family)) &&
+  (ll_adj || !stan_has_built_in_fun(family, link))
 }
 
 stan_eta_ilink <- function(family, link, disp = FALSE) {

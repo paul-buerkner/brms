@@ -61,6 +61,31 @@ test_that("stan_effects returns correct strings for autocorrelation models", {
                "eta = X * b + temp_Intercept + Yarr * arr", fixed = TRUE)
 })
 
+test_that("stan_effects handles link functions correctly", {
+  ee <- brms:::extract_effects(count ~ Trt_c)
+  expect_match(stan_effects(ee, data = epilepsy, family = weibull())$modelC3,
+               "eta[n] = exp((eta[n]) / shape);", fixed = TRUE)
+  expect_match(stan_effects(ee, data = epilepsy, 
+                            family = exponential("identity"))$modelC3,
+               "eta[n] = inv(eta[n]);", fixed = TRUE)
+  expect_match(stan_effects(ee, data = epilepsy, family = poisson("sqrt"))$modelC3,
+               "eta[n] = square(eta[n]);", fixed = TRUE)
+  expect_equal(stan_effects(ee, data = epilepsy, family = bernoulli())$modelC3,
+               NULL)
+  
+  ee <- brms:::extract_effects(count | cens(Base) ~ Trt_c, family = gaussian())
+  expect_match(stan_effects(ee, data = epilepsy, family = student("log"))$modelC3,
+               "eta[n] = exp(eta[n]);", fixed = TRUE)
+  expect_match(stan_effects(ee, data = epilepsy, family = geometric())$modelC3,
+               "eta[n] = exp(eta[n]);", fixed = TRUE)
+  expect_equal(stan_effects(ee, data = epilepsy, family = cumulative())$modelC3,
+               NULL)
+  expect_equal(stan_effects(ee, data = epilepsy, 
+                            family = zero_inflated_beta())$modelC3,
+               NULL)
+  expect_equal(stan_effects(ee, data = epilepsy)$modelC3, NULL)
+})
+
 test_that("stan_autocor returns correct strings (or errors)", {
   expect_equal(stan_autocor(family = gaussian(log), 
                             autocor = cor.arma()), list())
@@ -115,7 +140,7 @@ test_that("stan_llh uses simplifications when possible", {
   expect_equal(stan_llh(bernoulli("logit")), 
                "  Y ~ bernoulli_logit(eta); \n")
   expect_match(stan_llh(lognormal(), effects = list(weights = ~x)), 
-               "lognormal_lpdf(Y[n] | (eta[n]), sigma); \n", fixed = TRUE)
+               "lognormal_lpdf(Y[n] | eta[n], sigma); \n", fixed = TRUE)
   expect_equal(stan_llh(poisson()), "  Y ~ poisson_log(eta); \n")
   expect_match(stan_llh(cumulative("logit")), fixed = TRUE,
                "  Y[n] ~ ordered_logistic(eta[n], temp_Intercept); \n")
@@ -123,42 +148,40 @@ test_that("stan_llh uses simplifications when possible", {
 
 test_that("stan_llh returns correct llhs under weights and censoring", {
   expect_match(stan_llh(student("inverse"), effects = list(weights = ~x)),
-               "  lp_pre[n] = student_t_lpdf(Y[n] | nu, inv(eta[n]), sigma); \n",
+               "  lp_pre[n] = student_t_lpdf(Y[n] | nu, eta[n], sigma); \n",
                fixed = TRUE)
   expect_match(stan_llh(poisson(), effects = list(weights = ~x)),
-               "  lp_pre[n] = poisson_log_lpmf(Y[n] | (eta[n])); \n",
+               "  lp_pre[n] = poisson_log_lpmf(Y[n] | eta[n]); \n",
                fixed = TRUE)
   expect_match(stan_llh(poisson(), effects = list(cens = ~x)),
-               "Y[n] ~ poisson(exp(eta[n])); \n", fixed = TRUE)
+               "Y[n] ~ poisson(eta[n]); \n", fixed = TRUE)
   expect_match(stan_llh(binomial(logit), list(weights = ~x, trials = ~x)),
-               "  lp_pre[n] = binomial_logit_lpmf(Y[n] | trials[n], (eta[n])); \n",
+               "  lp_pre[n] = binomial_logit_lpmf(Y[n] | trials[n], eta[n]); \n",
                fixed = TRUE)
   expect_match(stan_llh(weibull("log"), effects = list(cens = ~x)), fixed = TRUE,
-               "target += weibull_lccdf(Y[n] | shape, exp(eta[n] / shape)); \n")
+               "target += weibull_lccdf(Y[n] | shape, eta[n]); \n")
   expect_match(stan_llh(weibull("inverse"), list(cens = ~x, weights = ~x)),
                paste("target += weights[n] * weibull_lccdf(Y[n] |", 
-                     "shape, inv(eta[n] / shape)); \n"), fixed = TRUE)
+                     "shape, eta[n]); \n"), fixed = TRUE)
 })
 
 test_that("stan_llh returns correct llhs under truncation", {
-  
   expect_match(stan_llh(student(inverse), trunc_bounds = list(lb = 0)),
-               "  Y[n] ~ student_t(nu, inv(eta[n]), sigma) T[lb[n], ];", fixed = TRUE)
+               "  Y[n] ~ student_t(nu, eta[n], sigma) T[lb[n], ];", fixed = TRUE)
   expect_match(stan_llh(poisson(), trunc_bounds = list(ub = 100)),
-               "  Y[n] ~ poisson(exp(eta[n])) T[, ub[n]]; \n", fixed = TRUE)
+               "  Y[n] ~ poisson(eta[n]) T[, ub[n]]; \n", fixed = TRUE)
   expect_match(stan_llh(gaussian(), effects = list(se = ~x),
                         trunc_bounds = list(lb = 0, ub = 100)),
-               "  Y[n] ~ normal((eta[n]), se[n]) T[lb[n], ub[n]];", fixed = TRUE)
+               "  Y[n] ~ normal(eta[n], se[n]) T[lb[n], ub[n]];", fixed = TRUE)
   expect_match(stan_llh(binomial(), effects = list(trials = ~x),
                         trunc_bounds = list(lb = 0, ub = 100)),
-               "  Y[n] ~ binomial(trials[n], inv_logit(eta[n])) T[lb[n], ub[n]];",
+               "  Y[n] ~ binomial(trials[n], eta[n]) T[lb[n], ub[n]];",
                fixed = TRUE)
 })
 
 test_that("stan_llh returns correct llhs for zero-inflated an hurdle models", {
   expect_match(stan_llh(zero_inflated_poisson()), fixed = TRUE,
                "  Y[n] ~ zero_inflated_poisson(eta[n], zi);")
-               
   expect_match(stan_llh(hurdle_negbinomial()), fixed = TRUE,
                "  Y[n] ~ hurdle_neg_binomial(eta[n], hu, shape);")
   expect_match(stan_llh(hurdle_gamma()), fixed = TRUE,
@@ -171,7 +194,7 @@ test_that("stan_llh returns correct llhs for multivariate models", {
   expect_match(stan_llh(student(), list(response = c("y1", "y2", "y3"))),
                "  Y ~ multi_student_t(nu, Eta, Sigma); \n", fixed = TRUE)
   expect_match(stan_llh(student(), list(response = c("y1", "y2"), weights = ~x)),
-               "  lp_pre[n] = multi_student_t_lpdf(Y[n] | nu, (Eta[n]), Sigma);",
+               "  lp_pre[n] = multi_student_t_lpdf(Y[n] | nu, Eta[n], Sigma);",
                fixed = TRUE)
 })
 

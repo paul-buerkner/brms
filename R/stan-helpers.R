@@ -63,27 +63,8 @@ stan_llh <- function(family, effects = list(), autocor = cor_arma(),
   
   # use inverse link in likelihood statement only 
   # if it does not prevent vectorization 
-  simplify <- !has_trunc && !has_cens && stan_has_build_in_fun(family, link)
-  ilink <- ifelse(n == "[n]" && !simplify, stan_ilink(link), "")
-  eta <- ifelse(is_mv, "Eta", "eta")
-  if (n == "[n]") {
-    if (is_hurdle || is_zero_inflated) {
-      eta <- "eta[n]"
-    } else {
-      eta <- paste0(eta, "[n]")
-      fl <- ifelse(family %in% c("gamma", "exponential"), 
-                   paste0(family, "_", link), family)
-      eta <- switch(fl, 
-        paste0(ilink,"(",eta,")"),
-        gamma_log = paste0(shape, " * exp(-", eta, ")"),
-        gamma_inverse = paste0(shape, " * ", eta),
-        gamma_identity =  paste0(shape, " / ", eta),
-        exponential_log = paste0("exp(-", eta, ")"),
-        exponential_inverse = eta,
-        exponential_identity = paste0("inv(", eta, ")"),
-        weibull = paste0(ilink, "(", eta, " / ", shape,")"))
-    }
-  }
+  simplify <- !has_trunc && !has_cens && stan_has_built_in_fun(family, link)
+  eta <- paste0(ifelse(is_mv, "Eta", "eta"), n)
   
   if (simplify) { 
     llh_pre <- switch(family,
@@ -115,7 +96,7 @@ stan_llh <- function(family, effects = list(), autocor = cor_arma(),
       gamma = c("gamma", paste0(shape, ", ", eta)), 
       exponential = c("exponential", eta),
       weibull = c("weibull", paste0(shape,", ", eta)), 
-      inverse.gaussian = c(paste0("inv_gaussian", if (!nchar(n)) "_vector"), 
+      inverse.gaussian = c(paste0("inv_gaussian", if (!reqn) "_vector"), 
                            paste0(eta, ", shape, log_Y", n, ", sqrt_Y", n)),
       beta = c("beta", paste0(eta, " * ", phi, ", (1 - ", eta, ") * ", phi)),
       cumulative = c("cumulative", ordinal_args),
@@ -568,13 +549,11 @@ stan_forked <- function(family) {
 stan_inv_gaussian <- function(family, weights = FALSE, cens = FALSE, 
                               trunc = FALSE) {
   # stan code for inverse gaussian models
-  #
   # Args:
   #   family: the model family
   #   weights: weights present?
   #   cens: censored data?
   #   trunc: truncated data?
-  #
   # Returns:
   #   a list of character strings defining the stan code
   #   specific for inverse gaussian models
@@ -889,7 +868,7 @@ stan_ilink <- function(link) {
          cloglog = "inv_cloglog", cauchit = "inv_cauchit")
 }
 
-stan_has_build_in_fun <- function(family, link) {
+stan_has_built_in_fun <- function(family, link) {
   # indicates if a family-link combination has a build in 
   # function in Stan (such as binomial_logit)
   (family %in% c("binomial", "bernoulli", "cumulative", "categorical")
