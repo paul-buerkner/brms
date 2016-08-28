@@ -179,6 +179,21 @@ test_that("loglik for bernoulli and beta models works correctly", {
   expect_equal(ll, as.matrix(ll_beta))
 })
 
+test_that("loglik for circular models runs without errors", {
+  ns <- 15
+  nobs <- 10
+  draws <- list(eta = matrix(rnorm(ns * nobs * 2), ncol = nobs * 2),
+                kappa = matrix(rgamma(ns, 4)))
+  draws$data <- list(Y = runif(nobs, -pi, pi))
+  draws$f$link <- "tan_half"
+  i <- sample(seq_len(nobs), 1)
+  ll <- loglik_von_mises(i, draws = draws)
+  expect_equal(length(ll), ns)
+  draws$data$cens <- sample(-1:1, nobs, TRUE)
+  ll <- loglik_von_mises(i, draws = draws)
+  expect_equal(length(ll), ns)
+})
+
 test_that("loglik for zero-inflated and hurdle models runs without erros", {
   ns <- 50
   nobs <- 8

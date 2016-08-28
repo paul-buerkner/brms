@@ -22,6 +22,9 @@ test_that("make_stancode accepts supported links", {
   expect_match(make_stancode(cbind(rating, rating + 1) ~ 1, 
                              data = inhaler, family = gaussian("log")), 
                "eta_rating[n] = exp(eta_rating[n])", fixed = TRUE)
+  expect_match(make_stancode(rating ~ 1, data = inhaler, 
+                             family = von_mises(tan_half)), 
+               "eta[n] = inv_tan_half(eta[n])", fixed = TRUE)
 })
 
 test_that(paste("make_stancode returns correct strings", 
@@ -90,14 +93,21 @@ test_that("make_stancode returns correct self-defined functions", {
   expect_match(make_stancode(rating ~ treat, data = inhaler,
                              family = cumulative("cauchit")),
                "real inv_cauchit(real y)", fixed = TRUE)
+  # tan_half link
+  expect_match(make_stancode(rating ~ treat, data = inhaler,
+                             family = von_mises("tan_half")),
+               "real inv_tan_half(real y)", fixed = TRUE)
   # inverse gaussian models
   temp_stancode <- make_stancode(time | cens(censored) ~ age, data = kidney,
                                  family = inverse.gaussian)
   expect_match(temp_stancode, "real inv_gaussian_lpdf(real y", fixed = TRUE)
   expect_match(temp_stancode, "real inv_gaussian_lcdf(real y", fixed = TRUE)
   expect_match(temp_stancode, "real inv_gaussian_lccdf(real y", fixed = TRUE)
-  expect_match(make_stancode(time ~ 1, data = kidney, family = inverse.gaussian),
-               "real inv_gaussian_vector_lpdf(vector y", fixed = TRUE)
+  expect_match(temp_stancode, "real inv_gaussian_vector_lpdf(vector y", fixed = TRUE)
+  # von Mises models
+  temp_stancode <- make_stancode(time ~ age, data = kidney, family = von_mises)
+  expect_match(temp_stancode, "real von_mises_real_lpdf(real y", fixed = TRUE)
+  expect_match(temp_stancode, "real von_mises_vector_lpdf(vector y", fixed = TRUE)
   # zero-inflated and hurdle models
   expect_match(make_stancode(count ~ Trt_c, data = epilepsy, 
                              family = "zero_inflated_poisson"),

@@ -146,6 +146,17 @@ test_that("predict for bernoulli and beta models works correctly", {
   expect_equal(length(pred), ns)
 })
 
+test_that("predict for circular models runs without errors", {
+  ns <- 15
+  nobs <- 10
+  draws <- list(eta = matrix(rnorm(ns * nobs * 2), ncol = nobs * 2),
+                kappa = matrix(rgamma(ns, 4)), nsamples = ns)
+  draws$f$link <- "tan_half"
+  i <- sample(seq_len(nobs), 1)
+  pred <- predict_von_mises(i, draws = draws)
+  expect_equal(length(pred), ns)
+})
+
 test_that("predict for zero-inflated and hurdle models runs without erros", {
   ns <- 50
   nobs <- 8
