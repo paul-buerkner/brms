@@ -174,6 +174,9 @@ dvon_mises <- function(x, mu, kappa, log = FALSE) {
   # density function of the von Mises distribution
   # CircStats::dvm has support within [0, 2*pi], 
   # but in brms we use [-pi, pi]
+  # Args:
+  #    mu: location parameter
+  #    kappa: precision parameter
   out <- CircStats::dvm(x + base::pi, mu + base::pi, kappa)
   if (log) {
     out <- log(out)
@@ -184,43 +187,30 @@ dvon_mises <- function(x, mu, kappa, log = FALSE) {
 pvon_mises <- function(q, mu, kappa, lower.tail = TRUE, 
                        log.p = FALSE, ...) {
   # distribution function of the von Mises distribution
-  dim_q <- dim(q)
-  q <- as.vector(q) + base::pi
-  mu <- as.vector(mu) + base::pi
-  kappa <- as.vector(kappa)
-  stopifnot(length(q) == length(mu), length(q) == length(kappa))
-  out <- rep(NA, length(q))
-  for (i in seq_along(q)) {
-    # function CircStats::pvm is not vectorized
-    out[i] <- CircStats::pvm(q[i], mu[i], kappa[i], ...)
-  }
+  q <- q + base::pi
+  mu <- mu + base::pi
+  out <- .pvon_mises(q, mu, kappa, ...)
   if (!lower.tail) {
     out <- 1 - out
   }
   if (log.p) {
     out <- log(out)
   }
-  structure(out, dim = dim_q)
+  out
 }
+
+# vectorized version of CircStats::pvm
+.pvon_mises <- Vectorize(CircStats::pvm, c("theta", "mu", "kappa"))
 
 rvon_mises <- function(n, mu, kappa) {
   # sample random numbers from the von Mises distribution
-  dim_mu <- dim(mu)
-  mu <- as.vector(mu) + base::pi
-  kappa <- as.vector(kappa)
-  if (length(mu) > 1L || length(kappa) > 1L) {
-    stopifnot(n == length(mu), length(mu) == length(kappa))
-    out <- rep(NA, length(mu))
-    for (i in seq_len(n)) {
-      # function CircStats::rvm is not vectorized
-      out[i] <- CircStats::rvm(1, mu[i], kappa[i])
-    }
-    out <- structure(out, dim = dim_mu)
-  } else {
-    out <- CircStats::rvm(n, mu, kappa)
-  }
-  out - base::pi
+  stopifnot(n %in% c(1, max(length(mu), length(kappa))))
+  mu <- mu + base::pi
+  .rvon_mises(1, mu, kappa) - base::pi
 }
+
+# vectorized version of CircStats::rvm
+.rvon_mises <- Vectorize(CircStats::rvm, c("mean", "k"))
 
 dcategorical <- function(x, eta, ncat, link = "logit") {
   # density of the categorical distribution
