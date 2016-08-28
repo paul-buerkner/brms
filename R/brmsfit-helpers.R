@@ -384,8 +384,8 @@ get_auxpar <- function(x, i = NULL) {
   #      (used in predict and logLik)
   if (is.list(x)) {
     # compute auxpar in distributional regression models
-    link <- get(x[["link"]], mode = "function")
-    x <- link(get_eta(i = if (!is.null(i)) i else NULL, draws = x))
+    ilink <- get(x[["ilink"]], mode = "function")
+    x <- ilink(get_eta(i = if (!is.null(i)) i else NULL, draws = x))
   } else {
     if (!is.null(i) && isTRUE(ncol(x) > 1L)) {
       x <- x[, i, drop = FALSE]
