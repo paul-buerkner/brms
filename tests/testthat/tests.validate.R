@@ -99,7 +99,7 @@ test_that("extract_effects finds all variables in non-linear models", {
 
 test_that("extract_effects rejects REs in non-linear formulas", {
   expect_error(extract_effects(y ~ exp(-x/a) + (1|g), nonlinear = a ~ 1),
-               "Random effects in non-linear models", fixed = TRUE)
+               "Group-level effects in non-linear models", fixed = TRUE)
 })
 
 test_that("extract_effects finds all spline terms", {

@@ -21,8 +21,8 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   x <- nlist(formula)
   if (length(nonlinear)) {
     if (grepl("|", tfixed, fixed = TRUE)) {
-      stop(paste("Random effects in non-linear models should be specified", 
-                 "in the 'nonlinear' argument."), call. = FALSE)
+      stop("Group-level effects in non-linear models have to be ",
+           "specified in the 'nonlinear' argument.", call. = FALSE)
     }
     if (is.ordinal(family) || is.categorical(family) || is.forked(family)) {
       stop("Non-linear effects are not yet allowed for this family.", 
@@ -60,9 +60,8 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
     cse_terms <- all_terms[pos_cse_terms]
     if (length(cse_terms)) {
       if (!is.na(family[[1]]) && !allows_cse(family)) {
-        stop(paste("Category specific effects are only meaningful for", 
-                   "families 'sratio', 'cratio', and 'acat'."), 
-             call. = FALSE)
+        stop("Category specific effects are only meaningful for ", 
+             "families 'sratio', 'cratio', and 'acat'.", call. = FALSE)
       }
       cse_terms <- substr(cse_terms, 5, nchar(cse_terms) - 1)
       cse_terms <- formula(paste("~", paste(cse_terms, collapse = "+")))
@@ -76,13 +75,9 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
     pos_spline_terms <- grep("^(s|t2|te|ti)\\(", all_terms)
     spline_terms <- all_terms[pos_spline_terms]
     if (length(spline_terms)) {
-      if (is.mv(family) || is.categorical(family)) {
-        stop("Splines are not yet implemented for this family.", 
-             call. = FALSE)
-      }
       if (any(grepl("^(te|ti)\\(", spline_terms))) {
-        stop(paste("Tensor product splines 'te' and 'ti' are not yet", 
-                   "implemented in brms. Consider using 't2' instead."),
+        stop("Tensor product splines 'te' and 'ti' are not yet ", 
+             "implemented in brms. Consider using 't2' instead.",
              call. = FALSE)
       }
       x$gam <- formula(paste("~", paste(spline_terms, collapse = "+")))
@@ -115,7 +110,7 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   covars <- setdiff(all.vars(rhs(x$fixed)), names(x$nonlinear))
   x$covars <- formula(paste("~", paste(c("1", covars), collapse = "+")))
   attr(x$covars, "rsv_intercept") <- TRUE
-  # extract random effects parts
+  # extract group-level effects parts
   x$random <- extract_random(re_terms)
   
   # evaluate formulas for auxiliary parameters
@@ -153,21 +148,21 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
               }
             }
           } else {
-            stop(paste("Argument", f, "in formula is not supported", 
-                       "by family", family$family), call. = FALSE)
+            stop("Argument ", f, " in formula is not supported ", 
+                 "by family ", family$family, call. = FALSE)
           } 
         } else if (length(matches) > 1L) {
-          stop("Addition arguments may be only defined once.", call. = FALSE)
+          stop("Addition arguments may be only defined once.", 
+               call. = FALSE)
         } 
       }
       if (length(add_terms)) {
-        stop(paste("Invalid addition part of formula.", 
-                   "Please see the 'Details' section of help(brm)"),
-             call. = FALSE)
+        stop("Invalid addition part of formula. Please see the ", 
+             "'Details' section of help(brmsformula).", call. = FALSE)
       }
       if (is.formula(x$se) && is.formula(x$disp)) {
-        stop(paste("Addition arguments 'se' and 'disp' cannot be used", 
-                   "at the same time."), call. = FALSE)
+        stop("Addition arguments 'se' and 'disp' cannot be used ", 
+             "at the same time.", call. = FALSE)
       }
     }
   }
@@ -204,9 +199,8 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
       } 
       if (length(x$response) > 1L) {
         if (is.linear(family) && length(rmNULL(x[c("se", "cens", "trunc")]))) {
-          stop(paste("Multivariate models currently allow", 
-                     "only weights as addition arguments"), 
-               call. = FALSE)
+          stop("Multivariate models currently allow only ",
+               "weights as addition arguments", call. = FALSE)
         }
         # don't use update on a formula that is possibly non-linear
         x$fixed[[2]] <- quote(response)
@@ -251,9 +245,8 @@ extract_time <- function(formula) {
   x <- list(time = ifelse(length(time), time, ""))
   group <- sub("^\\|*", "", sub("~[^\\|]*", "", formula))
   if (illegal_group_expr(group, bs_valid = FALSE)) {
-    stop(paste("Illegal grouping term:", group, "\n may contain only", 
-               "variable names combined by the symbols ':'"),
-         call. = FALSE)
+    stop("Illegal grouping term: ", group, "\n may contain only ", 
+         "variable names combined by the symbols ':'", call. = FALSE)
   }
   group <- formula(paste("~", ifelse(nchar(group), group, "1")))
   x$group <- paste0(all.vars(group), collapse = ":")
@@ -280,8 +273,8 @@ nonlinear_effects <- function(x, model = ~1, family = NA) {
     model_vars <- all.vars(rhs(model))
     missing_pars <- setdiff(names(nleffects), model_vars)
     if (length(missing_pars)) {
-      stop(paste("Some non-linear parameters are missing in formula:", 
-                 paste(missing_pars, collapse = ", ")), call. = FALSE)
+      stop("Some non-linear parameters are missing in formula: ", 
+           paste(missing_pars, collapse = ", "), call. = FALSE)
     }
   } else {
     nleffects <- NULL 
@@ -331,9 +324,8 @@ update_formula <- function(formula, data = NULL, family = gaussian(),
   old_attributes <- attributes(formula)
   fnew <- ". ~ ."
   if (is(partial, "formula")) {
-    warning(paste("Argument 'partial' is deprecated. Please use the 'cse'", 
-                  "function inside the model formula instead."), 
-            call. = FALSE)
+    warning("Argument 'partial' is deprecated. Please use the 'cse' ", 
+            "function inside the model formula instead.", call. = FALSE)
     partial <- formula2string(partial, rm = 1)
     fnew <- paste(fnew, "+ cse(", partial, ")")
   } else if (!is.null(partial)) {
@@ -353,8 +345,8 @@ update_formula <- function(formula, data = NULL, family = gaussian(),
     model_response <- model.response(model.frame(respform, data = data))
     response <- levels(factor(model_response))
     if (length(response) <= 2L) {
-      stop(paste("At least 3 response categories are required",
-                 "for categorical models"), call. = FALSE)
+      stop("At least 3 response categories are required ",
+           "for categorical models", call. = FALSE)
     }
     # the first level will serve as the reference category
     attr(formula, "response") <- response[-1]
@@ -365,7 +357,7 @@ update_formula <- function(formula, data = NULL, family = gaussian(),
 extract_random <- function(re_terms) {
   # generate a data.frame with all information about the group-level terms
   # Args:
-  #   re_terms: A vector of random effects terms in lme4 syntax
+  #   re_terms: A vector of group-level effects terms in lme4 syntax
   stopifnot(!length(re_terms) || is.character(re_terms))
   lhs_terms <- get_matches("^[^\\|]*", re_terms)
   mid_terms <- get_matches("\\|([^\\|]*\\||)", re_terms)
@@ -380,8 +372,8 @@ extract_random <- function(re_terms) {
     new_groups <- c(groups[1], rep("", length(groups) - 1L))
     for (j in seq_along(groups)) {
       if (illegal_group_expr(groups[j])) {
-        stop(paste("Illegal grouping term:", rhs_terms[i], "\n may contain",
-                   "only variable names combined by the symbols ':' or '/'"),
+        stop("Illegal grouping term: ", rhs_terms[i], "\n may contain ",
+             "only variable names combined by the symbols ':' or '/'",
              call. = FALSE)
       }
       if (j > 1L) {
@@ -499,7 +491,7 @@ update_re_terms <- function(formula, re_formula = NULL) {
   }
   if (!is.null(spars$nonlinear)) {
     # non-linear formulae may cause errors when passed to terms
-    # and do not contain random effects anyway
+    # and do not contain group-level effects anyway
     new_formula <- formula
     spars$nonlinear <- lapply(spars$nonlinear, update_re_terms, 
                               re_formula = re_formula)
@@ -508,7 +500,7 @@ update_re_terms <- function(formula, re_formula = NULL) {
     new_formula <- formula2string(formula)
     old_re_terms <- get_re_terms(formula)
     if (length(old_re_terms)) {
-      # make sure that + before random terms are also removed
+      # make sure that + before group-level terms are also removed
       rm_terms <- c(paste0("+", old_re_terms), old_re_terms)
       new_formula <- rename(new_formula, rm_terms, "")
       if (grepl("~$", new_formula)) {
@@ -683,14 +675,12 @@ amend_terms <- function(x) {
     term_labels <- attr(y, "term.labels")
     if (any(grepl("(^|:)(main|spec)($|:)", term_labels))) {
       if (any(grepl("(^|:)trait($|:)", term_labels))) {
-        stop(paste("formula may not contain variable 'trait'",
-                   "when using variables 'main' or 'spec'"),
-             call. = FALSE)
+        stop("formula may not contain variable 'trait' when ",
+             "using variables 'main' or 'spec'", call. = FALSE)
       }
       if (attr(y, "intercept")) {
-        stop(paste("formula may not contain an intercept",
-                   "when using variables 'main' or 'spec'"),
-             call. = FALSE)
+        stop("formula may not contain an intercept when ",
+             "using variables 'main' or 'spec'", call. = FALSE)
       }
       attr(x, "rsv_intercept") <- TRUE
     }
@@ -930,24 +920,18 @@ check_brm_input <- function(x) {
   family <- check_family(x$family) 
   if (family$family %in% c("exponential", "weibull") && 
       x$inits == "random") {
-    warning(paste("Families exponential and weibull may not work well",
-                  "with default initial values. \n",
-                  " It is thus recommended to set inits = '0'"), 
-            call. = FALSE)
-  }
-  if (family$family == "cauchy") {
-    warning(paste("Family cauchy is deprecated and will be removed soon",
-                  "as it often has convergence issues and not much",
-                  "practical application anyway."), call. = FALSE)
+    warning("Families exponential and weibull may not work well with ",
+            "default initial values. \nIt is thus recommended ",
+            "to set inits = '0'", call. = FALSE)
   }
   if (family$family == "inverse.gaussian") {
-    warning(paste("Inverse gaussian models require carefully chosen", 
-                  "prior distributions to ensure convergence of the chains."),
+    warning("Inverse gaussian models require carefully chosen ", 
+            "prior distributions to ensure convergence of the chains.",
             call. = FALSE)
   }
   if (family$link == "sqrt") {
-    warning(paste(family$family, "model with sqrt link may not be", 
-                  "uniquely identified"), call. = FALSE)
+    warning(family$family, " model with sqrt link may not be ", 
+            "uniquely identified", call. = FALSE)
   }
   invisible(NULL)
 }
