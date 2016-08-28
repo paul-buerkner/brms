@@ -549,36 +549,25 @@ stan_forked <- function(family) {
   out
 }
 
-stan_inv_gaussian <- function(family, weights = FALSE, cens = FALSE, 
-                              trunc = FALSE) {
+stan_inv_gaussian <- function(family, ll_adj = FALSE) {
   # stan code for inverse gaussian models
   # Args:
   #   family: the model family
-  #   weights: weights present?
-  #   cens: censored data?
-  #   trunc: truncated data?
+  #   ll_adj: is the model weighted, censored, or truncated?
   # Returns:
   #   a list of character strings defining the stan code
   #   specific for inverse gaussian models
   stopifnot(is(family, "family"))
   out <- list()
   if (family$family == "inverse.gaussian") {
+    out$fun <- "  #include 'fun_inv_gaussian.stan' \n"
     out$data <- paste0(
       "  // quantities for the inverse gaussian distribution \n",
       "  vector[N] sqrt_Y;  // sqrt(Y) \n")
-    if (weights || cens || trunc) {
+    if (ll_adj) {
       out$data <- paste0(out$data, "  vector[N] log_Y;  // log(Y) \n")
-      out$fun <- paste0(out$fun, 
-        "  #include 'fun_inv_gaussian_pw.stan' \n")
     } else {
       out$data <- paste0(out$data, "  real log_Y;  // sum(log(Y)) \n")
-      out$fun <- paste0(out$fun, 
-        "  #include 'fun_inv_gaussian_vector.stan' \n")
-    } 
-    if (cens || trunc) {
-      out$fun <- paste0(out$fun, 
-        "  #include 'fun_inv_gaussian_lcdf.stan' \n",
-        "  #include 'fun_inv_gaussian_lccdf.stan' \n")
     }
   }
   out
@@ -882,6 +871,15 @@ stan_ilink <- function(link) {
          probit = "Phi", probit_approx = "Phi_approx", 
          cloglog = "inv_cloglog", cauchit = "inv_cauchit",
          tan_half = "inv_tan_half")
+}
+
+stan_ll_adj <- function(effects, adds = c("weights", "cens", "trunc")) {
+  # checks if certain 'adds' are present so that the LL has to be adjusted
+  # Args:
+  #   effects: output of extract_effects
+  #   adds: vector of addition argument names
+  stopifnot(all(adds %in% c("weights", "cens", "trunc")))
+  any(ulapply(effects[adds], is.formula))
 }
 
 stan_has_built_in_fun <- function(family, link) {

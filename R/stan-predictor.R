@@ -71,7 +71,7 @@ stan_effects <- function(effects, data, family = gaussian(),
   }
   
   # possibly transform eta before it is passed to the likelihood
-  ll_adj <- any(ulapply(effects[c("cens", "trunc")], is.formula))
+  ll_adj <- stan_ll_adj(effects, c("cens", "trunc"))
   transform <- stan_eta_transform(family$family, family$link, ll_adj = ll_adj)
   if (transform) {
     eta_ilink <- stan_eta_ilink(family$family, family$link, 
@@ -157,7 +157,7 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
     nlmodel <- rename(nlmodel, c(nlpars, covars, " ( ", " ) "), 
                       c(new_nlpars, new_covars, "(", ")"))
     # possibly transform eta in the transformed params block
-    ll_adj <- any(ulapply(effects[c("cens", "trunc")], is.formula))
+    ll_adj <- stan_ll_adj(effects, c("cens", "trunc"))
     transform <- stan_eta_transform(family$family, family$link, ll_adj = ll_adj)
     if (transform) {
       eta_ilink <- stan_eta_ilink(family$family, family$link, 
