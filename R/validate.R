@@ -969,7 +969,7 @@ exclude_pars <- function(effects, ranef = empty_ranef(),
     }
     if (!save_ranef) {
       usc_nlpar <- usc(ranef$nlpar, "prefix")
-      out <- c(out, paste0("r_", ranef$gn, usc_nlpar, "_", ranef$cn))
+      out <- c(out, paste0("r_", ranef$id, usc_nlpar, "_", ranef$cn))
     }
   }
   out
