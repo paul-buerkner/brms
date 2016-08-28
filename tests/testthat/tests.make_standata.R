@@ -126,7 +126,7 @@ test_that(paste("make_standata rejects incorrect response variables",
                "family gamma requires response variable to be positive")
   expect_error(make_standata(y ~ 1, data = data.frame(y = c(0, 0.5, 1)),
                              family = Beta()),
-               "beta regression requires responses between 0 and 1")
+               "requires responses between 0 and 1")
   expect_error(make_standata(y ~ 1, data = data.frame(y = c(-1, 2, 5)),
                              family = hurdle_gamma()),
                "requires response variable to be non-negative")

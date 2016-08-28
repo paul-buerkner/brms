@@ -292,7 +292,8 @@ nonlinear_effects <- function(x, model = ~1, family = NA) {
 valid_auxpars <- function(family, effects = list(), autocor = cor_arma()) {
   # convenience function to find relevant auxiliary parameters
   x <- c(sigma = has_sigma(family, effects = effects, autocor = autocor),
-         shape = has_shape(family), nu = has_nu(family), phi = has_phi(family),
+         shape = has_shape(family), nu = has_nu(family), 
+         phi = has_phi(family), kappa = has_kappa(family),
          zi = is.zero_inflated(family, zi_beta = TRUE), 
          hu = is.hurdle(family, zi_beta = FALSE))
   names(x)[x]

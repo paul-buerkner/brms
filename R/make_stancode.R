@@ -92,6 +92,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   text_inv_gaussian <- stan_inv_gaussian(family, weights = is.formula(ee$weights),
                                          cens = is.formula(ee$cens),
                                          trunc = is.formula(ee$trunc))
+  text_von_mises <- stan_von_mises(family)
   text_disp <- stan_disp(ee, family = family)
   kronecker <- stan_needs_kronecker(ranef, names_cov_ranef = names(cov_ranef))
   text_misc_funs <- stan_misc_functions(family = family, kronecker = kronecker)
@@ -116,6 +117,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
       text_ordinal$fun,
       text_forked$fun,
       text_inv_gaussian$fun,
+      text_von_mises$fun,
       stan_funs,
     "} \n")
   

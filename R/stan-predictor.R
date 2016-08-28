@@ -184,10 +184,11 @@ stan_auxpars <- function(effects, data, family = gaussian(),
     shape = "  real<lower=0> shape;  // shape parameter \n",
     nu = "  real<lower=0> nu;  // degrees of freedom \n",
     phi = "  real<lower=0> phi;  // precision parameter \n",
+    kappa = "  real<lower=0> kappa;  // precision parameter \n",
     zi = "  real<lower=0,upper=1> zi;  // zero-inflation probability \n", 
     hu = "  real<lower=0,upper=1> hu;  // hurdle probability \n")
   links <- c(sigma = "exp", shape = "exp", nu = "exp", 
-             phi = "exp", zi = "", hu = "") 
+             phi = "exp", kappa = "exp", zi = "", hu = "") 
   valid_auxpars <- valid_auxpars(family, effects, autocor = autocor)
   args <- nlist(data, family, ranef, rm_intercept = FALSE, eta = "")
   for (ap in valid_auxpars) {

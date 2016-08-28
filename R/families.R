@@ -191,6 +191,25 @@ Beta <- function(link = "logit") {
 
 #' @rdname brmsfamily
 #' @export
+von_mises <- function(link = "tan_half") {
+  linktemp <- substitute(link)
+  if (!is.character(linktemp)) {
+    linktemp <- deparse(linktemp)
+  }
+  okLinks <- c("tan_half")
+  if (!linktemp %in% okLinks && is.character(link)) {
+    linktemp <- link
+  }
+  if (!linktemp %in% okLinks) {
+    stop(paste(linktemp, "is not a supported link for family von_mises.", 
+               "Supported links are: \n", paste(okLinks, collapse = ", ")))
+  }
+  structure(list(family = "von_mises", link = linktemp), 
+            class = c("brmsfamily", "family"))
+}
+
+#' @rdname brmsfamily
+#' @export
 hurdle_poisson <- function(link = "log") {
   linktemp <- substitute(link)
   if (!is.character(linktemp)) {
@@ -432,9 +451,10 @@ family.character <- function(object, link = NA, ...) {
     family <- "gaussian"
   }
   okFamilies <- c("gaussian", "student", "lognormal", 
-                  "binomial", "bernoulli", "categorical", "beta",
+                  "binomial", "bernoulli", "categorical", 
                   "poisson", "negbinomial", "geometric", 
-                  "gamma", "weibull", "exponential", "inverse.gaussian", 
+                  "gamma", "weibull", "exponential", 
+                  "inverse.gaussian", "beta", "von_mises",
                   "cumulative", "cratio", "sratio", "acat",
                   "hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma",
                   "zero_inflated_poisson", "zero_inflated_negbinomial",
@@ -462,10 +482,12 @@ family.character <- function(object, link = NA, ...) {
     okLinks <- c("log", "identity", "inverse")
   } else if (family %in% "lognormal") {
     okLinks <- c("identity", "inverse")
+  } else if (family %in% "von_mises") {
+    okLinks <- c("tan_half")
   } else if (is.hurdle(family) || is.zero_inflated(family)) {
     # does not include zi_binomial or zi_beta
     okLinks <- c("log")
-  } 
+  }
   if (is.na(link)) {
     link <- okLinks[1]
   }
@@ -620,7 +642,7 @@ use_real <- function(family) {
     family <- family$family
   }
   is.linear(family) || is.skewed(family) || 
-    family %in% c("lognormal", "inverse.gaussian", "beta", 
+    family %in% c("lognormal", "inverse.gaussian", "beta", "von_mises",
                   "zero_inflated_beta", "hurdle_gamma")
 }
 
@@ -674,6 +696,14 @@ has_phi <- function(family) {
     family <- family$family
   }
   family %in% c("beta", "zero_inflated_beta")
+}
+
+has_kappa <- function(family) {
+  # indicate if family needs a kappa parameter
+  if (is(family, "family")) {
+    family <- family$family
+  }
+  family %in% c("von_mises")
 }
 
 has_sigma <- function(family, effects = NULL, autocor = cor_arma(),

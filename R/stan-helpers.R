@@ -40,11 +40,11 @@ stan_llh <- function(family, effects = list(), autocor = cor_arma(),
     family <- paste0(family, "_fixed")
   }
   
+  auxpars <- intersect(auxpars(), names(effects))
   reqn <- ll_adj || is_categorical || is_ordinal || 
-          is_hurdle || is_zero_inflated
+          is_hurdle || is_zero_inflated || "kappa" %in% auxpars
   n <- ifelse(reqn, "[n]", "")
   # prepare auxiliary parameters
-  auxpars <- intersect(auxpars(), names(effects))
   disp <- ifelse(has_disp, "disp_", "")
   reqn_sigma <- (ll_adj && (has_se || has_disp)) || 
                 (reqn && "sigma" %in% auxpars)
@@ -54,6 +54,7 @@ stan_llh <- function(family, effects = list(), autocor = cor_arma(),
   shape <- paste0(disp, "shape", if (reqn_shape) "[n]")
   nu <- paste0("nu", if (reqn && "nu" %in% auxpars) "[n]")
   phi <- paste0("phi", if (reqn && "phi" %in% auxpars) "[n]")
+  kappa <- paste0("kappa", if (reqn && "kappa" %in% auxpars) "[n]")
   zi <- paste0("zi", if ("zi" %in% auxpars) "[n]")
   hu <- paste0("hu", if ("hu" %in% auxpars) "[n]")
   .logit <- ifelse(any(c("zi", "hu") %in% auxpars), "_logit", "")
@@ -99,6 +100,8 @@ stan_llh <- function(family, effects = list(), autocor = cor_arma(),
       inverse.gaussian = c(paste0("inv_gaussian", if (!reqn) "_vector"), 
                            paste0(eta, ", shape, log_Y", n, ", sqrt_Y", n)),
       beta = c("beta", paste0(eta, " * ", phi, ", (1 - ", eta, ") * ", phi)),
+      von_mises = c(paste0("von_mises_", ifelse(reqn, "real", "vector")), 
+                           paste0(eta, ", ", kappa)),
       cumulative = c("cumulative", ordinal_args),
       sratio = c("sratio", ordinal_args),
       cratio = c("cratio", ordinal_args),
@@ -581,6 +584,17 @@ stan_inv_gaussian <- function(family, weights = FALSE, cens = FALSE,
   out
 }
 
+stan_von_mises <- function(family, ...) {
+  # Stan code for von_mises models
+  stopifnot(is(family, "family"))
+  out <- list()
+  if (family$family == "von_mises") {
+    out$fun <- paste0("  #include 'fun_tan_half.stan' \n",
+                      "  #include 'fun_von_mises.stan' \n")
+  }
+  out
+}
+
 stan_disp <- function(effects, family = gaussian()) {
   # stan code for models with addition argument 'disp'
   # Args:
@@ -855,7 +869,8 @@ stan_link <- function(link) {
   switch(link, identity = "", log = "log", inverse = "inv",
          sqrt = "sqrt", "1/mu^2" = "inv_square", logit = "logit", 
          probit = "inv_Phi", probit_approx = "inv_Phi", 
-         cloglog = "cloglog", cauchit = "cauchit")
+         cloglog = "cloglog", cauchit = "cauchit",
+         tan_half = "tan_half")
 }
 
 stan_ilink <- function(link) {
@@ -865,7 +880,8 @@ stan_ilink <- function(link) {
   switch(link, identity = "", log = "exp", inverse = "inv", 
          sqrt = "square", "1/mu^2" = "inv_sqrt", logit = "inv_logit", 
          probit = "Phi", probit_approx = "Phi_approx", 
-         cloglog = "inv_cloglog", cauchit = "inv_cauchit")
+         cloglog = "inv_cloglog", cauchit = "inv_cauchit",
+         tan_half = "inv_tan_half")
 }
 
 stan_has_built_in_fun <- function(family, link) {

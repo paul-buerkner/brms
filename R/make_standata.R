@@ -95,7 +95,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
         stop(paste("family", family$family, "expects response variable", 
                    "of non-negative integers"), call. = FALSE)
       }
-    } else if (family$family == "bernoulli") {
+    } else if (family$family %in% "bernoulli") {
       standata$Y <- as.numeric(as.factor(standata$Y)) - 1
       if (any(!standata$Y %in% c(0,1))) {
         stop(paste("family", family$family, "expects response variable", 
@@ -103,11 +103,16 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       }
     } else if (family$family %in% c("beta", "zero_inflated_beta")) {
       lower <- if (family$family == "beta") any(standata$Y <= 0)
-      else any(standata$Y < 0)
+               else any(standata$Y < 0)
       upper <- any(standata$Y >= 1)
       if (lower || upper) {
-        stop("beta regression requires responses between 0 and 1", 
+        stop("The beta distribution requires responses between 0 and 1.", 
              call. = FALSE)
+      }
+    } else if (family$family %in% "von_mises") {
+      if (any(standata$Y < -pi | standata$Y > pi)) {
+        stop("The von_mises distribution requires ",
+             "responses between -pi and pi.", call. = FALSE)
       }
     } else if (is_categorical) { 
       standata$Y <- as.numeric(as.factor(standata$Y))
