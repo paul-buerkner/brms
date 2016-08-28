@@ -556,18 +556,20 @@ do_renaming <- function(change, x) {
   }
   onp <- match(change$oldname, names(x$fit@sim$dims_oi))
   if (is.na(onp)) {
-    stop(paste("Parameter", change$oldname, "could not be renamed.",
-               "Please report a bug."), call. = FALSE)
-  }
-  if (is.null(change$pnames)) {
-    # only needed to collapse multiple r_<i> of the same grouping factor
-    x$fit@sim$dims_oi[[onp]] <- NULL  
-  } else { 
-    # rename dims_oi to match names in fnames_oi
-    dims <- x$fit@sim$dims_oi
-    x$fit@sim$dims_oi <- c(if (onp > 1) dims[1:(onp - 1)], 
-                           make_dims(change),
-                           dims[(onp + 1):length(dims)])
+    warning("Parameter ", change$oldname, " could not be renamed. ",
+            "This should not happen. \nPlease inform me so that ",
+            "I can fix this problem.", call. = FALSE)
+  } else {
+    if (is.null(change$pnames)) {
+      # only needed to collapse multiple r_<i> of the same grouping factor
+      x$fit@sim$dims_oi[[onp]] <- NULL  
+    } else { 
+      # rename dims_oi to match names in fnames_oi
+      dims <- x$fit@sim$dims_oi
+      x$fit@sim$dims_oi <- c(if (onp > 1) dims[1:(onp - 1)], 
+                             make_dims(change),
+                             dims[(onp + 1):length(dims)])
+    }
   }
   x
 }
