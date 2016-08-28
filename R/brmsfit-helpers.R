@@ -101,6 +101,7 @@ link <- function(x, link) {
   else if (link == "inverse") 1/x
   else if (link == "sqrt") sqrt(x)
   else if (link == "1/mu^2") 1 / x^2
+  else if (link == "tan_half") tan(x / 2)
   else if (link == "logit") logit(x)
   else if (link == "probit") qnorm(x)
   else if (link == "probit_approx") qnorm(x)
@@ -121,6 +122,7 @@ ilink <- function(x, link) {
   else if (link == "inverse") 1/x
   else if (link == "sqrt") x^2
   else if (link == "1/mu^2") 1 / sqrt(x)
+  else if (link == "tan_half") 2 * atan(x)
   else if (link == "logit") inv_logit(x)
   else if (link == "probit") pnorm(x)
   else if (link == "probit_approx") inv_logit(0.07056*x^3 + 1.5976*x)

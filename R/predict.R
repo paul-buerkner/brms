@@ -245,6 +245,13 @@ predict_beta <- function(i, draws, ...) {
                  lb = draws$data$lb[i], ub = draws$data$ub[i])
 }
 
+predict_von_mises <- function(i, draws, ...) {
+  args <- list(mu = ilink(get_eta(draws, i), draws$f$link), 
+               kappa = get_auxpar(draws$kappa, i = i))
+  rng_continuous(nrng = draws$nsamples, dist = "von_mises", args = args,
+                 lb = draws$data$lb[i], ub = draws$data$ub[i])
+}
+
 predict_hurdle_poisson <- function(i, draws, ...) {
   # theta is the bernoulli hurdle parameter
   theta <- get_theta(draws, i, par = "hu")

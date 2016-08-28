@@ -617,8 +617,8 @@ summary.brmsfit <- function(object, waic = FALSE, ...) {
     rownames(out$fixed) <- gsub("^b_", "", fix_pars)
     
     # summary of family specific parameters
-    spec_pars <- pars[pars %in% c("nu", "shape", "delta", "phi", "zi", "hu") | 
-      apply(sapply(c("^sigma($|_)", "^rescor_"), grepl, x = pars), 1, any)]
+    is_mv_par <- apply(sapply(c("^sigma_", "^rescor_"), grepl, pars), 1, any)
+    spec_pars <- pars[pars %in% auxpars() | is_mv_par]
     out$spec_pars <- fit_summary[spec_pars, , drop = FALSE]
     if (is.linear(family(object)) && length(ee$response) > 1L) {
       sigma_names <- paste0("sigma(", ee$response, ")")
@@ -804,8 +804,8 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5,
   }
   if (!is.character(pars)) {
     pars <- c("^b_", "^bm_", "^sd_", "^cor_", "^sigma", "^rescor", 
-              "^nu$", "^shape$", "^delta$", "^phi$", "^zi$", "^hu$",
-              "^ar", "^ma", "^arr", "^simplex_", "^sds_")
+              "^nu$", "^shape$", "^delta$", "^phi$", "^kappa$", 
+              "^zi$", "^hu$", "^ar", "^ma", "^arr", "^simplex_", "^sds_")
   }
   samples <- posterior_samples(x, pars = pars, add_chain = TRUE)
   pars <- names(samples)[!names(samples) %in% c("chain", "iter")] 

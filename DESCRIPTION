@@ -21,6 +21,7 @@ Imports:
     abind,
     statmod,
     stats,
+    CircStats,
     graphics,
     utils,
     parallel,

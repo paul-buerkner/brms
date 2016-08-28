@@ -1,6 +1,5 @@
 dstudent <- function(x, df = stop("df is required"), mu = 0, sigma = 1, log = FALSE) {
   # density of student's distribution 
-  #
   # Args:
   #  x: the value(s) at which the density should be evaluated
   #  df: degrees of freedom
@@ -18,7 +17,6 @@ dstudent <- function(x, df = stop("df is required"), mu = 0, sigma = 1, log = FA
 pstudent <- function(q, df = stop("df is required"), mu = 0, sigma = 1, 
                      lower.tail = TRUE, log.p = FALSE) {
   # distribution function of student's distribution
-  #
   # Args:
   #  q: the value(s) at which the distribution should be evaluated
   #  df: degrees of freedom
@@ -31,7 +29,6 @@ pstudent <- function(q, df = stop("df is required"), mu = 0, sigma = 1,
 
 qstudent <-  function(p, df = stop("df is required"), mu = 0, sigma = 1) {
   # quantiles of student's distribution
-  #
   # Args:
   #  p: the probabilities to find quantiles for
   #  df: degrees of freedom
@@ -55,14 +52,12 @@ dmulti_normal <- function(x, mu, Sigma, log = TRUE,
                          check = FALSE) {
   # density of the multivariate normal distribution 
   # not vectorized to increase speed when x is only a vector not a matrix
-  #
   # Args:
   #   x: the value(s) at which the density should be evaluated
   #   mu: mean vector
   #   sigma: covariance matrix
   #   log: return on log scale?
   #   check: check arguments for validity?
-  #
   # Returns:
   #   density of the multi_normal distribution a values x
   p <- length(x)
@@ -88,13 +83,11 @@ dmulti_normal <- function(x, mu, Sigma, log = TRUE,
 
 rmulti_normal <- function(n, mu, Sigma, check = FALSE) {
   # random values of the multivariate normal distribution 
-  #
   # Args:
   #   n: number of random values
   #   mu: mean vector
   #   sigma: covariance matrix
   #   check: check arguments for validity?
-  #
   # Returns:
   #   n samples of multi_normal distribution of dimension length(mu) 
   p <- length(mu)
@@ -117,7 +110,6 @@ rmulti_normal <- function(n, mu, Sigma, check = FALSE) {
 dmulti_student <- function(x, df, mu, Sigma, log = TRUE,
                           check = FALSE) {
   # density of the multivariate student-t distribution 
-  #
   # Args:
   #   x: the value(s) at which the density should be evaluated
   #   df: degrees of freedom
@@ -125,7 +117,6 @@ dmulti_student <- function(x, df, mu, Sigma, log = TRUE,
   #   sigma: covariance matrix
   #   log: return on log scale?
   #   check: check arguments for validity?
-  #
   # Returns:
   #   density of the multi_student distribution a values x
   if (is.vector(x)) {
@@ -160,14 +151,12 @@ dmulti_student <- function(x, df, mu, Sigma, log = TRUE,
 rmulti_student <- function(n, df, mu, Sigma, log = TRUE, 
                           check = FALSE) {
   # random values of the multivariate student-t distribution 
-  #
   # Args:
   #   n: number of random values
   #   df: degrees of freedom
   #   mu: mean vector
   #   sigma: covariance matrix
   #   check: check arguments for validity?
-  #
   # Returns:
   #   n samples of multi_student distribution of dimension length(mu) 
   p <- length(mu)
@@ -179,6 +168,58 @@ rmulti_student <- function(n, df, mu, Sigma, log = TRUE,
   samples <- rmulti_normal(n, mu = rep(0, p), Sigma = Sigma, check = check) / 
                sqrt(rchisq(n, df = df) / df)
   sweep(samples, 2, mu, "+")
+}
+
+dvon_mises <- function(x, mu, kappa, log = FALSE) {
+  # density function of the von Mises distribution
+  # CircStats::dvm has support within [0, 2*pi], 
+  # but in brms we use [-pi, pi]
+  out <- CircStats::dvm(x + base::pi, mu + base::pi, kappa)
+  if (log) {
+    out <- log(out)
+  }
+  out
+}
+
+pvon_mises <- function(q, mu, kappa, lower.tail = TRUE, 
+                       log.p = FALSE, ...) {
+  # distribution function of the von Mises distribution
+  dim_q <- dim(q)
+  q <- as.vector(q) + base::pi
+  mu <- as.vector(mu) + base::pi
+  kappa <- as.vector(kappa)
+  stopifnot(length(q) == length(mu), length(q) == length(kappa))
+  out <- rep(NA, length(q))
+  for (i in seq_along(q)) {
+    # function CircStats::pvm is not vectorized
+    out[i] <- CircStats::pvm(q[i], mu[i], kappa[i], ...)
+  }
+  if (!lower.tail) {
+    out <- 1 - out
+  }
+  if (log.p) {
+    out <- log(out)
+  }
+  structure(out, dim = dim_q)
+}
+
+rvon_mises <- function(n, mu, kappa) {
+  # sample random numbers from the von Mises distribution
+  dim_mu <- dim(mu)
+  mu <- as.vector(mu) + base::pi
+  kappa <- as.vector(kappa)
+  if (length(mu) > 1L || length(kappa) > 1L) {
+    stopifnot(n == length(mu), length(mu) == length(kappa))
+    out <- rep(NA, length(mu))
+    for (i in seq_len(n)) {
+      # function CircStats::rvm is not vectorized
+      out[i] <- CircStats::rvm(1, mu[i], kappa[i])
+    }
+    out <- structure(out, dim = dim_mu)
+  } else {
+    out <- CircStats::rvm(n, mu, kappa)
+  }
+  out - base::pi
 }
 
 dcategorical <- function(x, eta, ncat, link = "logit") {
