@@ -28,11 +28,12 @@ to be used in the model. This can be a family function,
 a call to a family function or a character string naming the family.
 Currently, the following families are supported:
 \code{gaussian}, \code{student}, \code{binomial}, 
-\code{bernoulli}, \code{Beta}, \code{poisson}, \code{negbinomial}, 
+\code{bernoulli}, \code{poisson}, \code{negbinomial}, 
 \code{geometric}, \code{Gamma}, \code{lognormal}, \code{inverse.gaussian}, 
-\code{exponential}, \code{weibull}, \code{categorical}, \code{cumulative}, 
-\code{cratio}, \code{sratio}, \code{acat}, \code{hurdle_poisson}, 
-\code{hurdle_negbinomial}, \code{hurdle_gamma}, \code{zero_inflated_binomial},
+\code{exponential}, \code{weibull}, \code{Beta}, \code{von_mises},
+\code{categorical}, \code{cumulative}, \code{cratio}, \code{sratio}, 
+\code{acat}, \code{hurdle_poisson}, \code{hurdle_negbinomial}, 
+\code{hurdle_gamma}, \code{zero_inflated_binomial},
 \code{zero_inflated_beta}, \cr \code{zero_inflated_negbinomial}, 
 and \code{zero_inflated_poisson}.
 Every family function has a \code{link} argument allowing to specify

@@ -17,6 +17,7 @@
 \alias{negbinomial}
 \alias{sratio}
 \alias{student}
+\alias{von_mises}
 \alias{weibull}
 \alias{zero_inflated_beta}
 \alias{zero_inflated_binomial}
@@ -39,6 +40,8 @@ exponential(link = "log")
 weibull(link = "log")
 
 Beta(link = "logit")
+
+von_mises(link = "tan_half")
 
 hurdle_poisson(link = "log")
 
@@ -80,6 +83,7 @@ family \code{categorical}, the link \code{logit};
 families \code{weibull}, and \code{exponential} 
 the links \code{log}, \code{identity}, and \code{inverse};
 family \code{lognormal} the links \code{identity} and \code{inverse};
+family \code{von_mises} the link \code{tan_half};
 families \code{hurdle_poisson}, \code{hurdle_gamma}, 
 \code{hurdle_negbinomial}, \code{zero_inflated_poisson}, 
 and \code{zero_inflated_negbinomial} the link \code{log};

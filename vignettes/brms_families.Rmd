@@ -59,6 +59,13 @@ The density of the **beta** family for $y_i \in (0,1)$ is given by
 $$f(y_i) = \frac{y_i^{g(\eta_i) \phi - 1} (1-y_i)^{(1-g(\eta_i)) \phi)-1}}{B(g(\eta_i) \phi, (1-g(\eta_i)) \phi)}$$
 where $B$ is the beta function and $\phi$ is a positive precision parameter.
 
+## Circular models
+
+The density of the **von_mises** family for $y_i \in (-\pi,\pi)$ is given by
+$$f(y_i) = \frac{\exp(\kappa \cos(y_i - g(\eta_i)))}{2\pi I_0(\kappa)}$$
+where $I_0$ is the modified Bessel function of order 0 and $\kappa$ is
+a precision parameter.
+
 ## Ordinal and categorical models
 
 For ordinal and categorical models, $y_i$ is one of the categories $1, ..., K$. The intercepts of ordinal models are called thresholds and are denoted as $\tau_k$, with $k \in \{1, ..., K-1\}$, whereas $\eta$ does not contain a fixed effects intercept. Note that the applied link functions $h$ are technically distribution functions $\mathbb{R} \rightarrow [0,1]$.
