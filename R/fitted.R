@@ -111,7 +111,7 @@ fitted_hurdle <- function(mu, hu, shape, family) {
     adjusted_mu <- pre_mu
   }
   # incorporate hurdle part
-  pre_mu * (1 - ilink(hu, "logit")) 
+  pre_mu * (1 - hu)
 }
 
 fitted_zero_inflated <- function(mu, zi, family) {
@@ -123,7 +123,7 @@ fitted_zero_inflated <- function(mu, zi, family) {
     # old multivariate syntax model
     mu <- mu[, seq_len(ncol(mu) / 2)]
   }
-  ilink(mu, family$link) * (1 - ilink(zi, "logit")) 
+  ilink(mu, family$link) * (1 - zi) 
 }
 
 #------------- helper functions for truncated models ----------------
