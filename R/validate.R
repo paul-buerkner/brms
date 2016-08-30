@@ -186,7 +186,7 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
     if (!is.null(attr(formula, "response"))) {
       x$response <- attr(formula, "response")
     } else { 
-      x$response <- extract_response(x$respform)
+      x$response <- extract_response(x$respform, keep_dot_usc = old_mv)
     }
     if (old_mv) {
       # multivariate ('trait') syntax is deprecated as of brms 1.0.0
@@ -723,10 +723,11 @@ has_rsv_intercept <- function(formula) {
   out
 }
 
-extract_response <- function(formula) {
+extract_response <- function(formula, keep_dot_usc = FALSE) {
   # extract response variable names
   # Args:
   #   formula: a formula containing only the model response
+  #   keep_dot_usc: keep dots and underscores in the names?
   # Returns:
   #   a vector of names of the response variables (columns)
   formula <- lhs(as.formula(formula))
@@ -750,7 +751,11 @@ extract_response <- function(formula) {
   } else {
     stop("invalid response part of 'formula'", call. = FALSE)
   }
-  gsub("\\.|_", "", make.names(response, unique = TRUE))
+  response <- make.names(response, unique = TRUE)
+  if (!keep_dot_usc) {
+    response <- gsub("\\.|_", "", response)
+  }
+  response
 }
 
 has_splines <- function(effects) {
