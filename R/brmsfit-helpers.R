@@ -228,13 +228,16 @@ get_table <- function(samples, levels = sort(unique(as.numeric(samples)))) {
   #   samples: a S x N matrix
   #   levels: all possible values in \code{samples}
   # Returns:
-  #    a N x \code{levels} matrix containing absolute frequencies in each column seperately
+  #    a N x \code{levels} matrix containing relative frequencies
+  #    in each column seperately
   if (!is.matrix(samples)) 
     stop("samples must be a matrix")
-  out <- do.call(rbind, lapply(1:ncol(samples), function(n) 
-    table(factor(samples[, n], levels = levels))))
-  rownames(out) <- 1:nrow(out)
-  colnames(out) <- paste0("N(Y = ", 1:ncol(out), ")")
+  out <- do.call(rbind, lapply(seq_len(ncol(samples)), 
+    function(n) table(factor(samples[, n], levels = levels))))
+  # compute relative frequencies
+  out <- out / sum(out[1, ])
+  rownames(out) <- seq_len(nrow(out))
+  colnames(out) <- paste0("P(Y = ", seq_len(ncol(out)), ")")
   out
 }
 

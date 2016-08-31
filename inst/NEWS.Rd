@@ -38,6 +38,9 @@
     \itemize{
       \item Remove the \code{cauchy} family
       after several months of deprecation.
+      \item The \code{predict} method now returns predicted 
+      probabilities instead of absolute frequencies of 
+      samples for ordinal and categorical models.
       \item Compute the linear predictor in the model
       block of the Stan program instead of in the
       transformed parameters block. This avoids saving
