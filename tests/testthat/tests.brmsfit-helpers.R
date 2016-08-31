@@ -118,7 +118,8 @@ test_that("get_table returns correct dims and names", {
   res_table <- get_table(samples)
   expect_equal(dim(res_table), c(10, 5))
   expect_equal(dimnames(res_table), 
-               list(as.character(1:10), paste0("N(Y = ", 1:5, ")")))
+               list(as.character(1:10), paste0("P(Y = ", 1:5, ")")))
+  expect_equal(sum(res_table[5, ]), 1)
 })
 
 test_that("evidence_ratio runs without errors", {
