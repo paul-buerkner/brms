@@ -1458,7 +1458,8 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
        else if (!is.null(draws$data$N_tg)) draws$data$N_tg
        else if (is(draws$autocor, "cov_fixed")) 1
        else draws$data$N
-  out <- do.call(cbind, lapply(1:N, predict_fun, draws = draws, ntrys = ntrys))
+  out <- do.call(cbind, lapply(seq_len(N), predict_fun, 
+                               draws = draws, ntrys = ntrys))
   # percentage of invalid samples for truncated discrete models
   # should always be zero for all other models; see predict.R
   pct_invalid <- get_pct_invalid(out, lb = draws$data$lb, ub = draws$data$ub) 
@@ -1469,9 +1470,10 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   # reorder predicted responses in case of multivariate models
   # as they are sorted after units first not after traits
   if (grepl("_mv$", draws$f$family)) {
-    reorder <- with(draws$data, ulapply(1:K_trait, seq, to = N, by = K_trait))
+    nresp <- draws$data$nresp
+    reorder <- ulapply(seq_len(nresp), seq, to = N*nresp, by = nresp)
     out <- out[, reorder, drop = FALSE]
-    colnames(out) <- 1:ncol(out) 
+    colnames(out) <- seq_len(ncol(out)) 
   }
   # reorder predicted responses to be in the initial user defined order
   # currently only relevant for autocorrelation models 
@@ -1570,7 +1572,7 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   draws <- do.call(extract_draws, draws_args)
   # get mu and scale it appropriately
   mu <- get_eta(i = NULL, draws = draws)
-  if (is.linear(draws$f) && !is.null(draws[["mv"]])) {
+  if (grepl("_mv$", draws$f$family) && !is.null(draws[["mv"]])) {
     # collapse over responses in linear MV models
     dim(mu) <- c(dim(mu)[1], prod(dim(mu)[2:3])) 
   }

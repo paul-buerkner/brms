@@ -264,6 +264,9 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       standata <- c(standata, list(N_trait = nrow(standata$Y), 
                                    K_trait = ncol(standata$Y),
                                    NC_trait = NC_trait)) 
+      # for compatibility with the S3 methods of brms >= 1.0.0
+      standata$nresp <- standata$K_trait
+      standata$nrescor <- standata$NC_trait
     }
     if (is_forked) {
       # the second half of Y is only dummy data
