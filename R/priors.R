@@ -228,9 +228,11 @@
 #'   and \code{acat}, and only if \code{threshold = "equidistant"}, 
 #'   the parameter \code{delta} is used to model the distance between 
 #'   two adjacent thresholds. 
-#'   By default, \code{delta} has an improper flat prior over the reals. \cr
-#'   Every family specific parameter has its own prior class, so that \cr
-#'   \code{set_prior("<prior>", class = "<parameter>")} it the right way to go.
+#'   By default, \code{delta} has an improper flat prior over the reals.
+#'   The \code{von_mises} family needs the parameter \code{kappa}, representing
+#'   the concentration parameter. By default, \code{kappa} has prior \code{"gamma(2, 0.01)"}. \cr
+#'   Every family specific parameter has its own prior class, so that
+#'   \code{set_prior("<prior>", class = "<parameter>")} is the right way to go.
 #' 
 #'   Often, it may not be immediately clear, 
 #'   which parameters are present in the model.
@@ -288,7 +290,7 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
     stop("All arguments of set_prior must be of length 1.", call. = FALSE)
   valid_classes <- c("Intercept", "b", "sd", "sds", "simplex", "cor", "L", 
                      "ar", "ma", "arr", "sigma", "sigmaLL", "rescor", 
-                     "Lrescor", "nu", "shape", "delta", "phi")
+                     "Lrescor", "nu", "shape", "delta", "phi", "kappa")
   if (!class %in% valid_classes) {
     stop(paste(class, "is not a valid parameter class"), call. = FALSE)
   }
@@ -803,7 +805,7 @@ check_prior_content <- function(prior, family = gaussian(), warn = TRUE) {
     ulb_priors <- c("beta", "uniform", "von_mises")
     ulb_priors_reg <- paste0("^(", paste0(ulb_priors, collapse = "|"), ")")
     nb_pars <- c("b", "Intercept", if (!family %in% "cumulative") "delta")
-    lb_pars <- c("sd", "sigma", "nu", "shape", "phi",
+    lb_pars <- c("sd", "sigma", "nu", "shape", "phi", "kappa",
                  if (family %in% "cumulative") "delta")
     cor_pars <- c("cor", "L", "rescor", "Lrescor")
     autocor_pars <- c("ar", "ma")
