@@ -42,7 +42,8 @@ stan_llh <- function(family, effects = list(), autocor = cor_arma(),
   
   auxpars <- intersect(auxpars(), names(effects))
   reqn <- ll_adj || is_categorical || is_ordinal || 
-          is_hurdle || is_zero_inflated || "kappa" %in% auxpars
+          is_hurdle || is_zero_inflated || 
+          any(c("phi", "kappa") %in% auxpars)
   n <- ifelse(reqn, "[n]", "")
   # prepare auxiliary parameters
   disp <- ifelse(has_disp, "disp_", "")

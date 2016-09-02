@@ -190,16 +190,18 @@ stan_auxpars <- function(effects, data, family = gaussian(),
   ilinks <- c(sigma = "exp", shape = "exp", nu = "exp", 
               phi = "exp", kappa = "exp", zi = "", hu = "") 
   valid_auxpars <- valid_auxpars(family, effects, autocor = autocor)
-  args <- nlist(data, family, ranef, rm_intercept = FALSE, eta = "")
+  # don't supply the family argument to avoid applying link functions
+  args <- nlist(data, ranef, rm_intercept = FALSE, eta = "")
   for (ap in valid_auxpars) {
     if (!is.null(effects[[ap]])) {
       ap_prior <- prior[prior$nlpar == ap, ]
       ap_args <- list(effects = effects[[ap]], nlpar = ap, prior = ap_prior)
       if (nzchar(ilinks[ap])) {
-        ap_ilink <- paste0("  ", ap, " = ", ilinks[ap], "(", ap, "); \n") 
+        ap_ilink <- paste0("    ", ap, "[n] = ", 
+                           ilinks[ap], "(", ap, "[n]); \n")
       } else ap_ilink <- ""
-      out[[ap]] <- c(do.call(stan_effects, c(ap_args, args)), 
-                     list(modelC4 = ap_ilink))
+      out[[ap]] <- do.call(stan_effects, c(ap_args, args))
+      out[[ap]]$modelC3 <- paste0(out[[ap]]$modelC3, ap_ilink)
     } else {
       out[[ap]] <- list(par = default_defs[ap],
         prior = stan_prior(class = ap, prior = prior))
