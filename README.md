@@ -33,28 +33,28 @@ summary(fit, waic = TRUE)
 #>    Data: epilepsy (Number of observations: 236) 
 #> Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1; 
 #>          total post-warmup samples = 4000
-#>    WAIC: 1146.37
+#>    WAIC: 1145.53
 #>  
 #> Group-Level Effects: 
 #> ~obs (Number of levels: 236) 
 #>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> sd(Intercept)     0.37      0.04     0.29     0.46       1379    1
+#> sd(Intercept)     0.37      0.05     0.29     0.47       1100    1
 #> 
 #> ~patient (Number of levels: 59) 
 #>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> sd(Intercept)      0.5      0.07     0.37     0.65        996    1
+#> sd(Intercept)      0.5      0.07     0.37     0.66        955    1
 #> 
 #> ~visit (Number of levels: 4) 
 #>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> sd(Intercept)     0.11      0.11        0     0.41        747    1
+#> sd(Intercept)     0.11      0.11        0      0.4        700 1.01
 #> 
 #> Population-Level Effects: 
 #>                   Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> Intercept             1.56      0.11     1.34     1.77        581 1.01
-#> log_Age_c             0.48      0.37    -0.25     1.24       1178 1.00
-#> log_Base4_c           1.06      0.11     0.85     1.28       1218 1.00
-#> Trt_c                -0.34      0.16    -0.65    -0.03       1128 1.00
-#> log_Base4_c:Trt_c     0.35      0.22    -0.09     0.77        878 1.00
+#> Intercept             1.56      0.10     1.35     1.75       1042 1.01
+#> log_Age_c             0.50      0.37    -0.23     1.23        904 1.00
+#> log_Base4_c           1.07      0.11     0.86     1.27       1060 1.00
+#> Trt_c                -0.33      0.15    -0.63    -0.03        987 1.01
+#> log_Base4_c:Trt_c     0.36      0.21    -0.07     0.77       1148 1.00
 #> 
 #> Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 #> is a crude measure of effective sample size, and Rhat is the potential 
@@ -63,7 +63,7 @@ summary(fit, waic = TRUE)
 
 On the top of the output, some general information on the model is given, such as family, formula, number of iterations and chains, as well as the WAIC, which is an information criterion for Bayesian models. Next, random effects are displayed seperately for each grouping factor in terms of standard deviations and (in case of more than one random effect per grouping factor; not displayed here) correlations between random effects. On the bottom of the output, fixed effects are displayed. If incorporated, autocorrelation effects and family specific parameters (e.g., the residual standard deviation 'sigma' in normal models) are also given.
 
-In general, every parameter is summarized using the mean ('Estimate') and the standard deviation ('Est.Error') of the posterior distribution as well as two-sided 95% Credible intervals ('l-95% CI' and 'u-95% CI') based on quantiles. The last two values ('Eff.Sample' and 'Rhat') provide information on how well the algorithm could estimate the posterior distribution of this parameter. If 'Rhat' is considerably greater than 1, the algorithm has not yet converged and it is necessary to run more iterations and / or set stronger priors.
+In general, every parameter is summarized using the mean ('Estimate') and the standard deviation ('Est.Error') of the posterior distribution as well as two-sided 95% credible intervals ('l-95% CI' and 'u-95% CI') based on quantiles. The last two values ('Eff.Sample' and 'Rhat') provide information on how well the algorithm could estimate the posterior distribution of this parameter. If 'Rhat' is considerably greater than 1, the algorithm has not yet converged and it is necessary to run more iterations and / or set stronger priors.
 
 To visually investigate the chains as well as the posterior distributions, you can use
 
@@ -84,8 +84,8 @@ newdata <- data.frame(Trt_c = c(0.5, -0.5), log_Age_c = 0,
                       log_Base4_c = 0, visit = 4)
 predict(fit, newdata = newdata, allow_new_levels = TRUE, probs = c(0.05, 0.95))
 #>   Estimate Est.Error 5%ile 95%ile
-#> 1  4.73075  3.901161     0     12
-#> 2  6.60975  5.264350     1     17
+#> 1  4.72525  3.872856     0     12
+#> 2  6.56475  5.076785     1     17
 ```
 
 We need to set `allow_new_levels = TRUE` because we want to predict responses of a person that was not present in the data used to fit the model. While the `predict` method returns predictions of the responses, the `fitted` method returns predictions of the regression line.
@@ -93,8 +93,8 @@ We need to set `allow_new_levels = TRUE` because we want to predict responses of
 ``` r
 fitted(fit, newdata = newdata, allow_new_levels = TRUE, probs = c(0.05, 0.95))
 #>   Estimate Est.Error    5%ile   95%ile
-#> 1 4.711550  3.268968 1.366518 10.79041
-#> 2 6.582059  4.595984 1.966401 14.82510
+#> 1 4.805401  3.339553 1.374127 11.25165
+#> 2 6.675773  4.662246 1.941632 15.48872
 ```
 
 Both methods return the same etimate (up to random error), while the latter has smaller variance, because the uncertainty in the regression line is smaller than the uncertainty in each response. If we want to predict values of the original data, we can just leave the `newdata` argument empty.
@@ -114,10 +114,10 @@ methods(class = "brmsfit")
 #>  [9] formula           hypothesis        launch_shiny      logLik           
 #> [13] LOO               marginal_effects  model.frame       ngrps            
 #> [17] nobs              pairs             parnames          plot             
-#> [21] posterior_samples predict           print             prior_samples    
-#> [25] ranef             residuals         stancode          standata         
-#> [29] stanplot          summary           update            VarCorr          
-#> [33] vcov              WAIC             
+#> [21] posterior_samples pp_check          predict           print            
+#> [25] prior_samples     ranef             residuals         stancode         
+#> [29] standata          stanplot          summary           update           
+#> [33] VarCorr           vcov              WAIC             
 #> see '?methods' for accessing help and source code
 ```
 

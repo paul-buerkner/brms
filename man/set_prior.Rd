@@ -244,9 +244,11 @@ Define priors for specific parameters or classes of parameters
   and \code{acat}, and only if \code{threshold = "equidistant"}, 
   the parameter \code{delta} is used to model the distance between 
   two adjacent thresholds. 
-  By default, \code{delta} has an improper flat prior over the reals. \cr
-  Every family specific parameter has its own prior class, so that \cr
-  \code{set_prior("<prior>", class = "<parameter>")} it the right way to go.
+  By default, \code{delta} has an improper flat prior over the reals.
+  The \code{von_mises} family needs the parameter \code{kappa}, representing
+  the concentration parameter. By default, \code{kappa} has prior \code{"gamma(2, 0.01)"}. \cr
+  Every family specific parameter has its own prior class, so that
+  \code{set_prior("<prior>", class = "<parameter>")} is the right way to go.
 
   Often, it may not be immediately clear, 
   which parameters are present in the model.
