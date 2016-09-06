@@ -357,33 +357,19 @@ update_formula <- function(formula, data = NULL, family = gaussian(),
 extract_random <- function(re_terms) {
   # generate a data.frame with all information about the group-level terms
   # Args:
-  #   re_terms: A vector of group-level effects terms in lme4 syntax
-  stopifnot(!length(re_terms) || is.character(re_terms))
+  #   re_terms: A vector of group-level effects terms in extended lme4 syntax
+  re_terms <- split_re_terms(re_terms)
   lhs_terms <- get_matches("^[^\\|]*", re_terms)
   mid_terms <- get_matches("\\|([^\\|]*\\||)", re_terms)
   rhs_terms <- sub("^\\|", "", get_matches("\\|[^\\|]*$", re_terms))
   random <- vector("list", length(re_terms))
   for (i in seq_along(re_terms)) {
-    form <- formula(paste("~", lhs_terms[i]))
-    cor <- substr(mid_terms[i], 1, 2) != "||"
     id <- gsub("\\|", "", mid_terms[i])
     if (!nzchar(id)) id <- NA
-    groups <- unlist(strsplit(rhs_terms[i], "/", fixed = TRUE))
-    new_groups <- c(groups[1], rep("", length(groups) - 1L))
-    for (j in seq_along(groups)) {
-      if (illegal_group_expr(groups[j])) {
-        stop("Illegal grouping term: ", rhs_terms[i], "\n may contain ",
-             "only variable names combined by the symbols ':' or '/'",
-             call. = FALSE)
-      }
-      if (j > 1L) {
-        new_groups[j] <- paste0(new_groups[j - 1], ":", groups[j])
-      }
-    }
-    random[[i]] <- data.frame(group = new_groups, gn = i, id = id,
-                              cor = rep(cor, length(groups)),
+    random[[i]] <- data.frame(group = rhs_terms[i], gn = i, id = id,
+                              cor = substr(mid_terms[i], 1, 2) != "||",
                               stringsAsFactors = FALSE)
-    random[[i]]$form <- replicate(length(new_groups), form)
+    random[[i]]$form <- list(formula(paste("~", lhs_terms[i])))
   }
   if (length(random)) {
     random <- do.call(rbind, random)
@@ -428,6 +414,32 @@ get_re_terms <- function(x, formula = FALSE, brackets = TRUE) {
     }
   }
   re_terms
+}
+
+split_re_terms <- function(re_terms) {
+  # split nested group-level terms by the '/' sign
+  # Args:
+  #   re_terms: A vector of group-level effects terms in extended lme4 syntax
+  stopifnot(!length(re_terms) || is.character(re_terms))
+  lhs_mid_terms <- get_matches("^[^\\|]*\\|([^\\|]*\\||)", re_terms)
+  rhs_terms <- sub("^\\|", "", get_matches("\\|[^\\|]*$", re_terms))
+  new_re_terms <- vector("list", length(re_terms))
+  for (i in seq_along(re_terms)) {
+    groups <- unlist(strsplit(rhs_terms[i], "/", fixed = TRUE))
+    new_groups <- c(groups[1], rep("", length(groups) - 1L))
+    for (j in seq_along(groups)) {
+      if (illegal_group_expr(groups[j])) {
+        stop("Illegal grouping term: ", rhs_terms[i], "\n may contain ",
+             "only variable names combined by the symbols ':' or '/'",
+             call. = FALSE)
+      }
+      if (j > 1L) {
+        new_groups[j] <- paste0(new_groups[j - 1], ":", groups[j])
+      }
+    }
+    new_re_terms[[i]] <- paste0(lhs_mid_terms[i], new_groups)
+  }
+  unlist(new_re_terms)
 }
 
 check_re_formula <- function(re_formula, formula) {
