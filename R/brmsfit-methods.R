@@ -1024,7 +1024,8 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
   }
   if (missing(nsamples)) {
     aps_types <- c("scatter_avg", "scatter_avg_grouped", "stat", "stat_2d",
-                   "stat_grouped", "ts", "ts_grouped", "violin_grouped")
+                   "stat_grouped", "ts", "ts_grouped", "violin_grouped",
+                   "resid_scatter_avg", "vs_x", "vs_x_grouped")
     if (!is.null(subset)) {
       nsamples <- NULL
     } else if (type %in% aps_types) {
