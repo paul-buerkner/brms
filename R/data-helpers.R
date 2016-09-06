@@ -680,8 +680,6 @@ data_ranef <- function(ranef, data, nlpar = "", not4stan = FALSE) {
   if (nrow(ranef)) {
     Z <- lapply(ranef[!duplicated(ranef$gn), ]$form, 
                 get_model_matrix, data = data)
-    # TODO: move to tidy_ranef?
-    lapply(lapply(Z, colnames), avoid_auxpars, effects = effects)
     gn <- unique(ranef$gn)
     for (i in seq_along(gn)) {
       r <- ranef[ranef$gn == gn[i], ]

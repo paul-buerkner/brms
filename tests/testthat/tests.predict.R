@@ -2,8 +2,8 @@ test_that("predict for location shift models runs without errors", {
   ns <- 30
   nobs <- 10
   draws <- list(eta = matrix(rnorm(ns * nobs), ncol = nobs),
-            sigma = rchisq(ns, 3), nu = rgamma(ns, 4),
-            nsamples = ns)
+                sigma = rchisq(ns, 3), nu = rgamma(ns, 4),
+                nsamples = ns)
   i <- sample(nobs, 1)
   
   draws$f$link <- "identity"

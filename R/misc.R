@@ -60,7 +60,8 @@ rmNum <- function(x) {
 }
 
 rmMatch <- function(x, ...) {
-  # remove all elements in x that also appear in ... while keeping all attributes
+  # remove all elements in x that also appear in ... 
+  # while keeping all attributes
   att <- attributes(x)
   keep <- which(!(x %in% c(...)))
   x <- x[keep]

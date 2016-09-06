@@ -794,6 +794,7 @@ tidy_ranef <- function(effects, data = NULL, all = TRUE) {
   j <- 1
   for (i in seq_len(nrow(random))) {
     Z <- get_model_matrix(random$form[[i]], data = data)
+    avoid_auxpars(colnames(Z), effects = effects)
     rdat <- data.frame(id = random$id[[i]], 
                        group = random$group[[i]], 
                        gn = random$gn[[i]],
