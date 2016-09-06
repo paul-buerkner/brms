@@ -221,15 +221,23 @@ test_that("amend_terms performs expected changes to terms objects", {
 
 test_that("tidy_ranef works correctly", {
   data <- data.frame(g = 1:10, x = 11:20, y = 1:10)
+  data[["g:x"]] <- with(data, paste0(g, "_", x))
+  
   target <- data.frame(id = 1, group = "g", gn = 1, 
                        coef = c("Intercept", "x"), cn = 1:2,
                        nlpar = "", cor = FALSE, 
                        stringsAsFactors = FALSE)
   target$form <- replicate(2, ~1+x)
-  expect_equivalent(tidy_ranef(extract_effects(y~(1+x||g)), data = data),
-                    target)
-  expect_equivalent(tidy_ranef(extract_effects(y~x), data = data), 
-                    empty_ranef())
+  ranef <- tidy_ranef(extract_effects(y~(1+x||g)), data = data)
+  expect_equivalent(ranef, target)
+  
+  target <- data.frame(group = c("g", "g:x"), gn = 1:2,
+                       stringsAsFactors = FALSE)
+  ranef <- tidy_ranef(extract_effects(y~(1|g/x)), data = data)
+  expect_equal(ranef[, c("group", "gn")], target)
+  
+  ranef <- tidy_ranef(extract_effects(y~x), data = data)
+  expect_equivalent(ranef, empty_ranef())
 })
 
 test_that("check_brm_input returns correct warnings and errors", {
