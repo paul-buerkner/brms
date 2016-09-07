@@ -856,7 +856,7 @@ empty_ranef <- function() {
              cor = logical(0), form = character(0), stringsAsFactors = FALSE)
 }
 
-rsv_vars <- function(family, nresp = 1, rsv_intercept = FALSE,
+rsv_vars <- function(family, nresp = 1L, rsv_intercept = FALSE,
                      old_mv = FALSE) {
   # returns names of reserved variables
   # Args:
@@ -865,9 +865,9 @@ rsv_vars <- function(family, nresp = 1, rsv_intercept = FALSE,
   #   rsv_intercept: is the reserved variable "intercept" used?
   if (isTRUE(old_mv)) {
     if (is.linear(family) && nresp > 1L || is.categorical(family)) {
-      rsv <- "trait"
+      rsv <- c("trait", "response")
     } else if (is.forked(family)) {
-      rsv <- c("trait", "main", "spec")
+      rsv <- c("trait", "response", "main", "spec")
     } else {
       rsv <- NULL
     }

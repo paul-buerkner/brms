@@ -124,21 +124,14 @@ check_data_old_mv <- function(data, family, effects) {
   # check if the deprecated MV syntax was used in a new model
   # Args:
   #   see update_data
-  is_mv <- is.mv(family, effects$response) 
-  is_forked <- is.forked(family)
-  if (is_mv || is_forked) {
-    if (is_mv) {
-      rsv_vars <- c("trait")
-    } else if (is_forked) {
-      rsv_vars <- c("trait", "main", "spec")
-    }
-    rsv_vars <- setdiff(rsv_vars, names(data))
-    used_rsv_vars <- intersect(rsv_vars, all.vars(effects$all))
-    if (length(used_rsv_vars)) {
-      warning("It is no longer necessary (and possible) to specify models ", 
-              "using the multivariate 'trait' syntax. See help(brmsformula) ",
-              "for details on the new syntax.", call. = FALSE)
-    }
+  rsv_vars <- rsv_vars(family, nresp = length(effects$reponse),
+                       old_mv = TRUE)
+  rsv_vars <- setdiff(rsv_vars, names(data))
+  used_rsv_vars <- intersect(rsv_vars, all.vars(effects$all))
+  if (length(used_rsv_vars)) {
+    warning("It is no longer necessary (and possible) to specify models ", 
+            "using the multivariate 'trait' syntax. See help(brmsformula) ",
+            "for details on the new syntax.", call. = FALSE)
   }
   invisible(NULL)
 }
@@ -269,18 +262,6 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       missing_gf <- setdiff(new_gf, names(newdata))
       newdata[, missing_gf] <- NA
     }
-    # brms:::update_data expects all original variables to be present
-    # even if not actually used later on
-    old_gf <- unique(unlist(strsplit(fit$ranef$group, split = ":")))
-    old_ee <- extract_effects(formula(fit), et$all, family = family(fit))
-    old_slopes <- unique(ulapply(get_random(old_ee)$form, all.vars))
-    rsv_vars <- rsv_vars(family(fit), nresp = length(ee$response),
-                         old_mv = attr(ee$formula, "old_mv"))
-    unused_vars <- setdiff(union(old_gf, old_slopes), 
-                           union(all.vars(ee$all), rsv_vars))
-    if (length(unused_vars)) {
-      newdata[, unused_vars] <- NA
-    }
   }
   newdata <- combine_groups(newdata, get_random(ee)$group)
   # try to validate factor levels in newdata
@@ -343,6 +324,16 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
         }
         attr(newdata[[v]], "min") <- min_value
       }
+    }
+    # brms:::update_data expects all original variables to be present
+    # even if not actually used later on
+    all_mf_vars <- names(model.frame(fit))
+    rsv_vars <- rsv_vars(family(fit), nresp = length(ee$response),
+                         rsv_intercept = has_rsv_intercept(ee$formula),
+                         old_mv = attr(ee$formula, "old_mv"))
+    unused_vars <- setdiff(all_mf_vars, union(all.vars(ee$all), rsv_vars))
+    if (length(unused_vars)) {
+      newdata[, unused_vars] <- NA
     }
   } else {
     warning(paste("Validity of factors cannot be checked for", 
