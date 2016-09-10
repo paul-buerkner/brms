@@ -270,7 +270,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     list_data <- lapply(as.list(fit$data), function(x)
       if (is.numeric(x)) x else as.factor(x))
     is_factor <- sapply(list_data, is.factor)
-    is_group <- names(list_data) %in% names(fit$ranef)
+    is_group <- names(list_data) %in% fit$ranef$group
     factors <- list_data[is_factor & !is_group]
     if (length(factors)) {
       factor_names <- names(factors)
