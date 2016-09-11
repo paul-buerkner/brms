@@ -261,18 +261,20 @@ get_cov_matrix <- function(sd, cor = NULL) {
   }
   nsamples <- nrow(sd)
   nranef <- ncol(sd)
-  cor_matrix <- aperm(array(diag(1, nranef), dim = c(nranef, nranef, nsamples)), 
-                      perm = c(3, 1, 2))
+  cor_matrix <- array(diag(1, nranef), dim = c(nranef, nranef, nsamples))
+  cor_matrix <- aperm(cor_matrix, perm = c(3, 1, 2))
   cov_matrix <- cor_matrix
-  for (i in 1:nranef) 
-    cov_matrix[, i, i] <- sd[, i]^2 
+  for (i in seq_len(nranef)) { 
+    cov_matrix[, i, i] <- sd[, i]^2
+  }
   if (!is.null(cor)) {
     k <- 0 
     for (i in 2:nranef) {
       for (j in 1:(i-1)) {
         k = k + 1
         cor_matrix[, j, i] <- cor_matrix[, i, j] <- cor[, k]
-        cov_matrix[, j, i] <- cov_matrix[, i, j] <- cor[, k] * sd[, i] * sd[, j]
+        cov_matrix[, j, i] <- 
+          cov_matrix[, i, j] <- cor[, k] * sd[, i] * sd[, j]
       }
     }
   }
@@ -560,7 +562,7 @@ compare_ic <- function(x, ic = c("waic", "loo")) {
   rnames <- rep("", nrow(ic_diffs))
   # pairwise comparision to get differences in ICs and their SEs
   n <- 1
-  for (i in 1:(n_models - 1)) {
+  for (i in seq_len(n_models - 1)) {
     for (j in (i + 1):n_models) {
       temp <- loo::compare(x[[j]], x[[i]])
       ic_diffs[n, ] <- c(-2 * temp[["elpd_diff"]], 2 * temp[["se"]]) 
@@ -572,7 +574,7 @@ compare_ic <- function(x, ic = c("waic", "loo")) {
   colnames(ic_diffs) <- c(toupper(ic), "SE")
   # compare all models at once to obtain weights
   all_compare <- do.call(loo::compare, x)
-  if (n_models == 2) {
+  if (n_models == 2L) {
     # weights are named differently when comparing only 2 models
     weights <- unname(all_compare[c("weight1", "weight2")])
   } else {
@@ -626,7 +628,7 @@ match_response <- function(models) {
     # checks if all relevant parts of the response are the same 
     # Args:
     #   x, y: named lists as returned by standata
-    to_match <- c("Y", "se", "weights", "cens", "trunc")
+    to_match <- c("Y", "se", "weights", "cens", "trunc", "disp")
     all(ulapply(to_match, function(v) {
       a <- if (is.null(attr(x, "old_order"))) as.vector(x[[v]])
            else as.vector(x[[v]])[attr(x, "old_order")]
@@ -652,7 +654,9 @@ find_names <- function(x) {
   # Args:
   #   x: a character string
   # Notes:
-  #   currently used in hypothesis.brmsfit
+  #   does not use the R parser itself to allow for 
+  #   square brackets and kommas at the end of names
+  #   currently only used in hypothesis.brmsfit
   # Returns:
   #   all valid variable names within the string
   if (!is.character(x) || length(x) > 1) 
@@ -769,13 +773,8 @@ add_samples <- function(x, newpar, dim = numeric(0), dist = "norm", ...) {
   #           a single character vector
   #   dim: dimension of the new parameter
   # Returns:
-  #   a brmsfit object with new (standard normal) samples
-  if (!is(x, "brmsfit")) {
-    stop("x must be of class brmsfit")
-  }
-  if (!identical(dim, numeric(0))) {
-    stop("currently dim must be numeric(0)")
-  }
+  #   a brmsfit object with samples of a new parameter
+  stopifnot(is(x, "brmsfit"), identical(dim, numeric(0)))
   for (i in seq_along(x$fit@sim$samples)) {
     x$fit@sim$samples[[i]][[newpar]] <- 
       do.call(paste0("r", dist), list(x$fit@sim$iter, ...))

@@ -290,7 +290,7 @@ VarCorr.brmsfit <- function(x, sigma = 1, estimate = "mean",
                             as.list = TRUE, ...) {
   contains_samples(x)
   x <- restructure(x)
-  if (!(length(x$ranef) || any(grepl("^sigma($|_)", parnames(x))))) {
+  if (!(nrow(x$ranef) || any(grepl("^sigma($|_)", parnames(x))))) {
     stop("The model does not contain covariance matrices", call. = FALSE)
   }
   if (!is_equal(sigma, 1)) {
@@ -585,7 +585,7 @@ summary.brmsfit <- function(object, waic = FALSE, ...) {
     out$thin <- object$fit@sim$thin
     stan_args <- object$fit@stan_args[[1]]
     out$sampler <- paste0(stan_args$method, "(", stan_args$algorithm, ")")
-    allow_waic <- !length(object$ranef) || any(grepl("^r_", parnames(object)))
+    allow_waic <- !nrow(object$ranef) || any(grepl("^r_", parnames(object)))
     if (waic && allow_waic) out$WAIC <- WAIC(object)$waic
     
     pars <- parnames(object)
@@ -682,6 +682,7 @@ nobs.brmsfit <- function(object, ...) {
 #' @export ngrps
 #' @importFrom lme4 ngrps
 ngrps.brmsfit <- function(object, ...) {
+  object <- restructure(object)
   if (nrow(object$ranef)) {
     out <- lapply(attr(object$ranef, "levels"), length)
   } else {
@@ -1824,7 +1825,7 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
       dots$sample_prior <- any(grepl("^prior_", pnames))
     }
     if (is.null(dots$ranef)) {
-      dots$ranef <- any(grepl("^r_", pnames)) || !length(object$ranef)
+      dots$ranef <- any(grepl("^r_", pnames)) || !nrow(object$ranef)
     }
     if (is.null(dots$sparse)) {
       dots$sparse <- grepl("sparse matrix", stancode(object))

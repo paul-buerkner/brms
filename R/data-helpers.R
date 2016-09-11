@@ -255,9 +255,9 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   }
   new_ranef <- tidy_ranef(ee, data = model.frame(fit))
   if (nrow(fit$ranef)) {
-    if (length(new_ranef) && allow_new_levels) {
-      # random effects grouping factors do not need to be specified 
-      # by the user if new_levels are allowed
+    if (nrow(new_ranef) && allow_new_levels) {
+      # grouping factors do not need to be specified 
+      # by the user if new levels are allowed
       new_gf <- unique(unlist(strsplit(new_ranef$group, split = ":")))
       missing_gf <- setdiff(new_gf, names(newdata))
       newdata[, missing_gf] <- NA
