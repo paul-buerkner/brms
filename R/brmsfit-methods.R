@@ -394,9 +394,8 @@ posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,
                                       add_chains = FALSE, 
                                       subset = NULL, as.matrix = FALSE, 
                                       ...) {
-  if (is.na(pars[1])) {
-    pars <- parameters  
-  }
+  pars <- use_alias(pars, parameters, default = NA)
+  add_chain <- use_alias(add_chains, add_chains, default = FALSE)
   contains_samples(x)
   pars <- extract_pars(pars, all_pars = parnames(x), 
                        exact_match = exact_match, ...)
@@ -416,14 +415,6 @@ posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,
       # name the column 'chain' not 'chains' (#32)
       samples$chain <- factor(rep(1:chains, each = final_iter))
       samples$iter <- rep(samples_taken, chains)
-    }
-    if (add_chains) {
-      warning(paste("Argument 'add_chains' is deprecated.",
-                    "Please use argument 'add_chain' instead."))
-      if (!add_chain) {
-        samples$chains <- factor(rep(1:chains, each = final_iter))
-        samples$iter <- rep(samples_taken, chains)
-      }
     }
     if (!is.null(subset)) {
       samples <- samples[subset, , drop = FALSE]
