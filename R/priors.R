@@ -955,27 +955,6 @@ empty_prior_frame <- function() {
               nlpar = character(0), bound = character(0))
 }
 
-update_prior_frame <- function(object, ranef = list(), ...) {
-  # update prior_frames of models fitted with brms <= 0.8.0
-  # Args:
-  #   object: an object of class prior_frame
-  #   ranef: a named list of group specific terms
-  #   ...: currently ignored
-  has_group <- nchar(object$group) > 0
-  num_group <- suppressWarnings(as.numeric(object$group[has_group]))
-  if (length(num_group) && !anyNA(num_group)) {
-    if (max(num_group) != length(ranef)) {
-      warning(paste("Priors for standard deviation and correlation", 
-                    "parameters of group specific terms cannot be upated.", 
-                    "\nReturning to default priors."), call. = FALSE)
-    } else {
-      object$group[has_group] <- names(ranef)[num_group]
-    }
-  }
-  attr(object, "checked") <- NULL
-  object
-}
-
 #' @export
 print.brmsprior <- function(x, ...) {
   cat(.print_prior(x))

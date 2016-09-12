@@ -151,16 +151,6 @@ test_that("get_prior finds all classes for which priors can be specified", {
                sort(c(rep("b", 5), "delta", "Intercept")))
 })
 
-test_that("update_prior_frame works correctly", {
-  prior <- prior_frame(group = c("", "1", "1", "2"))
-  ranef <- list(g1 = "Intercept", g2 = c("Intercept", "x"))
-  target <- prior_frame(group = c("", "g1", "g1", "g2"))
-  expect_equal(update_prior_frame(prior, ranef), target)
-  prior <- prior_frame(group = c("", "1", "1", "2", "3"))
-  expect_warning(update_prior_frame(prior, ranef),
-                 "Returning to default priors")
-})
-
 test_that("print for class brmsprior works correctly", {
   expect_output(print(set_prior("normal(0,1)")), fixed = TRUE,
                 "b ~ normal(0,1)")
