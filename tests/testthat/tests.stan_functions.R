@@ -1,5 +1,6 @@
 test_that("self-defined Stan functions work correctly", {
-  skip("expose_stan_functions doesn't work within R CMD CHECK")
+  # for some reason expose_stan_functions doesn't work within R CMD CHECK
+  skip_if_not(exists("new_stan_functions", asNamespace("brms")))
   rstan::expose_stan_functions(brms:::new_stan_functions)
   
   # ARMA matrix generating functions
@@ -145,8 +146,12 @@ test_that("self-defined Stan functions work correctly", {
                kronecker(t(chol(A)), diag(sd) %*% t(chol(B))))
   
   # as_matrix
-  expect_equal(as_matrix(1:28, 4, 7), rbind(1:7, 8:14, 15:21, 22:28))
-  expect_equal(as_matrix(1:28, 3, 4), rbind(1:4, 5:8, 9:12))
+  # slightly arkward way to call this function to make sure
+  # is doesn't conflict with the brms R function of the same name
+  as_matrix_temp <- get("as_matrix", globalenv())
+  expect_equal(as_matrix_temp(1:28, 4, 7), 
+               rbind(1:7, 8:14, 15:21, 22:28))
+  expect_equal(as_matrix_temp(1:28, 3, 4), rbind(1:4, 5:8, 9:12))
   
   # cauchit and cloglog link
   expect_equal(inv_cauchit(1.5), pcauchy(1.5)) 
@@ -154,7 +159,8 @@ test_that("self-defined Stan functions work correctly", {
   expect_equal(cloglog(0.2), link(0.2, "cloglog"))
   
   # monotonic
-  expect_equal(monotonic(1:10, 4), sum(1:4))
-  expect_equal(monotonic(rnorm(5), 0), 0)
+  monotonic_temp <- get("monotonic", globalenv())
+  expect_equal(monotonic_temp(1:10, 4), sum(1:4))
+  expect_equal(monotonic_temp(rnorm(5), 0), 0)
 })
 
