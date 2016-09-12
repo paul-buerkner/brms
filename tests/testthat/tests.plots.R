@@ -1,5 +1,5 @@
 test_that("plotting functions don't throw unexpected errors", {
-  skip_on_cran()
+  skip_if_not(exists("brmsfit_example", asNamespace("brms")))
   fit <- rename_pars(brmsfit_example)
   
   # plot.brmsfit

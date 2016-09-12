@@ -87,7 +87,7 @@ test_that(paste("arr_design_matrix returns correct design",
 
 
 test_that("amend_newdata handles factors correctly", {
-  skip_on_cran()
+  skip_if_not(exists("brmsfit_example", asNamespace("brms")))
   fit <- rename_pars(brmsfit_example)
   fit$data$fac <- factor(sample(1:3, nrow(fit$data), replace = TRUE))
   newdata <- fit$data[1:5, ]

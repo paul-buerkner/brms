@@ -1,5 +1,5 @@
 test_that("all S3 methods have reasonable ouputs", {
-  skip_on_cran()
+  skip_if_not(exists("brmsfit_example", asNamespace("brms")))
   fit <- brms:::rename_pars(brmsfit_example)
   # test S3 methods in alphabetical order
   # as.data.frame
