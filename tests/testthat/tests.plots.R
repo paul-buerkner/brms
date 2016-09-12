@@ -26,8 +26,8 @@ test_that("plotting functions don't throw unexpected errors", {
   # warning occurs somewhere in rstan
   expect_silent(SW(stanplot(fit, type = "par", 
                             pars = "^b_Intercept$")))
-  expect_warning(p <- stanplot(fit, type = "par", pars = "^b_"),
-                 "stan_par expects a single parameter name")
+  expect_error(p <- stanplot(fit, type = "par", pars = "^b_"),
+               "'stan_par' expects a single parameter name")
   expect_error(stanplot(fit, type = "density"), "Invalid plot type")
   
   # pairs.brmsfit
