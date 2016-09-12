@@ -395,7 +395,7 @@ posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,
                                       subset = NULL, as.matrix = FALSE, 
                                       ...) {
   pars <- use_alias(pars, parameters, default = NA)
-  add_chain <- use_alias(add_chains, add_chains, default = FALSE)
+  add_chain <- use_alias(add_chain, add_chains, default = FALSE)
   contains_samples(x)
   pars <- extract_pars(pars, all_pars = parnames(x), 
                        exact_match = exact_match, ...)
