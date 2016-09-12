@@ -293,9 +293,6 @@ VarCorr.brmsfit <- function(x, sigma = 1, estimate = "mean",
   if (!(nrow(x$ranef) || any(grepl("^sigma($|_)", parnames(x))))) {
     stop("The model does not contain covariance matrices", call. = FALSE)
   }
-  if (!is_equal(sigma, 1)) {
-    warning("argument 'sigma' is unused", call. = FALSE)
-  }
   x <- restructure(x)
   
   # extracts samples for sd, cor and cov
@@ -870,10 +867,10 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
       args <- c(args, list(pars = pars))
     } else if (type == "par") {
       if (length(pars) > 1L) {
-        warning(paste("stan_par expects a single parameter name",
-                      "so that only the first one will be used"))
+        stop("Function 'stan_par' expects a single parameter name.",
+             call. = FALSE)
       }
-      args <- c(args, list(par = pars[1]))
+      args <- c(args, list(par = pars))
     } 
   }
   # make the plot
@@ -986,15 +983,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     stop(paste0("Argument 'group' is required for ppc type '", type, "'."),
          call. = FALSE)
   }
-  if (!is.null(group) && !is_group_type) {
-    warning(paste0("Argument 'group' is ignored for ppc type '", type, "'."),
-            call. = FALSE)
-  }
   is_ts_type <- "time" %in% names(formals(ppc_fun))
-  if (!is.null(time) && !is_ts_type) {
-    warning(paste0("Argument 'time' is ignored for ppc type '", type, "'."),
-            call. = FALSE)
-  }
   is_vs_x_type <- "x" %in% names(formals(ppc_fun))
   if (is_vs_x_type) {
     if (is.null(x)) {
@@ -1009,10 +998,6 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
            "Valid variables are: ", paste(ae_collapsed, collapse = ", "),
            call. = FALSE)
     }
-  }
-  if (!is.null(x) && !is_vs_x_type) {
-    warning(paste0("Argument 'x' is ignored for ppc type '", type, "'."),
-            call. = FALSE)
   }
   if (names(formals(ppc_fun))[2] == "Ey") {
     if (is.ordinal(object$family)) {

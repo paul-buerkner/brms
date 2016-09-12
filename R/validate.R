@@ -323,13 +323,11 @@ update_formula <- function(formula, data = NULL, family = gaussian(),
   formula <- bf(formula, nonlinear = nonlinear)
   old_attributes <- attributes(formula)
   fnew <- ". ~ ."
-  if (is(partial, "formula")) {
+  if (!is.null(partial)) {
     warning("Argument 'partial' is deprecated. Please use the 'cse' ", 
             "function inside the model formula instead.", call. = FALSE)
-    partial <- formula2string(partial, rm = 1)
+    partial <- formula2string(as.formula(partial), rm = 1)
     fnew <- paste(fnew, "+ cse(", partial, ")")
-  } else if (!is.null(partial)) {
-    stop("argument 'partial' must be of class formula")
   }
   # to allow the '.' symbol in formula
   try_terms <- try(terms(formula, data = data), silent = TRUE)
@@ -932,16 +930,10 @@ check_brm_input <- function(x) {
   # misc checks on brm arguments 
   # Args:
   #   x: A named list
-  if (x$chains %% x$cluster != 0) {
+  if (x$chains %% x$cluster != 0L) {
     stop("chains must be a multiple of cluster", call. = FALSE)
   }
   family <- check_family(x$family) 
-  if (family$family %in% c("exponential", "weibull") && 
-      x$inits == "random") {
-    warning("Families exponential and weibull may not work well with ",
-            "default initial values. \nIt is thus recommended ",
-            "to set inits = '0'", call. = FALSE)
-  }
   if (family$family == "inverse.gaussian") {
     warning("Inverse gaussian models require carefully chosen ", 
             "prior distributions to ensure convergence of the chains.",

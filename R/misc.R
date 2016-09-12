@@ -367,14 +367,17 @@ limit_chars <- function(x, chars = NULL, lsuffix = 4) {
   x
 }
 
-use_alias <- function(arg, alias = NULL, warn = TRUE) {
+use_alias <- function(arg, alias = NULL, default = NULL,
+                      warn = TRUE) {
   # ensure that deprecated arguments still work
   # Args:
   #   arg: input to the new argument
   #   alias: input to the deprecated argument
+  #   default: the default value of alias
+  #   warn: should a warning be printed if alias is specified?
   arg_name <- Reduce(paste, deparse(substitute(arg)))
   alias_name <- Reduce(paste, deparse(substitute(alias)))
-  if (!is.null(alias)) {
+  if (!is_equal(alias, default)) {
     arg <- alias
     if (substr(alias_name, 1, 5) == "dots$") {
       alias_name <- substr(alias_name, 6, nchar(alias_name))

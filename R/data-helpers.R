@@ -124,14 +124,14 @@ check_data_old_mv <- function(data, family, effects) {
   # check if the deprecated MV syntax was used in a new model
   # Args:
   #   see update_data
-  rsv_vars <- rsv_vars(family, nresp = length(effects$reponse),
+  rsv_vars <- rsv_vars(family, nresp = length(effects$response),
                        old_mv = TRUE)
   rsv_vars <- setdiff(rsv_vars, names(data))
   used_rsv_vars <- intersect(rsv_vars, all.vars(effects$all))
   if (length(used_rsv_vars)) {
-    warning("It is no longer necessary (and possible) to specify models ", 
-            "using the multivariate 'trait' syntax. See help(brmsformula) ",
-            "for details on the new syntax.", call. = FALSE)
+    stop("It is no longer possible (and necessary) to specify models ", 
+         "using the multivariate 'trait' syntax. See help(brmsformula) ",
+         "for details on the new syntax.", call. = FALSE)
   }
   invisible(NULL)
 }
@@ -739,10 +739,10 @@ data_group <- function(ranef, data, cov_ranef = NULL, old_levels = NULL) {
              call. = FALSE)
       }
       cov_mat <- cov_mat[true_level_names, true_level_names, drop = FALSE]
-      if (min(eigen(cov_mat, symmetric = TRUE, 
-                    only.values = TRUE)$values) <= 0) {
-        warning(paste("covariance matrix of grouping factor", g, 
-                      "may not be positive definite"), call. = FALSE)
+      evs <- eigen(cov_mat, symmetric = TRUE, only.values = TRUE)$values
+      if (min(evs) <= 0) {
+        stop("Covariance matrix of grouping factor '", g, 
+             "' is not positive definite.", call. = FALSE)
       }
       out <- c(out, setNames(list(t(chol(cov_mat))), paste0("Lcov_", id)))
     }

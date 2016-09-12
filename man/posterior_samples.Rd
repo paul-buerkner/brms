@@ -24,9 +24,9 @@ posterior_samples(x, pars = NA, ...)
 
 \item{pars}{Names of parameters for which posterior samples 
 should be returned, as given by a character vector or regular expressions.
-By default, all posterior samples of all parameters are extracted}
+By default, all posterior samples of all parameters are extracted.}
 
-\item{parameters}{A deprecated alias of \code{pars}}
+\item{parameters}{A deprecated alias of \code{pars}.}
 
 \item{exact_match}{Indicates whether parameter names 
 should be matched exactly or treated as regular expression. 
@@ -37,8 +37,7 @@ should contain two additional columns. The \code{chain} column
 indicates the chain in which each sample was generated, the \code{iter} 
 column indicates the iteration number within each chain.}
 
-\item{add_chains}{A deprecated alias of \code{add_chain}.
-Note that the \code{chain} column will be named \code{chains} instead.}
+\item{add_chains}{A deprecated alias of \code{add_chain}.}
 
 \item{subset}{A numeric vector indicating the rows 
 (i.e., posterior samples) to be returned. 

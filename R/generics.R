@@ -127,8 +127,8 @@ hypothesis <- function(x, hypothesis, ...) {
 #' @param x An \code{R} object typically of class \code{brmsfit}
 #' @param pars Names of parameters for which posterior samples 
 #'   should be returned, as given by a character vector or regular expressions.
-#'   By default, all posterior samples of all parameters are extracted
-#' @param parameters A deprecated alias of \code{pars}   
+#'   By default, all posterior samples of all parameters are extracted.
+#' @param parameters A deprecated alias of \code{pars}.  
 #' @param exact_match Indicates whether parameter names 
 #'   should be matched exactly or treated as regular expression. 
 #'   Default is \code{FALSE}.
@@ -137,7 +137,6 @@ hypothesis <- function(x, hypothesis, ...) {
 #'   indicates the chain in which each sample was generated, the \code{iter} 
 #'   column indicates the iteration number within each chain.
 #' @param add_chains A deprecated alias of \code{add_chain}.
-#'   Note that the \code{chain} column will be named \code{chains} instead.
 #' @param subset A numeric vector indicating the rows 
 #'   (i.e., posterior samples) to be returned. 
 #'   If \code{NULL} (the default), all  posterior samples are returned.

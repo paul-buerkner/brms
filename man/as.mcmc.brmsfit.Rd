@@ -13,7 +13,7 @@
 
 \item{pars}{Names of parameters for which posterior samples 
 should be returned, as given by a character vector or regular expressions.
-By default, all posterior samples of all parameters are extracted}
+By default, all posterior samples of all parameters are extracted.}
 
 \item{exact_match}{Indicates whether parameter names 
 should be matched exactly or treated as regular expression. 
