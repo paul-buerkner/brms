@@ -100,15 +100,6 @@ ulapply <- function(X, FUN, ...) {
   unlist(lapply(X = X, FUN = FUN, ...))
 }
 
-as_matrix <- function(x, ...) {
-  # wrapper around as.matrix that can handle NULL
-  if (is.null(x)) {
-    NULL
-  } else {
-    as.matrix(x, ...) 
-  }
-}
-
 lc <- function(l, x) {
   # append x to l
   l[[length(l) + 1]] <- x
@@ -393,9 +384,7 @@ use_alias <- function(arg, alias = NULL, default = NULL,
 
 .addition <- function(formula, data = NULL) {
   # computes data for addition arguments
-  if (!is.formula(formula)) {
-    formula <- as.formula(formula)
-  }
+  formula <- as.formula(formula)
   eval(formula[[2]], data, environment(formula))
 }
 

@@ -24,7 +24,7 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
       stop("Group-level effects in non-linear models have to be ",
            "specified in the 'nonlinear' argument.", call. = FALSE)
     }
-    if (is.ordinal(family) || is.categorical(family) || is.forked(family)) {
+    if (is.ordinal(family) || is.categorical(family)) {
       stop("Non-linear effects are not yet allowed for this family.", 
            call. = FALSE)
     }
@@ -121,7 +121,7 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   }
   
   # handle addition arguments
-  fun <- c("se", "weights", "trials", "cat", "cens", "trunc", "disp")
+  add_funs <- c("se", "weights", "trials", "cat", "cens", "trunc", "disp")
   add_vars <- list()
   if (!is.na(family[[1]])) {
     add <- get_matches("\\|[^~]*~", tformula)
@@ -129,27 +129,27 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
       # replace deprecated '|' by '+'
       add <- paste("~", rename(substr(add, 2, nchar(add) - 1), "|", "+"))
       add_terms <- attr(terms(formula(add)), "term.labels")
-      for (f in fun) {
-        matches <- grep(paste0("^", f, "\\(.+\\)$"), add_terms)
-        if (length(matches) == 1) {
-          x[[f]] <- add_terms[matches]
+      for (af in add_funs) {
+        matches <- grep(paste0("^", af, "\\(.+\\)$"), add_terms)
+        if (length(matches) == 1L) {
+          x[[af]] <- add_terms[matches]
           add_terms <- add_terms[-matches]
-          if (!is.na(x[[f]]) && (add_families(f)[1] == "all" ||
-              family$family %in% add_families(f))) {
-            args <- substr(x[[f]], nchar(f) + 2, nchar(x[[f]]) - 1)
-            try_numeric <- suppressWarnings(as.numeric(args))
-            if (f %in% c("trials", "cat") && !is.na(try_numeric)) {
-              x[[f]] <- try_numeric
+          if (!is.na(x[[af]]) && (add_families(af)[1] == "all" ||
+              family$family %in% add_families(af))) {
+            args <- substr(x[[af]], nchar(af) + 2, nchar(x[[af]]) - 1)
+            try_numeric <- SW(as.numeric(args))
+            if (af %in% c("trials", "cat") && !is.na(try_numeric)) {
+              x[[af]] <- try_numeric
             } else {
-              x[[f]] <- as.formula(paste0("~ .", x[[f]]))
-              if (length(all.vars(x[[f]]))) {
-                form <- paste("~", paste(all.vars(x[[f]]), collapse = "+"))
-                add_vars[[f]] <- as.formula(form)
+              x[[af]] <- as.formula(paste0("~ .", x[[af]]))
+              if (length(all.vars(x[[af]]))) {
+                form <- paste("~", paste(all.vars(x[[af]]), collapse = "+"))
+                add_vars[[af]] <- as.formula(form)
               }
             }
           } else {
-            stop("Argument ", f, " in formula is not supported ", 
-                 "by family ", family$family, call. = FALSE)
+            stop("Argument '", af, "' is not supported for family '", 
+                 family$family, "'", call. = FALSE)
           } 
         } else if (length(matches) > 1L) {
           stop("Addition arguments may be only defined once.", 
@@ -157,7 +157,7 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
         } 
       }
       if (length(add_terms)) {
-        stop("Invalid addition part of formula. Please see the ", 
+        stop("Invalid addition part of formula. \nPlease see the ", 
              "'Details' section of help(brmsformula).", call. = FALSE)
       }
       if (is.formula(x$se) && is.formula(x$disp)) {
@@ -188,25 +188,24 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
     } else { 
       x$response <- extract_response(x$respform, keep_dot_usc = old_mv)
     }
+    if (is.linear(family) && length(x$response) > 1L &&
+        length(rmNULL(x[c("se", "cens", "trunc")]))) {
+      stop("Multivariate models currently allow only ",
+           "weights as addition arguments", call. = FALSE)
+    }
     if (old_mv) {
       # multivariate ('trait') syntax is deprecated as of brms 1.0.0
       if (is.hurdle(family)) {
         x$response <- c(x$response, paste0("hu_", x$response))
       } else if (is.zero_inflated(family)) {
         x$response <- c(x$response, paste0("zi_", x$response))
-      } else if (is.2PL(family)) {
-        x$response <- c(x$response, paste0("logDisc_", x$response))
-      } 
+      }
       if (length(x$response) > 1L) {
-        if (is.linear(family) && length(rmNULL(x[c("se", "cens", "trunc")]))) {
-          stop("Multivariate models currently allow only ",
-               "weights as addition arguments", call. = FALSE)
-        }
         # don't use update on a formula that is possibly non-linear
         x$fixed[[2]] <- quote(response)
-        x$all <- update(x$all, response ~ .)
+        x$all[[2]] <- quote(response)
         attr(x$formula, "old_mv") <- TRUE
-      }   
+      }
     }
   }
   # check validity of auxiliary parameters
@@ -231,7 +230,10 @@ extract_time <- function(formula) {
   # Returns: 
   #   a list with elements time, group, and all, where all contains a 
   #   formula with all variables in formula
-  if (is.null(formula)) return(NULL)
+  if (is.null(formula)) {
+    return(NULL)
+  }
+  formula <- as.formula(formula)
   if (!is.null(lhs(formula))) {
     stop("autocorrelation formula must be one-sided", call. = FALSE)
   }
@@ -277,7 +279,7 @@ nonlinear_effects <- function(x, model = ~1, family = NA) {
            paste(missing_pars, collapse = ", "), call. = FALSE)
     }
   } else {
-    nleffects <- NULL 
+    nleffects <- list() 
   }
   nleffects
 }
