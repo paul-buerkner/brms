@@ -921,8 +921,8 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
 #' @return A ggplot object that can be further
 #'  customized using the \pkg{ggplot2} package.
 #' 
-#' @details For a detailed explanation of each of the
-#' ppc functions, see \code{\link[bayesplot:PPC-overview]{PPC-overview}}.
+#' @details For a detailed explanation of each of the ppc functions, 
+#' see the documentation of the \pkg{bayesplot} package.
 #' 
 #' @examples
 #' \dontrun{

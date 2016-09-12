@@ -62,8 +62,8 @@ Perform posterior predictive checks with the help
 of the \pkg{bayesplot} package.
 }
 \details{
-For a detailed explanation of each of the
-ppc functions, see \code{\link[bayesplot:PPC-overview]{PPC-overview}}.
+For a detailed explanation of each of the ppc functions, 
+see the documentation of the \pkg{bayesplot} package.
 }
 \examples{
 \dontrun{
