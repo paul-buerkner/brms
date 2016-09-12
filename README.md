@@ -1,5 +1,5 @@
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-[![Build Status](https://travis-ci.org/paul-buerkner/brms.svg?branch=master)](https://travis-ci.org/paul-buerkner/brms) [![Coverage Status](https://codecov.io/github/paul-buerkner/brms/coverage.svg?branch=master)](https://codecov.io/github/paul-buerkner/brms?branch=master) [![CRAN Version](http://www.r-pkg.org/badges/version/brms)](http://cran.r-project.org/package=brms) [![Codewake](https://www.codewake.com/badges/ask_question.svg)](https://www.codewake.com/p/brms)
+[![Build Status](https://travis-ci.org/paul-buerkner/brms.svg?branch=master)](https://travis-ci.org/paul-buerkner/brms) [![Coverage Status](https://codecov.io/github/paul-buerkner/brms/coverage.svg?branch=master)](https://codecov.io/github/paul-buerkner/brms?branch=master) [![CRAN Version](http://www.r-pkg.org/badges/version/brms)](https://cran.r-project.org/package=brms) [![Codewake](https://www.codewake.com/badges/ask_question.svg)](https://www.codewake.com/p/brms)
 
 brms
 ====
@@ -33,28 +33,28 @@ summary(fit, waic = TRUE)
 #>    Data: epilepsy (Number of observations: 236) 
 #> Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1; 
 #>          total post-warmup samples = 4000
-#>    WAIC: 1145.53
+#>    WAIC: 1146.21
 #>  
 #> Group-Level Effects: 
 #> ~obs (Number of levels: 236) 
 #>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> sd(Intercept)     0.37      0.05     0.29     0.47       1100    1
+#> sd(Intercept)     0.37      0.04     0.29     0.46       1322    1
 #> 
 #> ~patient (Number of levels: 59) 
 #>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> sd(Intercept)      0.5      0.07     0.37     0.66        955    1
+#> sd(Intercept)     0.51      0.07     0.38     0.66       1363    1
 #> 
 #> ~visit (Number of levels: 4) 
 #>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> sd(Intercept)     0.11      0.11        0      0.4        700 1.01
+#> sd(Intercept)     0.11      0.11        0      0.4       1457    1
 #> 
 #> Population-Level Effects: 
 #>                   Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> Intercept             1.56      0.10     1.35     1.75       1042 1.01
-#> log_Age_c             0.50      0.37    -0.23     1.23        904 1.00
-#> log_Base4_c           1.07      0.11     0.86     1.27       1060 1.00
-#> Trt_c                -0.33      0.15    -0.63    -0.03        987 1.01
-#> log_Base4_c:Trt_c     0.36      0.21    -0.07     0.77       1148 1.00
+#> Intercept             1.56      0.10     1.36     1.76       1457 1.00
+#> log_Age_c             0.47      0.37    -0.27     1.18       1495 1.00
+#> log_Base4_c           1.06      0.11     0.85     1.28       1565 1.00
+#> Trt_c                -0.34      0.15    -0.64    -0.03       1021 1.01
+#> log_Base4_c:Trt_c     0.35      0.22    -0.09     0.78       1714 1.00
 #> 
 #> Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 #> is a crude measure of effective sample size, and Rhat is the potential 
@@ -84,8 +84,8 @@ newdata <- data.frame(Trt_c = c(0.5, -0.5), log_Age_c = 0,
                       log_Base4_c = 0, visit = 4)
 predict(fit, newdata = newdata, allow_new_levels = TRUE, probs = c(0.05, 0.95))
 #>   Estimate Est.Error 5%ile 95%ile
-#> 1  4.72525  3.872856     0     12
-#> 2  6.56475  5.076785     1     17
+#> 1  4.78700  3.861005     0     12
+#> 2  6.65325  5.178583     1     17
 ```
 
 We need to set `allow_new_levels = TRUE` because we want to predict responses of a person that was not present in the data used to fit the model. While the `predict` method returns predictions of the responses, the `fitted` method returns predictions of the regression line.
@@ -93,8 +93,8 @@ We need to set `allow_new_levels = TRUE` because we want to predict responses of
 ``` r
 fitted(fit, newdata = newdata, allow_new_levels = TRUE, probs = c(0.05, 0.95))
 #>   Estimate Est.Error    5%ile   95%ile
-#> 1 4.805401  3.339553 1.374127 11.25165
-#> 2 6.675773  4.662246 1.941632 15.48872
+#> 1 4.799676  3.268087 1.347292 11.19560
+#> 2 6.728674  4.603833 1.915995 15.62788
 ```
 
 Both methods return the same etimate (up to random error), while the latter has smaller variance, because the uncertainty in the regression line is smaller than the uncertainty in each response. If we want to predict values of the original data, we can just leave the `newdata` argument empty.
