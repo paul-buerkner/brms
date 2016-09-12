@@ -386,3 +386,9 @@ test_that("make_standata does not center X in models without an intercept", {
   sdata <- make_standata(y~0+x, data = dat)
   expect_equal(unname(sdata$X[, 1]), dat$x)
 })
+
+test_that("make_standata handles variable 'intercept' correclty", {
+  dat <- data.frame(y = rnorm(10), x = 1:10)
+  sdata <- make_standata(y~0+intercept + x, data = dat)
+  expect_equal(unname(sdata$X), cbind(1, dat$x))
+})

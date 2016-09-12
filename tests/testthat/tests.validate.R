@@ -62,7 +62,7 @@ test_that("extract_effects handles addition arguments correctly", {
                ~ .se(a+2))
   expect_equal(extract_effects(y | trials(10) ~ x, family = binomial())$trials, 
                10)
-  expect_equal(extract_effects(y | cat(cate) ~ x, family = cumulative())$cat, 
+  expect_equal(extract_effects(y | cat(cate) ~ x, family = sratio())$cat, 
                ~ .cat(cate))
   expect_equal(extract_effects(y | cens(cens^2) ~ z, family = weibull())$cens, 
                ~ .cens(cens^2))
@@ -71,7 +71,7 @@ test_that("extract_effects handles addition arguments correctly", {
                y ~ y + cens + z + x + patient)
   expect_equal(extract_effects(resp | disp(a + b) ~ x, 
                                family = gaussian())$disp,
-               ~.disp(a + b))
+               ~ .disp(a + b))
 })
 
 test_that("extract_effects accepts complicated random terms", {
@@ -97,9 +97,39 @@ test_that("extract_effects finds all variables in non-linear models", {
   expect_equal(ee$all, y ~ y + x + z1 + g1 + z2 + z3 + g2)
 })
 
-test_that("extract_effects rejects REs in non-linear formulas", {
+test_that("extract_effects parses reseverd variable 'intercept'", {
+  ee <- extract_effects(y ~ 0 + intercept)
+  expect_true(attr(ee$fixed, "rsv_intercept"))
+})
+
+test_that("extract_effects returns expected error messages", {
+  expect_error(extract_effects(~ x + (1|g)),
+               "Invalid formula: response variable is missing")
   expect_error(extract_effects(y ~ exp(-x/a) + (1|g), nonlinear = a ~ 1),
                "Group-level effects in non-linear models", fixed = TRUE)
+  expect_error(extract_effects(y ~ a, nonlinear = a ~ 1, family = acat()),
+               "Non-linear effects are not yet allowed for this family", 
+               fixed = TRUE)
+  expect_error(extract_effects(y ~ mono(1)),
+               "invalid input to function 'monotonic'")
+  expect_error(extract_effects(y ~ mono(x1:x2)),
+               "Interactions cannot be modeled as monotonic effects")
+  expect_error(extract_effects(y | se(sei) ~ x, family = weibull()),
+               "Argument 'se' is not supported for family")
+  expect_error(extract_effects(y | se(sei) + se(sei2) ~ x, 
+                               family = gaussian()),
+               "Addition arguments may be only defined once")
+  expect_error(extract_effects(y | abc(sei) ~ x, family = gaussian()),
+               "Invalid addition part of formula")
+  expect_error(extract_effects(y | se(sei) + disp(sei) ~ x, 
+                               family = gaussian()),
+               "Addition arguments 'se' and 'disp' cannot be used")
+  expect_error(extract_effects(cbind(y1, y2) | se(z) ~ x, 
+                               family = gaussian()),
+               "Multivariate models currently allow only weights")
+  expect_error(extract_effects(bf(y ~ x, shape ~ x), family = gaussian()),
+               "Prediction of the parameter(s) 'shape' is not allowed",
+               fixed = TRUE)
 })
 
 test_that("extract_effects finds all spline terms", {
@@ -153,15 +183,21 @@ test_that("nonlinear_effects accepts valid non-linear models", {
 })
 
 test_that("extract_time returns all desired variables", {
-  expect_equal(extract_time(~1), list(time = "", group = "", all = ~1))
-  expect_equal(extract_time(~tt), list(time = "tt", group = "", all = ~1 + tt)) 
-  expect_equal(extract_time(~1|trait), list(time = "", group = "trait", all = ~1+trait)) 
+  expect_equal(extract_time(~1), 
+               list(time = "", group = "", all = ~1))
+  expect_equal(extract_time(~tt), 
+               list(time = "tt", group = "", all = ~1 + tt)) 
+  expect_equal(extract_time(~1|trait), 
+               list(time = "", group = "trait", all = ~1+trait)) 
   expect_equal(extract_time(~time|trait), 
                list(time = "time", group = "trait", all = ~1+time+trait)) 
   expect_equal(extract_time(~time|Site:trait),
-               list(time = "time", group = "Site:trait", all = ~1+time+Site+trait))
+               list(time = "time", group = "Site:trait", 
+                    all = ~1+time+Site+trait))
   expect_error(extract_time(~t1+t2|g1), 
                "Autocorrelation structures may only contain 1 time variable")
+  expect_error(extract_time(x~t1|g1), 
+               "autocorrelation formula must be one-sided")
   expect_error(extract_time(~1|g1/g2), 
                paste("Illegal grouping term: g1/g2"))
 })
@@ -181,7 +217,6 @@ test_that("get_effect works correctly", {
 })
 
 test_that("check_re_formula returns correct REs", {
-  #old_ranef = list(patient = c("Intercept"), visit = c("Trt_c", "Intercept"))
   old_form <- y ~ x + (1|patient) + (Trt_c|visit)
   form <- check_re_formula(~(1|visit), old_form)
   expect_equivalent(form, ~(1|visit))
@@ -215,8 +250,14 @@ test_that("update_re_terms works correctly", {
 test_that("amend_terms performs expected changes to terms objects", {
   expect_equal(amend_terms("a"), NULL)
   expect_equal(amend_terms(y~x), terms(y~x))
-  form <- structure(y~x, rsv_intercept = TRUE)
-  expect_equal(attr(amend_terms(form), "rm_intercept"), TRUE)
+  form <- structure(y ~ x, rsv_intercept = TRUE)
+  expect_true(attr(amend_terms(form), "rm_intercept"))
+  form <- structure(y ~ 0 + main, forked = TRUE, old_mv = TRUE)
+  expect_true(attr(amend_terms(form), "rm_intercept"))
+  form <- structure(y ~ main, forked = TRUE, old_mv = TRUE)
+  expect_error(amend_terms(form), "formula may not contain an intercept")
+  form <- structure(y ~ main + trait, forked = TRUE, old_mv = TRUE)
+  expect_error(amend_terms(form), "formula may not contain variable 'trait'")
 })
 
 test_that("tidy_ranef works correctly", {
@@ -235,6 +276,15 @@ test_that("tidy_ranef works correctly", {
                        stringsAsFactors = FALSE)
   ranef <- tidy_ranef(extract_effects(y~(1|g/x)), data = data)
   expect_equal(ranef[, c("group", "gn")], target)
+  
+  ee <- extract_effects(bf(y ~ x + (1|ID1|g) + (1|g:x), 
+                           sigma ~ (1|ID1|g)))
+  ranef <- tidy_ranef(ee, data = data)
+  expect_equal(ranef$id, c(1, 2, 1))
+  
+  ee <- extract_effects(y ~ x + (1|abc|g/x))
+  expect_error(tidy_ranef(ee, data = data),
+    "Can only combine group-level terms of the same grouping factor")
   
   ranef <- tidy_ranef(extract_effects(y~x), data = data)
   expect_equivalent(ranef, empty_ranef())

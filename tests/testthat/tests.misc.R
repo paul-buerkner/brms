@@ -66,13 +66,6 @@ test_that("convenience functions for model families work correctly", {
                         autocor = cor_ar(cov = TRUE)))
 })
 
-# test_that("check_intercept updates FE names", {
-#   expect_equal(check_intercept(c("Intercept", "x", "z")),
-#                list(names = c("x", "z"), has_intercept = TRUE))
-#   expect_equal(check_intercept(c("x", "z")),
-#                list(names = c("x", "z"), has_intercept = FALSE))
-# })
-
 test_that("use_alias works correctly", {
   a <- 2
   b <- 3
@@ -94,4 +87,10 @@ test_that("lsp works correctly", {
                c("log", "log10", "log1p", "log2", "logb", "logical"))
   expect_equal(lsp("brms", pattern = "^log_"),
                c("log_diff_exp", "log_inv_logit", "log_sum_exp"))
+})
+
+test_that(".addition and .cat works correctly", {
+  expect_equal(.addition(~ brms:::.cat(x), data = data.frame(x = 2:3)), 2:3)
+  expect_error(.addition(~ brms:::.cat(x), data = data.frame(x = -2)),
+               "number of categories must be positive integers")
 })
