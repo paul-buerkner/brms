@@ -1,4 +1,5 @@
 test_that("all S3 methods have reasonable ouputs", {
+  skip_on_cran()
   fit <- brms:::rename_pars(brmsfit_example)
   # test S3 methods in alphabetical order
   # as.data.frame
@@ -75,7 +76,7 @@ test_that("all S3 methods have reasonable ouputs", {
   loo_compare3 <- suppressWarnings(LOO(fit, fit, fit, cores = 1))
   expect_equal(length(loo_compare3), 3)
   expect_equal(dim(attr(loo_compare3, "compare")), c(3, 2))
-  #expect_output(print(loo_compare3), "Weights")
+  # expect_output(print(loo_compare3), "Weights")
   # marginal_effects (the related plot method is tested in tests.plots)
   expect_equal(nrow(marginal_effects(fit)[[2]]), 100)
   mdata = data.frame(Age = c(-0.3, 0, 0.3), count = c(10, 20, 30), 

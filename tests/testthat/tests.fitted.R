@@ -1,4 +1,5 @@
 test_that("fitted helper functions run without errors", {
+  skip_on_cran()
   # actually run fitted.brmsfit that call the helper functions
   fit <- brms:::rename_pars(brmsfit_example)
   fit <- brms:::add_samples(fit, "shape", dist = "exp")

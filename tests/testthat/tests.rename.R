@@ -53,11 +53,3 @@ test_that("change_prior returns correct lists to be understood by rename_pars", 
                list(list(pos = 9, oldname = "prior_bp_1", 
                          pnames = "prior_b_x1", fnames = "prior_b_x1")))
 })
-
-# test_that("change_fixef suggests renaming of fixed effects intercepts", {
-#   pars <- c("b[1]", "b_Intercept[1]", "b_Intercept[2]", "sigma_y")
-#   expect_equal(change_fixef(fixef = "x", intercepts = c("main", "spec"), 
-#                             pars = pars)[[2]],
-#                list(pos = c(FALSE, TRUE, TRUE, FALSE), oldname = "b_Intercept",
-#                     pnames = c("b_main", "b_spec"), fnames = c("b_main", "b_spec")))
-# })

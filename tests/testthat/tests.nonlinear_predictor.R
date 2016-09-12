@@ -1,4 +1,5 @@
 test_that("nonlinear_predictor runs without errors", {
+  skip_on_cran()
   # use brmsfit_example as the basis for constructing
   # a simple model that can be used to test nonlinear_predictor
   # more complicated non-linear models are only tested locally
