@@ -39,7 +39,7 @@ test_that("combine_duplicates works as expected", {
                list(a = c(2,2,4,2), b = c("a", "c")))
 })
 
-test_that("change_prior returns correct lists to be understood by rename_pars", {
+test_that("change_prior returns expected lists", {
   pars <- c("b", "b_1", "bp", "bp_1", "prior_b", "prior_b_1", 
             "prior_b_3", "sd_x[1]", "prior_bp_1")
   expect_equal(change_prior(class = "b", pars = pars, 
@@ -52,4 +52,21 @@ test_that("change_prior returns correct lists to be understood by rename_pars", 
                            names = c("x1", "x2"), new_class = "b"),
                list(list(pos = 9, oldname = "prior_bp_1", 
                          pnames = "prior_b_x1", fnames = "prior_b_x1")))
+})
+
+test_that("change_old_ranef returns expected lists", {
+  data <- data.frame(y = rnorm(10), x = rnorm(10), g = 1:10)
+  ee <- extract_effects(y ~ a, nonlinear = a ~ x + (1|g))
+  ranef <- tidy_ranef(ee, data = data)
+  pars <- c("b_a_Intercept", "b_a_x", "sd_a_g_Intercept", 
+            paste0("r_a_g[", 1:10, ",Intercept]"))
+  dims <- list("sd_a_g_Intercept" = numeric(0), "r_a_g" = c(10, 1))
+  target <- list(
+    list(pos = c(rep(FALSE, 2), TRUE, rep(FALSE, 10)),
+         oldname = "sd_a_g_Intercept", pnames = "sd_g_a_Intercept",
+         fnames = "sd_g_a_Intercept", dims = numeric(0)),
+    list(pos = c(rep(FALSE, 3), rep(TRUE, 10)), oldname = "r_a_g",
+         pnames = "r_g_a", fnames = paste0("r_g_a[", 1:10, ",Intercept]"),
+         dims = c(10, 1)))
+  expect_equal(change_old_ranef(ranef, pars = pars, dims = dims), target)
 })

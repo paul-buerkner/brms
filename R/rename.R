@@ -187,7 +187,7 @@ change_fixef <- function(fixef, pars, nlpar = "") {
   #   pars: names of all model parameters
   #   nlpar: optional string naming a non-linear parameter
   # Returns:
-  #  a list that can be interpreted by rename_pars
+  #   a list whose elements can be interpreted by do_renaming
   change <- list()
   if (length(fixef)) {
     b <- paste0("b", usc(nlpar, "prefix"))
@@ -206,7 +206,7 @@ change_monef <- function(monef, pars, nlpar = "") {
   #   pars: names of all model parameters
   #   nlpar: optional string naming a non-linear parameter
   # Returns:
-  #  a list that can be interpreted by rename_pars
+  #   a list whose elements can be interpreted by do_renaming
   change <- list()
   if (length(monef)) {
     p <- usc(nlpar, "prefix")
@@ -238,7 +238,7 @@ change_csef <- function(csef, pars, ncat) {
   #   pars: names of all model parameters
   #   ncat: number of response categories
   # Returns:
-  #  a list that can be interpreted by rename_pars
+  #   a list whose elements can be interpreted by do_renaming
   change <- list()
   if (length(csef)) {
     ncse <- length(csef)
@@ -261,6 +261,8 @@ change_splines <- function(splines, pars, nlpar = "") {
   #   splines: smoothing terms
   #   pars: names of all model parameters
   #   nlpar: optional string naming a non-linear parameter
+  # Returns:
+  #   a list whose elements can be interpreted by do_renaming
   change <- list()
   if (length(splines)) {
     p <- usc(nlpar, "prefix")
@@ -297,7 +299,7 @@ change_ranef <- function(ranef, pars, dims) {
   #   dims: named list containing parameter dimensions
   #   nlpar: optional string naming a non-linear parameter
   # Returns:
-  #   a list that can be interpreted by rename_pars
+  #   a list whose elements can be interpreted by do_renaming
   change <- list()
   if (nrow(ranef)) {
     for (id in unique(ranef$id)) {
@@ -341,7 +343,7 @@ change_ranef_levels <- function(ranef, pars, dims)  {
   #   pars: names of all model parameters
   #   dims: named list containing parameter dimensions
   # Returns:
-  #   a list that can be interpreted by rename_pars
+  #   a list whose elements can be interpreted by do_renaming
   change <- list()
   for (i in seq_len(nrow(ranef))) {
     r <- ranef[i, ]
@@ -381,7 +383,7 @@ change_prior <- function(class, pars, names = NULL, new_class = class,
   #   new_class: replacement of the orginal class name
   #   is_vector: indicate if the prior parameter is a vector
   # Return:
-  #   a list whose elements can be interpreted by rename_pars
+  #   a list whose elements can be interpreted by do_renaming
   change <- list()
   pos_priors <- which(grepl(paste0("^prior_", class, "(_|$|\\[)"), pars))
   if (length(pos_priors)) {
@@ -423,6 +425,9 @@ change_old_ranef <- function(ranef, pars, dims) {
   # Args:
   #   ranef: output of tidy_ranef
   #   pars: names of all parameters in the model
+  #   dims: dimension of parameters
+  # Returns:
+  #   a list whose elements can be interpreted by do_renaming
   change_simple <- function(oldname, fnames, pnames = fnames) {
     # helper function for very simple renaming
     pos <- grepl(paste0("^", oldname), pars)
