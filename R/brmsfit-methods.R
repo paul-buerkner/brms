@@ -1749,7 +1749,7 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
   } else {
     recompile <- length(sformula(formula.)) > 0L
     if (length(attr(object$formula, "nonlinear"))) {
-      if (length(setdiff(all.vars(dots$formula), ".")) == 0L) {
+      if (length(setdiff(all.vars(formula.), ".")) == 0L) {
         dots$formula <- update(object$formula, formula., mode = "keep")
       } else {
         dots$formula <- update(object$formula, formula., mode = "replace")
