@@ -28,28 +28,14 @@ If not found in data, the variables are taken from \code{environment(formula)},
 typically the environment from which \code{brm} is called. 
 Although it is optional, we strongly recommend to supply a data.frame.}
 
-\item{family}{A description of the error distribution and link function 
+\item{family}{A description of the response distribution and link function 
 to be used in the model. This can be a family function, 
 a call to a family function or a character string naming the family.
-Currently, the following families are supported:
-\code{gaussian}, \code{student}, \code{binomial}, 
-\code{bernoulli}, \code{poisson}, \code{negbinomial}, 
-\code{geometric}, \code{Gamma}, \code{lognormal}, \code{inverse.gaussian}, 
-\code{exponential}, \code{weibull}, \code{Beta}, \code{von_mises},
-\code{categorical}, \code{cumulative}, \code{cratio}, \code{sratio}, 
-\code{acat}, \code{hurdle_poisson}, \code{hurdle_negbinomial}, 
-\code{hurdle_gamma}, \code{zero_inflated_binomial},
-\code{zero_inflated_beta}, \cr \code{zero_inflated_negbinomial}, 
-and \code{zero_inflated_poisson}.
 Every family function has a \code{link} argument allowing to specify
 the link function to be applied on the response variable.
 If not specified, default links are used.
-See \code{\link[stats:family]{family}} for help on standard family functions 
-and \code{\link[brms:brmsfamily]{brmsfamily}} for family functions
-specific to the \pkg{brms} package. 
-For backwards compatibility, \code{family} may also be a vector of two
-character strings, the first naming the family and the second naming the link.
-Further information is provided under 'Details'.}
+For details of supported families see 
+\code{\link[brms:brmsfamily]{brmsfamily}}.}
 
 \item{prior}{One or more \code{brmsprior} objects created by function 
 \code{\link[brms:set_prior]{set_prior}} and combined using the \code{c} method. 
@@ -219,64 +205,12 @@ Fit a generalized (non-)linear multilevel model,
   \bold{Formula syntax of brms models}
   
   The details of the formula syntax applied in \pkg{brms} 
-  can be found in the 'Details' section of
-  \code{\link[brms:brmsformula]{brmsformula}}.
+  can be found in \code{\link[brms:brmsformula]{brmsformula}}.
   
   \bold{Families and link functions}
   
-  Family \code{gaussian} with \code{identity} link leads to linear regression. 
-  Family \code{student} with \code{identity} link leads to 
-  robust linear regression that is less influenced by outliers. 
-  Families \code{poisson}, \code{negbinomial}, and \code{geometric} 
-  with \code{log} link lead to regression models for count data. 
-  Families \code{binomial} and \code{bernoulli} with \code{logit} link leads to 
-  logistic regression and family \code{categorical} to multi-logistic regression 
-  when there are more than two possible outcomes.
-  Families \code{cumulative}, \code{cratio} ('contiuation ratio'), 
-  \code{sratio} ('stopping ratio'), and \code{acat} ('adjacent category') 
-  leads to ordinal regression. Families \code{Gamma}, \code{weibull}, 
-  \code{exponential}, \code{lognormal}, and \code{inverse.gaussian} can be used 
-  (among others) for survival regression.
-  Families \code{hurdle_poisson}, \code{hurdle_negbinomial}, \code{hurdle_gamma}, 
-  \code{zero_inflated_poisson}, and \cr
-  \code{zero_inflated_negbinomial} combined with the 
-  \code{log} link, and  \code{zero_inflated_binomial} with the \code{logit} link, 
-  allow to estimate zero-inflated and hurdle models. These models 
-  can be very helpful when there are many zeros in the data that cannot be explained 
-  by the primary distribution of the response. Family \code{hurdle_gamma} is 
-  especially useful, as a traditional \code{Gamma} model cannot be reasonably 
-  fitted for data containing zeros in the response. 
-  
-  In the following, we list all possible links for each family.
-  The families \code{gaussian}, and \code{student},
-  accept the links (as names) \code{identity}, \code{log}, and \code{inverse};
-  families \code{poisson}, \code{negbinomial}, and \code{geometric} the links 
-  \code{log}, \code{identity}, and \code{sqrt}; 
-  families \code{binomial}, \code{bernoulli}, \code{Beta},
-  \code{cumulative}, \code{cratio}, \code{sratio}, and \code{acat} 
-  the links \code{logit}, \code{probit}, \code{probit_approx}, 
-  \code{cloglog}, and \code{cauchit}; 
-  family \code{categorical} the link \code{logit}; 
-  families \code{Gamma}, \code{weibull}, and \code{exponential} 
-  the links \code{log}, \code{identity}, and \code{inverse};
-  family \code{lognormal} the links \code{identity} and \code{inverse};
-  family \code{inverse.gaussian} the links \code{1/mu^2}, 
-  \code{inverse}, \code{identity} and \code{log}; 
-  families \code{hurdle_poisson}, \code{hurdle_negbinomial},
-  \code{hurdle_gamma}, \code{zero_inflated_poisson}, and
-  \code{zero_inflated_negbinomial} the link \code{log}. 
-  The first link mentioned for each family is the default.     
-  
-  Please note that when calling the \code{\link[stats:family]{Gamma}} 
-  family function, the default link will be \code{inverse} not \code{log}. 
-  Also, the \code{probit_approx} link cannot be used when calling the
-  \code{\link[stats:family]{binomial}} family function. 
-  
-  The current implementation of \code{inverse.gaussian} models has some 
-  convergence problems and requires carefully chosen prior distributions 
-  to work efficiently. For this reason, we currently do not recommend
-  to use the \code{inverse.gaussian} family, unless you really feel
-  that your data requires exactly this type of model. \cr
+  Details of families supported by \pkg{brms} 
+  can be found in \code{\link[brms:brmsfamily]{brmsfamily}}.
   
   \bold{Prior distributions}
   
@@ -388,5 +322,11 @@ hist(sigmas[, 2])
 }
 \author{
 Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
+}
+\seealso{
+\code{\link[brms:brms]{brms}}, 
+  \code{\link[brms:brmsformula]{brmsformula}}, 
+  \code{\link[brms:brmsfamily]{brmsfamily}},
+  \code{\link[brms:brmsfit-class]{brmsfit}}
 }
 

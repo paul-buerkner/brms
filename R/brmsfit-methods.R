@@ -690,7 +690,7 @@ family.brmsfit <- function(object, ...) {
     # brms > 0.6.0
     family <- object$family
   } else {
-    family <- family(object$family, link = object$link) 
+    family <- brmsfamily(object$family, link = object$link) 
   }
   family
 }

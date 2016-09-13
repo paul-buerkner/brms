@@ -7,7 +7,7 @@
 \usage{
 make_standata(formula, data = NULL, family = "gaussian", prior = NULL,
   autocor = NULL, nonlinear = NULL, partial = NULL, cov_ranef = NULL,
-  sample_prior = FALSE, knots = NULL, control = NULL, ...)
+  sample_prior = FALSE, knots = NULL, control = list(), ...)
 }
 \arguments{
 \item{formula}{An object of class 
@@ -23,28 +23,14 @@ If not found in data, the variables are taken from \code{environment(formula)},
 typically the environment from which \code{brm} is called. 
 Although it is optional, we strongly recommend to supply a data.frame.}
 
-\item{family}{A description of the error distribution and link function 
+\item{family}{A description of the response distribution and link function 
 to be used in the model. This can be a family function, 
 a call to a family function or a character string naming the family.
-Currently, the following families are supported:
-\code{gaussian}, \code{student}, \code{binomial}, 
-\code{bernoulli}, \code{poisson}, \code{negbinomial}, 
-\code{geometric}, \code{Gamma}, \code{lognormal}, \code{inverse.gaussian}, 
-\code{exponential}, \code{weibull}, \code{Beta}, \code{von_mises},
-\code{categorical}, \code{cumulative}, \code{cratio}, \code{sratio}, 
-\code{acat}, \code{hurdle_poisson}, \code{hurdle_negbinomial}, 
-\code{hurdle_gamma}, \code{zero_inflated_binomial},
-\code{zero_inflated_beta}, \cr \code{zero_inflated_negbinomial}, 
-and \code{zero_inflated_poisson}.
 Every family function has a \code{link} argument allowing to specify
 the link function to be applied on the response variable.
 If not specified, default links are used.
-See \code{\link[stats:family]{family}} for help on standard family functions 
-and \code{\link[brms:brmsfamily]{brmsfamily}} for family functions
-specific to the \pkg{brms} package. 
-For backwards compatibility, \code{family} may also be a vector of two
-character strings, the first naming the family and the second naming the link.
-Further information is provided under 'Details'.}
+For details of supported families see 
+\code{\link[brms:brmsfamily]{brmsfamily}}.}
 
 \item{prior}{One or more \code{brmsprior} objects created by function 
 \code{\link[brms:set_prior]{set_prior}} and combined using the \code{c} method. 

@@ -21,7 +21,7 @@ test_that("all S3 methods have reasonable ouputs", {
   # coef
   expect_equal(dim(coef(fit)$visit), c(4, 8))
   # family
-  expect_equal(family(fit), family("student", link = "identity"))
+  expect_equal(family(fit), brmsfamily("student", link ="identity"))
   # fitted
   fitted1 <- fitted(fit)
   expect_equal(dim(fitted1), c(nrow(epilepsy), 4))

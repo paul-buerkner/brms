@@ -1,522 +1,354 @@
 #' Special Family Functions for \pkg{brms} Models
 #' 
 #' Family objects provide a convenient way to specify the details of the models 
-#' used by many model fitting functions. The families present here are currently 
-#' for use with \pkg{brms} only and will NOT work with other model fitting functions such as 
-#' \code{glm} or \code{glmer}. However, the standard family functions as decribed in
-#' \code{\link[stats:family]{family}} will work with \pkg{brms}. For a full list 
-#' of families and link functions supported by \pkg{brms}, see the documentation
-#' (in particular the 'Details' section) of \code{\link[brms:brm]{brm}}.
+#' used by many model fitting functions. The familiy functions present here are 
+#' currently for use with \pkg{brms} only and will NOT work with other model 
+#' fitting functions such as \code{glm} or \code{glmer}. 
+#' However, the standard family functions as decribed in
+#' \code{\link[stats:family]{family}} will work with \pkg{brms}.
 #' 
+#' @param family A character string naming the distribution
+#'   of the response variable be used in the model.
+#'   Currently, the following families are supported:
+#'   \code{gaussian}, \code{student}, \code{binomial}, 
+#'   \code{bernoulli}, \code{poisson}, \code{negbinomial}, 
+#'   \code{geometric}, \code{Gamma}, \code{lognormal}, \code{inverse.gaussian}, 
+#'   \code{exponential}, \code{weibull}, \code{Beta}, \code{von_mises},
+#'   \code{categorical}, \code{cumulative}, \code{cratio}, \code{sratio}, 
+#'   \code{acat}, \code{hurdle_poisson}, \code{hurdle_negbinomial}, 
+#'   \code{hurdle_gamma}, \code{zero_inflated_binomial},
+#'   \code{zero_inflated_beta}, \code{zero_inflated_negbinomial}, 
+#'   and \code{zero_inflated_poisson}.
 #' @param link A specification for the model link function. 
 #'   This can be a name/expression or character string. 
-#'   The following list only refers to \pkg{brms} specific family functions.
-#'   Familiy \code{student} accept the links 
-#'   (as names) \code{identity}, \code{log}, and \code{inverse};
-#'   families \code{negbinomial}, and \code{geometric} the links 
+#'   See the 'Details' section for more information on link
+#'   functions supported by each family.
+#'   
+#' @details 
+#'   Family \code{gaussian} with \code{identity} link leads to linear regression. 
+#'   Family \code{student} with \code{identity} link leads to 
+#'   robust linear regression that is less influenced by outliers. 
+#'   Families \code{poisson}, \code{negbinomial}, and \code{geometric} 
+#'   with \code{log} link lead to regression models for count data. 
+#'   Families \code{binomial} and \code{bernoulli} with \code{logit} link leads to 
+#'   logistic regression and family \code{categorical} to multi-logistic regression 
+#'   when there are more than two possible outcomes.
+#'   Families \code{cumulative}, \code{cratio} ('contiuation ratio'), 
+#'   \code{sratio} ('stopping ratio'), and \code{acat} ('adjacent category') 
+#'   leads to ordinal regression. Families \code{Gamma}, \code{weibull}, 
+#'   \code{exponential}, \code{lognormal}, and \code{inverse.gaussian} can be used 
+#'   (among others) for survival regression.
+#'   Families \code{hurdle_poisson}, \code{hurdle_negbinomial}, \code{hurdle_gamma}, 
+#'   \code{zero_inflated_poisson}, and \cr
+#'   \code{zero_inflated_negbinomial} combined with the 
+#'   \code{log} link, and  \code{zero_inflated_binomial} with the \code{logit} link, 
+#'   allow to estimate zero-inflated and hurdle models. These models 
+#'   can be very helpful when there are many zeros in the data that cannot be explained 
+#'   by the primary distribution of the response. Family \code{hurdle_gamma} is 
+#'   especially useful, as a traditional \code{Gamma} model cannot be reasonably 
+#'   fitted for data containing zeros in the response. 
+#'   
+#'   In the following, we list all possible links for each family.
+#'   The families \code{gaussian}, and \code{student},
+#'   accept the links (as names) \code{identity}, \code{log}, and \code{inverse};
+#'   families \code{poisson}, \code{negbinomial}, and \code{geometric} the links 
 #'   \code{log}, \code{identity}, and \code{sqrt}; 
-#'   families \code{bernoulli}, \code{Beta}, \code{cumulative}, 
-#'   \code{cratio}, \code{sratio}, and \code{acat} 
+#'   families \code{binomial}, \code{bernoulli}, \code{Beta},
+#'   \code{cumulative}, \code{cratio}, \code{sratio}, and \code{acat} 
 #'   the links \code{logit}, \code{probit}, \code{probit_approx}, 
-#'   \code{cloglog}, and \code{cauchit};
-#'   family \code{categorical}, the link \code{logit}; 
-#'   families \code{weibull}, and \code{exponential} 
+#'   \code{cloglog}, and \code{cauchit}; 
+#'   family \code{categorical} the link \code{logit}; 
+#'   families \code{Gamma}, \code{weibull}, and \code{exponential} 
 #'   the links \code{log}, \code{identity}, and \code{inverse};
 #'   family \code{lognormal} the links \code{identity} and \code{inverse};
-#'   family \code{von_mises} the link \code{tan_half};
-#'   families \code{hurdle_poisson}, \code{hurdle_gamma}, 
-#'   \code{hurdle_negbinomial}, \code{zero_inflated_poisson}, 
-#'   and \code{zero_inflated_negbinomial} the link \code{log};
-#'   families \code{zero_inflated_binomial} and 
-#'   \code{zero_inflated_beta} the link \code{logit}. 
-#'   The first link mentioned for each family is the default.
-#'   A full list of families and link functions supported by \pkg{brms}, 
-#'   is provided in the 'Details' section of \code{\link[brms:brm]{brm}}.
+#'   family \code{inverse.gaussian} the links \code{1/mu^2}, 
+#'   \code{inverse}, \code{identity} and \code{log}; 
+#'   families \code{hurdle_poisson}, \code{hurdle_negbinomial},
+#'   \code{hurdle_gamma}, \code{zero_inflated_poisson}, and
+#'   \code{zero_inflated_negbinomial} the link \code{log}. 
+#'   The first link mentioned for each family is the default.     
+#'   
+#'   Please note that when calling the \code{\link[stats:family]{Gamma}} 
+#'   family function, the default link will be \code{inverse} not \code{log}. 
+#'   Also, the \code{probit_approx} link cannot be used when calling the
+#'   \code{\link[stats:family]{binomial}} family function. 
+#'   
+#'   The current implementation of \code{inverse.gaussian} models has some 
+#'   convergence problems and requires carefully chosen prior distributions 
+#'   to work efficiently. For this reason, we currently do not recommend
+#'   to use the \code{inverse.gaussian} family, unless you really feel
+#'   that your data requires exactly this type of model. \cr
+#'   
+#'
+#' @seealso \code{\link[brms:brm]{brm}}, 
+#'   \code{\link[stats:family]{family}}
+#'   
+#' @examples 
+#'  # create a family object
+#'  (fam1 <- student("log"))
+#'  # alternatively use the brmsfamily function
+#'  (fam2 <- brmsfamily("student", "log"))
+#'  # both leads to the same object
+#'  identical(fam1, fam2) 
 #' 
-#' @name brmsfamily
-NULL
+#' @export
+brmsfamily <- function(family, link = NULL) {
+  slink <- substitute(link)
+  .brmsfamily(family, link = link, slink = slink)
+}
+
+.brmsfamily <- function(family, link = NULL, slink = link) {
+  # helper function to prepare brmsfamily objects
+  # Args:
+  #   family: character string naming the model family
+  #   link: character string naming the link function
+  #   slink: can be used with substitute(link) for 
+  #          non-standard evaluation of the link function
+  # returns:
+  #  An object of class = c(brmsfamily, family) to be used
+  #  only insided the brms package
+  family <- tolower(as.character(family))
+  if (length(family) != 1L) {
+    stop("Argument 'family' must be of length 1.", call. = FALSE)
+  }
+  family <- rename(family, symbols = c("^normal$", "^zi_", "^hu_"),
+                   subs = c("gaussian", "zero_inflated_", "hurdle_"),
+                   fixed = FALSE)
+  ok_families <- c(
+    "gaussian", "student", "lognormal", 
+    "binomial", "bernoulli", "categorical", 
+    "poisson", "negbinomial", "geometric", 
+    "gamma", "weibull", "exponential", 
+    "inverse.gaussian", "beta", "von_mises",
+    "cumulative", "cratio", "sratio", "acat",
+    "hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma",
+    "zero_inflated_poisson", "zero_inflated_negbinomial",
+    "zero_inflated_binomial", "zero_inflated_beta")
+  if (!family %in% ok_families) {
+    stop(family, " is not a supported family. Supported families are: \n",
+         paste(ok_families, collapse = ", "), call. = FALSE)
+  }
+  
+  # check validity of link
+  if (is.linear(family)) {
+    ok_links <- c("identity", "log", "inverse")
+  } else if (family == "inverse.gaussian") {
+    ok_links <- c("1/mu^2", "inverse", "identity", "log")
+  } else if (is.count(family)) {
+    ok_links <- c("log", "identity", "sqrt")
+  } else if (is.ordinal(family) || family %in% "zero_inflated_beta") {
+    ok_links <- c("logit", "probit", "probit_approx", "cloglog", "cauchit")
+  } else if (is.binary(family) || family %in% "beta") {
+    ok_links <- c("logit", "probit", "probit_approx", 
+                 "cloglog", "cauchit", "identity")
+  } else if (family %in% c("categorical", "zero_inflated_binomial")) {
+    ok_links <- c("logit")
+  } else if (is.skewed(family)) {
+    ok_links <- c("log", "identity", "inverse")
+  } else if (family %in% "lognormal") {
+    ok_links <- c("identity", "inverse")
+  } else if (family %in% "von_mises") {
+    ok_links <- c("tan_half")
+  } else if (is.hurdle(family) || is.zero_inflated(family)) {
+    # does not include zi_binomial or zi_beta
+    ok_links <- c("log")
+  }
+  # non-standard evaluation of link
+  if (!is.character(slink)) {
+    slink <- deparse(slink)
+  } 
+  if (!slink %in% ok_links) {
+    if (is.character(link)) {
+      slink <- link
+    } else if (!length(link) || identical(link, NA)) {
+      slink <- NA
+    }
+  }
+  if (length(slink) != 1L) {
+    stop("Argument 'link' must be of length 1.", call. = FALSE)
+  }
+  if (is.na(slink)) {
+    slink <- ok_links[1]
+  } 
+  if (!slink %in% ok_links) {
+    stop("Link '", slink, "' is not a supported link for family '", 
+         family, "'. \nSupported links are: ", 
+         paste(ok_links, collapse = ", "), call. = FALSE) 
+  }
+  structure(list(family = family, link = slink), 
+            class = c("brmsfamily", "family"))
+}
 
 #' @rdname brmsfamily
 #' @export
 student <- function(link = "identity") {
-  linktemp <- substitute(link)
-  if (!is.character(linktemp)) {
-    linktemp <- deparse(linktemp)
-  } 
-  okLinks <- c("identity", "log", "inverse")
-  if (!linktemp %in% okLinks && is.character(link)) {
-    linktemp <- link
-  }
-  if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family student.", 
-               "Supported links are: \n", paste(okLinks, collapse = ", ")))
-  }
-  structure(list(family = "student", link = linktemp), 
-            class = c("brmsfamily", "family"))
+  slink <- substitute(link)
+  .brmsfamily("student", link = link, slink = slink)
 }
 
 #' @rdname brmsfamily
 #' @export
 bernoulli <- function(link = "logit") {
-  linktemp <- substitute(link)
-  if (!is.character(linktemp)) {
-    linktemp <- deparse(linktemp)
-  } 
-  okLinks <- c("logit", "probit", "probit_approx", 
-               "cloglog", "cauchit", "identity")
-  if (!linktemp %in% okLinks && is.character(link)) {
-    linktemp <- link
-  }
-  if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family bernoulli.", 
-               "Supported links are: \n", paste(okLinks, collapse = ", ")))
-  }
-  structure(list(family = "bernoulli", link = linktemp), 
-            class = c("brmsfamily", "family"))
+  slink <- substitute(link)
+  .brmsfamily("bernoulli", link = link, slink = slink)
 }
 
 #' @rdname brmsfamily
 #' @export
 negbinomial <- function(link = "log") {
-  linktemp <- substitute(link)
-  if (!is.character(linktemp)) {
-    linktemp <- deparse(linktemp)
-  } 
-  okLinks <- c("log", "identity", "sqrt")
-  if (!linktemp %in% okLinks && is.character(link)) {
-    linktemp <- link
-  }
-  if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family negbinimial.", 
-               "Supported links are: \n", paste(okLinks, collapse = ", ")))
-  }
-  structure(list(family = "negbinomial", link = linktemp), 
-            class = c("brmsfamily", "family"))
+  slink <- substitute(link)
+  .brmsfamily("negbinomial", link = link, slink = slink)
 }
 
 #' @rdname brmsfamily
 #' @export
 geometric <- function(link = "log") {
-  linktemp <- substitute(link)
-  if (!is.character(linktemp)) {
-    linktemp <- deparse(linktemp)
-  } 
-  okLinks <- c("log", "identity", "sqrt")
-  if (!linktemp %in% okLinks && is.character(link)) {
-    linktemp <- link
-  }
-  if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family geometric.", 
-               "Supported links are: \n", paste(okLinks, collapse = ", ")))
-  }
-  structure(list(family = "geometric", link = linktemp), 
-            class = c("brmsfamily", "family"))
+  slink <- substitute(link)
+  .brmsfamily("geometric", link = link, slink = slink)
 }
 
 #' @rdname brmsfamily
 #' @export
 lognormal <- function(link = "identity") {
-  linktemp <- substitute(link)
-  if (!is.character(linktemp)) {
-    linktemp <- deparse(linktemp)
-  } 
-  okLinks <- c("identity", "inverse")
-  if (!linktemp %in% okLinks && is.character(link)) {
-    linktemp <- link
-  }
-  if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family lognormal.", 
-               "Supported links are: \n", paste(okLinks, collapse = ", ")))
-  }
-  structure(list(family = "lognormal", link = linktemp), 
-            class = c("brmsfamily", "family"))
+  slink <- substitute(link)
+  .brmsfamily("lognormal", link = link, slink = slink)
 }
 
 #' @rdname brmsfamily
 #' @export
 exponential <- function(link = "log") {
-  linktemp <- substitute(link)
-  if (!is.character(linktemp)) {
-    linktemp <- deparse(linktemp)
-  } 
-  okLinks <- c("log", "identity", "inverse")
-  if (!linktemp %in% okLinks && is.character(link)) {
-    linktemp <- link
-  }
-  if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family exponential. ", 
-               "Supported links are: \n", paste(okLinks, collapse = ", ")))
-  }
-  structure(list(family = "exponential", link = linktemp), 
-            class = c("brmsfamily", "family"))
+  slink <- substitute(link)
+  .brmsfamily("exponential", link = link, slink = slink)
 }
 
 #' @rdname brmsfamily
 #' @export
 weibull <- function(link = "log") {
-  linktemp <- substitute(link)
-  if (!is.character(linktemp)) {
-    linktemp <- deparse(linktemp)
-  } 
-  okLinks <- c("log", "identity", "inverse")
-  if (!linktemp %in% okLinks && is.character(link)) {
-    linktemp <- link
-  }
-  if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family weibull. ", 
-               "Supported links are: \n", paste(okLinks, collapse = ", ")))
-  }
-  structure(list(family = "weibull", link = linktemp), 
-            class = c("brmsfamily", "family"))
+  slink <- substitute(link)
+  .brmsfamily("weibull", link = link, slink = slink)
 }
 
 #' @rdname brmsfamily
 #' @export
 Beta <- function(link = "logit") {
-  linktemp <- substitute(link)
-  if (!is.character(linktemp)) {
-    linktemp <- deparse(linktemp)
-  } 
-  okLinks <- c("logit", "probit", "probit_approx", "cloglog", 
-               "cauchit", "identity")
-  if (!linktemp %in% okLinks && is.character(link)) {
-    linktemp <- link
-  }
-  if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family beta.", 
-               "Supported links are: \n", paste(okLinks, collapse = ", ")))
-  }
-  structure(list(family = "beta", link = linktemp), 
-            class = c("brmsfamily", "family"))
+  slink <- substitute(link)
+  .brmsfamily("beta", link = link, slink = slink)
 }
 
 #' @rdname brmsfamily
 #' @export
 von_mises <- function(link = "tan_half") {
-  linktemp <- substitute(link)
-  if (!is.character(linktemp)) {
-    linktemp <- deparse(linktemp)
-  }
-  okLinks <- c("tan_half")
-  if (!linktemp %in% okLinks && is.character(link)) {
-    linktemp <- link
-  }
-  if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family von_mises.", 
-               "Supported links are: \n", paste(okLinks, collapse = ", ")))
-  }
-  structure(list(family = "von_mises", link = linktemp), 
-            class = c("brmsfamily", "family"))
+  slink <- substitute(link)
+  .brmsfamily("von_mises", link = link, slink = slink)
 }
 
 #' @rdname brmsfamily
 #' @export
 hurdle_poisson <- function(link = "log") {
-  linktemp <- substitute(link)
-  if (!is.character(linktemp)) {
-    linktemp <- deparse(linktemp)
-  } 
-  okLinks <- c("log")
-  if (!linktemp %in% okLinks && is.character(link)) {
-    linktemp <- link
-  }
-  if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family hurdle_poisson. ", 
-               "Supported links are: \n", paste(okLinks, collapse = ", ")))
-  }
-  structure(list(family = "hurdle_poisson", link = linktemp), 
-            class = c("brmsfamily", "family"))
+  slink <- substitute(link)
+  .brmsfamily("hurdle_poisson", link = link, slink = slink)
 }
 
 #' @rdname brmsfamily
 #' @export
 hurdle_negbinomial <- function(link = "log") {
-  linktemp <- substitute(link)
-  if (!is.character(linktemp)) {
-    linktemp <- deparse(linktemp)
-  } 
-  okLinks <- c("log")
-  if (!linktemp %in% okLinks && is.character(link)) {
-    linktemp <- link
-  }
-  if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family hurdle_negbinomial. ", 
-               "Supported links are: \n", paste(okLinks, collapse = ", ")))
-  }
-  structure(list(family = "hurdle_negbinomial", link = linktemp), 
-            class = c("brmsfamily", "family"))
+  slink <- substitute(link)
+  .brmsfamily("hurdle_negbinomial", link = link, slink = slink)
 }
 
 #' @rdname brmsfamily
 #' @export
 hurdle_gamma <- function(link = "log") {
-  linktemp <- substitute(link)
-  if (!is.character(linktemp)) {
-    linktemp <- deparse(linktemp)
-  } 
-  okLinks <- c("log")
-  if (!linktemp %in% okLinks && is.character(link)) {
-    linktemp <- link
-  }
-  if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family hurdle_gamma. ", 
-               "Supported links are: \n", paste(okLinks, collapse = ", ")))
-  }
-  structure(list(family = "hurdle_gamma", link = linktemp), 
-            class = c("brmsfamily", "family"))
+  slink <- substitute(link)
+  .brmsfamily("hurdle_gamma", link = link, slink = slink)
 }
 
 #' @rdname brmsfamily
 #' @export
 zero_inflated_beta <- function(link = "logit") {
-  linktemp <- substitute(link)
-  if (!is.character(linktemp)) {
-    linktemp <- deparse(linktemp)
-  } 
-  okLinks <- c("logit")
-  if (!linktemp %in% okLinks && is.character(link)) {
-    linktemp <- link
-  }
-  if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link", 
-               "for family zero_inflated_beta. ", 
-               "Supported links are: \n", paste(okLinks, collapse = ", ")))
-  }
-  structure(list(family = "zero_inflated_beta", link = linktemp), 
-            class = c("brmsfamily", "family"))
+  slink <- substitute(link)
+  .brmsfamily("zero_inflated_beta", link = link, slink = slink)
 }
 
 #' @rdname brmsfamily
 #' @export
 zero_inflated_poisson <- function(link = "log") {
-  linktemp <- substitute(link)
-  if (!is.character(linktemp)) {
-    linktemp <- deparse(linktemp)
-  } 
-  okLinks <- c("log")
-  if (!linktemp %in% okLinks && is.character(link)) {
-    linktemp <- link
-  }
-  if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link", 
-               "for family zero_inflated_poisson. ", 
-               "Supported links are: \n", paste(okLinks, collapse = ", ")))
-  }
-  structure(list(family = "zero_inflated_poisson", link = linktemp), 
-            class = c("brmsfamily", "family"))
+  slink <- substitute(link)
+  .brmsfamily("zero_inflated_poisson", link = link, slink = slink)
 }
 
 #' @rdname brmsfamily
 #' @export
 zero_inflated_negbinomial <- function(link = "log") {
-  linktemp <- substitute(link)
-  if (!is.character(linktemp)) {
-    linktemp <- deparse(linktemp)
-  } 
-  okLinks <- c("log")
-  if (!linktemp %in% okLinks && is.character(link)) {
-    linktemp <- link
-  }
-  if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link", 
-               "for family zero_inflated_negbinomial. ", 
-               "Supported links are: \n", paste(okLinks, collapse = ", ")))
-  }
-  structure(list(family = "zero_inflated_negbinomial", link = linktemp), 
-            class = c("brmsfamily", "family"))
+  slink <- substitute(link)
+  .brmsfamily("zero_inflated_negbinomial", link = link, slink = slink)
 }
 
 #' @rdname brmsfamily
 #' @export
 zero_inflated_binomial <- function(link = "logit") {
-  linktemp <- substitute(link)
-  if (!is.character(linktemp)) {
-    linktemp <- deparse(linktemp)
-  } 
-  okLinks <- c("logit")
-  if (!linktemp %in% okLinks && is.character(link)) {
-    linktemp <- link
-  }
-  if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link", 
-               "for family zero_inflated_binomial. ", 
-               "Supported links are: \n", paste(okLinks, collapse = ", ")))
-  }
-  structure(list(family = "zero_inflated_binomial", link = linktemp), 
-            class = c("brmsfamily", "family"))
+  slink <- substitute(link)
+  .brmsfamily("zero_inflated_binomial", link = link, slink = slink)
 }
 
 #' @rdname brmsfamily
 #' @export
 categorical <- function(link = "logit") {
-  linktemp <- substitute(link)
-  if (!is.character(linktemp)) {
-    linktemp <- deparse(linktemp)
-  } 
-  okLinks <- c("logit")
-  if (!linktemp %in% okLinks && is.character(link)) {
-    linktemp <- link
-  }
-  if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family categorical.", 
-               "Supported links are: \n", paste(okLinks, collapse = ", ")))
-  }
-  structure(list(family = "categorical", link = linktemp), 
-            class = c("brmsfamily", "family"))
+  slink <- substitute(link)
+  .brmsfamily("categorical", link = link, slink = slink)
 }
 
 #' @rdname brmsfamily
 #' @export
 cumulative <- function(link = "logit") {
-  linktemp <- substitute(link)
-  if (!is.character(linktemp)) {
-    linktemp <- deparse(linktemp)
-  } 
-  okLinks <- c("logit", "probit", "probit_approx", "cloglog", "cauchit")
-  if (!linktemp %in% okLinks && is.character(link)) {
-    linktemp <- link
-  }
-  if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family cumulative.", 
-               "Supported links are: \n", paste(okLinks, collapse = ", ")))
-  }
-  structure(list(family = "cumulative", link = linktemp), 
-            class = c("brmsfamily", "family"))
+  slink <- substitute(link)
+  .brmsfamily("cumulative", link = link, slink = slink)
 }
 
 #' @rdname brmsfamily
 #' @export
 sratio <- function(link = "logit") {
-  linktemp <- substitute(link)
-  if (!is.character(linktemp)) {
-    linktemp <- deparse(linktemp)
-  } 
-  okLinks <- c("logit", "probit", "probit_approx", "cloglog", "cauchit")
-  if (!linktemp %in% okLinks && is.character(link)) {
-    linktemp <- link
-  }
-  if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family sratio.",
-               "Supported links are: \n", paste(okLinks, collapse = ", ")))
-  }
-  structure(list(family = "sratio", link = linktemp), 
-            class = c("brmsfamily", "family"))
+  slink <- substitute(link)
+  .brmsfamily("sratio", link = link, slink = slink)
 }
 
 #' @rdname brmsfamily
 #' @export
 cratio <- function(link = "logit") {
-  linktemp <- substitute(link)
-  if (!is.character(linktemp)) {
-    linktemp <- deparse(linktemp)
-  } 
-  okLinks <- c("logit", "probit", "probit_approx", "cloglog", "cauchit")
-  if (!linktemp %in% okLinks && is.character(link)) {
-    linktemp <- link
-  }
-  if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family cratio.", 
-               "Supported links are: \n", paste(okLinks, collapse = ", ")))
-  }
-  structure(list(family = "cratio", link = linktemp), 
-            class = c("brmsfamily", "family"))
+  slink <- substitute(link)
+  .brmsfamily("cratio", link = link, slink = slink)
 }
 
 #' @rdname brmsfamily
 #' @export
 acat <- function(link = "logit") {
-  linktemp <- substitute(link)
-  if (!is.character(linktemp)) {
-    linktemp <- deparse(linktemp)
-  } 
-  okLinks <- c("logit", "probit", "probit_approx", "cloglog", "cauchit")
-  if (!linktemp %in% okLinks && is.character(link)) {
-    linktemp <- link
-  }
-  if (!linktemp %in% okLinks) {
-    stop(paste(linktemp, "is not a supported link for family acat.", 
-               "Supported links are: \n", paste(okLinks, collapse = ", ")))
-  }
-  structure(list(family = "acat", link = linktemp), 
-            class = c("brmsfamily", "family"))
-}
-
-family.character <- function(object, link = NA, ...) {
-  # build a family object
-  # Args:
-  #   object: A character string defining the family
-  #   link: A character string defining the link
-  family <- tolower(object)
-  # check validity of family
-  if (family == "normal") {
-    family <- "gaussian"
-  }
-  okFamilies <- c("gaussian", "student", "lognormal", 
-                  "binomial", "bernoulli", "categorical", 
-                  "poisson", "negbinomial", "geometric", 
-                  "gamma", "weibull", "exponential", 
-                  "inverse.gaussian", "beta", "von_mises",
-                  "cumulative", "cratio", "sratio", "acat",
-                  "hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma",
-                  "zero_inflated_poisson", "zero_inflated_negbinomial",
-                  "zero_inflated_binomial", "zero_inflated_beta")
-  if (!family %in% okFamilies) {
-    stop(paste(family, "is not a supported family. Supported families are: \n",
-               paste(okFamilies, collapse = ", ")), call. = FALSE)
-  }
-  
-  # check validity of link
-  if (is.linear(family)) {
-    okLinks <- c("identity", "log", "inverse")
-  } else if (family == "inverse.gaussian") {
-    okLinks <- c("1/mu^2", "inverse", "identity", "log")
-  } else if (is.count(family)) {
-    okLinks <- c("log", "identity", "sqrt")
-  } else if (is.ordinal(family) || family %in% "zero_inflated_beta") {
-    okLinks <- c("logit", "probit", "probit_approx", "cloglog", "cauchit")
-  } else if (is.binary(family) || family %in% "beta") {
-    okLinks <- c("logit", "probit", "probit_approx", 
-                 "cloglog", "cauchit", "identity")
-  } else if (family %in% c("categorical", "zero_inflated_binomial")) {
-    okLinks <- c("logit")
-  } else if (is.skewed(family)) {
-    okLinks <- c("log", "identity", "inverse")
-  } else if (family %in% "lognormal") {
-    okLinks <- c("identity", "inverse")
-  } else if (family %in% "von_mises") {
-    okLinks <- c("tan_half")
-  } else if (is.hurdle(family) || is.zero_inflated(family)) {
-    # does not include zi_binomial or zi_beta
-    okLinks <- c("log")
-  }
-  if (is.na(link)) {
-    link <- okLinks[1]
-  }
-  if (!link %in% okLinks)
-    stop(paste0(link, " is not a supported link for family ", family, ". ", 
-                "Supported links are: \n", paste(okLinks, collapse = ", ")))
-  structure(nlist(family, link), class = c("brmsfamily", "family"))
+  slink <- substitute(link)
+  .brmsfamily("acat", link = link, slink = slink)
 }
 
 check_family <- function(family, link = NULL) {
   # checks and corrects validity of the model family
   # Args:
   #   family: Either a function, an object of class 'family' 
-  #   or a character string
+  #           or a character string of length one or two
   #   link: an optional character string naming the link function
   #         ignored if family is a function or a family object
   if (is.function(family)) {
     family <- family()   
   }
-  if (is(family, "family")) {
-    family <- family(family$family, link = family$link)
-  } else if (is.character(family)) {
-    if (is.null(link)) {
-      link <- family[2]
-    }
-    family <- family(family[1], link = link)
-  } else {
-    stop("family argument is invalid")
+  if (!is(family, "brmsfamily")) {
+    if (is(family, "family")) {
+      link <- family$link
+      family <- family$family
+    } 
+    if (is.character(family)) {
+      if (is.null(link)) {
+        link <- family[2]
+      }
+      family <- .brmsfamily(family[1], link = link)
+    } else {
+      stop("Argument 'family' is invalid.", call. = FALSE)
+    } 
   }
   family
 }
@@ -608,6 +440,8 @@ is.zero_inflated <- function(family, zi_beta = FALSE) {
 }
 
 is.2PL <- function(family) {
+  # do not remove to provide an informative error message
+  # why the special 2PL implementation is not supported anymore
   if (!is(family, "brmsfamily")) {
     out <- FALSE
   } else {

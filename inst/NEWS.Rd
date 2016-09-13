@@ -27,6 +27,8 @@
       \code{hu} defining zero-inflation / hurdle probabilities.
       \item Implement the \code{von_mises} family to model
       circular responses.
+      \item Introduce the \code{brmsfamily} function for
+      convenient specification of \code{family} objects.
       \item Allow predictions of \code{t2} smoothing
       terms for new data.
       \item Feature vectors as arguments for the addition 
