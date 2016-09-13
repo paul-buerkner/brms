@@ -28,7 +28,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
                           prior = NULL, autocor = NULL, nonlinear = NULL, 
                           partial = NULL, cov_ranef = NULL, 
                           sample_prior = FALSE, knots = NULL, 
-                          control = NULL, ...) {
+                          control = list(), ...) {
   # internal control arguments:
   #   is_newdata: is make_standata is called with new data?
   #   not4stan: is make_standata called for use in S3 methods?

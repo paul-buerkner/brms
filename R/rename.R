@@ -9,32 +9,33 @@ rename <- function(names, symbols = NULL, subs = NULL,
   #   check_dup: logical; check for duplications in names after renaming
   # Returns: 
   #   renamed parameter vector of the same length as names
-  if (is.null(symbols)) {
+  symbols <- as.character(symbols)
+  subs <- as.character(subs)
+  if (!length(symbols)) {
     symbols <- c(" ", "(", ")", "[", "]", ",", 
                  "+", "-", "*", "/", "^", "=", "!=")
   }
-  if (is.null(subs)) {
+  if (!length(subs)) {
     subs <- c(rep("", 6), "P", "M", "MU", "D", "E", "EQ", "NEQ")
   }
-  if (length(subs) == 1) {
+  if (length(subs) == 1L) {
     subs <- rep(subs, length(symbols))
   }
-  if (length(symbols) != length(subs)) {
-    stop("length(symbols) != length(subs)")
-  }
+  stopifnot(length(symbols) == length(subs))
+  # avoid zero-length pattern error
+  has_chars <- nzchar(symbols)
+  symbols <- symbols[has_chars]
+  subs <- subs[has_chars]
   new_names <- names
   for (i in seq_along(symbols)) {
-    # avoid zero-length pattern error when nchar(symbols[i]) == 0
-    if (nchar(symbols[i])) {
-      new_names <- gsub(symbols[i], subs[i], new_names, fixed = fixed)
-    }
+    new_names <- gsub(symbols[i], subs[i], new_names, fixed = fixed)
   }
   dup <- duplicated(new_names)
-  if (check_dup && any(dup)) 
-    stop(paste0("Internal renaming of variables led to duplicated names. \n",
-                "Occured for variables: ", 
-                paste(names[which(new_names %in% new_names[dup])], 
-                      collapse = ", ")))
+  if (check_dup && any(dup)) {
+    dup_names <- names[new_names %in% new_names[dup]]
+    stop("Internal renaming of variables led to duplicated names. \n",
+         "Occured for variables: ", paste(dup_names, collapse = ", "))
+  }
   new_names
 }
 

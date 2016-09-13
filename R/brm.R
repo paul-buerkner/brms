@@ -348,8 +348,8 @@ brm <- function(formula, data = NULL, family = gaussian(),
                          autocor = autocor,  threshold = threshold, 
                          warn = TRUE)
     # initialize S3 object
-    x <- brmsfit(formula = formula, family = family, link = family$link, 
-                 data = data, data.name = data.name, prior = prior, 
+    x <- brmsfit(formula = formula, family = family, data = data, 
+                 data.name = data.name, prior = prior, 
                  autocor = autocor, cov_ranef = cov_ranef, 
                  threshold = threshold, algorithm = algorithm)
     # see validate.R
