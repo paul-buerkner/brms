@@ -16,9 +16,9 @@ for the random effects, either "mean" or "median".}
 specified in \code{estimate}}
 }
 \value{
-A list of matrices (one per grouping factor), 
- with factor levels as row names and 
- coefficients as column names
+A list of matrices (one per grouping factor and 
+ non-linear parameter) with factor levels as row names and 
+ coefficients as column names.
 }
 \description{
 Extract model coefficients, which are the sum of population-level 

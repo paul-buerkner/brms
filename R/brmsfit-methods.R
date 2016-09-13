@@ -126,7 +126,7 @@ ranef.brmsfit <- function(object, estimate = c("mean", "median"),
   }
   pars <- parnames(object)
   
-  get_ranef <- function(group, nlpar = "") {
+  .ranef <- function(group, nlpar = "") {
     # get random effects of a grouping factor
     # Args:
     #   group: name of a grouping factor
@@ -139,30 +139,35 @@ ranef.brmsfit <- function(object, estimate = c("mean", "median"),
       return(NULL)
     }
     rdims <- object$fit@sim$dims_oi[[paste0("r_", group, usc_nlpar)]]
+    if (is.na(rdims[2])) rdims[2] <- 1
     levels <- attr(object$ranef, "levels")[[group]]
     if (is.null(levels)) {
       # avoid error in dimnames if levels are NULL 
       # for backwards compatibility with brms < 0.5.0 
-      levels <- 1:rdims[1]
+      levels <- seq_len(rdims[1])
     }
     rs <- posterior_samples(object, pars = rpars, exact_match = TRUE)
-    ncol <- ifelse(is.na(rdims[2]), 1, rdims[2])
-    rs_array <- array(dim = c(rdims[1], ncol, nrow(rs)))
+    rs_array <- array(dim = c(rdims[1], rdims[2], nrow(rs)))
     k <- 0
-    for (j in 1:ncol) {
-      for (l in 1:rdims[1]) {
+    for (j in seq_len(rdims[2])) {
+      for (l in seq_len(rdims[1])) {
         k <- k + 1
         rs_array[l, j, ] <- rs[, k]
       }
     }
     out <- get_estimate(estimate, samples = rs_array, margin = 1:2, ...)
     colnames(out) <- rnames
-    if(var) {
-      Var <- array(dim = c(rep(ncol, 2), rdims[1]), 
-                   dimnames = list(rnames, rnames, 1:rdims[1]))
-      for (j in 1:rdims[1]) {
-        if (is.na(rdims[2])) Var[, , j] <- var(rs_array[j, 1, ]) 
-        else Var[, , j] <- cov(t(rs_array[j, , ])) 
+    if (var) {
+      Var <- array(dim = c(rep(rdims[2], 2), rdims[1]), 
+                   dimnames = list(rnames, rnames, seq_len(rdims[1])))
+      if (rdims[2] == 1L) {
+        for (j in seq_len(rdims[1])) {
+          Var[, , j] <- var(rs_array[j, 1, ]) 
+        }
+      } else {
+        for (j in seq_len(rdims[1])) {
+          Var[, , j] <- cov(t(rs_array[j, , ]))
+        }
       }
       dimnames(Var)[[3]] <- levels
       attr(out, "var") <- Var
@@ -177,8 +182,8 @@ ranef.brmsfit <- function(object, estimate = c("mean", "median"),
   group_nlpar <- unique(object$ranef[, c("group", "nlpar")])
   ranef <- named_list(group_nlpar$group)
   for (i in seq_along(ranef)) {
-    ranef[[i]] <- get_ranef(group = group_nlpar$group[i], 
-                            nlpar = group_nlpar$nlpar[i])
+    ranef[[i]] <- .ranef(group = group_nlpar$group[i], 
+                         nlpar = group_nlpar$nlpar[i])
   }
   rmNULL(ranef) 
 } 
@@ -191,18 +196,18 @@ ranef.brmsfit <- function(object, estimate = c("mean", "median"),
 #' @param object An object of class \code{brmsfit}
 #' @inheritParams ranef.brmsfit
 #'
-#' @return A list of matrices (one per grouping factor), 
-#'  with factor levels as row names and 
-#'  coefficients as column names 
+#' @return A list of matrices (one per grouping factor and 
+#'  non-linear parameter) with factor levels as row names and 
+#'  coefficients as column names.
 #'  
 #' @examples
 #' \dontrun{
 #' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
 #'            data = epilepsy, family = "poisson", chains = 1)
-#' ## extract fixed and random effects coefficients seperately
+#' ## extract population and group-level coefficients separately
 #' fixef(fit)
 #' ranef(fit)
-#' ## extract combined coefficients     
+#' ## extract combined coefficients 
 #' coef(fit)
 #' }
 #' 
@@ -211,30 +216,60 @@ coef.brmsfit <- function(object, estimate = c("mean", "median"), ...) {
   contains_samples(object)
   object <- restructure(object)
   estimate <- match.arg(estimate)
-  fixef <- fixef(object, estimate = estimate, ...)
   if (!nrow(object$ranef)) {
-    return(fixef)  # no random effects present
+    stop("No group-level effects detected. Call method ", 
+         "'fixef' to access population-level effects.", 
+         call. = FALSE)
   }
-  coef <- ranef(object, estimate = estimate, ...)
-  ranef_names <- unique(ulapply(coef, colnames))
-  # FIXME: non-linear parameters are not correctly handled!
-  missing_fixef <- setdiff(ranef_names, rownames(fixef))
-  if (length(missing_fixef)) {
-    zero_mat <- matrix(0, nrow = length(missing_fixef))
-    rownames(zero_mat) <- missing_fixef
-    fixef <- rbind(fixef, zero_mat)
+  
+  .coef <- function(ranef, fixef) {
+    # helper function to combine group and population-level effects
+    # Args:
+    ranef_names <- unique(ulapply(ranef, colnames))
+    missing_fixef <- setdiff(ranef_names, rownames(fixef))
+    if (length(missing_fixef)) {
+      zero_mat <- matrix(0, nrow = length(missing_fixef))
+      rownames(zero_mat) <- missing_fixef
+      fixef <- rbind(fixef, zero_mat)
+    }
+    coef <- ranef
+    for (i in seq_along(coef)) {
+      missing_ranef <- setdiff(rownames(fixef), colnames(coef[[i]]))
+      if (length(missing_ranef)) {
+        zero_mat <- matrix(0, nrow = nrow(coef[[i]]), 
+                           ncol = length(missing_ranef))
+        colnames(zero_mat) <- missing_ranef
+        coef[[i]] <- cbind(coef[[i]], zero_mat)
+      }
+      for (nm in colnames(coef[[i]])) {
+        coef[[i]][, nm] <- coef[[i]][, nm] + fixef[nm, 1]
+      }
+      
+    }
+    return(coef)
   }
-  for (i in seq_along(coef)) {
-    missing_ranef <- setdiff(rownames(fixef), colnames(coef[[i]]))
-    if (length(missing_ranef)) {
-      zero_mat <- matrix(0, nrow = nrow(coef[[i]]), 
-                         ncol = length(missing_ranef))
-      colnames(zero_mat) <- missing_ranef
-      coef[[i]] <- cbind(coef[[i]], zero_mat)
+  
+  fixef <- fixef(object, estimate = estimate, ...)
+  ranef <- ranef(object, estimate = estimate, ...)
+  nlpars <- ulapply(ranef, attr, "nlpar")
+  if (length(nlpars)) {
+    # do not combine effects of different nlpars
+    unique_nlpars <- unique(nlpars)
+    coef <- named_list(unique_nlpars)
+    for (p in unique_nlpars) {
+      ranef_temp <- ranef[nlpars %in% p]
+      rx <- paste0("^", p, "_")
+      take_rows <- grepl(rx, rownames(fixef))
+      fixef_temp <- fixef[take_rows, , drop = FALSE]
+      rownames(fixef_temp) <- sub(rx, "", rownames(fixef_temp))
+      coef[[p]] <- .coef(ranef_temp, fixef_temp)
+      for (i in seq_along(coef[[p]])) {
+        attr(coef[[p]][[i]], "nlpar") <- p
+      }
     }
-    for (nm in colnames(coef[[i]])) {
-      coef[[i]][, nm] <- coef[[i]][, nm] + fixef[nm, 1]
-    }
+    coef <- unlist(unname(coef), recursive = FALSE)
+  } else {
+    coef <- .coef(ranef, fixef)
   }
   coef
 }
