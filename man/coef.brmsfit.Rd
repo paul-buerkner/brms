@@ -28,10 +28,10 @@ effects and corresponding group-level effects
 \dontrun{
 fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
            data = epilepsy, family = "poisson", chains = 1)
-## extract fixed and random effects coefficients seperately
+## extract population and group-level coefficients separately
 fixef(fit)
 ranef(fit)
-## extract combined coefficients     
+## extract combined coefficients 
 coef(fit)
 }
 
