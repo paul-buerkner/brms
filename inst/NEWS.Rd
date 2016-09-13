@@ -66,6 +66,8 @@
       \item Fix problems when trying to pointwise 
       evaluate non-linear formulae in 
       \code{logLik.brmsfit} thanks to Tom Wallis.
+      \item Ensure full compatibility of the \code{ranef}
+      and \code{coef} methods with non-linear models.
       \item Fix problems that occasionally occured when
       handling \pkg{dplyr} datasets thanks to the
       GitHub user Atan1988.
