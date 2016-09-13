@@ -6,7 +6,7 @@
 Class \code{brmsfit} of fitted mixed-effect models
 }
 \description{
-Models fitted with the \code{\link[brms:brms]{brms}} package are represented as a \code{brmsfit} object, which contains the posterior samples, the model code, the relevant data, the model formula, and some other useful information.
+Models fitted with the \code{\link[brms:brms]{brms}} package are represented as a \code{brmsfit} object, which contains the posterior samples, the model code, the relevant data, the model formula, and other useful information.
 }
 
 \details{
@@ -50,22 +50,21 @@ Models fitted with the \code{\link[brms:brms]{brms}} package are represented as 
 
 \section{Slots}{
   \describe{
-    \item{\code{formula}:}{model formula; an object of class \code{formula}} 
-    \item{\code{family}:}{model family; an object of class \code{family}}
-    \item{\code{link}:}{link function; a character string (deprecated)}
-    \item{\code{data.name}:}{name of the data frame; a character string} 
+    \item{\code{formula}:}{model formula; an object of class \code{brmsformula}} 
+    \item{\code{family}:}{model family; an object of class \code{brmsfamily}}
     \item{\code{data}:}{model.frame containing all variables used in the model}
+    \item{\code{data.name}:}{name of the data frame; a character string} 
     \item{\code{model}:}{model in Stan language; a character string}
-    \item{\code{exclude}:}{parameters for which samples are not saved; 
-    a character vector}
-    \item{\code{prior}:}{priors applied in the model; a matrix}
-    \item{\code{ranef}:}{random effects structure; a named list}
+    \item{\code{prior}:}{priors applied in the model; a tidy data.frame}
+    \item{\code{ranef}:}{structure of group-level terms; a tidy data.frame}
     \item{\code{autocor}:}{an object of class \code{cor_brms} 
     containing the autocorrelation structure}
     \item{\code{threshold}:}{character string defining the threshold
     type used in ordinal models}
-    \item{\code{cov_ranef}:}{a list of customized random effects 
+    \item{\code{cov_ranef}:}{a list of customized group-level 
     covariance matrices}
+    \item{\code{exclude}:}{parameters for which samples are not saved; 
+    a character vector}
     \item{\code{fit}:}{fitted results including the posterior samples; 
     an object of class \code{stanfit}}
     \item{\code{algorithm}:}{the name of the algorithm used to fit the model}
@@ -75,5 +74,8 @@ Models fitted with the \code{\link[brms:brms]{brms}} package are represented as 
 }
 
 \seealso{
-\code{\link[brms:brms]{brms}}, \code{\link[brms:brm]{brm}}   
+\code{\link[brms:brms]{brms}}, 
+\code{\link[brms:brm]{brm}},
+\code{\link[brms:brmsformula]{brmsformula}}, 
+\code{\link[brms:brmsfamily]{brmsfamily}},
 }

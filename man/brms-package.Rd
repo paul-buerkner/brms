@@ -6,18 +6,11 @@
 Bayesian Regression Models using Stan
 }
 \description{
-The \pkg{brms} package provides an interface to fit Bayesian generalized (non)-linear mixed models using Stan,
-which is a C++ package for obtaining Bayesian inference using the No-U-turn sampler (see \url{http://mc-stan.org/}). The formula syntax is very similar to that of the package \pkg{lme4} to provide a familiar and simple interface for performing regression analyses.
+The \pkg{brms} package provides an interface to fit Bayesian generalized (non-)linear multilevel models using \pkg{Stan},
+which is a C++ package for obtaining full Bayesian inference (see \url{http://mc-stan.org/}). The formula syntax is an extended version of the syntax applied in the \pkg{lme4} package to provide a familiar and simple interface for performing regression analyses.
 }
 
 \details{
-%\tabular{ll}{
-%Package: \tab brms\cr
-%Type: \tab Package\cr
-%Version: \tab 0.0.0.9000\cr
-%Date: \tab 2015-04-02\cr
-%License: \tab GPL >= 2 \cr
-%}
 
 The main function of the brms package is \code{\link[brms:brm]{brm}}, 
 which creates the model in Stan language and fits it using \pkg{Stan}. 
@@ -54,9 +47,13 @@ Paul-Christian Buerkner
 Maintainer: Paul-Christian Buerkner <paul.buerkner@gmail.com>
 }
 \references{
-The Stan Development Team Stan Modeling Language User's Guide and Reference Manual. \url{http://mc-stan.org/}.
+The Stan Development Team Stan Modeling Language User's Guide and Reference Manual. 
+\url{http://mc-stan.org/}.
 }
 \keyword{package}
 \seealso{
-\code{\link[brms:brm]{brm}}, \code{\link[brms:brmsformula]{brmsformula}}, \code{\link[brms:brmsfit-class]{brmsfit}}
+\code{\link[brms:brm]{brm}}, 
+\code{\link[brms:brmsformula]{brmsformula}}, 
+\code{\link[brms:brmsfamily]{brmsfamily}},
+\code{\link[brms:brmsfit-class]{brmsfit}}
 }
