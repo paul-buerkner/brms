@@ -11,7 +11,8 @@ brmsfit_example <- brm(bf(count ~ Trt*Age + mono(Exp) + s(Age) +
                        autocor = cor_arma(~visit|patient, 1, 1),
                        prior = c(set_prior("normal(0,5)", class = "b"),
                                  set_prior("cauchy(0,2)", class = "sd")),
-                       warmup = 150, iter = 200, chains = 2, testmode = TRUE)
+                       warmup = 150, iter = 200, chains = 2,
+                       save_dso = FALSE, testmode = TRUE)
 brmsfit_example$fit@stanmodel <- new("stanmodel")
 
 

@@ -129,11 +129,6 @@
 #'   Default is \code{"PSOCK"} working on all platforms. 
 #'   For OS X and Linux, \code{"FORK"} may be a faster and more stable option, 
 #'   but it does not work on Windows.
-#' @param save_model Either \code{NULL} or a character string. 
-#'   In the latter case, the model code is
-#'   saved in a file named after the string supplied in \code{save_model}, 
-#'   which may also contain the full path where to save the file.
-#'   If only a name is given, the file is saved in the current working directory. 
 #' @param algorithm Character string indicating the estimation approach to use. 
 #'   Can be \code{"sampling"} for MCMC (the default), \code{"meanfield"} for
 #'   variational inference with independent normal distributions, or
@@ -145,6 +140,16 @@
 #'   section below. For a comprehensive overview see \code{\link[rstan:stan]{stan}}.
 #' @param silent logical; If \code{TRUE}, warning messages of the sampler are suppressed.
 #' @param seed Positive integer. Used by \code{set.seed} to make results reproducable.  
+#' @param save_model Either \code{NULL} or a character string. 
+#'   In the latter case, the model code is
+#'   saved in a file named after the string supplied in \code{save_model}, 
+#'   which may also contain the full path where to save the file.
+#'   If only a name is given, the file is saved in the current working directory.
+#' @param save_dso Logical, defaulting to \code{TRUE}, indicating whether 
+#'   the dynamic shared object (DSO) compiled from the C++ code for the model 
+#'   will be saved or not. If \code{TRUE}, we can draw samples from the same 
+#'   model in another \R session using the saved DSO 
+#'   (i.e., without compiling the C++ code again).
 #' @param ... Further arguments to be passed to Stan.
 #' 
 #' @return An object of class \code{brmsfit}, which contains the posterior samples along 
@@ -296,7 +301,8 @@ brm <- function(formula, data = NULL, family = gaussian(),
                 warmup = floor(iter / 2), thin = 1, cluster = 1, 
                 cluster_type = "PSOCK", control = NULL, 
                 algorithm = c("sampling", "meanfield", "fullrank"),
-                silent = TRUE, seed = 12345, save_model = NULL, ...) {
+                silent = TRUE, seed = 12345, save_model = NULL,
+                save_dso = TRUE, ...) {
   
   dots <- list(...) 
   # use deprecated arguments if specified
@@ -345,7 +351,7 @@ brm <- function(formula, data = NULL, family = gaussian(),
     # see priors.R
     prior <- check_prior(prior, formula = formula, data = data, 
                          family = family, sample_prior = sample_prior, 
-                         autocor = autocor,  threshold = threshold, 
+                         autocor = autocor, threshold = threshold, 
                          warn = TRUE)
     # initialize S3 object
     x <- brmsfit(formula = formula, family = family, data = data, 
@@ -367,7 +373,7 @@ brm <- function(formula, data = NULL, family = gaussian(),
     # unnecessary compilations in case that the data is invalid
     standata <- standata(x, newdata = dots$is_newdata)
     message("Compiling the C++ model")
-    x$fit <- rstan::stan_model(stanc_ret = x$model)
+    x$fit <- rstan::stan_model(stanc_ret = x$model, save_dso = save_dso)
     x$model <- x$model$model_code
   }
   

@@ -12,7 +12,7 @@ brm(formula, data = NULL, family = gaussian(), prior = NULL,
   iter = 2000, warmup = floor(iter/2), thin = 1, cluster = 1,
   cluster_type = "PSOCK", control = NULL, algorithm = c("sampling",
   "meanfield", "fullrank"), silent = TRUE, seed = 12345,
-  save_model = NULL, ...)
+  save_model = NULL, save_dso = TRUE, ...)
 }
 \arguments{
 \item{formula}{An object of class 
@@ -184,6 +184,12 @@ In the latter case, the model code is
 saved in a file named after the string supplied in \code{save_model}, 
 which may also contain the full path where to save the file.
 If only a name is given, the file is saved in the current working directory.}
+
+\item{save_dso}{Logical, defaulting to \code{TRUE}, indicating whether 
+the dynamic shared object (DSO) compiled from the C++ code for the model 
+will be saved or not. If \code{TRUE}, we can draw samples from the same 
+model in another \R session using the saved DSO 
+(i.e., without compiling the C++ code again).}
 
 \item{...}{Further arguments to be passed to Stan.}
 }
