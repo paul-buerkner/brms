@@ -962,7 +962,8 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
 pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
                              time = NULL, x = NULL, re_formula = NULL,
                              subset = NULL, ntrys = 5, ...) {
-  if (!requireNamespace("bayesplot", quietly = TRUE)) {
+  rN_text <- "requireNamespace('bayesplot', quietly = TRUE)"
+  if (!eval(parse(text = rN_text))) {
     # remove check as soon as bayesplot is on CRAN
     stop(paste0("please install the bayesplot package via\n",
                 "devtools::install_github('jgabry/bayesplot')"),
