@@ -327,11 +327,11 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     }
     # brms:::update_data expects all original variables to be present
     # even if not actually used later on
-    all_mf_vars <- names(model.frame(fit))
     rsv_vars <- rsv_vars(family(fit), nresp = length(ee$response),
                          rsv_intercept = has_rsv_intercept(ee$formula),
                          old_mv = attr(ee$formula, "old_mv"))
-    unused_vars <- setdiff(all_mf_vars, union(all.vars(ee$all), rsv_vars))
+    used_vars <- unique(c(names(newdata), all.vars(ee$all), rsv_vars))
+    unused_vars <- setdiff(names(model.frame(fit)), used_vars)
     if (length(unused_vars)) {
       newdata[, unused_vars] <- NA
     }
