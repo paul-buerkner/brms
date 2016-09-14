@@ -655,9 +655,9 @@ stan_prior <- function(class, coef = "", group = "", nlpar = "", suffix = "",
   prior_only <- isTRUE(attr(prior, "prior_only"))
   hs_df <- attr(prior, "hs_df")
   keep <- prior$class == class & 
-          (prior$coef %in% coef | !nchar(prior$coef)) &
-          (prior$group == group | !nchar(prior$group)) & 
-          (prior$nlpar %in% nlpar | !nchar(prior$nlpar))
+          (prior$coef %in% coef | !nzchar(prior$coef)) &
+          (prior$group == group | !nzchar(prior$group)) & 
+          (prior$nlpar %in% nlpar | !nzchar(prior$nlpar))
   prior <- prior[keep, ]
   if (!nchar(class) && nrow(prior)) {
     # increment_log_prob statements are directly put into the Stan code
@@ -669,7 +669,8 @@ stan_prior <- function(class, coef = "", group = "", nlpar = "", suffix = "",
     # can only happen for SD parameters of the same ID
     base_prior <- rep(NA, length(unlpar))
     for (i in seq_along(unlpar)) {
-      base_prior[i] <- stan_base_prior(prior[prior$nlpar == unlpar[i], ])
+      nlpar_prior <- prior[prior$nlpar %in% c("", unlpar[i]), ]
+      base_prior[i] <- stan_base_prior(nlpar_prior)
     }
     if (length(unique(base_prior)) > 1L) {
       # define prior for single coefficients manually

@@ -425,7 +425,8 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
   } else {
     if (length(ee$response) > 1L) {
       # priors for effects in multivariate models
-      for (r in ee$response) {
+      for (r in c("", ee$response)) {
+        # r = "" adds global priors affecting parameters of all responses
         prior_eff <- get_prior_effects(ee, data = data, autocor = autocor,
                                        def_scale_prior = def_scale_prior,
                                        internal = internal, nlpar = r)
@@ -459,8 +460,9 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
   }
   # priors of group-level parameters
   ranef <- tidy_ranef(ee, data)
-  prior_ranef <- get_prior_ranef(ranef, internal = internal,
-                                 def_scale_prior = def_scale_prior)
+  prior_ranef <- get_prior_ranef(ranef, def_scale_prior = def_scale_prior,
+                                 global_sd = length(ee$response) > 1L,
+                                 internal = internal)
   prior <- rbind(prior, prior_ranef)
   
   # prior for the delta parameter for equidistant thresholds
@@ -596,23 +598,34 @@ get_prior_csef <- function(csef, fixef = NULL) {
   prior
 }
 
-get_prior_ranef <- function(ranef, def_scale_prior, nlpar = "", 
-                            internal = FALSE) {
+get_prior_ranef <- function(ranef, def_scale_prior, 
+                            global_sd = FALSE, internal = FALSE) {
   # priors for random effects parameters
   # Args:
   #   ranef: a list returned by tidy_ranef
   #   def_scale_prior: a character string defining the default
   #                    prior for random effects SDs
-  #   nlpar: optional name of a non-linear parameter
+  #   global_sd: allow to set a global SD prior
+  #              affecting all non-linear parameters?
   #   internal: see get_prior
   # Returns:
   #   an object of class prior_frame
   prior <- empty_prior_frame()
   if (nrow(ranef)) {
     # global sd class
-    prior <- rbind(prior, 
-      prior_frame(class = "sd", nlpar = unique(ranef$nlpar),
-                  prior = def_scale_prior))
+    nlpars <- unique(ranef$nlpar)
+    if (global_sd) {
+      global_sd_prior <- rep("", length(setdiff(nlpars, "")))
+      global_sd_prior <- c(def_scale_prior, global_sd_prior)
+      global_sd_prior <- prior_frame(class = "sd", 
+                                     prior = global_sd_prior,
+                                     nlpar = union("", nlpars))
+    } else {
+      global_sd_prior <- prior_frame(class = "sd", 
+                                     prior = def_scale_prior,
+                                     nlpar = nlpars)
+    }
+    prior <- rbind(prior, global_sd_prior)
     for (id in unique(ranef$id)) {
       r <- ranef[ranef$id == id, ]
       group <- r$group[1]

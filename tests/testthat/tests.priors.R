@@ -192,6 +192,25 @@ test_that("get_prior returns correct prior names for auxiliary parameters", {
   expect_equivalent(prior[, c("class", "coef", "group")], pdata)
 })
 
+test_that("get_prior returns global priors in multivariate models", {
+  dat <- data.frame(y1 = rnorm(10), y2 = c(1, rep(1:3, 3)), 
+                    x = rnorm(10), g = rep(1:2, 5))
+  # MV normal
+  prior <- get_prior(cbind(y1, y2) ~ x + (x|ID1|g), 
+                     data = dat, family = gaussian())
+  expect_equal(prior[prior$nlpar == "" & prior$class == "b", "coef"],
+               c("", "Intercept", "x"))
+  expect_equal(prior[prior$nlpar == "" & prior$class == "sd", "prior"],
+               c("student_t(3, 0, 10)"))
+  # categorical
+  prior <- get_prior(y2 ~ x + (x|ID1|g), 
+                     data = dat, family = categorical())
+  expect_equal(prior[prior$nlpar == "" & prior$class == "b", "coef"],
+               c("", "Intercept", "x"))
+  expect_equal(prior[prior$nlpar == "" & prior$class == "sd", "prior"],
+               c("student_t(3, 0, 10)"))
+})
+
 test_that("check_prior_content returns expected errors and warnings", {
   prior <- c(set_prior("", lb = 0), set_prior("gamma(0,1)", coef = "x"))
   expect_silent(check_prior_content(prior))
