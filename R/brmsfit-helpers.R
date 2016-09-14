@@ -52,6 +52,9 @@ algorithm <- function(x) {
 restructure <- function(x) {
   # restructure old brmsfit objects to work with the latest brms version
   stopifnot(is(x, "brmsfit"))
+  if (isTRUE(attr(x, "restructured"))) {
+    return(x)  # already restructured
+  }
   # x$nonlinear deprecated as of brms > 0.9.1
   # X$partial deprecated as of brms > 0.8.0
   x$formula <- SW(update_formula(x$formula, partial = x$partial, 
@@ -73,8 +76,16 @@ restructure <- function(x) {
         x <- do_renaming(change = change[[i]], x = x)
       }
     }
+  } else if (x$version < "1.0.0") {
+    # I added double underscores in group-level parameters
+    # right before the release of brms 1.0.0
+    change <- change_old_ranef2(x$ranef, pars = parnames(x),
+                                dims = x$fit@sim$dims_oi)
+    for (i in seq_along(change)) {
+      x <- do_renaming(change = change[[i]], x = x)
+    }
   }
-  x
+  structure(x, "restructured" = TRUE)
 }
 
 first_greater <- function(A, target, i = 1) {
@@ -131,23 +142,29 @@ ilink <- function(x, link) {
   else stop(paste("Link", link, "not supported"))
 }
 
-get_cornames <- function(names, type = "cor", brackets = TRUE) {
+get_cornames <- function(names, type = "cor", brackets = TRUE,
+                         sep = "__") {
   # get correlation names as combinations of variable names
   # Args:
   #   names: the variable names 
-  #   type: of the correlation to be put in front of the returned strings
+  #   type: character string to be put in front of the returned strings
   #   brackets: should the correlation names contain brackets 
   #            or underscores as seperators
+  #   sep: character string to separate names;
+  #        only used if brackets == FALSE
   # Returns: 
-  #   correlation names based on the variable names passed to the names argument
+  #   correlation names based on the variable names 
+  #   passed to the names argument
   cornames <- NULL
   if (length(names) > 1) {
     for (i in 2:length(names)) {
       for (j in 1:(i-1)) {
         if (brackets) {
-          cornames <- c(cornames, paste0(type,"(",names[j],",",names[i],")"))
+          cornames <- c(cornames, 
+            paste0(type, "(", names[j], "," , names[i], ")"))
         } else {
-          cornames <- c(cornames, paste0(type,"_",names[j],"_",names[i]))
+          cornames <- c(cornames, 
+            paste0(type, sep, names[j], sep, names[i]))
         }
       }
     }

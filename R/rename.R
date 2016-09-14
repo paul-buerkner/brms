@@ -306,7 +306,7 @@ change_ranef <- function(ranef, pars, dims) {
       r <- ranef[ranef$id == id, ]
       g <- r$group[1]
       suffix <- paste0(usc(r$nlpar, "suffix"), r$coef)
-      rfnames <- paste0("sd_", g, "_", suffix)
+      rfnames <- paste0("sd_", g, "__", suffix)
       change <- lc(change,
         list(pos = grepl(paste0("^sd_", id, "(\\[|$)"), pars),
              oldname = paste0("sd_", id), pnames = rfnames,
@@ -347,12 +347,12 @@ change_ranef_levels <- function(ranef, pars, dims)  {
   change <- list()
   for (i in seq_len(nrow(ranef))) {
     r <- ranef[i, ]
-    usc_nlpar <- usc(r$nlpar, "prefix")
+    usc_nlpar <- usc(r$nlpar)
     r_parnames <- paste0("r_", r$id, usc_nlpar, "_", r$cn)
     r_regex <- paste0("^", r_parnames, "(\\[|$)")
     change_rl <- list(pos = grepl(r_regex, pars), 
                       oldname = r_parnames)
-    r_new_parname <- paste0("r_", r$group, usc_nlpar)
+    r_new_parname <- paste0("r_", r$group, usc(usc_nlpar))
     # prepare for removal of redundant parameters r_<i>
     # and for combining group-level effects into one parameter matrix
     gf_matches <- which(ranef$group == r$group & ranef$nlpar == r$nlpar)
@@ -428,18 +428,6 @@ change_old_ranef <- function(ranef, pars, dims) {
   #   dims: dimension of parameters
   # Returns:
   #   a list whose elements can be interpreted by do_renaming
-  change_simple <- function(oldname, fnames, pnames = fnames) {
-    # helper function for very simple renaming
-    pos <- grepl(paste0("^", oldname), pars)
-    if (any(pos)) {
-      out <- nlist(pos, oldname, pnames, fnames,
-                   dims = dims[[oldname]])
-    } else {
-      out <- NULL
-    }
-    return(out)
-  }
-  
   change <- list()
   for (id in unique(ranef$id)) {
     r <- ranef[ranef$id == id, ]
@@ -447,30 +435,95 @@ change_old_ranef <- function(ranef, pars, dims) {
     nlpar <- r$nlpar[1]
     # rename sd-parameters
     old_sd_names <- paste0("sd_", nlpar, "_", g, "_", r$coef)
-    new_sd_names <- paste0("sd_", g, "_", nlpar, "_", r$coef)
-    for (i in seq_len(length(old_sd_names))) {
+    new_sd_names <- paste0("sd_", g, "__", nlpar, "_", r$coef)
+    for (i in seq_along(old_sd_names)) {
       change <- lc(change, 
-        change_simple(old_sd_names[i], new_sd_names[i]))
+        change_simple(old_sd_names[i], new_sd_names[i], pars, dims))
     }
     # rename cor-parameters
     new_cor_names <- get_cornames(paste0(nlpar, "_", r$coef),
                                   type = paste0("cor_", g),
                                   brackets = FALSE)
-    old_cor_names <- get_cornames(r$coef, brackets = FALSE,
+    old_cor_names <- get_cornames(r$coef, brackets = FALSE, sep = "_",
                                   type = paste0("cor_", nlpar, "_", g))
-    for (i in seq_len(length(old_cor_names))) {
+    for (i in seq_along(old_cor_names)) {
       change <- lc(change, 
-        change_simple(old_cor_names[i], new_cor_names[i]))
+        change_simple(old_cor_names[i], new_cor_names[i], pars, dims))
     } 
     # rename r-parameters
     old_r_name <- paste0("r_", nlpar, "_", g)
-    new_r_name <- paste0("r_", g, "_", nlpar)
+    new_r_name <- paste0("r_", g, "__", nlpar)
     levels <- gsub("[ \t\r\n]", ".", attr(ranef, "levels")[[g]])
     index_names <- make_index_names(levels, r$coef, dim = 2)
     new_r_names <- paste0(new_r_name, index_names)
-    change <- lc(change, change_simple(old_r_name, new_r_names, new_r_name))
+    change <- lc(change, 
+      change_simple(old_r_name, new_r_names, pars, dims, 
+                    pnames = new_r_name))
   }
   change
+}
+
+change_old_ranef2 <- function(ranef, pars, dims) {
+  # prepare for renaming of group-level parameters of models 
+  # fitted with brms > 0.10.0.9000 but < 1.0.0
+  # Args:
+  #   ranef: output of tidy_ranef
+  #   pars: names of all parameters in the model
+  #   dims: dimension of parameters
+  # Returns:
+  #   a list whose elements can be interpreted by do_renaming
+  change <- list()
+  for (id in unique(ranef$id)) {
+    r <- ranef[ranef$id == id, ]
+    g <- r$group[1]
+    #nlpar <- r$nlpar[1]
+    nlpars_usc <- usc(r$nlpar, "suffix")
+    # rename sd-parameters
+    old_sd_names <- paste0("sd_", g, "_", nlpars_usc, r$coef)
+    new_sd_names <- paste0("sd_", g, "__", nlpars_usc, r$coef)
+    for (i in seq_along(old_sd_names)) {
+      change <- lc(change, 
+        change_simple(old_sd_names[i], new_sd_names[i], pars, dims))
+    }
+    # rename cor-parameters
+    new_cor_names <- get_cornames(paste0(nlpars_usc, r$coef),
+                                  type = paste0("cor_", g),
+                                  brackets = FALSE)
+    old_cor_names <- get_cornames(paste0(nlpars_usc, r$coef),
+                                  type = paste0("cor_", g),
+                                  brackets = FALSE, sep = "_")
+    for (i in seq_along(old_cor_names)) {
+      change <- lc(change, 
+        change_simple(old_cor_names[i], new_cor_names[i], pars, dims))
+    } 
+    # rename r-parameters
+    for (nlpar in unique(r$nlpar)) {
+      sub_r <- r[r$nlpar == nlpar, ]
+      old_r_name <- paste0("r_", g, usc(nlpar))
+      new_r_name <- paste0("r_", g, usc(usc(nlpar)))
+      levels <- gsub("[ \t\r\n]", ".", attr(ranef, "levels")[[g]])
+      index_names <- make_index_names(levels, sub_r$coef, dim = 2)
+      new_r_names <- paste0(new_r_name, index_names)
+      change <- lc(change, 
+                   change_simple(old_r_name, new_r_names, pars, dims, 
+                                 pnames = new_r_name))
+    }
+  }
+  change
+}
+
+change_simple <- function(oldname, fnames, pars, dims,
+                          pnames = fnames) {
+  # helper function for very simple renaming
+  # currently only used in the change_old_ranef functions
+  pos <- grepl(paste0("^", oldname), pars)
+  if (any(pos)) {
+    out <- nlist(pos, oldname, pnames, fnames,
+                 dims = dims[[oldname]])
+  } else {
+    out <- NULL
+  }
+  return(out)
 }
 
 make_index_names <- function(rownames, colnames = NULL, dim = 1) {

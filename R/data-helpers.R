@@ -42,9 +42,9 @@ update_data <- function(data, family, effects, ...,
       warning("Rows containing NAs were excluded from the model",
               call. = FALSE)
     }
-    if (any(grepl("__", colnames(data)))) {
-      stop("Variable names may not contain double underscores.",
-           call. = FALSE)
+    if (any(grepl("__|_$", colnames(data)))) {
+      stop("Variable names may not contain double underscores ",
+           "or underscores at the end.", call. = FALSE)
     }
     data <- combine_groups(data, get_random(effects)$group, ...)
     data <- fix_factor_contrasts(data)

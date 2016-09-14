@@ -40,6 +40,9 @@
     \itemize{
       \item Remove the \code{cauchy} family
       after several months of deprecation.
+      \item Make sure that group-level parameter names
+      are unambiguous by adding double underscores 
+      thanks to the idea of the GitHub user schmettow.
       \item The \code{predict} method now returns predicted 
       probabilities instead of absolute frequencies of 
       samples for ordinal and categorical models.

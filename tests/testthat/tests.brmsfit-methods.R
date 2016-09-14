@@ -124,13 +124,13 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(nobs(fit1), nrow(epilepsy))
   # parnames 
   expect_equal(parnames(fit1)[c(1, 8, 9, 13, 15, 17, 27, 35, 38, 46)],
-               c("b_Intercept", "b_Exp", "ar[1]", "cor_visit_Intercept_Trt", 
+               c("b_Intercept", "b_Exp", "ar[1]", "cor_visit__Intercept__Trt", 
                  "nu", "simplex_Exp[2]", "r_visit[4,Trt]", "s_sAge[8]", 
                  "prior_sd_visit", "lp__"))
   expect_equal(parnames(fit2)[c(1, 4, 6, 7, 9, 71, 129)],
-               c("b_a_Intercept", "b_b_Age", "sd_patient_b_Intercept",
-                 "cor_patient_a_Intercept_b_Intercept", 
-                 "r_patient_a[1,Intercept]", "r_patient_b[4,Intercept]",
+               c("b_a_Intercept", "b_b_Age", "sd_patient__b_Intercept",
+                 "cor_patient__a_Intercept__b_Intercept", 
+                 "r_patient__a[1,Intercept]", "r_patient__b[4,Intercept]",
                  "prior_b_a"))
   # plot tested in tests.plots.R
   # posterior_samples

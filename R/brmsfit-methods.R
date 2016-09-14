@@ -133,7 +133,7 @@ ranef.brmsfit <- function(object, estimate = c("mean", "median"),
     #   nlpar: name of a non-linear parameter
     rnames <- object$ranef[object$ranef$group == group & 
                            object$ranef$nlpar == nlpar, "coef"]
-    usc_nlpar <- usc(nlpar, "prefix")
+    usc_nlpar <- usc(usc(nlpar))
     rpars <- pars[grepl(paste0("^r_", group, usc_nlpar, "\\["), pars)]
     if (!length(rpars)) {
       return(NULL)
@@ -388,7 +388,7 @@ VarCorr.brmsfit <- function(x, sigma = 1, estimate = "mean",
       r <- x$ranef[x$ranef$group == group, ]
       rnames <- paste0(usc(r$nlpar, "suffix"), r$coef)
       cor_type <- paste0("cor_", group)
-      sd_pars <- paste0("sd_", group, "_", rnames)
+      sd_pars <- paste0("sd_", group, "__", rnames)
       cor_pars <- get_cornames(rnames, type = cor_type, brackets = FALSE)
       nlist(rnames = rnames, type = cor_type, sd_pars, cor_pars)
     }
@@ -661,7 +661,7 @@ summary.brmsfit <- function(object, waic = FALSE, ...) {
       r <- object$ranef[object$ranef$group == g, ]
       nlpar_usc <- usc(r$nlpar, "suffix")
       rnames <- paste0(nlpar_usc, r$coef)
-      sd_pars <- paste0("sd_", g, "_", rnames)
+      sd_pars <- paste0("sd_", g, "__", rnames)
       sd_names <- paste0("sd", "(", rnames ,")")
       # construct correlation names
       type <- paste0("cor_", g)
@@ -2011,7 +2011,7 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
     stop(paste(class, "is not a valid paramter class"), call. = FALSE)
   if (class %in% c("b", "r", "sd", "cor", "sigma", "rescor")) {
     if (class %in% c("sd", "cor") && nchar(group)) {
-      class <- paste0(class, "_", group, "_")
+      class <- paste0(class, "_", group, "__")
     } else {
       class <- paste0(class, "_")
     }
@@ -2025,7 +2025,7 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
     # 
     # Args:
     #   h: A string containing a hypothesis
-    h <- rename(h, c("[ \t\r\n]", ":"), c("", "__"), fixed = FALSE)
+    h <- rename(h, c("[ \t\r\n]", ":"), c("", "___"), fixed = FALSE)
     sign <- unlist(regmatches(h, gregexpr("=|<|>", h)))
     lr <- unlist(regmatches(h, gregexpr("[^=<>]+", h)))
     if (length(sign) != 1 || length(lr) != 2)
@@ -2036,14 +2036,14 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
     parsH <- paste0(class, varsH)
     if (!all(parsH %in% pars)) 
       stop(paste("The following parameters cannot be found in the model:", 
-                 paste0(gsub("__", ":", parsH[which(!parsH %in% pars)]), 
+                 paste0(gsub("___", ":", parsH[which(!parsH %in% pars)]), 
                         collapse = ", ")), call. = FALSE)
     
     # prepare for renaming of parameters so that h can be evaluated
-    parsH <- rename(parsH, "__", ":")
+    parsH <- rename(parsH, "___", ":")
     h_renamed <- rename(h, c("[", "]", ","), c(".", ".", ".."))
     symbols <- c(paste0("^",class), ":", "\\[", "\\]", ",")
-    subs <- c("", "__", ".", ".", "..")
+    subs <- c("", "___", ".", ".", "..")
     
     # get posterior samples
     samples <- posterior_samples(x, pars = parsH, exact_match = TRUE)
@@ -2075,7 +2075,7 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
     }
     sm <- cbind(sm, ifelse(!(sm[1, 3] <= 0 && 0 <= sm[1, 4]), '*', ''))
     h <- paste0(lr[1], ifelse(lr[2] != "0", paste0("-(", lr[2], ")"), ""))
-    rownames(sm) <- paste(rename(h, "__", ":"), sign, "0")
+    rownames(sm) <- paste(rename(h, "___", ":"), sign, "0")
     cl <- (1 - alpha) * 100
     colnames(sm) <- c("Estimate", "Est.Error", paste0("l-",cl,"% CI"), 
                       paste0("u-",cl,"% CI"), "Evid.Ratio", "")
@@ -2088,14 +2088,14 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
   }
 
   pars <- rename(parnames(x)[grepl("^", class, parnames(x))],
-                 symbols = ":", subs = "__")
+                 symbols = ":", subs = "___")
   hlist <- lapply(hypothesis, hyp_fun)
   hs <- do.call(rbind, lapply(hlist, function(h) h$summary))
   samples <- do.call(cbind, lapply(hlist, function(h) h$samples))
   samples <- as.data.frame(samples) 
   names(samples) <- paste0("H", seq_along(hlist))
   samples$Type <- factor(rep(c("posterior", "prior"), each = Nsamples(x)))
-  class <- substr(class, 1, nchar(class) - 1)
+  class <- sub("_+$", "", class)
   out <- nlist(hypothesis = hs, samples, class, alpha)
   class(out) <- "brmshypothesis"
   out

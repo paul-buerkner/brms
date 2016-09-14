@@ -20,6 +20,8 @@ test_that("get_cornames returns desired correlation names", {
   names <- c("Intercept", "x", "y")
   expect_equal(get_cornames(names), c("cor(Intercept,x)", "cor(Intercept,y)", "cor(x,y)"))
   expect_equal(get_cornames(names, brackets = FALSE), 
+               c("cor__Intercept__x", "cor__Intercept__y", "cor__x__y"))
+  expect_equal(get_cornames(names, brackets = FALSE, sep = "_"), 
                c("cor_Intercept_x", "cor_Intercept_y", "cor_x_y"))
   expect_equal(get_cornames(names, type = "rescor"),
                c("rescor(Intercept,x)", "rescor(Intercept,y)", "rescor(x,y)"))

@@ -189,7 +189,7 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
       do.call(as.matrix, c(args, list(pars = s_pars)))
   }
   # group-level effects
-  usc_nlpar <- usc(nlpar, "prefix")
+  usc_nlpar <- usc(usc(nlpar))
   new_ranef <- tidy_ranef(ee, model.frame(x))
   groups <- unique(new_ranef$group)
   # requires initialization to assign S4 objects of the Matrix package
