@@ -535,14 +535,15 @@ prior_samples.brmsfit <- function(x, pars = NA, parameters = NA, ...) {
                           regexpr, text = par_internal)
         matches <- ulapply(matches, attr, which = "match.length")
         if (max(matches) == -1) {
-          return(NULL)
+          out <- NULL
         } else {
           take <- match(max(matches), matches)
           # order samples randomly to avoid artifical dependencies
           # between parameters using the same prior samples
           samples <- list(samples[sample(Nsamples(x)), take])
-          return(structure(samples, names = par))
+          out <- structure(samples, names = par)
         }
+        return(out)
       }
       samples <- data.frame(rmNULL(lapply(pars, get_samples)), 
                             check.names = FALSE)
@@ -781,15 +782,15 @@ launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"),
 #'   For some basic themes see \code{\link[ggplot2:ggtheme]{ggtheme}}. 
 #'   Can be defined globally for the current session, via
 #'   \code{\link[ggplot2:theme_update]{theme_set}}.
-#' @param do_plot logical; indicates if plots should be
+#' @param plot logical; indicates if plots should be
 #'   plotted directly in the active graphic device.
 #'   Defaults to \code{TRUE}.
 #' @param ask logical; indicates if the user is prompted 
 #'   before a new page is plotted. 
-#'   Only used if \code{do_plot} is \code{TRUE}.
+#'   Only used if \code{plot} is \code{TRUE}.
 #' @param newpage logical; indicates if the first set of plots
 #'   should be plotted to a new page. 
-#'   Only used if \code{do_plot} is \code{TRUE}.
+#'   Only used if \code{plot} is \code{TRUE}.
 #' @param ... Further arguments passed to 
 #'   \code{\link[gridExtra:arrangeGrob]{arrangeGrob}}.
 #' 
@@ -817,11 +818,10 @@ launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"),
 #' @export
 plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5, 
                          theme = ggplot2::theme(), ask = TRUE, 
-                         do_plot = TRUE, newpage = TRUE, ...) {
+                         plot = TRUE, newpage = TRUE, ...) {
   dots <- list(...)
-  if (is.na(pars[1])) {
-    pars <- parameters 
-  }
+  pars <- use_alias(pars, parameters, default = NA)
+  plot <- use_alias(plot, dots$do_plot)
   contains_samples(x)
   if (!is.wholenumber(N) || N < 1) {
     stop("N must be a positive integer", call. = FALSE)
@@ -837,14 +837,14 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5,
     stop("No valid parameters selected", call. = FALSE)
   }
   
-  if (do_plot) {
+  if (plot) {
     default_ask <- devAskNewPage()
     on.exit(devAskNewPage(default_ask))
     devAskNewPage(ask = FALSE)
   }
   n_plots <- ceiling(length(pars) / N)
   plots <- vector(mode = "list", length = n_plots)
-  for (i in 1:n_plots) {
+  for (i in seq_len(n_plots)) {
     rel_pars <- pars[((i - 1) * N + 1):min(i * N, length(pars))]
     sub_samples <- cbind(utils::stack(samples[, rel_pars, drop = FALSE]),
                          samples[, c("chain", "iter")])
@@ -852,7 +852,7 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5,
     sub_samples$ind <- with(sub_samples, factor(ind, levels = unique(ind)))
     td_plot <- trace_density_plot(sub_samples, theme = theme)
     plots[[i]] <- arrangeGrob(grobs = td_plot, nrow = 1, ncol = 2, ...)
-    if (do_plot) {
+    if (plot) {
       if (newpage || i > 1) grid.newpage()
       grid.draw(plots[[i]])
       if (i == 1) devAskNewPage(ask = ask)
@@ -1283,7 +1283,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     marg_data <- replicate(nrow(conditions), simplify = FALSE,
      expr = marg_data[do.call(order, as.list(marg_data)), , drop = FALSE])
     marg_vars <- setdiff(names(conditions), effects[[i]])
-    for (j in 1:nrow(conditions)) {
+    for (j in seq_len(nrow(conditions))) {
       marg_data[[j]][, marg_vars] <- conditions[j, marg_vars]
       marg_data[[j]][["MargCond"]] <- rownames(conditions)[j]
     }
@@ -1296,10 +1296,10 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
       args$summary <- FALSE 
       marg_res <- do.call(method, args)
       if (method == "fitted") {
-        for (k in 1:dim(marg_res)[3]) {
+        for (k in seq_len(dim(marg_res)[3])) {
           marg_res[, , k] <- marg_res[, , k] * k
         }
-        marg_res <- do.call(cbind, lapply(1:dim(marg_res)[2], 
+        marg_res <- do.call(cbind, lapply(seq_len(dim(marg_res)[2]), 
                             function(s) rowSums(marg_res[, s, ])))
       } 
       marg_res <- get_summary(marg_res, probs = probs, robust = robust)
@@ -1503,11 +1503,11 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (summary) {
     if (is_catordinal) {
       # compute frequencies of categories 
-      out <- get_table(out, levels = 1:max(draws$data$max_obs)) 
+      out <- get_table(out, levels = seq_len(max(draws$data$max_obs)))
     } else {
       out <- get_summary(out, probs = probs, robust = robust)
     }
-    rownames(out) <- 1:nrow(out)
+    rownames(out) <- seq_len(nrow(out))
   }
   out
 }
@@ -1607,7 +1607,7 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   }
   if (summary) {
     mu <- get_summary(mu, probs = probs, robust = robust)
-    rownames(mu) <- 1:nrow(mu)
+    rownames(mu) <- seq_len(nrow(mu))
   }
   mu
 }
@@ -1888,7 +1888,7 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
     pointwise <- set_pointwise(x, subset = subset, newdata = newdata)
   }
   ll_args = nlist(newdata, re_formula, allow_new_levels, subset, pointwise)
-  if (length(models) > 1) {
+  if (length(models) > 1L) {
     args <- nlist(X = models, FUN = compute_ic, ic = "waic", ll_args)
     out <- setNames(do.call(lapply, args), names)
     class(out) <- c("iclist", "list")
@@ -1919,7 +1919,7 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
     pointwise <- set_pointwise(x, subset = subset, newdata = newdata)
   }
   ll_args = nlist(newdata, re_formula, allow_new_levels, subset, pointwise)
-  if (length(models) > 1) {
+  if (length(models) > 1L) {
     args <- nlist(X = models, FUN = compute_ic, ic = "loo", 
                   ll_args, wcp, wtrunc, cores)
     out <- setNames(do.call(lapply, args), names)
@@ -1976,13 +1976,13 @@ logLik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     loglik <- structure(loglik_fun, draws = draws, N = N)
   } else {
     draws$eta <- get_eta(i = NULL, draws = draws)
-    loglik <- do.call(cbind, lapply(1:N, loglik_fun, draws = draws))
+    loglik <- do.call(cbind, lapply(seq_len(N), loglik_fun, draws = draws))
     # reorder loglik values to be in the initial user defined order
     # currently only relevant for autocorrelation models
     # that are not using covariance formulation
     old_order <- attr(draws$data, "old_order")
     if (!is.null(old_order) && !isTRUE(object$autocor$cov)) {
-      loglik <- loglik[, old_order[1:N]]  
+      loglik <- loglik[, old_order[seq_len(N)]]  
     }
     colnames(loglik) <- NULL
   }

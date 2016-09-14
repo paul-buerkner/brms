@@ -7,7 +7,7 @@ p <- function(x, i = NULL, row = TRUE) {
   #        only relevant if x has two dimensions
   if (!length(i)) {
     x
-  } else if (!is.null(dim(x)) && length(dim(x)) == 2L) {
+  } else if (length(dim(x)) == 2L) {
     if (row) {
       x[i, , drop = FALSE]
     } else {
@@ -113,10 +113,8 @@ collapse <- function(..., sep = "") {
 
 collapse_lists <- function(ls) {
   # collapse strings having the same name in different lists
-  #
   # Args:
   #  ls: a list of named lists
-  # 
   # Returns:
   #  a named list containg the collapsed strings
   elements <- unique(unlist(lapply(ls, names)))
@@ -171,7 +169,9 @@ get_arg <- function(x, ...) {
   while(i <= length(dots) && is.null(out)) {
     if (!is.null(dots[[i]][[x]])) {
       out <- dots[[i]][[x]]
-    } else i <- i + 1
+    } else {
+      i <- i + 1
+    }
   }
   out
 }
@@ -187,7 +187,7 @@ rhs <- function(x) {
 lhs <- function(x) {
   # return the lefthand side of a formula
   x <- as.formula(x)
-  if (length(x) == 3) update(x, . ~ 1) else NULL
+  if (length(x) == 3L) update(x, . ~ 1) else NULL
 }
 
 is.formula <- function(x) {
@@ -202,7 +202,9 @@ SW <- function(expr) {
 get_matches <- function(pattern, text, simplify = TRUE, ...) {
   # get pattern matches in text as vector
   x <- regmatches(text, gregexpr(pattern, text, ...))
-  if (simplify) x <- unlist(x)
+  if (simplify) {
+    x <- unlist(x)
+  }
   x
 }
 
@@ -336,8 +338,11 @@ wsp <- function(x, nsp = 1) {
   #   x: object accepted by paste
   #   nsp: number of whitespaces to add
   sp <- collapse(rep(" ", nsp))
-  if (length(x)) paste0(sp, x, sp)
-  else NULL
+  if (length(x)) {
+    paste0(sp, x, sp)
+  } else {
+    NULL
+  } 
 }
 
 limit_chars <- function(x, chars = NULL, lsuffix = 4) {
@@ -438,7 +443,7 @@ use_alias <- function(arg, alias = NULL, default = NULL,
     else if (grepl(paste0("^", x), "left")) x <- -1
     else x
   }))
-  if (!all(unique(cens) %in% c(-1:1)))
+  if (!all(unique(cens) %in% -1:1))
     stop (paste0("Invalid censoring data. Accepted values are ", 
                  "'left', 'none', and 'right' \n(abbreviations are allowed) ", 
                  "or -1, 0, and 1. TRUE and FALSE are also accepted \n",

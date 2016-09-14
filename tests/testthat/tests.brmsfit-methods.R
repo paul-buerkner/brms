@@ -65,12 +65,12 @@ test_that("all S3 methods have reasonable ouputs", {
   h1 <- hypothesis(fit1, "Intercept > Trt")
   expect_equal(dim(h1$hypothesis), c(1, 6))
   expect_output(print(h1), "Intercept-(Trt) > 0", fixed = TRUE)
-  expect_silent(p <- plot(h1, do_plot = FALSE))
+  expect_silent(p <- plot(h1, plot = FALSE))
   
   h2 <- hypothesis(fit1, "Intercept = 0", class = "sd", group = "visit")
   expect_true(is.numeric(h2$hypothesis$Evid.Ratio[1]))
   expect_output(print(h2), "class sd_visit:", fixed = TRUE)
-  expect_silent(p <- plot(h2, ignore_prior = TRUE, do_plot = FALSE))
+  expect_silent(p <- plot(h2, ignore_prior = TRUE, plot = FALSE))
   expect_error(hypothesis(fit1, "Intercept > x"), fixed = TRUE,
                "cannot be found in the model: b_x")
   # omit launch_shiny

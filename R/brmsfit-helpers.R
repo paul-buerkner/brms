@@ -8,8 +8,9 @@ array2list <- function(x) {
   n.dim <- length(dim(x))
   l <- list(length = dim(x)[n.dim])
   ind <- collapse(rep(",", n.dim - 1))
-  for (i in 1:dim(x)[n.dim])
-    l[[i]] <- eval(parse(text = paste0("x[", ind, i,"]")))
+  for (i in seq_len(dim(x)[n.dim])) {
+    l[[i]] <- eval(parse(text = paste0("x[", ind, i,"]"))) 
+  }
   names(l) <- dimnames(x)[[n.dim]]
   l
 }
@@ -234,7 +235,7 @@ get_summary <- function(samples, probs = c(0.025, 0.975),
   } else { 
     stop("dimension of 'samples' must be either 2 or 3") 
   }
-  rownames(out) <- 1:nrow(out)
+  rownames(out) <- seq_len(nrow(out))
   colnames(out) <- c("Estimate", "Est.Error", paste0(probs * 100, "%ile"))
   out  
 }
@@ -247,8 +248,7 @@ get_table <- function(samples, levels = sort(unique(as.numeric(samples)))) {
   # Returns:
   #    a N x \code{levels} matrix containing relative frequencies
   #    in each column seperately
-  if (!is.matrix(samples)) 
-    stop("samples must be a matrix")
+  stopifnot(is.matrix(samples))
   out <- do.call(rbind, lapply(seq_len(ncol(samples)), 
     function(n) table(factor(samples[, n], levels = levels))))
   # compute relative frequencies
@@ -268,13 +268,12 @@ get_cov_matrix <- function(sd, cor = NULL) {
   #   used in VarCorr.brmsfit
   # Returns: 
   #   samples of covariance and correlation matrices
-  if (any(sd < 0)) 
-    stop("standard deviations must be non negative")
+  sd <- as.matrix(sd)
+  stopifnot(all(sd >= 0))
   if (!is.null(cor)) {
-    if (ncol(cor) != ncol(sd) * (ncol(sd) - 1) / 2 || nrow(sd) != nrow(cor))
-      stop("dimensions of standard deviations and corrrelations do not match")
-    if (any(cor < -1 || cor > 1)) 
-      stop("correlations must be between -1 and 1")  
+    cor <- as.matrix(cor)
+    stopifnot(ncol(cor) == ncol(sd) * (ncol(sd) - 1) / 2, 
+              nrow(sd) == nrow(cor), min(cor) >= -1 && max(cor) <= 1)
   }
   nsamples <- nrow(sd)
   nranef <- ncol(sd)
@@ -311,17 +310,15 @@ get_cov_matrix_ar1 <- function(ar, sigma, nrows, se2 = 0) {
                perm = c(3, 1, 2))
   sigma2_adjusted <- sigma^2 / (1 - ar^2)
   pow_ar <- as.list(rep(1, nrows + 1))
-  for (i in 1:nrows) {
+  for (i in seq_len(nrows)) {
     pow_ar[[i + 1]] <- ar^i
     mat[, i, i] <- mat[, i, i] + sigma2_adjusted
-    if (i > 1) {
-      for (j in 1:(i - 1)) { 
-        mat[, i, j] <- sigma2_adjusted * pow_ar[[i - j + 1]]
-        mat[, j, i] <- mat[, i, j]
-      } 
-    }
+    for (j in seq_len(i - 1)) { 
+      mat[, i, j] <- sigma2_adjusted * pow_ar[[i - j + 1]]
+      mat[, j, i] <- mat[, i, j]
+    } 
   } 
-  mat 
+  mat
 }
 
 get_cov_matrix_ma1 <- function(ma, sigma, nrows, se2 = 0) {
@@ -338,7 +335,7 @@ get_cov_matrix_ma1 <- function(ma, sigma, nrows, se2 = 0) {
   sigma2 <- sigma^2
   sigma2_adjusted <- sigma2 * (1 + ma^2)
   sigma2_times_ma <- sigma2 * ma
-  for (i in 1:nrows) { 
+  for (i in seq_len(nrows)) { 
     mat[, i, i] <- mat[, i, i] + sigma2_adjusted
     if (i > 1) {
       mat[, i, i - 1] <- sigma2_times_ma
@@ -366,15 +363,13 @@ get_cov_matrix_arma1 <- function(ar, ma, sigma, nrows, se2 = 0) {
   gamma0 <- 1 + ma^2 + 2 * ar * ma
   gamma <- as.list(rep(NA, nrows))
   gamma[[1]] <- (1 + ar * ma) * (ar + ma)
-  for (i in 1:nrows) {
+  for (i in seq_len(nrows)) {
     mat[, i, i] <- mat[, i, i] + sigma2_adjusted * gamma0
     gamma[[i]] <- gamma[[1]] * ar^(i - 1)
-    if (i > 1) {
-      for (j in 1:(i - 1)) { 
-        mat[, i, j] <- sigma2_adjusted * gamma[[i - j]]
-        mat[, j, i] <- mat[, i, j]
-      } 
-    }
+    for (j in seq_len(i - 1)) { 
+      mat[, i, j] <- sigma2_adjusted * gamma[[i - j]]
+      mat[, j, i] <- mat[, i, j]
+    } 
   } 
   mat 
 }
@@ -391,7 +386,7 @@ get_cov_matrix_ident <- function(sigma, nrows, se2 = 0) {
   mat <- aperm(array(diag(se2, nrows), dim = c(nrows, nrows, nrow(sigma))),
                perm = c(3, 1, 2))
   sigma2 <- sigma^2
-  for (i in 1:nrows) {
+  for (i in seq_len(nrows)) {
     mat[, i, i] <- mat[, i, i] + sigma2
   }
   mat
@@ -524,8 +519,9 @@ extract_pars <- function(pars, all_pars, exact_match = FALSE,
   #   ...: Further arguments to be passed to grepl
   # Returns:
   #   A character vector of parameter names
-  if (!(anyNA(pars) || is.character(pars))) 
+  if (!(anyNA(pars) || is.character(pars))) {
     stop("Argument pars must be NA or a character vector")
+  }
   if (!anyNA(pars)) {
     if (exact_match) {
       pars <- all_pars[all_pars %in% pars]

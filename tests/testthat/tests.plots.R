@@ -2,9 +2,9 @@ test_that("plotting functions don't throw unexpected errors", {
   fit <- brms:::rename_pars(brmsfit_example1)
   
   # plot.brmsfit
-  expect_silent(p <- plot(fit, do_plot = FALSE))
-  expect_silent(p <- plot(fit, pars = "^b", do_plot = FALSE))
-  expect_silent(p <- plot(fit, pars = "^sd", do_plot = FALSE))
+  expect_silent(p <- plot(fit, plot = FALSE))
+  expect_silent(p <- plot(fit, pars = "^b", plot = FALSE))
+  expect_silent(p <- plot(fit, pars = "^sd", plot = FALSE))
   expect_error(plot(fit, pars = "123"),  "No valid parameters selected")
   
   # stanplot.brmsfit
@@ -36,7 +36,7 @@ test_that("plotting functions don't throw unexpected errors", {
   mdata = data.frame(Age = c(-0.3, 0, 0.3), count = c(10, 20, 30), 
                      visit = 1:3, patient = 1, Trt = 0, Exp = c(1,3,5))
   me <- marginal_effects(fit, conditions = mdata)
-  marg_plot <- plot(me, points = TRUE, rug = TRUE, do_plot = FALSE)
+  marg_plot <- plot(me, points = TRUE, rug = TRUE, plot = FALSE)
   expect_true(is(marg_plot[[1]], "ggplot"))
   # some manual checks
   N <- 90
@@ -52,14 +52,14 @@ test_that("plotting functions don't throw unexpected errors", {
   attr(marg_results[[1]], "response") <- "count"
   # test with 1 numeric predictor
   attr(marg_results[[1]], "effects") <- "P1"
-  marg_plot <- plot(marg_results, do_plot = FALSE)
+  marg_plot <- plot(marg_results, plot = FALSE)
   expect_true(is(marg_plot[[1]], "ggplot"))
   # test with 1 categorical predictor
   attr(marg_results[[1]], "effects") <- "P2"
-  marg_plot <- plot(marg_results, do_plot = FALSE)
+  marg_plot <- plot(marg_results, plot = FALSE)
   expect_true(is(marg_plot[[1]], "ggplot"))
   # test with 1 numeric and 1 categorical predictor
   attr(marg_results[[1]], "effects") <- c("P1", "P2")
-  marg_plot <- plot(marg_results, do_plot = FALSE)
+  marg_plot <- plot(marg_results, plot = FALSE)
   expect_true(is(marg_plot[[1]], "ggplot"))
 })

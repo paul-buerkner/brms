@@ -5,7 +5,7 @@
 \title{Trace and Density Plots for MCMC Samples}
 \usage{
 \method{plot}{brmsfit}(x, pars = NA, parameters = NA, N = 5,
-  theme = ggplot2::theme(), ask = TRUE, do_plot = TRUE, newpage = TRUE,
+  theme = ggplot2::theme(), ask = TRUE, plot = TRUE, newpage = TRUE,
   ...)
 }
 \arguments{
@@ -27,15 +27,15 @@ Can be defined globally for the current session, via
 
 \item{ask}{logical; indicates if the user is prompted 
 before a new page is plotted. 
-Only used if \code{do_plot} is \code{TRUE}.}
+Only used if \code{plot} is \code{TRUE}.}
 
-\item{do_plot}{logical; indicates if plots should be
+\item{plot}{logical; indicates if plots should be
 plotted directly in the active graphic device.
 Defaults to \code{TRUE}.}
 
 \item{newpage}{logical; indicates if the first set of plots
 should be plotted to a new page. 
-Only used if \code{do_plot} is \code{TRUE}.}
+Only used if \code{plot} is \code{TRUE}.}
 
 \item{...}{Further arguments passed to 
 \code{\link[gridExtra:arrangeGrob]{arrangeGrob}}.}
