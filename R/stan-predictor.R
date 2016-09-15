@@ -92,7 +92,7 @@ stan_effects <- function(effects, data, family = gaussian(),
 
 stan_effects_mv <- function(effects, data, family = gaussian(), 
                             ranef = empty_ranef(), prior = prior_frame(), 
-                            autocor = cor_arma(), sparse = FALSe) {
+                            autocor = cor_arma(), sparse = FALSE) {
   if (sparse) {
     stop("Sparse design matrices are not yet implemented ", 
          "for multivariate models.", call. = FALSE)
