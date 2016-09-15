@@ -1739,12 +1739,13 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
     stop("Please use argument 'newdata' to update the data", 
          call. = FALSE)
   }
-  if (is.null(object$version) || object$version <= "0.10.0") {
-    stop("Cannot update models fitted with brms < 1.0.0 anymore.",
-         call. = FALSE)
-  }
   object <- restructure(object)
   recompile <- FALSE
+  if (isTRUE(object$version < utils::packageVersion("brms"))) {
+    recompile <- TRUE
+    warning("Updating models fitted with older versions ", 
+            "of brms may fail.", call. = FALSE)
+  }
   if (missing(formula.)) {
     dots$formula <- object$formula
   } else {
