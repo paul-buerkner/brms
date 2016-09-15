@@ -2,6 +2,17 @@
 \title{brms News}
 \encoding{UTF-8}
 
+\section{CHANGES IN VERSION 1.0.1}{
+  \subsection{MINOR CHANGES}{
+    \itemize{
+      \item Center design matrices inside the Stan code
+      instead of inside \code{make_standata}.
+      \item Get rid of multiple warning messages
+      occuring on CRAN.
+    }
+  }
+}
+
 \section{CHANGES IN VERSION 1.0.0}{
   This is one of the largest updates of \code{brms} since its 
   initial release. In addition to many new features, 
