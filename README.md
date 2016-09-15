@@ -16,10 +16,10 @@ How to use brms
 library(brms)
 ```
 
-As a simple example, we use poisson regression to model the seizure counts in epileptic patients to investigate whether the treatment (represented by variable Trt\_c) can reduce the seizure counts. Three random intercepts are incorporated to account for the variance between patients and visits, as well as for the residual variance.
+As a simple example, we use poisson regression to model the seizure counts in epileptic patients to investigate whether the treatment (represented by variable Trt\_c) can reduce the seizure counts. Two group-level intercepts are incorporated to account for the variance between patients as well as for the residual variance.
 
 ``` r
-fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient) + (1|visit) + (1|obs), 
+fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient) + (1|obs), 
            data = epilepsy, family = "poisson")
 #> Compiling the C++ model
 ```
@@ -29,39 +29,35 @@ The results (i.e. posterior samples) can be investigated using
 ``` r
 summary(fit, waic = TRUE) 
 #>  Family: poisson (log) 
-#> Formula: count ~ log_Age_c + log_Base4_c * Trt_c + (1 | patient) + (1 | visit) + (1 | obs) 
+#> Formula: count ~ log_Age_c + log_Base4_c * Trt_c + (1 | patient) + (1 | obs) 
 #>    Data: epilepsy (Number of observations: 236) 
 #> Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1; 
 #>          total post-warmup samples = 4000
-#>    WAIC: 1146.21
+#>    WAIC: 1146.91
 #>  
 #> Group-Level Effects: 
 #> ~obs (Number of levels: 236) 
 #>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> sd(Intercept)     0.37      0.04     0.29     0.46       1322    1
+#> sd(Intercept)     0.37      0.04     0.29     0.46       1285    1
 #> 
 #> ~patient (Number of levels: 59) 
 #>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> sd(Intercept)     0.51      0.07     0.38     0.66       1363    1
-#> 
-#> ~visit (Number of levels: 4) 
-#>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> sd(Intercept)     0.11      0.11        0      0.4       1457    1
+#> sd(Intercept)     0.51      0.07     0.38     0.66       1054    1
 #> 
 #> Population-Level Effects: 
 #>                   Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> Intercept             1.56      0.10     1.36     1.76       1457 1.00
-#> log_Age_c             0.47      0.37    -0.27     1.18       1495 1.00
-#> log_Base4_c           1.06      0.11     0.85     1.28       1565 1.00
-#> Trt_c                -0.34      0.15    -0.64    -0.03       1021 1.01
-#> log_Base4_c:Trt_c     0.35      0.22    -0.09     0.78       1714 1.00
+#> Intercept             1.56      0.08     1.39     1.71       1265    1
+#> log_Age_c             0.49      0.37    -0.26     1.21       1213    1
+#> log_Base4_c           1.07      0.11     0.86     1.28       1373    1
+#> Trt_c                -0.33      0.16    -0.64    -0.02       1239    1
+#> log_Base4_c:Trt_c     0.37      0.21    -0.05     0.77       1600    1
 #> 
 #> Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 #> is a crude measure of effective sample size, and Rhat is the potential 
 #> scale reduction factor on split chains (at convergence, Rhat = 1).
 ```
 
-On the top of the output, some general information on the model is given, such as family, formula, number of iterations and chains, as well as the WAIC, which is an information criterion for Bayesian models. Next, random effects are displayed seperately for each grouping factor in terms of standard deviations and (in case of more than one random effect per grouping factor; not displayed here) correlations between random effects. On the bottom of the output, fixed effects are displayed. If incorporated, autocorrelation effects and family specific parameters (e.g., the residual standard deviation 'sigma' in normal models) are also given.
+On the top of the output, some general information on the model is given, such as family, formula, number of iterations and chains, as well as the WAIC, which is an information criterion for Bayesian models. Next, group-level effects are displayed seperately for each grouping factor in terms of standard deviations and (in case of more than one group-level effect per grouping factor; not displayed here) correlations between group-level effects. On the bottom of the output, population-level effects are displayed. If incorporated, autocorrelation effects and family specific parameters (e.g., the residual standard deviation 'sigma' in normal models) are also given.
 
 In general, every parameter is summarized using the mean ('Estimate') and the standard deviation ('Est.Error') of the posterior distribution as well as two-sided 95% credible intervals ('l-95% CI' and 'u-95% CI') based on quantiles. The last two values ('Eff.Sample' and 'Rhat') provide information on how well the algorithm could estimate the posterior distribution of this parameter. If 'Rhat' is considerably greater than 1, the algorithm has not yet converged and it is necessary to run more iterations and / or set stronger priors.
 
@@ -77,15 +73,14 @@ An even more detailed investigation can be achieved by applying the shinystan pa
 launch_shiny(fit) 
 ```
 
-There are several methods to compute and visualize model predictions. Suppose that we want to predict responses (i.e. seizure counts) of a person in the treatment group (`Trt_c = 0.5`) and in the control group (`Trt_c = -0.5`) with average age and average number of previous seizures at the fourth visit. Than we can use
+There are several methods to compute and visualize model predictions. Suppose that we want to predict responses (i.e. seizure counts) of a person in the treatment group (`Trt_c = 0.5`) and in the control group (`Trt_c = -0.5`) with average age and average number of previous seizures. Than we can use
 
 ``` r
-newdata <- data.frame(Trt_c = c(0.5, -0.5), log_Age_c = 0, 
-                      log_Base4_c = 0, visit = 4)
+newdata <- data.frame(Trt_c = c(0.5, -0.5), log_Age_c = 0, log_Base4_c = 0)
 predict(fit, newdata = newdata, allow_new_levels = TRUE, probs = c(0.05, 0.95))
 #>   Estimate Est.Error 5%ile 95%ile
-#> 1  4.78700  3.861005     0     12
-#> 2  6.65325  5.178583     1     17
+#> 1  4.97575  4.074348     0     13
+#> 2  6.88175  5.445014     1     17
 ```
 
 We need to set `allow_new_levels = TRUE` because we want to predict responses of a person that was not present in the data used to fit the model. While the `predict` method returns predictions of the responses, the `fitted` method returns predictions of the regression line.
@@ -93,8 +88,8 @@ We need to set `allow_new_levels = TRUE` because we want to predict responses of
 ``` r
 fitted(fit, newdata = newdata, allow_new_levels = TRUE, probs = c(0.05, 0.95))
 #>   Estimate Est.Error    5%ile   95%ile
-#> 1 4.799676  3.268087 1.347292 11.19560
-#> 2 6.728674  4.603833 1.915995 15.62788
+#> 1 4.976105  3.452092 1.480133 11.69071
+#> 2 6.915164  4.776523 2.050187 16.15948
 ```
 
 Both methods return the same etimate (up to random error), while the latter has smaller variance, because the uncertainty in the regression line is smaller than the uncertainty in each response. If we want to predict values of the original data, we can just leave the `newdata` argument empty.

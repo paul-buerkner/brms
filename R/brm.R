@@ -222,8 +222,8 @@
 #' ## Poisson regression for the number of seizures in epileptic patients
 #' ## using student_t priors for population-level effects 
 #' ## and half cauchy priors for standard deviations of group-level effects 
-#' fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt_c 
-#'             + (1|patient) + (1|visit) + (1|obs), 
+#' fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt_c  
+#'               + (1|patient) + (1|obs), 
 #'             data = epilepsy, family = poisson(), 
 #'             prior = c(set_prior("student_t(5,0,10)", class = "b"),
 #'                       set_prior("cauchy(0,2)", class = "sd")))
