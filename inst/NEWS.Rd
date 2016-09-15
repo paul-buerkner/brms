@@ -7,7 +7,7 @@
     \itemize{
       \item Center design matrices inside the Stan code
       instead of inside \code{make_standata}.
-      \item Get rid of multiple warning messages
+      \item Get rid of several warning messages
       occuring on CRAN.
     }
   }
