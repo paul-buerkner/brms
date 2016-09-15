@@ -530,8 +530,7 @@ arr_design_matrix <- function(Y, r, group)  {
 data_effects <- function(effects, data, family = gaussian(),
                          ranef = empty_ranef(), prior = prior_frame(), 
                          autocor = cor_arma(), knots = NULL, nlpar = "", 
-                         rm_intercept = TRUE, not4stan = FALSE, 
-                         smooth = NULL, Jm = NULL) {
+                         not4stan = FALSE, smooth = NULL, Jm = NULL) {
   # combine data for all types of effects
   # Args:
   #   effects: a list returned by extract_effects
@@ -542,7 +541,6 @@ data_effects <- function(effects, data, family = gaussian(),
   #   cov_ranef: name list of user-defined covariance matrices
   #   knots: optional knot values for smoothing terms
   #   nlpar: optional character string naming a non-linear parameter
-  #   rm_intercept: should the fixed effects intercept be removed?
   #   not4stan: is the data for use in S3 methods only?
   #   old_levels: original levels of grouping factors
   #   smooth: optional list of smoothing objects based on 
@@ -552,9 +550,7 @@ data_effects <- function(effects, data, family = gaussian(),
   #   A named list of data to be passed to Stan
   data_fixef <- data_fixef(effects, data = data, family = family, 
                            autocor = autocor, nlpar = nlpar, 
-                           rm_intercept = rm_intercept,
-                           knots = knots,  not4stan = not4stan, 
-                           smooth = smooth)
+                           knots = knots, smooth = smooth)
   data_monef <- data_monef(effects, data = data, prior = prior, 
                            Jm = Jm, nlpar = nlpar)
   data_ranef <- data_ranef(ranef, data = data, nlpar = nlpar, 
@@ -564,23 +560,16 @@ data_effects <- function(effects, data, family = gaussian(),
 
 data_fixef <- function(effects, data, family = gaussian(),
                        autocor = cor_arma(), knots = NULL,
-                       rm_intercept = TRUE, nlpar = "", 
-                       not4stan = FALSE, smooth = NULL) {
+                       nlpar = "", smooth = NULL) {
   # prepare data for fixed effects for use in Stan 
   # Args: see data_effects
   stopifnot(length(nlpar) == 1L)
+  out <- list()
   p <- usc(nlpar, "prefix")
   is_ordinal <- is.ordinal(family)
   is_bsts <- is(autocor, "cor_bsts")
-  has_intercept <- has_intercept(effects$fixed)
-  temp_intercept <- has_intercept && rm_intercept && !not4stan && !is_bsts
-  if (temp_intercept || is_ordinal || is_bsts) {
-    intercept <- "Intercept"
-  } else {
-    intercept <- NULL  # don't remove the intercept column
-  }
-  out <- list()
-  X <- get_model_matrix(rhs(effects$fixed), data, cols2remove = intercept)
+  cols2remove <- if (is_ordinal || is_bsts) "Intercept"
+  X <- get_model_matrix(rhs(effects$fixed), data, cols2remove = cols2remove)
   splines <- get_spline_labels(effects)
   if (length(splines)) {
     stopifnot(is.null(smooth) || length(smooth) == length(splines))
@@ -611,15 +600,7 @@ data_fixef <- function(effects, data, family = gaussian(),
     colnames(X) <- rename(colnames(X))
   }
   avoid_auxpars(colnames(X), effects = effects)
-  out[[paste0("K", p)]] <- ncol(X)
-  if (temp_intercept) {
-    # centered design matrices lead to faster sampling in Stan
-    X_means <- colMeans(X)
-    X <- sweep(X, 2L, X_means, FUN = "-")
-    out[[paste0("X_means", p)]] <- as.array(X_means)
-  }
-  out[[paste0("X", p)]] <- X
-  out
+  c(out, setNames(list(ncol(X), X), paste0(c("K", "X"), p)))
 }
 
 data_monef <- function(effects, data, prior = prior_frame(), 

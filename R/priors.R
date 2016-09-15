@@ -512,8 +512,7 @@ get_prior_effects <- function(effects, data, autocor = cor_arma(),
   # removal of the intercept for ordinal models
   # Args:
   #   spec_intercept: special parameter class for the FE Intercept? 
-  fixef <- colnames(data_fixef(effects, data, autocor = autocor, 
-                               rm_intercept = FALSE)$X)
+  fixef <- colnames(data_fixef(effects, data, autocor = autocor)$X)
   spec_intercept <- has_intercept(effects$fixed) && spec_intercept
   prior_fixef <- get_prior_fixef(fixef, spec_intercept = spec_intercept,
                                  nlpar = nlpar, internal = internal)

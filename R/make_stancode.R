@@ -61,7 +61,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     if (length(ee$response) > 1L) {
       text_pred <- stan_effects_mv(ee, data = data, family = family,
                                    prior = prior, ranef = ranef, 
-                                   autocor = autocor)
+                                   autocor = autocor, sparse = sparse)
     } else {
       text_pred <- stan_effects(ee, data = data, family = family,
                                 prior = prior, ranef = ranef, 

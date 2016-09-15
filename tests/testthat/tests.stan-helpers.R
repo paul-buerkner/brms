@@ -57,8 +57,8 @@ test_that("stan_effects returns correct strings for autocorrelation models", {
                            autocor = cor_arma(~visit|patient, q = 1))$modelC2,
                "eta[n] = eta[n] + head(E[n], Kma) * ma", fixed = TRUE)
   expect_match(stan_effects(ee, data = epilepsy, family = poisson(),
-                           autocor = cor_arma(~visit|patient, r = 3))$modelC1,
-               "eta = X * b + temp_Intercept + Yarr * arr", fixed = TRUE)
+                            autocor = cor_arma(~visit|patient, r = 3))$modelC1,
+               "eta = Xc * b + temp_Intercept + Yarr * arr", fixed = TRUE)
 })
 
 test_that("stan_effects handles link functions correctly", {

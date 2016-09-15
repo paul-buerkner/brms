@@ -86,7 +86,7 @@ rename_pars <- function(x) {
   class[pos_intercept] <- "b_Intercept"
   ordered <- order(factor(class, levels = all_classes))
   x$fit@sim$fnames_oi <- x$fit@sim$fnames_oi[ordered]
-  for (i in 1:chains) {
+  for (i in seq_len(chains)) {
     # subset_attr ensures that attributes are not removed
     x$fit@sim$samples[[i]] <- subset_attr(x$fit@sim$samples[[i]], ordered)
   }
@@ -189,12 +189,18 @@ change_fixef <- function(fixef, pars, nlpar = "") {
   # Returns:
   #   a list whose elements can be interpreted by do_renaming
   change <- list()
+  b <- paste0("b", usc(nlpar, "prefix"))
+  pos <- grepl(paste0("^", b, "\\["), pars)
+  if (length(fixef) == sum(pos) + 1) {
+    # the intercept is not part of b if X was centered 
+    fixef <- fixef[-1]  
+  }
   if (length(fixef)) {
-    b <- paste0("b", usc(nlpar, "prefix"))
-    change <- lc(change, list(pos = grepl(paste0("^", b, "\\["), pars), 
-                              oldname = b, pnames = paste0(b, "_", fixef), 
-                              fnames = paste0(b, "_", fixef)))
-    change <- c(change, change_prior(class = b, pars = pars, names = fixef))
+    bnames <- paste0(b, "_", fixef)
+    change <- lc(change, 
+      list(pos = pos, oldname = b, pnames = bnames, fnames = bnames))
+    change <- c(change,
+      change_prior(class = b, pars = pars, names = fixef))
   }
   change
 }

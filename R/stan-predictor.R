@@ -1,11 +1,11 @@
 stan_effects <- function(effects, data, family = gaussian(),
-                         rm_intercept = TRUE, ranef = empty_ranef(), 
+                         center_X = TRUE, ranef = empty_ranef(), 
                          prior = prior_frame(), autocor = cor_arma(), 
                          threshold = "flexible", sparse = FALSE, 
                          nlpar = "", eta = "eta") {
   # combine effects for the predictors of a single (non-linear) parameter
   # Args:
-  #   rm_intercept: special treatment of FE intercept?
+  #   center_X: center population-level design matrix if possible?
   #   eta: prefix of the linear predictor variable
   p <- usc(nlpar, "prefix")
   if (nzchar(eta) && nzchar(nlpar)) {
@@ -15,14 +15,14 @@ stan_effects <- function(effects, data, family = gaussian(),
   ranef <- ranef[ranef$nlpar == nlpar, ]
   out <- list()
   out$modelD <- paste0("  vector[N] ", eta, "; \n")
-  # out$data <- paste0("  // data for effects of ", nlpar, "\n")
   # include fixed effects
-  fixef <- colnames(data_fixef(effects, data = data, autocor = autocor,
-                               rm_intercept = rm_intercept)$X)
-  # cor_bsts parameters replace the intercept
-  has_intercept <- has_intercept(effects$fixed)
-  temp_intercept <- has_intercept && rm_intercept && !is(autocor, "cor_bsts")
-  text_fixef <- stan_fixef(fixef, temp_intercept = temp_intercept, 
+  center_X <- center_X && has_intercept(effects$fixed) && 
+              !is(autocor, "cor_bsts") && !sparse
+  rm_intercept <- center_X || is(autocor, "cor_bsts") || is.ordinal(family)
+  cols2remove <- if (rm_intercept) "Intercept"
+  fixef <- colnames(get_model_matrix(effects$fixed, data, 
+                                     cols2remove = cols2remove))
+  text_fixef <- stan_fixef(fixef, center_X = center_X, 
                            family = family, prior = prior, nlpar = nlpar,
                            sparse = sparse, threshold = threshold)
   # include spline terms
@@ -49,9 +49,10 @@ stan_effects <- function(effects, data, family = gaussian(),
   
   # initialize eta_<nlpar>
   out$modelC1 <- paste0(out$modelC1, "  ", eta, " = ", 
-    stan_eta_fixef(fixef, sparse = sparse, nlpar = nlpar), 
+    stan_eta_fixef(fixef, center_X = center_X, 
+                   sparse = sparse, nlpar = nlpar), 
     stan_eta_splines(splines, nlpar = nlpar), 
-    if (temp_intercept && !is.ordinal(family)) 
+    if (center_X && !is.ordinal(family)) 
       paste0(" + temp", p, "_Intercept"),
     if (has_offset) paste0(" + offset", p),
     if (get_arr(autocor)) " + Yarr * arr", 
@@ -91,7 +92,11 @@ stan_effects <- function(effects, data, family = gaussian(),
 
 stan_effects_mv <- function(effects, data, family = gaussian(), 
                             ranef = empty_ranef(), prior = prior_frame(), 
-                            autocor = cor_arma()) {
+                            autocor = cor_arma(), sparse = FALSe) {
+  if (sparse) {
+    stop("Sparse design matrices are not yet implemented ", 
+         "for multivariate models.", call. = FALSE)
+  }
   out <- list()
   resp <- effects$response
   if (length(resp) > 1L) {
@@ -135,7 +140,7 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
       nl_text <- stan_effects(effects = effects$nonlinear[[i]],
                               data = data, ranef = ranef, 
                               prior = prior, nlpar = nlpar, 
-                              rm_intercept = FALSE)
+                              center_X = FALSE)
       out <- collapse_lists(list(out, nl_text))
     }
     # prepare non-linear model of eta 
@@ -191,7 +196,7 @@ stan_auxpars <- function(effects, data, family = gaussian(),
               phi = "exp", kappa = "exp", zi = "", hu = "") 
   valid_auxpars <- valid_auxpars(family, effects, autocor = autocor)
   # don't supply the family argument to avoid applying link functions
-  args <- nlist(data, ranef, rm_intercept = FALSE, eta = "")
+  args <- nlist(data, ranef, center_X = FALSE, eta = "")
   for (ap in valid_auxpars) {
     if (!is.null(effects[[ap]])) {
       ap_prior <- prior[prior$nlpar == ap, ]
@@ -210,15 +215,13 @@ stan_auxpars <- function(effects, data, family = gaussian(),
   collapse_lists(out)
 } 
 
-stan_fixef <- function(fixef, temp_intercept = TRUE, family = gaussian(),
+stan_fixef <- function(fixef, center_X = TRUE, family = gaussian(),
                        prior = prior_frame(), nlpar = "", sparse = FALSE, 
                        threshold = "flexible") {
   # Stan code for fixed effects
   # Args:
   #   fixef: names of the fixed effects
-  #   temp_intercept: is a temporary intercept required
-  #                   due to centering of the design matrix?
-  #   csef: names of the category specific effects
+  #   center_X: center the design matrix?
   #   family: the model family
   #   prior: a data.frame containing user defined priors 
   #          as returned by check_prior 
@@ -226,50 +229,59 @@ stan_fixef <- function(fixef, temp_intercept = TRUE, family = gaussian(),
   # Returns:
   #   a list containing Stan code related to fixed effects
   p <- usc(nlpar, "prefix")
+  ct <- ifelse(center_X, "c", "")
   out <- list()
   if (length(fixef)) {
-    centered <- ifelse(temp_intercept, "centered", "")
     out$data <- paste0(out$data, 
       "  int<lower=1> K", p, ";",
       "  // number of population-level effects \n", 
       "  matrix[N, K", p, "] X", p, ";",
-      "  // ", centered, " population-level design matrix \n")
+      "  // population-level design matrix \n")
     if (sparse) {
+      stopifnot(!center_X)
       if (nchar(nlpar)) {
          stop("Sparse matrices are not yet implemented for this model.",
               call. = FALSE)
       }
-      out$tdataD <- "  #include tdata_def_sparse_X.stan \n"
-      out$tdataC <- "  #include tdata_calc_sparse_X.stan \n"
+      out$tdataD <- "  #include tdataD_sparse_X.stan \n"
+      out$tdataC <- "  #include tdataC_sparse_X.stan \n"
     }
     bound <- get_bound(prior, class = "b", nlpar = nlpar)
     out$par <- paste0(out$par,
-      "  vector", bound, "[K", p, "] b", p, ";",
+      "  vector", bound, "[K", ct, p, "] b", p, ";",
       "  // population-level effects \n",
       if (!is.null(attr(prior, "hs_df")))
         paste0("  // horseshoe shrinkage parameters \n",
-               "  vector<lower=0>[K] hs_local; \n",
+               "  vector<lower=0>[K", ct, "] hs_local; \n",
                "  real<lower=0> hs_global; \n")) 
     fixef_prior <- stan_prior(class = "b", coef = fixef, prior = prior,
                               nlpar = nlpar, suffix = p)
     out$prior <- paste0(out$prior, fixef_prior)
   }
-  if (temp_intercept) {
+  if (center_X) {
     if (length(fixef)) {
-      # X_means is not defined in intercept only models
-      def_X_means <- paste0("  vector[K", p, "] X_means", p, ";", 
-                            "  // column means of X before centering \n")
-      sub_X_means <- paste0(" - dot_product(X_means", p, ", b", p, ")")
+      out$tdataD <- paste0(out$tdataD, 
+        "  int Kc", p, "; \n",
+        "  matrix[N, K", p, " - 1] Xc", p, ";", 
+        "  // centered version of X", p, " \n",
+        "  vector[K", p, " - 1] means_X", p, ";",
+        "  // column means of X", p, " before centering \n")
+      out$tdataC <- paste0(out$tdataC, 
+        "  Kc", p, " = K", p, " - 1;",
+        "  // the intercept is removed from the design matrix \n",
+        "  for (i in 2:K", p, ") { \n",
+        "    means_X", p, "[i - 1] = mean(X", p, "[, i]); \n",
+        "    Xc", p, "[, i - 1] = X", p, "[, i] - means_X", p, "[i - 1]; \n",
+        "  } \n")
+      sub_X_means <- paste0(" - dot_product(means_X", p, ", b", p, ")")
     } else {
-      def_X_means <- sub_X_means <- ""
+      sub_X_means <- ""
     }
     if (is.ordinal(family)) {
       # temp intercepts for ordinal models are defined in stan_ordinal
-      out$data <- paste0(out$data, def_X_means)
       out$genD <- "  vector[ncat - 1] b_Intercept;  // thresholds \n" 
       out$genC <- paste0("  b_Intercept = temp_Intercept", sub_X_means, "; \n")
     } else {
-      out$data <- paste0(out$data, def_X_means)
       out$par <- paste0(out$par, 
         "  real temp", p, "_Intercept;  // temporary Intercept \n")
       out$genD <- paste0(
@@ -279,8 +291,7 @@ stan_fixef <- function(fixef, temp_intercept = TRUE, family = gaussian(),
     }
     # for equidistant thresholds only temp_Intercept1 is a parameter
     suffix <- ifelse(threshold == "equidistant", "1", "")
-    int_prior <- stan_prior("temp_Intercept", #coef = intercepts, 
-                            prior = prior, suffix = suffix)
+    int_prior <- stan_prior("temp_Intercept", prior = prior, suffix = suffix)
     out$prior <- paste0(out$prior, int_prior)
   }
   out
@@ -477,20 +488,21 @@ stan_csef <- function(csef, prior = prior_frame(), nlpar = "") {
   out
 } 
 
-stan_eta_fixef <- function(fixef, sparse = FALSE, nlpar = "") {
+stan_eta_fixef <- function(fixef, center_X = TRUE, 
+                           sparse = FALSE, nlpar = "") {
   # define Stan code to compute the fixef part of eta
   # Args:
   #   fixef: names of the fixed effects
-  #   nlpar: an optional character string to add to the variable names
-  #         (used for non-linear models)
-  #   sparse: logical; use sparse matrix multiplication?
-  p <- if (nchar(nlpar)) paste0("_", nlpar) else ""
+  #   center_X: use the centered design matrix?
+  #   sparse: use sparse matrix multiplication?
+  #   nlpar: optional name of a non-linear parameter
+  p <- usc(nlpar)
   if (length(fixef)) {
     if (sparse) {
-      stopifnot(nchar(nlpar) == 0L)
+      stopifnot(!center_X, nchar(nlpar) == 0L)
       eta_fixef <- "csr_matrix_times_vector(rows(X), cols(X), wX, vX, uX, b)"
     } else {
-      eta_fixef <- paste0("X", p, " * b", p)
+      eta_fixef <- paste0("X", if (center_X) "c", p, " * b", p)
     }
   } else { 
     eta_fixef <- "rep_vector(0, N)"

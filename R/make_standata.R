@@ -160,8 +160,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     for (nlp in nlpars) {
       args_eff_spec <- list(effects = ee$nonlinear[[nlp]], nlpar = nlp,
                             smooth = control$smooth[[nlp]],
-                            Jm = control$Jm[[nlp]],
-                            rm_intercept = FALSE)
+                            Jm = control$Jm[[nlp]])
       data_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
       standata <- c(standata, data_eff)
     }
@@ -193,8 +192,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   for (ap in intersect(auxpars(), names(ee))) {
     args_eff_spec <- list(effects = ee[[ap]], nlpar = ap,
                           smooth = control$smooth[[ap]],
-                          Jm = control$Jm[[ap]],
-                          rm_intercept = FALSE)
+                          Jm = control$Jm[[ap]])
     data_aux_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
     standata <- c(standata, data_aux_eff)
   }
