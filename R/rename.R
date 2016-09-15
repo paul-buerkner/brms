@@ -115,20 +115,21 @@ rename_pars <- function(x) {
     resp <- ee$response
     if (length(resp) > 1L) {
       for (r in resp) {
+        fixef <- rm_int_fixef(colnames(standata[[paste0("X_", r)]]), 
+                              stancode(x), nlpar = r)
         change_eff <- change_effects(
-          pars = pars, dims = x$fit@sim$dims_oi,
-          fixef = colnames(standata[[paste0("X_", r)]]), 
-          monef = colnames(standata[[paste0("Xm_", r)]]),
+          pars = pars, dims = x$fit@sim$dims_oi, 
+          fixef = fixef, monef = colnames(standata[[paste0("Xm_", r)]]),
           splines = get_spline_labels(ee), nlpar = r)
         change <- c(change, change_eff)
       }
     } else {
+      fixef <- rm_int_fixef(colnames(standata[["X"]]), stancode(x))
       change_eff <- change_effects(
-        pars = pars, dims = x$fit@sim$dims_oi,
-        fixef = colnames(standata$X), 
-        monef = colnames(standata$Xm),
+        pars = pars, dims = x$fit@sim$dims_oi, 
+        fixef = fixef, monef = colnames(standata[["Xm"]]),
         splines = get_spline_labels(ee))
-      change_csef <- change_csef(colnames(standata$Xp), 
+      change_csef <- change_csef(colnames(standata[["Xp"]]), 
                                  pars = pars, ncat = standata$ncat)
       change <- c(change, change_eff, change_csef)
     }
@@ -189,13 +190,9 @@ change_fixef <- function(fixef, pars, nlpar = "") {
   # Returns:
   #   a list whose elements can be interpreted by do_renaming
   change <- list()
-  b <- paste0("b", usc(nlpar, "prefix"))
-  pos <- grepl(paste0("^", b, "\\["), pars)
-  if (length(fixef) == sum(pos) + 1) {
-    # the intercept is not part of b if X was centered 
-    fixef <- fixef[-1]  
-  }
   if (length(fixef)) {
+    b <- paste0("b", usc(nlpar, "prefix"))
+    pos <- grepl(paste0("^", b, "\\["), pars)
     bnames <- paste0(b, "_", fixef)
     change <- lc(change, 
       list(pos = pos, oldname = b, pnames = bnames, fnames = bnames))
@@ -530,6 +527,16 @@ change_simple <- function(oldname, fnames, pars, dims,
     out <- NULL
   }
   return(out)
+}
+
+rm_int_fixef <- function(fixef, stancode, nlpar = "") {
+  # identifies if the intercept has to be removed from fixef
+  # and returns adjusted fixef names
+  regex <- paste0("int Kc", usc(nlpar), ";")
+  if (grepl(regex, stancode, fixed = TRUE)) {
+    fixef <- setdiff(fixef, "Intercept")
+  } 
+  fixef
 }
 
 make_index_names <- function(rownames, colnames = NULL, dim = 1) {

@@ -550,7 +550,8 @@ data_effects <- function(effects, data, family = gaussian(),
   #   A named list of data to be passed to Stan
   data_fixef <- data_fixef(effects, data = data, family = family, 
                            autocor = autocor, nlpar = nlpar, 
-                           knots = knots, smooth = smooth)
+                           knots = knots, not4stan = not4stan,
+                           smooth = smooth)
   data_monef <- data_monef(effects, data = data, prior = prior, 
                            Jm = Jm, nlpar = nlpar)
   data_ranef <- data_ranef(ranef, data = data, nlpar = nlpar, 
@@ -560,7 +561,8 @@ data_effects <- function(effects, data, family = gaussian(),
 
 data_fixef <- function(effects, data, family = gaussian(),
                        autocor = cor_arma(), knots = NULL,
-                       nlpar = "", smooth = NULL) {
+                       nlpar = "", not4stan = FALSE,
+                       smooth = NULL) {
   # prepare data for fixed effects for use in Stan 
   # Args: see data_effects
   stopifnot(length(nlpar) == 1L)
@@ -568,7 +570,8 @@ data_fixef <- function(effects, data, family = gaussian(),
   p <- usc(nlpar, "prefix")
   is_ordinal <- is.ordinal(family)
   is_bsts <- is(autocor, "cor_bsts")
-  cols2remove <- if (is_ordinal || is_bsts) "Intercept"
+  # the intercept is removed inside the Stan code for ordinal models
+  cols2remove <- if (is_ordinal && not4stan || is_bsts) "Intercept"
   X <- get_model_matrix(rhs(effects$fixed), data, cols2remove = cols2remove)
   splines <- get_spline_labels(effects)
   if (length(splines)) {
