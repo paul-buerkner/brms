@@ -30,9 +30,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   sample_prior <- use_alias(sample_prior, dots$sample.prior)
   save_model <- use_alias(save_model, dots$save.model)
   dots[c("cov.ranef", "sample.prior", "save.model")] <- NULL
-  # some input checks 
-  if (!(is.null(data) || is.list(data)))
-    stop("argument 'data' must be a data.frame or list", call. = FALSE)
+  # some input checks
   family <- check_family(family)
   formula <- update_formula(formula, data = data, family = family,
                             partial = partial, nonlinear = nonlinear)

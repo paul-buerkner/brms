@@ -40,9 +40,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   is_newdata <- isTRUE(control$is_newdata)
   # use deprecated arguments if specified
   cov_ranef <- use_alias(cov_ranef, dots$cov.ranef, warn = FALSE)
-  # some input checks 
-  if (!(is.null(data) || is.list(data)))
-    stop("argument 'data' must be a data.frame or list", call. = FALSE)
+  # some input checks
   family <- check_family(family)
   formula <- update_formula(formula, data = data, family = family,
                             partial = partial, nonlinear = nonlinear)

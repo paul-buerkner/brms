@@ -341,9 +341,9 @@ test_that("make_standata returns data for bsts models", {
   dat <- data.frame(y = 1:5, g = c(1:3, sample(1:3, 2, TRUE)), t = 1:5)
   expect_equal(make_standata(y~1, data = dat, autocor = cor_bsts(~t|g))$tg,
                sort(dat$g))
-  expect_equal(make_standata(bf(y~1, sigma ~ 1), data = dat, 
-                             autocor = cor_bsts(~t|g))$X_sigma[, 1],
-               rep(1, seq_len(nrow(dat))))
+  expect_equivalent(make_standata(bf(y~1, sigma ~ 1), data = dat, 
+                                  autocor = cor_bsts(~t|g))$X_sigma[, 1],
+                    rep(1, nrow(dat)))
 })
 
 test_that("make_standata returns data for GAMMs", {

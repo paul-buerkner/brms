@@ -383,8 +383,6 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
                       threshold = c("flexible", "equidistant"), 
                       internal = FALSE) {
   # note that default priors are stored in this function
-  if (!(is.null(data) || is.list(data)))
-    stop("argument 'data' must be a data.frame or list", call. = FALSE)
   family <- check_family(family) 
   link <- family$link
   formula <- update_formula(formula, data = data, family = family, 
