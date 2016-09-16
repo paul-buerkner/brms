@@ -189,6 +189,11 @@ test_that("make_stancode returns correct code for intercept only models", {
                "b_3_Intercept = temp_3_Intercept;", fixed = TRUE) 
 })
 
+test_that("make_stancode returns correct code for spline only models", {
+  expect_match(make_stancode(count ~ s(log_Age_c), data = epilepsy),
+               "matrix[N, K - 1] Xc;", fixed = TRUE)
+})
+
 test_that("make_stancode generates correct code for category specific effects", {
   scode <- make_stancode(rating ~ period + carry + cse(treat), 
                          data = inhaler, family = sratio())

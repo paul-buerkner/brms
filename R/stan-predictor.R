@@ -20,8 +20,8 @@ stan_effects <- function(effects, data, family = gaussian(),
               !is(autocor, "cor_bsts") && !sparse
   rm_intercept <- center_X || is(autocor, "cor_bsts") || is.ordinal(family)
   cols2remove <- if (rm_intercept) "Intercept"
-  fixef <- colnames(get_model_matrix(effects$fixed, data, 
-                                     cols2remove = cols2remove))
+  fixef <- colnames(data_fixef(effects, data, autocor = autocor)$X)
+  fixef <- setdiff(fixef, cols2remove)
   text_fixef <- stan_fixef(fixef, center_X = center_X, 
                            family = family, prior = prior, nlpar = nlpar,
                            sparse = sparse, threshold = threshold)
