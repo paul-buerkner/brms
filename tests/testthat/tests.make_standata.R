@@ -279,8 +279,8 @@ test_that("make_standata computes data for inverse.gaussian models", {
 
 test_that("brmdata is backwards compatible", {
   temp_data <- data.frame(y = 1:10, x = sample(1:5, 10, TRUE))
-  expect_identical(brmdata(y ~ x + (1|x), data = temp_data, 
-                           family = "poisson"), 
+  expect_identical(SW(brmdata(y ~ x + (1|x), data = temp_data, 
+                           family = "poisson")), 
                    make_standata(y ~ x + (1|x), data = temp_data, 
                                  family = "poisson"))
   expect_identical(SW(brmdata(y ~ 1, data = temp_data, 

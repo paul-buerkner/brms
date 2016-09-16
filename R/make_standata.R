@@ -396,11 +396,10 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
 }  
 
 #' @export
-brmdata <- function(formula, data = NULL, family = "gaussian", 
-                    autocor = NULL, partial = NULL, 
-                    cov_ranef = NULL, ...)  {
-  # deprectated alias of make_standata
-  make_standata(formula = formula, data = data, 
-                family = family, autocor = autocor,
-                partial = partial, cov_ranef = cov_ranef, ...)
+brmdata <- function(...)  {
+  # deprecated alias of make_standata
+  warning("Function 'brmdata' is deprecated. ",
+          "Please use 'make_standata' instead.", 
+          call. = FALSE)
+  make_standata(...)
 }
