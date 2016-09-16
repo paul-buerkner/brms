@@ -147,7 +147,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   
   # data for various kinds of effects
   ranef <- tidy_ranef(ee, data)
-  args_eff <- nlist(data, family, ranef, prior, autocor, knots, not4stan)
+  args_eff <- nlist(data, family, ranef, prior, knots, not4stan)
   if (length(ee$nonlinear)) {
     nlpars <- names(ee$nonlinear)
     # matrix of covariates appearing in the non-linear formula
@@ -167,7 +167,8 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   } else {
     resp <- ee$response
     if (length(resp) > 1L && !old_mv) {
-      args_eff_spec <- list(effects = ee, Jm = control$Jm[["mu"]],
+      args_eff_spec <- list(effects = ee, autocor = autocor,
+                            Jm = control$Jm[["mu"]],
                             smooth = control$smooth[["mu"]])
       for (r in resp) {
         data_eff <- do.call(data_effects, 
@@ -180,13 +181,14 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
         standata$nrescor <- length(resp) * (length(resp) - 1) / 2 
       }
     } else {
-      args_eff_spec <- list(effects = ee, Jm = control$Jm[["mu"]],
+      # pass autocor here to not affect non-linear and auxiliary pars
+      args_eff_spec <- list(effects = ee, autocor = autocor, 
+                            Jm = control$Jm[["mu"]],
                             smooth = control$smooth[["mu"]])
       data_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
       standata <- c(standata, data_eff, data_csef(ee, data = data))
       standata$offset <- model.offset(data)
     }
-   
   }
   # data for predictors of scale / shape parameters
   for (ap in intersect(auxpars(), names(ee))) {
