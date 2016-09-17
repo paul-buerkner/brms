@@ -532,7 +532,8 @@ change_simple <- function(oldname, fnames, pars, dims,
 rm_int_fixef <- function(fixef, stancode, nlpar = "") {
   # identifies if the intercept has to be removed from fixef
   # and returns adjusted fixef names
-  regex <- paste0("int Kc", usc(nlpar), ";")
+  p <- usc(nlpar, "suffix")
+  regex <- paste0("b_", p, "Intercept = temp_", p, "Intercept")
   if (grepl(regex, stancode, fixed = TRUE)) {
     fixef <- setdiff(fixef, "Intercept")
   } 
