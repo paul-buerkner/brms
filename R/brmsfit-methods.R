@@ -642,7 +642,7 @@ summary.brmsfit <- function(object, waic = FALSE, ...) {
     
     # summary of family specific parameters
     is_mv_par <- apply(sapply(c("^sigma_", "^rescor_"), grepl, pars), 1, any)
-    spec_pars <- pars[pars %in% auxpars() | is_mv_par]
+    spec_pars <- pars[pars %in% c(auxpars(), "delta") | is_mv_par]
     out$spec_pars <- fit_summary[spec_pars, , drop = FALSE]
     if (is.linear(family(object)) && length(ee$response) > 1L) {
       sigma_names <- paste0("sigma(", ee$response, ")")
