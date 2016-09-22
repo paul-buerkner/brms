@@ -209,7 +209,7 @@ test_that("make_stancode generates correct code for monotonic effects", {
   scode <- make_stancode(y ~ monotonic(x1 + x2), data = data)
   expect_match(scode, "int Xm[N, Km];", fixed = TRUE)
   expect_match(scode, "simplex[Jm[1]] simplex_1;", fixed = TRUE)
-  expect_match(scode, "bm[2] * monotonic(simplex_2, Xm[n, 2]);", fixed = TRUE)
+  expect_match(scode, "(bm[2]) * monotonic(simplex_2, Xm[n, 2]);", fixed = TRUE)
   expect_match(scode, "simplex_1 ~ dirichlet(con_simplex_1);", fixed = TRUE)
 })
 

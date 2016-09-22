@@ -26,16 +26,25 @@ linear_predictor <- function(draws, i = NULL) {
                         ncol = N, byrow = TRUE)
   }
   # incorporate monotonic effects
-  for (j in seq_along(draws[["bm"]])) {
+  monef <- colnames(draws$data$Xm)
+  for (j in seq_along(monef)) {
+    # prepare monotonic group-level effects
+    r_mono <- draws[["r_mono"]][[monef[j]]]
+    rm <- named_list(names(r_mono))
+    for (g in names(rm)) {
+      rm[[g]] <- ranef_predictor(Z = p(draws[["Z_mono"]][[g]], i),
+                                 r = r_mono[[g]])
+    }
     eta <- eta + monef_predictor(Xm = p(draws$data$Xm[, j], i), 
                                  bm = as.vector(draws[["bm"]][[j]]), 
-                                 simplex = draws$simplex[[j]])
+                                 simplex = draws$simplex[[j]],
+                                 rm = Reduce("+", rm))
   }
-  # incorporate random effects
+  # incorporate group-level effects
   group <- names(draws[["r"]])
-  for (j in seq_along(group)) {
-    eta <- eta + ranef_predictor(Z = p(draws[["Z"]][[group[j]]], i), 
-                                 r = draws[["r"]][[group[j]]]) 
+  for (g in group) {
+    eta <- eta + ranef_predictor(Z = p(draws[["Z"]][[g]], i), 
+                                 r = draws[["r"]][[g]]) 
   }
   # incorporate splines
   splines <- names(draws[["s"]])
@@ -150,13 +159,14 @@ fixef_predictor <- function(X, b) {
   tcrossprod(b, X)
 }
 
-monef_predictor <- function(Xm, bm, simplex) {
+monef_predictor <- function(Xm, bm, simplex, rm = NULL) {
   # compute eta for monotonic effects
   # Args:
   #   Xm: a vector of data for the monotonic effect
-  #   bm: montonous effects samples
+  #   bm: monotonic effects samples
   #   simplex: matrix of samples of the simplex
   #            corresponding to bm
+  #   rm: matrix with monotonic group-level samples
   stopifnot(is.vector(Xm))
   stopifnot(is.matrix(simplex))
   bm <- as.vector(bm)
@@ -165,7 +175,8 @@ monef_predictor <- function(Xm, bm, simplex) {
     simplex[, i] <- simplex[, i] + simplex[, i - 1]
   }
   simplex <- cbind(0, simplex)
-  bm * simplex[, Xm + 1]
+  if (is.null(rm)) rm <- 0 
+  (bm + rm) * simplex[, Xm + 1]
 }
 
 ranef_predictor <- function(Z, r) {

@@ -415,17 +415,16 @@ get_model_matrix <- function(formula, data = environment(formula),
   X   
 }
 
-prepare_mono_vars <- function(data, vars, check = TRUE) {
+prepare_mono_vars <- function(formula, data, check = TRUE) {
   # prepare monotonic variables for use in Stan
   # Args:
+  #   formula: formula containing mononotic effects terms
   #   data: a data.frame or named list
-  #   vars: names of monotonic variables
   #   check: check the number of levels? 
   # Returns:
   #   'data' with amended monotonic variables
-  stopifnot(is.list(data))
-  stopifnot(is.atomic(vars))
-  vars <- intersect(vars, names(data))
+  data <- model.frame(formula, data)
+  vars <- names(data)
   for (i in seq_along(vars)) {
     # validate predictors to be modeled as monotonic effects
     if (is.ordered(data[[vars[i]]])) {
@@ -448,7 +447,12 @@ prepare_mono_vars <- function(data, vars, check = TRUE) {
            call. = FALSE)
     }
   }
-  data
+  out <- get_model_matrix(formula, data, cols2remove = "Intercept")
+  if (any(grepl(":", colnames(out), fixed = TRUE))) {
+    stop("Modeling interactions as monotonic ", 
+         "is not meaningful.", call. = FALSE)
+  }
+  out
 }
 
 make_smooth_list <- function(effects, data) {
@@ -552,8 +556,8 @@ data_effects <- function(effects, data, family = gaussian(),
                            autocor = autocor, nlpar = nlpar, 
                            knots = knots, not4stan = not4stan,
                            smooth = smooth)
-  data_monef <- data_monef(effects, data = data, prior = prior, 
-                           Jm = Jm, nlpar = nlpar)
+  data_monef <- data_monef(effects, data = data, ranef = ranef,
+                           prior = prior, Jm = Jm, nlpar = nlpar)
   data_ranef <- data_ranef(ranef, data = data, nlpar = nlpar, 
                            not4stan = not4stan)
   c(data_fixef, data_monef, data_ranef)
@@ -606,17 +610,16 @@ data_fixef <- function(effects, data, family = gaussian(),
   c(out, setNames(list(ncol(X), X), paste0(c("K", "X"), p)))
 }
 
-data_monef <- function(effects, data, prior = prior_frame(), 
-                       nlpar = "", Jm = NULL) {
+data_monef <- function(effects, data, ranef = empty_ranef(),
+                       prior = prior_frame(), nlpar = "",
+                       Jm = NULL) {
   # prepare data for monotonic effects for use in Stan
   # Args: see data_effects
   stopifnot(length(nlpar) == 1L)
   p <- if (nchar(nlpar)) paste0("_", nlpar) else ""
   out <- list()
   if (is.formula(effects[["mono"]])) {
-    mmf <- model.frame(effects$mono, data)
-    mmf <- prepare_mono_vars(mmf, names(mmf), check = is.null(Jm))
-    Xm <- get_model_matrix(effects$mono, mmf)
+    Xm <- prepare_mono_vars(effects$mono, data, check = is.null(Jm))
     avoid_auxpars(colnames(Xm), effects = effects)
     if (is.null(Jm)) {
       Jm <- as.array(apply(Xm, 2, max))
@@ -646,12 +649,13 @@ data_monef <- function(effects, data, prior = prior_frame(),
   out
 }
 
-data_ranef <- function(ranef, data, nlpar = "", not4stan = FALSE) {
+data_ranef <- function(ranef, data, nlpar = "", 
+                       type = "", not4stan = FALSE) {
   # prepare data for group-level effects for use in Stan
   # Args: see data_effects
   stopifnot(length(nlpar) == 1L)
   out <- list()
-  ranef <- ranef[ranef$nlpar == nlpar, ]
+  ranef <- ranef[ranef$nlpar == nlpar & ranef$type == type, ]
   if (nrow(ranef)) {
     Z <- lapply(ranef[!duplicated(ranef$gn), ]$form, 
                 get_model_matrix, data = data)

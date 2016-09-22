@@ -104,7 +104,7 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   } else {
     x$formula <- rm_attr(formula(x), auxpars())
     x$ranef <- tidy_ranef(extract_effects(formula(x)), 
-                            data = model.frame(x))
+                          data = model.frame(x))
     resp <- ee$response
     if (length(resp) > 1L && !isTRUE(attr(formula(x), "old_mv"))) {
       # new multivariate models
@@ -188,64 +188,94 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
     draws[["s"]][[splines[i]]] <- 
       do.call(as.matrix, c(args, list(pars = s_pars)))
   }
+  
   # group-level effects
   usc_nlpar <- usc(usc(nlpar))
   new_ranef <- tidy_ranef(ee, model.frame(x))
   groups <- unique(new_ranef$group)
   # requires initialization to assign S4 objects of the Matrix package
-  draws[["Z"]] <- named_list(groups)
+  draws[["Z"]] <- draws[["Z_mono"]] <- named_list(groups)
   for (g in groups) {
     new_r <- new_ranef[new_ranef$group == g, ]
-    # create a single RE design matrix for every grouping factor
-    Z <- lapply(unique(new_r$gn), 
-                function(k) get(paste0("Z_", k), standata))
-    Z <- do.call(cbind, Z)
     gf <- get(paste0("J_", new_r$id[1]), standata)
     r_pars <- paste0("^r_", g, usc_nlpar, "\\[")
     r <- do.call(as.matrix, c(args, list(pars = r_pars)))
     if (is.null(r)) {
-      stop(paste0("Group-level effects for each level of group '",
-                 g, "' not found. Please set ranef = TRUE ",
-                 "when calling brm."), call. = FALSE)
+      stop("Group-level effects for each level of group '",
+           g, "' not found. Please set ranef = TRUE ",
+           "when calling brm.", call. = FALSE)
     }
-    # match columns of Z with corresponding RE estimates
-    n_levels <- ngrps(x)[[g]]
+    nlevels <- ngrps(x)[[g]]
     old_r <- x$ranef[x$ranef$group == g, ]
-    used_re <- ulapply(new_r$coef, match, old_r$coef)
+    used_re <- match(new_r$coef, old_r$coef)
     used_re_pars <- ulapply(used_re, function(k) 
-      1:n_levels + (k - 1) * n_levels)
+      seq_len(nlevels) + (k - 1) * nlevels)
     r <- r[, used_re_pars, drop = FALSE]
-    nranef <- ncol(Z)
+    nranef <- nrow(new_r)
     max_levels <- ncol(r) / nranef
+    # incorporate new gf levels (only if allow_new_levels is TRUE)
     has_new_levels <- anyNA(gf)
     if (has_new_levels) {
-      # if new levels are present (only if allow_new_levels is TRUE)
-      new_r <- matrix(nrow = nrow(r), ncol = nranef)
-      for (k in 1:nranef) {
+      new_r_level <- matrix(nrow = nrow(r), ncol = nranef)
+      for (k in seq_len(nranef)) {
         # sample values of the new level for each random effect
         indices <- ((k - 1) * max_levels + 1):(k * max_levels)
-        new_r[, k] <- apply(r[, indices], MARGIN = 1, FUN = sample, size = 1)
+        new_r_level[, k] <- apply(r[, indices], 1, sample, size = 1)
       }
       gf[is.na(gf)] <- max_levels + 1
     } else { 
-      new_r <- matrix(nrow = nrow(r), ncol = 0)
+      new_r_level <- matrix(nrow = nrow(r), ncol = 0)
     }
-    # sort levels because we need row major instead of column major order
-    sort_levels <- ulapply(1:max_levels, function(l) 
-      seq(l, ncol(r), max_levels))
-    r <- cbind(r[, sort_levels, drop = FALSE], new_r)
-    Z <- expand_matrix(Z, gf)
+    # we need row major instead of column major order
+    sort_levels <- ulapply(seq_len(max_levels), 
+      function(l) seq(l, ncol(r), max_levels))
+    r <- cbind(r[, sort_levels, drop = FALSE], new_r_level)
     levels <- unique(gf)
-    if (has_new_levels) max_levels <- max_levels + 1
+    if (has_new_levels) {
+      max_levels <- max_levels + 1
+    }
     if (length(levels) < max_levels) {
-      # if only a subset of levels is provided (only for newdata)
+      # if only a subset of levels is provided (for newdata)
       take_levels <- ulapply(levels, function(l) 
         ((l - 1) * nranef + 1):(l * nranef))
       r <- r[, take_levels, drop = FALSE]
-      Z <- Z[, take_levels, drop = FALSE]
     }
-    draws[["Z"]][[g]] <- Z
-    draws[["r"]][[g]] <- r
+    # handle monotonic group-level terms separately
+    new_r_mono <- new_r[new_r$type == "mono", ]
+    if (nrow(new_r_mono)) {
+      Z_mono <- expand_matrix(matrix(1, length(gf)), gf)
+      if (length(levels) < max_levels) {
+        Z_mono <- Z_mono[, levels, drop = FALSE]
+      }
+      draws[["Z_mono"]][[g]] <- Z_mono
+      old_r_mono <- old_r[old_r$type == "mono", ]
+      used_re_mono <- match(new_r_mono$coef, old_r_mono$coef)
+      take_mono <- named_list(old_r_mono$coef[used_re_mono])
+      for (m in used_re_mono) {
+        mc <- old_r_mono$coef[m]
+        take_mono[[mc]] <- m + nranef * (seq_along(levels) - 1)
+        draws[["r_mono"]][[mc]][[g]] <- r[, take_mono[[mc]]]
+      }
+      take_mono <- unname(unlist(take_mono))
+      if (length(take_mono)) {
+        r <- r[, -take_mono, drop = FALSE]
+      }
+    }
+    if (ncol(r)) {
+      # create a single RE design matrix for every grouping factor
+      Z <- lapply(unique(new_r$gn), 
+                  function(k) standata[[paste0("Z_", k)]])
+      Z <- do.call(cbind, Z)
+      Z <- expand_matrix(Z, gf) 
+      if (length(levels) < max_levels) {
+        nranef_basic <- sum(!nzchar(new_r$type))
+        take_levels <- ulapply(levels, function(l) 
+          ((l - 1) * nranef_basic + 1):(l * nranef_basic))
+        Z <- Z[, take_levels, drop = FALSE] 
+      }
+      draws[["Z"]][[g]] <- Z
+      draws[["r"]][[g]] <- r
+    }
   }
   draws
 }
