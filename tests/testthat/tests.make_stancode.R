@@ -353,3 +353,14 @@ test_that("make_stancode correctly handles the group ID syntax", {
   expect_match(sc, "r_2_a_3 = r_2[, 3];", fixed = TRUE)
   expect_match(sc, "r_1_sigma_2 = sd_1[2] * (z_1[2]);", fixed = TRUE)
 })
+
+test_that("make_stancode correctly computes ordinal thresholds", {
+  sc <- make_stancode(rating ~ period + carry + treat, 
+                      data = inhaler, family = cumulative())
+  expect_match(sc, "b_Intercept = temp_Intercept + dot_product(means_X, b);",
+               fixed = TRUE)
+  sc <- make_stancode(rating ~ period + carry + treat, 
+                      data = inhaler, family = acat())
+  expect_match(sc, "b_Intercept = temp_Intercept - dot_product(means_X, b);",
+               fixed = TRUE)
+})

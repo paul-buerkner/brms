@@ -273,7 +273,10 @@ stan_fixef <- function(fixef, center_X = TRUE, family = gaussian(),
         "    means_X", p, "[i - 1] = mean(X", p, "[, i]); \n",
         "    Xc", p, "[, i - 1] = X", p, "[, i] - means_X", p, "[i - 1]; \n",
         "  } \n")
-      sub_X_means <- paste0(" - dot_product(means_X", p, ", b", p, ")")
+      # cumulative and sratio models are parameterized as thres - eta
+      use_plus <- family$family %in% c("cumulative", "sratio")
+      sub_X_means <- paste0(ifelse(use_plus, " + ", " - "), 
+                            "dot_product(means_X", p, ", b", p, ")")
     } else {
       sub_X_means <- ""
     }

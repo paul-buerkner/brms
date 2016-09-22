@@ -2,6 +2,16 @@
 \title{brms News}
 \encoding{UTF-8}
 
+\section{CHANGES IN VERSION 1.0.1.9000}{
+  \subsection{BUG FIXES}{
+    \itemize{ 
+      \item Fix a bug that could result in incorrect
+      threshold estimates for \code{cumulative} and
+      \code{sratio} models thanks to Peter Congdon.
+    }
+  }
+}
+
 \section{CHANGES IN VERSION 1.0.1}{
   \subsection{MINOR CHANGES}{
     \itemize{

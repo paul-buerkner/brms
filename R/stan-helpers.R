@@ -400,7 +400,7 @@ stan_ordinal <- function(family, prior = prior_frame(),
     out$data <- "  int ncat;  // number of categories \n"
     th <- function(k, fam = family) {
       # helper function generating stan code inside ilink(.)
-      sign <- ifelse(fam %in% c("cumulative", "sratio")," - ", " + ")
+      sign <- ifelse(fam %in% c("cumulative", "sratio"), " - ", " + ")
       ptl <- ifelse(cse, paste0(sign, "etap[k]"), "") 
       if (sign == " - ") {
         out <- paste0("thres[",k,"]", ptl, " - eta")
