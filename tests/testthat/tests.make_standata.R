@@ -240,7 +240,8 @@ test_that("make_standata rejects invalid input for cse effects", {
   expect_error(make_standata(rating ~ 1 + cse(treat), data = inhaler,
                              family = "gaussian"), "only meaningful")
   expect_error(make_standata(rating ~ 1 + cse(1), data = inhaler,
-                             family = "acat"), "invalid input")
+                             family = "acat"), 
+               "No variable supplied to function 'cse'")
 })
 
 test_that("make_standata handles covariance matrices correctly", {

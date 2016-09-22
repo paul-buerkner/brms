@@ -169,13 +169,13 @@ test_that("extract_effects handles very long RE terms", {
   expect_equal(ee$random$group, "id")
 })
 
-test_that("nonlinear_effects finds missing parameters", {
-  expect_error(nonlinear_effects(list(a = a ~ 1, b = b ~ 1), model = y ~ a^x),
+test_that("extract_nonlinear finds missing parameters", {
+  expect_error(extract_nonlinear(list(a = a ~ 1, b = b ~ 1), model = y ~ a^x),
                "missing in formula: b")
 })
 
-test_that("nonlinear_effects accepts valid non-linear models", {
-  nle <- nonlinear_effects(list(a = a ~ 1 + (1+x|origin), b = b ~ 1 + z), 
+test_that("extract_nonlinear accepts valid non-linear models", {
+  nle <- extract_nonlinear(list(a = a ~ 1 + (1+x|origin), b = b ~ 1 + z), 
                            model = y ~ b - a^x)
   expect_equal(names(nle), c("a", "b"))
   expect_equal(nle[["a"]]$all, ~x + origin)
