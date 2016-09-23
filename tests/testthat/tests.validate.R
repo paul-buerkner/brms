@@ -287,6 +287,10 @@ test_that("tidy_ranef works correctly", {
   expect_error(tidy_ranef(ee, data = data),
     "Can only combine group-level terms of the same grouping factor")
   
+  ee <- extract_effects(y ~ x + (1|g) + (x|g))
+  expect_error(tidy_ranef(ee, data = data),
+               "Duplicated group-level effects are not allowed.")
+  
   ranef <- tidy_ranef(extract_effects(y~x), data = data)
   expect_equivalent(ranef, empty_ranef())
 })

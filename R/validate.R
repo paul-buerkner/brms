@@ -948,7 +948,11 @@ tidy_ranef <- function(effects, data = NULL, all = TRUE, ncat = NULL) {
     ranef[[i]] <- rdat 
   }
   ranef <- do.call(rbind, c(list(empty_ranef()), ranef))
-  # TODO: check for duplicated group-level effects
+  dup <- duplicated(ranef[, c("group", "coef", "nlpar")])
+  if (any(dup)) {
+    stop("Duplicated group-level effects are not allowed.",
+         call. = FALSE)
+  }
   if (nrow(ranef)) {
     for (id in unique(ranef$id)) {
       ranef$cn[ranef$id == id] <- seq_len(sum(ranef$id == id))
