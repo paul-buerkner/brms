@@ -221,6 +221,14 @@ test_that("make_stancode generates correct code for monotonic effects", {
   expect_match(scode, "simplex[Jm[1]] simplex_1;", fixed = TRUE)
   expect_match(scode, "(bm[2]) * monotonic(simplex_2, Xm[n, 2]);", fixed = TRUE)
   expect_match(scode, "simplex_1 ~ dirichlet(con_simplex_1);", fixed = TRUE)
+  scode <- make_stancode(y ~ mono(x1) + (mono(x1)|x2) + (1|x2), data = data)
+  expect_match(scode, "(bm[1] + r_1_1[J_1[n]]) * monotonic(simplex_1, Xm[n, 1]);",
+               fixed = TRUE)
+  # check that Z_1_1 is (correctly) undefined
+  expect_match(scode, paste0("  int<lower=1> M_1; \n",
+    "  // data for group-specific effects of ID 2"), fixed = TRUE)
+  expect_error(make_stancode(y ~ mono(x1) + (mono(x1+x2)|x2), data = data),
+               "Monotonic group-level terms require", fixed = TRUE)
 })
 
 test_that("make_stancode generates correct code for non-linear models", {
