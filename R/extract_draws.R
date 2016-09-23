@@ -172,12 +172,12 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
       do.call(as.matrix, c(args, list(pars = "^b_Intercept\\[")))
     if (!is.null(standata$Xp) && ncol(standata$Xp)) {
       cse_pars <- paste0("^b_", colnames(standata$Xp), "\\[")
-      draws[["p"]] <- do.call(as.matrix, c(args, list(pars = cse_pars)))
+      draws[["cse"]] <- do.call(as.matrix, c(args, list(pars = cse_pars)))
     }
   } else if (draws$old_cat == 1L) {
     # old categorical models deprecated as of brms > 0.8.0
     if (!is.null(standata$X)) {
-      draws[["p"]] <- do.call(as.matrix, c(args, list(pars = "^b_")))
+      draws[["cse"]] <- do.call(as.matrix, c(args, list(pars = "^b_")))
     }
   }
   # splines
@@ -194,7 +194,7 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   new_ranef <- tidy_ranef(ee, model.frame(x))
   groups <- unique(new_ranef$group)
   # requires initialization to assign S4 objects of the Matrix package
-  draws[["Z"]] <- draws[["Z_mono"]] <- named_list(groups)
+  draws[["Z"]] <- draws[["Z_mono"]] <- draws[["Z_cse"]] <- named_list(groups)
   for (g in groups) {
     new_r <- new_ranef[new_ranef$group == g, ]
     gf <- get(paste0("J_", new_r$id[1]), standata)
@@ -208,76 +208,95 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
     nlevels <- ngrps(x)[[g]]
     old_r <- x$ranef[x$ranef$group == g, ]
     used_re <- match(new_r$coef, old_r$coef)
-    used_re_pars <- ulapply(used_re, function(k) 
-      seq_len(nlevels) + (k - 1) * nlevels)
+    used_re_pars <- outer(seq_len(nlevels), (used_re - 1) * nlevels, "+")
+    used_re_pars <- as.vector(used_re_pars)
     r <- r[, used_re_pars, drop = FALSE]
     nranef <- nrow(new_r)
-    max_levels <- ncol(r) / nranef
     # incorporate new gf levels (only if allow_new_levels is TRUE)
     has_new_levels <- anyNA(gf)
     if (has_new_levels) {
       new_r_level <- matrix(nrow = nrow(r), ncol = nranef)
       for (k in seq_len(nranef)) {
-        # sample values of the new level for each random effect
-        indices <- ((k - 1) * max_levels + 1):(k * max_levels)
+        # sample values of the new level for each group-level effect
+        indices <- ((k - 1) * nlevels + 1):(k * nlevels)
         new_r_level[, k] <- apply(r[, indices], 1, sample, size = 1)
       }
-      gf[is.na(gf)] <- max_levels + 1
+      gf[is.na(gf)] <- nlevels + 1
     } else { 
       new_r_level <- matrix(nrow = nrow(r), ncol = 0)
     }
     # we need row major instead of column major order
-    sort_levels <- ulapply(seq_len(max_levels), 
-      function(l) seq(l, ncol(r), max_levels))
+    sort_levels <- ulapply(seq_len(nlevels), 
+      function(l) seq(l, ncol(r), nlevels))
     r <- cbind(r[, sort_levels, drop = FALSE], new_r_level)
     levels <- unique(gf)
-    if (has_new_levels) {
-      max_levels <- max_levels + 1
-    }
-    if (length(levels) < max_levels) {
-      # if only a subset of levels is provided (for newdata)
-      take_levels <- ulapply(levels, function(l) 
-        ((l - 1) * nranef + 1):(l * nranef))
-      r <- r[, take_levels, drop = FALSE]
-    }
-    # handle monotonic group-level terms separately
+    r <- subset_levels(r, levels, nranef)
+    # monotonic group-level terms separately
     new_r_mono <- new_r[new_r$type == "mono", ]
     if (nrow(new_r_mono)) {
       Z_mono <- expand_matrix(matrix(1, length(gf)), gf)
-      if (length(levels) < max_levels) {
+      if (length(levels) < nlevels) {
         Z_mono <- Z_mono[, levels, drop = FALSE]
       }
       draws[["Z_mono"]][[g]] <- Z_mono
-      old_r_mono <- old_r[old_r$type == "mono", ]
-      used_re_mono <- match(new_r_mono$coef, old_r_mono$coef)
-      take_mono <- named_list(old_r_mono$coef[used_re_mono])
-      for (m in used_re_mono) {
-        mc <- old_r_mono$coef[m]
-        take_mono[[mc]] <- m + nranef * (seq_along(levels) - 1)
-        draws[["r_mono"]][[mc]][[g]] <- r[, take_mono[[mc]]]
-      }
-      take_mono <- unname(unlist(take_mono))
-      if (length(take_mono)) {
-        r <- r[, -take_mono, drop = FALSE]
+      draws[["r_mono"]] <- named_list(new_r_mono$coef, list())
+      for (co in names(draws[["r_mono"]])) {
+        take <- which(new_r$coef == co & new_r$type == "mono")
+        take <- take + nranef * (seq_along(levels) - 1)
+        draws[["r_mono"]][[co]][[g]] <- r[, take, drop = FALSE]
       }
     }
-    if (ncol(r)) {
-      # create a single RE design matrix for every grouping factor
-      Z <- lapply(unique(new_r$gn), 
-                  function(k) standata[[paste0("Z_", k)]])
-      Z <- do.call(cbind, Z)
-      Z <- expand_matrix(Z, gf) 
-      if (length(levels) < max_levels) {
-        nranef_basic <- sum(!nzchar(new_r$type))
-        take_levels <- ulapply(levels, function(l) 
-          ((l - 1) * nranef_basic + 1):(l * nranef_basic))
-        Z <- Z[, take_levels, drop = FALSE] 
+    # category specific group-level terms
+    new_r_cse <- new_r[new_r$type == "cse", ]
+    if (nrow(new_r_cse)) {
+      Z <- prepare_Z(new_r_cse, gf, standata)
+      draws[["Z_cse"]][[g]] <- Z
+      draws[["r_cse"]] <- named_list(seq_len(standata$ncat - 1), list())
+      for (i in names(draws[["r_cse"]])) {
+        index <- paste0("\\[", i, "\\]$")
+        take <- which(grepl(index, new_r$coef) & new_r$type == "cse")
+        take <- as.vector(outer(take, nranef * (seq_along(levels) - 1), "+"))
+        draws[["r_cse"]][[i]][[g]] <- r[, take, drop = FALSE]
       }
+    }
+    # basic group-level effects
+    new_r_basic <- new_r[!nzchar(new_r$type), ]
+    if (nrow(new_r_basic)) {
+      Z <- prepare_Z(new_r_basic, gf, standata)
       draws[["Z"]][[g]] <- Z
+      take <- which(!nzchar(new_r$type))
+      take <- as.vector(outer(take, nranef * (seq_along(levels) - 1), "+"))
+      r <- r[, take, drop = FALSE]
       draws[["r"]][[g]] <- r
     }
   }
   draws
+}
+
+subset_levels <- function(x, levels, nranef) {
+  # take relevant cols of a matrix of group-level terms
+  # if only a subset of levels is provided (for newdata)
+  # Args:
+  #   x: a matrix typically samples of r or Z design matrices
+  #   levels: grouping factor levels to keep
+  #   nranef: number of group-level effects
+  take_levels <- ulapply(levels, 
+    function(l) ((l - 1) * nranef + 1):(l * nranef))
+  x[, take_levels, drop = FALSE]
+}
+
+prepare_Z <- function(ranef, gf, standata) {
+  # prepare group-level design matrices for use in linear_predictor
+  # Args:
+  #   ranef: output of tidy_ranef
+  #   standata: output of make_standata
+  #   gf: values of the grouping factor
+  Z <- lapply(unique(ranef$gn), 
+              function(k) standata[[paste0("Z_", k)]])
+  Z <- do.call(cbind, Z)
+  nranef <- ncol(Z)
+  Z <- expand_matrix(Z, gf)
+  subset_levels(Z, unique(gf), nranef)
 }
 
 expand_matrix <- function(A, x) {

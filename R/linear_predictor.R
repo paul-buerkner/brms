@@ -68,15 +68,30 @@ linear_predictor <- function(draws, i = NULL) {
     eta <- eta + p(draws$loclev, i, row = FALSE)
   }
   if (is.ordinal(draws$f)) {
-    if (!is.null(draws[["p"]])) {
-      eta <- cse_predictor(Xp = p(draws$data$Xp, i), p = draws[["p"]], 
-                           eta = eta, ncat = draws$data$max_obs)
+    if (!is.null(draws[["cse"]]) || !is.null(draws[["r_cse"]])) {
+      ncat <- draws$data$ncat
+      if (!is.null(draws[["r_cse"]])) {
+        rc <- named_list(seq_len(ncat - 1))
+        for (k in names(rc)) {
+          rc[[k]] <- named_list(names(draws[["r_cse"]][[k]]))
+          for (g in names(rc[[k]])) {
+            rc[[k]][[g]] <- ranef_predictor(Z = p(draws[["Z_cse"]][[g]], i),
+                                            r = draws[["r_cse"]][[k]][[g]])
+          }
+          rc[[k]] <- Reduce("+", rc[[k]])
+        }
+      } else {
+        rc <- NULL
+      }
+      eta <- cse_predictor(X = p(draws$data[["Xp"]], i), 
+                           b = draws[["cse"]], eta = eta, 
+                           ncat = ncat, rc = rc)
     } else {
       eta <- array(eta, dim = c(dim(eta), draws$data$max_obs - 1))
     } 
-    for (k in 1:(draws$data$max_obs - 1)) {
+    for (k in seq_len(draws$data$max_obs - 1)) {
       if (draws$f$family %in% c("cumulative", "sratio")) {
-        eta[, , k] <-  draws$Intercept[, k] - eta[, , k]
+        eta[, , k] <- draws$Intercept[, k] - eta[, , k]
       } else {
         eta[, , k] <- eta[, , k] - draws$Intercept[, k]
       }
@@ -84,8 +99,8 @@ linear_predictor <- function(draws, i = NULL) {
   } else if (isTRUE(draws$old_cat > 0L)) {
     if (draws$old_cat == 1L) {
       # deprecated as of brms > 0.8.0
-      if (!is.null(draws[["p"]])) {
-        eta <- cse_predictor(Xp = p(draws$data$X, i), p = draws[["p"]], 
+      if (!is.null(draws[["cse"]])) {
+        eta <- cse_predictor(X = p(draws$data$X, i), b = draws[["cse"]], 
                              eta = eta, ncat = draws$data$max_obs)
       } else {
         eta <- array(eta, dim = c(dim(eta), draws$data$max_obs - 1))
@@ -236,23 +251,30 @@ arma_predictor <- function(standata, eta, ar = NULL, ma = NULL,
   eta
 }
 
-cse_predictor <- function(Xp, p, eta, ncat) {
+cse_predictor <- function(X, b, eta, ncat, rc = NULL) {
   # add category specific effects to eta
   # Args:
-  #   Xp: category specific design matrix 
-  #   p: category specific effects samples
+  #   X: category specific design matrix 
+  #   b: category specific effects samples
   #   ncat: number of categories
   #   eta: linear predictor matrix
+  #   rc: list of 
   # Returns: 
   #   linear predictor including category specific effects as a 3D array
-  stopifnot(is.matrix(Xp))
-  stopifnot(is.matrix(p))
+  stopifnot(is.null(X) && is.null(b) || is.matrix(X) && is.matrix(b))
   ncat <- max(ncat)
   eta <- array(eta, dim = c(dim(eta), ncat - 1))
-  indices <- seq(1, (ncat - 1) * ncol(Xp), ncat - 1) - 1
-  Xp <- t(Xp)
-  for (k in 1:(ncat - 1)) {
-    eta[, , k] <- eta[, , k] + p[, indices + k, drop = FALSE] %*% Xp
+  if (!is.null(X)) {
+    I <- seq(1, (ncat - 1) * ncol(X), ncat - 1) - 1
+    X <- t(X)
+  }
+  for (k in seq_len(ncat - 1)) {
+    if (!is.null(X)) {
+      eta[, , k] <- eta[, , k] + b[, I + k, drop = FALSE] %*% X 
+    }
+    if (!is.null(rc[[k]])) {
+      eta[, , k] <- eta[, , k] + rc[[k]]
+    }
   }
   eta
 }
