@@ -86,8 +86,8 @@ The \code{formula} argument accepts formulae of the following syntax:
   For more details on this model class see \code{\link[mgcv:gam]{gam}} 
   and \code{\link[mgcv:gamm]{gamm}}.
   
-  The \code{Pterms} part may contain two non-standard types
-  of population-level effects namely monotonic and category specific effects,
+  The \code{Pterms} and \code{Gterms} parts may contain two non-standard
+  effect types namely monotonic and category specific effects,
   which can be specified using terms of the form \code{monotonic(<predictors>)} 
   and \code{cse(<predictors>)} respectively. The latter can only be applied in
   ordinal models and is explained in more detail in the package's vignette
@@ -334,6 +334,9 @@ bf(y ~ mono(x) + more_predictors)
 # specify a predictor as category specific
 # for ordinal models only
 bf(y ~ cse(x) + more_predictors)
+
+# add a category specific group-level intercept
+bf(y ~ cse(x) + (cse(1)|g))
 
 }
 
