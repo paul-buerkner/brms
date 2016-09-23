@@ -28,14 +28,9 @@ stan_effects <- function(effects, data, family = gaussian(),
   # include spline terms
   splines <- get_spline_labels(effects)
   text_splines <- stan_splines(splines, prior = prior, nlpar = nlpar)
-  # category specific effects
+  # include category specific effects
   csef <- colnames(get_model_matrix(effects$cse, data))
-  text_csef <- stan_csef(csef = csef, prior = prior, nlpar = nlpar)
-  if (length(csef)) {
-    out$modelD <- paste0(out$modelD, 
-     "  // linear predictor for category specific effects \n",                  
-     "  matrix[N, ncat - 1] etap; \n")
-  }
+  text_csef <- stan_csef(csef = csef, ranef = ranef, prior = prior)
   # include monotonic effects
   monef <- colnames(data_monef(effects, data)$Xm)
   text_monef <- stan_monef(monef, prior = prior, nlpar = nlpar)
@@ -47,8 +42,9 @@ stan_effects <- function(effects, data, family = gaussian(),
     out$data <- paste0(out$data, "  vector[N] offset", p, "; \n")
   }
   
-  # initialize eta_<nlpar>
-  out$modelC1 <- paste0(out$modelC1, "  ", eta, " = ", 
+  # initialize and compute eta_<nlpar>
+  out$modelC1 <- paste0(
+    out$modelC1, "  ", eta, " = ", 
     stan_eta_fixef(fixef, center_X = center_X, 
                    sparse = sparse, nlpar = nlpar), 
     stan_eta_splines(splines, nlpar = nlpar), 
@@ -56,15 +52,14 @@ stan_effects <- function(effects, data, family = gaussian(),
       paste0(" + temp", p, "_Intercept"),
     if (has_offset) paste0(" + offset", p),
     if (get_arr(autocor)) " + Yarr * arr", 
-    "; \n", 
-    if (length(csef)) "  etap = Xp * bp; \n")
+    "; \n")
   
   # repare loop over eta
   eta_ma <- ifelse(get_ma(autocor) && !use_cov(autocor),
                    paste0(" + head(E", p, "[n], Kma) * ma"), "")
   eta_loop <- paste0(
     stan_eta_ranef(ranef, nlpar = nlpar),
-    stan_eta_monef(monef, nlpar = nlpar),
+    stan_eta_monef(monef, ranef = ranef, nlpar = nlpar),
     eta_ma, stan_eta_bsts(autocor))
   if (nzchar(eta_loop)) {
     out$modelC2 <- paste0(out$modelC2,
@@ -328,7 +323,9 @@ stan_ranef <- function(id, ranef, prior = prior_frame(),
                           coef = r$coef, nlpar = r$nlpar, 
                           suffix = paste0("_", id), prior = prior)
   if (nrow(r) == 1L) {  # only one group-level effect
-    out$data <- paste0(out$data, "  vector[N] Z_", idp, "_1; \n")
+    if (r$type != "mono") {
+      out$data <- paste0(out$data, "  vector[N] Z_", idp, "_1; \n")
+    }
     out$par <- paste0(
       "  real<lower=0> sd_", id, ";",
       "  // group-specific standard deviation \n",
@@ -342,8 +339,11 @@ stan_ranef <- function(id, ranef, prior = prior_frame(),
       if (ccov) paste0("Lcov_", id, " * "), "z_", id, ");\n")
   } else if (nrow(r) > 1L) {
     J <- 1:nrow(r)
-    out$data <- paste0(out$data, 
-      collapse("  vector[N] Z_", idp, "_", r$cn, ";  \n"))
+    if (any(r$type != "mono")) {
+      out$data <- paste0(out$data, 
+        collapse("  vector[N] Z_", idp[r$type != "mono"], 
+                 "_", r$cn[r$type != "mono"], ";  \n")) 
+    }
     out$par <- paste0(
       "  vector<lower=0>[M_", id, "] sd_", id, ";",
       "  // group-specific standard deviations \n")
@@ -469,24 +469,53 @@ stan_monef <- function(monef, prior = prior_frame(), nlpar = "") {
   out
 }
 
-stan_csef <- function(csef, prior = prior_frame(), nlpar = "") {
+stan_csef <- function(csef, ranef = empty_ranef(), 
+                      prior = prior_frame(), nlpar = "") {
   # Stan code for category specific effects
   # Args:
   #   csef: names of the category specific effects
   #   prior: a data.frame containing user defined priors 
   #          as returned by check_prior
-  # (!) Not implemented for non-linear models
+  # (!) Not yet implemented for non-linear models
+  stopifnot(!nzchar(nlpar))
+  ranef <- ranef[ranef$nlpar == nlpar & ranef$type == "cse", ]
   out <- list()
+  if (length(csef) || nrow(ranef)) {
+    out$modelD <- paste0(
+      "  // linear predictor for category specific effects \n",                  
+      "  matrix[N, ncat - 1] etap; \n")
+  }
   if (length(csef)) {
-    stopifnot(!nzchar(nlpar))
     out$data <- paste0(
       "  int<lower=1> Kp;  // number of category specific effects \n",
       "  matrix[N, Kp] Xp;  // CSE design matrix \n")
     bound <- get_bound(prior, class = "b")
     out$par <- paste0(
       "  matrix", bound, "[Kp, ncat - 1] bp;  // category specific effects \n")
+    out$modelC1 <- "  etap = Xp * bp; \n"
     out$prior <- stan_prior(class = "b", coef = csef, prior = prior, 
                             suffix = "p", matrix = TRUE)
+  } 
+  if (nrow(ranef)) {
+    if (!length(csef)) {
+      # only group-level category specific effects present
+      out$modelC1 <- "  etap = rep_matrix(0, N, ncat - 1); \n"
+    }
+    cats <- get_matches("\\[[[:digit:]]+\\]$", ranef$coef)
+    ncatM1 <- max(as.numeric(substr(cats, 2, nchar(cats) - 1)))
+    for (i in seq_len(ncatM1)) {
+      r_cat <- ranef[grepl(paste0("\\[", i, "\\]$"), ranef$coef), ]
+      out$modelC2 <- paste0(out$modelC2,
+        "    etap[n, ", i, "] = etap[n, ", i, "]")
+      for (id in unique(r_cat$id)) {
+        r <- r_cat[r_cat$id == id, ]
+        idp <- paste0(r$id, usc(r$nlpar, "prefix"))
+        out$modelC2 <- paste0(out$modelC2, collapse(
+          " + r_", idp, "_", r$cn, "[J_", r$id, "[n]]",
+          " * Z_", idp, "_", r$cn, "[n]"))
+      }
+      out$modelC2 <- paste0(out$modelC2, "; \n")
+    }
   }
   out
 } 
@@ -519,6 +548,7 @@ stan_eta_ranef <- function(ranef, nlpar = "") {
   #   ranef: a named list returned by tidy_ranef
   #   nlpar: currently unused
   eta_ranef <- ""
+  ranef <- ranef[!nzchar(ranef$type), ]
   for (id in unique(ranef$id)) {
     r <- ranef[ranef$id == id, ]
     idp <- paste0(r$id, usc(r$nlpar, "prefix"))
@@ -529,17 +559,30 @@ stan_eta_ranef <- function(ranef, nlpar = "") {
   eta_ranef
 }
 
-stan_eta_monef <- function(monef, nlpar = "") {
+stan_eta_monef <- function(monef, ranef = empty_ranef(), nlpar = "") {
   # write the linear predictor for monotonic effects
   # Args:
   #   monef: names of the monotonic effects
   #   nlpar: an optional character string to add to the varnames
   #         (used for non-linear models)
-  p <- if (nchar(nlpar)) paste0("_", nlpar) else ""
+  p <- usc(nlpar)
   eta_monef <- ""
+  ranef <- ranef[ranef$nlpar == nlpar & ranef$type == "mono", ]
+  invalid_coef <- setdiff(ranef$coef, monef)
+  if (length(invalid_coef)) {
+    stop("Monotonic group-level terms require corresponding ",
+         "population-level terms.", call. = FALSE)
+  }
   for (i in seq_along(monef)) {
+    r <- ranef[ranef$coef == monef[i], ]
+    if (nrow(r)) {
+      idp <- paste0(r$id, usc(nlpar, "prefix"))
+      rpars <- collapse(" + r_", idp, "_", r$cn, "[J_", r$id, "[n]]")
+    } else {
+      rpars <- ""
+    }
     eta_monef <- paste0(eta_monef,
-      " + bm", p, "[", i, "] * monotonic(",
+      " + (bm", p, "[", i, "]", rpars, ") * monotonic(",
       "simplex", p, "_", i, ", Xm", p, "[n, ", i, "])")
   }
   eta_monef

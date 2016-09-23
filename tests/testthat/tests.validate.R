@@ -27,7 +27,8 @@ test_that("extract_effects finds all random effects terms", {
 test_that("extract_effects accepts || syntax", {
   random <- brms:::extract_effects(y ~ a + (1+x||g1) + (1+z|g2))$random
   target <- data.frame(group = c("g1", "g2"), gn = 1:2, id = c(NA, NA),
-                       cor = c(FALSE, TRUE), stringsAsFactors = FALSE)
+                       cor = c(FALSE, TRUE), type = "",
+                       stringsAsFactors = FALSE)
   target$form <- list(~1+x, ~1+z)
   expect_equal(random, target)
   expect_equal(extract_effects(y ~ (1+x||g1:g2))$random$group, c("g1:g2"))
@@ -111,9 +112,7 @@ test_that("extract_effects returns expected error messages", {
                "Non-linear effects are not yet allowed for this family", 
                fixed = TRUE)
   expect_error(extract_effects(y ~ mono(1)),
-               "invalid input to function 'monotonic'")
-  expect_error(extract_effects(y ~ mono(x1:x2)),
-               "Interactions cannot be modeled as monotonic effects")
+               "No variable supplied to function 'monotonic'")
   expect_error(extract_effects(y | se(sei) ~ x, family = weibull()),
                "Argument 'se' is not supported for family")
   expect_error(extract_effects(y | se(sei) + se(sei2) ~ x, 
@@ -147,14 +146,16 @@ test_that("extract_effects correctly handles group IDs", {
   form <- bf(y ~ x + (1+x|3|g) + (1|g2),
              sigma = ~ (x|3|g) + (1||g2))
   target <- data.frame(group = c("g", "g2"), gn = 1:2, id = c("3", NA),
-                       cor = c(TRUE, TRUE), stringsAsFactors = FALSE)
+                       cor = c(TRUE, TRUE), type = "", 
+                       stringsAsFactors = FALSE)
   target$form <- list(~1+x, ~1)
   expect_equal(extract_effects(form)$random, target)
   
   form <- bf(y ~ a, nonlinear = a ~ x + (1+x|3|g) + (1|g2),
              sigma = ~ (x|3|g) + (1||g2))
   target <- data.frame(group = c("g", "g2"), gn = 1:2, id = c("3", NA),
-                       cor = c(TRUE, FALSE), stringsAsFactors = FALSE)
+                       cor = c(TRUE, FALSE), type = "",
+                       stringsAsFactors = FALSE)
   target$form <- list(~x, ~1)
   expect_equal(extract_effects(form)$sigma$random, target)
 })
@@ -168,13 +169,13 @@ test_that("extract_effects handles very long RE terms", {
   expect_equal(ee$random$group, "id")
 })
 
-test_that("nonlinear_effects finds missing parameters", {
-  expect_error(nonlinear_effects(list(a = a ~ 1, b = b ~ 1), model = y ~ a^x),
+test_that("extract_nonlinear finds missing parameters", {
+  expect_error(extract_nonlinear(list(a = a ~ 1, b = b ~ 1), model = y ~ a^x),
                "missing in formula: b")
 })
 
-test_that("nonlinear_effects accepts valid non-linear models", {
-  nle <- nonlinear_effects(list(a = a ~ 1 + (1+x|origin), b = b ~ 1 + z), 
+test_that("extract_nonlinear accepts valid non-linear models", {
+  nle <- extract_nonlinear(list(a = a ~ 1 + (1+x|origin), b = b ~ 1 + z), 
                            model = y ~ b - a^x)
   expect_equal(names(nle), c("a", "b"))
   expect_equal(nle[["a"]]$all, ~x + origin)
@@ -266,7 +267,7 @@ test_that("tidy_ranef works correctly", {
   
   target <- data.frame(id = 1, group = "g", gn = 1, 
                        coef = c("Intercept", "x"), cn = 1:2,
-                       nlpar = "", cor = FALSE, 
+                       nlpar = "", cor = FALSE, type = "",
                        stringsAsFactors = FALSE)
   target$form <- replicate(2, ~1+x)
   ranef <- tidy_ranef(extract_effects(y~(1+x||g)), data = data)
@@ -285,6 +286,10 @@ test_that("tidy_ranef works correctly", {
   ee <- extract_effects(y ~ x + (1|abc|g/x))
   expect_error(tidy_ranef(ee, data = data),
     "Can only combine group-level terms of the same grouping factor")
+  
+  ee <- extract_effects(y ~ x + (1|g) + (x|g))
+  expect_error(tidy_ranef(ee, data = data),
+               "Duplicated group-level effects are not allowed.")
   
   ranef <- tidy_ranef(extract_effects(y~x), data = data)
   expect_equivalent(ranef, empty_ranef())

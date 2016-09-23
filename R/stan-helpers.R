@@ -20,7 +20,7 @@ stan_llh <- function(family, effects = list(), autocor = cor_arma(),
   has_cens <- is.formula(effects$cens)
   has_disp <- is.formula(effects$disp)
   has_trials <- is.formula(effects$trials)
-  has_cse <- is.formula(effects$cse)
+  has_cse <- has_cse(effects)
   has_trunc <- any(trunc_bounds$lb > -Inf) || any(trunc_bounds$ub < Inf)
   ll_adj <- has_cens || has_weights || has_trunc
 
@@ -61,7 +61,8 @@ stan_llh <- function(family, effects = list(), autocor = cor_arma(),
   .logit <- ifelse(any(c("zi", "hu") %in% auxpars), "_logit", "")
   reqn_trials <- has_trials && (ll_adj || is_zero_inflated)
   trials <- ifelse(reqn_trials, "trials[n]", "trials")
-  ordinal_args <- paste("eta[n],", if (has_cse) "etap[n],", "temp_Intercept")
+  ordinal_args <- paste0("eta[n], ", if (has_cse) "etap[n], ", 
+                         "temp_Intercept")
   
   # use inverse link in likelihood statement only 
   # if it does not prevent vectorization 
@@ -383,14 +384,12 @@ stan_mv <- function(family, response, prior = prior_frame()) {
 stan_ordinal <- function(family, prior = prior_frame(), 
                          cse = FALSE, threshold = "flexible") {
   # Ordinal effects in Stan
-  #
   # Args:
   #   family: the model family
   #   prior: a data.frame containing user defined priors 
   #          as returned by check_prior
   #   cse: logical; are there category specific effects?
   #   threshold: either "flexible" or "equidistant" 
-  #
   # Returns:
   #   A vector of strings containing the ordinal effects in stan language
   stopifnot(is(family, "family"))

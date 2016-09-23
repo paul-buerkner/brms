@@ -201,6 +201,16 @@ test_that("make_stancode generates correct code for category specific effects", 
   expect_match(scode, "matrix[Kp, ncat - 1] bp;", fixed = TRUE)
   expect_match(scode, "etap = Xp * bp;", fixed = TRUE)
   expect_match(scode, "sratio(eta[n], etap[n], temp_Intercept);", fixed = TRUE)
+  scode <- make_stancode(rating ~ period + carry + cse(treat) + (cse(1)|subject), 
+                         data = inhaler, family = acat())
+  expect_match(scode, "etap[n, 1] = etap[n, 1] + r_1_1[J_1[n]] * Z_1_1[n];",
+               fixed = TRUE)
+  scode <- make_stancode(rating ~ period + carry + (cse(treat)|subject), 
+                         data = inhaler, family = acat())
+  expect_match(scode, paste("etap[n, 3] = etap[n, 3] + r_1_3[J_1[n]] * Z_1_3[n]", 
+                             "+ r_1_6[J_1[n]] * Z_1_6[n];"), fixed = TRUE)
+  expect_match(scode, "Y[n] ~ acat(eta[n], etap[n], temp_Intercept);", 
+               fixed = TRUE)
 })
 
 test_that("make_stancode generates correct code for monotonic effects", {
@@ -209,8 +219,16 @@ test_that("make_stancode generates correct code for monotonic effects", {
   scode <- make_stancode(y ~ monotonic(x1 + x2), data = data)
   expect_match(scode, "int Xm[N, Km];", fixed = TRUE)
   expect_match(scode, "simplex[Jm[1]] simplex_1;", fixed = TRUE)
-  expect_match(scode, "bm[2] * monotonic(simplex_2, Xm[n, 2]);", fixed = TRUE)
+  expect_match(scode, "(bm[2]) * monotonic(simplex_2, Xm[n, 2]);", fixed = TRUE)
   expect_match(scode, "simplex_1 ~ dirichlet(con_simplex_1);", fixed = TRUE)
+  scode <- make_stancode(y ~ mono(x1) + (mono(x1)|x2) + (1|x2), data = data)
+  expect_match(scode, "(bm[1] + r_1_1[J_1[n]]) * monotonic(simplex_1, Xm[n, 1]);",
+               fixed = TRUE)
+  # check that Z_1_1 is (correctly) undefined
+  expect_match(scode, paste0("  int<lower=1> M_1; \n",
+    "  // data for group-specific effects of ID 2"), fixed = TRUE)
+  expect_error(make_stancode(y ~ mono(x1) + (mono(x1+x2)|x2), data = data),
+               "Monotonic group-level terms require", fixed = TRUE)
 })
 
 test_that("make_stancode generates correct code for non-linear models", {

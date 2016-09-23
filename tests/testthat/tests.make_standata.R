@@ -236,13 +236,6 @@ test_that("make_standata allows to retrieve the initial data order", {
                as.numeric(sdata2$Y[attr(sdata2, "old_order"), ]))
 })
 
-test_that("make_standata rejects invalid input for cse effects", {
-  expect_error(make_standata(rating ~ 1 + cse(treat), data = inhaler,
-                             family = "gaussian"), "only meaningful")
-  expect_error(make_standata(rating ~ 1 + cse(1), data = inhaler,
-                             family = "acat"), "invalid input")
-})
-
 test_that("make_standata handles covariance matrices correctly", {
   A <- structure(diag(1, 4), dimnames = list(1:4, NULL))
   expect_equivalent(make_standata(count ~ Trt_c + (1|visit), data = epilepsy,
@@ -386,8 +379,25 @@ test_that("make_standata does not center X in models without an intercept", {
   expect_equal(unname(sdata$X[, 1]), dat$x)
 })
 
-test_that("make_standata handles variable 'intercept' correclty", {
+test_that("make_standata handles variable 'intercept' correctly", {
   dat <- data.frame(y = rnorm(10), x = 1:10)
   sdata <- make_standata(y~0+intercept + x, data = dat)
   expect_equal(unname(sdata$X), cbind(1, dat$x))
+})
+
+test_that("make_standata handles category specific effects correctly", {
+  sdata <- make_standata(rating ~ period + carry + cse(treat), 
+                         data = inhaler, family = sratio())
+  expect_equivalent(sdata$Xp, matrix(inhaler$treat))
+  sdata <- make_standata(rating ~ period + carry + cse(treat) + (cse(1)|subject), 
+                         data = inhaler, family = acat())
+  expect_equivalent(sdata$Z_1_3, as.array(rep(1, nrow(inhaler))))
+  sdata <- make_standata(rating ~ period + carry + (cse(treat)|subject), 
+                         data = inhaler, family = cratio())
+  expect_equivalent(sdata$Z_1_4, as.array(inhaler$treat))
+  expect_error(make_standata(rating ~ 1 + cse(treat), data = inhaler,
+                             family = "cumulative"), "only meaningful")
+  expect_error(make_standata(rating ~ 1 + (1 + cse(1)|subject), 
+                             data = inhaler, family = "cratio"), 
+               "category specific effects in separate group-level terms")
 })
