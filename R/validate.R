@@ -219,9 +219,6 @@ extract_cse <- function(formula, family = NA) {
     cse_terms <- substr(cse_terms, 5, nchar(cse_terms) - 1)
     cse_terms <- formula(paste("~", paste(cse_terms, collapse = "+")))
     attr(cse_terms, "rsv_intercept") <- TRUE
-    if (!length(all.vars(cse_terms))) {
-      stop("No variable supplied to function 'cse'.", call. = FALSE)
-    }
   }
   structure(cse_terms, pos = pos_cse_terms)
 }
@@ -500,6 +497,19 @@ split_re_terms <- function(re_terms) {
       lhs_terms[i] <- formula2string(lhs_form_mono, rm = 1)
       type[[i]] <- "mono"
     }
+    lhs_form_cse <- extract_cse(lhs_form)
+    if (is.formula(lhs_form_cse)) {
+      pos_cse <- attr(lhs_form_cse, "pos")
+      comb_cse_terms <- paste(lhs_all_terms[pos_cse], collapse = "+")
+      comb_cse_terms <- gsub("[ \t\r\n]+", "", comb_cse_terms, perl = TRUE)
+      if (!identical(lhs_terms[i], comb_cse_terms)) {
+        stop("Please specify category specific effects in separate ",
+             "group-level terms.", call. = FALSE)
+      }
+      lhs_terms[i] <- formula2string(lhs_form_cse, rm = 1)
+      type[[i]] <- "cse"
+    }
+    
     # expaned grouping factor terms
     groups <- unlist(strsplit(rhs_terms[i], "/", fixed = TRUE))
     new_groups <- c(groups[1], rep("", length(groups) - 1L))
@@ -750,6 +760,7 @@ eval_spline <- function(spline) {
 }
 
 all_terms <- function(formula) {
+  if (is.null(formula)) return(NULL)
   terms <- terms(as.formula(formula))
   gsub("[ \t\r\n]+", "", x = attr(terms, "term.labels"), perl = TRUE)
 }
@@ -860,13 +871,19 @@ has_splines <- function(effects) {
   out || any(ulapply(ee_auxpars, has_splines))
 }
 
-tidy_ranef <- function(effects, data = NULL, all = TRUE) {
+has_cse <- function(effects) {
+  length(all_terms(effects$cse)) ||
+    any(get_random(effects)$type %in% "cse")
+}
+
+tidy_ranef <- function(effects, data = NULL, all = TRUE, ncat = NULL) {
   # combines helpful information on the group-level effects
   # Args:
   #   effects: output of extract_effects
   #   data: data passed to brm after updating
   #   all: include REs of non-linear and auxiliary parameters?
-  #   combined: should 
+  #   ncat: optional number of response categories
+  #         only used for category specific group-level effects
   # Returns: 
   #   A tidy data.frame with the following columns:
   #     id: ID of the group-level effect 
@@ -886,6 +903,15 @@ tidy_ranef <- function(effects, data = NULL, all = TRUE) {
     if (random$type[[i]] == "mono") {
       coef <- colnames(prepare_mono_vars(random$form[[i]], data = data, 
                                          check = FALSE))
+    } else if (random$type[[i]] == "cse") {
+      coef <- colnames(get_model_matrix(random$form[[i]], data = data))
+      if (is.null(ncat)) {
+        # try to infer ncat from the data
+        Y <- as.numeric(model.response(data))
+        ncat <- max(Y) - min(Y) + 1
+      }
+      indices <- paste0("[", seq_len(ncat - 1), "]")
+      coef <- as.vector(t(outer(coef, indices, paste0)))
     } else {
       coef <- colnames(get_model_matrix(random$form[[i]], data = data)) 
     }
@@ -922,6 +948,7 @@ tidy_ranef <- function(effects, data = NULL, all = TRUE) {
     ranef[[i]] <- rdat 
   }
   ranef <- do.call(rbind, c(list(empty_ranef()), ranef))
+  # TODO: check for duplicated group-level effects
   if (nrow(ranef)) {
     for (id in unique(ranef$id)) {
       ranef$cn[ranef$id == id] <- seq_len(sum(ranef$id == id))

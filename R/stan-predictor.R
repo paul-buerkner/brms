@@ -28,14 +28,9 @@ stan_effects <- function(effects, data, family = gaussian(),
   # include spline terms
   splines <- get_spline_labels(effects)
   text_splines <- stan_splines(splines, prior = prior, nlpar = nlpar)
-  # category specific effects
+  # include category specific effects
   csef <- colnames(get_model_matrix(effects$cse, data))
-  text_csef <- stan_csef(csef = csef, prior = prior, nlpar = nlpar)
-  if (length(csef)) {
-    out$modelD <- paste0(out$modelD, 
-     "  // linear predictor for category specific effects \n",                  
-     "  matrix[N, ncat - 1] etap; \n")
-  }
+  text_csef <- stan_csef(csef = csef, ranef = ranef, prior = prior)
   # include monotonic effects
   monef <- colnames(data_monef(effects, data)$Xm)
   text_monef <- stan_monef(monef, prior = prior, nlpar = nlpar)
@@ -47,8 +42,9 @@ stan_effects <- function(effects, data, family = gaussian(),
     out$data <- paste0(out$data, "  vector[N] offset", p, "; \n")
   }
   
-  # initialize eta_<nlpar>
-  out$modelC1 <- paste0(out$modelC1, "  ", eta, " = ", 
+  # initialize and compute eta_<nlpar>
+  out$modelC1 <- paste0(
+    out$modelC1, "  ", eta, " = ", 
     stan_eta_fixef(fixef, center_X = center_X, 
                    sparse = sparse, nlpar = nlpar), 
     stan_eta_splines(splines, nlpar = nlpar), 
@@ -56,8 +52,7 @@ stan_effects <- function(effects, data, family = gaussian(),
       paste0(" + temp", p, "_Intercept"),
     if (has_offset) paste0(" + offset", p),
     if (get_arr(autocor)) " + Yarr * arr", 
-    "; \n", 
-    if (length(csef)) "  etap = Xp * bp; \n")
+    "; \n")
   
   # repare loop over eta
   eta_ma <- ifelse(get_ma(autocor) && !use_cov(autocor),
@@ -474,24 +469,53 @@ stan_monef <- function(monef, prior = prior_frame(), nlpar = "") {
   out
 }
 
-stan_csef <- function(csef, prior = prior_frame(), nlpar = "") {
+stan_csef <- function(csef, ranef = empty_ranef(), 
+                      prior = prior_frame(), nlpar = "") {
   # Stan code for category specific effects
   # Args:
   #   csef: names of the category specific effects
   #   prior: a data.frame containing user defined priors 
   #          as returned by check_prior
-  # (!) Not implemented for non-linear models
+  # (!) Not yet implemented for non-linear models
+  stopifnot(!nzchar(nlpar))
+  ranef <- ranef[ranef$nlpar == nlpar & ranef$type == "cse", ]
   out <- list()
+  if (length(csef) || nrow(ranef)) {
+    out$modelD <- paste0(
+      "  // linear predictor for category specific effects \n",                  
+      "  matrix[N, ncat - 1] etap; \n")
+  }
   if (length(csef)) {
-    stopifnot(!nzchar(nlpar))
     out$data <- paste0(
       "  int<lower=1> Kp;  // number of category specific effects \n",
       "  matrix[N, Kp] Xp;  // CSE design matrix \n")
     bound <- get_bound(prior, class = "b")
     out$par <- paste0(
       "  matrix", bound, "[Kp, ncat - 1] bp;  // category specific effects \n")
+    out$modelC1 <- "  etap = Xp * bp; \n"
     out$prior <- stan_prior(class = "b", coef = csef, prior = prior, 
                             suffix = "p", matrix = TRUE)
+  } 
+  if (nrow(ranef)) {
+    if (!length(csef)) {
+      # only group-level category specific effects present
+      out$modelC1 <- "  etap = rep_matrix(0, N, ncat - 1); \n"
+    }
+    cats <- get_matches("\\[[[:digit:]]+\\]$", ranef$coef)
+    ncatM1 <- max(as.numeric(substr(cats, 2, nchar(cats) - 1)))
+    for (i in seq_len(ncatM1)) {
+      r_cat <- ranef[grepl(paste0("\\[", i, "\\]$"), ranef$coef), ]
+      out$modelC2 <- paste0(out$modelC2,
+        "    etap[n, ", i, "] = etap[n, ", i, "]")
+      for (id in unique(r_cat$id)) {
+        r <- r_cat[r_cat$id == id, ]
+        idp <- paste0(r$id, usc(r$nlpar, "prefix"))
+        out$modelC2 <- paste0(out$modelC2, collapse(
+          " + r_", idp, "_", r$cn, "[J_", r$id, "[n]]",
+          " * Z_", idp, "_", r$cn, "[n]"))
+      }
+      out$modelC2 <- paste0(out$modelC2, "; \n")
+    }
   }
   out
 } 

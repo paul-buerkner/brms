@@ -649,13 +649,12 @@ data_monef <- function(effects, data, ranef = empty_ranef(),
   out
 }
 
-data_ranef <- function(ranef, data, nlpar = "", 
-                       type = "", not4stan = FALSE) {
+data_ranef <- function(ranef, data, nlpar = "", not4stan = FALSE) {
   # prepare data for group-level effects for use in Stan
   # Args: see data_effects
   stopifnot(length(nlpar) == 1L)
   out <- list()
-  ranef <- ranef[ranef$nlpar == nlpar & ranef$type == type, ]
+  ranef <- ranef[ranef$nlpar == nlpar & ranef$type != "mono", ]
   if (nrow(ranef)) {
     Z <- lapply(ranef[!duplicated(ranef$gn), ]$form, 
                 get_model_matrix, data = data)
@@ -671,6 +670,14 @@ data_ranef <- function(ranef, data, nlpar = "",
         Zname <- paste0("Z_", gn[i])
         out <- c(out, setNames(Z[i], Zname))
       } else {
+        if (r$type[1] == "cse") {
+          ncatM1 <- nrow(r) / ncol(Z[[i]])
+          Z_temp <- vector("list", ncol(Z[[i]]))
+          for (k in seq_along(Z_temp)) {
+            Z_temp[[k]] <- replicate(ncatM1, Z[[i]][, k])
+          }
+          Z[[i]] <- do.call(cbind, Z_temp)
+        }
         Zname <- paste0("Z_", idp, "_", r$cn)
         for (j in seq_len(ncol(Z[[i]]))) {
           out <- c(out, setNames(list(as.array(Z[[i]][, j])), Zname[j]))
@@ -744,7 +751,7 @@ data_csef <- function(effects, data) {
   #   effects: a list returned by extract_effects
   #   data: the data passed by the user
   out <- list()
-  if (is.formula(effects[["cse"]])) {
+  if (length(all_terms(effects[["cse"]]))) {
     Xp <- get_model_matrix(effects$cse, data)
     avoid_auxpars(colnames(Xp), effects = effects)
     out <- c(out, list(Kp = ncol(Xp), Xp = Xp))
