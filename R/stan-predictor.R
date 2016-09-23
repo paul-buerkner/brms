@@ -548,7 +548,7 @@ stan_eta_ranef <- function(ranef, nlpar = "") {
   #   ranef: a named list returned by tidy_ranef
   #   nlpar: currently unused
   eta_ranef <- ""
-  ranef <- subset(ranef, !nzchar(type))
+  ranef <- ranef[!nzchar(ranef$type), ]
   for (id in unique(ranef$id)) {
     r <- ranef[ranef$id == id, ]
     idp <- paste0(r$id, usc(r$nlpar, "prefix"))
