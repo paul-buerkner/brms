@@ -434,7 +434,6 @@ posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,
   contains_samples(x)
   pars <- extract_pars(pars, all_pars = parnames(x), 
                        exact_match = exact_match, ...)
-  x <- restructure(x)
   
   # get basic information on the samples 
   iter <- x$fit@sim$iter
@@ -513,9 +512,7 @@ as.mcmc.brmsfit <- function(x, pars = NA, exact_match = FALSE,
 #' @rdname prior_samples
 #' @export
 prior_samples.brmsfit <- function(x, pars = NA, parameters = NA, ...) {
-  if (is.na(pars[1])) {
-    pars <- parameters 
-  }
+  pars <- use_alias(pars, parameters, default = NA)
   if (!anyNA(pars) && !is.character(pars)) {
     stop("Argument 'pars' must be a character vector", call. = FALSE)
   }
