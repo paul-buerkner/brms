@@ -71,6 +71,7 @@ stan_effects <- function(effects, data, family = gaussian(),
   transform <- stan_eta_transform(family$family, family$link, ll_adj = ll_adj)
   if (transform) {
     eta_ilink <- stan_eta_ilink(family$family, family$link, 
+                                pred_shape = is.list(effects$shape),
                                 disp = is.formula(effects$disp))
   } else {
     eta_ilink <- rep("", 2)
@@ -635,10 +636,12 @@ stan_eta_transform <- function(family, link, ll_adj = FALSE) {
   (ll_adj || !stan_has_built_in_fun(family, link))
 }
 
-stan_eta_ilink <- function(family, link, disp = FALSE) {
+stan_eta_ilink <- function(family, link, pred_shape = FALSE,
+                           disp = FALSE) {
   # correctly apply inverse link to eta
   ilink <- stan_ilink(link)
-  shape <- ifelse(disp, "disp_shape[n]", "shape")
+  shape <- ifelse(disp, "disp_shape[n]", 
+                  ifelse(pred_shape, "shape[n]", "shape"))
   fl <- ifelse(family %in% c("gamma", "exponential"), 
                paste0(family,"_",link), family)
   switch(fl, c(paste0(ilink,"("), ")"),

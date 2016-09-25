@@ -14,6 +14,9 @@
       \item Fix a bug that could result in incorrect
       threshold estimates for \code{cumulative} and
       \code{sratio} models thanks to Peter Congdon.
+      \item Fix a bug that sometimes kept distributional 
+      \code{gamma} models from being compiled 
+      thanks to Tim Beechey.
     }
   }
 }

@@ -389,3 +389,13 @@ test_that("make_stancode correctly computes ordinal thresholds", {
   expect_match(sc, "b_Intercept = temp_Intercept - dot_product(means_X, b);",
                fixed = TRUE)
 })
+
+test_that("make_stancode correctly parses distributional gamma models", {
+  # test fix of issue #124
+  scode <- make_stancode(bf(time ~ age * sex + disease + (1|patient), 
+                            shape ~ age + (1|patient)), 
+                         data = kidney, family = Gamma("log"))
+  expect_match(scode, paste0("    shape[n] = exp(shape[n]); \n", 
+                             "    eta[n] = shape[n] * exp(-(eta[n]));"),
+               fixed = TRUE)
+})

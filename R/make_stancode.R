@@ -74,7 +74,8 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   text_ranef <- lapply(unique(ranef$id), stan_ranef, ranef = ranef, 
                        prior = prior, cov_ranef = cov_ranef)
   # combine all code related to predictors
-  text_pred <- collapse_lists(c(list(text_pred, text_auxpars), text_ranef))
+  # list text_auxpars first as part of fixing issue #124
+  text_pred <- collapse_lists(c(list(text_auxpars, text_pred), text_ranef))
   
   # generate Stan code of the likelihood
   text_llh <- stan_llh(family, effects = ee, autocor = autocor,
@@ -213,14 +214,13 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
       if (needs_lp_pre) 
         paste0("  vector[N] lp_pre; \n"),
       text_pred$modelC1,
-      text_disp$modelC1,
       text_autocor$modelC1, 
       text_loop[1],
         text_pred$modelC2, 
         text_autocor$modelC2,
         text_pred$modelC3,
       text_loop[2],
-      text_forked$modelC1,
+      text_disp$modelC1,
       "  // prior specifications \n", 
       text_prior, 
       "  // likelihood contribution \n",
