@@ -512,8 +512,37 @@ change_old_ranef2 <- function(ranef, pars, dims) {
       index_names <- make_index_names(levels, sub_r$coef, dim = 2)
       new_r_names <- paste0(new_r_name, index_names)
       change <- lc(change, 
-                   change_simple(old_r_name, new_r_names, pars, dims, 
-                                 pnames = new_r_name))
+        change_simple(old_r_name, new_r_names, pars, dims, 
+                      pnames = new_r_name))
+    }
+  }
+  change
+}
+
+change_old_splines <- function(pars, dims) {
+  # change names of spline parameters fitted with brms <= 1.0.0
+  # this became necessary after allowing splines with multiple covariates
+  spline_pars <- pars[grepl("^sds_|^s_", pars)]
+  change <- list()
+  if (length(spline_pars)) {
+    # rename sds pars
+    old_sds_pars <- spline_pars[grepl("^sds_", spline_pars)]
+    new_sds_pars <- paste0(old_sds_pars, "_1")
+    for (i in seq_along(old_sds_pars)) {
+      change <- lc(change,
+        change_simple(old_sds_pars[i], new_sds_pars[i], pars, dims))
+    }
+    # rename s pars
+    all_old_s_pars <- spline_pars[grepl("^s_", spline_pars)]
+    indices <- get_matches("\\[[[:digit:]]\\]$", all_old_s_pars)
+    old_s_pars <- unique(sub("\\[[[:digit:]]\\]$", "", all_old_s_pars))
+    for (i in seq_along(old_s_pars)) {
+      new_s_par <- paste0(old_s_pars[i], "_1")
+      take <- grepl(paste0("^", old_s_pars[i]), all_old_s_pars)
+      new_s_pars <- paste0(new_s_par, indices[take])
+      change <- lc(change,
+        change_simple(old_s_pars[i], new_s_pars, pars, dims,
+                      pnames = new_s_par))
     }
   }
   change
