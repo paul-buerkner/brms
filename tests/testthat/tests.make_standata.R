@@ -357,7 +357,7 @@ test_that("make_standata returns data for GAMMs", {
   
   standata <- make_standata(y ~ t2(x1,x2), data = dat)
   expect_equal(standata$nb_1, 3)
-  expect_equal(as.vector(standata$knots_2), c(9, 6, 6))
+  expect_equal(as.vector(standata$knots_1), c(9, 6, 6))
   expect_equal(dim(standata$Zs_1_1), c(10, 9))
   expect_equal(dim(standata$Zs_1_3), c(10, 6))
 })
