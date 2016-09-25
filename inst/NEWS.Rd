@@ -3,6 +3,12 @@
 \encoding{UTF-8}
 
 \section{CHANGES IN VERSION 1.0.1.9000}{
+   \subsection{NEW FEATURES}{
+    \itemize{ 
+      \item Allow \code{t2} smooth terms based on
+      multiple covariates.
+    }
+  }
   \subsection{BUG FIXES}{
     \itemize{ 
       \item Fix a bug that could result in incorrect

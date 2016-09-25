@@ -48,9 +48,13 @@ linear_predictor <- function(draws, i = NULL) {
   }
   # incorporate splines
   splines <- names(draws[["s"]])
-  for (j in seq_along(splines)) {
-    eta <- eta + fixef_predictor(X = p(draws$data[[paste0("Zs_", j)]], i),
-                                 b = draws[["s"]][[splines[j]]])
+  for (k in seq_along(splines)) {
+    nb <- seq_len(length(draws[["s"]][[splines[k]]]))
+    for (j in nb) {
+      Zs <- p(draws$data[[paste0("Zs_", k, "_", j)]], i)
+      s <- draws[["s"]][[splines[k]]][[j]]
+      eta <- eta + fixef_predictor(X = Zs, b = s)
+    }
   }
   if (!is.null(draws[["arr"]])) {
     eta <- eta + fixef_predictor(X = p(draws$data$Yarr, i), b = draws[["arr"]])

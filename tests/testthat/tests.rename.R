@@ -105,3 +105,23 @@ test_that("change_old_ranef and change_old_ranef2 return expected lists", {
                "cor_g_a_Intercept_a_x" = numeric(0), "r_g_a" = c(10, 2))
   expect_equal(brms:::change_old_ranef2(ranef, pars = pars, dims = dims), target)
 })
+
+test_that("change_old_splines return expected lists", {
+  target <- list(
+    list(pos = c(TRUE, rep(FALSE, 16)), oldname = "sds_t2x0",
+         pnames = "sds_t2x0_1", fnames = "sds_t2x0_1", dims = numeric(0)),
+    list(pos = c(FALSE, TRUE, rep(FALSE, 15)), oldname = "sds_sx1",
+         pnames = "sds_sx1_1", fnames = "sds_sx1_1", dims = numeric(0)),
+    list(pos = c(FALSE, FALSE, rep(TRUE, 6), rep(FALSE, 9)), 
+         oldname = "s_t2x0", pnames = "s_t2x0_1", 
+         fnames = paste0("s_t2x0_1[", 1:6, "]"), dims = 6),
+    list(pos = c(rep(FALSE, 8), rep(TRUE, 9)), 
+         oldname = "s_sx1", pnames = "s_sx1_1", 
+         fnames = paste0("s_sx1_1[", 1:9, "]"), dims = 9)
+  )
+  pars <- c("sds_t2x0", "sds_sx1", paste0("s_t2x0[", 1:6, "]"),
+            paste0("s_sx1[", 1:9, "]"))
+  dims <- list(sds_t2x0 = numeric(0), sds_sx1 = numeric(0),
+               s_t2x0 = 6, s_sx1 = 9)
+  expect_equal(brms:::change_old_splines(pars, dims), target)
+})

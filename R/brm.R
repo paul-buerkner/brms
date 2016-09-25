@@ -360,7 +360,8 @@ brm <- function(formula, data = NULL, family = gaussian(),
                  threshold = threshold, algorithm = algorithm)
     # see validate.R
     x$ranef <- tidy_ranef(ee, data = x$data)  
-    x$exclude <- exclude_pars(ee, ranef = x$ranef, save_ranef = ranef)
+    x$exclude <- exclude_pars(ee, x$data, ranef = x$ranef, 
+                              save_ranef = ranef)
     # see make_stancode.R
     x$model <- make_stancode(formula = formula, data = data, 
                              family = family, prior = prior,  

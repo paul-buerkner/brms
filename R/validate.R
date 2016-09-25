@@ -745,14 +745,25 @@ get_all_effects <- function(effects, rsv_vars = NULL) {
   all_effects[ulapply(all_effects, length) < 3L]
 }
 
-get_spline_labels <- function(x) {
+get_spline_labels <- function(x, data = NULL) {
   # extract labels of splines for GAMMs
   # Args:
   #   x: either a formula or a list containing an element "gam"
-  if (is.list(x)) x <- x$gam
-  if (is.null(x)) return(NULL)
-  term_labels <- rename(attr(terms(x), "term.labels"), " ", "")
-  term_labels[grepl("^(s|t2|te|ti)\\(", term_labels)]
+  if (is.formula(x)) {
+    x <- extract_effects(x, check_response = FALSE)
+  }
+  if (!is.formula(x$gam)) {
+    return(NULL)
+  }
+  term_labels <- rename(attr(terms(x$gam), "term.labels"), " ", "")
+  splines <- term_labels[grepl("^(s|t2|te|ti)\\(", term_labels)]
+  if (length(splines) && !is.null(data)) {
+    # one spline term may contain multiple spline matrices
+    sdata_fixef <- data_fixef(x, data)
+    knots <- sdata_fixef[grepl("^knots_", names(sdata_fixef))]
+    attr(splines, "nbases") <- setNames(ulapply(knots, length), splines)
+  }
+  splines
 }
 
 eval_spline <- function(spline) {
@@ -1064,7 +1075,7 @@ check_brm_input <- function(x) {
   invisible(NULL)
 }
 
-exclude_pars <- function(effects, ranef = empty_ranef(),
+exclude_pars <- function(effects, data = NULL, ranef = empty_ranef(),
                          save_ranef = TRUE) {
   # list irrelevant parameters NOT to be saved by Stan
   # Args:
@@ -1080,14 +1091,20 @@ exclude_pars <- function(effects, ranef = empty_ranef(),
   par_effects <- rmNULL(c(effects[auxpars()], effects$nonlinear))
   for (par in names(par_effects)) {
     out <- c(out, paste0("temp_", par, "_Intercept"))
-    splines <- get_spline_labels(par_effects[[par]])
-    if (length(splines)) {
-      out <- c(out, paste0("zs_", par, "_", seq_along(splines)))
+    splines <- get_spline_labels(par_effects[[par]], data)
+    if (length(splines) && !is.null(data)) {
+      for (i in seq_along(splines)) {
+        nb <- seq_len(attr(splines, "nbases")[[i]])
+        out <- c(out, paste0("zs_", par, "_", i, "_", nb))
+      } 
     }
   }
-  splines <- get_spline_labels(effects)
-  if (length(splines)) {
-    out <- c(out, paste0("zs_", seq_along(splines)))
+  splines <- get_spline_labels(effects, data)
+  if (length(splines) && !is.null(data)) {
+    for (i in seq_along(splines)) {
+      nb <- seq_len(attr(splines, "nbases")[[i]])
+      out <- c(out, paste0("zs_", i, "_", nb))
+    }
   }
   # exclude group-level helper parameters
   if (nrow(ranef)) {

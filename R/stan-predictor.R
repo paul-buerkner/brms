@@ -26,7 +26,7 @@ stan_effects <- function(effects, data, family = gaussian(),
                            family = family, prior = prior, nlpar = nlpar,
                            sparse = sparse, threshold = threshold)
   # include spline terms
-  splines <- get_spline_labels(effects)
+  splines <- get_spline_labels(effects, data = data)
   text_splines <- stan_splines(splines, prior = prior, nlpar = nlpar)
   # include category specific effects
   csef <- colnames(get_model_matrix(effects$cse, data))
@@ -410,30 +410,35 @@ stan_splines <- function(splines, prior = prior_frame(), nlpar = "") {
   # Returns:
   #   A list of strings containing Stan code
   out <- list()
-  p <- if (nchar(nlpar)) paste0("_", nlpar) else ""
+  p <- usc(nlpar)
   if (length(splines)) {
-    out$data <- paste0(
-      "  int ns", p, ";  // number of splines terms \n",
-      "  int knots", p, "[ns", p, "];",
-      "  // number of knots per spline \n")
-  }
-  for (i in seq_along(splines)) {
-    pi <- paste0(p, "_", i)
-    out$data <- paste0(out$data, 
-      "  // design matrix of spline ", splines[i], "\n",  
-      "  matrix[N, knots", p, "[", i, "]] Zs", pi, "; \n")
-    out$par <- paste0(out$par,
-      "  // parameters of spline ", splines[i], "\n", 
-      "  vector[knots", p, "[", i, "]] zs", pi, "; \n",
-      "  real<lower=0> sds", pi, "; \n")
-    out$transD <- paste0(out$transD,
-      "  vector[knots", p, "[", i, "]] s", pi, "; \n")
-    out$transC1 <- paste0(out$transC1,
-      "  s", pi, " = sds", pi, " * zs", pi, "; \n")
-    out$prior <- paste0(out$prior, 
-      "  zs", pi, " ~ normal(0, 1); \n",
-      stan_prior(class = "sds", coef = splines[i], 
-                 nlpar = nlpar, suffix = pi, prior = prior))
+    stopifnot(!is.null(attr(splines, "nbases")))
+    for (i in seq_along(splines)) {
+      pi <- paste0(p, "_", i)
+      nb <- seq_len(attr(splines, "nbases")[[i]])
+      out$data <- paste0(out$data,
+        "  // data of spline ", splines[i], "\n",  
+        "  int nb", pi, ";  // number of bases \n",
+        "  int knots", pi, "[nb", pi, "]; \n")
+      out$data <- paste0(out$data, collapse(
+        "  matrix[N, knots", pi, "[", nb, "]]", 
+        " Zs", pi, "_", nb, "; \n"))
+      out$par <- paste0(out$par,
+        "  // parameters of spline ", splines[i], "\n")
+      out$par <- paste0(out$par, collapse(
+        "  vector[knots", pi, "[", nb, "]] zs", pi,"_", nb, "; \n",
+        "  real<lower=0> sds", pi, "_", nb, "; \n"))
+      out$transD <- paste0(out$transD, collapse(
+        "  vector[knots", pi, "[", nb, "]] s", pi, "_", nb, "; \n"))
+      out$transC1 <- paste0(out$transC1, collapse(
+        "  s", pi, "_", nb, " = sds", pi,  "_", nb, 
+        " * zs", pi, "_", nb, "; \n"))
+      out$prior <- paste0(out$prior, collapse(
+        "  zs", pi, "_", nb, " ~ normal(0, 1); \n"),
+        stan_prior(class = "sds", coef = splines[i], 
+                   nlpar = nlpar, prior = prior,
+                   suffix = paste0(pi, "_", nb)))
+    }
   }
   out
 }
@@ -594,11 +599,16 @@ stan_eta_splines <- function(splines, nlpar = "") {
   #   splines: names of the spline terms
   #   nlpar: an optional character string to add to the varnames
   #         (used for non-linear models)
-  p <- if (nchar(nlpar)) paste0("_", nlpar) else ""
+  p <- usc(nlpar)
   eta_splines <- ""
-  for (i in seq_along(splines)) {
-    eta_splines <- paste0(eta_splines, 
-      " + Zs", p, "_", i, " * s", p, "_", i)
+  if (length(splines)) {
+    stopifnot(!is.null(attr(splines, "nbases")))
+    for (i in seq_along(splines)) {
+      pi <- paste0(p, "_", i)
+      nb <- seq_len(attr(splines, "nbases")[[splines[i]]])
+      eta_splines <- paste0(eta_splines, collapse(
+        " + Zs", pi, "_", nb, " * s", pi, "_", nb))
+    }
   }
   eta_splines
 }
