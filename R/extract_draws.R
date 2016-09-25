@@ -181,12 +181,19 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
     }
   }
   # splines
-  splines <- rename(get_spline_labels(ee))
-  for (i in seq_along(splines)) {
-    draws[["Zs"]][[splines[i]]] <- draws$data[[paste0("Zs_", i)]]
-    s_pars <- paste0("^s_", nlpar_usc, splines[i], "\\[")
-    draws[["s"]][[splines[i]]] <- 
-      do.call(as.matrix, c(args, list(pars = s_pars)))
+  splines <- rename(get_spline_labels(ee, x$data))
+  if (length(splines)) {
+    draws[["Zs"]] <- draws[["s"]] <- named_list(splines)
+    for (i in seq_along(splines)) {
+      nb <- seq_len(attr(splines, "nbases")[[i]])
+      for (j in nb) {
+        draws[["Zs"]][[splines[i]]][[j]] <- 
+          draws$data[[paste0("Zs_", i, "_", j)]]
+        s_pars <- paste0("^s_", nlpar_usc, splines[i], "_", j, "\\[")
+        draws[["s"]][[splines[i]]][[j]] <- 
+          do.call(as.matrix, c(args, list(pars = s_pars)))
+      }
+    }
   }
   
   # group-level effects

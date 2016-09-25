@@ -590,19 +590,16 @@ data_fixef <- function(effects, data, family = gaussian(),
         sm$X <- mgcv::PredictMat(sm, rm_attr(data, "terms"))
       }
       rasm <- mgcv::smooth2random(sm, names(data))
-      # mgcv:::gamm.setup loops over rasm$rand 
-      # although it should have only one element anyway
-      # if it has more elements the brms implementation will fail
-      stopifnot(length(rasm$rand) <= 1L)
       Xs[[i]] <- rasm$Xf
       if (ncol(Xs[[i]])) {
-        colnames(Xs[[i]]) <- paste0(sm$label, "_", 1:ncol(Xs[[i]]))
+        colnames(Xs[[i]]) <- paste0(sm$label, "_", seq_len(ncol(Xs[[i]])))
       }
-      Zs[[i]] <- attr(rasm$rand[[1]], "Xr")
+      Zs <- lapply(rasm$rand, attr, "Xr")
+      Zs <- setNames(Zs, paste0("Zs", p, "_", i, "_", seq_along(Zs)))
+      knots <- list(length(Zs), as.array(ulapply(Zs, ncol)))
+      knots <- setNames(knots, paste0(c("nb", "knots"), p, "_", i))
+      out <- c(out, knots, Zs)
     }
-    knots <- list(length(splines), as.array(ulapply(Zs, ncol)))
-    knots <- setNames(knots, paste0(c("ns", "knots"), p))
-    out <- c(out, knots, setNames(Zs, paste0("Zs", p, "_", seq_along(Zs))))
     X <- cbind(X, do.call(cbind, Xs))
     colnames(X) <- rename(colnames(X))
   }

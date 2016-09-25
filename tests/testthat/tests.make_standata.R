@@ -342,21 +342,24 @@ test_that("make_standata returns data for bsts models", {
 test_that("make_standata returns data for GAMMs", {
   dat <- data.frame(y = rnorm(10), x1 = rnorm(10), x2 = rnorm(10),
                     z = rnorm(10), g = rep(1:2, 5))
-  standata <- make_standata(y ~ s(x1) + z + s(x2) + (1|g), data = dat)
-  expect_true(all(c("ns", "knots", "Zs_1", "Zs_2") %in% names(standata)))
-  expect_equal(standata$ns, 2)
-  expect_equal(as.vector(standata$knots), c(8, 8))
-  expect_equal(dim(standata$Zs_1), c(10, 8))
-  expect_equal(dim(standata$Zs_2), c(10, 8))
+  standata <- make_standata(y ~ s(x1) + z + s(x2), data = dat)
+  expect_equal(standata$nb_1, 1)
+  expect_equal(as.vector(standata$knots_2), 8)
+  expect_equal(dim(standata$Zs_1_1), c(10, 8))
+  expect_equal(dim(standata$Zs_2_1), c(10, 8))
   
-  standata <- make_standata(y ~ lp, nonlinear = lp ~ s(x1) + z + s(x2) + (1|g), 
-                            data = dat)
-  expect_true(all(c("ns_lp", "knots_lp", "Zs_lp_1", "Zs_lp_2") %in% 
-                    names(standata)))
-  expect_equal(standata$ns_lp, 2)
-  expect_equal(as.vector(standata$knots_lp), c(8, 8))
-  expect_equal(dim(standata$Zs_lp_1), c(10, 8))
-  expect_equal(dim(standata$Zs_lp_2), c(10, 8))
+  standata <- make_standata(y ~ lp, data = dat,
+                            nonlinear = lp ~ s(x1) + z + s(x2))
+  expect_equal(standata$nb_lp_1, 1)
+  expect_equal(as.vector(standata$knots_lp_2), 8)
+  expect_equal(dim(standata$Zs_lp_1_1), c(10, 8))
+  expect_equal(dim(standata$Zs_lp_2_1), c(10, 8))
+  
+  standata <- make_standata(y ~ t2(x1,x2), data = dat)
+  expect_equal(standata$nb_1, 3)
+  expect_equal(as.vector(standata$knots_2), c(9, 6, 6))
+  expect_equal(dim(standata$Zs_1_1), c(10, 9))
+  expect_equal(dim(standata$Zs_1_3), c(10, 6))
 })
 
 test_that("make_standata returns correct group ID data", {

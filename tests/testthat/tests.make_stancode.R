@@ -342,19 +342,26 @@ test_that("make_stancode correctly generates code for GAMMs", {
   dat <- data.frame(y = rnorm(10), x = rnorm(10), g = rep(1:2, 5))
   stancode <- make_stancode(y ~ s(x) + (1|g), data = dat,
                             prior = set_prior("normal(0,2)", "sds"))
-  expect_match(stancode, "Zs_1 * s_1", fixed = TRUE)
-  expect_match(stancode, "matrix[N, knots[1]] Zs_1", fixed = TRUE)
-  expect_match(stancode, "zs_1 ~ normal(0, 1)", fixed = TRUE)
-  expect_match(stancode, "sds_1 ~ normal(0,2)", fixed = TRUE)
+  expect_match(stancode, "Zs_1_1 * s_1_1", fixed = TRUE)
+  expect_match(stancode, "matrix[N, knots_1[1]] Zs_1_1", fixed = TRUE)
+  expect_match(stancode, "zs_1_1 ~ normal(0, 1)", fixed = TRUE)
+  expect_match(stancode, "sds_1_1 ~ normal(0,2)", fixed = TRUE)
   
   prior <- c(set_prior("normal(0,5)", nlpar = "lp"),
              set_prior("normal(0,2)", "sds", nlpar = "lp"))
   stancode <- make_stancode(y ~ lp, nonlinear = lp ~ s(x) + (1|g), data = dat, 
                             prior = prior)
-  expect_match(stancode, "Zs_lp_1 * s_lp_1", fixed = TRUE)
-  expect_match(stancode, "matrix[N, knots_lp[1]] Zs_lp_1", fixed = TRUE)
-  expect_match(stancode, "zs_lp_1 ~ normal(0, 1)", fixed = TRUE)
-  expect_match(stancode, "sds_lp_1 ~ normal(0,2)", fixed = TRUE)
+  expect_match(stancode, "Zs_lp_1_1 * s_lp_1_1", fixed = TRUE)
+  expect_match(stancode, "matrix[N, knots_lp_1[1]] Zs_lp_1_1", fixed = TRUE)
+  expect_match(stancode, "zs_lp_1_1 ~ normal(0, 1)", fixed = TRUE)
+  expect_match(stancode, "sds_lp_1_1 ~ normal(0,2)", fixed = TRUE)
+  
+  stancode <- make_stancode(y ~ s(x) + t2(x,y), data = dat,
+                            prior = set_prior("normal(0,2)", "sds"))
+  expect_match(stancode, "Zs_2_2 * s_2_2", fixed = TRUE)
+  expect_match(stancode, "matrix[N, knots_2[2]] Zs_2_2", fixed = TRUE)
+  expect_match(stancode, "zs_2_2 ~ normal(0, 1)", fixed = TRUE)
+  expect_match(stancode, "sds_2_2 ~ normal(0,2)", fixed = TRUE)
 })
 
 test_that("make_stancode correctly handles the group ID syntax", {
