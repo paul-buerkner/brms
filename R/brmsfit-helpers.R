@@ -83,7 +83,7 @@ restructure <- function(x) {
       change_old_ranef2(x$ranef, pars = parnames(x),
                         dims = x$fit@sim$dims_oi))
   }
-  if (isTRUE(x$version <= "1.0.0")) {
+  if (isTRUE(x$version <= "1.0.1")) {
     # names of spline parameters had to be changed after
     # allowing for multiple covariates in one spline term
     change <- c(change,
