@@ -154,6 +154,8 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       stop("Factors with more than two levels are not allowed as covariates",
            call. = FALSE)
     }
+    # fixes issue #127 occuring for factorial covariates
+    colnames(C) <- all.vars(ee$covars)
     standata <- c(standata, list(KC = ncol(C), C = C)) 
     for (nlp in nlpars) {
       args_eff_spec <- list(effects = ee$nonlinear[[nlp]], nlpar = nlp,

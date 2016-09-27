@@ -17,6 +17,10 @@
       \item Fix a bug that sometimes kept distributional 
       \code{gamma} models from being compiled 
       thanks to Tim Beechey.
+      \item Fix a bug causing an error in \code{predict} 
+      and related methods when two-level factors or 
+      logical variables were used as covariates in
+      non-linear models thanks to Martin Schmettow.
     }
   }
 }
