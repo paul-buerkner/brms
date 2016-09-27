@@ -4,7 +4,9 @@
 
 \section{CHANGES IN VERSION 1.0.1.9000}{
    \subsection{NEW FEATURES}{
-    \itemize{ 
+    \itemize{
+      \item Estimate monotonic group-level effects.
+      \item Estimate category specific group-level effects.
       \item Allow \code{t2} smooth terms based on
       multiple covariates.
     }
