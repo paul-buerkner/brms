@@ -133,16 +133,24 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   }
   
   # make a formula containing all required variables (element 'all')
+  lhs_vars <- if (resp_rhs_all) all.vars(lhs(x$fixed))
+  fixed_vars <- if (!length(x$nonlinear))
+                  c(rhs(x$fixed), all.vars(rhs(x$fixed)))
   formula_list <- c(
-    if (resp_rhs_all) all.vars(lhs(x$fixed)), 
-    add_vars, x[c("covars", "cse", "mono")], all.vars(rhs(x$gam)),  
-    if (!length(x$nonlinear)) c(rhs(x$fixed), all.vars(rhs(x$fixed))), 
-    x$random$form, lapply(x$random$form, all.vars), x$random$group, 
-    get_offset(x$fixed), lapply(x$nonlinear, function(e) e$all),
-    lapply(x[auxpars()], function(e) e$all), ...)
+    lhs_vars, 
+    add_vars, 
+    fixed_vars,
+    x[c("covars", "cse", "mono")], 
+    unlist(attr(x$gam, "term")), 
+    x$random$form, 
+    lapply(x$random$form, all.vars), 
+    x$random$group, 
+    get_offset(x$fixed),
+    lapply(x$nonlinear, function(e) e$all),
+    lapply(x[auxpars()], function(e) e$all), 
+    ...)
   new_formula <- collapse(ulapply(formula_list, plus_rhs))
-  x$all <- paste0("update(", tfixed, ", ~ ", new_formula, ")")
-  x$all <- eval(parse(text = x$all))
+  x$all <- eval2(paste0("update(", tfixed, ", ~ ", new_formula, ")"))
   environment(x$all) <- environment(formula)
   
   # extract response variables
@@ -234,9 +242,15 @@ extract_gam <- function(formula) {
            "implemented in brms. Consider using 't2' instead.",
            call. = FALSE)
     }
+    term <- named_list(gam_terms)
+    for (i in seq_along(gam_terms)) {
+      term[[i]] <- eval_spline(gam_terms[i])$term
+    }
     gam_terms <- formula(paste("~", paste(gam_terms, collapse = "+")))
+  } else {
+    term <- NULL
   }
-  structure(gam_terms, pos = pos_gam_terms)
+  structure(gam_terms, pos = pos_gam_terms, term = term)
 }
 
 extract_random <- function(re_terms) {
@@ -708,8 +722,7 @@ get_var_combs <- function(..., alist = list()) {
     if (is(dots[[i]], "formula")) {
       dots[[i]] <- attr(terms(dots[[i]]), "term.labels")
     }
-    dots[[i]] <- lapply(dots[[i]], function(y) 
-      all.vars(parse(text = y)))
+    dots[[i]] <- lapply(dots[[i]], function(y) all.vars(parse(text = y)))
   }
   unique(unlist(dots, recursive = FALSE))
 }
@@ -724,21 +737,24 @@ get_all_effects <- function(effects, rsv_vars = NULL) {
   #   excludes all 3-way or higher interactions
   stopifnot(is.list(effects))
   stopifnot(is.atomic(rsv_vars))
+  .get_all_effects <- function(ee) {
+    get_var_combs(ee$fixed, ee$mono, ee$cse, 
+                  alist = attr(ee$gam, "term"))
+  }
   if (length(effects$nonlinear)) {
     # allow covariates as well as fixed effects of non-linear parameters
     covars <- setdiff(all.vars(rhs(effects$fixed)), names(effects$nonlinear))
-    nl_effects <- unlist(lapply(effects$nonlinear, function(nl)
-      get_var_combs(nl$fixed, nl$mono, nl$gam)), recursive = FALSE)
+    nl_effects <- lapply(effects$nonlinear, .get_all_effects)
+    nl_effects <- unlist(nl_effects, recursive = FALSE)
     all_effects <- unique(c(list(covars), nl_effects))
   } else {
-    all_effects <- get_var_combs(effects$fixed, effects$cse, 
-                                 effects$mono, effects$gam)
+    all_effects <- .get_all_effects(effects)
   }
   # make sure to also include effects only present in auxpars
   effects_auxpars <- rmNULL(effects[auxpars()])
   if (length(effects_auxpars)) {
-    ap_effects <- unlist(lapply(effects_auxpars, function(ap)
-      get_var_combs(ap$fixed, ap$mono, ap$gam)), recursive = FALSE)
+    ap_effects <- lapply(effects_auxpars, .get_all_effects)
+    ap_effects <- unlist(ap_effects, recursive = FALSE)
     all_effects <- unique(c(all_effects, ap_effects))
   }
   all_effects <- rmNULL(lapply(all_effects, setdiff, y = rsv_vars))
@@ -767,7 +783,7 @@ get_spline_labels <- function(x, data = NULL) {
 }
 
 eval_spline <- function(spline) {
-  eval(parse(text = paste0("mgcv::", spline)))
+  eval2(paste0("mgcv::", spline))
 }
 
 all_terms <- function(formula) {

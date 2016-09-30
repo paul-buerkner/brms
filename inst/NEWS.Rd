@@ -23,6 +23,9 @@
       and related methods when two-level factors or 
       logical variables were used as covariates in
       non-linear models thanks to Martin Schmettow.
+      \item Fix a bug causing an error when passing 
+      lists to additional arguments of smoothing 
+      functions thanks to Wayne Folta.
     }
   }
 }

@@ -158,6 +158,11 @@ named_list <- function(names, values = NULL) {
   setNames(values, names)
 } 
 
+eval2 <- function(text, ...) {
+  # evaluate a string
+  eval(parse(text = text), ...)
+}
+
 get_arg <- function(x, ...) {
   # find first occurrence of x in ... objects
   # Args:
