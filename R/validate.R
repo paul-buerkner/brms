@@ -738,8 +738,9 @@ get_all_effects <- function(effects, rsv_vars = NULL) {
   stopifnot(is.list(effects))
   stopifnot(is.atomic(rsv_vars))
   .get_all_effects <- function(ee) {
-    get_var_combs(ee$fixed, ee$mono, ee$cse, 
-                  alist = attr(ee$gam, "term"))
+    alist <- lapply(attr(ee$gam, "covars"), function(x) 
+      formula(paste("~", paste(x, collapse = "*"))))
+    get_var_combs(ee$fixed, ee$mono, ee$cse, alist = alist)
   }
   if (length(effects$nonlinear)) {
     # allow covariates as well as fixed effects of non-linear parameters
