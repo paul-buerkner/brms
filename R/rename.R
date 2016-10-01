@@ -103,7 +103,7 @@ rename_pars <- function(x) {
   if (length(ee$nonlinear)) {
     nlpars <- names(ee$nonlinear)
     for (p in nlpars) {
-      splines <- get_spline_labels(ee$nonlinear[[p]], x$data)
+      splines <- get_spline_labels(ee$nonlinear[[p]], x$data, covars = TRUE)
       change_eff <- change_effects(
         pars = pars, dims = x$fit@sim$dims_oi,
         fixef = colnames(standata[[paste0("X_", p)]]),
