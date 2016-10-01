@@ -12,11 +12,11 @@ rename <- function(names, symbols = NULL, subs = NULL,
   symbols <- as.character(symbols)
   subs <- as.character(subs)
   if (!length(symbols)) {
-    symbols <- c(" ", "(", ")", "[", "]", ",", 
+    symbols <- c(" ", "(", ")", "[", "]", ",", "\"", "'", 
                  "+", "-", "*", "/", "^", "=", "!=")
   }
   if (!length(subs)) {
-    subs <- c(rep("", 6), "P", "M", "MU", "D", "E", "EQ", "NEQ")
+    subs <- c(rep("", 8), "P", "M", "MU", "D", "E", "EQ", "NEQ")
   }
   if (length(subs) == 1L) {
     subs <- rep(subs, length(symbols))
