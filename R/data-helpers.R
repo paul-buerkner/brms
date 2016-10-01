@@ -377,9 +377,9 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
                             nrow(newdata))
     }
     knots <- attr(model.frame(fit), "knots")
-    newdata <- make_standata(new_formula, data = newdata, family = fit$family,
-                             autocor = fit$autocor, knots = knots, 
-                             control = control)
+    newdata <- make_standata(new_formula, data = newdata, 
+                             family = fit$family, autocor = fit$autocor,
+                             knots = knots, control = control)
   }
   newdata
 }

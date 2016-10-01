@@ -120,7 +120,8 @@ rename_pars <- function(x) {
         change_eff <- change_effects(
           pars = pars, dims = x$fit@sim$dims_oi, 
           fixef = fixef, monef = colnames(standata[[paste0("Xm_", r)]]),
-          splines = get_spline_labels(ee, x$data), nlpar = r)
+          splines = get_spline_labels(ee, x$data, covars = TRUE),
+          nlpar = r)
         change <- c(change, change_eff)
       }
     } else {
@@ -128,7 +129,7 @@ rename_pars <- function(x) {
       change_eff <- change_effects(
         pars = pars, dims = x$fit@sim$dims_oi, 
         fixef = fixef, monef = colnames(standata[["Xm"]]),
-        splines = get_spline_labels(ee, x$data))
+        splines = get_spline_labels(ee, x$data, covars = TRUE))
       change_csef <- change_csef(colnames(standata[["Xp"]]), 
                                  pars = pars, ncat = standata$ncat)
       change <- c(change, change_eff, change_csef)
@@ -140,7 +141,7 @@ rename_pars <- function(x) {
       pars = pars, dims = x$fit@sim$dims_oi,
       fixef = colnames(standata[[paste0("X_", ap)]]),
       monef = colnames(standata[[paste0("Xm_", ap)]]),
-      splines = get_spline_labels(ee[[ap]], x$data),
+      splines = get_spline_labels(ee[[ap]], x$data, covars = TRUE),
       nlpar = ap)
     change <- c(change, change_eff)
   }

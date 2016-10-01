@@ -141,7 +141,7 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
     add_vars, 
     fixed_vars,
     x[c("covars", "cse", "mono")], 
-    unlist(attr(x$gam, "term")), 
+    unlist(attr(x$gam, "covars")), 
     x$random$form, 
     lapply(x$random$form, all.vars), 
     x$random$group, 
@@ -242,15 +242,15 @@ extract_gam <- function(formula) {
            "implemented in brms. Consider using 't2' instead.",
            call. = FALSE)
     }
-    term <- named_list(gam_terms)
+    covars <- named_list(gam_terms)
     for (i in seq_along(gam_terms)) {
-      term[[i]] <- eval_spline(gam_terms[i])$term
+      covars[[i]] <- eval_spline(gam_terms[i])$term
     }
     gam_terms <- formula(paste("~", paste(gam_terms, collapse = "+")))
   } else {
-    term <- NULL
+    covars <- NULL
   }
-  structure(gam_terms, pos = pos_gam_terms, term = term)
+  structure(gam_terms, pos = pos_gam_terms, covars = covars)
 }
 
 extract_random <- function(re_terms) {
@@ -761,10 +761,13 @@ get_all_effects <- function(effects, rsv_vars = NULL) {
   all_effects[ulapply(all_effects, length) < 3L]
 }
 
-get_spline_labels <- function(x, data = NULL) {
+get_spline_labels <- function(x, data = NULL, covars = FALSE) {
   # extract labels of splines for GAMMs
   # Args:
   #   x: either a formula or a list containing an element "gam"
+  #   data: optional data frame containing the covariates
+  #   covars: should the names of the covariates be returned
+  #           instead of the full term names?
   if (is.formula(x)) {
     x <- extract_effects(x, check_response = FALSE)
   }
@@ -772,10 +775,14 @@ get_spline_labels <- function(x, data = NULL) {
     return(NULL)
   }
   term_labels <- rename(attr(terms(x$gam), "term.labels"), " ", "")
-  splines <- term_labels[grepl("^(s|t2|te|ti)\\(", term_labels)]
+  splines <- term_labels[grepl("^(s|t2|te|ti)\\(", term_labels)] 
+  if (covars) {
+    sfuns <- get_matches("^[^\\(]+", splines)
+    splines <- paste0(sfuns, ulapply(attr(x$gam, "covars"), collapse))
+  }
   if (length(splines) && !is.null(data)) {
     # one spline term may contain multiple spline matrices
-    sdata_fixef <- data_fixef(x, data)
+    sdata_fixef <- data_fixef(x, data, knots = attr(data, "knots"))
     knots <- sdata_fixef[grepl("^knots_", names(sdata_fixef))]
     attr(splines, "nbases") <- setNames(ulapply(knots, length), splines)
   }
