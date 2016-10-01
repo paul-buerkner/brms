@@ -181,7 +181,7 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
     }
   }
   # splines
-  splines <- rename(get_spline_labels(ee, x$data))
+  splines <- rename(get_spline_labels(ee, x$data, covars = TRUE))
   if (length(splines)) {
     draws[["Zs"]] <- draws[["s"]] <- named_list(splines)
     for (i in seq_along(splines)) {
