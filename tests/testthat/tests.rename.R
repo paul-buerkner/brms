@@ -108,20 +108,32 @@ test_that("change_old_ranef and change_old_ranef2 return expected lists", {
 
 test_that("change_old_splines return expected lists", {
   target <- list(
-    list(pos = c(TRUE, rep(FALSE, 16)), oldname = "sds_t2x0",
-         pnames = "sds_t2x0_1", fnames = "sds_t2x0_1", dims = numeric(0)),
-    list(pos = c(FALSE, TRUE, rep(FALSE, 15)), oldname = "sds_sx1",
-         pnames = "sds_sx1_1", fnames = "sds_sx1_1", dims = numeric(0)),
+    list(pos = c(TRUE, rep(FALSE, 16)), 
+         oldname = "sds_sigma_t2x0",
+         pnames = "sds_sigma_t2x0_1",
+         fnames = "sds_sigma_t2x0_1", 
+         dims = numeric(0)),
     list(pos = c(FALSE, FALSE, rep(TRUE, 6), rep(FALSE, 9)), 
-         oldname = "s_t2x0", pnames = "s_t2x0_1", 
-         fnames = paste0("s_t2x0_1[", 1:6, "]"), dims = 6),
+         oldname = "s_sigma_t2x0", 
+         pnames = "s_sigma_t2x0_1", 
+         fnames = paste0("s_sigma_t2x0_1[", 1:6, "]"), 
+         dims = 6),
+    list(pos = c(FALSE, TRUE, rep(FALSE, 15)), 
+         oldname = "sds_sx1kEQ9",
+         pnames = "sds_sx1_1", 
+         fnames = "sds_sx1_1", 
+         dims = numeric(0)),
     list(pos = c(rep(FALSE, 8), rep(TRUE, 9)), 
-         oldname = "s_sx1", pnames = "s_sx1_1", 
-         fnames = paste0("s_sx1_1[", 1:9, "]"), dims = 9)
+         oldname = "s_sx1kEQ9", 
+         pnames = "s_sx1_1", 
+         fnames = paste0("s_sx1_1[", 1:9, "]"), 
+         dims = 9)
   )
-  pars <- c("sds_t2x0", "sds_sx1", paste0("s_t2x0[", 1:6, "]"),
-            paste0("s_sx1[", 1:9, "]"))
-  dims <- list(sds_t2x0 = numeric(0), sds_sx1 = numeric(0),
-               s_t2x0 = 6, s_sx1 = 9)
-  expect_equal(brms:::change_old_splines(pars, dims), target)
+  pars <- c("sds_sigma_t2x0", "sds_sx1kEQ9", 
+            paste0("s_sigma_t2x0[", 1:6, "]"),
+            paste0("s_sx1kEQ9[", 1:9, "]"))
+  dims <- list(sds_sigma_t2x0 = numeric(0), sds_sx1kEQ9 = numeric(0),
+               s_sigma_t2x0 = 6, s_sx1kEQ9 = 9)
+  ee <- brms:::extract_effects(bf(y ~ s(x1, k = 9), sigma ~ t2(x0)))
+  expect_equal(brms:::change_old_splines(ee, pars, dims), target)
 })

@@ -520,31 +520,43 @@ change_old_ranef2 <- function(ranef, pars, dims) {
   change
 }
 
-change_old_splines <- function(pars, dims) {
-  # change names of spline parameters fitted with brms <= 1.0.0
+change_old_splines <- function(effects, pars, dims) {
+  # change names of spline parameters fitted with brms <= 1.0.1
   # this became necessary after allowing splines with multiple covariates
-  spline_pars <- pars[grepl("^sds_|^s_", pars)]
-  change <- list()
-  if (length(spline_pars)) {
-    # rename sds pars
-    old_sds_pars <- spline_pars[grepl("^sds_", spline_pars)]
-    new_sds_pars <- paste0(old_sds_pars, "_1")
-    for (i in seq_along(old_sds_pars)) {
+  .change_old_splines <- function(e, nlpar = "") {
+    p <- usc(nlpar, "suffix")
+    old_splines <- rename(paste0(p, get_spline_labels(e)))
+    new_splines <- rename(paste0(p, get_spline_labels(e, covars = TRUE)))
+    old_sds_pars <- paste0("sds_", old_splines)
+    new_sds_pars <- paste0("sds_", new_splines, "_1")
+    old_s_pars <- paste0("s_", old_splines)
+    new_s_pars <- paste0("s_", new_splines, "_1")
+    change <- list()
+    for (i in seq_along(old_splines)) {
       change <- lc(change,
         change_simple(old_sds_pars[i], new_sds_pars[i], pars, dims))
-    }
-    # rename s pars
-    all_old_s_pars <- spline_pars[grepl("^s_", spline_pars)]
-    indices <- get_matches("\\[[[:digit:]]\\]$", all_old_s_pars)
-    old_s_pars <- unique(sub("\\[[[:digit:]]\\]$", "", all_old_s_pars))
-    for (i in seq_along(old_s_pars)) {
-      new_s_par <- paste0(old_s_pars[i], "_1")
-      take <- grepl(paste0("^", old_s_pars[i]), all_old_s_pars)
-      new_s_pars <- paste0(new_s_par, indices[take])
+      indices <- seq_len(dims[[old_s_pars[i]]])
+      new_s_par_indices <- paste0(new_s_pars[i], "[", indices, "]")
       change <- lc(change,
-        change_simple(old_s_pars[i], new_s_pars, pars, dims,
-                      pnames = new_s_par))
+        change_simple(old_s_pars[i], new_s_par_indices, pars, dims,
+                      pnames = new_s_pars[i]))
     }
+    return(change)
+  }
+  
+  change <- list()
+  spec_effects <- rmNULL(c(effects[auxpars()], effects$nonlinear))
+  for (sp in names(spec_effects)) {
+    se <- spec_effects[[sp]]
+    change <- c(change, .change_old_splines(se, nlpar = sp))
+  }
+  resp <- effects$response
+  if (length(resp) > 1L) {
+    for (r in resp) {
+      change <- c(change, .change_old_splines(effects, nlpar = r))
+    }
+  } else {
+    change <- c(change, .change_old_splines(effects))
   }
   change
 }
