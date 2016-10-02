@@ -65,23 +65,18 @@ stan_effects <- function(effects, data, family = gaussian(),
     out$modelC2 <- paste0(out$modelC2,
       "    ", eta, "[n] = ", eta, "[n]", eta_loop, "; \n")
   }
-  
-  # possibly transform eta before it is passed to the likelihood
-  ll_adj <- stan_ll_adj(effects, c("cens", "trunc"))
-  transform <- stan_eta_transform(family$family, family$link, ll_adj = ll_adj)
-  if (transform) {
-    eta_ilink <- stan_eta_ilink(family$family, family$link, 
-                                pred_shape = is.list(effects$shape),
-                                disp = is.formula(effects$disp))
-  } else {
-    eta_ilink <- rep("", 2)
-  }
   # include autoregressive effects
-  eta_ar <- ifelse(get_ar(autocor) && !use_cov(autocor), 
-                   paste0(" + head(E", p, "[n], Kar) * ar"), "")
-  if (sum(nzchar(c(eta_ilink, eta_ar)))) {
-    out$modelC3 <- paste0(out$modelC3, "    ", eta, "[n] = ", 
-      eta_ilink[1], eta, "[n]", eta_ar, eta_ilink[2], "; \n")
+  if (get_ar(autocor) && !use_cov(autocor)) {
+    eta_ar <- paste0(eta, "[n] + head(E", p, "[n], Kar) * ar")
+    out$modelC3 <- paste0(out$modelC3, 
+      "    ", eta, "[n] = ", eta_ar, "; \n")
+  }
+  # possibly transform eta before it is passed to the likelihood
+  eta_ilink <- stan_eta_ilink(family$family, family$link, effects)
+  if (sum(nzchar(eta_ilink))) {
+    eta_ilink <- paste0(eta_ilink[1], eta, "[n]", eta_ilink[2])
+    out$modelC3 <- paste0(out$modelC3, 
+      "    ", eta, "[n] = ", eta_ilink, "; \n")
   }
   out
 }
@@ -158,14 +153,9 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
     nlmodel <- rename(nlmodel, c(nlpars, covars, " ( ", " ) "), 
                       c(new_nlpars, new_covars, "(", ")"))
     # possibly transform eta in the transformed params block
-    ll_adj <- stan_ll_adj(effects, c("cens", "trunc"))
-    transform <- stan_eta_transform(family$family, family$link, ll_adj = ll_adj)
-    if (transform) {
-      eta_ilink <- stan_eta_ilink(family$family, family$link, 
-                                  disp = is.formula(effects$disp))
-    } else eta_ilink <- rep("", 2)
+    eta_ilink <- stan_eta_ilink(family$family, family$link, effects)
     out$modelD <- paste0(out$modelD, "  vector[N] eta; \n")
-    out$modelC2 <- paste0(out$modelC2, 
+    out$modelC3 <- paste0(out$modelC3, 
       "    // compute non-linear predictor \n",
       "    eta[n] = ", eta_ilink[1], trimws(nlmodel), eta_ilink[2], "; \n")
   }
@@ -207,7 +197,7 @@ stan_auxpars <- function(effects, data, family = gaussian(),
       out[[ap]] <- list(par = default_defs[ap],
         prior = stan_prior(class = ap, prior = prior))
     }
-  }  
+  }
   collapse_lists(out)
 } 
 
@@ -636,21 +626,31 @@ stan_eta_transform <- function(family, link, ll_adj = FALSE) {
   (ll_adj || !stan_has_built_in_fun(family, link))
 }
 
-stan_eta_ilink <- function(family, link, pred_shape = FALSE,
-                           disp = FALSE) {
+stan_eta_ilink <- function(family, link, effects) {
   # correctly apply inverse link to eta
-  ilink <- stan_ilink(link)
-  shape <- ifelse(disp, "disp_shape[n]", 
-                  ifelse(pred_shape, "shape[n]", "shape"))
-  fl <- ifelse(family %in% c("gamma", "exponential"), 
-               paste0(family,"_",link), family)
-  switch(fl, c(paste0(ilink,"("), ")"),
-         gamma_log = c(paste0(shape, " * exp(-("), "))"),
-         gamma_inverse = c(paste0(shape, " * ("), ")"),
-         gamma_identity = c(paste0(shape, " / ("), ")"),
-         exponential_log = c("exp(-(", "))"),
-         exponential_inverse = c("(", ")"),
-         exponential_identity = c("inv(", ")"),
-         weibull = c(paste0(ilink,"(("), 
-                     paste0(") / ", shape, ")")))
+  # Args:
+  #   family: string naming the family
+  #   link: string naming the link function
+  #   effects: output of extract_effects
+  ll_adj <- stan_ll_adj(effects, c("cens", "trunc"))
+  if (stan_eta_transform(family, link, ll_adj = ll_adj)) {
+    ilink <- stan_ilink(link)
+    shape <- ifelse(is.formula(effects$disp), "disp_shape[n]", 
+                    ifelse(is.list(effects$shape), "shape[n]", "shape"))
+    fl <- ifelse(family %in% c("gamma", "exponential"), 
+                 paste0(family, "_", link), family)
+    out <- switch(fl, 
+      c(paste0(ilink, "("), ")"),
+      gamma_log = c(paste0(shape, " * exp(-("), "))"),
+      gamma_inverse = c(paste0(shape, " * ("), ")"),
+      gamma_identity = c(paste0(shape, " / ("), ")"),
+      exponential_log = c("exp(-(", "))"),
+      exponential_inverse = c("(", ")"),
+      exponential_identity = c("inv(", ")"),
+      weibull = c(paste0(ilink, "(("), 
+                  paste0(") / ", shape, ")")))
+  } else {
+    out <- rep("", 2)
+  }
+  out
 }

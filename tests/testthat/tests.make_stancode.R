@@ -398,4 +398,16 @@ test_that("make_stancode correctly parses distributional gamma models", {
   expect_match(scode, paste0("    shape[n] = exp(shape[n]); \n", 
                              "    eta[n] = shape[n] * exp(-(eta[n]));"),
                fixed = TRUE)
+  
+  scode <- make_stancode(bf(time ~ inv_logit(a) * exp(b * age),
+                            nonlinear = a + b ~ sex + (1|patient), 
+                            shape ~ age + (1|patient)), 
+                         data = kidney, family = Gamma("identity"),
+                         prior = c(set_prior("normal(2,2)", nlpar = "a"),
+                                   set_prior("normal(0,3)", nlpar = "b")))
+  expect_match(scode, paste0(
+    "    shape[n] = exp(shape[n]); \n", 
+    "    // compute non-linear predictor \n",
+    "    eta[n] = shape[n] / (inv_logit(eta_a[n]) * exp(eta_b[n] * C[n, 1]));"),
+    fixed = TRUE)
 })

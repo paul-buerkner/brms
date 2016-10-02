@@ -52,7 +52,8 @@ test_that("stan_effects returns correct strings for autocorrelation models", {
   ee <- brms:::extract_effects(count ~ Trt_c)
   expect_match(stan_effects(ee, data = epilepsy, family = student(log),
                            autocor = cor_arma(~visit|patient, p = 2))$modelC3,
-               "eta[n] = exp(eta[n] + head(E[n], Kar) * ar)", fixed = TRUE)
+               paste0("    eta[n] = eta[n] + head(E[n], Kar) * ar; \n",
+                      "    eta[n] = exp(eta[n]); \n"), fixed = TRUE)
   expect_match(stan_effects(ee, data = epilepsy, family = gaussian(log),
                            autocor = cor_arma(~visit|patient, q = 1))$modelC2,
                "eta[n] = eta[n] + head(E[n], Kma) * ma", fixed = TRUE)

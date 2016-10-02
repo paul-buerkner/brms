@@ -211,7 +211,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     text_auxpars$modelC2, 
     text_pred$modelC2, 
     text_autocor$modelC2,
-    text_auxpars$modelC3, 
+    text_auxpars$modelC3,
     text_pred$modelC3)
   if (isTRUE(nzchar(text_model_loop))) {
     text_model_loop <- paste0("  for (n in 1:N) { \n", 
