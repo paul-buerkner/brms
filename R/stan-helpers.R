@@ -595,10 +595,13 @@ stan_disp <- function(effects, family = gaussian()) {
     par <- if (has_sigma(family)) "sigma"
            else if (has_shape(family)) "shape"
            else stop("invalid family for addition argument 'disp'")
-    times <- if(is.null(effects[[par]])) " * " else " .* "
+    if (!is.null(effects[[par]])) {
+      stop("Specifying 'disp' is not allowed when predicting '", 
+           par, "'", call. = FALSE)
+    }
     out$data <- "  vector<lower=0>[N] disp;  // dispersion factors \n"
     out$modelD <- paste0("  vector[N] disp_", par, "; \n")
-    out$modelC1 <- paste0("  disp_", par, " = ", par, times, "disp; \n")
+    out$modelC1 <- paste0("  disp_", par, " = ", par, " * disp; \n")
   }
   out
 }
