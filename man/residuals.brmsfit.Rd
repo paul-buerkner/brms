@@ -5,9 +5,10 @@
 \title{Extract Model Residuals from brmsfit Objects}
 \usage{
 \method{residuals}{brmsfit}(object, newdata = NULL, re_formula = NULL,
-  type = c("ordinary", "pearson"), allow_new_levels = FALSE,
-  incl_autocor = TRUE, subset = NULL, nsamples = NULL, sort = FALSE,
-  summary = TRUE, robust = FALSE, probs = c(0.025, 0.975), ...)
+  type = c("ordinary", "pearson"), method = c("fitted", "predict"),
+  allow_new_levels = FALSE, incl_autocor = TRUE, subset = NULL,
+  nsamples = NULL, sort = FALSE, summary = TRUE, robust = FALSE,
+  probs = c(0.025, 0.975), ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}}
@@ -23,6 +24,14 @@ if \code{NA}, include no random effects.}
 \item{type}{The type of the residuals, 
 either \code{"ordinary"} or \code{"pearson"}. 
 More information is provided under 'Details'.}
+
+\item{method}{Indicates the method to compute
+model implied values. Either \code{"fitted"}
+(predicted values of the regression curve) or
+\code{"predict"} (predicted response values). 
+Using \code{"predict"} is recommended
+but \code{"fitted"} is the current default for 
+reasons of backwards compatibility.}
 
 \item{allow_new_levels}{A flag indicating if new
 levels of random effects are allowed (defaults to \code{FALSE}). 

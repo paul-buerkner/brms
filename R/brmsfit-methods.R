@@ -1616,6 +1616,13 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' @param type The type of the residuals, 
 #'  either \code{"ordinary"} or \code{"pearson"}. 
 #'  More information is provided under 'Details'. 
+#' @param method Indicates the method to compute
+#'  model implied values. Either \code{"fitted"}
+#'  (predicted values of the regression curve) or
+#'  \code{"predict"} (predicted response values). 
+#'  Using \code{"predict"} is recommended
+#'  but \code{"fitted"} is the current default for 
+#'  reasons of backwards compatibility.
 #' 
 #' @details Residuals of type \code{ordinary} 
 #'  are of the form \eqn{R = Y - Yp}, where \eqn{Y} is the observed 
@@ -1647,13 +1654,15 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' 
 #' @export
 residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL, 
-                              type = c("ordinary", "pearson"), 
+                              type = c("ordinary", "pearson"),
+                              method = c("fitted", "predict"),
                               allow_new_levels = FALSE, 
                               incl_autocor = TRUE, subset = NULL, 
                               nsamples = NULL, sort = FALSE,
                               summary = TRUE, robust = FALSE, 
                               probs = c(0.025, 0.975), ...) {
   type <- match.arg(type)
+  method <- match.arg(method)
   contains_samples(object)
   object <- restructure(object)
   family <- family(object)
@@ -1670,7 +1679,7 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   }
   pred_args <- nlist(object, newdata, re_formula, allow_new_levels,
                      incl_autocor, subset, sort, summary = FALSE)
-  mu <- do.call(fitted, pred_args)
+  mu <- do.call(method, pred_args)
   Y <- matrix(rep(as.numeric(standata$Y), nrow(mu)), 
               nrow = nrow(mu), byrow = TRUE)
   res <- Y - mu
