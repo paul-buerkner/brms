@@ -59,10 +59,13 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, points = FALSE,
     if (points) {
       # show the data as points in the plot
       # add points first so that they appear behind the regression lines
+      aes_points <- aes_string(x = effects[1], y = ".RESP")
+      if (is.factor(attr(x[[i]], "points")[, gvar])) {
+        aes_points$colour <- parse(text = gvar)[[1]]
+      }
       plots[[i]] <- plots[[i]] + 
-        geom_point(aes_string(x = effects[1], y = ".RESP", colour = gvar),
-                   shape = 1, size = 4 / nCond^0.25, inherit.aes = FALSE,
-                   data = attr(x[[i]], "points"))
+        geom_point(aes_points, shape = 1, size = 4 / nCond^0.25,
+                   data = attr(x[[i]], "points"), inherit.aes = FALSE)
     }
     if (nCond > 1L) {
       # one plot per row of marginal_data
@@ -74,8 +77,8 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, points = FALSE,
       # smooth plots for numeric predictors
       plots[[i]] <- plots[[i]] + geom_smooth(stat = "identity")
       if (rug) {
-        plots[[i]] <- plots[[i]] + 
-          geom_rug(aes_string(x = effects[1], colour = gvar), 
+        plots[[i]] <- plots[[i]] +
+          geom_rug(aes_string(x = effects[1]),
                    sides = "b", data = attr(x[[i]], "points"), 
                    inherit.aes = FALSE)
       }

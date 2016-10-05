@@ -13,6 +13,12 @@
       on predicted values instead of fitted values.
     }
   }
+  \subsection{OTHER CHANGES}{
+    \itemize{
+      \item Ensure full compatibility with 
+      \pkg{ggplot2} version 2.2.
+    }
+  }
   \subsection{BUG FIXES}{
     \itemize{ 
       \item Fix a bug that could result in incorrect
