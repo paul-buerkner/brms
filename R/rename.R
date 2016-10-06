@@ -524,22 +524,25 @@ change_old_splines <- function(effects, pars, dims) {
   # change names of spline parameters fitted with brms <= 1.0.1
   # this became necessary after allowing splines with multiple covariates
   .change_old_splines <- function(e, nlpar = "") {
-    p <- usc(nlpar, "suffix")
-    old_splines <- rename(paste0(p, get_spline_labels(e)))
-    new_splines <- rename(paste0(p, get_spline_labels(e, covars = TRUE)))
-    old_sds_pars <- paste0("sds_", old_splines)
-    new_sds_pars <- paste0("sds_", new_splines, "_1")
-    old_s_pars <- paste0("s_", old_splines)
-    new_s_pars <- paste0("s_", new_splines, "_1")
     change <- list()
-    for (i in seq_along(old_splines)) {
-      change <- lc(change,
-        change_simple(old_sds_pars[i], new_sds_pars[i], pars, dims))
-      indices <- seq_len(dims[[old_s_pars[i]]])
-      new_s_par_indices <- paste0(new_s_pars[i], "[", indices, "]")
-      change <- lc(change,
-        change_simple(old_s_pars[i], new_s_par_indices, pars, dims,
-                      pnames = new_s_pars[i]))
+    spline_labels <- get_spline_labels(e)
+    if (length(spline_labels)) {
+      p <- usc(nlpar, "suffix")
+      old_splines <- rename(paste0(p, spline_labels))
+      new_splines <- rename(paste0(p, get_spline_labels(e, covars = TRUE)))
+      old_sds_pars <- paste0("sds_", old_splines)
+      new_sds_pars <- paste0("sds_", new_splines, "_1")
+      old_s_pars <- paste0("s_", old_splines)
+      new_s_pars <- paste0("s_", new_splines, "_1")
+      for (i in seq_along(old_splines)) {
+        change <- lc(change,
+          change_simple(old_sds_pars[i], new_sds_pars[i], pars, dims))
+        indices <- seq_len(dims[[old_s_pars[i]]])
+        new_s_par_indices <- paste0(new_s_pars[i], "[", indices, "]")
+        change <- lc(change,
+          change_simple(old_s_pars[i], new_s_par_indices, pars, dims,
+                        pnames = new_s_pars[i]))
+      }
     }
     return(change)
   }

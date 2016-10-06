@@ -56,42 +56,44 @@ restructure <- function(x) {
   if (isTRUE(attr(x, "restructured"))) {
     return(x)  # already restructured
   }
-  # x$nonlinear deprecated as of brms > 0.9.1
-  # X$partial deprecated as of brms > 0.8.0
-  x$formula <- SW(update_formula(x$formula, partial = x$partial, 
-                                 nonlinear = x$nonlinear))
-  x$nonlinear <- x$partial <- NULL
-  if (is(x$autocor, "cor_fixed")) {
-    # deprecated as of brms 1.0.0
-    class(x$autocor) <- "cov_fixed"
-  }
-  change <- list()
-  if (isTRUE(x$version <= "0.10.0.9000")) {
-    attr(x$formula, "old_mv") <- is.old_mv(x)
-    ee <- extract_effects(formula(x), family = family(x))
-    x$ranef <- tidy_ranef(ee, model.frame(x))
-    if (length(ee$nonlinear)) {
-      # nlpar and group have changed positions
-      change <- c(change,
-        change_old_ranef(x$ranef, pars = parnames(x),
-                         dims = x$fit@sim$dims_oi))
+  if (isTRUE(x$version < utils::packageVersion("brms"))) {
+    # element 'nonlinear' deprecated as of brms > 0.9.1
+    # element 'partial' deprecated as of brms > 0.8.0
+    x$formula <- SW(update_formula(x$formula, partial = x$partial, 
+                                   nonlinear = x$nonlinear))
+    x$nonlinear <- x$partial <- NULL
+    if (is(x$autocor, "cor_fixed")) {
+      # deprecated as of brms 1.0.0
+      class(x$autocor) <- "cov_fixed"
     }
-  } else if (isTRUE(x$version < "1.0.0")) {
-    # I added double underscores in group-level parameters
-    # right before the release of brms 1.0.0
-    change <- c(change,
-      change_old_ranef2(x$ranef, pars = parnames(x),
-                        dims = x$fit@sim$dims_oi))
-  }
-  if (isTRUE(x$version <= "1.0.1")) {
-    # names of spline parameters had to be changed after
-    # allowing for multiple covariates in one spline term
-    change <- c(change,
-      change_old_splines(pars = parnames(x),
-                         dims = x$fit@sim$dims_oi))
-  }
-  for (i in seq_along(change)) {
-    x <- do_renaming(change = change[[i]], x = x)
+    ee <- extract_effects(formula(x), family = family(x))
+    change <- list()
+    if (isTRUE(x$version <= "0.10.0.9000")) {
+      attr(x$formula, "old_mv") <- is.old_mv(x)
+      x$ranef <- tidy_ranef(ee, model.frame(x))
+      if (length(ee$nonlinear)) {
+        # nlpar and group have changed positions
+        change <- c(change,
+          change_old_ranef(x$ranef, pars = parnames(x),
+                           dims = x$fit@sim$dims_oi))
+      }
+    } else if (isTRUE(x$version < "1.0.0")) {
+      # I added double underscores in group-level parameters
+      # right before the release of brms 1.0.0
+      change <- c(change,
+        change_old_ranef2(x$ranef, pars = parnames(x),
+                          dims = x$fit@sim$dims_oi))
+    }
+    if (isTRUE(x$version <= "1.0.1")) {
+      # names of spline parameters had to be changed after
+      # allowing for multiple covariates in one spline term
+      change <- c(change,
+        change_old_splines(ee, pars = parnames(x),
+                           dims = x$fit@sim$dims_oi))
+    }
+    for (i in seq_along(change)) {
+      x <- do_renaming(change = change[[i]], x = x)
+    }
   }
   structure(x, "restructured" = TRUE)
 }

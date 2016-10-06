@@ -36,7 +36,7 @@ test_that("plotting functions don't throw unexpected errors", {
   mdata = data.frame(Age = c(-0.3, 0, 0.3), count = c(10, 20, 30), 
                      visit = 1:3, patient = 1, Trt = 0, Exp = c(1,3,5))
   me <- marginal_effects(fit, conditions = mdata)
-  marg_plot <- SW(plot(me, points = TRUE, rug = TRUE, plot = FALSE))
+  marg_plot <- plot(me, points = TRUE, rug = TRUE, plot = FALSE)
   expect_true(is(marg_plot[[1]], "ggplot"))
   # some manual checks
   N <- 90
