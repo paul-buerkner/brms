@@ -9,6 +9,7 @@ r_github_packages:
   - HenrikBengtsson/matrixStats@develop
   - jimhester/covr
   - jgabry/bayesplot
+  - hadley/ggplot2
   
 after_success:
   - Rscript -e 'covr::codecov()'
