@@ -8,8 +8,8 @@ warnings_are_errors: TRUE
 r_github_packages:
   - HenrikBengtsson/matrixStats@develop
   - jimhester/covr
-  - jgabry/bayesplot
   - hadley/ggplot2
+  - jgabry/bayesplot
   
 after_success:
   - Rscript -e 'covr::codecov()'
