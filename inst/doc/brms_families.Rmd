@@ -1,18 +1,14 @@
 ---
 title: "Parameterizations of families in brms"
 author: "Paul-Christian Bürkner"
-output: rmarkdown::html_vignette
+output: rmarkdown::pdf_document
 vignette: >
   %\VignetteIndexEntry{Parameterizations of families in brms}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
-The purpose of this vignette is to discuss the parameterizations of the families (i.e., response distributions) used in **brms**. For a more general overview of the package see
-
-```{r, eval=FALSE}
-vignette("brms")
-```
+The purpose of this vignette is to discuss the parameterizations of the families (i.e., response distributions) used in **brms**. For a more general overview of the package see `vignette("brms")`.
 
 ## Notation
 
@@ -64,7 +60,7 @@ where $B$ is the beta function and $\phi$ is a positive precision parameter.
 The density of the **von_mises** family for $y_i \in (-\pi,\pi)$ is given by
 $$f(y_i) = \frac{\exp(\kappa \cos(y_i - g(\eta_i)))}{2\pi I_0(\kappa)}$$
 where $I_0$ is the modified Bessel function of order 0 and $\kappa$ is
-a precision parameter.
+a positive precision parameter.
 
 ## Ordinal and categorical models
 
@@ -82,7 +78,7 @@ $$f(y_i) = \frac{\prod_{k=1}^{y_i} g(\eta_i - \tau_{k})
 For the logit link, this can be simplified to
 $$f(y_i) = \frac{\exp \left(\sum_{k=1}^{y_i} (\eta_i - \tau_{k}) \right)}
   {\sum_{k=0}^K \exp\left(\sum_{j=1}^k (\eta_i - \tau_{j}) \right)}$$
-The linear predictor $\eta$ can be generalized to also depend on the category $k$ for a subset of predictors. This leads to so called category specific effects (for details on how to specify them see help(brm)). Note that **cumulative** and **sratio** models use $\tau - \eta$, whereas **cratio** and **acat** use $\eta - \tau$. This is done to ensure that larger values of $\eta$ increase the probability of *higher* reponse categories.
+The linear predictor $\eta$ can be generalized to also depend on the category $k$ for a subset of predictors. This leads to so called category specific effects (for details on how to specify them see `help(brm)`). Note that **cumulative** and **sratio** models use $\tau - \eta$, whereas **cratio** and **acat** use $\eta - \tau$. This is done to ensure that larger values of $\eta$ increase the probability of *higher* reponse categories.
 
 The **categorical** family is currently only implemented with the logit link function and has density
 $$f(y_i) = \frac{\exp(\eta_{iy_i})}{\sum_{k = 1}^{K} \exp(\eta_{ik})}$$
