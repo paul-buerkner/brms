@@ -645,30 +645,33 @@ match_response <- function(models) {
   #   models: A list of brmsfit objects
   # Returns:
   #   TRUE if the response parts of all models match and FALSE else
-  if (length(models) <= 1) return(TRUE)
-  .match_fun <- function(x, y) {
-    # checks if all relevant parts of the response are the same 
-    # Args:
-    #   x, y: named lists as returned by standata
-    to_match <- c("Y", "se", "weights", "cens", "trunc", "disp")
-    all(ulapply(to_match, function(v) {
-      a <- if (is.null(attr(x, "old_order"))) as.vector(x[[v]])
-           else as.vector(x[[v]])[attr(x, "old_order")]
-      b <- if (is.null(attr(y, "old_order"))) as.vector(y[[v]])
-           else as.vector(y[[v]])[attr(y, "old_order")]
-      is_equal(a, b)
-    }))
-  } 
-  standatas <- lapply(models, standata, control = list(save_order = TRUE))
-  matches <- ulapply(standatas[-1], .match_fun, y = standatas[[1]]) 
-  if (all(matches)) {
-    out <- TRUE
+  if (length(models) <= 1L) {
+    out <- TRUE  
   } else {
-    out <- FALSE
-    warning(paste("model comparisons are invalid as the response parts", 
-                  "of at least two models do not match"), call. = FALSE)
+    .match_fun <- function(x, y) {
+      # checks if all relevant parts of the response are the same 
+      # Args:
+      #   x, y: named lists as returned by standata
+      to_match <- c("Y", "se", "weights", "cens", "trunc", "disp")
+      all(ulapply(to_match, function(v) {
+        a <- if (is.null(attr(x, "old_order"))) as.vector(x[[v]])
+             else as.vector(x[[v]])[attr(x, "old_order")]
+        b <- if (is.null(attr(y, "old_order"))) as.vector(y[[v]])
+             else as.vector(y[[v]])[attr(y, "old_order")]
+        is_equal(a, b)
+      }))
+    }
+    standatas <- lapply(models, standata, control = list(save_order = TRUE))
+    matches <- ulapply(standatas[-1], .match_fun, y = standatas[[1]]) 
+    if (all(matches)) {
+      out <- TRUE
+    } else {
+      out <- FALSE
+      warning("Model comparisons are most likely invalid as the response ", 
+              "parts of at least two models do not match.", call. = FALSE)
+    }
   }
-  out
+  invisible(out)
 }
 
 find_names <- function(x) {

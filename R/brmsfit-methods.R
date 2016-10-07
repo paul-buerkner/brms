@@ -1886,8 +1886,8 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
                          re_formula = NULL, allow_new_levels = FALSE, 
                          subset = NULL, nsamples = NULL, pointwise = NULL) {
   models <- list(x, ...)
-  names <- c(deparse(substitute(x)), sapply(substitute(list(...))[-1], 
-                                            deparse))
+  names <- deparse(substitute(x))
+  names <- c(names, sapply(substitute(list(...))[-1], deparse))
   if (is.null(subset) && !is.null(nsamples)) {
     subset <- sample(Nsamples(x), nsamples)
   }
@@ -1899,7 +1899,8 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
     args <- nlist(X = models, FUN = compute_ic, ic = "waic", ll_args)
     out <- setNames(do.call(lapply, args), names)
     class(out) <- c("iclist", "list")
-    if (compare && match_response(models)) {
+    if (compare) {
+      match_response(models)
       comp <- compare_ic(out, ic = "waic")
       attr(out, "compare") <- comp$ic_diffs
       attr(out, "weights") <- comp$weights
@@ -1917,8 +1918,8 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
                         subset = NULL, nsamples = NULL, pointwise = NULL,
                         cores = 1, wcp = 0.2, wtrunc = 3/4) {
   models <- list(x, ...)
-  names <- c(deparse(substitute(x)), sapply(substitute(list(...))[-1], 
-                                            deparse))
+  names <- deparse(substitute(x))
+  names <- c(names, sapply(substitute(list(...))[-1], deparse))
   if (is.null(subset) && !is.null(nsamples)) {
     subset <- sample(Nsamples(x), nsamples)
   }
@@ -1931,7 +1932,8 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
                   ll_args, wcp, wtrunc, cores)
     out <- setNames(do.call(lapply, args), names)
     class(out) <- c("iclist", "list")
-    if (compare && match_response(models)) {
+    if (compare) {
+      match_response(models)
       comp <- compare_ic(out, ic = "loo")
       attr(out, "compare") <- comp$ic_diffs
       attr(out, "weights") <- comp$weights

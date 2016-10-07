@@ -1,6 +1,6 @@
 test_that("all S3 methods have reasonable ouputs", {
-  fit1 <- brms:::rename_pars(brmsfit_example1)
-  fit2 <- brms:::rename_pars(brmsfit_example2)
+  fit1 <- brms:::rename_pars(brms:::brmsfit_example1)
+  fit2 <- brms:::rename_pars(brms:::brmsfit_example2)
   # test S3 methods in alphabetical order
   # as.data.frame
   ps <- as.data.frame(fit1)
@@ -299,5 +299,5 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_true(is.numeric(waic2[["waic"]]))
   waic_pointwise <- WAIC(fit2, pointwise = TRUE)
   expect_equal(waic2, waic_pointwise)
-  expect_warning(WAIC(fit1, fit2), "model comparisons are invalid")
+  expect_warning(WAIC(fit1, fit2), "Model comparisons are most likely invalid")
 })
