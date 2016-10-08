@@ -36,14 +36,14 @@ parnames.brmsfit <- function(x, ...) {
 fixef.brmsfit <-  function(object, estimate = "mean", ...) {
   contains_samples(object)
   pars <- parnames(object)
-  fpars <- pars[grepl("^b_", pars)]
+  fpars <- pars[grepl("^b(|p|m)_", pars)]
   if (!length(fpars)) {
     stop("The model does not contain population-level effects", 
          call. = FALSE) 
   }
   out <- posterior_samples(object, pars = fpars, exact_match = TRUE)
   out <- do.call(cbind, lapply(estimate, get_estimate, samples = out, ...))
-  rownames(out) <- gsub("^b_", "", fpars)
+  rownames(out) <- gsub("^b(|p|m)_", "", fpars)
   out
 }
 
@@ -67,13 +67,13 @@ fixef.brmsfit <-  function(object, estimate = "mean", ...) {
 vcov.brmsfit <- function(object, correlation = FALSE, ...) {
   contains_samples(object)
   pars <- parnames(object)
-  fpars <- pars[grepl("^b_", pars)]
+  fpars <- pars[grepl("^b(|p|m)_", pars)]
   if (!length(fpars)) {
     stop("The model does not contain population-level effects", 
          call. = FALSE) 
   }
   samples <- posterior_samples(object, pars = fpars, exact_match = TRUE)
-  names(samples) <- sub("^b_", "", names(samples))
+  names(samples) <- sub("^b(|p|m)_", "", names(samples))
   if (correlation) {
     cor(samples) 
   } else {
@@ -522,17 +522,13 @@ prior_samples.brmsfit <- function(x, pars = NA, parameters = NA, ...) {
     samples <- posterior_samples(x, pars = prior_names, exact_match = TRUE)
     names(samples) <- sub("^prior_", "", prior_names)
     if (!anyNA(pars)) {
-      get_samples <- function(par) {
+      .prior_samples <- function(par) {
         # get prior samples for parameter par 
         if (identical(par, "b_Intercept")) {
-          # the default intercept has no associated prior
+          # the population-level intercept has no associated prior
           out  <- NULL
         } else {
-          is_cse <- grepl("^b_", par) && grepl("\\[[[:digit:]]+\\]", par)
-          # ensures correct parameter to prior mapping for cse effects
-          par_internal <- ifelse(is_cse, sub("^b_", "bp_", par), par)
-          matches <- lapply(paste0("^", sub("^prior_", "", prior_names)), 
-                            regexpr, text = par_internal)
+          matches <- lapply(paste0("^", names(samples)), regexpr, text = par)
           matches <- ulapply(matches, attr, which = "match.length")
           if (max(matches) == -1) {
             out <- NULL
@@ -546,7 +542,7 @@ prior_samples.brmsfit <- function(x, pars = NA, parameters = NA, ...) {
         }
         return(out)
       }
-      samples <- data.frame(rmNULL(lapply(pars, get_samples)), 
+      samples <- data.frame(rmNULL(lapply(pars, .prior_samples)), 
                             check.names = FALSE)
     }
   } else {
@@ -637,9 +633,9 @@ summary.brmsfit <- function(object, waic = FALSE, ...) {
     }
     
     # fixed effects summary
-    fix_pars <- pars[grepl("^b_", pars)]
+    fix_pars <- pars[grepl("^b(|p|m)_", pars)]
     out$fixed <- fit_summary[fix_pars, , drop = FALSE]
-    rownames(out$fixed) <- gsub("^b_", "", fix_pars)
+    rownames(out$fixed) <- gsub("^b(|p|m)_", "", fix_pars)
     
     # summary of family specific parameters
     is_mv_par <- apply(sapply(c("^sigma_", "^rescor_"), grepl, pars), 1, any)
@@ -828,7 +824,7 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5,
     stop("N must be a positive integer", call. = FALSE)
   }
   if (!is.character(pars)) {
-    pars <- c("^b_", "^bm_", "^sd_", "^cor_", "^sigma", "^rescor", 
+    pars <- c("^b(|p|m)_", "^sd_", "^cor_", "^sigma", "^rescor", 
               "^nu$", "^shape$", "^delta$", "^phi$", "^kappa$", 
               "^zi$", "^hu$", "^ar", "^ma", "^arr", "^simplex_", "^sds_")
   }

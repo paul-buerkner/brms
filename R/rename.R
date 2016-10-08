@@ -215,7 +215,7 @@ change_monef <- function(monef, pars, nlpar = "") {
   if (length(monef)) {
     p <- usc(nlpar, "prefix")
     bm <- paste0("bm", p)
-    newnames <- paste0("b", p, "_", monef)
+    newnames <- paste0("bm", p, "_", monef)
     change <- lc(change, list(pos = grepl(paste0("^", bm, "\\["), pars), 
                               oldname = bm, pnames = newnames, 
                               fnames = newnames))
@@ -247,14 +247,13 @@ change_csef <- function(csef, pars, ncat) {
   if (length(csef)) {
     ncse <- length(csef)
     thres <- ncat - 1
-    csenames <- t(outer(csef, paste0("[",1:thres,"]"), FUN = paste0))
-    csenames <- paste0("b_", csenames)
-    sort_cse <- ulapply(1:ncse, seq, to = thres * ncse, by = ncse)
+    csenames <- t(outer(csef, paste0("[", 1:thres, "]"), FUN = paste0))
+    csenames <- paste0("bp_", csenames)
+    sort_cse <- ulapply(seq_len(ncse), seq, to = thres * ncse, by = ncse)
     change <- lc(change, list(pos = grepl("^bp\\[", pars), oldname = "bp", 
-                              pnames = paste0("b_", csef), fnames = csenames,
+                              pnames = paste0("bp_", csef), fnames = csenames,
                               sort = sort_cse, dim = thres))
-    change <- c(change, change_prior(class = "bp", pars = pars, 
-                                      names = csef))
+    change <- c(change, change_prior(class = "bp", pars = pars, names = csef))
   }
   change
 }

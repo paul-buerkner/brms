@@ -153,11 +153,13 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
     draws[["b"]] <- 
       do.call(as.matrix, c(args, list(pars = b_pars, exact = TRUE)))
   }
-  if (!is.null(standata$Xm) && ncol(standata$Xm)) {
+  if (isTRUE(ncol(standata$Xm) > 0)) {
     monef <- colnames(standata$Xm)
     draws[["bm"]] <- draws$simplex <- vector("list", length(monef))
-    for (i in 1:length(monef)) {
-      bm_par <- paste0("b_", nlpar_usc, monef[i])
+    # as of brms > 1.0.1 the original prefix 'bm' is used
+    bm <- ifelse(any(grepl("^bm_", parnames(x))), "bm_", "b_")
+    for (i in seq_along(monef)) {
+      bm_par <- paste0(bm, nlpar_usc, monef[i])
       draws[["bm"]][[i]] <- 
         do.call(as.matrix, c(args, list(pars = bm_par, exact = TRUE)))
       simplex_par <- paste0("simplex_", nlpar_usc, monef[i], 
@@ -170,8 +172,10 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   if (is.ordinal(family(x))) {
     draws[["Intercept"]] <- 
       do.call(as.matrix, c(args, list(pars = "^b_Intercept\\[")))
-    if (!is.null(standata$Xp) && ncol(standata$Xp)) {
-      cse_pars <- paste0("^b_", colnames(standata$Xp), "\\[")
+    if (isTRUE(ncol(standata$Xp) > 0)) {
+      # as of brms > 1.0.1 the original prefix 'bp' is used
+      bp <- ifelse(any(grepl("^bp_", parnames(x))), "^bp_", "^b_")
+      cse_pars <- paste0(bp, colnames(standata$Xp), "\\[")
       draws[["cse"]] <- do.call(as.matrix, c(args, list(pars = cse_pars)))
     }
   } else if (draws$old_cat == 1L) {
