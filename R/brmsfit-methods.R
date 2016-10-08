@@ -517,28 +517,32 @@ prior_samples.brmsfit <- function(x, pars = NA, parameters = NA, ...) {
     stop("Argument 'pars' must be a character vector", call. = FALSE)
   }
   par_names <- parnames(x)
-  prior_names <- par_names[grepl("^prior_", par_names)]
+  prior_names <- unique(par_names[grepl("^prior_", par_names)])
   if (length(prior_names)) {
-    samples <- posterior_samples(x, pars = prior_names, 
-                                 exact_match = TRUE)
+    samples <- posterior_samples(x, pars = prior_names, exact_match = TRUE)
     names(samples) <- sub("^prior_", "", prior_names)
     if (!anyNA(pars)) {
       get_samples <- function(par) {
         # get prior samples for parameter par 
-        is_cse <- grepl("^b_", par) && grepl("\\[[[:digit:]]+\\]", par)
-        # ensures correct parameter to prior mapping for cse effects
-        par_internal <- ifelse(is_cse, sub("^b_", "bp_", par), par)
-        matches <- lapply(paste0("^",sub("^prior_", "", prior_names)), 
-                          regexpr, text = par_internal)
-        matches <- ulapply(matches, attr, which = "match.length")
-        if (max(matches) == -1) {
-          out <- NULL
+        if (identical(par, "b_Intercept")) {
+          # the default intercept has no associated prior
+          out  <- NULL
         } else {
-          take <- match(max(matches), matches)
-          # order samples randomly to avoid artifical dependencies
-          # between parameters using the same prior samples
-          samples <- list(samples[sample(Nsamples(x)), take])
-          out <- structure(samples, names = par)
+          is_cse <- grepl("^b_", par) && grepl("\\[[[:digit:]]+\\]", par)
+          # ensures correct parameter to prior mapping for cse effects
+          par_internal <- ifelse(is_cse, sub("^b_", "bp_", par), par)
+          matches <- lapply(paste0("^", sub("^prior_", "", prior_names)), 
+                            regexpr, text = par_internal)
+          matches <- ulapply(matches, attr, which = "match.length")
+          if (max(matches) == -1) {
+            out <- NULL
+          } else {
+            take <- match(max(matches), matches)
+            # order samples randomly to avoid artifical dependencies
+            # between parameters using the same prior samples
+            samples <- list(samples[sample(Nsamples(x)), take])
+            out <- structure(samples, names = par)
+          }
         }
         return(out)
       }

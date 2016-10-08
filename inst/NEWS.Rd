@@ -34,6 +34,10 @@
       \item Fix a bug causing an error when passing 
       lists to additional arguments of smoothing 
       functions thanks to Wayne Folta.
+      \item Fix a bug causing an error in the 
+      \code{prior_samples} method for models with
+      multiple group-level terms that refer to the same 
+      grouping factor thanks to Marco Tullio Liuzza.
     }
   }
 }
