@@ -5,13 +5,13 @@ array2list <- function(x) {
   # Returns: 
   #   A list of arrays of dimension d-1
   if (is.null(dim(x))) stop("Argument x has no dimension")
-  n.dim <- length(dim(x))
-  l <- list(length = dim(x)[n.dim])
-  ind <- collapse(rep(",", n.dim - 1))
-  for (i in seq_len(dim(x)[n.dim])) {
+  ndim <- length(dim(x))
+  l <- list(length = dim(x)[ndim])
+  ind <- collapse(rep(",", ndim - 1))
+  for (i in seq_len(dim(x)[ndim])) {
     l[[i]] <- eval(parse(text = paste0("x[", ind, i,"]"))) 
   }
-  names(l) <- dimnames(x)[[n.dim]]
+  names(l) <- dimnames(x)[[ndim]]
   l
 }
 
@@ -21,17 +21,18 @@ Nsamples <- function(x, subset = NULL) {
   #   x: a brmsfit object
   #   subset: a vector defining a subset of samples to be considered
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) {
-    return(0)
-  }
-  ntsamples <- (x$fit@sim$iter - x$fit@sim$warmup) /
-                 x$fit@sim$thin * x$fit@sim$chains
-  if (length(subset)) {
-    out <- length(subset)
-    if (out > ntsamples || max(subset) > ntsamples) {
-      stop("invalid 'subset' argument", call. = FALSE)
-    }
+    out <- 0
   } else {
-    out <- ntsamples
+    ntsamples <- (x$fit@sim$iter - x$fit@sim$warmup) /
+                  x$fit@sim$thin * x$fit@sim$chains
+    if (length(subset)) {
+      out <- length(subset)
+      if (out > ntsamples || max(subset) > ntsamples) {
+        stop("invalid 'subset' argument", call. = FALSE)
+      }
+    } else {
+      out <- ntsamples
+    }
   }
   out
 }
@@ -237,7 +238,7 @@ get_summary <- function(samples, probs = c(0.025, 0.975),
     out <- do.call(cbind, lapply(coefs, get_estimate, samples = samples,
                                  probs = probs, na.rm = TRUE))
   } else if (length(dim(samples)) == 3L) {
-    out <- abind(lapply(1:dim(samples)[3], function(i)
+    out <- abind(lapply(seq_len(dim(samples)[3]), function(i)
       do.call(cbind, lapply(coefs, get_estimate, samples = samples[, , i],
                             probs = probs))), along = 3)
     dimnames(out) <- list(NULL, NULL, paste0("P(Y = ", 1:dim(out)[3], ")")) 
@@ -315,8 +316,8 @@ get_cov_matrix_ar1 <- function(ar, sigma, nrows, se2 = 0) {
   #   nrows: number of rows of the covariance matrix
   # Returns:
   #   An nsamples x nrows x nrows AR1 covariance array (!)
-  mat <- aperm(array(diag(se2, nrows), dim = c(nrows, nrows, nrow(ar))),
-               perm = c(3, 1, 2))
+  mat <- array(diag(se2, nrows), dim = c(nrows, nrows, nrow(sigma)))
+  mat <- aperm(mat, perm = c(3, 1, 2))
   sigma2_adjusted <- sigma^2 / (1 - ar^2)
   pow_ar <- as.list(rep(1, nrows + 1))
   for (i in seq_len(nrows)) {
@@ -339,8 +340,8 @@ get_cov_matrix_ma1 <- function(ma, sigma, nrows, se2 = 0) {
   #   nrows: number of rows of the covariance matrix
   # Returns:
   #   An nsamples x nrows x nrows MA1 covariance array (!)
-  mat <- aperm(array(diag(se2, nrows), dim = c(nrows, nrows, nrow(ma))),
-               perm = c(3, 1, 2))
+  mat <- array(diag(se2, nrows), dim = c(nrows, nrows, nrow(sigma)))
+  mat <- aperm(mat, perm = c(3, 1, 2))
   sigma2 <- sigma^2
   sigma2_adjusted <- sigma2 * (1 + ma^2)
   sigma2_times_ma <- sigma2 * ma
@@ -366,8 +367,8 @@ get_cov_matrix_arma1 <- function(ar, ma, sigma, nrows, se2 = 0) {
   #   nrows: number of rows of the covariance matrix
   # Returns:
   #   An nsamples x nrows x nrows ARMA1 covariance array (!)
-  mat <- aperm(array(diag(se2, nrows), dim = c(nrows, nrows, nrow(ar))),
-               perm = c(3, 1, 2))
+  mat <- array(diag(se2, nrows), dim = c(nrows, nrows, nrow(sigma)))
+  mat <- aperm(mat, perm = c(3, 1, 2))
   sigma2_adjusted <- sigma^2 / (1 - ar^2)
   gamma0 <- 1 + ma^2 + 2 * ar * ma
   gamma <- as.list(rep(NA, nrows))
@@ -385,15 +386,15 @@ get_cov_matrix_arma1 <- function(ar, ma, sigma, nrows, se2 = 0) {
 
 get_cov_matrix_ident <- function(sigma, nrows, se2 = 0) {
   # compute a variance matrix without including ARMA parameters
-  # only used for ARMA covariance models when incl_autor = FALSE
+  # only used for ARMA covariance models when incl_autocor = FALSE
   # Args:
-  #   sigma: standard deviation samples of the AR1 process
+  #   sigma: standard deviation samples
   #   se2: square of user defined standard errors (may be 0)
   #   nrows: number of rows of the covariance matrix
   # Returns:
   #   An nsamples x nrows x nrows sigma array
-  mat <- aperm(array(diag(se2, nrows), dim = c(nrows, nrows, nrow(sigma))),
-               perm = c(3, 1, 2))
+  mat <- array(diag(se2, nrows), dim = c(nrows, nrows, nrow(sigma)))
+  mat <- aperm(mat, perm = c(3, 1, 2))
   sigma2 <- sigma^2
   for (i in seq_len(nrows)) {
     mat[, i, i] <- mat[, i, i] + sigma2
