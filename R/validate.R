@@ -1043,7 +1043,7 @@ add_families <- function(x) {
                   "weibull", "gamma"),
          trunc = c("gaussian", "student", "cauchy", "lognormal", 
                    "binomial", "poisson", "geometric", "negbinomial",
-                   "exponential", "weibull", "gamma"),
+                   "exponential", "weibull", "gamma", "inverse.gaussian"),
          disp = c("gaussian", "student", "cauchy", "lognormal", 
                   "gamma", "weibull", "negbinomial"),
          stop(paste("addition argument", x, "is not supported")))

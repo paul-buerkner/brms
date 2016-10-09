@@ -86,7 +86,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
                                threshold = threshold)
   text_categorical <- stan_categorical(family)
   text_forked <- stan_forked(family)
-  text_inv_gaussian <- stan_inv_gaussian(family, ll_adj = stan_ll_adj(ee))
+  text_inv_gaussian <- stan_inv_gaussian(family)
   text_von_mises <- stan_von_mises(family)
   text_disp <- stan_disp(ee, family = family)
   kronecker <- stan_needs_kronecker(ranef, names_cov_ranef = names(cov_ranef))
@@ -161,10 +161,12 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   text_transformed_data <- paste0(
     "transformed data { \n",
        text_categorical$tdataD,
+       text_inv_gaussian$tdataD,
        text_pred$tdataD,
        text_auxpars$tdataD,
        text_autocor$tdataD,
        text_categorical$tdataC,
+       text_inv_gaussian$tdataC,
        text_pred$tdataC,
        text_auxpars$tdataC,
        text_autocor$tdataC,

@@ -243,15 +243,6 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       stop(paste0("Number of categories is smaller than the response", 
                   "variable would suggest."), call. = FALSE)
     }
-  } 
-  if (family$family == "inverse.gaussian" && check_response) {
-    # save as data to reduce computation time in Stan
-    if (is.formula(ee$weights) || is.formula(ee$cens)) {
-      standata$log_Y <- log(standata$Y) 
-    } else {
-      standata$log_Y <- sum(log(standata$Y))
-    }
-    standata$sqrt_Y <- sqrt(standata$Y)
   }
   
   if (old_mv) {

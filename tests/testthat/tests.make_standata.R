@@ -259,17 +259,6 @@ test_that("make_standata handles covariance matrices correctly", {
                "not symmetric")
 })
 
-test_that("make_standata computes data for inverse.gaussian models", {
-  temp_data <- data.frame(y = 1:10, x = rep(0,10), w = 1:10)
-  standata <- make_standata(y ~ x, data = temp_data, 
-                            family = inverse.gaussian)
-  expect_equal(standata$log_Y, sum(log(temp_data$y)))
-  expect_equal(as.numeric(standata$sqrt_Y), sqrt(temp_data$y))
-  standata <- make_standata(y | weights(w) ~ x, data = temp_data,
-                            family = inverse.gaussian)
-  expect_equal(as.numeric(standata$log_Y), log(temp_data$y))                         
-})
-
 test_that("brmdata is backwards compatible", {
   temp_data <- data.frame(y = 1:10, x = sample(1:5, 10, TRUE))
   expect_identical(SW(brmdata(y ~ x + (1|x), data = temp_data, 

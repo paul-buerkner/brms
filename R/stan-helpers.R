@@ -61,13 +61,16 @@ stan_llh <- function(family, effects = list(), autocor = cor_arma(),
   .logit <- ifelse(any(c("zi", "hu") %in% auxpars), "_logit", "")
   reqn_trials <- has_trials && (ll_adj || is_zero_inflated)
   trials <- ifelse(reqn_trials, "trials[n]", "trials")
-  ordinal_args <- paste0("eta[n], ", if (has_cse) "etap[n], ", 
-                         "temp_Intercept")
-  
+
   # use inverse link in likelihood statement only 
   # if it does not prevent vectorization 
   simplify <- !has_trunc && !has_cens && stan_has_built_in_fun(family, link)
   eta <- paste0(ifelse(is_mv, "Eta", "eta"), n)
+  ordinal_args <- paste0("eta[n], ", if (has_cse) "etap[n], ", 
+                         "temp_Intercept")
+  inv_gauss_fun <- paste0("inv_gaussian", if (!reqn) "_vector")
+  inv_gauss_args <- paste0(eta, ", shape, ", if (!reqn) "sum_", 
+                           "log_Y", n, ", sqrt_Y", n)
   
   if (simplify) { 
     llh_pre <- switch(family,
@@ -99,8 +102,7 @@ stan_llh <- function(family, effects = list(), autocor = cor_arma(),
       gamma = c("gamma", paste0(shape, ", ", eta)), 
       exponential = c("exponential", eta),
       weibull = c("weibull", paste0(shape,", ", eta)), 
-      inverse.gaussian = c(paste0("inv_gaussian", if (!reqn) "_vector"), 
-                           paste0(eta, ", shape, log_Y", n, ", sqrt_Y", n)),
+      inverse.gaussian = c(inv_gauss_fun, inv_gauss_args),
       beta = c("beta", paste0(eta, " * ", phi, ", (1 - ", eta, ") * ", phi)),
       von_mises = c(paste0("von_mises_", ifelse(reqn, "real", "vector")), 
                            paste0(eta, ", ", kappa)),
@@ -549,7 +551,7 @@ stan_forked <- function(family) {
   out
 }
 
-stan_inv_gaussian <- function(family, ll_adj = FALSE) {
+stan_inv_gaussian <- function(family) {
   # stan code for inverse gaussian models
   # Args:
   #   family: the model family
@@ -561,14 +563,8 @@ stan_inv_gaussian <- function(family, ll_adj = FALSE) {
   out <- list()
   if (family$family == "inverse.gaussian") {
     out$fun <- "  #include 'fun_inv_gaussian.stan' \n"
-    out$data <- paste0(
-      "  // quantities for the inverse gaussian distribution \n",
-      "  vector[N] sqrt_Y;  // sqrt(Y) \n")
-    if (ll_adj) {
-      out$data <- paste0(out$data, "  vector[N] log_Y;  // log(Y) \n")
-    } else {
-      out$data <- paste0(out$data, "  real log_Y;  // sum(log(Y)) \n")
-    }
+    out$tdataD <- "  #include 'tdataD_inv_gaussian.stan' \n"
+    out$tdataC <- "  #include 'tdataC_inv_gaussian.stan' \n"
   }
   out
 }
@@ -902,9 +898,9 @@ stan_needs_kronecker <- function(ranef, names_cov_ranef) {
   ids <- unique(ranef$id)
   out <- FALSE
   for (id in ids) {
-    id_ranef <- subset(ranef, id == id)
-    out <- out || nrow(id_ranef) > 1L && id_ranef$cor[1] &&
-      id_ranef$group[1] %in% names_cov_ranef
+    r <- ranef[ranef$id == id, ]
+    out <- out || nrow(r) > 1L && r$cor[1] && 
+             r$group[1] %in% names_cov_ranef
   }
   out
 }
