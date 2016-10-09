@@ -81,41 +81,39 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   standata <- list(N = nrow(data), Y = unname(model.response(data)))
   check_response <- !isTRUE(control$omit_response)
   if (check_response) {
-    if (!(is_ordinal || family$family %in% c("bernoulli", "categorical")) && 
+    if (!(is_ordinal || family$family %in% c("bernoulli", "categorical")) &&
         !is.numeric(standata$Y)) {
-      stop(paste("family", family$family, "expects numeric response variable"),
-           call. = FALSE)
+      stop2("Family '", family$family, "' expects numeric response variable.")
     }
     # transform and check response variable for different families
     regex_pos_int <- "(^|_)(binomial|poisson|negbinomial|geometric)$"
     if (grepl(regex_pos_int, family$family)) {
       if (!all(is.wholenumber(standata$Y)) || min(standata$Y) < 0) {
-        stop(paste("family", family$family, "expects response variable", 
-                   "of non-negative integers"), call. = FALSE)
+        stop2("Family '", family$family, "' expects response variable ", 
+              "of non-negative integers.")
       }
     } else if (family$family %in% "bernoulli") {
       standata$Y <- as.numeric(as.factor(standata$Y)) - 1
-      if (any(!standata$Y %in% c(0,1))) {
-        stop(paste("family", family$family, "expects response variable", 
-                   "to contain only two different values"), call. = FALSE)
+      if (any(!standata$Y %in% c(0, 1))) {
+        stop2("Family '", family$family, "' expects response variable ", 
+              "to contain only two different values.")
       }
     } else if (family$family %in% c("beta", "zero_inflated_beta")) {
       lower <- if (family$family == "beta") any(standata$Y <= 0)
                else any(standata$Y < 0)
       upper <- any(standata$Y >= 1)
       if (lower || upper) {
-        stop("The beta distribution requires responses between 0 and 1.", 
-             call. = FALSE)
+        stop2("The beta distribution requires responses between 0 and 1.")
       }
     } else if (family$family %in% "von_mises") {
       if (any(standata$Y < -pi | standata$Y > pi)) {
-        stop("The von_mises distribution requires ",
-             "responses between -pi and pi.", call. = FALSE)
+        stop2("The von_mises distribution requires ",
+              "responses between -pi and pi.")
       }
     } else if (is_categorical) { 
       standata$Y <- as.numeric(as.factor(standata$Y))
       if (length(unique(standata$Y)) < 2L) {
-        stop("At least two response categories are required.", call. = FALSE)
+        stop2("At least two response categories are required.")
       }
     } else if (is_ordinal) {
       if (is.ordered(standata$Y)) {
@@ -123,21 +121,21 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       } else if (all(is.wholenumber(standata$Y))) {
         standata$Y <- standata$Y - min(standata$Y) + 1
       } else {
-        stop(paste("family", family$family, "expects either integers or",
-                   "ordered factors as response variables"), call. = FALSE)
+        stop2("Family '", family$family, "' expects either integers or ",
+              "ordered factors as response variables.")
       }
       if (length(unique(standata$Y)) < 2L) {
-        stop("At least two response categories are required.", call. = FALSE)
+        stop2("At least two response categories are required.")
       }
     } else if (is.skewed(family) || is.lognormal(family)) {
       if (min(standata$Y) <= 0) {
-        stop(paste("family", family$family, "requires response variable", 
-                   "to be positive"), call. = FALSE)
+        stop2("Family '", family$family, "' requires response variable ", 
+              "to be positive.")
       }
     } else if (is.zero_inflated(family) || is.hurdle(family)) {
       if (min(standata$Y) < 0) {
-        stop(paste("family", family$family, "requires response variable", 
-                   "to be non-negative"), call. = FALSE)
+        stop2("Family '", family$family, "' requires response variable ", 
+              "to be non-negative.")
       }
     }
     standata$Y <- as.array(standata$Y)
@@ -151,8 +149,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     # matrix of covariates appearing in the non-linear formula
     C <- get_model_matrix(ee$covars, data = data)
     if (length(all.vars(ee$covars)) != ncol(C)) {
-      stop("Factors with more than two levels are not allowed as covariates",
-           call. = FALSE)
+      stop2("Factors with more than two levels are not allowed as covariates.")
     }
     # fixes issue #127 occuring for factorial covariates
     colnames(C) <- all.vars(ee$covars)
@@ -215,14 +212,16 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       standata$trials <- ee$trials
     } else if (is.formula(ee$trials)) {
       standata$trials <- .addition(formula = ee$trials, data = data)
-    } else stop("Response part of formula is invalid.")
+    } else {
+      stop2("Argument 'trials' is misspecified.")
+    }
     standata$max_obs <- standata$trials  # for backwards compatibility
     if (max(standata$trials) == 1L && family$family == "binomial") 
-      message(paste("Only 2 levels detected so that family bernoulli",
-                    "might be a more efficient choice."))
+      message("Only 2 levels detected so that family 'bernoulli' ",
+              "might be a more efficient choice.")
     if (check_response && any(standata$Y > standata$trials))
-      stop(paste("Number of trials is smaller than the response", 
-                 "variable would suggest."), call. = FALSE)
+      stop2("Number of trials is smaller than the response ", 
+            "variable would suggest.")
   }
   if (has_cat(family)) {
     if (!length(ee$cat)) {
@@ -233,15 +232,17 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       }
     } else if (is.wholenumber(ee$cat)) { 
       standata$ncat <- ee$cat
-    } else stop("Addition argument 'cat' is misspecified.", call. = FALSE)
+    } else {
+      stop2("Argument 'cat' is misspecified.")
+    }
     standata$max_obs <- standata$ncat  # for backwards compatibility
     if (max(standata$ncat) == 2L) {
-      message(paste("Only 2 levels detected so that family bernoulli", 
-                    "might be a more efficient choice."))
+      message("Only 2 levels detected so that family 'bernoulli' ",
+              "might be a more efficient choice.")
     }
     if (check_response && any(standata$Y > standata$ncat)) {
-      stop(paste0("Number of categories is smaller than the response", 
-                  "variable would suggest."), call. = FALSE)
+      stop2("Number of categories is smaller than the response ", 
+            "variable would suggest.")
     }
   }
   
@@ -302,12 +303,11 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     }
     if (length(standata$lb) != standata$N || 
         length(standata$ub) != standata$N) {
-      stop("Invalid truncation bounds", call. = FALSE)
+      stop2("Invalid truncation bounds.")
     }
     if (check_response && any(standata$Y < standata$lb | 
                               standata$Y > standata$ub)) {
-      stop("Some responses are outside of the truncation bounds.",
-           call. = FALSE)
+      stop2("Some responses are outside of the truncation bounds.")
     }
   }
   # autocorrelation variables
@@ -331,9 +331,9 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
         # requires additional data
         standata$N_tg <- length(unique(standata$tg))
         standata$begin_tg <- as.array(with(standata, 
-           ulapply(unique(tgroup), match, tgroup)))
+          ulapply(unique(tgroup), match, tgroup)))
         standata$nobs_tg <- as.array(with(standata, 
-           c(if (N_tg > 1L) begin_tg[2:N_tg], N + 1) - begin_tg))
+          c(if (N_tg > 1L) begin_tg[2:N_tg], N + 1) - begin_tg))
         standata$end_tg <- with(standata, begin_tg + nobs_tg - 1)
         if (!is.null(standata$se)) {
           standata$se2 <- standata$se^2
@@ -344,12 +344,10 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     }
     if (Karr) {
       if (length(ee$response) > 1L) {
-        stop("ARR structure not yet implemented for multivariate models.",
-             call. = FALSE)
+        stop2("ARR structure not yet implemented for multivariate models.")
       }
       # ARR effects (autoregressive effects of the response)
-      standata$Yarr <- arr_design_matrix(Y = standata$Y, r = Karr, 
-                                         group = tgroup)
+      standata$Yarr <- arr_design_matrix(standata$Y, Karr, tgroup)
       standata$Karr <- Karr
     }
   } 
@@ -360,17 +358,16 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       V <- V[-rmd_rows, -rmd_rows, drop = FALSE]
     }
     if (nrow(V) != nrow(data)) {
-      stop("'V' must have the same number of rows as 'data'", call. = FALSE)
+      stop2("'V' must have the same number of rows as 'data'.")
     }
     if (min(eigen(V)$values <= 0)) {
-      stop("'V' must be positive definite", call. = FALSE)
+      stop2("'V' must be positive definite.")
     }
     standata$V <- V
   }
   if (is(autocor, "cor_bsts")) {
     if (length(ee$response) > 1L) {
-      stop("BSTS structure not yet implemented for multivariate models.",
-           call. = FALSE)
+      stop2("BSTS structure not yet implemented for multivariate models.")
     }
     if (nchar(et$group)) {
       tgroup <- data[[et$group]]
@@ -389,8 +386,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
 #' @export
 brmdata <- function(...)  {
   # deprecated alias of make_standata
-  warning("Function 'brmdata' is deprecated. ",
-          "Please use 'make_standata' instead.", 
-          call. = FALSE)
+  warning2("Function 'brmdata' is deprecated. ",
+           "Please use 'make_standata' instead.")
   make_standata(...)
 }

@@ -502,12 +502,11 @@ make_smooth_list <- function(effects, data) {
 }
 
 arr_design_matrix <- function(Y, r, group)  { 
-  # calculate design matrix for autoregressive effects of the response
-  #
+  # compute the design matrix for ARR effects
   # Args:
   #   Y: a vector containing the response variable
   #   r: ARR order
-  #   group: vector containing the grouping variable for each observation
+  #   group: vector containing the grouping variable
   # Notes: 
   #   expects Y to be sorted after group already
   # Returns:
@@ -518,16 +517,18 @@ arr_design_matrix <- function(Y, r, group)  {
     N_group <- length(U_group)
     out <- matrix(0, nrow = length(Y), ncol = r)
     ptsum <- rep(0, N_group + 1)
-    for (j in 1:N_group) {
+    for (j in seq_len(N_group)) {
       ptsum[j + 1] <- ptsum[j] + sum(group == U_group[j])
-      for (i in 1:r) {
+      for (i in seq_len(r)) {
         if (ptsum[j] + i + 1 <= ptsum[j + 1]) {
           out[(ptsum[j] + i + 1):ptsum[j + 1], i] <- 
             Y[(ptsum[j] + 1):(ptsum[j + 1] - i)]
         }
       }
     }
-  } else out <- NULL
+  } else {
+    out <- NULL
+  } 
   out
 }
 

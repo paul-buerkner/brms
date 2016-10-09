@@ -104,22 +104,22 @@ test_that(paste("make_standata rejects incorrect response variables",
                 "depending on the family"), {
   expect_error(make_standata(y ~ 1, data = data.frame(y = factor(1:10)), 
                              family = "student"),
-               "family student expects numeric response variable")
+               "Family 'student' expects numeric response variable")
   expect_error(make_standata(y ~ 1, data = data.frame(y = -5:5), 
                              family = "geometric"),
-               "family geometric expects response variable of non-negative integers")
+               "Family 'geometric' expects response variable of non-negative integers")
   expect_error(make_standata(y ~ 1, data = data.frame(y = -1:1), 
                              family = "bernoulli"),
                "contain only two different values")
   expect_error(make_standata(y ~ 1, data = data.frame(y = factor(-1:1)), 
                              family = "cratio"),
-               "family cratio expects either integers or ordered factors")
+               "Family 'cratio' expects either integers or ordered factors")
   expect_error(make_standata(y ~ 1, data = data.frame(y = rep(0.5:7.5), 2), 
                              family = "sratio"),
-               "family sratio expects either integers or ordered factors")
+               "Family 'sratio' expects either integers or ordered factors")
   expect_error(make_standata(y ~ 1, data = data.frame(y = rep(-7.5:7.5), 2), 
                              family = "gamma"),
-               "family gamma requires response variable to be positive")
+               "Family 'gamma' requires response variable to be positive")
   expect_error(make_standata(y ~ 1, data = data.frame(y = c(0, 0.5, 1)),
                              family = Beta()),
                "requires responses between 0 and 1")
@@ -134,13 +134,13 @@ test_that(paste("make_standata rejects incorrect response variables",
 test_that("make_standata suggests using family bernoulli if appropriate", {
   expect_message(make_standata(y ~ 1, data = data.frame(y = rep(0:1,5)), 
                                family = "binomial"),
-                 paste("family bernoulli might be a more efficient choice."))
+                 paste("family 'bernoulli' might be a more efficient choice."))
   expect_message(make_standata(y ~ 1, data = data.frame(y = rep(0:1,5)), 
                                family = "acat"),
-                 paste("family bernoulli might be a more efficient choice."))
+                 paste("family 'bernoulli' might be a more efficient choice."))
   expect_error(make_standata(y ~ 1, data = data.frame(y = rep(0:1,5)), 
                              family = "categorical"),
-                 paste("At least 3 response categories are required"))
+               paste("At least 3 response categories are required"))
 })
 
 test_that("make_standata returns correct values for addition arguments", {

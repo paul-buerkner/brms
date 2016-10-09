@@ -163,6 +163,14 @@ eval2 <- function(text, ...) {
   eval(parse(text = text), ...)
 }
 
+stop2 <- function(...) {
+  stop(..., call. = FALSE)
+}
+
+warning2 <- function(...) {
+  warning(..., call. = FALSE)
+}
+
 get_arg <- function(x, ...) {
   # find first occurrence of x in ... objects
   # Args:
