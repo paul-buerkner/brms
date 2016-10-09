@@ -1,5 +1,5 @@
-stan_llh <- function(family, effects = list(), autocor = cor_arma(),
-                     trunc_bounds = NULL) {
+stan_llh <- function(family, effects = list(), data = NULL, 
+                     autocor = cor_arma()) {
   # Likelihood in Stan language
   # Args:
   #   family: the model family
@@ -17,11 +17,12 @@ stan_llh <- function(family, effects = list(), autocor = cor_arma(),
   
   has_se <- is.formula(effects$se)
   has_weights <- is.formula(effects$weights)
-  has_cens <- is.formula(effects$cens)
+  has_cens <- has_cens(effects$cens, data = data)
   has_disp <- is.formula(effects$disp)
   has_trials <- is.formula(effects$trials)
   has_cse <- has_cse(effects)
-  has_trunc <- any(trunc_bounds$lb > -Inf) || any(trunc_bounds$ub < Inf)
+  bounds <- get_bounds(effects$trunc, data = data)
+  has_trunc <- any(bounds$lb > -Inf) || any(bounds$ub < Inf)
   ll_adj <- has_cens || has_weights || has_trunc
 
   if (is_mv) {
@@ -62,8 +63,6 @@ stan_llh <- function(family, effects = list(), autocor = cor_arma(),
   reqn_trials <- has_trials && (ll_adj || is_zero_inflated)
   trials <- ifelse(reqn_trials, "trials[n]", "trials")
 
-  # use inverse link in likelihood statement only 
-  # if it does not prevent vectorization 
   simplify <- !has_trunc && !has_cens && stan_has_built_in_fun(family, link)
   eta <- paste0(ifelse(is_mv, "Eta", "eta"), n)
   ordinal_args <- paste0("eta[n], ", if (has_cse) "etap[n], ", 
@@ -71,7 +70,6 @@ stan_llh <- function(family, effects = list(), autocor = cor_arma(),
   inv_gauss_fun <- paste0("inv_gaussian", if (!reqn) "_vector")
   inv_gauss_args <- paste0(eta, ", shape, ", if (!reqn) "sum_", 
                            "log_Y", n, ", sqrt_Y", n)
-  
   if (simplify) { 
     llh_pre <- switch(family,
       poisson = c("poisson_log", eta), 
@@ -128,44 +126,72 @@ stan_llh <- function(family, effects = list(), autocor = cor_arma(),
   }
   
   # write likelihood code
+  interval <- isTRUE(attr(has_cens, "interval"))
   type <- c("cens", "weights")[match(TRUE, c(has_cens, has_weights))]
   if (is.na(type)) type <- "general"
-  # prepare for possible truncation
-  code_trunc <- ""
-  if (has_trunc) {
-    if (type %in% c("cens", "weights")) {
-      stop("truncation is not yet possible in censored ", 
-           "or weighted models", call. = FALSE)
-    } else {
-      lb <- ifelse(any(trunc_bounds$lb > -Inf), "lb[n]", "")
-      ub <- ifelse(any(trunc_bounds$ub < Inf), "ub[n]", "")
-      code_trunc <- paste0(" T[", lb, ", ", ub, "]")
-    }
-  }
-  weights <- ifelse(has_weights, "weights[n] * ", "")
-  .lpdf <- ifelse(use_int(family), "_lpmf", "_lpdf")
   llh <- switch(type, 
-    cens = paste0("  // special treatment of censored data \n",
-      "      if (cens[n] == 0) ", 
-      ifelse(!has_weights, 
-        paste0("Y[n] ~ ", llh_pre[1], "(", llh_pre[2],"); \n"),
-        paste0("target += ", weights, llh_pre[1], .lpdf, 
-               "(Y[n] | ", llh_pre[2],"); \n")),
-      "      else { \n",         
-      "        if (cens[n] == 1) target += ",
-      weights, llh_pre[1], "_lccdf(Y[n] | ", llh_pre[2],"); \n",
-      "        else target += ", 
-      weights, llh_pre[1], "_lcdf(Y[n] | ", llh_pre[2],"); \n",
-      "      } \n"),
-    weights = paste0("  lp_pre[n] = ", llh_pre[1], .lpdf, "(Y[n] | ",
-                     llh_pre[2],"); \n"),
-    general = paste0("  Y", n, " ~ ", llh_pre[1], "(", llh_pre[2], ")", 
-                     code_trunc, "; \n")) 
-  # loop over likelihood if it cannot be vectorized
+    cens = stan_llh_cens(llh_pre, family, interval, has_weights),
+    weights = stan_llh_weights(llh_pre, family),
+    general = stan_llh_general(llh_pre, reqn, bounds)) 
   if (reqn) {
+    # loop over likelihood if it cannot be vectorized
     llh <- paste0("  for (n in 1:N) { \n    ", llh, "    } \n")
   }
   llh
+}
+
+stan_llh_general <- function(llh_pre, reqn = FALSE, bounds = NULL) {
+  # default likelihood in Stan language
+  # Args:
+  #   reqn: does Y require the index 'n'?
+  #   bounds: a list containing elements lb and ub
+  stopifnot(length(llh_pre) == 2L)
+  if (any(bounds$lb > -Inf) || any(bounds$ub < Inf)) {
+    # prepare possible truncation
+    lb <- ifelse(any(bounds$lb > -Inf), "lb[n]", "")
+    ub <- ifelse(any(bounds$ub < Inf), "ub[n]", "")
+    trunc <- paste0(" T[", lb, ", ", ub, "]")
+  } else {
+    trunc <- ""
+  }
+  paste0("  Y", ifelse(reqn, "[n]", ""), " ~ ", llh_pre[1], 
+         "(", llh_pre[2], ")", trunc, "; \n")
+}
+
+stan_llh_cens <- function(llh_pre, family = gaussian(), 
+                          interval = FALSE, weights = FALSE) {
+  # censored likelihood in Stan language
+  # Args: 
+  #   interval: are there interval censored responses present?
+  #   weights: is the model additionally weighted?
+  stopifnot(length(llh_pre) == 2L)
+  s <- collapse(rep(" ", 6))
+  tp <- "  target += "
+  lpdf <- ifelse(use_int(family), "lpmf", "lpdf")
+  w <- ifelse(weights, "weights[n] * ", "")
+  paste0("  // special treatment of censored data \n",
+    s, "if (cens[n] == 0) \n", 
+    s, tp, w, llh_pre[1], "_", lpdf, "(Y[n] | ", llh_pre[2], "); \n",
+    s, "else if (cens[n] == 1) \n",         
+    s, tp, w, llh_pre[1], "_lccdf(Y[n] | ", llh_pre[2], "); \n",
+    s, "else if (cens[n] == -1) \n",
+    s, tp, w, llh_pre[1], "_lcdf(Y[n] | ", llh_pre[2], "); \n",
+    if (interval) {
+      paste0(
+        s, "else if (cens[n] == 2) \n",
+        s, tp, w, "log_diff_exp(", 
+          llh_pre[1], "_lcdf(rcens[n] | ", llh_pre[2], "), \n",
+        collapse(rep(" ", 31)),
+          llh_pre[1], "_lcdf(Y[n] | ", llh_pre[2], ")); \n")
+    })
+}
+
+stan_llh_weights <- function(llh_pre, family = gaussian()) {
+  # weighted likelihood in Stan language
+  stopifnot(length(llh_pre) == 2L)
+  lpdf <- ifelse(use_int(family), "lpmf", "lpdf")
+  paste0("  lp_pre[n] = ", llh_pre[1], "_", lpdf, 
+         "(Y[n] | ", llh_pre[2],"); \n")
 }
 
 stan_autocor <- function(autocor, effects = list(), family = gaussian(),
@@ -576,6 +602,20 @@ stan_von_mises <- function(family, ...) {
   if (family$family == "von_mises") {
     out$fun <- paste0("  #include 'fun_tan_half.stan' \n",
                       "  #include 'fun_von_mises.stan' \n")
+  }
+  out
+}
+
+stan_cens <- function(cens, family = gaussian()) {
+  out <- list()
+  if (cens) {
+    stopifnot(is(family, "family"))
+    out$data <- paste0(
+      "  int cens[N];  // indicates censoring \n",
+      if (isTRUE(attr(cens, "interval"))) {
+        paste0(ifelse(use_int(family), " int rcens[N];", "  vector[N] rcens;"),
+               "  // right censor points for interval censoring \n")
+      })
   }
   out
 }

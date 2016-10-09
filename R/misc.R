@@ -447,21 +447,39 @@ use_alias <- function(arg, alias = NULL, default = NULL,
   x
 }
 
-.cens <- function(x) {
+.cens <- function(x, y2 = NULL) {
   # indicator for censoring
-  if (is.factor(x)) x <- as.character(x)
-  cens <- unname(sapply(x, function(x) {
-    if (grepl(paste0("^", x), "right") || isTRUE(x)) x <- 1
-    else if (grepl(paste0("^", x), "none") || isFALSE(x)) x <- 0
-    else if (grepl(paste0("^", x), "left")) x <- -1
-    else x
-  }))
-  if (!all(unique(cens) %in% -1:1))
-    stop (paste0("Invalid censoring data. Accepted values are ", 
-                 "'left', 'none', and 'right' \n(abbreviations are allowed) ", 
-                 "or -1, 0, and 1. TRUE and FALSE are also accepted \n",
-                 "and refer to 'right' and 'none' respectively."),
-          call. = FALSE)
+  if (is.factor(x)) {
+    x <- as.character(x)
+  }
+  .prepare_cens <- function(x) {
+    stopifnot(length(x) == 1L)
+    regx <- paste0("^", x)
+    if (grepl(regx, "left")) {
+      x <- -1
+    } else if (grepl(regx, "none") || isFALSE(x)) {
+      x <- 0
+    } else if (grepl(regx, "right") || isTRUE(x)) {
+      x <- 1
+    } else if (grepl(regx, "interval")) {
+      x <- 2
+    }
+    x
+  }
+  cens <- unname(ulapply(x, .prepare_cens))
+  if (!all(is.wholenumber(cens) & cens %in% -1:2)) {
+    stop2("Invalid censoring data. Accepted values are ", 
+          "'left', 'none', 'right', and 'interval'\n",
+          "(abbreviations are allowed) or -1, 0, 1, and 2.\n",
+          "TRUE and FALSE are also accepted ",
+          "and refer to 'right' and 'none' respectively.")
+  }
+  if (any(cens %in% 2)) {
+    if (length(y2) != length(cens)) {
+      stop2("Argument 'y2' is required for interval censored data.")
+    }
+    attr(cens, "y2") <- unname(y2)
+  }
   cens
 }
 
@@ -469,27 +487,27 @@ use_alias <- function(arg, alias = NULL, default = NULL,
   lb <- as.numeric(lb)
   ub <- as.numeric(ub)
   if (any(lb >= ub)) {
-    stop("Invalid truncation bounds", call. = FALSE)
+    stop2("Invalid truncation bounds")
   }
   nlist(lb, ub)
 }
 
 cse <- function(...) {
-  stop("inappropriate use of function 'cse'", call. = FALSE)
+  stop2("inappropriate use of function 'cse'")
 }
 
 monotonic <- function(...) {
-  stop("inappropriate use of function 'monotonic'", call. = FALSE)
+  stop2("inappropriate use of function 'monotonic'")
 }
 
 mono <- function(...) {
   # abbreviation of monotonic
-  stop("inappropriate use of function 'monotonic'", call. = FALSE)
+  stop2("inappropriate use of function 'monotonic'")
 }
 
 monotonous <- function(...) {
   # abbreviation of monotonic
-  stop("please use function 'monotonic' instead", call. = FALSE)
+  stop2("please use function 'monotonic' instead")
 }
 
 # startup messages for brms

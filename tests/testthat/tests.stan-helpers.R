@@ -154,28 +154,40 @@ test_that("stan_llh returns correct llhs under weights and censoring", {
   expect_match(stan_llh(poisson(), effects = list(weights = ~x)),
                "  lp_pre[n] = poisson_log_lpmf(Y[n] | eta[n]); \n",
                fixed = TRUE)
-  expect_match(stan_llh(poisson(), effects = list(cens = ~x)),
-               "Y[n] ~ poisson(eta[n]); \n", fixed = TRUE)
+  ee <- brms:::extract_effects(y | cens(x, y2) ~ 1, family = gaussian())
+  expect_match(stan_llh(poisson(), ee, data = data.frame(x = 1)),
+               "target += poisson_lpmf(Y[n] | eta[n]); \n", 
+               fixed = TRUE)
+  expect_match(stan_llh(weibull("log"), ee, data = data.frame(x = -1)), 
+               "target += weibull_lccdf(Y[n] | shape, eta[n]); \n",
+               fixed = TRUE)
+  expect_match(stan_llh(gaussian(), ee, data.frame(x = 2, y = 10, y2 = 20)), 
+               "target += log_diff_exp(normal_lcdf(rcens[n] | eta[n], sigma),",
+               fixed = TRUE)
   expect_match(stan_llh(binomial(logit), list(weights = ~x, trials = ~x)),
                "  lp_pre[n] = binomial_logit_lpmf(Y[n] | trials[n], eta[n]); \n",
                fixed = TRUE)
-  expect_match(stan_llh(weibull("log"), effects = list(cens = ~x)), fixed = TRUE,
-               "target += weibull_lccdf(Y[n] | shape, eta[n]); \n")
-  expect_match(stan_llh(weibull("inverse"), list(cens = ~x, weights = ~x)),
+  ee <- extract_effects(y | cens(x) + weights(x) ~ 1, family = gaussian())
+  expect_match(stan_llh(weibull("inverse"), ee, data = data.frame(x = 1)),
                paste("target += weights[n] * weibull_lccdf(Y[n] |", 
                      "shape, eta[n]); \n"), fixed = TRUE)
 })
 
 test_that("stan_llh returns correct llhs under truncation", {
-  expect_match(stan_llh(student(inverse), trunc_bounds = list(lb = 0)),
-               "  Y[n] ~ student_t(nu, eta[n], sigma) T[lb[n], ];", fixed = TRUE)
-  expect_match(stan_llh(poisson(), trunc_bounds = list(ub = 100)),
-               "  Y[n] ~ poisson(eta[n]) T[, ub[n]]; \n", fixed = TRUE)
-  expect_match(stan_llh(gaussian(), effects = list(se = ~x),
-                        trunc_bounds = list(lb = 0, ub = 100)),
-               "  Y[n] ~ normal(eta[n], se[n]) T[lb[n], ub[n]];", fixed = TRUE)
-  expect_match(stan_llh(binomial(), effects = list(trials = ~x),
-                        trunc_bounds = list(lb = 0, ub = 100)),
+  ee <- extract_effects(y | trunc(0) ~ 1, family = gaussian())
+  expect_match(stan_llh(student(inverse), effects = ee),
+               "  Y[n] ~ student_t(nu, eta[n], sigma) T[lb[n], ];", 
+               fixed = TRUE)
+  ee <- extract_effects(y | trunc(ub = 100) ~ 1, family = gaussian())
+  expect_match(stan_llh(poisson(), effects = ee),
+               "  Y[n] ~ poisson(eta[n]) T[, ub[n]]; \n", 
+               fixed = TRUE)
+  ee <- extract_effects(y | trunc(0, 100) + se(x) ~ 1, family = gaussian())
+  expect_match(stan_llh(gaussian(), effects = ee),
+               "  Y[n] ~ normal(eta[n], se[n]) T[lb[n], ub[n]];", 
+               fixed = TRUE)
+  ee <- extract_effects(y | trunc(0, 100) + trials(x) ~ 1, family = binomial())
+  expect_match(stan_llh(binomial(), effects = ee),
                "  Y[n] ~ binomial(trials[n], eta[n]) T[lb[n], ub[n]];",
                fixed = TRUE)
 })

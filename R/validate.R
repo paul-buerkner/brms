@@ -129,6 +129,10 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
         stop("Addition arguments 'se' and 'disp' cannot be used ", 
              "at the same time.", call. = FALSE)
       }
+      cens_or_weights <- is.formula(x$cens) || is.formula(x$weights)
+      if (is.formula(x$trunc) && cens_or_weights) {
+        stop2("truncation is not yet possible in censored or weighted models.")
+      }
     }
   }
   
@@ -1067,17 +1071,33 @@ formula2string <- function(formula, rm = c(0, 0)) {
   x
 }
 
-get_bounds <- function(trunc, data = NULL) {
-   # extract truncation boundaries out of a formula
-   # that is known to contain the .trunc function
-   # Returns:
-   #   a list containing two numbers named lb and ub
-   if (is(trunc, "formula")) {
-     .addition(trunc, data = data)
-   } else {
-     .trunc()
-   }
- }
+get_bounds <- function(formula, data = NULL) {
+  # extract truncation boundaries out of a formula
+  # that is known to contain the .trunc function
+  # Returns:
+  #   a list containing two numbers named lb and ub
+  if (is.formula(formula)) {
+    term <- attr(terms(formula), "term.labels")
+    stopifnot(length(term) == 1L && grepl("\\.trunc\\(", term))
+    trunc <- .addition(formula, data = data)
+  } else {
+    trunc <- .trunc()
+  }
+  trunc
+}
+
+has_cens <- function(formula, data = NULL) {
+  # indicate if the model is (possibly interval) censored
+  if (is.formula(formula)) {
+    term <- attr(terms(formula), "term.labels")
+    stopifnot(length(term) == 1L && grepl("\\.cens\\(", term))
+    cens <- .addition(formula, data = data)
+    cens <- structure(TRUE, interval = !is.null(attr(cens, "y2")))
+  } else {
+    cens <- FALSE
+  }
+  cens
+}
 
 check_brm_input <- function(x) {
   # misc checks on brm arguments 

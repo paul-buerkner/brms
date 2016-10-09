@@ -46,7 +46,7 @@ test_that(paste("make_stancode returns correct strings",
 test_that("make_stancode handles addition arguments correctly", {
   expect_match(make_stancode(time | cens(censored) ~ age + sex + disease, 
                              data = kidney, family = c("weibull", "log")), 
-               "vector[N] cens;", fixed = TRUE)
+               "int cens[N];", fixed = TRUE)
   expect_match(make_stancode(time | trunc(0) ~ age + sex + disease,
                              data = kidney, family = "gamma"), 
                "T[lb[n], ];", fixed = TRUE)

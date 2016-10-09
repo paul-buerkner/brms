@@ -276,19 +276,30 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   
   # data for addition arguments
   if (is.formula(ee$se)) {
-    standata <- c(standata, list(se = .addition(formula = ee$se, data = data)))
+    standata[["se"]] <- .addition(formula = ee$se, data = data)
   }
   if (is.formula(ee$weights)) {
-    standata <- c(standata, list(weights = .addition(ee$weights, data = data)))
+    standata[["weights"]] <- .addition(ee$weights, data = data)
     if (old_mv) {
       standata$weights <- standata$weights[1:standata$N_trait]
     }
   }
   if (is.formula(ee$disp)) {
-    standata <- c(standata, list(disp = .addition(ee$disp, data = data)))
+    standata[["disp"]] <- .addition(ee$disp, data = data)
   }
   if (is.formula(ee$cens) && check_response) {
-    standata <- c(standata, list(cens = .addition(ee$cens, data = data)))
+    cens <- .addition(ee$cens, data = data)
+    standata$cens <- rm_attr(cens, "y2")
+    y2 <- attr(cens, "y2")
+    if (!is.null(y2)) {
+      icens <- cens %in% 2
+      if (any(standata$Y[icens] >= y2[icens])) {
+        stop2("Left censor points must be smaller than right ", 
+              "censor points for interval censored data.")
+      }
+      y2[!icens] <- 0  # not used in Stan
+      standata$rcens <- y2
+    }
     if (old_mv) {
       standata$cens <- standata$cens[1:standata$N_trait]
     }

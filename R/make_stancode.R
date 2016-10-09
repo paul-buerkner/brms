@@ -49,7 +49,8 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   is_categorical <- is.categorical(family)
   is_mv <- is.linear(family) && length(ee$response) > 1L
   is_forked <- is.forked(family)
-  trunc_bounds <- get_bounds(ee$trunc, data = data)
+  has_cens <- has_cens(ee$cens, data = data)
+  bounds <- get_bounds(ee$trunc, data = data)
   
   ranef <- tidy_ranef(ee, data = data)
   if (length(ee$nonlinear)) {
@@ -76,8 +77,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   text_ranef <- collapse_lists(text_ranef)
   
   # generate Stan code of the likelihood
-  text_llh <- stan_llh(family, effects = ee, autocor = autocor,
-                       trunc_bounds = trunc_bounds)
+  text_llh <- stan_llh(family, effects = ee, data = data, autocor = autocor)
   # generate Stan code specific to certain models
   text_autocor <- stan_autocor(autocor, effects = ee, family = family,
                                prior = prior)
@@ -88,6 +88,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   text_forked <- stan_forked(family)
   text_inv_gaussian <- stan_inv_gaussian(family)
   text_von_mises <- stan_von_mises(family)
+  text_cens <- stan_cens(has_cens, family = family)
   text_disp <- stan_disp(ee, family = family)
   kronecker <- stan_needs_kronecker(ranef, names_cov_ranef = names(cov_ranef))
   text_misc_funs <- stan_misc_functions(family = family, kronecker = kronecker)
@@ -119,8 +120,6 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     "} \n")
   
   # generate data block
-  Kar <- get_ar(autocor)
-  Kma <- get_ma(autocor)
   Nbin <- ifelse(is.formula(ee$trials), "[N]", "")
   text_data <- paste0(
     "data { \n",
@@ -139,19 +138,18 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     text_categorical$data,
     text_autocor$data,
     text_inv_gaussian$data,
+    text_cens$data,
     text_disp$data,
     if (has_trials(family))
       paste0("  int trials", Nbin, ";  // number of trials \n"),
     if (is.formula(ee$se) && !use_cov(autocor))
       "  vector<lower=0>[N] se;  // SEs for meta-analysis \n",
     if (is.formula(ee$weights))
-      paste0("  vector<lower=0>[N] weights;  // model weights \n"),
-    if (is.formula(ee$cens))
-      paste0("  vector[N] cens;  // indicates censoring \n"),
-    if (any(trunc_bounds$lb > -Inf))
+      "  vector<lower=0>[N] weights;  // model weights \n",
+    if (any(bounds$lb > -Inf))
       paste0("  ", ifelse(use_int(family), "int", "real"), " lb[N];",  
              "  // lower bounds for truncation; \n"),
-    if (any(trunc_bounds$ub < Inf))
+    if (any(bounds$ub < Inf))
       paste0("  ", ifelse(use_int(family), "int", "real"), " ub[N];",  
              "  // upper bounds for truncation; \n"),
     "  int prior_only;  // should the likelihood be ignored? \n",
