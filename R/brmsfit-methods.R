@@ -963,7 +963,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
   if (!eval(parse(text = rN_text))) {
     # remove check as soon as bayesplot is on CRAN
     stop(paste0("please install the bayesplot package via\n",
-                "devtools::install_github('jgabry/bayesplot')"),
+                "devtools::install_github('stan-dev/bayesplot')"),
          call. = FALSE)
   }
   if (missing(type)) {
