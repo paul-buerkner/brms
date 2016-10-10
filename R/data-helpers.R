@@ -248,10 +248,10 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       newdata[[resp]] <- NA 
     }
   }
-  if (is.formula(ee$cens)) {
-    for (cens in setdiff(all.vars(ee$cens), names(newdata))) { 
-      newdata[[cens]] <- 0 # add irrelevant censor variables
-    }
+  cens_vars <- all.vars(ee$cens)
+  for (cens in setdiff(cens_vars, names(newdata))) {
+    # censor variables are unused in predict and related methods
+    newdata[[cens]] <- 0  # indicates no censoring
   }
   new_ranef <- tidy_ranef(ee, data = model.frame(fit))
   if (nrow(fit$ranef)) {
@@ -270,8 +270,9 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     list_data <- lapply(as.list(fit$data), function(x)
       if (is.numeric(x)) x else as.factor(x))
     is_factor <- sapply(list_data, is.factor)
-    is_group <- names(list_data) %in% fit$ranef$group
-    factors <- list_data[is_factor & !is_group]
+    dont_check <- c(fit$ranef$group, cens_vars)
+    dont_check <- names(list_data) %in% dont_check
+    factors <- list_data[is_factor & !dont_check]
     if (length(factors)) {
       factor_names <- names(factors)
       factor_levels <- lapply(factors, levels) 
