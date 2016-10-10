@@ -167,11 +167,12 @@ The \code{formula} argument accepts formulae of the following syntax:
   (or equivalenty \code{-1}, \code{0}, \code{1}, and \code{2}) to indicate that 
   the corresponding observation is left censored, not censored, right censored,
   or interval censored. For interval censored data, a second variable
-  (let's call it \code{y2}) has to be passed to \code{cens} that is
-  \code{y | cens(censored, y2) ~ predictors}. While the lower bounds are 
-  given in \code{y} the upper bounds are given in \code{y2} for interval
-  censore data. Intervals are assumed to be open on the left and closed 
-  on the right, \code{(y, y2]}.
+  (let's call it \code{y2}) has to be passed to \code{cens}. In this case, 
+  the formula has the structure \code{y | cens(censored, y2) ~ predictors}. 
+  While the lower bounds are given in \code{y}, 
+  the upper bounds are given in \code{y2} for interval
+  censored data. Intervals are assumed to be open on the left and closed 
+  on the right: \code{(y, y2]}.
   
   With the expection of \code{categorical} and ordinal families, the response 
   distribution can be truncated using the \code{trunc} function in the addition part.
