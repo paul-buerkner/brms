@@ -147,30 +147,16 @@ test_that("stan_llh uses simplifications when possible", {
                "  Y[n] ~ ordered_logistic(eta[n], temp_Intercept); \n")
 })
 
-test_that("stan_llh returns correct llhs under weights and censoring", {
+test_that("stan_llh returns correct llhs for weighted models", {
   expect_match(stan_llh(student("inverse"), effects = list(weights = ~x)),
                "  lp_pre[n] = student_t_lpdf(Y[n] | nu, eta[n], sigma); \n",
                fixed = TRUE)
   expect_match(stan_llh(poisson(), effects = list(weights = ~x)),
                "  lp_pre[n] = poisson_log_lpmf(Y[n] | eta[n]); \n",
                fixed = TRUE)
-  ee <- brms:::extract_effects(y | cens(x, y2) ~ 1, family = gaussian())
-  expect_match(stan_llh(poisson(), ee, data = data.frame(x = 1)),
-               "target += poisson_lpmf(Y[n] | eta[n]); \n", 
-               fixed = TRUE)
-  expect_match(stan_llh(weibull("log"), ee, data = data.frame(x = -1)), 
-               "target += weibull_lccdf(Y[n] | shape, eta[n]); \n",
-               fixed = TRUE)
-  expect_match(stan_llh(gaussian(), ee, data.frame(x = 2, y = 10, y2 = 20)), 
-               "target += log_diff_exp(normal_lcdf(rcens[n] | eta[n], sigma),",
-               fixed = TRUE)
   expect_match(stan_llh(binomial(logit), list(weights = ~x, trials = ~x)),
                "  lp_pre[n] = binomial_logit_lpmf(Y[n] | trials[n], eta[n]); \n",
                fixed = TRUE)
-  ee <- extract_effects(y | cens(x) + weights(x) ~ 1, family = gaussian())
-  expect_match(stan_llh(weibull("inverse"), ee, data = data.frame(x = 1)),
-               paste("target += weights[n] * weibull_lccdf(Y[n] |", 
-                     "shape, eta[n]); \n"), fixed = TRUE)
 })
 
 test_that("stan_llh returns correct llhs under truncation", {

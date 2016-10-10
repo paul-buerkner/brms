@@ -411,3 +411,22 @@ test_that("make_stancode correctly parses distributional gamma models", {
     "    eta[n] = shape[n] / (inv_logit(eta_a[n]) * exp(eta_b[n] * C[n, 1]));"),
     fixed = TRUE)
 })
+
+test_that("make_stancode handles censored responses correctly", {
+  dat <- data.frame(y = 1:9, x = rep(-1:1, 3), y2 = 10:18)
+  expect_match(make_stancode(y | cens(x, y2) ~ 1, dat, poisson()),
+               "target += poisson_lpmf(Y[n] | eta[n]); \n", 
+               fixed = TRUE)
+  expect_match(make_stancode(y | cens(x) ~ 1, dat, weibull()), 
+               "target += weibull_lccdf(Y[n] | shape, eta[n]); \n",
+               fixed = TRUE)
+  dat$x[1] <- 2
+  expect_match(make_stancode(y | cens(x, y2) ~ 1, dat, gaussian()), 
+               "target += log_diff_exp(normal_lcdf(rcens[n] | eta[n], sigma),",
+               fixed = TRUE)
+  dat$x <- 1
+  make_stancode(y | cens(x) + weights(x) ~ 1, dat, weibull())
+  expect_match(make_stancode(y | cens(x) + weights(x) ~ 1, dat, weibull()),
+               paste("target += weights[n] * weibull_lccdf(Y[n] |", 
+                     "shape, eta[n]); \n"), fixed = TRUE)
+})

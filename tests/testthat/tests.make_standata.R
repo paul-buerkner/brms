@@ -147,6 +147,7 @@ test_that("make_standata returns correct values for addition arguments", {
   temp_data <- data.frame(y = rnorm(9), s = 1:9, w = 1:9, c1 = rep(-1:1, 3), 
                           c2 = rep(c("left","none","right"), 3),
                           c3 = c(rep(c(TRUE, FALSE), 4), FALSE),
+                          c4 = c(sample(-1:1, 5, TRUE), rep(2, 4)),
                           t = 11:19)
   expect_equal(make_standata(y | se(s) ~ 1, data = temp_data)$se, 
                1:9)
@@ -160,6 +161,8 @@ test_that("make_standata returns correct values for addition arguments", {
                rep(-1:1, 3))
   expect_equal(make_standata(y | cens(c3) ~ 1, data = temp_data)$cens, 
                c(rep(1:0, 4), 0))
+  expect_equal(make_standata(y | cens(c4, y + 2) ~ 1, data = temp_data)$rcens, 
+               c(rep(0, 5), temp_data$y[6:9] + 2))
   expect_equal(make_standata(s ~ 1, data = temp_data, 
                              family = "binomial")$max_obs, 9)
   expect_equal(make_standata(s | trials(10) ~ 1, data = temp_data, 

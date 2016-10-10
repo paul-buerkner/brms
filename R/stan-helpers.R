@@ -611,7 +611,7 @@ stan_cens <- function(cens, family = gaussian()) {
   if (cens) {
     stopifnot(is(family, "family"))
     out$data <- paste0(
-      "  int cens[N];  // indicates censoring \n",
+      "  int<lower=-1,upper=2> cens[N];  // indicates censoring \n",
       if (isTRUE(attr(cens, "interval"))) {
         paste0(ifelse(use_int(family), " int rcens[N];", "  vector[N] rcens;"),
                "  // right censor points for interval censoring \n")
