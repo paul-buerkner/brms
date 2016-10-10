@@ -1053,6 +1053,10 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
   yrep <- as.matrix(do.call(method, args))
   standata <- standata(object, control = list(save_order = TRUE))
   y <- as.vector(standata$Y)
+  if (!is.null(standata$cens)) {
+    warning2("Posterior predictive checks may not be ", 
+             "meaningful for censored models.")
+  }
   if (family(object)$family %in% "binomial") {
     # use success proportions following Gelman and Hill (2006)
     y <- y / standata$trials
@@ -1674,6 +1678,9 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   standata <- amend_newdata(newdata, fit = object, re_formula = re_formula,
                             allow_new_levels = allow_new_levels, 
                             check_response = TRUE)
+  if (!is.null(standata$cens)) {
+    warning2("Residuals may not be meaningful for censored models.")
+  }
   if (is.null(subset) && !is.null(nsamples)) {
     subset <- sample(Nsamples(object), nsamples)
   }
