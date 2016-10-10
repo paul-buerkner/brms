@@ -454,6 +454,9 @@ censor_loglik <- function(dist, args, i, data) {
     do.call(cdf, c(data$Y[i], args, lower.tail = FALSE, log.p = TRUE))
   } else if (data$cens[i] == -1) {
     do.call(cdf, c(data$Y[i], args, log.p = TRUE))
+  } else if (data$cens[i] == 2) {
+    log(do.call(cdf, c(data$rcens[i], args)) - 
+          do.call(cdf, c(data$Y[i], args)))
   }
 }
 
