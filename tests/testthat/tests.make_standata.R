@@ -276,7 +276,7 @@ test_that("brmdata is backwards compatible", {
 
 test_that("make_standata correctly prepares data for non-linear models", {
   nonlinear <- list(a ~ x + (1|1|g), b ~ mono(z) + (1|1|g))
-  data <- data.frame(y = rnorm(9), x = rnorm(9), z = sample(1:4, 9, TRUE), 
+  data <- data.frame(y = rnorm(9), x = rnorm(9), z = sample(1:9, 9), 
                      g = rep(1:3, 3))
   standata <- make_standata(y ~ a - b^z, data = data, nonlinear = nonlinear)
   expect_equal(names(standata), c("N", "Y", "KC", "C", "K_a", "X_a", "Z_1_a_1", 
