@@ -9,6 +9,8 @@
       \item Estimate category specific group-level effects.
       \item Allow \code{t2} smooth terms based on
       multiple covariates.
+      \item Estimate interval censored data via the
+      addition argument \code{cens} in the model formula.
       \item Allow to compute \code{residuals} also based 
       on predicted values instead of fitted values.
     }
