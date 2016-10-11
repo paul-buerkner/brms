@@ -1196,8 +1196,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
                   get_random(ee)$form,
                   lapply(get_effect(ee, "mono"), rhs), 
                   lapply(get_effect(ee, "gam"), rhs), 
-                  ee[c("cse", "se", "disp", "trials", "cat")], 
-                  extract_time(x$autocor$formula)$all)
+                  ee[c("cse", "se", "disp", "trials", "cat")])
     req_vars <- unique(ulapply(req_vars, all.vars))
     req_vars <- setdiff(req_vars, c(rsv_vars, names(ee$nonlinear)))
     conditions <- as.data.frame(as.list(rep(NA, length(req_vars))))
@@ -1238,7 +1237,8 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     stop("conditions must be a data.frame or NULL", call. = FALSE)
   }
   conditions <- amend_newdata(conditions, fit = x, re_formula = re_formula,
-                              allow_new_levels = TRUE, return_standata = FALSE)
+                              allow_new_levels = TRUE, incl_autocor = FALSE, 
+                              return_standata = FALSE)
 
   results <- list()
   for (i in seq_along(effects)) {

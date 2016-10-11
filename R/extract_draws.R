@@ -15,8 +15,8 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
     subset <- sample(Nsamples(x), nsamples)
   }
   nsamples <- Nsamples(x, subset = subset)
-  standata <- amend_newdata(newdata, fit = x, re_formula = re_formula,
-                            allow_new_levels = allow_new_levels, ...)
+  newd_args <- nlist(newdata, re_formula, allow_new_levels, incl_autocor)
+  standata <- do.call(amend_newdata, c(newd_args, list(fit = x, ...)))
   draws <- nlist(f = prepare_family(x), data = standata, 
                  nsamples = nsamples, autocor = x$autocor)
   
@@ -31,9 +31,7 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
       auxfit$formula <- update.formula(x$formula, rhs(attr(x$formula, ap)))
       auxfit$ranef <- tidy_ranef(extract_effects(auxfit$formula), 
                                  data = model.frame(x))
-      auxstandata <- amend_newdata(newdata, fit = auxfit, 
-                                   re_formula = re_formula,
-                                   allow_new_levels = allow_new_levels)
+      auxstandata <- do.call(amend_newdata, c(newd_args, list(fit = auxfit)))
       draws[[ap]] <- .extract_draws(auxfit, standata = auxstandata, nlpar = ap,
                                     re_formula = re_formula, subset = subset)
       rm(auxfit)
@@ -79,8 +77,7 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
                          rhs(attr(x$formula, "nonlinear")[[i]]))
       nlfit$ranef <- tidy_ranef(extract_effects(nlfit$formula), 
                                data = model.frame(x))
-      nlstandata <- amend_newdata(newdata, fit = nlfit, re_formula = re_formula, 
-                                  allow_new_levels = allow_new_levels)
+      nlstandata <- do.call(amend_newdata, c(newd_args, list(fit = nlfit)))
       draws$nonlinear[[nlpars[i]]] <- 
         .extract_draws(nlfit, standata = nlstandata, nlpar = nlpars[i], 
                        re_formula = re_formula, subset = subset)
@@ -112,9 +109,7 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
       for (r in resp) {
         mvfit <- x
         attr(mvfit$formula, "response") <- r
-        mvstandata <- amend_newdata(newdata, fit = mvfit, 
-                                    re_formula = re_formula, 
-                                    allow_new_levels = allow_new_levels)
+        mvstandata <- do.call(amend_newdata, c(newd_args, list(fit = mvfit)))
         draws[["mv"]][[r]] <- 
           .extract_draws(mvfit, standata = mvstandata, subset = subset,
                          re_formula = re_formula, nlpar = r)

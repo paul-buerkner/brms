@@ -206,22 +206,22 @@ fix_factor_contrasts <- function(data, optdata = NULL) {
 
 amend_newdata <- function(newdata, fit, re_formula = NULL, 
                           allow_new_levels = FALSE,
-                          return_standata = TRUE,
-                          check_response = FALSE) {
+                          check_response = FALSE,
+                          incl_autocor = TRUE,
+                          return_standata = TRUE) {
   # amend newdata passed to predict and fitted methods
   # Args:
   #   newdata: a data.frame containing new data for prediction 
   #   fit: an object of class brmsfit
   #   re_formula: a random effects formula
-  #   allow_new_levels: are new random effects levels allowed?
-  #   return_standata: logical; compute the data to be passed 
-  #                    to Stan, or just return the updated newdata?
+  #   allow_new_levels: Are new random effects levels allowed?
   #   check_response: Should response variables be checked
   #                   for existence and validity?
-  # Notes:
-  #   used in predict.brmsfit, fitted.brmsfit and linear_predictor.brmsfit
+  #   incl_autocor: Check data of autocorrelation terms?
+  #   return_standata: Compute the data to be passed to Stan
+  #                    or just return the updated newdata?
   # Returns:
-  #   updated data.frame being compatible with fit$formula
+  #   updated data.frame being compatible with formula(fit)
   if (is.null(newdata) || is(newdata, "list")) {
     # to shorten expressions in S3 methods such as predict.brmsfit
     if (return_standata && is.null(newdata)) {
@@ -234,7 +234,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   }
   # standata will be based on an updated formula if re_formula is specified
   new_formula <- update_re_terms(formula(fit), re_formula = re_formula)
-  et <- extract_time(fit$autocor$formula)
+  et <- if (incl_autocor) extract_time(fit$autocor$formula)
   ee <- extract_effects(new_formula, et$all, family = family(fit),
                         resp_rhs_all = FALSE)
   resp_only_vars <- setdiff(all.vars(ee$respform), all.vars(rhs(ee$all)))
