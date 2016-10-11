@@ -235,8 +235,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   # standata will be based on an updated formula if re_formula is specified
   new_formula <- update_re_terms(formula(fit), re_formula = re_formula)
   et <- if (incl_autocor) extract_time(fit$autocor$formula)
-  ee <- extract_effects(new_formula, et$all, family = family(fit),
-                        resp_rhs_all = FALSE)
+  ee <- extract_effects(new_formula, family = family(fit),
+                        resp_rhs_all = FALSE, et$all)
   resp_only_vars <- setdiff(all.vars(ee$respform), all.vars(rhs(ee$all)))
   missing_resp <- setdiff(resp_only_vars, names(newdata))
   if (check_response && length(missing_resp)) {

@@ -534,7 +534,7 @@ stan_categorical <- function(family) {
   stopifnot(is(family, "family"))
   out <- list()
   if (is.categorical(family)) {
-    out$data <- "  int<lower=2> ncat;  // number of categories' \n" 
+    out$data <- "  int<lower=2> ncat;  // number of categories \n" 
     out$tdataD <- "  vector[1] zero; \n"
     out$tdataC <- "  zero[1] = 0; \n"
   }

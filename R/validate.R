@@ -6,8 +6,8 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   #   ...: Additional objects of class "formula"
   #   family: the model family
   #   nonlinear: a list of formulas specifying non-linear effects
-  #   check_response: check if the response part is non-empty
-  #   resp_rhs_all: include response variables on the RHS of $all? 
+  #   check_response: check if the response part is non-empty?
+  #   resp_rhs_all: include response variables on the RHS of x$all? 
   # Returns: 
   #   A named list whose elements depend on the formula input
   old_mv <- isTRUE(attr(formula, "old_mv"))
@@ -140,20 +140,19 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   lhs_vars <- if (resp_rhs_all) all.vars(lhs(x$fixed))
   fixed_vars <- if (!length(x$nonlinear))
                   c(rhs(x$fixed), all.vars(rhs(x$fixed)))
-  formula_list <- c(
-    lhs_vars, 
-    add_vars, 
-    fixed_vars,
-    x[c("covars", "cse", "mono")], 
-    unlist(attr(x$gam, "covars")), 
-    x$random$form, 
-    lapply(x$random$form, all.vars), 
-    x$random$group, 
-    get_offset(x$fixed),
-    lapply(x$nonlinear, function(e) e$all),
-    lapply(x[auxpars()], function(e) e$all), 
-    ...)
-  new_formula <- collapse(ulapply(formula_list, plus_rhs))
+  formula_list <- c(lhs_vars, 
+                    add_vars, 
+                    fixed_vars,
+                    x[c("covars", "cse", "mono")], 
+                    unlist(attr(x$gam, "covars")), 
+                    x$random$form, 
+                    lapply(x$random$form, all.vars), 
+                    x$random$group, 
+                    get_offset(x$fixed),
+                    lapply(x$nonlinear, function(e) e$all),
+                    lapply(x[auxpars()], function(e) e$all), 
+                    ...)
+  new_formula <- collapse(ulapply(rmNULL(formula_list), plus_rhs))
   x$all <- eval2(paste0("update(", tfixed, ", ~ ", new_formula, ")"))
   environment(x$all) <- environment(formula)
   
@@ -637,9 +636,15 @@ update_re_terms <- function(formula, re_formula = NULL) {
 
 plus_rhs <- function(x) {
   # take the right hand side of a formula and add a +
-  if (is.formula(x)) x <- Reduce(paste, deparse(x[[2]]))
-  if (length(x) && nchar(x)) paste("+", paste(x, collapse = "+"))
-  else "+ 1"
+  if (is.formula(x)) {
+    x <- Reduce(paste, deparse(rhs(x)[[2]]))
+  }
+  if (length(x) && all(nzchar(x))) {
+    out <- paste0(" + ", paste(x, collapse = "+"))
+  } else {
+    out <- " + 1"
+  }
+  out
 }
 
 get_effect <- function(effects, target = c("fixed", "mono", "cse", "gam"),
