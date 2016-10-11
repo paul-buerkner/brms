@@ -6,10 +6,10 @@ cache: packages
 warnings_are_errors: TRUE
 
 r_github_packages:
-  - HenrikBengtsson/matrixStats@develop
   - jimhester/covr
+  - stan-dev/rstan/rstan/rstan@develop
   - hadley/ggplot2
-  - jgabry/bayesplot
+  - stan-dev/bayesplot
   
 after_success:
   - Rscript -e 'covr::codecov()'
