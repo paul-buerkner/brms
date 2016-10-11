@@ -187,7 +187,7 @@
 #'   \code{cbind(y1,y2) ~ x + (1+x|2|g)}. Of course, you could also use
 #'   any value other than \code{2} as ID. It is not yet possible
 #'   to model terms as only affecting certain responses (and not others),
-#'   but this will comebe implemented in the future.
+#'   but this will be implemented in the future.
 #'    
 #'   Categorical models use the same syntax as multivariate
 #'   models. As in most other implementations of categorical models,

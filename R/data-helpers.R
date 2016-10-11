@@ -751,9 +751,9 @@ data_csef <- function(effects, data) {
   #   data: the data passed by the user
   out <- list()
   if (length(all_terms(effects[["cse"]]))) {
-    Xp <- get_model_matrix(effects$cse, data)
-    avoid_auxpars(colnames(Xp), effects = effects)
-    out <- c(out, list(Kp = ncol(Xp), Xp = Xp))
+    Xcs <- get_model_matrix(effects$cse, data)
+    avoid_auxpars(colnames(Xcs), effects = effects)
+    out <- c(out, list(Kcs = ncol(Xcs), Xcs = Xcs))
   }
   out
 }

@@ -383,7 +383,7 @@ test_that("make_standata handles variable 'intercept' correctly", {
 test_that("make_standata handles category specific effects correctly", {
   sdata <- make_standata(rating ~ period + carry + cse(treat), 
                          data = inhaler, family = sratio())
-  expect_equivalent(sdata$Xp, matrix(inhaler$treat))
+  expect_equivalent(sdata$Xcs, matrix(inhaler$treat))
   sdata <- make_standata(rating ~ period + carry + cse(treat) + (cse(1)|subject), 
                          data = inhaler, family = acat())
   expect_equivalent(sdata$Z_1_3, as.array(rep(1, nrow(inhaler))))

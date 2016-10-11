@@ -197,19 +197,19 @@ test_that("make_stancode returns correct code for spline only models", {
 test_that("make_stancode generates correct code for category specific effects", {
   scode <- make_stancode(rating ~ period + carry + cse(treat), 
                          data = inhaler, family = sratio())
-  expect_match(scode, "matrix[N, Kp] Xp;", fixed = TRUE)
-  expect_match(scode, "matrix[Kp, ncat - 1] bp;", fixed = TRUE)
-  expect_match(scode, "etap = Xp * bp;", fixed = TRUE)
-  expect_match(scode, "sratio(eta[n], etap[n], temp_Intercept);", fixed = TRUE)
+  expect_match(scode, "matrix[N, Kcs] Xcs;", fixed = TRUE)
+  expect_match(scode, "matrix[Kcs, ncat - 1] bcs;", fixed = TRUE)
+  expect_match(scode, "etacs = Xcs * bcs;", fixed = TRUE)
+  expect_match(scode, "sratio(eta[n], etacs[n], temp_Intercept);", fixed = TRUE)
   scode <- make_stancode(rating ~ period + carry + cse(treat) + (cse(1)|subject), 
                          data = inhaler, family = acat())
-  expect_match(scode, "etap[n, 1] = etap[n, 1] + r_1_1[J_1[n]] * Z_1_1[n];",
+  expect_match(scode, "etacs[n, 1] = etacs[n, 1] + r_1_1[J_1[n]] * Z_1_1[n];",
                fixed = TRUE)
   scode <- make_stancode(rating ~ period + carry + (cse(treat)|subject), 
                          data = inhaler, family = acat())
-  expect_match(scode, paste("etap[n, 3] = etap[n, 3] + r_1_3[J_1[n]] * Z_1_3[n]", 
+  expect_match(scode, paste("etacs[n, 3] = etacs[n, 3] + r_1_3[J_1[n]] * Z_1_3[n]", 
                              "+ r_1_6[J_1[n]] * Z_1_6[n];"), fixed = TRUE)
-  expect_match(scode, "Y[n] ~ acat(eta[n], etap[n], temp_Intercept);", 
+  expect_match(scode, "Y[n] ~ acat(eta[n], etacs[n], temp_Intercept);", 
                fixed = TRUE)
 })
 

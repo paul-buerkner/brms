@@ -65,7 +65,7 @@ stan_llh <- function(family, effects = list(), data = NULL,
 
   simplify <- !has_trunc && !has_cens && stan_has_built_in_fun(family, link)
   eta <- paste0(ifelse(is_mv, "Eta", "eta"), n)
-  ordinal_args <- paste0("eta[n], ", if (has_cse) "etap[n], ", 
+  ordinal_args <- paste0("eta[n], ", if (has_cse) "etacs[n], ", 
                          "temp_Intercept")
   inv_gauss_fun <- paste0("inv_gaussian", if (!reqn) "_vector")
   inv_gauss_args <- paste0(eta, ", shape, ", if (!reqn) "sum_", 
@@ -428,7 +428,7 @@ stan_ordinal <- function(family, prior = prior_frame(),
     th <- function(k, fam = family) {
       # helper function generating stan code inside ilink(.)
       sign <- ifelse(fam %in% c("cumulative", "sratio"), " - ", " + ")
-      ptl <- ifelse(cse, paste0(sign, "etap[k]"), "") 
+      ptl <- ifelse(cse, paste0(sign, "etacs[k]"), "") 
       if (sign == " - ") {
         out <- paste0("thres[",k,"]", ptl, " - eta")
       } else {
@@ -460,13 +460,13 @@ stan_ordinal <- function(family, prior = prior_frame(),
     
     # generate Stan code specific for each ordinal model
     if (!(family == "cumulative" && ilink == "inv_logit")) {
-      cse_arg <- ifelse(!cse, "", "row_vector etap, ")
+      cse_arg <- ifelse(!cse, "", "row_vector etacs, ")
       out$fun <- paste0(
         "  /* ", family, " log-PDF for a single response \n",
         "   * Args: \n",
         "   *   y: response category \n",
         "   *   eta: linear predictor \n",
-        "   *   etap: optional linear predictor for category specific effects \n",
+        "   *   etacs: optional predictor for category specific effects \n",
         "   *   thres: ordinal thresholds \n",
         "   * Returns: \n", 
         "   *   a scalar to be added to the log posterior \n",

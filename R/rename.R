@@ -69,7 +69,7 @@ rename_pars <- function(x) {
   
   # order parameter samples after parameter class
   chains <- length(x$fit@sim$samples) 
-  all_classes <- c("b_Intercept", "b", "bm", "bp", "ar", "ma", "arr", "sd", 
+  all_classes <- c("b_Intercept", "b", "bm", "bcs", "ar", "ma", "arr", "sd", 
                    "cor", "sds", "sigma", "sigmaLL", "rescor", "nu", "shape",
                    "phi", "zi", "hu", "delta", "simplex", "r", "s", "loclev", 
                    "prior", "lp")
@@ -130,7 +130,7 @@ rename_pars <- function(x) {
         pars = pars, dims = x$fit@sim$dims_oi, 
         fixef = fixef, monef = colnames(standata[["Xm"]]),
         splines = get_spline_labels(ee, x$data, covars = TRUE))
-      change_csef <- change_csef(colnames(standata[["Xp"]]), 
+      change_csef <- change_csef(colnames(standata[["Xcs"]]), 
                                  pars = pars, ncat = standata$ncat)
       change <- c(change, change_eff, change_csef)
     }
@@ -248,12 +248,12 @@ change_csef <- function(csef, pars, ncat) {
     ncse <- length(csef)
     thres <- ncat - 1
     csenames <- t(outer(csef, paste0("[", 1:thres, "]"), FUN = paste0))
-    csenames <- paste0("bp_", csenames)
+    csenames <- paste0("bcs_", csenames)
     sort_cse <- ulapply(seq_len(ncse), seq, to = thres * ncse, by = ncse)
-    change <- lc(change, list(pos = grepl("^bp\\[", pars), oldname = "bp", 
-                              pnames = paste0("bp_", csef), fnames = csenames,
+    change <- lc(change, list(pos = grepl("^bcs\\[", pars), oldname = "bcs", 
+                              pnames = paste0("bcs_", csef), fnames = csenames,
                               sort = sort_cse, dim = thres))
-    change <- c(change, change_prior(class = "bp", pars = pars, names = csef))
+    change <- c(change, change_prior(class = "bcs", pars = pars, names = csef))
   }
   change
 }

@@ -17,7 +17,7 @@
   }
   \subsection{OTHER CHANGES}{
     \itemize{
-      \item Use the prefix \code{bp} in parameter names
+      \item Use the prefix \code{bcs} in parameter names
       of category specific effects and the prefix \code{bm} 
       in parameter names of monotonic effects (instead
       of the prefix \code{b}) to simplify their identifaction.

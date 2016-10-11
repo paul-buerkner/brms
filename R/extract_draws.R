@@ -172,10 +172,10 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   if (is.ordinal(family(x))) {
     draws[["Intercept"]] <- 
       do.call(as.matrix, c(args, list(pars = "^b_Intercept\\[")))
-    if (isTRUE(ncol(standata$Xp) > 0)) {
-      # as of brms > 1.0.1 the original prefix 'bp' is used
-      bp <- ifelse(any(grepl("^bp_", parnames(x))), "^bp_", "^b_")
-      cse_pars <- paste0(bp, colnames(standata$Xp), "\\[")
+    if (isTRUE(ncol(standata[["Xcs"]]) > 0)) {
+      # as of brms > 1.0.1 the original prefix 'bcs' is used
+      bcs <- ifelse(any(grepl("^bcs_", parnames(x))), "^bcs_", "^b_")
+      cse_pars <- paste0(bcs, colnames(standata$Xcs), "\\[")
       draws[["cse"]] <- do.call(as.matrix, c(args, list(pars = cse_pars)))
     }
   } else if (draws$old_cat == 1L) {

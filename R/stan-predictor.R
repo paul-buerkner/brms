@@ -479,30 +479,31 @@ stan_csef <- function(csef, ranef = empty_ranef(),
   if (length(csef) || nrow(ranef)) {
     out$modelD <- paste0(
       "  // linear predictor for category specific effects \n",                  
-      "  matrix[N, ncat - 1] etap; \n")
+      "  matrix[N, ncat - 1] etacs; \n")
   }
   if (length(csef)) {
     out$data <- paste0(
-      "  int<lower=1> Kp;  // number of category specific effects \n",
-      "  matrix[N, Kp] Xp;  // CSE design matrix \n")
+      "  int<lower=1> Kcs;  // number of category specific effects \n",
+      "  matrix[N, Kcs] Xcs;  // category specific design matrix \n")
     bound <- get_bound(prior, class = "b")
     out$par <- paste0(
-      "  matrix", bound, "[Kp, ncat - 1] bp;  // category specific effects \n")
-    out$modelC1 <- "  etap = Xp * bp; \n"
+      "  matrix", bound, "[Kcs, ncat - 1] bcs;",
+      "  // category specific effects \n")
+    out$modelC1 <- "  etacs = Xcs * bcs; \n"
     out$prior <- stan_prior(class = "b", coef = csef, prior = prior, 
-                            suffix = "p", matrix = TRUE)
+                            suffix = "cs", matrix = TRUE)
   } 
   if (nrow(ranef)) {
     if (!length(csef)) {
       # only group-level category specific effects present
-      out$modelC1 <- "  etap = rep_matrix(0, N, ncat - 1); \n"
+      out$modelC1 <- "  etacs = rep_matrix(0, N, ncat - 1); \n"
     }
     cats <- get_matches("\\[[[:digit:]]+\\]$", ranef$coef)
     ncatM1 <- max(as.numeric(substr(cats, 2, nchar(cats) - 1)))
     for (i in seq_len(ncatM1)) {
       r_cat <- ranef[grepl(paste0("\\[", i, "\\]$"), ranef$coef), ]
       out$modelC2 <- paste0(out$modelC2,
-        "    etap[n, ", i, "] = etap[n, ", i, "]")
+        "    etacs[n, ", i, "] = etacs[n, ", i, "]")
       for (id in unique(r_cat$id)) {
         r <- r_cat[r_cat$id == id, ]
         idp <- paste0(r$id, usc(r$nlpar, "prefix"))

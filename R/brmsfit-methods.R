@@ -36,14 +36,14 @@ parnames.brmsfit <- function(x, ...) {
 fixef.brmsfit <-  function(object, estimate = "mean", ...) {
   contains_samples(object)
   pars <- parnames(object)
-  fpars <- pars[grepl("^b(|p|m)_", pars)]
+  fpars <- pars[grepl("^b(|cs|m)_", pars)]
   if (!length(fpars)) {
     stop("The model does not contain population-level effects", 
          call. = FALSE) 
   }
   out <- posterior_samples(object, pars = fpars, exact_match = TRUE)
   out <- do.call(cbind, lapply(estimate, get_estimate, samples = out, ...))
-  rownames(out) <- gsub("^b(|p|m)_", "", fpars)
+  rownames(out) <- gsub("^b(|cs|m)_", "", fpars)
   out
 }
 
@@ -67,13 +67,13 @@ fixef.brmsfit <-  function(object, estimate = "mean", ...) {
 vcov.brmsfit <- function(object, correlation = FALSE, ...) {
   contains_samples(object)
   pars <- parnames(object)
-  fpars <- pars[grepl("^b(|p|m)_", pars)]
+  fpars <- pars[grepl("^b(|cs|m)_", pars)]
   if (!length(fpars)) {
     stop("The model does not contain population-level effects", 
          call. = FALSE) 
   }
   samples <- posterior_samples(object, pars = fpars, exact_match = TRUE)
-  names(samples) <- sub("^b(|p|m)_", "", names(samples))
+  names(samples) <- sub("^b(|cs|m)_", "", names(samples))
   if (correlation) {
     cor(samples) 
   } else {
@@ -633,9 +633,9 @@ summary.brmsfit <- function(object, waic = FALSE, ...) {
     }
     
     # fixed effects summary
-    fix_pars <- pars[grepl("^b(|p|m)_", pars)]
+    fix_pars <- pars[grepl("^b(|cs|m)_", pars)]
     out$fixed <- fit_summary[fix_pars, , drop = FALSE]
-    rownames(out$fixed) <- gsub("^b(|p|m)_", "", fix_pars)
+    rownames(out$fixed) <- gsub("^b(|cs|m)_", "", fix_pars)
     
     # summary of family specific parameters
     is_mv_par <- apply(sapply(c("^sigma_", "^rescor_"), grepl, pars), 1, any)
@@ -824,7 +824,7 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5,
     stop("N must be a positive integer", call. = FALSE)
   }
   if (!is.character(pars)) {
-    pars <- c("^b(|p|m)_", "^sd_", "^cor_", "^sigma", "^rescor", 
+    pars <- c("^b(|cs|m)_", "^sd_", "^cor_", "^sigma", "^rescor", 
               "^nu$", "^shape$", "^delta$", "^phi$", "^kappa$", 
               "^zi$", "^hu$", "^ar", "^ma", "^arr", "^simplex_", "^sds_")
   }

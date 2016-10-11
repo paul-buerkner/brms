@@ -19,14 +19,15 @@ linear_predictor <- function(draws, i = NULL) {
   
   eta <- matrix(0, nrow = draws$nsamples, ncol = N)
   if (!is.null(draws[["b"]])) {
-    eta <- eta + fixef_predictor(X = p(draws$data$X, i), b = draws[["b"]])  
+    eta <- eta + fixef_predictor(X = p(draws$data[["X"]], i), 
+                                 b = draws[["b"]])
   }
   if (!is.null(draws$data$offset)) {
     eta <- eta + matrix(rep(p(draws$data$offset, i), draws$nsamples), 
                         ncol = N, byrow = TRUE)
   }
   # incorporate monotonic effects
-  monef <- colnames(draws$data$Xm)
+  monef <- colnames(draws$data[["Xm"]])
   for (j in seq_along(monef)) {
     # prepare monotonic group-level effects
     r_mono <- draws[["r_mono"]][[monef[j]]]
@@ -87,7 +88,7 @@ linear_predictor <- function(draws, i = NULL) {
       } else {
         rc <- NULL
       }
-      eta <- cse_predictor(X = p(draws$data[["Xp"]], i), 
+      eta <- cse_predictor(X = p(draws$data[["Xcs"]], i), 
                            b = draws[["cse"]], eta = eta, 
                            ncat = ncat, rc = rc)
     } else {
@@ -104,7 +105,7 @@ linear_predictor <- function(draws, i = NULL) {
     if (draws$old_cat == 1L) {
       # deprecated as of brms > 0.8.0
       if (!is.null(draws[["cse"]])) {
-        eta <- cse_predictor(X = p(draws$data$X, i), b = draws[["cse"]], 
+        eta <- cse_predictor(X = p(draws$data[["X"]], i), b = draws[["cse"]], 
                              eta = eta, ncat = draws$data$max_obs)
       } else {
         eta <- array(eta, dim = c(dim(eta), draws$data$max_obs - 1))
