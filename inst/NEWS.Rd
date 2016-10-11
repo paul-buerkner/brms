@@ -2,7 +2,7 @@
 \title{brms News}
 \encoding{UTF-8}
 
-\section{CHANGES IN VERSION 1.0.1.9000}{
+\section{CHANGES IN VERSION 1.1.0}{
    \subsection{NEW FEATURES}{
     \itemize{
       \item Estimate monotonic group-level effects.
@@ -44,6 +44,8 @@
       \code{prior_samples} method for models with
       multiple group-level terms that refer to the same 
       grouping factor thanks to Marco Tullio Liuzza.
+      \item Fix a bug sometimes causing an error when 
+      calling \code{marginal_effects} for weighted models.
     }
   }
 }
