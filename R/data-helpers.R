@@ -249,9 +249,14 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     }
   }
   cens_vars <- all.vars(ee$cens)
-  for (cens in setdiff(cens_vars, names(newdata))) {
-    # censor variables are unused in predict and related methods
-    newdata[[cens]] <- 0  # indicates no censoring
+  for (v in setdiff(cens_vars, names(newdata))) {
+    # censoring vars are unused in predict and related methods
+    newdata[[v]] <- 0
+  }
+  weights_vars <- all.vars(ee$weights)
+  for (v in setdiff(weights_vars, names(newdata))) {
+    # weighting vars are unused in predict and related methods
+    newdata[[v]] <- 1
   }
   new_ranef <- tidy_ranef(ee, data = model.frame(fit))
   if (nrow(fit$ranef)) {
@@ -374,8 +379,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     }
     control$smooth <- make_smooth_list(ee, model.frame(fit))
     if (is(fit$autocor, "cov_fixed")) {
-      fit$autocor$V <- diag(median(diag(fit$autocor$V), na.rm = TRUE), 
-                            nrow(newdata))
+      median_V <- median(diag(fit$autocor$V), na.rm = TRUE)
+      fit$autocor$V <- diag(median_V, nrow(newdata))
     }
     knots <- attr(model.frame(fit), "knots")
     newdata <- make_standata(new_formula, data = newdata, 
