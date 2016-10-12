@@ -226,6 +226,13 @@ Fit a generalized (non-)linear multilevel model,
   on how to correctly specify priors. To find out on 
   which parameters or parameter classes priors can be defined, 
   use \code{\link[brms:get_prior]{get_prior}}. \cr
+  Default priors are chosen to be non or very weakly informative 
+  so that their influence on the results will be negligable and
+  you don't have to worry about them.
+  However, after getting more familiar with Bayesian statistics, 
+  I recommend you to start thinking about reasonable informative
+  priors for your model parameters: Nearly always there is at least some
+  prior information available that can be used to improve your inference.
   
   \bold{Adjusting the sampling behavior of \pkg{Stan}}
   

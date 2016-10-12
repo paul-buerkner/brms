@@ -133,6 +133,9 @@
 #'   have a half student-t prior with 3 degrees of freedom and a 
 #'   scale parameter that depends on the standard deviation of the response 
 #'   after applying the link function. Minimally, the scale parameter is 10. 
+#'   This prior is used (a) to be only very weakly informative in order to influence
+#'   results as few as possible, while (b) providing at least some regularization
+#'   to considerably improve convergence and sampling efficiency.
 #'   To define a prior distribution only for standard deviations 
 #'   of a specific grouping factor,
 #'   use \cr \code{set_prior("<prior>", class = "sd", group = "<group>")}. 
@@ -140,7 +143,8 @@
 #'   of a specific grouping factor, you may write \cr
 #'   \code{set_prior("<prior>", class = "sd", group = "<group>", coef = "<coef>")}. 
 #'   Recommendations on useful prior distributions for 
-#'   standard deviations are given in Gelman (2006). \cr
+#'   standard deviations are given in Gelman (2006), but note that he
+#'   is no longer recommending uniform priors, anymore. \cr
 #'   
 #'   When defining priors on group-level effects parameters in non-linear models, 
 #'   please make sure to specify the corresponding non-linear parameter 
@@ -216,11 +220,11 @@
 #'   need the parameter \code{sigma} 
 #'   to account for the residual standard deviation.
 #'   By default, \code{sigma} has a half student-t prior that scales 
-#'   in the same way as the random effects standard deviations. 
+#'   in the same way as the random effects standard deviations.
 #'   Furthermore, family \code{student} needs the parameter 
 #'   \code{nu} representing the degrees of freedom of students t distribution. 
 #'   By default, \code{nu} has prior \code{"gamma(2,0.1)"}
-#'   and a fixed lower bound of \code{1}.
+#'   and a fixed lower bound of \code{0}.
 #'   Families \code{gamma}, \code{weibull}, \code{inverse.gaussian}, and
 #'   \code{negbinomial} need a \code{shape} parameter that has a 
 #'   \code{"gamma(0.01,0.01)"} prior by default. 
@@ -230,9 +234,13 @@
 #'   two adjacent thresholds. 
 #'   By default, \code{delta} has an improper flat prior over the reals.
 #'   The \code{von_mises} family needs the parameter \code{kappa}, representing
-#'   the concentration parameter. By default, \code{kappa} has prior \code{"gamma(2, 0.01)"}. \cr
+#'   the concentration parameter. By default, \code{kappa} has prior 
+#'   \code{"gamma(2, 0.01)"}. \cr
 #'   Every family specific parameter has its own prior class, so that
 #'   \code{set_prior("<prior>", class = "<parameter>")} is the right way to go.
+#'   All of these priors are chosen to be weakly informative,
+#'   having only minimal influence on the estimations,
+#'   while improving convergence and sampling efficiency.
 #' 
 #'   Often, it may not be immediately clear, 
 #'   which parameters are present in the model.
