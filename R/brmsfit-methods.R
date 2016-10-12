@@ -957,8 +957,10 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
 #' }
 #' @export
 pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
-                             time = NULL, x = NULL, re_formula = NULL,
-                             subset = NULL, ntrys = 5, ...) {
+                             time = NULL, x = NULL, newdata = NULL, 
+                             re_formula = NULL, allow_new_levels = FALSE,
+                             incl_autocor = TRUE, subset = NULL, 
+                             ntrys = 5, ...) {
   rN_text <- "requireNamespace('bayesplot', quietly = TRUE)"
   if (!eval(parse(text = rN_text))) {
     # remove check as soon as bayesplot is on CRAN
@@ -1048,15 +1050,19 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
                      type, "'"))
     }
   }
-  args <- nlist(object, nsamples, subset, re_formula,
-                ntrys, sort = TRUE, summary = FALSE)
-  yrep <- as.matrix(do.call(method, args))
-  standata <- standata(object, control = list(save_order = TRUE))
+  newd_args <- nlist(newdata, fit = object, re_formula,
+                     allow_new_levels, incl_autocor,
+                     check_response = TRUE)
+  standata <- do.call(amend_newdata, newd_args)
   y <- as.vector(standata$Y)
   if (!is.null(standata$cens)) {
     warning2("Posterior predictive checks may not be ", 
              "meaningful for censored models.")
   }
+  pred_args <- nlist(object, newdata, re_formula, allow_new_levels, 
+                     incl_autocor, nsamples, subset, ntrys,
+                     sort = TRUE, summary = FALSE)
+  yrep <- as.matrix(do.call(method, pred_args))
   if (family(object)$family %in% "binomial") {
     # use success proportions following Gelman and Hill (2006)
     y <- y / standata$trials

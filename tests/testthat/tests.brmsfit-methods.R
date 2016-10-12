@@ -143,6 +143,7 @@ test_that("all S3 methods have reasonable ouputs", {
   # pp_check
   # commented out as long a bayesplot is not on CRAN
   # expect_true(is(pp_check(fit1), "ggplot"))
+  # expect_true(is(pp_check(fit1, newdata = fit1$data[1:100, ]), "ggplot"))
   # expect_true(is(pp_check(fit1, "stat", nsamples = 5), "ggplot"))
   # expect_true(is(pp_check(fit1, "resid_binned"), "ggplot"))
   # ts_plot <- pp_check(fit1, "ts_grouped", group = "patient", time = "visit")

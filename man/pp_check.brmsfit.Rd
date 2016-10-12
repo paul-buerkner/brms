@@ -5,8 +5,9 @@
 \title{Posterior Predictive Checks for \code{brmsfit} Objects}
 \usage{
 \method{pp_check}{brmsfit}(object, type, nsamples, group = NULL,
-  time = NULL, x = NULL, re_formula = NULL, subset = NULL, ntrys = 5,
-  ...)
+  time = NULL, x = NULL, newdata = NULL, re_formula = NULL,
+  allow_new_levels = FALSE, incl_autocor = TRUE, subset = NULL,
+  ntrys = 5, ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
@@ -36,10 +37,21 @@ ppc \code{ts*} types and ignored otherwise.}
 \item{x}{Optional name of a variable in the model. 
 Only used for ppc \code{vs_x*} types and ignored otherwise.}
 
+\item{newdata}{An optional data.frame for which to evaluate predictions.
+If \code{NULL} (default), the orginal data of the model is used.}
+
 \item{re_formula}{formula containing random effects 
 to be considered in the prediction. 
 If \code{NULL} (default), include all random effects; 
 if \code{NA}, include no random effects.}
+
+\item{allow_new_levels}{A flag indicating if new
+levels of random effects are allowed (defaults to \code{FALSE}). 
+Only relevant if \code{newdata} is provided.}
+
+\item{incl_autocor}{A flag indicating if autocorrelation
+parameters should be included in the predictions. 
+Defaults to \code{TRUE}.}
 
 \item{subset}{A numeric vector specifying
 the posterior samples to be used. 
