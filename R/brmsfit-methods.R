@@ -224,7 +224,6 @@ coef.brmsfit <- function(object, estimate = c("mean", "median"), ...) {
   
   .coef <- function(ranef, fixef) {
     # helper function to combine group and population-level effects
-    # Args:
     ranef_names <- unique(ulapply(ranef, colnames))
     missing_fixef <- setdiff(ranef_names, rownames(fixef))
     if (length(missing_fixef)) {
@@ -242,9 +241,10 @@ coef.brmsfit <- function(object, estimate = c("mean", "median"), ...) {
         coef[[i]] <- cbind(coef[[i]], zero_mat)
       }
       for (nm in colnames(coef[[i]])) {
-        coef[[i]][, nm] <- coef[[i]][, nm] + fixef[nm, 1]
+        # correct the sign of thresholds in ordinal models
+        sign <- ifelse(grepl("^Intercept\\[[[:digit:]]+\\]$", nm), -1, 1)
+        coef[[i]][, nm] <- coef[[i]][, nm] + sign * fixef[nm, 1]
       }
-      
     }
     return(coef)
   }
