@@ -224,22 +224,42 @@ coef.brmsfit <- function(object, estimate = c("mean", "median"), ...) {
   
   .coef <- function(ranef, fixef) {
     # helper function to combine group and population-level effects
-    ranef_names <- unique(ulapply(ranef, colnames))
-    missing_fixef <- setdiff(ranef_names, rownames(fixef))
-    if (length(missing_fixef)) {
-      zero_mat <- matrix(0, nrow = length(missing_fixef))
-      rownames(zero_mat) <- missing_fixef
-      fixef <- rbind(fixef, zero_mat)
+    all_ranef_names <- unique(ulapply(ranef, colnames))
+    fixef_no_digits <- get_matches("^[^\\[]+", rownames(fixef))
+    miss_fixef <- setdiff(all_ranef_names, rownames(fixef))
+    miss_fixef_no_digits <- get_matches("^[^\\[]+", miss_fixef)
+    new_fixef <- named_list(miss_fixef)
+    for (k in seq_along(miss_fixef)) {
+      # digits occur in ordinal models with category specific effects
+      match_fixef <- match(miss_fixef_no_digits[k], rownames(fixef))
+      if (!is.na(match_fixef)) {
+        new_fixef[[k]] <- fixef[match_fixef, 1]
+      } else if (!miss_fixef[k] %in% fixef_no_digits) {
+        new_fixef[[k]] <- 0
+      }
     }
+    rm_fixef <- rownames(fixef) %in% miss_fixef_no_digits
+    fixef <- fixef[!rm_fixef, , drop = FALSE]
+    fixef <- do.call(rbind, c(list(fixef), rmNULL(new_fixef)))
     coef <- ranef
     for (i in seq_along(coef)) {
-      missing_ranef <- setdiff(rownames(fixef), colnames(coef[[i]]))
-      if (length(missing_ranef)) {
-        zero_mat <- matrix(0, nrow = nrow(coef[[i]]), 
-                           ncol = length(missing_ranef))
-        colnames(zero_mat) <- missing_ranef
-        coef[[i]] <- cbind(coef[[i]], zero_mat)
+      ranef_names <- colnames(coef[[i]])
+      ranef_no_digits <- get_matches("^[^\\[]+", ranef_names)
+      miss_ranef <- setdiff(rownames(fixef), ranef_names)
+      miss_ranef_no_digits <- get_matches("^[^\\[]+", miss_ranef)
+      new_ranef <- named_list(miss_ranef)
+      for (k in seq_along(miss_ranef)) {
+        # digits occur in ordinal models with category specific effects
+        match_ranef <- match(miss_ranef_no_digits[k], ranef_names)
+        if (!is.na(match_ranef)) {
+          new_ranef[[k]] <- coef[[i]][, match_ranef]
+        } else if (!miss_ranef[k] %in% ranef_no_digits) {
+          new_ranef[[k]] <- 0
+        }
       }
+      rm_ranef <- ranef_names %in% miss_ranef_no_digits
+      coef[[i]] <- coef[[i]][, !rm_ranef, drop = FALSE]
+      coef[[i]] <- do.call(cbind, c(list(coef[[i]]), rmNULL(new_ranef)))
       for (nm in colnames(coef[[i]])) {
         # correct the sign of thresholds in ordinal models
         sign <- ifelse(grepl("^Intercept\\[[[:digit:]]+\\]$", nm), -1, 1)
