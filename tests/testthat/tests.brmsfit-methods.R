@@ -111,6 +111,8 @@ test_that("all S3 methods have reasonable ouputs", {
                "All specified effects are invalid for this model")
   expect_warning(marginal_effects(fit1, effects = c("Trtc", "Trt")), 
                  "Some specified effects are invalid for this model")
+  expect_error(marginal_effects(fit1, effects = "Trtc:a:b"), 
+               "please use the 'conditions' argument")
   
   expect_equal(nrow(marginal_effects(fit2)[[2]]), 100)
   expect_equal(nrow(marginal_effects(fit2, conditions = mdata)[[1]]),

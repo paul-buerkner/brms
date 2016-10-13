@@ -98,13 +98,21 @@ fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1 | patient),
 plot(marginal_effects(fit), ask = FALSE)
 ## only plot the marginal interaction effect of 'log_Base4_c:Trt_c'
 ## for different values for 'log_Age_c'
-mdata <- data.frame(log_Age_c = c(-0.3, 0, 0.3))
+conditions <- data.frame(log_Age_c = c(-0.3, 0, 0.3))
 plot(marginal_effects(fit, effects = "log_Base4_c:Trt_c", 
-                      data = mdata))
+                      conditions = conditions))
 ## also incorporate random effects variance over patients
-## and add a rug representation of predictor values
+## also add data points and a rug representation of predictor values
 plot(marginal_effects(fit, effects = "log_Base4_c:Trt_c", 
-                      data = mdata, re_formula = NULL), rug = TRUE)
+                      conditions = conditions, re_formula = NULL), 
+     points = TRUE, rug = TRUE)
+     
+# fit a model to illustrate how to plot 3-way interactions
+fit3way <- brm(count ~ log_Age_c * log_Base4_c * Trt_c, data = epilepsy)
+conditions <- data.frame(log_Age_c = c(-0.3, 0, 0.3))
+rownames(conditions) <- paste("log_Age_c =", conditions$log_Age_c)
+plot(marginal_effects(fit3way, "log_Base4_c:Trt_c",
+                      conditions = conditions))
 }
 
 }

@@ -1159,16 +1159,13 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   new_formula <- update_re_terms(x$formula, re_formula = re_formula)
   ee <- extract_effects(new_formula, family = x$family)
   if (is.linear(x$family) && length(ee$response) > 1L) {
-    stop("Marginal plots are not yet implemented for multivariate models.",
-         call. = FALSE)
+    stop2("Marginal plots are not yet implemented for multivariate models.")
   } else if (is.categorical(x$family)) {
-    stop("Marginal plots are not yet implemented for categorical models.",
-         call. = FALSE)
+    stop2("Marginal plots are not yet implemented for categorical models.")
   } else if (is.ordinal(x$family)) {
-    warning(paste0("Predictions are treated as continuous variables ", 
-                   "in marginal plots, \nwhich is likely an invalid ", 
-                   "assumption for family ", x$family$family, "."),
-            call. = FALSE)
+    warning2("Predictions are treated as continuous variables ", 
+             "in marginal plots, \nwhich is likely an invalid ", 
+             "assumption for family ", x$family$family, ".")
   }
   rsv_vars <- rsv_vars(x$family, nresp = length(ee$response),
                        rsv_intercept = attr(ee$fixed, "rsv_intercept"),
@@ -1181,32 +1178,29 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     # allow to define interactions in any order
     effects <- strsplit(as.character(effects), split = ":")
     if (any(unique(unlist(effects)) %in% rsv_vars)) {
-      stop(paste("Variables", paste0(rsv_vars, collapse = ", "),
-                 "should not be used as effects for this model"),
-           call. = FALSE)
+      stop2("Variables ", paste0(rsv_vars, collapse = ", "),
+            " should not be used as effects for this model")
+    }
+    if (any(lengths(effects) > 2L)) {
+      stop2("To display interactions of order higher than 2 ",
+            "please use the 'conditions' argument.")
     }
     matches <- match(lapply(all_effects, sort), lapply(effects, sort), 0L)
     if (sum(matches) > 0 && sum(matches > 0) < length(effects)) {
       invalid <- effects[setdiff(1:length(effects), sort(matches))]  
       invalid <- ulapply(invalid, function(e) paste(e, collapse = ":"))
-      warning(paste0("Some specified effects are invalid for this model: ",
-                     paste(invalid, collapse = ", "), "\nValid effects are: ", 
-                     paste(ae_collapsed, collapse = ", ")),
-              call. = FALSE)
+      warning2("Some specified effects are invalid for this model: ",
+               paste(invalid, collapse = ", "), "\nValid effects are: ", 
+               paste(ae_collapsed, collapse = ", "))
     }
     effects <- unique(effects[sort(matches)])
   }
   if (!length(unlist(effects))) {
-    stop(paste0("All specified effects are invalid for this model.\n", 
-                "Valid effects are: ", paste(ae_collapsed, collapse = ", ")), 
-         call. = FALSE)
-  }
-  if (any(ulapply(effects, length) > 2L)) {
-    stop("Interactions of order higher than 2 are currently not supported.",
-         call. = FALSE)
+    stop2("All specified effects are invalid for this model.\n", 
+          "Valid effects are: ", paste(ae_collapsed, collapse = ", ")) 
   }
   if (length(probs) != 2L) {
-    stop("Arguments 'probs' must be of length 2.", call. = FALSE)
+    stop2("Arguments 'probs' must be of length 2.")
   }
   
   # prepare marginal conditions

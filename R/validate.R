@@ -768,7 +768,7 @@ get_all_effects <- function(effects, rsv_vars = NULL) {
     all_effects <- unique(c(all_effects, ap_effects))
   }
   all_effects <- rmNULL(lapply(all_effects, setdiff, y = rsv_vars))
-  all_effects[ulapply(all_effects, length) < 3L]
+  all_effects[lengths(all_effects) <= 2L]
 }
 
 get_spline_labels <- function(x, data = NULL, covars = FALSE) {
