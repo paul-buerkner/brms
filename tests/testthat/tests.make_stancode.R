@@ -31,7 +31,7 @@ test_that(paste("make_stancode returns correct strings",
                 "for customized covariances"), {
   expect_match(make_stancode(rating ~ treat + period + carry + (1|subject), 
                              data = inhaler, cov_ranef = list(subject = 1)), 
-               "r_1_1 = sd_1 * (Lcov_1 * z_1)", fixed = TRUE)
+               "r_1_1 = sd_1[1] * (Lcov_1 * z_1[1])", fixed = TRUE)
   expect_match(make_stancode(rating ~ treat + period + carry + (1+carry|subject), 
                              data = inhaler, cov_ranef = list(subject = 1)),
                "kronecker(Lcov_1, diag_pre_multiply(sd_1, L_1)) * to_vector(z_1)",

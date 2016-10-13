@@ -298,7 +298,6 @@ stan_ranef <- function(id, ranef, prior = prior_frame(),
   # Returns:
   #   A list of strings containing Stan code
   r <- ranef[ranef$id == id, ]
-  cor <- r$cor[1]
   ccov <- r$group[1] %in% names(cov_ranef)
   idp <- paste0(r$id, usc(r$nlpar, "prefix"))
   out <- list()
@@ -313,81 +312,66 @@ stan_ranef <- function(id, ranef, prior = prior_frame(),
   out$prior <- stan_prior(class = "sd", group = r$group[1], 
                           coef = r$coef, nlpar = r$nlpar, 
                           suffix = paste0("_", id), prior = prior)
-  if (nrow(r) == 1L) {  # only one group-level effect
-    if (r$type != "mono") {
-      out$data <- paste0(out$data, "  vector[N] Z_", idp, "_1; \n")
-    }
-    out$par <- paste0(
-      "  real<lower=0> sd_", id, ";",
-      "  // group-specific standard deviation \n",
-      "  vector[N_", id, "] z_", id, ";",
-      "  // unscaled group-specific effects \n")
-    out$prior <- paste0(out$prior,"  z_", id, " ~ normal(0, 1); \n")
+  J <- seq_len(nrow(r))
+  if (any(r$type != "mono")) {
+    out$data <- paste0(out$data, 
+      collapse("  vector[N] Z_", idp[r$type != "mono"], 
+               "_", r$cn[r$type != "mono"], "; \n")) 
+  }
+  out$par <- paste0(
+    "  vector<lower=0>[M_", id, "] sd_", id, ";",
+    "  // group-specific standard deviations \n")
+  if (nrow(r) > 1L && r$cor[1]) {
+    # multiple correlated group-level effects
+    out$data <- paste0(out$data, "  int<lower=1> NC_", id, "; \n")
+    out$par <- paste0(out$par,
+      "  matrix[M_", id, ", N_", id, "] z_", id, ";",
+      "  // unscaled group-specific effects \n",    
+      "  // cholesky factor of correlation matrix \n",
+      "  cholesky_factor_corr[M_", id, "] L_", id, "; \n")
+    out$prior <- paste0(out$prior, 
+      stan_prior(class = "L", group = r$group[1],
+                 suffix = paste0("_", id), prior = prior),
+      "  to_vector(z_", id, ") ~ normal(0, 1); \n")
     out$transD <- paste0(
       "  // group-specific effects \n",
-      "  vector[N_", id, "] r_", idp, "_1; \n")
-    out$transC1 <- paste0("  r_", idp, "_1 = sd_", id, " * (", 
-      if (ccov) paste0("Lcov_", id, " * "), "z_", id, ");\n")
-  } else if (nrow(r) > 1L) {
-    J <- 1:nrow(r)
-    if (any(r$type != "mono")) {
-      out$data <- paste0(out$data, 
-        collapse("  vector[N] Z_", idp[r$type != "mono"], 
-                 "_", r$cn[r$type != "mono"], ";  \n")) 
+      "  matrix[N_", id, ", M_", id, "] r_", id, "; \n",
+      collapse("  vector[N_", id, "] r_", idp, "_", r$cn, "; \n"))
+    if (ccov) {  # customized covariance matrix supplied
+      out$transC1 <- paste0(
+        "  r_", id," = as_matrix(kronecker(Lcov_", id, ",", 
+        " diag_pre_multiply(sd_", id,", L_", id,")) *",
+        " to_vector(z_", id, "), N_", id, ", M_", id, "); \n")
+    } else { 
+      out$transC1 <- paste0("  r_", id, " = ", 
+        "(diag_pre_multiply(sd_", id, ", L_", id,") * z_", id, ")'; \n")
     }
-    out$par <- paste0(
-      "  vector<lower=0>[M_", id, "] sd_", id, ";",
-      "  // group-specific standard deviations \n")
-    if (cor) {  # multiple correlated group-level effects
-      out$data <- paste0(out$data, "  int<lower=1> NC_", id, "; \n")
-      out$par <- paste0(out$par,
-        "  matrix[M_", id, ", N_", id, "] z_", id, ";",
-        "  // unscaled group-specific effects \n",    
-        "  // cholesky factor of correlation matrix \n",
-        "  cholesky_factor_corr[M_", id, "] L_", id, "; \n")
-      out$prior <- paste0(out$prior, 
-        stan_prior(class = "L", group = r$group[1],
-                   suffix = paste0("_", id), prior = prior),
-        "  to_vector(z_", id, ") ~ normal(0, 1); \n")
-      out$transD <- paste0(
-        "  // group-specific effects \n",
-        "  matrix[N_", id, ", M_", id, "] r_", id, "; \n",
-        collapse("  vector[N_", id, "] r_", idp, "_", r$cn, "; \n"))
-      if (ccov) {  # customized covariance matrix supplied
-        out$transC1 <- paste0(
-          "  r_", id," = as_matrix(kronecker(Lcov_", id, ",", 
-          " diag_pre_multiply(sd_", id,", L_", id,")) *",
-          " to_vector(z_", id, "), N_", id, ", M_", id, "); \n")
-      } else { 
-        out$transC1 <- paste0("  r_", id, " = ", 
-          "(diag_pre_multiply(sd_", id, ", L_", id,") * z_", id, ")'; \n")
-      }
-      out$transC1 <- paste0(out$transC1, 
-        collapse("  r_", idp, "_", r$cn, " = r_", id, "[, ", J, "];  \n"))
-      # return correlations above the diagonal only
-      cors_genC <- ulapply(2:nrow(r), function(k) 
-        lapply(1:(k - 1), function(j) paste0(
-          "  cor_", id, "[", (k - 1) * (k - 2) / 2 + j, 
-          "] = Cor_", id, "[", j, ",", k, "]; \n")))
-      out$genD <- paste0(
-        "  corr_matrix[M_", id, "] Cor_", id, "; \n",
-        "  vector<lower=-1,upper=1>[NC_", id, "] cor_", id, "; \n")
-      out$genC <- paste0(
-        "  // take only relevant parts of correlation matrix \n",
-        "  Cor_", id, " = multiply_lower_tri_self_transpose(L_", id, "); \n",
-        collapse(cors_genC)) 
-    } else {  # multiple uncorrelated group-level effects
-      out$par <- paste0(out$par,
-                        "  vector[N_", id, "] z_", id, "[M_", id, "];",
-                        "  // unscaled group-specific effects \n")
-      out$prior <- paste0(out$prior, collapse(
-        "  z_", id, "[", 1:nrow(r), "] ~ normal(0, 1); \n"))
-      out$transD <- paste0("  // group-specific effects \n", 
-        collapse("  vector[N_", id, "] r_", idp, "_", r$cn, "; \n"))
-      out$transC1 <- collapse(
-        "  r_", idp, "_", r$cn, " = sd_", id, "[", J, "] * (", 
-        if (ccov) paste0("Lcov_", id, " * "), "z_", id, "[", J, "]); \n")
-    }
+    out$transC1 <- paste0(out$transC1, 
+      collapse("  r_", idp, "_", r$cn, " = r_", id, "[, ", J, "];  \n"))
+    # return correlations above the diagonal only
+    cors_genC <- ulapply(2:nrow(r), function(k) 
+      lapply(1:(k - 1), function(j) paste0(
+        "  cor_", id, "[", (k - 1) * (k - 2) / 2 + j, 
+        "] = Cor_", id, "[", j, ",", k, "]; \n")))
+    out$genD <- paste0(
+      "  corr_matrix[M_", id, "] Cor_", id, "; \n",
+      "  vector<lower=-1,upper=1>[NC_", id, "] cor_", id, "; \n")
+    out$genC <- paste0(
+      "  // take only relevant parts of correlation matrix \n",
+      "  Cor_", id, " = multiply_lower_tri_self_transpose(L_", id, "); \n",
+      collapse(cors_genC)) 
+  } else {
+    # single or uncorrelated group-level effects
+    out$par <- paste0(out$par,
+      "  vector[N_", id, "] z_", id, "[M_", id, "];",
+      "  // unscaled group-specific effects \n")
+    out$prior <- paste0(out$prior, collapse(
+      "  z_", id, "[", 1:nrow(r), "] ~ normal(0, 1); \n"))
+    out$transD <- paste0("  // group-specific effects \n", 
+      collapse("  vector[N_", id, "] r_", idp, "_", r$cn, "; \n"))
+    out$transC1 <- collapse(
+      "  r_", idp, "_", r$cn, " = sd_", id, "[", J, "] * (", 
+      if (ccov) paste0("Lcov_", id, " * "), "z_", id, "[", J, "]); \n")
   }
   out
 }
