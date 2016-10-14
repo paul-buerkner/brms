@@ -354,9 +354,15 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     old_levels[[i]] <- attr(new_ranef, "levels")[[gnames[i]]]
     unknown_levels <- setdiff(new_levels, old_levels[[i]])
     if (!allow_new_levels && length(unknown_levels)) {
-      stop(paste("levels", paste0(unknown_levels, collapse = ", "), 
-                 "of grouping factor", gnames[i], 
-                 "not found in the fitted model"), call. = FALSE)
+      unknown_levels <- paste0("'", unknown_levels, "'", collapse = ", ")
+      stop2("Levels ", unknown_levels, " of grouping factor '", 
+            gnames[i], "' cannot be not found in the fitted model. ",
+            "Consider setting argument 'allow_new_levels' to TRUE.")
+    }
+    if (is.factor(model.frame(fit)[[gnames[i]]])) {
+      # avoids an error in factor() when supplying only a single level
+      all_levels <- union(old_levels[[i]], new_levels)
+      newdata[[gnames[i]]] <- factor(newdata[[gnames[i]]], all_levels)   
     }
   }
   if (return_standata) {

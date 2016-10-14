@@ -2,8 +2,22 @@
 \title{brms News}
 \encoding{UTF-8}
 
+\section{CHANGES IN VERSION 1.1.0++}{
+  \subsection{NEW FEATURES}{
+  }
+  \subsection{OTHER CHANGES}{
+  }
+  \subsection{BUG FIXES}{
+    \itemize{ 
+      \item Avoid an error occuring during the prediction 
+      of new data when grouping factors with only a single 
+      factor level were supplied thanks to Tom Wallis.
+    }
+  }
+}
+
 \section{CHANGES IN VERSION 1.1.0}{
-   \subsection{NEW FEATURES}{
+  \subsection{NEW FEATURES}{
     \itemize{
       \item Estimate monotonic group-level effects.
       \item Estimate category specific group-level effects.

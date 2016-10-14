@@ -180,6 +180,10 @@ test_that("all S3 methods have reasonable ouputs", {
   pred <- predict(fit2, newdata = newdata, 
                   allow_new_levels = TRUE)
   expect_equal(dim(pred), c(2, 4))
+  # check if grouping factors with a single level are accepted
+  newdata$patient <- factor(2)
+  pred <- predict(fit2, newdata = newdata)
+  expect_equal(dim(pred), c(2, 4))
   # print
   expect_output(SW(print(fit1)), "Group-Level Effects:")
   # prior_samples

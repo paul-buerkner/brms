@@ -93,7 +93,7 @@ test_that("amend_newdata handles factors correctly", {
   expect_silent(amend_newdata(newdata, fit))
   newdata$visit <- 1:5
   expect_error(amend_newdata(newdata, fit), fixed = TRUE,
-               "levels 5 of grouping factor visit not found")
+               "Levels '5' of grouping factor 'visit' cannot")
   newdata$fac <- 1:5
   expect_error(amend_newdata(newdata, fit), fixed = TRUE,
                "New factor levels are not allowed")
