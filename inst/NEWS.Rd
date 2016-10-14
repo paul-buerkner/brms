@@ -3,10 +3,6 @@
 \encoding{UTF-8}
 
 \section{CHANGES IN VERSION 1.1.0++}{
-  \subsection{NEW FEATURES}{
-  }
-  \subsection{OTHER CHANGES}{
-  }
   \subsection{BUG FIXES}{
     \itemize{ 
       \item Avoid an error occuring during the prediction 
