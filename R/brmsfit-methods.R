@@ -1805,11 +1805,16 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
       family <- get_arg("family", dots, object)
       ee_new <- extract_effects(dots$formula, family = family)
       # no need to recompile the model when changing fixed effects only
+      dont_change <- c("random", "gam", "cse", "mono")
+      n_old_fixef <- length(attr(terms(ee_old$fixed), "term.labels"))
+      n_new_fixef <- length(attr(terms(ee_new$fixed), "term.labels"))
       recompile <- recompile ||
-        !(is_equal(names(ee_old), names(ee_new)) && 
-          is_equal(ee_old$random, ee_new$random) &&
-          is_equal(length(ee_old$response), length(ee_new$response)) &&
-          length(sformula(formula.)) == 0L)
+        !is_equal(names(ee_old), names(ee_new)) ||
+        !is_equal(ee_old[names(ee_old) %in% dont_change], 
+                  ee_new[names(ee_new) %in% dont_change]) ||
+        is_equal(sort(c(n_old_fixef, n_new_fixef)), c(0L, 1L)) ||
+        length(ee_old$response) != length(ee_new$response) ||
+        length(sformula(formula.)) > 0L
     }
     if (recompile) {
       message("The desired formula changes require recompling the model")
