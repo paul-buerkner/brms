@@ -144,7 +144,7 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
                     add_vars, 
                     fixed_vars,
                     x[c("covars", "cse", "mono")], 
-                    unlist(attr(x$gam, "covars")), 
+                    attr(x$gam, "fake_formula"), 
                     x$random$form, 
                     lapply(x$random$form, all.vars), 
                     x$random$group, 
@@ -250,10 +250,13 @@ extract_gam <- function(formula) {
       covars[[i]] <- eval_spline(gam_terms[i])$term
     }
     gam_terms <- formula(paste("~", paste(gam_terms, collapse = "+")))
+    fake_formula <- mgcv::interpret.gam(gam_terms)$fake.formula
   } else {
     covars <- NULL
+    fake_formula <- ~ 1
   }
-  structure(gam_terms, pos = pos_gam_terms, covars = covars)
+  structure(gam_terms, pos = pos_gam_terms, covars = covars,
+            fake_formula = fake_formula)
 }
 
 extract_random <- function(re_terms) {

@@ -333,15 +333,15 @@ test_that("make_standata returns data for bsts models", {
 
 test_that("make_standata returns data for GAMMs", {
   dat <- data.frame(y = rnorm(10), x1 = rnorm(10), x2 = rnorm(10),
-                    z = rnorm(10), g = rep(1:2, 5))
-  standata <- make_standata(y ~ s(x1) + z + s(x2), data = dat)
+                    x3 = rnorm(10), z = rnorm(10), g = rep(1:2, 5))
+  standata <- make_standata(y ~ s(x1) + z + s(x2, by = x3), data = dat)
   expect_equal(standata$nb_1, 1)
   expect_equal(as.vector(standata$knots_2), 8)
   expect_equal(dim(standata$Zs_1_1), c(10, 8))
   expect_equal(dim(standata$Zs_2_1), c(10, 8))
   
   standata <- make_standata(y ~ lp, data = dat,
-                            nonlinear = lp ~ s(x1) + z + s(x2))
+                            nonlinear = lp ~ s(x1) + z + s(x2, by = x3))
   expect_equal(standata$nb_lp_1, 1)
   expect_equal(as.vector(standata$knots_lp_2), 8)
   expect_equal(dim(standata$Zs_lp_1_1), c(10, 8))
