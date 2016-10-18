@@ -51,12 +51,11 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   is_count <- is.count(family)
   is_forked <- is.forked(family)
   is_categorical <- is.categorical(family)
-  et <- extract_time(autocor$formula)
-  ee <- extract_effects(formula, family = family, et$all)
+  ee <- extract_effects(formula, family = family, autocor = autocor)
   prior <- as.prior_frame(prior)
   check_prior_content(prior, family = family, warn = FALSE)
   na_action <- if (is_newdata) na.pass else na.omit
-  data <- update_data(data, family = family, effects = ee, et$group,
+  data <- update_data(data, family = family, effects = ee,
                       drop.unused.levels = !is_newdata, 
                       na.action = na_action, knots = knots,
                       terms_attr = control$terms_attr)
@@ -64,10 +63,10 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   # sort data in case of autocorrelation models
   if (has_arma(autocor) || is(autocor, "cor_bsts")) {
     if (old_mv) {
-      to_order <- rmNULL(list(data[["trait"]], data[[et$group]], 
-                              data[[et$time]]))
+      to_order <- rmNULL(list(data[["trait"]], data[[ee$time$group]], 
+                              data[[ee$time$time]]))
     } else {
-      to_order <- rmNULL(list(data[[et$group]], data[[et$time]]))
+      to_order <- rmNULL(list(data[[ee$time$group]], data[[ee$time$time]]))
     }
     if (length(to_order)) {
       new_order <- do.call(order, to_order)
@@ -323,8 +322,8 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   }
   # autocorrelation variables
   if (has_arma(autocor)) {
-    if (nchar(et$group)) {
-      tgroup <- data[[et$group]]
+    if (nchar(ee$time$group)) {
+      tgroup <- data[[ee$time$group]]
     } else {
       tgroup <- rep(1, standata$N) 
     }
@@ -380,8 +379,8 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
     if (length(ee$response) > 1L) {
       stop2("BSTS structure not yet implemented for multivariate models.")
     }
-    if (nchar(et$group)) {
-      tgroup <- data[[et$group]]
+    if (nchar(ee$time$group)) {
+      tgroup <- data[[ee$time$group]]
     } else {
       tgroup <- rep(1, standata$N) 
     }

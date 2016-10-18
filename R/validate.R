@@ -1,13 +1,15 @@
-extract_effects <- function(formula, ..., family = NA, nonlinear = NULL, 
-                            check_response = TRUE, resp_rhs_all = TRUE) {
+extract_effects <- function(formula, family = NA, nonlinear = NULL, 
+                            autocor = NULL, check_response = TRUE, 
+                            resp_rhs_all = TRUE, ...) {
   # Parse the model formula and related arguments
   # Args:
   #   formula: An object of class 'formula' or 'brmsformula'
-  #   ...: Additional objects of class "formula"
   #   family: the model family
   #   nonlinear: a list of formulas specifying non-linear effects
+  #   autocor: object of class 'cor_brms' or NULL
   #   check_response: check if the response part is non-empty?
-  #   resp_rhs_all: include response variables on the RHS of x$all? 
+  #   resp_rhs_all: include response variables on the RHS of x$allvars? 
+  #   ...: Additional objects of class 'formula'
   # Returns: 
   #   A named list whose elements depend on the formula input
   old_mv <- isTRUE(attr(formula, "old_mv"))
@@ -77,7 +79,8 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
   attr(x$covars, "rsv_intercept") <- TRUE
   # extract group-level effects parts
   x$random <- extract_random(re_terms)
-  
+  # evaluate autocor formula
+  x$time <- extract_time(autocor$formula)
   # evaluate formulas for auxiliary parameters
   auxpars <- sformula(formula, incl_nl = FALSE)
   for (ap in names(auxpars)) {
@@ -144,21 +147,21 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
                     add_vars, 
                     fixed_vars,
                     x[c("covars", "cse", "mono")], 
-                    attr(x$gam, "fake_formula"), 
+                    attr(x$gam, "allvars"), 
                     x$random$form, 
                     lapply(x$random$form, all.vars), 
                     x$random$group, 
                     get_offset(x$fixed),
-                    lapply(x$nonlinear, function(e) e$all),
-                    lapply(x[auxpars()], function(e) e$all), 
-                    ...)
+                    lapply(x$nonlinear, function(e) e$allvars),
+                    lapply(x[auxpars()], function(e) e$allvars), 
+                    x$time$allvars)
   new_formula <- collapse(ulapply(rmNULL(formula_list), plus_rhs))
-  x$all <- eval2(paste0("update(", tfixed, ", ~ ", new_formula, ")"))
-  environment(x$all) <- environment(formula)
+  x$allvars <- eval2(paste0("update(", tfixed, ", ~ ", new_formula, ")"))
+  environment(x$allvars) <- environment(formula)
   
   # extract response variables
   if (check_response) {
-    x$respform <- lhs(x$all)
+    x$respform <- lhs(x$allvars)
     if (!is.null(attr(formula, "response"))) {
       x$response <- attr(formula, "response")
     } else { 
@@ -179,7 +182,7 @@ extract_effects <- function(formula, ..., family = NA, nonlinear = NULL,
       if (length(x$response) > 1L) {
         # don't use update on a formula that is possibly non-linear
         x$fixed[[2]] <- quote(response)
-        x$all[[2]] <- quote(response)
+        x$allvars[[2]] <- quote(response)
         attr(x$formula, "old_mv") <- TRUE
       }
     }
@@ -250,13 +253,13 @@ extract_gam <- function(formula) {
       covars[[i]] <- eval_spline(gam_terms[i])$term
     }
     gam_terms <- formula(paste("~", paste(gam_terms, collapse = "+")))
-    fake_formula <- mgcv::interpret.gam(gam_terms)$fake.formula
+    allvars <- mgcv::interpret.gam(gam_terms)$fake.formula
   } else {
     covars <- NULL
-    fake_formula <- ~ 1
+    allvars <- ~ 1
   }
-  structure(gam_terms, pos = pos_gam_terms, covars = covars,
-            fake_formula = fake_formula)
+  structure(gam_terms, pos = pos_gam_terms, 
+            covars = covars, allvars = allvars)
 }
 
 extract_random <- function(re_terms) {
@@ -333,29 +336,28 @@ extract_time <- function(formula) {
   #   a list with elements time, group, and all, where all contains a 
   #   formula with all variables in formula
   if (is.null(formula)) {
-    return(NULL)
+    formula <- ~ 1
   }
   formula <- as.formula(formula)
   if (!is.null(lhs(formula))) {
-    stop("autocorrelation formula must be one-sided", call. = FALSE)
+    stop2("autocorrelation formula must be one-sided")
   }
   formula <- formula2string(formula)
   time <- as.formula(paste("~", gsub("~|\\|[[:print:]]*", "", formula)))
   time <- all.vars(time)
   if (length(time) > 1L) {
-    stop("Autocorrelation structures may only contain 1 time variable", 
-         call. = FALSE)
+    stop2("Autocorrelation structures may only contain 1 time variable")
   }
   x <- list(time = ifelse(length(time), time, ""))
   group <- sub("^\\|*", "", sub("~[^\\|]*", "", formula))
   if (illegal_group_expr(group, bs_valid = FALSE)) {
-    stop("Illegal grouping term: ", group, "\n may contain only ", 
-         "variable names combined by the symbols ':'", call. = FALSE)
+    stop2("Illegal grouping term: ", group, "\n It may contain only ", 
+          "variable names combined by the symbol ':'")
   }
   group <- formula(paste("~", ifelse(nchar(group), group, "1")))
   x$group <- paste0(all.vars(group), collapse = ":")
-  x$all <- formula(paste("~", paste(c("1", time, all.vars(group)), 
-                                    collapse = "+")))
+  x$allvars <- paste(c("1", time, all.vars(group)), collapse = "+")
+  x$allvars <- formula(paste("~", x$allvars))
   x
 }
 

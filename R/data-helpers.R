@@ -1,4 +1,4 @@
-update_data <- function(data, family, effects, ..., 
+update_data <- function(data, family, effects,
                         na.action = na.omit,
                         drop.unused.levels = TRUE,
                         terms_attr = NULL, knots = NULL) {
@@ -7,8 +7,6 @@ update_data <- function(data, family, effects, ...,
   #   data: the original data.frame
   #   family: the model family
   #   effects: output of extract_effects (see validate.R)
-  #   ...: More formulae passed to combine_groups
-  #        Currently only used for autocorrelation structures
   #   na.action: function defining how to treat NAs
   #   drop.unused.levels: indicates if unused factor levels
   #                       should be removed
@@ -26,15 +24,15 @@ update_data <- function(data, family, effects, ...,
     data <- as.data.frame(data)
   }
   if (!(isTRUE(attr(data, "brmsframe")) || "brms.frame" %in% class(data))) {
-    effects$all <- terms(effects$all)
-    attributes(effects$all)[names(terms_attr)] <- terms_attr
+    effects$allvars <- terms(effects$allvars)
+    attributes(effects$allvars)[names(terms_attr)] <- terms_attr
     if (isTRUE(attr(effects$formula, "old_mv"))) {
       data <- melt_data(data, family = family, effects = effects)
     } else {
       check_data_old_mv(data, family = family, effects = effects)
     }
     data <- data_rsv_intercept(data, effects = effects)
-    data <- model.frame(effects$all, data = data, na.action = na.pass,
+    data <- model.frame(effects$allvars, data = data, na.action = na.pass,
                         drop.unused.levels = drop.unused.levels)
     nrow_with_NA <- nrow(data)
     data <- na.action(data)
@@ -46,7 +44,8 @@ update_data <- function(data, family, effects, ...,
       stop("Variable names may not contain double underscores ",
            "or underscores at the end.", call. = FALSE)
     }
-    data <- combine_groups(data, get_random(effects)$group, ...)
+    data <- combine_groups(data, get_random(effects)$group, 
+                           effects$time$group)
     data <- fix_factor_contrasts(data)
     attr(data, "knots") <- knots
     attr(data, "brmsframe") <- TRUE
@@ -70,7 +69,7 @@ melt_data <- function(data, family, effects) {
            call. = FALSE)
     }
     # only keep variables that are relevant for the model
-    rel_vars <- c(all.vars(attr(terms(effects$all), "variables")), 
+    rel_vars <- c(all.vars(attr(terms(effects$allvars), "variables")), 
                   all.vars(effects$respform))
     data <- data[, which(names(data) %in% rel_vars), drop = FALSE]
     rsv_vars <- intersect(c("trait", "response"), names(data))
@@ -127,7 +126,7 @@ check_data_old_mv <- function(data, family, effects) {
   rsv_vars <- rsv_vars(family, nresp = length(effects$response),
                        old_mv = TRUE)
   rsv_vars <- setdiff(rsv_vars, names(data))
-  used_rsv_vars <- intersect(rsv_vars, all.vars(effects$all))
+  used_rsv_vars <- intersect(rsv_vars, all.vars(effects$allvars))
   if (length(used_rsv_vars)) {
     stop("It is no longer possible (and necessary) to specify models ", 
          "using the multivariate 'trait' syntax. See help(brmsformula) ",
@@ -234,10 +233,11 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   }
   # standata will be based on an updated formula if re_formula is specified
   new_formula <- update_re_terms(formula(fit), re_formula = re_formula)
-  et <- if (incl_autocor) extract_time(fit$autocor$formula)
   ee <- extract_effects(new_formula, family = family(fit),
-                        resp_rhs_all = FALSE, et$all)
-  resp_only_vars <- setdiff(all.vars(ee$respform), all.vars(rhs(ee$all)))
+                        autocor = if (incl_autocor) fit$autocor,
+                        resp_rhs_all = FALSE)
+  resp_only_vars <- setdiff(all.vars(ee$respform), 
+                            all.vars(rhs(ee$allvars)))
   missing_resp <- setdiff(resp_only_vars, names(newdata))
   if (check_response && length(missing_resp)) {
     stop("Response variables must be specified in newdata for this model.",
@@ -336,7 +336,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     rsv_vars <- rsv_vars(family(fit), nresp = length(ee$response),
                          rsv_intercept = has_rsv_intercept(ee$formula),
                          old_mv = attr(ee$formula, "old_mv"))
-    used_vars <- unique(c(names(newdata), all.vars(ee$all), rsv_vars))
+    used_vars <- unique(c(names(newdata), all.vars(ee$allvars), rsv_vars))
     unused_vars <- setdiff(names(model.frame(fit)), used_vars)
     if (length(unused_vars)) {
       newdata[, unused_vars] <- NA
