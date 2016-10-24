@@ -18,13 +18,18 @@
 #' @param ub Upper bound for parameter restriction. Currently only allowed
 #'   for classes \code{"b"}, \code{"ar"}, \code{"ma"}, and \code{"arr"}.
 #'   Defaults to \code{NULL}, that is no restriction.
+#' @param ... Arguments passed to \code{set_prior}.
 #' 
 #' @return An object of class \code{brmsprior} to be used in the \code{prior}
 #'   argument of \code{\link[brms:brm]{brm}}.
 #' 
 #' @details 
 #'   \code{set_prior} is used to define prior distributions for parameters 
-#'   in \pkg{brms} models. Below, we explain its usage and list some common 
+#'   in \pkg{brms} models. The functions \code{prior} and \code{prior_string} 
+#'   are both aliases of \code{set_prior}, the former allowing to specify 
+#'   arguments without quotes \code{""} using non-standard evaluation.
+#'   
+#'   Below, we explain its usage and list some common 
 #'   prior distributions for parameters. 
 #'   A complete overview on possible prior distributions is given 
 #'   in the Stan Reference Manual available at \url{http://mc-stan.org/}.
@@ -281,6 +286,11 @@
 #' make_stancode(count ~ log_Age_c + log_Base4_c * Trt_c,
 #'               data = epilepsy, family = poisson(),
 #'               prior = set_prior("horseshoe(3)"))
+#'               
+#' ## use alias functions
+#' (prior1 <- prior_string("cauchy(0, 1)", class = "sd"))
+#' (prior2 <- prior(cauchy(0, 1), class = sd))
+#' identical(prior1, prior2)
 #'
 #' @export
 set_prior <- function(prior, class = "b", coef = "", group = "",
@@ -350,6 +360,21 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
   out <- nlist(prior, class, coef, group, nlpar, bound)
   class(out) <- c("brmsprior", "list")
   out
+}
+
+#' @describeIn set_prior Alias of \code{set_prior}.
+#' @export
+prior_string <- function(prior, ...) {
+  set_prior(prior, ...)
+}
+
+#' @describeIn set_prior Alias of \code{set_prior} allowing to specify 
+#'   arguments without quotes \code{""} using non-standard evaluation.
+#' @export
+prior <- function(prior, ...) {
+  call <- as.list(match.call()[-1])
+  call <- lapply(call, deparse_no_string)
+  do.call(set_prior, call)
 }
 
 #' Overview on Priors for \pkg{brms} Models
@@ -829,7 +854,7 @@ check_prior_content <- function(prior, family = gaussian(), warn = TRUE) {
     autocor_pars <- c("ar", "ma")
     lb_warning <- ub_warning <- ""
     autocor_warning <- FALSE
-    for (i in 1:nrow(prior)) {
+    for (i in seq_len(nrow(prior))) {
       msg_prior <- .print_prior(as.brmsprior(prior[i, , drop = FALSE])[[1]])
       has_lb_prior <- grepl(lb_priors_reg, prior$prior[i])
       has_ulb_prior <- grepl(ulb_priors_reg, prior$prior[i])
@@ -869,24 +894,22 @@ check_prior_content <- function(prior, family = gaussian(), warn = TRUE) {
       }
     }  # end for  
     if (nchar(lb_warning) && warn) {
-      warning(paste0("It appears that you have specified a lower bounded ", 
-                     "prior on a parameter that has no natural lower bound.",
-                     "\nIf this is really what you want, please specify ",
-                     "argument 'lb' of 'set_prior' appropriately.",
-                     "\nWarning occurred for prior \n", lb_warning), 
-              call. = FALSE)
+      warning2("It appears that you have specified a lower bounded ", 
+               "prior on a parameter that has no natural lower bound.",
+               "\nIf this is really what you want, please specify ",
+               "argument 'lb' of 'set_prior' appropriately.",
+               "\nWarning occurred for prior \n", lb_warning)
     }
     if (nchar(ub_warning) && warn) {
-      warning(paste0("It appears that you have specified an upper bounded ", 
-                     "prior on a parameter that has no natural upper bound.",
-                     "\nIf this is really what you want, please specify ",
-                     "argument 'ub' of 'set_prior' appropriately.",
-                     "\nWarning occurred for prior \n", ub_warning), 
-              call. = FALSE)
+      warning2("It appears that you have specified an upper bounded ", 
+               "prior on a parameter that has no natural upper bound.",
+               "\nIf this is really what you want, please specify ",
+               "argument 'ub' of 'set_prior' appropriately.",
+               "\nWarning occurred for prior \n", ub_warning)
     }
     if (autocor_warning && warn) {
-      warning(paste("Changing the boundaries of autocorrelation", 
-                    "parameters is not recommended."), call. = FALSE)
+      warning2("Changing the boundaries of autocorrelation ", 
+               "parameters is not recommended.")
     }
   }
   invisible(NULL)

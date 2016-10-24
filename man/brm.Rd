@@ -270,8 +270,8 @@ Fit a generalized (non-)linear multilevel model,
 fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt_c  
               + (1|patient) + (1|obs), 
             data = epilepsy, family = poisson(), 
-            prior = c(set_prior("student_t(5,0,10)", class = "b"),
-                      set_prior("cauchy(0,2)", class = "sd")))
+            prior = c(prior(student_t(5,0,10), class = b),
+                      prior(cauchy(0,2), class = sd)))
 ## generate a summary of the results
 summary(fit1)
 ## plot the MCMC chains as well as the posterior distributions
@@ -313,8 +313,8 @@ summary(fit4)
 x <- rnorm(100)
 y <- rnorm(100, mean = 2 - 1.5^x, sd = 1)
 fit5 <- brm(y ~ a1 - a2^x, nonlinear = a1 + a2 ~ 1,
-            prior = c(set_prior("normal(0, 2)", nlpar = "a1"),
-                      set_prior("normal(0, 2)", nlpar = "a2")))
+            prior = c(prior(normal(0, 2), nlpar = a1),
+                      prior(normal(0, 2), nlpar = a2)))
 summary(fit5)
 plot(marginal_effects(fit5), ask = FALSE)
 

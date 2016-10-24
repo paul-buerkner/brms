@@ -158,6 +158,14 @@ named_list <- function(names, values = NULL) {
   setNames(values, names)
 } 
 
+deparse_no_string <- function(x) {
+  # deparse x if it is no string
+  if (!is.character(x)) {
+    x <- deparse(x)
+  } 
+  x
+}
+
 eval2 <- function(text, ...) {
   # evaluate a string
   eval(parse(text = text), ...)

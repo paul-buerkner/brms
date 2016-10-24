@@ -223,3 +223,12 @@ test_that("check_prior_content returns expected errors and warnings", {
   prior <- c(set_prior("normal(0,2)", class = "ar", lb = "0"))
   expect_warning(check_prior_content(prior), "autocorrelation parameters")
 })
+
+test_that("set_prior alias functions produce equivalent results", {
+  expect_equal(set_prior("normal(0, 1)", class = "sd"),
+               prior(normal(0, 1), class = sd))
+  expect_equal(set_prior("normal(0, 1)", class = "sd", nlpar = "a"),
+               prior(normal(0, 1), class = "sd", nlpar = a))
+  expect_equal(set_prior("normal(0, 1)", class = "sd"),
+               prior_string("normal(0, 1)", class = "sd"))
+})
