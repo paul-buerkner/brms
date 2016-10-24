@@ -109,7 +109,7 @@ Define priors for specific parameters or classes of parameters
   is the horseshoe prior.
   It is symmetric around zero with fat tails and an infinitely large spike
   at zero. This makes it ideal for sparse models that have 
-  many regression coefficients,although only a minority of them is non-zero. 
+  many regression coefficients, although only a minority of them is non-zero. 
   For more details see Carvalho et al. (2009).
   The horseshoe prior can be applied on all population-level effects at once 
   (excluding the intercept) by using \code{set_prior("horseshoe(1)")}.
@@ -119,6 +119,13 @@ Define priors for specific parameters or classes of parameters
   Accordingly, increasing the degrees of freedom to slightly higher values 
   (e.g., \code{3}) may often be a better option, although the prior 
   no longer resembles a horseshoe in this case. 
+  Further, the scale of the global shrinkage parameter plays an important role
+  in amount of shrinkage applied. It defaults to \code{1},
+  but this may result in too few shrinkage (Piironen & Vehtari, 2016).
+  It is thus possible to change the scale using argument \code{scale_global}
+  of the horseshoe prior, for instance \code{horseshoe(1, scale_global = 0.5)}.
+  For recommendations how to properly set the global scale see 
+  Piironen and Vehtari (2016).
   Generally, models with horseshoe priors a more likely than other models
   to have divergent transitions so that increasing \code{adapt_delta} 
   from \code{0.8} to values closer to \code{1} will often be necessary.
@@ -314,12 +321,16 @@ identical(prior1, prior2)
 
 }
 \references{
-Gelman A (2006). Prior distributions for variance parameters in hierarchical models.
-   Bayesian analysis, 1(3), 515 -- 534.
-   
 Carvalho, C. M., Polson, N. G., & Scott, J. G. (2009). 
   Handling sparsity via the horseshoe. 
   In International Conference on Artificial Intelligence and Statistics (pp. 73-80).
+
+Gelman A. (2006). Prior distributions for variance parameters in hierarchical models.
+   Bayesian analysis, 1(3), 515 -- 534.
+   
+Piironen J. & Vehtari A. (2016). On the Hyperprior Choice for the Global 
+   Shrinkage Parameter in the Horseshoe Prior. 
+   \url{https://arxiv.org/pdf/1610.05559v1.pdf}
 }
 \seealso{
 \code{\link[brms:get_prior]{get_prior}}

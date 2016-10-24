@@ -86,7 +86,7 @@
 #'   is the horseshoe prior.
 #'   It is symmetric around zero with fat tails and an infinitely large spike
 #'   at zero. This makes it ideal for sparse models that have 
-#'   many regression coefficients,although only a minority of them is non-zero. 
+#'   many regression coefficients, although only a minority of them is non-zero. 
 #'   For more details see Carvalho et al. (2009).
 #'   The horseshoe prior can be applied on all population-level effects at once 
 #'   (excluding the intercept) by using \code{set_prior("horseshoe(1)")}.
@@ -96,6 +96,13 @@
 #'   Accordingly, increasing the degrees of freedom to slightly higher values 
 #'   (e.g., \code{3}) may often be a better option, although the prior 
 #'   no longer resembles a horseshoe in this case. 
+#'   Further, the scale of the global shrinkage parameter plays an important role
+#'   in amount of shrinkage applied. It defaults to \code{1},
+#'   but this may result in too few shrinkage (Piironen & Vehtari, 2016).
+#'   It is thus possible to change the scale using argument \code{scale_global}
+#'   of the horseshoe prior, for instance \code{horseshoe(1, scale_global = 0.5)}.
+#'   For recommendations how to properly set the global scale see 
+#'   Piironen and Vehtari (2016).
 #'   Generally, models with horseshoe priors a more likely than other models
 #'   to have divergent transitions so that increasing \code{adapt_delta} 
 #'   from \code{0.8} to values closer to \code{1} will often be necessary.
@@ -256,12 +263,17 @@
 #' @seealso \code{\link[brms:get_prior]{get_prior}}
 #' 
 #' @references 
-#' Gelman A (2006). Prior distributions for variance parameters in hierarchical models.
-#'    Bayesian analysis, 1(3), 515 -- 534.
-#'    
 #' Carvalho, C. M., Polson, N. G., & Scott, J. G. (2009). 
 #'   Handling sparsity via the horseshoe. 
 #'   In International Conference on Artificial Intelligence and Statistics (pp. 73-80).
+#' 
+#' Gelman A. (2006). Prior distributions for variance parameters in hierarchical models.
+#'    Bayesian analysis, 1(3), 515 -- 534.
+#'    
+#' Piironen J. & Vehtari A. (2016). On the Hyperprior Choice for the Global 
+#'    Shrinkage Parameter in the Horseshoe Prior. 
+#'    \url{https://arxiv.org/pdf/1610.05559v1.pdf}
+#'   
 #' 
 #' @examples
 #' ## check which parameters can have priors
@@ -719,7 +731,8 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
   # Returns:
   #   a data.frame of prior specifications to be used in stan_prior (see stan.R)
   if (isTRUE(attr(prior, "checked"))) {
-    return(prior)  # prior has already been checked; no need to do it twice
+    # prior has already been checked; no need to do it twice
+    return(prior)
   }
   stopifnot(is(formula, "brmsformula"))
   ee <- extract_effects(formula, family = family)  
@@ -743,10 +756,8 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
     stop("Duplicated prior specifications are not allowed.", call. = FALSE)
   }
   # handle special priors that are not explictly coded as functions in Stan
-  has_specef <- is.formula(ee[c("mono", "cse")])
-  temp <- handle_special_priors(prior, has_specef = has_specef)  
-  prior <- temp$prior
-  attrib <- temp$attrib 
+  has_specef <- is.formula(ee[["mono"]]) || is.formula(ee[["cse"]])
+  prior <- handle_special_priors(prior, has_specef = has_specef)  
   # check if parameters in prior are valid
   if (nrow(prior)) {
     valid <- which(duplicated(rbind(all_priors[, 2:5], prior[, 2:5])))
@@ -820,11 +831,7 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
   }
   prior <- prior[with(prior, order(nlpar, class, group, coef)), ]
   prior <- rbind(prior, prior_incr_lp)
-  rownames(prior) <- 1:nrow(prior)
-  # add attributes to prior generated in handle_special_priors
-  for (i in seq_along(attrib)) {
-    attr(prior, names(attrib)[i]) <- attrib[[i]]
-  }
+  rownames(prior) <- seq_len(nrow(prior))
   attr(prior, "prior_only") <- identical(sample_prior, "only")
   attr(prior, "checked") <- TRUE
   prior
@@ -917,48 +924,36 @@ check_prior_content <- function(prior, family = gaussian(), warn = TRUE) {
 
 handle_special_priors <- function(prior, has_specef = FALSE) {
   # look for special priors such as horseshoe and process them appropriately
-  #
   # Args:
   #   prior: an object of class prior_frame
   #   has_specef: are monotonic or category specific effects present?
-  #
   # Returns:
-  #   an named list of two objects: 
-  #   prior: an updated version of prior
-  #   attrib: a named list containing future attributes of prior
-  attrib <- list()
+  #   a possibly amended prior.frame with additional attributes
+  prior_attr <- list()
   b_index <- which(prior$class == "b" & !nchar(prior$coef))
-  if (length(b_index) && grepl("^horseshoe\\(.+\\)$", prior$prior[b_index])) {
+  if (length(b_index) && grepl("^horseshoe\\(", prior$prior[b_index])) {
     # horseshoe prior for fixed effects parameters
     if (any(nchar(prior$nlpar))) {
-      stop("Horseshoe priors are not yet allowed in non-linear models.",
-           call. = FALSE)
+      stop2("Horseshoe priors are not yet allowed in non-linear models.")
     }
     if (has_specef) {
-      stop(paste("Horseshoe priors are not yet allowed in models with", 
-                 "monotonic or category specific effects."), 
-           call. = FALSE)
+      stop2("Horseshoe priors are not yet allowed in models with ", 
+            "monotonic or category specific effects.")
     }
-    hs_df <- gsub("^horseshoe\\(|\\)$", "", prior$prior[b_index])
-    hs_df <- suppressWarnings(as.numeric(hs_df))
-    if (!is.na(hs_df) && hs_df > 0) {
-      b_coef_indices <- which(prior$class == "b" & nchar(prior$coef)
-                              & prior$coef != "Intercept")
-      if (any(nchar(prior$prior[b_coef_indices]))) {
-        stop(paste("Defining priors for single fixed effects parameters",
-                   "is not allowed when using horseshoe priors",
-                   "(except for the Intercept)"), call. = FALSE)
-      }
-      attrib$hs_df <- hs_df
-      prior$prior[b_index] <- "normal(0, hs_local * hs_global)"
-    } else {
-      stop("degrees of freedom of horseshoe prior must be a positive number",
-           call. = FALSE)
+    b_coef_indices <- which(prior$class == "b" & nchar(prior$coef) &
+                            prior$coef != "Intercept")
+    if (any(nchar(prior$prior[b_coef_indices]))) {
+      stop2("Defining priors for single population-level parameters",
+            "is not allowed when using the horseshoe prior",
+            "(except for the Intercept).")
     }
+    hs <- eval2(prior$prior[b_index])
+    prior_attr[c("hs_df", "hs_scale_global")] <- hs[c("df", "scale_global")]
+    prior$prior[b_index] <- hs$prior
   }
   # expand lkj correlation prior to full name
   prior$prior <- sub("^(lkj\\(|lkj_corr\\()", "lkj_corr_cholesky(", prior$prior)
-  list(prior = prior, attrib = attrib)
+  do.call(structure, c(list(prior), prior_attr))
 }
 
 get_bound <- function(prior, class = "b", coef = "", 
@@ -1054,11 +1049,29 @@ as.prior_frame <- function(prior) {
   prior
 }
 
-.dirichlet <- function(...) {
-  # helper function for dirichlet priors of simplex parameters
+dirichlet <- function(...) {
+  # dirichlet prior of simplex parameters
   out <- as.numeric(c(...))
-  if (any(out <= 0)) {
-    stop("The dirichlet prior expects positive values.", call. = FALSE)
+  if (anyNA(out) || any(out <= 0)) {
+    stop2("The dirichlet prior expects positive values.")
   }
   out
+}
+
+horseshoe <- function(df = 1, scale_global = 1) {
+  # validate input for the horseshoe prior 
+  # Args:
+  #   df: degrees of freedom of the local parameters
+  #   scale_global: scale of the global cauchy prior
+  df <- as.numeric(df)
+  scale_global <- as.numeric(scale_global)
+  if (!isTRUE(df > 0)) {
+    stop2("Invalid horseshoe prior: Degrees of freedom of ", 
+          "the local priors must be a single positive number.")
+  }
+  if (!isTRUE(scale_global > 0)) {
+    stop2("Invalid horseshoe prior: Scale of the global ", 
+          "prior must be a single positive number.")
+  }
+  nlist(prior = "normal(0, hs_local * hs_global)", df, scale_global)
 }

@@ -641,9 +641,9 @@ data_monef <- function(effects, data, ranef = empty_ranef(),
     for (i in seq_along(monef)) {
       take <- prior$class == "simplex" & prior$coef == monef[i] & 
               prior$nlpar == nlpar  
-      sprior <- paste0(".", prior$prior[take])
-      if (nchar(sprior) > 1L) {
-        sprior <- as.numeric(eval(parse(text = sprior)))
+      sprior <- prior$prior[take]
+      if (isTRUE(nchar(sprior) > 0L)) {
+        sprior <- eval2(sprior)
         if (length(sprior) != Jm[i]) {
           stop(paste0("Invalid dirichlet prior for the simplex of ", 
                       monef[i], ". Expected input of length ", Jm[i], 

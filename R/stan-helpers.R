@@ -764,7 +764,7 @@ stan_prior <- function(class, coef = "", group = "", nlpar = "", suffix = "",
     # add horseshoe shrinkage priors
     hs_shrinkage_priors <- paste0(
       "  hs_local ~ student_t(", attr(prior, "hs_df"), ", 0, 1); \n",
-      "  hs_global ~ cauchy(0, 1); \n")
+      "  hs_global ~ cauchy(0, ", attr(prior, "hs_scale_global"), "); \n")
     out <- c(hs_shrinkage_priors, out)
   }
   out <- collapse(out)

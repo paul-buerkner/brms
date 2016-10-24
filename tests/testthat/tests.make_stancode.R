@@ -1,12 +1,15 @@
 test_that("make_stancode handles horseshoe priors correctly", {
-  prior <- prior_frame(prior = "normal(0, hs_local * hs_global)", class = "b")
-  attr(prior, "hs_df") <- 7
   temp_stancode <- make_stancode(rating ~ treat*period*carry, data = inhaler,
-                                 prior = prior)
+                                 prior = prior(horseshoe(7)))
   expect_match(temp_stancode, fixed = TRUE,
                "  vector<lower=0>[Kc] hs_local; \n  real<lower=0> hs_global; \n")
   expect_match(temp_stancode, fixed = TRUE,
                "  hs_local ~ student_t(7, 0, 1); \n  hs_global ~ cauchy(0, 1); \n")
+  
+  temp_stancode <- make_stancode(rating ~ treat*period*carry, data = inhaler,
+                                 prior = prior(horseshoe(7, scale_global = 2)))
+  expect_match(temp_stancode, fixed = TRUE,
+               "  hs_local ~ student_t(7, 0, 1); \n  hs_global ~ cauchy(0, 2); \n")
 })
 
 test_that("make_stancode accepts supported links", {

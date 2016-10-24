@@ -132,12 +132,13 @@ test_that("check_prior correctly validates priors for monotonic effects", {
 
 test_that("handle_special_priors handles horseshoe prior correctly", {
   prior <- set_prior("horseshoe(5)")
-  temp <- handle_special_priors(c(prior))
-  expect_equal(temp$attrib$hs_df, 5)
-  expect_equal(temp$prior$prior[1], "normal(0, hs_local * hs_global)")
-  expect_error(handle_special_priors(c(prior, set_prior("dist()", coef = "a"))))
-  expect_error(handle_special_priors(c(set_prior("horseshoe(b5)"))),
-               "degrees of freedom of horseshoe prior must be a positive")
+  prior <- handle_special_priors(c(prior))
+  expect_equal(attr(prior, "hs_df"), 5)
+  expect_equal(prior$prior[1], "normal(0, hs_local * hs_global)")
+  expect_error(handle_special_priors(c(set_prior("horseshoe(-1)"))),
+               "Degrees of freedom of the local priors")
+  expect_error(handle_special_priors(c(set_prior("horseshoe(1, -1)"))),
+               "Scale of the global prior")
 })
 
 test_that("get_prior finds all classes for which priors can be specified", {
