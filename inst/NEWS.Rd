@@ -8,6 +8,9 @@
       \item Avoid an error occuring during the prediction 
       of new data when grouping factors with only a single 
       factor level were supplied thanks to Tom Wallis.
+      \item Fix \code{marginal_effects} to consistently 
+      produce plots for all covariates in non-linear models 
+      thanks to David Auty.
     }
   }
 }

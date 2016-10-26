@@ -13,7 +13,6 @@ dstudent <- function(x, df = stop("df is required"), mu = 0, sigma = 1, log = FA
   }
 }
 
-
 pstudent <- function(q, df = stop("df is required"), mu = 0, sigma = 1, 
                      lower.tail = TRUE, log.p = FALSE) {
   # distribution function of student's distribution
@@ -49,7 +48,7 @@ rstudent <-  function(n, df = stop("df is required"), mu = 0, sigma = 1) {
 }
 
 dmulti_normal <- function(x, mu, Sigma, log = TRUE,
-                         check = FALSE) {
+                          check = FALSE) {
   # density of the multivariate normal distribution 
   # not vectorized to increase speed when x is only a vector not a matrix
   # Args:
@@ -108,7 +107,7 @@ rmulti_normal <- function(n, mu, Sigma, check = FALSE) {
 }
 
 dmulti_student <- function(x, df, mu, Sigma, log = TRUE,
-                          check = FALSE) {
+                           check = FALSE) {
   # density of the multivariate student-t distribution 
   # Args:
   #   x: the value(s) at which the density should be evaluated
@@ -149,7 +148,7 @@ dmulti_student <- function(x, df, mu, Sigma, log = TRUE,
 }
 
 rmulti_student <- function(n, df, mu, Sigma, log = TRUE, 
-                          check = FALSE) {
+                           check = FALSE) {
   # random values of the multivariate student-t distribution 
   # Args:
   #   n: number of random values

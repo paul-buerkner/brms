@@ -759,9 +759,13 @@ get_all_effects <- function(effects, rsv_vars = NULL) {
   if (length(effects$nonlinear)) {
     # allow covariates as well as fixed effects of non-linear parameters
     covars <- setdiff(all.vars(rhs(effects$fixed)), names(effects$nonlinear))
+    covars_comb <- as.list(covars)
+    if (length(covars) > 1L) {
+      covars_comb <- c(covars_comb, utils::combn(covars, 2, simplify = FALSE))
+    } 
     nl_effects <- lapply(effects$nonlinear, .get_all_effects)
     nl_effects <- unlist(nl_effects, recursive = FALSE)
-    all_effects <- unique(c(list(covars), nl_effects))
+    all_effects <- unique(c(covars_comb, nl_effects))
   } else {
     all_effects <- .get_all_effects(effects)
   }
