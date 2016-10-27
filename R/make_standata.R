@@ -52,7 +52,6 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   is_forked <- is.forked(family)
   is_categorical <- is.categorical(family)
   ee <- extract_effects(formula, family = family, autocor = autocor)
-  prior <- as.prior_frame(prior)
   check_prior_content(prior, family = family, warn = FALSE)
   na_action <- if (is_newdata) na.pass else na.omit
   data <- update_data(data, family = family, effects = ee,

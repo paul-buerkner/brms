@@ -1,6 +1,6 @@
 stan_effects <- function(effects, data, family = gaussian(),
                          center_X = TRUE, ranef = empty_ranef(), 
-                         prior = prior_frame(), autocor = cor_arma(), 
+                         prior = brmsprior(), autocor = cor_arma(), 
                          threshold = "flexible", sparse = FALSE, 
                          nlpar = "", eta = "eta") {
   # combine effects for the predictors of a single (non-linear) parameter
@@ -82,7 +82,7 @@ stan_effects <- function(effects, data, family = gaussian(),
 }
 
 stan_effects_mv <- function(effects, data, family = gaussian(), 
-                            ranef = empty_ranef(), prior = prior_frame(), 
+                            ranef = empty_ranef(), prior = brmsprior(), 
                             autocor = cor_arma(), sparse = FALSE) {
   if (sparse) {
     stop("Sparse design matrices are not yet implemented ", 
@@ -115,14 +115,14 @@ stan_effects_mv <- function(effects, data, family = gaussian(),
 }
 
 stan_nonlinear <- function(effects, data, family = gaussian(), 
-                           ranef = empty_ranef(), prior = prior_frame()) {
+                           ranef = empty_ranef(), prior = brmsprior()) {
   # prepare Stan code for non-linear models
   # Args:
   #   effects: a list returned by extract_effects()
   #   data: data.frame supplied by the user
   #   family: the model family
   #   cov_ranef: a list of user-defined covariance matrices
-  #   prior: a prior_frame object
+  #   prior: a brmsprior object
   out <- list()
   if (length(effects$nonlinear)) {
     for (i in seq_along(effects$nonlinear)) {
@@ -163,7 +163,7 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
 }
 
 stan_auxpars <- function(effects, data, family = gaussian(),
-                         ranef = empty_ranef(), prior = prior_frame(), 
+                         ranef = empty_ranef(), prior = brmsprior(), 
                          autocor = cor_arma()) {
   # Stan code for auxiliary parameters
   # Args:
@@ -202,7 +202,7 @@ stan_auxpars <- function(effects, data, family = gaussian(),
 } 
 
 stan_fixef <- function(fixef, center_X = TRUE, family = gaussian(),
-                       prior = prior_frame(), nlpar = "", sparse = FALSE, 
+                       prior = brmsprior(), nlpar = "", sparse = FALSE, 
                        threshold = "flexible") {
   # Stan code for fixed effects
   # Args:
@@ -286,7 +286,7 @@ stan_fixef <- function(fixef, center_X = TRUE, family = gaussian(),
   out
 }
 
-stan_ranef <- function(id, ranef, prior = prior_frame(), 
+stan_ranef <- function(id, ranef, prior = brmsprior(), 
                        cov_ranef = NULL) {
   # group-level effects in Stan 
   # Args:
@@ -376,11 +376,11 @@ stan_ranef <- function(id, ranef, prior = prior_frame(),
   out
 }
 
-stan_splines <- function(splines, prior = prior_frame(), nlpar = "") {
+stan_splines <- function(splines, prior = brmsprior(), nlpar = "") {
   # Stan code of spline terms for GAMMs
   # Args:
   #   splines: names of the spline terms
-  #   prior: object of class prior_frame
+  #   prior: object of class brmsprior
   #   nlpar: optional name of a non-linear parameter
   # Returns:
   #   A list of strings containing Stan code
@@ -418,7 +418,7 @@ stan_splines <- function(splines, prior = prior_frame(), nlpar = "") {
   out
 }
 
-stan_monef <- function(monef, prior = prior_frame(), nlpar = "") {
+stan_monef <- function(monef, prior = brmsprior(), nlpar = "") {
   # Stan code for monotonic effects
   # Args:
   #   monef: names of the monotonic effects
@@ -450,7 +450,7 @@ stan_monef <- function(monef, prior = prior_frame(), nlpar = "") {
 }
 
 stan_csef <- function(csef, ranef = empty_ranef(), 
-                      prior = prior_frame(), nlpar = "") {
+                      prior = brmsprior(), nlpar = "") {
   # Stan code for category specific effects
   # Args:
   #   csef: names of the category specific effects

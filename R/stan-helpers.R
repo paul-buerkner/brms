@@ -195,7 +195,7 @@ stan_llh_weights <- function(llh_pre, family = gaussian()) {
 }
 
 stan_autocor <- function(autocor, effects = list(), family = gaussian(),
-                         prior = prior_frame()) {
+                         prior = brmsprior()) {
   # Stan code related to autocorrelation structures
   # Args:
   #   autocor: autocorrelation structure; object of class cor_brms
@@ -360,7 +360,7 @@ stan_autocor <- function(autocor, effects = list(), family = gaussian(),
   out
 }
 
-stan_mv <- function(family, response, prior = prior_frame()) {
+stan_mv <- function(family, response, prior = brmsprior()) {
   # some Stan code for multivariate models
   # Args:
   #   family: model family
@@ -409,7 +409,7 @@ stan_mv <- function(family, response, prior = prior_frame()) {
   out
 }
 
-stan_ordinal <- function(family, prior = prior_frame(), 
+stan_ordinal <- function(family, prior = brmsprior(), 
                          cse = FALSE, threshold = "flexible") {
   # Ordinal effects in Stan
   # Args:
@@ -671,7 +671,7 @@ stan_misc_functions <- function(family = gaussian(), kronecker = FALSE) {
 }
 
 stan_prior <- function(class, coef = "", group = "", nlpar = "", suffix = "", 
-                       prior = prior_frame(), wsp = 2, matrix = FALSE) {
+                       prior = brmsprior(), wsp = 2, matrix = FALSE) {
   # Define priors for parameters in Stan language
   # Args:
   #   class: the parameter class

@@ -545,7 +545,7 @@ arr_design_matrix <- function(Y, r, group)  {
 }
 
 data_effects <- function(effects, data, family = gaussian(),
-                         ranef = empty_ranef(), prior = prior_frame(), 
+                         ranef = empty_ranef(), prior = brmsprior(), 
                          autocor = cor_arma(), knots = NULL, nlpar = "", 
                          not4stan = FALSE, smooth = NULL, Jm = NULL) {
   # combine data for all types of effects
@@ -553,7 +553,7 @@ data_effects <- function(effects, data, family = gaussian(),
   #   effects: a list returned by extract_effects
   #   data: the data passed by the user
   #   family: the model family
-  #   prior: an object of class prior_frame
+  #   prior: an object of class brmsprior
   #   autocor: object of class 'cor_brms'
   #   cov_ranef: name list of user-defined covariance matrices
   #   knots: optional knot values for smoothing terms
@@ -621,7 +621,7 @@ data_fixef <- function(effects, data, family = gaussian(),
 }
 
 data_monef <- function(effects, data, ranef = empty_ranef(),
-                       prior = prior_frame(), nlpar = "",
+                       prior = brmsprior(), nlpar = "",
                        Jm = NULL) {
   # prepare data for monotonic effects for use in Stan
   # Args: see data_effects

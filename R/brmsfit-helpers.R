@@ -63,6 +63,9 @@ restructure <- function(x) {
     x$formula <- SW(update_formula(x$formula, partial = x$partial, 
                                    nonlinear = x$nonlinear))
     x$nonlinear <- x$partial <- NULL
+    if ("prior_frame" %in% class(x$prior)) {
+      class(x$prior) <- c("brmsprior", "data.frame") 
+    }
     if (is(x$autocor, "cor_fixed")) {
       # deprecated as of brms 1.0.0
       class(x$autocor) <- "cov_fixed"

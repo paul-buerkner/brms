@@ -1,30 +1,30 @@
 test_that("stan_prior accepts supported prior classes", {
-  prior <- prior_frame(prior = "uniform(0,10)", class = "b")
+  prior <- brmsprior(prior = "uniform(0,10)", class = "b")
   expect_equal(stan_prior(class = "b", coef = "x1", prior = prior), 
                "  b ~ uniform(0,10); \n")
   
-  prior <- prior_frame(prior = c("uniform(0,10)", "normal(0,1)"), 
-                       class = "b", coef = c("", "x1"))
+  prior <- brmsprior(prior = c("uniform(0,10)", "normal(0,1)"), 
+                     class = "b", coef = c("", "x1"))
   expect_equal(stan_prior(class = "b", coef = c("x1","x2"), prior = prior),
                "  b[1] ~ normal(0,1); \n  b[2] ~ uniform(0,10); \n")
-  expect_equal(stan_prior("ar", prior = prior_frame("uniform(0,1)", class = "ar")),
+  expect_equal(stan_prior("ar", prior = brmsprior("uniform(0,1)", class = "ar")),
                "  ar ~ uniform(0,1); \n")
-  expect_equal(stan_prior("ma", prior = prior_frame("normal(0,5)", class = "ma")),
+  expect_equal(stan_prior("ma", prior = brmsprior("normal(0,5)", class = "ma")),
                "  ma ~ normal(0,5); \n")
   
-  prior <- prior_frame("lkj_corr_cholesky(2)", class = "rescor")
+  prior <- brmsprior("lkj_corr_cholesky(2)", class = "rescor")
   expect_equal(stan_prior("rescor", prior = prior),
                "  rescor ~ lkj_corr_cholesky(2); \n")
   
-  prior <- prior_frame("normal(0, 1)", class = "b")
+  prior <- brmsprior("normal(0, 1)", class = "b")
   expect_equal(stan_prior(class = "b", coef = c("x1", "x2"), suffix = "p", 
                           matrix = TRUE, prior = prior),
                "  to_vector(bp) ~ normal(0, 1); \n")
 })
 
 test_that("stan_prior returns the correct indices", {
-  prior <- prior_frame(prior = c("cauchy(0,5)", "normal(0,1)", "normal(0,1)"), 
-                       class = c("sd", "sd", "bp"), coef = c("", "x2", "z")) 
+  prior <- brmsprior(prior = c("cauchy(0,5)", "normal(0,1)", "normal(0,1)"), 
+                     class = c("sd", "sd", "bp"), coef = c("", "x2", "z")) 
   expect_equal(stan_prior(class = "sd", coef = "Intercept", prior = prior), 
                "  sd ~ cauchy(0,5); \n")
   expect_equal(stan_prior(class = "sd", coef = c("x1", "x2"), prior = prior), 
@@ -34,16 +34,16 @@ test_that("stan_prior returns the correct indices", {
 })
 
 test_that("stan_prior can remove default priors", {
-  prior <- prior_frame(prior = "", class = c("sigma", "sd", "shape"), 
-                       group = c("", "g", ""))
+  prior <- brmsprior(prior = "", class = c("sigma", "sd", "shape"), 
+                     group = c("", "g", ""))
   expect_equal(stan_prior("sigma", prior = prior), "")
   expect_equal(stan_prior("sd", group = "g", suffix = "_1", prior = prior), "")
   expect_equal(stan_prior("shape", prior = prior), "")
 })
 
 test_that("stan_prior passes increment_log_prob statements without changes", {
-  prior <- prior_frame(prior = c("increment_log_prob(a)", "increment_log_prob(b)"), 
-                       class = rep("", 2))
+  prior <- brmsprior(prior = c("increment_log_prob(a)", "increment_log_prob(b)"), 
+                     class = rep("", 2))
   expect_equal(stan_prior("", prior = prior),
                "  increment_log_prob(a); \n  increment_log_prob(b); \n")
 })
