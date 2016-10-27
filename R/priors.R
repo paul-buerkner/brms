@@ -1004,13 +1004,15 @@ print.brmsprior <- function(x, show_df, ...) {
 
 .print_prior <- function(x) {
   # prepare text for print.brmsprior
-  group <-  usc(x$group, "prefix")
-  coef <- usc(x$coef, "prefix")
-  nlpar <- usc(x$nlpar, "prefix")
+  group <-  usc(x$group)
+  nlpar <- usc(x$nlpar)
+  coef <- usc(x$coef)
+  nlpar <- ifelse(nchar(group), usc(nlpar), nlpar)
+  coef <- ifelse(nchar(group) & !nchar(nlpar), usc(coef), coef)
   bound <- ifelse(nchar(x$bound), paste0(x$bound, " "), "")
   tilde <- ifelse(nchar(x$class) + nchar(group) + nchar(coef), " ~ ", "")
   prior <- ifelse(nchar(x$prior), x$prior, "(no prior)")
-  paste0(bound, x$class, nlpar, group, coef, tilde, prior)
+  paste0(bound, x$class, group, nlpar, coef, tilde, prior)
 }
 
 #' @export

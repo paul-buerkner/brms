@@ -7,7 +7,7 @@
 pp_check(object, ...)
 }
 \arguments{
-\item{object}{an \code{R} object}
+\item{object}{an \R object}
 
 \item{...}{further arguments}
 }

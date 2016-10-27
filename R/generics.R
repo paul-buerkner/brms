@@ -581,7 +581,7 @@ expose_functions <- function(x, ...) {
 
 #' Temporary pp_check generic function
 #' 
-#' @param object an \code{R} object
+#' @param object an \R object
 #' @param ... further arguments
 #' 
 #' @details 
@@ -591,4 +591,31 @@ expose_functions <- function(x, ...) {
 pp_check <- function(object, ...) {
   # NOTE: remove as soon as the bayesplot package is on CRAN
   UseMethod("pp_check")
+}
+
+#' Extract priors of a Bayesian model
+#' 
+#' @param x An \R object
+#' @param all Logical; Show all parameters in the model which may have 
+#'   priors (\code{TRUE}) or only those with proper priors (\code{FALSE})?
+#' @param ... Further arguments passed to or from other methods.
+#' 
+#' @return For \code{brmsfit} objects, an object of class \code{brmsprior}.
+#' 
+#' @examples 
+#' \dontrun{
+#' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c  
+#'              + (1|patient) + (1|obs), 
+#'            data = epilepsy, family = poisson(), 
+#'            prior = c(prior(student_t(5,0,10), class = b),
+#'                      prior(cauchy(0,2), class = sd)))
+#'                    
+#' priors(fit)
+#' priors(fit, all = FALSE)
+#' print(priors(fit, all = FALSE), show_df = FALSE)
+#' }
+#' 
+#' @export
+priors <- function(x, ...) {
+  UseMethod("priors")
 }

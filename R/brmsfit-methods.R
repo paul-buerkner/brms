@@ -529,6 +529,17 @@ as.mcmc.brmsfit <- function(x, pars = NA, exact_match = FALSE,
   out
 }
 
+#' @rdname priors
+#' @export
+priors.brmsfit <- function(x, all = TRUE, ...) {
+  x <- restructure(x)
+  prior <- x$prior
+  if (!all) {
+    prior <- prior[nzchar(prior$prior), ]
+  }
+  prior
+}
+
 #' @rdname prior_samples
 #' @export
 prior_samples.brmsfit <- function(x, pars = NA, parameters = NA, ...) {
