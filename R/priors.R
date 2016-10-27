@@ -997,7 +997,7 @@ print.brmsprior <- function(x, show_df, ...) {
   if (show_df) {
     NextMethod()
   } else {
-    cat(paste(.print_prior(x), collapse = "\n")) 
+    cat(collapse(.print_prior(x), "\n"))
   }
   invisible(x)
 }

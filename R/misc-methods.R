@@ -26,6 +26,11 @@ print.brmssummary <- function(x, digits = 2, ...) {
                "         total post-warmup samples = ", final_samples, "\n"))
     cat(paste0("   WAIC: ", waic, "\n \n"))
     
+    if (nrow(x$prior)) {
+      cat("Priors: \n")
+      print(x$prior, show_df = FALSE)
+      cat("\n")
+    }
     if (length(x$splines)) {
       cat("Spline Effects: \n")
       if (x$algorithm == "sampling") {

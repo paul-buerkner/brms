@@ -600,7 +600,7 @@ prior_samples.brmsfit <- function(x, pars = NA, parameters = NA, ...) {
 #' 
 #' @export
 print.brmsfit <- function(x, digits = 2, ...) {
-  print(summary(x), digits = digits, ...)
+  print(summary(x, ...), digits = digits, ...)
 }  
 
 #' Create a summary of a fitted model represented by a \code{brmsfit} object
@@ -618,7 +618,7 @@ print.brmsfit <- function(x, digits = 2, ...) {
 #' 
 #' @method summary brmsfit
 #' @export
-summary.brmsfit <- function(object, waic = FALSE, ...) {
+summary.brmsfit <- function(object, waic = FALSE, priors = FALSE, ...) {
   object <- restructure(object)
   ee <- extract_effects(formula(object), family = family(object))
   out <- brmssummary(formula = formula(object), 
@@ -638,7 +638,12 @@ summary.brmsfit <- function(object, waic = FALSE, ...) {
     stan_args <- object$fit@stan_args[[1]]
     out$sampler <- paste0(stan_args$method, "(", stan_args$algorithm, ")")
     allow_waic <- !nrow(object$ranef) || any(grepl("^r_", parnames(object)))
-    if (waic && allow_waic) out$WAIC <- WAIC(object)$waic
+    if (waic && allow_waic) {
+      out$WAIC <- WAIC(object)$waic
+    }
+    if (priors) {
+      out$prior <- priors(object, all = FALSE)
+    }
     
     pars <- parnames(object)
     meta_pars <- object$fit@sim$pars_oi
