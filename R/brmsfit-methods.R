@@ -609,9 +609,11 @@ print.brmsfit <- function(x, digits = 2, ...) {
 #' results included in a \code{brmsfit} object.
 #'
 #' @param object An object of class \code{brmsfit}
-#' @param waic logical; indicating if the WAIC should be computed
+#' @param waic Logical; Indicating if the WAIC should be computed
 #'   (this will take some time for larger models). 
 #'   Default is \code{FALSE}.
+#' @param priors Logical; Indicating if priors should be included 
+#'   in the summary. Default is \code{FALSE}.
 #' @param ... Other potential arguments
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}

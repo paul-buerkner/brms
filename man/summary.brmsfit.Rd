@@ -9,9 +9,12 @@
 \arguments{
 \item{object}{An object of class \code{brmsfit}}
 
-\item{waic}{logical; indicating if the WAIC should be computed
+\item{waic}{Logical; Indicating if the WAIC should be computed
 (this will take some time for larger models). 
 Default is \code{FALSE}.}
+
+\item{priors}{Logical; Indicating if priors should be included 
+in the summary. Default is \code{FALSE}.}
 
 \item{...}{Other potential arguments}
 }

@@ -989,6 +989,14 @@ empty_brmsprior <- function() {
             nlpar = character(0), bound = character(0))
 }
 
+#' Print method for \code{brmsprior} objects
+#' 
+#' @param x An object of class \code{brmsprior}.
+#' @param show_df Logical; Print priors as a single 
+#'   \code{data.frame} (\code{TRUE}) or as a sequence of 
+#'   sampling statements (\code{FALSE})?
+#' @param ... Currently ignored.
+#' 
 #' @export
 print.brmsprior <- function(x, show_df, ...) {
   if (missing(show_df)) {
