@@ -81,12 +81,13 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 -->
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
-<p>In the present vignette, we want to discuss how to specify phylogenetic multilevel models using <strong>brms</strong>. These models are relevant in evolutionary biology when data of many species are analyzed at the same time. The usual approach would be to model species as a grouping factor in a multilevel model and estimate varying intercepts (and possibly also varying slopes) over species. However, species are not independent as they come from the same phylogenetic tree and we thus have to adjust our model to incoporate this dependence. The examples discussed here are from the book <em>Modern Phylogenetic Comparative Methods and the application in Evolutionary Biology</em> (Garamszegi, 2014) more specifically from the online practice material of Chapter 11. The necessary data can be downloaded from <a href="http://www.mpcm-evolution.org/practice/online-practical-material-chapter-11" class="uri">http://www.mpcm-evolution.org/practice/online-practical-material-chapter-11</a>. Some of these models may take a few minutes to fit.</p>
+<p>In the present vignette, we want to discuss how to specify phylogenetic multilevel models using <strong>brms</strong>. These models are relevant in evolutionary biology when data of many species are analyzed at the same time. The usual approach would be to model species as a grouping factor in a multilevel model and estimate varying intercepts (and possibly also varying slopes) over species. However, species are not independent as they come from the same phylogenetic tree and we thus have to adjust our model to incorporate this dependence. The examples discussed here are from the book <em>Modern Phylogenetic Comparative Methods and the application in Evolutionary Biology</em> (Garamszegi, 2014) more specifically from the online practice material of Chapter 11. The necessary data can be downloaded from <a href="http://www.mpcm-evolution.org/practice/online-practical-material-chapter-11" class="uri">http://www.mpcm-evolution.org/practice/online-practical-material-chapter-11</a>. Some of these models may take a few minutes to fit.</p>
 </div>
 <div id="a-simple-phylogenetic-model" class="section level2">
 <h2>A Simple Phylogenetic Model</h2>
 <p>Assume we have measurements of a phenotype <code>phen</code> (say the body size) and a <code>cofactor</code> variable (say the temperature of the environment). We prepare the data using the following code.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">setwd</span>(<span class="st">&quot;&lt;insert path to data folder here&gt;&quot;</span>)
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">setwd</span>(<span class="st">&quot;&lt;insert path here&gt;&quot;</span>)
+<span class="kw">library</span>(brms)
 <span class="kw">library</span>(ape)
 <span class="kw">library</span>(MCMCglmm)
 phylo &lt;-<span class="st"> </span>ape::<span class="kw">read.nexus</span>(<span class="st">&quot;phylo.nex&quot;</span>)
@@ -107,7 +108,7 @@ A &lt;-<span class="st"> </span><span class="kw">solve</span>(inv.phylo$Ainv)
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">summary</span>(model_simple)
 <span class="kw">plot</span>(model_simple)
 <span class="kw">plot</span>(<span class="kw">marginal_effects</span>(model_simple), <span class="dt">points =</span> <span class="ot">TRUE</span>) </code></pre></div>
-<p>The so called phylogenetic signal (often symbolize by <span class="math inline">\(\lambda\)</span>) can be computed as follows and will be roughly <span class="math inline">\(\lambda = 0.7\)</span> for this example.</p>
+<p>The so called phylogenetic signal (often symbolize by <span class="math inline">\(\lambda\)</span>) can be computed with the <code>hypothesis</code> method and is roughly <span class="math inline">\(\lambda = 0.7\)</span> for this example.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">hyp &lt;-<span class="st"> &quot;sd_phylo__Intercept^2 / (sd_phylo__Intercept^2 + sigma^2) = 0&quot;</span>
 (hyp &lt;-<span class="st"> </span><span class="kw">hypothesis</span>(model_simple, hyp, <span class="dt">class =</span> <span class="ot">NULL</span>))
 <span class="kw">plot</span>(hyp)</code></pre></div>
@@ -119,7 +120,7 @@ A &lt;-<span class="st"> </span><span class="kw">solve</span>(inv.phylo$Ainv)
 data_repeat$spec_mean_cf &lt;-<span class="st"> </span>
 <span class="st">  </span><span class="kw">with</span>(data_repeat, <span class="kw">sapply</span>(<span class="kw">split</span>(cofactor, phylo), mean)[phylo])
 <span class="kw">head</span>(data_repeat)</code></pre></div>
-<p>The variable <code>spec_mean_cf</code> just contains the mean of the cofactor of each species. The code for the repeated measurement phylogenetic model looks as follows:</p>
+<p>The variable <code>spec_mean_cf</code> just contains the mean of the cofactor for each species. The code for the repeated measurement phylogenetic model looks as follows:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model_repeat1 &lt;-<span class="st"> </span><span class="kw">brm</span>(phen ~<span class="st"> </span>spec_mean_cf +<span class="st"> </span>(<span class="dv">1</span>|phylo) +<span class="st"> </span>(<span class="dv">1</span>|species), 
                      <span class="dt">data =</span> data_repeat, <span class="dt">family =</span> <span class="kw">gaussian</span>(), 
                      <span class="dt">cov_ranef =</span> <span class="kw">list</span>(<span class="dt">phylo =</span> A),
@@ -163,7 +164,7 @@ data_repeat$spec_mean_cf &lt;-<span class="st"> </span>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">data_fisher &lt;-<span class="st"> </span><span class="kw">read.table</span>(<span class="st">&quot;data_effect.txt&quot;</span>, <span class="dt">header =</span> <span class="ot">TRUE</span>)
 data_fisher$obs &lt;-<span class="st"> </span><span class="dv">1</span>:<span class="kw">nrow</span>(data_fisher)
 <span class="kw">head</span>(data_fisher)</code></pre></div>
-<p>We assume the sampling variance to be known and as <span class="math inline">\(V(Zr) = \frac{1}{N - 3}\)</span> for Fisher’s values, where <span class="math inline">\(N\)</span> is the number of individuals per species. Incorporating the known sampling variance into the model is straight forward. One has to keep in mind though, that <strong>brms</strong> requires the sampling standard deviation (square root of the variance) as input instead of the variance itself. The group-level effect of <code>obs</code> represents the residual variance, which we have to model explicitly in a meta-analytic model.</p>
+<p>We assume the sampling variance to be known and as <span class="math inline">\(V(Zr) = \frac{1}{N - 3}\)</span> for Fisher’s values, where <span class="math inline">\(N\)</span> is the sample size per species. Incorporating the known sampling variance into the model is straight forward. One has to keep in mind though, that <strong>brms</strong> requires the sampling standard deviation (square root of the variance) as input instead of the variance itself. The group-level effect of <code>obs</code> represents the residual variance, which we have to model explicitly in a meta-analytic model.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model_fisher &lt;-<span class="st"> </span><span class="kw">brm</span>(Zr |<span class="st"> </span><span class="kw">se</span>(<span class="kw">sqrt</span>(<span class="dv">1</span> /<span class="st"> </span>(N -<span class="st"> </span><span class="dv">3</span>))) ~<span class="st"> </span><span class="dv">1</span> +<span class="st"> </span>(<span class="dv">1</span>|phylo) +<span class="st"> </span>(<span class="dv">1</span>|obs), 
                     <span class="dt">data =</span> data_fisher, <span class="dt">family =</span> <span class="kw">gaussian</span>(), 
                     <span class="dt">cov_ranef =</span> <span class="kw">list</span>(<span class="dt">phylo =</span> A),
@@ -178,23 +179,41 @@ data_fisher$obs &lt;-<span class="st"> </span><span class="dv">1</span>:<span cl
 </div>
 <div id="a-phylogenetic-count-data-model" class="section level2">
 <h2>A phylogenetic count-data model</h2>
-<p>Suppose that we analyze a phenotype that consists of counts instead of being continuous. In such a case, the assumption of a normal distribution will likely not be justified and it is recommended to use a distribution explicitely suited for count data, such as the Poisson distribution. The following data set provides an example.</p>
+<p>Suppose that we analyze a phenotype that consists of counts instead of being a continuous variable. In such a case, the normality assumption will likely not be justified and it is recommended to use a distribution explicitely suited for count data, for instance the Poisson distribution. The following data set provides an example.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">data_pois &lt;-<span class="st"> </span><span class="kw">read.table</span>(<span class="st">&quot;data_pois.txt&quot;</span>, <span class="dt">header =</span> <span class="ot">TRUE</span>)
 data_pois$obs &lt;-<span class="st"> </span><span class="dv">1</span>:<span class="kw">nrow</span>(data_pois)
 <span class="kw">head</span>(data_pois)</code></pre></div>
-<p>Here, we fit the same simple phylogenetic model as in the first example, but specify <code>family = poisson()</code>.</p>
+<p>As the poisson distribution does not have a natural overdispersion parameter, we model the residual variance via the group-level effects of <code>obs</code>.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model_pois &lt;-<span class="st"> </span><span class="kw">brm</span>(phen_pois ~<span class="st"> </span>cofactor +<span class="st"> </span>(<span class="dv">1</span>|phylo) +<span class="st"> </span>(<span class="dv">1</span>|obs), 
                   <span class="dt">data =</span> data_pois, <span class="dt">family =</span> <span class="kw">poisson</span>(<span class="st">&quot;log&quot;</span>), 
                   <span class="dt">cov_ranef =</span> <span class="kw">list</span>(<span class="dt">phylo =</span> A),
-                  <span class="dt">prior =</span> <span class="kw">c</span>(<span class="kw">set_prior</span>(<span class="st">&quot;normal(0,5)&quot;</span>),
-                            <span class="kw">set_prior</span>(<span class="st">&quot;normal(0,5)&quot;</span>, <span class="st">&quot;Intercept&quot;</span>),
-                            <span class="kw">set_prior</span>(<span class="st">&quot;student_t(3,0,5)&quot;</span>, <span class="st">&quot;sd&quot;</span>)),
-                  <span class="dt">chains =</span> <span class="dv">2</span>, <span class="dt">cores =</span> <span class="dv">2</span>, <span class="dt">iter =</span> <span class="dv">4000</span>, <span class="dt">warmup =</span> <span class="dv">1000</span>)</code></pre></div>
+                  <span class="dt">chains =</span> <span class="dv">2</span>, <span class="dt">cores =</span> <span class="dv">2</span>, <span class="dt">iter =</span> <span class="dv">4000</span>,
+                  <span class="dt">control =</span> <span class="kw">list</span>(<span class="dt">adapt_delta =</span> <span class="fl">0.95</span>))</code></pre></div>
 <p>Again, we obtain a summary of the fitted model via</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">summary</span>(model_pois)
 <span class="kw">plot</span>(model_pois)
 <span class="kw">plot</span>(<span class="kw">marginal_effects</span>(model_pois), <span class="dt">points =</span> <span class="ot">TRUE</span>) </code></pre></div>
-<p>Similar to the first example, we see that <code>cofactor</code> has a positive relationship with the phenotype. One should note, however, that the estimates of the poisson model are on the log-scale as we applied the canonical log-link function in this example.</p>
+<p>Assume, we ignore the fact that the phenotype is count data and fit a linear normal model instead.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">model_normal &lt;-<span class="st"> </span><span class="kw">brm</span>(phen_pois ~<span class="st"> </span>cofactor +<span class="st"> </span>(<span class="dv">1</span>|phylo), 
+                    <span class="dt">data =</span> data_pois, <span class="dt">family =</span> <span class="kw">gaussian</span>(), 
+                    <span class="dt">cov_ranef =</span> <span class="kw">list</span>(<span class="dt">phylo =</span> A),
+                    <span class="dt">chains =</span> <span class="dv">2</span>, <span class="dt">cores =</span> <span class="dv">2</span>, <span class="dt">iter =</span> <span class="dv">4000</span>,
+                    <span class="dt">control =</span> <span class="kw">list</span>(<span class="dt">adapt_delta =</span> <span class="fl">0.95</span>))
+<span class="kw">summary</span>(model_normal)</code></pre></div>
+<p>We see that <code>cofactor</code> has a positive relationship with the phenotype in both models. One should keep in mind though, that the estimates of the Poisson model are on the log-scale, as we applied the canonical log-link function in this example. Therefore, estimates are not comparable to a linear normal model even if applied to the same data. What we can compare, however, is the model fit, for instance graphically via posterior predictive checks.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">pp_check</span>(model_pois)
+<span class="kw">pp_check</span>(model_normal)</code></pre></div>
+<p>Apparently, the distribution of the phenotype prediced by the Poisson model resembles the original distribution of the phenotype pretty closely, but the normal models fails to do so. We can also apply leave-one-out cross-validation for direct numerical comparison of model fit.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">LOO</span>(model_pois, model_normal)</code></pre></div>
+<p>Since smaller values of LOO indicate better fit, it is again evident that the poisson model fits the data better than the normal model.</p>
+</div>
+<div id="phylogenetic-models-with-multiple-group-level-effects" class="section level2">
+<h2>Phylogenetic models with multiple group-level effects</h2>
+<p>In the above examples, we have only used a single group-level effect (i.e., a varying intercept) for the phylogenetic grouping factors. In <strong>brms</strong> it is also possible to estimate multiple group-level effects (e.g., a varying intercept and a varying slope) for these grouping factors. However, it requires repeatedly computing Kronecker products and Cholesky factors of covariance matrices while fitting the model. This will be very slow especially when the grouping factors have many levels and matrices are thus large. I hope to increase efficiency for such models in the future.</p>
+</div>
+<div id="references" class="section level2">
+<h2>References</h2>
+<p>Garamszegi, L. Z. (2014). <em>Modern Phylogenetic Comparative Methods and the application in Evolutionary Biology</em>. London, UK: Springer.</p>
 </div>
 
 

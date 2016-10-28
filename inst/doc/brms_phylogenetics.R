@@ -1,12 +1,10 @@
 ## ---- SETTINGS-knitr, include=FALSE--------------------------------------
 stopifnot(require(knitr))
-opts_chunk$set(
-  eval = FALSE,
-  fig.align='center', fig.width = 7, fig.height = 3
-)
+opts_chunk$set(eval = FALSE)
 
 ## ------------------------------------------------------------------------
-#  setwd("<insert path to data folder here>")
+#  setwd("<insert path here>")
+#  library(brms)
 #  library(ape)
 #  library(MCMCglmm)
 #  phylo <- ape::read.nexus("phylo.nex")
@@ -114,13 +112,26 @@ opts_chunk$set(
 #  model_pois <- brm(phen_pois ~ cofactor + (1|phylo) + (1|obs),
 #                    data = data_pois, family = poisson("log"),
 #                    cov_ranef = list(phylo = A),
-#                    prior = c(set_prior("normal(0,5)"),
-#                              set_prior("normal(0,5)", "Intercept"),
-#                              set_prior("student_t(3,0,5)", "sd")),
-#                    chains = 2, cores = 2, iter = 4000, warmup = 1000)
+#                    chains = 2, cores = 2, iter = 4000,
+#                    control = list(adapt_delta = 0.95))
 
 ## ------------------------------------------------------------------------
 #  summary(model_pois)
 #  plot(model_pois)
 #  plot(marginal_effects(model_pois), points = TRUE)
+
+## ------------------------------------------------------------------------
+#  model_normal <- brm(phen_pois ~ cofactor + (1|phylo),
+#                      data = data_pois, family = gaussian(),
+#                      cov_ranef = list(phylo = A),
+#                      chains = 2, cores = 2, iter = 4000,
+#                      control = list(adapt_delta = 0.95))
+#  summary(model_normal)
+
+## ------------------------------------------------------------------------
+#  pp_check(model_pois)
+#  pp_check(model_normal)
+
+## ------------------------------------------------------------------------
+#  LOO(model_pois, model_normal)
 

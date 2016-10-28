@@ -13,15 +13,12 @@ output: rmarkdown::html_vignette
 
 ```{r, SETTINGS-knitr, include=FALSE}
 stopifnot(require(knitr))
-opts_chunk$set(
-  eval = FALSE,
-  fig.align='center', fig.width = 7, fig.height = 3
-)
+opts_chunk$set(eval = FALSE)
 ```
 
 ## Introduction
 
-In the present vignette, we want to discuss how to specify phylogenetic multilevel models using **brms**. These models are relevant in evolutionary biology when data of many species are analyzed at the same time. The usual approach would be to model species as a grouping factor in a multilevel model and estimate varying intercepts (and possibly also varying slopes) over species. However, species are not independent as they come from the same phylogenetic tree and we thus have to adjust our model to incoporate this dependence. The examples discussed here are from the book *Modern Phylogenetic Comparative Methods and the application in Evolutionary Biology* (Garamszegi, 2014) more specifically from the online practice material of Chapter 11. The necessary data can be downloaded from  http://www.mpcm-evolution.org/practice/online-practical-material-chapter-11. Some of these models may take a few minutes to fit.
+In the present vignette, we want to discuss how to specify phylogenetic multilevel models using **brms**. These models are relevant in evolutionary biology when data of many species are analyzed at the same time. The usual approach would be to model species as a grouping factor in a multilevel model and estimate varying intercepts (and possibly also varying slopes) over species. However, species are not independent as they come from the same phylogenetic tree and we thus have to adjust our model to incorporate this dependence. The examples discussed here are from the book *Modern Phylogenetic Comparative Methods and the application in Evolutionary Biology* (Garamszegi, 2014) more specifically from the online practice material of Chapter 11. The necessary data can be downloaded from  http://www.mpcm-evolution.org/practice/online-practical-material-chapter-11. Some of these models may take a few minutes to fit.
 
 
 ## A Simple Phylogenetic Model
@@ -30,7 +27,8 @@ Assume we have measurements of a phenotype `phen` (say the body size) and a `cof
 
 
 ```{r}
-setwd("<insert path to data folder here>")
+setwd("<insert path here>")
+library(brms)
 library(ape)
 library(MCMCglmm)
 phylo <- ape::read.nexus("phylo.nex")
@@ -65,7 +63,7 @@ plot(model_simple)
 plot(marginal_effects(model_simple), points = TRUE) 
 ```
 
-The so called phylogenetic signal (often symbolize by $\lambda$) can be computed as follows and will be roughly $\lambda = 0.7$ for this example.
+The so called phylogenetic signal (often symbolize by $\lambda$) can be computed with the `hypothesis` method and is roughly $\lambda = 0.7$ for this example.
 
 ```{r}
 hyp <- "sd_phylo__Intercept^2 / (sd_phylo__Intercept^2 + sigma^2) = 0"
@@ -85,7 +83,7 @@ data_repeat$spec_mean_cf <-
 head(data_repeat)
 ```
 
-The variable `spec_mean_cf` just contains the mean of the cofactor of each species. The code for the repeated measurement phylogenetic model looks as follows:
+The variable `spec_mean_cf` just contains the mean of the cofactor for each species. The code for the repeated measurement phylogenetic model looks as follows:
 
 ```{r}
 model_repeat1 <- brm(phen ~ spec_mean_cf + (1|phylo) + (1|species), 
@@ -160,7 +158,7 @@ data_fisher$obs <- 1:nrow(data_fisher)
 head(data_fisher)
 ```
 
-We assume the sampling variance to be known and as $V(Zr) = \frac{1}{N - 3}$ for Fisher's values, where $N$ is the number of individuals per species. Incorporating the known sampling variance into the model is straight forward. One has to keep in mind though, that **brms** requires the sampling standard deviation (square root of the variance) as input instead of the variance itself. The group-level effect of `obs` represents the residual variance, which we have to model explicitly in a meta-analytic model.
+We assume the sampling variance to be known and as $V(Zr) = \frac{1}{N - 3}$ for Fisher's values, where $N$ is the sample size per species. Incorporating the known sampling variance into the model is straight forward. One has to keep in mind though, that **brms** requires the sampling standard deviation (square root of the variance) as input instead of the variance itself. The group-level effect of `obs` represents the residual variance, which we have to model explicitly in a meta-analytic model.
 
 ```{r}
 model_fisher <- brm(Zr | se(sqrt(1 / (N - 3))) ~ 1 + (1|phylo) + (1|obs), 
@@ -184,7 +182,7 @@ The meta-analytic mean (i.e., the model intercept) is $0.16$ with a credible int
 
 ## A phylogenetic count-data model
 
-Suppose that we analyze a phenotype that consists of counts instead of being continuous. In such a case, the assumption of a normal distribution will likely not be justified and it is recommended to use a distribution explicitely suited for count data, such as the Poisson distribution. The following data set provides an example.
+Suppose that we analyze a phenotype that consists of counts instead of being a continuous variable. In such a case, the normality assumption will likely not be justified and it is recommended to use a distribution explicitely suited for count data, for instance the Poisson distribution. The following data set provides an example.
 
 ```{r}
 data_pois <- read.table("data_pois.txt", header = TRUE)
@@ -192,16 +190,14 @@ data_pois$obs <- 1:nrow(data_pois)
 head(data_pois)
 ```
 
-Here, we fit the same simple phylogenetic model as in the first example, but specify `family = poisson()`.
+As the poisson distribution does not have a natural overdispersion parameter, we model the residual variance via the group-level effects of `obs`.
 
 ```{r}
 model_pois <- brm(phen_pois ~ cofactor + (1|phylo) + (1|obs), 
                   data = data_pois, family = poisson("log"), 
                   cov_ranef = list(phylo = A),
-                  prior = c(set_prior("normal(0,5)"),
-                            set_prior("normal(0,5)", "Intercept"),
-                            set_prior("student_t(3,0,5)", "sd")),
-                  chains = 2, cores = 2, iter = 4000, warmup = 1000)
+                  chains = 2, cores = 2, iter = 4000,
+                  control = list(adapt_delta = 0.95))
 ```
 
 Again, we obtain a summary of the fitted model via
@@ -212,4 +208,37 @@ plot(model_pois)
 plot(marginal_effects(model_pois), points = TRUE) 
 ```
 
-Similar to the first example, we see that `cofactor` has a positive relationship with the phenotype. One should note, however, that the estimates of the poisson model are on the log-scale as we applied the canonical log-link function in this example.
+Assume, we ignore the fact that the phenotype is count data and fit a linear normal model instead.
+
+```{r}
+model_normal <- brm(phen_pois ~ cofactor + (1|phylo), 
+                    data = data_pois, family = gaussian(), 
+                    cov_ranef = list(phylo = A),
+                    chains = 2, cores = 2, iter = 4000,
+                    control = list(adapt_delta = 0.95))
+summary(model_normal)
+```
+
+We see that `cofactor` has a positive relationship with the phenotype in both models. One should keep in mind though, that the estimates of the Poisson model are on the log-scale, as we applied the canonical log-link function in this example. Therefore, estimates are not comparable to a linear normal model even if applied to the same data. What we can compare, however, is the model fit, for instance graphically via posterior predictive checks.
+
+```{r}
+pp_check(model_pois)
+pp_check(model_normal)
+```
+
+Apparently, the distribution of the phenotype prediced by the Poisson model resembles the original distribution of the phenotype pretty closely, but the normal models fails to do so. We can also apply leave-one-out cross-validation for direct numerical comparison of model fit.
+
+```{r}
+LOO(model_pois, model_normal)
+```
+
+Since smaller values of LOO indicate better fit, it is again evident that the poisson model fits the data better than the normal model.
+
+## Phylogenetic models with multiple group-level effects
+
+In the above examples, we have only used a single group-level effect (i.e., a varying intercept) for the phylogenetic grouping factors. In **brms** it is also possible to estimate multiple group-level effects (e.g., a varying intercept and a varying slope) for these grouping factors. However, it requires repeatedly computing Kronecker products and Cholesky factors of covariance matrices while fitting the model. This will be very slow especially when the grouping factors have many levels and matrices are thus large. I hope to increase efficiency for such models in the future.
+
+
+## References
+
+Garamszegi, L. Z. (2014). *Modern Phylogenetic Comparative Methods and the application in Evolutionary Biology*. London, UK: Springer.
