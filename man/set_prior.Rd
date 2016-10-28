@@ -201,6 +201,10 @@ Define priors for specific parameters or classes of parameters
   \code{cor_(group)}, (e.g., \code{cor_g} if \code{g} is the grouping factor).
   To set the same prior on every correlation matrix, 
   use for instance \code{set_prior("lkj(2)", class = "cor")}.
+  Internally, the priors are transformed to be put on the Cholesky factors
+  of the correlation matrices to improve efficiency and numerical stability.
+  The corresponding parameter class of the Cholesky factors is \code{L},
+  but it is not recommended to specify priors for this parameter class directly.
   
   4. Standard deviations of smoothing terms
   
