@@ -3,14 +3,39 @@
 \encoding{UTF-8}
 
 \section{CHANGES IN VERSION 1.1.0++}{
+  \subsection{NEW FEATURES}{
+    \itemize{
+      \item Add functions \code{prior} and \code{prior_string}
+      as aliases of \code{set_prior}, the former 
+      allowing to pass arguments without quotes \code{""}
+      using non-standard evaluation.
+      \item Add a vignette explaining how to fit
+      phylogenetic multilevel models with \pkg{brms}.
+      \item Extend the \code{coef} method to better 
+      handle category specific group-level effects.
+    }
+  }
+  \subsection{OTHER CHANGES}{
+    \itemize{
+      \item Improve documentation of default priors.
+      \item Refactor internal structure of some 
+      formula and prior evaluating functions. 
+      This should not have any user visible effects.
+    }
+  }
   \subsection{BUG FIXES}{
     \itemize{ 
+      \item Better mimic \pkg{mgcv} when parsing smooth terms
+      to make sure all arguments are correctly handled.
       \item Avoid an error occuring during the prediction 
       of new data when grouping factors with only a single 
       factor level were supplied thanks to Tom Wallis.
       \item Fix \code{marginal_effects} to consistently 
       produce plots for all covariates in non-linear models 
       thanks to David Auty.
+      \item Improve the \code{update} method to better recognize
+      situations where recompliation of the \pkg{Stan} code
+      is necessary thanks to Raphael P.H.
     }
   }
 }
