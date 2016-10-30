@@ -194,7 +194,8 @@ fix_factor_contrasts <- function(data, optdata = NULL) {
       if (!is.null(attr(optdata[[names(data)[i]]], "contrasts"))) {
         # take contrasts from optdata
         contrasts(data[[i]]) <- attr(optdata[[names(data)[i]]], "contrasts")
-      } else {
+      } else if (length(unique(data[[i]])) > 1L) {
+        # avoid error when supplying only a single level
         # hard code current global "contrasts" option
         contrasts(data[[i]]) <- contrasts(data[[i]])
       }
@@ -342,9 +343,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       newdata[, unused_vars] <- NA
     }
   } else {
-    warning(paste("Validity of factors cannot be checked for", 
-                  "fitted model objects created with brms <= 0.5.0"),
-            call. = FALSE)
+    warning2("Validity of factors cannot be checked for ", 
+             "fitted model objects created with brms <= 0.5.0")
   }
   # validate grouping factors
   gnames <- unique(new_ranef$group)
@@ -358,11 +358,6 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       stop2("Levels ", unknown_levels, " of grouping factor '", 
             gnames[i], "' cannot be not found in the fitted model. ",
             "Consider setting argument 'allow_new_levels' to TRUE.")
-    }
-    if (is.factor(model.frame(fit)[[gnames[i]]])) {
-      # avoids an error in factor() when supplying only a single level
-      all_levels <- union(old_levels[[i]], new_levels)
-      newdata[[gnames[i]]] <- factor(newdata[[gnames[i]]], all_levels)   
     }
   }
   if (return_standata) {
@@ -712,7 +707,7 @@ data_group <- function(ranef, data, cov_ranef = NULL, old_levels = NULL) {
                      nranef * (nranef - 1) / 2)  # number of cors
   if (length(old_levels)) {
     # for newdata numeration has to depend on the original levels
-    expr[1] <- expression(ulapply(get(g, data), match, old_levels[[g]]))
+    expr[1] <- expression(match(get(g, data), old_levels[[g]]))
   }
   out <- list()
   ids <- unique(ranef$id)
