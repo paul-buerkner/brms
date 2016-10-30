@@ -246,11 +246,11 @@ test_that("make_standata handles covariance matrices correctly", {
   B <- diag(1, 4)
   expect_error(make_standata(count ~ Trt_c + (1|visit), data = epilepsy,
                              cov_ranef = list(visit = B)),
-               "rownames are required")
+               "Row names are required")
   B <- structure(diag(1, 4), dimnames = list(2:5, NULL))
   expect_error(make_standata(count ~ Trt_c + (1|visit), data = epilepsy,
                              cov_ranef = list(visit = B)),
-               "rownames .* do not match")
+               "Row names .* do not match")
   B <- structure(diag(1:5), dimnames = list(c(1,5,2,4,3), NULL))
   expect_equivalent(make_standata(count ~ Trt_c + (1|visit), data = epilepsy,
                              cov_ranef = list(visit = B))$Lcov_1,
@@ -311,7 +311,7 @@ test_that("make_standata correctly prepares data for monotonic effects", {
   
   prior <- c(set_prior("dirichlet(c(1,0.5,2))", class = "simplex", coef = "x2"))
   expect_error(make_standata(y ~ monotonic(x1 + x2), data = data, prior = prior),
-               "Invalid dirichlet prior for the simplex of x2", fixed = TRUE)
+               "Invalid dirichlet prior for the simplex of 'x2'", fixed = TRUE)
 })
 
 test_that("make_standata returns fixed residual covariance matrices", {

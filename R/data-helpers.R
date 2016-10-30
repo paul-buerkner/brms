@@ -344,7 +344,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     }
   } else {
     warning2("Validity of factors cannot be checked for ", 
-             "fitted model objects created with brms <= 0.5.0")
+             "fitted model objects created with brms <= 0.5.0.")
   }
   # validate grouping factors
   gnames <- unique(new_ranef$group)
@@ -444,20 +444,18 @@ prepare_mono_vars <- function(formula, data, check = TRUE) {
       }
       data[[vars[i]]] <- data[[vars[i]]] - min_value
     } else {
-      stop(paste("monotonic predictors must be either integers or",
-                 "ordered factors. Error occured for variable", vars[i]), 
-           call. = FALSE)
+      stop2("Monotonic predictors must be either integers or ",
+            "ordered factors. Error occured for variable '", 
+            vars[i], "'.")
     }
     if (check && max(data[[vars[i]]]) < 2L) {
-      stop(paste("monotonic predictors must have at least 3 different", 
-                 "values. Error occured for variable", vars[i]),
-           call. = FALSE)
+      stop2("Monotonic predictors must have at least 3 different ", 
+            "values. Error occured for variable '", vars[i], "'.")
     }
   }
   out <- get_model_matrix(formula, data, cols2remove = "Intercept")
   if (any(grepl(":", colnames(out), fixed = TRUE))) {
-    stop("Modeling interactions as monotonic ", 
-         "is not meaningful.", call. = FALSE)
+    stop2("Modeling interactions as monotonic is not meaningful.")
   }
   out
 }
@@ -640,10 +638,9 @@ data_monef <- function(effects, data, ranef = empty_ranef(),
       if (isTRUE(nchar(sprior) > 0L)) {
         sprior <- eval2(sprior)
         if (length(sprior) != Jm[i]) {
-          stop(paste0("Invalid dirichlet prior for the simplex of ", 
-                      monef[i], ". Expected input of length ", Jm[i], 
-                      " but found ", paste(sprior, collapse = ",")),
-               call. = FALSE)
+          stop2("Invalid dirichlet prior for the simplex of '", 
+                monef[i], "'. Expected input of length ", Jm[i], 
+                " but found ", paste(sprior, collapse = ","))
         }
         out[[paste0("con_simplex", p, "_", i)]] <- sprior
       } else {
@@ -722,27 +719,25 @@ data_group <- function(ranef, data, cov_ranef = NULL, old_levels = NULL) {
     if (g %in% names(cov_ranef)) {
       cov_mat <- as.matrix(cov_ranef[[g]])
       if (!isSymmetric(unname(cov_mat))) {
-        stop(paste("covariance matrix of grouping factor", g, 
-                   "is not symmetric"), call. = FALSE)
+        stop2("Covariance matrix of grouping factor '", g,
+              "' is not symmetric.")
       }
       found_level_names <- rownames(cov_mat)
       if (is.null(found_level_names)) {
-        stop(paste("rownames are required for covariance matrix of", g),
-             call. = FALSE)
+        stop2("Row names are required for covariance matrix of '", g, "'.")
       }
       colnames(cov_mat) <- found_level_names
       true_level_names <- levels(factor(get(g, data)))
       found <- true_level_names %in% found_level_names
       if (any(!found)) {
-        stop(paste("rownames of covariance matrix of", g, 
-                   "do not match names of the grouping levels"),
-             call. = FALSE)
+        stop2("Row names of covariance matrix of '", g, 
+              "' do not match names of the grouping levels.")
       }
       cov_mat <- cov_mat[true_level_names, true_level_names, drop = FALSE]
       evs <- eigen(cov_mat, symmetric = TRUE, only.values = TRUE)$values
       if (min(evs) <= 0) {
-        stop("Covariance matrix of grouping factor '", g, 
-             "' is not positive definite.", call. = FALSE)
+        stop2("Covariance matrix of grouping factor '", g, 
+              "' is not positive definite.")
       }
       out <- c(out, setNames(list(t(chol(cov_mat))), paste0("Lcov_", id)))
     }
