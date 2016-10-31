@@ -4,7 +4,8 @@
 \alias{summary.brmsfit}
 \title{Create a summary of a fitted model represented by a \code{brmsfit} object}
 \usage{
-\method{summary}{brmsfit}(object, waic = FALSE, priors = FALSE, ...)
+\method{summary}{brmsfit}(object, waic = FALSE, priors = FALSE,
+  use_cache = TRUE, ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}}
@@ -15,6 +16,13 @@ Default is \code{FALSE}.}
 
 \item{priors}{Logical; Indicating if priors should be included 
 in the summary. Default is \code{FALSE}.}
+
+\item{use_cache}{Logical; Indicating if summary results should
+be cached for future use by \pkg{rstan}. Defaults to \code{TRUE}.
+For models fitted with earlier versions of \pkg{brms},
+it may be necessary to set \code{use_cache} to
+\code{FALSE} in order to get the \code{summary} 
+method working correctly.}
 
 \item{...}{Other potential arguments}
 }

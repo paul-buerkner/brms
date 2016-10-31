@@ -614,13 +614,20 @@ print.brmsfit <- function(x, digits = 2, ...) {
 #'   Default is \code{FALSE}.
 #' @param priors Logical; Indicating if priors should be included 
 #'   in the summary. Default is \code{FALSE}.
+#' @param use_cache Logical; Indicating if summary results should
+#'   be cached for future use by \pkg{rstan}. Defaults to \code{TRUE}.
+#'   For models fitted with earlier versions of \pkg{brms},
+#'   it may be necessary to set \code{use_cache} to
+#'   \code{FALSE} in order to get the \code{summary} 
+#'   method working correctly.
 #' @param ... Other potential arguments
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
 #' @method summary brmsfit
 #' @export
-summary.brmsfit <- function(object, waic = FALSE, priors = FALSE, ...) {
+summary.brmsfit <- function(object, waic = FALSE, priors = FALSE,
+                            use_cache = TRUE, ...) {
   object <- restructure(object)
   ee <- extract_effects(formula(object), family = family(object))
   out <- brmssummary(formula = formula(object), 
@@ -652,7 +659,8 @@ summary.brmsfit <- function(object, waic = FALSE, priors = FALSE, ...) {
     meta_pars <- meta_pars[!apply(sapply(paste0("^", c("r_", "prior_")), 
                                   grepl, x = meta_pars, ...), 1, any)]
     fit_summary <- rstan::summary(object$fit, pars = meta_pars,
-                                  probs = c(0.025, 0.975))$summary
+                                  probs = c(0.025, 0.975),
+                                  use_cache = use_cache)$summary
     algorithm <- algorithm(object)
     if (algorithm == "sampling") {
       fit_summary <- fit_summary[, -2]
