@@ -117,14 +117,24 @@ test_that("check_prior correctly validates priors for category specific effects"
 })
 
 test_that("check_prior correctly validates priors for monotonic effects", {
-  data <- data.frame(y = rpois(100, 10), x = rep(1:4, 25))
+  data <- data.frame(y = rpois(100, 10), x = rep(1:4, 25), 
+                     z = factor(rep(1:4, 25), ordered = TRUE))
   prior <- c(set_prior("normal(0,1)", class = "b", coef = "x"),
-             set_prior("dirichlet(c(1,0.5,2))", class = "simplex", coef = "x"))
-  cp <- check_prior(prior, formula = bf(y ~ monotonic(x)), data = data,
-                    family = poisson())
+             set_prior("dirichlet(c(1,0.5,2))", "simplex", coef = "x"),
+             set_prior("dirichlet(c(1,0.5,2))", "simplex", coef = "z"))
+  
+  cp <- check_prior(prior, formula = bf(y ~ monotonic(x)), 
+                    data = data, family = poisson())
   target <- brmsprior(prior = c("normal(0,1)", "dirichlet(c(1,0.5,2))"),
-                        class = c("b", "simplex"), coef = c("x", "x"))
+                      class = c("b", "simplex"), coef = c("x", "x"))
   expect_equivalent(cp[2:3, ], target)
+  
+  cp <- check_prior(prior, formula = bf(y ~ monotonic(z)), 
+                    data = data, family = poisson())
+  target <- brmsprior(prior = "dirichlet(c(1,0.5,2))", 
+                      class = "simplex", coef = "z")
+  expect_equivalent(cp[3, ], target)
+  
   expect_error(check_prior(set_prior("beta(1,1)", class = "simplex", coef = "x"), 
                            formula = bf(y ~ monotonic(x)), data = data),
                "'dirichlet' is the only valid prior for simplex parameters")

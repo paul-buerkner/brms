@@ -555,15 +555,15 @@ get_prior_effects <- function(effects, data, autocor = cor_arma(),
   # wrapper function to get priors for various kinds of effects
   # don't use the family argument here to avoid
   # removal of the intercept for ordinal models
+  # group-level priors are prepared separately
   # Args:
   #   spec_intercept: special parameter class for the FE Intercept? 
   fixef <- colnames(data_fixef(effects, data, autocor = autocor)$X)
   spec_intercept <- has_intercept(effects$fixed) && spec_intercept
   prior_fixef <- get_prior_fixef(fixef, spec_intercept = spec_intercept,
                                  nlpar = nlpar, internal = internal)
-  monef <- colnames(get_model_matrix(effects$mono, data))
+  monef <- all_terms(effects$mono)
   prior_monef <- get_prior_monef(monef, fixef = fixef, nlpar = nlpar)
-  # group-level priors are prepared separately
   splines <- get_spline_labels(effects)
   prior_splines <- get_prior_splines(splines, def_scale_prior, nlpar = nlpar)
   csef <- colnames(get_model_matrix(effects$cse, data = data))
