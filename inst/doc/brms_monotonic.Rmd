@@ -1,0 +1,122 @@
+---
+title: "Estimating Monotonic Effects with brms"
+author: "Paul Bürkner"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+---
+
+<!--
+%\VignetteEngine{knitr::rmarkdown}
+%\VignetteIndexEntry{Estimate monotonic effects with brms}
+%\VignetteEncoding{UTF-8}
+-->
+
+```{r, SETTINGS-knitr, include=FALSE}
+stopifnot(require(knitr))
+opts_chunk$set(eval = FALSE)
+```
+
+## Introduction
+
+This vignette is about monotonic effects, a special way of handling discrete predictors that are at least on an ordinal scale. The idea was brought to me by   Emmanuel Charpentier, who deserves full credit for it. A predictor, which we want to model as monotonic, must either be integer valued or an ordered factor. As opposed to a continuous predictor, predictor categories (or integers) are not assumend to be equidistant with respect to their effect on the response variable. Instead, the distance between adjacent predictor categories (or integers) is estimated from the data and may vary across categories. This is realized by parameterizing as follows: One parameter, $b$, takes care of the direction and size of the effect similar to an ordinary regression parameter, while an additional parameter vector, $\zeta$, estimates the normalized distances between consecutive predictor categories. For a single monotonic predictor, $x$, the linear predictor term of observation $n$ looks as follows:
+
+$$\eta_n = b \sum_{i = 1}^{x_n} \zeta_i$$
+
+The parameter $b$ can take on any real value, while $\zeta$ is a simplex, which means that is it satisfies $\zeta_i \in [0,1]$ and $\sum_{i = 1}^K \zeta_i = 1$ with $K$ being the number of categories (or highest integer in the data).
+
+## A Simple Monotonic Model
+
+A main application of monotonic effects are ordinal predictors that can this way be modeled without falsely treating them either as continuous or as unordered categorical predictors. As an example, suppose we are interested in the relationship of yearly income (in $) and life satisfaction measured on an arbitrary scale from 0 to 100. Usually, people are not asked for the exact income, since they may hesitate to answer. Instead, they are asked to rank themselves in one of certain classes, say: 'below 20k', 'between 20k and 40k', 'between 40k and 100k' and 'above 100k'. We use some simulated data for illustration purposes.
+
+```{r}
+income_options <- c("below_20", "20_to_40", "40_to_100", "greater_100")
+income <- factor(sample(income_options, 100, TRUE), 
+                 levels = income_options, ordered = TRUE)
+mean_ls <- c(30, 60, 70, 75)
+ls <- mean_ls[income] + rnorm(100, sd = 7)
+dat <- data.frame(income, ls)
+```
+
+We now proceed with analyzing the data modeling `income` as a monotonic effect.
+
+```{r}
+library(brms)
+fit1 <- brm(ls ~ monotonic(income), data = dat)
+```
+
+The summary methods yield
+
+```{r}
+summary(fit1)
+plot(fit1, N = 6)
+plot(marginal_effects(fit1), points = TRUE)
+```
+
+The distributions of the simplex parameter of `income`, as shown in the `plot` method, demonstrate that the largest difference (about 70% of the difference between minimum and maximum category) is between the first two categories.
+
+Now, let's compare of monotonic model with two common alternative models. (a) Assume `income` to be continuous:
+
+```{r}
+dat$income_num <- as.numeric(dat$income)
+fit2 <- brm(ls ~ income_num, data = dat)
+summary(fit2)
+```
+
+or (b) Assume `income` to be an unordered factor:
+
+```{r}
+contrasts(dat$income) <- contr.treatment(4)
+fit3 <- brm(ls ~ income, data = dat)
+summary(fit3)
+```
+
+We can easily compare the fit of the three models using leave-one-out cross-validation.
+
+```{r}
+LOO(fit1, fit2, fit3)
+```
+
+The monotonic model fits better than the continuous model, which is not surprising given that the relationship between `income` and `ls` is non-linear. The monotonic and the unorderd factor model have almost identical fit in this example, but this may not be the case for other data sets.
+
+## Setting Prior Distributions
+
+In the previous monotonic model, we have implicitly assumed that all differences between adjacent categories were a-priori the same, or formulated correctly, had the same prior distribution. In the following, we want to show how to change this assumption. The canonical prior distribution of a simplex parameter is the Dirchlet distribution, a multivariate generalization of the beta distribution. It is non-zero for all valid simplexes (i.e., $\zeta_i \in [0,1]$ and $\sum_{i = 1}^K \zeta_i = 1$) and zero otherwise. The Dirichlet prior has a single parameter $\alpha$ of the same length as $\zeta$. The higher $\alpha_i$ the higher the a-priori probability of higher values of $\zeta_i$. Suppose that, before looking at the data, we expected that the same amount of additional money matters more for people who generally have less money. This translates into a higher a-priori values of $\zeta_1$ (difference between 'below_20' and '20_to_40') and hence into higher values of $\alpha_1$. We choose $\alpha_1 = 2$ and $\alpha_2 = \alpha_3 = 1$, the latter being the default value of $\alpha$. To fit the model we write:
+
+```{r}
+prior4 <- prior(dirichlet(c(2, 1, 1)), class = "simplex", coef = "income")
+fit4 <- brm(ls ~ monotonic(income), data = dat,
+            prior = prior4, sample_prior = TRUE)
+summary(fit4)
+```
+
+We have used `sample_prior = TRUE` to also obtain samples from the prior distribution of `simplex_income`.
+
+```{r}
+plot(fit4, pars = "simplex", N = 6)
+```
+
+As is visible in the plots, `simplex_income[1]` was a-priori on average twice as high as `simplex_income[2]` and `simplex_income[3]` as a result of setting $\alpha_1$ to 2.
+
+## Modelling Monotonic Group-Level Effects
+
+Suppose that the 100 people in our sample data were drawn from 10 different cities; 10 people per city. Thus, we add an identifier for `city` to the data and add some city-related variation to `ls`.
+
+```{r}
+dat$city <- rep(1:10, each = 10)
+var_city <- rnorm(10, sd = 10)
+dat$ls <- dat$ls + var_city[dat$city]
+```
+
+With the following code, we fit a multilevel model assuming the intercept and the effect of `income` to vary by city:
+
+```{r}
+fit5 <- brm(ls ~ mono(income) + (1 | city) + (mono(income) | city), data = dat)
+```
+For technical reasons, monotonic group-level effects have to be specified in separate terms in the model formula. Further, we have used the abbrevation `mono` for `monotonic`, which helps in shortening the formula a bit. The summary output
+
+```{r}
+summary(fit5)
+plot(fit5, ask = FALSE)
+```
+
+reveals that the effect of `income` varies only little across cities. For the present data, this is not overly surprising given that, in the data simulations, we assumed `income` to have the same effect across cities.
