@@ -138,18 +138,11 @@ link <- function(x, link) {
   #   link: a character string defining the link
   # Returns:
   #   an array of dimension dim(x) on which the link function was applied
-  if (link == "identity") x
-  else if (link == "log") log(x)
-  else if (link == "inverse") 1/x
-  else if (link == "sqrt") sqrt(x)
-  else if (link == "1/mu^2") 1 / x^2
-  else if (link == "tan_half") tan(x / 2)
-  else if (link == "logit") logit(x)
-  else if (link == "probit") qnorm(x)
-  else if (link == "probit_approx") qnorm(x)
-  else if (link == "cloglog") cloglog(x)
-  else if (link == "cauchit") qcauchy(x)
-  else stop(paste("Link", link, "not supported"))
+  switch(link, "identity" = x, "log" = log(x), "inverse" = 1 / x,
+         "sqrt" = sqrt(x), "1/mu^2" = 1 / x^2, "tan_half" = tan(x / 2),
+         "logit" = logit(x), "probit" = qnorm(x), "cauchit" = qcauchy(x),
+         "cloglog" = cloglog(x), "probit_approx" = qnorm(x),
+         stop2("Link '", link, "' not supported."))
 }
 
 ilink <- function(x, link) {
@@ -159,18 +152,11 @@ ilink <- function(x, link) {
   #   link: a character string defining the link
   # Returns:
   #   an array of dimension dim(x) on which the inverse link function was applied
-  if (link == "identity") x
-  else if (link == "log") exp(x)
-  else if (link == "inverse") 1/x
-  else if (link == "sqrt") x^2
-  else if (link == "1/mu^2") 1 / sqrt(x)
-  else if (link == "tan_half") 2 * atan(x)
-  else if (link == "logit") inv_logit(x)
-  else if (link == "probit") pnorm(x)
-  else if (link == "probit_approx") inv_logit(0.07056*x^3 + 1.5976*x)
-  else if (link == "cloglog") inv_cloglog(x)
-  else if (link == "cauchit") pcauchy(x)
-  else stop(paste("Link", link, "not supported"))
+  switch(link, "identity" = x, "log" = exp(x), "inverse" = 1 / x,
+         "sqrt" = x^2, "1/mu^2" = 1 / sqrt(x), "tan_half" = 2 * atan(x),
+         "logit" = inv_logit(x), "probit" = pnorm(x), "cauchit" = pcauchy(x),
+         "cloglog" = inv_cloglog(x), "probit_approx" = pnorm(x),
+         stop2("Link '", link, "' not supported."))
 }
 
 get_cornames <- function(names, type = "cor", brackets = TRUE,
