@@ -51,8 +51,11 @@ algorithm <- function(x) {
   else x$algorithm
 }
 
-restructure <- function(x) {
+restructure <- function(x, rstr_summary = FALSE) {
   # restructure old brmsfit objects to work with the latest brms version
+  # Args:
+  #   x: a brmsfit object
+  #   rstr_summary: restructure cached summary?
   stopifnot(is(x, "brmsfit"))
   if (isTRUE(attr(x, "restructured"))) {
     return(x)  # already restructured
@@ -97,6 +100,20 @@ restructure <- function(x) {
     }
     for (i in seq_along(change)) {
       x <- do_renaming(change = change[[i]], x = x)
+    }
+    stan_env <- attributes(x$fit)$.MISC
+    if (rstr_summary && exists("summary", stan_env)) {
+      # rename parameters in cached summary
+      stan_summary <- get("summary", stan_env)
+      old_parnames <- rownames(stan_summary$msd)
+      if (!identical(old_parnames, parnames(x))) {
+        V <- c("msd", "c_msd", "quan", "c_quan")
+        V <- intersect(V, names(stan_summary))
+        for (v in V) {
+          rownames(stan_summary[[v]]) <- parnames(x)
+        }
+        assign("summary", stan_summary, stan_env)
+      }
     }
   }
   structure(x, "restructured" = TRUE)

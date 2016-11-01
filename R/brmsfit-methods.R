@@ -628,7 +628,7 @@ print.brmsfit <- function(x, digits = 2, ...) {
 #' @export
 summary.brmsfit <- function(object, waic = FALSE, priors = FALSE,
                             use_cache = TRUE, ...) {
-  object <- restructure(object)
+  object <- restructure(object, rstr_summary = use_cache)
   ee <- extract_effects(formula(object), family = family(object))
   out <- brmssummary(formula = formula(object), 
                      family = family(object), 
