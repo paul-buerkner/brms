@@ -4,21 +4,24 @@
 \alias{pp_check.brmsfit}
 \title{Posterior Predictive Checks for \code{brmsfit} Objects}
 \usage{
-\method{pp_check}{brmsfit}(object, type, nsamples, group = NULL,
-  time = NULL, x = NULL, newdata = NULL, re_formula = NULL,
-  allow_new_levels = FALSE, incl_autocor = TRUE, subset = NULL,
-  ntrys = 5, ...)
+\method{pp_check}{brmsfit}(object, type, nsamples, group = NULL, x = NULL,
+  newdata = NULL, re_formula = NULL, allow_new_levels = FALSE,
+  incl_autocor = TRUE, subset = NULL, ntrys = 5, ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
 
 \item{type}{Type of the ppc plot as given by a character string.
 Currently, the following plots (as names) are implemented:
-\code{dens} \code{dens_overlay}, \code{hist}, \code{resid},
-\code{resid_binned}, \code{scatter}, \code{scatter_avg},
-\code{scatter_avg_grouped}, \code{stat}, \code{stat_2d},
-\code{stat_grouped}, \code{ts}, \code{ts_grouped}, and
-\code{violin_grouped}.}
+\code{dens} \code{dens_overlay}, \code{ecdf_overlay}, 
+\code{error_binned}, \code{error_hist}, \code{error_scatter}, 
+\code{error_scatter_avg}, \code{error_scatter_avg_vs_x},
+\code{freqpoly}, \code{freqpoly_grouped}, \code{hist},
+\code{intervals}, \code{intervals_grouped}, 
+\code{ribbon}, \code{ribbon_grouped}, \code{scatter},
+\code{scatter_avg}, \code{scatter_avg_grouped}, 
+\code{stat}, \code{stat_2d}, \code{stat_freqpoly_grouped},
+\code{stat_grouped}, and \code{violin_grouped}.}
 
 \item{nsamples}{Positive integer indicating how many
 posterior samples should be used.
@@ -30,12 +33,9 @@ Ignored if \code{subset} is not \code{NULL}.}
 by which to stratify the ppc plot. This argument is required for
 ppc \code{*_grouped} types and ignored otherwise.}
 
-\item{time}{Optional name of a time variable in the model by
-which to order time-series plots. Only used for
-ppc \code{ts*} types and ignored otherwise.}
-
 \item{x}{Optional name of a variable in the model. 
-Only used for ppc \code{vs_x*} types and ignored otherwise.}
+Only used for ppc types having an \code{x} argument 
+and ignored otherwise.}
 
 \item{newdata}{An optional data.frame for which to evaluate predictions.
 If \code{NULL} (default), the orginal data of the model is used.}
@@ -83,9 +83,9 @@ fit <-  brm(count ~ log_Age_c + log_Base4_c * Trt_c
             + (1|patient) + (1|visit),
             data = epilepsy, family = poisson())
 
-pp_check(fit) # shows dens_overlay plot by default
-pp_check(fit, type = "resid", nsamples = 12)
-pp_check(fit, type = "scatter_average", nsamples = 100)
+pp_check(fit)  # shows dens_overlay plot by default
+pp_check(fit, type = "error_hist", nsamples = 11)
+pp_check(fit, type = "scatter_avg", nsamples = 100)
 pp_check(fit, type = "stat_2d")
 }
 }
