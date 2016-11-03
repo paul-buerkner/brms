@@ -2051,63 +2051,59 @@ logLik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
                                alpha = 0.05, ...) {
   if (!is.character(hypothesis)) {
-    stop("Argument 'hypothesis' must be a character vector", 
-         call. = FALSE)
+    stop2("Argument 'hypothesis' must be a character vector.")
   }
-  if (alpha < 0 || alpha > 1) {
-    stop("Argument 'alpha' must be in [0,1]", call. = FALSE)
+  if (length(alpha) != 1L || alpha < 0 || alpha > 1) {
+    stop2("Argument 'alpha' must be a single value in [0,1].")
   }
   contains_samples(x)
   x <- restructure(x)
   
-  # process class and group arguments
-  if (is.null(class)) class <- ""
-  valid_classes <- c("", "b", "r", "sd", "cor", "ar", "ma", "arr", 
-                     "sigma", "rescor", "nu", "shape", "delta")
-  if (!class %in% valid_classes)
-    stop(paste(class, "is not a valid paramter class"), call. = FALSE)
-  if (class %in% c("b", "r", "sd", "cor", "sigma", "rescor")) {
-    if (class %in% c("sd", "cor") && nchar(group)) {
-      class <- paste0(class, "_", group, "__")
-    } else {
-      class <- paste0(class, "_")
-    }
-  } else {
-    # no class required
-    class <- ""  
+  if (!length(class)) {
+    class <- "" 
+  }
+  if (length(class) != 1L || length(group) != 1L) {
+    stop2("Arguments 'class' and 'group' must be of length one.")
+  }
+  valid_classes <- c("", "b", "bm", "bcs", "sd", "cor", "r", 
+                     "sds", "s", "simplex", "sigma", "rescor")
+  if (!class %in% valid_classes) {
+    stop2(class, " is not a valid paramter class.")
+  }
+  if (class %in% c("sd", "cor", "r") && nzchar(group)) {
+    class <- paste0(class, "_", group, "__")
+  } else if (nzchar(class)) {
+    class <- paste0(class, "_")
   }
 
   hyp_fun <- function(h) {
     # internal function to evaluate hypotheses
-    # 
     # Args:
     #   h: A string containing a hypothesis
     h <- rename(h, c("[ \t\r\n]", ":"), c("", "___"), fixed = FALSE)
     sign <- unlist(regmatches(h, gregexpr("=|<|>", h)))
     lr <- unlist(regmatches(h, gregexpr("[^=<>]+", h)))
-    if (length(sign) != 1 || length(lr) != 2)
-      stop("Every hypothesis must be of the form 'left (= OR < OR >) right'",
-           call. = FALSE)
+    if (length(sign) != 1 || length(lr) != 2) {
+      stop2("Every hypothesis must be of the form 'left (= OR < OR >) right'.")
+    }
     h <- paste0(lr[1], ifelse(lr[2] != "0", paste0("-(",lr[2],")"), ""))
     varsH <- unique(find_names(h))
     parsH <- paste0(class, varsH)
-    if (!all(parsH %in% pars)) 
-      stop(paste("The following parameters cannot be found in the model:", 
-                 paste0(gsub("___", ":", parsH[which(!parsH %in% pars)]), 
-                        collapse = ", ")), call. = FALSE)
-    
+    missing_pars <- setdiff(parsH, pars)
+    if (length(missing_pars)) {
+      stop2("The following parameters cannot be found in the model: \n", 
+            paste0(gsub("___", ":", missing_pars), collapse = ", "))
+    }
     # prepare for renaming of parameters so that h can be evaluated
     parsH <- rename(parsH, "___", ":")
     h_renamed <- rename(h, c("[", "]", ","), c(".", ".", ".."))
     symbols <- c(paste0("^",class), ":", "\\[", "\\]", ",")
     subs <- c("", "___", ".", ".", "..")
-    
     # get posterior samples
     samples <- posterior_samples(x, pars = parsH, exact_match = TRUE)
     names(samples) <- rename(names(samples), symbols = symbols, 
                              subs = subs, fixed = FALSE)
     samples <- matrix(with(samples, eval(parse(text = h_renamed))), ncol = 1)
-    
     # get prior samples
     prior_samples <- prior_samples(x, pars = parsH, fixed = TRUE)
     if (!is.null(prior_samples) && ncol(prior_samples) == length(varsH)) {
@@ -2115,8 +2111,9 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
                                      subs = subs, fixed = FALSE)
       prior_samples <- matrix(with(prior_samples, eval(parse(text = h_renamed))), 
                               ncol = 1)
-    } else prior_samples <- NULL
-    
+    } else {
+      prior_samples <- NULL
+    }
     # evaluate hypothesis
     wsign <- ifelse(sign == "=", "equal", ifelse(sign == "<", "less", "greater"))
     probs <- switch(wsign, equal = c(alpha / 2, 1 - alpha / 2), 
@@ -2134,8 +2131,8 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
     h <- paste0(lr[1], ifelse(lr[2] != "0", paste0("-(", lr[2], ")"), ""))
     rownames(sm) <- paste(rename(h, "___", ":"), sign, "0")
     cl <- (1 - alpha) * 100
-    colnames(sm) <- c("Estimate", "Est.Error", paste0("l-",cl,"% CI"), 
-                      paste0("u-",cl,"% CI"), "Evid.Ratio", "")
+    colnames(sm) <- c("Estimate", "Est.Error", paste0("l-", cl, "% CI"), 
+                      paste0("u-", cl, "% CI"), "Evid.Ratio", "")
     if (!is.null(prior_samples)) {
       samples <- c(samples, prior_samples)
     } else {

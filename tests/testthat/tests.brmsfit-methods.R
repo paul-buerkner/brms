@@ -72,7 +72,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_output(print(h2), "class sd_visit:", fixed = TRUE)
   expect_silent(p <- plot(h2, ignore_prior = TRUE, plot = FALSE))
   expect_error(hypothesis(fit1, "Intercept > x"), fixed = TRUE,
-               "cannot be found in the model: b_x")
+               "cannot be found in the model: \nb_x")
   # omit launch_shiny
   # logLik
   expect_equal(dim(logLik(fit1)), c(Nsamples(fit1), nobs(fit1)))
