@@ -32,7 +32,7 @@ stan_effects <- function(effects, data, family = gaussian(),
   csef <- colnames(get_model_matrix(effects$cse, data))
   text_csef <- stan_csef(csef = csef, ranef = ranef, prior = prior)
   # include monotonic effects
-  monef <- colnames(data_monef(effects, data)$Xm)
+  monef <- all_terms(effects$mono)
   text_monef <- stan_monef(monef, prior = prior, nlpar = nlpar)
   out <- collapse_lists(list(out, text_fixef, text_csef, 
                              text_monef, text_splines))

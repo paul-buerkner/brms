@@ -20,6 +20,7 @@ opts_chunk$set(eval = FALSE)
 
 In the present vignette, we want to discuss how to specify phylogenetic multilevel models using **brms**. These models are relevant in evolutionary biology when data of many species are analyzed at the same time. The usual approach would be to model species as a grouping factor in a multilevel model and estimate varying intercepts (and possibly also varying slopes) over species. However, species are not independent as they come from the same phylogenetic tree and we thus have to adjust our model to incorporate this dependence. The examples discussed here are from the book *Modern Phylogenetic Comparative Methods and the application in Evolutionary Biology* (Garamszegi, 2014) more specifically from the online practice material of Chapter 11. The necessary data can be downloaded from  http://www.mpcm-evolution.org/practice/online-practical-material-chapter-11. Some of these models may take a few minutes to fit.
 
+Throughout the vignette, **R** code output is not shown to reduce installation time and size of the package.
 
 ## A Simple Phylogenetic Model
 

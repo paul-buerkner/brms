@@ -67,13 +67,13 @@
 #'   However, sampling speed is currently not improved or even
 #'   slightly decreased.
 #' @param cov_ranef A list of matrices that are proportional to the 
-#'   (within) covariance structure of the random effects. 
+#'   (within) covariance structure of the group-level effects. 
 #'   The names of the matrices should correspond to columns 
 #'   in \code{data} that are used as grouping factors. 
 #'   All levels of the grouping factor should appear as rownames 
 #'   of the corresponding matrix. This argument can be used,
 #'   among others, to model pedigrees and phylogenetic effects.
-#' @param ranef A flag to indicate if random effects 
+#' @param ranef A flag to indicate if group-level effects 
 #'   for each level of the grouping factor(s) 
 #'   should be saved (default is \code{TRUE}). 
 #'   Set to \code{FALSE} to save memory. 
@@ -181,13 +181,13 @@
 #'   Its documentation contains detailed information 
 #'   on how to correctly specify priors. To find out on 
 #'   which parameters or parameter classes priors can be defined, 
-#'   use \code{\link[brms:get_prior]{get_prior}}. \cr
+#'   use \code{\link[brms:get_prior]{get_prior}}.
 #'   Default priors are chosen to be non or very weakly informative 
 #'   so that their influence on the results will be negligable and
 #'   you don't have to worry about them.
 #'   However, after getting more familiar with Bayesian statistics, 
 #'   I recommend you to start thinking about reasonable informative
-#'   priors for your model parameters: Nearly always there is at least some
+#'   priors for your model parameters: Nearly always, there is at least some
 #'   prior information available that can be used to improve your inference.
 #'   
 #'   \bold{Adjusting the sampling behavior of \pkg{Stan}}

@@ -85,7 +85,7 @@ However, sampling speed is currently not improved or even
 slightly decreased.}
 
 \item{cov_ranef}{A list of matrices that are proportional to the 
-(within) covariance structure of the random effects. 
+(within) covariance structure of the group-level effects. 
 The names of the matrices should correspond to columns 
 in \code{data} that are used as grouping factors. 
 All levels of the grouping factor should appear as rownames 

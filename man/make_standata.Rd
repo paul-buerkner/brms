@@ -64,7 +64,7 @@ As of \pkg{brms} > 0.8.0 category specific effects should be
 specified directly within \code{formula} using function \code{cse}.}
 
 \item{cov_ranef}{A list of matrices that are proportional to the 
-(within) covariance structure of the random effects. 
+(within) covariance structure of the group-level effects. 
 The names of the matrices should correspond to columns 
 in \code{data} that are used as grouping factors. 
 All levels of the grouping factor should appear as rownames 

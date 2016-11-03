@@ -12,7 +12,7 @@
 
 <meta name="author" content="Paul Bürkner" />
 
-<meta name="date" content="2016-10-28" />
+<meta name="date" content="2016-11-03" />
 
 <title>Estimating Phylogenetic Multilevel Models with brms</title>
 
@@ -70,7 +70,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 
 <h1 class="title toc-ignore">Estimating Phylogenetic Multilevel Models with brms</h1>
 <h4 class="author"><em>Paul Bürkner</em></h4>
-<h4 class="date"><em>2016-10-28</em></h4>
+<h4 class="date"><em>2016-11-03</em></h4>
 
 
 
@@ -82,6 +82,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
 <p>In the present vignette, we want to discuss how to specify phylogenetic multilevel models using <strong>brms</strong>. These models are relevant in evolutionary biology when data of many species are analyzed at the same time. The usual approach would be to model species as a grouping factor in a multilevel model and estimate varying intercepts (and possibly also varying slopes) over species. However, species are not independent as they come from the same phylogenetic tree and we thus have to adjust our model to incorporate this dependence. The examples discussed here are from the book <em>Modern Phylogenetic Comparative Methods and the application in Evolutionary Biology</em> (Garamszegi, 2014) more specifically from the online practice material of Chapter 11. The necessary data can be downloaded from <a href="http://www.mpcm-evolution.org/practice/online-practical-material-chapter-11" class="uri">http://www.mpcm-evolution.org/practice/online-practical-material-chapter-11</a>. Some of these models may take a few minutes to fit.</p>
+<p>Throughout the vignette, <strong>R</strong> code output is not shown to reduce installation time and size of the package.</p>
 </div>
 <div id="a-simple-phylogenetic-model" class="section level2">
 <h2>A Simple Phylogenetic Model</h2>

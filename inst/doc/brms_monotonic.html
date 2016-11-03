@@ -12,7 +12,7 @@
 
 <meta name="author" content="Paul Bürkner" />
 
-<meta name="date" content="2016-11-01" />
+<meta name="date" content="2016-11-03" />
 
 <title>Estimating Monotonic Effects with brms</title>
 
@@ -70,7 +70,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 
 <h1 class="title toc-ignore">Estimating Monotonic Effects with brms</h1>
 <h4 class="author"><em>Paul Bürkner</em></h4>
-<h4 class="date"><em>2016-11-01</em></h4>
+<h4 class="date"><em>2016-11-03</em></h4>
 
 
 
@@ -83,7 +83,8 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <h2>Introduction</h2>
 <p>This vignette is about monotonic effects, a special way of handling discrete predictors that are at least on an ordinal scale. The idea was brought to me by Emmanuel Charpentier, who deserves full credit for it. A predictor, which we want to model as monotonic, must either be integer valued or an ordered factor. As opposed to a continuous predictor, predictor categories (or integers) are not assumend to be equidistant with respect to their effect on the response variable. Instead, the distance between adjacent predictor categories (or integers) is estimated from the data and may vary across categories. This is realized by parameterizing as follows: One parameter, <span class="math inline">\(b\)</span>, takes care of the direction and size of the effect similar to an ordinary regression parameter, while an additional parameter vector, <span class="math inline">\(\zeta\)</span>, estimates the normalized distances between consecutive predictor categories. For a single monotonic predictor, <span class="math inline">\(x\)</span>, the linear predictor term of observation <span class="math inline">\(n\)</span> looks as follows:</p>
 <p><span class="math display">\[\eta_n = b \sum_{i = 1}^{x_n} \zeta_i\]</span></p>
-<p>The parameter <span class="math inline">\(b\)</span> can take on any real value, while <span class="math inline">\(\zeta\)</span> is a simplex, which means that is it satisfies <span class="math inline">\(\zeta_i \in [0,1]\)</span> and <span class="math inline">\(\sum_{i = 1}^K \zeta_i = 1\)</span> with <span class="math inline">\(K\)</span> being the number of categories (or highest integer in the data).</p>
+<p>The parameter <span class="math inline">\(b\)</span> can take on any real value, while <span class="math inline">\(\zeta\)</span> is a simplex, which means that is it satisfies <span class="math inline">\(\zeta_i \in [0,1]\)</span> and <span class="math inline">\(\sum_{i = 1}^C \zeta_i = 1\)</span> with <span class="math inline">\(C\)</span> being the number of categories (or highest integer in the data).</p>
+<p>Throughout the vignette, <strong>R</strong> code output is not shown to reduce installation time and size of the package.</p>
 </div>
 <div id="a-simple-monotonic-model" class="section level2">
 <h2>A Simple Monotonic Model</h2>
