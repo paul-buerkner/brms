@@ -1929,7 +1929,7 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
 }
 
 #' @export
-#' @describeIn WAIC method for class \code{brmsfit}
+#' @describeIn WAIC \code{WAIC} method for \code{brmsfit} objects
 WAIC.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL, 
                          re_formula = NULL, allow_new_levels = FALSE, 
                          subset = NULL, nsamples = NULL, pointwise = NULL) {
@@ -1959,8 +1959,19 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
   out
 }
 
+#' @importFrom loo waic
+#' @export waic
 #' @export
-#' @describeIn LOO method for class \code{brmsfit}
+waic.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
+                         re_formula = NULL, allow_new_levels = FALSE,
+                         subset = NULL, nsamples = NULL, pointwise = NULL) {
+  cl <- match.call()
+  cl[[1]] <- quote(WAIC)
+  eval(cl, parent.frame())
+}
+
+#' @export
+#' @describeIn LOO \code{LOO} method for \code{brmsfit} objects
 LOO.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL, 
                         re_formula = NULL, allow_new_levels = FALSE, 
                         subset = NULL, nsamples = NULL, pointwise = NULL,
@@ -1991,6 +2002,18 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
                                      wcp, wtrunc, cores))
   }
   out
+}
+
+#' @importFrom loo loo
+#' @export loo
+#' @export
+loo.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
+                        re_formula = NULL, allow_new_levels = FALSE,
+                        subset = NULL, nsamples = NULL, pointwise = NULL,
+                        cores = 1, wcp = 0.2, wtrunc = 3/4) {
+  cl <- match.call()
+  cl[[1]] <- quote(LOO)
+  eval(cl, parent.frame())
 }
 
 #' Compute the pointwise log-likelihood

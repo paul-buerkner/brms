@@ -3,13 +3,14 @@
 \name{WAIC.brmsfit}
 \alias{WAIC}
 \alias{WAIC.brmsfit}
+\alias{waic.brmsfit}
 \title{Compute the WAIC}
 \usage{
 \method{WAIC}{brmsfit}(x, ..., compare = TRUE, newdata = NULL,
   re_formula = NULL, allow_new_levels = FALSE, subset = NULL,
   nsamples = NULL, pointwise = NULL)
 
-WAIC(x, ..., compare = TRUE)
+WAIC(x, ...)
 }
 \arguments{
 \item{x}{A fitted model object typically of class \code{brmsfit}.}
@@ -59,22 +60,23 @@ based on the posterior likelihood by using the \pkg{loo} package
 \details{
 When comparing models fitted to the same data, 
  the smaller the WAIC, the better the fit.
+ For \code{brmsfit} objects, \code{waic} is an alias of \code{WAIC}.
 }
 \section{Methods (by class)}{
 \itemize{
-\item \code{brmsfit}: method for class \code{brmsfit}
+\item \code{brmsfit}: \code{WAIC} method for \code{brmsfit} objects
 }}
 \examples{
 \dontrun{
-#model with fixed effects only
+# model with fixed effects only
 fit1 <- brm(rating ~ treat + period + carry,
             data = inhaler, family = "gaussian")
 WAIC(fit1)
 
-#model with an additional random intercept for subjects
+# model with an additional random intercept for subjects
 fit2 <- brm(rating ~ treat + period + carry + (1|subject),
             data = inhaler, family = "gaussian")
-#compare both models
+# compare both models
 WAIC(fit1, fit2)                          
 }
 

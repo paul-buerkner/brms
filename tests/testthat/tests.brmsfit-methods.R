@@ -81,6 +81,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_true(is.numeric(loo1[["looic"]]))
   expect_true(loo1[["se_looic"]] > 0)
   expect_output(print(loo1), "LOOIC")
+  expect_equal(loo1, SW(loo(fit1, cores = 1)))
   
   loo_compare1 <- SW(LOO(fit1, fit1, cores = 1))
   expect_equal(length(loo_compare1), 2)
@@ -299,6 +300,8 @@ test_that("all S3 methods have reasonable ouputs", {
   waic1 <- WAIC(fit1)
   expect_true(is.numeric(waic1[["waic"]]))
   expect_true(is.numeric(waic1[["se_waic"]]))
+  expect_equal(waic1, waic(fit1))
+  
   waic_compare <- WAIC(fit1, fit1)
   expect_equal(length(waic_compare), 2)
   expect_equal(dim(attr(waic_compare, "compare")), c(1,2))

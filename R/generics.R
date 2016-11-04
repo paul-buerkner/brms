@@ -251,7 +251,7 @@ parnames <- function(x, ...) {
 #' Compute the Watanabe-Akaike Information Criterion 
 #' based on the posterior likelihood by using the \pkg{loo} package
 #' 
-#' @aliases WAIC.brmsfit
+#' @aliases WAIC.brmsfit waic.brmsfit
 #' 
 #' @param x A fitted model object typically of class \code{brmsfit}. 
 #' @param ... Optionally more fitted model objects.
@@ -268,6 +268,7 @@ parnames <- function(x, ...) {
 #' 
 #' @details When comparing models fitted to the same data, 
 #'  the smaller the WAIC, the better the fit.
+#'  For \code{brmsfit} objects, \code{waic} is an alias of \code{WAIC}.
 #' @return If just one object is provided, an object of class \code{ic}. 
 #'  If multiple objects are provided, an object of class \code{iclist}.
 #' 
@@ -275,15 +276,15 @@ parnames <- function(x, ...) {
 #' 
 #' @examples
 #' \dontrun{
-#' #model with fixed effects only
+#' # model with fixed effects only
 #' fit1 <- brm(rating ~ treat + period + carry,
 #'             data = inhaler, family = "gaussian")
 #' WAIC(fit1)
 #' 
-#' #model with an additional random intercept for subjects
+#' # model with an additional random intercept for subjects
 #' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
 #'             data = inhaler, family = "gaussian")
-#' #compare both models
+#' # compare both models
 #' WAIC(fit1, fit2)                          
 #' }
 #' 
@@ -301,16 +302,16 @@ parnames <- function(x, ...) {
 #' The Journal of Machine Learning Research, 11, 3571-3594.
 #' 
 #' @export
-WAIC <- function(x, ..., compare = TRUE) {
+WAIC <- function(x, ...) {
   UseMethod("WAIC")
 }
 
-#' Compute LOO
+#' Compute the LOOIC
 #' 
 #' Compute Leave-one-out cross-validation based on the posterior likelihood
 #' by using the \pkg{loo} package
 #' 
-#' @aliases LOO.brmsfit
+#' @aliases LOO.brmsfit loo.brmsfit
 #' 
 #' @inheritParams WAIC
 #' @param cores The number of cores to use for parallelization. 
@@ -321,6 +322,7 @@ WAIC <- function(x, ..., compare = TRUE) {
 #' 
 #' @details When comparing models fitted to the same data, 
 #'  the smaller the LOO, the better the fit.
+#'  For \code{brmsfit} objects, \code{loo} is an alias of \code{LOO}.
 #' @return If just one object is provided, an object of class \code{ic}. 
 #'  If multiple objects are provided, an object of class \code{iclist}.
 #' 
@@ -328,15 +330,15 @@ WAIC <- function(x, ..., compare = TRUE) {
 #' 
 #' @examples
 #' \dontrun{
-#' #model with fixed effects only
+#' # model with fixed effects only
 #' fit1 <- brm(rating ~ treat + period + carry,
 #'             data = inhaler, family = "gaussian")
 #' LOO(fit1)
 #' 
-#' #model with an additional random intercept for subjects
+#' # model with an additional random intercept for subjects
 #' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
 #'             data = inhaler, family = "gaussian")
-#' #compare both models
+#' # compare both models
 #' LOO(fit1, fit2)                          
 #' }
 #' 
@@ -354,7 +356,7 @@ WAIC <- function(x, ..., compare = TRUE) {
 #' The Journal of Machine Learning Research, 11, 3571-3594.
 #' 
 #' @export
-LOO <- function(x, ..., compare = TRUE) {
+LOO <- function(x, ...) {
   UseMethod("LOO")
 }
 
