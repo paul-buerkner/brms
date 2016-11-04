@@ -69,12 +69,12 @@ Currently there are methods for \code{brmsfit} objects.
 fit <- brm(rating ~ treat + period + carry + (1|subject), 
            data = inhaler, family = "cumulative")
 
-#extract posterior samples of fixed effects 
+# extract posterior samples of population-level effects 
 samples1 <- posterior_samples(fit, "^b")
 head(samples1)
 
-#extract posterior samples of standard deviations of random effects
-samples2 <- posterior_samples(fit, "^sd")
+# extract posterior samples of group-level standard deviations
+samples2 <- posterior_samples(fit, "^sd_")
 head(samples2)
 }
 

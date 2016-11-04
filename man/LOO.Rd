@@ -3,8 +3,9 @@
 \name{LOO.brmsfit}
 \alias{LOO}
 \alias{LOO.brmsfit}
+\alias{loo}
 \alias{loo.brmsfit}
-\title{Compute the LOOIC}
+\title{Compute the LOO information criterion}
 \usage{
 \method{LOO}{brmsfit}(x, ..., compare = TRUE, newdata = NULL,
   re_formula = NULL, allow_new_levels = FALSE, subset = NULL,
@@ -62,8 +63,8 @@ If just one object is provided, an object of class \code{ic}.
  If multiple objects are provided, an object of class \code{iclist}.
 }
 \description{
-Compute Leave-one-out cross-validation based on the posterior likelihood
-by using the \pkg{loo} package
+Perform Leave-one-out cross-validation based on the posterior likelihood
+using the \pkg{loo} package.
 }
 \details{
 When comparing models fitted to the same data, 

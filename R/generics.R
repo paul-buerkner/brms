@@ -1,6 +1,6 @@
 brmsfit <- function(formula = NULL, family = "", link = "", data.name = "", 
                     data = data.frame(), model = "", exclude = NULL,
-                    prior = prior_frame(), ranef = TRUE, autocor = NULL,
+                    prior = brmsprior(), ranef = TRUE, autocor = NULL,
                     threshold = "", cov_ranef = NULL, fit = NA, 
                     algorithm = "sampling") {
   # brmsfit class
@@ -160,12 +160,12 @@ hypothesis <- function(x, hypothesis, ...) {
 #' fit <- brm(rating ~ treat + period + carry + (1|subject), 
 #'            data = inhaler, family = "cumulative")
 #' 
-#' #extract posterior samples of fixed effects 
+#' # extract posterior samples of population-level effects 
 #' samples1 <- posterior_samples(fit, "^b")
 #' head(samples1)
 #' 
-#' #extract posterior samples of standard deviations of random effects
-#' samples2 <- posterior_samples(fit, "^sd")
+#' # extract posterior samples of group-level standard deviations
+#' samples2 <- posterior_samples(fit, "^sd_")
 #' head(samples2)
 #' }
 #' 
@@ -212,11 +212,11 @@ posterior.samples <- function(x, pars = NA, ...) {
 #'            prior = set_prior("normal(0,2)", class = "b"), 
 #'            sample_prior = TRUE)
 #' 
-#' #extract all prior samples
+#' # extract all prior samples
 #' samples1 <- prior_samples(fit)
 #' head(samples1)
 #' 
-#' #extract prior samples for the fixed effect of \code{treat}.
+#' # extract prior samples for the population-level effects of 'treat'
 #' samples2 <- posterior_samples(fit, "b_treat")
 #' head(samples2)
 #' }
@@ -249,9 +249,9 @@ parnames <- function(x, ...) {
 #' Compute the WAIC
 #' 
 #' Compute the Watanabe-Akaike Information Criterion 
-#' based on the posterior likelihood by using the \pkg{loo} package
+#' based on the posterior likelihood using the \pkg{loo} package.
 #' 
-#' @aliases WAIC.brmsfit waic.brmsfit
+#' @aliases WAIC.brmsfit waic.brmsfit waic
 #' 
 #' @param x A fitted model object typically of class \code{brmsfit}. 
 #' @param ... Optionally more fitted model objects.
@@ -306,12 +306,12 @@ WAIC <- function(x, ...) {
   UseMethod("WAIC")
 }
 
-#' Compute the LOOIC
+#' Compute the LOO information criterion
 #' 
-#' Compute Leave-one-out cross-validation based on the posterior likelihood
-#' by using the \pkg{loo} package
+#' Perform Leave-one-out cross-validation based on the posterior likelihood
+#' using the \pkg{loo} package.
 #' 
-#' @aliases LOO.brmsfit loo.brmsfit
+#' @aliases LOO.brmsfit loo.brmsfit loo
 #' 
 #' @inheritParams WAIC
 #' @param cores The number of cores to use for parallelization. 
@@ -540,20 +540,23 @@ stanplot <- function(object, pars, ...) {
 #' \dontrun{
 #' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1 | patient),
 #'            data = epilepsy, family = poisson()) 
+#'            
 #' ## plot all marginal effects
 #' plot(marginal_effects(fit), ask = FALSE)
+#' 
 #' ## only plot the marginal interaction effect of 'log_Base4_c:Trt_c'
 #' ## for different values for 'log_Age_c'
 #' conditions <- data.frame(log_Age_c = c(-0.3, 0, 0.3))
 #' plot(marginal_effects(fit, effects = "log_Base4_c:Trt_c", 
 #'                       conditions = conditions))
+#'                       
 #' ## also incorporate random effects variance over patients
 #' ## also add data points and a rug representation of predictor values
 #' plot(marginal_effects(fit, effects = "log_Base4_c:Trt_c", 
 #'                       conditions = conditions, re_formula = NULL), 
 #'      points = TRUE, rug = TRUE)
 #'      
-#' # fit a model to illustrate how to plot 3-way interactions
+#' ## fit a model to illustrate how to plot 3-way interactions
 #' fit3way <- brm(count ~ log_Age_c * log_Base4_c * Trt_c, data = epilepsy)
 #' conditions <- data.frame(log_Age_c = c(-0.3, 0, 0.3))
 #' rownames(conditions) <- paste("log_Age_c =", conditions$log_Age_c)

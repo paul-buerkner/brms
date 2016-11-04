@@ -3,6 +3,7 @@
 \name{WAIC.brmsfit}
 \alias{WAIC}
 \alias{WAIC.brmsfit}
+\alias{waic}
 \alias{waic.brmsfit}
 \title{Compute the WAIC}
 \usage{
@@ -55,7 +56,7 @@ If just one object is provided, an object of class \code{ic}.
 }
 \description{
 Compute the Watanabe-Akaike Information Criterion 
-based on the posterior likelihood by using the \pkg{loo} package
+based on the posterior likelihood using the \pkg{loo} package.
 }
 \details{
 When comparing models fitted to the same data, 

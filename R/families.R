@@ -17,7 +17,7 @@
 #'   \code{categorical}, \code{cumulative}, \code{cratio}, \code{sratio}, 
 #'   \code{acat}, \code{hurdle_poisson}, \code{hurdle_negbinomial}, 
 #'   \code{hurdle_gamma}, \code{zero_inflated_binomial},
-#'   \code{zero_inflated_beta}, \code{zero_inflated_negbinomial}, 
+#'   \code{zero_inflated_beta}, \cr \code{zero_inflated_negbinomial}, 
 #'   and \code{zero_inflated_poisson}.
 #' @param link A specification for the model link function. 
 #'   This can be a name/expression or character string. 

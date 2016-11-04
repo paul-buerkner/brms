@@ -40,11 +40,11 @@ fit <- brm(rating ~ treat + period + carry + (1|subject),
            prior = set_prior("normal(0,2)", class = "b"), 
            sample_prior = TRUE)
 
-#extract all prior samples
+# extract all prior samples
 samples1 <- prior_samples(fit)
 head(samples1)
 
-#extract prior samples for the fixed effect of \\code{treat}.
+# extract prior samples for the population-level effects of 'treat'
 samples2 <- posterior_samples(fit, "b_treat")
 head(samples2)
 }

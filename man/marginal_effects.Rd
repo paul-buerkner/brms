@@ -94,20 +94,23 @@ predictors including interaction effects of order 2.
 \dontrun{
 fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1 | patient),
            data = epilepsy, family = poisson()) 
+           
 ## plot all marginal effects
 plot(marginal_effects(fit), ask = FALSE)
+
 ## only plot the marginal interaction effect of 'log_Base4_c:Trt_c'
 ## for different values for 'log_Age_c'
 conditions <- data.frame(log_Age_c = c(-0.3, 0, 0.3))
 plot(marginal_effects(fit, effects = "log_Base4_c:Trt_c", 
                       conditions = conditions))
+                      
 ## also incorporate random effects variance over patients
 ## also add data points and a rug representation of predictor values
 plot(marginal_effects(fit, effects = "log_Base4_c:Trt_c", 
                       conditions = conditions, re_formula = NULL), 
      points = TRUE, rug = TRUE)
      
-# fit a model to illustrate how to plot 3-way interactions
+## fit a model to illustrate how to plot 3-way interactions
 fit3way <- brm(count ~ log_Age_c * log_Base4_c * Trt_c, data = epilepsy)
 conditions <- data.frame(log_Age_c = c(-0.3, 0, 0.3))
 rownames(conditions) <- paste("log_Age_c =", conditions$log_Age_c)

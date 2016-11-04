@@ -3,10 +3,10 @@
 \alias{brmsfit}
 \docType{class}
 \title{
-Class \code{brmsfit} of fitted mixed-effect models
+Class \code{brmsfit} of models fitted with the \pkg{brms} package
 }
 \description{
-Models fitted with the \code{\link[brms:brms]{brms}} package are represented as a \code{brmsfit} object, which contains the posterior samples, the model code, the relevant data, the model formula, and other useful information.
+Models fitted with the \code{\link[brms:brms]{brms}} package are represented as a \code{brmsfit} object, which contains the posterior samples, model formula, \pkg{Stan} code, relevant data, and other useful information.
 }
 
 \details{
@@ -46,6 +46,8 @@ Models fitted with the \code{\link[brms:brms]{brms}} package are represented as 
   \code{\link[brms:VarCorr.brmsfit]{VarCorr}}, 
   \code{\link[brms:vcov.brmsfit]{vcov}}, 
   \code{\link[brms:WAIC.brmsfit]{WAIC}}.
+  
+  See also \code{methods(class = "brmsfit")}.
 }
 
 \section{Slots}{
@@ -77,5 +79,5 @@ Models fitted with the \code{\link[brms:brms]{brms}} package are represented as 
 \code{\link[brms:brms]{brms}}, 
 \code{\link[brms:brm]{brm}},
 \code{\link[brms:brmsformula]{brmsformula}}, 
-\code{\link[brms:brmsfamily]{brmsfamily}},
+\code{\link[brms:brmsfamily]{brmsfamily}}
 }
