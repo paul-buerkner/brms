@@ -226,8 +226,7 @@ stan_fixef <- function(fixef, center_X = TRUE, family = gaussian(),
     if (sparse) {
       stopifnot(!center_X)
       if (nchar(nlpar)) {
-         stop("Sparse matrices are not yet implemented for this model.",
-              call. = FALSE)
+         stop2("Sparse matrices are not yet implemented for this model.")
       }
       out$tdataD <- "  #include tdataD_sparse_X.stan \n"
       out$tdataC <- "  #include tdataC_sparse_X.stan \n"
@@ -302,7 +301,7 @@ stan_ranef <- function(id, ranef, prior = brmsprior(),
   idp <- paste0(r$id, usc(r$nlpar, "prefix"))
   out <- list()
   out$data <- paste0(
-    "  // data for group-specific effects of ID ", id, " \n",
+    "  // data for group-level effects of ID ", id, " \n",
     "  int<lower=1> J_", id, "[N]; \n",
     "  int<lower=1> N_", id, "; \n",
     "  int<lower=1> M_", id, "; \n",
@@ -320,13 +319,13 @@ stan_ranef <- function(id, ranef, prior = brmsprior(),
   }
   out$par <- paste0(
     "  vector<lower=0>[M_", id, "] sd_", id, ";",
-    "  // group-specific standard deviations \n")
+    "  // group-level standard deviations \n")
   if (nrow(r) > 1L && r$cor[1]) {
     # multiple correlated group-level effects
     out$data <- paste0(out$data, "  int<lower=1> NC_", id, "; \n")
     out$par <- paste0(out$par,
       "  matrix[M_", id, ", N_", id, "] z_", id, ";",
-      "  // unscaled group-specific effects \n",    
+      "  // unscaled group-level effects \n",    
       "  // cholesky factor of correlation matrix \n",
       "  cholesky_factor_corr[M_", id, "] L_", id, "; \n")
     out$prior <- paste0(out$prior, 
@@ -334,7 +333,7 @@ stan_ranef <- function(id, ranef, prior = brmsprior(),
                  suffix = paste0("_", id), prior = prior),
       "  to_vector(z_", id, ") ~ normal(0, 1); \n")
     out$transD <- paste0(
-      "  // group-specific effects \n",
+      "  // group-level effects \n",
       "  matrix[N_", id, ", M_", id, "] r_", id, "; \n",
       collapse("  vector[N_", id, "] r_", idp, "_", r$cn, "; \n"))
     if (ccov) {  # customized covariance matrix supplied
@@ -364,10 +363,10 @@ stan_ranef <- function(id, ranef, prior = brmsprior(),
     # single or uncorrelated group-level effects
     out$par <- paste0(out$par,
       "  vector[N_", id, "] z_", id, "[M_", id, "];",
-      "  // unscaled group-specific effects \n")
+      "  // unscaled group-level effects \n")
     out$prior <- paste0(out$prior, collapse(
       "  z_", id, "[", 1:nrow(r), "] ~ normal(0, 1); \n"))
-    out$transD <- paste0("  // group-specific effects \n", 
+    out$transD <- paste0("  // group-level effects \n", 
       collapse("  vector[N_", id, "] r_", idp, "_", r$cn, "; \n"))
     out$transC1 <- collapse(
       "  r_", idp, "_", r$cn, " = sd_", id, "[", J, "] * (", 
@@ -551,8 +550,8 @@ stan_eta_monef <- function(monef, ranef = empty_ranef(), nlpar = "") {
   ranef <- ranef[ranef$nlpar == nlpar & ranef$type == "mono", ]
   invalid_coef <- setdiff(ranef$coef, monef)
   if (length(invalid_coef)) {
-    stop("Monotonic group-level terms require corresponding ",
-         "population-level terms.", call. = FALSE)
+    stop2("Monotonic group-level terms require ", 
+          "corresponding population-level terms.")
   }
   for (i in seq_along(monef)) {
     r <- ranef[ranef$coef == monef[i], ]

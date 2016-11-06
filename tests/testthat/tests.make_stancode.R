@@ -65,12 +65,12 @@ test_that("make_stancode correctly combines strings of multiple grouping factors
   expect_match(make_stancode(count ~ (1|patient) + (1 + Trt_c | visit), 
                              data = epilepsy, family = "poisson"), 
                paste0("  vector[N] Z_1_1; \n",
-                      "  // data for group-specific effects of ID 2 \n"), 
+                      "  // data for group-level effects of ID 2 \n"), 
                fixed = TRUE)
   expect_match(make_stancode(count ~ (1|visit) + (1+Trt_c|patient), 
                              data = epilepsy, family = "poisson"), 
                paste0("  int<lower=1> NC_1; \n",
-                      "  // data for group-specific effects of ID 2 \n"), 
+                      "  // data for group-level effects of ID 2 \n"), 
                fixed = TRUE)
 })
 
@@ -229,7 +229,7 @@ test_that("make_stancode generates correct code for monotonic effects", {
                fixed = TRUE)
   # check that Z_1_1 is (correctly) undefined
   expect_match(scode, paste0("  int<lower=1> M_1; \n",
-    "  // data for group-specific effects of ID 2"), fixed = TRUE)
+    "  // data for group-level effects of ID 2"), fixed = TRUE)
   expect_error(make_stancode(y ~ mono(x1) + (mono(x1+x2)|x2), data = data),
                "Monotonic group-level terms require", fixed = TRUE)
 })

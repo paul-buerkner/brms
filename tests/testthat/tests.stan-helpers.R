@@ -115,7 +115,7 @@ test_that("stan_autocor returns correct strings (or errors)", {
   
   expect_error(stan_autocor(family = poisson(),
                             autocor = cor.arma(~visit|patient, p = 1, q = 1)),
-               "ARMA effects for family poisson are not yet implemented")
+               "not yet implemented for family 'poisson'", fixed = TRUE)
 })  
 
 test_that("stan_ordinal returns correct strings", {
@@ -268,5 +268,5 @@ test_that("stan_mv returns correct Stan code (or errors)", {
                "  cov_matrix[nresp] Sigma; \n")
   expect_equal(stan_mv(hurdle_gamma(), c("y", "huy")), list())
   expect_error(stan_mv(poisson(), c("y1", "y2")),
-               "invalid multivariate model")
+               "not yet implemented for family 'poisson'", fixed = TRUE)
 })

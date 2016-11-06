@@ -31,12 +31,12 @@ stan_llh <- function(family, effects = list(), data = NULL,
   } else if (use_cov(autocor)) {
     # ARMA effects in covariance matrix formulation
     if (ll_adj) {
-      stop("Invalid addition arguments", call. = FALSE)
+      stop2("Invalid addition arguments for this model.")
     }
     family <- paste0(family, "_cov")
   } else if (is(autocor, "cov_fixed")) {
     if (has_se || ll_adj) {
-      stop("Invalid addition arguments", call. = FALSE)
+      stop2("Invalid addition arguments for this model.")
     }
     family <- paste0(family, "_fixed")
   }
@@ -214,8 +214,8 @@ stan_autocor <- function(autocor, effects = list(), family = gaussian(),
   out <- list()
   if (Kar || Kma) {
     if (!is_linear) {
-      stop(paste("ARMA effects for family", family$family, 
-                 "are not yet implemented"), call. = FALSE)
+      stop2("The ARMA correlation structure is not yet implemented ", 
+            "for family '", family$family, "'.") 
     }
     out$data <- paste0(out$data, "  #include 'data_arma.stan' \n")
     # restrict ARMA effects to be in [-1,1] when using covariance
@@ -238,13 +238,13 @@ stan_autocor <- function(autocor, effects = list(), family = gaussian(),
       # a covariance matrix for residuals
       err_msg <- "ARMA covariance matrices are not yet working"
       if (is_mv) {
-        stop(err_msg, " in multivariate models", call. = FALSE)
+        stop2(err_msg, " in multivariate models.")
       }
       if (is.formula(effects$disp)) {
-        stop(err_msg, " when specifying 'disp'", call. = FALSE)
+        stop2(err_msg, " when specifying 'disp'.")
       }
       if ("sigma" %in% names(effects)) {
-        stop(err_msg, " when predicting 'sigma'")
+        stop2(err_msg, " when predicting 'sigma'.")
       }
       out$data <- paste0(out$data, "  #include 'data_arma_cov.stan' \n")
       out$transD <- "  matrix[max(nobs_tg), max(nobs_tg)] res_cov_matrix; \n"
@@ -277,10 +277,10 @@ stan_autocor <- function(autocor, effects = list(), family = gaussian(),
     } else {
       err_msg <- "Please set cov = TRUE in cor_arma / cor_ar / cor_ma"
       if (is.formula(effects$se)) {
-        stop(err_msg, " when specifying 'se'", call. = FALSE)
+        stop2(err_msg, " when specifying 'se'.")
       }
       if (length(effects$nonlinear)) {
-        stop(err_msg, " for non-linear models", call. = FALSE)
+        stop2(err_msg, " for non-linear models.")
       }
       if (is_mv) {
         rs <- usc(resp, "prefix")
@@ -318,9 +318,8 @@ stan_autocor <- function(autocor, effects = list(), family = gaussian(),
   }
   if (is(autocor, "cov_fixed")) {
     if (!is_linear) {
-      stop(paste("Fixed residual covariance matrices for family", 
-                 family$family, "are not yet implemented"), 
-           call. = FALSE)
+      stop2("Fixed residual covariance matrices are not yet ", 
+            "implemented for family '", family$family, "'.") 
     }
     out$data <- "  matrix[N, N] V;  // known residual covariance matrix \n"
     if (family$family %in% "gaussian") {
@@ -330,12 +329,10 @@ stan_autocor <- function(autocor, effects = list(), family = gaussian(),
   }
   if (is(autocor, "cor_bsts")) {
     if (is_mv || family$family %in% c("bernoulli", "categorical")) {
-      stop("The bsts structure is not yet implemented for this family.",
-           call. = FALSE)
+      stop2("The bsts structure is not yet implemented for this family.")
     }
     if (length(effects$nonlinear)) {
-      stop("The bsts structure is not yet implemented for non-linear models",
-           call. = FALSE)
+      stop2("The bsts structure is not yet implemented for non-linear models.")
     }
     out$data <- "  vector[N] tg;  // indicates independent groups \n"
     out$par <- paste0("  vector[N] loclev;  // local level terms \n",
@@ -403,7 +400,8 @@ stan_mv <- function(family, response, prior = brmsprior()) {
         collapse(ulapply(2:nresp, function(i) lapply(1:(i-1), function(j)
           paste0("  rescor[",(i-1)*(i-2)/2+j,"] = Rescor[",j,", ",i,"]; \n")))))
     } else if (!is.forked(family) && !is.categorical(family)) {
-      stop("invalid multivariate model", call. = FALSE)
+      stop2("Multivariate models are not yet implemented ", 
+            "for family '", family$family, "'.")
     }
   }
   out
@@ -632,8 +630,7 @@ stan_disp <- function(effects, family = gaussian()) {
            else if (has_shape(family)) "shape"
            else stop("invalid family for addition argument 'disp'")
     if (!is.null(effects[[par]])) {
-      stop("Specifying 'disp' is not allowed when predicting '", 
-           par, "'", call. = FALSE)
+      stop2("Specifying 'disp' is not allowed when predicting '", par, "'.")
     }
     out$data <- "  vector<lower=0>[N] disp;  // dispersion factors \n"
     out$modelD <- paste0("  vector[N] disp_", par, "; \n")
@@ -769,10 +766,9 @@ stan_prior <- function(class, coef = "", group = "", nlpar = "", suffix = "",
   }
   out <- collapse(out)
   if (prior_only && nchar(class) && !nchar(out)) {
-    stop(paste0("Sampling from priors is not possible because ", 
-                "not all parameters have proper priors. \n",
-                "Error occured for class '", class, "'."), 
-         call. = FALSE)
+    stop2("Sampling from priors is not possible because ", 
+          "not all parameters have proper priors. \n",
+          "Error occured for class '", class, "'.")
   }
   out
 }
