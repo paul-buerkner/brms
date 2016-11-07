@@ -9,8 +9,9 @@
       as aliases of \code{set_prior}, the former 
       allowing to pass arguments without quotes \code{""}
       using non-standard evaluation.
-      \item Add a vignette explaining how to fit
-      phylogenetic multilevel models with \pkg{brms}.
+      \item Introduce four new vignettes explaining how to fit
+      non-linear models, distributional models, phylogenetic models, 
+      and monotonic effects respectively.
       \item Extend the \code{coef} method to better 
       handle category specific group-level effects.
     }
