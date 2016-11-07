@@ -2109,7 +2109,8 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
     if (length(sign) != 1 || length(lr) != 2) {
       stop2("Every hypothesis must be of the form 'left (= OR < OR >) right'.")
     }
-    h <- paste0(lr[1], ifelse(lr[2] != "0", paste0("-(",lr[2],")"), ""))
+    h <- paste0("(", lr[1], ")")
+    h <- paste0(h, ifelse(lr[2] != "0", paste0("-(", lr[2], ")"), ""))
     varsH <- unique(find_names(h))
     parsH <- paste0(class, varsH)
     missing_pars <- setdiff(parsH, pars)
@@ -2120,7 +2121,7 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
     # prepare for renaming of parameters so that h can be evaluated
     parsH <- rename(parsH, "___", ":")
     h_renamed <- rename(h, c("[", "]", ","), c(".", ".", ".."))
-    symbols <- c(paste0("^",class), ":", "\\[", "\\]", ",")
+    symbols <- c(paste0("^", class), ":", "\\[", "\\]", ",")
     subs <- c("", "___", ".", ".", "..")
     # get posterior samples
     samples <- posterior_samples(x, pars = parsH, exact_match = TRUE)
@@ -2151,7 +2152,6 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
       sm[1, 4] <- Inf
     }
     sm <- cbind(sm, ifelse(!(sm[1, 3] <= 0 && 0 <= sm[1, 4]), '*', ''))
-    h <- paste0(lr[1], ifelse(lr[2] != "0", paste0("-(", lr[2], ")"), ""))
     rownames(sm) <- paste(rename(h, "___", ":"), sign, "0")
     cl <- (1 - alpha) * 100
     colnames(sm) <- c("Estimate", "Est.Error", paste0("l-", cl, "% CI"), 

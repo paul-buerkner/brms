@@ -64,7 +64,7 @@ test_that("all S3 methods have reasonable ouputs", {
   # hypothesis
   h1 <- hypothesis(fit1, "Intercept > Trt")
   expect_equal(dim(h1$hypothesis), c(1, 6))
-  expect_output(print(h1), "Intercept-(Trt) > 0", fixed = TRUE)
+  expect_output(print(h1), "(Intercept)-(Trt) > 0", fixed = TRUE)
   expect_silent(p <- plot(h1, plot = FALSE))
   
   h2 <- hypothesis(fit1, "Intercept = 0", class = "sd", group = "visit")
