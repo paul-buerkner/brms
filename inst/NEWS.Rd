@@ -36,6 +36,9 @@
       \item Improve the \code{update} method to better recognize
       situations where recompliation of the \pkg{Stan} code
       is necessary thanks to Raphael P.H.
+      \item Fix an unexpected error occuring in many S3 methods
+      when the thinning rate is not a divisor of the total
+      number of posterior samples thanks to Paul Zerr.
     }
   }
 }

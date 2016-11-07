@@ -23,8 +23,8 @@ Nsamples <- function(x, subset = NULL) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) {
     out <- 0
   } else {
-    ntsamples <- (x$fit@sim$iter - x$fit@sim$warmup) /
-                  x$fit@sim$thin * x$fit@sim$chains
+    ntsamples <- ceiling((x$fit@sim$iter - x$fit@sim$warmup) /
+                          x$fit@sim$thin * x$fit@sim$chains)
     if (length(subset)) {
       out <- length(subset)
       if (out > ntsamples || max(subset) > ntsamples) {

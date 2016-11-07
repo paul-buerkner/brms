@@ -460,7 +460,7 @@ posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,
   warmup <- x$fit@sim$warmup
   thin <- x$fit@sim$thin
   chains <- x$fit@sim$chains
-  final_iter <- (iter - warmup) / thin
+  final_iter <- ceiling((iter - warmup) / thin)
   samples_taken <- seq(warmup + 1, iter, thin)
   
   if (length(pars)) {
