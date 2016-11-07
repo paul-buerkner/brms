@@ -32,7 +32,8 @@ opts_chunk$set(eval = FALSE)
 #  LOO(fit1, fit2)
 
 ## ------------------------------------------------------------------------
-#  loss <- read.csv("https://raw.githubusercontent.com/mages/diesunddas/master/Data/ClarkTriangle.csv")
+#  url <- "https://raw.githubusercontent.com/mages/diesunddas/master/Data/ClarkTriangle.csv"
+#  loss <- read.csv(url)
 #  head(loss)
 
 ## ------------------------------------------------------------------------

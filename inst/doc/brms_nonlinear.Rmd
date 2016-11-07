@@ -23,7 +23,7 @@ This vignette provides an introduction on how to fit non-linear multilevel model
 
 $$\eta_n = \sum_{i = 1}^K b_i x_{ni}$$
 
-where $b_i$ is the regression coefficient of predictor $i$ and $x_{ni}$ is the data of predictor $i$ for observation $n$. This comprises also interaction terms and all sorts of other data transformations. However, the structure of $\eta_n$ is always linear in the sense that the regression coefficients $b_i$ are multiplied by some predictor values and then added up. This implies that the hypothetical predictor term
+where $b_i$ is the regression coefficient of predictor $i$ and $x_{ni}$ is the data of predictor $i$ for observation $n$. This also compromises interaction terms and various other data transformations. However, the structure of $\eta_n$ is always linear in the sense that the regression coefficients $b_i$ are multiplied by some predictor values and then summed up. This implies that the hypothetical predictor term
 
 $$\eta_n = b_1 \exp(b_2 x_n)$$ 
 
@@ -52,9 +52,9 @@ fit1 <- brm(y ~ b1 * exp(b2 * x), nonlinear = b1 + b2 ~ 1,
             data = dat1, prior = prior1)
 ```
 
-When looking at the above code, the first thing that becomes obvious is that the `formula` argument has changed its syntax to display the non-linear formula including predictors (i.e., `x`) and parameters (i.e., `b1` and `b2`). This stands in contrast to classical **R** formulas, where only predictors are given and parameters are implicit. The `nonlinear` argument has two purposes. First, it provides information which variables in `formula` are parameters and which are data. Second, it specifies the linear predictor terms for each parameter. In fact, we should think of non-linear parameters as placeholders for linear predictor terms rather than as parameters itself (see also the following examples). In the present case, we have no further variables to predict `b1` and `b2` and thus we just fit intercepts that represent our estimates of $b_1$ and $b_2$ in the model equation above. The formula `b1 + b2 ~ 1` is a short form of `list(b1 ~ 1, b2 ~ 1)` that can be used if all non-linear parameters share the same formula.
+When looking at the above code, the first thing that becomes obvious is that we changed the `formula` syntax to display the non-linear formula including predictors (i.e., `x`) and parameters (i.e., `b1` and `b2`). This stands in contrast to classical **R** formulas, where only predictors are given and parameters are implicit. The `nonlinear` argument has two purposes. First, it provides information which variables in `formula` are parameters and which are data. Second, it specifies the linear predictor terms for each parameter. In fact, we should think of non-linear parameters as placeholders for linear predictor terms rather than as parameters themselves (see also the following examples). In the present case, we have no further variables to predict `b1` and `b2` and thus we just fit intercepts that represent our estimates of $b_1$ and $b_2$ in the model equation above. The formula `b1 + b2 ~ 1` is a short form of `list(b1 ~ 1, b2 ~ 1)` that can be used if all non-linear parameters share the same formula.
 
-In contrast to generalized linear models, priors on population-level parameters (i.e., 'fixed effects') are often mandatory to identify a non-linear model. Thus, **brms** requires the user to explicitely specify these priors. In the present example, we used a `normal(1, 2)` prior on (the population-level intercept of) `b1`, while we used a `normal(0, 2)` prior on (the population-level intercept of) `b2`. Setting priors is a non-trivial task in all kinds of models, especially in non-linear models, so you should always invest some time to think of appropriate priors. Quite often, you may be forced to change your priors after fitting your model for the first time, when you observe different MCMC chains converging to different posterior regions. This is a clear sign of an idenfication problem and one solution is to set stronger (i.e., more narrow) priors.
+In contrast to generalized linear models, priors on population-level parameters (i.e., 'fixed effects') are often mandatory to identify a non-linear model. Thus, **brms** requires the user to explicitely specify these priors. In the present example, we used a `normal(1, 2)` prior on (the population-level intercept of) `b1`, while we used a `normal(0, 2)` prior on (the population-level intercept of) `b2`. Setting priors is a non-trivial task in all kinds of models, especially in non-linear models, so you should always invest some time to think of appropriate priors. Quite often, you may be forced to change your priors after fitting a non-linear model for the first time, when you observe different MCMC chains converging to different posterior regions. This is a clear sign of an idenfication problem and one solution is to set stronger (i.e., more narrow) priors.
 
 To obtain summaries of the fitted model, we apply
 
@@ -98,7 +98,8 @@ $$\mu_{AY, dev} = ult_{AY} \left(1 - \exp\left(- \left( \frac{dev}{\theta} \righ
 The cumulative insurance payments $cum$ will grow over time, and we model this dependency using the variable $dev$. Further, $ult_{AY}$ is the (to be estimated) ultimate loss of accient each year. It constitutes a non-linear parameter in our framework along with the parameters $\theta$ and $\omega$, which are responsible for the growth of the cumulative loss and are assumed to be the same across years. We load the data
 
 ```{r}
-loss <- read.csv("https://raw.githubusercontent.com/mages/diesunddas/master/Data/ClarkTriangle.csv")
+url <- "https://raw.githubusercontent.com/mages/diesunddas/master/Data/ClarkTriangle.csv"
+loss <- read.csv(url)
 head(loss)
 ```
 
@@ -168,7 +169,7 @@ fit_ir2 <- brm(answer ~ 0.33 + 0.67 * inv_logit(eta),
                prior = prior(normal(0, 5), nlpar = "eta"))
 ```
 
-It is very important to set the link function of the `bernoulli` family to `identity` or we will else apply two link functions. This is because our non-linear predictor term already contains the desired link function (`0.33 + 0.67 * inv_logit`), but the `bernoulli` family does not know about it and applies the default `logit` link on top of it. This will of course lead to strange and uninterpretable results. Thus, please make sure that you set the link function to `identity`, whenever your non-linear predictor term already contains the desired link function.
+It is very important to set the link function of the `bernoulli` family to `identity` or else we will apply two link functions. This is because our non-linear predictor term already contains the desired link function (`0.33 + 0.67 * inv_logit`), but the `bernoulli` family applies the default `logit` link on top of it. This will of course lead to strange and uninterpretable results. Thus, please make sure that you set the link function to `identity`, whenever your non-linear predictor term already contains the desired link function.
 
 ```{r}
 summary(fit_ir2)
@@ -199,4 +200,4 @@ plot(fit_ir3)
 plot(marginal_effects(fit_ir3), points = TRUE)
 ```
 
-The results show that we are able to recover the simulated model parameters with this non-linear model. Of course, real item-response data have multiple items so that controlling for item and person variability becomes necessary as we have multiple observations per item and person. Luckily, this can all be done within the non-linear framework of **brms** and I hope that this vignette serves as a good starting point to dive deeper.
+The results show that we are able to recover the simulated model parameters with this non-linear model. Of course, real item-response data have multiple items so that accounting for item and person variability (e.g., using a multilevel model with varying intercepts) becomes necessary as we have multiple observations per item and person. Luckily, this can all be done within the non-linear framework of **brms** and I hope that this vignette serves as a good starting point.

@@ -18,7 +18,7 @@ opts_chunk$set(eval = FALSE)
 
 ## Introduction
 
-This vignette is about monotonic effects, a special way of handling discrete predictors that are at least on an ordinal scale. The idea was brought to me by   Emmanuel Charpentier, who deserves full credit for it. A predictor, which we want to model as monotonic, must either be integer valued or an ordered factor. As opposed to a continuous predictor, predictor categories (or integers) are not assumend to be equidistant with respect to their effect on the response variable. Instead, the distance between adjacent predictor categories (or integers) is estimated from the data and may vary across categories. This is realized by parameterizing as follows: One parameter, $b$, takes care of the direction and size of the effect similar to an ordinary regression parameter, while an additional parameter vector, $\zeta$, estimates the normalized distances between consecutive predictor categories. For a single monotonic predictor, $x$, the linear predictor term of observation $n$ looks as follows:
+This vignette is about monotonic effects, a special way of handling discrete predictors that are on an ordinal or higher scale. The idea was brought to me by Emmanuel Charpentier, who deserves full credit for it. A predictor, which we want to model as monotonic (i.e., having a monotonically increasing or decreasing relationship with the response), must either be integer valued or an ordered factor. As opposed to a continuous predictor, predictor categories (or integers) are not assumend to be equidistant with respect to their effect on the response variable. Instead, the distance between adjacent predictor categories (or integers) is estimated from the data and may vary across categories. This is realized by parameterizing as follows: One parameter, $b$, takes care of the direction and size of the effect similar to an ordinary regression parameter, while an additional parameter vector, $\zeta$, estimates the normalized distances between consecutive predictor categories. For a single monotonic predictor, $x$, the linear predictor term of observation $n$ looks as follows:
 
 $$\eta_n = b \sum_{i = 1}^{x_n} \zeta_i$$
 
@@ -28,7 +28,7 @@ Throughout the vignette, **R** code output is not shown to reduce installation t
 
 ## A Simple Monotonic Model
 
-A main application of monotonic effects are ordinal predictors that can this way be modeled without falsely treating them either as continuous or as unordered categorical predictors. As an example, suppose we are interested in the relationship of yearly income (in $) and life satisfaction measured on an arbitrary scale from 0 to 100. Usually, people are not asked for the exact income, since they may hesitate to answer. Instead, they are asked to rank themselves in one of certain classes, say: 'below 20k', 'between 20k and 40k', 'between 40k and 100k' and 'above 100k'. We use some simulated data for illustration purposes.
+A main application of monotonic effects are ordinal predictors that can be modeled this way without falsely treating them either as continuous or as unordered categorical predictors. In Psychology, for instance, this kind of data is omnipresent in the form of Likert scale items, which are often treated as being continuous for convenience without ever testing this assumption. As an example, suppose we are interested in the relationship of yearly income (in $) and life satisfaction measured on an arbitrary scale from 0 to 100. Usually, people are not asked for the exact income. Instead, they are asked to rank themselves in one of certain classes, say: 'below 20k', 'between 20k and 40k', 'between 40k and 100k' and 'above 100k'. We use some simulated data for illustration purposes.
 
 ```{r}
 income_options <- c("below_20", "20_to_40", "40_to_100", "greater_100")
@@ -114,7 +114,7 @@ With the following code, we fit a multilevel model assuming the intercept and th
 ```{r}
 fit5 <- brm(ls ~ mono(income) + (1 | city) + (mono(income) | city), data = dat)
 ```
-For technical reasons, monotonic group-level effects have to be specified in separate terms in the model formula. Further, we have used the abbrevation `mono` for `monotonic`, which helps in shortening the formula a bit. The summary output
+For technical reasons, monotonic group-level effects have to be specified in separate terms in the model formula. Further, we have used the abbrevation `mono` for `monotonic`, which helps in shortening the formula. The summary output
 
 ```{r}
 summary(fit5)

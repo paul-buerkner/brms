@@ -19,9 +19,9 @@ opts_chunk$set(eval = FALSE)
 
 ## Introduction
 
-This vignette provides an introduction on how to fit distributional regression models with **brms**. We use the term *distributional model* to refer to a model, in which we can specify predictor terms for all parameters of the assumed response distribution. In the vast majority of regression model implementations, only the location parameter (usually the mean) of the response distribution depends on the predictors and corresponding regression parameters. Other parameters (e.g., scale or shape parameters) are estimated as auxilliary parameters assuming them to be constant across observations. This assumption is so common that most researchers applying regression models are often (in my experience) not aware of the possibility of relaxing it. This is understandable insofar as relaxing this assumption drastically increase model complexity and thus makes models hard to fit. Luckily, **brms** uses **Stan** on the backend, which is an increadible flexible and powerful tool for estimating Bayesian models so that model complexity is much less of an issue anymore.
+This vignette provides an introduction on how to fit distributional regression models with **brms**. We use the term *distributional model* to refer to a model, in which we can specify predictor terms for all parameters of the assumed response distribution. In the vast majority of regression model implementations, only the location parameter (usually the mean) of the response distribution depends on the predictors and corresponding regression parameters. Other parameters (e.g., scale or shape parameters) are estimated as auxilliary parameters assuming them to be constant across observations. This assumption is so common that most researchers applying regression models are often (in my experience) not aware of the possibility of relaxing it. This is understandable insofar as relaxing this assumption drastically increase model complexity and thus makes models hard to fit. Fortunately, **brms** uses **Stan** on the backend, which is an incredibly flexible and powerful tool for estimating Bayesian models so that model complexity is much less of an issue.
 
-Suppose we have a normally distributed response variable. Then, in basic linear regression, we specify a predictor term $\eta_{\mu}$ for the mean parameter $\mu$ of the normal distribution. The second parameter of the normal distribution -- the residual standard deviation $\sigma$ -- is assumed to be constant across observations. We estimate $\sigma$ but do not try to *predict* it. In a distributional model, however, we do exactly this by allowing to specify a predictor term $\eta_{\sigma}$ for $\sigma$ in addition to the predictor term $\eta_{\mu}$. Ignoring group-level effects for the moment, the linear predictor of a parameter $\theta$ for observation $n$ has the form
+Suppose we have a normally distributed response variable. Then, in basic linear regression, we specify a predictor term $\eta_{\mu}$ for the mean parameter $\mu$ of the normal distribution. The second parameter of the normal distribution -- the residual standard deviation $\sigma$ -- is assumed to be constant across observations. We estimate $\sigma$ but do not try to *predict* it. In a distributional model, however, we do exactly this by specifying a predictor term $\eta_{\sigma}$ for $\sigma$ in addition to the predictor term $\eta_{\mu}$. Ignoring group-level effects for the moment, the linear predictor of a parameter $\theta$ for observation $n$ has the form
 
 $$\eta_{\theta n} = \sum_{i = 1}^{K_{\theta}} b_{\theta i} x_{\theta i n}$$
 where $x_{\theta i n}$ denotes the value of the $i$th predictor of parameter $\theta$ for observation $n$ and $b_{\theta i}$ is the $i$th regression coefficient of parameter $\theta$. A distributional normal model with response variable $y$ can then be written as
@@ -33,7 +33,7 @@ Throughout the vignette, **R** code output is not shown to reduce installation t
 
 ## A simple distributional model
 
-Possibly the most simple, but nevertheless very important application of distributional models, is linear regression with heterogeneous variance across groups. Suppose we have two groups of patients: One group recieves a treatment (e.g., an antidepressive drug) and another group recieves placebo. Since the treatment may not work equally well for all patients, the symptom variance of the treatment group may be larger than the symptom variance of the placebo group after some weeks of treatment. For simplicity, assume that we only investigate the post-treatment values.
+Unequal variance models are possibly the most simple, but nevertheless very important application of distributional models. Suppose we have two groups of patients: One group recieves a treatment (e.g., an antidepressive drug) and another group recieves placebo. Since the treatment may not work equally well for all patients, the symptom variance of the treatment group may be larger than the symptom variance of the placebo group after some weeks of treatment. For simplicity, assume that we only investigate the post-treatment values.
 
 ```{r}
 group <- rep(c("treat", "placebo"), each = 30)
@@ -78,7 +78,7 @@ Indeed, the residual standard deviation of the treatment group seems to larger t
 
 ## Zero-Inflated Models
 
-Another important application of the distributional regression framwork are so called zero-inflated models. These models are helpful whenever there are more zeros in the response variable than one would naturally expect. For example, if one seeks to predict the number of cigarettes people smoke per day and also includes non-smokers, there will be a huge amount of zeros, which when remain unmodeled, can seriously distort parameter estimates. Here, we consider another example dealing with the number of fish caught by various groups of people. 
+Another important application of the distributional regression framwork are so called zero-inflated models. These models are helpful whenever there are more zeros in the response variable than one would naturally expect. For example, if one seeks to predict the number of cigarettes people smoke per day and also includes non-smokers, there will be a huge amount of zeros which, when not modeled appropriately, can seriously distort parameter estimates. Here, we consider another example dealing with the number of fish caught by various groups of people. 
 
 ```{r}
 zinb <- read.csv("http://www.ats.ucla.edu/stat/data/fish.csv")
@@ -100,9 +100,9 @@ plot(fit_zinb1)
 plot(marginal_effects(fit_zinb1), ask = FALSE)
 ```
 
-According to the parameter estimates, larger groups catch more fish, campers catch more fish than non-campers, and children are really bad at catching fish. The zero-inflation probability `zi` is pretty large with a mean of 41%. Please note that the probability of catching no fish is actually higher than 41%, but parts of this probability are already modeled by the poisson distribution itself (hence the name zero-*inflation*). If you want to treat all zeros as origniating from a separate process, you can use hurdle models instead. 
+According to the parameter estimates, larger groups catch more fish, campers catch more fish than non-campers, and children are really bad at catching fish. The zero-inflation probability `zi` is pretty large with a mean of 41%. Please note that the probability of catching no fish is actually higher than 41%, but parts of this probability are already modeled by the poisson distribution itself (hence the name zero-*inflation*). If you want to treat all zeros as origniating from a separate process, you can use hurdle models instead (not shown here). 
 
-Now, we try to additionally predict the zero-inflation probability by the number of children.
+Now, we try to additionally predict the zero-inflation probability by the number of children. But why should we predict the zero-inflation probability at all? One line of reasong might go as follows. We assume two processes behind our response, the first being the basic Poisson process and the second being the zero-inflation process. For the smoker example, it is easy to interprete the zero-inflation process as the decision between smoking and non-smoking in general, which is definitely worth investigating using regression techniques. For other applications of zero-inflated models, for instance in the fishing example, it may not necessarily be that easy to interprete the zero-inflation process (or maybe it is, I have no idea of fishing), but the statistical idea remains the same: Each of the two processes comes with its own implied distribution and the zero-inflated Poisson distribution is a mixture of the two. From this perspective, predicting both parts of the model is natural and reasonable to fully understand the data.
 
 ```{r}
 fit_zinb2 <- brm(bf(count ~ persons + child + camper, zi ~ child), 
@@ -119,11 +119,13 @@ To transform the linear predictor of `zi` into a probability, **brms** implicitl
 
 $$logit(zi) = \log\left(\frac{zi}{1-zi}\right) = \eta_{zi}$$
 
-According to the model, trying to fish with children not only decreases the overall number fish caught, but on top of that also drastically increases your change of catching no fish at all.
+The logit-link takes values within $[0, 1]$ and returns values on the real line. Thus, it allows the transition between probabilities and linear predictors. 
+
+According to the model, trying to fish with children not only decreases the overall number fish caught (as implied by the Poisson part of the model), but on top of that also drastically increases your change of catching no fish at all (as implied by the zero-inflation part).
 
 ## Additive Distributional Models
 
-In the examples so far, we did not have multilevel data and thus did not fully use the capabilities of the distributional regression framework of **brms**. Below we simulate some data using the **mgcv** package.
+In the examples so far, we did not have multilevel data and thus did not fully use the capabilities of the distributional regression framework of **brms**. In the example presented below, we will not only show how to deal with multilevel data in distributional models, but also how to incorporate smooth terms (i.e., splines) into the model. In many applications, we have no or only a very vaque idea how the relationship between a predictor and the response looks like. A very flexible approach to tackle this problems is to use splines and let them figure out the form of the relationship. For illustration purposes, we simulate some data with the **mgcv** package, which is also used in **brms** to prepare smooth terms.
 
 ```{r}
 library(mgcv)
@@ -145,4 +147,4 @@ plot(fit_smooth1, ask = FALSE)
 plot(marginal_effects(fit_smooth1), points = TRUE, ask = FALSE)
 ```
 
-This model is likely an overkill for the data at hand, but demonstrates nicely how easy it is to specify complex models with **brms** and to fit them using **Stan** on the backend.
+This model is likely an overkill for the data at hand, but nicely demonstrates the ease with which one can specify complex models with **brms** and to fit them using **Stan** on the backend.
