@@ -2,7 +2,7 @@
 title: "Parameterization of Response Distributions in brms"
 author: "Paul Bürkner"
 date: "`r Sys.Date()`"
-output: rmarkdown::pdf_document
+output: rmarkdown::html_vignette
 ---
 
 <!--
