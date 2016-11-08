@@ -4,12 +4,14 @@ array2list <- function(x) {
   #   x: an arrary of dimension d
   # Returns: 
   #   A list of arrays of dimension d-1
-  if (is.null(dim(x))) stop("Argument x has no dimension")
+  if (is.null(dim(x))) {
+    stop("Argument 'x' has no dimension.")
+  }
   ndim <- length(dim(x))
   l <- list(length = dim(x)[ndim])
   ind <- collapse(rep(",", ndim - 1))
   for (i in seq_len(dim(x)[ndim])) {
-    l[[i]] <- eval(parse(text = paste0("x[", ind, i,"]"))) 
+    l[[i]] <- eval(parse(text = paste0("x[", ind, i, "]"))) 
   }
   names(l) <- dimnames(x)[[ndim]]
   l
@@ -28,7 +30,7 @@ Nsamples <- function(x, subset = NULL) {
     if (length(subset)) {
       out <- length(subset)
       if (out > ntsamples || max(subset) > ntsamples) {
-        stop("invalid 'subset' argument", call. = FALSE)
+        stop2("Argument 'subset' is invalid.")
       }
     } else {
       out <- ntsamples
@@ -39,8 +41,7 @@ Nsamples <- function(x, subset = NULL) {
 
 contains_samples <- function(x) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) {
-    stop("The model does not contain posterior samples",
-         call. = FALSE)
+    stop2("The model does not contain posterior samples.")
   }
   invisible(TRUE)
 }
@@ -249,7 +250,7 @@ get_summary <- function(samples, probs = c(0.025, 0.975),
                             probs = probs))), along = 3)
     dimnames(out) <- list(NULL, NULL, paste0("P(Y = ", 1:dim(out)[3], ")")) 
   } else { 
-    stop("dimension of 'samples' must be either 2 or 3") 
+    stop("Dimension of 'samples' must be either 2 or 3.") 
   }
   rownames(out) <- seq_len(nrow(out))
   colnames(out) <- c("Estimate", "Est.Error", paste0(probs * 100, "%ile"))
@@ -622,7 +623,7 @@ compare_ic <- function(x, ic = c("waic", "loo")) {
   nlist(ic_diffs, weights)
 }
 
-set_pointwise <- function(x, newdata = NULL, subset = NULL, thres = 1e+07) {
+set_pointwise <- function(x, newdata = NULL, subset = NULL, thres = 1e+08) {
   # set the pointwise argument based on the model size
   # Args:
   #   x: a brmsfit object
@@ -639,9 +640,9 @@ set_pointwise <- function(x, newdata = NULL, subset = NULL, thres = 1e+07) {
   }
   pointwise <- nsamples * nobs > thres
   if (pointwise) {
-    message(paste0("Switching to pointwise evaluation to reduce ",  
-                   "RAM requirements.\nThis will likely increase ",
-                   "computation time."))
+    message("Switching to pointwise evaluation to reduce ",  
+            "RAM requirements.\nThis will likely increase ",
+            "computation time.")
   }
   pointwise
 }
@@ -674,8 +675,8 @@ match_response <- function(models) {
       out <- TRUE
     } else {
       out <- FALSE
-      warning("Model comparisons are most likely invalid as the response ", 
-              "parts of at least two models do not match.", call. = FALSE)
+      warning2("Model comparisons are most likely invalid as the response ", 
+               "parts of at least two models do not match.")
     }
   }
   invisible(out)
@@ -691,8 +692,9 @@ find_names <- function(x) {
   #   currently only used in hypothesis.brmsfit
   # Returns:
   #   all valid variable names within the string
-  if (!is.character(x) || length(x) > 1) 
-    stop("x must be a character string of length 1")
+  if (!is.character(x) || length(x) > 1) {
+    stop("Argument 'x' must be a character string of length one.")
+  }
   x <- gsub(" ", "", x)
   reg_all <- paste0("([^([:digit:]|[:punct:])]|\\.)[[:alnum:]_\\.]*", 
                     "(\\[[^],]+(,[^],]+)*\\])?")
