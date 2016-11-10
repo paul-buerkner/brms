@@ -244,22 +244,26 @@ extract_gam <- function(formula) {
   gam_terms <- all_terms[pos_gam_terms]
   if (length(gam_terms)) {
     if (any(grepl("^(te|ti)\\(", gam_terms))) {
-      stop("Tensor product splines 'te' and 'ti' are not yet ", 
-           "implemented in brms. Consider using 't2' instead.",
-           call. = FALSE)
+      stop2("Tensor product splines 'te' and 'ti' are not yet ", 
+            "implemented in brms. Consider using 't2' instead.")
     }
-    covars <- named_list(gam_terms)
+    covars <- byvars <- named_list(gam_terms)
     for (i in seq_along(gam_terms)) {
-      covars[[i]] <- eval_spline(gam_terms[i])$term
+      es <- eval_spline(gam_terms[i])
+      covars[[i]] <- es$term
+      if (es$by != "NA") {
+        byvars[[i]] <- es$by 
+      }
     }
     gam_terms <- formula(paste("~", paste(gam_terms, collapse = "+")))
     allvars <- mgcv::interpret.gam(gam_terms)$fake.formula
   } else {
-    covars <- NULL
+    covars <- byvars <- NULL
     allvars <- ~ 1
   }
   structure(gam_terms, pos = pos_gam_terms, 
-            covars = covars, allvars = allvars)
+            covars = covars, byvars = byvars,  
+            allvars = allvars)
 }
 
 extract_random <- function(re_terms) {
@@ -797,7 +801,13 @@ get_spline_labels <- function(x, data = NULL, covars = FALSE) {
   splines <- term_labels[grepl("^(s|t2|te|ti)\\(", term_labels)] 
   if (covars) {
     sfuns <- get_matches("^[^\\(]+", splines)
-    splines <- paste0(sfuns, ulapply(attr(x$gam, "covars"), collapse))
+    covars <- attr(x$gam, "covars")
+    byvars <- attr(x$gam, "byvars")
+    var_labels <- named_list(attr(x$gam, "covars"))
+    for (i in seq_along(var_labels)) {
+      var_labels[[i]] <- c(covars[[i]], byvars[[i]])
+    }
+    splines <- paste0(sfuns, ulapply(var_labels, collapse))
   }
   if (length(splines) && !is.null(data)) {
     # one spline term may contain multiple spline matrices
