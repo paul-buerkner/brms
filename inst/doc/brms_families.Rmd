@@ -54,7 +54,7 @@ where $\alpha$ is again a positive shape parameter. The **exponential** family a
 
 ## Beta models
 
-The density of the **beta** family for $y_i \in (0,1)$ is given by
+The density of the **Beta** family for $y_i \in (0,1)$ is given by
 $$f(y_i) = \frac{y_i^{g(\eta_i) \phi - 1} (1-y_i)^{(1-g(\eta_i)) \phi)-1}}{B(g(\eta_i) \phi, (1-g(\eta_i)) \phi)}$$
 where $B$ is the beta function and $\phi$ is a positive precision parameter.
 
@@ -96,4 +96,4 @@ The zero-inflation part has its own linear predictor $\eta_{zi}$ combined with t
 The density of a **hurdle** family is given by 
 $$f_z(y_i) = g_z(\eta_{zi}) \quad \text{if } y_i = 0 \\
   f_z(y_i) = (1 - g_z(\eta_{zi})) f(y_i) / (1 - f(0)) \quad \text{if } y_i > 0$$
-Currently implemented families are **hurdle_poisson**, **hurdle_negbinomial**, and **hurdle_gamma**. Both linear predictors (i.e., $\eta$ and $\eta_z$) can be specified within the `formula` argument. See `help(brmsformula)` for instructions on how to do that.
+Currently implemented families are **hurdle_poisson**, **hurdle_negbinomial**, **hurdle_gamma**, and **hurdle_lognormal**. Both linear predictors (i.e., $\eta$ and $\eta_z$) can be specified within the `formula` argument. See `help(brmsformula)` for instructions on how to do that.

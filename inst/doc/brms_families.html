@@ -12,7 +12,7 @@
 
 <meta name="author" content="Paul Bürkner" />
 
-<meta name="date" content="2016-11-08" />
+<meta name="date" content="2016-11-11" />
 
 <title>Parameterization of Response Distributions in brms</title>
 
@@ -32,7 +32,7 @@
 
 <h1 class="title toc-ignore">Parameterization of Response Distributions in brms</h1>
 <h4 class="author"><em>Paul Bürkner</em></h4>
-<h4 class="date"><em>2016-11-08</em></h4>
+<h4 class="date"><em>2016-11-11</em></h4>
 
 
 
@@ -65,7 +65,7 @@
 </div>
 <div id="beta-models" class="section level2">
 <h2>Beta models</h2>
-<p>The density of the <strong>beta</strong> family for <span class="math inline">\(y_i \in (0,1)\)</span> is given by <span class="math display">\[f(y_i) = \frac{y_i^{g(\eta_i) \phi - 1} (1-y_i)^{(1-g(\eta_i)) \phi)-1}}{B(g(\eta_i) \phi, (1-g(\eta_i)) \phi)}\]</span> where <span class="math inline">\(B\)</span> is the beta function and <span class="math inline">\(\phi\)</span> is a positive precision parameter.</p>
+<p>The density of the <strong>Beta</strong> family for <span class="math inline">\(y_i \in (0,1)\)</span> is given by <span class="math display">\[f(y_i) = \frac{y_i^{g(\eta_i) \phi - 1} (1-y_i)^{(1-g(\eta_i)) \phi)-1}}{B(g(\eta_i) \phi, (1-g(\eta_i)) \phi)}\]</span> where <span class="math inline">\(B\)</span> is the beta function and <span class="math inline">\(\phi\)</span> is a positive precision parameter.</p>
 </div>
 <div id="circular-models" class="section level2">
 <h2>Circular models</h2>
@@ -83,7 +83,7 @@
 <h2>Zero-inflated and hurdle models</h2>
 <p><strong>Zero-inflated</strong> and <strong>hurdle</strong> families extend existing families by adding special processes for responses that are zero. The densitiy of a <strong>zero-inflated</strong> family is given by <span class="math display">\[f_z(y_i) = g_z(\eta_{zi}) + (1 - g_z(\eta_{zi})) f(y_i) \quad \text{if } y_i = 0 \\
   f_z(y_i) = (1 - g_z(\eta_{zi}) f(y_i) \quad \text{if } y_i &gt; 0\]</span> The zero-inflation part has its own linear predictor <span class="math inline">\(\eta_{zi}\)</span> combined with the logit link <span class="math inline">\(g_z\)</span>. Currently implemented families are <strong>zero_inflated_poisson</strong>, <strong>zero_inflated_binomial</strong>, <strong>zero_inflated_negbinomial</strong>, and <strong>zero_inflated_beta</strong>. The density of a <strong>hurdle</strong> family is given by <span class="math display">\[f_z(y_i) = g_z(\eta_{zi}) \quad \text{if } y_i = 0 \\
-  f_z(y_i) = (1 - g_z(\eta_{zi})) f(y_i) / (1 - f(0)) \quad \text{if } y_i &gt; 0\]</span> Currently implemented families are <strong>hurdle_poisson</strong>, <strong>hurdle_negbinomial</strong>, and <strong>hurdle_gamma</strong>. Both linear predictors (i.e., <span class="math inline">\(\eta\)</span> and <span class="math inline">\(\eta_z\)</span>) can be specified within the <code>formula</code> argument. See <code>help(brmsformula)</code> for instructions on how to do that.</p>
+  f_z(y_i) = (1 - g_z(\eta_{zi})) f(y_i) / (1 - f(0)) \quad \text{if } y_i &gt; 0\]</span> Currently implemented families are <strong>hurdle_poisson</strong>, <strong>hurdle_negbinomial</strong>, <strong>hurdle_gamma</strong>, and <strong>hurdle_lognormal</strong>. Both linear predictors (i.e., <span class="math inline">\(\eta\)</span> and <span class="math inline">\(\eta_z\)</span>) can be specified within the <code>formula</code> argument. See <code>help(brmsformula)</code> for instructions on how to do that.</p>
 </div>
 
 
