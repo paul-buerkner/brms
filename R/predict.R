@@ -290,6 +290,17 @@ predict_hurdle_gamma <- function(i, draws, ...) {
   ifelse(hu < theta, 0, rgamma(ndraws, shape = shape, scale = scale))
 }
 
+predict_hurdle_lognormal <- function(i, draws, ...) {
+  # theta is the bernoulli hurdle parameter
+  theta <- get_theta(draws, i, par = "hu")
+  mu <- ilink(get_eta(draws, i), draws$f$link)
+  sigma <- get_sigma(draws$sigma, data = draws$data, i = i)
+  ndraws <- draws$nsamples
+  # compare with theta to incorporate the hurdle process
+  hu <- runif(ndraws, 0, 1)
+  ifelse(hu < theta, 0, rlnorm(ndraws, meanlog = mu, sdlog = sigma))
+}
+
 predict_zero_inflated_beta <- function(i, draws, ...) {
   # theta is the bernoulli hurdle parameter
   theta <- get_theta(draws, i, par = "zi")

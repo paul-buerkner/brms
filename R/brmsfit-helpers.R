@@ -323,6 +323,7 @@ get_cov_matrix_ar1 <- function(ar, sigma, nrows, se2 = 0) {
   #   nrows: number of rows of the covariance matrix
   # Returns:
   #   An nsamples x nrows x nrows AR1 covariance array (!)
+  sigma <- as.matrix(sigma)
   mat <- array(diag(se2, nrows), dim = c(nrows, nrows, nrow(sigma)))
   mat <- aperm(mat, perm = c(3, 1, 2))
   sigma2_adjusted <- sigma^2 / (1 - ar^2)
@@ -347,6 +348,7 @@ get_cov_matrix_ma1 <- function(ma, sigma, nrows, se2 = 0) {
   #   nrows: number of rows of the covariance matrix
   # Returns:
   #   An nsamples x nrows x nrows MA1 covariance array (!)
+  sigma <- as.matrix(sigma)
   mat <- array(diag(se2, nrows), dim = c(nrows, nrows, nrow(sigma)))
   mat <- aperm(mat, perm = c(3, 1, 2))
   sigma2 <- sigma^2
@@ -374,6 +376,7 @@ get_cov_matrix_arma1 <- function(ar, ma, sigma, nrows, se2 = 0) {
   #   nrows: number of rows of the covariance matrix
   # Returns:
   #   An nsamples x nrows x nrows ARMA1 covariance array (!)
+  sigma <- as.matrix(sigma)
   mat <- array(diag(se2, nrows), dim = c(nrows, nrows, nrow(sigma)))
   mat <- aperm(mat, perm = c(3, 1, 2))
   sigma2_adjusted <- sigma^2 / (1 - ar^2)
@@ -400,6 +403,7 @@ get_cov_matrix_ident <- function(sigma, nrows, se2 = 0) {
   #   nrows: number of rows of the covariance matrix
   # Returns:
   #   An nsamples x nrows x nrows sigma array
+  sigma <- as.matrix(sigma)
   mat <- array(diag(se2, nrows), dim = c(nrows, nrows, nrow(sigma)))
   mat <- aperm(mat, perm = c(3, 1, 2))
   sigma2 <- sigma^2
@@ -474,16 +478,18 @@ get_theta <- function(draws, i = NULL, par = c("zi", "hu")) {
 get_se <- function(data, i = NULL, dim = NULL) {
   # extract user-defined standard errors
   # Args: see get_auxpar
-  se <- data$se
+  se <- data[["se"]]
   if (is.null(se)) {
     # for backwards compatibility with brms <= 0.5.0
-    se <- data$sigma
+    se <- data[["sigma"]]
   }
-  if (!is.null(i)) {
-    se <- se[i]
-  } else {
-    stopifnot(!is.null(dim))
-    se <- matrix(se, nrow = dim[1], ncol = dim[2], byrow = TRUE)
+  if (!is.null(se)) {
+    if (!is.null(i)) {
+      se <- se[i]
+    } else {
+      stopifnot(!is.null(dim))
+      se <- matrix(se, nrow = dim[1], ncol = dim[2], byrow = TRUE)
+    }
   }
   se
 }

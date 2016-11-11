@@ -48,7 +48,8 @@ test_that("self-defined Stan functions work correctly", {
                sum(dinvgauss(y, mean = mu, shape = shape, log = TRUE)))
   
   # zero-inflated and hurdle log-densities
-  draws <- draws2 <- list(eta = matrix(rnorm(4), ncol = 4), shape = 2, phi = 2)
+  draws <- draws2 <- list(eta = matrix(rnorm(4), ncol = 4), 
+                          shape = 2, phi = 2, sigma = 2)
   draws$data <- list(Y = c(0, 10), N_trait = 2, max_obs = 15)
   draws2$data <- list(Y = c(0, 0.5), N_trait = 2)
   for (i in seq_along(draws$data$Y)) {
@@ -92,6 +93,14 @@ test_that("self-defined Stan functions work correctly", {
     expect_equal(do.call(hurdle_gamma_logit_lpdf, 
                          c(eta_hu_args, shape = draws$shape)),
                  loglik_hurdle_gamma(i, draws))
+    
+    draws$f$link <- "identity"
+    expect_equal(do.call(hurdle_lognormal_lpdf, 
+                         c(hu_args, sigma = draws$sigma)),
+                 loglik_hurdle_lognormal(i, draws))
+    expect_equal(do.call(hurdle_lognormal_logit_lpdf, 
+                         c(eta_hu_args, sigma = draws$sigma)),
+                 loglik_hurdle_lognormal(i, draws))
     
     draws$f$link <- "logit"
     expect_equal(do.call(zero_inflated_binomial_lpmf, 

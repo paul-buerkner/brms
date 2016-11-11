@@ -133,6 +133,9 @@ test_that("make_stancode returns correct self-defined functions", {
   expect_match(make_stancode(count ~ Trt_c, data = epilepsy, 
                              family = hurdle_gamma("log")),
                "real hurdle_gamma_lpdf(real y", fixed = TRUE)
+  expect_match(make_stancode(count ~ Trt_c, data = epilepsy, 
+                             family = hurdle_lognormal("identity")),
+               "real hurdle_lognormal_lpdf(real y", fixed = TRUE)
   # linear models with special covariance structures
   expect_match(make_stancode(rating ~ treat, data = inhaler, 
                              autocor = cor_ma(cov = TRUE)),

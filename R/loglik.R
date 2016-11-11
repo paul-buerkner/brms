@@ -302,6 +302,15 @@ loglik_hurdle_gamma <- function(i, draws, data = data.frame()) {
   weight_loglik(out, i = i, data = draws$data)
 }
 
+loglik_hurdle_lognormal <- function(i, draws, data = data.frame()) {
+  theta <- get_theta(draws, i, par = "hu")
+  sigma <- get_sigma(draws$sigma, data = draws$data, i = i)
+  args <- list(meanlog = ilink(get_eta(draws, i), draws$f$link), sdlog = sigma)
+  out <- hurdle_loglik_continuous(pdf = dlnorm, theta = theta, 
+                                  args = args, i = i, data = draws$data)
+  weight_loglik(out, i = i, data = draws$data)
+}
+
 loglik_zero_inflated_poisson <- function(i, draws, data = data.frame()) {
   theta <- get_theta(draws, i, par = "zi")
   args <- list(lambda = ilink(get_eta(draws, i), draws$f$link))

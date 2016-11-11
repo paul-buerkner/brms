@@ -5,6 +5,8 @@
 \section{CHANGES IN VERSION 1.1.0++}{
   \subsection{NEW FEATURES}{
     \itemize{
+      \item Add the new family \code{hurdle_lognormal}
+      specifically suited for zero-inflated continuous responses.
       \item Add functions \code{prior} and \code{prior_string}
       as aliases of \code{set_prior}, the former 
       allowing to pass arguments without quotes \code{""}

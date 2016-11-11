@@ -40,8 +40,10 @@ fitted_response <- function(draws, mu) {
     mu <- fitted_catordinal(mu, max_obs = data$max_obs, family = draws$f)
   } else if (is.hurdle(draws$f)) {
     shape <- get_shape(draws$shape, data = draws$data, dim = dim)
+    sigma <- get_sigma(draws$sigma, data = draws$data, dim = dim)
     hu <- get_theta(draws, par = "hu")
-    mu <- fitted_hurdle(mu, hu = hu, shape = shape, family = draws$f)
+    mu <- fitted_hurdle(mu, hu = hu, family = draws$f,
+                        shape = shape, sigma = sigma)
   } else if (is.zero_inflated(draws$f)) {
     zi <- get_theta(draws, par = "zi")
     mu <- fitted_zero_inflated(mu, zi = zi, family = draws$f)
@@ -91,7 +93,7 @@ fitted_catordinal <- function(mu, max_obs, family) {
   aperm(abind(lapply(1:ncol(mu), get_density), along = 3), perm = c(1, 3, 2))
 }
 
-fitted_hurdle <- function(mu, hu, shape, family) {
+fitted_hurdle <- function(mu, hu, family, shape = NULL, sigma = NULL) {
   # Args:
   #   mu: linear predictor matrix
   #   hu: hurdle probability samples
@@ -107,11 +109,13 @@ fitted_hurdle <- function(mu, hu, shape, family) {
     adjusted_mu <- pre_mu / (1 - exp(-pre_mu))
   } else if (family$family == "hurdle_negbinomial") {
     adjusted_mu <- pre_mu / (1 - (shape / (pre_mu + shape))^shape)
+  } else if (family$family == "hurdle_lognormal") {
+    adjusted_mu <- exp(pre_mu + sigma^2 / 2)  
   } else {
     adjusted_mu <- pre_mu
   }
   # incorporate hurdle part
-  pre_mu * (1 - hu)
+  adjusted_mu * (1 - hu)
 }
 
 fitted_zero_inflated <- function(mu, zi, family) {

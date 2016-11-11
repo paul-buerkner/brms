@@ -16,8 +16,9 @@
 #'   \code{exponential}, \code{weibull}, \code{Beta}, \code{von_mises},
 #'   \code{categorical}, \code{cumulative}, \code{cratio}, \code{sratio}, 
 #'   \code{acat}, \code{hurdle_poisson}, \code{hurdle_negbinomial}, 
-#'   \code{hurdle_gamma}, \code{zero_inflated_binomial},
-#'   \code{zero_inflated_beta}, \cr \code{zero_inflated_negbinomial}, 
+#'   \code{hurdle_gamma}, \code{hurdle_lognormal}, 
+#'   \code{zero_inflated_binomial}, \cr \code{zero_inflated_beta},
+#'   \code{zero_inflated_negbinomial}, 
 #'   and \code{zero_inflated_poisson}.
 #' @param link A specification for the model link function. 
 #'   This can be a name/expression or character string. 
@@ -122,8 +123,9 @@ brmsfamily <- function(family, link = NULL) {
     "inverse.gaussian", "beta", "von_mises",
     "cumulative", "cratio", "sratio", "acat",
     "hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma",
-    "zero_inflated_poisson", "zero_inflated_negbinomial",
-    "zero_inflated_binomial", "zero_inflated_beta")
+    "hurdle_lognormal", "zero_inflated_poisson", 
+    "zero_inflated_negbinomial", "zero_inflated_binomial", 
+    "zero_inflated_beta")
   if (!family %in% ok_families) {
     stop(family, " is not a supported family. Supported families are: \n",
          paste(ok_families, collapse = ", "), call. = FALSE)
@@ -145,12 +147,14 @@ brmsfamily <- function(family, link = NULL) {
     ok_links <- c("logit")
   } else if (is.skewed(family)) {
     ok_links <- c("log", "identity", "inverse")
-  } else if (family %in% "lognormal") {
+  } else if (is.lognormal(family)) {
     ok_links <- c("identity", "inverse")
+  } else if (family %in% "hurdle_lognormal") {
+    ok_links <- c("identity")
   } else if (family %in% "von_mises") {
     ok_links <- c("tan_half")
   } else if (is.hurdle(family) || is.zero_inflated(family)) {
-    # does not include zi_binomial or zi_beta
+    # does not include zi_binomial, zi_beta, or hu_lognormal
     ok_links <- c("log")
   }
   # non-standard evaluation of link
@@ -261,6 +265,13 @@ hurdle_negbinomial <- function(link = "log") {
 hurdle_gamma <- function(link = "log") {
   slink <- substitute(link)
   .brmsfamily("hurdle_gamma", link = link, slink = slink)
+}
+
+#' @rdname brmsfamily
+#' @export
+hurdle_lognormal <- function(link = "identity") {
+  slink <- substitute(link)
+  .brmsfamily("hurdle_lognormal", link = link, slink = slink)
 }
 
 #' @rdname brmsfamily
@@ -408,7 +419,7 @@ is.lognormal <- function(family) {
   if (is(family, "family")) {
     family <- family$family
   }
-  family %in% "lognormal"
+  family %in% c("lognormal")
 }
 
 is.count <- function(family) {
@@ -426,7 +437,7 @@ is.hurdle <- function(family, zi_beta = TRUE) {
   }
   # zi_beta is technically a hurdle model
   family %in% c("hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma",
-                if (zi_beta) "zero_inflated_beta")
+                "hurdle_lognormal", if (zi_beta) "zero_inflated_beta")
 }
 
 is.zero_inflated <- function(family, zi_beta = FALSE) {
@@ -478,7 +489,7 @@ use_real <- function(family) {
   }
   is.linear(family) || is.skewed(family) || 
     family %in% c("lognormal", "inverse.gaussian", "beta", "von_mises",
-                  "zero_inflated_beta", "hurdle_gamma")
+                  "zero_inflated_beta", "hurdle_gamma", "hurdle_lognormal")
 }
 
 use_int <- function(family) {
@@ -549,8 +560,12 @@ has_sigma <- function(family, effects = NULL, autocor = cor_arma(),
   #  effects: list returned by extract_effects
   #  autocor: object of class cor_arma
   #  incmv: should MV (linear) models be treated as having sigma? 
+  if (is(family, "family")) {
+    family <- family$family
+  }
+  is_lognormal <- family %in% c("lognormal", "hurdle_lognormal")
   has_se <- !is.null(effects$se)
-  out <- (is.linear(family) || is.lognormal(family)) && 
+  out <- (is.linear(family) || is_lognormal) && 
          (!has_se || use_cov(autocor)) && !is(autocor, "cov_fixed")
   if (!incmv) {
     is_multi <- is.linear(family) && length(effects$response) > 1L

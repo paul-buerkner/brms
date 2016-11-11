@@ -113,7 +113,9 @@ stan_llh <- function(family, effects = list(), data = NULL,
       hurdle_negbinomial = c(paste0("hurdle_neg_binomial", .logit), 
                              paste0(eta, ", ", hu, ", ", shape)),
       hurdle_gamma = c(paste0("hurdle_gamma", .logit), 
-                       paste0("shape, ", eta, ", ", hu)),
+                       paste0(shape, ", ", eta, ", ", hu)),
+      hurdle_lognormal = c(paste0("hurdle_lognormal", .logit), 
+                           paste0(eta, ", ", hu, ", ", sigma)),
       zero_inflated_poisson = c(paste0("zero_inflated_poisson", .logit), 
                                 paste0(eta, ", ", zi)),
       zero_inflated_negbinomial = 
@@ -570,6 +572,9 @@ stan_forked <- function(family) {
     } else if (family$family == "hurdle_gamma") {
       out$fun <- paste0(out$fun, 
         "  #include 'fun_hurdle_gamma.stan' \n")
+    } else if (family$family == "hurdle_lognormal") {
+      out$fun <- paste0(out$fun, 
+        "  #include 'fun_hurdle_lognormal.stan' \n")
     } 
   }
   out

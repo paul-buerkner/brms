@@ -11,6 +11,7 @@
 \alias{exponential}
 \alias{geometric}
 \alias{hurdle_gamma}
+\alias{hurdle_lognormal}
 \alias{hurdle_negbinomial}
 \alias{hurdle_poisson}
 \alias{lognormal}
@@ -51,6 +52,8 @@ hurdle_negbinomial(link = "log")
 
 hurdle_gamma(link = "log")
 
+hurdle_lognormal(link = "identity")
+
 zero_inflated_beta(link = "logit")
 
 zero_inflated_poisson(link = "log")
@@ -79,8 +82,9 @@ Currently, the following families are supported:
 \code{exponential}, \code{weibull}, \code{Beta}, \code{von_mises},
 \code{categorical}, \code{cumulative}, \code{cratio}, \code{sratio}, 
 \code{acat}, \code{hurdle_poisson}, \code{hurdle_negbinomial}, 
-\code{hurdle_gamma}, \code{zero_inflated_binomial},
-\code{zero_inflated_beta}, \cr \code{zero_inflated_negbinomial}, 
+\code{hurdle_gamma}, \code{hurdle_lognormal}, 
+\code{zero_inflated_binomial}, \cr \code{zero_inflated_beta},
+\code{zero_inflated_negbinomial}, 
 and \code{zero_inflated_poisson}.}
 
 \item{link}{A specification for the model link function. 
