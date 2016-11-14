@@ -37,12 +37,11 @@ update_data <- function(data, family, effects,
     nrow_with_NA <- nrow(data)
     data <- na.action(data)
     if (nrow(data) != nrow_with_NA) {
-      warning("Rows containing NAs were excluded from the model",
-              call. = FALSE)
+      warning2("Rows containing NAs were excluded from the model")
     }
     if (any(grepl("__|_$", colnames(data)))) {
-      stop("Variable names may not contain double underscores ",
-           "or underscores at the end.", call. = FALSE)
+      stop2("Variable names may not contain double underscores ",
+            "or underscores at the end.")
     }
     data <- combine_groups(data, get_random(effects)$group, 
                            effects$time$group)
@@ -65,8 +64,7 @@ melt_data <- function(data, family, effects) {
   nresp <- length(response)
   if (is.mv(family, response = response)) {
     if (!is(data, "data.frame")) {
-      stop("Argument 'data' must be a data.frame for this model", 
-           call. = FALSE)
+      stop2("Argument 'data' must be a data.frame for this model.")
     }
     # only keep variables that are relevant for the model
     rel_vars <- c(all.vars(attr(terms(effects$allvars), "variables")), 
@@ -75,7 +73,7 @@ melt_data <- function(data, family, effects) {
     rsv_vars <- intersect(c("trait", "response"), names(data))
     if (length(rsv_vars)) {
       rsv_vars <- paste0("'", rsv_vars, "'", collapse = ", ")
-      stop(paste(rsv_vars, "is a reserved variable name"), call. = FALSE)
+      stop2(paste(rsv_vars, "is a reserved variable name."))
     }
     if (is.categorical(family)) {
       # no parameters are modeled for the reference category
@@ -101,7 +99,7 @@ melt_data <- function(data, family, effects) {
       rsv_vars <- intersect(c(response[2], "main", "spec"), names(data))
       if (length(rsv_vars)) {
         rsv_vars <- paste0("'", rsv_vars, "'", collapse = ", ")
-        stop(paste(rsv_vars, "is a reserved variable name"), call. = FALSE)
+        stop2(paste(rsv_vars, "is a reserved variable name."))
       }
       one <- rep(1, nobs)
       zero <- rep(0, nobs)
@@ -128,9 +126,9 @@ check_data_old_mv <- function(data, family, effects) {
   rsv_vars <- setdiff(rsv_vars, names(data))
   used_rsv_vars <- intersect(rsv_vars, all.vars(effects$allvars))
   if (length(used_rsv_vars)) {
-    stop("It is no longer possible (and necessary) to specify models ", 
-         "using the multivariate 'trait' syntax. See help(brmsformula) ",
-         "for details on the new syntax.", call. = FALSE)
+    stop2("It is no longer possible (and necessary) to specify models ", 
+          "using the multivariate 'trait' syntax. See help(brmsformula) ",
+          "for details on the new syntax.")
   }
   invisible(NULL)
 }
@@ -143,13 +141,13 @@ data_rsv_intercept <- function(data, effects) {
   if (isTRUE(attr(effects$fixed, "rsv_intercept"))) {
     if (is.list(data) && length(data)) {
       if ("intercept" %in% names(data)) {
-        stop("'intercept' is a reserved variable name in models ",
-             "without a fixed effects intercept", call. = FALSE)
+        stop2("Variable name 'intercept' is resevered in models ",
+              "without a population-level intercept.")
       }
       data$intercept <- rep(1, length(data[[1]]))
     } else {
-      stop("Argument 'data' must be a non empty data.frame ", 
-           "or list for this model.", call. = FALSE)
+      stop2("Argument 'data' must be a non empty data.frame ", 
+            "or list for this model.")
     }
   }
   data
@@ -230,7 +228,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     }
     return(newdata)
   } else if (!"data.frame" %in% class(newdata)) {
-    stop("newdata must be a data.frame", call. = FALSE)
+    newdata <- as.data.frame(newdata)
   }
   # standata will be based on an updated formula if re_formula is specified
   new_formula <- update_re_terms(formula(fit), re_formula = re_formula)
@@ -241,8 +239,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
                             all.vars(rhs(ee$allvars)))
   missing_resp <- setdiff(resp_only_vars, names(newdata))
   if (check_response && length(missing_resp)) {
-    stop("Response variables must be specified in newdata for this model.",
-         call. = FALSE)
+    stop2("Response variables must be specified in 'newdata' for this model.")
   } else {
     for (resp in missing_resp) {
       # add irrelevant response variables but make sure they pass all checks
@@ -301,10 +298,9 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
             old_contrasts <- rbind(old_contrasts, .ZERO = 0)
           }
           if (any(!new_levels %in% old_levels)) {
-            stop(paste("New factor levels are not allowed. \n",
-                 "Levels found:", paste(new_levels, collapse = ", ") , "\n",
-                 "Levels allowed:", paste(old_levels, collapse = ", ")),
-                 call. = FALSE)
+            stop2("New factor levels are not allowed.",
+                  "\nLevels found:", paste(new_levels, collapse = ", ") ,
+                  "\nLevels allowed:", paste(old_levels, collapse = ", "))
           }
           newdata[[factor_names[i]]] <- factor(new_factor, old_levels)
           # don't use contrasts(.) here to avoid dimension checks
@@ -325,9 +321,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
                    new_values > max(list_data[[v]]) |
                    !is.wholenumber(new_values)
         if (sum(invalid)) {
-          stop(paste0("Invalid values in variable '", v, "': ",
-                      paste(new_values[invalid], collapse = ",")),
-               call. = FALSE)
+          stop2("Invalid values in variable '", v, "': ",
+                paste(new_values[invalid], collapse = ","))
         }
         attr(newdata[[v]], "min") <- min_value
       }
