@@ -4,9 +4,9 @@
 \alias{plot.brmsfit}
 \title{Trace and Density Plots for MCMC Samples}
 \usage{
-\method{plot}{brmsfit}(x, pars = NA, parameters = NA, N = 5,
-  theme = ggplot2::theme(), ask = TRUE, plot = TRUE, newpage = TRUE,
-  ...)
+\method{plot}{brmsfit}(x, pars = NA, parameters = NA, combo = c("dens",
+  "trace"), N = 5, theme = bayesplot::theme_default(), plot = TRUE,
+  ask = TRUE, newpage = TRUE, ...)
 }
 \arguments{
 \item{x}{An object of class \code{brmsfit}.}
@@ -17,31 +17,38 @@ are plotted.}
 
 \item{parameters}{A deprecated alias of \code{pars}}
 
+\item{combo}{A  character vector with at least two elements. 
+Each element of \code{combo} corresponds to a column in the resulting graphic 
+and should be the name of one of the available 
+\code{link[bayesplot:MCMC-overview]{MCMC}} functions 
+(omitting the \code{mcmc_} prefix).}
+
 \item{N}{The number of parameters plotted per page.}
 
 \item{theme}{A \code{\link[ggplot2:theme]{theme}} object 
 modifying the appearance of the plots. 
-For some basic themes see \code{\link[ggplot2:ggtheme]{ggtheme}}. 
+For some basic themes see \code{\link[ggplot2:ggtheme]{ggtheme}}
+and \code{\link[bayesplot:theme_default]{theme_default}}.
 Can be defined globally for the current session, via
 \code{\link[ggplot2:theme_update]{theme_set}}.}
-
-\item{ask}{logical; indicates if the user is prompted 
-before a new page is plotted. 
-Only used if \code{plot} is \code{TRUE}.}
 
 \item{plot}{logical; indicates if plots should be
 plotted directly in the active graphic device.
 Defaults to \code{TRUE}.}
+
+\item{ask}{logical; indicates if the user is prompted 
+before a new page is plotted. 
+Only used if \code{plot} is \code{TRUE}.}
 
 \item{newpage}{logical; indicates if the first set of plots
 should be plotted to a new page. 
 Only used if \code{plot} is \code{TRUE}.}
 
 \item{...}{Further arguments passed to 
-\code{\link[gridExtra:arrangeGrob]{arrangeGrob}}.}
+\code{\link[bayesplot:mcmc_combo]{mcmc_combo}}.}
 }
 \value{
-A (possibly invisible) list of 
+An invisible list of 
   \code{\link[gtable:gtable]{gtable}} objects.
 }
 \description{

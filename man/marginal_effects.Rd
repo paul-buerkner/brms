@@ -61,7 +61,8 @@ Default is \code{FALSE}.}
 
 \item{theme}{A \code{\link[ggplot2:theme]{theme}} object 
 modifying the appearance of the plots. 
-For some basic themes see \code{\link[ggplot2:ggtheme]{ggtheme}}. 
+For some basic themes see \code{\link[ggplot2:ggtheme]{ggtheme}}
+and \code{\link[bayesplot:theme_default]{theme_default}}.
 Can be defined globally for the current session, via
 \code{\link[ggplot2:theme_update]{theme_set}}.}
 

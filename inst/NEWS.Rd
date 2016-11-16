@@ -7,6 +7,9 @@
     \itemize{
       \item Add the new family \code{hurdle_lognormal}
       specifically suited for zero-inflated continuous responses.
+      \item Introduce the \code{pp_check} method for \code{brmsfit} 
+      objects to perform various posterior predictive checks
+      using the \pkg{bayesplot} package. 
       \item Add functions \code{prior} and \code{prior_string}
       as aliases of \code{set_prior}, the former 
       allowing to pass arguments without quotes \code{""}
@@ -24,6 +27,8 @@
       \item Refactor internal structure of some 
       formula and prior evaluating functions. 
       This should not have any user visible effects.
+      \item Use the \pkg{bayesplot} package as the
+      new backend of \code{plot.brmsfit}.
     }
   }
   \subsection{BUG FIXES}{

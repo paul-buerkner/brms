@@ -11,7 +11,7 @@
 \item{object}{An object of class \code{brmsfit}}
 
 \item{estimate}{A character vector specifying which coefficients 
-(e.g., "mean", "median", "sd", or "quantile") 
+(e.g., \code{"mean"}, \code{"median"}, \code{"sd"}, or \code{"quantile"})
 should be calculated for the population-level effects.}
 
 \item{...}{Further arguments to be passed to the functions 

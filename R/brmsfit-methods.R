@@ -13,7 +13,7 @@ parnames.brmsfit <- function(x, ...) {
 #' 
 #' @param object An object of class \code{brmsfit}
 #' @param estimate A character vector specifying which coefficients 
-#'  (e.g., "mean", "median", "sd", or "quantile") 
+#'  (e.g., \code{"mean"}, \code{"median"}, \code{"sd"}, or \code{"quantile"})
 #'  should be calculated for the population-level effects.
 #' @param ... Further arguments to be passed to the functions 
 #'  specified in \code{estimate}
@@ -30,6 +30,7 @@ parnames.brmsfit <- function(x, ...) {
 #' fixef(fit, estimate = c("mean", "sd"))
 #' }
 #' 
+#' @method fixef brmsfit
 #' @export
 #' @export fixef
 #' @importFrom lme4 fixef
@@ -113,6 +114,7 @@ vcov.brmsfit <- function(object, correlation = FALSE, ...) {
 #' ranef(fit, estimate = "median")                                                        
 #' }
 #' 
+#' @method ranef brmsfit
 #' @export
 #' @export ranef
 #' @importFrom lme4 ranef
@@ -337,6 +339,7 @@ coef.brmsfit <- function(object, estimate = c("mean", "median"), ...) {
 #' VarCorr(fit, estimate = "quantile", probs = c(0.025, 0.975))
 #' }
 #' 
+#' @method VarCorr brmsfit
 #' @import abind abind
 #' @importFrom lme4 VarCorr
 #' @export VarCorr
@@ -346,7 +349,7 @@ VarCorr.brmsfit <- function(x, sigma = 1, estimate = "mean",
   contains_samples(x)
   x <- restructure(x)
   if (!(nrow(x$ranef) || any(grepl("^sigma($|_)", parnames(x))))) {
-    stop("The model does not contain covariance matrices", call. = FALSE)
+    stop2("The model does not contain covariance matrices.")
   }
   x <- restructure(x)
   
@@ -435,8 +438,7 @@ VarCorr.brmsfit <- function(x, sigma = 1, estimate = "mean",
 #' @export
 model.frame.brmsfit <- function(formula, ...) {
   if (!is.data.frame(formula$data)) {
-    stop("Cannot extract the model.frame for this model",
-         call. = FALSE)
+    stop2("Cannot extract the model.frame for this model.")
   }
   formula$data 
 }
@@ -818,11 +820,17 @@ launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"),
 #' @param pars Names of the parameters to plot, as given by a character vector 
 #'   or a regular expression. By default, all parameters except for random effects 
 #'   are plotted. 
-#' @param parameters A deprecated alias of \code{pars}   
+#' @param parameters A deprecated alias of \code{pars}
+#' @param combo A  character vector with at least two elements. 
+#' Each element of \code{combo} corresponds to a column in the resulting graphic 
+#' and should be the name of one of the available 
+#' \code{link[bayesplot:MCMC-overview]{MCMC}} functions 
+#' (omitting the \code{mcmc_} prefix).
 #' @param N The number of parameters plotted per page.
 #' @param theme A \code{\link[ggplot2:theme]{theme}} object 
 #'   modifying the appearance of the plots. 
-#'   For some basic themes see \code{\link[ggplot2:ggtheme]{ggtheme}}. 
+#'   For some basic themes see \code{\link[ggplot2:ggtheme]{ggtheme}}
+#'   and \code{\link[bayesplot:theme_default]{theme_default}}.
 #'   Can be defined globally for the current session, via
 #'   \code{\link[ggplot2:theme_update]{theme_set}}.
 #' @param plot logical; indicates if plots should be
@@ -835,9 +843,9 @@ launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"),
 #'   should be plotted to a new page. 
 #'   Only used if \code{plot} is \code{TRUE}.
 #' @param ... Further arguments passed to 
-#'   \code{\link[gridExtra:arrangeGrob]{arrangeGrob}}.
+#'   \code{\link[bayesplot:mcmc_combo]{mcmc_combo}}.
 #' 
-#' @return A (possibly invisible) list of 
+#' @return An invisible list of 
 #'   \code{\link[gtable:gtable]{gtable}} objects.
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
@@ -855,29 +863,27 @@ launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"),
 #' 
 #' @method plot brmsfit
 #' @import ggplot2
-#' @importFrom gridExtra arrangeGrob
 #' @importFrom grDevices devAskNewPage
-#' @importFrom grid grid.draw grid.newpage
 #' @export
-plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5, 
-                         theme = ggplot2::theme(), ask = TRUE, 
-                         plot = TRUE, newpage = TRUE, ...) {
+plot.brmsfit <- function(x, pars = NA, parameters = NA, 
+                         combo = c("dens", "trace"), N = 5, 
+                         theme = bayesplot::theme_default(), 
+                         plot = TRUE, ask = TRUE, 
+                         newpage = TRUE, ...) {
   dots <- list(...)
   pars <- use_alias(pars, parameters, default = NA)
   plot <- use_alias(plot, dots$do_plot)
   contains_samples(x)
   if (!is.wholenumber(N) || N < 1) {
-    stop("N must be a positive integer", call. = FALSE)
+    stop2("Argument 'N' must be a positive integer.")
   }
   if (!is.character(pars)) {
-    pars <- c("^b(|cs|m)_", "^sd_", "^cor_", "^sigma", "^rescor", 
-              "^nu$", "^shape$", "^delta$", "^phi$", "^kappa$", 
-              "^zi$", "^hu$", "^ar", "^ma", "^arr", "^simplex_", "^sds_")
+    pars <- default_plot_pars()
   }
   samples <- posterior_samples(x, pars = pars, add_chain = TRUE)
   pars <- names(samples)[!names(samples) %in% c("chain", "iter")] 
   if (!length(pars)) {
-    stop("No valid parameters selected", call. = FALSE)
+    stop2("No valid parameters selected.")
   }
   
   if (plot) {
@@ -888,17 +894,16 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA, N = 5,
   n_plots <- ceiling(length(pars) / N)
   plots <- vector(mode = "list", length = n_plots)
   for (i in seq_len(n_plots)) {
-    rel_pars <- pars[((i - 1) * N + 1):min(i * N, length(pars))]
-    sub_samples <- cbind(utils::stack(samples[, rel_pars, drop = FALSE]),
-                         samples[, c("chain", "iter")])
-    # make sure that parameters appear in the original order
-    sub_samples$ind <- with(sub_samples, factor(ind, levels = unique(ind)))
-    td_plot <- trace_density_plot(sub_samples, theme = theme)
-    plots[[i]] <- arrangeGrob(grobs = td_plot, nrow = 1, ncol = 2, ...)
+    sub_pars <- pars[((i - 1) * N + 1):min(i * N, length(pars))]
+    sub_samples <- samples[, c(sub_pars, "chain"), drop = FALSE]
+    # FIXME: add theme argument
+    plots[[i]] <- bayesplot::mcmc_combo(sub_samples, combo = combo, 
+                                        theme = theme, ...)
     if (plot) {
-      if (newpage || i > 1) grid.newpage()
-      grid.draw(plots[[i]])
-      if (i == 1) devAskNewPage(ask = ask)
+      plot(plots[[i]], newpage = newpage || i > 1)
+      if (i == 1) {
+        devAskNewPage(ask = ask)
+      }
     }
   }
   invisible(plots) 
@@ -913,13 +918,12 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
   basic_types <- c("plot", "trace", "scat", "hist", "dens", "ac")
   diag_types <- c("diag", "par", "rhat", "ess", "mcse")
   if (!type %in% c(basic_types, diag_types)) {
-    stop(paste("Invalid plot type. Valid plot types are: \n",
-               paste(c(basic_types, diag_types), collapse = ", ")),
-         call. = FALSE)
+    stop2("Invalid plot type. Valid plot types are: \n",
+          paste(c(basic_types, diag_types), collapse = ", "))
   }
   dots <- list(...)
   args <- c(object = object$fit, dots)
-  plot_fun <- get(paste0("stan_", type), mode = "function")
+  plot_fun <- get(paste0("stan_", type), pos = asNamespace("rstan"))
   
   # ensure that only desired parameters are plotted
   contains_samples(object)
@@ -936,11 +940,10 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
       args <- c(args, list(pars = pars))
     } else if (type == "par") {
       if (length(pars) > 1L) {
-        stop("Function 'stan_par' expects a single parameter name.",
-             call. = FALSE)
+        stop2("Function 'stan_par' expects a single parameter name.")
       }
       args <- c(args, list(par = pars))
-    } 
+    }
   }
   # make the plot
   if (quiet) {
@@ -954,6 +957,8 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
 #' 
 #' Perform posterior predictive checks with the help
 #' of the \pkg{bayesplot} package.
+#' 
+#' @aliases pp_check
 #' 
 #' @param object An object of class \code{brmsfit}.
 #' @param type Type of the ppc plot as given by a character string.
@@ -983,14 +988,16 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
 #'  Only used for ppc types having an \code{x} argument 
 #'  and ignored otherwise.
 #' @param ... Further arguments passed to the ppc functions
-#'   of the \pkg{bayesplot} package.
+#'   of the \pkg{\link[bayesplot:bayesplot]{bayesplot}} package.
 #' @inheritParams predict.brmsfit
 #' 
 #' @return A ggplot object that can be further
 #'  customized using the \pkg{ggplot2} package.
 #' 
 #' @details For a detailed explanation of each of the ppc functions, 
-#' see the documentation of the \pkg{bayesplot} package.
+#' see the \code{\link[bayesplot:PPC-overview]{PPC}} 
+#' documentation of the \pkg{\link[bayesplot:bayesplot]{bayesplot}} 
+#' package.
 #' 
 #' @examples
 #' \dontrun{
@@ -1003,18 +1010,14 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
 #' pp_check(fit, type = "scatter_avg", nsamples = 100)
 #' pp_check(fit, type = "stat_2d")
 #' }
+#' @importFrom bayesplot pp_check
+#' @export pp_check
 #' @export
 pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
                              x = NULL, newdata = NULL, 
                              re_formula = NULL, allow_new_levels = FALSE,
                              incl_autocor = TRUE, subset = NULL, 
                              ntrys = 5, ...) {
-  rN_text <- "requireNamespace('bayesplot', quietly = TRUE)"
-  if (!eval(parse(text = rN_text))) {
-    # remove check as soon as bayesplot is on CRAN
-    stop2("Please install the bayesplot package via\n",
-          "devtools::install_github('stan-dev/bayesplot')")
-  }
   if (missing(type)) {
     type <- "dens_overlay"
   }
@@ -1058,7 +1061,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     ae_collapsed <- ulapply(get_all_effects(ee), 
                             function(e) paste(e, collapse = ":"))
     if (!x %in% ae_collapsed) {
-      stop2("Variable '", x, "' is not a valid variable for this model. ",
+      stop2("Variable '", x, "' is not a valid variable for this model. \n",
             "Valid variables are: ", paste(ae_collapsed, collapse = ", "))
     }
   }

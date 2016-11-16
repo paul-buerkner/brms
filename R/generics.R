@@ -584,20 +584,6 @@ expose_functions <- function(x, ...) {
   UseMethod("expose_functions")
 }
 
-#' Temporary pp_check generic function
-#' 
-#' @param object an \R object
-#' @param ... further arguments
-#' 
-#' @details 
-#' See \code{\link[brms:pp_check.brmsfit]{pp_check.brmsfit}} for details.
-#' 
-#' @export
-pp_check <- function(object, ...) {
-  # NOTE: remove as soon as the bayesplot package is on CRAN
-  UseMethod("pp_check")
-}
-
 #' Extract priors of a Bayesian model
 #' 
 #' @param x An \R object

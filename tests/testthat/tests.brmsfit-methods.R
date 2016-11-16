@@ -144,18 +144,17 @@ test_that("all S3 methods have reasonable ouputs", {
                c("b_Intercept", "b_Trt", "b_Age", "b_Trt:Age", 
                  "b_sAge_1", "b_sigma_Intercept", "b_sigma_Trt"))
   # pp_check
-  # commented out as long a bayesplot is not on CRAN
-  # expect_true(is(pp_check(fit1), "ggplot"))
-  # expect_true(is(pp_check(fit1, newdata = fit1$data[1:100, ]), "ggplot"))
-  # expect_true(is(pp_check(fit1, "stat", nsamples = 5), "ggplot"))
-  # expect_true(is(pp_check(fit1, "resid_binned"), "ggplot"))
-  # ts_plot <- pp_check(fit1, "ts_grouped", group = "patient", time = "visit")
-  # expect_true(is(ts_plot, "ggplot"))
-  # expect_true(is(pp_check(fit2, "vs_x", x = "Trt"), "ggplot"))
-  # expect_error(pp_check(fit1, "wrong_type"))
-  # expect_error(pp_check(fit2, "violin_grouped"), "group")
-  # expect_error(pp_check(fit1, "stat_grouped", group = "g"),
-  #              "not a valid grouping factor")
+  expect_true(is(pp_check(fit1), "ggplot"))
+  expect_true(is(pp_check(fit1, newdata = fit1$data[1:100, ]), "ggplot"))
+  expect_true(is(pp_check(fit1, "stat", nsamples = 5), "ggplot"))
+  expect_true(is(pp_check(fit1, "error_binned"), "ggplot"))
+  ribbon_plot <- pp_check(fit1, "ribbon_grouped", group = "visit", x = "Age")
+  expect_true(is(ribbon_plot, "ggplot"))
+  expect_true(is(pp_check(fit2, "ribbon", x = "Trt"), "ggplot"))
+  expect_error(pp_check(fit1, "wrong_type"))
+  expect_error(pp_check(fit2, "violin_grouped"), "group")
+  expect_error(pp_check(fit1, "stat_grouped", group = "g"),
+               "not a valid grouping factor")
   # predict
   pred <- predict(fit1)
   expect_equal(dim(pred), c(nobs(fit1), 4))
