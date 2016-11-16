@@ -419,7 +419,7 @@ get_auxpar <- function(x, i = NULL) {
   #   x: object to extract postarior samples from
   #   data: data initially passed to Stan
   #   i: the current observation number
-  #      (used in predict and logLik)
+  #      (used in predict and log_lik)
   if (is.list(x)) {
     # compute auxpar in distributional regression models
     ilink <- get(x[["ilink"]], mode = "function")
@@ -515,7 +515,7 @@ mult_disp <- function(x, data, i = NULL, dim = NULL) {
 }
 
 prepare_family <- function(x) {
-  # prepare for calling family specific loglik / predict functions
+  # prepare for calling family specific log_lik / predict functions
   family <- family(x)
   nresp <- length(extract_effects(x$formula, family = family,
                                   nonlinear = x$nonlinear)$response)
@@ -569,13 +569,13 @@ compute_ic <- function(x, ic = c("waic", "loo"), ll_args = list(), ...) {
   # Args:
   #   x: an object of class brmsfit
   #   ic: the information criterion to be computed
-  #   ll_args: a list of additional arguments passed to logLik
+  #   ll_args: a list of additional arguments passed to log_lik
   #   ...: passed to the loo package
   # Returns:
   #   output of the loo package with amended class attribute
   ic <- match.arg(ic)
   contains_samples(x)
-  args <- list(x = do.call(logLik, c(list(x), ll_args)))
+  args <- list(x = do.call(log_lik, c(list(x), ll_args)))
   if (ll_args$pointwise) {
     args$args$draws <- attr(args$x, "draws")
     args$args$data <- data.frame()

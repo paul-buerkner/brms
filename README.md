@@ -106,13 +106,15 @@ For a complete list of methods to apply on <b>brms</b> models see
 methods(class = "brmsfit") 
 #>  [1] as.data.frame     as.matrix         as.mcmc           coef             
 #>  [5] expose_functions  family            fitted            fixef            
-#>  [9] formula           hypothesis        launch_shiny      logLik           
-#> [13] LOO               marginal_effects  model.frame       ngrps            
-#> [17] nobs              pairs             parnames          plot             
-#> [21] posterior_samples pp_check          predict           print            
-#> [25] prior_samples     ranef             residuals         stancode         
-#> [29] standata          stanplot          summary           update           
-#> [33] VarCorr           vcov              WAIC             
+#>  [9] formula           hypothesis        launch_shiny      log_lik          
+#> [13] logLik            loo               LOO               marginal_effects 
+#> [17] model.frame       ngrps             nobs              pairs            
+#> [21] parnames          plot              posterior_predict posterior_samples
+#> [25] pp_check          predict           predictive_error  print            
+#> [29] prior_samples     prior_summary     ranef             residuals        
+#> [33] stancode          standata          stanplot          summary          
+#> [37] update            VarCorr           vcov              waic             
+#> [41] WAIC             
 #> see '?methods' for accessing help and source code
 ```
 

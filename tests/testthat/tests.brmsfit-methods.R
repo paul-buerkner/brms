@@ -74,8 +74,10 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_error(hypothesis(fit1, "Intercept > x"), fixed = TRUE,
                "cannot be found in the model: \nb_x")
   # omit launch_shiny
-  # logLik
-  expect_equal(dim(logLik(fit1)), c(Nsamples(fit1), nobs(fit1)))
+  # log_lik
+  expect_equal(dim(log_lik(fit1)), c(Nsamples(fit1), nobs(fit1)))
+  expect_equal(dim(log_lik(fit2)), c(Nsamples(fit2), nobs(fit2)))
+  expect_equal(log_lik(fit1), logLik(fit1))
   # LOO
   loo1 <- SW(LOO(fit1, cores = 1))
   expect_true(is.numeric(loo1[["looic"]]))
@@ -143,6 +145,9 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(names(posterior_samples(fit1, pars = "^b_")),
                c("b_Intercept", "b_Trt", "b_Age", "b_Trt:Age", 
                  "b_sAge_1", "b_sigma_Intercept", "b_sigma_Trt"))
+  # posterior_predict
+  expect_equal(dim(posterior_predict(fit1)), 
+               c(Nsamples(fit1), nobs(fit1)))
   # pp_check
   expect_true(is(pp_check(fit1), "ggplot"))
   expect_true(is(pp_check(fit1, newdata = fit1$data[1:100, ]), "ggplot"))
@@ -184,6 +189,9 @@ test_that("all S3 methods have reasonable ouputs", {
   newdata$patient <- factor(2)
   pred <- predict(fit2, newdata = newdata)
   expect_equal(dim(pred), c(2, 4))
+  # predictive error
+  expect_equal(dim(predictive_error(fit1)), 
+               c(Nsamples(fit1), nobs(fit1)))
   # print
   expect_output(SW(print(fit1)), "Group-Level Effects:")
   # prior_samples
@@ -196,6 +204,8 @@ test_that("all S3 methods have reasonable ouputs", {
   prs2 <- prior_samples(fit1, pars = "b_Trt")
   expect_equal(dimnames(prs2), list(as.character(1:Nsamples(fit1)), "b_Trt"))
   expect_equal(sort(prs1$b), sort(prs2$b_Trt))
+  # prior_summary
+  expect_true(is(prior_summary(fit1), "brmsprior"))
   # ranef
   ranef1 <- ranef(fit1, estimate = "median", var = TRUE)
   expect_equal(dim(ranef1$visit), c(4, 2))

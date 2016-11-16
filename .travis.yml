@@ -7,7 +7,7 @@ warnings_are_errors: TRUE
 
 r_github_packages:
   - jimhester/covr
-  - hadley/ggplot2
+  - stan-dev/rstantools
   - stan-dev/rstan/rstan/rstan@develop
   - stan-dev/bayesplot
   

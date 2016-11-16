@@ -16,6 +16,7 @@ Imports:
     lme4 (>= 1.1-11),
     Matrix (>= 1.1.1),
     mgcv (>= 1.8-13),
+    rstantools,
     bayesplot,
     coda,
     abind,

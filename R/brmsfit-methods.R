@@ -530,11 +530,37 @@ as.mcmc.brmsfit <- function(x, pars = NA, exact_match = FALSE,
   out
 }
 
-#' @rdname priors
+#' Extract Priors of a Bayesian Model Fitted with \pkg{brms}
+#' 
+#' @aliases prior_summary
+#' 
+#' @param object A \code{brmsfit} object
+#' @param all Logical; Show all parameters in the model which may have 
+#'   priors (\code{TRUE}) or only those with proper priors (\code{FALSE})?
+#' @param ... Further arguments passed to or from other methods.
+#' 
+#' @return For \code{brmsfit} objects, an object of class \code{brmsprior}.
+#' 
+#' @examples 
+#' \dontrun{
+#' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c  
+#'              + (1|patient) + (1|obs), 
+#'            data = epilepsy, family = poisson(), 
+#'            prior = c(prior(student_t(5,0,10), class = b),
+#'                      prior(cauchy(0,2), class = sd)))
+#'                    
+#' prior_summary(fit)
+#' prior_summary(fit, all = FALSE)
+#' print(prior_summary(fit, all = FALSE), show_df = FALSE)
+#' }
+#' 
+#' @method prior_summary brmsfit
 #' @export
-priors.brmsfit <- function(x, all = TRUE, ...) {
-  x <- restructure(x)
-  prior <- x$prior
+#' @export prior_summary
+#' @importFrom rstantools prior_summary
+prior_summary.brmsfit <- function(object, all = TRUE, ...) {
+  object <- restructure(object)
+  prior <- object$prior
   if (!all) {
     prior <- prior[nzchar(prior$prior), ]
   }
@@ -652,7 +678,7 @@ summary.brmsfit <- function(object, waic = FALSE, priors = FALSE,
       out$WAIC <- WAIC(object)$waic
     }
     if (priors) {
-      out$prior <- priors(object, all = FALSE)
+      out$prior <- prior_summary(object, all = FALSE)
     }
     
     pars <- parnames(object)
@@ -1434,6 +1460,9 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
 #'   are interpreted as if all dummy variables of this factor are 
 #'   zero. This allows, for instance, to make predictions of the grand mean 
 #'   when using sum coding.  
+#'   
+#'   Method \code{posterior_predict.brmsfit} is an alias of 
+#'   \code{predict.brmsfit} with \code{summary = FALSE}. 
 #' 
 #'   For truncated discrete models only:
 #'   In the absence of any general algorithm to sample 
@@ -1534,6 +1563,24 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     rownames(out) <- seq_len(nrow(out))
   }
   out
+}
+
+#' @rdname predict.brmsfit
+#' @aliases posterior_predict
+#' @method posterior_predict brmsfit
+#' @export
+#' @export posterior_predict
+#' @importFrom rstantools posterior_predict
+posterior_predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
+                                      transform = NULL, allow_new_levels = FALSE,
+                                      incl_autocor = TRUE, subset = NULL, 
+                                      nsamples = NULL, sort = FALSE,
+                                      ntrys = 5, robust = FALSE,
+                                      probs = c(0.025, 0.975), ...) {
+  cl <- match.call()
+  cl[[1]] <- quote(predict)
+  cl[["summary"]] <- quote(FALSE)
+  eval(cl, parent.frame())
 }
 
 #' Extract Model Fitted Values of \code{brmsfit} Objects
@@ -1645,10 +1692,14 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #'  Residuals of type \code{pearson} are 
 #'  of the form \eqn{R = (Y - Yp) / SD(Y)},
 #'  where \eqn{SD(Y)} is an estimation of the standard deviation 
-#'  of \eqn{Y}. \cr
+#'  of \eqn{Y}. 
 #'   
 #'  Currently, \code{residuals.brmsfit} does not support 
 #'  \code{categorical} or ordinal models. 
+#'  
+#'  Method \code{predictive_error.brmsfit} is an alias of 
+#'  \code{residuals.brmsfit} with \code{method = "predict"} and
+#'  \code{summary = FALSE}. 
 #' 
 #' @return Model residuals. If \code{summary = TRUE} 
 #'  this is a N x C matrix and if \code{summary = FALSE} 
@@ -1712,6 +1763,25 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     res <- get_summary(res, probs = probs, robust = robust)
   }
   res
+}
+
+#' @rdname residuals.brmsfit
+#' @aliases predictive_error
+#' @method predictive_error brmsfit
+#' @export
+#' @export predictive_error
+#' @importFrom rstantools predictive_error
+predictive_error.brmsfit <- function(object, newdata = NULL, re_formula = NULL, 
+                                     type = c("ordinary", "pearson"),
+                                     allow_new_levels = FALSE, 
+                                     incl_autocor = TRUE, subset = NULL, 
+                                     nsamples = NULL, sort = FALSE,
+                                     robust = FALSE, probs = c(0.025, 0.975),
+                                     ...) {
+  cl <- match.call()
+  cl[[1]] <- quote(residuals)
+  cl[c("method", "summary")] <- list(quote("predict"), quote(FALSE))
+  eval(cl, parent.frame())
 }
 
 #' Update \pkg{brms} models
@@ -1988,7 +2058,9 @@ loo.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
   eval(cl, parent.frame())
 }
 
-#' Compute the pointwise log-likelihood
+#' Compute the Pointwise Log-Likelihood
+#' 
+#' @aliases log_lik logLik.brmsfit
 #' 
 #' @param object A fitted model object of class \code{brmsfit}. 
 #' @inheritParams predict.brmsfit
@@ -1997,7 +2069,7 @@ loo.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
 #'   the likelihood function along with all data and samples
 #'   required to compute the log-likelihood separately for each
 #'   observation. The latter option is rarely useful when
-#'   calling \code{logLik} directly, but rather when computing
+#'   calling \code{log_lik} directly, but rather when computing
 #'   \code{\link[brms:WAIC]{WAIC}} or \code{\link[brms:LOO]{LOO}}.
 #' @param ... Currently ignored
 #' 
@@ -2009,11 +2081,15 @@ loo.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
 #'  with a \code{draws} attribute containing all relevant
 #'  data and posterior samples.
 #' 
-#' @importFrom statmod dinvgauss
+#' @aliases log_lik
+#' @method log_lik brmsfit
 #' @export
-logLik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
-                           allow_new_levels = FALSE, subset = NULL,
-                           nsamples = NULL, pointwise = FALSE, ...) {
+#' @export log_lik
+#' @importFrom rstantools log_lik
+#' @importFrom statmod dinvgauss
+log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
+                            allow_new_levels = FALSE, subset = NULL,
+                            nsamples = NULL, pointwise = FALSE, ...) {
   contains_samples(object)
   object <- restructure(object)
   draws <- extract_draws(x = object, newdata = newdata, 
@@ -2039,6 +2115,15 @@ logLik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     colnames(loglik) <- NULL
   }
   loglik
+}
+
+#' @export
+logLik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
+                           allow_new_levels = FALSE, subset = NULL,
+                           nsamples = NULL, pointwise = FALSE, ...) {
+  cl <- match.call()
+  cl[[1]] <- quote(log_lik)
+  eval(cl, parent.frame())
 }
 
 #' @rdname hypothesis

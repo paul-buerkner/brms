@@ -19,6 +19,9 @@
       and monotonic effects respectively.
       \item Extend the \code{coef} method to better 
       handle category specific group-level effects.
+      \item Introduce the \code{prior_summary} method
+      for \code{brmsfit} objects to obtain a summary
+      of prior distributions applied.
     }
   }
   \subsection{OTHER CHANGES}{

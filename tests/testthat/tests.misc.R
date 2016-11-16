@@ -86,7 +86,8 @@ test_that("lsp works correctly", {
   expect_equal(lsp("base", pattern = "^log"),
                c("log", "log10", "log1p", "log2", "logb", "logical"))
   expect_equal(lsp("brms", pattern = "^log_"),
-               c("log_diff_exp", "log_inv_logit", "log_sum_exp"))
+               c("log_diff_exp", "log_inv_logit", 
+                 "log_lik.brmsfit", "log_sum_exp"))
 })
 
 test_that(".addition and .cat works correctly", {

@@ -10,7 +10,7 @@
 expose_functions(x, ...)
 }
 \arguments{
-\item{x}{An \code{R} object}
+\item{x}{An \R object}
 
 \item{...}{Further arguments}
 }
