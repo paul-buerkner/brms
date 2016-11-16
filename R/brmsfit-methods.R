@@ -39,8 +39,7 @@ fixef.brmsfit <-  function(object, estimate = "mean", ...) {
   pars <- parnames(object)
   fpars <- pars[grepl("^b(|cs|m)_", pars)]
   if (!length(fpars)) {
-    stop("The model does not contain population-level effects", 
-         call. = FALSE) 
+    stop2("The model does not contain population-level effects.")
   }
   out <- posterior_samples(object, pars = fpars, exact_match = TRUE)
   out <- do.call(cbind, lapply(estimate, get_estimate, samples = out, ...))
@@ -70,8 +69,7 @@ vcov.brmsfit <- function(object, correlation = FALSE, ...) {
   pars <- parnames(object)
   fpars <- pars[grepl("^b(|cs|m)_", pars)]
   if (!length(fpars)) {
-    stop("The model does not contain population-level effects", 
-         call. = FALSE) 
+    stop2("The model does not contain population-level effects.")
   }
   samples <- posterior_samples(object, pars = fpars, exact_match = TRUE)
   names(samples) <- sub("^b(|cs|m)_", "", names(samples))
@@ -674,7 +672,7 @@ summary.brmsfit <- function(object, waic = FALSE, priors = FALSE,
         msg <- paste("The model has not converged (some Rhats are > 1.1).",
                      "Do not analyse the results! \nWe recommend running", 
                      "more iterations and/or setting stronger priors.")
-        warning(msg, call. = FALSE)
+        warning2(msg)
       }
     } else {
       colnames(fit_summary) <- c("Estimate", "Est.Error", 
@@ -895,7 +893,6 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA,
   for (i in seq_len(n_plots)) {
     sub_pars <- pars[((i - 1) * N + 1):min(i * N, length(pars))]
     sub_samples <- samples[, c(sub_pars, "chain"), drop = FALSE]
-    # FIXME: add theme argument
     plots[[i]] <- bayesplot::mcmc_combo(sub_samples, combo = combo, 
                                         gg_theme = theme, ...)
     if (plot) {
@@ -1253,12 +1250,13 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
                                   ordered = is.ordered(mf[[v]]))
       }
     }
-  } else if (is.data.frame(conditions)) {
+  } else {
+    conditions <- as.data.frame(conditions)
     if (!nrow(conditions)) {
-      stop("'conditions' must have a least one row", call. = FALSE)
+      stop2("Argument 'conditions' must have a least one row.")
     }
     if (any(duplicated(rownames(conditions)))) {
-      stop("Row names of 'conditions' should be unique.", call. = FALSE)
+      stop2("Row names of 'conditions' should be unique.")
     }
     conditions <- unique(conditions)
     eff_vars <- lapply(effects, function(e) all.vars(parse(text = e)))
@@ -1271,8 +1269,6 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     for (v in missing_vars) {
       conditions[, v] <- mf[[v]][1]
     }
-  } else {
-    stop("conditions must be a data.frame or NULL", call. = FALSE)
   }
   conditions <- amend_newdata(conditions, fit = x, re_formula = re_formula,
                               allow_new_levels = TRUE, incl_autocor = FALSE, 
@@ -1377,7 +1373,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
 #' Can be performed for the data used to fit the model 
 #' (posterior predictive checks) or for new data.
 #' By definition, these predictions have higher variance than 
-#' predictions of the fitted values (i.e. the 'regression line')
+#' predictions of the fitted values (i.e., the 'regression line')
 #' performed by the \code{\link[brms:fitted.brmsfit]{fitted}}
 #' method. This is because the measurement error is incorporated.
 #' The estimated means of both methods should, however, be very similar.
@@ -1445,24 +1441,12 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
 #'   rejection sampling is applied in this special case. 
 #'   This means that values are sampled until 
 #'   a value lies within the defined truncation boundaries. 
-#'   In practice, this procedure may be rather slow (especially in R). 
+#'   In practice, this procedure may be rather slow (especially in \R). 
 #'   Thus, we try to do approximate rejection sampling 
 #'   by sampling each value \code{ntrys} times and then select a valid value. 
 #'   If all values are invalid, the closest boundary is used, instead. 
 #'   If there are more than a few of these pathological cases, 
 #'   a warning will occure suggesting to increase argument \code{ntrys}.
-#'   
-#'   For models fitted with \pkg{brms} <= 0.5.0 only: 
-#'   Be careful when using \code{newdata} with factors 
-#'   in fixed or random effects. The predicted results are only valid 
-#'   if all factor levels present in the initial 
-#'   data are also defined and ordered correctly 
-#'   for the factors in \code{newdata}.
-#'   Grouping factors may contain fewer levels than in the 
-#'   inital data without causing problems.
-#'   When using higher versions of \pkg{brms}, 
-#'   all factors are automatically checked 
-#'   for correctness and amended if necessary.
 #' 
 #' @examples 
 #' \dontrun{
@@ -1517,8 +1501,8 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   # should always be zero for all other models; see predict.R
   pct_invalid <- get_pct_invalid(out, lb = draws$data$lb, ub = draws$data$ub) 
   if (pct_invalid >= 0.01) {
-    warning(paste0(round(pct_invalid * 100), "% of all predicted values ", 
-                   "were invalid. Increasing argument ntrys may help."))
+    warning2(round(pct_invalid * 100), "% of all predicted values ", 
+             "were invalid. Increasing argument 'ntrys' may help.")
   }
   # reorder predicted responses in case of multivariate models
   # as they are sorted after units first not after traits
@@ -1554,7 +1538,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 
 #' Extract Model Fitted Values of \code{brmsfit} Objects
 #' 
-#' Predict fitted values (i.e. the 'regression line') of a fitted model.
+#' Predict fitted values (i.e., the 'regression line') of a fitted model.
 #' Can be performed for the data used to fit the model 
 #' (posterior predictive checks) or for new data.
 #' By definition, these predictions have smaller variance
@@ -1581,19 +1565,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' @details \code{NA} values within factors in \code{newdata}, 
 #'   are interpreted as if all dummy variables of this factor are 
 #'   zero. This allows, for instance, to make predictions of the grand mean 
-#'   when using sum coding.  
-#' 
-#'   For models fitted with \pkg{brms} <= 0.5.0 only: 
-#'   Be careful when using \code{newdata} with factors 
-#'   in fixed or random effects. The predicted results are only valid 
-#'   if all factor levels present in the initial 
-#'   data are also defined and ordered correctly 
-#'   for the factors in \code{newdata}.
-#'   Grouping factors may contain fewer levels than in the 
-#'   inital data without causing problems.
-#'   When using higher versions of \pkg{brms}, 
-#'   all factors are automatically checked 
-#'   for correctness and amended if necessary.
+#'   when using sum coding.
 #'
 #' @examples 
 #' \dontrun{
@@ -1636,7 +1608,8 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     }
   }
   if (scale == "response") {
-    mu <- fitted_response(draws = draws, mu = mu)  # see fitted.R
+    # see fitted.R
+    mu <- fitted_response(draws = draws, mu = mu)
   }
   # reorder fitted values to be in the initial user defined order
   # currently only relevant for autocorrelation models 
@@ -1709,8 +1682,7 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   object <- restructure(object)
   family <- family(object)
   if (is.ordinal(family) || is.categorical(family)) {
-    stop(paste("residuals not implemented for family", family$family),
-         call. = FALSE)
+    stop2("Residuals not implemented for family '", family$family, "'.")
   }
   
   standata <- amend_newdata(newdata, fit = object, re_formula = re_formula,
@@ -1787,15 +1759,14 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
   dots <- list(...)
   if ("data" %in% names(dots)) {
     # otherwise the data name cannot be found by substitute 
-    stop("Please use argument 'newdata' to update the data", 
-         call. = FALSE)
+    stop2("Please use argument 'newdata' to update the data.")
   }
   object <- restructure(object)
   recompile <- FALSE
   if (isTRUE(object$version < utils::packageVersion("brms"))) {
     recompile <- TRUE
-    warning("Updating models fitted with older versions ", 
-            "of brms may fail.", call. = FALSE)
+    warning2("Updating models fitted with older versions ", 
+             "of brms may fail.")
   }
   if (missing(formula.)) {
     dots$formula <- object$formula
@@ -1814,9 +1785,8 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
       dots$formula <- as.formula(formula.)
       mvars <- setdiff(all.vars(dots$formula), c(names(object$data), "."))
       if (length(mvars) && is.null(newdata)) {
-        stop(paste0("New variables found: ", paste(mvars, collapse = ", ")),
-             "\nPlease supply your data again via argument 'newdata'",
-             call. = FALSE)
+        stop2("New variables found: ", paste(mvars, collapse = ", "),
+              "\nPlease supply your data again via argument 'newdata'")
       }
       dots$formula <- update(object$formula, dots$formula)
       ee_old <- extract_effects(object$formula, family = object$family)
@@ -1883,7 +1853,7 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
       if (is(dots$prior, "brmsprior")) { 
         dots$prior <- c(dots$prior)
       } else if (!is(dots$prior, "prior_frame")) {
-        stop("invalid prior argument")
+        stop2("Invalid 'prior' argument.")
       }
       dots$prior <- rbind(dots$prior, object$prior)
       dots$prior <- dots$prior[!duplicated(dots$prior[, 2:5]), ]

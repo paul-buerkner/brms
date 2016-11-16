@@ -81,7 +81,7 @@ Predict responses based on the fitted model.
 Can be performed for the data used to fit the model 
 (posterior predictive checks) or for new data.
 By definition, these predictions have higher variance than 
-predictions of the fitted values (i.e. the 'regression line')
+predictions of the fitted values (i.e., the 'regression line')
 performed by the \code{\link[brms:fitted.brmsfit]{fitted}}
 method. This is because the measurement error is incorporated.
 The estimated means of both methods should, however, be very similar.
@@ -98,24 +98,12 @@ The estimated means of both methods should, however, be very similar.
   rejection sampling is applied in this special case. 
   This means that values are sampled until 
   a value lies within the defined truncation boundaries. 
-  In practice, this procedure may be rather slow (especially in R). 
+  In practice, this procedure may be rather slow (especially in \R). 
   Thus, we try to do approximate rejection sampling 
   by sampling each value \code{ntrys} times and then select a valid value. 
   If all values are invalid, the closest boundary is used, instead. 
   If there are more than a few of these pathological cases, 
   a warning will occure suggesting to increase argument \code{ntrys}.
-  
-  For models fitted with \pkg{brms} <= 0.5.0 only: 
-  Be careful when using \code{newdata} with factors 
-  in fixed or random effects. The predicted results are only valid 
-  if all factor levels present in the initial 
-  data are also defined and ordered correctly 
-  for the factors in \code{newdata}.
-  Grouping factors may contain fewer levels than in the 
-  inital data without causing problems.
-  When using higher versions of \pkg{brms}, 
-  all factors are automatically checked 
-  for correctness and amended if necessary.
 }
 \examples{
 \dontrun{

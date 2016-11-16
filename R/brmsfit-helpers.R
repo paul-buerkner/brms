@@ -550,7 +550,7 @@ extract_pars <- function(pars, all_pars, exact_match = FALSE,
   # Returns:
   #   A character vector of parameter names
   if (!(anyNA(pars) || is.character(pars))) {
-    stop("Argument pars must be NA or a character vector")
+    stop2("Argument 'pars' must be NA or a character vector.")
   }
   if (!anyNA(pars)) {
     if (exact_match) {
@@ -706,7 +706,7 @@ find_names <- function(x) {
   # Returns:
   #   all valid variable names within the string
   if (!is.character(x) || length(x) > 1) {
-    stop("Argument 'x' must be a character string of length one.")
+    stop2("Argument 'x' must be a character string of length one.")
   }
   x <- gsub(" ", "", x)
   reg_all <- paste0("([^([:digit:]|[:punct:])]|\\.)[[:alnum:]_\\.]*", 

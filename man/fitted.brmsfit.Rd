@@ -73,7 +73,7 @@ Fitted values extracted from \code{object}.
  C is the number of categories, and E is equal to \code{length(probs) + 2}.
 }
 \description{
-Predict fitted values (i.e. the 'regression line') of a fitted model.
+Predict fitted values (i.e., the 'regression line') of a fitted model.
 Can be performed for the data used to fit the model 
 (posterior predictive checks) or for new data.
 By definition, these predictions have smaller variance
@@ -86,19 +86,7 @@ The estimated means of both methods should, however, be very similar.
 \code{NA} values within factors in \code{newdata}, 
   are interpreted as if all dummy variables of this factor are 
   zero. This allows, for instance, to make predictions of the grand mean 
-  when using sum coding.  
-
-  For models fitted with \pkg{brms} <= 0.5.0 only: 
-  Be careful when using \code{newdata} with factors 
-  in fixed or random effects. The predicted results are only valid 
-  if all factor levels present in the initial 
-  data are also defined and ordered correctly 
-  for the factors in \code{newdata}.
-  Grouping factors may contain fewer levels than in the 
-  inital data without causing problems.
-  When using higher versions of \pkg{brms}, 
-  all factors are automatically checked 
-  for correctness and amended if necessary.
+  when using sum coding.
 }
 \examples{
 \dontrun{
