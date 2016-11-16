@@ -5,8 +5,8 @@
 \title{Trace and Density Plots for MCMC Samples}
 \usage{
 \method{plot}{brmsfit}(x, pars = NA, parameters = NA, combo = c("dens",
-  "trace"), N = 5, theme = bayesplot::theme_default(), plot = TRUE,
-  ask = TRUE, newpage = TRUE, ...)
+  "trace"), N = 5, theme = NULL, plot = TRUE, ask = TRUE,
+  newpage = TRUE, ...)
 }
 \arguments{
 \item{x}{An object of class \code{brmsfit}.}
@@ -17,9 +17,9 @@ are plotted.}
 
 \item{parameters}{A deprecated alias of \code{pars}}
 
-\item{combo}{A  character vector with at least two elements. 
-Each element of \code{combo} corresponds to a column in the resulting graphic 
-and should be the name of one of the available 
+\item{combo}{A character vector with at least two elements. 
+Each element of \code{combo} corresponds to a column in the resulting 
+graphic and should be the name of one of the available 
 \code{link[bayesplot:MCMC-overview]{MCMC}} functions 
 (omitting the \code{mcmc_} prefix).}
 

@@ -12,13 +12,13 @@
 \method{as.data.frame}{brmsVarCorr}(x, ...)
 }
 \arguments{
-\item{x}{An object of class \code{brmsift}.}
+\item{x}{An object of class \code{brmsfit}.}
 
 \item{sigma}{Ignored (included for compatibility with 
 \code{\link[lme4:VarCorr]{VarCorr}}).}
 
-\item{estimate}{A character vector specifying which summary
-statistics (e.g., "mean", "median", "sd", or "quantile")
+\item{estimate}{A character vector specifying which coefficients 
+(e.g., \code{"mean"}, \code{"median"}, \code{"sd"}, or \code{"quantile"})
 should be calculated for the extracted parameters.}
 
 \item{as.list}{logical; Indicates if covariance 

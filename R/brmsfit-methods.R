@@ -21,7 +21,7 @@ parnames.brmsfit <- function(x, ...) {
 #' @return A matrix with one row per population-level effect 
 #'   and one column per calculated estimate.
 #' 
-#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
+#' @author Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 #' 
 #' @examples
 #' \dontrun{
@@ -91,22 +91,22 @@ vcov.brmsfit <- function(object, correlation = FALSE, ...) {
 #' 
 #' @param object An object of class \code{brmsfit}.
 #' @param estimate The point estimate to be calculated 
-#'  for the random effects, either "mean" or "median".
+#'  for the random effects, either \code{"mean"} or \code{"median"}.
 #' @param var logical; indicating if the covariance matrix 
 #'  for each random effects should be computed.
 #' @param ... Further arguments to be passed to the function 
-#'  specified in \code{estimate}
+#'  specified in \code{estimate}.
 #'
 #' @return A list of matrices (one per grouping factor), 
 #'  with factor levels as row names and 
 #'  group-level effects as column names.
 #'     
-#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}   
+#' @author Paul-Christian Buerkner \email{paul.buerkner@gmail.com}   
 #'   
 #' @examples
 #' \dontrun{
 #' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
-#'              data = epilepsy, family = "poisson", chains = 1)
+#'            data = epilepsy, family = "poisson", chains = 1)
 #' ## group-level means with corresponding covariances
 #' rf <- ranef(fit, var = TRUE)
 #' attr(rf, "var")
@@ -124,7 +124,7 @@ ranef.brmsfit <- function(object, estimate = c("mean", "median"),
   object <- restructure(object)
   estimate <- match.arg(estimate)
   if (!nrow(object$ranef)) {
-    stop("The model does not contain group-level effects", call. = FALSE)
+    stop2("The model does not contain group-level effects.")
   }
   pars <- parnames(object)
   
@@ -202,6 +202,8 @@ ranef.brmsfit <- function(object, estimate = c("mean", "median"),
 #'  non-linear parameter) with factor levels as row names and 
 #'  coefficients as column names.
 #'  
+#' @author Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
+#'  
 #' @examples
 #' \dontrun{
 #' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
@@ -219,9 +221,8 @@ coef.brmsfit <- function(object, estimate = c("mean", "median"), ...) {
   object <- restructure(object)
   estimate <- match.arg(estimate)
   if (!nrow(object$ranef)) {
-    stop("No group-level effects detected. Call method ", 
-         "'fixef' to access population-level effects.", 
-         call. = FALSE)
+    stop2("No group-level effects detected. Call method ", 
+          "'fixef' to access population-level effects.")
   }
   
   .coef <- function(ranef, fixef) {
@@ -306,9 +307,9 @@ coef.brmsfit <- function(object, estimate = c("mean", "median"), ...) {
 #' 
 #' @aliases VarCorr
 #' 
-#' @param x An object of class \code{brmsift}. 
-#' @param estimate A character vector specifying which summary
-#'  statistics (e.g., "mean", "median", "sd", or "quantile")
+#' @param x An object of class \code{brmsfit}. 
+#' @param estimate A character vector specifying which coefficients 
+#'  (e.g., \code{"mean"}, \code{"median"}, \code{"sd"}, or \code{"quantile"})
 #'  should be calculated for the extracted parameters.
 #' @param as.list logical; Indicates if covariance 
 #'  and correlation matrices should be returned as 
@@ -325,7 +326,7 @@ coef.brmsfit <- function(object, estimate = c("mean", "median"), ...) {
 #' a list of correlation matrices, and a list of covariance matrices. 
 #' Can be coerced to a \code{data.frame} by using the \code{as.data.frame} method.
 #' 
-#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
+#' @author Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 #' 
 #' @examples
 #' \dontrun{
@@ -547,7 +548,7 @@ priors.brmsfit <- function(x, all = TRUE, ...) {
 prior_samples.brmsfit <- function(x, pars = NA, parameters = NA, ...) {
   pars <- use_alias(pars, parameters, default = NA)
   if (!anyNA(pars) && !is.character(pars)) {
-    stop("Argument 'pars' must be a character vector", call. = FALSE)
+    stop2("Argument 'pars' must be a character vector.")
   }
   par_names <- parnames(x)
   prior_names <- unique(par_names[grepl("^prior_", par_names)])
@@ -598,7 +599,7 @@ prior_samples.brmsfit <- function(x, pars = NA, parameters = NA, ...) {
 #' @param ... Additional arguments that would be passed 
 #'  to method \code{summary} of \code{brmsfit}.
 #'
-#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
+#' @author Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 #' 
 #' @export
 print.brmsfit <- function(x, digits = 2, ...) {
@@ -624,7 +625,7 @@ print.brmsfit <- function(x, digits = 2, ...) {
 #'   method working correctly.
 #' @param ... Other potential arguments
 #' 
-#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
+#' @author Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 #' 
 #' @method summary brmsfit
 #' @export
@@ -676,8 +677,8 @@ summary.brmsfit <- function(object, waic = FALSE, priors = FALSE,
         warning(msg, call. = FALSE)
       }
     } else {
-      colnames(fit_summary) <- c("Estimate", "Est.Error", "l-95% CI", 
-                                 "u-95% CI")
+      colnames(fit_summary) <- c("Estimate", "Est.Error", 
+                                 "l-95% CI", "u-95% CI")
     }
     
     # fixed effects summary
@@ -809,8 +810,7 @@ standata.brmsfit <- function(object, ...) {
 #' @export
 launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"), 
                                  ...) {
-  if (!is(x$fit, "stanfit") || !length(x$fit@sim)) 
-    stop("The model does not contain posterior samples")
+  contains_samples(x)
   shinystan::launch_shinystan(x$fit, rstudio = rstudio, ...)
 }
 
@@ -821,11 +821,11 @@ launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"),
 #'   or a regular expression. By default, all parameters except for random effects 
 #'   are plotted. 
 #' @param parameters A deprecated alias of \code{pars}
-#' @param combo A  character vector with at least two elements. 
-#' Each element of \code{combo} corresponds to a column in the resulting graphic 
-#' and should be the name of one of the available 
-#' \code{link[bayesplot:MCMC-overview]{MCMC}} functions 
-#' (omitting the \code{mcmc_} prefix).
+#' @param combo A character vector with at least two elements. 
+#'   Each element of \code{combo} corresponds to a column in the resulting 
+#'   graphic and should be the name of one of the available 
+#'   \code{link[bayesplot:MCMC-overview]{MCMC}} functions 
+#'   (omitting the \code{mcmc_} prefix).
 #' @param N The number of parameters plotted per page.
 #' @param theme A \code{\link[ggplot2:theme]{theme}} object 
 #'   modifying the appearance of the plots. 
@@ -848,7 +848,7 @@ launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"),
 #' @return An invisible list of 
 #'   \code{\link[gtable:gtable]{gtable}} objects.
 #' 
-#' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
+#' @author Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 #' 
 #' @examples
 #' \dontrun{ 
@@ -867,8 +867,7 @@ launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"),
 #' @export
 plot.brmsfit <- function(x, pars = NA, parameters = NA, 
                          combo = c("dens", "trace"), N = 5, 
-                         theme = bayesplot::theme_default(), 
-                         plot = TRUE, ask = TRUE, 
+                         theme = NULL, plot = TRUE, ask = TRUE, 
                          newpage = TRUE, ...) {
   dots <- list(...)
   pars <- use_alias(pars, parameters, default = NA)
@@ -898,7 +897,7 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA,
     sub_samples <- samples[, c(sub_pars, "chain"), drop = FALSE]
     # FIXME: add theme argument
     plots[[i]] <- bayesplot::mcmc_combo(sub_samples, combo = combo, 
-                                        theme = theme, ...)
+                                        gg_theme = theme, ...)
     if (plot) {
       plot(plots[[i]], newpage = newpage || i > 1)
       if (i == 1) {

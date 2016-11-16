@@ -12,13 +12,13 @@
 \item{object}{An object of class \code{brmsfit}.}
 
 \item{estimate}{The point estimate to be calculated 
-for the random effects, either "mean" or "median".}
+for the random effects, either \code{"mean"} or \code{"median"}.}
 
 \item{var}{logical; indicating if the covariance matrix 
 for each random effects should be computed.}
 
 \item{...}{Further arguments to be passed to the function 
-specified in \code{estimate}}
+specified in \code{estimate}.}
 }
 \value{
 A list of matrices (one per grouping factor), 
@@ -32,7 +32,7 @@ from a \code{brmsfit} object.
 \examples{
 \dontrun{
 fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
-             data = epilepsy, family = "poisson", chains = 1)
+           data = epilepsy, family = "poisson", chains = 1)
 ## group-level means with corresponding covariances
 rf <- ranef(fit, var = TRUE)
 attr(rf, "var")
