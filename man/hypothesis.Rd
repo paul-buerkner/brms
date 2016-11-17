@@ -34,7 +34,8 @@ against each other, but have to be specified with their full name
 group-level effects parameters related to this grouping factor.
 Ignored if \code{class} is not \code{"sd"} or \code{"cor"}.}
 
-\item{alpha}{The alpha-level of the tests (default is 0.05).}
+\item{alpha}{The alpha-level of the tests (default is 0.05;
+see 'Details' for more information).}
 
 \item{...}{Currently ignored.}
 
@@ -98,6 +99,16 @@ Among others, \code{hypothesis} computes an
  that your priors are reasonable and carefully chosen,
  as the result will depend heavily on the priors. 
  It particular, avoid using default priors.
+ 
+ The argument \code{alpha} specifies the size of the credible interval
+ (i.e., Bayesian confidence interval).
+ For instance, if \code{alpha = 0.05} (5\%), the credible interval
+ will contain \code{1 - alpha = 0.95} (95\%) of the posterior values.
+ Hence, \code{alpha * 100}\% of the posterior values will lie
+ outside of the credible interval. Although this allows testing of
+ hypotheses in a similar manner as in the frequentist null-hypothesis
+ testing framework, we strongly argue against using arbitrary cutoffs 
+ (e.g., \code{p < .05}) to determine the 'existence' of an effect.
 }
 \examples{
 \dontrun{
