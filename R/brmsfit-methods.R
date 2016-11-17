@@ -582,8 +582,8 @@ prior_samples.brmsfit <- function(x, pars = NA, parameters = NA, ...) {
     if (!anyNA(pars)) {
       .prior_samples <- function(par) {
         # get prior samples for parameter par 
-        if (identical(par, "b_Intercept")) {
-          # the population-level intercept has no associated prior
+        if (grepl("^b_Intercept", par) && !par %in% names(samples)) {
+          # population-level intercepts do not inherit priors
           out  <- NULL
         } else {
           matches <- lapply(paste0("^", names(samples)), regexpr, text = par)

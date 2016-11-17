@@ -21,18 +21,18 @@ test_that("check_prior performs correct renaming", {
   expect_equivalent(check_prior(set_prior("normal(0,1)", class = "Intercept"),
                                 formula = bf(rating ~ carry), data = inhaler, 
                                 family = cumulative())[3, ],
-                    brmsprior("normal(0,1)", class = "temp_Intercept"))
+                    brmsprior("normal(0,1)", class = "temp", coef = "Intercept"))
   
   expect_equivalent(check_prior(set_prior("normal(0,1)", class = "Intercept"),
                                 formula = bf(rating ~ carry), data = inhaler, 
                                 family = cumulative(),
                                 threshold = "equidistant")[4, ],
-                    brmsprior("normal(0,1)", class = "temp_Intercept"))
+                    brmsprior("normal(0,1)", class = "temp", coef = "Intercept"))
   
   expect_equivalent(check_prior(set_prior("normal(0,2)", "b", coef = "Intercept"),
                                 formula = bf(rating ~ carry), data = inhaler, 
                                 family = student())[5, ],
-                    brmsprior("normal(0,2)", class = "temp_Intercept"))
+                    brmsprior("normal(0,2)", class = "temp", coef = "Intercept"))
 })
 
 test_that("check_prior accepts correct prior names", {

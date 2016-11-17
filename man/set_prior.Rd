@@ -75,7 +75,7 @@ Define priors for specific parameters or classes of parameters
   Every Population-level effect has its own regression parameter 
   represents the name of the corresponding population-level effect. 
   Suppose, for instance, that \code{y} is predicted by \code{x1} and \code{x2} 
-  (i.e. \code{y ~ x1+x2} in formula syntax). 
+  (i.e., \code{y ~ x1 + x2} in formula syntax). 
   Then, \code{x1} and \code{x2} have regression parameters 
   \code{b_x1} and \code{b_x2} respectively. 
   The default prior for population-level effects (including monotonic and 
@@ -86,20 +86,23 @@ Define priors for specific parameters or classes of parameters
   degrees of freedom for \code{x2}, we can specify this via
   \code{set_prior("normal(0,5)", class = "b", coef = "x1")} and \cr
   \code{set_prior("student_t(10,0,1)", class = "b", coef = "x2")}.
-  To put the same prior on all fixed effects at once, 
+  To put the same prior on all population-level effects at once, 
   we may write as a shortcut \code{set_prior("<prior>", class = "b")}. 
   This also leads to faster sampling, because priors can be vectorized in this case. 
   Both ways of defining priors can be combined using for instance 
   \code{set_prior("normal(0,2)", class = "b")} and \cr
   \code{set_prior("normal(0,10)", class = "b", coef = "x1")}
   at the same time. This will set a \code{normal(0,10)} prior on 
-  the fixed effect of \code{x1} and a \code{normal(0,2)} prior 
-  on all other fixed effects. However, this will break vectorization and
+  the effect of \code{x1} and a \code{normal(0,2)} prior 
+  on all other population-level effects. 
+  However, this will break vectorization and
   may slow down the sampling procedure a bit.
   
   In case of the default intercept parameterization 
-  (discussed in the 'Details' section of \code{\link[brms:brm]{brm}}),
-  the fixed effects intercept has its own parameter class 
+  (discussed in the 'Details' section of 
+  \code{\link[brms:brmsformula]{brmsformula}}),
+  general priors on class \code{"b"} will not affect the intercept.
+  Instead, the intercept has its own parameter class 
   named \code{"Intercept"} and priors can thus be 
   specified via \code{set_prior("<prior>", class = "Intercept")}.
   Setting a prior on the intercept will not break vectorization
@@ -158,8 +161,8 @@ Define priors for specific parameters or classes of parameters
   2. Standard deviations of group-level ('random') effects
   
   Each group-level effect of each grouping factor has a standard deviation named
-  \code{sd_<group>_<random>}. Consider, for instance, the formula 
-  \code{y ~ x1+x2+(1+x1|g)}.
+  \code{sd_<group>_<coef>}. Consider, for instance, the formula 
+  \code{y ~ x1 + x2 + (1 + x1 | g)}.
   We see that the intercept as well as \code{x1} are group-level effects
   nested in the grouping factor \code{g}. 
   The corresponding standard deviation parameters are named as 
@@ -181,7 +184,7 @@ Define priors for specific parameters or classes of parameters
   standard deviations are given in Gelman (2006), but note that he
   is no longer recommending uniform priors, anymore. \cr
   
-  When defining priors on group-level effects parameters in non-linear models, 
+  When defining priors on group-level parameters in non-linear models, 
   please make sure to specify the corresponding non-linear parameter 
   through the \code{nlpar} argument in the same way as 
   for population-level effects.
@@ -192,13 +195,13 @@ Define priors for specific parameters or classes of parameters
   the correlations between those effects have to be estimated. 
   The prior \code{"lkj_corr_cholesky(eta)"} or in short 
   \code{"lkj(eta)"} with \code{eta > 0} 
-  is essentially the only prior for (choelsky factors) of correlation matrices. 
+  is essentially the only prior for (Cholesky factors) of correlation matrices. 
   If \code{eta = 1} (the default) all correlations matrices 
   are equally likely a priori. If \code{eta > 1}, extreme correlations 
   become less likely, whereas \code{0 < eta < 1} results in 
   higher probabilities for extreme correlations. 
   Correlation matrix parameters in \code{brms} models are named as 
-  \code{cor_(group)}, (e.g., \code{cor_g} if \code{g} is the grouping factor).
+  \code{cor_<group>}, (e.g., \code{cor_g} if \code{g} is the grouping factor).
   To set the same prior on every correlation matrix, 
   use for instance \code{set_prior("lkj(2)", class = "cor")}.
   Internally, the priors are transformed to be put on the Cholesky factors
@@ -259,9 +262,9 @@ Define priors for specific parameters or classes of parameters
   need the parameter \code{sigma} 
   to account for the residual standard deviation.
   By default, \code{sigma} has a half student-t prior that scales 
-  in the same way as the random effects standard deviations.
+  in the same way as the group-level standard deviations.
   Furthermore, family \code{student} needs the parameter 
-  \code{nu} representing the degrees of freedom of students t distribution. 
+  \code{nu} representing the degrees of freedom of students-t distribution. 
   By default, \code{nu} has prior \code{"gamma(2,0.1)"}
   and a fixed lower bound of \code{0}.
   Families \code{gamma}, \code{weibull}, \code{inverse.gaussian}, and

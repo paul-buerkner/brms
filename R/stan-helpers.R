@@ -822,7 +822,7 @@ stan_rngprior <- function(sample_prior, prior, par_declars = "",
   if (sample_prior) {
     prior <- gsub(" ", "", paste0("\n", prior))
     pars <- gsub("\\\n|to_vector\\(|\\)", "", get_matches("\\\n[^~]+", prior))
-    take <- !grepl("^(z|zs|temp)_|^increment_log_prob\\(", pars)
+    take <- !grepl("^(z|zs)_|^increment_log_prob\\(", pars)
     pars <- rename(pars[take], symbols = c("^L_", "^Lrescor"), 
                    subs = c("cor_", "rescor"), fixed = FALSE)
     dis <- gsub("~", "", regmatches(prior, gregexpr("~[^\\(]+", prior))[[1]])[take]
@@ -839,7 +839,7 @@ stan_rngprior <- function(sample_prior, prior, par_declars = "",
     
     # special treatment of lkj_corr_cholesky priors
     args <- ifelse(grepl("corr_cholesky$", dis), 
-                   paste0("(2,", substr(args, 2, nchar(args)-1), "[1,2];"), 
+                   paste0("(2,", substr(args, 2, nchar(args)-1), "[1, 2];"), 
                    args)
     dis <- sub("corr_cholesky$", "corr", dis)
     
@@ -880,13 +880,28 @@ stan_rngprior <- function(sample_prior, prior, par_declars = "",
       # unbounded parameters can be sampled in the generatated quantities block
       if (!is.null(hs_df)) {
         args[grepl("^b(m|p|_|$)", pars)] <- "(0, prior_hs_local * prior_hs_global);" 
-      } 
+      }
       out$genD <- collapse(
         "  ", types[no_bounds], " prior_", pars[no_bounds], "; \n")
       out$genC <- paste0(
         "  // additionally draw samples from priors \n",
         collapse("  prior_", pars[no_bounds], " = ",
                  dis[no_bounds], "_rng", args[no_bounds], " \n"))
+    }
+    # compute priors for the actual population-level intercepts
+    is_temp_intercept <- grepl("^temp.*_Intercept", pars)
+    if (any(is_temp_intercept)) {
+      temp_intercepts <- pars[is_temp_intercept]
+      p <- gsub("^temp|_Intercept$", "", temp_intercepts)
+      intercepts <- paste0("b", p, "_Intercept")
+      use_plus <- family$family %in% c("cumulative", "sratio")
+      sub_X_means <- paste0(ifelse(use_plus, " + ", " - "), 
+                            "dot_product(means_X", p, ", b", p, ")")
+      out$genD <- paste0(out$genD, 
+        collapse("  real prior_", intercepts, "; \n"))
+      out$genC <- paste0(out$genC, 
+        collapse("  prior_", intercepts, " = ",
+                 "prior_", temp_intercepts, sub_X_means, "; \n"))
     }
   }
   out

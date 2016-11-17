@@ -278,8 +278,10 @@ stan_fixef <- function(fixef, center_X = TRUE, family = gaussian(),
         "  b", p, "_Intercept = temp", p, "_Intercept", sub_X_means, "; \n")
     }
     # for equidistant thresholds only temp_Intercept1 is a parameter
-    suffix <- ifelse(threshold == "equidistant", "1", "")
-    int_prior <- stan_prior("temp_Intercept", prior = prior, suffix = suffix)
+    suffix <- paste0(p, "_Intercept")
+    suffix <- paste0(suffix, ifelse(threshold == "equidistant", "1", ""))
+    int_prior <- stan_prior("temp", prior = prior, coef = "Intercept",
+                            suffix = suffix, nlpar = nlpar)
     out$prior <- paste0(out$prior, int_prior)
   }
   out

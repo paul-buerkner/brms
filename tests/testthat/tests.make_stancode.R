@@ -436,3 +436,20 @@ test_that("make_stancode handles censored responses correctly", {
                paste("target += weights[n] * weibull_lccdf(Y[n] |", 
                      "shape, eta[n]); \n"), fixed = TRUE)
 })
+
+test_that("make_stancode handles priors on intercepts correctly", {
+  sc <- make_stancode(count ~ log_Age_c + log_Base4_c * Trt_c,
+                      data = epilepsy, family = gaussian(), 
+                      prior = c(prior(student_t(5,0,10), class = b),
+                                prior(normal(0,5), class = Intercept)),
+                      sample_prior = TRUE)
+  expect_match(sc, paste0("prior_b_Intercept = prior_temp_Intercept ", 
+                          "- dot_product(means_X, b);"), fixed = TRUE)
+  sc <- make_stancode(cbind(count, count) ~ log_Age_c + log_Base4_c * Trt_c,
+                      data = epilepsy, family = gaussian(), 
+                      prior = c(prior(student_t(5,0,10), class = b),
+                                prior(normal(0,5), class = Intercept)),
+                      sample_prior = TRUE)
+  expect_match(sc, paste0("prior_b_count_Intercept = prior_temp_count_Intercept ", 
+                          "- dot_product(means_X_count, b_count);"), fixed = TRUE)
+})

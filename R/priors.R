@@ -49,10 +49,10 @@
 #'   1. Population-level ('fixed') effects
 #'   
 #'   Every Population-level effect has its own regression parameter 
-#    These parameters are internally named as \code{b_<fixed>}, where \code{<fixed>} 
+#    These parameters are internally named as \code{b_<coef>}, where \code{<coef>} 
 #'   represents the name of the corresponding population-level effect. 
 #'   Suppose, for instance, that \code{y} is predicted by \code{x1} and \code{x2} 
-#'   (i.e. \code{y ~ x1+x2} in formula syntax). 
+#'   (i.e., \code{y ~ x1 + x2} in formula syntax). 
 #'   Then, \code{x1} and \code{x2} have regression parameters 
 #'   \code{b_x1} and \code{b_x2} respectively. 
 #'   The default prior for population-level effects (including monotonic and 
@@ -63,20 +63,23 @@
 #'   degrees of freedom for \code{x2}, we can specify this via
 #'   \code{set_prior("normal(0,5)", class = "b", coef = "x1")} and \cr
 #'   \code{set_prior("student_t(10,0,1)", class = "b", coef = "x2")}.
-#'   To put the same prior on all fixed effects at once, 
+#'   To put the same prior on all population-level effects at once, 
 #'   we may write as a shortcut \code{set_prior("<prior>", class = "b")}. 
 #'   This also leads to faster sampling, because priors can be vectorized in this case. 
 #'   Both ways of defining priors can be combined using for instance 
 #'   \code{set_prior("normal(0,2)", class = "b")} and \cr
 #'   \code{set_prior("normal(0,10)", class = "b", coef = "x1")}
 #'   at the same time. This will set a \code{normal(0,10)} prior on 
-#'   the fixed effect of \code{x1} and a \code{normal(0,2)} prior 
-#'   on all other fixed effects. However, this will break vectorization and
+#'   the effect of \code{x1} and a \code{normal(0,2)} prior 
+#'   on all other population-level effects. 
+#'   However, this will break vectorization and
 #'   may slow down the sampling procedure a bit.
 #'   
 #'   In case of the default intercept parameterization 
-#'   (discussed in the 'Details' section of \code{\link[brms:brm]{brm}}),
-#'   the fixed effects intercept has its own parameter class 
+#'   (discussed in the 'Details' section of 
+#'   \code{\link[brms:brmsformula]{brmsformula}}),
+#'   general priors on class \code{"b"} will not affect the intercept.
+#'   Instead, the intercept has its own parameter class 
 #'   named \code{"Intercept"} and priors can thus be 
 #'   specified via \code{set_prior("<prior>", class = "Intercept")}.
 #'   Setting a prior on the intercept will not break vectorization
@@ -135,8 +138,8 @@
 #'   2. Standard deviations of group-level ('random') effects
 #'   
 #'   Each group-level effect of each grouping factor has a standard deviation named
-#'   \code{sd_<group>_<random>}. Consider, for instance, the formula 
-#'   \code{y ~ x1+x2+(1+x1|g)}.
+#'   \code{sd_<group>_<coef>}. Consider, for instance, the formula 
+#'   \code{y ~ x1 + x2 + (1 + x1 | g)}.
 #'   We see that the intercept as well as \code{x1} are group-level effects
 #'   nested in the grouping factor \code{g}. 
 #'   The corresponding standard deviation parameters are named as 
@@ -158,7 +161,7 @@
 #'   standard deviations are given in Gelman (2006), but note that he
 #'   is no longer recommending uniform priors, anymore. \cr
 #'   
-#'   When defining priors on group-level effects parameters in non-linear models, 
+#'   When defining priors on group-level parameters in non-linear models, 
 #'   please make sure to specify the corresponding non-linear parameter 
 #'   through the \code{nlpar} argument in the same way as 
 #'   for population-level effects.
@@ -169,13 +172,13 @@
 #'   the correlations between those effects have to be estimated. 
 #'   The prior \code{"lkj_corr_cholesky(eta)"} or in short 
 #'   \code{"lkj(eta)"} with \code{eta > 0} 
-#'   is essentially the only prior for (choelsky factors) of correlation matrices. 
+#'   is essentially the only prior for (Cholesky factors) of correlation matrices. 
 #'   If \code{eta = 1} (the default) all correlations matrices 
 #'   are equally likely a priori. If \code{eta > 1}, extreme correlations 
 #'   become less likely, whereas \code{0 < eta < 1} results in 
 #'   higher probabilities for extreme correlations. 
 #'   Correlation matrix parameters in \code{brms} models are named as 
-#'   \code{cor_(group)}, (e.g., \code{cor_g} if \code{g} is the grouping factor).
+#'   \code{cor_<group>}, (e.g., \code{cor_g} if \code{g} is the grouping factor).
 #'   To set the same prior on every correlation matrix, 
 #'   use for instance \code{set_prior("lkj(2)", class = "cor")}.
 #'   Internally, the priors are transformed to be put on the Cholesky factors
@@ -236,9 +239,9 @@
 #'   need the parameter \code{sigma} 
 #'   to account for the residual standard deviation.
 #'   By default, \code{sigma} has a half student-t prior that scales 
-#'   in the same way as the random effects standard deviations.
+#'   in the same way as the group-level standard deviations.
 #'   Furthermore, family \code{student} needs the parameter 
-#'   \code{nu} representing the degrees of freedom of students t distribution. 
+#'   \code{nu} representing the degrees of freedom of students-t distribution. 
 #'   By default, \code{nu} has prior \code{"gamma(2,0.1)"}
 #'   and a fixed lower bound of \code{0}.
 #'   Families \code{gamma}, \code{weibull}, \code{inverse.gaussian}, and
@@ -320,41 +323,40 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
   ub <- as.numeric(ub)
   if (length(prior) != 1 || length(class) != 1 || length(coef) != 1 || 
       length(group) != 1 || length(nlpar) != 1 || length(lb) > 1 || 
-      length(ub) > 1)
-    stop("All arguments of set_prior must be of length 1.", call. = FALSE)
+      length(ub) > 1) {
+    stop2("All arguments of set_prior must be of length 1.")
+  }
+    
   valid_classes <- c("Intercept", "b", "sd", "sds", "simplex", "cor", "L", 
                      "ar", "ma", "arr", "sigma", "sigmaLL", "rescor", 
                      "Lrescor", "nu", "shape", "delta", "phi", "kappa")
   if (!class %in% valid_classes) {
-    stop(paste(class, "is not a valid parameter class"), call. = FALSE)
+    stop2("'", class, "' is not a valid parameter class.")
   }
   if (nchar(group) && !class %in% c("sd", "cor", "L")) {
-    stop(paste("argument 'group' not meaningful for class", class), 
-         call. = FALSE)
+    stop2("Argument 'group' is not meaningful for class '", class, "'.")
   }
   coef_classes <- c("Intercept", "b", "sd", "sds", "sigma", "simplex")
   if (nchar(coef) && !class %in% coef_classes) {
-    stop(paste("argument 'coef' not meaningful for class", class),
-         call. = FALSE)
+    stop2("Argument 'coef' ia not meaningful for class '", class, "'.")
   }
   if (nchar(nlpar) && !class %in% valid_classes[1:5]) {
-    stop(paste("argument 'nlpar' not meaningful for class", class),
-         call. = FALSE)
+    stop2("Argument 'nlpar' is not meaningful for class '", class, "'.")
   }
   is_arma <- class %in% c("ar", "ma")
   if (length(lb) || length(ub) || is_arma) {
     if (!(class %in% c("b", "arr") || is_arma))
-      stop("Currently boundaries are only allowed for ", 
-           "population-level and ARMA effects.", call. = FALSE)
+      stop2("Currently boundaries are only allowed for ", 
+            "population-level and autocorrelation parameters.")
     if (nchar(coef)) {
-      stop("'coef' may not be specified when using boundaries")
+      stop2("Argument 'coef' may not be specified when using boundaries.")
     }
     if (is_arma) {
       lb <- ifelse(length(lb), lb, -1)
       ub <- ifelse(length(ub), ub, 1) 
       if (is.na(lb) || is.na(ub) || abs(lb) > 1 || abs(ub) > 1) {
-        warning("Setting boundaries of ARMA parameters outside of ", 
-                "[-1,1] may not be appropriate.", call. = FALSE)
+        warning2("Setting boundaries of autocorrelation parameters ", 
+                 "outside of [-1,1] may not be appropriate.")
       }
     }
     # don't put spaces in boundary declarations
@@ -589,8 +591,8 @@ get_prior_fixef <- function(fixef, spec_intercept = TRUE,
     prior <- rbind(prior, brmsprior(class = "Intercept", coef = "",
                                     nlpar = nlpar))
     if (internal) {
-      prior <- rbind(prior, brmsprior(class = "temp_Intercept",
-                                      coef = "", nlpar = nlpar))
+      prior <- rbind(prior, brmsprior(class = "temp", coef = "Intercept",
+                                      nlpar = nlpar))
     }
   }
   prior
@@ -753,7 +755,7 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
                         subs = c("L", "Lrescor"), fixed = FALSE)
   duplicated_input <- duplicated(prior[, 2:5])
   if (any(duplicated_input)) {
-    stop("Duplicated prior specifications are not allowed.", call. = FALSE)
+    stop2("Duplicated prior specifications are not allowed.")
   }
   # handle special priors that are not explictly coded as functions in Stan
   has_specef <- is.formula(ee[["mono"]]) || is.formula(ee[["cse"]])
@@ -775,23 +777,19 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
   prior <- rbind(prior, all_priors)
   prior <- prior[!duplicated(prior[, 2:5]), ]
   rows2remove <- NULL
-  # special treatment of fixed effects Intercepts
+  # special treatment of population-level intercepts
   int_index <- which(prior$class == "Intercept")
   if (length(int_index)) {
     int_prior <- prior[int_index, ]
-    if (length(int_index) > 1L) {
-      intercepts <- prior$coef[int_index]
-      intercepts <- intercepts[nchar(intercepts) > 0]
-    } else intercepts <- "Intercept"
-    bint_index <- which(prior$class == "b" & prior$coef %in% intercepts)
+    bint_index <- which(prior$class == "b" & prior$coef %in% "Intercept")
     bint_prior <- prior[bint_index, ]
-    for (t in which(prior$class %in% "temp_Intercept")) {
-      ti <- int_prior$coef == prior$coef[t]
-      tb <- bint_prior$coef %in% c(prior$coef[t], "Intercept")
-      if (sum(ti) && nchar(int_prior$prior[ti]) > 0) {
+    for (t in which(prior$class %in% "temp" & prior$coef %in% "Intercept")) {
+      ti <- match(prior$nlpar[t], int_prior$nlpar)
+      tb <- match(prior$nlpar[t], bint_prior$nlpar) 
+      if (!is.na(ti) && nzchar(int_prior$prior[ti])) {
         # take 'Intercept' priors first if specified
         prior$prior[t] <- int_prior$prior[ti]
-      } else if (sum(tb) && nchar(bint_prior$prior[tb]) > 0) {
+      } else if (!is.na(tb) && nzchar(bint_prior$prior[tb])) {
         # fall back to 'b' (fixed effects) priors
         prior$prior[t] <- bint_prior$prior[tb]
       }
@@ -819,10 +817,9 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
     for (nlp in nlpars) {
       nlp_prior <- prior$prior[with(prior, nlpar == nlp & class == "b")]
       if (!any(as.logical(nchar(nlp_prior)))) {
-        stop(paste0("Priors on fixed effects are required in non-linear ", 
-                    "models, but none were found for parameter '", nlp, 
-                    "'. \nSee help(set_prior) for more details."), 
-             call. = FALSE)
+        stop2("Priors on population-level effects are required in ",
+              "non-linear models, but none were found for parameter ", 
+              "'", nlp, "'. \nSee help(set_prior) for more details.")
       }
     }
   }
