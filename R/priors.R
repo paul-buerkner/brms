@@ -734,8 +734,11 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
   #   warn: passed to check_prior_content
   # Returns:
   #   a data.frame of prior specifications to be used in stan_prior (see stan.R)
+  prior_only <- identical(sample_prior, "only")
   if (isTRUE(attr(prior, "checked"))) {
     # prior has already been checked; no need to do it twice
+    # attributes may still need to be updated
+    attr(prior, "prior_only") <- prior_only
     return(prior)
   }
   stopifnot(is(formula, "brmsformula"))
@@ -829,7 +832,7 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
   prior <- prior[with(prior, order(nlpar, class, group, coef)), ]
   prior <- rbind(prior, prior_incr_lp)
   rownames(prior) <- seq_len(nrow(prior))
-  attr(prior, "prior_only") <- identical(sample_prior, "only")
+  attr(prior, "prior_only") <- prior_only
   attr(prior, "checked") <- TRUE
   prior
 }
