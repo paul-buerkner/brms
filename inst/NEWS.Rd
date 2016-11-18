@@ -26,6 +26,9 @@
   }
   \subsection{OTHER CHANGES}{
     \itemize{
+      \item Improve computation of Bayes factors
+      in the \code{hypothesis} method to be less 
+      influenced by MCMC error.
       \item Improve documentation of default priors.
       \item Refactor internal structure of some 
       formula and prior evaluating functions. 

@@ -727,7 +727,7 @@ evidence_ratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"),
   #   cut: the cut point between the two hypotheses
   #   wsign: direction of the hypothesis
   #   prior_samples: optional prior samples for undirected hypothesis
-  #   pow influence: the accuracy of the density
+  #   pow: influences the accuracy of the density
   #   ...: optional arguments passed to density.default
   # Returns:
   #   the evidence ratio of the two hypothesis
@@ -738,15 +738,20 @@ evidence_ratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"),
     } else {
       dots <- list(...)
       dots <- dots[names(dots) %in% names(formals("density.default"))]
-      # compute prior and posterior densities
-      prior_density <- do.call(density, c(list(x = prior_samples, n = 2^pow), dots))
-      posterior_density <- do.call(density, c(list(x = x, n = 2^pow), dots))
-      # evaluate densities at the cut point
-      at_cut_prior <- match(min(abs(prior_density$x - cut)), 
-                            abs(prior_density$x - cut))
-      at_cut_posterior <- match(min(abs(posterior_density$x - cut)), 
-                                abs(posterior_density$x - cut))
-      out <- posterior_density$y[at_cut_posterior] / prior_density$y[at_cut_prior] 
+      args <- c(list(bw = "SJ", n = 2^pow), dots)
+      eval_dens <- function(x) {
+        # evaluate density of x at cut
+        from <- min(x)
+        to <- max(x)
+        if (from > cut) {
+          from <- cut - sd(x) / 4
+        } else if (to < cut) {
+          to <- cut + sd(x) / 4
+        }
+        dens <- do.call(density, c(nlist(x, from, to), args))
+        approx(dens$x, dens$y, cut)$y
+      }
+      out <- eval_dens(x) / eval_dens(prior_samples)
     }
   } else if (wsign == "less") {
     out <- length(which(x < cut))
