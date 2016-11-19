@@ -2,14 +2,16 @@
 \title{brms News}
 \encoding{UTF-8}
 
-\section{CHANGES IN VERSION 1.1.0++}{
+\section{CHANGES IN VERSION 1.2.0}{
   \subsection{NEW FEATURES}{
     \itemize{
       \item Add the new family \code{hurdle_lognormal}
       specifically suited for zero-inflated continuous responses.
       \item Introduce the \code{pp_check} method for \code{brmsfit} 
       objects to perform various posterior predictive checks
-      using the \pkg{bayesplot} package. 
+      using the \pkg{bayesplot} package.
+      \item Allow varying the scale of global shrinkage 
+      parameter of the \code{horseshoe} prior.
       \item Add functions \code{prior} and \code{prior_string}
       as aliases of \code{set_prior}, the former 
       allowing to pass arguments without quotes \code{""}
@@ -22,6 +24,14 @@
       \item Introduce the \code{prior_summary} method
       for \code{brmsfit} objects to obtain a summary
       of prior distributions applied.
+      \item Sample from the prior of the original population-level 
+      intercept when \code{sample_prior = TRUE} even in models
+      with an internal temporary intercept used to improve
+      sampling efficiency.
+      \item Introduce methods \code{posterior_predict}, 
+      \code{predictive_error} and \code{log_lik} as
+      (partial) aliases of \code{predict}, \code{residuals},
+      and \code{logLik} respectively.
     }
   }
   \subsection{OTHER CHANGES}{
@@ -50,6 +60,8 @@
       \item Improve the \code{update} method to better recognize
       situations where recompliation of the \pkg{Stan} code
       is necessary thanks to Raphael P.H.
+      \item Allow to correctly \code{update} the \code{sample_prior}
+      argument to value \code{"only"}.
       \item Fix an unexpected error occuring in many S3 methods
       when the thinning rate is not a divisor of the total
       number of posterior samples thanks to Paul Zerr.

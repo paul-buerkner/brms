@@ -1,6 +1,6 @@
 language: r
 r: devel
-sudo: false
+sudo: FALSE
 cache: packages
 
 warnings_are_errors: TRUE
@@ -9,7 +9,6 @@ r_github_packages:
   - jimhester/covr
   - stan-dev/rstantools
   - stan-dev/rstan/rstan/rstan@develop
-  - stan-dev/bayesplot
   
 after_success:
   - Rscript -e 'covr::codecov()'
