@@ -8,7 +8,7 @@
 \title{Non-linear hypothesis testing}
 \usage{
 \method{hypothesis}{brmsfit}(x, hypothesis, class = "b", group = "",
-  alpha = 0.05, ...)
+  alpha = 0.05, seed = 1234, ...)
 
 hypothesis(x, hypothesis, ...)
 
@@ -36,6 +36,9 @@ Ignored if \code{class} is not \code{"sd"} or \code{"cor"}.}
 
 \item{alpha}{The alpha-level of the tests (default is 0.05;
 see 'Details' for more information).}
+
+\item{seed}{A single numeric value passed to \code{set.seed} 
+to make results reproducible.}
 
 \item{...}{Currently ignored.}
 

@@ -738,7 +738,7 @@ evidence_ratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"),
     } else {
       dots <- list(...)
       dots <- dots[names(dots) %in% names(formals("density.default"))]
-      args <- c(list(bw = "SJ", n = 2^pow), dots)
+      args <- c(list(n = 2^pow), dots)
       eval_dens <- function(x) {
         # evaluate density of x at cut
         from <- min(x)
@@ -749,7 +749,7 @@ evidence_ratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"),
           to <- cut + sd(x) / 4
         }
         dens <- do.call(density, c(nlist(x, from, to), args))
-        approx(dens$x, dens$y, cut)$y
+        spline(dens$x, dens$y, xout = cut)$y
       }
       out <- eval_dens(x) / eval_dens(prior_samples)
     }

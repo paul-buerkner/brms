@@ -47,6 +47,8 @@ brmssummary <- function(formula = NULL, family = "", link = "",
 #'  Ignored if \code{class} is not \code{"sd"} or \code{"cor"}.
 #' @param alpha The alpha-level of the tests (default is 0.05;
 #'  see 'Details' for more information).
+#' @param seed A single numeric value passed to \code{set.seed} 
+#'  to make results reproducible.
 #' @param ignore_prior A flag indicating if prior distributions 
 #'  should also be plotted. Only used if priors were specified on
 #'  the relevant parameters.
