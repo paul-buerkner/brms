@@ -19,52 +19,44 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   standata <- do.call(amend_newdata, c(newd_args, list(fit = x, ...)))
   draws <- nlist(f = prepare_family(x), data = standata, 
                  nsamples = nsamples, autocor = x$autocor)
+  args <- c(newd_args, nlist(x, subset, nsamples, f = draws$f))
   
   # extract draws of auxiliary parameters
-  args <- list(x = x, subset = subset)
-  ilinks <- c(sigma = "exp", shape = "exp", nu = "exp", phi = "exp", 
-              kappa = "exp", zi = "inv_logit", hu = "inv_logit") 
+  am_args <- list(x = x, subset = subset)
   valid_auxpars <- valid_auxpars(family(x), effects = ee, autocor = x$autocor)
   for (ap in valid_auxpars) {
     if (!is.null(ee[[ap]])) {
-      auxfit <- x
-      auxfit$formula <- update.formula(x$formula, rhs(attr(x$formula, ap)))
-      auxfit$ranef <- tidy_ranef(extract_effects(auxfit$formula), 
-                                 data = model.frame(x))
-      auxstandata <- do.call(amend_newdata, c(newd_args, list(fit = auxfit)))
-      draws[[ap]] <- .extract_draws(auxfit, standata = auxstandata, nlpar = ap,
-                                    re_formula = re_formula, subset = subset)
-      rm(auxfit)
-      draws[[ap]][c("f", "data", "nsamples", "ilink")] <- 
-        list(draws$f, auxstandata, draws$nsamples, ilinks[ap])
+      more_args <- list(rhs_formula = attr(x$formula, ap),
+                        nlpar = ap, ilink = ilink_auxpars(ap))
+      draws[[ap]] <- do.call(.extract_draws, c(args, more_args))
     } else {
       regex <- paste0("^", ap, "($|_)")
-      draws[[ap]] <- do.call(as.matrix, c(args, pars = regex))
+      draws[[ap]] <- do.call(as.matrix, c(am_args, pars = regex))
     }
   }
-  # parameters for multivariate models
   if (is.linear(family(x)) && length(ee$response) > 1L) {
-    draws[["sigma"]] <- do.call(as.matrix, c(args, pars = "^sigma($|_)"))
-    draws[["rescor"]] <- do.call(as.matrix, c(args, pars = "^rescor_"))
+    # parameters for multivariate models
+    draws[["sigma"]] <- do.call(as.matrix, c(am_args, pars = "^sigma($|_)"))
+    draws[["rescor"]] <- do.call(as.matrix, c(am_args, pars = "^rescor_"))
     draws[["Sigma"]] <- get_cov_matrix(sd = draws$sigma, cor = draws$rescor)$cov
   }
-  # autocorrelation parameters
   if (incl_autocor) {
+    # autocorrelation parameters
     if (get_ar(x$autocor)) {
-      draws[["ar"]] <- do.call(as.matrix, c(args, pars = "^ar\\["))
+      draws[["ar"]] <- do.call(as.matrix, c(am_args, pars = "^ar\\["))
     }
     if (get_ma(x$autocor)) {
-      draws[["ma"]] <- do.call(as.matrix, c(args, pars = "^ma\\["))
+      draws[["ma"]] <- do.call(as.matrix, c(am_args, pars = "^ma\\["))
     }
     if (get_arr(x$autocor)) {
-      draws[["arr"]] <- do.call(as.matrix, c(args, pars = "^arr\\["))
+      draws[["arr"]] <- do.call(as.matrix, c(am_args, pars = "^arr\\["))
     }
     if (is(x$autocor, "cor_bsts")) {
       if (is.null(newdata)) {
-        draws[["loclev"]] <- do.call(as.matrix, c(args, pars = "^loclev\\["))
+        draws[["loclev"]] <- do.call(as.matrix, c(am_args, pars = "^loclev\\["))
       } else {
-        warning(paste("Local level terms are currently ignored when", 
-                      "'newdata' is specified."), call. = FALSE)
+        warning2("Local level terms are currently ignored when ",
+                 "'newdata' is specified.")
       }
     }
   }
@@ -72,18 +64,10 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   nlpars <- names(ee$nonlinear)
   if (length(nlpars)) {
     for (i in seq_along(nlpars)) {
-      nlfit <- x
-      nlfit$formula <- update.formula(x$formula, 
-                         rhs(attr(x$formula, "nonlinear")[[i]]))
-      nlfit$ranef <- tidy_ranef(extract_effects(nlfit$formula), 
-                               data = model.frame(x))
-      nlstandata <- do.call(amend_newdata, c(newd_args, list(fit = nlfit)))
+      rhs_formula <- attr(x$formula, "nonlinear")[[i]]
+      more_args <- list(rhs_formula = rhs_formula, nlpar = nlpars[i])
       draws$nonlinear[[nlpars[i]]] <- 
-        .extract_draws(nlfit, standata = nlstandata, nlpar = nlpars[i], 
-                       re_formula = re_formula, subset = subset)
-      rm(nlfit)
-      draws$nonlinear[[nlpars[i]]][c("f", "data", "nsamples")] <- 
-        list(f = draws$f, data = nlstandata, draws$nsamples)
+        do.call(.extract_draws, c(args, more_args))
     }
     covars <- all.vars(rhs(ee$covars))
     if (!all(covars %in% colnames(standata$C))) {
@@ -107,49 +91,68 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
       # new multivariate models
       draws[["mv"]] <- named_list(resp)
       for (r in resp) {
-        mvfit <- x
-        attr(mvfit$formula, "response") <- r
-        mvstandata <- do.call(amend_newdata, c(newd_args, list(fit = mvfit)))
-        draws[["mv"]][[r]] <- 
-          .extract_draws(mvfit, standata = mvstandata, subset = subset,
-                         re_formula = re_formula, nlpar = r)
-        rm(mvfit)
-        draws[["mv"]][[r]][c("f", "data", "nsamples")] <- 
-          list(draws$f, mvstandata, draws$nsamples)
+        more_args <- list(attr_formula = list(response = r), nlpar = r)
+        draws[["mv"]][[r]] <- do.call(.extract_draws, c(args, more_args))
       }
     } else {
       # univariate models
-      draws <- c(draws, 
-        .extract_draws(x, standata = standata, subset = subset,
-                       re_formula = re_formula))  
+      draws <- c(draws, do.call(.extract_draws, args))
     }
   }
   draws
 }
 
-.extract_draws <- function(x, standata, nlpar = "", re_formula = NULL, 
-                           subset = NULL) {
+.extract_draws <- function(x, newdata = NULL, re_formula = NULL,
+                           allow_new_levels = FALSE, 
+                           incl_autocor = TRUE, subset = NULL,
+                           nlpar = "", smooths_only = FALSE,
+                           rhs_formula = NULL, attr_formula = NULL,
+                           ...) {
   # helper function for extract_draws to extract posterior samples
   # of all regression effects
   # Args:
   #   x: a brmsift object
-  #   standata: a list returned by make_standata
+  #   rhs_formula: used to update the rhs for x$formula
+  #                e.g., to extract draws of non-linear parameters
+  #   attr_formula: list of attributes to add to x$formula
+  #   smooths_only: extract only smoothing terms?
   #   nlpar: optional name of a non-linear parameter
+  #   ...: further elements to store in draws
   # Returns:
   #   a named list
+  dots <- list(...)
+  if (!is.null(rhs_formula)) {
+    x$formula <- update.formula(x$formula, rhs(rhs_formula))
+    x$ranef <- tidy_ranef(extract_effects(x$formula), data = model.frame(x))
+  }
+  if (!is.null(attr_formula)) {
+    attributes(x$formula)[names(attr_formula)] <- attr_formula
+  }
   new_formula <- update_re_terms(formula(x), re_formula = re_formula)
   ee <- extract_effects(new_formula, family = family(x))
-  nlpar_usc <- ifelse(nchar(nlpar), paste0(nlpar, "_"), "")
-  args <- list(x = x, subset = subset)
+  new_ranef <- tidy_ranef(ee, model.frame(x))
+  nlpar_usc <- usc(nlpar, "suffix")
+  usc_nlpar <- usc(usc(nlpar))
+  newd_args <- nlist(fit = x, newdata, re_formula, 
+                     allow_new_levels, incl_autocor)
+  draws <- list(data = do.call(amend_newdata, newd_args), 
+                old_cat = is.old_categorical(x), ...)
   
-  draws <- list(old_cat = is.old_categorical(x))
-  if (!is.null(standata$X) && ncol(standata$X) && draws$old_cat != 1L) {
-    b_pars <- paste0("b_", nlpar_usc, colnames(standata$X))
+  if (smooths_only) {
+    # make sure only smooth terms will be included in draws
+    keep_elements <- setdiff(names(draws$data), c("Xm", "Xcs", "offset"))
+    draws$data <- draws$data[keep_elements]
+    new_ranef <- empty_ranef()
+  }
+  
+  args <- list(x = x, subset = subset)
+  if (isTRUE(ncol(draws$data[["X"]]) > 0) && draws$old_cat != 1L) {
+    b_pars <- paste0("b_", nlpar_usc, colnames(draws$data[["X"]]))
     draws[["b"]] <- 
       do.call(as.matrix, c(args, list(pars = b_pars, exact = TRUE)))
   }
-  if (isTRUE(ncol(standata$Xm) > 0)) {
-    monef <- colnames(standata$Xm)
+  if (isTRUE(ncol(draws$data[["Xm"]]) > 0)) {
+    monef <- colnames(draws$data[["Xm"]])
     draws[["bm"]] <- draws$simplex <- vector("list", length(monef))
     # as of brms > 1.0.1 the original prefix 'bm' is used
     bm <- ifelse(any(grepl("^bm_", parnames(x))), "bm_", "b_")
@@ -158,7 +161,7 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
       draws[["bm"]][[i]] <- 
         do.call(as.matrix, c(args, list(pars = bm_par, exact = TRUE)))
       simplex_par <- paste0("simplex_", nlpar_usc, monef[i], 
-                            "[", 1:standata$Jm[i], "]")
+                            "[", seq_len(draws$data$Jm[i]), "]")
       draws[["simplex"]][[i]] <- 
         do.call(as.matrix, c(args, list(pars = simplex_par, exact = TRUE)))
       
@@ -167,15 +170,15 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   if (is.ordinal(family(x))) {
     draws[["Intercept"]] <- 
       do.call(as.matrix, c(args, list(pars = "^b_Intercept\\[")))
-    if (isTRUE(ncol(standata[["Xcs"]]) > 0)) {
+    if (isTRUE(ncol(draws$data[["Xcs"]]) > 0)) {
       # as of brms > 1.0.1 the original prefix 'bcs' is used
       bcs <- ifelse(any(grepl("^bcs_", parnames(x))), "^bcs_", "^b_")
-      cse_pars <- paste0(bcs, colnames(standata$Xcs), "\\[")
+      cse_pars <- paste0(bcs, colnames(draws$data$Xcs), "\\[")
       draws[["cse"]] <- do.call(as.matrix, c(args, list(pars = cse_pars)))
     }
   } else if (draws$old_cat == 1L) {
     # old categorical models deprecated as of brms > 0.8.0
-    if (!is.null(standata$X)) {
+    if (!is.null(draws$data[["X"]])) {
       draws[["cse"]] <- do.call(as.matrix, c(args, list(pars = "^b_")))
     }
   }
@@ -195,21 +198,18 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
     }
   }
   
-  # group-level effects
-  usc_nlpar <- usc(usc(nlpar))
-  new_ranef <- tidy_ranef(ee, model.frame(x))
-  groups <- unique(new_ranef$group)
   # requires initialization to assign S4 objects of the Matrix package
+  groups <- unique(new_ranef$group) 
   draws[["Z"]] <- draws[["Z_mono"]] <- draws[["Z_cse"]] <- named_list(groups)
   for (g in groups) {
     new_r <- new_ranef[new_ranef$group == g, ]
-    gf <- get(paste0("J_", new_r$id[1]), standata)
+    gf <- get(paste0("J_", new_r$id[1]), draws$data)
     r_pars <- paste0("^r_", g, usc_nlpar, "\\[")
     r <- do.call(as.matrix, c(args, list(pars = r_pars)))
     if (is.null(r)) {
-      stop("Group-level effects for each level of group '",
-           g, "' not found. Please set ranef = TRUE ",
-           "when calling brm.", call. = FALSE)
+      stop2("Group-level effects for each level of group ", 
+            "'", g, "' not found. Please set ranef = TRUE ",
+            "when calling brm.")
     }
     nlevels <- ngrps(x)[[g]]
     old_r <- x$ranef[x$ranef$group == g, ]
@@ -255,9 +255,9 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
     # category specific group-level terms
     new_r_cse <- new_r[new_r$type == "cse", ]
     if (nrow(new_r_cse)) {
-      Z <- prepare_Z(new_r_cse, gf, standata)
+      Z <- prepare_Z(new_r_cse, gf, draws$data)
       draws[["Z_cse"]][[g]] <- Z
-      draws[["r_cse"]] <- named_list(seq_len(standata$ncat - 1), list())
+      draws[["r_cse"]] <- named_list(seq_len(draws$data$ncat - 1), list())
       for (i in names(draws[["r_cse"]])) {
         index <- paste0("\\[", i, "\\]$")
         take <- which(grepl(index, new_r$coef) & new_r$type == "cse")
@@ -268,7 +268,7 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
     # basic group-level effects
     new_r_basic <- new_r[!nzchar(new_r$type), ]
     if (nrow(new_r_basic)) {
-      Z <- prepare_Z(new_r_basic, gf, standata)
+      Z <- prepare_Z(new_r_basic, gf, draws$data)
       draws[["Z"]][[g]] <- Z
       take <- which(!nzchar(new_r$type))
       take <- as.vector(outer(take, nranef * (seq_along(levels) - 1), "+"))
