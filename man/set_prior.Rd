@@ -107,6 +107,11 @@ Define priors for specific parameters or classes of parameters
   specified via \code{set_prior("<prior>", class = "Intercept")}.
   Setting a prior on the intercept will not break vectorization
   of the other population-level effects.
+  Note that technially, this prior is set on a temporary intercept
+  that results when internally centering all population-level predictors 
+  around zero to improve sampling efficiency. To treat the intercept
+  as an ordinary population-level effect, use \code{0 + intercept}
+  on the right-hand side of the model formula.
   
   A special shrinkage prior to be applied on population-level effects 
   is the horseshoe prior.
