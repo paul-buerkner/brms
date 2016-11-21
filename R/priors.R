@@ -821,7 +821,7 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
       nlp_prior <- prior$prior[with(prior, nlpar == nlp & class == "b")]
       if (!any(as.logical(nchar(nlp_prior)))) {
         stop2("Priors on population-level effects are required in ",
-              "non-linear models, but none were found for parameter ", 
+              "non-linear models,\nbut none were found for parameter ", 
               "'", nlp, "'. \nSee help(set_prior) for more details.")
       }
     }

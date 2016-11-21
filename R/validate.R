@@ -23,12 +23,11 @@ extract_effects <- function(formula, family = NA, nonlinear = NULL,
   x <- nlist(formula)
   if (length(nonlinear)) {
     if (grepl("|", tfixed, fixed = TRUE)) {
-      stop("Group-level effects in non-linear models have to be ",
-           "specified in the 'nonlinear' argument.", call. = FALSE)
+      stop2("Group-level effects in non-linear models have ", 
+            "to be specified in the 'nonlinear' argument.")
     }
     if (is.ordinal(family) || is.categorical(family)) {
-      stop("Non-linear effects are not yet allowed for this family.", 
-           call. = FALSE)
+      stop2("Non-linear effects are not yet allowed for this family.")
     }
     x$fixed <- formula(tfixed)
     x$nonlinear <- extract_nonlinear(nonlinear, x$fixed, family = family)
@@ -70,7 +69,7 @@ extract_effects <- function(formula, family = NA, nonlinear = NULL,
     }
   }
   if (check_response && length(x$fixed) < 3L) { 
-    stop("Invalid formula: response variable is missing", call. = FALSE)
+    stop2("Invalid formula: response variable is missing.")
   }
   
   # make sure to store the plain names of all predictors
@@ -413,10 +412,9 @@ avoid_auxpars <- function(names, effects) {
     auxpars_prefix <- paste0("^", auxpars, "_")
     invalid <- any(ulapply(auxpars_prefix, grepl, names))
     if (invalid) {
-      auxpars <- paste0(auxpars, "_", collapse = ", ")
-      stop("Variable names starting with ", auxpars,
-           " are not allowed for this model.", 
-           call. = FALSE)
+      auxpars <- paste0("'", auxpars, "_'", collapse = ", ")
+      stop2("Variable names starting with ", auxpars,
+            " are not allowed for this model.")
     }
   }
   invisible(NULL)

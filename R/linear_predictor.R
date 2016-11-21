@@ -52,7 +52,7 @@ linear_predictor <- function(draws, i = NULL) {
   for (k in seq_along(splines)) {
     nb <- seq_len(length(draws[["s"]][[splines[k]]]))
     for (j in nb) {
-      Zs <- p(draws$data[[paste0("Zs_", k, "_", j)]], i)
+      Zs <- p(draws[["Zs"]][[splines[k]]][[j]], i)
       s <- draws[["s"]][[splines[k]]][[j]]
       eta <- eta + fixef_predictor(X = Zs, b = s)
     }
@@ -63,8 +63,7 @@ linear_predictor <- function(draws, i = NULL) {
   if (length(rmNULL(draws[c("ar", "ma")])) && !use_cov(draws$autocor)) {
     # only run when ARMA effects were modeled as part of eta
     if (!is.null(i)) {
-      stop("Pointwise evaluation is not yet implemented for ARMA models.",
-           call. = FALSE)
+      stop2("Pointwise evaluation is not yet implemented for ARMA models.")
     }
     eta <- arma_predictor(standata = draws$data, ar = draws[["ar"]], 
                           ma = draws[["ma"]], eta = eta, link = draws$f$link)
