@@ -116,10 +116,17 @@ test_that("all S3 methods have reasonable ouputs", {
                  "Some specified effects are invalid for this model")
   expect_error(marginal_effects(fit1, effects = "Trtc:a:b"), 
                "please use the 'conditions' argument")
-  
   expect_equal(nrow(marginal_effects(fit2)[[2]]), 100)
   expect_equal(nrow(marginal_effects(fit2, conditions = mdata)[[1]]),
                exp_nrow)
+  # marginal_smooths
+  ms1 <- marginal_smooths(fit1)
+  expect_equal(nrow(ms1[[1]]), 100)
+  expect_true(is(ms1, "brmsMarginalEffects"))
+  expect_error(marginal_smooths(fit1, smooths = "s3"),
+               "No valid smooth terms found in the model")
+  expect_error(marginal_smooths(fit2),
+               "No valid smooth terms found in the model")
   # model.frame
   expect_equal(model.frame(fit1), fit1$data)
   # ngrps

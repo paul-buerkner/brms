@@ -7,9 +7,11 @@
     \itemize{
       \item Add the new family \code{hurdle_lognormal}
       specifically suited for zero-inflated continuous responses.
-      \item Introduce the \code{pp_check} method for \code{brmsfit} 
-      objects to perform various posterior predictive checks
+      \item Introduce the \code{pp_check} method to perform 
+      various posterior predictive checks
       using the \pkg{bayesplot} package.
+      \item Introduce the \code{marginal_smooths} method to
+      better visualize smooth terms.
       \item Allow varying the scale of global shrinkage 
       parameter of the \code{horseshoe} prior.
       \item Add functions \code{prior} and \code{prior_string}

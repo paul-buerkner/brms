@@ -602,6 +602,8 @@ data_fixef <- function(effects, data, family = gaussian(),
       out <- c(out, knots, Zs)
     }
     X <- cbind(X, do.call(cbind, Xs))
+    attr(X, "smooth_cols") <- 
+      lapply(Xs, function(x) which(colnames(X) %in% colnames(x)))
     colnames(X) <- rename(colnames(X))
   }
   avoid_auxpars(colnames(X), effects = effects)
