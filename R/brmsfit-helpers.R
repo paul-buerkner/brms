@@ -160,6 +160,73 @@ ilink <- function(x, link) {
          stop2("Link '", link, "' not supported."))
 }
 
+prepare_conditions <- function(x, conditions = NULL, effects = NULL, 
+                               re_formula = NA) {
+  # prepare marginal conditions
+  # Args:
+  #   x: an object of class 'brmsfit'
+  #   conditions: optional data.frame containing user defined conditions
+  #   re_formula: see marginal_effects
+  # Returns:
+  #   A data.frame with (possibly updated) conditions
+  mf <- model.frame(x)
+  new_formula <- update_re_terms(formula(x), re_formula = re_formula)
+  ee <- extract_effects(new_formula, family = family(x))
+  int_effects <- c(get_effect(ee, "mono"), rmNULL(ee[c("trials", "cat")]))
+  int_vars <- unique(ulapply(int_effects, all.vars))
+  if (is.null(conditions)) {
+    if (!is.null(ee$trials)) {
+      message("Using the median number of trials by default")
+    }
+    # list all required variables
+    req_vars <- c(lapply(get_effect(ee), rhs), 
+                  get_random(ee)$form,
+                  lapply(get_effect(ee, "mono"), rhs), 
+                  lapply(get_effect(ee, "gam"), rhs), 
+                  ee[c("cse", "se", "disp", "trials", "cat")])
+    req_vars <- unique(ulapply(req_vars, all.vars))
+    req_vars <- setdiff(req_vars, c(rsv_vars, names(ee$nonlinear)))
+    conditions <- as.data.frame(as.list(rep(NA, length(req_vars))))
+    names(conditions) <- req_vars
+    for (v in req_vars) {
+      if (is.numeric(mf[[v]])) {
+        if (v %in% int_vars) {
+          conditions[[v]] <- round(median(mf[[v]]))
+        } else {
+          conditions[[v]] <- mean(mf[[v]])
+        }
+      } else {
+        # use reference category
+        lev <- attr(as.factor(mf[[v]]), "levels")
+        conditions[[v]] <- factor(lev[1], levels = lev, 
+                                  ordered = is.ordered(mf[[v]]))
+      }
+    }
+  } else {
+    conditions <- as.data.frame(conditions)
+    if (!nrow(conditions)) {
+      stop2("Argument 'conditions' must have a least one row.")
+    }
+    if (any(duplicated(rownames(conditions)))) {
+      stop2("Row names of 'conditions' should be unique.")
+    }
+    conditions <- unique(conditions)
+    eff_vars <- lapply(effects, function(e) all.vars(parse(text = e)))
+    uni_eff_vars <- unique(unlist(eff_vars))
+    is_everywhere <- ulapply(uni_eff_vars, function(uv)
+      all(ulapply(eff_vars, function(vs) uv %in% vs)))
+    # variables that are present in every effect term
+    # do not need to be defined in conditions
+    missing_vars <- setdiff(uni_eff_vars[is_everywhere], names(conditions))
+    for (v in missing_vars) {
+      conditions[, v] <- mf[[v]][1]
+    }
+  }
+  amend_newdata(conditions, fit = x, re_formula = re_formula,
+                allow_new_levels = TRUE, incl_autocor = FALSE, 
+                return_standata = FALSE)
+}
+
 get_cornames <- function(names, type = "cor", brackets = TRUE,
                          sep = "__") {
   # get correlation names as combinations of variable names
