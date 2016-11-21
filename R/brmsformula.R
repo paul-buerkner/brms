@@ -444,6 +444,21 @@ auxpars <- function(incl_nl = FALSE) {
   auxpars
 }
 
+ilink_auxpars <- function(ap = NULL, stan = FALSE) {
+  # helper function to store inverse links of auxiliary parameters
+  if (stan) {
+    ilink <- c(sigma = "exp", shape = "exp", nu = "exp", 
+               phi = "exp", kappa = "exp", zi = "", hu = "") 
+  } else {
+    ilink <- c(sigma = "exp", shape = "exp", nu = "exp", phi = "exp", 
+               kappa = "exp", zi = "inv_logit", hu = "inv_logit")
+  }
+  if (length(ap)) {
+    ilink <- ilink[ap]
+  }
+  ilink
+}
+
 sformula <- function(x, incl_nl = TRUE, flatten = FALSE, ...) {
   # extract special formulas stored in brmsformula objects
   # Args:

@@ -178,19 +178,19 @@ stan_auxpars <- function(effects, data, family = gaussian(),
     kappa = "  real<lower=0> kappa;  // precision parameter \n",
     zi = "  real<lower=0,upper=1> zi;  // zero-inflation probability \n", 
     hu = "  real<lower=0,upper=1> hu;  // hurdle probability \n")
-  ilinks <- c(sigma = "exp", shape = "exp", nu = "exp", 
-              phi = "exp", kappa = "exp", zi = "", hu = "") 
   valid_auxpars <- valid_auxpars(family, effects, autocor = autocor)
   # don't supply the family argument to avoid applying link functions
   args <- nlist(data, ranef, center_X = FALSE, eta = "")
   for (ap in valid_auxpars) {
     if (!is.null(effects[[ap]])) {
+      ap_ilink <- ilink_auxpars(ap, stan = TRUE)
       ap_prior <- prior[prior$nlpar == ap, ]
       ap_args <- list(effects = effects[[ap]], nlpar = ap, prior = ap_prior)
-      if (nzchar(ilinks[ap])) {
-        ap_ilink <- paste0("    ", ap, "[n] = ", 
-                           ilinks[ap], "(", ap, "[n]); \n")
-      } else ap_ilink <- ""
+      if (nzchar(ap_ilink)) {
+        ap_ilink <- paste0("    ", ap, "[n] = ", ap_ilink, "(", ap, "[n]); \n")
+      } else {
+        ap_ilink <- ""
+      }
       out[[ap]] <- do.call(stan_effects, c(ap_args, args))
       out[[ap]]$modelC3 <- paste0(out[[ap]]$modelC3, ap_ilink)
     } else {
