@@ -27,6 +27,10 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, points = FALSE,
     if (points) {
       # show the data as points in the plot
       # add points first so that they appear behind the regression lines
+      if (isTRUE(attr(x, "smooths_only"))) {
+        stop2("Argument 'points' is invalid for objects ", 
+              "returned by 'marginal_smooths'.")
+      }
       aes_points <- aes_string(x = effects[1], y = ".RESP")
       if (is.factor(attr(x[[i]], "points")[, gvar])) {
         aes_points$colour <- parse(text = gvar)[[1]]

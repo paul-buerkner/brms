@@ -782,13 +782,16 @@ get_all_effects <- function(effects, rsv_vars = NULL) {
   all_effects[lengths(all_effects) <= 2L]
 }
 
-get_spline_labels <- function(x, data = NULL, covars = FALSE) {
+get_spline_labels <- function(x, data = NULL, covars = FALSE,
+                              combine = TRUE) {
   # extract labels of splines for GAMMs
   # Args:
   #   x: either a formula or a list containing an element "gam"
   #   data: optional data frame containing the covariates
   #   covars: should the names of the covariates be returned
   #           instead of the full term names?
+  #   combine: combine names of the covariates (TRUE) 
+  #            or just return the covariate names (FALSE)?
   if (is.formula(x)) {
     x <- extract_effects(x, check_response = FALSE)
   }
@@ -805,7 +808,11 @@ get_spline_labels <- function(x, data = NULL, covars = FALSE) {
     for (i in seq_along(var_labels)) {
       var_labels[[i]] <- c(covars[[i]], byvars[[i]])
     }
-    splines <- paste0(sfuns, ulapply(var_labels, collapse))
+    if (combine) {
+      splines <- paste0(sfuns, ulapply(var_labels, collapse))
+    } else {
+      splines <- var_labels
+    }
   }
   if (length(splines) && !is.null(data)) {
     # one spline term may contain multiple spline matrices

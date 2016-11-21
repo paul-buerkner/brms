@@ -592,6 +592,40 @@ marginal_effects <- function(x, ...) {
   UseMethod("marginal_effects")
 }
 
+#' Display Smooth Terms
+#' 
+#' Display smooth \code{s} and \code{t2} terms of models
+#' fitted with \pkg{brms}.
+#' 
+#' @inheritParams marginal_effects
+#' @param smooths Optional character vector of smooth terms
+#'   to display. If \code{NULL} (the default) all smooth terms
+#'   are shown.
+#'   
+#' @return For the \code{brmsfit} method, 
+#' an object of class \code{brmsMarginalEffects}. See
+#' \code{\link[brms:marginal_effects]{marginal_effects}} for 
+#' more details and documentation of the related plotting function.
+#' 
+#' @details Smooth terms of more than one covariate cannot be
+#' plotted yet, but this will follow in future version of \pkg{brms}.
+#'   
+#' @examples 
+#' \dontrun{
+#' set.seed(0) 
+#' dat <- mgcv::gamSim(1, n = 200,scale = 2)
+#' fit <- brm(y ~ s(x0) + s(x1) + s(x2) + s(x3), data = dat)
+#' # show all smooth terms
+#' plot(smooth_effects(fit), rug = TRUE, ask = FALSE)
+#' # show only the smooth term s(x2)
+#' plot(smooth_effects(fit, smooths = "s(x2)"), ask = FALSE)
+#' }
+#' 
+#' @export
+marginal_smooths <- function(x, ...) {
+  UseMethod("marginal_smooths")
+}
+
 #' Expose user-defined \pkg{Stan} functions
 #' 
 #' Export user-defined \pkg{Stan} function to the 
