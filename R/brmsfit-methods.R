@@ -1352,20 +1352,15 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
   ee <- extract_effects(formula(x), family = family(x))
   if (length(ee$nonlinear)) {
     lee <- ee$nonlinear
-    type <- rep("nlp", length(ee$nonlinear))
   } else {
     resp <- ee$response
+    lee <- replicate(length(resp), ee, simplify = FALSE)
     if (length(resp) > 1L) {
-      lee <- setNames(rep(ee, 3), resp)
-      type <- rep("resp", length(resp))
-    } else {
-      lee <- list(ee)
-      type <- ""
+      names(lee) <- resp
     }
   }
   auxpars <- intersect(names(ee), auxpars())
   lee <- c(lee, ee[auxpars])
-  type <- c(type, rep("ap", length(auxpars)))
   
   args <- nlist(x, smooths_only = TRUE, allow_new_levels = TRUE,
                 incl_autocor = FALSE, f = prepare_family(x), 
@@ -1391,20 +1386,9 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
         newdata <- data.frame(values)
         other_vars <- setdiff(names(conditions), covars[[i]])
         newdata[, other_vars] <- conditions[1, other_vars]
-        if (type[k] == "nlp") {
-          nlpar <- names(lee[k])
-          rhs_formula <- attr(x$formula, "nonlinear")[[nlpar]]
-          more_args <- list(rhs_formula = rhs_formula, nlpar = nlpar)
-        } else if (type[k] == "ap") {
-          ap <- names(lee[k])
-          more_args <- list(rhs_formula = attr(x$formula, ap), nlpar = ap)
-        } else if (type[k] == "resp") {
-          r <- names(lee[k])
-          more_args <- list(attr_formula = list(response = r), nlpar = r)
-        } else {
-          more_args <- NULL
-        }
-        more_args <- c(more_args, nlist(newdata))
+        # prepare draws for linear_predictor
+        more_args <- nlist(newdata, nlpar = names(lee)[k], 
+                           rhs_formula = lee[[k]]$formula)
         draws <- do.call(.extract_draws, c(args, more_args))
         sc <- attr(draws$data[["X"]], "smooth_cols")
         draws$data[["X"]] <- draws$data[["X"]][, sc[[i]], drop = FALSE]

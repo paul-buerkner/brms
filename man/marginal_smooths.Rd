@@ -42,9 +42,9 @@ set.seed(0)
 dat <- mgcv::gamSim(1, n = 200,scale = 2)
 fit <- brm(y ~ s(x0) + s(x1) + s(x2) + s(x3), data = dat)
 # show all smooth terms
-plot(smooth_effects(fit), rug = TRUE, ask = FALSE)
+plot(marginal_smooths(fit), rug = TRUE, ask = FALSE)
 # show only the smooth term s(x2)
-plot(smooth_effects(fit, smooths = "s(x2)"), ask = FALSE)
+plot(marginal_smooths(fit, smooths = "s(x2)"), ask = FALSE)
 }
 
 }

@@ -65,7 +65,7 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   if (length(nlpars)) {
     for (i in seq_along(nlpars)) {
       rhs_formula <- attr(x$formula, "nonlinear")[[i]]
-      more_args <- list(rhs_formula = rhs_formula, nlpar = nlpars[i])
+      more_args <- nlist(rhs_formula, nlpar = nlpars[i])
       draws$nonlinear[[nlpars[i]]] <- 
         do.call(.extract_draws, c(args, more_args))
     }
@@ -91,7 +91,7 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
       # new multivariate models
       draws[["mv"]] <- named_list(resp)
       for (r in resp) {
-        more_args <- list(attr_formula = list(response = r), nlpar = r)
+        more_args <- list(nlpar = r)
         draws[["mv"]][[r]] <- do.call(.extract_draws, c(args, more_args))
       }
     } else {
@@ -106,15 +106,13 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
                            allow_new_levels = FALSE, 
                            incl_autocor = TRUE, subset = NULL,
                            nlpar = "", smooths_only = FALSE,
-                           rhs_formula = NULL, attr_formula = NULL,
-                           ...) {
+                           rhs_formula = NULL, ...) {
   # helper function for extract_draws to extract posterior samples
   # of all regression effects
   # Args:
   #   x: a brmsift object
   #   rhs_formula: used to update the rhs for x$formula
-  #                e.g., to extract draws of non-linear parameters
-  #   attr_formula: list of attributes to add to x$formula
+  #                to extract draws of non-linear parameters
   #   smooths_only: extract only smoothing terms?
   #   nlpar: optional name of a non-linear parameter
   #   ...: further elements to store in draws
@@ -122,11 +120,12 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   #   a named list
   dots <- list(...)
   if (!is.null(rhs_formula)) {
-    x$formula <- update.formula(x$formula, rhs(rhs_formula))
-    x$ranef <- tidy_ranef(extract_effects(x$formula), data = model.frame(x))
+    x$formula <- update.formula(formula(x), rhs(rhs_formula))
+    x$ranef <- tidy_ranef(extract_effects(formula(x)), data = model.frame(x))
   }
-  if (!is.null(attr_formula)) {
-    attributes(x$formula)[names(attr_formula)] <- attr_formula
+  if (nzchar(nlpar)) {
+    # relevant for multivariate models only
+    attr(x$formula, "response") <- nlpar 
   }
   new_formula <- update_re_terms(formula(x), re_formula = re_formula)
   ee <- extract_effects(new_formula, family = family(x))
