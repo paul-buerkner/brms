@@ -126,9 +126,9 @@ test_that("extract_effects returns expected error messages", {
                "Addition arguments 'se' and 'disp' cannot be used")
   expect_error(extract_effects(cbind(y1, y2) | se(z) ~ x, 
                                family = gaussian()),
-               "Multivariate models currently allow only weights")
+               "allow only addition argument 'weights'")
   expect_error(extract_effects(bf(y ~ x, shape ~ x), family = gaussian()),
-               "Prediction of the parameter(s) 'shape' is not allowed",
+               "Prediction of parameter(s) 'shape' is not allowed",
                fixed = TRUE)
 })
 
@@ -172,7 +172,7 @@ test_that("extract_effects handles very long RE terms", {
 
 test_that("extract_nonlinear finds missing parameters", {
   expect_error(extract_nonlinear(list(a = a ~ 1, b = b ~ 1), model = y ~ a^x),
-               "missing in formula: b")
+               "missing in formula: 'b'")
 })
 
 test_that("extract_nonlinear accepts valid non-linear models", {
@@ -199,7 +199,7 @@ test_that("extract_time returns all desired variables", {
   expect_error(extract_time(~t1+t2|g1), 
                "Autocorrelation structures may only contain 1 time variable")
   expect_error(extract_time(x~t1|g1), 
-               "autocorrelation formula must be one-sided")
+               "Autocorrelation formula must be one-sided")
   expect_error(extract_time(~1|g1/g2), 
                paste("Illegal grouping term: g1/g2"))
 })
@@ -298,7 +298,7 @@ test_that("tidy_ranef works correctly", {
 
 test_that("check_brm_input returns correct warnings and errors", {
   expect_error(check_brm_input(list(chains = 3, cluster = 2)), 
-               "chains must be a multiple of cluster", fixed = TRUE)
+               "'chains' must be a multiple of 'cluster'", fixed = TRUE)
   x <- list(family = inverse.gaussian(), chains = 1, cluster = 1,
             algorithm = "sampling")
   expect_warning(check_brm_input(x))

@@ -115,25 +115,24 @@ extract_effects <- function(formula, family = NA, nonlinear = NULL,
               }
             }
           } else {
-            stop("Argument '", af, "' is not supported for family '", 
-                 family$family, "'", call. = FALSE)
+            stop2("Argument '", af, "' is not supported for ", 
+                  "family '", family$family, "'.")
           } 
         } else if (length(matches) > 1L) {
-          stop("Addition arguments may be only defined once.", 
-               call. = FALSE)
+          stop2("Addition arguments may be only defined once.")
         } 
       }
       if (length(add_terms)) {
-        stop("Invalid addition part of formula. \nPlease see the ", 
-             "'Details' section of help(brmsformula).", call. = FALSE)
+        stop2("Invalid addition part of formula. \nPlease see the ", 
+              "'Details' section of help(brmsformula).")
       }
       if (is.formula(x$se) && is.formula(x$disp)) {
-        stop("Addition arguments 'se' and 'disp' cannot be used ", 
-             "at the same time.", call. = FALSE)
+        stop2("Addition arguments 'se' and 'disp' cannot ", 
+              "be used at the same time.")
       }
       cens_or_weights <- is.formula(x$cens) || is.formula(x$weights)
       if (is.formula(x$trunc) && cens_or_weights) {
-        stop2("truncation is not yet possible in censored or weighted models.")
+        stop2("Truncation is not yet possible in censored or weighted models.")
       }
     }
   }
@@ -168,8 +167,8 @@ extract_effects <- function(formula, family = NA, nonlinear = NULL,
     }
     if (is.linear(family) && length(x$response) > 1L &&
         length(rmNULL(x[c("se", "cens", "trunc")]))) {
-      stop("Multivariate models currently allow only ",
-           "weights as addition arguments", call. = FALSE)
+      stop2("Multivariate models currently allow only ",
+            "addition argument 'weights'.")
     }
     if (old_mv) {
       # multivariate ('trait') syntax is deprecated as of brms 1.0.0
@@ -192,9 +191,9 @@ extract_effects <- function(formula, family = NA, nonlinear = NULL,
     inv_auxpars <- setdiff(auxpars(), valid_auxpars(family, effects = x))
     inv_auxpars <- intersect(inv_auxpars, names(x))
     if (length(inv_auxpars)) {
-      stop("Prediction of the parameter(s) ", 
-           paste0("'", inv_auxpars, "'", collapse = ", "),
-           " is not allowed for this model.", call. = FALSE)
+      inv_auxpars <- paste0("'", inv_auxpars, "'", collapse = ", ")
+      stop2("Prediction of parameter(s) ", inv_auxpars,
+            " is not allowed for this model.")
     }
   }
   x
@@ -212,7 +211,7 @@ extract_mono <- function(formula) {
     mono_terms <- substr(mono_terms, 11, nchar(mono_terms) - 1)
     mono_terms <- formula(paste("~", paste(mono_terms, collapse = "+")))
     if (!length(all.vars(mono_terms))) {
-      stop("No variable supplied to function 'monotonic'.", call. = FALSE)
+      stop2("No variable supplied to function 'monotonic'.")
     }
     attr(mono_terms, "rsv_intercept") <- TRUE
   }
@@ -226,8 +225,8 @@ extract_cse <- function(formula, family = NA) {
   cse_terms <- all_terms[pos_cse_terms]
   if (length(cse_terms)) {
     if (!is.na(family[[1]]) && !allows_cse(family)) {
-      stop("Category specific effects are only meaningful for ", 
-           "families 'sratio', 'cratio', and 'acat'.", call. = FALSE)
+      stop2("Category specific effects are only meaningful for ", 
+            "families 'sratio', 'cratio', and 'acat'.")
     }
     cse_terms <- substr(cse_terms, 5, nchar(cse_terms) - 1)
     cse_terms <- formula(paste("~", paste(cse_terms, collapse = "+")))
@@ -305,7 +304,7 @@ extract_response <- function(formula, keep_dot_usc = FALSE) {
   formula <- lhs(as.formula(formula))
   all_vars <- all.vars(formula)
   if (!length(all_vars)) {
-    stop("formula contains no response variables", call. = FALSE)
+    stop2("The formula contains no response variables.")
   }
   mf <- as.data.frame(named_list(all_vars, values = 1))
   mf <- model.frame(formula, data = mf, na.action = NULL)
@@ -321,7 +320,7 @@ extract_response <- function(formula, keep_dot_usc = FALSE) {
       response[empty_names] <- paste0("response", empty_names)
     }
   } else {
-    stop("invalid response part of 'formula'", call. = FALSE)
+    stop2("Response part of 'formula' is invalid.")
   }
   response <- make.names(response, unique = TRUE)
   if (!keep_dot_usc) {
@@ -343,13 +342,13 @@ extract_time <- function(formula) {
   }
   formula <- as.formula(formula)
   if (!is.null(lhs(formula))) {
-    stop2("autocorrelation formula must be one-sided")
+    stop2("Autocorrelation formula must be one-sided.")
   }
   formula <- formula2string(formula)
   time <- as.formula(paste("~", gsub("~|\\|[[:print:]]*", "", formula)))
   time <- all.vars(time)
   if (length(time) > 1L) {
-    stop2("Autocorrelation structures may only contain 1 time variable")
+    stop2("Autocorrelation structures may only contain 1 time variable.")
   }
   x <- list(time = ifelse(length(time), time, ""))
   group <- sub("^\\|*", "", sub("~[^\\|]*", "", formula))
@@ -382,8 +381,8 @@ extract_nonlinear <- function(x, model = ~1, family = NA) {
     model_vars <- all.vars(rhs(model))
     missing_pars <- setdiff(names(nleffects), model_vars)
     if (length(missing_pars)) {
-      stop("Some non-linear parameters are missing in formula: ", 
-           paste(missing_pars, collapse = ", "), call. = FALSE)
+      stop2("Some non-linear parameters are missing in formula: ", 
+            paste0("'", missing_pars, "'", collapse = ", "))
     }
   } else {
     nleffects <- list() 
@@ -433,8 +432,8 @@ update_formula <- function(formula, data = NULL, family = gaussian(),
   old_attributes <- attributes(formula)
   fnew <- ". ~ ."
   if (!is.null(partial)) {
-    warning("Argument 'partial' is deprecated. Please use the 'cse' ", 
-            "function inside the model formula instead.", call. = FALSE)
+    warning2("Argument 'partial' is deprecated. Please use the 'cse' ", 
+             "function inside the model formula instead.")
     partial <- formula2string(as.formula(partial), rm = 1)
     fnew <- paste(fnew, "+ cse(", partial, ")")
   }
@@ -452,8 +451,8 @@ update_formula <- function(formula, data = NULL, family = gaussian(),
     model_response <- model.response(model.frame(respform, data = data))
     response <- levels(factor(model_response))
     if (length(response) <= 2L) {
-      stop("At least 3 response categories are required ",
-           "for categorical models", call. = FALSE)
+      stop2("At least 3 response categories are required ",
+            "for family 'categorical'.")
     }
     # the first level will serve as the reference category
     attr(formula, "response") <- response[-1]
@@ -515,8 +514,8 @@ split_re_terms <- function(re_terms) {
       comb_mono_terms <- paste(lhs_all_terms[pos_mono], collapse = "+")
       comb_mono_terms <- gsub("[ \t\r\n]+", "", comb_mono_terms, perl = TRUE)
       if (!identical(lhs_terms[i], comb_mono_terms)) {
-        stop("Please specify monotonic effects in separate ",
-             "group-level terms.", call. = FALSE)
+        stop2("Please specify monotonic effects ", 
+              "in separate group-level terms.")
       }
       lhs_terms[i] <- formula2string(lhs_form_mono, rm = 1)
       type[[i]] <- "mono"
@@ -527,8 +526,8 @@ split_re_terms <- function(re_terms) {
       comb_cse_terms <- paste(lhs_all_terms[pos_cse], collapse = "+")
       comb_cse_terms <- gsub("[ \t\r\n]+", "", comb_cse_terms, perl = TRUE)
       if (!identical(lhs_terms[i], comb_cse_terms)) {
-        stop("Please specify category specific effects in separate ",
-             "group-level terms.", call. = FALSE)
+        stop2("Please specify category specific effects ", 
+              "in separate group-level terms.")
       }
       lhs_terms[i] <- formula2string(lhs_form_cse, rm = 1)
       type[[i]] <- "cse"
@@ -539,9 +538,8 @@ split_re_terms <- function(re_terms) {
     new_groups <- c(groups[1], rep("", length(groups) - 1L))
     for (j in seq_along(groups)) {
       if (illegal_group_expr(groups[j])) {
-        stop("Illegal grouping term: ", rhs_terms[i], "\n may contain ",
-             "only variable names combined by the symbols ':' or '/'",
-             call. = FALSE)
+        stop2("Illegal grouping term: ", rhs_terms[i], "\n may contain ",
+             "only variable names combined by the symbols ':' or '/'")
       }
       if (j > 1L) {
         new_groups[j] <- paste0(new_groups[j - 1], ":", groups[j])
@@ -836,8 +834,7 @@ all_terms <- function(formula) {
 lhs_terms <- function(re_terms) {
   out <- get_matches("^[^\\|]*", re_terms) 
   if (length(out) != length(re_terms)) {
-    stop("One or more group-levels terms were invalid.", 
-         call. = FALSE)
+    stop2("One or more group-levels terms were invalid.")
   }
   out
 }
@@ -845,8 +842,7 @@ lhs_terms <- function(re_terms) {
 mid_terms <- function(re_terms) {
   out <- get_matches("\\|([^\\|]*\\||)", re_terms)
   if (length(out) != length(re_terms)) {
-    stop("One or more group-levels terms were invalid.", 
-         call. = FALSE)
+    stop2("One or more group-levels terms were invalid.")
   }
   out
 }
@@ -854,8 +850,7 @@ mid_terms <- function(re_terms) {
 rhs_terms <- function(re_terms) {
   out <- sub("^\\|", "", get_matches("\\|[^\\|]*$", re_terms))
   if (length(out) != length(re_terms)) {
-    stop("One or more group-levels terms were invalid.", 
-         call. = FALSE)
+    stop2("One or more group-levels terms were invalid.")
   }
   out
 }
@@ -878,12 +873,12 @@ amend_terms <- function(x) {
     term_labels <- attr(y, "term.labels")
     if (any(grepl("(^|:)(main|spec)($|:)", term_labels))) {
       if (any(grepl("(^|:)trait($|:)", term_labels))) {
-        stop("formula may not contain variable 'trait' when ",
-             "using variables 'main' or 'spec'", call. = FALSE)
+        stop2("formula may not contain variable 'trait' when ",
+              "using variables 'main' or 'spec'")
       }
       if (attr(y, "intercept")) {
-        stop("formula may not contain an intercept when ",
-             "using variables 'main' or 'spec'", call. = FALSE)
+        stop2("formula may not contain an intercept when ",
+              "using variables 'main' or 'spec'")
       }
       attr(x, "rsv_intercept") <- TRUE
     }
@@ -1002,8 +997,8 @@ tidy_ranef <- function(effects, data = NULL, all = TRUE, ncat = NULL) {
         k <- match(id, used_ids)
         rdat$id <- new_ids[k]
         if (!identical(random$group[[i]], id_groups[k])) {
-          stop("Can only combine group-level terms of the ",
-               "same grouping factor.", call. = FALSE)
+          stop2("Can only combine group-level terms of the ",
+                "same grouping factor.")
         }
       } else {
         used_ids <- c(used_ids, id)
@@ -1018,8 +1013,7 @@ tidy_ranef <- function(effects, data = NULL, all = TRUE, ncat = NULL) {
   ranef <- do.call(rbind, c(list(empty_ranef()), ranef))
   dup <- duplicated(ranef[, c("group", "coef", "nlpar")])
   if (any(dup)) {
-    stop("Duplicated group-level effects are not allowed.",
-         call. = FALSE)
+    stop2("Duplicated group-level effects are not allowed.")
   }
   if (nrow(ranef)) {
     for (id in unique(ranef$id)) {
@@ -1133,17 +1127,16 @@ check_brm_input <- function(x) {
   # Args:
   #   x: A named list
   if (x$chains %% x$cluster != 0L) {
-    stop("chains must be a multiple of cluster", call. = FALSE)
+    stop2("'chains' must be a multiple of 'cluster'")
   }
   family <- check_family(x$family) 
   if (family$family == "inverse.gaussian") {
-    warning("Inverse gaussian models require carefully chosen ", 
-            "prior distributions to ensure convergence of the chains.",
-            call. = FALSE)
+    warning2("Inverse gaussian models require carefully chosen ", 
+             "prior distributions to ensure convergence of the chains.")
   }
   if (family$link == "sqrt") {
-    warning(family$family, " model with sqrt link may not be ", 
-            "uniquely identified", call. = FALSE)
+    warning2(family$family, " model with sqrt link may not be ", 
+             "uniquely identified")
   }
   invisible(NULL)
 }

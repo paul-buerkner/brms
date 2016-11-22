@@ -173,7 +173,7 @@ test_that("make_stancode detects invalid combinations of modeling options", {
                "Please set cov = TRUE", fixed = TRUE)
   expect_error(make_stancode(y1 | trunc(lb = -50) | weights(wi) ~ y2,
                              data = data),
-               "truncation is not yet possible")
+               "Truncation is not yet possible")
 })
 
 test_that("make_stancode is silent for multivariate models", {
