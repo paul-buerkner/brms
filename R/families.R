@@ -120,7 +120,7 @@ brmsfamily <- function(family, link = NULL) {
     "gaussian", "student", "lognormal", 
     "binomial", "bernoulli", "categorical", 
     "poisson", "negbinomial", "geometric", 
-    "gamma", "weibull", "exponential", 
+    "gamma", "weibull", "exponential", "exgaussian",
     "inverse.gaussian", "beta", "von_mises",
     "cumulative", "cratio", "sratio", "acat",
     "hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma",
@@ -146,7 +146,7 @@ brmsfamily <- function(family, link = NULL) {
                  "cloglog", "cauchit", "identity")
   } else if (family %in% c("categorical", "zero_inflated_binomial")) {
     ok_links <- c("logit")
-  } else if (is.skewed(family)) {
+  } else if (is.skewed(family) || family %in% "exgaussian") {
     ok_links <- c("log", "identity", "inverse")
   } else if (is.lognormal(family)) {
     ok_links <- c("identity", "inverse")
@@ -231,6 +231,13 @@ exponential <- function(link = "log") {
 weibull <- function(link = "log") {
   slink <- substitute(link)
   .brmsfamily("weibull", link = link, slink = slink)
+}
+
+#' @rdname brmsfamily
+#' @export
+exgaussian <- function(link = "identity") {
+  slink <- substitute(link)
+  .brmsfamily("exgaussian", link = link, slink = slink)
 }
 
 #' @rdname brmsfamily
@@ -423,6 +430,14 @@ is.lognormal <- function(family) {
   family %in% c("lognormal")
 }
 
+is.exgaussian <- function(family) {
+  # indicate if family is exgaussian
+  if (is(family, "family")) {
+    family <- family$family
+  }
+  family %in% c("exgaussian")
+}
+
 is.count <- function(family) {
   # indicate if family is for a count model
   if (is(family, "family")) {
@@ -478,7 +493,7 @@ is.mv <- function(family, response = NULL) {
   is_mv <- nresp > 1L && is.linear(family) || is.categorical(family) || 
            nresp == 2L && is.forked(family)
   if (nresp > 1L && !is_mv) {
-    stop("Invalid multivariate model", call. = FALSE)
+    stop2("Invalid multivariate model")
   }
   is_mv
 }
@@ -489,8 +504,9 @@ use_real <- function(family) {
     family <- family$family
   }
   is.linear(family) || is.skewed(family) || 
-    family %in% c("lognormal", "inverse.gaussian", "beta", "von_mises",
-                  "zero_inflated_beta", "hurdle_gamma", "hurdle_lognormal")
+    family %in% c("lognormal", "exgaussian", "inverse.gaussian", "beta", 
+                  "von_mises", "zero_inflated_beta", "hurdle_gamma", 
+                  "hurdle_lognormal")
 }
 
 use_int <- function(family) {
@@ -553,6 +569,14 @@ has_kappa <- function(family) {
   family %in% c("von_mises")
 }
 
+has_beta <- function(family) {
+  # indicate if family needs a kappa parameter
+  if (is(family, "family")) {
+    family <- family$family
+  }
+  family %in% c("exgaussian")
+}
+
 has_sigma <- function(family, effects = NULL, autocor = cor_arma(),
                       incmv = FALSE) {
   # indicate if the model needs a sigma parameter
@@ -564,9 +588,9 @@ has_sigma <- function(family, effects = NULL, autocor = cor_arma(),
   if (is(family, "family")) {
     family <- family$family
   }
-  is_lognormal <- family %in% c("lognormal", "hurdle_lognormal")
+  is_ln_eg <- family %in% c("lognormal", "hurdle_lognormal", "exgaussian")
   has_se <- !is.null(effects$se)
-  out <- (is.linear(family) || is_lognormal) && 
+  out <- (is.linear(family) || is_ln_eg) && 
          (!has_se || use_cov(autocor)) && !is(autocor, "cov_fixed")
   if (!incmv) {
     is_multi <- is.linear(family) && length(effects$response) > 1L

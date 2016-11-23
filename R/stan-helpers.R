@@ -10,6 +10,7 @@ stan_llh <- function(family, effects = list(), data = NULL,
   family <- family$family
   is_categorical <- is.categorical(family)
   is_ordinal <- is.ordinal(family)
+  is_exgaussian <- is.exgaussian(family)
   is_hurdle <- is.hurdle(family)
   is_zero_inflated <- is.zero_inflated(family)
   is_forked <- is.forked(family)
@@ -43,20 +44,21 @@ stan_llh <- function(family, effects = list(), data = NULL,
   
   auxpars <- intersect(auxpars(), names(effects))
   reqn <- ll_adj || is_categorical || is_ordinal || 
-          is_hurdle || is_zero_inflated || 
+          is_hurdle || is_zero_inflated || is_exgaussian ||
           any(c("phi", "kappa") %in% auxpars)
   n <- ifelse(reqn, "[n]", "")
   # prepare auxiliary parameters
   disp <- ifelse(has_disp, "disp_", "")
   reqn_sigma <- (ll_adj && (has_se || has_disp)) || 
                 (reqn && "sigma" %in% auxpars)
-  sigma <- paste0(ifelse(has_se, "se", paste0(disp, "sigma")), 
+  sigma <- paste0(ifelse(has_se, "se", paste0(disp, "sigma")),
                   if (reqn_sigma) "[n]")
   reqn_shape <- (ll_adj && has_disp) || (reqn && "shape" %in% auxpars)
   shape <- paste0(disp, "shape", if (reqn_shape) "[n]")
   nu <- paste0("nu", if (reqn && "nu" %in% auxpars) "[n]")
   phi <- paste0("phi", if (reqn && "phi" %in% auxpars) "[n]")
   kappa <- paste0("kappa", if (reqn && "kappa" %in% auxpars) "[n]")
+  beta <- paste0("beta", if (reqn && "beta" %in% auxpars) "[n]")
   zi <- paste0("zi", if ("zi" %in% auxpars) "[n]")
   hu <- paste0("hu", if ("hu" %in% auxpars) "[n]")
   .logit <- ifelse(any(c("zi", "hu") %in% auxpars), "_logit", "")
@@ -65,8 +67,7 @@ stan_llh <- function(family, effects = list(), data = NULL,
 
   simplify <- !has_trunc && !has_cens && stan_has_built_in_fun(family, link)
   eta <- paste0(ifelse(is_mv, "Eta", "eta"), n)
-  ordinal_args <- paste0("eta[n], ", if (has_cse) "etacs[n], ", 
-                         "temp_Intercept")
+  ord_args <- paste0("eta[n], ", if (has_cse) "etacs[n], ", "temp_Intercept")
   inv_gauss_fun <- paste0("inv_gaussian", if (!reqn) "_vector")
   inv_gauss_args <- paste0(eta, ", shape, ", if (!reqn) "sum_", 
                            "log_Y", n, ", sqrt_Y", n)
@@ -99,15 +100,16 @@ stan_llh <- function(family, effects = list(), data = NULL,
       bernoulli = c("bernoulli", eta),
       gamma = c("gamma", paste0(shape, ", ", eta)), 
       exponential = c("exponential", eta),
-      weibull = c("weibull", paste0(shape,", ", eta)), 
+      weibull = c("weibull", paste0(shape, ", ", eta)), 
+      exgaussian = c("exgaussian", paste0(eta, ", ", sigma, ", ", beta)),
       inverse.gaussian = c(inv_gauss_fun, inv_gauss_args),
       beta = c("beta", paste0(eta, " * ", phi, ", (1 - ", eta, ") * ", phi)),
       von_mises = c(paste0("von_mises_", ifelse(reqn, "real", "vector")), 
                            paste0(eta, ", ", kappa)),
-      cumulative = c("cumulative", ordinal_args),
-      sratio = c("sratio", ordinal_args),
-      cratio = c("cratio", ordinal_args),
-      acat = c("acat", ordinal_args),
+      cumulative = c("cumulative", ord_args),
+      sratio = c("sratio", ord_args),
+      cratio = c("cratio", ord_args),
+      acat = c("acat", ord_args),
       hurdle_poisson = c(paste0("hurdle_poisson", .logit), 
                          paste0(eta, ", ", hu)),
       hurdle_negbinomial = c(paste0("hurdle_neg_binomial", .logit), 
@@ -518,91 +520,49 @@ stan_ordinal <- function(family, prior = brmsprior(),
           "     p = p / sum(p); \n")
         }
       }
-      out$fun <- paste(out$fun, "    return categorical_lpmf(y | p); \n   } \n")
+      out$fun <- paste(out$fun, 
+        "    return categorical_lpmf(y | p); \n   } \n")
     }
   }
   out
 }
 
-stan_categorical <- function(family) {
-  # Stan code specific to categorical models
+stan_families <- function(family) {
+  # include .stan files of certain response distributions
   # Args:
-  #  family: the model family
+  #   family: the model family
   # Returns:
-  #   a list of character strings defining the stan code
-  #   specific for categorical models
+  #   a list of character strings
   stopifnot(is(family, "family"))
+  family <- family$family
   out <- list()
-  if (is.categorical(family)) {
+  if (family == "categorical") {
     out$data <- "  int<lower=2> ncat;  // number of categories \n" 
     out$tdataD <- "  vector[1] zero; \n"
     out$tdataC <- "  zero[1] = 0; \n"
-  }
-  out
-}
-
-stan_forked <- function(family) {
-  # Stan code for forked models i.e. zero-inflated / hurdle models
-  # Args:
-  #   family: the model family
-  # Returns:
-  #   a list of character strings defining the stan code
-  #   specific for forked models
-  stopifnot(is(family, "family"))
-  out <- list()
-  if (is.forked(family)) {
-    if (family$family == "zero_inflated_poisson") {
-      out$fun <- paste0(out$fun, 
-        "  #include 'fun_zero_inflated_poisson.stan' \n")
-    } else if (family$family == "zero_inflated_negbinomial") {
-      out$fun <- paste0(out$fun, 
-        "  #include 'fun_zero_inflated_negbinomial.stan' \n")
-    } else if (family$family == "zero_inflated_binomial") {
-      out$fun <- paste0(out$fun, 
-        "  #include 'fun_zero_inflated_binomial.stan' \n")
-    } else if (family$family == "zero_inflated_beta") {
-      out$fun <- paste0(out$fun, 
-        "  #include 'fun_zero_inflated_beta.stan' \n")
-    } else if (family$family == "hurdle_poisson") {
-      out$fun <- paste0(out$fun, 
-        "  #include 'fun_hurdle_poisson.stan' \n")
-    } else if (family$family == "hurdle_negbinomial") {
-      out$fun <- paste0(out$fun, 
-        "  #include 'fun_hurdle_negbinomial.stan' \n")
-    } else if (family$family == "hurdle_gamma") {
-      out$fun <- paste0(out$fun, 
-        "  #include 'fun_hurdle_gamma.stan' \n")
-    } else if (family$family == "hurdle_lognormal") {
-      out$fun <- paste0(out$fun, 
-        "  #include 'fun_hurdle_lognormal.stan' \n")
-    } 
-  }
-  out
-}
-
-stan_inv_gaussian <- function(family) {
-  # stan code for inverse gaussian models
-  # Args:
-  #   family: the model family
-  #   ll_adj: is the model weighted, censored, or truncated?
-  # Returns:
-  #   a list of character strings defining the stan code
-  #   specific for inverse gaussian models
-  stopifnot(is(family, "family"))
-  out <- list()
-  if (family$family == "inverse.gaussian") {
+  } else if (family == "zero_inflated_poisson") {
+    out$fun <- "  #include 'fun_zero_inflated_poisson.stan' \n"
+  } else if (family == "zero_inflated_negbinomial") {
+    out$fun <- "  #include 'fun_zero_inflated_negbinomial.stan' \n"
+  } else if (family == "zero_inflated_binomial") {
+    out$fun <- "  #include 'fun_zero_inflated_binomial.stan' \n"
+  } else if (family == "zero_inflated_beta") {
+    out$fun <- "  #include 'fun_zero_inflated_beta.stan' \n"
+  } else if (family == "hurdle_poisson") {
+    out$fun <- "  #include 'fun_hurdle_poisson.stan' \n"
+  } else if (family == "hurdle_negbinomial") {
+    out$fun <- "  #include 'fun_hurdle_negbinomial.stan' \n"
+  } else if (family == "hurdle_gamma") {
+    out$fun <- "  #include 'fun_hurdle_gamma.stan' \n"
+  } else if (family == "hurdle_lognormal") {
+    out$fun <- "  #include 'fun_hurdle_lognormal.stan' \n"
+  } else if (family == "exgaussian") {
+    out$fun <- "  #include 'fun_exgaussian.stan' \n"
+  } else if (family == "inverse.gaussian") {
     out$fun <- "  #include 'fun_inv_gaussian.stan' \n"
     out$tdataD <- "  #include 'tdataD_inv_gaussian.stan' \n"
     out$tdataC <- "  #include 'tdataC_inv_gaussian.stan' \n"
-  }
-  out
-}
-
-stan_von_mises <- function(family, ...) {
-  # Stan code for von_mises models
-  stopifnot(is(family, "family"))
-  out <- list()
-  if (family$family == "von_mises") {
+  } else if (family == "von_mises") {
     out$fun <- paste0("  #include 'fun_tan_half.stan' \n",
                       "  #include 'fun_von_mises.stan' \n")
   }
@@ -743,7 +703,7 @@ stan_prior <- function(class, coef = "", group = "", nlpar = "", suffix = "",
     if (nchar(coef_prior) > 0) {  # implies a proper prior
       out <- paste0(wsp, class, index, " ~ ", coef_prior, "; \n")
     } else {
-      out <- "" # implies an improper flat prior
+      out <- ""  # implies an improper flat prior
     }
     return(out)
   }

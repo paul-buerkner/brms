@@ -176,6 +176,7 @@ stan_auxpars <- function(effects, data, family = gaussian(),
     nu = "  real<lower=0> nu;  // degrees of freedom \n",
     phi = "  real<lower=0> phi;  // precision parameter \n",
     kappa = "  real<lower=0> kappa;  // precision parameter \n",
+    beta = "  real<lower=0> beta;  // scale parameter \n",
     zi = "  real<lower=0,upper=1> zi;  // zero-inflation probability \n", 
     hu = "  real<lower=0,upper=1> hu;  // hurdle probability \n")
   valid_auxpars <- valid_auxpars(family, effects, autocor = autocor)
@@ -271,7 +272,7 @@ stan_fixef <- function(fixef, center_X = TRUE, family = gaussian(),
       out$genC <- paste0("  b_Intercept = temp_Intercept", sub_X_means, "; \n")
     } else {
       out$par <- paste0(out$par, 
-        "  real temp", p, "_Intercept;  // temporary Intercept \n")
+        "  real temp", p, "_Intercept;  // temporary intercept \n")
       out$genD <- paste0(
         "  real b", p, "_Intercept;  // population-level intercept \n")
       out$genC <- paste0(

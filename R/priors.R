@@ -495,8 +495,8 @@ get_prior <- function(formula, data = NULL, family = gaussian(),
   # priors for auxiliary parameters
   def_auxprior <- c(sigma = def_scale_prior, shape = "gamma(0.01, 0.01)",
                     nu = "gamma(2, 0.1)", phi = "gamma(0.01, 0.01)",
-                    kappa = "gamma(2, 0.01)", zi = "beta(1, 1)", 
-                    hu = "beta(1, 1)")
+                    kappa = "gamma(2, 0.01)", beta = "gamma(1, 0.1)", 
+                    zi = "beta(1, 1)", hu = "beta(1, 1)")
   valid_auxpars <- valid_auxpars(family, effects = ee, autocor = autocor)
   for (ap in valid_auxpars) {
     if (!is.null(ee[[ap]])) {

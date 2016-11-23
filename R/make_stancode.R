@@ -83,10 +83,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   text_mv <- stan_mv(family, response = ee$response, prior = prior)
   text_ordinal <- stan_ordinal(family, prior = prior, cse = has_cse(ee), 
                                threshold = threshold)
-  text_categorical <- stan_categorical(family)
-  text_forked <- stan_forked(family)
-  text_inv_gaussian <- stan_inv_gaussian(family)
-  text_von_mises <- stan_von_mises(family)
+  text_families <- stan_families(family)
   text_cens <- stan_cens(has_cens, family = family)
   text_disp <- stan_disp(ee, family = family)
   kronecker <- stan_needs_kronecker(ranef, names_cov_ranef = names(cov_ranef))
@@ -112,9 +109,7 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
       text_monotonic,
       text_autocor$fun,
       text_ordinal$fun,
-      text_forked$fun,
-      text_inv_gaussian$fun,
-      text_von_mises$fun,
+      text_families$fun,
       stan_funs,
     "} \n")
   
@@ -134,9 +129,8 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
     text_auxpars$data,
     text_ranef$data,
     text_ordinal$data,
-    text_categorical$data,
+    text_families$data,
     text_autocor$data,
-    text_inv_gaussian$data,
     text_cens$data,
     text_disp$data,
     if (has_trials(family))
@@ -157,13 +151,11 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
   # generate transformed parameters block
   text_transformed_data <- paste0(
     "transformed data { \n",
-       text_categorical$tdataD,
-       text_inv_gaussian$tdataD,
+       text_families$tdataD,
        text_pred$tdataD,
        text_auxpars$tdataD,
        text_autocor$tdataD,
-       text_categorical$tdataC,
-       text_inv_gaussian$tdataC,
+       text_families$tdataC,
        text_pred$tdataC,
        text_auxpars$tdataC,
        text_autocor$tdataC,
@@ -223,7 +215,6 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
       text_auxpars$modelD,
       text_disp$modelD,
       text_autocor$modelD,
-      text_forked$modelD,
       if (needs_lp_pre) 
         "  vector[N] lp_pre; \n",
       text_auxpars$modelC1,

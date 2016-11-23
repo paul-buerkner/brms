@@ -395,6 +395,7 @@ valid_auxpars <- function(family, effects = list(), autocor = cor_arma()) {
   x <- c(sigma = has_sigma(family, effects = effects, autocor = autocor),
          shape = has_shape(family), nu = has_nu(family), 
          phi = has_phi(family), kappa = has_kappa(family),
+         beta = has_beta(family),
          zi = is.zero_inflated(family, zi_beta = TRUE), 
          hu = is.hurdle(family, zi_beta = FALSE))
   names(x)[x]
@@ -1067,13 +1068,14 @@ add_families <- function(x) {
          cens = c("gaussian", "student", "cauchy", "lognormal",
                   "inverse.gaussian", "binomial", "poisson", 
                   "geometric", "negbinomial", "exponential", 
-                  "weibull", "gamma"),
+                  "weibull", "gamma", "exgaussian"),
          trunc = c("gaussian", "student", "cauchy", "lognormal", 
                    "binomial", "poisson", "geometric", "negbinomial",
-                   "exponential", "weibull", "gamma", "inverse.gaussian"),
+                   "exponential", "weibull", "gamma", "inverse.gaussian",
+                   "exgaussian"),
          disp = c("gaussian", "student", "cauchy", "lognormal", 
-                  "gamma", "weibull", "negbinomial"),
-         stop(paste("addition argument", x, "is not supported")))
+                  "gamma", "weibull", "negbinomial", "exgaussian"),
+         stop2(paste("Addition argument '", x, "' is not supported.")))
 }
 
 formula2string <- function(formula, rm = c(0, 0)) {

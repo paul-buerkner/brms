@@ -47,7 +47,7 @@ model_name <- function(family) {
     mn <- "brms-model"
   } else {
     type <- ifelse(is.null(family$type), "", paste(",", family$type))
-    mn <- paste0(family$family, "(",family$link, type, ") brms-model")
+    mn <- paste0(family$family, "(", family$link, type, ") brms-model")
   }
   mn
 }
@@ -70,9 +70,8 @@ rename_pars <- function(x) {
   # order parameter samples after parameter class
   chains <- length(x$fit@sim$samples) 
   all_classes <- c("b_Intercept", "b", "bm", "bcs", "ar", "ma", "arr", "sd", 
-                   "cor", "sds", "sigma", "sigmaLL", "rescor", "nu", "shape",
-                   "phi", "zi", "hu", "delta", "simplex", "r", "s", "loclev", 
-                   "prior", "lp")
+                   "cor", "sds", auxpars(), "sigmaLL", "rescor", "delta", 
+                   "simplex", "r", "s", "loclev", "prior", "lp")
   class <- get_matches("^[^_\\[]+", x$fit@sim$fnames_oi)
   # make sure that the fixed effects intercept comes first
   if (length(ee$response) > 1L) {
