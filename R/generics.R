@@ -445,43 +445,40 @@ standata <- function(object, ...) {
   UseMethod("standata")
 }
 
-#' Various Plotting Functions implemented in \pkg{rstan} 
+#' MCMC Plots Implemented in \pkg{bayesplot} 
 #' 
-#' Conveniant way to call plotting functions 
-#' implemented in the \pkg{rstan} package. 
+#' Conveniant way to call MCMC plotting functions 
+#' implemented in the \pkg{bayesplot} package. 
 #' 
 #' @inheritParams posterior_samples
-#' @param object An R object typically of class \code{brmsfit}
+#' @param object An \R object typically of class \code{brmsfit}
 #' @param pars Names of parameters to be plotted, 
 #'   as given by a character vector or regular expressions. 
-#'   By default, the first 10 parameters are plotted.
+#'   By default, all parameters except for group-level and 
+#'   smooth effects are plotted. May be ignored for some plots.
 #' @param type The type of the plot. 
-#'   Supported types are (as names) \code{plot},
-#'   \code{trace}, \code{hist}, \code{dens}, \code{scat}, 
-#'   \code{diag}, \code{rhat}, \code{ess}, \code{mcse}, \code{ac}. 
+#'   Supported types are (as names) \code{hist}, \code{dens}, 
+#'   \code{hist_by_chain}, \code{dens_overlay}, 
+#'   \code{violin}, \code{intervals}, \code{areas}, \code{acf}, 
+#'   \code{acf_bar},\code{trace}, \code{trace_highlight}, \code{scatter},
+#'   \code{rhat}, \code{rhat_hist}, \code{neff}, \code{neff_hist}
+#'   \code{nuts_acceptance}, \code{nuts_divergence},
+#'   \code{nuts_stepsize}, \code{nuts_treedepth}, and \code{nuts_energy}. 
 #'   For an overview on the various plot types see
-#'   \code{\link[rstan:plotting-functions]{plotting-functions}}.
+#'   \code{\link[bayesplot:MCMC-overview]{MCMC-overview}}.
 #' @param quiet A flag indicating whether messages 
 #'   produced by \pkg{ggplot2} during the plotting process 
-#'   should be silenced. Default is \code{FALSE}.
+#'   should be silenced. Default is \code{TRUE}.
 #' @param ... Additional arguments passed to the plotting functions.
+#'   See \code{\link[bayesplot:MCMC-overview]{MCMC-overview}} for
+#'   more details.
 #' 
 #' @return A \code{\link[ggplot2:ggplot]{ggplot}} object 
 #'   that can be further customized using the \pkg{ggplot2} package.
 #' 
-#' @details Instead of using \code{stanplot(<brmsfit-object>)}, 
-#'   the plotting functions can be called directly 
-#'   via \code{stan_<plot-type>(<brmsfit-object>$fit)}. 
-#'   For more details on the plotting functions see 
-#'   \code{\link[rstan:stan_plot]{Plots}} as well as 
-#'   \code{\link[rstan:stan_diag]{Diagnostic plots}}.
-#'   Note that the plotting functions themselves 
-#'   only accept full parameter names,
-#'   while \code{stanplot} allows for partial matching 
-#'   and regular expressions.
-#'   You should also consider using 
-#'   the \pkg{shinystan} package available via method 
-#'   \code{\link[brms:launch_shiny]{launch_shiny}} 
+#' @details 
+#'   Also consider using the \pkg{shinystan} package available via 
+#'   method \code{\link[brms:launch_shiny]{launch_shiny}} 
 #'   in \pkg{brms} for flexible and interactive visual analysis. 
 #' 
 #' @examples
@@ -489,23 +486,27 @@ standata <- function(object, ...) {
 #' model <- brm(count ~ log_Age_c + log_Base4_c * Trt_c 
 #'              + (1|patient) + (1|visit),
 #'              data = epilepsy, family = "poisson")
-#' # plot 95% CIs
-#' stanplot(model, type = "plot", ci_level = 0.95)
-#' # equivalent to
-#' stan_plot(model$fit, ci_level = 0.95)
+#'              
+#' # plot posterior intervals
+#' stanplot(model)
 #' 
-#' # only show fixed effects in the plots
-#' # this will not work when calling stan_plot directly
-#' stanplot(model, pars = "^b", type = "plot", ci_level = 0.95)
+#' # only show population-level effects in the plots
+#' stanplot(model, pars = "^b_")
 #' 
-#' # plot some diagnostics on the sampler
-#' stanplot(model, type = "diag")
-#' # equivalent to 
-#' stan_diag(model$fit)                           
+#' # show histograms of the posterior distributions
+#' stanplot(model, type = "hist")
+#' 
+#' # plot some diagnostics of the sampler
+#' stanplot(model, type = "neff")
+#' stanplot(model, type = "rhat")
+#' 
+#' # plot some diagnostics specific to the NUTS sampler
+#' stanplot(model, type = "nuts_acceptance")
+#' stanplot(model, type = "nuts_divergence")
 #' }
 #' 
 #' @export
-stanplot <- function(object, pars, ...) {
+stanplot <- function(object, ...) {
   UseMethod("stanplot")
 }
 

@@ -5,15 +5,15 @@
 \title{Trace and Density Plots for MCMC Samples}
 \usage{
 \method{plot}{brmsfit}(x, pars = NA, parameters = NA, combo = c("dens",
-  "trace"), N = 5, theme = NULL, plot = TRUE, ask = TRUE,
-  newpage = TRUE, ...)
+  "trace"), N = 5, exact_match = FALSE, theme = NULL, plot = TRUE,
+  ask = TRUE, newpage = TRUE, ...)
 }
 \arguments{
 \item{x}{An object of class \code{brmsfit}.}
 
 \item{pars}{Names of the parameters to plot, as given by a character vector 
-or a regular expression. By default, all parameters except for random effects 
-are plotted.}
+or a regular expression. By default, all parameters except 
+for group-level and smooth effects are plotted.}
 
 \item{parameters}{A deprecated alias of \code{pars}}
 
@@ -24,6 +24,10 @@ graphic and should be the name of one of the available
 (omitting the \code{mcmc_} prefix).}
 
 \item{N}{The number of parameters plotted per page.}
+
+\item{exact_match}{Indicates whether parameter names 
+should be matched exactly or treated as regular expression. 
+Default is \code{FALSE}.}
 
 \item{theme}{A \code{\link[ggplot2:theme]{theme}} object 
 modifying the appearance of the plots. 

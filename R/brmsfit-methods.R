@@ -842,8 +842,8 @@ launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"),
 #' 
 #' @param x An object of class \code{brmsfit}.
 #' @param pars Names of the parameters to plot, as given by a character vector 
-#'   or a regular expression. By default, all parameters except for random effects 
-#'   are plotted. 
+#'   or a regular expression. By default, all parameters except 
+#'   for group-level and smooth effects are plotted. 
 #' @param parameters A deprecated alias of \code{pars}
 #' @param combo A character vector with at least two elements. 
 #'   Each element of \code{combo} corresponds to a column in the resulting 
@@ -857,6 +857,9 @@ launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"),
 #'   and \code{\link[bayesplot:theme_default]{theme_default}}.
 #'   Can be defined globally for the current session, via
 #'   \code{\link[ggplot2:theme_update]{theme_set}}.
+#' @param exact_match Indicates whether parameter names 
+#'   should be matched exactly or treated as regular expression. 
+#'   Default is \code{FALSE}.
 #' @param plot logical; indicates if plots should be
 #'   plotted directly in the active graphic device.
 #'   Defaults to \code{TRUE}.
@@ -891,7 +894,8 @@ launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"),
 #' @export
 plot.brmsfit <- function(x, pars = NA, parameters = NA, 
                          combo = c("dens", "trace"), N = 5, 
-                         theme = NULL, plot = TRUE, ask = TRUE, 
+                         exact_match = FALSE, theme = NULL, 
+                         plot = TRUE, ask = TRUE, 
                          newpage = TRUE, ...) {
   dots <- list(...)
   pars <- use_alias(pars, parameters, default = NA)
@@ -902,8 +906,10 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA,
   }
   if (!is.character(pars)) {
     pars <- default_plot_pars()
+    exact_match <- FALSE
   }
-  samples <- posterior_samples(x, pars = pars, add_chain = TRUE)
+  samples <- posterior_samples(x, pars = pars, add_chain = TRUE,
+                               exact_match = exact_match)
   pars <- names(samples)[!names(samples) %in% c("chain", "iter")] 
   if (!length(pars)) {
     stop2("No valid parameters selected.")
@@ -933,45 +939,62 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA,
 
 #' @rdname stanplot
 #' @export
-stanplot.brmsfit <- function(object, pars = NA, type = "plot", 
-                             exact_match = FALSE, quiet = FALSE, ...) {
-  
-  # check validity of type first
-  basic_types <- c("plot", "trace", "scat", "hist", "dens", "ac")
-  diag_types <- c("diag", "par", "rhat", "ess", "mcse")
-  if (!type %in% c(basic_types, diag_types)) {
-    stop2("Invalid plot type. Valid plot types are: \n",
-          paste(c(basic_types, diag_types), collapse = ", "))
-  }
-  dots <- list(...)
-  args <- c(object = object$fit, dots)
-  plot_fun <- get(paste0("stan_", type), pos = asNamespace("rstan"))
-  
-  # ensure that only desired parameters are plotted
+stanplot.brmsfit <- function(object, pars = NA, type = "intervals", 
+                             exact_match = FALSE, quiet = TRUE, ...) {
   contains_samples(object)
-  pars <- extract_pars(pars, all_pars = parnames(object),
-                       exact_match = exact_match, 
-                       na_value = NA)
-  
-  if (type %in% basic_types) {
-    if (!anyNA(pars)) {
-      args <- c(args, list(pars = pars))
-    }
-  } else if (type %in% diag_types) {
-    if (type %in% c("rhat", "ess", "msce") && !anyNA(pars)) {
-      args <- c(args, list(pars = pars))
-    } else if (type == "par") {
-      if (length(pars) > 1L) {
-        stop2("Function 'stan_par' expects a single parameter name.")
+  object <- restructure(object)
+  if (length(type) != 1L) {
+    stop2("Argument 'type' must be of length 1.")
+  }
+  if (!is.character(pars)) {
+    pars <- default_plot_pars()
+    exact_match <- FALSE
+  }
+  nuts_types <- c("acceptance", "divergence", "stepsize",
+                  "treedepth", "energy")
+  valid_types <- c("hist", "dens", "hist_by_chain", "dens_overlay", 
+                   "violin", "intervals", "areas", "acf", "acf_bar",
+                   "trace", "trace_highlight", "scatter",
+                   "rhat", "rhat_hist", "neff", "neff_hist",
+                   paste0("nuts_", nuts_types))
+  if (!type %in% valid_types) {
+    stop2("Invalid plot type. Valid plot types are: \n",
+          paste(valid_types, collapse = ", "))
+  }
+  mcmc_fun <- get(paste0("mcmc_", type), pos = asNamespace("bayesplot"))
+  mcmc_arg_names <- names(formals(mcmc_fun))
+  mcmc_args <- list(...)
+  if ("x" %in% mcmc_arg_names) {
+    if (grepl("^nuts_", type)) {
+      # x refers to a molten data.frame of NUTS parameters
+      mcmc_args[["x"]] <- bayesplot::nuts_params(object$fit)
+    } else {
+      # x refers to a data.frame of samples
+      samples <- posterior_samples(object, pars, add_chain = TRUE,
+                                   exact_match = exact_match)
+      samples$iter <- NULL
+      sel_pars <- names(samples)[!names(samples) %in% "chain"]
+      if (type == "scatter" && length(sel_pars) != 2L) {
+        stop2("For type 'scatter' exactly 2 parameters must be selected.",
+              "\nParameters selected: ", paste(sel_pars, collapse = ", "))
       }
-      args <- c(args, list(par = pars))
+      mcmc_args[["x"]] <- samples
     }
+  }
+  if ("lp" %in% mcmc_arg_names) {
+    mcmc_args[["lp"]] <- bayesplot::log_posterior(object$fit)
+  }
+  if ("rhat" %in% mcmc_arg_names && !type %in% c("intervals", "areas")) {
+    mcmc_args[["rhat"]] <- bayesplot::rhat(object$fit)
+  }
+  if ("ratio" %in% mcmc_arg_names) {
+    mcmc_args[["ratio"]] <- bayesplot::neff_ratio(object$fit)
   }
   # make the plot
   if (quiet) {
-    rstan::quietgg(do.call(plot_fun, args))
+    rstan::quietgg(do.call(mcmc_fun, mcmc_args))
   } else {
-    do.call(plot_fun, args)
+    do.call(mcmc_fun, mcmc_args)
   }
 }
 
@@ -1009,6 +1032,9 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
 #' @param x Optional name of a variable in the model. 
 #'  Only used for ppc types having an \code{x} argument 
 #'  and ignored otherwise.
+#' @param quiet A flag indicating whether messages 
+#'   produced by \pkg{ggplot2} during the plotting process 
+#'   should be silenced. Default is \code{TRUE}.
 #' @param ... Further arguments passed to the ppc functions
 #'   of the \pkg{\link[bayesplot:bayesplot]{bayesplot}} package.
 #' @inheritParams predict.brmsfit
@@ -1032,6 +1058,7 @@ stanplot.brmsfit <- function(object, pars = NA, type = "plot",
 #' pp_check(fit, type = "scatter_avg", nsamples = 100)
 #' pp_check(fit, type = "stat_2d")
 #' }
+#' 
 #' @importFrom bayesplot pp_check
 #' @export pp_check
 #' @export
@@ -1039,7 +1066,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
                              x = NULL, newdata = NULL, 
                              re_formula = NULL, allow_new_levels = FALSE,
                              incl_autocor = TRUE, subset = NULL, 
-                             ntrys = 5, ...) {
+                             ntrys = 5, quiet = TRUE, ...) {
   if (missing(type)) {
     type <- "dens_overlay"
   }
@@ -1148,7 +1175,11 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     }
     ppc_args$x <- x_var
   }
-  rstan::quietgg(do.call(ppc_fun, ppc_args))
+  if (quiet) {
+    rstan::quietgg(do.call(ppc_fun, ppc_args))
+  } else {
+    do.call(ppc_fun, ppc_args)
+  }
 }
 
 #' Create a matrix of output plots from a \code{brmsfit} object

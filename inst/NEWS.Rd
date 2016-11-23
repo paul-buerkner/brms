@@ -10,6 +10,12 @@
       specifically suited to model for reaction times.
     }
   }
+  \subsection{OTHER CHANGES}{
+    \itemize{
+      \item Refactor the \code{stanplot} method
+      to use \pkg{bayesplot} on the backend.
+    }
+  }
 }
 
 \section{CHANGES IN VERSION 1.2.0}{
