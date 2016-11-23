@@ -2,6 +2,16 @@
 \title{brms News}
 \encoding{UTF-8}
 
+\section{CHANGES IN VERSION 1.2.0++}{
+  \subsection{NEW FEATURES}{
+    \itemize{
+      \item Add the new family \code{exgaussian}
+      ('exponentially modified Gaussian')
+      specifically suited to model for reaction times.
+    }
+  }
+}
+
 \section{CHANGES IN VERSION 1.2.0}{
   \subsection{NEW FEATURES}{
     \itemize{
