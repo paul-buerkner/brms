@@ -370,6 +370,28 @@ test_that("make_stancode correctly generates code for GAMMs", {
   expect_match(stancode, "sds_2_2 ~ normal(0,2)", fixed = TRUE)
 })
 
+test_that("make_stancode handles exgaussian models correctly", {
+  dat <- epilepsy
+  dat$cens <- sample(-1:1, nrow(dat), TRUE)
+  sc <- make_stancode(count ~ Trt_c + (1|patient),
+                      data = dat, family = exgaussian("log"))
+  expect_match(sc, "Y[n] ~ exgaussian(eta[n], sigma, beta)", 
+               fixed = TRUE)
+  expect_match(sc, "eta[n] = exp(eta[n])", fixed = TRUE)
+  
+  sc <- make_stancode(bf(count ~ Trt_c + (1|patient),
+                         sigma ~ Trt_c, beta ~ Trt_c),
+                      data = dat, family = exgaussian())
+  expect_match(sc, "Y[n] ~ exgaussian(eta[n], sigma[n], beta[n])",
+               fixed = TRUE)
+  expect_match(sc, "beta[n] = exp(beta[n])", fixed = TRUE)
+  
+  sc <- make_stancode(count | cens(cens) ~ Trt_c + (1|patient),
+                      data = dat, family = exgaussian("inverse"))
+  expect_match(sc, "exgaussian_lccdf(Y[n] | eta[n], sigma, beta)",
+               fixed = TRUE)
+})
+
 test_that("make_stancode correctly handles the group ID syntax", {
   form <- bf(count ~ Trt_c + (1+Trt_c|3|visit) + (1|patient), 
              shape ~ (1|3|visit) + (Trt_c||patient))

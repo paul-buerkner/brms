@@ -19,13 +19,15 @@ test_that("predict for location shift models runs without errors", {
   expect_equal(length(pred), ns)
 })
 
-test_that("predict for lognormal models runs without errors", {
+test_that("predict for lognormal and exgaussian models runs without errors", {
   ns <- 50
   nobs <- 2
-  draws <- list(sigma = rchisq(ns, 3), nsamples = ns,
+  draws <- list(sigma = rchisq(ns, 3), beta = rchisq(ns, 3),
                 eta = matrix(rnorm(ns * nobs), ncol = nobs),
-                f = lognormal())
+                f = lognormal(), nsamples = ns)
   pred <- predict_lognormal(1, draws = draws)
+  expect_equal(length(pred), ns)
+  pred <- predict_exgaussian(1, draws = draws)
   expect_equal(length(pred), ns)
 })
 

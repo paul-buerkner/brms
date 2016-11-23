@@ -29,15 +29,22 @@ test_that("loglik for location shift models works as expected", {
   expect_equal(ll, as.matrix(ll_gaussian * draws$data$weights[1]))
 })
 
-test_that("loglik for lognormal models works as expected", {
+test_that("loglik for lognormal and exgaussian models works as expected", {
   ns <- 50
-  draws <- list(sigma = rchisq(ns, 3), eta = matrix(rnorm(ns*2), ncol = 2),
+  draws <- list(sigma = rchisq(ns, 3), beta = rchisq(ns, 3),
+                eta = matrix(rnorm(ns*2), ncol = 2),
                 f = lognormal())
   draws$data <- list(Y = rlnorm(ns))
   ll_lognormal <- dlnorm(x = draws$data$Y[1], mean = draws$eta[, 1], 
                          sd = draws$sigma, log = TRUE)
   ll <- loglik_lognormal(1, draws = draws)
   expect_equal(ll, as.matrix(ll_lognormal))
+  
+  ll_exgaussian <- dexgauss(x = draws$data$Y[1], mean = draws$eta[, 1], 
+                            sigma = draws$sigma, beta = draws$beta,
+                            log = TRUE)
+  ll <- loglik_exgaussian(1, draws = draws)
+  expect_equal(ll, ll_exgaussian)
 })
 
 test_that("loglik for multivariate linear models runs without errors", {

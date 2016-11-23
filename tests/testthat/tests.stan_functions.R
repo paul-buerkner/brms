@@ -36,16 +36,30 @@ test_that("self-defined Stan functions work correctly", {
   shape <- rgamma(1, 20, 1)
   mu <- 20
   y <- statmod::rinvgauss(1, mean = mu, shape = shape)
+  expect_equal(inv_gaussian_lpdf(y, mu, shape, log(y), sqrt(y)),
+               dinvgauss(y, mean = mu, shape = shape, log = TRUE))
   expect_equal(inv_gaussian_lcdf(y, mu, shape, log(y), sqrt(y)),
                pinvgauss(y, mean = mu, shape = shape, log = TRUE))
   expect_equal(inv_gaussian_lccdf(y, mu, shape, log(y), sqrt(y)),
                log(1 - pinvgauss(y, mean = mu, shape = shape))) 
-  expect_equal(inv_gaussian_lpdf(y, mu, shape, log(y), sqrt(y)),
-               dinvgauss(y, mean = mu, shape = shape, log = TRUE))
+
   mu <- 18:22
   y <- statmod::rinvgauss(5, mean = mu, shape = shape)
   expect_equal(inv_gaussian_vector_lpdf(y, mu, shape, sum(log(y)), sqrt(y)),
                sum(dinvgauss(y, mean = mu, shape = shape, log = TRUE)))
+  
+  # exgaussian functions
+  beta <- rgamma(1, 1, 0.1)
+  sigma <- rgamma(1, 10, 0.1)
+  mean <- 10
+  y <- rexgauss(1, mean = mean, sigma = sigma, beta = beta)
+  expect_equal(exgaussian_lpdf(y, mean, sigma, beta),
+               dexgauss(y, mean, sigma, beta, log = TRUE))
+  expect_equal(exgaussian_lcdf(y, mean, sigma, beta),
+               pexgauss(y, mean, sigma, beta, log = TRUE))
+  expect_equal(exgaussian_lccdf(y, mean, sigma, beta),
+               pexgauss(y, mean, sigma, beta, 
+                        lower.tail = FALSE, log = TRUE))
   
   # zero-inflated and hurdle log-densities
   draws <- draws2 <- list(eta = matrix(rnorm(4), ncol = 4), 
