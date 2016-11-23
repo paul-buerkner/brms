@@ -12,7 +12,7 @@
 
 <meta name="author" content="Paul Bürkner" />
 
-<meta name="date" content="2016-11-11" />
+<meta name="date" content="2016-11-23" />
 
 <title>Parameterization of Response Distributions in brms</title>
 
@@ -32,7 +32,7 @@
 
 <h1 class="title toc-ignore">Parameterization of Response Distributions in brms</h1>
 <h4 class="author"><em>Paul Bürkner</em></h4>
-<h4 class="date"><em>2016-11-11</em></h4>
+<h4 class="date"><em>2016-11-23</em></h4>
 
 
 
@@ -62,6 +62,12 @@
 <p>With survival models we mean all models that are defined on the positive reals only, that is <span class="math inline">\(y_i \in \mathbb{R}^+\)</span>. The density of the <strong>lognormal</strong> family is given by <span class="math display">\[f(y_i) = \frac{1}{\sqrt{2\pi}\sigma x} \exp\left(-\frac{1}{2}\left(\frac{\log(y_i) - g(\eta_i)}{\sigma}\right)^2\right)\]</span> where <span class="math inline">\(\sigma\)</span> is the residual standard deviation on the log-scale. The density of the <strong>Gamma</strong> family is given by <span class="math display">\[f(y_i) = \frac{(\alpha / g(\eta_i))^\alpha}{\Gamma(\alpha)} y_i^{\alpha-1} 
 \exp\left(-\frac{\alpha y_i}{g(\eta_i)}\right)\]</span> where <span class="math inline">\(\alpha\)</span> is a positive shape parameter. The density of the <strong>weibull</strong> family is given by <span class="math display">\[f(y_i) = \frac{\alpha}{g(\eta_i / \alpha)} \left(\frac{y_i}{g(\eta_i / \alpha)}\right)^{\alpha-1} 
 \exp\left(-\left(\frac{y_i}{g(\eta_i / \alpha)}\right)^\alpha\right)\]</span> where <span class="math inline">\(\alpha\)</span> is again a positive shape parameter. The <strong>exponential</strong> family arises if <span class="math inline">\(\alpha\)</span> is set to <span class="math inline">\(1\)</span> for either the gamma or weibull distribution.</p>
+</div>
+<div id="reaction-time-models" class="section level2">
+<h2>Reaction time models</h2>
+<p>One family that is especially suited to model reaction times is the <strong>exgaussian</strong> (‘exponentially modified Gaussian’) family. Its density is given by</p>
+<p><span class="math display">\[f(y_i) = \frac{1}{2 \beta} \exp\left(\frac{1}{2 \beta} \left(2\mu + \sigma^2 / \beta - 2 y_i \right) \right) \text{erfc}\left(\frac{\mu + \sigma^2 / \beta - y_i}{\sqrt{2} \sigma} \right)\]</span></p>
+<p>where <span class="math inline">\(\beta\)</span> is the scale (inverse rate) of the exponential component, <span class="math inline">\(\mu = g(\eta_i) - \beta\)</span> is the mean of the Gaussian componenent, <span class="math inline">\(\sigma\)</span> is the standard deviation of the Gaussian component, and <span class="math inline">\(\text{erfc}\)</span> is the complementary error function.</p>
 </div>
 <div id="beta-models" class="section level2">
 <h2>Beta models</h2>

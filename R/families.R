@@ -12,12 +12,13 @@
 #'   Currently, the following families are supported:
 #'   \code{gaussian}, \code{student}, \code{binomial}, 
 #'   \code{bernoulli}, \code{poisson}, \code{negbinomial}, 
-#'   \code{geometric}, \code{Gamma}, \code{lognormal}, \code{inverse.gaussian}, 
+#'   \code{geometric}, \code{Gamma}, \code{lognormal}, 
+#'   \code{exgaussian}, \code{inverse.gaussian}, 
 #'   \code{exponential}, \code{weibull}, \code{Beta}, \code{von_mises},
 #'   \code{categorical}, \code{cumulative}, \code{cratio}, \code{sratio}, 
 #'   \code{acat}, \code{hurdle_poisson}, \code{hurdle_negbinomial}, 
 #'   \code{hurdle_gamma}, \code{hurdle_lognormal}, 
-#'   \code{zero_inflated_binomial}, \cr \code{zero_inflated_beta},
+#'   \code{zero_inflated_binomial}, \code{zero_inflated_beta},
 #'   \code{zero_inflated_negbinomial}, 
 #'   and \code{zero_inflated_poisson}.
 #' @param link A specification for the model link function. 
@@ -39,6 +40,8 @@
 #'   leads to ordinal regression. Families \code{Gamma}, \code{weibull}, 
 #'   \code{exponential}, \code{lognormal}, and \code{inverse.gaussian} can be used 
 #'   (among others) for survival regression.
+#'   Family \code{exgaussian} ('exponentially modified Gaussian') is especially
+#'   suited to model reaction times.
 #'   Families \code{hurdle_poisson}, \code{hurdle_negbinomial}, \code{hurdle_gamma}, 
 #'   \code{hurdle_lognormal}, \code{zero_inflated_poisson},
 #'   \code{zero_inflated_negbinomial}, \code{zero_inflated_binomial}, and
@@ -50,7 +53,7 @@
 #'   models cannot be reasonably fitted for data containing zeros in the response.
 #'   
 #'   In the following, we list all possible links for each family.
-#'   The families \code{gaussian}, and \code{student},
+#'   The families \code{gaussian}, \code{student}, and \code{exgaussian}
 #'   accept the links (as names) \code{identity}, \code{log}, and \code{inverse};
 #'   families \code{poisson}, \code{negbinomial}, and \code{geometric} the links 
 #'   \code{log}, \code{identity}, and \code{sqrt}; 
@@ -58,7 +61,7 @@
 #'   \code{cumulative}, \code{cratio}, \code{sratio}, and \code{acat} 
 #'   the links \code{logit}, \code{probit}, \code{probit_approx}, 
 #'   \code{cloglog}, and \code{cauchit}; 
-#'   family \code{categorical} the link \code{logit}; 
+#'   family \code{categorical} the link \code{logit};
 #'   families \code{Gamma}, \code{weibull}, and \code{exponential} 
 #'   the links \code{log}, \code{identity}, and \code{inverse};
 #'   family \code{lognormal} the links \code{identity} and \code{inverse};
