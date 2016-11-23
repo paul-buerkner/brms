@@ -8,6 +8,10 @@
       \item Add the new family \code{exgaussian}
       ('exponentially modified Gaussian')
       specifically suited to model for reaction times.
+      \item Add the methods \code{log_posterior},
+      \code{nuts_params}, \code{rhat}, and \code{neff_ratio}
+      for \code{brmsfit} objects to conveniently access
+      quantities used to diagnose sampling behavior.
     }
   }
   \subsection{OTHER CHANGES}{

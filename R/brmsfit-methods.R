@@ -2301,3 +2301,39 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
 expose_functions.brmsfit <- function(x, ...) {
   expose_stan_functions(x$fit)
 }
+
+#' @rdname diagnostic-quantities
+#' @importFrom bayesplot log_posterior
+#' @export log_posterior
+#' @export
+log_posterior.brmsfit <- function(object, ...) {
+  contains_samples(object)
+  bayesplot::log_posterior(object$fit, ...)
+}
+
+#' @rdname diagnostic-quantities
+#' @importFrom bayesplot nuts_params
+#' @export nuts_params
+#' @export
+nuts_params.brmsfit <- function(object, pars = NULL, ...) {
+  contains_samples(object)
+  bayesplot::nuts_params(object$fit, pars = pars, ...)
+}
+
+#' @rdname diagnostic-quantities
+#' @importFrom bayesplot rhat
+#' @export rhat
+#' @export
+rhat.brmsfit <- function(object, pars = NULL, ...) {
+  contains_samples(object)
+  bayesplot::rhat(object$fit, pars = pars, ...)
+}
+
+#' @rdname diagnostic-quantities
+#' @importFrom bayesplot neff_ratio
+#' @export neff_ratio
+#' @export
+neff_ratio.brmsfit <- function(object, pars = NULL, ...) {
+  contains_samples(object)
+  bayesplot::neff_ratio(object$fit, pars = pars, ...)
+}

@@ -326,4 +326,10 @@ test_that("all S3 methods have reasonable ouputs", {
   waic_pointwise <- WAIC(fit2, pointwise = TRUE)
   expect_equal(waic2, waic_pointwise)
   expect_warning(WAIC(fit1, fit2), "Model comparisons are most likely invalid")
+  
+  # test diagnostic convenience functions
+  expect_true(is(log_posterior(fit1), "data.frame"))
+  expect_true(is(nuts_params(fit1), "data.frame"))
+  expect_true(is(rhat(fit1), "numeric"))
+  expect_true(is(neff_ratio(fit1), "numeric"))
 })
