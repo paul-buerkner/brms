@@ -211,6 +211,70 @@ rvon_mises <- function(n, mu, kappa) {
 # vectorized version of CircStats::rvm
 .rvon_mises <- Vectorize(CircStats::rvm, c("mean", "k"))
 
+dexgauss <- function (x, mean, sigma, beta, log = FALSE) {
+  # PDF of the exponentially modified gaussian distribution
+  # Args:
+  #   mean: mean of the distribution; mean = mu + beta
+  #   sigma: SD of the gaussian comoponent
+  #   beta: scale / inverse rate of the exponential component
+  if (any(sigma < 0)) {
+    stop2("sigma must be greater than 0.")
+  }
+  if (any(beta < 0)) {
+    stop2("beta must be greater than 0.")
+  }
+  mu <- mean - beta
+  z <- x - mu - sigma^2 / beta
+  out <- ifelse(beta > 0.05 * sigma, 
+    -log(beta) - (z + sigma^2 / (2 * beta)) / beta + log(pnorm(z / sigma)), 
+    dnorm(x, mean = mu, sd = sigma, log = TRUE))
+  if (!log) {
+    out <- exp(out)
+  }
+  out
+}
+
+pexgauss <- function(q, mean, sigma, beta, 
+                     lower.tail = TRUE, log.p = FALSE) {
+  # CDF of the exponentially modified gaussian distribution
+  # Args:
+  #   see dexgauss
+  if (any(sigma < 0)) {
+    stop2("sigma must be greater than 0.")
+  }
+  if (any(beta < 0)) {
+    stop2("beta must be greater than 0.")
+  } 
+  mu <- mean - beta
+  z <- q - mu - sigma^2 / beta
+  out <- ifelse(beta > 0.05 * sigma, 
+    pnorm((q - mu) / sigma) - pnorm(z / sigma) * 
+      exp(((mu + sigma^2 / beta)^2 - mu^2 - 2 * q * sigma^2 / beta) / 
+            (2 * sigma^2)), 
+    pnorm(q, mean = mu, sd = sigma))
+  if (!lower.tail) {
+    out <- 1 - out
+  } 
+  if (log.p) {
+    out <- log(out) 
+  } 
+  out
+}
+
+rexgauss <- function(n, mean, sigma, beta) {
+  # create random numbers of the exgaussian distribution
+  # Args:
+  #   see dexgauss
+  if (any(sigma < 0)) {
+    stop2("sigma must be greater than 0.")
+  }
+  if (any(beta < 0)) {
+    stop2("beta must be greater than 0.")
+  } 
+  mu <- mean - beta
+  rnorm(n, mean = mu, sd = sigma) + rexp(n, rate = 1 / beta)
+}
+
 dcategorical <- function(x, eta, ncat, link = "logit") {
   # density of the categorical distribution
   # 

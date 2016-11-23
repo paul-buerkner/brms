@@ -255,6 +255,14 @@ loglik_inverse.gaussian <- function(i, draws, data = data.frame()) {
   weight_loglik(out, i = i, data = draws$data)
 }
 
+loglik_exgaussian <- function(i, draws, data = data.frame()) {
+  args <- list(mean = ilink(get_eta(draws, i), draws$f$link), 
+               sigma = get_sigma(draws$sigma, data = draws$data, i = i),
+               beta = get_auxpar(draws$beta, i = i))
+  out <- censor_loglik(dist = "exgauss", args = args, i = i, data = draws$data)
+  weight_loglik(out, i = i, data = draws$data)
+}
+
 loglik_beta <- function(i, draws, data = data.frame()) {
   mu <- ilink(get_eta(draws, i), draws$f$link)
   phi <- get_auxpar(draws$phi, i)

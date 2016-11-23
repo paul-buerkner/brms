@@ -601,7 +601,7 @@ prepare_family <- function(x) {
 default_plot_pars <- function() {
   # list all parameter classes to be included in plots by default
   c("^b(|cs|m)_", "^sd_", "^cor_", "^sigma", "^rescor", 
-    "^nu$", "^shape$", "^delta$", "^phi$", "^kappa$", 
+    "^nu$", "^shape$", "^delta$", "^phi$", "^kappa$", "^beta$",
     "^zi$", "^hu$", "^ar", "^ma", "^arr", "^simplex_", "^sds_")
 }
 
