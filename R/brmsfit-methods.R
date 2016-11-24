@@ -967,7 +967,7 @@ stanplot.brmsfit <- function(object, pars = NA, type = "intervals",
   if ("x" %in% mcmc_arg_names) {
     if (grepl("^nuts_", type)) {
       # x refers to a molten data.frame of NUTS parameters
-      mcmc_args[["x"]] <- bayesplot::nuts_params(object$fit)
+      mcmc_args[["x"]] <- nuts_params(object)
     } else {
       # x refers to a data.frame of samples
       samples <- posterior_samples(object, pars, add_chain = TRUE,
@@ -982,13 +982,13 @@ stanplot.brmsfit <- function(object, pars = NA, type = "intervals",
     }
   }
   if ("lp" %in% mcmc_arg_names) {
-    mcmc_args[["lp"]] <- bayesplot::log_posterior(object$fit)
+    mcmc_args[["lp"]] <- log_posterior(object)
   }
   if ("rhat" %in% mcmc_arg_names && !type %in% c("intervals", "areas")) {
-    mcmc_args[["rhat"]] <- bayesplot::rhat(object$fit)
+    mcmc_args[["rhat"]] <- rhat(object)
   }
   if ("ratio" %in% mcmc_arg_names) {
-    mcmc_args[["ratio"]] <- bayesplot::neff_ratio(object$fit)
+    mcmc_args[["ratio"]] <- neff_ratio(object)
   }
   # make the plot
   if (quiet) {
