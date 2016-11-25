@@ -1,9 +1,10 @@
 Package: brms
+Encoding: UTF-8
 Type: Package
 Title: Bayesian Regression Models using Stan
 Version: 1.2.0.9000
 Date: 2016-11-19
-Authors@R: person("Paul-Christian", "Buerkner", email = "paul.buerkner@gmail.com",
+Authors@R: person("Paul-Christian", "Bürkner", email = "paul.buerkner@gmail.com",
   role = c("aut", "cre"))
 Depends: 
     R (>= 3.2.0),
