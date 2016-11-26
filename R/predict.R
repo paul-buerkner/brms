@@ -245,6 +245,16 @@ predict_exgaussian <- function(i, draws, ...) {
                  lb = draws$data$lb[i], ub = draws$data$ub[i])
 }
 
+predict_wiener <- function(i, draws, col = c("q", "resp"), ...) {
+  args <- list(delta = ilink(get_eta(draws, i), draws$f$link), 
+               alpha = get_auxpar(draws$bs, i = i),
+               tau = get_auxpar(draws$ndt, i = i),
+               beta = get_auxpar(draws$bias, i = i),
+               col = match.arg(col))
+  rng_continuous(nrng = 1, dist = "Wiener", args = args, 
+                 lb = draws$data$lb[i], ub = draws$data$ub[i])
+}
+
 predict_beta <- function(i, draws, ...) {
   mu <- ilink(get_eta(draws, i), draws$f$link)
   phi <- get_auxpar(draws$phi, i = i)

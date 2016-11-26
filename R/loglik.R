@@ -263,6 +263,16 @@ loglik_exgaussian <- function(i, draws, data = data.frame()) {
   weight_loglik(out, i = i, data = draws$data)
 }
 
+loglik_wiener <- function(i, draws, data = data.frame()) {
+  args <- list(delta = ilink(get_eta(draws, i), draws$f$link), 
+               alpha = get_auxpar(draws$bs, i = i),
+               tau = get_auxpar(draws$ndt, i = i),
+               beta = get_auxpar(draws$bias, i = i),
+               resp = draws$data[["dec"]][i])
+  out <- do.call("dWiener", c(draws$data$Y[i], args, log = TRUE))
+  weight_loglik(out, i = i, data = draws$data)
+}
+
 loglik_beta <- function(i, draws, data = data.frame()) {
   mu <- ilink(get_eta(draws, i), draws$f$link)
   phi <- get_auxpar(draws$phi, i)

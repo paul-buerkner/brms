@@ -62,6 +62,9 @@ fitted_response <- function(draws, mu) {
       }
       mu <- mu * trials
     }
+  } else if (is.wiener(draws$f)) {
+    stop2("Fitted values on the respone scale not yet implemented ",
+          "for the Wiener diffusion model.")
   } else {
     mu <- ilink(mu, draws$f$link)
   }

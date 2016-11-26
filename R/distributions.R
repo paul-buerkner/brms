@@ -275,15 +275,65 @@ rexgauss <- function(n, mean, sigma, beta) {
   rnorm(n, mean = mu, sd = sigma) + rexp(n, rate = 1 / beta)
 }
 
+dWiener <- function(x, alpha, tau, beta, delta, resp = 1, log = FALSE) {
+  # compute the density of the Wiener diffusion model
+  # Args:
+  #   see RWiener::dwiener
+  alpha <- as.numeric(alpha)
+  tau <- as.numeric(tau)
+  beta <- as.numeric(beta)
+  delta <- as.numeric(delta)
+  if (!is.character(resp)) {
+    resp <- ifelse(resp, "upper", "lower") 
+  }
+  args <- nlist(q = x, alpha, tau, beta, delta, resp, give_log = log)
+  do.call(.dWiener, args)
+}
+
+# vectorized version of RWiener::dwiener
+.dWiener <- Vectorize(RWiener::dwiener, c("alpha", "tau", "beta", "delta"))
+
+rWiener <- function(n, alpha, tau, beta, delta, col = NULL) {
+  # create random numbers of the Wiener diffusion model
+  # Args:
+  #   see RWiener::rwiener
+  #   col: which response to return (RTs or decision or both)?
+  alpha <- as.numeric(alpha)
+  tau <- as.numeric(tau)
+  beta <- as.numeric(beta)
+  delta <- as.numeric(delta)
+  args <- nlist(n, alpha, tau, beta, delta, col)
+  do.call(.rWiener, args)
+}
+
+rwiener_num <- function(n, alpha, tau, beta, delta, col = NULL) {
+  # helper function to return a numeric vector instead
+  # of a data.frame with two columns as for RWiener::rwiener
+  out <- RWiener::rwiener(n, alpha, tau, beta, delta)
+  if (length(col) == 1L && col %in% c("q", "resp")) {
+    out <- out[[col]]
+    if (col == "resp") {
+      out <- ifelse(out == "upper", 1, 0)
+    }
+  }
+  out
+}
+
+.rWiener <- function(...) {
+  # vectorized version of RWiener::rwiener
+  # able to return data.frames correctly
+  fun <- Vectorize(rwiener_num, c("alpha", "tau", "beta", "delta"),
+                   SIMPLIFY = FALSE)
+  do.call(rbind, fun(...))
+}
+
 dcategorical <- function(x, eta, ncat, link = "logit") {
   # density of the categorical distribution
-  # 
   # Args:
   #   x: positive integers not greater than ncat
   #   eta: the linear predictor (of length or ncol ncat-1)  
   #   ncat: the number of categories
   #   link: the link function
-  #
   # Returns:
   #   probabilities P(X = x)
   if (is.null(dim(eta))) 
@@ -303,13 +353,11 @@ dcategorical <- function(x, eta, ncat, link = "logit") {
 
 pcategorical <- function(q, eta, ncat, link = "logit") {
   # distribution functions for the categorical family
-  #
   # Args:
   #   q: positive integers not greater than ncat
   #   eta: the linear predictor (of length or ncol ncat-1)  
   #   ncat: the number of categories
   #   link: a character string naming the link
-  #
   # Retruns: 
   #   probabilities P(x <= q)
   p <- dcategorical(1:max(q), eta = eta, ncat = ncat, link = link)
@@ -318,7 +366,6 @@ pcategorical <- function(q, eta, ncat, link = "logit") {
 
 dcumulative <- function(x, eta, ncat, link = "logit") {
   # density of the cumulative distribution
-  #
   # Args: same as dcategorical
   if (is.null(dim(eta))) 
     eta <- matrix(eta, nrow = 1)
@@ -341,7 +388,6 @@ dcumulative <- function(x, eta, ncat, link = "logit") {
 
 dsratio <- function(x, eta, ncat, link = "logit") {
   # density of the sratio distribution
-  #
   # Args: same as dcategorical
   if (is.null(dim(eta))) 
     eta <- matrix(eta, nrow = 1)
@@ -364,7 +410,6 @@ dsratio <- function(x, eta, ncat, link = "logit") {
 
 dcratio <- function(x, eta, ncat, link = "logit") {
   # density of the cratio distribution
-  #
   # Args: same as dcategorical
   if (is.null(dim(eta))) 
     eta <- matrix(eta, nrow = 1)
@@ -387,7 +432,6 @@ dcratio <- function(x, eta, ncat, link = "logit") {
 
 dacat <- function(x, eta, ncat, link = "logit") {
   # density of the acat distribution
-  #
   # Args: same as dcategorical
   if (is.null(dim(eta))) 
     eta <- matrix(eta, nrow = 1)
@@ -423,14 +467,12 @@ dacat <- function(x, eta, ncat, link = "logit") {
 
 pordinal <- function(q, eta, ncat, family, link = "logit") {
   # distribution functions for ordinal families
-  #
   # Args:
   #   q: positive integers not greater than ncat
   #   eta: the linear predictor (of length or ncol ncat-1)  
   #   ncat: the number of categories
   #   family: a character string naming the family
   #   link: a character string naming the link
-  #
   # Returns: 
   #   probabilites P(x <= q)
   args <- list(1:max(q), eta = eta, ncat = ncat, link = link)
