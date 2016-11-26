@@ -88,7 +88,8 @@ extract_effects <- function(formula, family = NA, nonlinear = NULL,
   }
   
   # handle addition arguments
-  add_funs <- c("se", "weights", "trials", "cat", "cens", "trunc", "disp")
+  add_funs <- c("se", "weights", "trials", "cat", 
+                "cens", "trunc", "disp", "dec")
   add_vars <- list()
   if (!is.na(family[[1]])) {
     add <- get_matches("\\|[^~]*~", tformula)
@@ -134,6 +135,9 @@ extract_effects <- function(formula, family = NA, nonlinear = NULL,
       if (is.formula(x$trunc) && cens_or_weights) {
         stop2("Truncation is not yet possible in censored or weighted models.")
       }
+    }
+    if (is.wiener(family) && check_response && !is.formula(x$dec)) {
+      stop2("Addition argument 'dec' is required for family 'wiener'.")
     }
   }
   
@@ -388,17 +392,6 @@ extract_nonlinear <- function(x, model = ~1, family = NA) {
     nleffects <- list() 
   }
   nleffects
-}
-
-valid_auxpars <- function(family, effects = list(), autocor = cor_arma()) {
-  # convenience function to find relevant auxiliary parameters
-  x <- c(sigma = has_sigma(family, effects = effects, autocor = autocor),
-         shape = has_shape(family), nu = has_nu(family), 
-         phi = has_phi(family), kappa = has_kappa(family),
-         beta = has_beta(family),
-         zi = is.zero_inflated(family, zi_beta = TRUE), 
-         hu = is.hurdle(family, zi_beta = FALSE))
-  names(x)[x]
 }
 
 avoid_auxpars <- function(names, effects) {
@@ -1075,6 +1068,7 @@ add_families <- function(x) {
                    "exgaussian"),
          disp = c("gaussian", "student", "cauchy", "lognormal", 
                   "gamma", "weibull", "negbinomial", "exgaussian"),
+         dec = c("wiener"),
          stop2(paste("Addition argument '", x, "' is not supported.")))
 }
 

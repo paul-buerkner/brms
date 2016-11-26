@@ -124,7 +124,7 @@ brmsfamily <- function(family, link = NULL) {
     "binomial", "bernoulli", "categorical", 
     "poisson", "negbinomial", "geometric", 
     "gamma", "weibull", "exponential", "exgaussian",
-    "inverse.gaussian", "beta", "von_mises",
+    "inverse.gaussian", "wiener", "beta", "von_mises",
     "cumulative", "cratio", "sratio", "acat",
     "hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma",
     "hurdle_lognormal", "zero_inflated_poisson", 
@@ -153,9 +153,9 @@ brmsfamily <- function(family, link = NULL) {
     ok_links <- c("log", "identity", "inverse")
   } else if (is.lognormal(family)) {
     ok_links <- c("identity", "inverse")
-  } else if (family %in% "hurdle_lognormal") {
+  } else if (family %in% c("hurdle_lognormal", "wiener")) {
     ok_links <- c("identity")
-  } else if (family %in% "von_mises") {
+  } else if (family %in% c("von_mises")) {
     ok_links <- c("tan_half")
   } else if (is.hurdle(family) || is.zero_inflated(family)) {
     # does not include zi_binomial, zi_beta, or hu_lognormal
@@ -241,6 +241,13 @@ weibull <- function(link = "log") {
 exgaussian <- function(link = "identity") {
   slink <- substitute(link)
   .brmsfamily("exgaussian", link = link, slink = slink)
+}
+
+#' @rdname brmsfamily
+#' @export
+wiener <- function(link = "identity") {
+  slink <- substitute(link)
+  .brmsfamily("wiener", link = link, slink = slink)
 }
 
 #' @rdname brmsfamily
@@ -441,6 +448,14 @@ is.exgaussian <- function(family) {
   family %in% c("exgaussian")
 }
 
+is.wiener <- function(family) {
+  # indicate if family is the wiener diffusion model
+  if (is(family, "family")) {
+    family <- family$family
+  }
+  family %in% c("wiener")
+}
+
 is.count <- function(family) {
   # indicate if family is for a count model
   if (is(family, "family")) {
@@ -509,7 +524,7 @@ use_real <- function(family) {
   is.linear(family) || is.skewed(family) || 
     family %in% c("lognormal", "exgaussian", "inverse.gaussian", "beta", 
                   "von_mises", "zero_inflated_beta", "hurdle_gamma", 
-                  "hurdle_lognormal")
+                  "hurdle_lognormal", "wiener")
 }
 
 use_int <- function(family) {

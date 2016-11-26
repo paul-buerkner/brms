@@ -85,8 +85,8 @@ stan_effects_mv <- function(effects, data, family = gaussian(),
                             ranef = empty_ranef(), prior = brmsprior(), 
                             autocor = cor_arma(), sparse = FALSE) {
   if (sparse) {
-    stop("Sparse design matrices are not yet implemented ", 
-         "for multivariate models.", call. = FALSE)
+    stop2("Sparse design matrices are not yet implemented ", 
+          "for multivariate models.")
   }
   out <- list()
   resp <- effects$response
@@ -103,7 +103,8 @@ stan_effects_mv <- function(effects, data, family = gaussian(),
     } else if (is.categorical(family)) {
       len_Eta_n <- "ncat - 1"
     } else {
-      stop("Invalid multivariate model", call. = FALSE)
+      stop2("Multivariate models are not yet implemented ", 
+            "for family '", family$family, "'.")
     }
     out$modelD <- paste0(out$modelD, 
       "  // multivariate linear predictor matrix \n",
@@ -178,7 +179,10 @@ stan_auxpars <- function(effects, data, family = gaussian(),
     kappa = "  real<lower=0> kappa;  // precision parameter \n",
     beta = "  real<lower=0> beta;  // scale parameter \n",
     zi = "  real<lower=0,upper=1> zi;  // zero-inflation probability \n", 
-    hu = "  real<lower=0,upper=1> hu;  // hurdle probability \n")
+    hu = "  real<lower=0,upper=1> hu;  // hurdle probability \n",
+    bs = "  real<lower=0> bs;  // boundary separation parameter \n",
+    ndt = "  real<lower=0,upper=min_Y> ndt;  // non-decision time parameter \n",
+    bias = "  real<lower=0,upper=1> bias;  // initial bias parameter \n")
   valid_auxpars <- valid_auxpars(family, effects, autocor = autocor)
   # don't supply the family argument to avoid applying link functions
   args <- nlist(data, ranef, center_X = FALSE, eta = "")

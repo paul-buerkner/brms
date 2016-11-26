@@ -441,6 +441,11 @@ use_alias <- function(arg, alias = NULL, default = NULL,
   x  
 }
 
+.dec <- function(x) {
+  # decisions for the wiener diffusion model
+  x <- as.numeric(as.logical(x))
+}
+
 .trials <- function(x) {
   # trials for binomial models
   if (any(!is.wholenumber(x) || x < 1))

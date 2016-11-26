@@ -139,6 +139,8 @@ make_stancode <- function(formula, data = NULL, family = gaussian(),
       "  vector<lower=0>[N] se;  // SEs for meta-analysis \n",
     if (is.formula(ee$weights))
       "  vector<lower=0>[N] weights;  // model weights \n",
+    if (is.formula(ee$dec))
+      "  int<lower=0,upper=1> dec[N];  // decisions \n",
     if (any(bounds$lb > -Inf))
       paste0("  ", ifelse(use_int(family), "int", "real"), " lb[N];",  
              "  // lower bounds for truncation; \n"),

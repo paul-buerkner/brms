@@ -125,7 +125,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
       if (length(unique(standata$Y)) < 2L) {
         stop2("At least two response categories are required.")
       }
-    } else if (is.skewed(family) || is.lognormal(family)) {
+    } else if (is.skewed(family) || is.lognormal(family) || is.wiener(family)) {
       if (min(standata$Y) <= 0) {
         stop2("Family '", family$family, "' requires response variable ", 
               "to be positive.")
@@ -284,6 +284,9 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   }
   if (is.formula(ee$disp)) {
     standata[["disp"]] <- .addition(ee$disp, data = data)
+  }
+  if (is.formula(ee$dec)) {
+    standata[["dec"]] <- .addition(ee$dec, data = data)
   }
   if (is.formula(ee$cens) && check_response) {
     cens <- .addition(ee$cens, data = data)

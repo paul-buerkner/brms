@@ -437,7 +437,8 @@ prepare_auxformula <- function(formula, par = NULL, rsv_pars = NULL) {
 
 auxpars <- function(incl_nl = FALSE) {
   # names of auxiliary parameters
-  auxpars <- c("sigma", "shape", "nu", "phi", "kappa", "beta", "zi", "hu")
+  auxpars <- c("sigma", "shape", "nu", "phi", "kappa", "beta", 
+               "zi", "hu", "bs", "ndt", "bias")
   if (incl_nl) {
     auxpars <- c(auxpars, "nonlinear")
   }
@@ -448,16 +449,31 @@ ilink_auxpars <- function(ap = NULL, stan = FALSE) {
   # helper function to store inverse links of auxiliary parameters
   if (stan) {
     ilink <- c(sigma = "exp", shape = "exp", nu = "exp", phi = "exp", 
-               kappa = "exp", beta = "exp", zi = "", hu = "") 
+               kappa = "exp", beta = "exp", zi = "", hu = "",
+               bs = "exp", ndt = "exp", bias = "inv_logit") 
   } else {
     ilink <- c(sigma = "exp", shape = "exp", nu = "exp", phi = "exp", 
                kappa = "exp", beta = "exp", zi = "inv_logit", 
-               hu = "inv_logit")
+               hu = "inv_logit", bs = "exp", ndt = "exp", 
+               bias = "inv_logit")
   }
   if (length(ap)) {
     ilink <- ilink[ap]
   }
   ilink
+}
+
+valid_auxpars <- function(family, effects = list(), autocor = cor_arma()) {
+  # convenience function to find relevant auxiliary parameters
+  x <- c(sigma = has_sigma(family, effects = effects, autocor = autocor),
+         shape = has_shape(family), nu = has_nu(family), 
+         phi = has_phi(family), kappa = has_kappa(family),
+         beta = has_beta(family),
+         zi = is.zero_inflated(family, zi_beta = TRUE), 
+         hu = is.hurdle(family, zi_beta = FALSE),
+         bs = is.wiener(family), ndt = is.wiener(family), 
+         bias = is.wiener(family))
+  names(x)[x]
 }
 
 sformula <- function(x, incl_nl = TRUE, flatten = FALSE, ...) {

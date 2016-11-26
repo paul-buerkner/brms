@@ -10,7 +10,6 @@ stan_llh <- function(family, effects = list(), data = NULL,
   family <- family$family
   is_categorical <- is.categorical(family)
   is_ordinal <- is.ordinal(family)
-  is_exgaussian <- is.exgaussian(family)
   is_hurdle <- is.hurdle(family)
   is_zero_inflated <- is.zero_inflated(family)
   is_forked <- is.forked(family)
@@ -44,7 +43,8 @@ stan_llh <- function(family, effects = list(), data = NULL,
   
   auxpars <- intersect(auxpars(), names(effects))
   reqn <- ll_adj || is_categorical || is_ordinal || 
-          is_hurdle || is_zero_inflated || is_exgaussian ||
+          is_hurdle || is_zero_inflated || 
+          is.exgaussian(family) || is.wiener(family) ||
           any(c("phi", "kappa") %in% auxpars)
   n <- ifelse(reqn, "[n]", "")
   # prepare auxiliary parameters
@@ -55,12 +55,9 @@ stan_llh <- function(family, effects = list(), data = NULL,
                   if (reqn_sigma) "[n]")
   reqn_shape <- (ll_adj && has_disp) || (reqn && "shape" %in% auxpars)
   shape <- paste0(disp, "shape", if (reqn_shape) "[n]")
-  nu <- paste0("nu", if (reqn && "nu" %in% auxpars) "[n]")
-  phi <- paste0("phi", if (reqn && "phi" %in% auxpars) "[n]")
-  kappa <- paste0("kappa", if (reqn && "kappa" %in% auxpars) "[n]")
-  beta <- paste0("beta", if (reqn && "beta" %in% auxpars) "[n]")
-  zi <- paste0("zi", if ("zi" %in% auxpars) "[n]")
-  hu <- paste0("hu", if ("hu" %in% auxpars) "[n]")
+  for (ap in setdiff(auxpars(), c("sigma", "shape"))) {
+    assign(ap, stan_apn(ap, auxpars, reqn))
+  }
   .logit <- ifelse(any(c("zi", "hu") %in% auxpars), "_logit", "")
   reqn_trials <- has_trials && (ll_adj || is_zero_inflated)
   trials <- ifelse(reqn_trials, "trials[n]", "trials")
@@ -103,6 +100,8 @@ stan_llh <- function(family, effects = list(), data = NULL,
       weibull = c("weibull", paste0(shape, ", ", eta)), 
       exgaussian = c("exgaussian", paste0(eta, ", ", sigma, ", ", beta)),
       inverse.gaussian = c(inv_gauss_fun, inv_gauss_args),
+      wiener <- c("wiener_diffusion", 
+                  paste0("dec[n], ", eta, ", ", bs, ", ", ndt, ", ", bias)),
       beta = c("beta", paste0(eta, " * ", phi, ", (1 - ", eta, ") * ", phi)),
       von_mises = c(paste0("von_mises_", ifelse(reqn, "real", "vector")), 
                            paste0(eta, ", ", kappa)),
@@ -403,7 +402,7 @@ stan_mv <- function(family, response, prior = brmsprior()) {
         "  Rescor = multiply_lower_tri_self_transpose(Lrescor); \n",
         collapse(ulapply(2:nresp, function(i) lapply(1:(i-1), function(j)
           paste0("  rescor[",(i-1)*(i-2)/2+j,"] = Rescor[",j,", ",i,"]; \n")))))
-    } else if (!is.forked(family) && !is.categorical(family)) {
+    } else if (!is.categorical(family)) {
       stop2("Multivariate models are not yet implemented ", 
             "for family '", family$family, "'.")
     }
@@ -565,6 +564,10 @@ stan_families <- function(family) {
   } else if (family == "von_mises") {
     out$fun <- paste0("  #include 'fun_tan_half.stan' \n",
                       "  #include 'fun_von_mises.stan' \n")
+  } else if (family == "wiener") {
+    out$fun <- "  #include 'fun_wiener_diffusion.stan' \n"
+    out$tdataD <- "  real min_Y; \n"
+    out$tdataC <- "  min_Y = min(Y); \n"
   }
   out
 }
@@ -919,4 +922,9 @@ stan_needs_kronecker <- function(ranef, names_cov_ranef) {
              r$group[1] %in% names_cov_ranef
   }
   out
+}
+
+stan_apn <- function(ap, auxpars, reqn = NULL) {
+  # helper function to add "[n]" to auxiliary parameter strings
+  paste0(ap, if ((is.null(reqn) || reqn) && ap %in% auxpars) "[n]")
 }
