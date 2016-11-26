@@ -333,8 +333,8 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
   }
     
   valid_classes <- c("Intercept", "b", "sd", "sds", "simplex", "cor", "L", 
-                     "ar", "ma", "arr", "sigma", "sigmaLL", "rescor", 
-                     "Lrescor", "nu", "shape", "delta", "phi", "kappa")
+                     "ar", "ma", "arr", "sigmaLL", "rescor", "Lrescor", 
+                     "delta", auxpars())
   if (!class %in% valid_classes) {
     stop2("'", class, "' is not a valid parameter class.")
   }

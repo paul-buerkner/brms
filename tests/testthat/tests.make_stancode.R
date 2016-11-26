@@ -374,10 +374,12 @@ test_that("make_stancode handles exgaussian models correctly", {
   dat <- epilepsy
   dat$cens <- sample(-1:1, nrow(dat), TRUE)
   sc <- make_stancode(count ~ Trt_c + (1|patient),
-                      data = dat, family = exgaussian("log"))
+                      data = dat, family = exgaussian("log"),
+                      prior = prior(gamma(1,1), class = beta))
   expect_match(sc, "Y[n] ~ exgaussian(eta[n], sigma, beta)", 
                fixed = TRUE)
   expect_match(sc, "eta[n] = exp(eta[n])", fixed = TRUE)
+  expect_match(sc, "beta ~ gamma(1, 1)", fixed = TRUE)
   
   sc <- make_stancode(bf(count ~ Trt_c + (1|patient),
                          sigma ~ Trt_c, beta ~ Trt_c),
