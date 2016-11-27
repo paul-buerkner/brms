@@ -417,46 +417,55 @@ use_alias <- function(arg, alias = NULL, default = NULL,
 .se <- function(x) {
   # standard errors for meta-analysis
   if (!is.numeric(x)) 
-    stop("SEs must be numeric")
+    stop2("Standard errors must be numeric.")
   if (min(x) < 0) 
-    stop("standard errors must be non-negative", call. = FALSE)
+    stop2("Standard errors must be non-negative.")
   x  
 }
 
 .weights <- function(x) {
   # weights to be applied on any model
   if (!is.numeric(x)) 
-    stop("weights must be numeric")
+    stop2("Weights must be numeric.")
   if (min(x) < 0) 
-    stop("weights must be non-negative", call. = FALSE)
+    stop2("Weights must be non-negative.")
   x
 }
 
 .disp <- function(x) {
   # dispersion factors
   if (!is.numeric(x)) 
-    stop("dispersion factors must be numeric")
+    stop2("Dispersion factors must be numeric.")
   if (min(x) < 0) 
-    stop("dispersion factors must be non-negative", call. = FALSE)
+    stop2("Dispersion factors must be non-negative.")
   x  
 }
 
 .dec <- function(x) {
   # decisions for the wiener diffusion model
-  x <- as.numeric(as.logical(x))
+  if (is.character(x) || is.factor(x)) {
+    x <- ifelse(x == "lower", 0, ifelse(x == "upper", 1, x))
+    if (!is.numeric(x)) {
+      stop2("Decisions should be 'lower' or 'upper' ", 
+            "when supplied as characters or factors.")
+    }
+  } else {
+    x <- as.numeric(as.logical(x))
+  }
+  x
 }
 
 .trials <- function(x) {
   # trials for binomial models
   if (any(!is.wholenumber(x) || x < 1))
-    stop("number of trials must be positive integers", call. = FALSE)
+    stop2("Number of trials must be positive integers.")
   x
 }
 
 .cat <- function(x) {
   # number of categories for categorical and ordinal models
   if (any(!is.wholenumber(x) || x < 1))
-    stop("number of categories must be positive integers", call. = FALSE)
+    stop2("Number of categories must be positive integers.")
   x
 }
 
@@ -500,27 +509,27 @@ use_alias <- function(arg, alias = NULL, default = NULL,
   lb <- as.numeric(lb)
   ub <- as.numeric(ub)
   if (any(lb >= ub)) {
-    stop2("Invalid truncation bounds")
+    stop2("Truncation bounds are invalid: lb >= ub")
   }
   nlist(lb, ub)
 }
 
 cse <- function(...) {
-  stop2("inappropriate use of function 'cse'")
+  stop2("Inappropriate use of function 'cse'")
 }
 
 monotonic <- function(...) {
-  stop2("inappropriate use of function 'monotonic'")
+  stop2("Inappropriate use of function 'monotonic'")
 }
 
 mono <- function(...) {
   # abbreviation of monotonic
-  stop2("inappropriate use of function 'monotonic'")
+  stop2("Inappropriate use of function 'monotonic'")
 }
 
 monotonous <- function(...) {
   # abbreviation of monotonic
-  stop2("please use function 'monotonic' instead")
+  stop2("Please use function 'monotonic' instead.")
 }
 
 # startup messages for brms

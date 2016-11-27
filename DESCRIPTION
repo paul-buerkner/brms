@@ -24,6 +24,7 @@ Imports:
     statmod,
     stats,
     CircStats,
+    RWiener,
     graphics,
     utils,
     parallel,
