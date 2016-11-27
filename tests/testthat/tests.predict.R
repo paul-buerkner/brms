@@ -241,3 +241,15 @@ test_that("truncated predict run without errors", {
   pred <- sapply(1:nobs, predict_poisson, draws = draws)
   expect_equal(dim(pred), c(ns, nobs))
 })
+
+test_that("predict for the wiener diffusion model runs without errors", {
+  ns <- 5
+  nobs <- 3
+  draws <- list(eta = matrix(rnorm(ns * nobs), ncol = nobs),
+                bs = matrix(rchisq(ns, 3)), ndt = matrix(rep(0.5, ns)),
+                bias = matrix(rbeta(ns, 1, 1)))
+  draws$data <- list(Y = abs(rnorm(ns)) + 0.5, dec = c(1, 0, 1))
+  draws$f$link <- "identity"
+  i <- sample(1:nobs, 1)
+  expect_equal(nrow(predict_wiener(i, draws)), ns)
+})

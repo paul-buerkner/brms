@@ -30,9 +30,11 @@ test_that("collapse_lists performs correct collapsing after names", {
   y <- list(b = "cauchy(1,2)", c = "normal(0,1)", a = "gamma(1,1)")
   expect_equal(collapse_lists(list()), list())
   expect_equal(collapse_lists(list(x, y)), 
-               list(a = "a <- gamma(1,1)", b = "b <- cauchy(1,2)", c = "normal(0,1)"))
+               list(a = "a <- gamma(1,1)", b = "b <- cauchy(1,2)", 
+                    c = "normal(0,1)"))
   expect_equal(collapse_lists(list(c(x, c = "c <- "), y)),
-               list(a = "a <- gamma(1,1)", b = "b <- cauchy(1,2)", c = "c <- normal(0,1)"))
+               list(a = "a <- gamma(1,1)", b = "b <- cauchy(1,2)", 
+                    c = "c <- normal(0,1)"))
 })
 
 test_that("subset_attr works correctly", {
@@ -94,5 +96,5 @@ test_that("lsp works correctly", {
 test_that(".addition and .cat works correctly", {
   expect_equal(.addition(~ brms:::.cat(x), data = data.frame(x = 2:3)), 2:3)
   expect_error(.addition(~ brms:::.cat(x), data = data.frame(x = -2)),
-               "number of categories must be positive integers")
+               "Number of categories must be positive integers")
 })

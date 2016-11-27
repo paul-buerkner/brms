@@ -177,9 +177,9 @@ test_that("make_standata rejects incorrect addition arguments", {
   temp_data <- data.frame(y = rnorm(9), s = -(1:9), w = -(1:9), 
                           c = rep(-2:0, 3), t = 9:1, z = 1:9)
   expect_error(make_standata(y | se(s) ~ 1, data = temp_data), 
-               "standard errors must be non-negative")
+               "Standard errors must be non-negative")
   expect_error(make_standata(y | weights(w) ~ 1, data = temp_data), 
-               "weights must be non-negative")
+               "Weights must be non-negative")
   expect_error(make_standata(y | cens(c) ~ 1, data = temp_data))
   expect_error(make_standata(z | trials(t) ~ 1, data = temp_data, 
                              family = "binomial"),
@@ -395,4 +395,17 @@ test_that("make_standata handles category specific effects correctly", {
   expect_error(make_standata(rating ~ 1 + (1 + cse(1)|subject), 
                              data = inhaler, family = "cratio"), 
                "category specific effects in separate group-level terms")
+})
+
+test_that("make_standata handels wiener diffusion models correctly", {
+  dat <- RWiener::rwiener(n=100, alpha=2, tau=.3, beta=.5, delta=.5)
+  dat$x <- rnorm(100)
+  dat$dec <- ifelse(dat$resp == "lower", 0, 1)
+  dat$test <- "a"
+  sdata <- make_standata(q | dec(resp) ~ x, data = dat, family = wiener())
+  expect_equal(sdata$dec, dat$dec)
+  sdata <- make_standata(q | dec(dec) ~ x, data = dat, family = wiener())
+  expect_equal(sdata$dec, dat$dec)
+  expect_error(make_standata(q | dec(test) ~ x, data = dat, family = wiener()),
+               "Decisions should be 'lower' or 'upper'")
 })

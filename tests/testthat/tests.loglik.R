@@ -282,3 +282,15 @@ test_that("censored and truncated loglik run without errors", {
   ll <- sapply(1:nobs, loglik_gaussian, draws = draws)
   expect_equal(dim(ll), c(ns, nobs))
 })
+
+test_that("loglik for the wiener diffusion model runs without errors", {
+  ns <- 5
+  nobs <- 3
+  draws <- list(eta = matrix(rnorm(ns * nobs), ncol = nobs),
+                bs = matrix(rchisq(ns, 3)), ndt = matrix(rep(0.5, ns)),
+                bias = matrix(rbeta(ns, 1, 1)))
+  draws$data <- list(Y = abs(rnorm(ns)) + 0.5, dec = c(1, 0, 1))
+  draws$f$link <- "identity"
+  i <- sample(1:nobs, 1)
+  expect_equal(length(loglik_wiener(i, draws)), ns)
+})

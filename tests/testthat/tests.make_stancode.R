@@ -394,6 +394,23 @@ test_that("make_stancode handles exgaussian models correctly", {
                fixed = TRUE)
 })
 
+test_that("make_stancode handels wiener diffusion models correctly", {
+  dat <- RWiener::rwiener(n=100, alpha=2, tau=.3, beta=.5, delta=.5)
+  dat$x <- rnorm(100)
+  sc <- make_stancode(q | dec(resp) ~ x, data = dat, family = wiener())
+  expect_match(sc, "Y[n] ~ wiener_diffusion(dec[n], bs, ndt, bias, eta[n])",
+               fixed = TRUE)
+  
+  sc <- make_stancode(bf(q | dec(resp) ~ x, bs ~ x, ndt ~ x, bias ~ x), 
+                         data = dat, family = wiener())
+  expect_match(sc, "Y[n] ~ wiener_diffusion(dec[n], bs[n], ndt[n], bias[n], eta[n])",
+               fixed = TRUE)
+  expect_match(sc, "bias[n] = inv_logit(bias[n]);", fixed = TRUE)
+  
+  expect_error(make_stancode(q ~ x, data = dat, family = wiener()),
+               "Addition argument 'dec' is required for family 'wiener'")
+})
+
 test_that("make_stancode correctly handles the group ID syntax", {
   form <- bf(count ~ Trt_c + (1+Trt_c|3|visit) + (1|patient), 
              shape ~ (1|3|visit) + (Trt_c||patient))

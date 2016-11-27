@@ -61,6 +61,17 @@ test_that("self-defined Stan functions work correctly", {
                pexgauss(y, mean, sigma, beta, 
                         lower.tail = FALSE, log = TRUE))
   
+  # wiener diffusion model functions
+  alpha = 2
+  tau = 0.5
+  beta = 0.5
+  delta = 0.5
+  y <- rWiener(1, alpha, tau, beta, delta)
+  y$resp <- ifelse(y$resp == "lower", 0, 1)
+  expect_equal(wiener_diffusion_lpdf(y$q, y$resp, alpha, tau, beta, delta),
+               dWiener(y$q, alpha, tau, beta, delta, 
+                       resp = y$resp, log = TRUE))
+  
   # zero-inflated and hurdle log-densities
   draws <- draws2 <- list(eta = matrix(rnorm(4), ncol = 4), 
                           shape = 2, phi = 2, sigma = 2)
