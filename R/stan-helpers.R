@@ -48,15 +48,16 @@ stan_llh <- function(family, effects = list(), data = NULL,
           any(c("phi", "kappa") %in% auxpars)
   n <- ifelse(reqn, "[n]", "")
   # prepare auxiliary parameters
+  p <- named_list(auxpars())
   disp <- ifelse(has_disp, "disp_", "")
   reqn_sigma <- (ll_adj && (has_se || has_disp)) || 
                 (reqn && "sigma" %in% auxpars)
-  sigma <- paste0(ifelse(has_se, "se", paste0(disp, "sigma")),
-                  if (reqn_sigma) "[n]")
+  p$sigma <- paste0(ifelse(has_se, "se", paste0(disp, "sigma")),
+                    if (reqn_sigma) "[n]")
   reqn_shape <- (ll_adj && has_disp) || (reqn && "shape" %in% auxpars)
-  shape <- paste0(disp, "shape", if (reqn_shape) "[n]")
+  p$shape <- paste0(disp, "shape", if (reqn_shape) "[n]")
   for (ap in setdiff(auxpars(), c("sigma", "shape"))) {
-    assign(ap, stan_apn(ap, auxpars, reqn))
+    p[[ap]] <- stan_apn(ap, auxpars, reqn)
   }
   .logit <- ifelse(any(c("zi", "hu") %in% auxpars), "_logit", "")
   reqn_trials <- has_trials && (ll_adj || is_zero_inflated)
@@ -71,7 +72,7 @@ stan_llh <- function(family, effects = list(), data = NULL,
   if (simplify) { 
     llh_pre <- switch(family,
       poisson = c("poisson_log", eta), 
-      negbinomial = c("neg_binomial_2_log", paste0(eta, ", ", shape)),
+      negbinomial = c("neg_binomial_2_log", paste0(eta, ", ", p$shape)),
       geometric = c("neg_binomial_2_log", paste0(eta, ", 1")),
       cumulative = c("ordered_logistic", "eta[n], temp_Intercept"),
       categorical = c("categorical_logit", "append_row(zero, Eta[n])"),
@@ -79,53 +80,53 @@ stan_llh <- function(family, effects = list(), data = NULL,
       bernoulli = c("bernoulli_logit", eta))
   } else {
     llh_pre <- switch(family,
-      gaussian = c("normal", paste0(eta, ", ", sigma)),
+      gaussian = c("normal", paste0(eta, ", ", p$sigma)),
       gaussian_cov = c("normal_cov", paste0(eta,", se2, N_tg, ", 
                        "begin_tg, end_tg, nobs_tg, res_cov_matrix")),
       gaussian_mv = c("multi_normal_cholesky", paste0(eta, ", LSigma")),
       gaussian_fixed = c("multi_normal_cholesky", paste0(eta, ", LV")),
-      student = c("student_t",  paste0(nu, ", ", eta, ", ", sigma)),
-      student_cov = c("student_t_cov", paste0(nu, ", ", eta, ", se2, N_tg, ", 
+      student = c("student_t",  paste0(p$nu, ", ", eta, ", ", p$sigma)),
+      student_cov = c("student_t_cov", paste0(p$nu, ", ", eta, ", se2, N_tg, ", 
                       "begin_tg, end_tg, nobs_tg, res_cov_matrix")),
-      student_mv = c("multi_student_t", paste0(nu, ", ", eta, ", Sigma")),
-      student_fixed = c("multi_student_t", paste0(nu, ", ", eta, ", V")),
-      lognormal = c("lognormal", paste0(eta, ", ", sigma)),
+      student_mv = c("multi_student_t", paste0(p$nu, ", ", eta, ", Sigma")),
+      student_fixed = c("multi_student_t", paste0(p$nu, ", ", eta, ", V")),
+      lognormal = c("lognormal", paste0(eta, ", ", p$sigma)),
       poisson = c("poisson", eta),
-      negbinomial = c("neg_binomial_2", paste0(eta, ", ", shape)),
+      negbinomial = c("neg_binomial_2", paste0(eta, ", ", p$shape)),
       geometric = c("neg_binomial_2", paste0(eta, ", 1")),
       binomial = c("binomial", paste0(trials, ", ", eta)),
       bernoulli = c("bernoulli", eta),
-      gamma = c("gamma", paste0(shape, ", ", eta)), 
+      gamma = c("gamma", paste0(p$shape, ", ", eta)), 
       exponential = c("exponential", eta),
-      weibull = c("weibull", paste0(shape, ", ", eta)), 
-      exgaussian = c("exgaussian", paste0(eta, ", ", sigma, ", ", beta)),
+      weibull = c("weibull", paste0(p$shape, ", ", eta)), 
+      exgaussian = c("exgaussian", paste0(eta, ", ", p$sigma, ", ", p$beta)),
       inverse.gaussian = c(inv_gauss_fun, inv_gauss_args),
       wiener <- c("wiener_diffusion", 
-                  paste0("dec[n], ", bs, ", ", ndt, ", ", bias, ", ", eta)),
-      beta = c("beta", paste0(eta, " * ", phi, ", (1 - ", eta, ") * ", phi)),
+        paste0("dec[n], ", p$bs, ", ", p$ndt, ", ", p$bias, ", ", eta)),
+      beta = c("beta", paste0(eta, " * ", p$phi, ", (1 - ", eta, ") * ", p$phi)),
       von_mises = c(paste0("von_mises_", ifelse(reqn, "real", "vector")), 
-                           paste0(eta, ", ", kappa)),
+                           paste0(eta, ", ", p$kappa)),
       cumulative = c("cumulative", ord_args),
       sratio = c("sratio", ord_args),
       cratio = c("cratio", ord_args),
       acat = c("acat", ord_args),
       hurdle_poisson = c(paste0("hurdle_poisson", .logit), 
-                         paste0(eta, ", ", hu)),
+                         paste0(eta, ", ", p$hu)),
       hurdle_negbinomial = c(paste0("hurdle_neg_binomial", .logit), 
-                             paste0(eta, ", ", hu, ", ", shape)),
+                             paste0(eta, ", ", p$hu, ", ", p$shape)),
       hurdle_gamma = c(paste0("hurdle_gamma", .logit), 
-                       paste0(shape, ", ", eta, ", ", hu)),
+                       paste0(p$shape, ", ", eta, ", ", p$hu)),
       hurdle_lognormal = c(paste0("hurdle_lognormal", .logit), 
-                           paste0(eta, ", ", hu, ", ", sigma)),
+                           paste0(eta, ", ", p$hu, ", ", p$sigma)),
       zero_inflated_poisson = c(paste0("zero_inflated_poisson", .logit), 
-                                paste0(eta, ", ", zi)),
+                                paste0(eta, ", ", p$zi)),
       zero_inflated_negbinomial = 
         c(paste0("zero_inflated_neg_binomial", .logit),
-          paste0(eta, ", ", zi, ", ", shape)),
+          paste0(eta, ", ", p$zi, ", ", p$shape)),
       zero_inflated_binomial = c(paste0("zero_inflated_binomial", .logit), 
-                                 paste0(trials, ", ", eta, ", ", zi)),
+                                 paste0(trials, ", ", eta, ", ", p$zi)),
       zero_inflated_beta = c(paste0("zero_inflated_beta", .logit), 
-                             paste0(eta, ", ", zi, ", ", phi)))
+                             paste0(eta, ", ", p$zi, ", ", p$phi)))
   }
   
   # write likelihood code
