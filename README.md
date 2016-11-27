@@ -108,13 +108,13 @@ methods(class = "brmsfit")
 #>  [5] expose_functions  family            fitted            fixef            
 #>  [9] formula           hypothesis        launch_shiny      log_lik          
 #> [13] logLik            loo               LOO               marginal_effects 
-#> [17] model.frame       ngrps             nobs              pairs            
-#> [21] parnames          plot              posterior_predict posterior_samples
-#> [25] pp_check          predict           predictive_error  print            
-#> [29] prior_samples     prior_summary     ranef             residuals        
-#> [33] stancode          standata          stanplot          summary          
-#> [37] update            VarCorr           vcov              waic             
-#> [41] WAIC             
+#> [17] marginal_smooths  model.frame       ngrps             nobs             
+#> [21] pairs             parnames          plot              posterior_predict
+#> [25] posterior_samples pp_check          predict           predictive_error 
+#> [29] print             prior_samples     prior_summary     ranef            
+#> [33] residuals         stancode          standata          stanplot         
+#> [37] summary           update            VarCorr           vcov             
+#> [41] waic              WAIC             
 #> see '?methods' for accessing help and source code
 ```
 
@@ -124,10 +124,10 @@ Details on formula syntax, families and link functions, as well as prior distrib
 help(brm) 
 ```
 
-More instructions on how to use <b>brms</b> are given in the package's vignette.
+More instructions on how to use <b>brms</b> are given in the package's main vignette.
 
 ``` r
-vignette("brms") 
+vignette("brms_overview") 
 ```
 
 FAQ
@@ -159,7 +159,7 @@ When you fit your model for the first time with <b>brms</b>, there is currently 
 What is the difference between brms and rstanarm?
 -------------------------------------------------
 
-<b>rstanarm</b> is an R package similar to <b>brms</b> that also allows to fit regression models using <b>Stan</b> for the backend estimation. Contrary to <b>brms</b>, <b>rstanarm</b> comes with precompiled code to save the compilation time (and the need for a C++ compiler) when fitting a model. However, as <b>brms</b> generates its <b>Stan</b> code on the fly, it offers more flexibility in model specification than <b>rstanarm</b>. Also, multilevel models are currently fitted a bit more efficiently in <b>brms</b>. For a detailed comparison of <b>brms</b> with other common R packages implementing multilevel models, type `vignette("brms")` in R.
+<b>rstanarm</b> is an R package similar to <b>brms</b> that also allows to fit regression models using <b>Stan</b> for the backend estimation. Contrary to <b>brms</b>, <b>rstanarm</b> comes with precompiled code to save the compilation time (and the need for a C++ compiler) when fitting a model. However, as <b>brms</b> generates its <b>Stan</b> code on the fly, it offers more flexibility in model specification than <b>rstanarm</b>. Also, multilevel models are currently fitted a bit more efficiently in <b>brms</b>. For a detailed comparison of <b>brms</b> with other common R packages implementing multilevel models, type `vignette("brms_overview")` in <b>R<b>.
 
 What is the best way to ask a question or propose a new feature?
 ----------------------------------------------------------------

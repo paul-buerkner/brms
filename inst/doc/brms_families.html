@@ -12,7 +12,7 @@
 
 <meta name="author" content="Paul Bürkner" />
 
-<meta name="date" content="2016-11-23" />
+<meta name="date" content="2016-11-27" />
 
 <title>Parameterization of Response Distributions in brms</title>
 
@@ -32,7 +32,7 @@
 
 <h1 class="title toc-ignore">Parameterization of Response Distributions in brms</h1>
 <h4 class="author"><em>Paul Bürkner</em></h4>
-<h4 class="date"><em>2016-11-23</em></h4>
+<h4 class="date"><em>2016-11-27</em></h4>
 
 
 
@@ -41,7 +41,7 @@
 %\VignetteEngine{knitr::rmarkdown}
 %\VignetteEncoding{UTF-8}
 -->
-<p>The purpose of this vignette is to discuss the parameterizations of the families (i.e., response distributions) used in <strong>brms</strong>. For a more general overview of the package see <code>vignette(&quot;brms&quot;)</code>.</p>
+<p>The purpose of this vignette is to discuss the parameterizations of the families (i.e., response distributions) used in <strong>brms</strong>. For a more general overview of the package see <code>vignette(&quot;brms_overview&quot;)</code>.</p>
 <div id="notation" class="section level2">
 <h2>Notation</h2>
 <p>Throughout this vignette, we use <span class="math inline">\(y\)</span> to refer to the response variable and <span class="math inline">\(\eta\)</span> to refer to the (non-)linear predictor (see <code>help(brmsformula)</code> for details on supported predictor terms). We write <span class="math inline">\(y_i\)</span> and <span class="math inline">\(\eta_i\)</span> for the response and linear predictor of observation <span class="math inline">\(i\)</span>. Furthermore, we use <span class="math inline">\(f\)</span> for a density function and <span class="math inline">\(g\)</span> for an inverse link function.</p>

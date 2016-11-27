@@ -207,6 +207,8 @@ Fit a generalized (non-)linear multilevel model,
   (also known as fixed-effects) and group-level parameters
   (also known as random effects) in a (non-)linear predictor 
   via full Bayesian inference using Stan. 
+  See \code{vignette("brms_overview")} for a general 
+  introduction and overview of \pkg{brms}.
   
   \bold{Formula syntax of brms models}
   

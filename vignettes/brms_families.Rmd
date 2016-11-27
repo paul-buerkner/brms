@@ -11,7 +11,7 @@ output: rmarkdown::html_vignette
 %\VignetteEncoding{UTF-8}
 -->
 
-The purpose of this vignette is to discuss the parameterizations of the families (i.e., response distributions) used in **brms**. For a more general overview of the package see `vignette("brms")`.
+The purpose of this vignette is to discuss the parameterizations of the families (i.e., response distributions) used in **brms**. For a more general overview of the package see `vignette("brms_overview")`.
 
 ## Notation
 

@@ -39,6 +39,9 @@ Thus, fitting smaller models may be relatively slow as compilation time makes
 up the majority of the whole running time. For larger / more complicated models 
 however, fitting my take several minutes or even hours, 
 so that the compilation time won't make much of a difference here.
+
+See \code{vignette("brms_overview")} for a general introduction 
+and overview of \pkg{brms}.
 }
 
 \author{
