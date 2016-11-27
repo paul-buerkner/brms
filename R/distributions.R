@@ -302,6 +302,14 @@ rWiener <- function(n, alpha, tau, beta, delta, col = NULL) {
   tau <- as.numeric(tau)
   beta <- as.numeric(beta)
   delta <- as.numeric(delta)
+  max_len <- max(lengths(list(alpha, tau, beta, delta)))
+  n <- n[1]
+  if (max_len > 1L) {
+    if (!n %in% c(1, max_len)) {
+      stop2("Can only sample exactly once for each condition.")
+    }
+    n <- 1
+  }
   args <- nlist(n, alpha, tau, beta, delta, col)
   do.call(.rWiener, args)
 }

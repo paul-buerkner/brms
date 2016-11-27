@@ -16,15 +16,22 @@
 #'   names on their left-hand side. Currently, the following
 #'   names are accepted: 
 #'   \code{sigma} (residual standard deviation of
-#'   the \code{gaussian} and \code{student} families);
+#'   the \code{gaussian}, \code{student}, and \code{lognormal} 
+#'   families);
 #'   \code{shape} (shape parameter of the \code{Gamma},
 #'   \code{weibull}, \code{negbinomial} and related
 #'   zero-inflated / hurdle families); \code{nu}
 #'   (degrees of freedom parameter of the \code{student} family);
 #'   \code{phi} (precision parameter of the \code{beta} 
 #'   and \code{zero_inflated_beta} families);
+#'   \code{kappa} (precision parameter of the \code{von_mises} family);
+#'   \code{beta} (mean parameter of the exponential componenent
+#'   of the \code{exgaussian} family);
 #'   \code{zi} (zero-inflation probability); 
-#'   \code{hu} (hurdle probability).
+#'   \code{hu} (hurdle probability);
+#'   \code{bs}, \code{ndt}, and \code{bias} (boundary separation,
+#'   non-decision time, and initial bias of the \code{wiener}
+#'   diffusion model).
 #'   All auxiliary parameters are modeled 
 #'   on the log or logit scale to ensure correct definition
 #'   intervals after transformation.
@@ -89,7 +96,8 @@
 #'   multiple terms of the form \code{fun(variable)} seperated by \code{+} each 
 #'   providing special information on the response variable. \code{fun} can be 
 #'   replaced with either \code{se}, \code{weights}, \code{disp}, \code{trials},
-#'   \code{cat}, \code{cens}, or \code{trunc}. Their meanings are explained below. 
+#'   \code{cat}, \code{cens}, \code{trunc}, or \code{dec}. 
+#'   Their meanings are explained below. 
 #'   
 #'   For families \code{gaussian} and \code{student}, it is 
 #'   possible to specify standard errors of the observation, thus allowing 
@@ -159,10 +167,18 @@
 #'   \code{yi | trunc(lb = 0, ub = 100) ~ predictors}. 
 #'   Instead of numbers, variables in the data set can also be passed allowing 
 #'   for varying truncation points across observations. 
-#'   Defining only one of the two arguments in \code{trunc} leads to one-sided truncation.
+#'   Defining only one of the two arguments in \code{trunc} 
+#'   leads to one-sided truncation.
+#'   
+#'   In Wiener diffusion models (family \code{wiener}) the addition term
+#'   \code{dec} is mandatory to specify the (vector of) binary decisions 
+#'   corresponding to the reaction times. Non-zero values will be treated
+#'   as a response on the upper boundary of the diffusion process and zeros
+#'   will be treated as a response on the lower boundary. 
 #' 
 #'   Mutiple \code{addition} terms may be specified at the same time using 
-#'   the \code{+} operator, for instance \code{formula = yi | se(sei) + cens(censored) ~ 1} 
+#'   the \code{+} operator, for instance 
+#'   \code{formula = yi | se(sei) + cens(censored) ~ 1} 
 #'   for a censored meta-analytic model. \cr
 #'   
 #'   For families \code{gaussian} and \code{student},
@@ -276,7 +292,7 @@
 #'   All auxiliary parameters currently supported by \code{brmsformula}
 #'   have to positive (a negative standard deviation or precision parameter 
 #'   doesn't make any sense) or are bounded between 0 and 1 (for zero-inflated / 
-#'   hurdle proabilities). 
+#'   hurdle proabilities or the intial bias parameter of the \code{wiener} family). 
 #'   However, linear predictors can be positive or negative, and thus
 #'   the log link (for positive parameters) or logit link (for probability parameters) 
 #'   are used to ensure that auxiliary parameters are within their valid intervals.
@@ -324,6 +340,10 @@
 #' # add a category specific group-level intercept
 #' bf(y ~ cse(x) + (cse(1)|g))
 #' 
+#' # specify predictors on all parameters of the wiener diffusion model
+#' # the main formula models the drift rate 'delta'
+#' bf(rt ~ x, bs ~ x, ndt ~ x, bias ~ x)
+#' 
 #' @export
 brmsformula <- function(formula, ..., nonlinear = NULL) {
   # parse and validate dots arguments
@@ -353,10 +373,9 @@ brmsformula <- function(formula, ..., nonlinear = NULL) {
   new_att <- rmNULL(c(nlist(nonlinear), dots))
   dupl_args <- intersect(names(new_att), names(old_att))
   if (length(dupl_args)) {
-    warning("Duplicated definitions of arguments ", 
-            paste0("'", dupl_args, "'", collapse = ", "),
-            "\nIgnoring definitions outside the formula",
-            call. = FALSE)
+    warning2("Duplicated definitions of arguments ", 
+             paste0("'", dupl_args, "'", collapse = ", "),
+             "\nIgnoring definitions outside the formula.")
   }
   null_pars <- setdiff(auxpars, names(old_att))
   new_pars <- intersect(names(new_att), null_pars)
@@ -409,28 +428,24 @@ prepare_auxformula <- function(formula, par = NULL, rsv_pars = NULL) {
   if (!is.null(lhs(formula))) {
     resp_pars <- all.vars(formula[[2]])
     if (length(resp_pars) != 1L) {
-      stop("LHS of additional formulas must contain exactly one variable.",
-           call. = FALSE)
+      stop2("LHS of additional formulas must contain exactly one variable.")
     }
     par <- resp_pars
     formula[[2]] <- eval(parse(text = paste("quote(", par, ")")))
   } else {
     if (!isTRUE(nzchar(par))) {
-      stop("Additional formulas must be named.", call. = FALSE)
+      stop2("Additional formulas must be named.")
     }
     formula <- formula(paste(par, formula2string(formula)))
   }
   if (any(ulapply(c(".", "_"), grepl, x = par, fixed = TRUE))) {
-    stop("Parameter names should not contain dots or underscores.",
-         call. = FALSE)
+    stop2("Parameter names should not contain dots or underscores.")
   }
   if (par %in% rsv_pars) {
-    stop("Parameter name '", par, "' is reserved for this model.",
-         call. = FALSE)
+    stop2("Parameter name '", par, "' is reserved for this model.")
   }
   if (!is.null(attr(terms(formula), "offset"))) {
-    stop("Offsets in additional formulas are currently not allowed.", 
-         call. = FALSE)
+    stop2("Offsets in additional formulas are currently not allowed.")
   }
   structure(formula, par = par)
 }

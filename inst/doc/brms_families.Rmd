@@ -60,6 +60,16 @@ $$f(y_i) = \frac{1}{2 \beta} \exp\left(\frac{1}{2 \beta} \left(2\mu + \sigma^2 /
 
 where $\beta$ is the scale (inverse rate) of the exponential component, $\mu = g(\eta_i) - \beta$ is the mean of the Gaussian componenent, $\sigma$ is the standard deviation of the Gaussian component, and $\text{erfc}$ is the complementary error function.
 
+A family concerned with the combined modelling of reaction times and corresponding binary responses is the **wiener** diffusion model. It has four model parameters each with a natural interpreation. The parameter $\alpha > 0$ describes the separation between two boundaries of the diffusion process, $\tau > 0$ describes the non-decision time (e.g., due to image or motor processing), $\beta \in [0, 1]$ describes the initial bias in favor of the upper alternative, and $\delta \in \mathbb{R}$ describes the drift rate to the boundaries (a positive value indicates a drift towards to upper boundary).
+The density for the reaction time at the uppder boundary is given by
+
+$$f(y_i) = \frac{\alpha}{(y_i-\tau)^3/2}
+\exp \! \left(- \delta \alpha \beta - \frac{\delta^2(y_i-\tau)}{2}\right)
+\sum_{k = - \infty}^{\infty} (2k + \beta)
+\phi \! \left(\frac{2k + \alpha \beta}{\sqrt{y_i - \tau}}\right)$$
+
+where $\phi(x)$ denotes the standard normal density function. The density at the lower boundary can be obtained by substituting $1 - \beta$ for $\beta$ and $-\delta$ for $\delta$ in the above equation. In **brms** the parameters $\alpha$, $\tau$, and $\beta$ are modeled as auxiliary parameters named *bs* ('boundary separation'), *ndt* ('non-decision time'), and *bias* respectively, whereas the drift rate $\delta$ is modeled via the ordinary model formula that is as $\delta = g(\eta_i)$. 
+
 ## Beta models
 
 The density of the **Beta** family for $y_i \in (0,1)$ is given by

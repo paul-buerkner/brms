@@ -13,7 +13,7 @@
 #'   \code{gaussian}, \code{student}, \code{binomial}, 
 #'   \code{bernoulli}, \code{poisson}, \code{negbinomial}, 
 #'   \code{geometric}, \code{Gamma}, \code{lognormal}, 
-#'   \code{exgaussian}, \code{inverse.gaussian}, 
+#'   \code{exgaussian}, \code{wiener}, \code{inverse.gaussian}, 
 #'   \code{exponential}, \code{weibull}, \code{Beta}, \code{von_mises},
 #'   \code{categorical}, \code{cumulative}, \code{cratio}, \code{sratio}, 
 #'   \code{acat}, \code{hurdle_poisson}, \code{hurdle_negbinomial}, 
@@ -41,7 +41,11 @@
 #'   \code{exponential}, \code{lognormal}, and \code{inverse.gaussian} can be used 
 #'   (among others) for survival regression.
 #'   Family \code{exgaussian} ('exponentially modified Gaussian') is especially
-#'   suited to model reaction times.
+#'   suited to model reaction times and the \code{wiener} family provides
+#'   an implementation of the Wiener diffusion model. For this family,
+#'   the main formula predicts the drift parameter 'delta' and
+#'   all other parameters are modeled as auxiliary parameters 
+#'   (see \code{\link[brms:brmsformula]{brmsformula}} for details).
 #'   Families \code{hurdle_poisson}, \code{hurdle_negbinomial}, \code{hurdle_gamma}, 
 #'   \code{hurdle_lognormal}, \code{zero_inflated_poisson},
 #'   \code{zero_inflated_negbinomial}, \code{zero_inflated_binomial}, and
@@ -70,7 +74,7 @@
 #'   families \code{hurdle_poisson}, \code{hurdle_negbinomial},
 #'   \code{hurdle_gamma}, \code{zero_inflated_poisson}, and
 #'   \code{zero_inflated_negbinomial} the link \code{log};
-#'   family \code{hurdle_lognormal} the link \code{identity}.
+#'   families \code{wiener} and \code{hurdle_lognormal} the link \code{identity}.
 #'   The first link mentioned for each family is the default.     
 #'   
 #'   Please note that when calling the \code{\link[stats:family]{Gamma}} 
