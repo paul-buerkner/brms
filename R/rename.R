@@ -69,9 +69,9 @@ rename_pars <- function(x) {
   
   # order parameter samples after parameter class
   chains <- length(x$fit@sim$samples) 
-  all_classes <- c("b_Intercept", "b", "bm", "bcs", "ar", "ma", "arr", "sd", 
-                   "cor", "sds", auxpars(), "sigmaLL", "rescor", "delta", 
-                   "simplex", "r", "s", "loclev", "prior", "lp")
+  all_classes <- c("b_Intercept", "b", "bm", "bcs", "bme", "ar", "ma", "arr", 
+                   "sd", "cor", "sds", auxpars(), "sigmaLL", "rescor", "delta",
+                   "simplex", "r", "s", "loclev", "Xme", "prior", "lp")
   class <- get_matches("^[^_\\[]+", x$fit@sim$fnames_oi)
   # make sure that the fixed effects intercept comes first
   if (length(ee$response) > 1L) {
@@ -107,6 +107,7 @@ rename_pars <- function(x) {
         pars = pars, dims = x$fit@sim$dims_oi,
         fixef = colnames(standata[[paste0("X_", p)]]),
         monef = colnames(standata[[paste0("Xm_", p)]]),
+        meef = get_me_labels(ee$nonlinear[[p]], x$data),
         splines = splines, nlpar = p)
       change <- c(change, change_eff)
     }
@@ -119,6 +120,7 @@ rename_pars <- function(x) {
         change_eff <- change_effects(
           pars = pars, dims = x$fit@sim$dims_oi, 
           fixef = fixef, monef = colnames(standata[[paste0("Xm_", r)]]),
+          meef = get_me_labels(ee, x$data),
           splines = get_spline_labels(ee, x$data, covars = TRUE),
           nlpar = r)
         change <- c(change, change_eff)
@@ -128,6 +130,7 @@ rename_pars <- function(x) {
       change_eff <- change_effects(
         pars = pars, dims = x$fit@sim$dims_oi, 
         fixef = fixef, monef = colnames(standata[["Xm"]]),
+        meef = get_me_labels(ee, x$data),
         splines = get_spline_labels(ee, x$data, covars = TRUE))
       change_csef <- change_csef(colnames(standata[["Xcs"]]), 
                                  pars = pars, ncat = standata$ncat)
@@ -140,6 +143,7 @@ rename_pars <- function(x) {
       pars = pars, dims = x$fit@sim$dims_oi,
       fixef = colnames(standata[[paste0("X_", ap)]]),
       monef = colnames(standata[[paste0("Xm_", ap)]]),
+      meef = get_me_labels(ee[[ap]], x$data),
       splines = get_spline_labels(ee[[ap]], x$data, covars = TRUE),
       nlpar = ap)
     change <- c(change, change_eff)
@@ -173,12 +177,13 @@ rename_pars <- function(x) {
 }
 
 change_effects <- function(pars, dims, fixef = NULL, monef = NULL, 
-                           splines = NULL, nlpar = "") {
+                           splines = NULL, meef = NULL, nlpar = "") {
   # helps in renaming various kinds of effects
   change_fixef <- change_fixef(fixef, pars = pars, nlpar = nlpar)
   change_monef <- change_monef(monef, pars = pars, nlpar = nlpar)
   change_splines <- change_splines(splines, pars = pars, nlpar = nlpar)
-  c(change_fixef, change_monef, change_splines)
+  change_meef <- change_meef(meef, pars = pars, dims = dims, nlpar = nlpar)
+  c(change_fixef, change_monef, change_splines, change_meef)
 }
 
 change_fixef <- function(fixef, pars, nlpar = "") {
@@ -253,6 +258,34 @@ change_csef <- function(csef, pars, ncat) {
                               pnames = paste0("bcs_", csef), fnames = csenames,
                               sort = sort_cse, dim = thres))
     change <- c(change, change_prior(class = "bcs", pars = pars, names = csef))
+  }
+  change
+}
+
+change_meef <- function(meef, pars, dims, nlpar = "") {
+  # rename parameters of noisy variables
+  change <- list()
+  if (length(meef)) {
+    p <- usc(nlpar, "prefix")
+    meef <- rename(meef)
+    # rename coefficients of noise free terms
+    bme <- paste0("bme", p)
+    pos <- grepl(paste0("^", bme, "\\["), pars)
+    bmenames <- paste0(bme, "_", meef)
+    change <- lc(change, 
+      nlist(pos, oldname = bme, pnames = bmenames, fnames = bmenames))
+    change <- c(change,
+      change_prior(class = bme, pars = pars, names = meef))
+    # rename noise free variables
+    Xme <- paste0("Xme", p)
+    pos <- grepl(paste0("^", Xme, "\\["), pars)
+    uni_me <- attr(meef, "uni_me")
+    cols <- 1:(sum(pos) / length(uni_me))
+    fnames <- make_index_names(rename(attr(meef, "uni_me")), cols, dim = 2)
+    change_Xme <- nlist(pos, oldname = Xme, pnames = Xme, 
+                        fnames = paste0(Xme, fnames),
+                        dims = dims[[Xme]])
+    change <- lc(change, change_Xme)
   }
   change
 }

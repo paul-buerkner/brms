@@ -387,7 +387,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
 }
 
 get_model_matrix <- function(formula, data = environment(formula),
-                             cols2remove = NULL, ...) {
+                             cols2remove = NULL, rename = TRUE, ...) {
   # Construct Design Matrices for \code{brms} models
   # Args:
   #   formula: An object of class formula
@@ -395,6 +395,7 @@ get_model_matrix <- function(formula, data = environment(formula),
   #         If another sort of object, model.frame is called first.
   #   cols2remove: names of the columns to remove from 
   #                the model matrix (mainly used for intercepts)
+  #   rename: rename column names via brms:::rename()?
   #   ...: currently ignored
   # Returns:
   #   The design matrix for a regression-like model 
@@ -406,15 +407,17 @@ get_model_matrix <- function(formula, data = environment(formula),
     return(NULL)
   }
   if (isTRUE(attr(terms, "rm_intercept"))) {
-    cols2remove <- union(cols2remove, "Intercept")
+    cols2remove <- union(cols2remove, "(Intercept)")
   }
   X <- stats::model.matrix(terms, data)
-  colnames(X) <- rename(colnames(X), check_dup = TRUE)
   cols2remove <- which(colnames(X) %in% cols2remove)
+  if (rename) {
+    colnames(X) <- rename(colnames(X), check_dup = TRUE) 
+  }
   if (length(cols2remove)) {
     X <- X[, -cols2remove, drop = FALSE]
   }
-  X   
+  X
 }
 
 prepare_mono_vars <- function(formula, data, check = TRUE) {
@@ -448,7 +451,7 @@ prepare_mono_vars <- function(formula, data, check = TRUE) {
             "values. Error occured for variable '", vars[i], "'.")
     }
   }
-  out <- get_model_matrix(formula, data, cols2remove = "Intercept")
+  out <- get_model_matrix(formula, data, cols2remove = "(Intercept)")
   if (any(grepl(":", colnames(out), fixed = TRUE))) {
     stop2("Modeling interactions as monotonic is not meaningful.")
   }
@@ -561,7 +564,8 @@ data_effects <- function(effects, data, family = gaussian(),
                            prior = prior, Jm = Jm, nlpar = nlpar)
   data_ranef <- data_ranef(ranef, data = data, nlpar = nlpar, 
                            not4stan = not4stan)
-  c(data_fixef, data_monef, data_ranef)
+  data_meef <- data_meef(effects, data = data, nlpar = nlpar)
+  c(data_fixef, data_monef, data_ranef, data_meef)
 }
 
 data_fixef <- function(effects, data, family = gaussian(),
@@ -752,6 +756,34 @@ data_csef <- function(effects, data) {
     Xcs <- get_model_matrix(effects$cse, data)
     avoid_auxpars(colnames(Xcs), effects = effects)
     out <- c(out, list(Kcs = ncol(Xcs), Xcs = Xcs))
+  }
+  out
+}
+
+data_meef <- function(effects, data, nlpar = "") {
+  # prepare data of meausurement error variables for use in Stan
+  # Args:
+  #   effects: a list returned by extract_effects
+  #   data: the data passed by the user
+  # TODO: feature group-level effects
+  out <- list()
+  meef <- get_me_labels(effects, data)
+  if (length(meef)) {
+    p <- usc(nlpar, "prefix")
+    Cn <- get_model_matrix(effects$me, rm_attr(data, "terms"))
+    avoid_auxpars(colnames(Cn), effects = effects)
+    Cn <- Cn[, attr(meef, "not_one"), drop = FALSE]
+    uni_me <- attr(meef, "uni_me")
+    Xn <- noise <- named_list(uni_me)
+    for (i in seq_along(uni_me)) {
+      temp <- eval2(uni_me[i], data)
+      Xn[[i]] <- attr(temp, "var")
+      noise[[i]] <- attr(temp, "noise")
+    }
+    Xn <- do.call(rbind, Xn)
+    noise <- do.call(rbind, noise)
+    out <- setNames(list(nrow(Xn), Xn, noise, ncol(Cn), t(Cn), length(meef)),
+                    paste0(c("Kn", "Xn", "noise", "KCn", "Cn", "Kme"), p))
   }
   out
 }

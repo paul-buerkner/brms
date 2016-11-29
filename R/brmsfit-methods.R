@@ -706,9 +706,9 @@ summary.brmsfit <- function(object, waic = FALSE, priors = FALSE,
     }
     
     # fixed effects summary
-    fix_pars <- pars[grepl("^b(|cs|m)_", pars)]
+    fix_pars <- pars[grepl("^b(|cs|m|me)_", pars)]
     out$fixed <- fit_summary[fix_pars, , drop = FALSE]
-    rownames(out$fixed) <- gsub("^b(|cs|m)_", "", fix_pars)
+    rownames(out$fixed) <- gsub("^b(|cs|m|me)_", "", fix_pars)
     
     # summary of family specific parameters
     is_mv_par <- apply(sapply(c("^sigma_", "^rescor_"), grepl, pars), 1, any)

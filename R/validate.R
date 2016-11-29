@@ -46,12 +46,16 @@ extract_effects <- function(formula, family = NA, nonlinear = NULL,
     if (is.formula(cse_form)) {
       x[["cse"]] <- cse_form
     }
+    me_form <- extract_me(formula)
+    if (is.formula(me_form)) {
+      x[["me"]] <- me_form
+    }
     gam_form <- extract_gam(formula)
     if (is.formula(gam_form)) {
       x[["gam"]] <- gam_form
     }
-    rm_pos <- list(pos_re_terms, attr(mono_form, "pos"), 
-                   attr(cse_form, "pos"), attr(gam_form, "pos"))
+    rm_pos <- lapply(list(mono_form, cse_form, me_form, gam_form), attr, "pos")
+    rm_pos <- c(rm_pos, list(pos_re_terms))
     fe_terms <- all_terms[!Reduce("|", rm_pos)]
     int_term <- ifelse(attr(terms, "intercept") == 1, "1", "0")
     fe_terms <- paste(c(int_term, fe_terms, get_offset(formula)), 
@@ -149,8 +153,9 @@ extract_effects <- function(formula, family = NA, nonlinear = NULL,
                     add_vars, 
                     fixed_vars,
                     x[c("covars", "cse", "mono")], 
+                    all.vars(x$me),
                     attr(x$gam, "allvars"), 
-                    x$random$form, 
+                    x$random$form,
                     lapply(x$random$form, all.vars), 
                     x$random$group, 
                     get_offset(x$fixed),
@@ -266,6 +271,23 @@ extract_gam <- function(formula) {
   structure(gam_terms, pos = pos_gam_terms, 
             covars = covars, byvars = byvars,  
             allvars = allvars)
+}
+
+extract_me <- function(formula) {
+  # extract variables modeled with measurement error
+  # Args:
+  #   formula: a formula object
+  all_terms <- all_terms(formula)
+  pos_me_terms <- grepl("(^|:)me\\([^\\|]+$", all_terms)
+  me_terms <- all_terms[pos_me_terms]
+  if (length(me_terms)) {
+    me_terms <- formula(paste("~", paste(me_terms, collapse = "+")))
+    if (!length(all.vars(me_terms))) {
+      stop2("No variable supplied to function 'me'.")
+    }
+    attr(me_terms, "rsv_intercept") <- TRUE
+  }
+  structure(me_terms, pos = pos_me_terms)
 }
 
 extract_random <- function(re_terms) {
@@ -817,6 +839,46 @@ get_spline_labels <- function(x, data = NULL, covars = FALSE,
 
 eval_spline <- function(spline) {
   eval2(paste0("mgcv::", spline))
+}
+
+get_me_labels <- function(x, data) {
+  if (is.formula(x)) {
+    x <- extract_effects(x, check_response = FALSE)
+  }
+  if (!is.formula(x$me)) {
+    return(NULL)
+  }
+  mm <- get_model_matrix(x$me, rm_attr(data, "terms"), rename = FALSE)
+  out <- colnames(mm)
+  not_one <- apply(mm, 2, function(x) any(x != 1))
+  uni_me <- get_matches("(^|:)me\\([^:]+(:|$)", out)
+  uni_me <- unique(gsub(" |:", "", uni_me))
+  structure(out, not_one = not_one, uni_me = uni_me)
+}
+
+me <- function(x, noise = NULL) {
+  # allows to evaluate me calls
+  # Args:
+  #   x: noisy variable
+  #   se: measurement error
+  x <- as.vector(x)
+  noise <- as.vector(noise)
+  if (length(noise) == 0L) {
+    stop2("Argument 'noise' is missing in function 'me'.")
+  } else if (length(noise) == 1L) {
+    noise <- rep(noise, length(x))
+  }
+  if (!is.numeric(x)) {
+    stop2("Noisy variables should be numeric.")
+  }
+  if (!is.numeric(noise)) {
+    stop2("Measurement error should be numeric.")
+  }
+  if (any(noise <= 0)) {
+    stop2("Measurement error should be positive.")
+  }
+  out <- rep(1, length(x))
+  structure(out, var = x, noise = noise) 
 }
 
 all_terms <- function(formula) {

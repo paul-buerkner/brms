@@ -577,7 +577,8 @@ get_prior_effects <- function(effects, data, autocor = cor_arma(),
   prior_splines <- get_prior_splines(splines, def_scale_prior, nlpar = nlpar)
   csef <- colnames(get_model_matrix(effects$cse, data = data))
   prior_csef <- get_prior_csef(csef, fixef = fixef)
-  rbind(prior_fixef, prior_monef, prior_splines, prior_csef)
+  prior_meef <- get_prior_meef(get_me_labels(effects, data))
+  rbind(prior_fixef, prior_monef, prior_splines, prior_csef, prior_meef)
 }
 
 get_prior_fixef <- function(fixef, spec_intercept = TRUE, 
@@ -647,6 +648,18 @@ get_prior_csef <- function(csef, fixef = NULL) {
                  paste(invalid, collapse = ", ")), call. = FALSE)
     }
     prior <- brmsprior(class = "b", coef = c("", csef))
+  }
+  prior
+}
+
+get_prior_meef <- function(meef, nlpar = "") {
+  # default priors of coefficients of noisy terms
+  # Args:
+  #   meef: terms containing noisy variables
+  prior <- empty_brmsprior()
+  if (length(meef)) {
+    prior <- brmsprior(class = "b", coef = c("", rename(meef)),
+                       nlpar = nlpar)
   }
   prior
 }
