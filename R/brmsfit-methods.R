@@ -502,31 +502,46 @@ as.matrix.brmsfit <- function(x, ...) {
 #' 
 #' @inheritParams posterior_samples
 #' @param ... currently unused
+#' @param combine_chains Indicates whether chains should be combined.
 #' @param inc_warmup Indicates if the warmup samples should be included.
 #'   Default is \code{FALSE}. Warmup samples are used to tune the 
 #'   parameters of the sampling algorithm and should not be analyzed.
 #'   
-#' @return A \code{list} of \code{mcmc} objects (not an \code{mcmc} object itself).
+#' @return If \code{combine_chains = TRUE} an \code{mcmc} object is returned.
+#'   If \code{combine_chains = FALSE} an \code{mcmc.list} object is returned.
 #' 
 #' @method as.mcmc brmsfit
 #' @export
 #' @export as.mcmc
 #' @importFrom coda as.mcmc
 as.mcmc.brmsfit <- function(x, pars = NA, exact_match = FALSE,
-                                 inc_warmup = FALSE, ...) {
+                            combine_chains = FALSE, inc_warmup = FALSE,
+                            ...) {
   contains_samples(x)
   pars <- extract_pars(pars, all_pars = parnames(x),
                        exact_match = exact_match, ...)
-  ps <- extract(x$fit, pars = pars, permuted = FALSE, 
-                inc_warmup = inc_warmup)
-  first <- if (inc_warmup) 1 else x$fit@sim$warmup + 1
-  out <- vector("list", length = dim(ps)[2])
-  for (i in seq_along(out)) {
-    out[[i]] <- ps[, i, ]
-    attr(out[[i]], "mcpar") <- c(first, x$fit@sim$iter, x$fit@sim$thin)
-    class(out[[i]]) <- "mcmc" 
+  if (combine_chains) {
+    if (inc_warmup) {
+      stop2("Cannot include warmup samples when 'combine_chains' is TRUE.")
+    }
+    out <- as.matrix(x$fit, pars)
+    mcpar <- c(x$fit@sim$warmup * x$fit@sim$chain + 1, 
+               x$fit@sim$iter * x$fit@sim$chain, x$fit@sim$thin)
+    attr(out, "mcpar") <- mcpar
+    class(out) <- "mcmc"
+  } else {
+    ps <- extract(x$fit, pars, permuted = FALSE, 
+                  inc_warmup = inc_warmup)
+    mcpar <- c(if (inc_warmup) 1 else x$fit@sim$warmup + 1, 
+               x$fit@sim$iter, x$fit@sim$thin)
+    out <- vector("list", length = dim(ps)[2])
+    for (i in seq_along(out)) {
+      out[[i]] <- ps[, i, ]
+      attr(out[[i]], "mcpar") <- mcpar
+      class(out[[i]]) <- "mcmc" 
+    }
+    class(out) <- "mcmc.list"
   }
-  class(out) <- "mcmc.list"
   out
 }
 

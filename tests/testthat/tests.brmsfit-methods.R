@@ -15,6 +15,8 @@ test_that("all S3 methods have reasonable ouputs", {
   mc <- as.mcmc(fit1)
   expect_equal(length(mc), chains)
   expect_equal(dim(mc[[1]]), c(Nsamples(fit1) / chains, length(parnames(fit1))))
+  mc <- as.mcmc(fit1, combine_chains = TRUE)
+  expect_equal(dim(mc), c(Nsamples(fit1), length(parnames(fit1))))
   # test assumes thin = 1
   expect_equal(dim(as.mcmc(fit1, inc_warmup = TRUE)[[1]]), 
                c(fit1$fit@sim$iter, length(parnames(fit1))))

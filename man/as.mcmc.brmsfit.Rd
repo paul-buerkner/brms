@@ -6,7 +6,7 @@
 \title{Extract posterior samples for use with the \pkg{coda} package}
 \usage{
 \method{as.mcmc}{brmsfit}(x, pars = NA, exact_match = FALSE,
-  inc_warmup = FALSE, ...)
+  combine_chains = FALSE, inc_warmup = FALSE, ...)
 }
 \arguments{
 \item{x}{An \code{R} object typically of class \code{brmsfit}}
@@ -19,6 +19,8 @@ By default, all posterior samples of all parameters are extracted.}
 should be matched exactly or treated as regular expression. 
 Default is \code{FALSE}.}
 
+\item{combine_chains}{Indicates whether chains should be combined.}
+
 \item{inc_warmup}{Indicates if the warmup samples should be included.
 Default is \code{FALSE}. Warmup samples are used to tune the 
 parameters of the sampling algorithm and should not be analyzed.}
@@ -26,7 +28,8 @@ parameters of the sampling algorithm and should not be analyzed.}
 \item{...}{currently unused}
 }
 \value{
-A \code{list} of \code{mcmc} objects (not an \code{mcmc} object itself).
+If \code{combine_chains = TRUE} an \code{mcmc} object is returned.
+  If \code{combine_chains = FALSE} an \code{mcmc.list} object is returned.
 }
 \description{
 Extract posterior samples for use with the \pkg{coda} package
