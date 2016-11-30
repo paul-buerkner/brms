@@ -145,24 +145,23 @@ extract_effects <- function(formula, family = NA, nonlinear = NULL,
     }
   }
   
-  # make a formula containing all required variables (element 'all')
+  # make a formula containing all required variables
   lhs_vars <- if (resp_rhs_all) all.vars(lhs(x$fixed))
-  fixed_vars <- if (!length(x$nonlinear))
-                  c(rhs(x$fixed), all.vars(rhs(x$fixed)))
+  fixed_vars <- if (!length(x$nonlinear)) rhs(x$fixed)
   formula_list <- c(lhs_vars, 
                     add_vars, 
                     fixed_vars,
-                    x[c("covars", "cse", "mono")], 
-                    all.vars(x$me),
+                    x[c("covars", "cse", "mono", "me")], 
                     attr(x$gam, "allvars"), 
                     x$random$form,
-                    lapply(x$random$form, all.vars), 
                     x$random$group, 
                     get_offset(x$fixed),
                     lapply(x$nonlinear, function(e) e$allvars),
                     lapply(x[auxpars()], function(e) e$allvars), 
                     x$time$allvars)
   new_formula <- collapse(ulapply(rmNULL(formula_list), plus_rhs))
+  all_vars <- c("1", all.vars(parse(text = new_formula)))
+  new_formula <- paste(new_formula, "+", paste0(all_vars, collapse = "+"))
   x$allvars <- eval2(paste0("update(", tfixed, ", ~ ", new_formula, ")"))
   environment(x$allvars) <- environment(formula)
   

@@ -17,7 +17,7 @@
 #'               data = epilepsy, family = "poisson")
 #'
 #' @export
-make_stancode <- function(formula, data = NULL, family = gaussian(), 
+make_stancode <- function(formula, data, family = gaussian(), 
                           prior = NULL, autocor = NULL, 
                           nonlinear = NULL, partial = NULL, 
                           threshold = c("flexible", "equidistant"),

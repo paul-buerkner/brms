@@ -24,7 +24,7 @@
 #' names(data2)
 #'          
 #' @export
-make_standata <- function(formula, data = NULL, family = "gaussian", 
+make_standata <- function(formula, data, family = "gaussian", 
                           prior = NULL, autocor = NULL, nonlinear = NULL, 
                           partial = NULL, cov_ranef = NULL, 
                           sample_prior = FALSE, knots = NULL, 
@@ -392,7 +392,7 @@ make_standata <- function(formula, data = NULL, family = "gaussian",
   if (isTRUE(control$save_order)) {
     attr(standata, "old_order") <- attr(data, "old_order")
   }
-  standata
+  structure(standata, class = "standata")
 }  
 
 #' @export

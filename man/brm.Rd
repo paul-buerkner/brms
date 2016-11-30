@@ -4,15 +4,14 @@
 \alias{brm}
 \title{Fit Bayesian Generalized (Non-)Linear Multilevel Models}
 \usage{
-brm(formula, data = NULL, family = gaussian(), prior = NULL,
-  autocor = NULL, nonlinear = NULL, partial = NULL,
-  threshold = c("flexible", "equidistant"), cov_ranef = NULL,
-  ranef = TRUE, sparse = FALSE, sample_prior = FALSE, knots = NULL,
-  stan_funs = NULL, fit = NA, inits = "random", chains = 4,
-  iter = 2000, warmup = floor(iter/2), thin = 1, cluster = 1,
-  cluster_type = "PSOCK", control = NULL, algorithm = c("sampling",
-  "meanfield", "fullrank"), silent = TRUE, seed = 12345,
-  save_model = NULL, save_dso = TRUE, ...)
+brm(formula, data, family = gaussian(), prior = NULL, autocor = NULL,
+  nonlinear = NULL, partial = NULL, threshold = c("flexible",
+  "equidistant"), cov_ranef = NULL, ranef = TRUE, sparse = FALSE,
+  sample_prior = FALSE, knots = NULL, stan_funs = NULL, fit = NA,
+  inits = "random", chains = 4, iter = 2000, warmup = floor(iter/2),
+  thin = 1, cluster = 1, cluster_type = "PSOCK", control = NULL,
+  algorithm = c("sampling", "meanfield", "fullrank"), silent = TRUE,
+  seed = 12345, save_model = NULL, save_dso = TRUE, ...)
 }
 \arguments{
 \item{formula}{An object of class 
@@ -22,11 +21,9 @@ a symbolic description of the model to be fitted.
 The details of model specification are explained in 
 \code{\link[brms:brmsformula]{brmsformula}}.}
 
-\item{data}{An optional data frame, list or environment  (or object coercible by 
-\code{as.data.frame} to a data frame) containing the variables in the model. 
-If not found in data, the variables are taken from \code{environment(formula)}, 
-typically the environment from which \code{brm} is called. 
-Although it is optional, we strongly recommend to supply a data.frame.}
+\item{data}{An object of class \code{data.frame} 
+(or one that can be coerced to that class) 
+containing data of all variables used in the model.}
 
 \item{family}{A description of the response distribution and link function 
 to be used in the model. This can be a family function, 

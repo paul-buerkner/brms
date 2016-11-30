@@ -432,7 +432,7 @@ prior <- function(prior, ...) {
 #'               prior = prior)
 #' 
 #' @export
-get_prior <- function(formula, data = NULL, family = gaussian(),
+get_prior <- function(formula, data, family = gaussian(),
                       autocor = NULL, nonlinear = NULL, partial = NULL, 
                       threshold = c("flexible", "equidistant"), 
                       internal = FALSE) {

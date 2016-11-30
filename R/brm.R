@@ -8,11 +8,9 @@
 #'   a symbolic description of the model to be fitted. 
 #'   The details of model specification are explained in 
 #'   \code{\link[brms:brmsformula]{brmsformula}}.
-#' @param data An optional data frame, list or environment  (or object coercible by 
-#'   \code{as.data.frame} to a data frame) containing the variables in the model. 
-#'   If not found in data, the variables are taken from \code{environment(formula)}, 
-#'   typically the environment from which \code{brm} is called. 
-#'   Although it is optional, we strongly recommend to supply a data.frame. 
+#' @param data An object of class \code{data.frame} 
+#'   (or one that can be coerced to that class) 
+#'   containing data of all variables used in the model.
 #' @param family A description of the response distribution and link function 
 #'   to be used in the model. This can be a family function, 
 #'   a call to a family function or a character string naming the family.
@@ -301,7 +299,7 @@
 #' @import methods
 #' @import stats   
 #' @export 
-brm <- function(formula, data = NULL, family = gaussian(), 
+brm <- function(formula, data, family = gaussian(), 
                 prior = NULL, autocor = NULL, nonlinear = NULL, 
                 partial = NULL, threshold = c("flexible", "equidistant"), 
                 cov_ranef = NULL, ranef = TRUE, sparse = FALSE,

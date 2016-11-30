@@ -90,7 +90,7 @@ test_that("extract_effects accepts calls to the poly function", {
 test_that("extract_effects also saves untransformed variables", {
   ee <- extract_effects(y ~ as.numeric(x) + (as.factor(z) | g))
   expect_equivalent(ee$allvars, 
-                    y ~ y + as.numeric(x) + x + as.factor(z) + z + g)
+                    y ~ y + as.numeric(x) + x + as.factor(z) + g + z)
 })
 
 test_that("extract_effects finds all variables in non-linear models", {

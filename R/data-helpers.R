@@ -24,6 +24,10 @@ update_data <- function(data, family, effects,
     data <- as.data.frame(data)
   }
   if (!(isTRUE(attr(data, "brmsframe")) || "brms.frame" %in% class(data))) {
+    data <- try(as.data.frame(data, silent = TRUE))
+    if (is(data, "try-error")) {
+      stop2("Argument 'data' must be coercible to a data.frame.")
+    }
     effects$allvars <- terms(effects$allvars)
     attributes(effects$allvars)[names(terms_attr)] <- terms_attr
     if (isTRUE(attr(effects$formula, "old_mv"))) {
@@ -32,7 +36,12 @@ update_data <- function(data, family, effects,
       check_data_old_mv(data, family = family, effects = effects)
     }
     data <- data_rsv_intercept(data, effects = effects)
-    data <- model.frame(effects$allvars, data = data, na.action = na.pass,
+    missing_vars <- setdiff(all.vars(effects$allvars), names(data))
+    if (length(missing_vars)) {
+      stop2("The following variables are missing in 'data':\n",
+            paste(missing_vars, collapse = ", "))
+    }
+    data <- model.frame(effects$allvars, data, na.action = na.pass,
                         drop.unused.levels = drop.unused.levels)
     nrow_with_NA <- nrow(data)
     data <- na.action(data)
@@ -43,8 +52,7 @@ update_data <- function(data, family, effects,
       stop2("Variable names may not contain double underscores ",
             "or underscores at the end.")
     }
-    data <- combine_groups(data, get_random(effects)$group, 
-                           effects$time$group)
+    data <- combine_groups(data, get_random(effects)$group, effects$time$group)
     data <- fix_factor_contrasts(data)
     attr(data, "knots") <- knots
     attr(data, "brmsframe") <- TRUE
@@ -220,15 +228,17 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   #                    or just return the updated newdata?
   # Returns:
   #   updated data.frame being compatible with formula(fit)
-  if (is.null(newdata) || is(newdata, "list")) {
+  if (is.null(newdata) || is(newdata, "standata")) {
     # to shorten expressions in S3 methods such as predict.brmsfit
     if (return_standata && is.null(newdata)) {
       control <- list(not4stan = TRUE, save_order = TRUE)
       newdata <- standata(fit, re_formula = re_formula, control = control)
     }
     return(newdata)
-  } else if (!"data.frame" %in% class(newdata)) {
-    newdata <- as.data.frame(newdata)
+  } 
+  newdata <- try(as.data.frame(newdata, silent = TRUE))
+  if (is(data, "try-error")) {
+    stop2("Argument 'newdata' must be coercible to a data.frame.")
   }
   # standata will be based on an updated formula if re_formula is specified
   new_formula <- update_re_terms(formula(fit), re_formula = re_formula)

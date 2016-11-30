@@ -4,7 +4,7 @@
 \alias{make_stancode}
 \title{Stan Code for \pkg{brms} Models}
 \usage{
-make_stancode(formula, data = NULL, family = gaussian(), prior = NULL,
+make_stancode(formula, data, family = gaussian(), prior = NULL,
   autocor = NULL, nonlinear = NULL, partial = NULL,
   threshold = c("flexible", "equidistant"), sparse = FALSE,
   cov_ranef = NULL, sample_prior = FALSE, stan_funs = NULL,
@@ -18,11 +18,9 @@ a symbolic description of the model to be fitted.
 The details of model specification are explained in 
 \code{\link[brms:brmsformula]{brmsformula}}.}
 
-\item{data}{An optional data frame, list or environment  (or object coercible by 
-\code{as.data.frame} to a data frame) containing the variables in the model. 
-If not found in data, the variables are taken from \code{environment(formula)}, 
-typically the environment from which \code{brm} is called. 
-Although it is optional, we strongly recommend to supply a data.frame.}
+\item{data}{An object of class \code{data.frame} 
+(or one that can be coerced to that class) 
+containing data of all variables used in the model.}
 
 \item{family}{A description of the response distribution and link function 
 to be used in the model. This can be a family function, 
