@@ -1215,12 +1215,14 @@ check_brm_input <- function(x) {
 }
 
 exclude_pars <- function(effects, data = NULL, ranef = empty_ranef(),
-                         save_ranef = TRUE) {
+                         save_ranef = TRUE, save_meef = FALSE) {
   # list irrelevant parameters NOT to be saved by Stan
   # Args:
   #   effects: output of extract_effects
+  #   data: data passed by the user
   #   ranef: output of tidy_ranef
-  #   save_ranef: should random effects of each level be saved?
+  #   save_ranef: should group-level effects be saved?
+  #   save_meef: should samples of noise-free variables be saved?
   # Returns:
   #   a vector of parameters to be excluded
   out <- c("temp_Intercept1", "temp_Intercept", "Lrescor", "Rescor", 
@@ -1237,6 +1239,10 @@ exclude_pars <- function(effects, data = NULL, ranef = empty_ranef(),
         out <- c(out, paste0("zs_", par, "_", i, "_", nb))
       } 
     }
+    meef <- get_me_labels(par_effects[[par]], data)
+    if (!save_meef && length(meef)) {
+      out <- c(out, paste0("Xme_", par, "_", seq_along(meef)))
+    }
   }
   splines <- get_spline_labels(effects, data)
   if (length(splines) && !is.null(data)) {
@@ -1244,6 +1250,10 @@ exclude_pars <- function(effects, data = NULL, ranef = empty_ranef(),
       nb <- seq_len(attr(splines, "nbases")[[i]])
       out <- c(out, paste0("zs_", i, "_", nb))
     }
+  }
+  meef <- get_me_labels(effects, data)
+  if (!save_meef && length(meef)) {
+    out <- c(out, paste0("Xme_", seq_along(meef)))
   }
   # exclude group-level helper parameters
   if (nrow(ranef)) {

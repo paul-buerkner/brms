@@ -2007,8 +2007,11 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
     if (is.null(dots$sample_prior)) {
       dots$sample_prior <- any(grepl("^prior_", pnames))
     }
-    if (is.null(dots$ranef)) {
-      dots$ranef <- any(grepl("^r_", pnames)) || !nrow(object$ranef)
+    if (is.null(dots$save_ranef)) {
+      dots$save_ranef <- any(grepl("^r_", pnames)) || !nrow(object$ranef)
+    }
+    if (is.null(dots$save_meef)) {
+      dots$save_meef <- any(grepl("^Xme_", pnames))
     }
     if (is.null(dots$sparse)) {
       dots$sparse <- grepl("sparse matrix", stancode(object))
@@ -2029,10 +2032,18 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
       object$ranef <- tidy_ranef(ee, data = object$data)
       dots$is_newdata <- TRUE
     }
-    if (!is.null(dots$ranef)) {
+    if (!is.null(dots$save_ranef) || !is.null(dots$save_meef)) {
+      pnames <- parnames(object)
+      if (is.null(dots$save_ranef)) {
+        dots$save_ranef <- any(grepl("^r_", pnames)) || !nrow(object$ranef)
+      }
+      if (is.null(dots$save_meef)) {
+        dots$save_meef <- any(grepl("^Xme_", pnames))
+      }
       object$exclude <- exclude_pars(ee, data = object$data, 
                                      ranef = object$ranef, 
-                                     save_ranef = dots$ranef)
+                                     save_ranef = dots$save_ranef,
+                                     save_meef = dots$save_meef)
     }
     if (!is.null(dots$algorithm)) {
       object$algorithm <- match.arg(dots$algorithm, 

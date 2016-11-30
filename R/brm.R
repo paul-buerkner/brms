@@ -71,11 +71,19 @@
 #'   All levels of the grouping factor should appear as rownames 
 #'   of the corresponding matrix. This argument can be used,
 #'   among others, to model pedigrees and phylogenetic effects.
-#' @param ranef A flag to indicate if group-level effects 
+#' @param save_ranef A flag to indicate if group-level effects 
 #'   for each level of the grouping factor(s) 
 #'   should be saved (default is \code{TRUE}). 
 #'   Set to \code{FALSE} to save memory. 
 #'   The argument has no impact on the model fitting itself.
+#'   A deprecated alias is \code{ranef}.
+#' @param save_meef A flag to indicate if samples
+#'   of noise-free variables obtained by using \code{me} terms
+#'   should be saved (default is \code{FALSE}).
+#'   Saving these samples allows to use methods such as
+#'   \code{predict} with the noise-free variables but 
+#'   leads to very large \R objects even for models
+#'   of moderate size and complexity.
 #' @param sample_prior A flag to indicate if samples from all specified 
 #'   proper priors should be drawn additionally to the posterior samples
 #'   (defaults to \code{FALSE}). Among others, these samples can be used 
@@ -299,12 +307,13 @@
 #' @import methods
 #' @import stats   
 #' @export 
-brm <- function(formula, data, family = gaussian(), 
-                prior = NULL, autocor = NULL, nonlinear = NULL, 
+brm <- function(formula, data, family = gaussian(), prior = NULL, 
+                autocor = NULL, nonlinear = NULL, 
                 partial = NULL, threshold = c("flexible", "equidistant"), 
-                cov_ranef = NULL, ranef = TRUE, sparse = FALSE,
-                sample_prior = FALSE, knots = NULL, stan_funs = NULL, 
-                fit = NA, inits = "random", chains = 4, iter = 2000, 
+                cov_ranef = NULL, save_ranef = TRUE, save_meef = FALSE, 
+                sparse = FALSE, sample_prior = FALSE, knots = NULL, 
+                stan_funs = NULL, fit = NA, inits = "random", 
+                chains = 4, iter = 2000, 
                 warmup = floor(iter / 2), thin = 1, cluster = 1, 
                 cluster_type = "PSOCK", control = NULL, 
                 algorithm = c("sampling", "meanfield", "fullrank"),
@@ -319,13 +328,12 @@ brm <- function(formula, data, family = gaussian(),
   chains <- use_alias(chains, dots$n.chains)
   cluster <- use_alias(cluster, dots$n.cluster)
   cov_ranef <- use_alias(cov_ranef, dots$cov.ranef)
+  save_ranef <- use_alias(save_ranef, dots$ranef)
   sample_prior <- use_alias(sample_prior, dots$sample.prior)
   save_model <- use_alias(save_model, dots$save.model)
   dots[c("n.iter", "n.warmup", "n.thin", "n.chains", "n.cluster",
-         "cov.ranef", "sample.prior", "save.model")] <- NULL
+         "cov.ranef", "sample.prior", "save.model", "ranef")] <- NULL
   # some input checks 
-  if (!(is.null(data) || is.list(data)))
-    stop("argument 'data' must be a data.frame or list", call. = FALSE)
   check_brm_input(nlist(family, chains, cluster, inits))
   autocor <- check_autocor(autocor)
   threshold <- match.arg(threshold)
@@ -367,7 +375,8 @@ brm <- function(formula, data, family = gaussian(),
     # see validate.R
     x$ranef <- tidy_ranef(ee, data = x$data)  
     x$exclude <- exclude_pars(ee, x$data, ranef = x$ranef, 
-                              save_ranef = ranef)
+                              save_ranef = save_ranef,
+                              save_meef = save_meef)
     # see make_stancode.R
     x$model <- make_stancode(formula = formula, data = data, 
                              family = family, prior = prior,  

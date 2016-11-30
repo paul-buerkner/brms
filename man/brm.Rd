@@ -6,12 +6,12 @@
 \usage{
 brm(formula, data, family = gaussian(), prior = NULL, autocor = NULL,
   nonlinear = NULL, partial = NULL, threshold = c("flexible",
-  "equidistant"), cov_ranef = NULL, ranef = TRUE, sparse = FALSE,
-  sample_prior = FALSE, knots = NULL, stan_funs = NULL, fit = NA,
-  inits = "random", chains = 4, iter = 2000, warmup = floor(iter/2),
-  thin = 1, cluster = 1, cluster_type = "PSOCK", control = NULL,
-  algorithm = c("sampling", "meanfield", "fullrank"), silent = TRUE,
-  seed = 12345, save_model = NULL, save_dso = TRUE, ...)
+  "equidistant"), cov_ranef = NULL, save_ranef = TRUE, save_meef = FALSE,
+  sparse = FALSE, sample_prior = FALSE, knots = NULL, stan_funs = NULL,
+  fit = NA, inits = "random", chains = 4, iter = 2000,
+  warmup = floor(iter/2), thin = 1, cluster = 1, cluster_type = "PSOCK",
+  control = NULL, algorithm = c("sampling", "meanfield", "fullrank"),
+  silent = TRUE, seed = 12345, save_model = NULL, save_dso = TRUE, ...)
 }
 \arguments{
 \item{formula}{An object of class 
@@ -79,11 +79,20 @@ All levels of the grouping factor should appear as rownames
 of the corresponding matrix. This argument can be used,
 among others, to model pedigrees and phylogenetic effects.}
 
-\item{ranef}{A flag to indicate if group-level effects 
+\item{save_ranef}{A flag to indicate if group-level effects 
 for each level of the grouping factor(s) 
 should be saved (default is \code{TRUE}). 
 Set to \code{FALSE} to save memory. 
-The argument has no impact on the model fitting itself.}
+The argument has no impact on the model fitting itself.
+A deprecated alias is \code{ranef}.}
+
+\item{save_meef}{A flag to indicate if samples
+of noise-free variables obtained by using \code{me} terms
+should be saved (default is \code{FALSE}).
+Saving these samples allows to use methods such as
+\code{predict} with the noise-free variables but 
+leads to very large \R objects even for models
+of moderate size and complexity.}
 
 \item{sparse}{Logical; indicates whether the population-level 
 design matrix should be treated as sparse (defaults to \code{FALSE}). 
