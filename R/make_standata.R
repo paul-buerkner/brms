@@ -26,9 +26,8 @@
 #' @export
 make_standata <- function(formula, data, family = "gaussian", 
                           prior = NULL, autocor = NULL, nonlinear = NULL, 
-                          partial = NULL, cov_ranef = NULL, 
-                          sample_prior = FALSE, knots = NULL, 
-                          control = list(), ...) {
+                          cov_ranef = NULL, sample_prior = FALSE, 
+                          knots = NULL, control = list(), ...) {
   # internal control arguments:
   #   is_newdata: is make_standata is called with new data?
   #   not4stan: is make_standata called for use in S3 methods?
@@ -43,7 +42,7 @@ make_standata <- function(formula, data, family = "gaussian",
   # some input checks
   family <- check_family(family)
   formula <- update_formula(formula, data = data, family = family,
-                            partial = partial, nonlinear = nonlinear)
+                            nonlinear = nonlinear)
   old_mv <- isTRUE(attr(formula, "old_mv"))
   autocor <- check_autocor(autocor)
   is_linear <- is.linear(family)

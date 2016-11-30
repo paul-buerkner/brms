@@ -18,8 +18,7 @@
 #'
 #' @export
 make_stancode <- function(formula, data, family = gaussian(), 
-                          prior = NULL, autocor = NULL, 
-                          nonlinear = NULL, partial = NULL, 
+                          prior = NULL, autocor = NULL, nonlinear = NULL,
                           threshold = c("flexible", "equidistant"),
                           sparse = FALSE,  cov_ranef = NULL, 
                           sample_prior = FALSE, stan_funs = NULL, 
@@ -33,7 +32,7 @@ make_stancode <- function(formula, data, family = gaussian(),
   # some input checks
   family <- check_family(family)
   formula <- update_formula(formula, data = data, family = family,
-                            partial = partial, nonlinear = nonlinear)
+                            nonlinear = nonlinear)
   autocor <- check_autocor(autocor)
   threshold <- match.arg(threshold)
   ee <- extract_effects(formula, family = family, autocor = autocor)

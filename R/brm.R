@@ -40,12 +40,6 @@
 #'   parameters on the left hand side (separated by a \code{+}) and a
 #'   common linear predictor on the right hand side.
 #'   More information is given under 'Details'.
-#' @param partial (Deprecated) A one sided formula of the form 
-#'   \code{~expression} allowing to specify predictors with 
-#'   category specific effects in non-cumulative ordinal models 
-#'   (i.e. in families \code{cratio}, \code{sratio}, or \code{acat}).
-#'   As of \pkg{brms} > 0.8.0 category specific effects should be 
-#'   specified directly within \code{formula} using function \code{cse}.
 #' @param threshold A character string indicating the type of thresholds 
 #'   (i.e. intercepts) used in an ordinal model. 
 #'   \code{"flexible"} provides the standard unstructured thresholds and 
@@ -309,7 +303,7 @@
 #' @export 
 brm <- function(formula, data, family = gaussian(), prior = NULL, 
                 autocor = NULL, nonlinear = NULL, 
-                partial = NULL, threshold = c("flexible", "equidistant"), 
+                threshold = c("flexible", "equidistant"), 
                 cov_ranef = NULL, save_ranef = TRUE, save_meef = FALSE, 
                 sparse = FALSE, sample_prior = FALSE, knots = NULL, 
                 stan_funs = NULL, fit = NA, inits = "random", 
@@ -352,7 +346,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     # see validate.R for function definitions
     family <- check_family(family)
     formula <- update_formula(formula, data = data, family = family, 
-                              nonlinear = nonlinear, partial = partial)
+                              nonlinear = nonlinear)
     ee <- extract_effects(formula, family = family, autocor = autocor)
     if (is.null(dots$data.name)) {
       data.name <- substr(Reduce(paste, deparse(substitute(data))), 1, 50)

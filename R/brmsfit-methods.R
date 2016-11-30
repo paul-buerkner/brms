@@ -1968,8 +1968,8 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
   # brm computes warmup automatically based on iter 
   dots$chains <- first_not_null(dots$chains, object$fit@sim$chains)
   dots$thin <- first_not_null(dots$thin, object$fit@sim$thin)
-  rc_args <- c("family", "prior", "autocor", "nonlinear", "partial", 
-               "threshold", "cov_ranef", "sparse", "sample_prior")
+  rc_args <- c("family", "prior", "autocor", "nonlinear", "threshold", 
+               "cov_ranef", "sparse", "sample_prior")
   new_args <- intersect(rc_args, names(dots))
   recompile <- recompile || length(new_args)
   if (recompile) {

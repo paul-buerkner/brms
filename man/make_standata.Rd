@@ -6,7 +6,7 @@
 \title{Data for \pkg{brms} Models}
 \usage{
 make_standata(formula, data, family = "gaussian", prior = NULL,
-  autocor = NULL, nonlinear = NULL, partial = NULL, cov_ranef = NULL,
+  autocor = NULL, nonlinear = NULL, cov_ranef = NULL,
   sample_prior = FALSE, knots = NULL, control = list(), ...)
 }
 \arguments{
@@ -53,13 +53,6 @@ Alternatively, it can be a single formula with all non-linear
 parameters on the left hand side (separated by a \code{+}) and a
 common linear predictor on the right hand side.
 More information is given under 'Details'.}
-
-\item{partial}{(Deprecated) A one sided formula of the form 
-\code{~expression} allowing to specify predictors with 
-category specific effects in non-cumulative ordinal models 
-(i.e. in families \code{cratio}, \code{sratio}, or \code{acat}).
-As of \pkg{brms} > 0.8.0 category specific effects should be 
-specified directly within \code{formula} using function \code{cse}.}
 
 \item{cov_ranef}{A list of matrices that are proportional to the 
 (within) covariance structure of the group-level effects. 

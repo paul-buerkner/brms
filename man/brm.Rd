@@ -5,8 +5,8 @@
 \title{Fit Bayesian Generalized (Non-)Linear Multilevel Models}
 \usage{
 brm(formula, data, family = gaussian(), prior = NULL, autocor = NULL,
-  nonlinear = NULL, partial = NULL, threshold = c("flexible",
-  "equidistant"), cov_ranef = NULL, save_ranef = TRUE, save_meef = FALSE,
+  nonlinear = NULL, threshold = c("flexible", "equidistant"),
+  cov_ranef = NULL, save_ranef = TRUE, save_meef = FALSE,
   sparse = FALSE, sample_prior = FALSE, knots = NULL, stan_funs = NULL,
   fit = NA, inits = "random", chains = 4, iter = 2000,
   warmup = floor(iter/2), thin = 1, cluster = 1, cluster_type = "PSOCK",
@@ -57,13 +57,6 @@ Alternatively, it can be a single formula with all non-linear
 parameters on the left hand side (separated by a \code{+}) and a
 common linear predictor on the right hand side.
 More information is given under 'Details'.}
-
-\item{partial}{(Deprecated) A one sided formula of the form 
-\code{~expression} allowing to specify predictors with 
-category specific effects in non-cumulative ordinal models 
-(i.e. in families \code{cratio}, \code{sratio}, or \code{acat}).
-As of \pkg{brms} > 0.8.0 category specific effects should be 
-specified directly within \code{formula} using function \code{cse}.}
 
 \item{threshold}{A character string indicating the type of thresholds 
 (i.e. intercepts) used in an ordinal model. 

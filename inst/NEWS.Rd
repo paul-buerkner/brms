@@ -18,6 +18,7 @@
     \itemize{
       \item Refactor the \code{stanplot} method
       to use \pkg{bayesplot} on the backend.
+      \item Remove the deprecated \code{partial} argument.
     }
   }
 }
