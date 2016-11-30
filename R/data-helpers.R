@@ -781,8 +781,8 @@ data_meef <- function(effects, data, nlpar = "") {
     p <- usc(nlpar, "prefix")
     Cn <- get_model_matrix(effects$me, data)
     avoid_auxpars(colnames(Cn), effects = effects)
-    Cn <- Cn[, attr(meef, "not_one"), drop = FALSE]
-    Cn <- setNames(array2list(Cn), paste0("Cn_", seq_len(ncol(Cn))))
+    Cn <- array2list(Cn[, attr(meef, "not_one"), drop = FALSE])
+    Cn <- setNames(Cn, paste0("Cn", p, "_", seq_along(Cn)))
     uni_me <- attr(meef, "uni_me")
     Xn <- noise <- named_list(uni_me)
     for (i in seq_along(uni_me)) {
@@ -790,9 +790,10 @@ data_meef <- function(effects, data, nlpar = "") {
       Xn[[i]] <- attr(temp, "var")
       noise[[i]] <- attr(temp, "noise")
     }
-    names(Xn) <- paste0("Xn_", seq_along(Xn))
-    names(noise) <- paste0("noise_", seq_along(Xn))
-    out <- c(out, Xn, noise, Cn, list(Kme = length(meef)))
+    names(Xn) <- paste0("Xn", p, "_", seq_along(Xn))
+    names(noise) <- paste0("noise", p, "_", seq_along(Xn))
+    Kme <- setNames(list(length(meef)), paste0("Kme", p))
+    out <- c(out, Xn, noise, Cn, Kme)
   }
   out
 }

@@ -569,7 +569,7 @@ stan_meef <- function(meef, ranef = empty_ranef(),
     out$par <- paste0(
       "  // noise free variables \n",
       collapse("  vector[N] Xme", pK, "; \n"),  
-      "  vector[Kme] bme", p, ";",
+      "  vector[Kme", p, "] bme", p, ";",
       "  // coefficients of noise-free terms \n")
     out$prior <- paste0(
       stan_prior(class = "b", coef = meef, prior = prior, 
