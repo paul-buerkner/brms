@@ -314,7 +314,7 @@ extract_random <- function(re_terms) {
   } else {
     random <- data.frame(group = character(0), gn = numeric(0),
                          id = numeric(0), cor = logical(0), 
-                         form = character(0))
+                         type = character(0), form = character(0))
   }
   random
 }
@@ -526,9 +526,7 @@ split_re_terms <- function(re_terms) {
     lhs_form_mono <- extract_mono(lhs_form)
     if (is.formula(lhs_form_mono)) {
       pos_mono <- attr(lhs_form_mono, "pos")
-      comb_mono_terms <- paste(lhs_all_terms[pos_mono], collapse = "+")
-      comb_mono_terms <- gsub("[ \t\r\n]+", "", comb_mono_terms, perl = TRUE)
-      if (!identical(lhs_terms[i], comb_mono_terms)) {
+      if (!all(pos_mono)) {
         stop2("Please specify monotonic effects ", 
               "in separate group-level terms.")
       }
@@ -538,14 +536,22 @@ split_re_terms <- function(re_terms) {
     lhs_form_cse <- extract_cse(lhs_form)
     if (is.formula(lhs_form_cse)) {
       pos_cse <- attr(lhs_form_cse, "pos")
-      comb_cse_terms <- paste(lhs_all_terms[pos_cse], collapse = "+")
-      comb_cse_terms <- gsub("[ \t\r\n]+", "", comb_cse_terms, perl = TRUE)
-      if (!identical(lhs_terms[i], comb_cse_terms)) {
+      if (!all(pos_cse)) {
         stop2("Please specify category specific effects ", 
               "in separate group-level terms.")
       }
       lhs_terms[i] <- formula2string(lhs_form_cse, rm = 1)
       type[[i]] <- "cse"
+    }
+    lhs_form_me <- extract_me(lhs_form)
+    if (is.formula(lhs_form_me)) {
+      pos_me <- attr(lhs_form_me, "pos")
+      if (!all(pos_me)) {
+        stop2("Please specify terms of noisy variables ", 
+              "in separate group-level terms.")
+      }
+      lhs_terms[i] <- formula2string(lhs_form_me, rm = 1)
+      type[[i]] <- "me"
     }
     
     # expaned grouping factor terms
@@ -847,14 +853,22 @@ get_me_labels <- function(x, data) {
   if (!is.formula(x$me)) {
     return(NULL)
   }
-  mm <- get_model_matrix(x$me, rm_attr(data, "terms"), rename = FALSE)
-  out <- colnames(mm)
+  mm <- get_model_matrix(x$me, data, rename = FALSE)
   not_one <- apply(mm, 2, function(x) any(x != 1))
-  uni_me <- get_matches("(^|:)me\\([^:]+(:|$)", out)
+  uni_me <- get_matches("(^|:)me\\([^:]+(:|$)", colnames(mm))
   uni_me <- unique(gsub(" |:", "", uni_me))
-  structure(out, not_one = not_one, uni_me = uni_me)
+  structure(colnames(mm), not_one = not_one, uni_me = uni_me)
 }
 
+#' Predictors with measurement error in \pkg{brms} models
+#' 
+#' @param x The variable measured with error.
+#' @param noise Known measurement error of \code{x}.
+#' 
+#' @details This function is almost solely useful when
+#'   called within functions of the \pkg{brms} package. 
+#' 
+#' @export
 me <- function(x, noise = NULL) {
   # allows to evaluate me calls
   # Args:
@@ -1019,8 +1033,8 @@ tidy_ranef <- function(effects, data = NULL, all = TRUE, ncat = NULL) {
   j <- 1
   for (i in seq_len(nrow(random))) {
     if (random$type[[i]] == "mono") {
-      coef <- colnames(prepare_mono_vars(random$form[[i]], data = data, 
-                                         check = FALSE))
+      coef <- prepare_mono_vars(random$form[[i]], data, check = FALSE)
+      coef <- colnames(coef)
     } else if (random$type[[i]] == "cse") {
       coef <- colnames(get_model_matrix(random$form[[i]], data = data))
       if (is.null(ncat)) {
@@ -1030,6 +1044,8 @@ tidy_ranef <- function(effects, data = NULL, all = TRUE, ncat = NULL) {
       }
       indices <- paste0("[", seq_len(ncat - 1), "]")
       coef <- as.vector(t(outer(coef, indices, paste0)))
+    } else if (random$type[[i]] == "me") {
+      coef <- rename(get_me_labels(random$form[[i]], data))
     } else {
       coef <- colnames(get_model_matrix(random$form[[i]], data = data)) 
     }

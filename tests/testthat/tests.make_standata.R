@@ -392,7 +392,7 @@ test_that("make_standata handles category specific effects correctly", {
   expect_equivalent(sdata$Z_1_4, as.array(inhaler$treat))
   expect_error(make_standata(rating ~ 1 + cse(treat), data = inhaler,
                              family = "cumulative"), "only meaningful")
-  expect_error(make_standata(rating ~ 1 + (1 + cse(1)|subject), 
+  expect_error(make_standata(rating ~ 1 + (treat + cse(1)|subject), 
                              data = inhaler, family = "cratio"), 
                "category specific effects in separate group-level terms")
 })

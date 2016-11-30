@@ -277,15 +277,18 @@ change_meef <- function(meef, pars, dims, nlpar = "") {
     change <- c(change,
       change_prior(class = bme, pars = pars, names = meef))
     # rename noise free variables
-    Xme <- paste0("Xme", p)
-    pos <- grepl(paste0("^", Xme, "\\["), pars)
     uni_me <- attr(meef, "uni_me")
-    cols <- 1:(sum(pos) / length(uni_me))
-    fnames <- make_index_names(rename(attr(meef, "uni_me")), cols, dim = 2)
-    change_Xme <- nlist(pos, oldname = Xme, pnames = Xme, 
-                        fnames = paste0(Xme, fnames),
-                        dims = dims[[Xme]])
-    change <- lc(change, change_Xme)
+    if (any(grepl("^Xme", pars))) {
+      for (i in seq_along(uni_me)) {
+        Xme <- paste0("Xme", p, "_", i)
+        pos <- grepl(paste0("^", Xme, "\\["), pars)
+        Xme_new <- paste0("Xme", p, "_", rename(uni_me[i]))
+        fnames <- paste0(Xme_new, "[", seq_len(sum(pos)), "]")
+        change_Xme <- nlist(pos, oldname = Xme, pnames = Xme_new, 
+                            fnames = fnames, dims = dims[[Xme]])
+        change <- lc(change, change_Xme)
+      }
+    }
   }
   change
 }

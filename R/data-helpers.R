@@ -237,7 +237,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     return(newdata)
   } 
   newdata <- try(as.data.frame(newdata, silent = TRUE))
-  if (is(data, "try-error")) {
+  if (is(newdata, "try-error")) {
     stop2("Argument 'newdata' must be coercible to a data.frame.")
   }
   # standata will be based on an updated formula if re_formula is specified
@@ -775,14 +775,14 @@ data_meef <- function(effects, data, nlpar = "") {
   # Args:
   #   effects: a list returned by extract_effects
   #   data: the data passed by the user
-  # TODO: feature group-level effects
   out <- list()
   meef <- get_me_labels(effects, data)
   if (length(meef)) {
     p <- usc(nlpar, "prefix")
-    Cn <- get_model_matrix(effects$me, rm_attr(data, "terms"))
+    Cn <- get_model_matrix(effects$me, data)
     avoid_auxpars(colnames(Cn), effects = effects)
     Cn <- Cn[, attr(meef, "not_one"), drop = FALSE]
+    Cn <- setNames(array2list(Cn), paste0("Cn_", seq_len(ncol(Cn))))
     uni_me <- attr(meef, "uni_me")
     Xn <- noise <- named_list(uni_me)
     for (i in seq_along(uni_me)) {
@@ -790,10 +790,9 @@ data_meef <- function(effects, data, nlpar = "") {
       Xn[[i]] <- attr(temp, "var")
       noise[[i]] <- attr(temp, "noise")
     }
-    Xn <- do.call(rbind, Xn)
-    noise <- do.call(rbind, noise)
-    out <- setNames(list(nrow(Xn), Xn, noise, ncol(Cn), t(Cn), length(meef)),
-                    paste0(c("Kn", "Xn", "noise", "KCn", "Cn", "Kme"), p))
+    names(Xn) <- paste0("Xn_", seq_along(Xn))
+    names(noise) <- paste0("noise_", seq_along(Xn))
+    out <- c(out, Xn, noise, Cn, list(Kme = length(meef)))
   }
   out
 }

@@ -30,13 +30,13 @@ stan_effects <- function(effects, data, family = gaussian(),
   text_splines <- stan_splines(splines, prior = prior, nlpar = nlpar)
   # include category specific effects
   csef <- colnames(get_model_matrix(effects$cse, data))
-  text_csef <- stan_csef(csef, ranef = ranef, prior = prior)
+  text_csef <- stan_csef(csef, ranef, prior = prior)
   # include monotonic effects
   monef <- all_terms(effects$mono)
-  text_monef <- stan_monef(monef, prior = prior, nlpar = nlpar)
+  text_monef <- stan_monef(monef, ranef, prior = prior, nlpar = nlpar)
   # include measurement error variables
   meef <- get_me_labels(effects, data = data)
-  text_meef <- stan_meef(meef, prior = prior, nlpar = nlpar)
+  text_meef <- stan_meef(meef, ranef, prior = prior, nlpar = nlpar)
   out <- collapse_lists(list(out, text_fixef, text_csef, 
                              text_monef, text_meef, text_splines))
   
@@ -48,10 +48,7 @@ stan_effects <- function(effects, data, family = gaussian(),
   # initialize and compute eta_<nlpar>
   out$modelC1 <- paste0(
     out$modelC1, "  ", eta, " = ", 
-    stan_eta_fixef(fixef, center_X = center_X, 
-                   sparse = sparse, nlpar = nlpar), 
-    stan_eta_splines(splines, nlpar = nlpar), 
-    if (is.formula(effects$me)) paste0(" + etan", p),
+    text_fixef$eta, text_splines$eta,
     if (center_X && !is.ordinal(family)) 
       paste0(" + temp", p, "_Intercept"),
     if (has_offset) paste0(" + offset", p),
@@ -63,7 +60,7 @@ stan_effects <- function(effects, data, family = gaussian(),
                    paste0(" + head(E", p, "[n], Kma) * ma"), "")
   eta_loop <- paste0(
     stan_eta_ranef(ranef, nlpar = nlpar),
-    stan_eta_monef(monef, ranef = ranef, nlpar = nlpar),
+    text_monef$eta, text_meef$eta,
     eta_ma, stan_eta_bsts(autocor))
   if (nzchar(eta_loop)) {
     out$modelC2 <- paste0(out$modelC2,
@@ -295,6 +292,7 @@ stan_fixef <- function(fixef, center_X = TRUE, family = gaussian(),
                             suffix = suffix, nlpar = nlpar)
     out$prior <- paste0(out$prior, int_prior)
   }
+  out$eta <- stan_eta_fixef(fixef, center_X, sparse, nlpar)
   out
 }
 
@@ -426,11 +424,13 @@ stan_splines <- function(splines, prior = brmsprior(), nlpar = "") {
                    nlpar = nlpar, prior = prior,
                    suffix = paste0(pi, "_", nb)))
     }
+    out$eta <- stan_eta_splines(splines, nlpar = nlpar)
   }
   out
 }
 
-stan_monef <- function(monef, prior = brmsprior(), nlpar = "") {
+stan_monef <- function(monef, ranef = empty_ranef(),
+                       prior = brmsprior(), nlpar = "") {
   # Stan code for monotonic effects
   # Args:
   #   monef: names of the monotonic effects
@@ -457,6 +457,7 @@ stan_monef <- function(monef, prior = brmsprior(), nlpar = "") {
                  nlpar = nlpar, suffix = paste0("m", p)),
       collapse("  simplex", p, "_", I, 
                " ~ dirichlet(con_simplex", p, "_", I, "); \n"))
+    out$eta <- stan_eta_monef(monef, ranef = ranef, nlpar = nlpar)
   }
   out
 }
@@ -513,53 +514,67 @@ stan_csef <- function(csef, ranef = empty_ranef(),
   out
 } 
 
-stan_meef <- function(meef, prior = empty_brmsprior(), nlpar = "") {
+stan_meef <- function(meef, ranef = empty_ranef(),
+                      prior = empty_brmsprior(), nlpar = "") {
   # stan code for measurement error effects
   # Args:
   #   meef: vector of terms containing noisy predictors
   out <- list()
   if (length(meef)) {
-    p <- usc(nlpar)
     not_one <- attr(meef, "not_one")
     uni_me <- attr(meef, "uni_me")
+    p <- usc(nlpar)
+    pK <- paste0(p, "_", seq_along(uni_me))
+    
     # remove non-me parts from the terms
-    meef <- gsub(" |(^|:)[^(me\\()]+(:|$)", "", meef)
-    new_me <- paste0("Xme", p, "[", seq_along(uni_me), "]")
-    meef <- rename(meef, uni_me, new_me)
+    meef_terms <- gsub(" |(^|:)[^(me\\()]+(:|$)", "", meef)
+    new_me <- paste0("Xme", pK, "[n]")
+    meef_terms <- rename(meef_terms, uni_me, new_me)
     ci <- ulapply(seq_along(not_one), function(i) sum(not_one[1:i]))
-    covars <- ifelse(not_one, paste0(" .* Cn", p, "[", ci, "]"), "")
-    meef <- rename(meef, ":", " .* ")
-    meef <- paste0("bme", p, "[", seq_along(meef), "] * ", meef, covars,
-                   collapse = " + ")
+    covars <- ifelse(not_one, paste0(" .* Cn", p, "_", ci, "[n]"), "")
+    ncovars <- sum(not_one)
+    
+    # prepare linear predictor component
+    meef <- rename(meef)
+    meef_terms <- rename(meef_terms, ":", " .* ")
+    ranef <- ranef[ranef$nlpar == nlpar & ranef$type == "me", ]
+    invalid_coef <- setdiff(ranef$coef, meef)
+    if (length(invalid_coef)) {
+      stop2("Noisy group-level terms require ", 
+            "corresponding population-level terms.")
+    }
+    for (i in seq_along(meef)) {
+      r <- ranef[ranef$coef == meef[i], ]
+      if (nrow(r)) {
+        idp <- paste0(r$id, usc(nlpar, "prefix"))
+        rpars <- collapse(" + r_", idp, "_", r$cn, "[J_", r$id, "[n]]")
+      } else {
+        rpars <- ""
+      }
+      out$eta <- paste0(out$eta,
+        " + (bme", p, "[", i, "]", rpars, ") * ", meef_terms[i], covars[i])
+    }
+    
     # prepare Stan code
     out$data <- paste0(
-      "  int<lower=1> Kn", p, ";  ",
-      "  // number of noisy variables \n",
-      "  vector[N] Xn", p, "[Kn", p, "];",
-      "  // noisy variables \n",
-      "  vector<lower=0>[N] noise", p, "[Kn", p, "];",
-      "  // measurement noise \n",
       "  int<lower=0> Kme", p, ";",
       "  // number of terms of noise free variables \n",
-      "  int<lower=0> KCn", p, ";",
-      "  // number of covariates of noise free variables \n",
-      "  vector[N] Cn", p, "[KCn", p, "];",
-      "  // covariates of noise free variables \n")
+      "  // noisy variables \n",
+      collapse("  vector[N] Xn", pK, "; \n"),
+      "  // measurement noise \n",
+      collapse("  vector<lower=0>[N] noise", pK, "; \n"),
+      if (ncovars > 0L) paste0(
+        "  // covariates of noise free variables \n",
+        collapse("  vector[N] Cn", p, "_", seq_len(ncovars), "; \n")))
     out$par <- paste0(
-      "  vector[N] Xme", p, "[Kn", p, "];",  
       "  // noise free variables \n",
+      collapse("  vector[N] Xme", pK, "; \n"),  
       "  vector[Kme] bme", p, ";",
       "  // coefficients of noise-free terms \n")
-    out$modelD <- paste0(
-      "  vector[N] etan", p, ";",
-      "  // predictor of noisy variables \n")
-    out$modelC1 <- paste0("  etan", p, " = ", trimws(meef), "; \n")
     out$prior <- paste0(
       stan_prior(class = "b", coef = meef, prior = prior, 
                  nlpar = nlpar, suffix = paste0("me", p)),
-      "  for (k in 1:Kn", p, ") { \n", 
-      "    Xme", p, "[k] ~ normal(Xn", p, "[k], noise", p, "[k]); \n",
-      "  } \n")
+      collapse("  Xme", pK, " ~ normal(Xn", pK, ", noise", pK,"); \n"))
   }
   out
 }
