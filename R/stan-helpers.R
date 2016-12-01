@@ -15,6 +15,7 @@ stan_llh <- function(family, effects = list(), data = NULL,
   is_forked <- is.forked(family)
   is_mv <- is.linear(family) && length(effects$response) > 1L
   
+  has_sigma <- has_sigma(family, effects, autocor)
   has_se <- is.formula(effects$se)
   has_weights <- is.formula(effects$weights)
   has_cens <- has_cens(effects$cens, data = data)
@@ -23,44 +24,40 @@ stan_llh <- function(family, effects = list(), data = NULL,
   has_cse <- has_cse(effects)
   bounds <- get_bounds(effects$trunc, data = data)
   has_trunc <- any(bounds$lb > -Inf) || any(bounds$ub < Inf)
-  ll_adj <- has_cens || has_weights || has_trunc
+  llh_adj <- stan_llh_adj(effects)
 
   if (is_mv) {
     # prepare for use of a multivariate likelihood
     family <- paste0(family, "_mv")
   } else if (use_cov(autocor)) {
     # ARMA effects in covariance matrix formulation
-    if (ll_adj) {
+    if (llh_adj) {
       stop2("Invalid addition arguments for this model.")
     }
     family <- paste0(family, "_cov")
   } else if (is(autocor, "cov_fixed")) {
-    if (has_se || ll_adj) {
+    if (has_se || llh_adj) {
       stop2("Invalid addition arguments for this model.")
     }
     family <- paste0(family, "_fixed")
   }
   
   auxpars <- intersect(auxpars(), names(effects))
-  reqn <- ll_adj || is_categorical || is_ordinal || 
+  reqn <- llh_adj || is_categorical || is_ordinal || 
           is_hurdle || is_zero_inflated || 
           is.exgaussian(family) || is.wiener(family) ||
+          has_sigma && has_se && !use_cov(autocor) ||
           any(c("phi", "kappa") %in% auxpars)
   n <- ifelse(reqn, "[n]", "")
   # prepare auxiliary parameters
   p <- named_list(auxpars())
-  disp <- ifelse(has_disp, "disp_", "")
-  reqn_sigma <- (ll_adj && (has_se || has_disp)) || 
-                (reqn && "sigma" %in% auxpars)
-  p$sigma <- paste0(ifelse(has_se, "se", paste0(disp, "sigma")),
-                    if (reqn_sigma) "[n]")
-  reqn_shape <- (ll_adj && has_disp) || (reqn && "shape" %in% auxpars)
-  p$shape <- paste0(disp, "shape", if (reqn_shape) "[n]")
+  p$sigma <- stan_llh_sigma(family, effects, autocor)
+  p$shape <- stan_llh_shape(family, effects)
   for (ap in setdiff(auxpars(), c("sigma", "shape"))) {
-    p[[ap]] <- stan_apn(ap, auxpars, reqn)
+    p[[ap]] <- paste0(ap, if (reqn && ap %in% auxpars) "[n]")
   }
   .logit <- ifelse(any(c("zi", "hu") %in% auxpars), "_logit", "")
-  reqn_trials <- has_trials && (ll_adj || is_zero_inflated)
+  reqn_trials <- has_trials && (llh_adj || is_zero_inflated)
   trials <- ifelse(reqn_trials, "trials[n]", "trials")
 
   simplify <- !has_trunc && !has_cens && stan_has_built_in_fun(family, link)
@@ -198,6 +195,53 @@ stan_llh_weights <- function(llh_pre, family = gaussian()) {
          "(Y[n] | ", llh_pre[2],"); \n")
 }
 
+stan_llh_sigma <- function(family, effects = NULL, autocor = cor_arma()) {
+  # prepare the code for 'sigma' in the likelihood statement
+  has_sigma <- has_sigma(family, effects, autocor)
+  has_se <- is.formula(effects$se)
+  has_disp <- is.formula(effects$disp)
+  llh_adj <- stan_llh_adj(effects)
+  auxpars <- intersect(auxpars(), names(effects))
+  nsigma <- (llh_adj || has_se || is.exgaussian(family)) && 
+            (has_disp || "sigma" %in% auxpars)
+  nsigma <- if (nsigma) "[n]"
+  nse <- if (llh_adj) "[n]"
+  if (has_sigma) {
+    if (has_se) {
+      out <- paste0("sqrt(sigma", nsigma, "^2 + se2[n])")
+    } else {
+      out <- paste0(if (has_disp) "disp_", "sigma", nsigma) 
+    }
+  } else {
+    if (has_se) {
+      out <- paste0("se", nse) 
+    } else {
+      out <- NULL
+    }
+  }
+  out
+}
+
+stan_llh_shape <- function(family, effects = NULL) {
+  # prepare the code for 'shape' in the likelihood statement
+  has_disp <- is.formula(effects$disp)
+  llh_adj <- stan_llh_adj(effects)
+  auxpars <- intersect(auxpars(), names(effects))
+  nshape <- (llh_adj || is.forked(family)) &&
+            (has_disp || "shape" %in% auxpars)
+  nshape <- if (nshape) "[n]"
+  paste0(if (has_disp) "disp_", "shape", nshape)
+}
+
+stan_llh_adj <- function(effects, adds = c("weights", "cens", "trunc")) {
+  # checks if certain 'adds' are present so that the LL has to be adjusted
+  # Args:
+  #   effects: output of extract_effects
+  #   adds: vector of addition argument names
+  stopifnot(all(adds %in% c("weights", "cens", "trunc")))
+  any(ulapply(effects[adds], is.formula))
+}
+
 stan_autocor <- function(autocor, effects = list(), family = gaussian(),
                          prior = brmsprior()) {
   # Stan code related to autocorrelation structures
@@ -251,6 +295,10 @@ stan_autocor <- function(autocor, effects = list(), family = gaussian(),
         stop2(err_msg, " when predicting 'sigma'.")
       }
       out$data <- paste0(out$data, "  #include 'data_arma_cov.stan' \n")
+      if (!is.formula(effects$se)) {
+        out$tdataD <- "  vector[N] se2; \n"
+        out$tdataC <- "  se2 = rep_vector(0, N); \n"
+      }
       out$transD <- "  matrix[max(nobs_tg), max(nobs_tg)] res_cov_matrix; \n"
       if (Kar && !Kma) {
         cov_mat_fun <- "ar1"
@@ -569,6 +617,16 @@ stan_families <- function(family) {
     out$fun <- "  #include 'fun_wiener_diffusion.stan' \n"
     out$tdataD <- "  real min_Y; \n"
     out$tdataC <- "  min_Y = min(Y); \n"
+  }
+  out
+}
+
+stan_se <- function(se) {
+  out <- list()
+  if (se) {
+    out$data <- "  vector<lower=0>[N] se;  // known sampling error \n"
+    out$tdataD <- "  vector<lower=0>[N] se2; \n"
+    out$tdataC <- "  for (n in 1:N) se2[n] = se[n]^2; \n"
   }
   out
 }
@@ -893,15 +951,6 @@ stan_ilink <- function(link) {
          tan_half = "inv_tan_half")
 }
 
-stan_ll_adj <- function(effects, adds = c("weights", "cens", "trunc")) {
-  # checks if certain 'adds' are present so that the LL has to be adjusted
-  # Args:
-  #   effects: output of extract_effects
-  #   adds: vector of addition argument names
-  stopifnot(all(adds %in% c("weights", "cens", "trunc")))
-  any(ulapply(effects[adds], is.formula))
-}
-
 stan_has_built_in_fun <- function(family, link) {
   # indicates if a family-link combination has a build in 
   # function in Stan (such as binomial_logit)
@@ -923,9 +972,4 @@ stan_needs_kronecker <- function(ranef, names_cov_ranef) {
              r$group[1] %in% names_cov_ranef
   }
   out
-}
-
-stan_apn <- function(ap, auxpars, reqn = NULL) {
-  # helper function to add "[n]" to auxiliary parameter strings
-  paste0(ap, if ((is.null(reqn) || reqn) && ap %in% auxpars) "[n]")
 }

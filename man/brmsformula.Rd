@@ -132,6 +132,10 @@ The \code{formula} argument accepts formulae of the following syntax:
   \code{yi | se(sei) ~ 1 + mod1 + mod2 + (1|study)} 
   or \cr \code{yi | se(sei) ~ 1 + mod1 + mod2 + (1 + mod1 + mod2|study)}, 
   where \code{mod1} and \code{mod2} represent moderator variables. 
+  By default, the standard errors replace the paramter \code{sigma}.
+  To model \code{sigma} in addition to the known standard errors,
+  set argument \code{sigma} in function \code{se} to \code{TRUE}, 
+  for instance, \code{yi | se(sei, sigma = TRUE) ~ 1}.
   
   For all families, weighted regression may be performed using
   \code{weights} in the addition part. Internally, this is 

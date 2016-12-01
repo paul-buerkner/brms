@@ -678,15 +678,15 @@ stan_eta_bsts <- function(autocor) {
   eta_bsts
 }
 
-stan_eta_transform <- function(family, link, ll_adj = FALSE) {
+stan_eta_transform <- function(family, link, llh_adj = FALSE) {
   # indicate whether eta needs to be transformed
   # in the transformed parameters block
   # Args:
-  #   ll_adj: is the model censored or truncated?
+  #   llh_adj: is the model censored or truncated?
   !(!is.skewed(family) && link == "identity" ||
     is.ordinal(family) || is.categorical(family) ||
     is.zero_inflated(family) || is.hurdle(family)) &&
-  (ll_adj || !stan_has_built_in_fun(family, link))
+  (llh_adj || !stan_has_built_in_fun(family, link))
 }
 
 stan_eta_ilink <- function(family, link, effects) {
@@ -695,8 +695,8 @@ stan_eta_ilink <- function(family, link, effects) {
   #   family: string naming the family
   #   link: string naming the link function
   #   effects: output of extract_effects
-  ll_adj <- stan_ll_adj(effects, c("cens", "trunc"))
-  if (stan_eta_transform(family, link, ll_adj = ll_adj)) {
+  llh_adj <- stan_llh_adj(effects, c("cens", "trunc"))
+  if (stan_eta_transform(family, link, llh_adj = llh_adj)) {
     ilink <- stan_ilink(link)
     shape <- ifelse(is.formula(effects$disp), "disp_shape[n]", 
                     ifelse(is.list(effects$shape), "shape[n]", "shape"))

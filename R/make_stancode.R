@@ -83,6 +83,7 @@ make_stancode <- function(formula, data, family = gaussian(),
   text_ordinal <- stan_ordinal(family, prior = prior, cse = has_cse(ee), 
                                threshold = threshold)
   text_families <- stan_families(family)
+  text_se <- stan_se(is.formula(ee$se))
   text_cens <- stan_cens(has_cens, family = family)
   text_disp <- stan_disp(ee, family = family)
   kronecker <- stan_needs_kronecker(ranef, names_cov_ranef = names(cov_ranef))
@@ -132,10 +133,9 @@ make_stancode <- function(formula, data, family = gaussian(),
     text_autocor$data,
     text_cens$data,
     text_disp$data,
+    text_se$data,
     if (has_trials(family))
       paste0("  int trials", Nbin, ";  // number of trials \n"),
-    if (is.formula(ee$se) && !use_cov(autocor))
-      "  vector<lower=0>[N] se;  // SEs for meta-analysis \n",
     if (is.formula(ee$weights))
       "  vector<lower=0>[N] weights;  // model weights \n",
     if (is.formula(ee$dec))
@@ -155,10 +155,12 @@ make_stancode <- function(formula, data, family = gaussian(),
        text_families$tdataD,
        text_pred$tdataD,
        text_auxpars$tdataD,
+       text_se$tdataD,
        text_autocor$tdataD,
        text_families$tdataC,
        text_pred$tdataC,
        text_auxpars$tdataC,
+       text_se$tdataC,
        text_autocor$tdataC,
     "} \n")
   

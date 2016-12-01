@@ -277,6 +277,21 @@ test_that("no loop in trans-par is defined for simple 'identity' models", {
                      "eta[n] <- (eta[n]);", fixed = TRUE))
 })
 
+test_that("make_stancode returns correct 'se' code", {
+  scode <- make_stancode(time | se(age) ~ sex, data = kidney)
+  expect_match(scode, "Y ~ normal(eta, se)", fixed = TRUE)
+  scode <- make_stancode(time | se(age) | weights(age) ~ sex, data = kidney)
+  expect_match(scode, "lp_pre[n] = normal_lpdf(Y[n] | eta[n], se[n])", 
+               fixed = TRUE)
+  scode <- make_stancode(time | se(age, sigma = TRUE) ~ sex, data = kidney)
+  expect_match(scode, "Y[n] ~ normal(eta[n], sqrt(sigma^2 + se2[n]))", 
+               fixed = TRUE)
+  scode <- make_stancode(bf(time | se(age, sigma = TRUE) ~ sex, sigma ~ sex),
+                         data = kidney)
+  expect_match(scode, "Y[n] ~ normal(eta[n], sqrt(sigma[n]^2 + se2[n]))", 
+               fixed = TRUE)
+})
+
 test_that("make_stancode returns correct 'disp' code", {
   stancode <- make_stancode(time | disp(sqrt(age)) ~ sex + age, data = kidney)
   expect_match(stancode, "disp_sigma = sigma \\* disp;.*normal\\(eta, disp_sigma\\)")

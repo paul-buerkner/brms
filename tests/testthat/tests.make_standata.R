@@ -149,7 +149,7 @@ test_that("make_standata returns correct values for addition arguments", {
                           c3 = c(rep(c(TRUE, FALSE), 4), FALSE),
                           c4 = c(sample(-1:1, 5, TRUE), rep(2, 4)),
                           t = 11:19)
-  expect_equal(make_standata(y | se(s) ~ 1, data = temp_data)$se, 
+  expect_equal(as.numeric(make_standata(y | se(s) ~ 1, data = temp_data)$se), 
                1:9)
   expect_equal(make_standata(y | weights(w) ~ 1, data = temp_data)$weights, 
                1:9)
@@ -219,7 +219,6 @@ test_that(paste("make_standata returns correct data",
                             autocor = cor_ar(~tim|g, cov = TRUE))
   expect_equal(standata$begin_tg, as.array(c(1, 6)))
   expect_equal(standata$nobs_tg, as.array(c(5, 5)))
-  expect_equal(standata$se2, rep(0, 10))
 })
 
 test_that("make_standata allows to retrieve the initial data order", {

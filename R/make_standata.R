@@ -208,7 +208,7 @@ make_standata <- function(formula, data, family = "gaussian",
     } else if (is.wholenumber(ee$trials)) {
       standata$trials <- ee$trials
     } else if (is.formula(ee$trials)) {
-      standata$trials <- .addition(formula = ee$trials, data = data)
+      standata$trials <- eval_rhs(formula = ee$trials, data = data)
     } else {
       stop2("Argument 'trials' is misspecified.")
     }
@@ -273,22 +273,22 @@ make_standata <- function(formula, data, family = "gaussian",
   
   # data for addition arguments
   if (is.formula(ee$se)) {
-    standata[["se"]] <- .addition(formula = ee$se, data = data)
+    standata[["se"]] <- eval_rhs(formula = ee$se, data = data)
   }
   if (is.formula(ee$weights)) {
-    standata[["weights"]] <- .addition(ee$weights, data = data)
+    standata[["weights"]] <- eval_rhs(ee$weights, data = data)
     if (old_mv) {
       standata$weights <- standata$weights[1:standata$N_trait]
     }
   }
   if (is.formula(ee$disp)) {
-    standata[["disp"]] <- .addition(ee$disp, data = data)
+    standata[["disp"]] <- eval_rhs(ee$disp, data = data)
   }
   if (is.formula(ee$dec)) {
-    standata[["dec"]] <- .addition(ee$dec, data = data)
+    standata[["dec"]] <- eval_rhs(ee$dec, data = data)
   }
   if (is.formula(ee$cens) && check_response) {
-    cens <- .addition(ee$cens, data = data)
+    cens <- eval_rhs(ee$cens, data = data)
     standata$cens <- rm_attr(cens, "y2")
     y2 <- attr(cens, "y2")
     if (!is.null(y2)) {
@@ -305,7 +305,7 @@ make_standata <- function(formula, data, family = "gaussian",
     }
   }
   if (is.formula(ee$trunc)) {
-    standata <- c(standata, .addition(ee$trunc, data = data))
+    standata <- c(standata, eval_rhs(ee$trunc, data = data))
     if (length(standata$lb) == 1L) {
       standata$lb <- rep(standata$lb, standata$N)
     }
@@ -346,11 +346,6 @@ make_standata <- function(formula, data, family = "gaussian",
         standata$nobs_tg <- as.array(with(standata, 
           c(if (N_tg > 1L) begin_tg[2:N_tg], N + 1) - begin_tg))
         standata$end_tg <- with(standata, begin_tg + nobs_tg - 1)
-        if (!is.null(standata$se)) {
-          standata$se2 <- standata$se^2
-        } else {
-          standata$se2 <- rep(0, standata$N)
-        }
       } 
     }
     if (Karr) {

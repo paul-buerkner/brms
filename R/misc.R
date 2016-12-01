@@ -408,19 +408,30 @@ use_alias <- function(arg, alias = NULL, default = NULL,
   arg
 }
 
-.addition <- function(formula, data = NULL) {
+eval_rhs <- function(formula, data = NULL) {
   # computes data for addition arguments
   formula <- as.formula(formula)
-  eval(formula[[2]], data, environment(formula))
+  eval(rhs(formula)[[2]], data, environment(formula))
 }
 
-.se <- function(x) {
+.se <- function(x, sigma = FALSE) {
   # standard errors for meta-analysis
-  if (!is.numeric(x)) 
+  if (!is.numeric(x)) {
     stop2("Standard errors must be numeric.")
-  if (min(x) < 0) 
+  }
+  if (min(x) < 0) {
     stop2("Standard errors must be non-negative.")
-  x  
+  }
+  sigma <- as.logical(sigma)
+  if (length(sigma) != 1L) {
+    stop2("Argument 'sigma' must be either TRUE or FALSE.")
+  }
+  structure(x, sigma = sigma)  
+}
+
+.se_no_data <- function(x, sigma = FALSE) {
+  # only evaluate the sigma argument
+  .se(1, sigma = sigma)
 }
 
 .weights <- function(x) {

@@ -509,12 +509,11 @@ get_sigma <- function(x, data, i = NULL, dim = NULL) {
   #    see get_auxpar
   #    dim: target dimension of output matrices (used in fitted)
   stopifnot(is.atomic(x) || is.list(x))
-  if (is.null(x)) {
-    x <- get_se(data = data, i = i, dim = dim)
-  } else {
-    x <- get_auxpar(x, i = i)
+  out <- get_se(data = data, i = i, dim = dim)
+  if (!is.null(x)) {
+    out <- sqrt(out^2 + get_auxpar(x, i = i)^2)
   }
-  mult_disp(x, data = data, i = i, dim = dim)
+  mult_disp(out, data = data, i = i, dim = dim)
 }
 
 get_shape <- function(x, data, i = NULL, dim = NULL) {
@@ -557,6 +556,8 @@ get_se <- function(data, i = NULL, dim = NULL) {
       stopifnot(!is.null(dim))
       se <- matrix(se, nrow = dim[1], ncol = dim[2], byrow = TRUE)
     }
+  } else {
+    se <- 0
   }
   se
 }

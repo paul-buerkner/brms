@@ -599,8 +599,8 @@ has_beta <- function(family) {
   family %in% c("exgaussian")
 }
 
-has_sigma <- function(family, effects = NULL, autocor = cor_arma(),
-                      incmv = FALSE) {
+has_sigma <- function(family, effects = NULL, 
+                      autocor = cor_arma(), incmv = FALSE) {
   # indicate if the model needs a sigma parameter
   # Args:
   #  family: model family
@@ -611,9 +611,20 @@ has_sigma <- function(family, effects = NULL, autocor = cor_arma(),
     family <- family$family
   }
   is_ln_eg <- family %in% c("lognormal", "hurdle_lognormal", "exgaussian")
-  has_se <- !is.null(effects$se)
+  if (is.formula(effects$se)) {
+    # call .se without evaluating the x argument 
+    cl <- rhs(effects$se)[[2]]
+    cl[[1]] <- quote(.se_no_data)
+    se_only <- isFALSE(attr(eval(cl), "sigma")) 
+    if (se_only && use_cov(autocor)) {
+      stop2("Please set argument 'sigma' of function 'se' ",  
+            "to TRUE when modeling ARMA covariance matrices.")
+    }
+  } else {
+    se_only <- FALSE
+  }
   out <- (is.linear(family) || is_ln_eg) && 
-         (!has_se || use_cov(autocor)) && !is(autocor, "cov_fixed")
+           !se_only && !is(autocor, "cov_fixed")
   if (!incmv) {
     is_multi <- is.linear(family) && length(effects$response) > 1L
     out <- out && !is_multi

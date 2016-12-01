@@ -61,11 +61,6 @@ test_that("convenience functions for model families work correctly", {
   expect_true(use_int(binomial()))
   expect_true(has_trials("zero_inflated_binomial"))
   expect_true(has_cat("acat"))
-  expect_true(has_sigma(student()))
-  effects <- list(se = TRUE)
-  expect_true(!has_sigma("cauchy", effects = effects))
-  expect_true(has_sigma("cauchy", effects = effects, 
-                        autocor = cor_ar(cov = TRUE)))
 })
 
 test_that("use_alias works correctly", {
@@ -91,10 +86,4 @@ test_that("lsp works correctly", {
                c("log_diff_exp", "log_inv_logit", 
                  "log_lik.brmsfit", "log_posterior.brmsfit",
                  "log_sum_exp"))
-})
-
-test_that(".addition and .cat works correctly", {
-  expect_equal(.addition(~ brms:::.cat(x), data = data.frame(x = 2:3)), 2:3)
-  expect_error(.addition(~ brms:::.cat(x), data = data.frame(x = -2)),
-               "Number of categories must be positive integers")
 })

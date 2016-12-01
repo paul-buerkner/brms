@@ -196,7 +196,7 @@ extract_effects <- function(formula, family = NA, nonlinear = NULL,
   # check validity of auxiliary parameters
   if (!is.na(family[[1]])) {
     # don't do this earlier to allow exlusion of MV models
-    inv_auxpars <- setdiff(auxpars(), valid_auxpars(family, effects = x))
+    inv_auxpars <- setdiff(auxpars(), valid_auxpars(family, x))
     inv_auxpars <- intersect(inv_auxpars, names(x))
     if (length(inv_auxpars)) {
       inv_auxpars <- paste0("'", inv_auxpars, "'", collapse = ", ")
@@ -1175,7 +1175,7 @@ get_bounds <- function(formula, data = NULL) {
   if (is.formula(formula)) {
     term <- attr(terms(formula), "term.labels")
     stopifnot(length(term) == 1L && grepl("\\.trunc\\(", term))
-    trunc <- .addition(formula, data = data)
+    trunc <- eval_rhs(formula, data = data)
   } else {
     trunc <- .trunc()
   }
@@ -1187,7 +1187,7 @@ has_cens <- function(formula, data = NULL) {
   if (is.formula(formula)) {
     term <- attr(terms(formula), "term.labels")
     stopifnot(length(term) == 1L && grepl("\\.cens\\(", term))
-    cens <- .addition(formula, data = data)
+    cens <- eval_rhs(formula, data = data)
     cens <- structure(TRUE, interval = !is.null(attr(cens, "y2")))
   } else {
     cens <- FALSE
