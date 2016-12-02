@@ -72,13 +72,14 @@ The \code{formula} argument accepts formulae of the following syntax:
   accross grouping variables specified in \code{group}. We
   call them 'group-level' effects or (adopting frequentist 
   vocabulary) 'random' effects, although the latter name is misleading
-  in a Bayesian context (for more details type \code{vignette("brms")}).
+  in a Bayesian context 
+  (for more details type \code{vignette("brms_overview")}).
   Multiple grouping factors each with multiple group-level effects 
   are possible. Instead of \code{|} you may use \code{||} in grouping terms
   to prevent correlations from being modeled. 
   Alternatively, it is possible to model different group-level terms of 
   the same grouping factor as correlated (even across different formulae,
-  e.g. in non-linear models) by using \code{|<ID>|} instead of \code{|}.
+  e.g., in non-linear models) by using \code{|<ID>|} instead of \code{|}.
   All group-level terms sharing the same ID will be modeled as correlated.
   If, for instance, one specifies the terms \code{(1+x|2|g)} and 
   \code{(1+z|2|g)} somewhere in the formulae passed to \code{brmsformula},
@@ -93,12 +94,15 @@ The \code{formula} argument accepts formulae of the following syntax:
   For more details on this model class see \code{\link[mgcv:gam]{gam}} 
   and \code{\link[mgcv:gamm]{gamm}}.
   
-  The \code{Pterms} and \code{Gterms} parts may contain two non-standard
-  effect types namely monotonic and category specific effects,
-  which can be specified using terms of the form \code{monotonic(<predictors>)} 
-  and \code{cse(<predictors>)} respectively. The latter can only be applied in
-  ordinal models and is explained in more detail in the package's vignette
-  (type \code{vignette("brms")}). The former effect type is explained here.
+  The \code{Pterms} and \code{Gterms} parts may contain three non-standard
+  effect types namely monotonic, measurement error, and category specific effects,
+  which can be specified using terms of the form \code{mo(<predictors>)},
+  \code{me(predictor, sd_predictor)}, and \code{cs(<predictors>)}, 
+  respectively. Category specific effects can only be estimated in
+  ordinal models and are explained in more detail in the package's 
+  main vignette (type \code{vignette("brms_overview")}). 
+  The other two effect types are explained in the following.
+  
   A monotonic predictor must either be integer valued or an ordered factor, 
   which is the first difference to an ordinary continuous predictor. 
   More importantly, predictor categories (or integers) are not assumend to be 
@@ -111,9 +115,33 @@ The \code{formula} argument accepts formulae of the following syntax:
   estimates the normalized distances between consecutive predictor categories.     
   A main application of monotonic effects are ordinal predictors that
   can this way be modeled without (falsely) treating them as continuous
-  or as unordered categorical predictors.
+  or as unordered categorical predictors. For more details and examples
+  see \code{vignette("brms_monotonic")}.
   
-  The third exception is the optional \code{addition} term, which may contain 
+  Quite often, predictors are measured and as such naturally contain 
+  measurement error. Although most reseachers are well aware of this problem,
+  measurement error in predictors is ignored in most
+  regression analyses, possibly because only few packages allow
+  for modelling it. Notably, measurement error can be handled in 
+  structural equation models, but many more general regression models
+  (such as those featured by \pkg{brms}) cannot be transferred 
+  to the SEM framework. In \pkg{brms}, effects of noise-free predictors 
+  can be modeled using the \code{me} (for 'measurement error') function.
+  If, say, \code{y} is the response variable and 
+  \code{x} is a measured predictor with known measurement error
+  \code{sdx}, we can simply include it on the right-hand side of the
+  model formula via \code{y ~ me(x, sdx)}. 
+  This can easily be extended to more general formulae. 
+  If \code{x2} is another measured predictor with corresponding error
+  \code{sdx2} and \code{z} is a predictor without error
+  (e.g., an experimental setting), we can model all main effects 
+  and interactions of the three predictors in the well known manner: 
+  \code{y ~ me(x, sdx) * me(x2, sdx2) * z}. In future version of \pkg{brms},
+  a vignette will be added to explain more details about these
+  so called 'error-in-variables' models and provide real world examples.
+  
+  Another speciality of the \pkg{brms} formula syntax is the optional 
+  \code{addition} term, which may contain 
   multiple terms of the form \code{fun(variable)} seperated by \code{+} each 
   providing special information on the response variable. \code{fun} can be 
   replaced with either \code{se}, \code{weights}, \code{disp}, \code{trials},
@@ -356,14 +384,17 @@ bf(cbind(y1, y2) ~ x * z + (1|g))
 bf(y ~ x * z + (1+x|ID1|g), zi ~ x + (1|ID1|g))
 
 # specify a predictor as monotonic
-bf(y ~ mono(x) + more_predictors)
+bf(y ~ mo(x) + more_predictors)
 
 # specify a predictor as category specific
 # for ordinal models only
-bf(y ~ cse(x) + more_predictors)
+bf(y ~ cs(x) + more_predictors)
 
 # add a category specific group-level intercept
-bf(y ~ cse(x) + (cse(1)|g))
+bf(y ~ cs(x) + (cs(1)|g))
+
+# specify variables containing measurement error
+bf(y ~ me(x, sdx))
 
 # specify predictors on all parameters of the wiener diffusion model
 # the main formula models the drift rate 'delta'
