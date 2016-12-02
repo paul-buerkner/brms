@@ -27,7 +27,7 @@ linear_predictor <- function(draws, i = NULL) {
                         ncol = N, byrow = TRUE)
   }
   # incorporate monotonic effects
-  monef <- colnames(draws$data[["Xm"]])
+  monef <- names(draws[["bm"]])
   for (j in seq_along(monef)) {
     # prepare monotonic group-level effects
     r_mono <- draws[["r_mono"]][[monef[j]]]
@@ -37,10 +37,37 @@ linear_predictor <- function(draws, i = NULL) {
                                  r = r_mono[[g]])
     }
     eta <- eta + monef_predictor(Xm = p(draws$data$Xm[, j], i), 
-                                 bm = as.vector(draws[["bm"]][[j]]), 
+                                 bm = draws[["bm"]][[j]], 
                                  simplex = draws$simplex[[j]],
                                  rm = Reduce("+", rm))
   }
+  # incorporate noise-free effects
+  meef <- names(draws[["bme"]])
+  if (length(meef)) {
+    eval_list <- list()
+    for (j in seq_along(draws[["Xme"]])) {
+      eval_list[[paste0("Xme_", j)]] <- 
+        p(draws[["Xme"]][[j]], i, row = FALSE)
+    }
+    for (j in seq_along(draws[["Cn"]])) {
+      eval_list[[paste0("Cn_", j)]] <- 
+        p(draws[["Cn"]][[j]], i, row = FALSE)
+    }
+    calls <- attr(draws[["bme"]], "calls")
+    for (j in seq_along(meef)) {
+      # prepare noise-free group-level effects
+      rme_temp <- draws[["r_me"]][[meef[j]]]
+      rme <- named_list(names(rme_temp))
+      for (g in names(rme)) {
+        rme[[g]] <- ranef_predictor(Z = p(draws[["Z_me"]][[g]], i),
+                                    r = rme_temp[[g]])
+      }
+      eta <- eta + meef_predictor(eval_list, call = calls[[j]],
+                                  bme = draws[["bme"]][[j]],
+                                  rme = Reduce("+", rme))
+    }
+  }
+  
   # incorporate group-level effects
   group <- names(draws[["r"]])
   for (g in group) {
@@ -196,6 +223,17 @@ monef_predictor <- function(Xm, bm, simplex, rm = NULL) {
   simplex <- cbind(0, simplex)
   if (is.null(rm)) rm <- 0 
   (bm + rm) * simplex[, Xm + 1]
+}
+
+meef_predictor <- function(eval_list, call, bme, rme = NULL) {
+  # compute eta for noise-free effects
+  # Args:
+  #   Xme: a matrix of samples of the noise-free variable
+  #   bme: samples of the noise-free coefficient
+  #   rm: matrix with meef group-level samples
+  bme <- as.vector(bme)
+  if (is.null(rme)) rme <- 0 
+  (bme + rme) * eval(call, eval_list)
 }
 
 ranef_predictor <- function(Z, r) {

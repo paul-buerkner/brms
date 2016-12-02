@@ -673,7 +673,8 @@ plus_rhs <- function(x) {
   out
 }
 
-get_effect <- function(effects, target = c("fixed", "mono", "cse", "gam"),
+get_effect <- function(effects, 
+                       target = c("fixed", "mono", "me", "cse", "gam"),
                        all = TRUE) {
   # get formulas of certain effects in a list
   # Args:
@@ -775,7 +776,7 @@ get_all_effects <- function(effects, rsv_vars = NULL) {
   .get_all_effects <- function(ee) {
     alist <- lapply(attr(ee$gam, "covars"), function(x) 
       formula(paste("~", paste(x, collapse = "*"))))
-    get_var_combs(ee$fixed, ee$mono, ee$cse, alist = alist)
+    get_var_combs(ee$fixed, ee$mono, ee$cse, ee$me, alist = alist)
   }
   if (length(effects$nonlinear)) {
     # allow covariates as well as fixed effects of non-linear parameters

@@ -181,7 +181,8 @@ prepare_conditions <- function(x, conditions = NULL, effects = NULL,
     # list all required variables
     req_vars <- c(lapply(get_effect(ee), rhs), 
                   get_random(ee)$form,
-                  lapply(get_effect(ee, "mono"), rhs), 
+                  lapply(get_effect(ee, "mono"), rhs),
+                  lapply(get_effect(ee, "me"), rhs),
                   lapply(get_effect(ee, "gam"), rhs), 
                   ee[c("cse", "se", "disp", "trials", "cat")])
     req_vars <- unique(ulapply(req_vars, all.vars))

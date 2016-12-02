@@ -75,8 +75,8 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
     }
     for (i in seq_along(covars)) {
       draws[["C"]][[covars[i]]] <- 
-        matrix(standata$C[, covars[i]], nrow = nsamples, 
-               ncol = nrow(standata$C), byrow = TRUE)
+        matrix(standata[["C"]][, covars[i]], nrow = nsamples, 
+               ncol = nrow(standata[["C"]]), byrow = TRUE)
     }
     draws$nlform <- ee$fixed[[3]]
     # remove redudant information to save working memory
@@ -119,6 +119,7 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   # Returns:
   #   a named list
   dots <- list(...)
+  nsamples <- Nsamples(x, subset = subset)
   if (!is.null(rhs_formula)) {
     x$formula <- update.formula(formula(x), rhs(rhs_formula))
     x$ranef <- tidy_ranef(extract_effects(formula(x)), data = model.frame(x))
@@ -150,9 +151,10 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
     draws[["b"]] <- 
       do.call(as.matrix, c(args, list(pars = b_pars, exact = TRUE)))
   }
+  # monotonic effects
   if (isTRUE(ncol(draws$data[["Xm"]]) > 0)) {
     monef <- colnames(draws$data[["Xm"]])
-    draws[["bm"]] <- draws$simplex <- vector("list", length(monef))
+    draws[["bm"]] <- draws$simplex <- named_list(monef)
     # as of brms > 1.0.1 the original prefix 'bm' is used
     bm <- ifelse(any(grepl("^bm_", parnames(x))), "bm_", "b_")
     for (i in seq_along(monef)) {
@@ -166,6 +168,54 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
       
     }
   }
+  # noise-free effects
+  meef <- get_me_labels(ee, x$data)
+  if (length(meef)) {
+    if (!is.null(newdata)) {
+      stop2("Predictions with noise-free variables are not yet ",
+            "possible when passing new data.")
+    }
+    if (!any(grepl(paste0("Xme_", nlpar_usc), parnames(x)))) {
+      stop2("Noise-free variables were not saved. Please set ",
+            "argument 'save_mevars' to TRUE when calling 'brm'.")
+    }
+    uni_me <- attr(meef, "uni_me")
+    not_one <- attr(meef, "not_one")
+    # prepare calls to evaluate noise-free data
+    meef_terms <- gsub(" |(^|:)[^(me\\()]+(:|$)", "", meef)
+    new_me <- paste0("Xme_", seq_along(uni_me))
+    meef_terms <- rename(meef_terms, uni_me, new_me)
+    ci <- ulapply(seq_along(not_one), function(i) sum(not_one[1:i]))
+    covars <- ifelse(not_one, paste0(" * Cn_", ci), "")
+    meef_terms <- paste0(gsub(":", " * ", meef_terms), covars)
+    # extract coefficient samples
+    meef <- rename(meef)
+    draws[["bme"]] <- named_list(meef)
+    attr(draws[["bme"]], "calls") <- parse(text = meef_terms)
+    for (j in seq_along(draws[["bme"]])) {
+      bme_par <- paste0("bme_", nlpar_usc, meef[j])
+      draws[["bme"]][[j]] <- 
+        do.call(as.matrix, c(args, list(pars = bme_par, exact = TRUE)))
+    }
+    # extract noise-free variable samples
+    uni_me <- rename(uni_me)
+    draws[["Xme"]] <- named_list(uni_me)
+    for (j in seq_along(draws[["Xme"]])) {
+      Xme_pars <- paste0("Xme_", nlpar_usc, uni_me[j],
+                         "[", seq_len(nobs(x)), "]")
+      draws[["Xme"]][[j]] <- 
+        do.call(as.matrix, c(args, list(pars = Xme_pars, exact = TRUE)))
+    }
+    # prepare covariates
+    ncovars <- sum(not_one)
+    for (j in seq_len(ncovars)) {
+      cn <- paste0("Cn_", j)
+      draws[["Cn"]][[j]] <- 
+        matrix(draws$data[[cn]], nrow = nsamples, 
+               ncol = length(draws$data[[cn]]), byrow = TRUE)
+    }
+  }
+  # category specific effects 
   if (is.ordinal(family(x))) {
     draws[["Intercept"]] <- 
       do.call(as.matrix, c(args, list(pars = "^b_Intercept\\[")))
@@ -199,7 +249,8 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   
   # requires initialization to assign S4 objects of the Matrix package
   groups <- unique(new_ranef$group) 
-  draws[["Z"]] <- draws[["Z_mono"]] <- draws[["Z_cse"]] <- named_list(groups)
+  draws[["Z"]] <- draws[["Z_mono"]] <- 
+    draws[["Z_cse"]] <- draws[["Z_me"]] <- named_list(groups)
   for (g in groups) {
     new_r <- new_ranef[new_ranef$group == g, ]
     gf <- get(paste0("J_", new_r$id[1]), draws$data)
@@ -236,7 +287,7 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
     r <- cbind(r[, sort_levels, drop = FALSE], new_r_level)
     levels <- unique(gf)
     r <- subset_levels(r, levels, nranef)
-    # monotonic group-level terms separately
+    # monotonic group-level terms
     new_r_mono <- new_r[new_r$type == "mono", ]
     if (nrow(new_r_mono)) {
       Z_mono <- expand_matrix(matrix(1, length(gf)), gf)
@@ -249,6 +300,21 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
         take <- which(new_r$coef == co & new_r$type == "mono")
         take <- take + nranef * (seq_along(levels) - 1)
         draws[["r_mono"]][[co]][[g]] <- r[, take, drop = FALSE]
+      }
+    }
+    # noise-free group-level terms
+    new_r_me <- new_r[new_r$type == "me", ]
+    if (nrow(new_r_me)) {
+      Z_me <- expand_matrix(matrix(1, length(gf)), gf)
+      if (length(levels) < nlevels) {
+        Z_me <- Z_me[, levels, drop = FALSE]
+      }
+      draws[["Z_me"]][[g]] <- Z_me
+      draws[["r_me"]] <- named_list(new_r_me$coef, list())
+      for (co in names(draws[["r_me"]])) {
+        take <- which(new_r$coef == co & new_r$type == "me")
+        take <- take + nranef * (seq_along(levels) - 1)
+        draws[["r_me"]][[co]][[g]] <- r[, take, drop = FALSE]
       }
     }
     # category specific group-level terms
