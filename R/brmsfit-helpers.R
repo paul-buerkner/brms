@@ -600,9 +600,14 @@ prepare_family <- function(x) {
   family
 }
 
+fixef_pars <- function() {
+  # regex to extract population-level coefficients
+  "^b(|cs|m|me)_"
+}
+
 default_plot_pars <- function() {
   # list all parameter classes to be included in plots by default
-  c("^b(|cs|m|me)_", "^sd_", "^cor_", "^sigma_", "^rescor_", 
+  c(fixef_pars(), "^sd_", "^cor_", "^sigma_", "^rescor_", 
     paste0("^", auxpars(), "$"), "^delta$", "^ar", "^ma", 
     "^arr", "^sigmaLL", "^simplex_", "^sds_")
 }

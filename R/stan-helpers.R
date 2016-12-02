@@ -844,7 +844,7 @@ stan_rngprior <- function(sample_prior, prior, par_declars = "",
   if (sample_prior) {
     prior <- gsub(" ", "", paste0("\n", prior))
     pars <- gsub("\\\n|to_vector\\(|\\)", "", get_matches("\\\n[^~]+", prior))
-    take <- !grepl("^(z|zs)_|^increment_log_prob\\(", pars)
+    take <- !grepl("^(z|zs|Xme)_|^increment_log_prob\\(", pars)
     pars <- rename(pars[take], symbols = c("^L_", "^Lrescor"), 
                    subs = c("cor_", "rescor"), fixed = FALSE)
     dis <- gsub("~", "", regmatches(prior, gregexpr("~[^\\(]+", prior))[[1]])[take]

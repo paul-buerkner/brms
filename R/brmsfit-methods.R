@@ -37,13 +37,13 @@ parnames.brmsfit <- function(x, ...) {
 fixef.brmsfit <-  function(object, estimate = "mean", ...) {
   contains_samples(object)
   pars <- parnames(object)
-  fpars <- pars[grepl("^b(|cs|m)_", pars)]
+  fpars <- pars[grepl(fixef_pars(), pars)]
   if (!length(fpars)) {
     stop2("The model does not contain population-level effects.")
   }
   out <- posterior_samples(object, pars = fpars, exact_match = TRUE)
   out <- do.call(cbind, lapply(estimate, get_estimate, samples = out, ...))
-  rownames(out) <- gsub("^b(|cs|m)_", "", fpars)
+  rownames(out) <- gsub(fixef_pars(), "", fpars)
   out
 }
 
@@ -67,12 +67,12 @@ fixef.brmsfit <-  function(object, estimate = "mean", ...) {
 vcov.brmsfit <- function(object, correlation = FALSE, ...) {
   contains_samples(object)
   pars <- parnames(object)
-  fpars <- pars[grepl("^b(|cs|m)_", pars)]
+  fpars <- pars[grepl(fixef_pars(), pars)]
   if (!length(fpars)) {
     stop2("The model does not contain population-level effects.")
   }
   samples <- posterior_samples(object, pars = fpars, exact_match = TRUE)
-  names(samples) <- sub("^b(|cs|m)_", "", names(samples))
+  names(samples) <- sub(fixef_pars(), "", names(samples))
   if (correlation) {
     cor(samples) 
   } else {
@@ -721,9 +721,9 @@ summary.brmsfit <- function(object, waic = FALSE, priors = FALSE,
     }
     
     # fixed effects summary
-    fix_pars <- pars[grepl("^b(|cs|m|me)_", pars)]
+    fix_pars <- pars[grepl(fixef_pars(), pars)]
     out$fixed <- fit_summary[fix_pars, , drop = FALSE]
-    rownames(out$fixed) <- gsub("^b(|cs|m|me)_", "", fix_pars)
+    rownames(out$fixed) <- gsub(fixef_pars(), "", fix_pars)
     
     # summary of family specific parameters
     is_mv_par <- apply(sapply(c("^sigma_", "^rescor_"), grepl, pars), 1, any)
