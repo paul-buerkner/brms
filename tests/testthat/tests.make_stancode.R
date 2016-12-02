@@ -509,3 +509,21 @@ test_that("make_stancode handles priors on intercepts correctly", {
   expect_match(sc, paste0("prior_b_count_Intercept = prior_temp_count_Intercept ", 
                           "- dot_product(means_X_count, b_count);"), fixed = TRUE)
 })
+
+test_that("make_stancode handles noise-free terms correctly", {
+  N <- 30
+  dat <- data.frame(y = rnorm(N), x = rnorm(N), z = rnorm(N),
+                    xsd = abs(rnorm(N, 1)), zsd = abs(rnorm(N, 1)),
+                    ID = rep(1:5, each = N / 5))
+  sc <- make_stancode(y ~ me(x, xsd)*me(z, zsd)*x, data = dat,
+                      prior = prior(normal(0,5)))
+  expect_match(sc, fixed = TRUE,
+    "(bme[1]) * Xme_1[n] + (bme[2]) * Xme_2[n] + (bme[3]) * Xme_1[n] .* Xme_2[n]")
+  expect_match(sc, fixed = TRUE, 
+    "(bme[6]) * Xme_1[n] .* Xme_2[n] .* Cn_3[n]")
+  expect_match(sc, "Xme_2 ~ normal(Xn_2, noise_2)", fixed = TRUE)
+  expect_match(sc, "bme ~ normal(0, 5)", fixed = TRUE)
+  
+  sc <- make_stancode(y ~ me(x, xsd)*me(z, zsd) + (me(x, xsd)|ID), data = dat)
+  expect_match(sc, "(bme[1] + r_1_1[J_1[n]]) * Xme_1[n]", fixed = TRUE)
+})

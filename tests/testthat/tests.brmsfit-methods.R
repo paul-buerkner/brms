@@ -1,6 +1,7 @@
 test_that("all S3 methods have reasonable ouputs", {
   fit1 <- brms:::rename_pars(brms:::brmsfit_example1)
   fit2 <- brms:::rename_pars(brms:::brmsfit_example2)
+  fit3 <- brms:::rename_pars(brms:::brmsfit_example3)
   # test S3 methods in alphabetical order
   # as.data.frame
   ps <- as.data.frame(fit1)
@@ -98,7 +99,12 @@ test_that("all S3 methods have reasonable ouputs", {
   # expect_output(print(loo_compare3), "Weights")
   
   loo2 <- SW(LOO(fit2, cores = 1))
-  expect_true(is.numeric(loo1[["looic"]]))
+  expect_true(is.numeric(loo2[["looic"]]))
+  
+  loo3 <- SW(LOO(fit3, cores = 1))
+  expect_true(is.numeric(loo3[["looic"]]))
+  loo3 <- SW(LOO(fit3, pointwise = TRUE, cores = 1))
+  expect_true(is.numeric(loo3[["looic"]]))
   # marginal_effects (the related plot method is tested in tests.plots)
   expect_equal(nrow(marginal_effects(fit1)[[2]]), 100)
   mdata = data.frame(Age = c(-0.3, 0, 0.3), count = c(10, 20, 30), 
@@ -164,6 +170,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_true(is(pp_check(fit1, "error_binned"), "ggplot"))
   ribbon_plot <- pp_check(fit1, "ribbon_grouped", group = "visit", x = "Age")
   expect_true(is(ribbon_plot, "ggplot"))
+  expect_true(is(pp_check(fit3), "ggplot"))
   expect_true(is(pp_check(fit2, "ribbon", x = "Trt"), "ggplot"))
   expect_error(pp_check(fit1, "wrong_type"))
   expect_error(pp_check(fit2, "violin_grouped"), "group")

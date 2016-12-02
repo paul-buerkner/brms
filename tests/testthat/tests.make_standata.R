@@ -396,7 +396,7 @@ test_that("make_standata handles category specific effects correctly", {
                "category specific effects in separate group-level terms")
 })
 
-test_that("make_standata handels wiener diffusion models correctly", {
+test_that("make_standata handles wiener diffusion models correctly", {
   dat <- RWiener::rwiener(n=100, alpha=2, tau=.3, beta=.5, delta=.5)
   dat$x <- rnorm(100)
   dat$dec <- ifelse(dat$resp == "lower", 0, 1)
@@ -407,4 +407,16 @@ test_that("make_standata handels wiener diffusion models correctly", {
   expect_equal(sdata$dec, dat$dec)
   expect_error(make_standata(q | dec(test) ~ x, data = dat, family = wiener()),
                "Decisions should be 'lower' or 'upper'")
+})
+
+test_that("make_standata handles noise-free terms correctly", {
+  N <- 30
+  dat <- data.frame(y = rnorm(N), x = rnorm(N), z = rnorm(N),
+                    xsd = abs(rnorm(N, 1)), zsd = abs(rnorm(N, 1)),
+                    ID = rep(1:5, each = N / 5))
+  sdata <- make_standata(y ~ me(x, xsd)*me(z, zsd)*x, data = dat)
+  expect_equal(sdata$Xn_1, dat$x)
+  expect_equal(sdata$noise_2, dat$zsd)
+  expect_equal(unname(sdata$Cn_3), dat$x)
+  expect_equal(sdata$Kme, 6)
 })
