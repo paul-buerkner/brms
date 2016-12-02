@@ -159,15 +159,15 @@ test_that("arma_predictor runs without errors", {
   expect_silent(arma_predictor(standata = data, eta = eta, ar = ar, ma = ma))
 })
 
-test_that("cse_predictor runs without errors", {
+test_that("cs_predictor runs without errors", {
   X <- matrix(rnorm(300), nrow = 100, ncol = 3)
   b <- matrix(rnorm(30 * 9), nrow = 30, ncol = 9)
   eta <- matrix(rnorm(3000), nrow = 30, ncol = 100)
-  expect_equal(dim(cse_predictor(X = X, b = b, eta = eta, ncat = 4)),
+  expect_equal(dim(cs_predictor(X = X, b = b, eta = eta, ncat = 4)),
                c(30, 100, 3))
   rc <- brms:::named_list(1:4, list(g = eta))
-  expect_equal(dim(cse_predictor(X = X, b = b, eta = eta, 
-                                 ncat = 4, rc = rc)),
+  expect_equal(dim(cs_predictor(X = X, b = b, eta = eta, 
+                                 ncat = 4, r = rc)),
                c(30, 100, 3))
 })
 

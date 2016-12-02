@@ -201,7 +201,7 @@ test_that("make_stancode returns correct code for spline only models", {
 })
 
 test_that("make_stancode generates correct code for category specific effects", {
-  scode <- make_stancode(rating ~ period + carry + cse(treat), 
+  scode <- make_stancode(rating ~ period + carry + cs(treat), 
                          data = inhaler, family = sratio())
   expect_match(scode, "matrix[N, Kcs] Xcs;", fixed = TRUE)
   expect_match(scode, "matrix[Kcs, ncat - 1] bcs;", fixed = TRUE)
@@ -222,13 +222,13 @@ test_that("make_stancode generates correct code for category specific effects", 
 test_that("make_stancode generates correct code for monotonic effects", {
   data <- data.frame(y = rpois(120, 10), x1 = rep(1:4, 30), 
                      x2 = factor(rep(c("a", "b", "c"), 40), ordered = TRUE))
-  scode <- make_stancode(y ~ monotonic(x1 + x2), data = data)
-  expect_match(scode, "int Xm[N, Km];", fixed = TRUE)
-  expect_match(scode, "simplex[Jm[1]] simplex_1;", fixed = TRUE)
-  expect_match(scode, "(bm[2]) * monotonic(simplex_2, Xm[n, 2]);", fixed = TRUE)
+  scode <- make_stancode(y ~ mo(x1 + x2), data = data)
+  expect_match(scode, "int Xmo[N, Kmo];", fixed = TRUE)
+  expect_match(scode, "simplex[Jmo[1]] simplex_1;", fixed = TRUE)
+  expect_match(scode, "(bmo[2]) * monotonic(simplex_2, Xmo[n, 2]);", fixed = TRUE)
   expect_match(scode, "simplex_1 ~ dirichlet(con_simplex_1);", fixed = TRUE)
   scode <- make_stancode(y ~ mono(x1) + (mono(x1)|x2) + (1|x2), data = data)
-  expect_match(scode, "(bm[1] + r_1_1[J_1[n]]) * monotonic(simplex_1, Xm[n, 1]);",
+  expect_match(scode, "(bmo[1] + r_1_1[J_1[n]]) * monotonic(simplex_1, Xmo[n, 1]);",
                fixed = TRUE)
   # check that Z_1_1 is (correctly) undefined
   expect_match(scode, paste0("  int<lower=1> M_1; \n",

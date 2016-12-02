@@ -301,7 +301,7 @@
 #'            set_prior("uniform(-5,5)", class = "delta"))
 #'               
 #' ## verify that the priors indeed found their way into Stan's model code
-#' make_stancode(rating ~ period + carry + cse(treat) + (1|subject),
+#' make_stancode(rating ~ period + carry + cs(treat) + (1|subject),
 #'               data = inhaler, family = sratio(), 
 #'               threshold = "equidistant",
 #'               prior = prior)
@@ -571,11 +571,11 @@ get_prior_effects <- function(effects, data, autocor = cor_arma(),
   spec_intercept <- has_intercept(effects$fixed) && spec_intercept
   prior_fixef <- get_prior_fixef(fixef, spec_intercept = spec_intercept,
                                  nlpar = nlpar, internal = internal)
-  monef <- all_terms(effects$mono)
+  monef <- all_terms(effects$mo)
   prior_monef <- get_prior_monef(monef, fixef = fixef, nlpar = nlpar)
   splines <- get_spline_labels(effects)
   prior_splines <- get_prior_splines(splines, def_scale_prior, nlpar = nlpar)
-  csef <- colnames(get_model_matrix(effects$cse, data = data))
+  csef <- colnames(get_model_matrix(effects$cs, data = data))
   prior_csef <- get_prior_csef(csef, fixef = fixef)
   prior_meef <- get_prior_meef(get_me_labels(effects, data))
   rbind(prior_fixef, prior_monef, prior_splines, prior_csef, prior_meef)
@@ -781,7 +781,7 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
     stop2("Duplicated prior specifications are not allowed.")
   }
   # handle special priors that are not explictly coded as functions in Stan
-  has_specef <- is.formula(ee[["mono"]]) || is.formula(ee[["cse"]])
+  has_specef <- is.formula(ee[["mo"]]) || is.formula(ee[["cs"]])
   prior <- handle_special_priors(prior, has_specef = has_specef)  
   # check if parameters in prior are valid
   if (nrow(prior)) {
@@ -820,12 +820,12 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
     rows2remove <- c(rows2remove, int_index, bint_index)
   }
   # prepare priors of monotonic effects
-  mono_forms <- get_effect(ee, "mono")
-  for (k in seq_along(mono_forms)) {
-    monef <- colnames(get_model_matrix(mono_forms[[k]], data = data))
+  mo_forms <- get_effect(ee, "mo")
+  for (k in seq_along(mo_forms)) {
+    monef <- colnames(get_model_matrix(mo_forms[[k]], data = data))
     for (i in seq_along(monef)) {
       take <- with(prior, class == "simplex" & coef == monef[i] &
-                          nlpar == names(mono_forms)[k])
+                          nlpar == names(mo_forms)[k])
       simplex_prior <- paste0(".", prior$prior[take])
       if (nchar(simplex_prior) > 1L) {
         simplex_prior <- paste(eval(parse(text = simplex_prior)),

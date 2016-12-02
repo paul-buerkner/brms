@@ -38,13 +38,13 @@ extract_effects <- function(formula, family = NA, nonlinear = NULL,
     all_terms <- all_terms(formula)
     pos_re_terms <- grepl("\\|", all_terms)
     re_terms <- all_terms[pos_re_terms]
-    mono_form <- extract_mono(formula)
-    if (is.formula(mono_form)) {
-      x[["mono"]] <- mono_form
+    mo_form <- extract_mo(formula)
+    if (is.formula(mo_form)) {
+      x[["mo"]] <- mo_form
     }
-    cse_form <- extract_cse(formula, family = family)
-    if (is.formula(cse_form)) {
-      x[["cse"]] <- cse_form
+    cs_form <- extract_cs(formula, family = family)
+    if (is.formula(cs_form)) {
+      x[["cs"]] <- cs_form
     }
     me_form <- extract_me(formula)
     if (is.formula(me_form)) {
@@ -54,7 +54,7 @@ extract_effects <- function(formula, family = NA, nonlinear = NULL,
     if (is.formula(gam_form)) {
       x[["gam"]] <- gam_form
     }
-    rm_pos <- lapply(list(mono_form, cse_form, me_form, gam_form), attr, "pos")
+    rm_pos <- lapply(list(mo_form, cs_form, me_form, gam_form), attr, "pos")
     rm_pos <- c(rm_pos, list(pos_re_terms))
     fe_terms <- all_terms[!Reduce("|", rm_pos)]
     int_term <- ifelse(attr(terms, "intercept") == 1, "1", "0")
@@ -151,7 +151,7 @@ extract_effects <- function(formula, family = NA, nonlinear = NULL,
   formula_list <- c(lhs_vars, 
                     add_vars, 
                     fixed_vars,
-                    x[c("covars", "cse", "mono", "me")], 
+                    x[c("covars", "cs", "mo", "me")], 
                     attr(x$gam, "allvars"), 
                     x$random$form,
                     x$random$group, 
@@ -207,40 +207,39 @@ extract_effects <- function(formula, family = NA, nonlinear = NULL,
   x
 } 
 
-extract_mono <- function(formula) {
+extract_mo <- function(formula) {
   # extract monotonic effects
   # Args:
   #   formula: a formula object
   all_terms <- all_terms(formula)
-  pos_mono_terms <- grepl("^mono(|tonic|tonous)\\([^\\|]+$", all_terms)
-  mono_terms <- all_terms[pos_mono_terms]
-  if (length(mono_terms)) {
-    mono_terms <- sub("^mono(|tonous)\\(", "monotonic(", mono_terms)
-    mono_terms <- substr(mono_terms, 11, nchar(mono_terms) - 1)
-    mono_terms <- formula(paste("~", paste(mono_terms, collapse = "+")))
-    if (!length(all.vars(mono_terms))) {
-      stop2("No variable supplied to function 'monotonic'.")
+  pos_mo_terms <- grepl("^mo((no)?|(notonic)?)\\([^\\|]+$", all_terms)
+  mo_terms <- all_terms[pos_mo_terms]
+  if (length(mo_terms)) {
+    mo_terms <- formula(paste("~", paste(eval2(mo_terms), collapse = "+")))
+    if (!length(all.vars(mo_terms))) {
+      stop2("No variable supplied to function 'mo'.")
     }
-    attr(mono_terms, "rsv_intercept") <- TRUE
+    attr(mo_terms, "rsv_intercept") <- TRUE
   }
-  structure(mono_terms, pos = pos_mono_terms)
+  structure(mo_terms, pos = pos_mo_terms)
 }
 
-extract_cse <- function(formula, family = NA) {
+extract_cs <- function(formula, family = NA) {
   # category specific effects in ordinal models
   all_terms <- all_terms(formula)
-  pos_cse_terms <- grepl("^cse\\([^\\|]+$", all_terms)
-  cse_terms <- all_terms[pos_cse_terms]
-  if (length(cse_terms)) {
-    if (!is.na(family[[1]]) && !allows_cse(family)) {
+  pos_cs_terms <- grepl("^cse?\\([^\\|]+$", all_terms)
+  cs_terms <- all_terms[pos_cs_terms]
+  if (length(cs_terms)) {
+    if (!is.na(family[[1]]) && !allows_cs(family)) {
       stop2("Category specific effects are only meaningful for ", 
             "families 'sratio', 'cratio', and 'acat'.")
     }
-    cse_terms <- substr(cse_terms, 5, nchar(cse_terms) - 1)
-    cse_terms <- formula(paste("~", paste(cse_terms, collapse = "+")))
-    attr(cse_terms, "rsv_intercept") <- TRUE
+    cs_terms <- formula(paste("~", paste(eval2(cs_terms), collapse = "+")))
+    # do not test whether variables were supplied to 'cs'
+    # to allow category specific group-level intercepts
+    attr(cs_terms, "rsv_intercept") <- TRUE
   }
-  structure(cse_terms, pos = pos_cse_terms)
+  structure(cs_terms, pos = pos_cs_terms)
 }
 
 extract_gam <- function(formula) {
@@ -420,7 +419,7 @@ avoid_auxpars <- function(names, effects) {
   # Args:
   #   names: names to check for ambiguity
   #   effects: output of extract_effects
-  auxpars <- c(auxpars(), "mono", "cse")
+  auxpars <- c(auxpars(), "mo", "cs")
   auxpars <- intersect(auxpars, names(effects))
   if (length(auxpars)) {
     auxpars_prefix <- paste0("^", auxpars, "_")
@@ -447,10 +446,10 @@ update_formula <- function(formula, data = NULL, family = gaussian(),
   old_attributes <- attributes(formula)
   fnew <- ". ~ ."
   if (!is.null(partial)) {
-    warning2("Argument 'partial' is deprecated. Please use the 'cse' ", 
+    warning2("Argument 'partial' is deprecated. Please use the 'cs' ", 
              "function inside the model formula instead.")
     partial <- formula2string(as.formula(partial), rm = 1)
-    fnew <- paste(fnew, "+ cse(", partial, ")")
+    fnew <- paste(fnew, "+ cs(", partial, ")")
   }
   # to allow the '.' symbol in formula
   try_terms <- try(terms(formula, data = data), silent = TRUE)
@@ -523,25 +522,25 @@ split_re_terms <- function(re_terms) {
     # check for special terms
     lhs_form <- formula(paste("~", lhs_terms[i]))
     lhs_all_terms <- all_terms(lhs_form)
-    lhs_form_mono <- extract_mono(lhs_form)
-    if (is.formula(lhs_form_mono)) {
-      pos_mono <- attr(lhs_form_mono, "pos")
-      if (!all(pos_mono)) {
+    lhs_form_mo <- extract_mo(lhs_form)
+    if (is.formula(lhs_form_mo)) {
+      pos_mo <- attr(lhs_form_mo, "pos")
+      if (!all(pos_mo)) {
         stop2("Please specify monotonic effects ", 
               "in separate group-level terms.")
       }
-      lhs_terms[i] <- formula2string(lhs_form_mono, rm = 1)
-      type[[i]] <- "mono"
+      lhs_terms[i] <- formula2string(lhs_form_mo, rm = 1)
+      type[[i]] <- "mo"
     }
-    lhs_form_cse <- extract_cse(lhs_form)
-    if (is.formula(lhs_form_cse)) {
-      pos_cse <- attr(lhs_form_cse, "pos")
-      if (!all(pos_cse)) {
+    lhs_form_cs <- extract_cs(lhs_form)
+    if (is.formula(lhs_form_cs)) {
+      pos_cs <- attr(lhs_form_cs, "pos")
+      if (!all(pos_cs)) {
         stop2("Please specify category specific effects ", 
               "in separate group-level terms.")
       }
-      lhs_terms[i] <- formula2string(lhs_form_cse, rm = 1)
-      type[[i]] <- "cse"
+      lhs_terms[i] <- formula2string(lhs_form_cs, rm = 1)
+      type[[i]] <- "cs"
     }
     lhs_form_me <- extract_me(lhs_form)
     if (is.formula(lhs_form_me)) {
@@ -674,7 +673,7 @@ plus_rhs <- function(x) {
 }
 
 get_effect <- function(effects, 
-                       target = c("fixed", "mono", "me", "cse", "gam"),
+                       target = c("fixed", "mo", "me", "cs", "gam"),
                        all = TRUE) {
   # get formulas of certain effects in a list
   # Args:
@@ -776,7 +775,7 @@ get_all_effects <- function(effects, rsv_vars = NULL) {
   .get_all_effects <- function(ee) {
     alist <- lapply(attr(ee$gam, "covars"), function(x) 
       formula(paste("~", paste(x, collapse = "*"))))
-    get_var_combs(ee$fixed, ee$mono, ee$cse, ee$me, alist = alist)
+    get_var_combs(ee$fixed, ee$mo, ee$cs, ee$me, alist = alist)
   }
   if (length(effects$nonlinear)) {
     # allow covariates as well as fixed effects of non-linear parameters
@@ -859,40 +858,6 @@ get_me_labels <- function(x, data) {
   uni_me <- get_matches("(^|:)me\\([^:]+(:|$)", colnames(mm))
   uni_me <- unique(gsub(" |:", "", uni_me))
   structure(colnames(mm), not_one = not_one, uni_me = uni_me)
-}
-
-#' Predictors with measurement error in \pkg{brms} models
-#' 
-#' @param x The variable measured with error.
-#' @param noise Known measurement error of \code{x}.
-#' 
-#' @details This function is almost solely useful when
-#'   called within functions of the \pkg{brms} package. 
-#' 
-#' @export
-me <- function(x, noise = NULL) {
-  # allows to evaluate me calls
-  # Args:
-  #   x: noisy variable
-  #   se: measurement error
-  x <- as.vector(x)
-  noise <- as.vector(noise)
-  if (length(noise) == 0L) {
-    stop2("Argument 'noise' is missing in function 'me'.")
-  } else if (length(noise) == 1L) {
-    noise <- rep(noise, length(x))
-  }
-  if (!is.numeric(x)) {
-    stop2("Noisy variables should be numeric.")
-  }
-  if (!is.numeric(noise)) {
-    stop2("Measurement error should be numeric.")
-  }
-  if (any(noise <= 0)) {
-    stop2("Measurement error should be positive.")
-  }
-  out <- rep(1, length(x))
-  structure(out, var = x, noise = noise) 
 }
 
 all_terms <- function(formula) {
@@ -1004,9 +969,9 @@ has_splines <- function(effects) {
   out || any(ulapply(ee_auxpars, has_splines))
 }
 
-has_cse <- function(effects) {
-  length(all_terms(effects$cse)) ||
-    any(get_random(effects)$type %in% "cse")
+has_cs <- function(effects) {
+  length(all_terms(effects$cs)) ||
+    any(get_random(effects)$type %in% "cs")
 }
 
 tidy_ranef <- function(effects, data = NULL, all = TRUE, ncat = NULL) {
@@ -1026,17 +991,17 @@ tidy_ranef <- function(effects, data = NULL, all = TRUE, ncat = NULL) {
   #     cn: number of the effect within the ID
   #     nlpar: name of the corresponding non-linear parameter
   #     cor: are correlations modeled for this effect?
-  #     type: special effects type; can be "mono" or "cse"
+  #     type: special effects type; can be "mo", "cs", or "me"
   #     form: formula used to compute the effects
   random <- get_random(effects, all = all)
   ranef <- vector("list", nrow(random))
   used_ids <- new_ids <- id_groups <- NULL
   j <- 1
   for (i in seq_len(nrow(random))) {
-    if (random$type[[i]] == "mono") {
-      coef <- prepare_mono_vars(random$form[[i]], data, check = FALSE)
+    if (random$type[[i]] == "mo") {
+      coef <- prepare_mo_vars(random$form[[i]], data, check = FALSE)
       coef <- colnames(coef)
-    } else if (random$type[[i]] == "cse") {
+    } else if (random$type[[i]] == "cs") {
       coef <- colnames(get_model_matrix(random$form[[i]], data = data))
       if (is.null(ncat)) {
         # try to infer ncat from the data

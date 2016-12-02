@@ -21,7 +21,7 @@ stan_llh <- function(family, effects = list(), data = NULL,
   has_cens <- has_cens(effects$cens, data = data)
   has_disp <- is.formula(effects$disp)
   has_trials <- is.formula(effects$trials)
-  has_cse <- has_cse(effects)
+  has_cs <- has_cs(effects)
   bounds <- get_bounds(effects$trunc, data = data)
   has_trunc <- any(bounds$lb > -Inf) || any(bounds$ub < Inf)
   llh_adj <- stan_llh_adj(effects)
@@ -62,7 +62,7 @@ stan_llh <- function(family, effects = list(), data = NULL,
 
   simplify <- !has_trunc && !has_cens && stan_has_built_in_fun(family, link)
   eta <- paste0(ifelse(is_mv, "Eta", "eta"), n)
-  ord_args <- paste0("eta[n], ", if (has_cse) "etacs[n], ", "temp_Intercept")
+  ord_args <- paste0("eta[n], ", if (has_cs) "etacs[n], ", "temp_Intercept")
   inv_gauss_fun <- paste0("inv_gaussian", if (!reqn) "_vector")
   inv_gauss_args <- paste0(eta, ", shape, ", if (!reqn) "sum_", 
                            "log_Y", n, ", sqrt_Y", n)
@@ -460,13 +460,13 @@ stan_mv <- function(family, response, prior = brmsprior()) {
 }
 
 stan_ordinal <- function(family, prior = brmsprior(), 
-                         cse = FALSE, threshold = "flexible") {
+                         cs = FALSE, threshold = "flexible") {
   # Ordinal effects in Stan
   # Args:
   #   family: the model family
   #   prior: a data.frame containing user defined priors 
   #          as returned by check_prior
-  #   cse: logical; are there category specific effects?
+  #   cs: logical; are there category specific effects?
   #   threshold: either "flexible" or "equidistant" 
   # Returns:
   #   A vector of strings containing the ordinal effects in stan language
@@ -478,7 +478,7 @@ stan_ordinal <- function(family, prior = brmsprior(),
     th <- function(k, fam = family) {
       # helper function generating stan code inside ilink(.)
       sign <- ifelse(fam %in% c("cumulative", "sratio"), " - ", " + ")
-      ptl <- ifelse(cse, paste0(sign, "etacs[k]"), "") 
+      ptl <- ifelse(cs, paste0(sign, "etacs[k]"), "") 
       if (sign == " - ") {
         out <- paste0("thres[",k,"]", ptl, " - eta")
       } else {
@@ -510,7 +510,7 @@ stan_ordinal <- function(family, prior = brmsprior(),
     
     # generate Stan code specific for each ordinal model
     if (!(family == "cumulative" && ilink == "inv_logit")) {
-      cse_arg <- ifelse(!cse, "", "row_vector etacs, ")
+      cs_arg <- ifelse(!cs, "", "row_vector etacs, ")
       out$fun <- paste0(
         "  /* ", family, " log-PDF for a single response \n",
         "   * Args: \n",
@@ -521,7 +521,7 @@ stan_ordinal <- function(family, prior = brmsprior(),
         "   * Returns: \n", 
         "   *   a scalar to be added to the log posterior \n",
         "   */ \n",
-        "   real ", family, "_lpmf(int y, real eta, ", cse_arg, "vector thres) { \n",
+        "   real ", family, "_lpmf(int y, real eta, ", cs_arg, "vector thres) { \n",
         "     int ncat; \n",
         "     vector[num_elements(thres) + 1] p; \n",
         if (family != "cumulative") "     vector[num_elements(thres)] q; \n",

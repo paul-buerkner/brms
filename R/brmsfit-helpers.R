@@ -99,6 +99,10 @@ restructure <- function(x, rstr_summary = FALSE) {
         change_old_splines(ee, pars = parnames(x),
                            dims = x$fit@sim$dims_oi))
     }
+    if (isTRUE(x$version <= "1.2.0")) {
+      x$ranef$type[x$ranef$type == "mono"] <- "mo"
+      x$ranef$type[x$ranef$type == "cse"] <- "cs"
+    }
     for (i in seq_along(change)) {
       x <- do_renaming(change = change[[i]], x = x)
     }
@@ -172,7 +176,7 @@ prepare_conditions <- function(x, conditions = NULL, effects = NULL,
   mf <- model.frame(x)
   new_formula <- update_re_terms(formula(x), re_formula = re_formula)
   ee <- extract_effects(new_formula, family = family(x))
-  int_effects <- c(get_effect(ee, "mono"), rmNULL(ee[c("trials", "cat")]))
+  int_effects <- c(get_effect(ee, "mo"), rmNULL(ee[c("trials", "cat")]))
   int_vars <- unique(ulapply(int_effects, all.vars))
   if (is.null(conditions)) {
     if (!is.null(ee$trials)) {
@@ -181,7 +185,7 @@ prepare_conditions <- function(x, conditions = NULL, effects = NULL,
     # list all required variables
     req_vars <- c(lapply(get_effect(ee), rhs), 
                   get_random(ee)$form,
-                  lapply(get_effect(ee, "mono"), rhs),
+                  lapply(get_effect(ee, "mo"), rhs),
                   lapply(get_effect(ee, "me"), rhs),
                   lapply(get_effect(ee, "gam"), rhs), 
                   ee[c("cse", "se", "disp", "trials", "cat")])
@@ -602,7 +606,7 @@ prepare_family <- function(x) {
 
 fixef_pars <- function() {
   # regex to extract population-level coefficients
-  "^b(|cs|m|me)_"
+  "^b(|cs|mo|me|m)_"
 }
 
 default_plot_pars <- function() {

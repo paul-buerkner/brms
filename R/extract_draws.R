@@ -152,15 +152,16 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
       do.call(as.matrix, c(args, list(pars = b_pars, exact = TRUE)))
   }
   # monotonic effects
-  if (isTRUE(ncol(draws$data[["Xm"]]) > 0)) {
-    monef <- colnames(draws$data[["Xm"]])
-    draws[["bm"]] <- draws$simplex <- named_list(monef)
-    # as of brms > 1.0.1 the original prefix 'bm' is used
-    bm <- ifelse(any(grepl("^bm_", parnames(x))), "bm_", "b_")
+  if (isTRUE(ncol(draws$data[["Xmo"]]) > 0)) {
+    monef <- colnames(draws$data[["Xmo"]])
+    draws[["bmo"]] <- draws$simplex <- named_list(monef)
+    # as of brms > 1.2.0 the prefix 'bmo' is used
+    bmo <- ifelse(any(grepl("^bmo_", parnames(x))), "bmo_",
+                  ifelse(any(grepl("^bm_", parnames(x))), "bm_", "b_"))
     for (i in seq_along(monef)) {
-      bm_par <- paste0(bm, nlpar_usc, monef[i])
-      draws[["bm"]][[i]] <- 
-        do.call(as.matrix, c(args, list(pars = bm_par, exact = TRUE)))
+      bmo_par <- paste0(bmo, nlpar_usc, monef[i])
+      draws[["bmo"]][[i]] <- 
+        do.call(as.matrix, c(args, list(pars = bmo_par, exact = TRUE)))
       simplex_par <- paste0("simplex_", nlpar_usc, monef[i], 
                             "[", seq_len(draws$data$Jm[i]), "]")
       draws[["simplex"]][[i]] <- 
@@ -222,13 +223,13 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
     if (isTRUE(ncol(draws$data[["Xcs"]]) > 0)) {
       # as of brms > 1.0.1 the original prefix 'bcs' is used
       bcs <- ifelse(any(grepl("^bcs_", parnames(x))), "^bcs_", "^b_")
-      cse_pars <- paste0(bcs, colnames(draws$data$Xcs), "\\[")
-      draws[["cse"]] <- do.call(as.matrix, c(args, list(pars = cse_pars)))
+      cs_pars <- paste0(bcs, colnames(draws$data$Xcs), "\\[")
+      draws[["cs"]] <- do.call(as.matrix, c(args, list(pars = cs_pars)))
     }
   } else if (draws$old_cat == 1L) {
     # old categorical models deprecated as of brms > 0.8.0
     if (!is.null(draws$data[["X"]])) {
-      draws[["cse"]] <- do.call(as.matrix, c(args, list(pars = "^b_")))
+      draws[["cs"]] <- do.call(as.matrix, c(args, list(pars = "^b_")))
     }
   }
   # splines
@@ -249,8 +250,8 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   
   # requires initialization to assign S4 objects of the Matrix package
   groups <- unique(new_ranef$group) 
-  draws[["Z"]] <- draws[["Z_mono"]] <- 
-    draws[["Z_cse"]] <- draws[["Z_me"]] <- named_list(groups)
+  draws[["Z"]] <- draws[["Zmo"]] <- 
+    draws[["Zcs"]] <- draws[["Zme"]] <- named_list(groups)
   for (g in groups) {
     new_r <- new_ranef[new_ranef$group == g, ]
     gf <- get(paste0("J_", new_r$id[1]), draws$data)
@@ -288,18 +289,18 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
     levels <- unique(gf)
     r <- subset_levels(r, levels, nranef)
     # monotonic group-level terms
-    new_r_mono <- new_r[new_r$type == "mono", ]
-    if (nrow(new_r_mono)) {
-      Z_mono <- expand_matrix(matrix(1, length(gf)), gf)
+    new_r_mo <- new_r[new_r$type == "mo", ]
+    if (nrow(new_r_mo)) {
+      Z_mo <- expand_matrix(matrix(1, length(gf)), gf)
       if (length(levels) < nlevels) {
-        Z_mono <- Z_mono[, levels, drop = FALSE]
+        Z_mo <- Z_mo[, levels, drop = FALSE]
       }
-      draws[["Z_mono"]][[g]] <- Z_mono
-      draws[["r_mono"]] <- named_list(new_r_mono$coef, list())
-      for (co in names(draws[["r_mono"]])) {
-        take <- which(new_r$coef == co & new_r$type == "mono")
+      draws[["Zmo"]][[g]] <- Z_mo
+      draws[["rmo"]] <- named_list(new_r_mo$coef, list())
+      for (co in names(draws[["rmo"]])) {
+        take <- which(new_r$coef == co & new_r$type == "mo")
         take <- take + nranef * (seq_along(levels) - 1)
-        draws[["r_mono"]][[co]][[g]] <- r[, take, drop = FALSE]
+        draws[["rmo"]][[co]][[g]] <- r[, take, drop = FALSE]
       }
     }
     # noise-free group-level terms
@@ -309,25 +310,25 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
       if (length(levels) < nlevels) {
         Z_me <- Z_me[, levels, drop = FALSE]
       }
-      draws[["Z_me"]][[g]] <- Z_me
-      draws[["r_me"]] <- named_list(new_r_me$coef, list())
+      draws[["Zme"]][[g]] <- Z_me
+      draws[["rme"]] <- named_list(new_r_me$coef, list())
       for (co in names(draws[["r_me"]])) {
         take <- which(new_r$coef == co & new_r$type == "me")
         take <- take + nranef * (seq_along(levels) - 1)
-        draws[["r_me"]][[co]][[g]] <- r[, take, drop = FALSE]
+        draws[["rme"]][[co]][[g]] <- r[, take, drop = FALSE]
       }
     }
     # category specific group-level terms
-    new_r_cse <- new_r[new_r$type == "cse", ]
-    if (nrow(new_r_cse)) {
-      Z <- prepare_Z(new_r_cse, gf, draws$data)
-      draws[["Z_cse"]][[g]] <- Z
-      draws[["r_cse"]] <- named_list(seq_len(draws$data$ncat - 1), list())
-      for (i in names(draws[["r_cse"]])) {
+    new_r_cs <- new_r[new_r$type == "cs", ]
+    if (nrow(new_r_cs)) {
+      Z <- prepare_Z(new_r_cs, gf, draws$data)
+      draws[["Zcs"]][[g]] <- Z
+      draws[["rcs"]] <- named_list(seq_len(draws$data$ncat - 1), list())
+      for (i in names(draws[["rcs"]])) {
         index <- paste0("\\[", i, "\\]$")
-        take <- which(grepl(index, new_r$coef) & new_r$type == "cse")
+        take <- which(grepl(index, new_r$coef) & new_r$type == "cs")
         take <- as.vector(outer(take, nranef * (seq_along(levels) - 1), "+"))
-        draws[["r_cse"]][[i]][[g]] <- r[, take, drop = FALSE]
+        draws[["rcs"]][[i]][[g]] <- r[, take, drop = FALSE]
       }
     }
     # basic group-level effects

@@ -69,7 +69,7 @@ rename_pars <- function(x) {
   
   # order parameter samples after parameter class
   chains <- length(x$fit@sim$samples) 
-  all_classes <- c("b_Intercept", "b", "bm", "bcs", "bme", "ar", "ma", "arr", 
+  all_classes <- c("b_Intercept", "b", "bmo", "bcs", "bme", "ar", "ma", "arr", 
                    "sd", "cor", "sds", auxpars(), "sigmaLL", "rescor", "delta",
                    "simplex", "r", "s", "loclev", "Xme", "prior", "lp")
   class <- get_matches("^[^_\\[]+", x$fit@sim$fnames_oi)
@@ -106,7 +106,7 @@ rename_pars <- function(x) {
       change_eff <- change_effects(
         pars = pars, dims = x$fit@sim$dims_oi,
         fixef = colnames(standata[[paste0("X_", p)]]),
-        monef = colnames(standata[[paste0("Xm_", p)]]),
+        monef = colnames(standata[[paste0("Xmo_", p)]]),
         meef = get_me_labels(ee$nonlinear[[p]], x$data),
         splines = splines, nlpar = p)
       change <- c(change, change_eff)
@@ -119,7 +119,7 @@ rename_pars <- function(x) {
                               stancode(x), nlpar = r)
         change_eff <- change_effects(
           pars = pars, dims = x$fit@sim$dims_oi, 
-          fixef = fixef, monef = colnames(standata[[paste0("Xm_", r)]]),
+          fixef = fixef, monef = colnames(standata[[paste0("Xmo_", r)]]),
           meef = get_me_labels(ee, x$data),
           splines = get_spline_labels(ee, x$data, covars = TRUE),
           nlpar = r)
@@ -129,7 +129,7 @@ rename_pars <- function(x) {
       fixef <- rm_int_fixef(colnames(standata[["X"]]), stancode(x))
       change_eff <- change_effects(
         pars = pars, dims = x$fit@sim$dims_oi, 
-        fixef = fixef, monef = colnames(standata[["Xm"]]),
+        fixef = fixef, monef = colnames(standata[["Xmo"]]),
         meef = get_me_labels(ee, x$data),
         splines = get_spline_labels(ee, x$data, covars = TRUE))
       change_csef <- change_csef(colnames(standata[["Xcs"]]), 
@@ -142,7 +142,7 @@ rename_pars <- function(x) {
     change_eff <- change_effects(
       pars = pars, dims = x$fit@sim$dims_oi,
       fixef = colnames(standata[[paste0("X_", ap)]]),
-      monef = colnames(standata[[paste0("Xm_", ap)]]),
+      monef = colnames(standata[[paste0("Xmo_", ap)]]),
       meef = get_me_labels(ee[[ap]], x$data),
       splines = get_spline_labels(ee[[ap]], x$data, covars = TRUE),
       nlpar = ap)
@@ -218,18 +218,18 @@ change_monef <- function(monef, pars, nlpar = "") {
   change <- list()
   if (length(monef)) {
     p <- usc(nlpar, "prefix")
-    bm <- paste0("bm", p)
-    newnames <- paste0("bm", p, "_", monef)
-    change <- lc(change, list(pos = grepl(paste0("^", bm, "\\["), pars), 
-                              oldname = bm, pnames = newnames, 
+    bmo <- paste0("bmo", p)
+    newnames <- paste0("bmo", p, "_", monef)
+    change <- lc(change, list(pos = grepl(paste0("^", bmo, "\\["), pars), 
+                              oldname = bmo, pnames = newnames, 
                               fnames = newnames))
-    change <- c(change, change_prior(class = bm, pars = pars, names = monef))
+    change <- c(change, change_prior(class = bmo, pars = pars, names = monef))
     for (i in seq_along(monef)) {
       simplex <- paste0(paste0("simplex", p, "_"), c(i, monef[i]))
       pos <- grepl(paste0("^", simplex[1], "\\["), pars)
       change <- lc(change, 
         list(pos = pos, oldname = simplex[1], pnames = simplex[2], 
-             fnames = paste0(simplex[2], "[", 1:sum(pos), "]"), 
+             fnames = paste0(simplex[2], "[", seq_len(sum(pos)), "]"), 
              dim = sum(pos)))
       change <- c(change,
         change_prior(class = simplex[1], new_class = simplex[2],

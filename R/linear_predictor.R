@@ -27,19 +27,19 @@ linear_predictor <- function(draws, i = NULL) {
                         ncol = N, byrow = TRUE)
   }
   # incorporate monotonic effects
-  monef <- names(draws[["bm"]])
+  monef <- names(draws[["bmo"]])
   for (j in seq_along(monef)) {
     # prepare monotonic group-level effects
-    r_mono <- draws[["r_mono"]][[monef[j]]]
-    rm <- named_list(names(r_mono))
+    rmo_temp <- draws[["rmo"]][[monef[j]]]
+    rmo <- named_list(names(rmo_temp))
     for (g in names(rm)) {
-      rm[[g]] <- ranef_predictor(Z = p(draws[["Z_mono"]][[g]], i),
-                                 r = r_mono[[g]])
+      rmo[[g]] <- ranef_predictor(Z = p(draws[["Zmo"]][[g]], i),
+                                  r = rmo[[g]])
     }
-    eta <- eta + monef_predictor(Xm = p(draws$data$Xm[, j], i), 
-                                 bm = draws[["bm"]][[j]], 
-                                 simplex = draws$simplex[[j]],
-                                 rm = Reduce("+", rm))
+    eta <- eta + mo_predictor(X = p(draws$data$Xmo[, j], i), 
+                              b = draws[["bmo"]][[j]], 
+                              simplex = draws$simplex[[j]],
+                              r = Reduce("+", rmo))
   }
   # incorporate noise-free effects
   meef <- names(draws[["bme"]])
@@ -56,15 +56,15 @@ linear_predictor <- function(draws, i = NULL) {
     calls <- attr(draws[["bme"]], "calls")
     for (j in seq_along(meef)) {
       # prepare noise-free group-level effects
-      rme_temp <- draws[["r_me"]][[meef[j]]]
+      rme_temp <- draws[["rme"]][[meef[j]]]
       rme <- named_list(names(rme_temp))
       for (g in names(rme)) {
-        rme[[g]] <- ranef_predictor(Z = p(draws[["Z_me"]][[g]], i),
+        rme[[g]] <- ranef_predictor(Z = p(draws[["Zme"]][[g]], i),
                                     r = rme_temp[[g]])
       }
-      eta <- eta + meef_predictor(eval_list, call = calls[[j]],
-                                  bme = draws[["bme"]][[j]],
-                                  rme = Reduce("+", rme))
+      eta <- eta + me_predictor(eval_list, call = calls[[j]],
+                                b = draws[["bme"]][[j]],
+                                r = Reduce("+", rme))
     }
   }
   
@@ -99,24 +99,24 @@ linear_predictor <- function(draws, i = NULL) {
     eta <- eta + p(draws$loclev, i, row = FALSE)
   }
   if (is.ordinal(draws$f)) {
-    if (!is.null(draws[["cse"]]) || !is.null(draws[["r_cse"]])) {
+    if (!is.null(draws[["cs"]]) || !is.null(draws[["rcs"]])) {
       ncat <- draws$data$ncat
-      if (!is.null(draws[["r_cse"]])) {
-        rc <- named_list(seq_len(ncat - 1))
-        for (k in names(rc)) {
-          rc[[k]] <- named_list(names(draws[["r_cse"]][[k]]))
-          for (g in names(rc[[k]])) {
-            rc[[k]][[g]] <- ranef_predictor(Z = p(draws[["Z_cse"]][[g]], i),
-                                            r = draws[["r_cse"]][[k]][[g]])
+      if (!is.null(draws[["rcs"]])) {
+        rcs <- named_list(seq_len(ncat - 1))
+        for (k in names(rcs)) {
+          rcs[[k]] <- named_list(names(draws[["rcs"]][[k]]))
+          for (g in names(rcs[[k]])) {
+            rcs[[k]][[g]] <- ranef_predictor(Z = p(draws[["Zcs"]][[g]], i),
+                                             r = draws[["rcs"]][[k]][[g]])
           }
-          rc[[k]] <- Reduce("+", rc[[k]])
+          rcs[[k]] <- Reduce("+", rcs[[k]])
         }
       } else {
-        rc <- NULL
+        rcs <- NULL
       }
-      eta <- cse_predictor(X = p(draws$data[["Xcs"]], i), 
-                           b = draws[["cse"]], eta = eta, 
-                           ncat = ncat, rc = rc)
+      eta <- cs_predictor(X = p(draws$data[["Xcs"]], i), 
+                          b = draws[["cs"]], eta = eta, 
+                          ncat = ncat, r = rcs)
     } else {
       eta <- array(eta, dim = c(dim(eta), draws$data$max_obs - 1))
     } 
@@ -130,9 +130,9 @@ linear_predictor <- function(draws, i = NULL) {
   } else if (isTRUE(draws$old_cat > 0L)) {
     if (draws$old_cat == 1L) {
       # deprecated as of brms > 0.8.0
-      if (!is.null(draws[["cse"]])) {
-        eta <- cse_predictor(X = p(draws$data[["X"]], i), b = draws[["cse"]], 
-                             eta = eta, ncat = draws$data$max_obs)
+      if (!is.null(draws[["cs"]])) {
+        eta <- cs_predictor(X = p(draws$data[["X"]], i), b = draws[["cs"]], 
+                            eta = eta, ncat = draws$data$max_obs)
       } else {
         eta <- array(eta, dim = c(dim(eta), draws$data$max_obs - 1))
       }
@@ -205,35 +205,35 @@ fixef_predictor <- function(X, b) {
   tcrossprod(b, X)
 }
 
-monef_predictor <- function(Xm, bm, simplex, rm = NULL) {
+mo_predictor <- function(X, b, simplex, r = NULL) {
   # compute eta for monotonic effects
   # Args:
-  #   Xm: a vector of data for the monotonic effect
-  #   bm: monotonic effects samples
+  #   X: a vector of data for the monotonic effect
+  #   b: monotonic effects samples
   #   simplex: matrix of samples of the simplex
   #            corresponding to bm
-  #   rm: matrix with monotonic group-level samples
-  stopifnot(is.vector(Xm))
+  #   r: matrix with monotonic group-level samples
+  stopifnot(is.vector(X))
   stopifnot(is.matrix(simplex))
-  bm <- as.vector(bm)
+  b <- as.vector(b)
   for (i in 2:ncol(simplex)) {
     # compute the cumulative representation of the simplex 
     simplex[, i] <- simplex[, i] + simplex[, i - 1]
   }
   simplex <- cbind(0, simplex)
-  if (is.null(rm)) rm <- 0 
-  (bm + rm) * simplex[, Xm + 1]
+  if (is.null(r)) r <- 0 
+  (b + r) * simplex[, X + 1]
 }
 
-meef_predictor <- function(eval_list, call, bme, rme = NULL) {
+me_predictor <- function(eval_list, call, b, r = NULL) {
   # compute eta for noise-free effects
   # Args:
   #   Xme: a matrix of samples of the noise-free variable
-  #   bme: samples of the noise-free coefficient
-  #   rm: matrix with meef group-level samples
-  bme <- as.vector(bme)
-  if (is.null(rme)) rme <- 0 
-  (bme + rme) * eval(call, eval_list)
+  #   b: samples of the noise-free coefficient
+  #   r: matrix with meef group-level samples
+  b <- as.vector(b)
+  if (is.null(r)) r <- 0 
+  (b + r) * eval(call, eval_list)
 }
 
 ranef_predictor <- function(Z, r) {
@@ -293,14 +293,14 @@ arma_predictor <- function(standata, eta, ar = NULL, ma = NULL,
   eta
 }
 
-cse_predictor <- function(X, b, eta, ncat, rc = NULL) {
+cs_predictor <- function(X, b, eta, ncat, r = NULL) {
   # add category specific effects to eta
   # Args:
   #   X: category specific design matrix 
   #   b: category specific effects samples
   #   ncat: number of categories
   #   eta: linear predictor matrix
-  #   rc: list of 
+  #   r: list of samples of cs group-level effects
   # Returns: 
   #   linear predictor including category specific effects as a 3D array
   stopifnot(is.null(X) && is.null(b) || is.matrix(X) && is.matrix(b))
@@ -314,8 +314,8 @@ cse_predictor <- function(X, b, eta, ncat, rc = NULL) {
     if (!is.null(X)) {
       eta[, , k] <- eta[, , k] + b[, I + k, drop = FALSE] %*% X 
     }
-    if (!is.null(rc[[k]])) {
-      eta[, , k] <- eta[, , k] + rc[[k]]
+    if (!is.null(r[[k]])) {
+      eta[, , k] <- eta[, , k] + r[[k]]
     }
   }
   eta

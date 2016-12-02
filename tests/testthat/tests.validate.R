@@ -113,7 +113,7 @@ test_that("extract_effects returns expected error messages", {
                "Non-linear effects are not yet allowed for this family", 
                fixed = TRUE)
   expect_error(extract_effects(y ~ mono(1)),
-               "No variable supplied to function 'monotonic'")
+               "No variable supplied to function 'mo'")
   expect_error(extract_effects(y | se(sei) ~ x, family = weibull()),
                "Argument 'se' is not supported for family")
   expect_error(extract_effects(y | se(sei) + se(sei2) ~ x, 
@@ -206,14 +206,14 @@ test_that("extract_time returns all desired variables", {
 
 test_that("update_formula returns correct formulas", {
   expect_warning(uf <- update_formula(y ~ x + z, partial = ~ a + I(a^2)))
-  expect_equal(uf, y ~ x + z + cse(a + I(a^2)))
+  expect_equal(uf, y ~ x + z + cs(a + I(a^2)))
 })
 
 test_that("get_effect works correctly", {
   effects <- extract_effects(y ~ a - b^x, 
                nonlinear = list(a ~ z, b ~ v + mono(z)))
   expect_equivalent(get_effect(effects), list(y ~ a - b^x, ~1 + z, ~ 1 + v))
-  expect_equivalent(get_effect(effects, "mono"), list(b = ~ z))
+  expect_equivalent(get_effect(effects, "mo"), list(b = ~ z))
   effects <- extract_effects(y ~ x + z + (1|g))
   expect_equivalent(get_effect(effects), list(y ~ 1 + x + z))
 })

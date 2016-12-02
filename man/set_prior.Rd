@@ -316,7 +316,7 @@ prior <- c(set_prior("normal(0,10)", class = "b"),
            set_prior("uniform(-5,5)", class = "delta"))
               
 ## verify that the priors indeed found their way into Stan's model code
-make_stancode(rating ~ period + carry + cse(treat) + (1|subject),
+make_stancode(rating ~ period + carry + cs(treat) + (1|subject),
               data = inhaler, family = sratio(), 
               threshold = "equidistant",
               prior = prior)

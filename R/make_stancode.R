@@ -80,7 +80,7 @@ make_stancode <- function(formula, data, family = gaussian(),
   text_autocor <- stan_autocor(autocor, effects = ee, family = family,
                                prior = prior)
   text_mv <- stan_mv(family, response = ee$response, prior = prior)
-  text_ordinal <- stan_ordinal(family, prior = prior, cse = has_cse(ee), 
+  text_ordinal <- stan_ordinal(family, prior = prior, cs = has_cs(ee), 
                                threshold = threshold)
   text_families <- stan_families(family)
   text_se <- stan_se(is.formula(ee$se))

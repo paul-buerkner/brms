@@ -1291,7 +1291,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   }
   
   conditions <- prepare_conditions(x, conditions, effects, re_formula)
-  int_effects <- c(get_effect(ee, "mono"), rmNULL(ee[c("trials", "cat")]))
+  int_effects <- c(get_effect(ee, "mo"), rmNULL(ee[c("trials", "cat")]))
   int_vars <- unique(ulapply(int_effects, all.vars))
   mf <- model.frame(x)
   results <- list()
@@ -1938,7 +1938,7 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
       family <- get_arg("family", dots, object)
       ee_new <- extract_effects(dots$formula, family = family)
       # no need to recompile the model when changing fixed effects only
-      dont_change <- c("random", "gam", "cse", "mono")
+      dont_change <- c("random", "gam", "cs", "mo", "me")
       n_old_fixef <- length(attr(terms(ee_old$fixed), "term.labels"))
       n_new_fixef <- length(attr(terms(ee_new$fixed), "term.labels"))
       recompile <- recompile ||

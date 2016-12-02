@@ -33,7 +33,7 @@ make_standata <- function(formula, data, family = "gaussian",
   #   not4stan: is make_standata called for use in S3 methods?
   #   save_order: should the initial order of the data be saved?
   #   omit_response: omit checking of the response?
-  #   ntrials, ncat, Jm: standata based on the original data
+  #   ntrials, ncat, Jmo: standata based on the original data
   dots <- list(...)
   not4stan <- isTRUE(control$not4stan)
   is_newdata <- isTRUE(control$is_newdata)
@@ -154,7 +154,7 @@ make_standata <- function(formula, data, family = "gaussian",
     for (nlp in nlpars) {
       args_eff_spec <- list(effects = ee$nonlinear[[nlp]], nlpar = nlp,
                             smooth = control$smooth[[nlp]],
-                            Jm = control$Jm[[nlp]])
+                            Jmo = control$Jmo[[nlp]])
       data_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
       standata <- c(standata, data_eff)
     }
@@ -162,7 +162,7 @@ make_standata <- function(formula, data, family = "gaussian",
     resp <- ee$response
     if (length(resp) > 1L && !old_mv) {
       args_eff_spec <- list(effects = ee, autocor = autocor,
-                            Jm = control$Jm[["mu"]],
+                            Jmo = control$Jmo[["mu"]],
                             smooth = control$smooth[["mu"]])
       for (r in resp) {
         data_eff <- do.call(data_effects, 
@@ -177,7 +177,7 @@ make_standata <- function(formula, data, family = "gaussian",
     } else {
       # pass autocor here to not affect non-linear and auxiliary pars
       args_eff_spec <- list(effects = ee, autocor = autocor, 
-                            Jm = control$Jm[["mu"]],
+                            Jmo = control$Jmo[["mu"]],
                             smooth = control$smooth[["mu"]])
       data_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
       standata <- c(standata, data_eff, data_csef(ee, data = data))
@@ -188,7 +188,7 @@ make_standata <- function(formula, data, family = "gaussian",
   for (ap in intersect(auxpars(), names(ee))) {
     args_eff_spec <- list(effects = ee[[ap]], nlpar = ap,
                           smooth = control$smooth[[ap]],
-                          Jm = control$Jm[[ap]])
+                          Jmo = control$Jmo[[ap]])
     data_aux_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
     standata <- c(standata, data_aux_eff)
   }

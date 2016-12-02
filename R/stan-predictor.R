@@ -29,10 +29,10 @@ stan_effects <- function(effects, data, family = gaussian(),
   splines <- get_spline_labels(effects, data = data)
   text_splines <- stan_splines(splines, prior = prior, nlpar = nlpar)
   # include category specific effects
-  csef <- colnames(get_model_matrix(effects$cse, data))
+  csef <- colnames(get_model_matrix(effects$cs, data))
   text_csef <- stan_csef(csef, ranef, prior = prior)
   # include monotonic effects
-  monef <- all_terms(effects$mono)
+  monef <- all_terms(effects$mo)
   text_monef <- stan_monef(monef, ranef, prior = prior, nlpar = nlpar)
   # include measurement error variables
   meef <- get_me_labels(effects, data = data)
@@ -323,7 +323,7 @@ stan_ranef <- function(id, ranef, prior = brmsprior(),
                           coef = r$coef, nlpar = r$nlpar, 
                           suffix = paste0("_", id), prior = prior)
   J <- seq_len(nrow(r))
-  has_def_type <- !r$type %in% c("mono", "me")
+  has_def_type <- !r$type %in% c("mo", "me")
   if (any(has_def_type)) {
     out$data <- paste0(out$data, 
       collapse("  vector[N] Z_", idp[has_def_type], 
@@ -442,20 +442,20 @@ stan_monef <- function(monef, ranef = empty_ranef(),
   if (length(monef)) {
     I <- seq_along(monef)
     out$data <- paste0(
-      "  int<lower=1> Km", p, ";  // number of monotonic effects \n",
-      "  int Xm", p, "[N, Km", p, "];  // monotonic design matrix \n",
-      "  int<lower=2> Jm", p, "[Km", p, "];  // length of simplexes \n",
-      collapse("  vector[Jm", p, "[", I, "]]", 
+      "  int<lower=1> Kmo", p, ";  // number of monotonic effects \n",
+      "  int Xmo", p, "[N, Kmo", p, "];  // monotonic design matrix \n",
+      "  int<lower=2> Jmo", p, "[Kmo", p, "];  // length of simplexes \n",
+      collapse("  vector[Jmo", p, "[", I, "]]", 
                " con_simplex", p, "_", I, "; \n"))
     bound <- get_bound(prior, class = "b", nlpar = nlpar)
     out$par <- paste0(
       "  // monotonic effects \n", 
-      "  vector", bound, "[Km", p, "] bm", p, "; \n",
-      collapse("  simplex[Jm", p, "[", I, "]]", 
+      "  vector", bound, "[Kmo", p, "] bmo", p, "; \n",
+      collapse("  simplex[Jmo", p, "[", I, "]]", 
                " simplex", p, "_", I, "; \n")) 
     out$prior <- paste0(
       stan_prior(class = "b", coef = monef, prior = prior, 
-                 nlpar = nlpar, suffix = paste0("m", p)),
+                 nlpar = nlpar, suffix = paste0("mo", p)),
       collapse("  simplex", p, "_", I, 
                " ~ dirichlet(con_simplex", p, "_", I, "); \n"))
     out$eta <- stan_eta_monef(monef, ranef = ranef, nlpar = nlpar)
@@ -472,7 +472,7 @@ stan_csef <- function(csef, ranef = empty_ranef(),
   #          as returned by check_prior
   # (!) Not yet implemented for non-linear models
   stopifnot(!nzchar(nlpar))
-  ranef <- ranef[ranef$nlpar == nlpar & ranef$type == "cse", ]
+  ranef <- ranef[ranef$nlpar == nlpar & ranef$type == "cs", ]
   out <- list()
   if (length(csef) || nrow(ranef)) {
     out$modelD <- paste0(
@@ -627,7 +627,7 @@ stan_eta_monef <- function(monef, ranef = empty_ranef(), nlpar = "") {
   #         (used for non-linear models)
   p <- usc(nlpar)
   eta_monef <- ""
-  ranef <- ranef[ranef$nlpar == nlpar & ranef$type == "mono", ]
+  ranef <- ranef[ranef$nlpar == nlpar & ranef$type == "mo", ]
   invalid_coef <- setdiff(ranef$coef, monef)
   if (length(invalid_coef)) {
     stop2("Monotonic group-level terms require ", 
@@ -642,8 +642,8 @@ stan_eta_monef <- function(monef, ranef = empty_ranef(), nlpar = "") {
       rpars <- ""
     }
     eta_monef <- paste0(eta_monef,
-      " + (bm", p, "[", i, "]", rpars, ") * monotonic(",
-      "simplex", p, "_", i, ", Xm", p, "[n, ", i, "])")
+      " + (bmo", p, "[", i, "]", rpars, ") * monotonic(",
+      "simplex", p, "_", i, ", Xmo", p, "[n, ", i, "])")
   }
   eta_monef
 }

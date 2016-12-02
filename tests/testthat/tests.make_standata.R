@@ -279,7 +279,7 @@ test_that("make_standata correctly prepares data for non-linear models", {
                      g = rep(1:3, 3))
   standata <- make_standata(y ~ a - b^z, data = data, nonlinear = nonlinear)
   expect_equal(names(standata), c("N", "Y", "KC", "C", "K_a", "X_a", "Z_1_a_1", 
-                                  "K_b", "X_b", "Km_b", "Xm_b", "Jm_b", 
+                                  "K_b", "X_b", "Kmo_b", "Xmo_b", "Jmo_b", 
                                   "con_simplex_b_1", "Z_1_b_2", "J_1", "N_1", 
                                   "M_1", "NC_1", "prior_only"))
   expect_equal(colnames(standata$X_a), c("Intercept", "x"))
@@ -291,9 +291,9 @@ test_that("make_standata correctly prepares data for monotonic effects", {
   data <- data.frame(y = rpois(120, 10), x1 = rep(1:4, 30), 
                      x2 = factor(rep(c("a", "b", "c"), 40), ordered = TRUE))
   sdata <- make_standata(y ~ mono(x1 + x2), data = data)
-  expect_true(all(c("Xm", "Jm", "con_simplex_1", "con_simplex_2") %in% names(sdata)))
-  expect_equivalent(sdata$Xm, cbind(data$x1 - 1, as.numeric(data$x2) - 1))
-  expect_equal(as.vector(unname(sdata$Jm)), 
+  expect_true(all(c("Xmo", "Jmo", "con_simplex_1", "con_simplex_2") %in% names(sdata)))
+  expect_equivalent(sdata$Xmo, cbind(data$x1 - 1, as.numeric(data$x2) - 1))
+  expect_equal(as.vector(unname(sdata$Jmo)), 
                c(max(data$x1) - 1, length(unique(data$x2)) - 1))
   expect_equal(sdata$con_simplex_1, rep(1, 3))
   

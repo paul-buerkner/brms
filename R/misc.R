@@ -525,22 +525,157 @@ eval_rhs <- function(formula, data = NULL) {
   nlist(lb, ub)
 }
 
-cse <- function(...) {
-  stop2("Inappropriate use of function 'cse'")
+#' Predictors with Measurement Error in \pkg{brms} Models
+#' 
+#' @param x The variable measured with error.
+#' @param sdx Known measurement error of \code{x}
+#'   treated as standard deviation.
+#' 
+#' @details For detailed documentation see \code{help(brmsformula)}. 
+#' 
+#' This function is almost solely useful when
+#' called in formulas passed to the \pkg{brms} package.
+#' 
+#' @seealso brmsformula
+#'   
+#' @examples 
+#' \dontrun{
+#' # sample some data
+#' N <- 100
+#' dat <- data.frame(y = rnorm(N), x = rnorm(N), sdx = abs(rnorm(N, 1)))
+#' # fit a simple error-in-variables model 
+#' fit <- brm(y ~ me(x, sdx), data = dat, save_mevars = TRUE)
+#' summary(fit)
+#' } 
+#' 
+#' @export
+me <- function(x, sdx = NULL) {
+  x <- as.vector(x)
+  sdx <- as.vector(sdx)
+  if (length(sdx) == 0L) {
+    stop2("Argument 'sdx' is missing in function 'me'.")
+  } else if (length(sdx) == 1L) {
+    sdx <- rep(sdx, length(x))
+  }
+  if (!is.numeric(x)) {
+    stop2("Noisy variables should be numeric.")
+  }
+  if (!is.numeric(sdx)) {
+    stop2("Measurement error should be numeric.")
+  }
+  if (any(sdx <= 0)) {
+    stop2("Measurement error should be positive.")
+  }
+  out <- rep(1, length(x))
+  structure(out, var = x, noise = sdx) 
 }
 
-monotonic <- function(...) {
-  stop2("Inappropriate use of function 'monotonic'")
+#' Category Specific Predictors in \pkg{brms} Models
+#' 
+#' @aliases cse
+#' 
+#' @param expr Expression containing predictors,
+#'  for which category specific effects should
+#'  be estimated. For evaluation, \R formula syntax is applied.
+#'  
+#' @details For detailed documentation see \code{help(brmsformula)}
+#'   as well as \code{vignette("brms_overview")}.
+#' 
+#' This function is almost solely useful when
+#' called in formulas passed to the \pkg{brms} package.
+#' 
+#' @seealso brmsformula
+#'   
+#' @examples   
+#' \dontrun{
+#' fit <- brm(rating ~ period + carry + cs(treat), 
+#'            data = inhaler, family = sratio("cloglog"), 
+#'            prior = set_prior("normal(0,5)"), chains = 2)
+#' summary(fit)
+#' plot(fit, ask = FALSE)
+#' } 
+#'  
+#' @export
+cs <- function(expr) {
+  expr <- substitute(expr)
+  if (!is.character(expr)) {
+    expr <- deparse(expr)
+  }
+  expr
 }
 
-mono <- function(...) {
-  # abbreviation of monotonic
-  stop2("Inappropriate use of function 'monotonic'")
+#' @export
+cse <- function(expr) {
+  # alias of function 'cs'
+  expr <- substitute(expr)
+  if (!is.character(expr)) {
+    expr <- deparse(expr)
+  }
+  expr
 }
 
-monotonous <- function(...) {
-  # abbreviation of monotonic
-  stop2("Please use function 'monotonic' instead.")
+#' Monotonic Predictors in \pkg{brms} Models
+#' 
+#' @aliases mono monotonic
+#' 
+#' @param expr Expression containing predictors,
+#'  for which monotonic effects should
+#'  be estimated. For evaluation, \R formula syntax is applied.
+#'  
+#' @details For detailed documentation see \code{help(brmsformula)}
+#'   as well as \code{vignette("brms_monotonic")}.
+#' 
+#' This function is almost solely useful when
+#' called in formulas passed to the \pkg{brms} package.
+#' 
+#' @seealso brmsformula
+#'   
+#' @examples   
+#' \dontrun{
+#' # generate some data
+#' income_options <- c("below_20", "20_to_40", "40_to_100", "greater_100")
+#' income <- factor(sample(income_options, 100, TRUE), 
+#'                  levels = income_options, ordered = TRUE)
+#' mean_ls <- c(30, 60, 70, 75)
+#' ls <- mean_ls[income] + rnorm(100, sd = 7)
+#' dat <- data.frame(income, ls)
+#' 
+#' # fit a simple monotonic model
+#' fit <- brm(ls ~ mo(income), data = dat)
+#' 
+#' # summarise the model
+#' summary(fit)
+#' plot(fit, N = 6)
+#' plot(marginal_effects(fit), points = TRUE)
+#' } 
+#'  
+#' @export
+mo <- function(expr) {
+  expr <- substitute(expr)
+  if (!is.character(expr)) {
+    expr <- deparse(expr)
+  }
+  expr
+}
+
+#' @export
+mono <- function(expr) {
+  # alias of function 'mo'
+  expr <- substitute(expr)
+  if (!is.character(expr)) {
+    expr <- deparse(expr)
+  }
+  expr
+}
+
+#' @export
+monotonic <- function(expr) {
+  # alias of function 'mo'
+  expr <- substitute(expr)
+  if (!is.character(expr)) {
+    expr <- deparse(expr)
+  }
+  expr
 }
 
 # startup messages for brms

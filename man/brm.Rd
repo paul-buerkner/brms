@@ -288,7 +288,7 @@ plot(marginal_effects(fit1), ask = FALSE)
  
 ## Ordinal regression modeling patient's rating of inhaler instructions 
 ## category specific effects are estimated for variable 'treat'
-fit2 <- brm(rating ~ period + carry + cse(treat), 
+fit2 <- brm(rating ~ period + carry + cs(treat), 
             data = inhaler, family = sratio("cloglog"), 
             prior = set_prior("normal(0,5)"), chains = 2)
 summary(fit2)

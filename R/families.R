@@ -632,7 +632,7 @@ has_sigma <- function(family, effects = NULL,
   out
 }
 
-allows_cse <- function(family) {
+allows_cs <- function(family) {
   # checks if category specific effects are allowed
   if (is(family, "family")) {
     family <- family$family

@@ -320,7 +320,7 @@ only have an impact on the decision between category 3 and 4, but not on the low
 
 To illustrate all three modeling options at once, we fit a (hardly theoretically justified) stopping ratio model with equidistant thresholds and category specific effects for variable \code{treat} on which we apply an informative prior.
 \begin{Sinput}
-fit4 <- brm(formula = rating ~ period + carry + cse(treat) + (1|subject),
+fit4 <- brm(formula = rating ~ period + carry + cs(treat) + (1|subject),
             data = inhaler, family = sratio, threshold = "equidistant",
             prior = set_prior("normal(-1,2)", coef = "treat"))
 \end{Sinput}
@@ -330,7 +330,7 @@ R> summary(fit4, waic = TRUE)
 \end{Sinput}
 \begin{Soutput}
  Family: sratio (logit) 
-Formula: rating ~ period + carry + cse(treat) + (1 | subject) 
+Formula: rating ~ period + carry + cs(treat) + (1 | subject) 
    Data: inhaler (Number of observations: 572) 
 Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1; 
          total post-warmup samples = 4000

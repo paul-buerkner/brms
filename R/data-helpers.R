@@ -319,11 +319,11 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       }
     }
     # validate monotonic variables
-    if (is.formula(ee$mono)) {
-      take_num <- !is_factor & names(list_data) %in% all.vars(ee$mono)
+    if (is.formula(ee$mo)) {
+      take_num <- !is_factor & names(list_data) %in% all.vars(ee$mo)
       # factors have already been checked
-      num_mono_vars <- names(list_data)[take_num]
-      for (v in num_mono_vars) {
+      num_mo_vars <- names(list_data)[take_num]
+      for (v in num_mo_vars) {
         # use 'get' to check whether v is defined in newdata
         new_values <- get(v, newdata)
         min_value <- min(list_data[[v]])
@@ -372,16 +372,16 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
                     old_cat <- is.old_categorical(fit))
     old_terms <- attr(model.frame(fit), "terms")
     control$terms_attr <- attributes(old_terms)[c("variables", "predvars")]
-    has_mono <- length(get_effect(ee, "mono")) > 0L
-    if (has_trials(fit$family) || has_cat(fit$family) || has_mono) {
+    has_mo <- length(get_effect(ee, "mo")) > 0L
+    if (has_trials(fit$family) || has_cat(fit$family) || has_mo) {
       # some components should not be computed based on newdata
       pars <- c(names(ee$nonlinear), intersect(auxpars(), names(ee)))
-      comp <- c("trials", "ncat", paste0("Jm", c("", paste0("_", pars))))
+      comp <- c("trials", "ncat", paste0("Jmo", c("", paste0("_", pars))))
       old_standata <- rmNULL(standata(fit)[comp])
       control[c("trials", "ncat")] <- old_standata[c("trials", "ncat")]
-      Jm <- old_standata[grepl("^Jm", names(old_standata))]
-      names(Jm) <- sub("^Jm$", "mu", sub("^Jm_", "", names(Jm)))
-      control[["Jm"]] <- Jm 
+      Jmo <- old_standata[grepl("^Jmo", names(old_standata))]
+      names(Jmo) <- sub("^Jmo$", "mu", sub("^Jmo_", "", names(Jmo)))
+      control[["Jmo"]] <- Jmo 
     }
     control$smooth <- make_smooth_list(ee, model.frame(fit))
     if (is(fit$autocor, "cov_fixed")) {
@@ -430,7 +430,7 @@ get_model_matrix <- function(formula, data = environment(formula),
   X
 }
 
-prepare_mono_vars <- function(formula, data, check = TRUE) {
+prepare_mo_vars <- function(formula, data, check = TRUE) {
   # prepare monotonic variables for use in Stan
   # Args:
   #   formula: formula containing mononotic effects terms
@@ -548,7 +548,7 @@ arr_design_matrix <- function(Y, r, group)  {
 data_effects <- function(effects, data, family = gaussian(),
                          ranef = empty_ranef(), prior = brmsprior(), 
                          autocor = cor_arma(), knots = NULL, nlpar = "", 
-                         not4stan = FALSE, smooth = NULL, Jm = NULL) {
+                         not4stan = FALSE, smooth = NULL, Jmo = NULL) {
   # combine data for all types of effects
   # Args:
   #   effects: a list returned by extract_effects
@@ -563,7 +563,7 @@ data_effects <- function(effects, data, family = gaussian(),
   #   old_levels: original levels of grouping factors
   #   smooth: optional list of smoothing objects based on 
   #           the original data
-  #   Jm: optional precomputed values of Jm for monotonic effects
+  #   Jmo: optional precomputed values of Jmo for monotonic effects
   # Returns:
   #   A named list of data to be passed to Stan
   data_fixef <- data_fixef(effects, data = data, family = family, 
@@ -571,7 +571,7 @@ data_effects <- function(effects, data, family = gaussian(),
                            knots = knots, not4stan = not4stan,
                            smooth = smooth)
   data_monef <- data_monef(effects, data = data, ranef = ranef,
-                           prior = prior, Jm = Jm, nlpar = nlpar)
+                           prior = prior, Jmo = Jmo, nlpar = nlpar)
   data_ranef <- data_ranef(ranef, data = data, nlpar = nlpar, 
                            not4stan = not4stan)
   data_meef <- data_meef(effects, data = data, nlpar = nlpar)
@@ -626,36 +626,36 @@ data_fixef <- function(effects, data, family = gaussian(),
 
 data_monef <- function(effects, data, ranef = empty_ranef(),
                        prior = brmsprior(), nlpar = "",
-                       Jm = NULL) {
+                       Jmo = NULL) {
   # prepare data for monotonic effects for use in Stan
   # Args: see data_effects
   stopifnot(length(nlpar) == 1L)
   p <- if (nchar(nlpar)) paste0("_", nlpar) else ""
   out <- list()
-  if (is.formula(effects[["mono"]])) {
-    Xm <- prepare_mono_vars(effects$mono, data, check = is.null(Jm))
-    avoid_auxpars(colnames(Xm), effects = effects)
-    if (is.null(Jm)) {
-      Jm <- as.array(apply(Xm, 2, max))
+  if (is.formula(effects[["mo"]])) {
+    Xmo <- prepare_mo_vars(effects$mo, data, check = is.null(Jmo))
+    avoid_auxpars(colnames(Xmo), effects = effects)
+    if (is.null(Jmo)) {
+      Jmo <- as.array(apply(Xmo, 2, max))
     }
-    out <- c(out, setNames(list(ncol(Xm), Xm, Jm), 
-                           paste0(c("Km", "Xm", "Jm"), p)))
+    out <- c(out, setNames(list(ncol(Xmo), Xmo, Jmo), 
+                           paste0(c("Kmo", "Xmo", "Jmo"), p)))
     # validate and assign vectors for dirichlet prior
-    monef <- colnames(Xm)
+    monef <- colnames(Xmo)
     for (i in seq_along(monef)) {
       take <- prior$class == "simplex" & prior$coef == monef[i] & 
               prior$nlpar == nlpar  
       sprior <- prior$prior[take]
       if (isTRUE(nchar(sprior) > 0L)) {
         sprior <- eval2(sprior)
-        if (length(sprior) != Jm[i]) {
+        if (length(sprior) != Jmo[i]) {
           stop2("Invalid dirichlet prior for the simplex of '", 
-                monef[i], "'. Expected input of length ", Jm[i], 
+                monef[i], "'. Expected input of length ", Jmo[i], 
                 " but found ", paste(sprior, collapse = ","))
         }
         out[[paste0("con_simplex", p, "_", i)]] <- sprior
       } else {
-        out[[paste0("con_simplex", p, "_", i)]] <- rep(1, Jm[i]) 
+        out[[paste0("con_simplex", p, "_", i)]] <- rep(1, Jmo[i]) 
       }
     }
   }
@@ -667,7 +667,7 @@ data_ranef <- function(ranef, data, nlpar = "", not4stan = FALSE) {
   # Args: see data_effects
   stopifnot(length(nlpar) == 1L)
   out <- list()
-  take <- ranef$nlpar == nlpar & !ranef$type %in% c("mono", "me")
+  take <- ranef$nlpar == nlpar & !ranef$type %in% c("mo", "me")
   ranef <- ranef[take, ]
   if (nrow(ranef)) {
     Z <- lapply(ranef[!duplicated(ranef$gn), ]$form, 
@@ -684,7 +684,7 @@ data_ranef <- function(ranef, data, nlpar = "", not4stan = FALSE) {
         Zname <- paste0("Z_", gn[i])
         out <- c(out, setNames(Z[i], Zname))
       } else {
-        if (r$type[1] == "cse") {
+        if (r$type[1] == "cs") {
           ncatM1 <- nrow(r) / ncol(Z[[i]])
           Z_temp <- vector("list", ncol(Z[[i]]))
           for (k in seq_along(Z_temp)) {
@@ -763,8 +763,8 @@ data_csef <- function(effects, data) {
   #   effects: a list returned by extract_effects
   #   data: the data passed by the user
   out <- list()
-  if (length(all_terms(effects[["cse"]]))) {
-    Xcs <- get_model_matrix(effects$cse, data)
+  if (length(all_terms(effects[["cs"]]))) {
+    Xcs <- get_model_matrix(effects$cs, data)
     avoid_auxpars(colnames(Xcs), effects = effects)
     out <- c(out, list(Kcs = ncol(Xcs), Xcs = Xcs))
   }
