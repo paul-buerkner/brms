@@ -112,9 +112,9 @@ dat$ls <- dat$ls + var_city[dat$city]
 With the following code, we fit a multilevel model assuming the intercept and the effect of `income` to vary by city:
 
 ```{r}
-fit5 <- brm(ls ~ mono(income) + (1 | city) + (mono(income) | city), data = dat)
+fit5 <- brm(ls ~ mo(income) + (1 | city) + (mo(income) | city), data = dat)
 ```
-For technical reasons, monotonic group-level effects have to be specified in separate terms in the model formula. Further, we have used the abbrevation `mono` for `monotonic`, which helps in shortening the formula. The summary output
+For technical reasons, monotonic group-level effects have to be specified in separate terms in the model formula. Further, we have used the abbrevation `mo` for `monotonic`, which helps in shortening the formula. The summary output
 
 ```{r}
 summary(fit5)

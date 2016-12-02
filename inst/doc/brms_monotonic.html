@@ -12,7 +12,7 @@
 
 <meta name="author" content="Paul Bürkner" />
 
-<meta name="date" content="2016-11-07" />
+<meta name="date" content="2016-12-02" />
 
 <title>Estimating Monotonic Effects with brms</title>
 
@@ -70,7 +70,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 
 <h1 class="title toc-ignore">Estimating Monotonic Effects with brms</h1>
 <h4 class="author"><em>Paul Bürkner</em></h4>
-<h4 class="date"><em>2016-11-07</em></h4>
+<h4 class="date"><em>2016-12-02</em></h4>
 
 
 
@@ -133,8 +133,8 @@ fit4 &lt;-<span class="st"> </span><span class="kw">brm</span>(ls ~<span class="
 var_city &lt;-<span class="st"> </span><span class="kw">rnorm</span>(<span class="dv">10</span>, <span class="dt">sd =</span> <span class="dv">10</span>)
 dat$ls &lt;-<span class="st"> </span>dat$ls +<span class="st"> </span>var_city[dat$city]</code></pre></div>
 <p>With the following code, we fit a multilevel model assuming the intercept and the effect of <code>income</code> to vary by city:</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">fit5 &lt;-<span class="st"> </span><span class="kw">brm</span>(ls ~<span class="st"> </span><span class="kw">mono</span>(income) +<span class="st"> </span>(<span class="dv">1</span> |<span class="st"> </span>city) +<span class="st"> </span>(<span class="kw">mono</span>(income) |<span class="st"> </span>city), <span class="dt">data =</span> dat)</code></pre></div>
-<p>For technical reasons, monotonic group-level effects have to be specified in separate terms in the model formula. Further, we have used the abbrevation <code>mono</code> for <code>monotonic</code>, which helps in shortening the formula. The summary output</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">fit5 &lt;-<span class="st"> </span><span class="kw">brm</span>(ls ~<span class="st"> </span><span class="kw">mo</span>(income) +<span class="st"> </span>(<span class="dv">1</span> |<span class="st"> </span>city) +<span class="st"> </span>(<span class="kw">mo</span>(income) |<span class="st"> </span>city), <span class="dt">data =</span> dat)</code></pre></div>
+<p>For technical reasons, monotonic group-level effects have to be specified in separate terms in the model formula. Further, we have used the abbrevation <code>mo</code> for <code>monotonic</code>, which helps in shortening the formula. The summary output</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">summary</span>(fit5)
 <span class="kw">plot</span>(fit5, <span class="dt">ask =</span> <span class="ot">FALSE</span>)</code></pre></div>
 <p>reveals that the effect of <code>income</code> varies only little across cities. For the present data, this is not overly surprising given that, in the data simulations, we assumed <code>income</code> to have the same effect across cities.</p>

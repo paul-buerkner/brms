@@ -47,7 +47,7 @@ opts_chunk$set(eval = FALSE)
 #  dat$ls <- dat$ls + var_city[dat$city]
 
 ## ------------------------------------------------------------------------
-#  fit5 <- brm(ls ~ mono(income) + (1 | city) + (mono(income) | city), data = dat)
+#  fit5 <- brm(ls ~ mo(income) + (1 | city) + (mo(income) | city), data = dat)
 
 ## ------------------------------------------------------------------------
 #  summary(fit5)
