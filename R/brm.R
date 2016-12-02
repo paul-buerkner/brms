@@ -71,7 +71,7 @@
 #'   Set to \code{FALSE} to save memory. 
 #'   The argument has no impact on the model fitting itself.
 #'   A deprecated alias is \code{ranef}.
-#' @param save_meef A flag to indicate if samples
+#' @param save_mevars A flag to indicate if samples
 #'   of noise-free variables obtained by using \code{me} terms
 #'   should be saved (default is \code{FALSE}).
 #'   Saving these samples allows to use methods such as
@@ -304,7 +304,7 @@
 brm <- function(formula, data, family = gaussian(), prior = NULL, 
                 autocor = NULL, nonlinear = NULL, 
                 threshold = c("flexible", "equidistant"), 
-                cov_ranef = NULL, save_ranef = TRUE, save_meef = FALSE, 
+                cov_ranef = NULL, save_ranef = TRUE, save_mevars = FALSE, 
                 sparse = FALSE, sample_prior = FALSE, knots = NULL, 
                 stan_funs = NULL, fit = NA, inits = "random", 
                 chains = 4, iter = 2000, 
@@ -370,7 +370,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     x$ranef <- tidy_ranef(ee, data = x$data)  
     x$exclude <- exclude_pars(ee, x$data, ranef = x$ranef, 
                               save_ranef = save_ranef,
-                              save_meef = save_meef)
+                              save_mevars = save_mevars)
     # see make_stancode.R
     x$model <- make_stancode(formula = formula, data = data, 
                              family = family, prior = prior,  

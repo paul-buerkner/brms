@@ -6,7 +6,7 @@
 \usage{
 brm(formula, data, family = gaussian(), prior = NULL, autocor = NULL,
   nonlinear = NULL, threshold = c("flexible", "equidistant"),
-  cov_ranef = NULL, save_ranef = TRUE, save_meef = FALSE,
+  cov_ranef = NULL, save_ranef = TRUE, save_mevars = FALSE,
   sparse = FALSE, sample_prior = FALSE, knots = NULL, stan_funs = NULL,
   fit = NA, inits = "random", chains = 4, iter = 2000,
   warmup = floor(iter/2), thin = 1, cluster = 1, cluster_type = "PSOCK",
@@ -79,7 +79,7 @@ Set to \code{FALSE} to save memory.
 The argument has no impact on the model fitting itself.
 A deprecated alias is \code{ranef}.}
 
-\item{save_meef}{A flag to indicate if samples
+\item{save_mevars}{A flag to indicate if samples
 of noise-free variables obtained by using \code{me} terms
 should be saved (default is \code{FALSE}).
 Saving these samples allows to use methods such as

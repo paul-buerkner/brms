@@ -323,10 +323,11 @@ stan_ranef <- function(id, ranef, prior = brmsprior(),
                           coef = r$coef, nlpar = r$nlpar, 
                           suffix = paste0("_", id), prior = prior)
   J <- seq_len(nrow(r))
-  if (any(r$type != "mono")) {
+  has_def_type <- !r$type %in% c("mono", "me")
+  if (any(has_def_type)) {
     out$data <- paste0(out$data, 
-      collapse("  vector[N] Z_", idp[r$type != "mono"], 
-               "_", r$cn[r$type != "mono"], "; \n")) 
+      collapse("  vector[N] Z_", idp[has_def_type], 
+               "_", r$cn[has_def_type], "; \n")) 
   }
   out$par <- paste0(
     "  vector<lower=0>[M_", id, "] sd_", id, ";",
@@ -536,7 +537,7 @@ stan_meef <- function(meef, ranef = empty_ranef(),
     
     # prepare linear predictor component
     meef <- rename(meef)
-    meef_terms <- rename(meef_terms, ":", " .* ")
+    meef_terms <- gsub(":", " .* ", meef_terms)
     ranef <- ranef[ranef$nlpar == nlpar & ranef$type == "me", ]
     invalid_coef <- setdiff(ranef$coef, meef)
     if (length(invalid_coef)) {

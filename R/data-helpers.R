@@ -667,7 +667,8 @@ data_ranef <- function(ranef, data, nlpar = "", not4stan = FALSE) {
   # Args: see data_effects
   stopifnot(length(nlpar) == 1L)
   out <- list()
-  ranef <- ranef[ranef$nlpar == nlpar & ranef$type != "mono", ]
+  take <- ranef$nlpar == nlpar & !ranef$type %in% c("mono", "me")
+  ranef <- ranef[take, ]
   if (nrow(ranef)) {
     Z <- lapply(ranef[!duplicated(ranef$gn), ]$form, 
                 get_model_matrix, data = data)
@@ -781,8 +782,11 @@ data_meef <- function(effects, data, nlpar = "") {
     p <- usc(nlpar, "prefix")
     Cn <- get_model_matrix(effects$me, data)
     avoid_auxpars(colnames(Cn), effects = effects)
-    Cn <- array2list(Cn[, attr(meef, "not_one"), drop = FALSE])
-    Cn <- setNames(Cn, paste0("Cn", p, "_", seq_along(Cn)))
+    Cn <- Cn[, attr(meef, "not_one"), drop = FALSE]
+    Cn <- lapply(seq_len(ncol(Cn)), function(i) Cn[, i])
+    if (length(Cn)) {
+      Cn <- setNames(Cn, paste0("Cn", p, "_", seq_along(Cn)))
+    }
     uni_me <- attr(meef, "uni_me")
     Xn <- noise <- named_list(uni_me)
     for (i in seq_along(uni_me)) {
