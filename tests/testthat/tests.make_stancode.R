@@ -523,7 +523,8 @@ test_that("make_stancode handles noise-free terms correctly", {
     "(bme[6]) * Xme_1[n] .* Xme_2[n] .* Cn_3[n]")
   expect_match(sc, "Xme_2 ~ normal(Xn_2, noise_2)", fixed = TRUE)
   expect_match(sc, "bme ~ normal(0, 5)", fixed = TRUE)
-  
   sc <- make_stancode(y ~ me(x, xsd)*me(z, zsd) + (me(x, xsd)|ID), data = dat)
   expect_match(sc, "(bme[1] + r_1_1[J_1[n]]) * Xme_1[n]", fixed = TRUE)
+  expect_error(make_stancode(y ~ I(me(x, xsd)^2), data = dat),
+               "The 'I' function is currently not supported")
 })
