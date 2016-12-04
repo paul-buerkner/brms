@@ -40,7 +40,7 @@ test_that("loglik for lognormal and exgaussian models works as expected", {
   ll <- loglik_lognormal(1, draws = draws)
   expect_equal(ll, as.matrix(ll_lognormal))
   
-  ll_exgaussian <- dexgauss(x = draws$data$Y[1], mean = draws$eta[, 1], 
+  ll_exgaussian <- dexgauss(x = draws$data$Y[1], mu = draws$eta[, 1], 
                             sigma = draws$sigma, beta = draws$beta,
                             log = TRUE)
   ll <- loglik_exgaussian(1, draws = draws)

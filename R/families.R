@@ -140,7 +140,7 @@ brmsfamily <- function(family, link = NULL) {
   }
   
   # check validity of link
-  if (is.linear(family)) {
+  if (is.linear(family) || family %in% "exgaussian") {
     ok_links <- c("identity", "log", "inverse")
   } else if (family == "inverse.gaussian") {
     ok_links <- c("1/mu^2", "inverse", "identity", "log")
@@ -153,7 +153,7 @@ brmsfamily <- function(family, link = NULL) {
                  "cloglog", "cauchit", "identity")
   } else if (family %in% c("categorical", "zero_inflated_binomial")) {
     ok_links <- c("logit")
-  } else if (is.skewed(family) || family %in% "exgaussian") {
+  } else if (is.skewed(family)) {
     ok_links <- c("log", "identity", "inverse")
   } else if (is.lognormal(family)) {
     ok_links <- c("identity", "inverse")

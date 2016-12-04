@@ -238,7 +238,7 @@ predict_inverse.gaussian <- function(i, draws, ...) {
 }
 
 predict_exgaussian <- function(i, draws, ...) {
-  args <- list(mean = ilink(get_eta(draws, i), draws$f$link), 
+  args <- list(mu = ilink(get_eta(draws, i), draws$f$link), 
                sigma = get_sigma(draws$sigma, data = draws$data, i = i),
                beta = get_auxpar(draws$beta, i = i))
   rng_continuous(nrng = draws$nsamples, dist = "exgauss", args = args, 

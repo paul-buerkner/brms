@@ -211,19 +211,18 @@ rvon_mises <- function(n, mu, kappa) {
 # vectorized version of CircStats::rvm
 .rvon_mises <- Vectorize(CircStats::rvm, c("mean", "k"))
 
-dexgauss <- function (x, mean, sigma, beta, log = FALSE) {
+dexgauss <- function (x, mu, sigma, beta, log = FALSE) {
   # PDF of the exponentially modified gaussian distribution
   # Args:
-  #   mean: mean of the distribution; mean = mu + beta
+  #   mu: mean of the gaussian comoponent
   #   sigma: SD of the gaussian comoponent
   #   beta: scale / inverse rate of the exponential component
-  if (any(sigma < 0)) {
+  if (any(sigma <= 0)) {
     stop2("sigma must be greater than 0.")
   }
-  if (any(beta < 0)) {
+  if (any(beta <= 0)) {
     stop2("beta must be greater than 0.")
   }
-  mu <- mean - beta
   z <- x - mu - sigma^2 / beta
   out <- ifelse(beta > 0.05 * sigma, 
     -log(beta) - (z + sigma^2 / (2 * beta)) / beta + log(pnorm(z / sigma)), 
@@ -234,18 +233,17 @@ dexgauss <- function (x, mean, sigma, beta, log = FALSE) {
   out
 }
 
-pexgauss <- function(q, mean, sigma, beta, 
+pexgauss <- function(q, mu, sigma, beta, 
                      lower.tail = TRUE, log.p = FALSE) {
   # CDF of the exponentially modified gaussian distribution
   # Args:
   #   see dexgauss
-  if (any(sigma < 0)) {
+  if (any(sigma <= 0)) {
     stop2("sigma must be greater than 0.")
   }
-  if (any(beta < 0)) {
+  if (any(beta <= 0)) {
     stop2("beta must be greater than 0.")
-  } 
-  mu <- mean - beta
+  }
   z <- q - mu - sigma^2 / beta
   out <- ifelse(beta > 0.05 * sigma, 
     pnorm((q - mu) / sigma) - pnorm(z / sigma) * 
@@ -261,17 +259,16 @@ pexgauss <- function(q, mean, sigma, beta,
   out
 }
 
-rexgauss <- function(n, mean, sigma, beta) {
+rexgauss <- function(n, mu, sigma, beta) {
   # create random numbers of the exgaussian distribution
   # Args:
   #   see dexgauss
-  if (any(sigma < 0)) {
+  if (any(sigma <= 0)) {
     stop2("sigma must be greater than 0.")
   }
-  if (any(beta < 0)) {
+  if (any(beta <= 0)) {
     stop2("beta must be greater than 0.")
-  } 
-  mu <- mean - beta
+  }
   rnorm(n, mean = mu, sd = sigma) + rexp(n, rate = 1 / beta)
 }
 

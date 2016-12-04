@@ -62,6 +62,8 @@ fitted_response <- function(draws, mu) {
       }
       mu <- mu * trials
     }
+  } else if (is.exgaussian(draws$f)) { 
+    mu <- ilink(mu, draws$f$link) + get_auxpar(draws$beta)
   } else if (is.wiener(draws$f)) {
     delta <- ilink(mu, draws$f$link)
     bs <- get_auxpar(draws$bs)

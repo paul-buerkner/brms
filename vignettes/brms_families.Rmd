@@ -52,13 +52,13 @@ $$f(y_i) = \frac{\alpha}{g(\eta_i / \alpha)} \left(\frac{y_i}{g(\eta_i / \alpha)
 \exp\left(-\left(\frac{y_i}{g(\eta_i / \alpha)}\right)^\alpha\right)$$
 where $\alpha$ is again a positive shape parameter. The **exponential** family arises if $\alpha$ is set to $1$ for either the gamma or weibull distribution.
 
-## Reaction time models
+## Response time models
 
 One family that is especially suited to model reaction times is the **exgaussian** ('exponentially modified Gaussian') family. Its density is given by
 
-$$f(y_i) = \frac{1}{2 \beta} \exp\left(\frac{1}{2 \beta} \left(2\mu + \sigma^2 / \beta - 2 y_i \right) \right) \text{erfc}\left(\frac{\mu + \sigma^2 / \beta - y_i}{\sqrt{2} \sigma} \right)$$
+$$f(y_i) = \frac{1}{2 \beta} \exp\left(\frac{1}{2 \beta} \left(2g(\eta_i) + \sigma^2 / \beta - 2 y_i \right) \right) \text{erfc}\left(\frac{g(\eta_i) + \sigma^2 / \beta - y_i}{\sqrt{2} \sigma} \right)$$
 
-where $\beta$ is the scale (inverse rate) of the exponential component, $\mu = g(\eta_i) - \beta$ is the mean of the Gaussian componenent, $\sigma$ is the standard deviation of the Gaussian component, and $\text{erfc}$ is the complementary error function.
+where $\beta$ is the scale (inverse rate) of the exponential component, $g(\eta_i) = \mu$ is the mean of the Gaussian componenent, $\sigma$ is the standard deviation of the Gaussian component, and $\text{erfc}$ is the complementary error function.
 
 A family concerned with the combined modelling of reaction times and corresponding binary responses is the **wiener** diffusion model. It has four model parameters each with a natural interpreation. The parameter $\alpha > 0$ describes the separation between two boundaries of the diffusion process, $\tau > 0$ describes the non-decision time (e.g., due to image or motor processing), $\beta \in [0, 1]$ describes the initial bias in favor of the upper alternative, and $\delta \in \mathbb{R}$ describes the drift rate to the boundaries (a positive value indicates a drift towards to upper boundary).
 The density for the reaction time at the uppder boundary is given by
