@@ -527,12 +527,22 @@ stan_meef <- function(meef, ranef = empty_ranef(),
     p <- usc(nlpar)
     pK <- paste0(p, "_", seq_along(uni_me))
     
-    # remove non-me parts from the terms
-    meef_terms <- gsub(" |(^|:)[^(me\\()]+(:|$)", "", meef)
+    me_sp <- strsplit(gsub("[[:space:]]", "", meef), ":")
+    meef_terms <- rep(NA, length(me_sp))
+    for (i in seq_along(me_sp)) {
+      # remove non-me parts from the terms
+      take <- grepl_expr("^me\\([^:]*\\)$", me_sp[[i]])
+      me_sp[[i]] <- me_sp[[i]][take]
+      # remove 'I' (identity) function calls that 
+      # were used solely to separate formula terms
+      I <- grepl("^I\\(", me_sp[[i]])
+      me_sp[[i]][I] <- substr(me_sp[[i]][I], 3,  nchar(me_sp[[i]][I]) - 1)
+      meef_terms[i] <- paste0(me_sp[[i]], collapse = ":")
+    }
     new_me <- paste0("Xme", pK, "[n]")
     meef_terms <- rename(meef_terms, uni_me, new_me)
     ci <- ulapply(seq_along(not_one), function(i) sum(not_one[1:i]))
-    covars <- ifelse(not_one, paste0(" .* Cn", p, "_", ci, "[n]"), "")
+    covars <- ifelse(not_one, paste0(" .* Cme", p, "_", ci, "[n]"), "")
     ncovars <- sum(not_one)
     
     # prepare linear predictor component
@@ -566,7 +576,7 @@ stan_meef <- function(meef, ranef = empty_ranef(),
       collapse("  vector<lower=0>[N] noise", pK, "; \n"),
       if (ncovars > 0L) paste0(
         "  // covariates of noise free variables \n",
-        collapse("  vector[N] Cn", p, "_", seq_len(ncovars), "; \n")))
+        collapse("  vector[N] Cme", p, "_", seq_len(ncovars), "; \n")))
     out$par <- paste0(
       "  // noise free variables \n",
       collapse("  vector[N] Xme", pK, "; \n"),  

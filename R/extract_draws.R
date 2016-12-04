@@ -183,12 +183,19 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
     uni_me <- attr(meef, "uni_me")
     not_one <- attr(meef, "not_one")
     # prepare calls to evaluate noise-free data
-    meef_terms <- gsub(" |(^|:)[^(me\\()]+(:|$)", "", meef)
+    me_sp <- strsplit(gsub("[[:space:]]", "", meef), ":")
+    meef_terms <- rep(NA, length(me_sp))
+    for (i in seq_along(me_sp)) {
+      # remove non-me parts from the terms
+      take <- grepl_expr("^me\\([^:]*\\)$", me_sp[[i]])
+      me_sp[[i]] <- me_sp[[i]][take]
+      meef_terms[i] <- paste0(me_sp[[i]], collapse = " * ")
+    }
     new_me <- paste0("Xme_", seq_along(uni_me))
     meef_terms <- rename(meef_terms, uni_me, new_me)
     ci <- ulapply(seq_along(not_one), function(i) sum(not_one[1:i]))
-    covars <- ifelse(not_one, paste0(" * Cn_", ci), "")
-    meef_terms <- paste0(gsub(":", " * ", meef_terms), covars)
+    covars <- ifelse(not_one, paste0(" * Cme_", ci), "")
+    meef_terms <- paste0(meef_terms, covars)
     # extract coefficient samples
     meef <- rename(meef)
     draws[["bme"]] <- named_list(meef)
@@ -210,10 +217,10 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
     # prepare covariates
     ncovars <- sum(not_one)
     for (j in seq_len(ncovars)) {
-      cn <- paste0("Cn_", j)
-      draws[["Cn"]][[j]] <- 
-        matrix(draws$data[[cn]], nrow = nsamples, 
-               ncol = length(draws$data[[cn]]), byrow = TRUE)
+      cme <- paste0("Cme_", j)
+      draws[["Cme"]][[j]] <- 
+        matrix(draws$data[[cme]], nrow = nsamples, 
+               ncol = length(draws$data[[cme]]), byrow = TRUE)
     }
   }
   # category specific effects 

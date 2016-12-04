@@ -417,6 +417,6 @@ test_that("make_standata handles noise-free terms correctly", {
   sdata <- make_standata(y ~ me(x, xsd)*me(z, zsd)*x, data = dat)
   expect_equal(sdata$Xn_1, dat$x)
   expect_equal(sdata$noise_2, dat$zsd)
-  expect_equal(unname(sdata$Cn_3), dat$x)
+  expect_equal(unname(sdata$Cme_3), dat$x)
   expect_equal(sdata$Kme, 6)
 })

@@ -49,9 +49,9 @@ linear_predictor <- function(draws, i = NULL) {
       eval_list[[paste0("Xme_", j)]] <- 
         p(draws[["Xme"]][[j]], i, row = FALSE)
     }
-    for (j in seq_along(draws[["Cn"]])) {
-      eval_list[[paste0("Cn_", j)]] <- 
-        p(draws[["Cn"]][[j]], i, row = FALSE)
+    for (j in seq_along(draws[["Cme"]])) {
+      eval_list[[paste0("Cme_", j)]] <- 
+        p(draws[["Cme"]][[j]], i, row = FALSE)
     }
     calls <- attr(draws[["bme"]], "calls")
     for (j in seq_along(meef)) {

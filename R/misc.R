@@ -229,6 +229,32 @@ get_matches <- function(pattern, text, simplify = TRUE, ...) {
   x
 }
 
+get_matches_expr <- function(pattern, expr, ...) {
+  # loop over the parse tree of 'expr '
+  # and find matches of 'pattern'
+  if (is.character(expr)) {
+    expr <- parse(text = expr)
+  }
+  out <- NULL
+  for (i in seq_along(expr)) {
+    sexpr <- try(expr[[i]], silent = TRUE)
+    if (!is(sexpr, "try-error")) {
+      sexpr_char <- deparse(sexpr)
+      out <- c(out, get_matches(pattern, sexpr_char, ...))
+    }
+    if (is.call(sexpr) || is.expression(sexpr)) {
+      out <- c(out, get_matches_expr(pattern, sexpr, ...))
+    }
+  }
+  unique(out)
+}
+
+grepl_expr <- function(pattern, expr, ...) {
+  # like base::grepl but handles (parse trees of) expressions 
+  as.logical(ulapply(expr, function(e) 
+    length(get_matches_expr(pattern, e, ...)) > 0L))
+}
+
 usc <- function(x, pos = c("prefix", "suffix")) {
   # add an underscore to non-empty character strings
   # Args:

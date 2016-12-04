@@ -276,8 +276,9 @@ extract_me <- function(formula) {
   # Args:
   #   formula: a formula object
   all_terms <- all_terms(formula)
-  regex <- "(^|:|I\\(|[[:space:]])me\\([^\\|]+$"
-  pos_me_terms <- grepl(regex, all_terms)
+  # stop group-level terms from being included
+  all_terms[grepl("\\|", all_terms)] <- ""
+  pos_me_terms <- grepl_expr("^me\\([^:]*\\)$", all_terms)
   me_terms <- all_terms[pos_me_terms]
   if (length(me_terms)) {
     me_terms <- formula(paste("~", paste(me_terms, collapse = "+")))
@@ -856,12 +857,8 @@ get_me_labels <- function(x, data) {
   }
   mm <- get_model_matrix(x$me, data, rename = FALSE)
   not_one <- apply(mm, 2, function(x) any(x != 1))
-  regex <- "(^|:|I\\(|[[:space:]])me\\([^:]+(:|$)"
-  uni_me <- get_matches(regex, colnames(mm))
-  uni_me <- unique(gsub("[[:space:]]|:", "", uni_me))
-  if (any(grepl("^I\\(", uni_me))) {
-    stop2("The 'I' function is currently not supported in 'me' terms.")
-  }
+  uni_me <- get_matches_expr("^me\\([^:]*\\)$", colnames(mm))
+  uni_me <- unique(gsub("[[:space:]]", "", uni_me))
   structure(colnames(mm), not_one = not_one, uni_me = uni_me)
 }
 
