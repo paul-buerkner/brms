@@ -269,14 +269,16 @@
 #' n <- sample(1:10, 100, TRUE)  # number of trials
 #' success <- rbinom(100, size = n, prob = 0.4)
 #' x <- rnorm(100)
-#' fit4 <- brm(success | trials(n) ~ x, 
+#' data4 <- data.frame(n, success, x)
+#' fit4 <- brm(success | trials(n) ~ x, data = data4,
 #'             family = binomial("probit"))
 #' summary(fit4)
 #' 
 #' ## Simple non-linear gaussian model
 #' x <- rnorm(100)
 #' y <- rnorm(100, mean = 2 - 1.5^x, sd = 1)
-#' fit5 <- brm(y ~ a1 - a2^x, nonlinear = a1 + a2 ~ 1,
+#' data5 <- data.frame(x, y)
+#' fit5 <- brm(y ~ a1 - a2^x, data = data5, nonlinear = a1 + a2 ~ 1,
 #'             prior = c(prior(normal(0, 2), nlpar = a1),
 #'                       prior(normal(0, 2), nlpar = a2)))
 #' summary(fit5)
