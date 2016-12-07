@@ -106,7 +106,7 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
                            allow_new_levels = FALSE, 
                            incl_autocor = TRUE, subset = NULL,
                            nlpar = "", smooths_only = FALSE,
-                           rhs_formula = NULL, ...) {
+                           rhs_formula = ~ ., ...) {
   # helper function for extract_draws to extract posterior samples
   # of all regression effects
   # Args:
@@ -120,10 +120,11 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   #   a named list
   dots <- list(...)
   nsamples <- Nsamples(x, subset = subset)
-  if (!is.null(rhs_formula)) {
-    x$formula <- update.formula(formula(x), rhs(rhs_formula))
-    x$ranef <- tidy_ranef(extract_effects(formula(x)), data = model.frame(x))
-  }
+  # always update formula to make sure that formulae of
+  # non-linear and auxiliary parameters are not included
+  # fixes issue #154
+  x$formula <- update.formula(formula(x), rhs(rhs_formula))
+  x$ranef <- tidy_ranef(extract_effects(formula(x)), data = model.frame(x))
   if (nzchar(nlpar)) {
     # relevant for multivariate models only
     attr(x$formula, "response") <- nlpar 
