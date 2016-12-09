@@ -100,10 +100,10 @@ ulapply <- function(X, FUN, ...) {
   unlist(lapply(X = X, FUN = FUN, ...))
 }
 
-lc <- function(l, x) {
-  # append x to l
-  l[[length(l) + 1]] <- x
-  l
+lc <- function(l, ...) {
+  # append ... to l
+  dots <- list(...)
+  c(l, dots)
 }
 
 collapse <- function(..., sep = "") {
@@ -710,5 +710,5 @@ monotonic <- function(expr) {
     "Loading 'brms' package (version ", utils::packageVersion("brms"), "). ",
     "Useful instructions \n", 
     "can be found by typing help('brms'). A more detailed introduction \n", 
-    "to the package is available through vignette('brms')."))
+    "to the package is available through vignette('brms_overview')."))
 }
