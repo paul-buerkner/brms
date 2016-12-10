@@ -378,7 +378,7 @@ extract_time <- function(formula) {
   }
   x <- list(time = ifelse(length(time), time, ""))
   group <- sub("^\\|*", "", sub("~[^\\|]*", "", formula))
-  if (illegal_group_expr(group, bs_valid = FALSE)) {
+  if (illegal_group_expr(group, fs_valid = FALSE)) {
     stop2("Illegal grouping term: ", group, "\n It may contain only ", 
           "variable names combined by the symbol ':'")
   }
@@ -476,14 +476,14 @@ update_formula <- function(formula, data = NULL, family = gaussian(),
   formula
 }
 
-illegal_group_expr <- function(group, bs_valid = TRUE) {
+illegal_group_expr <- function(group, fs_valid = TRUE) {
   # check if the group part of a group-level term is invalid
   # Args:
   #  g: the group part of a group-level term
-  #  bs_valid: is '/' valid? 
+  #  fs_valid: is '/' valid? 
   valid_expr <- ":|[^([:digit:]|[:punct:])][[:alnum:]_\\.]*"
-  rsv_signs <- c(".", "+", "*", "|", "?", "::", "\\", if (!bs_valid) "/")
-  nchar(gsub(valid_expr, "", group)) ||
+  rsv_signs <- c("+", "*", "|", "::", "\\", if (!fs_valid) "/")
+  nzchar(gsub(valid_expr, "", group)) ||
     any(ulapply(rsv_signs, grepl, x = group, fixed = TRUE))
 }
 
