@@ -139,7 +139,8 @@ make_standata <- function(formula, data, family = "gaussian",
   }
   
   # data for various kinds of effects
-  ranef <- tidy_ranef(ee, data, ncat = control$ncat)
+  ranef <- tidy_ranef(ee, data, ncat = control$ncat, 
+                      old_levels = control$old_levels)
   args_eff <- nlist(data, family, ranef, prior, knots, not4stan)
   if (length(ee$nonlinear)) {
     nlpars <- names(ee$nonlinear)
@@ -193,8 +194,7 @@ make_standata <- function(formula, data, family = "gaussian",
     standata <- c(standata, data_aux_eff)
   }
   # data for grouping factors separated after group-ID
-  data_group <- data_group(ranef, data, cov_ranef = cov_ranef,
-                           old_levels = control$old_levels)
+  data_group <- data_group(ranef, data, cov_ranef = cov_ranef)
   standata <- c(standata, data_group)
   
   # data for specific families

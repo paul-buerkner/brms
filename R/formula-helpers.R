@@ -282,6 +282,37 @@ monotonic <- function(expr) {
   expr
 }
 
+#' @export
+gr <- function(...) {
+  groups <- as.character(as.list(substitute(list(...)))[-1])
+  if (length(groups) > 1L) {
+    stop2("Grouping structure 'gr' expects only a single grouping term")
+  }
+  if (illegal_group_expr(groups[1])) {
+    stop2("Illegal grouping term: ", groups[1], "\nIt may contain ",
+          "only variable names combined by the symbol ':'")
+  }
+  nlist(groups, allvars = groups, type = "")
+}
+
+#' @export
+mm <- function(..., weights = NULL) {
+  groups <- as.character(as.list(substitute(list(...)))[-1])
+  for (i in seq_along(groups)) {
+    if (illegal_group_expr(groups[i])) {
+      stop2("Illegal grouping term: ", groups[i], "\nIt may contain ",
+            "only variable names combined by the symbol ':'")
+    }
+  }
+  weights <- substitute(weights)
+  weightvars <- all.vars(weights)
+  if (!is.null(weights)) {
+    weights <- deparse_no_string(weights)
+  }
+  nlist(groups, weights, weightvars, 
+        allvars = c(groups, weightvars), type = "mm")
+}
+
 is.formula <- function(x) {
   is(x, "formula")
 }

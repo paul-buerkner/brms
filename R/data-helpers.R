@@ -359,7 +359,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   old_levels <- named_list(gnames)
   for (i in seq_along(gnames)) {
     new_levels <- unique(as.character(get(gnames[i], newdata)))
-    old_levels[[i]] <- attr(new_ranef, "levels")[[gnames[i]]]
+    old_levels[[i]] <- attr(fit$ranef, "levels")[[gnames[i]]]
     unknown_levels <- setdiff(new_levels, old_levels[[i]])
     if (!allow_new_levels && length(unknown_levels)) {
       unknown_levels <- paste0("'", unknown_levels, "'", collapse = ", ")
@@ -563,7 +563,6 @@ data_effects <- function(effects, data, family = gaussian(),
   #   knots: optional knot values for smoothing terms
   #   nlpar: optional character string naming a non-linear parameter
   #   not4stan: is the data for use in S3 methods only?
-  #   old_levels: original levels of grouping factors
   #   smooth: optional list of smoothing objects based on 
   #           the original data
   #   Jmo: optional precomputed values of Jmo for monotonic effects
@@ -705,54 +704,65 @@ data_ranef <- function(ranef, data, nlpar = "", not4stan = FALSE) {
   out
 }
 
-data_group <- function(ranef, data, cov_ranef = NULL, old_levels = NULL) {
+data_group <- function(ranef, data, cov_ranef = NULL) {
   # compute data specific for each group-level-ID
   # Args:
   #   ranef: data.frame returned by tidy_ranef
   #   data: the model.frame
   #   cov_ranef: name list of user-defined covariance matrices
-  #   old_levels: original levels of grouping factors
-  #               only relevant for newdata
-  expr <- expression(as.array(as.numeric(factor(get(g, data)))), 
-                     length(unique(get(g, data))), # number of levels 
-                     nranef,  # number of group-level effects
-                     nranef * (nranef - 1) / 2)  # number of cors
-  if (length(old_levels)) {
-    # for newdata numeration has to depend on the original levels
-    expr[1] <- expression(match(get(g, data), old_levels[[g]]))
-  }
   out <- list()
   ids <- unique(ranef$id)
   for (id in ids) {
     id_ranef <- ranef[ranef$id == id, ]
     nranef <- nrow(id_ranef)
-    g <- id_ranef$group[1]
-    name <- paste0(c("J_", "N_", "M_", "NC_"), id)
-    for (j in seq_along(name)) {
-      out <- c(out, setNames(list(eval(expr[j])), name[j]))
+    group <- id_ranef$group[1]
+    levels <- attr(ranef, "levels")[[group]]
+    if (id_ranef$gtype[1] == "mm") {
+      gs <- id_ranef$gcall[[1]]$groups
+      ngs <- length(gs)
+      weights <- id_ranef$gcall[[1]]$weights
+      if (!is.null(weights)) {
+        weights <- as.matrix(eval2(id_ranef$gcall[[1]]$weights, data))
+        if (!identical(dim(weights), c(nrow(data), ngs))) {
+          stop2("Grouping structure 'mm' expects 'weights' to be a matrix ", 
+                "with as many columns as grouping factors.")
+        }
+        weights <- sweep(weights, 1, rowSums(weights), "/")
+      } else {
+        # all members get equal weights by default
+        weights <- matrix(1 / ngs, nrow = nrow(data), ncol = ngs)
+      }
+      for (i in seq_along(gs)) {
+        temp <- list(as.array(match(get(gs[i], data), levels)), weights[, i])
+        out <- c(out, setNames(temp, paste0(c("J_", "W_"), id, "_", i)))
+      }
+    } else {
+      g <- id_ranef$gcall[[1]]$groups
+      out[[paste0("J_", id)]] <- as.array(match(get(g, data), levels))
     }
-    if (g %in% names(cov_ranef)) {
-      cov_mat <- as.matrix(cov_ranef[[g]])
+    temp <- list(length(levels), nranef, nranef * (nranef - 1) / 2)
+    out <- c(out, setNames(temp, paste0(c("N_", "M_", "NC_"), id)))
+    if (group %in% names(cov_ranef)) {
+      cov_mat <- as.matrix(cov_ranef[[group]])
       if (!isSymmetric(unname(cov_mat))) {
-        stop2("Covariance matrix of grouping factor '", g,
-              "' is not symmetric.")
+        stop2("Covariance matrix of grouping factor '", 
+              group, "' is not symmetric.")
       }
-      found_level_names <- rownames(cov_mat)
-      if (is.null(found_level_names)) {
-        stop2("Row names are required for covariance matrix of '", g, "'.")
+      found_levels <- rownames(cov_mat)
+      if (is.null(found_levels)) {
+        stop2("Row names are required for covariance matrix of '", group, "'.")
       }
-      colnames(cov_mat) <- found_level_names
-      true_level_names <- levels(factor(get(g, data)))
-      found <- true_level_names %in% found_level_names
+      colnames(cov_mat) <- found_levels
+      found <- levels %in% found_levels
       if (any(!found)) {
-        stop2("Row names of covariance matrix of '", g, 
+        stop2("Row names of covariance matrix of '", group, 
               "' do not match names of the grouping levels.")
       }
-      cov_mat <- cov_mat[true_level_names, true_level_names, drop = FALSE]
+      cov_mat <- cov_mat[levels, levels, drop = FALSE]
       evs <- eigen(cov_mat, symmetric = TRUE, only.values = TRUE)$values
       if (min(evs) <= 0) {
-        stop2("Covariance matrix of grouping factor '", g, 
-              "' is not positive definite.")
+        stop2("Covariance matrix of grouping factor '", 
+              group, "' is not positive definite.")
       }
       out <- c(out, setNames(list(t(chol(cov_mat))), paste0("Lcov_", id)))
     }

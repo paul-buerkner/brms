@@ -309,11 +309,16 @@ stan_ranef <- function(id, ranef, prior = brmsprior(),
   #   A list of strings containing Stan code
   r <- ranef[ranef$id == id, ]
   ccov <- r$group[1] %in% names(cov_ranef)
+  ng <- seq_along(r$gcall[[1]]$groups)
   idp <- paste0(r$id, usc(r$nlpar, "prefix"))
   out <- list()
   out$data <- paste0(
     "  // data for group-level effects of ID ", id, " \n",
-    "  int<lower=1> J_", id, "[N]; \n",
+    if (r$gtype[1] == "mm") collapse(
+      "  int<lower=1> J_", id, "_", ng, "[N]; \n",
+      "  real<lower=0> W_", id, "_", ng, "[N]; \n")
+    else paste0(
+      "  int<lower=1> J_", id, "[N]; \n"),
     "  int<lower=1> N_", id, "; \n",
     "  int<lower=1> M_", id, "; \n",
     if (ccov) paste0(
@@ -557,8 +562,7 @@ stan_meef <- function(meef, ranef = empty_ranef(),
     for (i in seq_along(meef)) {
       r <- ranef[ranef$coef == meef[i], ]
       if (nrow(r)) {
-        idp <- paste0(r$id, usc(nlpar, "prefix"))
-        rpars <- collapse(" + r_", idp, "_", r$cn, "[J_", r$id, "[n]]")
+        rpars <- paste0(" + ", stan_eta_r(r))
       } else {
         rpars <- ""
       }
@@ -616,17 +620,39 @@ stan_eta_ranef <- function(ranef, nlpar = "") {
   # write the group-level part of the linear predictor
   # Args:
   #   ranef: a named list returned by tidy_ranef
-  #   nlpar: currently unused
+  #   nlpar: optional name of a non-linear parameter
   eta_ranef <- ""
-  ranef <- ranef[!nzchar(ranef$type), ]
+  ranef <- ranef[ranef$nlpar == nlpar & !nzchar(ranef$type), ]
   for (id in unique(ranef$id)) {
     r <- ranef[ranef$id == id, ]
     idp <- paste0(r$id, usc(r$nlpar, "prefix"))
     eta_ranef <- paste0(eta_ranef, collapse(
-      " + r_", idp, "_", r$cn, "[J_", r$id, "[n]]",
-      " * Z_", idp, "_", r$cn, "[n]"))
+      " + (", stan_eta_r(r), ") * Z_", idp, "_", r$cn, "[n]"))
   }
   eta_ranef
+}
+
+stan_eta_r <- function(r) {
+  # Stan code for r parameters in linear predictor terms
+  # Args:
+  #   r: data.frame created by tidy_ranef
+  # Returns:
+  #   A character vector, one element per row of 'r' 
+  stopifnot(nrow(r) > 0L, length(unique(r$gtype)) == 1L)
+  idp <- paste0(r$id, usc(r$nlpar, "prefix"))
+  if (r$gtype[1] == "mm") {
+    ng <- seq_along(r$gcall[[1]]$groups)
+    out <- rep("", nrow(r))
+    for (i in seq_along(out)) {
+      out[i] <- paste0(
+        "W_", r$id[i], "_", ng, "[n] * ", 
+        "r_", idp[i], "_", r$cn[i], "[J_", r$id[i], "_", ng, "[n]]",
+        collapse = " + ") 
+    }
+  } else {
+    out <- paste0("r_", idp, "_", r$cn, "[J_", r$id, "[n]]")
+  }
+  out
 }
 
 stan_eta_monef <- function(monef, ranef = empty_ranef(), nlpar = "") {
@@ -646,8 +672,7 @@ stan_eta_monef <- function(monef, ranef = empty_ranef(), nlpar = "") {
   for (i in seq_along(monef)) {
     r <- ranef[ranef$coef == monef[i], ]
     if (nrow(r)) {
-      idp <- paste0(r$id, usc(nlpar, "prefix"))
-      rpars <- collapse(" + r_", idp, "_", r$cn, "[J_", r$id, "[n]]")
+      rpars <- paste0(" + ", stan_eta_r(r))
     } else {
       rpars <- ""
     }

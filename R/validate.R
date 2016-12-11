@@ -148,17 +148,13 @@ extract_effects <- function(formula, family = NA, nonlinear = NULL,
   # make a formula containing all required variables
   lhs_vars <- if (resp_rhs_all) all.vars(lhs(x$fixed))
   fixed_vars <- if (!length(x$nonlinear)) rhs(x$fixed)
-  formula_list <- c(lhs_vars, 
-                    add_vars, 
-                    fixed_vars,
+  formula_list <- c(lhs_vars, add_vars, fixed_vars,
                     x[c("covars", "cs", "mo", "me")], 
-                    attr(x$gam, "allvars"), 
-                    x$random$form,
-                    x$random$group, 
-                    get_offset(x$fixed),
-                    lapply(x$nonlinear, function(e) e$allvars),
-                    lapply(x[auxpars()], function(e) e$allvars), 
-                    x$time$allvars)
+                    attr(x$gam, "allvars"), x$random$form,
+                    lapply(x$random$gcall, "[[", "allvars"), 
+                    lapply(x$nonlinear, "[[", "allvars"),
+                    lapply(x[auxpars()], "[[", "allvars"), 
+                    get_offset(x$fixed), x$time$allvars)
   new_formula <- collapse(ulapply(rmNULL(formula_list), plus_rhs))
   all_vars <- c("1", all.vars(parse(text = new_formula)))
   new_formula <- paste(new_formula, "+", paste0(all_vars, collapse = "+"))
@@ -303,9 +299,13 @@ extract_random <- function(re_terms) {
   for (i in seq_along(re_terms)) {
     id <- gsub("\\|", "", mid_terms[i])
     if (!nzchar(id)) id <- NA
-    random[[i]] <- data.frame(group = rhs_terms[i], gn = i, id = id,
+    gcall <- eval2(rhs_terms[i])
+    group <- paste0(gcall$type, collapse(gcall$groups))
+    random[[i]] <- data.frame(group = group, gtype = gcall$type,
+                              gn = i, id = id, type = type[i],
                               cor = substr(mid_terms[i], 1, 2) != "||",
-                              type = type[i], stringsAsFactors = FALSE)
+                              stringsAsFactors = FALSE)
+    random[[i]]$gcall <- list(gcall)
     random[[i]]$form <- list(formula(paste("~", lhs_terms[i])))
   }
   if (length(random)) {
@@ -378,8 +378,8 @@ extract_time <- function(formula) {
   }
   x <- list(time = ifelse(length(time), time, ""))
   group <- sub("^\\|*", "", sub("~[^\\|]*", "", formula))
-  if (illegal_group_expr(group, fs_valid = FALSE)) {
-    stop2("Illegal grouping term: ", group, "\n It may contain only ", 
+  if (illegal_group_expr(group)) {
+    stop2("Illegal grouping term: ", group, "\nIt may contain only ", 
           "variable names combined by the symbol ':'")
   }
   group <- formula(paste("~", ifelse(nchar(group), group, "1")))
@@ -476,13 +476,12 @@ update_formula <- function(formula, data = NULL, family = gaussian(),
   formula
 }
 
-illegal_group_expr <- function(group, fs_valid = TRUE) {
+illegal_group_expr <- function(group) {
   # check if the group part of a group-level term is invalid
   # Args:
   #  g: the group part of a group-level term
-  #  fs_valid: is '/' valid? 
   valid_expr <- ":|[^([:digit:]|[:punct:])][[:alnum:]_\\.]*"
-  rsv_signs <- c("+", "*", "|", "::", "\\", if (!fs_valid) "/")
+  rsv_signs <- c("+", "-", "*", "/", "|", "::")
   nzchar(gsub(valid_expr, "", group)) ||
     any(ulapply(rsv_signs, grepl, x = group, fixed = TRUE))
 }
@@ -554,20 +553,12 @@ split_re_terms <- function(re_terms) {
       lhs_terms[i] <- formula2string(lhs_form_me, rm = 1)
       type[[i]] <- "me"
     }
-    
-    # expaned grouping factor terms
-    groups <- unlist(strsplit(rhs_terms[i], "/", fixed = TRUE))
-    new_groups <- c(groups[1], rep("", length(groups) - 1L))
-    for (j in seq_along(groups)) {
-      if (illegal_group_expr(groups[j])) {
-        stop2("Illegal grouping term: ", rhs_terms[i], "\n may contain ",
-             "only variable names combined by the symbols ':' or '/'")
-      }
-      if (j > 1L) {
-        new_groups[j] <- paste0(new_groups[j - 1], ":", groups[j])
-      }
-    }
-    new_re_terms[[i]] <- paste0(lhs_terms[i], mid_terms[i], new_groups)
+    # expand grouping factor terms
+    groups <- terms(formula(paste0("~", rhs_terms[i])))
+    groups <- attr(groups, "term.labels")
+    groups <- ifelse(!grepl("^(gr|mm)\\(", groups), 
+                     paste0("gr(", groups, ")"), groups)
+    new_re_terms[[i]] <- paste0(lhs_terms[i], mid_terms[i], groups)
     type[[i]] <- rep(type[[i]], length(new_re_terms[[i]]))
   }
   structure(unlist(new_re_terms), type = unlist(type))
@@ -976,7 +967,8 @@ has_cs <- function(effects) {
     any(get_random(effects)$type %in% "cs")
 }
 
-tidy_ranef <- function(effects, data = NULL, all = TRUE, ncat = NULL) {
+tidy_ranef <- function(effects, data = NULL, all = TRUE, 
+                       ncat = NULL, old_levels = NULL) {
   # combines helpful information on the group-level effects
   # Args:
   #   effects: output of extract_effects
@@ -994,6 +986,7 @@ tidy_ranef <- function(effects, data = NULL, all = TRUE, ncat = NULL) {
   #     nlpar: name of the corresponding non-linear parameter
   #     cor: are correlations modeled for this effect?
   #     type: special effects type; can be "mo", "cs", or "me"
+  #     gcall: output of functions 'gr' or 'mm'
   #     form: formula used to compute the effects
   random <- get_random(effects, all = all)
   ranef <- vector("list", nrow(random))
@@ -1021,11 +1014,13 @@ tidy_ranef <- function(effects, data = NULL, all = TRUE, ncat = NULL) {
     rdat <- data.frame(id = random$id[[i]],
                        group = random$group[[i]],
                        gn = random$gn[[i]],
+                       gtype = random$gtype[[i]],
                        coef = coef, cn = NA,
                        nlpar = random$nlpar[[i]],
                        cor = random$cor[[i]],
                        type = random$type[[i]],
                        stringsAsFactors = FALSE)
+    rdat$gcall <- replicate(nrow(rdat), random$gcall[i]) 
     rdat$form <- replicate(nrow(rdat), random$form[[i]])
     id <- random$id[[i]]
     if (is.na(id)) {
@@ -1058,10 +1053,20 @@ tidy_ranef <- function(effects, data = NULL, all = TRUE, ncat = NULL) {
     for (id in unique(ranef$id)) {
       ranef$cn[ranef$id == id] <- seq_len(sum(ranef$id == id))
     }
-    levels <- lapply(unique(random$group), function(g) 
-      levels(factor(get(g, data))))
-    names(levels) <- unique(random$group)
-    attr(ranef, "levels") <- levels
+    if (is.null(old_levels)) {
+      un_random <- random[!duplicated(random$group), ]
+      levels <- named_list(un_random$group)
+      for (i in seq_along(levels)) {
+        # combine levels of all grouping factors within one grouping term
+        levels[[i]] <- ulapply(un_random$gcall[[i]]$groups, 
+                               function(g) levels(factor(get(g, data))))
+        levels[[i]] <- unique(levels[[i]])
+      }
+      attr(ranef, "levels") <- levels 
+    } else {
+      # for newdata numeration has to depend on the original levels
+      attr(ranef, "levels") <- old_levels
+    }
   }
   ranef
 }
