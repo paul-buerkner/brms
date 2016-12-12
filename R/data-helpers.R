@@ -722,8 +722,8 @@ data_group <- function(ranef, data, cov_ranef = NULL) {
       gs <- id_ranef$gcall[[1]]$groups
       ngs <- length(gs)
       weights <- id_ranef$gcall[[1]]$weights
-      if (!is.null(weights)) {
-        weights <- as.matrix(eval2(id_ranef$gcall[[1]]$weights, data))
+      if (is.formula(weights)) {
+        weights <- as.matrix(eval_rhs(weights, data))
         if (!identical(dim(weights), c(nrow(data), ngs))) {
           stop2("Grouping structure 'mm' expects 'weights' to be a matrix ", 
                 "with as many columns as grouping factors.")

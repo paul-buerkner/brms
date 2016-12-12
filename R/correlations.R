@@ -240,14 +240,14 @@ cor_bsts <- function(formula = ~1) {
 
 #' @export
 print.cor_arma <- function(x, ...) {
-  cat(paste0("arma(", formula2string(x$formula), ", ", 
+  cat(paste0("arma(", formula2str(x$formula), ", ", 
              get_ar(x), ", ", get_ma(x), ", ", get_arr(x),")"))
   invisible(x)
 }
 
 #' @export
 print.cor_bsts <- function(x, ...) {
-  cat(paste0("bsts(", formula2string(x$formula), ")"))
+  cat(paste0("bsts(", formula2str(x$formula), ")"))
   invisible(x)
 }
 

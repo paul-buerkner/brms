@@ -18,7 +18,7 @@ extract_effects <- function(formula, family = NA, nonlinear = NULL,
   if (!is.na(family[[1]])) {
     family <- check_family(family)
   }
-  tformula <- formula2string(formula) 
+  tformula <- formula2str(formula) 
   tfixed <- gsub("\\|+[^~]*~", "~", tformula)
   x <- nlist(formula)
   if (length(nonlinear)) {
@@ -370,7 +370,7 @@ extract_time <- function(formula) {
   if (!is.null(lhs(formula))) {
     stop2("Autocorrelation formula must be one-sided.")
   }
-  formula <- formula2string(formula)
+  formula <- formula2str(formula)
   time <- as.formula(paste("~", gsub("~|\\|[[:print:]]*", "", formula)))
   time <- all.vars(time)
   if (length(time) > 1L) {
@@ -450,7 +450,7 @@ update_formula <- function(formula, data = NULL, family = gaussian(),
   if (!is.null(partial)) {
     warning2("Argument 'partial' is deprecated. Please use the 'cs' ", 
              "function inside the model formula instead.")
-    partial <- formula2string(as.formula(partial), rm = 1)
+    partial <- formula2str(partial, rm = 1)
     fnew <- paste(fnew, "+ cs(", partial, ")")
   }
   # to allow the '.' symbol in formula
@@ -530,7 +530,7 @@ split_re_terms <- function(re_terms) {
         stop2("Please specify monotonic effects ", 
               "in separate group-level terms.")
       }
-      lhs_terms[i] <- formula2string(lhs_form_mo, rm = 1)
+      lhs_terms[i] <- formula2str(lhs_form_mo, rm = 1)
       type[[i]] <- "mo"
     }
     lhs_form_cs <- extract_cs(lhs_form)
@@ -540,7 +540,7 @@ split_re_terms <- function(re_terms) {
         stop2("Please specify category specific effects ", 
               "in separate group-level terms.")
       }
-      lhs_terms[i] <- formula2string(lhs_form_cs, rm = 1)
+      lhs_terms[i] <- formula2str(lhs_form_cs, rm = 1)
       type[[i]] <- "cs"
     }
     lhs_form_me <- extract_me(lhs_form)
@@ -550,7 +550,7 @@ split_re_terms <- function(re_terms) {
         stop2("Please specify terms of noisy variables ", 
               "in separate group-level terms.")
       }
-      lhs_terms[i] <- formula2string(lhs_form_me, rm = 1)
+      lhs_terms[i] <- formula2str(lhs_form_me, rm = 1)
       type[[i]] <- "me"
     }
     # expand grouping factor terms
@@ -597,7 +597,7 @@ check_re_formula <- function(re_formula, formula) {
       }  
       new <- new[found, ]
       if (nrow(new)) {
-        forms <- ulapply(new$form, formula2string, rm = 1)
+        forms <- ulapply(new$form, formula2str, rm = 1)
         re_terms <- paste("(", forms, "|", new$group, ")")
         re_formula <- formula(paste("~", paste(re_terms, collapse = "+")))
       } else {
@@ -631,7 +631,7 @@ update_re_terms <- function(formula, re_formula = NULL) {
                               re_formula = re_formula)
   } else {
     re_formula <- check_re_formula(re_formula, formula)
-    new_formula <- formula2string(formula)
+    new_formula <- formula2str(formula)
     old_re_terms <- get_re_terms(formula)
     if (length(old_re_terms)) {
       # make sure that + before group-level terms are also removed
@@ -1120,24 +1120,6 @@ add_families <- function(x) {
                   "gamma", "weibull", "negbinomial", "exgaussian"),
          dec = c("wiener"),
          stop2(paste("Addition argument '", x, "' is not supported.")))
-}
-
-formula2string <- function(formula, rm = c(0, 0)) {
-  # converts formula to string
-  # Args:
-  #   formula: a model formula
-  #   rm: a vector of to elements indicating how many characters 
-  #       should be removed at the beginning
-  #       and end of the string respectively
-  # Returns:
-  #    the formula as string 
-  if (!is(formula, "formula")) {
-    formula <- as.formula(formula)
-  }
-  if (is.na(rm[2])) rm[2] <- 0
-  x <- gsub("[ \t\r\n]+", "", Reduce(paste, deparse(formula)), perl = TRUE)
-  x <- substr(x, 1 + rm[1], nchar(x) - rm[2])
-  x
 }
 
 get_bounds <- function(formula, data = NULL) {

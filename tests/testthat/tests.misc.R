@@ -19,12 +19,6 @@ test_that("rmNum remove all numeric entries", {
   expect_equal(rmNum(list(x = 1.5, y = "abc", z = pi)), list(y = "abc"))
 })
 
-test_that("forumla2string performs correct conversion", {
-  expect_equal(formula2string("y~x"), "y~x")
-  expect_equal(formula2string(y ~ x + c), "y~x+c")
-  expect_equal(formula2string(abc ~ x + cd, rm = c(3,2)), "~x+")
-})
-
 test_that("collapse_lists performs correct collapsing after names", {
   x <- list(a = "a <- ", b = "b <- ")
   y <- list(b = "cauchy(1,2)", c = "normal(0,1)", a = "gamma(1,1)")

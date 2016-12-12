@@ -471,7 +471,7 @@ prepare_auxformula <- function(formula, par = NULL, rsv_pars = NULL) {
     if (!isTRUE(nzchar(par))) {
       stop2("Additional formulas must be named.")
     }
-    formula <- formula(paste(par, formula2string(formula)))
+    formula <- formula(paste(par, formula2str(formula)))
   }
   if (any(ulapply(c(".", "_"), grepl, x = par, fixed = TRUE))) {
     stop2("Parameter names should not contain dots or underscores.")

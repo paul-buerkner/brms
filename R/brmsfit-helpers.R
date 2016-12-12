@@ -183,8 +183,10 @@ prepare_conditions <- function(x, conditions = NULL, effects = NULL,
       message("Using the median number of trials by default")
     }
     # list all required variables
+    random <- get_random(ee)
     req_vars <- c(lapply(get_effect(ee), rhs), 
-                  get_random(ee)$form,
+                  random$form, 
+                  lapply(random$gcall, "[[", "weightvars"),
                   lapply(get_effect(ee, "mo"), rhs),
                   lapply(get_effect(ee, "me"), rhs),
                   lapply(get_effect(ee, "gam"), rhs), 

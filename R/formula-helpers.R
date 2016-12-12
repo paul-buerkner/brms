@@ -292,7 +292,8 @@ gr <- function(...) {
     stop2("Illegal grouping term: ", groups[1], "\nIt may contain ",
           "only variable names combined by the symbol ':'")
   }
-  nlist(groups, allvars = groups, type = "")
+  allvars <- str2formula(groups)
+  nlist(groups, allvars, type = "")
 }
 
 #' @export
@@ -306,11 +307,37 @@ mm <- function(..., weights = NULL) {
   }
   weights <- substitute(weights)
   weightvars <- all.vars(weights)
+  allvars <- str2formula(c(groups, weightvars))
   if (!is.null(weights)) {
-    weights <- deparse_no_string(weights)
+    weights <- str2formula(deparse_no_string(weights))
+    weightvars <- str2formula(weightvars)
   }
-  nlist(groups, weights, weightvars, 
-        allvars = c(groups, weightvars), type = "mm")
+  nlist(groups, weights, weightvars, allvars, type = "mm")
+}
+
+str2formula <- function(x, ...) {
+  # converts a string to a formula
+  # Args:
+  #   x: vector of strings to be converted
+  #   ...: passed to formula(.)
+  x <- paste(c("1", x), collapse = "+") 
+  formula(paste("~", x), ...)
+}
+
+formula2str <- function(formula, rm = c(0, 0)) {
+  # converts a formula to a string
+  # Args:
+  #   formula: a model formula
+  #   rm: a vector of to elements indicating how many characters 
+  #       should be removed at the beginning
+  #       and end of the string respectively
+  if (!is.formula(formula)) {
+    formula <- as.formula(formula)
+  }
+  if (is.na(rm[2])) rm[2] <- 0
+  x <- gsub("[ \t\r\n]+", "", Reduce(paste, deparse(formula)), perl = TRUE)
+  x <- substr(x, 1 + rm[1], nchar(x) - rm[2])
+  x
 }
 
 is.formula <- function(x) {

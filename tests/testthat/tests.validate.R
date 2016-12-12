@@ -21,18 +21,21 @@ test_that("extract_effects finds all random effects terms", {
   expect_equal(extract_effects(y ~ (1+x||g1/g2) + (1|g3))$random$cor, 
                c(FALSE, FALSE, TRUE))
   expect_equal(extract_effects(y ~ 1|g1)$random$group, "g1")
-  expect_error(extract_effects(y ~ (1+x|g1+g2) + x + (1|g1)))
+  expect_equal(extract_effects(y ~ x + (1+x|g1+g2))$random$group,
+               c("g1", "g2"))
 })
 
 test_that("extract_effects accepts || syntax", {
   random <- brms:::extract_effects(y ~ a + (1+x||g1) + (1+z|g2))$random
-  target <- data.frame(group = c("g1", "g2"), gn = 1:2, id = c(NA, NA),
-                       cor = c(FALSE, TRUE), type = "",
+  target <- data.frame(group = c("g1", "g2"), gtype = rep("", 2), 
+                       gn = 1:2, id = c(NA, NA),
+                       type = "", cor = c(FALSE, TRUE), 
                        stringsAsFactors = FALSE)
+  target$gcall <- list(list(groups = "g1", allvars = ~ 1 + g1, type = ""),
+                       list(groups = "g2", allvars = ~ 1 + g2, type = ""))
   target$form <- list(~1+x, ~1+z)
-  expect_equal(random, target)
+  expect_equivalent(random, target)
   expect_equal(extract_effects(y ~ (1+x||g1:g2))$random$group, c("g1:g2"))
-  expect_error(extract_effects(y ~ (1+x||g1-g2) + x + (1|g1)))
 })
 
 test_that("extract_effects finds all response variables", {
@@ -146,17 +149,23 @@ test_that("extract_effects finds all spline terms", {
 test_that("extract_effects correctly handles group IDs", {
   form <- bf(y ~ x + (1+x|3|g) + (1|g2),
              sigma = ~ (x|3|g) + (1||g2))
-  target <- data.frame(group = c("g", "g2"), gn = 1:2, id = c("3", NA),
-                       cor = c(TRUE, TRUE), type = "", 
+  target <- data.frame(group = c("g", "g2"), gtype = rep("", 2), 
+                       gn = 1:2, id = c("3", NA),
+                       type = "", cor = c(TRUE, TRUE), 
                        stringsAsFactors = FALSE)
+  target$gcall <- list(list(groups = "g", allvars = ~ 1 + g, type = ""),
+                       list(groups = "g2", allvars = ~ 1 + g2, type = ""))
   target$form <- list(~1+x, ~1)
   expect_equal(extract_effects(form)$random, target)
   
   form <- bf(y ~ a, nonlinear = a ~ x + (1+x|3|g) + (1|g2),
              sigma = ~ (x|3|g) + (1||g2))
-  target <- data.frame(group = c("g", "g2"), gn = 1:2, id = c("3", NA),
-                       cor = c(TRUE, FALSE), type = "",
+  target <- data.frame(group = c("g", "g2"), gtype = rep("", 2), 
+                       gn = 1:2, id = c("3", NA),
+                       type = "", cor = c(TRUE, FALSE),
                        stringsAsFactors = FALSE)
+  target$gcall <- list(list(groups = "g", allvars = ~ 1 + g, type = ""),
+                       list(groups = "g2", allvars = ~ 1 + g2, type = ""))
   target$form <- list(~x, ~1)
   expect_equal(extract_effects(form)$sigma$random, target)
 })
@@ -266,10 +275,11 @@ test_that("tidy_ranef works correctly", {
   data <- data.frame(g = 1:10, x = 11:20, y = 1:10)
   data[["g:x"]] <- with(data, paste0(g, "_", x))
   
-  target <- data.frame(id = 1, group = "g", gn = 1, 
+  target <- data.frame(id = 1, group = "g", gn = 1, gtype = "", 
                        coef = c("Intercept", "x"), cn = 1:2,
-                       nlpar = "", cor = FALSE, type = "",
+                       nlpar = "", cor = FALSE, type = "", 
                        stringsAsFactors = FALSE)
+  target$gcall <- replicate(2, list(list(groups = "g", allvars = ~ 1 + g, tyep = "")))
   target$form <- replicate(2, ~1+x)
   ranef <- tidy_ranef(extract_effects(y~(1+x||g)), data = data)
   expect_equivalent(ranef, target)
