@@ -990,7 +990,8 @@ tidy_ranef <- function(effects, data = NULL, all = TRUE,
   #     form: formula used to compute the effects
   random <- get_random(effects, all = all)
   ranef <- vector("list", nrow(random))
-  used_ids <- new_ids <- id_groups <- NULL
+  used_ids <- new_ids <- NULL
+  id_groups <- list()
   j <- 1
   for (i in seq_len(nrow(random))) {
     if (random$type[[i]] == "mo") {
@@ -1030,15 +1031,15 @@ tidy_ranef <- function(effects, data = NULL, all = TRUE,
       if (id %in% used_ids) {
         k <- match(id, used_ids)
         rdat$id <- new_ids[k]
-        if (!identical(random$group[[i]], id_groups[k])) {
+        if (!identical(random$gcall[[i]]$groups, id_groups[[k]])) {
           stop2("Can only combine group-level terms of the ",
-                "same grouping factor.")
+                "same grouping factors.")
         }
       } else {
         used_ids <- c(used_ids, id)
         k <- length(used_ids)
         rdat$id <- new_ids[k] <- j
-        id_groups[k] <- random$group[[i]]
+        id_groups[[k]] <- random$gcall[[i]]$groups
         j <- j + 1
       }
     }
