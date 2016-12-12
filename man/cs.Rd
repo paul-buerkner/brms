@@ -34,6 +34,6 @@ plot(fit, ask = FALSE)
  
 }
 \seealso{
-brmsformula
+\code{\link[brms:brmsformula]{brmsformula}}
 }
 

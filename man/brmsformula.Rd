@@ -39,7 +39,7 @@ All auxiliary parameters are modeled
 on the log or logit scale to ensure correct definition
 intervals after transformation.}
 
-\item{nonlinear}{An optional list of formuluas, specifying 
+\item{nonlinear}{An optional list of formulas, specifying 
 linear models for non-linear parameters. If \code{NULL} (the default)
 \code{formula} is treated as an ordinary formula. 
 If not \code{NULL}, \code{formula} is treated as a non-linear model
@@ -75,7 +75,13 @@ The \code{formula} argument accepts formulae of the following syntax:
   in a Bayesian context 
   (for more details type \code{vignette("brms_overview")}).
   Multiple grouping factors each with multiple group-level effects 
-  are possible. Instead of \code{|} you may use \code{||} in grouping terms
+  are possible. You can specify multi-membership terms
+  using the \code{\link[brms:mm]{mm}} function. For instance, 
+  a multi-membership term with two members could be
+  \code{(1|mm(g1, g2))}, where \code{g1} and \code{g2} specify
+  the first and second member, respectively.
+  
+  Instead of \code{|} you may use \code{||} in grouping terms
   to prevent correlations from being modeled. 
   Alternatively, it is possible to model different group-level terms of 
   the same grouping factor as correlated (even across different formulae,

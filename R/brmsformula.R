@@ -54,7 +54,13 @@
 #'   in a Bayesian context 
 #'   (for more details type \code{vignette("brms_overview")}).
 #'   Multiple grouping factors each with multiple group-level effects 
-#'   are possible. Instead of \code{|} you may use \code{||} in grouping terms
+#'   are possible. You can specify multi-membership terms
+#'   using the \code{\link[brms:mm]{mm}} function. For instance, 
+#'   a multi-membership term with two members could be
+#'   \code{(1|mm(g1, g2))}, where \code{g1} and \code{g2} specify
+#'   the first and second member, respectively.
+#'   
+#'   Instead of \code{|} you may use \code{||} in grouping terms
 #'   to prevent correlations from being modeled. 
 #'   Alternatively, it is possible to model different group-level terms of 
 #'   the same grouping factor as correlated (even across different formulae,

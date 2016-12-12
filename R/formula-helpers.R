@@ -140,7 +140,7 @@ eval_rhs <- function(formula, data = NULL) {
 #' This function is almost solely useful when
 #' called in formulas passed to the \pkg{brms} package.
 #' 
-#' @seealso brmsformula
+#' @seealso \code{\link[brms:brmsformula]{brmsformula}}
 #'   
 #' @examples 
 #' \dontrun{
@@ -188,7 +188,7 @@ me <- function(x, sdx = NULL) {
 #' This function is almost solely useful when
 #' called in formulas passed to the \pkg{brms} package.
 #' 
-#' @seealso brmsformula
+#' @seealso \code{\link[brms:brmsformula]{brmsformula}}
 #'   
 #' @examples   
 #' \dontrun{
@@ -232,7 +232,7 @@ cse <- function(expr) {
 #' This function is almost solely useful when
 #' called in formulas passed to the \pkg{brms} package.
 #' 
-#' @seealso brmsformula
+#' @seealso \code{\link[brms:brmsformula]{brmsformula}}
 #'   
 #' @examples   
 #' \dontrun{
@@ -286,11 +286,13 @@ monotonic <- function(expr) {
 #' 
 #' Function used to set up a basic grouping term in \pkg{brms}.
 #' The function does not evaluate its arguments --
-#' it exists purely to help set up a model grouping terms.
+#' it exists purely to help set up a model with grouping terms.
 #' \code{gr} is called implicitely inside the package
 #' and there is usually no need to call it directly.
 #' 
-#' @param ... One or more terms containing grouping factors
+#' @param ... One or more terms containing grouping factors.
+#' 
+#' @seealso \code{\link[brms:brmsformula]{brmsformula}}
 #' 
 #' @examples 
 #' \dontrun{
@@ -321,14 +323,15 @@ gr <- function(...) {
 #' 
 #' Function to set up a multi-membership grouping term in \pkg{brms}.
 #' The function does not evaluate its arguments --
-#' it exists purely to help set up a model grouping terms.
+#' it exists purely to help set up a model with grouping terms.
 #'
 #' @inheritParams gr
-#' @param weights A matrix specifying the
-#'  weights if members should not be weighted equally. 
+#' @param weights A matrix specifying the weights of each member.
 #'  It should have as many columns as grouping terms specified in \code{...}.
 #'  Weights are standardized in order to sum to one per row.
 #'  If \code{NULL} (the default), equally weights are used. 
+#'  
+#' @seealso \code{\link[brms:brmsformula]{brmsformula}}
 #'  
 #' @examples 
 #' \dontrun{
@@ -337,13 +340,13 @@ gr <- function(...) {
 #'                   g1 = sample(1:10, 100, TRUE),
 #'                   g2 = sample(1:10, 100, TRUE))
 #' # multi-membership model with two members per group and equal weights
-#' fit1 <- brm(y ~ x + (1|mm(g1,g2)), data = dat)
+#' fit1 <- brm(y ~ x + (1|mm(g1, g2)), data = dat)
 #' summary(fit1)
 #' 
 #' # weight the first member two times for than the second member
 #' dat$w1 <- rep(2, 100)
 #' dat$w2 <- rep(1, 100)
-#' fit2 <- brm(y ~ x + (1|mm(g1,g2, weights = cbind(w1, w2))), data = dat)
+#' fit2 <- brm(y ~ x + (1|mm(g1, g2, weights = cbind(w1, w2))), data = dat)
 #' summary(fit2)
 #' }
 #'   

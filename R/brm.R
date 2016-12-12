@@ -29,7 +29,7 @@
 #'   See the documentation of \code{\link{cor_brms}} for a description 
 #'   of the available correlation structures. Defaults to NULL, 
 #'   corresponding to no correlations.
-#' @param nonlinear An optional list of formuluas, specifying 
+#' @param nonlinear An optional list of formulas, specifying 
 #'   linear models for non-linear parameters. If \code{NULL} (the default)
 #'   \code{formula} is treated as an ordinary formula. 
 #'   If not \code{NULL}, \code{formula} is treated as a non-linear model

@@ -45,6 +45,6 @@ plot(marginal_effects(fit), points = TRUE)
  
 }
 \seealso{
-brmsformula
+\code{\link[brms:brmsformula]{brmsformula}}
 }
 
