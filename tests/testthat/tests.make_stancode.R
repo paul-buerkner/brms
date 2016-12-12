@@ -528,3 +528,15 @@ test_that("make_stancode handles noise-free terms correctly", {
   expect_match(make_stancode(y ~ I(me(x, xsd)^2), data = dat),
                "(bme[1]) * Xme_1[n]^2", fixed = TRUE)
 })
+
+test_that("make_stancode handles multi-membership models correctly", {
+  dat <- data.frame(y = rnorm(10), g1 = sample(1:10, 10, TRUE),
+                    g2 = sample(1:10, 10, TRUE), w1 = rep(1, 10),
+                    w2 = rep(abs(rnorm(10))))
+  expect_match(make_stancode(y ~ (1|mm(g1,g2)), data = dat), 
+               "(W_1_1[n] * r_1_1[J_1_1[n]] + W_1_2[n] * r_1_1[J_1_2[n]]) * Z_1_1[n]",
+               fixed = TRUE)
+  expect_match(make_stancode(y ~ (1+w1|mm(g1,g2)), data = dat), 
+               "(W_1_1[n] * r_1_2[J_1_1[n]] + W_1_2[n] * r_1_2[J_1_2[n]]) * Z_1_2[n]",
+               fixed = TRUE)
+})

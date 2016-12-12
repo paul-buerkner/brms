@@ -1031,7 +1031,8 @@ tidy_ranef <- function(effects, data = NULL, all = TRUE,
       if (id %in% used_ids) {
         k <- match(id, used_ids)
         rdat$id <- new_ids[k]
-        if (!identical(random$gcall[[i]]$groups, id_groups[[k]])) {
+        new_id_groups <- c(random$group[[i]], random$gcall[[i]]$groups)
+        if (!identical(new_id_groups, id_groups[[k]])) {
           stop2("Can only combine group-level terms of the ",
                 "same grouping factors.")
         }
@@ -1039,13 +1040,22 @@ tidy_ranef <- function(effects, data = NULL, all = TRUE,
         used_ids <- c(used_ids, id)
         k <- length(used_ids)
         rdat$id <- new_ids[k] <- j
-        id_groups[[k]] <- random$gcall[[i]]$groups
+        id_groups[[k]] <- c(random$group[[i]], random$gcall[[i]]$groups)
         j <- j + 1
       }
     }
     ranef[[i]] <- rdat 
   }
   ranef <- do.call(rbind, c(list(empty_ranef()), ranef))
+  # check for overlap between different group types
+  rsv_groups <- ranef[nzchar(ranef$gtype), "group"]
+  other_groups <- ranef[!nzchar(ranef$gtype), "group"]
+  inv_groups <- intersect(rsv_groups, other_groups)
+  if (length(inv_groups)) {
+    inv_groups <- paste0("'", inv_groups, "'", collapse = ", ")
+    stop2("Grouping factor names ", inv_groups, " are resevered.")
+  }
+  # check for duplicated and thus not identified effects
   dup <- duplicated(ranef[, c("group", "coef", "nlpar")])
   if (any(dup)) {
     stop2("Duplicated group-level effects are not allowed.")

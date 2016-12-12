@@ -420,3 +420,15 @@ test_that("make_standata handles noise-free terms correctly", {
   expect_equal(unname(sdata$Cme_3), dat$x)
   expect_equal(sdata$Kme, 6)
 })
+
+test_that("make_standata handles multi-membership models correctly", {
+  dat <- data.frame(y = rnorm(10), g1 = c(7:2, rep(10, 4)),
+                    g2 = 1:10, w1 = rep(1, 10),
+                    w2 = rep(abs(rnorm(10))))
+  sdata <- make_standata(y ~ (1|mm(g1,g2,g1,g2)), data = dat)
+  expect_true(all(paste0(c("W_1_", "J_1_"), 1:4) %in% names(sdata)))
+  expect_equal(sdata$W_1_4, rep(0.25, 10))
+  # this checks whether combintation of factor levels works as intended
+  expect_equal(sdata$J_1_1, as.array(c(6, 5, 4, 3, 2, 1, 7, 7, 7, 7)))
+  expect_equal(sdata$J_1_2, as.array(c(8, 1, 2, 3, 4, 5, 6, 9, 10, 7)))
+})
