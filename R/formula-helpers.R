@@ -282,6 +282,27 @@ monotonic <- function(expr) {
   expr
 }
 
+#' Set up basic grouping terms in \pkg{brms}
+#' 
+#' Function used to set up a basic grouping term in \pkg{brms}.
+#' The function does not evaluate its arguments --
+#' it exists purely to help set up a model grouping terms.
+#' \code{gr} is called implicitely inside the package
+#' and there is usually no need to call it directly.
+#' 
+#' @param ... One or more terms containing grouping factors
+#' 
+#' @examples 
+#' \dontrun{
+#' # model using basic lme4-style formula
+#' fit1 <- brm(count ~ Trt_c + (1|patient), data = epilepsy)
+#' summary(fit1)
+#' # equivalent model using 'gr' which is called anyway internally
+#' fit2 <- brm(count ~ Trt_c + (1|gr(patient)), data = epilepsy)
+#' summary(fit2)
+#' WAIC(fit1, fit2)
+#' }
+#' 
 #' @export
 gr <- function(...) {
   groups <- as.character(as.list(substitute(list(...)))[-1])
@@ -296,6 +317,36 @@ gr <- function(...) {
   nlist(groups, allvars, type = "")
 }
 
+#' Set up multi-membership grouping terms in \pkg{brms}
+#' 
+#' Function to set up a multi-membership grouping term in \pkg{brms}.
+#' The function does not evaluate its arguments --
+#' it exists purely to help set up a model grouping terms.
+#'
+#' @inheritParams gr
+#' @param weights A matrix specifying the
+#'  weights if members should not be weighted equally. 
+#'  It should have as many columns as grouping terms specified in \code{...}.
+#'  Weights are standardized in order to sum to one per row.
+#'  If \code{NULL} (the default), equally weights are used. 
+#'  
+#' @examples 
+#' \dontrun{
+#' # simulate some data
+#' dat <- data.frame(y = rnorm(100), x = rnorm(100), 
+#'                   g1 = sample(1:10, 100, TRUE),
+#'                   g2 = sample(1:10, 100, TRUE))
+#' # multi-membership model with two members per group and equal weights
+#' fit1 <- brm(y ~ x + (1|mm(g1,g2)), data = dat)
+#' summary(fit1)
+#' 
+#' # weight the first member two times for than the second member
+#' dat$w1 <- rep(2, 100)
+#' dat$w2 <- rep(1, 100)
+#' fit2 <- brm(y ~ x + (1|mm(g1,g2, weights = cbind(w1, w2))), data = dat)
+#' summary(fit2)
+#' }
+#'   
 #' @export
 mm <- function(..., weights = NULL) {
   groups <- as.character(as.list(substitute(list(...)))[-1])
