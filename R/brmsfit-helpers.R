@@ -67,6 +67,8 @@ restructure <- function(x, rstr_summary = FALSE) {
     x$formula <- SW(update_formula(x$formula, partial = x$partial, 
                                    nonlinear = x$nonlinear))
     x$nonlinear <- x$partial <- NULL
+    ee <- extract_effects(formula(x), family = family(x))
+    x$ranef <- tidy_ranef(ee, model.frame(x))
     if ("prior_frame" %in% class(x$prior)) {
       class(x$prior) <- c("brmsprior", "data.frame") 
     }
@@ -74,11 +76,9 @@ restructure <- function(x, rstr_summary = FALSE) {
       # deprecated as of brms 1.0.0
       class(x$autocor) <- "cov_fixed"
     }
-    ee <- extract_effects(formula(x), family = family(x))
     change <- list()
     if (isTRUE(x$version <= "0.10.0.9000")) {
       attr(x$formula, "old_mv") <- is.old_mv(x)
-      x$ranef <- tidy_ranef(ee, model.frame(x))
       if (length(ee$nonlinear)) {
         # nlpar and group have changed positions
         change <- c(change,
