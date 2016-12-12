@@ -262,12 +262,11 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
     draws[["Zcs"]] <- draws[["Zme"]] <- named_list(groups)
   for (g in groups) {
     new_r <- new_ranef[new_ranef$group == g, ]
-    gf <- get(paste0("J_", new_r$id[1]), draws$data)
     r_pars <- paste0("^r_", g, usc_nlpar, "\\[")
     r <- do.call(as.matrix, c(args, list(pars = r_pars)))
     if (is.null(r)) {
       stop2("Group-level effects for each level of group ", 
-            "'", g, "' not found. Please set ranef = TRUE ",
+            "'", g, "' not found. Please set save_ranef = TRUE ",
             "when calling brm.")
     }
     nlevels <- ngrps(x)[[g]]
@@ -277,33 +276,45 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
     used_re_pars <- as.vector(used_re_pars)
     r <- r[, used_re_pars, drop = FALSE]
     nranef <- nrow(new_r)
-    # incorporate new gf levels (only if allow_new_levels is TRUE)
-    has_new_levels <- anyNA(gf)
-    if (has_new_levels) {
-      new_r_level <- matrix(nrow = nrow(r), ncol = nranef)
-      for (k in seq_len(nranef)) {
-        # sample values of the new level for each group-level effect
-        indices <- ((k - 1) * nlevels + 1):(k * nlevels)
-        new_r_level[, k] <- apply(r[, indices], 1, sample, size = 1)
-      }
-      gf[is.na(gf)] <- nlevels + 1
-    } else { 
-      new_r_level <- matrix(nrow = nrow(r), ncol = 0)
+    gtype <- new_r$gtype[1]
+    if (gtype == "mm") {
+      ngf <- length(new_r$gcall[[1]]$groups)
+      gf <- draws$data[paste0("J_", new_r$id[1], "_", seq_len(ngf))]
+      weights <- draws$data[paste0("W_", new_r$id[1], "_", seq_len(ngf))]
+    } else {
+      gf <- draws$data[paste0("J_", new_r$id[1])]
+      weights <- list(rep(1, length(gf[[1]])))
     }
+    # incorporate new gf levels (only if allow_new_levels is TRUE)
+    new_r_levels <- vector("list", length(gf))
+    max_level <- nlevels
+    for (i in seq_along(gf)) {
+      has_new_levels <- anyNA(gf[[i]])
+      if (has_new_levels) {
+        new_r_levels[[i]] <- matrix(nrow = nrow(r), ncol = nranef)
+        for (k in seq_len(nranef)) {
+          # sample values of the new level for each group-level effect
+          indices <- ((k - 1) * nlevels + 1):(k * nlevels)
+          new_r_levels[[i]][, k] <- apply(r[, indices], 1, sample, size = 1)
+        }
+        max_level <- max_level + 1
+        gf[[i]][is.na(gf[[i]])] <- max_level
+      } else { 
+        new_r_levels[[i]] <- matrix(nrow = nrow(r), ncol = 0)
+      }
+    }
+    new_r_levels <- do.call(cbind, new_r_levels)
     # we need row major instead of column major order
     sort_levels <- ulapply(seq_len(nlevels), 
       function(l) seq(l, ncol(r), nlevels))
-    r <- cbind(r[, sort_levels, drop = FALSE], new_r_level)
-    levels <- unique(gf)
+    r <- cbind(r[, sort_levels, drop = FALSE], new_r_levels)
+    levels <- unique(unlist(gf))
     r <- subset_levels(r, levels, nranef)
     # monotonic group-level terms
     new_r_mo <- new_r[new_r$type == "mo", ]
     if (nrow(new_r_mo)) {
-      Z_mo <- expand_matrix(matrix(1, length(gf)), gf)
-      if (length(levels) < nlevels) {
-        Z_mo <- Z_mo[, levels, drop = FALSE]
-      }
-      draws[["Zmo"]][[g]] <- Z_mo
+      Z <- matrix(1, length(gf[[1]])) 
+      draws[["Zmo"]][[g]] <- prepare_Z(Z, gf, max_level, weights)
       draws[["rmo"]] <- named_list(new_r_mo$coef, list())
       for (co in names(draws[["rmo"]])) {
         take <- which(new_r$coef == co & new_r$type == "mo")
@@ -314,11 +325,8 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
     # noise-free group-level terms
     new_r_me <- new_r[new_r$type == "me", ]
     if (nrow(new_r_me)) {
-      Z_me <- expand_matrix(matrix(1, length(gf)), gf)
-      if (length(levels) < nlevels) {
-        Z_me <- Z_me[, levels, drop = FALSE]
-      }
-      draws[["Zme"]][[g]] <- Z_me
+      Z <- matrix(1, length(gf[[1]]))
+      draws[["Zme"]][[g]] <- prepare_Z(Z, gf, max_level, weights)
       draws[["rme"]] <- named_list(new_r_me$coef, list())
       for (co in names(draws[["r_me"]])) {
         take <- which(new_r$coef == co & new_r$type == "me")
@@ -329,8 +337,9 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
     # category specific group-level terms
     new_r_cs <- new_r[new_r$type == "cs", ]
     if (nrow(new_r_cs)) {
-      Z <- prepare_Z(new_r_cs, gf, draws$data)
-      draws[["Zcs"]][[g]] <- Z
+      Z <- do.call(cbind, lapply(unique(new_r_cs$gn), 
+                   function(k) draws$data[[paste0("Z_", k)]]))
+      draws[["Zcs"]][[g]] <- prepare_Z(Z, gf, max_level, weights)
       draws[["rcs"]] <- named_list(seq_len(draws$data$ncat - 1), list())
       for (i in names(draws[["rcs"]])) {
         index <- paste0("\\[", i, "\\]$")
@@ -342,8 +351,9 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
     # basic group-level effects
     new_r_basic <- new_r[!nzchar(new_r$type), ]
     if (nrow(new_r_basic)) {
-      Z <- prepare_Z(new_r_basic, gf, draws$data)
-      draws[["Z"]][[g]] <- Z
+      Z <- do.call(cbind, lapply(unique(new_r_basic$gn), 
+                   function(k) draws$data[[paste0("Z_", k)]]))
+      draws[["Z"]][[g]] <- prepare_Z(Z, gf, max_level, weights)
       take <- which(!nzchar(new_r$type))
       take <- as.vector(outer(take, nranef * (seq_along(levels) - 1), "+"))
       r <- r[, take, drop = FALSE]
@@ -365,35 +375,40 @@ subset_levels <- function(x, levels, nranef) {
   x[, take_levels, drop = FALSE]
 }
 
-prepare_Z <- function(ranef, gf, standata) {
+prepare_Z <- function(Z, gf, max_level = max(unlist(gf)),
+                      weights = list(rep(1, length(gf[[1]])))) {
   # prepare group-level design matrices for use in linear_predictor
   # Args:
-  #   ranef: output of tidy_ranef
-  #   standata: output of make_standata
-  #   gf: values of the grouping factor
-  Z <- lapply(unique(ranef$gn), 
-              function(k) standata[[paste0("Z_", k)]])
-  Z <- do.call(cbind, Z)
+  #   Z: matrix to be prepared
+  #   gf: list of vectors containing grouping factor values
+  #   max_level: maximal level of gf
+  #   weights: optional list of weights of the same length as gf
   nranef <- ncol(Z)
-  Z <- expand_matrix(Z, gf)
-  subset_levels(Z, unique(gf), nranef)
+  levels <- unique(unlist(gf))
+  Z <- mapply(expand_matrix, x = gf, weights = weights,
+              MoreArgs = nlist(A = Z, max_level))
+  Z <- Reduce("+", Z)
+  subset_levels(Z, levels, nranef)
 }
 
-expand_matrix <- function(A, x) {
+expand_matrix <- function(A, x, max_level = max(x), weights = 1) {
   # expand a matrix into a sparse matrix of higher dimension
   # Args:
   #   A: matrix to be expanded
   #   x: levels to expand the matrix
-  # Notes:
-  #   used in extract_draws
+  #   weights: weights to apply to rows of A before expanding
+  #   nlevels: number of levels that x can take on
   # Returns:
-  #   A sparse matrix of dimension nrow(A) x (ncol(A) * length(x))
+  #   A sparse matrix of dimension nrow(A) x (ncol(A) * max_level)
   stopifnot(is.matrix(A))
   stopifnot(length(x) == nrow(A))
   stopifnot(all(is.wholenumber(x) & x > 0))
+  stopifnot(length(weights) %in% c(1, nrow(A), prod(dim(A))))
+  A <- A * weights
   K <- ncol(A)
   i <- rep(seq_along(x), each = K)
   make_j <- function(n, K, x) K * (x[n] - 1) + 1:K
   j <- ulapply(seq_along(x), make_j, K = K, x = x)
-  Matrix::sparseMatrix(i = i, j = j, x = as.vector(t(A)))
+  Matrix::sparseMatrix(i = i, j = j, x = as.vector(t(A)),
+                       dims = c(nrow(A), ncol(A) * max_level))
 }

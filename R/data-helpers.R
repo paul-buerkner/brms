@@ -270,23 +270,25 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     newdata[[v]] <- 1
   }
   new_ranef <- tidy_ranef(ee, data = model.frame(fit))
+  group_vars <- unique(ulapply(new_ranef$gcall, "[[", "groups"))
   if (nrow(fit$ranef)) {
     if (nrow(new_ranef) && allow_new_levels) {
       # grouping factors do not need to be specified 
       # by the user if new levels are allowed
-      new_gf <- unique(unlist(strsplit(new_ranef$group, split = ":")))
+      new_gf <- unique(unlist(strsplit(group_vars, split = ":")))
       missing_gf <- setdiff(new_gf, names(newdata))
       newdata[, missing_gf] <- NA
     }
   }
-  newdata <- combine_groups(newdata, get_random(ee)$group)
+  newdata <- combine_groups(newdata, group_vars)
   # try to validate factor levels in newdata
   if (is.data.frame(fit$data)) {
     # validating is possible (implies brms > 0.5.0)
     list_data <- lapply(as.list(fit$data), function(x)
       if (is.numeric(x)) x else as.factor(x))
     is_factor <- sapply(list_data, is.factor)
-    dont_check <- c(fit$ranef$group, cens_vars)
+    all_group_vars <- ulapply(fit$ranef$gcall, "[[", "groups")
+    dont_check <- c(all_group_vars, cens_vars)
     dont_check <- names(list_data) %in% dont_check
     factors <- list_data[is_factor & !dont_check]
     if (length(factors)) {
@@ -356,15 +358,14 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   }
   # validate grouping factors
   gnames <- unique(new_ranef$group)
-  old_levels <- named_list(gnames)
-  for (i in seq_along(gnames)) {
-    new_levels <- unique(as.character(get(gnames[i], newdata)))
-    old_levels[[i]] <- attr(fit$ranef, "levels")[[gnames[i]]]
-    unknown_levels <- setdiff(new_levels, old_levels[[i]])
+  old_levels <- attr(new_ranef, "levels")
+  new_levels <- attr(tidy_ranef(ee, data = newdata), "levels")
+  for (g in gnames) {
+    unknown_levels <- setdiff(new_levels[[g]], old_levels[[g]])
     if (!allow_new_levels && length(unknown_levels)) {
       unknown_levels <- paste0("'", unknown_levels, "'", collapse = ", ")
       stop2("Levels ", unknown_levels, " of grouping factor '", 
-            gnames[i], "' cannot be not found in the fitted model. ",
+            g, "' cannot be not found in the fitted model. ",
             "Consider setting argument 'allow_new_levels' to TRUE.")
     }
   }
