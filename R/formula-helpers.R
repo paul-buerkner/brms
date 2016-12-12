@@ -374,7 +374,11 @@ str2formula <- function(x, ...) {
   # Args:
   #   x: vector of strings to be converted
   #   ...: passed to formula(.)
-  x <- paste(c("1", x), collapse = "+") 
+  if (length(x)) {
+    x <- paste(x, collapse = "+") 
+  } else {
+    x <- "1"
+  }
   formula(paste("~", x), ...)
 }
 

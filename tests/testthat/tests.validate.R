@@ -31,8 +31,8 @@ test_that("extract_effects accepts || syntax", {
                        gn = 1:2, id = c(NA, NA),
                        type = "", cor = c(FALSE, TRUE), 
                        stringsAsFactors = FALSE)
-  target$gcall <- list(list(groups = "g1", allvars = ~ 1 + g1, type = ""),
-                       list(groups = "g2", allvars = ~ 1 + g2, type = ""))
+  target$gcall <- list(list(groups = "g1", allvars = ~ g1, type = ""),
+                       list(groups = "g2", allvars = ~ g2, type = ""))
   target$form <- list(~1+x, ~1+z)
   expect_equivalent(random, target)
   expect_equal(extract_effects(y ~ (1+x||g1:g2))$random$group, c("g1:g2"))
@@ -153,8 +153,8 @@ test_that("extract_effects correctly handles group IDs", {
                        gn = 1:2, id = c("3", NA),
                        type = "", cor = c(TRUE, TRUE), 
                        stringsAsFactors = FALSE)
-  target$gcall <- list(list(groups = "g", allvars = ~ 1 + g, type = ""),
-                       list(groups = "g2", allvars = ~ 1 + g2, type = ""))
+  target$gcall <- list(list(groups = "g", allvars = ~ g, type = ""),
+                       list(groups = "g2", allvars = ~ g2, type = ""))
   target$form <- list(~1+x, ~1)
   expect_equal(extract_effects(form)$random, target)
   
@@ -164,8 +164,8 @@ test_that("extract_effects correctly handles group IDs", {
                        gn = 1:2, id = c("3", NA),
                        type = "", cor = c(TRUE, FALSE),
                        stringsAsFactors = FALSE)
-  target$gcall <- list(list(groups = "g", allvars = ~ 1 + g, type = ""),
-                       list(groups = "g2", allvars = ~ 1 + g2, type = ""))
+  target$gcall <- list(list(groups = "g", allvars = ~ g, type = ""),
+                       list(groups = "g2", allvars = ~ g2, type = ""))
   target$form <- list(~x, ~1)
   expect_equal(extract_effects(form)$sigma$random, target)
 })
@@ -279,7 +279,7 @@ test_that("tidy_ranef works correctly", {
                        coef = c("Intercept", "x"), cn = 1:2,
                        nlpar = "", cor = FALSE, type = "", 
                        stringsAsFactors = FALSE)
-  target$gcall <- replicate(2, list(list(groups = "g", allvars = ~ 1 + g, tyep = "")))
+  target$gcall <- replicate(2, list(list(groups = "g", allvars = ~ g, tyep = "")))
   target$form <- replicate(2, ~1+x)
   ranef <- tidy_ranef(extract_effects(y~(1+x||g)), data = data)
   expect_equivalent(ranef, target)
