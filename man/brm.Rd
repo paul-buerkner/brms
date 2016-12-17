@@ -198,20 +198,32 @@ An object of class \code{brmsfit}, which contains the posterior samples along
   Use \code{methods(class = "brmsfit")} for an overview on available methods.
 }
 \description{
-Fit a Bayesian generalized (non-)linear Multilevel model using Stan
+Fit Bayesian generalized (non-)linear multilevel models 
+using Stan for full Bayesian inference. A wide range of distributions 
+and link functions are supported, allowing users to fit
+linear, robust linear, binomial, Poisson, survival, response times, ordinal, 
+zero-inflated, hurdle, and even non-linear models all in a multilevel context. 
+Further modeling options include autocorrelation and smoothing terms, 
+user defined covariance structures, censored data, meta-analytic 
+standard errors, and quite a few more. 
+In addition, all parameters of the response distribution can be predicted
+in order to perform distributional regression.
+Prior specifications are flexible and explicitly encourage 
+users to apply prior distributions that actually reflect their beliefs.
+In addition, model fit can easily be assessed and compared with
+posterior predictive checks and leave-one-out cross-validation.
 }
 \details{
-Fit a generalized (non-)linear multilevel model, 
-  which incorporates both population-level parameters 
-  (also known as fixed-effects) and group-level parameters
-  (also known as random effects) in a (non-)linear predictor 
+Fit a generalized (non-)linear multilevel model
   via full Bayesian inference using Stan. 
   See \code{vignette("brms_overview")} for a general 
   introduction and overview of \pkg{brms}.
+  For a full list of available vignettes see
+  \code{vignette(package = "brms")}.
   
   \bold{Formula syntax of brms models}
   
-  The details of the formula syntax applied in \pkg{brms} 
+  Details of the formula syntax applied in \pkg{brms} 
   can be found in \code{\link[brms:brmsformula]{brmsformula}}.
   
   \bold{Families and link functions}

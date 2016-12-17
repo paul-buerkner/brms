@@ -2,11 +2,13 @@
 \title{brms News}
 \encoding{UTF-8}
 
-\section{CHANGES IN VERSION 1.2.0++}{
+\section{CHANGES IN VERSION 1.3.0}{
   \subsection{NEW FEATURES}{
     \itemize{
       \item Fit error-in-variables models
       using function \code{me} in the model formulae.
+      \item Fit multi-membership models using function
+      \code{mm} in grouping terms.
       \item Add families \code{exgaussian}
       (exponentially modified Gaussian distribution) 
       and \code{wiener} (Wiener diffusion model distribution)
@@ -21,14 +23,18 @@
       \code{sigma} in models with known standard errors of
       the response by setting argument \code{sigma} to 
       \code{TRUE} in addition function \code{se}.
+      \item Allow visualizing two-dimensional smooths
+      with the \code{marginal_smooths} method.
     }
   }
   \subsection{OTHER CHANGES}{
     \itemize{
-      \item Refactor the \code{stanplot} method
-      to use \pkg{bayesplot} on the backend.
       \item Require argument \code{data} to be explicitely 
       specified in all user facing functions.
+      \item Refactor the \code{stanplot} method
+      to use \pkg{bayesplot} on the backend.
+      \item Use the \pkg{bayesplot} theme as the default
+      in all plotting functions.
       \item Add the abbreviations \code{mo} and \code{cs}
       to specify monotonic and category specific effects
       respectively.

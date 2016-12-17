@@ -26,7 +26,7 @@ test_that("extract_effects finds all random effects terms", {
 })
 
 test_that("extract_effects accepts || syntax", {
-  random <- brms:::extract_effects(y ~ a + (1+x||g1) + (1+z|g2))$random
+  random <- extract_effects(y ~ a + (1+x||g1) + (1+z|g2))$random
   target <- data.frame(group = c("g1", "g2"), gtype = rep("", 2), 
                        gn = 1:2, id = c(NA, NA),
                        type = "", cor = c(FALSE, TRUE), 
@@ -329,7 +329,7 @@ test_that("exclude_pars returns expected parameter names", {
   ranef$nlpar <- c("a", "a", "")
   ep <- exclude_pars(list(), ranef = ranef, save_ranef = FALSE)
   expect_true(all(c("r_1_a_1", "r_1_a_2") %in% ep))
-  effects <- brms:::extract_effects(y ~ x + s(z))
+  effects <- extract_effects(y ~ x + s(z))
   data <- data.frame(y = rnorm(20), x = rnorm(20), z = rnorm(20))
   expect_true("zs_1_1" %in% exclude_pars(effects, data))
   effects <- extract_effects(y ~ eta, nonlinear = list(eta ~ x + s(z)))
