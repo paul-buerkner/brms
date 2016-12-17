@@ -1411,7 +1411,7 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
   args <- nlist(x, smooths_only = TRUE, allow_new_levels = TRUE,
                 incl_autocor = FALSE, f = prepare_family(x), 
                 nsamples = Nsamples(x))
-  multiple_covars <- FALSE
+  too_many_covars <- FALSE
   results <- list()
   for (k in seq_along(lee)) {
     # loop over elements that may contain smooth terms
@@ -1420,16 +1420,16 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
     for (i in seq_along(splines)) {
       # loop over smooth terms and compute their predictions
       ncovars <- length(covars[[i]])
-      if (ncovars > 1L) {
-        multiple_covars <- TRUE
+      if (ncovars > 2L) {
+        too_many_covars <- TRUE
       }
       include_spline <- !length(smooths) || splines[[i]] %in% smooths
-      if (include_spline && ncovars <= 1L) {
+      if (include_spline && ncovars <= 2L) {
         values <- named_list(covars[[i]])
         for (cv in names(values)) {
           values[[cv]] <- seq(min(mf[[cv]]), max(mf[[cv]]), length.out = 100)
         }
-        newdata <- data.frame(values)
+        newdata <- expand.grid(values)
         other_vars <- setdiff(names(conditions), covars[[i]])
         newdata[, other_vars] <- conditions[1, other_vars]
         # prepare draws for linear_predictor
@@ -1459,8 +1459,8 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
   if (!length(results)) {
     stop2("No valid smooth terms found in the model.")
   }
-  if (multiple_covars) {
-    warning2("Smooth terms with more than one covariate ",  
+  if (too_many_covars) {
+    warning2("Smooth terms with more than two covariates ",  
              "are not yet supported by 'marginal_smooths'.")
   }
   attr(results, "smooths_only") <- TRUE

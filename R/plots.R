@@ -10,6 +10,11 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL,
   #   A list of ggplot objects
   dots <- list(...)
   plot <- use_alias(plot, dots$do_plot)
+  smooths_only <- isTRUE(attr(x, "smooths_only"))
+  if (points && smooths_only) {
+    stop2("Argument 'points' is invalid for objects ", 
+          "returned by 'marginal_smooths'.")
+  }
   if (plot) {
     default_ask <- devAskNewPage()
     on.exit(devAskNewPage(default_ask))
@@ -19,49 +24,59 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL,
   for (i in seq_along(x)) {
     response <- attributes(x[[i]])$response
     effects <- attributes(x[[i]])$effects
-    gvar <- if (length(effects) == 2L) effects[2]
-    plots[[i]] <- ggplot(data = x[[i]]) + 
-      aes_string(x = effects, y = "Estimate", ymin = "lowerCI",
-                 ymax = "upperCI", colour = gvar, fill = gvar) + 
-      ylab(response) + theme
-    nCond <- length(unique(x[[i]]$MargCond))
-    if (points) {
-      # show the data as points in the plot
-      # add points first so that they appear behind the regression lines
-      if (isTRUE(attr(x, "smooths_only"))) {
-        stop2("Argument 'points' is invalid for objects ", 
-              "returned by 'marginal_smooths'.")
-      }
-      aes_points <- aes_string(x = effects[1], y = ".RESP")
-      if (is.factor(attr(x[[i]], "points")[, gvar])) {
-        aes_points$colour <- parse(text = gvar)[[1]]
-      }
-      plots[[i]] <- plots[[i]] + 
-        geom_point(aes_points, shape = 1, size = 4 / nCond^0.25,
-                   data = attr(x[[i]], "points"), inherit.aes = FALSE)
-    }
-    if (nCond > 1L) {
-      # one plot per row of marginal_data
-      if (is.null(ncol)) ncol <- max(floor(sqrt(nCond)), 3) 
-      plots[[i]] <- plots[[i]] + 
-        facet_wrap("MargCond", ncol = ncol)
-    }
-    if (is.numeric(x[[i]][, effects[1]])) {
-      # smooth plots for numeric predictors
-      plots[[i]] <- plots[[i]] + geom_smooth(stat = "identity")
-      if (rug) {
-        plots[[i]] <- plots[[i]] +
-          geom_rug(aes_string(x = effects[1]),
-                   sides = "b", data = attr(x[[i]], "points"), 
-                   inherit.aes = FALSE)
-      }
+    if (smooths_only && length(effects) == 2L) {
+      # contour plot for two dimensional smooths
+      # colours taken from the viridis package
+      magma5 <- c("#000004FF", "#51127CFF", "#B63679FF", 
+                  "#FB8861FF", "#FCFDBFFF")
+      plots[[i]] <- ggplot(x[[i]], aes_string(effects[1], effects[2])) + 
+        geom_contour(aes_string(z = "Estimate", colour = "..level.."), 
+                     bins = 30, size = 1.3) +
+        scale_color_gradientn(colors = magma5, name = response) +
+        theme
     } else {
-      # points and errorbars for factors
-      plots[[i]] <- plots[[i]] + 
-        geom_point(position = position_dodge(width = 0.4),
-                   size = 4 / nCond^0.25) + 
-        geom_errorbar(position = position_dodge(width = 0.4),
-                      width = 0.3)
+      # plot effects of single predictors / smooths
+      # as well as two-way interactions
+      gvar <- if (length(effects) == 2L) effects[2]
+      plots[[i]] <- ggplot(x[[i]]) + 
+        aes_string(x = effects, y = "Estimate", ymin = "lowerCI",
+                   ymax = "upperCI", colour = gvar, fill = gvar) + 
+        ylab(response) + theme
+      nCond <- length(unique(x[[i]]$MargCond))
+      if (points) {
+        # show the data as points in the plot
+        # add points first so that they appear behind the regression lines
+        aes_points <- aes_string(x = effects[1], y = ".RESP")
+        if (is.factor(attr(x[[i]], "points")[, gvar])) {
+          aes_points$colour <- parse(text = gvar)[[1]]
+        }
+        plots[[i]] <- plots[[i]] + 
+          geom_point(aes_points, shape = 1, size = 4 / nCond^0.25,
+                     data = attr(x[[i]], "points"), inherit.aes = FALSE)
+      }
+      if (nCond > 1L) {
+        # one plot per row of marginal_data
+        if (is.null(ncol)) ncol <- max(floor(sqrt(nCond)), 3) 
+        plots[[i]] <- plots[[i]] + 
+          facet_wrap("MargCond", ncol = ncol)
+      }
+      if (is.numeric(x[[i]][, effects[1]])) {
+        # smooth plots for numeric predictors
+        plots[[i]] <- plots[[i]] + geom_smooth(stat = "identity")
+        if (rug) {
+          plots[[i]] <- plots[[i]] +
+            geom_rug(aes_string(x = effects[1]),
+                     sides = "b", data = attr(x[[i]], "points"), 
+                     inherit.aes = FALSE)
+        }
+      } else {
+        # points and errorbars for factors
+        plots[[i]] <- plots[[i]] + 
+          geom_point(position = position_dodge(width = 0.4),
+                     size = 4 / nCond^0.25) + 
+          geom_errorbar(position = position_dodge(width = 0.4),
+                        width = 0.3)
+      }
     }
     if (plot) {
       plot(plots[[i]])
