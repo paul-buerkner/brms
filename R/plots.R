@@ -1,8 +1,9 @@
 #' @rdname marginal_effects
 #' @method plot brmsMarginalEffects
 #' @export 
-plot.brmsMarginalEffects <- function(x, ncol = NULL, points = FALSE, 
-                                     rug = FALSE, theme = ggplot2::theme(), 
+plot.brmsMarginalEffects <- function(x, ncol = NULL, 
+                                     points = FALSE, rug = FALSE,
+                                     theme = bayesplot::theme_default(), 
                                      ask = TRUE, plot = TRUE, ...) {
   # Compute marginal effects plots using ggplot2
   # Returns:
@@ -14,7 +15,7 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, points = FALSE,
     on.exit(devAskNewPage(default_ask))
     devAskNewPage(ask = FALSE)
   }
-  plots <- setNames(vector("list", length(x)), names(x))
+  plots <- named_list(names(x))
   for (i in seq_along(x)) {
     response <- attributes(x[[i]])$response
     effects <- attributes(x[[i]])$effects
@@ -73,9 +74,10 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, points = FALSE,
 #' @rdname hypothesis
 #' @method plot brmshypothesis
 #' @export
-plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE, 
-                                theme = ggplot2::theme(), ask = TRUE, 
-                                plot = TRUE, chars = 20, ...) {
+plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE,
+                                chars = 40, colors = c("red", "blue"),
+                                theme = bayesplot::theme_default(),
+                                ask = TRUE, plot = TRUE,  ...) {
   dots <- list(...)
   if (!is.data.frame(x$samples)) {
     stop("No posterior samples found", call. = FALSE)
@@ -85,9 +87,9 @@ plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE,
   .plot_fun <- function(samples) {
     ggplot(samples, aes_string(x = "values")) + 
       facet_wrap("ind", ncol = 1, scales = "free") +
-      geom_density(aes_string(fill = "Type"), alpha = 0.5, na.rm = TRUE) + 
-      scale_fill_manual(values = c("red", "blue")) + 
-      ggtitle(paste("Hypothesis for class", x$class)) + 
+      geom_density(aes_string(fill = "Type"), 
+                   alpha = 0.5, na.rm = TRUE) + 
+      scale_fill_manual(values = colors) + 
       xlab("") + ylab("") + theme
   }
   

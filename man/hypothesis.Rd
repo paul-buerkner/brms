@@ -14,8 +14,9 @@ hypothesis(x, hypothesis, ...)
 
 \method{print}{brmshypothesis}(x, digits = 2, chars = 20, ...)
 
-\method{plot}{brmshypothesis}(x, N = 5, ignore_prior = FALSE,
-  theme = ggplot2::theme(), ask = TRUE, plot = TRUE, chars = 20, ...)
+\method{plot}{brmshypothesis}(x, N = 5, ignore_prior = FALSE, chars = 40,
+  colors = c("red", "blue"), theme = bayesplot::theme_default(),
+  ask = TRUE, plot = TRUE, ...)
 }
 \arguments{
 \item{x}{An \code{R} object typically of class \code{brmsfit}.}
@@ -54,6 +55,10 @@ Defaults to \code{20}.}
 \item{ignore_prior}{A flag indicating if prior distributions 
 should also be plotted. Only used if priors were specified on
 the relevant parameters.}
+
+\item{colors}{Two values specifying the colors of the posterior
+and prior density respectively. Default to \code{"red"}
+and \code{"blue"}.}
 
 \item{theme}{A \code{\link[ggplot2:theme]{theme}} object 
 modifying the appearance of the plots. 

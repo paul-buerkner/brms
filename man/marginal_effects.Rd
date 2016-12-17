@@ -13,7 +13,8 @@
 marginal_effects(x, ...)
 
 \method{plot}{brmsMarginalEffects}(x, ncol = NULL, points = FALSE,
-  rug = FALSE, theme = ggplot2::theme(), ask = TRUE, plot = TRUE, ...)
+  rug = FALSE, theme = bayesplot::theme_default(), ask = TRUE,
+  plot = TRUE, ...)
 }
 \arguments{
 \item{x}{An object usually of class \code{brmsfit}}

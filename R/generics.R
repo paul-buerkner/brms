@@ -57,6 +57,9 @@ brmssummary <- function(formula = NULL, family = "", link = "",
 #' @param chars Maximum number of characters of each hypothesis
 #'  to print or plot. If \code{NULL}, print the full hypotheses.
 #'  Defaults to \code{20}.
+#' @param colors Two values specifying the colors of the posterior
+#'  and prior density respectively. Default to \code{"red"}
+#'  and \code{"blue"}.
 #' @inheritParams plot.brmsfit
 #' @param ... Currently ignored.
 #' 
