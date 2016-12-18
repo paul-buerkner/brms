@@ -397,7 +397,14 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     # unnecessary compilations in case that the data is invalid
     standata <- standata(x, newdata = dots$is_newdata)
     message("Compiling the C++ model")
-    x$fit <- rstan::stan_model(stanc_ret = x$model, save_dso = save_dso)
+    comp_expr <- expression(
+      x$fit <- rstan::stan_model(stanc_ret = x$model, save_dso = save_dso)
+    )
+    if (silent) {
+      capture.output(eval(comp_expr))
+    } else {
+      eval(comp_expr)
+    }
     x$model <- x$model$model_code
   }
   
