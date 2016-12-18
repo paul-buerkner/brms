@@ -401,7 +401,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       x$fit <- rstan::stan_model(stanc_ret = x$model, save_dso = save_dso)
     )
     if (silent) {
-      capture.output(eval(comp_expr))
+      utils::capture.output(eval(comp_expr))
     } else {
       eval(comp_expr)
     }
