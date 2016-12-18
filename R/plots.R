@@ -26,13 +26,10 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL,
     effects <- attributes(x[[i]])$effects
     if (smooths_only && length(effects) == 2L) {
       # contour plot for two dimensional smooths
-      # colours taken from the viridis package
-      magma5 <- c("#000004FF", "#51127CFF", "#B63679FF", 
-                  "#FB8861FF", "#FCFDBFFF")
       plots[[i]] <- ggplot(x[[i]], aes_string(effects[1], effects[2])) + 
         geom_contour(aes_string(z = "Estimate", colour = "..level.."), 
                      bins = 30, size = 1.3) +
-        scale_color_gradientn(colors = magma5, name = response) +
+        scale_color_gradientn(colors = viridis6(), name = response) +
         theme
     } else {
       # plot effects of single predictors / smooths
@@ -140,4 +137,9 @@ plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE,
     }
   }
   invisible(plots) 
+}
+
+viridis6 <- function() {
+  # colours taken from the viridis package
+  c("#440154", "#414487", "#2A788E", "#22A884", "#7AD151", "#FDE725")
 }
