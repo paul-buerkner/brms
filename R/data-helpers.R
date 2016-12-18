@@ -303,19 +303,19 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
           new_levels <- levels(new_factor)
           old_levels <- factor_levels[[i]]
           old_contrasts <- contrasts(factors[[i]])
-          to_zero <- is.na(new_factor) | new_factor %in% ".ZERO"
-          # don't add the '.ZERO' level to response variables
+          to_zero <- is.na(new_factor) | new_factor %in% "zero__"
+          # don't add the 'zero__' level to response variables
           is_resp <- factor_names[i] %in% all.vars(ee$respform)
           if (!is_resp && any(to_zero)) {
-            levels(new_factor) <- c(new_levels, ".ZERO")
-            new_factor[to_zero] <- ".ZERO"
-            old_levels <- c(old_levels, ".ZERO")
-            old_contrasts <- rbind(old_contrasts, .ZERO = 0)
+            levels(new_factor) <- c(new_levels, "zero__")
+            new_factor[to_zero] <- "zero__"
+            old_levels <- c(old_levels, "zero__")
+            old_contrasts <- rbind(old_contrasts, zero__ = 0)
           }
           if (any(!new_levels %in% old_levels)) {
             stop2("New factor levels are not allowed.",
-                  "\nLevels found:", paste(new_levels, collapse = ", ") ,
-                  "\nLevels allowed:", paste(old_levels, collapse = ", "))
+                  "\nLevels found: ", paste(new_levels, collapse = ", ") ,
+                  "\nLevels allowed: ", paste(old_levels, collapse = ", "))
           }
           newdata[[factor_names[i]]] <- factor(new_factor, old_levels)
           # don't use contrasts(.) here to avoid dimension checks
