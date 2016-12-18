@@ -6,12 +6,12 @@
 \title{Display Smooth Terms}
 \usage{
 \method{marginal_smooths}{brmsfit}(x, smooths = NULL, probs = c(0.025,
-  0.975), ...)
+  0.975), resolution = 100, ...)
 
 marginal_smooths(x, ...)
 }
 \arguments{
-\item{x}{An object usually of class \code{brmsfit}}
+\item{x}{An object usually of class \code{brmsfit}.}
 
 \item{smooths}{Optional character vector of smooth terms
 to display. If \code{NULL} (the default) all smooth terms
@@ -19,6 +19,13 @@ are shown.}
 
 \item{probs}{The quantiles to be used in the computation of credible
 intervals (defaults to 2.5 and 97.5 percent quantiles)}
+
+\item{resolution}{Number of support points used to generate 
+the plots. Higher resolution leads to smoother plots. 
+Defaults to \code{100}. If \code{contour} is \code{TRUE},
+this implies \code{10000} support points for interaction terms,
+so it might be necessary to reduce \code{resolution} 
+when only few RAM is available.}
 
 \item{...}{Currently ignored.}
 }
@@ -33,8 +40,8 @@ Display smooth \code{s} and \code{t2} terms of models
 fitted with \pkg{brms}.
 }
 \details{
-Smooth terms of more than one covariate cannot be
-plotted yet, but this will follow in future version of \pkg{brms}.
+Two-dimensional smooth terms will be visualized using
+  contour plots.
 }
 \examples{
 \dontrun{
@@ -45,6 +52,10 @@ fit <- brm(y ~ s(x0) + s(x1) + s(x2) + s(x3), data = dat)
 plot(marginal_smooths(fit), rug = TRUE, ask = FALSE)
 # show only the smooth term s(x2)
 plot(marginal_smooths(fit, smooths = "s(x2)"), ask = FALSE)
+
+# fit and plot a two-dimensional smooth term
+fit2 <- brm(y ~ t2(x0, x2), data = dat)
+marginal_smooths(fit2)
 }
 
 }

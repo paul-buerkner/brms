@@ -517,9 +517,9 @@ stanplot <- function(object, ...) {
 #' Display marginal effects of predictors
 #' 
 #' Display marginal effects of one or more numeric and/or categorical 
-#' predictors including interaction effects of order 2.
+#' predictors including two-way interaction effects.
 #' 
-#' @param x An object usually of class \code{brmsfit}
+#' @param x An object usually of class \code{brmsfit}.
 #' @param effects An optional character vector naming effects
 #'   (main effects or interactions) for which to compute marginal plots.
 #'   If \code{NULL} (the default), plots for all effects are generated.
@@ -540,6 +540,14 @@ stanplot <- function(object, ...) {
 #' @param method Either \code{"fitted"} or \code{"predict"}. 
 #'   If \code{"fitted"}, plot marginal predictions of the regression curve. 
 #'   If \code{"predict"}, plot marginal predictions of the responses.
+#' @param contour Logical; Indicates whether interactions should be 
+#'   visualized with a contour plot. Defaults to \code{FALSE}.
+#' @param resolution Number of support points used to generate 
+#'   the plots. Higher resolution leads to smoother plots. 
+#'   Defaults to \code{100}. If \code{contour} is \code{TRUE},
+#'   this implies \code{10000} support points for interaction terms,
+#'   so it might be necessary to reduce \code{resolution} 
+#'   when only few RAM is available.
 #' @param ncol Number of plots to display per column for each effect.
 #'   If \code{NULL} (default), \code{ncol} is computed internally based
 #'   on the number of rows of \code{data}.
@@ -554,8 +562,15 @@ stanplot <- function(object, ...) {
 #' @param ... Currently ignored.
 #' 
 #' @return An object of class \code{brmsMarginalEffects}, which is a named list
-#'   with one element per effect containing all information required to generate
-#'   marginal effects plots. The corresponding \code{plot} method returns a named 
+#'   with one data.frame per effect containing all information required 
+#'   to generate marginal effects plots. Among others, these data.frames
+#'   contain some special variables, namely \code{estimate__} (predicted values
+#'   of the response), \code{se__} (standard error of the predicted response),
+#'   \code{lower__} and \code{upper__} (lower and upper bounds of the uncertainty
+#'   interval of the response), as well as \code{cond__} (used in faceting when 
+#'   \code{conditions} contains multiple rows).
+#'   
+#'   The corresponding \code{plot} method returns a named 
 #'   list of \code{\link[ggplot2:ggplot]{ggplot}} objects, which can be further 
 #'   customized using the \pkg{ggplot2} package.
 #'   
@@ -612,8 +627,8 @@ marginal_effects <- function(x, ...) {
 #' \code{\link[brms:marginal_effects]{marginal_effects}} for 
 #' more details and documentation of the related plotting function.
 #' 
-#' @details Smooth terms of more than one covariate cannot be
-#' plotted yet, but this will follow in future version of \pkg{brms}.
+#' @details Two-dimensional smooth terms will be visualized using
+#'   contour plots.
 #'   
 #' @examples 
 #' \dontrun{
@@ -624,6 +639,10 @@ marginal_effects <- function(x, ...) {
 #' plot(marginal_smooths(fit), rug = TRUE, ask = FALSE)
 #' # show only the smooth term s(x2)
 #' plot(marginal_smooths(fit, smooths = "s(x2)"), ask = FALSE)
+#' 
+#' # fit and plot a two-dimensional smooth term
+#' fit2 <- brm(y ~ t2(x0, x2), data = dat)
+#' marginal_smooths(fit2)
 #' }
 #' 
 #' @export

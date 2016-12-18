@@ -22,40 +22,33 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL,
   }
   plots <- named_list(names(x))
   for (i in seq_along(x)) {
-    response <- attributes(x[[i]])$response
-    effects <- attributes(x[[i]])$effects
-    if (smooths_only && length(effects) == 2L) {
+    response <- attr(x[[i]], "response")
+    effects <- attr(x[[i]], "effects")
+    ncond <- length(unique(x[[i]]$cond__))
+    if (isTRUE(attr(x[[i]], "contour"))) {
       # contour plot for two dimensional smooths
       plots[[i]] <- ggplot(x[[i]], aes_string(effects[1], effects[2])) + 
-        geom_contour(aes_string(z = "Estimate", colour = "..level.."), 
+        geom_contour(aes_string(z = "estimate__", colour = "..level.."), 
                      bins = 30, size = 1.3) +
-        scale_color_gradientn(colors = viridis6(), name = response) +
-        theme
+        scale_color_gradientn(colors = viridis6(), name = response)
     } else {
       # plot effects of single predictors / smooths
       # as well as two-way interactions
       gvar <- if (length(effects) == 2L) effects[2]
       plots[[i]] <- ggplot(x[[i]]) + 
-        aes_string(x = effects, y = "Estimate", ymin = "lowerCI",
-                   ymax = "upperCI", colour = gvar, fill = gvar) + 
-        ylab(response) + theme
-      nCond <- length(unique(x[[i]]$MargCond))
+        aes_string(x = effects, y = "estimate__", ymin = "lower__",
+                   ymax = "upper__", colour = gvar, fill = gvar) + 
+        ylab(response)
       if (points) {
         # show the data as points in the plot
         # add points first so that they appear behind the regression lines
-        aes_points <- aes_string(x = effects[1], y = ".RESP")
+        aes_points <- aes_string(x = effects[1], y = "resp__")
         if (is.factor(attr(x[[i]], "points")[, gvar])) {
           aes_points$colour <- parse(text = gvar)[[1]]
         }
         plots[[i]] <- plots[[i]] + 
-          geom_point(aes_points, shape = 1, size = 4 / nCond^0.25,
+          geom_point(aes_points, shape = 1, size = 4 / ncond^0.25,
                      data = attr(x[[i]], "points"), inherit.aes = FALSE)
-      }
-      if (nCond > 1L) {
-        # one plot per row of marginal_data
-        if (is.null(ncol)) ncol <- max(floor(sqrt(nCond)), 3) 
-        plots[[i]] <- plots[[i]] + 
-          facet_wrap("MargCond", ncol = ncol)
       }
       if (is.numeric(x[[i]][, effects[1]])) {
         # smooth plots for numeric predictors
@@ -70,11 +63,20 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL,
         # points and errorbars for factors
         plots[[i]] <- plots[[i]] + 
           geom_point(position = position_dodge(width = 0.4),
-                     size = 4 / nCond^0.25) + 
+                     size = 4 / ncond^0.25) + 
           geom_errorbar(position = position_dodge(width = 0.4),
                         width = 0.3)
       }
     }
+    if (ncond > 1L) {
+      # one plot per row of conditions
+      if (is.null(ncol)) {
+        ncol <- max(floor(sqrt(ncond)), 3)
+      }
+      plots[[i]] <- plots[[i]] + 
+        facet_wrap("cond__", ncol = ncol)
+    }
+    plots[[i]] <- plots[[i]] + theme
     if (plot) {
       plot(plots[[i]])
       if (i == 1) devAskNewPage(ask = ask)

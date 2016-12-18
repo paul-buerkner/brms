@@ -1236,7 +1236,8 @@ pairs.brmsfit <- function(x, pars = NA, exact_match = FALSE, ...) {
 marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL, 
                                      re_formula = NA, robust = TRUE, 
                                      probs = c(0.025, 0.975),
-                                     method = c("fitted", "predict"), ...) {
+                                     method = c("fitted", "predict"), 
+                                     contour = FALSE, resolution = 100, ...) {
   method <- match.arg(method)
   dots <- list(...)
   conditions <- use_alias(conditions, dots$data)
@@ -1297,54 +1298,9 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   results <- list()
   for (i in seq_along(effects)) {
     marg_data <- mf[, effects[[i]], drop = FALSE]
-    pred_types <- ifelse(ulapply(marg_data, is.numeric), "numeric", "factor")
-    # numeric effects should come first
-    new_order <- order(pred_types, decreasing = TRUE)
-    effects[[i]] <- effects[[i]][new_order]
-    pred_types <- pred_types[new_order]
-    is_mono <- effects[[i]] %in% int_vars
-    if (pred_types[1] == "numeric") {
-      min1 <- min(marg_data[, effects[[i]][1]])
-      max1 <- max(marg_data[, effects[[i]][1]])
-      if (is_mono[1]) {
-        values <- seq(min1, max1, by = 1)
-      } else {
-        values <- seq(min1, max1, length.out = 100)
-      }
-    }
-    if (length(effects[[i]]) == 2L) {
-      if (pred_types[1] == "numeric") {
-        values <- setNames(list(values, NA), effects[[i]])
-        if (pred_types[2] == "numeric") {
-          if (is_mono[2]) {
-            median2 <- median(marg_data[, effects[[i]][2]])
-            mad2 <- mad(marg_data[, effects[[i]][2]])
-            values[[2]] <- round((-1:1) * mad2 + median2)
-          } else {
-            mean2 <- mean(marg_data[, effects[[i]][2]])
-            sd2 <- sd(marg_data[, effects[[i]][2]])
-            values[[2]] <- (-1:1) * sd2 + mean2
-          }
-        } else {
-          values[[2]] <- unique(marg_data[, effects[[i]][2]])
-        }
-        marg_data <- do.call(expand.grid, values)
-      }
-    } else if (pred_types == "numeric") {
-      # just a single numeric predictor
-      marg_data <- structure(data.frame(values), names = effects[[i]])
-    }
-    # no need to have the same value combination more than once
-    marg_data <- unique(marg_data)
-    marg_data <- replicate(nrow(conditions), simplify = FALSE,
-     expr = marg_data[do.call(order, as.list(marg_data)), , drop = FALSE])
-    marg_vars <- setdiff(names(conditions), effects[[i]])
-    for (j in seq_len(nrow(conditions))) {
-      marg_data[[j]][, marg_vars] <- conditions[j, marg_vars]
-      marg_data[[j]][["MargCond"]] <- rownames(conditions)[j]
-    }
-    marg_data <- do.call(rbind, marg_data)
-    marg_data$MargCond <- factor(marg_data$MargCond, rownames(conditions))
+    marg_args <- nlist(data = marg_data, conditions, 
+                       int_vars, contour, resolution)
+    marg_data <- do.call(prepare_marg_data, marg_args)
     args <- c(list(x, newdata = marg_data, re_formula = re_formula,
                    allow_new_levels = TRUE, incl_autocor = FALSE,
                    probs = probs, robust = robust), dots)
@@ -1362,11 +1318,13 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     } else {
       marg_res <- do.call(method, args)
     }
-    colnames(marg_res)[3:4] <- c("lowerCI", "upperCI")
-     
-    if (length(effects[[i]]) == 2L && all(pred_types == "numeric")) {
+    colnames(marg_res) <- c("estimate__", "se__", "lower__", "upper__")
+    
+    types <- attr(marg_data, "types")
+    both_numeric <- length(types) == 2L && all(types == "numeric")
+    if (both_numeric && !contour) {
       # can only be converted to factor after having called method
-      if (is_mono[2]) {
+      if (isTRUE(attr(marg_data, "mono")[2])) {
         labels <- c("Median - MAD", "Median", "Median + MAD")
       } else {
         labels <- c("Mean - SD", "Mean", "Mean + SD") 
@@ -1377,6 +1335,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     marg_res = cbind(marg_data, marg_res)
     attr(marg_res, "response") <- as.character(x$formula[2])
     attr(marg_res, "effects") <- effects[[i]]
+    attr(marg_res, "contour") <- both_numeric && contour
     point_args <- nlist(mf, effects = effects[[i]], conditions,
                         groups = get_random(ee)$group, family = x$family)
     attr(marg_res, "points") <- do.call(make_point_frame, point_args)
@@ -1389,7 +1348,8 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
 #' @rdname marginal_smooths
 #' @export
 marginal_smooths.brmsfit <- function(x, smooths = NULL,
-                                     probs = c(0.025, 0.975), ...) {
+                                     probs = c(0.025, 0.975),
+                                     resolution = 100, ...) {
   contains_samples(x)
   x <- restructure(x)
   mf <- model.frame(x)
@@ -1427,7 +1387,8 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
       if (include_spline && ncovars <= 2L) {
         values <- named_list(covars[[i]])
         for (cv in names(values)) {
-          values[[cv]] <- seq(min(mf[[cv]]), max(mf[[cv]]), length.out = 100)
+          values[[cv]] <- seq(min(mf[[cv]]), max(mf[[cv]]), 
+                              length.out = resolution)
         }
         newdata <- expand.grid(values)
         other_vars <- setdiff(names(conditions), covars[[i]])
@@ -1443,7 +1404,7 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
         draws[["s"]] <- draws[["s"]][i]
         eta <- get_eta(i = NULL, draws = draws)
         eta <- get_summary(eta, robust = TRUE, probs = probs)
-        colnames(eta)[3:4] <- c("lowerCI", "upperCI")
+        colnames(eta) <- c("estimate__", "se__", "lower__", "upper__")
         res <- cbind(newdata[, covars[[i]], drop = FALSE], eta)
         response <- splines[[i]]
         if (isTRUE(nzchar(names(lee)[k]))) {
@@ -1451,6 +1412,7 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
         }
         attr(res, "response") <- response
         attr(res, "effects") <- covars[[i]]
+        attr(res, "contour") <- ncovars == 2L
         attr(res, "points") <- mf[, covars[[i]], drop = FALSE]
         results[[response]] <- res
       }

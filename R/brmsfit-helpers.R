@@ -234,8 +234,80 @@ prepare_conditions <- function(x, conditions = NULL, effects = NULL,
                 return_standata = FALSE)
 }
 
-get_cornames <- function(names, type = "cor", brackets = TRUE,
-                         sep = "__") {
+prepare_marg_data <- function(data, conditions, int_vars = NULL,
+                              contour = FALSE, resolution = 100) {
+  # prepare data to be used in marginal_effects
+  # Args:
+  #  data: data.frame containing only data of the predictors of interest
+  #  conditions: see argument 'conditions' of marginal_effects
+  #  int_vars: names of variables being treated as integers
+  #  contour: generate contour plots later on?
+  #  resolution: number of distinct points at which to evaluate
+  #              the predictors of interest
+  effects <- names(data)
+  stopifnot(length(effects) %in% c(1L, 2L))
+  pred_types <- ifelse(ulapply(data, is.numeric), "numeric", "factor")
+  # numeric effects should come first
+  new_order <- order(pred_types, decreasing = TRUE)
+  effects <- effects[new_order]
+  pred_types <- pred_types[new_order]
+  is_mono <- effects %in% int_vars
+  if (pred_types[1] == "numeric") {
+    min1 <- min(data[, effects[1]])
+    max1 <- max(data[, effects[1]])
+    if (is_mono[1]) {
+      values <- seq(min1, max1, by = 1)
+    } else {
+      values <- seq(min1, max1, length.out = resolution)
+    }
+  }
+  if (length(effects) == 2L) {
+    if (pred_types[1] == "numeric") {
+      values <- setNames(list(values, NA), effects)
+      if (pred_types[2] == "numeric") {
+        if (contour) {
+          min2 <- min(data[, effects[2]])
+          max2 <- max(data[, effects[2]])
+          if (is_mono[2]) {
+            values[[2]] <- seq(min2, max2, by = 1)
+          } else {
+            values[[2]] <- seq(min2, max2, length.out = resolution)
+          }
+        } else {
+          if (is_mono[2]) {
+            median2 <- median(data[, effects[2]])
+            mad2 <- mad(data[, effects[2]])
+            values[[2]] <- round((-1:1) * mad2 + median2)
+          } else {
+            mean2 <- mean(data[, effects[2]])
+            sd2 <- sd(data[, effects[2]])
+            values[[2]] <- (-1:1) * sd2 + mean2
+          }
+        }
+      } else {
+        values[[2]] <- unique(data[, effects[2]])
+      }
+      data <- do.call(expand.grid, values)
+    }
+  } else if (pred_types == "numeric") {
+    # just a single numeric predictor
+    data <- structure(data.frame(values), names = effects)
+  }
+  # no need to have the same value combination more than once
+  data <- unique(data)
+  data <- data[do.call(order, as.list(data)), , drop = FALSE]
+  data <- replicate(nrow(conditions), data, simplify = FALSE)
+  marg_vars <- setdiff(names(conditions), effects)
+  for (j in seq_len(nrow(conditions))) {
+    data[[j]][, marg_vars] <- conditions[j, marg_vars]
+    data[[j]]$cond__ <- rownames(conditions)[j]
+  }
+  data <- do.call(rbind, data)
+  data$cond__ <- factor(data$cond__, rownames(conditions))
+  structure(data, types = pred_types, mono = is_mono)
+}
+
+get_cornames <- function(names, type = "cor", brackets = TRUE, sep = "__") {
   # get correlation names as combinations of variable names
   # Args:
   #   names: the variable names 
@@ -855,7 +927,7 @@ make_point_frame <- function(mf, effects, conditions, groups, family) {
   # Returns:
   #   a data.frame containing the data points to be plotted
   points <- mf[, effects, drop = FALSE]
-  points$.RESP <- model.response(mf)
+  points$resp__ <- model.response(mf)
   # get required variables i.e. (grouping) factors
   list_mf <- lapply(as.list(mf), function(x)
     if (is.numeric(x)) x else as.factor(x))
@@ -869,11 +941,11 @@ make_point_frame <- function(mf, effects, conditions, groups, family) {
     # find out which data point is valid for which condition
     mf <- mf[, req_vars, drop = FALSE]
     conditions <- conditions[, req_vars, drop = FALSE]
-    points$MargCond <- NA
+    points$cond__ <- NA
     points <- replicate(nrow(conditions), points, simplify = FALSE)
     for (i in seq_along(points)) {
       cond <- conditions[i, , drop = FALSE]
-      not_na <- which(!(is.na(cond) | cond == ".ZERO"))
+      not_na <- which(!(is.na(cond) | cond == "zero__"))
       if (length(not_na)) {
         # do it like base::duplicated
         K <- do.call("paste", c(mf[, not_na, drop = FALSE], sep = "\r")) %in% 
@@ -881,16 +953,16 @@ make_point_frame <- function(mf, effects, conditions, groups, family) {
       } else {
         K <- seq_len(nrow(mf))
       }
-      points[[i]]$MargCond[K] <- rownames(conditions)[i] 
+      points[[i]]$cond__[K] <- rownames(conditions)[i] 
     }
     points <- do.call(rbind, points)
-    # MargCond allows to assign points to conditions
-    points$MargCond <- factor(points$MargCond, rownames(conditions))
+    # cond__ allows to assign points to conditions
+    points$cond__ <- factor(points$cond__, rownames(conditions))
   }
-  if (!is.numeric(points$.RESP)) {
-    points$.RESP <- as.numeric(as.factor(points$.RESP))
+  if (!is.numeric(points$resp__)) {
+    points$resp__ <- as.numeric(as.factor(points$resp__))
     if (is.binary(family)) {
-      points$.RESP <- points$.RESP - 1
+      points$resp__ <- points$resp__ - 1
     }
   }
   na.omit(points)

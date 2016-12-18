@@ -38,6 +38,9 @@
       \item Add the abbreviations \code{mo} and \code{cs}
       to specify monotonic and category specific effects
       respectively.
+      \item Rename generated variables in the data.frames 
+      returned by \code{marginal_effects} to avoid potential
+      naming conflicts.
       \item Remove the deprecated \code{partial} argument.
     }
   }
