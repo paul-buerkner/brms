@@ -90,7 +90,7 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL,
 #' @method plot brmshypothesis
 #' @export
 plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE,
-                                chars = 40, colors = c("red", "blue"),
+                                chars = 40, colors = NULL,
                                 theme = bayesplot::theme_default(),
                                 ask = TRUE, plot = TRUE,  ...) {
   dots <- list(...)
@@ -98,12 +98,19 @@ plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE,
     stop("No posterior samples found", call. = FALSE)
   }
   plot <- use_alias(plot, dots$do_plot)
+  if (is.null(colors)) {
+    colors <- bayesplot::color_scheme_get()[c(6, 2)]
+    colors <- unname(unlist(colors))
+  }
+  if (length(colors) != 2L) {
+    stop2("Argument 'colors' must be of length 2.")
+  }
   
   .plot_fun <- function(samples) {
     ggplot(samples, aes_string(x = "values")) + 
       facet_wrap("ind", ncol = 1, scales = "free") +
       geom_density(aes_string(fill = "Type"), 
-                   alpha = 0.5, na.rm = TRUE) + 
+                   alpha = 0.7, na.rm = TRUE) + 
       scale_fill_manual(values = colors) + 
       xlab("") + ylab("") + theme
   }

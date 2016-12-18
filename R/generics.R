@@ -58,8 +58,9 @@ brmssummary <- function(formula = NULL, family = "", link = "",
 #'  to print or plot. If \code{NULL}, print the full hypotheses.
 #'  Defaults to \code{20}.
 #' @param colors Two values specifying the colors of the posterior
-#'  and prior density respectively. Default to \code{"red"}
-#'  and \code{"blue"}.
+#'  and prior density respectively. If \code{NULL} (the default)
+#'  colors are taken from the current color scheme of 
+#'  the \pkg{bayesplot} package.
 #' @inheritParams plot.brmsfit
 #' @param ... Currently ignored.
 #' 
