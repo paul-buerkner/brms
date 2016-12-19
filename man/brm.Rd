@@ -195,8 +195,8 @@ using Stan for full Bayesian inference. A wide range of distributions
 and link functions are supported, allowing users to fit
 linear, robust linear, binomial, Poisson, survival, response times, ordinal, 
 zero-inflated, hurdle, and even non-linear models all in a multilevel context. 
-Further modeling options include autocorrelation and smoothing terms, 
-user defined covariance structures, censored data, meta-analytic 
+Further modeling options include auto-correlation and smoothing terms, 
+user defined dependence structures, censored data, meta-analytic 
 standard errors, and quite a few more. 
 In addition, all parameters of the response distribution can be predicted
 in order to perform distributional regression.

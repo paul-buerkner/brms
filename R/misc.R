@@ -405,10 +405,9 @@ use_alias <- function(arg, alias = NULL, default = NULL,
   if (!is_equal(alias, default)) {
     arg <- alias
     if (grepl("^dots\\$", alias_name)) {
-      alias_name <- sub("^dots\\$", "", alias_name)
+      alias_name <- gsub("^dots\\$", "", alias_name)
     } else if (grepl("^dots\\[\\[", alias_name)) {
-      alias_name <- sub("^dots\\[\\[\"", "", alias_name)
-      alias_name <- sub("\"\\]\\]$", "", alias_name)
+      alias_name <- gsub("^dots\\[\\[\"|\"\\]\\]$", "", alias_name)
     }
     if (warn) {
       warning2("Argument '", alias_name, "' is deprecated. ", 
