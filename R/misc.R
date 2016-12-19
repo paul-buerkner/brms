@@ -404,13 +404,15 @@ use_alias <- function(arg, alias = NULL, default = NULL,
   alias_name <- Reduce(paste, deparse(substitute(alias)))
   if (!is_equal(alias, default)) {
     arg <- alias
-    if (substr(alias_name, 1, 5) == "dots$") {
-      alias_name <- substr(alias_name, 6, nchar(alias_name))
+    if (grepl("^dots\\$", alias_name)) {
+      alias_name <- sub("^dots\\$", "", alias_name)
+    } else if (grepl("^dots\\[\\[", alias_name)) {
+      alias_name <- sub("^dots\\[\\[\"", "", alias_name)
+      alias_name <- sub("\"\\]\\]$", "", alias_name)
     }
     if (warn) {
-      warning(paste0("Argument '", alias_name, "' is deprecated. ", 
-                     "Please use argument '", arg_name, "' instead."), 
-              call. = FALSE)
+      warning2("Argument '", alias_name, "' is deprecated. ", 
+               "Please use argument '", arg_name, "' instead.")
     }
   }
   arg
