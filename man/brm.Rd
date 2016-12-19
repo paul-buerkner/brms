@@ -136,21 +136,17 @@ Alternatively, \code{inits} can be a list of lists containing
 the initial values, or a function (or function name) generating initial values. 
 The latter options are mainly implemented for internal testing.}
 
-\item{chains}{Number of Markov chains (defaults to 4). 
-A deprecated alias is \code{n.chains}.}
+\item{chains}{Number of Markov chains (defaults to 4).}
 
-\item{iter}{Number of total iterations per chain (including warmup; defaults to 2000).
-A deprecated alias is \code{n.iter}.}
+\item{iter}{Number of total iterations per chain (including warmup; defaults to 2000).}
 
 \item{warmup}{A positive integer specifying number of warmup (aka burnin) iterations. 
 This also specifies the number of iterations used for stepsize adaptation, 
 so warmup samples should not be used for inference. The number of warmup should not 
-be larger than \code{iter} and the default is \code{iter/2}.
-A deprecated alias is \code{n.warmup}.}
+be larger than \code{iter} and the default is \code{iter/2}.}
 
 \item{thin}{Thinning rate. Must be a positive integer. 
-Set \code{thin > 1} to save memory and computation time if \code{iter} is large. 
-Default is 1, that is no thinning. A deprecated alias is \code{n.thin}.}
+Set \code{thin > 1} to save memory and computation time if \code{iter} is large.}
 
 \item{cores}{Number of cores to use when executing the chains in parallel, 
 which defaults to 1 but we recommend setting the \code{mc.cores} option 
@@ -169,9 +165,10 @@ variational inference with independent normal distributions, or
 \code{"fullrank"} for variational inference with a multivariate normal
 distribution.}
 
-\item{silent}{logical; If \code{TRUE}, warning messages of the sampler are suppressed.}
+\item{silent}{logical; If \code{TRUE}, informational messages of 
+the compiler and sampler are suppressed.}
 
-\item{seed}{Positive integer. Used by \code{set.seed} to make results reproducable.}
+\item{seed}{Used by \code{set.seed} to make results reproducable.}
 
 \item{save_model}{Either \code{NULL} or a character string. 
 In the latter case, the model code is

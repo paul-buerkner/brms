@@ -122,17 +122,13 @@
 #'   the initial values, or a function (or function name) generating initial values. 
 #'   The latter options are mainly implemented for internal testing.
 #' @param chains Number of Markov chains (defaults to 4). 
-#'   A deprecated alias is \code{n.chains}.
 #' @param iter Number of total iterations per chain (including warmup; defaults to 2000).
-#'   A deprecated alias is \code{n.iter}.
 #' @param warmup A positive integer specifying number of warmup (aka burnin) iterations. 
 #'   This also specifies the number of iterations used for stepsize adaptation, 
 #'   so warmup samples should not be used for inference. The number of warmup should not 
 #'   be larger than \code{iter} and the default is \code{iter/2}.
-#'   A deprecated alias is \code{n.warmup}.
 #' @param thin Thinning rate. Must be a positive integer. 
 #'   Set \code{thin > 1} to save memory and computation time if \code{iter} is large. 
-#'   Default is 1, that is no thinning. A deprecated alias is \code{n.thin}.
 #' @param cores	Number of cores to use when executing the chains in parallel, 
 #'   which defaults to 1 but we recommend setting the \code{mc.cores} option 
 #'   to be as many processors as the hardware and RAM allow (up to the number of chains).
@@ -147,8 +143,9 @@
 #'   It defaults to \code{NULL} so all the default values are used. 
 #'   The most important control parameters are discussed in the 'Details'
 #'   section below. For a comprehensive overview see \code{\link[rstan:stan]{stan}}.
-#' @param silent logical; If \code{TRUE}, warning messages of the sampler are suppressed.
-#' @param seed Positive integer. Used by \code{set.seed} to make results reproducable.  
+#' @param silent logical; If \code{TRUE}, informational messages of 
+#'   the compiler and sampler are suppressed.
+#' @param seed Used by \code{set.seed} to make results reproducable.  
 #' @param save_model Either \code{NULL} or a character string. 
 #'   In the latter case, the model code is
 #'   saved in a file named after the string supplied in \code{save_model}, 
