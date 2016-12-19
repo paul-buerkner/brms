@@ -8,7 +8,7 @@ Authors@R: person("Paul-Christian", "Bürkner", email = "paul.buerkner@gmail.com
   role = c("aut", "cre"))
 Depends: 
     R (>= 3.2.0),
-    rstan (>= 2.12.0),
+    rstan (>= 2.13.2),
     ggplot2 (>= 2.0.0),
     methods
 Imports: 
