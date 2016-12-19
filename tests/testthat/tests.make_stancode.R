@@ -1,15 +1,23 @@
-test_that("make_stancode handles horseshoe priors correctly", {
+test_that("make_stancode handles shrinkage priors correctly", {
   temp_stancode <- make_stancode(rating ~ treat*period*carry, data = inhaler,
-                                 prior = prior(horseshoe(7)))
+                                 prior = prior(horseshoe(7, scale_global = 2)),
+                                 sample_prior = TRUE)
   expect_match(temp_stancode, fixed = TRUE,
-               "  vector<lower=0>[Kc] hs_local; \n  real<lower=0> hs_global; \n")
+               "  vector<lower=0>[Kc] hs_local; \n  real<lower=0> hs_global;")
   expect_match(temp_stancode, fixed = TRUE,
-               "  hs_local ~ student_t(7, 0, 1); \n  hs_global ~ cauchy(0, 1); \n")
+               "  hs_local ~ student_t(7, 0, 1); \n  hs_global ~ cauchy(0, 2);")
+  expect_match(temp_stancode, fixed = TRUE,
+               "  b ~ normal(0, hs_local * hs_global);")
   
   temp_stancode <- make_stancode(rating ~ treat*period*carry, data = inhaler,
-                                 prior = prior(horseshoe(7, scale_global = 2)))
+                                 prior = prior(lasso(2, scale = 10)),
+                                 sample_prior = TRUE)
   expect_match(temp_stancode, fixed = TRUE,
-               "  hs_local ~ student_t(7, 0, 1); \n  hs_global ~ cauchy(0, 2); \n")
+               "  lasso_inv_lambda ~ chi_square(2);")
+  expect_match(temp_stancode, fixed = TRUE,
+               "  b ~ double_exponential(0, 10 * lasso_inv_lambda);")
+  expect_match(temp_stancode, fixed = TRUE,
+               "  prior_b = double_exponential_rng(0,10*prior_lasso_inv_lambda);")
 })
 
 test_that("make_stancode accepts supported links", {

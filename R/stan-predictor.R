@@ -246,7 +246,11 @@ stan_fixef <- function(fixef, center_X = TRUE, family = gaussian(),
       if (!is.null(attr(prior, "hs_df")))
         paste0("  // horseshoe shrinkage parameters \n",
                "  vector<lower=0>[K", ct, "] hs_local; \n",
-               "  real<lower=0> hs_global; \n")) 
+               "  real<lower=0> hs_global; \n"),
+      if (!is.null(attr(prior, "lasso_df")))
+        paste0("  // lasso shrinkage parameter \n",
+               "  real<lower=0> lasso_inv_lambda; \n")
+    ) 
     fixef_prior <- stan_prior(class = "b", coef = fixef, prior = prior,
                               nlpar = nlpar, suffix = p)
     out$prior <- paste0(out$prior, fixef_prior)

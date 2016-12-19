@@ -13,6 +13,8 @@
       (exponentially modified Gaussian distribution) 
       and \code{wiener} (Wiener diffusion model distribution)
       specifically suited to handle for response times.
+      \item Add the \code{lasso} prior as an alternative
+      to the \code{horseshoe} prior for sparse models.
       \item Add the methods \code{log_posterior},
       \code{nuts_params}, \code{rhat}, and \code{neff_ratio}
       for \code{brmsfit} objects to conveniently access

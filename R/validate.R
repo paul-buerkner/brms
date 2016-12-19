@@ -1191,8 +1191,8 @@ exclude_pars <- function(effects, data = NULL, ranef = empty_ranef(),
   #   save_mevars: should samples of noise-free variables be saved?
   # Returns:
   #   a vector of parameters to be excluded
-  out <- c("temp_Intercept1", "temp_Intercept", "Lrescor", "Rescor", 
-           "Sigma", "LSigma", "res_cov_matrix", "hs_local", "hs_global",
+  out <- c("temp_Intercept1", "temp_Intercept", "Lrescor", "Rescor",
+           "Sigma", "LSigma", "res_cov_matrix", "hs_local",
            intersect(auxpars(), names(effects)))
   # exclude spline helper parameters and temporary Intercepts
   par_effects <- rmNULL(c(effects[auxpars()], effects$nonlinear))

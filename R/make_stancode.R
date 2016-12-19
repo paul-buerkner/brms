@@ -175,7 +175,7 @@ make_stancode <- function(formula, data, family = gaussian(),
   text_rngprior <- stan_rngprior(sample_prior = sample_prior, 
                                  par_declars = text_parameters,
                                  prior = text_prior, family = family,
-                                 hs_df = attr(prior, "hs_df"))
+                                 prior_attr = attributes(prior))
   text_parameters <- paste0(
     "parameters { \n",
       text_parameters,

@@ -715,7 +715,6 @@ stan_prior <- function(class, coef = "", group = "", nlpar = "", suffix = "",
   # only consider user defined priors related to this class and group
   wsp <- collapse(rep(" ", wsp))
   prior_only <- isTRUE(attr(prior, "prior_only"))
-  hs_df <- attr(prior, "hs_df")
   keep <- prior$class == class & 
           (prior$coef %in% coef | !nzchar(prior$coef)) &
           (prior$group == group | !nzchar(prior$group)) & 
@@ -784,12 +783,20 @@ stan_prior <- function(class, coef = "", group = "", nlpar = "", suffix = "",
   } else {
     out <- ""
   }
-  if (class == "b" && !is.null(hs_df)) {
-    # add horseshoe shrinkage priors
-    hs_shrinkage_priors <- paste0(
-      "  hs_local ~ student_t(", attr(prior, "hs_df"), ", 0, 1); \n",
-      "  hs_global ~ cauchy(0, ", attr(prior, "hs_scale_global"), "); \n")
-    out <- c(hs_shrinkage_priors, out)
+  if (all(class == "b")) {
+    # add horseshoe and lasso shrinkage priors
+    att <- attributes(prior)
+    special_priors <- NULL
+    if (!is.null(att$hs_df)) {
+      special_priors <- paste0(special_priors,
+        "  hs_local ~ student_t(", att$hs_df, ", 0, 1); \n",
+        "  hs_global ~ cauchy(0, ", att$hs_scale_global, "); \n")
+    }
+    if (!is.null(att$lasso_df)) {
+      special_priors <- paste0(special_priors,
+        "  lasso_inv_lambda ~ chi_square(", att$lasso_df, "); \n")
+    }
+    out <- c(special_priors, out) 
   }
   out <- collapse(out)
   if (prior_only && nchar(class) && !nchar(out)) {
@@ -826,17 +833,16 @@ stan_base_prior <- function(prior) {
 }
 
 stan_rngprior <- function(sample_prior, prior, par_declars = "",
-                          family = gaussian(), hs_df = NULL) {
+                          family = gaussian(), prior_attr = list()) {
   # stan code to sample from priors seperately
-  #
   # Args:
   #   sample_prior: take samples from priors?
   #   prior: character string taken from stan_prior
   #   par_declars: the parameters block of the Stan code
   #                requied to extract boundaries
   #   family: the model family
-  #   hs_df: hs_df degrees of freedom
-  #
+  #   prior_attr: a list of values pertaining to special priors
+  #               such as horseshoe or lasso
   # Returns:
   #   a character string containing the priors to be sampled from in stan code
   stopifnot(is(family, "family"))
@@ -898,11 +904,20 @@ stan_rngprior <- function(sample_prior, prior, par_declars = "",
                                    dis[has_bounds], args[has_bounds]," \n"))
     }
     no_bounds <- !has_bounds
-    if (any(no_bounds)) {  
-      # unbounded parameters can be sampled in the generatated quantities block
-      if (!is.null(hs_df)) {
-        args[grepl("^b(m|p|_|$)", pars)] <- "(0, prior_hs_local * prior_hs_global);" 
+    if (any(no_bounds)) {
+      # use parameters sampled from priors for use in other priors
+      spars <- NULL
+      if (!is.null(prior_attr$hs_df)) {
+        spars <- c(spars, "hs_local", "hs_global")
       }
+      if (!is.null(prior_attr$lasso_df)) {
+        spars <- c(spars, "lasso_inv_lambda")
+      }
+      if (length(spars)) {
+        bpars <- grepl("^b(mo|cs|me|_|$)", pars)
+        args[bpars] <- rename(args[bpars], spars, paste0("prior_", spars))
+      }
+      # unbounded parameters can be sampled in the generatated quantities block
       out$genD <- collapse(
         "  ", types[no_bounds], " prior_", pars[no_bounds], "; \n")
       out$genC <- paste0(

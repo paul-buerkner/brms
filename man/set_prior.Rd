@@ -114,11 +114,10 @@ Define priors for specific parameters or classes of parameters
   on the right-hand side of the model formula.
   
   A special shrinkage prior to be applied on population-level effects 
-  is the horseshoe prior.
+  is the horseshoe prior (Carvalho et al., 2009).
   It is symmetric around zero with fat tails and an infinitely large spike
   at zero. This makes it ideal for sparse models that have 
   many regression coefficients, although only a minority of them is non-zero. 
-  For more details see Carvalho et al. (2009).
   The horseshoe prior can be applied on all population-level effects at once 
   (excluding the intercept) by using \code{set_prior("horseshoe(1)")}.
   The \code{1} implies that the student-t prior of the local shrinkage 
@@ -134,11 +133,31 @@ Define priors for specific parameters or classes of parameters
   of the horseshoe prior, for instance \code{horseshoe(1, scale_global = 0.5)}.
   For recommendations how to properly set the global scale see 
   Piironen and Vehtari (2016).
+  To make sure that shrinkage can equally affect all coefficients, 
+  predictors should be one the same scale. 
   Generally, models with horseshoe priors a more likely than other models
   to have divergent transitions so that increasing \code{adapt_delta} 
   from \code{0.8} to values closer to \code{1} will often be necessary.
   See the documentation of \code{\link[brms:brm]{brm}} for instructions
   on how to increase \code{adapt_delta}. \cr
+  
+  Another shrinkage prior is the so-called \emph{lasso} prior.
+  It is the Bayesian equivalent to the LASSO method for performing
+  variable selection (Park & Casella, 2008).
+  With this prior, independent Laplace (i.e., double exponential) priors 
+  are placed on the population-level effects. 
+  The scale of the Laplace priors depends on a tuning parameter
+  that controls the amount of shrinkage. In \pkg{brms}, the inverse
+  of the tuning parameter is used so that smaller values imply
+  more shrinkage. The inverse tuning parameter has a chi-square distribution
+  and with degrees of freedom controlled via argument \code{df}
+  of function \code{lasso} (defaults to \code{1}). For instance,
+  one can specify a lasso prior using \code{set_prior("lasso(1)")}.
+  To make sure that shrinkage can equally affect all coefficients, 
+  predictors should be one the same scale.
+  If you do not want to standarized all variables,
+  you can adjust the general scale of the lasso prior via argument
+  \code{scale}, for instance, \code{lasso(1, scale = 10)}.
   
   In non-linear models, population-level effects are defined separately 
   for each non-linear parameter. Accordingly, it is necessary to specify
@@ -321,10 +340,15 @@ make_stancode(rating ~ period + carry + cs(treat) + (1|subject),
               threshold = "equidistant",
               prior = prior)
               
-## use horseshoe priors to model sparsity in population-level effects parameters
+## use the horseshoe prior to model sparsity in population-level effects
 make_stancode(count ~ log_Age_c + log_Base4_c * Trt_c,
               data = epilepsy, family = poisson(),
               prior = set_prior("horseshoe(3)"))
+              
+## alternatively use the lasso prior
+make_stancode(count ~ log_Age_c + log_Base4_c * Trt_c,
+              data = epilepsy, family = poisson(),
+              prior = set_prior("lasso(1)"))
               
 ## use alias functions
 (prior1 <- prior_string("cauchy(0, 1)", class = "sd"))
@@ -339,6 +363,9 @@ Carvalho, C. M., Polson, N. G., & Scott, J. G. (2009).
 
 Gelman A. (2006). Prior distributions for variance parameters in hierarchical models.
    Bayesian analysis, 1(3), 515 -- 534.
+   
+Park, T., & Casella, G. (2008). The Bayesian Lasso. Journal of the American 
+   Statistical Association, 103(482), 681-686.
    
 Piironen J. & Vehtari A. (2016). On the Hyperprior Choice for the Global 
    Shrinkage Parameter in the Horseshoe Prior. 
