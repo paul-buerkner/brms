@@ -1161,25 +1161,6 @@ has_cens <- function(formula, data = NULL) {
   cens
 }
 
-check_brm_input <- function(x) {
-  # misc checks on brm arguments 
-  # Args:
-  #   x: A named list
-  if (x$chains %% x$cluster != 0L) {
-    stop2("'chains' must be a multiple of 'cluster'")
-  }
-  family <- check_family(x$family) 
-  if (family$family == "inverse.gaussian") {
-    warning2("Inverse gaussian models require carefully chosen ", 
-             "prior distributions to ensure convergence of the chains.")
-  }
-  if (family$link == "sqrt") {
-    warning2(family$family, " model with sqrt link may not be ", 
-             "uniquely identified")
-  }
-  invisible(NULL)
-}
-
 exclude_pars <- function(effects, data = NULL, ranef = empty_ranef(),
                          save_ranef = TRUE, save_mevars = FALSE) {
   # list irrelevant parameters NOT to be saved by Stan

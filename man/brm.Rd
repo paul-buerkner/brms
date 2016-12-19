@@ -9,7 +9,7 @@ brm(formula, data, family = gaussian(), prior = NULL, autocor = NULL,
   cov_ranef = NULL, save_ranef = TRUE, save_mevars = FALSE,
   sparse = FALSE, sample_prior = FALSE, knots = NULL, stan_funs = NULL,
   fit = NA, inits = "random", chains = 4, iter = 2000,
-  warmup = floor(iter/2), thin = 1, cluster = 1, cluster_type = "PSOCK",
+  warmup = floor(iter/2), thin = 1, cores = getOption("mc.cores", 1L),
   control = NULL, algorithm = c("sampling", "meanfield", "fullrank"),
   silent = TRUE, seed = 12345, save_model = NULL, save_dso = TRUE, ...)
 }
@@ -152,16 +152,11 @@ A deprecated alias is \code{n.warmup}.}
 Set \code{thin > 1} to save memory and computation time if \code{iter} is large. 
 Default is 1, that is no thinning. A deprecated alias is \code{n.thin}.}
 
-\item{cluster}{Number of clusters to use to run parallel chains. Default is 1.
-A deprecated alias is \code{n.cluster}. To use the built-in parallel execution
-of \pkg{rstan}, specify argument \code{cores} instead of \code{cluster}.}
-
-\item{cluster_type}{A character string specifying the type of cluster created by 
-\code{\link[parallel:makeCluster]{makeCluster}} when sampling in parallel 
-(i.e. when \code{cluster} is greater \code{1}). 
-Default is \code{"PSOCK"} working on all platforms. 
-For OS X and Linux, \code{"FORK"} may be a faster and more stable option, 
-but it does not work on Windows.}
+\item{cores}{Number of cores to use when executing the chains in parallel, 
+which defaults to 1 but we recommend setting the \code{mc.cores} option 
+to be as many processors as the hardware and RAM allow (up to the number of chains).
+For non-Windows OS in non-interactive \R sessions, forking is used
+instead of PSOCK clusters. A deprecated alias is \code{cluster}.}
 
 \item{control}{A named \code{list} of parameters to control the sampler's behavior. 
 It defaults to \code{NULL} so all the default values are used. 

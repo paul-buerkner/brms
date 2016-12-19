@@ -108,7 +108,7 @@ Residuals of type \code{ordinary}
 \dontrun{
 ## fit a model
 fit <- brm(rating ~ treat + period + carry + (1|subject), 
-           data = inhaler, cluster = 2)
+           data = inhaler, cores = 2)
 
 ## extract residuals 
 res <- residuals(fit, summary = TRUE)

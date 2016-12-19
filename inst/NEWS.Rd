@@ -43,6 +43,10 @@
       \item Rename generated variables in the data.frames 
       returned by \code{marginal_effects} to avoid potential
       naming conflicts.
+      \item Deprecate argument \code{cluster} and use 
+      the native \code{cores} argument of \pkg{rstan} instead.
+      \item Remove argument \code{cluster_type} as it is
+      no longer required to apply forking.
       \item Remove the deprecated \code{partial} argument.
     }
   }

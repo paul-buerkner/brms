@@ -306,16 +306,6 @@ test_that("tidy_ranef works correctly", {
   expect_equivalent(ranef, empty_ranef())
 })
 
-test_that("check_brm_input returns correct warnings and errors", {
-  expect_error(check_brm_input(list(chains = 3, cluster = 2)), 
-               "'chains' must be a multiple of 'cluster'", fixed = TRUE)
-  x <- list(family = inverse.gaussian(), chains = 1, cluster = 1,
-            algorithm = "sampling")
-  expect_warning(check_brm_input(x))
-  x$family <- poisson("sqrt")
-  expect_warning(check_brm_input(x))
-})
-
 test_that("exclude_pars returns expected parameter names", {
   ranef <- data.frame(id = c(1, 1, 2), group = c("g1", "g1", "g2"),
                        gn = c(1, 1, 2), coef = c("x", "z", "x"), 

@@ -133,15 +133,11 @@
 #' @param thin Thinning rate. Must be a positive integer. 
 #'   Set \code{thin > 1} to save memory and computation time if \code{iter} is large. 
 #'   Default is 1, that is no thinning. A deprecated alias is \code{n.thin}.
-#' @param cluster	Number of clusters to use to run parallel chains. Default is 1.  
-#'   A deprecated alias is \code{n.cluster}. To use the built-in parallel execution
-#'   of \pkg{rstan}, specify argument \code{cores} instead of \code{cluster}. 
-#' @param cluster_type A character string specifying the type of cluster created by 
-#'   \code{\link[parallel:makeCluster]{makeCluster}} when sampling in parallel 
-#'   (i.e. when \code{cluster} is greater \code{1}). 
-#'   Default is \code{"PSOCK"} working on all platforms. 
-#'   For OS X and Linux, \code{"FORK"} may be a faster and more stable option, 
-#'   but it does not work on Windows.
+#' @param cores	Number of cores to use when executing the chains in parallel, 
+#'   which defaults to 1 but we recommend setting the \code{mc.cores} option 
+#'   to be as many processors as the hardware and RAM allow (up to the number of chains).
+#'   For non-Windows OS in non-interactive \R sessions, forking is used
+#'   instead of PSOCK clusters. A deprecated alias is \code{cluster}.
 #' @param algorithm Character string indicating the estimation approach to use. 
 #'   Can be \code{"sampling"} for MCMC (the default), \code{"meanfield"} for
 #'   variational inference with independent normal distributions, or
@@ -320,43 +316,45 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 cov_ranef = NULL, save_ranef = TRUE, save_mevars = FALSE, 
                 sparse = FALSE, sample_prior = FALSE, knots = NULL, 
                 stan_funs = NULL, fit = NA, inits = "random", 
-                chains = 4, iter = 2000, 
-                warmup = floor(iter / 2), thin = 1, cluster = 1, 
-                cluster_type = "PSOCK", control = NULL, 
+                chains = 4, iter = 2000, warmup = floor(iter / 2),
+                thin = 1, cores = getOption("mc.cores", 1L), control = NULL,
                 algorithm = c("sampling", "meanfield", "fullrank"),
                 silent = TRUE, seed = 12345, save_model = NULL,
                 save_dso = TRUE, ...) {
   
   dots <- list(...) 
   # use deprecated arguments if specified
-  iter <- use_alias(iter, dots$n.iter)
-  warmup <- use_alias(warmup, dots$n.warmup)
-  thin <- use_alias(thin, dots$n.thin)
-  chains <- use_alias(chains, dots$n.chains)
-  cluster <- use_alias(cluster, dots$n.cluster)
-  cov_ranef <- use_alias(cov_ranef, dots$cov.ranef)
-  save_ranef <- use_alias(save_ranef, dots$ranef)
-  sample_prior <- use_alias(sample_prior, dots$sample.prior)
-  save_model <- use_alias(save_model, dots$save.model)
-  dots[c("n.iter", "n.warmup", "n.thin", "n.chains", "n.cluster",
-         "cov.ranef", "sample.prior", "save.model", "ranef")] <- NULL
-  # some input checks 
-  check_brm_input(nlist(family, chains, cluster, inits))
+  iter <- use_alias(iter, dots[["n.iter"]])
+  warmup <- use_alias(warmup, dots[["n.warmup"]])
+  thin <- use_alias(thin, dots[["n.thin"]])
+  chains <- use_alias(chains, dots[["n.chains"]])
+  cores <- use_alias(cores, dots[["cluster"]])
+  cov_ranef <- use_alias(cov_ranef, dots[["cov.ranef"]])
+  save_ranef <- use_alias(save_ranef, dots[["ranef"]])
+  sample_prior <- use_alias(sample_prior, dots[["sample.prior"]])
+  save_model <- use_alias(save_model, dots[["save.model"]])
+  if (!is.null(dots[["cluster_type"]])) {
+    warning2("Argument 'cluster_type' is deprecated and unused.\n",
+             "Forking is now automatically applied when appropriate.")
+  }
+  dots[deprecated_brm_args()] <- NULL
+  check_brm_input(nlist(family, inits))
   autocor <- check_autocor(autocor)
   threshold <- match.arg(threshold)
   algorithm <- match.arg(algorithm)
   
   testmode <- dots$testmode
   dots$testmode <- NULL
-  if (is(fit, "brmsfit")) {  
-    x <- fit  # re-use existing model
+  if (is(fit, "brmsfit")) {
+    # re-use existing model
+    x <- fit
     # compute data to be passed to Stan
     standata <- standata(x, is_newdata = dots$is_newdata)
     dots$is_newdata <- NULL
     # extract the compiled model
     x$fit <- rstan::get_stanmodel(x$fit)  
   } else {  # build new model
-    # see validate.R for function definitions
+    # see validate.R and formula-helpers.R
     family <- check_family(family)
     formula <- update_formula(formula, data = data, family = family, 
                               nonlinear = nonlinear)
@@ -393,7 +391,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                              stan_funs = stan_funs, save_model = save_model, 
                              brm_call = TRUE)
     # generate standata before compiling the model to avoid
-    # unnecessary compilations in case that the data is invalid
+    # unnecessary compilations in case of invalid data
     standata <- standata(x, newdata = dots$is_newdata)
     message("Compiling the C++ model")
     comp_expr <- expression(
@@ -407,7 +405,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     x$model <- x$model$model_code
   }
   
-  # arguments to be passed to stan
+  # arguments to be passed to Stan
   if (is.character(inits) && !inits %in% c("random", "0")) {
     inits <- get(inits, mode = "function", envir = parent.frame())
   }
@@ -415,43 +413,42 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                include = FALSE, algorithm = algorithm)
   args[names(dots)] <- dots 
   if (algorithm == "sampling") {
-    args <- c(args, list(init = inits, iter = iter, warmup = warmup, 
-              thin = thin, chains = chains, control = control,
-              show_messages = !silent))
+    args <- c(args, nlist(init = inits, iter, warmup, thin, chains, 
+                          cores, control, show_messages = !silent))
   }
   
   set.seed(seed)
-  if (cluster > 1) {  # sample in parallel
-    message("Start sampling")
-    if (is.character(args$init) || is.numeric(args$init)) 
-      args$init <- rep(args$init, chains)
-    cl <- makeCluster(cluster, type = cluster_type)
-    on.exit(stopCluster(cl))  # close all clusters when exiting brm
-    clusterExport(cl = cl, varlist = "args", envir = environment())
-    clusterEvalQ(cl, require(rstan))
-    run_chain <- function(i) {
-      args$chains <- 1L
-      args$chain_id <- i
-      args$init <- args$init[i]
-      Sys.sleep(0.5 * i)
-      if (args$algorithm == "sampling") {
-        args$algorithm <- NULL
-        do.call(rstan::sampling, args = args)
-      } else {
-        do.call(rstan::vb, args = args)
-      } 
-    }
-    x$fit <- rstan::sflist2stanfit(parLapply(cl, X = 1:chains, run_chain))
-  } else {  # do not sample in parallel
-    if (args$algorithm == "sampling") {
-      args$algorithm <- NULL
-      x$fit <- do.call(rstan::sampling, args = args)
-    } else {
-      x$fit <- do.call(rstan::vb, args = args)
-    } 
+  message("Start sampling")
+  if (args$algorithm == "sampling") {
+    args$algorithm <- NULL
+    x$fit <- do.call(rstan::sampling, args = args)
+  } else {
+    x$fit <- do.call(rstan::vb, args = args)
   }
   if (!isTRUE(testmode)) {
-    x <- rename_pars(x) # see rename.R
+    x <- rename_pars(x)
   }
   x
+}
+
+check_brm_input <- function(x) {
+  # misc checks on brm arguments 
+  # Args:
+  #   x: A named list
+  family <- check_family(x$family) 
+  if (family$family == "inverse.gaussian") {
+    warning2("Inverse gaussian models require carefully chosen ", 
+             "prior distributions to ensure convergence of the chains.")
+  }
+  if (family$link == "sqrt") {
+    warning2(family$family, " model with sqrt link may not be ", 
+             "uniquely identified")
+  }
+  invisible(NULL)
+}
+
+deprecated_brm_args <- function() {
+  # list all deprecated arguments of the brm function
+  c("n.iter", "n.warmup", "n.thin", "n.chains", "cluster", "cov.ranef",
+    "ranef", "sample.prior", "save.model", "cluster_type")
 }
