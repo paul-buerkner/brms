@@ -2,6 +2,16 @@
 \title{brms News}
 \encoding{UTF-8}
 
+\section{CHANGES IN VERSION 1.3.0++}{
+  \subsection{NEW FEATURES}{
+    \itemize{
+      \item Create \code{marginal_effects} plots of 
+      two-way interactions of variables that were 
+      not explicitely modeled as interacting.
+    }
+  }
+}
+
 \section{CHANGES IN VERSION 1.3.0}{
   \subsection{NEW FEATURES}{
     \itemize{

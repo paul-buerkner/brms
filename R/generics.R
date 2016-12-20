@@ -522,7 +522,11 @@ stanplot <- function(object, ...) {
 #' @param x An object usually of class \code{brmsfit}.
 #' @param effects An optional character vector naming effects
 #'   (main effects or interactions) for which to compute marginal plots.
-#'   If \code{NULL} (the default), plots for all effects are generated.
+#'   Interactions are specified by a \code{:} between variable names.
+#'   If \code{NULL} (the default), plots are generated for all main effects
+#'   and two-way interactions estimated in the model. When specifying
+#'   \code{effects} manually, \emph{all} two-way interactions may be plotted
+#'   even if not orginally modeled.
 #' @param conditions An optional \code{data.frame} containing variable values
 #'   to marginalize on. Each effect defined in \code{effects} will
 #'   be plotted separately for each row of \code{data}. 

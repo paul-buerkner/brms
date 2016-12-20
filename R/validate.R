@@ -755,11 +755,13 @@ get_var_combs <- function(..., alist = list()) {
   unique(unlist(dots, recursive = FALSE))
 }
 
-get_all_effects <- function(effects, rsv_vars = NULL) {
+get_all_effects <- function(effects, rsv_vars = NULL, 
+                            comb_all = FALSE) {
   # get all effects for use in marginal_effects
   # Args:
   #   effects: output of extract_effects
   #   rsv_vars: character vector of reserved variables
+  #   comb_all: include all main effects and two-way interactions?
   # Returns:
   #   a list with one element per valid effect / effects combination
   #   excludes all 3-way or higher interactions
@@ -779,19 +781,27 @@ get_all_effects <- function(effects, rsv_vars = NULL) {
     } 
     nl_effects <- lapply(effects$nonlinear, .get_all_effects)
     nl_effects <- unlist(nl_effects, recursive = FALSE)
-    all_effects <- unique(c(covars_comb, nl_effects))
+    out <- unique(c(covars_comb, nl_effects))
   } else {
-    all_effects <- .get_all_effects(effects)
+    out <- .get_all_effects(effects)
   }
   # make sure to also include effects only present in auxpars
   effects_auxpars <- rmNULL(effects[auxpars()])
   if (length(effects_auxpars)) {
     ap_effects <- lapply(effects_auxpars, .get_all_effects)
     ap_effects <- unlist(ap_effects, recursive = FALSE)
-    all_effects <- unique(c(all_effects, ap_effects))
+    out <- unique(c(out, ap_effects))
   }
-  all_effects <- rmNULL(lapply(all_effects, setdiff, y = rsv_vars))
-  all_effects[lengths(all_effects) <= 2L]
+  out <- rmNULL(lapply(out, setdiff, y = rsv_vars))
+  if (comb_all) {
+    out <- unique(unlist(out))
+    int <- expand.grid(out, out, stringsAsFactors = FALSE)
+    int <- int[int[, 1] != int[, 2], ]
+    int <- as.list(as.data.frame(t(int), stringsAsFactors = FALSE))
+    int <- unique(unname(lapply(int, sort)))
+    out <- c(as.list(out), int)
+  }
+  out[lengths(out) <= 2L] 
 }
 
 get_spline_labels <- function(x, data = NULL, covars = FALSE,

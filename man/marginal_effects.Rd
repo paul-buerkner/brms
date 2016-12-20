@@ -21,7 +21,11 @@ marginal_effects(x, ...)
 
 \item{effects}{An optional character vector naming effects
 (main effects or interactions) for which to compute marginal plots.
-If \code{NULL} (the default), plots for all effects are generated.}
+Interactions are specified by a \code{:} between variable names.
+If \code{NULL} (the default), plots are generated for all main effects
+and two-way interactions estimated in the model. When specifying
+\code{effects} manually, \emph{all} two-way interactions may be plotted
+even if not orginally modeled.}
 
 \item{conditions}{An optional \code{data.frame} containing variable values
 to marginalize on. Each effect defined in \code{effects} will
