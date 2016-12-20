@@ -322,17 +322,17 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(dim(vcov(fit1)), c(8, 8))
   expect_equal(dim(vcov(fit1, cor = TRUE)), c(8, 8))
   # WAIC
-  waic1 <- WAIC(fit1)
+  waic1 <- SW(WAIC(fit1))
   expect_true(is.numeric(waic1[["waic"]]))
   expect_true(is.numeric(waic1[["se_waic"]]))
-  expect_equal(waic1, waic(fit1))
+  expect_equal(waic1, SW(waic(fit1)))
   
-  waic_compare <- WAIC(fit1, fit1)
+  waic_compare <- SW(WAIC(fit1, fit1))
   expect_equal(length(waic_compare), 2)
   expect_equal(dim(attr(waic_compare, "compare")), c(1,2))
-  waic2 <- WAIC(fit2)
+  waic2 <- SW(WAIC(fit2))
   expect_true(is.numeric(waic2[["waic"]]))
-  waic_pointwise <- WAIC(fit2, pointwise = TRUE)
+  waic_pointwise <- SW(WAIC(fit2, pointwise = TRUE))
   expect_equal(waic2, waic_pointwise)
   expect_warning(WAIC(fit1, fit2), "Model comparisons are most likely invalid")
   
