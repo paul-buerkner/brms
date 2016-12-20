@@ -251,11 +251,11 @@ prepare_marg_data <- function(data, conditions, int_vars = NULL,
   new_order <- order(pred_types, decreasing = TRUE)
   effects <- effects[new_order]
   pred_types <- pred_types[new_order]
-  is_mono <- effects %in% int_vars
+  mono <- effects %in% int_vars
   if (pred_types[1] == "numeric") {
     min1 <- min(data[, effects[1]])
     max1 <- max(data[, effects[1]])
-    if (is_mono[1]) {
+    if (mono[1]) {
       values <- seq(min1, max1, by = 1)
     } else {
       values <- seq(min1, max1, length.out = resolution)
@@ -268,13 +268,13 @@ prepare_marg_data <- function(data, conditions, int_vars = NULL,
         if (contour) {
           min2 <- min(data[, effects[2]])
           max2 <- max(data[, effects[2]])
-          if (is_mono[2]) {
+          if (mono[2]) {
             values[[2]] <- seq(min2, max2, by = 1)
           } else {
             values[[2]] <- seq(min2, max2, length.out = resolution)
           }
         } else {
-          if (is_mono[2]) {
+          if (mono[2]) {
             median2 <- median(data[, effects[2]])
             mad2 <- mad(data[, effects[2]])
             values[[2]] <- round((-1:1) * mad2 + median2)
@@ -304,7 +304,7 @@ prepare_marg_data <- function(data, conditions, int_vars = NULL,
   }
   data <- do.call(rbind, data)
   data$cond__ <- factor(data$cond__, rownames(conditions))
-  structure(data, types = pred_types, mono = is_mono)
+  structure(data, effects = effects, types = pred_types, mono = mono)
 }
 
 get_cornames <- function(names, type = "cor", brackets = TRUE, sep = "__") {

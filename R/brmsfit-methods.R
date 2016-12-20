@@ -1305,6 +1305,8 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     marg_args <- nlist(data = marg_data, conditions, 
                        int_vars, contour, resolution)
     marg_data <- do.call(prepare_marg_data, marg_args)
+    # make sure numeric variables come first
+    effects[[i]] <- attr(marg_data, "effects")
     args <- c(list(x, newdata = marg_data, re_formula = re_formula,
                    allow_new_levels = TRUE, incl_autocor = FALSE,
                    probs = probs, robust = robust), dots)
