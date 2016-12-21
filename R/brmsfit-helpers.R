@@ -190,7 +190,7 @@ prepare_conditions <- function(x, conditions = NULL, effects = NULL,
                   lapply(get_effect(ee, "mo"), rhs),
                   lapply(get_effect(ee, "me"), rhs),
                   lapply(get_effect(ee, "gam"), rhs), 
-                  ee[c("cse", "se", "disp", "trials", "cat")])
+                  ee[c("cs", "se", "disp", "trials", "cat")])
     req_vars <- unique(ulapply(req_vars, all.vars))
     req_vars <- setdiff(req_vars, c(rsv_vars, names(ee$nonlinear)))
     conditions <- as.data.frame(as.list(rep(NA, length(req_vars))))
