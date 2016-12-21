@@ -1557,8 +1557,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   draws$eta <- get_eta(i = NULL, draws = draws)
   for (ap in intersect(auxpars(), names(draws))) {
     if (is(draws[[ap]], "list")) {
-      ilink <- get(draws[[ap]][["ilink"]], mode = "function")
-      draws[[ap]] <- ilink(get_eta(i = NULL, draws = draws[[ap]]))
+      draws[[ap]] <- get_auxpar(draws[[ap]])
     }
   }
   # see predict.R
@@ -1693,8 +1692,7 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   }
   for (ap in intersect(auxpars(), names(draws))) {
     if (is(draws[[ap]], "list")) {
-      ilink <- get(draws[[ap]][["ilink"]], mode = "function")
-      draws[[ap]] <- ilink(get_eta(i = NULL, draws = draws[[ap]]))
+      draws[[ap]] <- get_auxpar(draws[[ap]])
     }
   }
   if (scale == "response") {

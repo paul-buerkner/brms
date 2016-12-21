@@ -126,8 +126,12 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   x$formula <- update.formula(formula(x), rhs(rhs_formula))
   x$ranef <- tidy_ranef(extract_effects(formula(x)), data = model.frame(x))
   if (nzchar(nlpar)) {
-    # relevant for multivariate models only
+    # make sure not to evaluate family specific stuff
+    # when extracting draws of nlpars
     attr(x$formula, "response") <- nlpar 
+    na_family <- list(family = NA, link = "identity")
+    class(na_family) <- c("brmsfamily", "family")
+    x$family <- dots$f <- na_family
   }
   new_formula <- update_re_terms(formula(x), re_formula = re_formula)
   ee <- extract_effects(new_formula, family = family(x))
@@ -137,7 +141,8 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   newd_args <- nlist(fit = x, newdata, re_formula, 
                      allow_new_levels, incl_autocor)
   draws <- list(data = do.call(amend_newdata, newd_args), 
-                old_cat = is.old_categorical(x), ...)
+                old_cat = is.old_categorical(x))
+  draws[names(dots)] <- dots
   
   if (smooths_only) {
     # make sure only smooth terms will be included in draws
