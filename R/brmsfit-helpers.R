@@ -620,6 +620,23 @@ get_theta <- function(draws, i = NULL, par = c("zi", "hu")) {
   theta
 }
 
+get_disc <- function(draws, i = NULL, ncat = NULL) {
+  # convenience function to extract discrimination parameters
+  # Args:
+  #   see get_auxpar 
+  #   ncat: number of response categories
+  if (!is.null(draws[["disc"]])) {
+    disc <- get_auxpar(draws[["disc"]], i)
+    if (!is.null(dim(disc))) {
+      stopifnot(is.numeric(ncat))
+      disc <- array(disc, dim = c(dim(disc), ncat - 1))
+    }
+  } else {
+    disc <- 1
+  }
+  disc
+}
+
 get_se <- function(data, i = NULL, dim = NULL) {
   # extract user-defined standard errors
   # Args: see get_auxpar

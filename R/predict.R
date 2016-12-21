@@ -390,8 +390,10 @@ predict_acat <- function(i, draws, ...) {
 predict_ordinal <- function(i, draws, family, ...) {
   ncat <- ifelse(length(draws$data$max_obs) > 1, 
                  draws$data$max_obs[i], draws$data$max_obs)
-  p <- pordinal(1:ncat, eta = get_eta(draws, i)[, 1, ], 
-                ncat = ncat, family = family, link = draws$f$link)
+  disc <- get_disc(draws, i, ncat)
+  eta <- (disc * get_eta(draws, i))[, 1, ]
+  p <- pordinal(1:ncat, eta = eta, ncat = ncat, 
+                family = family, link = draws$f$link)
   first_greater(p, target = runif(draws$nsamples, min = 0, max = 1))
 }
 

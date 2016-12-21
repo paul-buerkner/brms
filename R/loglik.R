@@ -382,7 +382,8 @@ loglik_categorical <- function(i, draws, data = data.frame()) {
 loglik_cumulative <- function(i, draws, data = data.frame()) {
   ncat <- ifelse(length(draws$data$max_obs) > 1, 
                  draws$data$max_obs[i], draws$data$max_obs)
-  eta <- get_eta(draws, i)
+  disc <- get_disc(draws, i, ncat)
+  eta <- disc * get_eta(draws, i)
   y <- draws$data$Y[i]
   if (y == 1) { 
     out <- log(ilink(eta[, 1, 1], draws$f$link))
@@ -398,7 +399,8 @@ loglik_cumulative <- function(i, draws, data = data.frame()) {
 loglik_sratio <- function(i, draws, data = data.frame()) {
   ncat <- ifelse(length(draws$data$max_obs) > 1, 
                  draws$data$max_obs[i], draws$data$max_obs)
-  eta <- get_eta(draws, i)
+  disc <- get_disc(draws, i, ncat)
+  eta <- disc * get_eta(draws, i)
   y <- draws$data$Y[i]
   q <- sapply(1:min(y, ncat - 1), function(k) 
     1 - ilink(eta[, 1, k], draws$f$link))
@@ -417,7 +419,8 @@ loglik_sratio <- function(i, draws, data = data.frame()) {
 loglik_cratio <- function(i, draws, data = data.frame()) {
   ncat <- ifelse(length(draws$data$max_obs) > 1, 
                  draws$data$max_obs[i], draws$data$max_obs)
-  eta <- get_eta(draws, i)
+  disc <- get_disc(draws, i, ncat)
+  eta <- disc * get_eta(draws, i)
   y <- draws$data$Y[i]
   q <- sapply(1:min(y, ncat-1), function(k) 
     ilink(eta[, 1, k], draws$f$link))
@@ -436,7 +439,8 @@ loglik_cratio <- function(i, draws, data = data.frame()) {
 loglik_acat <- function(i, draws, data = data.frame()) {
   ncat <- ifelse(length(draws$data$max_obs) > 1, 
                  draws$data$max_obs[i], draws$data$max_obs)
-  eta <- get_eta(draws, i)
+  disc <- get_disc(draws, i, ncat)
+  eta <- disc * get_eta(draws, i)
   y <- draws$data$Y[i]
   if (draws$f$link == "logit") { # more efficient calculation 
     q <- sapply(1:(ncat - 1), function(k) eta[, 1, k])

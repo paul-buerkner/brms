@@ -37,6 +37,8 @@ fitted_response <- function(draws, mu) {
       mu <- mu * gamma(1 + 1 / shape) 
     }
   } else if (is.ordinal(draws$f) || is.categorical(draws$f)) {
+    disc <- get_disc(draws, ncat = data$ncat)
+    mu <- disc * mu 
     mu <- fitted_catordinal(mu, max_obs = data$max_obs, family = draws$f)
   } else if (is.hurdle(draws$f)) {
     shape <- get_shape(draws$shape, data = draws$data, dim = dim)
