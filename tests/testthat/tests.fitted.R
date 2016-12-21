@@ -1,6 +1,6 @@
 test_that("fitted helper functions run without errors", {
   # actually run fitted.brmsfit that call the helper functions
-  fit <- brms:::rename_pars(brmsfit_example1)
+  fit <- brms:::rename_pars(brms:::brmsfit_example1)
   fit <- brms:::add_samples(fit, "shape", dist = "exp")
   # nu must come after hu here to avoid a strange error in rstan
   fit <- brms:::add_samples(fit, "hu", dist = "beta", shape1 = 1, shape2 = 1)

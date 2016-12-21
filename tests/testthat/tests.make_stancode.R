@@ -214,7 +214,7 @@ test_that("make_stancode generates correct code for category specific effects", 
   expect_match(scode, "matrix[N, Kcs] Xcs;", fixed = TRUE)
   expect_match(scode, "matrix[Kcs, ncat - 1] bcs;", fixed = TRUE)
   expect_match(scode, "etacs = Xcs * bcs;", fixed = TRUE)
-  expect_match(scode, "sratio(eta[n], etacs[n], temp_Intercept);", fixed = TRUE)
+  expect_match(scode, "sratio(eta[n], etacs[n], temp_Intercept, 1);", fixed = TRUE)
   scode <- make_stancode(rating ~ period + carry + cse(treat) + (cse(1)|subject), 
                          data = inhaler, family = acat())
   expect_match(scode, "etacs[n, 1] = etacs[n, 1] + r_1_1[J_1[n]] * Z_1_1[n];",
@@ -223,8 +223,18 @@ test_that("make_stancode generates correct code for category specific effects", 
                          data = inhaler, family = acat())
   expect_match(scode, paste("etacs[n, 3] = etacs[n, 3] + r_1_3[J_1[n]] * Z_1_3[n]", 
                              "+ r_1_6[J_1[n]] * Z_1_6[n];"), fixed = TRUE)
-  expect_match(scode, "Y[n] ~ acat(eta[n], etacs[n], temp_Intercept);", 
+  expect_match(scode, "Y[n] ~ acat(eta[n], etacs[n], temp_Intercept, 1);", 
                fixed = TRUE)
+})
+
+test_that("make_stancode works correctly for ordinal disc parameters", {
+  scode <- make_stancode(bf(rating ~ period + carry + treat, disc ~ 1),
+                         data = inhaler, family = cumulative(), 
+                         prior = c(prior(normal(0,5), nlpar = disc)))
+  expect_match(scode, "Y[n] ~ cumulative(eta[n], temp_Intercept, disc[n])",
+               fixed = TRUE)
+  expect_match(scode, "b_disc ~ normal(0, 5)", fixed = TRUE)
+  expect_match(scode, "disc[n] = exp(disc[n])", fixed = TRUE)
 })
 
 test_that("make_stancode generates correct code for monotonic effects", {
