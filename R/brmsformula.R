@@ -494,7 +494,7 @@ prepare_auxformula <- function(formula, par = NULL, rsv_pars = NULL) {
 auxpars <- function(incl_nl = FALSE) {
   # names of auxiliary parameters
   auxpars <- c("sigma", "shape", "nu", "phi", "kappa", "beta", 
-               "zi", "hu", "bs", "ndt", "bias")
+               "zi", "hu", "bs", "ndt", "bias", "disc")
   if (incl_nl) {
     auxpars <- c(auxpars, "nonlinear")
   }
@@ -506,12 +506,12 @@ ilink_auxpars <- function(ap = NULL, stan = FALSE) {
   if (stan) {
     ilink <- c(sigma = "exp", shape = "exp", nu = "exp", phi = "exp", 
                kappa = "exp", beta = "exp", zi = "", hu = "",
-               bs = "exp", ndt = "exp", bias = "inv_logit") 
+               bs = "exp", ndt = "exp", bias = "inv_logit", disc = "exp") 
   } else {
     ilink <- c(sigma = "exp", shape = "exp", nu = "exp", phi = "exp", 
                kappa = "exp", beta = "exp", zi = "inv_logit", 
                hu = "inv_logit", bs = "exp", ndt = "exp", 
-               bias = "inv_logit")
+               bias = "inv_logit", disc = "exp")
   }
   if (length(ap)) {
     ilink <- ilink[ap]
@@ -528,7 +528,7 @@ valid_auxpars <- function(family, effects = list(), autocor = cor_arma()) {
          zi = is.zero_inflated(family, zi_beta = TRUE), 
          hu = is.hurdle(family, zi_beta = FALSE),
          bs = is.wiener(family), ndt = is.wiener(family), 
-         bias = is.wiener(family))
+         bias = is.wiener(family), disc = is.ordinal(family))
   names(x)[x]
 }
 

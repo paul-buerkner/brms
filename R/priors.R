@@ -524,7 +524,7 @@ get_prior <- function(formula, data, family = gaussian(),
                     kappa = "gamma(2, 0.01)", beta = "gamma(1, 0.1)", 
                     zi = "beta(1, 1)", hu = "beta(1, 1)", 
                     bs = "gamma(1, 1)", ndt = "uniform(0, min_Y)", 
-                    bias = "beta(1, 1)")
+                    bias = "beta(1, 1)", disc = NA)
   valid_auxpars <- valid_auxpars(family, effects = ee, autocor = autocor)
   for (ap in valid_auxpars) {
     if (!is.null(ee[[ap]])) {
@@ -533,8 +533,10 @@ get_prior <- function(formula, data, family = gaussian(),
                                     spec_intercept = FALSE,
                                     def_scale_prior = def_scale_prior,
                                     internal = internal)
-    } else {
+    } else if (!is.na(def_auxprior[ap])) {
       auxprior <- brmsprior(class = ap, prior = def_auxprior[ap])
+    } else {
+      auxprior <- empty_brmsprior()
     }
     prior <- rbind(prior, auxprior)
   }

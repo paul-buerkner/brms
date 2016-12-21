@@ -53,16 +53,19 @@ stan_llh <- function(family, effects = list(), data = NULL,
   p <- named_list(auxpars())
   p$sigma <- stan_llh_sigma(family, effects, autocor)
   p$shape <- stan_llh_shape(family, effects)
-  for (ap in setdiff(auxpars(), c("sigma", "shape"))) {
+  p$disc <- ifelse("disc" %in% auxpars, "disc[n]", "1")
+  for (ap in setdiff(auxpars(), c("sigma", "shape", "disc"))) {
     p[[ap]] <- paste0(ap, if (reqn && ap %in% auxpars) "[n]")
   }
   .logit <- ifelse(any(c("zi", "hu") %in% auxpars), "_logit", "")
   reqn_trials <- has_trials && (llh_adj || is_zero_inflated)
   trials <- ifelse(reqn_trials, "trials[n]", "trials")
 
-  simplify <- !has_trunc && !has_cens && stan_has_built_in_fun(family, link)
+  simplify <- stan_has_built_in_fun(family, link) &&
+              !has_trunc && !has_cens && !"disc" %in% auxpars
   eta <- paste0(ifelse(is_mv, "Eta", "eta"), n)
-  ord_args <- paste0("eta[n], ", if (has_cs) "etacs[n], ", "temp_Intercept")
+  ord_args <- paste0("eta[n], ", if (has_cs) "etacs[n], ", 
+                     "temp_Intercept, ", p$disc)
   inv_gauss_fun <- paste0("inv_gaussian", if (!reqn) "_vector")
   inv_gauss_args <- paste0(eta, ", shape, ", if (!reqn) "sum_", 
                            "log_Y", n, ", sqrt_Y", n)
@@ -460,13 +463,15 @@ stan_mv <- function(family, response, prior = brmsprior()) {
 }
 
 stan_ordinal <- function(family, prior = brmsprior(), 
-                         cs = FALSE, threshold = "flexible") {
+                         cs = FALSE, disc = FALSE, 
+                         threshold = "flexible") {
   # Ordinal effects in Stan
   # Args:
   #   family: the model family
   #   prior: a data.frame containing user defined priors 
   #          as returned by check_prior
   #   cs: logical; are there category specific effects?
+  #   disc: logical; discrimination parameter used?
   #   threshold: either "flexible" or "equidistant" 
   # Returns:
   #   A vector of strings containing the ordinal effects in stan language
@@ -484,7 +489,8 @@ stan_ordinal <- function(family, prior = brmsprior(),
       } else {
         out <- paste0("eta", ptl, " - thres[",k,"]")
       }
-    } 
+      paste0("disc * (", out, ")")
+    }
     link <- family$link
     family <- family$family
     ilink <- stan_ilink(link)
@@ -509,7 +515,7 @@ stan_ordinal <- function(family, prior = brmsprior(),
     }
     
     # generate Stan code specific for each ordinal model
-    if (!(family == "cumulative" && ilink == "inv_logit")) {
+    if (!(family == "cumulative" && ilink == "inv_logit") || disc) {
       cs_arg <- ifelse(!cs, "", "row_vector etacs, ")
       out$fun <- paste0(
         "  /* ", family, " log-PDF for a single response \n",
@@ -518,13 +524,16 @@ stan_ordinal <- function(family, prior = brmsprior(),
         "   *   eta: linear predictor \n",
         "   *   etacs: optional predictor for category specific effects \n",
         "   *   thres: ordinal thresholds \n",
+        "   *   disc: discrimination parameter \n",
         "   * Returns: \n", 
         "   *   a scalar to be added to the log posterior \n",
         "   */ \n",
-        "   real ", family, "_lpmf(int y, real eta, ", cs_arg, "vector thres) { \n",
+        "   real ", family, "_lpmf(int y, real eta, ", cs_arg, 
+                                  "vector thres, real disc) { \n",
         "     int ncat; \n",
         "     vector[num_elements(thres) + 1] p; \n",
-        if (family != "cumulative") "     vector[num_elements(thres)] q; \n",
+        if (family != "cumulative") 
+          "     vector[num_elements(thres)] q; \n",
         "     ncat = num_elements(thres) + 1; \n")
       
       # define actual function content
