@@ -327,6 +327,12 @@
 #'   The syntax closely resembles that of a non-linear 
 #'   parameter, for instance \code{sigma ~ x + s(z) + (1+x|g)}.
 #'   
+#'   A special case is the parameter \code{disc} ('discrimination') 
+#'   in ordinal models. It is usually fixed to 1 and not estimated, 
+#'   but may be modeled as any other auxiliary parameter if desired
+#'   (see examples). For reasons of identification, \code{'disc'}
+#'   can only be positive, which is achieved by applying the log-link.
+#'   
 #'   All auxiliary parameters currently supported by \code{brmsformula}
 #'   have to positive (a negative standard deviation or precision parameter 
 #'   doesn't make any sense) or are bounded between 0 and 1 (for zero-inflated / 
@@ -371,12 +377,13 @@
 #' # specify a predictor as monotonic
 #' bf(y ~ mo(x) + more_predictors)
 #' 
-#' # specify a predictor as category specific
 #' # for ordinal models only
+#' # specify a predictor as category specific
 #' bf(y ~ cs(x) + more_predictors)
-#' 
 #' # add a category specific group-level intercept
 #' bf(y ~ cs(x) + (cs(1)|g))
+#' # specify parameter 'disc'
+#' bf(y ~ person + item, disc ~ item)
 #' 
 #' # specify variables containing measurement error
 #' bf(y ~ me(x, sdx))

@@ -5,6 +5,9 @@
 \section{CHANGES IN VERSION 1.3.0++}{
   \subsection{NEW FEATURES}{
     \itemize{
+      \item Introduce the auxiliary parameter \code{disc}
+      ('discrimination') to be used in ordinal models.
+      By default it is not estimated but fixed to one.
       \item Create \code{marginal_effects} plots of 
       two-way interactions of variables that were 
       not explicitely modeled as interacting.
