@@ -355,7 +355,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     standata <- standata(x, is_newdata = dots$is_newdata)
     dots$is_newdata <- NULL
     # extract the compiled model
-    x$fit <- rstan::get_stanmodel(x$fit)  
+    x$fit <- rstan::get_stanmodel(x$fit)
   } else {  # build new model
     # see validate.R and formula-helpers.R
     family <- check_family(family)
