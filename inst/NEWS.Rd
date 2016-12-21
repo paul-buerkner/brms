@@ -2,7 +2,7 @@
 \title{brms News}
 \encoding{UTF-8}
 
-\section{CHANGES IN VERSION 1.3.0++}{
+\section{CHANGES IN VERSION 1.3.1}{
   \subsection{NEW FEATURES}{
     \itemize{
       \item Introduce the auxiliary parameter \code{disc}
@@ -13,7 +13,14 @@
       not explicitely modeled as interacting.
     }
   }
-  \subsection{bug fixes}{
+  \subsection{OTHER CHANGES}{
+    \itemize{
+      \item Move \pkg{rstan} to 'Imports' and \pkg{Rcpp} 
+      to 'Depends' in order to avoid loading \pkg{rstan} 
+      into the global environment automatically.
+    }
+  }
+  \subsection{BUG FIXES}{
     \itemize{
       \item Fix a bug leading to unexpected errors
       in some S3 methods when applied to ordinal models.
