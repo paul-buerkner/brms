@@ -289,6 +289,9 @@ ranef(fit1)
 head(predict(fit1))  
 ## plot marginal effects of each predictor
 plot(marginal_effects(fit1), ask = FALSE)
+## investigate model fit
+WAIC(fit1)
+pp_check(fit1)
  
 ## Ordinal regression modeling patient's rating of inhaler instructions 
 ## category specific effects are estimated for variable 'treat'
@@ -296,7 +299,9 @@ fit2 <- brm(rating ~ period + carry + cs(treat),
             data = inhaler, family = sratio("cloglog"), 
             prior = set_prior("normal(0,5)"), chains = 2)
 summary(fit2)
-plot(fit2, ask = FALSE)    
+plot(fit2, ask = FALSE) 
+WAIC(fit2)   
+head(predict(fit2))
 
 ## Survival regression modeling the time between the first 
 ## and second recurrence of an infection in kidney patients.

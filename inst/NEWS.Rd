@@ -10,6 +10,12 @@
       not explicitely modeled as interacting.
     }
   }
+  \subsection{bug fixes}{
+    \itemize{
+      \item Fix a bug leading to unexpected errors
+      in some S3 methods when applied to ordinal models.
+    }
+  }
 }
 
 \section{CHANGES IN VERSION 1.3.0}{

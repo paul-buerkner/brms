@@ -593,8 +593,9 @@ data_fixef <- function(effects, data, family = gaussian(),
   is_ordinal <- is.ordinal(family)
   is_bsts <- is(autocor, "cor_bsts")
   # the intercept is removed inside the Stan code for ordinal models
-  cols2remove <- if (is_ordinal && not4stan || is_bsts) "Intercept"
-  X <- get_model_matrix(rhs(effects$fixed), data, cols2remove = cols2remove)
+  cols2remove <- if (is_ordinal && not4stan || is_bsts) "(Intercept)"
+  X <- get_model_matrix(rhs(effects$fixed), data, 
+                        cols2remove = cols2remove)
   splines <- get_spline_labels(effects)
   if (length(splines)) {
     stopifnot(is.null(smooth) || length(smooth) == length(splines))
