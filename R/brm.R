@@ -308,6 +308,7 @@
 #' }
 #' 
 #' @import rstan
+#' @import Rcpp
 #' @import parallel
 #' @import methods
 #' @import stats   
