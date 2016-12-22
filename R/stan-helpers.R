@@ -485,9 +485,9 @@ stan_ordinal <- function(family, prior = brmsprior(),
       sign <- ifelse(fam %in% c("cumulative", "sratio"), " - ", " + ")
       ptl <- ifelse(cs, paste0(sign, "etacs[k]"), "") 
       if (sign == " - ") {
-        out <- paste0("thres[",k,"]", ptl, " - eta")
+        out <- paste0("thres[", k, "]", ptl, " - eta")
       } else {
-        out <- paste0("eta", ptl, " - thres[",k,"]")
+        out <- paste0("eta", ptl, " - thres[", k, "]")
       }
       paste0("disc * (", out, ")")
     }
@@ -541,8 +541,8 @@ stan_ordinal <- function(family, prior = brmsprior(),
         out$fun <- paste0(out$fun,
         "     p[1] = ", ilink, "(", th(1), "); \n",
         "     for (k in 2:(ncat - 1)) { \n", 
-        "       p[k] = ", ilink, "(", th("k"), ") - ",
-        ilink, "(", th("k - 1"), "); \n", 
+        "       p[k] = ", ilink, "(", th("k"), ") - \n",
+        "              ", ilink, "(", th("k - 1"), "); \n", 
         "     } \n",
         "     p[ncat] = 1 - ",ilink, "(", th("ncat - 1"), "); \n")
       } else if (family %in% c("sratio", "cratio")) {

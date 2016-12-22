@@ -32,6 +32,7 @@ and \code{zero_inflated_beta} families);
 of the \code{exgaussian} family);
 \code{zi} (zero-inflation probability); 
 \code{hu} (hurdle probability);
+\code{disc} (discrimination) for ordinal models;
 \code{bs}, \code{ndt}, and \code{bias} (boundary separation,
 non-decision time, and initial bias of the \code{wiener}
 diffusion model).

@@ -29,6 +29,7 @@
 #'   of the \code{exgaussian} family);
 #'   \code{zi} (zero-inflation probability); 
 #'   \code{hu} (hurdle probability);
+#'   \code{disc} (discrimination) for ordinal models;
 #'   \code{bs}, \code{ndt}, and \code{bias} (boundary separation,
 #'   non-decision time, and initial bias of the \code{wiener}
 #'   diffusion model).
@@ -402,12 +403,12 @@ brmsformula <- function(formula, ..., nonlinear = NULL) {
     attr(dots[[i]], "par") <- NULL
   }
   if (any(!nzchar(names(dots)))) {
-    stop("'brmsformula' requires named arguments.", call. = FALSE)
+    stop2("'brmsformula' requires named arguments.")
   }
   invalid_names <- setdiff(names(dots), auxpars())
   if (length(invalid_names)) {
-    stop("The following argument names were invalid: ",
-         paste(invalid_names, collapse = ", "), call. = FALSE)
+    stop2("The following argument names were invalid: ",
+          paste(invalid_names, collapse = ", "))
   }
   # add attributes to formula
   if (is.logical(attr(formula, "nonlinear"))) {
