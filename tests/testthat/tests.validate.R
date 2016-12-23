@@ -216,8 +216,8 @@ test_that("extract_time returns all desired variables", {
                paste("Illegal grouping term: g1/g2"))
 })
 
-test_that("update_formula returns correct formulas", {
-  expect_warning(uf <- update_formula(y ~ x + z, partial = ~ a + I(a^2)))
+test_that("amend_formula returns correct formulas", {
+  expect_warning(uf <- amend_formula(y ~ x + z, partial = ~ a + I(a^2)))
   expect_equal(uf, y ~ x + z + cs(a + I(a^2)))
 })
 

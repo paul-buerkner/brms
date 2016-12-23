@@ -437,47 +437,6 @@ avoid_auxpars <- function(names, effects) {
   invisible(NULL)
 }
 
-update_formula <- function(formula, data = NULL, family = gaussian(),
-                           nonlinear = NULL, partial = NULL) {
-  # incorporate additional arguments into formula
-  # Args:
-  #   formula: object of class 'formula'
-  #   data: optional data.frame
-  #   family: optional object of class 'family'
-  #   nonlinear, partial: deprecated arguments of brm
-  formula <- bf(formula, nonlinear = nonlinear)
-  attr(formula, "family") <- family
-  old_attr <- attributes(formula)
-  fnew <- ". ~ ."
-  if (!is.null(partial)) {
-    warning2("Argument 'partial' is deprecated. Please use the 'cs' ", 
-             "function inside the model formula instead.")
-    partial <- formula2str(partial, rm = 1)
-    fnew <- paste(fnew, "+ cs(", partial, ")")
-  }
-  # to allow the '.' symbol in formula
-  try_terms <- try(terms(formula, data = data), silent = TRUE)
-  if (!is(try_terms, "try-error")) {
-    formula <- formula(try_terms)
-  }
-  if (fnew != ". ~ .") {
-    formula <- update.formula(formula, formula(fnew))
-  }
-  attributes(formula) <- old_attr
-  if (is.categorical(family) && is.null(attr(formula, "response"))) {
-    respform <- extract_effects(formula)$respform
-    model_response <- model.response(model.frame(respform, data = data))
-    response <- levels(factor(model_response))
-    if (length(response) <= 2L) {
-      stop2("At least 3 response categories are required ",
-            "for family 'categorical'.")
-    }
-    # the first level will serve as the reference category
-    attr(formula, "response") <- response[-1]
-  }
-  bf(formula)
-}
-
 illegal_group_expr <- function(group) {
   # check if the group part of a group-level term is invalid
   # Args:

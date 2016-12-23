@@ -64,9 +64,9 @@ restructure <- function(x, rstr_summary = FALSE) {
   if (isTRUE(x$version < utils::packageVersion("brms"))) {
     # element 'nonlinear' deprecated as of brms > 0.9.1
     # element 'partial' deprecated as of brms > 0.8.0
-    x$formula <- SW(update_formula(formula(x), family = family(x),
-                                   partial = x$partial, 
-                                   nonlinear = x$nonlinear))
+    x$formula <- SW(amend_formula(formula(x), family = family(x),
+                                  partial = x$partial, 
+                                  nonlinear = x$nonlinear))
     x$nonlinear <- x$partial <- NULL
     ee <- extract_effects(formula(x), family = family(x))
     x$ranef <- tidy_ranef(ee, model.frame(x))

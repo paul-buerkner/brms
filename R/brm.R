@@ -361,8 +361,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   } else {  # build new model
     # see validate.R and formula-helpers.R
     family <- check_family(family)
-    formula <- update_formula(formula, data = data, family = family, 
-                              nonlinear = nonlinear)
+    formula <- amend_formula(formula, data = data, family = family, 
+                             nonlinear = nonlinear)
     ee <- extract_effects(formula, family = family, autocor = autocor)
     if (is.null(dots$data.name)) {
       data.name <- substr(Reduce(paste, deparse(substitute(data))), 1, 50)

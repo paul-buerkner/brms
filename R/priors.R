@@ -465,8 +465,8 @@ get_prior <- function(formula, data, family = gaussian(),
   # note that default priors are stored in this function
   family <- check_family(family) 
   link <- family$link
-  formula <- update_formula(formula, data = data, family = family, 
-                            nonlinear = nonlinear)
+  formula <- amend_formula(formula, data = data, family = family, 
+                           nonlinear = nonlinear)
   threshold <- match.arg(threshold)
   autocor <- check_autocor(autocor)
   ee <- extract_effects(formula, family = family)

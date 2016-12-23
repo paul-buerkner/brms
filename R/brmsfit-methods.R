@@ -1901,7 +1901,7 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
       dots$formula <- update(formula(object), dots$formula)
       ee_old <- extract_effects(formula(object))
       family <- get_arg("family", dots, object)
-      dots$formula <- update_formula(dots$formula, family = family)
+      dots$formula <- amend_formula(dots$formula, family = family)
       ee_new <- extract_effects(dots$formula)
       # no need to recompile the model when changing fixed effects only
       dont_change <- c("random", "gam", "cs", "mo", "me")

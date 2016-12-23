@@ -41,7 +41,7 @@ make_standata <- function(formula, data, family = "gaussian",
   cov_ranef <- use_alias(cov_ranef, dots$cov.ranef, warn = FALSE)
   # some input checks
   family <- check_family(family)
-  formula <- update_formula(formula, data = data, family = family,
+  formula <- amend_formula(formula, data = data, family = family,
                             nonlinear = nonlinear)
   old_mv <- isTRUE(attr(formula, "old_mv"))
   autocor <- check_autocor(autocor)
