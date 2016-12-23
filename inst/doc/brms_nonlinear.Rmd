@@ -48,7 +48,7 @@ As stated above, we cannot use a generalized linear model to estimate $b$ so we 
 library(brms)
 prior1 <- c(prior(normal(1, 2), nlpar = "b1"),
             prior(normal(0, 2), nlpar = "b2"))
-fit1 <- brm(y ~ b1 * exp(b2 * x), nonlinear = b1 + b2 ~ 1,
+fit1 <- brm(bf(y ~ b1 * exp(b2 * x), b1 + b2 ~ 1, nl = TRUE),
             data = dat1, prior = prior1)
 ```
 
@@ -106,8 +106,9 @@ head(loss)
 and translate the proposed model into a non-linear **brms** model.
 
 ```{r}
-fit_loss <- brm(cum ~ ult * (1 - exp(-(dev/theta)^omega)),
-                nonlinear = list(ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1),
+fit_loss <- brm(bf(cum ~ ult * (1 - exp(-(dev/theta)^omega)),
+                   ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1, 
+                   nl = TRUE),
                 data = loss, family = gaussian(),
                 prior = c(prior(normal(5000, 1000), nlpar = "ult"),
                           prior(normal(1, 2), nlpar = "omega"),
@@ -163,8 +164,8 @@ plot(marginal_effects(fit_ir1), points = TRUE)
 A more sophisticated approach incorporating the guessing probability looks as follows:
 
 ```{r}
-fit_ir2 <- brm(answer ~ 0.33 + 0.67 * inv_logit(eta), 
-               nonlinear = eta ~ ability, 
+fit_ir2 <- brm(bf(answer ~ 0.33 + 0.67 * inv_logit(eta),
+                  eta ~ ability, nl = TRUE),
                data = dat_ir, family = bernoulli("identity"), 
                prior = prior(normal(0, 5), nlpar = "eta"))
 ```
@@ -185,8 +186,8 @@ LOO(fit_ir1, fit_ir2)
 shows that both model fit the data equally well, but remember that predictions of the first model might still be misleading as they may well be below the guessing probability for low ability values. Now, suppose that we don't know the guessing probability and want to estimate it from the data. This can easily be done changing the previous model just a bit.
 
 ```{r}
-fit_ir3 <- brm(answer ~ guess + (1 - guess) * inv_logit(eta), 
-               nonlinear = list(eta ~ 0 + ability, guess ~ 1),
+fit_ir3 <- brm(bf(answer ~ guess + (1 - guess) * inv_logit(eta), 
+                  eta ~ 0 + ability, guess ~ 1, nl = TRUE),
                data = dat_ir, family = bernoulli("identity"), 
                prior = c(prior(normal(0, 5), nlpar = "eta"),
                          prior(beta(1, 1), nlpar = "guess", lb = 0, ub = 1)))

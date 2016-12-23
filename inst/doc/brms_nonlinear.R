@@ -12,7 +12,7 @@ opts_chunk$set(eval = FALSE)
 #  library(brms)
 #  prior1 <- c(prior(normal(1, 2), nlpar = "b1"),
 #              prior(normal(0, 2), nlpar = "b2"))
-#  fit1 <- brm(y ~ b1 * exp(b2 * x), nonlinear = b1 + b2 ~ 1,
+#  fit1 <- brm(bf(y ~ b1 * exp(b2 * x), b1 + b2 ~ 1, nl = TRUE),
 #              data = dat1, prior = prior1)
 
 ## ------------------------------------------------------------------------
@@ -37,8 +37,9 @@ opts_chunk$set(eval = FALSE)
 #  head(loss)
 
 ## ------------------------------------------------------------------------
-#  fit_loss <- brm(cum ~ ult * (1 - exp(-(dev/theta)^omega)),
-#                  nonlinear = list(ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1),
+#  fit_loss <- brm(bf(cum ~ ult * (1 - exp(-(dev/theta)^omega)),
+#                     ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1,
+#                     nl = TRUE),
 #                  data = loss, family = gaussian(),
 #                  prior = c(prior(normal(5000, 1000), nlpar = "ult"),
 #                            prior(normal(1, 2), nlpar = "omega"),
@@ -72,8 +73,8 @@ opts_chunk$set(eval = FALSE)
 #  plot(marginal_effects(fit_ir1), points = TRUE)
 
 ## ------------------------------------------------------------------------
-#  fit_ir2 <- brm(answer ~ 0.33 + 0.67 * inv_logit(eta),
-#                 nonlinear = eta ~ ability,
+#  fit_ir2 <- brm(bf(answer ~ 0.33 + 0.67 * inv_logit(eta),
+#                    eta ~ ability, nl = TRUE),
 #                 data = dat_ir, family = bernoulli("identity"),
 #                 prior = prior(normal(0, 5), nlpar = "eta"))
 
@@ -85,8 +86,8 @@ opts_chunk$set(eval = FALSE)
 #  LOO(fit_ir1, fit_ir2)
 
 ## ------------------------------------------------------------------------
-#  fit_ir3 <- brm(answer ~ guess + (1 - guess) * inv_logit(eta),
-#                 nonlinear = list(eta ~ 0 + ability, guess ~ 1),
+#  fit_ir3 <- brm(bf(answer ~ guess + (1 - guess) * inv_logit(eta),
+#                    eta ~ 0 + ability, guess ~ 1, nl = TRUE),
 #                 data = dat_ir, family = bernoulli("identity"),
 #                 prior = c(prior(normal(0, 5), nlpar = "eta"),
 #                           prior(beta(1, 1), nlpar = "guess", lb = 0, ub = 1)))
