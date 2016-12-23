@@ -98,7 +98,7 @@ test_that("extract_effects also saves untransformed variables", {
 
 test_that("extract_effects finds all variables in non-linear models", {
   nonlinear <- list(a ~ z1 + (1|g1), b ~ z2 + (z3|g2))
-  ee <- extract_effects(y ~ a - b^x, nonlinear = nonlinear)
+  ee <- extract_effects(bf(y ~ a - b^x, flist = nonlinear, nl = TRUE))
   expect_equal(ee$allvars, y ~ y + x + z1 + g1 + z2 + z3 + g2)
 })
 
@@ -110,11 +110,12 @@ test_that("extract_effects parses reseverd variable 'intercept'", {
 test_that("extract_effects returns expected error messages", {
   expect_error(extract_effects(~ x + (1|g)),
                "Invalid formula: response variable is missing")
-  expect_error(extract_effects(y ~ exp(-x/a) + (1|g), nonlinear = a ~ 1),
+  expect_error(extract_effects(bf(y ~ exp(-x/a) + (1|g), a ~ 1, nl = TRUE)),
                "Group-level effects in non-linear models", fixed = TRUE)
-  expect_error(extract_effects(y ~ a, nonlinear = a ~ 1, family = acat()),
-               "Non-linear effects are not yet allowed for this family", 
-               fixed = TRUE)
+  expect_error(extract_effects(bf(y ~ a, nl = TRUE)),
+               "No non-linear parameters specified")
+  expect_error(extract_effects(bf(y ~ a, a~ 1, nl = TRUE), family = acat()),
+               "Non-linear formulas are not yet allowed for this family")
   expect_error(extract_effects(y ~ mono(1)),
                "No variable supplied to function 'mo'")
   expect_error(extract_effects(y | se(sei) ~ x, family = weibull()),
@@ -139,7 +140,7 @@ test_that("extract_effects finds all spline terms", {
   ee <- extract_effects(y ~ s(x) + t2(z) + v)
   expect_equal(all.vars(ee$fixed), c("y", "v"))
   expect_equivalent(ee$gam, ~ s(x) + t2(z))
-  ee <- extract_effects(y ~ lp , nonlinear = list(lp ~ s(x) + t2(z) + v))
+  ee <- extract_effects(bf(y ~ lp, lp ~ s(x) + t2(z) + v, nl = TRUE))
   expect_equal(all.vars(ee$nonlinear[[1]]$fixed), "v")
   expect_equivalent(ee$nonlinear[[1]]$gam, ~ s(x) + t2(z))
   expect_error(extract_effects(y ~ s(x) + te(z) + v), 
@@ -156,10 +157,11 @@ test_that("extract_effects correctly handles group IDs", {
   target$gcall <- list(list(groups = "g", allvars = ~ g, type = ""),
                        list(groups = "g2", allvars = ~ g2, type = ""))
   target$form <- list(~1+x, ~1)
-  expect_equal(extract_effects(form)$random, target)
+  expect_equal(extract_effects(form, family = gaussian())$random, target)
   
-  form <- bf(y ~ a, nonlinear = a ~ x + (1+x|3|g) + (1|g2),
-             sigma = ~ (x|3|g) + (1||g2))
+  expect_warning(form <- bf(y ~ a, nonlinear = a ~ x + (1+x|3|g) + (1|g2),
+                           sigma = ~ (x|3|g) + (1||g2)),
+                 "Argument 'nonlinear' is deprecated")
   target <- data.frame(group = c("g", "g2"), gtype = rep("", 2), 
                        gn = 1:2, id = c("3", NA),
                        type = "", cor = c(TRUE, FALSE),
@@ -167,7 +169,7 @@ test_that("extract_effects correctly handles group IDs", {
   target$gcall <- list(list(groups = "g", allvars = ~ g, type = ""),
                        list(groups = "g2", allvars = ~ g2, type = ""))
   target$form <- list(~x, ~1)
-  expect_equal(extract_effects(form)$sigma$random, target)
+  expect_equal(extract_effects(form, family = gaussian())$sigma$random, target)
 })
 
 test_that("extract_effects handles very long RE terms", {
@@ -219,8 +221,8 @@ test_that("update_formula returns correct formulas", {
 })
 
 test_that("get_effect works correctly", {
-  effects <- extract_effects(y ~ a - b^x, 
-               nonlinear = list(a ~ z, b ~ v + mono(z)))
+  form <- bf(y ~ a - b^x, a ~ z, b ~ v + mono(z), nl = TRUE)
+  effects <- extract_effects(form)
   expect_equivalent(get_effect(effects), list(y ~ a - b^x, ~1 + z, ~ 1 + v))
   expect_equivalent(get_effect(effects, "mo"), list(b = ~ z))
   effects <- extract_effects(y ~ x + z + (1|g))
@@ -254,8 +256,8 @@ test_that("update_re_terms works correctly", {
                     y ~ x + (1|visit))
   expect_equal(update_re_terms(bf(y ~ x, sigma = ~ x + (x|g)), ~ (1|g)),
                bf(y ~ x, sigma = ~ x + (1|g)))
-  expect_equal(update_re_terms(bf(y ~ x, nonlinear = x ~ z + (1|g)), ~ (1|g)),
-               bf(y ~ x, nonlinear = x ~ z + (1|g)))
+  expect_equal(update_re_terms(bf(y ~ x, x ~ z + (1|g), nl = TRUE), ~ (1|g)),
+               bf(y ~ x, x ~ z + (1|g), nl = TRUE))
 })
 
 test_that("amend_terms performs expected changes to terms objects", {
@@ -290,7 +292,8 @@ test_that("tidy_ranef works correctly", {
   expect_equal(ranef[, c("group", "gn")], target)
   
   ee <- extract_effects(bf(y ~ x + (1|ID1|g) + (1|g:x), 
-                           sigma ~ (1|ID1|g)))
+                           sigma ~ (1|ID1|g)),
+                        family = gaussian())
   ranef <- tidy_ranef(ee, data = data)
   expect_equal(ranef$id, c(1, 2, 1))
   
@@ -322,6 +325,6 @@ test_that("exclude_pars returns expected parameter names", {
   effects <- extract_effects(y ~ x + s(z))
   data <- data.frame(y = rnorm(20), x = rnorm(20), z = rnorm(20))
   expect_true("zs_1_1" %in% exclude_pars(effects, data))
-  effects <- extract_effects(y ~ eta, nonlinear = list(eta ~ x + s(z)))
+  effects <- extract_effects(bf(y ~ eta, eta ~ x + s(z), nl = TRUE))
   expect_true("zs_eta_1_1" %in% exclude_pars(effects, data))
 })

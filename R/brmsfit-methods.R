@@ -802,7 +802,7 @@ ngrps.brmsfit <- function(object, ...) {
 
 #' @export
 formula.brmsfit <- function(x, ...) {
-  x$formula
+  bf(x$formula)
 }
 
 #' @export
@@ -1883,7 +1883,7 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
     dots$formula <- object$formula
   } else {
     recompile <- length(sformula(formula.)) > 0L
-    if (length(attr(object$formula, "nonlinear"))) {
+    if (isTRUE(attr(object$formula, "nl"))) {
       if (length(setdiff(all.vars(formula.), ".")) == 0L) {
         dots$formula <- update(object$formula, formula., mode = "keep")
       } else {
@@ -1899,10 +1899,11 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
         stop2("New variables found: ", paste(mvars, collapse = ", "),
               "\nPlease supply your data again via argument 'newdata'")
       }
-      dots$formula <- update(object$formula, dots$formula)
-      ee_old <- extract_effects(object$formula, family = object$family)
+      dots$formula <- update(formula(object), dots$formula)
+      ee_old <- extract_effects(formula(object))
       family <- get_arg("family", dots, object)
-      ee_new <- extract_effects(dots$formula, family = family)
+      dots$formula <- update_formula(dots$formula, family = family)
+      ee_new <- extract_effects(dots$formula)
       # no need to recompile the model when changing fixed effects only
       dont_change <- c("random", "gam", "cs", "mo", "me")
       n_old_fixef <- length(attr(terms(ee_old$fixed), "term.labels"))

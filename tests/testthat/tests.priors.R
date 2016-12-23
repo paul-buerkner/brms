@@ -176,7 +176,8 @@ test_that("print for class brmsprior works correctly", {
 test_that("get_prior returns correct nlpar names for random effects pars", {
   # reported in issue #47
   data <- data.frame(y = rnorm(10), x = rnorm(10), g = rep(1:2, 5))
-  gp <- get_prior(y ~ a - b^x, data = data, nonlinear = a + b ~ (1+x|g))
+  gp <- get_prior(bf(y ~ a - b^x, a + b ~ (1+x|g), nl = TRUE), 
+                  data = data)
   expect_equal(sort(unique(gp$nlpar)), c("", "a", "b"))
 })
 
@@ -186,7 +187,8 @@ test_that("get_prior returns correct fixed effect names for GAMMs", {
   prior <- get_prior(y ~ z + s(x) + (1|g), data = dat)
   expect_equal(prior[prior$class == "b", ]$coef, 
                c("", "Intercept", "sx_1", "z"))
-  prior <- get_prior(y ~ lp, nonlinear = lp ~ z + s(x) + (1|g), data = dat)
+  prior <- get_prior(bf(y ~ lp, lp ~ z + s(x) + (1|g), nl = TRUE), 
+                     data = dat)
   expect_equal(prior[prior$class == "b", ]$coef, 
                c("", "Intercept", "sx_1", "z"))
 })

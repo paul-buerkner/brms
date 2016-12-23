@@ -5,19 +5,20 @@
 \alias{brmsformula}
 \title{Set up a model formula for use in the \pkg{brms} package}
 \usage{
-brmsformula(formula, ..., nonlinear = NULL)
+brmsformula(formula, ..., flist = NULL, nl = FALSE, nonlinear = NULL)
 }
 \arguments{
 \item{formula}{An object of class \code{formula} 
 (or one that can be coerced to that class): 
 a symbolic description of the model to be fitted. 
-The details of model specification are given under 'Details'.}
+The details of model specification are given in 'Details'.}
 
 \item{...}{Additional \code{formula} objects to specify 
-predictors of special model parts and auxiliary parameters. 
+predictors of non-linear and auxiliary parameters. 
 Formulas can either be named directly or contain
-names on their left-hand side. Currently, the following
-names are accepted: 
+names on their left-hand side. 
+The following are auxiliary parameters of specific families
+(all other parameters are treated as non-linear parameters):
 \code{sigma} (residual standard deviation of
 the \code{gaussian}, \code{student}, and \code{lognormal} 
 families);
@@ -38,9 +39,16 @@ non-decision time, and initial bias of the \code{wiener}
 diffusion model).
 All auxiliary parameters are modeled 
 on the log or logit scale to ensure correct definition
-intervals after transformation.}
+intervals after transformation.
+See 'Details' for more explanation.}
 
-\item{nonlinear}{An optional list of formulas, specifying 
+\item{flist}{Optional list of formulas, which are treated in the 
+same way as formulas passed via the \code{...} argument.}
+
+\item{nl}{Logical; Indicates whether \code{formula} should be
+treated as specifying a non-linear model (defaults to \code{FALSE}).}
+
+\item{nonlinear}{(Deprecated) An optional list of formulas, specifying 
 linear models for non-linear parameters. If \code{NULL} (the default)
 \code{formula} is treated as an ordinary formula. 
 If not \code{NULL}, \code{formula} is treated as a non-linear model
@@ -50,7 +58,8 @@ linear predictor on the right hand side.
 Alternatively, it can be a single formula with all non-linear
 parameters on the left hand side (separated by a \code{+}) and a
 common linear predictor on the right hand side.
-More information is given under 'Details'.}
+As of \pkg{brms} 1.4.0, we recommend specifying non-linear
+parameters directly within \code{formula}.}
 }
 \value{
 An object of class \code{brmsformula}, which inherits
@@ -310,11 +319,9 @@ The \code{formula} argument accepts formulae of the following syntax:
   
   \bold{Formula syntax for non-linear models}
   
-  Using the \code{nonlinear} argument, it is possible to specify
-  non-linear models in \pkg{brms}. Contrary to what the name might suggest,
-  \code{nonlinear} should not contain the non-linear model itself
-  but rather information on the non-linear parameters. 
-  The non-linear model will just be specified within the \code{formula}
+  In \pkg{brms}, it is possible to specify non-linear models 
+  of arbitrary complexity.
+  The non-linear model can just be specified within the \code{formula}
   argument. Suppose, that we want to predict the response \code{y}
   through the predictor \code{x}, where \code{x} is linked to \code{y}
   through \code{y = alpha - beta * lambda^x}, with parameters
@@ -322,15 +329,17 @@ The \code{formula} argument accepts formulae of the following syntax:
   non-linear model being defined via
   \code{formula = y ~ alpha - beta * lambda^x} (addition arguments 
   can be added in the same way as for ordinary formulas).
-  Now we have to tell \pkg{brms} the names of the non-linear parameters 
-  and specfiy a (linear mixed) model for each of them using the \code{nonlinear}
-  argument. Let's say we just want to estimate those three parameters
-  with no further covariates or random effects. Then we can write
-  \code{nonlinear = alpha + beta + lambda ~ 1} or equivalently
-  (and more flexible) \code{nonlinear = list(alpha ~ 1, beta ~ 1, lambda ~ 1)}. 
+  To tell \code{brms} that this is a non-linear model, 
+  we set argument \code{nl} to \code{TRUE}.
+  Now we have to specfiy a model for each of the non-linear parameters. 
+  Let's say we just want to estimate those three parameters
+  with no further covariates or random effects. Then we can pass
+  \code{alpha + beta + lambda ~ 1} or equivalently
+  (and more flexible) \code{alpha ~ 1, beta ~ 1, lambda ~ 1} 
+  to the \code{...} argument.
   This can, of course, be extended. If we have another predictor \code{z} and 
   observations nested within the grouping factor \code{g}, we may write for 
-  instance \cr \code{nonlinear = list(alpha ~ 1, beta ~ 1 + z + (1|g), lambda ~ 1)}.
+  instance \code{alpha ~ 1, beta ~ 1 + z + (1|g), lambda ~ 1}.
   The formula syntax described above applies here as well.
   In this example, we are using \code{z} and \code{g} only for the 
   prediction of \code{beta}, but we might also use them for the other
@@ -383,11 +392,14 @@ identical(formula1, formula2)
 # incorporate censoring
 bf(y | cens(censor_variable) ~ predictors)
 
-# define a non-linear model
-bf(y ~ a1 - a2^x, nonlinear = list(a1 ~ 1, a2 ~ x + (x|g)))
+# define a simple non-linear model
+bf(y ~ a1 - a2^x, a1 + a2 ~ 1, nl = TRUE)
+
+# predict a1 and a2 differently
+bf(y ~ a1 - a2^x, a1 ~ 1, a2 ~ x + (x|g), nl = TRUE)
 
 # correlated group-level effects across parameters
-bf(y ~ a1 - a2^x, nonlinear = list(a1 ~ 1 + (1|2|g), a2 ~ x + (x|2|g)))
+bf(y ~ a1 - a2^x, a1 ~ 1 + (1|2|g), a2 ~ x + (x|2|g), nl = TRUE)
 
 # define a multivariate model
 bf(cbind(y1, y2) ~ x * z + (1|g))

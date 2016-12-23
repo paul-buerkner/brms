@@ -111,6 +111,10 @@ collapse <- function(..., sep = "") {
   paste(..., sep = sep, collapse = "")
 }
 
+collapse_comma <- function(...) {
+  paste0("'", ..., "'", collapse = ", ")
+}
+
 collapse_lists <- function(ls) {
   # collapse strings having the same name in different lists
   # Args:

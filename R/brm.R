@@ -42,7 +42,7 @@
 #'   See the documentation of \code{\link{cor_brms}} for a description 
 #'   of the available correlation structures. Defaults to NULL, 
 #'   corresponding to no correlations.
-#' @param nonlinear An optional list of formulas, specifying 
+#' @param nonlinear (Deprecated) An optional list of formulas, specifying 
 #'   linear models for non-linear parameters. If \code{NULL} (the default)
 #'   \code{formula} is treated as an ordinary formula. 
 #'   If not \code{NULL}, \code{formula} is treated as a non-linear model
@@ -52,7 +52,8 @@
 #'   Alternatively, it can be a single formula with all non-linear
 #'   parameters on the left hand side (separated by a \code{+}) and a
 #'   common linear predictor on the right hand side.
-#'   More information is given under 'Details'.
+#'   As of \pkg{brms} 1.4.0, we recommend specifying non-linear
+#'   parameters directly within \code{formula}.
 #' @param threshold A character string indicating the type of thresholds 
 #'   (i.e. intercepts) used in an ordinal model. 
 #'   \code{"flexible"} provides the standard unstructured thresholds and 

@@ -274,10 +274,10 @@ test_that("brmdata is backwards compatible", {
 })
 
 test_that("make_standata correctly prepares data for non-linear models", {
-  nonlinear <- list(a ~ x + (1|1|g), b ~ mono(z) + (1|1|g))
+  flist <- list(a ~ x + (1|1|g), b ~ mono(z) + (1|1|g))
   data <- data.frame(y = rnorm(9), x = rnorm(9), z = sample(1:9, 9), 
                      g = rep(1:3, 3))
-  standata <- make_standata(y ~ a - b^z, data = data, nonlinear = nonlinear)
+  standata <- make_standata(bf(y ~ a - b^z, flist = flist, nl = TRUE), data = data)
   expect_equal(names(standata), c("N", "Y", "KC", "C", "K_a", "X_a", "Z_1_a_1", 
                                   "K_b", "X_b", "Kmo_b", "Xmo_b", "Jmo_b", 
                                   "con_simplex_b_1", "Z_1_b_2", "J_1", "N_1", 
@@ -339,8 +339,8 @@ test_that("make_standata returns data for GAMMs", {
   expect_equal(dim(standata$Zs_1_1), c(10, 8))
   expect_equal(dim(standata$Zs_2_1), c(10, 8))
   
-  standata <- make_standata(y ~ lp, data = dat,
-                            nonlinear = lp ~ s(x1) + z + s(x2, by = x3))
+  standata <- make_standata(bf(y ~ lp, lp ~ s(x1) + z + s(x2, by = x3), 
+                               nl = TRUE), data = dat)
   expect_equal(standata$nb_lp_1, 1)
   expect_equal(as.vector(standata$knots_lp_2), 8)
   expect_equal(dim(standata$Zs_lp_1_1), c(10, 8))
@@ -361,7 +361,7 @@ test_that("make_standata returns correct group ID data", {
                     names(sdata)))
   
   form <- bf(count ~ a, sigma ~ (1|3|visit) + (Trt_c||patient),
-             nonlinear = a ~ Trt_c + (1+Trt_c|3|visit) + (1|patient))
+             a ~ Trt_c + (1+Trt_c|3|visit) + (1|patient), nl = TRUE)
   sdata <- make_standata(form, data = epilepsy, family = student())
   expect_true(all(c("Z_1_sigma_1", "Z_2_a_3", "Z_2_sigma_1",  
                     "Z_3_a_1") %in% names(sdata)))

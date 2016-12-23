@@ -64,7 +64,8 @@ restructure <- function(x, rstr_summary = FALSE) {
   if (isTRUE(x$version < utils::packageVersion("brms"))) {
     # element 'nonlinear' deprecated as of brms > 0.9.1
     # element 'partial' deprecated as of brms > 0.8.0
-    x$formula <- SW(update_formula(x$formula, partial = x$partial, 
+    x$formula <- SW(update_formula(formula(x), family = family(x),
+                                   partial = x$partial, 
                                    nonlinear = x$nonlinear))
     x$nonlinear <- x$partial <- NULL
     ee <- extract_effects(formula(x), family = family(x))
@@ -681,8 +682,7 @@ mult_disp <- function(x, data, i = NULL, dim = NULL) {
 prepare_family <- function(x) {
   # prepare for calling family specific log_lik / predict functions
   family <- family(x)
-  nresp <- length(extract_effects(x$formula, family = family,
-                                  nonlinear = x$nonlinear)$response)
+  nresp <- length(extract_effects(x$formula, family = family)$response)
   if (is.old_lognormal(family, nresp = nresp, version = x$version)) {
     family <- lognormal()
   } else if (is.linear(family) && nresp > 1L) {

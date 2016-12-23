@@ -350,7 +350,7 @@ test_that("all S3 methods have reasonable ouputs", {
                "New variables found: wrong_var")
   up <- update(fit2, algorithm = "fullrank", testmode = TRUE)
   expect_equal(up$algorithm, "fullrank")
-  up <- update(fit2, formula. = bf(. ~ ., nonlinear = a + b ~ 1), 
+  up <- update(fit2, formula. = bf(. ~ ., a + b ~ 1, nl = TRUE), 
                testmode = TRUE)
   expect_true(is(up, "brmsfit"))
   up <- update(fit2, formula. = count ~ a + b, testmode = TRUE)

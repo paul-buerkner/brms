@@ -256,23 +256,23 @@ test_that("make_stancode generates correct code for monotonic effects", {
 })
 
 test_that("make_stancode generates correct code for non-linear models", {
-  nonlinear <- list(a ~ x, b ~ z + (1|g))
+  flist <- list(a ~ x, b ~ z + (1|g))
   data <- data.frame(y = rgamma(9, 1, 1), x = rnorm(9), z = rnorm(9), 
                      g = rep(1:3, 3))
   prior <- c(set_prior("normal(0,5)", nlpar = "a"),
              set_prior("normal(0,1)", nlpar = "b"))
   # syntactic validity is already checked within make_stancode
-  stancode <- make_stancode(y ~ a - exp(b^z), data = data, prior = prior,
-                            nonlinear = nonlinear)
+  stancode <- make_stancode(bf(y ~ a - exp(b^z), flist = flist, nl = TRUE), 
+                            data = data, prior = prior)
   expect_match(stancode, "eta[n] = eta_a[n] - exp(eta_b[n] ^ C[n, 1]);",
                fixed = TRUE)
   
-  nonlinear <- list(a1 ~ 1, a2 ~ z + (x|g))
+  flist <- list(a1 ~ 1, a2 ~ z + (x|g))
   prior <- c(set_prior("beta(1,1)", nlpar = "a1", lb = 0, ub = 1),
              set_prior("normal(0,1)", nlpar = "a2"))
-  stancode <- make_stancode(y ~ a1 * exp(-x/(a2 + z)), data = data, 
-                            family = Gamma("log"), prior = prior, 
-                            nonlinear = nonlinear)
+  stancode <- make_stancode(bf(y ~ a1 * exp(-x/(a2 + z)), 
+                               flist = flist, nl = TRUE),
+                            data = data, family = Gamma("log"), prior = prior)
   expect_match(stancode, fixed = TRUE,
     paste("eta[n] = shape * exp(-(eta_a1[n] *", 
           "exp( - C[n, 1] / (eta_a2[n] + C[n, 2]))));"))
@@ -280,15 +280,15 @@ test_that("make_stancode generates correct code for non-linear models", {
 
 test_that("make_stancode accepts very long non-linear formulas", {
   data <- data.frame(y = rnorm(10), this_is_a_very_long_predictor = rnorm(10))
-  expect_silent(make_stancode(y ~ b0 + this_is_a_very_long_predictor + 
-                              this_is_a_very_long_predictor +
-                              this_is_a_very_long_predictor,
-                data = data, nonlinear = b0 ~ 1,
-                prior = set_prior("normal(0,1)", nlpar = "b0")))
+  expect_silent(make_stancode(bf(y ~ b0 + this_is_a_very_long_predictor + 
+                                 this_is_a_very_long_predictor +
+                                 this_is_a_very_long_predictor,
+                                 b0 ~ 1, nl = TRUE),
+                data = data, prior = prior(normal(0,1), nlpar = "b0")))
 })
 
 test_that("no loop in trans-par is defined for simple 'identity' models", {
-  expect_true(!grepl(make_stancode(time ~ age, data = kidney), 
+  expect_true(!grepl(make_stancode(time ~ age, data = kidney),
                      "eta[n] <- (eta[n]);", fixed = TRUE))
   expect_true(!grepl(make_stancode(time ~ age, data = kidney, 
                                    family = poisson("identity")), 
@@ -333,9 +333,10 @@ test_that("make_stancode returns correct 'disp' code", {
   expect_match(stancode, "Y ~ neg_binomial_2_log(eta, disp_shape);", 
                fixed = TRUE)
   
-  stancode <- make_stancode(y | disp(y) ~ a - b^x, family = weibull(),
+  stancode <- make_stancode(bf(y | disp(y) ~ a - b^x, 
+                               a + b ~ 1, nl = TRUE),
+                            family = weibull(),
                             data = data.frame(y = rpois(10, 10), x = rnorm(10)),
-                            nonlinear = a + b ~ 1,
                             prior = c(set_prior("normal(0,1)", nlpar = "a"),
                                       set_prior("normal(0,1)", nlpar = "b")))
   expect_match(stancode, fixed = TRUE,
@@ -388,8 +389,8 @@ test_that("make_stancode correctly generates code for GAMMs", {
   
   prior <- c(set_prior("normal(0,5)", nlpar = "lp"),
              set_prior("normal(0,2)", "sds", nlpar = "lp"))
-  stancode <- make_stancode(y ~ lp, nonlinear = lp ~ s(x) + (1|g), data = dat, 
-                            prior = prior)
+  stancode <- make_stancode(bf(y ~ lp, lp ~ s(x) + (1|g), nl = TRUE), 
+                            data = dat, prior = prior)
   expect_match(stancode, "Zs_lp_1_1 * s_lp_1_1", fixed = TRUE)
   expect_match(stancode, "matrix[N, knots_lp_1[1]] Zs_lp_1_1", fixed = TRUE)
   expect_match(stancode, "zs_lp_1_1 ~ normal(0, 1)", fixed = TRUE)
@@ -452,7 +453,7 @@ test_that("make_stancode correctly handles the group ID syntax", {
   expect_match(sc, "r_2_shape_3 = r_2[, 3]", fixed = TRUE)
   
   form <- bf(count ~ a, sigma ~ (1|3|visit) + (Trt_c||patient),
-             nonlinear = a ~ Trt_c + (1+Trt_c|3|visit) + (1|patient))
+             a ~ Trt_c + (1+Trt_c|3|visit) + (1|patient), nl = TRUE)
   sc <- make_stancode(form, data = epilepsy, family = student(),
                       prior = set_prior("normal(0,5)", nlpar = "a"))
   expect_match(sc, "r_2_a_3 = r_2[, 3];", fixed = TRUE)
@@ -480,7 +481,7 @@ test_that("make_stancode correctly parses distributional gamma models", {
                fixed = TRUE)
   
   scode <- make_stancode(bf(time ~ inv_logit(a) * exp(b * age),
-                            nonlinear = a + b ~ sex + (1|patient), 
+                            a + b ~ sex + (1|patient), nl = TRUE, 
                             shape ~ age + (1|patient)), 
                          data = kidney, family = Gamma("identity"),
                          prior = c(set_prior("normal(2,2)", nlpar = "a"),

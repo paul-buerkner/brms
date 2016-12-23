@@ -26,7 +26,7 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   valid_auxpars <- valid_auxpars(family(x), effects = ee, autocor = x$autocor)
   for (ap in valid_auxpars) {
     if (!is.null(ee[[ap]])) {
-      more_args <- list(rhs_formula = attr(x$formula, ap),
+      more_args <- list(rhs_formula = ee[[ap]]$formula,
                         nlpar = ap, ilink = ilink_auxpars(ap))
       draws[[ap]] <- do.call(.extract_draws, c(args, more_args))
     } else {
@@ -63,10 +63,10 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   # samples of the (non-linear) predictor
   nlpars <- names(ee$nonlinear)
   if (length(nlpars)) {
-    for (i in seq_along(nlpars)) {
-      rhs_formula <- attr(x$formula, "nonlinear")[[i]]
-      more_args <- nlist(rhs_formula, nlpar = nlpars[i])
-      draws$nonlinear[[nlpars[i]]] <- 
+    for (np in nlpars) {
+      rhs_formula <- ee$nonlinear[[np]]$formula
+      more_args <- nlist(rhs_formula, nlpar = np)
+      draws$nonlinear[[np]] <- 
         do.call(.extract_draws, c(args, more_args))
     }
     covars <- all.vars(rhs(ee$covars))

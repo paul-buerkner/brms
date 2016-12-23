@@ -19,19 +19,19 @@ test_that("fitted helper functions run without errors", {
   fit$family <- gaussian("log")
   expect_equal(dim(fitted(fit, summary = FALSE)), c(nsamples, nobs))
   # pseudo weibull model
-  fit$formula <- rm_attr(fit$formula, "sigma")
+  fit$formula <- rm_attr(fit$formula, "pars")
   fit$family <- weibull()
   expect_equal(dim(SW(fitted(fit, summary = FALSE))), c(nsamples, nobs))
   # pseudo binomial model
   fit$autocor <- cor_arma()
-  fit$family <- binomial()
+  fit$family <- attr(fit$formula, "family") <- binomial()
   expect_equal(dim(fitted(fit, summary = FALSE)), c(nsamples, nobs))
   # pseudo hurdle poisson model
   fit$family <- hurdle_poisson()
   fit$formula <- count ~ Trt*Age + mono(Exp) + offset(Age) + (1+Trt|visit)
   expect_equal(dim(fitted(fit, summary = FALSE)), c(nsamples, nobs(fit)))
   # pseudo zero-inflated poisson model
-  fit$family <- zero_inflated_poisson()
+  fit$family <- attr(fit$formula, "family") <- zero_inflated_poisson()
   expect_equal(dim(fitted(fit, summary = FALSE)), c(nsamples, nobs(fit)))
   # directly test the catordinal helper function
   mu <- fitted_catordinal(array(eta, dim = c(dim(eta), 3)), 

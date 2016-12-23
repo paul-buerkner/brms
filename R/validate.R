@@ -1,39 +1,117 @@
-extract_effects <- function(formula, family = NA, nonlinear = NULL, 
-                            autocor = NULL, check_response = TRUE, 
-                            resp_rhs_all = TRUE, ...) {
+extract_effects <- function(formula, family = NA, autocor = NULL, 
+                            check_response = TRUE, resp_rhs_all = TRUE) {
   # Parse the model formula and related arguments
   # Args:
   #   formula: An object of class 'formula' or 'brmsformula'
-  #   family: the model family
-  #   nonlinear: a list of formulas specifying non-linear effects
-  #   autocor: object of class 'cor_brms' or NULL
+  #   family: Optinal object of class 'family'. Ignored
+  #           if 'formula' has a suitable family attribute.
+  #   autocor: Optional object of class 'cor_brms'
   #   check_response: check if the response part is non-empty?
   #   resp_rhs_all: include response variables on the RHS of x$allvars? 
-  #   ...: Additional objects of class 'formula'
   # Returns: 
   #   A named list whose elements depend on the formula input
   old_mv <- isTRUE(attr(formula, "old_mv"))
-  formula <- bf(formula, nonlinear = nonlinear)
-  nonlinear <- attr(formula, "nonlinear")
+  formula <- bf(formula)
+  if (!is.null(attr(formula, "family"))) {
+    family <- attr(formula, "family")
+  }
   if (!is.na(family[[1]])) {
     family <- check_family(family)
   }
-  tformula <- formula2str(formula) 
-  tfixed <- gsub("\\|+[^~]*~", "~", tformula)
+ 
   x <- nlist(formula)
-  if (length(nonlinear)) {
+  tformula <- formula2str(formula)
+  # handle addition arguments
+  # TODO: move to separate function?
+  add_funs <- c("se", "weights", "trials", "cat", 
+                "cens", "trunc", "disp", "dec")
+  add_vars <- list()
+  if (!is.na(family[[1]])) {
+    add <- get_matches("\\|[^~]*~", tformula)
+    if (length(add)) {
+      # replace deprecated '|' by '+'
+      add <- paste("~", rename(substr(add, 2, nchar(add) - 1), "|", "+"))
+      add_terms <- attr(terms(formula(add)), "term.labels")
+      for (af in add_funs) {
+        matches <- grep(paste0("^", af, "\\(.+\\)$"), add_terms)
+        if (length(matches) == 1L) {
+          x[[af]] <- add_terms[matches]
+          add_terms <- add_terms[-matches]
+          if (!is.na(x[[af]]) && (add_families(af)[1] == "all" ||
+                                  family$family %in% add_families(af))) {
+            args <- substr(x[[af]], nchar(af) + 2, nchar(x[[af]]) - 1)
+            try_numeric <- SW(as.numeric(args))
+            if (af %in% c("trials", "cat") && !is.na(try_numeric)) {
+              x[[af]] <- try_numeric
+            } else {
+              x[[af]] <- as.formula(paste0("~ .", x[[af]]))
+              if (length(all.vars(x[[af]]))) {
+                form <- paste("~", paste(all.vars(x[[af]]), collapse = "+"))
+                add_vars[[af]] <- as.formula(form)
+              }
+            }
+          } else {
+            stop2("Argument '", af, "' is not supported for ", 
+                  "family '", family$family, "'.")
+          } 
+        } else if (length(matches) > 1L) {
+          stop2("Addition arguments may be only defined once.")
+        } 
+      }
+      if (length(add_terms)) {
+        stop2("Invalid addition part of formula. \nPlease see the ", 
+              "'Details' section of help(brmsformula).")
+      }
+      if (is.formula(x$se) && is.formula(x$disp)) {
+        stop2("Addition arguments 'se' and 'disp' cannot ", 
+              "be used at the same time.")
+      }
+      cens_or_weights <- is.formula(x$cens) || is.formula(x$weights)
+      if (is.formula(x$trunc) && cens_or_weights) {
+        stop2("Truncation is not yet possible in censored or weighted models.")
+      }
+    }
+    if (is.wiener(family) && check_response && !is.formula(x$dec)) {
+      stop2("Addition argument 'dec' is required for family 'wiener'.")
+    }
+  }
+  
+  # check validity of non-linear parameters
+  nl <- isTRUE(attr(formula, "nl"))
+  sforms <- sformula(formula)
+  auxpars <- intersect(names(sforms), valid_auxpars(family, x))
+  nlpars <- setdiff(names(sforms), auxpars)
+  if (nl) {
+    nonlinear <- sforms[nlpars] 
+  } else {
+    
+    nonlinear <- NULL
+  }
+  
+  sforms <- sformula(formula)
+  auxpars <- intersect(names(sforms), valid_auxpars(family, x))
+  nlpars <- setdiff(names(sforms), auxpars)
+  tfixed <- gsub("\\|+[^~]*~", "~", tformula)
+  if (isTRUE(attr(formula, "nl"))) {
+    if (!length(nlpars)) {
+      stop2("No non-linear parameters specified.")
+    }
     if (grepl("|", tfixed, fixed = TRUE)) {
       stop2("Group-level effects in non-linear models have ", 
             "to be specified in the 'nonlinear' argument.")
     }
     if (is.ordinal(family) || is.categorical(family)) {
-      stop2("Non-linear effects are not yet allowed for this family.")
+      stop2("Non-linear formulas are not yet allowed for this family.")
     }
     x$fixed <- formula(tfixed)
-    x$nonlinear <- extract_nonlinear(nonlinear, x$fixed, family = family)
+    x$nonlinear <- extract_nonlinear(sforms[nlpars], x$fixed)
     re_terms <- NULL
   } else {
-    # terms() doesn't like non-linear formulas
+    if (length(nlpars)) {
+      nlpars <- collapse_comma(nlpars)
+      stop2("Prediction of parameter(s) ", nlpars,
+            " is not allowed for this model.")
+    }
     terms <- terms(formula)
     all_terms <- all_terms(formula)
     pos_re_terms <- grepl("\\|", all_terms)
@@ -85,64 +163,8 @@ extract_effects <- function(formula, family = NA, nonlinear = NULL,
   # evaluate autocor formula
   x$time <- extract_time(autocor$formula)
   # evaluate formulas for auxiliary parameters
-  auxpars <- sformula(formula, incl_nl = FALSE)
-  for (ap in names(auxpars)) {
-    x[[ap]] <- extract_effects(rhs(auxpars[[ap]]), family = family,
-                               check_response = FALSE)
-  }
-  
-  # handle addition arguments
-  add_funs <- c("se", "weights", "trials", "cat", 
-                "cens", "trunc", "disp", "dec")
-  add_vars <- list()
-  if (!is.na(family[[1]])) {
-    add <- get_matches("\\|[^~]*~", tformula)
-    if (length(add)) {
-      # replace deprecated '|' by '+'
-      add <- paste("~", rename(substr(add, 2, nchar(add) - 1), "|", "+"))
-      add_terms <- attr(terms(formula(add)), "term.labels")
-      for (af in add_funs) {
-        matches <- grep(paste0("^", af, "\\(.+\\)$"), add_terms)
-        if (length(matches) == 1L) {
-          x[[af]] <- add_terms[matches]
-          add_terms <- add_terms[-matches]
-          if (!is.na(x[[af]]) && (add_families(af)[1] == "all" ||
-              family$family %in% add_families(af))) {
-            args <- substr(x[[af]], nchar(af) + 2, nchar(x[[af]]) - 1)
-            try_numeric <- SW(as.numeric(args))
-            if (af %in% c("trials", "cat") && !is.na(try_numeric)) {
-              x[[af]] <- try_numeric
-            } else {
-              x[[af]] <- as.formula(paste0("~ .", x[[af]]))
-              if (length(all.vars(x[[af]]))) {
-                form <- paste("~", paste(all.vars(x[[af]]), collapse = "+"))
-                add_vars[[af]] <- as.formula(form)
-              }
-            }
-          } else {
-            stop2("Argument '", af, "' is not supported for ", 
-                  "family '", family$family, "'.")
-          } 
-        } else if (length(matches) > 1L) {
-          stop2("Addition arguments may be only defined once.")
-        } 
-      }
-      if (length(add_terms)) {
-        stop2("Invalid addition part of formula. \nPlease see the ", 
-              "'Details' section of help(brmsformula).")
-      }
-      if (is.formula(x$se) && is.formula(x$disp)) {
-        stop2("Addition arguments 'se' and 'disp' cannot ", 
-              "be used at the same time.")
-      }
-      cens_or_weights <- is.formula(x$cens) || is.formula(x$weights)
-      if (is.formula(x$trunc) && cens_or_weights) {
-        stop2("Truncation is not yet possible in censored or weighted models.")
-      }
-    }
-    if (is.wiener(family) && check_response && !is.formula(x$dec)) {
-      stop2("Addition argument 'dec' is required for family 'wiener'.")
-    }
+  for (ap in auxpars) {
+    x[[ap]] <- extract_effects(rhs(sforms[[ap]]), check_response = FALSE)
   }
   
   # make a formula containing all required variables
@@ -169,10 +191,15 @@ extract_effects <- function(formula, family = NA, nonlinear = NULL,
     } else { 
       x$response <- extract_response(x$respform, keep_dot_usc = old_mv)
     }
-    if (is.linear(family) && length(x$response) > 1L &&
-        length(rmNULL(x[c("se", "cens", "trunc")]))) {
-      stop2("Multivariate models currently allow only ",
-            "addition argument 'weights'.")
+    if (is.linear(family) && length(x$response) > 1L) {
+      if (length(rmNULL(x[c("se", "cens", "trunc")]))) {
+        stop2("Multivariate models currently allow only ",
+              "addition argument 'weights'.")
+      }
+      if (length(rmNULL(x[auxpars]))) {
+        stop2("Auxiliary parameter cannot yet be ", 
+              "predicted in multivariate models.")
+      }
     }
     if (old_mv) {
       # multivariate ('trait') syntax is deprecated as of brms 1.0.0
@@ -189,19 +216,8 @@ extract_effects <- function(formula, family = NA, nonlinear = NULL,
       }
     }
   }
-  # check validity of auxiliary parameters
-  if (!is.na(family[[1]])) {
-    # don't do this earlier to allow exlusion of MV models
-    inv_auxpars <- setdiff(auxpars(), valid_auxpars(family, x))
-    inv_auxpars <- intersect(inv_auxpars, names(x))
-    if (length(inv_auxpars)) {
-      inv_auxpars <- paste0("'", inv_auxpars, "'", collapse = ", ")
-      stop2("Prediction of parameter(s) ", inv_auxpars,
-            " is not allowed for this model.")
-    }
-  }
   x
-} 
+}
 
 extract_mo <- function(formula) {
   # extract monotonic effects
@@ -389,7 +405,7 @@ extract_time <- function(formula) {
   x
 }
 
-extract_nonlinear <- function(x, model = ~1, family = NA) {
+extract_nonlinear <- function(x, model = ~1) {
   # prepare nonlinear formulas
   # Args:
   #   x: a list for formulas specifying linear predictors for 
@@ -401,8 +417,7 @@ extract_nonlinear <- function(x, model = ~1, family = NA) {
   if (length(x)) {
     nleffects <- named_list(names(x))
     for (i in seq_along(x)) {
-      nleffects[[i]] <- extract_effects(rhs(x[[i]]), family = family, 
-                                        check_response = FALSE)
+      nleffects[[i]] <- extract_effects(rhs(x[[i]]), check_response = FALSE)
     }
     model_vars <- all.vars(rhs(model))
     missing_pars <- setdiff(names(nleffects), model_vars)
@@ -445,7 +460,8 @@ update_formula <- function(formula, data = NULL, family = gaussian(),
   # Returns:
   #   an updated formula containing the addition and category specific effects
   formula <- bf(formula, nonlinear = nonlinear)
-  old_attributes <- attributes(formula)
+  attr(formula, "family") <- family
+  old_attr <- attributes(formula)
   fnew <- ". ~ ."
   if (!is.null(partial)) {
     warning2("Argument 'partial' is deprecated. Please use the 'cs' ", 
@@ -461,7 +477,7 @@ update_formula <- function(formula, data = NULL, family = gaussian(),
   if (fnew != ". ~ .") {
     formula <- update.formula(formula, formula(fnew))
   }
-  attributes(formula) <- old_attributes
+  attributes(formula) <- old_attr
   if (is.categorical(family) && is.null(attr(formula, "response"))) {
     respform <- extract_effects(formula)$respform
     model_response <- model.response(model.frame(respform, data = data))
@@ -473,7 +489,7 @@ update_formula <- function(formula, data = NULL, family = gaussian(),
     # the first level will serve as the reference category
     attr(formula, "response") <- response[-1]
   }
-  formula
+  bf(formula)
 }
 
 illegal_group_expr <- function(group) {
@@ -618,17 +634,16 @@ update_re_terms <- function(formula, re_formula = NULL) {
   #   re_formula: formula containing new RE terms
   # Returns:
   #  a formula with updated RE terms
-  old_attr <- attributes(formula)[c("response", "old_mv")]
-  spars <- sformula(formula)
-  for (ap in setdiff(names(spars), "nonlinear")) {
-    spars[[ap]] <- update_re_terms(spars[[ap]], re_formula = re_formula)
-  }
-  if (!is.null(spars$nonlinear)) {
+  old_attr <- attributes(formula)
+  sforms <- sformula(formula)
+  sforms <- lapply(sforms, update_re_terms, re_formula)
+  if (isTRUE(attr(formula, "nl"))) {
     # non-linear formulae may cause errors when passed to terms
     # and do not contain group-level effects anyway
+    # new_formula <- formula
+    # spars$nonlinear <- lapply(spars$nonlinear, update_re_terms, 
+    #                           re_formula = re_formula)
     new_formula <- formula
-    spars$nonlinear <- lapply(spars$nonlinear, update_re_terms, 
-                              re_formula = re_formula)
   } else {
     re_formula <- check_re_formula(re_formula, formula)
     new_formula <- formula2str(formula)
@@ -646,10 +661,10 @@ update_re_terms <- function(formula, re_formula = NULL) {
     new_formula <- paste(c(new_formula, new_re_terms), collapse = "+")
     new_formula <- formula(new_formula)
   }
-  attributes(new_formula)[names(spars)] <- spars
   attributes(new_formula)[names(old_attr)] <- old_attr
+  attr(new_formula, "pars") <- sforms
   environment(new_formula) <- environment(formula)
-  new_formula
+  bf(new_formula)
 }
 
 plus_rhs <- function(x) {
