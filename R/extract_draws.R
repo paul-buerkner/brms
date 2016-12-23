@@ -8,7 +8,7 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   #   other arguments: see doc of logLik.brmsfit
   # Returns:
   #   A named list to be understood by linear_predictor.
-  #   For non-linear models, every element of draws$nonlinear
+  #   For non-linear models, every element of draws$nlpars
   #   can itself be passed to linear_predictor
   ee <- extract_effects(formula(x), family = family(x))
   if (is.null(subset) && !is.null(nsamples)) {
@@ -23,10 +23,11 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   
   # extract draws of auxiliary parameters
   am_args <- list(x = x, subset = subset)
-  valid_auxpars <- valid_auxpars(family(x), effects = ee, autocor = x$autocor)
+  valid_auxpars <- valid_auxpars(family(x), effects = ee, 
+                                 autocor = x$autocor)
   for (ap in valid_auxpars) {
-    if (!is.null(ee[[ap]])) {
-      more_args <- list(rhs_formula = ee[[ap]]$formula,
+    if (!is.null(ee$auxpars[[ap]])) {
+      more_args <- list(rhs_formula = ee$auxpars[[ap]]$formula,
                         nlpar = ap, ilink = ilink_auxpars(ap))
       draws[[ap]] <- do.call(.extract_draws, c(args, more_args))
     } else {
@@ -61,12 +62,12 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
     }
   }
   # samples of the (non-linear) predictor
-  nlpars <- names(ee$nonlinear)
+  nlpars <- names(ee$nlpars)
   if (length(nlpars)) {
     for (np in nlpars) {
-      rhs_formula <- ee$nonlinear[[np]]$formula
+      rhs_formula <- ee$nlpars[[np]]$formula
       more_args <- nlist(rhs_formula, nlpar = np)
-      draws$nonlinear[[np]] <- 
+      draws$nlpars[[np]] <- 
         do.call(.extract_draws, c(args, more_args))
     }
     covars <- all.vars(rhs(ee$covars))

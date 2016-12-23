@@ -490,10 +490,10 @@ get_prior <- function(formula, data, family = gaussian(),
   # initialize output
   prior <- empty_brmsprior()
   # priors for primary regression effects
-  if (length(ee$nonlinear)) {
-    nlpars <- names(ee$nonlinear)
+  if (length(ee$nlpars)) {
+    nlpars <- names(ee$nlpars)
     for (i in seq_along(nlpars)) {
-      prior_eff <- get_prior_effects(ee$nonlinear[[i]], data = data, 
+      prior_eff <- get_prior_effects(ee$nlpars[[i]], data = data, 
                                      autocor = autocor, nlpar = nlpars[i],
                                      spec_intercept = FALSE,
                                      def_scale_prior = def_scale_prior,
@@ -527,8 +527,8 @@ get_prior <- function(formula, data, family = gaussian(),
                     bias = "beta(1, 1)", disc = NA)
   valid_auxpars <- valid_auxpars(family, effects = ee, autocor = autocor)
   for (ap in valid_auxpars) {
-    if (!is.null(ee[[ap]])) {
-      auxprior <- get_prior_effects(ee[[ap]], data = data,
+    if (!is.null(ee$auxpars[[ap]])) {
+      auxprior <- get_prior_effects(ee$auxpars[[ap]], data = data,
                                     autocor = autocor, nlpar = ap,
                                     spec_intercept = FALSE,
                                     def_scale_prior = def_scale_prior,
@@ -777,7 +777,6 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
   # check prior input and amend it if needed
   # Args:
   #   same as the respective parameters in brm
-  #   (nonlinear is expected to be an attribute of formula)
   #   check_rows: if not NULL, check only the rows given in check_rows
   #   warn: passed to check_prior_content
   # Returns:
@@ -863,8 +862,8 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
     }
   }
   # check if priors for non-linear parameters are defined
-  if (length(ee$nonlinear)) {
-    nlpars <- names(ee$nonlinear)
+  if (length(ee$nlpars)) {
+    nlpars <- names(ee$nlpars)
     for (nlp in nlpars) {
       nlp_prior <- prior$prior[with(prior, nlpar == nlp & class == "b")]
       if (!any(as.logical(nchar(nlp_prior)))) {

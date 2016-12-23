@@ -42,7 +42,7 @@ stan_llh <- function(family, effects = list(), data = NULL,
     family <- paste0(family, "_fixed")
   }
   
-  auxpars <- intersect(auxpars(), names(effects))
+  auxpars <- names(effects$auxpars)
   reqn <- llh_adj || is_categorical || is_ordinal || 
           is_hurdle || is_zero_inflated || 
           is.exgaussian(family) || is.wiener(family) ||
@@ -204,7 +204,7 @@ stan_llh_sigma <- function(family, effects = NULL, autocor = cor_arma()) {
   has_se <- is.formula(effects$se)
   has_disp <- is.formula(effects$disp)
   llh_adj <- stan_llh_adj(effects)
-  auxpars <- intersect(auxpars(), names(effects))
+  auxpars <- names(effects$auxpars)
   nsigma <- (llh_adj || has_se || is.exgaussian(family)) && 
             (has_disp || "sigma" %in% auxpars)
   nsigma <- if (nsigma) "[n]"
@@ -229,7 +229,7 @@ stan_llh_shape <- function(family, effects = NULL) {
   # prepare the code for 'shape' in the likelihood statement
   has_disp <- is.formula(effects$disp)
   llh_adj <- stan_llh_adj(effects)
-  auxpars <- intersect(auxpars(), names(effects))
+  auxpars <- names(effects$auxpars)
   nshape <- (llh_adj || is.forked(family)) &&
             (has_disp || "shape" %in% auxpars)
   nshape <- if (nshape) "[n]"
@@ -334,7 +334,7 @@ stan_autocor <- function(autocor, effects = list(), family = gaussian(),
       if (is.formula(effects$se)) {
         stop2(err_msg, " when specifying 'se'.")
       }
-      if (length(effects$nonlinear)) {
+      if (length(effects$nlpars)) {
         stop2(err_msg, " for non-linear models.")
       }
       if (is_mv) {
@@ -386,7 +386,7 @@ stan_autocor <- function(autocor, effects = list(), family = gaussian(),
     if (is_mv || family$family %in% c("bernoulli", "categorical")) {
       stop2("The bsts structure is not yet implemented for this family.")
     }
-    if (length(effects$nonlinear)) {
+    if (length(effects$nlpars)) {
       stop2("The bsts structure is not yet implemented for non-linear models.")
     }
     out$data <- "  vector[N] tg;  // indicates independent groups \n"

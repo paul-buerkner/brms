@@ -142,8 +142,8 @@ make_standata <- function(formula, data, family = "gaussian",
   ranef <- tidy_ranef(ee, data, ncat = control$ncat, 
                       old_levels = control$old_levels)
   args_eff <- nlist(data, family, ranef, prior, knots, not4stan)
-  if (length(ee$nonlinear)) {
-    nlpars <- names(ee$nonlinear)
+  if (length(ee$nlpars)) {
+    nlpars <- names(ee$nlpars)
     # matrix of covariates appearing in the non-linear formula
     C <- get_model_matrix(ee$covars, data = data)
     if (length(all.vars(ee$covars)) != ncol(C)) {
@@ -153,7 +153,7 @@ make_standata <- function(formula, data, family = "gaussian",
     colnames(C) <- all.vars(ee$covars)
     standata <- c(standata, list(KC = ncol(C), C = C)) 
     for (nlp in nlpars) {
-      args_eff_spec <- list(effects = ee$nonlinear[[nlp]], nlpar = nlp,
+      args_eff_spec <- list(effects = ee$nlpars[[nlp]], nlpar = nlp,
                             smooth = control$smooth[[nlp]],
                             Jmo = control$Jmo[[nlp]])
       data_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
@@ -185,9 +185,9 @@ make_standata <- function(formula, data, family = "gaussian",
       standata$offset <- model.offset(data)
     }
   }
-  # data for predictors of scale / shape parameters
-  for (ap in intersect(auxpars(), names(ee))) {
-    args_eff_spec <- list(effects = ee[[ap]], nlpar = ap,
+  # data for predictors of auxiliary parameters
+  for (ap in names(ee$auxpars)) {
+    args_eff_spec <- list(effects = ee$auxpars[[ap]], nlpar = ap,
                           smooth = control$smooth[[ap]],
                           Jmo = control$Jmo[[ap]])
     data_aux_eff <- do.call(data_effects, c(args_eff_spec, args_eff))

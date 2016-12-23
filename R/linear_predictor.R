@@ -169,9 +169,9 @@ nonlinear_predictor <- function(draws, i = NULL) {
   #   Usually an S x N matrix where S is the number of samples
   #   and N is the number of observations or length of i if specified. 
   nlmodel_list <- list()
-  nlpars <- names(draws$nonlinear)
+  nlpars <- names(draws$nlpars)
   for (nlp in nlpars) {
-    nlmodel_list[[nlp]] <- linear_predictor(draws$nonlinear[[nlp]], i = i)
+    nlmodel_list[[nlp]] <- linear_predictor(draws$nlpars[[nlp]], i = i)
   }
   for (cov in names(draws$C)) {
     nlmodel_list[[cov]] <- p(draws$C[[cov]], i, row = FALSE)  
@@ -335,7 +335,7 @@ get_eta <- function(draws, i) {
     } else {
       eta <- draws$eta[, i, drop = FALSE]  
     }
-  } else if (!is.null(draws$nonlinear)) {
+  } else if (!is.null(draws$nlpars)) {
     eta <- nonlinear_predictor(draws, i = i)
   } else if (!is.null(draws[["mv"]])) {
     eta <- linear_predictor_mv(draws, i = i)

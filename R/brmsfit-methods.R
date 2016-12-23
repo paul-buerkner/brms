@@ -421,7 +421,7 @@ VarCorr.brmsfit <- function(x, sigma = 1, estimate = "mean",
   } 
   # special treatment of residuals variances in linear models
   has_sigma <- has_sigma(family, ee, autocor = x$autocor, incmv = TRUE)
-  if (has_sigma && !"sigma" %in% names(ee)) {
+  if (has_sigma && !"sigma" %in% names(ee$auxpars)) {
     cor_pars <- get_cornames(ee$response, type = "rescor", 
                              brackets = FALSE)
     p <- lc(p, list(rnames = ee$response, cor_pars = cor_pars,
@@ -1362,8 +1362,8 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
   conditions <- prepare_conditions(x)
   smooths <- rename(as.character(smooths), " ", "")
   ee <- extract_effects(formula(x), family = family(x))
-  if (length(ee$nonlinear)) {
-    lee <- ee$nonlinear
+  if (length(ee$nlpars)) {
+    lee <- ee$nlpars
   } else {
     resp <- ee$response
     lee <- replicate(length(resp), ee, simplify = FALSE)
@@ -1371,8 +1371,7 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
       names(lee) <- resp
     }
   }
-  auxpars <- intersect(names(ee), auxpars())
-  lee <- c(lee, ee[auxpars])
+  lee <- c(lee, ee$auxpars)
   
   args <- nlist(x, smooths_only = TRUE, allow_new_levels = TRUE,
                 incl_autocor = FALSE, f = prepare_family(x), 
@@ -1882,7 +1881,7 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
   if (missing(formula.)) {
     dots$formula <- object$formula
   } else {
-    recompile <- length(sformula(formula.)) > 0L
+    recompile <- length(pforms(formula.)) > 0L
     if (isTRUE(attr(object$formula, "nl"))) {
       if (length(setdiff(all.vars(formula.), ".")) == 0L) {
         dots$formula <- update(object$formula, formula., mode = "keep")
@@ -1914,7 +1913,7 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
                   ee_new[names(ee_new) %in% dont_change]) ||
         is_equal(sort(c(n_old_fixef, n_new_fixef)), c(0L, 1L)) ||
         length(ee_old$response) != length(ee_new$response) ||
-        length(sformula(formula.)) > 0L
+        length(pforms(formula.)) > 0L
     }
     if (recompile) {
       message("The desired formula changes require recompling the model")

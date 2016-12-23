@@ -51,7 +51,7 @@ make_stancode <- function(formula, data, family = gaussian(),
   bounds <- get_bounds(ee$trunc, data = data)
   
   ranef <- tidy_ranef(ee, data = data)
-  if (length(ee$nonlinear)) {
+  if (length(ee$nlpars)) {
     text_pred <- stan_nonlinear(ee, data = data, family = family, 
                                 ranef = ranef, prior = prior)
   } else {
@@ -81,7 +81,7 @@ make_stancode <- function(formula, data, family = gaussian(),
                                prior = prior)
   text_mv <- stan_mv(family, response = ee$response, prior = prior)
   text_ordinal <- stan_ordinal(family, prior = prior, cs = has_cs(ee), 
-                               disc = "disc" %in% names(ee),
+                               disc = "disc" %in% names(ee$auxpars),
                                threshold = threshold)
   text_families <- stan_families(family)
   text_se <- stan_se(is.formula(ee$se))

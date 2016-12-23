@@ -111,7 +111,7 @@ test_that("extract_effects returns expected error messages", {
   expect_error(extract_effects(~ x + (1|g)),
                "Invalid formula: response variable is missing")
   expect_error(extract_effects(bf(y ~ exp(-x/a) + (1|g), a ~ 1, nl = TRUE)),
-               "Group-level effects in non-linear models", fixed = TRUE)
+               "Group-level terms cannot be specified", fixed = TRUE)
   expect_error(extract_effects(bf(y ~ a, nl = TRUE)),
                "No non-linear parameters specified")
   expect_error(extract_effects(bf(y ~ a, a~ 1, nl = TRUE), family = acat()),
@@ -141,8 +141,8 @@ test_that("extract_effects finds all spline terms", {
   expect_equal(all.vars(ee$fixed), c("y", "v"))
   expect_equivalent(ee$gam, ~ s(x) + t2(z))
   ee <- extract_effects(bf(y ~ lp, lp ~ s(x) + t2(z) + v, nl = TRUE))
-  expect_equal(all.vars(ee$nonlinear[[1]]$fixed), "v")
-  expect_equivalent(ee$nonlinear[[1]]$gam, ~ s(x) + t2(z))
+  expect_equal(all.vars(ee$nlpars[[1]]$fixed), "v")
+  expect_equivalent(ee$nlpars[[1]]$gam, ~ s(x) + t2(z))
   expect_error(extract_effects(y ~ s(x) + te(z) + v), 
                "splines 'te' and 'ti' are not yet implemented")
 })
@@ -169,7 +169,8 @@ test_that("extract_effects correctly handles group IDs", {
   target$gcall <- list(list(groups = "g", allvars = ~ g, type = ""),
                        list(groups = "g2", allvars = ~ g2, type = ""))
   target$form <- list(~x, ~1)
-  expect_equal(extract_effects(form, family = gaussian())$sigma$random, target)
+  ee <- extract_effects(form, family = gaussian())
+  expect_equal(ee$auxpars$sigma$random, target)
 })
 
 test_that("extract_effects handles very long RE terms", {

@@ -80,7 +80,7 @@ restructure <- function(x, rstr_summary = FALSE) {
     change <- list()
     if (isTRUE(x$version <= "0.10.0.9000")) {
       attr(x$formula, "old_mv") <- is.old_mv(x)
-      if (length(ee$nonlinear)) {
+      if (length(ee$nlpars)) {
         # nlpar and group have changed positions
         change <- c(change,
           change_old_ranef(x$ranef, pars = parnames(x),
@@ -193,7 +193,7 @@ prepare_conditions <- function(x, conditions = NULL, effects = NULL,
                   lapply(get_effect(ee, "gam"), rhs), 
                   ee[c("cs", "se", "disp", "trials", "cat")])
     req_vars <- unique(ulapply(req_vars, all.vars))
-    req_vars <- setdiff(req_vars, c(rsv_vars, names(ee$nonlinear)))
+    req_vars <- setdiff(req_vars, c(rsv_vars, names(ee$nlpars)))
     conditions <- as.data.frame(as.list(rep(NA, length(req_vars))))
     names(conditions) <- req_vars
     for (v in req_vars) {

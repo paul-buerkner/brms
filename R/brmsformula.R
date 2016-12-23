@@ -418,30 +418,30 @@ brmsformula <- function(formula, ..., flist = NULL,
   }
   nl_pre <- isTRUE(attr(formula, "nl")) || length(nonlinear)
   nl <- ifelse(nl_pre, TRUE, nl)
-  old_pars <- rmNULL(attributes(formula)[auxpars()])
-  attr(formula, "pars")[names(old_pars)] <- old_pars
+  old_forms <- rmNULL(attributes(formula)[auxpars()])
+  attr(formula, "pforms")[names(old_forms)] <- old_forms
   
   # parse and validate dots arguments
   dots <- c(list(...), flist, nonlinear)
-  pars <- list()
+  forms <- list()
   for (i in seq_along(dots)) {
-    pars <- c(pars, prepare_auxformula(dots[[i]], par = names(dots)[i]))
+    forms <- c(forms, prepare_auxformula(dots[[i]], par = names(dots)[i]))
   }
-  dupl_pars <- names(pars)[duplicated(names(pars))]
+  dupl_pars <- names(forms)[duplicated(names(forms))]
   if (length(dupl_pars)) {
     dupl_pars <- collapse_comma(dupl_pars)
     stop2("Duplicated specification of parameters ", dupl_pars)
   }
   if (!nl) {
-    inv_names <- setdiff(names(pars), auxpars())
+    inv_names <- setdiff(names(forms), auxpars())
     if (length(inv_names)) {
       inv_names <- collapse_comma(inv_names)
-      stop2("The following parameter names were invalid: ", inv_names,
+      stop2("The following parameter names are invalid: ", inv_names,
             "\nSet nl = TRUE if you want to specify non-linear models.")
     }
   }
   # add attributes to formula
-  attr(formula, "pars")[names(pars)] <- pars
+  attr(formula, "pforms")[names(forms)] <- forms
   if (is.null(attr(formula, "nl"))) {
     attr(formula, "nl") <- as.logical(nl)[1]
   }
@@ -494,14 +494,10 @@ prepare_auxformula <- function(formula, par = NULL, rsv_pars = NULL) {
   out
 }
 
-auxpars <- function(incl_nl = FALSE) {
+auxpars <- function() {
   # names of auxiliary parameters
-  auxpars <- c("sigma", "shape", "nu", "phi", "kappa", "beta", 
-               "zi", "hu", "bs", "ndt", "bias", "disc")
-  if (incl_nl) {
-    auxpars <- c(auxpars, "nonlinear")
-  }
-  auxpars
+  c("sigma", "shape", "nu", "phi", "kappa", "beta", 
+    "zi", "hu", "bs", "ndt", "bias", "disc")
 }
 
 ilink_auxpars <- function(ap = NULL, stan = FALSE) {
@@ -535,11 +531,9 @@ valid_auxpars <- function(family, effects = list(), autocor = cor_arma()) {
   names(x)[x]
 }
 
-sformula <- function(x) {
-  # extract special formulas stored in brmsformula objects
-  # Args:
-  #   x: object coerced to a 'brmsformula' object
-  attr(bf(x), "pars")
+pforms <- function(x, ...) {
+  # extract formulas of additional parameters
+  attr(bf(x, ...), "pforms")
 }
 
 #' @export
@@ -555,8 +549,8 @@ update.brmsformula <- function(object, formula.,
   #         "keep": keep old formula
   #   ...: currently unused
   mode <- match.arg(mode)
-  new_auxpars <- sformula(formula.)
-  old_auxpars <- sformula(object)
+  new_pforms <- pforms(formula.)
+  old_pforms <- pforms(object)
   if (mode == "update") {
     new_formula <- update.formula(object, formula., ...)
   } else if (mode == "replace") {
@@ -570,21 +564,21 @@ update.brmsformula <- function(object, formula.,
   for (a in spec_attr) {
     attr(new_formula, a) <- get_arg(a, new_attr, old_attr)
   }
-  attr(new_formula, "pars") <- NULL
-  new_formula <- do.call(bf, c(new_formula, new_auxpars))
-  new_formula <- do.call(bf, c(new_formula, old_auxpars))
+  attr(new_formula, "pforms") <- NULL
+  new_formula <- do.call(bf, c(new_formula, new_pforms))
+  new_formula <- do.call(bf, c(new_formula, old_pforms))
   new_formula
 }
 
 #' @export
 print.brmsformula <- function(x, wsp = 0, ...) {
   cat(gsub(" {1,}", " ", Reduce(paste, deparse(x))), "\n")
-  sforms <- sformula(x)
-  if (length(sforms)) {
-    sforms <- ulapply(sforms, function(form) 
+  pforms <- pforms(x)
+  if (length(pforms)) {
+    pforms <- ulapply(pforms, function(form) 
       gsub(" {1,}", " ", Reduce(paste, deparse(form))))
     wsp <- collapse(rep(" ", wsp))
-    cat(collapse(wsp, sforms, "\n"))
+    cat(collapse(wsp, pforms, "\n"))
   }
   invisible(x)
 }

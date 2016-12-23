@@ -76,35 +76,23 @@ extract_effects <- function(formula, family = NA, autocor = NULL,
     }
   }
   
-  # check validity of non-linear parameters
-  nl <- isTRUE(attr(formula, "nl"))
-  sforms <- sformula(formula)
-  auxpars <- intersect(names(sforms), valid_auxpars(family, x))
-  nlpars <- setdiff(names(sforms), auxpars)
-  if (nl) {
-    nonlinear <- sforms[nlpars] 
-  } else {
-    
-    nonlinear <- NULL
-  }
-  
-  sforms <- sformula(formula)
-  auxpars <- intersect(names(sforms), valid_auxpars(family, x))
-  nlpars <- setdiff(names(sforms), auxpars)
+  pforms <- pforms(formula)
+  auxpars <- intersect(names(pforms), valid_auxpars(family, x))
+  nlpars <- setdiff(names(pforms), auxpars)
   tfixed <- gsub("\\|+[^~]*~", "~", tformula)
   if (isTRUE(attr(formula, "nl"))) {
     if (!length(nlpars)) {
       stop2("No non-linear parameters specified.")
     }
     if (grepl("|", tfixed, fixed = TRUE)) {
-      stop2("Group-level effects in non-linear models have ", 
-            "to be specified in the 'nonlinear' argument.")
+      stop2("Group-level terms cannot be specified ", 
+            "in the non-linear formula itself.")
     }
     if (is.ordinal(family) || is.categorical(family)) {
       stop2("Non-linear formulas are not yet allowed for this family.")
     }
     x$fixed <- formula(tfixed)
-    x$nonlinear <- extract_nonlinear(sforms[nlpars], x$fixed)
+    x$nlpars <- extract_nonlinear(pforms[nlpars], x$fixed)
     re_terms <- NULL
   } else {
     if (length(nlpars)) {
@@ -155,7 +143,7 @@ extract_effects <- function(formula, family = NA, autocor = NULL,
   }
   
   # make sure to store the plain names of all predictors
-  covars <- setdiff(all.vars(rhs(x$fixed)), names(x$nonlinear))
+  covars <- setdiff(all.vars(rhs(x$fixed)), names(x$nlpars))
   x$covars <- formula(paste("~", paste(c("1", covars), collapse = "+")))
   attr(x$covars, "rsv_intercept") <- TRUE
   # extract group-level effects parts
@@ -164,18 +152,19 @@ extract_effects <- function(formula, family = NA, autocor = NULL,
   x$time <- extract_time(autocor$formula)
   # evaluate formulas for auxiliary parameters
   for (ap in auxpars) {
-    x[[ap]] <- extract_effects(rhs(sforms[[ap]]), check_response = FALSE)
+    x$auxpars[[ap]] <- extract_effects(rhs(pforms[[ap]]), 
+                                       check_response = FALSE)
   }
   
   # make a formula containing all required variables
   lhs_vars <- if (resp_rhs_all) all.vars(lhs(x$fixed))
-  fixed_vars <- if (!length(x$nonlinear)) rhs(x$fixed)
+  fixed_vars <- if (!length(x$nlpars)) rhs(x$fixed)
   formula_list <- c(lhs_vars, add_vars, fixed_vars,
                     x[c("covars", "cs", "mo", "me")], 
                     attr(x$gam, "allvars"), x$random$form,
                     lapply(x$random$gcall, "[[", "allvars"), 
-                    lapply(x$nonlinear, "[[", "allvars"),
-                    lapply(x[auxpars()], "[[", "allvars"), 
+                    lapply(x$nlpars, "[[", "allvars"),
+                    lapply(x$auxpars, "[[", "allvars"), 
                     get_offset(x$fixed), x$time$allvars)
   new_formula <- collapse(ulapply(rmNULL(formula_list), plus_rhs))
   all_vars <- c("1", all.vars(parse(text = new_formula)))
@@ -196,7 +185,7 @@ extract_effects <- function(formula, family = NA, autocor = NULL,
         stop2("Multivariate models currently allow only ",
               "addition argument 'weights'.")
       }
-      if (length(rmNULL(x[auxpars]))) {
+      if (length(x$auxpars)) {
         stop2("Auxiliary parameter cannot yet be ", 
               "predicted in multivariate models.")
       }
@@ -288,7 +277,7 @@ extract_me <- function(formula) {
   # Args:
   #   formula: a formula object
   all_terms <- all_terms(formula)
-  # stop group-level terms from being included
+  # do not include group-level terms
   all_terms[grepl("\\|", all_terms)] <- ""
   pos_me_terms <- grepl_expr("^me\\([^:]*\\)$", all_terms)
   me_terms <- all_terms[pos_me_terms]
@@ -326,7 +315,6 @@ extract_random <- function(re_terms) {
   }
   if (length(random)) {
     random <- do.call(rbind, random)
-    # ensure that all REs of the same gf are next to each other
     random <- random[order(random$group), ]
   } else {
     random <- data.frame(group = character(0), gn = numeric(0),
@@ -406,7 +394,7 @@ extract_time <- function(formula) {
 }
 
 extract_nonlinear <- function(x, model = ~1) {
-  # prepare nonlinear formulas
+  # prepare non-linear formulas
   # Args:
   #   x: a list for formulas specifying linear predictors for 
   #      non-linear parameters
@@ -415,20 +403,20 @@ extract_nonlinear <- function(x, model = ~1) {
   #   A list of objects each returned by extract_effects
   stopifnot(is.list(x), is(model, "formula"))
   if (length(x)) {
-    nleffects <- named_list(names(x))
+    out <- named_list(names(x))
     for (i in seq_along(x)) {
-      nleffects[[i]] <- extract_effects(rhs(x[[i]]), check_response = FALSE)
+      out[[i]] <- extract_effects(rhs(x[[i]]), check_response = FALSE)
     }
     model_vars <- all.vars(rhs(model))
-    missing_pars <- setdiff(names(nleffects), model_vars)
+    missing_pars <- setdiff(names(out), model_vars)
     if (length(missing_pars)) {
       stop2("Some non-linear parameters are missing in formula: ", 
-            paste0("'", missing_pars, "'", collapse = ", "))
+            collapse_comma(missing_pars))
     }
   } else {
-    nleffects <- list() 
+    out <- list() 
   }
-  nleffects
+  out
 }
 
 avoid_auxpars <- function(names, effects) {
@@ -436,8 +424,7 @@ avoid_auxpars <- function(names, effects) {
   # Args:
   #   names: names to check for ambiguity
   #   effects: output of extract_effects
-  auxpars <- c(auxpars(), "mo", "cs")
-  auxpars <- intersect(auxpars, names(effects))
+  auxpars <- c(names(effects$auxpars), "mo", "cs", "me")
   if (length(auxpars)) {
     auxpars_prefix <- paste0("^", auxpars, "_")
     invalid <- any(ulapply(auxpars_prefix, grepl, names))
@@ -452,13 +439,12 @@ avoid_auxpars <- function(names, effects) {
 
 update_formula <- function(formula, data = NULL, family = gaussian(),
                            nonlinear = NULL, partial = NULL) {
-  # incorporate addition arguments and category specific effects into formula 
+  # incorporate additional arguments into formula
   # Args:
-  #   formula: a model formula 
-  #   data: a data.frame or NULL 
-  #   partial: a one sided formula containing category specific effects
-  # Returns:
-  #   an updated formula containing the addition and category specific effects
+  #   formula: object of class 'formula'
+  #   data: optional data.frame
+  #   family: optional object of class 'family'
+  #   nonlinear, partial: deprecated arguments of brm
   formula <- bf(formula, nonlinear = nonlinear)
   attr(formula, "family") <- family
   old_attr <- attributes(formula)
@@ -635,14 +621,11 @@ update_re_terms <- function(formula, re_formula = NULL) {
   # Returns:
   #  a formula with updated RE terms
   old_attr <- attributes(formula)
-  sforms <- sformula(formula)
-  sforms <- lapply(sforms, update_re_terms, re_formula)
+  pforms <- pforms(formula)
+  pforms <- lapply(pforms, update_re_terms, re_formula)
   if (isTRUE(attr(formula, "nl"))) {
     # non-linear formulae may cause errors when passed to terms
     # and do not contain group-level effects anyway
-    # new_formula <- formula
-    # spars$nonlinear <- lapply(spars$nonlinear, update_re_terms, 
-    #                           re_formula = re_formula)
     new_formula <- formula
   } else {
     re_formula <- check_re_formula(re_formula, formula)
@@ -662,7 +645,7 @@ update_re_terms <- function(formula, re_formula = NULL) {
     new_formula <- formula(new_formula)
   }
   attributes(new_formula)[names(old_attr)] <- old_attr
-  attr(new_formula, "pars") <- sforms
+  attr(new_formula, "pforms") <- pforms
   environment(new_formula) <- environment(formula)
   bf(new_formula)
 }
@@ -692,8 +675,7 @@ get_effect <- function(effects,
   eff <- effects[[target]]
   out <- list(eff)
   if (all) {
-    el <- c(effects[auxpars()], effects$nonlinear)
-    el <- rmNULL(el, recursive = FALSE)
+    el <- c(effects$auxpars, effects$nlpars)
     if (length(el)) {
       out <- c(out, lapply(el, function(e) e[[target]]))
     }
@@ -726,7 +708,7 @@ get_random <- function(effects, all = TRUE) {
   }
   if (all) {
     # non-linear and auxiliary parameters
-    ep <- rmNULL(c(effects[auxpars()], effects$nonlinear), recursive = FALSE)
+    ep <- c(effects$auxpars, effects$nlpars)
     if (length(ep)) {
       rand <- do.call(rbind, lapply(ep, function(e) get_random(e)))
       # R does not allow duplicated rownames and adds "."
@@ -787,23 +769,22 @@ get_all_effects <- function(effects, rsv_vars = NULL,
       formula(paste("~", paste(x, collapse = "*"))))
     get_var_combs(ee$fixed, ee$mo, ee$cs, ee$me, alist = alist)
   }
-  if (length(effects$nonlinear)) {
+  if (length(effects$nlpars)) {
     # allow covariates as well as fixed effects of non-linear parameters
-    covars <- setdiff(all.vars(rhs(effects$fixed)), names(effects$nonlinear))
+    covars <- setdiff(all.vars(rhs(effects$fixed)), names(effects$nlpars))
     covars_comb <- as.list(covars)
     if (length(covars) > 1L) {
       covars_comb <- c(covars_comb, utils::combn(covars, 2, simplify = FALSE))
     } 
-    nl_effects <- lapply(effects$nonlinear, .get_all_effects)
+    nl_effects <- lapply(effects$nlpars, .get_all_effects)
     nl_effects <- unlist(nl_effects, recursive = FALSE)
     out <- unique(c(covars_comb, nl_effects))
   } else {
     out <- .get_all_effects(effects)
   }
   # make sure to also include effects only present in auxpars
-  effects_auxpars <- rmNULL(effects[auxpars()])
-  if (length(effects_auxpars)) {
-    ap_effects <- lapply(effects_auxpars, .get_all_effects)
+  if (length(effects$auxpars)) {
+    ap_effects <- lapply(effects$auxpars, .get_all_effects)
     ap_effects <- unlist(ap_effects, recursive = FALSE)
     out <- unique(c(out, ap_effects))
   }
@@ -978,13 +959,12 @@ has_splines <- function(effects) {
   # check if splines are present in the model
   # Args:
   #   effects: output of extract_effects
-  if (length(effects$nonlinear)) {
-    out <- any(ulapply(effects$nonlinear, has_splines))
+  if (length(effects$nlpars)) {
+    out <- any(ulapply(effects$nlpars, has_splines))
   } else {
     out <- !is.null(effects[["gam"]])
   }
-  ee_auxpars <- rmNULL(effects[auxpars()], recursive = FALSE)
-  out || any(ulapply(ee_auxpars, has_splines))
+  out || any(ulapply(effects$auxpars, has_splines))
 }
 
 has_cs <- function(effects) {
@@ -1201,7 +1181,7 @@ exclude_pars <- function(effects, data = NULL, ranef = empty_ranef(),
            "Sigma", "LSigma", "res_cov_matrix", "hs_local",
            intersect(auxpars(), names(effects)))
   # exclude spline helper parameters and temporary Intercepts
-  par_effects <- rmNULL(c(effects[auxpars()], effects$nonlinear))
+  par_effects <- c(effects$auxpars, effects$nlpars)
   for (par in names(par_effects)) {
     out <- c(out, paste0("temp_", par, "_Intercept"))
     splines <- get_spline_labels(par_effects[[par]], data)

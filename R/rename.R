@@ -99,15 +99,15 @@ rename_pars <- function(x) {
   
   # find positions of parameters and define new names
   change <- list()
-  if (length(ee$nonlinear)) {
-    nlpars <- names(ee$nonlinear)
+  if (length(ee$nlpars)) {
+    nlpars <- names(ee$nlpars)
     for (p in nlpars) {
-      splines <- get_spline_labels(ee$nonlinear[[p]], x$data, covars = TRUE)
+      splines <- get_spline_labels(ee$nlpars[[p]], x$data, covars = TRUE)
       change_eff <- change_effects(
         pars = pars, dims = x$fit@sim$dims_oi,
         fixef = colnames(standata[[paste0("X_", p)]]),
         monef = colnames(standata[[paste0("Xmo_", p)]]),
-        meef = get_me_labels(ee$nonlinear[[p]], x$data),
+        meef = get_me_labels(ee$nlpars[[p]], x$data),
         splines = splines, nlpar = p)
       change <- c(change, change_eff)
     }
@@ -138,14 +138,14 @@ rename_pars <- function(x) {
     }
   }
   # rename parameters related to auxilliary parameters
-  for (ap in intersect(auxpars(), names(ee))) {
+  for (ap in names(ee$auxpars)) {
+    splines <- get_spline_labels(ee$auxpars[[ap]], x$data, covars = TRUE)
     change_eff <- change_effects(
       pars = pars, dims = x$fit@sim$dims_oi,
       fixef = colnames(standata[[paste0("X_", ap)]]),
       monef = colnames(standata[[paste0("Xmo_", ap)]]),
-      meef = get_me_labels(ee[[ap]], x$data),
-      splines = get_spline_labels(ee[[ap]], x$data, covars = TRUE),
-      nlpar = ap)
+      meef = get_me_labels(ee$auxpars[[ap]], x$data),
+      splines = splines, nlpar = ap)
     change <- c(change, change_eff)
   }
   # rename group-level parameters separately
@@ -582,7 +582,7 @@ change_old_splines <- function(effects, pars, dims) {
   }
   
   change <- list()
-  spec_effects <- rmNULL(c(effects[auxpars()], effects$nonlinear))
+  spec_effects <- c(effects$auxpars, effects$nlpars)
   for (sp in names(spec_effects)) {
     se <- spec_effects[[sp]]
     change <- c(change, .change_old_splines(se, nlpar = sp))
