@@ -2,6 +2,16 @@
 \title{brms News}
 \encoding{UTF-8}
 
+\section{CHANGES IN VERSION 1.3.1++}{
+  \subsection{NEW FEATURES}{
+    \itemize{
+      \item Pass priors to \pkg{Stan} directly without
+      performing any checks by setting \code{check = FALSE} 
+      in \code{set_prior}.
+    }
+  }
+}
+
 \section{CHANGES IN VERSION 1.3.1}{
   \subsection{NEW FEATURES}{
     \itemize{

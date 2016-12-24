@@ -18,6 +18,10 @@
 #' @param ub Upper bound for parameter restriction. Currently only allowed
 #'   for classes \code{"b"}, \code{"ar"}, \code{"ma"}, and \code{"arr"}.
 #'   Defaults to \code{NULL}, that is no restriction.
+#' @param check Logical; Indicates whether priors
+#'   should be checked for validity (as far as possible).
+#'   Defaults to \code{TRUE}. If \code{FALSE}, \code{prior} is passed
+#'   to the Stan code as is, and all other arguments are ignored.
 #' @param ... Arguments passed to \code{set_prior}.
 #' 
 #' @return An object of class \code{brmsprior} to be used in the \code{prior}
@@ -341,10 +345,15 @@
 #' (prior1 <- prior_string("cauchy(0, 1)", class = "sd"))
 #' (prior2 <- prior(cauchy(0, 1), class = sd))
 #' identical(prior1, prior2)
+#' 
+#' ## pass priors to Stan without checking
+#' prior <- set_prior("target += normal_lpdf(b[1] | 0, 1)", check = FALSE)
+#' make_stancode(count ~ Trt_c, data = epilepsy, prior = prior)
 #'
 #' @export
 set_prior <- function(prior, class = "b", coef = "", group = "",
-                      nlpar = "", resp = NULL, lb = NULL, ub = NULL) {
+                      nlpar = "", resp = NULL, lb = NULL, ub = NULL,
+                      check = TRUE) {
   prior <- as.character(prior)
   class <- as.character(class)
   group <- as.character(group)
@@ -352,6 +361,7 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
   nlpar <- as.character(use_alias(nlpar, resp, warn = FALSE))
   lb <- as.numeric(lb)
   ub <- as.numeric(ub)
+  check <- as.logical(check)[1]
   if (length(prior) != 1 || length(class) != 1 || length(coef) != 1 || 
       length(group) != 1 || length(nlpar) != 1 || length(lb) > 1 || 
       length(ub) > 1) {
@@ -360,7 +370,7 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
     
   valid_classes <- c("Intercept", "b", "sd", "sds", "simplex", "cor", "L", 
                      "ar", "ma", "arr", "sigmaLL", "rescor", "Lrescor", 
-                     "delta", auxpars())
+                     "delta", auxpars(), if (!check) "")
   if (!class %in% valid_classes) {
     stop2("'", class, "' is not a valid parameter class.")
   }
@@ -401,10 +411,9 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
   } else {
     bound <- ""
   }
-  if (grepl("^increment_log_prob\\(", prior)) {
-    # increment_log_prob can be used to directly add a term 
-    # to the log posterior
-    class <- coef <- group <- nlpar <- ""
+  if (!check) {
+    # prior will be added to the log-posterior as is
+    class <- coef <- group <- nlpar <- bound <- ""
   }
   do.call(brmsprior, nlist(prior, class, coef, group, nlpar, bound))
 }
@@ -788,7 +797,7 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
     attr(prior, "prior_only") <- prior_only
     return(prior)
   }
-  stopifnot(is(formula, "brmsformula"))
+  formula <- bf(formula)
   ee <- extract_effects(formula, family = family)  
   all_priors <- get_prior(formula = formula, data = data, 
                           family = family, autocor = autocor, 
@@ -797,9 +806,9 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
     prior <- all_priors  
   }
   # exclude priors using increment_log_prob to readd them at the end
-  has_incr_lp <- grepl("^increment_log_prob\\(", prior$prior)
-  prior_incr_lp <- prior[has_incr_lp, ]
-  prior <- prior[!has_incr_lp, ]
+  no_checks <- !nzchar(prior$class)
+  prior_no_checks <- prior[no_checks, ]
+  prior <- prior[!no_checks, ]
   # check for duplicated priors
   prior$class <- rename(prior$class, symbols = c("^cor$", "^rescor$"), 
                         subs = c("L", "Lrescor"), fixed = FALSE)
@@ -877,7 +886,7 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
     prior <- prior[-rows2remove, ]
   }
   prior <- prior[with(prior, order(nlpar, class, group, coef)), ]
-  prior <- rbind(prior, prior_incr_lp)
+  prior <- rbind(prior, prior_no_checks)
   rownames(prior) <- seq_len(nrow(prior))
   attr(prior, "prior_only") <- prior_only
   attr(prior, "checked") <- TRUE
@@ -950,14 +959,14 @@ check_prior_content <- function(prior, family = gaussian(), warn = TRUE) {
       }
     }  # end for  
     if (nchar(lb_warning) && warn) {
-      warning2("It appears that you have specified a lower bounded ", 
+      warning2("It appears as if you have specified a lower bounded ", 
                "prior on a parameter that has no natural lower bound.",
                "\nIf this is really what you want, please specify ",
                "argument 'lb' of 'set_prior' appropriately.",
                "\nWarning occurred for prior \n", lb_warning)
     }
     if (nchar(ub_warning) && warn) {
-      warning2("It appears that you have specified an upper bounded ", 
+      warning2("It appears as if you have specified an upper bounded ", 
                "prior on a parameter that has no natural upper bound.",
                "\nIf this is really what you want, please specify ",
                "argument 'ub' of 'set_prior' appropriately.",

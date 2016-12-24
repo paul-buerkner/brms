@@ -7,7 +7,7 @@
 \title{Prior Definitions for \pkg{brms} Models}
 \usage{
 set_prior(prior, class = "b", coef = "", group = "", nlpar = "",
-  resp = NULL, lb = NULL, ub = NULL)
+  resp = NULL, lb = NULL, ub = NULL, check = TRUE)
 
 prior_string(prior, ...)
 
@@ -37,6 +37,11 @@ Defaults to \code{NULL}, that is no restriction.}
 \item{ub}{Upper bound for parameter restriction. Currently only allowed
 for classes \code{"b"}, \code{"ar"}, \code{"ma"}, and \code{"arr"}.
 Defaults to \code{NULL}, that is no restriction.}
+
+\item{check}{Logical; Indicates whether priors
+should be checked for validity (as far as possible).
+Defaults to \code{TRUE}. If \code{FALSE}, \code{prior} is passed
+to the Stan code as is, and all other arguments are ignored.}
 
 \item{...}{Arguments passed to \code{set_prior}.}
 }
@@ -354,6 +359,10 @@ make_stancode(count ~ log_Age_c + log_Base4_c * Trt_c,
 (prior1 <- prior_string("cauchy(0, 1)", class = "sd"))
 (prior2 <- prior(cauchy(0, 1), class = sd))
 identical(prior1, prior2)
+
+## pass priors to Stan without checking
+prior <- set_prior("target += normal_lpdf(b[1] | 0, 1)", check = FALSE)
+make_stancode(count ~ Trt_c, data = epilepsy, prior = prior)
 
 }
 \references{
