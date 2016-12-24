@@ -614,7 +614,7 @@ has_sigma <- function(family, effects = NULL,
   if (is.formula(effects$se)) {
     # call .se without evaluating the x argument 
     cl <- rhs(effects$se)[[2]]
-    cl[[1]] <- quote(.se_no_data)
+    cl[[1]] <- quote(resp_se_no_data)
     se_only <- isFALSE(attr(eval(cl), "sigma")) 
     if (se_only && use_cov(autocor)) {
       stop2("Please set argument 'sigma' of function 'se' ",  

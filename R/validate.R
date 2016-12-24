@@ -20,66 +20,14 @@ extract_effects <- function(formula, family = NA, autocor = NULL,
   }
  
   x <- nlist(formula)
-  tformula <- formula2str(formula)
-  # handle addition arguments
-  # TODO: move to separate function?
-  add_funs <- c("se", "weights", "trials", "cat", 
-                "cens", "trunc", "disp", "dec")
-  add_vars <- list()
-  if (!is.na(family[[1]])) {
-    add <- get_matches("\\|[^~]*~", tformula)
-    if (length(add)) {
-      # replace deprecated '|' by '+'
-      add <- paste("~", rename(substr(add, 2, nchar(add) - 1), "|", "+"))
-      add_terms <- attr(terms(formula(add)), "term.labels")
-      for (af in add_funs) {
-        matches <- grep(paste0("^", af, "\\(.+\\)$"), add_terms)
-        if (length(matches) == 1L) {
-          x[[af]] <- add_terms[matches]
-          add_terms <- add_terms[-matches]
-          if (!is.na(x[[af]]) && (add_families(af)[1] == "all" ||
-                                  family$family %in% add_families(af))) {
-            args <- substr(x[[af]], nchar(af) + 2, nchar(x[[af]]) - 1)
-            try_numeric <- SW(as.numeric(args))
-            if (af %in% c("trials", "cat") && !is.na(try_numeric)) {
-              x[[af]] <- try_numeric
-            } else {
-              x[[af]] <- as.formula(paste0("~ .", x[[af]]))
-              if (length(all.vars(x[[af]]))) {
-                form <- paste("~", paste(all.vars(x[[af]]), collapse = "+"))
-                add_vars[[af]] <- as.formula(form)
-              }
-            }
-          } else {
-            stop2("Argument '", af, "' is not supported for ", 
-                  "family '", family$family, "'.")
-          } 
-        } else if (length(matches) > 1L) {
-          stop2("Addition arguments may be only defined once.")
-        } 
-      }
-      if (length(add_terms)) {
-        stop2("Invalid addition part of formula. \nPlease see the ", 
-              "'Details' section of help(brmsformula).")
-      }
-      if (is.formula(x$se) && is.formula(x$disp)) {
-        stop2("Addition arguments 'se' and 'disp' cannot ", 
-              "be used at the same time.")
-      }
-      cens_or_weights <- is.formula(x$cens) || is.formula(x$weights)
-      if (is.formula(x$trunc) && cens_or_weights) {
-        stop2("Truncation is not yet possible in censored or weighted models.")
-      }
-    }
-    if (is.wiener(family) && check_response && !is.formula(x$dec)) {
-      stop2("Addition argument 'dec' is required for family 'wiener'.")
-    }
-  }
+  add_forms <- extract_add(formula, family, check_response)
+  add_vars <- str2formula(ulapply(add_forms, all.vars))
+  x[names(add_forms)] <- add_forms
   
   pforms <- pforms(formula)
   auxpars <- intersect(names(pforms), valid_auxpars(family, x))
   nlpars <- setdiff(names(pforms), auxpars)
-  tfixed <- gsub("\\|+[^~]*~", "~", tformula)
+  tfixed <- gsub("\\|+[^~]*~", "~", formula2str(formula))
   if (isTRUE(attr(formula, "nl"))) {
     if (!length(nlpars)) {
       stop2("No non-linear parameters specified.")
@@ -144,7 +92,7 @@ extract_effects <- function(formula, family = NA, autocor = NULL,
   
   # make sure to store the plain names of all predictors
   covars <- setdiff(all.vars(rhs(x$fixed)), names(x$nlpars))
-  x$covars <- formula(paste("~", paste(c("1", covars), collapse = "+")))
+  x$covars <- str2formula(covars)
   attr(x$covars, "rsv_intercept") <- TRUE
   # extract group-level effects parts
   x$random <- extract_random(re_terms)
@@ -203,6 +151,59 @@ extract_effects <- function(formula, family = NA, autocor = NULL,
         x$allvars[[2]] <- quote(response)
         attr(x$formula, "old_mv") <- TRUE
       }
+    }
+  }
+  x
+}
+
+extract_add <- function(formula, family = NA, check_response = TRUE) {
+  # extract addition arguments out formula
+  # Args:
+  #   see extract_effects
+  # Returns:
+  #   A list of formulas each containg a single addition term
+  x <- list()
+  if (!is.na(family[[1]])) {
+    add <- get_matches("\\|[^~]*~", formula2str(formula))
+    if (length(add)) {
+      # replace deprecated '|' by '+'
+      add <- paste("~", rename(substr(add, 2, nchar(add) - 1), "|", "+"))
+      add_terms <- attr(terms(formula(add)), "term.labels")
+      for (af in add_funs()) {
+        matches <- grep(paste0("^(resp_)?", af, "\\(.+\\)$"), add_terms)
+        if (length(matches) == 1L) {
+          x[[af]] <- add_terms[matches]
+          if (!grepl("^resp_", x[[af]])) {
+            x[[af]] <- paste0("resp_", x[[af]])
+          }
+          add_terms <- add_terms[-matches]
+          add_fams <- add_families(af)
+          valid <- add_fams[1] == "all" || family$family %in% add_fams
+          if (!is.na(x[[af]]) && valid) {
+            x[[af]] <- str2formula(x[[af]])
+          } else {
+            stop2("Argument '", af, "' is not supported for ", 
+                  "family '", family$family, "'.")
+          } 
+        } else if (length(matches) > 1L) {
+          stop2("Each addition argument may only be defined once.")
+        } 
+      }
+      if (length(add_terms)) {
+        stop2("The following addition terms are invalid:\n",
+              collapse_comma(add_terms))
+      }
+      if (is.formula(x$se) && is.formula(x$disp)) {
+        stop2("Addition arguments 'se' and 'disp' cannot ", 
+              "be used at the same time.")
+      }
+      cens_or_weights <- is.formula(x$cens) || is.formula(x$weights)
+      if (is.formula(x$trunc) && cens_or_weights) {
+        stop2("Truncation is not yet possible in censored or weighted models.")
+      }
+    }
+    if (is.wiener(family) && check_response && !is.formula(x$dec)) {
+      stop2("Addition argument 'dec' is required for family 'wiener'.")
     }
   }
   x
@@ -1097,17 +1098,21 @@ add_families <- function(x) {
          stop2(paste("Addition argument '", x, "' is not supported.")))
 }
 
+add_funs <- function() {
+  # a character vector naming all valid addition arguments 
+  c("se", "weights", "trials", "cat", "cens", "trunc", "disp", "dec")
+}
+
 get_bounds <- function(formula, data = NULL) {
-  # extract truncation boundaries out of a formula
-  # that is known to contain the .trunc function
+  # extract truncation boundaries
   # Returns:
   #   a list containing two numbers named lb and ub
   if (is.formula(formula)) {
     term <- attr(terms(formula), "term.labels")
-    stopifnot(length(term) == 1L && grepl("\\.trunc\\(", term))
+    stopifnot(length(term) == 1L && grepl("resp_trunc\\(", term))
     trunc <- eval_rhs(formula, data = data)
   } else {
-    trunc <- .trunc()
+    trunc <- resp_trunc()
   }
   trunc
 }
@@ -1116,7 +1121,7 @@ has_cens <- function(formula, data = NULL) {
   # indicate if the model is (possibly interval) censored
   if (is.formula(formula)) {
     term <- attr(terms(formula), "term.labels")
-    stopifnot(length(term) == 1L && grepl("\\.cens\\(", term))
+    stopifnot(length(term) == 1L && grepl("resp_cens\\(", term))
     cens <- eval_rhs(formula, data = data)
     cens <- structure(TRUE, interval = !is.null(attr(cens, "y2")))
   } else {

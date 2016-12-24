@@ -1,4 +1,4 @@
-#' Set up a model formula for use in the \pkg{brms} package
+#' Set up a model formula for use in \pkg{brms}
 #' 
 #' Set up a model formula for use in the \pkg{brms} package
 #' allowing to define (potentially non-linear) additive multilevel 
@@ -47,7 +47,11 @@
 #' @return An object of class \code{brmsformula}, which inherits
 #'  from class \code{formula} but contains additional attributes.
 #'   
-#' @details The \code{formula} argument accepts formulae of the following syntax:
+#' @details 
+#' 
+#'   \bold{General formula structure}
+#'   
+#'   The \code{formula} argument accepts formulae of the following syntax:
 #'   
 #'   \code{response | addition ~ Pterms + (Gterms | group)} 
 #'   
@@ -58,15 +62,13 @@
 #'   accross grouping variables specified in \code{group}. We
 #'   call them 'group-level' effects or (adopting frequentist 
 #'   vocabulary) 'random' effects, although the latter name is misleading
-#'   in a Bayesian context 
-#'   (for more details type \code{vignette("brms_overview")}).
-#'   Multiple grouping factors each with multiple group-level effects 
-#'   are possible. You can specify multi-membership terms
-#'   using the \code{\link[brms:mm]{mm}} function. For instance, 
-#'   a multi-membership term with two members could be
-#'   \code{(1|mm(g1, g2))}, where \code{g1} and \code{g2} specify
-#'   the first and second member, respectively.
+#'   in a Bayesian context.
+#'   For more details type \code{vignette("brms_overview")}.
 #'   
+#'   \bold{Group-level terms}
+#'   
+#'   Multiple grouping factors each with multiple group-level effects 
+#'   are possible. 
 #'   Instead of \code{|} you may use \code{||} in grouping terms
 #'   to prevent correlations from being modeled. 
 #'   Alternatively, it is possible to model different group-level terms of 
@@ -76,7 +78,15 @@
 #'   If, for instance, one specifies the terms \code{(1+x|2|g)} and 
 #'   \code{(1+z|2|g)} somewhere in the formulae passed to \code{brmsformula},
 #'   correlations between the corresponding group-level effects 
-#'   will be estimated.
+#'   will be estimated. 
+#'   
+#'   You can specify multi-membership terms
+#'   using the \code{\link[brms:mm]{mm}} function. For instance, 
+#'   a multi-membership term with two members could be
+#'   \code{(1|mm(g1, g2))}, where \code{g1} and \code{g2} specify
+#'   the first and second member, respectively.
+#'   
+#'   \bold{Special predictor terms}
 #'   
 #'   Smoothing terms can modeled using the \code{\link[mgcv:s]{s}}
 #'   and \code{\link[mgcv:t2]{t2}} functions of the \pkg{mgcv} package 
@@ -132,13 +142,16 @@
 #'   a vignette will be added to explain more details about these
 #'   so called 'error-in-variables' models and provide real world examples.
 #'   
+#'   \bold{Additional response information}
+#'   
 #'   Another speciality of the \pkg{brms} formula syntax is the optional 
 #'   \code{addition} term, which may contain 
 #'   multiple terms of the form \code{fun(variable)} seperated by \code{+} each 
 #'   providing special information on the response variable. \code{fun} can be 
 #'   replaced with either \code{se}, \code{weights}, \code{disp}, \code{trials},
-#'   \code{cat}, \code{cens}, \code{trunc}, or \code{dec}. 
-#'   Their meanings are explained below. 
+#'   \code{cat}, \code{cens}, \code{trunc}, or \code{dec}.
+#'   Their meanings are explained below 
+#'   (see also \code{\link[brms:addition-terms]{addition-terms}}). 
 #'   
 #'   For families \code{gaussian} and \code{student}, it is 
 #'   possible to specify standard errors of the observation, thus allowing 
@@ -171,7 +184,7 @@
 #'   implementation and is less general as it is only usable for the
 #'   families \code{gaussian}, \code{student},
 #'   \code{lognormal}, \code{Gamma}, \code{weibull}, and \code{negbinomial}.
-#'   For the former four families, the residual standard deviation 
+#'   For the former three families, the residual standard deviation 
 #'   \code{sigma} is multiplied by the values given in 
 #'   \code{disp}, so that higher values lead to lower weights.
 #'   Contrariwise, for the latter three families, the parameter \code{shape}
@@ -183,8 +196,8 @@
 #'   addition should contain a variable indicating the number of trials 
 #'   underlying each observation. In \code{lme4} syntax, we may write for instance 
 #'   \code{cbind(success, n - success)}, which is equivalent
-#'   to \code{success | trials(n)} in \code{brms} syntax. If the number of trials
-#'   is constant across all observation (say \code{10}), 
+#'   to \code{success | trials(n)} in \pkg{brms} syntax. If the number of trials
+#'   is constant across all observations, say \code{10}, 
 #'   we may also write \code{success | trials(10)}. 
 #'   
 #'   For all ordinal families, \code{addition} may contain a term 
@@ -224,7 +237,9 @@
 #'   Mutiple \code{addition} terms may be specified at the same time using 
 #'   the \code{+} operator, for instance 
 #'   \code{formula = yi | se(sei) + cens(censored) ~ 1} 
-#'   for a censored meta-analytic model. \cr
+#'   for a censored meta-analytic model. 
+#'   
+#'   \bold{Formula syntax for multivariate and categorical models}
 #'   
 #'   For families \code{gaussian} and \code{student},
 #'   multivariate models may be specified using \code{cbind} notation. 

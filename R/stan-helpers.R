@@ -20,7 +20,6 @@ stan_llh <- function(family, effects = list(), data = NULL,
   has_weights <- is.formula(effects$weights)
   has_cens <- has_cens(effects$cens, data = data)
   has_disp <- is.formula(effects$disp)
-  has_trials <- is.formula(effects$trials)
   has_cs <- has_cs(effects)
   bounds <- get_bounds(effects$trunc, data = data)
   has_trunc <- any(bounds$lb > -Inf) || any(bounds$ub < Inf)
@@ -58,8 +57,7 @@ stan_llh <- function(family, effects = list(), data = NULL,
     p[[ap]] <- paste0(ap, if (reqn && ap %in% auxpars) "[n]")
   }
   .logit <- ifelse(any(c("zi", "hu") %in% auxpars), "_logit", "")
-  reqn_trials <- has_trials && (llh_adj || is_zero_inflated)
-  trials <- ifelse(reqn_trials, "trials[n]", "trials")
+  trials <- ifelse(llh_adj || is_zero_inflated, "trials[n]", "trials")
 
   simplify <- stan_has_built_in_fun(family, link) &&
               !has_trunc && !has_cens && !"disc" %in% auxpars

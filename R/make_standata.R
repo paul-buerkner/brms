@@ -203,22 +203,27 @@ make_standata <- function(formula, data, family = "gaussian",
       if (!is.null(control$trials)) {
         standata$trials <- control$trials
       } else {
+        message("Using the maximum of the response", 
+                "variable as the number of trials.")
         standata$trials <- max(standata$Y) 
       }
-    } else if (is.wholenumber(ee$trials)) {
-      standata$trials <- ee$trials
     } else if (is.formula(ee$trials)) {
       standata$trials <- eval_rhs(formula = ee$trials, data = data)
     } else {
       stop2("Argument 'trials' is misspecified.")
     }
+    if (length(standata$trials) == 1L) {
+      standata$trials <- rep(standata$trials, nrow(data))
+    }
     standata$max_obs <- standata$trials  # for backwards compatibility
-    if (max(standata$trials) == 1L && family$family == "binomial") 
+    if (max(standata$trials) == 1L) {
       message("Only 2 levels detected so that family 'bernoulli' ",
               "might be a more efficient choice.")
-    if (check_response && any(standata$Y > standata$trials))
+    }
+    if (check_response && any(standata$Y > standata$trials)) {
       stop2("Number of trials is smaller than the response ", 
             "variable would suggest.")
+    }
   }
   if (has_cat(family)) {
     if (!length(ee$cat)) {
@@ -227,8 +232,8 @@ make_standata <- function(formula, data, family = "gaussian",
       } else {
         standata$ncat <- max(standata$Y)
       }
-    } else if (is.wholenumber(ee$cat)) { 
-      standata$ncat <- ee$cat
+    } else if (is.formula(ee$cat)) { 
+      standata$ncat <- eval_rhs(formula = ee$cat, data = data)
     } else {
       stop2("Argument 'cat' is misspecified.")
     }

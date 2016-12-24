@@ -115,13 +115,14 @@ make_stancode <- function(formula, data, family = gaussian(),
     "} \n")
   
   # generate data block
-  Nbin <- ifelse(is.formula(ee$trials), "[N]", "")
+  rtype <- ifelse(use_int(family), "int", "real")
   text_data <- paste0(
     "data { \n",
     "  int<lower=1> N;  // total number of observations \n", 
     if (is_mv) {
       text_mv$data
     } else if (use_real(family)) {
+      # don't use real Y[n]
       "  vector[N] Y;  // response variable \n"
     } else if (use_int(family)) {
       "  int Y[N];  // response variable \n"
@@ -136,17 +137,15 @@ make_stancode <- function(formula, data, family = gaussian(),
     text_disp$data,
     text_se$data,
     if (has_trials(family))
-      paste0("  int trials", Nbin, ";  // number of trials \n"),
+      "  int trials[N];  // number of trials \n",
     if (is.formula(ee$weights))
       "  vector<lower=0>[N] weights;  // model weights \n",
     if (is.formula(ee$dec))
       "  int<lower=0,upper=1> dec[N];  // decisions \n",
     if (any(bounds$lb > -Inf))
-      paste0("  ", ifelse(use_int(family), "int", "real"), " lb[N];",  
-             "  // lower bounds for truncation; \n"),
+      paste0("  ", rtype, " lb[N];  // lower truncation bounds; \n"),
     if (any(bounds$ub < Inf))
-      paste0("  ", ifelse(use_int(family), "int", "real"), " ub[N];",  
-             "  // upper bounds for truncation; \n"),
+      paste0("  ", rtype, " ub[N];  // upper truncation bounds \n"),
     "  int prior_only;  // should the likelihood be ignored? \n",
     "} \n")
   
@@ -207,20 +206,27 @@ make_stancode <- function(formula, data, family = gaussian(),
     text_pred$modelC2, 
     text_autocor$modelC2,
     text_auxpars$modelC3,
-    text_pred$modelC3)
+    text_pred$modelC3
+  )
   if (isTRUE(nzchar(text_model_loop))) {
-    text_model_loop <- paste0("  for (n in 1:N) { \n", 
-                              text_model_loop, "  } \n")
+    text_model_loop <- paste0(
+      "  for (n in 1:N) { \n", text_model_loop, "  } \n"
+    )
   }
-  needs_lp_pre <- is.formula(ee$weights) && !is.formula(ee$cens)
+  text_lp_pre <- list()
+  if (is.formula(ee$weights) && !is.formula(ee$cens)) {
+    text_lp_pre <- list(
+      modelD = "  vector[N] lp_pre; \n",
+      modelC = "    target += dot_product(weights, lp_pre); \n"
+    )
+  }
   text_model <- paste0(
     "model { \n",
       text_pred$modelD,
       text_auxpars$modelD,
       text_disp$modelD,
       text_autocor$modelD,
-      if (needs_lp_pre) 
-        "  vector[N] lp_pre; \n",
+      text_lp_pre$modelD,
       text_auxpars$modelC1,
       text_pred$modelC1,
       text_autocor$modelC1, 
@@ -231,8 +237,7 @@ make_stancode <- function(formula, data, family = gaussian(),
       "  // likelihood contribution \n",
       "  if (!prior_only) { \n  ",
       text_llh, 
-      if (needs_lp_pre)
-        "    target += dot_product(weights, lp_pre); \n",
+      text_lp_pre$modelC,
       "  } \n", 
       text_rngprior$model,
     "} \n")
