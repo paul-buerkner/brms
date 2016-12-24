@@ -1,4 +1,4 @@
-test_that("melt_data returns data in long format", {
+test_that("(deprecated) melt_data returns data in long format", {
   data <- data.frame(x = rep(c("a","b"), 5), y1 = 1:10, y2 = 11:20, 
                      y3 = 21:30, z = 100:91)
   effects <- extract_effects(y ~ x, family = "poisson")
@@ -26,7 +26,7 @@ test_that("melt_data returns data in long format", {
                target2[, c("x", "y1", "y2", "y3", "trait", "response")])
 })
 
-test_that("melt_data keeps factor contrasts", {
+test_that("(deprecated) melt_data keeps factor contrasts", {
   data <- data.frame(y1 = rnorm(10), y2 = rnorm(10),
                      x = factor(rep(1:2, each = 5)))
   contrasts(data$x) <- contr.sum(2)
@@ -35,7 +35,7 @@ test_that("melt_data keeps factor contrasts", {
   expect_equal(attr(newdata$x, "contrasts"), attr(data$x, "contrasts"))
 })
 
-test_that("melt_data (deprecated) returns expected errors", {
+test_that("(deprecated) melt_data returns expected errors", {
   ee <- extract_effects(structure(y1 ~ x:main, old_mv = TRUE), 
                         family = hurdle_poisson())
   data <- data.frame(y1 = rnorm(10), y2 = rnorm(10), x = 1:10)
@@ -61,30 +61,13 @@ test_that("melt_data (deprecated) returns expected errors", {
                "Invalid multivariate model", fixed = TRUE)
 })
 
-test_that("combine_groups does the expected", {
-  data <- data.frame(x = rep(c("a","b"), 5), y1 = 1:10, 
-                     y2 = 11:20, y3 = 21:30, z = 100:91)
-  expected <- data 
-  expected[["y1:y2"]] <- paste0(data$y1, "_", data$y2)
-  expected[["y1:y2:y3"]] <- paste0(data$y1, "_", data$y2, "_", data$y3)
-  expect_equal(combine_groups(data, "y1:y2", "y1:y2:y3"), expected)
-})
-
-test_that("get_model_matrix removes intercepts correctly", {
-  data <- data.frame(x = factor(rep(1:2, 5)), y = 11:20)
-  expect_equal(get_model_matrix(y ~ x, data, cols2remove = "(Intercept)"),
-               structure(matrix(rep(0:1, 5)), dimnames = list(1:10, "x2")))
-})
-
-test_that(paste("arr_design_matrix returns correct design", 
-                "matrices for autoregressive effects"), {
+test_that("arr_design_matrix works correctly", {
   expect_equal(arr_design_matrix(1:10, 0, sort(rep(1:2, 5))), NULL)
   expect_equal(arr_design_matrix(1:10, 1, sort(rep(1:2, 5))), 
                matrix(c(0,1:4.5,0,6:9.5)))
   expect_equal(arr_design_matrix(1:10, 2, sort(rep(1:2, 5))), 
-               cbind(c(0,1:4.5,0,6:9), c(0,0,1:3,0,0,6:8)))
+               cbind(c(0, 1:4.5, 0, 6:9), c(0, 0, 1:3, 0 ,0, 6:8)))
 })
-
 
 test_that("amend_newdata handles factors correctly", {
   fit <- brms:::rename_pars(brmsfit_example1)
@@ -99,7 +82,20 @@ test_that("amend_newdata handles factors correctly", {
                "New factor levels are not allowed")
 })
 
-test_that("update_data handles NAs correctly in old MV models", {
+test_that("update_data returns correct model.frames", {
+  dat <- data.frame(y = 1:5, x = 1:5, z = 6:10, g = 5:1)
+  
+  ee <- brms:::extract_effects(y ~ as.numeric(x) + (as.factor(z) | g))
+  mf <- brms:::update_data(dat, family = gaussian(), effects = ee)
+  expect_true(all(c("x", "z") %in% names(mf)))
+  
+  ee <- brms:::extract_effects(y ~ 1 + (1|g/x/z))
+  mf <- brms:::update_data(dat, family = gaussian(), effects = ee)
+  expect_equal(mf[["g:x"]], paste0(dat$g, "_", dat$x))
+  expect_equal(mf[["g:x:z"]], paste0(dat$g, "_", dat$x, "_", dat$z))
+})
+
+test_that("(deprecated) update_data handles NAs correctly in old MV models", {
   data <- data.frame(y1 = c(1, NA, 3), y2 = 4:6, x = 10:12, z = NA)
   ee <- extract_effects(structure(cbind(y1, y2) ~ x, old_mv = TRUE), 
                         family = "gaussian")

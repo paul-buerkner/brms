@@ -78,8 +78,9 @@ make_standata <- function(formula, data, family = "gaussian",
   standata <- list(N = nrow(data), Y = unname(model.response(data)))
   check_response <- !isTRUE(control$omit_response)
   if (check_response) {
-    if (!(is_ordinal || family$family %in% c("bernoulli", "categorical")) &&
-        !is.numeric(standata$Y)) {
+    factors_allowed <- is_ordinal || 
+      family$family %in% c("bernoulli", "categorical")
+    if (!factors_allowed && !is.numeric(standata$Y)) {
       stop2("Family '", family$family, "' expects numeric response variable.")
     }
     # transform and check response variable for different families
@@ -109,8 +110,8 @@ make_standata <- function(formula, data, family = "gaussian",
       }
     } else if (is_categorical) { 
       standata$Y <- as.numeric(as.factor(standata$Y))
-      if (length(unique(standata$Y)) < 2L) {
-        stop2("At least two response categories are required.")
+      if (length(unique(standata$Y)) < 3L) {
+        stop2("At least three response categories are required.")
       }
     } else if (is_ordinal) {
       if (is.ordered(standata$Y)) {
@@ -166,14 +167,17 @@ make_standata <- function(formula, data, family = "gaussian",
                             Jmo = control$Jmo[["mu"]],
                             smooth = control$smooth[["mu"]])
       for (r in resp) {
-        data_eff <- do.call(data_effects, 
-                            c(args_eff_spec, args_eff, nlpar = r))
+        data_eff <- do.call(
+          data_effects, 
+          c(args_eff_spec, args_eff, nlpar = r)
+        )
         standata <- c(standata, data_eff)
         standata[[paste0("offset_", r)]] <- model.offset(data)
       }
       if (is.linear(family)) {
         standata$nresp <- length(resp) 
-        standata$nrescor <- length(resp) * (length(resp) - 1) / 2 
+        standata$nrescor <- length(resp) * (length(resp) - 1) / 2
+        colnames(standata$Y) <- resp
       }
     } else {
       # pass autocor here to not affect non-linear and auxiliary pars
@@ -321,8 +325,8 @@ make_standata <- function(formula, data, family = "gaussian",
         length(standata$ub) != standata$N) {
       stop2("Invalid truncation bounds.")
     }
-    if (check_response && any(standata$Y < standata$lb | 
-                              standata$Y > standata$ub)) {
+    inv_bounds <- standata$Y < standata$lb | standata$Y > standata$ub
+    if (check_response && any(inv_bounds)) {
       stop2("Some responses are outside of the truncation bounds.")
     }
   }
