@@ -17,28 +17,6 @@ array2list <- function(x) {
   l
 }
 
-Nsamples <- function(x, subset = NULL) {
-  # compute the number of posterior samples
-  # Args:
-  #   x: a brmsfit object
-  #   subset: a vector defining a subset of samples to be considered
-  if (!is(x$fit, "stanfit") || !length(x$fit@sim)) {
-    out <- 0
-  } else {
-    ntsamples <- ceiling((x$fit@sim$iter - x$fit@sim$warmup) /
-                          x$fit@sim$thin * x$fit@sim$chains)
-    if (length(subset)) {
-      out <- length(subset)
-      if (out > ntsamples || max(subset) > ntsamples) {
-        stop2("Argument 'subset' is invalid.")
-      }
-    } else {
-      out <- ntsamples
-    }
-  }
-  out
-}
-
 contains_samples <- function(x) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) {
     stop2("The model does not contain posterior samples.")
@@ -659,7 +637,7 @@ mult_disp <- function(x, data, i = NULL, dim = NULL) {
     if (!is.null(i)) {
       x <- x * data$disp[i]
     } else {
-      # results in a Nsamples x Nobs matrix
+      # results in a nsamples x Nobs matrix
       if (is.matrix(x)) {
         stopifnot(!is.null(dim))
         disp <- matrix(disp, nrow = dim[1], ncol = dim[2], byrow = TRUE)
@@ -742,7 +720,7 @@ compute_ic <- function(x, ic = c("waic", "loo"), ll_args = list(), ...) {
     args$args$draws <- attr(args$x, "draws")
     args$args$data <- data.frame()
     args$args$N <- attr(args$x, "N")
-    args$args$S <- Nsamples(x, subset = ll_args$subset)
+    args$args$S <- nsamples(x, subset = ll_args$subset)
     attr(args$x, "draws") <- NULL
   }
   if (ic == "loo") {
@@ -807,7 +785,7 @@ set_pointwise <- function(x, newdata = NULL, subset = NULL, thres = 1e+08) {
   #   thres: threshold above which pointwise is set to TRUE
   # Returns:
   #   TRUE or FALSE
-  nsamples <- Nsamples(x, subset = subset)
+  nsamples <- nsamples(x, subset = subset)
   if (is.data.frame(newdata)) {
     nobs <- nrow(newdata)
   } else {

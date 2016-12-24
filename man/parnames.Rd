@@ -10,7 +10,7 @@
 parnames(x, ...)
 }
 \arguments{
-\item{x}{An \code{R} object}
+\item{x}{An \R object}
 
 \item{...}{Further arguments passed to or from other methods}
 }
@@ -21,8 +21,7 @@ A character vector containing the parameter names of the model.
 Extract all parameter names of a given model.
 }
 \details{
-Currently there are methods for \code{brmsfit} 
-  and \code{formula} objects.
+Currently there are methods for \code{brmsfit} objects.
 }
 \author{
 Paul-Christian Buerkner \email{paul.buerkner@gmail.com}

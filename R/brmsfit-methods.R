@@ -609,7 +609,7 @@ prior_samples.brmsfit <- function(x, pars = NA, parameters = NA, ...) {
             take <- match(max(matches), matches)
             # order samples randomly to avoid artifical dependencies
             # between parameters using the same prior samples
-            samples <- list(samples[sample(Nsamples(x)), take])
+            samples <- list(samples[sample(nsamples(x)), take])
             out <- structure(samples, names = par)
           }
         }
@@ -767,6 +767,30 @@ summary.brmsfit <- function(object, waic = FALSE, priors = FALSE,
       rownames(out$splines) <- paste0(gsub("^sds_", "sds(", spline_pars), ")")
     }
   }  
+  out
+}
+
+#' @rdname nsamples
+#' @export
+nsamples.brmsfit <- function(x, subset = NULL, 
+                             incl_warmup = FALSE, ...) {
+  if (!is(x$fit, "stanfit") || !length(x$fit@sim)) {
+    out <- 0
+  } else {
+    ntsamples <- x$fit@sim$iter
+    if (!incl_warmup) {
+      ntsamples <- ntsamples - x$fit@sim$warmup
+    }
+    ntsamples <- ceiling(ntsamples / x$fit@sim$thin * x$fit@sim$chains)
+    if (length(subset)) {
+      out <- length(subset)
+      if (out > ntsamples || max(subset) > ntsamples) {
+        stop2("Argument 'subset' is invalid.")
+      }
+    } else {
+      out <- ntsamples
+    }
+  }
   out
 }
 
@@ -1375,7 +1399,7 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
   
   args <- nlist(x, smooths_only = TRUE, allow_new_levels = TRUE,
                 incl_autocor = FALSE, f = prepare_family(x), 
-                nsamples = Nsamples(x))
+                nsamples = nsamples(x))
   too_many_covars <- FALSE
   results <- list()
   for (k in seq_along(lee)) {
@@ -1783,7 +1807,7 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     warning2("Residuals may not be meaningful for censored models.")
   }
   if (is.null(subset) && !is.null(nsamples)) {
-    subset <- sample(Nsamples(object), nsamples)
+    subset <- sample(nsamples(object), nsamples)
   }
   pred_args <- nlist(object, newdata, re_formula, allow_new_levels,
                      incl_autocor, subset, sort, summary = FALSE)
@@ -2031,7 +2055,7 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
   names <- deparse(substitute(x))
   names <- c(names, sapply(substitute(list(...))[-1], deparse))
   if (is.null(subset) && !is.null(nsamples)) {
-    subset <- sample(Nsamples(x), nsamples)
+    subset <- sample(nsamples(x), nsamples)
   }
   if (is.null(pointwise)) {
     pointwise <- set_pointwise(x, subset = subset, newdata = newdata)
@@ -2074,7 +2098,7 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
   names <- deparse(substitute(x))
   names <- c(names, sapply(substitute(list(...))[-1], deparse))
   if (is.null(subset) && !is.null(nsamples)) {
-    subset <- sample(Nsamples(x), nsamples)
+    subset <- sample(nsamples(x), nsamples)
   }
   if (is.null(pointwise)) {
     pointwise <- set_pointwise(x, subset = subset, newdata = newdata)
@@ -2281,7 +2305,7 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
   samples <- do.call(cbind, lapply(hlist, function(h) h$samples))
   samples <- as.data.frame(samples) 
   names(samples) <- paste0("H", seq_along(hlist))
-  samples$Type <- factor(rep(c("posterior", "prior"), each = Nsamples(x)))
+  samples$Type <- factor(rep(c("posterior", "prior"), each = nsamples(x)))
   class <- sub("_+$", "", class)
   out <- nlist(hypothesis = hs, samples, class, alpha)
   class(out) <- "brmshypothesis"

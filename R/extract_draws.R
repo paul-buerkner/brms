@@ -12,9 +12,9 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   #   can itself be passed to linear_predictor
   ee <- extract_effects(formula(x), family = family(x))
   if (is.null(subset) && !is.null(nsamples)) {
-    subset <- sample(Nsamples(x), nsamples)
+    subset <- sample(nsamples(x), nsamples)
   }
-  nsamples <- Nsamples(x, subset = subset)
+  nsamples <- nsamples(x, subset = subset)
   newd_args <- nlist(newdata, re_formula, allow_new_levels, incl_autocor)
   standata <- do.call(amend_newdata, c(newd_args, list(fit = x, ...)))
   draws <- nlist(f = prepare_family(x), data = standata, 
@@ -120,7 +120,7 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   # Returns:
   #   a named list
   dots <- list(...)
-  nsamples <- Nsamples(x, subset = subset)
+  nsamples <- nsamples(x, subset = subset)
   # always update formula to make sure that formulae of
   # non-linear and auxiliary parameters are not included
   # fixes issue #154
