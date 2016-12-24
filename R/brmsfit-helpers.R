@@ -337,12 +337,6 @@ get_cornames <- function(names, type = "cor", brackets = TRUE, sep = "__") {
   cornames
 }
 
-get_nlpar <- function(x, suffix = "") {
-  # extract name of a non-linear parameter
-  nlpar <- attr(x, "nlpar")
-  if (length(nlpar) && nchar(nlpar)) paste0(nlpar, suffix) else ""
-}
-
 get_estimate <- function(coef, samples, margin = 2, to.array = FALSE, ...) {
   # calculate estimates over posterior samples 
   # Args:
@@ -408,10 +402,9 @@ get_table <- function(samples, levels = sort(unique(as.numeric(samples)))) {
   # compute absolute frequencies for each column
   # Args:
   #   samples: a S x N matrix
-  #   levels: all possible values in \code{samples}
+  #   levels: all possible values in samples
   # Returns:
-  #    a N x \code{levels} matrix containing relative frequencies
-  #    in each column seperately
+  #    a N x levels matrix containing relative frequencies of each level
   stopifnot(is.matrix(samples))
   out <- do.call(rbind, lapply(seq_len(ncol(samples)), 
     function(n) table(factor(samples[, n], levels = levels))))

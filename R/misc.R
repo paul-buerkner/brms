@@ -421,6 +421,11 @@ use_alias <- function(arg, alias = NULL, default = NULL,
   arg
 }
 
+expect_match2 <- function(object, regexp, ..., all = TRUE) {
+  # just testthat::expect_match with fixed = TRUE
+  testthat::expect_match(object, regexp, fixed = TRUE, ..., all = all)
+}
+
 # startup messages for brms
 .onAttach <- function(libname, pkgname) {
   packageStartupMessage(paste0(

@@ -38,7 +38,8 @@ make_stancode <- function(formula, data, family = gaussian(),
   ee <- extract_effects(formula, family = family, autocor = autocor)
   prior <- check_prior(prior, formula = formula, data = data,
                        family = family, autocor = autocor,
-                       threshold = threshold)
+                       threshold = threshold, 
+                       warn = !isTRUE(dots$brm_call))
   prior_only <- identical(sample_prior, "only")
   sample_prior <- if (prior_only) FALSE else sample_prior
   data <- update_data(data, family = family, effects = ee)

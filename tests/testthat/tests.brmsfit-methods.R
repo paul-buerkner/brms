@@ -217,8 +217,8 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(dim(pred), c(nobs(fit1), 4))
   expect_equal(colnames(pred), 
                c("Estimate", "Est.Error", "2.5%ile", "97.5%ile"))
-  expect_equal(dim(predict(fit1, nsamples = 10, probs = 0.5)), 
-               c(nobs(fit1), 3))
+  pred <- predict(fit1, nsamples = 10, probs = c(0.2, 0.5, 0.8))
+  expect_equal(dim(pred), c(nobs(fit1), 5))
   
   newdata <- data.frame(Age = c(0, -0.2), visit = c(1, 4),
                         Trt = c(-0.2, 0.5), count = c(2, 10),
@@ -240,6 +240,7 @@ test_that("all S3 methods have reasonable ouputs", {
   
   pred <- predict(fit4)
   expect_equal(dim(pred), c(nobs(fit4), 4))
+  expect_equal(colnames(pred), paste0("P(Y = ", 1:4, ")"))
   # check if grouping factors with a single level are accepted
   newdata$patient <- factor(2)
   pred <- predict(fit2, newdata = newdata)

@@ -1,45 +1,114 @@
-test_that("make_stancode handles shrinkage priors correctly", {
-  scode <- make_stancode(rating ~ treat*period*carry, data = inhaler,
-                                 prior = prior(horseshoe(7, scale_global = 2)),
-                                 sample_prior = TRUE)
-  expect_match(scode, fixed = TRUE,
-               "  vector<lower=0>[Kc] hs_local; \n  real<lower=0> hs_global;")
-  expect_match(scode, fixed = TRUE,
-               "  hs_local ~ student_t(7, 0, 1); \n  hs_global ~ cauchy(0, 2);")
-  expect_match(scode, fixed = TRUE,
-               "  b ~ normal(0, hs_local * hs_global);")
+test_that("specified priors appear in the Stan code", {
+  dat <- data.frame(y = 1:10, x1 = rnorm(10), x2 = rnorm(10), 
+                    g = rep(1:5, 2), h = factor(rep(1:5, each = 2)))
+  prior <- c(prior(normal(0,1), coef = x1),
+             prior(normal(0,2), coef = x2),
+             prior(cauchy(0,1), sd, group = g),
+             prior(cauchy(0,2), sd, group = g, coef = x1),
+             prior(gamma(1, 1), class = sd, group = h))
+  scode <- make_stancode(y ~ x1*x2 + (x1*x2|g) + (1 | h), dat,
+                         prior = prior)
+  expect_match2(scode, "b[1] ~ normal(0, 1)")
+  expect_match2(scode, "b[2] ~ normal(0, 2)")
+  expect_match2(scode, "sd_1[1] ~ cauchy(0, 1)")
+  expect_match2(scode, "sd_1[2] ~ cauchy(0, 2)")
+  expect_match2(scode, "sigma ~ student_t(3, 0, 10)")
+  expect_match2(scode, "sd_2 ~ gamma(1, 1)")
   
-  scode <- make_stancode(rating ~ treat*period*carry, data = inhaler,
-                                 prior = prior(lasso(2, scale = 10)),
-                                 sample_prior = TRUE)
-  expect_match(scode, fixed = TRUE,
-               "  lasso_inv_lambda ~ chi_square(2);")
-  expect_match(scode, fixed = TRUE,
-               "  b ~ double_exponential(0, 10 * lasso_inv_lambda);")
-  expect_match(scode, fixed = TRUE,
-               "  prior_b = double_exponential_rng(0,10*prior_lasso_inv_lambda);")
+  prior <- c(prior(lkj(0.5), class = cor, group = g),
+             prior(normal(0, 1), class = b),
+             prior(normal(0, 5), class = Intercept),
+             prior(cauchy(0, 5), class = sd))
+  scode <- make_stancode(y ~ x1 + cs(x2) + (0 + x1 + x2 | g) , dat, 
+                         family = acat(), prior = prior)
+  expect_match2(scode, "b ~ normal(0, 1)")
+  expect_match2(scode, "temp_Intercept ~ normal(0, 5)")
+  expect_match2(scode, "sd_1 ~ cauchy(0, 5)")
+  expect_match2(scode, "L_1 ~ lkj_corr_cholesky(0.5)")
+  expect_match2(scode, "to_vector(bcs) ~ normal(0, 1)")
+  
+  prior <- c(prior(lkj(2), rescor),
+             prior(cauchy(0, 5), sigma),
+             prior(cauchy(0, 1), sigma, coef = x1))
+  scode <- make_stancode(cbind(y, x1) ~ x2, dat, prior = prior)
+  expect_match2(scode, "sigma[1] ~ cauchy(0, 5)")
+  expect_match2(scode, "sigma[2] ~ cauchy(0, 1)")
+  expect_match2(scode, "Lrescor ~ lkj_corr_cholesky(2)")
+  
+  prior <- c(SW(prior(uniform(-1, 1), ar, lb = -2, ub = 0.5)),
+             prior(normal(0, 0.5), ma),
+             prior(double_exponential(0, 1), arr))
+  expect_warning(
+    scode <- make_stancode(y ~ 1, dat, prior = prior,
+                           autocor = cor_arma(p = 1, q = 2, r = 3)),
+    "Changing the boundaries of autocorrelation parameters"
+  )
+  expect_match2(scode, "vector<lower=-2,upper=0.5>[Kar] ar;")
+  expect_match2(scode, "ar ~ uniform(-1, 1)")
+  expect_match2(scode, "ma ~ normal(0, 0.5)")
+  expect_match2(scode, "arr ~ double_exponential(0, 1)")
+  
+  prior <- set_prior("target += normal_lpdf(b[1] | 0, 1)", check = FALSE)
+  scode <- make_stancode(y ~ x1, dat, prior = prior)
+  expect_match2(scode, "target += normal_lpdf(b[1] | 0, 1)")
+  
+  prior <- prior(gamma(0, 1), coef = x1)
+  expect_warning(make_stancode(y~x1, dat, prior = prior),
+                 "no natural lower bound")
+  prior <- prior(uniform(0,5), class = sd)
+  expect_warning(make_stancode(y~x1 + (1|g), dat, prior = prior),
+                  "no natural upper bound")
 })
 
-test_that("make_stancode accepts supported links", {
+test_that("special shrinkage priors appear in the Stan code", {
+  dat <- data.frame(y = 1:10, x1 = rnorm(10), x2 = rnorm(10))
+  scode <- make_stancode(y ~ x1*x2, data = dat,
+                         prior = prior(horseshoe(7, scale_global = 2)),
+                         sample_prior = TRUE)
+  expect_match2(scode,
+    "  vector<lower=0>[Kc] hs_local; \n  real<lower=0> hs_global;")
+  expect_match2(scode, 
+    "  hs_local ~ student_t(7, 0, 1); \n  hs_global ~ cauchy(0, 2);")
+  expect_match2(scode, "  b ~ normal(0, hs_local * hs_global);")
+  
+  scode <- make_stancode(y ~ x1*x2, data = dat,
+                         prior = prior(lasso(2, scale = 10)),
+                         sample_prior = TRUE)
+  expect_match2(scode, "  lasso_inv_lambda ~ chi_square(2);")
+  expect_match2(scode, "  b ~ double_exponential(0, 10 * lasso_inv_lambda);")
+  expect_match2(scode,
+    "  prior_b = double_exponential_rng(0,10*prior_lasso_inv_lambda);")
+  
+  expect_error(make_stancode(y ~ x1*x2, data = dat, 
+                             prior = prior(horseshoe(-1))),
+               "Degrees of freedom of the local priors")
+  expect_error(make_stancode(y ~ x1*x2, data = dat, 
+                             prior = prior(horseshoe(1, -1))),
+               "Scale of the global prior")
+  expect_error(make_stancode(y ~ x1*x2, data = dat, 
+                             prior = prior(lasso(-1))),
+               "Degrees of freedom of the shrinkage parameter prior")
+})
+
+test_that("link functions appear in the Stan code", {
   expect_match(make_stancode(rating ~ treat + period + carry, 
-                             data = inhaler, family = sratio("probit_approx")), 
+                             inhaler, family = sratio("probit_approx")), 
                "Phi_approx")
   expect_match(make_stancode(rating ~ treat + period + carry, 
-                             data = inhaler, family = c("cumulative", "probit")), 
+                             inhaler, family = cumulative("probit")), 
                "Phi")
   expect_match(make_stancode(rating ~ treat + period + carry, 
-                             data = inhaler, family = "poisson"), 
+                             inhaler, family = "poisson"), 
                "log")
   expect_match(make_stancode(cbind(rating, rating + 1) ~ 1, 
-                             data = inhaler, family = gaussian("log")), 
+                             inhaler, family = gaussian("log")), 
                "eta_rating[n] = exp(eta_rating[n])", fixed = TRUE)
   expect_match(make_stancode(rating ~ 1, data = inhaler, 
                              family = von_mises(tan_half)), 
                "eta[n] = inv_tan_half(eta[n])", fixed = TRUE)
 })
 
-test_that(paste("make_stancode returns correct strings", 
-                "for customized covariances"), {
+test_that("customized covariances appear in the Stan code", {
   expect_match(make_stancode(rating ~ treat + period + carry + (1|subject), 
                              data = inhaler, cov_ranef = list(subject = 1)), 
                "r_1_1 = sd_1[1] * (Lcov_1 * z_1[1])", fixed = TRUE)
@@ -54,7 +123,7 @@ test_that(paste("make_stancode returns correct strings",
                fixed = TRUE)
 })
 
-test_that("make_stancode handles addition arguments correctly", {
+test_that("addition terms appear in the Stan code", {
   expect_match(make_stancode(time | cens(censored) ~ age + sex + disease, 
                              data = kidney, family = c("weibull", "log")), 
                "int<lower=-1,upper=2> cens[N];", fixed = TRUE)
@@ -99,7 +168,7 @@ test_that("make_stancode correctly restricts FE parameters", {
   expect_match(sc, "vector<lower=-3,upper=5>[K] b", fixed = TRUE)
 })
 
-test_that("make_stancode returns correct self-defined functions", {
+test_that("self-defined functions appear in the Stan code", {
   # cauchit link
   expect_match(make_stancode(rating ~ treat, data = inhaler,
                              family = cumulative("cauchit")),
@@ -167,7 +236,7 @@ test_that("make_stancode returns correct self-defined functions", {
               "matrix as_matrix.*matrix kronecker")
 })
 
-test_that("make_stancode detects invalid combinations of modeling options", {
+test_that("invalid combinations of modeling options are detected", {
   data <- data.frame(y1 = rnorm(10), y2 = rnorm(10), 
                      wi = 1:10, ci = sample(-1:1, 10, TRUE))
   expect_error(make_stancode(y1 | cens(ci) ~ y2, data = data,
@@ -194,7 +263,7 @@ test_that("make_stancode is silent for categorical models", {
   expect_silent(make_stancode(y ~ x, data = data, family = categorical()))
 })
 
-test_that("make_stancode returns correct code for intercept only models", {
+test_that("the Stan code for intercept only models is correct", {
   expect_match(make_stancode(rating ~ 1, data = inhaler),
                "b_Intercept = temp_Intercept;", fixed = TRUE) 
   expect_match(make_stancode(rating ~ 1, data = inhaler, family = sratio()),
@@ -208,7 +277,7 @@ test_that("make_stancode returns correct code for spline only models", {
                "matrix[N, K - 1] Xc;", fixed = TRUE)
 })
 
-test_that("make_stancode works correctly for category specific effects", {
+test_that("category specific effects appear in the Stan code", {
   scode <- make_stancode(rating ~ period + carry + cs(treat), 
                          data = inhaler, family = sratio())
   expect_match(scode, "matrix[N, Kcs] Xcs;", fixed = TRUE)
@@ -229,7 +298,7 @@ test_that("make_stancode works correctly for category specific effects", {
                fixed = TRUE)
 })
 
-test_that("make_stancode works correctly for ordinal disc parameters", {
+test_that("ordinal disc parameters appear in the Stan code", {
   scode <- make_stancode(bf(rating ~ period + carry + treat, disc ~ 1),
                          data = inhaler, family = cumulative(), 
                          prior = c(prior(normal(0,5), nlpar = disc)))
@@ -239,25 +308,32 @@ test_that("make_stancode works correctly for ordinal disc parameters", {
   expect_match(scode, "disc[n] = exp(disc[n])", fixed = TRUE)
 })
 
-test_that("make_stancode generates correct code for monotonic effects", {
-  data <- data.frame(y = rpois(120, 10), x1 = rep(1:4, 30), 
-                     x2 = factor(rep(c("a", "b", "c"), 40), ordered = TRUE))
-  scode <- make_stancode(y ~ mo(x1 + x2), data = data)
-  expect_match(scode, "int Xmo[N, Kmo];", fixed = TRUE)
-  expect_match(scode, "simplex[Jmo[1]] simplex_1;", fixed = TRUE)
-  expect_match(scode, "(bmo[2]) * monotonic(simplex_2, Xmo[n, 2]);", fixed = TRUE)
-  expect_match(scode, "simplex_1 ~ dirichlet(con_simplex_1);", fixed = TRUE)
-  scode <- make_stancode(y ~ mono(x1) + (mono(x1)|x2) + (1|x2), data = data)
-  expect_match(scode, "(bmo[1] + r_1_1[J_1[n]]) * monotonic(simplex_1, Xmo[n, 1]);",
-               fixed = TRUE)
-  # check that Z_1_1 is (correctly) undefined
-  expect_match(scode, paste0("  int<lower=1> M_1; \n",
-    "  // data for group-level effects of ID 2"), fixed = TRUE)
-  expect_error(make_stancode(y ~ mono(x1) + (mono(x1+x2)|x2), data = data),
+test_that("monotonic effects appear in the Stan code", {
+  prior <- c(prior(normal(0,1), class = b, coef = x1),
+             prior(dirichlet(c(1,0.5,2)), simplex, coef = x1),
+             prior(dirichlet(c(1,0.5,2)), simplex, coef = x2))
+  dat <- data.frame(y = rpois(120, 10), x1 = rep(1:4, 30), 
+                    x2 = factor(rep(c("a", "b", "c"), 40), ordered = TRUE))
+  scode <- make_stancode(y ~ mo(x1 + x2), dat, prior = prior)
+  expect_match2(scode, "int Xmo[N, Kmo];")
+  expect_match2(scode, "simplex[Jmo[1]] simplex_1;")
+  expect_match2(scode, "(bmo[2]) * monotonic(simplex_2, Xmo[n, 2]);")
+  expect_match2(scode, "bmo[1] ~ normal(0, 1)")
+  expect_match2(scode, "simplex_1 ~ dirichlet(con_simplex_1);")
+  expect_match2(scode, "simplex_2 ~ dirichlet(con_simplex_2);")
+  scode <- make_stancode(y ~ mono(x1) + (mono(x1)|x2) + (1|x2), dat)
+  expect_match2(scode, "(bmo[1] + r_1_1[J_1[n]]) * monotonic(simplex_1, Xmo[n, 1]);")
+  # test that Z_1_1 is (correctly) undefined
+  expect_match2(scode, paste0("  int<lower=1> M_1; \n",
+    "  // data for group-level effects of ID 2"))
+  expect_error(make_stancode(y ~ mono(x1) + (mono(x1+x2)|x2), dat),
                "Monotonic group-level terms require", fixed = TRUE)
+  expect_error(make_stancode(y ~ mo(x1), dat, 
+                             prior = prior(beta(1, 1), simplex, coef = x1)),
+               "'dirichlet' is the only valid prior for simplex parameters")
 })
 
-test_that("make_stancode generates correct code for non-linear models", {
+test_that("Stan code for non-linear models is correct", {
   flist <- list(a ~ x, b ~ z + (1|g))
   data <- data.frame(y = rgamma(9, 1, 1), x = rnorm(9), z = rnorm(9), 
                      g = rep(1:3, 3))
@@ -297,7 +373,7 @@ test_that("no loop in trans-par is defined for simple 'identity' models", {
                      "eta[n] <- (eta[n]);", fixed = TRUE))
 })
 
-test_that("make_stancode returns correct 'se' code", {
+test_that("known standard errors appear in the Stan code", {
   scode <- make_stancode(time | se(age) ~ sex, data = kidney)
   expect_match(scode, "Y ~ normal(eta, se)", fixed = TRUE)
   scode <- make_stancode(time | se(age) | weights(age) ~ sex, data = kidney)
@@ -312,7 +388,7 @@ test_that("make_stancode returns correct 'se' code", {
                fixed = TRUE)
 })
 
-test_that("make_stancode returns correct 'disp' code", {
+test_that("Addition term 'disp' appears in the Stan code", {
   stancode <- make_stancode(time | disp(sqrt(age)) ~ sex + age, data = kidney)
   expect_match(stancode, "disp_sigma = sigma \\* disp;.*normal\\(eta, disp_sigma\\)")
   
@@ -367,20 +443,21 @@ test_that("fixed residual covariance matrices appear in the Stan code", {
                "Y ~ multi_student_t(nu, eta, V)", fixed = TRUE)
 })
 
-test_that("make_stancode correctly generates code for bsts models", {
+test_that("Stan code for bsts models is correct", {
   dat <- data.frame(y = rnorm(10), x = rnorm(10))
-  stancode <- make_stancode(y~x, data = dat, autocor = cor_bsts())
-  expect_match(stancode, "+ loclev[n]", fixed = TRUE)
-  expect_match(stancode, "loclev[n] ~ normal(loclev[n - 1], sigmaLL)",
-               fixed = TRUE)
+  scode <- make_stancode(y ~ x, data = dat, autocor = cor_bsts(),
+                         prior = prior(normal(0, 10), sigmaLL))
+  expect_match2(scode, "+ loclev[n]")
+  expect_match2(scode, "loclev[n] ~ normal(loclev[n - 1], sigmaLL)")
+  expect_match2(scode, "sigmaLL ~ normal(0, 10)")
+  
   dat <- data.frame(y = rexp(1), x = rnorm(10))
-  stancode <- make_stancode(y~x, data = dat, family = student("log"),
-                            autocor = cor_bsts())
-  expect_match(stancode, "loclev[n] ~ normal(log(Y[n]), sigmaLL)",
-               fixed = TRUE)
+  scode <- make_stancode(y~x, data = dat, family = student("log"),
+                         autocor = cor_bsts())
+  expect_match2(scode, "loclev[n] ~ normal(log(Y[n]), sigmaLL)")
 })
 
-test_that("make_stancode correctly generates code for GAMMs", {
+test_that("Stan code for GAMMs is correct", {
   dat <- data.frame(y = rnorm(10), x = rnorm(10), g = rep(1:2, 5))
   stancode <- make_stancode(y ~ s(x) + (1|g), data = dat,
                             prior = set_prior("normal(0,2)", "sds"))
@@ -406,7 +483,7 @@ test_that("make_stancode correctly generates code for GAMMs", {
   expect_match(stancode, "sds_2_2 ~ normal(0,2)", fixed = TRUE)
 })
 
-test_that("make_stancode handles exgaussian models correctly", {
+test_that("Stan code of exgaussian models is correct", {
   dat <- epilepsy
   dat$cens <- sample(-1:1, nrow(dat), TRUE)
   sc <- make_stancode(count ~ Trt_c + (1|patient),
@@ -430,7 +507,7 @@ test_that("make_stancode handles exgaussian models correctly", {
                fixed = TRUE)
 })
 
-test_that("make_stancode handels wiener diffusion models correctly", {
+test_that("Stan code of wiener diffusion models is correct", {
   dat <- RWiener::rwiener(n=100, alpha=2, tau=.3, beta=.5, delta=.5)
   dat$x <- rnorm(100)
   sc <- make_stancode(q | dec(resp) ~ x, data = dat, family = wiener())
@@ -447,7 +524,7 @@ test_that("make_stancode handels wiener diffusion models correctly", {
                "Addition argument 'dec' is required for family 'wiener'")
 })
 
-test_that("make_stancode correctly handles the group ID syntax", {
+test_that("Group IDs appear in the Stan code", {
   form <- bf(count ~ Trt_c + (1+Trt_c|3|visit) + (1|patient), 
              shape ~ (1|3|visit) + (Trt_c||patient))
   sc <- make_stancode(form, data = epilepsy, family = negbinomial())
@@ -462,7 +539,7 @@ test_that("make_stancode correctly handles the group ID syntax", {
   expect_match(sc, "r_1_sigma_2 = sd_1[2] * (z_1[2]);", fixed = TRUE)
 })
 
-test_that("make_stancode correctly computes ordinal thresholds", {
+test_that("ordinal thresholds appear in the Stan code", {
   sc <- make_stancode(rating ~ period + carry + treat, 
                       data = inhaler, family = cumulative())
   expect_match(sc, "b_Intercept = temp_Intercept + dot_product(means_X, b);",
@@ -473,7 +550,7 @@ test_that("make_stancode correctly computes ordinal thresholds", {
                fixed = TRUE)
 })
 
-test_that("make_stancode correctly parses distributional gamma models", {
+test_that("distributional gamma models are handled correctly", {
   # test fix of issue #124
   scode <- make_stancode(bf(time ~ age * sex + disease + (1|patient), 
                             shape ~ age + (1|patient)), 
@@ -495,7 +572,7 @@ test_that("make_stancode correctly parses distributional gamma models", {
     fixed = TRUE)
 })
 
-test_that("make_stancode handles weighted and censored responses", {
+test_that("weighted and censored responses appear in the Stan code", {
   dat <- data.frame(y = 1:9, x = rep(-1:1, 3), y2 = 10:18)
   expect_match(make_stancode(y | weights(y2) ~ 1, dat, poisson()),
                "target += dot_product(weights, lp_pre);", fixed = TRUE)
@@ -516,7 +593,7 @@ test_that("make_stancode handles weighted and censored responses", {
                      "shape, eta[n]); \n"), fixed = TRUE)
 })
 
-test_that("make_stancode handles priors on intercepts correctly", {
+test_that("priors on intercepts appear in the Stan code", {
   sc <- make_stancode(count ~ log_Age_c + log_Base4_c * Trt_c,
                       data = epilepsy, family = gaussian(), 
                       prior = c(prior(student_t(5,0,10), class = b),
@@ -533,7 +610,7 @@ test_that("make_stancode handles priors on intercepts correctly", {
                           "- dot_product(means_X_count, b_count);"), fixed = TRUE)
 })
 
-test_that("make_stancode handles noise-free terms correctly", {
+test_that("noise-free terms appear in the Stan code", {
   N <- 30
   dat <- data.frame(y = rnorm(N), x = rnorm(N), z = rnorm(N),
                     xsd = abs(rnorm(N, 1)), zsd = abs(rnorm(N, 1)),
@@ -552,7 +629,7 @@ test_that("make_stancode handles noise-free terms correctly", {
                "(bme[1]) * Xme_1[n]^2", fixed = TRUE)
 })
 
-test_that("make_stancode handles multi-membership models correctly", {
+test_that("Stan code of multi-membership models is correct", {
   dat <- data.frame(y = rnorm(10), g1 = sample(1:10, 10, TRUE),
                     g2 = sample(1:10, 10, TRUE), w1 = rep(1, 10),
                     w2 = rep(abs(rnorm(10))))
@@ -564,7 +641,7 @@ test_that("make_stancode handles multi-membership models correctly", {
                fixed = TRUE)
 })
 
-test_that("make_stancode correctly handles | and || correctly,", {
+test_that("Group syntax | and || is handled correctly,", {
   data <- data.frame(y = rnorm(10), x = rnorm(10),
                      g1 = rep(1:5, each = 2), g2 = rep(1:2, 5))
   scode <- make_stancode(y ~ x + (1+x||g1) + (I(x/4)|g2), data)
