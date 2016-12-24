@@ -1,22 +1,22 @@
 test_that("make_stancode handles shrinkage priors correctly", {
-  temp_stancode <- make_stancode(rating ~ treat*period*carry, data = inhaler,
+  scode <- make_stancode(rating ~ treat*period*carry, data = inhaler,
                                  prior = prior(horseshoe(7, scale_global = 2)),
                                  sample_prior = TRUE)
-  expect_match(temp_stancode, fixed = TRUE,
+  expect_match(scode, fixed = TRUE,
                "  vector<lower=0>[Kc] hs_local; \n  real<lower=0> hs_global;")
-  expect_match(temp_stancode, fixed = TRUE,
+  expect_match(scode, fixed = TRUE,
                "  hs_local ~ student_t(7, 0, 1); \n  hs_global ~ cauchy(0, 2);")
-  expect_match(temp_stancode, fixed = TRUE,
+  expect_match(scode, fixed = TRUE,
                "  b ~ normal(0, hs_local * hs_global);")
   
-  temp_stancode <- make_stancode(rating ~ treat*period*carry, data = inhaler,
+  scode <- make_stancode(rating ~ treat*period*carry, data = inhaler,
                                  prior = prior(lasso(2, scale = 10)),
                                  sample_prior = TRUE)
-  expect_match(temp_stancode, fixed = TRUE,
+  expect_match(scode, fixed = TRUE,
                "  lasso_inv_lambda ~ chi_square(2);")
-  expect_match(temp_stancode, fixed = TRUE,
+  expect_match(scode, fixed = TRUE,
                "  b ~ double_exponential(0, 10 * lasso_inv_lambda);")
-  expect_match(temp_stancode, fixed = TRUE,
+  expect_match(scode, fixed = TRUE,
                "  prior_b = double_exponential_rng(0,10*prior_lasso_inv_lambda);")
 })
 
@@ -69,7 +69,7 @@ test_that("make_stancode handles addition arguments correctly", {
                "T[lb[n], ub[n]];", fixed = TRUE)
 })
 
-test_that("make_stancode correctly combines strings of multiple grouping factors", {
+test_that("make_stancode combines strings of multiple grouping factors", {
   expect_match(make_stancode(count ~ (1|patient) + (1 + Trt_c | visit), 
                              data = epilepsy, family = "poisson"), 
                paste0("  vector[N] Z_1_1; \n",
@@ -82,7 +82,7 @@ test_that("make_stancode correctly combines strings of multiple grouping factors
                fixed = TRUE)
 })
 
-test_that("make_stancode handles models without fixed effects correctly", {
+test_that("make_stancode handles models without fixed effects", {
   expect_match(make_stancode(count ~ 0 + (1|patient) + (1+Trt_c|visit), 
                              data = epilepsy, family = "poisson"), 
                "  eta = rep_vector(0, N); \n", fixed = TRUE)
@@ -109,16 +109,16 @@ test_that("make_stancode returns correct self-defined functions", {
                              family = von_mises("tan_half")),
                "real inv_tan_half(real y)", fixed = TRUE)
   # inverse gaussian models
-  temp_stancode <- make_stancode(time | cens(censored) ~ age, data = kidney,
+  scode <- make_stancode(time | cens(censored) ~ age, data = kidney,
                                  family = inverse.gaussian)
-  expect_match(temp_stancode, "real inv_gaussian_lpdf(real y", fixed = TRUE)
-  expect_match(temp_stancode, "real inv_gaussian_lcdf(real y", fixed = TRUE)
-  expect_match(temp_stancode, "real inv_gaussian_lccdf(real y", fixed = TRUE)
-  expect_match(temp_stancode, "real inv_gaussian_vector_lpdf(vector y", fixed = TRUE)
+  expect_match(scode, "real inv_gaussian_lpdf(real y", fixed = TRUE)
+  expect_match(scode, "real inv_gaussian_lcdf(real y", fixed = TRUE)
+  expect_match(scode, "real inv_gaussian_lccdf(real y", fixed = TRUE)
+  expect_match(scode, "real inv_gaussian_vector_lpdf(vector y", fixed = TRUE)
   # von Mises models
-  temp_stancode <- make_stancode(time ~ age, data = kidney, family = von_mises)
-  expect_match(temp_stancode, "real von_mises_real_lpdf(real y", fixed = TRUE)
-  expect_match(temp_stancode, "real von_mises_vector_lpdf(vector y", fixed = TRUE)
+  scode <- make_stancode(time ~ age, data = kidney, family = von_mises)
+  expect_match(scode, "real von_mises_real_lpdf(real y", fixed = TRUE)
+  expect_match(scode, "real von_mises_vector_lpdf(vector y", fixed = TRUE)
   # zero-inflated and hurdle models
   expect_match(make_stancode(count ~ Trt_c, data = epilepsy, 
                              family = "zero_inflated_poisson"),
@@ -172,11 +172,11 @@ test_that("make_stancode detects invalid combinations of modeling options", {
                      wi = 1:10, ci = sample(-1:1, 10, TRUE))
   expect_error(make_stancode(y1 | cens(ci) ~ y2, data = data,
                              autocor = cor_ar(cov = TRUE)),
-               "Invalid addition arguments")
+               "Invalid addition arguments for this model")
   expect_error(make_stancode(cbind(y1, y2) ~ 1, data = data,
                              autocor = cor_ar(cov = TRUE)),
                "ARMA covariance matrices are not yet working")
-  expect_error(make_stancode(y1 | se(wi) ~ y2, data = data,
+  expect_error(make_stancode(y1 | resp_se(wi) ~ y2, data = data,
                              autocor = cor_ma()),
                "Please set cov = TRUE", fixed = TRUE)
   expect_error(make_stancode(y1 | trunc(lb = -50) | weights(wi) ~ y2,
@@ -208,14 +208,16 @@ test_that("make_stancode returns correct code for spline only models", {
                "matrix[N, K - 1] Xc;", fixed = TRUE)
 })
 
-test_that("make_stancode generates correct code for category specific effects", {
+test_that("make_stancode works correctly for category specific effects", {
   scode <- make_stancode(rating ~ period + carry + cs(treat), 
                          data = inhaler, family = sratio())
   expect_match(scode, "matrix[N, Kcs] Xcs;", fixed = TRUE)
   expect_match(scode, "matrix[Kcs, ncat - 1] bcs;", fixed = TRUE)
   expect_match(scode, "etacs = Xcs * bcs;", fixed = TRUE)
-  expect_match(scode, "sratio(eta[n], etacs[n], temp_Intercept, 1);", fixed = TRUE)
-  scode <- make_stancode(rating ~ period + carry + cse(treat) + (cse(1)|subject), 
+  expect_match(scode, "sratio(eta[n], etacs[n], temp_Intercept, 1);", 
+               fixed = TRUE)
+  scode <- make_stancode(rating ~ period + carry + 
+                           cse(treat) + (cse(1)|subject), 
                          data = inhaler, family = acat())
   expect_match(scode, "etacs[n, 1] = etacs[n, 1] + r_1_1[J_1[n]] * Z_1_1[n];",
                fixed = TRUE)
@@ -493,8 +495,10 @@ test_that("make_stancode correctly parses distributional gamma models", {
     fixed = TRUE)
 })
 
-test_that("make_stancode handles censored responses correctly", {
+test_that("make_stancode handles weighted and censored responses", {
   dat <- data.frame(y = 1:9, x = rep(-1:1, 3), y2 = 10:18)
+  expect_match(make_stancode(y | weights(y2) ~ 1, dat, poisson()),
+               "target += dot_product(weights, lp_pre);", fixed = TRUE)
   expect_match(make_stancode(y | cens(x, y2) ~ 1, dat, poisson()),
                "target += poisson_lpmf(Y[n] | eta[n]); \n", 
                fixed = TRUE)
@@ -552,10 +556,20 @@ test_that("make_stancode handles multi-membership models correctly", {
   dat <- data.frame(y = rnorm(10), g1 = sample(1:10, 10, TRUE),
                     g2 = sample(1:10, 10, TRUE), w1 = rep(1, 10),
                     w2 = rep(abs(rnorm(10))))
-  expect_match(make_stancode(y ~ (1|mm(g1,g2)), data = dat), 
+  expect_match(make_stancode(y ~ (1|mm(g1, g2)), data = dat), 
                "(W_1_1[n] * r_1_1[J_1_1[n]] + W_1_2[n] * r_1_1[J_1_2[n]]) * Z_1_1[n]",
                fixed = TRUE)
   expect_match(make_stancode(y ~ (1+w1|mm(g1,g2)), data = dat), 
                "(W_1_1[n] * r_1_2[J_1_1[n]] + W_1_2[n] * r_1_2[J_1_2[n]]) * Z_1_2[n]",
+               fixed = TRUE)
+})
+
+test_that("make_stancode correctly handles | and || correctly,", {
+  data <- data.frame(y = rnorm(10), x = rnorm(10),
+                     g1 = rep(1:5, each = 2), g2 = rep(1:2, 5))
+  scode <- make_stancode(y ~ x + (1+x||g1) + (I(x/4)|g2), data)
+  expect_match(scode, "r_1_2 = sd_1[2] * (z_1[2]);", fixed = TRUE)
+  expect_match(scode, "r_2_1 = r_2[, 1];", fixed = TRUE)
+  expect_match(scode, "r_2 = (diag_pre_multiply(sd_2, L_2) * z_2)';",
                fixed = TRUE)
 })

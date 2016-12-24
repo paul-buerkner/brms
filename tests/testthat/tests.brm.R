@@ -1,4 +1,47 @@
 test_that("brm produces expected errors", {
+  dat <- data.frame(y = rnorm(10), x = rnorm(10), g = rep(1:5, 2))
+  
+  # formula parsing
+  expect_error(brm(bf(y ~ a^x, a + b ~ 1, nl = TRUE), dat),
+               "missing in formula: 'b'")
+  expect_error(brm(~ x + (1|g), dat), 
+               "response variable is missing")
+  expect_error(brm(bf(y ~ exp(-x/a) + (1|g), a ~ 1, nl = TRUE), dat),
+               "Group-level terms cannot be specified")
+  expect_error(brm(bf(y ~ a, nl = TRUE)),
+               "No non-linear parameters specified")
+  expect_error(brm(bf(y ~ a, a ~ 1, nl = TRUE), family = acat()),
+               "Non-linear formulas are not yet allowed for this family")
+  expect_error(brm(y ~ mono(1), dat),
+               "No variable supplied to function 'mo'")
+  expect_error(brm(y | se(sei) ~ x, dat, family = weibull()),
+               "Argument 'se' is not supported for family")
+  expect_error(brm(y | se(sei) + se(sei2) ~ x, dat, family = gaussian()),
+               "Each addition argument may only be defined once")
+  expect_error(brm(y | abc(sei) ~ x, family = gaussian()),
+               "The following addition terms are invalid:\n'abc(sei)'",
+               fixed = TRUE)
+  expect_error(brm(y | se(sei) + disp(sei) ~ x, dat, family = gaussian()),
+               "Addition arguments 'se' and 'disp' cannot be used")
+  expect_error(brm(cbind(y, x) | se(z) ~ x, dat, family = gaussian()),
+               "allow only addition argument 'weights'")
+  expect_error(brm(bf(y ~ x, shape ~ x), family = gaussian()),
+               "Prediction of parameter(s) 'shape' is not allowed",
+               fixed = TRUE)
+  expect_error(brm(y ~ x + (1|abc|g/x), dat), 
+               "Can only combine group-level terms")
+  expect_error(brm(y ~ x + (1|g) + (x|g), dat), 
+               "Duplicated group-level effects are not allowed")
+  
+  # autocorrelation
+  expect_error(brm(y ~ 1, dat, autocor = cor_ar(~x+y|g)), 
+               "Autocorrelation structures may only contain 1 time variable")
+  expect_error(brm(y ~ 1, dat, autocor = cor_ar(x~t1|g1)), 
+               "Autocorrelation formula must be one-sided")
+  expect_error(brm(y ~ 1, dat, autocor = cor_ar(~1|g1/g2)), 
+               paste("Illegal grouping term: g1/g2"))
+  
+  # ordinal models
   expect_error(brm(rating ~ treat + period + carry + cse(treat) + (1|subject), 
                    data = inhaler, family = cratio("logit")), 
                paste("Error occured for variables: treat"))
@@ -7,7 +50,7 @@ test_that("brm produces expected errors", {
                paste("Error occured for variables: carry"))
 })
 
-test_that("check_brm_input returns correct warnings and errors", {
+test_that("check_brm_input returns correct warnings", {
   x <- list(family = inverse.gaussian(), algorithm = "sampling")
   expect_warning(check_brm_input(x))
   x$family <- poisson("sqrt")

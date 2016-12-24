@@ -37,7 +37,7 @@ test_that(paste("make_standata handles variables used as fixed effects",
 })
 
 test_that(paste("make_standata returns correct data names", 
-                "for addition and cse variables"), {
+                "for addition and cs variables"), {
   temp_data <- data.frame(y = 1:10, w = 1:10, t = 1:10, x = rep(0,10), 
                           c = sample(-1:1,10,TRUE))
   expect_equal(names(make_standata(y | se(w) ~ x, family = "gaussian", 
@@ -144,33 +144,36 @@ test_that("make_standata suggests using family bernoulli if appropriate", {
 })
 
 test_that("make_standata returns correct values for addition arguments", {
-  temp_data <- data.frame(y = rnorm(9), s = 1:9, w = 1:9, c1 = rep(-1:1, 3), 
-                          c2 = rep(c("left","none","right"), 3),
-                          c3 = c(rep(c(TRUE, FALSE), 4), FALSE),
-                          c4 = c(sample(-1:1, 5, TRUE), rep(2, 4)),
-                          t = 11:19)
-  expect_equal(as.numeric(make_standata(y | se(s) ~ 1, data = temp_data)$se), 
+  dat <- data.frame(y = rnorm(9), s = 1:9, w = 1:9, c1 = rep(-1:1, 3), 
+                    c2 = rep(c("left","none","right"), 3),
+                    c3 = c(rep(c(TRUE, FALSE), 4), FALSE),
+                    c4 = c(sample(-1:1, 5, TRUE), rep(2, 4)),
+                    t = 11:19)
+  expect_equal(as.numeric(make_standata(y | se(s) ~ 1, data = dat)$se), 
                1:9)
-  expect_equal(make_standata(y | weights(w) ~ 1, data = temp_data)$weights, 
+  expect_equal(make_standata(y | weights(w) ~ 1, data = dat)$weights, 
                1:9)
-  expect_equal(make_standata(y | disp(w) ~ 1, data = temp_data)$disp, 
+  expect_equal(make_standata(y | disp(w) ~ 1, data = dat)$disp, 
                1:9)
-  expect_equal(make_standata(y | cens(c1) ~ 1, data = temp_data)$cens, 
+  expect_equal(make_standata(y | cens(c1) ~ 1, data = dat)$cens, 
                rep(-1:1, 3))
-  expect_equal(make_standata(y | cens(c2) ~ 1, data = temp_data)$cens,
+  expect_equal(make_standata(y | cens(c2) ~ 1, data = dat)$cens,
                rep(-1:1, 3))
-  expect_equal(make_standata(y | cens(c3) ~ 1, data = temp_data)$cens, 
+  expect_equal(make_standata(y | cens(c3) ~ 1, data = dat)$cens, 
                c(rep(1:0, 4), 0))
-  expect_equal(make_standata(y | cens(c4, y + 2) ~ 1, data = temp_data)$rcens, 
-               c(rep(0, 5), temp_data$y[6:9] + 2))
-  expect_equal(make_standata(s ~ 1, data = temp_data, 
-                             family = "binomial")$max_obs, 9)
-  expect_equal(make_standata(s | trials(10) ~ 1, data = temp_data, 
-                             family = "binomial")$max_obs, 10)
-  expect_equal(make_standata(s | trials(t) ~ 1, data = temp_data, 
-                             family = "binomial")$max_obs, 11:19)
-  expect_equal(make_standata(s | cat(19) ~ 1, data = temp_data, 
-                             family = "cumulative")$ncat, 19)
+  expect_equal(make_standata(y | cens(c4, y + 2) ~ 1, data = dat)$rcens, 
+               c(rep(0, 5), dat$y[6:9] + 2))
+  expect_equal(make_standata(s ~ 1, dat, family = "binomial")$trials, 
+               rep(9, 9))
+  expect_equal(make_standata(s | trials(10) ~ 1, dat, 
+                             family = "binomial")$trials, 
+               rep(10, 9))
+  expect_equal(make_standata(s | trials(t) ~ 1, data = dat, 
+                             family = "binomial")$trials, 
+               11:19)
+  expect_equal(make_standata(s | cat(19) ~ 1, data = dat, 
+                             family = "cumulative")$ncat, 
+               19)
 })
 
 test_that("make_standata rejects incorrect addition arguments", {
@@ -190,12 +193,12 @@ test_that(paste("make_standata handles addition arguments",
                 "and autocorrelation in multinormal models"), {
   temp_data <- data.frame(y1 = 1:10, y2 = 11:20, w = 1:10, x = rep(0,10), 
                           tim = 10:1, g = rep(1:2,5))
-  expect_equal(make_standata(cbind(y1,y2) | weights(w) ~ x, 
+  expect_equal(make_standata(cbind(y1, y2) | weights(w) ~ x, 
                              family = "gaussian", data = temp_data)$weights, 
                1:10)
-  expect_equal(make_standata(cbind(y1,y2) | weights(w) ~ x, 
+  expect_equal(make_standata(cbind(y1, y2) | weights(w) ~ x, 
                              family = "gaussian", data = temp_data,
-                             autocor = cor_ar(~tim | g))$Y,
+                             autocor = cor_ar(~ tim | g))$Y,
                cbind(c(seq(9,1,-2), seq(10,2,-2)), 
                      c(seq(19,11,-2), seq(20,12,-2))))
 })
@@ -367,19 +370,19 @@ test_that("make_standata returns correct group ID data", {
                     "Z_3_a_1") %in% names(sdata)))
 })
 
-test_that("make_standata does not center X in models without an intercept", {
+test_that("make_standata does not center X without an intercept", {
   dat <- data.frame(y = rnorm(10), x = 1:10)
-  sdata <- make_standata(y~0+x, data = dat)
+  sdata <- make_standata(y~ 0 + x, data = dat)
   expect_equal(unname(sdata$X[, 1]), dat$x)
 })
 
-test_that("make_standata handles variable 'intercept' correctly", {
+test_that("make_standata handles variable 'intercept'", {
   dat <- data.frame(y = rnorm(10), x = 1:10)
-  sdata <- make_standata(y~0+intercept + x, data = dat)
+  sdata <- make_standata(y~0 + intercept + x, data = dat)
   expect_equal(unname(sdata$X), cbind(1, dat$x))
 })
 
-test_that("make_standata handles category specific effects correctly", {
+test_that("make_standata handles category specific effects", {
   sdata <- make_standata(rating ~ period + carry + cse(treat), 
                          data = inhaler, family = sratio())
   expect_equivalent(sdata$Xcs, matrix(inhaler$treat))
@@ -396,7 +399,7 @@ test_that("make_standata handles category specific effects correctly", {
                "category specific effects in separate group-level terms")
 })
 
-test_that("make_standata handles wiener diffusion models correctly", {
+test_that("make_standata handles wiener diffusion models", {
   dat <- RWiener::rwiener(n=100, alpha=2, tau=.3, beta=.5, delta=.5)
   dat$x <- rnorm(100)
   dat$dec <- ifelse(dat$resp == "lower", 0, 1)
@@ -409,7 +412,7 @@ test_that("make_standata handles wiener diffusion models correctly", {
                "Decisions should be 'lower' or 'upper'")
 })
 
-test_that("make_standata handles noise-free terms correctly", {
+test_that("make_standata handles noise-free terms", {
   N <- 30
   dat <- data.frame(y = rnorm(N), x = rnorm(N), z = rnorm(N),
                     xsd = abs(rnorm(N, 1)), zsd = abs(rnorm(N, 1)),
@@ -421,7 +424,7 @@ test_that("make_standata handles noise-free terms correctly", {
   expect_equal(sdata$Kme, 6)
 })
 
-test_that("make_standata handles multi-membership models correctly", {
+test_that("make_standata handles multi-membership models", {
   dat <- data.frame(y = rnorm(10), g1 = c(7:2, rep(10, 4)),
                     g2 = 1:10, w1 = rep(1, 10),
                     w2 = rep(abs(rnorm(10))))
@@ -431,4 +434,10 @@ test_that("make_standata handles multi-membership models correctly", {
   # this checks whether combintation of factor levels works as intended
   expect_equal(sdata$J_1_1, as.array(c(6, 5, 4, 3, 2, 1, 7, 7, 7, 7)))
   expect_equal(sdata$J_1_2, as.array(c(8, 1, 2, 3, 4, 5, 6, 9, 10, 7)))
+})
+
+test_that("make_standata handles calls to the 'poly' function", {
+  dat <- data.frame(y = rnorm(10), x = rnorm(10))
+  expect_equal(colnames(make_standata(y ~ 1 + poly(x, 3), dat)$X),
+               c("Intercept", "polyx31", "polyx32", "polyx33"))
 })
