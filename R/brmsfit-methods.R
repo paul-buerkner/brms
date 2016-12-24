@@ -690,7 +690,7 @@ summary.brmsfit <- function(object, waic = FALSE, priors = FALSE,
     out$sampler <- paste0(stan_args$method, "(", stan_args$algorithm, ")")
     allow_waic <- !nrow(object$ranef) || any(grepl("^r_", parnames(object)))
     if (waic && allow_waic) {
-      out$WAIC <- WAIC(object)$waic
+      out$WAIC <- SW(WAIC(object)$waic)
     }
     if (priors) {
       out$prior <- prior_summary(object, all = FALSE)
