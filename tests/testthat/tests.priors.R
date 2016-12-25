@@ -78,6 +78,8 @@ test_that("set_prior alias functions produce equivalent results", {
                prior(normal(0, 1), class = sd))
   expect_equal(set_prior("normal(0, 1)", class = "sd", nlpar = "a"),
                prior(normal(0, 1), class = "sd", nlpar = a))
+  expect_equal(set_prior("normal(0, 1)", class = "sd", nlpar = "a"),
+               prior_(~normal(0, 1), class = ~sd, nlpar = quote(a)))
   expect_equal(set_prior("normal(0, 1)", class = "sd"),
                prior_string("normal(0, 1)", class = "sd"))
 })
