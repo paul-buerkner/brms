@@ -40,6 +40,8 @@ test_that("brm produces expected errors", {
                "Autocorrelation formula must be one-sided")
   expect_error(brm(y ~ 1, dat, autocor = cor_ar(~1|g1/g2)), 
                paste("Illegal grouping term: g1/g2"))
+  expect_error(brm(y ~ 1, dat, poisson(), autocor = cor_ma(~x)),
+               "not yet implemented for family 'poisson'")
   
   # ordinal models
   expect_error(brm(rating ~ treat + period + carry + cse(treat) + (1|subject), 
@@ -48,6 +50,18 @@ test_that("brm produces expected errors", {
   expect_error(brm(rating ~ treat + period + carry + monotonic(carry),
                    data = inhaler, family = cratio("logit")), 
                paste("Error occured for variables: carry"))
+  
+  # families and links
+  expect_error(brm(y ~ x, dat, family = gaussian("logit")), 
+               "'logit' is not a supported link for family 'gaussian'")
+  expect_error(brm(y ~ x, dat, family = poisson("inverse")), 
+               "'inverse' is not a supported link for family 'poisson'")
+  expect_error(brm(y ~ x, dat, family = c("weibull", "sqrt")),
+               "'sqrt' is not a supported link for family 'weibull'")
+  expect_error(brm(y ~ x, dat, family = c("categorical","probit")),
+               "'probit' is not a supported link for family 'categorical'")
+  expect_error(brm(y ~ x, dat, family = "ordinal"),
+              "ordinal is not a supported family")
 })
 
 test_that("check_brm_input returns correct warnings", {

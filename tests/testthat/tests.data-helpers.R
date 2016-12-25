@@ -70,15 +70,15 @@ test_that("arr_design_matrix works correctly", {
 })
 
 test_that("amend_newdata handles factors correctly", {
-  fit <- brms:::rename_pars(brmsfit_example1)
-  fit$data$fac <- factor(sample(1:3, nrow(fit$data), replace = TRUE))
+  fit <- brms:::rename_pars(brms:::brmsfit_example1)
+  fit$data$fac <- factor(sample(1:3, nrow(fit$data), TRUE))
   newdata <- fit$data[1:5, ]
-  expect_silent(amend_newdata(newdata, fit))
+  expect_silent(brms:::amend_newdata(newdata, fit))
   newdata$visit <- 1:5
-  expect_error(amend_newdata(newdata, fit), fixed = TRUE,
+  expect_error(brms:::amend_newdata(newdata, fit),
                "Levels '5' of grouping factor 'visit' cannot")
   newdata$fac <- 1:5
-  expect_error(amend_newdata(newdata, fit), fixed = TRUE,
+  expect_error(brms:::amend_newdata(newdata, fit),
                "New factor levels are not allowed")
 })
 

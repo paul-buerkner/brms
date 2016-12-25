@@ -856,12 +856,14 @@ stan_rngprior <- function(sample_prior, prior, par_declars = "",
   out <- list()
   if (sample_prior) {
     prior <- gsub(" ", "", paste0("\n", prior))
-    pars <- gsub("\\\n|to_vector\\(|\\)", "", get_matches("\\\n[^~]+", prior))
-    take <- !grepl("^(z|zs|Xme)_|^increment_log_prob\\(", pars)
+    pars <- get_matches("\\\n[^~]+", prior)
+    pars <- gsub("\\\n|to_vector\\(|\\)", "", pars)
+    regex <- "^(z|zs|Xme)_|^increment_log_prob\\(|^target ?(\\+=)"
+    take <- !grepl(regex, pars)
     pars <- rename(pars[take], symbols = c("^L_", "^Lrescor"), 
                    subs = c("cor_", "rescor"), fixed = FALSE)
-    dis <- gsub("~", "", regmatches(prior, gregexpr("~[^\\(]+", prior))[[1]])[take]
-    args <- regmatches(prior, gregexpr("\\([^;~]+\\);", prior))[[1]][take]
+    dis <- gsub("~", "", get_matches("~[^\\(]+", prior))[take]
+    args <- get_matches("\\([^;~]+\\);", prior)[take]
     type <- rep("real", length(pars))
     
     # rename parameters containing indices
@@ -903,12 +905,16 @@ stan_rngprior <- function(sample_prior, prior, par_declars = "",
     has_bounds <- as.logical(nchar(bounds))
     if (any(has_bounds)) {  
       # bounded parameters have to be sampled in the model block
-      out$par <- paste0("  // parameters to store prior samples \n",
-                        collapse("  real", bounds[has_bounds], 
-                                 " prior_", pars[has_bounds], "; \n"))
-      out$model <- paste0("  // additionally draw samples from priors \n",
-                          collapse("  prior_", pars[has_bounds] ," ~ ",
-                                   dis[has_bounds], args[has_bounds]," \n"))
+      out$par <- paste0(
+        "  // parameters to store prior samples\n",
+        collapse("  real", bounds[has_bounds], 
+                 " prior_", pars[has_bounds], ";\n")
+      )
+      out$model <- paste0(
+        "  // additionally draw samples from priors\n",
+        collapse("  prior_", pars[has_bounds] ," ~ ",
+                 dis[has_bounds], args[has_bounds], "\n")
+      )
     }
     no_bounds <- !has_bounds
     if (any(no_bounds)) {
