@@ -1,24 +1,83 @@
-rhs <- function(x) {
-  # return the righthand side of a formula
-  attri <- attributes(x)
-  x <- as.formula(x)
-  x <- if (length(x) == 3) x[-2] else x
-  do.call(structure, c(list(x), attri))
-}
+#' Additional Response Information
+#' 
+#' Provide additional information on the response variable 
+#' in \pkg{brms} models, such as censoring, truncation, or
+#' known measurement error.
+#' 
+#' @name addition-terms
+#' 
+#' @param x A vector; usually a variable defined in the
+#'  data. Allowed values depend on the function:
+#'  \code{resp_se}, \code{resp_weights}, and \code{resp_disp} 
+#'  require positive numeric values;
+#'  \code{resp_trials} and \code{resp_cat} require positive integers;
+#'  \code{resp_dec} requires \code{0} and \code{1}, or alternatively
+#'  \code{'lower'} and \code{'upper'}; 
+#'  \code{resp_cens} requires \code{'left'}, \code{'none'}, \code{'right'},
+#'  and \code{'interval'} (or equivalenty \code{-1}, \code{0}, \code{1},
+#'  and \code{2}) to indicate left, no, right, or interval censoring.
+#' @param sigma Logical; Indicates whether the residual standard deviation
+#'  parameter \code{sigma} should be included in addition to the known
+#'  measurement error. Defaults to \code{FALSE} for backwards compatibility,
+#'  but setting it to \code{TRUE} is usually the better choice.
+#' @param y2 A vector specifying the upper bounds in interval censoring.
+#' @param lb A numeric vector or single numeric value specifying 
+#'   the lower truncation bound.
+#' @param ub A numeric vector or single numeric value specifying 
+#'   the upper truncation bound.
+#'
+#' @return A vector containing additional information on the response
+#'   variable in an appropriate format.
+#'
+#' @details 
+#'   These functions are almost solely useful when
+#'   called in formulas passed to the \pkg{brms} package.
+#'   Within formulas, the \code{resp_} prefix may be omitted.
+#'   More information is given in the 'Details' section
+#'   of \code{\link[brms:brmsformula]{brmsformula}}.
+#'   
+#' @seealso 
+#'   \code{\link[brms:brm]{brm}}, 
+#'   \code{\link[brms:brmsformula]{brmsformula}}   
+#'  
+#' @examples 
+#' \dontrun{
+#' ## Random effects meta-analysis
+#' nstudies <- 20
+#' true_effects <- rnorm(nstudies, 0.5, 0.2)
+#' sei <- runif(nstudies, 0.05, 0.3)
+#' outcomes <- rnorm(nstudies, true_effects, sei)
+#' data1 <- data.frame(outcomes, sei)
+#' fit1 <- brm(outcomes | se(sei, sigma = TRUE) ~ 1,
+#'             data = data1)
+#' summary(fit1)
+#' 
+#' ## Probit regression using the binomial family
+#' n <- sample(1:10, 100, TRUE)  # number of trials
+#' success <- rbinom(100, size = n, prob = 0.4)
+#' x <- rnorm(100)
+#' data2 <- data.frame(n, success, x)
+#' fit2 <- brm(success | trials(n) ~ x, data = data2,
+#'             family = binomial("probit"))
+#' summary(fit2)
+#' 
+#' ## Survival regression modeling the time between the first 
+#' ## and second recurrence of an infection in kidney patients.
+#' fit3 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient), 
+#'             data = kidney, family = lognormal())
+#' summary(fit3)
+#' 
+#' ## Poisson model with truncated counts  
+#' fit4 <- brm(count | trunc(ub = 104) ~ log_Base4_c * Trt_c, 
+#'             data = epilepsy, family = poisson())
+#' summary(fit4)
+#' }
+#'   
+NULL
 
-lhs <- function(x) {
-  # return the lefthand side of a formula
-  x <- as.formula(x)
-  if (length(x) == 3L) update(x, . ~ 1) else NULL
-}
-
-eval_rhs <- function(formula, data = NULL) {
-  # computes data for addition arguments
-  formula <- as.formula(formula)
-  eval(rhs(formula)[[2]], data, environment(formula))
-}
-
-.se <- function(x, sigma = FALSE) {
+#' @rdname addition-terms
+#' @export
+resp_se <- function(x, sigma = FALSE) {
   # standard errors for meta-analysis
   if (!is.numeric(x)) {
     stop2("Standard errors must be numeric.")
@@ -33,12 +92,14 @@ eval_rhs <- function(formula, data = NULL) {
   structure(x, sigma = sigma)  
 }
 
-.se_no_data <- function(x, sigma = FALSE) {
+resp_se_no_data <- function(x, sigma = FALSE) {
   # only evaluate the sigma argument
-  .se(1, sigma = sigma)
+  resp_se(1, sigma = sigma)
 }
 
-.weights <- function(x) {
+#' @rdname addition-terms
+#' @export
+resp_weights <- function(x) {
   # weights to be applied on any model
   if (!is.numeric(x)) 
     stop2("Weights must be numeric.")
@@ -47,7 +108,9 @@ eval_rhs <- function(formula, data = NULL) {
   x
 }
 
-.disp <- function(x) {
+#' @rdname addition-terms
+#' @export
+resp_disp <- function(x) {
   # dispersion factors
   if (!is.numeric(x)) 
     stop2("Dispersion factors must be numeric.")
@@ -56,7 +119,29 @@ eval_rhs <- function(formula, data = NULL) {
   x  
 }
 
-.dec <- function(x) {
+#' @rdname addition-terms
+#' @export
+resp_trials <- function(x) {
+  # trials for binomial models
+  if (any(!is.wholenumber(x) || x < 1)) {
+    stop2("Number of trials must be positive integers.")
+  }
+  x
+}
+
+#' @rdname addition-terms
+#' @export
+resp_cat <- function(x) {
+  # number of categories for ordinal models
+  if (length(x) != 1L || !is.wholenumber(x) || x < 1) {
+    stop2("Number of categories must be a positive integer.")
+  }
+  x
+}
+
+#' @rdname addition-terms
+#' @export
+resp_dec <- function(x) {
   # decisions for the wiener diffusion model
   if (is.character(x) || is.factor(x)) {
     x <- ifelse(x == "lower", 0, ifelse(x == "upper", 1, x))
@@ -70,26 +155,14 @@ eval_rhs <- function(formula, data = NULL) {
   x
 }
 
-.trials <- function(x) {
-  # trials for binomial models
-  if (any(!is.wholenumber(x) || x < 1))
-    stop2("Number of trials must be positive integers.")
-  x
-}
-
-.cat <- function(x) {
-  # number of categories for categorical and ordinal models
-  if (any(!is.wholenumber(x) || x < 1))
-    stop2("Number of categories must be positive integers.")
-  x
-}
-
-.cens <- function(x, y2 = NULL) {
+#' @rdname addition-terms
+#' @export
+resp_cens <- function(x, y2 = NULL) {
   # indicator for censoring
   if (is.factor(x)) {
     x <- as.character(x)
   }
-  .prepare_cens <- function(x) {
+  prepare_cens <- function(x) {
     stopifnot(length(x) == 1L)
     regx <- paste0("^", x)
     if (grepl(regx, "left")) {
@@ -103,7 +176,7 @@ eval_rhs <- function(formula, data = NULL) {
     }
     x
   }
-  cens <- unname(ulapply(x, .prepare_cens))
+  cens <- unname(ulapply(x, prepare_cens))
   if (!all(is.wholenumber(cens) & cens %in% -1:2)) {
     stop2("Invalid censoring data. Accepted values are ", 
           "'left', 'none', 'right', and 'interval'\n",
@@ -120,7 +193,9 @@ eval_rhs <- function(formula, data = NULL) {
   cens
 }
 
-.trunc <- function(lb = -Inf, ub = Inf) {
+#' @rdname addition-terms
+#' @export
+resp_trunc <- function(lb = -Inf, ub = Inf) {
   lb <- as.numeric(lb)
   ub <- as.numeric(ub)
   if (any(lb >= ub)) {
@@ -369,11 +444,74 @@ mm <- function(..., weights = NULL) {
   nlist(groups, weights, weightvars, allvars, type = "mm")
 }
 
+rhs <- function(x) {
+  # return the righthand side of a formula
+  attri <- attributes(x)
+  x <- as.formula(x)
+  x <- if (length(x) == 3) x[-2] else x
+  do.call(structure, c(list(x), attri))
+}
+
+lhs <- function(x) {
+  # return the lefthand side of a formula
+  x <- as.formula(x)
+  if (length(x) == 3L) update(x, . ~ 1) else NULL
+}
+
+eval_rhs <- function(formula, data = NULL) {
+  # computes data for addition arguments
+  formula <- as.formula(formula)
+  eval(rhs(formula)[[2]], data, environment(formula))
+}
+
+amend_formula <- function(formula, data = NULL, family = gaussian(),
+                          nonlinear = NULL, partial = NULL) {
+  # incorporate additional arguments into formula
+  # Args:
+  #   formula: object of class 'formula' of 'brmsformula'
+  #   data: optional data.frame
+  #   family: optional object of class 'family'
+  #   nonlinear, partial: deprecated arguments of brm
+  # Returns:
+  #   a brmsformula object compatible with the current version of brms
+  out <- bf(formula, nonlinear = nonlinear)
+  out[["family"]] <- family
+  fnew <- ". ~ ."
+  if (!is.null(partial)) {
+    warning2("Argument 'partial' is deprecated. Please use the 'cs' ", 
+             "function inside the model formula instead.")
+    partial <- formula2str(partial, rm = 1)
+    fnew <- paste(fnew, "+ cs(", partial, ")")
+  }
+  # to allow the '.' symbol in formula
+  try_terms <- try(terms(out$formula, data = data), silent = TRUE)
+  if (!is(try_terms, "try-error")) {
+    out$formula <- formula(try_terms)
+  }
+  if (fnew != ". ~ .") {
+    out$formula <- update.formula(out$formula, formula(fnew))
+  }
+  if (is.categorical(family) && is.null(attr(formula, "response"))) {
+    respform <- extract_effects(out)$respform
+    model_response <- model.response(model.frame(respform, data = data))
+    response <- levels(factor(model_response))
+    if (length(response) <= 2L) {
+      stop2("At least 3 response categories are required for family ", 
+            "'categorical'.\nPlease use family 'bernoulli' instead.")
+    }
+    # the first level will serve as the reference category
+    out[["response"]] <- response[-1]
+  }
+  out
+}
+
 str2formula <- function(x, ...) {
   # converts a string to a formula
   # Args:
   #   x: vector of strings to be converted
   #   ...: passed to formula(.)
+  # Returns:
+  #   a formula
   if (length(x)) {
     x <- paste(x, collapse = "+") 
   } else {
@@ -382,22 +520,31 @@ str2formula <- function(x, ...) {
   formula(paste("~", x), ...)
 }
 
-formula2str <- function(formula, rm = c(0, 0)) {
+formula2str <- function(formula, rm = c(0, 0), space = c("rm", "trim")) {
   # converts a formula to a string
   # Args:
   #   formula: a model formula
   #   rm: a vector of to elements indicating how many characters 
   #       should be removed at the beginning
   #       and end of the string respectively
+  #   space: how should whitespaces be treated?
+  # Returns:
+  #   a string
+  space <- match.arg(space)
   if (!is.formula(formula)) {
     formula <- as.formula(formula)
   }
   if (is.na(rm[2])) rm[2] <- 0
-  x <- gsub("[ \t\r\n]+", "", Reduce(paste, deparse(formula)), perl = TRUE)
-  x <- substr(x, 1 + rm[1], nchar(x) - rm[2])
-  x
+  x <- Reduce(paste, deparse(formula))
+  x <- gsub("[\t\r\n]+", "", x, perl = TRUE)
+  if (space == "trim") {
+    x <- gsub(" {1,}", " ", x, perl = TRUE)
+  } else {
+    x <- gsub(" ", "", x, perl = TRUE) 
+  }
+  substr(x, 1 + rm[1], nchar(x) - rm[2])
 }
 
 is.formula <- function(x) {
-  is(x, "formula")
+  inherits(x, "formula")
 }

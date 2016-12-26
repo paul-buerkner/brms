@@ -1,29 +1,51 @@
 test_that("brmsformula validates formulas of non-linear parameters", {
-  expect_error(bf(y ~ a, nonlinear = list(~ 1, a ~ 1)),
+  expect_error(bf(y ~ a, ~ 1, a ~ 1),
                "Additional formulas must be named")
-  expect_error(bf(y ~ exp(-x), nonlinear = list(a + b ~ 1)),
-               "LHS of additional formulas must contain exactly one variable")
-  expect_error(bf(y ~ a^x, nonlinear = list(a.b ~ 1)),
+  expect_error(bf(y ~ a^x, a.b ~ 1),
                "not contain dots or underscores")
-  expect_error(bf(y ~ a^(x+b), nonlinear = a_b ~ 1),
+  expect_error(bf(y ~ a^(x+b), a_b ~ 1),
                "not contain dots or underscores")
 })
 
 test_that("brmsformula validates formulas of auxiliary parameters", {
   expect_error(bf(y ~ a, ~ 1, sigma ~ 1),
                "Additional formulas must be named")
-  expect_error(bf(y ~ exp(-x), a + b ~ 1),
-               "LHS of additional formulas must contain exactly one variable")
   expect_error(bf(y ~ a^x, a ~ 1),
-               "The following argument names were invalid: a")
+               "The following parameter names are invalid: 'a'")
 })
 
-test_that("nonlinear2list works correctly", {
-  expect_equal(nonlinear2list(a ~ 1), list(a = a ~ 1))
-  expect_equal(nonlinear2list(a + alpha ~ x + (x|g)), 
-               list(a = a ~ x + (x|g), alpha = alpha ~ x + (x|g)))
-  expect_equal(nonlinear2list(list(a ~ 1, b ~ 1 + z)),
-               list(a = a ~ 1, b = b ~ 1 + z))
-  expect_equal(nonlinear2list(NULL), NULL)
-  expect_error(nonlinear2list(1), "invalid formula")
+test_that("brmsformula does not change a 'brmsformula' object", {
+  form <- bf(y ~ a, sigma ~ 1)
+  expect_identical(form, bf(form))
+  form <- bf(y ~ a, sigma ~ 1, a ~ x, nl = TRUE)
+  expect_identical(form, bf(form))
+})
+
+test_that("brmsformula is backwards compatible", {
+  expect_warning(form <- bf(y ~ a * exp(-b * x), 
+                            nonlinear = a + b ~ 1),
+                 "Argument 'nonlinear' is deprecated")
+  expect_equivalent(pforms(form), list(a ~ 1, b ~ 1))
+  expect_true(form[["nl"]])
+  
+  expect_warning(form <- bf(y ~ a * exp(-b * x), 
+                            nonlinear = list(a ~ x, b ~ 1)),
+                 "Argument 'nonlinear' is deprecated")
+  expect_equivalent(pforms(form), list(a ~ x, b ~ 1))
+  expect_true(form[["nl"]])
+  
+  form <- structure(y ~ x + z, sigma = sigma ~ x)
+  class(form) <- c("brmsformula", "formula")
+  form <- bf(form)
+  expect_equal(form$formula, y ~ x + z)
+  expect_equal(pforms(form), list(sigma = sigma ~ x))
+  expect_true(!form[["nl"]])
+  
+  form <- structure(y ~ a * exp(-b * x),
+                    nonlinear = list(a = a ~ x, b = b ~ 1))
+  class(form) <- c("brmsformula", "formula")
+  form <- bf(form)
+  expect_equal(form$formula, y ~ a * exp(-b * x))
+  expect_equal(pforms(form), list(a = a ~ x, b = b ~ 1))
+  expect_true(form[["nl"]])
 })

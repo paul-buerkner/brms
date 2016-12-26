@@ -1,5 +1,5 @@
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-[![Build Status](https://travis-ci.org/paul-buerkner/brms.svg?branch=master)](https://travis-ci.org/paul-buerkner/brms) [![Coverage Status](https://codecov.io/github/paul-buerkner/brms/coverage.svg?branch=master)](https://codecov.io/github/paul-buerkner/brms?branch=master) [![CRAN Version](http://www.r-pkg.org/badges/version/brms)](https://cran.r-project.org/package=brms) [![Codewake](https://www.codewake.com/badges/ask_question.svg)](https://www.codewake.com/p/brms)
+[![Build Status](https://travis-ci.org/paul-buerkner/brms.svg?branch=master)](https://travis-ci.org/paul-buerkner/brms) [![Coverage Status](https://codecov.io/github/paul-buerkner/brms/coverage.svg?branch=master)](https://codecov.io/github/paul-buerkner/brms?branch=master) [![CRAN Version](http://www.r-pkg.org/badges/version/brms)](https://cran.r-project.org/package=brms) [![Downloads](http://cranlogs.r-pkg.org/badges/brms?color=brightgreen)](http://cran.rstudio.com/package=brms) [![Codewake](https://www.codewake.com/badges/ask_question.svg)](https://www.codewake.com/p/brms)
 
 brms
 ====
@@ -22,6 +22,7 @@ As a simple example, we use poisson regression to model the seizure counts in ep
 fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient) + (1|obs), 
            data = epilepsy, family = "poisson")
 #> Compiling the C++ model
+#> Start sampling
 ```
 
 The results (i.e. posterior samples) can be investigated using
@@ -33,24 +34,24 @@ summary(fit, waic = TRUE)
 #>    Data: epilepsy (Number of observations: 236) 
 #> Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1; 
 #>          total post-warmup samples = 4000
-#>    WAIC: 1146.91
+#>    WAIC: 1145.61
 #>  
 #> Group-Level Effects: 
 #> ~obs (Number of levels: 236) 
 #>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> sd(Intercept)     0.37      0.04     0.29     0.46       1285    1
+#> sd(Intercept)     0.37      0.04     0.29     0.46       1276 1.01
 #> 
 #> ~patient (Number of levels: 59) 
 #>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> sd(Intercept)     0.51      0.07     0.38     0.66       1054    1
+#> sd(Intercept)     0.51      0.07     0.38     0.66       1312    1
 #> 
 #> Population-Level Effects: 
 #>                   Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> Intercept             1.56      0.08     1.39     1.71       1265    1
-#> log_Age_c             0.49      0.37    -0.26     1.21       1213    1
-#> log_Base4_c           1.07      0.11     0.86     1.28       1373    1
-#> Trt_c                -0.33      0.16    -0.64    -0.02       1239    1
-#> log_Base4_c:Trt_c     0.37      0.21    -0.05     0.77       1600    1
+#> Intercept             1.56      0.08     1.40     1.72       1557    1
+#> log_Age_c             0.49      0.37    -0.22     1.21       1343    1
+#> log_Base4_c           1.07      0.11     0.86     1.28       1453    1
+#> Trt_c                -0.34      0.16    -0.65    -0.03       1475    1
+#> log_Base4_c:Trt_c     0.35      0.21    -0.06     0.77       1262    1
 #> 
 #> Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 #> is a crude measure of effective sample size, and Rhat is the potential 
@@ -79,8 +80,8 @@ There are several methods to compute and visualize model predictions. Suppose th
 newdata <- data.frame(Trt_c = c(0.5, -0.5), log_Age_c = 0, log_Base4_c = 0)
 predict(fit, newdata = newdata, allow_new_levels = TRUE, probs = c(0.05, 0.95))
 #>   Estimate Est.Error 5%ile 95%ile
-#> 1  4.97575  4.074348     0     13
-#> 2  6.88175  5.445014     1     17
+#> 1  4.90475  4.064087     0     12
+#> 2  6.85700  5.462143     1     17
 ```
 
 We need to set `allow_new_levels = TRUE` because we want to predict responses of a person that was not present in the data used to fit the model. While the `predict` method returns predictions of the responses, the `fitted` method returns predictions of the regression line.
@@ -88,8 +89,8 @@ We need to set `allow_new_levels = TRUE` because we want to predict responses of
 ``` r
 fitted(fit, newdata = newdata, allow_new_levels = TRUE, probs = c(0.05, 0.95))
 #>   Estimate Est.Error    5%ile   95%ile
-#> 1 4.976105  3.452092 1.480133 11.69071
-#> 2 6.915164  4.776523 2.050187 16.15948
+#> 1 4.946287  3.314481 1.523729 11.45134
+#> 2 6.906215  4.638504 2.100405 15.69012
 ```
 
 Both methods return the same etimate (up to random error), while the latter has smaller variance, because the uncertainty in the regression line is smaller than the uncertainty in each response. If we want to predict values of the original data, we can just leave the `newdata` argument empty.

@@ -41,9 +41,9 @@ make_standata <- function(formula, data, family = "gaussian",
   cov_ranef <- use_alias(cov_ranef, dots$cov.ranef, warn = FALSE)
   # some input checks
   family <- check_family(family)
-  formula <- update_formula(formula, data = data, family = family,
+  formula <- amend_formula(formula, data = data, family = family,
                             nonlinear = nonlinear)
-  old_mv <- isTRUE(attr(formula, "old_mv"))
+  old_mv <- isTRUE(formula[["old_mv"]])
   autocor <- check_autocor(autocor)
   is_linear <- is.linear(family)
   is_ordinal <- is.ordinal(family)
@@ -78,8 +78,9 @@ make_standata <- function(formula, data, family = "gaussian",
   standata <- list(N = nrow(data), Y = unname(model.response(data)))
   check_response <- !isTRUE(control$omit_response)
   if (check_response) {
-    if (!(is_ordinal || family$family %in% c("bernoulli", "categorical")) &&
-        !is.numeric(standata$Y)) {
+    factors_allowed <- is_ordinal || 
+      family$family %in% c("bernoulli", "categorical")
+    if (!factors_allowed && !is.numeric(standata$Y)) {
       stop2("Family '", family$family, "' expects numeric response variable.")
     }
     # transform and check response variable for different families
@@ -109,8 +110,8 @@ make_standata <- function(formula, data, family = "gaussian",
       }
     } else if (is_categorical) { 
       standata$Y <- as.numeric(as.factor(standata$Y))
-      if (length(unique(standata$Y)) < 2L) {
-        stop2("At least two response categories are required.")
+      if (length(unique(standata$Y)) < 3L) {
+        stop2("At least three response categories are required.")
       }
     } else if (is_ordinal) {
       if (is.ordered(standata$Y)) {
@@ -142,8 +143,8 @@ make_standata <- function(formula, data, family = "gaussian",
   ranef <- tidy_ranef(ee, data, ncat = control$ncat, 
                       old_levels = control$old_levels)
   args_eff <- nlist(data, family, ranef, prior, knots, not4stan)
-  if (length(ee$nonlinear)) {
-    nlpars <- names(ee$nonlinear)
+  if (length(ee$nlpars)) {
+    nlpars <- names(ee$nlpars)
     # matrix of covariates appearing in the non-linear formula
     C <- get_model_matrix(ee$covars, data = data)
     if (length(all.vars(ee$covars)) != ncol(C)) {
@@ -153,7 +154,7 @@ make_standata <- function(formula, data, family = "gaussian",
     colnames(C) <- all.vars(ee$covars)
     standata <- c(standata, list(KC = ncol(C), C = C)) 
     for (nlp in nlpars) {
-      args_eff_spec <- list(effects = ee$nonlinear[[nlp]], nlpar = nlp,
+      args_eff_spec <- list(effects = ee$nlpars[[nlp]], nlpar = nlp,
                             smooth = control$smooth[[nlp]],
                             Jmo = control$Jmo[[nlp]])
       data_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
@@ -166,14 +167,17 @@ make_standata <- function(formula, data, family = "gaussian",
                             Jmo = control$Jmo[["mu"]],
                             smooth = control$smooth[["mu"]])
       for (r in resp) {
-        data_eff <- do.call(data_effects, 
-                            c(args_eff_spec, args_eff, nlpar = r))
+        data_eff <- do.call(
+          data_effects, 
+          c(args_eff_spec, args_eff, nlpar = r)
+        )
         standata <- c(standata, data_eff)
         standata[[paste0("offset_", r)]] <- model.offset(data)
       }
       if (is.linear(family)) {
         standata$nresp <- length(resp) 
-        standata$nrescor <- length(resp) * (length(resp) - 1) / 2 
+        standata$nrescor <- length(resp) * (length(resp) - 1) / 2
+        colnames(standata$Y) <- resp
       }
     } else {
       # pass autocor here to not affect non-linear and auxiliary pars
@@ -185,9 +189,9 @@ make_standata <- function(formula, data, family = "gaussian",
       standata$offset <- model.offset(data)
     }
   }
-  # data for predictors of scale / shape parameters
-  for (ap in intersect(auxpars(), names(ee))) {
-    args_eff_spec <- list(effects = ee[[ap]], nlpar = ap,
+  # data for predictors of auxiliary parameters
+  for (ap in names(ee$auxpars)) {
+    args_eff_spec <- list(effects = ee$auxpars[[ap]], nlpar = ap,
                           smooth = control$smooth[[ap]],
                           Jmo = control$Jmo[[ap]])
     data_aux_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
@@ -203,22 +207,26 @@ make_standata <- function(formula, data, family = "gaussian",
       if (!is.null(control$trials)) {
         standata$trials <- control$trials
       } else {
+        message("Using the maximum of the response ", 
+                "variable as the number of trials.")
         standata$trials <- max(standata$Y) 
       }
-    } else if (is.wholenumber(ee$trials)) {
-      standata$trials <- ee$trials
     } else if (is.formula(ee$trials)) {
       standata$trials <- eval_rhs(formula = ee$trials, data = data)
     } else {
       stop2("Argument 'trials' is misspecified.")
     }
-    standata$max_obs <- standata$trials  # for backwards compatibility
-    if (max(standata$trials) == 1L && family$family == "binomial") 
+    if (length(standata$trials) == 1L) {
+      standata$trials <- rep(standata$trials, nrow(data))
+    }
+    if (max(standata$trials) == 1L) {
       message("Only 2 levels detected so that family 'bernoulli' ",
               "might be a more efficient choice.")
-    if (check_response && any(standata$Y > standata$trials))
+    }
+    if (check_response && any(standata$Y > standata$trials)) {
       stop2("Number of trials is smaller than the response ", 
             "variable would suggest.")
+    }
   }
   if (has_cat(family)) {
     if (!length(ee$cat)) {
@@ -227,12 +235,11 @@ make_standata <- function(formula, data, family = "gaussian",
       } else {
         standata$ncat <- max(standata$Y)
       }
-    } else if (is.wholenumber(ee$cat)) { 
-      standata$ncat <- ee$cat
+    } else if (is.formula(ee$cat)) { 
+      standata$ncat <- eval_rhs(formula = ee$cat, data = data)
     } else {
       stop2("Argument 'cat' is misspecified.")
     }
-    standata$max_obs <- standata$ncat  # for backwards compatibility
     if (max(standata$ncat) == 2L) {
       message("Only 2 levels detected so that family 'bernoulli' ",
               "might be a more efficient choice.")
@@ -316,8 +323,8 @@ make_standata <- function(formula, data, family = "gaussian",
         length(standata$ub) != standata$N) {
       stop2("Invalid truncation bounds.")
     }
-    if (check_response && any(standata$Y < standata$lb | 
-                              standata$Y > standata$ub)) {
+    inv_bounds <- standata$Y < standata$lb | standata$Y > standata$ub
+    if (check_response && any(inv_bounds)) {
       stop2("Some responses are outside of the truncation bounds.")
     }
   }

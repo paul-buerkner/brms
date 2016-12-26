@@ -2,6 +2,40 @@
 \title{brms News}
 \encoding{UTF-8}
 
+\section{CHANGES IN VERSION 1.3.1++}{
+  \subsection{NEW FEATURES}{
+    \itemize{
+      \item Specify non-linear models in a (hopefully) more
+      intuitive way using \code{brmsformula}.
+      \item Introduce new function \code{prior_} allowing
+      to specify priors using one-sided formulas or \code{quote}.
+      \item Pass priors to \pkg{Stan} directly without
+      performing any checks by setting \code{check = FALSE} 
+      in \code{set_prior}.
+      \item Introduce method \code{nsamples} to extract
+      the number of posterior samples.
+    }
+  }
+  \subsection{OTHER CHANGES}{
+    \itemize{
+      \item Change structure of \code{brmsformula}
+      objects to be more reliable and easier to extend.
+      \item Deprecate argument \code{nonlinear}.
+      \item Make handling of addition terms more transparent
+      by exporting and documenting related functions.
+      \item Remove many units tests of internal functions
+      and add tests of user-facing functions instead.
+    }
+  }
+  \subsection{BUG FIXES}{
+    \itemize{
+      \item Fix a few minor bugs related to the backwards 
+      compatibility of multivariate and related models 
+      fitted with \pkg{brms} < 1.0.0.
+    }
+  }
+}
+
 \section{CHANGES IN VERSION 1.3.1}{
   \subsection{NEW FEATURES}{
     \itemize{

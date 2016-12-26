@@ -379,7 +379,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     has_mo <- length(get_effect(ee, "mo")) > 0L
     if (has_trials(fit$family) || has_cat(fit$family) || has_mo) {
       # some components should not be computed based on newdata
-      pars <- c(names(ee$nonlinear), intersect(auxpars(), names(ee)))
+      pars <- c(names(ee$nlpars), intersect(auxpars(), names(ee)))
       comp <- c("trials", "ncat", paste0("Jmo", c("", paste0("_", pars))))
       old_standata <- rmNULL(standata(fit)[comp])
       control[c("trials", "ncat")] <- old_standata[c("trials", "ncat")]
@@ -486,10 +486,10 @@ make_smooth_list <- function(effects, data) {
     data <- rm_attr(data, "terms")
     gam_args <- list(data = data, knots = knots, 
                      absorb.cons = TRUE, modCon = 3)
-    if (length(effects$nonlinear)) {
-      smooth <- named_list(names(effects$nonlinear))
+    if (length(effects$nlpars)) {
+      smooth <- named_list(names(effects$nlpars))
       for (nlp in names(smooth)) {
-        splines <- get_spline_labels(effects$nonlinear[[nlp]])
+        splines <- get_spline_labels(effects$nlpars[[nlp]])
         for (i in seq_along(splines)) {
           sc_args <- c(list(eval_spline(splines[i])), gam_args)
           smooth[[nlp]][[i]] <- do.call(mgcv::smoothCon, sc_args)[[1]]
@@ -503,10 +503,10 @@ make_smooth_list <- function(effects, data) {
         smooth[["mu"]][[i]] <- do.call(mgcv::smoothCon, sc_args)[[1]]
       }
     }
-    auxpars <- intersect(auxpars(), names(effects))
+    auxpars <- names(effects$auxpars)
     smooth <- c(smooth, named_list(auxpars))
     for (ap in auxpars) {
-      splines <- get_spline_labels(effects[[ap]])
+      splines <- get_spline_labels(effects$auxpars[[ap]])
       for (i in seq_along(splines)) {
         sc_args <- c(list(eval_spline(splines[i])), gam_args)
         smooth[[ap]][[i]] <- do.call(mgcv::smoothCon, sc_args)[[1]]

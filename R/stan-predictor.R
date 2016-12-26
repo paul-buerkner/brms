@@ -126,22 +126,22 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
   #   cov_ranef: a list of user-defined covariance matrices
   #   prior: a brmsprior object
   out <- list()
-  if (length(effects$nonlinear)) {
-    for (i in seq_along(effects$nonlinear)) {
-      nlpar <- names(effects$nonlinear)[i]
+  if (length(effects$nlpars)) {
+    for (i in seq_along(effects$nlpars)) {
+      nlpar <- names(effects$nlpars)[i]
       # do not pass 'family' here to avoid inverse link transformations
-      nl_text <- stan_effects(effects = effects$nonlinear[[i]],
+      nl_text <- stan_effects(effects = effects$nlpars[[i]],
                               data = data, ranef = ranef, 
                               prior = prior, nlpar = nlpar, 
                               center_X = FALSE)
       out <- collapse_lists(list(out, nl_text))
     }
     # prepare non-linear model of eta 
-    nlpars <- wsp(names(effects$nonlinear))
-    new_nlpars <- paste0(" eta_", names(effects$nonlinear), "[n] ")
-    # covariates in the nonlinear model
+    nlpars <- wsp(names(effects$nlpars))
+    new_nlpars <- paste0(" eta_", names(effects$nlpars), "[n] ")
+    # covariates in the non-linear model
     covars <- wsp(setdiff(all.vars(effects$fixed[[3]]), 
-                          names(effects$nonlinear)))
+                          names(effects$nlpars)))
     if (length(covars)) {
       out$data <- paste0(out$data, 
         "  int<lower=1> KC;  // number of covariates \n",
@@ -191,10 +191,11 @@ stan_auxpars <- function(effects, data, family = gaussian(),
   # don't supply the family argument to avoid applying link functions
   args <- nlist(data, ranef, center_X = FALSE, eta = "")
   for (ap in valid_auxpars) {
-    if (!is.null(effects[[ap]])) {
+    if (!is.null(effects$auxpars[[ap]])) {
       ap_ilink <- ilink_auxpars(ap, stan = TRUE)
       ap_prior <- prior[prior$nlpar == ap, ]
-      ap_args <- list(effects = effects[[ap]], nlpar = ap, prior = ap_prior)
+      ap_args <- list(effects = effects$auxpars[[ap]], 
+                      nlpar = ap, prior = ap_prior)
       if (nzchar(ap_ilink)) {
         ap_ilink <- paste0("    ", ap, "[n] = ", ap_ilink, "(", ap, "[n]); \n")
       } else {
@@ -740,7 +741,8 @@ stan_eta_ilink <- function(family, link, effects) {
   if (stan_eta_transform(family, link, llh_adj = llh_adj)) {
     ilink <- stan_ilink(link)
     shape <- ifelse(is.formula(effects$disp), "disp_shape[n]", 
-                    ifelse(is.list(effects$shape), "shape[n]", "shape"))
+                    ifelse("shape" %in% names(effects$auxpars), 
+                           "shape[n]", "shape"))
     fl <- ifelse(family %in% c("gamma", "exponential"), 
                  paste0(family, "_", link), family)
     out <- switch(fl, 

@@ -1,4 +1,4 @@
-#' Set up a model formula for use in the \pkg{brms} package
+#' Set up a model formula for use in \pkg{brms}
 #' 
 #' Set up a model formula for use in the \pkg{brms} package
 #' allowing to define (potentially non-linear) additive multilevel 
@@ -9,12 +9,13 @@
 #' @param formula An object of class \code{formula} 
 #'   (or one that can be coerced to that class): 
 #'   a symbolic description of the model to be fitted. 
-#'   The details of model specification are given under 'Details'.
+#'   The details of model specification are given in 'Details'.
 #' @param ... Additional \code{formula} objects to specify 
-#'   predictors of special model parts and auxiliary parameters. 
+#'   predictors of non-linear and auxiliary parameters. 
 #'   Formulas can either be named directly or contain
-#'   names on their left-hand side. Currently, the following
-#'   names are accepted: 
+#'   names on their left-hand side. 
+#'   The following are auxiliary parameters of specific families
+#'   (all other parameters are treated as non-linear parameters):
 #'   \code{sigma} (residual standard deviation of
 #'   the \code{gaussian}, \code{student}, and \code{lognormal} 
 #'   families);
@@ -36,12 +37,22 @@
 #'   All auxiliary parameters are modeled 
 #'   on the log or logit scale to ensure correct definition
 #'   intervals after transformation.
+#'   See 'Details' for more explanation.
+#' @param flist Optional list of formulas, which are treated in the 
+#'   same way as formulas passed via the \code{...} argument.
+#' @param nl Logical; Indicates whether \code{formula} should be
+#'   treated as specifying a non-linear model (defaults to \code{FALSE}).
 #' @inheritParams brm
 #' 
-#' @return An object of class \code{brmsformula}, which inherits
-#'  from class \code{formula} but contains additional attributes.
+#' @return An object of class \code{brmsformula}, which
+#'   is essentially a \code{list} containing all model
+#'   formulas as well as some additional information.
 #'   
-#' @details The \code{formula} argument accepts formulae of the following syntax:
+#' @details 
+#' 
+#'   \bold{General formula structure}
+#'   
+#'   The \code{formula} argument accepts formulae of the following syntax:
 #'   
 #'   \code{response | addition ~ Pterms + (Gterms | group)} 
 #'   
@@ -52,15 +63,13 @@
 #'   accross grouping variables specified in \code{group}. We
 #'   call them 'group-level' effects or (adopting frequentist 
 #'   vocabulary) 'random' effects, although the latter name is misleading
-#'   in a Bayesian context 
-#'   (for more details type \code{vignette("brms_overview")}).
-#'   Multiple grouping factors each with multiple group-level effects 
-#'   are possible. You can specify multi-membership terms
-#'   using the \code{\link[brms:mm]{mm}} function. For instance, 
-#'   a multi-membership term with two members could be
-#'   \code{(1|mm(g1, g2))}, where \code{g1} and \code{g2} specify
-#'   the first and second member, respectively.
+#'   in a Bayesian context.
+#'   For more details type \code{vignette("brms_overview")}.
 #'   
+#'   \bold{Group-level terms}
+#'   
+#'   Multiple grouping factors each with multiple group-level effects 
+#'   are possible. 
 #'   Instead of \code{|} you may use \code{||} in grouping terms
 #'   to prevent correlations from being modeled. 
 #'   Alternatively, it is possible to model different group-level terms of 
@@ -70,7 +79,15 @@
 #'   If, for instance, one specifies the terms \code{(1+x|2|g)} and 
 #'   \code{(1+z|2|g)} somewhere in the formulae passed to \code{brmsformula},
 #'   correlations between the corresponding group-level effects 
-#'   will be estimated.
+#'   will be estimated. 
+#'   
+#'   You can specify multi-membership terms
+#'   using the \code{\link[brms:mm]{mm}} function. For instance, 
+#'   a multi-membership term with two members could be
+#'   \code{(1|mm(g1, g2))}, where \code{g1} and \code{g2} specify
+#'   the first and second member, respectively.
+#'   
+#'   \bold{Special predictor terms}
 #'   
 #'   Smoothing terms can modeled using the \code{\link[mgcv:s]{s}}
 #'   and \code{\link[mgcv:t2]{t2}} functions of the \pkg{mgcv} package 
@@ -126,13 +143,16 @@
 #'   a vignette will be added to explain more details about these
 #'   so called 'error-in-variables' models and provide real world examples.
 #'   
+#'   \bold{Additional response information}
+#'   
 #'   Another speciality of the \pkg{brms} formula syntax is the optional 
 #'   \code{addition} term, which may contain 
 #'   multiple terms of the form \code{fun(variable)} seperated by \code{+} each 
 #'   providing special information on the response variable. \code{fun} can be 
 #'   replaced with either \code{se}, \code{weights}, \code{disp}, \code{trials},
-#'   \code{cat}, \code{cens}, \code{trunc}, or \code{dec}. 
-#'   Their meanings are explained below. 
+#'   \code{cat}, \code{cens}, \code{trunc}, or \code{dec}.
+#'   Their meanings are explained below 
+#'   (see also \code{\link[brms:addition-terms]{addition-terms}}). 
 #'   
 #'   For families \code{gaussian} and \code{student}, it is 
 #'   possible to specify standard errors of the observation, thus allowing 
@@ -165,7 +185,7 @@
 #'   implementation and is less general as it is only usable for the
 #'   families \code{gaussian}, \code{student},
 #'   \code{lognormal}, \code{Gamma}, \code{weibull}, and \code{negbinomial}.
-#'   For the former four families, the residual standard deviation 
+#'   For the former three families, the residual standard deviation 
 #'   \code{sigma} is multiplied by the values given in 
 #'   \code{disp}, so that higher values lead to lower weights.
 #'   Contrariwise, for the latter three families, the parameter \code{shape}
@@ -177,8 +197,8 @@
 #'   addition should contain a variable indicating the number of trials 
 #'   underlying each observation. In \code{lme4} syntax, we may write for instance 
 #'   \code{cbind(success, n - success)}, which is equivalent
-#'   to \code{success | trials(n)} in \code{brms} syntax. If the number of trials
-#'   is constant across all observation (say \code{10}), 
+#'   to \code{success | trials(n)} in \pkg{brms} syntax. If the number of trials
+#'   is constant across all observations, say \code{10}, 
 #'   we may also write \code{success | trials(10)}. 
 #'   
 #'   For all ordinal families, \code{addition} may contain a term 
@@ -218,7 +238,9 @@
 #'   Mutiple \code{addition} terms may be specified at the same time using 
 #'   the \code{+} operator, for instance 
 #'   \code{formula = yi | se(sei) + cens(censored) ~ 1} 
-#'   for a censored meta-analytic model. \cr
+#'   for a censored meta-analytic model. 
+#'   
+#'   \bold{Formula syntax for multivariate and categorical models}
 #'   
 #'   For families \code{gaussian} and \code{student},
 #'   multivariate models may be specified using \code{cbind} notation. 
@@ -289,11 +311,9 @@
 #'   
 #'   \bold{Formula syntax for non-linear models}
 #'   
-#'   Using the \code{nonlinear} argument, it is possible to specify
-#'   non-linear models in \pkg{brms}. Contrary to what the name might suggest,
-#'   \code{nonlinear} should not contain the non-linear model itself
-#'   but rather information on the non-linear parameters. 
-#'   The non-linear model will just be specified within the \code{formula}
+#'   In \pkg{brms}, it is possible to specify non-linear models 
+#'   of arbitrary complexity.
+#'   The non-linear model can just be specified within the \code{formula}
 #'   argument. Suppose, that we want to predict the response \code{y}
 #'   through the predictor \code{x}, where \code{x} is linked to \code{y}
 #'   through \code{y = alpha - beta * lambda^x}, with parameters
@@ -301,15 +321,17 @@
 #'   non-linear model being defined via
 #'   \code{formula = y ~ alpha - beta * lambda^x} (addition arguments 
 #'   can be added in the same way as for ordinary formulas).
-#'   Now we have to tell \pkg{brms} the names of the non-linear parameters 
-#'   and specfiy a (linear mixed) model for each of them using the \code{nonlinear}
-#'   argument. Let's say we just want to estimate those three parameters
-#'   with no further covariates or random effects. Then we can write
-#'   \code{nonlinear = alpha + beta + lambda ~ 1} or equivalently
-#'   (and more flexible) \code{nonlinear = list(alpha ~ 1, beta ~ 1, lambda ~ 1)}. 
+#'   To tell \code{brms} that this is a non-linear model, 
+#'   we set argument \code{nl} to \code{TRUE}.
+#'   Now we have to specfiy a model for each of the non-linear parameters. 
+#'   Let's say we just want to estimate those three parameters
+#'   with no further covariates or random effects. Then we can pass
+#'   \code{alpha + beta + lambda ~ 1} or equivalently
+#'   (and more flexible) \code{alpha ~ 1, beta ~ 1, lambda ~ 1} 
+#'   to the \code{...} argument.
 #'   This can, of course, be extended. If we have another predictor \code{z} and 
 #'   observations nested within the grouping factor \code{g}, we may write for 
-#'   instance \cr \code{nonlinear = list(alpha ~ 1, beta ~ 1 + z + (1|g), lambda ~ 1)}.
+#'   instance \code{alpha ~ 1, beta ~ 1 + z + (1|g), lambda ~ 1}.
 #'   The formula syntax described above applies here as well.
 #'   In this example, we are using \code{z} and \code{g} only for the 
 #'   prediction of \code{beta}, but we might also use them for the other
@@ -362,11 +384,14 @@
 #' # incorporate censoring
 #' bf(y | cens(censor_variable) ~ predictors)
 #' 
-#' # define a non-linear model
-#' bf(y ~ a1 - a2^x, nonlinear = list(a1 ~ 1, a2 ~ x + (x|g)))
+#' # define a simple non-linear model
+#' bf(y ~ a1 - a2^x, a1 + a2 ~ 1, nl = TRUE)
+#' 
+#' # predict a1 and a2 differently
+#' bf(y ~ a1 - a2^x, a1 ~ 1, a2 ~ x + (x|g), nl = TRUE)
 #' 
 #' # correlated group-level effects across parameters
-#' bf(y ~ a1 - a2^x, nonlinear = list(a1 ~ 1 + (1|2|g), a2 ~ x + (x|2|g)))
+#' bf(y ~ a1 - a2^x, a1 ~ 1 + (1|2|g), a2 ~ x + (x|2|g), nl = TRUE)
 #' 
 #' # define a multivariate model
 #' bf(cbind(y1, y2) ~ x * z + (1|g))
@@ -394,75 +419,78 @@
 #' bf(rt ~ x, bs ~ x, ndt ~ x, bias ~ x)
 #' 
 #' @export
-brmsformula <- function(formula, ..., nonlinear = NULL) {
+brmsformula <- function(formula, ..., flist = NULL, 
+                        nl = NULL, nonlinear = NULL) {
+  # ensure backwards compatibility
+  if (is.brmsformula(formula) && is.formula(formula)) {
+    # convert deprecated brmsformula objects back to formula
+    class(formula) <- "formula"
+  }
+  if (!is.null(nonlinear)) {
+    warning2("Argument 'nonlinear' is deprecated. ", 
+             "See help(brmsformula) for the new way ", 
+             "of specifying non-linear models.")
+  }
+  old_nonlinear <- attr(formula, "nonlinear")
+  if (is.list(old_nonlinear)) {
+    nonlinear <- c(old_nonlinear, nonlinear)
+  }
+  if (length(nonlinear)) {
+    nl <- TRUE
+  }
+  old_forms <- rmNULL(attributes(formula)[auxpars()])
+  attributes(formula)[c(auxpars(), "nonlinear")] <- NULL
+  
+  if (is.brmsformula(formula)) {
+    out <- formula
+  } else {
+    out <- list(formula = as.formula(formula))
+  }
+  out$pforms[names(old_forms)] <- old_forms
+  
   # parse and validate dots arguments
-  dots <- list(...)
+  dots <- c(list(...), flist, nonlinear)
+  forms <- list()
   for (i in seq_along(dots)) {
-    dots[[i]] <- prepare_auxformula(dots[[i]], par = names(dots)[i])
-    names(dots)[i] <- attr(dots[[i]], "par")
-    attr(dots[[i]], "par") <- NULL
+    forms <- c(forms, prepare_auxformula(dots[[i]], par = names(dots)[i]))
   }
-  if (any(!nzchar(names(dots)))) {
-    stop2("'brmsformula' requires named arguments.")
+  dupl_pars <- names(forms)[duplicated(names(forms))]
+  if (length(dupl_pars)) {
+    dupl_pars <- collapse_comma(dupl_pars)
+    stop2("Duplicated specification of parameters ", dupl_pars)
   }
-  invalid_names <- setdiff(names(dots), auxpars())
-  if (length(invalid_names)) {
-    stop2("The following argument names were invalid: ",
-          paste(invalid_names, collapse = ", "))
+  if (!isTRUE(nl)) {
+    inv_names <- setdiff(names(forms), auxpars())
+    if (length(inv_names)) {
+      inv_names <- collapse_comma(inv_names)
+      stop2("The following parameter names are invalid: ", inv_names,
+            "\nSet nl = TRUE if you want to specify non-linear models.")
+    }
   }
   # add attributes to formula
-  if (is.logical(attr(formula, "nonlinear"))) {
-    # In brms < 0.10.0 the nonlinear attribute was used differently
-    attr(formula, "nonlinear") <- NULL
+  out$pforms[names(forms)] <- forms
+  if (!is.null(nl)) {
+    nl <- as.logical(nl)[1]
+    if (!nl %in% c(TRUE, FALSE)) {
+      stop2("Argument 'nl' could not be coerced to logical.")
+    }
+    out[["nl"]] <- nl
   }
-  auxpars <- auxpars(incl_nl = TRUE)
-  old_att <- rmNULL(attributes(formula)[auxpars])
-  formula <- as.formula(formula)
-  nonlinear <- nonlinear2list(nonlinear, rsv_pars = names(dots))
-  new_att <- rmNULL(c(nlist(nonlinear), dots))
-  dupl_args <- intersect(names(new_att), names(old_att))
-  if (length(dupl_args)) {
-    warning2("Duplicated definitions of arguments ", 
-             paste0("'", dupl_args, "'", collapse = ", "),
-             "\nIgnoring definitions outside the formula.")
-  }
-  null_pars <- setdiff(auxpars, names(old_att))
-  new_pars <- intersect(names(new_att), null_pars)
-  att <- c(old_att, new_att[new_pars])
-  attributes(formula)[names(att)] <- att
-  class(formula) <- c("brmsformula", "formula")
-  formula
+  # add default values for unspecified elements
+  defs <- list(pforms = list(), nl = FALSE, family = NULL, 
+               response = NULL, old_mv = FALSE)
+  defs <- defs[setdiff(names(defs), names(out))]
+  out[names(defs)] <- defs
+  class(out) <- "brmsformula"
+  out
 }
 
 #' @export
-bf <- function(formula, ..., nonlinear = NULL) {
+bf <- function(formula, ..., flist = NULL, 
+               nl = NULL, nonlinear = NULL) {
   # alias of brmsformula
-  brmsformula(formula, ..., nonlinear = nonlinear)
-}
-
-nonlinear2list <- function(x, rsv_pars = NULL) {
-  # convert a single formula into a list of formulas
-  # one for each non-linear parameter
-  # Args:
-  #   x: a formula or a list of formulas
-  #   rsv_pars: optional character vector of reserved parameter names
-  if (!(is.list(x) || is.null(x))) {
-    x <- as.formula(x)
-  }
-  if (is(x, "formula")) {
-    if (length(x) != 3L) {
-      stop("Non-linear formulas must be two-sided.", call. = FALSE)
-    }
-    nlpars <- all.vars(lhs(x))
-    x <- lapply(nlpars, function(nlp) update(x, paste(nlp, " ~ .")))
-  }
-  for (i in seq_along(x)) {
-    x[[i]] <- prepare_auxformula(x[[i]], par = names(x)[i],
-                                 rsv_pars = rsv_pars)
-    names(x)[i] <- attr(x[[i]], "par")
-    attr(x[[i]], "par") <- NULL
-  }
-  x
+  brmsformula(formula, ..., flist = flist,
+              nl = nl, nonlinear = nonlinear)
 }
 
 prepare_auxformula <- function(formula, par = NULL, rsv_pars = NULL) {
@@ -476,37 +504,36 @@ prepare_auxformula <- function(formula, par = NULL, rsv_pars = NULL) {
   formula <- as.formula(formula)
   if (!is.null(lhs(formula))) {
     resp_pars <- all.vars(formula[[2]])
-    if (length(resp_pars) != 1L) {
-      stop2("LHS of additional formulas must contain exactly one variable.")
+    out <- named_list(resp_pars, list(formula))
+    for (i in seq_along(out)) {
+      out[[i]][[2]] <- eval2(paste("quote(", resp_pars[i], ")"))
     }
-    par <- resp_pars
-    formula[[2]] <- eval(parse(text = paste("quote(", par, ")")))
   } else {
     if (!isTRUE(nzchar(par))) {
       stop2("Additional formulas must be named.")
     }
     formula <- formula(paste(par, formula2str(formula)))
+    out <- named_list(par, list(formula))
   }
-  if (any(ulapply(c(".", "_"), grepl, x = par, fixed = TRUE))) {
+  pars <- names(out)
+  if (any(ulapply(c(".", "_"), grepl, x = pars, fixed = TRUE))) {
     stop2("Parameter names should not contain dots or underscores.")
   }
-  if (par %in% rsv_pars) {
-    stop2("Parameter name '", par, "' is reserved for this model.")
+  inv_pars <- intersect(pars, rsv_pars)
+  if (length(inv_pars)) {
+    inv_pars <- paste("'", inv_pars, "'", collapse = ", ")
+    stop2("Parameter names ", inv_pars, " are reserved for this model.")
   }
   if (!is.null(attr(terms(formula), "offset"))) {
     stop2("Offsets in additional formulas are currently not allowed.")
   }
-  structure(formula, par = par)
+  out
 }
 
-auxpars <- function(incl_nl = FALSE) {
+auxpars <- function() {
   # names of auxiliary parameters
-  auxpars <- c("sigma", "shape", "nu", "phi", "kappa", "beta", 
-               "zi", "hu", "bs", "ndt", "bias", "disc")
-  if (incl_nl) {
-    auxpars <- c(auxpars, "nonlinear")
-  }
-  auxpars
+  c("sigma", "shape", "nu", "phi", "kappa", "beta", 
+    "zi", "hu", "bs", "ndt", "bias", "disc")
 }
 
 ilink_auxpars <- function(ap = NULL, stan = FALSE) {
@@ -540,20 +567,9 @@ valid_auxpars <- function(family, effects = list(), autocor = cor_arma()) {
   names(x)[x]
 }
 
-sformula <- function(x, incl_nl = TRUE, flatten = FALSE, ...) {
-  # extract special formulas stored in brmsformula objects
-  # Args:
-  #   x: coerced to a 'brmsformula' object
-  #   incl_nl: include the 'nonlinear' argument in the output?
-  #   flatten: should formulas stored in lists be put on the first
-  #            level of the returned list?
-  out <- rmNULL(attributes(bf(x))[auxpars(incl_nl = incl_nl)])
-  if (flatten) {
-    nonlinear <- out$nonlinear
-    out$nonlinear <- NULL
-    out <- c(out, nonlinear)
-  }
-  out
+pforms <- function(x, ...) {
+  # extract formulas of additional parameters
+  bf(x, ...)[["pforms"]]
 }
 
 #' @export
@@ -567,32 +583,58 @@ update.brmsformula <- function(object, formula.,
   #   mode: "update": apply update.formula
   #         "replace": replace old formula
   #         "keep": keep old formula
+  #         attributes are always updated
   #   ...: currently unused
+  # Returns:
+  #   a brmsformula object
   mode <- match.arg(mode)
-  new_att <- sformula(formula.)
-  old_att <- sformula(object)
-  if (mode == "update") {
-    new_formula <- update.formula(object, formula., ...)
-  } else if (mode == "replace") {
-    new_formula <- formula.
-  } else {
-    new_formula <- object
+  object <- bf(object)
+  up_nl <- formula.[["nl"]]
+  if (is.null(up_nl)) {
+    up_nl <- object[["nl"]]
   }
-  attributes(new_formula)[union(names(new_att), names(old_att))] <- NULL
-  new_formula <- do.call(bf, c(new_formula, new_att))
-  new_formula <- SW(do.call(bf, c(new_formula, old_att)))
-  new_formula
+  formula. <- bf(formula., nl = up_nl)
+  old_form <- object$formula
+  up_form <- formula.$formula
+  if (mode == "update") {
+    new_form <- update(old_form, up_form, ...)
+  } else if (mode == "replace") {
+    new_form <- up_form
+  } else if (mode == "keep") {
+    new_form <- old_form
+  }
+  pforms <- pforms(object)
+  up_pforms <- pforms(formula.)
+  pforms[names(up_pforms)] <- up_pforms 
+  
+  nl <- get_arg("nl", formula., object)
+  out <- bf(new_form, flist = pforms, nl = nl)
+  out$family <- get_arg("family", formula.,  object)
+  out
 }
 
 #' @export
 print.brmsformula <- function(x, wsp = 0, ...) {
-  cat(gsub(" {1,}", " ", Reduce(paste, deparse(x))), "\n")
-  sformulas <- sformula(x, incl_nl = TRUE, flatten = TRUE)
-  if (length(sformulas)) {
-    sformulas <- ulapply(sformulas, function(form) 
-      gsub(" {1,}", " ", Reduce(paste, deparse(form))))
+  cat(formula2str(x$formula, space = "trim"), "\n")
+  pforms <- pforms(x)
+  if (length(pforms)) {
+    pforms <- ulapply(pforms, formula2str, space = "trim")
     wsp <- collapse(rep(" ", wsp))
-    cat(collapse(wsp, sformulas, "\n"))
+    cat(collapse(wsp, pforms, "\n"))
   }
   invisible(x)
+}
+
+#' Checks if argument is a \code{brmsformula} object
+#' 
+#' @param x An \R object
+#' 
+#' @export
+is.brmsformula <- function(x) {
+  inherits(x, "brmsformula")
+}
+
+is.nonlinear <- function(x) {
+  stopifnot(is.brmsfit(x))
+  bf(x$formula)[["nl"]]
 }

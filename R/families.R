@@ -614,7 +614,7 @@ has_sigma <- function(family, effects = NULL,
   if (is.formula(effects$se)) {
     # call .se without evaluating the x argument 
     cl <- rhs(effects$se)[[2]]
-    cl[[1]] <- quote(.se_no_data)
+    cl[[1]] <- quote(resp_se_no_data)
     se_only <- isFALSE(attr(eval(cl), "sigma")) 
     if (se_only && use_cov(autocor)) {
       stop2("Please set argument 'sigma' of function 'se' ",  
@@ -677,7 +677,7 @@ is.old_categorical <- function(x) {
 is.old_mv <- function(x) {
   # indicate if the model uses the old multivariate syntax 
   # from brms < 1.0.0
-  stopifnot(is(x, "brmsfit"))
+  stopifnot(is.brmsfit(x))
   ee <- extract_effects(formula(x), family = family(x))
   (is.null(x$version) || x$version <= "0.10.0.9000") &&
     (is.mv(family(x), ee$response) || is.forked(family(x)))

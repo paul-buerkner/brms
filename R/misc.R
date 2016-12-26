@@ -111,6 +111,10 @@ collapse <- function(..., sep = "") {
   paste(..., sep = sep, collapse = "")
 }
 
+collapse_comma <- function(...) {
+  paste0("'", ..., "'", collapse = ", ")
+}
+
 collapse_lists <- function(ls) {
   # collapse strings having the same name in different lists
   # Args:
@@ -415,6 +419,11 @@ use_alias <- function(arg, alias = NULL, default = NULL,
     }
   }
   arg
+}
+
+expect_match2 <- function(object, regexp, ..., all = TRUE) {
+  # just testthat::expect_match with fixed = TRUE
+  testthat::expect_match(object, regexp, fixed = TRUE, ..., all = all)
 }
 
 # startup messages for brms

@@ -118,9 +118,9 @@ linear_predictor <- function(draws, i = NULL) {
                           b = draws[["cs"]], eta = eta, 
                           ncat = ncat, r = rcs)
     } else {
-      eta <- array(eta, dim = c(dim(eta), draws$data$max_obs - 1))
+      eta <- array(eta, dim = c(dim(eta), draws$data$ncat - 1))
     } 
-    for (k in seq_len(draws$data$max_obs - 1)) {
+    for (k in seq_len(draws$data$ncat - 1)) {
       if (draws$f$family %in% c("cumulative", "sratio")) {
         eta[, , k] <- draws$Intercept[, k] - eta[, , k]
       } else {
@@ -132,9 +132,9 @@ linear_predictor <- function(draws, i = NULL) {
       # deprecated as of brms > 0.8.0
       if (!is.null(draws[["cs"]])) {
         eta <- cs_predictor(X = p(draws$data[["X"]], i), b = draws[["cs"]], 
-                            eta = eta, ncat = draws$data$max_obs)
+                            eta = eta, ncat = draws$data$ncat)
       } else {
-        eta <- array(eta, dim = c(dim(eta), draws$data$max_obs - 1))
+        eta <- array(eta, dim = c(dim(eta), draws$data$ncat - 1))
       }
     } else if (draws$old_cat == 2L) {
       # deprecated as of brms > 0.10.0
@@ -169,9 +169,9 @@ nonlinear_predictor <- function(draws, i = NULL) {
   #   Usually an S x N matrix where S is the number of samples
   #   and N is the number of observations or length of i if specified. 
   nlmodel_list <- list()
-  nlpars <- names(draws$nonlinear)
+  nlpars <- names(draws$nlpars)
   for (nlp in nlpars) {
-    nlmodel_list[[nlp]] <- linear_predictor(draws$nonlinear[[nlp]], i = i)
+    nlmodel_list[[nlp]] <- linear_predictor(draws$nlpars[[nlp]], i = i)
   }
   for (cov in names(draws$C)) {
     nlmodel_list[[cov]] <- p(draws$C[[cov]], i, row = FALSE)  
@@ -335,7 +335,7 @@ get_eta <- function(draws, i) {
     } else {
       eta <- draws$eta[, i, drop = FALSE]  
     }
-  } else if (!is.null(draws$nonlinear)) {
+  } else if (!is.null(draws$nlpars)) {
     eta <- nonlinear_predictor(draws, i = i)
   } else if (!is.null(draws[["mv"]])) {
     eta <- linear_predictor_mv(draws, i = i)

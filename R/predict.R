@@ -172,8 +172,7 @@ predict_cauchy_fixed <- function(i, draws, ...) {
 }
 
 predict_binomial <- function(i, draws, ntrys = 5, ...) {
-  trials <- ifelse(length(draws$data$max_obs) > 1, 
-                   draws$data$max_obs[i], draws$data$max_obs) 
+  trials <- draws$data$trials[i]
   args <- list(size = trials, prob = ilink(get_eta(draws, i), draws$f$link))
   rng_discrete(nrng = draws$nsamples, dist = "binom", args = args, 
                lb = draws$data$lb[i], ub = draws$data$ub[i], 
@@ -354,8 +353,7 @@ predict_zero_inflated_negbinomial <- function(i, draws, ...) {
 predict_zero_inflated_binomial <- function(i, draws, ...) {
   # theta is the bernoulii zero-inflation parameter
   theta <- get_theta(draws, i, par = "zi")
-  trials <- ifelse(length(draws$data$max_obs) > 1, 
-                   draws$data$max_obs[i], draws$data$max_obs)
+  trials <- draws$data$trials[i]
   prob <- ilink(get_eta(draws, i), draws$f$link)
   ndraws <- draws$nsamples
   # compare with theta to incorporate the zero-inflation process
@@ -364,8 +362,7 @@ predict_zero_inflated_binomial <- function(i, draws, ...) {
 }
 
 predict_categorical <- function(i, draws, ...) {
-  ncat <- ifelse(length(draws$data$max_obs) > 1, 
-                 draws$data$max_obs[i], draws$data$max_obs) 
+  ncat <- draws$data$ncat
   p <- pcategorical(1:ncat, eta = get_eta(draws, i)[, 1, ], 
                     ncat = ncat, link = draws$f$link)
   first_greater(p, target = runif(draws$nsamples, min = 0, max = 1))
@@ -388,8 +385,7 @@ predict_acat <- function(i, draws, ...) {
 }  
 
 predict_ordinal <- function(i, draws, family, ...) {
-  ncat <- ifelse(length(draws$data$max_obs) > 1, 
-                 draws$data$max_obs[i], draws$data$max_obs)
+  ncat <- draws$data$ncat
   disc <- get_disc(draws, i, ncat)
   eta <- (disc * get_eta(draws, i))[, 1, ]
   p <- pordinal(1:ncat, eta = eta, ncat = ncat, 

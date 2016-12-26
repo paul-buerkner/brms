@@ -119,13 +119,13 @@ test_that("loglik for count and survival models works correctly", {
                 shape = matrix(rgamma(ns, 4)), nsamples = ns)
   draws$data <- list(Y = rbinom(nobs, size = trials, 
                                 prob = rbeta(nobs, 1, 1)), 
-                     max_obs = trials)
+                     trials = trials)
   
   i <- sample(nobs, 1)
   
   draws$f$link <- "logit"
   ll_binom <- dbinom(x = draws$data$Y[i], prob = inv_logit(draws$eta[, i]), 
-                     size = draws$data$max_obs[i], log = TRUE)
+                     size = draws$data$trials[i], log = TRUE)
   ll <- loglik_binomial(i, draws = draws)
   expect_equal(ll, as.matrix(ll_binom))
   
@@ -211,7 +211,7 @@ test_that("loglik for zero-inflated and hurdle models runs without erros", {
                 shape = matrix(rgamma(ns, 4)), 
                 phi = matrix(rgamma(ns, 1)))
   draws$data <- list(Y = c(resp, rep(0, 4)), N_trait = nobs, 
-                     max_obs = trials)
+                     trials = trials)
   draws$f$link <- "log"
   
   ll <- loglik_hurdle_poisson(1, draws = draws)
@@ -247,7 +247,7 @@ test_that("loglik for categorical and ordinal models runs without erros", {
   ncat <- 4
   draws <- list(eta = array(rnorm(ns*nobs), dim = c(ns, nobs, ncat)),
                 nsamples = ns)
-  draws$data <- list(Y = rep(1:ncat, 2), max_obs = ncat)
+  draws$data <- list(Y = rep(1:ncat, 2), ncat = ncat)
   draws$f$link <- "logit"
   ll <- sapply(1:nobs, loglik_categorical, draws = draws)
   expect_equal(dim(ll), c(ns, nobs))

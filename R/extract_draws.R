@@ -8,13 +8,13 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   #   other arguments: see doc of logLik.brmsfit
   # Returns:
   #   A named list to be understood by linear_predictor.
-  #   For non-linear models, every element of draws$nonlinear
+  #   For non-linear models, every element of draws$nlpars
   #   can itself be passed to linear_predictor
   ee <- extract_effects(formula(x), family = family(x))
   if (is.null(subset) && !is.null(nsamples)) {
-    subset <- sample(Nsamples(x), nsamples)
+    subset <- sample(nsamples(x), nsamples)
   }
-  nsamples <- Nsamples(x, subset = subset)
+  nsamples <- nsamples(x, subset = subset)
   newd_args <- nlist(newdata, re_formula, allow_new_levels, incl_autocor)
   standata <- do.call(amend_newdata, c(newd_args, list(fit = x, ...)))
   draws <- nlist(f = prepare_family(x), data = standata, 
@@ -23,10 +23,11 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   
   # extract draws of auxiliary parameters
   am_args <- list(x = x, subset = subset)
-  valid_auxpars <- valid_auxpars(family(x), effects = ee, autocor = x$autocor)
+  valid_auxpars <- valid_auxpars(family(x), effects = ee, 
+                                 autocor = x$autocor)
   for (ap in valid_auxpars) {
-    if (!is.null(ee[[ap]])) {
-      more_args <- list(rhs_formula = attr(x$formula, ap),
+    if (!is.null(ee$auxpars[[ap]])) {
+      more_args <- list(rhs_formula = ee$auxpars[[ap]]$formula,
                         nlpar = ap, ilink = ilink_auxpars(ap))
       draws[[ap]] <- do.call(.extract_draws, c(args, more_args))
     } else {
@@ -61,12 +62,12 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
     }
   }
   # samples of the (non-linear) predictor
-  nlpars <- names(ee$nonlinear)
+  nlpars <- names(ee$nlpars)
   if (length(nlpars)) {
-    for (i in seq_along(nlpars)) {
-      rhs_formula <- attr(x$formula, "nonlinear")[[i]]
-      more_args <- nlist(rhs_formula, nlpar = nlpars[i])
-      draws$nonlinear[[nlpars[i]]] <- 
+    for (np in nlpars) {
+      rhs_formula <- ee$nlpars[[np]]$formula
+      more_args <- nlist(rhs_formula, nlpar = np)
+      draws$nlpars[[np]] <- 
         do.call(.extract_draws, c(args, more_args))
     }
     covars <- all.vars(rhs(ee$covars))
@@ -83,11 +84,8 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
     keep <- !grepl("^(X|Z|J|C)", names(draws$data))
     draws$data <- subset_attr(draws$data, keep)
   } else {
-    x$formula <- rm_attr(formula(x), auxpars())
-    x$ranef <- tidy_ranef(extract_effects(formula(x)), 
-                          data = model.frame(x))
     resp <- ee$response
-    if (length(resp) > 1L && !isTRUE(attr(formula(x), "old_mv"))) {
+    if (length(resp) > 1L && !isTRUE(x$formula[["old_mv"]])) {
       # new multivariate models
       draws[["mv"]] <- named_list(resp)
       for (r in resp) {
@@ -119,21 +117,22 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   # Returns:
   #   a named list
   dots <- list(...)
-  nsamples <- Nsamples(x, subset = subset)
-  # always update formula to make sure that formulae of
-  # non-linear and auxiliary parameters are not included
-  # fixes issue #154
-  x$formula <- update.formula(formula(x), rhs(rhs_formula))
-  x$ranef <- tidy_ranef(extract_effects(formula(x)), data = model.frame(x))
+  nsamples <- nsamples(x, subset = subset)
+  stopifnot(is.brmsformula(x$formula))
+  x$formula$formula <- update.formula(x$formula$formula, rhs(rhs_formula))
+  # ensure that auxiliary parameters are not included (fixes #154)
+  x$formula$pforms <- NULL
+  x$formula$nl <- FALSE
+  x$ranef <- tidy_ranef(extract_effects(x$formula), data = x$data)
   if (nzchar(nlpar)) {
     # make sure not to evaluate family specific stuff
     # when extracting draws of nlpars
-    attr(x$formula, "response") <- nlpar 
+    x$formula[["response"]] <- nlpar 
     na_family <- list(family = NA, link = "identity")
     class(na_family) <- c("brmsfamily", "family")
-    x$family <- dots$f <- na_family
+    x$family <- x$formula$family <- dots$f <- na_family
   }
-  new_formula <- update_re_terms(formula(x), re_formula = re_formula)
+  new_formula <- update_re_terms(x$formula, re_formula = re_formula)
   ee <- extract_effects(new_formula, family = family(x))
   new_ranef <- tidy_ranef(ee, model.frame(x))
   nlpar_usc <- usc(nlpar, "suffix")

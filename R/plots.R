@@ -27,7 +27,8 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL,
     ncond <- length(unique(x[[i]]$cond__))
     if (isTRUE(attr(x[[i]], "contour"))) {
       # contour plot for two dimensional smooths
-      plots[[i]] <- ggplot(x[[i]], aes_string(effects[1], effects[2])) + 
+      plots[[i]] <- ggplot(x[[i]]) +
+        aes_string(effects[1], effects[2]) + 
         geom_contour(aes_string(z = "estimate__", colour = "..level.."), 
                      bins = 30, size = 1.3) +
         scale_color_gradientn(colors = viridis6(), name = response)
@@ -36,8 +37,9 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL,
       # as well as two-way interactions
       gvar <- if (length(effects) == 2L) effects[2]
       plots[[i]] <- ggplot(x[[i]]) + 
-        aes_string(x = effects, y = "estimate__", ymin = "lower__",
-                   ymax = "upper__", colour = gvar, fill = gvar) + 
+        aes_string(x = effects[1], y = "estimate__",
+                   ymin = "lower__", ymax = "upper__", 
+                   colour = gvar, fill = gvar) + 
         ylab(response)
       if (points) {
         # show the data as points in the plot

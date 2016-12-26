@@ -17,28 +17,6 @@ array2list <- function(x) {
   l
 }
 
-Nsamples <- function(x, subset = NULL) {
-  # compute the number of posterior samples
-  # Args:
-  #   x: a brmsfit object
-  #   subset: a vector defining a subset of samples to be considered
-  if (!is(x$fit, "stanfit") || !length(x$fit@sim)) {
-    out <- 0
-  } else {
-    ntsamples <- ceiling((x$fit@sim$iter - x$fit@sim$warmup) /
-                          x$fit@sim$thin * x$fit@sim$chains)
-    if (length(subset)) {
-      out <- length(subset)
-      if (out > ntsamples || max(subset) > ntsamples) {
-        stop2("Argument 'subset' is invalid.")
-      }
-    } else {
-      out <- ntsamples
-    }
-  }
-  out
-}
-
 contains_samples <- function(x) {
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) {
     stop2("The model does not contain posterior samples.")
@@ -47,7 +25,7 @@ contains_samples <- function(x) {
 }
 
 algorithm <- function(x) {
-  stopifnot(is(x, "brmsfit"))
+  stopifnot(is.brmsfit(x))
   if (is.null(x$algorithm)) "sampling"
   else x$algorithm
 }
@@ -57,16 +35,22 @@ restructure <- function(x, rstr_summary = FALSE) {
   # Args:
   #   x: a brmsfit object
   #   rstr_summary: restructure cached summary?
-  stopifnot(is(x, "brmsfit"))
+  stopifnot(is.brmsfit(x))
   if (isTRUE(attr(x, "restructured"))) {
     return(x)  # already restructured
   }
-  if (isTRUE(x$version < utils::packageVersion("brms"))) {
+  if (is.null(x$version)) {
+    # this is the latest version without saving the version number
+    x$version <- package_version("0.9.1")
+  }
+  if (x$version < utils::packageVersion("brms")) {
     # element 'nonlinear' deprecated as of brms > 0.9.1
     # element 'partial' deprecated as of brms > 0.8.0
-    x$formula <- SW(update_formula(x$formula, partial = x$partial, 
-                                   nonlinear = x$nonlinear))
+    x$formula <- SW(amend_formula(formula(x), data = model.frame(x),
+                                  family = family(x), partial = x$partial,
+                                  nonlinear = x$nonlinear))
     x$nonlinear <- x$partial <- NULL
+    x$formula[["old_mv"]] <- is.old_mv(x)
     ee <- extract_effects(formula(x), family = family(x))
     x$ranef <- tidy_ranef(ee, model.frame(x))
     if ("prior_frame" %in% class(x$prior)) {
@@ -76,35 +60,30 @@ restructure <- function(x, rstr_summary = FALSE) {
       # deprecated as of brms 1.0.0
       class(x$autocor) <- "cov_fixed"
     }
-    change <- list()
-    if (isTRUE(x$version <= "0.10.0.9000")) {
-      attr(x$formula, "old_mv") <- is.old_mv(x)
-      if (length(ee$nonlinear)) {
+    if (x$version <= "0.10.0.9000") {
+      if (length(ee$nlpars)) {
         # nlpar and group have changed positions
-        change <- c(change,
-          change_old_ranef(x$ranef, pars = parnames(x),
-                           dims = x$fit@sim$dims_oi))
+        change <- change_old_ranef(x$ranef, pars = parnames(x),
+                                   dims = x$fit@sim$dims_oi)
+        x <- do_renaming(x, change)
       }
-    } else if (isTRUE(x$version < "1.0.0")) {
-      # I added double underscores in group-level parameters
-      # right before the release of brms 1.0.0
-      change <- c(change,
-        change_old_ranef2(x$ranef, pars = parnames(x),
-                          dims = x$fit@sim$dims_oi))
     }
-    if (isTRUE(x$version <= "1.0.1")) {
+    if (x$version < "1.0.0") {
+      # double underscores were added to group-level parameters
+      change <- change_old_ranef2(x$ranef, pars = parnames(x),
+                                  dims = x$fit@sim$dims_oi)
+      x <- do_renaming(x, change)
+    }
+    if (x$version <= "1.0.1") {
       # names of spline parameters had to be changed after
       # allowing for multiple covariates in one spline term
-      change <- c(change,
-        change_old_splines(ee, pars = parnames(x),
-                           dims = x$fit@sim$dims_oi))
+      change <- change_old_splines(ee, pars = parnames(x),
+                                   dims = x$fit@sim$dims_oi)
+      x <- do_renaming(x, change)
     }
-    if (isTRUE(x$version <= "1.2.0")) {
+    if (x$version <= "1.2.0") {
       x$ranef$type[x$ranef$type == "mono"] <- "mo"
       x$ranef$type[x$ranef$type == "cse"] <- "cs"
-    }
-    for (i in seq_along(change)) {
-      x <- do_renaming(change = change[[i]], x = x)
     }
     stan_env <- attributes(x$fit)$.MISC
     if (rstr_summary && exists("summary", stan_env)) {
@@ -121,7 +100,7 @@ restructure <- function(x, rstr_summary = FALSE) {
       }
     }
   }
-  structure(x, "restructured" = TRUE)
+  structure(x, restructured = TRUE)
 }
 
 first_greater <- function(A, target, i = 1) {
@@ -165,12 +144,13 @@ ilink <- function(x, link) {
 }
 
 prepare_conditions <- function(x, conditions = NULL, effects = NULL, 
-                               re_formula = NA) {
+                               re_formula = NA, rsv_vars = NULL) {
   # prepare marginal conditions
   # Args:
   #   x: an object of class 'brmsfit'
   #   conditions: optional data.frame containing user defined conditions
   #   re_formula: see marginal_effects
+  #   rsv_vars: names of reserved variables
   # Returns:
   #   A data.frame with (possibly updated) conditions
   mf <- model.frame(x)
@@ -184,15 +164,14 @@ prepare_conditions <- function(x, conditions = NULL, effects = NULL,
     }
     # list all required variables
     random <- get_random(ee)
-    req_vars <- c(lapply(get_effect(ee), rhs), 
-                  random$form, 
+    req_vars <- c(lapply(get_effect(ee), rhs), random$form, 
                   lapply(random$gcall, "[[", "weightvars"),
                   lapply(get_effect(ee, "mo"), rhs),
                   lapply(get_effect(ee, "me"), rhs),
                   lapply(get_effect(ee, "gam"), rhs), 
                   ee[c("cs", "se", "disp", "trials", "cat")])
     req_vars <- unique(ulapply(req_vars, all.vars))
-    req_vars <- setdiff(req_vars, c(rsv_vars, names(ee$nonlinear)))
+    req_vars <- setdiff(req_vars, c(rsv_vars, names(ee$nlpars)))
     conditions <- as.data.frame(as.list(rep(NA, length(req_vars))))
     names(conditions) <- req_vars
     for (v in req_vars) {
@@ -336,12 +315,6 @@ get_cornames <- function(names, type = "cor", brackets = TRUE, sep = "__") {
   cornames
 }
 
-get_nlpar <- function(x, suffix = "") {
-  # extract name of a non-linear parameter
-  nlpar <- attr(x, "nlpar")
-  if (length(nlpar) && nchar(nlpar)) paste0(nlpar, suffix) else ""
-}
-
 get_estimate <- function(coef, samples, margin = 2, to.array = FALSE, ...) {
   # calculate estimates over posterior samples 
   # Args:
@@ -407,10 +380,9 @@ get_table <- function(samples, levels = sort(unique(as.numeric(samples)))) {
   # compute absolute frequencies for each column
   # Args:
   #   samples: a S x N matrix
-  #   levels: all possible values in \code{samples}
+  #   levels: all possible values in samples
   # Returns:
-  #    a N x \code{levels} matrix containing relative frequencies
-  #    in each column seperately
+  #    a N x levels matrix containing relative frequencies of each level
   stopifnot(is.matrix(samples))
   out <- do.call(rbind, lapply(seq_len(ncol(samples)), 
     function(n) table(factor(samples[, n], levels = levels))))
@@ -665,7 +637,7 @@ mult_disp <- function(x, data, i = NULL, dim = NULL) {
     if (!is.null(i)) {
       x <- x * data$disp[i]
     } else {
-      # results in a Nsamples x Nobs matrix
+      # results in a nsamples x Nobs matrix
       if (is.matrix(x)) {
         stopifnot(!is.null(dim))
         disp <- matrix(disp, nrow = dim[1], ncol = dim[2], byrow = TRUE)
@@ -681,8 +653,7 @@ mult_disp <- function(x, data, i = NULL, dim = NULL) {
 prepare_family <- function(x) {
   # prepare for calling family specific log_lik / predict functions
   family <- family(x)
-  nresp <- length(extract_effects(x$formula, family = family,
-                                  nonlinear = x$nonlinear)$response)
+  nresp <- length(extract_effects(x$formula, family = family)$response)
   if (is.old_lognormal(family, nresp = nresp, version = x$version)) {
     family <- lognormal()
   } else if (is.linear(family) && nresp > 1L) {
@@ -749,7 +720,7 @@ compute_ic <- function(x, ic = c("waic", "loo"), ll_args = list(), ...) {
     args$args$draws <- attr(args$x, "draws")
     args$args$data <- data.frame()
     args$args$N <- attr(args$x, "N")
-    args$args$S <- Nsamples(x, subset = ll_args$subset)
+    args$args$S <- nsamples(x, subset = ll_args$subset)
     attr(args$x, "draws") <- NULL
   }
   if (ic == "loo") {
@@ -814,7 +785,7 @@ set_pointwise <- function(x, newdata = NULL, subset = NULL, thres = 1e+08) {
   #   thres: threshold above which pointwise is set to TRUE
   # Returns:
   #   TRUE or FALSE
-  nsamples <- Nsamples(x, subset = subset)
+  nsamples <- nsamples(x, subset = subset)
   if (is.data.frame(newdata)) {
     nobs <- nrow(newdata)
   } else {
@@ -995,7 +966,8 @@ add_samples <- function(x, newpar, dim = numeric(0), dist = "norm", ...) {
   #   dim: dimension of the new parameter
   # Returns:
   #   a brmsfit object with samples of a new parameter
-  stopifnot(is(x, "brmsfit"), identical(dim, numeric(0)))
+  stopifnot(is.brmsfit(x))
+  stopifnot(identical(dim, numeric(0)))
   for (i in seq_along(x$fit@sim$samples)) {
     x$fit@sim$samples[[i]][[newpar]] <- 
       do.call(paste0("r", dist), list(x$fit@sim$iter, ...))

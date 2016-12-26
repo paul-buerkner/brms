@@ -46,7 +46,7 @@ See the documentation of \code{\link{cor_brms}} for a description
 of the available correlation structures. Defaults to NULL, 
 corresponding to no correlations.}
 
-\item{nonlinear}{An optional list of formulas, specifying 
+\item{nonlinear}{(Deprecated) An optional list of formulas, specifying 
 linear models for non-linear parameters. If \code{NULL} (the default)
 \code{formula} is treated as an ordinary formula. 
 If not \code{NULL}, \code{formula} is treated as a non-linear model
@@ -56,7 +56,8 @@ linear predictor on the right hand side.
 Alternatively, it can be a single formula with all non-linear
 parameters on the left hand side (separated by a \code{+}) and a
 common linear predictor on the right hand side.
-More information is given under 'Details'.}
+As of \pkg{brms} 1.4.0, we recommend specifying non-linear
+parameters directly within \code{formula}.}
 
 \item{threshold}{A character string indicating the type of thresholds 
 (i.e. intercepts) used in an ordinal model. 
@@ -324,7 +325,8 @@ summary(fit4)
 x <- rnorm(100)
 y <- rnorm(100, mean = 2 - 1.5^x, sd = 1)
 data5 <- data.frame(x, y)
-fit5 <- brm(y ~ a1 - a2^x, data = data5, nonlinear = a1 + a2 ~ 1,
+fit5 <- brm(bf(y ~ a1 - a2^x, a1 + a2 ~ 1, nl = TRUE),  
+            data = data5,
             prior = c(prior(normal(0, 2), nlpar = a1),
                       prior(normal(0, 2), nlpar = a2)))
 summary(fit5)

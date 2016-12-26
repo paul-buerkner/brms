@@ -42,7 +42,7 @@
 #'   See the documentation of \code{\link{cor_brms}} for a description 
 #'   of the available correlation structures. Defaults to NULL, 
 #'   corresponding to no correlations.
-#' @param nonlinear An optional list of formulas, specifying 
+#' @param nonlinear (Deprecated) An optional list of formulas, specifying 
 #'   linear models for non-linear parameters. If \code{NULL} (the default)
 #'   \code{formula} is treated as an ordinary formula. 
 #'   If not \code{NULL}, \code{formula} is treated as a non-linear model
@@ -52,7 +52,8 @@
 #'   Alternatively, it can be a single formula with all non-linear
 #'   parameters on the left hand side (separated by a \code{+}) and a
 #'   common linear predictor on the right hand side.
-#'   More information is given under 'Details'.
+#'   As of \pkg{brms} 1.4.0, we recommend specifying non-linear
+#'   parameters directly within \code{formula}.
 #' @param threshold A character string indicating the type of thresholds 
 #'   (i.e. intercepts) used in an ordinal model. 
 #'   \code{"flexible"} provides the standard unstructured thresholds and 
@@ -288,7 +289,8 @@
 #' x <- rnorm(100)
 #' y <- rnorm(100, mean = 2 - 1.5^x, sd = 1)
 #' data5 <- data.frame(x, y)
-#' fit5 <- brm(y ~ a1 - a2^x, data = data5, nonlinear = a1 + a2 ~ 1,
+#' fit5 <- brm(bf(y ~ a1 - a2^x, a1 + a2 ~ 1, nl = TRUE),  
+#'             data = data5,
 #'             prior = c(prior(normal(0, 2), nlpar = a1),
 #'                       prior(normal(0, 2), nlpar = a2)))
 #' summary(fit5)
@@ -359,8 +361,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   } else {  # build new model
     # see validate.R and formula-helpers.R
     family <- check_family(family)
-    formula <- update_formula(formula, data = data, family = family, 
-                              nonlinear = nonlinear)
+    formula <- amend_formula(formula, data = data, family = family, 
+                             nonlinear = nonlinear)
     ee <- extract_effects(formula, family = family, autocor = autocor)
     if (is.null(dots$data.name)) {
       data.name <- substr(Reduce(paste, deparse(substitute(data))), 1, 50)

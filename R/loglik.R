@@ -174,8 +174,7 @@ loglik_cauchy_fixed <- function(i, draws, data = data.frame()) {
 }
 
 loglik_binomial <- function(i, draws, data = data.frame()) {
-  trials <- ifelse(length(draws$data$max_obs) > 1, 
-                   draws$data$max_obs[i], draws$data$max_obs) 
+  trials <- draws$data$trials[i]
   args <- list(size = trials, prob = ilink(get_eta(draws, i), draws$f$link))
   out <- censor_loglik(dist = "binom", args = args, i = i, data = draws$data)
   out <- truncate_loglik(out, cdf = pbinom, args = args, 
@@ -347,8 +346,7 @@ loglik_zero_inflated_negbinomial <- function(i, draws, data = data.frame()) {
 }
 
 loglik_zero_inflated_binomial <- function(i, draws, data = data.frame()) {
-  trials <- ifelse(length(draws$data$max_obs) > 1, 
-                   draws$data$max_obs[i], draws$data$max_obs) 
+  trials <- draws$data$trials[i] 
   theta <- get_theta(draws, i, par = "zi")
   args <- list(size = trials, prob = ilink(get_eta(draws, i), draws$f$link))
   out <- zero_inflated_loglik(pdf = dbinom, theta = theta, 
@@ -368,8 +366,6 @@ loglik_zero_inflated_beta <- function(i, draws, data = data.frame()) {
 }
 
 loglik_categorical <- function(i, draws, data = data.frame()) {
-  ncat <- ifelse(length(draws$data$max_obs) > 1, draws$data$max_obs[i], 
-                 draws$data$max_obs) 
   if (draws$f$link == "logit") {
     p <- cbind(rep(0, draws$nsamples), get_eta(draws, i)[, 1, ])
     out <- p[, draws$data$Y[i]] - log(rowSums(exp(p)))
@@ -380,8 +376,7 @@ loglik_categorical <- function(i, draws, data = data.frame()) {
 }
 
 loglik_cumulative <- function(i, draws, data = data.frame()) {
-  ncat <- ifelse(length(draws$data$max_obs) > 1, 
-                 draws$data$max_obs[i], draws$data$max_obs)
+  ncat <- draws$data$ncat
   disc <- get_disc(draws, i, ncat)
   eta <- disc * get_eta(draws, i)
   y <- draws$data$Y[i]
@@ -397,8 +392,7 @@ loglik_cumulative <- function(i, draws, data = data.frame()) {
 }
 
 loglik_sratio <- function(i, draws, data = data.frame()) {
-  ncat <- ifelse(length(draws$data$max_obs) > 1, 
-                 draws$data$max_obs[i], draws$data$max_obs)
+  ncat <- draws$data$ncat
   disc <- get_disc(draws, i, ncat)
   eta <- disc * get_eta(draws, i)
   y <- draws$data$Y[i]
@@ -417,8 +411,7 @@ loglik_sratio <- function(i, draws, data = data.frame()) {
 }
 
 loglik_cratio <- function(i, draws, data = data.frame()) {
-  ncat <- ifelse(length(draws$data$max_obs) > 1, 
-                 draws$data$max_obs[i], draws$data$max_obs)
+  ncat <- draws$data$ncat
   disc <- get_disc(draws, i, ncat)
   eta <- disc * get_eta(draws, i)
   y <- draws$data$Y[i]
@@ -437,8 +430,7 @@ loglik_cratio <- function(i, draws, data = data.frame()) {
 }
 
 loglik_acat <- function(i, draws, data = data.frame()) {
-  ncat <- ifelse(length(draws$data$max_obs) > 1, 
-                 draws$data$max_obs[i], draws$data$max_obs)
+  ncat <- draws$data$ncat
   disc <- get_disc(draws, i, ncat)
   eta <- disc * get_eta(draws, i)
   y <- draws$data$Y[i]

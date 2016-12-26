@@ -99,15 +99,15 @@ rename_pars <- function(x) {
   
   # find positions of parameters and define new names
   change <- list()
-  if (length(ee$nonlinear)) {
-    nlpars <- names(ee$nonlinear)
+  if (length(ee$nlpars)) {
+    nlpars <- names(ee$nlpars)
     for (p in nlpars) {
-      splines <- get_spline_labels(ee$nonlinear[[p]], x$data, covars = TRUE)
+      splines <- get_spline_labels(ee$nlpars[[p]], x$data, covars = TRUE)
       change_eff <- change_effects(
         pars = pars, dims = x$fit@sim$dims_oi,
         fixef = colnames(standata[[paste0("X_", p)]]),
         monef = colnames(standata[[paste0("Xmo_", p)]]),
-        meef = get_me_labels(ee$nonlinear[[p]], x$data),
+        meef = get_me_labels(ee$nlpars[[p]], x$data),
         splines = splines, nlpar = p)
       change <- c(change, change_eff)
     }
@@ -138,14 +138,14 @@ rename_pars <- function(x) {
     }
   }
   # rename parameters related to auxilliary parameters
-  for (ap in intersect(auxpars(), names(ee))) {
+  for (ap in names(ee$auxpars)) {
+    splines <- get_spline_labels(ee$auxpars[[ap]], x$data, covars = TRUE)
     change_eff <- change_effects(
       pars = pars, dims = x$fit@sim$dims_oi,
       fixef = colnames(standata[[paste0("X_", ap)]]),
       monef = colnames(standata[[paste0("Xmo_", ap)]]),
-      meef = get_me_labels(ee[[ap]], x$data),
-      splines = get_spline_labels(ee[[ap]], x$data, covars = TRUE),
-      nlpar = ap)
+      meef = get_me_labels(ee$auxpars[[ap]], x$data),
+      splines = splines, nlpar = ap)
     change <- c(change, change_eff)
   }
   # rename group-level parameters separately
@@ -169,9 +169,7 @@ rename_pars <- function(x) {
   }
   
   # perform the actual renaming in x$fit@sim
-  for (i in seq_along(change)) {
-    x <- do_renaming(change = change[[i]], x = x)
-  }
+  x <- do_renaming(x, change)
   x$fit@sim$pars_oi <- names(x$fit@sim$dims_oi)
   x
 }
@@ -461,9 +459,8 @@ change_prior <- function(class, pars, names = NULL, new_class = class,
 }
 
 change_old_ranef <- function(ranef, pars, dims) {
-  # prepare for renaming of group-level parameters of models 
-  # fitted with brms <= 0.10.0.9000
-  # only relevant for non-linear models
+  # interchanges group and nlpar in names of group-level parameters
+  # for brms <= 0.10.0.9000 only
   # Args:
   #   ranef: output of tidy_ranef
   #   pars: names of all parameters in the model
@@ -475,9 +472,10 @@ change_old_ranef <- function(ranef, pars, dims) {
     r <- ranef[ranef$id == id, ]
     g <- r$group[1]
     nlpar <- r$nlpar[1]
+    stopifnot(nzchar(nlpar))
     # rename sd-parameters
     old_sd_names <- paste0("sd_", nlpar, "_", g, "_", r$coef)
-    new_sd_names <- paste0("sd_", g, "__", nlpar, "_", r$coef)
+    new_sd_names <- paste0("sd_", g, "_", nlpar, "_", r$coef)
     for (i in seq_along(old_sd_names)) {
       change <- lc(change, 
         change_simple(old_sd_names[i], new_sd_names[i], pars, dims))
@@ -485,7 +483,7 @@ change_old_ranef <- function(ranef, pars, dims) {
     # rename cor-parameters
     new_cor_names <- get_cornames(paste0(nlpar, "_", r$coef),
                                   type = paste0("cor_", g),
-                                  brackets = FALSE)
+                                  brackets = FALSE, sep = "_")
     old_cor_names <- get_cornames(r$coef, brackets = FALSE, sep = "_",
                                   type = paste0("cor_", nlpar, "_", g))
     for (i in seq_along(old_cor_names)) {
@@ -494,7 +492,7 @@ change_old_ranef <- function(ranef, pars, dims) {
     } 
     # rename r-parameters
     old_r_name <- paste0("r_", nlpar, "_", g)
-    new_r_name <- paste0("r_", g, "__", nlpar)
+    new_r_name <- paste0("r_", g, "_", nlpar)
     levels <- gsub("[ \t\r\n]", ".", attr(ranef, "levels")[[g]])
     index_names <- make_index_names(levels, r$coef, dim = 2)
     new_r_names <- paste0(new_r_name, index_names)
@@ -506,8 +504,9 @@ change_old_ranef <- function(ranef, pars, dims) {
 }
 
 change_old_ranef2 <- function(ranef, pars, dims) {
-  # prepare for renaming of group-level parameters of models 
-  # fitted with brms > 0.10.0.9000 but < 1.0.0
+  # add double underscore in group-level parameters
+  # for brms < 1.0.0 only
+  # assumes that group and nlpar are correctly ordered already
   # Args:
   #   ranef: output of tidy_ranef
   #   pars: names of all parameters in the model
@@ -518,7 +517,6 @@ change_old_ranef2 <- function(ranef, pars, dims) {
   for (id in unique(ranef$id)) {
     r <- ranef[ranef$id == id, ]
     g <- r$group[1]
-    #nlpar <- r$nlpar[1]
     nlpars_usc <- usc(r$nlpar, "suffix")
     # rename sd-parameters
     old_sd_names <- paste0("sd_", g, "_", nlpars_usc, r$coef)
@@ -582,7 +580,7 @@ change_old_splines <- function(effects, pars, dims) {
   }
   
   change <- list()
-  spec_effects <- rmNULL(c(effects[auxpars()], effects$nonlinear))
+  spec_effects <- c(effects$auxpars, effects$nlpars)
   for (sp in names(spec_effects)) {
     se <- spec_effects[[sp]]
     change <- c(change, .change_old_splines(se, nlpar = sp))
@@ -693,39 +691,45 @@ make_dims <- function(x) {
   setNames(rep(list(x$dim), length(x$pnames)), x$pnames)
 }
 
-do_renaming <- function(change, x) {
-  # perform actual renaming of parameters
+do_renaming <- function(x, change) {
+  # perform actual renaming of Stan parameters
   # Args:
-  #   change: A list containing all information to rename 
-  #           a certain type of parameters (e.g., fixed effects)
+  #   change: a list of lists each element allowing
+  #           to rename certain parameters
   #   x: An object of class brmsfit
   # Returns:
   #   A brmsfit object with updated parameter names
-  chains <- length(x$fit@sim$samples) 
-  x$fit@sim$fnames_oi[change$pos] <- change$fnames
-  for (i in 1:chains) {
-    names(x$fit@sim$samples[[i]])[change$pos] <- change$fnames
-    if (!is.null(change$sort)) {
-      x$fit@sim$samples[[i]][change$pos] <- 
-        x$fit@sim$samples[[i]][change$pos][change$sort]
+  .do_renaming <- function(x, change) {
+    chains <- length(x$fit@sim$samples) 
+    x$fit@sim$fnames_oi[change$pos] <- change$fnames
+    for (i in 1:chains) {
+      names(x$fit@sim$samples[[i]])[change$pos] <- change$fnames
+      if (!is.null(change$sort)) {
+        x$fit@sim$samples[[i]][change$pos] <- 
+          x$fit@sim$samples[[i]][change$pos][change$sort]
+      }
     }
+    onp <- match(change$oldname, names(x$fit@sim$dims_oi))
+    if (is.null(onp) || is.na(onp)) {
+      warning("Parameter ", change$oldname, " could not be renamed. ",
+              "This should not happen. \nPlease inform me so that ",
+              "I can fix this problem.", call. = FALSE)
+    } else {
+      if (is.null(change$pnames)) {
+        # only needed to collapse multiple r_<i> of the same grouping factor
+        x$fit@sim$dims_oi[[onp]] <- NULL  
+      } else { 
+        # rename dims_oi to match names in fnames_oi
+        dims <- x$fit@sim$dims_oi
+        x$fit@sim$dims_oi <- c(if (onp > 1) dims[1:(onp - 1)], 
+                               make_dims(change),
+                               dims[(onp + 1):length(dims)])
+      }
+    }
+    return(x)
   }
-  onp <- match(change$oldname, names(x$fit@sim$dims_oi))
-  if (is.na(onp)) {
-    warning("Parameter ", change$oldname, " could not be renamed. ",
-            "This should not happen. \nPlease inform me so that ",
-            "I can fix this problem.", call. = FALSE)
-  } else {
-    if (is.null(change$pnames)) {
-      # only needed to collapse multiple r_<i> of the same grouping factor
-      x$fit@sim$dims_oi[[onp]] <- NULL  
-    } else { 
-      # rename dims_oi to match names in fnames_oi
-      dims <- x$fit@sim$dims_oi
-      x$fit@sim$dims_oi <- c(if (onp > 1) dims[1:(onp - 1)], 
-                             make_dims(change),
-                             dims[(onp + 1):length(dims)])
-    }
+  for (i in seq_along(change)) {
+    x <- .do_renaming(x, change[[i]])
   }
   x
 }

@@ -11,6 +11,15 @@ brmsfit <- function(formula = NULL, family = "", link = "", data.name = "",
   x
 }
 
+#' Checks if argument is a \code{brmsfit} object
+#' 
+#' @param x An \R object
+#' 
+#' @export
+is.brmsfit <- function(x) {
+  inherits(x, "brmsfit")
+}
+
 brmssummary <- function(formula = NULL, family = "", link = "", 
                         data.name = "", group = NULL, nobs = NULL, 
                         ngrps = NULL, chains = 1, iter = 2000, 
@@ -259,11 +268,11 @@ prior_samples <- function(x, pars = NA, ...) {
 #'  
 #' @aliases par.names parnames.brmsfit par.names.brmsfit
 #' 
-#' @param x An \code{R} object
+#' @param x An \R object
 #' @param ... Further arguments passed to or from other methods
 #' 
-#' @details Currently there are methods for \code{brmsfit} 
-#'   and \code{formula} objects.
+#' @details Currently there are methods for \code{brmsfit} objects.
+#' 
 #' @return A character vector containing the parameter names of the model.
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
@@ -271,6 +280,25 @@ prior_samples <- function(x, pars = NA, ...) {
 #' @export
 parnames <- function(x, ...) {
   UseMethod("parnames")
+}
+
+#' Number of Posterior Samples
+#' 
+#' Extract the number of posterior samples 
+#' stored in a fitted Bayesian model.
+#' 
+#' @param x An \R object
+#' @param ... Further arguments passed to or from other methods
+#' @param subset An optional integer vector defining a 
+#'   subset of samples to be considered.
+#' @param incl_warmup A flag indicating whether to also 
+#'   count warmup / burn-in samples.
+#' 
+#' @details Currently there are methods for \code{brmsfit} objects.
+#' 
+#' @export
+nsamples <- function(x, ...) {
+  UseMethod("nsamples")
 }
 
 #' Compute the WAIC

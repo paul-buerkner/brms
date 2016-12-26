@@ -421,7 +421,7 @@ VarCorr.brmsfit <- function(x, sigma = 1, estimate = "mean",
   } 
   # special treatment of residuals variances in linear models
   has_sigma <- has_sigma(family, ee, autocor = x$autocor, incmv = TRUE)
-  if (has_sigma && !"sigma" %in% names(ee)) {
+  if (has_sigma && !"sigma" %in% names(ee$auxpars)) {
     cor_pars <- get_cornames(ee$response, type = "rescor", 
                              brackets = FALSE)
     p <- lc(p, list(rnames = ee$response, cor_pars = cor_pars,
@@ -609,7 +609,7 @@ prior_samples.brmsfit <- function(x, pars = NA, parameters = NA, ...) {
             take <- match(max(matches), matches)
             # order samples randomly to avoid artifical dependencies
             # between parameters using the same prior samples
-            samples <- list(samples[sample(Nsamples(x)), take])
+            samples <- list(samples[sample(nsamples(x)), take])
             out <- structure(samples, names = par)
           }
         }
@@ -690,7 +690,7 @@ summary.brmsfit <- function(object, waic = FALSE, priors = FALSE,
     out$sampler <- paste0(stan_args$method, "(", stan_args$algorithm, ")")
     allow_waic <- !nrow(object$ranef) || any(grepl("^r_", parnames(object)))
     if (waic && allow_waic) {
-      out$WAIC <- WAIC(object)$waic
+      out$WAIC <- SW(WAIC(object)$waic)
     }
     if (priors) {
       out$prior <- prior_summary(object, all = FALSE)
@@ -770,6 +770,30 @@ summary.brmsfit <- function(object, waic = FALSE, priors = FALSE,
   out
 }
 
+#' @rdname nsamples
+#' @export
+nsamples.brmsfit <- function(x, subset = NULL, 
+                             incl_warmup = FALSE, ...) {
+  if (!is(x$fit, "stanfit") || !length(x$fit@sim)) {
+    out <- 0
+  } else {
+    ntsamples <- x$fit@sim$iter
+    if (!incl_warmup) {
+      ntsamples <- ntsamples - x$fit@sim$warmup
+    }
+    ntsamples <- ceiling(ntsamples / x$fit@sim$thin * x$fit@sim$chains)
+    if (length(subset)) {
+      out <- length(subset)
+      if (out > ntsamples || max(subset) > ntsamples) {
+        stop2("Argument 'subset' is invalid.")
+      }
+    } else {
+      out <- ntsamples
+    }
+  }
+  out
+}
+
 #' @export
 nobs.brmsfit <- function(object, ...) {
   nrow(model.frame(object))
@@ -802,7 +826,7 @@ ngrps.brmsfit <- function(object, ...) {
 
 #' @export
 formula.brmsfit <- function(x, ...) {
-  x$formula
+  bf(x$formula, ...)
 }
 
 #' @export
@@ -870,8 +894,6 @@ launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"),
 #'   modifying the appearance of the plots. 
 #'   For some basic themes see \code{\link[ggplot2:ggtheme]{ggtheme}}
 #'   and \code{\link[bayesplot:theme_default]{theme_default}}.
-#'   Can be defined globally for the current session, via
-#'   \code{\link[ggplot2:theme_update]{theme_set}}.
 #' @param exact_match Indicates whether parameter names 
 #'   should be matched exactly or treated as regular expression. 
 #'   Default is \code{FALSE}.
@@ -1295,7 +1317,9 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     stop2("Arguments 'probs' must be of length 2.")
   }
   
-  conditions <- prepare_conditions(x, conditions, effects, re_formula)
+  conditions <- prepare_conditions(x, conditions, effects, 
+                                   re_formula = re_formula, 
+                                   rsv_vars = rsv_vars)
   int_effects <- c(get_effect(ee, "mo"), rmNULL(ee[c("trials", "cat")]))
   int_vars <- unique(ulapply(int_effects, all.vars))
   mf <- model.frame(x)
@@ -1339,7 +1363,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
         factor(marg_data[[effects[[i]][2]]], labels = labels)
     }
     marg_res = cbind(marg_data, marg_res)
-    attr(marg_res, "response") <- as.character(x$formula[2])
+    attr(marg_res, "response") <- as.character(x$formula$formula[2])
     attr(marg_res, "effects") <- effects[[i]]
     attr(marg_res, "contour") <- both_numeric && contour
     point_args <- nlist(mf, effects = effects[[i]], conditions,
@@ -1362,21 +1386,19 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
   conditions <- prepare_conditions(x)
   smooths <- rename(as.character(smooths), " ", "")
   ee <- extract_effects(formula(x), family = family(x))
-  if (length(ee$nonlinear)) {
-    lee <- ee$nonlinear
+  if (length(ee$nlpars)) {
+    lee <- ee$nlpars
   } else {
-    resp <- ee$response
-    lee <- replicate(length(resp), ee, simplify = FALSE)
-    if (length(resp) > 1L) {
-      names(lee) <- resp
+    lee <- named_list(ee$response, list(ee))
+    if (length(lee) == 1L) {
+      names(lee) <- ""
     }
   }
-  auxpars <- intersect(names(ee), auxpars())
-  lee <- c(lee, ee[auxpars])
+  lee <- c(lee, ee$auxpars)
   
   args <- nlist(x, smooths_only = TRUE, allow_new_levels = TRUE,
                 incl_autocor = FALSE, f = prepare_family(x), 
-                nsamples = Nsamples(x))
+                nsamples = nsamples(x))
   too_many_covars <- FALSE
   results <- list()
   for (k in seq_along(lee)) {
@@ -1598,7 +1620,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (summary) {
     if (is_catordinal) {
       # compute frequencies of categories 
-      out <- get_table(out, levels = seq_len(max(draws$data$max_obs)))
+      out <- get_table(out, levels = seq_len(max(draws$data$ncat)))
     } else {
       out <- get_summary(out, probs = probs, robust = robust)
     }
@@ -1784,7 +1806,7 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     warning2("Residuals may not be meaningful for censored models.")
   }
   if (is.null(subset) && !is.null(nsamples)) {
-    subset <- sample(Nsamples(object), nsamples)
+    subset <- sample(nsamples(object), nsamples)
   }
   pred_args <- nlist(object, newdata, re_formula, allow_new_levels,
                      incl_autocor, subset, sort, summary = FALSE)
@@ -1882,8 +1904,8 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
   if (missing(formula.)) {
     dots$formula <- object$formula
   } else {
-    recompile <- length(sformula(formula.)) > 0L
-    if (length(attr(object$formula, "nonlinear"))) {
+    recompile <- length(pforms(formula.)) > 0L
+    if (is.nonlinear(object)) {
       if (length(setdiff(all.vars(formula.), ".")) == 0L) {
         dots$formula <- update(object$formula, formula., mode = "keep")
       } else {
@@ -1899,10 +1921,11 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
         stop2("New variables found: ", paste(mvars, collapse = ", "),
               "\nPlease supply your data again via argument 'newdata'")
       }
-      dots$formula <- update(object$formula, dots$formula)
-      ee_old <- extract_effects(object$formula, family = object$family)
+      dots$formula <- update(formula(object), dots$formula)
+      ee_old <- extract_effects(formula(object))
       family <- get_arg("family", dots, object)
-      ee_new <- extract_effects(dots$formula, family = family)
+      dots$formula <- amend_formula(dots$formula, family = family)
+      ee_new <- extract_effects(dots$formula)
       # no need to recompile the model when changing fixed effects only
       dont_change <- c("random", "gam", "cs", "mo", "me")
       n_old_fixef <- length(attr(terms(ee_old$fixed), "term.labels"))
@@ -1913,7 +1936,7 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
                   ee_new[names(ee_new) %in% dont_change]) ||
         is_equal(sort(c(n_old_fixef, n_new_fixef)), c(0L, 1L)) ||
         length(ee_old$response) != length(ee_new$response) ||
-        length(sformula(formula.)) > 0L
+        length(pforms(formula.)) > 0L
     }
     if (recompile) {
       message("The desired formula changes require recompling the model")
@@ -2031,7 +2054,7 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
   names <- deparse(substitute(x))
   names <- c(names, sapply(substitute(list(...))[-1], deparse))
   if (is.null(subset) && !is.null(nsamples)) {
-    subset <- sample(Nsamples(x), nsamples)
+    subset <- sample(nsamples(x), nsamples)
   }
   if (is.null(pointwise)) {
     pointwise <- set_pointwise(x, subset = subset, newdata = newdata)
@@ -2074,7 +2097,7 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
   names <- deparse(substitute(x))
   names <- c(names, sapply(substitute(list(...))[-1], deparse))
   if (is.null(subset) && !is.null(nsamples)) {
-    subset <- sample(Nsamples(x), nsamples)
+    subset <- sample(nsamples(x), nsamples)
   }
   if (is.null(pointwise)) {
     pointwise <- set_pointwise(x, subset = subset, newdata = newdata)
@@ -2281,7 +2304,7 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
   samples <- do.call(cbind, lapply(hlist, function(h) h$samples))
   samples <- as.data.frame(samples) 
   names(samples) <- paste0("H", seq_along(hlist))
-  samples$Type <- factor(rep(c("posterior", "prior"), each = Nsamples(x)))
+  samples$Type <- factor(rep(c("posterior", "prior"), each = nsamples(x)))
   class <- sub("_+$", "", class)
   out <- nlist(hypothesis = hs, samples, class, alpha)
   class(out) <- "brmshypothesis"

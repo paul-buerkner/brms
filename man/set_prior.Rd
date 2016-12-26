@@ -2,16 +2,19 @@
 % Please edit documentation in R/priors.R
 \name{set_prior}
 \alias{prior}
+\alias{prior_}
 \alias{prior_string}
 \alias{set_prior}
 \title{Prior Definitions for \pkg{brms} Models}
 \usage{
 set_prior(prior, class = "b", coef = "", group = "", nlpar = "",
-  resp = NULL, lb = NULL, ub = NULL)
-
-prior_string(prior, ...)
+  resp = NULL, lb = NULL, ub = NULL, check = TRUE)
 
 prior(prior, ...)
+
+prior_(prior, ...)
+
+prior_string(prior, ...)
 }
 \arguments{
 \item{prior}{A character string defining a distribution in \pkg{Stan} language}
@@ -38,6 +41,11 @@ Defaults to \code{NULL}, that is no restriction.}
 for classes \code{"b"}, \code{"ar"}, \code{"ma"}, and \code{"arr"}.
 Defaults to \code{NULL}, that is no restriction.}
 
+\item{check}{Logical; Indicates whether priors
+should be checked for validity (as far as possible).
+Defaults to \code{TRUE}. If \code{FALSE}, \code{prior} is passed
+to the Stan code as is, and all other arguments are ignored.}
+
 \item{...}{Arguments passed to \code{set_prior}.}
 }
 \value{
@@ -49,9 +57,15 @@ Define priors for specific parameters or classes of parameters
 }
 \details{
 \code{set_prior} is used to define prior distributions for parameters 
-  in \pkg{brms} models. The functions \code{prior} and \code{prior_string} 
-  are both aliases of \code{set_prior}, the former allowing to specify 
-  arguments without quotes \code{""} using non-standard evaluation.
+  in \pkg{brms} models. The functions \code{prior}, \code{prior_}, and
+  \code{prior_string} are aliases of \code{set_prior} each allowing
+  for a differnt kind of argument specification. 
+  \code{prior} allows specifying arguments as expression without
+  quotation marks using non-standard evaluation. 
+  \code{prior_} allows specifying arguments as one-sided formulas
+  or wrapped in \code{quote}.
+  \code{prior_string} allows specifying arguments as strings just
+  as \code{set_prior} itself.
   
   Below, we explain its usage and list some common 
   prior distributions for parameters. 
@@ -316,28 +330,36 @@ Define priors for specific parameters or classes of parameters
 }
 \section{Functions}{
 \itemize{
-\item \code{prior_string}: Alias of \code{set_prior}.
+\item \code{prior}: Alias of \code{set_prior} allowing to 
+specify arguments as expressions without quotation marks.
 
-\item \code{prior}: Alias of \code{set_prior} allowing to specify 
-arguments without quotes \code{""} using non-standard evaluation.
+\item \code{prior_}: Alias of \code{set_prior} allowing to specify 
+arguments as as one-sided formulas or wrapped in \code{quote}.
+
+\item \code{prior_string}: Alias of \code{set_prior} allowing to
+specify arguments as strings.
 }}
 \examples{
+## use alias functions
+(prior1 <- prior(cauchy(0, 1), class = sd))
+(prior2 <- prior_(~cauchy(0, 1), class = ~sd))
+(prior3 <- prior_string("cauchy(0, 1)", class = "sd"))
+identical(prior1, prior2)
+identical(prior1, prior3)
+
 ## check which parameters can have priors
 get_prior(rating ~ treat + period + carry + (1|subject),
-          data = inhaler, family = sratio(), 
-          threshold = "equidistant")
+          data = inhaler, family = cumulative())
          
 ## define some priors          
-prior <- c(set_prior("normal(0,10)", class = "b"),
-           set_prior("normal(1,2)", class = "b", coef = "treat"),
-           set_prior("cauchy(0,2)", class = "sd", 
-                     group = "subject", coef = "Intercept"),
-           set_prior("uniform(-5,5)", class = "delta"))
+prior <- c(prior_string("normal(0,10)", class = "b"),
+           prior(normal(1,2), class = b, coef = treat),
+           prior_(~cauchy(0,2), class = ~sd, 
+                  group = ~subject, coef = ~Intercept))
               
 ## verify that the priors indeed found their way into Stan's model code
-make_stancode(rating ~ period + carry + cs(treat) + (1|subject),
-              data = inhaler, family = sratio(), 
-              threshold = "equidistant",
+make_stancode(rating ~ treat + period + carry + (1|subject),
+              data = inhaler, family = cumulative(),
               prior = prior)
               
 ## use the horseshoe prior to model sparsity in population-level effects
@@ -349,11 +371,10 @@ make_stancode(count ~ log_Age_c + log_Base4_c * Trt_c,
 make_stancode(count ~ log_Age_c + log_Base4_c * Trt_c,
               data = epilepsy, family = poisson(),
               prior = set_prior("lasso(1)"))
-              
-## use alias functions
-(prior1 <- prior_string("cauchy(0, 1)", class = "sd"))
-(prior2 <- prior(cauchy(0, 1), class = sd))
-identical(prior1, prior2)
+
+## pass priors to Stan without checking
+prior <- prior_string("target += normal_lpdf(b[1] | 0, 1)", check = FALSE)
+make_stancode(count ~ Trt_c, data = epilepsy, prior = prior)
 
 }
 \references{
