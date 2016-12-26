@@ -39,7 +39,11 @@ restructure <- function(x, rstr_summary = FALSE) {
   if (isTRUE(attr(x, "restructured"))) {
     return(x)  # already restructured
   }
-  if (isTRUE(x$version < utils::packageVersion("brms"))) {
+  if (is.null(x$version)) {
+    # this is the latest version without saving the version number
+    x$version <- package_version("0.9.1")
+  }
+  if (x$version < utils::packageVersion("brms")) {
     # element 'nonlinear' deprecated as of brms > 0.9.1
     # element 'partial' deprecated as of brms > 0.8.0
     x$formula <- SW(amend_formula(formula(x), data = model.frame(x),
@@ -56,7 +60,7 @@ restructure <- function(x, rstr_summary = FALSE) {
       # deprecated as of brms 1.0.0
       class(x$autocor) <- "cov_fixed"
     }
-    if (isTRUE(x$version <= "0.10.0.9000")) {
+    if (x$version <= "0.10.0.9000") {
       if (length(ee$nlpars)) {
         # nlpar and group have changed positions
         change <- change_old_ranef(x$ranef, pars = parnames(x),
@@ -64,20 +68,20 @@ restructure <- function(x, rstr_summary = FALSE) {
         x <- do_renaming(x, change)
       }
     }
-    if (isTRUE(x$version < "1.0.0")) {
+    if (x$version < "1.0.0") {
       # double underscores were added to group-level parameters
       change <- change_old_ranef2(x$ranef, pars = parnames(x),
                                   dims = x$fit@sim$dims_oi)
       x <- do_renaming(x, change)
     }
-    if (isTRUE(x$version <= "1.0.1")) {
+    if (x$version <= "1.0.1") {
       # names of spline parameters had to be changed after
       # allowing for multiple covariates in one spline term
       change <- change_old_splines(ee, pars = parnames(x),
                                    dims = x$fit@sim$dims_oi)
       x <- do_renaming(x, change)
     }
-    if (isTRUE(x$version <= "1.2.0")) {
+    if (x$version <= "1.2.0") {
       x$ranef$type[x$ranef$type == "mono"] <- "mo"
       x$ranef$type[x$ranef$type == "cse"] <- "cs"
     }
