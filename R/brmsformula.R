@@ -421,24 +421,17 @@
 #' @export
 brmsformula <- function(formula, ..., flist = NULL, 
                         nl = NULL, nonlinear = NULL) {
+  # ensure backwards compatibility
   if (is.brmsformula(formula) && is.formula(formula)) {
     # convert deprecated brmsformula objects back to formula
     class(formula) <- "formula"
   }
-  if (is.brmsformula(formula)) {
-    out <- formula
-  } else {
-    out <- list(formula = as.formula(formula))
-  }
-  
-  # ensure backwards compatibility
   if (!is.null(nonlinear)) {
     warning2("Argument 'nonlinear' is deprecated. ", 
-             "See help('brmsformula') for the new way ", 
+             "See help(brmsformula) for the new way ", 
              "of specifying non-linear models.")
   }
   old_nonlinear <- attr(formula, "nonlinear")
-  attr(formula, "nonlinear") <- NULL
   if (is.list(old_nonlinear)) {
     nonlinear <- c(old_nonlinear, nonlinear)
   }
@@ -446,6 +439,13 @@ brmsformula <- function(formula, ..., flist = NULL,
     nl <- TRUE
   }
   old_forms <- rmNULL(attributes(formula)[auxpars()])
+  attributes(formula)[c(auxpars(), "nonlinear")] <- NULL
+  
+  if (is.brmsformula(formula)) {
+    out <- formula
+  } else {
+    out <- list(formula = as.formula(formula))
+  }
   out$pforms[names(old_forms)] <- old_forms
   
   # parse and validate dots arguments

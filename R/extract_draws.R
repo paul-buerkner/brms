@@ -84,11 +84,8 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
     keep <- !grepl("^(X|Z|J|C)", names(draws$data))
     draws$data <- subset_attr(draws$data, keep)
   } else {
-    x$formula <- rm_attr(formula(x), auxpars())
-    x$ranef <- tidy_ranef(extract_effects(formula(x)), 
-                          data = model.frame(x))
     resp <- ee$response
-    if (length(resp) > 1L && !isTRUE(attr(formula(x), "old_mv"))) {
+    if (length(resp) > 1L && !isTRUE(x$formula[["old_mv"]])) {
       # new multivariate models
       draws[["mv"]] <- named_list(resp)
       for (r in resp) {
@@ -121,20 +118,21 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   #   a named list
   dots <- list(...)
   nsamples <- nsamples(x, subset = subset)
-  # always update formula to make sure that formulae of
-  # non-linear and auxiliary parameters are not included
-  # fixes issue #154
-  x$formula <- update.formula(formula(x), rhs(rhs_formula))
-  x$ranef <- tidy_ranef(extract_effects(formula(x)), data = model.frame(x))
+  stopifnot(is.brmsformula(x$formula))
+  x$formula$formula <- update.formula(x$formula$formula, rhs(rhs_formula))
+  # ensure that auxiliary parameters are not included (fixes #154)
+  x$formula$pforms <- NULL
+  x$formula$nl <- FALSE
+  x$ranef <- tidy_ranef(extract_effects(x$formula), data = x$data)
   if (nzchar(nlpar)) {
     # make sure not to evaluate family specific stuff
     # when extracting draws of nlpars
-    attr(x$formula, "response") <- nlpar 
+    x$formula[["response"]] <- nlpar 
     na_family <- list(family = NA, link = "identity")
     class(na_family) <- c("brmsfamily", "family")
-    x$family <- dots$f <- na_family
+    x$family <- x$formula$family <- dots$f <- na_family
   }
-  new_formula <- update_re_terms(formula(x), re_formula = re_formula)
+  new_formula <- update_re_terms(x$formula, re_formula = re_formula)
   ee <- extract_effects(new_formula, family = family(x))
   new_ranef <- tidy_ranef(ee, model.frame(x))
   nlpar_usc <- usc(nlpar, "suffix")

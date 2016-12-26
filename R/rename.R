@@ -169,9 +169,7 @@ rename_pars <- function(x) {
   }
   
   # perform the actual renaming in x$fit@sim
-  for (i in seq_along(change)) {
-    x <- do_renaming(change = change[[i]], x = x)
-  }
+  x <- do_renaming(x, change)
   x$fit@sim$pars_oi <- names(x$fit@sim$dims_oi)
   x
 }
@@ -461,9 +459,8 @@ change_prior <- function(class, pars, names = NULL, new_class = class,
 }
 
 change_old_ranef <- function(ranef, pars, dims) {
-  # prepare for renaming of group-level parameters of models 
-  # fitted with brms <= 0.10.0.9000
-  # only relevant for non-linear models
+  # interchanges group and nlpar in names of group-level parameters
+  # for brms <= 0.10.0.9000 only
   # Args:
   #   ranef: output of tidy_ranef
   #   pars: names of all parameters in the model
@@ -475,9 +472,10 @@ change_old_ranef <- function(ranef, pars, dims) {
     r <- ranef[ranef$id == id, ]
     g <- r$group[1]
     nlpar <- r$nlpar[1]
+    stopifnot(nzchar(nlpar))
     # rename sd-parameters
     old_sd_names <- paste0("sd_", nlpar, "_", g, "_", r$coef)
-    new_sd_names <- paste0("sd_", g, "__", nlpar, "_", r$coef)
+    new_sd_names <- paste0("sd_", g, "_", nlpar, "_", r$coef)
     for (i in seq_along(old_sd_names)) {
       change <- lc(change, 
         change_simple(old_sd_names[i], new_sd_names[i], pars, dims))
@@ -485,7 +483,7 @@ change_old_ranef <- function(ranef, pars, dims) {
     # rename cor-parameters
     new_cor_names <- get_cornames(paste0(nlpar, "_", r$coef),
                                   type = paste0("cor_", g),
-                                  brackets = FALSE)
+                                  brackets = FALSE, sep = "_")
     old_cor_names <- get_cornames(r$coef, brackets = FALSE, sep = "_",
                                   type = paste0("cor_", nlpar, "_", g))
     for (i in seq_along(old_cor_names)) {
@@ -494,7 +492,7 @@ change_old_ranef <- function(ranef, pars, dims) {
     } 
     # rename r-parameters
     old_r_name <- paste0("r_", nlpar, "_", g)
-    new_r_name <- paste0("r_", g, "__", nlpar)
+    new_r_name <- paste0("r_", g, "_", nlpar)
     levels <- gsub("[ \t\r\n]", ".", attr(ranef, "levels")[[g]])
     index_names <- make_index_names(levels, r$coef, dim = 2)
     new_r_names <- paste0(new_r_name, index_names)
@@ -506,8 +504,9 @@ change_old_ranef <- function(ranef, pars, dims) {
 }
 
 change_old_ranef2 <- function(ranef, pars, dims) {
-  # prepare for renaming of group-level parameters of models 
-  # fitted with brms > 0.10.0.9000 but < 1.0.0
+  # add double underscore in group-level parameters
+  # for brms < 1.0.0 only
+  # assumes that group and nlpar are correctly ordered already
   # Args:
   #   ranef: output of tidy_ranef
   #   pars: names of all parameters in the model
@@ -518,7 +517,6 @@ change_old_ranef2 <- function(ranef, pars, dims) {
   for (id in unique(ranef$id)) {
     r <- ranef[ranef$id == id, ]
     g <- r$group[1]
-    #nlpar <- r$nlpar[1]
     nlpars_usc <- usc(r$nlpar, "suffix")
     # rename sd-parameters
     old_sd_names <- paste0("sd_", g, "_", nlpars_usc, r$coef)
@@ -693,8 +691,22 @@ make_dims <- function(x) {
   setNames(rep(list(x$dim), length(x$pnames)), x$pnames)
 }
 
-do_renaming <- function(change, x) {
-  # perform actual renaming of parameters
+do_renaming <- function(x, change) {
+  # perform actual renaming of Stan parameters
+  # Args:
+  #   change: a list of lists each element allowing
+  #           to rename a certain type of parameter
+  #   x: An object of class brmsfit
+  # Returns:
+  #   A brmsfit object with updated parameter names
+  for (i in seq_along(change)) {
+    x <- .do_renaming(x, change[[i]])
+  }
+  x
+}
+
+.do_renaming <- function(x, change) {
+  # perform actual renaming of Stan parameters
   # Args:
   #   change: A list containing all information to rename 
   #           a certain type of parameters (e.g., fixed effects)
@@ -711,7 +723,7 @@ do_renaming <- function(change, x) {
     }
   }
   onp <- match(change$oldname, names(x$fit@sim$dims_oi))
-  if (is.na(onp)) {
+  if (is.null(onp) || is.na(onp)) {
     warning("Parameter ", change$oldname, " could not be renamed. ",
             "This should not happen. \nPlease inform me so that ",
             "I can fix this problem.", call. = FALSE)

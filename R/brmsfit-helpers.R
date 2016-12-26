@@ -42,10 +42,11 @@ restructure <- function(x, rstr_summary = FALSE) {
   if (isTRUE(x$version < utils::packageVersion("brms"))) {
     # element 'nonlinear' deprecated as of brms > 0.9.1
     # element 'partial' deprecated as of brms > 0.8.0
-    x$formula <- SW(amend_formula(formula(x), family = family(x),
-                                  partial = x$partial, 
+    x$formula <- SW(amend_formula(formula(x), data = model.frame(x),
+                                  family = family(x), partial = x$partial,
                                   nonlinear = x$nonlinear))
     x$nonlinear <- x$partial <- NULL
+    x$formula[["old_mv"]] <- is.old_mv(x)
     ee <- extract_effects(formula(x), family = family(x))
     x$ranef <- tidy_ranef(ee, model.frame(x))
     if ("prior_frame" %in% class(x$prior)) {
@@ -55,35 +56,30 @@ restructure <- function(x, rstr_summary = FALSE) {
       # deprecated as of brms 1.0.0
       class(x$autocor) <- "cov_fixed"
     }
-    change <- list()
     if (isTRUE(x$version <= "0.10.0.9000")) {
-      x$formula$formula[["old_mv"]] <- is.old_mv(x)
       if (length(ee$nlpars)) {
         # nlpar and group have changed positions
-        change <- c(change,
-          change_old_ranef(x$ranef, pars = parnames(x),
-                           dims = x$fit@sim$dims_oi))
+        change <- change_old_ranef(x$ranef, pars = parnames(x),
+                                   dims = x$fit@sim$dims_oi)
+        x <- do_renaming(x, change)
       }
-    } else if (isTRUE(x$version < "1.0.0")) {
-      # I added double underscores in group-level parameters
-      # right before the release of brms 1.0.0
-      change <- c(change,
-        change_old_ranef2(x$ranef, pars = parnames(x),
-                          dims = x$fit@sim$dims_oi))
+    }
+    if (isTRUE(x$version < "1.0.0")) {
+      # double underscores were added to group-level parameters
+      change <- change_old_ranef2(x$ranef, pars = parnames(x),
+                                  dims = x$fit@sim$dims_oi)
+      x <- do_renaming(x, change)
     }
     if (isTRUE(x$version <= "1.0.1")) {
       # names of spline parameters had to be changed after
       # allowing for multiple covariates in one spline term
-      change <- c(change,
-        change_old_splines(ee, pars = parnames(x),
-                           dims = x$fit@sim$dims_oi))
+      change <- change_old_splines(ee, pars = parnames(x),
+                                   dims = x$fit@sim$dims_oi)
+      x <- do_renaming(x, change)
     }
     if (isTRUE(x$version <= "1.2.0")) {
       x$ranef$type[x$ranef$type == "mono"] <- "mo"
       x$ranef$type[x$ranef$type == "cse"] <- "cs"
-    }
-    for (i in seq_along(change)) {
-      x <- do_renaming(change = change[[i]], x = x)
     }
     stan_env <- attributes(x$fit)$.MISC
     if (rstr_summary && exists("summary", stan_env)) {
@@ -100,7 +96,7 @@ restructure <- function(x, rstr_summary = FALSE) {
       }
     }
   }
-  structure(x, "restructured" = TRUE)
+  structure(x, restructured = TRUE)
 }
 
 first_greater <- function(A, target, i = 1) {
@@ -144,12 +140,13 @@ ilink <- function(x, link) {
 }
 
 prepare_conditions <- function(x, conditions = NULL, effects = NULL, 
-                               re_formula = NA) {
+                               re_formula = NA, rsv_vars = NULL) {
   # prepare marginal conditions
   # Args:
   #   x: an object of class 'brmsfit'
   #   conditions: optional data.frame containing user defined conditions
   #   re_formula: see marginal_effects
+  #   rsv_vars: names of reserved variables
   # Returns:
   #   A data.frame with (possibly updated) conditions
   mf <- model.frame(x)
@@ -163,8 +160,7 @@ prepare_conditions <- function(x, conditions = NULL, effects = NULL,
     }
     # list all required variables
     random <- get_random(ee)
-    req_vars <- c(lapply(get_effect(ee), rhs), 
-                  random$form, 
+    req_vars <- c(lapply(get_effect(ee), rhs), random$form, 
                   lapply(random$gcall, "[[", "weightvars"),
                   lapply(get_effect(ee, "mo"), rhs),
                   lapply(get_effect(ee, "me"), rhs),

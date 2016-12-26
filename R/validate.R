@@ -150,8 +150,8 @@ extract_effects <- function(x, family = NA, autocor = NULL,
         # don't use update on a formula that is possibly non-linear
         y$fixed[[2]] <- quote(response)
         y$allvars[[2]] <- quote(response)
-        attr(y$formula, "old_mv") <- TRUE
       }
+      attr(y$formula, "old_mv") <- TRUE
     }
   }
   y

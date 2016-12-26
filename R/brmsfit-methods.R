@@ -1317,7 +1317,9 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     stop2("Arguments 'probs' must be of length 2.")
   }
   
-  conditions <- prepare_conditions(x, conditions, effects, re_formula)
+  conditions <- prepare_conditions(x, conditions, effects, 
+                                   re_formula = re_formula, 
+                                   rsv_vars = rsv_vars)
   int_effects <- c(get_effect(ee, "mo"), rmNULL(ee[c("trials", "cat")]))
   int_vars <- unique(ulapply(int_effects, all.vars))
   mf <- model.frame(x)

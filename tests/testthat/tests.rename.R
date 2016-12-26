@@ -73,18 +73,18 @@ test_that("change_old_ranef and change_old_ranef2 return expected lists", {
   ranef <- brms:::tidy_ranef(ee, data = data)
   target <- list(
     list(pos = c(rep(FALSE, 2), TRUE, rep(FALSE, 22)),
-         oldname = "sd_a_g_Intercept", pnames = "sd_g__a_Intercept",
-         fnames = "sd_g__a_Intercept", dims = numeric(0)),
+         oldname = "sd_a_g_Intercept", pnames = "sd_g_a_Intercept",
+         fnames = "sd_g_a_Intercept", dims = numeric(0)),
     list(pos = c(rep(FALSE, 3), TRUE, rep(FALSE, 21)),
-         oldname = "sd_a_g_x", pnames = "sd_g__a_x",
-         fnames = "sd_g__a_x", dims = numeric(0)),
+         oldname = "sd_a_g_x", pnames = "sd_g_a_x",
+         fnames = "sd_g_a_x", dims = numeric(0)),
     list(pos = c(rep(FALSE, 4), TRUE, rep(FALSE, 20)),
-         oldname = "cor_a_g_Intercept_x", pnames = "cor_g__a_Intercept__a_x",
-         fnames = "cor_g__a_Intercept__a_x", dims = numeric(0)),
+         oldname = "cor_a_g_Intercept_x", pnames = "cor_g_a_Intercept_a_x",
+         fnames = "cor_g_a_Intercept_a_x", dims = numeric(0)),
     list(pos = c(rep(FALSE, 5), rep(TRUE, 20)), oldname = "r_a_g",
-         pnames = "r_g__a", 
-         fnames = c(paste0("r_g__a[", 1:10, ",Intercept]"),
-                    paste0("r_g__a[", 1:10, ",x]")),
+         pnames = "r_g_a", 
+         fnames = c(paste0("r_g_a[", 1:10, ",Intercept]"),
+                    paste0("r_g_a[", 1:10, ",x]")),
          dims = c(10, 2)))
   
   pars <- c("b_a_Intercept", "b_a_x", "sd_a_g_Intercept", "sd_a_g_x",
@@ -94,10 +94,22 @@ test_that("change_old_ranef and change_old_ranef2 return expected lists", {
                "cor_a_g_Intercept_x" = numeric(0), "r_a_g" = c(10, 2))
   expect_equal(brms:::change_old_ranef(ranef, pars = pars, dims = dims), target)
   
-  target[[1]]$oldname <- "sd_g_a_Intercept"
-  target[[2]]$oldname <- "sd_g_a_x"
-  target[[3]]$oldname <- "cor_g_a_Intercept_a_x"
-  target[[4]]$oldname <- "r_g_a"
+  target <- list(
+    list(pos = c(rep(FALSE, 2), TRUE, rep(FALSE, 22)),
+         oldname = "sd_g_a_Intercept", pnames = "sd_g__a_Intercept",
+         fnames = "sd_g__a_Intercept", dims = numeric(0)),
+    list(pos = c(rep(FALSE, 3), TRUE, rep(FALSE, 21)),
+         oldname = "sd_g_a_x", pnames = "sd_g__a_x",
+         fnames = "sd_g__a_x", dims = numeric(0)),
+    list(pos = c(rep(FALSE, 4), TRUE, rep(FALSE, 20)),
+         oldname = "cor_g_a_Intercept_a_x", pnames = "cor_g__a_Intercept__a_x",
+         fnames = "cor_g__a_Intercept__a_x", dims = numeric(0)),
+    list(pos = c(rep(FALSE, 5), rep(TRUE, 20)), oldname = "r_g_a",
+         pnames = "r_g__a", 
+         fnames = c(paste0("r_g__a[", 1:10, ",Intercept]"),
+                    paste0("r_g__a[", 1:10, ",x]")),
+         dims = c(10, 2)))
+  
   pars <- c("b_a_Intercept", "b_a_x", "sd_g_a_Intercept", "sd_g_a_x",
             "cor_g_a_Intercept_a_x", paste0("r_g_a[", 1:10, ",Intercept]"),
             paste0("r_g_a[", 1:10, ",x]"))
