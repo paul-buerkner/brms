@@ -118,9 +118,9 @@ linear_predictor <- function(draws, i = NULL) {
                           b = draws[["cs"]], eta = eta, 
                           ncat = ncat, r = rcs)
     } else {
-      eta <- array(eta, dim = c(dim(eta), draws$data$max_obs - 1))
+      eta <- array(eta, dim = c(dim(eta), draws$data$ncat - 1))
     } 
-    for (k in seq_len(draws$data$max_obs - 1)) {
+    for (k in seq_len(draws$data$ncat - 1)) {
       if (draws$f$family %in% c("cumulative", "sratio")) {
         eta[, , k] <- draws$Intercept[, k] - eta[, , k]
       } else {
@@ -132,9 +132,9 @@ linear_predictor <- function(draws, i = NULL) {
       # deprecated as of brms > 0.8.0
       if (!is.null(draws[["cs"]])) {
         eta <- cs_predictor(X = p(draws$data[["X"]], i), b = draws[["cs"]], 
-                            eta = eta, ncat = draws$data$max_obs)
+                            eta = eta, ncat = draws$data$ncat)
       } else {
-        eta <- array(eta, dim = c(dim(eta), draws$data$max_obs - 1))
+        eta <- array(eta, dim = c(dim(eta), draws$data$ncat - 1))
       }
     } else if (draws$old_cat == 2L) {
       # deprecated as of brms > 0.10.0

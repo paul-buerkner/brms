@@ -99,7 +99,7 @@ test_that("predict for count and survival models runs without errors", {
   trials <- sample(10:30, nobs, replace = TRUE)
   draws <- list(eta = matrix(rnorm(ns*nobs), ncol = nobs),
                 shape = rgamma(ns, 4), nsamples = ns)
-  draws$data <- list(max_obs = trials)
+  draws$data <- list(trials = trials)
   i <- sample(nobs, 1)
   
   draws$f$link <- "cloglog"
@@ -166,7 +166,7 @@ test_that("predict for zero-inflated and hurdle models runs without erros", {
   draws <- list(eta = matrix(rnorm(ns * nobs * 2), ncol = nobs * 2),
                 shape = rgamma(ns, 4), phi = rgamma(ns, 1),
                 nsamples = ns)
-  draws$data <- list(N_trait = nobs, max_obs = trials)
+  draws$data <- list(N_trait = nobs, trials = trials)
   draws$f$link <- "log"
   
   pred <- predict_hurdle_poisson(1, draws = draws)
@@ -198,7 +198,7 @@ test_that("predict for categorical and ordinal models runs without erros", {
   ncat <- 4
   draws <- list(eta = array(rnorm(ns*nobs), dim = c(ns, nobs, ncat)),
                 nsamples = ns)
-  draws$data <- list(Y = rep(1:ncat, 2), max_obs = ncat)
+  draws$data <- list(Y = rep(1:ncat, 2), ncat = ncat)
   
   draws$f$link <- "logit"
   pred <- sapply(1:nobs, predict_categorical, draws = draws)

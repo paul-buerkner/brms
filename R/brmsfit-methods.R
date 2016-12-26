@@ -1621,7 +1621,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (summary) {
     if (is_catordinal) {
       # compute frequencies of categories 
-      out <- get_table(out, levels = seq_len(max(draws$data$max_obs)))
+      out <- get_table(out, levels = seq_len(max(draws$data$ncat)))
     } else {
       out <- get_summary(out, probs = probs, robust = robust)
     }

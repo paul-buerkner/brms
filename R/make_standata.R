@@ -219,7 +219,6 @@ make_standata <- function(formula, data, family = "gaussian",
     if (length(standata$trials) == 1L) {
       standata$trials <- rep(standata$trials, nrow(data))
     }
-    standata$max_obs <- standata$trials  # for backwards compatibility
     if (max(standata$trials) == 1L) {
       message("Only 2 levels detected so that family 'bernoulli' ",
               "might be a more efficient choice.")
@@ -241,7 +240,6 @@ make_standata <- function(formula, data, family = "gaussian",
     } else {
       stop2("Argument 'cat' is misspecified.")
     }
-    standata$max_obs <- standata$ncat  # for backwards compatibility
     if (max(standata$ncat) == 2L) {
       message("Only 2 levels detected so that family 'bernoulli' ",
               "might be a more efficient choice.")

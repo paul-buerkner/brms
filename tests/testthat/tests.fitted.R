@@ -49,7 +49,7 @@ test_that("fitted helper functions run without errors", {
   
   # directly test the catordinal helper function
   mu <- fitted_catordinal(array(eta, dim = c(dim(eta), 3)), 
-                          max_obs = 4, family = cumulative())
+                          ncat = 4, family = cumulative())
   expect_equal(dim(mu), c(nsamples, nobs, 4))
   
   # truncated continous models

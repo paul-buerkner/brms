@@ -10,7 +10,7 @@ test_that(paste("make_standata returns correct data names ",
                c("N", "Y", "K_2", "X_2", "Z_1_2_1", "Z_1_2_2", 
                  "K_3", "X_3", "Z_1_3_3", "Z_1_3_4",
                  "K_4", "X_4", "Z_1_4_5", "Z_1_4_6",
-                 "J_1", "N_1", "M_1", "NC_1", "ncat", "max_obs", 
+                 "J_1", "N_1", "M_1", "NC_1", "ncat",
                  "prior_only"))
   expect_equal(names(make_standata(rating ~ treat + period + carry 
                                    + (1+treat|subject), data = inhaler,
@@ -56,16 +56,16 @@ test_that(paste("make_standata returns correct data names",
                c("N", "Y", "K", "X", "cens", "prior_only"))
   expect_equal(names(make_standata(y | trials(t) ~ x, family = "binomial", 
                                    data = dat)), 
-               c("N", "Y", "K", "X", "trials", "max_obs", "prior_only"))
+               c("N", "Y", "K", "X", "trials", "prior_only"))
   expect_equal(names(make_standata(y | trials(10) ~ x, family = "binomial", 
                                    data = dat)), 
-               c("N", "Y", "K", "X", "trials", "max_obs", "prior_only"))
+               c("N", "Y", "K", "X", "trials", "prior_only"))
   expect_equal(names(make_standata(y | cat(11) ~ x, family = "acat", 
                                    data = dat)), 
-               c("N", "Y", "K", "X", "ncat", "max_obs", "prior_only"))
+               c("N", "Y", "K", "X", "ncat", "prior_only"))
   expect_equal(names(make_standata(y | cat(10) ~ x, family = "cumulative", 
                                    data = dat)), 
-               c("N", "Y", "K", "X", "ncat", "max_obs", "prior_only"))
+               c("N", "Y", "K", "X", "ncat", "prior_only"))
   standata <- make_standata(y | trunc(0,20) ~ x, family = "gaussian", 
                             data = dat)
   expect_true(all(standata$lb == 0) && all(standata$ub == 20))

@@ -11,15 +11,11 @@ fitted_response <- function(draws, mu) {
   # compute (mean) fitted values
   dim <- c(nrow(mu), draws$data$N)
   if (draws$f$family == "binomial") {
-    if (length(data$max_obs) > 1L) {
-      trials <- matrix(data$max_obs, nrow = dim[1], 
-                       ncol = dim[2], byrow = TRUE)
-    } else {
-      trials <- data$max_obs
-    }
+    trials <- matrix(data$trials, nrow = dim[1], 
+                     ncol = dim[2], byrow = TRUE)
     mu <- ilink(mu, draws$f$link) 
     if (!is_trunc) {
-      # scale mu from [0,1] to [0,max_obs]
+      # scale mu from [0,1] to [0,trials]
       mu <- mu * trials 
     }
   } else if (draws$f$family == "lognormal") {
@@ -39,7 +35,7 @@ fitted_response <- function(draws, mu) {
   } else if (is.ordinal(draws$f) || is.categorical(draws$f)) {
     disc <- get_disc(draws, ncat = data$ncat)
     mu <- disc * mu 
-    mu <- fitted_catordinal(mu, max_obs = data$max_obs, family = draws$f)
+    mu <- fitted_catordinal(mu, ncat = data$ncat, family = draws$f)
   } else if (is.hurdle(draws$f)) {
     shape <- get_shape(draws$shape, data = draws$data, dim = dim)
     sigma <- get_sigma(draws$sigma, data = draws$data, dim = dim)
@@ -50,18 +46,14 @@ fitted_response <- function(draws, mu) {
     zi <- get_theta(draws, par = "zi")
     mu <- fitted_zero_inflated(mu, zi = zi, family = draws$f)
     if (draws$f$family == "zero_inflated_binomial") {
-      if (length(data$max_obs) > 1L) {
-        if (!is.null(draws$data$N_trait)) {
-          # deprecated as of brms 1.0.0
-          J <- seq_len(ceiling(length(data$max_obs) / 2))
-          trials <- data$max_obs[J]
-        } else {
-          trials <- data$max_obs
-        }
-        trials <- matrix(trials, nrow = dim[1], ncol = dim[2], byrow = TRUE)
+      if (!is.null(draws$data$N_trait)) {
+        # deprecated as of brms 1.0.0
+        J <- seq_len(ceiling(length(data$trials) / 2))
+        trials <- data$trials[J]
       } else {
-        trials <- data$max_obs
+        trials <- data$trials
       }
+      trials <- matrix(trials, nrow = dim[1], ncol = dim[2], byrow = TRUE)
       mu <- mu * trials
     }
   } else if (is.exgaussian(draws$f)) { 
@@ -93,11 +85,10 @@ fitted_response <- function(draws, mu) {
   mu
 }
 
-fitted_catordinal <- function(mu, max_obs, family) {
+fitted_catordinal <- function(mu, ncat, family) {
   # compute fitted values for categorical and ordinal families
-  ncat <- max(max_obs)
-  # get probabilities of each category
   get_density <- function(s) {
+    # get probabilities of each category
     do.call(paste0("d", family$family), 
             list(1:ncat, eta = mu[, s, ], ncat = ncat, link = family$link))
   }
