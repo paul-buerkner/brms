@@ -11,6 +11,15 @@ brmsfit <- function(formula = NULL, family = "", link = "", data.name = "",
   x
 }
 
+#' Checks if argument is a \code{brmsfit} object
+#' 
+#' @param x An \R object
+#' 
+#' @export
+is.brmsfit <- function(x) {
+  inherits(x, "brmsfit")
+}
+
 brmssummary <- function(formula = NULL, family = "", link = "", 
                         data.name = "", group = NULL, nobs = NULL, 
                         ngrps = NULL, chains = 1, iter = 2000, 

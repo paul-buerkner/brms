@@ -5,7 +5,7 @@
 \alias{brmsformula}
 \title{Set up a model formula for use in \pkg{brms}}
 \usage{
-brmsformula(formula, ..., flist = NULL, nl = FALSE, nonlinear = NULL)
+brmsformula(formula, ..., flist = NULL, nl = NULL, nonlinear = NULL)
 }
 \arguments{
 \item{formula}{An object of class \code{formula} 
@@ -62,8 +62,9 @@ As of \pkg{brms} 1.4.0, we recommend specifying non-linear
 parameters directly within \code{formula}.}
 }
 \value{
-An object of class \code{brmsformula}, which inherits
- from class \code{formula} but contains additional attributes.
+An object of class \code{brmsformula}, which
+contains one or more formulae and additional information
+on the model.
 }
 \description{
 Set up a model formula for use in the \pkg{brms} package

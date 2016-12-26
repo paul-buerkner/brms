@@ -25,7 +25,7 @@ contains_samples <- function(x) {
 }
 
 algorithm <- function(x) {
-  stopifnot(is(x, "brmsfit"))
+  stopifnot(is.brmsfit(x))
   if (is.null(x$algorithm)) "sampling"
   else x$algorithm
 }
@@ -35,7 +35,7 @@ restructure <- function(x, rstr_summary = FALSE) {
   # Args:
   #   x: a brmsfit object
   #   rstr_summary: restructure cached summary?
-  stopifnot(is(x, "brmsfit"))
+  stopifnot(is.brmsfit(x))
   if (isTRUE(attr(x, "restructured"))) {
     return(x)  # already restructured
   }
@@ -57,7 +57,7 @@ restructure <- function(x, rstr_summary = FALSE) {
     }
     change <- list()
     if (isTRUE(x$version <= "0.10.0.9000")) {
-      attr(x$formula, "old_mv") <- is.old_mv(x)
+      x$formula$formula[["old_mv"]] <- is.old_mv(x)
       if (length(ee$nlpars)) {
         # nlpar and group have changed positions
         change <- c(change,
@@ -966,7 +966,8 @@ add_samples <- function(x, newpar, dim = numeric(0), dist = "norm", ...) {
   #   dim: dimension of the new parameter
   # Returns:
   #   a brmsfit object with samples of a new parameter
-  stopifnot(is(x, "brmsfit"), identical(dim, numeric(0)))
+  stopifnot(is.brmsfit(x))
+  stopifnot(identical(dim, numeric(0)))
   for (i in seq_along(x$fit@sim$samples)) {
     x$fit@sim$samples[[i]][[newpar]] <- 
       do.call(paste0("r", dist), list(x$fit@sim$iter, ...))

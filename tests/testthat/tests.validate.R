@@ -10,13 +10,13 @@ test_that("extract_effects handles very long RE terms", {
   covariate_vector <- paste0("xxxxx", 1:80, collapse = "+")
   formula <- paste(sprintf("y ~ 0 + trait + trait:(%s)", covariate_vector),
                    sprintf("(1+%s|id)", covariate_vector), sep = " + ")
-  ee <- extract_effects(formula = as.formula(formula))
+  ee <- extract_effects(as.formula(formula))
   expect_equal(ee$random$group, "id")
 })
 
 test_that("(deprecated) amend_formula returns correct formulas", {
   expect_warning(uf <- brms:::amend_formula(y ~ x, partial = ~ a + I(a^2)))
-  expect_equal(uf, y ~ x + cs(a + I(a^2)))
+  expect_equal(uf$formula, y ~ x + cs(a + I(a^2)))
 })
 
 test_that("check_re_formula returns correct REs", {

@@ -36,27 +36,36 @@ test_that("(deprecated) melt_data keeps factor contrasts", {
 })
 
 test_that("(deprecated) melt_data returns expected errors", {
-  ee <- extract_effects(structure(y1 ~ x:main, old_mv = TRUE), 
-                        family = hurdle_poisson())
   data <- data.frame(y1 = rnorm(10), y2 = rnorm(10), x = 1:10)
+  
+  formula <- bf(y1 ~ x:main)
+  formula$old_mv <- TRUE
+  ee <- brms:::extract_effects(formula, family = hurdle_poisson())
   expect_error(melt_data(data = NULL, family = hurdle_poisson(), effects = ee),
                "'data' must be a data.frame", fixed = TRUE)
+  
   data$main <- 1:10 
   expect_error(melt_data(data = data, family = hurdle_poisson(), effects = ee),
                "'main' is a reserved variable name", fixed = TRUE)
-  data$response <- 1:10 
-  ee <- extract_effects(structure(response ~ x:main, old_mv = TRUE), 
-                        family = hurdle_poisson())
+  
+  data$response <- 1:10
+  formula <- bf(response ~ x:main)
+  formula$old_mv <- TRUE
+  ee <- extract_effects(formula, family = hurdle_poisson())
   expect_error(melt_data(data = data, family = hurdle_poisson(), effects = ee),
                "'response' is a reserved variable name", fixed = TRUE)
-  data$trait <- 1:10 
-  ee <- extract_effects(structure(y ~ 0 + x*trait, old_mv = TRUE), 
-                        family = hurdle_poisson())
+  
+  data$trait <- 1:10
+  formula <- bf(y ~ 0 + x*trait)
+  formula$old_mv <- TRUE
+  ee <- extract_effects(formula, family = hurdle_poisson())
   expect_error(melt_data(data = data, family = hurdle_poisson(), effects = ee),
                "'trait', 'response' is a reserved variable name", fixed = TRUE)
   
-  ee <- extract_effects(structure(cbind(y1, y2) ~ x, old_mv = TRUE))
   data <- data.frame(y1 = rnorm(10), y2 = rnorm(10), x = 1:10)
+  formula <- bf(cbind(y1, y2) ~ x)
+  formula$old_mv <- TRUE
+  ee <- extract_effects(formula)
   expect_error(melt_data(data = data, family = poisson(), effects = ee),
                "Invalid multivariate model", fixed = TRUE)
 })
@@ -97,15 +106,17 @@ test_that("update_data returns correct model.frames", {
 
 test_that("(deprecated) update_data handles NAs correctly in old MV models", {
   data <- data.frame(y1 = c(1, NA, 3), y2 = 4:6, x = 10:12, z = NA)
-  ee <- extract_effects(structure(cbind(y1, y2) ~ x, old_mv = TRUE), 
-                        family = "gaussian")
+  formula <- bf(cbind(y1, y2) ~ x)
+  formula$old_mv <- TRUE
+  ee <- extract_effects(formula, family = "gaussian")
   expect_warning(mf <- update_data(data, family = "gaussian", effects = ee),
                  "NAs were excluded")
   expect_equivalent(mf, data.frame(response = c(1, 3, 4, 6), y1 = c(1, 3, 1, 3), 
                                    y2 = c(4, 6, 4, 6), x = c(10, 12, 10, 12)))
   
-  ee <- extract_effects(structure(y1 ~ x, old_mv = TRUE), 
-                        family = "hurdle_gamma")
+  formula <- bf(y1 ~ x)
+  formula$old_mv <- TRUE
+  ee <- extract_effects(formula, family = "hurdle_gamma")
   expect_warning(mf <- update_data(data, family = "hurdle_gamma", 
                                    effects = ee),
                  "NAs were excluded")
@@ -113,8 +124,7 @@ test_that("(deprecated) update_data handles NAs correctly in old MV models", {
                                    y1 = c(1, 3, 1, 3),
                                    x = c(10, 12, 10, 12)))
   
-  ee <- extract_effects(structure(y1 ~ x, old_mv = TRUE), 
-                        family = "zero_inflated_poisson")
+  ee <- extract_effects(formula, family = "zero_inflated_poisson")
   expect_warning(mf <- update_data(data, family = "zero_inflated_poisson", 
                                    effects = ee), "NAs were excluded")
   expect_equivalent(mf, data.frame(response = c(1, 3, 1, 3), y1 = c(1, 3, 1, 3),

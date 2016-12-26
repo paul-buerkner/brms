@@ -25,7 +25,7 @@ test_that("fitted helper functions run without errors", {
                c(nsamples, nobs))
   
   # pseudo weibull model
-  attr(fit$formula, "pforms") <- NULL
+  fit$formula$pforms <- NULL
   fit$family <- weibull()
   expect_equal(dim(SW(fitted(fit, summary = FALSE))), 
                c(nsamples, nobs))

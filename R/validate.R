@@ -1,8 +1,8 @@
-extract_effects <- function(formula, family = NA, autocor = NULL, 
+extract_effects <- function(x, family = NA, autocor = NULL, 
                             check_response = TRUE, resp_rhs_all = TRUE) {
   # Parse the model formula and related arguments
   # Args:
-  #   formula: An object of class 'formula' or 'brmsformula'
+  #   x: coerced to a 'brmsformula' object
   #   family: Optinal object of class 'family'. Ignored
   #           if 'formula' has a suitable family attribute.
   #   autocor: Optional object of class 'cor_brms'
@@ -10,25 +10,26 @@ extract_effects <- function(formula, family = NA, autocor = NULL,
   #   resp_rhs_all: include response variables on the RHS of x$allvars? 
   # Returns: 
   #   A named list whose elements depend on the formula input
-  old_mv <- isTRUE(attr(formula, "old_mv"))
-  formula <- bf(formula)
-  if (!is.null(attr(formula, "family"))) {
-    family <- attr(formula, "family")
+  x <- bf(x)
+  old_mv <- isTRUE(x[["old_mv"]])
+  if (!is.null(x[["family"]])) {
+    family <- x[["family"]]
   }
   if (!is.na(family[[1]])) {
     family <- check_family(family)
   }
- 
-  x <- nlist(formula)
+  
+  formula <- x$formula
+  y <- nlist(formula)
   add_forms <- extract_add(formula, family, check_response)
   add_vars <- str2formula(ulapply(add_forms, all.vars))
-  x[names(add_forms)] <- add_forms
+  y[names(add_forms)] <- add_forms
   
-  pforms <- pforms(formula)
-  auxpars <- intersect(names(pforms), valid_auxpars(family, x))
+  pforms <- pforms(x)
+  auxpars <- intersect(names(pforms), valid_auxpars(family, y))
   nlpars <- setdiff(names(pforms), auxpars)
   tfixed <- gsub("\\|+[^~]*~", "~", formula2str(formula))
-  if (isTRUE(attr(formula, "nl"))) {
+  if (isTRUE(x[["nl"]])) {
     if (!length(nlpars)) {
       stop2("No non-linear parameters specified.")
     }
@@ -39,8 +40,8 @@ extract_effects <- function(formula, family = NA, autocor = NULL,
     if (is.ordinal(family) || is.categorical(family)) {
       stop2("Non-linear formulas are not yet allowed for this family.")
     }
-    x$fixed <- formula(tfixed)
-    x$nlpars <- extract_nonlinear(pforms[nlpars], x$fixed)
+    y$fixed <- formula(tfixed)
+    y$nlpars <- extract_nonlinear(pforms[nlpars], y$fixed)
     re_terms <- NULL
   } else {
     if (length(nlpars)) {
@@ -54,19 +55,19 @@ extract_effects <- function(formula, family = NA, autocor = NULL,
     re_terms <- all_terms[pos_re_terms]
     mo_form <- extract_mo(formula)
     if (is.formula(mo_form)) {
-      x[["mo"]] <- mo_form
+      y[["mo"]] <- mo_form
     }
     cs_form <- extract_cs(formula, family = family)
     if (is.formula(cs_form)) {
-      x[["cs"]] <- cs_form
+      y[["cs"]] <- cs_form
     }
     me_form <- extract_me(formula)
     if (is.formula(me_form)) {
-      x[["me"]] <- me_form
+      y[["me"]] <- me_form
     }
     gam_form <- extract_gam(formula)
     if (is.formula(gam_form)) {
-      x[["gam"]] <- gam_form
+      y[["gam"]] <- gam_form
     }
     rm_pos <- lapply(list(mo_form, cs_form, me_form, gam_form), attr, "pos")
     rm_pos <- c(rm_pos, list(pos_re_terms))
@@ -75,65 +76,65 @@ extract_effects <- function(formula, family = NA, autocor = NULL,
     fe_terms <- paste(c(int_term, fe_terms, get_offset(formula)), 
                       collapse = "+")
     tfixed <- paste(sub("~.*", "", tfixed), "~", fe_terms)
-    x$fixed <- formula(tfixed)
+    y$fixed <- formula(tfixed)
     if (is.ordinal(family)) {
-      x$fixed <- update.formula(x$fixed, . ~ . + 1)
+      y$fixed <- update.formula(y$fixed, . ~ . + 1)
     }
-    if (has_rsv_intercept(x$fixed)) {
-      attr(x$fixed, "rsv_intercept") <- TRUE
+    if (has_rsv_intercept(y$fixed)) {
+      attr(y$fixed, "rsv_intercept") <- TRUE
     }
     if (is.forked(family)) {
-      attr(x$fixed, "forked") <- TRUE
+      attr(y$fixed, "forked") <- TRUE
     }
   }
-  if (check_response && length(x$fixed) < 3L) { 
+  if (check_response && length(y$fixed) < 3L) { 
     stop2("Invalid formula: response variable is missing.")
   }
   
   # make sure to store the plain names of all predictors
-  covars <- setdiff(all.vars(rhs(x$fixed)), names(x$nlpars))
-  x$covars <- str2formula(covars)
-  attr(x$covars, "rsv_intercept") <- TRUE
+  covars <- setdiff(all.vars(rhs(y$fixed)), names(y$nlpars))
+  y$covars <- str2formula(covars)
+  attr(y$covars, "rsv_intercept") <- TRUE
   # extract group-level effects parts
-  x$random <- extract_random(re_terms)
+  y$random <- extract_random(re_terms)
   # evaluate autocor formula
-  x$time <- extract_time(autocor$formula)
+  y$time <- extract_time(autocor$formula)
   # evaluate formulas for auxiliary parameters
   for (ap in auxpars) {
-    x$auxpars[[ap]] <- extract_effects(rhs(pforms[[ap]]), 
+    y$auxpars[[ap]] <- extract_effects(rhs(pforms[[ap]]), 
                                        check_response = FALSE)
   }
   
   # make a formula containing all required variables
-  lhs_vars <- if (resp_rhs_all) all.vars(lhs(x$fixed))
-  fixed_vars <- if (!length(x$nlpars)) rhs(x$fixed)
+  lhs_vars <- if (resp_rhs_all) all.vars(lhs(y$fixed))
+  fixed_vars <- if (!length(y$nlpars)) rhs(y$fixed)
   formula_list <- c(lhs_vars, add_vars, fixed_vars,
-                    x[c("covars", "cs", "mo", "me")], 
-                    attr(x$gam, "allvars"), x$random$form,
-                    lapply(x$random$gcall, "[[", "allvars"), 
-                    lapply(x$nlpars, "[[", "allvars"),
-                    lapply(x$auxpars, "[[", "allvars"), 
-                    get_offset(x$fixed), x$time$allvars)
+                    y[c("covars", "cs", "mo", "me")], 
+                    attr(y$gam, "allvars"), y$random$form,
+                    lapply(y$random$gcall, "[[", "allvars"), 
+                    lapply(y$nlpars, "[[", "allvars"),
+                    lapply(y$auxpars, "[[", "allvars"), 
+                    get_offset(y$fixed), y$time$allvars)
   new_formula <- collapse(ulapply(rmNULL(formula_list), plus_rhs))
   all_vars <- c("1", all.vars(parse(text = new_formula)))
   new_formula <- paste(new_formula, "+", paste0(all_vars, collapse = "+"))
-  x$allvars <- eval2(paste0("update(", tfixed, ", ~ ", new_formula, ")"))
-  environment(x$allvars) <- environment(formula)
+  y$allvars <- eval2(paste0("update(", tfixed, ", ~ ", new_formula, ")"))
+  environment(y$allvars) <- environment(formula)
   
   # extract response variables
   if (check_response) {
-    x$respform <- lhs(x$allvars)
-    if (!is.null(attr(formula, "response"))) {
-      x$response <- attr(formula, "response")
+    y$respform <- lhs(y$allvars)
+    if (!is.null(x$response)) {
+      y$response <- x$response
     } else { 
-      x$response <- extract_response(x$respform, keep_dot_usc = old_mv)
+      y$response <- extract_response(y$respform, keep_dot_usc = old_mv)
     }
-    if (is.linear(family) && length(x$response) > 1L) {
-      if (length(rmNULL(x[c("se", "cens", "trunc")]))) {
+    if (is.linear(family) && length(y$response) > 1L) {
+      if (length(rmNULL(y[c("se", "cens", "trunc")]))) {
         stop2("Multivariate models currently allow only ",
               "addition argument 'weights'.")
       }
-      if (length(x$auxpars)) {
+      if (length(y$auxpars)) {
         stop2("Auxiliary parameter cannot yet be ", 
               "predicted in multivariate models.")
       }
@@ -141,19 +142,19 @@ extract_effects <- function(formula, family = NA, autocor = NULL,
     if (old_mv) {
       # multivariate ('trait') syntax is deprecated as of brms 1.0.0
       if (is.hurdle(family)) {
-        x$response <- c(x$response, paste0("hu_", x$response))
+        y$response <- c(y$response, paste0("hu_", y$response))
       } else if (is.zero_inflated(family)) {
-        x$response <- c(x$response, paste0("zi_", x$response))
+        y$response <- c(y$response, paste0("zi_", y$response))
       }
-      if (length(x$response) > 1L) {
+      if (length(y$response) > 1L) {
         # don't use update on a formula that is possibly non-linear
-        x$fixed[[2]] <- quote(response)
-        x$allvars[[2]] <- quote(response)
-        attr(x$formula, "old_mv") <- TRUE
+        y$fixed[[2]] <- quote(response)
+        y$allvars[[2]] <- quote(response)
+        attr(y$formula, "old_mv") <- TRUE
       }
     }
   }
-  x
+  y
 }
 
 extract_add <- function(formula, family = NA, check_response = TRUE) {
@@ -328,7 +329,7 @@ extract_random <- function(re_terms) {
 extract_response <- function(formula, keep_dot_usc = FALSE) {
   # extract response variable names
   # Args:
-  #   formula: a formula containing only the model response
+  #   formula: a two-sided formula
   #   keep_dot_usc: keep dots and underscores in the names?
   # Returns:
   #   a vector of names of the response variables (columns)
@@ -572,42 +573,48 @@ check_re_formula <- function(re_formula, formula) {
   re_formula
 }
 
-update_re_terms <- function(formula, re_formula = NULL) {
-  # remove RE terms in formula and add valid RE terms of re_formula
-  # can handle brmsformula objects
+update_re_terms <- function(x, re_formula = NULL) {
+  # update group-level terms
   # Args:
-  #   formula: model formula to be updated
+  #   x: Either 'formula' or 'brmsformula' object
   #   re_formula: formula containing new RE terms
-  # Returns:
-  #  a formula with updated RE terms
-  old_attr <- attributes(formula)
-  pforms <- pforms(formula)
-  pforms <- lapply(pforms, update_re_terms, re_formula)
-  if (isTRUE(attr(formula, "nl"))) {
-    # non-linear formulae may cause errors when passed to terms
-    # and do not contain group-level effects anyway
-    new_formula <- formula
-  } else {
-    re_formula <- check_re_formula(re_formula, formula)
-    new_formula <- formula2str(formula)
-    old_re_terms <- get_re_terms(formula)
-    if (length(old_re_terms)) {
-      # make sure that + before group-level terms are also removed
-      rm_terms <- c(paste0("+", old_re_terms), old_re_terms)
-      new_formula <- rename(new_formula, rm_terms, "")
-      if (grepl("~$", new_formula)) {
-        # lhs only formulas are not allowed
-        new_formula <- paste(new_formula, "1")
-      }
+  if (is.formula(x)) {
+    x <- .update_re_terms(x, re_formula) 
+  } else if (is.brmsformula(x)) {
+    if (!x[["nl"]]) {
+      x$formula <- .update_re_terms(x$formula, re_formula)
     }
-    new_re_terms <- get_re_terms(re_formula)
-    new_formula <- paste(c(new_formula, new_re_terms), collapse = "+")
-    new_formula <- formula(new_formula)
+    x$pforms <- lapply(pforms(x), .update_re_terms, re_formula)
+  } else {
+    stop("Don't know how to handle objects of class ",
+         collapse_comma(class(x)))
   }
-  attributes(new_formula)[names(old_attr)] <- old_attr
-  attr(new_formula, "pforms") <- pforms
+  x
+}
+
+.update_re_terms <- function(formula, re_formula = NULL) {
+  # remove existing group-level terms in formula and
+  # add valid group-level terms of re_formula
+  # Args:
+  #   formula: object of class 'formula'
+  formula <- as.formula(formula)
+  re_formula <- check_re_formula(re_formula, formula)
+  new_formula <- formula2str(formula)
+  old_re_terms <- get_re_terms(formula)
+  if (length(old_re_terms)) {
+    # make sure that + before group-level terms are also removed
+    rm_terms <- c(paste0("+", old_re_terms), old_re_terms)
+    new_formula <- rename(new_formula, rm_terms, "")
+    if (grepl("~$", new_formula)) {
+      # lhs only formulas are not allowed
+      new_formula <- paste(new_formula, "1")
+    }
+  }
+  new_re_terms <- get_re_terms(re_formula)
+  new_formula <- paste(c(new_formula, new_re_terms), collapse = "+")
+  new_formula <- formula(new_formula)
   environment(new_formula) <- environment(formula)
-  bf(new_formula)
+  new_formula
 }
 
 plus_rhs <- function(x) {

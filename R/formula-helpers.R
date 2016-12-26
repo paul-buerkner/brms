@@ -468,13 +468,12 @@ amend_formula <- function(formula, data = NULL, family = gaussian(),
                           nonlinear = NULL, partial = NULL) {
   # incorporate additional arguments into formula
   # Args:
-  #   formula: object of class 'formula'
+  #   formula: object of class 'formula' of 'brmsformula'
   #   data: optional data.frame
   #   family: optional object of class 'family'
   #   nonlinear, partial: deprecated arguments of brm
-  formula <- bf(formula, nonlinear = nonlinear)
-  attr(formula, "family") <- family
-  old_attr <- attributes(formula)
+  out <- bf(formula, nonlinear = nonlinear)
+  out[["family"]] <- family
   fnew <- ". ~ ."
   if (!is.null(partial)) {
     warning2("Argument 'partial' is deprecated. Please use the 'cs' ", 
@@ -483,16 +482,15 @@ amend_formula <- function(formula, data = NULL, family = gaussian(),
     fnew <- paste(fnew, "+ cs(", partial, ")")
   }
   # to allow the '.' symbol in formula
-  try_terms <- try(terms(formula, data = data), silent = TRUE)
+  try_terms <- try(terms(out$formula, data = data), silent = TRUE)
   if (!is(try_terms, "try-error")) {
-    formula <- formula(try_terms)
+    out$formula <- formula(try_terms)
   }
   if (fnew != ". ~ .") {
-    formula <- update.formula(formula, formula(fnew))
+    out$formula <- update.formula(out$formula, formula(fnew))
   }
-  attributes(formula) <- old_attr
   if (is.categorical(family) && is.null(attr(formula, "response"))) {
-    respform <- extract_effects(formula)$respform
+    respform <- extract_effects(out)$respform
     model_response <- model.response(model.frame(respform, data = data))
     response <- levels(factor(model_response))
     if (length(response) <= 2L) {
@@ -500,9 +498,9 @@ amend_formula <- function(formula, data = NULL, family = gaussian(),
             "'categorical'.\nPlease use family 'bernoulli' instead.")
     }
     # the first level will serve as the reference category
-    attr(formula, "response") <- response[-1]
+    out[["response"]] <- response[-1]
   }
-  bf(formula)
+  out
 }
 
 str2formula <- function(x, ...) {
@@ -518,22 +516,25 @@ str2formula <- function(x, ...) {
   formula(paste("~", x), ...)
 }
 
-formula2str <- function(formula, rm = c(0, 0)) {
+formula2str <- function(formula, rm = c(0, 0), trimws = TRUE) {
   # converts a formula to a string
   # Args:
   #   formula: a model formula
   #   rm: a vector of to elements indicating how many characters 
   #       should be removed at the beginning
   #       and end of the string respectively
+  #   trimws: remove whitespaces from the resulting string?
   if (!is.formula(formula)) {
     formula <- as.formula(formula)
   }
   if (is.na(rm[2])) rm[2] <- 0
-  x <- gsub("[ \t\r\n]+", "", Reduce(paste, deparse(formula)), perl = TRUE)
-  x <- substr(x, 1 + rm[1], nchar(x) - rm[2])
-  x
+  x <- Reduce(paste, deparse(formula))
+  if (trimws) {
+    x <- gsub("[ \t\r\n]+", "", x, perl = TRUE)
+  }
+  substr(x, 1 + rm[1], nchar(x) - rm[2])
 }
 
 is.formula <- function(x) {
-  is(x, "formula")
+  inherits(x, "formula")
 }

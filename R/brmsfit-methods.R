@@ -826,7 +826,7 @@ ngrps.brmsfit <- function(object, ...) {
 
 #' @export
 formula.brmsfit <- function(x, ...) {
-  bf(x$formula)
+  bf(x$formula, ...)
 }
 
 #' @export
@@ -1361,7 +1361,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
         factor(marg_data[[effects[[i]][2]]], labels = labels)
     }
     marg_res = cbind(marg_data, marg_res)
-    attr(marg_res, "response") <- as.character(x$formula[2])
+    attr(marg_res, "response") <- as.character(x$formula$formula[2])
     attr(marg_res, "effects") <- effects[[i]]
     attr(marg_res, "contour") <- both_numeric && contour
     point_args <- nlist(mf, effects = effects[[i]], conditions,
@@ -1904,7 +1904,7 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
     dots$formula <- object$formula
   } else {
     recompile <- length(pforms(formula.)) > 0L
-    if (isTRUE(attr(object$formula, "nl"))) {
+    if (is.nonlinear(object)) {
       if (length(setdiff(all.vars(formula.), ".")) == 0L) {
         dots$formula <- update(object$formula, formula., mode = "keep")
       } else {

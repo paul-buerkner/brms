@@ -76,7 +76,7 @@ test_that("all S3 methods have reasonable ouputs", {
                     c("median", "5%", "95%")))
   
   # formula
-  expect_equal(formula(fit1), 
+  expect_equal(formula(fit1)$formula, 
     count ~ Trt * Age + mono(Exp) + s(Age) + offset(Age) + (1 + Trt | visit))
   
   # hypothesis

@@ -44,8 +44,9 @@
 #'   treated as specifying a non-linear model (defaults to \code{FALSE}).
 #' @inheritParams brm
 #' 
-#' @return An object of class \code{brmsformula}, which inherits
-#'  from class \code{formula} but contains additional attributes.
+#' @return An object of class \code{brmsformula}, which
+#' contains one or more formulae and additional information
+#' on the model.
 #'   
 #' @details 
 #' 
@@ -419,7 +420,17 @@
 #' 
 #' @export
 brmsformula <- function(formula, ..., flist = NULL, 
-                        nl = FALSE, nonlinear = NULL) {
+                        nl = NULL, nonlinear = NULL) {
+  if (is.brmsformula(formula) && is.formula(formula)) {
+    # convert deprecated brmsformula objects back to formula
+    class(formula) <- "formula"
+  }
+  if (is.brmsformula(formula)) {
+    out <- formula
+  } else {
+    out <- list(formula = as.formula(formula))
+  }
+  
   # ensure backwards compatibility
   if (!is.null(nonlinear)) {
     warning2("Argument 'nonlinear' is deprecated. ", 
@@ -431,10 +442,11 @@ brmsformula <- function(formula, ..., flist = NULL,
   if (is.list(old_nonlinear)) {
     nonlinear <- c(old_nonlinear, nonlinear)
   }
-  nl_pre <- isTRUE(attr(formula, "nl")) || length(nonlinear)
-  nl <- ifelse(nl_pre, TRUE, nl)
+  if (length(nonlinear)) {
+    nl <- TRUE
+  }
   old_forms <- rmNULL(attributes(formula)[auxpars()])
-  attr(formula, "pforms")[names(old_forms)] <- old_forms
+  out$pforms[names(old_forms)] <- old_forms
   
   # parse and validate dots arguments
   dots <- c(list(...), flist, nonlinear)
@@ -447,7 +459,7 @@ brmsformula <- function(formula, ..., flist = NULL,
     dupl_pars <- collapse_comma(dupl_pars)
     stop2("Duplicated specification of parameters ", dupl_pars)
   }
-  if (!nl) {
+  if (!isTRUE(nl)) {
     inv_names <- setdiff(names(forms), auxpars())
     if (length(inv_names)) {
       inv_names <- collapse_comma(inv_names)
@@ -456,17 +468,26 @@ brmsformula <- function(formula, ..., flist = NULL,
     }
   }
   # add attributes to formula
-  attr(formula, "pforms")[names(forms)] <- forms
-  if (is.null(attr(formula, "nl"))) {
-    attr(formula, "nl") <- as.logical(nl)[1]
+  out$pforms[names(forms)] <- forms
+  if (!is.null(nl)) {
+    nl <- as.logical(nl)[1]
+    if (!nl %in% c(TRUE, FALSE)) {
+      stop2("Argument 'nl' could not be coerced to logical.")
+    }
+    out[["nl"]] <- nl
   }
-  class(formula) <- c("brmsformula", "formula")
-  formula
+  # add default values for unspecified elements
+  defs <- list(pforms = list(), nl = FALSE, family = NULL, 
+               response = NULL, old_mv = FALSE)
+  defs <- defs[setdiff(names(defs), names(out))]
+  out[names(defs)] <- defs
+  class(out) <- "brmsformula"
+  out
 }
 
 #' @export
 bf <- function(formula, ..., flist = NULL, 
-               nl = FALSE, nonlinear = NULL) {
+               nl = NULL, nonlinear = NULL) {
   # alias of brmsformula
   brmsformula(formula, ..., flist = flist,
               nl = nl, nonlinear = nonlinear)
@@ -548,7 +569,7 @@ valid_auxpars <- function(family, effects = list(), autocor = cor_arma()) {
 
 pforms <- function(x, ...) {
   # extract formulas of additional parameters
-  attr(bf(x, ...), "pforms")
+  bf(x, ...)[["pforms"]]
 }
 
 #' @export
@@ -562,38 +583,56 @@ update.brmsformula <- function(object, formula.,
   #   mode: "update": apply update.formula
   #         "replace": replace old formula
   #         "keep": keep old formula
+  #         attributes are always updated
   #   ...: currently unused
   mode <- match.arg(mode)
-  new_pforms <- pforms(formula.)
-  old_pforms <- pforms(object)
+  object <- bf(object)
+  up_nl <- formula.[["nl"]]
+  if (is.null(up_nl)) {
+    up_nl <- object[["nl"]]
+  }
+  formula. <- bf(formula., nl = up_nl)
+  old_form <- object$formula
+  up_form <- formula.$formula
   if (mode == "update") {
-    new_formula <- update.formula(object, formula., ...)
+    new_form <- update(old_form, up_form, ...)
   } else if (mode == "replace") {
-    new_formula <- formula.
-  } else {
-    new_formula <- object
+    new_form <- up_form
+  } else if (mode == "keep") {
+    new_form <- old_form
   }
-  new_attr <- attributes(formula.)
-  old_attr <- attributes(object)
-  spec_attr <- c("nl", "family")
-  for (a in spec_attr) {
-    attr(new_formula, a) <- get_arg(a, new_attr, old_attr)
-  }
-  attr(new_formula, "pforms") <- NULL
-  new_formula <- do.call(bf, c(new_formula, new_pforms))
-  new_formula <- do.call(bf, c(new_formula, old_pforms))
-  new_formula
+  pforms <- pforms(object)
+  up_pforms <- pforms(formula.)
+  pforms[names(up_pforms)] <- up_pforms 
+  
+  nl <- get_arg("nl", formula., object)
+  out <- bf(new_form, flist = pforms, nl = nl)
+  out$family <- get_arg("family", formula.,  object)
+  out
 }
 
 #' @export
 print.brmsformula <- function(x, wsp = 0, ...) {
-  cat(gsub(" {1,}", " ", Reduce(paste, deparse(x))), "\n")
+  cat(formula2str(x$formula, trimws = FALSE), "\n")
   pforms <- pforms(x)
   if (length(pforms)) {
-    pforms <- ulapply(pforms, function(form) 
-      gsub(" {1,}", " ", Reduce(paste, deparse(form))))
+    pforms <- ulapply(pforms, formula2str, trimws = FALSE)
     wsp <- collapse(rep(" ", wsp))
     cat(collapse(wsp, pforms, "\n"))
   }
   invisible(x)
+}
+
+#' Checks if argument is a \code{brmsformula} object
+#' 
+#' @param x An \R object
+#' 
+#' @export
+is.brmsformula <- function(x) {
+  inherits(x, "brmsformula")
+}
+
+is.nonlinear <- function(x) {
+  stopifnot(is.brmsfit(x))
+  bf(x$formula)[["nl"]]
 }

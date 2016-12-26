@@ -43,7 +43,7 @@ make_standata <- function(formula, data, family = "gaussian",
   family <- check_family(family)
   formula <- amend_formula(formula, data = data, family = family,
                             nonlinear = nonlinear)
-  old_mv <- isTRUE(attr(formula, "old_mv"))
+  old_mv <- isTRUE(formula[["old_mv"]])
   autocor <- check_autocor(autocor)
   is_linear <- is.linear(family)
   is_ordinal <- is.ordinal(family)
