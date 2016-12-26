@@ -585,6 +585,8 @@ update.brmsformula <- function(object, formula.,
   #         "keep": keep old formula
   #         attributes are always updated
   #   ...: currently unused
+  # Returns:
+  #   a brmsformula object
   mode <- match.arg(mode)
   object <- bf(object)
   up_nl <- formula.[["nl"]]
@@ -613,10 +615,10 @@ update.brmsformula <- function(object, formula.,
 
 #' @export
 print.brmsformula <- function(x, wsp = 0, ...) {
-  cat(formula2str(x$formula, trimws = FALSE), "\n")
+  cat(formula2str(x$formula, space = "trim"), "\n")
   pforms <- pforms(x)
   if (length(pforms)) {
-    pforms <- ulapply(pforms, formula2str, trimws = FALSE)
+    pforms <- ulapply(pforms, formula2str, space = "trim")
     wsp <- collapse(rep(" ", wsp))
     cat(collapse(wsp, pforms, "\n"))
   }

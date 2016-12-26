@@ -677,7 +677,7 @@ is.old_categorical <- function(x) {
 is.old_mv <- function(x) {
   # indicate if the model uses the old multivariate syntax 
   # from brms < 1.0.0
-  stopifnot(is(x, "brmsfit"))
+  stopifnot(is.brmsfit(x))
   ee <- extract_effects(formula(x), family = family(x))
   (is.null(x$version) || x$version <= "0.10.0.9000") &&
     (is.mv(family(x), ee$response) || is.forked(family(x)))

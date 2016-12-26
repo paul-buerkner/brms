@@ -207,7 +207,7 @@ make_standata <- function(formula, data, family = "gaussian",
       if (!is.null(control$trials)) {
         standata$trials <- control$trials
       } else {
-        message("Using the maximum of the response", 
+        message("Using the maximum of the response ", 
                 "variable as the number of trials.")
         standata$trials <- max(standata$Y) 
       }

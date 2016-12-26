@@ -472,6 +472,8 @@ amend_formula <- function(formula, data = NULL, family = gaussian(),
   #   data: optional data.frame
   #   family: optional object of class 'family'
   #   nonlinear, partial: deprecated arguments of brm
+  # Returns:
+  #   a brmsformula object compatible with the current version of brms
   out <- bf(formula, nonlinear = nonlinear)
   out[["family"]] <- family
   fnew <- ". ~ ."
@@ -508,6 +510,8 @@ str2formula <- function(x, ...) {
   # Args:
   #   x: vector of strings to be converted
   #   ...: passed to formula(.)
+  # Returns:
+  #   a formula
   if (length(x)) {
     x <- paste(x, collapse = "+") 
   } else {
@@ -516,21 +520,27 @@ str2formula <- function(x, ...) {
   formula(paste("~", x), ...)
 }
 
-formula2str <- function(formula, rm = c(0, 0), trimws = TRUE) {
+formula2str <- function(formula, rm = c(0, 0), space = c("rm", "trim")) {
   # converts a formula to a string
   # Args:
   #   formula: a model formula
   #   rm: a vector of to elements indicating how many characters 
   #       should be removed at the beginning
   #       and end of the string respectively
-  #   trimws: remove whitespaces from the resulting string?
+  #   space: how should whitespaces be treated?
+  # Returns:
+  #   a string
+  space <- match.arg(space)
   if (!is.formula(formula)) {
     formula <- as.formula(formula)
   }
   if (is.na(rm[2])) rm[2] <- 0
   x <- Reduce(paste, deparse(formula))
-  if (trimws) {
-    x <- gsub("[ \t\r\n]+", "", x, perl = TRUE)
+  x <- gsub("[\t\r\n]+", "", x, perl = TRUE)
+  if (space == "trim") {
+    x <- gsub(" {1,}", " ", x, perl = TRUE)
+  } else {
+    x <- gsub(" ", "", x, perl = TRUE) 
   }
   substr(x, 1 + rm[1], nchar(x) - rm[2])
 }
