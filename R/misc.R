@@ -151,7 +151,7 @@ named_list <- function(names, values = NULL) {
   #   names: names of the elements
   #   values: values of the elements
   if (!is.null(values)) {
-    if (length(values) == 1L) {
+    if (length(values) <= 1L) {
       values <- replicate(length(names), values)
     }
     values <- as.list(values)
