@@ -63,8 +63,8 @@ parameters directly within \code{formula}.}
 }
 \value{
 An object of class \code{brmsformula}, which
-contains one or more formulae and additional information
-on the model.
+  is essentially a \code{list} containing all model
+  formulas as well as some additional information.
 }
 \description{
 Set up a model formula for use in the \pkg{brms} package

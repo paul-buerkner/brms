@@ -45,8 +45,8 @@
 #' @inheritParams brm
 #' 
 #' @return An object of class \code{brmsformula}, which
-#' contains one or more formulae and additional information
-#' on the model.
+#'   is essentially a \code{list} containing all model
+#'   formulas as well as some additional information.
 #'   
 #' @details 
 #' 

@@ -1389,10 +1389,9 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
   if (length(ee$nlpars)) {
     lee <- ee$nlpars
   } else {
-    resp <- ee$response
-    lee <- replicate(length(resp), ee, simplify = FALSE)
-    if (length(resp) > 1L) {
-      names(lee) <- resp
+    lee <- named_list(ee$response, list(ee))
+    if (length(lee) == 1L) {
+      names(lee) <- ""
     }
   }
   lee <- c(lee, ee$auxpars)
