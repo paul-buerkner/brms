@@ -428,7 +428,7 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
 #' @export
 prior <- function(prior, ...) {
   call <- as.list(match.call()[-1])
-  seval <- call[prior_seval_args()]
+  seval <- rmNULL(call[prior_seval_args()])
   call[prior_seval_args()] <- NULL
   call <- lapply(call, deparse_no_string)
   do.call(set_prior, c(call, seval))
@@ -439,7 +439,7 @@ prior <- function(prior, ...) {
 #' @export
 prior_ <- function(prior, ...) {
   call <- nlist(prior, ...)
-  seval <- call[prior_seval_args()]
+  seval <- rmNULL(call[prior_seval_args()])
   call[prior_seval_args()] <- NULL
   
   as_string <- function(x) {
