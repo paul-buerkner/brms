@@ -428,8 +428,10 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
 #' @export
 prior <- function(prior, ...) {
   call <- as.list(match.call()[-1])
+  seval <- call[prior_seval_args()]
+  call[prior_seval_args()] <- NULL
   call <- lapply(call, deparse_no_string)
-  do.call(set_prior, call)
+  do.call(set_prior, c(call, seval))
 }
 
 #' @describeIn set_prior Alias of \code{set_prior} allowing to specify 
@@ -437,6 +439,9 @@ prior <- function(prior, ...) {
 #' @export
 prior_ <- function(prior, ...) {
   call <- nlist(prior, ...)
+  seval <- call[prior_seval_args()]
+  call[prior_seval_args()] <- NULL
+  
   as_string <- function(x) {
     if (is.formula(x) && length(x) == 2) {
       deparse_no_string(x[[2]])
@@ -447,7 +452,12 @@ prior_ <- function(prior, ...) {
     }
   }
   call <- lapply(call, as_string)
-  do.call(set_prior, call)
+  do.call(set_prior, c(call, seval))
+}
+
+prior_seval_args <- function() {
+  # arguments for which to use standard evaluation
+  c("check")
 }
 
 #' @describeIn set_prior Alias of \code{set_prior} allowing to
