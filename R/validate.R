@@ -524,7 +524,7 @@ split_re_terms <- function(re_terms) {
     new_re_terms[[i]] <- paste0(lhs_terms[i], mid_terms[i], groups)
     type[[i]] <- rep(type[[i]], length(new_re_terms[[i]]))
   }
-  structure(unlist(new_re_terms), type = unlist(type))
+  structure_not_null(unlist(new_re_terms), type = unlist(type))
 }
 
 check_re_formula <- function(re_formula, formula) {

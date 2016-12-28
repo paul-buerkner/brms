@@ -59,6 +59,14 @@ rmNum <- function(x) {
   x[sapply(x, Negate(is.numeric))]
 }
 
+structure_not_null <- function(.Data, ...) {
+  # structure but ignore NULL
+  if (!is.null(.Data)) {
+    .Data <- structure(.Data, ...)
+  }
+  .Data
+}
+
 rmMatch <- function(x, ...) {
   # remove all elements in x that also appear in ... 
   # while keeping all attributes
