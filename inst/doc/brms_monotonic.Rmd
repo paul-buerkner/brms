@@ -2,7 +2,11 @@
 title: "Estimating Monotonic Effects with brms"
 author: "Paul Bürkner"
 date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette
+output: 
+  rmarkdown::html_vignette:
+    toc: yes
+params:
+  EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
 ---
 
 <!--
@@ -11,9 +15,7 @@ output: rmarkdown::html_vignette
 %\VignetteEncoding{UTF-8}
 -->
 
-```{r, SETTINGS-knitr, include=FALSE}
-stopifnot(require(knitr))
-opts_chunk$set(eval = FALSE)
+```{r, child = "children/SETTINGS-knitr.txt"}
 ```
 
 ## Introduction
@@ -41,7 +43,7 @@ dat <- data.frame(income, ls)
 
 We now proceed with analyzing the data modeling `income` as a monotonic effect.
 
-```{r}
+```{r, results='hide', message=FALSE, warning = FALSE}
 library(brms)
 fit1 <- brm(ls ~ monotonic(income), data = dat)
 ```
@@ -50,25 +52,32 @@ The summary methods yield
 
 ```{r}
 summary(fit1)
-plot(fit1, N = 6)
-plot(marginal_effects(fit1), points = TRUE)
+plot(fit1, pars = "simplex")
+plot(marginal_effects(fit1))
 ```
 
 The distributions of the simplex parameter of `income`, as shown in the `plot` method, demonstrate that the largest difference (about 70% of the difference between minimum and maximum category) is between the first two categories.
 
 Now, let's compare of monotonic model with two common alternative models. (a) Assume `income` to be continuous:
 
-```{r}
+```{r, results='hide', message=FALSE, warning = FALSE}
 dat$income_num <- as.numeric(dat$income)
 fit2 <- brm(ls ~ income_num, data = dat)
+```
+
+
+```{r}
 summary(fit2)
 ```
 
 or (b) Assume `income` to be an unordered factor:
 
-```{r}
+```{r, results='hide', message=FALSE, warning = FALSE}
 contrasts(dat$income) <- contr.treatment(4)
 fit3 <- brm(ls ~ income, data = dat)
+```
+
+```{r}
 summary(fit3)
 ```
 
@@ -84,17 +93,20 @@ The monotonic model fits better than the continuous model, which is not surprisi
 
 In the previous monotonic model, we have implicitly assumed that all differences between adjacent categories were a-priori the same, or formulated correctly, had the same prior distribution. In the following, we want to show how to change this assumption. The canonical prior distribution of a simplex parameter is the Dirchlet distribution, a multivariate generalization of the beta distribution. It is non-zero for all valid simplexes (i.e., $\zeta_i \in [0,1]$ and $\sum_{i = 1}^K \zeta_i = 1$) and zero otherwise. The Dirichlet prior has a single parameter $\alpha$ of the same length as $\zeta$. The higher $\alpha_i$ the higher the a-priori probability of higher values of $\zeta_i$. Suppose that, before looking at the data, we expected that the same amount of additional money matters more for people who generally have less money. This translates into a higher a-priori values of $\zeta_1$ (difference between 'below_20' and '20_to_40') and hence into higher values of $\alpha_1$. We choose $\alpha_1 = 2$ and $\alpha_2 = \alpha_3 = 1$, the latter being the default value of $\alpha$. To fit the model we write:
 
-```{r}
+```{r, results='hide', message=FALSE, warning = FALSE}
 prior4 <- prior(dirichlet(c(2, 1, 1)), class = "simplex", coef = "income")
 fit4 <- brm(ls ~ monotonic(income), data = dat,
-            prior = prior4, sample_prior = TRUE)
+           prior = prior4, sample_prior = TRUE)
+```
+
+```{r}
 summary(fit4)
 ```
 
 We have used `sample_prior = TRUE` to also obtain samples from the prior distribution of `simplex_income`.
 
 ```{r}
-plot(fit4, pars = "simplex", N = 6)
+plot(fit4, pars = "prior_simplex", N = 3)
 ```
 
 As is visible in the plots, `simplex_income[1]` was a-priori on average twice as high as `simplex_income[2]` and `simplex_income[3]` as a result of setting $\alpha_1$ to 2.
@@ -111,14 +123,13 @@ dat$ls <- dat$ls + var_city[dat$city]
 
 With the following code, we fit a multilevel model assuming the intercept and the effect of `income` to vary by city:
 
-```{r}
+```{r, results='hide', message=FALSE, warning = FALSE}
 fit5 <- brm(ls ~ mo(income) + (1 | city) + (mo(income) | city), data = dat)
 ```
 For technical reasons, monotonic group-level effects have to be specified in separate terms in the model formula. Further, we have used the abbrevation `mo` for `monotonic`, which helps in shortening the formula. The summary output
 
 ```{r}
 summary(fit5)
-plot(fit5, ask = FALSE)
 ```
 
 reveals that the effect of `income` varies only little across cities. For the present data, this is not overly surprising given that, in the data simulations, we assumed `income` to have the same effect across cities.

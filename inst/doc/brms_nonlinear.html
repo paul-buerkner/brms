@@ -12,7 +12,7 @@
 
 <meta name="author" content="Paul Bürkner" />
 
-<meta name="date" content="2016-12-23" />
+<meta name="date" content="2016-12-28" />
 
 <title>Estimating Non-Linear Models with brms</title>
 
@@ -70,9 +70,17 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 
 <h1 class="title toc-ignore">Estimating Non-Linear Models with brms</h1>
 <h4 class="author"><em>Paul Bürkner</em></h4>
-<h4 class="date"><em>2016-12-23</em></h4>
+<h4 class="date"><em>2016-12-28</em></h4>
 
 
+<div id="TOC">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#a-simple-non-linear-model">A Simple Non-Linear Model</a></li>
+<li><a href="#a-real-world-non-linear-model">A Real-World Non-Linear model</a></li>
+<li><a href="#advanced-item-response-models">Advanced Item-Response Models</a></li>
+</ul>
+</div>
 
 <!--
 %\VignetteEngine{knitr::rmarkdown}
@@ -109,8 +117,8 @@ fit1 &lt;-<span class="st"> </span><span class="kw">brm</span>(<span class="kw">
 <span class="kw">plot</span>(<span class="kw">marginal_effects</span>(fit1), <span class="dt">points =</span> <span class="ot">TRUE</span>)</code></pre></div>
 <p>The <code>summary</code> method reveals that we were able to recover the true parameter values pretty nicely. According to the <code>plot</code> method, our MCMC chains have converged well and to the same posterior. The <code>marginal_effects</code> method visualizes the model-implied (non-linear) regression line.</p>
 <p>We might be also interested in comparing our non-linear model to a classical linear model.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">fit2 &lt;-<span class="st"> </span><span class="kw">brm</span>(y ~<span class="st"> </span>x, <span class="dt">data =</span> dat1)
-<span class="kw">summary</span>(fit2)</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">fit2 &lt;-<span class="st"> </span><span class="kw">brm</span>(y ~<span class="st"> </span>x, <span class="dt">data =</span> dat1)</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">summary</span>(fit2)</code></pre></div>
 <p>To investigate and compare model fit, we can apply graphical posterior predictive checks, which make use of the <strong>bayesplot</strong> package on the backend.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">pp_check</span>(fit1)
 <span class="kw">pp_check</span>(fit2)</code></pre></div>

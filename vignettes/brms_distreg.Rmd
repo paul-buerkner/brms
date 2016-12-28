@@ -2,7 +2,11 @@
 title: "Estimating Distributional Models with brms"
 author: "Paul Bürkner"
 date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette
+output: 
+  rmarkdown::html_vignette:
+    toc: yes
+params:
+  EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
 ---
 
 <!--
@@ -11,9 +15,7 @@ output: rmarkdown::html_vignette
 %\VignetteEncoding{UTF-8}
 -->
 
-```{r, SETTINGS-knitr, include=FALSE}
-stopifnot(require(knitr))
-opts_chunk$set(eval = FALSE)
+```{r, child = "children/SETTINGS-knitr.txt"}
 ```
 
 
@@ -44,14 +46,14 @@ head(dat1)
 
 The following model estimates the effect of `group` on both the mean and the residual standard deviation of the normal response distribution.
 
-```{r}
+```{r, results='hide'}
 fit1 <- brm(bf(symptom_post ~ group, sigma ~ group), 
             data = dat1, family = gaussian())
 ```
 
 Useful summary statistics and plots can be obtained via
 
-```{r}
+```{r, results='hide'}
 summary(fit1)
 plot(fit1)
 plot(marginal_effects(fit1), points = TRUE)
@@ -87,7 +89,7 @@ head(zinb)
 
 As predictors we choose the number of people per group, the number of children, as well as whether the group consists of campers. Many groups may not catch any fish and so we directly fit a zero-inflated Poisson model. For now, we assume a constant zero-inflation probability across observations.
 
-```{r}
+```{r, results='hide'}
 fit_zinb1 <- brm(count ~ persons + child + camper, 
                  data = zinb, family = zero_inflated_poisson())
 ```
@@ -104,7 +106,7 @@ According to the parameter estimates, larger groups catch more fish, campers cat
 
 Now, we try to additionally predict the zero-inflation probability by the number of children. But why should we predict the zero-inflation probability at all? One line of reasong might go as follows. We assume two processes behind our response, the first being the basic Poisson process and the second being the zero-inflation process. For the smoker example, it is easy to interprete the zero-inflation process as the decision between smoking and non-smoking in general, which is definitely worth investigating using regression techniques. For other applications of zero-inflated models, for instance in the fishing example, it may not necessarily be that easy to interprete the zero-inflation process (or maybe it is, I have no idea of fishing), but the statistical idea remains the same: Each of the two processes comes with its own implied distribution and the zero-inflated Poisson distribution is a mixture of the two. From this perspective, predicting both parts of the model is natural and reasonable to fully understand the data.
 
-```{r}
+```{r, results='hide'}
 fit_zinb2 <- brm(bf(count ~ persons + child + camper, zi ~ child), 
                  data = zinb, family = zero_inflated_poisson())
 ```
@@ -135,7 +137,7 @@ head(dat_smooth)
 
 The data contains the predictors `x0` to `x3` as well as the grouping factor `fac` indicating the nested structure of the data. We predict the response variable `y` using smooth terms of `x1` and `x2` and a varying intercept of `fac`. In addition, we assume the residual standard deviation `sigma` to vary by a smoothing term of `x0` and a varying intercept of `fac`.
 
-```{r}
+```{r, results='hide'}
 fit_smooth1 <- brm(bf(y ~ s(x1) + s(x2) + (1|fac), sigma ~ s(x0) + (1|fac)),
                    data = dat_smooth, family = gaussian(),
                    chains = 2, control = list(adapt_delta = 0.95))

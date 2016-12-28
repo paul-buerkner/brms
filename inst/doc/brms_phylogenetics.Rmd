@@ -2,7 +2,11 @@
 title: "Estimating Phylogenetic Multilevel Models with brms"
 author: "Paul Bürkner"
 date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette
+output: 
+  rmarkdown::html_vignette:
+    toc: yes
+params:
+  EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
 ---
 
 <!--
@@ -11,9 +15,7 @@ output: rmarkdown::html_vignette
 %\VignetteEncoding{UTF-8}
 -->
 
-```{r, SETTINGS-knitr, include=FALSE}
-stopifnot(require(knitr))
-opts_chunk$set(eval = FALSE)
+```{r, child = "children/SETTINGS-knitr.txt"}
 ```
 
 ## Introduction
@@ -26,14 +28,21 @@ Throughout the vignette, **R** code output is not shown to reduce installation t
 
 Assume we have measurements of a phenotype, `phen` (say the body size), and a `cofactor` variable (say the temperature of the environment). We prepare the data using the following code.
 
-
-```{r}
-setwd("<insert path here>")
-library(brms)
+```{r, results='hide', message=FALSE, warning = FALSE}
 library(ape)
 library(MCMCglmm)
-phylo <- ape::read.nexus("phylo.nex")
-data_simple <- read.table("data_simple.txt", header = TRUE)
+```
+
+```{r, include = FALSE}
+my_path <- "C:\\Users\\paulb\\Dropbox\\Psychologie\\Paper\\2015_Bayesian_Regression_Models\\Models\\MCMCglmm\\"
+```
+
+
+```{r}
+# uncomment and set your path to the folder where you stored the data
+# my_path <- "insert your path here"
+phylo <- ape::read.nexus(paste0(my_path, "phylo.nex"))
+data_simple <- read.table(paste0(my_path, "data_simple.txt"), header = TRUE)
 head(data_simple)
 ```
 
@@ -45,9 +54,10 @@ A <- solve(inv.phylo$Ainv)
 rownames(A) <- rownames(inv.phylo$Ainv)
 ```
 
-In contrast to **MCMCglmm**, **brms** requires the covariance matrix not its inverse. Now, we are ready to fit our first phylogenetic multilevel model:
+In contrast to **MCMCglmm**, **brms** requires the covariance matrix and not its inverse. Now, we are ready to fit our first phylogenetic multilevel model:
 
-```{r}
+```{r, results='hide', message=FALSE, warning = FALSE}
+library(brms)
 model_simple <- brm(phen ~ cofactor + (1|phylo), data = data_simple, 
                     family = gaussian(), cov_ranef = list(phylo = A),
                     prior = c(prior(normal(0, 10), "b"),
@@ -75,12 +85,12 @@ plot(hyp)
 Note that the phylogenetic signal is just a synonym of the intra-class correlation (ICC) used in the context phylogenetic analysis.
 
 
-## A Phylogenetic Model with Repeated Mesurements
+## A Phylogenetic Model with Repeated Measurements
 
 Often, we have multiple observations per species and this allows to fit more complicated phylogenetic models.
 
 ```{r}
-data_repeat <- read.table("data_repeat.txt", header = TRUE)
+data_repeat <- read.table(paste0(my_path, "data_repeat.txt"), header = TRUE)
 data_repeat$spec_mean_cf <- 
   with(data_repeat, sapply(split(cofactor, phylo), mean)[phylo])
 head(data_repeat)
@@ -88,7 +98,7 @@ head(data_repeat)
 
 The variable `spec_mean_cf` just contains the mean of the cofactor for each species. The code for the repeated measurement phylogenetic model looks as follows:
 
-```{r}
+```{r, results='hide', message=FALSE, warning = FALSE}
 model_repeat1 <- brm(phen ~ spec_mean_cf + (1|phylo) + (1|species), 
                      data = data_repeat, family = gaussian(), 
                      cov_ranef = list(phylo = A),
@@ -104,8 +114,6 @@ The variables `phylo` and `species` are identical as they are both identifiers o
 
 ```{r}
 summary(model_repeat1)
-plot(model_repeat1)
-plot(marginal_effects(model_repeat1), points = TRUE)
 ```
 
 ```{r}
@@ -114,7 +122,7 @@ hyp <- paste(
   "(sd_phylo__Intercept^2 + sd_species__Intercept^2 + sigma^2) = 0"
 )
 (hyp <- hypothesis(model_repeat1, hyp, class = NULL))
-plot(hyp, chars = NULL)
+plot(hyp)
 ```
 
 So far, we have completely ignored the variability of the cofactor within species. To incorporate this into the model, we define
@@ -125,7 +133,7 @@ data_repeat$within_spec_cf <- data_repeat$cofactor - data_repeat$spec_mean_cf
 
 and then fit it again using `within_spec_cf` as an additional predictor.
 
-```{r}
+```{r, results='hide', message=FALSE, warning = FALSE}
 model_repeat2 <- update(model_repeat1, formula = ~ . + within_spec_cf,
                         newdata = data_repeat, chains = 2, cores = 2, 
                         iter = 4000, warmup = 1000)
@@ -135,8 +143,6 @@ The results are almost unchanged, with apparently no relationship between the ph
 
 ```{r}
 summary(model_repeat2)
-plot(model_repeat2, N = 6)
-plot(marginal_effects(model_repeat2), points = TRUE) 
 ```
 
 Also, the phylogenetic signal remains more or less the same.
@@ -156,14 +162,14 @@ plot(hyp, chars = NULL)
 Let's say we have Fisher's z-transformated correlation coefficients $Zr$ per species along with corresponding sample sizes (e.g., correlations between male coloration and reproductive success): 
 
 ```{r}
-data_fisher <- read.table("data_effect.txt", header = TRUE)
+data_fisher <- read.table(paste0(my_path, "data_effect.txt"), header = TRUE)
 data_fisher$obs <- 1:nrow(data_fisher)
 head(data_fisher)
 ```
 
 We assume the sampling variance to be known and as $V(Zr) = \frac{1}{N - 3}$ for Fisher's values, where $N$ is the sample size per species. Incorporating the known sampling variance into the model is straight forward. One has to keep in mind though, that **brms** requires the sampling standard deviation (square root of the variance) as input instead of the variance itself. The group-level effect of `obs` represents the residual variance, which we have to model explicitly in a meta-analytic model.
 
-```{r}
+```{r, results='hide', message=FALSE, warning = FALSE}
 model_fisher <- brm(Zr | se(sqrt(1 / (N - 3))) ~ 1 + (1|phylo) + (1|obs), 
                     data = data_fisher, family = gaussian(), 
                     cov_ranef = list(phylo = A),
@@ -188,14 +194,14 @@ The meta-analytic mean (i.e., the model intercept) is $0.16$ with a credible int
 Suppose that we analyze a phenotype that consists of counts instead of being a continuous variable. In such a case, the normality assumption will likely not be justified and it is recommended to use a distribution explicitely suited for count data, for instance the Poisson distribution. The following data set (again retrieved from http://www.mpcm-evolution.org/practice/online-practical-material-chapter-11) provides an example.
 
 ```{r}
-data_pois <- read.table("data_pois.txt", header = TRUE)
+data_pois <- read.table(paste0(my_path, "data_pois.txt"), header = TRUE)
 data_pois$obs <- 1:nrow(data_pois)
 head(data_pois)
 ```
 
 As the poisson distribution does not have a natural overdispersion parameter, we model the residual variance via the group-level effects of `obs` (e.g., see Lawless, 1987).
 
-```{r}
+```{r, results='hide', message=FALSE, warning = FALSE}
 model_pois <- brm(phen_pois ~ cofactor + (1|phylo) + (1|obs), 
                   data = data_pois, family = poisson("log"), 
                   cov_ranef = list(phylo = A),
@@ -207,18 +213,20 @@ Again, we obtain a summary of the fitted model via
 
 ```{r}
 summary(model_pois)
-plot(model_pois)
 plot(marginal_effects(model_pois), points = TRUE) 
 ```
 
 Now, assume we ignore the fact that the phenotype is count data and fit a linear normal model instead.
 
-```{r}
+```{r, results='hide', message=FALSE, warning = FALSE}
 model_normal <- brm(phen_pois ~ cofactor + (1|phylo), 
                     data = data_pois, family = gaussian(), 
                     cov_ranef = list(phylo = A),
                     chains = 2, cores = 2, iter = 4000,
                     control = list(adapt_delta = 0.95))
+```
+
+```{r}
 summary(model_normal)
 ```
 
@@ -229,7 +237,7 @@ pp_check(model_pois)
 pp_check(model_normal)
 ```
 
-Apparently, the distribution of the phenotype prediced by the Poisson model resembles the original distribution of the phenotype pretty closely, while the normal models fails to do so. We can also apply leave-one-out cross-validation for direct numerical comparison of model fit.
+Apparently, the distribution of the phenotype predicted by the Poisson model resembles the original distribution of the phenotype pretty closely, while the normal models fails to do so. We can also apply leave-one-out cross-validation for direct numerical comparison of model fit.
 
 ```{r}
 LOO(model_pois, model_normal)

@@ -2,7 +2,11 @@
 title: "Estimating Non-Linear Models with brms"
 author: "Paul Bürkner"
 date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette
+output: 
+  rmarkdown::html_vignette:
+    toc: yes
+params:
+  EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
 ---
 
 <!--
@@ -11,9 +15,7 @@ output: rmarkdown::html_vignette
 %\VignetteEncoding{UTF-8}
 -->
 
-```{r, SETTINGS-knitr, include=FALSE}
-stopifnot(require(knitr))
-opts_chunk$set(eval = FALSE)
+```{r, child = "children/SETTINGS-knitr.txt"}
 ```
 
 
@@ -27,7 +29,7 @@ where $b_i$ is the regression coefficient of predictor $i$ and $x_{ni}$ is the d
 
 $$\eta_n = b_1 \exp(b_2 x_n)$$ 
 
-would *not* be a *linear* predictor anymore and we could not fit it using classical techniques of generalized linear models. We thus need a more general model class, which we will call *non-linear* models. Note that the term 'non-linear' does not say anything about the assumed distribution of the response variable. In particular it does not mean 'not normally distributed' as we can apply non-linear predictor terms to all kinds of response distributions (for more details on response distributions available in **brms** see `vignette("brms_families")`). 
+would *not* be a *linear* predictor anymore and we could not fit it using classical techniques of generalized linear models. We thus need a more general model class, which we will call *non-linear* models. Note that the term 'non-linear' does not say anything about the assumed distribution of the response variable. In particular it does not mean 'not normally distributed' as we can apply non-linear predictor terms to all kinds of response distributions (for more details on response distributions available in **brms** see `vignette("brms_families")`).
 
 Throughout the vignette, **R** code output is not shown to reduce installation time and size of the package.
 
@@ -44,7 +46,7 @@ dat1 <- data.frame(x, y)
 
 As stated above, we cannot use a generalized linear model to estimate $b$ so we go ahead an specify a non-linear model.
 
-```{r}
+```{r, results='hide', message=FALSE, warning = FALSE}
 library(brms)
 prior1 <- c(prior(normal(1, 2), nlpar = "b1"),
             prior(normal(0, 2), nlpar = "b2"))
@@ -68,8 +70,11 @@ The `summary` method reveals that we were able to recover the true parameter val
 
 We might be also interested in comparing our non-linear model to a classical linear model.
 
-```{r}
+```{r, results='hide', message=FALSE, warning = FALSE}
 fit2 <- brm(y ~ x, data = dat1)
+```
+
+```{r}
 summary(fit2)
 ```
 
@@ -105,7 +110,7 @@ head(loss)
 
 and translate the proposed model into a non-linear **brms** model.
 
-```{r}
+```{r, results='hide', message=FALSE, warning = FALSE}
 fit_loss <- brm(bf(cum ~ ult * (1 - exp(-(dev/theta)^omega)),
                    ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1, 
                    nl = TRUE),
@@ -150,7 +155,7 @@ dat_ir <- data.frame(ability, answer)
 
 The most basic item-response model is equivalent to a simple logistic regression model.
 
-```{r}
+```{r, results='hide', message=FALSE, warning = FALSE}
 fit_ir1 <- brm(answer ~ ability, data = dat_ir, family = bernoulli())
 ```
 
@@ -163,7 +168,7 @@ plot(marginal_effects(fit_ir1), points = TRUE)
 
 A more sophisticated approach incorporating the guessing probability looks as follows:
 
-```{r}
+```{r, results='hide', message=FALSE, warning = FALSE}
 fit_ir2 <- brm(bf(answer ~ 0.33 + 0.67 * inv_logit(eta),
                   eta ~ ability, nl = TRUE),
                data = dat_ir, family = bernoulli("identity"), 
@@ -185,7 +190,7 @@ LOO(fit_ir1, fit_ir2)
 
 shows that both model fit the data equally well, but remember that predictions of the first model might still be misleading as they may well be below the guessing probability for low ability values. Now, suppose that we don't know the guessing probability and want to estimate it from the data. This can easily be done changing the previous model just a bit.
 
-```{r}
+```{r, results='hide', message=FALSE, warning = FALSE}
 fit_ir3 <- brm(bf(answer ~ guess + (1 - guess) * inv_logit(eta), 
                   eta ~ 0 + ability, guess ~ 1, nl = TRUE),
                data = dat_ir, family = bernoulli("identity"), 

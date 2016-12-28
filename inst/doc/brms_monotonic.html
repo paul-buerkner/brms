@@ -12,7 +12,7 @@
 
 <meta name="author" content="Paul Bürkner" />
 
-<meta name="date" content="2016-12-21" />
+<meta name="date" content="2016-12-28" />
 
 <title>Estimating Monotonic Effects with brms</title>
 
@@ -70,9 +70,17 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 
 <h1 class="title toc-ignore">Estimating Monotonic Effects with brms</h1>
 <h4 class="author"><em>Paul Bürkner</em></h4>
-<h4 class="date"><em>2016-12-21</em></h4>
+<h4 class="date"><em>2016-12-28</em></h4>
 
 
+<div id="TOC">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#a-simple-monotonic-model">A Simple Monotonic Model</a></li>
+<li><a href="#setting-prior-distributions">Setting Prior Distributions</a></li>
+<li><a href="#modelling-monotonic-group-level-effects">Modelling Monotonic Group-Level Effects</a></li>
+</ul>
+</div>
 
 <!--
 %\VignetteEngine{knitr::rmarkdown}
@@ -100,17 +108,17 @@ dat &lt;-<span class="st"> </span><span class="kw">data.frame</span>(income, ls)
 fit1 &lt;-<span class="st"> </span><span class="kw">brm</span>(ls ~<span class="st"> </span><span class="kw">monotonic</span>(income), <span class="dt">data =</span> dat)</code></pre></div>
 <p>The summary methods yield</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">summary</span>(fit1)
-<span class="kw">plot</span>(fit1, <span class="dt">N =</span> <span class="dv">6</span>)
-<span class="kw">plot</span>(<span class="kw">marginal_effects</span>(fit1), <span class="dt">points =</span> <span class="ot">TRUE</span>)</code></pre></div>
+<span class="kw">plot</span>(fit1, <span class="dt">pars =</span> <span class="st">&quot;simplex&quot;</span>)
+<span class="kw">plot</span>(<span class="kw">marginal_effects</span>(fit1))</code></pre></div>
 <p>The distributions of the simplex parameter of <code>income</code>, as shown in the <code>plot</code> method, demonstrate that the largest difference (about 70% of the difference between minimum and maximum category) is between the first two categories.</p>
 <p>Now, let’s compare of monotonic model with two common alternative models. (a) Assume <code>income</code> to be continuous:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">dat$income_num &lt;-<span class="st"> </span><span class="kw">as.numeric</span>(dat$income)
-fit2 &lt;-<span class="st"> </span><span class="kw">brm</span>(ls ~<span class="st"> </span>income_num, <span class="dt">data =</span> dat)
-<span class="kw">summary</span>(fit2)</code></pre></div>
+fit2 &lt;-<span class="st"> </span><span class="kw">brm</span>(ls ~<span class="st"> </span>income_num, <span class="dt">data =</span> dat)</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">summary</span>(fit2)</code></pre></div>
 <p>or (b) Assume <code>income</code> to be an unordered factor:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">contrasts</span>(dat$income) &lt;-<span class="st"> </span><span class="kw">contr.treatment</span>(<span class="dv">4</span>)
-fit3 &lt;-<span class="st"> </span><span class="kw">brm</span>(ls ~<span class="st"> </span>income, <span class="dt">data =</span> dat)
-<span class="kw">summary</span>(fit3)</code></pre></div>
+fit3 &lt;-<span class="st"> </span><span class="kw">brm</span>(ls ~<span class="st"> </span>income, <span class="dt">data =</span> dat)</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">summary</span>(fit3)</code></pre></div>
 <p>We can easily compare the fit of the three models using leave-one-out cross-validation.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">LOO</span>(fit1, fit2, fit3)</code></pre></div>
 <p>The monotonic model fits better than the continuous model, which is not surprising given that the relationship between <code>income</code> and <code>ls</code> is non-linear. The monotonic and the unorderd factor model have almost identical fit in this example, but this may not be the case for other data sets.</p>
@@ -120,10 +128,10 @@ fit3 &lt;-<span class="st"> </span><span class="kw">brm</span>(ls ~<span class="
 <p>In the previous monotonic model, we have implicitly assumed that all differences between adjacent categories were a-priori the same, or formulated correctly, had the same prior distribution. In the following, we want to show how to change this assumption. The canonical prior distribution of a simplex parameter is the Dirchlet distribution, a multivariate generalization of the beta distribution. It is non-zero for all valid simplexes (i.e., <span class="math inline">\(\zeta_i \in [0,1]\)</span> and <span class="math inline">\(\sum_{i = 1}^K \zeta_i = 1\)</span>) and zero otherwise. The Dirichlet prior has a single parameter <span class="math inline">\(\alpha\)</span> of the same length as <span class="math inline">\(\zeta\)</span>. The higher <span class="math inline">\(\alpha_i\)</span> the higher the a-priori probability of higher values of <span class="math inline">\(\zeta_i\)</span>. Suppose that, before looking at the data, we expected that the same amount of additional money matters more for people who generally have less money. This translates into a higher a-priori values of <span class="math inline">\(\zeta_1\)</span> (difference between ‘below_20’ and ‘20_to_40’) and hence into higher values of <span class="math inline">\(\alpha_1\)</span>. We choose <span class="math inline">\(\alpha_1 = 2\)</span> and <span class="math inline">\(\alpha_2 = \alpha_3 = 1\)</span>, the latter being the default value of <span class="math inline">\(\alpha\)</span>. To fit the model we write:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">prior4 &lt;-<span class="st"> </span><span class="kw">prior</span>(<span class="kw">dirichlet</span>(<span class="kw">c</span>(<span class="dv">2</span>, <span class="dv">1</span>, <span class="dv">1</span>)), <span class="dt">class =</span> <span class="st">&quot;simplex&quot;</span>, <span class="dt">coef =</span> <span class="st">&quot;income&quot;</span>)
 fit4 &lt;-<span class="st"> </span><span class="kw">brm</span>(ls ~<span class="st"> </span><span class="kw">monotonic</span>(income), <span class="dt">data =</span> dat,
-            <span class="dt">prior =</span> prior4, <span class="dt">sample_prior =</span> <span class="ot">TRUE</span>)
-<span class="kw">summary</span>(fit4)</code></pre></div>
+           <span class="dt">prior =</span> prior4, <span class="dt">sample_prior =</span> <span class="ot">TRUE</span>)</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">summary</span>(fit4)</code></pre></div>
 <p>We have used <code>sample_prior = TRUE</code> to also obtain samples from the prior distribution of <code>simplex_income</code>.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">plot</span>(fit4, <span class="dt">pars =</span> <span class="st">&quot;simplex&quot;</span>, <span class="dt">N =</span> <span class="dv">6</span>)</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">plot</span>(fit4, <span class="dt">pars =</span> <span class="st">&quot;prior_simplex&quot;</span>, <span class="dt">N =</span> <span class="dv">3</span>)</code></pre></div>
 <p>As is visible in the plots, <code>simplex_income[1]</code> was a-priori on average twice as high as <code>simplex_income[2]</code> and <code>simplex_income[3]</code> as a result of setting <span class="math inline">\(\alpha_1\)</span> to 2.</p>
 </div>
 <div id="modelling-monotonic-group-level-effects" class="section level2">
@@ -135,8 +143,7 @@ dat$ls &lt;-<span class="st"> </span>dat$ls +<span class="st"> </span>var_city[d
 <p>With the following code, we fit a multilevel model assuming the intercept and the effect of <code>income</code> to vary by city:</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">fit5 &lt;-<span class="st"> </span><span class="kw">brm</span>(ls ~<span class="st"> </span><span class="kw">mo</span>(income) +<span class="st"> </span>(<span class="dv">1</span> |<span class="st"> </span>city) +<span class="st"> </span>(<span class="kw">mo</span>(income) |<span class="st"> </span>city), <span class="dt">data =</span> dat)</code></pre></div>
 <p>For technical reasons, monotonic group-level effects have to be specified in separate terms in the model formula. Further, we have used the abbrevation <code>mo</code> for <code>monotonic</code>, which helps in shortening the formula. The summary output</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">summary</span>(fit5)
-<span class="kw">plot</span>(fit5, <span class="dt">ask =</span> <span class="ot">FALSE</span>)</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">summary</span>(fit5)</code></pre></div>
 <p>reveals that the effect of <code>income</code> varies only little across cities. For the present data, this is not overly surprising given that, in the data simulations, we assumed <code>income</code> to have the same effect across cities.</p>
 </div>
 

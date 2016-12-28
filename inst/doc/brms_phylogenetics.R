@@ -1,14 +1,33 @@
+params <-
+structure(list(EVAL = FALSE), .Names = "EVAL")
+
 ## ---- SETTINGS-knitr, include=FALSE--------------------------------------
 stopifnot(require(knitr))
-opts_chunk$set(eval = FALSE)
+opts_chunk$set(
+  comment = NA,
+  message = FALSE,
+  warning = FALSE,
+  eval = FALSE, # params$EVAL,
+  dev = "png",
+  dpi = 150,
+  fig.asp = 0.618,
+  fig.width = 5,
+  out.width = "60%",
+  fig.align = "center"
+  )
 
-## ------------------------------------------------------------------------
-#  setwd("<insert path here>")
-#  library(brms)
+## ---- results='hide', message=FALSE, warning = FALSE---------------------
 #  library(ape)
 #  library(MCMCglmm)
-#  phylo <- ape::read.nexus("phylo.nex")
-#  data_simple <- read.table("data_simple.txt", header = TRUE)
+
+## ---- include = FALSE----------------------------------------------------
+#  my_path <- "C:\\Users\\paulb\\Dropbox\\Psychologie\\Paper\\2015_Bayesian_Regression_Models\\Models\\MCMCglmm\\"
+
+## ------------------------------------------------------------------------
+#  # uncomment and set your path to the folder where you stored the data
+#  # my_path <- "insert your path here"
+#  phylo <- ape::read.nexus(paste0(my_path, "phylo.nex"))
+#  data_simple <- read.table(paste0(my_path, "data_simple.txt"), header = TRUE)
 #  head(data_simple)
 
 ## ------------------------------------------------------------------------
@@ -16,7 +35,8 @@ opts_chunk$set(eval = FALSE)
 #  A <- solve(inv.phylo$Ainv)
 #  rownames(A) <- rownames(inv.phylo$Ainv)
 
-## ------------------------------------------------------------------------
+## ---- results='hide', message=FALSE, warning = FALSE---------------------
+#  library(brms)
 #  model_simple <- brm(phen ~ cofactor + (1|phylo), data = data_simple,
 #                      family = gaussian(), cov_ranef = list(phylo = A),
 #                      prior = c(prior(normal(0, 10), "b"),
@@ -35,12 +55,12 @@ opts_chunk$set(eval = FALSE)
 #  plot(hyp)
 
 ## ------------------------------------------------------------------------
-#  data_repeat <- read.table("data_repeat.txt", header = TRUE)
+#  data_repeat <- read.table(paste0(my_path, "data_repeat.txt"), header = TRUE)
 #  data_repeat$spec_mean_cf <-
 #    with(data_repeat, sapply(split(cofactor, phylo), mean)[phylo])
 #  head(data_repeat)
 
-## ------------------------------------------------------------------------
+## ---- results='hide', message=FALSE, warning = FALSE---------------------
 #  model_repeat1 <- brm(phen ~ spec_mean_cf + (1|phylo) + (1|species),
 #                       data = data_repeat, family = gaussian(),
 #                       cov_ranef = list(phylo = A),
@@ -53,8 +73,6 @@ opts_chunk$set(eval = FALSE)
 
 ## ------------------------------------------------------------------------
 #  summary(model_repeat1)
-#  plot(model_repeat1)
-#  plot(marginal_effects(model_repeat1), points = TRUE)
 
 ## ------------------------------------------------------------------------
 #  hyp <- paste(
@@ -62,20 +80,18 @@ opts_chunk$set(eval = FALSE)
 #    "(sd_phylo__Intercept^2 + sd_species__Intercept^2 + sigma^2) = 0"
 #  )
 #  (hyp <- hypothesis(model_repeat1, hyp, class = NULL))
-#  plot(hyp, chars = NULL)
+#  plot(hyp)
 
 ## ------------------------------------------------------------------------
 #  data_repeat$within_spec_cf <- data_repeat$cofactor - data_repeat$spec_mean_cf
 
-## ------------------------------------------------------------------------
+## ---- results='hide', message=FALSE, warning = FALSE---------------------
 #  model_repeat2 <- update(model_repeat1, formula = ~ . + within_spec_cf,
 #                          newdata = data_repeat, chains = 2, cores = 2,
 #                          iter = 4000, warmup = 1000)
 
 ## ------------------------------------------------------------------------
 #  summary(model_repeat2)
-#  plot(model_repeat2, N = 6)
-#  plot(marginal_effects(model_repeat2), points = TRUE)
 
 ## ------------------------------------------------------------------------
 #  hyp <- paste(
@@ -86,11 +102,11 @@ opts_chunk$set(eval = FALSE)
 #  plot(hyp, chars = NULL)
 
 ## ------------------------------------------------------------------------
-#  data_fisher <- read.table("data_effect.txt", header = TRUE)
+#  data_fisher <- read.table(paste0(my_path, "data_effect.txt"), header = TRUE)
 #  data_fisher$obs <- 1:nrow(data_fisher)
 #  head(data_fisher)
 
-## ------------------------------------------------------------------------
+## ---- results='hide', message=FALSE, warning = FALSE---------------------
 #  model_fisher <- brm(Zr | se(sqrt(1 / (N - 3))) ~ 1 + (1|phylo) + (1|obs),
 #                      data = data_fisher, family = gaussian(),
 #                      cov_ranef = list(phylo = A),
@@ -104,11 +120,11 @@ opts_chunk$set(eval = FALSE)
 #  plot(model_fisher)
 
 ## ------------------------------------------------------------------------
-#  data_pois <- read.table("data_pois.txt", header = TRUE)
+#  data_pois <- read.table(paste0(my_path, "data_pois.txt"), header = TRUE)
 #  data_pois$obs <- 1:nrow(data_pois)
 #  head(data_pois)
 
-## ------------------------------------------------------------------------
+## ---- results='hide', message=FALSE, warning = FALSE---------------------
 #  model_pois <- brm(phen_pois ~ cofactor + (1|phylo) + (1|obs),
 #                    data = data_pois, family = poisson("log"),
 #                    cov_ranef = list(phylo = A),
@@ -117,15 +133,16 @@ opts_chunk$set(eval = FALSE)
 
 ## ------------------------------------------------------------------------
 #  summary(model_pois)
-#  plot(model_pois)
 #  plot(marginal_effects(model_pois), points = TRUE)
 
-## ------------------------------------------------------------------------
+## ---- results='hide', message=FALSE, warning = FALSE---------------------
 #  model_normal <- brm(phen_pois ~ cofactor + (1|phylo),
 #                      data = data_pois, family = gaussian(),
 #                      cov_ranef = list(phylo = A),
 #                      chains = 2, cores = 2, iter = 4000,
 #                      control = list(adapt_delta = 0.95))
+
+## ------------------------------------------------------------------------
 #  summary(model_normal)
 
 ## ------------------------------------------------------------------------
