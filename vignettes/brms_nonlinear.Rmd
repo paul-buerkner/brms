@@ -6,7 +6,8 @@ output:
   rmarkdown::html_vignette:
     toc: yes
 params:
-  EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
+  # EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
+  EVAL: !r FALSE
 ---
 
 <!--
@@ -54,7 +55,7 @@ fit1 <- brm(bf(y ~ b1 * exp(b2 * x), b1 + b2 ~ 1, nl = TRUE),
             data = dat1, prior = prior1)
 ```
 
-When looking at the above code, the first thing that becomes obvious is that we changed the `formula` syntax to display the non-linear formula including predictors (i.e., `x`) and parameters (i.e., `b1` and `b2`). This stands in contrast to classical **R** formulas, where only predictors are given and parameters are implicit. The `nonlinear` argument has two purposes. First, it provides information which variables in `formula` are parameters and which are data. Second, it specifies the linear predictor terms for each parameter. In fact, we should think of non-linear parameters as placeholders for linear predictor terms rather than as parameters themselves (see also the following examples). In the present case, we have no further variables to predict `b1` and `b2` and thus we just fit intercepts that represent our estimates of $b_1$ and $b_2$ in the model equation above. The formula `b1 + b2 ~ 1` is a short form of `list(b1 ~ 1, b2 ~ 1)` that can be used if all non-linear parameters share the same formula.
+When looking at the above code, the first thing that becomes obvious is that we changed the `formula` syntax to display the non-linear formula including predictors (i.e., `x`) and parameters (i.e., `b1` and `b2`) wrapped in a call to `bf`. This stands in contrast to classical **R** formulas, where only predictors are given and parameters are implicit. The argument `b1 + b2 ~ 1` serves two purposes. First, it provides information, which variables in `formula` are parameters, and second, it specifies the linear predictor terms for each parameter. In fact, we should think of non-linear parameters as placeholders for linear predictor terms rather than as parameters themselves (see also the following examples). In the present case, we have no further variables to predict `b1` and `b2` and thus we just fit intercepts that represent our estimates of $b_1$ and $b_2$ in the model equation above. The formula `b1 + b2 ~ 1` is a short form of `b1 ~ 1, b2 ~ 1` that can be used if multiple non-linear parameters share the same formula. Setting `nl = TRUE` tells **brms** that the formula should be treated as non-linear.
 
 In contrast to generalized linear models, priors on population-level parameters (i.e., 'fixed effects') are often mandatory to identify a non-linear model. Thus, **brms** requires the user to explicitely specify these priors. In the present example, we used a `normal(1, 2)` prior on (the population-level intercept of) `b1`, while we used a `normal(0, 2)` prior on (the population-level intercept of) `b2`. Setting priors is a non-trivial task in all kinds of models, especially in non-linear models, so you should always invest some time to think of appropriate priors. Quite often, you may be forced to change your priors after fitting a non-linear model for the first time, when you observe different MCMC chains converging to different posterior regions. This is a clear sign of an idenfication problem and one solution is to set stronger (i.e., more narrow) priors.
 
@@ -121,7 +122,7 @@ fit_loss <- brm(bf(cum ~ ult * (1 - exp(-(dev/theta)^omega)),
                 control = list(adapt_delta = 0.9))
 ```
 
-As visible in the `nonlinear` argument, we estimate a group-level effect of accident year (variable `AY`) for the ultimate loss `ult`. This also shows nicely how a non-linear parameter is actually a placeholder for a linear predictor, which in case of `ult`, contains only an varying intercept over year. Again, priors on population-level effects are required and, for the present model, are actually mandatory to ensure identifiability. We summarize the model using well known methods.
+We estimate a group-level effect of accident year (variable `AY`) for the ultimate loss `ult`. This also shows nicely how a non-linear parameter is actually a placeholder for a linear predictor, which in case of `ult`, contains only an varying intercept over year. Again, priors on population-level effects are required and, for the present model, are actually mandatory to ensure identifiability. We summarize the model using well known methods.
 
 ```{r}
 summary(fit_loss)

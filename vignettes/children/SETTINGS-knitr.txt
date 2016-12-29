@@ -4,10 +4,10 @@ opts_chunk$set(
   comment = NA,
   message = FALSE,
   warning = FALSE,
-  eval = FALSE,  # params$EVAL,
+  eval = params$EVAL,
   dev = "png",
   dpi = 150,
-  fig.asp = 0.618,
+  fig.asp = 0.8,
   fig.width = 5,
   out.width = "60%",
   fig.align = "center"

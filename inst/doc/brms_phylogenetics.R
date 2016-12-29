@@ -7,16 +7,16 @@ opts_chunk$set(
   comment = NA,
   message = FALSE,
   warning = FALSE,
-  eval = FALSE, # params$EVAL,
+  eval = params$EVAL,
   dev = "png",
   dpi = 150,
-  fig.asp = 0.618,
+  fig.asp = 0.8,
   fig.width = 5,
   out.width = "60%",
   fig.align = "center"
   )
 
-## ---- results='hide', message=FALSE, warning = FALSE---------------------
+## ---- results='hide'-----------------------------------------------------
 #  library(ape)
 #  library(MCMCglmm)
 
@@ -35,7 +35,7 @@ opts_chunk$set(
 #  A <- solve(inv.phylo$Ainv)
 #  rownames(A) <- rownames(inv.phylo$Ainv)
 
-## ---- results='hide', message=FALSE, warning = FALSE---------------------
+## ---- results='hide'-----------------------------------------------------
 #  library(brms)
 #  model_simple <- brm(phen ~ cofactor + (1|phylo), data = data_simple,
 #                      family = gaussian(), cov_ranef = list(phylo = A),
@@ -60,7 +60,7 @@ opts_chunk$set(
 #    with(data_repeat, sapply(split(cofactor, phylo), mean)[phylo])
 #  head(data_repeat)
 
-## ---- results='hide', message=FALSE, warning = FALSE---------------------
+## ---- results='hide'-----------------------------------------------------
 #  model_repeat1 <- brm(phen ~ spec_mean_cf + (1|phylo) + (1|species),
 #                       data = data_repeat, family = gaussian(),
 #                       cov_ranef = list(phylo = A),
@@ -85,7 +85,7 @@ opts_chunk$set(
 ## ------------------------------------------------------------------------
 #  data_repeat$within_spec_cf <- data_repeat$cofactor - data_repeat$spec_mean_cf
 
-## ---- results='hide', message=FALSE, warning = FALSE---------------------
+## ---- results='hide'-----------------------------------------------------
 #  model_repeat2 <- update(model_repeat1, formula = ~ . + within_spec_cf,
 #                          newdata = data_repeat, chains = 2, cores = 2,
 #                          iter = 4000, warmup = 1000)
@@ -99,14 +99,13 @@ opts_chunk$set(
 #    "(sd_phylo__Intercept^2 + sd_species__Intercept^2 + sigma^2) = 0"
 #  )
 #  (hyp <- hypothesis(model_repeat2, hyp, class = NULL))
-#  plot(hyp, chars = NULL)
 
 ## ------------------------------------------------------------------------
 #  data_fisher <- read.table(paste0(my_path, "data_effect.txt"), header = TRUE)
 #  data_fisher$obs <- 1:nrow(data_fisher)
 #  head(data_fisher)
 
-## ---- results='hide', message=FALSE, warning = FALSE---------------------
+## ---- results='hide'-----------------------------------------------------
 #  model_fisher <- brm(Zr | se(sqrt(1 / (N - 3))) ~ 1 + (1|phylo) + (1|obs),
 #                      data = data_fisher, family = gaussian(),
 #                      cov_ranef = list(phylo = A),
@@ -124,7 +123,7 @@ opts_chunk$set(
 #  data_pois$obs <- 1:nrow(data_pois)
 #  head(data_pois)
 
-## ---- results='hide', message=FALSE, warning = FALSE---------------------
+## ---- results='hide'-----------------------------------------------------
 #  model_pois <- brm(phen_pois ~ cofactor + (1|phylo) + (1|obs),
 #                    data = data_pois, family = poisson("log"),
 #                    cov_ranef = list(phylo = A),
@@ -135,7 +134,7 @@ opts_chunk$set(
 #  summary(model_pois)
 #  plot(marginal_effects(model_pois), points = TRUE)
 
-## ---- results='hide', message=FALSE, warning = FALSE---------------------
+## ---- results='hide'-----------------------------------------------------
 #  model_normal <- brm(phen_pois ~ cofactor + (1|phylo),
 #                      data = data_pois, family = gaussian(),
 #                      cov_ranef = list(phylo = A),

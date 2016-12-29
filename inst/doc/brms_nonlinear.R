@@ -7,10 +7,10 @@ opts_chunk$set(
   comment = NA,
   message = FALSE,
   warning = FALSE,
-  eval = FALSE, # params$EVAL,
+  eval = params$EVAL,
   dev = "png",
   dpi = 150,
-  fig.asp = 0.618,
+  fig.asp = 0.8,
   fig.width = 5,
   out.width = "60%",
   fig.align = "center"
@@ -22,7 +22,7 @@ opts_chunk$set(
 #  y <- rnorm(100, mean = b[1] * exp(b[2] * x))
 #  dat1 <- data.frame(x, y)
 
-## ---- results='hide', message=FALSE, warning = FALSE---------------------
+## ---- results='hide'-----------------------------------------------------
 #  library(brms)
 #  prior1 <- c(prior(normal(1, 2), nlpar = "b1"),
 #              prior(normal(0, 2), nlpar = "b2"))
@@ -34,7 +34,7 @@ opts_chunk$set(
 #  plot(fit1)
 #  plot(marginal_effects(fit1), points = TRUE)
 
-## ---- results='hide', message=FALSE, warning = FALSE---------------------
+## ---- results='hide'-----------------------------------------------------
 #  fit2 <- brm(y ~ x, data = dat1)
 
 ## ------------------------------------------------------------------------
@@ -52,7 +52,7 @@ opts_chunk$set(
 #  loss <- read.csv(url)
 #  head(loss)
 
-## ---- results='hide', message=FALSE, warning = FALSE---------------------
+## ---- results='hide'-----------------------------------------------------
 #  fit_loss <- brm(bf(cum ~ ult * (1 - exp(-(dev/theta)^omega)),
 #                     ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1,
 #                     nl = TRUE),
@@ -81,14 +81,14 @@ opts_chunk$set(
 #  answer <- ifelse(runif(300, 0, 1) < p, 1, 0)
 #  dat_ir <- data.frame(ability, answer)
 
-## ---- results='hide', message=FALSE, warning = FALSE---------------------
+## ---- results='hide'-----------------------------------------------------
 #  fit_ir1 <- brm(answer ~ ability, data = dat_ir, family = bernoulli())
 
 ## ------------------------------------------------------------------------
 #  summary(fit_ir1)
 #  plot(marginal_effects(fit_ir1), points = TRUE)
 
-## ---- results='hide', message=FALSE, warning = FALSE---------------------
+## ---- results='hide'-----------------------------------------------------
 #  fit_ir2 <- brm(bf(answer ~ 0.33 + 0.67 * inv_logit(eta),
 #                    eta ~ ability, nl = TRUE),
 #                 data = dat_ir, family = bernoulli("identity"),
@@ -101,7 +101,7 @@ opts_chunk$set(
 ## ------------------------------------------------------------------------
 #  LOO(fit_ir1, fit_ir2)
 
-## ---- results='hide', message=FALSE, warning = FALSE---------------------
+## ---- results='hide'-----------------------------------------------------
 #  fit_ir3 <- brm(bf(answer ~ guess + (1 - guess) * inv_logit(eta),
 #                    eta ~ 0 + ability, guess ~ 1, nl = TRUE),
 #                 data = dat_ir, family = bernoulli("identity"),

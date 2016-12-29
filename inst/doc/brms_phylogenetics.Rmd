@@ -6,7 +6,8 @@ output:
   rmarkdown::html_vignette:
     toc: yes
 params:
-  EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
+  # EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
+  EVAL: !r FALSE
 ---
 
 <!--
@@ -28,7 +29,7 @@ Throughout the vignette, **R** code output is not shown to reduce installation t
 
 Assume we have measurements of a phenotype, `phen` (say the body size), and a `cofactor` variable (say the temperature of the environment). We prepare the data using the following code.
 
-```{r, results='hide', message=FALSE, warning = FALSE}
+```{r, results='hide'}
 library(ape)
 library(MCMCglmm)
 ```
@@ -56,7 +57,7 @@ rownames(A) <- rownames(inv.phylo$Ainv)
 
 In contrast to **MCMCglmm**, **brms** requires the covariance matrix and not its inverse. Now, we are ready to fit our first phylogenetic multilevel model:
 
-```{r, results='hide', message=FALSE, warning = FALSE}
+```{r, results='hide'}
 library(brms)
 model_simple <- brm(phen ~ cofactor + (1|phylo), data = data_simple, 
                     family = gaussian(), cov_ranef = list(phylo = A),
@@ -98,7 +99,7 @@ head(data_repeat)
 
 The variable `spec_mean_cf` just contains the mean of the cofactor for each species. The code for the repeated measurement phylogenetic model looks as follows:
 
-```{r, results='hide', message=FALSE, warning = FALSE}
+```{r, results='hide'}
 model_repeat1 <- brm(phen ~ spec_mean_cf + (1|phylo) + (1|species), 
                      data = data_repeat, family = gaussian(), 
                      cov_ranef = list(phylo = A),
@@ -133,7 +134,7 @@ data_repeat$within_spec_cf <- data_repeat$cofactor - data_repeat$spec_mean_cf
 
 and then fit it again using `within_spec_cf` as an additional predictor.
 
-```{r, results='hide', message=FALSE, warning = FALSE}
+```{r, results='hide'}
 model_repeat2 <- update(model_repeat1, formula = ~ . + within_spec_cf,
                         newdata = data_repeat, chains = 2, cores = 2, 
                         iter = 4000, warmup = 1000)
@@ -153,7 +154,6 @@ hyp <- paste(
   "(sd_phylo__Intercept^2 + sd_species__Intercept^2 + sigma^2) = 0"
 )
 (hyp <- hypothesis(model_repeat2, hyp, class = NULL))
-plot(hyp, chars = NULL)
 ```
 
 
@@ -169,7 +169,7 @@ head(data_fisher)
 
 We assume the sampling variance to be known and as $V(Zr) = \frac{1}{N - 3}$ for Fisher's values, where $N$ is the sample size per species. Incorporating the known sampling variance into the model is straight forward. One has to keep in mind though, that **brms** requires the sampling standard deviation (square root of the variance) as input instead of the variance itself. The group-level effect of `obs` represents the residual variance, which we have to model explicitly in a meta-analytic model.
 
-```{r, results='hide', message=FALSE, warning = FALSE}
+```{r, results='hide'}
 model_fisher <- brm(Zr | se(sqrt(1 / (N - 3))) ~ 1 + (1|phylo) + (1|obs), 
                     data = data_fisher, family = gaussian(), 
                     cov_ranef = list(phylo = A),
@@ -201,7 +201,7 @@ head(data_pois)
 
 As the poisson distribution does not have a natural overdispersion parameter, we model the residual variance via the group-level effects of `obs` (e.g., see Lawless, 1987).
 
-```{r, results='hide', message=FALSE, warning = FALSE}
+```{r, results='hide'}
 model_pois <- brm(phen_pois ~ cofactor + (1|phylo) + (1|obs), 
                   data = data_pois, family = poisson("log"), 
                   cov_ranef = list(phylo = A),
@@ -218,7 +218,7 @@ plot(marginal_effects(model_pois), points = TRUE)
 
 Now, assume we ignore the fact that the phenotype is count data and fit a linear normal model instead.
 
-```{r, results='hide', message=FALSE, warning = FALSE}
+```{r, results='hide'}
 model_normal <- brm(phen_pois ~ cofactor + (1|phylo), 
                     data = data_pois, family = gaussian(), 
                     cov_ranef = list(phylo = A),

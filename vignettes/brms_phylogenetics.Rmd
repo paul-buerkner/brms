@@ -6,7 +6,8 @@ output:
   rmarkdown::html_vignette:
     toc: yes
 params:
-  EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
+  # EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
+  EVAL: !r FALSE
 ---
 
 <!--
@@ -153,7 +154,6 @@ hyp <- paste(
   "(sd_phylo__Intercept^2 + sd_species__Intercept^2 + sigma^2) = 0"
 )
 (hyp <- hypothesis(model_repeat2, hyp, class = NULL))
-plot(hyp, chars = NULL)
 ```
 
 

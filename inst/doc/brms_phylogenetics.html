@@ -12,7 +12,7 @@
 
 <meta name="author" content="Paul Bürkner" />
 
-<meta name="date" content="2016-12-28" />
+<meta name="date" content="2016-12-29" />
 
 <title>Estimating Phylogenetic Multilevel Models with brms</title>
 
@@ -70,7 +70,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 
 <h1 class="title toc-ignore">Estimating Phylogenetic Multilevel Models with brms</h1>
 <h4 class="author"><em>Paul Bürkner</em></h4>
-<h4 class="date"><em>2016-12-28</em></h4>
+<h4 class="date"><em>2016-12-29</em></h4>
 
 
 <div id="TOC">
@@ -165,8 +165,7 @@ data_repeat$spec_mean_cf &lt;-<span class="st"> </span>
   <span class="st">&quot;sd_phylo__Intercept^2 /&quot;</span>, 
   <span class="st">&quot;(sd_phylo__Intercept^2 + sd_species__Intercept^2 + sigma^2) = 0&quot;</span>
 )
-(hyp &lt;-<span class="st"> </span><span class="kw">hypothesis</span>(model_repeat2, hyp, <span class="dt">class =</span> <span class="ot">NULL</span>))
-<span class="kw">plot</span>(hyp, <span class="dt">chars =</span> <span class="ot">NULL</span>)</code></pre></div>
+(hyp &lt;-<span class="st"> </span><span class="kw">hypothesis</span>(model_repeat2, hyp, <span class="dt">class =</span> <span class="ot">NULL</span>))</code></pre></div>
 </div>
 <div id="a-phylogenetic-meta-analysis" class="section level2">
 <h2>A Phylogenetic Meta-Analysis</h2>

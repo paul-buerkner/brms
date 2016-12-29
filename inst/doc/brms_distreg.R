@@ -7,10 +7,10 @@ opts_chunk$set(
   comment = NA,
   message = FALSE,
   warning = FALSE,
-  eval = FALSE, # params$EVAL,
+  eval = params$EVAL,
   dev = "png",
   dpi = 150,
-  fig.asp = 0.618,
+  fig.asp = 0.8,
   fig.width = 5,
   out.width = "60%",
   fig.align = "center"
@@ -22,11 +22,11 @@ opts_chunk$set(
 #  dat1 <- data.frame(group, symptom_post)
 #  head(dat1)
 
-## ---- results='hide', message=FALSE, warning = FALSE---------------------
+## ---- results='hide'-----------------------------------------------------
 #  fit1 <- brm(bf(symptom_post ~ group, sigma ~ group),
 #              data = dat1, family = gaussian())
 
-## ---- results='hide', message=FALSE, warning = FALSE---------------------
+## ---- results='hide'-----------------------------------------------------
 #  summary(fit1)
 #  plot(fit1)
 #  plot(marginal_effects(fit1), points = TRUE)
@@ -45,7 +45,7 @@ opts_chunk$set(
 #  zinb <- read.csv("http://www.ats.ucla.edu/stat/data/fish.csv")
 #  head(zinb)
 
-## ---- results='hide', message=FALSE, warning = FALSE---------------------
+## ---- results='hide'-----------------------------------------------------
 #  fit_zinb1 <- brm(count ~ persons + child + camper,
 #                   data = zinb, family = zero_inflated_poisson())
 
@@ -54,7 +54,7 @@ opts_chunk$set(
 #  plot(fit_zinb1)
 #  plot(marginal_effects(fit_zinb1), ask = FALSE)
 
-## ---- results='hide', message=FALSE, warning = FALSE---------------------
+## ---- results='hide'-----------------------------------------------------
 #  fit_zinb2 <- brm(bf(count ~ persons + child + camper, zi ~ child),
 #                   data = zinb, family = zero_inflated_poisson())
 
@@ -68,7 +68,7 @@ opts_chunk$set(
 #  dat_smooth <- gamSim(eg = 6, n = 200, scale = 2)
 #  head(dat_smooth)
 
-## ---- results='hide', message=FALSE, warning = FALSE---------------------
+## ---- results='hide'-----------------------------------------------------
 #  fit_smooth1 <- brm(bf(y ~ s(x1) + s(x2) + (1|fac), sigma ~ s(x0) + (1|fac)),
 #                     data = dat_smooth, family = gaussian(),
 #                     chains = 2, control = list(adapt_delta = 0.95))

@@ -12,7 +12,7 @@
 
 <meta name="author" content="Paul Bürkner" />
 
-<meta name="date" content="2016-12-28" />
+<meta name="date" content="2016-12-29" />
 
 <title>Estimating Non-Linear Models with brms</title>
 
@@ -70,7 +70,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 
 <h1 class="title toc-ignore">Estimating Non-Linear Models with brms</h1>
 <h4 class="author"><em>Paul Bürkner</em></h4>
-<h4 class="date"><em>2016-12-28</em></h4>
+<h4 class="date"><em>2016-12-29</em></h4>
 
 
 <div id="TOC">
@@ -109,7 +109,7 @@ prior1 &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="kw">
             <span class="kw">prior</span>(<span class="kw">normal</span>(<span class="dv">0</span>, <span class="dv">2</span>), <span class="dt">nlpar =</span> <span class="st">&quot;b2&quot;</span>))
 fit1 &lt;-<span class="st"> </span><span class="kw">brm</span>(<span class="kw">bf</span>(y ~<span class="st"> </span>b1 *<span class="st"> </span><span class="kw">exp</span>(b2 *<span class="st"> </span>x), b1 +<span class="st"> </span>b2 ~<span class="st"> </span><span class="dv">1</span>, <span class="dt">nl =</span> <span class="ot">TRUE</span>),
             <span class="dt">data =</span> dat1, <span class="dt">prior =</span> prior1)</code></pre></div>
-<p>When looking at the above code, the first thing that becomes obvious is that we changed the <code>formula</code> syntax to display the non-linear formula including predictors (i.e., <code>x</code>) and parameters (i.e., <code>b1</code> and <code>b2</code>). This stands in contrast to classical <strong>R</strong> formulas, where only predictors are given and parameters are implicit. The <code>nonlinear</code> argument has two purposes. First, it provides information which variables in <code>formula</code> are parameters and which are data. Second, it specifies the linear predictor terms for each parameter. In fact, we should think of non-linear parameters as placeholders for linear predictor terms rather than as parameters themselves (see also the following examples). In the present case, we have no further variables to predict <code>b1</code> and <code>b2</code> and thus we just fit intercepts that represent our estimates of <span class="math inline">\(b_1\)</span> and <span class="math inline">\(b_2\)</span> in the model equation above. The formula <code>b1 + b2 ~ 1</code> is a short form of <code>list(b1 ~ 1, b2 ~ 1)</code> that can be used if all non-linear parameters share the same formula.</p>
+<p>When looking at the above code, the first thing that becomes obvious is that we changed the <code>formula</code> syntax to display the non-linear formula including predictors (i.e., <code>x</code>) and parameters (i.e., <code>b1</code> and <code>b2</code>) wrapped in a call to <code>bf</code>. This stands in contrast to classical <strong>R</strong> formulas, where only predictors are given and parameters are implicit. The argument <code>b1 + b2 ~ 1</code> serves two purposes. First, it provides information, which variables in <code>formula</code> are parameters, and second, it specifies the linear predictor terms for each parameter. In fact, we should think of non-linear parameters as placeholders for linear predictor terms rather than as parameters themselves (see also the following examples). In the present case, we have no further variables to predict <code>b1</code> and <code>b2</code> and thus we just fit intercepts that represent our estimates of <span class="math inline">\(b_1\)</span> and <span class="math inline">\(b_2\)</span> in the model equation above. The formula <code>b1 + b2 ~ 1</code> is a short form of <code>b1 ~ 1, b2 ~ 1</code> that can be used if multiple non-linear parameters share the same formula. Setting <code>nl = TRUE</code> tells <strong>brms</strong> that the formula should be treated as non-linear.</p>
 <p>In contrast to generalized linear models, priors on population-level parameters (i.e., ‘fixed effects’) are often mandatory to identify a non-linear model. Thus, <strong>brms</strong> requires the user to explicitely specify these priors. In the present example, we used a <code>normal(1, 2)</code> prior on (the population-level intercept of) <code>b1</code>, while we used a <code>normal(0, 2)</code> prior on (the population-level intercept of) <code>b2</code>. Setting priors is a non-trivial task in all kinds of models, especially in non-linear models, so you should always invest some time to think of appropriate priors. Quite often, you may be forced to change your priors after fitting a non-linear model for the first time, when you observe different MCMC chains converging to different posterior regions. This is a clear sign of an idenfication problem and one solution is to set stronger (i.e., more narrow) priors.</p>
 <p>To obtain summaries of the fitted model, we apply</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">summary</span>(fit1)
@@ -143,7 +143,7 @@ loss &lt;-<span class="st"> </span><span class="kw">read.csv</span>(url)
                           <span class="kw">prior</span>(<span class="kw">normal</span>(<span class="dv">1</span>, <span class="dv">2</span>), <span class="dt">nlpar =</span> <span class="st">&quot;omega&quot;</span>),
                           <span class="kw">prior</span>(<span class="kw">normal</span>(<span class="dv">45</span>, <span class="dv">10</span>), <span class="dt">nlpar =</span> <span class="st">&quot;theta&quot;</span>)),
                 <span class="dt">control =</span> <span class="kw">list</span>(<span class="dt">adapt_delta =</span> <span class="fl">0.9</span>))</code></pre></div>
-<p>As visible in the <code>nonlinear</code> argument, we estimate a group-level effect of accident year (variable <code>AY</code>) for the ultimate loss <code>ult</code>. This also shows nicely how a non-linear parameter is actually a placeholder for a linear predictor, which in case of <code>ult</code>, contains only an varying intercept over year. Again, priors on population-level effects are required and, for the present model, are actually mandatory to ensure identifiability. We summarize the model using well known methods.</p>
+<p>We estimate a group-level effect of accident year (variable <code>AY</code>) for the ultimate loss <code>ult</code>. This also shows nicely how a non-linear parameter is actually a placeholder for a linear predictor, which in case of <code>ult</code>, contains only an varying intercept over year. Again, priors on population-level effects are required and, for the present model, are actually mandatory to ensure identifiability. We summarize the model using well known methods.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">summary</span>(fit_loss)
 <span class="kw">plot</span>(fit_loss)
 <span class="kw">marginal_effects</span>(fit_loss)</code></pre></div>

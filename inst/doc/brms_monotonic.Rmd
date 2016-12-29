@@ -6,7 +6,8 @@ output:
   rmarkdown::html_vignette:
     toc: yes
 params:
-  EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
+  # EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
+  EVAL: !r FALSE
 ---
 
 <!--
@@ -43,7 +44,7 @@ dat <- data.frame(income, ls)
 
 We now proceed with analyzing the data modeling `income` as a monotonic effect.
 
-```{r, results='hide', message=FALSE, warning = FALSE}
+```{r, results='hide'}
 library(brms)
 fit1 <- brm(ls ~ monotonic(income), data = dat)
 ```
@@ -60,7 +61,7 @@ The distributions of the simplex parameter of `income`, as shown in the `plot` m
 
 Now, let's compare of monotonic model with two common alternative models. (a) Assume `income` to be continuous:
 
-```{r, results='hide', message=FALSE, warning = FALSE}
+```{r, results='hide'}
 dat$income_num <- as.numeric(dat$income)
 fit2 <- brm(ls ~ income_num, data = dat)
 ```
@@ -72,7 +73,7 @@ summary(fit2)
 
 or (b) Assume `income` to be an unordered factor:
 
-```{r, results='hide', message=FALSE, warning = FALSE}
+```{r, results='hide'}
 contrasts(dat$income) <- contr.treatment(4)
 fit3 <- brm(ls ~ income, data = dat)
 ```
@@ -93,7 +94,7 @@ The monotonic model fits better than the continuous model, which is not surprisi
 
 In the previous monotonic model, we have implicitly assumed that all differences between adjacent categories were a-priori the same, or formulated correctly, had the same prior distribution. In the following, we want to show how to change this assumption. The canonical prior distribution of a simplex parameter is the Dirchlet distribution, a multivariate generalization of the beta distribution. It is non-zero for all valid simplexes (i.e., $\zeta_i \in [0,1]$ and $\sum_{i = 1}^K \zeta_i = 1$) and zero otherwise. The Dirichlet prior has a single parameter $\alpha$ of the same length as $\zeta$. The higher $\alpha_i$ the higher the a-priori probability of higher values of $\zeta_i$. Suppose that, before looking at the data, we expected that the same amount of additional money matters more for people who generally have less money. This translates into a higher a-priori values of $\zeta_1$ (difference between 'below_20' and '20_to_40') and hence into higher values of $\alpha_1$. We choose $\alpha_1 = 2$ and $\alpha_2 = \alpha_3 = 1$, the latter being the default value of $\alpha$. To fit the model we write:
 
-```{r, results='hide', message=FALSE, warning = FALSE}
+```{r, results='hide'}
 prior4 <- prior(dirichlet(c(2, 1, 1)), class = "simplex", coef = "income")
 fit4 <- brm(ls ~ monotonic(income), data = dat,
            prior = prior4, sample_prior = TRUE)
@@ -123,7 +124,7 @@ dat$ls <- dat$ls + var_city[dat$city]
 
 With the following code, we fit a multilevel model assuming the intercept and the effect of `income` to vary by city:
 
-```{r, results='hide', message=FALSE, warning = FALSE}
+```{r, results='hide'}
 fit5 <- brm(ls ~ mo(income) + (1 | city) + (mo(income) | city), data = dat)
 ```
 For technical reasons, monotonic group-level effects have to be specified in separate terms in the model formula. Further, we have used the abbrevation `mo` for `monotonic`, which helps in shortening the formula. The summary output

@@ -7,10 +7,10 @@ opts_chunk$set(
   comment = NA,
   message = FALSE,
   warning = FALSE,
-  eval = FALSE, # params$EVAL,
+  eval = params$EVAL,
   dev = "png",
   dpi = 150,
-  fig.asp = 0.618,
+  fig.asp = 0.8,
   fig.width = 5,
   out.width = "60%",
   fig.align = "center"
@@ -24,7 +24,7 @@ opts_chunk$set(
 #  ls <- mean_ls[income] + rnorm(100, sd = 7)
 #  dat <- data.frame(income, ls)
 
-## ---- results='hide', message=FALSE, warning = FALSE---------------------
+## ---- results='hide'-----------------------------------------------------
 #  library(brms)
 #  fit1 <- brm(ls ~ monotonic(income), data = dat)
 
@@ -33,14 +33,14 @@ opts_chunk$set(
 #  plot(fit1, pars = "simplex")
 #  plot(marginal_effects(fit1))
 
-## ---- results='hide', message=FALSE, warning = FALSE---------------------
+## ---- results='hide'-----------------------------------------------------
 #  dat$income_num <- as.numeric(dat$income)
 #  fit2 <- brm(ls ~ income_num, data = dat)
 
 ## ------------------------------------------------------------------------
 #  summary(fit2)
 
-## ---- results='hide', message=FALSE, warning = FALSE---------------------
+## ---- results='hide'-----------------------------------------------------
 #  contrasts(dat$income) <- contr.treatment(4)
 #  fit3 <- brm(ls ~ income, data = dat)
 
@@ -50,7 +50,7 @@ opts_chunk$set(
 ## ------------------------------------------------------------------------
 #  LOO(fit1, fit2, fit3)
 
-## ---- results='hide', message=FALSE, warning = FALSE---------------------
+## ---- results='hide'-----------------------------------------------------
 #  prior4 <- prior(dirichlet(c(2, 1, 1)), class = "simplex", coef = "income")
 #  fit4 <- brm(ls ~ monotonic(income), data = dat,
 #             prior = prior4, sample_prior = TRUE)
@@ -66,7 +66,7 @@ opts_chunk$set(
 #  var_city <- rnorm(10, sd = 10)
 #  dat$ls <- dat$ls + var_city[dat$city]
 
-## ---- results='hide', message=FALSE, warning = FALSE---------------------
+## ---- results='hide'-----------------------------------------------------
 #  fit5 <- brm(ls ~ mo(income) + (1 | city) + (mo(income) | city), data = dat)
 
 ## ------------------------------------------------------------------------
