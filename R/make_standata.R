@@ -227,6 +227,7 @@ make_standata <- function(formula, data, family = "gaussian",
       stop2("Number of trials is smaller than the response ", 
             "variable would suggest.")
     }
+    standata$trials <- as.array(standata$trials)
   }
   if (has_cat(family)) {
     if (!length(ee$cat)) {
@@ -280,19 +281,19 @@ make_standata <- function(formula, data, family = "gaussian",
   
   # data for addition arguments
   if (is.formula(ee$se)) {
-    standata[["se"]] <- eval_rhs(formula = ee$se, data = data)
+    standata[["se"]] <- as.array(eval_rhs(formula = ee$se, data = data))
   }
   if (is.formula(ee$weights)) {
-    standata[["weights"]] <- eval_rhs(ee$weights, data = data)
+    standata[["weights"]] <- as.array(eval_rhs(ee$weights, data = data))
     if (old_mv) {
       standata$weights <- standata$weights[1:standata$N_trait]
     }
   }
   if (is.formula(ee$disp)) {
-    standata[["disp"]] <- eval_rhs(ee$disp, data = data)
+    standata[["disp"]] <- as.array(eval_rhs(ee$disp, data = data))
   }
   if (is.formula(ee$dec)) {
-    standata[["dec"]] <- eval_rhs(ee$dec, data = data)
+    standata[["dec"]] <- as.array(eval_rhs(ee$dec, data = data))
   }
   if (is.formula(ee$cens) && check_response) {
     cens <- eval_rhs(ee$cens, data = data)
@@ -305,8 +306,9 @@ make_standata <- function(formula, data, family = "gaussian",
               "censor points for interval censored data.")
       }
       y2[!icens] <- 0  # not used in Stan
-      standata$rcens <- y2
+      standata$rcens <- as.array(y2)
     }
+    standata$cens <- as.array(standata$cens)
     if (old_mv) {
       standata$cens <- standata$cens[1:standata$N_trait]
     }
@@ -387,7 +389,7 @@ make_standata <- function(formula, data, family = "gaussian",
     } else {
       tgroup <- rep(1, standata$N) 
     }
-    standata$tg <- as.numeric(factor(tgroup))
+    standata$tg <- as.array(as.numeric(factor(tgroup)))
   }
   standata$prior_only <- ifelse(identical(sample_prior, "only"), 1L, 0L)
   if (isTRUE(control$save_order)) {

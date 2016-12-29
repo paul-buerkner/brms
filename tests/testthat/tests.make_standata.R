@@ -153,28 +153,28 @@ test_that("make_standata returns correct values for addition terms", {
                     c3 = c(rep(c(TRUE, FALSE), 4), FALSE),
                     c4 = c(sample(-1:1, 5, TRUE), rep(2, 4)),
                     t = 11:19)
-  expect_equal(as.numeric(make_standata(y | se(s) ~ 1, data = dat)$se), 
-               1:9)
+  expect_equivalent(make_standata(y | se(s) ~ 1, data = dat)$se, 
+                    as.array(1:9))
   expect_equal(make_standata(y | weights(w) ~ 1, data = dat)$weights, 
-               1:9)
+               as.array(1:9))
   expect_equal(make_standata(y | disp(w) ~ 1, data = dat)$disp, 
-               1:9)
+               as.array(1:9))
   expect_equal(make_standata(y | cens(c1) ~ 1, data = dat)$cens, 
-               rep(-1:1, 3))
+               as.array(rep(-1:1, 3)))
   expect_equal(make_standata(y | cens(c2) ~ 1, data = dat)$cens,
-               rep(-1:1, 3))
+               as.array(rep(-1:1, 3)))
   expect_equal(make_standata(y | cens(c3) ~ 1, data = dat)$cens, 
-               c(rep(1:0, 4), 0))
+               as.array(c(rep(1:0, 4), 0)))
   expect_equal(make_standata(y | cens(c4, y + 2) ~ 1, data = dat)$rcens, 
-               c(rep(0, 5), dat$y[6:9] + 2))
+               as.array(c(rep(0, 5), dat$y[6:9] + 2)))
   expect_equal(make_standata(s ~ 1, dat, family = "binomial")$trials, 
-               rep(9, 9))
+               as.array(rep(9, 9)))
   expect_equal(make_standata(s | trials(10) ~ 1, dat, 
                              family = "binomial")$trials, 
-               rep(10, 9))
+               as.array(rep(10, 9)))
   expect_equal(make_standata(s | trials(t) ~ 1, data = dat, 
                              family = "binomial")$trials, 
-               11:19)
+               as.array(11:19))
   expect_equal(make_standata(s | cat(19) ~ 1, data = dat, 
                              family = "cumulative")$ncat, 
                19)
@@ -182,7 +182,7 @@ test_that("make_standata returns correct values for addition terms", {
 
 test_that("make_standata rejects incorrect addition terms", {
   dat <- data.frame(y = rnorm(9), s = -(1:9), w = -(1:9), 
-                          c = rep(-2:0, 3), t = 9:1, z = 1:9)
+                    c = rep(-2:0, 3), t = 9:1, z = 1:9)
   expect_error(make_standata(y | se(s) ~ 1, data = dat), 
                "Standard errors must be non-negative")
   expect_error(make_standata(y | weights(w) ~ 1, data = dat), 
@@ -199,7 +199,7 @@ test_that("make_standata handles multivariate models", {
   
   sdata <- make_standata(cbind(y1, y2) | weights(w) ~ x, data = dat)
   expect_equal(colnames(sdata$Y), c("y1", "y2"))
-  expect_equal(sdata$weights, 1:10)
+  expect_equal(sdata$weights, as.array(1:10))
   
   sdata <- make_standata(cbind(y1, y2, y2) ~ x, data = dat)
   expect_equal(colnames(sdata$Y), c("y1", "y2", "y21"))
@@ -338,7 +338,7 @@ test_that("make_standata returns fixed residual covariance matrices", {
 test_that("make_standata returns data for bsts models", {
   dat <- data.frame(y = 1:5, g = c(1:3, sample(1:3, 2, TRUE)), t = 1:5)
   expect_equal(make_standata(y~1, data = dat, autocor = cor_bsts(~t|g))$tg,
-               sort(dat$g))
+               as.array(sort(dat$g)))
   expect_equivalent(make_standata(bf(y~1, sigma ~ 1), data = dat, 
                                   autocor = cor_bsts(~t|g))$X_sigma[, 1],
                     rep(1, nrow(dat)))
@@ -420,9 +420,9 @@ test_that("make_standata handles wiener diffusion models", {
   dat$dec <- ifelse(dat$resp == "lower", 0, 1)
   dat$test <- "a"
   sdata <- make_standata(q | dec(resp) ~ x, data = dat, family = wiener())
-  expect_equal(sdata$dec, dat$dec)
+  expect_equal(sdata$dec, as.array(dat$dec))
   sdata <- make_standata(q | dec(dec) ~ x, data = dat, family = wiener())
-  expect_equal(sdata$dec, dat$dec)
+  expect_equal(sdata$dec, as.array(dat$dec))
   expect_error(make_standata(q | dec(test) ~ x, data = dat, family = wiener()),
                "Decisions should be 'lower' or 'upper'")
 })
@@ -433,8 +433,8 @@ test_that("make_standata handles noise-free terms", {
                     xsd = abs(rnorm(N, 1)), zsd = abs(rnorm(N, 1)),
                     ID = rep(1:5, each = N / 5))
   sdata <- make_standata(y ~ me(x, xsd)*me(z, zsd)*x, data = dat)
-  expect_equal(sdata$Xn_1, dat$x)
-  expect_equal(sdata$noise_2, dat$zsd)
+  expect_equal(sdata$Xn_1, as.array(dat$x))
+  expect_equal(sdata$noise_2, as.array(dat$zsd))
   expect_equal(unname(sdata$Cme_3), dat$x)
   expect_equal(sdata$Kme, 6)
 })

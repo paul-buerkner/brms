@@ -806,8 +806,8 @@ data_meef <- function(effects, data, nlpar = "") {
     Xn <- noise <- named_list(uni_me)
     for (i in seq_along(uni_me)) {
       temp <- eval2(uni_me[i], data)
-      Xn[[i]] <- attr(temp, "var")
-      noise[[i]] <- attr(temp, "noise")
+      Xn[[i]] <- as.array(attr(temp, "var"))
+      noise[[i]] <- as.array(attr(temp, "noise"))
     }
     names(Xn) <- paste0("Xn", p, "_", seq_along(Xn))
     names(noise) <- paste0("noise", p, "_", seq_along(Xn))
