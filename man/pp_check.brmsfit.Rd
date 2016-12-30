@@ -13,9 +13,11 @@
 \item{object}{An object of class \code{brmsfit}.}
 
 \item{type}{Type of the ppc plot as given by a character string.
-Currently, the following plots (as names) are implemented:
-\code{dens} \code{dens_overlay}, \code{ecdf_overlay}, 
-\code{error_binned}, \code{error_hist}, \code{error_scatter}, 
+Currently, the following plots (as names) are implemented
+in \pkg{bayesplot} (v1.1.0):
+\code{boxplot}, \code{dens} \code{dens_overlay} (default), 
+\code{ecdf_overlay}, \code{error_binned}, 
+\code{error_hist}, \code{error_scatter}, 
 \code{error_scatter_avg}, \code{error_scatter_avg_vs_x},
 \code{freqpoly}, \code{freqpoly_grouped}, \code{hist},
 \code{intervals}, \code{intervals_grouped}, 

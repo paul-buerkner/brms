@@ -164,13 +164,15 @@ extract_add <- function(formula, family = NA, check_response = TRUE) {
   # Returns:
   #   A list of formulas each containg a single addition term
   x <- list()
+  add_funs <- lsp("brms", what = "exports", pattern = "^resp_")
+  add_funs <- sub("^resp_", "", add_funs)
   if (!is.na(family[[1]])) {
     add <- get_matches("\\|[^~]*~", formula2str(formula))
     if (length(add)) {
       # replace deprecated '|' by '+'
       add <- paste("~", rename(substr(add, 2, nchar(add) - 1), "|", "+"))
       add_terms <- attr(terms(formula(add)), "term.labels")
-      for (af in add_funs()) {
+      for (af in add_funs) {
         matches <- grep(paste0("^(resp_)?", af, "\\(.+\\)$"), add_terms)
         if (length(matches) == 1L) {
           x[[af]] <- add_terms[matches]
@@ -1087,27 +1089,24 @@ rsv_vars <- function(family, nresp = 1L, rsv_intercept = FALSE,
 
 add_families <- function(x) {
   # return names of valid families for addition argument x
-  switch(x, weights = "all",
-         se = c("gaussian", "student", "cauchy"),
-         trials = c("binomial", "zero_inflated_binomial"),
-         cat = c("cumulative", "cratio", "sratio", "acat"), 
-         cens = c("gaussian", "student", "cauchy", "lognormal",
-                  "inverse.gaussian", "binomial", "poisson", 
-                  "geometric", "negbinomial", "exponential", 
-                  "weibull", "gamma", "exgaussian"),
-         trunc = c("gaussian", "student", "cauchy", "lognormal", 
-                   "binomial", "poisson", "geometric", "negbinomial",
-                   "exponential", "weibull", "gamma", "inverse.gaussian",
-                   "exgaussian"),
-         disp = c("gaussian", "student", "cauchy", "lognormal", 
-                  "gamma", "weibull", "negbinomial", "exgaussian"),
-         dec = c("wiener"),
-         stop2(paste("Addition argument '", x, "' is not supported.")))
-}
-
-add_funs <- function() {
-  # a character vector naming all valid addition arguments 
-  c("se", "weights", "trials", "cat", "cens", "trunc", "disp", "dec")
+  switch(x, 
+    weights = "all",
+    se = c("gaussian", "student", "cauchy"),
+    trials = c("binomial", "zero_inflated_binomial"),
+    cat = c("cumulative", "cratio", "sratio", "acat"), 
+    cens = c("gaussian", "student", "cauchy", "lognormal",
+             "inverse.gaussian", "binomial", "poisson", 
+             "geometric", "negbinomial", "exponential", 
+             "weibull", "gamma", "exgaussian"),
+    trunc = c("gaussian", "student", "cauchy", "lognormal", 
+              "binomial", "poisson", "geometric", "negbinomial",
+              "exponential", "weibull", "gamma", "inverse.gaussian",
+              "exgaussian"),
+    disp = c("gaussian", "student", "cauchy", "lognormal", 
+             "gamma", "weibull", "negbinomial", "exgaussian"),
+    dec = c("wiener"),
+    stop2("Addition argument '", x, "' is not supported.")
+  )
 }
 
 get_bounds <- function(formula, data = NULL) {
