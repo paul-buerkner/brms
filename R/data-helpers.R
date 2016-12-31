@@ -28,7 +28,7 @@ update_data <- function(data, family, effects,
     if (is(data, "try-error")) {
       stop2("Argument 'data' must be coercible to a data.frame.")
     }
-    if (nrow(data) == 0L) {
+    if (!isTRUE(nrow(data) > 0L)) {
       stop2("Argument 'data' does not contain observations.")
     }
     effects$allvars <- terms(effects$allvars)
