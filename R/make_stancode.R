@@ -104,8 +104,7 @@ make_stancode <- function(formula, data, family = gaussian(),
   
   # generate functions block
   text_functions <- paste0(
-    "// This Stan code was generated with the R package 'brms'. \n",
-    "// We recommend generating the data with the 'make_standata' function. \n",
+    "// generated with brms ", utils::packageVersion("brms"), "\n",
     "functions { \n",
       text_misc_funs,
       text_monotonic,
