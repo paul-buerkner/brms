@@ -22,8 +22,8 @@ knitr::opts_chunk$set(
 
 # brms
 
-The <b>brms</b> package provides an interface to fit Bayesian generalized (non-)linear mixed models using Stan, which is a C++ package for obtaining Bayesian inference using the No-U-turn sampler (see http://mc-stan.org/). The formula syntax is very similar to that of the package lme4 to provide a familiar and simple interface for performing regression analyses.
-
+The **brms** package provides an interface to fit Bayesian generalized (non-)linear multilevel models using Stan, which is a C++ package for performing full Bayesian inference (see http://mc-stan.org/). The formula syntax is very similar to that of the package lme4 to provide a familiar and simple interface for performing regression analyses. A wide range of distributions and link functions are supported, allowing users to fit -- among others -- linear, robust linear, binomial, Poisson, survival, response times, ordinal, zero-inflated, hurdle, and even non-linear models all in a multilevel context. Further modeling options include auto-correlation and smoothing terms, user defined dependence structures, censored data, meta-analytic standard errors, and quite a few more. In addition, all parameters of the response distribution can be predicted in order to perform distributional regression. Prior specifications are flexible and explicitly encourage users to apply prior distributions that actually reflect their beliefs. In addition, model fit can easily be assessed and compared with posterior predictive checks and leave-one-out cross-validation.
+    
 <!--
 ```{r set-options, echo=FALSE}
 options(width=90)
@@ -75,17 +75,17 @@ A related feature is the computation and visualization of marginal effects, whic
 plot(marginal_effects(fit, probs = c(0.05, 0.95)))
 ```
 
-For a complete list of methods to apply on <b>brms</b> models see
+For a complete list of methods to apply on **brms** models see
 ```{r methods.brmsfit}
 methods(class = "brmsfit") 
 ``` 
 
 Details on formula syntax, families and link functions, as well as prior distributions can be found on the help page of the brm function:
 ```{r help.brm, eval=FALSE}
-help(brm) 
+help("brm") 
 ``` 
 
-More instructions on how to use <b>brms</b> are given in the package's main vignette.
+More instructions on how to use **brms** are given in the package's main vignette.
 ```{r vignette, eval=FALSE}
 vignette("brms_overview") 
 ``` 
@@ -103,19 +103,48 @@ install.packages("brms")
 The current developmental version can be downloaded from github via
 
 ```{r install_brms2, eval=FALSE}
-library(devtools)
-install_github("paul-buerkner/brms")
+if (!require("devtools")) {
+  install.packages("devtools")
+}
+devtools::install_github("paul-buerkner/brms", dependencies = TRUE)
 ```
 
-Because <b>brms</b> is based on Stan, a C++ compiler is required. The program Rtools (available on https://cran.r-project.org/bin/windows/Rtools/) comes with a C++ compiler for Windows. On Mac, you should install Xcode. For further instructions on how to get the compilers running, see the prerequisites section on https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started.
+Because **brms** is based on Stan, a C++ compiler is required. The program Rtools (available on https://cran.r-project.org/bin/windows/Rtools/) comes with a C++ compiler for Windows. On Mac, you should install Xcode. For further instructions on how to get the compilers running, see the prerequisites section on https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started.
+
+## How can I extract the generated Stan code?
+
+If you have already fitted a model, just apply the `stancode` method on the fitted model object.
+If you just want to generate the Stan code without any model fitting, use the `make_stancode` function.
 
 ## Can I avoid compiling models?
 
-When you fit your model for the first time with <b>brms</b>, there is currently no way to avoid compilation. However, if you have already fitted your model and want to run it again, for instance with more samples, you can do this without recompilation by using the `update` method (type `help(update.brmsfit)` in R for more details).
+When you fit your model for the first time with **brms**, there is currently no way to avoid compilation. However, if you have already fitted your model and want to run it again, for instance with more samples, you can do this without recompilation by using the `update` method. For more details see 
+```{r, eval = FALSE}
+help("update.brmsfit")
+```
+
+## How can I specify non-linear or distributional models?
+
+Specification of non-linear or distributional models requires multiple formulae. In **brms**, the function `brmsformula` (or short `bf`) is used to combine all formulae into one object, which can then be passed to the `formula` argument of `brm`. More help is given in 
+```{r, eval = FALSE}
+help("brmsformula")
+```
+
+For a detailed discussion of some examples see 
+```{r, eval = FALSE}
+vignette("brms_nonlinear")
+```
+
+```{r, eval = FALSE}
+vignette("brms_distreg")
+```
 
 ## What is the difference between brms and rstanarm?
 
-<b>rstanarm</b> is an R package similar to <b>brms</b> that also allows to fit regression models using <b>Stan</b> for the backend estimation. Contrary to <b>brms</b>, <b>rstanarm</b> comes with precompiled code to save the compilation time (and the need for a C++ compiler) when fitting a model. However, as <b>brms</b> generates its <b>Stan</b> code on the fly, it offers more flexibility in model specification than <b>rstanarm</b>. Also, multilevel models are currently fitted a bit more efficiently in <b>brms</b>. For a detailed comparison of <b>brms</b> with other common R packages implementing multilevel models, type `vignette("brms_overview")` in <b>R</b>.
+**rstanarm** is an R package similar to **brms** that also allows to fit regression models using **Stan** for the backend estimation. Contrary to **brms**, **rstanarm** comes with precompiled code to save the compilation time (and the need for a C++ compiler) when fitting a model. However, as **brms** generates its **Stan** code on the fly, it offers much more flexibility in model specification than **rstanarm**. Also, multilevel models are currently fitted a bit more efficiently in **brms**. For a detailed comparison of **brms** with other common R packages implementing multilevel models, see
+```{r, eval = FALSE}
+vignette("brms_overview")
+```
 
 ## What is the best way to ask a question or propose a new feature?
 

@@ -4,7 +4,7 @@
 brms
 ====
 
-The <b>brms</b> package provides an interface to fit Bayesian generalized (non-)linear mixed models using Stan, which is a C++ package for obtaining Bayesian inference using the No-U-turn sampler (see <http://mc-stan.org/>). The formula syntax is very similar to that of the package lme4 to provide a familiar and simple interface for performing regression analyses.
+The **brms** package provides an interface to fit Bayesian generalized (non-)linear multilevel models using Stan, which is a C++ package for performing full Bayesian inference (see <http://mc-stan.org/>). The formula syntax is very similar to that of the package lme4 to provide a familiar and simple interface for performing regression analyses. A wide range of distributions and link functions are supported, allowing users to fit -- among others -- linear, robust linear, binomial, Poisson, survival, response times, ordinal, zero-inflated, hurdle, and even non-linear models all in a multilevel context. Further modeling options include auto-correlation and smoothing terms, user defined dependence structures, censored data, meta-analytic standard errors, and quite a few more. In addition, all parameters of the response distribution can be predicted in order to perform distributional regression. Prior specifications are flexible and explicitly encourage users to apply prior distributions that actually reflect their beliefs. In addition, model fit can easily be assessed and compared with posterior predictive checks and leave-one-out cross-validation.
 
 <!--
 
@@ -34,24 +34,24 @@ summary(fit, waic = TRUE)
 #>    Data: epilepsy (Number of observations: 236) 
 #> Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1; 
 #>          total post-warmup samples = 4000
-#>    WAIC: 1145.61
+#>    WAIC: 1144.41
 #>  
 #> Group-Level Effects: 
 #> ~obs (Number of levels: 236) 
 #>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> sd(Intercept)     0.37      0.04     0.29     0.46       1276 1.01
+#> sd(Intercept)     0.37      0.04     0.29     0.46       1333    1
 #> 
 #> ~patient (Number of levels: 59) 
 #>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> sd(Intercept)     0.51      0.07     0.38     0.66       1312    1
+#> sd(Intercept)      0.5      0.07     0.38     0.66       1561    1
 #> 
 #> Population-Level Effects: 
 #>                   Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> Intercept             1.56      0.08     1.40     1.72       1557    1
-#> log_Age_c             0.49      0.37    -0.22     1.21       1343    1
-#> log_Base4_c           1.07      0.11     0.86     1.28       1453    1
-#> Trt_c                -0.34      0.16    -0.65    -0.03       1475    1
-#> log_Base4_c:Trt_c     0.35      0.21    -0.06     0.77       1262    1
+#> Intercept             1.56      0.08     1.40     1.71       1491    1
+#> log_Age_c             0.47      0.37    -0.26     1.21       1379    1
+#> log_Base4_c           1.06      0.11     0.86     1.27       1608    1
+#> Trt_c                -0.33      0.16    -0.63    -0.03       1440    1
+#> log_Base4_c:Trt_c     0.35      0.22    -0.09     0.78       1540    1
 #> 
 #> Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 #> is a crude measure of effective sample size, and Rhat is the potential 
@@ -80,8 +80,8 @@ There are several methods to compute and visualize model predictions. Suppose th
 newdata <- data.frame(Trt_c = c(0.5, -0.5), log_Age_c = 0, log_Base4_c = 0)
 predict(fit, newdata = newdata, allow_new_levels = TRUE, probs = c(0.05, 0.95))
 #>   Estimate Est.Error 5%ile 95%ile
-#> 1  4.90475  4.064087     0     12
-#> 2  6.85700  5.462143     1     17
+#> 1  5.00175  4.138481     0     13
+#> 2  6.98275  5.509632     1     17
 ```
 
 We need to set `allow_new_levels = TRUE` because we want to predict responses of a person that was not present in the data used to fit the model. While the `predict` method returns predictions of the responses, the `fitted` method returns predictions of the regression line.
@@ -89,8 +89,8 @@ We need to set `allow_new_levels = TRUE` because we want to predict responses of
 ``` r
 fitted(fit, newdata = newdata, allow_new_levels = TRUE, probs = c(0.05, 0.95))
 #>   Estimate Est.Error    5%ile   95%ile
-#> 1 4.946287  3.314481 1.523729 11.45134
-#> 2 6.906215  4.638504 2.100405 15.69012
+#> 1 4.911491  3.413325 1.446990 11.50398
+#> 2 6.869297  4.843522 2.034335 16.28492
 ```
 
 Both methods return the same etimate (up to random error), while the latter has smaller variance, because the uncertainty in the regression line is smaller than the uncertainty in each response. If we want to predict values of the original data, we can just leave the `newdata` argument empty.
@@ -101,7 +101,7 @@ A related feature is the computation and visualization of marginal effects, whic
 plot(marginal_effects(fit, probs = c(0.05, 0.95)))
 ```
 
-For a complete list of methods to apply on <b>brms</b> models see
+For a complete list of methods to apply on **brms** models see
 
 ``` r
 methods(class = "brmsfit") 
@@ -110,23 +110,23 @@ methods(class = "brmsfit")
 #>  [9] formula           hypothesis        launch_shiny      log_lik          
 #> [13] log_posterior     logLik            loo               LOO              
 #> [17] marginal_effects  marginal_smooths  model.frame       neff_ratio       
-#> [21] ngrps             nobs              nuts_params       pairs            
-#> [25] parnames          plot              posterior_predict posterior_samples
-#> [29] pp_check          predict           predictive_error  print            
-#> [33] prior_samples     prior_summary     ranef             residuals        
-#> [37] rhat              stancode          standata          stanplot         
-#> [41] summary           update            VarCorr           vcov             
-#> [45] waic              WAIC             
+#> [21] ngrps             nobs              nsamples          nuts_params      
+#> [25] pairs             parnames          plot              posterior_predict
+#> [29] posterior_samples pp_check          predict           predictive_error 
+#> [33] print             prior_samples     prior_summary     ranef            
+#> [37] residuals         rhat              stancode          standata         
+#> [41] stanplot          summary           update            VarCorr          
+#> [45] vcov              waic              WAIC             
 #> see '?methods' for accessing help and source code
 ```
 
 Details on formula syntax, families and link functions, as well as prior distributions can be found on the help page of the brm function:
 
 ``` r
-help(brm) 
+help("brm") 
 ```
 
-More instructions on how to use <b>brms</b> are given in the package's main vignette.
+More instructions on how to use **brms** are given in the package's main vignette.
 
 ``` r
 vignette("brms_overview") 
@@ -147,21 +147,55 @@ install.packages("brms")
 The current developmental version can be downloaded from github via
 
 ``` r
-library(devtools)
-install_github("paul-buerkner/brms")
+if (!require("devtools")) {
+  install.packages("devtools")
+}
+devtools::install_github("paul-buerkner/brms", dependencies = TRUE)
 ```
 
-Because <b>brms</b> is based on Stan, a C++ compiler is required. The program Rtools (available on <https://cran.r-project.org/bin/windows/Rtools/>) comes with a C++ compiler for Windows. On Mac, you should install Xcode. For further instructions on how to get the compilers running, see the prerequisites section on <https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started>.
+Because **brms** is based on Stan, a C++ compiler is required. The program Rtools (available on <https://cran.r-project.org/bin/windows/Rtools/>) comes with a C++ compiler for Windows. On Mac, you should install Xcode. For further instructions on how to get the compilers running, see the prerequisites section on <https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started>.
+
+How can I extract the generated Stan code?
+------------------------------------------
+
+If you have already fitted a model, just apply the `stancode` method on the fitted model object. If you just want to generate the Stan code without any model fitting, use the `make_stancode` function.
 
 Can I avoid compiling models?
 -----------------------------
 
-When you fit your model for the first time with <b>brms</b>, there is currently no way to avoid compilation. However, if you have already fitted your model and want to run it again, for instance with more samples, you can do this without recompilation by using the `update` method (type `help(update.brmsfit)` in R for more details).
+When you fit your model for the first time with **brms**, there is currently no way to avoid compilation. However, if you have already fitted your model and want to run it again, for instance with more samples, you can do this without recompilation by using the `update` method. For more details see
+
+``` r
+help("update.brmsfit")
+```
+
+How can I specify non-linear or distributional models?
+------------------------------------------------------
+
+Specification of non-linear or distributional models requires multiple formulae. In **brms**, the function `brmsformula` (or short `bf`) is used to combine all formulae into one object, which can then be passed to the `formula` argument of `brm`. More help is given in
+
+``` r
+help("brmsformula")
+```
+
+For a detailed discussion of some examples see
+
+``` r
+vignette("brms_nonlinear")
+```
+
+``` r
+vignette("brms_distreg")
+```
 
 What is the difference between brms and rstanarm?
 -------------------------------------------------
 
-<b>rstanarm</b> is an R package similar to <b>brms</b> that also allows to fit regression models using <b>Stan</b> for the backend estimation. Contrary to <b>brms</b>, <b>rstanarm</b> comes with precompiled code to save the compilation time (and the need for a C++ compiler) when fitting a model. However, as <b>brms</b> generates its <b>Stan</b> code on the fly, it offers more flexibility in model specification than <b>rstanarm</b>. Also, multilevel models are currently fitted a bit more efficiently in <b>brms</b>. For a detailed comparison of <b>brms</b> with other common R packages implementing multilevel models, type `vignette("brms_overview")` in <b>R</b>.
+**rstanarm** is an R package similar to **brms** that also allows to fit regression models using **Stan** for the backend estimation. Contrary to **brms**, **rstanarm** comes with precompiled code to save the compilation time (and the need for a C++ compiler) when fitting a model. However, as **brms** generates its **Stan** code on the fly, it offers much more flexibility in model specification than **rstanarm**. Also, multilevel models are currently fitted a bit more efficiently in **brms**. For a detailed comparison of **brms** with other common R packages implementing multilevel models, see
+
+``` r
+vignette("brms_overview")
+```
 
 What is the best way to ask a question or propose a new feature?
 ----------------------------------------------------------------
