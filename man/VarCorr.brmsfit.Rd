@@ -15,7 +15,7 @@
 \item{x}{An object of class \code{brmsfit}.}
 
 \item{sigma}{Ignored (included for compatibility with 
-\code{\link[lme4:VarCorr]{VarCorr}}).}
+\code{\link[nlme:VarCorr]{VarCorr}}).}
 
 \item{estimate}{A character vector specifying which coefficients 
 (e.g., \code{"mean"}, \code{"median"}, \code{"sd"}, or \code{"quantile"})

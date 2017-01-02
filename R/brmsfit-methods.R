@@ -33,7 +33,7 @@ parnames.brmsfit <- function(x, ...) {
 #' @method fixef brmsfit
 #' @export
 #' @export fixef
-#' @importFrom lme4 fixef
+#' @importFrom nlme fixef
 fixef.brmsfit <-  function(object, estimate = "mean", ...) {
   contains_samples(object)
   pars <- parnames(object)
@@ -115,7 +115,7 @@ vcov.brmsfit <- function(object, correlation = FALSE, ...) {
 #' @method ranef brmsfit
 #' @export
 #' @export ranef
-#' @importFrom lme4 ranef
+#' @importFrom nlme ranef
 ranef.brmsfit <- function(object, estimate = c("mean", "median"), 
                           var = FALSE, ...) {
   contains_samples(object)
@@ -314,7 +314,7 @@ coef.brmsfit <- function(object, estimate = c("mean", "median"), ...) {
 #'  lists of matrices (the default), or as 3-dimensional arrays.
 #'  We recommend not to set \code{as.list} to \code{FALSE}.
 #' @param sigma Ignored (included for compatibility with 
-#'  \code{\link[lme4:VarCorr]{VarCorr}}).
+#'  \code{\link[nlme:VarCorr]{VarCorr}}).
 #' @param ... Further arguments to be passed to the functions 
 #'  specified in \code{estimate}
 #' 
@@ -340,7 +340,7 @@ coef.brmsfit <- function(object, estimate = c("mean", "median"), ...) {
 #' 
 #' @method VarCorr brmsfit
 #' @import abind abind
-#' @importFrom lme4 VarCorr
+#' @importFrom nlme VarCorr
 #' @export VarCorr
 #' @export
 VarCorr.brmsfit <- function(x, sigma = 1, estimate = "mean", 
@@ -799,21 +799,8 @@ nobs.brmsfit <- function(object, ...) {
   nrow(model.frame(object))
 }
 
-#' Number of levels
-#' 
-#' Number of levels of one or more grouping factors
-#' 
-#' @aliases ngrps
-#' 
-#' @param object An object of class \code{brmsfit}.
-#' @param ... Currently ignored.
-#' 
-#' @return A named list containing the number of levels per
-#'   grouping factor
-#' 
+#' @rdname ngrps
 #' @export
-#' @export ngrps
-#' @importFrom lme4 ngrps
 ngrps.brmsfit <- function(object, ...) {
   object <- restructure(object)
   if (nrow(object$ranef)) {

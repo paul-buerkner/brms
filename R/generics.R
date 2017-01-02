@@ -301,6 +301,23 @@ nsamples <- function(x, ...) {
   UseMethod("nsamples")
 }
 
+#' Number of levels
+#' 
+#' Extract the number of levels of one or more grouping factors.
+#' 
+#' @aliases ngrps.brmsfit
+#' 
+#' @param object An \R object.
+#' @param ... Currently ignored.
+#' 
+#' @return A named list containing the number of levels per
+#'   grouping factor.
+#' 
+#' @export
+ngrps <- function(object, ...) {
+  UseMethod("ngrps")
+}
+
 #' Compute the WAIC
 #' 
 #' Compute the Watanabe-Akaike Information Criterion 

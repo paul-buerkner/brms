@@ -15,11 +15,11 @@ Imports:
     rstan (>= 2.13.2),
     loo (>= 0.1.6),
     shinystan (>= 2.2.1),
-    lme4 (>= 1.1-11),
     Matrix (>= 1.1.1),
     mgcv (>= 1.8-13),
-    rstantools,
-    bayesplot,
+    rstantools (>= 1.0.0),
+    bayesplot (>= 1.0.0),
+    nlme,
     coda,
     abind,
     statmod,
@@ -40,7 +40,7 @@ Suggests:
     rmarkdown
 Description: Fit Bayesian generalized (non-)linear multilevel models 
     using Stan for full Bayesian inference. A wide range of distributions 
-    and link functions are supported, allowing users to fit
+    and link functions are supported, allowing users to fit -- among others --
     linear, robust linear, binomial, Poisson, survival, response times, ordinal, 
     zero-inflated, hurdle, and even non-linear models all in a multilevel context. 
     Further modeling options include auto-correlation and smoothing terms, 
