@@ -1105,7 +1105,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
   if (!is.null(x) && length(x) != 1L) {
     stop2("Argument 'x' must be of length 1.")
   }
-  ppc_funs <- lsp("bayesplot", what = "exports", pattern = "^ppc_")
+  ppc_funs <- as.character(bayesplot::available_ppc(""))
   valid_ppc_types <- sub("^ppc_", "", ppc_funs)
   if (!type %in% valid_ppc_types) {
     stop2("Type '", type, "' is not a valid ppc type. Valid types are: \n", 
