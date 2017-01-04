@@ -276,21 +276,13 @@ me <- function(x, sdx = NULL) {
 #'  
 #' @export
 cs <- function(expr) {
-  expr <- substitute(expr)
-  if (!is.character(expr)) {
-    expr <- deparse(expr)
-  }
-  expr
+  deparse_no_string(substitute(expr))
 }
 
 #' @export
 cse <- function(expr) {
   # alias of function 'cs'
-  expr <- substitute(expr)
-  if (!is.character(expr)) {
-    expr <- deparse(expr)
-  }
-  expr
+  deparse_no_string(substitute(expr))
 }
 
 #' Monotonic Predictors in \pkg{brms} Models
@@ -330,31 +322,19 @@ cse <- function(expr) {
 #'  
 #' @export
 mo <- function(expr) {
-  expr <- substitute(expr)
-  if (!is.character(expr)) {
-    expr <- deparse(expr)
-  }
-  expr
+  deparse_no_string(substitute(expr))
 }
 
 #' @export
 mono <- function(expr) {
   # alias of function 'mo'
-  expr <- substitute(expr)
-  if (!is.character(expr)) {
-    expr <- deparse(expr)
-  }
-  expr
+  deparse_no_string(substitute(expr))
 }
 
 #' @export
 monotonic <- function(expr) {
   # alias of function 'mo'
-  expr <- substitute(expr)
-  if (!is.character(expr)) {
-    expr <- deparse(expr)
-  }
-  expr
+  deparse_no_string(substitute(expr))
 }
 
 #' Set up basic grouping terms in \pkg{brms}
