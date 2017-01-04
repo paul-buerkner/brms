@@ -76,12 +76,12 @@ models for all parameters of the assumed response distribution.
   
   The \code{formula} argument accepts formulae of the following syntax:
   
-  \code{response | addition ~ Pterms + (Gterms | group)} 
+  \code{response | addition ~ pterms + (gterms | group)} 
   
-  The \code{Pterms} part contains effects that are assumed to be the 
+  The \code{pterms} part contains effects that are assumed to be the 
   same across obervations. We call them 'population-level' effects
   or (adopting frequentist vocabulary) 'fixed' effects. The optional
-  \code{Gterms} part may contain effects that are assumed to vary
+  \code{gterms} part may contain effects that are assumed to vary
   accross grouping variables specified in \code{group}. We
   call them 'group-level' effects or (adopting frequentist 
   vocabulary) 'random' effects, although the latter name is misleading
@@ -113,13 +113,13 @@ models for all parameters of the assumed response distribution.
   
   Smoothing terms can modeled using the \code{\link[mgcv:s]{s}}
   and \code{\link[mgcv:t2]{t2}} functions of the \pkg{mgcv} package 
-  in the \code{Pterms} part of the model formula.
+  in the \code{pterms} part of the model formula.
   This allows to fit generalized additive mixed models (GAMMs) with \pkg{brms}. 
   The implementation is similar to that used in the \pkg{gamm4} package.
   For more details on this model class see \code{\link[mgcv:gam]{gam}} 
   and \code{\link[mgcv:gamm]{gamm}}.
   
-  The \code{Pterms} and \code{Gterms} parts may contain three non-standard
+  The \code{pterms} and \code{gterms} parts may contain three non-standard
   effect types namely monotonic, measurement error, and category specific effects,
   which can be specified using terms of the form \code{mo(<predictors>)},
   \code{me(predictor, sd_predictor)}, and \code{cs(<predictors>)}, 
@@ -255,7 +255,9 @@ models for all parameters of the assumed response distribution.
   \code{dec} is mandatory to specify the (vector of) binary decisions 
   corresponding to the reaction times. Non-zero values will be treated
   as a response on the upper boundary of the diffusion process and zeros
-  will be treated as a response on the lower boundary. 
+  will be treated as a response on the lower boundary. Alternatively,
+  the variable passed to \code{dec} might also be a character vector 
+  consisting of \code{'lower'} and \code{'upper'}.
 
   Mutiple \code{addition} terms may be specified at the same time using 
   the \code{+} operator, for instance 
@@ -312,7 +314,7 @@ models for all parameters of the assumed response distribution.
   and not as part of population-level parameter vector \code{b}. 
   also have to be specified separately
   (see \code{\link[brms:set_prior]{set_prior}} for more details).
-  Furthermore, to increase sampling efficiency, the fixed effects 
+  Furthermore, to increase sampling efficiency, the population-level 
   design matrix \code{X} is centered around its column means 
   \code{X_means} if the intercept is incorporated. 
   This leads to a temporary bias in the intercept equal to 
@@ -326,9 +328,9 @@ models for all parameters of the assumed response distribution.
   Instead of \code{y ~ x}, you may write
   \code{y ~ 0 + intercept + x}. This way, priors can be
   defined on the real intercept, directly. In addition,
-  the intercept is just treated as an ordinary fixed effect
+  the intercept is just treated as an ordinary population-level effect
   and thus priors defined on \code{b} will also apply to it. 
-  Note that this parameterization may be a bit less efficient
+  Note that this parameterization may be less efficient
   than the default parameterization discussed above.  
   
   \bold{Formula syntax for non-linear models}
