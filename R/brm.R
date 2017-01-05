@@ -414,11 +414,11 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   if (is.character(inits) && !inits %in% c("random", "0")) {
     inits <- get(inits, mode = "function", envir = parent.frame())
   }
-  args <- list(object = x$fit, data = standata, pars = x$exclude, 
-               include = FALSE, algorithm = algorithm)
+  args <- nlist(object = x$fit, data = standata, pars = x$exclude, 
+                include = FALSE, algorithm, iter)
   args[names(dots)] <- dots 
   if (algorithm == "sampling") {
-    args <- c(args, nlist(init = inits, iter, warmup, thin, chains, 
+    args <- c(args, nlist(init = inits, warmup, thin, chains, 
                           cores, control, show_messages = !silent))
   }
   
