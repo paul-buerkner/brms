@@ -426,9 +426,9 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   message("Start sampling")
   if (args$algorithm == "sampling") {
     args$algorithm <- NULL
-    x$fit <- do.call(rstan::sampling, args = args)
+    x$fit <- do.call(rstan::sampling, args)
   } else {
-    x$fit <- do.call(rstan::vb, args = args)
+    x$fit <- do.call(rstan::vb, args)
   }
   if (!isTRUE(testmode)) {
     x <- rename_pars(x)

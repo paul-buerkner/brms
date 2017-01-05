@@ -2024,8 +2024,11 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
                                      save_mevars = dots$save_mevars)
     }
     if (!is.null(dots$algorithm)) {
-      object$algorithm <- match.arg(dots$algorithm, 
-                                    c("sampling", "meanfield", "fullrank"))
+      aopts <- c("sampling", "meanfield", "fullrank")
+      algorithm <- match.arg(dots$algorithm, aopts)
+      dots$algorithm <- object$algorithm <- algorithm
+    } else if (!is.null(object$algorithm)) {
+      dots$algorithm <- object$algorithm
     }
     if (!isTRUE(dots$testmode)) {
       object <- do.call(brm, c(list(fit = object), dots))
