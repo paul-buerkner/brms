@@ -729,7 +729,7 @@ summary.brmsfit <- function(object, waic = FALSE, priors = FALSE,
     is_mv_par <- apply(sapply(c("^sigma_", "^rescor_"), grepl, pars), 1, any)
     spec_pars <- pars[pars %in% c(auxpars(), "delta") | is_mv_par]
     out$spec_pars <- fit_summary[spec_pars, , drop = FALSE]
-    if (is.linear(family(object)) && length(ee$response) > 1L) {
+    if (is_linear(family(object)) && length(ee$response) > 1L) {
       sigma_names <- paste0("sigma(", ee$response, ")")
       rescor_names <- get_cornames(ee$response, type = "rescor")   
       spec_pars[grepl("^sigma_", spec_pars)] <- sigma_names
@@ -839,7 +839,7 @@ standata.brmsfit <- function(object, ...) {
     # brms > 0.5.0 stores the original model.frame
     object <- restructure(object)
     new_formula <- update_re_terms(object$formula, dots$re_formula)
-    dots$control$old_cat <- is.old_categorical(object)
+    dots$control$old_cat <- is_old_categorical(object)
     prior_only <- attr(object$prior, "prior_only")
     sample_prior <- ifelse(isTRUE(prior_only), "only", FALSE)
     args <- list(formula = new_formula, data = model.frame(object), 
@@ -925,7 +925,7 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA,
   pars <- use_alias(pars, parameters, default = NA)
   plot <- use_alias(plot, dots$do_plot)
   contains_samples(x)
-  if (!is.wholenumber(N) || N < 1) {
+  if (!is_wholenumber(N) || N < 1) {
     stop2("Argument 'N' must be a positive integer.")
   }
   if (!is.character(pars)) {
@@ -1140,7 +1140,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     }
   }
   if (type == "error_binned") {
-    if (is.ordinal(object$family)) {
+    if (is_ordinal(object$family)) {
       stop2("Type '", type, "' is not available for ordinal models.")
     }
     method <- "fitted"
@@ -1256,11 +1256,11 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   x <- restructure(x)
   new_formula <- update_re_terms(x$formula, re_formula = re_formula)
   ee <- extract_effects(new_formula, family = x$family)
-  if (is.linear(x$family) && length(ee$response) > 1L) {
+  if (is_linear(x$family) && length(ee$response) > 1L) {
     stop2("Marginal plots are not yet implemented for multivariate models.")
-  } else if (is.categorical(x$family)) {
+  } else if (is_categorical(x$family)) {
     stop2("Marginal plots are not yet implemented for categorical models.")
-  } else if (is.ordinal(x$family)) {
+  } else if (is_ordinal(x$family)) {
     warning2("Predictions are treated as continuous variables ", 
              "in marginal plots, \nwhich is likely an invalid ", 
              "assumption for family ", x$family$family, ".")
@@ -1323,7 +1323,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     args <- c(list(x, newdata = marg_data, re_formula = re_formula,
                    allow_new_levels = TRUE, incl_autocor = FALSE,
                    probs = probs, robust = robust), dots)
-    if (is.ordinal(x$family) || is.categorical(x$family)) {
+    if (is_ordinal(x$family) || is_categorical(x$family)) {
       args$summary <- FALSE 
       marg_res <- do.call(method, args)
       if (method == "fitted") {
@@ -1602,7 +1602,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     colnames(out) <- NULL
   }
   # transform predicted response samples before summarizing them 
-  is_catordinal <- is.ordinal(draws$f) || is.categorical(draws$f)
+  is_catordinal <- is_ordinal(draws$f) || is_categorical(draws$f)
   if (!is.null(transform) && !is_catordinal) {
     out <- do.call(transform, list(out))
   }
@@ -1784,7 +1784,7 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   contains_samples(object)
   object <- restructure(object)
   family <- family(object)
-  if (is.ordinal(family) || is.categorical(family)) {
+  if (is_ordinal(family) || is_categorical(family)) {
     stop2("Residuals not implemented for family '", family$family, "'.")
   }
   
@@ -1894,7 +1894,7 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
     dots$formula <- object$formula
   } else {
     recompile <- length(pforms(formula.)) > 0L
-    if (is.nonlinear(object)) {
+    if (is_nonlinear(object)) {
       if (length(setdiff(all.vars(formula.), ".")) == 0L) {
         dots$formula <- update(object$formula, formula., mode = "keep")
       } else {
@@ -1937,7 +1937,7 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
   if (take_nl) attr(dots$formula, "nonlinear") <- NULL
   # update gaussian("log") to lognormal() family
   resp <- extract_effects(object$formula, family = object$family)$response
-  if (is.old_lognormal(object$family, nresp = length(resp),
+  if (is_old_lognormal(object$family, nresp = length(resp),
                        version = object$version)) {
     object$family <- lognormal()
   }

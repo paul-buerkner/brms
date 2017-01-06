@@ -94,7 +94,7 @@ subset_attr <- function(x, y) {
   x
 } 
 
-is.wholenumber <- function(x, tol = .Machine$double.eps) {  
+is_wholenumber <- function(x, tol = .Machine$double.eps) {  
   # check if x is a whole number (integer)
   if (!is.numeric(x)) {
     return(FALSE)

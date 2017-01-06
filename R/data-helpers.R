@@ -73,7 +73,7 @@ melt_data <- function(data, family, effects) {
   #   effects: output of extract_effects
   response <- effects$response
   nresp <- length(response)
-  if (is.mv(family, response = response)) {
+  if (is_mv(family, response = response)) {
     if (!is(data, "data.frame")) {
       stop2("Argument 'data' must be a data.frame for this model.")
     }
@@ -86,7 +86,7 @@ melt_data <- function(data, family, effects) {
       rsv_vars <- paste0("'", rsv_vars, "'", collapse = ", ")
       stop2(paste(rsv_vars, "is a reserved variable name."))
     }
-    if (is.categorical(family)) {
+    if (is_categorical(family)) {
       # no parameters are modeled for the reference category
       response <- response[-1]
     }
@@ -100,12 +100,12 @@ melt_data <- function(data, family, effects) {
       effects$respform, data = data, na.action = na.pass))
     # allow to remove NA responses later on
     rows2remove <- which(!complete.cases(model_response))
-    if (is.linear(family)) {
+    if (is_linear(family)) {
       model_response[rows2remove, ] <- NA
       model_response <- as.vector(model_response)
-    } else if (is.categorical(family)) {
+    } else if (is_categorical(family)) {
       model_response[rows2remove] <- NA
-    } else if (is.forked(family)) {
+    } else if (is_forked(family)) {
       model_response[rows2remove] <- NA
       rsv_vars <- intersect(c(response[2], "main", "spec"), names(data))
       if (length(rsv_vars)) {
@@ -334,7 +334,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
         min_value <- min(list_data[[v]])
         invalid <- new_values < min_value | 
                    new_values > max(list_data[[v]]) |
-                   !is.wholenumber(new_values)
+                   !is_wholenumber(new_values)
         if (sum(invalid)) {
           stop2("Invalid values in variable '", v, "': ",
                 paste(new_values[invalid], collapse = ","))
@@ -373,7 +373,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     control <- list(is_newdata = TRUE, not4stan = TRUE, 
                     old_levels = old_levels, save_order = TRUE, 
                     omit_response = !check_response,
-                    old_cat <- is.old_categorical(fit))
+                    old_cat <- is_old_categorical(fit))
     old_terms <- attr(model.frame(fit), "terms")
     control$terms_attr <- attributes(old_terms)[c("variables", "predvars")]
     has_mo <- length(get_effect(ee, "mo")) > 0L
@@ -449,7 +449,7 @@ prepare_mo_vars <- function(formula, data, check = TRUE) {
     if (is.ordered(data[[vars[i]]])) {
       # counting starts at zero
       data[[vars[i]]] <- as.numeric(data[[vars[i]]]) - 1 
-    } else if (all(is.wholenumber(data[[vars[i]]]))) {
+    } else if (all(is_wholenumber(data[[vars[i]]]))) {
       min_value <- attr(data[[vars[i]]], "min")
       if (is.null(min_value)) {
         min_value <- min(data[[vars[i]]])
@@ -590,7 +590,7 @@ data_fixef <- function(effects, data, family = gaussian(),
   stopifnot(length(nlpar) == 1L)
   out <- list()
   p <- usc(nlpar, "prefix")
-  is_ordinal <- is.ordinal(family)
+  is_ordinal <- is_ordinal(family)
   is_bsts <- is(autocor, "cor_bsts")
   # the intercept is removed inside the Stan code for ordinal models
   cols2remove <- if (is_ordinal && not4stan || is_bsts) "(Intercept)"

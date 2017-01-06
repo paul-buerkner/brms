@@ -9,7 +9,7 @@ linear_predictor <- function(draws, i = NULL) {
   # Returns:
   #   Usually an S x N matrix where S is the number of samples
   #   and N is the number of observations or length of i if specified. 
-  if (length(i) == 1L && is.categorical(draws$f) && 
+  if (length(i) == 1L && is_categorical(draws$f) && 
       isTRUE(draws$old_cat == 2L)) {
     # for some time categorical models were using mv syntax
     nobs <- draws$data$N_trait * (draws$data$ncat - 1)
@@ -98,7 +98,7 @@ linear_predictor <- function(draws, i = NULL) {
   if (!is.null(draws$loclev)) {
     eta <- eta + p(draws$loclev, i, row = FALSE)
   }
-  if (is.ordinal(draws$f)) {
+  if (is_ordinal(draws$f)) {
     if (!is.null(draws[["cs"]]) || !is.null(draws[["rcs"]])) {
       ncat <- draws$data$ncat
       if (!is.null(draws[["rcs"]])) {

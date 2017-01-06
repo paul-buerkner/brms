@@ -35,7 +35,7 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
       draws[[ap]] <- do.call(as.matrix, c(am_args, pars = regex))
     }
   }
-  if (is.linear(family(x)) && length(ee$response) > 1L) {
+  if (is_linear(family(x)) && length(ee$response) > 1L) {
     # parameters for multivariate models
     draws[["sigma"]] <- do.call(as.matrix, c(am_args, pars = "^sigma($|_)"))
     draws[["rescor"]] <- do.call(as.matrix, c(am_args, pars = "^rescor_"))
@@ -140,7 +140,7 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   newd_args <- nlist(fit = x, newdata, re_formula, 
                      allow_new_levels, incl_autocor)
   draws <- list(data = do.call(amend_newdata, newd_args), 
-                old_cat = is.old_categorical(x))
+                old_cat = is_old_categorical(x))
   draws[names(dots)] <- dots
   
   if (smooths_only) {
@@ -229,7 +229,7 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
     }
   }
   # category specific effects 
-  if (is.ordinal(family(x))) {
+  if (is_ordinal(family(x))) {
     draws[["Intercept"]] <- 
       do.call(as.matrix, c(args, list(pars = "^b_Intercept\\[")))
     if (isTRUE(ncol(draws$data[["Xcs"]]) > 0)) {
@@ -406,7 +406,7 @@ expand_matrix <- function(A, x, max_level = max(x), weights = 1) {
   #   A sparse matrix of dimension nrow(A) x (ncol(A) * max_level)
   stopifnot(is.matrix(A))
   stopifnot(length(x) == nrow(A))
-  stopifnot(all(is.wholenumber(x) & x > 0))
+  stopifnot(all(is_wholenumber(x) & x > 0))
   stopifnot(length(weights) %in% c(1, nrow(A), prod(dim(A))))
   A <- A * weights
   K <- ncol(A)

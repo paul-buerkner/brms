@@ -18,7 +18,7 @@ stan_effects <- function(effects, data, family = gaussian(),
   # include fixed effects
   center_X <- center_X && has_intercept(effects$fixed) && 
               !is(autocor, "cor_bsts") && !sparse
-  rm_intercept <- center_X || is(autocor, "cor_bsts") || is.ordinal(family)
+  rm_intercept <- center_X || is(autocor, "cor_bsts") || is_ordinal(family)
   cols2remove <- if (rm_intercept) "Intercept"
   fixef <- colnames(data_fixef(effects, data, autocor = autocor)$X)
   fixef <- setdiff(fixef, cols2remove)
@@ -49,7 +49,7 @@ stan_effects <- function(effects, data, family = gaussian(),
   out$modelC1 <- paste0(
     out$modelC1, "  ", eta, " = ", 
     text_fixef$eta, text_splines$eta,
-    if (center_X && !is.ordinal(family)) 
+    if (center_X && !is_ordinal(family)) 
       paste0(" + temp", p, "_Intercept"),
     if (has_offset) paste0(" + offset", p),
     if (get_arr(autocor)) " + Yarr * arr", 
@@ -99,9 +99,9 @@ stan_effects_mv <- function(effects, data, family = gaussian(),
       tmp_list[[r]] <- do.call(stan_effects, c(args, nlpar = r))
     }
     out <- collapse_lists(tmp_list)
-    if (is.linear(family)) {
+    if (is_linear(family)) {
       len_Eta_n <- "nresp" 
-    } else if (is.categorical(family)) {
+    } else if (is_categorical(family)) {
       len_Eta_n <- "ncat - 1"
     } else {
       stop2("Multivariate models are not yet implemented ", 
@@ -279,7 +279,7 @@ stan_fixef <- function(fixef, center_X = TRUE, family = gaussian(),
     } else {
       sub_X_means <- ""
     }
-    if (is.ordinal(family)) {
+    if (is_ordinal(family)) {
       # temp intercepts for ordinal models are defined in stan_ordinal
       out$genD <- "  vector[ncat - 1] b_Intercept;  // thresholds \n" 
       out$genC <- paste0("  b_Intercept = temp_Intercept", sub_X_means, "; \n")
@@ -725,9 +725,9 @@ stan_eta_transform <- function(family, link, llh_adj = FALSE) {
   # in the transformed parameters block
   # Args:
   #   llh_adj: is the model censored or truncated?
-  !(!is.skewed(family) && link == "identity" ||
-    is.ordinal(family) || is.categorical(family) ||
-    is.zero_inflated(family) || is.hurdle(family)) &&
+  !(!is_skewed(family) && link == "identity" ||
+    is_ordinal(family) || is_categorical(family) ||
+    is_zero_inflated(family) || is_hurdle(family)) &&
   (llh_adj || !stan_has_built_in_fun(family, link))
 }
 

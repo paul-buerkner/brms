@@ -123,7 +123,7 @@ resp_disp <- function(x) {
 #' @export
 resp_trials <- function(x) {
   # trials for binomial models
-  if (any(!is.wholenumber(x) || x < 1)) {
+  if (any(!is_wholenumber(x) || x < 1)) {
     stop2("Number of trials must be positive integers.")
   }
   x
@@ -133,7 +133,7 @@ resp_trials <- function(x) {
 #' @export
 resp_cat <- function(x) {
   # number of categories for ordinal models
-  if (length(x) != 1L || !is.wholenumber(x) || x < 1) {
+  if (length(x) != 1L || !is_wholenumber(x) || x < 1) {
     stop2("Number of categories must be a positive integer.")
   }
   x
@@ -177,7 +177,7 @@ resp_cens <- function(x, y2 = NULL) {
     x
   }
   cens <- unname(ulapply(x, prepare_cens))
-  if (!all(is.wholenumber(cens) & cens %in% -1:2)) {
+  if (!all(is_wholenumber(cens) & cens %in% -1:2)) {
     stop2("Invalid censoring data. Accepted values are ", 
           "'left', 'none', 'right', and 'interval'\n",
           "(abbreviations are allowed) or -1, 0, 1, and 2.\n",
@@ -471,7 +471,7 @@ amend_formula <- function(formula, data = NULL, family = gaussian(),
   if (fnew != ". ~ .") {
     out$formula <- update.formula(out$formula, formula(fnew))
   }
-  if (is.categorical(family) && is.null(attr(formula, "response"))) {
+  if (is_categorical(family) && is.null(attr(formula, "response"))) {
     respform <- extract_effects(out)$respform
     model_response <- model.response(model.frame(respform, data = data))
     response <- levels(factor(model_response))

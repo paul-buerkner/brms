@@ -8,12 +8,12 @@ stan_llh <- function(family, effects = list(), data = NULL,
   stopifnot(is(family, "family"))
   link <- family$link
   family <- family$family
-  is_categorical <- is.categorical(family)
-  is_ordinal <- is.ordinal(family)
-  is_hurdle <- is.hurdle(family)
-  is_zero_inflated <- is.zero_inflated(family)
-  is_forked <- is.forked(family)
-  is_mv <- is.linear(family) && length(effects$response) > 1L
+  is_categorical <- is_categorical(family)
+  is_ordinal <- is_ordinal(family)
+  is_hurdle <- is_hurdle(family)
+  is_zero_inflated <- is_zero_inflated(family)
+  is_forked <- is_forked(family)
+  is_mv <- is_linear(family) && length(effects$response) > 1L
   
   has_sigma <- has_sigma(family, effects, autocor)
   has_se <- is.formula(effects$se)
@@ -44,7 +44,7 @@ stan_llh <- function(family, effects = list(), data = NULL,
   auxpars <- names(effects$auxpars)
   reqn <- llh_adj || is_categorical || is_ordinal || 
           is_hurdle || is_zero_inflated || 
-          is.exgaussian(family) || is.wiener(family) ||
+          is_exgaussian(family) || is_wiener(family) ||
           has_sigma && has_se && !use_cov(autocor) ||
           any(c("phi", "kappa") %in% auxpars)
   n <- ifelse(reqn, "[n]", "")
@@ -203,7 +203,7 @@ stan_llh_sigma <- function(family, effects = NULL, autocor = cor_arma()) {
   has_disp <- is.formula(effects$disp)
   llh_adj <- stan_llh_adj(effects)
   auxpars <- names(effects$auxpars)
-  nsigma <- (llh_adj || has_se || is.exgaussian(family)) && 
+  nsigma <- (llh_adj || has_se || is_exgaussian(family)) && 
             (has_disp || "sigma" %in% auxpars)
   nsigma <- if (nsigma) "[n]"
   nse <- if (llh_adj) "[n]"
@@ -228,7 +228,7 @@ stan_llh_shape <- function(family, effects = NULL) {
   has_disp <- is.formula(effects$disp)
   llh_adj <- stan_llh_adj(effects)
   auxpars <- names(effects$auxpars)
-  nshape <- (llh_adj || is.forked(family)) &&
+  nshape <- (llh_adj || is_forked(family)) &&
             (has_disp || "shape" %in% auxpars)
   nshape <- if (nshape) "[n]"
   paste0(if (has_disp) "disp_", "shape", nshape)
@@ -253,7 +253,7 @@ stan_autocor <- function(autocor, effects = list(), family = gaussian(),
   #   prior: a data.frame containing user defined priors 
   #          as returned by check_prior
   stopifnot(is(family, "family"))
-  is_linear <- is.linear(family)
+  is_linear <- is_linear(family)
   resp <- effects$response
   is_mv <- is_linear && length(resp) > 1L
   link <- stan_link(family$link)
@@ -423,7 +423,7 @@ stan_mv <- function(family, response, prior = brmsprior()) {
   out <- list()
   nresp <- length(response)
   if (nresp > 1L) {
-    if (is.linear(family)) {
+    if (is_linear(family)) {
       out$data <- "  #include 'data_mv.stan' \n"
       out$par <- paste0(
         "  // parameters for multivariate linear models \n",
@@ -452,7 +452,7 @@ stan_mv <- function(family, response, prior = brmsprior()) {
         "  Rescor = multiply_lower_tri_self_transpose(Lrescor); \n",
         collapse(ulapply(2:nresp, function(i) lapply(1:(i-1), function(j)
           paste0("  rescor[",(i-1)*(i-2)/2+j,"] = Rescor[",j,", ",i,"]; \n")))))
-    } else if (!is.categorical(family)) {
+    } else if (!is_categorical(family)) {
       stop2("Multivariate models are not yet implemented ", 
             "for family '", family$family, "'.")
     }
@@ -475,7 +475,7 @@ stan_ordinal <- function(family, prior = brmsprior(),
   #   A vector of strings containing the ordinal effects in stan language
   stopifnot(is(family, "family"))
   out <- list()
-  if (is.ordinal(family)) {
+  if (is_ordinal(family)) {
     # define Stan code similar for all ordinal models
     out$data <- "  int ncat;  // number of categories \n"
     th <- function(k, fam = family) {
@@ -983,7 +983,7 @@ stan_has_built_in_fun <- function(family, link) {
   # indicates if a family-link combination has a build in 
   # function in Stan (such as binomial_logit)
   (family %in% c("binomial", "bernoulli", "cumulative", "categorical")
-   && link == "logit" || is.count(family) && link == "log")
+   && link == "logit" || is_count(family) && link == "log")
 }
 
 stan_needs_kronecker <- function(ranef, names_cov_ranef) {

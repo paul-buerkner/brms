@@ -50,7 +50,7 @@ restructure <- function(x, rstr_summary = FALSE) {
                                   family = family(x), partial = x$partial,
                                   nonlinear = x$nonlinear))
     x$nonlinear <- x$partial <- NULL
-    x$formula[["old_mv"]] <- is.old_mv(x)
+    x$formula[["old_mv"]] <- is_old_mv(x)
     ee <- extract_effects(formula(x), family = family(x))
     x$ranef <- tidy_ranef(ee, model.frame(x))
     if ("prior_frame" %in% class(x$prior)) {
@@ -654,9 +654,9 @@ prepare_family <- function(x) {
   # prepare for calling family specific log_lik / predict functions
   family <- family(x)
   nresp <- length(extract_effects(x$formula, family = family)$response)
-  if (is.old_lognormal(family, nresp = nresp, version = x$version)) {
+  if (is_old_lognormal(family, nresp = nresp, version = x$version)) {
     family <- lognormal()
-  } else if (is.linear(family) && nresp > 1L) {
+  } else if (is_linear(family) && nresp > 1L) {
     family$family <- paste0(family$family, "_mv")
   } else if (use_cov(x$autocor) && sum(x$autocor$p, x$autocor$q) > 0) {
     family$family <- paste0(family$family, "_cov")
@@ -949,7 +949,7 @@ make_point_frame <- function(mf, effects, conditions, groups, family) {
   }
   if (!is.numeric(points$resp__)) {
     points$resp__ <- as.numeric(as.factor(points$resp__))
-    if (is.binary(family)) {
+    if (is_binary(family)) {
       points$resp__ <- points$resp__ - 1
     }
   }

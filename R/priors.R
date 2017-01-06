@@ -518,7 +518,7 @@ get_prior <- function(formula, data, family = gaussian(),
   # ensure that RE and residual SDs only have a weakly informative prior by default
   Y <- unname(model.response(data))
   prior_scale <- 10
-  if (is.lognormal(family)) link <- "log"
+  if (is_lognormal(family)) link <- "log"
   if (link %in% c("identity", "log", "inverse", "sqrt", "1/mu^2")) {
     if (link %in% c("log", "inverse", "1/mu^2")) {
       Y <- ifelse(Y == 0, Y + 0.1, Y)  # avoid Inf in link(Y)
@@ -591,11 +591,11 @@ get_prior <- function(formula, data, family = gaussian(),
   prior <- rbind(prior, prior_ranef)
   
   # prior for the delta parameter for equidistant thresholds
-  if (is.ordinal(family) && threshold == "equidistant") {
+  if (is_ordinal(family) && threshold == "equidistant") {
     prior <- rbind(prior, brmsprior(class = "delta"))
   }
   # priors for auxiliary parameters of multivariate models
-  if (is.linear(family) && length(ee$response) > 1L) {
+  if (is_linear(family) && length(ee$response) > 1L) {
     sigma_coef <- c("", ee$response)
     sigma_prior <- c(def_scale_prior, rep("", length(ee$response)))
     sigma_prior <- brmsprior(class = "sigma", coef = sigma_coef,

@@ -37,7 +37,7 @@ extract_effects <- function(x, family = NA, autocor = NULL,
       stop2("Group-level terms cannot be specified ", 
             "in the non-linear formula itself.")
     }
-    if (is.ordinal(family) || is.categorical(family)) {
+    if (is_ordinal(family) || is_categorical(family)) {
       stop2("Non-linear formulas are not yet allowed for this family.")
     }
     y$fixed <- formula(tfixed)
@@ -77,13 +77,13 @@ extract_effects <- function(x, family = NA, autocor = NULL,
                       collapse = "+")
     tfixed <- paste(sub("~.*", "", tfixed), "~", fe_terms)
     y$fixed <- formula(tfixed)
-    if (is.ordinal(family)) {
+    if (is_ordinal(family)) {
       y$fixed <- update.formula(y$fixed, . ~ . + 1)
     }
     if (has_rsv_intercept(y$fixed)) {
       attr(y$fixed, "rsv_intercept") <- TRUE
     }
-    if (is.forked(family)) {
+    if (is_forked(family)) {
       attr(y$fixed, "forked") <- TRUE
     }
   }
@@ -129,7 +129,7 @@ extract_effects <- function(x, family = NA, autocor = NULL,
     } else { 
       y$response <- extract_response(y$respform, keep_dot_usc = old_mv)
     }
-    if (is.linear(family) && length(y$response) > 1L) {
+    if (is_linear(family) && length(y$response) > 1L) {
       if (length(rmNULL(y[c("se", "cens", "trunc")]))) {
         stop2("Multivariate models currently allow only ",
               "addition argument 'weights'.")
@@ -141,9 +141,9 @@ extract_effects <- function(x, family = NA, autocor = NULL,
     }
     if (old_mv) {
       # multivariate ('trait') syntax is deprecated as of brms 1.0.0
-      if (is.hurdle(family)) {
+      if (is_hurdle(family)) {
         y$response <- c(y$response, paste0("hu_", y$response))
-      } else if (is.zero_inflated(family)) {
+      } else if (is_zero_inflated(family)) {
         y$response <- c(y$response, paste0("zi_", y$response))
       }
       if (length(y$response) > 1L) {
@@ -205,7 +205,7 @@ extract_add <- function(formula, family = NA, check_response = TRUE) {
         stop2("Truncation is not yet possible in censored or weighted models.")
       }
     }
-    if (is.wiener(family) && check_response && !is.formula(x$dec)) {
+    if (is_wiener(family) && check_response && !is.formula(x$dec)) {
       stop2("Addition argument 'dec' is required for family 'wiener'.")
     }
   }
@@ -1071,9 +1071,9 @@ rsv_vars <- function(family, nresp = 1L, rsv_intercept = FALSE,
   #   nresp: number of response variables
   #   rsv_intercept: is the reserved variable "intercept" used?
   if (isTRUE(old_mv)) {
-    if (is.linear(family) && nresp > 1L || is.categorical(family)) {
+    if (is_linear(family) && nresp > 1L || is_categorical(family)) {
       rsv <- c("trait", "response")
-    } else if (is.forked(family)) {
+    } else if (is_forked(family)) {
       rsv <- c("trait", "response", "main", "spec")
     } else {
       rsv <- NULL

@@ -91,7 +91,7 @@ rmulti_normal <- function(n, mu, Sigma, check = FALSE) {
   #   n samples of multi_normal distribution of dimension length(mu) 
   p <- length(mu)
   if (check) {
-    if (!(is.wholenumber(n) && n > 0)) {
+    if (!(is_wholenumber(n) && n > 0)) {
       stop("n must be a positive integer")
     }
     if (!all(dim(Sigma) == c(p, p))) {

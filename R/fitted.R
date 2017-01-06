@@ -32,17 +32,17 @@ fitted_response <- function(draws, mu) {
       # compute untruncated weibull mean
       mu <- mu * gamma(1 + 1 / shape) 
     }
-  } else if (is.ordinal(draws$f) || is.categorical(draws$f)) {
+  } else if (is_ordinal(draws$f) || is_categorical(draws$f)) {
     disc <- get_disc(draws, ncat = data$ncat)
     mu <- disc * mu 
     mu <- fitted_catordinal(mu, ncat = data$ncat, family = draws$f)
-  } else if (is.hurdle(draws$f)) {
+  } else if (is_hurdle(draws$f)) {
     shape <- get_shape(draws$shape, data = draws$data, dim = dim)
     sigma <- get_sigma(draws$sigma, data = draws$data, dim = dim)
     hu <- get_theta(draws, par = "hu")
     mu <- fitted_hurdle(mu, hu = hu, family = draws$f,
                         shape = shape, sigma = sigma)
-  } else if (is.zero_inflated(draws$f)) {
+  } else if (is_zero_inflated(draws$f)) {
     zi <- get_theta(draws, par = "zi")
     mu <- fitted_zero_inflated(mu, zi = zi, family = draws$f)
     if (draws$f$family == "zero_inflated_binomial") {
@@ -56,9 +56,9 @@ fitted_response <- function(draws, mu) {
       trials <- matrix(trials, nrow = dim[1], ncol = dim[2], byrow = TRUE)
       mu <- mu * trials
     }
-  } else if (is.exgaussian(draws$f)) { 
+  } else if (is_exgaussian(draws$f)) { 
     mu <- ilink(mu, draws$f$link) + get_auxpar(draws$beta)
-  } else if (is.wiener(draws$f)) {
+  } else if (is_wiener(draws$f)) {
     delta <- ilink(mu, draws$f$link)
     bs <- get_auxpar(draws$bs)
     ndt <- get_auxpar(draws$ndt)

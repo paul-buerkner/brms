@@ -153,7 +153,7 @@ rename_pars <- function(x) {
                                dims = x$fit@sim$dims_oi)
   change <- c(change, change_ranef)
   
-  if (is.linear(family) && length(ee$response) > 1L) {
+  if (is_linear(family) && length(ee$response) > 1L) {
     # rename residual parameters of multivariate linear models
     corfnames <- paste0("sigma_", ee$response)
     change <- lc(change, 

@@ -562,10 +562,10 @@ valid_auxpars <- function(family, effects = list(), autocor = cor_arma()) {
          shape = has_shape(family), nu = has_nu(family), 
          phi = has_phi(family), kappa = has_kappa(family),
          beta = has_beta(family),
-         zi = is.zero_inflated(family, zi_beta = TRUE), 
-         hu = is.hurdle(family, zi_beta = FALSE),
-         bs = is.wiener(family), ndt = is.wiener(family), 
-         bias = is.wiener(family), disc = is.ordinal(family))
+         zi = is_zero_inflated(family, zi_beta = TRUE), 
+         hu = is_hurdle(family, zi_beta = FALSE),
+         bs = is_wiener(family), ndt = is_wiener(family), 
+         bias = is_wiener(family), disc = is_ordinal(family))
   names(x)[x]
 }
 
@@ -636,7 +636,7 @@ is.brmsformula <- function(x) {
   inherits(x, "brmsformula")
 }
 
-is.nonlinear <- function(x) {
+is_nonlinear <- function(x) {
   stopifnot(is.brmsfit(x))
   bf(x$formula)[["nl"]]
 }

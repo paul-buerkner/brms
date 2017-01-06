@@ -140,28 +140,28 @@ brmsfamily <- function(family, link = NULL) {
   }
   
   # check validity of link
-  if (is.linear(family) || family %in% "exgaussian") {
+  if (is_linear(family) || family %in% "exgaussian") {
     ok_links <- c("identity", "log", "inverse")
   } else if (family == "inverse.gaussian") {
     ok_links <- c("1/mu^2", "inverse", "identity", "log")
-  } else if (is.count(family)) {
+  } else if (is_count(family)) {
     ok_links <- c("log", "identity", "sqrt")
-  } else if (is.ordinal(family) || family %in% "zero_inflated_beta") {
+  } else if (is_ordinal(family) || family %in% "zero_inflated_beta") {
     ok_links <- c("logit", "probit", "probit_approx", "cloglog", "cauchit")
-  } else if (is.binary(family) || family %in% "beta") {
+  } else if (is_binary(family) || family %in% "beta") {
     ok_links <- c("logit", "probit", "probit_approx", 
                  "cloglog", "cauchit", "identity")
   } else if (family %in% c("categorical", "zero_inflated_binomial")) {
     ok_links <- c("logit")
-  } else if (is.skewed(family)) {
+  } else if (is_skewed(family)) {
     ok_links <- c("log", "identity", "inverse")
-  } else if (is.lognormal(family)) {
+  } else if (is_lognormal(family)) {
     ok_links <- c("identity", "inverse")
   } else if (family %in% c("hurdle_lognormal", "wiener")) {
     ok_links <- c("identity")
   } else if (family %in% c("von_mises")) {
     ok_links <- c("tan_half")
-  } else if (is.hurdle(family) || is.zero_inflated(family)) {
+  } else if (is_hurdle(family) || is_zero_inflated(family)) {
     # does not include zi_binomial, zi_beta, or hu_lognormal
     ok_links <- c("log")
   }
@@ -397,7 +397,7 @@ print.brmsfamily <- function(x, ...) {
   invisible(x)
 }
 
-is.linear <- function(family) {
+is_linear <- function(family) {
   # indicate if family is for a linear model
   if (is(family, "family")) {
     family <- family$family
@@ -405,7 +405,7 @@ is.linear <- function(family) {
   family %in% c("gaussian", "student", "cauchy")
 }
 
-is.binary <- function(family) {
+is_binary <- function(family) {
   # indicate if family is bernoulli or binomial
   if (is(family, "family")) {
     family <- family$family
@@ -413,7 +413,7 @@ is.binary <- function(family) {
   family %in% c("binomial", "bernoulli")
 }
 
-is.ordinal <- function(family) {
+is_ordinal <- function(family) {
   # indicate if family is for an ordinal model
   if (is(family, "family")) {
     family <- family$family
@@ -421,14 +421,14 @@ is.ordinal <- function(family) {
   family %in% c("cumulative", "cratio", "sratio", "acat") 
 }
 
-is.categorical <- function(family) {
+is_categorical <- function(family) {
   if (is(family, "family")) {
     family <- family$family
   }
   family %in% "categorical" 
 }
 
-is.skewed <- function(family) {
+is_skewed <- function(family) {
   # indicate if family is for model with postive skewed response
   if (is(family, "family")) {
     family <- family$family
@@ -436,7 +436,7 @@ is.skewed <- function(family) {
   family %in% c("gamma", "weibull", "exponential")
 }
 
-is.lognormal <- function(family) {
+is_lognormal <- function(family) {
   # indicate if family is lognormal
   if (is(family, "family")) {
     family <- family$family
@@ -444,7 +444,7 @@ is.lognormal <- function(family) {
   family %in% c("lognormal")
 }
 
-is.exgaussian <- function(family) {
+is_exgaussian <- function(family) {
   # indicate if family is exgaussian
   if (is(family, "family")) {
     family <- family$family
@@ -452,7 +452,7 @@ is.exgaussian <- function(family) {
   family %in% c("exgaussian")
 }
 
-is.wiener <- function(family) {
+is_wiener <- function(family) {
   # indicate if family is the wiener diffusion model
   if (is(family, "family")) {
     family <- family$family
@@ -460,7 +460,7 @@ is.wiener <- function(family) {
   family %in% c("wiener")
 }
 
-is.count <- function(family) {
+is_count <- function(family) {
   # indicate if family is for a count model
   if (is(family, "family")) {
     family <- family$family
@@ -468,7 +468,7 @@ is.count <- function(family) {
   family %in% c("poisson", "negbinomial", "geometric")
 }
 
-is.hurdle <- function(family, zi_beta = TRUE) {
+is_hurdle <- function(family, zi_beta = TRUE) {
   # indicate if family is for a hurdle model
   if (is(family, "family")) {
     family <- family$family
@@ -478,7 +478,7 @@ is.hurdle <- function(family, zi_beta = TRUE) {
                 "hurdle_lognormal", if (zi_beta) "zero_inflated_beta")
 }
 
-is.zero_inflated <- function(family, zi_beta = FALSE) {
+is_zero_inflated <- function(family, zi_beta = FALSE) {
   # indicate if family is for a zero inflated model
   if (is(family, "family")) {
     family <- family$family
@@ -488,7 +488,7 @@ is.zero_inflated <- function(family, zi_beta = FALSE) {
                 "zero_inflated_binomial", if (zi_beta) "zero_inflated_beta")
 }
 
-is.2PL <- function(family) {
+is_2PL <- function(family) {
   # do not remove to provide an informative error message
   # why the special 2PL implementation is not supported anymore
   if (!is(family, "brmsfamily")) {
@@ -504,16 +504,16 @@ is.2PL <- function(family) {
   out
 }
 
-is.forked <- function(family) {
+is_forked <- function(family) {
   # indicate if family has two separate model parts
-  is.hurdle(family) || is.zero_inflated(family) || is.2PL(family)
+  is_hurdle(family) || is_zero_inflated(family) || is_2PL(family)
 }
 
-is.mv <- function(family, response = NULL) {
+is_mv <- function(family, response = NULL) {
   # indicate if the model uses multiple responses
   nresp <- length(response)
-  is_mv <- nresp > 1L && is.linear(family) || is.categorical(family) || 
-           nresp == 2L && is.forked(family)
+  is_mv <- nresp > 1L && is_linear(family) || is_categorical(family) || 
+           nresp == 2L && is_forked(family)
   if (nresp > 1L && !is_mv) {
     stop2("Invalid multivariate model")
   }
@@ -525,7 +525,7 @@ use_real <- function(family) {
   if (is(family, "family")) {
     family <- family$family
   }
-  is.linear(family) || is.skewed(family) || 
+  is_linear(family) || is_skewed(family) || 
     family %in% c("lognormal", "exgaussian", "inverse.gaussian", "beta", 
                   "von_mises", "zero_inflated_beta", "hurdle_gamma", 
                   "hurdle_lognormal", "wiener")
@@ -536,8 +536,8 @@ use_int <- function(family) {
   if (is(family, "family")) {
     family <- family$family
   }
-  is.binary(family) || has_cat(family) || 
-    is.count(family) || is.zero_inflated(family) || 
+  is_binary(family) || has_cat(family) || 
+    is_count(family) || is_zero_inflated(family) || 
     family %in% c("hurdle_poisson", "hurdle_negbinomial")
 }
 
@@ -554,7 +554,7 @@ has_cat <- function(family) {
   if (is(family, "family")) {
     family <- family$family
   }
-  is.categorical(family) || is.ordinal(family)
+  is_categorical(family) || is_ordinal(family)
 }
 
 has_shape <- function(family) {
@@ -623,10 +623,10 @@ has_sigma <- function(family, effects = NULL,
   } else {
     se_only <- FALSE
   }
-  out <- (is.linear(family) || is_ln_eg) && 
+  out <- (is_linear(family) || is_ln_eg) && 
            !se_only && !is(autocor, "cov_fixed")
   if (!incmv) {
-    is_multi <- is.linear(family) && length(effects$response) > 1L
+    is_multi <- is_linear(family) && length(effects$response) > 1L
     out <- out && !is_multi
   }
   out
@@ -640,7 +640,7 @@ allows_cs <- function(family) {
   family %in% c("sratio", "cratio", "acat")
 }
 
-is.old_lognormal <- function(family, link = "identity", nresp = 1,
+is_old_lognormal <- function(family, link = "identity", nresp = 1,
                              version = utils::packageVersion("brms")) {
   # indicate transformation to lognormal models
   # Args:
@@ -655,14 +655,14 @@ is.old_lognormal <- function(family, link = "identity", nresp = 1,
     (is.null(version) || version <= "0.9.1")
 }
 
-is.old_categorical <- function(x) {
+is_old_categorical <- function(x) {
   # indicate if the model is and old categorical model
   stopifnot(is(x, "brmsfit"))
-  if (is(x$fit, "stanfit") && is.categorical(x$family)) {
+  if (is(x$fit, "stanfit") && is_categorical(x$family)) {
     if ("bp" %in% x$fit@model_pars) {
       # fitted with brms <= 0.8.0
       out <- 1L
-    } else if (is.old_mv(x)) {
+    } else if (is_old_mv(x)) {
       # fitted with brms <= 1.0.0
       out <- 2L
     } else {
@@ -674,11 +674,11 @@ is.old_categorical <- function(x) {
   out
 }
 
-is.old_mv <- function(x) {
+is_old_mv <- function(x) {
   # indicate if the model uses the old multivariate syntax 
   # from brms < 1.0.0
   stopifnot(is.brmsfit(x))
   ee <- extract_effects(formula(x), family = family(x))
   (is.null(x$version) || x$version <= "0.10.0.9000") &&
-    (is.mv(family(x), ee$response) || is.forked(family(x)))
+    (is_mv(family(x), ee$response) || is_forked(family(x)))
 }

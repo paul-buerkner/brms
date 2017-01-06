@@ -45,11 +45,11 @@ make_standata <- function(formula, data, family = "gaussian",
                             nonlinear = nonlinear)
   old_mv <- isTRUE(formula[["old_mv"]])
   autocor <- check_autocor(autocor)
-  is_linear <- is.linear(family)
-  is_ordinal <- is.ordinal(family)
-  is_count <- is.count(family)
-  is_forked <- is.forked(family)
-  is_categorical <- is.categorical(family)
+  is_linear <- is_linear(family)
+  is_ordinal <- is_ordinal(family)
+  is_count <- is_count(family)
+  is_forked <- is_forked(family)
+  is_categorical <- is_categorical(family)
   ee <- extract_effects(formula, family = family, autocor = autocor)
   check_prior_content(prior, family = family, warn = FALSE)
   na_action <- if (is_newdata) na.pass else na.omit
@@ -86,7 +86,7 @@ make_standata <- function(formula, data, family = "gaussian",
     # transform and check response variable for different families
     regex_pos_int <- "(^|_)(binomial|poisson|negbinomial|geometric)$"
     if (grepl(regex_pos_int, family$family)) {
-      if (!all(is.wholenumber(standata$Y)) || min(standata$Y) < 0) {
+      if (!all(is_wholenumber(standata$Y)) || min(standata$Y) < 0) {
         stop2("Family '", family$family, "' expects response variable ", 
               "of non-negative integers.")
       }
@@ -116,7 +116,7 @@ make_standata <- function(formula, data, family = "gaussian",
     } else if (is_ordinal) {
       if (is.ordered(standata$Y)) {
         standata$Y <- as.numeric(standata$Y)
-      } else if (all(is.wholenumber(standata$Y))) {
+      } else if (all(is_wholenumber(standata$Y))) {
         standata$Y <- standata$Y - min(standata$Y) + 1
       } else {
         stop2("Family '", family$family, "' expects either integers or ",
@@ -125,12 +125,12 @@ make_standata <- function(formula, data, family = "gaussian",
       if (length(unique(standata$Y)) < 2L) {
         stop2("At least two response categories are required.")
       }
-    } else if (is.skewed(family) || is.lognormal(family) || is.wiener(family)) {
+    } else if (is_skewed(family) || is_lognormal(family) || is_wiener(family)) {
       if (min(standata$Y) <= 0) {
         stop2("Family '", family$family, "' requires response variable ", 
               "to be positive.")
       }
-    } else if (is.zero_inflated(family) || is.hurdle(family)) {
+    } else if (is_zero_inflated(family) || is_hurdle(family)) {
       if (min(standata$Y) < 0) {
         stop2("Family '", family$family, "' requires response variable ", 
               "to be non-negative.")
@@ -174,7 +174,7 @@ make_standata <- function(formula, data, family = "gaussian",
         standata <- c(standata, data_eff)
         standata[[paste0("offset_", r)]] <- model.offset(data)
       }
-      if (is.linear(family)) {
+      if (is_linear(family)) {
         standata$nresp <- length(resp) 
         standata$nrescor <- length(resp) * (length(resp) - 1) / 2
         colnames(standata$Y) <- resp

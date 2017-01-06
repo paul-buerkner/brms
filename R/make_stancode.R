@@ -45,9 +45,9 @@ make_stancode <- function(formula, data, family = gaussian(),
   data <- update_data(data, family = family, effects = ee)
   
   # flags to indicate the family type
-  is_categorical <- is.categorical(family)
-  is_mv <- is.linear(family) && length(ee$response) > 1L
-  is_forked <- is.forked(family)
+  is_categorical <- is_categorical(family)
+  is_mv <- is_linear(family) && length(ee$response) > 1L
+  is_forked <- is_forked(family)
   has_cens <- has_cens(ee$cens, data = data)
   bounds <- get_bounds(ee$trunc, data = data)
   
