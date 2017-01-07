@@ -56,9 +56,9 @@ restructure <- function(x, rstr_summary = FALSE) {
     if ("prior_frame" %in% class(x$prior)) {
       class(x$prior) <- c("brmsprior", "data.frame") 
     }
-    if (is(x$autocor, "cor_fixed")) {
-      # deprecated as of brms 1.0.0
-      class(x$autocor) <- "cov_fixed"
+    if (is(x$autocor, "cov_fixed")) {
+      # deprecated as of brms 1.4.0
+      class(x$autocor) <- "cor_fixed"
     }
     if (x$version <= "0.10.0.9000") {
       if (length(ee$nlpars)) {
@@ -660,7 +660,7 @@ prepare_family <- function(x) {
     family$family <- paste0(family$family, "_mv")
   } else if (use_cov(x$autocor) && sum(x$autocor$p, x$autocor$q) > 0) {
     family$family <- paste0(family$family, "_cov")
-  } else if (is(x$autocor, "cov_fixed")) {
+  } else if (is(x$autocor, "cor_fixed")) {
     family$family <- paste0(family$family, "_fixed")
   }
   family
