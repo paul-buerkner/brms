@@ -429,6 +429,15 @@ use_alias <- function(arg, alias = NULL, default = NULL,
   arg
 }
 
+warn_deprecated <- function(new, old = as.character(sys.call(sys.parent()))[1]) {
+  msg <- paste0("Function '", old, "' is deprecated.")
+  if (!missing(new)) {
+    msg <- paste0(msg, " Please use '", new, "' instead.")
+  }
+  warning2(msg)
+  invisible(NULL)
+}
+
 expect_match2 <- function(object, regexp, ..., all = TRUE) {
   # just testthat::expect_match with fixed = TRUE
   testthat::expect_match(object, regexp, fixed = TRUE, ..., all = all)

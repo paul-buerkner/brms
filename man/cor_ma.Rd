@@ -8,13 +8,14 @@
 cor_ma(formula = ~1, q = 1, cov = FALSE)
 }
 \arguments{
-\item{formula}{A one sided formula of the form ~ t, or ~ t | g, 
-specifying a time covariate t and, optionally, a grouping factor g. 
+\item{formula}{A one sided formula of the form \code{~ t}, or \code{~ t | g}, 
+specifying a time covariate \code{t} and, optionally, 
+a grouping factor \code{g}. 
 A covariate for this correlation structure must be integer valued. 
 When a grouping factor is present in \code{formula}, the correlation structure 
 is assumed to apply only to observations within the same grouping level; 
 observations with different grouping levels are assumed to be uncorrelated. 
-Defaults to ~ 1, which corresponds to using the order of the observations 
+Defaults to \code{~ 1}, which corresponds to using the order of the observations 
 in the data as a covariate, and no groups.}
 
 \item{q}{A non-negative integer specifying the moving average (MA) order of the ARMA structure. 
@@ -31,7 +32,8 @@ of order higher than 1 but cannot handle user defined standard errors.}
 An object of class \code{cor_arma} containing solely moving average terms.
 }
 \description{
-This function is a constructor for the \code{cor_arma} class, allowing for moving average terms only.
+This function is a constructor for the \code{cor_arma} class, 
+allowing for moving average terms only.
 }
 \examples{
 cor_ma(~visit|patient, q = 2)

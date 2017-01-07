@@ -331,7 +331,7 @@ test_that("make_standata returns fixed residual covariance matrices", {
   data <- data.frame(y = 1:5)
   V <- diag(5)
   expect_equal(make_standata(y~1, data, autocor = SW(cor_fixed(V)))$V, V)
-  expect_error(make_standata(y~1, data, autocor = cov_fixed(diag(2))),
+  expect_error(make_standata(y~1, data, autocor = cor_fixed(diag(2))),
                "'V' must have the same number of rows as 'data'")
 })
 

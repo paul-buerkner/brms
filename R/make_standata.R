@@ -366,7 +366,7 @@ make_standata <- function(formula, data, family = "gaussian",
       standata$Karr <- Karr
     }
   } 
-  if (is(autocor, "cor_fixed")) {
+  if (is.cor_fixed(autocor)) {
     V <- autocor$V
     rmd_rows <- attr(data, "na.action")
     if (!is.null(rmd_rows)) {
@@ -380,7 +380,7 @@ make_standata <- function(formula, data, family = "gaussian",
     }
     standata$V <- V
   }
-  if (is(autocor, "cor_bsts")) {
+  if (is.cor_bsts(autocor)) {
     if (length(ee$response) > 1L) {
       stop2("BSTS structure not yet implemented for multivariate models.")
     }
@@ -401,7 +401,6 @@ make_standata <- function(formula, data, family = "gaussian",
 #' @export
 brmdata <- function(...)  {
   # deprecated alias of make_standata
-  warning2("Function 'brmdata' is deprecated. ",
-           "Please use 'make_standata' instead.")
+  warn_deprecated("make_standata")
   make_standata(...)
 }

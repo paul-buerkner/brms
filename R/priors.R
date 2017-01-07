@@ -1093,6 +1093,15 @@ empty_brmsprior <- function() {
             nlpar = character(0), bound = character(0))
 }
 
+#' Checks if argument is a \code{brmsprior} object
+#' 
+#' @param x An \R object
+#' 
+#' @export
+is.brmsprior <- function(x) {
+  inherits(x, "brmsprior")
+}
+
 #' Print method for \code{brmsprior} objects
 #' 
 #' @param x An object of class \code{brmsprior}.

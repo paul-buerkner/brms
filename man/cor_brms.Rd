@@ -20,6 +20,7 @@ Avaiblable correlation structures
                   autoregressive and moving average components}
   \item{cor_arr}{autoregressive process of the response (instead of residuals) of arbitrary order} 
   \item{cor_ma}{moving average process of arbitrary order} 
+  \item{cor_bsts}{Bayesian structural time series}
   \item{cor_fixed}{fixed user-defined covariance structure}
 }
 }
@@ -27,5 +28,5 @@ Avaiblable correlation structures
 \seealso{
 \code{\link[brms:cor_ar]{cor_ar}, \link[brms:cor_arma]{cor_arma}, 
       \link[brms:cor_arr]{cor_arr}, \link[brms:cor_ma]{cor_ma},
-      \link[brms:cor_fixed]{cor_fixed}}
+      \link[brms:cor_bsts]{cor_bsts}, \link[brms:cor_fixed]{cor_fixed}}
 }
