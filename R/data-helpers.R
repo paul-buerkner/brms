@@ -42,7 +42,7 @@ update_data <- function(data, family, effects,
     missing_vars <- setdiff(all.vars(effects$allvars), names(data))
     if (length(missing_vars)) {
       stop2("The following variables are missing in 'data':\n",
-            paste(missing_vars, collapse = ", "))
+            collapse_comma(missing_vars))
     }
     data <- model.frame(effects$allvars, data, na.action = na.pass,
                         drop.unused.levels = drop.unused.levels)
@@ -248,11 +248,12 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   ee <- extract_effects(new_formula, family = family(fit),
                         autocor = if (incl_autocor) fit$autocor,
                         resp_rhs_all = FALSE)
-  resp_only_vars <- setdiff(all.vars(ee$respform), 
-                            all.vars(rhs(ee$allvars)))
+  resp_only_vars <- setdiff(all.vars(ee$respform), all.vars(rhs(ee$allvars)))
+  resp_only_vars <- c(resp_only_vars, all.vars(ee[["dec"]]))  # fixes #162
   missing_resp <- setdiff(resp_only_vars, names(newdata))
   if (check_response && length(missing_resp)) {
-    stop2("Response variables must be specified in 'newdata' for this model.")
+    stop2("Response variables must be specified in 'newdata'.\n",
+          "Missing variables: ", collapse_comma(missing_resp))
   } else {
     for (resp in missing_resp) {
       # add irrelevant response variables but make sure they pass all checks
