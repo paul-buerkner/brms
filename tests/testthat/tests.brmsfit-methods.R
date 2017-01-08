@@ -394,7 +394,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_true(is.numeric(waic2[["waic"]]))
   waic_pointwise <- SW(WAIC(fit2, pointwise = TRUE))
   expect_equal(waic2, waic_pointwise)
-  expect_warning(WAIC(fit1, fit2), "Model comparisons are most likely invalid")
+  expect_warning(WAIC(fit1, fit2), "Model comparisons are likely invalid")
   waic4 <- SW(WAIC(fit4))
   expect_true(is.numeric(waic4[["waic"]]))
   

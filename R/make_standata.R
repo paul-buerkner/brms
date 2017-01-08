@@ -347,8 +347,7 @@ make_standata <- function(formula, data, family = "gaussian",
       standata$Kma <- Kma
       standata$Karma <- max(Kar, Kma)
       if (use_cov(autocor)) {
-        # Modeling ARMA effects using a special covariance matrix
-        # requires additional data
+        # data for covariance matrices of ARMA effects 
         standata$N_tg <- length(unique(standata$tg))
         standata$begin_tg <- as.array(with(standata, 
           ulapply(unique(tgroup), match, tgroup)))

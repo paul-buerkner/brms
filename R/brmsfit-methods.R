@@ -1586,21 +1586,17 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     warning2(round(pct_invalid * 100), "% of all predicted values ", 
              "were invalid. Increasing argument 'ntrys' may help.")
   }
+
   # reorder predicted responses in case of multivariate models
   # as they are sorted after units first not after traits
   if (grepl("_mv$", draws$f$family)) {
     nresp <- draws$data$nresp
-    reorder <- ulapply(seq_len(nresp), seq, to = N*nresp, by = nresp)
+    reorder <- ulapply(seq_len(nresp), seq, to = N * nresp, by = nresp)
     out <- out[, reorder, drop = FALSE]
-    colnames(out) <- seq_len(ncol(out)) 
   }
-  # reorder predicted responses to be in the initial user defined order
-  # currently only relevant for autocorrelation models 
   old_order <- attr(draws$data, "old_order")
-  if (!is.null(old_order) && !sort) {
-    out <- out[, old_order, drop = FALSE]  
-    colnames(out) <- NULL
-  }
+  out <- reorder_obs(out, old_order, sort = sort)
+  colnames(out) <- NULL
   # transform predicted response samples before summarizing them 
   is_catordinal <- is_ordinal(draws$f) || is_categorical(draws$f)
   if (!is.null(transform) && !is_catordinal) {
@@ -1699,7 +1695,7 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   mu <- get_eta(i = NULL, draws = draws)
   if (grepl("_mv$", draws$f$family) && !is.null(draws[["mv"]])) {
     # collapse over responses in linear MV models
-    dim(mu) <- c(dim(mu)[1], prod(dim(mu)[2:3])) 
+    dim(mu) <- c(dim(mu)[1], prod(dim(mu)[2:3]))
   }
   for (ap in intersect(auxpars(), names(draws))) {
     if (is(draws[[ap]], "list")) {
@@ -1710,13 +1706,9 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     # see fitted.R
     mu <- fitted_response(draws = draws, mu = mu)
   }
-  # reorder fitted values to be in the initial user defined order
-  # currently only relevant for autocorrelation models 
   old_order <- attr(draws$data, "old_order")
-  if (!is.null(old_order) && !sort) {
-    mu <- mu[, old_order, drop = FALSE]  
-    colnames(mu) <- NULL
-  }
+  out <- reorder_obs(mu, old_order, sort = sort)
+  colnames(out) <- NULL
   if (summary) {
     mu <- get_summary(mu, probs = probs, robust = robust)
     rownames(mu) <- seq_len(nrow(mu))
@@ -2178,13 +2170,10 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   } else {
     draws$eta <- get_eta(i = NULL, draws = draws)
     loglik <- do.call(cbind, lapply(seq_len(N), loglik_fun, draws = draws))
-    # reorder loglik values to be in the initial user defined order
-    # currently only relevant for autocorrelation models
-    # that are not using covariance formulation
     old_order <- attr(draws$data, "old_order")
-    if (!is.null(old_order) && !isTRUE(object$autocor$cov)) {
-      loglik <- loglik[, old_order[seq_len(N)]]  
-    }
+    # do not loglik reorder for ARMA covariance models
+    sort <- use_cov(object$autocor)
+    loglik <- reorder_obs(loglik, old_order, sort = sort)
     colnames(loglik) <- NULL
   }
   loglik

@@ -669,6 +669,34 @@ prepare_family <- function(x) {
   family
 }
 
+reorder_obs <- function(eta, old_order = NULL, sort = FALSE) {
+  # reorder observations to be in the initial user-defined order
+  # currently only relevant for autocorrelation models 
+  # Args:
+  #   eta: Nsamples x Nobs matrix
+  #   old_order: optional vector to retrieve the initial data order
+  #   sort: keep the new order as defined by the time-series?
+  # Returns:
+  #   eta with possibly reordered columns
+  if (!is.null(old_order) && !sort) {
+    N <- length(old_order)
+    if (ncol(eta) %% N != 0) {
+      # for compatibility with MV models fitted before brms 1.0.0
+      stopifnot(N %% ncol(eta) == 0)
+      old_order <- old_order[seq_len(ncol(eta))]
+    }
+    if (N < ncol(eta)) {
+      # should occur for multivariate models only
+      nresp <- ncol(eta) / N
+      old_order <- rep(old_order, nresp)
+      old_order <- old_order + rep(0:(nresp - 1) * N, each = N)
+    }
+    eta <- eta[, old_order, drop = FALSE]  
+    colnames(eta) <- NULL
+  }
+  eta
+}
+
 fixef_pars <- function() {
   # regex to extract population-level coefficients
   "^b(|cs|mo|me|m)_"
@@ -869,7 +897,7 @@ match_response <- function(models) {
       out <- TRUE
     } else {
       out <- FALSE
-      warning2("Model comparisons are most likely invalid as the response ", 
+      warning2("Model comparisons are likely invalid as the response ", 
                "parts of at least two models do not match.")
     }
   }
