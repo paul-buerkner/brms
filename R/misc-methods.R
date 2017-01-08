@@ -176,21 +176,27 @@ print.ic <- function(x, digits = 2, ...) {
 
 #' @export
 print.iclist <- function(x, digits = 2, ...) {
-  # print the output of LOO(x1, x2, ...) and WAIC(x1, x2, ...)
-  ic <- names(x[[1]])[3]
-  mat <- matrix(0, nrow = length(x), ncol = 2, 
-                dimnames = list(names(x), c(toupper(ic), "SE")))
-  for (i in 1:length(x)) { 
-    mat[i, ] <- c(x[[i]][[ic]], x[[i]][[paste0("se_",ic)]])
-  }
-  if (is.matrix(attr(x, "compare"))) {
-    # models were compared using the compare_ic function
-    mat <- rbind(mat, attr(x, "compare"))
-    weights <- c(attr(x, "weights"), rep(NA, nrow(attr(x, "compare")))) 
-    if (length(na.omit(weights))) {
-      # no need to show the weights column if all weights are NA
-      mat <- cbind(mat, Weights = weights)
+  # print the output of LOO and WAIC with multiple models
+  m <- x
+  m$ic_diffs__ <- NULL
+  if (length(m)) {
+    ic <- names(m[[1]])[3]
+    mat <- matrix(0, nrow = length(m), ncol = 2)
+    dimnames(mat) <- list(names(m), c(toupper(ic), "SE"))
+    for (i in seq_along(m)) { 
+      mat[i, ] <- c(m[[i]][[ic]], m[[i]][[paste0("se_", ic)]])
     }
+  } else {
+    mat <- NULL
+  }
+  ic_diffs <- x$ic_diffs__
+  if (is.matrix(attr(x, "compare"))) {
+    # deprecated as of brms 1.4.0
+    ic_diffs <- attr(x, "compare")
+  }
+  if (is.matrix(ic_diffs)) {
+    # models were compared using the compare_ic function
+    mat <- rbind(mat, ic_diffs)
   }
   print(round(mat, digits = digits), na.print = "")
   invisible(x)

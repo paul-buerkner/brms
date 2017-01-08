@@ -19,8 +19,9 @@ LOO(x, ...)
 
 \item{...}{Optionally more fitted model objects.}
 
-\item{compare}{A flag indicating if the WAICs 
-of the models should be compared to each other.}
+\item{compare}{A flag indicating if the information criteria
+of the models should be compared to each other
+via \code{\link[brms:compare_ic]{compare_ic}}.}
 
 \item{newdata}{An optional data.frame for which to evaluate predictions.
 If \code{NULL} (default), the orginal data of the model is used.}
@@ -77,12 +78,12 @@ When comparing models fitted to the same data,
 }}
 \examples{
 \dontrun{
-# model with fixed effects only
+# model with population-level effects only
 fit1 <- brm(rating ~ treat + period + carry,
             data = inhaler, family = "gaussian")
 LOO(fit1)
 
-# model with an additional random intercept for subjects
+# model with an additional varying intercept for subjects
 fit2 <- brm(rating ~ treat + period + carry + (1|subject),
             data = inhaler, family = "gaussian")
 # compare both models

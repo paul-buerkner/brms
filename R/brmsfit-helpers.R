@@ -728,10 +728,48 @@ compute_ic <- function(x, ic = c("waic", "loo"), ll_args = list(), ...) {
   }
   IC <- do.call(eval(parse(text = paste0("loo::", ic))), args)
   class(IC) <- c("ic", "loo")
-  return(IC)
+  IC
 }
 
-compare_ic <- function(x, ic = c("waic", "loo")) {
+#' Compare Information Criteria of Different Models
+#'
+#' Compare information criteria of different models fitted
+#' with \code{\link[brms:WAIC]{WAIC}} or \code{\link[brms:LOO]{LOO}}.
+#' 
+#' @param ... At least two objects returned by 
+#'   \code{\link[brms:WAIC]{WAIC}} or \code{\link[brms:LOO]{LOO}}.
+#' @param x A list of at least two objects returned by
+#'   \code{\link[brms:WAIC]{WAIC}} or \code{\link[brms:LOO]{LOO}}.
+#'   This argument can be used as an alternative to specifying the 
+#'   models in \code{...}.
+#'   
+#' @return An object of class \code{iclist}.
+#' 
+#' @details For more details see \code{\link[loo:compare]{compare}}.
+#' 
+#' @seealso 
+#'   \code{\link[brms:WAIC]{WAIC}}, 
+#'   \code{\link[brms:LOO]{LOO}},
+#'   \code{\link[loo:compare]{compare}}
+#'   
+#' @examples 
+#' \dontrun{
+#' # model with population-level effects only
+#' fit1 <- brm(rating ~ treat + period + carry,
+#'             data = inhaler, family = "gaussian")
+#' w1 <- WAIC(fit1)
+#' 
+#' # model with an additional varying intercept for subjects
+#' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
+#'             data = inhaler, family = "gaussian")
+#' w2 <- WAIC(fit2)
+#' 
+#' # compare both models
+#' compare_ic(w1, w2)
+#' }
+#' 
+#' @export
+compare_ic <- function(..., x = NULL) {
   # compare information criteria of different models
   # Args:
   #   x: A list containing loo objects
@@ -739,7 +777,22 @@ compare_ic <- function(x, ic = c("waic", "loo")) {
   # Returns:
   #   A matrix with differences in the ICs 
   #   as well as corresponding standard errors
-  ic <- match.arg(ic)
+  if (!(is.null(x) || is.list(x))) {
+    stop2("Argument 'x' should be a list.")
+  }
+  x$ic_diffs__ <- NULL
+  x <- c(list(...), x)
+  if (!all(sapply(x, inherits, "ic"))) {
+    stop2("All inputs should have class 'ic'.")
+  }
+  if (length(x) < 2L) {
+    stop2("Expecting at least two objects.")
+  }
+  ics <- unname(sapply(x, function(y) names(y)[3]))
+  if (!all(sapply(ics, identical, ics[1]))) {
+    stop2("All inputs should be from the the same criterion.")
+  }
+  names(x) <- ulapply(x, "[[", "model_name")
   n_models <- length(x)
   ic_diffs <- matrix(0, nrow = n_models * (n_models - 1) / 2, ncol = 2)
   rnames <- rep("", nrow(ic_diffs))
@@ -754,26 +807,10 @@ compare_ic <- function(x, ic = c("waic", "loo")) {
     }
   }
   rownames(ic_diffs) <- rnames
-  colnames(ic_diffs) <- c(toupper(ic), "SE")
-  # compare all models at once to obtain weights
-  all_compare <- do.call(loo::compare, x)
-  if (n_models == 2L) {
-    # weights are named differently when comparing only 2 models
-    weights <- unname(all_compare[c("weight1", "weight2")])
-  } else {
-    # weights must be resorted as loo::compare sorts models after weights
-    get_input_names <- function(...) {
-      # mimic the way loo::compare defines model names
-      as.character(match.call())[-1L]
-    }
-    if ("weights" %in% colnames(all_compare)) {
-      weights <- unname(all_compare[do.call(get_input_names, x), "weights"])
-    } else {
-      # weights have been temporarily removed in loo 0.1.5
-      weights <- rep(NA, n_models)
-    }
-  }
-  nlist(ic_diffs, weights)
+  colnames(ic_diffs) <- c(toupper(ics[1]), "SE")
+  x$ic_diffs__ <- ic_diffs
+  class(x) <- c("iclist", "list")
+  x
 }
 
 set_pointwise <- function(x, newdata = NULL, subset = NULL, thres = 1e+08) {

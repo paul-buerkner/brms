@@ -107,14 +107,13 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(loo1, SW(loo(fit1, cores = 1)))
   
   loo_compare1 <- SW(LOO(fit1, fit1, cores = 1))
-  expect_equal(length(loo_compare1), 2)
-  expect_equal(dim(attr(loo_compare1, "compare")), c(1, 2))
+  expect_equal(length(loo_compare1), 3)
+  expect_equal(dim(loo_compare1$ic_diffs__), c(1, 2))
   expect_output(print(loo_compare1), "fit1 - fit1")
   
   loo_compare2 <- SW(LOO(fit1, fit1, fit1, cores = 1))
-  expect_equal(length(loo_compare2), 3)
-  expect_equal(dim(attr(loo_compare2, "compare")), c(3, 2))
-  # expect_output(print(loo_compare3), "Weights")
+  expect_equal(length(loo_compare2), 4)
+  expect_equal(dim(loo_compare2$ic_diffs__), c(3, 2))
   
   loo2 <- SW(LOO(fit2, cores = 1))
   expect_true(is.numeric(loo2[["looic"]]))
@@ -389,8 +388,8 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(waic1, SW(waic(fit1)))
   
   waic_compare <- SW(WAIC(fit1, fit1))
-  expect_equal(length(waic_compare), 2)
-  expect_equal(dim(attr(waic_compare, "compare")), c(1,2))
+  expect_equal(length(waic_compare), 3)
+  expect_equal(dim(waic_compare$ic_diffs__), c(1, 2))
   waic2 <- SW(WAIC(fit2))
   expect_true(is.numeric(waic2[["waic"]]))
   waic_pointwise <- SW(WAIC(fit2, pointwise = TRUE))

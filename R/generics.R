@@ -327,8 +327,9 @@ ngrps <- function(object, ...) {
 #' 
 #' @param x A fitted model object typically of class \code{brmsfit}. 
 #' @param ... Optionally more fitted model objects.
-#' @param compare A flag indicating if the WAICs 
-#'  of the models should be compared to each other.
+#' @param compare A flag indicating if the information criteria
+#'  of the models should be compared to each other
+#'  via \code{\link[brms:compare_ic]{compare_ic}}.
 #' @param pointwise A flag indicating whether to compute the full
 #'  log-likelihood matrix at once or separately for each observation. 
 #'  The latter approach is usually considerably slower but 
@@ -348,12 +349,12 @@ ngrps <- function(object, ...) {
 #' 
 #' @examples
 #' \dontrun{
-#' # model with fixed effects only
+#' # model with population-level effects only
 #' fit1 <- brm(rating ~ treat + period + carry,
 #'             data = inhaler, family = "gaussian")
 #' WAIC(fit1)
 #' 
-#' # model with an additional random intercept for subjects
+#' # model with an additional varying intercept for subjects
 #' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
 #'             data = inhaler, family = "gaussian")
 #' # compare both models
@@ -402,12 +403,12 @@ WAIC <- function(x, ...) {
 #' 
 #' @examples
 #' \dontrun{
-#' # model with fixed effects only
+#' # model with population-level effects only
 #' fit1 <- brm(rating ~ treat + period + carry,
 #'             data = inhaler, family = "gaussian")
 #' LOO(fit1)
 #' 
-#' # model with an additional random intercept for subjects
+#' # model with an additional varying intercept for subjects
 #' fit2 <- brm(rating ~ treat + period + carry + (1|subject),
 #'             data = inhaler, family = "gaussian")
 #' # compare both models

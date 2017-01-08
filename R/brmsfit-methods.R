@@ -2043,8 +2043,8 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
                          re_formula = NULL, allow_new_levels = FALSE, 
                          subset = NULL, nsamples = NULL, pointwise = NULL) {
   models <- list(x, ...)
-  names <- deparse(substitute(x))
-  names <- c(names, sapply(substitute(list(...))[-1], deparse))
+  mnames <- deparse(substitute(x))
+  mnames <- c(mnames, sapply(substitute(list(...))[-1], deparse))
   if (is.null(subset) && !is.null(nsamples)) {
     subset <- sample(nsamples(x), nsamples)
   }
@@ -2052,18 +2052,22 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
     pointwise <- set_pointwise(x, subset = subset, newdata = newdata)
   }
   ll_args = nlist(newdata, re_formula, allow_new_levels, subset, pointwise)
+  args <- nlist(ic = "waic", ll_args)
   if (length(models) > 1L) {
-    args <- nlist(X = models, FUN = compute_ic, ic = "waic", ll_args)
-    out <- setNames(do.call(lapply, args), names)
-    class(out) <- c("iclist", "list")
+    out <- named_list(mnames)
+    for (i in seq_along(models)) {
+      args[["x"]] <- models[[i]]
+      out[[i]] <- do.call(compute_ic, args)
+      out[[i]]$model_name <- mnames[i]
+    }
     if (compare) {
       match_response(models)
-      comp <- compare_ic(out, ic = "waic")
-      attr(out, "compare") <- comp$ic_diffs
-      attr(out, "weights") <- comp$weights
+      out <- compare_ic(x = out)
     }
-  } else { 
-    out <- do.call(compute_ic, nlist(x, ic = "waic", ll_args))
+    class(out) <- c("iclist", "list")
+  } else {
+    out <- do.call(compute_ic, c(nlist(x), args))
+    out$model_name <- mnames
   }
   out
 }
@@ -2086,8 +2090,8 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
                         subset = NULL, nsamples = NULL, pointwise = NULL,
                         cores = 1, wcp = 0.2, wtrunc = 3/4) {
   models <- list(x, ...)
-  names <- deparse(substitute(x))
-  names <- c(names, sapply(substitute(list(...))[-1], deparse))
+  mnames <- deparse(substitute(x))
+  mnames <- c(mnames, sapply(substitute(list(...))[-1], deparse))
   if (is.null(subset) && !is.null(nsamples)) {
     subset <- sample(nsamples(x), nsamples)
   }
@@ -2095,20 +2099,22 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
     pointwise <- set_pointwise(x, subset = subset, newdata = newdata)
   }
   ll_args = nlist(newdata, re_formula, allow_new_levels, subset, pointwise)
+  args <- nlist(ic = "loo", ll_args, wcp, wtrunc, cores)
   if (length(models) > 1L) {
-    args <- nlist(X = models, FUN = compute_ic, ic = "loo", 
-                  ll_args, wcp, wtrunc, cores)
-    out <- setNames(do.call(lapply, args), names)
-    class(out) <- c("iclist", "list")
+    out <- named_list(mnames)
+    for (i in seq_along(models)) {
+      args[["x"]] <- models[[i]]
+      out[[i]] <- do.call(compute_ic, args)
+      out[[i]]$model_name <- mnames[i]
+    }
     if (compare) {
       match_response(models)
-      comp <- compare_ic(out, ic = "loo")
-      attr(out, "compare") <- comp$ic_diffs
-      attr(out, "weights") <- comp$weights
+      out <- compare_ic(x = out)
     }
+    class(out) <- c("iclist", "list")
   } else {
-    out <- do.call(compute_ic, nlist(x, ic = "loo", ll_args, 
-                                     wcp, wtrunc, cores))
+    out <- do.call(compute_ic, c(nlist(x), args))
+    out$model_name <- mnames
   }
   out
 }
