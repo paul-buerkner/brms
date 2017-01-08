@@ -846,12 +846,13 @@ match_response <- function(models) {
   if (length(models) <= 1L) {
     out <- TRUE  
   } else {
+    add_funs <- lsp("brms", what = "exports", pattern = "^resp_")
+    match_vars <- c("Y", sub("^resp_", "", add_funs))
     .match_fun <- function(x, y) {
       # checks if all relevant parts of the response are the same 
       # Args:
       #   x, y: named lists as returned by standata
-      to_match <- c("Y", "se", "weights", "cens", "trunc", "disp")
-      all(ulapply(to_match, function(v) {
+      all(ulapply(match_vars, function(v) {
         a <- if (is.null(attr(x, "old_order"))) as.vector(x[[v]])
              else as.vector(x[[v]])[attr(x, "old_order")]
         b <- if (is.null(attr(y, "old_order"))) as.vector(y[[v]])
@@ -859,8 +860,8 @@ match_response <- function(models) {
         is_equal(a, b)
       }))
     }
-    standatas <- lapply(models, standata, control = list(save_order = TRUE))
-    matches <- ulapply(standatas[-1], .match_fun, y = standatas[[1]]) 
+    sdatas <- lapply(models, standata, control = list(save_order = TRUE))
+    matches <- ulapply(sdatas[-1], .match_fun, y = sdatas[[1]]) 
     if (all(matches)) {
       out <- TRUE
     } else {
