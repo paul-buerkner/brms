@@ -13,3 +13,4 @@
 ^brm\.stan$
 ^\.travis\.yml$
 ^tests/testthat/Rplots\.pdf$
+^tests/local/

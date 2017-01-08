@@ -4,3 +4,4 @@
 brm.stan
 tests/testthat/Rplots.pdf
 cran-comments.md
+tests/local/
