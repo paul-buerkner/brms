@@ -219,7 +219,7 @@ make_standata <- function(formula, data, family = "gaussian",
     if (length(standata$trials) == 1L) {
       standata$trials <- rep(standata$trials, nrow(data))
     }
-    if (max(standata$trials) == 1L) {
+    if (max(standata$trials) == 1L && !not4stan) {
       message("Only 2 levels detected so that family 'bernoulli' ",
               "might be a more efficient choice.")
     }
