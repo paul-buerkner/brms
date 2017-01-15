@@ -379,7 +379,10 @@ models for all parameters of the assumed response distribution.
   otherwise leading to convergence issues. A good example is the 
   \code{bias} parameter in wiener diffusion models, which is fixed 
   to \code{0.5} in many application. To achieve this, simply 
-  write \code{bias = 0.5}.
+  write \code{bias = 0.5}. Other applications are the Cauchy 
+  distribution as a special case of the Student-t distribution with 
+  \code{nu = 1}, or the geometric distribution as a special case of
+  the negative binomial distribution with \code{shape = 1}.
   A special case is the parameter \code{disc} ('discrimination') 
   in ordinal models. It is fixed to 1 by default and not estimated, 
   but may be modeled as any other auxiliary parameter if desired

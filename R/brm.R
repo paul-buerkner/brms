@@ -445,6 +445,10 @@ check_brm_input <- function(x) {
     warning2("Inverse gaussian models require carefully chosen ", 
              "prior distributions to ensure convergence of the chains.")
   }
+  if (family$family == "geometric") {
+    warning2("Family 'geometric' is deprecated. Use 'negbinomial' ", 
+             "instead and fix the 'shape' parameter to 1.")
+  }
   if (family$link == "sqrt") {
     warning2(family$family, " model with sqrt link may not be ", 
              "uniquely identified")

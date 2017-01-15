@@ -23,6 +23,7 @@
       \item Change structure of \code{brmsformula}
       objects to be more reliable and easier to extend.
       \item Deprecate argument \code{nonlinear}.
+      \item Deprecate family \code{geometric}.
       \item Rename \code{cov_fixed} to \code{cor_fixed}.
       \item Make handling of addition terms more transparent
       by exporting and documenting related functions.
