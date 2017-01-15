@@ -7,6 +7,8 @@
     \itemize{
       \item Specify non-linear models in a (hopefully) more
       intuitive way using \code{brmsformula}.
+      \item Fix auxiliary parameters to certain values
+      through \code{brmsformula}.
       \item Introduce new function \code{prior_} allowing
       to specify priors using one-sided formulas or \code{quote}.
       \item Pass priors to \pkg{Stan} directly without
@@ -21,14 +23,29 @@
       \item Change structure of \code{brmsformula}
       objects to be more reliable and easier to extend.
       \item Deprecate argument \code{nonlinear}.
+      \item Rename \code{cov_fixed} to \code{cor_fixed}.
       \item Make handling of addition terms more transparent
       by exporting and documenting related functions.
       \item Remove many units tests of internal functions
       and add tests of user-facing functions instead.
+      \item Import some generics from \pkg{nlme} instead
+      of \pkg{lme4} to remove dependency on the latter one.
+      \item Do not apply \code{structure} to \code{NULL}
+      anymore to get rid of warnings in \R-devel.
     }
   }
   \subsection{BUG FIXES}{
     \itemize{
+      \item Make sure that the data of models with
+      only a single observation are compatible with 
+      the generated \pkg{Stan} code.
+      \item Handle argument \code{algorithm} 
+      correctly in \code{update.brmsfit}.
+      \item Fix a bug sometimes causing an error in
+      \code{marginal_effects} when using family
+      \code{wiener} thanks to Andrew Ellis.
+      \item Fix minor problems related to the prediction
+      of autocorrelated models.
       \item Fix a few minor bugs related to the backwards 
       compatibility of multivariate and related models 
       fitted with \pkg{brms} < 1.0.0.
