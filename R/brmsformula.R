@@ -353,16 +353,18 @@
 #'   parameter, for instance \code{sigma ~ x + s(z) + (1+x|g)}.
 #'   
 #'   Alternatively, one may fix auxiliary parameters to certain values.
-#'   This is useful in particular when models become too complicated
-#'   otherwise leading to convergence issues. A good example is the 
-#'   \code{bias} parameter in wiener diffusion models, which is fixed 
-#'   to \code{0.5} in many application. To achieve this, simply 
-#'   write \code{bias = 0.5}. Other applications are the Cauchy 
+#'   However, this is usually \emph{only} useful when models become too 
+#'   complicated and otherwise have convergence issues. 
+#'   We thus suggest to be generally careful when making use of this option. 
+#'   The \code{bias} parameter in drift-diffusion models, being fixed to 
+#'   \code{0.5} in many applications, is a good example 
+#'   where it might be useful. To achieve this, simply 
+#'   write \code{bias = 0.5}. Other possible applications are the Cauchy 
 #'   distribution as a special case of the Student-t distribution with 
 #'   \code{nu = 1}, or the geometric distribution as a special case of
 #'   the negative binomial distribution with \code{shape = 1}.
-#'   A special case is the parameter \code{disc} ('discrimination') 
-#'   in ordinal models. It is fixed to 1 by default and not estimated, 
+#'   Furthermore, the parameter \code{disc} ('discrimination') in ordinal 
+#'   models is fixed to \code{1} by default and not estimated,
 #'   but may be modeled as any other auxiliary parameter if desired
 #'   (see examples). For reasons of identification, \code{'disc'}
 #'   can only be positive, which is achieved by applying the log-link.
@@ -411,9 +413,6 @@
 #' # also predicting the zero-inflation part
 #' bf(y ~ x * z + (1+x|ID1|g), zi ~ x + (1|ID1|g))
 #' 
-#' #' fix zero-inflation parameter
-#' bf(y ~ x, zi = 0.5)
-#' 
 #' # specify a predictor as monotonic
 #' bf(y ~ mo(x) + more_predictors)
 #' 
@@ -430,7 +429,10 @@
 #' 
 #' # specify predictors on all parameters of the wiener diffusion model
 #' # the main formula models the drift rate 'delta'
-#' bf(rt ~ x, bs ~ x, ndt ~ x, bias ~ x)
+#' bf(rt | dec(decision) ~ x, bs ~ x, ndt ~ x, bias ~ x)
+#' 
+#' # fix the bias parameter to 0.5
+#' bf(rt | dec(decision) ~ x, bias = 0.5)
 #' 
 #' @export
 brmsformula <- function(formula, ..., flist = NULL, 
