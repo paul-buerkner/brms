@@ -52,8 +52,7 @@ stan_llh <- function(family, effects = list(), data = NULL,
   p <- named_list(auxpars())
   p$sigma <- stan_llh_sigma(family, effects, autocor)
   p$shape <- stan_llh_shape(family, effects)
-  p$disc <- ifelse("disc" %in% auxpars, "disc[n]", "1")
-  for (ap in setdiff(auxpars(), c("sigma", "shape", "disc"))) {
+  for (ap in setdiff(auxpars(), c("sigma", "shape"))) {
     p[[ap]] <- paste0(ap, if (reqn && ap %in% auxpars) "[n]")
   }
   .logit <- ifelse(any(c("zi", "hu") %in% auxpars), "_logit", "")

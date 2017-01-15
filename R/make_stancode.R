@@ -81,9 +81,9 @@ make_stancode <- function(formula, data, family = gaussian(),
   text_autocor <- stan_autocor(autocor, effects = ee, family = family,
                                prior = prior)
   text_mv <- stan_mv(family, response = ee$response, prior = prior)
+  disc <- "disc" %in% names(ee$auxpars) || isTRUE(ee$fauxpars$disc != 1)
   text_ordinal <- stan_ordinal(family, prior = prior, cs = has_cs(ee), 
-                               disc = "disc" %in% names(ee$auxpars),
-                               threshold = threshold)
+                               disc = disc, threshold = threshold)
   text_families <- stan_families(family)
   text_se <- stan_se(is.formula(ee$se))
   text_cens <- stan_cens(has_cens, family = family)

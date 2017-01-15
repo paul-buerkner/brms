@@ -377,7 +377,7 @@ test_that("Stan code of ordinal models is correct", {
   expect_match2(scode, "matrix[N, Kcs] Xcs;")
   expect_match2(scode, "matrix[Kcs, ncat - 1] bcs;")
   expect_match2(scode, "etacs = Xcs * bcs;")
-  expect_match2(scode, "sratio(eta[n], etacs[n], temp_Intercept, 1);")
+  expect_match2(scode, "sratio(eta[n], etacs[n], temp_Intercept, disc);")
   
   scode <- make_stancode(y ~ x1 + cse(x2) + (cse(1)|g), dat, family = acat())
   expect_match2(scode, "real acat_lpmf(int y")
@@ -390,7 +390,7 @@ test_that("Stan code of ordinal models is correct", {
   expect_match2(scode, 
     paste("etacs[n, 3] = etacs[n, 3] + r_1_3[J_1[n]] * Z_1_3[n]", 
           "+ r_1_6[J_1[n]] * Z_1_6[n];"))
-  expect_match2(scode, "Y[n] ~ acat(eta[n], etacs[n], temp_Intercept, 1);")
+  expect_match2(scode, "Y[n] ~ acat(eta[n], etacs[n], temp_Intercept, disc);")
 })
 
 test_that("ordinal disc parameters appear in the Stan code", {

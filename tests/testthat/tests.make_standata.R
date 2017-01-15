@@ -45,33 +45,24 @@ test_that(paste("make_standata returns correct data names",
                 "for addition and cs variables"), {
   dat <- data.frame(y = 1:10, w = 1:10, t = 1:10, x = rep(0,10), 
                           c = sample(-1:1,10,TRUE))
-  expect_equal(names(make_standata(y | se(w) ~ x, family = "gaussian", 
-                                   data = dat)), 
+  expect_equal(names(make_standata(y | se(w) ~ x, dat, gaussian())), 
                c("N", "Y", "K", "X", "se", "prior_only"))
-  expect_equal(names(make_standata(y | weights(w) ~ x, family = "gaussian", 
-                                   data = dat)), 
+  expect_equal(names(make_standata(y | weights(w) ~ x, dat, "gaussian")), 
                c("N", "Y", "K", "X", "weights", "prior_only"))
-  expect_equal(names(make_standata(y | cens(c) ~ x, family = "student", 
-                                   data = dat)), 
+  expect_equal(names(make_standata(y | cens(c) ~ x, dat, "student")), 
                c("N", "Y", "K", "X", "cens", "prior_only"))
-  expect_equal(names(make_standata(y | trials(t) ~ x, family = "binomial", 
-                                   data = dat)), 
+  expect_equal(names(make_standata(y | trials(t) ~ x, dat, "binomial")), 
                c("N", "Y", "K", "X", "trials", "prior_only"))
-  expect_equal(names(make_standata(y | trials(10) ~ x, family = "binomial", 
-                                   data = dat)), 
+  expect_equal(names(make_standata(y | trials(10) ~ x, dat, "binomial")), 
                c("N", "Y", "K", "X", "trials", "prior_only"))
-  expect_equal(names(make_standata(y | cat(11) ~ x, family = "acat", 
-                                   data = dat)), 
-               c("N", "Y", "K", "X", "ncat", "prior_only"))
-  expect_equal(names(make_standata(y | cat(10) ~ x, family = "cumulative", 
-                                   data = dat)), 
-               c("N", "Y", "K", "X", "ncat", "prior_only"))
-  standata <- make_standata(y | trunc(0,20) ~ x, family = "gaussian", 
-                            data = dat)
-  expect_true(all(standata$lb == 0) && all(standata$ub == 20))
-  standata <- make_standata(y | trunc(ub = 21:30) ~ x, family = "gaussian", 
-                            data = dat)
-  expect_true(all(all(standata$ub == 21:30)))
+  expect_equal(names(make_standata(y | cat(11) ~ x, dat, "acat")),
+               c("N", "Y", "K", "X", "disc", "ncat", "prior_only"))
+  expect_equal(names(make_standata(y | cat(10) ~ x, dat, cumulative())), 
+               c("N", "Y", "K", "X", "disc", "ncat", "prior_only"))
+  sdata <- make_standata(y | trunc(0,20) ~ x, dat, "gaussian")
+  expect_true(all(sdata$lb == 0) && all(sdata$ub == 20))
+  sdata <- make_standata(y | trunc(ub = 21:30) ~ x, dat)
+  expect_true(all(all(sdata$ub == 21:30)))
 })
 
 test_that(paste("make_standata accepts correct response variables", 
@@ -459,7 +450,8 @@ test_that("make_standata handles calls to the 'poly' function", {
 
 test_that("make_standata allows fixed auxiliary parameters", {
   dat <- list(y = 1:10)
-  expect_equal(make_standata(bf(y ~ 1, nu = 1), dat, student())$nu, 1)
+  expect_equal(make_standata(bf(y ~ 1, nu = 3), dat, student())$nu, 3)
+  expect_equal(make_standata(y ~ 1, dat, acat())$disc, 1)
   expect_error(make_standata(bf(y ~ 1, bias = 0.5), dat),
                "Invalid auxiliary parameters: 'bias'")
 })

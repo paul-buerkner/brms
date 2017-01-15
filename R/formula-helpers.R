@@ -471,6 +471,12 @@ amend_formula <- function(formula, data = NULL, family = gaussian(),
   if (fnew != ". ~ .") {
     out$formula <- update.formula(out$formula, formula(fnew))
   }
+  if (is_ordinal(family)) {
+    # fix discrimination to 1 by default
+    if (!"disc" %in% c(names(pforms(out)), names(pfix(out)))) {
+      out <- bf(out, disc = 1)
+    }
+  }
   if (is_categorical(family) && is.null(attr(formula, "response"))) {
     respform <- extract_effects(out)$respform
     model_response <- model.response(model.frame(respform, data = data))

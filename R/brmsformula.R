@@ -408,7 +408,7 @@
 #' # also predicting the zero-inflation part
 #' bf(y ~ x * z + (1+x|ID1|g), zi ~ x + (1|ID1|g))
 #' 
-#' #' fix zero-inflation to a certain value
+#' #' fix zero-inflation parameter
 #' bf(y ~ x, zi = 0.5)
 #' 
 #' # specify a predictor as monotonic
