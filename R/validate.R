@@ -154,6 +154,7 @@ extract_effects <- function(x, family = NA, autocor = NULL,
       attr(y$formula, "old_mv") <- TRUE
     }
   }
+  class(y) <- "brmseffects"
   y
 }
 
@@ -421,6 +422,10 @@ extract_nonlinear <- function(x, model = ~1) {
     out <- list() 
   }
   out
+}
+
+is.brmseffects <- function(x) {
+  inherits(x, "brmseffects")
 }
 
 avoid_auxpars <- function(names, effects) {
