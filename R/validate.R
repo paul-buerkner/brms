@@ -104,6 +104,13 @@ extract_effects <- function(x, family = NA, autocor = NULL,
     y$auxpars[[ap]] <- extract_effects(rhs(pforms[[ap]]), 
                                        check_response = FALSE)
   }
+  # fixed auxiliary parameters
+  pfix <- pfix(x)
+  inv_fauxpars <- setdiff(names(pfix), valid_auxpars(family, y))
+  if (length(inv_fauxpars)) {
+    stop2("Invalid auxiliary parameters: ", collapse_comma(inv_fauxpars))
+  }
+  y$fauxpars <- pfix
   
   # make a formula containing all required variables
   lhs_vars <- if (resp_rhs_all) all.vars(lhs(y$fixed))

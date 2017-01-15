@@ -197,6 +197,9 @@ make_standata <- function(formula, data, family = "gaussian",
     data_aux_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
     standata <- c(standata, data_aux_eff)
   }
+  for (ap in names(ee$fauxpars)) {
+    standata[[ap]] <- ee$fauxpars[[ap]]
+  }
   # data for grouping factors separated after group-ID
   data_group <- data_group(ranef, data, cov_ranef = cov_ranef)
   standata <- c(standata, data_group)

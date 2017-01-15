@@ -720,3 +720,8 @@ test_that("Group syntax | and || is handled correctly,", {
   expect_match2(scode, "r_2_1 = r_2[, 1];")
   expect_match2(scode, "r_2 = (diag_pre_multiply(sd_2, L_2) * z_2)';")
 })
+
+test_that("fixing auxiliary parameters is possible", {
+  scode <- make_stancode(bf(y ~ 1, sigma = 0.5), data = list(y = rnorm(10)))
+  expect_match(scode, "data \\{[^\\}]*real<lower=0> sigma;")
+})

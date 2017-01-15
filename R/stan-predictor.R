@@ -191,7 +191,7 @@ stan_auxpars <- function(effects, data, family = gaussian(),
   # don't supply the family argument to avoid applying link functions
   args <- nlist(data, ranef, center_X = FALSE, eta = "")
   for (ap in valid_auxpars) {
-    if (!is.null(effects$auxpars[[ap]])) {
+    if (is.brmseffects(effects$auxpars[[ap]])) {
       ap_ilink <- ilink_auxpars(ap, stan = TRUE)
       ap_prior <- prior[prior$nlpar == ap, ]
       ap_args <- list(effects = effects$auxpars[[ap]], 
@@ -203,9 +203,11 @@ stan_auxpars <- function(effects, data, family = gaussian(),
       }
       out[[ap]] <- do.call(stan_effects, c(ap_args, args))
       out[[ap]]$modelC3 <- paste0(out[[ap]]$modelC3, ap_ilink)
+    } else if (is.numeric(effects$fauxpars[[ap]])) {
+      out[[ap]] <- list(data = default_defs[ap]) 
     } else {
       out[[ap]] <- list(par = default_defs[ap],
-        prior = stan_prior(class = ap, prior = prior))
+                        prior = stan_prior(class = ap, prior = prior))
     }
   }
   collapse_lists(out)

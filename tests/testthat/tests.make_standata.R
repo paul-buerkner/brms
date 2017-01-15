@@ -456,3 +456,11 @@ test_that("make_standata handles calls to the 'poly' function", {
   expect_equal(colnames(make_standata(y ~ 1 + poly(x, 3), dat)$X),
                c("Intercept", "polyx31", "polyx32", "polyx33"))
 })
+
+test_that("make_standata allows fixed auxiliary parameters", {
+  dat <- list(y = 1:10)
+  expect_equal(make_standata(bf(y ~ 1, nu = 1), dat, student())$nu, 1)
+  expect_error(make_standata(bf(y ~ 1, bias = 0.5), dat),
+               "Invalid auxiliary parameters: 'bias'")
+})
+

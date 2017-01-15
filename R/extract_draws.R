@@ -26,10 +26,12 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   valid_auxpars <- valid_auxpars(family(x), effects = ee, 
                                  autocor = x$autocor)
   for (ap in valid_auxpars) {
-    if (!is.null(ee$auxpars[[ap]])) {
+    if (is.brmseffects(ee$auxpars[[ap]])) {
       more_args <- list(rhs_formula = ee$auxpars[[ap]]$formula,
                         nlpar = ap, ilink = ilink_auxpars(ap))
       draws[[ap]] <- do.call(.extract_draws, c(args, more_args))
+    } else if (is.numeric(ee$fauxpars[[ap]])) {
+      draws[[ap]] <- ee$fauxpars[[ap]]
     } else {
       regex <- paste0("^", ap, "($|_)")
       draws[[ap]] <- do.call(as.matrix, c(am_args, pars = regex))

@@ -616,10 +616,6 @@ get_se <- function(data, i = NULL, dim = NULL) {
   # extract user-defined standard errors
   # Args: see get_auxpar
   se <- data[["se"]]
-  if (is.null(se)) {
-    # for backwards compatibility with brms <= 0.5.0
-    se <- data[["sigma"]]
-  }
   if (!is.null(se)) {
     if (!is.null(i)) {
       se <- se[i]
@@ -646,7 +642,12 @@ mult_disp <- function(x, data, i = NULL, dim = NULL) {
         disp <- matrix(disp, nrow = dim[1], ncol = dim[2], byrow = TRUE)
         x <- x * disp
       } else {
-        x <- x %*% matrix(data$disp, nrow = 1) 
+        disp <- matrix(data$disp, nrow = 1) 
+        if (length(x) == 1L) {
+          x <- x * disp
+        } else {
+          x <- x %*% disp 
+        }
       }
     }
   }

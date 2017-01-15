@@ -352,8 +352,14 @@
 #'   The syntax closely resembles that of a non-linear 
 #'   parameter, for instance \code{sigma ~ x + s(z) + (1+x|g)}.
 #'   
+#'   Alternatively, one may fix auxiliary parameters to certain values.
+#'   This is useful in particular when models become too complicated
+#'   otherwise leading to convergence issues. A good example is the 
+#'   \code{bias} parameter in wiener diffusion models, which is fixed 
+#'   to \code{0.5} in many application. To achieve this, simply 
+#'   write \code{bias = 0.5}.
 #'   A special case is the parameter \code{disc} ('discrimination') 
-#'   in ordinal models. It is usually fixed to 1 and not estimated, 
+#'   in ordinal models. It is fixed to 1 by default and not estimated, 
 #'   but may be modeled as any other auxiliary parameter if desired
 #'   (see examples). For reasons of identification, \code{'disc'}
 #'   can only be positive, which is achieved by applying the log-link.
@@ -401,6 +407,9 @@
 #' # define a zero-inflated model 
 #' # also predicting the zero-inflation part
 #' bf(y ~ x * z + (1+x|ID1|g), zi ~ x + (1|ID1|g))
+#' 
+#' #' fix zero-inflation to a certain value
+#' bf(y ~ x, zi = 0.5)
 #' 
 #' # specify a predictor as monotonic
 #' bf(y ~ mo(x) + more_predictors)
@@ -461,6 +470,9 @@ brmsformula <- function(formula, ..., flist = NULL,
     dupl_pars <- collapse_comma(dupl_pars)
     stop2("Duplicated specification of parameters ", dupl_pars)
   }
+  is_num <- ulapply(forms, is.numeric)
+  fix <- forms[is_num]
+  forms[names(fix)] <- NULL
   if (!isTRUE(nl)) {
     inv_names <- setdiff(names(forms), auxpars())
     if (length(inv_names)) {
@@ -469,8 +481,8 @@ brmsformula <- function(formula, ..., flist = NULL,
             "\nSet nl = TRUE if you want to specify non-linear models.")
     }
   }
-  # add attributes to formula
   out$pforms[names(forms)] <- forms
+  out$pfix[names(fix)] <- fix
   if (!is.null(nl)) {
     nl <- as.logical(nl)[1]
     if (!nl %in% c(TRUE, FALSE)) {
@@ -503,19 +515,29 @@ prepare_auxformula <- function(formula, par = NULL, rsv_pars = NULL) {
   #        the parameter name will be inferred from the formula
   #   rsv_pars: optional character vector of reserved parameter names
   stopifnot(length(par) <= 1L)
-  formula <- as.formula(formula)
-  if (!is.null(lhs(formula))) {
-    resp_pars <- all.vars(formula[[2]])
-    out <- named_list(resp_pars, list(formula))
-    for (i in seq_along(out)) {
-      out[[i]][[2]] <- eval2(paste("quote(", resp_pars[i], ")"))
+  if (is.numeric(formula)) {
+    if (length(formula) != 1L) {
+      stop2("Expecting a single value when fixing auxiliary parameters.")
     }
+    out <- named_list(par, formula)
   } else {
-    if (!isTRUE(nzchar(par))) {
-      stop2("Additional formulas must be named.")
+    formula <- as.formula(formula)
+    if (!is.null(attr(terms(formula), "offset"))) {
+      stop2("Offsets in additional formulas are currently not allowed.")
     }
-    formula <- formula(paste(par, formula2str(formula)))
-    out <- named_list(par, list(formula))
+    if (!is.null(lhs(formula))) {
+      resp_pars <- all.vars(formula[[2]])
+      out <- named_list(resp_pars, list(formula))
+      for (i in seq_along(out)) {
+        out[[i]][[2]] <- eval2(paste("quote(", resp_pars[i], ")"))
+      }
+    } else {
+      if (!isTRUE(nzchar(par))) {
+        stop2("Additional formulas must be named.")
+      }
+      formula <- formula(paste(par, formula2str(formula)))
+      out <- named_list(par, list(formula))
+    }
   }
   pars <- names(out)
   if (any(ulapply(c(".", "_"), grepl, x = pars, fixed = TRUE))) {
@@ -525,9 +547,6 @@ prepare_auxformula <- function(formula, par = NULL, rsv_pars = NULL) {
   if (length(inv_pars)) {
     inv_pars <- paste("'", inv_pars, "'", collapse = ", ")
     stop2("Parameter names ", inv_pars, " are reserved for this model.")
-  }
-  if (!is.null(attr(terms(formula), "offset"))) {
-    stop2("Offsets in additional formulas are currently not allowed.")
   }
   out
 }
@@ -574,6 +593,11 @@ pforms <- function(x, ...) {
   bf(x, ...)[["pforms"]]
 }
 
+pfix <- function(x, ...) {
+  # extract fixed values of additional parameters
+  bf(x, ...)[["pfix"]]
+}
+
 #' @export
 update.brmsformula <- function(object, formula., 
                                mode = c("update", "replace", "keep"), 
@@ -616,13 +640,18 @@ update.brmsformula <- function(object, formula.,
 }
 
 #' @export
-print.brmsformula <- function(x, wsp = 0, ...) {
+print.brmsformula <- function(x, wsp = 0, digits = 2, ...) {
   cat(formula2str(x$formula, space = "trim"), "\n")
+  wsp <- collapse(rep(" ", wsp))
   pforms <- pforms(x)
   if (length(pforms)) {
     pforms <- ulapply(pforms, formula2str, space = "trim")
-    wsp <- collapse(rep(" ", wsp))
     cat(collapse(wsp, pforms, "\n"))
+  }
+  pfix <- pfix(x)
+  if (length(pfix)) {
+    pfix <- paste0(names(pfix), " = ", round(unlist(pfix), digits))
+    cat(collapse(wsp, pfix, "\n"))
   }
   invisible(x)
 }
