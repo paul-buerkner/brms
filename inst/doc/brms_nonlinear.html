@@ -12,7 +12,7 @@
 
 <meta name="author" content="Paul Bürkner" />
 
-<meta name="date" content="2016-12-29" />
+<meta name="date" content="2017-01-15" />
 
 <title>Estimating Non-Linear Models with brms</title>
 
@@ -70,7 +70,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 
 <h1 class="title toc-ignore">Estimating Non-Linear Models with brms</h1>
 <h4 class="author"><em>Paul Bürkner</em></h4>
-<h4 class="date"><em>2016-12-29</em></h4>
+<h4 class="date"><em>2017-01-15</em></h4>
 
 
 <div id="TOC">
@@ -130,7 +130,7 @@ fit1 &lt;-<span class="st"> </span><span class="kw">brm</span>(<span class="kw">
 <h2>A Real-World Non-Linear model</h2>
 <p>On his blog, Markus Gesmann predicts the growth of cumulative insurance loss payments over time, originated from different origin years (see <a href="http://www.magesblog.com/2015/11/loss-developments-via-growth-curves-and.html" class="uri">http://www.magesblog.com/2015/11/loss-developments-via-growth-curves-and.html</a>). We will use a slightly simplified version of his model for demonstration purposes here. It looks as follows:</p>
 <p><span class="math display">\[cum_{AY, dev} \sim N(\mu_{AY, dev}, \sigma)\]</span> <span class="math display">\[\mu_{AY, dev} = ult_{AY} \left(1 - \exp\left(- \left( \frac{dev}{\theta} \right)^\omega \right) \right)\]</span></p>
-<p>The cumulative insurance payments <span class="math inline">\(cum\)</span> will grow over time, and we model this dependency using the variable <span class="math inline">\(dev\)</span>. Further, <span class="math inline">\(ult_{AY}\)</span> is the (to be estimated) ultimate loss of accient each year. It constitutes a non-linear parameter in our framework along with the parameters <span class="math inline">\(\theta\)</span> and <span class="math inline">\(\omega\)</span>, which are responsible for the growth of the cumulative loss and are assumed to be the same across years. We load the data</p>
+<p>The cumulative insurance payments <span class="math inline">\(cum\)</span> will grow over time, and we model this dependency using the variable <span class="math inline">\(dev\)</span>. Further, <span class="math inline">\(ult_{AY}\)</span> is the (to be estimated) ultimate loss of accident each year. It constitutes a non-linear parameter in our framework along with the parameters <span class="math inline">\(\theta\)</span> and <span class="math inline">\(\omega\)</span>, which are responsible for the growth of the cumulative loss and are assumed to be the same across years. We load the data</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">url &lt;-<span class="st"> &quot;https://raw.githubusercontent.com/mages/diesunddas/master/Data/ClarkTriangle.csv&quot;</span>
 loss &lt;-<span class="st"> </span><span class="kw">read.csv</span>(url)
 <span class="kw">head</span>(loss)</code></pre></div>

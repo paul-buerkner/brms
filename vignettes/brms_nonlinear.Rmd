@@ -101,7 +101,7 @@ On his blog, Markus Gesmann predicts the growth of cumulative insurance loss pay
 $$cum_{AY, dev} \sim N(\mu_{AY, dev}, \sigma)$$
 $$\mu_{AY, dev} = ult_{AY} \left(1 - \exp\left(- \left( \frac{dev}{\theta} \right)^\omega \right) \right)$$
 
-The cumulative insurance payments $cum$ will grow over time, and we model this dependency using the variable $dev$. Further, $ult_{AY}$ is the (to be estimated) ultimate loss of accient each year. It constitutes a non-linear parameter in our framework along with the parameters $\theta$ and $\omega$, which are responsible for the growth of the cumulative loss and are assumed to be the same across years. We load the data
+The cumulative insurance payments $cum$ will grow over time, and we model this dependency using the variable $dev$. Further, $ult_{AY}$ is the (to be estimated) ultimate loss of accident each year. It constitutes a non-linear parameter in our framework along with the parameters $\theta$ and $\omega$, which are responsible for the growth of the cumulative loss and are assumed to be the same across years. We load the data
 
 ```{r}
 url <- "https://raw.githubusercontent.com/mages/diesunddas/master/Data/ClarkTriangle.csv"

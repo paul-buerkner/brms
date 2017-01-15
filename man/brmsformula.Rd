@@ -76,7 +76,7 @@ models for all parameters of the assumed response distribution.
   
   The \code{formula} argument accepts formulae of the following syntax:
   
-  \code{response | addition ~ pterms + (gterms | group)} 
+  \code{response | aterms ~ pterms + (gterms | group)} 
   
   The \code{pterms} part contains effects that are assumed to be the 
   same across obervations. We call them 'population-level' effects
@@ -168,8 +168,8 @@ models for all parameters of the assumed response distribution.
   \bold{Additional response information}
   
   Another speciality of the \pkg{brms} formula syntax is the optional 
-  \code{addition} term, which may contain 
-  multiple terms of the form \code{fun(variable)} seperated by \code{+} each 
+  \code{aterms} part, which may contain 
+  multiple terms of the form \code{fun(<variable>)} seperated by \code{+} each 
   providing special information on the response variable. \code{fun} can be 
   replaced with either \code{se}, \code{weights}, \code{disp}, \code{trials},
   \code{cat}, \code{cens}, \code{trunc}, or \code{dec}.
@@ -194,7 +194,7 @@ models for all parameters of the assumed response distribution.
   for instance, \code{yi | se(sei, sigma = TRUE) ~ 1}.
   
   For all families, weighted regression may be performed using
-  \code{weights} in the addition part. Internally, this is 
+  \code{weights} in the \code{aterms} part. Internally, this is 
   implemented by multiplying the log-posterior values of each 
   observation by their corresponding weights.
   Suppose that variable \code{wei} contains the weights 
@@ -223,7 +223,7 @@ models for all parameters of the assumed response distribution.
   is constant across all observations, say \code{10}, 
   we may also write \code{success | trials(10)}. 
   
-  For all ordinal families, \code{addition} may contain a term 
+  For all ordinal families, \code{aterms} may contain a term 
   \code{cat(number)} to specify the number categories (e.g, \code{cat(7)}). 
   If not given, the number of categories is calculated from the data.
   
@@ -259,7 +259,7 @@ models for all parameters of the assumed response distribution.
   the variable passed to \code{dec} might also be a character vector 
   consisting of \code{'lower'} and \code{'upper'}.
 
-  Mutiple \code{addition} terms may be specified at the same time using 
+  Mutiple addition terms may be specified at the same time using 
   the \code{+} operator, for instance 
   \code{formula = yi | se(sei) + cens(censored) ~ 1} 
   for a censored meta-analytic model. 
