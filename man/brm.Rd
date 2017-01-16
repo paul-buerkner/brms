@@ -15,9 +15,10 @@ brm(formula, data, family = gaussian(), prior = NULL, autocor = NULL,
 }
 \arguments{
 \item{formula}{An object of class 
+\code{\link[stats:formula]{formula}} or
 \code{\link[brms:brmsformula]{brmsformula}}
-(or one that can be coerced to that class): 
-a symbolic description of the model to be fitted. 
+(or one that can be coerced to that classes): 
+A symbolic description of the model to be fitted. 
 The details of model specification are explained in 
 \code{\link[brms:brmsformula]{brmsformula}}.}
 
@@ -34,16 +35,17 @@ If not specified, default links are used.
 For details of supported families see 
 \code{\link[brms:brmsfamily]{brmsfamily}}.}
 
-\item{prior}{One or more \code{brmsprior} objects created by function 
-\code{\link[brms:set_prior]{set_prior}} and combined using the \code{c} method. 
-A single \code{brmsprior} object may be passed without \code{c()} surrounding it. 
+\item{prior}{One or more \code{brmsprior} objects created by
+\code{\link[brms:set_prior]{set_prior}} or related functions 
+and combined using the \code{c} method. A single \code{brmsprior} 
+object may be passed without \code{c()} surrounding it. 
 See also  \code{\link[brms:get_prior]{get_prior}} for more help.}
 
 \item{autocor}{An optional \code{\link{cor_brms}} object describing 
-the correlation structure 
-within the response variable (i.e. the 'autocorrelation'). 
+the correlation structure within the response variable 
+(i.e., the 'autocorrelation'). 
 See the documentation of \code{\link{cor_brms}} for a description 
-of the available correlation structures. Defaults to NULL, 
+of the available correlation structures. Defaults to \code{NULL}, 
 corresponding to no correlations.}
 
 \item{nonlinear}{(Deprecated) An optional list of formulas, specifying 
@@ -71,7 +73,8 @@ The names of the matrices should correspond to columns
 in \code{data} that are used as grouping factors. 
 All levels of the grouping factor should appear as rownames 
 of the corresponding matrix. This argument can be used,
-among others, to model pedigrees and phylogenetic effects.}
+among others to model pedigrees and phylogenetic effects.
+See \code{vignette("brms_phylogenetics")} for more details.}
 
 \item{save_ranef}{A flag to indicate if group-level effects 
 for each level of the grouping factor(s) 
@@ -94,13 +97,8 @@ For design matrices with many zeros, this can considerably
 reduce required memory. For univariate sparse models, it may be
 sensible to prevent the design matrix from being centered
 (see 'Details' for more information), as centering may
-reduce sparsity. 
-For all models using multivariate syntax 
-(i.e. multivariate linear models, zero-inflated and hurdle models 
-as well as categorical models), setting \code{sparse = TRUE}, 
-is generally worth a try to decrease memory requirements.
-However, sampling speed is currently not improved or even
-slightly decreased.}
+reduce sparsity. Sampling speed is currently not improved or 
+even slightly decreased.}
 
 \item{sample_prior}{A flag to indicate if samples from all specified 
 proper priors should be drawn additionally to the posterior samples
@@ -111,8 +109,8 @@ sample solely from the priors. In this case, all parameters must
 have proper priors.}
 
 \item{knots}{Optional list containing user specified knot values to be 
-used for basis construction of smoothing terms. For details see
-\code{\link[mgcv:gamm]{gamm}}.}
+used for basis construction of smoothing terms. 
+See \code{\link[mgcv:gamm]{gamm}} for more details.}
 
 \item{stan_funs}{An optional character string containing self-defined 
 \pkg{Stan} functions, which will be included in the functions block 
@@ -122,7 +120,9 @@ of the generated \pkg{Stan} code.}
 defaults to \code{NA}. 
 If \code{fit} is of class \code{brmsfit}, the compiled model associated 
 with the fitted result is re-used and all arguments 
-modifying the model code or data are ignored.}
+modifying the model code or data are ignored.
+It is not recommended to use this argument directly, but to call 
+the \code{\link[brms:update.brmsfit]{update}} method, instead.}
 
 \item{inits}{Either \code{"random"} or \code{"0"}. 
 If inits is \code{"random"} (the default), 
@@ -131,8 +131,7 @@ If it is \code{"0"}, all parameters are initiliazed to zero.
 This option is recommended for \code{exponential} and \code{weibull} models, 
 as it happens that default (\code{"random"}) inits cause samples 
 to be essentially constant. 
-Generally, setting \code{inits = "0"} is worth a try, 
-if chains do not behave well.
+Generally, setting \code{inits = "0"} is worth a try, if chains do not behave well.
 Alternatively, \code{inits} can be a list of lists containing 
 the initial values, or a function (or function name) generating initial values. 
 The latter options are mainly implemented for internal testing.}

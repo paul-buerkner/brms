@@ -10,9 +10,10 @@ get_prior(formula, data, family = gaussian(), autocor = NULL,
 }
 \arguments{
 \item{formula}{An object of class 
+\code{\link[stats:formula]{formula}} or
 \code{\link[brms:brmsformula]{brmsformula}}
-(or one that can be coerced to that class): 
-a symbolic description of the model to be fitted. 
+(or one that can be coerced to that classes): 
+A symbolic description of the model to be fitted. 
 The details of model specification are explained in 
 \code{\link[brms:brmsformula]{brmsformula}}.}
 
@@ -30,10 +31,10 @@ For details of supported families see
 \code{\link[brms:brmsfamily]{brmsfamily}}.}
 
 \item{autocor}{An optional \code{\link{cor_brms}} object describing 
-the correlation structure 
-within the response variable (i.e. the 'autocorrelation'). 
+the correlation structure within the response variable 
+(i.e., the 'autocorrelation'). 
 See the documentation of \code{\link{cor_brms}} for a description 
-of the available correlation structures. Defaults to NULL, 
+of the available correlation structures. Defaults to \code{NULL}, 
 corresponding to no correlations.}
 
 \item{nonlinear}{(Deprecated) An optional list of formulas, specifying 

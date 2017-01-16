@@ -16,9 +16,10 @@
 #' posterior predictive checks and leave-one-out cross-validation.
 #' 
 #' @param formula An object of class 
+#'   \code{\link[stats:formula]{formula}} or
 #'   \code{\link[brms:brmsformula]{brmsformula}}
-#'   (or one that can be coerced to that class): 
-#'   a symbolic description of the model to be fitted. 
+#'   (or one that can be coerced to that classes): 
+#'   A symbolic description of the model to be fitted. 
 #'   The details of model specification are explained in 
 #'   \code{\link[brms:brmsformula]{brmsformula}}.
 #' @param data An object of class \code{data.frame} 
@@ -32,15 +33,16 @@
 #'   If not specified, default links are used.
 #'   For details of supported families see 
 #'   \code{\link[brms:brmsfamily]{brmsfamily}}.
-#' @param prior One or more \code{brmsprior} objects created by function 
-#'   \code{\link[brms:set_prior]{set_prior}} and combined using the \code{c} method. 
-#'   A single \code{brmsprior} object may be passed without \code{c()} surrounding it. 
+#' @param prior One or more \code{brmsprior} objects created by
+#'   \code{\link[brms:set_prior]{set_prior}} or related functions 
+#'   and combined using the \code{c} method. A single \code{brmsprior} 
+#'   object may be passed without \code{c()} surrounding it. 
 #'   See also  \code{\link[brms:get_prior]{get_prior}} for more help.
 #' @param autocor An optional \code{\link{cor_brms}} object describing 
-#'   the correlation structure 
-#'   within the response variable (i.e. the 'autocorrelation'). 
+#'   the correlation structure within the response variable 
+#'   (i.e., the 'autocorrelation'). 
 #'   See the documentation of \code{\link{cor_brms}} for a description 
-#'   of the available correlation structures. Defaults to NULL, 
+#'   of the available correlation structures. Defaults to \code{NULL}, 
 #'   corresponding to no correlations.
 #' @param nonlinear (Deprecated) An optional list of formulas, specifying 
 #'   linear models for non-linear parameters. If \code{NULL} (the default)
@@ -65,20 +67,16 @@
 #'   reduce required memory. For univariate sparse models, it may be
 #'   sensible to prevent the design matrix from being centered
 #'   (see 'Details' for more information), as centering may
-#'   reduce sparsity. 
-#'   For all models using multivariate syntax 
-#'   (i.e. multivariate linear models, zero-inflated and hurdle models 
-#'   as well as categorical models), setting \code{sparse = TRUE}, 
-#'   is generally worth a try to decrease memory requirements.
-#'   However, sampling speed is currently not improved or even
-#'   slightly decreased.
+#'   reduce sparsity. Sampling speed is currently not improved or 
+#'   even slightly decreased.
 #' @param cov_ranef A list of matrices that are proportional to the 
 #'   (within) covariance structure of the group-level effects. 
 #'   The names of the matrices should correspond to columns 
 #'   in \code{data} that are used as grouping factors. 
 #'   All levels of the grouping factor should appear as rownames 
 #'   of the corresponding matrix. This argument can be used,
-#'   among others, to model pedigrees and phylogenetic effects.
+#'   among others to model pedigrees and phylogenetic effects.
+#'   See \code{vignette("brms_phylogenetics")} for more details.
 #' @param save_ranef A flag to indicate if group-level effects 
 #'   for each level of the grouping factor(s) 
 #'   should be saved (default is \code{TRUE}). 
@@ -100,8 +98,8 @@
 #'   sample solely from the priors. In this case, all parameters must 
 #'   have proper priors.
 #' @param knots Optional list containing user specified knot values to be 
-#'   used for basis construction of smoothing terms. For details see
-#'   \code{\link[mgcv:gamm]{gamm}}.
+#'   used for basis construction of smoothing terms. 
+#'   See \code{\link[mgcv:gamm]{gamm}} for more details.
 #' @param stan_funs An optional character string containing self-defined 
 #'   \pkg{Stan} functions, which will be included in the functions block 
 #'   of the generated \pkg{Stan} code. 
@@ -110,6 +108,8 @@
 #'   If \code{fit} is of class \code{brmsfit}, the compiled model associated 
 #'   with the fitted result is re-used and all arguments 
 #'   modifying the model code or data are ignored.
+#'   It is not recommended to use this argument directly, but to call 
+#'   the \code{\link[brms:update.brmsfit]{update}} method, instead.
 #' @param inits Either \code{"random"} or \code{"0"}. 
 #'   If inits is \code{"random"} (the default), 
 #'   Stan will randomly generate initial values for parameters. 
@@ -117,8 +117,7 @@
 #'   This option is recommended for \code{exponential} and \code{weibull} models, 
 #'   as it happens that default (\code{"random"}) inits cause samples 
 #'   to be essentially constant. 
-#'   Generally, setting \code{inits = "0"} is worth a try, 
-#'   if chains do not behave well.
+#'   Generally, setting \code{inits = "0"} is worth a try, if chains do not behave well.
 #'   Alternatively, \code{inits} can be a list of lists containing 
 #'   the initial values, or a function (or function name) generating initial values. 
 #'   The latter options are mainly implemented for internal testing.
