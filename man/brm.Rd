@@ -166,8 +166,10 @@ variational inference with independent normal distributions, or
 \code{"fullrank"} for variational inference with a multivariate normal
 distribution.}
 
-\item{silent}{logical; If \code{TRUE}, informational messages of 
-the compiler and sampler are suppressed.}
+\item{silent}{logical; If \code{TRUE} (the default), most of the
+informational messages of compiler and sampler are suppressed.
+The actual sampling progress is still printed. 
+Set \code{refresh = 0} to turn this off as well.}
 
 \item{seed}{Used by \code{set.seed} to make results reproducable.}
 

@@ -144,8 +144,10 @@
 #'   It defaults to \code{NULL} so all the default values are used. 
 #'   The most important control parameters are discussed in the 'Details'
 #'   section below. For a comprehensive overview see \code{\link[rstan:stan]{stan}}.
-#' @param silent logical; If \code{TRUE}, informational messages of 
-#'   the compiler and sampler are suppressed.
+#' @param silent logical; If \code{TRUE} (the default), most of the
+#'   informational messages of compiler and sampler are suppressed.
+#'   The actual sampling progress is still printed. 
+#'   Set \code{refresh = 0} to turn this off as well.
 #' @param seed Used by \code{set.seed} to make results reproducable.  
 #' @param save_model Either \code{NULL} or a character string. 
 #'   In the latter case, the model code is
