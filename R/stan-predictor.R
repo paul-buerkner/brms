@@ -7,6 +7,7 @@ stan_effects <- function(effects, data, family = gaussian(),
   # Args:
   #   center_X: center population-level design matrix if possible?
   #   eta: prefix of the linear predictor variable
+  stopifnot(is.brmseffects(effects))
   p <- usc(nlpar, "prefix")
   if (nzchar(eta) && nzchar(nlpar)) {
     eta <- usc(eta, "suffix") 
@@ -85,6 +86,7 @@ stan_effects <- function(effects, data, family = gaussian(),
 stan_effects_mv <- function(effects, data, family = gaussian(), 
                             ranef = empty_ranef(), prior = brmsprior(), 
                             autocor = cor_arma(), sparse = FALSE) {
+  stopifnot(is.brmseffects(effects))
   if (sparse) {
     stop2("Sparse design matrices are not yet implemented ", 
           "for multivariate models.")
@@ -125,6 +127,7 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
   #   family: the model family
   #   cov_ranef: a list of user-defined covariance matrices
   #   prior: a brmsprior object
+  stopifnot(is.brmseffects(effects))
   out <- list()
   if (length(effects$nlpars)) {
     for (i in seq_along(effects$nlpars)) {
@@ -173,6 +176,7 @@ stan_auxpars <- function(effects, data, family = gaussian(),
   # Args:
   #   effects: output of extract_effects
   #   other arguments: same as make_stancode
+  stopifnot(is.brmseffects(effects))
   out <- list()
   default_defs <- c(
     sigma = "  real<lower=0> sigma;  // residual SD \n",

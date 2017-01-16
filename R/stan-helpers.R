@@ -1,11 +1,12 @@
-stan_llh <- function(family, effects = list(), data = NULL, 
+stan_llh <- function(family, effects, data = NULL, 
                      autocor = cor_arma()) {
   # Likelihood in Stan language
   # Args:
   #   family: the model family
   #   effects: output of extract_effects
   #   autocor: object of classe cor_brms
-  stopifnot(is(family, "family"))
+  stopifnot(is.family(family))
+  stopifnot(is.brmseffects(effects))
   link <- family$link
   family <- family$family
   is_categorical <- is_categorical(family)
@@ -222,7 +223,7 @@ stan_llh_sigma <- function(family, effects = NULL, autocor = cor_arma()) {
   out
 }
 
-stan_llh_shape <- function(family, effects = NULL) {
+stan_llh_shape <- function(family, effects) {
   # prepare the code for 'shape' in the likelihood statement
   has_disp <- is.formula(effects$disp)
   llh_adj <- stan_llh_adj(effects)
@@ -242,7 +243,7 @@ stan_llh_adj <- function(effects, adds = c("weights", "cens", "trunc")) {
   any(ulapply(effects[adds], is.formula))
 }
 
-stan_autocor <- function(autocor, effects = list(), family = gaussian(),
+stan_autocor <- function(autocor, effects, family = gaussian(),
                          prior = brmsprior()) {
   # Stan code related to autocorrelation structures
   # Args:
@@ -251,7 +252,8 @@ stan_autocor <- function(autocor, effects = list(), family = gaussian(),
   #   family: the model family
   #   prior: a data.frame containing user defined priors 
   #          as returned by check_prior
-  stopifnot(is(family, "family"))
+  stopifnot(is.family(family))
+  stopifnot(is.brmseffects(effects))
   is_linear <- is_linear(family)
   resp <- effects$response
   is_mv <- is_linear && length(resp) > 1L
@@ -418,7 +420,7 @@ stan_mv <- function(family, response, prior = brmsprior()) {
   #          as returned by check_prior
   # Returns: 
   #   list containing Stan code specific for multivariate models
-  stopifnot(is(family, "family"))
+  stopifnot(is.family(family))
   out <- list()
   nresp <- length(response)
   if (nresp > 1L) {
@@ -472,7 +474,7 @@ stan_ordinal <- function(family, prior = brmsprior(),
   #   threshold: either "flexible" or "equidistant" 
   # Returns:
   #   A vector of strings containing the ordinal effects in stan language
-  stopifnot(is(family, "family"))
+  stopifnot(is.family(family))
   out <- list()
   if (is_ordinal(family)) {
     # define Stan code similar for all ordinal models
@@ -587,7 +589,7 @@ stan_families <- function(family) {
   #   family: the model family
   # Returns:
   #   a list of character strings
-  stopifnot(is(family, "family"))
+  stopifnot(is.family(family))
   family <- family$family
   out <- list()
   if (family == "categorical") {
@@ -640,7 +642,7 @@ stan_se <- function(se) {
 stan_cens <- function(cens, family = gaussian()) {
   out <- list()
   if (cens) {
-    stopifnot(is(family, "family"))
+    stopifnot(is.family(family))
     out$data <- paste0(
       "  int<lower=-1,upper=2> cens[N];  // indicates censoring \n",
       if (isTRUE(attr(cens, "interval"))) {
@@ -656,7 +658,8 @@ stan_disp <- function(effects, family = gaussian()) {
   # Args:
   #   disp: logical; are dispersion factors specified?
   #   family: the model family
-  stopifnot(is(family, "family"))
+  stopifnot(is.brmseffects(effects))
+  stopifnot(is.family(family))
   out <- list()
   if (is(effects$disp, "formula")) {
     par <- if (has_sigma(family)) "sigma"
@@ -686,7 +689,7 @@ stan_misc_functions <- function(family = gaussian(), kronecker = FALSE) {
   #   kronecker: logical; is the kronecker product needed?
   # Returns:
   #   a string containing defined functions in stan code
-  stopifnot(is(family, "family"))
+  stopifnot(is.family(family))
   out <- NULL
   if (family$link == "cauchit") {
     out <- paste0(out, "  #include 'fun_cauchit.stan' \n")
@@ -851,7 +854,7 @@ stan_rngprior <- function(sample_prior, prior, par_declars = "",
   #               such as horseshoe or lasso
   # Returns:
   #   a character string containing the priors to be sampled from in stan code
-  stopifnot(is(family, "family"))
+  stopifnot(is.family(family))
   out <- list()
   if (sample_prior) {
     prior <- gsub(" ", "", paste0("\n", prior))

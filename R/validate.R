@@ -413,7 +413,7 @@ extract_nonlinear <- function(x, model = ~1) {
   #   model: formula of the non-linear model
   # Returns:
   #   A list of objects each returned by extract_effects
-  stopifnot(is.list(x), is(model, "formula"))
+  stopifnot(is.list(x), is.formula(model))
   if (length(x)) {
     out <- named_list(names(x))
     for (i in seq_along(x)) {
@@ -440,6 +440,7 @@ avoid_auxpars <- function(names, effects) {
   # Args:
   #   names: names to check for ambiguity
   #   effects: output of extract_effects
+  stopifnot(is.brmseffects(effects))
   auxpars <- c(names(effects$auxpars), "mo", "cs", "me")
   if (length(auxpars)) {
     auxpars_prefix <- paste0("^", auxpars, "_")
@@ -652,6 +653,7 @@ get_effect <- function(effects,
   #   effects: object returned by extract_effects
   #   target: type of effects to return
   #   all: logical; include effects of nl and auxpars?
+  stopifnot(is.brmseffects(effects))
   target <- match.arg(target)
   eff <- effects[[target]]
   out <- list(eff)
@@ -669,6 +671,7 @@ get_random <- function(effects, all = TRUE) {
   # Args:
   #   effects: object returned by extract_effects
   #   all: logical; include ranefs of nl and aux parameters?
+  stopifnot(is.brmseffects(effects))
   if (!is.null(effects$random)) {
     stopifnot(is.data.frame(effects$random))
     out <- effects$random
@@ -743,7 +746,7 @@ get_all_effects <- function(effects, rsv_vars = NULL,
   # Returns:
   #   a list with one element per valid effect / effects combination
   #   excludes all 3-way or higher interactions
-  stopifnot(is.list(effects))
+  stopifnot(is.brmseffects(effects))
   stopifnot(is.atomic(rsv_vars))
   .get_all_effects <- function(ee) {
     alist <- lapply(attr(ee$gam, "covars"), function(x) 
@@ -827,6 +830,10 @@ eval_spline <- function(spline) {
 }
 
 get_me_labels <- function(x, data) {
+  # get labels of measurement error terms
+  # Args:
+  #   x: either a formula or a list containing an element "gam"
+  #   data: data frame containing the noisy variables
   if (is.formula(x)) {
     x <- extract_effects(x, check_response = FALSE)
   }
@@ -940,6 +947,7 @@ has_splines <- function(effects) {
   # check if splines are present in the model
   # Args:
   #   effects: output of extract_effects
+  stopifnot(is.brmseffects(effects))
   if (length(effects$nlpars)) {
     out <- any(ulapply(effects$nlpars, has_splines))
   } else {
@@ -949,6 +957,7 @@ has_splines <- function(effects) {
 }
 
 has_cs <- function(effects) {
+  stopifnot(is.brmseffects(effects))
   length(all_terms(effects$cs)) ||
     any(get_random(effects)$type %in% "cs")
 }
@@ -974,6 +983,7 @@ tidy_ranef <- function(effects, data = NULL, all = TRUE,
   #     type: special effects type; can be "mo", "cs", or "me"
   #     gcall: output of functions 'gr' or 'mm'
   #     form: formula used to compute the effects
+  stopifnot(is.brmseffects(effects))
   random <- get_random(effects, all = all)
   ranef <- vector("list", nrow(random))
   used_ids <- new_ids <- NULL
@@ -1159,6 +1169,7 @@ exclude_pars <- function(effects, data = NULL, ranef = empty_ranef(),
   #   save_mevars: should samples of noise-free variables be saved?
   # Returns:
   #   a vector of parameters to be excluded
+  stopifnot(is.brmseffects(effects))
   out <- c("temp_Intercept1", "temp_Intercept", "Lrescor", "Rescor",
            "Sigma", "LSigma", "res_cov_matrix", "hs_local",
            intersect(auxpars(), names(effects)))

@@ -68,13 +68,14 @@ test_that("exclude_pars returns expected parameter names", {
                        gn = c(1, 1, 2), coef = c("x", "z", "x"), 
                        cn = c(1, 2, 1), nlpar = "", 
                        cor = c(TRUE, TRUE, FALSE))
-  ep <- exclude_pars(list(), ranef = ranef)
+  empty_effects <- structure(list(), class = "brmseffects")
+  ep <- exclude_pars(empty_effects, ranef = ranef)
   expect_true(all(c("r_1", "r_2") %in% ep))
-  ep <- exclude_pars(list(), ranef = ranef, save_ranef = FALSE)
+  ep <- exclude_pars(empty_effects, ranef = ranef, save_ranef = FALSE)
   expect_true("r_1_1" %in% ep)
   
   ranef$nlpar <- c("a", "a", "")
-  ep <- exclude_pars(list(), ranef = ranef, save_ranef = FALSE)
+  ep <- exclude_pars(empty_effects, ranef = ranef, save_ranef = FALSE)
   expect_true(all(c("r_1_a_1", "r_1_a_2") %in% ep))
   effects <- extract_effects(y ~ x + s(z))
   data <- data.frame(y = rnorm(20), x = rnorm(20), z = rnorm(20))

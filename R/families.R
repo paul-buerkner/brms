@@ -397,6 +397,10 @@ print.brmsfamily <- function(x, ...) {
   invisible(x)
 }
 
+is.family <- function(x) {
+  inherits(x, "family")
+}
+
 is_linear <- function(family) {
   # indicate if family is for a linear model
   if (is(family, "family")) {
