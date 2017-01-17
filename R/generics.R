@@ -574,7 +574,7 @@ stanplot <- function(object, ...) {
 #'   \code{effects} manually, \emph{all} two-way interactions may be plotted
 #'   even if not orginally modeled.
 #' @param conditions An optional \code{data.frame} containing variable values
-#'   to marginalize on. Each effect defined in \code{effects} will
+#'   to condition on. Each effect defined in \code{effects} will
 #'   be plotted separately for each row of \code{data}. 
 #'   The row names of \code{data} will be treated as titles of the subplots. 
 #'   It is recommended to only define a few rows in order to keep the plots clear.
@@ -624,7 +624,22 @@ stanplot <- function(object, ...) {
 #'   list of \code{\link[ggplot2:ggplot]{ggplot}} objects, which can be further 
 #'   customized using the \pkg{ggplot2} package.
 #'   
-#' @details \code{NA} values within factors in \code{conditions}, 
+#' @details When creating \code{marginal_effects} for a particular predictor 
+#'   (or interaction of two predictors), one has to choose the values of all 
+#'   other predictors to condition on. 
+#'   By default, the mean is used for continuous variables
+#'   and the reference category is used for factors, but you may change these
+#'   values via argument \code{conditions}. 
+#'   This also has an implication for the \code{points} argument: 
+#'   In the created plots, only those points will be shown that correspond 
+#'   to the factor levels actually used in the conditioning, in order not 
+#'   to create the false impressivion of bad model fit, where it is just 
+#'   due to conditioning on certain factor levels.
+#'   Since we condition on rather than actually marginalizing variables, 
+#'   the name  \code{marginal_effects} is possibly not ideally chosen in 
+#'   retrospect. 
+#' 
+#'   \code{NA} values within factors in \code{conditions}, 
 #'   are interpreted as if all dummy variables of this factor are 
 #'   zero. This allows, for instance, to make predictions of the grand mean 
 #'   when using sum coding. 
