@@ -99,6 +99,7 @@ test_that("predict for count and survival models runs without errors", {
   trials <- sample(10:30, nobs, replace = TRUE)
   draws <- list(eta = matrix(rnorm(ns*nobs), ncol = nobs),
                 shape = rgamma(ns, 4), nsamples = ns)
+  draws$nu <- draws$shape + 1
   draws$data <- list(trials = trials)
   i <- sample(nobs, 1)
   
@@ -123,6 +124,9 @@ test_that("predict for count and survival models runs without errors", {
   expect_equal(length(pred), ns)
   
   pred <- predict_weibull(i, data = data, draws = draws)
+  expect_equal(length(pred), ns)
+  
+  pred <- predict_frechet(i, data = data, draws = draws)
   expect_equal(length(pred), ns)
   
   pred <- predict_inverse.gaussian(i, data = data, draws = draws)

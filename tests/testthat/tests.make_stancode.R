@@ -216,6 +216,11 @@ test_that("self-defined functions appear in the Stan code", {
                               family = von_mises("tan_half")),
                "real inv_tan_half(real y)")
   
+  # logm1 link
+  expect_match2(make_stancode(rating ~ treat, data = inhaler,
+                              family = frechet()),
+                "real expp1(real y)")
+  
   # inverse gaussian models
   scode <- make_stancode(time | cens(censored) ~ age, data = kidney,
                                  family = inverse.gaussian)

@@ -9,7 +9,9 @@
       intuitive way using \code{brmsformula}.
       \item Fix auxiliary parameters to certain values
       through \code{brmsformula}.
-      \item Introduce new function \code{prior_} allowing
+      \item Introduce family \code{frechet} for modelling
+      strictly positive responses.
+      \item Introduce function \code{prior_} allowing
       to specify priors using one-sided formulas or \code{quote}.
       \item Pass priors to \pkg{Stan} directly without
       performing any checks by setting \code{check = FALSE} 

@@ -665,7 +665,6 @@ stan_disp <- function(effects, family = gaussian()) {
   if (is(effects$disp, "formula")) {
     par <- if (has_sigma(family)) "sigma"
            else if (has_shape(family)) "shape"
-           else stop("invalid family for addition argument 'disp'")
     if (!is.null(effects[[par]])) {
       stop2("Specifying 'disp' is not allowed when predicting '", par, "'.")
     }

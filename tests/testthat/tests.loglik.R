@@ -117,6 +117,7 @@ test_that("loglik for count and survival models works correctly", {
   trials <- sample(10:30, nobs, replace = TRUE)
   draws <- list(eta = matrix(rnorm(ns*nobs), ncol = nobs),
                 shape = matrix(rgamma(ns, 4)), nsamples = ns)
+  draws$nu <- draws$shape + 1
   draws$data <- list(Y = rbinom(nobs, size = trials, 
                                 prob = rbeta(nobs, 1, 1)), 
                      trials = trials)
@@ -159,6 +160,12 @@ test_that("loglik for count and survival models works correctly", {
                          scale = exp(draws$eta[, i] / draws$shape), log = TRUE)
   ll <- loglik_weibull(i, draws = draws)
   expect_equal(ll, as.matrix(ll_weibull))
+  
+  scale <- exp(draws$eta[, i]) / gamma(1 - 1 / draws$nu)
+  ll_frechet <- evd::dfrechet(x = draws$data$Y[i], shape = draws$nu,
+                              scale = scale, log = TRUE)
+  ll <- loglik_frechet(i, draws = draws)
+  expect_equal(ll, ll_frechet)
   
   ll_invgauss <- dinvgauss(x = draws$data$Y[i], shape = draws$shape,
                            mean = exp(draws$eta[, i]), log = TRUE)

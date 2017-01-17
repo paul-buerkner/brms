@@ -205,8 +205,8 @@ models for all parameters of the assumed response distribution.
   The addition argument \code{disp} (short for dispersion) serves a
   similar purpose than \code{weight}. However, it has a different 
   implementation and is less general as it is only usable for the
-  families \code{gaussian}, \code{student},
-  \code{lognormal}, \code{Gamma}, \code{weibull}, and \code{negbinomial}.
+  families \code{gaussian}, \code{student}, \code{lognormal}, 
+  \code{Gamma}, \code{weibull}, and \code{negbinomial}.
   For the former three families, the residual standard deviation 
   \code{sigma} is multiplied by the values given in 
   \code{disp}, so that higher values lead to lower weights.
