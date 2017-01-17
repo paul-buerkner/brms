@@ -10,6 +10,7 @@
 \alias{cumulative}
 \alias{exgaussian}
 \alias{exponential}
+\alias{frechet}
 \alias{geometric}
 \alias{hurdle_gamma}
 \alias{hurdle_lognormal}
@@ -43,6 +44,8 @@ lognormal(link = "identity")
 exponential(link = "log")
 
 weibull(link = "log")
+
+frechet(link = "log")
 
 exgaussian(link = "identity")
 
@@ -86,8 +89,9 @@ Currently, the following families are supported:
 \code{bernoulli}, \code{poisson}, \code{negbinomial}, 
 \code{geometric}, \code{Gamma}, \code{lognormal}, 
 \code{exgaussian}, \code{wiener}, \code{inverse.gaussian}, 
-\code{exponential}, \code{weibull}, \code{Beta}, \code{von_mises},
-\code{categorical}, \code{cumulative}, \code{cratio}, \code{sratio}, 
+\code{exponential}, \code{weibull}, \code{frechet},
+\code{Beta}, \code{von_mises},
+\code{categorical}, \code{cumulative}, \code{cratio}, \code{sratio},
 \code{acat}, \code{hurdle_poisson}, \code{hurdle_negbinomial}, 
 \code{hurdle_gamma}, \code{hurdle_lognormal}, 
 \code{zero_inflated_binomial}, \code{zero_inflated_beta},
@@ -119,8 +123,8 @@ Family \code{gaussian} with \code{identity} link leads to linear regression.
   Families \code{cumulative}, \code{cratio} ('contiuation ratio'), 
   \code{sratio} ('stopping ratio'), and \code{acat} ('adjacent category') 
   leads to ordinal regression. Families \code{Gamma}, \code{weibull}, 
-  \code{exponential}, \code{lognormal}, and \code{inverse.gaussian} can be used 
-  (among others) for survival regression.
+  \code{exponential}, \code{lognormal}, \code{frechet}, and 
+  \code{inverse.gaussian} can be used (among others) for survival regression.
   Family \code{exgaussian} ('exponentially modified Gaussian') is especially
   suited to model reaction times and the \code{wiener} family provides
   an implementation of the Wiener diffusion model. For this family,
@@ -147,8 +151,8 @@ Family \code{gaussian} with \code{identity} link leads to linear regression.
   the links \code{logit}, \code{probit}, \code{probit_approx}, 
   \code{cloglog}, and \code{cauchit}; 
   family \code{categorical} the link \code{logit};
-  families \code{Gamma}, \code{weibull}, and \code{exponential} 
-  the links \code{log}, \code{identity}, and \code{inverse};
+  families \code{Gamma}, \code{weibull}, \code{exponential}, and 
+  \code{frechet} the links \code{log}, \code{identity}, and \code{inverse};
   family \code{lognormal} the links \code{identity} and \code{inverse};
   family \code{inverse.gaussian} the links \code{1/mu^2}, 
   \code{inverse}, \code{identity} and \code{log}; 

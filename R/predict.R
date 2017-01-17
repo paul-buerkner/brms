@@ -223,9 +223,17 @@ predict_gamma <- function(i, draws, ...) {
 
 predict_weibull <- function(i, draws, ...) {
   shape <- get_shape(draws$shape, data = draws$data, i = i)
-  args <- list(shape = shape, 
-               scale = ilink(get_eta(draws, i) / shape, draws$f$link))
+  scale <- ilink(get_eta(draws, i) / shape, draws$f$link)
+  args <- list(shape = shape, scale = scale)
   rng_continuous(nrng = draws$nsamples, dist = "weibull", args = args, 
+                 lb = draws$data$lb[i], ub = draws$data$ub[i])
+}
+
+predict_frechet <- function(i, draws, ...) {
+  nu <- get_auxpar(draws$nu, i = i)
+  scale <- ilink(get_eta(draws, i), draws$f$link) / gamma(1 - 1 / nu)
+  args <- list(scale = scale, shape = nu)
+  rng_continuous(nrng = draws$nsamples, dist = "frechet", args = args, 
                  lb = draws$data$lb[i], ub = draws$data$ub[i])
 }
 

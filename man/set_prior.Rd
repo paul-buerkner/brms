@@ -19,10 +19,11 @@ prior_string(prior, ...)
 \arguments{
 \item{prior}{A character string defining a distribution in \pkg{Stan} language}
 
-\item{class}{The parameter class. Defaults to \code{"b"} (fixed effects). 
+\item{class}{The parameter class. Defaults to \code{"b"} 
+(i.e. population-level effects). 
 See 'Details' for other valid parameter classes.}
 
-\item{coef}{Name of the (population- or group-level) parameter}
+\item{coef}{Name of the (population- or group-level) parameter.}
 
 \item{group}{Grouping factor of group-level parameters.}
 

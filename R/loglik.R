@@ -237,10 +237,22 @@ loglik_gamma <- function(i, draws, data = data.frame()) {
 
 loglik_weibull <- function(i, draws, data = data.frame()) {
   shape <- get_shape(draws$shape, data = draws$data, i = i)
-  args <- list(scale = ilink(get_eta(draws, i) / shape, draws$f$link),
-               shape = shape)
-  out <- censor_loglik(dist = "weibull", args = args, i = i, data = draws$data)
+  scale <- ilink(get_eta(draws, i) / shape, draws$f$link)
+  args <- list(shape = shape, scale = scale)
+  out <- censor_loglik(dist = "weibull", args = args, 
+                       i = i, data = draws$data)
   out <- truncate_loglik(out, cdf = pweibull, args = args,
+                         i = i, data = draws$data)
+  weight_loglik(out, i = i, data = draws$data)
+}
+
+loglik_frechet <- function(i, draws, data = data.frame()) {
+  nu <- get_auxpar(draws$nu, i = i)
+  scale <- ilink(get_eta(draws, i), draws$f$link) / gamma(1 - 1 / nu)
+  args <- list(scale = scale, shape = nu)
+  out <- censor_loglik(dist = "frechet", args = args, 
+                       i = i, data = draws$data)
+  out <- truncate_loglik(out, cdf = pfrechet, args = args,
                          i = i, data = draws$data)
   weight_loglik(out, i = i, data = draws$data)
 }

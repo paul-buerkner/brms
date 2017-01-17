@@ -272,6 +272,18 @@ rexgauss <- function(n, mu, sigma, beta) {
   rnorm(n, mean = mu, sd = sigma) + rexp(n, rate = 1 / beta)
 }
 
+#' @import evd
+pfrechet <- function(q, loc = 0, scale = 1, shape = 1, 
+                     lower.tail = TRUE, log.p = FALSE) {
+  # just evd::pfrechet but with argument log.p
+  out <- evd::pfrechet(q, loc = loc, scale = scale, shape = shape,
+                       lower.tail = lower.tail)
+  if (log.p) {
+    out <- log(out)
+  }
+  out
+}
+
 dWiener <- function(x, alpha, tau, beta, delta, resp = 1, log = FALSE) {
   # compute the density of the Wiener diffusion model
   # Args:

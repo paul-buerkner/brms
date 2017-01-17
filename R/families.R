@@ -14,8 +14,9 @@
 #'   \code{bernoulli}, \code{poisson}, \code{negbinomial}, 
 #'   \code{geometric}, \code{Gamma}, \code{lognormal}, 
 #'   \code{exgaussian}, \code{wiener}, \code{inverse.gaussian}, 
-#'   \code{exponential}, \code{weibull}, \code{Beta}, \code{von_mises},
-#'   \code{categorical}, \code{cumulative}, \code{cratio}, \code{sratio}, 
+#'   \code{exponential}, \code{weibull}, \code{frechet},
+#'   \code{Beta}, \code{von_mises},
+#'   \code{categorical}, \code{cumulative}, \code{cratio}, \code{sratio},
 #'   \code{acat}, \code{hurdle_poisson}, \code{hurdle_negbinomial}, 
 #'   \code{hurdle_gamma}, \code{hurdle_lognormal}, 
 #'   \code{zero_inflated_binomial}, \code{zero_inflated_beta},
@@ -38,8 +39,8 @@
 #'   Families \code{cumulative}, \code{cratio} ('contiuation ratio'), 
 #'   \code{sratio} ('stopping ratio'), and \code{acat} ('adjacent category') 
 #'   leads to ordinal regression. Families \code{Gamma}, \code{weibull}, 
-#'   \code{exponential}, \code{lognormal}, and \code{inverse.gaussian} can be used 
-#'   (among others) for survival regression.
+#'   \code{exponential}, \code{lognormal}, \code{frechet}, and 
+#'   \code{inverse.gaussian} can be used (among others) for survival regression.
 #'   Family \code{exgaussian} ('exponentially modified Gaussian') is especially
 #'   suited to model reaction times and the \code{wiener} family provides
 #'   an implementation of the Wiener diffusion model. For this family,
@@ -66,8 +67,8 @@
 #'   the links \code{logit}, \code{probit}, \code{probit_approx}, 
 #'   \code{cloglog}, and \code{cauchit}; 
 #'   family \code{categorical} the link \code{logit};
-#'   families \code{Gamma}, \code{weibull}, and \code{exponential} 
-#'   the links \code{log}, \code{identity}, and \code{inverse};
+#'   families \code{Gamma}, \code{weibull}, \code{exponential}, and 
+#'   \code{frechet} the links \code{log}, \code{identity}, and \code{inverse};
 #'   family \code{lognormal} the links \code{identity} and \code{inverse};
 #'   family \code{inverse.gaussian} the links \code{1/mu^2}, 
 #'   \code{inverse}, \code{identity} and \code{log}; 
@@ -127,8 +128,9 @@ brmsfamily <- function(family, link = NULL) {
     "gaussian", "student", "lognormal", 
     "binomial", "bernoulli", "categorical", 
     "poisson", "negbinomial", "geometric", 
-    "gamma", "weibull", "exponential", "exgaussian",
-    "inverse.gaussian", "wiener", "beta", "von_mises",
+    "gamma", "weibull", "exponential", 
+    "exgaussian", "frechet", "inverse.gaussian", 
+    "wiener", "beta", "von_mises",
     "cumulative", "cratio", "sratio", "acat",
     "hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma",
     "hurdle_lognormal", "zero_inflated_poisson", 
@@ -238,6 +240,13 @@ exponential <- function(link = "log") {
 weibull <- function(link = "log") {
   slink <- substitute(link)
   .brmsfamily("weibull", link = link, slink = slink)
+}
+
+#' @rdname brmsfamily
+#' @export
+frechet <- function(link = "log") {
+  slink <- substitute(link)
+  .brmsfamily("frechet", link = link, slink = slink)
 }
 
 #' @rdname brmsfamily
@@ -437,7 +446,7 @@ is_skewed <- function(family) {
   if (is(family, "family")) {
     family <- family$family
   }
-  family %in% c("gamma", "weibull", "exponential")
+  family %in% c("gamma", "weibull", "exponential", "frechet")
 }
 
 is_lognormal <- function(family) {
@@ -576,7 +585,7 @@ has_nu <- function(family) {
   if (is(family, "family")) {
     family <- family$family
   }
-  family %in% c("student")
+  family %in% c("student", "frechet")
 }
 
 has_phi <- function(family) {

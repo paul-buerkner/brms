@@ -97,6 +97,7 @@ stan_llh <- function(family, effects, data = NULL,
       gamma = c("gamma", paste0(p$shape, ", ", eta)), 
       exponential = c("exponential", eta),
       weibull = c("weibull", paste0(p$shape, ", ", eta)), 
+      frechet = c("frechet", paste0(p$nu, ", ", eta)),
       exgaussian = c("exgaussian", paste0(eta, ", ", p$sigma, ", ", p$beta)),
       inverse.gaussian = c(inv_gauss_fun, inv_gauss_args),
       wiener = c("wiener_diffusion", 
@@ -696,7 +697,7 @@ stan_misc_functions <- function(family = gaussian(), kronecker = FALSE) {
   } else if (family$link == "cloglog") {
     out <- paste0(out, "  #include 'fun_cloglog.stan' \n")
   }
-  if (family$family %in% c("student")) {
+  if (family$family %in% c("student", "frechet")) {
     out <- paste0(out, "  #include 'fun_logm1.stan' \n")
   }
   if (kronecker) {

@@ -181,7 +181,7 @@ stan_auxpars <- function(effects, data, family = gaussian(),
   default_defs <- c(
     sigma = "  real<lower=0> sigma;  // residual SD \n",
     shape = "  real<lower=0> shape;  // shape parameter \n",
-    nu = "  real<lower=1> nu;  // degrees of freedom \n",
+    nu = "  real<lower=1> nu;  // degrees of freedom or shape \n",
     phi = "  real<lower=0> phi;  // precision parameter \n",
     kappa = "  real<lower=0> kappa;  // precision parameter \n",
     beta = "  real<lower=0> beta;  // scale parameter \n",
@@ -749,6 +749,7 @@ stan_eta_ilink <- function(family, link, effects) {
     shape <- ifelse(is.formula(effects$disp), "disp_shape[n]", 
                     ifelse("shape" %in% names(effects$auxpars), 
                            "shape[n]", "shape"))
+    nu <- ifelse("nu" %in% names(effects$auxpars), "nu[n]", "nu")
     fl <- ifelse(family %in% c("gamma", "exponential"), 
                  paste0(family, "_", link), family)
     out <- switch(fl, 
@@ -760,7 +761,10 @@ stan_eta_ilink <- function(family, link, effects) {
       exponential_inverse = c("(", ")"),
       exponential_identity = c("inv(", ")"),
       weibull = c(paste0(ilink, "(("), 
-                  paste0(") / ", shape, ")")))
+                  paste0(") / ", shape, ")")),
+      frechet = c(paste0(ilink, "("),
+                  paste0(") / tgamma(1 - 1 / ", nu, ")"))
+    )
   } else {
     out <- rep("", 2)
   }
