@@ -22,6 +22,9 @@
     \itemize{
       \item Change structure of \code{brmsformula}
       objects to be more reliable and easier to extend.
+      \item Make sure that parameter \code{nu} never 
+      falls below \code{1} to reduce convergence problems
+      when using family \code{student}.
       \item Deprecate argument \code{nonlinear}.
       \item Deprecate family \code{geometric}.
       \item Rename \code{cov_fixed} to \code{cor_fixed}.

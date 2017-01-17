@@ -565,11 +565,11 @@ auxpars <- function() {
 ilink_auxpars <- function(ap = NULL, stan = FALSE) {
   # helper function to store inverse links of auxiliary parameters
   if (stan) {
-    ilink <- c(sigma = "exp", shape = "exp", nu = "exp", phi = "exp", 
+    ilink <- c(sigma = "exp", shape = "exp", nu = "expp1", phi = "exp", 
                kappa = "exp", beta = "exp", zi = "", hu = "",
                bs = "exp", ndt = "exp", bias = "inv_logit", disc = "exp") 
   } else {
-    ilink <- c(sigma = "exp", shape = "exp", nu = "exp", phi = "exp", 
+    ilink <- c(sigma = "exp", shape = "exp", nu = "expp1", phi = "exp", 
                kappa = "exp", beta = "exp", zi = "inv_logit", 
                hu = "inv_logit", bs = "exp", ndt = "exp", 
                bias = "inv_logit", disc = "exp")

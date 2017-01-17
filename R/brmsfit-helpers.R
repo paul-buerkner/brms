@@ -122,11 +122,21 @@ link <- function(x, link) {
   #   link: a character string defining the link
   # Returns:
   #   an array of dimension dim(x) on which the link function was applied
-  switch(link, "identity" = x, "log" = log(x), "inverse" = 1 / x,
-         "sqrt" = sqrt(x), "1/mu^2" = 1 / x^2, "tan_half" = tan(x / 2),
-         "logit" = logit(x), "probit" = qnorm(x), "cauchit" = qcauchy(x),
-         "cloglog" = cloglog(x), "probit_approx" = qnorm(x),
-         stop2("Link '", link, "' not supported."))
+  switch(link, 
+    "identity" = x, 
+    "log" = log(x), 
+    "logm1" = logm1(x), 
+    "inverse" = 1 / x,
+    "sqrt" = sqrt(x), 
+    "1/mu^2" = 1 / x^2, 
+    "tan_half" = tan(x / 2),
+    "logit" = logit(x), 
+    "probit" = qnorm(x), 
+    "cauchit" = qcauchy(x),
+    "cloglog" = cloglog(x), 
+    "probit_approx" = qnorm(x),
+    stop2("Link '", link, "' not supported.")
+  )
 }
 
 ilink <- function(x, link) {
@@ -136,11 +146,21 @@ ilink <- function(x, link) {
   #   link: a character string defining the link
   # Returns:
   #   an array of dimension dim(x) on which the inverse link function was applied
-  switch(link, "identity" = x, "log" = exp(x), "inverse" = 1 / x,
-         "sqrt" = x^2, "1/mu^2" = 1 / sqrt(x), "tan_half" = 2 * atan(x),
-         "logit" = inv_logit(x), "probit" = pnorm(x), "cauchit" = pcauchy(x),
-         "cloglog" = inv_cloglog(x), "probit_approx" = pnorm(x),
-         stop2("Link '", link, "' not supported."))
+  switch(link, 
+    "identity" = x, 
+    "log" = exp(x),
+    "logm1" = expp1(x),
+    "inverse" = 1 / x,
+    "sqrt" = x^2, 
+    "1/mu^2" = 1 / sqrt(x), 
+    "tan_half" = 2 * atan(x),
+    "logit" = inv_logit(x), 
+    "probit" = pnorm(x), 
+    "cauchit" = pcauchy(x),
+    "cloglog" = inv_cloglog(x), 
+    "probit_approx" = pnorm(x),
+    stop2("Link '", link, "' not supported.")
+  )
 }
 
 prepare_conditions <- function(x, conditions = NULL, effects = NULL, 

@@ -696,6 +696,9 @@ stan_misc_functions <- function(family = gaussian(), kronecker = FALSE) {
   } else if (family$link == "cloglog") {
     out <- paste0(out, "  #include 'fun_cloglog.stan' \n")
   }
+  if (family$family %in% c("student")) {
+    out <- paste0(out, "  #include 'fun_logm1.stan' \n")
+  }
   if (kronecker) {
     out <- paste0(out, "  #include 'fun_as_matrix.stan' \n",
                   "  #include 'fun_kronecker.stan' \n")
@@ -963,22 +966,40 @@ stan_link <- function(link) {
   # find the link in Stan language
   # Args:
   #   link: the link function
-  switch(link, identity = "", log = "log", inverse = "inv",
-         sqrt = "sqrt", "1/mu^2" = "inv_square", logit = "logit", 
-         probit = "inv_Phi", probit_approx = "inv_Phi", 
-         cloglog = "cloglog", cauchit = "cauchit",
-         tan_half = "tan_half")
+  switch(link, 
+    identity = "",
+    log = "log", 
+    logm1 = "logm1",
+    inverse = "inv",
+    sqrt = "sqrt", 
+    "1/mu^2" = "inv_square", 
+    logit = "logit", 
+    probit = "inv_Phi", 
+    probit_approx = "inv_Phi", 
+    cloglog = "cloglog", 
+    cauchit = "cauchit",
+    tan_half = "tan_half"
+  )
 }
 
 stan_ilink <- function(link) {
   # find the inverse link in Stan language
   # Args:
   #   link: the link function
-  switch(link, identity = "", log = "exp", inverse = "inv", 
-         sqrt = "square", "1/mu^2" = "inv_sqrt", logit = "inv_logit", 
-         probit = "Phi", probit_approx = "Phi_approx", 
-         cloglog = "inv_cloglog", cauchit = "inv_cauchit",
-         tan_half = "inv_tan_half")
+  switch(link, 
+    identity = "",
+    log = "exp", 
+    logm1 = "expp1",
+    inverse = "inv", 
+    sqrt = "square", 
+    "1/mu^2" = "inv_sqrt", 
+    logit = "inv_logit", 
+    probit = "Phi", 
+    probit_approx = "Phi_approx", 
+    cloglog = "inv_cloglog",
+    cauchit = "inv_cauchit",
+    tan_half = "inv_tan_half"
+  )
 }
 
 stan_has_built_in_fun <- function(family, link) {

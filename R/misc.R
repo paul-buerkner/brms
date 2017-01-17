@@ -327,16 +327,16 @@ hypot <- function(x, y) {
   sqrt(x^2 + y^2)
 }
 
-log1p <- function(x) {
-  log(1 + x)
-}
-
 log1m <- function(x) {
   log(1 - x)
 }
 
-expm1 <- function(x) {
-  exp(x) - 1
+logm1 <- function(x) {
+  log(x - 1)
+}
+
+expp1 <- function(x) {
+  exp(x) + 1
 }
 
 multiply_log <- function(x, y) {
