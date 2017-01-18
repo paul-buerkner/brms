@@ -105,7 +105,7 @@ plot(marginal_effects(fit_zinb1), ask = FALSE)
 
 According to the parameter estimates, larger groups catch more fish, campers catch more fish than non-campers, and groups with more children catch less fish. The zero-inflation probability `zi` is pretty large with a mean of 41%. Please note that the probability of catching no fish is actually higher than 41%, but parts of this probability are already modeled by the poisson distribution itself (hence the name zero-*inflation*). If you want to treat all zeros as origniating from a separate process, you can use hurdle models instead (not shown here). 
 
-Now, we try to additionally predict the zero-inflation probability by the number of children. The underlying reasoning is that we expect groups with more children to be less likely to try catching fish at all. Most children are just terribly bad at waiting for ours until something happens. From a purely statistical perspective, zero-inflated (and hurdle) distributions are a mixture of two processes and predicting both parts of the model is natural and often very reasonable to fully understand the data.
+Now, we try to additionally predict the zero-inflation probability by the number of children. The underlying reasoning is that we expect groups with more children to not even try catching fish. Most children are just terribly bad at waiting for hours until something happens. From a purely statistical perspective, zero-inflated (and hurdle) distributions are a mixture of two processes and predicting both parts of the model is natural and often very reasonable to make full use of the data.
 
 ```{r, results='hide'}
 fit_zinb2 <- brm(bf(count ~ persons + child + camper, zi ~ child), 
@@ -118,13 +118,13 @@ plot(fit_zinb2, N = 6)
 plot(marginal_effects(fit_zinb2), ask = FALSE)
 ```
 
-To transform the linear predictor of `zi` into a probability, **brms** implicitly applies the logit-link: 
+To transform the linear predictor of `zi` into a probability, **brms** applies the logit-link: 
 
 $$logit(zi) = \log\left(\frac{zi}{1-zi}\right) = \eta_{zi}$$
 
 The logit-link takes values within $[0, 1]$ and returns values on the real line. Thus, it allows the transition between probabilities and linear predictors. 
 
-According to the model, trying to fish with children not only decreases the overall number fish caught (as implied by the Poisson part of the model) but also drastically increases your change of catching no fish at all (as implied by the zero-inflation part) most likely simply because groups with more children are not even trying.
+According to the model, trying to fish with children not only decreases the overall number fish caught (as implied by the Poisson part of the model) but also drastically increases your change of catching no fish at all (as implied by the zero-inflation part) most likely because groups with more children are not even trying.
 
 ## Additive Distributional Models
 

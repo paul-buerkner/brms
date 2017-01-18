@@ -254,7 +254,7 @@ bernoulli <- function(link = "logit") {
 negbinomial <- function(link = "log", link_shape = "log") {
   slink <- substitute(link)
   .brmsfamily("negbinomial", link = link, slink = slink,
-              link_shape =link_shape)
+              link_shape = link_shape)
 }
 
 #' @rdname brmsfamily
