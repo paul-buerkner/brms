@@ -400,7 +400,9 @@ models for all parameters of the assumed response distribution.
   are used to ensure that auxiliary parameters are within their valid intervals.
   This implies that effects for auxiliary parameters are estimated on the
   log / logit scale and one has to apply the inverse link function to get 
-  to the effects on the original scale.
+  to the effects on the original scale. 
+  See also \code{\link[brms:brmsfamily]{brmsfamily}} for an overview of 
+  valid link functions.
 }
 \examples{
 # multilevel model with smoothing terms

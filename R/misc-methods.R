@@ -10,7 +10,7 @@ print.brmssummary <- function(x, digits = 2, ...) {
   cat("Formula: ")
   print(x$formula, wsp = 9)
   cat(paste0("   Data: ", x$data.name, 
-             " (Number of observations: ",x$nobs,") \n"))
+             " (Number of observations: ", x$nobs, ") \n"))
   if (x$sampler == "") {
     cat(paste("\nThe model does not contain posterior samples."))
   } else {

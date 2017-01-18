@@ -378,7 +378,9 @@
 #'   are used to ensure that auxiliary parameters are within their valid intervals.
 #'   This implies that effects for auxiliary parameters are estimated on the
 #'   log / logit scale and one has to apply the inverse link function to get 
-#'   to the effects on the original scale.
+#'   to the effects on the original scale. 
+#'   See also \code{\link[brms:brmsfamily]{brmsfamily}} for an overview of 
+#'   valid link functions.
 #' 
 #' @examples 
 #' # multilevel model with smoothing terms
@@ -559,7 +561,30 @@ prepare_auxformula <- function(formula, par = NULL, rsv_pars = NULL) {
 auxpars <- function() {
   # names of auxiliary parameters
   c("sigma", "shape", "nu", "phi", "kappa", "beta", 
-    "zi", "hu", "bs", "ndt", "bias", "disc")
+    "zi", "hu", "disc", "bs", "ndt", "bias")
+}
+
+links_auxpars <- function(ap = NULL) {
+  # link functions for auxiliary parameters
+  stopifnot(length(ap) <= 1L)
+  link <- list(
+    sigma = "log", 
+    shape = "log", 
+    nu = "logm1", 
+    phi = "log",
+    kappa = "log", 
+    beta = "log",
+    zi = "logit", 
+    hu = "logit",
+    disc = "log",
+    bs = "log", 
+    ndt = "log", 
+    bias = "logit"
+  )
+  if (length(ap)) {
+    link <- link[[ap]]
+  }
+  link
 }
 
 ilink_auxpars <- function(ap = NULL, stan = FALSE) {

@@ -29,57 +29,63 @@
 \alias{zero_inflated_poisson}
 \title{Special Family Functions for \pkg{brms} Models}
 \usage{
-brmsfamily(family, link = NULL)
+brmsfamily(family, link = NULL, link_sigma = "log", link_shape = "log",
+  link_nu = "logm1", link_phi = "log", link_kappa = "log",
+  link_beta = "log", link_zi = "logit", link_hu = "logit",
+  link_disc = "log", link_bs = "log", link_ndt = "log",
+  link_bias = "logit")
 
-student(link = "identity")
+student(link = "identity", link_sigma = "log", link_nu = "logm1")
 
 bernoulli(link = "logit")
 
-negbinomial(link = "log")
+negbinomial(link = "log", link_shape = "log")
 
 geometric(link = "log")
 
-lognormal(link = "identity")
+lognormal(link = "identity", link_sigma = "log")
 
 exponential(link = "log")
 
-weibull(link = "log")
+weibull(link = "log", link_shape = "log")
 
-frechet(link = "log")
+frechet(link = "log", link_nu = "logm1")
 
-exgaussian(link = "identity")
+exgaussian(link = "identity", link_sigma = "log", link_beta = "log")
 
-wiener(link = "identity")
+wiener(link = "identity", link_bs = "log", link_ndt = "log",
+  link_bias = "logit")
 
-Beta(link = "logit")
+Beta(link = "logit", link_phi = "log")
 
-von_mises(link = "tan_half")
+von_mises(link = "tan_half", link_kappa = "log")
 
 hurdle_poisson(link = "log")
 
-hurdle_negbinomial(link = "log")
+hurdle_negbinomial(link = "log", link_shape = "log", link_hu = "logit")
 
-hurdle_gamma(link = "log")
+hurdle_gamma(link = "log", link_shape = "log", link_hu = "logit")
 
-hurdle_lognormal(link = "identity")
+hurdle_lognormal(link = "identity", link_sigma = "log", link_hu = "logit")
 
-zero_inflated_beta(link = "logit")
+zero_inflated_beta(link = "logit", link_phi = "log", link_zi = "logit")
 
-zero_inflated_poisson(link = "log")
+zero_inflated_poisson(link = "log", link_zi = "logit")
 
-zero_inflated_negbinomial(link = "log")
+zero_inflated_negbinomial(link = "log", link_shape = "log",
+  link_zi = "logit")
 
-zero_inflated_binomial(link = "logit")
+zero_inflated_binomial(link = "logit", link_zi = "logit")
 
 categorical(link = "logit")
 
-cumulative(link = "logit")
+cumulative(link = "logit", link_disc = "log")
 
-sratio(link = "logit")
+sratio(link = "logit", link_disc = "log")
 
-cratio(link = "logit")
+cratio(link = "logit", link_disc = "log")
 
-acat(link = "logit")
+acat(link = "logit", link_disc = "log")
 }
 \arguments{
 \item{family}{A character string naming the distribution
@@ -102,6 +108,30 @@ and \code{zero_inflated_poisson}.}
 This can be a name/expression or character string. 
 See the 'Details' section for more information on link
 functions supported by each family.}
+
+\item{link_sigma}{Link of auxiliary parameter \code{sigma} if being predicted.}
+
+\item{link_shape}{Link of auxiliary parameter \code{shape} if being predicted.}
+
+\item{link_nu}{Link of auxiliary parameter \code{nu} if being predicted.}
+
+\item{link_phi}{Link of auxiliary parameter \code{phi} if being predicted.}
+
+\item{link_kappa}{Link of auxiliary parameter \code{kappa} if being predicted.}
+
+\item{link_beta}{Link of auxiliary parameter \code{beta} if being predicted.}
+
+\item{link_zi}{Link of auxiliary parameter \code{zi} if being predicted.}
+
+\item{link_hu}{Link of auxiliary parameter \code{hu} if being predicted.}
+
+\item{link_disc}{Link of auxiliary parameter \code{disc} if being predicted.}
+
+\item{link_bs}{Link of auxiliary parameter \code{bs} if being predicted.}
+
+\item{link_ndt}{Link of auxiliary parameter \code{ndt} if being predicted.}
+
+\item{link_bias}{Link of auxiliary parameter \code{bias} if being predicted.}
 }
 \description{
 Family objects provide a convenient way to specify the details of the models 
