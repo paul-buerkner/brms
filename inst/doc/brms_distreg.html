@@ -12,7 +12,7 @@
 
 <meta name="author" content="Paul Bürkner" />
 
-<meta name="date" content="2016-12-29" />
+<meta name="date" content="2017-01-18" />
 
 <title>Estimating Distributional Models with brms</title>
 
@@ -70,7 +70,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 
 <h1 class="title toc-ignore">Estimating Distributional Models with brms</h1>
 <h4 class="author"><em>Paul Bürkner</em></h4>
-<h4 class="date"><em>2016-12-29</em></h4>
+<h4 class="date"><em>2017-01-18</em></h4>
 
 
 <div id="TOC">
@@ -121,18 +121,18 @@ dat1 &lt;-<span class="st"> </span><span class="kw">data.frame</span>(group, sym
 </div>
 <div id="zero-inflated-models" class="section level2">
 <h2>Zero-Inflated Models</h2>
-<p>Another important application of the distributional regression framwork are so called zero-inflated models. These models are helpful whenever there are more zeros in the response variable than one would naturally expect. For example, if one seeks to predict the number of cigarettes people smoke per day and also includes non-smokers, there will be a huge amount of zeros which, when not modeled appropriately, can seriously distort parameter estimates. Here, we consider another example dealing with the number of fish caught by various groups of people.</p>
+<p>Another important application of the distributional regression framework are so called zero-inflated models. These models are helpful whenever there are more zeros in the response variable than one would naturally expect. For example, if one seeks to predict the number of cigarettes people smoke per day and also includes non-smokers, there will be a huge amount of zeros which, when not modeled appropriately, can seriously distort parameter estimates. Here, we consider an example dealing with the number of fish caught by various groups of people. On the UCLA website (), the data are described as follows: “The state wildlife biologists want to model how many fish are being caught by fishermen at a state park. Visitors are asked how long they stayed, how many people were in the group, were there children in the group and how many fish were caught. Some visitors do not fish, but there is no data on whether a person fished or not. Some visitors who did fish did not catch any fish so there are excess zeros in the data because of the people that did not fish.”</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">zinb &lt;-<span class="st"> </span><span class="kw">read.csv</span>(<span class="st">&quot;http://www.ats.ucla.edu/stat/data/fish.csv&quot;</span>)
 <span class="kw">head</span>(zinb)</code></pre></div>
-<p>As predictors we choose the number of people per group, the number of children, as well as whether the group consists of campers. Many groups may not catch any fish and so we directly fit a zero-inflated Poisson model. For now, we assume a constant zero-inflation probability across observations.</p>
+<p>As predictors we choose the number of people per group, the number of children, as well as whether the group consists of campers. Many groups may not even try catching any fish at all (thus leading to many zero responses) and so we fit a zero-inflated Poisson model to the data. For now, we assume a constant zero-inflation probability across observations.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">fit_zinb1 &lt;-<span class="st"> </span><span class="kw">brm</span>(count ~<span class="st"> </span>persons +<span class="st"> </span>child +<span class="st"> </span>camper, 
                  <span class="dt">data =</span> zinb, <span class="dt">family =</span> <span class="kw">zero_inflated_poisson</span>())</code></pre></div>
 <p>Again, we summarize the results using the usual methods.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">summary</span>(fit_zinb1)
 <span class="kw">plot</span>(fit_zinb1)
 <span class="kw">plot</span>(<span class="kw">marginal_effects</span>(fit_zinb1), <span class="dt">ask =</span> <span class="ot">FALSE</span>)</code></pre></div>
-<p>According to the parameter estimates, larger groups catch more fish, campers catch more fish than non-campers, and children are really bad at catching fish. The zero-inflation probability <code>zi</code> is pretty large with a mean of 41%. Please note that the probability of catching no fish is actually higher than 41%, but parts of this probability are already modeled by the poisson distribution itself (hence the name zero-<em>inflation</em>). If you want to treat all zeros as origniating from a separate process, you can use hurdle models instead (not shown here).</p>
-<p>Now, we try to additionally predict the zero-inflation probability by the number of children. But why should we predict the zero-inflation probability at all? One line of reasong might go as follows. We assume two processes behind our response, the first being the basic Poisson process and the second being the zero-inflation process. For the smoker example, it is easy to interprete the zero-inflation process as the decision between smoking and non-smoking in general, which is definitely worth investigating using regression techniques. For other applications of zero-inflated models, for instance in the fishing example, it may not necessarily be that easy to interprete the zero-inflation process (or maybe it is, I have no idea of fishing), but the statistical idea remains the same: Each of the two processes comes with its own implied distribution and the zero-inflated Poisson distribution is a mixture of the two. From this perspective, predicting both parts of the model is natural and reasonable to fully understand the data.</p>
+<p>According to the parameter estimates, larger groups catch more fish, campers catch more fish than non-campers, and groups with more children catch less fish. The zero-inflation probability <code>zi</code> is pretty large with a mean of 41%. Please note that the probability of catching no fish is actually higher than 41%, but parts of this probability are already modeled by the poisson distribution itself (hence the name zero-<em>inflation</em>). If you want to treat all zeros as origniating from a separate process, you can use hurdle models instead (not shown here).</p>
+<p>Now, we try to additionally predict the zero-inflation probability by the number of children. The underlying reasoning is that we expect groups with more children to be less likely to try catching fish at all. Most children are just terribly bad at waiting for ours until something happens. From a purely statistical perspective, zero-inflated (and hurdle) distributions are a mixture of two processes and predicting both parts of the model is natural and often very reasonable to fully understand the data.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">fit_zinb2 &lt;-<span class="st"> </span><span class="kw">brm</span>(<span class="kw">bf</span>(count ~<span class="st"> </span>persons +<span class="st"> </span>child +<span class="st"> </span>camper, zi ~<span class="st"> </span>child), 
                  <span class="dt">data =</span> zinb, <span class="dt">family =</span> <span class="kw">zero_inflated_poisson</span>())</code></pre></div>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">summary</span>(fit_zinb2)
@@ -141,7 +141,7 @@ dat1 &lt;-<span class="st"> </span><span class="kw">data.frame</span>(group, sym
 <p>To transform the linear predictor of <code>zi</code> into a probability, <strong>brms</strong> implicitly applies the logit-link:</p>
 <p><span class="math display">\[logit(zi) = \log\left(\frac{zi}{1-zi}\right) = \eta_{zi}\]</span></p>
 <p>The logit-link takes values within <span class="math inline">\([0, 1]\)</span> and returns values on the real line. Thus, it allows the transition between probabilities and linear predictors.</p>
-<p>According to the model, trying to fish with children not only decreases the overall number fish caught (as implied by the Poisson part of the model), but on top of that also drastically increases your change of catching no fish at all (as implied by the zero-inflation part).</p>
+<p>According to the model, trying to fish with children not only decreases the overall number fish caught (as implied by the Poisson part of the model) but also drastically increases your change of catching no fish at all (as implied by the zero-inflation part) most likely simply because groups with more children are not even trying.</p>
 </div>
 <div id="additive-distributional-models" class="section level2">
 <h2>Additive Distributional Models</h2>
