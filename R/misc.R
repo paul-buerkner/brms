@@ -331,10 +331,26 @@ log1m <- function(x) {
   log(1 - x)
 }
 
-logm1 <- function(x) {
-  log(x - 1)
+#' Logarithm with a minus one offset.
+#' 
+#' Computes \code{log(x - 1)}.
+#' 
+#' @param x A numeric or complex vector.
+#' @param base A positive or complex number: the base with respect to which
+#'   logarithms are computed. Defaults to \emph{e} = \code{exp(1)}.
+#'     
+#' @export
+logm1 <- function(x, base = exp(1)) {
+  log(x - 1, base = base)
 }
 
+#' Exponential function plus one.
+#' 
+#' Computes \code{exp(x) + 1}.
+#' 
+#' @param x A numeric or complex vector.
+#' 
+#' @export
 expp1 <- function(x) {
   exp(x) + 1
 }
