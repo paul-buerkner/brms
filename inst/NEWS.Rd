@@ -18,6 +18,8 @@
       in \code{set_prior}.
       \item Introduce method \code{nsamples} to extract
       the number of posterior samples.
+      \item Export the main formula parsing function 
+      \code{parse_bf}.
     }
   }
   \subsection{OTHER CHANGES}{

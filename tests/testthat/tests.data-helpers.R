@@ -1,8 +1,8 @@
 test_that("(deprecated) melt_data returns data in long format", {
   data <- data.frame(x = rep(c("a","b"), 5), y1 = 1:10, y2 = 11:20, 
                      y3 = 21:30, z = 100:91)
-  effects <- extract_effects(y ~ x, family = "poisson")
-  expect_equivalent(melt_data(data, effects = effects, 
+  bterms <- parse_bf(y ~ x, family = "poisson")
+  expect_equivalent(melt_data(data, bterms = bterms, 
                          family = "poisson"), data)
   
   target1 <- data.frame(x = rep(c("a","b"), 10), y1 = rep(1:10, 2), 
@@ -11,8 +11,8 @@ test_that("(deprecated) melt_data returns data in long format", {
                         trait = factor(rep(c("y3", "y1"), each = 10),
                                        levels = c("y3", "y1")), 
                         response = c(21:30, 1:10))
-  effects <- extract_effects(cbind(y3,y1) ~ x, family = "gaussian")
-  expect_equivalent(melt_data(data, effects = effects, family = "gaussian"), 
+  bterms <- parse_bf(cbind(y3,y1) ~ x, family = "gaussian")
+  expect_equivalent(melt_data(data, bterms = bterms, family = "gaussian"), 
                target1[, c("x", "y1", "y3", "trait", "response")])
   
   target2 <- data.frame(x = rep(c("a","b"), 15), y1 = rep(1:10, 3), 
@@ -21,8 +21,8 @@ test_that("(deprecated) melt_data returns data in long format", {
                         trait = factor(rep(c("y2", "y1", "y3"), each = 10),
                                        levels = c("y2", "y1", "y3")), 
                         response = c(11:20, 1:10, 21:30))
-  effects <- extract_effects(cbind(y2,y1,y3) ~ x, family = "gaussian")
-  expect_equivalent(melt_data(data, effects = effects, family = "gaussian"), 
+  bterms <- parse_bf(cbind(y2,y1,y3) ~ x, family = "gaussian")
+  expect_equivalent(melt_data(data, bterms = bterms, family = "gaussian"), 
                target2[, c("x", "y1", "y2", "y3", "trait", "response")])
 })
 
@@ -30,8 +30,8 @@ test_that("(deprecated) melt_data keeps factor contrasts", {
   data <- data.frame(y1 = rnorm(10), y2 = rnorm(10),
                      x = factor(rep(1:2, each = 5)))
   contrasts(data$x) <- contr.sum(2)
-  effects <- extract_effects(cbind(y1,y2) ~ x)
-  newdata <- melt_data(data, family = "gaussian", effects = effects)
+  bterms <- parse_bf(cbind(y1,y2) ~ x)
+  newdata <- melt_data(data, family = "gaussian", bterms = bterms)
   expect_equal(attr(newdata$x, "contrasts"), attr(data$x, "contrasts"))
 })
 
@@ -40,33 +40,33 @@ test_that("(deprecated) melt_data returns expected errors", {
   
   formula <- bf(y1 ~ x:main)
   formula$old_mv <- TRUE
-  ee <- brms:::extract_effects(formula, family = hurdle_poisson())
-  expect_error(melt_data(data = NULL, family = hurdle_poisson(), effects = ee),
+  bterms <- brms:::parse_bf(formula, family = hurdle_poisson())
+  expect_error(melt_data(data = NULL, family = hurdle_poisson(), bterms = bterms),
                "'data' must be a data.frame", fixed = TRUE)
   
   data$main <- 1:10 
-  expect_error(melt_data(data = data, family = hurdle_poisson(), effects = ee),
+  expect_error(melt_data(data = data, family = hurdle_poisson(), bterms = bterms),
                "'main' is a reserved variable name", fixed = TRUE)
   
   data$response <- 1:10
   formula <- bf(response ~ x:main)
   formula$old_mv <- TRUE
-  ee <- extract_effects(formula, family = hurdle_poisson())
-  expect_error(melt_data(data = data, family = hurdle_poisson(), effects = ee),
+  bterms <- parse_bf(formula, family = hurdle_poisson())
+  expect_error(melt_data(data = data, family = hurdle_poisson(), bterms = bterms),
                "'response' is a reserved variable name", fixed = TRUE)
   
   data$trait <- 1:10
   formula <- bf(y ~ 0 + x*trait)
   formula$old_mv <- TRUE
-  ee <- extract_effects(formula, family = hurdle_poisson())
-  expect_error(melt_data(data = data, family = hurdle_poisson(), effects = ee),
+  bterms <- parse_bf(formula, family = hurdle_poisson())
+  expect_error(melt_data(data = data, family = hurdle_poisson(), bterms = bterms),
                "'trait', 'response' is a reserved variable name", fixed = TRUE)
   
   data <- data.frame(y1 = rnorm(10), y2 = rnorm(10), x = 1:10)
   formula <- bf(cbind(y1, y2) ~ x)
   formula$old_mv <- TRUE
-  ee <- extract_effects(formula)
-  expect_error(melt_data(data = data, family = poisson(), effects = ee),
+  bterms <- parse_bf(formula)
+  expect_error(melt_data(data = data, family = poisson(), bterms = bterms),
                "Invalid multivariate model", fixed = TRUE)
 })
 
@@ -94,12 +94,12 @@ test_that("amend_newdata handles factors correctly", {
 test_that("update_data returns correct model.frames", {
   dat <- data.frame(y = 1:5, x = 1:5, z = 6:10, g = 5:1)
   
-  ee <- brms:::extract_effects(y ~ as.numeric(x) + (as.factor(z) | g))
-  mf <- brms:::update_data(dat, family = gaussian(), effects = ee)
+  bterms <- brms:::parse_bf(y ~ as.numeric(x) + (as.factor(z) | g))
+  mf <- brms:::update_data(dat, family = gaussian(), bterms = bterms)
   expect_true(all(c("x", "z") %in% names(mf)))
   
-  ee <- brms:::extract_effects(y ~ 1 + (1|g/x/z))
-  mf <- brms:::update_data(dat, family = gaussian(), effects = ee)
+  bterms <- brms:::parse_bf(y ~ 1 + (1|g/x/z))
+  mf <- brms:::update_data(dat, family = gaussian(), bterms = bterms)
   expect_equal(mf[["g:x"]], paste0(dat$g, "_", dat$x))
   expect_equal(mf[["g:x:z"]], paste0(dat$g, "_", dat$x, "_", dat$z))
 })
@@ -108,25 +108,25 @@ test_that("(deprecated) update_data handles NAs correctly in old MV models", {
   data <- data.frame(y1 = c(1, NA, 3), y2 = 4:6, x = 10:12, z = NA)
   formula <- bf(cbind(y1, y2) ~ x)
   formula$old_mv <- TRUE
-  ee <- extract_effects(formula, family = "gaussian")
-  expect_warning(mf <- update_data(data, family = "gaussian", effects = ee),
+  bterms <- parse_bf(formula, family = "gaussian")
+  expect_warning(mf <- update_data(data, family = "gaussian", bterms = bterms),
                  "NAs were excluded")
   expect_equivalent(mf, data.frame(response = c(1, 3, 4, 6), y1 = c(1, 3, 1, 3), 
                                    y2 = c(4, 6, 4, 6), x = c(10, 12, 10, 12)))
   
   formula <- bf(y1 ~ x)
   formula$old_mv <- TRUE
-  ee <- extract_effects(formula, family = "hurdle_gamma")
+  bterms <- parse_bf(formula, family = "hurdle_gamma")
   expect_warning(mf <- update_data(data, family = "hurdle_gamma", 
-                                   effects = ee),
+                                   bterms = bterms),
                  "NAs were excluded")
   expect_equivalent(mf, data.frame(response = c(1, 3, 1, 3), 
                                    y1 = c(1, 3, 1, 3),
                                    x = c(10, 12, 10, 12)))
   
-  ee <- extract_effects(formula, family = "zero_inflated_poisson")
+  bterms <- parse_bf(formula, family = "zero_inflated_poisson")
   expect_warning(mf <- update_data(data, family = "zero_inflated_poisson", 
-                                   effects = ee), "NAs were excluded")
+                                   bterms = bterms), "NAs were excluded")
   expect_equivalent(mf, data.frame(response = c(1, 3, 1, 3), y1 = c(1, 3, 1, 3),
                                    x = c(10, 12, 10, 12)))
 })

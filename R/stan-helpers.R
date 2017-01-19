@@ -1,12 +1,12 @@
-stan_llh <- function(family, effects, data = NULL, 
+stan_llh <- function(family, bterms, data = NULL, 
                      autocor = cor_arma()) {
   # Likelihood in Stan language
   # Args:
   #   family: the model family
-  #   effects: output of extract_effects
+  #   bterms: object of class brmsterms
   #   autocor: object of classe cor_brms
   stopifnot(is.family(family))
-  stopifnot(is.brmseffects(effects))
+  stopifnot(is.brmsterms(bterms))
   link <- family$link
   family <- family$family
   is_categorical <- is_categorical(family)
@@ -14,17 +14,17 @@ stan_llh <- function(family, effects, data = NULL,
   is_hurdle <- is_hurdle(family)
   is_zero_inflated <- is_zero_inflated(family)
   is_forked <- is_forked(family)
-  is_mv <- is_linear(family) && length(effects$response) > 1L
+  is_mv <- is_linear(family) && length(bterms$response) > 1L
   
-  has_sigma <- has_sigma(family, effects, autocor)
-  has_se <- is.formula(effects$se)
-  has_weights <- is.formula(effects$weights)
-  has_cens <- has_cens(effects$cens, data = data)
-  has_disp <- is.formula(effects$disp)
-  has_cs <- has_cs(effects)
-  bounds <- get_bounds(effects$trunc, data = data)
+  has_sigma <- has_sigma(family, bterms, autocor)
+  has_se <- is.formula(bterms$se)
+  has_weights <- is.formula(bterms$weights)
+  has_cens <- has_cens(bterms$cens, data = data)
+  has_disp <- is.formula(bterms$disp)
+  has_cs <- has_cs(bterms)
+  bounds <- get_bounds(bterms$trunc, data = data)
   has_trunc <- any(bounds$lb > -Inf) || any(bounds$ub < Inf)
-  llh_adj <- stan_llh_adj(effects)
+  llh_adj <- stan_llh_adj(bterms)
 
   if (is_mv) {
     # prepare for use of a multivariate likelihood
@@ -42,7 +42,7 @@ stan_llh <- function(family, effects, data = NULL,
     family <- paste0(family, "_fixed")
   }
   
-  auxpars <- names(effects$auxpars)
+  auxpars <- names(bterms$auxpars)
   reqn <- llh_adj || is_categorical || is_ordinal || 
           is_hurdle || is_zero_inflated || 
           is_exgaussian(family) || is_wiener(family) ||
@@ -51,8 +51,8 @@ stan_llh <- function(family, effects, data = NULL,
   n <- ifelse(reqn, "[n]", "")
   # prepare auxiliary parameters
   p <- named_list(auxpars())
-  p$sigma <- stan_llh_sigma(family, effects, autocor)
-  p$shape <- stan_llh_shape(family, effects)
+  p$sigma <- stan_llh_sigma(family, bterms, autocor)
+  p$shape <- stan_llh_shape(family, bterms)
   for (ap in setdiff(auxpars(), c("sigma", "shape"))) {
     p[[ap]] <- paste0(ap, if (reqn && ap %in% auxpars) "[n]")
   }
@@ -197,13 +197,13 @@ stan_llh_weights <- function(llh_pre, family = gaussian()) {
          "(Y[n] | ", llh_pre[2],"); \n")
 }
 
-stan_llh_sigma <- function(family, effects = NULL, autocor = cor_arma()) {
+stan_llh_sigma <- function(family, bterms = NULL, autocor = cor_arma()) {
   # prepare the code for 'sigma' in the likelihood statement
-  has_sigma <- has_sigma(family, effects, autocor)
-  has_se <- is.formula(effects$se)
-  has_disp <- is.formula(effects$disp)
-  llh_adj <- stan_llh_adj(effects)
-  auxpars <- names(effects$auxpars)
+  has_sigma <- has_sigma(family, bterms, autocor)
+  has_se <- is.formula(bterms$se)
+  has_disp <- is.formula(bterms$disp)
+  llh_adj <- stan_llh_adj(bterms)
+  auxpars <- names(bterms$auxpars)
   nsigma <- (llh_adj || has_se || is_exgaussian(family)) && 
             (has_disp || "sigma" %in% auxpars)
   nsigma <- if (nsigma) "[n]"
@@ -224,39 +224,39 @@ stan_llh_sigma <- function(family, effects = NULL, autocor = cor_arma()) {
   out
 }
 
-stan_llh_shape <- function(family, effects) {
+stan_llh_shape <- function(family, bterms) {
   # prepare the code for 'shape' in the likelihood statement
-  has_disp <- is.formula(effects$disp)
-  llh_adj <- stan_llh_adj(effects)
-  auxpars <- names(effects$auxpars)
+  has_disp <- is.formula(bterms$disp)
+  llh_adj <- stan_llh_adj(bterms)
+  auxpars <- names(bterms$auxpars)
   nshape <- (llh_adj || is_forked(family)) &&
             (has_disp || "shape" %in% auxpars)
   nshape <- if (nshape) "[n]"
   paste0(if (has_disp) "disp_", "shape", nshape)
 }
 
-stan_llh_adj <- function(effects, adds = c("weights", "cens", "trunc")) {
+stan_llh_adj <- function(bterms, adds = c("weights", "cens", "trunc")) {
   # checks if certain 'adds' are present so that the LL has to be adjusted
   # Args:
-  #   effects: output of extract_effects
+  #   bterms: object of class brmsterms
   #   adds: vector of addition argument names
   stopifnot(all(adds %in% c("weights", "cens", "trunc")))
-  any(ulapply(effects[adds], is.formula))
+  any(ulapply(bterms[adds], is.formula))
 }
 
-stan_autocor <- function(autocor, effects, family = gaussian(),
+stan_autocor <- function(autocor, bterms, family = gaussian(),
                          prior = brmsprior()) {
   # Stan code related to autocorrelation structures
   # Args:
   #   autocor: autocorrelation structure; object of class cor_brms
-  #   effects: output of extract_effects
+  #   bterms: object of class brmsterms
   #   family: the model family
   #   prior: a data.frame containing user defined priors 
   #          as returned by check_prior
   stopifnot(is.family(family))
-  stopifnot(is.brmseffects(effects))
+  stopifnot(is.brmsterms(bterms))
   is_linear <- is_linear(family)
-  resp <- effects$response
+  resp <- bterms$response
   is_mv <- is_linear && length(resp) > 1L
   link <- stan_link(family$link)
   Kar <- get_ar(autocor)
@@ -291,14 +291,14 @@ stan_autocor <- function(autocor, effects, family = gaussian(),
       if (is_mv) {
         stop2(err_msg, " in multivariate models.")
       }
-      if (is.formula(effects$disp)) {
+      if (is.formula(bterms$disp)) {
         stop2(err_msg, " when specifying 'disp'.")
       }
-      if ("sigma" %in% names(effects)) {
+      if ("sigma" %in% names(bterms)) {
         stop2(err_msg, " when predicting 'sigma'.")
       }
       out$data <- paste0(out$data, "  #include 'data_arma_cov.stan' \n")
-      if (!is.formula(effects$se)) {
+      if (!is.formula(bterms$se)) {
         out$tdataD <- "  vector[N] se2; \n"
         out$tdataC <- "  se2 = rep_vector(0, N); \n"
       }
@@ -331,10 +331,10 @@ stan_autocor <- function(autocor, effects, family = gaussian(),
       }
     } else {
       err_msg <- "Please set cov = TRUE in cor_arma / cor_ar / cor_ma"
-      if (is.formula(effects$se)) {
+      if (is.formula(bterms$se)) {
         stop2(err_msg, " when specifying 'se'.")
       }
-      if (length(effects$nlpars)) {
+      if (length(bterms$nlpars)) {
         stop2(err_msg, " for non-linear models.")
       }
       if (is_mv) {
@@ -386,7 +386,7 @@ stan_autocor <- function(autocor, effects, family = gaussian(),
     if (is_mv || family$family %in% c("bernoulli", "categorical")) {
       stop2("The bsts structure is not yet implemented for this family.")
     }
-    if (length(effects$nlpars)) {
+    if (length(bterms$nlpars)) {
       stop2("The bsts structure is not yet implemented for non-linear models.")
     }
     out$data <- "  vector[N] tg;  // indicates independent groups \n"
@@ -654,18 +654,18 @@ stan_cens <- function(cens, family = gaussian()) {
   out
 }
 
-stan_disp <- function(effects, family = gaussian()) {
+stan_disp <- function(bterms, family = gaussian()) {
   # stan code for models with addition argument 'disp'
   # Args:
   #   disp: logical; are dispersion factors specified?
   #   family: the model family
-  stopifnot(is.brmseffects(effects))
+  stopifnot(is.brmsterms(bterms))
   stopifnot(is.family(family))
   out <- list()
-  if (is(effects$disp, "formula")) {
+  if (is(bterms$disp, "formula")) {
     par <- if (has_sigma(family)) "sigma"
            else if (has_shape(family)) "shape"
-    if (!is.null(effects[[par]])) {
+    if (!is.null(bterms[[par]])) {
       stop2("Specifying 'disp' is not allowed when predicting '", par, "'.")
     }
     out$data <- "  vector<lower=0>[N] disp;  // dispersion factors \n"

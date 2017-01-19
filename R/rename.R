@@ -64,7 +64,7 @@ rename_pars <- function(x) {
   }
   # some variables generally needed
   family <- family(x)
-  ee <- extract_effects(x$formula, family = family)
+  bterms <- parse_bf(x$formula, family = family)
   standata <- standata(x)
   
   # order parameter samples after parameter class
@@ -74,8 +74,8 @@ rename_pars <- function(x) {
                    "simplex", "r", "s", "loclev", "Xme", "prior", "lp")
   class <- get_matches("^[^_\\[]+", x$fit@sim$fnames_oi)
   # make sure that the fixed effects intercept comes first
-  if (length(ee$response) > 1L) {
-    regex_resp <- paste0(usc(ee$response , "suffix"), collapse  = "|")
+  if (length(bterms$response) > 1L) {
+    regex_resp <- paste0(usc(bterms$response , "suffix"), collapse  = "|")
     regex_resp <- paste0("(", regex_resp, ")")
   } else {
     regex_resp <- ""
@@ -99,20 +99,20 @@ rename_pars <- function(x) {
   
   # find positions of parameters and define new names
   change <- list()
-  if (length(ee$nlpars)) {
-    nlpars <- names(ee$nlpars)
+  if (length(bterms$nlpars)) {
+    nlpars <- names(bterms$nlpars)
     for (p in nlpars) {
-      splines <- get_spline_labels(ee$nlpars[[p]], x$data, covars = TRUE)
+      splines <- get_spline_labels(bterms$nlpars[[p]], x$data, covars = TRUE)
       change_eff <- change_effects(
         pars = pars, dims = x$fit@sim$dims_oi,
         fixef = colnames(standata[[paste0("X_", p)]]),
         monef = colnames(standata[[paste0("Xmo_", p)]]),
-        meef = get_me_labels(ee$nlpars[[p]], x$data),
+        meef = get_me_labels(bterms$nlpars[[p]], x$data),
         splines = splines, nlpar = p)
       change <- c(change, change_eff)
     }
   } else {
-    resp <- ee$response
+    resp <- bterms$response
     if (length(resp) > 1L) {
       for (r in resp) {
         fixef <- rm_int_fixef(colnames(standata[[paste0("X_", r)]]), 
@@ -120,8 +120,8 @@ rename_pars <- function(x) {
         change_eff <- change_effects(
           pars = pars, dims = x$fit@sim$dims_oi, 
           fixef = fixef, monef = colnames(standata[[paste0("Xmo_", r)]]),
-          meef = get_me_labels(ee, x$data),
-          splines = get_spline_labels(ee, x$data, covars = TRUE),
+          meef = get_me_labels(bterms, x$data),
+          splines = get_spline_labels(bterms, x$data, covars = TRUE),
           nlpar = r)
         change <- c(change, change_eff)
       }
@@ -130,21 +130,21 @@ rename_pars <- function(x) {
       change_eff <- change_effects(
         pars = pars, dims = x$fit@sim$dims_oi, 
         fixef = fixef, monef = colnames(standata[["Xmo"]]),
-        meef = get_me_labels(ee, x$data),
-        splines = get_spline_labels(ee, x$data, covars = TRUE))
+        meef = get_me_labels(bterms, x$data),
+        splines = get_spline_labels(bterms, x$data, covars = TRUE))
       change_csef <- change_csef(colnames(standata[["Xcs"]]), 
                                  pars = pars, ncat = standata$ncat)
       change <- c(change, change_eff, change_csef)
     }
   }
   # rename parameters related to auxilliary parameters
-  for (ap in names(ee$auxpars)) {
-    splines <- get_spline_labels(ee$auxpars[[ap]], x$data, covars = TRUE)
+  for (ap in names(bterms$auxpars)) {
+    splines <- get_spline_labels(bterms$auxpars[[ap]], x$data, covars = TRUE)
     change_eff <- change_effects(
       pars = pars, dims = x$fit@sim$dims_oi,
       fixef = colnames(standata[[paste0("X_", ap)]]),
       monef = colnames(standata[[paste0("Xmo_", ap)]]),
-      meef = get_me_labels(ee$auxpars[[ap]], x$data),
+      meef = get_me_labels(bterms$auxpars[[ap]], x$data),
       splines = splines, nlpar = ap)
     change <- c(change, change_eff)
   }
@@ -153,15 +153,15 @@ rename_pars <- function(x) {
                                dims = x$fit@sim$dims_oi)
   change <- c(change, change_ranef)
   
-  if (is_linear(family) && length(ee$response) > 1L) {
+  if (is_linear(family) && length(bterms$response) > 1L) {
     # rename residual parameters of multivariate linear models
-    corfnames <- paste0("sigma_", ee$response)
+    corfnames <- paste0("sigma_", bterms$response)
     change <- lc(change, 
       list(pos = grepl("^sigma\\[", pars), oldname = "sigma",
            pnames = corfnames, fnames = corfnames))
     change <- c(change, change_prior(class = "sigma", pars = pars, 
-                                     names = ee$response))
-    rescor_names <- get_cornames(ee$response, type = "rescor", 
+                                     names = bterms$response))
+    rescor_names <- get_cornames(bterms$response, type = "rescor", 
                                   brackets = FALSE)
     change <- lc(change, list(pos = grepl("^rescor\\[", pars), 
                               oldname = "rescor", pnames = rescor_names,
@@ -552,16 +552,16 @@ change_old_ranef2 <- function(ranef, pars, dims) {
   change
 }
 
-change_old_splines <- function(effects, pars, dims) {
+change_old_splines <- function(bterms, pars, dims) {
   # change names of spline parameters fitted with brms <= 1.0.1
   # this became necessary after allowing splines with multiple covariates
-  .change_old_splines <- function(e, nlpar = "") {
+  .change_old_splines <- function(bt, nlpar = "") {
     change <- list()
-    spline_labels <- get_spline_labels(e)
+    spline_labels <- get_spline_labels(bt)
     if (length(spline_labels)) {
       p <- usc(nlpar, "suffix")
       old_splines <- rename(paste0(p, spline_labels))
-      new_splines <- rename(paste0(p, get_spline_labels(e, covars = TRUE)))
+      new_splines <- rename(paste0(p, get_spline_labels(bt, covars = TRUE)))
       old_sds_pars <- paste0("sds_", old_splines)
       new_sds_pars <- paste0("sds_", new_splines, "_1")
       old_s_pars <- paste0("s_", old_splines)
@@ -580,18 +580,18 @@ change_old_splines <- function(effects, pars, dims) {
   }
   
   change <- list()
-  spec_effects <- c(effects$auxpars, effects$nlpars)
+  spec_effects <- c(bterms$auxpars, bterms$nlpars)
   for (sp in names(spec_effects)) {
     se <- spec_effects[[sp]]
     change <- c(change, .change_old_splines(se, nlpar = sp))
   }
-  resp <- effects$response
+  resp <- bterms$response
   if (length(resp) > 1L) {
     for (r in resp) {
-      change <- c(change, .change_old_splines(effects, nlpar = r))
+      change <- c(change, .change_old_splines(bterms, nlpar = r))
     }
   } else {
-    change <- c(change, .change_old_splines(effects))
+    change <- c(change, .change_old_splines(bterms))
   }
   change
 }

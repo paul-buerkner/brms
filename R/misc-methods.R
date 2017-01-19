@@ -32,7 +32,7 @@ print.brmssummary <- function(x, digits = 2, ...) {
       cat("\n")
     }
     if (length(x$splines)) {
-      cat("Spline Effects: \n")
+      cat("Smooth Terms: \n")
       if (x$algorithm == "sampling") {
         x$splines[, "Eff.Sample"] <- 
           round(x$splines[, "Eff.Sample"], digits = 0)

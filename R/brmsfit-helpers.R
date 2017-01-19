@@ -51,8 +51,8 @@ restructure <- function(x, rstr_summary = FALSE) {
                                   nonlinear = x$nonlinear))
     x$nonlinear <- x$partial <- NULL
     x$formula[["old_mv"]] <- is_old_mv(x)
-    ee <- extract_effects(formula(x), family = family(x))
-    x$ranef <- tidy_ranef(ee, model.frame(x))
+    bterms <- parse_bf(formula(x), family = family(x))
+    x$ranef <- tidy_ranef(bterms, model.frame(x))
     if ("prior_frame" %in% class(x$prior)) {
       class(x$prior) <- c("brmsprior", "data.frame") 
     }
@@ -61,7 +61,7 @@ restructure <- function(x, rstr_summary = FALSE) {
       class(x$autocor) <- "cor_fixed"
     }
     if (x$version <= "0.10.0.9000") {
-      if (length(ee$nlpars)) {
+      if (length(bterms$nlpars)) {
         # nlpar and group have changed positions
         change <- change_old_ranef(x$ranef, pars = parnames(x),
                                    dims = x$fit@sim$dims_oi)
@@ -77,7 +77,7 @@ restructure <- function(x, rstr_summary = FALSE) {
     if (x$version <= "1.0.1") {
       # names of spline parameters had to be changed after
       # allowing for multiple covariates in one spline term
-      change <- change_old_splines(ee, pars = parnames(x),
+      change <- change_old_splines(bterms, pars = parnames(x),
                                    dims = x$fit@sim$dims_oi)
       x <- do_renaming(x, change)
     }
@@ -163,35 +163,37 @@ ilink <- function(x, link) {
   )
 }
 
-prepare_conditions <- function(x, conditions = NULL, effects = NULL, 
+prepare_conditions <- function(x, conditions = NULL, effects = NULL,
                                re_formula = NA, rsv_vars = NULL) {
   # prepare marginal conditions
   # Args:
   #   x: an object of class 'brmsfit'
   #   conditions: optional data.frame containing user defined conditions
+  #   effects: see marginal_effects
   #   re_formula: see marginal_effects
   #   rsv_vars: names of reserved variables
   # Returns:
   #   A data.frame with (possibly updated) conditions
   mf <- model.frame(x)
   new_formula <- update_re_terms(formula(x), re_formula = re_formula)
-  ee <- extract_effects(new_formula, family = family(x))
-  int_effects <- c(get_effect(ee, "mo"), rmNULL(ee[c("trials", "cat")]))
+  bterms <- parse_bf(new_formula, family = family(x))
+  int_effects <- c(get_effect(bterms, "mo"), 
+                   rmNULL(bterms[c("trials", "cat")]))
   int_vars <- unique(ulapply(int_effects, all.vars))
   if (is.null(conditions)) {
-    if (!is.null(ee$trials)) {
+    if (!is.null(bterms$trials)) {
       message("Using the median number of trials by default")
     }
     # list all required variables
-    random <- get_random(ee)
-    req_vars <- c(lapply(get_effect(ee), rhs), random$form, 
+    random <- get_random(bterms)
+    req_vars <- c(lapply(get_effect(bterms), rhs), random$form, 
                   lapply(random$gcall, "[[", "weightvars"),
-                  lapply(get_effect(ee, "mo"), rhs),
-                  lapply(get_effect(ee, "me"), rhs),
-                  lapply(get_effect(ee, "gam"), rhs), 
-                  ee[c("cs", "se", "disp", "trials", "cat")])
+                  lapply(get_effect(bterms, "mo"), rhs),
+                  lapply(get_effect(bterms, "me"), rhs),
+                  lapply(get_effect(bterms, "gam"), rhs), 
+                  bterms[c("cs", "se", "disp", "trials", "cat")])
     req_vars <- unique(ulapply(req_vars, all.vars))
-    req_vars <- setdiff(req_vars, c(rsv_vars, names(ee$nlpars)))
+    req_vars <- setdiff(req_vars, c(rsv_vars, names(bterms$nlpars)))
     conditions <- as.data.frame(as.list(rep(NA, length(req_vars))))
     names(conditions) <- req_vars
     for (v in req_vars) {
@@ -677,7 +679,7 @@ mult_disp <- function(x, data, i = NULL, dim = NULL) {
 prepare_family <- function(x) {
   # prepare for calling family specific log_lik / predict functions
   family <- family(x)
-  nresp <- length(extract_effects(x$formula, family = family)$response)
+  nresp <- length(parse_bf(x$formula, family = family)$response)
   if (is_old_lognormal(family, nresp = nresp, version = x$version)) {
     family <- lognormal()
   } else if (is_linear(family) && nresp > 1L) {

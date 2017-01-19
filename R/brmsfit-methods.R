@@ -403,7 +403,7 @@ VarCorr.brmsfit <- function(x, sigma = 1, estimate = "mean",
   }
   
   family <- family(x)
-  ee <- extract_effects(x$formula, family = family)
+  bterms <- parse_bf(x$formula, family = family)
   if (nrow(x$ranef)) {
     get_names <- function(group) {
       # get names of group-level parameters
@@ -420,12 +420,12 @@ VarCorr.brmsfit <- function(x, sigma = 1, estimate = "mean",
     p <- group <- NULL
   } 
   # special treatment of residuals variances in linear models
-  has_sigma <- has_sigma(family, ee, autocor = x$autocor, incmv = TRUE)
-  if (has_sigma && !"sigma" %in% names(ee$auxpars)) {
-    cor_pars <- get_cornames(ee$response, type = "rescor", 
+  has_sigma <- has_sigma(family, bterms, autocor = x$autocor, incmv = TRUE)
+  if (has_sigma && !"sigma" %in% names(bterms$auxpars)) {
+    cor_pars <- get_cornames(bterms$response, type = "rescor", 
                              brackets = FALSE)
-    p <- lc(p, list(rnames = ee$response, cor_pars = cor_pars,
-                    sd_pars = c("sigma", paste0("sigma_", ee$response))))
+    p <- lc(p, list(rnames = bterms$response, cor_pars = cor_pars,
+                    sd_pars = c("sigma", paste0("sigma_", bterms$response))))
     group <- c(group, "RESIDUAL")
   } 
   VarCorr <- lapply(p, extract)
@@ -671,7 +671,7 @@ print.brmsfit <- function(x, digits = 2, ...) {
 summary.brmsfit <- function(object, waic = FALSE, priors = FALSE,
                             use_cache = TRUE, ...) {
   object <- restructure(object, rstr_summary = use_cache)
-  ee <- extract_effects(formula(object), family = family(object))
+  bterms <- parse_bf(formula(object), family = family(object))
   out <- brmssummary(formula = formula(object), 
                      family = family(object), 
                      data.name = object$data.name, 
@@ -729,9 +729,9 @@ summary.brmsfit <- function(object, waic = FALSE, priors = FALSE,
     is_mv_par <- apply(sapply(c("^sigma_", "^rescor_"), grepl, pars), 1, any)
     spec_pars <- pars[pars %in% c(auxpars(), "delta") | is_mv_par]
     out$spec_pars <- fit_summary[spec_pars, , drop = FALSE]
-    if (is_linear(family(object)) && length(ee$response) > 1L) {
-      sigma_names <- paste0("sigma(", ee$response, ")")
-      rescor_names <- get_cornames(ee$response, type = "rescor")   
+    if (is_linear(family(object)) && length(bterms$response) > 1L) {
+      sigma_names <- paste0("sigma(", bterms$response, ")")
+      rescor_names <- get_cornames(bterms$response, type = "rescor")   
       spec_pars[grepl("^sigma_", spec_pars)] <- sigma_names
       spec_pars[grepl("^rescor_", spec_pars)] <- rescor_names 
     }    
@@ -1115,7 +1115,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
   # validate argument "group"
   object <- restructure(object)
   valid_groups <- unique(object$ranef$group)
-  time_group <- extract_time(object$autocor$formula)$group
+  time_group <- parse_time(object$autocor$formula)$group
   if (!is.null(time_group) && nchar(time_group)) {
     valid_groups <- unique(c(valid_groups, time_group))
   }
@@ -1132,8 +1132,8 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     if (is.null(x)) {
       stop2("Argument 'x' is required for ppc type '", type, "'.")
     }
-    ee <- extract_effects(formula(object), family = family(object))
-    ae_coll <- ulapply(get_all_effects(ee), paste, collapse = ":")
+    bterms <- parse_bf(formula(object), family = family(object))
+    ae_coll <- ulapply(get_all_effects(bterms), paste, collapse = ":")
     if (!x %in% ae_coll) {
       stop2("Variable '", x, "' is not a valid variable for this model. \n",
             "Valid variables are: ", paste(ae_coll, collapse = ", "))
@@ -1256,8 +1256,8 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   contains_samples(x)
   x <- restructure(x)
   new_formula <- update_re_terms(x$formula, re_formula = re_formula)
-  ee <- extract_effects(new_formula, family = x$family)
-  if (is_linear(x$family) && length(ee$response) > 1L) {
+  bterms <- parse_bf(new_formula, family = x$family)
+  if (is_linear(x$family) && length(bterms$response) > 1L) {
     stop2("Marginal plots are not yet implemented for multivariate models.")
   } else if (is_categorical(x$family)) {
     stop2("Marginal plots are not yet implemented for categorical models.")
@@ -1266,11 +1266,11 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
              "in marginal plots, \nwhich is likely an invalid ", 
              "assumption for family ", x$family$family, ".")
   }
-  rsv_vars <- rsv_vars(x$family, nresp = length(ee$response),
-                       rsv_intercept = attr(ee$fixed, "rsv_intercept"),
-                       old_mv = attr(ee$formula, "old_mv"))
+  rsv_vars <- rsv_vars(x$family, nresp = length(bterms$response),
+                       rsv_intercept = attr(bterms$fixed, "rsv_intercept"),
+                       old_mv = attr(bterms$formula, "old_mv"))
   if (is.null(effects)) {
-    effects <- get_all_effects(ee, rsv_vars = rsv_vars)
+    effects <- get_all_effects(bterms, rsv_vars = rsv_vars)
     if (!length(effects)) {
       stop2("No valid effects detected.")
     }
@@ -1285,7 +1285,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
       stop2("To display interactions of order higher than 2 ",
             "please use the 'conditions' argument.")
     }
-    all_effects <- get_all_effects(ee, rsv_vars = rsv_vars, comb_all = TRUE)
+    all_effects <- get_all_effects(bterms, rsv_vars = rsv_vars, comb_all = TRUE)
     ae_coll <- all_effects[lengths(all_effects) == 1L]
     ae_coll <- ulapply(ae_coll, paste, collapse = ":")
     matches <- match(lapply(all_effects, sort), lapply(effects, sort), 0L)
@@ -1310,7 +1310,8 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   conditions <- prepare_conditions(x, conditions, effects, 
                                    re_formula = re_formula, 
                                    rsv_vars = rsv_vars)
-  int_effects <- c(get_effect(ee, "mo"), rmNULL(ee[c("trials", "cat")]))
+  int_effects <- c(get_effect(bterms, "mo"), 
+                   rmNULL(bterms[c("trials", "cat")]))
   int_vars <- unique(ulapply(int_effects, all.vars))
   mf <- model.frame(x)
   results <- list()
@@ -1357,7 +1358,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     attr(marg_res, "effects") <- effects[[i]]
     attr(marg_res, "contour") <- both_numeric && contour
     point_args <- nlist(mf, effects = effects[[i]], conditions,
-                        groups = get_random(ee)$group, family = x$family)
+                        groups = get_random(bterms)$group, family = x$family)
     attr(marg_res, "points") <- do.call(make_point_frame, point_args)
     results[[paste0(effects[[i]], collapse = ":")]] <- marg_res
   }
@@ -1375,16 +1376,16 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
   mf <- model.frame(x)
   conditions <- prepare_conditions(x)
   smooths <- rename(as.character(smooths), " ", "")
-  ee <- extract_effects(formula(x), family = family(x))
-  if (length(ee$nlpars)) {
-    lee <- ee$nlpars
+  bterms <- parse_bf(formula(x), family = family(x))
+  if (length(bterms$nlpars)) {
+    lee <- bterms$nlpars
   } else {
-    lee <- named_list(ee$response, list(ee))
+    lee <- named_list(bterms$response, list(bterms))
     if (length(lee) == 1L) {
       names(lee) <- ""
     }
   }
-  lee <- c(lee, ee$auxpars)
+  lee <- c(lee, bterms$auxpars)
   
   args <- nlist(x, smooths_only = TRUE, allow_new_levels = TRUE,
                 incl_autocor = FALSE, f = prepare_family(x), 
@@ -1462,15 +1463,16 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
 #' @param object An object of class \code{brmsfit}
 #' @param newdata An optional data.frame for which to evaluate predictions.
 #'   If \code{NULL} (default), the orginal data of the model is used.
-#' @param re_formula formula containing random effects 
+#' @param re_formula formula containing group-level effects 
 #'   to be considered in the prediction. 
-#'   If \code{NULL} (default), include all random effects; 
-#'   if \code{NA}, include no random effects.
+#'   If \code{NULL} (default), include all group-level effects; 
+#'   if \code{NA}, include no group-level effects.
 #' @param transform A function or a character string naming 
 #'   a function to be applied on the predicted responses
 #'   before summary statistics are computed.
 #' @param allow_new_levels A flag indicating if new
-#'   levels of random effects are allowed (defaults to \code{FALSE}). 
+#'   levels of group-level effects are allowed 
+#'   (defaults to \code{FALSE}). 
 #'   Only relevant if \code{newdata} is provided.
 #' @param incl_autocor A flag indicating if autocorrelation
 #'  parameters should be included in the predictions. 
@@ -1863,7 +1865,7 @@ predictive_error.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #'                newdata = kidney[1:38, ])
 #' summary(fit3)
 #' 
-#' ## use another family and add fixed effects priors
+#' ## use another family and add population-level priors
 #' fit4 <- update(fit1, family = weibull(), inits = "0",
 #'                prior = set_prior("normal(0,5)"))
 #' summary(fit4)
@@ -1904,10 +1906,10 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
               "\nPlease supply your data again via argument 'newdata'")
       }
       dots$formula <- update(formula(object), dots$formula)
-      ee_old <- extract_effects(formula(object))
+      ee_old <- parse_bf(formula(object))
       family <- get_arg("family", dots, object)
       dots$formula <- amend_formula(dots$formula, family = family)
-      ee_new <- extract_effects(dots$formula)
+      ee_new <- parse_bf(dots$formula)
       # no need to recompile the model when changing fixed effects only
       dont_change <- c("random", "gam", "cs", "mo", "me")
       n_old_fixef <- length(attr(terms(ee_old$fixed), "term.labels"))
@@ -1929,7 +1931,7 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
     (missing(formula.) || is.null(attr(formula., "nonlinear")))
   if (take_nl) attr(dots$formula, "nonlinear") <- NULL
   # update gaussian("log") to lognormal() family
-  resp <- extract_effects(object$formula, family = object$family)$response
+  resp <- parse_bf(object$formula, family = object$family)$response
   if (is_old_lognormal(object$family, nresp = length(resp),
                        version = object$version)) {
     object$family <- lognormal()
@@ -1996,11 +1998,12 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
       object$formula <- dots$formula
       dots$formula <- NULL
     }
-    ee <- extract_effects(object$formula, family = object$family)
+    bterms <- parse_bf(object$formula, family = object$family)
     if (!is.null(newdata)) {
-      object$data <- update_data(newdata, family = object$family, effects = ee)
+      object$data <- update_data(newdata, bterms = bterms, 
+                                 family = object$family)
       object$data.name <- Reduce(paste, deparse(substitute(newdata)))
-      object$ranef <- tidy_ranef(ee, data = object$data)
+      object$ranef <- tidy_ranef(bterms, data = object$data)
       dots$is_newdata <- TRUE
     }
     if (!is.null(dots$save_ranef) || !is.null(dots$save_mevars)) {
@@ -2011,7 +2014,7 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
       if (is.null(dots$save_mevars)) {
         dots$save_mevars <- any(grepl("^Xme_", pnames))
       }
-      object$exclude <- exclude_pars(ee, data = object$data, 
+      object$exclude <- exclude_pars(bterms, data = object$data, 
                                      ranef = object$ranef, 
                                      save_ranef = dots$save_ranef,
                                      save_mevars = dots$save_mevars)

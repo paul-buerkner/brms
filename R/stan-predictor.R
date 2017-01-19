@@ -1,4 +1,4 @@
-stan_effects <- function(effects, data, family = gaussian(),
+stan_effects <- function(bterms, data, family = gaussian(),
                          center_X = TRUE, ranef = empty_ranef(), 
                          prior = brmsprior(), autocor = cor_arma(), 
                          threshold = "flexible", sparse = FALSE, 
@@ -7,7 +7,7 @@ stan_effects <- function(effects, data, family = gaussian(),
   # Args:
   #   center_X: center population-level design matrix if possible?
   #   eta: prefix of the linear predictor variable
-  stopifnot(is.brmseffects(effects))
+  stopifnot(is.brmsterms(bterms))
   p <- usc(nlpar, "prefix")
   if (nzchar(eta) && nzchar(nlpar)) {
     eta <- usc(eta, "suffix") 
@@ -17,31 +17,31 @@ stan_effects <- function(effects, data, family = gaussian(),
   out <- list()
   out$modelD <- paste0("  vector[N] ", eta, "; \n")
   # include fixed effects
-  center_X <- center_X && has_intercept(effects$fixed) && 
+  center_X <- center_X && has_intercept(bterms$fixed) && 
               !is(autocor, "cor_bsts") && !sparse
   rm_intercept <- center_X || is(autocor, "cor_bsts") || is_ordinal(family)
   cols2remove <- if (rm_intercept) "Intercept"
-  fixef <- colnames(data_fixef(effects, data, autocor = autocor)$X)
+  fixef <- colnames(data_fixef(bterms, data, autocor = autocor)$X)
   fixef <- setdiff(fixef, cols2remove)
   text_fixef <- stan_fixef(fixef, center_X = center_X, 
                            family = family, prior = prior, nlpar = nlpar,
                            sparse = sparse, threshold = threshold)
   # include spline terms
-  splines <- get_spline_labels(effects, data = data)
+  splines <- get_spline_labels(bterms, data = data)
   text_splines <- stan_splines(splines, prior = prior, nlpar = nlpar)
   # include category specific effects
-  csef <- colnames(get_model_matrix(effects$cs, data))
+  csef <- colnames(get_model_matrix(bterms$cs, data))
   text_csef <- stan_csef(csef, ranef, prior = prior)
   # include monotonic effects
-  monef <- all_terms(effects$mo)
+  monef <- all_terms(bterms$mo)
   text_monef <- stan_monef(monef, ranef, prior = prior, nlpar = nlpar)
   # include measurement error variables
-  meef <- get_me_labels(effects, data = data)
+  meef <- get_me_labels(bterms, data = data)
   text_meef <- stan_meef(meef, ranef, prior = prior, nlpar = nlpar)
   out <- collapse_lists(list(out, text_fixef, text_csef, 
                              text_monef, text_meef, text_splines))
   
-  has_offset <- !is.null(get_offset(effects$fixed))
+  has_offset <- !is.null(get_offset(bterms$fixed))
   if (has_offset) {
     out$data <- paste0(out$data, "  vector[N] offset", p, "; \n")
   }
@@ -74,7 +74,7 @@ stan_effects <- function(effects, data, family = gaussian(),
       "    ", eta, "[n] = ", eta_ar, "; \n")
   }
   # possibly transform eta before it is passed to the likelihood
-  eta_ilink <- stan_eta_ilink(family$family, family$link, effects)
+  eta_ilink <- stan_eta_ilink(family$family, family$link, bterms)
   if (sum(nzchar(eta_ilink))) {
     eta_ilink <- paste0(eta_ilink[1], eta, "[n]", eta_ilink[2])
     out$modelC3 <- paste0(out$modelC3, 
@@ -83,19 +83,19 @@ stan_effects <- function(effects, data, family = gaussian(),
   out
 }
 
-stan_effects_mv <- function(effects, data, family = gaussian(), 
+stan_effects_mv <- function(bterms, data, family = gaussian(), 
                             ranef = empty_ranef(), prior = brmsprior(), 
                             autocor = cor_arma(), sparse = FALSE) {
-  stopifnot(is.brmseffects(effects))
+  stopifnot(is.brmsterms(bterms))
   if (sparse) {
     stop2("Sparse design matrices are not yet implemented ", 
           "for multivariate models.")
   }
   out <- list()
-  resp <- effects$response
+  resp <- bterms$response
   if (length(resp) > 1L) {
-    args <- nlist(effects, data, family, ranef, prior, autocor)
-    resp <- effects$response
+    args <- nlist(bterms, data, family, ranef, prior, autocor)
+    resp <- bterms$response
     tmp_list <- named_list(resp)
     for (r in resp) {
       tmp_list[[r]] <- do.call(stan_effects, c(args, nlpar = r))
@@ -118,33 +118,33 @@ stan_effects_mv <- function(effects, data, family = gaussian(),
   out
 }
 
-stan_nonlinear <- function(effects, data, family = gaussian(), 
+stan_nonlinear <- function(bterms, data, family = gaussian(), 
                            ranef = empty_ranef(), prior = brmsprior()) {
   # prepare Stan code for non-linear models
   # Args:
-  #   effects: a list returned by extract_effects()
+  #   bterms: object of class brmsterms
   #   data: data.frame supplied by the user
   #   family: the model family
   #   cov_ranef: a list of user-defined covariance matrices
   #   prior: a brmsprior object
-  stopifnot(is.brmseffects(effects))
+  stopifnot(is.brmsterms(bterms))
   out <- list()
-  if (length(effects$nlpars)) {
-    for (i in seq_along(effects$nlpars)) {
-      nlpar <- names(effects$nlpars)[i]
+  if (length(bterms$nlpars)) {
+    for (i in seq_along(bterms$nlpars)) {
+      nlpar <- names(bterms$nlpars)[i]
       # do not pass 'family' here to avoid inverse link transformations
-      nl_text <- stan_effects(effects = effects$nlpars[[i]],
+      nl_text <- stan_effects(bterms = bterms$nlpars[[i]],
                               data = data, ranef = ranef, 
                               prior = prior, nlpar = nlpar, 
                               center_X = FALSE)
       out <- collapse_lists(list(out, nl_text))
     }
     # prepare non-linear model of eta 
-    nlpars <- wsp(names(effects$nlpars))
-    new_nlpars <- paste0(" eta_", names(effects$nlpars), "[n] ")
+    nlpars <- wsp(names(bterms$nlpars))
+    new_nlpars <- paste0(" eta_", names(bterms$nlpars), "[n] ")
     # covariates in the non-linear model
-    covars <- wsp(setdiff(all.vars(effects$fixed[[3]]), 
-                          names(effects$nlpars)))
+    covars <- wsp(setdiff(all.vars(bterms$fixed[[3]]), 
+                          names(bterms$nlpars)))
     if (length(covars)) {
       out$data <- paste0(out$data, 
         "  int<lower=1> KC;  // number of covariates \n",
@@ -155,12 +155,12 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
     }
     # add whitespaces to be able to replace parameters and covariates
     meta_sym <- c("+", "-", "*", "/", "^", ")", "(", ",")
-    nlmodel <- gsub(" ", "", collapse(deparse(effects$fixed[[3]])))
+    nlmodel <- gsub(" ", "", collapse(deparse(bterms$fixed[[3]])))
     nlmodel <- wsp(rename(nlmodel, meta_sym, wsp(meta_sym))) 
     nlmodel <- rename(nlmodel, c(nlpars, covars, " ( ", " ) "), 
                       c(new_nlpars, new_covars, "(", ")"))
     # possibly transform eta in the transformed params block
-    eta_ilink <- stan_eta_ilink(family$family, family$link, effects)
+    eta_ilink <- stan_eta_ilink(family$family, family$link, bterms)
     out$modelD <- paste0(out$modelD, "  vector[N] eta; \n")
     out$modelC3 <- paste0(out$modelC3, 
       "    // compute non-linear predictor \n",
@@ -169,14 +169,14 @@ stan_nonlinear <- function(effects, data, family = gaussian(),
   out
 }
 
-stan_auxpars <- function(effects, data, family = gaussian(),
+stan_auxpars <- function(bterms, data, family = gaussian(),
                          ranef = empty_ranef(), prior = brmsprior(), 
                          autocor = cor_arma()) {
   # Stan code for auxiliary parameters
   # Args:
-  #   effects: output of extract_effects
+  #   bterms: object of class brmsterms
   #   other arguments: same as make_stancode
-  stopifnot(is.brmseffects(effects))
+  stopifnot(is.brmsterms(bterms))
   out <- list()
   default_defs <- c(
     sigma = "  real<lower=0> sigma;  // residual SD \n",
@@ -191,14 +191,14 @@ stan_auxpars <- function(effects, data, family = gaussian(),
     ndt = "  real<lower=0,upper=min_Y> ndt;  // non-decision time parameter \n",
     bias = "  real<lower=0,upper=1> bias;  // initial bias parameter \n",
     disc = "  real<lower=0> disc;  // discrimination parameters \n")
-  valid_auxpars <- valid_auxpars(family, effects, autocor = autocor)
+  valid_auxpars <- valid_auxpars(family, bterms, autocor = autocor)
   # don't supply the family argument to avoid applying link functions
   args <- nlist(data, ranef, center_X = FALSE, eta = "")
   for (ap in valid_auxpars) {
-    if (is.brmseffects(effects$auxpars[[ap]])) {
+    if (is.brmsterms(bterms$auxpars[[ap]])) {
       ap_ilink <- ilink_auxpars(ap, stan = TRUE)
       ap_prior <- prior[prior$nlpar == ap, ]
-      ap_args <- list(effects = effects$auxpars[[ap]], 
+      ap_args <- list(bterms = bterms$auxpars[[ap]], 
                       nlpar = ap, prior = ap_prior)
       if (nzchar(ap_ilink)) {
         ap_ilink <- paste0("    ", ap, "[n] = ", ap_ilink, "(", ap, "[n]); \n")
@@ -207,7 +207,7 @@ stan_auxpars <- function(effects, data, family = gaussian(),
       }
       out[[ap]] <- do.call(stan_effects, c(ap_args, args))
       out[[ap]]$modelC3 <- paste0(out[[ap]]$modelC3, ap_ilink)
-    } else if (is.numeric(effects$fauxpars[[ap]])) {
+    } else if (is.numeric(bterms$fauxpars[[ap]])) {
       out[[ap]] <- list(data = default_defs[ap]) 
     } else {
       out[[ap]] <- list(par = default_defs[ap],
@@ -737,19 +737,19 @@ stan_eta_transform <- function(family, link, llh_adj = FALSE) {
   (llh_adj || !stan_has_built_in_fun(family, link))
 }
 
-stan_eta_ilink <- function(family, link, effects) {
+stan_eta_ilink <- function(family, link, bterms) {
   # correctly apply inverse link to eta
   # Args:
   #   family: string naming the family
   #   link: string naming the link function
-  #   effects: output of extract_effects
-  llh_adj <- stan_llh_adj(effects, c("cens", "trunc"))
+  #   bterms: object of class brmsterms
+  llh_adj <- stan_llh_adj(bterms, c("cens", "trunc"))
   if (stan_eta_transform(family, link, llh_adj = llh_adj)) {
     ilink <- stan_ilink(link)
-    shape <- ifelse(is.formula(effects$disp), "disp_shape[n]", 
-                    ifelse("shape" %in% names(effects$auxpars), 
+    shape <- ifelse(is.formula(bterms$disp), "disp_shape[n]", 
+                    ifelse("shape" %in% names(bterms$auxpars), 
                            "shape[n]", "shape"))
-    nu <- ifelse("nu" %in% names(effects$auxpars), "nu[n]", "nu")
+    nu <- ifelse("nu" %in% names(bterms$auxpars), "nu[n]", "nu")
     fl <- ifelse(family %in% c("gamma", "exponential"), 
                  paste0(family, "_", link), family)
     out <- switch(fl, 

@@ -44,7 +44,7 @@ fit3 <- update(fit1, formula. = ~ . - (1|patient),
                newdata = kidney[1:38, ])
 summary(fit3)
 
-## use another family and add fixed effects priors
+## use another family and add population-level priors
 fit4 <- update(fit1, family = weibull(), inits = "0",
                prior = set_prior("normal(0,5)"))
 summary(fit4)

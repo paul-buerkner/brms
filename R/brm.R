@@ -364,7 +364,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     family <- check_family(family)
     formula <- amend_formula(formula, data = data, family = family, 
                              nonlinear = nonlinear)
-    ee <- extract_effects(formula, family = family, autocor = autocor)
+    bterms <- parse_bf(formula, family = family, autocor = autocor)
     if (is.null(dots$data.name)) {
       data.name <- substr(Reduce(paste, deparse(substitute(data))), 1, 50)
     } else {
@@ -372,7 +372,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       dots$data.name <- NULL
     }
     # see data-helpers.R
-    data <- update_data(data, family = family, effects = ee)
+    data <- update_data(data, family = family, bterms = bterms)
     # see priors.R
     prior <- check_prior(prior, formula = formula, data = data, 
                          family = family, sample_prior = sample_prior, 
@@ -384,8 +384,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                  autocor = autocor, cov_ranef = cov_ranef, 
                  threshold = threshold, algorithm = algorithm)
     # see validate.R
-    x$ranef <- tidy_ranef(ee, data = x$data)  
-    x$exclude <- exclude_pars(ee, x$data, ranef = x$ranef, 
+    x$ranef <- tidy_ranef(bterms, data = x$data)  
+    x$exclude <- exclude_pars(bterms, x$data, ranef = x$ranef, 
                               save_ranef = save_ranef,
                               save_mevars = save_mevars)
     # see make_stancode.R

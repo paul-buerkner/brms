@@ -22,17 +22,18 @@
 \item{newdata}{An optional data.frame for which to evaluate predictions.
 If \code{NULL} (default), the orginal data of the model is used.}
 
-\item{re_formula}{formula containing random effects 
+\item{re_formula}{formula containing group-level effects 
 to be considered in the prediction. 
-If \code{NULL} (default), include all random effects; 
-if \code{NA}, include no random effects.}
+If \code{NULL} (default), include all group-level effects; 
+if \code{NA}, include no group-level effects.}
 
 \item{transform}{A function or a character string naming 
 a function to be applied on the predicted responses
 before summary statistics are computed.}
 
 \item{allow_new_levels}{A flag indicating if new
-levels of random effects are allowed (defaults to \code{FALSE}). 
+levels of group-level effects are allowed 
+(defaults to \code{FALSE}). 
 Only relevant if \code{newdata} is provided.}
 
 \item{incl_autocor}{A flag indicating if autocorrelation

@@ -513,8 +513,8 @@ get_prior <- function(formula, data, family = gaussian(),
                            nonlinear = nonlinear)
   threshold <- match.arg(threshold)
   autocor <- check_autocor(autocor)
-  ee <- extract_effects(formula, family = family)
-  data <- update_data(data, family = family, effects = ee)
+  bterms <- parse_bf(formula, family = family)
+  data <- update_data(data, family = family, bterms = bterms)
   
   # ensure that RE and residual SDs only have a weakly informative prior by default
   Y <- unname(model.response(data))
@@ -534,10 +534,10 @@ get_prior <- function(formula, data, family = gaussian(),
   # initialize output
   prior <- empty_brmsprior()
   # priors for primary regression effects
-  if (length(ee$nlpars)) {
-    nlpars <- names(ee$nlpars)
+  if (length(bterms$nlpars)) {
+    nlpars <- names(bterms$nlpars)
     for (i in seq_along(nlpars)) {
-      prior_eff <- get_prior_effects(ee$nlpars[[i]], data = data, 
+      prior_eff <- get_prior_effects(bterms$nlpars[[i]], data = data, 
                                      autocor = autocor, nlpar = nlpars[i],
                                      spec_intercept = FALSE,
                                      def_scale_prior = def_scale_prior,
@@ -545,18 +545,18 @@ get_prior <- function(formula, data, family = gaussian(),
       prior <- rbind(prior, prior_eff)
     }
   } else {
-    if (length(ee$response) > 1L) {
+    if (length(bterms$response) > 1L) {
       # priors for effects in multivariate models
-      for (r in c("", ee$response)) {
+      for (r in c("", bterms$response)) {
         # r = "" adds global priors affecting parameters of all responses
-        prior_eff <- get_prior_effects(ee, data = data, autocor = autocor,
+        prior_eff <- get_prior_effects(bterms, data = data, autocor = autocor,
                                        def_scale_prior = def_scale_prior,
                                        internal = internal, nlpar = r)
         prior <- rbind(prior, prior_eff)
       }
     } else {
       # priors for effects in univariate models
-      prior_eff <- get_prior_effects(ee, data = data, autocor = autocor,
+      prior_eff <- get_prior_effects(bterms, data = data, autocor = autocor,
                                      def_scale_prior = def_scale_prior,
                                      internal = internal)
       prior <- rbind(prior, prior_eff)
@@ -569,10 +569,10 @@ get_prior <- function(formula, data, family = gaussian(),
                     zi = "beta(1, 1)", hu = "beta(1, 1)", 
                     bs = "gamma(1, 1)", ndt = "uniform(0, min_Y)", 
                     bias = "beta(1, 1)", disc = NA)
-  valid_auxpars <- valid_auxpars(family, effects = ee, autocor = autocor)
+  valid_auxpars <- valid_auxpars(family, bterms = bterms, autocor = autocor)
   for (ap in valid_auxpars) {
-    if (!is.null(ee$auxpars[[ap]])) {
-      auxprior <- get_prior_effects(ee$auxpars[[ap]], data = data,
+    if (!is.null(bterms$auxpars[[ap]])) {
+      auxprior <- get_prior_effects(bterms$auxpars[[ap]], data = data,
                                     autocor = autocor, nlpar = ap,
                                     spec_intercept = FALSE,
                                     def_scale_prior = def_scale_prior,
@@ -585,9 +585,9 @@ get_prior <- function(formula, data, family = gaussian(),
     prior <- rbind(prior, auxprior)
   }
   # priors of group-level parameters
-  ranef <- tidy_ranef(ee, data)
+  ranef <- tidy_ranef(bterms, data)
   prior_ranef <- get_prior_ranef(ranef, def_scale_prior = def_scale_prior,
-                                 global_sd = length(ee$response) > 1L,
+                                 global_sd = length(bterms$response) > 1L,
                                  internal = internal)
   prior <- rbind(prior, prior_ranef)
   
@@ -596,9 +596,9 @@ get_prior <- function(formula, data, family = gaussian(),
     prior <- rbind(prior, brmsprior(class = "delta"))
   }
   # priors for auxiliary parameters of multivariate models
-  if (is_linear(family) && length(ee$response) > 1L) {
-    sigma_coef <- c("", ee$response)
-    sigma_prior <- c(def_scale_prior, rep("", length(ee$response)))
+  if (is_linear(family) && length(bterms$response) > 1L) {
+    sigma_coef <- c("", bterms$response)
+    sigma_prior <- c(def_scale_prior, rep("", length(bterms$response)))
     sigma_prior <- brmsprior(class = "sigma", coef = sigma_coef,
                              prior = sigma_prior)
     prior <- rbind(prior, sigma_prior)
@@ -630,7 +630,7 @@ get_prior <- function(formula, data, family = gaussian(),
   structure(prior, class = c("brmsprior", "data.frame"))
 }
 
-get_prior_effects <- function(effects, data, autocor = cor_arma(), 
+get_prior_effects <- function(bterms, data, autocor = cor_arma(), 
                               nlpar = "", spec_intercept = TRUE,
                               def_scale_prior = "", internal = FALSE) {
   # wrapper function to get priors for various kinds of effects
@@ -639,17 +639,17 @@ get_prior_effects <- function(effects, data, autocor = cor_arma(),
   # group-level priors are prepared separately
   # Args:
   #   spec_intercept: special parameter class for the FE Intercept? 
-  fixef <- colnames(data_fixef(effects, data, autocor = autocor)$X)
-  spec_intercept <- has_intercept(effects$fixed) && spec_intercept
+  fixef <- colnames(data_fixef(bterms, data, autocor = autocor)$X)
+  spec_intercept <- has_intercept(bterms$fixed) && spec_intercept
   prior_fixef <- get_prior_fixef(fixef, spec_intercept = spec_intercept,
                                  nlpar = nlpar, internal = internal)
-  monef <- all_terms(effects$mo)
+  monef <- all_terms(bterms$mo)
   prior_monef <- get_prior_monef(monef, fixef = fixef, nlpar = nlpar)
-  splines <- get_spline_labels(effects)
+  splines <- get_spline_labels(bterms)
   prior_splines <- get_prior_splines(splines, def_scale_prior, nlpar = nlpar)
-  csef <- colnames(get_model_matrix(effects$cs, data = data))
+  csef <- colnames(get_model_matrix(bterms$cs, data = data))
   prior_csef <- get_prior_csef(csef, fixef = fixef)
-  prior_meef <- get_prior_meef(get_me_labels(effects, data))
+  prior_meef <- get_prior_meef(get_me_labels(bterms, data))
   rbind(prior_fixef, prior_monef, prior_splines, prior_csef, prior_meef)
 }
 
@@ -833,7 +833,7 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
     return(prior)
   }
   formula <- bf(formula)
-  ee <- extract_effects(formula, family = family)  
+  bterms <- parse_bf(formula, family = family)  
   all_priors <- get_prior(formula = formula, data = data, 
                           family = family, autocor = autocor, 
                           threshold = threshold, internal = TRUE)
@@ -852,7 +852,7 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
     stop2("Duplicated prior specifications are not allowed.")
   }
   # handle special priors that are not explictly coded as functions in Stan
-  has_specef <- is.formula(ee[["mo"]]) || is.formula(ee[["cs"]])
+  has_specef <- is.formula(bterms[["mo"]]) || is.formula(bterms[["cs"]])
   prior <- handle_special_priors(prior, has_specef = has_specef)  
   # check if parameters in prior are valid
   if (nrow(prior)) {
@@ -891,7 +891,7 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
     rows2remove <- c(rows2remove, int_index, bint_index)
   }
   # prepare priors of monotonic effects
-  mo_forms <- get_effect(ee, "mo")
+  mo_forms <- get_effect(bterms, "mo")
   for (k in seq_along(mo_forms)) {
     monef <- colnames(get_model_matrix(mo_forms[[k]], data = data))
     for (i in seq_along(monef)) {
@@ -906,8 +906,8 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
     }
   }
   # check if priors for non-linear parameters are defined
-  if (length(ee$nlpars)) {
-    nlpars <- names(ee$nlpars)
+  if (length(bterms$nlpars)) {
+    nlpars <- names(bterms$nlpars)
     for (nlp in nlpars) {
       nlp_prior <- prior$prior[with(prior, nlpar == nlp & class == "b")]
       if (!any(as.logical(nchar(nlp_prior)))) {

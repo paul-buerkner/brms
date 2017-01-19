@@ -605,9 +605,9 @@ ilink_auxpars <- function(ap = NULL, stan = FALSE) {
   ilink
 }
 
-valid_auxpars <- function(family, effects = list(), autocor = cor_arma()) {
+valid_auxpars <- function(family, bterms = list(), autocor = cor_arma()) {
   # convenience function to find relevant auxiliary parameters
-  x <- c(sigma = has_sigma(family, effects = effects, autocor = autocor),
+  x <- c(sigma = has_sigma(family, bterms = bterms, autocor = autocor),
          shape = has_shape(family), nu = has_nu(family), 
          phi = has_phi(family), kappa = has_kappa(family),
          beta = has_beta(family),

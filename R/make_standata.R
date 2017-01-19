@@ -50,10 +50,10 @@ make_standata <- function(formula, data, family = "gaussian",
   is_count <- is_count(family)
   is_forked <- is_forked(family)
   is_categorical <- is_categorical(family)
-  ee <- extract_effects(formula, family = family, autocor = autocor)
+  bterms <- parse_bf(formula, family = family, autocor = autocor)
   check_prior_content(prior, family = family, warn = FALSE)
   na_action <- if (is_newdata) na.pass else na.omit
-  data <- update_data(data, family = family, effects = ee,
+  data <- update_data(data, family = family, bterms = bterms,
                       drop.unused.levels = !is_newdata, 
                       na.action = na_action, knots = knots,
                       terms_attr = control$terms_attr)
@@ -61,10 +61,11 @@ make_standata <- function(formula, data, family = "gaussian",
   # sort data in case of autocorrelation models
   if (has_arma(autocor) || is(autocor, "cor_bsts")) {
     if (old_mv) {
-      to_order <- rmNULL(list(data[["trait"]], data[[ee$time$group]], 
-                              data[[ee$time$time]]))
+      to_order <- rmNULL(list(data[["trait"]], data[[bterms$time$group]], 
+                              data[[bterms$time$time]]))
     } else {
-      to_order <- rmNULL(list(data[[ee$time$group]], data[[ee$time$time]]))
+      to_order <- rmNULL(list(data[[bterms$time$group]], 
+                              data[[bterms$time$time]]))
     }
     if (length(to_order)) {
       new_order <- do.call(order, to_order)
@@ -140,30 +141,30 @@ make_standata <- function(formula, data, family = "gaussian",
   }
   
   # data for various kinds of effects
-  ranef <- tidy_ranef(ee, data, ncat = control$ncat, 
+  ranef <- tidy_ranef(bterms, data, ncat = control$ncat, 
                       old_levels = control$old_levels)
   args_eff <- nlist(data, family, ranef, prior, knots, not4stan)
-  if (length(ee$nlpars)) {
-    nlpars <- names(ee$nlpars)
+  if (length(bterms$nlpars)) {
+    nlpars <- names(bterms$nlpars)
     # matrix of covariates appearing in the non-linear formula
-    C <- get_model_matrix(ee$covars, data = data)
-    if (length(all.vars(ee$covars)) != ncol(C)) {
+    C <- get_model_matrix(bterms$covars, data = data)
+    if (length(all.vars(bterms$covars)) != ncol(C)) {
       stop2("Factors with more than two levels are not allowed as covariates.")
     }
     # fixes issue #127 occuring for factorial covariates
-    colnames(C) <- all.vars(ee$covars)
+    colnames(C) <- all.vars(bterms$covars)
     standata <- c(standata, list(KC = ncol(C), C = C)) 
     for (nlp in nlpars) {
-      args_eff_spec <- list(effects = ee$nlpars[[nlp]], nlpar = nlp,
+      args_eff_spec <- list(bterms = bterms$nlpars[[nlp]], nlpar = nlp,
                             smooth = control$smooth[[nlp]],
                             Jmo = control$Jmo[[nlp]])
       data_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
       standata <- c(standata, data_eff)
     }
   } else {
-    resp <- ee$response
+    resp <- bterms$response
     if (length(resp) > 1L && !old_mv) {
-      args_eff_spec <- list(effects = ee, autocor = autocor,
+      args_eff_spec <- list(bterms = bterms, autocor = autocor,
                             Jmo = control$Jmo[["mu"]],
                             smooth = control$smooth[["mu"]])
       for (r in resp) {
@@ -181,24 +182,24 @@ make_standata <- function(formula, data, family = "gaussian",
       }
     } else {
       # pass autocor here to not affect non-linear and auxiliary pars
-      args_eff_spec <- list(effects = ee, autocor = autocor, 
+      args_eff_spec <- list(bterms = bterms, autocor = autocor, 
                             Jmo = control$Jmo[["mu"]],
                             smooth = control$smooth[["mu"]])
       data_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
-      standata <- c(standata, data_eff, data_csef(ee, data = data))
+      standata <- c(standata, data_eff, data_csef(bterms, data = data))
       standata$offset <- model.offset(data)
     }
   }
   # data for predictors of auxiliary parameters
-  for (ap in names(ee$auxpars)) {
-    args_eff_spec <- list(effects = ee$auxpars[[ap]], nlpar = ap,
+  for (ap in names(bterms$auxpars)) {
+    args_eff_spec <- list(bterms = bterms$auxpars[[ap]], nlpar = ap,
                           smooth = control$smooth[[ap]],
                           Jmo = control$Jmo[[ap]])
     data_aux_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
     standata <- c(standata, data_aux_eff)
   }
-  for (ap in names(ee$fauxpars)) {
-    standata[[ap]] <- ee$fauxpars[[ap]]
+  for (ap in names(bterms$fauxpars)) {
+    standata[[ap]] <- bterms$fauxpars[[ap]]
   }
   # data for grouping factors separated after group-ID
   data_group <- data_group(ranef, data, cov_ranef = cov_ranef)
@@ -206,7 +207,7 @@ make_standata <- function(formula, data, family = "gaussian",
   
   # data for specific families
   if (has_trials(family)) {
-    if (!length(ee$trials)) {
+    if (!length(bterms$trials)) {
       if (!is.null(control$trials)) {
         standata$trials <- control$trials
       } else {
@@ -214,8 +215,8 @@ make_standata <- function(formula, data, family = "gaussian",
                 "variable as the number of trials.")
         standata$trials <- max(standata$Y) 
       }
-    } else if (is.formula(ee$trials)) {
-      standata$trials <- eval_rhs(formula = ee$trials, data = data)
+    } else if (is.formula(bterms$trials)) {
+      standata$trials <- eval_rhs(formula = bterms$trials, data = data)
     } else {
       stop2("Argument 'trials' is misspecified.")
     }
@@ -233,14 +234,14 @@ make_standata <- function(formula, data, family = "gaussian",
     standata$trials <- as.array(standata$trials)
   }
   if (has_cat(family)) {
-    if (!length(ee$cat)) {
+    if (!length(bterms$cat)) {
       if (!is.null(control$ncat)) {
         standata$ncat <- control$ncat
       } else {
         standata$ncat <- max(standata$Y)
       }
-    } else if (is.formula(ee$cat)) { 
-      standata$ncat <- eval_rhs(formula = ee$cat, data = data)
+    } else if (is.formula(bterms$cat)) { 
+      standata$ncat <- eval_rhs(formula = bterms$cat, data = data)
     } else {
       stop2("Argument 'cat' is misspecified.")
     }
@@ -258,8 +259,8 @@ make_standata <- function(formula, data, family = "gaussian",
     # deprecated as of brms 1.0.0
     # evaluate even if check_response is FALSE to ensure 
     # that N_trait is defined
-    if (is_linear && length(ee$response) > 1L) {
-      standata$Y <- matrix(standata$Y, ncol = length(ee$response))
+    if (is_linear && length(bterms$response) > 1L) {
+      standata$Y <- matrix(standata$Y, ncol = length(bterms$response))
       NC_trait <- ncol(standata$Y) * (ncol(standata$Y) - 1L) / 2L
       standata <- c(standata, list(N_trait = nrow(standata$Y), 
                                    K_trait = ncol(standata$Y),
@@ -283,23 +284,23 @@ make_standata <- function(formula, data, family = "gaussian",
   }
   
   # data for addition arguments
-  if (is.formula(ee$se)) {
-    standata[["se"]] <- as.array(eval_rhs(formula = ee$se, data = data))
+  if (is.formula(bterms$se)) {
+    standata[["se"]] <- as.array(eval_rhs(formula = bterms$se, data = data))
   }
-  if (is.formula(ee$weights)) {
-    standata[["weights"]] <- as.array(eval_rhs(ee$weights, data = data))
+  if (is.formula(bterms$weights)) {
+    standata[["weights"]] <- as.array(eval_rhs(bterms$weights, data = data))
     if (old_mv) {
       standata$weights <- standata$weights[1:standata$N_trait]
     }
   }
-  if (is.formula(ee$disp)) {
-    standata[["disp"]] <- as.array(eval_rhs(ee$disp, data = data))
+  if (is.formula(bterms$disp)) {
+    standata[["disp"]] <- as.array(eval_rhs(bterms$disp, data = data))
   }
-  if (is.formula(ee$dec)) {
-    standata[["dec"]] <- as.array(eval_rhs(ee$dec, data = data))
+  if (is.formula(bterms$dec)) {
+    standata[["dec"]] <- as.array(eval_rhs(bterms$dec, data = data))
   }
-  if (is.formula(ee$cens) && check_response) {
-    cens <- eval_rhs(ee$cens, data = data)
+  if (is.formula(bterms$cens) && check_response) {
+    cens <- eval_rhs(bterms$cens, data = data)
     standata$cens <- rm_attr(cens, "y2")
     y2 <- attr(cens, "y2")
     if (!is.null(y2)) {
@@ -316,8 +317,8 @@ make_standata <- function(formula, data, family = "gaussian",
       standata$cens <- standata$cens[1:standata$N_trait]
     }
   }
-  if (is.formula(ee$trunc)) {
-    standata <- c(standata, eval_rhs(ee$trunc, data = data))
+  if (is.formula(bterms$trunc)) {
+    standata <- c(standata, eval_rhs(bterms$trunc, data = data))
     if (length(standata$lb) == 1L) {
       standata$lb <- rep(standata$lb, standata$N)
     }
@@ -335,8 +336,8 @@ make_standata <- function(formula, data, family = "gaussian",
   }
   # autocorrelation variables
   if (has_arma(autocor)) {
-    if (nchar(ee$time$group)) {
-      tgroup <- data[[ee$time$group]]
+    if (nchar(bterms$time$group)) {
+      tgroup <- data[[bterms$time$group]]
     } else {
       tgroup <- rep(1, standata$N) 
     }
@@ -360,7 +361,7 @@ make_standata <- function(formula, data, family = "gaussian",
       } 
     }
     if (Karr) {
-      if (length(ee$response) > 1L) {
+      if (length(bterms$response) > 1L) {
         stop2("ARR structure not yet implemented for multivariate models.")
       }
       # ARR effects (autoregressive effects of the response)
@@ -383,11 +384,11 @@ make_standata <- function(formula, data, family = "gaussian",
     standata$V <- V
   }
   if (is.cor_bsts(autocor)) {
-    if (length(ee$response) > 1L) {
+    if (length(bterms$response) > 1L) {
       stop2("BSTS structure not yet implemented for multivariate models.")
     }
-    if (nchar(ee$time$group)) {
-      tgroup <- data[[ee$time$group]]
+    if (nchar(bterms$time$group)) {
+      tgroup <- data[[bterms$time$group]]
     } else {
       tgroup <- rep(1, standata$N) 
     }

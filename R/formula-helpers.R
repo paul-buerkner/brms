@@ -478,7 +478,7 @@ amend_formula <- function(formula, data = NULL, family = gaussian(),
     }
   }
   if (is_categorical(family) && is.null(attr(formula, "response"))) {
-    respform <- extract_effects(out)$respform
+    respform <- parse_bf(out)$respform
     model_response <- model.response(model.frame(respform, data = data))
     response <- levels(factor(model_response))
     if (length(response) <= 2L) {

@@ -1,17 +1,17 @@
-test_that("extract_effects finds all variables in very long formulas", {
-  expect_equal(extract_effects(t2_brand_recall ~ psi_expsi + psi_api_probsolv + 
+test_that("parse_bf finds all variables in very long formulas", {
+  expect_equal(parse_bf(t2_brand_recall ~ psi_expsi + psi_api_probsolv + 
                                  psi_api_ident + psi_api_intere + psi_api_groupint)$all, 
                t2_brand_recall ~ t2_brand_recall + psi_expsi + psi_api_probsolv + psi_api_ident + 
                  psi_api_intere + psi_api_groupint)
 })
 
-test_that("extract_effects handles very long RE terms", {
+test_that("parse_bf handles very long RE terms", {
   # tests issue #100
   covariate_vector <- paste0("xxxxx", 1:80, collapse = "+")
   formula <- paste(sprintf("y ~ 0 + trait + trait:(%s)", covariate_vector),
                    sprintf("(1+%s|id)", covariate_vector), sep = " + ")
-  ee <- extract_effects(as.formula(formula))
-  expect_equal(ee$random$group, "id")
+  bterms <- parse_bf(as.formula(formula))
+  expect_equal(bterms$random$group, "id")
 })
 
 test_that("(deprecated) amend_formula returns correct formulas", {
@@ -68,7 +68,7 @@ test_that("exclude_pars returns expected parameter names", {
                        gn = c(1, 1, 2), coef = c("x", "z", "x"), 
                        cn = c(1, 2, 1), nlpar = "", 
                        cor = c(TRUE, TRUE, FALSE))
-  empty_effects <- structure(list(), class = "brmseffects")
+  empty_effects <- structure(list(), class = "brmsterms")
   ep <- exclude_pars(empty_effects, ranef = ranef)
   expect_true(all(c("r_1", "r_2") %in% ep))
   ep <- exclude_pars(empty_effects, ranef = ranef, save_ranef = FALSE)
@@ -77,9 +77,9 @@ test_that("exclude_pars returns expected parameter names", {
   ranef$nlpar <- c("a", "a", "")
   ep <- exclude_pars(empty_effects, ranef = ranef, save_ranef = FALSE)
   expect_true(all(c("r_1_a_1", "r_1_a_2") %in% ep))
-  effects <- extract_effects(y ~ x + s(z))
+  bterms <- parse_bf(y ~ x + s(z))
   data <- data.frame(y = rnorm(20), x = rnorm(20), z = rnorm(20))
-  expect_true("zs_1_1" %in% exclude_pars(effects, data))
-  effects <- extract_effects(bf(y ~ eta, eta ~ x + s(z), nl = TRUE))
-  expect_true("zs_eta_1_1" %in% exclude_pars(effects, data))
+  expect_true("zs_1_1" %in% exclude_pars(bterms, data))
+  bterms <- parse_bf(bf(y ~ eta, eta ~ x + s(z), nl = TRUE))
+  expect_true("zs_eta_1_1" %in% exclude_pars(bterms, data))
 })

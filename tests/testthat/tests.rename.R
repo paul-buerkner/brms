@@ -69,8 +69,8 @@ test_that("change_prior returns expected lists", {
 
 test_that("change_old_ranef and change_old_ranef2 return expected lists", {
   data <- data.frame(y = rnorm(10), x = rnorm(10), g = 1:10)
-  ee <- brms:::extract_effects(bf(y ~ a, a ~ x + (1+x|g), nl = TRUE))
-  ranef <- brms:::tidy_ranef(ee, data = data)
+  bterms <- parse_bf(bf(y ~ a, a ~ x + (1+x|g), nl = TRUE))
+  ranef <- brms:::tidy_ranef(bterms, data = data)
   target <- list(
     list(pos = c(rep(FALSE, 2), TRUE, rep(FALSE, 22)),
          oldname = "sd_a_g_Intercept", pnames = "sd_g_a_Intercept",
@@ -146,7 +146,7 @@ test_that("change_old_splines return expected lists", {
             paste0("s_sx1kEQ9[", 1:9, "]"))
   dims <- list(sds_sigma_t2x0 = numeric(0), sds_sx1kEQ9 = numeric(0),
                s_sigma_t2x0 = 6, s_sx1kEQ9 = 9)
-  ee <- brms:::extract_effects(bf(y ~ s(x1, k = 9), sigma ~ t2(x0)),
-                               family = gaussian())
-  expect_equal(brms:::change_old_splines(ee, pars, dims), target)
+  bterms <- parse_bf(bf(y ~ s(x1, k = 9), sigma ~ t2(x0)), 
+                     family = gaussian())
+  expect_equal(brms:::change_old_splines(bterms, pars, dims), target)
 })

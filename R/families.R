@@ -689,21 +689,21 @@ has_beta <- function(family) {
   family %in% c("exgaussian")
 }
 
-has_sigma <- function(family, effects = NULL, 
+has_sigma <- function(family, bterms = NULL, 
                       autocor = cor_arma(), incmv = FALSE) {
   # indicate if the model needs a sigma parameter
   # Args:
   #  family: model family
-  #  effects: list returned by extract_effects
+  #  bterms: object of class brmsterms
   #  autocor: object of class cor_arma
   #  incmv: should MV (linear) models be treated as having sigma? 
   if (is(family, "family")) {
     family <- family$family
   }
   is_ln_eg <- family %in% c("lognormal", "hurdle_lognormal", "exgaussian")
-  if (is.formula(effects$se)) {
+  if (is.formula(bterms$se)) {
     # call .se without evaluating the x argument 
-    cl <- rhs(effects$se)[[2]]
+    cl <- rhs(bterms$se)[[2]]
     cl[[1]] <- quote(resp_se_no_data)
     se_only <- isFALSE(attr(eval(cl), "sigma")) 
     if (se_only && use_cov(autocor)) {
@@ -716,7 +716,7 @@ has_sigma <- function(family, effects = NULL,
   out <- (is_linear(family) || is_ln_eg) && 
            !se_only && !is(autocor, "cov_fixed")
   if (!incmv) {
-    is_multi <- is_linear(family) && length(effects$response) > 1L
+    is_multi <- is_linear(family) && length(bterms$response) > 1L
     out <- out && !is_multi
   }
   out
@@ -768,7 +768,7 @@ is_old_mv <- function(x) {
   # indicate if the model uses the old multivariate syntax 
   # from brms < 1.0.0
   stopifnot(is.brmsfit(x))
-  ee <- extract_effects(formula(x), family = family(x))
+  bterms <- parse_bf(formula(x), family = family(x))
   (is.null(x$version) || x$version <= "0.10.0.9000") &&
-    (is_mv(family(x), ee$response) || is_forked(family(x)))
+    (is_mv(family(x), bterms$response) || is_forked(family(x)))
 }

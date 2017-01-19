@@ -35,39 +35,39 @@ make_stancode <- function(formula, data, family = gaussian(),
                            nonlinear = nonlinear)
   autocor <- check_autocor(autocor)
   threshold <- match.arg(threshold)
-  ee <- extract_effects(formula, family = family, autocor = autocor)
+  bterms <- parse_bf(formula, family = family, autocor = autocor)
   prior <- check_prior(prior, formula = formula, data = data,
                        family = family, autocor = autocor,
                        threshold = threshold, 
                        warn = !isTRUE(dots$brm_call))
   prior_only <- identical(sample_prior, "only")
   sample_prior <- if (prior_only) FALSE else sample_prior
-  data <- update_data(data, family = family, effects = ee)
+  data <- update_data(data, family = family, bterms = bterms)
   
   # flags to indicate the family type
   is_categorical <- is_categorical(family)
-  is_mv <- is_linear(family) && length(ee$response) > 1L
+  is_mv <- is_linear(family) && length(bterms$response) > 1L
   is_forked <- is_forked(family)
-  has_cens <- has_cens(ee$cens, data = data)
-  bounds <- get_bounds(ee$trunc, data = data)
+  has_cens <- has_cens(bterms$cens, data = data)
+  bounds <- get_bounds(bterms$trunc, data = data)
   
-  ranef <- tidy_ranef(ee, data = data)
-  if (length(ee$nlpars)) {
-    text_pred <- stan_nonlinear(ee, data = data, family = family, 
+  ranef <- tidy_ranef(bterms, data = data)
+  if (length(bterms$nlpars)) {
+    text_pred <- stan_nonlinear(bterms, data = data, family = family, 
                                 ranef = ranef, prior = prior)
   } else {
-    if (length(ee$response) > 1L) {
-      text_pred <- stan_effects_mv(ee, data = data, family = family,
+    if (length(bterms$response) > 1L) {
+      text_pred <- stan_effects_mv(bterms, data = data, family = family,
                                    prior = prior, ranef = ranef, 
                                    autocor = autocor, sparse = sparse)
     } else {
-      text_pred <- stan_effects(ee, data = data, family = family,
+      text_pred <- stan_effects(bterms, data = data, family = family,
                                 prior = prior, ranef = ranef, 
                                 autocor = autocor, sparse = sparse,
                                 threshold = threshold)
     }
   }
-  text_auxpars <- stan_auxpars(ee, data = data, family = family, 
+  text_auxpars <- stan_auxpars(bterms, data = data, family = family, 
                                ranef = ranef, prior = prior, 
                                autocor = autocor)
   # due to the ID syntax, group-level effects are evaluated separately
@@ -76,18 +76,19 @@ make_stancode <- function(formula, data, family = gaussian(),
   text_ranef <- collapse_lists(text_ranef)
   
   # generate Stan code of the likelihood
-  text_llh <- stan_llh(family, effects = ee, data = data, autocor = autocor)
+  text_llh <- stan_llh(family, bterms = bterms, 
+                       data = data, autocor = autocor)
   # generate Stan code specific to certain models
-  text_autocor <- stan_autocor(autocor, effects = ee, family = family,
-                               prior = prior)
-  text_mv <- stan_mv(family, response = ee$response, prior = prior)
-  disc <- "disc" %in% names(ee$auxpars) || isTRUE(ee$fauxpars$disc != 1)
-  text_ordinal <- stan_ordinal(family, prior = prior, cs = has_cs(ee), 
+  text_autocor <- stan_autocor(autocor, bterms = bterms, 
+                               family = family, prior = prior)
+  text_mv <- stan_mv(family, response = bterms$response, prior = prior)
+  disc <- "disc" %in% names(bterms$auxpars) || isTRUE(bterms$fauxpars$disc != 1)
+  text_ordinal <- stan_ordinal(family, prior = prior, cs = has_cs(bterms), 
                                disc = disc, threshold = threshold)
   text_families <- stan_families(family)
-  text_se <- stan_se(is.formula(ee$se))
+  text_se <- stan_se(is.formula(bterms$se))
   text_cens <- stan_cens(has_cens, family = family)
-  text_disp <- stan_disp(ee, family = family)
+  text_disp <- stan_disp(bterms, family = family)
   kronecker <- stan_needs_kronecker(ranef, names_cov_ranef = names(cov_ranef))
   text_misc_funs <- stan_misc_functions(family = family, kronecker = kronecker)
   text_monotonic <- stan_monotonic(text_pred)
@@ -138,9 +139,9 @@ make_stancode <- function(formula, data, family = gaussian(),
     text_se$data,
     if (has_trials(family))
       "  int trials[N];  // number of trials \n",
-    if (is.formula(ee$weights))
+    if (is.formula(bterms$weights))
       "  vector<lower=0>[N] weights;  // model weights \n",
-    if (is.formula(ee$dec))
+    if (is.formula(bterms$dec))
       "  int<lower=0,upper=1> dec[N];  // decisions \n",
     if (any(bounds$lb > -Inf))
       paste0("  ", rtype, " lb[N];  // lower truncation bounds; \n"),
@@ -214,7 +215,7 @@ make_stancode <- function(formula, data, family = gaussian(),
     )
   }
   text_lp_pre <- list()
-  if (is.formula(ee$weights) && !is.formula(ee$cens)) {
+  if (is.formula(bterms$weights) && !is.formula(bterms$cens)) {
     text_lp_pre <- list(
       modelD = "  vector[N] lp_pre; \n",
       modelC = "    target += dot_product(weights, lp_pre); \n"
