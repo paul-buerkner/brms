@@ -561,7 +561,7 @@ prepare_auxformula <- function(formula, par = NULL, rsv_pars = NULL) {
 auxpars <- function() {
   # names of auxiliary parameters
   c("sigma", "shape", "nu", "phi", "kappa", "beta", 
-    "zi", "hu", "disc", "bs", "ndt", "bias")
+    "zi", "hu", "disc", "bs", "ndt", "bias", "quantile")
 }
 
 links_auxpars <- function(ap = NULL) {
@@ -579,7 +579,8 @@ links_auxpars <- function(ap = NULL) {
     disc = "log",
     bs = "log", 
     ndt = "log", 
-    bias = "logit"
+    bias = "logit",
+    quantile = "logit"
   )
   if (length(ap)) {
     link <- link[[ap]]
@@ -591,13 +592,14 @@ ilink_auxpars <- function(ap = NULL, stan = FALSE) {
   # helper function to store inverse links of auxiliary parameters
   if (stan) {
     ilink <- c(sigma = "exp", shape = "exp", nu = "expp1", phi = "exp", 
-               kappa = "exp", beta = "exp", zi = "", hu = "",
-               bs = "exp", ndt = "exp", bias = "inv_logit", disc = "exp") 
+               kappa = "exp", beta = "exp", zi = "", hu = "", 
+               bs = "exp", ndt = "exp", bias = "inv_logit", disc = "exp",
+               quantile = "inv_logit") 
   } else {
     ilink <- c(sigma = "exp", shape = "exp", nu = "expp1", phi = "exp", 
                kappa = "exp", beta = "exp", zi = "inv_logit", 
                hu = "inv_logit", bs = "exp", ndt = "exp", 
-               bias = "inv_logit", disc = "exp")
+               bias = "inv_logit", disc = "exp", quantile = "inv_logit")
   }
   if (length(ap)) {
     ilink <- ilink[ap]
@@ -614,7 +616,8 @@ valid_auxpars <- function(family, bterms = list(), autocor = cor_arma()) {
          zi = is_zero_inflated(family, zi_beta = TRUE), 
          hu = is_hurdle(family, zi_beta = FALSE),
          bs = is_wiener(family), ndt = is_wiener(family), 
-         bias = is_wiener(family), disc = is_ordinal(family))
+         bias = is_wiener(family), disc = is_ordinal(family),
+         quantile = is_asym_laplace(family))
   names(x)[x]
 }
 

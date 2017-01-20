@@ -120,7 +120,7 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
                        link_beta = "log", link_zi = "logit", 
                        link_hu = "logit", link_disc = "log",
                        link_bs = "log", link_ndt = "log",
-                       link_bias = "logit") {
+                       link_bias = "logit", link_quantile = "logit") {
   slink <- substitute(link)
   .brmsfamily(family, link = link, slink = slink,
               link_sigma = link_sigma, link_shape = link_shape, 
@@ -128,7 +128,8 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
               link_kappa = link_kappa, link_beta = link_beta, 
               link_zi = link_zi, link_hu = link_hu, 
               link_disc = link_disc, link_bs = link_bs, 
-              link_ndt = link_ndt, link_bias = link_bias)
+              link_ndt = link_ndt, link_bias = link_bias,
+              link_quantile = link_quantile)
 }
 
 .brmsfamily <- function(family, link = NULL, slink = link, ...) {
@@ -156,7 +157,7 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
     "poisson", "negbinomial", "geometric", 
     "gamma", "weibull", "exponential", 
     "exgaussian", "frechet", "inverse.gaussian", 
-    "wiener", "beta", "von_mises",
+    "wiener", "beta", "von_mises", "asym_laplace",
     "cumulative", "cratio", "sratio", "acat",
     "hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma",
     "hurdle_lognormal", "zero_inflated_poisson", 
@@ -168,7 +169,7 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
   }
   
   # check validity of link
-  if (is_linear(family) || family %in% "exgaussian") {
+  if (is_linear(family) || family %in% c("exgaussian", "asym_laplace")) {
     ok_links <- c("identity", "log", "inverse")
   } else if (family == "inverse.gaussian") {
     ok_links <- c("1/mu^2", "inverse", "identity", "log")
@@ -326,6 +327,15 @@ von_mises <- function(link = "tan_half", link_kappa = "log") {
   slink <- substitute(link)
   .brmsfamily("von_mises", link = link, slink = slink,
               link_kappa = link_kappa)
+}
+
+#' @rdname brmsfamily
+#' @export
+asym_laplace <- function(link = "identity", link_sigma = "log",
+                         link_quantile = "logit") {
+  slink <- substitute(link)
+  .brmsfamily("asym_laplace", link = link, slink = slink,
+              link_sigma = link_sigma, link_quantile = link_quantile)
 }
 
 #' @rdname brmsfamily
@@ -550,6 +560,14 @@ is_wiener <- function(family) {
   family %in% c("wiener")
 }
 
+is_asym_laplace <- function(family) {
+  # indicates if family is asymmetric laplace
+  if (is(family, "family")) {
+    family <- family$family
+  }
+  family %in% c("asym_laplace")
+}
+
 is_count <- function(family) {
   # indicate if family is for a count model
   if (is(family, "family")) {
@@ -618,7 +636,7 @@ use_real <- function(family) {
   is_linear(family) || is_skewed(family) || 
     family %in% c("lognormal", "exgaussian", "inverse.gaussian", "beta", 
                   "von_mises", "zero_inflated_beta", "hurdle_gamma", 
-                  "hurdle_lognormal", "wiener")
+                  "hurdle_lognormal", "wiener", "asym_laplace")
 }
 
 use_int <- function(family) {
@@ -700,7 +718,8 @@ has_sigma <- function(family, bterms = NULL,
   if (is(family, "family")) {
     family <- family$family
   }
-  is_ln_eg <- family %in% c("lognormal", "hurdle_lognormal", "exgaussian")
+  is_ln_eg <- family %in% c("lognormal", "hurdle_lognormal", 
+                            "exgaussian", "asym_laplace")
   if (is.formula(bterms$se)) {
     # call .se without evaluating the x argument 
     cl <- rhs(bterms$se)[[2]]

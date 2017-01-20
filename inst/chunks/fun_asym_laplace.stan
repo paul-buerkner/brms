@@ -1,0 +1,26 @@
+  /* helper function for asym_laplace_lpdf
+   * Args: 
+   *   y: the response value 
+   *   quantile: quantile parameter in (0, 1)
+   */ 
+   real rho_quantile(real y, real quantile) {
+     if (y < 0) {
+       return y * (quantile - 1);
+     } else {
+       return y * quantile;
+     }
+   }
+  /* asymmetric laplace log-PDF for a single response
+   * Args: 
+   *   y: the response value 
+   *   mu: location parameter
+   *   sigma: positive scale parameter
+   *   quantile: quantile parameter in (0, 1)
+   * Returns:  
+   *   a scalar to be added to the log posterior 
+   */ 
+   real asym_laplace_lpdf(real y, real mu, real sigma, real quantile) { 
+     return log(quantile * (1 - quantile)) - 
+            log(sigma) - 
+            rho_quantile((y - mu) / sigma, quantile); 
+   }

@@ -44,8 +44,8 @@ stan_llh <- function(family, bterms, data = NULL,
   
   auxpars <- names(bterms$auxpars)
   reqn <- llh_adj || is_categorical || is_ordinal || 
-          is_hurdle || is_zero_inflated || 
-          is_exgaussian(family) || is_wiener(family) ||
+          is_hurdle || is_zero_inflated || is_wiener(family) ||
+          is_exgaussian(family) || is_asym_laplace(family) ||
           has_sigma && has_se && !use_cov(autocor) ||
           any(c("phi", "kappa") %in% auxpars)
   n <- ifelse(reqn, "[n]", "")
@@ -88,6 +88,8 @@ stan_llh <- function(family, bterms, data = NULL,
                       "begin_tg, end_tg, nobs_tg, res_cov_matrix")),
       student_mv = c("multi_student_t", paste0(p$nu, ", ", eta, ", Sigma")),
       student_fixed = c("multi_student_t", paste0(p$nu, ", ", eta, ", V")),
+      asym_laplace = c("asym_laplace", 
+                      paste0(eta, ", ", p$sigma, ", ", p$quantile)),
       lognormal = c("lognormal", paste0(eta, ", ", p$sigma)),
       poisson = c("poisson", eta),
       negbinomial = c("neg_binomial_2", paste0(eta, ", ", p$shape)),
@@ -626,6 +628,8 @@ stan_families <- function(family) {
     out$fun <- "  #include 'fun_wiener_diffusion.stan' \n"
     out$tdataD <- "  real min_Y; \n"
     out$tdataC <- "  min_Y = min(Y); \n"
+  } else if (family == "asym_laplace") {
+    out$fun <- "  #include 'fun_asym_laplace.stan' \n"
   }
   out
 }
