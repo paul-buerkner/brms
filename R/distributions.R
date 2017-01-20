@@ -284,6 +284,60 @@ pfrechet <- function(q, loc = 0, scale = 1, shape = 1,
   out
 }
 
+dasym_laplace <- function(y, mu = 0, sigma = 1, quantile = 0.5, log = FALSE) {
+  # density of the asymmetric laplace distribution
+  out <- ifelse(y < mu, 
+    yes = (quantile * (1 - quantile) / sigma) * 
+           exp((1 - quantile) * (y - mu) / sigma),
+    no = (quantile * (1 - quantile) / sigma) * 
+          exp(-quantile * (y - mu) / sigma)
+  )
+  if (log) {
+    out <- log(out)
+  }
+  out
+}
+
+pasym_laplace <- function(q, mu = 0, sigma = 1, quantile = 0.5,
+                          lower.tail = TRUE, log.p = FALSE) {
+  # distribution function of the asymmetric laplace distribution
+  out <- ifelse(q < mu, 
+    yes = quantile * exp((1 - quantile) * (q - mu) / sigma), 
+    no = 1 - (1 - quantile) * exp(-quantile * (q - mu) / sigma)
+  )
+  if (!lower.tail) {
+    out <- 1 - out
+  } 
+  if (log.p) {
+    out <- log(out) 
+  }
+  out
+}
+
+qasym_laplace <- function(p, mu = 0, sigma = 1, quantile = 0.5,
+                          lower.tail = TRUE, log.p = FALSE) {
+  # quantile function of the asymmetric laplace distribution
+  if (log.p) {
+    p <- exp(p)
+  }
+  if (!lower.tail) {
+    p <- 1 - p
+  }
+  if (length(quantile) == 1L) {
+    quantile <- rep(quantile, length(mu))
+  }
+  ifelse(p < quantile, 
+    yes = mu + ((sigma * log(p / quantile)) / (1 - quantile)), 
+    no = mu - ((sigma * log((1 - p) / (1 - quantile))) / quantile)
+  )
+}
+
+rasym_laplace <- function(n, mu = 0, sigma = 1, quantile = 0.5) {
+  # random numbers of the asymmetric laplace distribution
+  u <- runif(n)
+  qasym_laplace(u, mu = mu, sigma = sigma, quantile = quantile)
+}
+
 dWiener <- function(x, alpha, tau, beta, delta, resp = 1, log = FALSE) {
   # compute the density of the Wiener diffusion model
   # Args:

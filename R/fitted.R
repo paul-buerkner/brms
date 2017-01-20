@@ -65,6 +65,11 @@ fitted_response <- function(draws, mu) {
     bias <- get_auxpar(draws$bias)
     mu <- ndt - bias / delta + bs / delta * 
       (exp(- 2 * delta * bias) - 1) / (exp(-2 * delta * bs) - 1)
+  } else if (is_asym_laplace(draws$f)) {
+    mu <- ilink(mu, draws$f$link)
+    quantile <- get_auxpar(draws$quantile)
+    sigma <- get_sigma(draws$sigma, data = draws$data, dim = dim)
+    mu <- mu + sigma * (1 - 2 * quantile) / (quantile * (1 - quantile))
   } else {
     mu <- ilink(mu, draws$f$link)
   }

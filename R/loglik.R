@@ -304,6 +304,17 @@ loglik_von_mises <- function(i, draws, data = data.frame()) {
   weight_loglik(out, i = i, data = draws$data)
 }
 
+loglik_asym_laplace <- function(i, draws, ...) {
+  args <- list(mu = ilink(get_eta(draws, i), draws$f$link), 
+               sigma = get_sigma(draws$sigma, data = draws$data, i = i),
+               quantile = get_auxpar(draws$quantile, i = i))
+  out <- censor_loglik(dist = "asym_laplace", args = args, 
+                       i = i, data = draws$data)
+  out <- truncate_loglik(out, cdf = pvon_mises, args = args,
+                         i = i, data = draws$data)
+  weight_loglik(out, i = i, data = draws$data)
+}
+
 loglik_hurdle_poisson <- function(i, draws, data = data.frame()) {
   theta <- get_theta(draws, i, par = "hu")
   args <- list(lambda = ilink(get_eta(draws, i), draws$f$link))

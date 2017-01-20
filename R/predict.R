@@ -277,6 +277,14 @@ predict_von_mises <- function(i, draws, ...) {
                  lb = draws$data$lb[i], ub = draws$data$ub[i])
 }
 
+predict_asym_laplace <- function(i, draws, ...) {
+  args <- list(mu = ilink(get_eta(draws, i), draws$f$link), 
+               sigma = get_sigma(draws$sigma, data = draws$data, i = i),
+               quantile = get_auxpar(draws$quantile, i = i))
+  rng_continuous(nrng = draws$nsamples, dist = "asym_laplace", args = args, 
+                 lb = draws$data$lb[i], ub = draws$data$ub[i])
+}
+
 predict_hurdle_poisson <- function(i, draws, ...) {
   # theta is the bernoulli hurdle parameter
   theta <- get_theta(draws, i, par = "hu")
