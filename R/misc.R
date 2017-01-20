@@ -130,8 +130,8 @@ collapse_lists <- function(ls) {
   # Returns:
   #  a named list containg the collapsed strings
   elements <- unique(unlist(lapply(ls, names)))
-  out <- do.call(mapply, c(FUN = collapse, lapply(ls, "[", elements), 
-                           SIMPLIFY = FALSE))
+  out <- do.call(mapply, 
+    c(FUN = collapse, lapply(ls, "[", elements), SIMPLIFY = FALSE))
   names(out) <- elements
   out
 }

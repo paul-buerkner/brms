@@ -777,10 +777,15 @@ get_all_effects <- function(bterms, rsv_vars = NULL,
   #   excludes all 3-way or higher interactions
   stopifnot(is.brmsterms(bterms))
   stopifnot(is.atomic(rsv_vars))
-  .get_all_effects <- function(ee) {
-    alist <- lapply(attr(ee$gam, "covars"), function(x) 
-      formula(paste("~", paste(x, collapse = "*"))))
-    get_var_combs(ee$fixed, ee$mo, ee$cs, ee$me, alist = alist)
+  int_formula <- function(x) {
+    formula(paste("~", paste(x, collapse = "*")))
+  }
+  .get_all_effects <- function(bt) {
+    covars <- attr(bt$gam, "covars")
+    byvars <- attr(bt$gam, "byvars")
+    svars <- mapply(c, covars, byvars, SIMPLIFY = FALSE)
+    alist <- lapply(svars, int_formula)
+    get_var_combs(bt$fixed, bt$mo, bt$cs, bt$me, alist = alist)
   }
   if (length(bterms$nlpars)) {
     # allow covariates as well as pop-level effects of non-linear parameters
