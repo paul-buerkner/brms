@@ -337,25 +337,28 @@ test_that("make_standata returns data for bsts models", {
 
 test_that("make_standata returns data for GAMMs", {
   dat <- data.frame(y = rnorm(10), x1 = rnorm(10), x2 = rnorm(10),
-                    x3 = rnorm(10), z = rnorm(10), g = rep(1:2, 5))
-  standata <- make_standata(y ~ s(x1) + z + s(x2, by = x3), data = dat)
-  expect_equal(standata$nb_1, 1)
-  expect_equal(as.vector(standata$knots_2), 8)
-  expect_equal(dim(standata$Zs_1_1), c(10, 8))
-  expect_equal(dim(standata$Zs_2_1), c(10, 8))
+                    x3 = rnorm(10), z = rnorm(10), g = factor(rep(1:2, 5)))
+  sdata <- make_standata(y ~ s(x1) + z + s(x2, by = x3), data = dat)
+  expect_equal(sdata$nb_1, 1)
+  expect_equal(as.vector(sdata$knots_2), 8)
+  expect_equal(dim(sdata$Zs_1_1), c(10, 8))
+  expect_equal(dim(sdata$Zs_2_1), c(10, 8))
   
-  standata <- make_standata(bf(y ~ lp, lp ~ s(x1) + z + s(x2, by = x3), 
-                               nl = TRUE), data = dat)
-  expect_equal(standata$nb_lp_1, 1)
-  expect_equal(as.vector(standata$knots_lp_2), 8)
-  expect_equal(dim(standata$Zs_lp_1_1), c(10, 8))
-  expect_equal(dim(standata$Zs_lp_2_1), c(10, 8))
+  sdata <- make_standata(bf(y ~ lp, lp ~ s(x1) + z + s(x2, by = x3), 
+                            nl = TRUE), data = dat)
+  expect_equal(sdata$nb_lp_1, 1)
+  expect_equal(as.vector(sdata$knots_lp_2), 8)
+  expect_equal(dim(sdata$Zs_lp_1_1), c(10, 8))
+  expect_equal(dim(sdata$Zs_lp_2_1), c(10, 8))
   
-  standata <- make_standata(y ~ t2(x1, x2), data = dat)
-  expect_equal(standata$nb_1, 3)
-  expect_equal(as.vector(standata$knots_1), c(9, 6, 6))
-  expect_equal(dim(standata$Zs_1_1), c(10, 9))
-  expect_equal(dim(standata$Zs_1_3), c(10, 6))
+  sdata <- make_standata(y ~ g + s(x2, by = g), data = dat)
+  expect_true(all(c("knots_1", "knots_2") %in% names(sdata)))
+  
+  sdata <- make_standata(y ~ t2(x1, x2), data = dat)
+  expect_equal(sdata$nb_1, 3)
+  expect_equal(as.vector(sdata$knots_1), c(9, 6, 6))
+  expect_equal(dim(sdata$Zs_1_1), c(10, 9))
+  expect_equal(dim(sdata$Zs_1_3), c(10, 6))
   
   expect_error(make_standata(y ~ te(x1, x2), data = dat),
                "splines 'te' and 'ti' are not yet implemented")

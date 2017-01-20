@@ -44,6 +44,9 @@
   }
   \subsection{BUG FIXES}{
     \itemize{
+      \item Fix problems when fitting smoothing terms
+      with factors as \code{by} variables thanks to
+      Milani Chaloupka.
       \item Make sure that the data of models with
       only a single observation are compatible with 
       the generated \pkg{Stan} code.

@@ -826,6 +826,7 @@ get_spline_labels <- function(x, data = NULL, covars = FALSE,
   #   data: optional data frame containing the covariates
   #   covars: should the names of the covariates be returned
   #           instead of the full term names?
+  #   byvars_as_covars: should byvars be returned as covars?
   #   combine: combine names of the covariates (TRUE) 
   #            or just return the covariate names (FALSE)?
   if (is.formula(x)) {
@@ -834,29 +835,45 @@ get_spline_labels <- function(x, data = NULL, covars = FALSE,
   if (!is.formula(x$gam)) {
     return(NULL)
   }
+  return_covars <- covars
   term_labels <- rename(attr(terms(x$gam), "term.labels"), " ", "")
   splines <- term_labels[grepl("^(s|t2|te|ti)\\(", term_labels)] 
-  if (covars) {
+  byvars <- attr(x$gam, "byvars")
+  if (return_covars) {
     sfuns <- get_matches("^[^\\(]+", splines)
     covars <- attr(x$gam, "covars")
-    byvars <- attr(x$gam, "byvars")
-    var_labels <- named_list(attr(x$gam, "covars"))
-    for (i in seq_along(var_labels)) {
-      var_labels[[i]] <- c(covars[[i]], byvars[[i]])
+    for (i in seq_along(covars)) {
+      covars[[i]] <- c(covars[[i]], byvars[[i]])
     }
     if (combine) {
-      splines <- paste0(sfuns, ulapply(var_labels, collapse))
+      splines <- paste0(sfuns, ulapply(covars, collapse))
     } else {
-      splines <- var_labels
+      splines <- covars
     }
   }
   if (length(splines) && !is.null(data)) {
     # one spline term may contain multiple spline matrices
+    if (return_covars && !combine) {
+      stop("Invalid combination of arguments. Please report a bug.")
+    }
     sdata_fixef <- data_fixef(x, data, knots = attr(data, "knots"))
+    by_levels <- attr(sdata_fixef[["X"]], "by_levels")
+    nby <- lengths(by_levels)
+    splines <- as.list(splines)
+    for (i in seq_along(splines)) {
+      if (nby[i] > 0L) {
+        splines[[i]] <- paste0(splines[[i]], ":", rename(by_levels[[i]]))
+      }
+    }
+    nby[nby == 0L] <- 1L
+    termnum <- rep(seq_along(splines), nby)
+    splines <- unlist(splines)
     knots <- sdata_fixef[grepl("^knots_", names(sdata_fixef))]
-    attr(splines, "nbases") <- setNames(ulapply(knots, length), splines)
+    nbases <- setNames(ulapply(knots, length), splines)
+    alist <- nlist(nbases, by_levels, termnum)
+    attributes(splines)[names(alist)] <- alist
   }
-  splines
+  structure_not_null(splines, byvars = byvars)
 }
 
 eval_spline <- function(spline) {

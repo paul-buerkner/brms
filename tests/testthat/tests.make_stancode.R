@@ -551,9 +551,9 @@ test_that("Stan code for bsts models is correct", {
 })
 
 test_that("Stan code for GAMMs is correct", {
-  dat <- data.frame(y = rnorm(10), x = rnorm(10), g = rep(1:2, 5))
+  dat <- data.frame(y = rnorm(10), x = rnorm(10), g = factor(rep(1:2, 5)))
   scode <- make_stancode(y ~ s(x) + (1|g), data = dat,
-                            prior = set_prior("normal(0,2)", "sds"))
+                         prior = set_prior("normal(0,2)", "sds"))
   expect_match2(scode, "Zs_1_1 * s_1_1")
   expect_match2(scode, "matrix[N, knots_1[1]] Zs_1_1")
   expect_match2(scode, "zs_1_1 ~ normal(0, 1)")
@@ -562,18 +562,22 @@ test_that("Stan code for GAMMs is correct", {
   prior <- c(set_prior("normal(0,5)", nlpar = "lp"),
              set_prior("normal(0,2)", "sds", nlpar = "lp"))
   scode <- make_stancode(bf(y ~ lp, lp ~ s(x) + (1|g), nl = TRUE), 
-                            data = dat, prior = prior)
+                         data = dat, prior = prior)
   expect_match2(scode, "Zs_lp_1_1 * s_lp_1_1")
   expect_match2(scode, "matrix[N, knots_lp_1[1]] Zs_lp_1_1")
   expect_match2(scode, "zs_lp_1_1 ~ normal(0, 1)")
   expect_match2(scode, "sds_lp_1_1 ~ normal(0,2)")
   
   scode <- make_stancode(y ~ s(x) + t2(x,y), data = dat,
-                            prior = set_prior("normal(0,2)", "sds"))
+                        prior = set_prior("normal(0,2)", "sds"))
   expect_match2(scode, "Zs_2_2 * s_2_2")
   expect_match2(scode, "matrix[N, knots_2[2]] Zs_2_2")
   expect_match2(scode, "zs_2_2 ~ normal(0, 1)")
   expect_match2(scode, "sds_2_2 ~ normal(0,2)")
+  
+  scode <- make_stancode(y ~ g + s(x, by = g), data = dat)
+  expect_match2(scode, "vector[knots_2[1]] zs_2_1")
+  expect_match2(scode, "s_2_1 = sds_2_1 * zs_2_1")
 })
 
 test_that("Stan code of exgaussian models is correct", {

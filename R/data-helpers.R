@@ -494,7 +494,7 @@ make_smooth_list <- function(bterms, data) {
         splines <- get_spline_labels(bterms$nlpars[[nlp]])
         for (i in seq_along(splines)) {
           sc_args <- c(list(eval_spline(splines[i])), gam_args)
-          smooth[[nlp]][[i]] <- do.call(mgcv::smoothCon, sc_args)[[1]]
+          smooth[[nlp]][[i]] <- do.call(mgcv::smoothCon, sc_args)
         }
       }
     } else {
@@ -502,7 +502,7 @@ make_smooth_list <- function(bterms, data) {
       splines <- get_spline_labels(bterms)
       for (i in seq_along(splines)) {
         sc_args <- c(list(eval_spline(splines[i])), gam_args)
-        smooth[["mu"]][[i]] <- do.call(mgcv::smoothCon, sc_args)[[1]]
+        smooth[["mu"]][[i]] <- do.call(mgcv::smoothCon, sc_args)
       }
     }
     auxpars <- names(bterms$auxpars)
@@ -511,7 +511,7 @@ make_smooth_list <- function(bterms, data) {
       splines <- get_spline_labels(bterms$auxpars[[ap]])
       for (i in seq_along(splines)) {
         sc_args <- c(list(eval_spline(splines[i])), gam_args)
-        smooth[[ap]][[i]] <- do.call(mgcv::smoothCon, sc_args)[[1]]
+        smooth[[ap]][[i]] <- do.call(mgcv::smoothCon, sc_args)
       }
     }
   } else {
@@ -601,29 +601,43 @@ data_fixef <- function(bterms, data, family = gaussian(),
   splines <- get_spline_labels(bterms)
   if (length(splines)) {
     stopifnot(is.null(smooth) || length(smooth) == length(splines))
-    Xs <- Zs <- vector("list", length(splines))
-    for (i in seq_along(splines)) {
-      if (is.null(smooth[[i]])) {
-        sm <- mgcv::smoothCon(eval_spline(splines[i]), data = data, 
-                              knots = knots, absorb.cons = TRUE)[[1]]
-      } else {
-        sm <- smooth[[i]]
-        sm$X <- mgcv::PredictMat(sm, rm_attr(data, "terms"))
+    Xs <- Zs <- list()
+    new_smooths <- is.null(smooth)
+    if (new_smooths) {
+      smooth <- named_list(splines)
+      for (i in seq_along(splines)) {
+        smooth[[i]] <- mgcv::smoothCon(eval_spline(splines[i]), data = data, 
+                                       knots = knots, absorb.cons = TRUE)
       }
-      rasm <- mgcv::smooth2random(sm, names(data))
-      Xs[[i]] <- rasm$Xf
-      if (ncol(Xs[[i]])) {
-        colnames(Xs[[i]]) <- paste0(sm$label, "_", seq_len(ncol(Xs[[i]])))
+    }
+    by_levels <- named_list(splines)
+    ns <- 0
+    for (i in seq_along(smooth)) {
+      # may contain multiple terms when 'by' is a factor
+      for (j in seq_along(smooth[[i]])) {
+        ns <- ns + 1
+        sm <- smooth[[i]][[j]]
+        if (length(sm$by.level)) {
+          by_levels[[i]][j] <- sm$by.level
+        }
+        if (!new_smooths) {
+          sm$X <- mgcv::PredictMat(sm, rm_attr(data, "terms"))
+        }
+        rasm <- mgcv::smooth2random(sm, names(data))
+        Xs[[ns]] <- rasm$Xf
+        if (ncol(Xs[[ns]])) {
+          colnames(Xs[[ns]]) <- paste0(sm$label, "_", seq_len(ncol(Xs[[ns]])))
+        }
+        Zs <- lapply(rasm$rand, attr, "Xr")
+        Zs <- setNames(Zs, paste0("Zs", p, "_", ns, "_", seq_along(Zs)))
+        knots <- list(length(Zs), as.array(ulapply(Zs, ncol)))
+        knots <- setNames(knots, paste0(c("nb", "knots"), p, "_", ns))
+        out <- c(out, knots, Zs)
       }
-      Zs <- lapply(rasm$rand, attr, "Xr")
-      Zs <- setNames(Zs, paste0("Zs", p, "_", i, "_", seq_along(Zs)))
-      knots <- list(length(Zs), as.array(ulapply(Zs, ncol)))
-      knots <- setNames(knots, paste0(c("nb", "knots"), p, "_", i))
-      out <- c(out, knots, Zs)
     }
     X <- cbind(X, do.call(cbind, Xs))
-    attr(X, "smooth_cols") <- 
-      lapply(Xs, function(x) which(colnames(X) %in% colnames(x)))
+    scols <- lapply(Xs, function(x) which(colnames(X) %in% colnames(x)))
+    X <- structure(X, smooth_cols = scols, by_levels = by_levels)
     colnames(X) <- rename(colnames(X))
   }
   avoid_auxpars(colnames(X), bterms = bterms)
