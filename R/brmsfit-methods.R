@@ -964,7 +964,7 @@ plot.brmsfit <- function(x, pars = NA, parameters = NA,
 #' @rdname stanplot
 #' @export
 stanplot.brmsfit <- function(object, pars = NA, type = "intervals", 
-                             exact_match = FALSE, quiet = TRUE, ...) {
+                             exact_match = FALSE, ...) {
   contains_samples(object)
   object <- restructure(object)
   if (length(type) != 1L) {
@@ -1014,12 +1014,7 @@ stanplot.brmsfit <- function(object, pars = NA, type = "intervals",
   if ("ratio" %in% mcmc_arg_names) {
     mcmc_args[["ratio"]] <- neff_ratio(object)
   }
-  # make the plot
-  if (quiet) {
-    rstan::quietgg(do.call(mcmc_fun, mcmc_args))
-  } else {
-    do.call(mcmc_fun, mcmc_args)
-  }
+  do.call(mcmc_fun, mcmc_args)
 }
 
 #' Posterior Predictive Checks for \code{brmsfit} Objects
@@ -1058,9 +1053,6 @@ stanplot.brmsfit <- function(object, pars = NA, type = "intervals",
 #' @param x Optional name of a variable in the model. 
 #'  Only used for ppc types having an \code{x} argument 
 #'  and ignored otherwise.
-#' @param quiet A flag indicating whether messages 
-#'   produced by \pkg{ggplot2} during the plotting process 
-#'   should be silenced. Default is \code{TRUE}.
 #' @param ... Further arguments passed to the ppc functions
 #'   of the \pkg{\link[bayesplot:bayesplot]{bayesplot}} package.
 #' @inheritParams predict.brmsfit
@@ -1092,7 +1084,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
                              x = NULL, newdata = NULL, 
                              re_formula = NULL, allow_new_levels = FALSE,
                              incl_autocor = TRUE, subset = NULL, 
-                             ntrys = 5, quiet = TRUE, ...) {
+                             ntrys = 5, ...) {
   if (missing(type)) {
     type <- "dens_overlay"
   }
@@ -1201,11 +1193,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     }
     ppc_args$x <- x_var
   }
-  if (quiet) {
-    rstan::quietgg(do.call(ppc_fun, ppc_args))
-  } else {
-    do.call(ppc_fun, ppc_args)
-  }
+  do.call(ppc_fun, ppc_args)
 }
 
 #' Create a matrix of output plots from a \code{brmsfit} object

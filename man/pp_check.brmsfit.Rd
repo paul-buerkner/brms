@@ -7,7 +7,7 @@
 \usage{
 \method{pp_check}{brmsfit}(object, type, nsamples, group = NULL, x = NULL,
   newdata = NULL, re_formula = NULL, allow_new_levels = FALSE,
-  incl_autocor = TRUE, subset = NULL, ntrys = 5, quiet = TRUE, ...)
+  incl_autocor = TRUE, subset = NULL, ntrys = 5, ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
@@ -65,10 +65,6 @@ If \code{NULL} (the default), all samples are used.}
 for truncated discrete models only
 (defaults to \code{5}). For more details see
 \code{\link[brms:predict.brmsfit]{predict.brmsfit}}.}
-
-\item{quiet}{A flag indicating whether messages 
-produced by \pkg{ggplot2} during the plotting process 
-should be silenced. Default is \code{TRUE}.}
 
 \item{...}{Further arguments passed to the ppc functions
 of the \pkg{\link[bayesplot:bayesplot]{bayesplot}} package.}

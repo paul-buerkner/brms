@@ -6,7 +6,7 @@
 \title{MCMC Plots Implemented in \pkg{bayesplot}}
 \usage{
 \method{stanplot}{brmsfit}(object, pars = NA, type = "intervals",
-  exact_match = FALSE, quiet = TRUE, ...)
+  exact_match = FALSE, ...)
 
 stanplot(object, ...)
 }
@@ -32,10 +32,6 @@ For an overview on the various plot types see
 \item{exact_match}{Indicates whether parameter names 
 should be matched exactly or treated as regular expression. 
 Default is \code{FALSE}.}
-
-\item{quiet}{A flag indicating whether messages 
-produced by \pkg{ggplot2} during the plotting process 
-should be silenced. Default is \code{TRUE}.}
 
 \item{...}{Additional arguments passed to the plotting functions.
 See \code{\link[bayesplot:MCMC-overview]{MCMC-overview}} for

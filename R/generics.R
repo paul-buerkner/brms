@@ -516,9 +516,6 @@ standata <- function(object, ...) {
 #'   \code{nuts_stepsize}, \code{nuts_treedepth}, and \code{nuts_energy}. 
 #'   For an overview on the various plot types see
 #'   \code{\link[bayesplot:MCMC-overview]{MCMC-overview}}.
-#' @param quiet A flag indicating whether messages 
-#'   produced by \pkg{ggplot2} during the plotting process 
-#'   should be silenced. Default is \code{TRUE}.
 #' @param ... Additional arguments passed to the plotting functions.
 #'   See \code{\link[bayesplot:MCMC-overview]{MCMC-overview}} for
 #'   more details.
