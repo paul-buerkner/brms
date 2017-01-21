@@ -1390,7 +1390,8 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
       j <- termnum[i]
       covars_no_by_factor <- covars[[j]]
       byvars <- attr(covars, "byvars")[[j]]
-      byfactors <- byvars[ulapply(mf[, byvars], is.factor)]
+      byfactors <- !sapply(mf[, byvars, drop = FALSE], is.numeric)
+      byfactors <- byvars[byfactors]
       covars_no_byfactor <- setdiff(covars[[j]], byfactors)
       ncovars <- length(covars_no_byfactor)
       if (ncovars > 2L) {
@@ -1411,7 +1412,7 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
             }
           }
         }
-        newdata <- expand.grid(rmNULL(values))
+        newdata <- expand.grid(values)
         other_vars <- setdiff(names(conditions), covars[[j]])
         newdata[, other_vars] <- conditions[1, other_vars]
         # prepare draws for linear_predictor

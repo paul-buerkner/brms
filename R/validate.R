@@ -862,7 +862,7 @@ get_spline_labels <- function(x, data = NULL, covars = FALSE,
     splines <- as.list(splines)
     for (i in seq_along(splines)) {
       if (nby[i] > 0L) {
-        splines[[i]] <- paste0(splines[[i]], ":", rename(by_levels[[i]]))
+        splines[[i]] <- paste0(splines[[i]], rename(by_levels[[i]]))
       }
     }
     nby[nby == 0L] <- 1L
