@@ -5,6 +5,8 @@
 \section{CHANGES IN VERSION 1.3.1++}{
   \subsection{NEW FEATURES}{
     \itemize{
+      \item Fit quantile regression models via family
+      \code{asym_laplace} (asymmetric Laplace distribution).
       \item Specify non-linear models in a (hopefully) more
       intuitive way using \code{brmsformula}.
       \item Fix auxiliary parameters to certain values

@@ -16,11 +16,11 @@
 #'   names on their left-hand side. 
 #'   The following are auxiliary parameters of specific families
 #'   (all other parameters are treated as non-linear parameters):
-#'   \code{sigma} (residual standard deviation of
-#'   the \code{gaussian}, \code{student}, and \code{lognormal} 
-#'   families);
+#'   \code{sigma} (residual standard deviation or scale of
+#'   the \code{gaussian}, \code{student}, \code{lognormal} 
+#'   \code{exgaussian}, and \code{asym_laplace} families);
 #'   \code{shape} (shape parameter of the \code{Gamma},
-#'   \code{weibull}, \code{negbinomial} and related
+#'   \code{weibull}, \code{negbinomial}, and related
 #'   zero-inflated / hurdle families); \code{nu}
 #'   (degrees of freedom parameter of the \code{student} family);
 #'   \code{phi} (precision parameter of the \code{beta} 
@@ -28,6 +28,7 @@
 #'   \code{kappa} (precision parameter of the \code{von_mises} family);
 #'   \code{beta} (mean parameter of the exponential componenent
 #'   of the \code{exgaussian} family);
+#'   \code{quantile} (quantile parameter of the \code{asym_laplace} family);
 #'   \code{zi} (zero-inflation probability); 
 #'   \code{hu} (hurdle probability);
 #'   \code{disc} (discrimination) for ordinal models;
@@ -41,7 +42,8 @@
 #' @param flist Optional list of formulas, which are treated in the 
 #'   same way as formulas passed via the \code{...} argument.
 #' @param nl Logical; Indicates whether \code{formula} should be
-#'   treated as specifying a non-linear model (defaults to \code{FALSE}).
+#'   treated as specifying a non-linear model. By default, \code{formula} 
+#'   is treated as an ordinary linear model formula.
 #' @inheritParams brm
 #' 
 #' @return An object of class \code{brmsformula}, which
@@ -183,8 +185,9 @@
 #'   The addition argument \code{disp} (short for dispersion) serves a
 #'   similar purpose than \code{weight}. However, it has a different 
 #'   implementation and is less general as it is only usable for the
-#'   families \code{gaussian}, \code{student}, \code{lognormal}, 
-#'   \code{Gamma}, \code{weibull}, and \code{negbinomial}.
+#'   families \code{gaussian}, \code{student}, \code{lognormal},
+#'   \code{exgaussian}, \code{asym_laplace}, \code{Gamma}, 
+#'   \code{weibull}, and \code{negbinomial}.
 #'   For the former three families, the residual standard deviation 
 #'   \code{sigma} is multiplied by the values given in 
 #'   \code{disp}, so that higher values lead to lower weights.
@@ -353,13 +356,17 @@
 #'   parameter, for instance \code{sigma ~ x + s(z) + (1+x|g)}.
 #'   
 #'   Alternatively, one may fix auxiliary parameters to certain values.
-#'   However, this is usually \emph{only} useful when models become too 
+#'   However, this is mainly useful when models become too 
 #'   complicated and otherwise have convergence issues. 
 #'   We thus suggest to be generally careful when making use of this option. 
-#'   The \code{bias} parameter in drift-diffusion models, being fixed to 
-#'   \code{0.5} in many applications, is a good example 
-#'   where it might be useful. To achieve this, simply 
-#'   write \code{bias = 0.5}. Other possible applications are the Cauchy 
+#'   The \code{quantile} parameter of the \code{asym_laplace} distribution
+#'   is a good example where it is useful. By fixing \code{quantile}, 
+#'   one can perform quantile regression for the specified quantile. 
+#'   For instance, \code{quantile = 0.25} allows predicting the 25\%-quantile.
+#'   Furthermore, the \code{bias} parameter in drift-diffusion models, 
+#'   is assumed to be \code{0.5} (i.e. no bias) in many applications. 
+#'   To achieve this, simply write \code{bias = 0.5}. 
+#'   Other possible applications are the Cauchy 
 #'   distribution as a special case of the Student-t distribution with 
 #'   \code{nu = 1}, or the geometric distribution as a special case of
 #'   the negative binomial distribution with \code{shape = 1}.
@@ -372,7 +379,8 @@
 #'   All auxiliary parameters currently supported by \code{brmsformula}
 #'   have to positive (a negative standard deviation or precision parameter 
 #'   doesn't make any sense) or are bounded between 0 and 1 (for zero-inflated / 
-#'   hurdle proabilities or the intial bias parameter of the \code{wiener} family). 
+#'   hurdle proabilities, quantiles, or the intial bias parameter of 
+#'   drift-diffusion models). 
 #'   However, linear predictors can be positive or negative, and thus
 #'   the log link (for positive parameters) or logit link (for probability parameters) 
 #'   are used to ensure that auxiliary parameters are within their valid intervals.

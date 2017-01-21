@@ -307,7 +307,7 @@ pasym_laplace <- function(q, mu = 0, sigma = 1, quantile = 0.5,
   )
   if (!lower.tail) {
     out <- 1 - out
-  } 
+  }
   if (log.p) {
     out <- log(out) 
   }

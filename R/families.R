@@ -38,6 +38,7 @@
 #' @param link_bs Link of auxiliary parameter \code{bs} if being predicted.
 #' @param link_ndt Link of auxiliary parameter \code{ndt} if being predicted.
 #' @param link_bias Link of auxiliary parameter \code{bias} if being predicted.
+#' @param link_quantile Link of auxiliary parameter \code{quantile} if being predicted.
 #' 
 #' @details 
 #'   Family \code{gaussian} with \code{identity} link leads to linear regression. 
@@ -53,6 +54,8 @@
 #'   leads to ordinal regression. Families \code{Gamma}, \code{weibull}, 
 #'   \code{exponential}, \code{lognormal}, \code{frechet}, and 
 #'   \code{inverse.gaussian} can be used (among others) for survival regression.
+#'   Family \code{asym_laplace} allows for quantile regression when fixing
+#'   the auxiliary \code{quantile} parameter to the quantile of interest.
 #'   Family \code{exgaussian} ('exponentially modified Gaussian') is especially
 #'   suited to model reaction times and the \code{wiener} family provides
 #'   an implementation of the Wiener diffusion model. For this family,
@@ -70,8 +73,9 @@
 #'   models cannot be reasonably fitted for data containing zeros in the response.
 #'   
 #'   In the following, we list all possible links for each family.
-#'   The families \code{gaussian}, \code{student}, and \code{exgaussian}
-#'   accept the links (as names) \code{identity}, \code{log}, and \code{inverse};
+#'   The families \code{gaussian}, \code{student}, \code{exgaussian}. and
+#'   \code{asym_laplace} accept the links (as names) \code{identity}, 
+#'   \code{log}, and \code{inverse};
 #'   families \code{poisson}, \code{negbinomial}, and \code{geometric} the links 
 #'   \code{log}, \code{identity}, and \code{sqrt}; 
 #'   families \code{binomial}, \code{bernoulli}, \code{Beta},

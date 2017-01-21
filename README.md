@@ -1,5 +1,5 @@
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-[![Build Status](https://travis-ci.org/paul-buerkner/brms.svg?branch=master)](https://travis-ci.org/paul-buerkner/brms) [![Coverage Status](https://codecov.io/github/paul-buerkner/brms/coverage.svg?branch=master)](https://codecov.io/github/paul-buerkner/brms?branch=master) [![CRAN Version](http://www.r-pkg.org/badges/version/brms)](https://cran.r-project.org/package=brms) [![Downloads](http://cranlogs.r-pkg.org/badges/brms?color=brightgreen)](https://cran.rstudio.com/package=brms) [![brms-users](https://www.codewake.com/badges/ask_question.svg)](https://groups.google.com/forum/#!forum/brms-users)
+[![Build Status](https://travis-ci.org/paul-buerkner/brms.svg?branch=master)](https://travis-ci.org/paul-buerkner/brms) [![Coverage Status](https://codecov.io/github/paul-buerkner/brms/coverage.svg?branch=master)](https://codecov.io/github/paul-buerkner/brms?branch=master) [![CRAN Version](http://www.r-pkg.org/badges/version/brms)](https://cran.r-project.org/package=brms) [![brms-users](https://www.codewake.com/badges/ask_question.svg)](https://groups.google.com/forum/#!forum/brms-users)
 
 brms
 ====

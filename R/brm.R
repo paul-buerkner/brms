@@ -2,9 +2,10 @@
 #' 
 #' Fit Bayesian generalized (non-)linear multilevel models 
 #' using Stan for full Bayesian inference. A wide range of distributions 
-#' and link functions are supported, allowing users to fit
-#' linear, robust linear, binomial, Poisson, survival, response times, ordinal, 
-#' zero-inflated, hurdle, and even non-linear models all in a multilevel context. 
+#' and link functions are supported, allowing users to fit linear, 
+#' robust linear, binomial, Poisson, survival, response times, ordinal, 
+#' quantile, zero-inflated, hurdle, and even non-linear models 
+#' all in a multilevel context. 
 #' Further modeling options include auto-correlation and smoothing terms, 
 #' user defined dependence structures, censored data, meta-analytic 
 #' standard errors, and quite a few more. 
@@ -308,6 +309,13 @@
 #' sigmas <- exp(posterior_samples(fit6, "^b_sigma_"))
 #' ggplot(stack(sigmas), aes(values)) + 
 #'   geom_density(aes(fill = ind))
+#'   
+#' ## Quantile regression predicting the 25%-quantile
+#' fit7 <- brm(bf(y ~ x, quantile = 0.25), data = data_het, 
+#'             family = asym_laplace())
+#' summary(fit7)
+#' marginal_effects(fit7)
+#'    
 #' }
 #' 
 #' @import rstan

@@ -12,7 +12,7 @@
 
 <meta name="author" content="Paul Bürkner" />
 
-<meta name="date" content="2017-01-18" />
+<meta name="date" content="2017-01-21" />
 
 <title>Parameterization of Response Distributions in brms</title>
 
@@ -32,7 +32,7 @@
 
 <h1 class="title toc-ignore">Parameterization of Response Distributions in brms</h1>
 <h4 class="author"><em>Paul Bürkner</em></h4>
-<h4 class="date"><em>2017-01-18</em></h4>
+<h4 class="date"><em>2017-01-21</em></h4>
 
 
 
@@ -68,12 +68,17 @@
 <p>One family that is especially suited to model reaction times is the <strong>exgaussian</strong> (‘exponentially modified Gaussian’) family. Its density is given by</p>
 <p><span class="math display">\[f(y_i) = \frac{1}{2 \beta} \exp\left(\frac{1}{2 \beta} \left(2g(\eta_i) + \sigma^2 / \beta - 2 y_i \right) \right) \text{erfc}\left(\frac{g(\eta_i) + \sigma^2 / \beta - y_i}{\sqrt{2} \sigma} \right)\]</span></p>
 <p>where <span class="math inline">\(\beta\)</span> is the scale (inverse rate) of the exponential component, <span class="math inline">\(g(\eta_i) = \mu\)</span> is the mean of the Gaussian componenent, <span class="math inline">\(\sigma\)</span> is the standard deviation of the Gaussian component, and <span class="math inline">\(\text{erfc}\)</span> is the complementary error function.</p>
-<p>A family concerned with the combined modelling of reaction times and corresponding binary responses is the <strong>wiener</strong> diffusion model. It has four model parameters each with a natural interpreation. The parameter <span class="math inline">\(\alpha &gt; 0\)</span> describes the separation between two boundaries of the diffusion process, <span class="math inline">\(\tau &gt; 0\)</span> describes the non-decision time (e.g., due to image or motor processing), <span class="math inline">\(\beta \in [0, 1]\)</span> describes the initial bias in favor of the upper alternative, and <span class="math inline">\(\delta \in \mathbb{R}\)</span> describes the drift rate to the boundaries (a positive value indicates a drift towards to upper boundary). The density for the reaction time at the uppder boundary is given by</p>
+<p>A family concerned with the combined modelling of reaction times and corresponding binary responses is the <strong>wiener</strong> diffusion model. It has four model parameters each with a natural interpreation. The parameter <span class="math inline">\(\alpha &gt; 0\)</span> describes the separation between two boundaries of the diffusion process, <span class="math inline">\(\tau &gt; 0\)</span> describes the non-decision time (e.g., due to image or motor processing), <span class="math inline">\(\beta \in [0, 1]\)</span> describes the initial bias in favor of the upper alternative, and <span class="math inline">\(\delta \in \mathbb{R}\)</span> describes the drift rate to the boundaries (a positive value indicates a drift towards to upper boundary). The density for the reaction time at the upper boundary is given by</p>
 <p><span class="math display">\[f(y_i) = \frac{\alpha}{(y_i-\tau)^3/2}
 \exp \! \left(- \delta \alpha \beta - \frac{\delta^2(y_i-\tau)}{2}\right)
 \sum_{k = - \infty}^{\infty} (2k + \beta)
 \phi \! \left(\frac{2k + \alpha \beta}{\sqrt{y_i - \tau}}\right)\]</span></p>
 <p>where <span class="math inline">\(\phi(x)\)</span> denotes the standard normal density function. The density at the lower boundary can be obtained by substituting <span class="math inline">\(1 - \beta\)</span> for <span class="math inline">\(\beta\)</span> and <span class="math inline">\(-\delta\)</span> for <span class="math inline">\(\delta\)</span> in the above equation. In <strong>brms</strong> the parameters <span class="math inline">\(\alpha\)</span>, <span class="math inline">\(\tau\)</span>, and <span class="math inline">\(\beta\)</span> are modeled as auxiliary parameters named <em>bs</em> (‘boundary separation’), <em>ndt</em> (‘non-decision time’), and <em>bias</em> respectively, whereas the drift rate <span class="math inline">\(\delta\)</span> is modeled via the ordinary model formula that is as <span class="math inline">\(\delta = g(\eta_i)\)</span>.</p>
+</div>
+<div id="quantile-regression" class="section level2">
+<h2>Quantile regression</h2>
+<p>Quantile regression is implemented via family <strong>asym_laplace</strong> (asymmetric Laplace distribution) with density</p>
+<p><span class="math display">\[f(y_i) = \frac{p (1 - p)}{\sigma} \exp\left(-\rho_p\left(\frac{y_i - g(\eta_i)}{\sigma}\right)\right)\]</span> where <span class="math inline">\(\rho_p\)</span> is given by <span class="math inline">\(\rho_p(x) = x (p - I_{x &lt; 0})\)</span> and <span class="math inline">\(I_A\)</span> is the indicator function of set <span class="math inline">\(A\)</span>. The parameter <span class="math inline">\(\sigma\)</span> is a positive scale parameter and <span class="math inline">\(p\)</span> is the <em>quantile</em> parameter taking on values in <span class="math inline">\((0, 1)\)</span>. For this distribution, we have <span class="math inline">\(P(Y &lt; g(\eta)) = p\)</span>. Thus, quantile regression can be performed by fixing <span class="math inline">\(p\)</span> to the quantile to interest.</p>
 </div>
 <div id="beta-models" class="section level2">
 <h2>Beta models</h2>
