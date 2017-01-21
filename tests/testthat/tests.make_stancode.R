@@ -734,3 +734,15 @@ test_that("fixing auxiliary parameters is possible", {
   scode <- make_stancode(bf(y ~ 1, sigma = 0.5), data = list(y = rnorm(10)))
   expect_match(scode, "data \\{[^\\}]*real<lower=0> sigma;")
 })
+
+test_that("Stan code of quantile regression models is correct", {
+  data <- data.frame(y = rnorm(10), x = rnorm(10), c = 1)
+  scode <- make_stancode(y ~ x, data, family = asym_laplace())
+  expect_match2(scode, "Y[n] ~ asym_laplace(eta[n], sigma, quantile)")
+  
+  scode <- make_stancode(bf(y ~ x, quantile = 0.75), data, family = asym_laplace())
+  expect_match(scode, "data \\{[^\\}]*real<lower=0,upper=1> quantile;")
+  
+  scode <- make_stancode(y | cens(c) ~ x, data, family = asym_laplace())
+  expect_match2(scode, "target += asym_laplace_lccdf(Y[n] | eta[n], sigma, quantile)")
+})

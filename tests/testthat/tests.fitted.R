@@ -7,6 +7,8 @@ test_that("fitted helper functions run without errors", {
                             shape1 = 1, shape2 = 1)
   fit <- brms:::add_samples(fit, "zi", dist = "beta", 
                             shape1 = 1, shape2 = 1)
+  fit <- brms:::add_samples(fit, "quantile", dist = "beta", 
+                            shape1 = 2, shape2 = 1)
   fit <- brms:::add_samples(fit, "nu", dist = "exp")
   draws <- brms:::extract_draws(fit)
   eta <- brms:::linear_predictor(draws)
@@ -20,7 +22,12 @@ test_that("fitted helper functions run without errors", {
   expect_equal(dim(mu), c(nsamples, nobs))
   
   # pseudo log-normal model
-  fit$family <- gaussian("log")
+  fit$family <- lognormal()
+  expect_equal(dim(fitted(fit, summary = FALSE)), 
+               c(nsamples, nobs))
+  
+  # pseudo aysm_laplace model
+  fit$family <- asym_laplace()
   expect_equal(dim(fitted(fit, summary = FALSE)), 
                c(nsamples, nobs))
   

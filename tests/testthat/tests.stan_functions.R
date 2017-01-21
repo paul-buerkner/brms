@@ -51,15 +51,28 @@ test_that("self-defined Stan functions work correctly", {
   # exgaussian functions
   beta <- rgamma(1, 1, 0.1)
   sigma <- rgamma(1, 10, 0.1)
-  mean <- 10
-  y <- rexgauss(1, mean = mean, sigma = sigma, beta = beta)
-  expect_equal(exgaussian_lpdf(y, mean, sigma, beta),
-               dexgauss(y, mean, sigma, beta, log = TRUE))
-  expect_equal(exgaussian_lcdf(y, mean, sigma, beta),
-               pexgauss(y, mean, sigma, beta, log = TRUE))
-  expect_equal(exgaussian_lccdf(y, mean, sigma, beta),
-               pexgauss(y, mean, sigma, beta, 
+  mu <- 10
+  y <- rexgauss(1, mu = mu, sigma = sigma, beta = beta)
+  expect_equal(exgaussian_lpdf(y, mu, sigma, beta),
+               dexgauss(y, mu, sigma, beta, log = TRUE))
+  expect_equal(exgaussian_lcdf(y, mu, sigma, beta),
+               pexgauss(y, mu, sigma, beta, log = TRUE))
+  expect_equal(exgaussian_lccdf(y, mu, sigma, beta),
+               pexgauss(y, mu, sigma, beta, 
                         lower.tail = FALSE, log = TRUE))
+  
+  # asym_laplace functions
+  mu <- 10
+  quantile <- rbeta(1, 2, 1)
+  sigma <- rgamma(1, 10, 0.1)
+  y <- rasym_laplace(1, mu = mu, sigma = sigma, quantile = quantile)
+  expect_equal(asym_laplace_lpdf(y, mu, sigma, quantile),
+               dasym_laplace(y, mu, sigma, quantile, log = TRUE))
+  expect_equal(asym_laplace_lcdf(y, mu, sigma, quantile),
+               pasym_laplace(y, mu, sigma, quantile, log = TRUE))
+  expect_equal(asym_laplace_lccdf(y, mu, sigma, quantile),
+               pasym_laplace(y, mu, sigma, quantile, 
+                             lower.tail = FALSE, log = TRUE))
   
   # wiener diffusion model functions
   alpha = 2

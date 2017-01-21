@@ -31,6 +31,15 @@ test_that("predict for lognormal and exgaussian models runs without errors", {
   expect_equal(length(pred), ns)
 })
 
+test_that("predict for aysm_laplace models runs without errors", {
+  ns <- 50
+  draws <- list(sigma = rchisq(ns, 3), quantile = rbeta(ns, 2, 1),
+                eta = matrix(rnorm(ns*2), ncol = 2),
+                f = asym_laplace(), nsamples = ns)
+  pred <- brms:::predict_asym_laplace(1, draws = draws)
+  expect_equal(length(pred), ns)
+})
+
 test_that("predict for multivariate linear models runs without errors", {
   ns <- 10
   nvars <- 3

@@ -47,6 +47,16 @@ test_that("loglik for lognormal and exgaussian models works as expected", {
   expect_equal(ll, ll_exgaussian)
 })
 
+test_that("loglik of aysm_laplace models runs without errors", {
+  ns <- 50
+  draws <- list(sigma = rchisq(ns, 3), quantile = rbeta(ns, 2, 1),
+                eta = matrix(rnorm(ns*2), ncol = 2),
+                f = asym_laplace())
+  draws$data <- list(Y = brms:::rasym_laplace(ns))
+  ll <- brms:::loglik_asym_laplace(1, draws = draws)
+  expect_equal(length(ll), ns)
+})
+
 test_that("loglik for multivariate linear models runs without errors", {
   ns <- 10
   nvars <- 3

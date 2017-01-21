@@ -6,9 +6,9 @@
 #   chunk_filenames <- list.files(isystem, pattern = "^fun_")
 #   families <- list(cumulative("probit"), sratio("logit"),
 #                    cratio("cloglog"), acat("cauchit"))
-#   cse <- c(rep(FALSE, 2), rep(TRUE, 2))
+#   cs <- c(rep(FALSE, 2), rep(TRUE, 2))
 #   ordinal_funs <- ulapply(seq_along(families), function(i)
-#     stan_ordinal(families[[i]], cse = cse[i])$fun)
+#     stan_ordinal(families[[i]], cs = cs[i])$fun)
 #   temp_file <- tempfile()
 #   cat(paste0("functions { \n",
 #              collapse("  #include '", chunk_filenames, "' \n"),
