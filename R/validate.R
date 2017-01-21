@@ -1170,13 +1170,15 @@ add_families <- function(x) {
     cens = c("gaussian", "student", "cauchy", "lognormal",
              "inverse.gaussian", "binomial", "poisson", 
              "geometric", "negbinomial", "exponential", 
-             "weibull", "gamma", "exgaussian", "frechet"),
+             "weibull", "gamma", "exgaussian", "frechet",
+             "asym_laplace"),
     trunc = c("gaussian", "student", "cauchy", "lognormal", 
               "binomial", "poisson", "geometric", "negbinomial",
               "exponential", "weibull", "gamma", "inverse.gaussian",
-              "exgaussian", "frechet"),
+              "exgaussian", "frechet", "asym_laplace"),
     disp = c("gaussian", "student", "cauchy", "lognormal", 
-             "gamma", "weibull", "negbinomial", "exgaussian"),
+             "gamma", "weibull", "negbinomial", "exgaussian",
+             "asym_laplace"),
     dec = c("wiener"),
     stop2("Addition argument '", x, "' is not supported.")
   )
