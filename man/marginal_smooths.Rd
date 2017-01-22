@@ -6,7 +6,7 @@
 \title{Display Smooth Terms}
 \usage{
 \method{marginal_smooths}{brmsfit}(x, smooths = NULL, probs = c(0.025,
-  0.975), resolution = 100, ...)
+  0.975), resolution = 100, too_far = 0, ...)
 
 marginal_smooths(x, ...)
 }
@@ -26,6 +26,13 @@ Defaults to \code{100}. If \code{contour} is \code{TRUE},
 this implies \code{10000} support points for interaction terms,
 so it might be necessary to reduce \code{resolution} 
 when only few RAM is available.}
+
+\item{too_far}{For contour plots only: Grid points that are too 
+far away from the actual data points can be excluded from the plot. 
+\code{too_far} determines what is too far. The grid is scaled into 
+the unit square and then grid points more than \code{too_far} 
+from the predictor variables are excluded. By default, all
+grid points are used. Ignored for non-contour plots.}
 
 \item{...}{Currently ignored.}
 }

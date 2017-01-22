@@ -22,6 +22,10 @@
       the number of posterior samples.
       \item Export the main formula parsing function 
       \code{parse_bf}.
+      \item Add argument \code{too_far} to \code{marginal_effects}
+      and \code{marginal_smooths} to allow for exclusion of
+      grid points too far away from the observed data points
+      in contour plots.
     }
   }
   \subsection{OTHER CHANGES}{

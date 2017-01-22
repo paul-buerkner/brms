@@ -595,6 +595,12 @@ stanplot <- function(object, ...) {
 #'   this implies \code{10000} support points for interaction terms,
 #'   so it might be necessary to reduce \code{resolution} 
 #'   when only few RAM is available.
+#' @param too_far For contour plots only: Grid points that are too 
+#'   far away from the actual data points can be excluded from the plot. 
+#'   \code{too_far} determines what is too far. The grid is scaled into 
+#'   the unit square and then grid points more than \code{too_far} 
+#'   from the predictor variables are excluded. By default, all
+#'   grid points are used. Ignored for non-contour plots.
 #' @param ncol Number of plots to display per column for each effect.
 #'   If \code{NULL} (default), \code{ncol} is computed internally based
 #'   on the number of rows of \code{data}.

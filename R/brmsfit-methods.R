@@ -1236,7 +1236,8 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
                                      re_formula = NA, robust = TRUE, 
                                      probs = c(0.025, 0.975),
                                      method = c("fitted", "predict"), 
-                                     contour = FALSE, resolution = 100, ...) {
+                                     contour = FALSE, resolution = 100,
+                                     too_far = 0, ...) {
   method <- match.arg(method)
   dots <- list(...)
   conditions <- use_alias(conditions, dots$data)
@@ -1308,6 +1309,16 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     marg_args <- nlist(data = marg_data, conditions, 
                        int_vars, contour, resolution)
     marg_data <- do.call(prepare_marg_data, marg_args)
+    if (contour && length(effects[[i]]) == 2L && too_far > 0) {
+      # exclude prediction grid points too far from data
+      ex_too_far <- mgcv::exclude.too.far(
+        g1 = marg_data[[effects[[i]][1]]], 
+        g2 = marg_data[[effects[[i]][2]]], 
+        d1 = x$data[, effects[[i]][1]],
+        d2 = x$data[, effects[[i]][2]],
+        dist = too_far)
+      marg_data <- marg_data[!ex_too_far, ]  
+    }
     # make sure numeric variables come first
     effects[[i]] <- attr(marg_data, "effects")
     args <- c(list(x, newdata = marg_data, re_formula = re_formula,
@@ -1358,7 +1369,8 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
 #' @export
 marginal_smooths.brmsfit <- function(x, smooths = NULL,
                                      probs = c(0.025, 0.975),
-                                     resolution = 100, ...) {
+                                     resolution = 100, too_far = 0,
+                                     ...) {
   contains_samples(x)
   x <- restructure(x)
   mf <- model.frame(x)
@@ -1413,7 +1425,17 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
           }
         }
         newdata <- expand.grid(values)
-        other_vars <- setdiff(names(conditions), covars[[j]])
+        if (ncovars == 2L && too_far > 0) {
+          # exclude prediction grid points too far from data
+          ex_too_far <- mgcv::exclude.too.far(
+            g1 = newdata[[covars_no_byfactor[1]]], 
+            g2 = newdata[[covars_no_byfactor[2]]], 
+            d1 = x$data[, covars_no_byfactor[1]],
+            d2 = x$data[, covars_no_byfactor[2]],
+            dist = too_far)
+          newdata <- newdata[!ex_too_far, ]  
+        }
+         other_vars <- setdiff(names(conditions), covars[[j]])
         newdata[, other_vars] <- conditions[1, other_vars]
         # prepare draws for linear_predictor
         more_args <- nlist(newdata, nlpar = names(lee)[k], 
