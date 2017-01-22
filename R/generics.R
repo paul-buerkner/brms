@@ -362,9 +362,9 @@ ngrps <- function(object, ...) {
 #' }
 #' 
 #' @references 
-#' Vehtari, A., Gelman, A., and Gabry, J. (2015). 
-#' Efficient implementation of leave-one-out cross-validation 
-#' and WAIC for evaluating fitted Bayesian models.
+#' Vehtari, A., Gelman, A., & Gabry J. (2016). Practical Bayesian model
+#' evaluation using leave-one-out cross-validation and WAIC. In Statistics 
+#' and Computing, doi:10.1007/s11222-016-9696-4. arXiv preprint arXiv:1507.04544.
 #' 
 #' Gelman, A., Hwang, J., & Vehtari, A. (2014). 
 #' Understanding predictive information criteria for Bayesian models. 
@@ -416,9 +416,9 @@ WAIC <- function(x, ...) {
 #' }
 #' 
 #' @references 
-#' Vehtari, A., Gelman, A., and Gabry, J. (2015). 
-#' Efficient implementation of leave-one-out cross-validation 
-#' and WAIC for evaluating fitted Bayesian models.
+#' Vehtari, A., Gelman, A., & Gabry J. (2016). Practical Bayesian model
+#' evaluation using leave-one-out cross-validation and WAIC. In Statistics 
+#' and Computing, doi:10.1007/s11222-016-9696-4. arXiv preprint arXiv:1507.04544.
 #' 
 #' Gelman, A., Hwang, J., & Vehtari, A. (2014). 
 #' Understanding predictive information criteria for Bayesian models. 
