@@ -11,6 +11,8 @@
       intuitive way using \code{brmsformula}.
       \item Fix auxiliary parameters to certain values
       through \code{brmsformula}.
+      \item Allow \code{family} to be specified in
+      \code{brmsformula}.
       \item Introduce family \code{frechet} for modelling
       strictly positive responses.
       \item Introduce function \code{prior_} allowing
