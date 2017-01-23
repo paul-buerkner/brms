@@ -50,6 +50,10 @@ isFALSE <- function(x) {
   identical(FALSE, x)
 }
 
+isNA <- function(x) {
+  identical(NA, x)
+}
+
 is_equal <- function(x, y, ...) {
   isTRUE(all.equal(x, y, ...))
 }

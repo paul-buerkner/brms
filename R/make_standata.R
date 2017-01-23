@@ -24,7 +24,7 @@
 #' names(data2)
 #'          
 #' @export
-make_standata <- function(formula, data, family = "gaussian", 
+make_standata <- function(formula, data, family = NULL, 
                           prior = NULL, autocor = NULL, nonlinear = NULL, 
                           cov_ranef = NULL, sample_prior = FALSE, 
                           knots = NULL, control = list(), ...) {
@@ -40,9 +40,9 @@ make_standata <- function(formula, data, family = "gaussian",
   # use deprecated arguments if specified
   cov_ranef <- use_alias(cov_ranef, dots$cov.ranef, warn = FALSE)
   # some input checks
-  family <- check_family(family)
   formula <- amend_formula(formula, data = data, family = family,
-                            nonlinear = nonlinear)
+                           nonlinear = nonlinear)
+  family <- formula$family
   old_mv <- isTRUE(formula[["old_mv"]])
   autocor <- check_autocor(autocor)
   is_linear <- is_linear(family)

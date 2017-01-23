@@ -60,6 +60,13 @@ restructure <- function(x, rstr_summary = FALSE) {
       # deprecated as of brms 1.4.0
       class(x$autocor) <- "cor_fixed"
     }
+    if (x$version <= "0.9.1") {
+      # update gaussian("log") to lognormal() family
+      nresp <- length(bterms$response)
+      if (is_old_lognormal(x$family, nresp = nresp, version = x$version)) {
+        object$family <- object$formula$family <- lognormal()
+      }
+    }
     if (x$version <= "0.10.0.9000") {
       if (length(bterms$nlpars)) {
         # nlpar and group have changed positions

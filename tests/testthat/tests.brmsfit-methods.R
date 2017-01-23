@@ -360,6 +360,10 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_true(is(up, "brmsfit"))
   up <- update(fit2, formula. = count ~ a + b, testmode = TRUE)
   expect_true(is(up, "brmsfit"))
+  up <- update(fit3, family = acat(), testmode = TRUE)
+  expect_true(is(up, "brmsfit"))
+  up <- update(fit3, bf(~., family = acat()), testmode = TRUE)
+  expect_true(is(up, "brmsfit"))
   
   # VarCorr
   vc <- VarCorr(fit1)

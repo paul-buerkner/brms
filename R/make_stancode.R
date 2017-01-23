@@ -17,7 +17,7 @@
 #'               data = epilepsy, family = "poisson")
 #'
 #' @export
-make_stancode <- function(formula, data, family = gaussian(), 
+make_stancode <- function(formula, data, family = NULL, 
                           prior = NULL, autocor = NULL, nonlinear = NULL,
                           threshold = c("flexible", "equidistant"),
                           sparse = FALSE,  cov_ranef = NULL, 
@@ -30,9 +30,9 @@ make_stancode <- function(formula, data, family = gaussian(),
   save_model <- use_alias(save_model, dots$save.model)
   dots[c("cov.ranef", "sample.prior", "save.model")] <- NULL
   # some input checks
-  family <- check_family(family)
   formula <- amend_formula(formula, data = data, family = family,
                            nonlinear = nonlinear)
+  family <- formula$family
   autocor <- check_autocor(autocor)
   threshold <- match.arg(threshold)
   bterms <- parse_bf(formula, family = family, autocor = autocor)

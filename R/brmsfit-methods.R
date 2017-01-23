@@ -818,11 +818,11 @@ formula.brmsfit <- function(x, ...) {
 
 #' @export
 family.brmsfit <- function(object, ...) {
-  if (is(object$family, "family")) {
-    # brms > 0.6.0
-    family <- object$family
-  } else {
+  if (is.character(object$family)) {
+    # brms <= 0.6.0
     family <- brmsfamily(object$family, link = object$link) 
+  } else {
+    family <- object$family
   }
   family
 }
@@ -1913,27 +1913,28 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
   if (missing(formula.)) {
     dots$formula <- object$formula
   } else {
-    recompile <- length(pforms(formula.)) > 0L
+    family <- get_arg("family", dots, formula., object)
+    nl <- get_arg("nl", formula., formula(object))
+    dots$formula <- bf(formula., family = family, nl = nl)
+    recompile <- length(pforms(dots$formula)) > 0L
     if (is_nonlinear(object)) {
-      if (length(setdiff(all.vars(formula.), ".")) == 0L) {
-        dots$formula <- update(object$formula, formula., mode = "keep")
+      if (length(setdiff(all.vars(dots$formula$formula), ".")) == 0L) {
+        dots$formula <- update(object$formula, dots$formula, mode = "keep")
       } else {
-        dots$formula <- update(object$formula, formula., mode = "replace")
+        dots$formula <- update(object$formula, dots$formula, mode = "replace")
         message("Argument 'formula.' will completely replace the ", 
                 "original formula in non-linear models.")
         recompile <- TRUE
       }
     } else {
-      dots$formula <- as.formula(formula.)
-      mvars <- setdiff(all.vars(dots$formula), c(names(object$data), "."))
+      mvars <- all.vars(dots$formula$formula)
+      mvars <- setdiff(mvars, c(names(object$data), "."))
       if (length(mvars) && is.null(newdata)) {
         stop2("New variables found: ", paste(mvars, collapse = ", "),
               "\nPlease supply your data again via argument 'newdata'")
       }
       dots$formula <- update(formula(object), dots$formula)
       ee_old <- parse_bf(formula(object))
-      family <- get_arg("family", dots, object)
-      dots$formula <- amend_formula(dots$formula, family = family)
       ee_new <- parse_bf(dots$formula)
       # no need to recompile the model when changing fixed effects only
       dont_change <- c("random", "gam", "cs", "mo", "me")
@@ -1945,21 +1946,12 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
                   ee_new[names(ee_new) %in% dont_change]) ||
         is_equal(sort(c(n_old_fixef, n_new_fixef)), c(0L, 1L)) ||
         length(ee_old$response) != length(ee_new$response) ||
-        length(pforms(formula.)) > 0L
+        length(pforms(formula.)) > 0L ||
+        !identical(dots$formula$family, family(object))
     }
     if (recompile) {
       message("The desired formula changes require recompling the model")
     }
-  }
-  # allow to change the non-linear part via argument 'nonlinear'
-  take_nl <- !is.null(dots$nonlinear) && 
-    (missing(formula.) || is.null(attr(formula., "nonlinear")))
-  if (take_nl) attr(dots$formula, "nonlinear") <- NULL
-  # update gaussian("log") to lognormal() family
-  resp <- parse_bf(object$formula, family = object$family)$response
-  if (is_old_lognormal(object$family, nresp = length(resp),
-                       version = object$version)) {
-    object$family <- lognormal()
   }
   
   dots$iter <- first_not_null(dots$iter, object$fit@sim$iter)
@@ -1972,11 +1964,10 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
   recompile <- recompile || length(new_args)
   if (recompile) {
     if (length(new_args)) {
-      message(paste("Changing argument(s)", 
-                    paste0("'", new_args, "'", collapse = ", "),
-                    "requires recompiling the model"))
+      message("Changing argument(s) ", collapse_comma(new_args),
+              " requires recompiling the model")
     }
-    old_args <- setdiff(rc_args, new_args)
+    old_args <- setdiff(rc_args, c(new_args, "family"))
     dots[old_args] <- object[old_args]
     if (!is.null(newdata)) {
       dots$data <- newdata

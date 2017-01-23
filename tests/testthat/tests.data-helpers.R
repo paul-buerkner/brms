@@ -38,9 +38,9 @@ test_that("(deprecated) melt_data keeps factor contrasts", {
 test_that("(deprecated) melt_data returns expected errors", {
   data <- data.frame(y1 = rnorm(10), y2 = rnorm(10), x = 1:10)
   
-  formula <- bf(y1 ~ x:main)
+  formula <- bf(y1 ~ x:main, family = hurdle_poisson())
   formula$old_mv <- TRUE
-  bterms <- brms:::parse_bf(formula, family = hurdle_poisson())
+  bterms <- parse_bf(formula)
   expect_error(melt_data(data = NULL, family = hurdle_poisson(), bterms = bterms),
                "'data' must be a data.frame", fixed = TRUE)
   
@@ -49,16 +49,16 @@ test_that("(deprecated) melt_data returns expected errors", {
                "'main' is a reserved variable name", fixed = TRUE)
   
   data$response <- 1:10
-  formula <- bf(response ~ x:main)
+  formula <- bf(response ~ x:main, family = hurdle_poisson())
   formula$old_mv <- TRUE
-  bterms <- parse_bf(formula, family = hurdle_poisson())
+  bterms <- parse_bf(formula)
   expect_error(melt_data(data = data, family = hurdle_poisson(), bterms = bterms),
                "'response' is a reserved variable name", fixed = TRUE)
   
   data$trait <- 1:10
-  formula <- bf(y ~ 0 + x*trait)
+  formula <- bf(y ~ 0 + x*trait, family = hurdle_poisson())
   formula$old_mv <- TRUE
-  bterms <- parse_bf(formula, family = hurdle_poisson())
+  bterms <- parse_bf(formula)
   expect_error(melt_data(data = data, family = hurdle_poisson(), bterms = bterms),
                "'trait', 'response' is a reserved variable name", fixed = TRUE)
   
@@ -114,9 +114,9 @@ test_that("(deprecated) update_data handles NAs correctly in old MV models", {
   expect_equivalent(mf, data.frame(response = c(1, 3, 4, 6), y1 = c(1, 3, 1, 3), 
                                    y2 = c(4, 6, 4, 6), x = c(10, 12, 10, 12)))
   
-  formula <- bf(y1 ~ x)
+  formula <- bf(y1 ~ x, family = "hurdle_gamma")
   formula$old_mv <- TRUE
-  bterms <- parse_bf(formula, family = "hurdle_gamma")
+  bterms <- parse_bf(formula)
   expect_warning(mf <- update_data(data, family = "hurdle_gamma", 
                                    bterms = bterms),
                  "NAs were excluded")
@@ -124,7 +124,8 @@ test_that("(deprecated) update_data handles NAs correctly in old MV models", {
                                    y1 = c(1, 3, 1, 3),
                                    x = c(10, 12, 10, 12)))
   
-  bterms <- parse_bf(formula, family = "zero_inflated_poisson")
+  formula$family <- zero_inflated_poisson()
+  bterms <- parse_bf(formula)
   expect_warning(mf <- update_data(data, family = "zero_inflated_poisson", 
                                    bterms = bterms), "NAs were excluded")
   expect_equivalent(mf, data.frame(response = c(1, 3, 1, 3), y1 = c(1, 3, 1, 3),

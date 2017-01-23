@@ -28,21 +28,16 @@
 #'   \code{\link[brms:brmsformula]{brmsformula}}
 #' 
 #' @export
-parse_bf <- function(formula, family = NA, autocor = NULL, 
+parse_bf <- function(formula, family = NULL, autocor = NULL, 
                      check_response = TRUE, resp_rhs_all = TRUE) {
-  x <- bf(formula)
+  x <- bf(formula, family = family)
   old_mv <- isTRUE(x[["old_mv"]])
-  if (!is.null(x[["family"]])) {
-    family <- x[["family"]]
-  }
-  if (!is.na(family[[1]])) {
-    family <- check_family(family)
-  }
   if (!(is.null(autocor) || is.cor_brms(autocor))) {
     stop2("Argument 'autocor' has to be of class 'cor_brms'")
   }
   
   formula <- x$formula
+  family <- x$family
   y <- nlist(formula)
   add_forms <- parse_add(formula, family, check_response)
   add_vars <- str2formula(ulapply(add_forms, all.vars))
@@ -187,7 +182,7 @@ parse_bf <- function(formula, family = NA, autocor = NULL,
   y
 }
 
-parse_add <- function(formula, family = NA, check_response = TRUE) {
+parse_add <- function(formula, family = NULL, check_response = TRUE) {
   # extract addition arguments out formula
   # Args:
   #   see parse_bf
@@ -196,7 +191,7 @@ parse_add <- function(formula, family = NA, check_response = TRUE) {
   x <- list()
   add_funs <- lsp("brms", what = "exports", pattern = "^resp_")
   add_funs <- sub("^resp_", "", add_funs)
-  if (!is.na(family[[1]])) {
+  if (!is.null(family) && !isNA(family$family)) {
     add <- get_matches("\\|[^~]*~", formula2str(formula))
     if (length(add)) {
       # replace deprecated '|' by '+'
@@ -259,13 +254,13 @@ parse_mo <- function(formula) {
   structure(mo_terms, pos = pos_mo_terms)
 }
 
-parse_cs <- function(formula, family = NA) {
+parse_cs <- function(formula, family = NULL) {
   # category specific terms for ordinal models
   all_terms <- all_terms(formula)
   pos_cs_terms <- grepl("^cse?\\([^\\|]+$", all_terms)
   cs_terms <- all_terms[pos_cs_terms]
   if (length(cs_terms)) {
-    if (!is.na(family[[1]]) && !allows_cs(family)) {
+    if (!is.null(family) && !allows_cs(family)) {
       stop2("Category specific effects are only meaningful for ", 
             "families 'sratio', 'cratio', and 'acat'.")
     }

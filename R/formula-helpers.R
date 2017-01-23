@@ -444,7 +444,7 @@ eval_rhs <- function(formula, data = NULL) {
   eval(rhs(formula)[[2]], data, environment(formula))
 }
 
-amend_formula <- function(formula, data = NULL, family = gaussian(),
+amend_formula <- function(formula, data = NULL, family = NULL,
                           nonlinear = NULL, partial = NULL) {
   # incorporate additional arguments into formula
   # Args:
@@ -454,8 +454,7 @@ amend_formula <- function(formula, data = NULL, family = gaussian(),
   #   nonlinear, partial: deprecated arguments of brm
   # Returns:
   #   a brmsformula object compatible with the current version of brms
-  out <- bf(formula, nonlinear = nonlinear)
-  out[["family"]] <- family
+  out <- bf(formula, family = family, nonlinear = nonlinear)
   fnew <- ". ~ ."
   if (!is.null(partial)) {
     warning2("Argument 'partial' is deprecated. Please use the 'cs' ", 
@@ -471,13 +470,16 @@ amend_formula <- function(formula, data = NULL, family = gaussian(),
   if (fnew != ". ~ .") {
     out$formula <- update.formula(out$formula, formula(fnew))
   }
-  if (is_ordinal(family)) {
+  if (is.null(out$family)) {
+    out$family <- check_family(gaussian())
+  }
+  if (is_ordinal(out$family)) {
     # fix discrimination to 1 by default
     if (!"disc" %in% c(names(pforms(out)), names(pfix(out)))) {
       out <- bf(out, disc = 1)
     }
   }
-  if (is_categorical(family) && is.null(attr(formula, "response"))) {
+  if (is_categorical(out$family) && is.null(out[["response"]])) {
     respform <- parse_bf(out)$respform
     model_response <- model.response(model.frame(respform, data = data))
     response <- levels(factor(model_response))

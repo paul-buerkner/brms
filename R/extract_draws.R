@@ -129,7 +129,7 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   if (nzchar(nlpar)) {
     # make sure not to evaluate family specific stuff
     # when extracting draws of nlpars
-    x$formula[["response"]] <- nlpar 
+    x$formula[["response"]] <- nlpar
     na_family <- list(family = NA, link = "identity")
     class(na_family) <- c("brmsfamily", "family")
     x$family <- x$formula$family <- dots$f <- na_family

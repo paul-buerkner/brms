@@ -4,7 +4,7 @@
 \alias{brm}
 \title{Fit Bayesian Generalized (Non-)Linear Multilevel Models}
 \usage{
-brm(formula, data, family = gaussian(), prior = NULL, autocor = NULL,
+brm(formula, data, family = NULL, prior = NULL, autocor = NULL,
   nonlinear = NULL, threshold = c("flexible", "equidistant"),
   cov_ranef = NULL, save_ranef = TRUE, save_mevars = FALSE,
   sparse = FALSE, sample_prior = FALSE, knots = NULL, stan_funs = NULL,
@@ -33,7 +33,8 @@ Every family function has a \code{link} argument allowing to specify
 the link function to be applied on the response variable.
 If not specified, default links are used.
 For details of supported families see 
-\code{\link[brms:brmsfamily]{brmsfamily}}.}
+\code{\link[brms:brmsfamily]{brmsfamily}}.
+By default, a linear \code{gaussian} model is applied.}
 
 \item{prior}{One or more \code{brmsprior} objects created by
 \code{\link[brms:set_prior]{set_prior}} or related functions 

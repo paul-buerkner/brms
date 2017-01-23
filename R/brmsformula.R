@@ -445,7 +445,7 @@
 #' bf(rt | dec(decision) ~ x, bias = 0.5)
 #' 
 #' @export
-brmsformula <- function(formula, ..., flist = NULL, 
+brmsformula <- function(formula, ..., flist = NULL, family = NULL,
                         nl = NULL, nonlinear = NULL) {
   # ensure backwards compatibility
   if (is.brmsformula(formula) && is.formula(formula)) {
@@ -505,20 +505,23 @@ brmsformula <- function(formula, ..., flist = NULL,
     }
     out[["nl"]] <- nl
   }
+  if (!is.null(family)) {
+    out[["family"]] <- check_family(family)
+  }
   # add default values for unspecified elements
-  defs <- list(pforms = list(), nl = FALSE, family = NULL, 
-               response = NULL, old_mv = FALSE)
-  defs <- defs[setdiff(names(defs), names(out))]
+  defs <- list(pforms = list(), pfix = list(), family = NULL, 
+               nl = FALSE, response = NULL, old_mv = FALSE)
+  defs <- defs[setdiff(names(defs), names(rmNULL(out, FALSE)))]
   out[names(defs)] <- defs
   class(out) <- "brmsformula"
   out
 }
 
 #' @export
-bf <- function(formula, ..., flist = NULL, 
+bf <- function(formula, ..., flist = NULL, family = NULL, 
                nl = NULL, nonlinear = NULL) {
   # alias of brmsformula
-  brmsformula(formula, ..., flist = flist,
+  brmsformula(formula, ..., flist = flist, family = family,
               nl = nl, nonlinear = nonlinear)
 }
 
@@ -656,10 +659,15 @@ update.brmsformula <- function(object, formula.,
   #   a brmsformula object
   mode <- match.arg(mode)
   object <- bf(object)
+  up_family <- formula.[["family"]]
+  if (is.null(up_family)) {
+    up_family <- object[["family"]]
+  }
   up_nl <- formula.[["nl"]]
   if (is.null(up_nl)) {
     up_nl <- object[["nl"]]
   }
+  # already use up_nl here to avoid ordinary parsing of NL formulas
   formula. <- bf(formula., nl = up_nl)
   old_form <- object$formula
   up_form <- formula.$formula
@@ -672,12 +680,12 @@ update.brmsformula <- function(object, formula.,
   }
   pforms <- pforms(object)
   up_pforms <- pforms(formula.)
-  pforms[names(up_pforms)] <- up_pforms 
-  
-  nl <- get_arg("nl", formula., object)
-  out <- bf(new_form, flist = pforms, nl = nl)
-  out$family <- get_arg("family", formula.,  object)
-  out
+  pforms[names(up_pforms)] <- up_pforms
+  pfix <- pfix(object)
+  up_pfix <- pfix(formula.)
+  pfix[names(up_pfix)] <- up_pfix
+  bf(new_form, flist = c(pforms, pfix),
+     family = up_family, nl = up_nl)
 }
 
 #' @export

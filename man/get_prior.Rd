@@ -4,9 +4,8 @@
 \alias{get_prior}
 \title{Overview on Priors for \pkg{brms} Models}
 \usage{
-get_prior(formula, data, family = gaussian(), autocor = NULL,
-  nonlinear = NULL, threshold = c("flexible", "equidistant"),
-  internal = FALSE)
+get_prior(formula, data, family = NULL, autocor = NULL, nonlinear = NULL,
+  threshold = c("flexible", "equidistant"), internal = FALSE)
 }
 \arguments{
 \item{formula}{An object of class 
@@ -28,7 +27,8 @@ Every family function has a \code{link} argument allowing to specify
 the link function to be applied on the response variable.
 If not specified, default links are used.
 For details of supported families see 
-\code{\link[brms:brmsfamily]{brmsfamily}}.}
+\code{\link[brms:brmsfamily]{brmsfamily}}.
+By default, a linear \code{gaussian} model is applied.}
 
 \item{autocor}{An optional \code{\link{cor_brms}} object describing 
 the correlation structure within the response variable 

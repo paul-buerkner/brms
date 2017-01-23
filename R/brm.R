@@ -34,6 +34,7 @@
 #'   If not specified, default links are used.
 #'   For details of supported families see 
 #'   \code{\link[brms:brmsfamily]{brmsfamily}}.
+#'   By default, a linear \code{gaussian} model is applied.
 #' @param prior One or more \code{brmsprior} objects created by
 #'   \code{\link[brms:set_prior]{set_prior}} or related functions 
 #'   and combined using the \code{c} method. A single \code{brmsprior} 
@@ -324,7 +325,7 @@
 #' @import methods
 #' @import stats   
 #' @export 
-brm <- function(formula, data, family = gaussian(), prior = NULL, 
+brm <- function(formula, data, family = NULL, prior = NULL, 
                 autocor = NULL, nonlinear = NULL, 
                 threshold = c("flexible", "equidistant"), 
                 cov_ranef = NULL, save_ranef = TRUE, save_mevars = FALSE, 
@@ -352,7 +353,6 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
              "Forking is now automatically applied when appropriate.")
   }
   dots[deprecated_brm_args()] <- NULL
-  check_brm_input(nlist(family, inits))
   autocor <- check_autocor(autocor)
   threshold <- match.arg(threshold)
   algorithm <- match.arg(algorithm)
@@ -369,10 +369,11 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     x$fit <- rstan::get_stanmodel(x$fit)
   } else {  # build new model
     # see validate.R and formula-helpers.R
-    family <- check_family(family)
     formula <- amend_formula(formula, data = data, family = family, 
                              nonlinear = nonlinear)
-    bterms <- parse_bf(formula, family = family, autocor = autocor)
+    family <- formula$family
+    check_brm_input(nlist(family))
+    bterms <- parse_bf(formula, autocor = autocor)
     if (is.null(dots$data.name)) {
       data.name <- substr(Reduce(paste, deparse(substitute(data))), 1, 50)
     } else {

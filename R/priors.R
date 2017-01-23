@@ -502,15 +502,15 @@ prior_string <- function(prior, ...) {
 #'               prior = prior)
 #' 
 #' @export
-get_prior <- function(formula, data, family = gaussian(),
+get_prior <- function(formula, data, family = NULL,
                       autocor = NULL, nonlinear = NULL,
                       threshold = c("flexible", "equidistant"), 
                       internal = FALSE) {
   # note that default priors are stored in this function
-  family <- check_family(family) 
-  link <- family$link
   formula <- amend_formula(formula, data = data, family = family, 
                            nonlinear = nonlinear)
+  family <- formula$family
+  link <- family$link
   threshold <- match.arg(threshold)
   autocor <- check_autocor(autocor)
   bterms <- parse_bf(formula, family = family)
@@ -937,7 +937,7 @@ check_prior_content <- function(prior, family = gaussian(), warn = TRUE) {
   if (!is(prior, "brmsprior")) {
     return(invisible(NULL))
   }
-  stopifnot(is(family, "family"))
+  stopifnot(is.family(family))
   family <- family$family
   if (nrow(prior)) {
     lb_priors <- c("lognormal", "chi_square", "inv_chi_square",

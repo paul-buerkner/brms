@@ -5,9 +5,9 @@
 \alias{make_standata}
 \title{Data for \pkg{brms} Models}
 \usage{
-make_standata(formula, data, family = "gaussian", prior = NULL,
-  autocor = NULL, nonlinear = NULL, cov_ranef = NULL,
-  sample_prior = FALSE, knots = NULL, control = list(), ...)
+make_standata(formula, data, family = NULL, prior = NULL, autocor = NULL,
+  nonlinear = NULL, cov_ranef = NULL, sample_prior = FALSE,
+  knots = NULL, control = list(), ...)
 }
 \arguments{
 \item{formula}{An object of class 
@@ -29,7 +29,8 @@ Every family function has a \code{link} argument allowing to specify
 the link function to be applied on the response variable.
 If not specified, default links are used.
 For details of supported families see 
-\code{\link[brms:brmsfamily]{brmsfamily}}.}
+\code{\link[brms:brmsfamily]{brmsfamily}}.
+By default, a linear \code{gaussian} model is applied.}
 
 \item{prior}{One or more \code{brmsprior} objects created by
 \code{\link[brms:set_prior]{set_prior}} or related functions 

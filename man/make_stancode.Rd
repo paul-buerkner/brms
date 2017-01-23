@@ -4,9 +4,9 @@
 \alias{make_stancode}
 \title{Stan Code for \pkg{brms} Models}
 \usage{
-make_stancode(formula, data, family = gaussian(), prior = NULL,
-  autocor = NULL, nonlinear = NULL, threshold = c("flexible",
-  "equidistant"), sparse = FALSE, cov_ranef = NULL, sample_prior = FALSE,
+make_stancode(formula, data, family = NULL, prior = NULL, autocor = NULL,
+  nonlinear = NULL, threshold = c("flexible", "equidistant"),
+  sparse = FALSE, cov_ranef = NULL, sample_prior = FALSE,
   stan_funs = NULL, save_model = NULL, ...)
 }
 \arguments{
@@ -29,7 +29,8 @@ Every family function has a \code{link} argument allowing to specify
 the link function to be applied on the response variable.
 If not specified, default links are used.
 For details of supported families see 
-\code{\link[brms:brmsfamily]{brmsfamily}}.}
+\code{\link[brms:brmsfamily]{brmsfamily}}.
+By default, a linear \code{gaussian} model is applied.}
 
 \item{prior}{One or more \code{brmsprior} objects created by
 \code{\link[brms:set_prior]{set_prior}} or related functions 
