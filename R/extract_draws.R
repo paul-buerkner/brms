@@ -123,7 +123,7 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
   stopifnot(is.brmsformula(x$formula))
   x$formula$formula <- update.formula(x$formula$formula, rhs(rhs_formula))
   # ensure that auxiliary parameters are not included (fixes #154)
-  x$formula$pforms <- NULL
+  x$formula$pforms <- x$formula$pfix <- NULL
   x$formula$nl <- FALSE
   x$ranef <- tidy_ranef(parse_bf(x$formula), data = x$data)
   if (nzchar(nlpar)) {
