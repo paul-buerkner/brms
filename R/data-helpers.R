@@ -231,6 +231,9 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   #                    or just return the updated newdata?
   # Returns:
   #   updated data.frame being compatible with formula(fit)
+  if (!incl_autocor) {
+    fit$autocor <- NULL
+  }
   if (is.null(newdata) || is(newdata, "standata")) {
     # to shorten expressions in S3 methods such as predict.brmsfit
     if (return_standata && is.null(newdata)) {
@@ -246,8 +249,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   # standata will be based on an updated formula if re_formula is specified
   new_formula <- update_re_terms(formula(fit), re_formula = re_formula)
   bterms <- parse_bf(new_formula, family = family(fit),
-                        autocor = if (incl_autocor) fit$autocor,
-                        resp_rhs_all = FALSE)
+                     autocor = fit$autocor, resp_rhs_all = FALSE)
   resp_only_vars <- setdiff(all.vars(bterms$respform), 
                             all.vars(rhs(bterms$allvars)))
   resp_only_vars <- c(resp_only_vars, all.vars(bterms[["dec"]]))  # fixes #162
