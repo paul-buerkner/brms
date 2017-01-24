@@ -243,13 +243,13 @@ prepare_conditions <- function(x, conditions = NULL, effects = NULL,
 }
 
 prepare_marg_data <- function(data, conditions, int_vars = NULL,
-                              contour = FALSE, resolution = 100) {
+                              surface = FALSE, resolution = 100) {
   # prepare data to be used in marginal_effects
   # Args:
   #  data: data.frame containing only data of the predictors of interest
   #  conditions: see argument 'conditions' of marginal_effects
   #  int_vars: names of variables being treated as integers
-  #  contour: generate contour plots later on?
+  #  surface: generate surface plots later on?
   #  resolution: number of distinct points at which to evaluate
   #              the predictors of interest
   effects <- names(data)
@@ -273,7 +273,7 @@ prepare_marg_data <- function(data, conditions, int_vars = NULL,
     if (pred_types[1] == "numeric") {
       values <- setNames(list(values, NA), effects)
       if (pred_types[2] == "numeric") {
-        if (contour) {
+        if (surface) {
           min2 <- min(data[, effects[2]])
           max2 <- max(data[, effects[2]])
           if (mono[2]) {

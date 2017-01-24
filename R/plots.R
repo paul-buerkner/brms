@@ -3,6 +3,7 @@
 #' @export 
 plot.brmsMarginalEffects <- function(x, ncol = NULL, 
                                      points = FALSE, rug = FALSE,
+                                     stype = c("contour", "raster"),
                                      theme = bayesplot::theme_default(), 
                                      ask = TRUE, plot = TRUE, ...) {
   # Compute marginal effects plots using ggplot2
@@ -10,6 +11,7 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL,
   #   A list of ggplot objects
   dots <- list(...)
   plot <- use_alias(plot, dots$do_plot)
+  stype <- match.arg(stype)
   smooths_only <- isTRUE(attr(x, "smooths_only"))
   if (points && smooths_only) {
     stop2("Argument 'points' is invalid for objects ", 
@@ -25,13 +27,23 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL,
     response <- attr(x[[i]], "response")
     effects <- attr(x[[i]], "effects")
     ncond <- length(unique(x[[i]]$cond__))
-    if (isTRUE(attr(x[[i]], "contour"))) {
-      # contour plot for two dimensional smooths
+    surface <- isTRUE(attr(x[[i]], "surface"))
+    # for backwards compatibility with brms < 1.4.0
+    surface <- surface || isTRUE(attr(x[[i]], "contour"))
+    if (surface) {
+      # surface plots for two dimensional smooths
       plots[[i]] <- ggplot(x[[i]]) +
-        aes_string(effects[1], effects[2]) + 
-        geom_contour(aes_string(z = "estimate__", colour = "..level.."), 
-                     bins = 30, size = 1.3) +
-        scale_color_gradientn(colors = viridis6(), name = response)
+        aes_string(effects[1], effects[2])
+      if (stype == "contour") {
+        plots[[i]] <- plots[[i]] + 
+          geom_contour(aes_(z = ~ estimate__, colour = ~ ..level..),
+                       bins = 30, size = 1.3) +
+          scale_color_gradientn(colors = viridis6(), name = response)
+      } else if (stype == "raster") {
+        plots[[i]] <- plots[[i]] + 
+          geom_raster(aes_(fill = ~ estimate__)) + 
+          scale_fill_gradientn(colors = viridis6(), name = response)
+      }
     } else {
       # plot effects of single predictors / smooths
       # as well as two-way interactions

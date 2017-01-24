@@ -8,14 +8,14 @@
 \usage{
 \method{marginal_effects}{brmsfit}(x, effects = NULL, conditions = NULL,
   re_formula = NA, robust = TRUE, probs = c(0.025, 0.975),
-  method = c("fitted", "predict"), contour = FALSE, resolution = 100,
+  method = c("fitted", "predict"), surface = FALSE, resolution = 100,
   too_far = 0, ...)
 
 marginal_effects(x, ...)
 
 \method{plot}{brmsMarginalEffects}(x, ncol = NULL, points = FALSE,
-  rug = FALSE, theme = bayesplot::theme_default(), ask = TRUE,
-  plot = TRUE, ...)
+  rug = FALSE, stype = c("contour", "raster"),
+  theme = bayesplot::theme_default(), ask = TRUE, plot = TRUE, ...)
 }
 \arguments{
 \item{x}{An object usually of class \code{brmsfit}.}
@@ -50,8 +50,10 @@ intervals (defaults to 2.5 and 97.5 percent quantiles)}
 If \code{"fitted"}, plot marginal predictions of the regression curve. 
 If \code{"predict"}, plot marginal predictions of the responses.}
 
-\item{contour}{Logical; Indicates whether interactions should be 
-visualized with a contour plot. Defaults to \code{FALSE}.}
+\item{surface}{Logical; Indicates whether interactions or 
+two-dimensional smooths should be visualized as a surface. 
+Defaults to \code{FALSE}. The surface type can be controlled 
+via argument \code{stype} of the related plotting method.}
 
 \item{resolution}{Number of support points used to generate 
 the plots. Higher resolution leads to smoother plots. 
@@ -81,6 +83,9 @@ that match the specified conditions defined in \code{conditions}.}
 \item{rug}{Logical; indicating whether a rug representation of predictor
 values should be added via \code{\link[ggplot2:geom_rug]{geom_rug}}.
 Default is \code{FALSE}.}
+
+\item{stype}{Indicates how surface plots should be displayed.
+Either \code{"contour"} or \code{"raster"}.}
 
 \item{theme}{A \code{\link[ggplot2:theme]{theme}} object 
 modifying the appearance of the plots. 

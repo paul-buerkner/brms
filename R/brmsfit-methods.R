@@ -1236,11 +1236,12 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
                                      re_formula = NA, robust = TRUE, 
                                      probs = c(0.025, 0.975),
                                      method = c("fitted", "predict"), 
-                                     contour = FALSE, resolution = 100,
+                                     surface = FALSE, resolution = 100,
                                      too_far = 0, ...) {
   method <- match.arg(method)
   dots <- list(...)
-  conditions <- use_alias(conditions, dots$data)
+  conditions <- use_alias(conditions, dots[["data"]])
+  surface <- use_alias(surface, dots[["contour"]])
   dots$data <- NULL
   contains_samples(x)
   x <- restructure(x)
@@ -1307,9 +1308,9 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   for (i in seq_along(effects)) {
     marg_data <- mf[, effects[[i]], drop = FALSE]
     marg_args <- nlist(data = marg_data, conditions, 
-                       int_vars, contour, resolution)
+                       int_vars, surface, resolution)
     marg_data <- do.call(prepare_marg_data, marg_args)
-    if (contour && length(effects[[i]]) == 2L && too_far > 0) {
+    if (surface && length(effects[[i]]) == 2L && too_far > 0) {
       # exclude prediction grid points too far from data
       ex_too_far <- mgcv::exclude.too.far(
         g1 = marg_data[[effects[[i]][1]]], 
@@ -1342,7 +1343,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     
     types <- attr(marg_data, "types")
     both_numeric <- length(types) == 2L && all(types == "numeric")
-    if (both_numeric && !contour) {
+    if (both_numeric && !surface) {
       # can only be converted to factor after having called method
       if (isTRUE(attr(marg_data, "mono")[2])) {
         labels <- c("Median - MAD", "Median", "Median + MAD")
@@ -1355,7 +1356,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     marg_res = cbind(marg_data, marg_res)
     attr(marg_res, "response") <- as.character(x$formula$formula[2])
     attr(marg_res, "effects") <- effects[[i]]
-    attr(marg_res, "contour") <- both_numeric && contour
+    attr(marg_res, "surface") <- both_numeric && surface
     point_args <- nlist(mf, effects = effects[[i]], conditions,
                         groups = get_random(bterms)$group, family = x$family)
     attr(marg_res, "points") <- do.call(make_point_frame, point_args)
@@ -1456,7 +1457,7 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
         }
         attr(res, "response") <- response
         attr(res, "effects") <- covars_no_byfactor
-        attr(res, "contour") <- ncovars == 2L
+        attr(res, "surface") <- ncovars == 2L
         attr(res, "points") <- mf[, covars[[j]], drop = FALSE]
         results[[response]] <- res
       }

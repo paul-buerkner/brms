@@ -587,8 +587,10 @@ stanplot <- function(object, ...) {
 #' @param method Either \code{"fitted"} or \code{"predict"}. 
 #'   If \code{"fitted"}, plot marginal predictions of the regression curve. 
 #'   If \code{"predict"}, plot marginal predictions of the responses.
-#' @param contour Logical; Indicates whether interactions should be 
-#'   visualized with a contour plot. Defaults to \code{FALSE}.
+#' @param surface Logical; Indicates whether interactions or 
+#'   two-dimensional smooths should be visualized as a surface. 
+#'   Defaults to \code{FALSE}. The surface type can be controlled 
+#'   via argument \code{stype} of the related plotting method.
 #' @param resolution Number of support points used to generate 
 #'   the plots. Higher resolution leads to smoother plots. 
 #'   Defaults to \code{100}. If \code{contour} is \code{TRUE},
@@ -611,6 +613,8 @@ stanplot <- function(object, ...) {
 #' @param rug Logical; indicating whether a rug representation of predictor
 #'   values should be added via \code{\link[ggplot2:geom_rug]{geom_rug}}.
 #'   Default is \code{FALSE}.
+#' @param stype Indicates how surface plots should be displayed.
+#'   Either \code{"contour"} or \code{"raster"}.
 #' @inheritParams plot.brmsfit
 #' @param ... Currently ignored.
 #' 
@@ -710,7 +714,9 @@ marginal_effects <- function(x, ...) {
 #' 
 #' # fit and plot a two-dimensional smooth term
 #' fit2 <- brm(y ~ t2(x0, x2), data = dat)
-#' marginal_smooths(fit2)
+#' ms <- marginal_smooths(fit2)
+#' plot(ms, stype = "contour")
+#' plot(ms, stype = "raster")
 #' }
 #' 
 #' @export

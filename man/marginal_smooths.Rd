@@ -62,7 +62,9 @@ plot(marginal_smooths(fit, smooths = "s(x2)"), ask = FALSE)
 
 # fit and plot a two-dimensional smooth term
 fit2 <- brm(y ~ t2(x0, x2), data = dat)
-marginal_smooths(fit2)
+ms <- marginal_smooths(fit2)
+plot(ms, stype = "contour")
+plot(ms, stype = "raster")
 }
 
 }
