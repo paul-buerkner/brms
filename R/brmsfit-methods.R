@@ -1395,34 +1395,29 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
   results <- list()
   for (k in seq_along(lee)) {
     # loop over elements that may contain smooth terms
-    splines <- get_spline_labels(lee[[k]], data = mf)
+    splines <- get_spline_labels(lee[[k]])
+    splines_by <- get_spline_labels(lee[[k]], data = mf)
     covars <- get_spline_labels(lee[[k]], covars = TRUE, combine = FALSE)
-    termnum <- attr(splines, "termnum")
     for (i in seq_along(splines)) {
       # loop over smooth terms and compute their predictions
-      j <- termnum[i]
-      covars_no_by_factor <- covars[[j]]
-      byvars <- attr(covars, "byvars")[[j]]
+      covars_no_by_factor <- covars[[i]]
+      byvars <- attr(covars, "byvars")[[i]]
       byfactors <- !sapply(mf[, byvars, drop = FALSE], is.numeric)
       byfactors <- byvars[byfactors]
-      covars_no_byfactor <- setdiff(covars[[j]], byfactors)
+      covars_no_byfactor <- setdiff(covars[[i]], byfactors)
       ncovars <- length(covars_no_byfactor)
       if (ncovars > 2L) {
         too_many_covars <- TRUE
       }
       include_spline <- !length(smooths) || splines[[i]] %in% smooths
       if (include_spline && ncovars <= 2L) {
-        values <- named_list(covars[[j]])
+        values <- named_list(covars[[i]])
         for (cv in names(values)) {
           if (is.numeric(mf[[cv]])) {
             values[[cv]] <- seq(min(mf[[cv]]), max(mf[[cv]]), 
                                 length.out = resolution)
           } else {
             values[[cv]] <- levels(factor(mf[[cv]]))
-            if (cv %in% byvars) {
-              # factor levels in 'by' are displayed in separate plots
-              values[[cv]] <- values[[cv]][sum(termnum[1:i] == j)]
-            }
           }
         }
         newdata <- expand.grid(values)
@@ -1436,21 +1431,25 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
             dist = too_far)
           newdata <- newdata[!ex_too_far, ]  
         }
-         other_vars <- setdiff(names(conditions), covars[[j]])
+        other_vars <- setdiff(names(conditions), covars[[i]])
         newdata[, other_vars] <- conditions[1, other_vars]
         # prepare draws for linear_predictor
         more_args <- nlist(newdata, nlpar = names(lee)[k], 
                            rhs_formula = lee[[k]]$formula)
         draws <- do.call(.extract_draws, c(args, more_args))
-        sc <- attr(draws$data[["X"]], "smooth_cols")
-        draws$data[["X"]] <- draws$data[["X"]][, sc[[i]], drop = FALSE]
-        draws[["b"]] <- draws[["b"]][, sc[[i]], drop = FALSE]
-        draws[["Zs"]] <- draws[["Zs"]][i] 
-        draws[["s"]] <- draws[["s"]][i]
+        J <- which(attr(splines_by, "termnum") == i)
+        scs <- unlist(attr(draws$data[["X"]], "smooth_cols")[J])
+        draws$data[["X"]] <- draws$data[["X"]][, scs, drop = FALSE]
+        draws[["b"]] <- draws[["b"]][, scs, drop = FALSE]
+        draws[["Zs"]] <- draws[["Zs"]][J] 
+        draws[["s"]] <- draws[["s"]][J]
         eta <- get_eta(i = NULL, draws = draws)
         eta <- get_summary(eta, robust = TRUE, probs = probs)
         colnames(eta) <- c("estimate__", "se__", "lower__", "upper__")
-        res <- cbind(newdata[, covars_no_byfactor, drop = FALSE], eta)
+        res <- cbind(newdata[, covars[[i]], drop = FALSE], eta)
+        if (length(byfactors)) {
+          res$cond__ <- Reduce(paste_colon, res[, byfactors, drop = FALSE]) 
+        }
         response <- splines[[i]]
         if (isTRUE(nzchar(names(lee)[k]))) {
           response <- paste0(names(lee)[k], ": ", response)
@@ -1458,7 +1457,7 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
         attr(res, "response") <- response
         attr(res, "effects") <- covars_no_byfactor
         attr(res, "surface") <- ncovars == 2L
-        attr(res, "points") <- mf[, covars[[j]], drop = FALSE]
+        attr(res, "points") <- mf[, covars[[i]], drop = FALSE]
         results[[response]] <- res
       }
     }

@@ -119,8 +119,13 @@ lc <- function(l, ...) {
 }
 
 collapse <- function(..., sep = "") {
-  # wrapper for paste with collapse
+  # wrapper for paste with collapse = ""
   paste(..., sep = sep, collapse = "")
+}
+
+paste_colon <- function(..., collapse = NULL) {
+  # wrapper for paste with sep = ":"
+  paste(..., sep = ":", collapse = collapse)
 }
 
 collapse_comma <- function(...) {
