@@ -25,13 +25,7 @@ test_that("plotting functions don't throw unexpected errors", {
   # pairs.brmsfit
   expect_identical(SW(pairs(fit, pars = parnames(fit)[1:3])), NULL)
   
-  # marginal_effects
-  mdata = data.frame(Age = c(-0.3, 0, 0.3), count = c(10, 20, 30), 
-                     visit = 1:3, patient = 1, Trt = 0, Exp = c(1,3,5))
-  me <- marginal_effects(fit, conditions = mdata)
-  marg_plot <- plot(me, points = TRUE, rug = TRUE, plot = FALSE)
-  expect_true(is(marg_plot[[1]], "ggplot"))
-  # some manual checks
+  # marginal_effects: manual checks of plotting method
   N <- 90
   marg_results <- data.frame(P1 = rpois(N, 20), 
                              P2 = factor(rep(1:3, each = N / 3)),

@@ -126,8 +126,20 @@ test_that("all S3 methods have reasonable ouputs", {
   loo4 <- SW(LOO(fit4, cores = 1))
   expect_true(is.numeric(loo4[["looic"]]))
   
-  # marginal_effects (the related plot method is tested in tests.plots)
-  expect_equal(nrow(marginal_effects(fit1)[[2]]), 100)
+  # marginal_effects
+  me <- marginal_effects(fit1)
+  expect_equal(nrow(me[[2]]), 100)
+  meplot <- plot(me, points = TRUE, rug = TRUE, 
+                 ask = FALSE, plot = FALSE)
+  expect_true(is(meplot[[1]], "ggplot"))
+  
+  me <- marginal_effects(fit1, "Trt:Age", surface = TRUE, 
+                         resolution = 15, too_far = 0.2)
+  meplot <- plot(me, plot = FALSE)
+  expect_true(is(meplot[[1]], "ggplot"))
+  meplot <- plot(me, stype = "raster", plot = FALSE)
+  expect_true(is(meplot[[1]], "ggplot"))
+  
   mdata = data.frame(Age = c(-0.3, 0, 0.3), count = c(10, 20, 30), 
                      visit = 1:3, patient = 1, Trt = 0, Exp = c(1,3,5))
   exp_nrow <- nrow(mdata) * 100
