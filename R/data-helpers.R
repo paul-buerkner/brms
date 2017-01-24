@@ -352,7 +352,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
                          rsv_intercept = has_rsv_intercept(bterms$formula),
                          old_mv = attr(bterms$formula, "old_mv"))
     used_vars <- unique(c(names(newdata), all.vars(bterms$allvars), rsv_vars))
-    unused_vars <- setdiff(names(model.frame(fit)), used_vars)
+    all_vars <- all.vars(str2formula(names(model.frame(fit))))
+    unused_vars <- setdiff(all_vars, used_vars)
     if (length(unused_vars)) {
       newdata[, unused_vars] <- NA
     }
@@ -379,7 +380,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
                     omit_response = !check_response,
                     old_cat <- is_old_categorical(fit))
     old_terms <- attr(model.frame(fit), "terms")
-    control$terms_attr <- attributes(old_terms)[c("variables", "predvars")]
+    terms_attr <- c("variables", "predvars", "offset")
+    control$terms_attr <- attributes(old_terms)[terms_attr]
     has_mo <- length(get_effect(bterms, "mo")) > 0L
     if (has_trials(fit$family) || has_cat(fit$family) || has_mo) {
       # some components should not be computed based on newdata

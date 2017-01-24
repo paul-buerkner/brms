@@ -91,8 +91,7 @@ parse_bf <- function(formula, family = NULL, autocor = NULL,
     rm_pos <- c(rm_pos, list(pos_re_terms))
     fe_terms <- all_terms[!Reduce("|", rm_pos)]
     int_term <- ifelse(attr(terms, "intercept") == 1, "1", "0")
-    fe_terms <- paste(c(int_term, fe_terms, get_offset(formula)), 
-                      collapse = "+")
+    fe_terms <- paste(c(int_term, fe_terms), collapse = "+")
     tfixed <- paste(sub("~.*", "", tfixed), "~", fe_terms)
     y$fixed <- formula(tfixed)
     if (is_ordinal(family)) {
@@ -132,13 +131,16 @@ parse_bf <- function(formula, family = NULL, autocor = NULL,
   # make a formula containing all required variables
   lhs_vars <- if (resp_rhs_all) all.vars(lhs(y$fixed))
   fixed_vars <- if (!length(y$nlpars)) rhs(y$fixed)
-  formula_list <- c(lhs_vars, add_vars, fixed_vars,
-                    y[c("covars", "cs", "mo", "me")], 
-                    attr(y$gam, "allvars"), y$random$form,
-                    lapply(y$random$gcall, "[[", "allvars"), 
-                    lapply(y$nlpars, "[[", "allvars"),
-                    lapply(y$auxpars, "[[", "allvars"), 
-                    get_offset(y$fixed), y$time$allvars)
+  formula_list <- c(
+    lhs_vars, add_vars, 
+    fixed_vars, get_offset(formula),
+    y[c("covars", "cs", "mo", "me")], 
+    attr(y$gam, "allvars"), y$random$form,
+    lapply(y$random$gcall, "[[", "allvars"), 
+    lapply(y$nlpars, "[[", "allvars"),
+    lapply(y$auxpars, "[[", "allvars"), 
+    y$time$allvars
+  )
   new_formula <- collapse(ulapply(rmNULL(formula_list), plus_rhs))
   all_vars <- c("1", all.vars(parse(text = new_formula)))
   new_formula <- paste(new_formula, "+", paste0(all_vars, collapse = "+"))
