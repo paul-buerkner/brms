@@ -1600,7 +1600,8 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     }
   }
   # see predict.R
-  predict_fun <- get(paste0("predict_", draws$f$family), mode = "function")
+  predict_fun <- paste0("predict_", draws$f$family)
+  predict_fun <- get(predict_fun, asNamespace("brms"))
   N <- if (!is.null(draws$data$N_trait)) draws$data$N_trait
        else if (!is.null(draws$data$N_tg)) draws$data$N_tg
        else if (is.cor_fixed(draws$autocor)) 1
@@ -1731,8 +1732,11 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     }
   }
   if (scale == "response") {
-    # see fitted.R
-    mu <- fitted_response(draws = draws, mu = mu)
+    # original families are required for fitted helper functions 
+    draws$f <- family(object)
+    fitted_fun <- paste0("fitted_", draws$f$family)
+    fitted_fun <- get(fitted_fun, asNamespace("brms"))
+    mu <- do.call(fitted_fun, nlist(mu, draws))
   }
   old_order <- attr(draws$data, "old_order")
   out <- reorder_obs(mu, old_order, sort = sort)
@@ -2184,7 +2188,8 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   N <- if (!is.null(draws$data$N_tg)) draws$data$N_tg
        else if (is.cor_fixed(object$autocor)) 1
        else nrow(as.matrix(draws$data$Y))
-  loglik_fun <- get(paste0("loglik_", draws$f$family), mode = "function")
+  loglik_fun <- paste0("loglik_", draws$f$family)
+  loglik_fun <- get(loglik_fun, asNamespace("brms"))
   if (pointwise) {
     loglik <- structure(loglik_fun, draws = draws, N = N)
   } else {

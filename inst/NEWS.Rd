@@ -41,6 +41,8 @@
       \item Rename \code{cov_fixed} to \code{cor_fixed}.
       \item Make handling of addition terms more transparent
       by exporting and documenting related functions.
+      \item Refactor helper functions of the \code{fitted}
+      method to be easier to extend in the future.
       \item Remove many units tests of internal functions
       and add tests of user-facing functions instead.
       \item Import some generics from \pkg{nlme} instead
@@ -54,6 +56,9 @@
       \item Fix problems when fitting smoothing terms
       with factors as \code{by} variables thanks to
       Milani Chaloupka.
+      \item Fix a bug that could cause some monotonic 
+      effects to be ignored in the \pkg{Stan} code thanks 
+      to the GitHub user bschneider.
       \item Make sure that the data of models with
       only a single observation are compatible with 
       the generated \pkg{Stan} code.

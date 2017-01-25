@@ -1,145 +1,279 @@
-fitted_response <- function(draws, mu) {
-  # comnpute fitted values on the response scale
-  # Args:
-  #   draws: output of extract_draws
-  #   mu: linear predictor matrix
-  # Returns: 
-  #   (usually) an S x N matrix containing samples of 
-  #   the response distribution's mean 
-  data <- draws$data
-  is_trunc <- !(is.null(data$lb) && is.null(data$ub))
-  # compute (mean) fitted values
-  dim <- c(nrow(mu), draws$data$N)
-  if (draws$f$family == "binomial") {
-    trials <- matrix(data$trials, nrow = dim[1], 
-                     ncol = dim[2], byrow = TRUE)
-    mu <- ilink(mu, draws$f$link) 
-    if (!is_trunc) {
-      # scale mu from [0,1] to [0,trials]
-      mu <- mu * trials 
-    }
-  } else if (draws$f$family == "lognormal") {
-    sigma <- get_sigma(draws$sigma, data = draws$data, dim = dim)
-    mu <- ilink(mu, draws$f$link)
-    if (!is_trunc) {
-      # compute untruncated lognormal mean
-      mu <- exp(mu + sigma^2 / 2)  
-    }
-  } else if (draws$f$family == "weibull") {
-    shape <- get_shape(draws$shape, data = draws$data, dim = dim)
-    mu <- ilink(mu / shape, draws$f$link)
-    if (!is_trunc) {
-      # compute untruncated weibull mean
-      mu <- mu * gamma(1 + 1 / shape) 
-    }
-  } else if (is_ordinal(draws$f) || is_categorical(draws$f)) {
-    disc <- get_disc(draws, ncat = data$ncat)
-    mu <- disc * mu 
-    mu <- fitted_catordinal(mu, ncat = data$ncat, family = draws$f)
-  } else if (is_hurdle(draws$f)) {
-    shape <- get_shape(draws$shape, data = draws$data, dim = dim)
-    sigma <- get_sigma(draws$sigma, data = draws$data, dim = dim)
-    # zi_beta is technically a hurdle model
-    hu <- ifelse(draws$f$family == "zero_inflated_beta", "zi", "hu")
-    hu <- get_theta(draws, par = hu)
-    mu <- fitted_hurdle(mu, hu = hu, family = draws$f,
-                        shape = shape, sigma = sigma)
-  } else if (is_zero_inflated(draws$f)) {
-    zi <- get_theta(draws, par = "zi")
-    mu <- fitted_zero_inflated(mu, zi = zi, family = draws$f)
-    if (draws$f$family == "zero_inflated_binomial") {
-      if (!is.null(draws$data$N_trait)) {
-        # deprecated as of brms 1.0.0
-        J <- seq_len(ceiling(length(data$trials) / 2))
-        trials <- data$trials[J]
-      } else {
-        trials <- data$trials
-      }
-      trials <- matrix(trials, nrow = dim[1], ncol = dim[2], byrow = TRUE)
-      mu <- mu * trials
-    }
-  } else if (is_exgaussian(draws$f)) { 
-    mu <- ilink(mu, draws$f$link) + get_auxpar(draws$beta)
-  } else if (is_wiener(draws$f)) {
-    delta <- ilink(mu, draws$f$link)
-    bs <- get_auxpar(draws$bs)
-    ndt <- get_auxpar(draws$ndt)
-    bias <- get_auxpar(draws$bias)
-    mu <- ndt - bias / delta + bs / delta * 
-      (exp(- 2 * delta * bias) - 1) / (exp(-2 * delta * bs) - 1)
-  } else if (is_asym_laplace(draws$f)) {
-    mu <- ilink(mu, draws$f$link)
-    quantile <- get_auxpar(draws$quantile)
-    sigma <- get_sigma(draws$sigma, data = draws$data, dim = dim)
-    mu <- mu + sigma * (1 - 2 * quantile) / (quantile * (1 - quantile))
+# functions in this file have the same arguments structure
+# Args:
+#   mu: untransformed linear predictor matrix
+#   draws: A named list returned by extract_draws containing 
+#          all required data and samples
+# Returns:
+#   transformed linear predictor representing the mean
+#   of the response distribution
+fitted_gaussian <- function(mu, draws) {
+  fitted_default(mu, draws)
+}
+
+fitted_student <- function(mu, draws) {
+  fitted_default(mu, draws)
+}
+
+fitted_cauchy <- function(mu, draws) {
+  fitted_default(mu, draws)
+}
+
+fitted_lognormal <- function(mu, draws) {
+  dim <- dim_mu(mu, draws)
+  sigma <- get_sigma(draws$sigma, data = draws$data, dim = dim)
+  mu <- ilink(mu, draws$f$link)
+  if (!is_trunc(draws$data)) {
+    mu <- exp(mu + sigma^2 / 2)  
   } else {
-    mu <- ilink(mu, draws$f$link)
+    mu <- fitted_trunc(mu, draws)
   }
-  # fitted values for truncated models
-  if (is_trunc) {
-    lb <- matrix(data$lb, nrow = nrow(mu), ncol = ncol(mu), byrow = TRUE)
-    ub <- matrix(data$ub, nrow = nrow(mu), ncol = ncol(mu), byrow = TRUE)
-    fitted_trunc_fun <- try(get(paste0("fitted_trunc_", draws$f$family), 
-                                mode = "function"), silent = TRUE)
+  mu
+}
+
+fitted_binomial <- function(mu, draws) {
+  dim <- dim_mu(mu, draws)
+  trials <- matrix(draws$data$trials, nrow = dim[1], 
+                   ncol = dim[2], byrow = TRUE)
+  mu <- ilink(mu, draws$f$link) 
+  if (!is_trunc(draws$data)) {
+    # scale mu from [0,1] to [0,trials]
+    mu <- mu * trials 
+  } else {
+    mu <- fitted_trunc(mu, draws)
+  }
+  mu
+}
+
+fitted_bernoulli <- function(mu, draws) {
+  fitted_default(mu, draws)
+}
+
+fitted_poisson <- function(mu, draws) {
+  fitted_default(mu, draws)
+}
+
+fitted_negbinomial <- function(mu, draws) {
+  fitted_default(mu, draws)
+}
+
+fitted_geometric <- function(mu, draws) {
+  fitted_default(mu, draws)
+}
+
+fitted_exponential <- function(mu, draws) {
+  fitted_default(mu, draws)
+}
+
+fitted_gamma <- function(mu, draws) {
+  fitted_default(mu, draws)
+}
+
+fitted_weibull <- function(mu, draws) {
+  dim <- dim_mu(mu, draws)
+  shape <- get_shape(draws$shape, data = draws$data, dim = dim)
+  mu <- ilink(mu / shape, draws$f$link)
+  if (!is_trunc(draws$data)) {
+    mu <- mu * gamma(1 + 1 / shape) 
+  } else {
+    mu <- fitted_trunc(mu, draws)
+  }
+  mu
+}
+
+fitted_frechet <- function(mu, draws) {
+  fitted_default(mu, draws)
+}
+
+fitted_inverse.gaussian <- function(mu, draws) {
+  fitted_default(mu, draws)
+}
+
+fitted_exgaussian <- function(mu, draws) {
+  mu <- ilink(mu, draws$f$link) + get_auxpar(draws$beta)
+  fitted_trunc(mu, draws)
+}
+
+fitted_wiener <- function(mu, draws) {
+  delta <- ilink(mu, draws$f$link)
+  bs <- get_auxpar(draws$bs)
+  ndt <- get_auxpar(draws$ndt)
+  bias <- get_auxpar(draws$bias)
+  ndt - bias / delta + bs / delta * 
+    (exp(- 2 * delta * bias) - 1) / (exp(-2 * delta * bs) - 1)
+}
+
+fitted_beta <- function(mu, draws) {
+  fitted_default(mu, draws)
+}
+
+fitted_von_mises <- function(mu, draws) {
+  fitted_default(mu, draws)
+}
+
+fitted_asym_laplace <- function(mu, draws) {
+  dim <- dim_mu(mu, draws)
+  mu <- ilink(mu, draws$f$link)
+  quantile <- get_auxpar(draws$quantile)
+  sigma <- get_sigma(draws$sigma, data = draws$data, dim = dim)
+  mu + sigma * (1 - 2 * quantile) / (quantile * (1 - quantile))
+}
+
+fitted_hurdle_poisson <- function(mu, draws) {
+  hu <- get_theta(draws, par = "hu")
+  mu <- adjust_old_forked(mu, hu)
+  mu <- ilink(mu, draws$f$link)
+  mu / (1 - exp(-mu)) * (1 - hu)
+}
+
+fitted_hurdle_negbinomial <- function(mu, draws) {
+  dim <- dim_mu(mu, draws)
+  shape <- get_shape(draws$shape, data = draws$data, dim = dim)
+  hu <- get_theta(draws, par = "hu")
+  mu <- adjust_old_forked(mu, hu)
+  mu <- ilink(mu, draws$f$link)
+  mu / (1 - (shape / (mu + shape))^shape) * (1 - hu)
+}
+
+fitted_hurdle_gamma <- function(mu, draws) {
+  hu <- get_theta(draws, par = "hu")
+  mu <- adjust_old_forked(mu, hu)
+  mu <- ilink(mu, draws$f$link)
+  mu * (1 - hu)
+}
+
+fitted_hurdle_lognormal <- function(mu, draws) {
+  dim <- dim_mu(mu, draws)
+  sigma <- get_sigma(draws$sigma, data = draws$data, dim = dim)
+  hu <- get_theta(draws, par = "hu")
+  mu <- ilink(mu, draws$f$link)
+  exp(mu + sigma^2 / 2) * (1 - hu)
+}
+
+fitted_zero_inflated_poisson <- function(mu, draws) {
+  zi <- get_theta(draws, par = "zi")
+  mu <- adjust_old_forked(mu, zi)
+  ilink(mu, draws$f$link) * (1 - zi) 
+}
+
+fitted_zero_inflated_negbinomial <- function(mu, draws) {
+  zi <- get_theta(draws, par = "zi")
+  mu <- adjust_old_forked(mu, zi)
+  ilink(mu, draws$f$link) * (1 - zi) 
+}
+
+fitted_zero_inflated_binomial <- function(mu, draws) {
+  zi <- get_theta(draws, par = "zi")
+  mu <- adjust_old_forked(mu, zi)
+  mu <- ilink(mu, draws$f$link) * (1 - zi)
+  trials <- draws$data[["trials"]]
+  if (!is.null(draws$data$N_trait)) {
+    # deprecated as of brms 1.0.0
+    J <- seq_len(ceiling(length(trials) / 2))
+    trials <- trials[J]
+  }
+  dim <- dim_mu(mu, draws)
+  trials <- matrix(trials, nrow = dim[1], ncol = dim[2], byrow = TRUE)
+  mu * trials
+}
+
+fitted_zero_inflated_beta <- function(mu, draws) {
+  zi <- get_theta(draws, par = "zi")
+  mu <- adjust_old_forked(mu, zi)
+  ilink(mu, draws$f$link) * (1 - zi) 
+}
+
+fitted_categorical <- function(mu, draws) {
+  fitted_catordinal(mu, draws)
+}
+
+fitted_cumulative <- function(mu, draws) {
+  disc <- get_disc(draws, ncat = draws$data[["ncat"]])
+  mu <- disc * mu 
+  fitted_catordinal(mu, draws)
+}
+
+fitted_sratio <- function(mu, draws) {
+  disc <- get_disc(draws, ncat = draws$data[["ncat"]])
+  mu <- disc * mu 
+  fitted_catordinal(mu, draws)
+}
+
+fitted_cratio <- function(mu, draws) {
+  disc <- get_disc(draws, ncat = draws$data[["ncat"]])
+  mu <- disc * mu 
+  fitted_catordinal(mu, draws)
+}
+
+fitted_acat <- function(mu, draws) {
+  disc <- get_disc(draws, ncat = draws$data[["ncat"]])
+  mu <- disc * mu 
+  fitted_catordinal(mu, draws)
+}
+
+# ------ fitted helper functions ------
+
+fitted_default <- function(mu, draws) {
+  # default fitted values
+  mu <- ilink(mu, draws$f$link)
+  fitted_trunc(mu, draws)
+}
+
+fitted_catordinal <- function(mu, draws) {
+  # fitted values for categorical and ordinal models
+  get_density <- function(s) {
+    # get probabilities of each category
+    do.call(dens, c(args, list(eta = mu[, s, ])))
+  }
+  ncat <- draws$data[["ncat"]]
+  args <- list(seq_len(ncat), ncat = ncat, link = draws$f$link)
+  dens <- paste0("d", draws$f$family)
+  out <- abind(lapply(seq_len(ncol(mu)), get_density), along = 3)
+  aperm(out, perm = c(1, 3, 2))
+}
+
+adjust_old_forked <- function(mu, par) {
+  # for compatibility with zi / hu models 
+  # using old multivariate syntax
+  # Args:
+  #   par: samples of zi or hu parameter
+  if (isTRUE(ncol(mu) == 2 * ncol(par))) {
+    mu <- mu[, seq_len(ncol(mu) / 2)]
+  }
+  mu
+}
+
+dim_mu <- function(mu, draws) {
+  c(nrow(mu), draws$data$N)
+}
+
+is_trunc <- function(data) {
+  any(data[["lb"]] > - Inf) || any(data[["ub"]] < Inf)
+}
+
+fitted_trunc <- function(mu, draws) {
+  # prepares data required for truncation and calles the 
+  # family specific truncation function for fitted values
+  if (is_trunc(draws$data)) {
+    lb <- matrix(draws$data[["lb"]], nrow = nrow(mu), 
+                 ncol = ncol(mu), byrow = TRUE)
+    ub <- matrix(draws$data[["ub"]], nrow = nrow(mu), 
+                 ncol = ncol(mu), byrow = TRUE)
+    fitted_trunc_fun <- paste0("fitted_trunc_", draws$f$family)
+    fitted_trunc_fun <- try(get(fitted_trunc_fun, asNamespace("brms")),
+                            silent = TRUE)
     if (is(fitted_trunc_fun, "try-error")) {
       stop2("Fitted values on the respone scale not yet implemented ",
             "for truncated '", draws$f$family, "' models.")
     } else {
+      dim <- dim_mu(mu, draws)
       trunc_args <- nlist(mu, lb, ub, draws, dim)
       mu <- do.call(fitted_trunc_fun, trunc_args)
     }
-  } 
+  }
   mu
 }
 
-fitted_catordinal <- function(mu, ncat, family) {
-  # compute fitted values for categorical and ordinal families
-  get_density <- function(s) {
-    # get probabilities of each category
-    do.call(paste0("d", family$family), 
-            list(1:ncat, eta = mu[, s, ], ncat = ncat, link = family$link))
-  }
-  aperm(abind(lapply(1:ncol(mu), get_density), along = 3), perm = c(1, 3, 2))
-}
-
-fitted_hurdle <- function(mu, hu, family, shape = NULL, sigma = NULL) {
-  # Args:
-  #   mu: linear predictor matrix
-  #   hu: hurdle probability samples
-  #   shape: shape parameter samples
-  #   family: the model family
-  if (isTRUE(ncol(mu) == 2 * ncol(hu))) {
-    # old multivariate syntax model
-    mu <- mu[, seq_len(ncol(mu) / 2)]
-  }
-  pre_mu <- ilink(mu, family$link)
-  # adjust pre_mu as it is no longer the mean of the truncated distributions
-  if (family$family == "hurdle_poisson") {
-    adjusted_mu <- pre_mu / (1 - exp(-pre_mu))
-  } else if (family$family == "hurdle_negbinomial") {
-    adjusted_mu <- pre_mu / (1 - (shape / (pre_mu + shape))^shape)
-  } else if (family$family == "hurdle_lognormal") {
-    adjusted_mu <- exp(pre_mu + sigma^2 / 2)  
-  } else {
-    adjusted_mu <- pre_mu
-  }
-  # incorporate hurdle part
-  adjusted_mu * (1 - hu)
-}
-
-fitted_zero_inflated <- function(mu, zi, family) {
-  # Args:
-  #   mu: linear predictor matrix
-  #   zi: zero-inflation probability samples
-  #   family: the model family
-  if (isTRUE(ncol(mu) == 2 * ncol(zi))) {
-    # old multivariate syntax model
-    mu <- mu[, seq_len(ncol(mu) / 2)]
-  }
-  ilink(mu, family$link) * (1 - zi) 
-}
-
-#------------- helper functions for truncated models ----------------
+# ----- family specific truncation functions -----
 # Args:
 #   mu: (usually) samples of the untruncated mean parameter
 #   lb: lower truncation bound

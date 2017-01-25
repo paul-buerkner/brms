@@ -1,15 +1,12 @@
 test_that("fitted helper functions run without errors", {
   # actually run fitted.brmsfit that call the helper functions
   fit <- brms:::rename_pars(brms:::brmsfit_example1)
-  fit <- brms:::add_samples(fit, "shape", dist = "exp")
-  # nu must come after hu here to avoid a strange error in rstan
-  fit <- brms:::add_samples(fit, "hu", dist = "beta", 
-                            shape1 = 1, shape2 = 1)
-  fit <- brms:::add_samples(fit, "zi", dist = "beta", 
-                            shape1 = 1, shape2 = 1)
-  fit <- brms:::add_samples(fit, "quantile", dist = "beta", 
-                            shape1 = 2, shape2 = 1)
-  fit <- brms:::add_samples(fit, "nu", dist = "exp")
+  add_samples <- brms:::add_samples
+  fit <- add_samples(fit, "shape", dist = "exp")
+  fit <- add_samples(fit, "hu", dist = "beta", shape1 = 1, shape2 = 1)
+  fit <- add_samples(fit, "zi", dist = "beta", shape1 = 1, shape2 = 1)
+  fit <- add_samples(fit, "quantile", dist = "beta", shape1 = 2, shape2 = 1)
+  fit <- add_samples(fit, "nu", dist = "exp")
   draws <- brms:::extract_draws(fit)
   eta <- brms:::linear_predictor(draws)
   nsamples <- nsamples(fit)
@@ -18,7 +15,7 @@ test_that("fitted helper functions run without errors", {
   # test preparation of truncated models
   draws$data$lb <- 0
   draws$data$ub <- 200
-  mu <- brms:::fitted_response(draws = draws, mu = eta)
+  mu <- brms:::fitted_trunc(eta, draws)
   expect_equal(dim(mu), c(nsamples, nobs))
   
   # pseudo log-normal model
@@ -54,11 +51,6 @@ test_that("fitted helper functions run without errors", {
   expect_equal(dim(fitted(fit, summary = FALSE)), 
                c(nsamples, nobs))
   
-  # directly test the catordinal helper function
-  mu <- fitted_catordinal(array(eta, dim = c(dim(eta), 3)), 
-                          ncat = 4, family = cumulative())
-  expect_equal(dim(mu), c(nsamples, nobs, 4))
-  
   # truncated continous models
   draws$nu <- c(posterior_samples(fit, pars = "^nu$", as.matrix = TRUE))
   draws$shape <- c(posterior_samples(fit, pars = "^shape$", as.matrix = TRUE))
@@ -87,7 +79,7 @@ test_that("fitted helper functions run without errors", {
   mu <- fitted_trunc_poisson(exp_eta, lb = lb, ub = ub, draws = draws)
   expect_equal(dim(mu), c(nsamples, nobs))
   
-  mu <- fitted_trunc_negbinomial(exp_eta, lb = lb, ub = ub,draws = draws)
+  mu <- fitted_trunc_negbinomial(exp_eta, lb = lb, ub = ub, draws = draws)
   expect_equal(dim(mu), c(nsamples, nobs))
   
   mu <- fitted_trunc_geometric(exp_eta, lb = lb, ub = ub, draws = draws)
@@ -95,7 +87,7 @@ test_that("fitted helper functions run without errors", {
   
   draws$data$trials <- 120
   lb <- matrix(-Inf, nrow = nsamples, ncol = nobs)
-  mu <- fitted_trunc_binomial(ilink(eta, "logit"), lb = lb, ub = ub,
-                              draws = draws)
+  expit_eta <- ilink(eta, "logit")
+  mu <- fitted_trunc_binomial(expit_eta, lb = lb, ub = ub, draws = draws)
   expect_equal(dim(mu), c(nsamples, nobs))
 })

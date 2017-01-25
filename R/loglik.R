@@ -481,7 +481,7 @@ loglik_acat <- function(i, draws, data = data.frame()) {
   weight_loglik(out, i = i, data = draws$data)
 }
 
-#---------------loglik helper-functions----------------------------
+# ----------- loglik helper-functions -----------
 
 censor_loglik <- function(dist, args, i, data) {
   # compute (possibly censored) loglik values
