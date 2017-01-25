@@ -374,7 +374,7 @@ test_that("Stan code of ordinal models is correct", {
   expect_match2(scode, "real cratio_lpmf(int y")
   expect_match2(scode, "q[k] = Phi_approx(disc * (eta - thres[k]));")
 
-  scode <- make_stancode(y ~ x1 + cs(x2), dat, family = sratio())
+  scode <- make_stancode(y ~ x1 + cs(x2) + cs(g), dat, family = sratio())
   expect_match2(scode, "real sratio_lpmf(int y")
   expect_match2(scode, "matrix[N, Kcs] Xcs;")
   expect_match2(scode, "matrix[Kcs, ncat - 1] bcs;")
@@ -410,7 +410,7 @@ test_that("monotonic effects appear in the Stan code", {
              prior(dirichlet(c(1,0.5,2)), simplex, coef = x2))
   dat <- data.frame(y = rpois(120, 10), x1 = rep(1:4, 30), 
                     x2 = factor(rep(c("a", "b", "c"), 40), ordered = TRUE))
-  scode <- make_stancode(y ~ mo(x1 + x2), dat, prior = prior)
+  scode <- make_stancode(y ~ mo(x1) + mo(x2), dat, prior = prior)
   expect_match2(scode, "int Xmo[N, Kmo];")
   expect_match2(scode, "simplex[Jmo[1]] simplex_1;")
   expect_match2(scode, "(bmo[2]) * monotonic(simplex_2, Xmo[n, 2]);")

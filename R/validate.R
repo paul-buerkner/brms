@@ -243,7 +243,8 @@ parse_mo <- function(formula) {
   pos_mo_terms <- grepl("^mo((no)?|(notonic)?)\\([^\\|]+$", all_terms)
   mo_terms <- all_terms[pos_mo_terms]
   if (length(mo_terms)) {
-    mo_terms <- formula(paste("~", paste(eval2(mo_terms), collapse = "+")))
+    mo_terms <- ulapply(mo_terms, eval2)
+    mo_terms <- str2formula(mo_terms)
     if (!length(all.vars(mo_terms))) {
       stop2("No variable supplied to function 'mo'.")
     }
@@ -262,7 +263,8 @@ parse_cs <- function(formula, family = NULL) {
       stop2("Category specific effects are only meaningful for ", 
             "families 'sratio', 'cratio', and 'acat'.")
     }
-    cs_terms <- formula(paste("~", paste(eval2(cs_terms), collapse = "+")))
+    cs_terms <- ulapply(cs_terms, eval2)
+    cs_terms <- str2formula(cs_terms)
     # do not test whether variables were supplied to 'cs'
     # to allow category specific group-level intercepts
     attr(cs_terms, "rsv_intercept") <- TRUE
