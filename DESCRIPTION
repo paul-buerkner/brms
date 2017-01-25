@@ -2,8 +2,8 @@ Package: brms
 Encoding: UTF-8
 Type: Package
 Title: Bayesian Regression Models using Stan
-Version: 1.3.1.9000
-Date: 2016-12-22
+Version: 1.4.0
+Date: 2017-01-25
 Authors@R: person("Paul-Christian", "Bürkner", email = "paul.buerkner@gmail.com",
   role = c("aut", "cre"))
 Depends: 
@@ -43,10 +43,10 @@ Description: Fit Bayesian generalized (non-)linear multilevel models
     using Stan for full Bayesian inference. A wide range of distributions 
     and link functions are supported, allowing users to fit -- among others --
     linear, robust linear, binomial, Poisson, survival, response times, ordinal, 
-    zero-inflated, hurdle, and even non-linear models all in a multilevel context. 
-    Further modeling options include auto-correlation and smoothing terms, 
-    user defined dependence structures, censored data, meta-analytic 
-    standard errors, and quite a few more. 
+    quantile, zero-inflated, hurdle, and even non-linear models all in a 
+    multilevel context. Further modeling options include auto-correlation 
+    and smoothing terms, user defined dependence structures, censored data, 
+    meta-analytic standard errors, and quite a few more. 
     In addition, all parameters of the response distribution can be predicted
     in order to perform distributional regression.
     Prior specifications are flexible and explicitly encourage 

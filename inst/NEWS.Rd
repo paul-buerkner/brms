@@ -2,7 +2,7 @@
 \title{brms News}
 \encoding{UTF-8}
 
-\section{CHANGES IN VERSION 1.3.1++}{
+\section{CHANGES IN VERSION 1.4.0}{
   \subsection{NEW FEATURES}{
     \itemize{
       \item Fit quantile regression models via family
@@ -62,6 +62,9 @@
       \item Fix a bug sometimes causing an error in
       \code{marginal_effects} when using family
       \code{wiener} thanks to Andrew Ellis.
+      \item Fix problems in \code{fitted} when applied
+      to \code{zero_inflated_beta} models thanks to
+      Milani Chaloupka.
       \item Fix minor problems related to the prediction
       of autocorrelated models.
       \item Fix a few minor bugs related to the backwards 
