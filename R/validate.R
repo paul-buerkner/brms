@@ -227,10 +227,6 @@ parse_add <- function(formula, family = NULL, check_response = TRUE) {
         stop2("Addition arguments 'se' and 'disp' cannot ", 
               "be used at the same time.")
       }
-      cens_or_weights <- is.formula(x$cens) || is.formula(x$weights)
-      if (is.formula(x$trunc) && cens_or_weights) {
-        stop2("Truncation is not yet possible in censored or weighted models.")
-      }
     }
     if (is_wiener(family) && check_response && !is.formula(x$dec)) {
       stop2("Addition argument 'dec' is required for family 'wiener'.")

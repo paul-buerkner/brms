@@ -15,6 +15,7 @@
       \code{brmsformula}.
       \item Introduce family \code{frechet} for modelling
       strictly positive responses.
+      \item Allow truncation and censoring at the same time.
       \item Introduce function \code{prior_} allowing
       to specify priors using one-sided formulas or \code{quote}.
       \item Pass priors to \pkg{Stan} directly without

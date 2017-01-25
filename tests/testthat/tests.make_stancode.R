@@ -297,9 +297,6 @@ test_that("invalid combinations of modeling options are detected", {
   expect_error(make_stancode(y1 | resp_se(wi) ~ y2, data = data,
                              autocor = cor_ma()),
                "Please set cov = TRUE")
-  expect_error(make_stancode(y1 | trunc(lb = -50) | weights(wi) ~ y2,
-                             data = data),
-               "Truncation is not yet possible")
 })
 
 test_that("Stan code for multivariate models is correct", {
@@ -652,7 +649,7 @@ test_that("distributional gamma models are handled correctly", {
     "    eta[n] = shape[n] / (inv_logit(eta_a[n]) * exp(eta_b[n] * C[n, 1]));"))
 })
 
-test_that("weighted and censored responses appear in the Stan code", {
+test_that("weighted, censored, and truncated likelihoods are correct", {
   dat <- data.frame(y = 1:9, x = rep(-1:1, 3), y2 = 10:18)
   
   scode <- make_stancode(y | weights(y2) ~ 1, dat, poisson())
@@ -663,16 +660,27 @@ test_that("weighted and censored responses appear in the Stan code", {
   expect_match2(scode, "lp_pre[n] = binomial_logit_lpmf(Y[n] | trials[n], eta[n]);")
   
   expect_match2(make_stancode(y | cens(x, y2) ~ 1, dat, poisson()),
-               "target += poisson_lpmf(Y[n] | eta[n]); \n")
+                "target += poisson_lpmf(Y[n] | eta[n]);")
   expect_match2(make_stancode(y | cens(x) ~ 1, dat, weibull()), 
-               "target += weibull_lccdf(Y[n] | shape, eta[n]); \n")
+                "target += weibull_lccdf(Y[n] | shape, eta[n]);")
   dat$x[1] <- 2
   expect_match2(make_stancode(y | cens(x, y2) ~ 1, dat, gaussian()), 
-               "target += log_diff_exp(normal_lcdf(rcens[n] | eta[n], sigma),")
+                "target += log_diff_exp(normal_lcdf(rcens[n] | eta[n], sigma),")
   dat$x <- 1
-  make_stancode(y | cens(x) + weights(x) ~ 1, dat, weibull())
   expect_match2(make_stancode(y | cens(x) + weights(x) ~ 1, dat, weibull()),
-   "target += weights[n] * weibull_lccdf(Y[n] | shape, eta[n]); \n")
+   "target += weights[n] * weibull_lccdf(Y[n] | shape, eta[n]);")
+  
+  scode <- make_stancode(y | cens(x) + trunc(0.1) ~ 1, dat, weibull())
+  expect_match2(scode, "target += weibull_lccdf(Y[n] | shape, eta[n]) -")
+  expect_match2(scode, "  weibull_lccdf(lb[n] | shape, eta[n]);")
+  
+  scode <- make_stancode(y | cens(x) + trunc(ub = 30) ~ 1, dat)
+  expect_match2(scode, "target += normal_lccdf(Y[n] | eta[n], sigma) -")
+  expect_match2(scode, "  normal_lcdf(ub[n] | eta[n], sigma);")
+  
+  scode <- make_stancode(y | weights(x) + trunc(0, 30) ~ 1, dat)
+  expect_match2(scode, "lp_pre[n] = normal_lpdf(Y[n] | eta[n], sigma) -")
+  expect_match2(scode, "  log_diff_exp(normal_lcdf(ub[n] | eta[n], sigma),")
 })
 
 test_that("priors on intercepts appear in the Stan code", {
