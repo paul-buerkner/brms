@@ -39,7 +39,9 @@ fitted_response <- function(draws, mu) {
   } else if (is_hurdle(draws$f)) {
     shape <- get_shape(draws$shape, data = draws$data, dim = dim)
     sigma <- get_sigma(draws$sigma, data = draws$data, dim = dim)
-    hu <- get_theta(draws, par = "hu")
+    # zi_beta is technically a hurdle model
+    hu <- ifelse(draws$f$family == "zero_inflated_beta", "zi", "hu")
+    hu <- get_theta(draws, par = hu)
     mu <- fitted_hurdle(mu, hu = hu, family = draws$f,
                         shape = shape, sigma = sigma)
   } else if (is_zero_inflated(draws$f)) {
