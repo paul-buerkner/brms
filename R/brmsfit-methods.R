@@ -698,11 +698,10 @@ summary.brmsfit <- function(object, waic = FALSE, priors = FALSE,
     
     pars <- parnames(object)
     meta_pars <- object$fit@sim$pars_oi
-    meta_pars <- meta_pars[!apply(sapply(paste0("^", c("r_", "prior_")), 
-                                  grepl, x = meta_pars, ...), 1, any)]
-    fit_summary <- rstan::summary(object$fit, pars = meta_pars,
-                                  probs = c(0.025, 0.975),
-                                  use_cache = use_cache)$summary
+    meta_pars <- meta_pars[!grepl("^(r|s|Xme|prior)_", meta_pars)]
+    fit_summary <- summary(object$fit, pars = meta_pars,
+                           probs = c(0.025, 0.975),
+                           use_cache = use_cache)$summary
     algorithm <- algorithm(object)
     if (algorithm == "sampling") {
       fit_summary <- fit_summary[, -2]
