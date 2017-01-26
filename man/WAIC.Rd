@@ -57,7 +57,7 @@ If just one object is provided, an object of class \code{ic}.
  If multiple objects are provided, an object of class \code{iclist}.
 }
 \description{
-Compute the Watanabe-Akaike Information Criterion 
+Compute the widely applicable information criterion (WAIC)
 based on the posterior likelihood using the \pkg{loo} package.
 }
 \details{

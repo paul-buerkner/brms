@@ -320,7 +320,7 @@ ngrps <- function(object, ...) {
 
 #' Compute the WAIC
 #' 
-#' Compute the Watanabe-Akaike Information Criterion 
+#' Compute the widely applicable information criterion (WAIC)
 #' based on the posterior likelihood using the \pkg{loo} package.
 #' 
 #' @aliases WAIC.brmsfit waic.brmsfit waic
