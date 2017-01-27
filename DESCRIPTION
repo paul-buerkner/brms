@@ -43,7 +43,7 @@ Description: Fit Bayesian generalized (non-)linear multilevel models
     using Stan for full Bayesian inference. A wide range of distributions 
     and link functions are supported, allowing users to fit -- among others --
     linear, robust linear, binomial, Poisson, survival, response times, ordinal, 
-    quantile, zero-inflated, hurdle, and even non-linear models all in a 
+    zero-inflated, hurdle, and even non-linear models all in a 
     multilevel context. Further modeling options include auto-correlation 
     and smoothing terms, user defined dependence structures, censored data, 
     meta-analytic standard errors, and quite a few more. 
