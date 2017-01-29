@@ -44,8 +44,9 @@ stan_llh <- function(family, bterms, data = NULL,
   
   auxpars <- names(bterms$auxpars)
   reqn <- llh_adj || is_categorical || is_ordinal || 
-          is_hurdle || is_zero_inflated || is_wiener(family) ||
-          is_exgaussian(family) || is_asym_laplace(family) ||
+          is_hurdle || is_zero_inflated || 
+          is_wiener(family) || is_exgaussian(family) || 
+          is_asym_laplace(family) || is_gev(family) ||
           has_sigma && has_se && !use_cov(autocor) ||
           any(c("phi", "kappa") %in% auxpars)
   n <- ifelse(reqn, "[n]", "")
@@ -174,6 +175,10 @@ stan_llh <- function(family, bterms, data = NULL,
       frechet = c(
         "frechet", 
         sargs(p$nu, eta)
+      ),
+      gen_extreme_value = c(
+        "gen_extreme_value",
+        sargs(eta, p$sigma, p$xi)
       ),
       exgaussian = c(
         "exgaussian", 
@@ -358,8 +363,8 @@ stan_llh_sigma <- function(family, bterms = NULL, autocor = cor_arma()) {
   has_disp <- is.formula(bterms$disp)
   llh_adj <- stan_llh_adj(bterms)
   auxpars <- names(bterms$auxpars)
-  nsigma <- (llh_adj || has_se || is_exgaussian(family)) && 
-            (has_disp || "sigma" %in% auxpars)
+  nsigma <- llh_adj || has_se || is_exgaussian(family) || is_gev(family)
+  nsigma <- nsigma && (has_disp || "sigma" %in% auxpars)
   nsigma <- if (nsigma) "[n]"
   nse <- if (llh_adj) "[n]"
   if (has_sigma) {

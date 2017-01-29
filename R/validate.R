@@ -290,7 +290,7 @@ parse_gam <- function(formula) {
         byvars[[i]] <- es$by 
       }
     }
-    gam_terms <- formula(paste("~", paste(gam_terms, collapse = "+")))
+    gam_terms <- str2formula(gam_terms)
     allvars <- mgcv::interpret.gam(gam_terms)$fake.formula
   } else {
     covars <- byvars <- NULL
@@ -1166,11 +1166,12 @@ add_families <- function(x) {
              "inverse.gaussian", "binomial", "poisson", 
              "geometric", "negbinomial", "exponential", 
              "weibull", "gamma", "exgaussian", "frechet",
-             "asym_laplace"),
+             "asym_laplace", "gen_extreme_value"),
     trunc = c("gaussian", "student", "cauchy", "lognormal", 
               "binomial", "poisson", "geometric", "negbinomial",
               "exponential", "weibull", "gamma", "inverse.gaussian",
-              "exgaussian", "frechet", "asym_laplace"),
+              "exgaussian", "frechet", "asym_laplace",
+              "gen_extreme_value"),
     disp = c("gaussian", "student", "cauchy", "lognormal", 
              "gamma", "weibull", "negbinomial", "exgaussian",
              "asym_laplace"),

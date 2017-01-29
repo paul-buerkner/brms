@@ -373,9 +373,16 @@ stan_families <- function(family) {
     out$fun <- "  #include 'fun_inv_gaussian.stan' \n"
     out$tdataD <- "  #include 'tdataD_inv_gaussian.stan' \n"
     out$tdataC <- "  #include 'tdataC_inv_gaussian.stan' \n"
+  } else if (family == "gen_extreme_value") {
+    out$fun <- paste0(
+      "  #include 'fun_gen_extreme_value.stan' \n",
+      "  #include 'fun_logit_m1_to_half.stan' \n"
+    )
   } else if (family == "von_mises") {
-    out$fun <- paste0("  #include 'fun_tan_half.stan' \n",
-                      "  #include 'fun_von_mises.stan' \n")
+    out$fun <- paste0(
+      "  #include 'fun_tan_half.stan' \n",
+      "  #include 'fun_von_mises.stan' \n"
+    )
   } else if (family == "wiener") {
     out$fun <- "  #include 'fun_wiener_diffusion.stan' \n"
     out$tdataD <- "  real min_Y; \n"

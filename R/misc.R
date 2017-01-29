@@ -101,11 +101,17 @@ subset_attr <- function(x, y) {
 is_wholenumber <- function(x, tol = .Machine$double.eps) {  
   # check if x is a whole number (integer)
   if (!is.numeric(x)) {
-    return(FALSE)
+    out <- FALSE
   } else {
-    return(abs(x - round(x)) < tol)
+    out <- abs(x - round(x)) < tol
   }
-} 
+  out
+}
+
+is_symmetric <- function(x, tol = sqrt(.Machine$double.eps)) {
+  # helper function to check symmetry of a matrix
+  isSymmetric(x, tol = tol, check.attributes = FALSE)
+}
 
 ulapply <- function(X, FUN, ...) {
   # short for unlist(lapply(.))
@@ -362,6 +368,28 @@ logm1 <- function(x, base = exp(1)) {
 #' @export
 expp1 <- function(x) {
   exp(x) + 1
+}
+
+#' Modified logit-link returning values between -1 and 0.5
+#' 
+#' Computes \code{logit((x + 1) / 1.5)}
+#' 
+#' @param x A numeric or complex vector.
+#' 
+#' @export
+logit_m1_to_half <- function(x) {
+  logit((x + 1) / 1.5)
+}
+
+#' Modified inverse logit-link taking values between -1 and 0.5
+#' 
+#' Computes \code{inv_logit(y) * 1.5 - 1}
+#' 
+#' @param x A numeric or complex vector.
+#' 
+#' @export
+inv_logit_m1_to_half <- function(x) {
+  inv_logit(y) * 1.5 - 1
 }
 
 multiply_log <- function(x, y) {

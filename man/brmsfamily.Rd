@@ -12,6 +12,7 @@
 \alias{exgaussian}
 \alias{exponential}
 \alias{frechet}
+\alias{gen_extreme_value}
 \alias{geometric}
 \alias{hurdle_gamma}
 \alias{hurdle_lognormal}
@@ -34,7 +35,7 @@ brmsfamily(family, link = NULL, link_sigma = "log", link_shape = "log",
   link_nu = "logm1", link_phi = "log", link_kappa = "log",
   link_beta = "log", link_zi = "logit", link_hu = "logit",
   link_disc = "log", link_bs = "log", link_ndt = "log",
-  link_bias = "logit", link_quantile = "logit")
+  link_bias = "logit", link_quantile = "logit", link_xi = "logit_m1_half")
 
 student(link = "identity", link_sigma = "log", link_nu = "logm1")
 
@@ -51,6 +52,9 @@ exponential(link = "log")
 weibull(link = "log", link_shape = "log")
 
 frechet(link = "log", link_nu = "logm1")
+
+gen_extreme_value(link = "identity", link_sigma = "log",
+  link_xi = "logit_m1_to_half")
 
 exgaussian(link = "identity", link_sigma = "log", link_beta = "log")
 
@@ -138,6 +142,8 @@ functions supported by each family.}
 \item{link_bias}{Link of auxiliary parameter \code{bias} if being predicted.}
 
 \item{link_quantile}{Link of auxiliary parameter \code{quantile} if being predicted.}
+
+\item{link_xi}{Link of auxiliary parameter \code{xi} if being predicted.}
 }
 \description{
 Family objects provide a convenient way to specify the details of the models 
@@ -161,6 +167,8 @@ Family \code{gaussian} with \code{identity} link leads to linear regression.
   leads to ordinal regression. Families \code{Gamma}, \code{weibull}, 
   \code{exponential}, \code{lognormal}, \code{frechet}, and 
   \code{inverse.gaussian} can be used (among others) for survival regression.
+  Families \code{weibull}, \code{frechet}, and \code{gen_extreme_value}
+  ('generalized extreme value') allow for modeling extremes.
   Family \code{asym_laplace} allows for quantile regression when fixing
   the auxiliary \code{quantile} parameter to the quantile of interest.
   Family \code{exgaussian} ('exponentially modified Gaussian') is especially
@@ -180,9 +188,9 @@ Family \code{gaussian} with \code{identity} link leads to linear regression.
   models cannot be reasonably fitted for data containing zeros in the response.
   
   In the following, we list all possible links for each family.
-  The families \code{gaussian}, \code{student}, \code{exgaussian}. and
-  \code{asym_laplace} accept the links (as names) \code{identity}, 
-  \code{log}, and \code{inverse};
+  The families \code{gaussian}, \code{student}, \code{exgaussian},
+  \code{asym_laplace}, and \code{gen_extreme_value} accept the links 
+  (as names) \code{identity}, \code{log}, and \code{inverse};
   families \code{poisson}, \code{negbinomial}, and \code{geometric} the links 
   \code{log}, \code{identity}, and \code{sqrt}; 
   families \code{binomial}, \code{bernoulli}, \code{Beta},
