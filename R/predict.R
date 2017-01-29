@@ -237,6 +237,15 @@ predict_frechet <- function(i, draws, ...) {
                  lb = draws$data$lb[i], ub = draws$data$ub[i])
 }
 
+predict_gen_extreme_value <- function(i, draws, ...) {
+  sigma <- get_sigma(draws$sigma, data = draws$data, i = i)
+  xi <- get_auxpar(draws$xi, i = i)
+  mu <- ilink(get_eta(draws, i), draws$f$link)
+  args <- nlist(mu, sigma, xi)
+  rng_continuous(nrng = draws$nsamples, dist = "gen_extreme_value", 
+                 args = args, lb = draws$data$lb[i], ub = draws$data$ub[i])
+}
+
 predict_inverse.gaussian <- function(i, draws, ...) {
   args <- list(mean = ilink(get_eta(draws, i), draws$f$link), 
                shape = get_shape(draws$shape, data = draws$data, i = i))
@@ -248,7 +257,7 @@ predict_exgaussian <- function(i, draws, ...) {
   args <- list(mu = ilink(get_eta(draws, i), draws$f$link), 
                sigma = get_sigma(draws$sigma, data = draws$data, i = i),
                beta = get_auxpar(draws$beta, i = i))
-  rng_continuous(nrng = draws$nsamples, dist = "exgauss", args = args, 
+  rng_continuous(nrng = draws$nsamples, dist = "exgaussian", args = args, 
                  lb = draws$data$lb[i], ub = draws$data$ub[i])
 }
 

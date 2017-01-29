@@ -84,6 +84,19 @@ fitted_frechet <- function(mu, draws) {
   fitted_default(mu, draws)
 }
 
+fitted_gen_extreme_value <- function(mu, draws) {
+  dim <- dim_mu(mu, draws)
+  sigma <- get_sigma(draws$sigma, data = draws$data, dim = dim)
+  xi <- get_auxpar(draws$xi)
+  mu <- ilink(mu, draws$f$link)
+  if (!is_trunc(draws$data)) {
+    mu <- mu + sigma * (gamma(1 - xi) - 1) / xi
+  } else {
+    mu <- fitted_trunc(mu, draws)
+  }
+  mu
+}
+
 fitted_inverse.gaussian <- function(mu, draws) {
   fitted_default(mu, draws)
 }

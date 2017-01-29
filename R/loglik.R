@@ -257,6 +257,18 @@ loglik_frechet <- function(i, draws, data = data.frame()) {
   weight_loglik(out, i = i, data = draws$data)
 }
 
+loglik_gen_extreme_value <- function(i, draws, data = data.frame()) {
+  sigma <- get_sigma(draws$sigma, data = draws$data, i = i)
+  xi <- get_auxpar(draws$xi, i = i)
+  mu <- ilink(get_eta(draws, i), draws$f$link)
+  args <- nlist(mu, sigma, xi)
+  out <- censor_loglik(dist = "gen_extreme_value", args = args, 
+                       i = i, data = draws$data)
+  out <- truncate_loglik(out, cdf = pgen_extreme_value, 
+                         args = args, i = i, data = draws$data)
+  weight_loglik(out, i = i, data = draws$data)
+}
+
 loglik_inverse.gaussian <- function(i, draws, data = data.frame()) {
   args <- list(mean = ilink(get_eta(draws, i), draws$f$link), 
                shape = get_shape(draws$shape, data = draws$data, i = i))
@@ -270,7 +282,10 @@ loglik_exgaussian <- function(i, draws, data = data.frame()) {
   args <- list(mu = ilink(get_eta(draws, i), draws$f$link), 
                sigma = get_sigma(draws$sigma, data = draws$data, i = i),
                beta = get_auxpar(draws$beta, i = i))
-  out <- censor_loglik(dist = "exgauss", args = args, i = i, data = draws$data)
+  out <- censor_loglik(dist = "exgaussian", args = args, 
+                       i = i, data = draws$data)
+  out <- truncate_loglik(out, cdf = pexgaussian, args = args,
+                         i = i, data = draws$data)
   weight_loglik(out, i = i, data = draws$data)
 }
 
