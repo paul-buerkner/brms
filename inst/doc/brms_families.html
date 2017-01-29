@@ -61,7 +61,17 @@
 <h2>Survival models</h2>
 <p>With survival models we mean all models that are defined on the positive reals only, that is <span class="math inline">\(y_i \in \mathbb{R}^+\)</span>. The density of the <strong>lognormal</strong> family is given by <span class="math display">\[f(y_i) = \frac{1}{\sqrt{2\pi}\sigma x} \exp\left(-\frac{1}{2}\left(\frac{\log(y_i) - g(\eta_i)}{\sigma}\right)^2\right)\]</span> where <span class="math inline">\(\sigma\)</span> is the residual standard deviation on the log-scale. The density of the <strong>Gamma</strong> family is given by <span class="math display">\[f(y_i) = \frac{(\alpha / g(\eta_i))^\alpha}{\Gamma(\alpha)} y_i^{\alpha-1} 
 \exp\left(-\frac{\alpha y_i}{g(\eta_i)}\right)\]</span> where <span class="math inline">\(\alpha\)</span> is a positive shape parameter. The density of the <strong>weibull</strong> family is given by <span class="math display">\[f(y_i) = \frac{\alpha}{g(\eta_i / \alpha)} \left(\frac{y_i}{g(\eta_i / \alpha)}\right)^{\alpha-1} 
-\exp\left(-\left(\frac{y_i}{g(\eta_i / \alpha)}\right)^\alpha\right)\]</span> where <span class="math inline">\(\alpha\)</span> is again a positive shape parameter. The <strong>exponential</strong> family arises if <span class="math inline">\(\alpha\)</span> is set to <span class="math inline">\(1\)</span> for either the gamma or Weibull distribution. The density of the <strong>frechet</strong> distribution is given by <span class="math display">\[f(y_i) = \frac{\nu}{s_i} \left(\frac{y_i}{s_i}\right)^{-1-\nu} \exp\left(-\left(\frac{y_i}{s_i}\right)^{-\nu}\right)\]</span> where <span class="math inline">\(s_i = g(\eta_i) / \Gamma(1 - 1 / \nu)\)</span> is a positive scale parameter and <span class="math inline">\(\nu &gt; 1\)</span> is a shape parameter so that <span class="math inline">\(g(\eta_i)\)</span> predicts the mean of the Frechet distribution.</p>
+\exp\left(-\left(\frac{y_i}{g(\eta_i / \alpha)}\right)^\alpha\right)\]</span> where <span class="math inline">\(\alpha\)</span> is again a positive shape parameter. The <strong>exponential</strong> family arises if <span class="math inline">\(\alpha\)</span> is set to <span class="math inline">\(1\)</span> for either the gamma or Weibull distribution.</p>
+</div>
+<div id="extreme-value-models" class="section level2">
+<h2>Extreme value models</h2>
+<p>Modeling extremes requires special distributions. One may use the <strong>weibull</strong> distribution (see above) or the <strong>frechet</strong> distribution with density <span class="math display">\[
+f(y_i) = \frac{\nu}{s_i} \left(\frac{y_i}{s_i}\right)^{-1-\nu} \exp\left(-\left(\frac{y_i}{s_i}\right)^{-\nu}\right)
+\]</span> where <span class="math inline">\(s_i = g(\eta_i) / \Gamma(1 - 1 / \nu)\)</span> is a positive scale parameter and <span class="math inline">\(\nu &gt; 1\)</span> is a shape parameter so that <span class="math inline">\(g(\eta_i)\)</span> predicts the mean of the Frechet distribution. A generalization of both distributions is the generalized extreme value distribution (family <strong>gen_extreme_value</strong>) with density <span class="math display">\[
+f(y_i) = \frac{1}{\sigma} t(y_i)^{-1 - 1 / \xi} \exp(-t(y_i))
+\]</span> where <span class="math display">\[
+t(y_i) = \left(1 + \xi \left(\frac{y_i - g(\eta_i)}{\sigma} \right)\right)^{-1 / \xi}
+\]</span> with positive scale parameter <span class="math inline">\(\sigma\)</span> and shape parameter <span class="math inline">\(\xi\)</span>.</p>
 </div>
 <div id="response-time-models" class="section level2">
 <h2>Response time models</h2>

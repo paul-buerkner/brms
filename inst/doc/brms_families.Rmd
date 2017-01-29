@@ -51,9 +51,22 @@ where $\alpha$ is a positive shape parameter. The density of the **weibull** fam
 $$f(y_i) = \frac{\alpha}{g(\eta_i / \alpha)} \left(\frac{y_i}{g(\eta_i / \alpha)}\right)^{\alpha-1} 
 \exp\left(-\left(\frac{y_i}{g(\eta_i / \alpha)}\right)^\alpha\right)$$
 where $\alpha$ is again a positive shape parameter. The **exponential** family arises if $\alpha$ is set to $1$ for either the gamma or Weibull distribution.
-The density of the **frechet** distribution is given by
-$$f(y_i) = \frac{\nu}{s_i} \left(\frac{y_i}{s_i}\right)^{-1-\nu} \exp\left(-\left(\frac{y_i}{s_i}\right)^{-\nu}\right)$$
-where $s_i = g(\eta_i) / \Gamma(1 - 1 / \nu)$ is a positive scale parameter and $\nu > 1$ is a shape parameter so that $g(\eta_i)$ predicts the mean of the Frechet distribution.
+
+## Extreme value models
+
+Modeling extremes requires special distributions. One may use the **weibull** distribution (see above) or the **frechet** distribution with density
+$$
+f(y_i) = \frac{\nu}{s_i} \left(\frac{y_i}{s_i}\right)^{-1-\nu} \exp\left(-\left(\frac{y_i}{s_i}\right)^{-\nu}\right)
+$$
+where $s_i = g(\eta_i) / \Gamma(1 - 1 / \nu)$ is a positive scale parameter and $\nu > 1$ is a shape parameter so that $g(\eta_i)$ predicts the mean of the Frechet distribution. A generalization of both distributions is the generalized extreme value distribution (family **gen_extreme_value**) with density
+$$
+f(y_i) = \frac{1}{\sigma} t(y_i)^{-1 - 1 / \xi} \exp(-t(y_i))
+$$
+where 
+$$
+t(y_i) = \left(1 + \xi \left(\frac{y_i - g(\eta_i)}{\sigma} \right)\right)^{-1 / \xi}
+$$
+with positive scale parameter $\sigma$ and shape parameter $\xi$.
 
 ## Response time models
 
