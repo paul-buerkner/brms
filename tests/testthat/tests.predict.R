@@ -107,38 +107,42 @@ test_that("predict for count and survival models runs without errors", {
   nobs <- 10
   trials <- sample(10:30, nobs, replace = TRUE)
   draws <- list(eta = matrix(rnorm(ns*nobs), ncol = nobs),
-                shape = rgamma(ns, 4), nsamples = ns)
-  draws$nu <- draws$shape + 1
+                shape = rgamma(ns, 4), xi = 0,
+                nsamples = ns)
+  draws$nu <- draws$sigma <- draws$shape + 1
   draws$data <- list(trials = trials)
   i <- sample(nobs, 1)
   
   draws$f$link <- "cloglog"
-  pred <- predict_binomial(i, data = data, draws = draws)
+  pred <- predict_binomial(i, draws = draws)
   expect_equal(length(pred), ns)
   
   draws$f$link <- "log"
-  pred <- predict_poisson(i, data = data, draws = draws)
+  pred <- predict_poisson(i, draws = draws)
   expect_equal(length(pred), ns)
   
-  pred <- predict_negbinomial(i, data = data, draws = draws)
+  pred <- predict_negbinomial(i, draws = draws)
   expect_equal(length(pred), ns)
   
-  pred <- predict_geometric(i, data = data, draws = draws)
+  pred <- predict_geometric(i, draws = draws)
   expect_equal(length(pred), ns)
   
-  pred <- predict_exponential(i, data = data, draws = draws)
+  pred <- predict_exponential(i, draws = draws)
   expect_equal(length(pred), ns)
   
-  pred <- predict_gamma(i, data = data, draws = draws)
+  pred <- predict_gamma(i, draws = draws)
   expect_equal(length(pred), ns)
   
-  pred <- predict_weibull(i, data = data, draws = draws)
+  pred <- predict_weibull(i, draws = draws)
   expect_equal(length(pred), ns)
   
-  pred <- predict_frechet(i, data = data, draws = draws)
+  pred <- predict_frechet(i, draws = draws)
   expect_equal(length(pred), ns)
   
-  pred <- predict_inverse.gaussian(i, data = data, draws = draws)
+  pred <- predict_inverse.gaussian(i, draws = draws)
+  expect_equal(length(pred), ns)
+  
+  pred <- predict_gen_extreme_value(i, draws = draws)
   expect_equal(length(pred), ns)
 })
 

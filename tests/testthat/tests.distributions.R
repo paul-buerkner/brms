@@ -19,10 +19,10 @@ test_that("multivariate normal and student distributions work correctly", {
                c(7, 3))
   # test errors
   expect_error(dmulti_normal(1:3, mu = rnorm(2), Sigma = Sigma, check = TRUE),
-               "dimension of mu is incompatible")
+               "Dimension of mu is incorrect")
   expect_error(dmulti_normal(1:3, mu = mu, Sigma = Sigma[1:2, 1:2],
                              check = TRUE),
-               "dimension of Sigma is incompatible")
+               "Dimension of Sigma is incorrect")
   expect_error(dmulti_normal(1:3, mu = mu, Sigma = Sigma[1:3, 3:1],
                              check = TRUE),
                "Sigma must be a symmetric matrix")
@@ -33,11 +33,11 @@ test_that("multivariate normal and student distributions work correctly", {
                "Sigma must be a symmetric matrix")
   expect_error(dmulti_student(rnorm(3), mu = mu, Sigma = Sigma,
                               df = -1, check = TRUE),
-               "df must be greater zero")
+               "df must be greater than 0")
   expect_error(dmulti_student(rnorm(3), mu = mu, Sigma = Sigma[1:3, 3:1],
                               df = 30, check = TRUE),
                "Sigma must be a symmetric matrix")
   expect_error(rmulti_student(10, mu = mu, Sigma = Sigma,
                               df = -1, check = TRUE),
-               "df must be greater zero")
+               "df must be greater than 0")
 })

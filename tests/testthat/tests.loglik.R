@@ -40,9 +40,9 @@ test_that("loglik for lognormal and exgaussian models works as expected", {
   ll <- loglik_lognormal(1, draws = draws)
   expect_equal(ll, as.matrix(ll_lognormal))
   
-  ll_exgaussian <- dexgauss(x = draws$data$Y[1], mu = draws$eta[, 1], 
-                            sigma = draws$sigma, beta = draws$beta,
-                            log = TRUE)
+  ll_exgaussian <- dexgaussian(x = draws$data$Y[1], mu = draws$eta[, 1],
+                               sigma = draws$sigma, beta = draws$beta,
+                               log = TRUE)
   ll <- loglik_exgaussian(1, draws = draws)
   expect_equal(ll, ll_exgaussian)
 })
@@ -126,8 +126,9 @@ test_that("loglik for count and survival models works correctly", {
   nobs <- 10
   trials <- sample(10:30, nobs, replace = TRUE)
   draws <- list(eta = matrix(rnorm(ns*nobs), ncol = nobs),
-                shape = matrix(rgamma(ns, 4)), nsamples = ns)
-  draws$nu <- draws$shape + 1
+                shape = matrix(rgamma(ns, 4)), nsamples = ns,
+                xi = runif(ns, -1, 0.5))
+  draws$nu <- draws$sigma <- draws$shape + 1
   draws$data <- list(Y = rbinom(nobs, size = trials, 
                                 prob = rbeta(nobs, 1, 1)), 
                      trials = trials)
@@ -181,6 +182,16 @@ test_that("loglik for count and survival models works correctly", {
                            mean = exp(draws$eta[, i]), log = TRUE)
   ll <- loglik_inverse.gaussian(i, draws = draws)
   expect_equal(ll, ll_invgauss)
+  
+  # keep test at the end
+  draws$f$link <- "identity"
+  draws$data$Y[i] <- 0
+  ll_gen_extreme_value <- dgen_extreme_value(
+    x = draws$data$Y[i], mu = draws$eta[, i],
+    sigma = draws$nu, xi = draws$xi, log = TRUE
+  )
+  ll <- loglik_gen_extreme_value(i, draws = draws)
+  expect_equal(ll, ll_gen_extreme_value)
 })
 
 test_that("loglik for bernoulli and beta models works correctly", {

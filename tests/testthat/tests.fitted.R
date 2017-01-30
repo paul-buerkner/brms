@@ -6,7 +6,7 @@ test_that("fitted helper functions run without errors", {
   fit <- add_samples(fit, "hu", dist = "beta", shape1 = 1, shape2 = 1)
   fit <- add_samples(fit, "zi", dist = "beta", shape1 = 1, shape2 = 1)
   fit <- add_samples(fit, "quantile", dist = "beta", shape1 = 2, shape2 = 1)
-  fit <- add_samples(fit, "nu", dist = "exp")
+  fit <- add_samples(fit, "xi", dist = "unif", min = -1, max = 0.5)
   draws <- brms:::extract_draws(fit)
   eta <- brms:::linear_predictor(draws)
   nsamples <- nsamples(fit)
@@ -23,8 +23,13 @@ test_that("fitted helper functions run without errors", {
   expect_equal(dim(fitted(fit, summary = FALSE)), 
                c(nsamples, nobs))
   
-  # pseudo aysm_laplace model
+  # pseudo asym_laplace model
   fit$family <- asym_laplace()
+  expect_equal(dim(fitted(fit, summary = FALSE)), 
+               c(nsamples, nobs))
+  
+  # pseudo gen_extreme_value model
+  fit$family <- gen_extreme_value()
   expect_equal(dim(fitted(fit, summary = FALSE)), 
                c(nsamples, nobs))
   
@@ -51,7 +56,7 @@ test_that("fitted helper functions run without errors", {
   expect_equal(dim(fitted(fit, summary = FALSE)), 
                c(nsamples, nobs))
   
-  # truncated continous models
+  # truncated continuous models
   draws$nu <- c(posterior_samples(fit, pars = "^nu$", as.matrix = TRUE))
   draws$shape <- c(posterior_samples(fit, pars = "^shape$", as.matrix = TRUE))
   mu <- fitted_trunc_gaussian(eta, lb = 0, ub = 10, draws = draws)

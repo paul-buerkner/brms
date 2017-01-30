@@ -52,13 +52,13 @@ test_that("self-defined Stan functions work correctly", {
   beta <- rgamma(1, 1, 0.1)
   sigma <- rgamma(1, 10, 0.1)
   mu <- 10
-  y <- rexgauss(1, mu = mu, sigma = sigma, beta = beta)
+  y <- rexgaussian(1, mu = mu, sigma = sigma, beta = beta)
   expect_equal(exgaussian_lpdf(y, mu, sigma, beta),
-               dexgauss(y, mu, sigma, beta, log = TRUE))
+               dexgaussian(y, mu, sigma, beta, log = TRUE))
   expect_equal(exgaussian_lcdf(y, mu, sigma, beta),
-               pexgauss(y, mu, sigma, beta, log = TRUE))
+               pexgaussian(y, mu, sigma, beta, log = TRUE))
   expect_equal(exgaussian_lccdf(y, mu, sigma, beta),
-               pexgauss(y, mu, sigma, beta, 
+               pexgaussian(y, mu, sigma, beta, 
                         lower.tail = FALSE, log = TRUE))
   
   # asym_laplace functions

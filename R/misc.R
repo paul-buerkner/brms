@@ -389,7 +389,7 @@ logit_m1_to_half <- function(x) {
 #' 
 #' @export
 inv_logit_m1_to_half <- function(x) {
-  inv_logit(y) * 1.5 - 1
+  inv_logit(x) * 1.5 - 1
 }
 
 multiply_log <- function(x, y) {

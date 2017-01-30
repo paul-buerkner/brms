@@ -285,7 +285,8 @@ pfrechet <- function(q, loc = 0, scale = 1, shape = 1,
   out
 }
 
-dgen_extreme_value <- function (x, mu = 0, sigma = 1, xi = 0, log = FALSE) {
+dgen_extreme_value <- function(x, mu = 0, sigma = 1, 
+                               xi = 0, log = FALSE) {
   # pdf of the generalized extreme value distribution
   # Args:
   #   mu: location parameter
@@ -295,6 +296,9 @@ dgen_extreme_value <- function (x, mu = 0, sigma = 1, xi = 0, log = FALSE) {
     stop2("sigma bust be greater than 0.")
   }
   x <- (x - mu) / sigma
+  if (length(xi) == 1L) {
+    xi <- rep(xi, length(x))
+  }
   t <- 1 + xi * x
   out <- ifelse(
     xi == 0, 
@@ -307,13 +311,16 @@ dgen_extreme_value <- function (x, mu = 0, sigma = 1, xi = 0, log = FALSE) {
   out
 }
 
-pgen_extreme_value <- function (q, mu = 0, sigma = 1, xi = 0,
-                          lower.tail = TRUE, log.p = FALSE) {
+pgen_extreme_value <- function(q, mu = 0, sigma = 1, xi = 0,
+                               lower.tail = TRUE, log.p = FALSE) {
   # cdf of the generalized extreme value distribution
   if (any(sigma <= 0)) {
     stop2("sigma bust be greater than 0.")
   }
   q <- (q - mu) / sigma
+  if (length(xi) == 1L) {
+    xi <- rep(xi, length(q))
+  }
   out <- ifelse(
     xi == 0, 
     exp(-exp(-q)),
@@ -332,6 +339,9 @@ rgen_extreme_value <- function(n, mu = 0, sigma = 1, xi = 0) {
   # random numbers of the generalized extreme value distribution
   if (any(sigma <= 0)) {
     stop2("sigma bust be greater than 0.")
+  }
+  if (length(xi) == 1L) {
+    xi <- rep(xi, max(n, length(mu), length(sigma)))
   }
   ifelse(
     xi == 0,

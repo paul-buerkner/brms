@@ -754,3 +754,15 @@ test_that("Stan code of quantile regression models is correct", {
   scode <- make_stancode(y | cens(c) ~ x, data, family = asym_laplace())
   expect_match2(scode, "target += asym_laplace_lccdf(Y[n] | eta[n], sigma, quantile)")
 })
+
+test_that("Stan code of GEV models is correct", {
+  data <- data.frame(y = rnorm(10), x = rnorm(10), c = 1)
+  scode <- make_stancode(y ~ x, data, gen_extreme_value())
+  expect_match2(scode, "Y[n] ~ gen_extreme_value(eta[n], sigma, xi)")
+  
+  scode <- make_stancode(bf(y ~ x, xi = 0), data, gen_extreme_value())
+  expect_match(scode, "data \\{[^\\}]*real<lower=-1,upper=0.5> xi;")
+  
+  scode <- make_stancode(y | cens(c) ~ x, data, gen_extreme_value())
+  expect_match2(scode, "target += gen_extreme_value_lccdf(Y[n] | eta[n], sigma, xi)")
+})
