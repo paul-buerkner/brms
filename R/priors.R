@@ -122,6 +122,8 @@
 #'   In linear models, \code{scale_global} will internally be multiplied by the 
 #'   residual standard deviation parameter \code{sigma}. See Piironen and 
 #'   Vehtari (2016) for recommendations how to properly set the global scale.
+#'   The degrees of freedom of the global shrinkage prior may also be 
+#'   adjusted via argument \code{df_global}. 
 #'   To make sure that shrinkage can equally affect all coefficients, 
 #'   predictors should be one the same scale. 
 #'   Generally, models with horseshoe priors a more likely than other models
@@ -1051,6 +1053,7 @@ handle_special_priors <- function(prior, bterms, autocor = cor_arma(),
         hs <- eval2(b_prior)
         prior$prior[b_index] <- attr(hs, "b_prior")
         prior_attr$hs_df <- attr(hs, "df")
+        prior_attr$hs_df_global <- attr(hs, "df_global")
         scale_global <- attr(hs, "scale_global")
         has_sigma <- has_sigma(bterms$family, bterms, autocor = autocor)
         if (has_sigma && !is.formula(bterms$sigma)) {
@@ -1181,6 +1184,8 @@ dirichlet <- function(...) {
 #'   parameter. Defaults to \code{1}. 
 #'   In linear models, \code{scale_global} will internally be 
 #'   multiplied by the residual standard deviation parameter \code{sigma}.
+#' @param df_global Degrees of freedom of student-t prior of the 
+#'   global shrinkage parameter. Defaults to \code{1}.
 #'   
 #' @return A character string obtained by \code{match.call()} with
 #'   additional arguments.
@@ -1194,20 +1199,25 @@ dirichlet <- function(...) {
 #' set_prior(horseshoe(df = 3, scale_global = 2))
 #' 
 #' @export
-horseshoe <- function(df = 1, scale_global = 1) {
+horseshoe <- function(df = 1, scale_global = 1, df_global = 1) {
   out <- deparse(match.call())
   df <- round(as.numeric(df)[1], 5)
+  df_global <- round(as.numeric(df_global)[1], 5)
   scale_global <- round(as.numeric(scale_global)[1], 5)
   if (!isTRUE(df > 0)) {
     stop2("Invalid horseshoe prior: Degrees of freedom of ", 
           "the local priors must be a single positive number.")
+  }
+  if (!isTRUE(df_global > 0)) {
+    stop2("Invalid horseshoe prior: Degrees of freedom of ", 
+          "the global prior must be a single positive number.")
   }
   if (!isTRUE(scale_global > 0)) {
     stop2("Invalid horseshoe prior: Scale of the global ", 
           "prior must be a single positive number.")
   }
   b_prior <- "normal(0, hs_local * hs_global)"
-  att <- nlist(b_prior, df, scale_global)
+  att <- nlist(b_prior, df, df_global, scale_global)
   attributes(out)[names(att)] <- att
   out
 }

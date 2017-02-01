@@ -99,18 +99,21 @@ test_that("specified priors appear in the Stan code", {
 
 test_that("special shrinkage priors appear in the Stan code", {
   dat <- data.frame(y = 1:10, x1 = rnorm(10), x2 = rnorm(10))
-  scode <- make_stancode(y ~ x1*x2, data = dat,
-                         prior = prior(horseshoe(7, scale_global = 2)),
+  hs <- horseshoe(7, scale_global = 2, df_global = 3)
+  scode <- make_stancode(y ~ x1*x2, data = dat, 
+                         prior = set_prior(hs),
                          sample_prior = TRUE)
   expect_match2(scode, 
     "  vector<lower=0>[Kc] hs_local; \n  real<lower=0> hs_global;")
   expect_match2(scode, 
-    "  hs_local ~ student_t(7, 0, 1); \n  hs_global ~ cauchy(0, 2 * sigma);")
+    paste0("  hs_local ~ student_t(7, 0, 1); \n",
+           "  hs_global ~ student_t(3, 0, 2 * sigma);")
+  )
   expect_match2(scode, "  b ~ normal(0, hs_local * hs_global);")
   
   scode <- make_stancode(y ~ x1*x2, data = dat, poisson(),
                          prior = prior(horseshoe(scale_global = 3)))
-  expect_match2(scode, "hs_global ~ cauchy(0, 3);")
+  expect_match2(scode, "hs_global ~ student_t(1, 0, 3);")
   
   scode <- make_stancode(y ~ x1*x2, data = dat,
                          prior = prior(lasso(2, scale = 10)),

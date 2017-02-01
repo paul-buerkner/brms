@@ -4,7 +4,7 @@
 \alias{horseshoe}
 \title{Set up a horseshoe prior in \pkg{brms}}
 \usage{
-horseshoe(df = 1, scale_global = 1)
+horseshoe(df = 1, scale_global = 1, df_global = 1)
 }
 \arguments{
 \item{df}{Degrees of freedom of student-t prior of the 
@@ -14,6 +14,9 @@ local shrinkage parameters. Defaults to \code{1}.}
 parameter. Defaults to \code{1}. 
 In linear models, \code{scale_global} will internally be 
 multiplied by the residual standard deviation parameter \code{sigma}.}
+
+\item{df_global}{Degrees of freedom of student-t prior of the 
+global shrinkage parameter. Defaults to \code{1}.}
 }
 \value{
 A character string obtained by \code{match.call()} with

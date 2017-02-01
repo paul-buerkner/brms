@@ -560,9 +560,11 @@ stan_prior <- function(class, coef = "", group = "", nlpar = "", suffix = "",
     att <- attributes(prior)
     special_priors <- NULL
     if (!is.null(att$hs_df)) {
+      local_args <- sargs(att$hs_df, "0", "1")
+      global_args <- sargs(att$hs_df_global, "0", att$hs_scale_global)
       special_priors <- paste0(special_priors,
-        "  hs_local ~ student_t(", att$hs_df, ", 0, 1); \n",
-        "  hs_global ~ cauchy(0, ", att$hs_scale_global, "); \n")
+        "  hs_local ~ student_t(", local_args, "); \n",
+        "  hs_global ~ student_t(", global_args, "); \n")
     }
     if (!is.null(att$lasso_df)) {
       special_priors <- paste0(special_priors,

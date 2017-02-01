@@ -149,6 +149,8 @@ Define priors for specific parameters or classes of parameters
   In linear models, \code{scale_global} will internally be multiplied by the 
   residual standard deviation parameter \code{sigma}. See Piironen and 
   Vehtari (2016) for recommendations how to properly set the global scale.
+  The degrees of freedom of the global shrinkage prior may also be 
+  adjusted via argument \code{df_global}. 
   To make sure that shrinkage can equally affect all coefficients, 
   predictors should be one the same scale. 
   Generally, models with horseshoe priors a more likely than other models
