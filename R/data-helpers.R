@@ -18,6 +18,9 @@ update_data <- function(data, family, bterms,
   #   knots: a list of knot values for GAMMS
   # Returns:
   #   model.frame in long format with combined grouping variables if present
+  if (missing(data)) {
+    stop2("Argument 'data' is missing.")
+  }
   if (is.null(attr(data, "terms")) && "brms.frame" %in% class(data)) {
     # to avoid error described in #30
     # brms.frame class is deprecated as of brms > 0.7.0
