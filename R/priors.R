@@ -855,7 +855,8 @@ check_prior <- function(prior, formula, data = NULL, family = NULL,
   }
   # handle special priors that are not explictly coded as functions in Stan
   has_specef <- is.formula(bterms[["mo"]]) || is.formula(bterms[["cs"]])
-  prior <- handle_special_priors(prior, bterms = bterms, has_specef = has_specef)  
+  prior <- handle_special_priors(prior, bterms, autocor = autocor, 
+                                 has_specef = has_specef)  
   # check if parameters in prior are valid
   if (nrow(prior)) {
     valid <- which(duplicated(rbind(all_priors[, 2:5], prior[, 2:5])))
@@ -1017,7 +1018,8 @@ check_prior_content <- function(prior, family = gaussian(), warn = TRUE) {
   invisible(NULL)
 }
 
-handle_special_priors <- function(prior, bterms, has_specef = FALSE) {
+handle_special_priors <- function(prior, bterms, autocor = cor_arma(), 
+                                  has_specef = FALSE) {
   # look for special priors such as horseshoe and process them appropriately
   # Args:
   #   prior: an object of class brmsprior
@@ -1047,15 +1049,19 @@ handle_special_priors <- function(prior, bterms, has_specef = FALSE) {
       }
       if (grepl("^horseshoe\\(", b_prior)) {
         hs <- eval2(b_prior)
-        if (is_linear(bterms$family) && !is.formula(bterms$sigma)) {
-          hs[["scale_global"]] <- paste(hs[["scale_global"]], "* sigma")
+        prior$prior[b_index] <- attr(hs, "b_prior")
+        prior_attr$hs_df <- attr(hs, "df")
+        scale_global <- attr(hs, "scale_global")
+        has_sigma <- has_sigma(bterms$family, bterms, autocor = autocor)
+        if (has_sigma && !is.formula(bterms$sigma)) {
+          scale_global <- paste(scale_global, "* sigma")
         }
-        prior_attr[c("hs_df", "hs_scale_global")] <- hs[c("df", "scale_global")]
-        prior$prior[b_index] <- hs$prior
+        prior_attr$hs_scale_global <- scale_global
       } else if (grepl("^lasso\\(", b_prior)) {
         lasso <- eval2(b_prior)
-        prior_attr[c("lasso_df", "lasso_scale")] <- lasso[c("df", "scale")]
-        prior$prior[b_index] <- lasso$prior
+        prior$prior[b_index] <- attr(lasso, "b_prior")
+        prior_attr$lasso_df <- attr(lasso, "df")
+        prior_attr$lasso_scale <- attr(lasso, "scale")
       }
     }
   }
@@ -1162,11 +1168,34 @@ dirichlet <- function(...) {
   out
 }
 
+
+#' Set up a horseshoe prior in \pkg{brms}
+#' 
+#' Function used to set up a horseshoe prior for population-level effects 
+#' in \pkg{brms}. The function does not evaluate its arguments --
+#' it exists purely to help set up the model.
+#' 
+#' @param df Degrees of freedom of student-t prior of the 
+#'   local shrinkage parameters. Defaults to \code{1}.
+#' @param scale_global Scale of the student-t prior of the global shrinkage 
+#'   parameter. Defaults to \code{1}. 
+#'   In linear models, \code{scale_global} will internally be 
+#'   multiplied by the residual standard deviation parameter \code{sigma}.
+#'   
+#' @return A character string obtained by \code{match.call()} with
+#'   additional arguments.
+#'   
+#' @details See \code{\link[brms:set_prior]{set_prior}} for more details
+#'   about the horseshoe prior.
+#'   
+#' @seealso \code{\link[brms:set_prior]{set_prior}}
+#'   
+#' @examples 
+#' set_prior(horseshoe(df = 3, scale_global = 2))
+#' 
+#' @export
 horseshoe <- function(df = 1, scale_global = 1) {
-  # validate input for the horseshoe prior 
-  # Args:
-  #   df: degrees of freedom of the local parameters
-  #   scale_global: scale of the global cauchy prior
+  out <- deparse(match.call())
   df <- round(as.numeric(df)[1], 5)
   scale_global <- round(as.numeric(scale_global)[1], 5)
   if (!isTRUE(df > 0)) {
@@ -1177,15 +1206,36 @@ horseshoe <- function(df = 1, scale_global = 1) {
     stop2("Invalid horseshoe prior: Scale of the global ", 
           "prior must be a single positive number.")
   }
-  prior <- "normal(0, hs_local * hs_global)"
-  nlist(prior, df, scale_global)
+  b_prior <- "normal(0, hs_local * hs_global)"
+  att <- nlist(b_prior, df, scale_global)
+  attributes(out)[names(att)] <- att
+  out
 }
 
+#' Set up a lasso prior in \pkg{brms}
+#' 
+#' Function used to set up a lasso prior for population-level effects 
+#' in \pkg{brms}. The function does not evaluate its arguments --
+#' it exists purely to help set up the model.
+#' 
+#' @param df Degrees of freedom of the chi-sqaure prior of the inverse tuning
+#'   parameter. Defaults to \code{1}.
+#' @param scale Scale of the lasso prior. Defaults to \code{1}.
+#'   
+#' @return A character string obtained by \code{match.call()} with
+#'   additional arguments.
+#'   
+#' @details See \code{\link[brms:set_prior]{set_prior}} for more details
+#'   about the lasso prior.
+#'   
+#' @seealso \code{\link[brms:set_prior]{set_prior}}
+#'   
+#' @examples 
+#' set_prior(lasso(df = 1, scale = 10))
+#' 
+#' @export
 lasso <- function(df = 1, scale = 1) {
-  # validate input for lasso prior
-  # Args:
-  #   df: degrees of freedom of the chi-square distribution 
-  #       of inv_lambda
+  out <- deparse(match.call())
   df <- round(as.numeric(df)[1], 5)
   scale <- round(as.numeric(scale)[1], 5)
   if (!isTRUE(df > 0)) {
@@ -1196,6 +1246,8 @@ lasso <- function(df = 1, scale = 1) {
     stop2("Invalid lasso prior: Scale of the Laplace ", 
           "priors must be a single positive number.")
   }
-  prior <- paste0("double_exponential(0, ", scale, " * lasso_inv_lambda)")
-  nlist(prior, df, scale)
+  b_prior <- paste0("double_exponential(0, ", scale, " * lasso_inv_lambda)")
+  att <- nlist(b_prior, df, scale)
+  attributes(out)[names(att)] <- att
+  out
 }
