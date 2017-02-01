@@ -8,9 +8,13 @@ inv_logit_scaled(x, lb = 0, ub = 1)
 }
 \arguments{
 \item{x}{A numeric or complex vector.}
+
+\item{lb}{Lower bound defaulting to \code{0}.}
+
+\item{ub}{Upper bound defaulting to \code{1}.}
 }
 \value{
-A vector of values between \code{lb} and \code{ub}.
+A numeric or complex vector between \code{lb} and \code{ub}.
 }
 \description{
 Computes \code{inv_logit(x) * (ub - lb) + lb}

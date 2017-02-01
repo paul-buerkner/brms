@@ -375,6 +375,10 @@ expp1 <- function(x) {
 #' Computes \code{logit((x - lb) / (ub - lb))}
 #' 
 #' @param x A numeric or complex vector.
+#' @param lb Lower bound defaulting to \code{0}.
+#' @param ub Upper bound defaulting to \code{1}.
+#' 
+#' @return A numeric or complex vector.
 #' 
 #' @export
 logit_scaled <- function(x, lb = 0, ub = 1) {
@@ -386,8 +390,10 @@ logit_scaled <- function(x, lb = 0, ub = 1) {
 #' Computes \code{inv_logit(x) * (ub - lb) + lb}
 #' 
 #' @param x A numeric or complex vector.
+#' @param lb Lower bound defaulting to \code{0}.
+#' @param ub Upper bound defaulting to \code{1}.
 #' 
-#' @return A vector of values between \code{lb} and \code{ub}.
+#' @return A numeric or complex vector between \code{lb} and \code{ub}.
 #' 
 #' @export
 inv_logit_scaled <- function(x, lb = 0, ub = 1) {
