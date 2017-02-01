@@ -128,7 +128,7 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
                        link_hu = "logit", link_disc = "log",
                        link_bs = "log", link_ndt = "log",
                        link_bias = "logit", link_quantile = "logit",
-                       link_xi = "logit_m1_half") {
+                       link_xi = "log1p") {
   slink <- substitute(link)
   .brmsfamily(family, link = link, slink = slink,
               link_sigma = link_sigma, link_shape = link_shape, 
@@ -309,7 +309,7 @@ frechet <- function(link = "log", link_nu = "logm1") {
 #' @rdname brmsfamily
 #' @export
 gen_extreme_value <- function(link = "identity", link_sigma = "log",
-                              link_xi = "logit_m1_to_half") {
+                              link_xi = "log1p") {
   slink <- substitute(link)
   .brmsfamily("gen_extreme_value", link = link, slink = slink,
               link_sigma = link_sigma, link_xi = link_xi)

@@ -592,7 +592,7 @@ links_auxpars <- function(ap = NULL) {
     ndt = "log", 
     bias = "logit",
     quantile = "logit",
-    xi = "logit_m1_to_half"
+    xi = "log1p"
   )
   if (length(ap)) {
     link <- link[[ap]]
@@ -606,13 +606,13 @@ ilink_auxpars <- function(ap = NULL, stan = FALSE) {
     ilink <- c(sigma = "exp", shape = "exp", nu = "expp1", phi = "exp", 
                kappa = "exp", beta = "exp", zi = "", hu = "", 
                bs = "exp", ndt = "exp", bias = "inv_logit", disc = "exp",
-               quantile = "inv_logit", xi = "inv_logit_m1_to_half") 
+               quantile = "inv_logit", xi = "expm1") 
   } else {
     ilink <- c(sigma = "exp", shape = "exp", nu = "expp1", phi = "exp", 
                kappa = "exp", beta = "exp", zi = "inv_logit", 
                hu = "inv_logit", bs = "exp", ndt = "exp", 
                bias = "inv_logit", disc = "exp", quantile = "inv_logit",
-               xi = "inv_logit_m1_to_half")
+               xi = "expm1")
   }
   if (length(ap)) {
     ilink <- ilink[ap]

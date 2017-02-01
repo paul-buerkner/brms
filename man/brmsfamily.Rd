@@ -35,7 +35,7 @@ brmsfamily(family, link = NULL, link_sigma = "log", link_shape = "log",
   link_nu = "logm1", link_phi = "log", link_kappa = "log",
   link_beta = "log", link_zi = "logit", link_hu = "logit",
   link_disc = "log", link_bs = "log", link_ndt = "log",
-  link_bias = "logit", link_quantile = "logit", link_xi = "logit_m1_half")
+  link_bias = "logit", link_quantile = "logit", link_xi = "log1p")
 
 student(link = "identity", link_sigma = "log", link_nu = "logm1")
 
@@ -54,7 +54,7 @@ weibull(link = "log", link_shape = "log")
 frechet(link = "log", link_nu = "logm1")
 
 gen_extreme_value(link = "identity", link_sigma = "log",
-  link_xi = "logit_m1_to_half")
+  link_xi = "log1p")
 
 exgaussian(link = "identity", link_sigma = "log", link_beta = "log")
 

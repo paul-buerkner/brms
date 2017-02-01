@@ -192,7 +192,7 @@ stan_auxpars <- function(bterms, data, family = gaussian(),
     bias = "  real<lower=0,upper=1> bias;  // initial bias parameter \n",
     disc = "  real<lower=0> disc;  // discrimination parameters \n",
     quantile = "  real<lower=0,upper=1> quantile;  // quantile parameter \n",
-    xi = "  real<lower=-1,upper=0.5> xi;  // shape parameter \n")
+    xi = "  real<lower=-1> xi;  // shape parameter \n")
   valid_auxpars <- valid_auxpars(family, bterms, autocor = autocor)
   # don't supply the family argument to avoid applying link functions
   args <- nlist(data, ranef, center_X = FALSE, eta = "")

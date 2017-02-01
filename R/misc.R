@@ -370,26 +370,28 @@ expp1 <- function(x) {
   exp(x) + 1
 }
 
-#' Modified logit-link returning values between -1 and 0.5
+#' Scaled logit-link
 #' 
-#' Computes \code{logit((x + 1) / 1.5)}
+#' Computes \code{logit((x - lb) / (ub - lb))}
 #' 
 #' @param x A numeric or complex vector.
 #' 
 #' @export
-logit_m1_to_half <- function(x) {
-  logit((x + 1) / 1.5)
+logit_scaled <- function(x, lb = 0, ub = 1) {
+  logit((x - lb) / (ub - lb))
 }
 
-#' Modified inverse logit-link taking values between -1 and 0.5
+#' Scaled inverse logit-link
 #' 
-#' Computes \code{inv_logit(y) * 1.5 - 1}
+#' Computes \code{inv_logit(x) * (ub - lb) + lb}
 #' 
 #' @param x A numeric or complex vector.
 #' 
+#' @return A vector of values between \code{lb} and \code{ub}.
+#' 
 #' @export
-inv_logit_m1_to_half <- function(x) {
-  inv_logit(x) * 1.5 - 1
+inv_logit_scaled <- function(x, lb = 0, ub = 1) {
+  inv_logit(x) * (ub - lb) + lb
 }
 
 multiply_log <- function(x, y) {
