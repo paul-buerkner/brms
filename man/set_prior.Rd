@@ -146,8 +146,9 @@ Define priors for specific parameters or classes of parameters
   but this may result in too few shrinkage (Piironen & Vehtari, 2016).
   It is thus possible to change the scale using argument \code{scale_global}
   of the horseshoe prior, for instance \code{horseshoe(1, scale_global = 0.5)}.
-  For recommendations how to properly set the global scale see 
-  Piironen and Vehtari (2016).
+  In linear models, \code{scale_global} will internally be multiplied by the 
+  residual standard deviation parameter \code{sigma}. See Piironen and 
+  Vehtari (2016) for recommendations how to properly set the global scale.
   To make sure that shrinkage can equally affect all coefficients, 
   predictors should be one the same scale. 
   Generally, models with horseshoe priors a more likely than other models
@@ -159,7 +160,7 @@ Define priors for specific parameters or classes of parameters
   Another shrinkage prior is the so-called \emph{lasso} prior.
   It is the Bayesian equivalent to the LASSO method for performing
   variable selection (Park & Casella, 2008).
-  With this prior, independent Laplace (i.e., double exponential) priors 
+  With this prior, independent Laplace (i.e. double exponential) priors 
   are placed on the population-level effects. 
   The scale of the Laplace priors depends on a tuning parameter
   that controls the amount of shrinkage. In \pkg{brms}, the inverse

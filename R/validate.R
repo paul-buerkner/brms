@@ -38,7 +38,7 @@ parse_bf <- function(formula, family = NULL, autocor = NULL,
   
   formula <- x$formula
   family <- x$family
-  y <- nlist(formula)
+  y <- nlist(formula, family)
   add_forms <- parse_add(formula, family, check_response)
   add_vars <- str2formula(ulapply(add_forms, all.vars))
   y[names(add_forms)] <- add_forms

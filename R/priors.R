@@ -119,8 +119,9 @@
 #'   but this may result in too few shrinkage (Piironen & Vehtari, 2016).
 #'   It is thus possible to change the scale using argument \code{scale_global}
 #'   of the horseshoe prior, for instance \code{horseshoe(1, scale_global = 0.5)}.
-#'   For recommendations how to properly set the global scale see 
-#'   Piironen and Vehtari (2016).
+#'   In linear models, \code{scale_global} will internally be multiplied by the 
+#'   residual standard deviation parameter \code{sigma}. See Piironen and 
+#'   Vehtari (2016) for recommendations how to properly set the global scale.
 #'   To make sure that shrinkage can equally affect all coefficients, 
 #'   predictors should be one the same scale. 
 #'   Generally, models with horseshoe priors a more likely than other models
@@ -132,7 +133,7 @@
 #'   Another shrinkage prior is the so-called \emph{lasso} prior.
 #'   It is the Bayesian equivalent to the LASSO method for performing
 #'   variable selection (Park & Casella, 2008).
-#'   With this prior, independent Laplace (i.e., double exponential) priors 
+#'   With this prior, independent Laplace (i.e. double exponential) priors 
 #'   are placed on the population-level effects. 
 #'   The scale of the Laplace priors depends on a tuning parameter
 #'   that controls the amount of shrinkage. In \pkg{brms}, the inverse
@@ -815,7 +816,7 @@ get_prior_splines <- function(splines, def_scale_prior, nlpar = "") {
   prior
 }
 
-check_prior <- function(prior, formula, data = NULL, family = gaussian(), 
+check_prior <- function(prior, formula, data = NULL, family = NULL, 
                         sample_prior = FALSE, autocor = NULL, 
                         threshold = "flexible", check_rows = NULL, 
                         warn = FALSE) {
@@ -854,7 +855,7 @@ check_prior <- function(prior, formula, data = NULL, family = gaussian(),
   }
   # handle special priors that are not explictly coded as functions in Stan
   has_specef <- is.formula(bterms[["mo"]]) || is.formula(bterms[["cs"]])
-  prior <- handle_special_priors(prior, has_specef = has_specef)  
+  prior <- handle_special_priors(prior, bterms = bterms, has_specef = has_specef)  
   # check if parameters in prior are valid
   if (nrow(prior)) {
     valid <- which(duplicated(rbind(all_priors[, 2:5], prior[, 2:5])))
@@ -1016,7 +1017,7 @@ check_prior_content <- function(prior, family = gaussian(), warn = TRUE) {
   invisible(NULL)
 }
 
-handle_special_priors <- function(prior, has_specef = FALSE) {
+handle_special_priors <- function(prior, bterms, has_specef = FALSE) {
   # look for special priors such as horseshoe and process them appropriately
   # Args:
   #   prior: an object of class brmsprior
@@ -1046,6 +1047,9 @@ handle_special_priors <- function(prior, has_specef = FALSE) {
       }
       if (grepl("^horseshoe\\(", b_prior)) {
         hs <- eval2(b_prior)
+        if (is_linear(bterms$family) && !is.formula(bterms$sigma)) {
+          hs[["scale_global"]] <- paste(hs[["scale_global"]], "* sigma")
+        }
         prior_attr[c("hs_df", "hs_scale_global")] <- hs[c("df", "scale_global")]
         prior$prior[b_index] <- hs$prior
       } else if (grepl("^lasso\\(", b_prior)) {
