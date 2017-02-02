@@ -213,7 +213,7 @@ stan_auxpars <- function(bterms, data, family = gaussian(),
       out[[ap]] <- list(data = default_defs[ap]) 
     } else {
       out[[ap]] <- list(par = default_defs[ap],
-                        prior = stan_prior(class = ap, prior = prior))
+                        prior = stan_prior(prior, class = ap))
     }
   }
   collapse_lists(out)
@@ -249,19 +249,37 @@ stan_fixef <- function(fixef, center_X = TRUE, family = gaussian(),
       out$tdataD <- "  #include tdataD_sparse_X.stan \n"
       out$tdataC <- "  #include tdataC_sparse_X.stan \n"
     }
-    bound <- get_bound(prior, class = "b", nlpar = nlpar)
-    out$par <- paste0(out$par,
-      "  vector", bound, "[K", ct, p, "] b", p, ";",
-      "  // population-level effects \n",
-      if (!is.null(attr(prior, "hs_df")))
-        paste0("  // horseshoe shrinkage parameters \n",
-               "  vector<lower=0>[K", ct, "] hs_local; \n",
-               "  real<lower=0> hs_global; \n"),
-      if (!is.null(attr(prior, "lasso_df")))
-        paste0("  // lasso shrinkage parameter \n",
-               "  real<lower=0> lasso_inv_lambda; \n")
-    ) 
-    fixef_prior <- stan_prior(class = "b", coef = fixef, prior = prior,
+    # prepare population-level coefficients
+    if (!is.null(attr(prior, "hs_df")) && !nzchar(nlpar)) {
+      out$par <- paste0(out$par,
+        "  // horseshoe shrinkage parameters \n",
+        "  vector[K", ct, "] zb; \n",
+        "  vector<lower=0>[K", ct, "] hs_local[2]; \n",
+        "  real<lower=0> hs_global[2]; \n"
+      )
+      out$transD <- paste0(out$transD, 
+        "  vector[K", ct, "] b;",
+        "  // population-level effects \n"
+      )
+      hs_scale_global <- attr(prior, "hs_scale_global")
+      hs_args <- sargs("zb", "hs_local", "hs_global", hs_scale_global)
+      out$transD <- paste0(out$transD, 
+        "  b = horseshoe(", hs_args, "); \n"
+      )
+    } else {
+      bound <- get_bound(prior, class = "b", nlpar = nlpar)
+      out$par <- paste0(out$par,
+        "  vector", bound, "[K", ct, p, "] b", p, ";",
+        "  // population-level effects \n"
+      )
+    }
+    if (!is.null(attr(prior, "lasso_df")) && !nzchar(nlpar)) {
+      out$par <- paste0(out$par,
+        "  // lasso shrinkage parameter \n",
+        "  real<lower=0> lasso_inv_lambda; \n"
+      )
+    }
+    fixef_prior <- stan_prior(prior, class = "b", coef = fixef,
                               nlpar = nlpar, suffix = p)
     out$prior <- paste0(out$prior, fixef_prior)
   }
@@ -302,7 +320,7 @@ stan_fixef <- function(fixef, center_X = TRUE, family = gaussian(),
     # for equidistant thresholds only temp_Intercept1 is a parameter
     suffix <- paste0(p, "_Intercept")
     suffix <- paste0(suffix, ifelse(threshold == "equidistant", "1", ""))
-    int_prior <- stan_prior("temp", prior = prior, coef = "Intercept",
+    int_prior <- stan_prior(prior, class = "temp", coef = "Intercept",
                             suffix = suffix, nlpar = nlpar)
     out$prior <- paste0(out$prior, int_prior)
   }
@@ -338,9 +356,9 @@ stan_ranef <- function(id, ranef, prior = brmsprior(),
     if (ccov) paste0(
       "  // cholesky factor of known covariance matrix \n",
       "  matrix[N_", id, ", N_", id,"] Lcov_", id,"; \n"))
-  out$prior <- stan_prior(class = "sd", group = r$group[1], 
+  out$prior <- stan_prior(prior, class = "sd", group = r$group[1], 
                           coef = r$coef, nlpar = r$nlpar, 
-                          suffix = paste0("_", id), prior = prior)
+                          suffix = paste0("_", id))
   J <- seq_len(nrow(r))
   has_def_type <- !r$type %in% c("mo", "me")
   if (any(has_def_type)) {
@@ -360,8 +378,8 @@ stan_ranef <- function(id, ranef, prior = brmsprior(),
       "  // cholesky factor of correlation matrix \n",
       "  cholesky_factor_corr[M_", id, "] L_", id, "; \n")
     out$prior <- paste0(out$prior, 
-      stan_prior(class = "L", group = r$group[1],
-                 suffix = paste0("_", id), prior = prior),
+      stan_prior(prior, class = "L", group = r$group[1],
+                 suffix = paste0("_", id)),
       "  to_vector(z_", id, ") ~ normal(0, 1); \n")
     out$transD <- paste0(
       "  // group-level effects \n",
@@ -440,9 +458,8 @@ stan_splines <- function(splines, prior = brmsprior(), nlpar = "") {
         " * zs", pi, "_", nb, "; \n"))
       out$prior <- paste0(out$prior, collapse(
         "  zs", pi, "_", nb, " ~ normal(0, 1); \n"),
-        stan_prior(class = "sds", coef = splines[i], 
-                   nlpar = nlpar, prior = prior,
-                   suffix = paste0(pi, "_", nb)))
+        stan_prior(prior, class = "sds", coef = splines[i], 
+                   nlpar = nlpar, suffix = paste0(pi, "_", nb)))
     }
     out$eta <- stan_eta_splines(splines, nlpar = nlpar)
   }
@@ -473,7 +490,7 @@ stan_monef <- function(monef, ranef = empty_ranef(),
       collapse("  simplex[Jmo", p, "[", I, "]]", 
                " simplex", p, "_", I, "; \n")) 
     out$prior <- paste0(
-      stan_prior(class = "b", coef = monef, prior = prior, 
+      stan_prior(prior, class = "b", coef = monef,
                  nlpar = nlpar, suffix = paste0("mo", p)),
       collapse("  simplex", p, "_", I, 
                " ~ dirichlet(con_simplex", p, "_", I, "); \n"))
@@ -507,7 +524,7 @@ stan_csef <- function(csef, ranef = empty_ranef(),
       "  matrix", bound, "[Kcs, ncat - 1] bcs;",
       "  // category specific effects \n")
     out$modelC1 <- "  etacs = Xcs * bcs; \n"
-    out$prior <- stan_prior(class = "b", coef = csef, prior = prior, 
+    out$prior <- stan_prior(prior, class = "b", coef = csef,
                             suffix = "cs", matrix = TRUE)
   } 
   if (nrow(ranef)) {
@@ -601,7 +618,7 @@ stan_meef <- function(meef, ranef = empty_ranef(),
       "  vector[Kme", p, "] bme", p, ";",
       "  // coefficients of noise-free terms \n")
     out$prior <- paste0(
-      stan_prior(class = "b", coef = meef, prior = prior, 
+      stan_prior(prior, class = "b", coef = meef, 
                  nlpar = nlpar, suffix = paste0("me", p)),
       collapse("  Xme", pK, " ~ normal(Xn", pK, ", noise", pK,"); \n"))
   }

@@ -29,13 +29,13 @@ stan_autocor <- function(autocor, bterms, family = gaussian(),
       ar_bound <- with(prior, bound[class == "ar"])
       out$par <- paste0(out$par, 
         "  vector", ar_bound, "[Kar] ar;  // autoregressive effects \n")
-      out$prior <- paste0(out$prior, stan_prior(class = "ar", prior = prior))
+      out$prior <- paste0(out$prior, stan_prior(prior, class = "ar"))
     }
     if (Kma) {
       ma_bound <- with(prior, bound[class == "ma"])
       out$par <- paste0(out$par, 
         "  vector", ma_bound, "[Kma] ma;  // moving-average effects \n")
-      out$prior <- paste0(out$prior, stan_prior(class = "ma", prior = prior))
+      out$prior <- paste0(out$prior, stan_prior(prior, class = "ma"))
     }
     
     if (use_cov(autocor)) {
@@ -123,7 +123,7 @@ stan_autocor <- function(autocor, bterms, family = gaussian(),
     out$par <- paste0(out$par,
       "  vector", with(prior, bound[class == "arr"]), "[Karr] arr;",
       "  // autoregressive effects of the response \n")
-    out$prior <- paste0(out$prior, stan_prior(class = "arr", prior = prior))
+    out$prior <- paste0(out$prior, stan_prior(prior, class = "arr"))
   }
   if (is.cor_fixed(autocor)) {
     if (!is_linear) {
@@ -153,7 +153,7 @@ stan_autocor <- function(autocor, bterms, family = gaussian(),
       center <- c("0", "0")
     }
     out$prior <- paste0(out$prior, 
-      stan_prior(class = "sigmaLL", prior = prior),
+      stan_prior(prior, class = "sigmaLL"),
       "  loclev[1] ~ normal(", center[1], ", sigmaLL); \n",
       "  for (n in 2:N) { \n",
       "    if (tg[n] == tg[n - 1]) { \n",
@@ -186,8 +186,9 @@ stan_mv <- function(family, response, prior = brmsprior()) {
         "  vector<lower=0>[nresp] sigma; \n",
         "  cholesky_factor_corr[nresp] Lrescor; \n")
       out$prior <- paste0(
-        stan_prior(class = "sigma", coef = response, prior = prior),
-        stan_prior(class = "Lrescor", prior = prior))
+        stan_prior(prior, class = "sigma", coef = response),
+        stan_prior(prior, class = "Lrescor")
+      )
       if (family$family == "gaussian") {
         out$transD <- "  cholesky_factor_cov[nresp] LSigma; \n"
         out$transC1 <- paste0(
@@ -253,7 +254,7 @@ stan_ordinal <- function(family, prior = brmsprior(),
                         "  // temporary thresholds \n")
     if (threshold == "flexible") {
       out$par <- intercept
-      out$prior <- stan_prior("temp_Intercept", prior = prior) 
+      out$prior <- stan_prior(prior, class = "temp_Intercept") 
     } else if (threshold == "equidistant") {
       out$par <- paste0("  real temp_Intercept1;  // threshold 1 \n",
                         "  real", if (family == "cumulative") "<lower=0>",
@@ -264,8 +265,10 @@ stan_ordinal <- function(family, prior = brmsprior(),
         "  for (k in 1:(ncat - 1)) { \n",
         "    temp_Intercept[k] = temp_Intercept1 + (k - 1.0) * delta; \n",
         "  } \n")
-      out$prior <- paste0(stan_prior(class = "temp_Intercept1", prior = prior), 
-                          stan_prior(class = "delta", prior = prior))
+      out$prior <- paste0(
+        stan_prior(prior, class = "temp_Intercept1"), 
+        stan_prior(prior, class = "delta")
+      )
     }
     
     # generate Stan code specific for each ordinal model
@@ -442,10 +445,12 @@ stan_monotonic <- function(x) {
   } else NULL
 }
 
-stan_misc_functions <- function(family = gaussian(), kronecker = FALSE) {
+stan_misc_functions <- function(family = gaussian(), prior = brmsprior(),
+                                kronecker = FALSE) {
   # stan code for user defined functions
   # Args:
   #   family: the model family
+  #   prior: object of class brmsprior
   #   kronecker: logical; is the kronecker product needed?
   # Returns:
   #   a string containing defined functions in stan code
@@ -459,6 +464,9 @@ stan_misc_functions <- function(family = gaussian(), kronecker = FALSE) {
   if (family$family %in% c("student", "frechet")) {
     out <- paste0(out, "  #include 'fun_logm1.stan' \n")
   }
+  if (!is.null(attr(prior, "hs_df"))) {
+    out <- paste0(out, "  #include 'fun_horseshoe.stan' \n")
+  }
   if (kronecker) {
     out <- paste0(out, "  #include 'fun_as_matrix.stan' \n",
                   "  #include 'fun_kronecker.stan' \n")
@@ -466,17 +474,16 @@ stan_misc_functions <- function(family = gaussian(), kronecker = FALSE) {
   out
 }
 
-stan_prior <- function(class, coef = "", group = "", nlpar = "", suffix = "", 
-                       prior = brmsprior(), wsp = 2, matrix = FALSE) {
+stan_prior <- function(prior, class, coef = "", group = "", nlpar = "", 
+                       suffix = "", wsp = 2, matrix = FALSE) {
   # Define priors for parameters in Stan language
   # Args:
+  #   prior: an object of class 'brmsprior'
   #   class: the parameter class
   #   coef: the coefficients of this class
   #   group: the name of a grouping factor
   #   nlpar: the name of a non-linear parameter
   #   suffix: a suffix to put at the parameter class
-  #   prior: a data.frame containing user defined priors 
-  #          as returned by check_prior
   #   matrix: logical; corresponds the class to a parameter matrix?
   #   wsp: an integer >= 0 defining the number of spaces 
   #        in front of the output string
@@ -560,15 +567,22 @@ stan_prior <- function(class, coef = "", group = "", nlpar = "", suffix = "",
     att <- attributes(prior)
     special_priors <- NULL
     if (!is.null(att$hs_df)) {
-      local_args <- sargs(att$hs_df, "0", "1")
-      global_args <- sargs(att$hs_df_global, "0", att$hs_scale_global)
+      local_args <- paste("0.5 *", att$hs_df)
+      local_args <- sargs(local_args, local_args)
+      global_args <- paste("0.5 *", att$hs_df_global)
+      global_args <- sargs(global_args, global_args)
       special_priors <- paste0(special_priors,
-        "  hs_local ~ student_t(", local_args, "); \n",
-        "  hs_global ~ student_t(", global_args, "); \n")
+        "  zb ~ normal(0, 1); \n",
+        "  hs_local[1] ~ normal(0, 1); \n",
+        "  hs_local[2] ~ inv_gamma(", local_args, "); \n",
+        "  hs_global[1] ~ normal(0, 1); \n",
+        "  hs_global[2] ~ inv_gamma(", global_args, "); \n"
+      )
     }
     if (!is.null(att$lasso_df)) {
       special_priors <- paste0(special_priors,
-        "  lasso_inv_lambda ~ chi_square(", att$lasso_df, "); \n")
+        "  lasso_inv_lambda ~ chi_square(", att$lasso_df, "); \n"
+      )
     }
     out <- c(special_priors, out) 
   }
@@ -625,7 +639,7 @@ stan_rngprior <- function(sample_prior, prior, par_declars = "",
     prior <- gsub(" ", "", paste0("\n", prior))
     pars <- get_matches("\\\n[^~]+", prior)
     pars <- gsub("\\\n|to_vector\\(|\\)", "", pars)
-    regex <- "^(z|zs|Xme)_|^increment_log_prob\\(|^target ?(\\+=)"
+    regex <- "^(z|zs|zb|Xme)_?|^increment_log_prob\\(|^target ?(\\+=)"
     take <- !grepl(regex, pars)
     pars <- rename(pars[take], symbols = c("^L_", "^Lrescor"), 
                    subs = c("cor_", "rescor"), fixed = FALSE)

@@ -90,7 +90,7 @@ make_stancode <- function(formula, data, family = NULL,
   text_cens <- stan_cens(has_cens, family = family)
   text_disp <- stan_disp(bterms, family = family)
   kronecker <- stan_needs_kronecker(ranef, names_cov_ranef = names(cov_ranef))
-  text_misc_funs <- stan_misc_functions(family = family, kronecker = kronecker)
+  text_misc_funs <- stan_misc_functions(family, prior, kronecker = kronecker)
   text_monotonic <- stan_monotonic(text_pred)
     
   # get priors for all parameters in the model

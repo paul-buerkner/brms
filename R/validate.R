@@ -1220,8 +1220,8 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
   #   a vector of parameters to be excluded
   stopifnot(is.brmsterms(bterms))
   out <- c("temp_Intercept1", "temp_Intercept", "Lrescor", "Rescor",
-           "Sigma", "LSigma", "res_cov_matrix", "hs_local",
-           intersect(auxpars(), names(bterms)))
+           "Sigma", "LSigma", "res_cov_matrix", "hs_local", "hs_global",
+           "zb", intersect(auxpars(), names(bterms)))
   # exclude spline helper parameters and temporary Intercepts
   par_effects <- c(bterms$auxpars, bterms$nlpars)
   for (par in names(par_effects)) {

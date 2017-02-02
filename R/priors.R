@@ -1033,10 +1033,14 @@ handle_special_priors <- function(prior, bterms, autocor = cor_arma(),
   if (length(b_index)) {
     b_prior <- prior$prior[b_index]
     if (any(grepl("^(horseshoe|lasso)\\(", b_prior))) {
-      # horseshoe prior for fixed effects parameters
+      # horseshoe prior for population-level parameters
       if (any(nchar(prior$nlpar))) {
         stop2("Horseshoe or lasso priors are not yet allowed ", 
-              "in non-linear models.")
+              "in non-linear or distributional models.")
+      }
+      if (any(nzchar(prior[b_index, "bound"]))) {
+        stop2("Boundaries for population-level effects are not", 
+              "allowed when using the horseshoe or lasso priors.")
       }
       if (has_specef) {
         stop2("Horseshoe or lasso priors are not yet allowed ", 
@@ -1051,7 +1055,7 @@ handle_special_priors <- function(prior, bterms, autocor = cor_arma(),
       }
       if (grepl("^horseshoe\\(", b_prior)) {
         hs <- eval2(b_prior)
-        prior$prior[b_index] <- attr(hs, "b_prior")
+        prior$prior[b_index] <- ""
         prior_attr$hs_df <- attr(hs, "df")
         prior_attr$hs_df_global <- attr(hs, "df_global")
         scale_global <- attr(hs, "scale_global")
@@ -1062,7 +1066,9 @@ handle_special_priors <- function(prior, bterms, autocor = cor_arma(),
         prior_attr$hs_scale_global <- scale_global
       } else if (grepl("^lasso\\(", b_prior)) {
         lasso <- eval2(b_prior)
-        prior$prior[b_index] <- attr(lasso, "b_prior")
+        lasso_scale <- paste(attr(lasso, "scale"), "* lasso_inv_lambda")
+        lasso_prior <- paste0("double_exponential(0, ", lasso_scale, ")")
+        prior$prior[b_index] <- lasso_prior
         prior_attr$lasso_df <- attr(lasso, "df")
         prior_attr$lasso_scale <- attr(lasso, "scale")
       }
@@ -1216,8 +1222,7 @@ horseshoe <- function(df = 1, scale_global = 1, df_global = 1) {
     stop2("Invalid horseshoe prior: Scale of the global ", 
           "prior must be a single positive number.")
   }
-  b_prior <- "normal(0, hs_local * hs_global)"
-  att <- nlist(b_prior, df, df_global, scale_global)
+  att <- nlist(df, df_global, scale_global)
   attributes(out)[names(att)] <- att
   out
 }
@@ -1256,8 +1261,7 @@ lasso <- function(df = 1, scale = 1) {
     stop2("Invalid lasso prior: Scale of the Laplace ", 
           "priors must be a single positive number.")
   }
-  b_prior <- paste0("double_exponential(0, ", scale, " * lasso_inv_lambda)")
-  att <- nlist(b_prior, df, scale)
+  att <- nlist(df, scale)
   attributes(out)[names(att)] <- att
   out
 }
