@@ -776,11 +776,11 @@ nsamples.brmsfit <- function(x, subset = NULL,
   if (!is(x$fit, "stanfit") || !length(x$fit@sim)) {
     out <- 0
   } else {
-    ntsamples <- x$fit@sim$iter
+    ntsamples <- x$fit@sim$n_save[1]
     if (!incl_warmup) {
-      ntsamples <- ntsamples - x$fit@sim$warmup
+      ntsamples <- ntsamples - x$fit@sim$warmup2[1]
     }
-    ntsamples <- ceiling(ntsamples / x$fit@sim$thin * x$fit@sim$chains)
+    ntsamples <- ntsamples * x$fit@sim$chains
     if (length(subset)) {
       out <- length(subset)
       if (out > ntsamples || max(subset) > ntsamples) {
@@ -1442,7 +1442,7 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
         draws[["b"]] <- draws[["b"]][, scs, drop = FALSE]
         draws[["Zs"]] <- draws[["Zs"]][J] 
         draws[["s"]] <- draws[["s"]][J]
-        eta <- get_eta(i = NULL, draws = draws)
+        eta <- get_eta(draws = draws, i = NULL)
         eta <- get_summary(eta, robust = TRUE, probs = probs)
         colnames(eta) <- c("estimate__", "se__", "lower__", "upper__")
         res <- cbind(newdata[, covars[[i]], drop = FALSE], eta)
@@ -1592,7 +1592,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   draws_args <- nlist(x = object, newdata, re_formula, incl_autocor, 
                       allow_new_levels, subset, nsamples)
   draws <- do.call(extract_draws, draws_args)
-  draws$eta <- get_eta(i = NULL, draws = draws)
+  draws$eta <- get_eta(draws = draws, i = NULL)
   for (ap in intersect(auxpars(), names(draws))) {
     if (is.list(draws[[ap]])) {
       draws[[ap]] <- get_auxpar(draws[[ap]])
@@ -1720,7 +1720,7 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                       allow_new_levels, subset, nsamples)
   draws <- do.call(extract_draws, draws_args)
   # get mu and scale it appropriately
-  mu <- get_eta(i = NULL, draws = draws)
+  mu <- get_eta(draws = draws, i = NULL)
   if (grepl("_mv$", draws$f$family) && !is.null(draws[["mv"]])) {
     # collapse over responses in linear MV models
     dim(mu) <- c(dim(mu)[1], prod(dim(mu)[2:3]))
@@ -2192,7 +2192,7 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (pointwise) {
     loglik <- structure(loglik_fun, draws = draws, N = N)
   } else {
-    draws$eta <- get_eta(i = NULL, draws = draws)
+    draws$eta <- get_eta(draws = draws, i = NULL)
     loglik <- do.call(cbind, lapply(seq_len(N), loglik_fun, draws = draws))
     old_order <- attr(draws$data, "old_order")
     # do not loglik reorder for ARMA covariance models
