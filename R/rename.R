@@ -70,8 +70,8 @@ rename_pars <- function(x) {
   # order parameter samples after parameter class
   chains <- length(x$fit@sim$samples) 
   all_classes <- c("b_Intercept", "b", "bmo", "bcs", "bme", "ar", "ma", "arr", 
-                   "sd", "cor", "sds", auxpars(), "sigmaLL", "rescor", "delta",
-                   "simplex", "r", "s", "loclev", "Xme", "prior", "lp")
+                   "sd", "cor", "sds", auxpars(), "temp", "sigmaLL", "rescor", 
+                   "delta", "simplex", "r", "s", "loclev", "Xme", "prior", "lp")
   class <- get_matches("^[^_\\[]+", x$fit@sim$fnames_oi)
   # make sure that the fixed effects intercept comes first
   if (length(bterms$response) > 1L) {
@@ -152,9 +152,8 @@ rename_pars <- function(x) {
   change_ranef <- change_ranef(x$ranef, pars = pars, 
                                dims = x$fit@sim$dims_oi)
   change <- c(change, change_ranef)
-  
+  # rename residual parameters of multivariate linear models
   if (is_linear(family) && length(bterms$response) > 1L) {
-    # rename residual parameters of multivariate linear models
     corfnames <- paste0("sigma_", bterms$response)
     change <- lc(change, 
       list(pos = grepl("^sigma\\[", pars), oldname = "sigma",
@@ -167,9 +166,10 @@ rename_pars <- function(x) {
                               oldname = "rescor", pnames = rescor_names,
                               fnames = rescor_names))
   }
-  
   # perform the actual renaming in x$fit@sim
   x <- do_renaming(x, change)
+  # samples of xi are currently not stored by Stan
+  x <- recreate_xi(x)
   x$fit@sim$pars_oi <- names(x$fit@sim$dims_oi)
   x
 }
@@ -721,9 +721,11 @@ do_renaming <- function(x, change) {
       } else { 
         # rename dims_oi to match names in fnames_oi
         dims <- x$fit@sim$dims_oi
-        x$fit@sim$dims_oi <- c(if (onp > 1) dims[1:(onp - 1)], 
-                               make_dims(change),
-                               dims[(onp + 1):length(dims)])
+        x$fit@sim$dims_oi <- c(
+          if (onp > 1) dims[1:(onp - 1)], 
+          make_dims(change),
+          dims[(onp + 1):length(dims)]
+        )
       }
     }
     return(x)
@@ -732,4 +734,45 @@ do_renaming <- function(x, change) {
     x <- .do_renaming(x, change[[i]])
   }
   x
+}
+
+recreate_xi <- function(x) {
+  # helper function to recreate parameter xi, which is currently
+  # defined in the Stan model block and thus not being stored
+  # Args:
+  #   x: a brmsfit object
+  # Returns:
+  #   a brmsfit object, with temp_xi being replaced by xi 
+  stopifnot(is.brmsfit(x))
+  if (!"temp_xi" %in% parnames(x)) {
+    return(x)
+  }
+  draws <- try(extract_draws(x))
+  if (is(draws, "try-error")) {
+    warning2("Trying to compute 'xi' was unsuccessful. ",
+             "Some S3 methods may not work as expected.")
+    return(x)
+  }
+  mu <- ilink(get_eta(draws, i = NULL), draws$f$link)
+  sigma <- get_sigma(draws$sigma, data = draws$data, i = NULL)
+  y <- matrix(draws$data$Y, dim(mu)[1], dim(mu)[2], byrow = TRUE)
+  bs <- - 1 / matrixStats::rowRanges((y - mu) / sigma)
+  bs <- matrixStats::rowRanges(bs)
+  temp_xi <- as.vector(as.matrix(x, pars = "temp_xi"))
+  xi <- inv_logit(temp_xi) * (bs[, 2] - bs[, 1]) + bs[, 1]
+  # write xi into stanfit object
+  samp_chain <- length(xi) / x$fit@sim$chains
+  for (i in seq_len(x$fit@sim$chains)) {
+    xi_part <- xi[((i - 1) * samp_chain + 1):(i * samp_chain)]
+    # add warmup samples not used anyway
+    xi_part <- c(rep(0, x$fit@sim$warmup2[1]), xi_part)
+    x$fit@sim$samples[[i]][["temp_xi"]] <- xi_part
+  }
+  change <- list(
+    pos = grepl("^temp_xi$", parnames(x)), 
+    oldname = "temp_xi", 
+    fnames = "xi", 
+    pnames = "xi"           
+  )
+  do_renaming(x, list(change))
 }

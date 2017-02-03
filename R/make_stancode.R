@@ -85,7 +85,7 @@ make_stancode <- function(formula, data, family = NULL,
   disc <- "disc" %in% names(bterms$auxpars) || isTRUE(bterms$fauxpars$disc != 1)
   text_ordinal <- stan_ordinal(family, prior = prior, cs = has_cs(bterms), 
                                disc = disc, threshold = threshold)
-  text_families <- stan_families(family)
+  text_families <- stan_families(family, bterms)
   text_se <- stan_se(is.formula(bterms$se))
   text_cens <- stan_cens(has_cens, family = family)
   text_disp <- stan_disp(bterms, family = family)
@@ -227,12 +227,14 @@ make_stancode <- function(formula, data, family = NULL,
       text_auxpars$modelD,
       text_disp$modelD,
       text_autocor$modelD,
+      text_families$modelD,
       text_lp_pre$modelD,
       text_auxpars$modelC1,
       text_pred$modelC1,
       text_autocor$modelC1, 
       text_disp$modelC1,
       text_model_loop,
+      text_families$modelC,
       "  // prior specifications \n", 
       text_prior, 
       "  // likelihood contribution \n",

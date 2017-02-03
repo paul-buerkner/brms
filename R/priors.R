@@ -571,7 +571,7 @@ get_prior <- function(formula, data, family = NULL,
                     kappa = "gamma(2, 0.01)", beta = "gamma(1, 0.1)", 
                     zi = "beta(1, 1)", hu = "beta(1, 1)", 
                     bs = "gamma(1, 1)", ndt = "uniform(0, min_Y)", 
-                    bias = "beta(1, 1)", xi = "normal(0, 0.3)",
+                    bias = "beta(1, 1)", xi = "normal(0, 2.5)",
                     disc = NA)
   valid_auxpars <- valid_auxpars(family, bterms = bterms, autocor = autocor)
   for (ap in valid_auxpars) {

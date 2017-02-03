@@ -341,13 +341,13 @@ stan_ordinal <- function(family, prior = brmsprior(),
   out
 }
 
-stan_families <- function(family) {
+stan_families <- function(family, bterms) {
   # include .stan files of certain response distributions
   # Args:
   #   family: the model family
   # Returns:
   #   a list of character strings
-  stopifnot(is.family(family))
+  stopifnot(is.family(family), is.brmsterms(bterms))
   family <- family$family
   out <- list()
   if (family == "categorical") {
@@ -377,7 +377,17 @@ stan_families <- function(family) {
     out$tdataD <- "  #include 'tdataD_inv_gaussian.stan' \n"
     out$tdataC <- "  #include 'tdataC_inv_gaussian.stan' \n"
   } else if (family == "gen_extreme_value") {
-    out$fun <- "  #include 'fun_gen_extreme_value.stan' \n"
+    out$fun <- paste0(
+      "  #include 'fun_gen_extreme_value.stan' \n",
+      "  #include 'fun_scale_xi.stan' \n"
+    )
+    if (!"xi" %in% c(names(bterms$auxpars), names(bterms$fauxpars))) {
+       out$modelD <- "  real xi;  // scaled shape parameter \n"
+       v <- ifelse("sigma" %in% names(bterms$auxpars), "_vector", "")
+       out$modelC <- paste0(
+         "  xi = scale_xi", v, "(temp_xi, Y, eta, sigma); \n"
+       )
+    }
   } else if (family == "von_mises") {
     out$fun <- paste0(
       "  #include 'fun_tan_half.stan' \n",
@@ -475,7 +485,7 @@ stan_misc_functions <- function(family = gaussian(), prior = brmsprior(),
 }
 
 stan_prior <- function(prior, class, coef = "", group = "", nlpar = "", 
-                       suffix = "", wsp = 2, matrix = FALSE) {
+                       prefix = "", suffix = "", wsp = 2, matrix = FALSE) {
   # Define priors for parameters in Stan language
   # Args:
   #   prior: an object of class 'brmsprior'
@@ -483,6 +493,7 @@ stan_prior <- function(prior, class, coef = "", group = "", nlpar = "",
   #   coef: the coefficients of this class
   #   group: the name of a grouping factor
   #   nlpar: the name of a non-linear parameter
+  #   prefix: a prefix to put at the parameter class
   #   suffix: a suffix to put at the parameter class
   #   matrix: logical; corresponds the class to a parameter matrix?
   #   wsp: an integer >= 0 defining the number of spaces 
@@ -549,7 +560,7 @@ stan_prior <- function(prior, class, coef = "", group = "", nlpar = "",
   }
   
   # generate stan prior statements
-  class <- paste0(class, suffix)
+  class <- paste0(prefix, class, suffix)
   if (any(with(prior, nchar(coef) & nchar(prior)))) {
     # generate a prior for each coefficient
     out <- sapply(seq_along(coef), individual_prior, 
