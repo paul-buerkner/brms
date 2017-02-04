@@ -1,29 +1,3 @@
-test_that("rename returns an error on duplicated names", {
-  expect_error(rename(c(letters[1:4],"a()","a["), check_dup = TRUE), fixed = TRUE,
-               paste("Internal renaming of variables led to duplicated names.", 
-                     "\nOccured for variables: a, a(), a["))
-  expect_error(rename(c("aDb","a/b","b"), check_dup = TRUE), fixed = TRUE,
-               paste("Internal renaming of variables led to duplicated names.", 
-                     "\nOccured for variables: aDb, a/b"))
-  expect_error(rename(c("log(a,b)","logab","bac","ba"), check_dup = TRUE), fixed = TRUE,
-               paste("Internal renaming of variables led to duplicated names.", 
-                     "\nOccured for variables: log(a,b), logab"))
-})
-
-test_that("rename perform correct renaming", {
-  names <- c("acd", "a[23]", "b__")
-  expect_equal(rename(names, symbols = c("[", "]", "__"), subs = c(".", ".", ":")),
-               c("acd", "a.23.", "b:"))
-  expect_equal(rename(names, symbols = c("^\\[", "\\]", "__$"), 
-                      subs = c(".", ".", ":"), fixed = FALSE),
-               c("acd", "a[23.", "b:"))
-})
-
-test_that("model_names works correctly", {
-  expect_equal(model_name(NA), "brms-model")
-  expect_equal(model_name(gaussian()), "gaussian(identity) brms-model")
-})
-
 test_that("make_index_names returns correct 1 and 2 dimensional indices", {
   expect_equal(make_index_names(rownames = 1:2), c("[1]", "[2]"))
   expect_equal(make_index_names(rownames = 1:2, colnames = 1:3, dim = 1), 

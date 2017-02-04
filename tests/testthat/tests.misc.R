@@ -19,6 +19,27 @@ test_that("rmNum remove all numeric entries", {
   expect_equal(rmNum(list(x = 1.5, y = "abc", z = pi)), list(y = "abc"))
 })
 
+test_that("rename returns an error on duplicated names", {
+  expect_error(rename(c(letters[1:4],"a()","a["), check_dup = TRUE), fixed = TRUE,
+               paste("Internal renaming led to duplicated names.", 
+                     "\nOccured for: 'a', 'a()', 'a['"))
+  expect_error(rename(c("aDb","a/b","b"), check_dup = TRUE), fixed = TRUE,
+               paste("Internal renaming led to duplicated names.", 
+                     "\nOccured for: 'aDb', 'a/b'"))
+  expect_error(rename(c("log(a,b)","logab","bac","ba"), check_dup = TRUE), fixed = TRUE,
+               paste("Internal renaming led to duplicated names.", 
+                     "\nOccured for: 'log(a,b)', 'logab'"))
+})
+
+test_that("rename perform correct renaming", {
+  names <- c("acd", "a[23]", "b__")
+  expect_equal(rename(names, symbols = c("[", "]", "__"), subs = c(".", ".", ":")),
+               c("acd", "a.23.", "b:"))
+  expect_equal(rename(names, symbols = c("^\\[", "\\]", "__$"), 
+                      subs = c(".", ".", ":"), fixed = FALSE),
+               c("acd", "a[23.", "b:"))
+})
+
 test_that("collapse_lists performs correct collapsing after names", {
   x <- list(a = "a <- ", b = "b <- ")
   y <- list(b = "cauchy(1,2)", c = "normal(0,1)", a = "gamma(1,1)")

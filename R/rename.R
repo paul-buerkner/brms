@@ -1,57 +1,3 @@
-rename <- function(names, symbols = NULL, subs = NULL, 
-                   fixed = TRUE, check_dup = FALSE) {
-  # rename certain symbols in a character vector
-  # Args:
-  #   names: a character vector of names to be renamed
-  #   symbols: the regular expressions in names to be replaced
-  #   subs: the replacements
-  #   fixed: same as for sub, grepl etc
-  #   check_dup: logical; check for duplications in names after renaming
-  # Returns: 
-  #   renamed parameter vector of the same length as names
-  symbols <- as.character(symbols)
-  subs <- as.character(subs)
-  if (!length(symbols)) {
-    symbols <- c(" ", "(", ")", "[", "]", ",", "\"", "'", 
-                 "+", "-", "*", "/", "^", "=", "!=")
-  }
-  if (!length(subs)) {
-    subs <- c(rep("", 8), "P", "M", "MU", "D", "E", "EQ", "NEQ")
-  }
-  if (length(subs) == 1L) {
-    subs <- rep(subs, length(symbols))
-  }
-  stopifnot(length(symbols) == length(subs))
-  # avoid zero-length pattern error
-  has_chars <- nzchar(symbols)
-  symbols <- symbols[has_chars]
-  subs <- subs[has_chars]
-  new_names <- names
-  for (i in seq_along(symbols)) {
-    new_names <- gsub(symbols[i], subs[i], new_names, fixed = fixed)
-  }
-  dup <- duplicated(new_names)
-  if (check_dup && any(dup)) {
-    dup_names <- names[new_names %in% new_names[dup]]
-    stop("Internal renaming of variables led to duplicated names. \n",
-         "Occured for variables: ", paste(dup_names, collapse = ", "))
-  }
-  new_names
-}
-
-model_name <- function(family) {
-  # create the name of the fitted stan model
-  # Args:
-  #   family: A family object
-  if (!is(family, "family")) {
-    mn <- "brms-model"
-  } else {
-    type <- ifelse(is.null(family$type), "", paste(",", family$type))
-    mn <- paste0(family$family, "(", family$link, type, ") brms-model")
-  }
-  mn
-}
-
 rename_pars <- function(x) {
   # rename parameters (and possibly change their dimensions) 
   # within the stanfit object to ensure reasonable parameter names
@@ -168,8 +114,7 @@ rename_pars <- function(x) {
   }
   # perform the actual renaming in x$fit@sim
   x <- do_renaming(x, change)
-  # samples of xi are currently not stored by Stan
-  x <- recreate_xi(x)
+  x <- compute_quantities(x)
   x$fit@sim$pars_oi <- names(x$fit@sim$dims_oi)
   x
 }
@@ -711,9 +656,9 @@ do_renaming <- function(x, change) {
     }
     onp <- match(change$oldname, names(x$fit@sim$dims_oi))
     if (is.null(onp) || is.na(onp)) {
-      warning("Parameter ", change$oldname, " could not be renamed. ",
-              "This should not happen. \nPlease inform me so that ",
-              "I can fix this problem.", call. = FALSE)
+      warning2("Parameter ", change$oldname, " could not be renamed. ",
+               "This should not happen. \nPlease inform me so that ",
+               "I can fix this problem.", call. = FALSE)
     } else {
       if (is.null(change$pnames)) {
         # only needed to collapse multiple r_<i> of the same grouping factor
@@ -733,6 +678,16 @@ do_renaming <- function(x, change) {
   for (i in seq_along(change)) {
     x <- .do_renaming(x, change[[i]])
   }
+  x
+}
+
+compute_quantities <- function(x) {
+  # wrapper function to compute and store quantities in the stanfit 
+  # object which were not computed / stored by Stan itself
+  # Args:
+  #   x: a brmsfit object
+  stopifnot(is.brmsfit(x))
+  x <- recreate_xi(x)
   x
 }
 

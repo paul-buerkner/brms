@@ -277,7 +277,7 @@ make_stancode <- function(formula, data, family = NULL,
     isystem <- system.file("chunks", package = "brms")
     complete_model <- rstan::stanc_builder(file = temp_file, isystem = isystem,
                                            obfuscate_model_name = TRUE)
-    complete_model$model_name <- model_name(family)
+    complete_model$model_name <- name_model(family)
     class(complete_model$model_code) <- c("character", "brmsmodel")
     if (is.character(save_model)) {
       cat(complete_model$model_code, file = save_model)

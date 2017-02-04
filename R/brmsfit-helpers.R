@@ -30,6 +30,19 @@ algorithm <- function(x) {
   else x$algorithm
 }
 
+name_model <- function(family) {
+  # create the name of the fitted stan model
+  # Args:
+  #   family: A family object
+  if (!is(family, "family")) {
+    mn <- "brms-model"
+  } else {
+    type <- ifelse(is.null(family$type), "", paste(",", family$type))
+    mn <- paste0(family$family, "(", family$link, type, ") brms-model")
+  }
+  mn
+}
+
 restructure <- function(x, rstr_summary = FALSE) {
   # restructure old brmsfit objects to work with the latest brms version
   # Args:
