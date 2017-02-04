@@ -102,18 +102,24 @@ stan_autocor <- function(autocor, bterms, family, prior) {
       }
       out$modelD <- paste0(
         "  // objects storing residuals \n",
-        collapse("  matrix[N, Karma] E", rs, "; \n",
-                 "  vector[N] e", rs, "; \n"))
+        collapse(
+          "  matrix[N, Karma] E", rs, "; \n",
+          "  vector[N] e", rs, "; \n"
+        )
+      )
       out$modelC1 <- collapse("  E", rs, " = rep_matrix(0.0, N, Karma); \n")
       out$modelC2 <- paste0(
         "    // computation of ARMA effects \n",
-        collapse("    e", rs, "[n] = ", link, "(Y[", index, "])", 
-                 " - eta", rs, "[n]", "; \n"),
+        collapse(
+          "    e", rs, "[n] = ", link, "(Y[", index, "])", 
+          " - eta", rs, "[n]", "; \n"
+        ),
         "    for (i in 1:Karma) { \n", 
         "      if (n + 1 - i > 0 && n < N && tg[n + 1] == tg[n + 1 - i]) { \n",
         collapse("        E", rs, "[n + 1, i] = e", rs, "[n + 1 - i]; \n"),
         "      } \n",
-        "    } \n")
+        "    } \n"
+      )
     } 
   }
   if (Karr) {
@@ -121,10 +127,12 @@ stan_autocor <- function(autocor, bterms, family, prior) {
     out$data <- paste0(out$data,
       "  // data needed for ARR effects \n",
       "  int<lower=1> Karr; \n",
-      "  matrix[N, Karr] Yarr;  // ARR design matrix \n")
+      "  matrix[N, Karr] Yarr;  // ARR design matrix \n"
+    )
     out$par <- paste0(out$par,
       "  vector", with(prior, bound[class == "arr"]), "[Karr] arr;",
-      "  // autoregressive effects of the response \n")
+      "  // autoregressive effects of the response \n"
+    )
     out$prior <- paste0(out$prior, stan_prior(prior, class = "arr"))
   }
   if (is.cor_fixed(autocor)) {
@@ -146,8 +154,10 @@ stan_autocor <- function(autocor, bterms, family, prior) {
       stop2("The bsts structure is not yet implemented for non-linear models.")
     }
     out$data <- "  vector[N] tg;  // indicates independent groups \n"
-    out$par <- paste0("  vector[N] loclev;  // local level terms \n",
-                      "  real<lower=0> sigmaLL;  // SD of local level terms \n")
+    out$par <- paste0(
+      "  vector[N] loclev;  // local level terms \n",
+      "  real<lower=0> sigmaLL;  // SD of local level terms \n"
+    )
     if (is_linear && !is_mv) {
       # this often helps with convergence
       center <- paste0(link, "(Y[", c("1", "n"), "])")
@@ -163,7 +173,8 @@ stan_autocor <- function(autocor, bterms, family, prior) {
       "    } else { \n",
       "      loclev[n] ~ normal(", center[2], ", sigmaLL); \n",
       "    } \n",
-      "  } \n")
+      "  } \n"
+    )
   }
   out
 }
@@ -214,8 +225,8 @@ stan_mv <- function(family, response, prior) {
         "  // take only relevant parts of residual correlation matrix \n",
         "  Rescor = multiply_lower_tri_self_transpose(Lrescor); \n",
         collapse(ulapply(2:nresp, function(i) lapply(1:(i-1), function(j)
-          paste0("  rescor[",(i-1)*(i-2)/2+j,"] = Rescor[",j,", ",i,"]; \n")))
-        )
+          paste0("  rescor[",(i-1)*(i-2)/2+j,"] = Rescor[",j,", ",i,"]; \n")
+        )))
       )
     } else if (!is_categorical(family)) {
       stop2("Multivariate models are not yet implemented ", 
@@ -255,21 +266,26 @@ stan_ordinal <- function(family, prior, cs, disc, threshold) {
     family <- family$family
     ilink <- stan_ilink(link)
     type <- ifelse(family == "cumulative", "ordered", "vector")
-    intercept <- paste0("  ", type, "[ncat-1] temp_Intercept;",
-                        "  // temporary thresholds \n")
+    intercept <- paste0(
+      "  ", type, "[ncat-1] temp_Intercept;",
+      "  // temporary thresholds \n"
+    )
     if (threshold == "flexible") {
       out$par <- intercept
       out$prior <- stan_prior(prior, class = "temp_Intercept") 
     } else if (threshold == "equidistant") {
-      out$par <- paste0("  real temp_Intercept1;  // threshold 1 \n",
-                        "  real", if (family == "cumulative") "<lower=0>",
-                        " delta;  // distance between thresholds \n")
+      out$par <- paste0(
+        "  real temp_Intercept1;  // threshold 1 \n",
+        "  real", if (family == "cumulative") "<lower=0>",
+        " delta;  // distance between thresholds \n"
+      )
       out$transD <- intercept
       out$transC1 <- paste0(
         "  // compute equidistant thresholds \n",
         "  for (k in 1:(ncat - 1)) { \n",
         "    temp_Intercept[k] = temp_Intercept1 + (k - 1.0) * delta; \n",
-        "  } \n")
+        "  } \n"
+      )
       out$prior <- paste0(
         stan_prior(prior, class = "temp_Intercept1"), 
         stan_prior(prior, class = "delta")
@@ -296,51 +312,57 @@ stan_ordinal <- function(family, prior, cs, disc, threshold) {
         "     vector[num_elements(thres) + 1] p; \n",
         if (family != "cumulative") 
           "     vector[num_elements(thres)] q; \n",
-        "     ncat = num_elements(thres) + 1; \n")
+        "     ncat = num_elements(thres) + 1; \n"
+      )
       
       # define actual function content
       if (family == "cumulative") {
         out$fun <- paste0(out$fun,
-        "     p[1] = ", ilink, "(", th(1), "); \n",
-        "     for (k in 2:(ncat - 1)) { \n", 
-        "       p[k] = ", ilink, "(", th("k"), ") - \n",
-        "              ", ilink, "(", th("k - 1"), "); \n", 
-        "     } \n",
-        "     p[ncat] = 1 - ",ilink, "(", th("ncat - 1"), "); \n")
+          "     p[1] = ", ilink, "(", th(1), "); \n",
+          "     for (k in 2:(ncat - 1)) { \n", 
+          "       p[k] = ", ilink, "(", th("k"), ") - \n",
+          "              ", ilink, "(", th("k - 1"), "); \n", 
+          "     } \n",
+          "     p[ncat] = 1 - ",ilink, "(", th("ncat - 1"), "); \n"
+        )
       } else if (family %in% c("sratio", "cratio")) {
         sc <- ifelse(family == "sratio", "1 - ", "")
         out$fun <- paste0(out$fun,
-        "     for (k in 1:(ncat - 1)) { \n",
-        "       q[k] = ", sc, ilink, "(", th("k"), "); \n",
-        "       p[k] = 1 - q[k]; \n",
-        "       for (kk in 1:(k - 1)) p[k] = p[k] * q[kk]; \n", 
-        "     } \n",
-        "     p[ncat] = prod(q); \n")
+          "     for (k in 1:(ncat - 1)) { \n",
+          "       q[k] = ", sc, ilink, "(", th("k"), "); \n",
+          "       p[k] = 1 - q[k]; \n",
+          "       for (kk in 1:(k - 1)) p[k] = p[k] * q[kk]; \n", 
+          "     } \n",
+          "     p[ncat] = prod(q); \n"
+        )
       } else if (family == "acat") {
         if (ilink == "inv_logit") {
           out$fun <- paste0(out$fun,
-          "     p[1] = 1.0; \n",
-          "     for (k in 1:(ncat - 1)) { \n",
-          "       q[k] = ", th("k"), "; \n",
-          "       p[k + 1] = q[1]; \n",
-          "       for (kk in 2:k) p[k + 1] = p[k + 1] + q[kk]; \n",
-          "       p[k + 1] = exp(p[k + 1]); \n",
-          "     } \n",
-          "     p = p / sum(p); \n")
+            "     p[1] = 1.0; \n",
+            "     for (k in 1:(ncat - 1)) { \n",
+            "       q[k] = ", th("k"), "; \n",
+            "       p[k + 1] = q[1]; \n",
+            "       for (kk in 2:k) p[k + 1] = p[k + 1] + q[kk]; \n",
+            "       p[k + 1] = exp(p[k + 1]); \n",
+            "     } \n",
+            "     p = p / sum(p); \n"
+          )
         } else {
           out$fun <- paste0(out$fun,    
-          "     for (k in 1:(ncat - 1)) \n",
-          "       q[k] = ", ilink, "(", th("k"), "); \n",
-          "     for (k in 1:ncat) { \n",     
-          "       p[k] = 1.0; \n",
-          "       for (kk in 1:(k - 1)) p[k] = p[k] * q[kk]; \n",
-          "       for (kk in k:(ncat - 1)) p[k] = p[k] * (1 - q[kk]); \n",      
-          "     } \n",
-          "     p = p / sum(p); \n")
+            "     for (k in 1:(ncat - 1)) \n",
+            "       q[k] = ", ilink, "(", th("k"), "); \n",
+            "     for (k in 1:ncat) { \n",     
+            "       p[k] = 1.0; \n",
+            "       for (kk in 1:(k - 1)) p[k] = p[k] * q[kk]; \n",
+            "       for (kk in k:(ncat - 1)) p[k] = p[k] * (1 - q[kk]); \n",   
+            "     } \n",
+            "     p = p / sum(p); \n"
+          )
         }
       }
       out$fun <- paste(out$fun, 
-        "    return categorical_lpmf(y | p); \n   } \n")
+        "    return categorical_lpmf(y | p); \n   } \n"
+      )
     }
   }
   out
@@ -426,9 +448,12 @@ stan_cens <- function(cens, family) {
     out$data <- paste0(
       "  int<lower=-1,upper=2> cens[N];  // indicates censoring \n",
       if (isTRUE(attr(cens, "interval"))) {
-        paste0(ifelse(use_int(family), " int rcens[N];", "  vector[N] rcens;"),
-               "  // right censor points for interval censoring \n")
-      })
+        paste0(
+          ifelse(use_int(family), " int rcens[N];", "  vector[N] rcens;"),
+          "  // right censor points for interval censoring \n"
+        )
+      }
+    )
   }
   out
 }
@@ -643,7 +668,7 @@ stan_base_prior <- function(prior) {
 }
 
 stan_rngprior <- function(sample_prior, prior, par_declars,
-                          family, prior_attr = list()) {
+                          family, prior_attr) {
   # stan code to sample from priors seperately
   # Args:
   #   sample_prior: take samples from priors?

@@ -1,8 +1,7 @@
-stan_effects <- function(bterms, data, prior, family = gaussian(), 
-                         center_X = TRUE, ranef = empty_ranef(),
-                         autocor = cor_arma(), sparse = FALSE, 
-                         threshold = "flexible", nlpar = "", 
-                         eta = "eta") {
+stan_effects <- function(bterms, data, ranef, prior, family = gaussian(),
+                         center_X = TRUE, autocor = cor_arma(), 
+                         sparse = FALSE, threshold = "flexible",
+                         nlpar = "", eta = "eta") {
   # combine effects for the predictors of a single (non-linear) parameter
   # Args:
   #   center_X: center population-level design matrix if possible?
@@ -92,10 +91,11 @@ stan_effects <- function(bterms, data, prior, family = gaussian(),
   out
 }
 
-stan_effects_mv <- function(bterms, data, family, prior,
-                            ranef = empty_ranef(),
-                            autocor = cor_arma(), 
-                            sparse = FALSE) {
+stan_effects_mv <- function(bterms, data, family, prior, 
+                            ranef, autocor, sparse) {
+  # Stan code for multivariate models
+  # Args:
+  #   see stan_effects
   stopifnot(is.brmsterms(bterms))
   if (sparse) {
     stop2("Sparse design matrices are not yet implemented ", 

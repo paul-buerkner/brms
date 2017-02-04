@@ -1,9 +1,9 @@
-stan_llh <- function(family, bterms, data = NULL, 
-                     autocor = cor_arma()) {
+stan_llh <- function(family, bterms, data, autocor) {
   # Likelihood in Stan language
   # Args:
   #   family: the model family
   #   bterms: object of class brmsterms
+  #   data: data passed by the user
   #   autocor: object of classe cor_brms
   stopifnot(is.family(family))
   stopifnot(is.brmsterms(bterms))
@@ -255,14 +255,14 @@ stan_llh <- function(family, bterms, data = NULL,
   
   # write likelihood code
   interval <- isTRUE(attr(has_cens, "interval"))
-  type <- c("cens", "weights")[match(TRUE, c(has_cens, has_weights))]
-  if (is.na(type)) {
-    type <- "general"
-  }
+  type <- match(TRUE, c(has_cens, has_weights))
+  type <- c("cens", "weights")[type]
+  type <- ifelse(is.na(type), "general", type)
   llh <- switch(type, 
     cens = stan_llh_cens(llh_pre, family, interval, has_weights, bounds),
     weights = stan_llh_weights(llh_pre, family, bounds),
-    general = stan_llh_general(llh_pre, reqn, bounds)) 
+    general = stan_llh_general(llh_pre, reqn, bounds)
+  ) 
   if (reqn) {
     # loop over likelihood if it cannot be vectorized
     llh <- paste0("  for (n in 1:N) { \n    ", llh, "    } \n")
@@ -270,18 +270,20 @@ stan_llh <- function(family, bterms, data = NULL,
   llh
 }
 
-stan_llh_general <- function(llh_pre, reqn = FALSE, bounds = NULL) {
+stan_llh_general <- function(llh_pre, reqn, bounds = NULL) {
   # default likelihood in Stan language
   # Args:
   #   reqn: does Y require the index 'n'?
   #   bounds: a list containing elements lb and ub
   stopifnot(length(llh_pre) == 2L)
   tr <- stan_llh_trunc(llh_pre, bounds = bounds)
-  paste0("  Y", ifelse(reqn, "[n]", ""), " ~ ", llh_pre[1], 
-         "(", llh_pre[2], ")", tr, "; \n")
+  paste0(
+    "  Y", ifelse(reqn, "[n]", ""), " ~ ", llh_pre[1], 
+    "(", llh_pre[2], ")", tr, "; \n"
+  )
 }
 
-stan_llh_cens <- function(llh_pre, family, interval = FALSE, 
+stan_llh_cens <- function(llh_pre, family, interval, 
                           weights = FALSE, bounds = NULL) {
   # censored likelihood in Stan language
   # Args: 
@@ -304,7 +306,8 @@ stan_llh_cens <- function(llh_pre, family, interval = FALSE,
   } else {
     int_cens <- ""
   }
-  paste0("  // special treatment of censored data \n",
+  paste0(
+    "  // special treatment of censored data \n",
     s, "if (cens[n] == 0) {\n", 
     s, tp, w, llh_pre[1], "_", lpdf, "(Y[n] | ", llh_pre[2], ")", tr, ";\n",
     s, "} else if (cens[n] == 1) {\n",         
@@ -320,8 +323,10 @@ stan_llh_weights <- function(llh_pre, family, bounds = NULL) {
   stopifnot(length(llh_pre) == 2L)
   tr <- stan_llh_trunc(llh_pre, bounds = bounds, general = FALSE)
   lpdf <- ifelse(use_int(family), "lpmf", "lpdf")
-  paste0("  lp_pre[n] = ", llh_pre[1], "_", lpdf, 
-         "(Y[n] | ", llh_pre[2],")", tr, "; \n")
+  paste0(
+    "  lp_pre[n] = ", llh_pre[1], "_", lpdf, 
+    "(Y[n] | ", llh_pre[2],")", tr, "; \n"
+  )
 }
 
 stan_llh_trunc <- function(llh_pre, bounds, general = TRUE) {
@@ -358,7 +363,7 @@ stan_llh_trunc <- function(llh_pre, bounds, general = TRUE) {
   tr
 }
 
-stan_llh_sigma <- function(family, bterms = NULL, autocor = cor_arma()) {
+stan_llh_sigma <- function(family, bterms, autocor) {
   # prepare the code for 'sigma' in the likelihood statement
   has_sigma <- has_sigma(family, bterms, autocor)
   has_se <- is.formula(bterms$se)
