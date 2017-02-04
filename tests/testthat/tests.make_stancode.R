@@ -772,6 +772,9 @@ test_that("Stan code of GEV models is correct", {
   scode <- make_stancode(bf(y ~ x, sigma ~ x), data, gen_extreme_value())
   expect_match2(scode, "xi = scale_xi_vector(temp_xi, Y, eta, sigma)")
   
+  scode <- make_stancode(bf(y ~ x, xi ~ x), data, gen_extreme_value())
+  expect_match2(scode, "xi[n] = expm1(xi[n])")
+  
   scode <- make_stancode(bf(y ~ x, xi = 0), data, gen_extreme_value())
   expect_match(scode, "data \\{[^\\}]*real xi;  // shape parameter")
   
