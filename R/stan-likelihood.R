@@ -347,8 +347,10 @@ stan_llh_trunc <- function(llh_pre, bounds, general = TRUE) {
     } else if (any(bounds$lb > -Inf) && any(bounds$ub < Inf)) {
       trr <- paste0(llh_pre[1], "_lcdf(ub[n] | ", llh_pre[2], ")")
       trl <- paste0(llh_pre[1], "_lcdf(lb[n] | ", llh_pre[2], ")")
-      tr <- paste0(ms, "log_diff_exp(", trr, ", \n",
-                   collapse(rep(" ", 31)), trl, ")")
+      tr <- paste0(
+        ms, "log_diff_exp(", trr, ", \n",
+        collapse(rep(" ", 31)), trl, ")"
+      )
     } else {
       tr <- ""
     }

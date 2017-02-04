@@ -1,12 +1,10 @@
-stan_autocor <- function(autocor, bterms, family = gaussian(),
-                         prior = brmsprior()) {
+stan_autocor <- function(autocor, bterms, family, prior) {
   # Stan code related to autocorrelation structures
   # Args:
-  #   autocor: autocorrelation structure; object of class cor_brms
+  #   autocor: object of class cor_brms
   #   bterms: object of class brmsterms
   #   family: the model family
-  #   prior: a data.frame containing user defined priors 
-  #          as returned by check_prior
+  #   prior: object of class brmsprior
   stopifnot(is.family(family))
   stopifnot(is.brmsterms(bterms))
   is_linear <- is_linear(family)
@@ -28,13 +26,15 @@ stan_autocor <- function(autocor, bterms, family = gaussian(),
     if (Kar) {
       ar_bound <- with(prior, bound[class == "ar"])
       out$par <- paste0(out$par, 
-        "  vector", ar_bound, "[Kar] ar;  // autoregressive effects \n")
+        "  vector", ar_bound, "[Kar] ar;  // autoregressive effects \n"
+      )
       out$prior <- paste0(out$prior, stan_prior(prior, class = "ar"))
     }
     if (Kma) {
       ma_bound <- with(prior, bound[class == "ma"])
       out$par <- paste0(out$par, 
-        "  vector", ma_bound, "[Kma] ma;  // moving-average effects \n")
+        "  vector", ma_bound, "[Kma] ma;  // moving-average effects \n"
+      )
       out$prior <- paste0(out$prior, stan_prior(prior, class = "ma"))
     }
     
@@ -67,9 +67,11 @@ stan_autocor <- function(autocor, bterms, family = gaussian(),
         cov_mat_fun <- "arma1"
         cov_mat_args <- "ar[1], ma[1]"
       }
-      out$transC1 <- paste0("  // compute residual covariance matrix \n",
-                            "  res_cov_matrix = cov_matrix_", cov_mat_fun, 
-                            "(", cov_mat_args, ", sigma, max(nobs_tg)); \n")
+      out$transC1 <- paste0(
+        "  // compute residual covariance matrix \n",
+        "  res_cov_matrix = cov_matrix_", cov_mat_fun, 
+        "(", cov_mat_args, ", sigma, max(nobs_tg)); \n"
+      )
       # defined selfmade functions for the functions block
       if (family$family == "gaussian") {
         out$fun <- paste0(out$fun, "  #include 'fun_normal_cov.stan' \n")
@@ -166,7 +168,7 @@ stan_autocor <- function(autocor, bterms, family = gaussian(),
   out
 }
 
-stan_mv <- function(family, response, prior = brmsprior()) {
+stan_mv <- function(family, response, prior) {
   # some Stan code for multivariate models
   # Args:
   #   family: model family
@@ -184,7 +186,8 @@ stan_mv <- function(family, response, prior = brmsprior()) {
       out$par <- paste0(
         "  // parameters for multivariate linear models \n",
         "  vector<lower=0>[nresp] sigma; \n",
-        "  cholesky_factor_corr[nresp] Lrescor; \n")
+        "  cholesky_factor_corr[nresp] Lrescor; \n"
+      )
       out$prior <- paste0(
         stan_prior(prior, class = "sigma", coef = response),
         stan_prior(prior, class = "Lrescor")
@@ -193,22 +196,27 @@ stan_mv <- function(family, response, prior = brmsprior()) {
         out$transD <- "  cholesky_factor_cov[nresp] LSigma; \n"
         out$transC1 <- paste0(
           "  // compute cholesky factor of residual covariance matrix \n",
-          "  LSigma = diag_pre_multiply(sigma, Lrescor); \n")
+          "  LSigma = diag_pre_multiply(sigma, Lrescor); \n"
+        )
       } else if (family$family == "student") {
         out$transD <- "  cov_matrix[nresp] Sigma; \n"
         out$transC1 <- paste0(
           "  // compute residual covariance matrix \n",
           "  Sigma = multiply_lower_tri_self_transpose(", 
-          "diag_pre_multiply(sigma, Lrescor)); \n")
+          "diag_pre_multiply(sigma, Lrescor)); \n"
+        )
       }
       out$genD <- paste0(
         "  matrix[nresp, nresp] Rescor; \n",
-        "  vector<lower=-1,upper=1>[nrescor] rescor; \n")
+        "  vector<lower=-1,upper=1>[nrescor] rescor; \n"
+      )
       out$genC <- paste0(
         "  // take only relevant parts of residual correlation matrix \n",
         "  Rescor = multiply_lower_tri_self_transpose(Lrescor); \n",
         collapse(ulapply(2:nresp, function(i) lapply(1:(i-1), function(j)
-          paste0("  rescor[",(i-1)*(i-2)/2+j,"] = Rescor[",j,", ",i,"]; \n")))))
+          paste0("  rescor[",(i-1)*(i-2)/2+j,"] = Rescor[",j,", ",i,"]; \n")))
+        )
+      )
     } else if (!is_categorical(family)) {
       stop2("Multivariate models are not yet implemented ", 
             "for family '", family$family, "'.")
@@ -217,14 +225,11 @@ stan_mv <- function(family, response, prior = brmsprior()) {
   out
 }
 
-stan_ordinal <- function(family, prior = brmsprior(), 
-                         cs = FALSE, disc = FALSE, 
-                         threshold = "flexible") {
+stan_ordinal <- function(family, prior, cs, disc, threshold) {
   # Ordinal effects in Stan
   # Args:
   #   family: the model family
-  #   prior: a data.frame containing user defined priors 
-  #          as returned by check_prior
+  #   prior: object of class brmsprior
   #   cs: logical; are there category specific effects?
   #   disc: logical; discrimination parameter used?
   #   threshold: either "flexible" or "equidistant" 
@@ -345,6 +350,7 @@ stan_families <- function(family, bterms) {
   # include .stan files of certain response distributions
   # Args:
   #   family: the model family
+  #   bterms: object of class brmsterms
   # Returns:
   #   a list of character strings
   stopifnot(is.family(family), is.brmsterms(bterms))
@@ -376,18 +382,6 @@ stan_families <- function(family, bterms) {
     out$fun <- "  #include 'fun_inv_gaussian.stan' \n"
     out$tdataD <- "  #include 'tdataD_inv_gaussian.stan' \n"
     out$tdataC <- "  #include 'tdataC_inv_gaussian.stan' \n"
-  } else if (family == "gen_extreme_value") {
-    out$fun <- paste0(
-      "  #include 'fun_gen_extreme_value.stan' \n",
-      "  #include 'fun_scale_xi.stan' \n"
-    )
-    if (!"xi" %in% c(names(bterms$auxpars), names(bterms$fauxpars))) {
-       out$modelD <- "  real xi;  // scaled shape parameter \n"
-       v <- ifelse("sigma" %in% names(bterms$auxpars), "_vector", "")
-       out$modelC <- paste0(
-         "  xi = scale_xi", v, "(temp_xi, Y, eta, sigma); \n"
-       )
-    }
   } else if (family == "von_mises") {
     out$fun <- paste0(
       "  #include 'fun_tan_half.stan' \n",
@@ -399,6 +393,18 @@ stan_families <- function(family, bterms) {
     out$tdataC <- "  min_Y = min(Y); \n"
   } else if (family == "asym_laplace") {
     out$fun <- "  #include 'fun_asym_laplace.stan' \n"
+  } else if (family == "gen_extreme_value") {
+    out$fun <- paste0(
+      "  #include 'fun_gen_extreme_value.stan' \n",
+      "  #include 'fun_scale_xi.stan' \n"
+    )
+    if (!"xi" %in% c(names(bterms$auxpars), names(bterms$fauxpars))) {
+      out$modelD <- "  real xi;  // scaled shape parameter \n"
+      v <- ifelse("sigma" %in% names(bterms$auxpars), "_vector", "")
+      out$modelC <- paste0(
+        "  xi = scale_xi", v, "(temp_xi, Y, eta, sigma); \n"
+      )
+    }
   }
   out
 }
@@ -413,7 +419,7 @@ stan_se <- function(se) {
   out
 }
 
-stan_cens <- function(cens, family = gaussian()) {
+stan_cens <- function(cens, family) {
   out <- list()
   if (cens) {
     stopifnot(is.family(family))
@@ -427,10 +433,10 @@ stan_cens <- function(cens, family = gaussian()) {
   out
 }
 
-stan_disp <- function(bterms, family = gaussian()) {
+stan_disp <- function(bterms, family) {
   # stan code for models with addition argument 'disp'
   # Args:
-  #   disp: logical; are dispersion factors specified?
+  #   bterms: object of class brmsterms
   #   family: the model family
   stopifnot(is.brmsterms(bterms))
   stopifnot(is.family(family))
@@ -451,12 +457,14 @@ stan_disp <- function(bterms, family = gaussian()) {
 stan_monotonic <- function(x) {
   # add the monotonic function to Stan's functions block
   if (grepl("[^[:alnum:]]monotonic\\(", collapse(x))) {
-    "  #include fun_monotonic.stan \n"
-  } else NULL
+    out <- "  #include fun_monotonic.stan \n"
+  } else {
+    out <- ""
+  }
+  out
 }
 
-stan_misc_functions <- function(family = gaussian(), prior = brmsprior(),
-                                kronecker = FALSE) {
+stan_misc_functions <- function(family, prior, kronecker) {
   # stan code for user defined functions
   # Args:
   #   family: the model family
@@ -478,14 +486,17 @@ stan_misc_functions <- function(family = gaussian(), prior = brmsprior(),
     out <- paste0(out, "  #include 'fun_horseshoe.stan' \n")
   }
   if (kronecker) {
-    out <- paste0(out, "  #include 'fun_as_matrix.stan' \n",
-                  "  #include 'fun_kronecker.stan' \n")
+    out <- paste0(out, 
+      "  #include 'fun_as_matrix.stan' \n",
+      "  #include 'fun_kronecker.stan' \n"
+    )
   }
   out
 }
 
-stan_prior <- function(prior, class, coef = "", group = "", nlpar = "", 
-                       prefix = "", suffix = "", wsp = 2, matrix = FALSE) {
+stan_prior <- function(prior, class, coef = "", group = "", 
+                       nlpar = "", prefix = "", suffix = "",
+                       wsp = 2, matrix = FALSE) {
   # Define priors for parameters in Stan language
   # Args:
   #   prior: an object of class 'brmsprior'
@@ -631,8 +642,8 @@ stan_base_prior <- function(prior) {
   base_prior
 }
 
-stan_rngprior <- function(sample_prior, prior, par_declars = "",
-                          family = gaussian(), prior_attr = list()) {
+stan_rngprior <- function(sample_prior, prior, par_declars,
+                          family, prior_attr = list()) {
   # stan code to sample from priors seperately
   # Args:
   #   sample_prior: take samples from priors?
@@ -667,9 +678,11 @@ stan_rngprior <- function(sample_prior, prior, par_declars = "",
     })
     
     # special treatment of lkj_corr_cholesky priors
-    args <- ifelse(grepl("corr_cholesky$", dis), 
-                   paste0("(2,", substr(args, 2, nchar(args)-1), "[1, 2];"), 
-                   args)
+    args <- ifelse(
+      grepl("corr_cholesky$", dis), 
+      paste0("(2,", substr(args, 2, nchar(args)-1), "[1, 2];"),
+      args
+    )
     dis <- sub("corr_cholesky$", "corr", dis)
     
     # extract information from the initial parameter definition
@@ -699,13 +712,17 @@ stan_rngprior <- function(sample_prior, prior, par_declars = "",
       # bounded parameters have to be sampled in the model block
       out$par <- paste0(
         "  // parameters to store prior samples\n",
-        collapse("  real", bounds[has_bounds], 
-                 " prior_", pars[has_bounds], ";\n")
+        collapse(
+          "  real", bounds[has_bounds], 
+          " prior_", pars[has_bounds], ";\n"
+        )
       )
       out$model <- paste0(
         "  // additionally draw samples from priors\n",
-        collapse("  prior_", pars[has_bounds] ," ~ ",
-                 dis[has_bounds], args[has_bounds], "\n")
+        collapse(
+          "  prior_", pars[has_bounds] ," ~ ",
+          dis[has_bounds], args[has_bounds], "\n"
+        )
       )
     }
     no_bounds <- !has_bounds
@@ -724,11 +741,15 @@ stan_rngprior <- function(sample_prior, prior, par_declars = "",
       }
       # unbounded parameters can be sampled in the generatated quantities block
       out$genD <- collapse(
-        "  ", types[no_bounds], " prior_", pars[no_bounds], "; \n")
+        "  ", types[no_bounds], " prior_", pars[no_bounds], "; \n"
+      )
       out$genC <- paste0(
         "  // additionally draw samples from priors \n",
-        collapse("  prior_", pars[no_bounds], " = ",
-                 dis[no_bounds], "_rng", args[no_bounds], " \n"))
+        collapse(
+          "  prior_", pars[no_bounds], " = ",
+          dis[no_bounds], "_rng", args[no_bounds], " \n"
+        )
+      )
     }
     # compute priors for the actual population-level intercepts
     is_temp_intercept <- grepl("^temp.*_Intercept", pars)
@@ -737,13 +758,19 @@ stan_rngprior <- function(sample_prior, prior, par_declars = "",
       p <- gsub("^temp|_Intercept$", "", temp_intercepts)
       intercepts <- paste0("b", p, "_Intercept")
       use_plus <- family$family %in% c("cumulative", "sratio")
-      sub_X_means <- paste0(ifelse(use_plus, " + ", " - "), 
-                            "dot_product(means_X", p, ", b", p, ")")
+      sub_X_means <- paste0(
+        ifelse(use_plus, " + ", " - "), 
+        "dot_product(means_X", p, ", b", p, ")"
+      )
       out$genD <- paste0(out$genD, 
-        collapse("  real prior_", intercepts, "; \n"))
+        collapse("  real prior_", intercepts, "; \n")
+      )
       out$genC <- paste0(out$genC, 
-        collapse("  prior_", intercepts, " = ",
-                 "prior_", temp_intercepts, sub_X_means, "; \n"))
+        collapse(
+          "  prior_", intercepts, " = ",
+          "prior_", temp_intercepts, sub_X_means, "; \n"
+        )
+      )
     }
   }
   out
