@@ -649,6 +649,55 @@ pfix <- function(x, ...) {
   bf(x, ...)[["pfix"]]
 }
 
+amend_formula <- function(formula, data = NULL, family = NULL,
+                          nonlinear = NULL, partial = NULL) {
+  # incorporate additional arguments into formula
+  # Args:
+  #   formula: object of class 'formula' of 'brmsformula'
+  #   data: optional data.frame
+  #   family: optional object of class 'family'
+  #   nonlinear, partial: deprecated arguments of brm
+  # Returns:
+  #   a brmsformula object compatible with the current version of brms
+  out <- bf(formula, family = family, nonlinear = nonlinear)
+  fnew <- ". ~ ."
+  if (!is.null(partial)) {
+    warning2("Argument 'partial' is deprecated. Please use the 'cs' ", 
+             "function inside the model formula instead.")
+    partial <- formula2str(partial, rm = 1)
+    fnew <- paste(fnew, "+ cs(", partial, ")")
+  }
+  # to allow the '.' symbol in formula
+  try_terms <- try(terms(out$formula, data = data), silent = TRUE)
+  if (!is(try_terms, "try-error")) {
+    out$formula <- formula(try_terms)
+  }
+  if (fnew != ". ~ .") {
+    out$formula <- update.formula(out$formula, formula(fnew))
+  }
+  if (is.null(out$family)) {
+    out$family <- check_family(gaussian())
+  }
+  if (is_ordinal(out$family)) {
+    # fix discrimination to 1 by default
+    if (!"disc" %in% c(names(pforms(out)), names(pfix(out)))) {
+      out <- bf(out, disc = 1)
+    }
+  }
+  if (is_categorical(out$family) && is.null(out[["response"]])) {
+    respform <- parse_bf(out)$respform
+    model_response <- model.response(model.frame(respform, data = data))
+    response <- levels(factor(model_response))
+    if (length(response) <= 2L) {
+      stop2("At least 3 response categories are required for family ", 
+            "'categorical'.\nPlease use family 'bernoulli' instead.")
+    }
+    # the first level will serve as the reference category
+    out[["response"]] <- response[-1]
+  }
+  out
+}
+
 #' @export
 update.brmsformula <- function(object, formula., 
                                mode = c("update", "replace", "keep"), 
