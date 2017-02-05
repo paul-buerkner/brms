@@ -186,7 +186,7 @@ make_standata <- function(formula, data, family = NULL,
                             Jmo = control$Jmo[["mu"]],
                             smooth = control$smooth[["mu"]])
       data_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
-      standata <- c(standata, data_eff, data_csef(bterms, data = data))
+      standata <- c(standata, data_eff, data_cs(bterms, data = data))
       standata$offset <- model.offset(data)
     }
   }
@@ -202,8 +202,8 @@ make_standata <- function(formula, data, family = NULL,
     standata[[ap]] <- bterms$fauxpars[[ap]]
   }
   # data for grouping factors separated after group-ID
-  data_group <- data_group(ranef, data, cov_ranef = cov_ranef)
-  standata <- c(standata, data_group)
+  data_gr <- data_gr(ranef, data, cov_ranef = cov_ranef)
+  standata <- c(standata, data_gr)
   
   # data for specific families
   if (has_trials(family)) {

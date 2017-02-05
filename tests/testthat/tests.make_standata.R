@@ -361,7 +361,7 @@ test_that("make_standata returns data for GAMMs", {
   expect_equal(dim(sdata$Zs_1_3), c(10, 6))
   
   expect_error(make_standata(y ~ te(x1, x2), data = dat),
-               "splines 'te' and 'ti' are not yet implemented")
+               "smooths 'te' and 'ti' are not yet implemented")
 })
 
 test_that("make_standata returns correct group ID data", {

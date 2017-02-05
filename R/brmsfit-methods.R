@@ -89,9 +89,9 @@ vcov.brmsfit <- function(object, correlation = FALSE, ...) {
 #' 
 #' @param object An object of class \code{brmsfit}.
 #' @param estimate The point estimate to be calculated 
-#'  for the random effects, either \code{"mean"} or \code{"median"}.
+#'  for the group-level effects, either \code{"mean"} or \code{"median"}.
 #' @param var logical; indicating if the covariance matrix 
-#'  for each random effects should be computed.
+#'  for each group-level effects should be computed.
 #' @param ... Further arguments to be passed to the function 
 #'  specified in \code{estimate}.
 #'
@@ -127,7 +127,7 @@ ranef.brmsfit <- function(object, estimate = c("mean", "median"),
   pars <- parnames(object)
   
   .ranef <- function(group, nlpar = "") {
-    # get random effects of a grouping factor
+    # get group-level effects of a grouping factor
     # Args:
     #   group: name of a grouping factor
     #   nlpar: name of a non-linear parameter
@@ -298,8 +298,8 @@ coef.brmsfit <- function(object, estimate = c("mean", "median"), ...) {
 #' Extract variance and correlation components
 #' 
 #' This function calculates the estimated standard deviations, 
-#' correlations and covariances of the random-effects terms 
-#' in a mixed-effects model of class \code{brmsfit}. 
+#' correlations and covariances of the group-level terms 
+#' in a multilevel model of class \code{brmsfit}. 
 #' For linear models, the residual standard deviations, 
 #' correlations and covariances are also returned. 
 #' 
@@ -330,11 +330,11 @@ coef.brmsfit <- function(object, estimate = c("mean", "median"), ...) {
 #' \dontrun{
 #' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
 #'              data = epilepsy, family = "poisson", chains = 1)
-#' ## return the means of random effects covariances
+#' ## return the means of group-level covariances
 #' (vc <- VarCorr(fit))
 #' as.data.frame(vc)
 #' 
-#' ## return 2.5% and 97.5% quantiles of random effects covariances
+#' ## return 2.5% and 97.5% quantiles of group-level covariances
 #' VarCorr(fit, estimate = "quantile", probs = c(0.025, 0.975))
 #' }
 #' 
@@ -625,10 +625,6 @@ prior_samples.brmsfit <- function(x, pars = NA, parameters = NA, ...) {
 }
 
 #' Print a summary for a fitted model represented by a \code{brmsfit} object
-#'
-#' Print basic information regarding the fitted model and a summary 
-#' for the fixed and random effects
-#' estimated by the samples included in a \code{brmsfit} object.
 #' 
 #' @aliases print.brmssummary
 #' 
@@ -646,9 +642,6 @@ print.brmsfit <- function(x, digits = 2, ...) {
 }  
 
 #' Create a summary of a fitted model represented by a \code{brmsfit} object
-#' 
-#' Summarize estimated fixed and random effects as well as other useful
-#' results included in a \code{brmsfit} object.
 #'
 #' @param object An object of class \code{brmsfit}
 #' @param waic Logical; Indicating if the WAIC should be computed
@@ -720,9 +713,9 @@ summary.brmsfit <- function(object, waic = FALSE, priors = FALSE,
     }
     
     # fixed effects summary
-    fix_pars <- pars[grepl(fixef_pars(), pars)]
-    out$fixed <- fit_summary[fix_pars, , drop = FALSE]
-    rownames(out$fixed) <- gsub(fixef_pars(), "", fix_pars)
+    fe_pars <- pars[grepl(fixef_pars(), pars)]
+    out$fixed <- fit_summary[fe_pars, , drop = FALSE]
+    rownames(out$fixed) <- gsub(fixef_pars(), "", fe_pars)
     
     # summary of family specific parameters
     is_mv_par <- apply(sapply(c("^sigma_", "^rescor_"), grepl, pars), 1, any)
@@ -905,9 +898,8 @@ launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"),
 #' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c 
 #'            + (1|patient) + (1|visit), 
 #'            data = epilepsy, family = "poisson")
-#' ## plot fixed effects as well as standard devations of the random effects
 #' plot(fit)
-#' ## plot fixed effects only
+#' ## plot population-level effects only
 #' plot(fit, pars = "^b_") 
 #' }
 #' 
@@ -1256,7 +1248,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
              "assumption for family ", x$family$family, ".")
   }
   rsv_vars <- rsv_vars(x$family, nresp = length(bterms$response),
-                       rsv_intercept = attr(bterms$fixed, "rsv_intercept"),
+                       rsv_intercept = attr(bterms$fe, "rsv_intercept"),
                        old_mv = attr(bterms$formula, "old_mv"))
   if (is.null(effects)) {
     effects <- get_all_effects(bterms, rsv_vars = rsv_vars)
@@ -1357,7 +1349,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     attr(marg_res, "effects") <- effects[[i]]
     attr(marg_res, "surface") <- both_numeric && surface
     point_args <- nlist(mf, effects = effects[[i]], conditions,
-                        groups = get_random(bterms)$group, family = x$family)
+                        groups = get_re(bterms)$group, family = x$family)
     attr(marg_res, "points") <- do.call(make_point_frame, point_args)
     results[[paste0(effects[[i]], collapse = ":")]] <- marg_res
   }
@@ -1387,16 +1379,18 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
   }
   lee <- c(lee, bterms$auxpars)
   
-  args <- nlist(x, smooths_only = TRUE, allow_new_levels = TRUE,
-                incl_autocor = FALSE, f = prepare_family(x), 
-                nsamples = nsamples(x))
+  args <- nlist(
+    x, smooths_only = TRUE, allow_new_levels = TRUE,
+    incl_autocor = FALSE, f = prepare_family(x), 
+    nsamples = nsamples(x)
+  )
   too_many_covars <- FALSE
   results <- list()
   for (k in seq_along(lee)) {
     # loop over elements that may contain smooth terms
-    splines <- get_spline_labels(lee[[k]])
-    splines_by <- get_spline_labels(lee[[k]], data = mf)
-    covars <- get_spline_labels(lee[[k]], covars = TRUE, combine = FALSE)
+    splines <- get_sm_labels(lee[[k]])
+    splines_by <- get_sm_labels(lee[[k]], data = mf)
+    covars <- get_sm_labels(lee[[k]], covars = TRUE, combine = FALSE)
     for (i in seq_along(splines)) {
       # loop over smooth terms and compute their predictions
       covars_no_by_factor <- covars[[i]]
@@ -1427,7 +1421,8 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
             g2 = newdata[[covars_no_byfactor[2]]], 
             d1 = x$data[, covars_no_byfactor[1]],
             d2 = x$data[, covars_no_byfactor[2]],
-            dist = too_far)
+            dist = too_far
+          )
           newdata <- newdata[!ex_too_far, ]  
         }
         other_vars <- setdiff(names(conditions), covars[[i]])
@@ -1568,7 +1563,7 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
 #' pp <- predict(fit)
 #' head(pp)
 #' 
-#' ## predicted responses excluding the random effect of age
+#' ## predicted responses excluding the group-level effect of age
 #' pp2 <- predict(fit, re_formula = ~ (1|patient))
 #' head(pp2)
 #' 
@@ -1605,8 +1600,9 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
        else if (!is.null(draws$data$N_tg)) draws$data$N_tg
        else if (is.cor_fixed(draws$autocor)) 1
        else draws$data$N
-  out <- do.call(cbind, lapply(seq_len(N), predict_fun, 
-                               draws = draws, ntrys = ntrys))
+  out <- do.call(cbind, 
+    lapply(seq_len(N), predict_fun, draws = draws, ntrys = ntrys)
+  )
   # percentage of invalid samples for truncated discrete models
   # should always be zero for all other models; see predict.R
   pct_invalid <- get_pct_invalid(out, lb = draws$data$lb, ub = draws$data$ub) 
@@ -1811,9 +1807,10 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     stop2("Residuals not implemented for family '", family$family, "'.")
   }
   
-  standata <- amend_newdata(newdata, fit = object, re_formula = re_formula,
-                            allow_new_levels = allow_new_levels, 
-                            check_response = TRUE)
+  standata <- amend_newdata(
+    newdata, fit = object, re_formula = re_formula,
+    allow_new_levels = allow_new_levels, check_response = TRUE
+  )
   if (!is.null(standata$cens)) {
     warning2("Residuals may not be meaningful for censored models.")
   }
@@ -1940,9 +1937,9 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
       ee_old <- parse_bf(formula(object))
       ee_new <- parse_bf(dots$formula)
       # no need to recompile the model when changing fixed effects only
-      dont_change <- c("random", "gam", "cs", "mo", "me")
-      n_old_fixef <- length(attr(terms(ee_old$fixed), "term.labels"))
-      n_new_fixef <- length(attr(terms(ee_new$fixed), "term.labels"))
+      dont_change <- c("re", "sm", "cs", "mo", "me")
+      n_old_fixef <- length(attr(terms(ee_old$fe), "term.labels"))
+      n_new_fixef <- length(attr(terms(ee_new$fe), "term.labels"))
       recompile <- recompile ||
         !is_equal(names(ee_old), names(ee_new)) ||
         !is_equal(ee_old[names(ee_old) %in% dont_change], 

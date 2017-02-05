@@ -19,12 +19,12 @@ linear_predictor <- function(draws, i = NULL) {
   
   eta <- matrix(0, nrow = draws$nsamples, ncol = N)
   if (!is.null(draws[["b"]])) {
-    eta <- eta + fixef_predictor(X = p(draws$data[["X"]], i), 
-                                 b = draws[["b"]])
+    eta_fe <- fe_predictor(X = p(draws$data[["X"]], i), b = draws[["b"]])
+    eta <- eta + eta_fe
   }
   if (!is.null(draws$data$offset)) {
-    eta <- eta + matrix(rep(p(draws$data$offset, i), draws$nsamples), 
-                        ncol = N, byrow = TRUE)
+    eta_offset <- rep(p(draws$data$offset, i), draws$nsamples)
+    eta <- eta + matrix(eta_offset, ncol = N, byrow = TRUE)
   }
   # incorporate monotonic effects
   monef <- names(draws[["bmo"]])
@@ -33,13 +33,17 @@ linear_predictor <- function(draws, i = NULL) {
     rmo_temp <- draws[["rmo"]][[monef[j]]]
     rmo <- named_list(names(rmo_temp))
     for (g in names(rm)) {
-      rmo[[g]] <- ranef_predictor(Z = p(draws[["Zmo"]][[g]], i),
-                                  r = rmo[[g]])
+      rmo[[g]] <- re_predictor(
+        Z = p(draws[["Zmo"]][[g]], i), r = rmo[[g]]
+      )
     }
-    eta <- eta + mo_predictor(X = p(draws$data$Xmo[, j], i), 
-                              b = draws[["bmo"]][[j]], 
-                              simplex = draws$simplex[[j]],
-                              r = Reduce("+", rmo))
+    eta <- eta + 
+      mo_predictor(
+        X = p(draws$data$Xmo[, j], i), 
+        b = draws[["bmo"]][[j]], 
+        simplex = draws$simplex[[j]],
+        r = Reduce("+", rmo)
+      )
   }
   # incorporate noise-free effects
   meef <- names(draws[["bme"]])
@@ -59,41 +63,50 @@ linear_predictor <- function(draws, i = NULL) {
       rme_temp <- draws[["rme"]][[meef[j]]]
       rme <- named_list(names(rme_temp))
       for (g in names(rme)) {
-        rme[[g]] <- ranef_predictor(Z = p(draws[["Zme"]][[g]], i),
-                                    r = rme_temp[[g]])
+        rme[[g]] <- re_predictor(
+          Z = p(draws[["Zme"]][[g]], i), r = rme_temp[[g]]
+        )
       }
-      eta <- eta + me_predictor(eval_list, call = calls[[j]],
-                                b = draws[["bme"]][[j]],
-                                r = Reduce("+", rme))
+      eta <- eta + 
+        me_predictor(
+          eval_list, call = calls[[j]],
+          b = draws[["bme"]][[j]],
+          r = Reduce("+", rme)
+        )
     }
   }
   
   # incorporate group-level effects
   group <- names(draws[["r"]])
   for (g in group) {
-    eta <- eta + ranef_predictor(Z = p(draws[["Z"]][[g]], i), 
-                                 r = draws[["r"]][[g]]) 
+    eta_re <- re_predictor(
+      Z = p(draws[["Z"]][[g]], i), 
+      r = draws[["r"]][[g]]
+    )
+    eta <- eta + eta_re
   }
-  # incorporate splines
-  splines <- names(draws[["s"]])
-  for (k in seq_along(splines)) {
-    nb <- seq_len(length(draws[["s"]][[splines[k]]]))
+  # incorporate smooths
+  smooths <- names(draws[["s"]])
+  for (k in seq_along(smooths)) {
+    nb <- seq_len(length(draws[["s"]][[smooths[k]]]))
     for (j in nb) {
-      Zs <- p(draws[["Zs"]][[splines[k]]][[j]], i)
-      s <- draws[["s"]][[splines[k]]][[j]]
-      eta <- eta + fixef_predictor(X = Zs, b = s)
+      Zs <- p(draws[["Zs"]][[smooths[k]]][[j]], i)
+      s <- draws[["s"]][[smooths[k]]][[j]]
+      eta <- eta + fe_predictor(X = Zs, b = s)
     }
   }
   if (!is.null(draws[["arr"]])) {
-    eta <- eta + fixef_predictor(X = p(draws$data$Yarr, i), b = draws[["arr"]])
+    eta <- eta + fe_predictor(X = p(draws$data$Yarr, i), b = draws[["arr"]])
   }
   if (length(rmNULL(draws[c("ar", "ma")])) && !use_cov(draws$autocor)) {
     # only run when ARMA effects were modeled as part of eta
     if (!is.null(i)) {
       stop2("Pointwise evaluation is not yet implemented for ARMA models.")
     }
-    eta <- arma_predictor(standata = draws$data, ar = draws[["ar"]], 
-                          ma = draws[["ma"]], eta = eta, link = draws$f$link)
+    eta <- arma_predictor(
+      standata = draws$data, ar = draws[["ar"]], 
+      ma = draws[["ma"]], eta = eta, link = draws$f$link
+    )
   }
   if (!is.null(draws$loclev)) {
     eta <- eta + p(draws$loclev, i, row = FALSE)
@@ -106,17 +119,21 @@ linear_predictor <- function(draws, i = NULL) {
         for (k in names(rcs)) {
           rcs[[k]] <- named_list(names(draws[["rcs"]][[k]]))
           for (g in names(rcs[[k]])) {
-            rcs[[k]][[g]] <- ranef_predictor(Z = p(draws[["Zcs"]][[g]], i),
-                                             r = draws[["rcs"]][[k]][[g]])
+            rcs[[k]][[g]] <- re_predictor(
+              Z = p(draws[["Zcs"]][[g]], i),
+              r = draws[["rcs"]][[k]][[g]]
+            )
           }
           rcs[[k]] <- Reduce("+", rcs[[k]])
         }
       } else {
         rcs <- NULL
       }
-      eta <- cs_predictor(X = p(draws$data[["Xcs"]], i), 
-                          b = draws[["cs"]], eta = eta, 
-                          ncat = ncat, r = rcs)
+      eta <- cs_predictor(
+        X = p(draws$data[["Xcs"]], i), 
+        b = draws[["cs"]], eta = eta, 
+        ncat = ncat, r = rcs
+      )
     } else {
       eta <- array(eta, dim = c(dim(eta), draws$data$ncat - 1))
     } 
@@ -131,8 +148,10 @@ linear_predictor <- function(draws, i = NULL) {
     if (draws$old_cat == 1L) {
       # deprecated as of brms > 0.8.0
       if (!is.null(draws[["cs"]])) {
-        eta <- cs_predictor(X = p(draws$data[["X"]], i), b = draws[["cs"]], 
-                            eta = eta, ncat = draws$data$ncat)
+        eta <- cs_predictor(
+          X = p(draws$data[["X"]], i), b = draws[["cs"]], 
+          eta = eta, ncat = draws$data$ncat
+        )
       } else {
         eta <- array(eta, dim = c(dim(eta), draws$data$ncat - 1))
       }
@@ -181,12 +200,11 @@ nonlinear_predictor <- function(draws, i = NULL) {
   if (is(out, "try-error")) {
     if (grepl("could not find function", out)) {
       out <- rename(out, "Error in eval(expr, envir, enclos) : ", "")
-      stop(paste0(out, "Most likely this is because you used a Stan ",
-                  "function in the non-linear model formula that ",
-                  "is not defined in R. Currently, you have to write ",
-                  "this function yourself making sure that it is ",
-                  "vectorized. I apologize for the inconvenience."),
-           call. = FALSE)
+      stop2(out, " Most likely this is because you used a Stan ",
+            "function in the non-linear model formula that ",
+            "is not defined in R. Currently, you have to write ",
+            "this function yourself making sure that it is ",
+            "vectorized. I apologize for the inconvenience.")
     } else {
       out <- rename(out, "^Error :", "", fixed = FALSE)
       stop(out, call. = FALSE)
@@ -195,7 +213,7 @@ nonlinear_predictor <- function(draws, i = NULL) {
   unname(out)
 }
 
-fixef_predictor <- function(X, b) {
+fe_predictor <- function(X, b) {
   # compute eta for fixed effects
   # Args:
   #   X: fixed effects design matrix
@@ -236,7 +254,7 @@ me_predictor <- function(eval_list, call, b, r = NULL) {
   (b + r) * eval(call, eval_list)
 }
 
-ranef_predictor <- function(Z, r) {
+re_predictor <- function(Z, r) {
   # compute eta for random effects
   # Args:
   #   Z: sparse random effects design matrix
@@ -244,6 +262,34 @@ ranef_predictor <- function(Z, r) {
   # Returns: 
   #   linear predictor for random effects
   Matrix::as.matrix(Matrix::tcrossprod(r, Z))
+}
+
+cs_predictor <- function(X, b, eta, ncat, r = NULL) {
+  # add category specific effects to eta
+  # Args:
+  #   X: category specific design matrix 
+  #   b: category specific effects samples
+  #   ncat: number of categories
+  #   eta: linear predictor matrix
+  #   r: list of samples of cs group-level effects
+  # Returns: 
+  #   linear predictor including category specific effects as a 3D array
+  stopifnot(is.null(X) && is.null(b) || is.matrix(X) && is.matrix(b))
+  ncat <- max(ncat)
+  eta <- array(eta, dim = c(dim(eta), ncat - 1))
+  if (!is.null(X)) {
+    I <- seq(1, (ncat - 1) * ncol(X), ncat - 1) - 1
+    X <- t(X)
+  }
+  for (k in seq_len(ncat - 1)) {
+    if (!is.null(X)) {
+      eta[, , k] <- eta[, , k] + b[, I + k, drop = FALSE] %*% X 
+    }
+    if (!is.null(r[[k]])) {
+      eta[, , k] <- eta[, , k] + r[[k]]
+    }
+  }
+  eta
 }
 
 arma_predictor <- function(standata, eta, ar = NULL, ma = NULL, 
@@ -288,34 +334,6 @@ arma_predictor <- function(standata, eta, ar = NULL, ma = NULL,
     E <- abind(E[, , 2:(K + 1), drop = FALSE], zero_mat)
     if (K > 1) {
       e <- cbind(e[, 2:K, drop = FALSE], zero_vec)
-    }
-  }
-  eta
-}
-
-cs_predictor <- function(X, b, eta, ncat, r = NULL) {
-  # add category specific effects to eta
-  # Args:
-  #   X: category specific design matrix 
-  #   b: category specific effects samples
-  #   ncat: number of categories
-  #   eta: linear predictor matrix
-  #   r: list of samples of cs group-level effects
-  # Returns: 
-  #   linear predictor including category specific effects as a 3D array
-  stopifnot(is.null(X) && is.null(b) || is.matrix(X) && is.matrix(b))
-  ncat <- max(ncat)
-  eta <- array(eta, dim = c(dim(eta), ncat - 1))
-  if (!is.null(X)) {
-    I <- seq(1, (ncat - 1) * ncol(X), ncat - 1) - 1
-    X <- t(X)
-  }
-  for (k in seq_len(ncat - 1)) {
-    if (!is.null(X)) {
-      eta[, , k] <- eta[, , k] + b[, I + k, drop = FALSE] %*% X 
-    }
-    if (!is.null(r[[k]])) {
-      eta[, , k] <- eta[, , k] + r[[k]]
     }
   }
   eta

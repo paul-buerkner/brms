@@ -239,6 +239,10 @@ eval2 <- function(text, ...) {
   eval(parse(text = text), ...)
 }
 
+eval_smooth <- function(x) {
+  eval2(paste0("mgcv::", x))
+}
+
 stop2 <- function(...) {
   stop(..., call. = FALSE)
 }

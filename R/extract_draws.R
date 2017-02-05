@@ -81,7 +81,7 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
         matrix(standata[["C"]][, covars[i]], nrow = nsamples, 
                ncol = nrow(standata[["C"]]), byrow = TRUE)
     }
-    draws$nlform <- bterms$fixed[[3]]
+    draws$nlform <- bterms$fe[[3]]
     # remove redudant information to save working memory
     keep <- !grepl("^(X|Z|J|C)", names(draws$data))
     draws$data <- subset_attr(draws$data, keep)
@@ -247,7 +247,7 @@ extract_draws <- function(x, newdata = NULL, re_formula = NULL,
     }
   }
   # splines
-  splines <- rename(get_spline_labels(bterms, x$data, covars = TRUE))
+  splines <- rename(get_sm_labels(bterms, x$data, covars = TRUE))
   if (length(splines)) {
     draws[["Zs"]] <- draws[["s"]] <- named_list(splines)
     for (i in seq_along(splines)) {
@@ -415,6 +415,8 @@ expand_matrix <- function(A, x, max_level = max(x), weights = 1) {
   i <- rep(seq_along(x), each = K)
   make_j <- function(n, K, x) K * (x[n] - 1) + 1:K
   j <- ulapply(seq_along(x), make_j, K = K, x = x)
-  Matrix::sparseMatrix(i = i, j = j, x = as.vector(t(A)),
-                       dims = c(nrow(A), ncol(A) * max_level))
+  Matrix::sparseMatrix(
+    i = i, j = j, x = as.vector(t(A)),
+    dims = c(nrow(A), ncol(A) * max_level)
+  )
 }

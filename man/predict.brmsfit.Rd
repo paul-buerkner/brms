@@ -126,7 +126,7 @@ fit <- brm(time | cens(censored) ~ age + sex + (1+age||patient),
 pp <- predict(fit)
 head(pp)
 
-## predicted responses excluding the random effect of age
+## predicted responses excluding the group-level effect of age
 pp2 <- predict(fit, re_formula = ~ (1|patient))
 head(pp2)
 

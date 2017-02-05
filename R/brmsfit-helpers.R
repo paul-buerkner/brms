@@ -59,9 +59,10 @@ restructure <- function(x, rstr_summary = FALSE) {
   if (x$version < utils::packageVersion("brms")) {
     # element 'nonlinear' deprecated as of brms > 0.9.1
     # element 'partial' deprecated as of brms > 0.8.0
-    x$formula <- SW(amend_formula(formula(x), data = model.frame(x),
-                                  family = family(x), partial = x$partial,
-                                  nonlinear = x$nonlinear))
+    x$formula <- SW(amend_formula(
+      formula(x), data = model.frame(x), family = family(x), 
+      partial = x$partial, nonlinear = x$nonlinear
+    ))
     x$nonlinear <- x$partial <- NULL
     x$formula[["old_mv"]] <- is_old_mv(x)
     bterms <- parse_bf(formula(x), family = family(x))
@@ -83,22 +84,22 @@ restructure <- function(x, rstr_summary = FALSE) {
     if (x$version <= "0.10.0.9000") {
       if (length(bterms$nlpars)) {
         # nlpar and group have changed positions
-        change <- change_old_ranef(x$ranef, pars = parnames(x),
-                                   dims = x$fit@sim$dims_oi)
+        change <- change_old_re(x$ranef, pars = parnames(x),
+                                dims = x$fit@sim$dims_oi)
         x <- do_renaming(x, change)
       }
     }
     if (x$version < "1.0.0") {
       # double underscores were added to group-level parameters
-      change <- change_old_ranef2(x$ranef, pars = parnames(x),
-                                  dims = x$fit@sim$dims_oi)
+      change <- change_old_re2(x$ranef, pars = parnames(x),
+                               dims = x$fit@sim$dims_oi)
       x <- do_renaming(x, change)
     }
     if (x$version <= "1.0.1") {
       # names of spline parameters had to be changed after
       # allowing for multiple covariates in one spline term
-      change <- change_old_splines(bterms, pars = parnames(x),
-                                   dims = x$fit@sim$dims_oi)
+      change <- change_old_sm(bterms, pars = parnames(x),
+                              dims = x$fit@sim$dims_oi)
       x <- do_renaming(x, change)
     }
     if (x$version <= "1.2.0") {
@@ -205,13 +206,15 @@ prepare_conditions <- function(x, conditions = NULL, effects = NULL,
       message("Using the median number of trials by default")
     }
     # list all required variables
-    random <- get_random(bterms)
-    req_vars <- c(lapply(get_effect(bterms), rhs), random$form, 
-                  lapply(random$gcall, "[[", "weightvars"),
-                  lapply(get_effect(bterms, "mo"), rhs),
-                  lapply(get_effect(bterms, "me"), rhs),
-                  lapply(get_effect(bterms, "gam"), rhs), 
-                  bterms[c("cs", "se", "disp", "trials", "cat")])
+    re <- get_re(bterms)
+    req_vars <- c(
+      lapply(get_effect(bterms), rhs), re$form, 
+      lapply(re$gcall, "[[", "weightvars"),
+      lapply(get_effect(bterms, "mo"), rhs),
+      lapply(get_effect(bterms, "me"), rhs),
+      lapply(get_effect(bterms, "sm"), rhs), 
+      bterms[c("cs", "se", "disp", "trials", "cat")]
+    )
     req_vars <- unique(ulapply(req_vars, all.vars))
     req_vars <- setdiff(req_vars, c(rsv_vars, names(bterms$nlpars)))
     conditions <- as.data.frame(as.list(rep(NA, length(req_vars))))

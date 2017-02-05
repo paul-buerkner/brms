@@ -17,9 +17,7 @@ defaults to 2. The effective sample size is always rounded to integers.}
 to method \code{summary} of \code{brmsfit}.}
 }
 \description{
-Print basic information regarding the fitted model and a summary 
-for the fixed and random effects
-estimated by the samples included in a \code{brmsfit} object.
+Print a summary for a fitted model represented by a \code{brmsfit} object
 }
 \author{
 Paul-Christian Buerkner \email{paul.buerkner@gmail.com}

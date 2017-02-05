@@ -61,9 +61,8 @@ Trace and Density Plots for MCMC Samples
 fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c 
            + (1|patient) + (1|visit), 
            data = epilepsy, family = "poisson")
-## plot fixed effects as well as standard devations of the random effects
 plot(fit)
-## plot fixed effects only
+## plot population-level effects only
 plot(fit, pars = "^b_") 
 }
 

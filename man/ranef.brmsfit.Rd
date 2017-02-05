@@ -12,10 +12,10 @@
 \item{object}{An object of class \code{brmsfit}.}
 
 \item{estimate}{The point estimate to be calculated 
-for the random effects, either \code{"mean"} or \code{"median"}.}
+for the group-level effects, either \code{"mean"} or \code{"median"}.}
 
 \item{var}{logical; indicating if the covariance matrix 
-for each random effects should be computed.}
+for each group-level effects should be computed.}
 
 \item{...}{Further arguments to be passed to the function 
 specified in \code{estimate}.}

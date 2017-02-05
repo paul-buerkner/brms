@@ -38,8 +38,8 @@ Can be coerced to a \code{data.frame} by using the \code{as.data.frame} method.
 }
 \description{
 This function calculates the estimated standard deviations, 
-correlations and covariances of the random-effects terms 
-in a mixed-effects model of class \code{brmsfit}. 
+correlations and covariances of the group-level terms 
+in a multilevel model of class \code{brmsfit}. 
 For linear models, the residual standard deviations, 
 correlations and covariances are also returned.
 }
@@ -47,11 +47,11 @@ correlations and covariances are also returned.
 \dontrun{
 fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
              data = epilepsy, family = "poisson", chains = 1)
-## return the means of random effects covariances
+## return the means of group-level covariances
 (vc <- VarCorr(fit))
 as.data.frame(vc)
 
-## return 2.5\% and 97.5\% quantiles of random effects covariances
+## return 2.5\% and 97.5\% quantiles of group-level covariances
 VarCorr(fit, estimate = "quantile", probs = c(0.025, 0.975))
 }
 

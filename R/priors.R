@@ -540,11 +540,11 @@ get_prior <- function(formula, data, family = NULL,
   if (length(bterms$nlpars)) {
     nlpars <- names(bterms$nlpars)
     for (i in seq_along(nlpars)) {
-      prior_eff <- get_prior_effects(bterms$nlpars[[i]], data = data, 
-                                     autocor = autocor, nlpar = nlpars[i],
-                                     spec_intercept = FALSE,
-                                     def_scale_prior = def_scale_prior,
-                                     internal = internal)
+      prior_eff <- get_prior_effects(
+        bterms$nlpars[[i]], data = data, autocor = autocor, 
+        nlpar = nlpars[i], spec_intercept = FALSE,
+        def_scale_prior = def_scale_prior, internal = internal
+      )
       prior <- rbind(prior, prior_eff)
     }
   } else {
@@ -552,35 +552,48 @@ get_prior <- function(formula, data, family = NULL,
       # priors for effects in multivariate models
       for (r in c("", bterms$response)) {
         # r = "" adds global priors affecting parameters of all responses
-        prior_eff <- get_prior_effects(bterms, data = data, autocor = autocor,
-                                       def_scale_prior = def_scale_prior,
-                                       internal = internal, nlpar = r)
+        prior_eff <- get_prior_effects(
+          bterms, data = data, autocor = autocor,
+          def_scale_prior = def_scale_prior,
+          internal = internal, nlpar = r
+        )
         prior <- rbind(prior, prior_eff)
       }
     } else {
       # priors for effects in univariate models
-      prior_eff <- get_prior_effects(bterms, data = data, autocor = autocor,
-                                     def_scale_prior = def_scale_prior,
-                                     internal = internal)
+      prior_eff <- get_prior_effects(
+        bterms, data = data, autocor = autocor,
+        def_scale_prior = def_scale_prior,
+        internal = internal
+      )
       prior <- rbind(prior, prior_eff)
     }
   }
   # priors for auxiliary parameters
-  def_auxprior <- c(sigma = def_scale_prior, shape = "gamma(0.01, 0.01)",
-                    nu = "gamma(2, 0.1)", phi = "gamma(0.01, 0.01)",
-                    kappa = "gamma(2, 0.01)", beta = "gamma(1, 0.1)", 
-                    zi = "beta(1, 1)", hu = "beta(1, 1)", 
-                    bs = "gamma(1, 1)", ndt = "uniform(0, min_Y)", 
-                    bias = "beta(1, 1)", xi = "normal(0, 2.5)",
-                    disc = NA)
+  def_auxprior <- c(
+    sigma = def_scale_prior, 
+    shape = "gamma(0.01, 0.01)",
+    nu = "gamma(2, 0.1)", 
+    phi = "gamma(0.01, 0.01)",
+    kappa = "gamma(2, 0.01)", 
+    beta = "gamma(1, 0.1)", 
+    zi = "beta(1, 1)", 
+    hu = "beta(1, 1)", 
+    bs = "gamma(1, 1)", 
+    ndt = "uniform(0, min_Y)", 
+    bias = "beta(1, 1)", 
+    xi = "normal(0, 2.5)",
+    disc = NA
+  )
   valid_auxpars <- valid_auxpars(family, bterms = bterms, autocor = autocor)
   for (ap in valid_auxpars) {
     if (!is.null(bterms$auxpars[[ap]])) {
-      auxprior <- get_prior_effects(bterms$auxpars[[ap]], data = data,
-                                    autocor = autocor, nlpar = ap,
-                                    spec_intercept = FALSE,
-                                    def_scale_prior = def_scale_prior,
-                                    internal = internal)
+      auxprior <- get_prior_effects(
+        bterms$auxpars[[ap]], data = data, autocor = autocor,
+        nlpar = ap, spec_intercept = FALSE,
+        def_scale_prior = def_scale_prior,
+        internal = internal
+      )
     } else if (!is.na(def_auxprior[ap])) {
       auxprior <- brmsprior(class = ap, prior = def_auxprior[ap])
     } else {
@@ -590,10 +603,12 @@ get_prior <- function(formula, data, family = NULL,
   }
   # priors of group-level parameters
   ranef <- tidy_ranef(bterms, data)
-  prior_ranef <- get_prior_ranef(ranef, def_scale_prior = def_scale_prior,
-                                 global_sd = length(bterms$response) > 1L,
-                                 internal = internal)
-  prior <- rbind(prior, prior_ranef)
+  prior_re <- get_prior_re(
+    ranef, def_scale_prior = def_scale_prior,
+    global_sd = length(bterms$response) > 1L,
+    internal = internal
+  )
+  prior <- rbind(prior, prior_re)
   
   # prior for the delta parameter for equidistant thresholds
   if (is_ordinal(family) && threshold == "equidistant") {
@@ -603,12 +618,14 @@ get_prior <- function(formula, data, family = NULL,
   if (is_linear(family) && length(bterms$response) > 1L) {
     sigma_coef <- c("", bterms$response)
     sigma_prior <- c(def_scale_prior, rep("", length(bterms$response)))
-    sigma_prior <- brmsprior(class = "sigma", coef = sigma_coef,
-                             prior = sigma_prior)
+    sigma_prior <- brmsprior(
+      class = "sigma", coef = sigma_coef, prior = sigma_prior
+    )
     prior <- rbind(prior, sigma_prior)
     if (internal) {
-      prior <- rbind(prior, brmsprior(class = "Lrescor", 
-                                      prior = "lkj_corr_cholesky(1)"))
+      prior <- rbind(prior, 
+        brmsprior(class = "Lrescor", prior = "lkj_corr_cholesky(1)")
+      )
     } else {
       prior <- rbind(prior, brmsprior(class = "rescor", prior = "lkj(1)"))
     }
@@ -625,8 +642,9 @@ get_prior <- function(formula, data, family = NULL,
     prior <- rbind(prior, brmsprior(class = "arr"))
   }
   if (is(autocor, "cor_bsts")) {
-    prior <- rbind(prior, brmsprior(class = "sigmaLL", 
-                                    prior = def_scale_prior))
+    prior <- rbind(prior, 
+      brmsprior(class = "sigmaLL", prior = def_scale_prior)
+    )
   }
   # do not remove unique(.)
   prior <- unique(prior[with(prior, order(nlpar, class, group, coef)), ])
@@ -643,50 +661,55 @@ get_prior_effects <- function(bterms, data, autocor = cor_arma(),
   # group-level priors are prepared separately
   # Args:
   #   spec_intercept: special parameter class for the FE Intercept? 
-  fixef <- colnames(data_fixef(bterms, data, autocor = autocor)$X)
-  spec_intercept <- has_intercept(bterms$fixed) && spec_intercept
-  prior_fixef <- get_prior_fixef(fixef, spec_intercept = spec_intercept,
-                                 nlpar = nlpar, internal = internal)
+  fixef <- colnames(data_fe(bterms, data, autocor = autocor)$X)
+  spec_intercept <- has_intercept(bterms$fe) && spec_intercept
+  prior_fe <- get_prior_fe(
+    fixef, spec_intercept = spec_intercept,
+    nlpar = nlpar, internal = internal
+  )
   monef <- all_terms(bterms$mo)
-  prior_monef <- get_prior_monef(monef, fixef = fixef, nlpar = nlpar)
-  splines <- get_spline_labels(bterms)
-  prior_splines <- get_prior_splines(splines, def_scale_prior, nlpar = nlpar)
+  prior_mo <- get_prior_mo(monef, fixef = fixef, nlpar = nlpar)
+  smooths <- get_sm_labels(bterms)
+  prior_sm <- get_prior_sm(smooths, def_scale_prior, nlpar = nlpar)
   csef <- colnames(get_model_matrix(bterms$cs, data = data))
-  prior_csef <- get_prior_csef(csef, fixef = fixef)
-  prior_meef <- get_prior_meef(get_me_labels(bterms, data))
-  rbind(prior_fixef, prior_monef, prior_splines, prior_csef, prior_meef)
+  prior_cs <- get_prior_cs(csef, fixef = fixef)
+  prior_me <- get_prior_me(get_me_labels(bterms, data))
+  rbind(prior_fe, prior_mo, prior_sm, prior_cs, prior_me)
 }
 
-get_prior_fixef <- function(fixef, spec_intercept = TRUE, 
+get_prior_fe <- function(fixef, spec_intercept = TRUE, 
                             nlpar = "", internal = FALSE) {
-  # priors for fixed effects parameters
+  # priors for population-level parameters
   # Args:
-  #   fixef: names of the fixed effects
+  #   fixef: names of the population-level effects
   #   spec_intercept: special parameter class for the Intercept? 
   #   internal: see get_prior
   # Returns:
   #   an object of class brmsprior
   prior <- empty_brmsprior()
   if (length(fixef)) {
-    prior <- rbind(prior, brmsprior(class = "b", coef = c("", fixef),
-                                    nlpar = nlpar)) 
+    prior <- rbind(prior, 
+      brmsprior(class = "b", coef = c("", fixef), nlpar = nlpar)
+    ) 
   }
   if (spec_intercept) {
-    prior <- rbind(prior, brmsprior(class = "Intercept", coef = "",
-                                    nlpar = nlpar))
+    prior <- rbind(prior, 
+      brmsprior(class = "Intercept", coef = "", nlpar = nlpar)
+    )
     if (internal) {
-      prior <- rbind(prior, brmsprior(class = "temp", coef = "Intercept",
-                                      nlpar = nlpar))
+      prior <- rbind(prior, 
+        brmsprior(class = "temp", coef = "Intercept", nlpar = nlpar)
+      )
     }
   }
   prior
 }
 
-get_prior_monef <- function(monef, fixef = NULL, nlpar = "") {
+get_prior_mo <- function(monef, fixef = NULL, nlpar = "") {
   # priors for monotonic effects parameters
   # Args:
   #   monef: names of the monotonic effects
-  #   fixef: names of the fixed effects
+  #   fixef: names of the population-level effects
   #   nlpar: optional name of a non-linear parameter
   # Returns:
   #   an object of class brmsprior
@@ -694,53 +717,54 @@ get_prior_monef <- function(monef, fixef = NULL, nlpar = "") {
   if (length(monef)) {
     invalid <- intersect(fixef, monef)
     if (length(invalid)) {
-      stop(paste("Variables cannot be modeled as fixed and", 
-                 "monotonic effects at the same time.", 
-                 "\nError occured for variables:", 
-                 paste(invalid, collapse = ", ")), call. = FALSE)
+      stop2("Variables cannot be modeled as fixed and ", 
+            "monotonic effects at the same time. ", 
+            "\nError occured for variables: ", 
+            collapse_comma(invalid))
     }
-    prior <- rbind(brmsprior(class = "b", coef = c("", monef), 
-                             nlpar = nlpar),
-                   brmsprior(class = "simplex", coef = monef, 
-                             nlpar = nlpar))
+    prior <- rbind(
+      brmsprior(class = "b", coef = c("", monef), nlpar = nlpar),
+      brmsprior(class = "simplex", coef = monef, nlpar = nlpar)
+    )
   }
   prior
 }
 
-get_prior_csef <- function(csef, fixef = NULL) {
+get_prior_cs <- function(csef, fixef = NULL) {
   # priors for category spcific effects parameters
   # Args:
   #   csef: names of the category specific effects
-  #   fixef: names of the fixed effects
+  #   fixef: names of the population-level effects
   # Returns:
   #   an object of class brmsprior
   prior <- empty_brmsprior()
   if (length(csef)) {
     invalid <- intersect(fixef, csef)
     if (length(invalid)) {
-      stop(paste("Variables cannot be modeled as fixed and", 
-                 "category specific effects at the same time.", 
-                 "\nError occured for variables:", 
-                 paste(invalid, collapse = ", ")), call. = FALSE)
+      stop2("Variables cannot be modeled as fixed and ", 
+            "category specific effects at the same time. ", 
+            "\nError occured for variables: ", 
+            collapse_comma(invalid))
     }
     prior <- brmsprior(class = "b", coef = c("", csef))
   }
   prior
 }
 
-get_prior_meef <- function(meef, nlpar = "") {
+get_prior_me <- function(meef, nlpar = "") {
   # default priors of coefficients of noisy terms
   # Args:
   #   meef: terms containing noisy variables
   prior <- empty_brmsprior()
   if (length(meef)) {
-    prior <- brmsprior(class = "b", coef = c("", rename(meef)),
-                       nlpar = nlpar)
+    prior <- brmsprior(
+      class = "b", coef = c("", rename(meef)), nlpar = nlpar
+    )
   }
   prior
 }
 
-get_prior_ranef <- function(ranef, def_scale_prior, 
+get_prior_re <- function(ranef, def_scale_prior, 
                             global_sd = FALSE, internal = FALSE) {
   # priors for random effects parameters
   # Args:
@@ -759,13 +783,12 @@ get_prior_ranef <- function(ranef, def_scale_prior,
     if (global_sd) {
       global_sd_prior <- rep("", length(setdiff(nlpars, "")))
       global_sd_prior <- c(def_scale_prior, global_sd_prior)
-      global_sd_prior <- brmsprior(class = "sd", 
-                                   prior = global_sd_prior,
-                                   nlpar = union("", nlpars))
+      global_sd_prior <- brmsprior(
+        class = "sd", prior = global_sd_prior, nlpar = union("", nlpars)
+      )
     } else {
-      global_sd_prior <- brmsprior(class = "sd", 
-                                   prior = def_scale_prior,
-                                   nlpar = nlpars)
+      global_sd_prior <- 
+        brmsprior(class = "sd", prior = def_scale_prior, nlpar = nlpars)
     }
     prior <- rbind(prior, global_sd_prior)
     for (id in unique(ranef$id)) {
@@ -776,24 +799,26 @@ get_prior_ranef <- function(ranef, def_scale_prior,
         brmsprior(class = "sd", group = group, 
                   nlpar = unique(r$nlpar)),
         brmsprior(class = "sd", coef = r$coef, 
-                  group = group, nlpar = r$nlpar))
+                  group = group, nlpar = r$nlpar)
+      )
       # detect duplicated group-level effects
       J <- with(prior, class == "sd" & nchar(coef))
       dupli <- duplicated(prior[J, ])
       if (any(dupli)) {
-        stop("Duplicated group-level effects detected for group ", 
-             group, call. = FALSE)
+        stop2("Duplicated group-level effects detected for group ", group)
       }
       # include correlation parameters
       if (isTRUE(r$cor[1]) && nrow(r) > 1L) {
         if (internal) {
           prior <- rbind(prior, 
             brmsprior(class = "L", group = c("", group),
-                      prior = c("lkj_corr_cholesky(1)", "")))
+                      prior = c("lkj_corr_cholesky(1)", ""))
+          )
         } else {
           prior <- rbind(prior, 
             brmsprior(class = "cor", group = c("", group),
-                      prior = c("lkj(1)", "")))
+                      prior = c("lkj(1)", ""))
+          )
         }
       }
     }
@@ -801,16 +826,16 @@ get_prior_ranef <- function(ranef, def_scale_prior,
   prior
 }
 
-get_prior_splines <- function(splines, def_scale_prior, nlpar = "") {
-  # priors for GAMM models
+get_prior_sm <- function(smooths, def_scale_prior, nlpar = "") {
+  # priors for smooth terms
   # Args:
-  #   splines: names of the spline terms
+  #   smooths: names of the smooth terms
   #   def_scale_prior: a character string defining the default
-  #                    prior for spline SDs
+  #                    prior for smooth SDs
   #   nlpar: optional name of a non-linear parameter
-  if (length(splines)) {
-    prior_strings <- c(def_scale_prior, rep("", length(splines)))
-    prior <- brmsprior(class = "sds", coef = c("", splines), 
+  if (length(smooths)) {
+    prior_strings <- c(def_scale_prior, rep("", length(smooths)))
+    prior <- brmsprior(class = "sds", coef = c("", smooths), 
                        prior = prior_strings, nlpar = nlpar)
   } else {
     prior <- empty_brmsprior()
@@ -838,9 +863,10 @@ check_prior <- function(prior, formula, data = NULL, family = NULL,
   }
   formula <- bf(formula)
   bterms <- parse_bf(formula, family = family)  
-  all_priors <- get_prior(formula = formula, data = data, 
-                          family = family, autocor = autocor, 
-                          threshold = threshold, internal = TRUE)
+  all_priors <- get_prior(
+    formula = formula, data = data, family = family, 
+    autocor = autocor, threshold = threshold, internal = TRUE
+  )
   if (is.null(prior)) {
     prior <- all_priors  
   }
@@ -849,8 +875,10 @@ check_prior <- function(prior, formula, data = NULL, family = NULL,
   prior_no_checks <- prior[no_checks, ]
   prior <- prior[!no_checks, ]
   # check for duplicated priors
-  prior$class <- rename(prior$class, symbols = c("^cor$", "^rescor$"), 
-                        subs = c("L", "Lrescor"), fixed = FALSE)
+  prior$class <- rename(
+    prior$class, symbols = c("^cor$", "^rescor$"), 
+    subs = c("L", "Lrescor"), fixed = FALSE
+  )
   duplicated_input <- duplicated(prior[, 2:5])
   if (any(duplicated_input)) {
     stop2("Duplicated prior specifications are not allowed.")
@@ -900,8 +928,9 @@ check_prior <- function(prior, formula, data = NULL, family = NULL,
   for (k in seq_along(mo_forms)) {
     monef <- colnames(get_model_matrix(mo_forms[[k]], data = data))
     for (i in seq_along(monef)) {
-      take <- with(prior, class == "simplex" & coef == monef[i] &
-                          nlpar == names(mo_forms)[k])
+      take <- with(prior, 
+        class == "simplex" & coef == monef[i] & nlpar == names(mo_forms)[k]
+      )
       simplex_prior <- paste0(".", prior$prior[take])
       if (nchar(simplex_prior) > 1L) {
         simplex_prior <- paste(eval(parse(text = simplex_prior)),
@@ -945,10 +974,12 @@ check_prior_content <- function(prior, family = gaussian(), warn = TRUE) {
   stopifnot(is.family(family))
   family <- family$family
   if (nrow(prior)) {
-    lb_priors <- c("lognormal", "chi_square", "inv_chi_square",
-                   "scaled_inv_chi_square", "exponential", "gamma",
-                   "inv_gamma", "weibull", "frechet", "rayleigh",
-                   "pareto", "pareto_type_2")
+    lb_priors <- c(
+      "lognormal", "chi_square", "inv_chi_square",
+      "scaled_inv_chi_square", "exponential", "gamma",
+      "inv_gamma", "weibull", "frechet", "rayleigh",
+      "pareto", "pareto_type_2"
+    )
     lb_priors_reg <- paste0("^(", paste0(lb_priors, collapse = "|"), ")")
     ulb_priors <- c("beta", "uniform", "von_mises")
     ulb_priors_reg <- paste0("^(", paste0(ulb_priors, collapse = "|"), ")")
@@ -964,8 +995,10 @@ check_prior_content <- function(prior, family = gaussian(), warn = TRUE) {
       has_lb_prior <- grepl(lb_priors_reg, prior$prior[i])
       has_ulb_prior <- grepl(ulb_priors_reg, prior$prior[i])
       # priors with nchar(coef) inherit their boundaries 
-      j <- with(prior, which(class == class[i] & group == group[i] & 
-                               nlpar == nlpar[i] & !nchar(coef)))
+      j <- with(prior, 
+        which(class == class[i] & group == group[i] & 
+              nlpar == nlpar[i] & !nchar(coef))
+      )
       bound <- if (length(j)) prior$bound[j] else ""
       has_lb <- grepl("lower", bound)
       has_ub <- grepl("upper", bound)
@@ -982,9 +1015,9 @@ check_prior_content <- function(prior, family = gaussian(), warn = TRUE) {
         }
       } else if (prior$class[i] %in% cor_pars) {
         if (nchar(prior$prior[i]) && !grepl("^lkj", prior$prior[i])) {
-          stop(paste("Currently 'lkj' is the only valid prior",
-                     "for group-level correlations. See help(set_prior)",
-                     "for more details."), call. = FALSE)
+          stop2("Currently 'lkj' is the only valid prior ",
+                "for group-level correlations. See help(set_prior) ",
+                "for more details.")
         }
       } else if (prior$class[i] %in% autocor_pars) {
         if (prior$bound[i] != "<lower=-1,upper=1>") {
@@ -992,9 +1025,9 @@ check_prior_content <- function(prior, family = gaussian(), warn = TRUE) {
         } 
       } else if (prior$class[i] == "simplex") {
         if (nchar(prior$prior[i]) && !grepl("^dirichlet\\(", prior$prior[i])) {
-          stop(paste("Currently 'dirichlet' is the only valid prior",
-                     "for simplex parameters. See help(set_prior)",
-                     "for more details."), call. = FALSE)
+          stop2("Currently 'dirichlet' is the only valid prior ",
+                "for simplex parameters. See help(set_prior) ",
+                "for more details.")
         }
       }
     }  # end for  
@@ -1075,7 +1108,9 @@ handle_special_priors <- function(prior, bterms, autocor = cor_arma(),
     }
   }
   # expand lkj correlation prior to full name
-  prior$prior <- sub("^(lkj\\(|lkj_corr\\()", "lkj_corr_cholesky(", prior$prior)
+  prior$prior <- sub(
+    "^(lkj\\(|lkj_corr\\()", "lkj_corr_cholesky(", prior$prior
+  )
   do.call(structure, c(list(prior), prior_attr))
 }
 
