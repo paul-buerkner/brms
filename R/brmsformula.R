@@ -575,10 +575,9 @@ auxpars <- function() {
     "zi", "hu", "disc", "bs", "ndt", "bias", "quantile")
 }
 
-links_auxpars <- function(ap = NULL) {
+links_auxpars <- function(ap) {
   # link functions for auxiliary parameters
-  stopifnot(length(ap) <= 1L)
-  link <- list(
+  switch(ap,
     mu = "identity",
     sigma = "log", 
     shape = "log", 
@@ -593,32 +592,9 @@ links_auxpars <- function(ap = NULL) {
     ndt = "log", 
     bias = "logit",
     quantile = "logit",
-    xi = "log1p"
+    xi = "log1p",
+    stop2("Parameter '", ap, "' is not supported.")
   )
-  if (length(ap)) {
-    link <- link[[ap]]
-  }
-  link
-}
-
-ilink_auxpars <- function(ap = NULL, stan = FALSE) {
-  # helper function to store inverse links of auxiliary parameters
-  if (stan) {
-    ilink <- c(sigma = "exp", shape = "exp", nu = "expp1", phi = "exp", 
-               kappa = "exp", beta = "exp", zi = "", hu = "", 
-               bs = "exp", ndt = "exp", bias = "inv_logit", disc = "exp",
-               quantile = "inv_logit", xi = "expm1", mu = "") 
-  } else {
-    ilink <- c(sigma = "exp", shape = "exp", nu = "expp1", phi = "exp", 
-               kappa = "exp", beta = "exp", zi = "inv_logit", 
-               hu = "inv_logit", bs = "exp", ndt = "exp", 
-               bias = "inv_logit", disc = "exp", quantile = "inv_logit",
-               xi = "expm1", mu = "identity")
-  }
-  if (length(ap)) {
-    ilink <- ilink[ap]
-  }
-  ilink
 }
 
 valid_auxpars <- function(family, bterms = NULL) {

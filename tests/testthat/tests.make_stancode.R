@@ -247,7 +247,7 @@ test_that("self-defined functions appear in the Stan code", {
   
   # zero-inflated and hurdle models
   expect_match2(make_stancode(count ~ Trt_c, data = epilepsy, 
-                             family = "zero_inflated_poisson"),
+                              family = "zero_inflated_poisson"),
                "real zero_inflated_poisson_lpmf(int y")
   expect_match2(make_stancode(count ~ Trt_c, data = epilepsy, 
                              family = "zero_inflated_negbinomial"),
@@ -273,7 +273,7 @@ test_that("self-defined functions appear in the Stan code", {
   
   # linear models with special covariance structures
   expect_match2(make_stancode(rating ~ treat, data = inhaler, 
-                             autocor = cor_ma(cov = TRUE)),
+                              autocor = cor_ma(cov = TRUE)),
                "real normal_cov_lpdf(vector y")
   expect_match2(make_stancode(time ~ age, data = kidney, family = "student", 
                              autocor = cor_ar(cov = TRUE)),
@@ -749,6 +749,15 @@ test_that("Group syntax | and || is handled correctly,", {
   expect_match2(scode, "r_1_2 = sd_1[2] * (z_1[2]);")
   expect_match2(scode, "r_2_1 = r_2[, 1];")
   expect_match2(scode, "r_2 = (diag_pre_multiply(sd_2, L_2) * z_2)';")
+})
+
+test_that("predicting zi and hu works correctly", {
+  expect_match2(make_stancode(bf(count ~ Trt_c, zi ~ Trt_c), epilepsy, 
+                              family = "zero_inflated_poisson"),
+                "Y[n] ~ zero_inflated_poisson_logit(eta[n], zi[n])")
+  expect_match2(make_stancode(bf(count ~ Trt_c, hu ~ Trt_c), epilepsy, 
+                              family = "hurdle_gamma"),
+                "Y[n] ~ hurdle_gamma_logit(shape, eta[n], hu[n])")
 })
 
 test_that("fixing auxiliary parameters is possible", {

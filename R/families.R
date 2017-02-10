@@ -226,8 +226,10 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
          family, "'. \nSupported links are: ", 
          paste(ok_links, collapse = ", "), call. = FALSE) 
   }
-  out <- structure(list(family = family, link = slink), 
-                   class = c("brmsfamily", "family"))
+  out <- structure(
+    list(family = family, link = slink), 
+    class = c("brmsfamily", "family")
+  )
   for (ap in valid_auxpars(out$family)) {
     alink <- as.character(aux_links[[paste0("link_", ap)]])
     if (length(alink)) {
@@ -464,10 +466,30 @@ acat <- function(link = "logit", link_disc = "log") {
               link_disc = link_disc)
 }
 
-par_family <- function(par, link = "identity") {
-  # temporary until properly defined
-  structure(list(family = par, link = link),
-            class = c("brmsfamily", "family"))
+par_family <- function(par, link = NULL) {
+  # set up family objects for auxiliary parameters
+  # Args:
+  #   par: name of the auxiliary parameter
+  #   link: link function of the parameter
+  if (!isNA(par) && !isTRUE(par %in% auxpars())) {
+    stop2("Parameter '", par, "' is invalid.")
+  }
+  if (isNA(par)) {
+    link <- "identity"
+  } else {
+    links <- links_auxpars(par)
+    if (is.null(link)) {
+      link <- links[1]
+    } else {
+      if (!isTRUE(link %in% links)) {
+        stop2("Link '", link, "' is invalid for parameter '", par, "'.")
+      }
+    }
+  }
+  structure(
+    list(family = par, link = link),
+    class = c("brmsfamily", "family")
+  )
 }
 
 check_family <- function(family, link = NULL) {

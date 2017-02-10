@@ -150,6 +150,7 @@ stan_effects.brmsterms <- function(x, data, ranef, prior, sparse = FALSE,
   #   other arguments: same as make_stancode
   out <- list()
   default_defs <- c(
+    mu = "",  # mu is always predicted
     sigma = "  real<lower=0> sigma;  // residual SD \n",
     shape = "  real<lower=0> shape;  // shape parameter \n",
     nu = "  real<lower=1> nu;  // degrees of freedom or shape \n",
@@ -163,8 +164,7 @@ stan_effects.brmsterms <- function(x, data, ranef, prior, sparse = FALSE,
     bias = "  real<lower=0,upper=1> bias;  // initial bias parameter \n",
     disc = "  real<lower=0> disc;  // discrimination parameters \n",
     quantile = "  real<lower=0,upper=1> quantile;  // quantile parameter \n",
-    xi = "  real xi;  // shape parameter \n",
-    mu = ""
+    xi = "  real xi;  // shape parameter \n"
   )
   default_defs_temp <- c(
     xi = "  real temp_xi;  // unscaled shape parameter \n"
@@ -174,10 +174,6 @@ stan_effects.brmsterms <- function(x, data, ranef, prior, sparse = FALSE,
   for (ap in valid_auxpars) {
     ap_terms <- x$auxpars[[ap]]
     if (is.btl(ap_terms) || is.btnl(ap_terms)) {
-      # TODO: define families inside parse_bf?
-      if (is.null(ap_terms$family)) {
-        ap_terms$family <- par_family(ap, links_auxpars(ap))
-      }
       ilink <- stan_eta_ilink(
         ap_terms$family, auxpars = names(x$auxpars), adforms = x$adforms
       )
@@ -820,9 +816,9 @@ stan_eta_bsts <- function(autocor) {
 
 stan_eta_transform <- function(family, llh_adj = FALSE) {
   # indicate whether eta needs to be transformed
-  # in the transformed parameters block
+  # manually using the link functions
   # Args:
-  #   family: a list with elements 'family' and 'link
+  #   family: a list with elements 'family' and 'link'
   #   llh_adj: is the model censored or truncated?
   stopifnot(all(c("family", "link") %in% names(family)))
   link <- family$link

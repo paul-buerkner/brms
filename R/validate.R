@@ -67,7 +67,6 @@ parse_bf <- function(formula, family = NULL, autocor = NULL,
       stop2("Terms should be specified in either or 'formula' or 'mu'.")
     }
   }
-  
   x$pforms <- x$pforms[c("mu", setdiff(names(x$pforms), "mu"))]
   auxpars <- intersect(names(x$pforms), valid_auxpars(family, y))
   nlpars <- setdiff(names(x$pforms), auxpars)
@@ -76,20 +75,24 @@ parse_bf <- function(formula, family = NULL, autocor = NULL,
       stop2("Non-linear formulas are not yet allowed for this family.")
     }
     y$auxpars[["mu"]] <- parse_nlf(x$pforms[["mu"]], x$pforms[nlpars])
-    auxpars <- setdiff(auxpars, "mu")
   } else {
     if (length(nlpars)) {
       nlpars <- collapse_comma(nlpars)
       stop2("Prediction of parameter(s) ", nlpars,
             " is not allowed for this model.")
     }
-  }
-  
-  # varying auxiliary parameters
-  for (ap in auxpars) {
-    y$auxpars[[ap]] <- parse_lf(x$pforms[[ap]], family = family)
+    y$auxpars[["mu"]] <- parse_lf(x$pforms[["mu"]], family = family)
   }
   y$auxpars[["mu"]][c("family", "autocor")] <- nlist(family, autocor)
+  auxpars <- setdiff(auxpars, "mu")
+  
+  # predicted auxiliary parameters
+  for (ap in auxpars) {
+    y$auxpars[[ap]] <- parse_lf(x$pforms[[ap]], family = family)
+    ap_family <- par_family(ap, family[[paste0("link_", ap)]])
+    y$auxpars[[ap]]$family <- ap_family
+  }
+
   # fixed auxiliary parameters
   inv_fauxpars <- setdiff(names(x$pfix), valid_auxpars(family, y))
   if (length(inv_fauxpars)) {
