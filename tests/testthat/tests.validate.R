@@ -11,7 +11,7 @@ test_that("parse_bf handles very long RE terms", {
   formula <- paste(sprintf("y ~ 0 + trait + trait:(%s)", covariate_vector),
                    sprintf("(1+%s|id)", covariate_vector), sep = " + ")
   bterms <- parse_bf(as.formula(formula))
-  expect_equal(bterms$re$group, "id")
+  expect_equal(bterms$auxpars$mu$re$group, "id")
 })
 
 test_that("(deprecated) amend_formula returns correct formulas", {

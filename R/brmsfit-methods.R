@@ -420,12 +420,14 @@ VarCorr.brmsfit <- function(x, sigma = 1, estimate = "mean",
     p <- group <- NULL
   } 
   # special treatment of residuals variances in linear models
-  has_sigma <- has_sigma(family, bterms, autocor = x$autocor, incmv = TRUE)
+  has_sigma <- has_sigma(family, bterms, incmv = TRUE)
   if (has_sigma && !"sigma" %in% names(bterms$auxpars)) {
     cor_pars <- get_cornames(bterms$response, type = "rescor", 
                              brackets = FALSE)
-    p <- lc(p, list(rnames = bterms$response, cor_pars = cor_pars,
-                    sd_pars = c("sigma", paste0("sigma_", bterms$response))))
+    p <- lc(p, 
+      list(rnames = bterms$response, cor_pars = cor_pars,
+           sd_pars = c("sigma", paste0("sigma_", bterms$response)))
+    )
     group <- c(group, "RESIDUAL")
   } 
   VarCorr <- lapply(p, extract)
@@ -752,7 +754,7 @@ summary.brmsfit <- function(object, waic = FALSE, priors = FALSE,
       rownames(out$random[[g]]) <- c(sd_names, cor_names)
     }
     
-    # summary of splines
+    # summary of smooths
     spline_pars <- pars[grepl("^sds_", pars)]
     if (length(spline_pars)) {
       out$splines <- fit_summary[spline_pars, , drop = FALSE]
@@ -1369,29 +1371,33 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
   conditions <- prepare_conditions(x)
   smooths <- rename(as.character(smooths), " ", "")
   bterms <- parse_bf(formula(x), family = family(x))
-  if (length(bterms$nlpars)) {
-    lee <- bterms$nlpars
-  } else {
-    lee <- named_list(bterms$response, list(bterms))
-    if (length(lee) == 1L) {
-      names(lee) <- ""
+  lee <- list()
+  if (length(bterms$response) > 1L) {
+    for (r in bterms$response) {
+      lee <- c(lee, setNames(bterms$auxpars["mu"], r))
+    }
+    bterms$auxpars[["mu"]] <- NULL
+  }
+  for (ap in names(bterms$auxpars)) {
+    bt <- bterms$auxpars[ap]
+    if (is.btnl(bt[[1]])) {
+      lee <- c(lee, bt[[1]]$nlpars)
+    } else {
+      lee <- c(lee, bt)
     }
   }
-  lee <- c(lee, bterms$auxpars)
-  
   args <- nlist(
-    x, smooths_only = TRUE, allow_new_levels = TRUE,
-    incl_autocor = FALSE, f = prepare_family(x), 
-    nsamples = nsamples(x)
+    fit = x, smooths_only = TRUE, nsamples = nsamples(x),
+    incl_autocor = FALSE, allow_new_levels = TRUE
   )
   too_many_covars <- FALSE
   results <- list()
   for (k in seq_along(lee)) {
     # loop over elements that may contain smooth terms
-    splines <- get_sm_labels(lee[[k]])
-    splines_by <- get_sm_labels(lee[[k]], data = mf)
+    sm_labels <- get_sm_labels(lee[[k]])
+    sm_labels_by <- get_sm_labels(lee[[k]], data = mf)
     covars <- get_sm_labels(lee[[k]], covars = TRUE, combine = FALSE)
-    for (i in seq_along(splines)) {
+    for (i in seq_along(sm_labels)) {
       # loop over smooth terms and compute their predictions
       covars_no_by_factor <- covars[[i]]
       byvars <- attr(covars, "byvars")[[i]]
@@ -1402,8 +1408,8 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
       if (ncovars > 2L) {
         too_many_covars <- TRUE
       }
-      include_spline <- !length(smooths) || splines[[i]] %in% smooths
-      if (include_spline && ncovars <= 2L) {
+      include_smooth <- !length(smooths) || sm_labels[[i]] %in% smooths
+      if (include_smooth && ncovars <= 2L) {
         values <- named_list(covars[[i]])
         for (cv in names(values)) {
           if (is.numeric(mf[[cv]])) {
@@ -1428,10 +1434,9 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
         other_vars <- setdiff(names(conditions), covars[[i]])
         newdata[, other_vars] <- conditions[1, other_vars]
         # prepare draws for linear_predictor
-        more_args <- nlist(newdata, nlpar = names(lee)[k], 
-                           rhs_formula = lee[[k]]$formula)
-        draws <- do.call(.extract_draws, c(args, more_args))
-        J <- which(attr(splines_by, "termnum") == i)
+        more_args <- nlist(x = lee[[k]], newdata, nlpar = names(lee)[k])
+        draws <- do.call(extract_draws, c(args, more_args))
+        J <- which(attr(sm_labels_by, "termnum") == i)
         scs <- unlist(attr(draws$data[["X"]], "smooth_cols")[J])
         draws$data[["X"]] <- draws$data[["X"]][, scs, drop = FALSE]
         draws[["b"]] <- draws[["b"]][, scs, drop = FALSE]
@@ -1444,7 +1449,7 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
         if (length(byfactors)) {
           res$cond__ <- Reduce(paste_colon, res[, byfactors, drop = FALSE]) 
         }
-        response <- splines[[i]]
+        response <- sm_labels[[i]]
         if (isTRUE(nzchar(names(lee)[k]))) {
           response <- paste0(names(lee)[k], ": ", response)
         }
@@ -1584,10 +1589,14 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                             probs = c(0.025, 0.975), ...) {
   contains_samples(object)
   object <- restructure(object)
-  draws_args <- nlist(x = object, newdata, re_formula, incl_autocor, 
-                      allow_new_levels, subset, nsamples)
+  draws_args <- nlist(
+    x = object, newdata, re_formula, incl_autocor, 
+    allow_new_levels, subset, nsamples
+  )
   draws <- do.call(extract_draws, draws_args)
-  draws$eta <- get_eta(draws = draws, i = NULL)
+  if (is.list(draws$mu[["mv"]])) {
+    draws$mu <- get_eta(draws$mu)
+  }
   for (ap in intersect(auxpars(), names(draws))) {
     if (is.list(draws[[ap]])) {
       draws[[ap]] <- get_auxpar(draws[[ap]])
@@ -1712,26 +1721,30 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   scale <- match.arg(scale)
   contains_samples(object)
   object <- restructure(object)
-  draws_args <- nlist(x = object, newdata, re_formula, incl_autocor, 
-                      allow_new_levels, subset, nsamples)
+  draws_args <- nlist(
+    x = object, newdata, re_formula, incl_autocor, 
+    allow_new_levels, subset, nsamples
+  )
   draws <- do.call(extract_draws, draws_args)
-  # get mu and scale it appropriately
-  mu <- get_eta(draws = draws, i = NULL)
-  if (grepl("_mv$", draws$f$family) && !is.null(draws[["mv"]])) {
-    # collapse over responses in linear MV models
-    dim(mu) <- c(dim(mu)[1], prod(dim(mu)[2:3]))
+  if (is.list(draws$mu[["mv"]])) {
+    draws$mu <- get_eta(draws$mu)
   }
   for (ap in intersect(auxpars(), names(draws))) {
-    if (is(draws[[ap]], "list")) {
+    if (is.list(draws[[ap]])) {
       draws[[ap]] <- get_auxpar(draws[[ap]])
     }
+  }
+  mu <- draws$mu
+  if (grepl("_mv$", draws$f$family) && length(dim(mu)) == 3L) {
+    # collapse over responses in linear MV models
+    dim(mu) <- c(dim(mu)[1], prod(dim(mu)[2:3]))
   }
   if (scale == "response") {
     # original families are required for fitted helper functions 
     draws$f <- family(object)
     fitted_fun <- paste0("fitted_", draws$f$family)
     fitted_fun <- get(fitted_fun, asNamespace("brms"))
-    mu <- do.call(fitted_fun, nlist(mu, draws))
+    mu <- fitted_fun(mu, draws)
   }
   old_order <- attr(draws$data, "old_order")
   out <- reorder_obs(mu, old_order, sort = sort)
@@ -1938,8 +1951,8 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
       ee_new <- parse_bf(dots$formula)
       # no need to recompile the model when changing fixed effects only
       dont_change <- c("re", "sm", "cs", "mo", "me")
-      n_old_fixef <- length(attr(terms(ee_old$fe), "term.labels"))
-      n_new_fixef <- length(attr(terms(ee_new$fe), "term.labels"))
+      n_old_fixef <- length(attr(terms(ee_old$auxpars$mu$fe), "term.labels"))
+      n_new_fixef <- length(attr(terms(ee_new$auxpars$mu$fe), "term.labels"))
       recompile <- recompile ||
         !is_equal(names(ee_old), names(ee_new)) ||
         !is_equal(ee_old[names(ee_old) %in% dont_change], 
@@ -2177,10 +2190,12 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                             nsamples = NULL, pointwise = FALSE, ...) {
   contains_samples(object)
   object <- restructure(object)
-  draws <- extract_draws(x = object, newdata = newdata, 
-                         re_formula = re_formula, subset = subset,
-                         allow_new_levels = allow_new_levels,
-                         nsamples = nsamples, check_response = TRUE)
+  draws_args <- nlist(
+    x = object, newdata, re_formula, allow_new_levels,
+    subset, nsamples, check_response = TRUE
+  )
+  draws <- do.call(extract_draws, draws_args)
+  
   N <- if (!is.null(draws$data$N_tg)) draws$data$N_tg
        else if (is.cor_fixed(object$autocor)) 1
        else nrow(as.matrix(draws$data$Y))
@@ -2189,7 +2204,14 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (pointwise) {
     loglik <- structure(loglik_fun, draws = draws, N = N)
   } else {
-    draws$eta <- get_eta(draws = draws, i = NULL)
+    if (is.list(draws$mu[["mv"]])) {
+      draws$mu <- get_eta(draws$mu)
+    }
+    for (ap in intersect(auxpars(), names(draws))) {
+      if (is.list(draws[[ap]])) {
+        draws[[ap]] <- get_auxpar(draws[[ap]])
+      }
+    }
     loglik <- do.call(cbind, lapply(seq_len(N), loglik_fun, draws = draws))
     old_order <- attr(draws$data, "old_order")
     # do not loglik reorder for ARMA covariance models

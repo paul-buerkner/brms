@@ -10,7 +10,7 @@
 #   A vector of length draws$nsamples containing samples
 #   from the posterior predictive distribution
 predict_gaussian <- function(i, draws, ...) {
-  args <- list(mean = ilink(get_eta(draws, i), draws$f$link), 
+  args <- list(mean = ilink(get_eta(draws$mu, i), draws$f$link), 
                sd = get_sigma(draws$sigma, data = draws$data, i = i))
   rng_continuous(nrng = draws$nsamples, dist = "norm", args = args, 
                  lb = draws$data$lb[i], ub = draws$data$ub[i])
@@ -18,21 +18,21 @@ predict_gaussian <- function(i, draws, ...) {
 
 predict_student <- function(i, draws, ...) {
   args <- list(df = get_auxpar(draws$nu, i = i), 
-               mu = ilink(get_eta(draws, i), draws$f$link), 
+               mu = ilink(get_eta(draws$mu, i), draws$f$link), 
                sigma = get_sigma(draws$sigma, data = draws$data, i = i))
   rng_continuous(nrng = draws$nsamples, dist = "student", args = args, 
                  lb = draws$data$lb[i], ub = draws$data$ub[i])
 }
 
 predict_cauchy <- function(i, draws, ...) {
-  args <- list(df = 1, mu = ilink(get_eta(draws, i), draws$f$link), 
+  args <- list(df = 1, mu = ilink(get_eta(draws$mu, i), draws$f$link), 
                sigma = get_sigma(draws$sigma, data = draws$data, i = i))
   rng_continuous(nrng = draws$nsamples, dist = "student", args = args,
                  lb = draws$data$lb[i], ub = draws$data$ub[i])
 }
 
 predict_lognormal <- function(i, draws, ...) {
-  args <- list(meanlog = ilink(get_eta(draws, i), draws$f$link), 
+  args <- list(meanlog = ilink(get_eta(draws$mu, i), draws$f$link), 
                sdlog = get_sigma(draws$sigma, data = draws$data, i = i))
   rng_continuous(nrng = draws$nsamples, dist = "lnorm", args = args, 
                  lb = draws$data$lb[i], ub = draws$data$ub[i])
@@ -42,9 +42,9 @@ predict_gaussian_mv <- function(i, draws, ...) {
   # currently no truncation available
   if (!is.null(draws$data$N_trait)) {
     obs <- seq(i, draws$data$N, draws$data$N_trait)
-    mu <- ilink(get_eta(draws, obs), draws$f$link)
+    mu <- ilink(get_eta(draws$mu, obs), draws$f$link)
   } else {
-    mu <- ilink(get_eta(draws, i), draws$f$link)[, 1, ]
+    mu <- ilink(get_eta(draws$mu, i), draws$f$link)[, 1, ]
   }
   .fun <- function(s) {
     rmulti_normal(1, mu = mu[s, ], Sigma = draws$Sigma[s, , ])
@@ -56,9 +56,9 @@ predict_student_mv <- function(i, draws, ...) {
   # currently no truncation available
   if (!is.null(draws$data$N_trait)) {
     obs <- seq(i, draws$data$N, draws$data$N_trait)
-    mu <- ilink(get_eta(draws, obs), draws$f$link)
+    mu <- ilink(get_eta(draws$mu, obs), draws$f$link)
   } else {
-    mu <- ilink(get_eta(draws, i), draws$f$link)[, 1, ]
+    mu <- ilink(get_eta(draws$mu, i), draws$f$link)[, 1, ]
   }
   nu <- get_auxpar(draws$nu, i = i)
   .fun <- function(s) {
@@ -72,9 +72,9 @@ predict_cauchy_mv <- function(i, draws, ...) {
   # currently no truncation available
   if (!is.null(draws$data$N_trait)) {
     obs <- seq(i, draws$data$N, draws$data$N_trait)
-    mu <- ilink(get_eta(draws, obs), draws$f$link)
+    mu <- ilink(get_eta(draws$mu, obs), draws$f$link)
   } else {
-    mu <- ilink(get_eta(draws, i), draws$f$link)[, 1, ]
+    mu <- ilink(get_eta(draws$mu, i), draws$f$link)[, 1, ]
   }
   .fun <- function(s) {
     rmulti_student(1, df = 1, mu = mu[s, ],
@@ -86,7 +86,7 @@ predict_cauchy_mv <- function(i, draws, ...) {
 predict_gaussian_cov <- function(i, draws, ...) {
   # currently, only ARMA1 processes are implemented
   obs <- with(draws$data, begin_tg[i]:(begin_tg[i] + nobs_tg[i] - 1))
-  mu <- ilink(get_eta(draws, obs), draws$f$link)
+  mu <- ilink(get_eta(draws$mu, obs), draws$f$link)
   args <- list(sigma = get_sigma(draws$sigma, data = draws$data, i = i), 
                se2 = draws$data$se2[obs], nrows = length(obs))
   if (!is.null(draws$ar) && is.null(draws$ma)) {
@@ -114,7 +114,7 @@ predict_gaussian_cov <- function(i, draws, ...) {
 predict_student_cov <- function(i, draws, ...) {
   # currently, only ARMA1 processes are implemented
   obs <- with(draws$data, begin_tg[i]:(begin_tg[i] + nobs_tg[i] - 1))
-  mu <- ilink(get_eta(draws, obs), draws$f$link)
+  mu <- ilink(get_eta(draws$mu, obs), draws$f$link)
   args <- list(sigma = get_sigma(draws$sigma, data = draws$data, i = i), 
                se2 = draws$data$se2[obs], nrows = length(obs))
   if (!is.null(draws$ar) && is.null(draws$ma)) {
@@ -148,7 +148,7 @@ predict_cauchy_cov <- function(i, draws, ...) {
 
 predict_gaussian_fixed <- function(i, draws, ...) {
   stopifnot(i == 1)
-  mu <- ilink(get_eta(draws, 1:nrow(draws$data$V)), draws$f$link)
+  mu <- ilink(get_eta(draws$mu, 1:nrow(draws$data$V)), draws$f$link)
   .fun <- function(s) {
     rmulti_normal(1, mu = mu[s, ], Sigma = draws$data$V)
   }
@@ -157,7 +157,7 @@ predict_gaussian_fixed <- function(i, draws, ...) {
 
 predict_student_fixed <- function(i, draws, ...) {
   stopifnot(i == 1)
-  mu <- ilink(get_eta(draws, 1:nrow(draws$data$V)), draws$f$link)
+  mu <- ilink(get_eta(draws$mu, 1:nrow(draws$data$V)), draws$f$link)
   nu <- get_auxpar(draws$nu, 1:nrow(draws$data$V))
   .fun <- function(s) {
     rmulti_student(1, df = nu[s, ], mu = mu[s, ], Sigma = draws$data$V)
@@ -173,7 +173,7 @@ predict_cauchy_fixed <- function(i, draws, ...) {
 
 predict_binomial <- function(i, draws, ntrys = 5, ...) {
   trials <- draws$data$trials[i]
-  args <- list(size = trials, prob = ilink(get_eta(draws, i), draws$f$link))
+  args <- list(size = trials, prob = ilink(get_eta(draws$mu, i), draws$f$link))
   rng_discrete(nrng = draws$nsamples, dist = "binom", args = args, 
                lb = draws$data$lb[i], ub = draws$data$ub[i], 
                ntrys = ntrys)
@@ -181,19 +181,19 @@ predict_binomial <- function(i, draws, ntrys = 5, ...) {
 
 predict_bernoulli <- function(i, draws, ...) {
   # truncation not useful
-  eta <- get_eta(draws, i)
+  eta <- get_eta(draws$mu, i)
   rbinom(length(eta), size = 1, prob = ilink(eta, draws$f$link))
 }
 
 predict_poisson <- function(i, draws, ntrys = 5, ...) {
-  args <- list(lambda = ilink(get_eta(draws, i), draws$f$link))
+  args <- list(lambda = ilink(get_eta(draws$mu, i), draws$f$link))
   rng_discrete(nrng = draws$nsamples, dist = "pois", args = args, 
                lb = draws$data$lb[i], ub = draws$data$ub[i],
                ntrys = ntrys)
 }
 
 predict_negbinomial <- function(i, draws, ntrys = 5, ...) {
-  args <- list(mu = ilink(get_eta(draws, i), draws$f$link), 
+  args <- list(mu = ilink(get_eta(draws$mu, i), draws$f$link), 
                size = get_shape(draws$shape, data = draws$data, i = i))
   rng_discrete(nrng = draws$nsamples, dist = "nbinom", args = args, 
                lb = draws$data$lb[i], ub = draws$data$ub[i],
@@ -201,14 +201,14 @@ predict_negbinomial <- function(i, draws, ntrys = 5, ...) {
 }
 
 predict_geometric <- function(i, draws, ntrys = 5, ...) {
-  args <- list(mu = ilink(get_eta(draws, i), draws$f$link), size = 1)
+  args <- list(mu = ilink(get_eta(draws$mu, i), draws$f$link), size = 1)
   rng_discrete(nrng = draws$nsamples, dist = "nbinom", args = args, 
                lb = draws$data$lb[i], ub = draws$data$ub[i], 
                ntrys = ntrys)
 }
 
 predict_exponential <- function(i, draws, ...) {
-  args <- list(rate = 1 / ilink(get_eta(draws, i), draws$f$link))
+  args <- list(rate = 1 / ilink(get_eta(draws$mu, i), draws$f$link))
   rng_continuous(nrng = draws$nsamples, dist = "exp", args = args, 
                  lb = draws$data$lb[i], ub = draws$data$ub[i])
 }
@@ -216,14 +216,14 @@ predict_exponential <- function(i, draws, ...) {
 predict_gamma <- function(i, draws, ...) {
   shape <- get_shape(draws$shape, data = draws$data, i = i)
   args <- list(shape = shape, 
-               scale = ilink(get_eta(draws, i), draws$f$link) / shape)
+               scale = ilink(get_eta(draws$mu, i), draws$f$link) / shape)
   rng_continuous(nrng = draws$nsamples, dist = "gamma", args = args, 
                  lb = draws$data$lb[i], ub = draws$data$ub[i])
 }
 
 predict_weibull <- function(i, draws, ...) {
   shape <- get_shape(draws$shape, data = draws$data, i = i)
-  scale <- ilink(get_eta(draws, i) / shape, draws$f$link)
+  scale <- ilink(get_eta(draws$mu, i) / shape, draws$f$link)
   args <- list(shape = shape, scale = scale)
   rng_continuous(nrng = draws$nsamples, dist = "weibull", args = args, 
                  lb = draws$data$lb[i], ub = draws$data$ub[i])
@@ -231,7 +231,7 @@ predict_weibull <- function(i, draws, ...) {
 
 predict_frechet <- function(i, draws, ...) {
   nu <- get_auxpar(draws$nu, i = i)
-  scale <- ilink(get_eta(draws, i), draws$f$link) / gamma(1 - 1 / nu)
+  scale <- ilink(get_eta(draws$mu, i), draws$f$link) / gamma(1 - 1 / nu)
   args <- list(scale = scale, shape = nu)
   rng_continuous(nrng = draws$nsamples, dist = "frechet", args = args, 
                  lb = draws$data$lb[i], ub = draws$data$ub[i])
@@ -240,21 +240,21 @@ predict_frechet <- function(i, draws, ...) {
 predict_gen_extreme_value <- function(i, draws, ...) {
   sigma <- get_sigma(draws$sigma, data = draws$data, i = i)
   xi <- get_auxpar(draws$xi, i = i)
-  mu <- ilink(get_eta(draws, i), draws$f$link)
+  mu <- ilink(get_eta(draws$mu, i), draws$f$link)
   args <- nlist(mu, sigma, xi)
   rng_continuous(nrng = draws$nsamples, dist = "gen_extreme_value", 
                  args = args, lb = draws$data$lb[i], ub = draws$data$ub[i])
 }
 
 predict_inverse.gaussian <- function(i, draws, ...) {
-  args <- list(mean = ilink(get_eta(draws, i), draws$f$link), 
+  args <- list(mean = ilink(get_eta(draws$mu, i), draws$f$link), 
                shape = get_shape(draws$shape, data = draws$data, i = i))
   rng_continuous(nrng = draws$nsamples, dist = "invgauss", args = args, 
                  lb = draws$data$lb[i], ub = draws$data$ub[i])
 }
 
 predict_exgaussian <- function(i, draws, ...) {
-  args <- list(mu = ilink(get_eta(draws, i), draws$f$link), 
+  args <- list(mu = ilink(get_eta(draws$mu, i), draws$f$link), 
                sigma = get_sigma(draws$sigma, data = draws$data, i = i),
                beta = get_auxpar(draws$beta, i = i))
   rng_continuous(nrng = draws$nsamples, dist = "exgaussian", args = args, 
@@ -262,7 +262,7 @@ predict_exgaussian <- function(i, draws, ...) {
 }
 
 predict_wiener <- function(i, draws, col = c("q", "resp"), ...) {
-  args <- list(delta = ilink(get_eta(draws, i), draws$f$link), 
+  args <- list(delta = ilink(get_eta(draws$mu, i), draws$f$link), 
                alpha = get_auxpar(draws$bs, i = i),
                tau = get_auxpar(draws$ndt, i = i),
                beta = get_auxpar(draws$bias, i = i),
@@ -272,7 +272,7 @@ predict_wiener <- function(i, draws, col = c("q", "resp"), ...) {
 }
 
 predict_beta <- function(i, draws, ...) {
-  mu <- ilink(get_eta(draws, i), draws$f$link)
+  mu <- ilink(get_eta(draws$mu, i), draws$f$link)
   phi <- get_auxpar(draws$phi, i = i)
   args <- list(shape1 = mu * phi, shape2 = (1 - mu) * phi)
   rng_continuous(nrng = draws$nsamples, dist = "beta", args = args, 
@@ -280,14 +280,14 @@ predict_beta <- function(i, draws, ...) {
 }
 
 predict_von_mises <- function(i, draws, ...) {
-  args <- list(mu = ilink(get_eta(draws, i), draws$f$link), 
+  args <- list(mu = ilink(get_eta(draws$mu, i), draws$f$link), 
                kappa = get_auxpar(draws$kappa, i = i))
   rng_continuous(nrng = draws$nsamples, dist = "von_mises", args = args,
                  lb = draws$data$lb[i], ub = draws$data$ub[i])
 }
 
 predict_asym_laplace <- function(i, draws, ...) {
-  args <- list(mu = ilink(get_eta(draws, i), draws$f$link), 
+  args <- list(mu = ilink(get_eta(draws$mu, i), draws$f$link), 
                sigma = get_sigma(draws$sigma, data = draws$data, i = i),
                quantile = get_auxpar(draws$quantile, i = i))
   rng_continuous(nrng = draws$nsamples, dist = "asym_laplace", args = args, 
@@ -297,7 +297,7 @@ predict_asym_laplace <- function(i, draws, ...) {
 predict_hurdle_poisson <- function(i, draws, ...) {
   # theta is the bernoulli hurdle parameter
   theta <- get_theta(draws, i, par = "hu")
-  lambda <- ilink(get_eta(draws, i), draws$f$link)
+  lambda <- ilink(get_eta(draws$mu, i), draws$f$link)
   ndraws <- draws$nsamples
   # compare with theta to incorporate the hurdle process
   hu <- runif(ndraws, 0, 1)
@@ -310,7 +310,7 @@ predict_hurdle_poisson <- function(i, draws, ...) {
 predict_hurdle_negbinomial <- function(i, draws, ...) {
   # theta is the bernoulli hurdle parameter
   theta <- get_theta(draws, i, par = "hu")
-  mu <- ilink(get_eta(draws, i), draws$f$link)
+  mu <- ilink(get_eta(draws$mu, i), draws$f$link)
   ndraws <- draws$nsamples
   # compare with theta to incorporate the hurdle process
   hu <- runif(ndraws, 0, 1)
@@ -325,7 +325,7 @@ predict_hurdle_gamma <- function(i, draws, ...) {
   # theta is the bernoulli hurdle parameter
   theta <- get_theta(draws, i, par = "hu")
   shape <- get_shape(draws$shape, data = draws$data, i = i)
-  scale <- ilink(get_eta(draws, i), draws$f$link) / shape
+  scale <- ilink(get_eta(draws$mu, i), draws$f$link) / shape
   ndraws <- draws$nsamples
   # compare with theta to incorporate the hurdle process
   hu <- runif(ndraws, 0, 1)
@@ -335,7 +335,7 @@ predict_hurdle_gamma <- function(i, draws, ...) {
 predict_hurdle_lognormal <- function(i, draws, ...) {
   # theta is the bernoulli hurdle parameter
   theta <- get_theta(draws, i, par = "hu")
-  mu <- ilink(get_eta(draws, i), draws$f$link)
+  mu <- ilink(get_eta(draws$mu, i), draws$f$link)
   sigma <- get_sigma(draws$sigma, data = draws$data, i = i)
   ndraws <- draws$nsamples
   # compare with theta to incorporate the hurdle process
@@ -346,7 +346,7 @@ predict_hurdle_lognormal <- function(i, draws, ...) {
 predict_zero_inflated_beta <- function(i, draws, ...) {
   # theta is the bernoulli hurdle parameter
   theta <- get_theta(draws, i, par = "zi")
-  mu <- ilink(get_eta(draws, i), draws$f$link)
+  mu <- ilink(get_eta(draws$mu, i), draws$f$link)
   phi <- get_auxpar(draws$phi, i = i)
   # compare with theta to incorporate the hurdle process
   hu <- runif(draws$nsamples, 0, 1)
@@ -357,7 +357,7 @@ predict_zero_inflated_beta <- function(i, draws, ...) {
 predict_zero_inflated_poisson <- function(i, draws, ...) {
   # theta is the bernoulli zero-inflation parameter
   theta <- get_theta(draws, i, par = "zi")
-  lambda <- ilink(get_eta(draws, i), draws$f$link)
+  lambda <- ilink(get_eta(draws$mu, i), draws$f$link)
   ndraws <- draws$nsamples
   # compare with theta to incorporate the zero-inflation process
   zi <- runif(ndraws, 0, 1)
@@ -367,7 +367,7 @@ predict_zero_inflated_poisson <- function(i, draws, ...) {
 predict_zero_inflated_negbinomial <- function(i, draws, ...) {
   # theta is the bernoulli zero-inflation parameter
   theta <- get_theta(draws, i, par = "zi")
-  mu <- ilink(get_eta(draws, i), draws$f$link)
+  mu <- ilink(get_eta(draws$mu, i), draws$f$link)
   shape <- get_shape(draws$shape, data = draws$data, i = i)
   ndraws <- draws$nsamples
   # compare with theta to incorporate the zero-inflation process
@@ -379,7 +379,7 @@ predict_zero_inflated_binomial <- function(i, draws, ...) {
   # theta is the bernoulii zero-inflation parameter
   theta <- get_theta(draws, i, par = "zi")
   trials <- draws$data$trials[i]
-  prob <- ilink(get_eta(draws, i), draws$f$link)
+  prob <- ilink(get_eta(draws$mu, i), draws$f$link)
   ndraws <- draws$nsamples
   # compare with theta to incorporate the zero-inflation process
   zi <- runif(ndraws, 0, 1)
@@ -388,7 +388,7 @@ predict_zero_inflated_binomial <- function(i, draws, ...) {
 
 predict_categorical <- function(i, draws, ...) {
   ncat <- draws$data$ncat
-  p <- pcategorical(1:ncat, eta = get_eta(draws, i)[, 1, ], 
+  p <- pcategorical(1:ncat, eta = get_eta(draws$mu, i)[, 1, ], 
                     ncat = ncat, link = draws$f$link)
   first_greater(p, target = runif(draws$nsamples, min = 0, max = 1))
 }
@@ -412,7 +412,7 @@ predict_acat <- function(i, draws, ...) {
 predict_ordinal <- function(i, draws, family, ...) {
   ncat <- draws$data$ncat
   disc <- get_disc(draws, i, ncat)
-  eta <- (disc * get_eta(draws, i))[, 1, ]
+  eta <- (disc * get_eta(draws$mu, i))[, 1, ]
   p <- pordinal(1:ncat, eta = eta, ncat = ncat, 
                 family = family, link = draws$f$link)
   first_greater(p, target = runif(draws$nsamples, min = 0, max = 1))

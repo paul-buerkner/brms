@@ -26,8 +26,8 @@ test_that(paste("make_standata returns correct data names ",
                  "prior_only"))
   expect_true(all(c("Z_1_1", "Z_1_2", "Z_2_1", "Z_2_2") %in%
                   names(make_standata(y ~ x + (1+x|g/h), dat))))
-  expect_equal(make_stancode(y ~ x + (1+x|g+h), dat),
-               make_stancode(y ~ x + (1+x|g) + (1+x|h), dat))
+  expect_equal(make_standata(y ~ x + (1+x|g+h), dat),
+               make_standata(y ~ x + (1+x|g) + (1+x|h), dat))
 })
 
 test_that(paste("make_standata handles variables used as fixed effects", 
@@ -374,8 +374,8 @@ test_that("make_standata returns correct group ID data", {
   form <- bf(count ~ a, sigma ~ (1|3|visit) + (Trt_c||patient),
              a ~ Trt_c + (1+Trt_c|3|visit) + (1|patient), nl = TRUE)
   sdata <- make_standata(form, data = epilepsy, family = student())
-  expect_true(all(c("Z_1_sigma_1", "Z_2_a_3", "Z_2_sigma_1",  
-                    "Z_3_a_1") %in% names(sdata)))
+  expect_true(all(c("Z_3_sigma_1", "Z_2_a_1", "Z_2_sigma_3",  
+                    "Z_1_a_1") %in% names(sdata)))
 })
 
 test_that("make_standata handles population-level intercepts", {
@@ -458,4 +458,3 @@ test_that("make_standata allows fixed auxiliary parameters", {
   expect_error(make_standata(bf(y ~ 1, bias = 0.5), dat),
                "Invalid auxiliary parameters: 'bias'")
 })
-

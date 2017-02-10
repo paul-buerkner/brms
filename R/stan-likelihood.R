@@ -16,15 +16,15 @@ stan_llh <- function(family, bterms, data, autocor) {
   is_forked <- is_forked(family)
   is_mv <- is_linear(family) && length(bterms$response) > 1L
   
-  has_sigma <- has_sigma(family, bterms, autocor)
-  has_se <- is.formula(bterms$se)
-  has_weights <- is.formula(bterms$weights)
-  has_cens <- has_cens(bterms$cens, data = data)
-  has_disp <- is.formula(bterms$disp)
+  has_sigma <- has_sigma(family, bterms)
+  has_se <- is.formula(bterms$adforms$se)
+  has_weights <- is.formula(bterms$adforms$weights)
+  has_cens <- has_cens(bterms$adforms$cens, data = data)
+  has_disp <- is.formula(bterms$adforms$disp)
   has_cs <- has_cs(bterms)
-  bounds <- get_bounds(bterms$trunc, data = data)
+  bounds <- get_bounds(bterms$adforms$trunc, data = data)
   has_trunc <- any(bounds$lb > -Inf) || any(bounds$ub < Inf)
-  llh_adj <- stan_llh_adj(bterms)
+  llh_adj <- stan_llh_adj(bterms$adforms)
 
   if (is_mv) {
     # prepare for use of a multivariate likelihood
@@ -52,7 +52,7 @@ stan_llh <- function(family, bterms, data, autocor) {
   n <- ifelse(reqn, "[n]", "")
   # prepare auxiliary parameters
   p <- named_list(auxpars())
-  p$sigma <- stan_llh_sigma(family, bterms, autocor)
+  p$sigma <- stan_llh_sigma(family, bterms)
   p$shape <- stan_llh_shape(family, bterms)
   for (ap in setdiff(auxpars(), c("sigma", "shape"))) {
     p[[ap]] <- paste0(ap, if (reqn && ap %in% auxpars) "[n]")
@@ -60,7 +60,7 @@ stan_llh <- function(family, bterms, data, autocor) {
   .logit <- ifelse(any(c("zi", "hu") %in% auxpars), "_logit", "")
   trials <- ifelse(llh_adj || is_zero_inflated, "trials[n]", "trials")
 
-  simplify <- stan_has_built_in_fun(family, link) &&
+  simplify <- stan_has_built_in_fun(nlist(family, link)) &&
               !has_trunc && !has_cens && !"disc" %in% auxpars
   eta <- paste0(ifelse(is_mv, "Eta", "eta"), n)
   ord_args <- sargs("eta[n]", if (has_cs) "etacs[n]", 
@@ -363,12 +363,12 @@ stan_llh_trunc <- function(llh_pre, bounds, general = TRUE) {
   tr
 }
 
-stan_llh_sigma <- function(family, bterms, autocor) {
+stan_llh_sigma <- function(family, bterms) {
   # prepare the code for 'sigma' in the likelihood statement
-  has_sigma <- has_sigma(family, bterms, autocor)
-  has_se <- is.formula(bterms$se)
-  has_disp <- is.formula(bterms$disp)
-  llh_adj <- stan_llh_adj(bterms)
+  has_sigma <- has_sigma(family, bterms)
+  has_se <- is.formula(bterms$adforms$se)
+  has_disp <- is.formula(bterms$adforms$disp)
+  llh_adj <- stan_llh_adj(bterms$adforms)
   auxpars <- names(bterms$auxpars)
   nsigma <- llh_adj || has_se || is_exgaussian(family) || is_gev(family)
   nsigma <- nsigma && (has_disp || "sigma" %in% auxpars)
@@ -392,8 +392,8 @@ stan_llh_sigma <- function(family, bterms, autocor) {
 
 stan_llh_shape <- function(family, bterms) {
   # prepare the code for 'shape' in the likelihood statement
-  has_disp <- is.formula(bterms$disp)
-  llh_adj <- stan_llh_adj(bterms)
+  has_disp <- is.formula(bterms$adforms$disp)
+  llh_adj <- stan_llh_adj(bterms$adforms)
   auxpars <- names(bterms$auxpars)
   nshape <- (llh_adj || is_forked(family)) &&
             (has_disp || "shape" %in% auxpars)
@@ -401,13 +401,13 @@ stan_llh_shape <- function(family, bterms) {
   paste0(if (has_disp) "disp_", "shape", nshape)
 }
 
-stan_llh_adj <- function(bterms, adds = c("weights", "cens", "trunc")) {
+stan_llh_adj <- function(adforms, adds = c("weights", "cens", "trunc")) {
   # checks if certain 'adds' are present so that the LL has to be adjusted
   # Args:
-  #   bterms: object of class brmsterms
+  #   adforms: named list of formulas
   #   adds: vector of addition argument names
   stopifnot(all(adds %in% c("weights", "cens", "trunc")))
-  any(ulapply(bterms[adds], is.formula))
+  any(ulapply(adforms[adds], is.formula))
 }
 
 sargs <- function(...) {

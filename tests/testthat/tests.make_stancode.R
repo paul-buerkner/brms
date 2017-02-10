@@ -6,6 +6,7 @@ test_that("specified priors appear in the Stan code", {
                     g = rep(1:5, 2), h = factor(rep(1:5, each = 2)))
   prior <- c(prior(normal(0,1), coef = x1),
              prior(normal(0,2), coef = x2),
+             prior(normal(0,5), Intercept),
              prior(cauchy(0,1), sd, group = g),
              prior(cauchy(0,2), sd, group = g, coef = x1),
              prior(gamma(1, 1), class = sd, group = h))
@@ -13,6 +14,7 @@ test_that("specified priors appear in the Stan code", {
                          prior = prior, sample_prior = TRUE)
   expect_match2(scode, "b[1] ~ normal(0, 1)")
   expect_match2(scode, "b[2] ~ normal(0, 2)")
+  expect_match2(scode, "temp_Intercept ~ normal(0, 5)")
   expect_match2(scode, "sd_1[1] ~ cauchy(0, 1)")
   expect_match2(scode, "sd_1[2] ~ cauchy(0, 2)")
   expect_match2(scode, "sigma ~ student_t(3, 0, 10)")
@@ -35,7 +37,8 @@ test_that("specified priors appear in the Stan code", {
   expect_match2(scode, "to_vector(bcs) ~ normal(0, 1)")
   expect_match2(scode, "prior_bcs = normal_rng(0,1)")
   expect_match2(scode, 
-    "prior_b_Intercept = prior_temp_Intercept - dot_product(means_X, b)")
+    "prior_b_Intercept = prior_temp_Intercept - dot_product(means_X, b)"
+  )
   
   prior <- c(prior(normal(0,5), nlpar = a),
              prior(normal(0,10), nlpar = b),
@@ -250,7 +253,7 @@ test_that("self-defined functions appear in the Stan code", {
                              family = "zero_inflated_negbinomial"),
                "real zero_inflated_neg_binomial_lpmf(int y")
   expect_match2(make_stancode(count ~ Trt_c, data = epilepsy, 
-                             family = "zero_inflated_binomial"),
+                              family = "zero_inflated_binomial"),
                "real zero_inflated_binomial_lpmf(int y")
   expect_match2(make_stancode(count ~ Trt_c, data = epilepsy, 
                              family = "zero_inflated_beta"),
@@ -359,7 +362,7 @@ test_that("the Stan code for intercept only models is correct", {
                "b_3_Intercept = temp_3_Intercept;") 
 })
 
-test_that("make_stancode returns correct code for spline only models", {
+test_that("make_stancode returns correct code for smooth only models", {
   expect_match2(make_stancode(count ~ s(log_Age_c), data = epilepsy),
                "matrix[N, K - 1] Xc;")
 })
@@ -404,9 +407,11 @@ test_that("Stan code of ordinal models is correct", {
 })
 
 test_that("ordinal disc parameters appear in the Stan code", {
-  scode <- make_stancode(bf(rating ~ period + carry + treat, disc ~ 1),
-                         data = inhaler, family = cumulative(), 
-                         prior = c(prior(normal(0,5), nlpar = disc)))
+  scode <- make_stancode(
+    bf(rating ~ period + carry + treat, disc ~ period),
+    data = inhaler, family = cumulative(), 
+    prior = prior(normal(0,5), nlpar = disc)
+  )
   expect_match2(scode, "Y[n] ~ cumulative(eta[n], temp_Intercept, disc[n])")
   expect_match2(scode, "b_disc ~ normal(0, 5)")
   expect_match2(scode, "disc[n] = exp(disc[n])")
@@ -632,8 +637,8 @@ test_that("Group IDs appear in the Stan code", {
              a ~ Trt_c + (1+Trt_c|3|visit) + (1|patient), nl = TRUE)
   scode <- make_stancode(form, data = epilepsy, family = student(),
                       prior = set_prior("normal(0,5)", nlpar = "a"))
-  expect_match2(scode, "r_2_a_3 = r_2[, 3];")
-  expect_match2(scode, "r_1_sigma_2 = sd_1[2] * (z_1[2]);")
+  expect_match2(scode, "r_2_a_1 = r_2[, 1];")
+  expect_match2(scode, "r_3_sigma_2 = sd_3[2] * (z_3[2]);")
 })
 
 test_that("distributional gamma models are handled correctly", {

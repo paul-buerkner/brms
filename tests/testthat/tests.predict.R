@@ -1,7 +1,7 @@
 test_that("predict for location shift models runs without errors", {
   ns <- 30
   nobs <- 10
-  draws <- list(eta = matrix(rnorm(ns * nobs), ncol = nobs),
+  draws <- list(mu = matrix(rnorm(ns * nobs), ncol = nobs),
                 sigma = rchisq(ns, 3), nu = rgamma(ns, 4),
                 nsamples = ns)
   i <- sample(nobs, 1)
@@ -23,7 +23,7 @@ test_that("predict for lognormal and exgaussian models runs without errors", {
   ns <- 50
   nobs <- 2
   draws <- list(sigma = rchisq(ns, 3), beta = rchisq(ns, 3),
-                eta = matrix(rnorm(ns * nobs), ncol = nobs),
+                mu = matrix(rnorm(ns * nobs), ncol = nobs),
                 f = lognormal(), nsamples = ns)
   pred <- predict_lognormal(1, draws = draws)
   expect_equal(length(pred), ns)
@@ -34,7 +34,7 @@ test_that("predict for lognormal and exgaussian models runs without errors", {
 test_that("predict for aysm_laplace models runs without errors", {
   ns <- 50
   draws <- list(sigma = rchisq(ns, 3), quantile = rbeta(ns, 2, 1),
-                eta = matrix(rnorm(ns*2), ncol = 2),
+                mu = matrix(rnorm(ns*2), ncol = 2),
                 f = asym_laplace(), nsamples = ns)
   pred <- brms:::predict_asym_laplace(1, draws = draws)
   expect_equal(length(pred), ns)
@@ -47,7 +47,7 @@ test_that("predict for multivariate linear models runs without errors", {
   nobs <- nvars * ncols
   Sigma = array(cov(matrix(rnorm(300), ncol = 3)), 
                 dim = c(3, 3, 10))
-  draws <- list(eta = matrix(rnorm(ns*nobs), ncol = nobs),
+  draws <- list(mu = matrix(rnorm(ns*nobs), ncol = nobs),
             Sigma = aperm(Sigma, c(3, 1, 2)), 
             nu = matrix(rgamma(ns, 5)),
             nsamples = ns)
@@ -67,7 +67,7 @@ test_that("predict for multivariate linear models runs without errors", {
 test_that("predict for ARMA covariance models runs without errors", {
   ns <- 20
   nobs <- 15
-  draws <- list(eta = matrix(rnorm(ns*nobs), ncol = nobs),
+  draws <- list(mu = matrix(rnorm(ns*nobs), ncol = nobs),
                 sigma = matrix(rchisq(ns, 3)),
                 nu = matrix(rgamma(ns, 5)),
                 ar = matrix(rbeta(ns, 0.5, 0.5), ncol = 1),
@@ -90,7 +90,7 @@ test_that("predict for ARMA covariance models runs without errors", {
 })
 
 test_that("predict for 'cor_fixed' models runs without errors", {
-  draws <- list(eta = matrix(rnorm(30), nrow = 3),
+  draws <- list(mu = matrix(rnorm(30), nrow = 3),
                 nu = matrix(rep(2, 3)), nsamples = 3)
   draws$data <- list(V = diag(10))
   draws$f$link <- "identity"
@@ -106,7 +106,7 @@ test_that("predict for count and survival models runs without errors", {
   ns <- 25
   nobs <- 10
   trials <- sample(10:30, nobs, replace = TRUE)
-  draws <- list(eta = matrix(rnorm(ns*nobs), ncol = nobs),
+  draws <- list(mu = matrix(rnorm(ns*nobs), ncol = nobs),
                 shape = rgamma(ns, 4), xi = 0,
                 nsamples = ns)
   draws$nu <- draws$sigma <- draws$shape + 1
@@ -149,7 +149,7 @@ test_that("predict for count and survival models runs without errors", {
 test_that("predict for bernoulli and beta models works correctly", {
   ns <- 17
   nobs <- 10
-  draws <- list(eta = matrix(rnorm(ns * nobs * 2), ncol = 2 * nobs),
+  draws <- list(mu = matrix(rnorm(ns * nobs * 2), ncol = 2 * nobs),
                 phi = rgamma(ns, 4), nsamples = ns)
   i <- sample(1:nobs, 1)
   draws$f$link <- "logit"
@@ -168,7 +168,7 @@ test_that("predict for bernoulli and beta models works correctly", {
 test_that("predict for circular models runs without errors", {
   ns <- 15
   nobs <- 10
-  draws <- list(eta = matrix(rnorm(ns * nobs * 2), ncol = nobs * 2),
+  draws <- list(mu = matrix(rnorm(ns * nobs * 2), ncol = nobs * 2),
                 kappa = matrix(rgamma(ns, 4)), nsamples = ns)
   draws$f$link <- "tan_half"
   i <- sample(seq_len(nobs), 1)
@@ -180,7 +180,7 @@ test_that("predict for zero-inflated and hurdle models runs without erros", {
   ns <- 50
   nobs <- 8
   trials <- sample(10:30, nobs, replace = TRUE)
-  draws <- list(eta = matrix(rnorm(ns * nobs * 2), ncol = nobs * 2),
+  draws <- list(mu = matrix(rnorm(ns * nobs * 2), ncol = nobs * 2),
                 shape = rgamma(ns, 4), phi = rgamma(ns, 1),
                 nsamples = ns)
   draws$data <- list(N_trait = nobs, trials = trials)
@@ -213,7 +213,7 @@ test_that("predict for categorical and ordinal models runs without erros", {
   ns <- 50
   nobs <- 8
   ncat <- 4
-  draws <- list(eta = array(rnorm(ns*nobs), dim = c(ns, nobs, ncat)),
+  draws <- list(mu = array(rnorm(ns*nobs), dim = c(ns, nobs, ncat)),
                 nsamples = ns)
   draws$data <- list(Y = rep(1:ncat, 2), ncat = ncat)
   
@@ -241,7 +241,7 @@ test_that("predict for categorical and ordinal models runs without erros", {
 test_that("truncated predict run without errors", {
   ns <- 30
   nobs <- 15
-  draws <- list(eta = matrix(rnorm(ns * nobs), ncol = nobs),
+  draws <- list(mu = matrix(rnorm(ns * nobs), ncol = nobs),
                 sigma = rchisq(ns, 3), nsamples = ns)
   
   draws$f$link <- "identity"
@@ -262,7 +262,7 @@ test_that("truncated predict run without errors", {
 test_that("predict for the wiener diffusion model runs without errors", {
   ns <- 5
   nobs <- 3
-  draws <- list(eta = matrix(rnorm(ns * nobs), ncol = nobs),
+  draws <- list(mu = matrix(rnorm(ns * nobs), ncol = nobs),
                 bs = matrix(rchisq(ns, 3)), ndt = matrix(rep(0.5, ns)),
                 bias = matrix(rbeta(ns, 1, 1)))
   draws$data <- list(Y = abs(rnorm(ns)) + 0.5, dec = c(1, 0, 1))

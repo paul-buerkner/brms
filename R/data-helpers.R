@@ -152,17 +152,13 @@ data_rsv_intercept <- function(data, bterms) {
   # Args:
   #   data: data.frame or list
   #   bterms: object of class brmsterms
-  if (isTRUE(attr(bterms$fe, "rsv_intercept"))) {
-    if (is.list(data) && length(data)) {
-      if ("intercept" %in% names(data)) {
-        stop2("Variable name 'intercept' is resevered in models ",
-              "without a population-level intercept.")
-      }
-      data$intercept <- rep(1, length(data[[1]]))
-    } else {
-      stop2("Argument 'data' must be a non empty data.frame ", 
-            "or list for this model.")
+  rsv_int <- ulapply(bterms$auxpars, function(x) attr(x$fe, "rsv_intercept"))
+  if (any(rsv_int)) {
+    if ("intercept" %in% names(data)) {
+      stop2("Variable name 'intercept' is resevered in models ",
+            "without a population-level intercept.")
     }
+    data$intercept <- rep(1, length(data[[1]]))
   }
   data
 }
@@ -237,14 +233,17 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   if (!incl_autocor) {
     fit$autocor <- NULL
   }
-  if (is.null(newdata) || is(newdata, "standata")) {
+  if (is.null(newdata)) {
     # to shorten expressions in S3 methods such as predict.brmsfit
-    if (return_standata && is.null(newdata)) {
-      control <- list(not4stan = TRUE, save_order = TRUE)
+    if (return_standata) {
+      control <- nlist(not4stan = TRUE, save_order = TRUE,
+                       omit_response = !check_response)
       newdata <- standata(fit, re_formula = re_formula, control = control)
+    } else {
+      newdata <- model.frame(fit)
     }
     return(newdata)
-  } 
+  }
   newdata <- try(as.data.frame(newdata, silent = TRUE))
   if (is(newdata, "try-error")) {
     stop2("Argument 'newdata' must be coercible to a data.frame.")
@@ -255,7 +254,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
                      autocor = fit$autocor, resp_rhs_all = FALSE)
   resp_only_vars <- setdiff(all.vars(bterms$respform), 
                             all.vars(rhs(bterms$allvars)))
-  resp_only_vars <- c(resp_only_vars, all.vars(bterms[["dec"]]))  # fixes #162
+  # fixes #162
+  resp_only_vars <- c(resp_only_vars, all.vars(bterms$adforms$dec))
   missing_resp <- setdiff(resp_only_vars, names(newdata))
   if (check_response && length(missing_resp)) {
     stop2("Response variables must be specified in 'newdata'.\n",
@@ -266,12 +266,12 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       newdata[[resp]] <- NA 
     }
   }
-  cens_vars <- all.vars(bterms$cens)
+  cens_vars <- all.vars(bterms$adforms$cens)
   for (v in setdiff(cens_vars, names(newdata))) {
     # censoring vars are unused in predict and related methods
     newdata[[v]] <- 0
   }
-  weights_vars <- all.vars(bterms$weights)
+  weights_vars <- all.vars(bterms$adforms$weights)
   for (v in setdiff(weights_vars, names(newdata))) {
     # weighting vars are unused in predict and related methods
     newdata[[v]] <- 1

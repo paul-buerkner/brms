@@ -1,10 +1,10 @@
-data_effects <- function(bterms, data, family = gaussian(),
-                         ranef = empty_ranef(), prior = brmsprior(), 
-                         autocor = cor_arma(), knots = NULL, nlpar = "", 
-                         not4stan = FALSE, smooth = NULL, Jmo = NULL) {
-  # combine data for all types of effects
+#' @export
+data_effects.btl <- function(x, data, ranef = empty_ranef(), 
+                             prior = brmsprior(), knots = NULL, 
+                             nlpar = "", not4stan = FALSE, 
+                             smooth = NULL, Jmo = NULL) {
+  # prepare data for all types of effects fpr use in Stan
   # Args:
-  #   bterms: object of class brmsterms
   #   data: the data passed by the user
   #   family: the model family
   #   prior: an object of class brmsprior
@@ -18,29 +18,54 @@ data_effects <- function(bterms, data, family = gaussian(),
   #   Jmo: optional precomputed values of Jmo for monotonic effects
   # Returns:
   #   A named list of data to be passed to Stan
-  data_fe <- data_fe(bterms, data = data, family = family, 
-                     autocor = autocor, nlpar = nlpar, 
-                     knots = knots, not4stan = not4stan,
+  nlpar <- check_nlpar(nlpar)
+  data_fe <- data_fe(x, data = data, knots = knots,
+                     nlpar = nlpar, not4stan = not4stan,
                      smooth = smooth)
-  data_mo <- data_mo(bterms, data = data, ranef = ranef,
+  data_mo <- data_mo(x, data = data, ranef = ranef,
                      prior = prior, Jmo = Jmo, nlpar = nlpar)
-  data_re <- data_re(ranef, data = data, nlpar = nlpar, 
+  data_re <- data_re(ranef, data = data, nlpar = nlpar,
                      not4stan = not4stan)
-  data_me <- data_me(bterms, data = data, nlpar = nlpar)
-  c(data_fe, data_mo, data_re, data_me)
+  data_me <- data_me(x, data = data, nlpar = nlpar)
+  data_cs <- data_cs(x, data = data, nlpar = nlpar)
+  c(data_fe, data_mo, data_re, data_me, data_cs)
 }
 
-data_fe <- function(bterms, data, family = gaussian(),
-                    autocor = cor_arma(), knots = NULL,
-                    nlpar = "", not4stan = FALSE,
-                    smooth = NULL) {
+#' @export 
+data_effects.btnl <- function(x, data, ranef = empty_ranef(), 
+                              prior = brmsprior(), knots = NULL, 
+                              nlpar = "", not4stan = FALSE, 
+                              smooth = NULL, Jmo = NULL) {
+  # prepare data for non-linear parameters for use in Stan
+  # matrix of covariates appearing in the non-linear formula
+  C <- get_model_matrix(x$covars, data = data)
+  if (length(all.vars(x$covars)) != ncol(C)) {
+    stop2("Factors with more than two levels are not allowed as covariates.")
+  }
+  # fixes issue #127 occuring for factorial covariates
+  colnames(C) <- all.vars(x$covars)
+  out <- list(KC = ncol(C), C = C)
+  for (nlp in names(x$nlpars)) {
+    out <- c(out,
+      data_effects(
+        x$nlpars[[nlp]], data, ranef = ranef,
+        prior = prior, knots = knots, nlpar = nlp,
+        not4stan = not4stan, smooth = smooth, Jmo = Jmo
+      )
+    )
+  }
+  out
+}
+
+data_fe <- function(bterms, data, knots = NULL, nlpar = "", 
+                    not4stan = FALSE, smooth = NULL) {
   # prepare data for fixed effects for use in Stan 
   # Args: see data_effects
   stopifnot(length(nlpar) == 1L)
   out <- list()
   p <- usc(nlpar, "prefix")
-  is_ordinal <- is_ordinal(family)
-  is_bsts <- is(autocor, "cor_bsts")
+  is_ordinal <- is_ordinal(bterms$family)
+  is_bsts <- inherits(bterms$autocor, "cor_bsts")
   # the intercept is removed inside the Stan code for ordinal models
   cols2remove <- if (is_ordinal && not4stan || is_bsts) "(Intercept)"
   X <- get_model_matrix(rhs(bterms$fe), data, cols2remove = cols2remove)
@@ -106,8 +131,9 @@ data_mo <- function(bterms, data, ranef = empty_ranef(),
     if (is.null(Jmo)) {
       Jmo <- as.array(apply(Xmo, 2, max))
     }
-    out <- c(out, setNames(list(ncol(Xmo), Xmo, Jmo), 
-                           paste0(c("Kmo", "Xmo", "Jmo"), p)))
+    out <- c(out, 
+      setNames(list(ncol(Xmo), Xmo, Jmo), paste0(c("Kmo", "Xmo", "Jmo"), p))
+    )
     # validate and assign vectors for dirichlet prior
     monef <- colnames(Xmo)
     for (i in seq_along(monef)) {
@@ -236,13 +262,14 @@ data_gr <- function(ranef, data, cov_ranef = NULL) {
   out
 }
 
-data_cs <- function(bterms, data) {
+data_cs <- function(bterms, data, nlpar = "") {
   # prepare data for category specific effects for use in Stan
   # Args:
   #   bterms: object of class brmsterms
   #   data: the data passed by the user
   out <- list()
   if (length(all_terms(bterms[["cs"]]))) {
+    stopifnot(!nzchar(nlpar))
     Xcs <- get_model_matrix(bterms$cs, data)
     avoid_auxpars(colnames(Xcs), bterms = bterms)
     out <- c(out, list(Kcs = ncol(Xcs), Xcs = Xcs))

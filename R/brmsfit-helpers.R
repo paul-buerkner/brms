@@ -82,7 +82,7 @@ restructure <- function(x, rstr_summary = FALSE) {
       }
     }
     if (x$version <= "0.10.0.9000") {
-      if (length(bterms$nlpars)) {
+      if (length(bterms$auxpars$mu$nlpars)) {
         # nlpar and group have changed positions
         change <- change_old_re(x$ranef, pars = parnames(x),
                                 dims = x$fit@sim$dims_oi)
@@ -146,7 +146,8 @@ link <- function(x, link) {
   switch(link, 
     "identity" = x, 
     "log" = log(x), 
-    "logm1" = logm1(x), 
+    "logm1" = logm1(x),
+    "log1p" = log1p(x),
     "inverse" = 1 / x,
     "sqrt" = sqrt(x), 
     "1/mu^2" = 1 / x^2, 
@@ -171,6 +172,7 @@ ilink <- function(x, link) {
     "identity" = x, 
     "log" = exp(x),
     "logm1" = expp1(x),
+    "log1p" = expm1(x),
     "inverse" = 1 / x,
     "sqrt" = x^2, 
     "1/mu^2" = 1 / sqrt(x), 
@@ -198,25 +200,29 @@ prepare_conditions <- function(x, conditions = NULL, effects = NULL,
   mf <- model.frame(x)
   new_formula <- update_re_terms(formula(x), re_formula = re_formula)
   bterms <- parse_bf(new_formula, family = family(x))
-  int_effects <- c(get_effect(bterms, "mo"), 
-                   rmNULL(bterms[c("trials", "cat")]))
+  int_effects <- c(
+    get_effect(bterms, "mo"), 
+    rmNULL(bterms$adforms[c("trials", "cat")])
+  )
   int_vars <- unique(ulapply(int_effects, all.vars))
   if (is.null(conditions)) {
-    if (!is.null(bterms$trials)) {
+    if (!is.null(bterms$adforms$trials)) {
       message("Using the median number of trials by default")
     }
     # list all required variables
     re <- get_re(bterms)
     req_vars <- c(
-      lapply(get_effect(bterms), rhs), re$form, 
-      lapply(re$gcall, "[[", "weightvars"),
+      lapply(get_effect(bterms, "fe"), rhs), 
       lapply(get_effect(bterms, "mo"), rhs),
       lapply(get_effect(bterms, "me"), rhs),
-      lapply(get_effect(bterms, "sm"), rhs), 
-      bterms[c("cs", "se", "disp", "trials", "cat")]
+      lapply(get_effect(bterms, "sm"), rhs),
+      lapply(get_effect(bterms, "cs"), rhs),
+      re$form, lapply(re$gcall, "[[", "weightvars"),
+      bterms$adforms[c("se", "disp", "trials", "cat")],
+      bterms$auxpars$mu$covars
     )
     req_vars <- unique(ulapply(req_vars, all.vars))
-    req_vars <- setdiff(req_vars, c(rsv_vars, names(bterms$nlpars)))
+    req_vars <- setdiff(req_vars, rsv_vars)
     conditions <- as.data.frame(as.list(rep(NA, length(req_vars))))
     names(conditions) <- req_vars
     for (v in req_vars) {
@@ -583,19 +589,22 @@ get_auxpar <- function(x, i = NULL) {
   # get samples of an auxiliary parameter
   # Args:
   #   x: object to extract postarior samples from
-  #   data: data initially passed to Stan
   #   i: the current observation number
   #      (used in predict and log_lik)
   if (is.list(x)) {
     # compute auxpar in distributional regression models
-    ilink <- get(x[["ilink"]], mode = "function")
-    x <- ilink(get_eta(i = if (!is.null(i)) i else NULL, draws = x))
+    if (!x$f$family %in% auxpars()) {
+      # link functions may not just span the parameter
+      # and will be applied later on
+      x$f$link <- "identity"
+    }
+    x <- ilink(get_eta(x, i = i), x$f$link)
   } else {
-    if (!is.null(i) && isTRUE(ncol(x) > 1L)) {
+    if (!is.null(i) && is.matrix(x) && ncol(x) > 1L) {
       x <- x[, i, drop = FALSE]
     }
   }
-  if (is.null(i) && isTRUE(ncol(x) == 1L)) {
+  if (is.null(i) && is.matrix(x) && ncol(x) == 1L) {
     # for compatibility with fitted helper functions
     x <- as.vector(x)
   }
@@ -633,7 +642,7 @@ get_theta <- function(draws, i = NULL, par = c("zi", "hu")) {
   par <- match.arg(par)
   if (!is.null(draws$data$N_trait)) {
     j <- if (!is.null(i)) i else seq_len(draws$data$N_trait)
-    theta <- ilink(get_eta(draws, j + draws$data$N_trait), "logit")
+    theta <- ilink(get_eta(draws$mu, j + draws$data$N_trait), "logit")
   } else {
     theta <- get_auxpar(draws[[par]], i = i)
   }
