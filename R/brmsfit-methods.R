@@ -1734,26 +1734,25 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
       draws[[ap]] <- get_auxpar(draws[[ap]])
     }
   }
-  mu <- draws$mu
-  if (grepl("_mv$", draws$f$family) && length(dim(mu)) == 3L) {
+  if (grepl("_mv$", draws$f$family) && length(dim(draws$mu)) == 3L) {
     # collapse over responses in linear MV models
-    dim(mu) <- c(dim(mu)[1], prod(dim(mu)[2:3]))
+    dim(draws$mu) <- c(dim(draws$mu)[1], prod(dim(draws$mu)[2:3]))
   }
   if (scale == "response") {
     # original families are required for fitted helper functions 
     draws$f <- family(object)
     fitted_fun <- paste0("fitted_", draws$f$family)
     fitted_fun <- get(fitted_fun, asNamespace("brms"))
-    mu <- fitted_fun(mu, draws)
+    draws$mu <- fitted_fun(draws)
   }
   old_order <- attr(draws$data, "old_order")
-  out <- reorder_obs(mu, old_order, sort = sort)
-  colnames(out) <- NULL
+  draws$mu <- reorder_obs(draws$mu, old_order, sort = sort)
+  colnames(draws$mu) <- NULL
   if (summary) {
-    mu <- get_summary(mu, probs = probs, robust = robust)
-    rownames(mu) <- seq_len(nrow(mu))
+    draws$mu <- get_summary(draws$mu, probs = probs, robust = robust)
+    rownames(draws$mu) <- seq_len(nrow(draws$mu))
   }
-  mu
+  draws$mu
 }
 
 #' Extract Model Residuals from brmsfit Objects
