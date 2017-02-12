@@ -752,12 +752,15 @@ test_that("Group syntax | and || is handled correctly,", {
 })
 
 test_that("predicting zi and hu works correctly", {
-  expect_match2(make_stancode(bf(count ~ Trt_c, zi ~ Trt_c), epilepsy, 
-                              family = "zero_inflated_poisson"),
-                "Y[n] ~ zero_inflated_poisson_logit(eta[n], zi[n])")
-  expect_match2(make_stancode(bf(count ~ Trt_c, hu ~ Trt_c), epilepsy, 
-                              family = "hurdle_gamma"),
-                "Y[n] ~ hurdle_gamma_logit(shape, eta[n], hu[n])")
+  scode <- make_stancode(bf(count ~ Trt_c, zi ~ Trt_c), epilepsy, 
+                         family = "zero_inflated_poisson")
+  expect_match2(scode, "Y[n] ~ zero_inflated_poisson_logit(eta[n], zi[n])")
+  expect_true(!grepl("inv_logit\\(", scode))
+  
+  scode <- make_stancode(bf(count ~ Trt_c, hu ~ Trt_c), epilepsy, 
+                         family = "hurdle_gamma")
+  expect_match2(scode, "Y[n] ~ hurdle_gamma_logit(shape, eta[n], hu[n])")
+  expect_true(!grepl("inv_logit\\(", scode))
 })
 
 test_that("fixing auxiliary parameters is possible", {

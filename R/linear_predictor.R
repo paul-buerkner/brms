@@ -75,7 +75,6 @@ linear_predictor <- function(draws, i = NULL) {
         )
     }
   }
-  
   # incorporate group-level effects
   group <- names(draws[["r"]])
   for (g in group) {
