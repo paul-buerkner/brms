@@ -91,7 +91,7 @@ fitted_gen_extreme_value <- function(draws) {
   draws$xi <- get_auxpar(draws$xi)
   draws$mu <- ilink(draws$mu, draws$f$link)
   if (!is_trunc(draws$data)) {
-    with(draws, mu <- mu + sigma * (gamma(1 - xi) - 1) / xi)
+    draws$mu <- with(draws, mu + sigma * (gamma(1 - xi) - 1) / xi)
   } else {
     draws$mu <- fitted_trunc(draws)
   }
