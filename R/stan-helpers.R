@@ -114,7 +114,7 @@ stan_autocor <- function(autocor, bterms, family, prior) {
         "    // computation of ARMA effects \n",
         collapse(
           "    e", rs, "[n] = ", link, "(Y[", index, "])", 
-          " - eta", rs, "[n]", "; \n"
+          " - mu", rs, "[n]", "; \n"
         ),
         "    for (i in 1:Karma) { \n", 
         "      if (n + 1 - i > 0 && n < N && tg[n + 1] == tg[n + 1 - i]) { \n",
@@ -256,11 +256,11 @@ stan_ordinal <- function(family, prior, cs, disc, threshold) {
     th <- function(k, fam = family) {
       # helper function generating stan code inside ilink(.)
       sign <- ifelse(fam %in% c("cumulative", "sratio"), " - ", " + ")
-      ptl <- ifelse(cs, paste0(sign, "etacs[k]"), "") 
+      ptl <- ifelse(cs, paste0(sign, "mucs[k]"), "") 
       if (sign == " - ") {
-        out <- paste0("thres[", k, "]", ptl, " - eta")
+        out <- paste0("thres[", k, "]", ptl, " - mu")
       } else {
-        out <- paste0("eta", ptl, " - thres[", k, "]")
+        out <- paste0("mu", ptl, " - thres[", k, "]")
       }
       paste0("disc * (", out, ")")
     }
@@ -296,19 +296,19 @@ stan_ordinal <- function(family, prior, cs, disc, threshold) {
     
     # generate Stan code specific for each ordinal model
     if (!(family == "cumulative" && ilink == "inv_logit") || disc) {
-      cs_arg <- ifelse(!cs, "", "row_vector etacs, ")
+      cs_arg <- ifelse(!cs, "", "row_vector mucs, ")
       out$fun <- paste0(
         "  /* ", family, " log-PDF for a single response \n",
         "   * Args: \n",
         "   *   y: response category \n",
-        "   *   eta: linear predictor \n",
-        "   *   etacs: optional predictor for category specific effects \n",
+        "   *   mu: linear predictor \n",
+        "   *   mucs: optional predictor for category specific effects \n",
         "   *   thres: ordinal thresholds \n",
         "   *   disc: discrimination parameter \n",
         "   * Returns: \n", 
         "   *   a scalar to be added to the log posterior \n",
         "   */ \n",
-        "   real ", family, "_lpmf(int y, real eta, ", cs_arg, 
+        "   real ", family, "_lpmf(int y, real mu, ", cs_arg, 
                                   "vector thres, real disc) { \n",
         "     int ncat; \n",
         "     vector[num_elements(thres) + 1] p; \n",
@@ -426,7 +426,7 @@ stan_families <- function(family, bterms) {
       out$modelD <- "  real xi;  // scaled shape parameter \n"
       v <- ifelse("sigma" %in% names(bterms$auxpars), "_vector", "")
       out$modelC <- paste0(
-        "  xi = scale_xi", v, "(temp_xi, Y, eta, sigma); \n"
+        "  xi = scale_xi", v, "(temp_xi, Y, mu, sigma); \n"
       )
     }
   }

@@ -1,6 +1,6 @@
 stan_effects.btl <- function(x, data, ranef, prior, center_X = TRUE, 
                              sparse = FALSE, threshold = "flexible",
-                             nlpar = "", eta = "eta", ilink = rep("", 2),
+                             nlpar = "", eta = "mu", ilink = rep("", 2),
                              ...) {
   # combine effects for the predictors of a single (non-linear) parameter
   # Args:
@@ -92,7 +92,7 @@ stan_effects.btl <- function(x, data, ranef, prior, center_X = TRUE,
   out
 }
 
-stan_effects.btnl <- function(x, data, ranef, prior,
+stan_effects.btnl <- function(x, data, ranef, prior, eta = "mu", 
                               ilink = rep("", 2), ...) {
   # prepare Stan code for non-linear models
   # Args:
@@ -111,8 +111,8 @@ stan_effects.btnl <- function(x, data, ranef, prior,
       )
       out <- collapse_lists(list(out, nl_text))
     }
-    # prepare non-linear model of eta 
-    new_nlpars <- paste0(" eta_", nlpars, "[n] ")
+    # prepare non-linear model
+    new_nlpars <- paste0(" ", eta, "_", nlpars, "[n] ")
     # covariates in the non-linear model
     covars <- wsp(setdiff(all.vars(rhs(x$formula)), nlpars))
     if (length(covars)) {
@@ -133,10 +133,10 @@ stan_effects.btnl <- function(x, data, ranef, prior,
       c(new_nlpars, new_covars, "(", ")")
     )
     # possibly transform eta in the transformed params block
-    out$modelD <- paste0(out$modelD, "  vector[N] eta; \n")
+    out$modelD <- paste0(out$modelD, "  vector[N] ", eta, "; \n")
     out$modelC4 <- paste0(out$modelC4, 
       "    // compute non-linear predictor \n",
-      "    eta[n] = ", ilink[1], trimws(nlmodel), ilink[2], "; \n"
+      "    ", eta, "[n] = ", ilink[1], trimws(nlmodel), ilink[2], "; \n"
     )
   }
   out
@@ -177,7 +177,7 @@ stan_effects.brmsterms <- function(x, data, ranef, prior, sparse = FALSE,
       ilink <- stan_eta_ilink(
         ap_terms$family, auxpars = names(x$auxpars), adforms = x$adforms
       )
-      eta <- ifelse(ap == "mu", "eta", "")
+      eta <- ifelse(ap == "mu", "mu", "")
       ap_args <- list(ap_terms, nlpar = ap, eta = eta, ilink = ilink)
       out[[ap]] <- do.call(stan_effects, c(ap_args, args))
     } else if (is.numeric(x$fauxpars[[ap]])) {
@@ -227,10 +227,10 @@ stan_effects_mv <- function(bterms, data, ranef, prior, sparse = FALSE) {
     }
     out$modelD <- paste0(out$modelD, 
       "  // multivariate linear predictor matrix \n",
-      "  vector[", len_Eta_n, "] Eta[N]; \n"
+      "  vector[", len_Eta_n, "] Mu[N]; \n"
     )
     out$modelC3 <- paste0(out$modelC3, 
-      collapse("    Eta[n, ", seq_along(resp), "] = eta_", resp, "[n]; \n")
+      collapse("    Mu[n, ", seq_along(resp), "] = mu_", resp, "[n]; \n")
     )
   }
   out
@@ -571,7 +571,7 @@ stan_cs <- function(csef, ranef, prior, nlpar = "") {
   if (length(csef) || nrow(ranef)) {
     out$modelD <- paste0(
       "  // linear predictor for category specific effects \n",                  
-      "  matrix[N, ncat - 1] etacs; \n"
+      "  matrix[N, ncat - 1] mucs; \n"
     )
   }
   if (length(csef)) {
@@ -584,21 +584,21 @@ stan_cs <- function(csef, ranef, prior, nlpar = "") {
       "  matrix", bound, "[Kcs, ncat - 1] bcs;",
       "  // category specific effects \n"
     )
-    out$modelC1 <- "  etacs = Xcs * bcs; \n"
+    out$modelC1 <- "  mucs = Xcs * bcs; \n"
     out$prior <- stan_prior(prior, class = "b", coef = csef,
                             suffix = "cs", matrix = TRUE)
   } 
   if (nrow(ranef)) {
     if (!length(csef)) {
       # only group-level category specific effects present
-      out$modelC1 <- "  etacs = rep_matrix(0, N, ncat - 1); \n"
+      out$modelC1 <- "  mucs = rep_matrix(0, N, ncat - 1); \n"
     }
     cats <- get_matches("\\[[[:digit:]]+\\]$", ranef$coef)
     ncatM1 <- max(as.numeric(substr(cats, 2, nchar(cats) - 1)))
     for (i in seq_len(ncatM1)) {
       r_cat <- ranef[grepl(paste0("\\[", i, "\\]$"), ranef$coef), ]
       out$modelC2 <- paste0(out$modelC2,
-        "    etacs[n, ", i, "] = etacs[n, ", i, "]"
+        "    mucs[n, ", i, "] = mucs[n, ", i, "]"
       )
       for (id in unique(r_cat$id)) {
         r <- r_cat[r_cat$id == id, ]
