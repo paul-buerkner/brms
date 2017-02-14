@@ -4,11 +4,11 @@ test_that("get_prior finds all classes for which priors can be specified", {
   expect_equal(sort(get_prior(count ~ log_Base4_c * Trt_c 
                               + (1|patient) + (1+Trt_c|visit),
                               data = epilepsy, family = "poisson")$class),
-               sort(c(rep("b", 4), c("cor", "cor"), "Intercept", rep("sd", 6))))
+               sort(c(rep("b", 5), c("cor", "cor"), "Intercept", rep("sd", 6))))
   expect_equal(sort(get_prior(rating ~ treat + period + cse(carry),
                          data = inhaler, family = "sratio", 
                          threshold = "equidistant")$class),
-               sort(c(rep("b", 4), "delta", "Intercept")))
+               sort(c(rep("b", 5), "delta", "Intercept")))
 })
 
 test_that("print for class brmsprior works correctly", {
@@ -35,7 +35,7 @@ test_that("get_prior returns correct fixed effect names for GAMMs", {
                     z = rnorm(10), g = rep(1:2, 5))
   prior <- get_prior(y ~ z + s(x) + (1|g), data = dat)
   expect_equal(prior[prior$class == "b", ]$coef, 
-               c("", "sx_1", "z"))
+               c("", "Intercept", "sx_1", "z"))
   prior <- get_prior(bf(y ~ lp, lp ~ z + s(x) + (1|g), nl = TRUE), 
                      data = dat)
   expect_equal(prior[prior$class == "b", ]$coef, 
@@ -47,9 +47,9 @@ test_that("get_prior returns correct prior names for auxiliary parameters", {
                     z = rnorm(10), g = rep(1:2, 5))
   prior <- get_prior(bf(y ~ 1, phi ~ z + (1|g)), data = dat, family = Beta())
   prior <- prior[prior$nlpar == "phi", ]
-  pdata <- data.frame(class = c("b", "b", "Intercept", rep("sd", 3)), 
-                      coef = c("", "z", "", "", "", "Intercept"),
-                      group = c(rep("", 4), "g", "g"),
+  pdata <- data.frame(class = c("b", "b", "b", "Intercept", rep("sd", 3)), 
+                      coef = c("", "Intercept", "z", "", "", "", "Intercept"),
+                      group = c(rep("", 5), "g", "g"),
                       stringsAsFactors = FALSE)
   pdata <- pdata[with(pdata, order(class, group, coef)), ]
   expect_equivalent(prior[, c("class", "coef", "group")], pdata)
@@ -62,14 +62,14 @@ test_that("get_prior returns global priors in multivariate models", {
   prior <- get_prior(cbind(y1, y2) ~ x + (x|ID1|g), 
                      data = dat, family = gaussian())
   expect_equal(prior[prior$nlpar == "" & prior$class == "b", "coef"],
-               c("", "x"))
+               c("", "Intercept", "x"))
   expect_equal(prior[prior$nlpar == "" & prior$class == "sd", "prior"],
                c("student_t(3, 0, 10)"))
   # categorical
   prior <- get_prior(y2 ~ x + (x|ID1|g), 
                      data = dat, family = categorical())
   expect_equal(prior[prior$nlpar == "" & prior$class == "b", "coef"],
-               c("", "x"))
+               c("", "Intercept", "x"))
   expect_equal(prior[prior$nlpar == "" & prior$class == "sd", "prior"],
                c("student_t(3, 0, 10)"))
 })

@@ -676,7 +676,8 @@ prior_fe <- function(fixef, spec_intercept = TRUE, nlpar = "") {
   prior <- empty_brmsprior()
   if (spec_intercept) {
     prior <- rbind(prior, 
-      brmsprior(class = "Intercept", coef = "", nlpar = nlpar)
+      brmsprior(class = "Intercept", coef = "", nlpar = nlpar),
+      brmsprior(class = "b", coef = "Intercept", nlpar = nlpar)
     )
     fixef <- setdiff(fixef, "Intercept")
   }
@@ -884,6 +885,32 @@ check_prior <- function(prior, formula, data = NULL, family = NULL,
   # merge prior with all_priors
   prior <- rbind(prior, all_priors)
   prior <- prior[!duplicated(prior[, 2:5]), ]
+  rows2remove <- NULL
+  # special treatment of population-level intercepts
+  int_index <- which(prior$class == "Intercept")
+  if (length(int_index)) {
+    int_prior <- prior[int_index, ]
+    bint_index <- which(prior$class == "b" & prior$coef %in% "Intercept")
+    bint_prior <- prior[bint_index, ]
+    for (t in int_index) {
+      tb <- match(prior$nlpar[t], bint_prior$nlpar) 
+      if (!is.na(tb) && nzchar(bint_prior$prior[tb])) {
+        # fall back to 'b' priors deprecated as of brms 1.5.0
+        if (nzchar(prior$prior[t])) {
+          stop2("Duplicated prior definitions detected ", 
+                "for the population-level intercept.")
+        } else {
+          warning2(
+            "Setting a prior on the population-level intercept",
+            "\nvia (class = 'b', coef = 'Intercept') is deprecated.",
+            "\nPlease use (class = 'Intercept', coef = '') instead."
+          )
+          prior$prior[t] <- bint_prior$prior[tb]
+        }
+      }
+    }
+    rows2remove <- c(rows2remove, bint_index)
+  }
   # prepare priors of monotonic effects
   mo_forms <- get_effect(bterms, "mo")
   for (k in seq_along(mo_forms)) {
@@ -909,9 +936,12 @@ check_prior <- function(prior, formula, data = NULL, family = NULL,
             "'", nlp, "'. \nSee help(set_prior) for more details.")
     }
   }
+  if (length(rows2remove)) {   
+    prior <- prior[-rows2remove, ]
+  }
   prior <- prior[with(prior, order(nlpar, class, group, coef)), ]
   prior <- rbind(prior, prior_no_checks)
-  rownames(prior) <- seq_len(nrow(prior))
+  rownames(prior) <- NULL
   attr(prior, "prior_only") <- prior_only
   attr(prior, "checked") <- TRUE
   prior

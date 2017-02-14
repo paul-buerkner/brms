@@ -100,6 +100,18 @@ test_that("specified priors appear in the Stan code", {
                   "no natural upper bound")
 })
 
+test_that("deprecated priors for the population-level intercept are used", {
+  dat <- data.frame(y = 1:10)
+  prior <- prior(normal(0, 5), coef = Intercept)
+  expect_warning(scode <- make_stancode(y~1, dat, prior = prior),
+                 "Setting a prior on the population-level intercept")
+  expect_match2(scode, "temp_Intercept ~ normal(0, 5)")
+  
+  prior <- c(prior, prior(normal(0, 10), class = Intercept))
+  expect_error(make_stancode(y~1, dat, prior = prior),
+               "Duplicated prior definitions detected")
+})
+
 test_that("special shrinkage priors appear in the Stan code", {
   dat <- data.frame(y = 1:10, x1 = rnorm(10), x2 = rnorm(10))
   
