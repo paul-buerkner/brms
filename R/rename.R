@@ -8,104 +8,39 @@ rename_pars <- function(x) {
   if (!length(x$fit@sim)) {
     return(x) 
   }
-  # some variables generally needed
+  x <- reorder_pars(x)
   family <- family(x)
   bterms <- parse_bf(x$formula, family = family)
-  standata <- standata(x)
-  
-  # order parameter samples after parameter class
-  chains <- length(x$fit@sim$samples) 
-  all_classes <- c(
-    "b_Intercept", "b", "bmo", "bcs", "bme", "ar", "ma", "arr", 
-    "sd", "cor", "sds", auxpars(), "temp", "sigmaLL", "rescor", 
-    "delta", "simplex", "r", "s", "loclev", "Xme", "prior", "lp"
-  )
-  class <- get_matches("^[^_\\[]+", x$fit@sim$fnames_oi)
-  # make sure that the fixed effects intercept comes first
-  if (length(bterms$response) > 1L) {
-    regex_resp <- paste0(usc(bterms$response , "suffix"), collapse  = "|")
-    regex_resp <- paste0("(", regex_resp, ")")
-  } else {
-    regex_resp <- ""
-  }
-  regex_intercept <- paste0("^b_", regex_resp, "Intercept($|\\[)")
-  pos_intercept <- which(grepl(regex_intercept, x$fit@sim$fnames_oi))
-  class[pos_intercept] <- "b_Intercept"
-  ordered <- order(factor(class, levels = all_classes))
-  x$fit@sim$fnames_oi <- x$fit@sim$fnames_oi[ordered]
-  for (i in seq_len(chains)) {
-    # subset_attr ensures that attributes are not removed
-    x$fit@sim$samples[[i]] <- subset_attr(x$fit@sim$samples[[i]], ordered)
-  }
-  mclass <- regexpr("^[^_]+", x$fit@sim$pars_oi)
-  mclass <- regmatches(x$fit@sim$pars_oi, mclass)
-  pos_intercept <- which(grepl(regex_intercept, x$fit@sim$pars_oi))
-  mclass[pos_intercept] <- "b_Intercept"
-  ordered <- order(factor(mclass, levels = all_classes))
-  x$fit@sim$dims_oi <- x$fit@sim$dims_oi[ordered]
-  x$fit@sim$pars_oi <- names(x$fit@sim$dims_oi)
   pars <- parnames(x)
   
   # find positions of parameters and define new names
   change <- list()
-  if (length(bterms$nlpars)) {
-    nlpars <- names(bterms$nlpars)
-    for (p in nlpars) {
-      smooths <- get_sm_labels(bterms$nlpars[[p]], x$data, covars = TRUE)
+  resp <- bterms$response
+  if (length(resp) > 1L) {
+    # rename effects in multivaraite models
+    for (r in resp) {
       change_eff <- change_effects(
-        pars = pars, dims = x$fit@sim$dims_oi,
-        fixef = colnames(standata[[paste0("X_", p)]]),
-        monef = colnames(standata[[paste0("Xmo_", p)]]),
-        meef = get_me_labels(bterms$nlpars[[p]], x$data),
-        smooths = smooths, nlpar = p
+        bterms$auxpars[["mu"]], model.frame(x), pars, 
+        dims = x$fit@sim$dims_oi, nlpar = r, 
+        stancode = stancode(x)
       )
       change <- c(change, change_eff)
     }
-  } else {
-    resp <- bterms$response
-    if (length(resp) > 1L) {
-      for (r in resp) {
-        fixef <- rm_int_fe(colnames(standata[[paste0("X_", r)]]), 
-                           stancode(x), nlpar = r)
-        change_eff <- change_effects(
-          pars = pars, dims = x$fit@sim$dims_oi, 
-          fixef = fixef, monef = colnames(standata[[paste0("Xmo_", r)]]),
-          meef = get_me_labels(bterms, x$data),
-          smooths = get_sm_labels(bterms, x$data, covars = TRUE),
-          nlpar = r
-        )
-        change <- c(change, change_eff)
-      }
-    } else {
-      fixef <- rm_int_fe(colnames(standata[["X"]]), stancode(x))
-      change_eff <- change_effects(
-        pars = pars, dims = x$fit@sim$dims_oi, 
-        fixef = fixef, monef = colnames(standata[["Xmo"]]),
-        meef = get_me_labels(bterms, x$data),
-        smooths = get_sm_labels(bterms, x$data, covars = TRUE))
-      change_cs <- change_cs(
-        colnames(standata[["Xcs"]]), 
-        pars = pars, ncat = standata$ncat
-      )
-      change <- c(change, change_eff, change_cs)
-    }
+    bterms$auxpars[["mu"]] <- NULL
   }
-  # rename parameters related to auxilliary parameters
+  # rename effects of auxilliary parameters
   for (ap in names(bterms$auxpars)) {
-    smooths <- get_sm_labels(bterms$auxpars[[ap]], x$data, covars = TRUE)
     change_eff <- change_effects(
-      pars = pars, dims = x$fit@sim$dims_oi,
-      fixef = colnames(standata[[paste0("X_", ap)]]),
-      monef = colnames(standata[[paste0("Xmo_", ap)]]),
-      meef = get_me_labels(bterms$auxpars[[ap]], x$data),
-      smooths = smooths, nlpar = ap
+      bterms$auxpars[[ap]], model.frame(x), pars, 
+      dims = x$fit@sim$dims_oi, nlpar = ap, 
+      stancode = stancode(x)
     )
     change <- c(change, change_eff)
   }
   # rename group-level parameters separately
-  change_re <- change_re(x$ranef, pars = pars, 
-                         dims = x$fit@sim$dims_oi)
-  change <- c(change, change_re)
+  change <- c(change,
+    change_re(x$ranef, pars = pars, dims = x$fit@sim$dims_oi)
+  )
   # rename residual parameters of multivariate linear models
   if (is_linear(family) && length(bterms$response) > 1L) {
     corfnames <- paste0("sigma_", bterms$response)
@@ -139,14 +74,34 @@ rename_pars <- function(x) {
   x
 }
 
-change_effects <- function(pars, dims, fixef = NULL, monef = NULL, 
-                           smooths = NULL, meef = NULL, nlpar = "") {
+#' @export
+change_effects.btl <- function(x, data, pars, dims, nlpar = "",
+                               stancode = "", ...) {
   # helps in renaming various kinds of effects
-  change_fe <- change_fe(fixef, pars = pars, nlpar = nlpar)
-  change_mo <- change_mo(monef, pars = pars, nlpar = nlpar)
-  change_sm <- change_sm(smooths, pars = pars, nlpar = nlpar)
-  change_me <- change_me(meef, pars = pars, dims = dims, nlpar = nlpar)
-  c(change_fe, change_mo, change_sm, change_me)
+  nlpar <- check_nlpar(nlpar)
+  fixef <- colnames(data_fe(x, data)$X)
+  fixef <- rm_int_fe(fixef, stancode, nlpar = nlpar)
+  change_fe <- change_fe(fixef, pars, nlpar = nlpar)
+  smooths = get_sm_labels(x, data, covars = TRUE)
+  change_sm <- change_sm(smooths, pars, nlpar = nlpar)
+  csef <- colnames(data_cs(x, data)$Xcs)
+  change_cs <- change_cs(csef, pars, nlpar = nlpar)
+  monef <- colnames(data_mo(x, data)$Xmo)
+  change_mo <- change_mo(monef, pars, nlpar = nlpar)
+  meef <- get_me_labels(x, data)
+  change_me <- change_me(meef, pars, dims = dims, nlpar = nlpar)
+  c(change_fe, change_sm, change_cs, change_mo, change_me)
+}
+
+change_effects.btnl <- function(x, data, pars, dims, ...) {
+  # helps in renaming effects for non-linear parameters
+  change <- list()
+  for (nlp in names(x$nlpars)) {
+    change <- c(change, 
+      change_effects(x$nlpars[[nlp]], data, pars, dims, nlpar = nlp)
+    )
+  }
+  change
 }
 
 change_fe <- function(fixef, pars, nlpar = "") {
@@ -216,18 +171,18 @@ change_mo <- function(monef, pars, nlpar = "") {
   change
 }
 
-change_cs <- function(csef, pars, ncat) {
+change_cs <- function(csef, pars, nlpar = "") {
   # helps in renaming category specific effects parameters
   # Args:
-  #   cseef: names of the category specific effects
+  #   csef: names of the category specific effects
   #   pars: names of all model parameters
-  #   ncat: number of response categories
   # Returns:
   #   a list whose elements can be interpreted by do_renaming
   change <- list()
   if (length(csef)) {
+    stopifnot(!nzchar(nlpar))
     ncse <- length(csef)
-    thres <- ncat - 1
+    thres <- sum(grepl("^b_Intercept\\[", pars))
     csenames <- t(outer(csef, paste0("[", 1:thres, "]"), FUN = paste0))
     csenames <- paste0("bcs_", csenames)
     sort_cse <- ulapply(seq_len(ncse), seq, to = thres * ncse, by = ncse)
@@ -588,7 +543,9 @@ change_old_re2 <- function(ranef, pars, dims) {
 change_old_sm <- function(bterms, pars, dims) {
   # change names of spline parameters fitted with brms <= 1.0.1
   # this became necessary after allowing smooths with multiple covariates
+  stopifnot(is.brmsterms(bterms))
   .change_old_sm <- function(bt, nlpar = "") {
+    nlpar <- check_nlpar(nlpar)
     change <- list()
     sm_labels <- get_sm_labels(bt)
     if (length(sm_labels)) {
@@ -617,18 +574,23 @@ change_old_sm <- function(bterms, pars, dims) {
   }
   
   change <- list()
-  spec_effects <- c(bterms$auxpars, bterms$nlpars)
-  for (sp in names(spec_effects)) {
-    se <- spec_effects[[sp]]
-    change <- c(change, .change_old_sm(se, nlpar = sp))
-  }
-  resp <- bterms$response
-  if (length(resp) > 1L) {
-    for (r in resp) {
-      change <- c(change, .change_old_sm(bterms, nlpar = r))
+  if (length(bterms$response) > 1L) {
+    for (r in bterms$response) {
+      change <- c(change, .change_old_sm(bterms$auxpars$mu, nlpar = r))
     }
-  } else {
-    change <- c(change, .change_old_sm(bterms))
+    bterms$auxpars$mu <- NULL
+  }
+  for (ap in names(bterms$auxpars)) {
+    bt <- bterms$auxpars[[ap]]
+    if (length(bt$nlpars)) {
+      for (nlp in names(bt$nlpars)) {
+        change <- c(change, 
+          .change_old_sm(bt$nlpars[[nlp]], nlpar = nlp)
+        )
+      }
+    } else {
+      change <- c(change, .change_old_sm(bt, nlpar = ap))
+    }
   }
   change
 }
@@ -693,7 +655,8 @@ combine_duplicates <- function(x, sep = NULL) {
   dat <- data.frame(names = names(x))
   for (s in sep) {
     dat[[s]] <- lapply(x, function(y)
-      if (is.null(attr(y, s))) NA else attr(y, s))
+      if (is.null(attr(y, s))) NA else attr(y, s)
+    )
   }
   unique_dat <- unique(dat)
   new_list <- vector("list", length = nrow(unique_dat))
@@ -768,6 +731,38 @@ do_renaming <- function(x, change) {
   }
   for (i in seq_along(change)) {
     x <- .do_renaming(x, change[[i]])
+  }
+  x
+}
+
+reorder_pars <- function(x) {
+  # order parameter samples after parameter class
+  # Args:
+  #   x: brmsfit object
+  all_classes <- c(
+    "b", "bmo", "bcs", "bme", "ar", "ma", "arr", 
+    "sd", "cor", "sds", auxpars(), "temp", "sigmaLL", "rescor", 
+    "delta", "simplex", "r", "s", "loclev", "Xme", "prior", "lp"
+  )
+  # reorder parameter classes
+  class <- get_matches("^[^_]+", x$fit@sim$pars_oi)
+  new_order <- order(
+    factor(class, levels = all_classes),
+    !grepl("_Intercept$", x$fit@sim$pars_oi)
+  )
+  x$fit@sim$dims_oi <- x$fit@sim$dims_oi[new_order]
+  x$fit@sim$pars_oi <- names(x$fit@sim$dims_oi)
+  # reorder single parameter names
+  nsubpars <- ulapply(x$fit@sim$dims_oi, prod)
+  num <- lapply(seq_along(new_order), function(x)
+    as.numeric(paste0(x, ".", sprintf("%010d", seq_len(nsubpars[x]))))
+  )
+  new_order <- order(unlist(num[order(new_order)]))
+  x$fit@sim$fnames_oi <- x$fit@sim$fnames_oi[new_order]
+  chains <- length(x$fit@sim$samples)
+  for (i in seq_len(chains)) {
+    # subset_attr ensures that attributes are not removed
+    x$fit@sim$samples[[i]] <- subset_attr(x$fit@sim$samples[[i]], new_order)
   }
   x
 }

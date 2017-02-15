@@ -571,14 +571,14 @@ prepare_auxformula <- function(formula, par = NULL, rsv_pars = NULL) {
 
 auxpars <- function() {
   # names of auxiliary parameters
-  c("sigma", "shape", "nu", "phi", "kappa", "beta", "xi",
+  c("mu", "sigma", "shape", "nu", "phi", "kappa", "beta", "xi",
     "zi", "hu", "disc", "bs", "ndt", "bias", "quantile")
 }
 
-links_auxpars <- function(ap = NULL) {
+links_auxpars <- function(ap) {
   # link functions for auxiliary parameters
-  stopifnot(length(ap) <= 1L)
-  link <- list(
+  switch(ap,
+    mu = "identity",
     sigma = "log", 
     shape = "log", 
     nu = "logm1", 
@@ -592,50 +592,33 @@ links_auxpars <- function(ap = NULL) {
     ndt = "log", 
     bias = "logit",
     quantile = "logit",
-    xi = "log1p"
+    xi = "log1p",
+    stop2("Parameter '", ap, "' is not supported.")
   )
-  if (length(ap)) {
-    link <- link[[ap]]
-  }
-  link
 }
 
-ilink_auxpars <- function(ap = NULL, stan = FALSE) {
-  # helper function to store inverse links of auxiliary parameters
-  if (stan) {
-    ilink <- c(sigma = "exp", shape = "exp", nu = "expp1", phi = "exp", 
-               kappa = "exp", beta = "exp", zi = "", hu = "", 
-               bs = "exp", ndt = "exp", bias = "inv_logit", disc = "exp",
-               quantile = "inv_logit", xi = "expm1") 
-  } else {
-    ilink <- c(sigma = "exp", shape = "exp", nu = "expp1", phi = "exp", 
-               kappa = "exp", beta = "exp", zi = "inv_logit", 
-               hu = "inv_logit", bs = "exp", ndt = "exp", 
-               bias = "inv_logit", disc = "exp", quantile = "inv_logit",
-               xi = "expm1")
-  }
-  if (length(ap)) {
-    ilink <- ilink[ap]
-  }
-  ilink
-}
-
-valid_auxpars <- function(family, bterms = list(), autocor = cor_arma()) {
+valid_auxpars <- function(family, bterms = NULL) {
   # convenience function to find relevant auxiliary parameters
-  x <- c(sigma = has_sigma(family, bterms = bterms, autocor = autocor),
-         shape = has_shape(family), 
-         nu = has_nu(family), 
-         phi = has_phi(family),
-         kappa = has_kappa(family),
-         beta = has_beta(family),
-         zi = is_zero_inflated(family, zi_beta = TRUE), 
-         hu = is_hurdle(family, zi_beta = FALSE),
-         bs = is_wiener(family), 
-         ndt = is_wiener(family), 
-         bias = is_wiener(family), 
-         disc = is_ordinal(family),
-         quantile = is_asym_laplace(family),
-         xi = has_xi(family))
+  if (missing(family) && !is.null(bterms$family)) {
+    family <- bterms$family
+  } 
+  x <- c(
+    mu = TRUE,
+    sigma = has_sigma(family, bterms = bterms),
+    shape = has_shape(family), 
+    nu = has_nu(family), 
+    phi = has_phi(family),
+    kappa = has_kappa(family),
+    beta = has_beta(family),
+    zi = is_zero_inflated(family, zi_beta = TRUE), 
+    hu = is_hurdle(family, zi_beta = FALSE),
+    bs = is_wiener(family), 
+    ndt = is_wiener(family), 
+    bias = is_wiener(family), 
+    disc = is_ordinal(family),
+    quantile = is_asym_laplace(family),
+    xi = has_xi(family)
+  )
   names(x)[x]
 }
 

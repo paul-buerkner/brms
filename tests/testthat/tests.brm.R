@@ -6,8 +6,6 @@ test_that("brm produces expected errors", {
                "missing in formula: 'b'")
   expect_error(brm(~ x + (1|g), dat), 
                "response variable is missing")
-  expect_error(brm(bf(y ~ exp(-x/a) + (1|g), a ~ 1, nl = TRUE), dat),
-               "Group-level terms cannot be specified")
   expect_error(brm(bf(y ~ a, nl = TRUE)),
                "No non-linear parameters specified")
   expect_error(brm(bf(y ~ a, a ~ 1, nl = TRUE), family = acat()),

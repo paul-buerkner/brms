@@ -173,24 +173,74 @@ dvon_mises <- function(x, mu, kappa, log = FALSE) {
   # Args:
   #    mu: location parameter
   #    kappa: precision parameter
-  out <- CircStats::dvm(x + base::pi, mu + base::pi, kappa)
-  if (log) {
-    out <- log(out)
+  if (any(kappa < 0)) {
+    stop2("kappa must be non-negative")
+  }
+  be <- besselI(kappa, nu = 0, expon.scaled = TRUE)
+  out <- - log(2 * pi * be) + kappa * (cos(x - mu) - 1)
+  if (!log) {
+    out <- exp(out)
   }
   out
 }
 
 pvon_mises <- function(q, mu, kappa, lower.tail = TRUE, 
-                       log.p = FALSE, ...) {
+                       log.p = FALSE, acc = 1e-20, ...) {
   # distribution function of the von Mises distribution
-  q <- q + base::pi
-  mu <- mu + base::pi
-  # vectorized version of CircStats::pvm
-  .pvon_mises <- Vectorize(
-    CircStats::pvm, 
-    c("theta", "mu", "kappa")
-  )
-  out <- .pvon_mises(q, mu, kappa, ...)
+  # code basis taken from CircStats::pvm but improved 
+  # considerably with respect to speed and stability
+  if (any(kappa < 0)) {
+    stop2("kappa must be non-negative")
+  }
+  pi <- base::pi
+  pi2 <- 2 * pi
+  q <- (q + pi) %% pi2
+  mu <- (mu + pi) %% pi2
+  args <- expand(q, mu, kappa)
+  q <- args[[1]]
+  mu <- args[[2]]
+  kappa <- args[[3]]
+  
+  rec_sum <- function(q, kappa, acc, sum = 0, i = 1) {
+    # compute the sum of of besselI functions recursively
+    term <- (besselI(kappa, nu = i) * sin(i * q)) / i
+    sum <- sum + term
+    rd <- abs(term) >= acc
+    if (sum(rd)) {
+      sum[rd] <- rec_sum(
+        q[rd], kappa[rd], acc, sum = sum[rd], i = i + 1
+      ) 
+    }
+    sum
+  }
+  
+  .pvon_mises <- function(q, kappa, acc) {
+    sum <- rec_sum(q, kappa, acc)
+    q / pi2 + sum / (pi * besselI(kappa, nu = 0))
+  }
+  
+  out <- rep(NA, length(mu))
+  zero_mu <- mu == 0
+  if (sum(zero_mu)) {
+    out[zero_mu] <- .pvon_mises(q[zero_mu], kappa[zero_mu], acc)
+  }
+  lq_mu <- q <= mu
+  if (sum(lq_mu)) {
+    upper <- (q[lq_mu] - mu[lq_mu]) %% pi2
+    upper[upper == 0] <- pi2
+    lower <- (-mu[lq_mu]) %% pi2
+    out[lq_mu] <- 
+      .pvon_mises(upper, kappa[lq_mu], acc) -
+      .pvon_mises(lower, kappa[lq_mu], acc)
+  }
+  uq_mu <- q > mu
+  if (sum(uq_mu)) {
+    upper <- q[uq_mu] - mu[uq_mu]
+    lower <- mu[uq_mu] %% pi2
+    out[uq_mu] <- 
+      .pvon_mises(upper, kappa[uq_mu], acc) +
+      .pvon_mises(lower, kappa[uq_mu], acc)
+  }
   if (!lower.tail) {
     out <- 1 - out
   }
@@ -202,14 +252,58 @@ pvon_mises <- function(q, mu, kappa, lower.tail = TRUE,
 
 rvon_mises <- function(n, mu, kappa) {
   # sample random numbers from the von Mises distribution
-  stopifnot(n %in% c(1, max(length(mu), length(kappa))))
-  mu <- mu + base::pi
-  # vectorized version of CircStats::rvm
-  .rvon_mises <- Vectorize(
-    CircStats::rvm, 
-    c("mean", "k")
-  )
-  .rvon_mises(1, mu, kappa) - base::pi
+  # code basis taken from CircStats::rvm but improved 
+  # considerably with respect to speed and stability
+  if (any(kappa < 0)) {
+    stop2("kappa must be non-negative")
+  }
+  args <- expand(mu, kappa, length = n)
+  mu <- args[[1]]
+  kappa <- args[[2]]
+  pi <- base::pi
+  mu <- mu + pi
+  
+  rvon_mises_outer <- function(r, mu, kappa) {
+    n <- length(r)
+    U1 <- runif(n, 0, 1)
+    z <- cos(pi * U1)
+    f <- (1 + r * z) / (r + z)
+    c <- kappa * (r - f)
+    U2 <- runif(n, 0, 1)
+    outer <- is.na(f) | is.infinite(f) |
+      !(c * (2 - c) - U2 > 0 | log(c / U2) + 1 - c >= 0)
+    inner <- !outer
+    out <- rep(NA, n)
+    if (sum(inner)) {
+      out[inner] <- rvon_mises_inner(f[inner], mu[inner]) 
+    }
+    if (sum(outer)) {
+      # evaluate recursively until a valid sample is found
+      out[outer] <- rvon_mises_outer(r[outer], mu[outer], kappa[outer])      
+    }
+    out
+  }
+  
+  rvon_mises_inner <- function(f, mu) {
+    n <- length(f)
+    U3 <- runif(n, 0, 1)
+    (sign(U3 - 0.5) * acos(f) + mu) %% (2 * pi)
+  }
+  
+  a <- 1 + (1 + 4 * (kappa^2))^0.5
+  b <- (a - (2 * a)^0.5) / (2 * kappa)
+  r <- (1 + b^2) / (2 * b)
+  # indicates underflow due to kappa being close to zero
+  is_uf <- is.na(r) | is.infinite(r) 
+  not_uf <- !is_uf
+  out <- rep(NA, n)
+  if (sum(is_uf)) {
+    out[is_uf] <- runif(sum(is_uf), 0, 2 * pi) 
+  } 
+  if (sum(not_uf)) {
+    out[not_uf] <- rvon_mises_outer(r[not_uf], mu[not_uf], kappa[not_uf])
+  }
+  out - pi
 }
 
 dexgaussian <- function(x, mu, sigma, beta, log = FALSE) {

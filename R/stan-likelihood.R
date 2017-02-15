@@ -16,15 +16,15 @@ stan_llh <- function(family, bterms, data, autocor) {
   is_forked <- is_forked(family)
   is_mv <- is_linear(family) && length(bterms$response) > 1L
   
-  has_sigma <- has_sigma(family, bterms, autocor)
-  has_se <- is.formula(bterms$se)
-  has_weights <- is.formula(bterms$weights)
-  has_cens <- has_cens(bterms$cens, data = data)
-  has_disp <- is.formula(bterms$disp)
+  has_sigma <- has_sigma(family, bterms)
+  has_se <- is.formula(bterms$adforms$se)
+  has_weights <- is.formula(bterms$adforms$weights)
+  has_cens <- has_cens(bterms$adforms$cens, data = data)
+  has_disp <- is.formula(bterms$adforms$disp)
   has_cs <- has_cs(bterms)
-  bounds <- get_bounds(bterms$trunc, data = data)
+  bounds <- get_bounds(bterms$adforms$trunc, data = data)
   has_trunc <- any(bounds$lb > -Inf) || any(bounds$ub < Inf)
-  llh_adj <- stan_llh_adj(bterms)
+  llh_adj <- stan_llh_adj(bterms$adforms)
 
   if (is_mv) {
     # prepare for use of a multivariate likelihood
@@ -52,155 +52,153 @@ stan_llh <- function(family, bterms, data, autocor) {
   n <- ifelse(reqn, "[n]", "")
   # prepare auxiliary parameters
   p <- named_list(auxpars())
-  p$sigma <- stan_llh_sigma(family, bterms, autocor)
+  p$mu <- paste0(ifelse(is_mv || is_categorical, "Mu", "mu"), n)
+  p$sigma <- stan_llh_sigma(family, bterms)
   p$shape <- stan_llh_shape(family, bterms)
-  for (ap in setdiff(auxpars(), c("sigma", "shape"))) {
+  for (ap in setdiff(auxpars(), c("mu", "sigma", "shape"))) {
     p[[ap]] <- paste0(ap, if (reqn && ap %in% auxpars) "[n]")
   }
+  ord_args <- sargs(p$mu, if (has_cs) "mucs[n]", "temp_Intercept", p$disc)
   .logit <- ifelse(any(c("zi", "hu") %in% auxpars), "_logit", "")
   trials <- ifelse(llh_adj || is_zero_inflated, "trials[n]", "trials")
-
-  simplify <- stan_has_built_in_fun(family, link) &&
-              !has_trunc && !has_cens && !"disc" %in% auxpars
-  eta <- paste0(ifelse(is_mv, "Eta", "eta"), n)
-  ord_args <- sargs("eta[n]", if (has_cs) "etacs[n]", 
-                    "temp_Intercept", p$disc)
+  simplify <- stan_has_built_in_fun(nlist(family, link)) &&
+    !has_trunc && !has_cens && !"disc" %in% auxpars
   
   if (simplify) { 
     llh_pre <- switch(family,
       poisson = c(
         "poisson_log", 
-        eta
+        p$mu
       ), 
       negbinomial = c(
         "neg_binomial_2_log", 
-        sargs(eta, p$shape)
+        sargs(p$mu, p$shape)
       ),
       geometric = c(
         "neg_binomial_2_log",
-        sargs(eta, "1")
+        sargs(p$mu, "1")
       ),
       cumulative = c(
         "ordered_logistic", 
-        sargs("eta[n]", "temp_Intercept")
+        sargs(p$mu, "temp_Intercept")
       ),
       categorical = c(
         "categorical_logit", 
-        "append_row(zero, Eta[n])"
+        paste0("append_row(", sargs("zero", p$mu), ")")
       ),
       binomial = c(
         "binomial_logit", 
-        sargs(trials, eta)
+        sargs(trials, p$mu)
       ), 
       bernoulli = c(
         "bernoulli_logit", 
-        eta)
+        p$mu)
       )
   } else {
     llh_pre <- switch(family,
       gaussian = c(
         "normal", 
-        sargs(eta, p$sigma)
+        sargs(p$mu, p$sigma)
       ),
       gaussian_cov = c(
         "normal_cov", 
-        sargs(eta, "se2, N_tg, begin_tg, end_tg", 
+        sargs(p$mu, "se2, N_tg, begin_tg, end_tg", 
               "nobs_tg, res_cov_matrix")
       ),
       gaussian_mv = c(
         "multi_normal_cholesky", 
-        sargs(eta, "LSigma")
+        sargs(p$mu, "LSigma")
       ),
       gaussian_fixed = c(
         "multi_normal_cholesky", 
-        sargs(eta, "LV")
+        sargs(p$mu, "LV")
       ),
       student = c(
         "student_t", 
-        sargs(p$nu, eta, p$sigma)
+        sargs(p$nu, p$mu, p$sigma)
       ),
       student_cov = c(
         "student_t_cov", 
-        sargs(p$nu, eta, "se2, N_tg, begin_tg", 
+        sargs(p$nu, p$mu, "se2, N_tg, begin_tg", 
               "end_tg, nobs_tg, res_cov_matrix")
       ),
       student_mv = c(
         "multi_student_t", 
-        sargs(p$nu, eta, "Sigma")
+        sargs(p$nu, p$mu, "Sigma")
       ),
       student_fixed = c(
         "multi_student_t", 
-        sargs(p$nu, eta, "V")
+        sargs(p$nu, p$mu, "V")
       ),
       asym_laplace = c(
         "asym_laplace",
-        sargs(eta, p$sigma, p$quantile)
+        sargs(p$mu, p$sigma, p$quantile)
       ),
       lognormal = c(
         "lognormal", 
-        sargs(eta, p$sigma)
+        sargs(p$mu, p$sigma)
       ),
       poisson = c(
         "poisson", 
-        eta
+        p$mu
       ),
       negbinomial = c(
         "neg_binomial_2", 
-        sargs(eta, p$shape)
+        sargs(p$mu, p$shape)
       ),
       geometric = c(
         "neg_binomial_2", 
-        sargs(eta, "1")
+        sargs(p$mu, "1")
       ),
       binomial = c(
         "binomial", 
-        sargs(trials, eta)
+        sargs(trials, p$mu)
       ),
       bernoulli = c(
         "bernoulli", 
-        eta
+        p$mu
       ),
       gamma = c(
         "gamma", 
-        sargs(p$shape, eta)
+        sargs(p$shape, p$mu)
       ), 
       exponential = c(
         "exponential", 
-        eta
+        p$mu
       ),
       weibull = c(
         "weibull", 
-        sargs(p$shape, eta)
+        sargs(p$shape, p$mu)
       ), 
       frechet = c(
         "frechet", 
-        sargs(p$nu, eta)
+        sargs(p$nu, p$mu)
       ),
       gen_extreme_value = c(
         "gen_extreme_value",
-        sargs(eta, p$sigma, p$xi)
+        sargs(p$mu, p$sigma, p$xi)
       ),
       exgaussian = c(
         "exgaussian", 
-        sargs(eta, p$sigma, p$beta)
+        sargs(p$mu, p$sigma, p$beta)
       ),
       inverse.gaussian = c(
         paste0("inv_gaussian", if (!reqn) "_vector"),
-        sargs(eta, "shape", paste0(if (!reqn) "sum_", "log_Y", n),
+        sargs(p$mu, "shape", paste0(if (!reqn) "sum_", "log_Y", n),
               paste0("sqrt_Y", n))
       ),
       wiener = c(
         "wiener_diffusion", 
-        sargs("dec[n]", p$bs, p$ndt, p$bias, eta)
+        sargs("dec[n]", p$bs, p$ndt, p$bias, p$mu)
       ),
       beta = c(
         "beta", 
-        sargs(paste0(eta, " * ", p$phi), 
-              paste0("(1 - ", eta, ") * ", p$phi))
+        sargs(paste0(p$mu, " * ", p$phi), 
+              paste0("(1 - ", p$mu, ") * ", p$phi))
       ),
       von_mises = c(
         paste0("von_mises_", ifelse(reqn, "real", "vector")), 
-        sargs(eta, p$kappa)
+        sargs(p$mu, p$kappa)
       ),
       cumulative = c(
         "cumulative", 
@@ -220,35 +218,35 @@ stan_llh <- function(family, bterms, data, autocor) {
       ),
       hurdle_poisson = c(
         paste0("hurdle_poisson", .logit), 
-        sargs(eta, p$hu)
+        sargs(p$mu, p$hu)
       ),
       hurdle_negbinomial = c(
         paste0("hurdle_neg_binomial", .logit), 
-        sargs(eta, p$hu, p$shape)
+        sargs(p$mu, p$hu, p$shape)
       ),
       hurdle_gamma = c(
         paste0("hurdle_gamma", .logit), 
-        sargs(p$shape, eta, p$hu)
+        sargs(p$shape, p$mu, p$hu)
       ),
       hurdle_lognormal = c(
         paste0("hurdle_lognormal", .logit), 
-        sargs(eta, p$hu, p$sigma)
+        sargs(p$mu, p$hu, p$sigma)
       ),
       zero_inflated_poisson = c(
         paste0("zero_inflated_poisson", .logit), 
-        sargs(eta, p$zi)
+        sargs(p$mu, p$zi)
       ),
       zero_inflated_negbinomial = c(
         paste0("zero_inflated_neg_binomial", .logit),
-        sargs(eta, p$zi, p$shape)
+        sargs(p$mu, p$zi, p$shape)
       ),
       zero_inflated_binomial = c(
         paste0("zero_inflated_binomial", .logit), 
-        sargs(trials, eta, p$zi)
+        sargs(trials, p$mu, p$zi)
       ),
       zero_inflated_beta = c(
         paste0("zero_inflated_beta", .logit), 
-        sargs(eta, p$zi, p$phi)
+        sargs(p$mu, p$zi, p$phi)
       )
     )
   }
@@ -363,12 +361,12 @@ stan_llh_trunc <- function(llh_pre, bounds, general = TRUE) {
   tr
 }
 
-stan_llh_sigma <- function(family, bterms, autocor) {
+stan_llh_sigma <- function(family, bterms) {
   # prepare the code for 'sigma' in the likelihood statement
-  has_sigma <- has_sigma(family, bterms, autocor)
-  has_se <- is.formula(bterms$se)
-  has_disp <- is.formula(bterms$disp)
-  llh_adj <- stan_llh_adj(bterms)
+  has_sigma <- has_sigma(family, bterms)
+  has_se <- is.formula(bterms$adforms$se)
+  has_disp <- is.formula(bterms$adforms$disp)
+  llh_adj <- stan_llh_adj(bterms$adforms)
   auxpars <- names(bterms$auxpars)
   nsigma <- llh_adj || has_se || is_exgaussian(family) || is_gev(family)
   nsigma <- nsigma && (has_disp || "sigma" %in% auxpars)
@@ -392,8 +390,8 @@ stan_llh_sigma <- function(family, bterms, autocor) {
 
 stan_llh_shape <- function(family, bterms) {
   # prepare the code for 'shape' in the likelihood statement
-  has_disp <- is.formula(bterms$disp)
-  llh_adj <- stan_llh_adj(bterms)
+  has_disp <- is.formula(bterms$adforms$disp)
+  llh_adj <- stan_llh_adj(bterms$adforms)
   auxpars <- names(bterms$auxpars)
   nshape <- (llh_adj || is_forked(family)) &&
             (has_disp || "shape" %in% auxpars)
@@ -401,13 +399,13 @@ stan_llh_shape <- function(family, bterms) {
   paste0(if (has_disp) "disp_", "shape", nshape)
 }
 
-stan_llh_adj <- function(bterms, adds = c("weights", "cens", "trunc")) {
+stan_llh_adj <- function(adforms, adds = c("weights", "cens", "trunc")) {
   # checks if certain 'adds' are present so that the LL has to be adjusted
   # Args:
-  #   bterms: object of class brmsterms
+  #   adforms: named list of formulas
   #   adds: vector of addition argument names
   stopifnot(all(adds %in% c("weights", "cens", "trunc")))
-  any(ulapply(bterms[adds], is.formula))
+  any(ulapply(adforms[adds], is.formula))
 }
 
 sargs <- function(...) {

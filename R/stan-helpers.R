@@ -45,14 +45,14 @@ stan_autocor <- function(autocor, bterms, family, prior) {
       if (is_mv) {
         stop2(err_msg, " in multivariate models.")
       }
-      if (is.formula(bterms$disp)) {
+      if (is.formula(bterms$adforms$disp)) {
         stop2(err_msg, " when specifying 'disp'.")
       }
-      if ("sigma" %in% names(bterms)) {
+      if ("sigma" %in% names(bterms$auxpars)) {
         stop2(err_msg, " when predicting 'sigma'.")
       }
       out$data <- paste0(out$data, "  #include 'data_arma_cov.stan' \n")
-      if (!is.formula(bterms$se)) {
+      if (!is.formula(bterms$adforms$se)) {
         out$tdataD <- "  vector[N] se2; \n"
         out$tdataC <- "  se2 = rep_vector(0, N); \n"
       }
@@ -87,10 +87,10 @@ stan_autocor <- function(autocor, bterms, family, prior) {
       }
     } else {
       err_msg <- "Please set cov = TRUE in cor_arma / cor_ar / cor_ma"
-      if (is.formula(bterms$se)) {
+      if (is.formula(bterms$adforms$se)) {
         stop2(err_msg, " when specifying 'se'.")
       }
-      if (length(bterms$nlpars)) {
+      if (length(bterms$auxpars[["mu"]]$nlpars)) {
         stop2(err_msg, " for non-linear models.")
       }
       if (is_mv) {
@@ -107,12 +107,14 @@ stan_autocor <- function(autocor, bterms, family, prior) {
           "  vector[N] e", rs, "; \n"
         )
       )
-      out$modelC1 <- collapse("  E", rs, " = rep_matrix(0.0, N, Karma); \n")
+      out$modelC1 <- collapse(
+        "  E", rs, " = rep_matrix(0.0, N, Karma); \n"
+      )
       out$modelC2 <- paste0(
         "    // computation of ARMA effects \n",
         collapse(
           "    e", rs, "[n] = ", link, "(Y[", index, "])", 
-          " - eta", rs, "[n]", "; \n"
+          " - mu", rs, "[n]", "; \n"
         ),
         "    for (i in 1:Karma) { \n", 
         "      if (n + 1 - i > 0 && n < N && tg[n + 1] == tg[n + 1 - i]) { \n",
@@ -150,7 +152,7 @@ stan_autocor <- function(autocor, bterms, family, prior) {
     if (is_mv || family$family %in% c("bernoulli", "categorical")) {
       stop2("The bsts structure is not yet implemented for this family.")
     }
-    if (length(bterms$nlpars)) {
+    if (length(bterms$auxpars[["mu"]]$nlpars)) {
       stop2("The bsts structure is not yet implemented for non-linear models.")
     }
     out$data <- "  vector[N] tg;  // indicates independent groups \n"
@@ -254,11 +256,11 @@ stan_ordinal <- function(family, prior, cs, disc, threshold) {
     th <- function(k, fam = family) {
       # helper function generating stan code inside ilink(.)
       sign <- ifelse(fam %in% c("cumulative", "sratio"), " - ", " + ")
-      ptl <- ifelse(cs, paste0(sign, "etacs[k]"), "") 
+      ptl <- ifelse(cs, paste0(sign, "mucs[k]"), "") 
       if (sign == " - ") {
-        out <- paste0("thres[", k, "]", ptl, " - eta")
+        out <- paste0("thres[", k, "]", ptl, " - mu")
       } else {
-        out <- paste0("eta", ptl, " - thres[", k, "]")
+        out <- paste0("mu", ptl, " - thres[", k, "]")
       }
       paste0("disc * (", out, ")")
     }
@@ -294,19 +296,19 @@ stan_ordinal <- function(family, prior, cs, disc, threshold) {
     
     # generate Stan code specific for each ordinal model
     if (!(family == "cumulative" && ilink == "inv_logit") || disc) {
-      cs_arg <- ifelse(!cs, "", "row_vector etacs, ")
+      cs_arg <- ifelse(!cs, "", "row_vector mucs, ")
       out$fun <- paste0(
         "  /* ", family, " log-PDF for a single response \n",
         "   * Args: \n",
         "   *   y: response category \n",
-        "   *   eta: linear predictor \n",
-        "   *   etacs: optional predictor for category specific effects \n",
+        "   *   mu: linear predictor \n",
+        "   *   mucs: optional predictor for category specific effects \n",
         "   *   thres: ordinal thresholds \n",
         "   *   disc: discrimination parameter \n",
         "   * Returns: \n", 
         "   *   a scalar to be added to the log posterior \n",
         "   */ \n",
-        "   real ", family, "_lpmf(int y, real eta, ", cs_arg, 
+        "   real ", family, "_lpmf(int y, real mu, ", cs_arg, 
                                   "vector thres, real disc) { \n",
         "     int ncat; \n",
         "     vector[num_elements(thres) + 1] p; \n",
@@ -424,7 +426,7 @@ stan_families <- function(family, bterms) {
       out$modelD <- "  real xi;  // scaled shape parameter \n"
       v <- ifelse("sigma" %in% names(bterms$auxpars), "_vector", "")
       out$modelC <- paste0(
-        "  xi = scale_xi", v, "(temp_xi, Y, eta, sigma); \n"
+        "  xi = scale_xi", v, "(temp_xi, Y, mu, sigma); \n"
       )
     }
   }
@@ -466,7 +468,7 @@ stan_disp <- function(bterms, family) {
   stopifnot(is.brmsterms(bterms))
   stopifnot(is.family(family))
   out <- list()
-  if (is(bterms$disp, "formula")) {
+  if (is.formula(bterms$adforms$disp)) {
     par <- if (has_sigma(family)) "sigma"
            else if (has_shape(family)) "shape"
     if (!is.null(bterms[[par]])) {
@@ -817,7 +819,8 @@ stan_link <- function(link) {
     probit_approx = "inv_Phi", 
     cloglog = "cloglog", 
     cauchit = "cauchit",
-    tan_half = "tan_half"
+    tan_half = "tan_half",
+    log1p = "log1p"
   )
 }
 
@@ -837,15 +840,25 @@ stan_ilink <- function(link) {
     probit_approx = "Phi_approx", 
     cloglog = "inv_cloglog",
     cauchit = "inv_cauchit",
-    tan_half = "inv_tan_half"
+    tan_half = "inv_tan_half",
+    log1p = "expm1"
   )
 }
 
-stan_has_built_in_fun <- function(family, link) {
+stan_has_built_in_fun <- function(family) {
   # indicates if a family-link combination has a build in 
   # function in Stan (such as binomial_logit)
-  (family %in% c("binomial", "bernoulli", "cumulative", "categorical")
-   && link == "logit" || is_count(family) && link == "log")
+  # Args:
+  #   family: a list with elements 'family' and 'link'
+  stopifnot(all(c("family", "link") %in% names(family)))
+  link <- family$link
+  family <- family$family
+  isTRUE(
+    is_count(family) && link == "log" ||
+    family %in% c("binomial", "bernoulli", "cumulative", "categorical") &&
+    link == "logit" ||
+    family %in% c("zi", "hu") && link == "logit"
+  )
 }
 
 stan_needs_kronecker <- function(ranef, names_cov_ranef) {

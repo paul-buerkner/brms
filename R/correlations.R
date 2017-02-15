@@ -293,7 +293,7 @@ print.cov_fixed <- function(x, ...) {
 has_arma <- function(x) {
   # checks if any autocorrelation effects are present
   stop_not_cor_brms(x)
-  sum(x$p, x$q, x$r) > 0
+  isTRUE(sum(x$p, x$q, x$r) > 0)
 }
 
 get_ar <- function(x) {
@@ -318,7 +318,7 @@ get_arr <- function(x) {
 
 use_cov <- function(x) {
   stop_not_cor_brms(x)
-  if (!is.null(x$cov) && sum(x$p, x$q) > 0) {
+  if (!is.null(x$cov) && isTRUE(sum(x$p, x$q) > 0)) {
     x$cov
   } else {
     FALSE
@@ -326,7 +326,7 @@ use_cov <- function(x) {
 }
 
 stop_not_cor_brms <- function(x) {
-  if (!(is.cor_brms(x) || is(x, "cor.brms"))) {
+  if (!(is.null(x) || is.cor_brms(x) || is(x, "cor.brms"))) {
     stop2("Argument 'autocor' must be of class 'cor_brms'.")
   }
   TRUE

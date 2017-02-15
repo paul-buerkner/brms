@@ -226,8 +226,10 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
          family, "'. \nSupported links are: ", 
          paste(ok_links, collapse = ", "), call. = FALSE) 
   }
-  out <- structure(list(family = family, link = slink), 
-                   class = c("brmsfamily", "family"))
+  out <- structure(
+    list(family = family, link = slink), 
+    class = c("brmsfamily", "family")
+  )
   for (ap in valid_auxpars(out$family)) {
     alink <- as.character(aux_links[[paste0("link_", ap)]])
     if (length(alink)) {
@@ -462,6 +464,32 @@ acat <- function(link = "logit", link_disc = "log") {
   slink <- substitute(link)
   .brmsfamily("acat", link = link, slink = slink,
               link_disc = link_disc)
+}
+
+par_family <- function(par, link = NULL) {
+  # set up family objects for auxiliary parameters
+  # Args:
+  #   par: name of the auxiliary parameter
+  #   link: link function of the parameter
+  if (!isNA(par) && !isTRUE(par %in% auxpars())) {
+    stop2("Parameter '", par, "' is invalid.")
+  }
+  if (isNA(par)) {
+    link <- "identity"
+  } else {
+    links <- links_auxpars(par)
+    if (is.null(link)) {
+      link <- links[1]
+    } else {
+      if (!isTRUE(link %in% links)) {
+        stop2("Link '", link, "' is invalid for parameter '", par, "'.")
+      }
+    }
+  }
+  structure(
+    list(family = par, link = link),
+    class = c("brmsfamily", "family")
+  )
 }
 
 check_family <- function(family, link = NULL) {
@@ -744,13 +772,11 @@ has_xi <- function(family) {
   isTRUE(family %in% c("gen_extreme_value"))
 }
 
-has_sigma <- function(family, bterms = NULL, 
-                      autocor = cor_arma(), incmv = FALSE) {
+has_sigma <- function(family, bterms = NULL, incmv = FALSE) {
   # indicate if the model needs a sigma parameter
   # Args:
   #  family: model family
   #  bterms: object of class brmsterms
-  #  autocor: object of class cor_arma
   #  incmv: should MV (linear) models be treated as having sigma? 
   if (is.family(family)) {
     family <- family$family
@@ -759,12 +785,12 @@ has_sigma <- function(family, bterms = NULL,
     c("lognormal", "hurdle_lognormal", "exgaussian",
       "asym_laplace", "gen_extreme_value")
   )
-  if (is.formula(bterms$se)) {
+  if (is.formula(bterms$adforms$se)) {
     # call .se without evaluating the x argument 
-    cl <- rhs(bterms$se)[[2]]
+    cl <- rhs(bterms$adforms$se)[[2]]
     cl[[1]] <- quote(resp_se_no_data)
     se_only <- isFALSE(attr(eval(cl), "sigma")) 
-    if (se_only && use_cov(autocor)) {
+    if (se_only && use_cov(bterms$autocor)) {
       stop2("Please set argument 'sigma' of function 'se' ",  
             "to TRUE when modeling ARMA covariance matrices.")
     }
@@ -772,7 +798,7 @@ has_sigma <- function(family, bterms = NULL,
     se_only <- FALSE
   }
   out <- (is_linear(family) || is_ln_eg) && 
-          !se_only && !is(autocor, "cov_fixed")
+          !se_only && !is(bterms$autocor, "cov_fixed")
   if (!incmv) {
     is_multi <- is_linear(family) && length(bterms$response) > 1L
     out <- out && !is_multi

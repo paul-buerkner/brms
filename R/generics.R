@@ -775,3 +775,45 @@ expose_functions <- function(x, ...) {
 #' head(neff_ratio(fit))
 #' }
 NULL
+
+
+# ----- internal generics -----
+get_re <- function(x, ...) {
+  # extract group-level terms
+  UseMethod("get_re")
+}
+
+get_effect <- function(x, ...) {
+  # extract various kind of effects
+  UseMethod("get_effect")
+}
+
+get_all_effects <- function(x, ...) {
+  # extract combinations of predictor variables
+  UseMethod("get_all_effects")
+}
+
+prior_effects <- function(x, ...) {
+  # generate priors various kind of effects 
+  UseMethod("prior_effects")
+}
+
+data_effects <- function(x, ...) {
+  # generate data for various kind of effects 
+  UseMethod("data_effects")
+}
+
+stan_effects <- function(x, ...) {
+  # generate stan code various kind of effects 
+  UseMethod("stan_effects")
+}
+
+change_effects <- function(x, ...) {
+  # helps in renaming parameters after model fitting
+  UseMethod("change_effects")
+}
+
+extract_draws <- function(x, ...) {
+  # extract data and posterior draws
+  UseMethod("extract_draws")
+}

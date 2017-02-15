@@ -58,6 +58,18 @@ is_equal <- function(x, y, ...) {
   isTRUE(all.equal(x, y, ...))
 }
 
+expand <- function(..., length = NULL) {
+  # expand arguments of be of the same length
+  # Args:
+  #   ...: arguments to expand
+  #   length: optional expansion length
+  dots <- list(...)
+  if (is.null(length)) {
+    length <- max(sapply(dots, length))
+  }
+  lapply(dots, rep, length.out = length)
+}
+
 rmNum <- function(x) {
   # remove all numeric elements from an object
   x[sapply(x, Negate(is.numeric))]

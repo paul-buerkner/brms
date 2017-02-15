@@ -110,7 +110,7 @@ make_standata <- function(formula, data, family = NULL,
               "responses between -pi and pi.")
       }
     } else if (is_categorical) { 
-      standata$Y <- as.numeric(as.factor(standata$Y))
+      standata$Y <- as.numeric(factor(standata$Y))
       if (length(unique(standata$Y)) < 3L) {
         stop2("At least three response categories are required.")
       }
@@ -143,58 +143,35 @@ make_standata <- function(formula, data, family = NULL,
   # data for various kinds of effects
   ranef <- tidy_ranef(bterms, data, ncat = control$ncat, 
                       old_levels = control$old_levels)
-  args_eff <- nlist(data, family, ranef, prior, knots, not4stan)
-  if (length(bterms$nlpars)) {
-    nlpars <- names(bterms$nlpars)
-    # matrix of covariates appearing in the non-linear formula
-    C <- get_model_matrix(bterms$covars, data = data)
-    if (length(all.vars(bterms$covars)) != ncol(C)) {
-      stop2("Factors with more than two levels are not allowed as covariates.")
-    }
-    # fixes issue #127 occuring for factorial covariates
-    colnames(C) <- all.vars(bterms$covars)
-    standata <- c(standata, list(KC = ncol(C), C = C)) 
-    for (nlp in nlpars) {
-      args_eff_spec <- list(bterms = bterms$nlpars[[nlp]], nlpar = nlp,
-                            smooth = control$smooth[[nlp]],
-                            Jmo = control$Jmo[[nlp]])
-      data_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
+  args_eff <- nlist(data, ranef, prior, knots, not4stan)
+  resp <- bterms$response
+  if (length(resp) > 1L && !old_mv) {
+    args_eff_spec <- list(
+      x = bterms$auxpars[["mu"]],
+      smooth = control$smooth[["mu"]],
+      Jmo = control$Jmo[["mu"]]
+    )
+    bterms$auxpars[["mu"]] <- NULL
+    for (r in resp) {
+      data_eff <- do.call(
+        data_effects, c(args_eff_spec, args_eff, nlpar = r)
+      )
       standata <- c(standata, data_eff)
+      standata[[paste0("offset_", r)]] <- model.offset(data)
     }
-  } else {
-    resp <- bterms$response
-    if (length(resp) > 1L && !old_mv) {
-      args_eff_spec <- list(bterms = bterms, autocor = autocor,
-                            Jmo = control$Jmo[["mu"]],
-                            smooth = control$smooth[["mu"]])
-      for (r in resp) {
-        data_eff <- do.call(
-          data_effects, 
-          c(args_eff_spec, args_eff, nlpar = r)
-        )
-        standata <- c(standata, data_eff)
-        standata[[paste0("offset_", r)]] <- model.offset(data)
-      }
-      if (is_linear(family)) {
-        standata$nresp <- length(resp) 
-        standata$nrescor <- length(resp) * (length(resp) - 1) / 2
-        colnames(standata$Y) <- resp
-      }
-    } else {
-      # pass autocor here to not affect non-linear and auxiliary pars
-      args_eff_spec <- list(bterms = bterms, autocor = autocor, 
-                            Jmo = control$Jmo[["mu"]],
-                            smooth = control$smooth[["mu"]])
-      data_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
-      standata <- c(standata, data_eff, data_cs(bterms, data = data))
-      standata$offset <- model.offset(data)
+    if (is_linear(family)) {
+      standata$nresp <- length(resp)
+      standata$nrescor <- length(resp) * (length(resp) - 1) / 2
+      colnames(standata$Y) <- resp
     }
   }
   # data for predictors of auxiliary parameters
   for (ap in names(bterms$auxpars)) {
-    args_eff_spec <- list(bterms = bterms$auxpars[[ap]], nlpar = ap,
-                          smooth = control$smooth[[ap]],
-                          Jmo = control$Jmo[[ap]])
+    args_eff_spec <- list(
+      x = bterms$auxpars[[ap]], nlpar = ap,
+      smooth = control$smooth[[ap]], 
+      Jmo = control$Jmo[[ap]]
+    )
     data_aux_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
     standata <- c(standata, data_aux_eff)
   }
@@ -204,10 +181,11 @@ make_standata <- function(formula, data, family = NULL,
   # data for grouping factors separated after group-ID
   data_gr <- data_gr(ranef, data, cov_ranef = cov_ranef)
   standata <- c(standata, data_gr)
+  standata$offset <- model.offset(data)
   
   # data for specific families
   if (has_trials(family)) {
-    if (!length(bterms$trials)) {
+    if (!length(bterms$adforms$trials)) {
       if (!is.null(control$trials)) {
         standata$trials <- control$trials
       } else {
@@ -215,8 +193,8 @@ make_standata <- function(formula, data, family = NULL,
                 "variable as the number of trials.")
         standata$trials <- max(standata$Y) 
       }
-    } else if (is.formula(bterms$trials)) {
-      standata$trials <- eval_rhs(formula = bterms$trials, data = data)
+    } else if (is.formula(bterms$adforms$trials)) {
+      standata$trials <- eval_rhs(bterms$adforms$trials, data = data)
     } else {
       stop2("Argument 'trials' is misspecified.")
     }
@@ -234,14 +212,14 @@ make_standata <- function(formula, data, family = NULL,
     standata$trials <- as.array(standata$trials)
   }
   if (has_cat(family)) {
-    if (!length(bterms$cat)) {
+    if (!length(bterms$adforms$cat)) {
       if (!is.null(control$ncat)) {
         standata$ncat <- control$ncat
       } else {
-        standata$ncat <- max(standata$Y)
+        standata$ncat <- length(unique(standata$Y))
       }
-    } else if (is.formula(bterms$cat)) { 
-      standata$ncat <- eval_rhs(formula = bterms$cat, data = data)
+    } else if (is.formula(bterms$adforms$cat)) { 
+      standata$ncat <- eval_rhs(bterms$adforms$cat, data = data)
     } else {
       stop2("Argument 'cat' is misspecified.")
     }
@@ -284,23 +262,24 @@ make_standata <- function(formula, data, family = NULL,
   }
   
   # data for addition arguments
-  if (is.formula(bterms$se)) {
-    standata[["se"]] <- as.array(eval_rhs(formula = bterms$se, data = data))
+  if (is.formula(bterms$adforms$se)) {
+    standata[["se"]] <- as.array(eval_rhs(bterms$adforms$se, data = data))
   }
-  if (is.formula(bterms$weights)) {
-    standata[["weights"]] <- as.array(eval_rhs(bterms$weights, data = data))
+  if (is.formula(bterms$adforms$weights)) {
+    standata[["weights"]] <- 
+      as.array(eval_rhs(bterms$adforms$weights, data = data))
     if (old_mv) {
       standata$weights <- standata$weights[1:standata$N_trait]
     }
   }
-  if (is.formula(bterms$disp)) {
-    standata[["disp"]] <- as.array(eval_rhs(bterms$disp, data = data))
+  if (is.formula(bterms$adforms$disp)) {
+    standata[["disp"]] <- as.array(eval_rhs(bterms$adforms$disp, data = data))
   }
-  if (is.formula(bterms$dec)) {
-    standata[["dec"]] <- as.array(eval_rhs(bterms$dec, data = data))
+  if (is.formula(bterms$adforms$dec)) {
+    standata[["dec"]] <- as.array(eval_rhs(bterms$adforms$dec, data = data))
   }
-  if (is.formula(bterms$cens) && check_response) {
-    cens <- eval_rhs(bterms$cens, data = data)
+  if (is.formula(bterms$adforms$cens) && check_response) {
+    cens <- eval_rhs(bterms$adforms$cens, data = data)
     standata$cens <- rm_attr(cens, "y2")
     y2 <- attr(cens, "y2")
     if (!is.null(y2)) {
@@ -317,8 +296,8 @@ make_standata <- function(formula, data, family = NULL,
       standata$cens <- standata$cens[1:standata$N_trait]
     }
   }
-  if (is.formula(bterms$trunc)) {
-    standata <- c(standata, eval_rhs(bterms$trunc, data = data))
+  if (is.formula(bterms$adforms$trunc)) {
+    standata <- c(standata, eval_rhs(bterms$adforms$trunc, data = data))
     if (length(standata$lb) == 1L) {
       standata$lb <- rep(standata$lb, standata$N)
     }

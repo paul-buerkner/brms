@@ -94,16 +94,6 @@ test_that("change_old_re and change_old_re2 return expected lists", {
 
 test_that("change_old_sm return expected lists", {
   target <- list(
-    list(pos = c(TRUE, rep(FALSE, 16)), 
-         oldname = "sds_sigma_t2x0",
-         pnames = "sds_sigma_t2x0_1",
-         fnames = "sds_sigma_t2x0_1", 
-         dims = numeric(0)),
-    list(pos = c(FALSE, FALSE, rep(TRUE, 6), rep(FALSE, 9)), 
-         oldname = "s_sigma_t2x0", 
-         pnames = "s_sigma_t2x0_1", 
-         fnames = paste0("s_sigma_t2x0_1[", 1:6, "]"), 
-         dims = 6),
     list(pos = c(FALSE, TRUE, rep(FALSE, 15)), 
          oldname = "sds_sx1kEQ9",
          pnames = "sds_sx1_1", 
@@ -113,7 +103,17 @@ test_that("change_old_sm return expected lists", {
          oldname = "s_sx1kEQ9", 
          pnames = "s_sx1_1", 
          fnames = paste0("s_sx1_1[", 1:9, "]"), 
-         dims = 9)
+         dims = 9),
+    list(pos = c(TRUE, rep(FALSE, 16)), 
+         oldname = "sds_sigma_t2x0",
+         pnames = "sds_sigma_t2x0_1",
+         fnames = "sds_sigma_t2x0_1", 
+         dims = numeric(0)),
+    list(pos = c(FALSE, FALSE, rep(TRUE, 6), rep(FALSE, 9)), 
+         oldname = "s_sigma_t2x0", 
+         pnames = "s_sigma_t2x0_1", 
+         fnames = paste0("s_sigma_t2x0_1[", 1:6, "]"), 
+         dims = 6)
   )
   pars <- c("sds_sigma_t2x0", "sds_sx1kEQ9", 
             paste0("s_sigma_t2x0[", 1:6, "]"),

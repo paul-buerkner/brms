@@ -25,7 +25,6 @@ Imports:
     abind,
     statmod,
     stats,
-    CircStats,
     RWiener,
     evd,
     graphics,

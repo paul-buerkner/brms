@@ -47,10 +47,11 @@ test_that("get_prior returns correct prior names for auxiliary parameters", {
                     z = rnorm(10), g = rep(1:2, 5))
   prior <- get_prior(bf(y ~ 1, phi ~ z + (1|g)), data = dat, family = Beta())
   prior <- prior[prior$nlpar == "phi", ]
-  pdata <- data.frame(class = rep(c("b", "sd"), each = 3), 
-                      coef = c("", "Intercept", "z", "", "", "Intercept"),
-                      group = c(rep("", 4), "g", "g"),
+  pdata <- data.frame(class = c("b", "b", "b", "Intercept", rep("sd", 3)), 
+                      coef = c("", "Intercept", "z", "", "", "", "Intercept"),
+                      group = c(rep("", 5), "g", "g"),
                       stringsAsFactors = FALSE)
+  pdata <- pdata[with(pdata, order(class, group, coef)), ]
   expect_equivalent(prior[, c("class", "coef", "group")], pdata)
 })
 
