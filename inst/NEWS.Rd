@@ -2,6 +2,35 @@
 \title{brms News}
 \encoding{UTF-8}
 
+\section{CHANGES IN VERSION 1.4.0++}{
+  \subsection{NEW FEATURES}{
+    \itemize{
+      \item Implement the generalized extreme value
+      distribution via family \code{gen_extreme_value}.
+      \item Improve flexibility of the \code{horseshoe}
+      prior thanks to Juho Piironen.
+      \item Introduce auxiliary parameter \code{mu}
+      as an alternative to specifying effects within
+      the \code{formula} argument in function
+      \code{brmsformula}.
+    }
+  }
+  \subsection{OTHER CHANGES}{
+    \itemize{
+      \item Refactor various parts of the package
+      to ease implementation of mixture and multivariate
+      models in future updates. This should not have
+      any user visible effects.
+    }
+  }
+  \subsection{BUG FIXES}{
+    \itemize{
+      \item Fix a rare error when predicting \code{von_mises}
+      models thanks to John Kirwan.
+    }
+  }
+}
+
 \section{CHANGES IN VERSION 1.4.0}{
   \subsection{NEW FEATURES}{
     \itemize{
