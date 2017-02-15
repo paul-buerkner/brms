@@ -14,6 +14,14 @@ test_that("parse_bf handles very long RE terms", {
   expect_equal(bterms$auxpars$mu$re$group, "id")
 })
 
+test_that("parse_bf correctly handles auxiliary parameter mu", {
+  bterms1 <- parse_bf(y ~ x + (x|g))
+  bterms2 <- parse_bf(bf(y~1, mu ~ x + (x|g)))
+  expect_equal(bterms1$auxpars$mu, bterms2$auxpars$mu)
+  expect_error(parse_bf(bf(y~z, mu ~ x + (x|g))),
+               "Terms should be specified in either or 'formula' or 'mu'")
+})
+
 test_that("(deprecated) amend_formula returns correct formulas", {
   expect_warning(uf <- brms:::amend_formula(y ~ x, partial = ~ a + I(a^2)))
   expect_equal(uf$formula, y ~ x + cs(a + I(a^2)))
