@@ -53,6 +53,14 @@ test_that("all S3 methods have reasonable ouputs", {
   fi <- fitted(fit1, newdata = newdata, 
                allow_new_levels = TRUE)
   expect_equal(dim(fi), c(2, 4))
+  
+  # fitted values of auxiliary parameters
+  fi <- fitted(fit1, auxpar = "sigma")
+  expect_equal(dim(fi), c(nobs(fit1), 4))
+  expect_true(all(fi > 0))
+  fi <- fitted(fit1, auxpar = "sigma", scale = "linear")
+  expect_equal(dim(fi), c(nobs(fit1), 4))
+  expect_true(any(fi < 0))
 
   fi <- fitted(fit2)
   expect_equal(dim(fi), c(nobs(fit2), 4))
