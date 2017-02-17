@@ -2,7 +2,7 @@
 \title{brms News}
 \encoding{UTF-8}
 
-\section{CHANGES IN VERSION 1.4.0++}{
+\section{CHANGES IN VERSION 1.5.0}{
   \subsection{NEW FEATURES}{
     \itemize{
       \item Implement the generalized extreme value
@@ -15,6 +15,9 @@
       \code{brmsformula}.
       \item Return fitted values of auxiliary parameters 
       via argument \code{auxpar} of method \code{fitted}.
+      \item Add vignette \code{"brms_multilevel"}, in which
+      the advanced formula syntax of \pkg{brms} is explained
+      in detail using several examples.
     }
   }
   \subsection{OTHER CHANGES}{
@@ -23,6 +26,8 @@
       to ease implementation of mixture and multivariate
       models in future updates. This should not have
       any user visible effects.
+      \item Save the version number of \pkg{rstan} in 
+      element \code{version} of \code{brmsfit} objects.
     }
   }
   \subsection{BUG FIXES}{
