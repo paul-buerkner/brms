@@ -1681,6 +1681,8 @@ posterior_predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #'  If \code{"response"} results are returned on the scale 
 #'  of the response variable. If \code{"linear"} 
 #'  fitted values are returned on the scale of the linear predictor.
+#' @param auxpar Optional name of a predicted auxiliary parameter.
+#'  If specified, fitted values of this parameters are returned.
 #'
 #' @return Fitted values extracted from \code{object}. 
 #'  The output depends on the family:
@@ -1715,8 +1717,8 @@ posterior_predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                            scale = c("response", "linear"),
                            allow_new_levels = FALSE, incl_autocor = TRUE,
-                           subset = NULL, nsamples = NULL, sort = FALSE,
-                           summary = TRUE, robust = FALSE,
+                           auxpar = NULL, subset = NULL, nsamples = NULL, 
+                           sort = FALSE, summary = TRUE, robust = FALSE,
                            probs = c(0.025, 0.975), ...) {
   scale <- match.arg(scale)
   contains_samples(object)
@@ -1726,24 +1728,40 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     allow_new_levels, subset, nsamples
   )
   draws <- do.call(extract_draws, draws_args)
-  if (is.list(draws$mu[["mv"]])) {
-    draws$mu <- get_eta(draws$mu)
-  }
-  for (ap in intersect(auxpars(), names(draws))) {
-    if (is.list(draws[[ap]])) {
-      draws[[ap]] <- get_auxpar(draws[[ap]])
+  auxpars <- intersect(auxpars(), names(draws))
+  if (!length(auxpar)) {
+    if (is.list(draws$mu[["mv"]])) {
+      draws$mu <- get_eta(draws$mu)
     }
-  }
-  if (grepl("_mv$", draws$f$family) && length(dim(draws$mu)) == 3L) {
-    # collapse over responses in linear MV models
-    dim(draws$mu) <- c(dim(draws$mu)[1], prod(dim(draws$mu)[2:3]))
-  }
-  if (scale == "response") {
-    # original families are required for fitted helper functions 
-    draws$f <- family(object)
-    fitted_fun <- paste0("fitted_", draws$f$family)
-    fitted_fun <- get(fitted_fun, asNamespace("brms"))
-    draws$mu <- fitted_fun(draws)
+    for (ap in auxpars) {
+      if (is.list(draws[[ap]])) {
+        draws[[ap]] <- get_auxpar(draws[[ap]])
+      }
+    }
+    if (grepl("_mv$", draws$f$family) && length(dim(draws$mu)) == 3L) {
+      # collapse over responses in linear MV models
+      dim(draws$mu) <- c(dim(draws$mu)[1], prod(dim(draws$mu)[2:3]))
+    }
+    if (scale == "response") {
+      # original families are required for fitted helper functions 
+      draws$f <- family(object)
+      fitted_fun <- paste0("fitted_", draws$f$family)
+      fitted_fun <- get(fitted_fun, asNamespace("brms"))
+      draws$mu <- fitted_fun(draws)
+    }
+  } else {
+    auxpars <- setdiff(auxpars, "mu")
+    if (length(auxpar) != 1L || !auxpar %in% auxpars) {
+      stop2("Invalid argument 'auxpar'. Valid auxiliary ",
+            "parameters are: ", collapse_comma(auxpars))
+    }
+    if (!is.list(draws[[auxpar]])) {
+      stop2("Auxiliary parameter '", auxpar, "' was not predicted.")
+    }
+    if (scale == "linear") {
+      draws[[auxpar]]$f$link <- "identity"
+    }
+    draws$mu <- get_auxpar(draws[[auxpar]])
   }
   old_order <- attr(draws$data, "old_order")
   draws$mu <- reorder_obs(draws$mu, old_order, sort = sort)

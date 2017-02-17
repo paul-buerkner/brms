@@ -13,6 +13,8 @@
       as an alternative to specifying effects within
       the \code{formula} argument in function
       \code{brmsformula}.
+      \item Return fitted values of auxiliary parameters 
+      via argument \code{auxpar} of method \code{fitted}.
     }
   }
   \subsection{OTHER CHANGES}{
