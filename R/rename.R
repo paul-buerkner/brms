@@ -605,7 +605,7 @@ change_simple <- function(oldname, fnames, pars, dims,
   } else {
     out <- NULL
   }
-  return(out)
+  out
 }
 
 rm_int_fe <- function(fixef, stancode, nlpar = "") {

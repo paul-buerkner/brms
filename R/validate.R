@@ -134,7 +134,6 @@ parse_bf <- function(formula, family = NULL, autocor = NULL,
       y$response <- c(y$response, paste0("zi_", y$response))
     }
     if (length(y$response) > 1L) {
-      # don't use update on a formula that is possibly non-linear
       y$allvars[[2]] <- quote(response)
     }
     attr(y$formula, "old_mv") <- TRUE

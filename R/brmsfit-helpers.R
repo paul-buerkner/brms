@@ -54,9 +54,12 @@ restructure <- function(x, rstr_summary = FALSE) {
   }
   if (is.null(x$version)) {
     # this is the latest version without saving the version number
-    x$version <- package_version("0.9.1")
+    x$version <- list(brms = package_version("0.9.1"))
+  } else if (is.package_version(x$version)) {
+    # also added the rstan version in brms 1.5.0
+    x$version <- list(brms = x$version)
   }
-  if (x$version < utils::packageVersion("brms")) {
+  if (x$version$brms < utils::packageVersion("brms")) {
     # element 'nonlinear' deprecated as of brms > 0.9.1
     # element 'partial' deprecated as of brms > 0.8.0
     x$formula <- SW(amend_formula(
@@ -74,14 +77,14 @@ restructure <- function(x, rstr_summary = FALSE) {
       # deprecated as of brms 1.4.0
       class(x$autocor) <- "cor_fixed"
     }
-    if (x$version <= "0.9.1") {
+    if (x$version$brms <= "0.9.1") {
       # update gaussian("log") to lognormal() family
       nresp <- length(bterms$response)
-      if (is_old_lognormal(x$family, nresp = nresp, version = x$version)) {
+      if (is_old_lognormal(x$family, nresp = nresp, version = x$version$brms)) {
         object$family <- object$formula$family <- lognormal()
       }
     }
-    if (x$version <= "0.10.0.9000") {
+    if (x$version$brms <= "0.10.0.9000") {
       if (length(bterms$auxpars$mu$nlpars)) {
         # nlpar and group have changed positions
         change <- change_old_re(x$ranef, pars = parnames(x),
@@ -89,20 +92,20 @@ restructure <- function(x, rstr_summary = FALSE) {
         x <- do_renaming(x, change)
       }
     }
-    if (x$version < "1.0.0") {
+    if (x$version$brms < "1.0.0") {
       # double underscores were added to group-level parameters
       change <- change_old_re2(x$ranef, pars = parnames(x),
                                dims = x$fit@sim$dims_oi)
       x <- do_renaming(x, change)
     }
-    if (x$version <= "1.0.1") {
+    if (x$version$brms <= "1.0.1") {
       # names of spline parameters had to be changed after
       # allowing for multiple covariates in one spline term
       change <- change_old_sm(bterms, pars = parnames(x),
                               dims = x$fit@sim$dims_oi)
       x <- do_renaming(x, change)
     }
-    if (x$version <= "1.2.0") {
+    if (x$version$brms <= "1.2.0") {
       x$ranef$type[x$ranef$type == "mono"] <- "mo"
       x$ranef$type[x$ranef$type == "cse"] <- "cs"
     }
@@ -712,7 +715,7 @@ prepare_family <- function(x) {
   # prepare for calling family specific log_lik / predict functions
   family <- family(x)
   nresp <- length(parse_bf(x$formula, family = family)$response)
-  if (is_old_lognormal(family, nresp = nresp, version = x$version)) {
+  if (is_old_lognormal(family, nresp = nresp, version = x$version$brms)) {
     family <- lognormal()
   } else if (is_linear(family) && nresp > 1L) {
     family$family <- paste0(family$family, "_mv")

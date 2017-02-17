@@ -4,9 +4,12 @@ brmsfit <- function(formula = NULL, family = "", link = "", data.name = "",
                     threshold = "", cov_ranef = NULL, fit = NA, 
                     algorithm = "sampling") {
   # brmsfit class
+  version <- list(
+    brms = utils::packageVersion("brms"),
+    rstan = utils::packageVersion("rstan")
+  )
   x <- nlist(formula, family, link, data.name, data, model, exclude, prior, 
-             ranef, autocor, threshold, cov_ranef, fit, algorithm, 
-             version = utils::packageVersion("brms"))
+             ranef, autocor, threshold, cov_ranef, fit, algorithm, version)
   class(x) <- "brmsfit"
   x
 }

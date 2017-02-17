@@ -853,6 +853,9 @@ is_old_mv <- function(x) {
   # from brms < 1.0.0
   stopifnot(is.brmsfit(x))
   bterms <- parse_bf(formula(x), family = family(x))
-  (is.null(x$version) || x$version <= "0.10.0.9000") &&
+  if (is.package_version(x$version)) {
+    x$version <- list(brms = x$version)
+  }
+  (is.null(x$version) || x$version$brms <= "0.10.0.9000") &&
     (is_mv(family(x), bterms$response) || is_forked(family(x)))
 }

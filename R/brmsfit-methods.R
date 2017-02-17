@@ -1935,7 +1935,7 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
   }
   object <- restructure(object)
   recompile <- FALSE
-  if (isTRUE(object$version < utils::packageVersion("brms"))) {
+  if (isTRUE(object$version$brms < utils::packageVersion("brms"))) {
     recompile <- TRUE
     warning2("Updating models fitted with older versions ", 
              "of brms may fail.")
