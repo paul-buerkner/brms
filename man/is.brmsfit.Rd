@@ -12,4 +12,3 @@ is.brmsfit(x)
 \description{
 Checks if argument is a \code{brmsfit} object
 }
-

@@ -19,4 +19,3 @@ A numeric or complex vector between \code{lb} and \code{ub}.
 \description{
 Computes \code{inv_logit(x) * (ub - lb) + lb}
 }
-

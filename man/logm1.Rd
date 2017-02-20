@@ -15,4 +15,3 @@ logarithms are computed. Defaults to \emph{e} = \code{exp(1)}.}
 \description{
 Computes \code{log(x - 1)}.
 }
-

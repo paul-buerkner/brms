@@ -19,4 +19,3 @@ A numeric or complex vector.
 \description{
 Computes \code{logit((x - lb) / (ub - lb))}
 }
-

@@ -15,4 +15,3 @@ Checks if argument is a \code{brmsterms} object
 \seealso{
 \code{\link[brms:parse_bf]{parse_bf}}
 }
-

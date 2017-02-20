@@ -18,4 +18,3 @@ sampling statements (\code{FALSE})?}
 \description{
 Print method for \code{brmsprior} objects
 }
-

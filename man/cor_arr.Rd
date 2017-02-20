@@ -38,10 +38,9 @@ AR refers to autoregressive effects of residuals, which
 cor_arr(~visit|patient, r = 2)
 
 }
-\author{
-Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
-}
 \seealso{
 \code{\link{cor_arma}}
 }
-
+\author{
+Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
+}

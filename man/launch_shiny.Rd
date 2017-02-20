@@ -35,4 +35,3 @@ launch_shiny(fit)
 \seealso{
 \code{\link[shinystan:launch_shinystan]{launch_shinystan}}
 }
-

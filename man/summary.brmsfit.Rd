@@ -32,4 +32,3 @@ Create a summary of a fitted model represented by a \code{brmsfit} object
 \author{
 Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 }
-

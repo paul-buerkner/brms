@@ -38,4 +38,3 @@ set_prior(horseshoe(df = 3, scale_global = 2))
 \seealso{
 \code{\link[brms:set_prior]{set_prior}}
 }
-

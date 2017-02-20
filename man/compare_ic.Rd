@@ -47,4 +47,3 @@ compare_ic(w1, w2)
   \code{\link[brms:LOO]{LOO}},
   \code{\link[loo:compare]{compare}}
 }
-

@@ -38,4 +38,3 @@ pairs(fit, pars = "^sd")
 }
 
 }
-

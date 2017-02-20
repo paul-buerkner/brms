@@ -18,4 +18,3 @@ A named list containing the data passed to Stan
 \description{
 Extract all data that was used by Stan to fit the model
 }
-

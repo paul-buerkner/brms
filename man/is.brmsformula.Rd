@@ -12,4 +12,3 @@ is.brmsformula(x)
 \description{
 Checks if argument is a \code{brmsformula} object
 }
-

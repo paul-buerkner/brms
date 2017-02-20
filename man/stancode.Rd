@@ -18,4 +18,3 @@ model code in stan language for further processing.
 \description{
 Extract the model code in Stan language
 }
-

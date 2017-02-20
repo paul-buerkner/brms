@@ -12,4 +12,3 @@ is.brmsprior(x)
 \description{
 Checks if argument is a \code{brmsprior} object
 }
-

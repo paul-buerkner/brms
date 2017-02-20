@@ -32,4 +32,3 @@ set_prior(lasso(df = 1, scale = 10))
 \seealso{
 \code{\link[brms:set_prior]{set_prior}}
 }
-

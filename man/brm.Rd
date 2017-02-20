@@ -356,13 +356,12 @@ marginal_effects(fit7)
 }
 
 }
-\author{
-Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
-}
 \seealso{
 \code{\link[brms:brms]{brms}}, 
   \code{\link[brms:brmsformula]{brmsformula}}, 
   \code{\link[brms:brmsfamily]{brmsfamily}},
   \code{\link[brms:brmsfit-class]{brmsfit}}
 }
-
+\author{
+Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
+}

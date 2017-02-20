@@ -12,4 +12,3 @@ expp1(x)
 \description{
 Computes \code{exp(x) + 1}.
 }
-

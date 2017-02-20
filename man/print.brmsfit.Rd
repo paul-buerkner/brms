@@ -22,4 +22,3 @@ Print a summary for a fitted model represented by a \code{brmsfit} object
 \author{
 Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 }
-

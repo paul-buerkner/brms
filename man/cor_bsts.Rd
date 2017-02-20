@@ -43,4 +43,3 @@ fit <- brm(y~x, data = dat, autocor = cor_bsts())
 }   
 
 }
-

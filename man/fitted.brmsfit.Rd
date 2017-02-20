@@ -109,4 +109,3 @@ ggplot(dat) + geom_point(aes(x = Estimate, y = Y))
 }
 
 }
-

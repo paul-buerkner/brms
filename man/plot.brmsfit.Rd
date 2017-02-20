@@ -70,4 +70,3 @@ plot(fit, pars = "^b_")
 \author{
 Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 }
-

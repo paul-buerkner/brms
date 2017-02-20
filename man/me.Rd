@@ -35,4 +35,3 @@ summary(fit)
 \seealso{
 \code{\link[brms:brmsformula]{brmsformula}}
 }
-

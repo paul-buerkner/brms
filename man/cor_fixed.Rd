@@ -27,4 +27,3 @@ fit <- brm(y~1, data = dat, autocor = cor_fixed(V))
 }
 
 }
-

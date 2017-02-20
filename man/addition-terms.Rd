@@ -2,14 +2,14 @@
 % Please edit documentation in R/formula-helpers.R
 \name{addition-terms}
 \alias{addition-terms}
-\alias{resp_cat}
-\alias{resp_cens}
-\alias{resp_dec}
-\alias{resp_disp}
 \alias{resp_se}
-\alias{resp_trials}
-\alias{resp_trunc}
 \alias{resp_weights}
+\alias{resp_disp}
+\alias{resp_trials}
+\alias{resp_cat}
+\alias{resp_dec}
+\alias{resp_cens}
+\alias{resp_trunc}
 \title{Additional Response Information}
 \usage{
 resp_se(x, sigma = FALSE)
@@ -107,4 +107,3 @@ summary(fit4)
 \code{\link[brms:brm]{brm}}, 
   \code{\link[brms:brmsformula]{brmsformula}}
 }
-

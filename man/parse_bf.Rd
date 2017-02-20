@@ -63,4 +63,3 @@ This is the main formula parsing function of \pkg{brms}.
 \code{\link[brms:brm]{brm}}, 
   \code{\link[brms:brmsformula]{brmsformula}}
 }
-

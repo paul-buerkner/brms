@@ -61,4 +61,3 @@ plot(fit2)
  
 }
 \keyword{datasets}
-

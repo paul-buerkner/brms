@@ -26,4 +26,3 @@ correlation matrix of population-level parameters
 Estimates are obtained by calculating the maximum likelihood 
   covariances (correlations) of the posterior samples.
 }
-
