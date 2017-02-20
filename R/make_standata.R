@@ -61,11 +61,16 @@ make_standata <- function(formula, data, family = NULL,
   # sort data in case of autocorrelation models
   if (has_arma(autocor) || is(autocor, "cor_bsts")) {
     if (old_mv) {
-      to_order <- rmNULL(list(data[["trait"]], data[[bterms$time$group]], 
-                              data[[bterms$time$time]]))
+      to_order <- rmNULL(list(
+        data[["trait"]], 
+        data[[bterms$time$group]], 
+        data[[bterms$time$time]]
+      ))
     } else {
-      to_order <- rmNULL(list(data[[bterms$time$group]], 
-                              data[[bterms$time$time]]))
+      to_order <- rmNULL(list(
+        data[[bterms$time$group]], 
+        data[[bterms$time$time]]
+      ))
     }
     if (length(to_order)) {
       new_order <- do.call(order, to_order)

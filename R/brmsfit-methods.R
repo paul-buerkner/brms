@@ -1097,16 +1097,18 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
           paste(valid_ppc_types, collapse = ", "))
   }
   ppc_fun <- get(paste0("ppc_", type), pos = asNamespace("bayesplot"))
-  # validate argument "group"
+  # validate argument 'group'
   object <- restructure(object)
-  valid_groups <- unique(object$ranef$group)
-  time_group <- parse_time(object$autocor$formula)$group
-  if (!is.null(time_group) && nchar(time_group)) {
-    valid_groups <- unique(c(valid_groups, time_group))
-  }
+  not_num <- !sapply(model.frame(object), is.numeric)
+  valid_groups <- c(
+    names(model.frame(object))[not_num],
+    parse_time(object$autocor$formula)$group,
+    object$ranef$group
+  )
+  valid_groups <- unique(valid_groups[nzchar(valid_groups)])
   if (!is.null(group) && !group %in% valid_groups) {
     stop2("Group '", group, "' is not a valid grouping factor. ",
-          "Valid groups are: \n", paste(valid_groups, collapse = ", "))
+          "Valid groups are: \n", collapse_comma(valid_groups))
   }
   is_group_type <- "group" %in% names(formals(ppc_fun))
   if (is.null(group) && is_group_type) {
@@ -1120,8 +1122,8 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     bterms <- parse_bf(formula(object), family = family(object))
     ae_coll <- ulapply(get_all_effects(bterms), paste, collapse = ":")
     if (!x %in% ae_coll) {
-      stop2("Variable '", x, "' is not a valid variable for this model. \n",
-            "Valid variables are: ", paste(ae_coll, collapse = ", "))
+      stop2("Variable '", x, "' is not a valid variable for this model.",
+            "\nValid variables are: ", collapse_comma(ae_coll))
     }
   }
   if (type == "error_binned") {
@@ -1133,12 +1135,14 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     method <- "predict"
   }
   if (missing(nsamples)) {
-    aps_types <- c("error_scatter_avg", "error_scatter_avg_vs_x",
-                   "intervals", "intervals_grouped", "ribbon", 
-                   "ribbon_grouped", "rootogram", "scatter_avg", 
-                   "scatter_avg_grouped", "stat", "stat_2d", 
-                   "stat_freqpoly_grouped", "stat_grouped", 
-                   "violin_grouped")
+    aps_types <- c(
+      "error_scatter_avg", "error_scatter_avg_vs_x",
+      "intervals", "intervals_grouped", "ribbon", 
+      "ribbon_grouped", "rootogram", "scatter_avg", 
+      "scatter_avg_grouped", "stat", "stat_2d", 
+      "stat_freqpoly_grouped", "stat_grouped", 
+      "violin_grouped"
+    )
     if (!is.null(subset)) {
       nsamples <- NULL
     } else if (type %in% aps_types) {
@@ -1167,8 +1171,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
   if (family(object)$family %in% "binomial") {
     # use success proportions following Gelman and Hill (2006)
     y <- y / standata$trials
-    yrep <- yrep / matrix(standata$trials, nrow = nrow(yrep),
-                          ncol = ncol(yrep), byrow = TRUE)
+    yrep <- yrep / as_draws_matrix(standata$trials, dim = dim(yrep))
   }
   ppc_args <- list(y, yrep, ...)
   old_order <- attr(standata, "old_order")

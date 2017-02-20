@@ -2,6 +2,15 @@
 \title{brms News}
 \encoding{UTF-8}
 
+\section{CHANGES IN VERSION 1.5.0++}{
+  \subsection{BUG FIXES}{
+    \itemize{
+      \item Fix checks of argument \code{group} in
+      method \code{pp_check} thanks to Thomas K.
+    }
+  }
+}
+
 \section{CHANGES IN VERSION 1.5.0}{
   \subsection{NEW FEATURES}{
     \itemize{
