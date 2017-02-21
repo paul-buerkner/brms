@@ -247,9 +247,9 @@ predict_gen_extreme_value <- function(i, draws, ...) {
 }
 
 predict_inverse.gaussian <- function(i, draws, ...) {
-  args <- list(mean = ilink(get_eta(draws$mu, i), draws$f$link), 
+  args <- list(mu = ilink(get_eta(draws$mu, i), draws$f$link), 
                shape = get_shape(draws$shape, data = draws$data, i = i))
-  rng_continuous(nrng = draws$nsamples, dist = "invgauss", args = args, 
+  rng_continuous(nrng = draws$nsamples, dist = "inv_gaussian", args = args, 
                  lb = draws$data$lb[i], ub = draws$data$ub[i])
 }
 

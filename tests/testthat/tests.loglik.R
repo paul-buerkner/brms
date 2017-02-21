@@ -173,13 +173,13 @@ test_that("loglik for count and survival models works correctly", {
   expect_equal(ll, as.matrix(ll_weibull))
   
   scale <- exp(draws$mu[, i]) / gamma(1 - 1 / draws$nu)
-  ll_frechet <- evd::dfrechet(x = draws$data$Y[i], shape = draws$nu,
-                              scale = scale, log = TRUE)
+  ll_frechet <- dfrechet(x = draws$data$Y[i], shape = draws$nu,
+                         scale = scale, log = TRUE)
   ll <- loglik_frechet(i, draws = draws)
   expect_equal(ll, ll_frechet)
   
-  ll_invgauss <- dinvgauss(x = draws$data$Y[i], shape = draws$shape,
-                           mean = exp(draws$mu[, i]), log = TRUE)
+  ll_invgauss <- dinv_gaussian(x = draws$data$Y[i], shape = draws$shape,
+                               mu = exp(draws$mu[, i]), log = TRUE)
   ll <- loglik_inverse.gaussian(i, draws = draws)
   expect_equal(ll, ll_invgauss)
   

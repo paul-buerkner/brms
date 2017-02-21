@@ -23,7 +23,6 @@ Imports:
     nlme,
     coda,
     abind,
-    statmod,
     stats,
     RWiener,
     graphics,

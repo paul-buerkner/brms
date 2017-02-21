@@ -270,10 +270,11 @@ loglik_gen_extreme_value <- function(i, draws, data = data.frame()) {
 }
 
 loglik_inverse.gaussian <- function(i, draws, data = data.frame()) {
-  args <- list(mean = ilink(get_eta(draws$mu, i), draws$f$link), 
+  args <- list(mu = ilink(get_eta(draws$mu, i), draws$f$link), 
                shape = get_shape(draws$shape, data = draws$data, i = i))
-  out <- censor_loglik(dist = "invgauss", args = args, i = i, data = draws$data)
-  out <- truncate_loglik(out, cdf = pinvgauss, args = args,
+  out <- censor_loglik(dist = "inv_gaussian", args = args, 
+                       i = i, data = draws$data)
+  out <- truncate_loglik(out, cdf = pinv_gaussian, args = args,
                          i = i, data = draws$data)
   weight_loglik(out, i = i, data = draws$data)
 }

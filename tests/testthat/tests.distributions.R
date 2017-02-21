@@ -78,6 +78,17 @@ test_that("frechet distribution functions run without errors", {
   expect_true(length(res) == n)
 })
 
+test_that("inv_gaussian distribution functions run without errors", {
+  n <- 10
+  x <- rgamma(n, 10, 3)
+  res <- brms:::dinv_gaussian(x, mu = 1, shape = 1)
+  expect_true(length(res) == n)
+  res <- brms:::pinv_gaussian(x, mu = abs(rnorm(n)), shape = 3)
+  expect_true(length(res) == n)
+  res <- brms:::rinv_gaussian(n, mu = abs(rnorm(n)), shape = 1:10)
+  expect_true(length(res) == n)
+})
+
 test_that("gen_extreme_value distribution functions run without errors", {
   n <- 10
   x <- rgamma(n, 10, 3)

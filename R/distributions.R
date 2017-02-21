@@ -458,6 +458,77 @@ rfrechet <- function(n, loc = 0, scale = 1, shape = 1) {
   loc + scale * rexp(n)^(-1 / shape)
 }
 
+dinv_gaussian <- function(x, mu = 1, shape = 1, log = FALSE) {
+  # PDF of the inverse gaussian distribution
+  # Args:
+  #   mu: mean parameter
+  #   shape: shape parameter
+  if (isTRUE(any(mu <= 0))) {
+    stop2("Argument 'mu' must be positive.")
+  }
+  if (isTRUE(any(shape <= 0))) {
+    stop2("Argument 'shape' must be positive.")
+  }
+  args <- nlist(x, mu, shape)
+  args <- do.call(expand, args)
+  out <- with(args,
+    0.5 * log(shape / (2 * pi)) -  
+    1.5 * log(x) - 0.5 * shape * (x - mu)^2 / (x * mu^2)
+  )
+  if (!log) {
+    out <- exp(out)
+  }
+  out
+}
+
+pinv_gaussian <- function(q, mu = 1, shape = 1, lower.tail = TRUE,
+                          log.p = FALSE) {
+  # CDF of the inverse gaussian distribution
+  # Args:
+  #   Args: see dinv_gaussian
+  if (isTRUE(any(mu <= 0))) {
+    stop2("Argument 'mu' must be positive.")
+  }
+  if (isTRUE(any(shape <= 0))) {
+    stop2("Argument 'shape' must be positive.")
+  }
+  args <- nlist(q, mu, shape)
+  args <- do.call(expand, args)
+  out <- with(args,
+    pnorm(sqrt(shape / q) * (q / mu - 1)) + 
+      exp(2 * shape / mu) * pnorm(- sqrt(shape / q) * (q / mu + 1))
+  )
+  if (!lower.tail) {
+    out <- 1 - out
+  }
+  if (log.p) {
+    out <- log(out)
+  }
+  out
+}
+
+rinv_gaussian <- function(n, mu = 1, shape = 1) {
+  # create random numbers for the inverse gaussian distribution
+  # Args:
+  #   Args: see dinv_gaussian
+  if (isTRUE(any(mu <= 0))) {
+    stop2("Argument 'mu' must be positive.")
+  }
+  if (isTRUE(any(shape <= 0))) {
+    stop2("Argument 'shape' must be positive.")
+  }
+  args <- nlist(mu, shape, length = n)
+  args <- do.call(expand, args)
+  # algorithm from wikipedia
+  args$y <- rnorm(n)^2
+  args$x <- with(args, 
+    mu + (mu^2 * y) / (2 * shape) - mu / (2 * shape) * 
+      sqrt(4 * mu * shape * y + mu^2 * y^2) 
+  )
+  args$z <- runif(n)
+  with(args, ifelse(z <= mu / (mu + x), x, mu^2 / x))
+}
+
 dgen_extreme_value <- function(x, mu = 0, sigma = 1, 
                                xi = 0, log = FALSE) {
   # pdf of the generalized extreme value distribution

@@ -1582,7 +1582,6 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
 #' predict(fit, newdata = newdata)
 #' }
 #' 
-#' @importFrom statmod rinvgauss pinvgauss qinvgauss
 #' @export 
 predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                             transform = NULL, allow_new_levels = FALSE,
@@ -2204,7 +2203,6 @@ loo.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
 #' @export
 #' @export log_lik
 #' @importFrom rstantools log_lik
-#' @importFrom statmod dinvgauss
 log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                             allow_new_levels = FALSE, subset = NULL,
                             nsamples = NULL, pointwise = FALSE, ...) {
