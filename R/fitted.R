@@ -266,7 +266,7 @@ adjust_old_forked <- function(mu, par) {
 as_draws_matrix <- function(x, dim) {
   # expand data to dimension appropriate for
   # vectorized multiplication with posterior samples
-  stopifnot(length(dim) == 2, length(x) != dim[1])
+  stopifnot(length(dim) == 2L, length(x) %in% c(1, dim[2]))
   matrix(x, nrow = dim[1], ncol = dim[2], byrow = TRUE)
 }
 
@@ -282,8 +282,8 @@ fitted_trunc <- function(draws) {
   # prepares data required for truncation and calles the 
   # family specific truncation function for fitted values
   if (is_trunc(draws$data)) {
-    lb <- as_draws_matrix(draws$data[["lb"]], dim(draws$mu))
-    ub <- as_draws_matrix(draws$data[["ub"]], dim(draws$mu))
+    lb <- as_draws_matrix(draws$data[["lb"]], dim_mu(draws))
+    ub <- as_draws_matrix(draws$data[["ub"]], dim_mu(draws))
     fitted_trunc_fun <- paste0("fitted_trunc_", draws$f$family)
     fitted_trunc_fun <- try(
       get(fitted_trunc_fun, asNamespace("brms")), 
