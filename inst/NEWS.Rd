@@ -3,6 +3,12 @@
 \encoding{UTF-8}
 
 \section{CHANGES IN VERSION 1.5.0++}{
+  \subsection{OTHER CHANGES}{
+    \itemize{
+      \item Avoid indexing of matrices in non-linear
+      models to slightly improve sampling speed.
+    }
+  }
   \subsection{BUG FIXES}{
     \itemize{
       \item Fix checks of argument \code{group} in

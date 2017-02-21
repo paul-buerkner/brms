@@ -38,13 +38,24 @@ data_effects.btnl <- function(x, data, ranef = empty_ranef(),
                               smooth = NULL, Jmo = NULL) {
   # prepare data for non-linear parameters for use in Stan
   # matrix of covariates appearing in the non-linear formula
+  out <- list()
   C <- get_model_matrix(x$covars, data = data)
   if (length(all.vars(x$covars)) != ncol(C)) {
     stop2("Factors with more than two levels are not allowed as covariates.")
   }
   # fixes issue #127 occuring for factorial covariates
   colnames(C) <- all.vars(x$covars)
-  out <- list(KC = ncol(C), C = C)
+  if (not4stan) {
+    out <- c(out, nlist(C))
+  } else {
+    # use vectors as indexing matrices in Stan is slow
+    if (ncol(C)) {
+      out <- c(out, setNames(
+        as.list(as.data.frame(C)), 
+        paste0("C_", seq_len(ncol(C)))
+      ))
+    }
+  }
   for (nlp in names(x$nlpars)) {
     out <- c(out,
       data_effects(

@@ -116,11 +116,12 @@ stan_effects.btnl <- function(x, data, ranef, prior, eta = "mu",
     # covariates in the non-linear model
     covars <- wsp(setdiff(all.vars(rhs(x$formula)), nlpars))
     if (length(covars)) {
+      # use vectors as indexing matrices in Stan is slow
       out$data <- paste0(out$data, 
-        "  int<lower=1> KC;  // number of covariates \n",
-        " matrix[N, KC] C;  // covariate matrix \n"
+        "  // covariate vectors \n",
+        collapse("  vector[N] C_", seq_along(covars), ";\n")
       )
-      new_covars <- paste0(" C[n, ", seq_along(covars), "] ")
+      new_covars <- paste0(" C_", seq_along(covars), "[n] ")
     } else {
       new_covars <- NULL
     }

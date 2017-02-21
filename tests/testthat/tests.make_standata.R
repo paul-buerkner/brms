@@ -282,14 +282,20 @@ test_that("make_standata correctly prepares data for non-linear models", {
   flist <- list(a ~ x + (1|1|g), b ~ mono(z) + (1|1|g))
   data <- data.frame(y = rnorm(9), x = rnorm(9), z = sample(1:9, 9), 
                      g = rep(1:3, 3))
-  standata <- make_standata(bf(y ~ a - b^z, flist = flist, nl = TRUE), data = data)
-  expect_equal(names(standata), c("N", "Y", "KC", "C", "K_a", "X_a", "Z_1_a_1", 
-                                  "K_b", "X_b", "Kmo_b", "Xmo_b", "Jmo_b", 
-                                  "con_simplex_b_1", "Z_1_b_2", "J_1", "N_1", 
-                                  "M_1", "NC_1", "prior_only"))
-  expect_equal(colnames(standata$X_a), c("Intercept", "x"))
-  expect_equal(colnames(standata$C), "z")
-  expect_equal(standata$J_1, as.array(data$g))
+  sdata <- make_standata(bf(y ~ a - b^z, flist = flist, nl = TRUE), 
+                         data = data)
+  expect_equal(names(sdata), 
+    c("N", "Y", "C_1", "K_a", "X_a", "Z_1_a_1", 
+      "K_b", "X_b", "Kmo_b", "Xmo_b", "Jmo_b", 
+      "con_simplex_b_1", "Z_1_b_2", "J_1", "N_1", 
+      "M_1", "NC_1", "prior_only")
+  )
+  expect_equal(colnames(sdata$X_a), c("Intercept", "x"))
+  expect_equal(sdata$J_1, as.array(data$g))
+  
+  sdata <- make_standata(bf(y ~ a - b^z, flist = flist, nl = TRUE), 
+                         data = data, control = list(not4stan = TRUE))
+  expect_equal(colnames(sdata$C), "z")
 })
 
 test_that("make_standata correctly prepares data for monotonic effects", {

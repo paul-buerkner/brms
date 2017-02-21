@@ -463,7 +463,7 @@ test_that("Stan code for non-linear models is correct", {
   # syntactic validity is already checked within make_stancode
   scode <- make_stancode(bf(y ~ a - exp(b^z), flist = flist, nl = TRUE), 
                             data = data, prior = prior)
-  expect_match2(scode, "mu[n] = mu_a[n] - exp(mu_b[n] ^ C[n, 1]);")
+  expect_match2(scode, "mu[n] = mu_a[n] - exp(mu_b[n] ^ C_1[n]);")
   
   flist <- list(a1 ~ 1, a2 ~ z + (x|g))
   prior <- c(set_prior("beta(1,1)", nlpar = "a1", lb = 0, ub = 1),
@@ -473,7 +473,7 @@ test_that("Stan code for non-linear models is correct", {
                             data = data, family = Gamma("log"), prior = prior)
   expect_match2(scode,
     paste("mu[n] = shape * exp(-(mu_a1[n] *", 
-          "exp( - C[n, 1] / (mu_a2[n] + C[n, 2]))));"))
+          "exp( - C_1[n] / (mu_a2[n] + C_2[n]))));"))
 })
 
 test_that("make_stancode accepts very long non-linear formulas", {
@@ -533,7 +533,7 @@ test_that("Addition term 'disp' appears in the Stan code", {
                             prior = c(set_prior("normal(0,1)", nlpar = "a"),
                                       set_prior("normal(0,1)", nlpar = "b")))
   expect_match2(scode,
-    "mu[n] = exp((mu_a[n] - mu_b[n] ^ C[n, 1]) / disp_shape[n]);")
+    "mu[n] = exp((mu_a[n] - mu_b[n] ^ C_1[n]) / disp_shape[n]);")
 })
 
 test_that("functions defined in 'stan_funs' appear in the functions block", {
@@ -671,7 +671,7 @@ test_that("distributional gamma models are handled correctly", {
   expect_match2(scode, paste0(
     "    shape[n] = exp(shape[n]); \n", 
     "    // compute non-linear predictor \n",
-    "    mu[n] = shape[n] / (inv_logit(mu_a[n]) * exp(mu_b[n] * C[n, 1]));"))
+    "    mu[n] = shape[n] / (inv_logit(mu_a[n]) * exp(mu_b[n] * C_1[n]));"))
 })
 
 test_that("weighted, censored, and truncated likelihoods are correct", {

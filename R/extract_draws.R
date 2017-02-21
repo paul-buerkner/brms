@@ -93,8 +93,8 @@ extract_draws.btnl <- function(x, C, nlpar = "", ...) {
   nsamples <- draws$nlpars[[nlpars[1]]]$nsamples
   stopifnot(is.matrix(C))
   for (cov in colnames(C)) {
-    draws[["C"]][[cov]] <- matrix(
-      C[, cov], nrow = nsamples, ncol = nrow(C), byrow = TRUE
+    draws[["C"]][[cov]] <- as_draws_matrix(
+      C[, cov], dim = c(nsamples, nrow(C))
     )
   }
   draws$nlform <- x$formula[[2]]

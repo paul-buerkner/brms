@@ -354,7 +354,7 @@ test_that("all S3 methods have reasonable ouputs", {
                  "K_sigma", "X_sigma", "J_1", "N_1", "M_1", "NC_1", 
                  "offset", "tg", "Kar", "Kma", "Karma", "prior_only"))
   expect_equal(names(standata(fit2)),
-               c("N", "Y", "KC", "C", "K_a", "X_a", "Z_1_a_1",
+               c("N", "Y", "C_1", "K_a", "X_a", "Z_1_a_1",
                  "K_b", "X_b", "Z_1_b_2", "J_1", "N_1", "M_1",
                  "NC_1", "disp", "prior_only"))
   
