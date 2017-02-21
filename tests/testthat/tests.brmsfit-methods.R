@@ -61,6 +61,10 @@ test_that("all S3 methods have reasonable ouputs", {
   fi <- fitted(fit1, auxpar = "sigma", scale = "linear")
   expect_equal(dim(fi), c(nobs(fit1), 4))
   expect_true(any(fi < 0))
+  expect_error(fitted(fit1, auxpar = "inv"),
+               "Invalid argument 'auxpar'")
+  expect_error(fitted(fit1, auxpar = "nu"),
+               "Auxiliary parameter 'nu' was not predicted")
 
   fi <- fitted(fit2)
   expect_equal(dim(fi), c(nobs(fit2), 4))
@@ -101,8 +105,19 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_output(print(h2), "class sd_visit:", fixed = TRUE)
   expect_silent(p <- plot(h2, ignore_prior = TRUE, plot = FALSE))
   expect_error(hypothesis(fit1, "Intercept > x"), fixed = TRUE,
-               "cannot be found in the model: \nb_x")
+               "cannot be found in the model: \n'b_x'")
   
+  expect_error(hypothesis(fit1, 1),
+               "Argument 'hypothesis' must be a character vector")
+  expect_error(hypothesis(fit2, "b_Age = 0", alpha = 2),
+               "Argument 'alpha' must be a single value in [0,1]",
+               fixed = TRUE)
+  expect_error(hypothesis(fit3, "b_Age x 0"),
+               "Every hypothesis must be of the form 'left (= OR < OR >) right'",
+               fixed = TRUE)
+  expect_error(hypothesis(fit4, "x1 = 0", class = "a"),
+               "'a' is not a valid parameter class")
+
   # omit launch_shiny
   
   # log_lik
@@ -233,11 +248,17 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_true(is(ribbon_plot, "ggplot"))
   expect_true(is(pp_check(fit3), "ggplot"))
   expect_true(is(pp_check(fit2, "ribbon", x = "Trt"), "ggplot"))
+  expect_error(pp_check(fit2, "ribbon"),
+               "Argument 'x' is required")
+  expect_error(pp_check(fit2, "ribbon", x = "x"),
+               "Variable 'x' is not a valid variable")
   expect_error(pp_check(fit1, "wrong_type"))
   expect_error(pp_check(fit2, "violin_grouped"), "group")
   expect_error(pp_check(fit1, "stat_grouped", group = "g"),
                "not a valid grouping factor")
   expect_true(is(pp_check(fit4), "ggplot"))
+  expect_error(pp_check(fit4, "error_binned"),
+               "Type 'error_binned' is not available")
   
   # predict
   pred <- predict(fit1)
@@ -363,20 +384,29 @@ test_that("all S3 methods have reasonable ouputs", {
                          Trt = rep(c(0, 0.5, -0.5), 6), 
                          count = rep(c(5, 17, 28), 6),
                          patient = 1, Exp = 4)
+  
   up <- update(fit1, newdata = new_data, ranef = FALSE, testmode = TRUE)
   expect_true(is(up, "brmsfit"))
   expect_equal(up$data.name, "new_data")
   expect_equal(attr(up$ranef, "levels")$visit, c("2", "3", "4"))
   expect_true("r_1" %in% up$exclude)
   expect_error(update(fit1, data = new_data), "use argument 'newdata'")
+  
   up <- update(fit1, formula = ~ . + log(Trt), testmode = TRUE,
                prior = set_prior("normal(0,10)"))
   expect_true(is(up, "brmsfit"))
+  
   up <- update(fit1, formula = ~ . + log(Trt), newdata = new_data,
                sample_prior = FALSE, testmode = TRUE)
   expect_true(is(up, "brmsfit"))
   expect_error(update(fit1, formula. = ~ . + wrong_var),
-               "New variables found: wrong_var")
+               "New variables found: 'wrong_var'")
+  
+  up <- update(fit1, save_ranef = FALSE, testmode = TRUE)
+  expect_true("r_1_1" %in% up$exclude)
+  up <- update(fit3, save_mevars = FALSE, testmode = TRUE)
+  expect_true("Xme_1" %in% up$exclude)
+  
   up <- update(fit2, algorithm = "fullrank", testmode = TRUE)
   expect_equal(up$algorithm, "fullrank")
   up <- update(fit2, formula. = bf(. ~ ., a + b ~ 1, nl = TRUE), 

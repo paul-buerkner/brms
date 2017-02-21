@@ -976,7 +976,7 @@ stanplot.brmsfit <- function(object, pars = NA, type = "intervals",
                    paste0("nuts_", nuts_types))
   if (!type %in% valid_types) {
     stop2("Invalid plot type. Valid plot types are: \n",
-          paste(valid_types, collapse = ", "))
+          collapse_comma(valid_types))
   }
   mcmc_fun <- get(paste0("mcmc_", type), pos = asNamespace("bayesplot"))
   mcmc_arg_names <- names(formals(mcmc_fun))
@@ -993,7 +993,7 @@ stanplot.brmsfit <- function(object, pars = NA, type = "intervals",
       sel_pars <- names(samples)[!names(samples) %in% "chain"]
       if (type == "scatter" && length(sel_pars) != 2L) {
         stop2("For type 'scatter' exactly 2 parameters must be selected.",
-              "\nParameters selected: ", paste(sel_pars, collapse = ", "))
+              "\nParameters selected: ", collapse_comma(sel_pars))
       }
       mcmc_args[["x"]] <- samples
     }
@@ -1094,7 +1094,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
   valid_ppc_types <- sub("^ppc_", "", ppc_funs)
   if (!type %in% valid_ppc_types) {
     stop2("Type '", type, "' is not a valid ppc type. Valid types are: \n", 
-          paste(valid_ppc_types, collapse = ", "))
+          collapse_comma(valid_ppc_types))
   }
   ppc_fun <- get(paste0("ppc_", type), pos = asNamespace("bayesplot"))
   # validate argument 'group'
@@ -1264,7 +1264,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     # allow to define interactions in any order
     effects <- strsplit(as.character(effects), split = ":")
     if (any(unique(unlist(effects)) %in% rsv_vars)) {
-      stop2("Variables ", paste0(rsv_vars, collapse = ", "),
+      stop2("Variables ", collapse_comma(rsv_vars),
             " should not be used as effects for this model")
     }
     if (any(lengths(effects) > 2L)) {
@@ -1279,14 +1279,14 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
       invalid <- effects[setdiff(seq_along(effects), sort(matches))]  
       invalid <- ulapply(invalid, paste, collapse = ":")
       warning2("Some specified effects are invalid for this model: ",
-               paste(invalid, collapse = ", "), "\nValid effects are ", 
-               "(combinations of): ", paste(ae_coll, collapse = ", "))
+               collapse_comma(invalid), "\nValid effects are ", 
+               "(combinations of): ", collapse_comma(ae_coll))
     }
     effects <- unique(effects[sort(matches)])
     if (!length(effects)) {
       stop2("All specified effects are invalid for this model.\n", 
             "Valid effects are (combinations of): ", 
-            paste(ae_coll, collapse = ", ")) 
+            collapse_comma(ae_coll))
     }
   }
   if (length(probs) != 2L) {
@@ -1963,8 +1963,8 @@ update.brmsfit <- function(object, formula., newdata = NULL, ...) {
       mvars <- all.vars(dots$formula$formula)
       mvars <- setdiff(mvars, c(names(object$data), "."))
       if (length(mvars) && is.null(newdata)) {
-        stop2("New variables found: ", paste(mvars, collapse = ", "),
-              "\nPlease supply your data again via argument 'newdata'")
+        stop2("New variables found: ", collapse_comma(mvars),
+              "\nPlease supply your data again via argument 'newdata'.")
       }
       dots$formula <- update(formula(object), dots$formula)
       ee_old <- parse_bf(formula(object))
@@ -2271,10 +2271,12 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
   if (length(class) != 1L || length(group) != 1L) {
     stop2("Arguments 'class' and 'group' must be of length one.")
   }
-  valid_classes <- c("", "b", "bm", "bcs", "sd", "cor", "r", 
-                     "sds", "s", "simplex", "sigma", "rescor")
+  valid_classes <- c(
+    "", "b", "bcs", "bmo", "bme", "bm", "sd", "cor", 
+    "r", "sds", "s", "simplex", "sigma", "rescor"
+  )
   if (!class %in% valid_classes) {
-    stop2(class, " is not a valid paramter class.")
+    stop2("'", class, "' is not a valid parameter class.")
   }
   if (class %in% c("sd", "cor", "r") && nzchar(group)) {
     class <- paste0(class, "_", group, "__")
@@ -2299,7 +2301,7 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
     missing_pars <- setdiff(parsH, pars)
     if (length(missing_pars)) {
       stop2("The following parameters cannot be found in the model: \n", 
-            paste0(gsub("___", ":", missing_pars), collapse = ", "))
+            collapse_comma(gsub("___", ":", missing_pars)))
     }
     # prepare for renaming of parameters so that h can be evaluated
     parsH <- rename(parsH, "___", ":")
