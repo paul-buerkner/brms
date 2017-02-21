@@ -47,8 +47,7 @@ rstudent <-  function(n, df, mu = 0, sigma = 1) {
   mu + sigma * rt(n, df = df)
 }
 
-dmulti_normal <- function(x, mu, Sigma, log = TRUE,
-                          check = FALSE) {
+dmulti_normal <- function(x, mu, Sigma, log = TRUE, check = FALSE) {
   # density of the multivariate normal distribution 
   # not vectorized to increase speed when x is only a vector not a matrix
   # Args:
@@ -105,8 +104,7 @@ rmulti_normal <- function(n, mu, Sigma, check = FALSE) {
   mu + samples %*% chol(Sigma)
 }
 
-dmulti_student <- function(x, df, mu, Sigma, log = TRUE,
-                           check = FALSE) {
+dmulti_student <- function(x, df, mu, Sigma, log = TRUE, check = FALSE) {
   # density of the multivariate student-t distribution 
   # Args:
   #   x: the value(s) at which the density should be evaluated
@@ -146,8 +144,7 @@ dmulti_student <- function(x, df, mu, Sigma, log = TRUE,
   out
 }
 
-rmulti_student <- function(n, df, mu, Sigma, log = TRUE, 
-                           check = FALSE) {
+rmulti_student <- function(n, df, mu, Sigma, log = TRUE, check = FALSE) {
   # random values of the multivariate student-t distribution 
   # Args:
   #   n: number of random values
@@ -196,10 +193,11 @@ pvon_mises <- function(q, mu, kappa, lower.tail = TRUE,
   pi2 <- 2 * pi
   q <- (q + pi) %% pi2
   mu <- (mu + pi) %% pi2
-  args <- expand(q, mu, kappa)
-  q <- args[[1]]
-  mu <- args[[2]]
-  kappa <- args[[3]]
+  args <- expand(q = q, mu = mu, kappa = kappa)
+  q <- args$q
+  mu <- args$mu
+  kappa <- args$kappa
+  rm(args)
   
   rec_sum <- function(q, kappa, acc, sum = 0, i = 1) {
     # compute the sum of of besselI functions recursively
@@ -257,9 +255,10 @@ rvon_mises <- function(n, mu, kappa) {
   if (any(kappa < 0)) {
     stop2("kappa must be non-negative")
   }
-  args <- expand(mu, kappa, length = n)
-  mu <- args[[1]]
-  kappa <- args[[2]]
+  args <- expand(mu = mu, kappa = kappa, length = n)
+  mu <- args$mu
+  kappa <- args$kappa
+  rm(args)
   pi <- base::pi
   mu <- mu + pi
   
@@ -318,10 +317,15 @@ dexgaussian <- function(x, mu, sigma, beta, log = FALSE) {
   if (any(beta <= 0)) {
     stop2("beta must be greater than 0.")
   }
-  z <- x - mu - sigma^2 / beta
-  out <- ifelse(beta > 0.05 * sigma, 
+  args <- nlist(x, mu, sigma, beta)
+  args <- do.call(expand, args)
+  args$z <- with(args, x - mu - sigma^2 / beta)
+  
+  out <- with(args, ifelse(
+    beta > 0.05 * sigma, 
     -log(beta) - (z + sigma^2 / (2 * beta)) / beta + log(pnorm(z / sigma)),
-    dnorm(x, mean = mu, sd = sigma, log = TRUE))
+    dnorm(x, mean = mu, sd = sigma, log = TRUE)
+  ))
   if (!log) {
     out <- exp(out)
   }
@@ -339,12 +343,17 @@ pexgaussian <- function(q, mu, sigma, beta,
   if (any(beta <= 0)) {
     stop2("beta must be greater than 0.")
   }
-  z <- q - mu - sigma^2 / beta
-  out <- ifelse(beta > 0.05 * sigma, 
+  args <- nlist(q, mu, sigma, beta)
+  args <- do.call(expand, args)
+  args$z <- with(args, q - mu - sigma^2 / beta)
+  
+  out <- with(args, ifelse(
+    beta > 0.05 * sigma, 
     pnorm((q - mu) / sigma) - pnorm(z / sigma) * 
       exp(((mu + sigma^2 / beta)^2 - mu^2 - 2 * q * sigma^2 / beta) / 
             (2 * sigma^2)), 
-    pnorm(q, mean = mu, sd = sigma))
+    pnorm(q, mean = mu, sd = sigma)
+  ))
   if (!lower.tail) {
     out <- 1 - out
   } 
@@ -367,16 +376,86 @@ rexgaussian <- function(n, mu, sigma, beta) {
   rnorm(n, mean = mu, sd = sigma) + rexp(n, rate = 1 / beta)
 }
 
-#' @import evd
+dfrechet <- function (x, loc = 0, scale = 1, shape = 1, log = FALSE) {
+  # PDF of the frechet distribution
+  # Args:
+  #   loc: location parameter
+  #   scale: scale parameter
+  #   shape: shape parameter
+  if (isTRUE(any(scale <= 0))) {
+    stop2("Argument 'scale' must be positive.")
+  }
+  if (isTRUE(any(shape <= 0))) {
+    stop2("Argument 'shape' must be positive.")
+  }
+  x <- (x - loc) / scale
+  args <- nlist(x, loc, scale, shape)
+  args <- do.call(expand, args)
+  out <- with(args, 
+    log(shape / scale) - (1 + shape) * log(x) - x^(-shape)
+  )
+  if (!log) { 
+    out <- exp(out)
+  }
+  out
+}
+
 pfrechet <- function(q, loc = 0, scale = 1, shape = 1, 
                      lower.tail = TRUE, log.p = FALSE) {
-  # just evd::pfrechet but with argument log.p
-  out <- evd::pfrechet(q, loc = loc, scale = scale, shape = shape,
-                       lower.tail = lower.tail)
+  # CDF of the frechet distribution
+  # Args:
+  #   see dfrechet
+  if (isTRUE(any(scale <= 0))) {
+    stop2("Argument 'scale' must be positive.")
+  }
+  if (isTRUE(any(shape <= 0))) {
+    stop2("Argument 'shape' must be positive.")
+  }
+  q <- pmax((q - loc) / scale, 0)
+  out <- exp(-q^(-shape))
+  if (!lower.tail) {
+    out <- 1 - out
+  }
   if (log.p) {
     out <- log(out)
   }
   out
+}
+
+qfrechet <- function (p, loc = 0, scale = 1, shape = 1, 
+                      lower.tail = TRUE, log.p = FALSE) {
+  # inverse CDF of the frechet distribution
+  # Args:
+  #   see dfrechet
+  if (isTRUE(any(p <= 0)) || isTRUE(any(p >= 1))) {
+    stop("'p' must contain probabilities in (0,1)")
+  }
+  if (isTRUE(any(scale <= 0))) {
+    stop2("Argument 'scale' must be positive.")
+  }
+  if (isTRUE(any(shape <= 0))) {
+    stop2("Argument 'shape' must be positive.")
+  }
+  if (log.p) {
+    p <- exp(p)
+  }
+  if (!lower.tail) {
+    p <- 1 - p
+  }
+  loc + scale * (-log(p))^(-1/shape)
+}
+
+rfrechet <- function(n, loc = 0, scale = 1, shape = 1) {
+  # create random numbers of the frechet distribution
+  # Args:
+  #   see dfrechet
+  if (isTRUE(any(scale <= 0))) {
+    stop2("Argument 'scale' must be positive.")
+  }
+  if (isTRUE(any(shape <= 0))) {
+    stop2("Argument 'shape' must be positive.")
+  }
+  loc + scale * rexp(n)^(-1 / shape)
 }
 
 dgen_extreme_value <- function(x, mu = 0, sigma = 1, 
@@ -390,15 +469,14 @@ dgen_extreme_value <- function(x, mu = 0, sigma = 1,
     stop2("sigma bust be greater than 0.")
   }
   x <- (x - mu) / sigma
-  if (length(xi) == 1L) {
-    xi <- rep(xi, length(x))
-  }
-  t <- 1 + xi * x
-  out <- ifelse(
+  args <- nlist(x, mu, sigma, xi)
+  args <- do.call(expand, args)
+  args$t <- with(args, 1 + xi * x)
+  out <- with(args, ifelse(
     xi == 0, 
     - log(sigma) - x - exp(-x),
     - log(sigma) - (1 + 1 / xi) * log(t) - t^(-1 / xi)
-  )
+  ))
   if (!log) {
     out <- exp(out)
   } 
@@ -412,14 +490,13 @@ pgen_extreme_value <- function(q, mu = 0, sigma = 1, xi = 0,
     stop2("sigma bust be greater than 0.")
   }
   q <- (q - mu) / sigma
-  if (length(xi) == 1L) {
-    xi <- rep(xi, length(q))
-  }
-  out <- ifelse(
+  args <- nlist(q, mu, sigma, xi)
+  args <- do.call(expand, args)
+  out <- with(args, ifelse(
     xi == 0, 
     exp(-exp(-q)),
     exp(-(1 + xi * q)^(-1 / xi))
-  )
+  ))
   if (!lower.tail) {
     out <- 1 - out
   }
@@ -434,14 +511,13 @@ rgen_extreme_value <- function(n, mu = 0, sigma = 1, xi = 0) {
   if (any(sigma <= 0)) {
     stop2("sigma bust be greater than 0.")
   }
-  if (length(xi) == 1L) {
-    xi <- rep(xi, max(n, length(mu), length(sigma)))
-  }
-  ifelse(
+  args <- nlist(mu, sigma, xi, length = n)
+  args <- do.call(expand, args)
+  with(args, ifelse(
     xi == 0,
     mu - sigma * log(rexp(n)),
     mu + sigma * (rexp(n)^(-xi) - 1) / xi
-  )
+  ))
 }
 
 dasym_laplace <- function(y, mu = 0, sigma = 1, quantile = 0.5, 
@@ -579,7 +655,7 @@ dcategorical <- function(x, eta, ncat, link = "logit") {
   if (is.null(dim(eta))) {
     eta <- matrix(eta, nrow = 1)
   }
-  if (length(dim(eta)) != 2) {
+  if (length(dim(eta)) != 2L) {
     stop2("eta must be a numeric vector or matrix.")
   }
   if (missing(ncat)) {
@@ -588,7 +664,7 @@ dcategorical <- function(x, eta, ncat, link = "logit") {
   if (link == "logit") {
     p <- exp(cbind(rep(0, nrow(eta)), eta[, 1:(ncat - 1)]))
   } else {
-    stop2("Link ", link, " not supported.")
+    stop2("Link '", link, "' not supported.")
   }
   p <- p / rowSums(p)
   p[, x]

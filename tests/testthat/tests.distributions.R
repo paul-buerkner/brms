@@ -41,3 +41,62 @@ test_that("multivariate normal and student distributions work correctly", {
                               df = -1, check = TRUE),
                "df must be greater than 0")
 })
+
+test_that("von_mises distribution functions run without errors", {
+  n <- 10
+  res <- brms:::dvon_mises(runif(n, -pi, pi), mu = 1, kappa = 1:n)
+  expect_true(length(res) == n)
+  res <- brms:::pvon_mises(runif(n, -pi, pi), mu = rnorm(n), kappa = 0:(n-1))
+  expect_true(length(res) == n)
+  res <- brms:::rvon_mises(n, mu = rnorm(n), kappa = 0:(n-1))
+  expect_true(length(res) == n)
+})
+
+test_that("exgaussian distribution functions run without errors", {
+  n <- 10
+  x <- rnorm(n, 10, 3)
+  res <- brms:::dexgaussian(x, mu = 1, sigma = 2, beta = 1)
+  expect_true(length(res) == n)
+  res <- brms:::pexgaussian(x, mu = rnorm(n), sigma = 1:n, 
+                            beta = 3, log.p = TRUE)
+  expect_true(length(res) == n)
+  res <- brms:::rexgaussian(n, mu = rnorm(n), sigma = 10, beta = 1:10)
+  expect_true(length(res) == n)
+})
+
+test_that("frechet distribution functions run without errors", {
+  n <- 10
+  x <- 21:30
+  res <- brms:::dfrechet(x, loc = 1, scale = 2, shape = 1, log = TRUE)
+  expect_true(length(res) == n)
+  loc <- 1:10
+  res <- brms:::pfrechet(x, loc = loc, scale = 1:n, shape = 3)
+  expect_true(length(res) == n)
+  q <- brms:::qfrechet(res, loc = loc, scale = 1:n, shape = 3)
+  expect_equal(x, q)
+  res <- brms:::rfrechet(n, loc = loc, scale = 10, shape = 1:10)
+  expect_true(length(res) == n)
+})
+
+test_that("gen_extreme_value distribution functions run without errors", {
+  n <- 10
+  x <- rgamma(n, 10, 3)
+  res <- brms:::dgen_extreme_value(x, mu = 1, sigma = 2, xi = 1)
+  expect_true(length(res) == n)
+  res <- brms:::pgen_extreme_value(x, mu = rnorm(n), sigma = 1:n, xi = 3)
+  expect_true(length(res) == n)
+  res <- brms:::rgen_extreme_value(n, mu = rnorm(n), sigma = 10, xi = 1:10)
+  expect_true(length(res) == n)
+})
+
+test_that("asym_laplace distribution functions run without errors", {
+  n <- 10
+  x <- rnorm(n, 10, 3)
+  res <- brms:::dasym_laplace(x, mu = 1, sigma = 2, quantile = 0.5)
+  expect_true(length(res) == n)
+  res <- brms:::pasym_laplace(x, mu = rnorm(n), sigma = 1:n, quantile = 0.3)
+  expect_true(length(res) == n)
+  res <- brms:::rasym_laplace(n, mu = rnorm(n), sigma = 10, 
+                              quantile = runif(n, 0, 1))
+  expect_true(length(res) == n)
+})

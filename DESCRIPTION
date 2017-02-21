@@ -26,7 +26,6 @@ Imports:
     statmod,
     stats,
     RWiener,
-    evd,
     graphics,
     utils,
     parallel,
