@@ -97,8 +97,7 @@ linear_predictor <- function(draws, i = NULL) {
   if (!is.null(draws[["arr"]])) {
     eta <- eta + fe_predictor(X = p(draws$data$Yarr, i), b = draws[["arr"]])
   }
-  if (length(rmNULL(draws[c("ar", "ma")])) && !use_cov(draws$autocor)) {
-    # only run when ARMA effects were modeled as part of eta
+  if (any(c("ar", "ma") %in% names(draws))) {
     if (!is.null(i)) {
       stop2("Pointwise evaluation is not yet implemented for ARMA models.")
     }
