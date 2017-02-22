@@ -26,9 +26,12 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   resp <- bterms$response
   if (length(resp) > 1L && !isTRUE(x$formula[["old_mv"]])) {
     draws$mu[["mv"]] <- named_list(resp)
-    for (r in resp) {
+    for (j in seq_along(resp)) {
+      r <- resp[j]
       more_args <- list(x = bterms$auxpars[["mu"]], nlpar = r, mv = TRUE)
       draws$mu[["mv"]][[r]] <- do.call(extract_draws, c(args, more_args))
+      draws$mu[["mv"]][[r]]$data$Y <- draws$mu[["mv"]][[r]]$data$Y[, j]
+      draws$mu[["mv"]][[r]][["f"]] <- bterms$auxpars[["mu"]]$family
     }
     bterms$auxpars[["mu"]] <- NULL
   }
