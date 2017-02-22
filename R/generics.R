@@ -619,7 +619,9 @@ stanplot <- function(object, ...) {
 #' @param stype Indicates how surface plots should be displayed.
 #'   Either \code{"contour"} or \code{"raster"}.
 #' @inheritParams plot.brmsfit
-#' @param ... Currently ignored.
+#' @param ... Further arguments such as \code{subset} or \code{nsamples}
+#'   passed to \code{\link[brms:predict.brmsfit]{predict}} or 
+#'   \code{\link[brms:fitted.brmsfit]{fitted}}.
 #' 
 #' @return An object of class \code{brmsMarginalEffects}, which is a named list
 #'   with one data.frame per effect containing all information required 
@@ -696,6 +698,14 @@ marginal_effects <- function(x, ...) {
 #' @param smooths Optional character vector of smooth terms
 #'   to display. If \code{NULL} (the default) all smooth terms
 #'   are shown.
+#' @param subset A numeric vector specifying
+#'  the posterior samples to be used. 
+#'  If \code{NULL} (the default), all samples are used.
+#' @param nsamples Positive integer indicating how many 
+#'  posterior samples should be used. 
+#'  If \code{NULL} (the default) all samples are used.
+#'  Ignored if \code{subset} is not \code{NULL}.
+#' @param ... Currently ignored.
 #'   
 #' @return For the \code{brmsfit} method, 
 #' an object of class \code{brmsMarginalEffects}. See

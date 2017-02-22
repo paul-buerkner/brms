@@ -9,9 +9,7 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   # Returns:
   #   A named list to be intepreted by linear_predictor
   bterms <- parse_bf(formula(x), family = family(x))
-  if (is.null(subset) && !is.null(nsamples)) {
-    subset <- sample(nsamples(x), nsamples)
-  }
+  subset <- subset_samples(x, subset, nsamples)
   nsamples <- nsamples(x, subset = subset)
   newd_args <- nlist(
     fit = x, newdata, re_formula, allow_new_levels, incl_autocor

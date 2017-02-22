@@ -1238,7 +1238,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   dots <- list(...)
   conditions <- use_alias(conditions, dots[["data"]])
   surface <- use_alias(surface, dots[["contour"]])
-  dots$data <- NULL
+  dots[["data"]] <- dots[["contour"]] <- NULL
   contains_samples(x)
   x <- restructure(x)
   new_formula <- update_re_terms(x$formula, re_formula = re_formula)
@@ -1252,9 +1252,11 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
              "in marginal plots, \nwhich is likely an invalid ", 
              "assumption for family ", x$family$family, ".")
   }
-  rsv_vars <- rsv_vars(x$family, nresp = length(bterms$response),
-                       rsv_intercept = attr(bterms$fe, "rsv_intercept"),
-                       old_mv = attr(bterms$formula, "old_mv"))
+  rsv_vars <- rsv_vars(
+    x$family, nresp = length(bterms$response),
+    rsv_intercept = attr(bterms$fe, "rsv_intercept"),
+    old_mv = attr(bterms$formula, "old_mv")
+  )
   if (is.null(effects)) {
     effects <- get_all_effects(bterms, rsv_vars = rsv_vars)
     if (!length(effects)) {
@@ -1271,7 +1273,9 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
       stop2("To display interactions of order higher than 2 ",
             "please use the 'conditions' argument.")
     }
-    all_effects <- get_all_effects(bterms, rsv_vars = rsv_vars, comb_all = TRUE)
+    all_effects <- get_all_effects(
+      bterms, rsv_vars = rsv_vars, comb_all = TRUE
+    )
     ae_coll <- all_effects[lengths(all_effects) == 1L]
     ae_coll <- ulapply(ae_coll, paste, collapse = ":")
     matches <- match(lapply(all_effects, sort), lapply(effects, sort), 0L)
@@ -1293,9 +1297,10 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     stop2("Arguments 'probs' must be of length 2.")
   }
   
-  conditions <- prepare_conditions(x, conditions, effects, 
-                                   re_formula = re_formula, 
-                                   rsv_vars = rsv_vars)
+  conditions <- prepare_conditions(
+    x, conditions = conditions, effects = effects, 
+    re_formula = re_formula, rsv_vars = rsv_vars
+  )
   int_effects <- c(get_effect(bterms, "mo"), 
                    rmNULL(bterms[c("trials", "cat")]))
   int_vars <- unique(ulapply(int_effects, all.vars))
@@ -1318,9 +1323,12 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     }
     # make sure numeric variables come first
     effects[[i]] <- attr(marg_data, "effects")
-    args <- c(list(x, newdata = marg_data, re_formula = re_formula,
-                   allow_new_levels = TRUE, incl_autocor = FALSE,
-                   probs = probs, robust = robust), dots)
+    args <- list(
+      x, newdata = marg_data, re_formula = re_formula,
+      allow_new_levels = TRUE, incl_autocor = FALSE,
+      probs = probs, robust = robust
+    )
+    args <- c(args, dots)
     if (is_ordinal(x$family) || is_categorical(x$family)) {
       args$summary <- FALSE 
       marg_res <- do.call(method, args)
@@ -1367,6 +1375,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
 marginal_smooths.brmsfit <- function(x, smooths = NULL,
                                      probs = c(0.025, 0.975),
                                      resolution = 100, too_far = 0,
+                                     subset = NULL, nsamples = NULL,
                                      ...) {
   contains_samples(x)
   x <- restructure(x)
@@ -1389,9 +1398,12 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
       lee <- c(lee, bt)
     }
   }
+  subset <- subset_samples(x, subset, nsamples)
+  nsamples <- nsamples(x, subset = subset)
   args <- nlist(
-    fit = x, smooths_only = TRUE, nsamples = nsamples(x),
-    incl_autocor = FALSE, allow_new_levels = TRUE
+    fit = x, allow_new_levels = TRUE,
+    subset, nsamples, incl_autocor = FALSE, 
+    smooths_only = TRUE 
   )
   too_many_covars <- FALSE
   results <- list()

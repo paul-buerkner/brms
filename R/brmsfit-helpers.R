@@ -350,6 +350,15 @@ prepare_marg_data <- function(data, conditions, int_vars = NULL,
   structure(data, effects = effects, types = pred_types, mono = mono)
 }
 
+subset_samples <- function(x, subset = NULL, nsamples = NULL) {
+  # generate integers indicating subsets of the posterior samples
+  stopifnot(is.brmsfit(x))
+  if (is.null(subset) && !is.null(nsamples)) {
+    subset <- sample(nsamples(x), nsamples)
+  }
+  subset
+}
+
 get_cornames <- function(names, type = "cor", brackets = TRUE, sep = "__") {
   # get correlation names as combinations of variable names
   # Args:

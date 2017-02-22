@@ -6,7 +6,8 @@
 \title{Display Smooth Terms}
 \usage{
 \method{marginal_smooths}{brmsfit}(x, smooths = NULL, probs = c(0.025,
-  0.975), resolution = 100, too_far = 0, ...)
+  0.975), resolution = 100, too_far = 0, subset = NULL, nsamples = NULL,
+  ...)
 
 marginal_smooths(x, ...)
 }
@@ -33,6 +34,15 @@ far away from the actual data points can be excluded from the plot.
 the unit square and then grid points more than \code{too_far} 
 from the predictor variables are excluded. By default, all
 grid points are used. Ignored for non-surface plots.}
+
+\item{subset}{A numeric vector specifying
+the posterior samples to be used. 
+If \code{NULL} (the default), all samples are used.}
+
+\item{nsamples}{Positive integer indicating how many 
+posterior samples should be used. 
+If \code{NULL} (the default) all samples are used.
+Ignored if \code{subset} is not \code{NULL}.}
 
 \item{...}{Currently ignored.}
 }

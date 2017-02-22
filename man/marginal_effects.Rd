@@ -69,7 +69,9 @@ the unit square and then grid points more than \code{too_far}
 from the predictor variables are excluded. By default, all
 grid points are used. Ignored for non-surface plots.}
 
-\item{...}{Currently ignored.}
+\item{...}{Further arguments such as \code{subset} or \code{nsamples}
+passed to \code{\link[brms:predict.brmsfit]{predict}} or 
+\code{\link[brms:fitted.brmsfit]{fitted}}.}
 
 \item{ncol}{Number of plots to display per column for each effect.
 If \code{NULL} (default), \code{ncol} is computed internally based

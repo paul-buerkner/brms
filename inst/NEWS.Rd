@@ -18,6 +18,8 @@
       \item Fix problems when summarizing some models
       fitted with older version of \pkg{brms} thanks
       to Vivian Lam.
+      \item Get arguments \code{subset} and \code{nsamples}
+      working correctly in \code{marginal_smooths}.
     }
   }
 }
