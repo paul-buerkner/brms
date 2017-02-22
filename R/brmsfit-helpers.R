@@ -43,11 +43,24 @@ name_model <- function(family) {
   mn
 }
 
+#' Retructure Old \code{brmsfit} Objects
+#'
+#' Restructure old \code{brmsfit} objects to work with 
+#' the latest \pkg{brms} version. This function is called
+#' internally when applying post-processing methods.
+#' However, in order to avoid uncessary run time caused
+#' by the restructuring, I recommend explicitely calling
+#' \code{restructure} once per model after updating \pkg{brms}.
+#' 
+#' @param x An object of class \code{brmsfit}.
+#' @param rstr_summary Logical; If \code{TRUE}, the cached summary
+#'   stored by \pkg{rstan} is restructured as well.
+#'   
+#' @return A \code{brmsfit} object compatible with the latest version
+#'   of \pkg{brms}.
+#'   
+#' @export
 restructure <- function(x, rstr_summary = FALSE) {
-  # restructure old brmsfit objects to work with the latest brms version
-  # Args:
-  #   x: a brmsfit object
-  #   rstr_summary: restructure cached summary?
   stopifnot(is.brmsfit(x))
   if (isTRUE(attr(x, "restructured"))) {
     return(x)  # already restructured
@@ -59,7 +72,8 @@ restructure <- function(x, rstr_summary = FALSE) {
     # also added the rstan version in brms 1.5.0
     x$version <- list(brms = x$version)
   }
-  if (x$version$brms < utils::packageVersion("brms")) {
+  version <- x$version$brms
+  if (version < utils::packageVersion("brms")) {
     # element 'nonlinear' deprecated as of brms > 0.9.1
     # element 'partial' deprecated as of brms > 0.8.0
     x$formula <- SW(amend_formula(
@@ -77,14 +91,14 @@ restructure <- function(x, rstr_summary = FALSE) {
       # deprecated as of brms 1.4.0
       class(x$autocor) <- "cor_fixed"
     }
-    if (x$version$brms <= "0.9.1") {
+    if (version <= "0.9.1") {
       # update gaussian("log") to lognormal() family
       nresp <- length(bterms$response)
-      if (is_old_lognormal(x$family, nresp = nresp, version = x$version$brms)) {
+      if (is_old_lognormal(x$family, nresp = nresp, version = version)) {
         object$family <- object$formula$family <- lognormal()
       }
     }
-    if (x$version$brms <= "0.10.0.9000") {
+    if (version <= "0.10.0.9000") {
       if (length(bterms$auxpars$mu$nlpars)) {
         # nlpar and group have changed positions
         change <- change_old_re(x$ranef, pars = parnames(x),
@@ -92,35 +106,31 @@ restructure <- function(x, rstr_summary = FALSE) {
         x <- do_renaming(x, change)
       }
     }
-    if (x$version$brms < "1.0.0") {
+    if (version < "1.0.0") {
       # double underscores were added to group-level parameters
       change <- change_old_re2(x$ranef, pars = parnames(x),
                                dims = x$fit@sim$dims_oi)
       x <- do_renaming(x, change)
     }
-    if (x$version$brms <= "1.0.1") {
+    if (version <= "1.0.1") {
       # names of spline parameters had to be changed after
       # allowing for multiple covariates in one spline term
       change <- change_old_sm(bterms, pars = parnames(x),
                               dims = x$fit@sim$dims_oi)
       x <- do_renaming(x, change)
     }
-    if (x$version$brms <= "1.2.0") {
+    if (version <= "1.2.0") {
       x$ranef$type[x$ranef$type == "mono"] <- "mo"
       x$ranef$type[x$ranef$type == "cse"] <- "cs"
     }
     stan_env <- attributes(x$fit)$.MISC
     if (rstr_summary && exists("summary", stan_env)) {
-      # rename parameters in cached summary
       stan_summary <- get("summary", stan_env)
       old_parnames <- rownames(stan_summary$msd)
       if (!identical(old_parnames, parnames(x))) {
-        V <- c("msd", "c_msd", "quan", "c_quan")
-        V <- intersect(V, names(stan_summary))
-        for (v in V) {
-          rownames(stan_summary[[v]]) <- parnames(x)
-        }
-        assign("summary", stan_summary, stan_env)
+        # do not rename parameters in the cached summary
+        # just let rstan compute the summary again
+        remove("summary", pos = stan_env)
       }
     }
   }
