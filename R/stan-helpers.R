@@ -852,12 +852,13 @@ stan_has_built_in_fun <- function(family) {
   #   family: a list with elements 'family' and 'link'
   stopifnot(all(c("family", "link") %in% names(family)))
   link <- family$link
+  par <- family$par
   family <- family$family
+  logit_families <- c("binomial", "bernoulli", "cumulative", "categorical")
   isTRUE(
     is_count(family) && link == "log" ||
-    family %in% c("binomial", "bernoulli", "cumulative", "categorical") &&
-    link == "logit" ||
-    family %in% c("zi", "hu") && link == "logit"
+    family %in% logit_families && link == "logit" ||
+    isTRUE(par %in% c("zi", "hu")) && link == "logit"
   )
 }
 

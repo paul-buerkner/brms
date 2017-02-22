@@ -243,7 +243,7 @@ parse_ad <- function(formula, family = NULL, check_response = TRUE) {
   x <- list()
   ad_funs <- lsp("brms", what = "exports", pattern = "^resp_")
   ad_funs <- sub("^resp_", "", ad_funs)
-  if (!is.null(family) && !isNA(family$family)) {
+  if (!is.null(family) && nzchar(family$family)) {
     ad <- get_matches("\\|[^~]*~", formula2str(formula))
     if (length(ad)) {
       # replace deprecated '|' by '+'

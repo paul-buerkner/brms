@@ -13,6 +13,8 @@
     \itemize{
       \item Fix checks of argument \code{group} in
       method \code{pp_check} thanks to Thomas K.
+      \item Fix problems when predicting \code{Beta}
+      models thanks to Vivian Lam.
       \item Fix problems when summarizing some models
       fitted with older version of \pkg{brms} thanks
       to Vivian Lam.

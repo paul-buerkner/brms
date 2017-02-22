@@ -126,7 +126,7 @@ extract_draws.btl <- function(x, fit, newdata = NULL, re_formula = NULL,
   if (nzchar(nlpar)) {
     # make sure not to evaluate family specific stuff
     fit$formula[["response"]] <- NA
-    fit$family <- fit$formula$family <- par_family(NA)
+    fit$family <- fit$formula$family <- par_family()
   }
   new_formula <- update_re_terms(fit$formula, re_formula = re_formula)
   bterms <- parse_bf(new_formula, family = family(fit))

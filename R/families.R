@@ -466,15 +466,15 @@ acat <- function(link = "logit", link_disc = "log") {
               link_disc = link_disc)
 }
 
-par_family <- function(par, link = NULL) {
+par_family <- function(par = NULL, link = NULL) {
   # set up family objects for auxiliary parameters
   # Args:
   #   par: name of the auxiliary parameter
   #   link: link function of the parameter
-  if (!isNA(par) && !isTRUE(par %in% auxpars())) {
+  if (!is.null(par) && !isTRUE(par %in% auxpars())) {
     stop2("Parameter '", par, "' is invalid.")
   }
-  if (isNA(par)) {
+  if (is.null(par)) {
     link <- "identity"
   } else {
     links <- links_auxpars(par)
@@ -487,7 +487,7 @@ par_family <- function(par, link = NULL) {
     }
   }
   structure(
-    list(family = par, link = link),
+    list(family = "", link = link, par = par),
     class = c("brmsfamily", "family")
   )
 }

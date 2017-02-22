@@ -606,9 +606,8 @@ get_auxpar <- function(x, i = NULL) {
   #      (used in predict and log_lik)
   if (is.list(x)) {
     # compute auxpar in distributional regression models
-    if (!x$f$family %in% auxpars()) {
-      # link functions may not just span the parameter
-      # and will be applied later on
+    if (nzchar(x$f$family)) {
+      # links will be applied later on
       x$f$link <- "identity"
     }
     x <- ilink(get_eta(x, i = i), x$f$link)
