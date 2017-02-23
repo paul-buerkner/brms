@@ -183,7 +183,7 @@ make_stancode <- function(formula, data, family = NULL,
     sample_prior = sample_prior, 
     par_declars = text_parameters,
     prior = text_prior, family = family, 
-    prior_attr = attributes(prior)
+    prior_special = attr(prior, "special")
   )
   text_parameters <- paste0(
     "parameters { \n",

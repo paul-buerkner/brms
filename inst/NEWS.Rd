@@ -3,6 +3,13 @@
 \encoding{UTF-8}
 
 \section{CHANGES IN VERSION 1.5.0++}{
+  \subsection{NEW FEATURES}{
+    \itemize{
+      \item Allow \code{horseshoe} and \code{lasso} 
+      priors to be applied on population-level effects 
+      of non-linear and auxiliary parameters.
+    }
+  }
   \subsection{OTHER CHANGES}{
     \itemize{
       \item Avoid indexing of matrices in non-linear

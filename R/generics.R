@@ -830,3 +830,8 @@ extract_draws <- function(x, ...) {
   # extract data and posterior draws
   UseMethod("extract_draws")
 }
+
+check_prior_special <- function(x, ...) {
+  # prepare special priors for use in Stan
+  UseMethod("check_prior_special")
+}

@@ -509,7 +509,8 @@ stan_misc_functions <- function(family, prior, kronecker) {
   if (family$family %in% c("student", "frechet")) {
     out <- paste0(out, "  #include 'fun_logm1.stan' \n")
   }
-  if (!is.null(attr(prior, "hs_df"))) {
+  hs_dfs <- ulapply(attr(prior, "special"), "[[", "hs_df")
+  if (any(nzchar(hs_dfs))) {
     out <- paste0(out, "  #include 'fun_horseshoe.stan' \n")
   }
   if (kronecker) {
@@ -611,32 +612,35 @@ stan_prior <- function(prior, class, coef = "", group = "",
   } else {
     out <- ""
   }
-  if (all(class == "b")) {
+  p <- usc(unlpar)
+  if (all(class == paste0("b", p))) {
+    stopifnot(length(unlpar) == 1L)
     # add horseshoe and lasso shrinkage priors
-    att <- attributes(prior)
+    orig_nlpar <- ifelse(nzchar(unlpar), unlpar, "mu")
+    special <- attributes(prior)$special[[orig_nlpar]]
     special_priors <- NULL
-    if (!is.null(att$hs_df)) {
-      local_args <- paste("0.5 *", att$hs_df)
+    if (!is.null(special$hs_df)) {
+      local_args <- paste("0.5 *", special$hs_df)
       local_args <- sargs(local_args, local_args)
-      global_args <- paste("0.5 *", att$hs_df_global)
+      global_args <- paste("0.5 *", special$hs_df_global)
       global_args <- sargs(global_args, global_args)
       special_priors <- paste0(special_priors,
-        "  zb ~ normal(0, 1); \n",
-        "  hs_local[1] ~ normal(0, 1); \n",
-        "  hs_local[2] ~ inv_gamma(", local_args, "); \n",
-        "  hs_global[1] ~ normal(0, 1); \n",
-        "  hs_global[2] ~ inv_gamma(", global_args, "); \n"
+        "  zb", p, " ~ normal(0, 1); \n",
+        "  hs_local", p, "[1] ~ normal(0, 1); \n",
+        "  hs_local", p, "[2] ~ inv_gamma(", local_args, "); \n",
+        "  hs_global", p, "[1] ~ normal(0, 1); \n",
+        "  hs_global", p, "[2] ~ inv_gamma(", global_args, "); \n"
       )
     }
-    if (!is.null(att$lasso_df)) {
+    if (!is.null(special$lasso_df)) {
       special_priors <- paste0(special_priors,
-        "  lasso_inv_lambda ~ chi_square(", att$lasso_df, "); \n"
+        "  lasso_inv_lambda", p, " ~ chi_square(", special$lasso_df, "); \n"
       )
     }
     out <- c(special_priors, out) 
   }
   out <- collapse(out)
-  if (prior_only && nchar(class) && !nchar(out)) {
+  if (prior_only && nzchar(class) && !nchar(out)) {
     stop2("Sampling from priors is not possible because ", 
           "not all parameters have proper priors. \n",
           "Error occured for class '", class, "'.")
@@ -670,16 +674,16 @@ stan_base_prior <- function(prior) {
 }
 
 stan_rngprior <- function(sample_prior, prior, par_declars,
-                          family, prior_attr) {
+                          family, prior_special) {
   # stan code to sample from priors seperately
   # Args:
   #   sample_prior: take samples from priors?
   #   prior: character string taken from stan_prior
   #   par_declars: the parameters block of the Stan code
-  #                requied to extract boundaries
+  #                required to extract boundaries
   #   family: the model family
-  #   prior_attr: a list of values pertaining to special priors
-  #               such as horseshoe or lasso
+  #   prior_special: a list of values pertaining to special priors
+  #                  such as horseshoe or lasso
   # Returns:
   #   a character string containing the priors to be sampled from in stan code
   stopifnot(is.family(family))
@@ -688,7 +692,7 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
     prior <- gsub(" ", "", paste0("\n", prior))
     pars <- get_matches("\\\n[^~]+", prior)
     pars <- gsub("\\\n|to_vector\\(|\\)", "", pars)
-    regex <- "^(z|zs|zb|Xme)_?|^increment_log_prob\\(|^target ?(\\+=)"
+    regex <- "^(z|zs|zb|Xme|hs)_?|^increment_log_prob\\(|^target ?(\\+=)"
     take <- !grepl(regex, pars)
     pars <- rename(pars[take], symbols = c("^L_", "^Lrescor"), 
                    subs = c("cor_", "rescor"), fixed = FALSE)
@@ -756,11 +760,12 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
     if (any(no_bounds)) {
       # use parameters sampled from priors for use in other priors
       spars <- NULL
-      if (!is.null(prior_attr$hs_df)) {
-        spars <- c(spars, "hs_local", "hs_global")
-      }
-      if (!is.null(prior_attr$lasso_df)) {
-        spars <- c(spars, "lasso_inv_lambda")
+      # cannot sample from the horseshoe prior anymore as of brms 1.5.0
+      lasso_nlpars <- nzchar(ulapply(prior_special, "[[", "lasso_df"))
+      lasso_nlpars <- names(prior_special)[lasso_nlpars]
+      lasso_nlpars <- usc(ulapply(lasso_nlpars, check_nlpar))
+      if (length(lasso_nlpars)) {
+        spars <- c(spars, paste0("lasso_inv_lambda", lasso_nlpars))
       }
       if (length(spars)) {
         bpars <- grepl("^b(mo|cs|me|_|$)", pars)

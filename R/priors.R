@@ -854,7 +854,7 @@ check_prior <- function(prior, formula, data = NULL, family = NULL,
   if (is.null(prior)) {
     prior <- all_priors  
   }
-  # exclude priors using increment_log_prob to readd them at the end
+  # temporarily exclude priors priors that should not be checked
   no_checks <- !nzchar(prior$class)
   prior_no_checks <- prior[no_checks, ]
   prior <- prior[!no_checks, ]
@@ -867,8 +867,6 @@ check_prior <- function(prior, formula, data = NULL, family = NULL,
   if (any(duplicated_input)) {
     stop2("Duplicated prior specifications are not allowed.")
   }
-  # handle special priors that are not explictly coded as functions in Stan
-  prior <- handle_special_priors(prior, bterms)  
   # check if parameters in prior are valid
   if (nrow(prior)) {
     valid <- which(duplicated(rbind(all_priors[, 2:5], prior[, 2:5])))
@@ -881,8 +879,21 @@ check_prior <- function(prior, formula, data = NULL, family = NULL,
       prior <- prior[-invalid, ]
     }
   }
+  prior$prior <- sub("^(lkj|lkj_corr)\\(", "lkj_corr_cholesky(", prior$prior)
   check_prior_content(prior, family = family, warn = warn)
-  # merge prior with all_priors
+  # check if priors for non-linear parameters are defined
+  nlpars <- names(bterms$auxpars$mu$nlpars)
+  for (nlp in nlpars) {
+    nlp_prior <- prior$prior[with(prior, nlpar == nlp & class == "b")]
+    if (!any(as.logical(nchar(nlp_prior)))) {
+      stop2("Priors on population-level effects are required in ",
+            "non-linear models,\nbut none were found for parameter ", 
+            "'", nlp, "'. \nSee help(set_prior) for more details.")
+    }
+  }
+  # prepare special priors for use in Stan
+  prior <- check_prior_special(bterms, prior)
+  # merge user-specified priors with default priors
   prior <- rbind(prior, all_priors)
   prior <- prior[!duplicated(prior[, 2:5]), ]
   rows2remove <- NULL
@@ -924,16 +935,6 @@ check_prior <- function(prior, formula, data = NULL, family = NULL,
         simplex_prior <- paste(eval2(simplex_prior), collapse = ",")
         prior$prior[take] <- paste0("dirichlet(c(", simplex_prior, "))")
       }
-    }
-  }
-  # check if priors for non-linear parameters are defined
-  nlpars <- names(bterms$auxpars$mu$nlpars)
-  for (nlp in nlpars) {
-    nlp_prior <- prior$prior[with(prior, nlpar == nlp & class == "b")]
-    if (!any(as.logical(nchar(nlp_prior)))) {
-      stop2("Priors on population-level effects are required in ",
-            "non-linear models,\nbut none were found for parameter ", 
-            "'", nlp, "'. \nSee help(set_prior) for more details.")
     }
   }
   if (length(rows2remove)) {   
@@ -1038,33 +1039,61 @@ check_prior_content <- function(prior, family = gaussian(), warn = TRUE) {
   invisible(NULL)
 }
 
-handle_special_priors <- function(prior, bterms) {
-  # look for special priors such as horseshoe and process them appropriately
+#' @export
+check_prior_special.brmsterms <- function(x, prior, ...) {
+  stopifnot(is.brmsprior(prior))
+  simple_sigma <- has_sigma(x$family, x) && is.null(x$auxpars$sigma)
+  for (ap in names(x$auxpars)) {
+    prior <- check_prior_special(
+      x$auxpars[[ap]], prior, nlpar = ap,
+      scale_with_sigma = simple_sigma && identical(ap, "mu") 
+    )
+  }
+  prior
+}
+
+#' @export
+check_prior_special.btnl <- function(x, prior, nlpar = "", ...) {
+  stopifnot(is.brmsprior(prior))
+  for (nlp in names(x$nlpars)) {
+    prior <- check_prior_special(
+      x$nlpars[[nlp]], prior, nlpar = nlp
+    )
+  }
+  prior
+}
+
+#' @export
+check_prior_special.btl <- function(x, prior, nlpar = "",
+                                    scale_with_sigma = FALSE, ...) {
+  # prepare special priors such as horseshoe or lasso
   # Args:
   #   prior: an object of class brmsprior
-  #   has_specef: are monotonic or category specific effects present?
+  #   scale_with_sigma: scale the horseshose prior by sigma?
   # Returns:
-  #   a possibly amended prior.frame with additional attributes
-  prior_attr <- list()
-  b_index <- which(prior$class == "b" & !nchar(prior$coef))
+  #   a possibly amended brmsprior object with additional attributes
+  nlpar_original <- nlpar
+  nlpar <- check_nlpar(nlpar)
+  prior_special <- list()
+  b_index <- which(
+    prior$class == "b" & !nchar(prior$coef) & prior$nlpar == nlpar
+  )
+  stopifnot(length(b_index) <= 1L)
   if (length(b_index)) {
     b_prior <- prior$prior[b_index]
     if (any(grepl("^(horseshoe|lasso)\\(", b_prior))) {
       # horseshoe prior for population-level parameters
-      if (any(nchar(prior$nlpar))) {
-        stop2("Horseshoe or lasso priors are not yet allowed ", 
-              "in non-linear or distributional models.")
-      }
       if (any(nzchar(prior[b_index, "bound"]))) {
         stop2("Boundaries for population-level effects are not", 
               "allowed when using the horseshoe or lasso priors.")
       }
-      if (any(ulapply(bterms$auxpars$mu[c("me", "mo", "cs")], is.formula))) {
+      if (any(ulapply(x[c("me", "mo", "cs")], is.formula))) {
         stop2("Horseshoe or lasso priors are not yet allowed ",
               "in models with special population-level effects.")
       }
       b_coef_indices <- which(
-        prior$class == "b" & nchar(prior$coef) & prior$coef != "Intercept"
+        prior$class == "b" & nchar(prior$coef) & 
+        prior$coef != "Intercept" & prior$nlpar == nlpar
       )
       if (any(nchar(prior$prior[b_coef_indices]))) {
         stop2("Defining priors for single population-level parameters",
@@ -1074,29 +1103,27 @@ handle_special_priors <- function(prior, bterms) {
       if (grepl("^horseshoe\\(", b_prior)) {
         hs <- eval2(b_prior)
         prior$prior[b_index] <- ""
-        prior_attr$hs_df <- attr(hs, "df")
-        prior_attr$hs_df_global <- attr(hs, "df_global")
+        prior_special$hs_df <- attr(hs, "df")
+        prior_special$hs_df_global <- attr(hs, "df_global")
         scale_global <- attr(hs, "scale_global")
-        has_sigma <- has_sigma(bterms$family, bterms)
-        if (has_sigma && !is.formula(bterms$auxpars$sigma)) {
+        if (scale_with_sigma) {
           scale_global <- paste(scale_global, "* sigma")
         }
-        prior_attr$hs_scale_global <- scale_global
+        prior_special$hs_scale_global <- scale_global
       } else if (grepl("^lasso\\(", b_prior)) {
         lasso <- eval2(b_prior)
-        lasso_scale <- paste(attr(lasso, "scale"), "* lasso_inv_lambda")
+        lasso_scale <- paste0(
+          attr(lasso, "scale"), " * lasso_inv_lambda", usc(nlpar)
+        )
         lasso_prior <- paste0("double_exponential(0, ", lasso_scale, ")")
         prior$prior[b_index] <- lasso_prior
-        prior_attr$lasso_df <- attr(lasso, "df")
-        prior_attr$lasso_scale <- attr(lasso, "scale")
+        prior_special$lasso_df <- attr(lasso, "df")
+        prior_special$lasso_scale <- attr(lasso, "scale")
       }
     }
   }
-  # expand lkj correlation prior to full name
-  prior$prior <- sub(
-    "^(lkj\\(|lkj_corr\\()", "lkj_corr_cholesky(", prior$prior
-  )
-  do.call(structure, c(list(prior), prior_attr))
+  attributes(prior)$special[[nlpar_original]] <- prior_special
+  prior
 }
 
 get_bound <- function(prior, class = "b", coef = "", 

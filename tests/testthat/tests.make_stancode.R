@@ -120,8 +120,8 @@ test_that("special shrinkage priors appear in the Stan code", {
   scode <- make_stancode(y ~ x1*x2, data = dat, 
                          prior = set_prior(hs),
                          sample_prior = TRUE)
-  expect_match2(scode, 
-    "  vector<lower=0>[Kc] hs_local[2]; \n  real<lower=0> hs_global[2];")
+  expect_match2(scode, "vector<lower=0>[Kc] hs_local[2];") 
+  expect_match2(scode, "real<lower=0> hs_global[2];") 
   expect_match2(scode, "hs_local[2] ~ inv_gamma(0.5 * 7, 0.5 * 7);")
   expect_match2(scode, "hs_global[2] ~ inv_gamma(0.5 * 3, 0.5 * 3);")
   expect_match2(scode, "b = horseshoe(zb, hs_local, hs_global, 2 * sigma);")
@@ -134,11 +134,35 @@ test_that("special shrinkage priors appear in the Stan code", {
   scode <- make_stancode(y ~ x1*x2, data = dat,
                          prior = prior(lasso(2, scale = 10)),
                          sample_prior = TRUE)
-  expect_match2(scode, "  lasso_inv_lambda ~ chi_square(2);")
-  expect_match2(scode, "  b ~ double_exponential(0, 10 * lasso_inv_lambda);")
+  expect_match2(scode, "lasso_inv_lambda ~ chi_square(2);")
+  expect_match2(scode, "b ~ double_exponential(0, 10 * lasso_inv_lambda);")
   expect_match2(scode,
-    "  prior_b = double_exponential_rng(0,10*prior_lasso_inv_lambda);")
+    "prior_b = double_exponential_rng(0,10*prior_lasso_inv_lambda);"
+  )
   
+  # horseshoe and lasso prior applied in a non-linear model
+  hs_a1 <- horseshoe(7, scale_global = 2, df_global = 3)
+  lasso_a2 <- lasso(2, scale = 10)
+  scode <- make_stancode(
+    bf(y ~ a1 + a2, a1 ~ x1, a2 ~ 0 + x2, nl = TRUE),
+    data = dat, sample_prior = TRUE,
+    prior = c(set_prior(hs_a1, nlpar = "a1"),
+              set_prior(lasso_a2, nlpar = "a2"))
+  )
+  expect_match2(scode, "vector<lower=0>[K_a1] hs_local_a1[2];")
+  expect_match2(scode, "real<lower=0> hs_global_a1[2];")
+  expect_match2(scode, "hs_local_a1[2] ~ inv_gamma(0.5 * 7, 0.5 * 7);")
+  expect_match2(scode, "hs_global_a1[2] ~ inv_gamma(0.5 * 3, 0.5 * 3);")
+  expect_match2(scode, 
+    "b_a1 = horseshoe(zb_a1, hs_local_a1, hs_global_a1, 2);"
+  )
+  expect_match2(scode, "lasso_inv_lambda_a2 ~ chi_square(2);")
+  expect_match2(scode, "b_a2 ~ double_exponential(0, 10 * lasso_inv_lambda_a2);")
+  expect_match2(scode,
+    "prior_b_a2 = double_exponential_rng(0,10*prior_lasso_inv_lambda_a2);"
+  )
+  
+  # check error messages
   expect_error(make_stancode(y ~ x1*x2, data = dat, 
                              prior = prior(horseshoe(-1))),
                "Degrees of freedom of the local priors")
