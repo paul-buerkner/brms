@@ -614,12 +614,14 @@ get_auxpar <- function(x, i = NULL) {
   #   i: the current observation number
   #      (used in predict and log_lik)
   if (is.list(x)) {
-    # compute auxpar in distributional regression models
-    if (nzchar(x$f$family)) {
-      # links will be applied later on
-      x$f$link <- "identity"
+    # compute samples of a predicted parameter
+    family <- x[["f"]]
+    x <- get_eta(x, i = i)
+    if (!nzchar(family$family)) {
+      # apply links for auxiliary parameters only
+      # the main family link is applied later on
+      x <- ilink(x, family$link)
     }
-    x <- ilink(get_eta(x, i = i), x$f$link)
   } else {
     if (!is.null(i) && is.matrix(x) && ncol(x) > 1L) {
       x <- x[, i, drop = FALSE]
