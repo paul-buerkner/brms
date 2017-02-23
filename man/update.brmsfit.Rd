@@ -4,19 +4,24 @@
 \alias{update.brmsfit}
 \title{Update \pkg{brms} models}
 \usage{
-\method{update}{brmsfit}(object, formula., newdata = NULL, ...)
+\method{update}{brmsfit}(object, formula., newdata = NULL,
+  recompile = FALSE, ...)
 }
 \arguments{
-\item{object}{object of class \code{brmsfit}}
+\item{object}{An object of class \code{brmsfit}.}
 
-\item{formula.}{changes to the formula; for details see 
-\code{\link[stats:update.formula]{update.formula}}}
+\item{formula.}{Changes to the formula; for details see 
+\code{\link[stats:update.formula]{update.formula}} and
+\code{\link[brms:brmsformula]{brmsformula}}.}
 
-\item{newdata}{optional \code{data.frame} 
-to update the model with new data}
+\item{newdata}{Optional \code{data.frame} 
+to update the model with new data.}
 
-\item{...}{other arguments passed to 
-\code{\link[brms:brm]{brm}}}
+\item{recompile}{Logical, indicating whether the Stan model should 
+be recompiled. If \code{FALSE} (the default), the model is only 
+recompiled when necessary.}
+
+\item{...}{Other arguments passed to \code{\link[brms:brm]{brm}}.}
 }
 \description{
 This method allows to update an existing \code{brmsfit} object

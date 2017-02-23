@@ -8,6 +8,9 @@
       \item Allow \code{horseshoe} and \code{lasso} 
       priors to be applied on population-level effects 
       of non-linear and auxiliary parameters.
+      \item Force recompiling \pkg{Stan} models
+      in \code{update.brmsfit} via argument
+      \code{recompile}.
     }
   }
   \subsection{OTHER CHANGES}{
@@ -18,13 +21,13 @@
   }
   \subsection{BUG FIXES}{
     \itemize{
-      \item Fix checks of argument \code{group} in
-      method \code{pp_check} thanks to Thomas K.
-      \item Fix problems when predicting \code{Beta}
-      models thanks to Vivian Lam.
+      \item Fix a severe problem (introduced in version 1.5.0), 
+      when predicting \code{Beta} models thanks to Vivian Lam.
       \item Fix problems when summarizing some models
       fitted with older version of \pkg{brms} thanks
       to Vivian Lam.
+      \item Fix checks of argument \code{group} in
+      method \code{pp_check} thanks to Thomas K.
       \item Get arguments \code{subset} and \code{nsamples}
       working correctly in \code{marginal_smooths}.
     }

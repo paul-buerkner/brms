@@ -1904,13 +1904,16 @@ predictive_error.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' 
 #' This method allows to update an existing \code{brmsfit} object
 #' 
-#' @param object object of class \code{brmsfit}
-#' @param formula. changes to the formula; for details see 
-#'   \code{\link[stats:update.formula]{update.formula}}
-#' @param newdata optional \code{data.frame} 
-#'  to update the model with new data
-#' @param ... other arguments passed to 
-#'  \code{\link[brms:brm]{brm}}
+#' @param object An object of class \code{brmsfit}.
+#' @param formula. Changes to the formula; for details see 
+#'   \code{\link[stats:update.formula]{update.formula}} and
+#'   \code{\link[brms:brmsformula]{brmsformula}}.
+#' @param newdata Optional \code{data.frame} 
+#'   to update the model with new data.
+#' @param recompile Logical, indicating whether the Stan model should 
+#'  be recompiled. If \code{FALSE} (the default), the model is only 
+#'  recompiled when necessary.
+#' @param ... Other arguments passed to \code{\link[brms:brm]{brm}}.
 #'  
 #' @details Sometimes, when updating the model formula, 
 #'  it may happen that \R complains about a mismatch
@@ -1941,18 +1944,17 @@ predictive_error.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' }
 #'
 #' @export
-update.brmsfit <- function(object, formula., newdata = NULL, ...) {
+update.brmsfit <- function(object, formula., newdata = NULL, 
+                           recompile = FALSE, ...) {
   dots <- list(...)
   if ("data" %in% names(dots)) {
     # otherwise the data name cannot be found by substitute 
     stop2("Please use argument 'newdata' to update the data.")
   }
   object <- restructure(object)
-  recompile <- FALSE
   if (isTRUE(object$version$brms < utils::packageVersion("brms"))) {
     recompile <- TRUE
-    warning2("Updating models fitted with older versions ", 
-             "of brms may fail.")
+    warning2("Updating models fitted with older versions of brms may fail.")
   }
   if (missing(formula.)) {
     dots$formula <- object$formula
