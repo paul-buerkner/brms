@@ -154,7 +154,7 @@ test_that("special shrinkage priors appear in the Stan code", {
   expect_match2(scode, "hs_local_a1[2] ~ inv_gamma(0.5 * 7, 0.5 * 7);")
   expect_match2(scode, "hs_global_a1[2] ~ inv_gamma(0.5 * 3, 0.5 * 3);")
   expect_match2(scode, 
-    "b_a1 = horseshoe(zb_a1, hs_local_a1, hs_global_a1, 2);"
+    "b_a1 = horseshoe(zb_a1, hs_local_a1, hs_global_a1, 2 * sigma);"
   )
   expect_match2(scode, "lasso_inv_lambda_a2 ~ chi_square(2);")
   expect_match2(scode, "b_a2 ~ double_exponential(0, 10 * lasso_inv_lambda_a2);")

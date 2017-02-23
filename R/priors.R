@@ -1044,9 +1044,10 @@ check_prior_special.brmsterms <- function(x, prior, ...) {
   stopifnot(is.brmsprior(prior))
   simple_sigma <- has_sigma(x$family, x) && is.null(x$auxpars$sigma)
   for (ap in names(x$auxpars)) {
+    allow_autoscale <- simple_sigma && identical(ap, "mu") 
     prior <- check_prior_special(
       x$auxpars[[ap]], prior, nlpar = ap,
-      scale_with_sigma = simple_sigma && identical(ap, "mu") 
+      allow_autoscale = allow_autoscale, ... 
     )
   }
   prior
@@ -1056,20 +1057,18 @@ check_prior_special.brmsterms <- function(x, prior, ...) {
 check_prior_special.btnl <- function(x, prior, nlpar = "", ...) {
   stopifnot(is.brmsprior(prior))
   for (nlp in names(x$nlpars)) {
-    prior <- check_prior_special(
-      x$nlpars[[nlp]], prior, nlpar = nlp
-    )
+    prior <- check_prior_special(x$nlpars[[nlp]], prior, nlpar = nlp, ...)
   }
   prior
 }
 
 #' @export
 check_prior_special.btl <- function(x, prior, nlpar = "",
-                                    scale_with_sigma = FALSE, ...) {
+                                    allow_autoscale = TRUE, ...) {
   # prepare special priors such as horseshoe or lasso
   # Args:
   #   prior: an object of class brmsprior
-  #   scale_with_sigma: scale the horseshose prior by sigma?
+  #   allow_autoscale: allow autoscaling using sigma?
   # Returns:
   #   a possibly amended brmsprior object with additional attributes
   nlpar_original <- nlpar
@@ -1106,7 +1105,8 @@ check_prior_special.btl <- function(x, prior, nlpar = "",
         prior_special$hs_df <- attr(hs, "df")
         prior_special$hs_df_global <- attr(hs, "df_global")
         scale_global <- attr(hs, "scale_global")
-        if (scale_with_sigma) {
+        autoscale <- isTRUE(attr(hs, "autoscale"))
+        if (autoscale && allow_autoscale) {
           scale_global <- paste(scale_global, "* sigma")
         }
         prior_special$hs_scale_global <- scale_global
@@ -1239,6 +1239,11 @@ dirichlet <- function(...) {
 #'   multiplied by the residual standard deviation parameter \code{sigma}.
 #' @param df_global Degrees of freedom of student-t prior of the 
 #'   global shrinkage parameter. Defaults to \code{1}.
+#' @param autoscale Logical; indicating whether the horseshoe
+#'   prior should be scaled using the residual standard deviation
+#'   \code{sigma} if possible and sensible (defaults to \code{TRUE}).
+#'   Autoscaling is not applied for auxiliary parameters or 
+#'   when the model does not contain the parameter \code{sigma}.
 #'   
 #' @return A character string obtained by \code{match.call()} with
 #'   additional arguments.
@@ -1252,7 +1257,7 @@ dirichlet <- function(...) {
 #' set_prior(horseshoe(df = 3, scale_global = 2))
 #' 
 #' @export
-horseshoe <- function(df = 1, scale_global = 1, df_global = 1) {
+horseshoe <- function(df = 1, scale_global = 1, df_global = 1, autoscale = TRUE) {
   out <- deparse(match.call())
   df <- round(as.numeric(df)[1], 5)
   df_global <- round(as.numeric(df_global)[1], 5)
@@ -1269,7 +1274,11 @@ horseshoe <- function(df = 1, scale_global = 1, df_global = 1) {
     stop2("Invalid horseshoe prior: Scale of the global ", 
           "prior must be a single positive number.")
   }
-  att <- nlist(df, df_global, scale_global)
+  autoscale <- as.logical(autoscale)
+  if (length(autoscale) != 1L) {
+    stop2("Argument 'autoscale' must be either TRUE or FALSE.")
+  }
+  att <- nlist(df, df_global, scale_global, autoscale)
   attributes(out)[names(att)] <- att
   out
 }
