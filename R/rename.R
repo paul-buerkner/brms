@@ -740,9 +740,9 @@ reorder_pars <- function(x) {
   # Args:
   #   x: brmsfit object
   all_classes <- c(
-    "b", "bmo", "bcs", "bme", "ar", "ma", "arr", 
-    "sd", "cor", "sds", auxpars(), "temp", "sigmaLL", "rescor", 
-    "delta", "simplex", "r", "s", "loclev", "Xme", "prior", "lp"
+    "b", "bmo", "bcs", "bme", "ar", "ma", "arr", "sd", "cor", 
+    "sds", auxpars(), "temp", "sigmaLL", "rescor", "delta", 
+    "lasso", "simplex", "r", "s", "loclev", "Xme", "prior", "lp"
   )
   # reorder parameter classes
   class <- get_matches("^[^_]+", x$fit@sim$pars_oi)
