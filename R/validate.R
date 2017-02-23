@@ -1295,9 +1295,12 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
   #   a vector of parameters to be excluded
   stopifnot(is.brmsterms(bterms))
   .exclude_pars <- function(bt, nlpar = "") {
-    # exclude smooth helper parameters and temporary Intercepts
+    stopifnot(is.btl(bt))
     nlpar <- usc(check_nlpar(nlpar))
-    out <- paste0("temp", nlpar, "_Intercept")
+    out <- c(
+      paste0("temp", nlpar, "_Intercept"),
+      paste0(c("hs_local", "hs_global", "zb"), nlpar)
+    )
     sms <- get_sm_labels(bt, data)
     if (length(sms) && !is.null(data)) {
       for (i in seq_along(sms)) {
@@ -1311,9 +1314,10 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
     }
     return(out)
   }
-  out <- c("temp_Intercept1", "temp_Intercept", "Lrescor", "Rescor",
-           "Sigma", "LSigma", "res_cov_matrix", "hs_local", "hs_global",
-           "zb", intersect(auxpars(), names(bterms$auxpars)))
+  out <- c(
+    "temp_Intercept1", "Rescor", "Lrescor", "Sigma", "LSigma", 
+    "res_cov_matrix",  intersect(auxpars(), names(bterms$auxpars))
+  )
   if (length(bterms$response) > 1L) {
     for (r in bterms$response) {
       out <- c(out, .exclude_pars(bterms$auxpars$mu, nlpar = r))
