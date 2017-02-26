@@ -2,7 +2,7 @@
 \title{brms News}
 \encoding{UTF-8}
 
-\section{CHANGES IN VERSION 1.5.0++}{
+\section{CHANGES IN VERSION 1.5.1}{
   \subsection{NEW FEATURES}{
     \itemize{
       \item Allow \code{horseshoe} and \code{lasso} 

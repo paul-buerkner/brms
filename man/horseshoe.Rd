@@ -18,7 +18,7 @@ multiplied by the residual standard deviation parameter \code{sigma}.}
 \item{df_global}{Degrees of freedom of student-t prior of the 
 global shrinkage parameter. Defaults to \code{1}.}
 
-\item{autoscale}{Logical, indicating whether the horseshoe
+\item{autoscale}{Logical; indicating whether the horseshoe
 prior should be scaled using the residual standard deviation
 \code{sigma} if possible and sensible (defaults to \code{TRUE}).
 Autoscaling is not applied for auxiliary parameters or 
