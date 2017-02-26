@@ -30,8 +30,10 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
       r <- resp[j]
       more_args <- list(x = bterms$auxpars[["mu"]], nlpar = r, mv = TRUE)
       draws$mu[["mv"]][[r]] <- do.call(extract_draws, c(args, more_args))
-      draws$mu[["mv"]][[r]]$data$Y <- draws$mu[["mv"]][[r]]$data$Y[, j]
       draws$mu[["mv"]][[r]][["f"]] <- bterms$auxpars[["mu"]]$family
+      if (isTRUE(ncol(draws$mu[["mv"]][[r]]$data$Y) > 1L)) {
+        draws$mu[["mv"]][[r]]$data$Y <- draws$mu[["mv"]][[r]]$data$Y[, j]
+      }
     }
     bterms$auxpars[["mu"]] <- NULL
   }
