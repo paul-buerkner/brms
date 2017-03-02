@@ -241,7 +241,15 @@ data_gr <- function(ranef, data, cov_ranef = NULL) {
       }
     } else {
       g <- id_ranef$gcall[[1]]$groups
-      out[[paste0("J_", id)]] <- as.array(match(get(g, data), levels))
+      gdata <- get(g, data)
+      J <- match(gdata, levels)
+      if (anyNA(J)) {
+        # occurs for new levels only
+        new_gdata <- gdata[!gdata %in% levels]
+        new_levels <- unique(new_gdata)
+        J[is.na(J)] <- match(new_gdata, new_levels) + length(levels)
+      }
+      out[[paste0("J_", id)]] <- as.array(J)
     }
     temp <- list(length(levels), nranef, nranef * (nranef - 1) / 2)
     out <- c(out, setNames(temp, paste0(c("N_", "M_", "NC_"), id)))

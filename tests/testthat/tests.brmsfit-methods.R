@@ -44,14 +44,24 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(colnames(fi), 
                c("Estimate", "Est.Error", "2.5%ile", "97.5%ile"))
   
-  newdata <- data.frame(Age = c(0, -0.2), visit = c(1, 4),
-                        Trt = c(-0.2, 0.5), count = c(20, 13),
-                        patient = c(1, 42), Exp = c(2, 4))
+  newdata <- data.frame(
+    Age = c(0, -0.2), visit = c(1, 4), Trt = c(-0.2, 0.5), 
+    count = c(20, 13), patient = c(1, 42), Exp = c(2, 4)
+  )
   fi <- fitted(fit1, newdata = newdata)
   expect_equal(dim(fi), c(2, 4))
   newdata$visit <- c(1, 6)
   fi <- fitted(fit1, newdata = newdata, 
                allow_new_levels = TRUE)
+  expect_equal(dim(fi), c(2, 4))
+  
+  # fitted values with new_levels
+  newdata <- data.frame(
+    Age = 0, visit = c("a", "b"), Trt = 0, 
+    count = 20, patient = 1, Exp = 2
+  )
+  fi <- fitted(fit1, newdata = newdata, allow_new_levels = TRUE, 
+               sample_new_levels = TRUE)
   expect_equal(dim(fi), c(2, 4))
   
   # fitted values of auxiliary parameters

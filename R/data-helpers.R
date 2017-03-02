@@ -374,8 +374,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     unknown_levels <- setdiff(new_levels[[g]], old_levels[[g]])
     if (!allow_new_levels && length(unknown_levels)) {
       unknown_levels <- paste0("'", unknown_levels, "'", collapse = ", ")
-      stop2("Levels ", unknown_levels, " of grouping factor '", 
-            g, "' cannot be not found in the fitted model. ",
+      stop2("Levels ", unknown_levels, " of grouping factor '", g, "' ",
+            "cannot be found in the fitted model. ",
             "Consider setting argument 'allow_new_levels' to TRUE.")
     }
   }

@@ -7,7 +7,8 @@
 \usage{
 \method{pp_check}{brmsfit}(object, type, nsamples, group = NULL, x = NULL,
   newdata = NULL, re_formula = NULL, allow_new_levels = FALSE,
-  incl_autocor = TRUE, subset = NULL, ntrys = 5, ...)
+  sample_new_levels = FALSE, incl_autocor = TRUE, subset = NULL,
+  ntrys = 5, ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
@@ -52,6 +53,18 @@ if \code{NA}, include no group-level effects.}
 levels of group-level effects are allowed 
 (defaults to \code{FALSE}). 
 Only relevant if \code{newdata} is provided.}
+
+\item{sample_new_levels}{A flag indicating whether to include 
+group-level uncertainty in predictions or to sample new levels 
+for grouping factors specified in \code{re_formula}.
+If \code{FALSE} (default), include group-level uncertainty
+in the predictions. If \code{TRUE}, sample new levels from 
+the group-level posterior distribution. One sample from the 
+group-level posterior is drawn for each new level of the 
+grouping factor(s). This feature may be useful for conducting 
+Bayesian power analysis.
+Only relevant if \code{newdata} is provided and 
+\code{allow_new_levels} is set to \code{TRUE}.}
 
 \item{incl_autocor}{A flag indicating if autocorrelation
 parameters should be included in the predictions. 

@@ -1,7 +1,9 @@
 #' @export
 extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL, 
-                                  allow_new_levels = FALSE, incl_autocor = TRUE,
-                                  subset = NULL, nsamples = NULL, ...) {
+                                  allow_new_levels = FALSE, 
+                                  sample_new_levels = FALSE,
+                                  incl_autocor = TRUE, subset = NULL, 
+                                  nsamples = NULL, ...) {
   # extract all data and posterior draws required in (non)linear_predictor
   # Args:
   #   incl_autocor: include autocorrelation parameters in the output?
@@ -18,7 +20,10 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
     f = prepare_family(x), nsamples = nsamples,
     data = do.call(amend_newdata, c(newd_args, list(...)))
   )
-  args <- c(newd_args, nlist(subset, nsamples, C = draws$data[["C"]]))
+  args <- c(newd_args, nlist(
+    sample_new_levels, subset, 
+    nsamples, C = draws$data[["C"]]
+  ))
   keep <- !grepl("^(X|Z|J|C)", names(draws$data))
   draws$data <- subset_attr(draws$data, keep)
   
@@ -93,9 +98,10 @@ extract_draws.btnl <- function(x, C, nlpar = "", ...) {
 
 #' @export
 extract_draws.btl <- function(x, fit, newdata = NULL, re_formula = NULL, 
-                              allow_new_levels = FALSE, incl_autocor = TRUE,
-                              subset = NULL, nlpar = "", smooths_only = FALSE, 
-                              mv = FALSE, ...) {
+                              allow_new_levels = FALSE, 
+                              sample_new_levels = FALSE,
+                              incl_autocor = TRUE, subset = NULL, nlpar = "",
+                              smooths_only = FALSE, mv = FALSE, ...) {
   # extract draws of all kinds of effects
   # Args:
   #   fit: a brmsfit object
@@ -124,8 +130,10 @@ extract_draws.btl <- function(x, fit, newdata = NULL, re_formula = NULL,
   new_ranef <- tidy_ranef(bterms, model.frame(fit))
   nlpar_usc <- usc(nlpar, "suffix")
   usc_nlpar <- usc(usc(nlpar))
-  newd_args <- nlist(fit, newdata, re_formula, allow_new_levels, 
-                     incl_autocor, check_response = FALSE)
+  newd_args <- nlist(
+    fit, newdata, re_formula, allow_new_levels, 
+    incl_autocor, check_response = FALSE
+  )
   draws <- list(data = do.call(amend_newdata, newd_args), 
                 old_cat = is_old_categorical(fit))
   draws[names(dots)] <- dots
@@ -150,7 +158,8 @@ extract_draws.btl <- function(x, fit, newdata = NULL, re_formula = NULL,
     extract_draws_me(meef, args, sdata = draws$data, nlpar = nlpar,
                      is_newdata = !is.null(newdata)),
     extract_draws_sm(smooths, args, sdata = draws$data, nlpar = nlpar),
-    extract_draws_re(new_ranef, args, sdata = draws$data, nlpar = nlpar)
+    extract_draws_re(new_ranef, args, sdata = draws$data, nlpar = nlpar,
+                     sample_new_levels = sample_new_levels)
   )
   if (incl_autocor && !use_cov(fit$autocor) && (!nzchar(nlpar) || mv)) {
     # only include autocorrelation parameters in draws for mu
@@ -345,13 +354,15 @@ extract_draws_sm <- function(smooths, args, sdata, nlpar = "") {
   draws
 }
 
-extract_draws_re <- function(ranef, args, sdata, nlpar = "") {
+extract_draws_re <- function(ranef, args, sdata, nlpar = "",
+                             sample_new_levels = FALSE) {
   # extract draws of group-level effects
   # Args:
   #   ranef: data.frame returned by tidy_ranef
   #   args: list of arguments passed to as.matrix.brmsfit
   #   sdata: list returned by make_standata
   #   nlpar: name of a non-linear parameter
+  #   sample_new_levels: see help("predict.brmsfit")
   # Returns: 
   #   A named list to be interpreted by linear_predictor
   stopifnot("x" %in% names(args))
@@ -389,16 +400,32 @@ extract_draws_re <- function(ranef, args, sdata, nlpar = "") {
     new_r_levels <- vector("list", length(gf))
     max_level <- nlevels
     for (i in seq_along(gf)) {
-      has_new_levels <- anyNA(gf[[i]])
+      has_new_levels <- any(gf[[i]] > nlevels)
       if (has_new_levels) {
-        new_r_levels[[i]] <- matrix(nrow = nrow(r), ncol = nranef)
-        for (k in seq_len(nranef)) {
-          # sample values of the new level for each group-level effect
-          indices <- ((k - 1) * nlevels + 1):(k * nlevels)
-          new_r_levels[[i]][, k] <- apply(r[, indices], 1, sample, size = 1)
+        if (sample_new_levels) {
+          new_levels <- sort(setdiff(gf[[i]], seq_len(nlevels)))
+          new_r_levels[[i]] <- matrix(
+            nrow = nrow(r), ncol = nranef * length(new_levels)
+          )
+          for (j in seq_along(new_levels)) {
+            # choose a person to take the group-level effects from
+            take_level <- sample(seq_len(nlevels), 1)
+            for (k in seq_len(nranef)) {
+              take <- (k - 1) * nlevels + take_level
+              new_r_levels[[i]][, (j - 1) * nranef + k] <- r[, take]
+            }
+          }
+          max_level <- max_level + length(new_levels)
+        } else {
+          new_r_levels[[i]] <- matrix(nrow = nrow(r), ncol = nranef)
+          for (k in seq_len(nranef)) {
+            # sample values for the new level
+            indices <- ((k - 1) * nlevels + 1):(k * nlevels)
+            new_r_levels[[i]][, k] <- apply(r[, indices], 1, sample, size = 1)
+          }
+          max_level <- max_level + 1
+          gf[[i]][gf[[i]] > nlevels] <- max_level
         }
-        max_level <- max_level + 1
-        gf[[i]][is.na(gf[[i]])] <- max_level
       } else { 
         new_r_levels[[i]] <- matrix(nrow = nrow(r), ncol = 0)
       }
