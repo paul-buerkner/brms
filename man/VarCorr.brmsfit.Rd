@@ -18,13 +18,15 @@
 \code{\link[nlme:VarCorr]{VarCorr}}).}
 
 \item{estimate}{A character vector specifying which coefficients 
-(e.g., \code{"mean"}, \code{"median"}, \code{"sd"}, or \code{"quantile"})
+(e.g. \code{"mean"}, \code{"median"}, \code{"sd"}, or \code{"quantile"})
 should be calculated for the extracted parameters.}
 
 \item{as.list}{logical; Indicates if covariance 
 and correlation matrices should be returned as 
-lists of matrices (the default), or as 3-dimensional arrays.
-We recommend not to set \code{as.list} to \code{FALSE}.}
+lists of matrices (\code{TRUE}; the default)
+or as 3-dimensional arrays (\code{FALSE}).
+This option is kept for backwards compatibility and 
+we recommend not to change it.}
 
 \item{...}{Further arguments to be passed to the functions 
 specified in \code{estimate}}

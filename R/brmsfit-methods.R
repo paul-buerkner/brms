@@ -307,12 +307,14 @@ coef.brmsfit <- function(object, estimate = c("mean", "median"), ...) {
 #' 
 #' @param x An object of class \code{brmsfit}. 
 #' @param estimate A character vector specifying which coefficients 
-#'  (e.g., \code{"mean"}, \code{"median"}, \code{"sd"}, or \code{"quantile"})
+#'  (e.g. \code{"mean"}, \code{"median"}, \code{"sd"}, or \code{"quantile"})
 #'  should be calculated for the extracted parameters.
 #' @param as.list logical; Indicates if covariance 
 #'  and correlation matrices should be returned as 
-#'  lists of matrices (the default), or as 3-dimensional arrays.
-#'  We recommend not to set \code{as.list} to \code{FALSE}.
+#'  lists of matrices (\code{TRUE}; the default)
+#'  or as 3-dimensional arrays (\code{FALSE}).
+#'  This option is kept for backwards compatibility and 
+#'  we recommend not to change it.
 #' @param sigma Ignored (included for compatibility with 
 #'  \code{\link[nlme:VarCorr]{VarCorr}}).
 #' @param ... Further arguments to be passed to the functions 
@@ -357,34 +359,42 @@ VarCorr.brmsfit <- function(x, sigma = 1, estimate = "mean",
     nr <- length(p$sd_pars)
     sd <- posterior_samples(x, pars = p$sd_pars, exact_match = TRUE)
     nsamples <- nrow(sd)
-    out <- list(sd = do.call(cbind, lapply(estimate, get_estimate, 
-                                           samples = sd, ...)))
+    out <- list(
+      sd = do.call(cbind, lapply(estimate, get_estimate, samples = sd, ...))
+    )
     rownames(out$sd) <- p$rnames 
-    
     # calculate correlation and covariance matrices
     found_cor_pars <- intersect(p$cor_pars, parnames(x))
     if (length(found_cor_pars)) {
-      cor <- posterior_samples(x, pars = paste0("^",found_cor_pars,"$"))
+      cor <- posterior_samples(x, pars = paste0("^", found_cor_pars, "$"))
       if (length(found_cor_pars) < length(p$cor_pars)) { 
         # some correlations are missing and will be replaced by 0
-        cor_all <- as.data.frame(matrix(0, nrow = nrow(cor), 
-                                        ncol = length(p$cor_pars)))
+        cor_all <- as.data.frame(
+          matrix(0, nrow = nrow(cor), ncol = length(p$cor_pars))
+        )
         names(cor_all) <- p$cor_pars
-        for (i in 1:ncol(cor_all)) {
+        for (i in seq_len(ncol(cor_all))) {
           found <- match(names(cor_all)[i], names(cor))
-          if (!is.na(found))  # correlation was estimated
+          if (!is.na(found)) {
+            # correlation was estimated
             cor_all[, i] <- cor[, found]
+          }
         }
         cor <- cor_all
       }
-    } else cor <- NULL
-    
-    # get_cov_matrix and array2list can be found in brsmfit-helpers.R
+    } else {
+      cor <- NULL
+    } 
+    # get_cov_matrix and array2list can be found in brmsfit-helpers.R
     matrices <- get_cov_matrix(sd = sd, cor = cor) 
-    out$cor <- abind(lapply(estimate, get_estimate, samples = matrices$cor, 
-                            margin = c(2,3), to.array = TRUE, ...))
-    out$cov <- abind(lapply(estimate, get_estimate, samples = matrices$cov, 
-                            margin = c(2,3), to.array = TRUE, ...)) 
+    out$cor <- abind(lapply(
+      estimate, get_estimate, samples = matrices$cor, 
+      margin = c(2, 3), to.array = TRUE, ...
+    ))
+    out$cov <- abind(lapply(
+      estimate, get_estimate, samples = matrices$cov, 
+      margin = c(2,3), to.array = TRUE, ...
+    )) 
     if (length(p$rnames) > 1) {
       dimnames(out$cor) <- list(p$rnames, p$rnames, dimnames(out$cor)[[3]])
       dimnames(out$cov) <- dimnames(out$cor)   
@@ -393,11 +403,13 @@ VarCorr.brmsfit <- function(x, sigma = 1, estimate = "mean",
       out$cor <- lapply(array2list(out$cor), function(x)
         if (is.null(dim(x))) 
           structure(matrix(x), dimnames = list(p$rnames, p$rnames)) 
-        else x)
+        else x
+      )
       out$cov <- lapply(array2list(out$cov), function(x)
         if (is.null(dim(x))) 
           structure(matrix(x), dimnames = list(p$rnames, p$rnames)) 
-        else x)
+        else x
+      )
     }
     out
   }
@@ -412,7 +424,7 @@ VarCorr.brmsfit <- function(x, sigma = 1, estimate = "mean",
       cor_type <- paste0("cor_", group)
       sd_pars <- paste0("sd_", group, "__", rnames)
       cor_pars <- get_cornames(rnames, type = cor_type, brackets = FALSE)
-      nlist(rnames = rnames, type = cor_type, sd_pars, cor_pars)
+      nlist(rnames, type = cor_type, sd_pars, cor_pars)
     }
     group <- unique(x$ranef$group)
     p <- lapply(group, get_names)
@@ -422,8 +434,9 @@ VarCorr.brmsfit <- function(x, sigma = 1, estimate = "mean",
   # special treatment of residuals variances in linear models
   has_sigma <- has_sigma(family, bterms, incmv = TRUE)
   if (has_sigma && !"sigma" %in% names(bterms$auxpars)) {
-    cor_pars <- get_cornames(bterms$response, type = "rescor", 
-                             brackets = FALSE)
+    cor_pars <- get_cornames(
+      bterms$response, type = "rescor", brackets = FALSE
+    )
     p <- lc(p, 
       list(rnames = bterms$response, cor_pars = cor_pars,
            sd_pars = c("sigma", paste0("sigma_", bterms$response)))
@@ -432,7 +445,9 @@ VarCorr.brmsfit <- function(x, sigma = 1, estimate = "mean",
   } 
   VarCorr <- lapply(p, extract)
   names(VarCorr) <- group
-  if (as.list) class(VarCorr) <- "brmsVarCorr"
+  if (as.list) {
+    class(VarCorr) <- "brmsVarCorr" 
+  }
   VarCorr
 }
 
