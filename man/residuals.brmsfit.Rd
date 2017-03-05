@@ -8,13 +8,13 @@
 \usage{
 \method{residuals}{brmsfit}(object, newdata = NULL, re_formula = NULL,
   type = c("ordinary", "pearson"), method = c("fitted", "predict"),
-  allow_new_levels = FALSE, sample_new_levels = FALSE,
+  allow_new_levels = FALSE, sample_new_levels = "uncertainty",
   incl_autocor = TRUE, subset = NULL, nsamples = NULL, sort = FALSE,
   summary = TRUE, robust = FALSE, probs = c(0.025, 0.975), ...)
 
 \method{predictive_error}{brmsfit}(object, newdata = NULL,
   re_formula = NULL, type = c("ordinary", "pearson"),
-  allow_new_levels = FALSE, sample_new_levels = FALSE,
+  allow_new_levels = FALSE, sample_new_levels = "uncertainty",
   incl_autocor = TRUE, subset = NULL, nsamples = NULL, sort = FALSE,
   robust = FALSE, probs = c(0.025, 0.975), ...)
 }
@@ -46,17 +46,18 @@ levels of group-level effects are allowed
 (defaults to \code{FALSE}). 
 Only relevant if \code{newdata} is provided.}
 
-\item{sample_new_levels}{A flag indicating whether to include 
-group-level uncertainty in predictions or to sample new levels 
+\item{sample_new_levels}{Indicates how to sample new levels 
 for grouping factors specified in \code{re_formula}.
-If \code{FALSE} (default), include group-level uncertainty
-in the predictions. If \code{TRUE}, sample new levels from 
-the group-level posterior distribution. One sample from the 
-group-level posterior is drawn for each new level of the 
-grouping factor(s). This feature may be useful for conducting 
-Bayesian power analysis.
-Only relevant if \code{newdata} is provided and 
-\code{allow_new_levels} is set to \code{TRUE}.}
+This argument is only relevant if \code{newdata} is provided and 
+\code{allow_new_levels} is set to \code{TRUE}.
+If \code{"uncertainty"} (default), include group-level uncertainty
+in the predictions based on the variation of the existing levels. 
+If \code{"gaussian"}, sample new levels from the (multivariate) 
+normal distribution implied by the group-level standard deviations 
+and correlations. This options may be useful for conducting 
+Bayesian power analysis. 
+If \code{"old_levels"}, directly sample new levels from the
+existing levels.}
 
 \item{incl_autocor}{A flag indicating if autocorrelation
 parameters should be included in the predictions. 

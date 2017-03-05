@@ -1091,8 +1091,9 @@ stanplot.brmsfit <- function(object, pars = NA, type = "intervals",
 pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
                              x = NULL, newdata = NULL, 
                              re_formula = NULL, allow_new_levels = FALSE,
-                             sample_new_levels = FALSE, incl_autocor = TRUE, 
-                             subset = NULL, ntrys = 5, ...) {
+                             sample_new_levels = "uncertainty", 
+                             incl_autocor = TRUE, subset = NULL, 
+                             ntrys = 5, ...) {
   if (missing(type)) {
     type <- "dens_overlay"
   }
@@ -1532,17 +1533,18 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
 #'   levels of group-level effects are allowed 
 #'   (defaults to \code{FALSE}). 
 #'   Only relevant if \code{newdata} is provided.
-#' @param sample_new_levels A flag indicating whether to include 
-#'   group-level uncertainty in predictions or to sample new levels 
+#' @param sample_new_levels Indicates how to sample new levels 
 #'   for grouping factors specified in \code{re_formula}.
-#'   If \code{FALSE} (default), include group-level uncertainty
-#'   in the predictions. If \code{TRUE}, sample new levels from 
-#'   the group-level posterior distribution. One sample from the 
-#'   group-level posterior is drawn for each new level of the 
-#'   grouping factor(s). This feature may be useful for conducting 
-#'   Bayesian power analysis.
-#'   Only relevant if \code{newdata} is provided and 
+#'   This argument is only relevant if \code{newdata} is provided and 
 #'   \code{allow_new_levels} is set to \code{TRUE}.
+#'   If \code{"uncertainty"} (default), include group-level uncertainty
+#'   in the predictions based on the variation of the existing levels. 
+#'   If \code{"gaussian"}, sample new levels from the (multivariate) 
+#'   normal distribution implied by the group-level standard deviations 
+#'   and correlations. This options may be useful for conducting 
+#'   Bayesian power analysis. 
+#'   If \code{"old_levels"}, directly sample new levels from the
+#'   existing levels. 
 #' @param incl_autocor A flag indicating if autocorrelation
 #'  parameters should be included in the predictions. 
 #'  Defaults to \code{TRUE}.
@@ -1627,8 +1629,9 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
 #' @export 
 predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                             transform = NULL, allow_new_levels = FALSE,
-                            sample_new_levels = FALSE, incl_autocor = TRUE,
-                            subset = NULL, nsamples = NULL, sort = FALSE,
+                            sample_new_levels = "uncertainty", 
+                            incl_autocor = TRUE, subset = NULL, 
+                            nsamples = NULL, sort = FALSE,
                             ntrys = 5, summary = TRUE, robust = FALSE,
                             probs = c(0.025, 0.975), ...) {
   contains_samples(object)
@@ -1699,7 +1702,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' @importFrom rstantools posterior_predict
 posterior_predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                                       transform = NULL, allow_new_levels = FALSE,
-                                      sample_new_levels = FALSE, 
+                                      sample_new_levels = "uncertainty", 
                                       incl_autocor = TRUE, subset = NULL, 
                                       nsamples = NULL, sort = FALSE,
                                       ntrys = 5, robust = FALSE,
@@ -1761,7 +1764,8 @@ posterior_predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' @export 
 fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                            scale = c("response", "linear"),
-                           allow_new_levels = FALSE, sample_new_levels = FALSE, 
+                           allow_new_levels = FALSE, 
+                           sample_new_levels = "uncertainty", 
                            incl_autocor = TRUE, auxpar = NULL, subset = NULL, 
                            nsamples = NULL, sort = FALSE, summary = TRUE, 
                            robust = FALSE, probs = c(0.025, 0.975), ...) {
@@ -1869,7 +1873,7 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                               type = c("ordinary", "pearson"),
                               method = c("fitted", "predict"),
                               allow_new_levels = FALSE, 
-                              sample_new_levels = FALSE,
+                              sample_new_levels = "uncertainty",
                               incl_autocor = TRUE, subset = NULL, 
                               nsamples = NULL, sort = FALSE,
                               summary = TRUE, robust = FALSE, 
@@ -1925,7 +1929,7 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 predictive_error.brmsfit <- function(object, newdata = NULL, re_formula = NULL, 
                                      type = c("ordinary", "pearson"),
                                      allow_new_levels = FALSE, 
-                                     sample_new_levels = FALSE,
+                                     sample_new_levels = "uncertainty",
                                      incl_autocor = TRUE, subset = NULL, 
                                      nsamples = NULL, sort = FALSE,
                                      robust = FALSE, probs = c(0.025, 0.975),
@@ -2135,7 +2139,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
 #' @describeIn WAIC \code{WAIC} method for \code{brmsfit} objects
 WAIC.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL, 
                          re_formula = NULL, allow_new_levels = FALSE,
-                         sample_new_levels = FALSE, subset = NULL, 
+                         sample_new_levels = "uncertainty", subset = NULL,
                          nsamples = NULL, pointwise = NULL) {
   models <- list(x, ...)
   mnames <- deparse(substitute(x))
@@ -2175,7 +2179,7 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
 #' @export
 waic.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
                          re_formula = NULL, allow_new_levels = FALSE,
-                         sample_new_levels = FALSE, subset = NULL, 
+                         sample_new_levels = "uncertainty", subset = NULL, 
                          nsamples = NULL, pointwise = NULL) {
   cl <- match.call()
   cl[[1]] <- quote(WAIC)
@@ -2186,7 +2190,7 @@ waic.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
 #' @describeIn LOO \code{LOO} method for \code{brmsfit} objects
 LOO.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL, 
                         re_formula = NULL, allow_new_levels = FALSE, 
-                        sample_new_levels = FALSE, subset = NULL, 
+                        sample_new_levels = "uncertainty", subset = NULL, 
                         nsamples = NULL, pointwise = NULL,
                         cores = 1, wcp = 0.2, wtrunc = 3/4) {
   models <- list(x, ...)
@@ -2227,7 +2231,7 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
 #' @export
 loo.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
                         re_formula = NULL, allow_new_levels = FALSE,
-                        sample_new_levels = FALSE, subset = NULL,
+                        sample_new_levels = "uncertainty", subset = NULL,
                         nsamples = NULL, pointwise = NULL,
                         cores = 1, wcp = 0.2, wtrunc = 3/4) {
   cl <- match.call()
@@ -2265,7 +2269,7 @@ loo.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
 #' @importFrom rstantools log_lik
 log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                             allow_new_levels = FALSE, 
-                            sample_new_levels = FALSE, subset = NULL,
+                            sample_new_levels = "uncertainty", subset = NULL,
                             nsamples = NULL, pointwise = FALSE, ...) {
   contains_samples(object)
   object <- restructure(object)
@@ -2304,7 +2308,7 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' @export
 logLik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                            allow_new_levels = FALSE,
-                           sample_new_levels = FALSE, subset = NULL,
+                           sample_new_levels = "uncertainty", subset = NULL,
                            nsamples = NULL, pointwise = FALSE, ...) {
   cl <- match.call()
   cl[[1]] <- quote(log_lik)

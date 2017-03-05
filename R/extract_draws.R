@@ -1,15 +1,17 @@
 #' @export
-extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL, 
-                                  allow_new_levels = FALSE, 
-                                  sample_new_levels = FALSE,
-                                  incl_autocor = TRUE, subset = NULL, 
-                                  nsamples = NULL, ...) {
+extract_draws.brmsfit <- function(
+  x, newdata = NULL, re_formula = NULL, 
+  allow_new_levels = FALSE, 
+  sample_new_levels = c("uncertainty", "gaussian", "old_levels"),
+  incl_autocor = TRUE, subset = NULL, 
+  nsamples = NULL, ...) {
   # extract all data and posterior draws required in (non)linear_predictor
   # Args:
   #   incl_autocor: include autocorrelation parameters in the output?
   #   other arguments: see doc of logLik.brmsfit
   # Returns:
   #   A named list to be intepreted by linear_predictor
+  sample_new_levels <- match.arg(sample_new_levels)
   bterms <- parse_bf(formula(x), family = family(x))
   subset <- subset_samples(x, subset, nsamples)
   nsamples <- nsamples(x, subset = subset)
@@ -355,7 +357,7 @@ extract_draws_sm <- function(smooths, args, sdata, nlpar = "") {
 }
 
 extract_draws_re <- function(ranef, args, sdata, nlpar = "",
-                             sample_new_levels = FALSE) {
+                             sample_new_levels = "uncertainty") {
   # extract draws of group-level effects
   # Args:
   #   ranef: data.frame returned by tidy_ranef
@@ -402,21 +404,53 @@ extract_draws_re <- function(ranef, args, sdata, nlpar = "",
     for (i in seq_along(gf)) {
       has_new_levels <- any(gf[[i]] > nlevels)
       if (has_new_levels) {
-        if (sample_new_levels) {
+        if (sample_new_levels %in% c("old_levels", "gaussian")) {
           new_levels <- sort(setdiff(gf[[i]], seq_len(nlevels)))
           new_r_levels[[i]] <- matrix(
             nrow = nrow(r), ncol = nranef * length(new_levels)
           )
-          for (j in seq_along(new_levels)) {
-            # choose a person to take the group-level effects from
-            take_level <- sample(seq_len(nlevels), 1)
-            for (k in seq_len(nranef)) {
-              take <- (k - 1) * nlevels + take_level
-              new_r_levels[[i]][, (j - 1) * nranef + k] <- r[, take]
+          if (sample_new_levels == "old_levels") {
+            for (j in seq_along(new_levels)) {
+              # choose a person to take the group-level effects from
+              take_level <- sample(seq_len(nlevels), 1)
+              for (k in seq_len(nranef)) {
+                take <- (k - 1) * nlevels + take_level
+                new_r_levels[[i]][, (j - 1) * nranef + k] <- r[, take]
+              }
+            }
+          } else if (sample_new_levels == "gaussian") {
+            # extract hyperparameters used to compute the covariance matrix
+            sd_pars <- paste0("sd_", g, usc_nlpar, "__", new_r$coef)
+            sd_samples <- do.call(as.matrix, 
+              c(args, list(pars = sd_pars, exact_match = TRUE))
+            )
+            cor_type <- paste0("cor_", g)
+            cor_pars <- paste0(usc(nlpar, "suffix"), new_r$coef)
+            cor_pars <- get_cornames(cor_pars, type = cor_type, brackets = FALSE)
+            cor_samples <- matrix(
+              0, nrow = nrow(sd_samples), ncol = length(cor_pars)
+            )
+            for (i in seq_along(cor_pars)) {
+              if (cor_pars[i] %in% parnames(args$x)) {
+                cor_samples[, i] <- do.call(as.matrix, 
+                  c(args, list(pars = cor_pars[i], exact_match = TRUE))
+                )
+              }
+            }
+            # compute the covariance matrix
+            cov_matrix <- get_cov_matrix(sd_samples, cor_samples)$cov
+            for (j in seq_along(new_levels)) {
+              # sample new levels from the normal distribution
+              # implied by the covariance matrix
+              indices <- ((j - 1) * nranef + 1):(j * nranef)
+              new_r_levels[[i]][, indices] <- t(apply(
+                cov_matrix, 1, rmulti_normal, 
+                n = 1, mu = rep(0, length(sd_pars))
+              ))
             }
           }
           max_level <- max_level + length(new_levels)
-        } else {
+        } else if (sample_new_levels == "uncertainty") {
           new_r_levels[[i]] <- matrix(nrow = nrow(r), ncol = nranef)
           for (k in seq_len(nranef)) {
             # sample values for the new level

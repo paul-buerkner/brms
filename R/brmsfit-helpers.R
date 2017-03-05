@@ -480,8 +480,10 @@ get_cov_matrix <- function(sd, cor = NULL) {
   stopifnot(all(sd >= 0))
   if (!is.null(cor)) {
     cor <- as.matrix(cor)
-    stopifnot(ncol(cor) == ncol(sd) * (ncol(sd) - 1) / 2, 
-              nrow(sd) == nrow(cor), min(cor) >= -1 && max(cor) <= 1)
+    stopifnot(
+      ncol(cor) == ncol(sd) * (ncol(sd) - 1) / 2, 
+      nrow(sd) == nrow(cor), min(cor) >= -1 && max(cor) <= 1
+    )
   }
   nsamples <- nrow(sd)
   nranef <- ncol(sd)
