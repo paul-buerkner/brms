@@ -1,17 +1,18 @@
 #' @export
-extract_draws.brmsfit <- function(
-  x, newdata = NULL, re_formula = NULL, 
-  allow_new_levels = FALSE, 
-  sample_new_levels = c("uncertainty", "gaussian", "old_levels"),
-  incl_autocor = TRUE, subset = NULL, 
-  nsamples = NULL, ...) {
+extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL, 
+                                  allow_new_levels = FALSE, 
+                                  sample_new_levels = "uncertainty",
+                                  incl_autocor = TRUE, subset = NULL, 
+                                  nsamples = NULL, ...) {
   # extract all data and posterior draws required in (non)linear_predictor
   # Args:
   #   incl_autocor: include autocorrelation parameters in the output?
   #   other arguments: see doc of logLik.brmsfit
   # Returns:
-  #   A named list to be intepreted by linear_predictor
-  sample_new_levels <- match.arg(sample_new_levels)
+  #   A named list to be interpreted by linear_predictor
+  sample_new_levels <- match.arg(
+    sample_new_levels, c("uncertainty", "gaussian", "old_levels")
+  )
   bterms <- parse_bf(formula(x), family = family(x))
   subset <- subset_samples(x, subset, nsamples)
   nsamples <- nsamples(x, subset = subset)
