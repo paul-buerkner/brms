@@ -175,7 +175,9 @@ Set \code{refresh = 0} to turn this off as well.}
 Be aware that \code{brm} resets the seed to the value specified
 in \code{seed} (default: \code{12345}) every time it is run.
 If you want to use different seeds per run, use, for instance,
-\code{seed = sample(1e+7, size = 1)}.}
+\code{seed = sample(1e+7, size = 1)}. Be aware that generally, 
+the seed also affects subsequently called functions (such as 
+\code{predict}), which make use of the random number generator of \R.}
 
 \item{save_model}{Either \code{NULL} or a character string. 
 In the latter case, the model code is

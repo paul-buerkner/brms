@@ -153,7 +153,9 @@
 #'   Be aware that \code{brm} resets the seed to the value specified
 #'   in \code{seed} (default: \code{12345}) every time it is run.
 #'   If you want to use different seeds per run, use, for instance,
-#'   \code{seed = sample(1e+7, size = 1)}.
+#'   \code{seed = sample(1e+7, size = 1)}. Be aware that generally, 
+#'   the seed also affects subsequently called functions (such as 
+#'   \code{predict}), which make use of the random number generator of \R.
 #' @param save_model Either \code{NULL} or a character string. 
 #'   In the latter case, the model code is
 #'   saved in a file named after the string supplied in \code{save_model}, 
