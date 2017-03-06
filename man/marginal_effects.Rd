@@ -139,7 +139,13 @@ When creating \code{marginal_effects} for a particular predictor
   \code{NA} values within factors in \code{conditions}, 
   are interpreted as if all dummy variables of this factor are 
   zero. This allows, for instance, to make predictions of the grand mean 
-  when using sum coding.
+  when using sum coding. 
+  
+  To fully change colours of the created plots, 
+  one has to amend both \code{scale_colour} and \code{scale_fill}.
+  See \code{\link[ggplot2:scale_colour_grey]{scale_colour_grey}} or
+  \code{\link[ggplot2:scale_colour_gradient]{scale_colour_gradient}}
+  for more details.
 }
 \examples{
 \dontrun{
@@ -148,6 +154,12 @@ fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1 | patient),
            
 ## plot all marginal effects
 plot(marginal_effects(fit), ask = FALSE)
+
+## change colours to grey scale
+me <- marginal_effects(fit, "log_Base4_c:Trt_c")
+plot(me, plot = FALSE)[[1]] + 
+  scale_color_grey() +
+  scale_fill_grey()
 
 ## only plot the marginal interaction effect of 'log_Base4_c:Trt_c'
 ## for different values for 'log_Age_c'
