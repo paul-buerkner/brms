@@ -405,11 +405,11 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_true("r_1" %in% up$exclude)
   expect_error(update(fit1, data = new_data), "use argument 'newdata'")
   
-  up <- update(fit1, formula = ~ . + log(Trt), testmode = TRUE,
+  up <- update(fit1, formula = ~ . + I(exp(Trt)), testmode = TRUE,
                prior = set_prior("normal(0,10)"))
   expect_true(is(up, "brmsfit"))
   
-  up <- update(fit1, formula = ~ . + log(Trt), newdata = new_data,
+  up <- update(fit1, formula = ~ . + I(exp(Trt)), newdata = new_data,
                sample_prior = FALSE, testmode = TRUE)
   expect_true(is(up, "brmsfit"))
   expect_error(update(fit1, formula. = ~ . + wrong_var),

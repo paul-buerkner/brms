@@ -1993,7 +1993,6 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   }
   object <- restructure(object)
   if (isTRUE(object$version$brms < utils::packageVersion("brms"))) {
-    recompile <- TRUE
     warning2("Updating models fitted with older versions of brms may fail.")
   }
   if (missing(formula.)) {
@@ -2002,7 +2001,6 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     family <- get_arg("family", dots, formula., object)
     nl <- get_arg("nl", formula., formula(object))
     dots$formula <- bf(formula., family = family, nl = nl)
-    recompile <- length(pforms(dots$formula)) > 0L
     if (is_nonlinear(object)) {
       if (length(setdiff(all.vars(dots$formula$formula), ".")) == 0L) {
         dots$formula <- update(object$formula, dots$formula, mode = "keep")
@@ -2010,7 +2008,6 @@ update.brmsfit <- function(object, formula., newdata = NULL,
         dots$formula <- update(object$formula, dots$formula, mode = "replace")
         message("Argument 'formula.' will completely replace the ", 
                 "original formula in non-linear models.")
-        recompile <- TRUE
       }
     } else {
       mvars <- all.vars(dots$formula$formula)
@@ -2020,76 +2017,65 @@ update.brmsfit <- function(object, formula., newdata = NULL,
               "\nPlease supply your data again via argument 'newdata'.")
       }
       dots$formula <- update(formula(object), dots$formula)
-      ee_old <- parse_bf(formula(object))
-      ee_new <- parse_bf(dots$formula)
-      # no need to recompile the model when changing fixed effects only
-      dont_change <- c("re", "sm", "cs", "mo", "me")
-      n_old_fixef <- length(attr(terms(ee_old$auxpars$mu$fe), "term.labels"))
-      n_new_fixef <- length(attr(terms(ee_new$auxpars$mu$fe), "term.labels"))
-      recompile <- recompile ||
-        !is_equal(names(ee_old), names(ee_new)) ||
-        !is_equal(ee_old[names(ee_old) %in% dont_change], 
-                  ee_new[names(ee_new) %in% dont_change]) ||
-        is_equal(sort(c(n_old_fixef, n_new_fixef)), c(0L, 1L)) ||
-        length(ee_old$response) != length(ee_new$response) ||
-        length(pforms(formula.)) > 0L ||
-        !identical(dots$formula$family, family(object))
-    }
-    if (recompile) {
-      message("The desired formula changes require recompling the model")
     }
   }
   
+  arg_names <- c("prior", "autocor", "nonlinear", "threshold", 
+                 "cov_ranef", "sparse", "sample_prior")
+  new_args <- intersect(arg_names, names(dots))
+  old_args <- setdiff(arg_names, new_args)
+  dots[old_args] <- object[old_args]
+  if (!is.null(newdata)) {
+    dots$data <- newdata
+  } else  {
+    dots$data <- rm_attr(object$data, c("terms", "brmsframe"))
+  }
+  if (is.null(dots$threshold)) {
+    # for backwards compatibility with brms <= 0.8.0
+    if (grepl("(k - 1.0) * delta", object$model, fixed = TRUE)) {
+      dots$threshold <- "equidistant"
+    } else {
+      dots$threshold <- "flexible"
+    }
+  }
+  if ("prior" %in% new_args) {
+    if (!is.brmsprior(dots$prior)) { 
+      stop2("Invalid 'prior' argument.")
+    }
+    dots$prior <- rbind(dots$prior, object$prior)
+    dots$prior <- dots$prior[!duplicated(dots$prior[, 2:5]), ]
+  }
+  pnames <- parnames(object)
+  if (is.null(dots$sample_prior)) {
+    dots$sample_prior <- any(grepl("^prior_", pnames))
+  }
+  if (is.null(dots$save_ranef)) {
+    dots$save_ranef <- any(grepl("^r_", pnames)) || !nrow(object$ranef)
+  }
+  if (is.null(dots$save_mevars)) {
+    dots$save_mevars <- any(grepl("^Xme_", pnames))
+  }
+  if (is.null(dots$sparse)) {
+    dots$sparse <- grepl("sparse matrix", stancode(object))
+  }
   dots$iter <- first_not_null(dots$iter, object$fit@sim$iter)
   # brm computes warmup automatically based on iter 
   dots$chains <- first_not_null(dots$chains, object$fit@sim$chains)
   dots$thin <- first_not_null(dots$thin, object$fit@sim$thin)
-  rc_args <- c("family", "prior", "autocor", "nonlinear", "threshold", 
-               "cov_ranef", "sparse", "sample_prior")
-  new_args <- intersect(rc_args, names(dots))
-  recompile <- recompile || length(new_args)
-  if (recompile) {
-    if (length(new_args)) {
-      message("Changing argument(s) ", collapse_comma(new_args),
-              " requires recompiling the model")
-    }
-    old_args <- setdiff(rc_args, c(new_args, "family"))
-    dots[old_args] <- object[old_args]
+  
+  new_stancode <- suppressMessages(
+    do.call(make_stancode, dots[!names(dots) %in% "testmode"])
+  )
+  # only recompile if new and old stan code do not match
+  if (recompile || !identical(new_stancode, stancode(object))) {
+    # recompliation is necessary
+    message("The desired updates require recompling the model")
+    dots$fit <- NA
     if (!is.null(newdata)) {
-      dots$data <- newdata
       dots$data.name <- Reduce(paste, deparse(substitute(newdata)))
       dots$data.name <- substr(dots$data.name, 1, 50)
     } else  {
-      dots$data <- object$data
       dots$data.name <- object$data.name
-    }
-    if (is.null(dots$threshold)) {
-      # for backwards compatibility with brms <= 0.8.0
-      if (grepl("(k - 1.0) * delta", object$model, fixed = TRUE)) {
-        dots$threshold <- "equidistant"
-      } else dots$threshold <- "flexible"
-    }
-    if ("prior" %in% new_args) {
-      if (is(dots$prior, "brmsprior")) { 
-        dots$prior <- c(dots$prior)
-      } else if (!is(dots$prior, "prior_frame")) {
-        stop2("Invalid 'prior' argument.")
-      }
-      dots$prior <- rbind(dots$prior, object$prior)
-      dots$prior <- dots$prior[!duplicated(dots$prior[, 2:5]), ]
-    }
-    pnames <- parnames(object)
-    if (is.null(dots$sample_prior)) {
-      dots$sample_prior <- any(grepl("^prior_", pnames))
-    }
-    if (is.null(dots$save_ranef)) {
-      dots$save_ranef <- any(grepl("^r_", pnames)) || !nrow(object$ranef)
-    }
-    if (is.null(dots$save_mevars)) {
-      dots$save_mevars <- any(grepl("^Xme_", pnames))
-    }
-    if (is.null(dots$sparse)) {
-      dots$sparse <- grepl("sparse matrix", stancode(object))
     }
     if (!isTRUE(dots$testmode)) {
       object <- do.call(brm, dots)
@@ -2109,17 +2095,16 @@ update.brmsfit <- function(object, formula., newdata = NULL,
       dots$is_newdata <- TRUE
     }
     if (!is.null(dots$save_ranef) || !is.null(dots$save_mevars)) {
-      pnames <- parnames(object)
       if (is.null(dots$save_ranef)) {
         dots$save_ranef <- any(grepl("^r_", pnames)) || !nrow(object$ranef)
       }
       if (is.null(dots$save_mevars)) {
         dots$save_mevars <- any(grepl("^Xme_", pnames))
       }
-      object$exclude <- exclude_pars(bterms, data = object$data, 
-                                     ranef = object$ranef, 
-                                     save_ranef = dots$save_ranef,
-                                     save_mevars = dots$save_mevars)
+      object$exclude <- exclude_pars(
+        bterms, data = object$data, ranef = object$ranef, 
+        save_ranef = dots$save_ranef, save_mevars = dots$save_mevars
+      )
     }
     if (!is.null(dots$algorithm)) {
       aopts <- c("sampling", "meanfield", "fullrank")
