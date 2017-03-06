@@ -431,10 +431,10 @@ extract_draws_re <- function(ranef, args, sdata, nlpar = "",
             cor_samples <- matrix(
               0, nrow = nrow(sd_samples), ncol = length(cor_pars)
             )
-            for (i in seq_along(cor_pars)) {
-              if (cor_pars[i] %in% parnames(args$x)) {
-                cor_samples[, i] <- do.call(as.matrix, 
-                  c(args, list(pars = cor_pars[i], exact_match = TRUE))
+            for (j in seq_along(cor_pars)) {
+              if (cor_pars[j] %in% parnames(args$x)) {
+                cor_samples[, j] <- do.call(as.matrix, 
+                  c(args, list(pars = cor_pars[j], exact_match = TRUE))
                 )
               }
             }
