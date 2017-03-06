@@ -171,7 +171,11 @@ informational messages of compiler and sampler are suppressed.
 The actual sampling progress is still printed. 
 Set \code{refresh = 0} to turn this off as well.}
 
-\item{seed}{Used by \code{set.seed} to make results reproducable.}
+\item{seed}{Used by \code{set.seed} to make results reproducable.
+Be aware that \code{brm} resets the seed to the value specified
+in \code{seed} (default: \code{12345}) every time it is run.
+If you want to use different seeds per run, use, for instance,
+\code{seed = sample(1e+7, size = 1)}.}
 
 \item{save_model}{Either \code{NULL} or a character string. 
 In the latter case, the model code is
