@@ -364,8 +364,8 @@ test_that("Stan code for categorical models is correct", {
   dat <- data.frame(y = rep(1:4, 2), x = 1:8, g = 1:8)
   scode <- make_stancode(y ~ x + (1|ID|g), dat, categorical())
   expect_match2(scode, "Y[n] ~ categorical_logit(append_row(zero, Mu[n]));")
-  expect_match2(scode, "mu_2 = Xc_2 * b_2 + temp_2_Intercept;")
-  expect_match2(scode, "mu_4[n] = mu_4[n] + (r_1_4_3[J_1[n]]) * Z_1_4_3[n];")
+  expect_match2(scode, "mu_X2 = Xc_X2 * b_X2 + temp_X2_Intercept;")
+  expect_match2(scode, "mu_X4[n] = mu_X4[n] + (r_1_X4_3[J_1[n]]) * Z_1_X4_3[n];")
 })
 
 test_that("Stan code for autocorrelated models is correct", {
@@ -395,7 +395,7 @@ test_that("the Stan code for intercept only models is correct", {
   expect_match2(make_stancode(rating ~ 1, data = inhaler, family = cratio()),
                "b_Intercept = temp_Intercept;") 
   expect_match2(make_stancode(rating ~ 1, data = inhaler, family = categorical()),
-               "b_3_Intercept = temp_3_Intercept;") 
+               "b_X3_Intercept = temp_X3_Intercept;")
 })
 
 test_that("make_stancode returns correct code for smooth only models", {

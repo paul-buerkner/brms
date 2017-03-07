@@ -676,7 +676,12 @@ amend_formula <- function(formula, data = NULL, family = NULL,
             "'categorical'.\nPlease use family 'bernoulli' instead.")
     }
     # the first level will serve as the reference category
-    out[["response"]] <- response[-1]
+    out[["response"]] <- make.names(response[-1], unique = TRUE)
+    out[["response"]] <- rename(out[["response"]], ".", "x")
+    if (any(duplicated(out[["response"]]))) {
+      stop2("Invalid response category names. Please avoid ",
+            "using any special characters in the names.")
+    }
   }
   out
 }

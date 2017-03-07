@@ -7,9 +7,9 @@ test_that(paste("make_standata returns correct data names ",
   expect_equal(names(make_standata(rating ~ treat + period + carry 
                                    + (1+treat|id|subject), data = inhaler,
                                    family = "categorical")),
-               c("N", "Y", "K_2", "X_2", "Z_1_2_1", "Z_1_2_2", 
-                 "K_3", "X_3", "Z_1_3_3", "Z_1_3_4",
-                 "K_4", "X_4", "Z_1_4_5", "Z_1_4_6",
+               c("N", "Y", "K_X2", "X_X2", "Z_1_X2_1", "Z_1_X2_2", 
+                 "K_X3", "X_X3", "Z_1_X3_3", "Z_1_X3_4",
+                 "K_X4", "X_X4", "Z_1_X4_5", "Z_1_X4_6",
                  "J_1", "N_1", "M_1", "NC_1", "ncat",
                  "prior_only"))
   expect_equal(names(make_standata(rating ~ treat + period + carry 
