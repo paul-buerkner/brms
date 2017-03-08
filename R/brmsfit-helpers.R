@@ -230,6 +230,7 @@ prepare_conditions <- function(x, conditions = NULL, effects = NULL,
       lapply(get_effect(bterms, "me"), rhs),
       lapply(get_effect(bterms, "sm"), rhs),
       lapply(get_effect(bterms, "cs"), rhs),
+      lapply(get_effect(bterms, "offset"), rhs),
       re$form, lapply(re$gcall, "[[", "weightvars"),
       bterms$adforms[c("se", "disp", "trials", "cat")],
       bterms$auxpars$mu$covars

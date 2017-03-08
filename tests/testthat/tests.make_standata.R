@@ -464,3 +464,11 @@ test_that("make_standata allows fixed auxiliary parameters", {
   expect_error(make_standata(bf(y ~ 1, bias = 0.5), dat),
                "Invalid auxiliary parameters: 'bias'")
 })
+
+test_that("make_standata correctly includes offsets", {
+  data <- data.frame(y = rnorm(10), x = rnorm(10), c = 1)
+  sdata <- make_standata(y ~ x + offset(c), data)
+  expect_equal(sdata$offset, data$c)
+  sdata <- make_standata(y ~ x + offset(c) + offset(x), data)
+  expect_equal(sdata$offset, data$c + data$x)
+})

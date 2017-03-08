@@ -45,18 +45,16 @@ stan_effects.btl <- function(x, data, ranef, prior, center_X = TRUE,
   ))
   
   p <- usc(nlpar, "prefix")
-  has_offset <- !is.null(get_offset(x$formula))
-  if (has_offset) {
+  if (is.formula(x$offset)) {
     out$data <- paste0(out$data, "  vector[N] offset", p, "; \n")
   }
-  
   # initialize and compute eta_<nlpar>
   out$modelC1 <- paste0(
     out$modelC1, "  ", eta, " = ", 
     text_fe$eta, text_sm$eta,
     if (center_X && !is_ordinal(x$family)) 
       paste0(" + temp", p, "_Intercept"),
-    if (has_offset) paste0(" + offset", p),
+    if (is.formula(x$offset)) paste0(" + offset", p),
     if (get_arr(x$autocor)) " + Yarr * arr", 
     "; \n"
   )

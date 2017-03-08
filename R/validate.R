@@ -171,8 +171,12 @@ parse_lf <- function(formula, family = NULL) {
   if (is.formula(sm_form)) {
     y[["sm"]] <- sm_form
   }
-  rm_pos <- lapply(list(mo_form, cs_form, me_form, sm_form), attr, "pos")
-  rm_pos <- c(rm_pos, list(pos_re_terms))
+  offset_form <- parse_offset(formula)
+  if (is.formula(offset_form)) {
+    y[["offset"]] <- offset_form
+  }
+  rm_pos <- list(mo_form, cs_form, me_form, sm_form)
+  rm_pos <- c(lapply(rm_pos, attr, "pos"), list(pos_re_terms))
   fe_terms <- all_terms[!Reduce("|", rm_pos)]
   int_term <- ifelse(attr(terms, "intercept") == 1, "1", "0")
   fe_terms <- paste(c(int_term, fe_terms), collapse = "+")
@@ -192,7 +196,7 @@ parse_lf <- function(formula, family = NULL) {
     y[c("fe", "cs", "mo", "me")], 
     attr(y$sm, "allvars"), y$re$form,
     lapply(y$re$gcall, "[[", "allvars"),
-    get_offset(formula)
+    y$offset
   )
   y$allvars <- allvars_formula(lformula)
   environment(y$allvars) <- environment(formula)
@@ -361,13 +365,29 @@ parse_me <- function(formula) {
   pos_me_terms <- grepl_expr("^me\\([^:]*\\)$", all_terms)
   me_terms <- all_terms[pos_me_terms]
   if (length(me_terms)) {
-    me_terms <- formula(paste("~", paste(me_terms, collapse = "+")))
+    me_terms <- str2formula(me_terms)
     if (!length(all.vars(me_terms))) {
       stop2("No variable supplied to function 'me'.")
     }
     attr(me_terms, "rsv_intercept") <- TRUE
   }
   structure(me_terms, pos = pos_me_terms)
+}
+
+parse_offset <- function(formula) {
+  # extract offset terms from a formula
+  terms <- terms(as.formula(formula))
+  pos_offset_terms <- attr(terms, "offset")
+  if (!is.null(pos_offset_terms)) {
+    vars <- attr(terms, "variables")
+    offset_terms <- ulapply(
+      pos_offset_terms, function(i) deparse(vars[[i+1]])
+    )
+    offset_terms <- str2formula(offset_terms)
+  } else {
+    offset_terms <- character(0)
+  }
+  offset_terms
 }
 
 parse_re <- function(re_terms) {
@@ -826,24 +846,6 @@ get_effect.btnl <- function(x, target = "fe", ...) {
     out[[nlp]] <- get_effect(x$nlpars[[nlp]], target = target)
   }
   rmNULL(out)
-}
-
-get_offset <- function(x) {
-  # extract offset terms from a formula
-  x <- try(terms(as.formula(x)), silent = TRUE)
-  if (is(x, "try-error")) {
-    # terms doesn't like non-linear formulas
-    offset <- NULL
-  } else {
-    offset_pos <- attr(x, "offset")
-    if (!is.null(offset_pos)) {
-      vars <- attr(x, "variables")
-      offset <- ulapply(offset_pos, function(i) deparse(vars[[i+1]]))
-    } else {
-      offset <- NULL
-    }
-  }
-  offset
 }
 
 get_var_combs <- function(..., alist = list()) {
