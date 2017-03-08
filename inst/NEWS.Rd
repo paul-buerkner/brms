@@ -2,6 +2,16 @@
 \title{brms News}
 \encoding{UTF-8}
 
+\section{CHANGES IN VERSION 1.5.1++}{
+  \subsection{BUG FIXES}{
+    \itemize{
+      \item Fix problems with the inclusion of offsets
+      in the Stan code occuring for more complicated 
+      formulas thanks to Christian Stock.
+    }
+  }
+}
+
 \section{CHANGES IN VERSION 1.5.1}{
   \subsection{NEW FEATURES}{
     \itemize{

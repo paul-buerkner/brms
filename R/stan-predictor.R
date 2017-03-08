@@ -45,7 +45,7 @@ stan_effects.btl <- function(x, data, ranef, prior, center_X = TRUE,
   ))
   
   p <- usc(nlpar, "prefix")
-  has_offset <- !is.null(get_offset(x$fe))
+  has_offset <- !is.null(get_offset(x$formula))
   if (has_offset) {
     out$data <- paste0(out$data, "  vector[N] offset", p, "; \n")
   }

@@ -834,3 +834,11 @@ test_that("Stan code of GEV models is correct", {
   scode <- make_stancode(y | cens(c) ~ x, data, gen_extreme_value())
   expect_match2(scode, "target += gen_extreme_value_lccdf(Y[n] | mu[n], sigma, xi)")
 })
+
+test_that("offsets appear in the Stan code", {
+  data <- data.frame(y = rnorm(10), x = rnorm(10), c = 1)
+  scode <- make_stancode(y ~ x + offset(c), data)
+  expect_match2(scode, "Xc * b + temp_Intercept + offset;")
+  scode <- make_stancode(y ~ x + offset(I(log(c*10^5))), data)
+  expect_match2(scode, "Xc * b + temp_Intercept + offset;")
+})
