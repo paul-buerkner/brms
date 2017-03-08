@@ -982,13 +982,16 @@ stanplot.brmsfit <- function(object, pars = NA, type = "intervals",
     pars <- default_plot_pars()
     exact_match <- FALSE
   }
-  nuts_types <- c("acceptance", "divergence", "stepsize",
-                  "treedepth", "energy")
-  valid_types <- c("hist", "dens", "hist_by_chain", "dens_overlay", 
-                   "violin", "intervals", "areas", "acf", "acf_bar",
-                   "trace", "trace_highlight", "scatter",
-                   "rhat", "rhat_hist", "neff", "neff_hist",
-                   paste0("nuts_", nuts_types))
+  nuts_types <- c(
+    "acceptance", "divergence", "stepsize", "treedepth", "energy"
+  )
+  valid_types <- c(
+    "hist", "dens", "hist_by_chain", "dens_overlay", 
+    "violin", "intervals", "areas", "trace", "trace_highlight", 
+    "scatter", "hex", "pairs", "rhat", "rhat_hist", "neff", 
+    "neff_hist", "acf", "acf_bar", "recover_intervals",
+    paste0("nuts_", nuts_types)
+  )
   if (!type %in% valid_types) {
     stop2("Invalid plot type. Valid plot types are: \n",
           collapse_comma(valid_types))
@@ -1006,8 +1009,8 @@ stanplot.brmsfit <- function(object, pars = NA, type = "intervals",
                                    exact_match = exact_match)
       samples$iter <- NULL
       sel_pars <- names(samples)[!names(samples) %in% "chain"]
-      if (type == "scatter" && length(sel_pars) != 2L) {
-        stop2("For type 'scatter' exactly 2 parameters must be selected.",
+      if (type %in% c("scatter", "hex") && length(sel_pars) != 2L) {
+        stop2("Exactly 2 parameters must be selected for this type.",
               "\nParameters selected: ", collapse_comma(sel_pars))
       }
       mcmc_args[["x"]] <- samples
@@ -1015,6 +1018,9 @@ stanplot.brmsfit <- function(object, pars = NA, type = "intervals",
   }
   if ("lp" %in% mcmc_arg_names) {
     mcmc_args[["lp"]] <- log_posterior(object)
+  }
+  if ("np" %in% mcmc_arg_names) {
+    mcmc_args[["np"]] <- nuts_params(object)
   }
   if ("rhat" %in% mcmc_arg_names && !type %in% c("intervals", "areas")) {
     mcmc_args[["rhat"]] <- rhat(object)
