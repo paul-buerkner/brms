@@ -162,7 +162,6 @@ make_standata <- function(formula, data, family = NULL,
         data_effects, c(args_eff_spec, args_eff, nlpar = r)
       )
       standata <- c(standata, data_eff)
-      standata[[paste0("offset_", r)]] <- model.offset(data)
     }
     if (is_linear(family)) {
       standata$nresp <- length(resp)
@@ -186,7 +185,6 @@ make_standata <- function(formula, data, family = NULL,
   # data for grouping factors separated after group-ID
   data_gr <- data_gr(ranef, data, cov_ranef = cov_ranef)
   standata <- c(standata, data_gr)
-  standata$offset <- model.offset(data)
   
   # data for specific families
   if (has_trials(family)) {

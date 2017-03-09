@@ -28,7 +28,8 @@ data_effects.btl <- function(x, data, ranef = empty_ranef(),
                      not4stan = not4stan)
   data_me <- data_me(x, data = data, nlpar = nlpar)
   data_cs <- data_cs(x, data = data, nlpar = nlpar)
-  c(data_fe, data_mo, data_re, data_me, data_cs)
+  data_offset <- data_offset(x, data = data, nlpar = nlpar)
+  c(data_fe, data_mo, data_re, data_me, data_cs, data_offset)
 }
 
 #' @export 
@@ -323,6 +324,16 @@ data_me <- function(bterms, data, nlpar = "") {
     names(noise) <- paste0("noise", p, "_", seq_along(Xn))
     Kme <- setNames(list(length(meef)), paste0("Kme", p))
     out <- c(out, Xn, noise, Cme, Kme)
+  }
+  out
+}
+
+data_offset <- function(bterms, data, nlpar = "") {
+  # prepare data of offsets for use in Stan
+  out <- list()
+  if (is.formula(bterms$offset)) {
+    mf <- model.frame(bterms$offset, rm_attr(data, "terms"))
+    out[[paste0("offset", usc(nlpar))]] <- model.offset(mf)
   }
   out
 }

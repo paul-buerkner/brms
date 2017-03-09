@@ -71,9 +71,9 @@ test_that("all S3 methods have reasonable ouputs", {
   fi <- fitted(fit1, auxpar = "sigma")
   expect_equal(dim(fi), c(nobs(fit1), 4))
   expect_true(all(fi > 0))
-  fi <- fitted(fit1, auxpar = "sigma", scale = "linear")
-  expect_equal(dim(fi), c(nobs(fit1), 4))
-  expect_true(any(fi < 0))
+  fi_lin <- fitted(fit1, auxpar = "sigma", scale = "linear")
+  expect_equal(dim(fi_lin), c(nobs(fit1), 4))
+  expect_true(!isTRUE(all.equal(fi, fi_lin)))
   expect_error(fitted(fit1, auxpar = "inv"),
                "Invalid argument 'auxpar'")
   expect_error(fitted(fit1, auxpar = "nu"),
@@ -364,8 +364,8 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(names(standata(fit1)),
                c("N", "Y", "nb_1", "knots_1", "Zs_1_1", "K", "X", 
                  "Kmo", "Xmo", "Jmo", "con_simplex_1", "Z_1_1", "Z_1_2", 
-                 "K_sigma", "X_sigma", "J_1", "N_1", "M_1", "NC_1", 
-                 "offset", "tg", "Kar", "Kma", "Karma", "prior_only"))
+                 "offset", "K_sigma", "X_sigma", "J_1", "N_1", "M_1", 
+                 "NC_1", "tg", "Kar", "Kma", "Karma", "prior_only"))
   expect_equal(names(standata(fit2)),
                c("N", "Y", "C_1", "K_a", "X_a", "Z_1_a_1",
                  "K_b", "X_b", "Z_1_b_2", "J_1", "N_1", "M_1",

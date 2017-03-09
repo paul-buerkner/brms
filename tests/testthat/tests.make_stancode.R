@@ -839,6 +839,7 @@ test_that("offsets appear in the Stan code", {
   data <- data.frame(y = rnorm(10), x = rnorm(10), c = 1)
   scode <- make_stancode(y ~ x + offset(c), data)
   expect_match2(scode, "Xc * b + temp_Intercept + offset;")
-  scode <- make_stancode(y ~ x + offset(I(log(c*10^5))), data)
-  expect_match2(scode, "Xc * b + temp_Intercept + offset;")
+  scode <- make_stancode(bf(y ~ a, a ~ offset(log(c + 1)), nl = TRUE),
+                         data, prior = prior(normal(0,1), nlpar = a))
+  expect_match2(scode, "X_a * b_a + offset_a;")
 })

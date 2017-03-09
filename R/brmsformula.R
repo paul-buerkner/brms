@@ -540,9 +540,6 @@ prepare_auxformula <- function(formula, par = NULL, rsv_pars = NULL) {
     out <- named_list(par, formula)
   } else {
     formula <- as.formula(formula)
-    if (!is.null(attr(terms(formula), "offset"))) {
-      stop2("Offsets in additional formulas are currently not allowed.")
-    }
     if (!is.null(lhs(formula))) {
       resp_pars <- all.vars(formula[[2]])
       out <- named_list(resp_pars, list(formula))
@@ -563,8 +560,8 @@ prepare_auxformula <- function(formula, par = NULL, rsv_pars = NULL) {
   }
   inv_pars <- intersect(pars, rsv_pars)
   if (length(inv_pars)) {
-    inv_pars <- paste("'", inv_pars, "'", collapse = ", ")
-    stop2("Parameter names ", inv_pars, " are reserved for this model.")
+    stop2("The following parameter names are reserved",  
+          "for this model:\n", collapse_comma(inv_pars))
   }
   out
 }

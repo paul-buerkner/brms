@@ -467,8 +467,9 @@ test_that("make_standata allows fixed auxiliary parameters", {
 
 test_that("make_standata correctly includes offsets", {
   data <- data.frame(y = rnorm(10), x = rnorm(10), c = 1)
-  sdata <- make_standata(y ~ x + offset(c), data)
+  sdata <- make_standata(bf(y ~ x + offset(c), sigma ~ offset(c + 1)), data)
   expect_equal(sdata$offset, data$c)
+  expect_equal(sdata$offset_sigma, data$c + 1)
   sdata <- make_standata(y ~ x + offset(c) + offset(x), data)
   expect_equal(sdata$offset, data$c + data$x)
 })
