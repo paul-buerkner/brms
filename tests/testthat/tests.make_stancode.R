@@ -843,3 +843,15 @@ test_that("offsets appear in the Stan code", {
                          data, prior = prior(normal(0,1), nlpar = a))
   expect_match2(scode, "X_a * b_a + offset_a;")
 })
+
+test_that("prior only models are correctly checked", {
+  data <- data.frame(y = rnorm(10), x = rnorm(10), c = 1)
+  prior <- prior(normal(0, 5), b)
+  expect_error(make_stancode(y ~ x, data, prior = prior,
+                             sample_prior = "only"),
+               "Sampling from priors is not possible")
+  prior <- c(prior, prior(normal(0, 10), Intercept))
+  scode <- make_stancode(y ~ x, data, prior = prior,
+                         sample_prior = "only")
+  expect_match2(scode, "temp_Intercept ~ normal(0, 10)")
+})

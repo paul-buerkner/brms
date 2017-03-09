@@ -39,8 +39,8 @@ make_stancode <- function(formula, data, family = NULL,
   bterms <- parse_bf(formula, family = family, autocor = autocor)
   prior <- check_prior(
     prior, formula = formula, data = data, family = family, 
-    autocor = autocor, threshold = threshold, 
-    warn = !isTRUE(dots$brm_call)
+    autocor = autocor, sample_prior = sample_prior, 
+    threshold = threshold, warn = !isTRUE(dots$brm_call)
   )
   prior_only <- identical(sample_prior, "only")
   sample_prior <- if (prior_only) FALSE else sample_prior

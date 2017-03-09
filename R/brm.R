@@ -389,28 +389,33 @@ brm <- function(formula, data, family = NULL, prior = NULL,
     # see data-helpers.R
     data <- update_data(data, family = family, bterms = bterms)
     # see priors.R
-    prior <- check_prior(prior, formula = formula, data = data, 
-                         family = family, sample_prior = sample_prior, 
-                         autocor = autocor, threshold = threshold, 
-                         warn = TRUE)
+    prior <- check_prior(
+      prior, formula = formula, data = data, family = family, 
+      sample_prior = sample_prior, autocor = autocor, 
+      threshold = threshold, warn = TRUE
+    )
     # initialize S3 object
-    x <- brmsfit(formula = formula, family = family, data = data, 
-                 data.name = data.name, prior = prior, 
-                 autocor = autocor, cov_ranef = cov_ranef, 
-                 threshold = threshold, algorithm = algorithm)
+    x <- brmsfit(
+      formula = formula, family = family, data = data, 
+      data.name = data.name, prior = prior, 
+      autocor = autocor, cov_ranef = cov_ranef, 
+      threshold = threshold, algorithm = algorithm
+    )
     # see validate.R
     x$ranef <- tidy_ranef(bterms, data = x$data)  
-    x$exclude <- exclude_pars(bterms, x$data, ranef = x$ranef, 
-                              save_ranef = save_ranef,
-                              save_mevars = save_mevars)
+    x$exclude <- exclude_pars(
+      bterms, data = x$data, ranef = x$ranef, 
+      save_ranef = save_ranef, save_mevars = save_mevars
+    )
     # see make_stancode.R
-    x$model <- make_stancode(formula = formula, data = data, 
-                             family = family, prior = prior,  
-                             autocor = autocor, threshold = threshold, 
-                             sparse = sparse, cov_ranef = cov_ranef, 
-                             sample_prior = sample_prior, knots = knots, 
-                             stan_funs = stan_funs, save_model = save_model, 
-                             brm_call = TRUE)
+    x$model <- make_stancode(
+      formula = formula, data = data, family = family, 
+      prior = prior, autocor = autocor, threshold = threshold,
+      sparse = sparse, cov_ranef = cov_ranef,
+      sample_prior = sample_prior, knots = knots, 
+      stan_funs = stan_funs, save_model = save_model, 
+      brm_call = TRUE
+    )
     # generate standata before compiling the model to avoid
     # unnecessary compilations in case of invalid data
     standata <- standata(x, newdata = dots$is_newdata)
@@ -434,8 +439,10 @@ brm <- function(formula, data, family = NULL, prior = NULL,
                 include = FALSE, algorithm, iter)
   args[names(dots)] <- dots 
   if (algorithm == "sampling") {
-    args <- c(args, nlist(init = inits, warmup, thin, chains, 
-                          cores, control, show_messages = !silent))
+    args <- c(args, 
+      nlist(init = inits, warmup, thin, chains, cores, 
+            control, show_messages = !silent)
+    )
   }
   
   set.seed(seed)

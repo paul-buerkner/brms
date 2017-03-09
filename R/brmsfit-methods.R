@@ -2102,6 +2102,10 @@ update.brmsfit <- function(object, formula., newdata = NULL,
       object$ranef <- tidy_ranef(bterms, data = object$data)
       dots$is_newdata <- TRUE
     }
+    if (!is.null(dots$sample_prior)) {
+      prior_only <- identical(dots$sample_prior, "only")
+      attr(object$prior, "prior_only") <- prior_only
+    }
     if (!is.null(dots$save_ranef) || !is.null(dots$save_mevars)) {
       if (is.null(dots$save_ranef)) {
         dots$save_ranef <- any(grepl("^r_", pnames)) || !nrow(object$ranef)

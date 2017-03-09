@@ -641,8 +641,8 @@ stan_prior <- function(prior, class, coef = "", group = "",
   }
   out <- collapse(out)
   if (prior_only && nzchar(class) && !nchar(out)) {
-    stop2("Sampling from priors is not possible because ", 
-          "not all parameters have proper priors. \n",
+    stop2("Sampling from priors is not possible as ", 
+          "some parameters have no proper priors. ",
           "Error occured for class '", class, "'.")
   }
   out
