@@ -1019,10 +1019,12 @@ stanplot.brmsfit <- function(object, pars = NA, type = "intervals",
   if ("lp" %in% mcmc_arg_names) {
     mcmc_args[["lp"]] <- log_posterior(object)
   }
-  if ("np" %in% mcmc_arg_names) {
+  use_nuts <- isTRUE(object$algorithm == "sampling")
+  if ("np" %in% mcmc_arg_names && use_nuts) {
     mcmc_args[["np"]] <- nuts_params(object)
   }
-  if ("rhat" %in% mcmc_arg_names && !type %in% c("intervals", "areas")) {
+  interval_type <- type %in% c("intervals", "areas")
+  if ("rhat" %in% mcmc_arg_names && !interval_type) {
     mcmc_args[["rhat"]] <- rhat(object)
   }
   if ("ratio" %in% mcmc_arg_names) {

@@ -8,13 +8,13 @@
       \item Implement different ways to sample new levels
       of grouping factors in \code{predict} and related 
       methods through argument \code{sample_new_levels}.
-      Thanks to Tom Wallis and Jonah Gabry for a thorough 
+      Thanks to Tom Wallis and Jonah Gabry for a detailed 
       discussion about this feature.
       \item Allow using \code{offset} in formulas
       of non-linear and auxiliary parameters.
-      \item Extend method \code{stanplot} to handle
-      some new \code{mcmc_} plots of the \pkg{bayesplot}
-      package.
+      \item Extend method \code{stanplot} to correctly 
+      handle some new \code{mcmc_} plots of the 
+      \pkg{bayesplot} package.
     }
   }
   \subsection{OTHER CHANGES}{
@@ -27,10 +27,10 @@
   \subsection{BUG FIXES}{
     \itemize{
       \item Fix problems with the inclusion of offsets
-      in the Stan code occuring for more complicated 
-      formulas thanks to Christian Stock.
-      \item Add new line at the end of the \code{summary}
-      output thanks to Thomas Kluth.
+      occuring for more complicated formulas thanks to 
+      Christian Stock.
+      \item Add a missing new line statement at the end 
+      of the \code{summary} output thanks to Thomas Kluth.
     }
   }
 }
