@@ -3,11 +3,34 @@
 \encoding{UTF-8}
 
 \section{CHANGES IN VERSION 1.5.1++}{
+  \subsection{NEW FEATURES}{
+    \itemize{
+      \item Implement different ways to sample new levels
+      of grouping factors in \code{predict} and related 
+      methods through argument \code{sample_new_levels}.
+      Thanks to Tom Wallis and Jonah Gabry for a thorough 
+      discussion about this feature.
+      \item Allow using \code{offset} in formulas
+      of non-linear and auxiliary parameters.
+      \item Extend method \code{stanplot} to handle
+      some new \code{mcmc_} plots of the \pkg{bayesplot}
+      package.
+    }
+  }
+  \subsection{OTHER CHANGES}{
+    \itemize{
+      \item Improve the \code{update} method to
+      only recompile models when the \pkg{Stan} code
+      changes.
+    }
+  }
   \subsection{BUG FIXES}{
     \itemize{
       \item Fix problems with the inclusion of offsets
       in the Stan code occuring for more complicated 
       formulas thanks to Christian Stock.
+      \item Add new line at the end of the \code{summary}
+      output thanks to Thomas Kluth.
     }
   }
 }
