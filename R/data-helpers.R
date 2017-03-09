@@ -387,7 +387,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       old_cat <- is_old_categorical(fit)
     )
     old_terms <- attr(model.frame(fit), "terms")
-    terms_attr <- c("variables", "predvars", "offset")
+    terms_attr <- c("variables", "predvars")
     control$terms_attr <- attributes(old_terms)[terms_attr]
     has_mo <- length(get_effect(bterms, "mo")) > 0L
     if (has_trials(fit$family) || has_cat(fit$family) || has_mo) {

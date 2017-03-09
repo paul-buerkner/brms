@@ -196,7 +196,7 @@ parse_lf <- function(formula, family = NULL) {
     y[c("fe", "cs", "mo", "me")], 
     attr(y$sm, "allvars"), y$re$form,
     lapply(y$re$gcall, "[[", "allvars"),
-    y$offset
+    str2formula(all.vars(y$offset))
   )
   y$allvars <- allvars_formula(lformula)
   environment(y$allvars) <- environment(formula)
