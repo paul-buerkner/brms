@@ -99,22 +99,22 @@ test_that(paste("make_standata rejects incorrect response variables",
                 "depending on the family"), {
   expect_error(make_standata(y ~ 1, data = data.frame(y = factor(1:10)), 
                              family = "student"),
-               "Family 'student' expects numeric response variable")
+               "Family 'student' requires numeric responses")
   expect_error(make_standata(y ~ 1, data = data.frame(y = -5:5), 
                              family = "geometric"),
-               "Family 'geometric' expects response variable of non-negative integers")
+               "Family 'geometric' requires responses to be non-negative integers")
   expect_error(make_standata(y ~ 1, data = data.frame(y = -1:1), 
                              family = "bernoulli"),
                "contain only two different values")
   expect_error(make_standata(y ~ 1, data = data.frame(y = factor(-1:1)), 
                              family = "cratio"),
-               "Family 'cratio' expects either integers or ordered factors")
+               "Family 'cratio' requires either integers or ordered factors")
   expect_error(make_standata(y ~ 1, data = data.frame(y = rep(0.5:7.5), 2), 
                              family = "sratio"),
-               "Family 'sratio' expects either integers or ordered factors")
+               "Family 'sratio' requires either integers or ordered factors")
   expect_error(make_standata(y ~ 1, data = data.frame(y = rep(-7.5:7.5), 2), 
                              family = "gamma"),
-               "Family 'gamma' requires response variable to be positive")
+               "Family 'gamma' requires responses to be positive")
   expect_error(make_standata(y ~ 1, data = data.frame(y = c(0, 0.5, 1)),
                              family = Beta()),
                "requires responses between 0 and 1")
@@ -123,7 +123,7 @@ test_that(paste("make_standata rejects incorrect response variables",
                "requires responses between -pi and pi")
   expect_error(make_standata(y ~ 1, data = data.frame(y = c(-1, 2, 5)),
                              family = hurdle_gamma()),
-               "requires response variable to be non-negative")
+               "requires responses to be non-negative")
 })
 
 test_that("make_standata suggests using family bernoulli if appropriate", {

@@ -83,36 +83,47 @@ make_standata <- function(formula, data, family = NULL,
   # response variable
   standata <- list(N = nrow(data), Y = unname(model.response(data)))
   check_response <- !isTRUE(control$omit_response)
+  families <- family_names(family)
+  if (is.mixfamily(family)) {
+    family4error <- paste0(families, collapse = ", ")
+    family4error <- paste0("mixture(", family4error, ")")
+  } else {
+    family4error <- families
+  }
   if (check_response) {
     factors_allowed <- is_ordinal || 
-      family$family %in% c("bernoulli", "categorical")
+      any(families %in% c("bernoulli", "categorical"))
     if (!factors_allowed && !is.numeric(standata$Y)) {
-      stop2("Family '", family$family, "' expects numeric response variable.")
+      stop2("Family '", family4error, "' requires numeric responses.")
     }
     # transform and check response variable for different families
     regex_pos_int <- "(^|_)(binomial|poisson|negbinomial|geometric)$"
-    if (grepl(regex_pos_int, family$family)) {
+    if (any(grepl(regex_pos_int, families))) {
       if (!all(is_wholenumber(standata$Y)) || min(standata$Y) < 0) {
-        stop2("Family '", family$family, "' expects response variable ", 
-              "of non-negative integers.")
+        stop2("Family '", family4error, "' requires responses ", 
+              "to be non-negative integers.")
       }
-    } else if (family$family %in% "bernoulli") {
+    } else if (any(families %in% "bernoulli")) {
       standata$Y <- as.numeric(as.factor(standata$Y)) - 1
       if (any(!standata$Y %in% c(0, 1))) {
-        stop2("Family '", family$family, "' expects response variable ", 
+        stop2("Family '", family4error, "' requires responses ", 
               "to contain only two different values.")
       }
-    } else if (family$family %in% c("beta", "zero_inflated_beta")) {
-      lower <- if (family$family == "beta") any(standata$Y <= 0)
-               else any(standata$Y < 0)
+    } else if (any(families %in% c("beta", "zero_inflated_beta"))) {
+      if (any(families %in% "beta")) {
+        lower <- any(standata$Y <= 0)
+      } else {
+        lower <- any(standata$Y < 0) 
+      } 
       upper <- any(standata$Y >= 1)
       if (lower || upper) {
-        stop2("The beta distribution requires responses between 0 and 1.")
+        stop2("Family '", family4error, "' requires responses ", 
+              "between 0 and 1.")
       }
-    } else if (family$family %in% "von_mises") {
+    } else if (any(families %in% "von_mises")) {
       if (any(standata$Y < -pi | standata$Y > pi)) {
-        stop2("The von_mises distribution requires ",
-              "responses between -pi and pi.")
+        stop2("Family '", family4error, "' requires responses ",
+              "between -pi and pi.")
       }
     } else if (is_categorical) { 
       standata$Y <- as.numeric(factor(standata$Y))
@@ -125,20 +136,20 @@ make_standata <- function(formula, data, family = NULL,
       } else if (all(is_wholenumber(standata$Y))) {
         standata$Y <- standata$Y - min(standata$Y) + 1
       } else {
-        stop2("Family '", family$family, "' expects either integers or ",
-              "ordered factors as response variables.")
+        stop2("Family '", family4error, "' requires either integers or ",
+              "ordered factors as responses.")
       }
       if (length(unique(standata$Y)) < 2L) {
         stop2("At least two response categories are required.")
       }
     } else if (is_skewed(family) || is_lognormal(family) || is_wiener(family)) {
       if (min(standata$Y) <= 0) {
-        stop2("Family '", family$family, "' requires response variable ", 
+        stop2("Family '", family4error, "' requires responses ", 
               "to be positive.")
       }
     } else if (is_zero_inflated(family) || is_hurdle(family)) {
       if (min(standata$Y) < 0) {
-        stop2("Family '", family$family, "' requires response variable ", 
+        stop2("Family '", family4error, "' requires responses ", 
               "to be non-negative.")
       }
     }
