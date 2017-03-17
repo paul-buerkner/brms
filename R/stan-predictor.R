@@ -1,7 +1,7 @@
 stan_effects.btl <- function(x, data, ranef, prior, center_X = TRUE, 
                              sparse = FALSE, threshold = "flexible",
                              nlpar = "", eta = "mu", ilink = rep("", 2),
-                             ...) {
+                             mix = "", ...) {
   # combine effects for the predictors of a single (non-linear) parameter
   # Args:
   #   center_X: center population-level design matrix if possible?
@@ -148,48 +148,50 @@ stan_effects.brmsterms <- function(x, data, ranef, prior, sparse = FALSE,
   #   bterms: object of class brmsterms
   #   other arguments: same as make_stancode
   out <- list()
-  default_defs <- c(
-    mu = "",  # mu is always predicted
-    sigma = "  real<lower=0> sigma;  // residual SD \n",
-    shape = "  real<lower=0> shape;  // shape parameter \n",
-    nu = "  real<lower=1> nu;  // degrees of freedom or shape \n",
-    phi = "  real<lower=0> phi;  // precision parameter \n",
-    kappa = "  real<lower=0> kappa;  // precision parameter \n",
-    beta = "  real<lower=0> beta;  // scale parameter \n",
-    zi = "  real<lower=0,upper=1> zi;  // zero-inflation probability \n", 
-    hu = "  real<lower=0,upper=1> hu;  // hurdle probability \n",
-    bs = "  real<lower=0> bs;  // boundary separation parameter \n",
-    ndt = "  real<lower=0,upper=min_Y> ndt;  // non-decision time parameter \n",
-    bias = "  real<lower=0,upper=1> bias;  // initial bias parameter \n",
-    disc = "  real<lower=0> disc;  // discrimination parameters \n",
-    quantile = "  real<lower=0,upper=1> quantile;  // quantile parameter \n",
-    xi = "  real xi;  // shape parameter \n"
-  )
-  default_defs_temp <- c(
-    xi = "  real temp_xi;  // unscaled shape parameter \n"
-  )
-  valid_auxpars <- valid_auxpars(bterms = x)
+  # default_defs <- c(
+  #   mu = "",  # mu is always predicted
+  #   sigma = "  real<lower=0> sigma;  // residual SD \n",
+  #   shape = "  real<lower=0> shape;  // shape parameter \n",
+  #   nu = "  real<lower=1> nu;  // degrees of freedom or shape \n",
+  #   phi = "  real<lower=0> phi;  // precision parameter \n",
+  #   kappa = "  real<lower=0> kappa;  // precision parameter \n",
+  #   beta = "  real<lower=0> beta;  // scale parameter \n",
+  #   zi = "  real<lower=0,upper=1> zi;  // zero-inflation probability \n", 
+  #   hu = "  real<lower=0,upper=1> hu;  // hurdle probability \n",
+  #   bs = "  real<lower=0> bs;  // boundary separation parameter \n",
+  #   ndt = "  real<lower=0,upper=min_Y> ndt;  // non-decision time parameter \n",
+  #   bias = "  real<lower=0,upper=1> bias;  // initial bias parameter \n",
+  #   disc = "  real<lower=0> disc;  // discrimination parameters \n",
+  #   quantile = "  real<lower=0,upper=1> quantile;  // quantile parameter \n",
+  #   xi = "  real xi;  // shape parameter \n"
+  # )
+  # default_defs_temp <- c(
+  #   xi = "  real temp_xi;  // unscaled shape parameter \n"
+  # )
+  valid_auxpars <- valid_auxpars(x$family, bterms = x)
   args <- nlist(data, ranef, prior)
   for (ap in valid_auxpars) {
     ap_terms <- x$auxpars[[ap]]
     if (is.btl(ap_terms) || is.btnl(ap_terms)) {
       ilink <- stan_eta_ilink(
-        ap_terms$family, auxpars = names(x$auxpars), adforms = x$adforms
+        ap_terms$family, auxpars = names(x$auxpars), 
+        adforms = x$adforms, mix = auxpar_id(ap)
       )
       eta <- ifelse(ap == "mu", "mu", "")
       ap_args <- list(ap_terms, nlpar = ap, eta = eta, ilink = ilink)
       out[[ap]] <- do.call(stan_effects, c(ap_args, args))
     } else if (is.numeric(x$fauxpars[[ap]])) {
-      out[[ap]] <- list(data = default_defs[ap]) 
+      out[[ap]] <- list(data = stan_auxpar_defs(ap)) 
     } else {
-      if (ap %in% names(default_defs_temp)) {
+      def_temp <- stan_auxpar_defs_temp(ap)
+      if (nzchar(def_temp)) {
         out[[ap]] <- list(
-          par = default_defs_temp[ap],
+          par = def_temp,
           prior = stan_prior(prior, class = ap, prefix = "temp_")
         )
       } else {
         out[[ap]] <- list(
-          par = default_defs[ap],
+          par = stan_auxpar_defs(ap),
           prior = stan_prior(prior, class = ap)
         )
       }
@@ -833,22 +835,26 @@ stan_eta_transform <- function(family, llh_adj = FALSE) {
   (llh_adj || !stan_has_built_in_fun(family))
 }
 
-stan_eta_ilink <- function(family, auxpars = NULL, adforms = NULL) {
+stan_eta_ilink <- function(family, auxpars = NULL, 
+                           adforms = NULL, mix = "") {
   # correctly apply inverse link to eta
   # Args:
   #   family: a list with elements 'family' and 'link
   #   auxpars: names of auxiliary parameters
   #   adforms: list of formulas containing addition terms
   stopifnot(all(c("family", "link") %in% names(family)))
+  ap_classes <- auxpar_class(auxpars) 
   llh_adj <- stan_llh_adj(adforms, c("cens", "trunc"))
   if (stan_eta_transform(family, llh_adj = llh_adj)) {
     link <- family$link
     family <- family$family
+    shape <- paste0("shape", mix)
     shape <- ifelse(
-      is.formula(adforms$disp), "disp_shape[n]", 
-      ifelse("shape" %in% auxpars, "shape[n]", "shape")
+      is.formula(adforms$disp), paste0("disp_", shape, "[n]"), 
+      ifelse("shape" %in% ap_classes, paste0(shape, "[n]"), shape)
     )
-    nu <- ifelse("nu" %in% auxpars, "nu[n]", "nu")
+    nu <- paste0("nu", mix)
+    nu <- ifelse("nu" %in% ap_classes, paste0(nu, "[n]"), nu)
     fl <- ifelse(family %in% c("gamma", "exponential"), 
                  paste0(family, "_", link), family)
     ilink <- stan_ilink(link)
@@ -873,4 +879,90 @@ stan_eta_ilink <- function(family, auxpars = NULL, adforms = NULL) {
     out <- rep("", 2)
   }
   out
+}
+
+stan_auxpar_defs <- function(auxpar) {
+  # default Stan definitions for auxiliary parameters
+  default_defs <- list(
+    sigma = c(
+      "  real<lower=0> ", 
+      ";  // residual SD \n"
+    ),
+    shape = c(
+      "  real<lower=0> ", 
+      ";  // shape parameter \n"
+    ),
+    nu = c(
+      "  real<lower=1> ", 
+      ";  // degrees of freedom or shape \n"
+    ),
+    phi = c(
+      "  real<lower=0> ", 
+      ";  // precision parameter \n"
+    ),
+    kappa = c(
+      "  real<lower=0> ", 
+      ";  // precision parameter \n"
+    ),
+    beta = c(
+      "  real<lower=0> ", 
+      ";  // scale parameter \n"
+    ),
+    zi = c(
+      "  real<lower=0,upper=1> ", 
+      ";  // zero-inflation probability \n"
+    ), 
+    hu = c(
+      "  real<lower=0,upper=1> ", 
+      ";  // hurdle probability \n"
+    ),
+    bs = c(
+      "  real<lower=0> ", 
+      ";  // boundary separation parameter \n"
+    ),
+    ndt = c(
+      "  real<lower=0,upper=min_Y> ", 
+      ";  // non-decision time parameter \n"
+    ),
+    bias = c(
+      "  real<lower=0,upper=1> ", 
+      ";  // initial bias parameter \n"
+    ),
+    disc = c(
+      "  real<lower=0> ", 
+      ";  // discrimination parameters \n"
+    ),
+    quantile = c(
+      "  real<lower=0,upper=1> ", 
+      ";  // quantile parameter \n"
+    ),
+    xi = c(
+      "  real ", 
+      ";  // shape parameter \n"
+    )
+  )
+  def <- default_defs[[auxpar_class(auxpar)]]
+  if (!is.null(def)) {
+    def <- paste0(def[1], auxpar, def[2])
+  } else {
+    def <- ""
+  }
+  def
+}
+
+stan_auxpar_defs_temp <- function(auxpar) {
+  # default Stan definitions for temporary auxiliary parameters
+  default_defs_temp <- list(
+    xi = c(
+      "  real temp_", 
+      ";  // unscaled shape parameter \n"
+    )
+  )
+  def <- default_defs_temp[[auxpar_class(auxpar)]]
+  if (!is.null(def)) {
+    def <- paste0(def[1], auxpar, def[2])
+  } else {
+    def <- ""
+  }
+  def
 }

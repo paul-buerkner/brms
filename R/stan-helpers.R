@@ -378,46 +378,46 @@ stan_families <- function(family, bterms) {
   # Returns:
   #   a list of character strings
   stopifnot(is.family(family), is.brmsterms(bterms))
-  family <- family$family
+  families <- family_names(family)
   out <- list()
-  if (family == "categorical") {
+  if (any(families %in% "categorical")) {
     out$data <- "  int<lower=2> ncat;  // number of categories \n" 
     out$tdataD <- "  vector[1] zero; \n"
     out$tdataC <- "  zero[1] = 0; \n"
-  } else if (family == "zero_inflated_poisson") {
+  } else if (any(families %in% "zero_inflated_poisson")) {
     out$fun <- "  #include 'fun_zero_inflated_poisson.stan' \n"
-  } else if (family == "zero_inflated_negbinomial") {
+  } else if (any(families %in% "zero_inflated_negbinomial")) {
     out$fun <- "  #include 'fun_zero_inflated_negbinomial.stan' \n"
-  } else if (family == "zero_inflated_binomial") {
+  } else if (any(families %in% "zero_inflated_binomial")) {
     out$fun <- "  #include 'fun_zero_inflated_binomial.stan' \n"
-  } else if (family == "zero_inflated_beta") {
+  } else if (any(families %in% "zero_inflated_beta")) {
     out$fun <- "  #include 'fun_zero_inflated_beta.stan' \n"
-  } else if (family == "hurdle_poisson") {
+  } else if (any(families %in% "hurdle_poisson")) {
     out$fun <- "  #include 'fun_hurdle_poisson.stan' \n"
-  } else if (family == "hurdle_negbinomial") {
+  } else if (any(families %in% "hurdle_negbinomial")) {
     out$fun <- "  #include 'fun_hurdle_negbinomial.stan' \n"
-  } else if (family == "hurdle_gamma") {
+  } else if (any(families %in% "hurdle_gamma")) {
     out$fun <- "  #include 'fun_hurdle_gamma.stan' \n"
-  } else if (family == "hurdle_lognormal") {
+  } else if (any(families %in% "hurdle_lognormal")) {
     out$fun <- "  #include 'fun_hurdle_lognormal.stan' \n"
-  } else if (family == "exgaussian") {
+  } else if (any(families %in% "exgaussian")) {
     out$fun <- "  #include 'fun_exgaussian.stan' \n"
-  } else if (family == "inverse.gaussian") {
+  } else if (any(families %in% "inverse.gaussian")) {
     out$fun <- "  #include 'fun_inv_gaussian.stan' \n"
     out$tdataD <- "  #include 'tdataD_inv_gaussian.stan' \n"
     out$tdataC <- "  #include 'tdataC_inv_gaussian.stan' \n"
-  } else if (family == "von_mises") {
+  } else if (any(families %in% "von_mises")) {
     out$fun <- paste0(
       "  #include 'fun_tan_half.stan' \n",
       "  #include 'fun_von_mises.stan' \n"
     )
-  } else if (family == "wiener") {
+  } else if (any(families %in% "wiener")) {
     out$fun <- "  #include 'fun_wiener_diffusion.stan' \n"
     out$tdataD <- "  real min_Y; \n"
     out$tdataC <- "  min_Y = min(Y); \n"
-  } else if (family == "asym_laplace") {
+  } else if (any(families %in% "asym_laplace")) {
     out$fun <- "  #include 'fun_asym_laplace.stan' \n"
-  } else if (family == "gen_extreme_value") {
+  } else if (any(families %in% "gen_extreme_value")) {
     out$fun <- paste0(
       "  #include 'fun_gen_extreme_value.stan' \n",
       "  #include 'fun_scale_xi.stan' \n"
