@@ -523,7 +523,9 @@ get_prior <- function(formula, data, family = NULL,
   # ensure that RE and residual SDs only have a weakly informative prior by default
   Y <- unname(model.response(data))
   prior_scale <- 10
-  if (is_lognormal(family)) link <- "log"
+  if (is_lognormal(family)) {
+    link <- "log"
+  }
   if (link %in% c("identity", "log", "inverse", "sqrt", "1/mu^2")) {
     if (link %in% c("log", "inverse", "1/mu^2")) {
       Y <- ifelse(Y == 0, Y + 0.1, Y)  # avoid Inf in link(Y)
@@ -569,13 +571,14 @@ get_prior <- function(formula, data, family = NULL,
   )
   valid_auxpars <- valid_auxpars(family, bterms = bterms)
   for (ap in valid_auxpars) {
+    ap_class <- auxpar_class(ap)
     if (!is.null(bterms$auxpars[[ap]])) {
       auxprior <- prior_effects(
         bterms$auxpars[[ap]], data = data, nlpar = ap,
         def_scale_prior = def_scale_prior
       )
-    } else if (!is.na(def_auxprior[ap])) {
-      auxprior <- brmsprior(class = ap, prior = def_auxprior[ap])
+    } else if (!is.na(def_auxprior[ap_class])) {
+      auxprior <- brmsprior(class = ap, prior = def_auxprior[ap_class])
     } else {
       auxprior <- empty_brmsprior()
     }
