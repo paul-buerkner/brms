@@ -44,10 +44,13 @@ test_that("brm produces expected errors", {
   # ordinal models
   expect_error(brm(rating ~ treat + period + carry + cse(treat) + (1|subject), 
                    data = inhaler, family = cratio("logit")), 
-               paste("Error occured for variables: 'treat'"))
+               "Error occured for variables: 'treat'")
   expect_error(brm(rating ~ treat + period + carry + monotonic(carry),
                    data = inhaler, family = cratio("logit")), 
-               paste("Error occured for variables: 'carry'"))
+               "Error occured for variables: 'carry'")
+  expect_error(brm(rating ~ treat + (cs(period)|subject),
+                   data = inhaler, family = categorical()), 
+               "Category specific effects are only meaningful")
   
   # families and links
   expect_error(brm(y ~ x, dat, family = gaussian("logit")), 

@@ -37,7 +37,8 @@ parse_bf <- function(formula, family = NULL, autocor = NULL,
   }
   formula <- x$formula
   family <- x$family
-  y <- nlist(formula, family, autocor)
+  y <- nlist(formula, family, autocor) 
+  class(y) <- "brmsterms"
   
   if (check_response) {
     # extract response variables
@@ -92,14 +93,17 @@ parse_bf <- function(formula, family = NULL, autocor = NULL,
     ap_family <- par_family(ap, family[[paste0("link_", ap)]])
     y$auxpars[[ap]]$family <- ap_family
   }
-
   # fixed auxiliary parameters
   inv_fauxpars <- setdiff(names(x$pfix), valid_auxpars(family, y))
   if (length(inv_fauxpars)) {
     stop2("Invalid auxiliary parameters: ", collapse_comma(inv_fauxpars))
   }
   y$fauxpars <- x$pfix
-  
+  # check for illegal use of cs terms
+  if (has_cs(y) && !(is.null(family) || allows_cs(family))) {
+    stop2("Category specific effects are only meaningful for ", 
+          "families 'sratio', 'cratio', and 'acat'.")
+  }
   # parse autocor formula
   y$time <- parse_time(autocor$formula)
   
@@ -138,7 +142,7 @@ parse_bf <- function(formula, family = NULL, autocor = NULL,
     }
     attr(y$formula, "old_mv") <- TRUE
   }
-  structure(y, class = "brmsterms")
+  y
 }
 
 parse_lf <- function(formula, family = NULL) {
@@ -159,7 +163,7 @@ parse_lf <- function(formula, family = NULL) {
   if (is.formula(mo_form)) {
     y[["mo"]] <- mo_form
   }
-  cs_form <- parse_cs(formula, family = family)
+  cs_form <- parse_cs(formula)
   if (is.formula(cs_form)) {
     y[["cs"]] <- cs_form
   }
@@ -307,16 +311,12 @@ parse_mo <- function(formula) {
   structure(mo_terms, pos = pos_mo_terms)
 }
 
-parse_cs <- function(formula, family = NULL) {
+parse_cs <- function(formula) {
   # category specific terms for ordinal models
   all_terms <- all_terms(formula)
   pos_cs_terms <- grepl("^cse?\\([^\\|]+$", all_terms)
   cs_terms <- all_terms[pos_cs_terms]
   if (length(cs_terms)) {
-    if (!is.null(family) && !allows_cs(family)) {
-      stop2("Category specific effects are only meaningful for ", 
-            "families 'sratio', 'cratio', and 'acat'.")
-    }
     cs_terms <- ulapply(cs_terms, eval2)
     cs_terms <- str2formula(cs_terms)
     # do not test whether variables were supplied to 'cs'
