@@ -489,9 +489,9 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   fix <- forms[is_num]
   forms[names(fix)] <- NULL
   if (!isTRUE(nl)) {
-    inv_names <- setdiff(names(forms), auxpars())
-    if (length(inv_names)) {
-      inv_names <- collapse_comma(inv_names)
+    inv_names <- !is_auxpar_name(names(forms))
+    if (any(inv_names)) {
+      inv_names <- collapse_comma(names(forms)[inv_names])
       stop2("The following parameter names are invalid: ", inv_names,
             "\nSet nl = TRUE if you want to specify non-linear models.")
     }
@@ -594,11 +594,9 @@ links_auxpars <- function(ap) {
   )
 }
 
-valid_auxpars <- function(family, bterms = NULL) {
+#' @export
+valid_auxpars.default <- function(family, bterms = NULL, ...) {
   # convenience function to find relevant auxiliary parameters
-  if (missing(family) && !is.null(bterms$family)) {
-    family <- bterms$family
-  } 
   x <- c(
     mu = TRUE,
     sigma = has_sigma(family, bterms = bterms),
@@ -617,6 +615,47 @@ valid_auxpars <- function(family, bterms = NULL) {
     xi = has_xi(family)
   )
   names(x)[x]
+}
+
+#' @export
+valid_auxpars.mixfamily <- function(family, ...) {
+  out <- lapply(family$mix, valid_auxpars, ...)
+  for (i in seq_along(out)) {
+    out[[i]] <- paste0(out[[i]], i)
+  }
+  unlist(out)
+}
+
+is_auxpar_name <- function(auxpars, family = NULL, ...) {
+  # check if provided names of auxiliar parameters are valid
+  # Args:
+  #   auxpars: character vector to be checked
+  #   family: the model family
+  #   ...: further arguments passed to valid_auxpars
+  auxpars <- as.character(auxpars)
+  if (!length(auxpars)) {
+    return(logical(0))
+  }
+  if (is.null(family)) {
+    patterns <- paste0("^", auxpars(), "[[:digit:]]*$")
+    .is_auxpar_name <- function(auxpar, ...) {
+      any(ulapply(patterns, grepl, x = auxpar))
+    }
+    out <- ulapply(auxpars, .is_auxpar_name)
+  } else {
+    out <- auxpars %in% valid_auxpars(family, ...)
+  }
+  as.logical(out)
+}
+
+auxpar_class <- function(auxpar) {
+  # class of an auxiliary parameter
+  get_matches("^[^[:digit:]]+", auxpar)
+}
+
+auxpar_id <- function(auxpar) {
+  # id of an auxiliary parameter
+  as.numeric(get_matches("[[:digit:]]+$", auxpar))
 }
 
 pforms <- function(x, ...) {

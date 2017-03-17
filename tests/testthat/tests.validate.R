@@ -18,8 +18,8 @@ test_that("parse_bf correctly handles auxiliary parameter mu", {
   bterms1 <- parse_bf(y ~ x + (x|g))
   bterms2 <- parse_bf(bf(y~1, mu ~ x + (x|g)))
   expect_equal(bterms1$auxpars$mu, bterms2$auxpars$mu)
-  expect_error(parse_bf(bf(y~z, mu ~ x + (x|g))),
-               "Terms should be specified in either or 'formula' or 'mu'")
+  expect_error(parse_bf(bf(y ~ z, mu ~ x + (x|g))),
+               "All 'mu' parameters are specified")
 })
 
 test_that("(deprecated) amend_formula returns correct formulas", {

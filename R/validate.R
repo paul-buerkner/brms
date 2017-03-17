@@ -58,39 +58,56 @@ parse_bf <- function(formula, family = NULL, autocor = NULL,
   advars <- str2formula(ulapply(adforms, all.vars))
   y$adforms[names(adforms)] <- adforms
   
-  if (!is.formula(x$pforms[["mu"]])) {
-    str_rhs_form <- formula2str(rhs(formula))
-    x$pforms[["mu"]] <- eval2(paste0("mu", str_rhs_form))
-  } else {
-    terms <- try(terms(rhs(formula)), silent = TRUE)
-    if (is(terms, "try-error") || length(attr(terms,"term.labels"))) {
-      stop2("Terms should be specified in either or 'formula' or 'mu'.")
+  str_rhs_form <- formula2str(rhs(formula))
+  terms <- try(terms(rhs(formula)), silent = TRUE)
+  has_terms <- is(terms, "try-error") || 
+    length(attr(terms, "term.labels")) ||
+    length(attr(terms, "offset"))
+  rhs_needed <- FALSE
+  if (is.mixfamily(family)) {
+    for (i in seq_along(family$mix)) {
+      mui <- paste0("mu", i)
+      if (!is.formula(x$pforms[[mui]])) {
+        x$pforms[[mui]] <- eval2(paste0(mui, str_rhs_form))
+        rhs_needed <- TRUE
+      }
     }
+  } else {
+    if (!is.formula(x$pforms[["mu"]])) { 
+      x$pforms[["mu"]] <- eval2(paste0("mu", str_rhs_form))
+      rhs_needed <- TRUE
+    }
+    x$pforms <- x$pforms[c("mu", setdiff(names(x$pforms), "mu"))]
   }
-  x$pforms <- x$pforms[c("mu", setdiff(names(x$pforms), "mu"))]
-  auxpars <- intersect(names(x$pforms), valid_auxpars(family, y))
+  if (!rhs_needed && has_terms) {
+    stop2("All 'mu' parameters are specified so that ",
+          "the right-hand side of 'formula' is unused.")
+  }
+  auxpars <- is_auxpar_name(names(x$pforms), family, bterms = y)
+  auxpars <- names(x$pforms)[auxpars]
   nlpars <- setdiff(names(x$pforms), auxpars)
   if (isTRUE(x[["nl"]])) {
-    if (is_ordinal(family) || is_categorical(family)) {
+    if (is.mixfamily(family) || is_ordinal(family) || is_categorical(family)) {
       stop2("Non-linear formulas are not yet allowed for this family.")
     }
     y$auxpars[["mu"]] <- parse_nlf(x$pforms[["mu"]], x$pforms[nlpars])
+    y$auxpars[["mu"]]$family <- auxpar_family(family, "mu")
+    auxpars <- setdiff(auxpars, "mu")
   } else {
     if (length(nlpars)) {
       nlpars <- collapse_comma(nlpars)
       stop2("Prediction of parameter(s) ", nlpars,
             " is not allowed for this model.")
     }
-    y$auxpars[["mu"]] <- parse_lf(x$pforms[["mu"]], family = family)
   }
-  y$auxpars[["mu"]][c("family", "autocor")] <- nlist(family, autocor)
-  auxpars <- setdiff(auxpars, "mu")
   
   # predicted auxiliary parameters
   for (ap in auxpars) {
     y$auxpars[[ap]] <- parse_lf(x$pforms[[ap]], family = family)
-    ap_family <- par_family(ap, family[[paste0("link_", ap)]])
-    y$auxpars[[ap]]$family <- ap_family
+    y$auxpars[[ap]]$family <- auxpar_family(family, ap)
+  }
+  if (!is.null(y$auxpars[["mu"]])) {
+    y$auxpars[["mu"]][["autocor"]] <- autocor
   }
 
   # fixed auxiliary parameters
@@ -239,7 +256,7 @@ parse_nlf <- function(formula, nlpar_forms) {
 }
 
 parse_ad <- function(formula, family = NULL, check_response = TRUE) {
-  # extract addition arguments out formula
+  # extract addition arguments out of formula
   # Args:
   #   see parse_bf
   # Returns:
