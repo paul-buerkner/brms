@@ -2035,7 +2035,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   dots[old_args] <- object[old_args]
   if (!is.null(newdata)) {
     dots$data <- newdata
-  } else  {
+  } else {
     dots$data <- rm_attr(object$data, c("terms", "brmsframe"))
   }
   if (is.null(dots$threshold)) {
@@ -2095,9 +2095,10 @@ update.brmsfit <- function(object, formula., newdata = NULL,
       dots$formula <- NULL
     }
     bterms <- parse_bf(object$formula, family = object$family)
+    object$data <- update_data(
+      dots$data, bterms = bterms, family = object$family
+    )
     if (!is.null(newdata)) {
-      object$data <- update_data(newdata, bterms = bterms, 
-                                 family = object$family)
       object$data.name <- Reduce(paste, deparse(substitute(newdata)))
       object$ranef <- tidy_ranef(bterms, data = object$data)
       dots$is_newdata <- TRUE

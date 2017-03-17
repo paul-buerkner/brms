@@ -408,6 +408,8 @@ test_that("all S3 methods have reasonable ouputs", {
   up <- update(fit1, formula = ~ . + I(exp(Trt)), testmode = TRUE,
                prior = set_prior("normal(0,10)"))
   expect_true(is(up, "brmsfit"))
+  up <- update(fit1, ~ . - Trt + factor(Trt),  testmode = TRUE)
+  expect_true(is(up, "brmsfit"))
   
   up <- update(fit1, formula = ~ . + I(exp(Trt)), newdata = new_data,
                sample_prior = FALSE, testmode = TRUE)
