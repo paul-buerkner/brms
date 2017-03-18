@@ -422,11 +422,26 @@ stan_families <- function(family, bterms) {
       "  #include 'fun_gen_extreme_value.stan' \n",
       "  #include 'fun_scale_xi.stan' \n"
     )
-    if (!"xi" %in% c(names(bterms$auxpars), names(bterms$fauxpars))) {
-      out$modelD <- "  real xi;  // scaled shape parameter \n"
-      v <- ifelse("sigma" %in% names(bterms$auxpars), "_vector", "")
-      out$modelC <- paste0(
-        "  xi = scale_xi", v, "(temp_xi, Y, mu, sigma); \n"
+    ap_names <- c(names(bterms$auxpars), names(bterms$fauxpars))
+    for (i in which(families %in% "gen_extreme_value")) {
+      id <- ifelse(length(families) == 1L, "", i)
+      xi <- paste0("xi", id)
+      if (!xi %in% ap_names) {
+        out$modelD <- paste0(out$modelD, 
+           "  real ", xi, ";  // scaled shape parameter \n"
+        )
+        sigma <- paste0("sigma", id)
+        v <- ifelse(sigma %in% names(bterms$auxpars), "_vector", "")
+        args <- sargs(paste0("temp_", xi), "Y", paste0("mu", id), sigma)
+        out$modelC <- paste0(out$modelC, 
+           "  ", xi, " = scale_xi", v, "(", args, "); \n"
+        )
+      }
+    }
+  }
+  out
+}
+
 stan_mixture <- function(family) {
   # Stan code specific for mixture families
   out <- list()
