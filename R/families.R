@@ -599,27 +599,21 @@ auxpar_family.mixfamily <- function(family, auxpar, ...) {
 }
 
 #' @export
-print.brmsfamily <- function(x, links = FALSE, summary = FALSE, 
-                             newline = TRUE, ...) {
-  if (summary) {
-    cat(paste0(x$family, "(", x$link, ")"))
-  } else {
-    cat("\nFamily:", x$family, "\n")
-    cat("Link function:", x$link, "\n")
-    if (!is.null(x$type)) {
-      cat("Type:", x$type, "\n") 
+print.brmsfamily <- function(x, links = FALSE, newline = TRUE, ...) {
+  cat("\nFamily:", x$family, "\n")
+  cat("Link function:", x$link, "\n")
+  if (!is.null(x$type)) {
+    cat("Type:", x$type, "\n") 
+  }
+  if (isTRUE(links) || is.character(links)) {
+    ap_links <- x[grepl("^link_", names(x))]
+    names(ap_links) <- sub("^link_", "", names(ap_links))
+    if (is.character(links)) {
+      ap_links <- rmNULL(ap_links[links])
     }
-    if (isTRUE(links) || is.character(links)) {
-      ap_links <- x[grepl("^link_", names(x))]
-      names(ap_links) <- sub("^link_", "", names(ap_links))
-      if (is.character(links)) {
-        ap_links <- rmNULL(ap_links[links])
-      }
-      for (ap in names(ap_links)) {
-        cat(paste0("Link function of ", ap, ": ", ap_links[[ap]], " \n")) 
-      }
+    for (ap in names(ap_links)) {
+      cat(paste0("Link function of ", ap, ": ", ap_links[[ap]], " \n")) 
     }
-   
   }
   if (newline) {
     cat("\n")
@@ -628,26 +622,26 @@ print.brmsfamily <- function(x, links = FALSE, summary = FALSE,
 }
 
 #' @export
-print.mixfamily <- function(x, summary = FALSE, newline = TRUE, ...) {
-  if (summary) {
-    cat("mixture(")
-    for (i in seq_along(x$mix)) {
-      print(x$mix[[i]], summary = TRUE, newline = FALSE, ...)
-      if (i < length(x$mix)) {
-        cat(", ") 
-      }
-    }
-    cat(")")
-  } else {
-    cat("\nMixture\n")
-    for (i in seq_along(x$mix)) {
-      print(x$mix[[i]], newline = FALSE, ...)
-    }
+print.mixfamily <- function(x, newline = TRUE, ...) {
+  cat("\nMixture\n")
+  for (i in seq_along(x$mix)) {
+    print(x$mix[[i]], newline = FALSE, ...)
   }
   if (newline) {
     cat("\n")
   }
   invisible(x)
+}
+
+#' @export
+summary.family <- function(object, ...) {
+  paste0(object$family, "(", object$link, ")")
+}
+
+#' @export
+summary.mixfamily <- function(object, ...) {
+  families <- ulapply(object$mix, summary, ...)
+  paste0("mixture(", paste0(families, collapse = ", "), ")")
 }
 
 is.family <- function(x) {

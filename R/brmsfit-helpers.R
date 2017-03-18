@@ -34,13 +34,12 @@ name_model <- function(family) {
   # create the name of the fitted stan model
   # Args:
   #   family: A family object
-  if (!is(family, "family")) {
-    mn <- "brms-model"
+  if (!is.family(family)) {
+    out <- "brms-model"
   } else {
-    type <- ifelse(is.null(family$type), "", paste(",", family$type))
-    mn <- paste0(family$family, "(", family$link, type, ") brms-model")
+    out <- summary(family)
   }
-  mn
+  out
 }
 
 #' Retructure Old \code{brmsfit} Objects

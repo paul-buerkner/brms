@@ -2,7 +2,7 @@
 print.brmssummary <- function(x, digits = 2, ...) {
   cat(" Family: ")
   if (is.family(x$family)) {
-    print(x$family, summary = TRUE)
+    cat(summary(x$family), "\n")
   } else {
     cat(paste0(x$family, " (", x$link, ") \n"))  
   }
