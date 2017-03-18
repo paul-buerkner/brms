@@ -92,6 +92,7 @@ make_stancode <- function(formula, data, family = NULL,
     disc = disc, threshold = threshold
   )
   text_families <- stan_families(family, bterms)
+  text_mixture <- stan_mixture(family)
   text_se <- stan_se(is.formula(bterms$adforms$se))
   text_cens <- stan_cens(has_cens, family = family)
   text_disp <- stan_disp(bterms, family = family)
@@ -172,20 +173,13 @@ make_stancode <- function(formula, data, family = NULL,
   )
   
   # generate parameters block
-  text_mix <- list()
-  if (is.mixfamily(family)) {
-    text_mix$par <- paste0(
-      "  simplex[", length(family$mix), "] theta;",
-      "  // mixing proportions \n"
-    )
-  }
   text_parameters <- paste0(
     text_effects$par,
     text_ranef$par,
     text_ordinal$par,
     text_autocor$par,
     text_mv$par,
-    text_mix$par
+    text_mixture$par
   )
   text_rngprior <- stan_rngprior(
     sample_prior = sample_prior, 

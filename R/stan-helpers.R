@@ -427,6 +427,18 @@ stan_families <- function(family, bterms) {
       v <- ifelse("sigma" %in% names(bterms$auxpars), "_vector", "")
       out$modelC <- paste0(
         "  xi = scale_xi", v, "(temp_xi, Y, mu, sigma); \n"
+stan_mixture <- function(family) {
+  # Stan code specific for mixture families
+  out <- list()
+  if (is.mixfamily(family)) {
+    nmix <- length(family$mix)
+    out$par <- paste0(out$par,
+      "  simplex[", nmix, "] theta;",
+      "  // mixing proportions \n"
+    )
+    if (family$order) {
+      out$par <- paste0(out$par, 
+        "  ordered[", nmix, "] ordered_Intercept;  // to identify mixtures \n"
       )
     }
   }

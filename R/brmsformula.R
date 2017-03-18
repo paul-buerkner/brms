@@ -650,12 +650,14 @@ is_auxpar_name <- function(auxpars, family = NULL, ...) {
 
 auxpar_class <- function(auxpar) {
   # class of an auxiliary parameter
-  get_matches("^[^[:digit:]]+", auxpar)
+  out <- get_matches("^[^[:digit:]]+", auxpar, simplify = FALSE)
+  ulapply(out, function(x) ifelse(length(x), x, ""))
 }
 
 auxpar_id <- function(auxpar) {
   # id of an auxiliary parameter
-  as.numeric(get_matches("[[:digit:]]+$", auxpar))
+  out <- get_matches("[[:digit:]]+$", auxpar, simplify = FALSE)
+  ulapply(out, function(x) ifelse(length(x), x, ""))
 }
 
 pforms <- function(x, ...) {

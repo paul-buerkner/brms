@@ -1,7 +1,7 @@
 stan_effects.btl <- function(x, data, ranef, prior, center_X = TRUE, 
                              sparse = FALSE, threshold = "flexible",
                              nlpar = "", eta = "mu", ilink = rep("", 2),
-                             mix = "", ...) {
+                             order_mixture = FALSE,  ...) {
   # combine effects for the predictors of a single (non-linear) parameter
   # Args:
   #   center_X: center population-level design matrix if possible?
@@ -26,7 +26,7 @@ stan_effects.btl <- function(x, data, ranef, prior, center_X = TRUE,
   text_fe <- stan_fe(
     fixef, center_X = center_X, family = x$family, 
     prior = prior, nlpar = nlpar, sparse = sparse, 
-    threshold = threshold
+    threshold = threshold, order_mixture = order_mixture
   )
   # include smooth terms
   smooths <- get_sm_labels(x, data = data)
@@ -148,26 +148,6 @@ stan_effects.brmsterms <- function(x, data, ranef, prior, sparse = FALSE,
   #   bterms: object of class brmsterms
   #   other arguments: same as make_stancode
   out <- list()
-  # default_defs <- c(
-  #   mu = "",  # mu is always predicted
-  #   sigma = "  real<lower=0> sigma;  // residual SD \n",
-  #   shape = "  real<lower=0> shape;  // shape parameter \n",
-  #   nu = "  real<lower=1> nu;  // degrees of freedom or shape \n",
-  #   phi = "  real<lower=0> phi;  // precision parameter \n",
-  #   kappa = "  real<lower=0> kappa;  // precision parameter \n",
-  #   beta = "  real<lower=0> beta;  // scale parameter \n",
-  #   zi = "  real<lower=0,upper=1> zi;  // zero-inflation probability \n", 
-  #   hu = "  real<lower=0,upper=1> hu;  // hurdle probability \n",
-  #   bs = "  real<lower=0> bs;  // boundary separation parameter \n",
-  #   ndt = "  real<lower=0,upper=min_Y> ndt;  // non-decision time parameter \n",
-  #   bias = "  real<lower=0,upper=1> bias;  // initial bias parameter \n",
-  #   disc = "  real<lower=0> disc;  // discrimination parameters \n",
-  #   quantile = "  real<lower=0,upper=1> quantile;  // quantile parameter \n",
-  #   xi = "  real xi;  // shape parameter \n"
-  # )
-  # default_defs_temp <- c(
-  #   xi = "  real temp_xi;  // unscaled shape parameter \n"
-  # )
   valid_auxpars <- valid_auxpars(x$family, bterms = x)
   args <- nlist(data, ranef, prior)
   for (ap in valid_auxpars) {
@@ -178,7 +158,10 @@ stan_effects.brmsterms <- function(x, data, ranef, prior, sparse = FALSE,
         adforms = x$adforms, mix = auxpar_id(ap)
       )
       eta <- ifelse(ap == "mu", "mu", "")
-      ap_args <- list(ap_terms, nlpar = ap, eta = eta, ilink = ilink)
+      ap_args <- list(
+        ap_terms, nlpar = ap, eta = eta, ilink = ilink,
+        order_mixture = isTRUE(x$family$order)
+      )
       out[[ap]] <- do.call(stan_effects, c(ap_args, args))
     } else if (is.numeric(x$fauxpars[[ap]])) {
       out[[ap]] <- list(data = stan_auxpar_defs(ap)) 
@@ -239,7 +222,7 @@ stan_effects_mv <- function(bterms, data, ranef, prior, sparse = FALSE) {
 
 stan_fe <- function(fixef, prior, family = gaussian(),
                     center_X = TRUE, nlpar = "", sparse = FALSE,
-                    threshold = "flexible") {
+                    threshold = "flexible", order_mixture = FALSE) {
   # Stan code for population-level effects
   # Args:
   #   fixef: names of the population-level effects
@@ -247,7 +230,8 @@ stan_fe <- function(fixef, prior, family = gaussian(),
   #   family: the model family
   #   prior: a data.frame containing user defined priors 
   #          as returned by check_prior 
-  #   threshold: either "flexible" or "equidistant" 
+  #   threshold: either "flexible" or "equidistant"
+  #   order_mixture: order intercepts to identify mixture models?
   # Returns:
   #   a list containing Stan code related to population-level effects
   p <- usc(nlpar, "prefix")
@@ -341,9 +325,21 @@ stan_fe <- function(fixef, prior, family = gaussian(),
         "  b_Intercept = temp_Intercept", sub_X_means, "; \n"
       )
     } else {
-      out$par <- paste0(out$par, 
-        "  real temp", p, "_Intercept;  // temporary intercept \n"
-      )
+       if (order_mixture && auxpar_class(nlpar) == "mu") {
+         # identify mixtures via ordering of the intercepts
+         out$transD <- paste0(out$transD, 
+           "  real temp", p, "_Intercept;  // temporary intercept \n"
+        )
+        ap_id <- auxpar_id(nlpar)
+        out$transC1 <- paste0(out$transC1, 
+          "  temp", p, "_Intercept = ordered_Intercept[", ap_id, "]; \n"
+        )
+      } else {
+        out$par <- paste0(out$par, 
+          "  real temp", p, "_Intercept;  // temporary intercept \n"
+        )
+      }
+
       out$genD <- paste0(
         "  real b", p, "_Intercept;  // population-level intercept \n"
       )
@@ -357,6 +353,12 @@ stan_fe <- function(fixef, prior, family = gaussian(),
     int_prior <- stan_prior(prior, class = "Intercept", nlpar = nlpar,
                             prefix = prefix, suffix = suffix)
     out$prior <- paste0(out$prior, int_prior)
+  } else {
+    if (order_mixture && auxpar_class(nlpar) == "mu") {
+      stop2("Identifying mixture components via ordering requires ",
+            "population-level intercepts to be present.\n",
+            "Try setting 'order = FALSE' in function 'mixture'.")
+    }
   }
   out$eta <- stan_eta_fe(fixef, center_X, sparse, nlpar)
   out

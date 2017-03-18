@@ -521,7 +521,7 @@ check_family <- function(family, link = NULL) {
 }
 
 #' @export
-mixture <- function(...) {
+mixture <- function(..., order = NULL) {
   dots <- list(...)
   family <- list(
     family = "mixture", 
@@ -531,6 +531,9 @@ mixture <- function(...) {
   class(family) <- c("mixfamily", "brmsfamily", "family")
   # validity checks
   families <- family_names(family)
+  if (length(families) < 2L) {
+    stop2("Expecting at least 2 mixture components.")
+  }
   non_mix_families <- c("bernoulli", "categorical", "wiener")
   non_mix_families <- intersect(families, non_mix_families)
   if (length(non_mix_families)) {
@@ -543,6 +546,20 @@ mixture <- function(...) {
   }
   if (use_real(family) && use_int(family)) {
     stop2("Cannot mix families with real and integer support.")
+  }
+  if (is.null(order)) {
+    if (length(unique(families)) == 1L) {
+      family$order <- TRUE
+      message("Setting 'order = TRUE' for mixtures of the same family.")
+    } else {
+      family$order <- FALSE
+      message("Setting 'order = FALSE' for mixtures of different families.")
+    }
+  } else {
+    family$order <- as.logical(order)
+    if (length(family$order) != 1L) {
+      stop2("Argument 'order' must be either TRUE or FALSE.")
+    }
   }
   family
 }
@@ -574,7 +591,10 @@ auxpar_family.default <- function(family, auxpar, ...) {
 
 #' @export
 auxpar_family.mixfamily <- function(family, auxpar, ...) {
-  ap_id <- auxpar_id(auxpar)
+  ap_id <- as.numeric(auxpar_id(auxpar))
+  if (!(length(ap_id) == 1L && is.numeric(ap_id))) {
+    stop2("Parameter '", auxpar, "' is not a valid mixture parameter.")
+  }
   auxpar_family(family$mix[[ap_id]], auxpar, ...)
 }
 
