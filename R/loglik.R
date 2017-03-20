@@ -497,6 +497,26 @@ loglik_acat <- function(i, draws, data = data.frame()) {
   weight_loglik(out, i = i, data = draws$data)
 }
 
+loglik_mixture <- function(i, draws, data = data.frame()) {
+  families <- family_names(draws$f)
+  out <- 0
+  for (j in seq_along(families)) {
+    loglik_fun <- paste0("loglik_", families[j])
+    loglik_fun <- get(loglik_fun, asNamespace("brms"))
+    auxpars <- valid_auxpars(families[j])
+    tmp_draws <- list(
+      f = draws$f$mix[[j]],
+      nsamples = draws[["nsamples"]],
+      data = draws[["data"]]
+    )
+    for (ap in auxpars) {
+      tmp_draws[[ap]] <- draws[[paste0(ap, j)]]
+    }
+    out <- out + exp(log(draws$theta[, j]) + loglik_fun(i, tmp_draws))
+  }
+  log(out)
+}
+
 # ----------- loglik helper-functions -----------
 
 censor_loglik <- function(dist, args, i, data) {
