@@ -785,8 +785,8 @@ fixef_pars <- function() {
 default_plot_pars <- function() {
   # list all parameter classes to be included in plots by default
   c(fixef_pars(), "^sd_", "^cor_", "^sigma_", "^rescor_", 
-    paste0("^", auxpars(), "[[:digit:]]*$"), "^delta$", 
-    "^ar", "^ma", "^arr", "^sigmaLL", "^sds_", "^theta")
+    paste0("^", auxpars(), "[[:digit:]]*$"), "^delta$",
+    "^theta", "^ar", "^ma", "^arr", "^sigmaLL", "^sds_")
 }
 
 extract_pars <- function(pars, all_pars, exact_match = FALSE,

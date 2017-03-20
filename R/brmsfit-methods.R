@@ -715,8 +715,10 @@ summary.brmsfit <- function(object, waic = FALSE, priors = FALSE,
     algorithm <- algorithm(object)
     if (algorithm == "sampling") {
       fit_summary <- fit_summary[, -2]
-      colnames(fit_summary) <- c("Estimate", "Est.Error", "l-95% CI", 
-                                 "u-95% CI", "Eff.Sample", "Rhat")
+      colnames(fit_summary) <- c(
+        "Estimate", "Est.Error", "l-95% CI", "u-95% CI", 
+        "Eff.Sample", "Rhat"
+      )
       Rhats <- fit_summary[, "Rhat"]
       if (any(Rhats > 1.1, na.rm = TRUE) || anyNA(Rhats)) {
         msg <- paste("The model has not converged (some Rhats are > 1.1).",
@@ -725,8 +727,9 @@ summary.brmsfit <- function(object, waic = FALSE, priors = FALSE,
         warning2(msg)
       }
     } else {
-      colnames(fit_summary) <- c("Estimate", "Est.Error", 
-                                 "l-95% CI", "u-95% CI")
+      colnames(fit_summary) <- c(
+        "Estimate", "Est.Error", "l-95% CI", "u-95% CI"
+      )
     }
     
     # fixed effects summary
@@ -735,8 +738,9 @@ summary.brmsfit <- function(object, waic = FALSE, priors = FALSE,
     rownames(out$fixed) <- gsub(fixef_pars(), "", fe_pars)
     
     # summary of family specific parameters
-    is_mv_par <- apply(sapply(c("^sigma_", "^rescor_"), grepl, pars), 1, any)
-    spec_pars <- pars[pars %in% c(auxpars(), "delta") | is_mv_par]
+    spec_pars <- c(auxpars(), "delta", "theta", "rescor")
+    spec_pars <- paste0("^(", paste0(spec_pars, collapse = "|"), ")")
+    spec_pars <- pars[grepl(spec_pars, pars)]
     out$spec_pars <- fit_summary[spec_pars, , drop = FALSE]
     if (is_linear(family(object)) && length(bterms$response) > 1L) {
       sigma_names <- paste0("sigma(", bterms$response, ")")
