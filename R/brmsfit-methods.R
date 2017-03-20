@@ -1656,7 +1656,8 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (is.list(draws$mu[["mv"]])) {
     draws$mu <- get_eta(draws$mu)
   }
-  for (ap in intersect(auxpars(), names(draws))) {
+  auxpars <- intersect(valid_auxpars(family(object)), names(draws))
+  for (ap in auxpars) {
     if (is.list(draws[[ap]])) {
       draws[[ap]] <- get_auxpar(draws[[ap]])
     }
