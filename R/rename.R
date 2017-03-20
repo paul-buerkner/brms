@@ -741,11 +741,11 @@ reorder_pars <- function(x) {
   #   x: brmsfit object
   all_classes <- c(
     "b", "bmo", "bcs", "bme", "ar", "ma", "arr", "sd", "cor", 
-    "sds", auxpars(), "temp", "sigmaLL", "rescor", "delta", 
+    "sds", auxpars(), "temp", "sigmaLL", "rescor", "delta", "theta",
     "lasso", "simplex", "r", "s", "loclev", "Xme", "prior", "lp"
   )
   # reorder parameter classes
-  class <- get_matches("^[^_]+", x$fit@sim$pars_oi)
+  class <- get_matches("^[^[:digit:]_]+", x$fit@sim$pars_oi)
   new_order <- order(
     factor(class, levels = all_classes),
     !grepl("_Intercept$", x$fit@sim$pars_oi)
