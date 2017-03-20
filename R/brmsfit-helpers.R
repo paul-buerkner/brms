@@ -37,7 +37,7 @@ name_model <- function(family) {
   if (!is.family(family)) {
     out <- "brms-model"
   } else {
-    out <- summary(family)
+    out <- paste(summary(family), "brms-model")
   }
   out
 }
