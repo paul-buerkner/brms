@@ -442,14 +442,20 @@ stan_families <- function(family, bterms) {
   out
 }
 
-stan_mixture <- function(family) {
+stan_mixture <- function(family, prior) {
   # Stan code specific for mixture families
   out <- list()
   if (is.mixfamily(family)) {
     nmix <- length(family$mix)
+    out$data <- paste0(out$data,
+      "  vector[", nmix, "] con_theta;  // prior concentration \n"                  
+    )
     out$par <- paste0(out$par,
       "  simplex[", nmix, "] theta;",
       "  // mixing proportions \n"
+    )
+    out$prior <- paste0(out$prior, 
+      "  theta ~ dirichlet(con_theta); \n"                
     )
     if (family$order) {
       out$par <- paste0(out$par, 

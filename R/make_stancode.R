@@ -92,7 +92,7 @@ make_stancode <- function(formula, data, family = NULL,
     disc = disc, threshold = threshold
   )
   text_families <- stan_families(family, bterms)
-  text_mixture <- stan_mixture(family)
+  text_mixture <- stan_mixture(family, prior = prior)
   text_se <- stan_se(is.formula(bterms$adforms$se))
   text_cens <- stan_cens(has_cens, family = family)
   text_disp <- stan_disp(bterms, family = family)
@@ -107,6 +107,7 @@ make_stancode <- function(formula, data, family = NULL,
     text_ordinal$prior,
     text_autocor$prior,
     text_mv$prior,
+    text_mixture$prior,
     stan_prior(class = "", prior = prior)
   )
   
@@ -140,6 +141,7 @@ make_stancode <- function(formula, data, family = NULL,
     text_ranef$data,
     text_ordinal$data,
     text_families$data,
+    text_mixture$data,
     text_autocor$data,
     text_cens$data,
     text_disp$data,

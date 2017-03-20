@@ -379,7 +379,7 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
     
   valid_classes <- c("Intercept", "b", "sd", "sds", "simplex", "cor", "L", 
                      "ar", "ma", "arr", "sigmaLL", "rescor", "Lrescor", 
-                     "delta", auxpars(), if (!check) "")
+                     "delta", "theta", auxpars(), if (!check) "")
   if (!class %in% valid_classes) {
     stop2("'", class, "' is not a valid parameter class.")
   }
@@ -594,6 +594,10 @@ get_prior <- function(formula, data, family = NULL,
   # prior for the delta parameter for equidistant thresholds
   if (is_ordinal(family) && threshold == "equidistant") {
     prior <- rbind(prior, brmsprior(class = "delta"))
+  }
+  # priors for mixture models
+  if (is.mixfamily(family)) {
+    prior <- rbind(prior, brmsprior(class = "theta"))
   }
   # priors for auxiliary parameters of multivariate models
   if (is_linear(family) && length(bterms$response) > 1L) {
@@ -930,14 +934,26 @@ check_prior <- function(prior, formula, data = NULL, family = NULL,
   for (k in seq_along(mo_forms)) {
     monef <- colnames(get_model_matrix(mo_forms[[k]], data = data))
     for (i in seq_along(monef)) {
-      take <- with(prior, 
+      take <- with(prior,
         class == "simplex" & coef == monef[i] & nlpar == names(mo_forms)[k]
       )
-      simplex_prior <- paste0(".", prior$prior[take])
-      if (nchar(simplex_prior) > 1L) {
-        simplex_prior <- paste(eval2(simplex_prior), collapse = ",")
+      simplex_prior <- prior$prior[take]
+      if (isTRUE(nzchar(simplex_prior))) {
+        # hard code prior concentration 
+        # in order not to depend on external objects
+        simplex_prior <- paste0(eval2(simplex_prior), collapse = ", ")
         prior$prior[take] <- paste0("dirichlet(c(", simplex_prior, "))")
       }
+    }
+  }
+  # prepare priors for mixture probabilities
+  if (is.mixfamily(family)) {
+    take <- prior$class == "theta"
+    theta_prior <- prior$prior[take]
+    if (isTRUE(nzchar(theta_prior))) {
+      # hard code prior concentration
+      theta_prior <- paste0(eval2(theta_prior), collapse = ", ")
+      prior$prior[take] <- paste0("dirichlet(c(", theta_prior, "))")
     }
   }
   if (length(rows2remove)) {   
@@ -1012,7 +1028,7 @@ check_prior_content <- function(prior, family = gaussian(), warn = TRUE) {
         if (prior$bound[i] != "<lower=-1,upper=1>") {
           autocor_warning <- TRUE
         } 
-      } else if (prior$class[i] == "simplex") {
+      } else if (prior$class[i] %in% c("simplex", "theta")) {
         if (nchar(prior$prior[i]) && !grepl("^dirichlet\\(", prior$prior[i])) {
           stop2("Currently 'dirichlet' is the only valid prior ",
                 "for simplex parameters. See help(set_prior) ",

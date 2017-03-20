@@ -151,15 +151,14 @@ data_mo <- function(bterms, data, ranef = empty_ranef(),
     for (i in seq_along(monef)) {
       take <- prior$class == "simplex" & prior$coef == monef[i] & 
         prior$nlpar == nlpar  
-      sprior <- prior$prior[take]
-      if (isTRUE(nchar(sprior) > 0L)) {
-        sprior <- eval2(sprior)
-        if (length(sprior) != Jmo[i]) {
-          stop2("Invalid dirichlet prior for the simplex of '", 
-                monef[i], "'. Expected input of length ", Jmo[i], 
-                " but found ", paste(sprior, collapse = ","))
+      simplex_prior <- prior$prior[take]
+      if (isTRUE(nzchar(simplex_prior))) {
+        simplex_prior <- eval2(simplex_prior)
+        if (length(simplex_prior) != Jmo[i]) {
+          stop2("Invalid Dirichlet prior for the simplex of coefficient '",
+                monef[i], "'. Expected input of length ", Jmo[i], ".")
         }
-        out[[paste0("con_simplex", p, "_", i)]] <- sprior
+        out[[paste0("con_simplex", p, "_", i)]] <- simplex_prior
       } else {
         out[[paste0("con_simplex", p, "_", i)]] <- rep(1, Jmo[i]) 
       }
@@ -334,6 +333,27 @@ data_offset <- function(bterms, data, nlpar = "") {
   if (is.formula(bterms$offset)) {
     mf <- model.frame(bterms$offset, rm_attr(data, "terms"))
     out[[paste0("offset", usc(nlpar))]] <- model.offset(mf)
+  }
+  out
+}
+
+data_mixture <- function(family, prior = brmsprior()) {
+  # data specific for mixture models
+  out <- list()
+  if (is.mixfamily(family)) {
+    families <- family_names(family)
+    take <- prior$class == "theta"
+    theta_prior <- prior$prior[take]
+    if (isTRUE(nzchar(theta_prior))) {
+      theta_prior <- eval2(theta_prior)
+      if (length(theta_prior) != length(families)) {
+        stop2("Invalid dirichlet prior for the ", 
+              "mixture probabilities 'theta'.")
+      }
+      out[["con_theta"]] <- theta_prior
+    } else {
+      out[["con_theta"]] <- rep(1, length(families)) 
+    }
   }
   out
 }

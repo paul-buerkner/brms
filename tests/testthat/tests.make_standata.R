@@ -321,7 +321,8 @@ test_that("make_standata correctly prepares data for monotonic effects", {
   
   prior <- c(set_prior("dirichlet(c(1,0.5,2))", class = "simplex", coef = "x2"))
   expect_error(make_standata(y ~ monotonic(x1 + x2), data = data, prior = prior),
-               "Invalid dirichlet prior for the simplex of 'x2'", fixed = TRUE)
+               "Invalid Dirichlet prior for the simplex of coefficient 'x2'", 
+               fixed = TRUE)
 })
 
 test_that("make_standata returns fixed residual covariance matrices", {

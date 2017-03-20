@@ -193,9 +193,10 @@ make_standata <- function(formula, data, family = NULL,
   for (ap in names(bterms$fauxpars)) {
     standata[[ap]] <- bterms$fauxpars[[ap]]
   }
-  # data for grouping factors separated after group-ID
-  data_gr <- data_gr(ranef, data, cov_ranef = cov_ranef)
-  standata <- c(standata, data_gr)
+  standata <- c(standata,
+    data_gr(ranef, data, cov_ranef = cov_ranef),
+    data_mixture(family, prior = prior)
+  )
   
   # data for specific families
   if (has_trials(family)) {
