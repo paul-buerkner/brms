@@ -1789,9 +1789,9 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     allow_new_levels, sample_new_levels, subset, nsamples
   )
   draws <- do.call(extract_draws, draws_args)
-  auxpars <- intersect(auxpars(), names(draws))
+  auxpars <- intersect(valid_auxpars(family(object)), names(draws))
   if (!length(auxpar)) {
-    if (is.list(draws$mu[["mv"]])) {
+    if (is.list(draws[["mu"]][["mv"]])) {
       draws$mu <- get_eta(draws$mu)
     }
     for (ap in auxpars) {
@@ -1811,7 +1811,7 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
       draws$mu <- fitted_fun(draws)
     }
   } else {
-    auxpars <- setdiff(auxpars, "mu")
+    auxpars <- auxpars[auxpar_class(auxpars) != "mu"]
     if (length(auxpar) != 1L || !auxpar %in% auxpars) {
       stop2("Invalid argument 'auxpar'. Valid auxiliary ",
             "parameters are: ", collapse_comma(auxpars))

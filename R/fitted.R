@@ -231,6 +231,26 @@ fitted_acat <- function(draws) {
   fitted_catordinal(draws)
 }
 
+fitted_mixture <- function(draws) {
+  families <- family_names(draws$f)
+  out <- 0
+  for (j in seq_along(families)) {
+    fitted_fun <- paste0("fitted_", families[j])
+    fitted_fun <- get(fitted_fun, asNamespace("brms"))
+    auxpars <- valid_auxpars(families[j])
+    tmp_draws <- list(
+      f = draws$f$mix[[j]],
+      nsamples = draws[["nsamples"]],
+      data = draws[["data"]]
+    )
+    for (ap in auxpars) {
+      tmp_draws[[ap]] <- draws[[paste0(ap, j)]]
+    }
+    out <- out + draws$theta[, j] * fitted_fun(tmp_draws)
+  }
+  out
+}
+
 # ------ fitted helper functions ------
 
 fitted_default <- function(draws) {
