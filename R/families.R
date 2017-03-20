@@ -633,11 +633,13 @@ print.mixfamily <- function(x, newline = TRUE, ...) {
   invisible(x)
 }
 
+#' @method summary family
 #' @export
 summary.family <- function(object, ...) {
   paste0(object$family, "(", object$link, ")")
 }
 
+#' @method summary mixfamily
 #' @export
 summary.mixfamily <- function(object, ...) {
   families <- ulapply(object$mix, summary, ...)
