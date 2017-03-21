@@ -485,19 +485,41 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
     dupl_pars <- collapse_comma(dupl_pars)
     stop2("Duplicated specification of parameters ", dupl_pars)
   }
-  is_num <- ulapply(forms, is.numeric)
-  fix <- forms[is_num]
+  not_form <- ulapply(forms, function(x) !is.formula(x))
+  fix <- forms[not_form]
   forms[names(fix)] <- NULL
   if (!isTRUE(nl)) {
     inv_names <- !is_auxpar_name(names(forms))
     if (any(inv_names)) {
       inv_names <- collapse_comma(names(forms)[inv_names])
       stop2("The following parameter names are invalid: ", inv_names,
-            "\nSet nl = TRUE if you want to specify non-linear models.")
+            "\nSet 'nl = TRUE' if you want to specify non-linear models.")
     }
   }
   out$pforms[names(forms)] <- forms
   out$pfix[names(fix)] <- fix
+  for (ap in names(out$pfix)) {
+    if (is.character(out$pfix[[ap]])) {
+      if (identical(ap, out$pfix[[ap]])) {
+        stop2("Equating '", ap, "' with itself is not meaningful.")
+      }
+      ap_class <- auxpar_class(ap)
+      if (ap_class == "mu") {
+        stop2("Equating parameters of class 'mu' is not allowed.")
+      }
+      if (!identical(ap_class, auxpar_class(out$pfix[[ap]]))) {
+        stop2("Can only equate parameters of the same class.")
+      }
+      if (out$pfix[[ap]] %in% names(out$pfix)) {
+        stop2("Cannot use fixed parameters on ", 
+              "the right-hand side of an equation.")
+      }
+      if (out$pfix[[ap]] %in% names(out$pforms)) {
+        stop2("Cannot use predicted parameters on ", 
+              "the right-hand side of an equation.")
+      }
+    }
+  }
   if (!is.null(nl)) {
     nl <- as.logical(nl)[1]
     if (!nl %in% c(TRUE, FALSE)) {
@@ -533,13 +555,20 @@ prepare_auxformula <- function(formula, par = NULL, rsv_pars = NULL) {
   #        the parameter name will be inferred from the formula
   #   rsv_pars: optional character vector of reserved parameter names
   stopifnot(length(par) <= 1L)
-  if (is.numeric(formula)) {
+  try_formula <- try(as.formula(formula), silent = TRUE)
+  if (is(try_formula, "try-error")) {
     if (length(formula) != 1L) {
       stop2("Expecting a single value when fixing auxiliary parameters.")
     }
+    scalar <- SW(as.numeric(formula))
+    if (!is.na(scalar)) {
+      formula <- scalar
+    } else {
+      formula <- as.character(formula)
+    }
     out <- named_list(par, formula)
   } else {
-    formula <- as.formula(formula)
+    formula <- try_formula
     if (!is.null(lhs(formula))) {
       resp_pars <- all.vars(formula[[2]])
       out <- named_list(resp_pars, list(formula))
@@ -781,7 +810,10 @@ print.brmsformula <- function(x, wsp = 0, digits = 2, ...) {
   }
   pfix <- pfix(x)
   if (length(pfix)) {
-    pfix <- paste0(names(pfix), " = ", round(unlist(pfix), digits))
+    pfix <- lapply(pfix, function(x) 
+      ifelse(is.numeric(x), round(x, digits), x)
+    )
+    pfix <- paste0(names(pfix), " = ", unlist(pfix))
     cat(collapse(wsp, pfix, "\n"))
   }
   invisible(x)

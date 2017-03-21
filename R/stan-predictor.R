@@ -164,7 +164,15 @@ stan_effects.brmsterms <- function(x, data, ranef, prior, sparse = FALSE,
       )
       out[[ap]] <- do.call(stan_effects, c(ap_args, args))
     } else if (is.numeric(x$fauxpars[[ap]])) {
-      out[[ap]] <- list(data = stan_auxpar_defs(ap)) 
+      out[[ap]] <- list(data = stan_auxpar_defs(ap))
+    } else if (is.character(x$fauxpars[[ap]])) {
+      if (!x$fauxpars[[ap]] %in% valid_auxpars) {
+        stop2("Parameter '", x$fauxpars[[ap]], "' cannot be found.")
+      }
+      out[[ap]] <- list(
+        transD = stan_auxpar_defs(ap),
+        transC1 = paste0("  ", ap, " = ", x$fauxpars[[ap]], "; \n") 
+      )
     } else {
       def_temp <- stan_auxpar_defs_temp(ap)
       if (nzchar(def_temp)) {
