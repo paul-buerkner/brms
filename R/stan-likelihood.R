@@ -405,8 +405,9 @@ stan_llh_sigma <- function(family, bterms, mix = "") {
   has_disp <- is.formula(bterms$adforms$disp)
   llh_adj <- stan_llh_adj(bterms$adforms)
   auxpars <- names(bterms$auxpars)
-  nsigma <- llh_adj || has_se || is_exgaussian(family) || is_gev(family)
-  nsigma <- nsigma && (has_disp || "sigma" %in% auxpars)
+  nsigma <- llh_adj || has_se || nzchar(mix) || 
+            is_exgaussian(family) || is_gev(family)
+  nsigma <- nsigma && (has_disp || paste0("sigma", mix) %in% auxpars)
   nsigma <- if (nsigma) "[n]"
   nse <- if (llh_adj) "[n]"
   if (has_sigma) {
@@ -430,8 +431,8 @@ stan_llh_shape <- function(family, bterms, mix = "") {
   has_disp <- is.formula(bterms$adforms$disp)
   llh_adj <- stan_llh_adj(bterms$adforms)
   auxpars <- names(bterms$auxpars)
-  nshape <- (llh_adj || is_forked(family)) &&
-            (has_disp || "shape" %in% auxpars)
+  nshape <- (llh_adj || is_forked(family) || nzchar(mix)) &&
+            (has_disp || paste0("shape", mix) %in% auxpars)
   nshape <- if (nshape) "[n]"
   paste0(if (has_disp) "disp_", "shape", mix, nshape)
 }

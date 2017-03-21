@@ -597,7 +597,7 @@ mixture <- function(..., flist = NULL, theta = NULL, order = NULL) {
     }
   } else {
     family$order <- as.logical(order)
-    if (length(family$order) != 1L) {
+    if (!isTRUE(family$order %in% c(TRUE, FALSE))) {
       stop2("Argument 'order' must be either TRUE or FALSE.")
     }
   }

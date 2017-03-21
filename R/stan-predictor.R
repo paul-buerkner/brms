@@ -82,7 +82,8 @@ stan_effects.btl <- function(x, data, ranef, prior, center_X = TRUE,
   # possibly transform eta before it is passed to the likelihood
   if (sum(nzchar(ilink))) {
     # make sure mu comes last as it might depend on other parameters
-    position <- ifelse(nzchar(nlpar), "modelC3", "modelC4")
+    not_mu <- nzchar(nlpar) && auxpar_class(nlpar) != "mu"
+    position <- ifelse(not_mu, "modelC3", "modelC4")
     out[[position]] <- paste0(out[[position]],
       "    ", eta, "[n] = ", ilink[1], eta, "[n]", ilink[2], "; \n"
     )
@@ -853,7 +854,6 @@ stan_eta_ilink <- function(family, auxpars = NULL,
   #   auxpars: names of auxiliary parameters
   #   adforms: list of formulas containing addition terms
   stopifnot(all(c("family", "link") %in% names(family)))
-  ap_classes <- auxpar_class(auxpars) 
   llh_adj <- stan_llh_adj(adforms, c("cens", "trunc"))
   if (stan_eta_transform(family, llh_adj = llh_adj)) {
     link <- family$link
@@ -861,10 +861,10 @@ stan_eta_ilink <- function(family, auxpars = NULL,
     shape <- paste0("shape", mix)
     shape <- ifelse(
       is.formula(adforms$disp), paste0("disp_", shape, "[n]"), 
-      ifelse("shape" %in% ap_classes, paste0(shape, "[n]"), shape)
+      ifelse(shape %in% auxpars, paste0(shape, "[n]"), shape)
     )
     nu <- paste0("nu", mix)
-    nu <- ifelse("nu" %in% ap_classes, paste0(nu, "[n]"), nu)
+    nu <- ifelse(nu %in% auxpars, paste0(nu, "[n]"), nu)
     fl <- ifelse(family %in% c("gamma", "exponential"), 
                  paste0(family, "_", link), family)
     ilink <- stan_ilink(link)
