@@ -520,9 +520,33 @@ check_family <- function(family, link = NULL) {
   family
 }
 
+#' Mixture Families in \pkg{brms}
+#' 
+#' Set up a mixture family for use in \pkg{brms}.
+#' 
+#' @param ... Two or more objects providing a description of the 
+#'   response distributions to be combined in the mixture model. 
+#'   These can be family functions, calls to family functions or 
+#'   character strings naming the families.
+#'   For details of supported families see 
+#'   \code{\link[brms:brmsfamily]{brmsfamily}}.
+#' @param flist Optional list of objects, which are treated in the 
+#'   same way as objects passed via the \code{...} argument.
+#' @param order Logical; indicating whether population-level intercepts
+#'   of the families should be ordered to identify mixture components.
+#'   If \code{NULL} (the default), \code{order} is set to \code{TRUE}
+#'   if all families are the same and \code{FALSE} otherwise.
+#'
+#' @return An object of class \code{mixfamily}.
+#' 
+#' @details TODO
+#' 
+#' @examples
+#' # TODO
+#' 
 #' @export
-mixture <- function(..., order = NULL) {
-  dots <- list(...)
+mixture <- function(..., flist = NULL, order = NULL) {
+  dots <- c(list(...), flist)
   family <- list(
     family = "mixture", 
     link = "identity",
