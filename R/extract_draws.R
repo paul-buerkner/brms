@@ -61,7 +61,14 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
     }
   }
   if (is.mixfamily(family(x))) {
-    draws$theta <- do.call(as.matrix, c(am_args, pars = "^theta\\["))
+    fixed_theta <- family(x)$theta
+    if (!is.null(fixed_theta)) {
+      draws$theta <- as_draws_matrix(
+        fixed_theta, dim = c(nsamples, length(fixed_theta))
+      )
+    } else {
+      draws$theta <- do.call(as.matrix, c(am_args, pars = "^theta\\["))  
+    }
   }
   if (is_linear(family(x)) && length(bterms$response) > 1L) {
     # parameters for multivariate normal models

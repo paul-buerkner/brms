@@ -342,17 +342,23 @@ data_mixture <- function(family, prior = brmsprior()) {
   out <- list()
   if (is.mixfamily(family)) {
     families <- family_names(family)
-    take <- prior$class == "theta"
-    theta_prior <- prior$prior[take]
-    if (isTRUE(nzchar(theta_prior))) {
-      theta_prior <- eval2(theta_prior)
-      if (length(theta_prior) != length(families)) {
-        stop2("Invalid dirichlet prior for the ", 
-              "mixture probabilities 'theta'.")
-      }
-      out[["con_theta"]] <- theta_prior
+    if (!is.null(family$theta)) {
+      # fix mixture probabilities
+      out[["theta"]] <- family$theta
     } else {
-      out[["con_theta"]] <- rep(1, length(families)) 
+      # estimate mixture probabilities
+      take <- prior$class == "theta"
+      theta_prior <- prior$prior[take]
+      if (isTRUE(nzchar(theta_prior))) {
+        theta_prior <- eval2(theta_prior)
+        if (length(theta_prior) != length(families)) {
+          stop2("Invalid dirichlet prior for the ", 
+                "mixture probabilities 'theta'.")
+        }
+        out[["con_theta"]] <- theta_prior
+      } else {
+        out[["con_theta"]] <- rep(1, length(families)) 
+      }
     }
   }
   out

@@ -447,16 +447,23 @@ stan_mixture <- function(family, prior) {
   out <- list()
   if (is.mixfamily(family)) {
     nmix <- length(family$mix)
-    out$data <- paste0(out$data,
-      "  vector[", nmix, "] con_theta;  // prior concentration \n"                  
-    )
-    out$par <- paste0(out$par,
-      "  simplex[", nmix, "] theta;",
-      "  // mixing proportions \n"
-    )
-    out$prior <- paste0(out$prior, 
-      "  theta ~ dirichlet(con_theta); \n"                
-    )
+    if (!is.null(family$theta)) {
+      out$data <- paste0(out$data,
+        "  simplex[", nmix, "] theta;",
+        "  // mixing proportions \n"
+      )
+    } else {
+      out$data <- paste0(out$data,
+        "  vector[", nmix, "] con_theta;  // prior concentration \n"                  
+      )
+      out$par <- paste0(out$par,
+        "  simplex[", nmix, "] theta;",
+        "  // mixing proportions \n"
+      )
+      out$prior <- paste0(out$prior, 
+        "  theta ~ dirichlet(con_theta); \n"                
+      )
+    }
     if (family$order) {
       out$par <- paste0(out$par, 
         "  ordered[", nmix, "] ordered_Intercept;  // to identify mixtures \n"

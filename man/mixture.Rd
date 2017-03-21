@@ -4,7 +4,7 @@
 \alias{mixture}
 \title{Mixture Families in \pkg{brms}}
 \usage{
-mixture(..., flist = NULL, order = NULL)
+mixture(..., flist = NULL, theta = NULL, order = NULL)
 }
 \arguments{
 \item{...}{Two or more objects providing a description of the 
@@ -16,6 +16,12 @@ For details of supported families see
 
 \item{flist}{Optional list of objects, which are treated in the 
 same way as objects passed via the \code{...} argument.}
+
+\item{theta}{Optional vector specifying the mixing proportions
+\code{theta}. If specified, it must have the same length as the 
+number of mixture components. The input is normalized to
+form a probability vector. If \code{NULL} (the default), 
+\code{theta} is estimated from the data.}
 
 \item{order}{Logical; indicating whether population-level intercepts
 of the families should be ordered to identify mixture components.

@@ -532,6 +532,11 @@ check_family <- function(family, link = NULL) {
 #'   \code{\link[brms:brmsfamily]{brmsfamily}}.
 #' @param flist Optional list of objects, which are treated in the 
 #'   same way as objects passed via the \code{...} argument.
+#' @param theta Optional vector specifying the mixing proportions
+#'   \code{theta}. If specified, it must have the same length as the 
+#'   number of mixture components. The input is normalized to
+#'   form a probability vector. If \code{NULL} (the default), 
+#'   \code{theta} is estimated from the data.
 #' @param order Logical; indicating whether population-level intercepts
 #'   of the families should be ordered to identify mixture components.
 #'   If \code{NULL} (the default), \code{order} is set to \code{TRUE}
@@ -545,7 +550,7 @@ check_family <- function(family, link = NULL) {
 #' # TODO
 #' 
 #' @export
-mixture <- function(..., flist = NULL, order = NULL) {
+mixture <- function(..., flist = NULL, theta = NULL, order = NULL) {
   dots <- c(list(...), flist)
   family <- list(
     family = "mixture", 
@@ -570,6 +575,17 @@ mixture <- function(..., flist = NULL, order = NULL) {
   }
   if (use_real(family) && use_int(family)) {
     stop2("Cannot mix families with real and integer support.")
+  }
+  if (!is.null(theta)) {
+    theta <- as.numeric(theta)
+    if (length(theta) != length(family$mix)) {
+      stop2("The length of 'theta' should be the same ", 
+            "as the number of mixture components.")
+    }
+    if (anyNA(theta) || any(theta <= 0)) {
+      stop2("'theta' should contain positive values only.")
+    }
+    family$theta <- theta / sum(theta)
   }
   if (is.null(order)) {
     if (length(unique(families)) == 1L) {
