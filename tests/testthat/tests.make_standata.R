@@ -474,3 +474,20 @@ test_that("make_standata correctly includes offsets", {
   sdata <- make_standata(y ~ x + offset(c) + offset(x), data)
   expect_equal(sdata$offset, data$c + data$x)
 })
+
+test_that("make_standata includes data for mixture models", {
+  data <- data.frame(y = rnorm(10), x = rnorm(10), c = 1)
+  form <- bf(y ~ x, mu1 ~ 1, family = mixture(gaussian, gaussian))
+  sdata <- make_standata(form, data)
+  expect_equal(sdata$con_theta, c(1, 1))
+  expect_equal(dim(sdata$X_mu1), c(10, 1))
+  expect_equal(dim(sdata$X_mu2), c(10, 2))
+  
+  form <- bf(y ~ x, family = mixture(gaussian, gaussian))
+  sdata <- make_standata(form, data, prior = prior(dirichlet(10, 2), theta))
+  expect_equal(sdata$con_theta, c(10, 2))
+  
+  form <- bf(y ~ x, family = mixture(gaussian, gaussian, theta = c(1, 3)))
+  sdata <- make_standata(form, data)
+  expect_equal(sdata$theta, c(1/4, 3/4))
+})

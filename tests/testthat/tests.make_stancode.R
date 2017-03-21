@@ -855,3 +855,29 @@ test_that("prior only models are correctly checked", {
                          sample_prior = "only")
   expect_match2(scode, "temp_Intercept ~ normal(0, 10)")
 })
+
+test_that("Stan code of mixture model is correct", {
+  data <- data.frame(y = rnorm(10), x = rnorm(10), c = 1)
+  scode <- make_stancode(bf(y ~ x,  sigma2 ~ x), data, 
+                         mixture(gaussian, gaussian))
+  expect_match2(scode, "ordered[2] ordered_Intercept;")
+  expect_match2(scode, "temp_mu2_Intercept = ordered_Intercept[2];")
+  expect_match2(scode, "theta ~ dirichlet(con_theta);")
+  expect_match2(scode, "ps[1] = log(theta[1]) + normal_lpdf(Y[n] | mu1[n], sigma1);")
+  expect_match2(scode, "ps[2] = log(theta[2]) + normal_lpdf(Y[n] | mu2[n], sigma2[n]);")
+  expect_match2(scode, "target += log_sum_exp(ps);")
+  
+  scode <- make_stancode(bf(abs(y) | weights(c) ~ x, shape1 ~ x), data = data, 
+                         mixture(Gamma("log"), weibull, theta = c(1, 2)))
+  expect_match(scode, "data \\{[^\\}]*simplex\\[2\\] theta;")
+  expect_match(scode, "shape1\\[n\\] = exp\\(shape1\\[n\\]\\); \\\n    mu1\\[n\\] = ")
+  expect_match2(scode, "ps[1] = log(theta[1]) + gamma_lpdf(Y[n] | shape1[n], mu1[n]);")
+  expect_match2(scode, "lp_pre[n] = log_sum_exp(ps);")
+  expect_match2(scode, "target += dot_product(weights, lp_pre);")
+  
+  fam <- mixture(gaussian, student, exgaussian)
+  scode <- make_stancode(bf(y ~ x), data = data, family = fam)
+  expect_match(scode, "parameters \\{[^\\}]*real temp_mu3_Intercept;")
+  expect_match2(scode, "ps[2] = log(theta[2]) + student_t_lpdf(Y[n] | nu2, mu2[n], sigma2);")
+  expect_match2(scode, "ps[3] = log(theta[3]) + exgaussian_lpdf(Y[n] | mu3[n], sigma3, beta3);")
+})

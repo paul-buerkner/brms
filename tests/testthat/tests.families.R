@@ -56,3 +56,22 @@ test_that("family functions returns expected results", {
 test_that("print brmsfamily works correctly", {
   expect_output(print(weibull()), "Family: weibull \nLink function: log")
 })
+
+test_that("mixture returns expected errors", {
+  expect_error(mixture(gaussian, "x"), 
+               "x is not a supported family")
+  expect_error(mixture(gaussian, categorical()), 
+               "Families 'categorical' are currently not allowed in mixture models")
+  expect_error(mixture(poisson, "cumulative"), 
+               "Cannot mix ordinal and non-ordinal families")
+  expect_error(mixture(lognormal, exgaussian, poisson()), 
+               "Cannot mix families with real and integer support")
+  expect_error(mixture(lognormal), 
+               "Expecting at least 2 mixture components")
+  expect_error(mixture(gaussian(), student(), theta = c(1, 2, 3)), 
+               "The length of 'theta' should be the same as the number")
+  expect_error(mixture(gaussian(), student(), theta = c(1, NA)), 
+               "'theta' should contain positive values only")
+  expect_error(mixture(poisson, binomial, order = "x"),
+               "Argument 'order' must be either TRUE or FALSE")
+})
