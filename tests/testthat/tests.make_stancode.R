@@ -85,6 +85,11 @@ test_that("specified priors appear in the Stan code", {
   expect_match2(scode, "prior_simplex_1 = dirichlet_rng(con_simplex_1)")
   expect_match2(scode, "prior_ar ~ uniform(-1,1)")
   
+  # test for problem described in #197
+  scode <- make_stancode(y ~ 1, dat, prior = prior(normal(0,1), Intercept),
+                         sample_prior = TRUE)
+  expect_match2(scode, "prior_b_Intercept = prior_temp_Intercept;")
+  
   prior <- c(set_prior("target += normal_lpdf(b[1] | 0, 1)", check = FALSE),
              set_prior("", class = "sigma"))
   scode <- make_stancode(y ~ x1, dat, prior = prior,

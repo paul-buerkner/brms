@@ -674,19 +674,18 @@ stan_base_prior <- function(prior) {
 }
 
 stan_rngprior <- function(sample_prior, prior, par_declars,
-                          family, prior_special) {
+                          gen_quantities, prior_special) {
   # stan code to sample from priors seperately
   # Args:
   #   sample_prior: take samples from priors?
   #   prior: character string taken from stan_prior
   #   par_declars: the parameters block of the Stan code
-  #                required to extract boundaries
-  #   family: the model family
+  #     required to extract boundaries
+  #   gen_quantities: Stan code from the generated quantities block
   #   prior_special: a list of values pertaining to special priors
-  #                  such as horseshoe or lasso
+  #     such as horseshoe or lasso
   # Returns:
   #   a character string containing the priors to be sampled from in stan code
-  stopifnot(is.family(family))
   out <- list()
   if (sample_prior) {
     prior <- gsub(" ", "", paste0("\n", prior))
@@ -789,10 +788,10 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
       temp_intercepts <- pars[is_temp_intercept]
       p <- gsub("^temp|_Intercept$", "", temp_intercepts)
       intercepts <- paste0("b", p, "_Intercept")
-      use_plus <- family$family %in% c("cumulative", "sratio")
-      sub_X_means <- paste0(
-        ifelse(use_plus, " + ", " - "), 
-        "dot_product(means_X", p, ", b", p, ")"
+      regex <- paste0(" (\\+|-) dot_product\\(means_X", p, ", b", p, "\\)")
+      sub_X_means <- lapply(regex, get_matches, gen_quantities)
+      sub_X_means <- ulapply(sub_X_means, 
+        function(x) if (length(x)) x[1] else ""
       )
       out$genD <- paste0(out$genD, 
         collapse("  real prior_", intercepts, "; \n")
