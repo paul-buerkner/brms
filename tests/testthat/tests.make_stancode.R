@@ -875,6 +875,11 @@ test_that("Stan code of mixture model is correct", {
   expect_match2(scode, "lp_pre[n] = log_sum_exp(ps);")
   expect_match2(scode, "target += dot_product(weights, lp_pre);")
   
+  scode <- make_stancode(bf(abs(y) | se(c) ~ x), data = data, 
+                         mixture(gaussian, student))
+  expect_match2(scode, "ps[1] = log(theta[1]) + normal_lpdf(Y[n] | mu1[n], se);")
+  expect_match2(scode, "ps[2] = log(theta[2]) + student_t_lpdf(Y[n] | nu2, mu2[n], se);")
+  
   fam <- mixture(gaussian, student, exgaussian)
   scode <- make_stancode(bf(y ~ x), data = data, family = fam)
   expect_match(scode, "parameters \\{[^\\}]*real temp_mu3_Intercept;")

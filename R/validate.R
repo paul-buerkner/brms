@@ -264,7 +264,8 @@ parse_ad <- function(formula, family = NULL, check_response = TRUE) {
   x <- list()
   ad_funs <- lsp("brms", what = "exports", pattern = "^resp_")
   ad_funs <- sub("^resp_", "", ad_funs)
-  if (!is.null(family) && nzchar(family$family)) {
+  families <- family_names(family)
+  if (is.family(family) && any(nzchar(families))) {
     ad <- get_matches("\\|[^~]*~", formula2str(formula))
     if (length(ad)) {
       # replace deprecated '|' by '+'
@@ -279,12 +280,12 @@ parse_ad <- function(formula, family = NULL, check_response = TRUE) {
           }
           ad_terms <- ad_terms[-matches]
           ad_fams <- ad_families(a)
-          valid <- ad_fams[1] == "all" || family$family %in% ad_fams
+          valid <- ad_fams[1] == "all" || all(families %in% ad_fams)
           if (!is.na(x[[a]]) && valid) {
             x[[a]] <- str2formula(x[[a]])
           } else {
             stop2("Argument '", a, "' is not supported for ", 
-                  "family '", family$family, "'.")
+                  "family '", summary(family), "'.")
           } 
         } else if (length(matches) > 1L) {
           stop2("Each addition argument may only be defined once.")
@@ -301,6 +302,9 @@ parse_ad <- function(formula, family = NULL, check_response = TRUE) {
     }
     if (is_wiener(family) && check_response && !is.formula(x$dec)) {
       stop2("Addition argument 'dec' is required for family 'wiener'.")
+    }
+    if (is.mixfamily(family) && (is.formula(x$cens) || is.formula(x$trunc))) {
+      stop2("Censoring or truncation is not yet allowed in mixture models.")
     }
   }
   x
@@ -743,19 +747,25 @@ ad_families <- function(x) {
     se = c("gaussian", "student", "cauchy"),
     trials = c("binomial", "zero_inflated_binomial"),
     cat = c("cumulative", "cratio", "sratio", "acat"), 
-    cens = c("gaussian", "student", "cauchy", "lognormal",
-             "inverse.gaussian", "binomial", "poisson", 
-             "geometric", "negbinomial", "exponential", 
-             "weibull", "gamma", "exgaussian", "frechet",
-             "asym_laplace", "gen_extreme_value"),
-    trunc = c("gaussian", "student", "cauchy", "lognormal", 
-              "binomial", "poisson", "geometric", "negbinomial",
-              "exponential", "weibull", "gamma", "inverse.gaussian",
-              "exgaussian", "frechet", "asym_laplace",
-              "gen_extreme_value"),
-    disp = c("gaussian", "student", "cauchy", "lognormal", 
-             "gamma", "weibull", "negbinomial", "exgaussian",
-             "asym_laplace"),
+    cens = c(
+      "gaussian", "student", "cauchy", "lognormal",
+      "inverse.gaussian", "binomial", "poisson", 
+      "geometric", "negbinomial", "exponential", 
+      "weibull", "gamma", "exgaussian", "frechet",
+      "asym_laplace", "gen_extreme_value"
+    ),
+    trunc = c(
+      "gaussian", "student", "cauchy", "lognormal", 
+      "binomial", "poisson", "geometric", "negbinomial",
+      "exponential", "weibull", "gamma", "inverse.gaussian",
+      "exgaussian", "frechet", "asym_laplace",
+      "gen_extreme_value"
+    ),
+    disp = c(
+      "gaussian", "student", "cauchy", "lognormal", 
+      "gamma", "weibull", "negbinomial", "exgaussian",
+      "asym_laplace"
+    ),
     dec = c("wiener"),
     stop2("Addition argument '", x, "' is not supported.")
   )
