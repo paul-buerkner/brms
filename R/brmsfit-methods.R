@@ -719,10 +719,20 @@ summary.brmsfit <- function(object, waic = FALSE, priors = FALSE,
                                  "u-95% CI", "Eff.Sample", "Rhat")
       Rhats <- fit_summary[, "Rhat"]
       if (any(Rhats > 1.1, na.rm = TRUE) || anyNA(Rhats)) {
-        msg <- paste("The model has not converged (some Rhats are > 1.1).",
-                     "Do not analyse the results! \nWe recommend running", 
-                     "more iterations and/or setting stronger priors.")
-        warning2(msg)
+        warning2(
+          "The model has not converged (some Rhats are > 1.1). ",
+          "Do not analyse the results! \nWe recommend running ", 
+          "more iterations and/or setting stronger priors."
+        )
+      }
+      div_trans <- sum(nuts_params(object, pars = "divergent__")$Value)
+      adapt_delta <- control_params(object)$adapt_delta
+      if (div_trans > 0) {
+        warning2(
+          "There were ", div_trans, " divergent transitions after warmup. ", 
+          "Increasing adapt_delta above ", adapt_delta, " may help. See \n",
+          "http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup"
+        )
       }
     } else {
       colnames(fit_summary) <- c("Estimate", "Est.Error", 
