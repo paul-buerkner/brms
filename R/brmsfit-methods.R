@@ -2466,3 +2466,14 @@ neff_ratio.brmsfit <- function(object, pars = NULL, ...) {
   contains_samples(object)
   bayesplot::neff_ratio(object$fit, pars = pars, ...)
 }
+
+#' @rdname control_params
+#' @export
+control_params.brmsfit <- function(x, pars = NULL, ...) {
+  contains_samples(x)
+  out <- attr(x$fit@sim$samples[[1]], "args")$control
+  if (!is.null(pars)) {
+    out <- out[pars]
+  }
+  out
+}
