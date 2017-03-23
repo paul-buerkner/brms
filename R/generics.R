@@ -764,6 +764,24 @@ expose_functions <- function(x, ...) {
   UseMethod("expose_functions")
 }
 
+#' Extract Control Parameters of the NUTS Sampler
+#' 
+#' Extract control parameters of the NUTS sampler such as 
+#' \code{adapt_delta} or \code{max_treedepth}.
+#' 
+#' @param x an \R object
+#' @param pars Optional names of the control parameters to be returned.
+#'  If \code{NULL} (the default) all control parameters are returned.
+#'  See \code{\link[rstan:stan]{stan}} for more details.
+#' @param ... Currently ignored.
+#' 
+#' @return A named \code{list} with control parameter values.
+#' 
+#' @export
+control_params <- function(x, ...) {
+  UseMethod("control_params")
+}
+
 #' Extract Diagnostic Quantities of \pkg{brms} Models
 #' 
 #' Extract quantities that can be used to diagnose sampling behavior

@@ -721,10 +721,20 @@ summary.brmsfit <- function(object, waic = FALSE, priors = FALSE,
       )
       Rhats <- fit_summary[, "Rhat"]
       if (any(Rhats > 1.1, na.rm = TRUE) || anyNA(Rhats)) {
-        msg <- paste("The model has not converged (some Rhats are > 1.1).",
-                     "Do not analyse the results! \nWe recommend running", 
-                     "more iterations and/or setting stronger priors.")
-        warning2(msg)
+        warning2(
+          "The model has not converged (some Rhats are > 1.1). ",
+          "Do not analyse the results! \nWe recommend running ", 
+          "more iterations and/or setting stronger priors."
+        )
+      }
+      div_trans <- sum(nuts_params(object, pars = "divergent__")$Value)
+      adapt_delta <- control_params(object)$adapt_delta
+      if (div_trans > 0) {
+        warning2(
+          "There were ", div_trans, " divergent transitions after warmup. ", 
+          "Increasing adapt_delta above ", adapt_delta, " may help. See \n",
+          "http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup"
+        )
       }
     } else {
       colnames(fit_summary) <- c(
@@ -2087,7 +2097,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     if (!is.null(newdata)) {
       dots$data.name <- Reduce(paste, deparse(substitute(newdata)))
       dots$data.name <- substr(dots$data.name, 1, 50)
-    } else  {
+    } else {
       dots$data.name <- object$data.name
     }
     if (!isTRUE(dots$testmode)) {
@@ -2406,8 +2416,8 @@ hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
     sm <- cbind(sm, ifelse(!(sm[1, 3] <= 0 && 0 <= sm[1, 4]), '*', ''))
     rownames(sm) <- paste(rename(h, "___", ":"), sign, "0")
     cl <- (1 - alpha) * 100
-    colnames(sm) <- c("Estimate", "Est.Error", paste0("l-", cl, "% CI"), 
-                      paste0("u-", cl, "% CI"), "Evid.Ratio", "")
+    colnames(sm) <- c("Estimate", "Est.Error", paste0("l-", cl, "% CI"),
+                      paste0("u-", cl, "% CI"), "Evid.Ratio", "Star")
     if (!is.null(prior_samples)) {
       samples <- c(samples, prior_samples)
     } else {
@@ -2470,4 +2480,15 @@ rhat.brmsfit <- function(object, pars = NULL, ...) {
 neff_ratio.brmsfit <- function(object, pars = NULL, ...) {
   contains_samples(object)
   bayesplot::neff_ratio(object$fit, pars = pars, ...)
+}
+
+#' @rdname control_params
+#' @export
+control_params.brmsfit <- function(x, pars = NULL, ...) {
+  contains_samples(x)
+  out <- attr(x$fit@sim$samples[[1]], "args")$control
+  if (!is.null(pars)) {
+    out <- out[pars]
+  }
+  out
 }

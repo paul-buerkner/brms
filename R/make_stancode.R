@@ -186,7 +186,8 @@ make_stancode <- function(formula, data, family = NULL,
   text_rngprior <- stan_rngprior(
     sample_prior = sample_prior, 
     par_declars = text_parameters,
-    prior = text_prior, family = family, 
+    gen_quantities = text_effects$genC,
+    prior = text_prior,
     prior_special = attr(prior, "special")
   )
   text_parameters <- paste0(
