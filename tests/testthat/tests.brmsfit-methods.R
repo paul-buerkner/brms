@@ -3,6 +3,7 @@ test_that("all S3 methods have reasonable ouputs", {
   fit2 <- brms:::rename_pars(brms:::brmsfit_example2)
   fit3 <- brms:::rename_pars(brms:::brmsfit_example3)
   fit4 <- brms:::rename_pars(brms:::brmsfit_example4)
+  fit5 <- brms:::rename_pars(brms:::brmsfit_example5)
   
   # test S3 methods in alphabetical order
   # as.data.frame
@@ -88,6 +89,9 @@ test_that("all S3 methods have reasonable ouputs", {
   fi <- fitted(fit4)
   expect_equal(dim(fi), c(nobs(fit4), 4, 4))
   
+  fi <- fitted(fit5)
+  expect_equal(dim(fi), c(nobs(fit5), 4))
+  
   # fixef
   fixef1 <- fixef(fit1, estimate = c("mean", "sd"))  
   expect_equal(dimnames(fixef1), 
@@ -165,6 +169,9 @@ test_that("all S3 methods have reasonable ouputs", {
   loo4 <- SW(LOO(fit4, cores = 1))
   expect_true(is.numeric(loo4[["looic"]]))
   
+  loo5 <- SW(LOO(fit5, cores = 1))
+  expect_true(is.numeric(loo5[["looic"]]))
+  
   # marginal_effects
   me <- marginal_effects(fit1)
   expect_equal(nrow(me[[2]]), 100)
@@ -196,12 +203,17 @@ test_that("all S3 methods have reasonable ouputs", {
                  "Some specified effects are invalid for this model")
   expect_error(marginal_effects(fit1, effects = "Trtc:a:b"), 
                "please use the 'conditions' argument")
+  
   expect_equal(nrow(marginal_effects(fit2)[[2]]), 100)
   expect_equal(nrow(marginal_effects(fit2, conditions = mdata)[[1]]),
                exp_nrow)
+  
   expect_warning(me4 <- marginal_effects(fit4),
                  "Predictions are treated as continuous variables")
   expect_true(is(me4, "brmsMarginalEffects"))
+  
+  me5 <- marginal_effects(fit5)
+  expect_true(is(me5, "brmsMarginalEffects"))
   
   # marginal_smooths
   ms1 <- marginal_smooths(fit1)
@@ -270,6 +282,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_error(pp_check(fit1, "stat_grouped", group = "g"),
                "not a valid grouping factor")
   expect_true(is(pp_check(fit4), "ggplot"))
+  expect_true(is(pp_check(fit5), "ggplot"))
   expect_error(pp_check(fit4, "error_binned"),
                "Type 'error_binned' is not available")
   
@@ -302,6 +315,10 @@ test_that("all S3 methods have reasonable ouputs", {
   pred <- predict(fit4)
   expect_equal(dim(pred), c(nobs(fit4), 4))
   expect_equal(colnames(pred), paste0("P(Y = ", 1:4, ")"))
+  
+  pred <- predict(fit5)
+  expect_equal(dim(pred), c(nobs(fit5), 4))
+  
   # check if grouping factors with a single level are accepted
   newdata$patient <- factor(2)
   pred <- predict(fit2, newdata = newdata)
@@ -387,7 +404,9 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_output(print(summary1), "Population-Level Effects:")
   expect_output(print(summary1), "Priors:")
   
-  summary2 <- SW(summary(fit1, waic = TRUE))
+  summary5 <- SW(summary(fit5, waic = TRUE))
+  expect_output(print(summary5), "sigma1")
+  expect_output(print(summary5), "theta\\[1\\]")
   
   # update
   # do not actually refit the model as is causes CRAN checks to fail

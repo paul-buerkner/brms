@@ -42,6 +42,16 @@ brmsfit_example4 <- brm(bf(rating ~ x1 + cs(x2) + (cs(x2)||subject),
                         warmup = 150, iter = 200, chains = 2,
                         save_dso = FALSE, testmode = TRUE)
 
-devtools::use_data(brmsfit_example1, brmsfit_example2, 
-                   brmsfit_example3, brmsfit_example4,
-                   internal = TRUE, overwrite = TRUE)
+brmsfit_example5 <- brm(bf(count ~ Age + (1|visit), mu2 ~ Age), dat,
+                        family = mixture(gaussian, exponential),
+                        prior = c(prior(normal(0, 10), Intercept, nlpar = mu1),
+                                  prior(normal(0, 1), Intercept, nlpar = mu2),
+                                  prior(normal(0, 1), nlpar = mu2)),
+                        warmup = 150, iter = 200, chains = 2,
+                        save_dso = FALSE, testmode = TRUE)
+
+devtools::use_data(
+  brmsfit_example1, brmsfit_example2, brmsfit_example3, 
+  brmsfit_example4, brmsfit_example5,
+  internal = TRUE, overwrite = TRUE
+)
