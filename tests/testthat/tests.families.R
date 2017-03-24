@@ -57,7 +57,14 @@ test_that("print brmsfamily works correctly", {
   expect_output(print(weibull()), "Family: weibull \nLink function: log")
 })
 
-test_that("mixture returns expected errors", {
+test_that("mixture returns expected results and errors", {
+  mix <- mixture(gaussian, nmix = 3)
+  expect_equal(brms:::family_names(mix), rep("gaussian", 3))
+  mix <- mixture(gaussian, student, weibull, nmix = 3:1)
+  expect_equal(
+    brms:::family_names(mix), 
+    c(rep("gaussian", 3), rep("student", 2), "weibull")
+  )
   expect_error(mixture(gaussian, "x"), 
                "x is not a supported family")
   expect_error(mixture(gaussian, categorical()), 

@@ -532,6 +532,9 @@ check_family <- function(family, link = NULL) {
 #'   \code{\link[brms:brmsfamily]{brmsfamily}}.
 #' @param flist Optional list of objects, which are treated in the 
 #'   same way as objects passed via the \code{...} argument.
+#' @param nmix Optional numeric vector specifying the number of times
+#'   each family is repeated. If specified, it must have the same length 
+#'   as the number of families passed via \code{...} or \code{flist}.
 #' @param theta Optional vector specifying the mixing proportions
 #'   \code{theta}. If specified, it must have the same length as the 
 #'   number of mixture components. The input is normalized to
@@ -601,8 +604,17 @@ check_family <- function(family, link = NULL) {
 #' }
 #' 
 #' @export
-mixture <- function(..., flist = NULL, theta = NULL, order = NULL) {
+mixture <- function(..., flist = NULL, nmix = 1,
+                    theta = NULL, order = NULL) {
   dots <- c(list(...), flist)
+  if (length(nmix) == 1L) {
+    nmix <- rep(nmix, length(dots))
+  }
+  if (length(dots) != length(nmix)) {
+    stop2("The length of 'nmix' should be the same ", 
+          "as the number of mixture components.")
+  }
+  dots <- dots[rep(seq_along(dots), nmix)]
   family <- list(
     family = "mixture", 
     link = "identity",

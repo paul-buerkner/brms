@@ -4,7 +4,7 @@
 \alias{mixture}
 \title{Finite Mixture Families in \pkg{brms}}
 \usage{
-mixture(..., flist = NULL, theta = NULL, order = NULL)
+mixture(..., flist = NULL, nmix = 1, theta = NULL, order = NULL)
 }
 \arguments{
 \item{...}{Two or more objects providing a description of the 
@@ -16,6 +16,10 @@ For details of supported families see
 
 \item{flist}{Optional list of objects, which are treated in the 
 same way as objects passed via the \code{...} argument.}
+
+\item{nmix}{Optional numeric vector specifying the number of times
+each family is repeated. If specified, it must have the same length 
+as the number of families passed via \code{...} or \code{flist}.}
 
 \item{theta}{Optional vector specifying the mixing proportions
 \code{theta}. If specified, it must have the same length as the 
