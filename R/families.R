@@ -626,7 +626,7 @@ mixture <- function(..., flist = NULL, nmix = 1,
   if (length(families) < 2L) {
     stop2("Expecting at least 2 mixture components.")
   }
-  non_mix_families <- c("bernoulli", "categorical", "wiener")
+  non_mix_families <- c("categorical")
   non_mix_families <- intersect(families, non_mix_families)
   if (length(non_mix_families)) {
     stop2("Families ", collapse_comma(non_mix_families), 
