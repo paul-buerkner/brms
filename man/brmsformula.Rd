@@ -422,6 +422,35 @@ models for all parameters of the assumed response distribution.
   to the effects on the original scale. 
   See also \code{\link[brms:brmsfamily]{brmsfamily}} for an overview of 
   valid link functions.
+  
+  \bold{Formula syntax for mixture models}
+  
+  The specification of mixture models closely resembles that 
+  of non-mixture models. If not specified otherwise (see below), 
+  all mean parameters of the mixture components are predicted
+  using the right-hand side of \code{formula}. All types of predictor
+  terms allowed in non-mixture models are allowed in mixture models
+  as well.
+  
+  Auxiliary parameters of mixture distributions have the same 
+  name as those of the corresponding ordinary distributions, but with 
+  a number at the end to indicate the mixture component. For instance, if
+  you use family \code{mixture(gaussian, gaussian)}, the auxiliary
+  parameters are \code{sigma1} and \code{sigma2}.
+  Auxiliary parameters of the same class can be fixed to the same value. 
+  For the above example, we could write \code{sigma2 = "sigma1"} to make
+  sure that both components have the same residual standard deviation,
+  which is in turn estimated from the data.
+  
+  In addition, there are special auxiliary parameters named \code{mu<ID>},
+  that allow for modeling different predictors for the mean parameters of 
+  different mixture components. For instance, if you want to predict the 
+  mean of the first component using predictor \code{x} and the mean of the
+  second component using predictor \code{z}, you can write \code{mu1 ~ x} 
+  as well as \code{mu2 ~ z}. 
+  
+  For more information on mixture models, see
+  the documentation of \code{\link[brms:mixture]{mixture}}.
 }
 \examples{
 # multilevel model with smoothing terms
@@ -476,5 +505,12 @@ bf(rt | dec(decision) ~ x, bs ~ x, ndt ~ x, bias ~ x)
 
 # fix the bias parameter to 0.5
 bf(rt | dec(decision) ~ x, bias = 0.5)
+
+# specify different predictors for different mixture components
+mix <- mixture(gaussian, gaussian)
+bf(y ~ 1, mu1 ~ x, mu2 ~ z, family = mix)
+
+# fix both residual standard deviations to the same value
+bf(y ~ x, sigma2 = "sigma1", family = mix)
 
 }

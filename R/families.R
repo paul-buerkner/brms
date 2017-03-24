@@ -520,9 +520,9 @@ check_family <- function(family, link = NULL) {
   family
 }
 
-#' Mixture Families in \pkg{brms}
+#' Finite Mixture Families in \pkg{brms}
 #' 
-#' Set up a mixture family for use in \pkg{brms}.
+#' Set up a finite mixture family for use in \pkg{brms}.
 #' 
 #' @param ... Two or more objects providing a description of the 
 #'   response distributions to be combined in the mixture model. 
@@ -544,10 +544,61 @@ check_family <- function(family, link = NULL) {
 #'
 #' @return An object of class \code{mixfamily}.
 #' 
-#' @details TODO
+#' @details
+#' 
+#' Most families supported by \pkg{brms} can be used to form 
+#' mixtures. The response variable has to be valid for all components
+#' of the mixture family. Currently, the number of mixture components 
+#' has to be specified by the user. It is not yet possible to estimate 
+#' the number of mixture components from the data.
+#' 
+#' For some mixture models, you may want to specify priors on the population-level
+#' intercepts via \code{\link[brms:set_prior]{set_prior}} to improve convergence. 
+#' If you do, you will notice some parser warnings starting with 
+#' "Left-hand side of sampling statement (~) may contain a non-linear transform ...". 
+#' These warnings can be safely ignored. In addition, it is sometimes necessary to 
+#' set \code{inits = 0} in the call to \code{\link[brms:brms]{brm}} to allow chains
+#' to initialize properly.
+#' 
+#' For more details on the specification of mixture
+#' models, see \code{\link[brms:brmsformula]{brmsformula}}.
 #' 
 #' @examples
-#' # TODO
+#' \dontrun{
+#' ## simulate some data
+#' set.seed(1234)
+#' dat <- data.frame(
+#'   y = c(rnorm(200), rnorm(100, 6)), 
+#'   x = rnorm(300),
+#'   z = sample(0:1, 300, TRUE)
+#' )
+#' 
+#' ## fit a simple normal mixture model
+#' mix <- mixture(gaussian, gaussian)
+#' prior <- c(
+#'   prior(normal(0, 7), Intercept, nlpar = mu1),
+#'   prior(normal(5, 7), Intercept, nlpar = mu2)
+#' )
+#' fit1 <- brm(bf(y ~ x + z), dat, family = mix,
+#'             prior = prior, inits = 0, chains = 2) 
+#' summary(fit1)
+#' pp_check(fit1)
+#' 
+#' ## use different predictors for the components
+#' fit2 <- brm(bf(y ~ 1, mu1 ~ x, mu2 ~ z), dat, family = mix,
+#'             prior = prior, inits = 0, chains = 2) 
+#' summary(fit2)
+#' 
+#' ## fix the mixing proportions
+#' mix <- mixture(gaussian, gaussian, theta = c(1, 2))
+#' fit3 <- brm(bf(y ~ x + z), dat, family = mix,
+#'             prior = prior, inits = 0, chains = 2)
+#' summary(fit3)
+#' pp_check(fit3)           
+#'
+#' ## compare model fit
+#' LOO(fit1, fit2, fit3)  
+#' }
 #' 
 #' @export
 mixture <- function(..., flist = NULL, theta = NULL, order = NULL) {
