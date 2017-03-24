@@ -738,14 +738,18 @@ print.mixfamily <- function(x, newline = TRUE, ...) {
 
 #' @method summary family
 #' @export
-summary.family <- function(object, ...) {
-  paste0(object$family, "(", object$link, ")")
+summary.family <- function(object, link = TRUE, ...) {
+  out <- object$family
+  if (link) {
+    out <- paste0(out, "(", object$link, ")")
+  }
+  out
 }
 
 #' @method summary mixfamily
 #' @export
-summary.mixfamily <- function(object, ...) {
-  families <- ulapply(object$mix, summary, ...)
+summary.mixfamily <- function(object, link = FALSE, ...) {
+  families <- ulapply(object$mix, summary, link = link, ...)
   paste0("mixture(", paste0(families, collapse = ", "), ")")
 }
 
