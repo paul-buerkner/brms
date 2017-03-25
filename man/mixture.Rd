@@ -7,7 +7,7 @@
 mixture(..., flist = NULL, nmix = 1, theta = NULL, order = NULL)
 }
 \arguments{
-\item{...}{Two or more objects providing a description of the 
+\item{...}{One or more objects providing a description of the 
 response distributions to be combined in the mixture model. 
 These can be family functions, calls to family functions or 
 character strings naming the families.

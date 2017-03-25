@@ -524,7 +524,7 @@ check_family <- function(family, link = NULL) {
 #' 
 #' Set up a finite mixture family for use in \pkg{brms}.
 #' 
-#' @param ... Two or more objects providing a description of the 
+#' @param ... One or more objects providing a description of the 
 #'   response distributions to be combined in the mixture model. 
 #'   These can be family functions, calls to family functions or 
 #'   character strings naming the families.
