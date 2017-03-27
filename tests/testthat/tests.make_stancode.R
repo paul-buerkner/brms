@@ -891,3 +891,30 @@ test_that("Stan code of mixture model is correct", {
   expect_match2(scode, "ps[2] = log(theta[2]) + student_t_lpdf(Y[n] | nu2, mu2[n], sigma2);")
   expect_match2(scode, "ps[3] = log(theta[3]) + exgaussian_lpdf(Y[n] | mu3[n], sigma3, beta3);")
 })
+
+test_that("sparse matrix multiplication is applied correctly", {
+  data <- data.frame(y = rnorm(10), x = rnorm(10))
+  # linear model
+  scode <- make_stancode(bf(y ~ x, sigma ~ x), data, sparse = TRUE)
+  expect_match2(scode, "wX = csr_extract_w(X);")
+  expect_match2(scode, 
+    "mu = csr_matrix_times_vector(rows(X), cols(X), wX, vX, uX, b);"
+  )
+  expect_match2(scode, "uX_sigma = csr_extract_u(X_sigma);")
+  expect_match2(scode,
+    paste0(
+      "sigma = csr_matrix_times_vector(rows(X_sigma), cols(X_sigma), ", 
+      "wX_sigma, vX_sigma, uX_sigma, b_sigma);"
+    )
+  )
+  # non-linear model
+  scode <- make_stancode(
+    bf(y ~ a, a ~ x, nl = TRUE), 
+    data, sparse = TRUE, 
+    prior = prior(normal(0, 1), nlpar = a)
+  )
+  expect_match2(scode, "vX_a = csr_extract_v(X_a);")
+  expect_match2(scode, 
+    "mu_a = csr_matrix_times_vector(rows(X_a), cols(X_a), wX_a, vX_a, uX_a, b_a);"
+  )
+})

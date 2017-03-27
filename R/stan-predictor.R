@@ -92,12 +92,16 @@ stan_effects.btl <- function(x, data, ranef, prior, center_X = TRUE,
 }
 
 stan_effects.btnl <- function(x, data, ranef, prior, eta = "mu", 
-                              ilink = rep("", 2), ...) {
+                              nlpar = "", ilink = rep("", 2), ...) {
   # prepare Stan code for non-linear models
   # Args:
   #   data: data.frame supplied by the user
   #   ranef: data.frame returned by tidy_ranef
   #   prior: a brmsprior object
+  #   nlpar: currently unused but should not be part of ...
+  #   ilink: character vector of length 2 containing
+  #          Stan code for the link function
+  #   ...: passed to stan_effects.btl
   stopifnot(length(ilink) == 2L)
   out <- list()
   if (length(x$nlpars)) {
@@ -106,7 +110,8 @@ stan_effects.btnl <- function(x, data, ranef, prior, eta = "mu",
       nl_text <- stan_effects(
         x = x$nlpars[[nlp]], data = data, 
         ranef = ranef, prior = prior, 
-        nlpar = nlp, center_X = FALSE
+        nlpar = nlp, center_X = FALSE, 
+        ...
       )
       out <- collapse_lists(list(out, nl_text))
     }
@@ -161,7 +166,7 @@ stan_effects.brmsterms <- function(x, data, ranef, prior, sparse = FALSE,
       eta <- ifelse(ap == "mu", "mu", "")
       ap_args <- list(
         ap_terms, nlpar = ap, eta = eta, ilink = ilink,
-        order_mixture = isTRUE(x$family$order)
+        sparse = sparse, order_mixture = isTRUE(x$family$order)
       )
       out[[ap]] <- do.call(stan_effects, c(ap_args, args))
     } else if (is.numeric(x$fauxpars[[ap]])) {
@@ -255,11 +260,17 @@ stan_fe <- function(fixef, prior, family = gaussian(),
     )
     if (sparse) {
       stopifnot(!center_X)
-      if (nchar(nlpar)) {
-        stop2("Sparse matrices are not yet implemented for this model.")
-      }
-      out$tdataD <- "  #include tdataD_sparse_X.stan \n"
-      out$tdataC <- "  #include tdataC_sparse_X.stan \n"
+      out$tdataD <- paste0(
+        "  vector[rows(csr_extract_w(X", p, "))] wX", p, ";\n",
+        "  int vX", p, "[size(csr_extract_v(X", p, "))];\n",
+        "  int uX", p, "[size(csr_extract_u(X", p, "))];\n"
+      )
+      out$tdataC <- paste0(
+        "  // generate sparse matrix representation of X", p, "\n",
+        "  wX", p, " = csr_extract_w(X", p, ");\n",
+        "  vX", p, " = csr_extract_v(X", p, ");\n",
+        "  uX", p, " = csr_extract_u(X", p, ");\n"
+      )
     }
     # prepare population-level coefficients
     orig_nlpar <- ifelse(nzchar(nlpar), nlpar, "mu")
@@ -721,8 +732,12 @@ stan_eta_fe <- function(fixef, center_X = TRUE,
   p <- usc(nlpar)
   if (length(fixef)) {
     if (sparse) {
-      stopifnot(!center_X, nchar(nlpar) == 0L)
-      eta_fe <- "csr_matrix_times_vector(rows(X), cols(X), wX, vX, uX, b)"
+      stopifnot(!center_X)
+      csr_args <- sargs(
+        paste0(c("rows", "cols"), "(X", p, ")"),
+        paste0(c("wX", "vX", "uX", "b"), p)
+      )
+      eta_fe <- paste0("csr_matrix_times_vector(", csr_args, ")")
     } else {
       eta_fe <- paste0("X", if (center_X) "c", p, " * b", p)
     }
