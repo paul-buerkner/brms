@@ -58,17 +58,21 @@ test_that("all S3 methods have reasonable ouputs", {
   
   # fitted values with new_levels
   newdata <- data.frame(
-    Age = 0, visit = c("a", "b"), Trt = 0, 
+    Age = 0, visit = paste0("a", 1:100), Trt = 0, 
     count = 20, patient = 1, Exp = 2
   )
   fi <- fitted(fit1, newdata = newdata, allow_new_levels = TRUE, 
-               sample_new_levels = "old_levels")
-  expect_equal(dim(fi), c(2, 4))
+               sample_new_levels = "old_levels", nsamples = 10)
+  expect_equal(dim(fi), c(100, 4))
   fi <- fitted(fit1, newdata = newdata, allow_new_levels = TRUE, 
-               sample_new_levels = "gaussian")
-  expect_equal(dim(fi), c(2, 4))
+               sample_new_levels = "gaussian", nsamples = 1)
+  expect_equal(dim(fi), c(100, 4))
   
   # fitted values of auxiliary parameters
+  newdata <- data.frame(
+    Age = 0, visit = c("a", "b"), Trt = 0, 
+    count = 20, patient = 1, Exp = 2
+  )
   fi <- fitted(fit1, auxpar = "sigma")
   expect_equal(dim(fi), c(nobs(fit1), 4))
   expect_true(all(fi > 0))
