@@ -187,7 +187,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_true(is(meplot[[1]], "ggplot"))
   
   mdata = data.frame(Age = c(-0.3, 0, 0.3), count = c(10, 20, 30), 
-                     visit = 1:3, patient = 1, Trt = 0, Exp = c(1,3,5))
+                     visit = 1:3, patient = 1, Exp = c(1,3,5))
   exp_nrow <- nrow(mdata) * 100
   expect_equal(nrow(marginal_effects(fit1, conditions = mdata)[[1]]),
                exp_nrow)

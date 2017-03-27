@@ -212,46 +212,23 @@ prepare_conditions <- function(x, conditions = NULL, effects = NULL,
   mf <- model.frame(x)
   new_formula <- update_re_terms(formula(x), re_formula = re_formula)
   bterms <- parse_bf(new_formula, family = family(x))
-  int_effects <- c(
-    get_effect(bterms, "mo"), 
-    rmNULL(bterms$adforms[c("trials", "cat")])
+  re <- get_re(bterms)
+  req_vars <- c(
+    lapply(get_effect(bterms, "fe"), rhs), 
+    lapply(get_effect(bterms, "mo"), rhs),
+    lapply(get_effect(bterms, "me"), rhs),
+    lapply(get_effect(bterms, "sm"), rhs),
+    lapply(get_effect(bterms, "cs"), rhs),
+    lapply(get_effect(bterms, "offset"), rhs),
+    re$form, lapply(re$gcall, "[[", "weightvars"),
+    bterms$adforms[c("se", "disp", "trials", "cat")],
+    bterms$auxpars$mu$covars
   )
-  int_vars <- unique(ulapply(int_effects, all.vars))
+  req_vars <- unique(ulapply(req_vars, all.vars))
+  req_vars <- setdiff(req_vars, rsv_vars)
   if (is.null(conditions)) {
-    if (!is.null(bterms$adforms$trials)) {
-      message("Using the median number of trials by default")
-    }
-    # list all required variables
-    re <- get_re(bterms)
-    req_vars <- c(
-      lapply(get_effect(bterms, "fe"), rhs), 
-      lapply(get_effect(bterms, "mo"), rhs),
-      lapply(get_effect(bterms, "me"), rhs),
-      lapply(get_effect(bterms, "sm"), rhs),
-      lapply(get_effect(bterms, "cs"), rhs),
-      lapply(get_effect(bterms, "offset"), rhs),
-      re$form, lapply(re$gcall, "[[", "weightvars"),
-      bterms$adforms[c("se", "disp", "trials", "cat")],
-      bterms$auxpars$mu$covars
-    )
-    req_vars <- unique(ulapply(req_vars, all.vars))
-    req_vars <- setdiff(req_vars, rsv_vars)
     conditions <- as.data.frame(as.list(rep(NA, length(req_vars))))
     names(conditions) <- req_vars
-    for (v in req_vars) {
-      if (is.numeric(mf[[v]])) {
-        if (v %in% int_vars) {
-          conditions[[v]] <- round(median(mf[[v]]))
-        } else {
-          conditions[[v]] <- mean(mf[[v]])
-        }
-      } else {
-        # use reference category
-        lev <- attr(as.factor(mf[[v]]), "levels")
-        conditions[[v]] <- factor(lev[1], levels = lev, 
-                                  ordered = is.ordered(mf[[v]]))
-      }
-    }
   } else {
     conditions <- as.data.frame(conditions)
     if (!nrow(conditions)) {
@@ -261,20 +238,42 @@ prepare_conditions <- function(x, conditions = NULL, effects = NULL,
       stop2("Row names of 'conditions' should be unique.")
     }
     conditions <- unique(conditions)
-    eff_vars <- lapply(effects, function(e) all.vars(parse(text = e)))
-    uni_eff_vars <- unique(unlist(eff_vars))
-    is_everywhere <- ulapply(uni_eff_vars, function(uv)
-      all(ulapply(eff_vars, function(vs) uv %in% vs)))
-    # variables that are present in every effect term
-    # do not need to be defined in conditions
-    missing_vars <- setdiff(uni_eff_vars[is_everywhere], names(conditions))
-    for (v in missing_vars) {
-      conditions[, v] <- mf[[v]][1]
+    req_vars <- setdiff(req_vars, names(conditions))
+  }
+  trial_vars <- all.vars(bterms$adforms$trials)
+  if (length(trial_vars)) {
+    write_msg <- any(ulapply(trial_vars, function(x) 
+      !isTRUE(x %in% names(conditions)) || anyNA(conditions[[x]])
+    ))
+    if (write_msg) {
+      message("Using the median number of trials by ", 
+              "default if not specified otherwise.")
     }
   }
-  amend_newdata(conditions, fit = x, re_formula = re_formula,
-                allow_new_levels = TRUE, incl_autocor = FALSE, 
-                return_standata = FALSE)
+  # use default values for unspecified variables
+  int_vars <- rmNULL(bterms$adforms[c("trials", "cat")])
+  int_vars <- c(int_vars, get_effect(bterms, "mo"))
+  int_vars <- unique(ulapply(int_vars, all.vars))
+  for (v in req_vars) {
+    if (is.numeric(mf[[v]])) {
+      if (v %in% int_vars) {
+        conditions[[v]] <- round(median(mf[[v]]))
+      } else {
+        conditions[[v]] <- mean(mf[[v]])
+      }
+    } else {
+      # use reference category
+      levels <- attr(as.factor(mf[[v]]), "levels")
+      conditions[[v]] <- factor(
+        lev[1], levels = levels, ordered = is.ordered(mf[[v]])
+      )
+    }
+  }
+  amend_newdata(
+    conditions, fit = x, re_formula = re_formula,
+    allow_new_levels = TRUE, incl_autocor = FALSE, 
+    return_standata = FALSE
+  )
 }
 
 prepare_marg_data <- function(data, conditions, int_vars = NULL,

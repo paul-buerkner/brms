@@ -19,6 +19,8 @@
       \item Introduce method \code{control_params} to
       conveniently extract control parameters of the 
       NUTS sampler.
+      \item Improve flexibility of the \code{conditions} 
+      argument of \code{marginal_effects}.
       \item Extend method \code{stanplot} to correctly 
       handle some new \code{mcmc_} plots of the 
       \pkg{bayesplot} package.
