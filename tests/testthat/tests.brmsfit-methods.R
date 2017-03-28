@@ -165,6 +165,33 @@ test_that("all S3 methods have reasonable ouputs", {
   loo4 <- SW(LOO(fit4, cores = 1))
   expect_true(is.numeric(loo4[["looic"]]))
   
+  # loo_linpred
+  llp <- SW(loo_linpred(fit1))
+  expect_equal(length(llp), nobs(fit1))
+  llp2 <- SW(loo::psislw(-log_lik(fit1), cores = 1))
+  llp2 <- loo_linpred(fit1, lw = llp2$lw_smooth)
+  expect_equal(llp, llp2)
+  
+  expect_error(loo_linpred(fit4), "Method 'loo_linpred'")
+  llp <- SW(loo_linpred(fit2, scale = "response", type = "var"))
+  expect_equal(length(llp), nobs(fit2))
+  
+  # loo_predict
+  llp <- SW(loo_predict(fit1))
+  expect_equal(length(llp), nobs(fit1))
+  llp <- SW(loo_predict(
+    fit1, newdata = newdata, 
+    type = "quantile", probs = c(0.25, 0.75),
+    allow_new_levels = TRUE
+  ))
+  expect_equal(dim(llp), c(2, nrow(newdata)))
+  llp <- SW(loo_predict(fit4))
+  expect_equal(length(llp), nobs(fit4))
+  
+  # loo_predictive_interval
+  llp <- SW(loo_predictive_interval(fit3, pointwise = TRUE))
+  expect_equal(dim(llp), c(nobs(fit3), 2))
+  
   # marginal_effects
   me <- marginal_effects(fit1)
   expect_equal(nrow(me[[2]]), 100)
