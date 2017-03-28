@@ -215,6 +215,7 @@ fix_factor_contrasts <- function(data, optdata = NULL) {
 amend_newdata <- function(newdata, fit, re_formula = NULL, 
                           allow_new_levels = FALSE,
                           check_response = FALSE,
+                          only_response = FALSE,
                           incl_autocor = TRUE,
                           return_standata = TRUE) {
   # amend newdata passed to predict and fitted methods
@@ -236,8 +237,11 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   if (is.null(newdata)) {
     # to shorten expressions in S3 methods such as predict.brmsfit
     if (return_standata) {
-      control <- nlist(not4stan = TRUE, save_order = TRUE,
-                       omit_response = !check_response)
+      control <- list(
+        not4stan = TRUE, save_order = TRUE,
+        omit_response = !check_response,
+        only_response = only_response
+      )
       newdata <- standata(fit, re_formula = re_formula, control = control)
     } else {
       newdata <- model.frame(fit)
@@ -384,6 +388,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       is_newdata = TRUE, not4stan = TRUE, 
       old_levels = old_levels, save_order = TRUE, 
       omit_response = !check_response,
+      only_response = only_response,
       old_cat <- is_old_categorical(fit)
     )
     old_terms <- attr(model.frame(fit), "terms")

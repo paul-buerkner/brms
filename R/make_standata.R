@@ -33,6 +33,7 @@ make_standata <- function(formula, data, family = NULL,
   #   not4stan: is make_standata called for use in S3 methods?
   #   save_order: should the initial order of the data be saved?
   #   omit_response: omit checking of the response?
+  #   only_response: only compute data related to the response?
   #   ntrials, ncat, Jmo: standata based on the original data
   dots <- list(...)
   not4stan <- isTRUE(control$not4stan)
@@ -145,46 +146,77 @@ make_standata <- function(formula, data, family = NULL,
     standata$Y <- as.array(standata$Y)
   }
   
+  if (old_mv) {
+    # deprecated as of brms 1.0.0
+    # evaluate even if check_response is FALSE to ensure 
+    # that N_trait is defined
+    if (is_linear && length(bterms$response) > 1L) {
+      standata$Y <- matrix(standata$Y, ncol = length(bterms$response))
+      NC_trait <- ncol(standata$Y) * (ncol(standata$Y) - 1L) / 2L
+      standata <- c(standata, list(N_trait = nrow(standata$Y), 
+                                   K_trait = ncol(standata$Y),
+                                   NC_trait = NC_trait)) 
+      # for compatibility with the S3 methods of brms >= 1.0.0
+      standata$nresp <- standata$K_trait
+      standata$nrescor <- standata$NC_trait
+    }
+    if (is_forked) {
+      # the second half of Y is only dummy data
+      # that was put into data to make melt_data work correctly
+      standata$N_trait <- nrow(data) / 2L
+      standata$Y <- as.array(standata$Y[1L:standata$N_trait]) 
+    }
+    if (is_categorical && !isTRUE(control$old_cat == 1L)) {
+      ncat1m <- standata$ncat - 1L
+      standata$N_trait <- nrow(data) / ncat1m
+      standata$Y <- as.array(standata$Y[1L:standata$N_trait])
+      standata$J_trait <- as.array(matrix(1L:standata$N, ncol = ncat1m))
+    }
+  }
+  
   # data for various kinds of effects
-  ranef <- tidy_ranef(bterms, data, ncat = control$ncat, 
-                      old_levels = control$old_levels)
-  args_eff <- nlist(data, ranef, prior, knots, not4stan)
-  resp <- bterms$response
-  if (length(resp) > 1L && !old_mv) {
-    args_eff_spec <- list(
-      x = bterms$auxpars[["mu"]],
-      smooth = control$smooth[["mu"]],
-      Jmo = control$Jmo[["mu"]]
-    )
-    bterms$auxpars[["mu"]] <- NULL
-    for (r in resp) {
-      data_eff <- do.call(
-        data_effects, c(args_eff_spec, args_eff, nlpar = r)
+  only_response <- isTRUE(control$only_response)
+  if (!only_response) {
+    ranef <- tidy_ranef(bterms, data, ncat = control$ncat, 
+                        old_levels = control$old_levels)
+    args_eff <- nlist(data, ranef, prior, knots, not4stan)
+    resp <- bterms$response
+    if (length(resp) > 1L && !old_mv) {
+      args_eff_spec <- list(
+        x = bterms$auxpars[["mu"]],
+        smooth = control$smooth[["mu"]],
+        Jmo = control$Jmo[["mu"]]
       )
-      standata <- c(standata, data_eff)
+      bterms$auxpars[["mu"]] <- NULL
+      for (r in resp) {
+        data_eff <- do.call(
+          data_effects, c(args_eff_spec, args_eff, nlpar = r)
+        )
+        standata <- c(standata, data_eff)
+      }
+      if (is_linear(family)) {
+        standata$nresp <- length(resp)
+        standata$nrescor <- length(resp) * (length(resp) - 1) / 2
+        colnames(standata$Y) <- resp
+      }
     }
-    if (is_linear(family)) {
-      standata$nresp <- length(resp)
-      standata$nrescor <- length(resp) * (length(resp) - 1) / 2
-      colnames(standata$Y) <- resp
+    # data for predictors of auxiliary parameters
+    for (ap in names(bterms$auxpars)) {
+      args_eff_spec <- list(
+        x = bterms$auxpars[[ap]], nlpar = ap,
+        smooth = control$smooth[[ap]], 
+        Jmo = control$Jmo[[ap]]
+      )
+      data_aux_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
+      standata <- c(standata, data_aux_eff)
     }
+    for (ap in names(bterms$fauxpars)) {
+      standata[[ap]] <- bterms$fauxpars[[ap]]
+    }
+    # data for grouping factors separated after group-ID
+    data_gr <- data_gr(ranef, data, cov_ranef = cov_ranef)
+    standata <- c(standata, data_gr)
   }
-  # data for predictors of auxiliary parameters
-  for (ap in names(bterms$auxpars)) {
-    args_eff_spec <- list(
-      x = bterms$auxpars[[ap]], nlpar = ap,
-      smooth = control$smooth[[ap]], 
-      Jmo = control$Jmo[[ap]]
-    )
-    data_aux_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
-    standata <- c(standata, data_aux_eff)
-  }
-  for (ap in names(bterms$fauxpars)) {
-    standata[[ap]] <- bterms$fauxpars[[ap]]
-  }
-  # data for grouping factors separated after group-ID
-  data_gr <- data_gr(ranef, data, cov_ranef = cov_ranef)
-  standata <- c(standata, data_gr)
   
   # data for specific families
   if (has_trials(family)) {
@@ -233,34 +265,6 @@ make_standata <- function(formula, data, family = NULL,
     if (check_response && any(standata$Y > standata$ncat)) {
       stop2("Number of categories is smaller than the response ", 
             "variable would suggest.")
-    }
-  }
-  
-  if (old_mv) {
-    # deprecated as of brms 1.0.0
-    # evaluate even if check_response is FALSE to ensure 
-    # that N_trait is defined
-    if (is_linear && length(bterms$response) > 1L) {
-      standata$Y <- matrix(standata$Y, ncol = length(bterms$response))
-      NC_trait <- ncol(standata$Y) * (ncol(standata$Y) - 1L) / 2L
-      standata <- c(standata, list(N_trait = nrow(standata$Y), 
-                                   K_trait = ncol(standata$Y),
-                                   NC_trait = NC_trait)) 
-      # for compatibility with the S3 methods of brms >= 1.0.0
-      standata$nresp <- standata$K_trait
-      standata$nrescor <- standata$NC_trait
-    }
-    if (is_forked) {
-      # the second half of Y is only dummy data
-      # that was put into data to make melt_data work correctly
-      standata$N_trait <- nrow(data) / 2L
-      standata$Y <- as.array(standata$Y[1L:standata$N_trait]) 
-    }
-    if (is_categorical && !isTRUE(control$old_cat == 1L)) {
-      ncat1m <- standata$ncat - 1L
-      standata$N_trait <- nrow(data) / ncat1m
-      standata$Y <- as.array(standata$Y[1L:standata$N_trait])
-      standata$J_trait <- as.array(matrix(1L:standata$N, ncol = ncat1m))
     }
   }
   
@@ -316,66 +320,72 @@ make_standata <- function(formula, data, family = NULL,
       stop2("Some responses are outside of the truncation bounds.")
     }
   }
+  
   # autocorrelation variables
-  if (has_arma(autocor)) {
-    if (nchar(bterms$time$group)) {
-      tgroup <- data[[bterms$time$group]]
-    } else {
-      tgroup <- rep(1, standata$N) 
-    }
-    Kar <- get_ar(autocor)
-    Kma <- get_ma(autocor)
-    Karr <- get_arr(autocor)
-    if (Kar || Kma) {
-      # ARMA effects (of residuals)
-      standata$tg <- as.numeric(factor(tgroup))
-      standata$Kar <- Kar
-      standata$Kma <- Kma
-      standata$Karma <- max(Kar, Kma)
-      if (use_cov(autocor)) {
-        # data for covariance matrices of ARMA effects 
-        standata$N_tg <- length(unique(standata$tg))
-        standata$begin_tg <- as.array(with(standata, 
-          ulapply(unique(tgroup), match, tgroup)))
-        standata$nobs_tg <- as.array(with(standata, 
-          c(if (N_tg > 1L) begin_tg[2:N_tg], N + 1) - begin_tg))
-        standata$end_tg <- with(standata, begin_tg + nobs_tg - 1)
-      } 
-    }
-    if (Karr) {
-      if (length(bterms$response) > 1L) {
-        stop2("ARR structure not yet implemented for multivariate models.")
+  if (!only_response) {
+    if (has_arma(autocor)) {
+      if (nchar(bterms$time$group)) {
+        tgroup <- data[[bterms$time$group]]
+      } else {
+        tgroup <- rep(1, standata$N) 
       }
-      # ARR effects (autoregressive effects of the response)
-      standata$Yarr <- arr_design_matrix(standata$Y, Karr, tgroup)
-      standata$Karr <- Karr
+      Kar <- get_ar(autocor)
+      Kma <- get_ma(autocor)
+      Karr <- get_arr(autocor)
+      if (Kar || Kma) {
+        # ARMA effects (of residuals)
+        standata$tg <- as.numeric(factor(tgroup))
+        standata$Kar <- Kar
+        standata$Kma <- Kma
+        standata$Karma <- max(Kar, Kma)
+        if (use_cov(autocor)) {
+          # data for covariance matrices of ARMA effects 
+          standata$N_tg <- length(unique(standata$tg))
+          standata$begin_tg <- as.array(with(standata, 
+            ulapply(unique(tgroup), match, tgroup)
+          ))
+          standata$nobs_tg <- as.array(with(standata, 
+            c(if (N_tg > 1L) begin_tg[2:N_tg], N + 1) - begin_tg
+          ))
+          standata$end_tg <- with(standata, begin_tg + nobs_tg - 1)
+        } 
+      }
+      if (Karr) {
+        if (length(bterms$response) > 1L) {
+          stop2("ARR structure not yet implemented for multivariate models.")
+        }
+        # ARR effects (autoregressive effects of the response)
+        standata$Yarr <- arr_design_matrix(standata$Y, Karr, tgroup)
+        standata$Karr <- Karr
+      }
+    } 
+    if (is.cor_fixed(autocor)) {
+      V <- autocor$V
+      rmd_rows <- attr(data, "na.action")
+      if (!is.null(rmd_rows)) {
+        V <- V[-rmd_rows, -rmd_rows, drop = FALSE]
+      }
+      if (nrow(V) != nrow(data)) {
+        stop2("'V' must have the same number of rows as 'data'.")
+      }
+      if (min(eigen(V)$values <= 0)) {
+        stop2("'V' must be positive definite.")
+      }
+      standata$V <- V
     }
-  } 
-  if (is.cor_fixed(autocor)) {
-    V <- autocor$V
-    rmd_rows <- attr(data, "na.action")
-    if (!is.null(rmd_rows)) {
-      V <- V[-rmd_rows, -rmd_rows, drop = FALSE]
+    if (is.cor_bsts(autocor)) {
+      if (length(bterms$response) > 1L) {
+        stop2("BSTS structure not yet implemented for multivariate models.")
+      }
+      if (nchar(bterms$time$group)) {
+        tgroup <- data[[bterms$time$group]]
+      } else {
+        tgroup <- rep(1, standata$N) 
+      }
+      standata$tg <- as.array(as.numeric(factor(tgroup)))
     }
-    if (nrow(V) != nrow(data)) {
-      stop2("'V' must have the same number of rows as 'data'.")
-    }
-    if (min(eigen(V)$values <= 0)) {
-      stop2("'V' must be positive definite.")
-    }
-    standata$V <- V
   }
-  if (is.cor_bsts(autocor)) {
-    if (length(bterms$response) > 1L) {
-      stop2("BSTS structure not yet implemented for multivariate models.")
-    }
-    if (nchar(bterms$time$group)) {
-      tgroup <- data[[bterms$time$group]]
-    } else {
-      tgroup <- rep(1, standata$N) 
-    }
-    standata$tg <- as.array(as.numeric(factor(tgroup)))
-  }
+  
   standata$prior_only <- ifelse(identical(sample_prior, "only"), 1L, 0L)
   if (isTRUE(control$save_order)) {
     attr(standata, "old_order") <- attr(data, "old_order")

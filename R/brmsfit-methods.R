@@ -1189,12 +1189,10 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
               type, "' by default.")
     }
   }
-  newd_args <- nlist(
-    newdata, fit = object, re_formula, 
-    allow_new_levels, incl_autocor,
-    check_response = TRUE
+  standata <- amend_newdata(
+    newdata, object, re_formula = NA, incl_autocor = incl_autocor,
+    check_response = TRUE, only_response = TRUE
   )
-  standata <- do.call(amend_newdata, newd_args)
   y <- as.vector(standata$Y)
   if (!is.null(standata$cens)) {
     warning2("Posterior predictive checks may not be ", 
@@ -1203,7 +1201,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
   pred_args <- nlist(
     object, newdata, re_formula, allow_new_levels, 
     sample_new_levels, incl_autocor, nsamples, subset, 
-    ntrys, sort = TRUE, summary = FALSE
+    ntrys, sort = FALSE, summary = FALSE
   )
   yrep <- as.matrix(do.call(method, pred_args))
   if (family(object)$family %in% "binomial") {
@@ -1212,20 +1210,11 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     yrep <- yrep / as_draws_matrix(standata$trials, dim = dim(yrep))
   }
   ppc_args <- list(y, yrep, ...)
-  old_order <- attr(standata, "old_order")
   if (!is.null(group)) {
-    group_var <- model.frame(object)[[group]]
-    if (!is.null(old_order)) {
-      group_var <- group_var[order(old_order)]
-    }
-    ppc_args$group <- group_var
+    ppc_args$group <- model.frame(object)[[group]]
   }
   if (!is.null(x)) {
-    x_var <- model.frame(object)[[x]]
-    if (!is.null(old_order)) {
-      x_var <- x_var[order(old_order)]
-    }
-    ppc_args$x <- x_var
+    ppc_args$x <- model.frame(object)[[x]]
   }
   do.call(ppc_fun, ppc_args)
 }
