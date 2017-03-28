@@ -50,7 +50,7 @@ See \code{\link[loo:loo]{loo}} for details.}
 \code{\link[brms:predict.brmsfit]{predict}} or
 \code{\link[brms:fitted.brmsfit]{fitted}}.}
 
-\item{scale}{Passed to \code{\link[brms]{fitted}}.}
+\item{scale}{Passed to \code{\link[brms:fitted.brmsfit]{fitted}}.}
 
 \item{prob}{For \code{loo_predictive_interval}, a scalar in \eqn{(0,1)}
 indicating the desired probability mass to include in the intervals. The

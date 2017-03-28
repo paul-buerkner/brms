@@ -2248,7 +2248,10 @@ loo.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
 #'   \code{"quantile"}.
 #' @param probs A vector of quantiles to compute. 
 #'   Only used if \code{type = quantile}.
-#' @param scale Passed to \code{\link[brms]{fitted}}.
+#' @param scale Passed to \code{\link[brms:fitted.brmsfit]{fitted}}.
+#' @param prob For \code{loo_predictive_interval}, a scalar in \eqn{(0,1)}
+#'   indicating the desired probability mass to include in the intervals. The
+#'   default is \code{prob = 0.9} (\eqn{90}\% intervals).
 #' @param lw An optional matrix of (smoothed) log-weights. If \code{lw} is 
 #'   missing then \code{\link[loo]{psislw}} is executed internally, which may be
 #'   time consuming for models fit to very large datasets. 
@@ -2299,9 +2302,9 @@ loo_predict.brmsfit <- function(object, type = c("mean", "var", "quantile"),
                                 wtrunc = 3/4, ...) {
   type <- match.arg(type)
   loo_args <- nlist(cores, wcp, wtrunc)
-  lwts <- loo_weights(object, lw = lw, log = TRUE, loo_args = loo_args, ...)
+  lw <- loo_weights(object, lw = lw, log = TRUE, loo_args = loo_args, ...)
   preds <- predict(object, summary = FALSE, ...)
-  loo::E_loo(x = preds, lw = lwts, type = type, probs = probs)
+  loo::E_loo(x = preds, lw = lw, type = type, probs = probs)
 }
 
 #' @rdname loo_predict.brmsfit
@@ -2318,17 +2321,12 @@ loo_linpred.brmsfit <- function(object, type = c("mean", "var", "quantile"),
           "for categorical or ordinal models")
   }
   loo_args <- nlist(cores, wcp, wtrunc)
-  lwts <- loo_weights(object, lw = lw, log = TRUE, loo_args = loo_args, ...)
+  lw <- loo_weights(object, lw = lw, log = TRUE, loo_args = loo_args, ...)
   preds <- fitted(object, scale = scale, summary = FALSE, ...)
-  loo::E_loo(x = preds, lw = lwts, type = type, probs = probs)
+  loo::E_loo(x = preds, lw = lw, type = type, probs = probs)
 }
 
 #' @rdname loo_predict.brmsfit
-#' 
-#' @param prob For \code{loo_predictive_interval}, a scalar in \eqn{(0,1)}
-#'   indicating the desired probability mass to include in the intervals. The
-#'   default is \code{prob = 0.9} (\eqn{90}\% intervals).
-#' 
 #' @method loo_predictive_interval brmsfit
 #' @importFrom rstantools loo_predictive_interval
 #' @export loo_predictive_interval
