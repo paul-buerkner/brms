@@ -175,6 +175,33 @@ test_that("all S3 methods have reasonable ouputs", {
   
   loo5 <- SW(LOO(fit5, cores = 1))
   expect_true(is.numeric(loo5[["looic"]]))
+
+  # loo_linpred
+  llp <- SW(loo_linpred(fit1))
+  expect_equal(length(llp), nobs(fit1))
+  llp2 <- SW(loo::psislw(-log_lik(fit1), cores = 1))
+  llp2 <- loo_linpred(fit1, lw = llp2$lw_smooth)
+  expect_equal(llp, llp2)
+  
+  expect_error(loo_linpred(fit4), "Method 'loo_linpred'")
+  llp <- SW(loo_linpred(fit2, scale = "response", type = "var"))
+  expect_equal(length(llp), nobs(fit2))
+  
+  # loo_predict
+  llp <- SW(loo_predict(fit1))
+  expect_equal(length(llp), nobs(fit1))
+  llp <- SW(loo_predict(
+    fit1, newdata = newdata, 
+    type = "quantile", probs = c(0.25, 0.75),
+    allow_new_levels = TRUE
+  ))
+  expect_equal(dim(llp), c(2, nrow(newdata)))
+  llp <- SW(loo_predict(fit4))
+  expect_equal(length(llp), nobs(fit4))
+  
+  # loo_predictive_interval
+  llp <- SW(loo_predictive_interval(fit3, pointwise = TRUE))
+  expect_equal(dim(llp), c(nobs(fit3), 2))
   
   # marginal_effects
   me <- marginal_effects(fit1)
@@ -190,17 +217,19 @@ test_that("all S3 methods have reasonable ouputs", {
   meplot <- plot(me, stype = "raster", plot = FALSE)
   expect_true(is(meplot[[1]], "ggplot"))
   
-  mdata = data.frame(Age = c(-0.3, 0, 0.3), count = c(10, 20, 30), 
-                     visit = 1:3, patient = 1, Exp = c(1,3,5))
+  mdata = data.frame(
+    Age = c(-0.3, 0, 0.3), 
+    count = c(10, 20, 30), 
+    Exp = c(1, 3, 5)
+  )
   exp_nrow <- nrow(mdata) * 100
-  expect_equal(nrow(marginal_effects(fit1, conditions = mdata)[[1]]),
-               exp_nrow)
-  expect_equal(nrow(marginal_effects(fit1, effects = "Trt", 
-                                     conditions = mdata)[[1]]), 
-               exp_nrow)
-  expect_equal(nrow(marginal_effects(fit1, re_formula = NULL, 
-                                     conditions = mdata)[[1]]), 
-               exp_nrow)
+  me <- marginal_effects(fit1, effects = "Trt", conditions = mdata)
+  expect_equal(nrow(me[[1]]), exp_nrow)
+  
+  mdata$visit <- 1:3
+  me <- marginal_effects(fit1, re_formula = NULL, conditions = mdata)
+  expect_equal(nrow(me[[1]]), exp_nrow)
+  
   expect_error(marginal_effects(fit1, effects = "Trtc"), 
                "All specified effects are invalid for this model")
   expect_warning(marginal_effects(fit1, effects = c("Trtc", "Trt")), 
@@ -208,9 +237,11 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_error(marginal_effects(fit1, effects = "Trtc:a:b"), 
                "please use the 'conditions' argument")
   
+  mdata$visit <- NULL
+  mdata$patient <- 1
   expect_equal(nrow(marginal_effects(fit2)[[2]]), 100)
-  expect_equal(nrow(marginal_effects(fit2, conditions = mdata)[[1]]),
-               exp_nrow)
+  me <- marginal_effects(fit2, re_formula = NULL, conditions = mdata)
+  expect_equal(nrow(me[[1]]), exp_nrow)
   
   expect_warning(me4 <- marginal_effects(fit4),
                  "Predictions are treated as continuous variables")

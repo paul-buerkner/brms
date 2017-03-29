@@ -18,7 +18,7 @@ array2list <- function(x) {
 }
 
 contains_samples <- function(x) {
-  if (!is(x$fit, "stanfit") || !length(x$fit@sim)) {
+  if (!(is.brmsfit(x) && length(x$fit@sim))) {
     stop2("The model does not contain posterior samples.")
   }
   invisible(TRUE)
@@ -821,29 +821,37 @@ extract_pars <- function(pars, all_pars, exact_match = FALSE,
   pars
 }
 
-compute_ic <- function(x, ic = c("waic", "loo"), ll_args = list(), ...) {
+compute_ic <- function(x, ic = c("waic", "loo", "psislw"), 
+                       loo_args = list(), ...) {
   # compute WAIC and LOO using the 'loo' package
   # Args:
   #   x: an object of class brmsfit
   #   ic: the information criterion to be computed
-  #   ll_args: a list of additional arguments passed to log_lik
-  #   ...: passed to the loo package
+  #   loo_args: passed to functions of the loo package
+  #   ...: passed to log_lik.brmsfit
   # Returns:
-  #   output of the loo package with amended class attribute
+  #   output of the loo functions with amended class attribute
+  stopifnot(is.list(loo_args))
   ic <- match.arg(ic)
+  dots <- list(...)
   contains_samples(x)
-  args <- list(x = do.call(log_lik, c(list(x), ll_args)))
-  if (ll_args$pointwise) {
-    args$args$draws <- attr(args$x, "draws")
-    args$args$data <- data.frame()
-    args$args$N <- attr(args$x, "N")
-    args$args$S <- nsamples(x, subset = ll_args$subset)
-    attr(args$x, "draws") <- NULL
+  loo_args$x <- do.call(log_lik, c(list(x), dots))
+  pointwise <- is.function(loo_args$x)
+  if (pointwise) {
+    loo_args$args <- attr(loo_args$x, "args")
+    attr(loo_args$x, "args") <- NULL
   }
-  if (ic == "loo") {
-    args <- c(args, ...)
+  if (ic == "psislw") {
+    if (pointwise) {
+      loo_args[["llfun"]] <- loo_args[["x"]]
+      loo_args[["llargs"]] <- loo_args[["args"]]
+      loo_args[["x"]] <- loo_args[["args"]] <- NULL
+    } else {
+      loo_args[["lw"]] <- -loo_args[["x"]]
+      loo_args[["x"]] <- NULL
+    }
   }
-  IC <- do.call(eval(parse(text = paste0("loo::", ic))), args)
+  IC <- do.call(eval(parse(text = paste0("loo::", ic))), loo_args)
   class(IC) <- c("ic", "loo")
   IC
 }
@@ -930,7 +938,32 @@ compare_ic <- function(..., x = NULL) {
   x
 }
 
-set_pointwise <- function(x, newdata = NULL, subset = NULL, thres = 1e+08) {
+loo_weights <- function(x, lw = NULL, log = FALSE, 
+                        loo_args = list(), ...) {
+  # compute loo weights for use in loo_predict and related methods
+  # Args:
+  #   x: a brmsfit object
+  #   lw: precomputed log weights matrix
+  #   log: return log weights?
+  #   loo_args: further arguments passed to functions of loo
+  #   ...: further arguments passed to compute_ic
+  # Returns:
+  #   an S x N matrix
+  if (!is.null(lw)) {
+    stopifnot(is.matrix(lw))
+  } else {
+    message("Running PSIS to compute weights")
+    psis <- compute_ic(x, ic = "psislw", loo_args = loo_args, ...)
+    lw <- psis[["lw_smooth"]]
+  }
+  if (!log) {
+    lw <- exp(lw) 
+  } 
+  lw
+}
+
+set_pointwise <- function(x, pointwise = NULL, newdata = NULL, 
+                          subset = NULL, thres = 1e+08) {
   # set the pointwise argument based on the model size
   # Args:
   #   x: a brmsfit object
@@ -939,17 +972,26 @@ set_pointwise <- function(x, newdata = NULL, subset = NULL, thres = 1e+08) {
   #   thres: threshold above which pointwise is set to TRUE
   # Returns:
   #   TRUE or FALSE
-  nsamples <- nsamples(x, subset = subset)
-  if (is.data.frame(newdata)) {
-    nobs <- nrow(newdata)
+  if (!is.null(pointwise)) {
+    pointwise <- as.logical(pointwise)
+    if (length(pointwise) != 1L || anyNA(pointwise)) {
+      stop2("Argument 'pointwise' must be either TRUE or FALSE.")
+    }
   } else {
-    nobs <- nobs(x)
-  }
-  pointwise <- nsamples * nobs > thres
-  if (pointwise) {
-    message("Switching to pointwise evaluation to reduce ",  
-            "RAM requirements.\nThis will likely increase ",
-            "computation time.")
+    nsamples <- nsamples(x, subset = subset)
+    if (is.data.frame(newdata)) {
+      nobs <- nrow(newdata)
+    } else {
+      nobs <- nobs(x)
+    }
+    pointwise <- nsamples * nobs > thres
+    if (pointwise) {
+      message(
+        "Switching to pointwise evaluation to reduce ",  
+        "RAM requirements.\nThis will likely increase ",
+        "computation time."
+      )
+    }
   }
   pointwise
 }

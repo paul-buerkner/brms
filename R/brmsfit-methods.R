@@ -1193,12 +1193,10 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
               type, "' by default.")
     }
   }
-  newd_args <- nlist(
-    newdata, fit = object, re_formula, 
-    allow_new_levels, incl_autocor,
-    check_response = TRUE
+  standata <- amend_newdata(
+    newdata, object, re_formula = NA, incl_autocor = incl_autocor,
+    check_response = TRUE, only_response = TRUE
   )
-  standata <- do.call(amend_newdata, newd_args)
   y <- as.vector(standata$Y)
   if (!is.null(standata$cens)) {
     warning2("Posterior predictive checks may not be ", 
@@ -1207,7 +1205,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
   pred_args <- nlist(
     object, newdata, re_formula, allow_new_levels, 
     sample_new_levels, incl_autocor, nsamples, subset, 
-    ntrys, sort = TRUE, summary = FALSE
+    ntrys, sort = FALSE, summary = FALSE
   )
   yrep <- as.matrix(do.call(method, pred_args))
   if (family(object)$family %in% "binomial") {
@@ -1216,20 +1214,11 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     yrep <- yrep / as_draws_matrix(standata$trials, dim = dim(yrep))
   }
   ppc_args <- list(y, yrep, ...)
-  old_order <- attr(standata, "old_order")
   if (!is.null(group)) {
-    group_var <- model.frame(object)[[group]]
-    if (!is.null(old_order)) {
-      group_var <- group_var[order(old_order)]
-    }
-    ppc_args$group <- group_var
+    ppc_args$group <- model.frame(object)[[group]]
   }
   if (!is.null(x)) {
-    x_var <- model.frame(object)[[x]]
-    if (!is.null(old_order)) {
-      x_var <- x_var[order(old_order)]
-    }
-    ppc_args$x <- x_var
+    ppc_args$x <- model.frame(object)[[x]]
   }
   do.call(ppc_fun, ppc_args)
 }
@@ -2160,14 +2149,13 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
   if (is.null(subset) && !is.null(nsamples)) {
     subset <- sample(nsamples(x), nsamples)
   }
-  if (is.null(pointwise)) {
-    pointwise <- set_pointwise(x, subset = subset, newdata = newdata)
-  }
-  ll_args = nlist(
-    newdata, re_formula, allow_new_levels, 
-    sample_new_levels, subset, pointwise
+  pointwise <- set_pointwise(
+    x, pointwise, subset = subset, newdata = newdata
   )
-  args <- nlist(ic = "waic", ll_args)
+  args = nlist(
+    ic = "waic", newdata, re_formula, subset,
+    allow_new_levels, sample_new_levels, pointwise
+  )
   if (length(models) > 1L) {
     out <- named_list(mnames)
     for (i in seq_along(models)) {
@@ -2212,14 +2200,14 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
   if (is.null(subset) && !is.null(nsamples)) {
     subset <- sample(nsamples(x), nsamples)
   }
-  if (is.null(pointwise)) {
-    pointwise <- set_pointwise(x, subset = subset, newdata = newdata)
-  }
-  ll_args = nlist(
-    newdata, re_formula, allow_new_levels, 
-    sample_new_levels, subset, pointwise
+  pointwise <- set_pointwise(
+    x, pointwise, subset = subset, newdata = newdata
   )
-  args <- nlist(ic = "loo", ll_args, wcp, wtrunc, cores)
+  loo_args <- nlist(wcp, wtrunc, cores)
+  args = nlist(
+    ic = "loo", loo_args, newdata, re_formula, subset,
+    allow_new_levels, sample_new_levels, pointwise
+  )
   if (length(models) > 1L) {
     out <- named_list(mnames)
     for (i in seq_along(models)) {
@@ -2252,6 +2240,117 @@ loo.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
   eval(cl, parent.frame())
 }
 
+#' Compute Weighted Expectations Using LOO
+#' 
+#' These functions are wrappers around the \code{\link[loo]{E_loo}} function 
+#' of the \pkg{loo} package.
+#'
+#' @aliases loo_predict loo_linpred loo_predictive_interval
+#' 
+#' @param object An object of class \code{brmsfit}.
+#' @param type The statistic to be computed on the results. 
+#'   Can by either \code{"mean"} (default), \code{"var"}, or
+#'   \code{"quantile"}.
+#' @param probs A vector of quantiles to compute. 
+#'   Only used if \code{type = quantile}.
+#' @param scale Passed to \code{\link[brms:fitted.brmsfit]{fitted}}.
+#' @param prob For \code{loo_predictive_interval}, a scalar in \eqn{(0,1)}
+#'   indicating the desired probability mass to include in the intervals. The
+#'   default is \code{prob = 0.9} (\eqn{90}\% intervals).
+#' @param lw An optional matrix of (smoothed) log-weights. If \code{lw} is 
+#'   missing then \code{\link[loo]{psislw}} is executed internally, which may be
+#'   time consuming for models fit to very large datasets. 
+#'   If \code{lw} is specified, arguments passed via \code{...} may be ignored.
+#' @param ... Optional arguments passed to the underlying methods that is 
+#'   \code{\link[brms:log_lik.brmsfit]{log_lik}}, as well as
+#'   \code{\link[brms:predict.brmsfit]{predict}} or
+#'   \code{\link[brms:fitted.brmsfit]{fitted}}. 
+#' @inheritParams LOO.brmsfit
+#'   
+#' @return \code{loo_predict} and \code{loo_linpred} return a vector with one 
+#'   element per observation. The only exception is if \code{type = "quantile"} 
+#'   and \code{length(probs) >= 2}, in which case a separate vector for each 
+#'   element of \code{probs} is computed and they are returned in a matrix with 
+#'   \code{length(probs)} rows and one column per observation.
+#'   
+#'   \code{loo_predictive_interval} returns a matrix with one row per 
+#'   observation and two columns. 
+#'   \code{loo_predictive_interval(..., prob = p)} is equivalent to 
+#'   \code{loo_predict(..., type = "quantile", probs = c(a, 1-a))} with 
+#'   \code{a = (1 - p)/2}, except it transposes the result and adds informative 
+#'   column names.
+#'   
+#' @examples
+#' \dontrun{
+#' ## data from help("lm")
+#' ctl <- c(4.17,5.58,5.18,6.11,4.50,4.61,5.17,4.53,5.33,5.14)
+#' trt <- c(4.81,4.17,4.41,3.59,5.87,3.83,6.03,4.89,4.32,4.69)
+#' d <- data.frame(
+#'   weight = c(ctl, trt), 
+#'   group = gl(2, 10, 20, labels = c("Ctl", "Trt"))
+#' ) 
+#' fit <- brm(weight ~ group, data = d)
+#' loo_predictive_interval(fit, prob = 0.8)
+#' 
+#' ## optionally log-weights can be pre-computed and reused
+#' psis <- loo::psislw(-log_lik(fit), cores = 2)
+#' loo_predictive_interval(fit, prob = 0.8, lw = psis$lw_smooth)
+#' loo_predict(fit, type = "var", lw = psis$lw_smooth)
+#' }
+#' 
+#' @method loo_predict brmsfit
+#' @importFrom rstantools loo_predict
+#' @export loo_predict
+#' @export 
+loo_predict.brmsfit <- function(object, type = c("mean", "var", "quantile"), 
+                                probs = 0.5, lw = NULL, cores = 1, wcp = 0.2, 
+                                wtrunc = 3/4, ...) {
+  type <- match.arg(type)
+  loo_args <- nlist(cores, wcp, wtrunc)
+  lw <- loo_weights(object, lw = lw, log = TRUE, loo_args = loo_args, ...)
+  preds <- predict(object, summary = FALSE, ...)
+  loo::E_loo(x = preds, lw = lw, type = type, probs = probs)
+}
+
+#' @rdname loo_predict.brmsfit
+#' @method loo_linpred brmsfit
+#' @importFrom rstantools loo_linpred
+#' @export loo_linpred
+#' @export 
+loo_linpred.brmsfit <- function(object, type = c("mean", "var", "quantile"), 
+                                probs = 0.5, scale = "linear", lw = NULL, 
+                                cores = 1, wcp = 0.2, wtrunc = 3/4, ...) {
+  type <- match.arg(type)
+  if (is_ordinal(object$family) || is_categorical(object$family)) {
+    stop2("Method 'loo_linpred' is not yet working ", 
+          "for categorical or ordinal models")
+  }
+  loo_args <- nlist(cores, wcp, wtrunc)
+  lw <- loo_weights(object, lw = lw, log = TRUE, loo_args = loo_args, ...)
+  preds <- fitted(object, scale = scale, summary = FALSE, ...)
+  loo::E_loo(x = preds, lw = lw, type = type, probs = probs)
+}
+
+#' @rdname loo_predict.brmsfit
+#' @method loo_predictive_interval brmsfit
+#' @importFrom rstantools loo_predictive_interval
+#' @export loo_predictive_interval
+#' @export
+loo_predictive_interval.brmsfit <- function(object, prob = 0.9,
+                                            lw = NULL, ...) {
+  if (length(prob) != 1L) {
+    stop2("Argument 'prob' should be of length 1.")
+  }
+  alpha <- (1 - prob) / 2
+  probs <- c(alpha, 1 - alpha)
+  labs <- paste0(100 * probs, "%")
+  intervals <- loo_predict(
+    object, type = "quantile", probs = probs, lw = lw, ...
+  )
+  rownames(intervals) <- labs
+  t(intervals)
+}
+ 
 #' Compute the Pointwise Log-Likelihood
 #' 
 #' @aliases log_lik logLik.brmsfit
@@ -2298,7 +2397,10 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   loglik_fun <- paste0("loglik_", draws$f$family)
   loglik_fun <- get(loglik_fun, asNamespace("brms"))
   if (pointwise) {
-    loglik <- structure(loglik_fun, draws = draws, N = N)
+    loglik <- loglik_fun
+    attr(loglik, "args") <- nlist(
+      draws, N, S = draws$nsamples, data = data.frame()
+    )
   } else {
     if (is.list(draws$mu[["mv"]])) {
       draws$mu <- get_eta(draws$mu)
