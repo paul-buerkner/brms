@@ -157,34 +157,6 @@ make_standata <- function(formula, data, family = NULL,
     standata$Y <- as.array(standata$Y)
   }
   
-  if (old_mv) {
-    # deprecated as of brms 1.0.0
-    # evaluate even if check_response is FALSE to ensure 
-    # that N_trait is defined
-    if (is_linear && length(bterms$response) > 1L) {
-      standata$Y <- matrix(standata$Y, ncol = length(bterms$response))
-      NC_trait <- ncol(standata$Y) * (ncol(standata$Y) - 1L) / 2L
-      standata <- c(standata, list(N_trait = nrow(standata$Y), 
-                                   K_trait = ncol(standata$Y),
-                                   NC_trait = NC_trait)) 
-      # for compatibility with the S3 methods of brms >= 1.0.0
-      standata$nresp <- standata$K_trait
-      standata$nrescor <- standata$NC_trait
-    }
-    if (is_forked) {
-      # the second half of Y is only dummy data
-      # that was put into data to make melt_data work correctly
-      standata$N_trait <- nrow(data) / 2L
-      standata$Y <- as.array(standata$Y[1L:standata$N_trait]) 
-    }
-    if (is_categorical && !isTRUE(control$old_cat == 1L)) {
-      ncat1m <- standata$ncat - 1L
-      standata$N_trait <- nrow(data) / ncat1m
-      standata$Y <- as.array(standata$Y[1L:standata$N_trait])
-      standata$J_trait <- as.array(matrix(1L:standata$N, ncol = ncat1m))
-    }
-  }
-  
   # data for various kinds of effects
   only_response <- isTRUE(control$only_response)
   if (!only_response) {
@@ -395,6 +367,34 @@ make_standata <- function(formula, data, family = NULL,
         tgroup <- rep(1, standata$N) 
       }
       standata$tg <- as.array(as.numeric(factor(tgroup)))
+    }
+  }
+  
+  if (old_mv) {
+    # deprecated as of brms 1.0.0
+    # evaluate even if check_response is FALSE to ensure 
+    # that N_trait is defined
+    if (is_linear && length(bterms$response) > 1L) {
+      standata$Y <- matrix(standata$Y, ncol = length(bterms$response))
+      NC_trait <- ncol(standata$Y) * (ncol(standata$Y) - 1L) / 2L
+      standata <- c(standata, list(N_trait = nrow(standata$Y), 
+                                   K_trait = ncol(standata$Y),
+                                   NC_trait = NC_trait)) 
+      # for compatibility with the S3 methods of brms >= 1.0.0
+      standata$nresp <- standata$K_trait
+      standata$nrescor <- standata$NC_trait
+    }
+    if (is_forked) {
+      # the second half of Y is only dummy data
+      # that was put into data to make melt_data work correctly
+      standata$N_trait <- nrow(data) / 2L
+      standata$Y <- as.array(standata$Y[1L:standata$N_trait]) 
+    }
+    if (is_categorical && !isTRUE(control$old_cat == 1L)) {
+      ncat1m <- standata$ncat - 1L
+      standata$N_trait <- nrow(data) / ncat1m
+      standata$Y <- as.array(standata$Y[1L:standata$N_trait])
+      standata$J_trait <- as.array(matrix(1L:standata$N, ncol = ncat1m))
     }
   }
   
