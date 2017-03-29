@@ -1193,9 +1193,12 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
               type, "' by default.")
     }
   }
-  standata <- amend_newdata(
-    newdata, object, re_formula = NA, incl_autocor = incl_autocor,
-    check_response = TRUE, only_response = TRUE
+  newd_args <- nlist(
+    newdata, fit = object, re_formula = NA, 
+    incl_autocor, check_response = TRUE
+  )
+  standata <- do.call(amend_newdata, 
+    args = c(newd_args, list(only_response = TRUE))
   )
   y <- as.vector(standata$Y)
   if (!is.null(standata$cens)) {
@@ -1214,11 +1217,13 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     yrep <- yrep / as_draws_matrix(standata$trials, dim = dim(yrep))
   }
   ppc_args <- list(y, yrep, ...)
+  # allow using arguments 'group' and 'x' for new data
+  mf <- do.call(amend_newdata, c(newd_args, return_standata = FALSE))
   if (!is.null(group)) {
-    ppc_args$group <- model.frame(object)[[group]]
+    ppc_args$group <- mf[[group]]
   }
   if (!is.null(x)) {
-    ppc_args$x <- model.frame(object)[[x]]
+    ppc_args$x <- mf[[x]]
   }
   do.call(ppc_fun, ppc_args)
 }

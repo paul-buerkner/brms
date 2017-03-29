@@ -304,8 +304,12 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_true(is(pp_check(fit1, newdata = fit1$data[1:100, ]), "ggplot"))
   expect_true(is(pp_check(fit1, "stat", nsamples = 5), "ggplot"))
   expect_true(is(pp_check(fit1, "error_binned"), "ggplot"))
-  ribbon_plot <- pp_check(fit1, "ribbon_grouped", group = "visit", x = "Age")
-  expect_true(is(ribbon_plot, "ggplot"))
+  pp <- pp_check(fit1, "ribbon_grouped", group = "visit", x = "Age")
+  expect_true(is(pp, "ggplot"))
+  pp <- pp_check(fit1, type = "violin_grouped", 
+                 group = "visit", newdata = fit1$data[1:100, ])
+  expect_true(is(pp, "ggplot"))
+  
   expect_true(is(pp_check(fit3), "ggplot"))
   expect_true(is(pp_check(fit2, "ribbon", x = "Trt"), "ggplot"))
   expect_error(pp_check(fit2, "ribbon"),
