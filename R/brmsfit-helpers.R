@@ -269,6 +269,13 @@ prepare_conditions <- function(x, conditions = NULL, effects = NULL,
       )
     }
   }
+  unused_vars <- setdiff(names(conditions), all.vars(bterms$allvars))
+  if (length(unused_vars)) {
+    warning2(
+      "The following variables in 'conditions' are not ", 
+      "part of the model:\n", collapse_comma(unused_vars)
+    )
+  }
   amend_newdata(
     conditions, fit = x, re_formula = re_formula,
     allow_new_levels = TRUE, incl_autocor = FALSE, 
