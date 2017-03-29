@@ -222,9 +222,9 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
     slink <- ok_links[1]
   } 
   if (!slink %in% ok_links) {
-    stop("Link '", slink, "' is not a supported link for family '", 
-         family, "'. \nSupported links are: ", 
-         paste(ok_links, collapse = ", "), call. = FALSE) 
+    stop2("'", slink, "' is not a supported link ", 
+          "for family '", family, "'.\nSupported links are: ",
+          collapse_comma(ok_links))
   }
   out <- structure(
     list(family = family, link = slink), 
@@ -238,8 +238,9 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
       }
       valid_links <- links_auxpars(ap)
       if (!alink %in% valid_links) {
-        stop2("Link '", alink, "' is invalid for parameter '", ap, 
-              "'. Valid links are: ", collapse_comma(valid_links))
+        stop2("'", alink, "' is not a supported link ", 
+              "for parameter '", ap, "'.\nSupported links are: ", 
+              collapse_comma(valid_links))
       }
       out[[paste0("link_", ap)]] <- alink
     }

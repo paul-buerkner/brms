@@ -63,7 +63,7 @@ stan_llh.default <- function(family, bterms, data, autocor, mix = "", ...) {
     p[[ap]] <- paste0(ap, mix, if (reqn && ap %in% auxpars) "[n]")
   }
   ord_args <- sargs(p$mu, if (has_cs) "mucs[n]", "temp_Intercept", p$disc)
-  usc_logit <- ifelse(any(c("zi", "hu") %in% auxpars), "_logit", "")
+  usc_logit <- stan_llh_auxpar_usc_logit(c("zi", "hu"), bterms)
   trials <- ifelse(llh_adj || is_zero_inflated, "trials[n]", "trials")
   simplify <- stan_has_built_in_fun(nlist(family, link)) &&
     !has_trunc && !has_cens && !"disc" %in% auxpars
@@ -435,6 +435,16 @@ stan_llh_shape <- function(family, bterms, mix = "") {
             (has_disp || paste0("shape", mix) %in% auxpars)
   nshape <- if (nshape) "[n]"
   paste0(if (has_disp) "disp_", "shape", mix, nshape)
+}
+
+stan_llh_auxpar_usc_logit <- function(auxpars, bterms) {
+  # prepare _logit suffix for auxiliary parameters
+  # currently only used in zero-inflated and hurdle models
+  stopifnot(is.brmsterms(bterms))
+  use_logit <- any(ulapply(auxpars, function(ap) 
+    isTRUE(bterms$auxpars[[ap]]$family$link == "logit")
+  ))
+  ifelse(use_logit, "_logit", "")
 }
 
 stan_llh_adj <- function(adforms, adds = c("weights", "cens", "trunc")) {

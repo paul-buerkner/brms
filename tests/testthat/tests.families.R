@@ -48,7 +48,7 @@ test_that("family functions returns expected results", {
                          link_zi = "logit"))
   
   expect_error(weibull(link_shape = "logit"), 
-               "Link 'logit' is invalid for parameter 'shape'")
+               "'logit' is not a supported link for parameter 'shape'")
   expect_error(weibull(link_shape = c("log", "logit")),
                "Link functions must be of length 1")
 })

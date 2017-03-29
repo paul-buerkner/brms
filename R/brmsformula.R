@@ -381,12 +381,16 @@
 #'   doesn't make any sense) or are bounded between 0 and 1 (for zero-inflated / 
 #'   hurdle proabilities, quantiles, or the intial bias parameter of 
 #'   drift-diffusion models). 
-#'   However, linear predictors can be positive or negative, and thus
-#'   the log link (for positive parameters) or logit link (for probability parameters) 
-#'   are used to ensure that auxiliary parameters are within their valid intervals.
-#'   This implies that effects for auxiliary parameters are estimated on the
-#'   log / logit scale and one has to apply the inverse link function to get 
-#'   to the effects on the original scale. 
+#'   However, linear predictors can be positive or negative, and thus the log link 
+#'   (for positive parameters) or logit link (for probability parameters) are used 
+#'   by default to ensure that auxiliary parameters are within their valid intervals.
+#'   This implies that, by default, effects for auxiliary parameters are estimated 
+#'   on the log / logit scale and one has to apply the inverse link function to get 
+#'   to the effects on the original scale.
+#'   Alternatively, it is possible to use the identity link to predict parameters
+#'   on their original scale, directly. However, this is much more likely to lead 
+#'   to problems in the model fitting.
+#'   
 #'   See also \code{\link[brms:brmsfamily]{brmsfamily}} for an overview of 
 #'   valid link functions.
 #'   
@@ -641,20 +645,20 @@ links_auxpars <- function(ap) {
   # link functions for auxiliary parameters
   switch(ap,
     mu = "identity",
-    sigma = "log", 
-    shape = "log", 
-    nu = "logm1", 
-    phi = "log",
-    kappa = "log", 
-    beta = "log",
-    zi = "logit", 
-    hu = "logit",
-    disc = "log",
-    bs = "log", 
-    ndt = "log", 
-    bias = "logit",
-    quantile = "logit",
-    xi = "log1p",
+    sigma = c("log", "identity"), 
+    shape = c("log", "identity"),
+    nu = c("logm1", "identity"), 
+    phi = c("log", "identity"),
+    kappa = c("log", "identity"), 
+    beta = c("log", "identity"),
+    zi = c("logit", "identity"), 
+    hu = c("logit", "identity"),
+    disc = c("log", "identity"),
+    bs = c("log", "identity"), 
+    ndt = c("log", "identity"),
+    bias = c("logit", "identity"),
+    quantile = c("logit", "identity"),
+    xi = c("log1p", "identity"),
     stop2("Parameter '", ap, "' is not supported.")
   )
 }

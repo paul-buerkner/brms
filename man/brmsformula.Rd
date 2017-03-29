@@ -414,12 +414,16 @@ models for all parameters of the assumed response distribution.
   doesn't make any sense) or are bounded between 0 and 1 (for zero-inflated / 
   hurdle proabilities, quantiles, or the intial bias parameter of 
   drift-diffusion models). 
-  However, linear predictors can be positive or negative, and thus
-  the log link (for positive parameters) or logit link (for probability parameters) 
-  are used to ensure that auxiliary parameters are within their valid intervals.
-  This implies that effects for auxiliary parameters are estimated on the
-  log / logit scale and one has to apply the inverse link function to get 
-  to the effects on the original scale. 
+  However, linear predictors can be positive or negative, and thus the log link 
+  (for positive parameters) or logit link (for probability parameters) are used 
+  by default to ensure that auxiliary parameters are within their valid intervals.
+  This implies that, by default, effects for auxiliary parameters are estimated 
+  on the log / logit scale and one has to apply the inverse link function to get 
+  to the effects on the original scale.
+  Alternatively, it is possible to use the identity link to predict parameters
+  on their original scale, directly. However, this is much more likely to lead 
+  to problems in the model fitting.
+  
   See also \code{\link[brms:brmsfamily]{brmsfamily}} for an overview of 
   valid link functions.
   

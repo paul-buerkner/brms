@@ -16,6 +16,8 @@
       of non-linear and auxiliary parameters.
       \item Allow sparse matrix multiplication in
       non-linear and distributional models.
+      \item Allow using the \code{identity} link for
+      all auxiliary parameters.
       \item Introduce method \code{control_params} to
       conveniently extract control parameters of the 
       NUTS sampler.

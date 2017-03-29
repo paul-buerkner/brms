@@ -394,7 +394,7 @@ test_that("Stan code for autocorrelated models is correct", {
   expect_match2(scode, "e_y[n] = inv(Y[n, 1]) - mu_y[n];")
 })
 
-test_that("the Stan code for intercept only models is correct", {
+test_that("Stan code for intercept only models is correct", {
   expect_match2(make_stancode(rating ~ 1, data = inhaler),
                "b_Intercept = temp_Intercept;") 
   expect_match2(make_stancode(rating ~ 1, data = inhaler, family = cratio()),
@@ -403,7 +403,7 @@ test_that("the Stan code for intercept only models is correct", {
                "b_X3_Intercept = temp_X3_Intercept;")
 })
 
-test_that("make_stancode returns correct code for smooth only models", {
+test_that("Stan code for smooth only models is correct", {
   expect_match2(make_stancode(count ~ s(log_Age_c), data = epilepsy),
                "matrix[N, K - 1] Xc;")
 })
@@ -684,23 +684,40 @@ test_that("Group IDs appear in the Stan code", {
 
 test_that("distributional gamma models are handled correctly", {
   # test fix of issue #124
-  scode <- make_stancode(bf(time ~ age * sex + disease + (1|patient), 
-                            shape ~ age + (1|patient)), 
-                         data = kidney, family = Gamma("log"))
+  scode <- make_stancode(
+    bf(time ~ age * sex + disease + (1|patient), 
+       shape ~ age + (1|patient)), 
+    data = kidney, family = Gamma("log")
+  )
   expect_match2(scode, paste0(
     "    shape[n] = exp(shape[n]); \n", 
     "    mu[n] = shape[n] * exp(-(mu[n]));"))
   
-  scode <- make_stancode(bf(time ~ inv_logit(a) * exp(b * age),
-                            a + b ~ sex + (1|patient), nl = TRUE, 
-                            shape ~ age + (1|patient)), 
-                         data = kidney, family = Gamma("identity"),
-                         prior = c(set_prior("normal(2,2)", nlpar = "a"),
-                                   set_prior("normal(0,3)", nlpar = "b")))
+  scode <- make_stancode(
+    bf(time ~ inv_logit(a) * exp(b * age),
+       a + b ~ sex + (1|patient), nl = TRUE, 
+       shape ~ age + (1|patient)), 
+    data = kidney, family = Gamma("identity"),
+    prior = c(set_prior("normal(2,2)", nlpar = "a"),
+              set_prior("normal(0,3)", nlpar = "b"))
+  )
   expect_match2(scode, paste0(
     "    shape[n] = exp(shape[n]); \n", 
     "    // compute non-linear predictor \n",
-    "    mu[n] = shape[n] / (inv_logit(mu_a[n]) * exp(mu_b[n] * C_1[n]));"))
+    "    mu[n] = shape[n] / (inv_logit(mu_a[n]) * exp(mu_b[n] * C_1[n]));"
+  ))
+  
+  scode <- make_stancode(
+    bf(time ~ age, shape ~ age), 
+    data = kidney,
+    family = brmsfamily("gamma", link_shape = "identity")
+  )
+  # test that no link function is applied on 'shape'
+  expect_match2(scode, paste0(
+    "  for (n in 1:N) { \n",
+    "    mu[n] = shape[n] * exp(-(mu[n])); \n",
+    "  } \n"
+  ))
 })
 
 test_that("weighted, censored, and truncated likelihoods are correct", {
@@ -801,6 +818,11 @@ test_that("predicting zi and hu works correctly", {
   scode <- make_stancode(bf(count ~ Trt_c, hu ~ Trt_c), epilepsy, 
                          family = "hurdle_gamma")
   expect_match2(scode, "Y[n] ~ hurdle_gamma_logit(shape, mu[n], hu[n])")
+  expect_true(!grepl("inv_logit\\(", scode))
+  
+  scode <- make_stancode(bf(count ~ Trt_c, hu ~ Trt_c), epilepsy, 
+                         family = hurdle_gamma(link_hu = "identity"))
+  expect_match2(scode, "Y[n] ~ hurdle_gamma(shape, mu[n], hu[n])")
   expect_true(!grepl("inv_logit\\(", scode))
 })
 
