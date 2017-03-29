@@ -265,7 +265,7 @@ prepare_conditions <- function(x, conditions = NULL, effects = NULL,
       # use reference category
       levels <- attr(as.factor(mf[[v]]), "levels")
       conditions[[v]] <- factor(
-        lev[1], levels = levels, ordered = is.ordered(mf[[v]])
+        levels[1], levels = levels, ordered = is.ordered(mf[[v]])
       )
     }
   }
