@@ -188,7 +188,7 @@ stan_llh.default <- function(family, bterms, data, autocor, mix = "", ...) {
       ),
       inverse.gaussian = c(
         paste0("inv_gaussian", if (!reqn) "_vector"),
-        sargs(p$mu, "shape", paste0(if (!reqn) "sum_", "log_Y", n),
+        sargs(p$mu, p$shape, paste0(if (!reqn) "sum_", "log_Y", n),
               paste0("sqrt_Y", n))
       ),
       wiener = c(
