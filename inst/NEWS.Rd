@@ -5,13 +5,16 @@
 \section{CHANGES IN VERSION 1.5.1++}{
   \subsection{NEW FEATURES}{
     \itemize{
-      \item Fit finite mixture models via function
-      \code{mixture}.
+      \item Fit finite mixture models using family
+      function \code{mixture}.
       \item Implement different ways to sample new levels
       of grouping factors in \code{predict} and related 
       methods through argument \code{sample_new_levels}.
       Thanks to Tom Wallis and Jonah Gabry for a detailed 
       discussion about this feature.
+      \item Add methods \code{loo_predict}, \code{loo_linpred},
+      and \code{loo_predictive_interval} for computing
+      LOO predictions thanks to Aki Vehtari and Jonah Gabry.
       \item Allow using \code{offset} in formulas
       of non-linear and auxiliary parameters.
       \item Allow sparse matrix multiplication in
@@ -35,6 +38,8 @@
       changes.
       \item Warn about divergent transitions when calling
       \code{summary} or \code{print} on \code{brmsfit} objects.
+      \item Warn about unused variables in argument 
+      \code{conditions} when calling \code{marginal_effects}.
     }
   }
   \subsection{BUG FIXES}{
@@ -48,9 +53,13 @@
       \item Correctly check for category specific
       group-level effects in non-ordinal models thanks to
       Wayne Folta.
+      \item Fix problems in \code{pp_check} when specifying
+      argument \code{newdata} together with arguments 
+      \code{x} or \code{group}. 
       \item Rename the last column in the output of 
-      \code{hypothesis} to avoid problems with zero length 
-      column names thanks to the GitHub user puterleat.
+      \code{hypothesis} to \code{"star"} in order to avoid 
+      problems with zero length column names thanks to 
+      the GitHub user puterleat.
       \item Add a missing new line statement at the end 
       of the \code{summary} output thanks to Thomas Kluth.
     }
