@@ -101,10 +101,12 @@ resp_se_no_data <- function(x, sigma = FALSE) {
 #' @export
 resp_weights <- function(x) {
   # weights to be applied on any model
-  if (!is.numeric(x)) 
+  if (!is.numeric(x)) {
     stop2("Weights must be numeric.")
-  if (min(x) < 0) 
+  }
+  if (min(x) < 0) {
     stop2("Weights must be non-negative.")
+  }
   x
 }
 
@@ -112,10 +114,12 @@ resp_weights <- function(x) {
 #' @export
 resp_disp <- function(x) {
   # dispersion factors
-  if (!is.numeric(x)) 
+  if (!is.numeric(x)) {
     stop2("Dispersion factors must be numeric.")
-  if (min(x) < 0) 
+  }
+  if (min(x) < 0) {
     stop2("Dispersion factors must be non-negative.")
+  }
   x  
 }
 
@@ -123,6 +127,9 @@ resp_disp <- function(x) {
 #' @export
 resp_trials <- function(x) {
   # trials for binomial models
+  if (!is.numeric(x)) {
+    stop2("Number of trials must be numeric.")
+  }
   if (any(!is_wholenumber(x) || x < 1)) {
     stop2("Number of trials must be positive integers.")
   }
@@ -133,6 +140,9 @@ resp_trials <- function(x) {
 #' @export
 resp_cat <- function(x) {
   # number of categories for ordinal models
+  if (!is.numeric(x)) {
+    stop2("Number of categories must be numeric.")
+  }
   if (length(x) != 1L || !is_wholenumber(x) || x < 1) {
     stop2("Number of categories must be a positive integer.")
   }

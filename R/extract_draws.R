@@ -60,11 +60,21 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
       draws[[ap]] <- do.call(as.matrix, c(am_args, pars = ap_regex))
     }
   }
+  if (is.mixfamily(family(x))) {
+    fixed_theta <- family(x)$theta
+    if (!is.null(fixed_theta)) {
+      draws$theta <- as_draws_matrix(
+        fixed_theta, dim = c(nsamples, length(fixed_theta))
+      )
+    } else {
+      draws$theta <- do.call(as.matrix, c(am_args, pars = "^theta\\["))  
+    }
+  }
   if (is_linear(family(x)) && length(bterms$response) > 1L) {
     # parameters for multivariate normal models
-    draws[["sigma"]] <- do.call(as.matrix, c(am_args, pars = "^sigma($|_)"))
-    draws[["rescor"]] <- do.call(as.matrix, c(am_args, pars = "^rescor_"))
-    draws[["Sigma"]] <- get_cov_matrix(sd = draws$sigma, cor = draws$rescor)$cov
+    draws$sigma <- do.call(as.matrix, c(am_args, pars = "^sigma($|_)"))
+    draws$rescor <- do.call(as.matrix, c(am_args, pars = "^rescor_"))
+    draws$Sigma <- get_cov_matrix(sd = draws$sigma, cor = draws$rescor)$cov
   }
   if (incl_autocor && use_cov(x$autocor)) {
     # only include autocor samples on the top-level of draws 

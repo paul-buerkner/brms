@@ -49,3 +49,16 @@ test_that("brmsformula is backwards compatible", {
   expect_equal(pforms(form), list(a = a ~ x, b = b ~ 1))
   expect_true(form[["nl"]])
 })
+
+test_that("brmsformula detects auxiliary parameter equations", {
+  expect_error(bf(y~x, sigma1 = "sigmaa2"),
+               "Can only equate parameters of the same class")
+  expect_error(bf(y~x, mu3 = "mu2"),
+               "Equating parameters of class 'mu' is not allowed")
+  expect_error(bf(y~x, sigma1 = "sigma1"),
+               "Equating 'sigma1' with itself is not meaningful")
+  expect_error(bf(y~x, shape1 ~ x, shape2 = "shape1"),
+               "Cannot use predicted parameters on the right-hand side")
+  expect_error(bf(y~x, shape1 = "shape3", shape2 = "shape1"),
+               "Cannot use fixed parameters on the right-hand side")
+})

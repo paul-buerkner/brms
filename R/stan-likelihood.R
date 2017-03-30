@@ -1,4 +1,5 @@
-stan_llh <- function(family, bterms, data, autocor) {
+#' @export
+stan_llh.default <- function(family, bterms, data, autocor, mix = "", ...) {
   # Likelihood in Stan language
   # Args:
   #   family: the model family
@@ -7,8 +8,11 @@ stan_llh <- function(family, bterms, data, autocor) {
   #   autocor: object of classe cor_brms
   stopifnot(is.family(family))
   stopifnot(is.brmsterms(bterms))
+  stopifnot(length(mix) == 1L)
   link <- family$link
   family <- family$family
+  mix <- as.character(mix)
+  is_mix <- nzchar(mix)
   is_categorical <- is_categorical(family)
   is_ordinal <- is_ordinal(family)
   is_hurdle <- is_hurdle(family)
@@ -44,7 +48,7 @@ stan_llh <- function(family, bterms, data, autocor) {
   
   auxpars <- names(bterms$auxpars)
   reqn <- llh_adj || is_categorical || is_ordinal || 
-          is_hurdle || is_zero_inflated || 
+          is_hurdle || is_zero_inflated || is_mix ||
           is_wiener(family) || is_exgaussian(family) || 
           is_asym_laplace(family) || is_gev(family) ||
           has_sigma && has_se && !use_cov(autocor) ||
@@ -52,14 +56,14 @@ stan_llh <- function(family, bterms, data, autocor) {
   n <- ifelse(reqn, "[n]", "")
   # prepare auxiliary parameters
   p <- named_list(auxpars())
-  p$mu <- paste0(ifelse(is_mv || is_categorical, "Mu", "mu"), n)
-  p$sigma <- stan_llh_sigma(family, bterms)
-  p$shape <- stan_llh_shape(family, bterms)
+  p$mu <- paste0(ifelse(is_mv || is_categorical, "Mu", "mu"), mix, n)
+  p$sigma <- stan_llh_sigma(family, bterms, mix)
+  p$shape <- stan_llh_shape(family, bterms, mix)
   for (ap in setdiff(auxpars(), c("mu", "sigma", "shape"))) {
-    p[[ap]] <- paste0(ap, if (reqn && ap %in% auxpars) "[n]")
+    p[[ap]] <- paste0(ap, mix, if (reqn && ap %in% auxpars) "[n]")
   }
   ord_args <- sargs(p$mu, if (has_cs) "mucs[n]", "temp_Intercept", p$disc)
-  .logit <- ifelse(any(c("zi", "hu") %in% auxpars), "_logit", "")
+  usc_logit <- stan_llh_auxpar_usc_logit(c("zi", "hu"), bterms)
   trials <- ifelse(llh_adj || is_zero_inflated, "trials[n]", "trials")
   simplify <- stan_has_built_in_fun(nlist(family, link)) &&
     !has_trunc && !has_cens && !"disc" %in% auxpars
@@ -217,35 +221,35 @@ stan_llh <- function(family, bterms, data, autocor) {
         ord_args
       ),
       hurdle_poisson = c(
-        paste0("hurdle_poisson", .logit), 
+        paste0("hurdle_poisson", usc_logit), 
         sargs(p$mu, p$hu)
       ),
       hurdle_negbinomial = c(
-        paste0("hurdle_neg_binomial", .logit), 
+        paste0("hurdle_neg_binomial", usc_logit), 
         sargs(p$mu, p$hu, p$shape)
       ),
       hurdle_gamma = c(
-        paste0("hurdle_gamma", .logit), 
+        paste0("hurdle_gamma", usc_logit), 
         sargs(p$shape, p$mu, p$hu)
       ),
       hurdle_lognormal = c(
-        paste0("hurdle_lognormal", .logit), 
+        paste0("hurdle_lognormal", usc_logit), 
         sargs(p$mu, p$hu, p$sigma)
       ),
       zero_inflated_poisson = c(
-        paste0("zero_inflated_poisson", .logit), 
+        paste0("zero_inflated_poisson", usc_logit), 
         sargs(p$mu, p$zi)
       ),
       zero_inflated_negbinomial = c(
-        paste0("zero_inflated_neg_binomial", .logit),
+        paste0("zero_inflated_neg_binomial", usc_logit),
         sargs(p$mu, p$zi, p$shape)
       ),
       zero_inflated_binomial = c(
-        paste0("zero_inflated_binomial", .logit), 
+        paste0("zero_inflated_binomial", usc_logit), 
         sargs(trials, p$mu, p$zi)
       ),
       zero_inflated_beta = c(
-        paste0("zero_inflated_beta", .logit), 
+        paste0("zero_inflated_beta", usc_logit), 
         sargs(p$mu, p$zi, p$phi)
       )
     )
@@ -253,19 +257,42 @@ stan_llh <- function(family, bterms, data, autocor) {
   
   # write likelihood code
   interval <- isTRUE(attr(has_cens, "interval"))
-  type <- match(TRUE, c(has_cens, has_weights))
-  type <- c("cens", "weights")[type]
+  type <- match(TRUE, c(is_mix, has_cens, has_weights))
+  type <- c("mix", "cens", "weights")[type]
   type <- ifelse(is.na(type), "general", type)
   llh <- switch(type, 
+    mix = stan_llh_mix(llh_pre, family, mix, bounds),
     cens = stan_llh_cens(llh_pre, family, interval, has_weights, bounds),
     weights = stan_llh_weights(llh_pre, family, bounds),
     general = stan_llh_general(llh_pre, reqn, bounds)
   ) 
-  if (reqn) {
+  if (reqn && !is_mix) {
     # loop over likelihood if it cannot be vectorized
     llh <- paste0("  for (n in 1:N) { \n    ", llh, "    } \n")
   }
   llh
+}
+
+#' @export
+stan_llh.mixfamily <- function(family, bterms, ...) {
+  ap_ids <- auxpar_id(names(bterms$auxpars))
+  fap_ids <- auxpar_id(names(bterms$fauxpars))
+  llh <- rep(NA, length(family$mix))
+  for (i in seq_along(family$mix)) {
+    sbterms <- bterms
+    sbterms$auxpars <- sbterms$auxpars[ap_ids == i]
+    sbterms$fauxpars <- sbterms$fauxpars[fap_ids == i]
+    llh[i] <- stan_llh(family$mix[[i]], sbterms, mix = i, ...)
+  }
+  has_weights <- is.formula(bterms$adforms$weights)  
+  lhs <- ifelse(has_weights, "lp_pre[n] = ", "target += ")
+  paste0(
+    "  for (n in 1:N) { \n",
+    "      real ps[", length(llh), "]; \n",
+    collapse("    ", llh),
+    "      ", lhs, "log_sum_exp(ps); \n",
+    "    } \n"
+  )
 }
 
 stan_llh_general <- function(llh_pre, reqn, bounds = NULL) {
@@ -327,6 +354,16 @@ stan_llh_weights <- function(llh_pre, family, bounds = NULL) {
   )
 }
 
+stan_llh_mix <- function(llh_pre, family, mix, bounds = NULL) {
+  stopifnot(length(llh_pre) == 2L)
+  tr <- stan_llh_trunc(llh_pre, bounds = bounds, general = FALSE)
+  lpdf <- ifelse(use_int(family), "lpmf", "lpdf")
+  paste0(
+    "  ps[", mix, "] = log(theta[", mix, "]) + ",
+    llh_pre[1], "_", lpdf, "(Y[n] | ", llh_pre[2],")", tr, "; \n"
+  )
+}
+
 stan_llh_trunc <- function(llh_pre, bounds, general = TRUE) {
   # truncated part of the likelihood
   # Args:
@@ -361,22 +398,23 @@ stan_llh_trunc <- function(llh_pre, bounds, general = TRUE) {
   tr
 }
 
-stan_llh_sigma <- function(family, bterms) {
+stan_llh_sigma <- function(family, bterms, mix = "") {
   # prepare the code for 'sigma' in the likelihood statement
   has_sigma <- has_sigma(family, bterms)
   has_se <- is.formula(bterms$adforms$se)
   has_disp <- is.formula(bterms$adforms$disp)
   llh_adj <- stan_llh_adj(bterms$adforms)
   auxpars <- names(bterms$auxpars)
-  nsigma <- llh_adj || has_se || is_exgaussian(family) || is_gev(family)
-  nsigma <- nsigma && (has_disp || "sigma" %in% auxpars)
+  nsigma <- llh_adj || has_se || nzchar(mix) || 
+            is_exgaussian(family) || is_gev(family)
+  nsigma <- nsigma && (has_disp || paste0("sigma", mix) %in% auxpars)
   nsigma <- if (nsigma) "[n]"
   nse <- if (llh_adj) "[n]"
   if (has_sigma) {
     if (has_se) {
-      out <- paste0("sqrt(sigma", nsigma, "^2 + se2[n])")
+      out <- paste0("sqrt(sigma", mix, nsigma, "^2 + se2[n])")
     } else {
-      out <- paste0(if (has_disp) "disp_", "sigma", nsigma) 
+      out <- paste0(if (has_disp) "disp_", "sigma", mix, nsigma)
     }
   } else {
     if (has_se) {
@@ -388,15 +426,25 @@ stan_llh_sigma <- function(family, bterms) {
   out
 }
 
-stan_llh_shape <- function(family, bterms) {
+stan_llh_shape <- function(family, bterms, mix = "") {
   # prepare the code for 'shape' in the likelihood statement
   has_disp <- is.formula(bterms$adforms$disp)
   llh_adj <- stan_llh_adj(bterms$adforms)
   auxpars <- names(bterms$auxpars)
-  nshape <- (llh_adj || is_forked(family)) &&
-            (has_disp || "shape" %in% auxpars)
+  nshape <- (llh_adj || is_forked(family) || nzchar(mix)) &&
+            (has_disp || paste0("shape", mix) %in% auxpars)
   nshape <- if (nshape) "[n]"
-  paste0(if (has_disp) "disp_", "shape", nshape)
+  paste0(if (has_disp) "disp_", "shape", mix, nshape)
+}
+
+stan_llh_auxpar_usc_logit <- function(auxpars, bterms) {
+  # prepare _logit suffix for auxiliary parameters
+  # currently only used in zero-inflated and hurdle models
+  stopifnot(is.brmsterms(bterms))
+  use_logit <- any(ulapply(auxpars, function(ap) 
+    isTRUE(bterms$auxpars[[ap]]$family$link == "logit")
+  ))
+  ifelse(use_logit, "_logit", "")
 }
 
 stan_llh_adj <- function(adforms, adds = c("weights", "cens", "trunc")) {

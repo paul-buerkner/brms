@@ -1,9 +1,8 @@
 #' @export
 print.brmssummary <- function(x, digits = 2, ...) {
   cat(" Family: ")
-  if (is(x$family, "family")) {
-    type <- ifelse(is.null(x$family$type), "", paste(",", x$family$type))
-    cat(paste0(x$family$family, " (", x$family$link, type, ") \n"))
+  if (is.family(x$family)) {
+    cat(summary(x$family), "\n")
   } else {
     cat(paste0(x$family, " (", x$link, ") \n"))  
   }

@@ -99,22 +99,22 @@ test_that(paste("make_standata rejects incorrect response variables",
                 "depending on the family"), {
   expect_error(make_standata(y ~ 1, data = data.frame(y = factor(1:10)), 
                              family = "student"),
-               "Family 'student' expects numeric response variable")
+               "Family 'student' requires numeric responses")
   expect_error(make_standata(y ~ 1, data = data.frame(y = -5:5), 
                              family = "geometric"),
-               "Family 'geometric' expects response variable of non-negative integers")
+               "Family 'geometric' requires responses to be non-negative integers")
   expect_error(make_standata(y ~ 1, data = data.frame(y = -1:1), 
                              family = "bernoulli"),
                "contain only two different values")
   expect_error(make_standata(y ~ 1, data = data.frame(y = factor(-1:1)), 
                              family = "cratio"),
-               "Family 'cratio' expects either integers or ordered factors")
+               "Family 'cratio' requires either integers or ordered factors")
   expect_error(make_standata(y ~ 1, data = data.frame(y = rep(0.5:7.5), 2), 
                              family = "sratio"),
-               "Family 'sratio' expects either integers or ordered factors")
+               "Family 'sratio' requires either integers or ordered factors")
   expect_error(make_standata(y ~ 1, data = data.frame(y = rep(-7.5:7.5), 2), 
                              family = "gamma"),
-               "Family 'gamma' requires response variable to be positive")
+               "Family 'gamma' requires responses to be positive")
   expect_error(make_standata(y ~ 1, data = data.frame(y = c(0, 0.5, 1)),
                              family = Beta()),
                "requires responses between 0 and 1")
@@ -123,7 +123,7 @@ test_that(paste("make_standata rejects incorrect response variables",
                "requires responses between -pi and pi")
   expect_error(make_standata(y ~ 1, data = data.frame(y = c(-1, 2, 5)),
                              family = hurdle_gamma()),
-               "requires response variable to be non-negative")
+               "requires responses to be non-negative")
 })
 
 test_that("make_standata suggests using family bernoulli if appropriate", {
@@ -321,7 +321,8 @@ test_that("make_standata correctly prepares data for monotonic effects", {
   
   prior <- c(set_prior("dirichlet(c(1,0.5,2))", class = "simplex", coef = "x2"))
   expect_error(make_standata(y ~ monotonic(x1 + x2), data = data, prior = prior),
-               "Invalid dirichlet prior for the simplex of 'x2'", fixed = TRUE)
+               "Invalid Dirichlet prior for the simplex of coefficient 'x2'", 
+               fixed = TRUE)
 })
 
 test_that("make_standata returns fixed residual covariance matrices", {
@@ -472,4 +473,21 @@ test_that("make_standata correctly includes offsets", {
   expect_equal(sdata$offset_sigma, data$c + 1)
   sdata <- make_standata(y ~ x + offset(c) + offset(x), data)
   expect_equal(sdata$offset, data$c + data$x)
+})
+
+test_that("make_standata includes data for mixture models", {
+  data <- data.frame(y = rnorm(10), x = rnorm(10), c = 1)
+  form <- bf(y ~ x, mu1 ~ 1, family = mixture(gaussian, gaussian))
+  sdata <- make_standata(form, data)
+  expect_equal(sdata$con_theta, c(1, 1))
+  expect_equal(dim(sdata$X_mu1), c(10, 1))
+  expect_equal(dim(sdata$X_mu2), c(10, 2))
+  
+  form <- bf(y ~ x, family = mixture(gaussian, gaussian))
+  sdata <- make_standata(form, data, prior = prior(dirichlet(10, 2), theta))
+  expect_equal(sdata$con_theta, c(10, 2))
+  
+  form <- bf(y ~ x, family = mixture(gaussian, gaussian, theta = c(1, 3)))
+  sdata <- make_standata(form, data)
+  expect_equal(sdata$theta, c(1/4, 3/4))
 })

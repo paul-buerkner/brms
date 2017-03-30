@@ -12,39 +12,39 @@
 loglik_gaussian <- function(i, draws, data = data.frame()) {
   args <- list(mean = ilink(get_eta(draws$mu, i), draws$f$link), 
                sd = get_sigma(draws$sigma, data = draws$data, i = i))
-  # censor_loglik computes the conventional loglik in case of no censoring 
-  out <- censor_loglik(dist = "norm", args = args, i = i, data = draws$data)
-  out <- truncate_loglik(out, cdf = pnorm, args = args, 
+  # loglik_censor computes the conventional loglik in case of no censoring 
+  out <- loglik_censor(dist = "norm", args = args, i = i, data = draws$data)
+  out <- loglik_truncate(out, cdf = pnorm, args = args, 
                          i = i, data = draws$data)
-  weight_loglik(out, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
 }
 
 loglik_student <- function(i, draws, data = data.frame()) {
   args <- list(df = get_auxpar(draws$nu, i = i), 
                mu = ilink(get_eta(draws$mu, i), draws$f$link), 
                sigma = get_sigma(draws$sigma, data = draws$data, i = i))
-  out <- censor_loglik(dist = "student", args = args, i = i, data = draws$data)
-  out <- truncate_loglik(out, cdf = pstudent, args = args, 
+  out <- loglik_censor(dist = "student", args = args, i = i, data = draws$data)
+  out <- loglik_truncate(out, cdf = pstudent, args = args, 
                          i = i, data = draws$data)
-  weight_loglik(out, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
 }
 
 loglik_cauchy <- function(i, draws, data = data.frame()) {
   args <- list(df = 1, mu = ilink(get_eta(draws$mu, i), draws$f$link), 
                sigma = get_sigma(draws$sigma, data = draws$data, i = i))
-  out <- censor_loglik(dist = "student", args = args, i = i, data = draws$data)
-  out <- truncate_loglik(out, cdf = pstudent, args = args, 
+  out <- loglik_censor(dist = "student", args = args, i = i, data = draws$data)
+  out <- loglik_truncate(out, cdf = pstudent, args = args, 
                          i = i, data = draws$data)
-  weight_loglik(out, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
 }
 
 loglik_lognormal <- function(i, draws, data = data.frame()) {
   sigma <- get_sigma(draws$sigma, data = draws$data, i = i)
   args <- list(meanlog = ilink(get_eta(draws$mu, i), draws$f$link), sdlog = sigma)
-  out <- censor_loglik(dist = "lnorm", args = args, i = i, data = draws$data)
-  out <- truncate_loglik(out, cdf = plnorm, args = args, 
+  out <- loglik_censor(dist = "lnorm", args = args, i = i, data = draws$data)
+  out <- loglik_truncate(out, cdf = plnorm, args = args, 
                          i = i, data = draws$data)
-  weight_loglik(out, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
 }
 
 loglik_gaussian_mv <- function(i, draws, data = data.frame()) {
@@ -58,7 +58,7 @@ loglik_gaussian_mv <- function(i, draws, data = data.frame()) {
     dmulti_normal(draws$data$Y[i, ], Sigma = draws$Sigma[s, , ], 
                   mu = mu[s, ], log = TRUE))
   # no truncation allowed
-  weight_loglik(out, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
 }
 
 loglik_student_mv <- function(i, draws, data = data.frame()) {
@@ -73,7 +73,7 @@ loglik_student_mv <- function(i, draws, data = data.frame()) {
     dmulti_student(draws$data$Y[i, ], df = nu[s, ], mu = mu[s, ],
                    Sigma = draws$Sigma[s, , ], log = TRUE))
   # no truncation allowed
-  weight_loglik(out, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
 }
 
 loglik_cauchy_mv <- function(i, draws, data = data.frame()) {
@@ -87,7 +87,7 @@ loglik_cauchy_mv <- function(i, draws, data = data.frame()) {
     dmulti_student(draws$data$Y[i, ], df = 1, mu = mu[s, ],
                    Sigma = draws$Sigma[s, , ], log = TRUE))
   # no truncation allowed
-  weight_loglik(out, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
 }
 
 loglik_gaussian_cov <- function(i, draws, data = data.frame()) {
@@ -176,85 +176,85 @@ loglik_cauchy_fixed <- function(i, draws, data = data.frame()) {
 loglik_binomial <- function(i, draws, data = data.frame()) {
   trials <- draws$data$trials[i]
   args <- list(size = trials, prob = ilink(get_eta(draws$mu, i), draws$f$link))
-  out <- censor_loglik(dist = "binom", args = args, i = i, data = draws$data)
-  out <- truncate_loglik(out, cdf = pbinom, args = args, 
+  out <- loglik_censor(dist = "binom", args = args, i = i, data = draws$data)
+  out <- loglik_truncate(out, cdf = pbinom, args = args, 
                          i = i, data = draws$data)
-  weight_loglik(out, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
 }  
 
 loglik_bernoulli <- function(i, draws, data = data.frame()) {
   eta <-  get_eta(draws$mu, i)
   args <- list(size = 1, prob = ilink(eta, draws$f$link))
-  out <- censor_loglik(dist = "binom", args = args, i = i, 
+  out <- loglik_censor(dist = "binom", args = args, i = i, 
                        data = draws$data)
   # no truncation allowed
-  weight_loglik(out, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
 }
 
 loglik_poisson <- function(i, draws, data = data.frame()) {
   args <- list(lambda = ilink(get_eta(draws$mu, i), draws$f$link))
-  out <- censor_loglik(dist = "pois", args = args, i = i, 
+  out <- loglik_censor(dist = "pois", args = args, i = i, 
                        data = draws$data)
-  out <- truncate_loglik(out, cdf = ppois, args = args, 
+  out <- loglik_truncate(out, cdf = ppois, args = args, 
                          i = i, data = draws$data)
-  weight_loglik(out, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
 }
 
 loglik_negbinomial <- function(i, draws, data = data.frame()) {
   shape <- get_shape(draws$shape, data = draws$data, i = i)
   args <- list(mu = ilink(get_eta(draws$mu, i), draws$f$link), size = shape)
-  out <- censor_loglik(dist = "nbinom", args = args, i = i, data = draws$data)
-  out <- truncate_loglik(out, cdf = pnbinom, args = args, 
+  out <- loglik_censor(dist = "nbinom", args = args, i = i, data = draws$data)
+  out <- loglik_truncate(out, cdf = pnbinom, args = args, 
                          i = i, data = draws$data)
-  weight_loglik(out, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
 }
 
 loglik_geometric <- function(i, draws, data = data.frame()) {
   args <- list(mu = ilink(get_eta(draws$mu, i), draws$f$link), size = 1)
-  out <- censor_loglik(dist = "nbinom", args = args, i = i, data = draws$data)
-  out <- truncate_loglik(out, cdf = pnbinom, args = args,
+  out <- loglik_censor(dist = "nbinom", args = args, i = i, data = draws$data)
+  out <- loglik_truncate(out, cdf = pnbinom, args = args,
                          i = i, data = draws$data)
-  weight_loglik(out, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
 }
 
 loglik_exponential <- function(i, draws, data = data.frame()) {
   args <- list(rate = 1 / ilink(get_eta(draws$mu, i), draws$f$link))
-  out <- censor_loglik(dist = "exp", args = args, i = i, data = draws$data)
-  out <- truncate_loglik(out, cdf = pexp, args = args,
+  out <- loglik_censor(dist = "exp", args = args, i = i, data = draws$data)
+  out <- loglik_truncate(out, cdf = pexp, args = args,
                          i = i, data = draws$data)
-  weight_loglik(out, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
 }
 
 loglik_gamma <- function(i, draws, data = data.frame()) {
   shape <- get_shape(draws$shape, data = draws$data, i = i)
   args <- list(shape = shape, 
                scale = ilink(get_eta(draws$mu, i), draws$f$link) / shape)
-  out <- censor_loglik(dist = "gamma", args = args, i = i, data = draws$data)
-  out <- truncate_loglik(out, cdf = pgamma, args = args,
+  out <- loglik_censor(dist = "gamma", args = args, i = i, data = draws$data)
+  out <- loglik_truncate(out, cdf = pgamma, args = args,
                          i = i, data = draws$data)
-  weight_loglik(out, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
 }
 
 loglik_weibull <- function(i, draws, data = data.frame()) {
   shape <- get_shape(draws$shape, data = draws$data, i = i)
   scale <- ilink(get_eta(draws$mu, i) / shape, draws$f$link)
   args <- list(shape = shape, scale = scale)
-  out <- censor_loglik(dist = "weibull", args = args, 
+  out <- loglik_censor(dist = "weibull", args = args, 
                        i = i, data = draws$data)
-  out <- truncate_loglik(out, cdf = pweibull, args = args,
+  out <- loglik_truncate(out, cdf = pweibull, args = args,
                          i = i, data = draws$data)
-  weight_loglik(out, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
 }
 
 loglik_frechet <- function(i, draws, data = data.frame()) {
   nu <- get_auxpar(draws$nu, i = i)
   scale <- ilink(get_eta(draws$mu, i), draws$f$link) / gamma(1 - 1 / nu)
   args <- list(scale = scale, shape = nu)
-  out <- censor_loglik(dist = "frechet", args = args, 
+  out <- loglik_censor(dist = "frechet", args = args, 
                        i = i, data = draws$data)
-  out <- truncate_loglik(out, cdf = pfrechet, args = args,
+  out <- loglik_truncate(out, cdf = pfrechet, args = args,
                          i = i, data = draws$data)
-  weight_loglik(out, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
 }
 
 loglik_gen_extreme_value <- function(i, draws, data = data.frame()) {
@@ -262,32 +262,32 @@ loglik_gen_extreme_value <- function(i, draws, data = data.frame()) {
   xi <- get_auxpar(draws$xi, i = i)
   mu <- ilink(get_eta(draws$mu, i), draws$f$link)
   args <- nlist(mu, sigma, xi)
-  out <- censor_loglik(dist = "gen_extreme_value", args = args, 
+  out <- loglik_censor(dist = "gen_extreme_value", args = args, 
                        i = i, data = draws$data)
-  out <- truncate_loglik(out, cdf = pgen_extreme_value, 
+  out <- loglik_truncate(out, cdf = pgen_extreme_value, 
                          args = args, i = i, data = draws$data)
-  weight_loglik(out, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
 }
 
 loglik_inverse.gaussian <- function(i, draws, data = data.frame()) {
   args <- list(mu = ilink(get_eta(draws$mu, i), draws$f$link), 
                shape = get_shape(draws$shape, data = draws$data, i = i))
-  out <- censor_loglik(dist = "inv_gaussian", args = args, 
+  out <- loglik_censor(dist = "inv_gaussian", args = args, 
                        i = i, data = draws$data)
-  out <- truncate_loglik(out, cdf = pinv_gaussian, args = args,
+  out <- loglik_truncate(out, cdf = pinv_gaussian, args = args,
                          i = i, data = draws$data)
-  weight_loglik(out, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
 }
 
 loglik_exgaussian <- function(i, draws, data = data.frame()) {
   args <- list(mu = ilink(get_eta(draws$mu, i), draws$f$link), 
                sigma = get_sigma(draws$sigma, data = draws$data, i = i),
                beta = get_auxpar(draws$beta, i = i))
-  out <- censor_loglik(dist = "exgaussian", args = args, 
+  out <- loglik_censor(dist = "exgaussian", args = args, 
                        i = i, data = draws$data)
-  out <- truncate_loglik(out, cdf = pexgaussian, args = args,
+  out <- loglik_truncate(out, cdf = pexgaussian, args = args,
                          i = i, data = draws$data)
-  weight_loglik(out, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
 }
 
 loglik_wiener <- function(i, draws, data = data.frame()) {
@@ -297,55 +297,55 @@ loglik_wiener <- function(i, draws, data = data.frame()) {
                beta = get_auxpar(draws$bias, i = i),
                resp = draws$data[["dec"]][i])
   out <- do.call("dWiener", c(draws$data$Y[i], args, log = TRUE))
-  weight_loglik(out, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
 }
 
 loglik_beta <- function(i, draws, data = data.frame()) {
   mu <- ilink(get_eta(draws$mu, i), draws$f$link)
   phi <- get_auxpar(draws$phi, i)
   args <- list(shape1 = mu * phi, shape2 = (1 - mu) * phi)
-  out <- censor_loglik(dist = "beta", args = args, i = i, data = draws$data)
-  out <- truncate_loglik(out, cdf = pbeta, args = args,
+  out <- loglik_censor(dist = "beta", args = args, i = i, data = draws$data)
+  out <- loglik_truncate(out, cdf = pbeta, args = args,
                          i = i, data = draws$data)
-  weight_loglik(out, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
 }
 
 loglik_von_mises <- function(i, draws, data = data.frame()) {
   args <- list(mu = ilink(get_eta(draws$mu, i), draws$f$link), 
                kappa = get_auxpar(draws$kappa, i = i))
-  out <- censor_loglik(dist = "von_mises", args = args, 
+  out <- loglik_censor(dist = "von_mises", args = args, 
                        i = i, data = draws$data)
-  out <- truncate_loglik(out, cdf = pvon_mises, args = args,
+  out <- loglik_truncate(out, cdf = pvon_mises, args = args,
                          i = i, data = draws$data)
-  weight_loglik(out, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
 }
 
 loglik_asym_laplace <- function(i, draws, ...) {
   args <- list(mu = ilink(get_eta(draws$mu, i), draws$f$link), 
                sigma = get_sigma(draws$sigma, data = draws$data, i = i),
                quantile = get_auxpar(draws$quantile, i = i))
-  out <- censor_loglik(dist = "asym_laplace", args = args, 
+  out <- loglik_censor(dist = "asym_laplace", args = args, 
                        i = i, data = draws$data)
-  out <- truncate_loglik(out, cdf = pvon_mises, args = args,
+  out <- loglik_truncate(out, cdf = pvon_mises, args = args,
                          i = i, data = draws$data)
-  weight_loglik(out, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
 }
 
 loglik_hurdle_poisson <- function(i, draws, data = data.frame()) {
   theta <- get_theta(draws, i, par = "hu")
   args <- list(lambda = ilink(get_eta(draws$mu, i), draws$f$link))
-  out <- hurdle_loglik_discrete(pdf = dpois, theta = theta, 
+  out <- loglik_hurdle_discrete(pdf = dpois, theta = theta, 
                                 args = args, i = i, data = draws$data)
-  weight_loglik(out, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
 }
 
 loglik_hurdle_negbinomial <- function(i, draws, data = data.frame()) {
   theta <- get_theta(draws, i, par = "hu")
   args <- list(mu = ilink(get_eta(draws$mu, i), draws$f$link), 
                size = get_shape(draws$shape, data = draws$data, i = i))
-  out <- hurdle_loglik_discrete(pdf = dnbinom, theta = theta, 
+  out <- loglik_hurdle_discrete(pdf = dnbinom, theta = theta, 
                                 args = args, i = i, data = draws$data)
-  weight_loglik(out, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
 }
 
 loglik_hurdle_gamma <- function(i, draws, data = data.frame()) {
@@ -353,44 +353,44 @@ loglik_hurdle_gamma <- function(i, draws, data = data.frame()) {
   shape <- get_shape(draws$shape, data = draws$data, i = i)
   args <- list(shape = shape, 
                scale = ilink(get_eta(draws$mu, i), draws$f$link) / shape)
-  out <- hurdle_loglik_continuous(pdf = dgamma, theta = theta, 
+  out <- loglik_hurdle_continuous(pdf = dgamma, theta = theta, 
                                   args = args, i = i, data = draws$data)
-  weight_loglik(out, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
 }
 
 loglik_hurdle_lognormal <- function(i, draws, data = data.frame()) {
   theta <- get_theta(draws, i, par = "hu")
   sigma <- get_sigma(draws$sigma, data = draws$data, i = i)
   args <- list(meanlog = ilink(get_eta(draws$mu, i), draws$f$link), sdlog = sigma)
-  out <- hurdle_loglik_continuous(pdf = dlnorm, theta = theta, 
+  out <- loglik_hurdle_continuous(pdf = dlnorm, theta = theta, 
                                   args = args, i = i, data = draws$data)
-  weight_loglik(out, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
 }
 
 loglik_zero_inflated_poisson <- function(i, draws, data = data.frame()) {
   theta <- get_theta(draws, i, par = "zi")
   args <- list(lambda = ilink(get_eta(draws$mu, i), draws$f$link))
-  out <- zero_inflated_loglik(pdf = dpois, theta = theta, 
+  out <- loglik_zero_inflated(pdf = dpois, theta = theta, 
                               args = args, i = i, data = draws$data)
-  weight_loglik(out, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
 }
 
 loglik_zero_inflated_negbinomial <- function(i, draws, data = data.frame()) {
   theta <- get_theta(draws, i, par = "zi")
   args <- list(mu = ilink(get_eta(draws$mu, i), draws$f$link), 
                size = get_shape(draws$shape, data = draws$data, i = i))
-  out <- zero_inflated_loglik(pdf = dnbinom, theta = theta, 
+  out <- loglik_zero_inflated(pdf = dnbinom, theta = theta, 
                               args = args, i = i, data = draws$data)
-  weight_loglik(out, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
 }
 
 loglik_zero_inflated_binomial <- function(i, draws, data = data.frame()) {
   trials <- draws$data$trials[i] 
   theta <- get_theta(draws, i, par = "zi")
   args <- list(size = trials, prob = ilink(get_eta(draws$mu, i), draws$f$link))
-  out <- zero_inflated_loglik(pdf = dbinom, theta = theta, 
+  out <- loglik_zero_inflated(pdf = dbinom, theta = theta, 
                               args = args, i = i, data = draws$data)
-  weight_loglik(out, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
 }
 
 loglik_zero_inflated_beta <- function(i, draws, data = data.frame()) {
@@ -399,9 +399,9 @@ loglik_zero_inflated_beta <- function(i, draws, data = data.frame()) {
   phi <- get_auxpar(draws$phi, i)
   args <- list(shape1 = mu * phi, shape2 = (1 - mu) * phi)
   # zi_beta is technically a hurdle model
-  out <- hurdle_loglik_continuous(pdf = dbeta, theta = theta, 
+  out <- loglik_hurdle_continuous(pdf = dbeta, theta = theta, 
                                   args = args, i = i, data = draws$data)
-  weight_loglik(out, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
 }
 
 loglik_categorical <- function(i, draws, data = data.frame()) {
@@ -411,7 +411,7 @@ loglik_categorical <- function(i, draws, data = data.frame()) {
   } else {
     stop(paste("Link", draws$f$link, "not supported"))
   }
-  weight_loglik(out, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
 }
 
 loglik_cumulative <- function(i, draws, data = data.frame()) {
@@ -427,7 +427,7 @@ loglik_cumulative <- function(i, draws, data = data.frame()) {
     out <- log(ilink(eta[, 1, y], draws$f$link) - 
                   ilink(eta[, 1, y - 1], draws$f$link))
   }
-  weight_loglik(out, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
 }
 
 loglik_sratio <- function(i, draws, data = data.frame()) {
@@ -446,7 +446,7 @@ loglik_sratio <- function(i, draws, data = data.frame()) {
   } else {
     out <- log(1 - q[, y]) + rowSums(log(q[, 1:(y - 1)]))
   }
-  weight_loglik(out, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
 }
 
 loglik_cratio <- function(i, draws, data = data.frame()) {
@@ -465,7 +465,7 @@ loglik_cratio <- function(i, draws, data = data.frame()) {
   } else {
     out <- log(1 - q[, y]) + rowSums(log(q[, 1:(y - 1)]))
   }
-  weight_loglik(out, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
 }
 
 loglik_acat <- function(i, draws, data = data.frame()) {
@@ -494,12 +494,32 @@ loglik_acat <- function(i, draws, data = data.frame()) {
     p[, ncat] <- apply(q[, 1:(ncat - 1)], 1, prod)
     out <- log(p[, y]) - log(apply(p, 1, sum))
   }
-  weight_loglik(out, i = i, data = draws$data)
+  loglik_weight(out, i = i, data = draws$data)
+}
+
+loglik_mixture <- function(i, draws, data = data.frame()) {
+  families <- family_names(draws$f)
+  out <- 0
+  for (j in seq_along(families)) {
+    loglik_fun <- paste0("loglik_", families[j])
+    loglik_fun <- get(loglik_fun, asNamespace("brms"))
+    auxpars <- valid_auxpars(families[j])
+    tmp_draws <- list(
+      f = draws$f$mix[[j]],
+      nsamples = draws[["nsamples"]],
+      data = draws[["data"]]
+    )
+    for (ap in auxpars) {
+      tmp_draws[[ap]] <- draws[[paste0(ap, j)]]
+    }
+    out <- out + exp(log(draws$theta[, j]) + loglik_fun(i, tmp_draws))
+  }
+  log(out)
 }
 
 # ----------- loglik helper-functions -----------
 
-censor_loglik <- function(dist, args, i, data) {
+loglik_censor <- function(dist, args, i, data) {
   # compute (possibly censored) loglik values
   # Args:
   #   dist: name of a distribution for which the functions
@@ -522,7 +542,7 @@ censor_loglik <- function(dist, args, i, data) {
   }
 }
 
-truncate_loglik <- function(x, cdf, args, i, data) {
+loglik_truncate <- function(x, cdf, args, i, data) {
   # adjust logLik in truncated models
   # Args:
   #   x: vector of loglik values
@@ -541,7 +561,7 @@ truncate_loglik <- function(x, cdf, args, i, data) {
   }
 }
 
-weight_loglik <- function(x, i, data) {
+loglik_weight <- function(x, i, data) {
   # weight loglik values according to defined weights
   # Args:
   #   x: vector of loglik values
@@ -556,7 +576,7 @@ weight_loglik <- function(x, i, data) {
   }
 }
 
-hurdle_loglik_discrete <- function(pdf, theta, args, i, data) {
+loglik_hurdle_discrete <- function(pdf, theta, args, i, data) {
   # loglik values for discrete hurdle models
   # Args:
   #  pdf: a probability density function 
@@ -574,11 +594,11 @@ hurdle_loglik_discrete <- function(pdf, theta, args, i, data) {
   }
 }
 
-hurdle_loglik_continuous <- function(pdf, theta, args, i, data) {
+loglik_hurdle_continuous <- function(pdf, theta, args, i, data) {
   # loglik values for continuous hurdle models
   # does not call log(1 - do.call(pdf, c(0, args)))
   # Args:
-  #   same as hurdle_loglik_discrete
+  #   same as loglik_hurdle_discrete
   if (data$Y[i] == 0) {
     dbinom(1, size = 1, prob = theta, log = TRUE)
   } else {
@@ -587,7 +607,7 @@ hurdle_loglik_continuous <- function(pdf, theta, args, i, data) {
   }
 }
 
-zero_inflated_loglik <- function(pdf, theta, args, i, data) {
+loglik_zero_inflated <- function(pdf, theta, args, i, data) {
   # loglik values for zero-inflated models
   # Args:
   #  pdf: a probability density function 

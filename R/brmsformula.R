@@ -381,15 +381,48 @@
 #'   doesn't make any sense) or are bounded between 0 and 1 (for zero-inflated / 
 #'   hurdle proabilities, quantiles, or the intial bias parameter of 
 #'   drift-diffusion models). 
-#'   However, linear predictors can be positive or negative, and thus
-#'   the log link (for positive parameters) or logit link (for probability parameters) 
-#'   are used to ensure that auxiliary parameters are within their valid intervals.
-#'   This implies that effects for auxiliary parameters are estimated on the
-#'   log / logit scale and one has to apply the inverse link function to get 
-#'   to the effects on the original scale. 
+#'   However, linear predictors can be positive or negative, and thus the log link 
+#'   (for positive parameters) or logit link (for probability parameters) are used 
+#'   by default to ensure that auxiliary parameters are within their valid intervals.
+#'   This implies that, by default, effects for auxiliary parameters are estimated 
+#'   on the log / logit scale and one has to apply the inverse link function to get 
+#'   to the effects on the original scale.
+#'   Alternatively, it is possible to use the identity link to predict parameters
+#'   on their original scale, directly. However, this is much more likely to lead 
+#'   to problems in the model fitting.
+#'   
 #'   See also \code{\link[brms:brmsfamily]{brmsfamily}} for an overview of 
 #'   valid link functions.
-#' 
+#'   
+#'   \bold{Formula syntax for mixture models}
+#'   
+#'   The specification of mixture models closely resembles that 
+#'   of non-mixture models. If not specified otherwise (see below), 
+#'   all mean parameters of the mixture components are predicted
+#'   using the right-hand side of \code{formula}. All types of predictor
+#'   terms allowed in non-mixture models are allowed in mixture models
+#'   as well.
+#'   
+#'   Auxiliary parameters of mixture distributions have the same 
+#'   name as those of the corresponding ordinary distributions, but with 
+#'   a number at the end to indicate the mixture component. For instance, if
+#'   you use family \code{mixture(gaussian, gaussian)}, the auxiliary
+#'   parameters are \code{sigma1} and \code{sigma2}.
+#'   Auxiliary parameters of the same class can be fixed to the same value. 
+#'   For the above example, we could write \code{sigma2 = "sigma1"} to make
+#'   sure that both components have the same residual standard deviation,
+#'   which is in turn estimated from the data.
+#'   
+#'   In addition, there are special auxiliary parameters named \code{mu<ID>},
+#'   that allow for modeling different predictors for the mean parameters of 
+#'   different mixture components. For instance, if you want to predict the 
+#'   mean of the first component using predictor \code{x} and the mean of the
+#'   second component using predictor \code{z}, you can write \code{mu1 ~ x} 
+#'   as well as \code{mu2 ~ z}. 
+#'   
+#'   For more information on mixture models, see
+#'   the documentation of \code{\link[brms:mixture]{mixture}}.
+#'
 #' @examples 
 #' # multilevel model with smoothing terms
 #' brmsformula(y ~ x1*x2 + s(z) + (1+x1|1) + (1|g2))
@@ -444,6 +477,13 @@
 #' # fix the bias parameter to 0.5
 #' bf(rt | dec(decision) ~ x, bias = 0.5)
 #' 
+#' # specify different predictors for different mixture components
+#' mix <- mixture(gaussian, gaussian)
+#' bf(y ~ 1, mu1 ~ x, mu2 ~ z, family = mix)
+#' 
+#' # fix both residual standard deviations to the same value
+#' bf(y ~ x, sigma2 = "sigma1", family = mix)
+#' 
 #' @export
 brmsformula <- function(formula, ..., flist = NULL, family = NULL,
                         nl = NULL, nonlinear = NULL) {
@@ -485,19 +525,41 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
     dupl_pars <- collapse_comma(dupl_pars)
     stop2("Duplicated specification of parameters ", dupl_pars)
   }
-  is_num <- ulapply(forms, is.numeric)
-  fix <- forms[is_num]
+  not_form <- ulapply(forms, function(x) !is.formula(x))
+  fix <- forms[not_form]
   forms[names(fix)] <- NULL
   if (!isTRUE(nl)) {
-    inv_names <- setdiff(names(forms), auxpars())
-    if (length(inv_names)) {
-      inv_names <- collapse_comma(inv_names)
+    inv_names <- !is_auxpar_name(names(forms))
+    if (any(inv_names)) {
+      inv_names <- collapse_comma(names(forms)[inv_names])
       stop2("The following parameter names are invalid: ", inv_names,
-            "\nSet nl = TRUE if you want to specify non-linear models.")
+            "\nSet 'nl = TRUE' if you want to specify non-linear models.")
     }
   }
   out$pforms[names(forms)] <- forms
   out$pfix[names(fix)] <- fix
+  for (ap in names(out$pfix)) {
+    if (is.character(out$pfix[[ap]])) {
+      if (identical(ap, out$pfix[[ap]])) {
+        stop2("Equating '", ap, "' with itself is not meaningful.")
+      }
+      ap_class <- auxpar_class(ap)
+      if (ap_class == "mu") {
+        stop2("Equating parameters of class 'mu' is not allowed.")
+      }
+      if (!identical(ap_class, auxpar_class(out$pfix[[ap]]))) {
+        stop2("Can only equate parameters of the same class.")
+      }
+      if (out$pfix[[ap]] %in% names(out$pfix)) {
+        stop2("Cannot use fixed parameters on ", 
+              "the right-hand side of an equation.")
+      }
+      if (out$pfix[[ap]] %in% names(out$pforms)) {
+        stop2("Cannot use predicted parameters on ", 
+              "the right-hand side of an equation.")
+      }
+    }
+  }
   if (!is.null(nl)) {
     nl <- as.logical(nl)[1]
     if (!nl %in% c(TRUE, FALSE)) {
@@ -533,13 +595,20 @@ prepare_auxformula <- function(formula, par = NULL, rsv_pars = NULL) {
   #        the parameter name will be inferred from the formula
   #   rsv_pars: optional character vector of reserved parameter names
   stopifnot(length(par) <= 1L)
-  if (is.numeric(formula)) {
+  try_formula <- try(as.formula(formula), silent = TRUE)
+  if (is(try_formula, "try-error")) {
     if (length(formula) != 1L) {
       stop2("Expecting a single value when fixing auxiliary parameters.")
     }
+    scalar <- SW(as.numeric(formula))
+    if (!is.na(scalar)) {
+      formula <- scalar
+    } else {
+      formula <- as.character(formula)
+    }
     out <- named_list(par, formula)
   } else {
-    formula <- as.formula(formula)
+    formula <- try_formula
     if (!is.null(lhs(formula))) {
       resp_pars <- all.vars(formula[[2]])
       out <- named_list(resp_pars, list(formula))
@@ -576,29 +645,27 @@ links_auxpars <- function(ap) {
   # link functions for auxiliary parameters
   switch(ap,
     mu = "identity",
-    sigma = "log", 
-    shape = "log", 
-    nu = "logm1", 
-    phi = "log",
-    kappa = "log", 
-    beta = "log",
-    zi = "logit", 
-    hu = "logit",
-    disc = "log",
-    bs = "log", 
-    ndt = "log", 
-    bias = "logit",
-    quantile = "logit",
-    xi = "log1p",
+    sigma = c("log", "identity"), 
+    shape = c("log", "identity"),
+    nu = c("logm1", "identity"), 
+    phi = c("log", "identity"),
+    kappa = c("log", "identity"), 
+    beta = c("log", "identity"),
+    zi = c("logit", "identity"), 
+    hu = c("logit", "identity"),
+    disc = c("log", "identity"),
+    bs = c("log", "identity"), 
+    ndt = c("log", "identity"),
+    bias = c("logit", "identity"),
+    quantile = c("logit", "identity"),
+    xi = c("log1p", "identity"),
     stop2("Parameter '", ap, "' is not supported.")
   )
 }
 
-valid_auxpars <- function(family, bterms = NULL) {
+#' @export
+valid_auxpars.default <- function(family, bterms = NULL, ...) {
   # convenience function to find relevant auxiliary parameters
-  if (missing(family) && !is.null(bterms$family)) {
-    family <- bterms$family
-  } 
   x <- c(
     mu = TRUE,
     sigma = has_sigma(family, bterms = bterms),
@@ -617,6 +684,49 @@ valid_auxpars <- function(family, bterms = NULL) {
     xi = has_xi(family)
   )
   names(x)[x]
+}
+
+#' @export
+valid_auxpars.mixfamily <- function(family, ...) {
+  out <- lapply(family$mix, valid_auxpars, ...)
+  for (i in seq_along(out)) {
+    out[[i]] <- paste0(out[[i]], i)
+  }
+  unlist(out)
+}
+
+is_auxpar_name <- function(auxpars, family = NULL, ...) {
+  # check if provided names of auxiliar parameters are valid
+  # Args:
+  #   auxpars: character vector to be checked
+  #   family: the model family
+  #   ...: further arguments passed to valid_auxpars
+  auxpars <- as.character(auxpars)
+  if (!length(auxpars)) {
+    return(logical(0))
+  }
+  if (is.null(family)) {
+    patterns <- paste0("^", auxpars(), "[[:digit:]]*$")
+    .is_auxpar_name <- function(auxpar, ...) {
+      any(ulapply(patterns, grepl, x = auxpar))
+    }
+    out <- ulapply(auxpars, .is_auxpar_name)
+  } else {
+    out <- auxpars %in% valid_auxpars(family, ...)
+  }
+  as.logical(out)
+}
+
+auxpar_class <- function(auxpar) {
+  # class of an auxiliary parameter
+  out <- get_matches("^[^[:digit:]]+", auxpar, simplify = FALSE)
+  ulapply(out, function(x) ifelse(length(x), x, ""))
+}
+
+auxpar_id <- function(auxpar) {
+  # id of an auxiliary parameter
+  out <- get_matches("[[:digit:]]+$", auxpar, simplify = FALSE)
+  ulapply(out, function(x) ifelse(length(x), x, ""))
 }
 
 pforms <- function(x, ...) {
@@ -740,7 +850,10 @@ print.brmsformula <- function(x, wsp = 0, digits = 2, ...) {
   }
   pfix <- pfix(x)
   if (length(pfix)) {
-    pfix <- paste0(names(pfix), " = ", round(unlist(pfix), digits))
+    pfix <- lapply(pfix, function(x) 
+      ifelse(is.numeric(x), round(x, digits), x)
+    )
+    pfix <- paste0(names(pfix), " = ", unlist(pfix))
     cat(collapse(wsp, pfix, "\n"))
   }
   invisible(x)

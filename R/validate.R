@@ -59,39 +59,56 @@ parse_bf <- function(formula, family = NULL, autocor = NULL,
   advars <- str2formula(ulapply(adforms, all.vars))
   y$adforms[names(adforms)] <- adforms
   
-  if (!is.formula(x$pforms[["mu"]])) {
-    str_rhs_form <- formula2str(rhs(formula))
-    x$pforms[["mu"]] <- eval2(paste0("mu", str_rhs_form))
-  } else {
-    terms <- try(terms(rhs(formula)), silent = TRUE)
-    if (is(terms, "try-error") || length(attr(terms,"term.labels"))) {
-      stop2("Terms should be specified in either or 'formula' or 'mu'.")
+  str_rhs_form <- formula2str(rhs(formula))
+  terms <- try(terms(rhs(formula)), silent = TRUE)
+  has_terms <- is(terms, "try-error") || 
+    length(attr(terms, "term.labels")) ||
+    length(attr(terms, "offset"))
+  rhs_needed <- FALSE
+  if (is.mixfamily(family)) {
+    for (i in seq_along(family$mix)) {
+      mui <- paste0("mu", i)
+      if (!is.formula(x$pforms[[mui]])) {
+        x$pforms[[mui]] <- eval2(paste0(mui, str_rhs_form))
+        rhs_needed <- TRUE
+      }
     }
+  } else {
+    if (!is.formula(x$pforms[["mu"]])) { 
+      x$pforms[["mu"]] <- eval2(paste0("mu", str_rhs_form))
+      rhs_needed <- TRUE
+    }
+    x$pforms <- x$pforms[c("mu", setdiff(names(x$pforms), "mu"))]
   }
-  x$pforms <- x$pforms[c("mu", setdiff(names(x$pforms), "mu"))]
-  auxpars <- intersect(names(x$pforms), valid_auxpars(family, y))
+  if (!rhs_needed && has_terms) {
+    stop2("All 'mu' parameters are specified so that ",
+          "the right-hand side of 'formula' is unused.")
+  }
+  auxpars <- is_auxpar_name(names(x$pforms), family, bterms = y)
+  auxpars <- names(x$pforms)[auxpars]
   nlpars <- setdiff(names(x$pforms), auxpars)
   if (isTRUE(x[["nl"]])) {
-    if (is_ordinal(family) || is_categorical(family)) {
+    if (is.mixfamily(family) || is_ordinal(family) || is_categorical(family)) {
       stop2("Non-linear formulas are not yet allowed for this family.")
     }
     y$auxpars[["mu"]] <- parse_nlf(x$pforms[["mu"]], x$pforms[nlpars])
+    y$auxpars[["mu"]]$family <- auxpar_family(family, "mu")
+    auxpars <- setdiff(auxpars, "mu")
   } else {
     if (length(nlpars)) {
       nlpars <- collapse_comma(nlpars)
       stop2("Prediction of parameter(s) ", nlpars,
             " is not allowed for this model.")
     }
-    y$auxpars[["mu"]] <- parse_lf(x$pforms[["mu"]], family = family)
   }
-  y$auxpars[["mu"]][c("family", "autocor")] <- nlist(family, autocor)
-  auxpars <- setdiff(auxpars, "mu")
   
   # predicted auxiliary parameters
   for (ap in auxpars) {
     y$auxpars[[ap]] <- parse_lf(x$pforms[[ap]], family = family)
-    ap_family <- par_family(ap, family[[paste0("link_", ap)]])
-    y$auxpars[[ap]]$family <- ap_family
+    y$auxpars[[ap]]$family <- auxpar_family(family, ap)
+  }
+  if (!is.null(y$auxpars[["mu"]])) {
+    y$auxpars[["mu"]][["autocor"]] <- autocor
   }
   # fixed auxiliary parameters
   inv_fauxpars <- setdiff(names(x$pfix), valid_auxpars(family, y))
@@ -243,7 +260,7 @@ parse_nlf <- function(formula, nlpar_forms) {
 }
 
 parse_ad <- function(formula, family = NULL, check_response = TRUE) {
-  # extract addition arguments out formula
+  # extract addition arguments out of formula
   # Args:
   #   see parse_bf
   # Returns:
@@ -251,7 +268,8 @@ parse_ad <- function(formula, family = NULL, check_response = TRUE) {
   x <- list()
   ad_funs <- lsp("brms", what = "exports", pattern = "^resp_")
   ad_funs <- sub("^resp_", "", ad_funs)
-  if (!is.null(family) && nzchar(family$family)) {
+  families <- family_names(family)
+  if (is.family(family) && any(nzchar(families))) {
     ad <- get_matches("\\|[^~]*~", formula2str(formula))
     if (length(ad)) {
       # replace deprecated '|' by '+'
@@ -266,12 +284,12 @@ parse_ad <- function(formula, family = NULL, check_response = TRUE) {
           }
           ad_terms <- ad_terms[-matches]
           ad_fams <- ad_families(a)
-          valid <- ad_fams[1] == "all" || family$family %in% ad_fams
+          valid <- ad_fams[1] == "all" || all(families %in% ad_fams)
           if (!is.na(x[[a]]) && valid) {
             x[[a]] <- str2formula(x[[a]])
           } else {
             stop2("Argument '", a, "' is not supported for ", 
-                  "family '", family$family, "'.")
+                  "family '", summary(family), "'.")
           } 
         } else if (length(matches) > 1L) {
           stop2("Each addition argument may only be defined once.")
@@ -288,6 +306,9 @@ parse_ad <- function(formula, family = NULL, check_response = TRUE) {
     }
     if (is_wiener(family) && check_response && !is.formula(x$dec)) {
       stop2("Addition argument 'dec' is required for family 'wiener'.")
+    }
+    if (is.mixfamily(family) && (is.formula(x$cens) || is.formula(x$trunc))) {
+      stop2("Censoring or truncation is not yet allowed in mixture models.")
     }
   }
   x
@@ -726,19 +747,25 @@ ad_families <- function(x) {
     se = c("gaussian", "student", "cauchy"),
     trials = c("binomial", "zero_inflated_binomial"),
     cat = c("cumulative", "cratio", "sratio", "acat"), 
-    cens = c("gaussian", "student", "cauchy", "lognormal",
-             "inverse.gaussian", "binomial", "poisson", 
-             "geometric", "negbinomial", "exponential", 
-             "weibull", "gamma", "exgaussian", "frechet",
-             "asym_laplace", "gen_extreme_value"),
-    trunc = c("gaussian", "student", "cauchy", "lognormal", 
-              "binomial", "poisson", "geometric", "negbinomial",
-              "exponential", "weibull", "gamma", "inverse.gaussian",
-              "exgaussian", "frechet", "asym_laplace",
-              "gen_extreme_value"),
-    disp = c("gaussian", "student", "cauchy", "lognormal", 
-             "gamma", "weibull", "negbinomial", "exgaussian",
-             "asym_laplace"),
+    cens = c(
+      "gaussian", "student", "cauchy", "lognormal",
+      "inverse.gaussian", "binomial", "poisson", 
+      "geometric", "negbinomial", "exponential", 
+      "weibull", "gamma", "exgaussian", "frechet",
+      "asym_laplace", "gen_extreme_value"
+    ),
+    trunc = c(
+      "gaussian", "student", "cauchy", "lognormal", 
+      "binomial", "poisson", "geometric", "negbinomial",
+      "exponential", "weibull", "gamma", "inverse.gaussian",
+      "exgaussian", "frechet", "asym_laplace",
+      "gen_extreme_value"
+    ),
+    disp = c(
+      "gaussian", "student", "cauchy", "lognormal", 
+      "gamma", "weibull", "negbinomial", "exgaussian",
+      "asym_laplace"
+    ),
     dec = c("wiener"),
     stop2("Addition argument '", x, "' is not supported.")
   )
@@ -1317,8 +1344,9 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
     return(out)
   }
   out <- c(
-    "temp_Intercept1", "Rescor", "Lrescor", "Sigma", "LSigma", 
-    "res_cov_matrix",  intersect(auxpars(), names(bterms$auxpars))
+    "temp_Intercept1", "ordered_Intercept", "Rescor", "Lrescor", 
+    "Sigma", "LSigma", "res_cov_matrix", 
+    intersect(auxpars(), names(bterms$auxpars))
   )
   if (length(bterms$response) > 1L) {
     for (r in bterms$response) {

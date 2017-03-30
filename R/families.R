@@ -222,9 +222,9 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
     slink <- ok_links[1]
   } 
   if (!slink %in% ok_links) {
-    stop("Link '", slink, "' is not a supported link for family '", 
-         family, "'. \nSupported links are: ", 
-         paste(ok_links, collapse = ", "), call. = FALSE) 
+    stop2("'", slink, "' is not a supported link ", 
+          "for family '", family, "'.\nSupported links are: ",
+          collapse_comma(ok_links))
   }
   out <- structure(
     list(family = family, link = slink), 
@@ -238,8 +238,9 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
       }
       valid_links <- links_auxpars(ap)
       if (!alink %in% valid_links) {
-        stop2("Link '", alink, "' is invalid for parameter '", ap, 
-              "'. Valid links are: ", collapse_comma(valid_links))
+        stop2("'", alink, "' is not a supported link ", 
+              "for parameter '", ap, "'.\nSupported links are: ", 
+              collapse_comma(valid_links))
       }
       out[[paste0("link_", ap)]] <- alink
     }
@@ -467,17 +468,18 @@ acat <- function(link = "logit", link_disc = "log") {
 }
 
 par_family <- function(par = NULL, link = NULL) {
-  # set up family objects for auxiliary parameters
+  # set up special family objects for parameters
   # Args:
-  #   par: name of the auxiliary parameter
-  #   link: link function of the parameter
-  if (!is.null(par) && !isTRUE(par %in% auxpars())) {
+  #   par: name of the parameter
+  #   link: optional link function of the parameter
+  ap_class <- auxpar_class(par)
+  if (!is.null(par) && !isTRUE(ap_class %in% auxpars())) {
     stop2("Parameter '", par, "' is invalid.")
   }
   if (is.null(par)) {
     link <- "identity"
   } else {
-    links <- links_auxpars(par)
+    links <- links_auxpars(ap_class)
     if (is.null(link)) {
       link <- links[1]
     } else {
@@ -519,8 +521,189 @@ check_family <- function(family, link = NULL) {
   family
 }
 
+#' Finite Mixture Families in \pkg{brms}
+#' 
+#' Set up a finite mixture family for use in \pkg{brms}.
+#' 
+#' @param ... One or more objects providing a description of the 
+#'   response distributions to be combined in the mixture model. 
+#'   These can be family functions, calls to family functions or 
+#'   character strings naming the families.
+#'   For details of supported families see 
+#'   \code{\link[brms:brmsfamily]{brmsfamily}}.
+#' @param flist Optional list of objects, which are treated in the 
+#'   same way as objects passed via the \code{...} argument.
+#' @param nmix Optional numeric vector specifying the number of times
+#'   each family is repeated. If specified, it must have the same length 
+#'   as the number of families passed via \code{...} or \code{flist}.
+#' @param theta Optional vector specifying the mixing proportions
+#'   \code{theta}. If specified, it must have the same length as the 
+#'   number of mixture components. The input is normalized to
+#'   form a probability vector. If \code{NULL} (the default), 
+#'   \code{theta} is estimated from the data.
+#' @param order Logical; indicating whether population-level intercepts
+#'   of the families should be ordered to identify mixture components.
+#'   If \code{NULL} (the default), \code{order} is set to \code{TRUE}
+#'   if all families are the same and \code{FALSE} otherwise.
+#'
+#' @return An object of class \code{mixfamily}.
+#' 
+#' @details
+#' 
+#' Most families supported by \pkg{brms} can be used to form 
+#' mixtures. The response variable has to be valid for all components
+#' of the mixture family. Currently, the number of mixture components 
+#' has to be specified by the user. It is not yet possible to estimate 
+#' the number of mixture components from the data.
+#' 
+#' For some mixture models, you may want to specify priors on the population-level
+#' intercepts via \code{\link[brms:set_prior]{set_prior}} to improve convergence. 
+#' If you do, you will notice some parser warnings starting with 
+#' "Left-hand side of sampling statement (~) may contain a non-linear transform ...". 
+#' These warnings can be safely ignored. In addition, it is sometimes necessary to 
+#' set \code{inits = 0} in the call to \code{\link[brms:brms]{brm}} to allow chains
+#' to initialize properly.
+#' 
+#' For more details on the specification of mixture
+#' models, see \code{\link[brms:brmsformula]{brmsformula}}.
+#' 
+#' @examples
+#' \dontrun{
+#' ## simulate some data
+#' set.seed(1234)
+#' dat <- data.frame(
+#'   y = c(rnorm(200), rnorm(100, 6)), 
+#'   x = rnorm(300),
+#'   z = sample(0:1, 300, TRUE)
+#' )
+#' 
+#' ## fit a simple normal mixture model
+#' mix <- mixture(gaussian, gaussian)
+#' prior <- c(
+#'   prior(normal(0, 7), Intercept, nlpar = mu1),
+#'   prior(normal(5, 7), Intercept, nlpar = mu2)
+#' )
+#' fit1 <- brm(bf(y ~ x + z), dat, family = mix,
+#'             prior = prior, inits = 0, chains = 2) 
+#' summary(fit1)
+#' pp_check(fit1)
+#' 
+#' ## use different predictors for the components
+#' fit2 <- brm(bf(y ~ 1, mu1 ~ x, mu2 ~ z), dat, family = mix,
+#'             prior = prior, inits = 0, chains = 2) 
+#' summary(fit2)
+#' 
+#' ## fix the mixing proportions
+#' mix <- mixture(gaussian, gaussian, theta = c(1, 2))
+#' fit3 <- brm(bf(y ~ x + z), dat, family = mix,
+#'             prior = prior, inits = 0, chains = 2)
+#' summary(fit3)
+#' pp_check(fit3)           
+#'
+#' ## compare model fit
+#' LOO(fit1, fit2, fit3)  
+#' }
+#' 
 #' @export
-print.brmsfamily <- function(x, links = FALSE, ...) {
+mixture <- function(..., flist = NULL, nmix = 1,
+                    theta = NULL, order = NULL) {
+  dots <- c(list(...), flist)
+  if (length(nmix) == 1L) {
+    nmix <- rep(nmix, length(dots))
+  }
+  if (length(dots) != length(nmix)) {
+    stop2("The length of 'nmix' should be the same ", 
+          "as the number of mixture components.")
+  }
+  dots <- dots[rep(seq_along(dots), nmix)]
+  family <- list(
+    family = "mixture", 
+    link = "identity",
+    mix = lapply(dots, check_family)
+  )
+  class(family) <- c("mixfamily", "brmsfamily", "family")
+  # validity checks
+  families <- family_names(family)
+  if (length(families) < 2L) {
+    stop2("Expecting at least 2 mixture components.")
+  }
+  non_mix_families <- c("categorical")
+  non_mix_families <- intersect(families, non_mix_families)
+  if (length(non_mix_families)) {
+    stop2("Families ", collapse_comma(non_mix_families), 
+          " are currently not allowed in mixture models.")
+  }
+  ordinal_families <- c("cumulative", "sratio", "cratio", "acat")
+  if (is_ordinal(family) && any(!families %in% ordinal_families)) {
+    stop2("Cannot mix ordinal and non-ordinal families.")
+  }
+  if (use_real(family) && use_int(family)) {
+    stop2("Cannot mix families with real and integer support.")
+  }
+  if (!is.null(theta)) {
+    theta <- as.numeric(theta)
+    if (length(theta) != length(family$mix)) {
+      stop2("The length of 'theta' should be the same ", 
+            "as the number of mixture components.")
+    }
+    if (anyNA(theta) || any(theta <= 0)) {
+      stop2("'theta' should contain positive values only.")
+    }
+    family$theta <- theta / sum(theta)
+  }
+  if (is.null(order)) {
+    if (length(unique(families)) == 1L) {
+      family$order <- TRUE
+      message("Setting 'order = TRUE' for mixtures of the same family.")
+    } else {
+      family$order <- FALSE
+      message("Setting 'order = FALSE' for mixtures of different families.")
+    }
+  } else {
+    family$order <- as.logical(order)
+    if (!isTRUE(family$order %in% c(TRUE, FALSE))) {
+      stop2("Argument 'order' must be either TRUE or FALSE.")
+    }
+  }
+  family
+}
+
+#' @export
+family_names.default <- function(family, ...) {
+  family
+}
+
+#' @export
+family_names.family <- function(family, ...) {
+  family$family
+}
+
+#' @export
+family_names.mixfamily <- function(family, ...) {
+  ulapply(family$mix, "[[", "family")
+}
+
+#' @export
+auxpar_family.default <- function(family, auxpar, ...) {
+  ap_class <- auxpar_class(auxpar)
+  if (!identical(ap_class, "mu")) {
+    link <- family[[paste0("link_", ap_class)]]
+    family <- par_family(auxpar, link)
+  }
+  family
+}
+
+#' @export
+auxpar_family.mixfamily <- function(family, auxpar, ...) {
+  ap_id <- as.numeric(auxpar_id(auxpar))
+  if (!(length(ap_id) == 1L && is.numeric(ap_id))) {
+    stop2("Parameter '", auxpar, "' is not a valid mixture parameter.")
+  }
+  auxpar_family(family$mix[[ap_id]], auxpar, ...)
+}
+
+#' @export
+print.brmsfamily <- function(x, links = FALSE, newline = TRUE, ...) {
   cat("\nFamily:", x$family, "\n")
   cat("Link function:", x$link, "\n")
   if (!is.null(x$type)) {
@@ -536,119 +719,118 @@ print.brmsfamily <- function(x, links = FALSE, ...) {
       cat(paste0("Link function of ", ap, ": ", ap_links[[ap]], " \n")) 
     }
   }
-  cat("\n")
+  if (newline) {
+    cat("\n")
+  }
   invisible(x)
+}
+
+#' @export
+print.mixfamily <- function(x, newline = TRUE, ...) {
+  cat("\nMixture\n")
+  for (i in seq_along(x$mix)) {
+    print(x$mix[[i]], newline = FALSE, ...)
+  }
+  if (newline) {
+    cat("\n")
+  }
+  invisible(x)
+}
+
+#' @method summary family
+#' @export
+summary.family <- function(object, link = TRUE, ...) {
+  out <- object$family
+  if (link) {
+    out <- paste0(out, "(", object$link, ")")
+  }
+  out
+}
+
+#' @method summary mixfamily
+#' @export
+summary.mixfamily <- function(object, link = FALSE, ...) {
+  families <- ulapply(object$mix, summary, link = link, ...)
+  paste0("mixture(", paste0(families, collapse = ", "), ")")
 }
 
 is.family <- function(x) {
   inherits(x, "family")
 }
 
+is.mixfamily <- function(x) {
+  inherits(x, "mixfamily")
+}
+
 is_linear <- function(family) {
   # indicate if family is for a linear model
-  if (is.family(family)) {
-    family <- family$family
-  }
-  isTRUE(family %in% c("gaussian", "student", "cauchy"))
+  any(family_names(family) %in% c("gaussian", "student", "cauchy"))
 }
 
 is_binary <- function(family) {
   # indicate if family is bernoulli or binomial
-  if (is.family(family)) {
-    family <- family$family
-  }
-  isTRUE(family %in% c("binomial", "bernoulli"))
+  any(family_names(family) %in% c("binomial", "bernoulli"))
 }
 
 is_ordinal <- function(family) {
   # indicate if family is for an ordinal model
-  if (is.family(family)) {
-    family <- family$family
-  }
-  isTRUE(family %in% c("cumulative", "cratio", "sratio", "acat"))
+  any(family_names(family) %in% c("cumulative", "cratio", "sratio", "acat"))
 }
 
 is_categorical <- function(family) {
-  if (is.family(family)) {
-    family <- family$family
-  }
-  isTRUE(family %in% "categorical")
+  any(family_names(family) %in% "categorical")
 }
 
 is_skewed <- function(family) {
   # indicate if family is for model with postive skewed response
-  if (is.family(family)) {
-    family <- family$family
-  }
-  isTRUE(family %in% c("gamma", "weibull", "exponential", "frechet"))
+  any(family_names(family) %in% 
+        c("gamma", "weibull", "exponential", "frechet"))
 }
 
 is_lognormal <- function(family) {
   # indicate if family is lognormal
-  if (is.family(family)) {
-    family <- family$family
-  }
-  isTRUE(family %in% c("lognormal"))
+  any(family_names(family) %in% c("lognormal"))
 }
 
 is_exgaussian <- function(family) {
   # indicate if family is exgaussian
-  if (is.family(family)) {
-    family <- family$family
-  }
-  isTRUE(family %in% c("exgaussian"))
+  any(family_names(family) %in% c("exgaussian"))
 }
 
 is_wiener <- function(family) {
   # indicate if family is the wiener diffusion model
-  if (is.family(family)) {
-    family <- family$family
-  }
-  isTRUE(family %in% c("wiener"))
+  any(family_names(family) %in% c("wiener"))
 }
 
 is_asym_laplace <- function(family) {
   # indicates if family is asymmetric laplace
-  if (is.family(family)) {
-    family <- family$family
-  }
-  isTRUE(family %in% c("asym_laplace"))
+  any(family_names(family) %in% c("asym_laplace"))
 }
 
 is_gev <- function(family) {
   # indicates if family is generalized extreme value
-  if (is.family(family)) {
-    family <- family$family
-  }
-  isTRUE(family %in% c("gen_extreme_value"))
+  any(family_names(family) %in% c("gen_extreme_value"))
 }
 
 is_count <- function(family) {
   # indicate if family is for a count model
-  if (is.family(family)) {
-    family <- family$family
-  }
-  isTRUE(family %in% c("poisson", "negbinomial", "geometric"))
+  any(family_names(family) %in% c("poisson", "negbinomial", "geometric"))
 }
 
 is_hurdle <- function(family, zi_beta = TRUE) {
   # indicate if family is for a hurdle model
-  if (is.family(family)) {
-    family <- family$family
-  }
   # zi_beta is technically a hurdle model
-  isTRUE(family %in% c("hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma",
-                       "hurdle_lognormal", if (zi_beta) "zero_inflated_beta"))
+  any(family_names(family) %in% 
+        c("hurdle_poisson", "hurdle_negbinomial", "hurdle_gamma",
+          "hurdle_lognormal", if (zi_beta) "zero_inflated_beta"))
 }
 
 is_zero_inflated <- function(family, zi_beta = FALSE) {
   # indicate if family is for a zero inflated model
-  if (is.family(family)) {
-    family <- family$family
-  }
   # zi_beta is technically a hurdle model
-  isTRUE(family %in% c("zero_inflated_poisson", "zero_inflated_negbinomial",
-                       "zero_inflated_binomial", if (zi_beta) "zero_inflated_beta"))
+  any(family_names(family) %in% 
+        c("zero_inflated_poisson", "zero_inflated_negbinomial",
+          "zero_inflated_binomial", if (zi_beta) "zero_inflated_beta"))
 }
 
 is_2PL <- function(family) {
@@ -657,11 +839,12 @@ is_2PL <- function(family) {
   if (!is(family, "brmsfamily")) {
     out <- FALSE
   } else {
-    out <- family$family %in% "bernoulli" && identical(family$type, "2PL")
+    out <- any(family_names(family) %in% "bernoulli") && 
+      identical(family$type, "2PL")
   }
   if (out) {
     stop2("The special implementation of 2PL models has been removed.\n",
-         "You can now use argument 'nonlinear' to fit such models.")
+          "You can now use argument 'nonlinear' to fit such models.")
   }
   out
 }
@@ -684,11 +867,9 @@ is_mv <- function(family, response = NULL) {
 
 use_real <- function(family) {
   # indicate if family uses real responses
-  if (is.family(family)) {
-    family <- family$family
-  }
-  is_linear(family) || is_skewed(family) || 
-    isTRUE(family %in% 
+  families <- family_names(family)
+  is_linear(families) || is_skewed(families) || 
+    any(families %in% 
       c("lognormal", "exgaussian", "inverse.gaussian", "beta", 
         "von_mises", "zero_inflated_beta", "hurdle_gamma", 
         "hurdle_lognormal", "wiener", "asym_laplace", 
@@ -698,78 +879,54 @@ use_real <- function(family) {
 
 use_int <- function(family) {
   # indicate if family uses integer responses
-  if (is.family(family)) {
-    family <- family$family
-  }
-  is_binary(family) || has_cat(family) || 
-    is_count(family) || is_zero_inflated(family) || 
-    isTRUE(family %in% c("hurdle_poisson", "hurdle_negbinomial"))
+  families <- family_names(family)
+  is_binary(families) || has_cat(families) || 
+    is_count(families) || is_zero_inflated(families) || 
+    any(families %in% c("hurdle_poisson", "hurdle_negbinomial"))
 }
 
 has_trials <- function(family) {
   # indicate if family makes use of argument trials
-  if (is.family(family)) {
-    family <- family$family
-  }
-  isTRUE(family %in% c("binomial", "zero_inflated_binomial"))
+  any(family_names(family) %in% c("binomial", "zero_inflated_binomial"))
 }
 
 has_cat <- function(family) {
   # indicate if family makes use of argument cat
-  if (is.family(family)) {
-    family <- family$family
-  }
-  is_categorical(family) || is_ordinal(family)
+  families <- family_names(family)
+  is_categorical(families) || is_ordinal(families)
 }
 
 has_shape <- function(family) {
   # indicate if family needs a shape parameter
-  if (is.family(family)) {
-    family <- family$family
-  }
-  isTRUE(family %in% c("gamma", "weibull", "inverse.gaussian", 
-                       "negbinomial", "hurdle_negbinomial", 
-                       "hurdle_gamma", "zero_inflated_negbinomial"))
+  any(family_names(family) %in% 
+        c("gamma", "weibull", "inverse.gaussian", 
+          "negbinomial", "hurdle_negbinomial", 
+          "hurdle_gamma", "zero_inflated_negbinomial"))
 }
 
 has_nu <- function(family) {
   # indicate if family needs a nu parameter
-  if (is.family(family)) {
-    family <- family$family
-  }
-  isTRUE(family %in% c("student", "frechet"))
+  any(family_names(family) %in% c("student", "frechet"))
 }
 
 has_phi <- function(family) {
   # indicate if family needs a phi parameter
-  if (is.family(family)) {
-    family <- family$family
-  }
-  isTRUE(family %in% c("beta", "zero_inflated_beta"))
+  any(family_names(family) %in% c("beta", "zero_inflated_beta"))
 }
 
 has_kappa <- function(family) {
   # indicate if family needs a kappa parameter
-  if (is.family(family)) {
-    family <- family$family
-  }
-  isTRUE(family %in% c("von_mises"))
+  any(family_names(family) %in% c("von_mises"))
 }
 
 has_beta <- function(family) {
   # indicate if family needs a beta parameter
-  if (is.family(family)) {
-    family <- family$family
-  }
-  isTRUE(family %in% c("exgaussian"))
+  any(family_names(family) %in% c("exgaussian"))
 }
 
 has_xi <- function(family) {
   # indicate if family needs a xi parameter
-  if (is.family(family)) {
-    family <- family$family
-  }
-  isTRUE(family %in% c("gen_extreme_value"))
+  any(family_names(family) %in% c("gen_extreme_value"))
 }
 
 has_sigma <- function(family, bterms = NULL, incmv = FALSE) {
@@ -778,10 +935,8 @@ has_sigma <- function(family, bterms = NULL, incmv = FALSE) {
   #  family: model family
   #  bterms: object of class brmsterms
   #  incmv: should MV (linear) models be treated as having sigma? 
-  if (is.family(family)) {
-    family <- family$family
-  }
-  is_ln_eg <- isTRUE(family %in% 
+  families <- family_names(family)
+  is_ln_eg <- any(families %in% 
     c("lognormal", "hurdle_lognormal", "exgaussian",
       "asym_laplace", "gen_extreme_value")
   )
@@ -808,10 +963,7 @@ has_sigma <- function(family, bterms = NULL, incmv = FALSE) {
 
 allows_cs <- function(family) {
   # checks if category specific effects are allowed
-  if (is.family(family)) {
-    family <- family$family
-  }
-  isTRUE(family %in% c("sratio", "cratio", "acat"))
+  all(family_names(family) %in% c("sratio", "cratio", "acat"))
 }
 
 is_old_lognormal <- function(family, link = "identity", nresp = 1L,

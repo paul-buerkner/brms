@@ -715,8 +715,10 @@ summary.brmsfit <- function(object, waic = FALSE, priors = FALSE,
     algorithm <- algorithm(object)
     if (algorithm == "sampling") {
       fit_summary <- fit_summary[, -2]
-      colnames(fit_summary) <- c("Estimate", "Est.Error", "l-95% CI", 
-                                 "u-95% CI", "Eff.Sample", "Rhat")
+      colnames(fit_summary) <- c(
+        "Estimate", "Est.Error", "l-95% CI", "u-95% CI", 
+        "Eff.Sample", "Rhat"
+      )
       Rhats <- fit_summary[, "Rhat"]
       if (any(Rhats > 1.1, na.rm = TRUE) || anyNA(Rhats)) {
         warning2(
@@ -730,13 +732,14 @@ summary.brmsfit <- function(object, waic = FALSE, priors = FALSE,
       if (div_trans > 0) {
         warning2(
           "There were ", div_trans, " divergent transitions after warmup. ", 
-          "Increasing adapt_delta above ", adapt_delta, " may help. See \n",
+          "Increasing adapt_delta above ", adapt_delta, " may help. See ",
           "http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup"
         )
       }
     } else {
-      colnames(fit_summary) <- c("Estimate", "Est.Error", 
-                                 "l-95% CI", "u-95% CI")
+      colnames(fit_summary) <- c(
+        "Estimate", "Est.Error", "l-95% CI", "u-95% CI"
+      )
     }
     
     # fixed effects summary
@@ -745,8 +748,9 @@ summary.brmsfit <- function(object, waic = FALSE, priors = FALSE,
     rownames(out$fixed) <- gsub(fixef_pars(), "", fe_pars)
     
     # summary of family specific parameters
-    is_mv_par <- apply(sapply(c("^sigma_", "^rescor_"), grepl, pars), 1, any)
-    spec_pars <- pars[pars %in% c(auxpars(), "delta") | is_mv_par]
+    spec_pars <- c(auxpars(), "delta", "theta", "rescor")
+    spec_pars <- paste0("^(", paste0(spec_pars, collapse = "|"), ")")
+    spec_pars <- pars[grepl(spec_pars, pars)]
     out$spec_pars <- fit_summary[spec_pars, , drop = FALSE]
     if (is_linear(family(object)) && length(bterms$response) > 1L) {
       sigma_names <- paste0("sigma(", bterms$response, ")")
@@ -1189,9 +1193,12 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
               type, "' by default.")
     }
   }
-  standata <- amend_newdata(
-    newdata, object, re_formula = NA, incl_autocor = incl_autocor,
-    check_response = TRUE, only_response = TRUE
+  newd_args <- nlist(
+    newdata, fit = object, re_formula = NA, 
+    incl_autocor, check_response = TRUE
+  )
+  standata <- do.call(amend_newdata, 
+    args = c(newd_args, list(only_response = TRUE))
   )
   y <- as.vector(standata$Y)
   if (!is.null(standata$cens)) {
@@ -1210,11 +1217,13 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     yrep <- yrep / as_draws_matrix(standata$trials, dim = dim(yrep))
   }
   ppc_args <- list(y, yrep, ...)
+  # allow using arguments 'group' and 'x' for new data
+  mf <- do.call(amend_newdata, c(newd_args, return_standata = FALSE))
   if (!is.null(group)) {
-    ppc_args$group <- model.frame(object)[[group]]
+    ppc_args$group <- mf[[group]]
   }
   if (!is.null(x)) {
-    ppc_args$x <- model.frame(object)[[x]]
+    ppc_args$x <- mf[[x]]
   }
   do.call(ppc_fun, ppc_args)
 }
@@ -1651,7 +1660,8 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (is.list(draws$mu[["mv"]])) {
     draws$mu <- get_eta(draws$mu)
   }
-  for (ap in intersect(auxpars(), names(draws))) {
+  auxpars <- intersect(valid_auxpars(family(object)), names(draws))
+  for (ap in auxpars) {
     if (is.list(draws[[ap]])) {
       draws[[ap]] <- get_auxpar(draws[[ap]])
     }
@@ -1784,9 +1794,9 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     allow_new_levels, sample_new_levels, subset, nsamples
   )
   draws <- do.call(extract_draws, draws_args)
-  auxpars <- intersect(auxpars(), names(draws))
+  auxpars <- intersect(valid_auxpars(family(object)), names(draws))
   if (!length(auxpar)) {
-    if (is.list(draws$mu[["mv"]])) {
+    if (is.list(draws[["mu"]][["mv"]])) {
       draws$mu <- get_eta(draws$mu)
     }
     for (ap in auxpars) {
@@ -1806,7 +1816,7 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
       draws$mu <- fitted_fun(draws)
     }
   } else {
-    auxpars <- setdiff(auxpars, "mu")
+    auxpars <- auxpars[auxpar_class(auxpars) != "mu"]
     if (length(auxpar) != 1L || !auxpar %in% auxpars) {
       stop2("Invalid argument 'auxpar'. Valid auxiliary ",
             "parameters are: ", collapse_comma(auxpars))
@@ -2034,7 +2044,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   dots[old_args] <- object[old_args]
   if (!is.null(newdata)) {
     dots$data <- newdata
-  } else  {
+  } else {
     dots$data <- rm_attr(object$data, c("terms", "brmsframe"))
   }
   if (is.null(dots$threshold)) {

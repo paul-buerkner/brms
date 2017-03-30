@@ -3,6 +3,7 @@ test_that("all S3 methods have reasonable ouputs", {
   fit2 <- brms:::rename_pars(brms:::brmsfit_example2)
   fit3 <- brms:::rename_pars(brms:::brmsfit_example3)
   fit4 <- brms:::rename_pars(brms:::brmsfit_example4)
+  fit5 <- brms:::rename_pars(brms:::brmsfit_example5)
   
   # test S3 methods in alphabetical order
   # as.data.frame
@@ -57,17 +58,21 @@ test_that("all S3 methods have reasonable ouputs", {
   
   # fitted values with new_levels
   newdata <- data.frame(
-    Age = 0, visit = c("a", "b"), Trt = 0, 
+    Age = 0, visit = paste0("a", 1:100), Trt = 0, 
     count = 20, patient = 1, Exp = 2
   )
   fi <- fitted(fit1, newdata = newdata, allow_new_levels = TRUE, 
-               sample_new_levels = "old_levels")
-  expect_equal(dim(fi), c(2, 4))
+               sample_new_levels = "old_levels", nsamples = 10)
+  expect_equal(dim(fi), c(100, 4))
   fi <- fitted(fit1, newdata = newdata, allow_new_levels = TRUE, 
-               sample_new_levels = "gaussian")
-  expect_equal(dim(fi), c(2, 4))
+               sample_new_levels = "gaussian", nsamples = 1)
+  expect_equal(dim(fi), c(100, 4))
   
   # fitted values of auxiliary parameters
+  newdata <- data.frame(
+    Age = 0, visit = c("a", "b"), Trt = 0, 
+    count = 20, patient = 1, Exp = 2
+  )
   fi <- fitted(fit1, auxpar = "sigma")
   expect_equal(dim(fi), c(nobs(fit1), 4))
   expect_true(all(fi > 0))
@@ -87,6 +92,9 @@ test_that("all S3 methods have reasonable ouputs", {
   
   fi <- fitted(fit4)
   expect_equal(dim(fi), c(nobs(fit4), 4, 4))
+  
+  fi <- fitted(fit5)
+  expect_equal(dim(fi), c(nobs(fit5), 4))
   
   # fixef
   fixef1 <- fixef(fit1, estimate = c("mean", "sd"))  
@@ -165,6 +173,9 @@ test_that("all S3 methods have reasonable ouputs", {
   loo4 <- SW(LOO(fit4, cores = 1))
   expect_true(is.numeric(loo4[["looic"]]))
   
+  loo5 <- SW(LOO(fit5, cores = 1))
+  expect_true(is.numeric(loo5[["looic"]]))
+
   # loo_linpred
   llp <- SW(loo_linpred(fit1))
   expect_equal(length(llp), nobs(fit1))
@@ -206,29 +217,38 @@ test_that("all S3 methods have reasonable ouputs", {
   meplot <- plot(me, stype = "raster", plot = FALSE)
   expect_true(is(meplot[[1]], "ggplot"))
   
-  mdata = data.frame(Age = c(-0.3, 0, 0.3), count = c(10, 20, 30), 
-                     visit = 1:3, patient = 1, Trt = 0, Exp = c(1,3,5))
+  mdata = data.frame(
+    Age = c(-0.3, 0, 0.3), 
+    count = c(10, 20, 30), 
+    Exp = c(1, 3, 5)
+  )
   exp_nrow <- nrow(mdata) * 100
-  expect_equal(nrow(marginal_effects(fit1, conditions = mdata)[[1]]),
-               exp_nrow)
-  expect_equal(nrow(marginal_effects(fit1, effects = "Trt", 
-                                     conditions = mdata)[[1]]), 
-               exp_nrow)
-  expect_equal(nrow(marginal_effects(fit1, re_formula = NULL, 
-                                     conditions = mdata)[[1]]), 
-               exp_nrow)
+  me <- marginal_effects(fit1, effects = "Trt", conditions = mdata)
+  expect_equal(nrow(me[[1]]), exp_nrow)
+  
+  mdata$visit <- 1:3
+  me <- marginal_effects(fit1, re_formula = NULL, conditions = mdata)
+  expect_equal(nrow(me[[1]]), exp_nrow)
+  
   expect_error(marginal_effects(fit1, effects = "Trtc"), 
                "All specified effects are invalid for this model")
   expect_warning(marginal_effects(fit1, effects = c("Trtc", "Trt")), 
                  "Some specified effects are invalid for this model")
   expect_error(marginal_effects(fit1, effects = "Trtc:a:b"), 
                "please use the 'conditions' argument")
+  
+  mdata$visit <- NULL
+  mdata$patient <- 1
   expect_equal(nrow(marginal_effects(fit2)[[2]]), 100)
-  expect_equal(nrow(marginal_effects(fit2, conditions = mdata)[[1]]),
-               exp_nrow)
+  me <- marginal_effects(fit2, re_formula = NULL, conditions = mdata)
+  expect_equal(nrow(me[[1]]), exp_nrow)
+  
   expect_warning(me4 <- marginal_effects(fit4),
                  "Predictions are treated as continuous variables")
   expect_true(is(me4, "brmsMarginalEffects"))
+  
+  me5 <- marginal_effects(fit5)
+  expect_true(is(me5, "brmsMarginalEffects"))
   
   # marginal_smooths
   ms1 <- marginal_smooths(fit1)
@@ -284,8 +304,12 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_true(is(pp_check(fit1, newdata = fit1$data[1:100, ]), "ggplot"))
   expect_true(is(pp_check(fit1, "stat", nsamples = 5), "ggplot"))
   expect_true(is(pp_check(fit1, "error_binned"), "ggplot"))
-  ribbon_plot <- pp_check(fit1, "ribbon_grouped", group = "visit", x = "Age")
-  expect_true(is(ribbon_plot, "ggplot"))
+  pp <- pp_check(fit1, "ribbon_grouped", group = "visit", x = "Age")
+  expect_true(is(pp, "ggplot"))
+  pp <- pp_check(fit1, type = "violin_grouped", 
+                 group = "visit", newdata = fit1$data[1:100, ])
+  expect_true(is(pp, "ggplot"))
+  
   expect_true(is(pp_check(fit3), "ggplot"))
   expect_true(is(pp_check(fit2, "ribbon", x = "Trt"), "ggplot"))
   expect_error(pp_check(fit2, "ribbon"),
@@ -297,6 +321,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_error(pp_check(fit1, "stat_grouped", group = "g"),
                "not a valid grouping factor")
   expect_true(is(pp_check(fit4), "ggplot"))
+  expect_true(is(pp_check(fit5), "ggplot"))
   expect_error(pp_check(fit4, "error_binned"),
                "Type 'error_binned' is not available")
   
@@ -329,6 +354,10 @@ test_that("all S3 methods have reasonable ouputs", {
   pred <- predict(fit4)
   expect_equal(dim(pred), c(nobs(fit4), 4))
   expect_equal(colnames(pred), paste0("P(Y = ", 1:4, ")"))
+  
+  pred <- predict(fit5)
+  expect_equal(dim(pred), c(nobs(fit5), 4))
+  
   # check if grouping factors with a single level are accepted
   newdata$patient <- factor(2)
   pred <- predict(fit2, newdata = newdata)
@@ -414,7 +443,9 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_output(print(summary1), "Population-Level Effects:")
   expect_output(print(summary1), "Priors:")
   
-  summary2 <- SW(summary(fit1, waic = TRUE))
+  summary5 <- SW(summary(fit5, waic = TRUE))
+  expect_output(print(summary5), "sigma1")
+  expect_output(print(summary5), "theta\\[1\\]")
   
   # update
   # do not actually refit the model as is causes CRAN checks to fail

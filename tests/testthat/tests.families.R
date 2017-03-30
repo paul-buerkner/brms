@@ -48,11 +48,37 @@ test_that("family functions returns expected results", {
                          link_zi = "logit"))
   
   expect_error(weibull(link_shape = "logit"), 
-               "Link 'logit' is invalid for parameter 'shape'")
+               "'logit' is not a supported link for parameter 'shape'")
   expect_error(weibull(link_shape = c("log", "logit")),
                "Link functions must be of length 1")
 })
 
 test_that("print brmsfamily works correctly", {
   expect_output(print(weibull()), "Family: weibull \nLink function: log")
+})
+
+test_that("mixture returns expected results and errors", {
+  mix <- mixture(gaussian, nmix = 3)
+  expect_equal(brms:::family_names(mix), rep("gaussian", 3))
+  mix <- mixture(gaussian, student, weibull, nmix = 3:1)
+  expect_equal(
+    brms:::family_names(mix), 
+    c(rep("gaussian", 3), rep("student", 2), "weibull")
+  )
+  expect_error(mixture(gaussian, "x"), 
+               "x is not a supported family")
+  expect_error(mixture(gaussian, categorical()), 
+               "Families 'categorical' are currently not allowed in mixture models")
+  expect_error(mixture(poisson, "cumulative"), 
+               "Cannot mix ordinal and non-ordinal families")
+  expect_error(mixture(lognormal, exgaussian, poisson()), 
+               "Cannot mix families with real and integer support")
+  expect_error(mixture(lognormal), 
+               "Expecting at least 2 mixture components")
+  expect_error(mixture(gaussian(), student(), theta = c(1, 2, 3)), 
+               "The length of 'theta' should be the same as the number")
+  expect_error(mixture(gaussian(), student(), theta = c(1, NA)), 
+               "'theta' should contain positive values only")
+  expect_error(mixture(poisson, binomial, order = "x"),
+               "Argument 'order' must be either TRUE or FALSE")
 })

@@ -865,3 +865,22 @@ check_prior_special <- function(x, ...) {
   # prepare special priors for use in Stan
   UseMethod("check_prior_special")
 }
+
+auxpar_family <- function(family, auxpar, ...) {
+  # generate a family object of an auxiliary parameter
+  UseMethod("auxpar_family")
+}
+
+family_names <- function(family, ...) {
+  # extract family names
+  UseMethod("family_names")
+}
+
+valid_auxpars <- function(family, ...) {
+  # get valid auxiliary parameters for a family
+  UseMethod("valid_auxpars")
+}
+
+stan_llh <- function(family, ...) {
+  UseMethod("stan_llh")
+}

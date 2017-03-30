@@ -5,6 +5,8 @@
 \section{CHANGES IN VERSION 1.5.1++}{
   \subsection{NEW FEATURES}{
     \itemize{
+      \item Fit finite mixture models via function
+      \code{mixture}.
       \item Implement different ways to sample new levels
       of grouping factors in \code{predict} and related 
       methods through argument \code{sample_new_levels}.
@@ -12,6 +14,15 @@
       discussion about this feature.
       \item Allow using \code{offset} in formulas
       of non-linear and auxiliary parameters.
+      \item Allow sparse matrix multiplication in
+      non-linear and distributional models.
+      \item Allow using the \code{identity} link for
+      all auxiliary parameters.
+      \item Introduce method \code{control_params} to
+      conveniently extract control parameters of the 
+      NUTS sampler.
+      \item Improve flexibility of the \code{conditions} 
+      argument of \code{marginal_effects}.
       \item Extend method \code{stanplot} to correctly 
       handle some new \code{mcmc_} plots of the 
       \pkg{bayesplot} package.
@@ -22,6 +33,8 @@
       \item Improve the \code{update} method to
       only recompile models when the \pkg{Stan} code
       changes.
+      \item Warn about divergent transitions when calling
+      \code{summary} or \code{print} on \code{brmsfit} objects.
     }
   }
   \subsection{BUG FIXES}{
@@ -29,6 +42,15 @@
       \item Fix problems with the inclusion of offsets
       occuring for more complicated formulas thanks to 
       Christian Stock.
+      \item Fix a bug that led to invalid Stan code when 
+      sampling from priors in intercept only models thanks 
+      to Tom Wallis.
+      \item Correctly check for category specific
+      group-level effects in non-ordinal models thanks to
+      Wayne Folta.
+      \item Rename the last column in the output of 
+      \code{hypothesis} to avoid problems with zero length 
+      column names thanks to the GitHub user puterleat.
       \item Add a missing new line statement at the end 
       of the \code{summary} output thanks to Thomas Kluth.
     }

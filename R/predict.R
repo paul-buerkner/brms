@@ -418,6 +418,30 @@ predict_ordinal <- function(i, draws, family, ...) {
   first_greater(p, target = runif(draws$nsamples, min = 0, max = 1))
 }
 
+predict_mixture <- function(i, draws, ...) {
+  families <- family_names(draws$f)
+  smix <- rng_mix(draws$theta)
+  out <- rep(NA, draws$nsamples)
+  for (j in seq_along(families)) {
+    sample_ids <- which(smix == j)
+    if (length(sample_ids)) {
+      predict_fun <- paste0("predict_", families[j])
+      predict_fun <- get(predict_fun, asNamespace("brms"))
+      auxpars <- valid_auxpars(families[j])
+      tmp_draws <- list(
+        f = draws$f$mix[[j]],
+        nsamples = length(sample_ids),
+        data = draws[["data"]]
+      )
+      for (ap in auxpars) {
+        tmp_draws[[ap]] <- p(draws[[paste0(ap, j)]], sample_ids, row = TRUE)
+      }
+      out[sample_ids] <- predict_fun(i, tmp_draws, ...)
+    }
+  }
+  out
+}
+
 #---------------predict helper-functions----------------------------
 
 rng_continuous <- function(nrng, dist, args, lb = NULL, ub = NULL) {
@@ -473,6 +497,16 @@ rng_discrete <- function(nrng, dist, args, lb = NULL, ub = NULL, ntrys = 5) {
     rng <- matrix(do.call(rdist, c(nrng * ntrys, args)), ncol = ntrys)
     apply(rng, 1, extract_valid_sample, lb = lb, ub = ub)
   }
+}
+
+rng_mix <- function(theta) {
+  # sample the ID of the mixture component
+  #stopifnot(all(dim(theta), c(nrng, length(families))))
+  stopifnot(is.matrix(theta))
+  mix_comp <- seq_len(ncol(theta))
+  ulapply(seq_len(nrow(theta)), function(s)
+    sample(mix_comp, 1, prob = theta[s, ])
+  )
 }
 
 extract_valid_sample <- function(rng, lb, ub) {

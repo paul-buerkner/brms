@@ -84,36 +84,47 @@ make_standata <- function(formula, data, family = NULL,
   # response variable
   standata <- list(N = nrow(data), Y = unname(model.response(data)))
   check_response <- !isTRUE(control$omit_response)
+  families <- family_names(family)
+  if (is.mixfamily(family)) {
+    family4error <- paste0(families, collapse = ", ")
+    family4error <- paste0("mixture(", family4error, ")")
+  } else {
+    family4error <- families
+  }
   if (check_response) {
     factors_allowed <- is_ordinal || 
-      family$family %in% c("bernoulli", "categorical")
+      any(families %in% c("bernoulli", "categorical"))
     if (!factors_allowed && !is.numeric(standata$Y)) {
-      stop2("Family '", family$family, "' expects numeric response variable.")
+      stop2("Family '", family4error, "' requires numeric responses.")
     }
     # transform and check response variable for different families
     regex_pos_int <- "(^|_)(binomial|poisson|negbinomial|geometric)$"
-    if (grepl(regex_pos_int, family$family)) {
+    if (any(grepl(regex_pos_int, families))) {
       if (!all(is_wholenumber(standata$Y)) || min(standata$Y) < 0) {
-        stop2("Family '", family$family, "' expects response variable ", 
-              "of non-negative integers.")
+        stop2("Family '", family4error, "' requires responses ", 
+              "to be non-negative integers.")
       }
-    } else if (family$family %in% "bernoulli") {
+    } else if (any(families %in% "bernoulli")) {
       standata$Y <- as.numeric(as.factor(standata$Y)) - 1
       if (any(!standata$Y %in% c(0, 1))) {
-        stop2("Family '", family$family, "' expects response variable ", 
+        stop2("Family '", family4error, "' requires responses ", 
               "to contain only two different values.")
       }
-    } else if (family$family %in% c("beta", "zero_inflated_beta")) {
-      lower <- if (family$family == "beta") any(standata$Y <= 0)
-               else any(standata$Y < 0)
+    } else if (any(families %in% c("beta", "zero_inflated_beta"))) {
+      if (any(families %in% "beta")) {
+        lower <- any(standata$Y <= 0)
+      } else {
+        lower <- any(standata$Y < 0) 
+      } 
       upper <- any(standata$Y >= 1)
       if (lower || upper) {
-        stop2("The beta distribution requires responses between 0 and 1.")
+        stop2("Family '", family4error, "' requires responses ", 
+              "between 0 and 1.")
       }
-    } else if (family$family %in% "von_mises") {
+    } else if (any(families %in% "von_mises")) {
       if (any(standata$Y < -pi | standata$Y > pi)) {
-        stop2("The von_mises distribution requires ",
-              "responses between -pi and pi.")
+        stop2("Family '", family4error, "' requires responses ",
+              "between -pi and pi.")
       }
     } else if (is_categorical) { 
       standata$Y <- as.numeric(factor(standata$Y))
@@ -126,52 +137,24 @@ make_standata <- function(formula, data, family = NULL,
       } else if (all(is_wholenumber(standata$Y))) {
         standata$Y <- standata$Y - min(standata$Y) + 1
       } else {
-        stop2("Family '", family$family, "' expects either integers or ",
-              "ordered factors as response variables.")
+        stop2("Family '", family4error, "' requires either integers or ",
+              "ordered factors as responses.")
       }
       if (length(unique(standata$Y)) < 2L) {
         stop2("At least two response categories are required.")
       }
     } else if (is_skewed(family) || is_lognormal(family) || is_wiener(family)) {
       if (min(standata$Y) <= 0) {
-        stop2("Family '", family$family, "' requires response variable ", 
+        stop2("Family '", family4error, "' requires responses ", 
               "to be positive.")
       }
     } else if (is_zero_inflated(family) || is_hurdle(family)) {
       if (min(standata$Y) < 0) {
-        stop2("Family '", family$family, "' requires response variable ", 
+        stop2("Family '", family4error, "' requires responses ", 
               "to be non-negative.")
       }
     }
     standata$Y <- as.array(standata$Y)
-  }
-  
-  if (old_mv) {
-    # deprecated as of brms 1.0.0
-    # evaluate even if check_response is FALSE to ensure 
-    # that N_trait is defined
-    if (is_linear && length(bterms$response) > 1L) {
-      standata$Y <- matrix(standata$Y, ncol = length(bterms$response))
-      NC_trait <- ncol(standata$Y) * (ncol(standata$Y) - 1L) / 2L
-      standata <- c(standata, list(N_trait = nrow(standata$Y), 
-                                   K_trait = ncol(standata$Y),
-                                   NC_trait = NC_trait)) 
-      # for compatibility with the S3 methods of brms >= 1.0.0
-      standata$nresp <- standata$K_trait
-      standata$nrescor <- standata$NC_trait
-    }
-    if (is_forked) {
-      # the second half of Y is only dummy data
-      # that was put into data to make melt_data work correctly
-      standata$N_trait <- nrow(data) / 2L
-      standata$Y <- as.array(standata$Y[1L:standata$N_trait]) 
-    }
-    if (is_categorical && !isTRUE(control$old_cat == 1L)) {
-      ncat1m <- standata$ncat - 1L
-      standata$N_trait <- nrow(data) / ncat1m
-      standata$Y <- as.array(standata$Y[1L:standata$N_trait])
-      standata$J_trait <- as.array(matrix(1L:standata$N, ncol = ncat1m))
-    }
   }
   
   # data for various kinds of effects
@@ -213,9 +196,10 @@ make_standata <- function(formula, data, family = NULL,
     for (ap in names(bterms$fauxpars)) {
       standata[[ap]] <- bterms$fauxpars[[ap]]
     }
-    # data for grouping factors separated after group-ID
-    data_gr <- data_gr(ranef, data, cov_ranef = cov_ranef)
-    standata <- c(standata, data_gr)
+    standata <- c(standata,
+      data_gr(ranef, data, cov_ranef = cov_ranef),
+      data_mixture(family, prior = prior)
+    )
   }
   
   # data for specific families
@@ -383,6 +367,34 @@ make_standata <- function(formula, data, family = NULL,
         tgroup <- rep(1, standata$N) 
       }
       standata$tg <- as.array(as.numeric(factor(tgroup)))
+    }
+  }
+  
+  if (old_mv) {
+    # deprecated as of brms 1.0.0
+    # evaluate even if check_response is FALSE to ensure 
+    # that N_trait is defined
+    if (is_linear && length(bterms$response) > 1L) {
+      standata$Y <- matrix(standata$Y, ncol = length(bterms$response))
+      NC_trait <- ncol(standata$Y) * (ncol(standata$Y) - 1L) / 2L
+      standata <- c(standata, list(N_trait = nrow(standata$Y), 
+                                   K_trait = ncol(standata$Y),
+                                   NC_trait = NC_trait)) 
+      # for compatibility with the S3 methods of brms >= 1.0.0
+      standata$nresp <- standata$K_trait
+      standata$nrescor <- standata$NC_trait
+    }
+    if (is_forked) {
+      # the second half of Y is only dummy data
+      # that was put into data to make melt_data work correctly
+      standata$N_trait <- nrow(data) / 2L
+      standata$Y <- as.array(standata$Y[1L:standata$N_trait]) 
+    }
+    if (is_categorical && !isTRUE(control$old_cat == 1L)) {
+      ncat1m <- standata$ncat - 1L
+      standata$N_trait <- nrow(data) / ncat1m
+      standata$Y <- as.array(standata$Y[1L:standata$N_trait])
+      standata$J_trait <- as.array(matrix(1L:standata$N, ncol = ncat1m))
     }
   }
   
