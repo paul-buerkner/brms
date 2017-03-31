@@ -8,7 +8,7 @@
 \method{pp_check}{brmsfit}(object, type, nsamples, group = NULL, x = NULL,
   newdata = NULL, re_formula = NULL, allow_new_levels = FALSE,
   sample_new_levels = "uncertainty", incl_autocor = TRUE, subset = NULL,
-  ntrys = 5, ...)
+  ntrys = 5, loo_args = list(), ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
@@ -71,6 +71,10 @@ If \code{NULL} (the default), all samples are used.}
 for truncated discrete models only
 (defaults to \code{5}). For more details see
 \code{\link[brms:predict.brmsfit]{predict.brmsfit}}.}
+
+\item{loo_args}{An optional list of additional arguments 
+passed to \code{\link[loo:psislw]{psislw}}. 
+Ignored for non \code{loo_*} ppc types.}
 
 \item{...}{Further arguments passed to the ppc functions
 of \pkg{\link[bayesplot:bayesplot]{bayesplot}}.}

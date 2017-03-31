@@ -1075,6 +1075,9 @@ stanplot.brmsfit <- function(object, pars = NA, type = "intervals",
 #' @param x Optional name of a variable in the model. 
 #'  Only used for ppc types having an \code{x} argument 
 #'  and ignored otherwise.
+#' @param loo_args An optional list of additional arguments 
+#'  passed to \code{\link[loo:psislw]{psislw}}. 
+#'  Ignored for non \code{loo_*} ppc types.
 #' @param ... Further arguments passed to the ppc functions
 #'   of \pkg{\link[bayesplot:bayesplot]{bayesplot}}.
 #' @inheritParams predict.brmsfit
@@ -1112,7 +1115,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
                              re_formula = NULL, allow_new_levels = FALSE,
                              sample_new_levels = "uncertainty", 
                              incl_autocor = TRUE, subset = NULL, 
-                             ntrys = 5, ...) {
+                             ntrys = 5, loo_args = list(), ...) {
   if (missing(type)) {
     type <- "dens_overlay"
   }
@@ -1216,6 +1219,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
   ppc_args <- list(y, yrep, ...)
   if ("lw" %in% names(formals(ppc_fun)) && !"lw" %in% names(ppc_args)) {
     # required for 'loo' types only
+    pred_args$loo_args <- loo_args
     ppc_args$lw <- do.call(loo_weights, c(pred_args, log = TRUE))
   }
   # allow using arguments 'group' and 'x' for new data
