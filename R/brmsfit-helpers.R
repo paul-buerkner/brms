@@ -938,11 +938,11 @@ compare_ic <- function(..., x = NULL) {
   x
 }
 
-loo_weights <- function(x, lw = NULL, log = FALSE, 
+loo_weights <- function(object, lw = NULL, log = FALSE, 
                         loo_args = list(), ...) {
   # compute loo weights for use in loo_predict and related methods
   # Args:
-  #   x: a brmsfit object
+  #   object: a brmsfit object
   #   lw: precomputed log weights matrix
   #   log: return log weights?
   #   loo_args: further arguments passed to functions of loo
@@ -953,7 +953,7 @@ loo_weights <- function(x, lw = NULL, log = FALSE,
     stopifnot(is.matrix(lw))
   } else {
     message("Running PSIS to compute weights")
-    psis <- compute_ic(x, ic = "psislw", loo_args = loo_args, ...)
+    psis <- compute_ic(object, ic = "psislw", loo_args = loo_args, ...)
     lw <- psis[["lw_smooth"]]
   }
   if (!log) {

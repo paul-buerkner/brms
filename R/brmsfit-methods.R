@@ -1148,12 +1148,11 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     stop2("Group '", group, "' is not a valid grouping factor. ",
           "Valid groups are: \n", collapse_comma(valid_groups))
   }
-  is_group_type <- "group" %in% names(formals(ppc_fun))
+  is_group_type <- isTRUE("group" %in% names(formals(ppc_fun)))
   if (is.null(group) && is_group_type) {
     stop2("Argument 'group' is required for ppc type '", type, "'.")
   }
-  is_vs_x_type <- "x" %in% names(formals(ppc_fun))
-  if (is_vs_x_type) {
+  if (isTRUE("x" %in% names(formals(ppc_fun)))) {
     if (is.null(x)) {
       stop2("Argument 'x' is required for ppc type '", type, "'.")
     }
@@ -1175,7 +1174,8 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
   if (missing(nsamples)) {
     aps_types <- c(
       "error_scatter_avg", "error_scatter_avg_vs_x",
-      "intervals", "intervals_grouped", "ribbon", 
+      "intervals", "intervals_grouped", "loo_pit", 
+      "loo_intervals", "loo_ribbon", "ribbon", 
       "ribbon_grouped", "rootogram", "scatter_avg", 
       "scatter_avg_grouped", "stat", "stat_2d", 
       "stat_freqpoly_grouped", "stat_grouped", 
@@ -1217,6 +1217,10 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     yrep <- yrep / as_draws_matrix(standata$trials, dim = dim(yrep))
   }
   ppc_args <- list(y, yrep, ...)
+  if (isTRUE("lw" %in% names(formals(ppc_fun)))) {
+    # required for 'loo' types only
+    ppc_args$lw <- do.call(loo_weights, c(pred_args, log = TRUE))
+  }
   # allow using arguments 'group' and 'x' for new data
   mf <- do.call(amend_newdata, c(newd_args, return_standata = FALSE))
   if (!is.null(group)) {
