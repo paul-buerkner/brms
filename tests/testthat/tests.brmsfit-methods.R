@@ -310,6 +310,11 @@ test_that("all S3 methods have reasonable ouputs", {
                  group = "visit", newdata = fit1$data[1:100, ])
   expect_true(is(pp, "ggplot"))
   
+  expect_true(is(SW(pp_check(fit1, type = "loo_pit")), "ggplot"))
+  lw <- SW(loo::psislw(-log_lik(fit1))$lw_smooth)
+  # not getting warnings implies that the precomputed lw is used
+  expect_true(is(pp_check(fit1, type = "loo_intervals", lw = lw), "ggplot"))
+  
   expect_true(is(pp_check(fit3), "ggplot"))
   expect_true(is(pp_check(fit2, "ribbon", x = "Trt"), "ggplot"))
   expect_error(pp_check(fit2, "ribbon"),

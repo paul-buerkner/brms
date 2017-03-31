@@ -1056,18 +1056,10 @@ stanplot.brmsfit <- function(object, pars = NA, type = "intervals",
 #' 
 #' @param object An object of class \code{brmsfit}.
 #' @param type Type of the ppc plot as given by a character string.
-#'   Currently, the following plots (as names) are implemented
-#'   in \pkg{bayesplot} (v1.1.0):
-#'   \code{boxplot}, \code{dens} \code{dens_overlay} (default), 
-#'   \code{ecdf_overlay}, \code{error_binned}, 
-#'   \code{error_hist}, \code{error_scatter}, 
-#'   \code{error_scatter_avg}, \code{error_scatter_avg_vs_x},
-#'   \code{freqpoly}, \code{freqpoly_grouped}, \code{hist},
-#'   \code{intervals}, \code{intervals_grouped}, 
-#'   \code{ribbon}, \code{ribbon_grouped}, \code{scatter},
-#'   \code{scatter_avg}, \code{scatter_avg_grouped}, 
-#'   \code{stat}, \code{stat_2d}, \code{stat_freqpoly_grouped},
-#'   \code{stat_grouped}, and \code{violin_grouped}.
+#'   See \code{\link[bayesplot:PPC-overview]{PPC}} for an overview
+#'   of currently supported types. You may also use an invalid
+#'   type (e.g. \code{type = "xyz"}) to get a list of supported 
+#'   types in the resulting error message.
 #' @param nsamples Positive integer indicating how many
 #'  posterior samples should be used.
 #'  If \code{NULL} all samples are used. If not specified,
@@ -1105,6 +1097,10 @@ stanplot.brmsfit <- function(object, pars = NA, type = "intervals",
 #' pp_check(fit, type = "error_hist", nsamples = 11)
 #' pp_check(fit, type = "scatter_avg", nsamples = 100)
 #' pp_check(fit, type = "stat_2d")
+#' pp_check(fit, type = "loo_pit")
+#' 
+#' ## get an overview of all valid types
+#' pp_check(fit, type = "xyz")
 #' }
 #' 
 #' @importFrom bayesplot pp_check
@@ -1148,11 +1144,11 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     stop2("Group '", group, "' is not a valid grouping factor. ",
           "Valid groups are: \n", collapse_comma(valid_groups))
   }
-  is_group_type <- isTRUE("group" %in% names(formals(ppc_fun)))
+  is_group_type <- "group" %in% names(formals(ppc_fun))
   if (is.null(group) && is_group_type) {
     stop2("Argument 'group' is required for ppc type '", type, "'.")
   }
-  if (isTRUE("x" %in% names(formals(ppc_fun)))) {
+  if ("x" %in% names(formals(ppc_fun))) {
     if (is.null(x)) {
       stop2("Argument 'x' is required for ppc type '", type, "'.")
     }
@@ -1217,7 +1213,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
     yrep <- yrep / as_draws_matrix(standata$trials, dim = dim(yrep))
   }
   ppc_args <- list(y, yrep, ...)
-  if (isTRUE("lw" %in% names(formals(ppc_fun)))) {
+  if ("lw" %in% names(formals(ppc_fun)) && !"lw" %in% names(ppc_args)) {
     # required for 'loo' types only
     ppc_args$lw <- do.call(loo_weights, c(pred_args, log = TRUE))
   }

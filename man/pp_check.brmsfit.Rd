@@ -14,18 +14,10 @@
 \item{object}{An object of class \code{brmsfit}.}
 
 \item{type}{Type of the ppc plot as given by a character string.
-Currently, the following plots (as names) are implemented
-in \pkg{bayesplot} (v1.1.0):
-\code{boxplot}, \code{dens} \code{dens_overlay} (default), 
-\code{ecdf_overlay}, \code{error_binned}, 
-\code{error_hist}, \code{error_scatter}, 
-\code{error_scatter_avg}, \code{error_scatter_avg_vs_x},
-\code{freqpoly}, \code{freqpoly_grouped}, \code{hist},
-\code{intervals}, \code{intervals_grouped}, 
-\code{ribbon}, \code{ribbon_grouped}, \code{scatter},
-\code{scatter_avg}, \code{scatter_avg_grouped}, 
-\code{stat}, \code{stat_2d}, \code{stat_freqpoly_grouped},
-\code{stat_grouped}, and \code{violin_grouped}.}
+See \code{\link[bayesplot:PPC-overview]{PPC}} for an overview
+of currently supported types. You may also use an invalid
+type (e.g. \code{type = "xyz"}) to get a list of supported 
+types in the resulting error message.}
 
 \item{nsamples}{Positive integer indicating how many
 posterior samples should be used.
@@ -107,6 +99,10 @@ pp_check(fit)  # shows dens_overlay plot by default
 pp_check(fit, type = "error_hist", nsamples = 11)
 pp_check(fit, type = "scatter_avg", nsamples = 100)
 pp_check(fit, type = "stat_2d")
+pp_check(fit, type = "loo_pit")
+
+## get an overview of all valid types
+pp_check(fit, type = "xyz")
 }
 
 }
