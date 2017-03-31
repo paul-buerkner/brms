@@ -1069,14 +1069,14 @@ stanplot.brmsfit <- function(object, pars = NA, type = "intervals",
 #'  for truncated discrete models only
 #'  (defaults to \code{5}). For more details see
 #'  \code{\link[brms:predict.brmsfit]{predict.brmsfit}}.
-#' @param group Optional name of a grouping factor in the model
+#' @param group Optional name of a factor variable in the model
 #'  by which to stratify the ppc plot. This argument is required for
 #'  ppc \code{*_grouped} types and ignored otherwise.
 #' @param x Optional name of a variable in the model. 
 #'  Only used for ppc types having an \code{x} argument 
 #'  and ignored otherwise.
 #' @param ... Further arguments passed to the ppc functions
-#'   of the \pkg{\link[bayesplot:bayesplot]{bayesplot}} package.
+#'   of \pkg{\link[bayesplot:bayesplot]{bayesplot}}.
 #' @inheritParams predict.brmsfit
 #' 
 #' @return A ggplot object that can be further
@@ -1090,13 +1090,14 @@ stanplot.brmsfit <- function(object, pars = NA, type = "intervals",
 #' @examples
 #' \dontrun{
 #' fit <-  brm(count ~ log_Age_c + log_Base4_c * Trt_c
-#'             + (1|patient) + (1|visit),
+#'             + (1|patient) + (1|obs),
 #'             data = epilepsy, family = poisson())
 #' 
 #' pp_check(fit)  # shows dens_overlay plot by default
 #' pp_check(fit, type = "error_hist", nsamples = 11)
 #' pp_check(fit, type = "scatter_avg", nsamples = 100)
 #' pp_check(fit, type = "stat_2d")
+#' pp_check(fit, type = "rootogram")
 #' pp_check(fit, type = "loo_pit")
 #' 
 #' ## get an overview of all valid types
