@@ -579,7 +579,17 @@ stanplot <- function(object, ...) {
 #'   The row names of \code{data} will be treated as titles of the subplots. 
 #'   It is recommended to only define a few rows in order to keep the plots clear.
 #'   If \code{NULL} (the default), numeric variables will be marginalized
-#'   by using their means and factors will get their reference level assigned.   
+#'   by using their means and factors will get their reference level assigned.
+#' @param Iconditions An optional named \code{list} whose elements are vectors 
+#'   of values of the second variables in two-way interactions. 
+#'   At these values, predictions are evaluated. 
+#'   The names of \code{Iconditions} have to match the variable names exactly.
+#'   Instead of vectors, functions returning vectors may be passed and are
+#'   applied on the original values of the corresponding variable.
+#'   If \code{NULL} (the default), values are computed internally.
+#'   For numeric variables, predictions are evaluated at the \eqn{mean} 
+#'   and at \eqn{mean +/- SD}. For factors, predictions are evaluated 
+#'   for all factor levels.
 #' @param re_formula A formula containing random effects to be considered 
 #'   in the marginal predictions. If \code{NULL}, include all random effects; 
 #'   if \code{NA} (default), include no random effects.
@@ -687,13 +697,20 @@ stanplot <- function(object, ...) {
 #' plot(marginal_effects(fit, effects = "log_Base4_c:Trt_c", 
 #'                       conditions = conditions, re_formula = NULL), 
 #'      points = TRUE, rug = TRUE)
+#'  
+#' ## change handling of two-way interactions
+#' marginal_effects(fit, effects = "Trt_c:log_Base4_c",
+#'                  Iconditions = list(log_Base4_c = c(-2, 0, 1)))
+#' marginal_effects(fit, effects = "Trt_c:log_Base4_c",
+#'                  Iconditions = list(log_Base4_c = quantile))        
 #'      
 #' ## fit a model to illustrate how to plot 3-way interactions
 #' fit3way <- brm(count ~ log_Age_c * log_Base4_c * Trt_c, data = epilepsy)
 #' conditions <- data.frame(log_Age_c = c(-0.3, 0, 0.3))
 #' rownames(conditions) <- paste("log_Age_c =", conditions$log_Age_c)
-#' plot(marginal_effects(fit3way, "log_Base4_c:Trt_c",
-#'                       conditions = conditions))
+#' marginal_effects(fit3way, "log_Base4_c:Trt_c",
+#'                  conditions = conditions)
+#'                    
 #' }
 #' 
 #' @export

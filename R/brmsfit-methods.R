@@ -1270,8 +1270,8 @@ pairs.brmsfit <- function(x, pars = NA, exact_match = FALSE, ...) {
 #' @rdname marginal_effects
 #' @export
 marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL, 
-                                     re_formula = NA, robust = TRUE, 
-                                     probs = c(0.025, 0.975),
+                                     Iconditions = NULL, re_formula = NA, 
+                                     robust = TRUE, probs = c(0.025, 0.975),
                                      method = c("fitted", "predict"), 
                                      surface = FALSE, resolution = 100,
                                      too_far = 0, ...) {
@@ -1349,8 +1349,10 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   results <- list()
   for (i in seq_along(effects)) {
     marg_data <- mf[, effects[[i]], drop = FALSE]
-    marg_args <- nlist(data = marg_data, conditions, 
-                       int_vars, surface, resolution)
+    marg_args <- nlist(
+      data = marg_data, conditions, Iconditions,
+      int_vars, surface, resolution
+    )
     marg_data <- do.call(prepare_marg_data, marg_args)
     if (surface && length(effects[[i]]) == 2L && too_far > 0) {
       # exclude prediction grid points too far from data
@@ -1377,8 +1379,11 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
         for (k in seq_len(dim(marg_res)[3])) {
           marg_res[, , k] <- marg_res[, , k] * k
         }
-        marg_res <- do.call(cbind, lapply(seq_len(dim(marg_res)[2]), 
-                            function(s) rowSums(marg_res[, s, ])))
+        marg_res <- lapply(
+          seq_len(dim(marg_res)[2]), 
+          function(s) rowSums(marg_res[, s, ])
+        )
+        marg_res <- do.call(cbind, marg_res)
       } 
       marg_res <- get_summary(marg_res, probs = probs, robust = robust)
     } else {
@@ -1390,13 +1395,9 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     both_numeric <- length(types) == 2L && all(types == "numeric")
     if (both_numeric && !surface) {
       # can only be converted to factor after having called method
-      if (isTRUE(attr(marg_data, "mono")[2])) {
-        labels <- c("Median - MAD", "Median", "Median + MAD")
-      } else {
-        labels <- c("Mean - SD", "Mean", "Mean + SD") 
-      }
+      mde2 <- round(marg_data[[effects[[i]][2]]], 2)
       marg_data[[effects[[i]][2]]] <- 
-        factor(marg_data[[effects[[i]][2]]], labels = labels)
+        factor(mde2, levels = sort(unique(mde2), TRUE))
     }
     marg_res = cbind(marg_data, marg_res)
     attr(marg_res, "response") <- as.character(x$formula$formula[2])

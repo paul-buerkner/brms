@@ -230,6 +230,15 @@ test_that("all S3 methods have reasonable ouputs", {
   me <- marginal_effects(fit1, re_formula = NULL, conditions = mdata)
   expect_equal(nrow(me[[1]]), exp_nrow)
   
+  me <- marginal_effects(
+    fit1, "Trt:Age", Iconditions = list(Age = rnorm(5))
+  )
+  expect_equal(nrow(me[[1]]), 500)
+  me <- marginal_effects(
+    fit1, "Trt:Age", Iconditions = list(Age = quantile)
+  )
+  expect_equal(nrow(me[[1]]), 500)
+  
   expect_error(marginal_effects(fit1, effects = "Trtc"), 
                "All specified effects are invalid for this model")
   expect_warning(marginal_effects(fit1, effects = c("Trtc", "Trt")), 
