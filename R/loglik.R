@@ -296,7 +296,7 @@ loglik_wiener <- function(i, draws, data = data.frame()) {
                tau = get_auxpar(draws$ndt, i = i),
                beta = get_auxpar(draws$bias, i = i),
                resp = draws$data[["dec"]][i])
-  out <- do.call("dWiener", c(draws$data$Y[i], args, log = TRUE))
+  out <- do.call("dwiener", c(draws$data$Y[i], args, log = TRUE))
   loglik_weight(out, i = i, data = draws$data)
 }
 

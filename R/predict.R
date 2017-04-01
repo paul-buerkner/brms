@@ -267,7 +267,7 @@ predict_wiener <- function(i, draws, col = c("q", "resp"), ...) {
                tau = get_auxpar(draws$ndt, i = i),
                beta = get_auxpar(draws$bias, i = i),
                col = match.arg(col))
-  rng_continuous(nrng = 1, dist = "Wiener", args = args, 
+  rng_continuous(nrng = 1, dist = "wiener", args = args, 
                  lb = draws$data$lb[i], ub = draws$data$ub[i])
 }
 

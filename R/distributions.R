@@ -650,8 +650,8 @@ rasym_laplace <- function(n, mu = 0, sigma = 1, quantile = 0.5) {
   qasym_laplace(u, mu = mu, sigma = sigma, quantile = quantile)
 }
 
-dWiener <- function(x, alpha, tau, beta, delta, resp = 1, log = FALSE) {
-  # compute the density of the Wiener diffusion model
+dwiener <- function(x, alpha, tau, beta, delta, resp = 1, log = FALSE) {
+  # compute the density of the wiener diffusion model
   # Args:
   #   see RWiener::dwiener
   alpha <- as.numeric(alpha)
@@ -662,16 +662,16 @@ dWiener <- function(x, alpha, tau, beta, delta, resp = 1, log = FALSE) {
     resp <- ifelse(resp, "upper", "lower") 
   }
   # vectorized version of RWiener::dwiener
-  .dWiener <- Vectorize(
+  .dwiener <- Vectorize(
     RWiener::dwiener, 
     c("alpha", "tau", "beta", "delta")
   )
   args <- nlist(q = x, alpha, tau, beta, delta, resp, give_log = log)
-  do.call(.dWiener, args)
+  do.call(.dwiener, args)
 }
 
-rWiener <- function(n, alpha, tau, beta, delta, col = NULL) {
-  # create random numbers of the Wiener diffusion model
+rwiener <- function(n, alpha, tau, beta, delta, col = NULL) {
+  # create random numbers of the wiener diffusion model
   # Args:
   #   see RWiener::rwiener
   #   col: which response to return (RTs or decision or both)?
@@ -687,7 +687,7 @@ rWiener <- function(n, alpha, tau, beta, delta, col = NULL) {
     }
     n <- 1
   }
-  .rWiener <- function(...) {
+  .rwiener <- function(...) {
     # vectorized version of RWiener::rwiener
     # returns a numeric vector
     fun <- Vectorize(
@@ -698,7 +698,7 @@ rWiener <- function(n, alpha, tau, beta, delta, col = NULL) {
     do.call(rbind, fun(...))
   }
   args <- nlist(n, alpha, tau, beta, delta, col)
-  do.call(.rWiener, args)
+  do.call(.rwiener, args)
 }
 
 rwiener_num <- function(n, alpha, tau, beta, delta, col = NULL) {
