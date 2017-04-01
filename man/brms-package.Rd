@@ -6,23 +6,28 @@
 Bayesian Regression Models using Stan
 }
 \description{
-The \pkg{brms} package provides an interface to fit Bayesian generalized (non-)linear multilevel models using \pkg{Stan},
-which is a C++ package for obtaining full Bayesian inference (see \url{http://mc-stan.org/}). The formula syntax is an extended version of the syntax applied in the \pkg{lme4} package to provide a familiar and simple interface for performing regression analyses.
+The \pkg{brms} package provides an interface to fit Bayesian generalized 
+(non-)linear multilevel models using \pkg{Stan}, which is a C++ package 
+for obtaining full Bayesian inference (see \url{http://mc-stan.org/}). 
+The formula syntax is an extended version of the syntax applied in the 
+\pkg{lme4} package to provide a familiar and simple interface for 
+performing regression analyses.
 }
 
 \details{
-
 The main function of the brms package is \code{\link[brms:brm]{brm}}, 
 which creates the model in Stan language and fits it using \pkg{Stan}. 
 Subsequently, a large number of methods can be applied: 
 To get an overview on the estimated parameters, 
-\code{\link[brms:summary.brmsfit]{summary}} or \code{\link[brms:plot.brmsfit]{plot}} 
+\code{\link[brms:summary.brmsfit]{summary}} or 
+\code{\link[brms:marginal_effects.brmsfit]{marginal_effects}} 
 are perfectly suited. 
 Detailed visual analyses can be performed by applying the \pkg{shinystan} package, 
 which can be called directly within \pkg{brms} using 
 \code{\link[brms:launch_shiny]{launch_shiny}}. 
 Information Criteria are also readily available via \code{\link[brms:WAIC]{WAIC}}
 and \code{\link[brms:LOO]{LOO}} both relying on the \pkg{loo} package.
+For a full list of methods to apply, type \code{methods(class = "brmsfit")}.
 
 Because \pkg{brms} is based on \pkg{Stan}, a C++ compiler is required. 
 The program Rtools (available on https://cran.r-project.org/bin/windows/Rtools/) 
@@ -41,7 +46,8 @@ however, fitting my take several minutes or even hours,
 so that the compilation time won't make much of a difference here.
 
 See \code{vignette("brms_overview")} for a general introduction 
-and overview of \pkg{brms}.
+and overview of \pkg{brms}. For a full list of available vignettes,
+type \code{vignette(package = "brms")}.
 }
 
 \author{

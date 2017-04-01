@@ -201,16 +201,14 @@ An object of class \code{brmsfit}, which contains the posterior samples along
 \description{
 Fit Bayesian generalized (non-)linear multilevel models 
 using Stan for full Bayesian inference. A wide range of distributions 
-and link functions are supported, allowing users to fit linear, 
-robust linear, binomial, Poisson, survival, response times, ordinal, 
-quantile, zero-inflated, hurdle, and even non-linear models 
-all in a multilevel context. 
-Further modeling options include auto-correlation and smoothing terms, 
-user defined dependence structures, censored data, meta-analytic 
-standard errors, and quite a few more. 
-In addition, all parameters of the response distribution can be predicted
-in order to perform distributional regression.
-Prior specifications are flexible and explicitly encourage 
+and link functions are supported, allowing users to fit -- among others -- 
+linear, robust linear, count data, survival, response times, ordinal, 
+zero-inflated, hurdle, and even self-defined mixture models all in a 
+multilevel context. Further modeling options include non-linear and 
+smooth terms, auto-correlation structures, censored data, meta-analytic 
+standard errors, and quite a few more. In addition, all parameters of the 
+response distribution can be predicted in order to perform distributional 
+regression. Prior specifications are flexible and explicitly encourage 
 users to apply prior distributions that actually reflect their beliefs.
 In addition, model fit can easily be assessed and compared with
 posterior predictive checks and leave-one-out cross-validation.
