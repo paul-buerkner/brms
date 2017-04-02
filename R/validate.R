@@ -116,6 +116,7 @@ parse_bf <- function(formula, family = NULL, autocor = NULL,
     stop2("Invalid auxiliary parameters: ", collapse_comma(inv_fauxpars))
   }
   y$fauxpars <- x$pfix
+  check_fauxpars(y$fauxpars)
   # check for illegal use of cs terms
   if (has_cs(y) && !(is.null(family) || allows_cs(family))) {
     stop2("Category specific effects are only meaningful for ", 
@@ -558,6 +559,26 @@ check_nlpar <- function(nlpar) {
   stopifnot(length(nlpar) == 1L)
   nlpar <- as.character(nlpar)
   ifelse(nlpar == "mu", "", nlpar)
+}
+
+check_fauxpars <- function(x) {
+  # check validity of fixed auxiliary parameters
+  stopifnot(is.null(x) || is.list(x))
+  pos_pars <- c(
+    "sigma", "shape", "nu", "phi", "kappa", 
+    "beta", "disc", "bs", "ndt", "theta"
+  )
+  prob_pars <- c("zi", "hu", "bias", "quantile")
+  for (ap in names(x)) {
+    apc <- auxpar_class(ap)
+    if (apc %in% pos_pars && x[[ap]] < 0) {
+      stop2("Parameter '", ap, "' must be positive.")
+    }
+    if (apc %in% prob_pars && (x[[ap]] < 0 || x[[ap]] > 1)) {
+      stop2("Parameter '", ap, "' must be between 0 and 1.")
+    }
+  }
+  invisible(TRUE)
 }
 
 illegal_group_expr <- function(group) {

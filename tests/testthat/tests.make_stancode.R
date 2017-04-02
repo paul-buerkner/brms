@@ -897,8 +897,8 @@ test_that("Stan code of mixture model is correct", {
   data$z <- abs(data$y)
   scode <- make_stancode(bf(z | weights(c) ~ x, shape1 ~ x, theta1 = 1, theta2 = 2), 
                          data = data, mixture(Gamma("log"), weibull))
-  expect_match(scode, "data \\{[^\\}]*real theta1;")
-  expect_match(scode, "data \\{[^\\}]*real theta2;")
+  expect_match(scode, "data \\{[^\\}]*real<lower=0,upper=1> theta1;")
+  expect_match(scode, "data \\{[^\\}]*real<lower=0,upper=1> theta2;")
   expect_match(scode, "shape1\\[n\\] = exp\\(shape1\\[n\\]\\); \\\n    mu1\\[n\\] = ")
   expect_match2(scode, "ps[1] = log(theta1) + gamma_lpdf(Y[n] | shape1[n], mu1[n]);")
   expect_match2(scode, "lp_pre[n] = log_sum_exp(ps);")

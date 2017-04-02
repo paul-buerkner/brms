@@ -14,12 +14,23 @@ test_that("parse_bf handles very long RE terms", {
   expect_equal(bterms$auxpars$mu$re$group, "id")
 })
 
-test_that("parse_bf correctly handles auxiliary parameter mu", {
+test_that("parse_bf correctly handles auxiliary parameter 'mu'", {
   bterms1 <- parse_bf(y ~ x + (x|g))
   bterms2 <- parse_bf(bf(y~1, mu ~ x + (x|g)))
   expect_equal(bterms1$auxpars$mu, bterms2$auxpars$mu)
   expect_error(parse_bf(bf(y ~ z, mu ~ x + (x|g))),
                "All 'mu' parameters are specified")
+})
+
+test_that("parse_bf correctly check fixed auxiliary parameters", {
+  bform <- bf(y~1, sigma = 4, family = gaussian)
+  expect_true(is.brmsterms(parse_bf(bform)))
+  bform <- bf(y~1, zi = 0.5, family = zero_inflated_beta())
+  expect_true(is.brmsterms(parse_bf(bform)))
+  bform <- bf(y~1, shape = -2, family = Gamma())
+  expect_error(parse_bf(bform), "Parameter 'shape' must be positive")
+  bform <- bf(y~1, quantile = 1.5, family = asym_laplace())
+  expect_error(parse_bf(bform), "Parameter 'quantile' must be between 0 and 1")
 })
 
 test_that("(deprecated) amend_formula returns correct formulas", {

@@ -699,10 +699,6 @@ get_theta <- function(draws, i = NULL) {
     for (j in seq_along(families)) {
       theta[[j]] <- get_auxpar(draws[[paste0("theta", j)]], i = i)
     }
-    # missing_id <- which(ulapply(theta, is.null))
-    # stopifnot(length(missing_id) == 1L)
-    # id <- setdiff(missing_id, seq_along(families))[1]
-    # theta[[missing_id]] <- as_draws_matrix(0, dim(theta[[id]]))
     theta <- do.call(abind, c(theta, along = 3))
     for (n in seq_len(dim(theta)[2])) {
       theta[, n, ] <- softmax(theta[, n, ])

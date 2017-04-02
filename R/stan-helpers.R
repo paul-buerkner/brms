@@ -451,6 +451,10 @@ stan_mixture <- function(bterms, prior) {
     theta_pred <- bterms$auxpars[theta_pred]
     theta_fix <- grepl("^theta", names(bterms$fauxpars))
     theta_fix <- bterms$fauxpars[theta_fix]
+    def_thetas <- collapse(
+      "  real<lower=0,upper=1> theta", 1:nmix, ";",
+      "  // mixing proportion \n"
+    )
     if (length(theta_pred)) {
       if (length(theta_pred) != nmix - 1) {
         stop2("Can only predict all but one mixing proportion.")
@@ -477,9 +481,7 @@ stan_mixture <- function(bterms, prior) {
       if (length(theta_fix) != nmix) {
         stop2("Can only fix no or all mixing proportions.")
       }
-      out$data <- paste0(out$data,
-        collapse("  real theta", 1:nmix, ";  // mixing proportion \n")
-      )
+      out$data <- paste0(out$data, def_thetas)
     } else {
       out$data <- paste0(out$data,
         "  vector[", nmix, "] con_theta;  // prior concentration \n"                  
@@ -491,16 +493,15 @@ stan_mixture <- function(bterms, prior) {
       out$prior <- paste0(out$prior, 
         "  theta ~ dirichlet(con_theta); \n"                
       )
-      out$transD <- paste0(out$transD,
-        collapse("  real theta", 1:nmix, ";  // mixing proportion \n")
-      )
+      out$transD <- paste0(out$transD, def_thetas)
       out$transC1 <- paste0(out$transC1,
         collapse("  theta", 1:nmix, " = theta[", 1:nmix, "]; \n")
       )
     }
     if (bterms$family$order) {
       out$par <- paste0(out$par, 
-        "  ordered[", nmix, "] ordered_Intercept;  // to identify mixtures \n"
+        "  ordered[", nmix, "] ordered_Intercept;",
+        "  // to identify mixtures \n"
       )
     }
   }
