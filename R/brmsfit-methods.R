@@ -1827,13 +1827,19 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
       stop2("Invalid argument 'auxpar'. Valid auxiliary ",
             "parameters are: ", collapse_comma(auxpars))
     }
-    if (!is.list(draws[[auxpar]])) {
+    if (!isTRUE(attr(draws[[auxpar]], "predicted"))) {
       stop2("Auxiliary parameter '", auxpar, "' was not predicted.")
     }
-    if (scale == "linear") {
+    if (scale == "linear" && is.list(draws[[auxpar]])) {
       draws[[auxpar]]$f$link <- "identity"
     }
-    draws$mu <- get_auxpar(draws[[auxpar]])
+    if (auxpar_class(auxpar) == "theta" && scale == "response") {
+      ap_id <- as.numeric(auxpar_id(auxpar))
+      draws$mu <- get_theta(draws)[, , ap_id, drop = FALSE]
+      dim(draws$mu) <- dim(draws$mu)[c(1, 2)]
+    } else {
+      draws$mu <- get_auxpar(draws[[auxpar]]) 
+    }
   }
   old_order <- attr(draws$data, "old_order")
   draws$mu <- reorder_obs(draws$mu, old_order, sort = sort)

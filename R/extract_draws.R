@@ -66,8 +66,10 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
     if (any(ulapply(draws[thetas], is.list))) {
       # theta was predicted
       missing_id <- which(ulapply(draws[thetas], is.null))
-      draws[[paste0("theta", missing_id)]] <-
-        as_draws_matrix(0, c(draws$nsamples, draws$data$N))
+      draws[[paste0("theta", missing_id)]] <- structure(
+        as_draws_matrix(0, c(draws$nsamples, draws$data$N)),
+        predicted = TRUE
+      )
     } else {
       # theta was not predicted
       draws$theta <- do.call(cbind, draws[thetas])
@@ -189,7 +191,7 @@ extract_draws.btl <- function(x, fit, newdata = NULL, re_formula = NULL,
       extract_draws_autocor(fit, newdata = newdata, subset = subset)
     )
   }
-  draws
+  structure(draws, predicted = TRUE)
 }
 
 extract_draws_fe <- function(fixef, args, nlpar = "", old_cat = 0L) {
