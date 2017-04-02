@@ -8,7 +8,8 @@
 \usage{
 \method{log_lik}{brmsfit}(object, newdata = NULL, re_formula = NULL,
   allow_new_levels = FALSE, sample_new_levels = "uncertainty",
-  subset = NULL, nsamples = NULL, pointwise = FALSE, ...)
+  incl_autocor = TRUE, subset = NULL, nsamples = NULL,
+  pointwise = FALSE, ...)
 }
 \arguments{
 \item{object}{A fitted model object of class \code{brmsfit}.}
@@ -38,6 +39,10 @@ and correlations. This options may be useful for conducting
 Bayesian power analysis. 
 If \code{"old_levels"}, directly sample new levels from the
 existing levels.}
+
+\item{incl_autocor}{A flag indicating if autocorrelation
+parameters should be included in the predictions. 
+Defaults to \code{TRUE}.}
 
 \item{subset}{A numeric vector specifying
 the posterior samples to be used. 
