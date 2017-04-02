@@ -11,8 +11,8 @@ test_that("multivariate normal and student distributions work correctly", {
   mu <- rnorm(3)
   Sigma <- cov(matrix(rnorm(300), ncol = 3))
   expect_equal(dmulti_normal(1:3, mu = mu, Sigma = Sigma),
-               dmvnorm(1:3, mean = mu, sigma = Sigma, log = TRUE))
-  expect_equal(dmulti_student(1:3, mu = mu, Sigma = Sigma, df = 10),
+               dmvnorm(1:3, mean = mu, sigma = Sigma))
+  expect_equal(dmulti_student(1:3, mu = mu, Sigma = Sigma, df = 10, log = TRUE),
                dmvt(1:3, df = 10, delta = mu, sigma = Sigma, log = TRUE))
   expect_equal(dim(rmulti_normal(7, mu = mu, Sigma = Sigma)), c(7, 3))
   expect_equal(dim(rmulti_student(7, mu = mu, Sigma = Sigma, df = 10)), 

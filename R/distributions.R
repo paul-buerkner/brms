@@ -47,9 +47,8 @@ rstudent <-  function(n, df, mu = 0, sigma = 1) {
   mu + sigma * rt(n, df = df)
 }
 
-dmulti_normal <- function(x, mu, Sigma, log = TRUE, check = FALSE) {
+dmulti_normal <- function(x, mu, Sigma, log = FALSE, check = FALSE) {
   # density of the multivariate normal distribution 
-  # not vectorized to increase speed when x is only a vector not a matrix
   # Args:
   #   x: the value(s) at which the density should be evaluated
   #   mu: mean vector
@@ -58,7 +57,10 @@ dmulti_normal <- function(x, mu, Sigma, log = TRUE, check = FALSE) {
   #   check: check arguments for validity?
   # Returns:
   #   density of the multi_normal distribution a values x
-  p <- length(x)
+  if (is.vector(x)) {
+    x <- matrix(x, ncol = length(x))
+  }
+  p <- ncol(x)
   if (check) {
     if (length(mu) != p) {
       stop2("Dimension of mu is incorrect.")
@@ -70,9 +72,10 @@ dmulti_normal <- function(x, mu, Sigma, log = TRUE, check = FALSE) {
       stop2("Sigma must be a symmetric matrix.")
     }
   }
-  rooti <- backsolve(chol(Sigma), diag(p))
-  quads <- colSums((crossprod(rooti, (x - mu)))^2)
-  out <- -(p / 2) * log(2 * pi) + sum(log(diag(rooti))) - .5 * quads
+  chol_Sigma <- chol(Sigma)
+  rooti <- backsolve(chol_Sigma, t(x) - mu, transpose = TRUE)
+  quads <- colSums(rooti^2)
+  out <- -(p / 2) * log(2 * pi) - sum(log(diag(chol_Sigma))) - .5 * quads
   if (!log) {
     out <- exp(out)
   }
@@ -104,7 +107,7 @@ rmulti_normal <- function(n, mu, Sigma, check = FALSE) {
   mu + samples %*% chol(Sigma)
 }
 
-dmulti_student <- function(x, df, mu, Sigma, log = TRUE, check = FALSE) {
+dmulti_student <- function(x, df, mu, Sigma, log = FALSE, check = FALSE) {
   # density of the multivariate student-t distribution 
   # Args:
   #   x: the value(s) at which the density should be evaluated
@@ -144,7 +147,7 @@ dmulti_student <- function(x, df, mu, Sigma, log = TRUE, check = FALSE) {
   out
 }
 
-rmulti_student <- function(n, df, mu, Sigma, log = TRUE, check = FALSE) {
+rmulti_student <- function(n, df, mu, Sigma, check = FALSE) {
   # random values of the multivariate student-t distribution 
   # Args:
   #   n: number of random values
