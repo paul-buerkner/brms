@@ -356,6 +356,8 @@ make_standata <- function(formula, data, family = NULL,
         stop2("'V' must be positive definite.")
       }
       standata$V <- V
+      # simplifies code of choose_N
+      standata$N_tg <- 1
     }
     if (is.cor_bsts(autocor)) {
       if (length(bterms$response) > 1L) {

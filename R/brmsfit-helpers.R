@@ -769,6 +769,19 @@ mult_disp <- function(x, data, i = NULL, dim = NULL) {
   x
 }
 
+choose_N <- function(draws) {
+  # choose N to be used in predict and log_lik
+  stopifnot(is.list(draws))
+  if (!is.null(draws$data$N_trait)) {
+    N <- draws$data$N_trait
+  } else if (!is.null(draws$data$N_tg)) {
+    N <- draws$data$N_tg
+  } else {
+    N <- draws$data$N
+  }
+  N
+}
+
 prepare_family <- function(x) {
   # prepare for calling family specific log_lik / predict functions
   family <- family(x)

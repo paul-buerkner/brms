@@ -1675,10 +1675,7 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   # see predict.R
   predict_fun <- paste0("predict_", draws$f$family)
   predict_fun <- get(predict_fun, asNamespace("brms"))
-  N <- if (!is.null(draws$data$N_trait)) draws$data$N_trait
-       else if (!is.null(draws$data$N_tg)) draws$data$N_tg
-       else if (is.cor_fixed(draws$autocor)) 1
-       else draws$data$N
+  N <- choose_N(draws)
   out <- do.call(cbind, 
     lapply(seq_len(N), predict_fun, draws = draws, ntrys = ntrys)
   )
@@ -2409,11 +2406,9 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   )
   draws <- do.call(extract_draws, draws_args)
   
-  N <- if (!is.null(draws$data$N_tg)) draws$data$N_tg
-       else if (is.cor_fixed(object$autocor)) 1
-       else nrow(as.matrix(draws$data$Y))
   loglik_fun <- paste0("loglik_", draws$f$family)
   loglik_fun <- get(loglik_fun, asNamespace("brms"))
+  N <- choose_N(draws)
   if (pointwise) {
     loglik <- loglik_fun
     attr(loglik, "args") <- nlist(
