@@ -671,7 +671,7 @@ get_shape <- function(x, data, i = NULL, dim = NULL) {
   mult_disp(x, data = data, i = i, dim = dim)
 }
 
-get_theta <- function(draws, i = NULL, par = c("zi", "hu")) {
+get_zi_hu <- function(draws, i = NULL, par = c("zi", "hu")) {
   # convenience function to extract zi / hu parameters
   # also works with deprecated models fitted with brms < 1.0.0 
   # which were using multivariate syntax
@@ -681,9 +681,35 @@ get_theta <- function(draws, i = NULL, par = c("zi", "hu")) {
   par <- match.arg(par)
   if (!is.null(draws$data$N_trait)) {
     j <- if (!is.null(i)) i else seq_len(draws$data$N_trait)
-    theta <- ilink(get_eta(draws$mu, j + draws$data$N_trait), "logit")
+    out <- ilink(get_eta(draws$mu, j + draws$data$N_trait), "logit")
   } else {
-    theta <- get_auxpar(draws[[par]], i = i)
+    out <- get_auxpar(draws[[par]], i = i)
+  }
+  out
+}
+
+get_theta <- function(draws, i = NULL) {
+  # get the mixing proportions of mixture models
+  if (!is.null(draws[["theta"]])) {
+    theta <- draws[["theta"]]
+  } else {
+    # theta was predicted; apply softmax
+    families <- family_names(draws$f)
+    theta <- vector("list", length(families))
+    for (j in seq_along(families)) {
+      theta[[j]] <- get_auxpar(draws[[paste0("theta", j)]], i = i)
+    }
+    # missing_id <- which(ulapply(theta, is.null))
+    # stopifnot(length(missing_id) == 1L)
+    # id <- setdiff(missing_id, seq_along(families))[1]
+    # theta[[missing_id]] <- as_draws_matrix(0, dim(theta[[id]]))
+    theta <- do.call(abind, c(theta, along = 3))
+    for (n in seq_len(dim(theta)[2])) {
+      theta[, n, ] <- softmax(theta[, n, ])
+    }
+    if (length(i) == 1L) {
+      dim(theta) <- dim(theta)[c(1, 3)]
+    }
   }
   theta
 }

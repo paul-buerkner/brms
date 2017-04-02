@@ -139,7 +139,7 @@ fitted_asym_laplace <- function(draws) {
 }
 
 fitted_hurdle_poisson <- function(draws) {
-  draws$hu <- get_theta(draws, par = "hu")
+  draws$hu <- get_zi_hu(draws, par = "hu")
   draws$mu <- adjust_old_forked(draws$mu, draws$hu)
   draws$mu <- ilink(draws$mu, draws$f$link)
   with(draws, mu / (1 - exp(-mu)) * (1 - hu))
@@ -149,14 +149,14 @@ fitted_hurdle_negbinomial <- function(draws) {
   draws$shape <- get_shape(
     draws$shape, data = draws$data, dim = dim_mu(draws)
   )
-  draws$hu <- get_theta(draws, par = "hu")
+  draws$hu <- get_zi_hu(draws, par = "hu")
   draws$mu <- adjust_old_forked(draws$mu, draws$hu)
   draws$mu <- ilink(draws$mu, draws$f$link)
   with(draws, mu / (1 - (shape / (mu + shape))^shape) * (1 - hu))
 }
 
 fitted_hurdle_gamma <- function(draws) {
-  draws$hu <- get_theta(draws, par = "hu")
+  draws$hu <- get_zi_hu(draws, par = "hu")
   draws$mu <- adjust_old_forked(draws$mu, draws$hu)
   draws$mu <- ilink(draws$mu, draws$f$link)
   with(draws, mu * (1 - hu))
@@ -166,25 +166,25 @@ fitted_hurdle_lognormal <- function(draws) {
   sigma <- get_sigma(
     draws$sigma, data = draws$data, dim = dim_mu(draws)
   )
-  draws$hu <- get_theta(draws, par = "hu")
+  draws$hu <- get_zi_hu(draws, par = "hu")
   draws$mu <- ilink(draws$mu, draws$f$link)
   with(draws, exp(mu + sigma^2 / 2) * (1 - hu))
 }
 
 fitted_zero_inflated_poisson <- function(draws) {
-  draws$zi <- get_theta(draws, par = "zi")
+  draws$zi <- get_zi_hu(draws, par = "zi")
   draws$mu <- adjust_old_forked(draws$mu, draws$zi)
   ilink(draws$mu, draws$f$link) * (1 - draws$zi) 
 }
 
 fitted_zero_inflated_negbinomial <- function(draws) {
-  draws$zi <- get_theta(draws, par = "zi")
+  draws$zi <- get_zi_hu(draws, par = "zi")
   draws$mu <- adjust_old_forked(draws$mu, draws$zi)
   ilink(draws$mu, draws$f$link) * (1 - draws$zi) 
 }
 
 fitted_zero_inflated_binomial <- function(draws) {
-  draws$zi <- get_theta(draws, par = "zi")
+  draws$zi <- get_zi_hu(draws, par = "zi")
   draws$mu <- adjust_old_forked(draws$mu, draws$zi)
   draws$mu <- ilink(draws$mu, draws$f$link) * (1 - draws$zi)
   trials <- draws$data[["trials"]]
@@ -198,7 +198,7 @@ fitted_zero_inflated_binomial <- function(draws) {
 }
 
 fitted_zero_inflated_beta <- function(draws) {
-  draws$zi <- get_theta(draws, par = "zi")
+  draws$zi <- get_zi_hu(draws, par = "zi")
   draws$mu <- adjust_old_forked(draws$mu, draws$zi)
   ilink(draws$mu, draws$f$link) * (1 - draws$zi)
 }
@@ -233,6 +233,7 @@ fitted_acat <- function(draws) {
 
 fitted_mixture <- function(draws) {
   families <- family_names(draws$f)
+  draws$theta <- get_theta(draws)
   out <- 0
   for (j in seq_along(families)) {
     fitted_fun <- paste0("fitted_", families[j])
@@ -246,7 +247,12 @@ fitted_mixture <- function(draws) {
     for (ap in auxpars) {
       tmp_draws[[ap]] <- draws[[paste0(ap, j)]]
     }
-    out <- out + draws$theta[, j] * fitted_fun(tmp_draws)
+    if (length(dim(draws$theta)) == 3L) {
+      theta <- draws$theta[, , j]
+    } else {
+      theta <- draws$theta[, j]
+    }
+    out <- out + theta * fitted_fun(tmp_draws)
   }
   out
 }

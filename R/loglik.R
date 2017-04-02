@@ -332,7 +332,7 @@ loglik_asym_laplace <- function(i, draws, ...) {
 }
 
 loglik_hurdle_poisson <- function(i, draws, data = data.frame()) {
-  theta <- get_theta(draws, i, par = "hu")
+  theta <- get_zi_hu(draws, i, par = "hu")
   args <- list(lambda = ilink(get_eta(draws$mu, i), draws$f$link))
   out <- loglik_hurdle_discrete(pdf = dpois, theta = theta, 
                                 args = args, i = i, data = draws$data)
@@ -340,7 +340,7 @@ loglik_hurdle_poisson <- function(i, draws, data = data.frame()) {
 }
 
 loglik_hurdle_negbinomial <- function(i, draws, data = data.frame()) {
-  theta <- get_theta(draws, i, par = "hu")
+  theta <- get_zi_hu(draws, i, par = "hu")
   args <- list(mu = ilink(get_eta(draws$mu, i), draws$f$link), 
                size = get_shape(draws$shape, data = draws$data, i = i))
   out <- loglik_hurdle_discrete(pdf = dnbinom, theta = theta, 
@@ -349,7 +349,7 @@ loglik_hurdle_negbinomial <- function(i, draws, data = data.frame()) {
 }
 
 loglik_hurdle_gamma <- function(i, draws, data = data.frame()) {
-  theta <- get_theta(draws, i, par = "hu")
+  theta <- get_zi_hu(draws, i, par = "hu")
   shape <- get_shape(draws$shape, data = draws$data, i = i)
   args <- list(shape = shape, 
                scale = ilink(get_eta(draws$mu, i), draws$f$link) / shape)
@@ -359,7 +359,7 @@ loglik_hurdle_gamma <- function(i, draws, data = data.frame()) {
 }
 
 loglik_hurdle_lognormal <- function(i, draws, data = data.frame()) {
-  theta <- get_theta(draws, i, par = "hu")
+  theta <- get_zi_hu(draws, i, par = "hu")
   sigma <- get_sigma(draws$sigma, data = draws$data, i = i)
   args <- list(meanlog = ilink(get_eta(draws$mu, i), draws$f$link), sdlog = sigma)
   out <- loglik_hurdle_continuous(pdf = dlnorm, theta = theta, 
@@ -368,7 +368,7 @@ loglik_hurdle_lognormal <- function(i, draws, data = data.frame()) {
 }
 
 loglik_zero_inflated_poisson <- function(i, draws, data = data.frame()) {
-  theta <- get_theta(draws, i, par = "zi")
+  theta <- get_zi_hu(draws, i, par = "zi")
   args <- list(lambda = ilink(get_eta(draws$mu, i), draws$f$link))
   out <- loglik_zero_inflated(pdf = dpois, theta = theta, 
                               args = args, i = i, data = draws$data)
@@ -376,7 +376,7 @@ loglik_zero_inflated_poisson <- function(i, draws, data = data.frame()) {
 }
 
 loglik_zero_inflated_negbinomial <- function(i, draws, data = data.frame()) {
-  theta <- get_theta(draws, i, par = "zi")
+  theta <- get_zi_hu(draws, i, par = "zi")
   args <- list(mu = ilink(get_eta(draws$mu, i), draws$f$link), 
                size = get_shape(draws$shape, data = draws$data, i = i))
   out <- loglik_zero_inflated(pdf = dnbinom, theta = theta, 
@@ -386,7 +386,7 @@ loglik_zero_inflated_negbinomial <- function(i, draws, data = data.frame()) {
 
 loglik_zero_inflated_binomial <- function(i, draws, data = data.frame()) {
   trials <- draws$data$trials[i] 
-  theta <- get_theta(draws, i, par = "zi")
+  theta <- get_zi_hu(draws, i, par = "zi")
   args <- list(size = trials, prob = ilink(get_eta(draws$mu, i), draws$f$link))
   out <- loglik_zero_inflated(pdf = dbinom, theta = theta, 
                               args = args, i = i, data = draws$data)
@@ -394,7 +394,7 @@ loglik_zero_inflated_binomial <- function(i, draws, data = data.frame()) {
 }
 
 loglik_zero_inflated_beta <- function(i, draws, data = data.frame()) {
-  theta <- get_theta(draws, i, par = "zi")
+  theta <- get_zi_hu(draws, i, par = "zi")
   mu <- ilink(get_eta(draws$mu, i), draws$f$link)
   phi <- get_auxpar(draws$phi, i)
   args <- list(shape1 = mu * phi, shape2 = (1 - mu) * phi)
@@ -499,6 +499,7 @@ loglik_acat <- function(i, draws, data = data.frame()) {
 
 loglik_mixture <- function(i, draws, data = data.frame()) {
   families <- family_names(draws$f)
+  theta <- get_theta(draws, i = i)
   out <- 0
   for (j in seq_along(families)) {
     loglik_fun <- paste0("loglik_", families[j])
@@ -512,7 +513,7 @@ loglik_mixture <- function(i, draws, data = data.frame()) {
     for (ap in auxpars) {
       tmp_draws[[ap]] <- draws[[paste0(ap, j)]]
     }
-    out <- out + exp(log(draws$theta[, j]) + loglik_fun(i, tmp_draws))
+    out <- out + exp(log(theta[, j]) + loglik_fun(i, tmp_draws))
   }
   log(out)
 }

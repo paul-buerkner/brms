@@ -413,12 +413,20 @@
 #'   sure that both components have the same residual standard deviation,
 #'   which is in turn estimated from the data.
 #'   
-#'   In addition, there are special auxiliary parameters named \code{mu<ID>},
-#'   that allow for modeling different predictors for the mean parameters of 
-#'   different mixture components. For instance, if you want to predict the 
-#'   mean of the first component using predictor \code{x} and the mean of the
-#'   second component using predictor \code{z}, you can write \code{mu1 ~ x} 
-#'   as well as \code{mu2 ~ z}. 
+#'   In addition, there are two types of special auxiliary parameters.
+#'   The first are named \code{mu<ID>}, that allow for modeling different 
+#'   predictors for the mean parameters of different mixture components. 
+#'   For instance, if you want to predict the mean of the first component 
+#'   using predictor \code{x} and the mean of the second component using 
+#'   predictor \code{z}, you can write \code{mu1 ~ x} as well as \code{mu2 ~ z}. 
+#'   The second are named \code{theta<ID>}, which constitute the mixing 
+#'   proportions. If the mixing proportions are fixed to certain values, 
+#'   they are internally normalized to form a probability vector.
+#'   If one seeks to predict the mixing proportions, all but 
+#'   one of the them has to be predicted, while the remaining one is used
+#'   as the reference category to identify the model. The \code{softmax} 
+#'   function is applied on the linear predictor terms to form a 
+#'   probability vector.
 #'   
 #'   For more information on mixture models, see
 #'   the documentation of \code{\link[brms:mixture]{mixture}}.
@@ -528,6 +536,13 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   not_form <- ulapply(forms, function(x) !is.formula(x))
   fix <- forms[not_form]
   forms[names(fix)] <- NULL
+  fix_theta <- fix[auxpar_class(names(fix)) %in% "theta"]
+  if (length(fix_theta)) {
+    # normalize mixing proportions
+    sum_theta <- sum(unlist(fix_theta))
+    fix_theta <- lapply(fix_theta, "/", sum_theta)
+    fix[names(fix_theta)] <- fix_theta
+  }
   if (!isTRUE(nl)) {
     inv_names <- !is_auxpar_name(names(forms))
     if (any(inv_names)) {
@@ -638,7 +653,7 @@ prepare_auxformula <- function(formula, par = NULL, rsv_pars = NULL) {
 auxpars <- function() {
   # names of auxiliary parameters
   c("mu", "sigma", "shape", "nu", "phi", "kappa", "beta", "xi",
-    "zi", "hu", "disc", "bs", "ndt", "bias", "quantile")
+    "zi", "hu", "disc", "bs", "ndt", "bias", "quantile", "theta")
 }
 
 links_auxpars <- function(ap) {
@@ -659,6 +674,7 @@ links_auxpars <- function(ap) {
     bias = c("logit", "identity"),
     quantile = c("logit", "identity"),
     xi = c("log1p", "identity"),
+    theta = c("identity"), 
     stop2("Parameter '", ap, "' is not supported.")
   )
 }
@@ -692,7 +708,7 @@ valid_auxpars.mixfamily <- function(family, ...) {
   for (i in seq_along(out)) {
     out[[i]] <- paste0(out[[i]], i)
   }
-  unlist(out)
+  c(unlist(out), paste0("theta", seq_along(out)))
 }
 
 is_auxpar_name <- function(auxpars, family = NULL, ...) {
@@ -843,12 +859,12 @@ update.brmsformula <- function(object, formula.,
 print.brmsformula <- function(x, wsp = 0, digits = 2, ...) {
   cat(formula2str(x$formula, space = "trim"), "\n")
   wsp <- collapse(rep(" ", wsp))
-  pforms <- pforms(x)
+  pforms <- x$pforms
   if (length(pforms)) {
     pforms <- ulapply(pforms, formula2str, space = "trim")
     cat(collapse(wsp, pforms, "\n"))
   }
-  pfix <- pfix(x)
+  pfix <- x$pfix
   if (length(pfix)) {
     pfix <- lapply(pfix, function(x) 
       ifelse(is.numeric(x), round(x, digits), x)

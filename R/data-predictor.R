@@ -337,16 +337,17 @@ data_offset <- function(bterms, data, nlpar = "") {
   out
 }
 
-data_mixture <- function(family, prior = brmsprior()) {
+data_mixture <- function(bterms, prior = brmsprior()) {
   # data specific for mixture models
+  stopifnot(is.brmsterms(bterms))
   out <- list()
-  if (is.mixfamily(family)) {
-    families <- family_names(family)
-    if (!is.null(family$theta)) {
-      # fix mixture probabilities
-      out[["theta"]] <- family$theta
-    } else {
-      # estimate mixture probabilities
+  if (is.mixfamily(bterms$family)) {
+    families <- family_names(bterms$family)
+    ap_classes <- auxpar_class(
+      names(c(bterms$auxpars, bterms$fauxpars))
+    )
+    if (!any(ap_classes %in% "theta")) {
+      # estimate mixture probabilities directly
       take <- prior$class == "theta"
       theta_prior <- prior$prior[take]
       if (isTRUE(nzchar(theta_prior))) {

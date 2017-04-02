@@ -198,7 +198,7 @@ make_standata <- function(formula, data, family = NULL,
     }
     standata <- c(standata,
       data_gr(ranef, data, cov_ranef = cov_ranef),
-      data_mixture(family, prior = prior)
+      data_mixture(bterms, prior = prior)
     )
   }
   

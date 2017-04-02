@@ -461,7 +461,7 @@ test_that("all S3 methods have reasonable ouputs", {
   
   summary5 <- SW(summary(fit5, waic = TRUE))
   expect_output(print(summary5), "sigma1")
-  expect_output(print(summary5), "theta\\[1\\]")
+  expect_output(print(summary5), "theta1")
   
   # update
   # do not actually refit the model as is causes CRAN checks to fail

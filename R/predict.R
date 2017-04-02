@@ -296,7 +296,7 @@ predict_asym_laplace <- function(i, draws, ...) {
 
 predict_hurdle_poisson <- function(i, draws, ...) {
   # theta is the bernoulli hurdle parameter
-  theta <- get_theta(draws, i, par = "hu")
+  theta <- get_zi_hu(draws, i, par = "hu")
   lambda <- ilink(get_eta(draws$mu, i), draws$f$link)
   ndraws <- draws$nsamples
   # compare with theta to incorporate the hurdle process
@@ -309,7 +309,7 @@ predict_hurdle_poisson <- function(i, draws, ...) {
 
 predict_hurdle_negbinomial <- function(i, draws, ...) {
   # theta is the bernoulli hurdle parameter
-  theta <- get_theta(draws, i, par = "hu")
+  theta <- get_zi_hu(draws, i, par = "hu")
   mu <- ilink(get_eta(draws$mu, i), draws$f$link)
   ndraws <- draws$nsamples
   # compare with theta to incorporate the hurdle process
@@ -323,7 +323,7 @@ predict_hurdle_negbinomial <- function(i, draws, ...) {
 
 predict_hurdle_gamma <- function(i, draws, ...) {
   # theta is the bernoulli hurdle parameter
-  theta <- get_theta(draws, i, par = "hu")
+  theta <- get_zi_hu(draws, i, par = "hu")
   shape <- get_shape(draws$shape, data = draws$data, i = i)
   scale <- ilink(get_eta(draws$mu, i), draws$f$link) / shape
   ndraws <- draws$nsamples
@@ -334,7 +334,7 @@ predict_hurdle_gamma <- function(i, draws, ...) {
 
 predict_hurdle_lognormal <- function(i, draws, ...) {
   # theta is the bernoulli hurdle parameter
-  theta <- get_theta(draws, i, par = "hu")
+  theta <- get_zi_hu(draws, i, par = "hu")
   mu <- ilink(get_eta(draws$mu, i), draws$f$link)
   sigma <- get_sigma(draws$sigma, data = draws$data, i = i)
   ndraws <- draws$nsamples
@@ -345,7 +345,7 @@ predict_hurdle_lognormal <- function(i, draws, ...) {
 
 predict_zero_inflated_beta <- function(i, draws, ...) {
   # theta is the bernoulli hurdle parameter
-  theta <- get_theta(draws, i, par = "zi")
+  theta <- get_zi_hu(draws, i, par = "zi")
   mu <- ilink(get_eta(draws$mu, i), draws$f$link)
   phi <- get_auxpar(draws$phi, i = i)
   # compare with theta to incorporate the hurdle process
@@ -356,7 +356,7 @@ predict_zero_inflated_beta <- function(i, draws, ...) {
 
 predict_zero_inflated_poisson <- function(i, draws, ...) {
   # theta is the bernoulli zero-inflation parameter
-  theta <- get_theta(draws, i, par = "zi")
+  theta <- get_zi_hu(draws, i, par = "zi")
   lambda <- ilink(get_eta(draws$mu, i), draws$f$link)
   ndraws <- draws$nsamples
   # compare with theta to incorporate the zero-inflation process
@@ -366,7 +366,7 @@ predict_zero_inflated_poisson <- function(i, draws, ...) {
 
 predict_zero_inflated_negbinomial <- function(i, draws, ...) {
   # theta is the bernoulli zero-inflation parameter
-  theta <- get_theta(draws, i, par = "zi")
+  theta <- get_zi_hu(draws, i, par = "zi")
   mu <- ilink(get_eta(draws$mu, i), draws$f$link)
   shape <- get_shape(draws$shape, data = draws$data, i = i)
   ndraws <- draws$nsamples
@@ -377,7 +377,7 @@ predict_zero_inflated_negbinomial <- function(i, draws, ...) {
 
 predict_zero_inflated_binomial <- function(i, draws, ...) {
   # theta is the bernoulii zero-inflation parameter
-  theta <- get_theta(draws, i, par = "zi")
+  theta <- get_zi_hu(draws, i, par = "zi")
   trials <- draws$data$trials[i]
   prob <- ilink(get_eta(draws$mu, i), draws$f$link)
   ndraws <- draws$nsamples
@@ -420,7 +420,8 @@ predict_ordinal <- function(i, draws, family, ...) {
 
 predict_mixture <- function(i, draws, ...) {
   families <- family_names(draws$f)
-  smix <- rng_mix(draws$theta)
+  theta <- get_theta(draws, i = i)
+  smix <- rng_mix(theta)
   out <- rep(NA, draws$nsamples)
   for (j in seq_along(families)) {
     sample_ids <- which(smix == j)

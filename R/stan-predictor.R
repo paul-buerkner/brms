@@ -181,14 +181,13 @@ stan_effects.brmsterms <- function(x, data, ranef, prior, sparse = FALSE,
       )
     } else {
       def_temp <- stan_auxpar_defs_temp(ap)
+      def <- stan_auxpar_defs(ap)
       if (nzchar(def_temp)) {
-        out[[ap]] <- list(
-          par = def_temp,
+        out[[ap]] <- list(par = def_temp,
           prior = stan_prior(prior, class = ap, prefix = "temp_")
         )
-      } else {
-        out[[ap]] <- list(
-          par = stan_auxpar_defs(ap),
+      } else if (nzchar(def)) {
+        out[[ap]] <- list(par = def,
           prior = stan_prior(prior, class = ap)
         )
       }
@@ -965,6 +964,7 @@ stan_auxpar_defs <- function(auxpar) {
       "  real ", 
       ";  // shape parameter \n"
     )
+    # theta is handled in stan_mixture
   )
   def <- default_defs[[auxpar_class(auxpar)]]
   if (!is.null(def)) {
@@ -977,13 +977,13 @@ stan_auxpar_defs <- function(auxpar) {
 
 stan_auxpar_defs_temp <- function(auxpar) {
   # default Stan definitions for temporary auxiliary parameters
-  default_defs_temp <- list(
+  default_defs <- list(
     xi = c(
       "  real temp_", 
       ";  // unscaled shape parameter \n"
     )
   )
-  def <- default_defs_temp[[auxpar_class(auxpar)]]
+  def <- default_defs[[auxpar_class(auxpar)]]
   if (!is.null(def)) {
     def <- paste0(def[1], auxpar, def[2])
   } else {

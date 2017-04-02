@@ -487,7 +487,8 @@ test_that("make_standata includes data for mixture models", {
   sdata <- make_standata(form, data, prior = prior(dirichlet(10, 2), theta))
   expect_equal(sdata$con_theta, c(10, 2))
   
-  form <- bf(y ~ x, family = mixture(gaussian, gaussian, theta = c(1, 3)))
+  form <- bf(y ~ x, theta1 = 1, theta2 = 3, family = mixture(gaussian, gaussian))
   sdata <- make_standata(form, data)
-  expect_equal(sdata$theta, c(1/4, 3/4))
+  expect_equal(sdata$theta1, 1/4)
+  expect_equal(sdata$theta2, 3/4)
 })

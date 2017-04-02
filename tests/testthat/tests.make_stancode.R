@@ -890,28 +890,37 @@ test_that("Stan code of mixture model is correct", {
   expect_match2(scode, "ordered[2] ordered_Intercept;")
   expect_match2(scode, "temp_mu2_Intercept = ordered_Intercept[2];")
   expect_match2(scode, "theta ~ dirichlet(con_theta);")
-  expect_match2(scode, "ps[1] = log(theta[1]) + normal_lpdf(Y[n] | mu1[n], sigma1);")
-  expect_match2(scode, "ps[2] = log(theta[2]) + normal_lpdf(Y[n] | mu2[n], sigma2[n]);")
+  expect_match2(scode, "ps[1] = log(theta1) + normal_lpdf(Y[n] | mu1[n], sigma1);")
+  expect_match2(scode, "ps[2] = log(theta2) + normal_lpdf(Y[n] | mu2[n], sigma2[n]);")
   expect_match2(scode, "target += log_sum_exp(ps);")
   
-  scode <- make_stancode(bf(abs(y) | weights(c) ~ x, shape1 ~ x), data = data, 
-                         mixture(Gamma("log"), weibull, theta = c(1, 2)))
-  expect_match(scode, "data \\{[^\\}]*simplex\\[2\\] theta;")
+  data$z <- abs(data$y)
+  scode <- make_stancode(bf(z | weights(c) ~ x, shape1 ~ x, theta1 = 1, theta2 = 2), 
+                         data = data, mixture(Gamma("log"), weibull))
+  expect_match(scode, "data \\{[^\\}]*real theta1;")
+  expect_match(scode, "data \\{[^\\}]*real theta2;")
   expect_match(scode, "shape1\\[n\\] = exp\\(shape1\\[n\\]\\); \\\n    mu1\\[n\\] = ")
-  expect_match2(scode, "ps[1] = log(theta[1]) + gamma_lpdf(Y[n] | shape1[n], mu1[n]);")
+  expect_match2(scode, "ps[1] = log(theta1) + gamma_lpdf(Y[n] | shape1[n], mu1[n]);")
   expect_match2(scode, "lp_pre[n] = log_sum_exp(ps);")
   expect_match2(scode, "target += dot_product(weights, lp_pre);")
   
   scode <- make_stancode(bf(abs(y) | se(c) ~ x), data = data, 
                          mixture(gaussian, student))
-  expect_match2(scode, "ps[1] = log(theta[1]) + normal_lpdf(Y[n] | mu1[n], se);")
-  expect_match2(scode, "ps[2] = log(theta[2]) + student_t_lpdf(Y[n] | nu2, mu2[n], se);")
+  expect_match2(scode, "ps[1] = log(theta1) + normal_lpdf(Y[n] | mu1[n], se);")
+  expect_match2(scode, "ps[2] = log(theta2) + student_t_lpdf(Y[n] | nu2, mu2[n], se);")
   
   fam <- mixture(gaussian, student, exgaussian)
   scode <- make_stancode(bf(y ~ x), data = data, family = fam)
   expect_match(scode, "parameters \\{[^\\}]*real temp_mu3_Intercept;")
-  expect_match2(scode, "ps[2] = log(theta[2]) + student_t_lpdf(Y[n] | nu2, mu2[n], sigma2);")
-  expect_match2(scode, "ps[3] = log(theta[3]) + exgaussian_lpdf(Y[n] | mu3[n], sigma3, beta3);")
+  expect_match2(scode, "ps[2] = log(theta2) + student_t_lpdf(Y[n] | nu2, mu2[n], sigma2);")
+  expect_match2(scode, "ps[3] = log(theta3) + exgaussian_lpdf(Y[n] | mu3[n], sigma3, beta3);")
+  
+  scode <- make_stancode(bf(y ~ x, theta1 ~ x, theta3 ~ x), 
+                         data = data, family = fam)
+  expect_match2(scode, "log_sum_exp_theta = log(exp(theta1[n]) + exp(theta2[n]) + exp(theta3[n]));")
+  expect_match2(scode, "theta2 = rep_vector(0, N);")
+  expect_match2(scode, "theta3[n] = theta3[n] - log_sum_exp_theta;")
+  expect_match2(scode, "ps[1] = theta1[n] + normal_lpdf(Y[n] | mu1[n], sigma1);")
 })
 
 test_that("sparse matrix multiplication is applied correctly", {

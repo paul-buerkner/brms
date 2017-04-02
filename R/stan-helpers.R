@@ -442,15 +442,43 @@ stan_families <- function(family, bterms) {
   out
 }
 
-stan_mixture <- function(family, prior) {
+stan_mixture <- function(bterms, prior) {
   # Stan code specific for mixture families
   out <- list()
-  if (is.mixfamily(family)) {
-    nmix <- length(family$mix)
-    if (!is.null(family$theta)) {
+  if (is.mixfamily(bterms$family)) {
+    nmix <- length(bterms$family$mix)
+    theta_pred <- grepl("^theta", names(bterms$auxpars))
+    theta_pred <- bterms$auxpars[theta_pred]
+    theta_fix <- grepl("^theta", names(bterms$fauxpars))
+    theta_fix <- bterms$fauxpars[theta_fix]
+    if (length(theta_pred)) {
+      if (length(theta_pred) != nmix - 1) {
+        stop2("Can only predict all but one mixing proportion.")
+      }
+      missing_id <- setdiff(1:nmix, auxpar_id(names(theta_pred)))
+      out$modelD <- paste0(out$modelD,
+        "  vector[N] theta", missing_id, "; \n",                   
+        "  real log_sum_exp_theta; \n"      
+      )
+      out$modelC1 <- paste0(out$modelC1,
+        "  theta", missing_id, " = rep_vector(0, N); \n"
+      )
+      sum_exp_theta <- paste0(
+        "exp(theta", 1:nmix, "[n])", collapse = " + "
+      )
+      out$modelC3 <- paste0(out$modelC3, 
+        "    log_sum_exp_theta = log(", sum_exp_theta, "); \n",
+        collapse(
+          "    theta", 1:nmix, "[n] = theta", 1:nmix, "[n]", 
+          " - log_sum_exp_theta; \n"
+        )
+      )
+    } else if (length(theta_fix)) {
+      if (length(theta_fix) != nmix) {
+        stop2("Can only fix no or all mixing proportions.")
+      }
       out$data <- paste0(out$data,
-        "  simplex[", nmix, "] theta;",
-        "  // mixing proportions \n"
+        collapse("  real theta", 1:nmix, ";  // mixing proportion \n")
       )
     } else {
       out$data <- paste0(out$data,
@@ -463,8 +491,14 @@ stan_mixture <- function(family, prior) {
       out$prior <- paste0(out$prior, 
         "  theta ~ dirichlet(con_theta); \n"                
       )
+      out$transD <- paste0(out$transD,
+        collapse("  real theta", 1:nmix, ";  // mixing proportion \n")
+      )
+      out$transC1 <- paste0(out$transC1,
+        collapse("  theta", 1:nmix, " = theta[", 1:nmix, "]; \n")
+      )
     }
-    if (family$order) {
+    if (bterms$family$order) {
       out$par <- paste0(out$par, 
         "  ordered[", nmix, "] ordered_Intercept;  // to identify mixtures \n"
       )

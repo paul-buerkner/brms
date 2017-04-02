@@ -4,7 +4,7 @@
 \alias{mixture}
 \title{Finite Mixture Families in \pkg{brms}}
 \usage{
-mixture(..., flist = NULL, nmix = 1, theta = NULL, order = NULL)
+mixture(..., flist = NULL, nmix = 1, order = NULL)
 }
 \arguments{
 \item{...}{One or more objects providing a description of the 
@@ -20,12 +20,6 @@ same way as objects passed via the \code{...} argument.}
 \item{nmix}{Optional numeric vector specifying the number of times
 each family is repeated. If specified, it must have the same length 
 as the number of families passed via \code{...} or \code{flist}.}
-
-\item{theta}{Optional vector specifying the mixing proportions
-\code{theta}. If specified, it must have the same length as the 
-number of mixture components. The input is normalized to
-form a probability vector. If \code{NULL} (the default), 
-\code{theta} is estimated from the data.}
 
 \item{order}{Logical; indicating whether population-level intercepts
 of the families should be ordered to identify mixture components.
@@ -73,24 +67,31 @@ prior <- c(
   prior(normal(5, 7), Intercept, nlpar = mu2)
 )
 fit1 <- brm(bf(y ~ x + z), dat, family = mix,
-            prior = prior, inits = 0, chains = 2) 
+            prior = prior, chains = 2) 
 summary(fit1)
 pp_check(fit1)
 
 ## use different predictors for the components
 fit2 <- brm(bf(y ~ 1, mu1 ~ x, mu2 ~ z), dat, family = mix,
-            prior = prior, inits = 0, chains = 2) 
+            prior = prior, chains = 2) 
 summary(fit2)
 
 ## fix the mixing proportions
-mix <- mixture(gaussian, gaussian, theta = c(1, 2))
-fit3 <- brm(bf(y ~ x + z), dat, family = mix,
-            prior = prior, inits = 0, chains = 2)
+fit3 <- brm(bf(y ~ x + z, theta1 = 1, theta2 = 2), 
+            dat, family = mix, prior = prior, 
+            inits = 0, chains = 2)
 summary(fit3)
-pp_check(fit3)           
+pp_check(fit3)    
+
+## predict the mixing proportions
+fit4 <- brm(bf(y ~ x + z, theta2 ~ x), 
+            dat, family = mix, prior = prior, 
+            inits = 0, chains = 2)
+summary(fit4)
+pp_check(fit4)           
 
 ## compare model fit
-LOO(fit1, fit2, fit3)  
+LOO(fit1, fit2, fit3, fit4)  
 }
 
 }

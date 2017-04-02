@@ -536,11 +536,6 @@ check_family <- function(family, link = NULL) {
 #' @param nmix Optional numeric vector specifying the number of times
 #'   each family is repeated. If specified, it must have the same length 
 #'   as the number of families passed via \code{...} or \code{flist}.
-#' @param theta Optional vector specifying the mixing proportions
-#'   \code{theta}. If specified, it must have the same length as the 
-#'   number of mixture components. The input is normalized to
-#'   form a probability vector. If \code{NULL} (the default), 
-#'   \code{theta} is estimated from the data.
 #' @param order Logical; indicating whether population-level intercepts
 #'   of the families should be ordered to identify mixture components.
 #'   If \code{NULL} (the default), \code{order} is set to \code{TRUE}
@@ -584,29 +579,35 @@ check_family <- function(family, link = NULL) {
 #'   prior(normal(5, 7), Intercept, nlpar = mu2)
 #' )
 #' fit1 <- brm(bf(y ~ x + z), dat, family = mix,
-#'             prior = prior, inits = 0, chains = 2) 
+#'             prior = prior, chains = 2) 
 #' summary(fit1)
 #' pp_check(fit1)
 #' 
 #' ## use different predictors for the components
 #' fit2 <- brm(bf(y ~ 1, mu1 ~ x, mu2 ~ z), dat, family = mix,
-#'             prior = prior, inits = 0, chains = 2) 
+#'             prior = prior, chains = 2) 
 #' summary(fit2)
 #' 
 #' ## fix the mixing proportions
-#' mix <- mixture(gaussian, gaussian, theta = c(1, 2))
-#' fit3 <- brm(bf(y ~ x + z), dat, family = mix,
-#'             prior = prior, inits = 0, chains = 2)
+#' fit3 <- brm(bf(y ~ x + z, theta1 = 1, theta2 = 2), 
+#'             dat, family = mix, prior = prior, 
+#'             inits = 0, chains = 2)
 #' summary(fit3)
-#' pp_check(fit3)           
+#' pp_check(fit3)    
+#' 
+#' ## predict the mixing proportions
+#' fit4 <- brm(bf(y ~ x + z, theta2 ~ x), 
+#'             dat, family = mix, prior = prior, 
+#'             inits = 0, chains = 2)
+#' summary(fit4)
+#' pp_check(fit4)           
 #'
 #' ## compare model fit
-#' LOO(fit1, fit2, fit3)  
+#' LOO(fit1, fit2, fit3, fit4)  
 #' }
 #' 
 #' @export
-mixture <- function(..., flist = NULL, nmix = 1,
-                    theta = NULL, order = NULL) {
+mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
   dots <- c(list(...), flist)
   if (length(nmix) == 1L) {
     nmix <- rep(nmix, length(dots))
@@ -639,17 +640,6 @@ mixture <- function(..., flist = NULL, nmix = 1,
   }
   if (use_real(family) && use_int(family)) {
     stop2("Cannot mix families with real and integer support.")
-  }
-  if (!is.null(theta)) {
-    theta <- as.numeric(theta)
-    if (length(theta) != length(family$mix)) {
-      stop2("The length of 'theta' should be the same ", 
-            "as the number of mixture components.")
-    }
-    if (anyNA(theta) || any(theta <= 0)) {
-      stop2("'theta' should contain positive values only.")
-    }
-    family$theta <- theta / sum(theta)
   }
   if (is.null(order)) {
     if (length(unique(families)) == 1L) {

@@ -741,7 +741,7 @@ reorder_pars <- function(x) {
   #   x: brmsfit object
   all_classes <- c(
     "b", "bmo", "bcs", "bme", "ar", "ma", "arr", "sd", "cor", 
-    "sds", auxpars(), "temp", "sigmaLL", "rescor", "delta", "theta",
+    "sds", auxpars(), "temp", "sigmaLL", "rescor", "delta",
     "lasso", "simplex", "r", "s", "loclev", "Xme", "prior", "lp"
   )
   # reorder parameter classes

@@ -1,11 +1,14 @@
 #' @export
-stan_llh.default <- function(family, bterms, data, autocor, mix = "", ...) {
+stan_llh.default <- function(family, bterms, data, autocor, 
+                             mix = "", ptheta = FALSE, ...) {
   # Likelihood in Stan language
   # Args:
   #   family: the model family
   #   bterms: object of class brmsterms
   #   data: data passed by the user
   #   autocor: object of classe cor_brms
+  #   mix: optional mixture component ID
+  #   ptheta: are mixing proportions predicted?
   stopifnot(is.family(family))
   stopifnot(is.brmsterms(bterms))
   stopifnot(length(mix) == 1L)
@@ -261,7 +264,7 @@ stan_llh.default <- function(family, bterms, data, autocor, mix = "", ...) {
   type <- c("mix", "cens", "weights")[type]
   type <- ifelse(is.na(type), "general", type)
   llh <- switch(type, 
-    mix = stan_llh_mix(llh_pre, family, mix, bounds),
+    mix = stan_llh_mix(llh_pre, family, mix, ptheta, bounds),
     cens = stan_llh_cens(llh_pre, family, interval, has_weights, bounds),
     weights = stan_llh_weights(llh_pre, family, bounds),
     general = stan_llh_general(llh_pre, reqn, bounds)
@@ -277,12 +280,15 @@ stan_llh.default <- function(family, bterms, data, autocor, mix = "", ...) {
 stan_llh.mixfamily <- function(family, bterms, ...) {
   ap_ids <- auxpar_id(names(bterms$auxpars))
   fap_ids <- auxpar_id(names(bterms$fauxpars))
+  ptheta <- any(auxpar_class(names(bterms$auxpars)) %in% "theta")
   llh <- rep(NA, length(family$mix))
   for (i in seq_along(family$mix)) {
     sbterms <- bterms
     sbterms$auxpars <- sbterms$auxpars[ap_ids == i]
     sbterms$fauxpars <- sbterms$fauxpars[fap_ids == i]
-    llh[i] <- stan_llh(family$mix[[i]], sbterms, mix = i, ...)
+    llh[i] <- stan_llh(
+      family$mix[[i]], sbterms, mix = i, ptheta = ptheta, ...
+    )
   }
   has_weights <- is.formula(bterms$adforms$weights)  
   lhs <- ifelse(has_weights, "lp_pre[n] = ", "target += ")
@@ -354,13 +360,17 @@ stan_llh_weights <- function(llh_pre, family, bounds = NULL) {
   )
 }
 
-stan_llh_mix <- function(llh_pre, family, mix, bounds = NULL) {
+stan_llh_mix <- function(llh_pre, family, mix, ptheta, bounds = NULL) {
+  # likelihood of a single mixture component
   stopifnot(length(llh_pre) == 2L)
+  theta <- ifelse(ptheta,
+    paste0("theta", mix, "[n]"), paste0("log(theta", mix, ")")
+  )
   tr <- stan_llh_trunc(llh_pre, bounds = bounds, general = FALSE)
   lpdf <- ifelse(use_int(family), "lpmf", "lpdf")
   paste0(
-    "  ps[", mix, "] = log(theta[", mix, "]) + ",
-    llh_pre[1], "_", lpdf, "(Y[n] | ", llh_pre[2],")", tr, "; \n"
+    "  ps[", mix, "] = ", theta, " + ",
+    llh_pre[1], "_", lpdf, "(Y[n] | ", llh_pre[2], ")", tr, "; \n"
   )
 }
 

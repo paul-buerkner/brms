@@ -75,10 +75,6 @@ test_that("mixture returns expected results and errors", {
                "Cannot mix families with real and integer support")
   expect_error(mixture(lognormal), 
                "Expecting at least 2 mixture components")
-  expect_error(mixture(gaussian(), student(), theta = c(1, 2, 3)), 
-               "The length of 'theta' should be the same as the number")
-  expect_error(mixture(gaussian(), student(), theta = c(1, NA)), 
-               "'theta' should contain positive values only")
   expect_error(mixture(poisson, binomial, order = "x"),
                "Argument 'order' must be either TRUE or FALSE")
 })

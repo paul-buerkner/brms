@@ -446,12 +446,20 @@ models for all parameters of the assumed response distribution.
   sure that both components have the same residual standard deviation,
   which is in turn estimated from the data.
   
-  In addition, there are special auxiliary parameters named \code{mu<ID>},
-  that allow for modeling different predictors for the mean parameters of 
-  different mixture components. For instance, if you want to predict the 
-  mean of the first component using predictor \code{x} and the mean of the
-  second component using predictor \code{z}, you can write \code{mu1 ~ x} 
-  as well as \code{mu2 ~ z}. 
+  In addition, there are two types of special auxiliary parameters.
+  The first are named \code{mu<ID>}, that allow for modeling different 
+  predictors for the mean parameters of different mixture components. 
+  For instance, if you want to predict the mean of the first component 
+  using predictor \code{x} and the mean of the second component using 
+  predictor \code{z}, you can write \code{mu1 ~ x} as well as \code{mu2 ~ z}. 
+  The second are named \code{theta<ID>}, which constitute the mixing 
+  proportions. If the mixing proportions are fixed to certain values, 
+  they are internally normalized to form a probability vector.
+  If one seeks to predict the mixing proportions, all but 
+  one of the them has to be predicted, while the remaining one is used
+  as the reference category to identify the model. The \code{softmax} 
+  function is applied on the linear predictor terms to form a 
+  probability vector.
   
   For more information on mixture models, see
   the documentation of \code{\link[brms:mixture]{mixture}}.

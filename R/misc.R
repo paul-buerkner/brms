@@ -491,6 +491,14 @@ fabs <- function(x) {
   abs(x)
 }
 
+softmax <- function(x) {
+  if (!is.matrix(x)) {
+    x <- matrix(x, nrow = 1)
+  }
+  x <- exp(x) 
+  x / rowSums(x)
+}
+
 wsp <- function(x, nsp = 1) {
   # add leading and trailing whitespaces
   # Args:

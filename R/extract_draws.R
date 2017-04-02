@@ -61,13 +61,22 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
     }
   }
   if (is.mixfamily(family(x))) {
-    fixed_theta <- family(x)$theta
-    if (!is.null(fixed_theta)) {
-      draws$theta <- as_draws_matrix(
-        fixed_theta, dim = c(nsamples, length(fixed_theta))
-      )
+    families <- family_names(family(x))
+    thetas <- paste0("theta", seq_along(families))
+    if (any(ulapply(draws[thetas], is.list))) {
+      # theta was predicted
+      missing_id <- which(ulapply(draws[thetas], is.null))
+      draws[[paste0("theta", missing_id)]] <-
+        as_draws_matrix(0, c(draws$nsamples, draws$data$N))
     } else {
-      draws$theta <- do.call(as.matrix, c(am_args, pars = "^theta\\["))  
+      # theta was not predicted
+      draws$theta <- do.call(cbind, draws[thetas])
+      draws[thetas] <- NULL
+      if (nrow(draws$theta) == 1L) {
+        draws$theta <- as_draws_matrix(
+          draws$theta, dim = c(nsamples, ncol(draws$theta))
+        )
+      }
     }
   }
   if (is_linear(family(x)) && length(bterms$response) > 1L) {
