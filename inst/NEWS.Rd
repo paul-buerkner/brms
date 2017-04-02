@@ -43,6 +43,8 @@
       \code{summary} or \code{print} on \code{brmsfit} objects.
       \item Warn about unused variables in argument 
       \code{conditions} when calling \code{marginal_effects}.
+      \item Export and document several distribution functions 
+      that were previously kept internal.
     }
   }
   \subsection{BUG FIXES}{

@@ -1,11 +1,32 @@
+#' The Student-t Distribution
+#' 
+#' Density, distribution function, quantile function and random generation 
+#' for the Student-t distribution with location \code{mu}, scale \code{sigma},
+#' and degrees of freedom \code{df}.
+#' 
+#' @name Student 
+#' 
+#' @param x,q Vector of quantiles.
+#' @param p Vector of probabilities.
+#' @param n Number of observations. If \code{length(n) > 1}, the length 
+#'   is taken to be the number required.
+#' @param mu Vector of location values.
+#' @param sigma Vector of scale values.
+#' @param df Vector of degrees of freedom.
+#' @param log,log.p Logical; If \code{TRUE} values are returned on the log scale.
+#' @param lower.tail Logical; If \code{TRUE} (default), probabilities are 
+#'   P[X ≤ x], otherwise, P[X > x].
+#'   
+#' @details See \code{vignette("brms_families")} for details
+#' on the parameterization.
+#' 
+#' @seealso \code{\link[stats:TDist]{TDist}}
+#' 
+#' @export
 dstudent <- function(x, df, mu = 0, sigma = 1, log = FALSE) {
-  # density of student's distribution 
-  # Args:
-  #  x: the value(s) at which the density should be evaluated
-  #  df: degrees of freedom
-  #  mu: the mean
-  #  sigma: the scale parameter
-  #  log: logical; return on log scale?
+  if (any(sigma <= 0)) {
+    stop2("sigma must be greater than 0.")
+  }
   if (log) {
     dt((x - mu) / sigma, df = df, log = TRUE) - log(sigma)
   } else {
@@ -13,50 +34,55 @@ dstudent <- function(x, df, mu = 0, sigma = 1, log = FALSE) {
   }
 }
 
+#' @rdname Student
+#' @export
 pstudent <- function(q, df, mu = 0, sigma = 1, 
                      lower.tail = TRUE, log.p = FALSE) {
-  # distribution function of student's distribution
-  # Args:
-  #  q: the value(s) at which the distribution should be evaluated
-  #  df: degrees of freedom
-  #  mu: the mean
-  #  sigma: the scale parameter
-  #  lower.tail: same as for every pdist function
-  #  log.p: logical; return on log scale?
-  pt((q - mu)/sigma, df = df, lower.tail = lower.tail, log.p = log.p)
+  if (any(sigma <= 0)) {
+    stop2("sigma must be greater than 0.")
+  }
+  pt((q - mu) / sigma, df = df, lower.tail = lower.tail, log.p = log.p)
 }
 
+#' @rdname Student
+#' @export
 qstudent <-  function(p, df, mu = 0, sigma = 1) {
-  # quantiles of student's distribution
-  # Args:
-  #  p: the probabilities to find quantiles for
-  #  df: degrees of freedom
-  #  mu: the mean
-  #  sigma: the scale parameter
+  if (any(sigma <= 0)) {
+    stop2("sigma must be greater than 0.")
+  }
   mu + sigma * qt(p, df = df)
 }
 
+#' @rdname Student
+#' @export
 rstudent <-  function(n, df, mu = 0, sigma = 1) {
-  # random values of student's distribution 
-  #
-  # Args:
-  #  n: number of random values
-  #  df: degrees of freedom
-  #  mu: the mean
-  #  sigma: the scale parameter
+  if (any(sigma <= 0)) {
+    stop2("sigma must be greater than 0.")
+  }
   mu + sigma * rt(n, df = df)
 }
 
+#' The Multivariate Normal Distribution
+#' 
+#' Density function and random generation for the multivariate normal 
+#' distribution with mean vector \code{mu} and covariance matrix \code{Sigma}.
+#' 
+#' @name MultiNormal
+#' 
+#' @inheritParams Student
+#' @param x Vector or matrix of quantiles. If \code{x} is a matrix, 
+#'   each row is taken to be a quantile.
+#' @param mu Mean vector with length equal to the number of dimensions.
+#' @param Sigma Covariance matrix.
+#' @param check Logical; Indicates whether several input checks
+#'   should be performed. Defaults to \code{FALSE} to improve
+#'   efficiency.
+#'   
+#' @details See the Stan user's manual \url{http://mc-stan.org/documentation/}
+#' for details on the parameterization
+#'   
+#' @export
 dmulti_normal <- function(x, mu, Sigma, log = FALSE, check = FALSE) {
-  # density of the multivariate normal distribution 
-  # Args:
-  #   x: the value(s) at which the density should be evaluated
-  #   mu: mean vector
-  #   sigma: covariance matrix
-  #   log: return on log scale?
-  #   check: check arguments for validity?
-  # Returns:
-  #   density of the multi_normal distribution a values x
   if (is.vector(x)) {
     x <- matrix(x, ncol = length(x))
   }
@@ -82,6 +108,8 @@ dmulti_normal <- function(x, mu, Sigma, log = FALSE, check = FALSE) {
   out
 }
 
+#' @rdname MultiNormal
+#' @export
 rmulti_normal <- function(n, mu, Sigma, check = FALSE) {
   # random values of the multivariate normal distribution 
   # Args:
@@ -107,17 +135,28 @@ rmulti_normal <- function(n, mu, Sigma, check = FALSE) {
   mu + samples %*% chol(Sigma)
 }
 
+#' The Multivariate Student-t Distribution
+#' 
+#' Density function and random generation for the multivariate Student-t
+#' distribution with location vector \code{mu}, covariance matrix \code{Sigma},
+#' and degrees of freedom \code{df}.
+#' 
+#' @name MultiStudent
+#' 
+#' @inheritParams Student
+#' @param x Vector or matrix of quantiles. If \code{x} is a matrix, 
+#'   each row is taken to be a quantile.
+#' @param mu Location vector with length equal to the number of dimensions.
+#' @param Sigma Covariance matrix.
+#' @param check Logical; Indicates whether several input checks
+#'   should be performed. Defaults to \code{FALSE} to improve
+#'   efficiency.
+#'   
+#' @details See the Stan user's manual \url{http://mc-stan.org/documentation/}
+#'   for details on the parameterization
+#'   
+#' @export
 dmulti_student <- function(x, df, mu, Sigma, log = FALSE, check = FALSE) {
-  # density of the multivariate student-t distribution 
-  # Args:
-  #   x: the value(s) at which the density should be evaluated
-  #   df: degrees of freedom
-  #   mu: mean vector
-  #   sigma: covariance matrix
-  #   log: return on log scale?
-  #   check: check arguments for validity?
-  # Returns:
-  #   density of the multi_student distribution a values x
   if (is.vector(x)) {
     x <- matrix(x, ncol = length(x))
   }
@@ -147,16 +186,9 @@ dmulti_student <- function(x, df, mu, Sigma, log = FALSE, check = FALSE) {
   out
 }
 
+#' @rdname MultiStudent
+#' @export
 rmulti_student <- function(n, df, mu, Sigma, check = FALSE) {
-  # random values of the multivariate student-t distribution 
-  # Args:
-  #   n: number of random values
-  #   df: degrees of freedom
-  #   mu: mean vector
-  #   sigma: covariance matrix
-  #   check: check arguments for validity?
-  # Returns:
-  #   n samples of multi_student distribution of dimension length(mu) 
   p <- length(mu)
   if (any(df <= 0)) {
     stop2("df must be greater than 0.")
@@ -166,13 +198,25 @@ rmulti_student <- function(n, df, mu, Sigma, check = FALSE) {
   sweep(samples, 2, mu, "+")
 }
 
+#' The von Mises Distribution
+#' 
+#' Density, distribution function, and random generation for the 
+#' von Mises distribution with location \code{mu}, and precision \code{kappa}.
+#' 
+#' @name VonMises
+#' 
+#' @inheritParams Student
+#' @param x,q Vector of quantiles.
+#' @param kappa Vector of precision values.
+#' @param acc Accuracy of numerical approximations.
+#'   
+#' @details See \code{vignette("brms_families")} for details
+#' on the parameterization.
+#' 
+#' @export
 dvon_mises <- function(x, mu, kappa, log = FALSE) {
-  # density function of the von Mises distribution
   # CircStats::dvm has support within [0, 2*pi], 
   # but in brms we use [-pi, pi]
-  # Args:
-  #    mu: location parameter
-  #    kappa: precision parameter
   if (any(kappa < 0)) {
     stop2("kappa must be non-negative")
   }
@@ -184,9 +228,10 @@ dvon_mises <- function(x, mu, kappa, log = FALSE) {
   out
 }
 
+#' @rdname VonMises
+#' @export
 pvon_mises <- function(q, mu, kappa, lower.tail = TRUE, 
-                       log.p = FALSE, acc = 1e-20, ...) {
-  # distribution function of the von Mises distribution
+                       log.p = FALSE, acc = 1e-20) {
   # code basis taken from CircStats::pvm but improved 
   # considerably with respect to speed and stability
   if (any(kappa < 0)) {
@@ -251,8 +296,9 @@ pvon_mises <- function(q, mu, kappa, lower.tail = TRUE,
   out
 }
 
+#' @rdname VonMises
+#' @export
 rvon_mises <- function(n, mu, kappa) {
-  # sample random numbers from the von Mises distribution
   # code basis taken from CircStats::rvm but improved 
   # considerably with respect to speed and stability
   if (any(kappa < 0)) {
@@ -308,12 +354,27 @@ rvon_mises <- function(n, mu, kappa) {
   out - pi
 }
 
+#' The Exponentially Modified Gaussian Distribution
+#' 
+#' Density, distribution function, and random generation 
+#' for the exponentially modified Gaussian distribution with
+#' mean \code{mu} and standard deviation \code{sigma} of the gaussian 
+#' component, as well as scale \code{beta} of the exponential
+#' component.
+#' 
+#' @name ExGaussian 
+#' 
+#' @inheritParams Student
+#' @param x,q Vector of quantiles.
+#' @param mu Vector of means of the gaussian component.
+#' @param sigma Vector of standard deviations of the gaussian component.
+#' @param beta Vector of scales of the exponential component.
+#'   
+#' @details See \code{vignette("brms_families")} for details
+#' on the parameterization.
+#' 
+#' @export
 dexgaussian <- function(x, mu, sigma, beta, log = FALSE) {
-  # PDF of the exponentially modified gaussian distribution
-  # Args:
-  #   mu: mean of the gaussian comoponent
-  #   sigma: SD of the gaussian comoponent
-  #   beta: scale / inverse rate of the exponential component
   if (any(sigma <= 0)) {
     stop2("sigma must be greater than 0.")
   }
@@ -335,6 +396,8 @@ dexgaussian <- function(x, mu, sigma, beta, log = FALSE) {
   out
 }
 
+#' @rdname ExGaussian
+#' @export
 pexgaussian <- function(q, mu, sigma, beta, 
                         lower.tail = TRUE, log.p = FALSE) {
   # CDF of the exponentially modified gaussian distribution
@@ -366,6 +429,8 @@ pexgaussian <- function(q, mu, sigma, beta,
   out
 }
 
+#' @rdname ExGaussian
+#' @export
 rexgaussian <- function(n, mu, sigma, beta) {
   # create random numbers of the exgaussian distribution
   # Args:
@@ -379,12 +444,25 @@ rexgaussian <- function(n, mu, sigma, beta) {
   rnorm(n, mean = mu, sd = sigma) + rexp(n, rate = 1 / beta)
 }
 
+#' The Frechet Distribution
+#' 
+#' Density, distribution function, quantile function and random generation 
+#' for the Frechet distribution with location \code{loc}, scale \code{scale},
+#' and shape \code{shape}.
+#' 
+#' @name Frechet
+#' 
+#' @inheritParams Student
+#' @param x,q Vector of quantiles.
+#' @param loc Vector of locations.
+#' @param scale Vector of scales.
+#' @param shape Vector of shapes.
+#'   
+#' @details See \code{vignette("brms_families")} for details
+#' on the parameterization.
+#' 
+#' @export
 dfrechet <- function (x, loc = 0, scale = 1, shape = 1, log = FALSE) {
-  # PDF of the frechet distribution
-  # Args:
-  #   loc: location parameter
-  #   scale: scale parameter
-  #   shape: shape parameter
   if (isTRUE(any(scale <= 0))) {
     stop2("Argument 'scale' must be positive.")
   }
@@ -403,11 +481,10 @@ dfrechet <- function (x, loc = 0, scale = 1, shape = 1, log = FALSE) {
   out
 }
 
+#' @rdname Frechet
+#' @export
 pfrechet <- function(q, loc = 0, scale = 1, shape = 1, 
                      lower.tail = TRUE, log.p = FALSE) {
-  # CDF of the frechet distribution
-  # Args:
-  #   see dfrechet
   if (isTRUE(any(scale <= 0))) {
     stop2("Argument 'scale' must be positive.")
   }
@@ -425,11 +502,10 @@ pfrechet <- function(q, loc = 0, scale = 1, shape = 1,
   out
 }
 
+#' @rdname Frechet
+#' @export
 qfrechet <- function (p, loc = 0, scale = 1, shape = 1, 
                       lower.tail = TRUE, log.p = FALSE) {
-  # inverse CDF of the frechet distribution
-  # Args:
-  #   see dfrechet
   if (isTRUE(any(p <= 0)) || isTRUE(any(p >= 1))) {
     stop("'p' must contain probabilities in (0,1)")
   }
@@ -448,10 +524,9 @@ qfrechet <- function (p, loc = 0, scale = 1, shape = 1,
   loc + scale * (-log(p))^(-1/shape)
 }
 
+#' @rdname Frechet
+#' @export
 rfrechet <- function(n, loc = 0, scale = 1, shape = 1) {
-  # create random numbers of the frechet distribution
-  # Args:
-  #   see dfrechet
   if (isTRUE(any(scale <= 0))) {
     stop2("Argument 'scale' must be positive.")
   }
@@ -461,11 +536,24 @@ rfrechet <- function(n, loc = 0, scale = 1, shape = 1) {
   loc + scale * rexp(n)^(-1 / shape)
 }
 
+#' The Inverse Gaussian Distribution
+#' 
+#' Density, distribution function, and random generation 
+#' for the inverse Gaussian distribution with location \code{mu}, 
+#' and shape \code{shape}.
+#' 
+#' @name InvGaussian
+#' 
+#' @inheritParams Student
+#' @param x,q Vector of quantiles.
+#' @param mu Vector of locations.
+#' @param shape Vector of shapes.
+#'   
+#' @details See \code{vignette("brms_families")} for details
+#' on the parameterization.
+#' 
+#' @export
 dinv_gaussian <- function(x, mu = 1, shape = 1, log = FALSE) {
-  # PDF of the inverse gaussian distribution
-  # Args:
-  #   mu: mean parameter
-  #   shape: shape parameter
   if (isTRUE(any(mu <= 0))) {
     stop2("Argument 'mu' must be positive.")
   }
@@ -484,11 +572,10 @@ dinv_gaussian <- function(x, mu = 1, shape = 1, log = FALSE) {
   out
 }
 
+#' @rdname InvGaussian
+#' @export
 pinv_gaussian <- function(q, mu = 1, shape = 1, lower.tail = TRUE,
                           log.p = FALSE) {
-  # CDF of the inverse gaussian distribution
-  # Args:
-  #   Args: see dinv_gaussian
   if (isTRUE(any(mu <= 0))) {
     stop2("Argument 'mu' must be positive.")
   }
@@ -510,6 +597,8 @@ pinv_gaussian <- function(q, mu = 1, shape = 1, lower.tail = TRUE,
   out
 }
 
+#' @rdname InvGaussian
+#' @export
 rinv_gaussian <- function(n, mu = 1, shape = 1) {
   # create random numbers for the inverse gaussian distribution
   # Args:
@@ -532,13 +621,26 @@ rinv_gaussian <- function(n, mu = 1, shape = 1) {
   with(args, ifelse(z <= mu / (mu + x), x, mu^2 / x))
 }
 
+#' The Generalized Extreme Value Distribution
+#' 
+#' Density, distribution function, and random generation 
+#' for the generalized extreme value distribution with 
+#' location \code{mu}, scale \code{sigma} and shape \code{xi}.
+#' 
+#' @name GenExtremeValue
+#' 
+#' @inheritParams Student
+#' @param x,q Vector of quantiles.
+#' @param mu Vector of locations.
+#' @param sigma Vector of scales.
+#' @param xi Vector of shapes.
+#'   
+#' @details See \code{vignette("brms_families")} for details
+#' on the parameterization.
+#' 
+#' @export
 dgen_extreme_value <- function(x, mu = 0, sigma = 1, 
                                xi = 0, log = FALSE) {
-  # pdf of the generalized extreme value distribution
-  # Args:
-  #   mu: location parameter
-  #   sigma: scale parameter
-  #   xi: shape parameter
   if (any(sigma <= 0)) {
     stop2("sigma bust be greater than 0.")
   }
@@ -557,9 +659,10 @@ dgen_extreme_value <- function(x, mu = 0, sigma = 1,
   out
 }
 
+#' @rdname GenExtremeValue
+#' @export
 pgen_extreme_value <- function(q, mu = 0, sigma = 1, xi = 0,
                                lower.tail = TRUE, log.p = FALSE) {
-  # cdf of the generalized extreme value distribution
   if (any(sigma <= 0)) {
     stop2("sigma bust be greater than 0.")
   }
@@ -580,8 +683,9 @@ pgen_extreme_value <- function(q, mu = 0, sigma = 1, xi = 0,
   out
 }
 
+#' @rdname GenExtremeValue
+#' @export
 rgen_extreme_value <- function(n, mu = 0, sigma = 1, xi = 0) {
-  # random numbers of the generalized extreme value distribution
   if (any(sigma <= 0)) {
     stop2("sigma bust be greater than 0.")
   }
@@ -594,18 +698,32 @@ rgen_extreme_value <- function(n, mu = 0, sigma = 1, xi = 0) {
   ))
 }
 
-dasym_laplace <- function(y, mu = 0, sigma = 1, quantile = 0.5, 
+#' The Asymmetric Laplace Distribution
+#' 
+#' Density, distribution function, quantile function and random generation 
+#' for the asymmetric Laplace distribution with location \code{mu}, 
+#' scale \code{sigma} and asymmetry parameter \code{quantile}.
+#' 
+#' @name AsymLaplace
+#' 
+#' @inheritParams Student
+#' @param x,q Vector of quantiles.
+#' @param mu Vector of locations.
+#' @param sigma Vector of scales.
+#' @param quantile Asymmetry parameter corresponding to quantiles
+#'   in quantile regression (hence the name).
+#'   
+#' @details See \code{vignette("brms_families")} for details
+#' on the parameterization.
+#' 
+#' @export
+dasym_laplace <- function(x, mu = 0, sigma = 1, quantile = 0.5, 
                           log = FALSE) {
-  # pdf of the asymmetric laplace distribution
-  # Args:
-  #   mu: location parameter
-  #   sigma: scale parameter
-  #   quantile: quantile parameter
-  out <- ifelse(y < mu, 
+  out <- ifelse(x < mu, 
     yes = (quantile * (1 - quantile) / sigma) * 
-           exp((1 - quantile) * (y - mu) / sigma),
+           exp((1 - quantile) * (x - mu) / sigma),
     no = (quantile * (1 - quantile) / sigma) * 
-          exp(-quantile * (y - mu) / sigma)
+          exp(-quantile * (x - mu) / sigma)
   )
   if (log) {
     out <- log(out)
@@ -613,9 +731,10 @@ dasym_laplace <- function(y, mu = 0, sigma = 1, quantile = 0.5,
   out
 }
 
+#' @rdname AsymLaplace
+#' @export
 pasym_laplace <- function(q, mu = 0, sigma = 1, quantile = 0.5,
                           lower.tail = TRUE, log.p = FALSE) {
-  # cdf of the asymmetric laplace distribution
   out <- ifelse(q < mu, 
     yes = quantile * exp((1 - quantile) * (q - mu) / sigma), 
     no = 1 - (1 - quantile) * exp(-quantile * (q - mu) / sigma)
@@ -629,6 +748,8 @@ pasym_laplace <- function(q, mu = 0, sigma = 1, quantile = 0.5,
   out
 }
 
+#' @rdname AsymLaplace
+#' @export
 qasym_laplace <- function(p, mu = 0, sigma = 1, quantile = 0.5,
                           lower.tail = TRUE, log.p = FALSE) {
   # quantile function of the asymmetric laplace distribution
@@ -647,16 +768,43 @@ qasym_laplace <- function(p, mu = 0, sigma = 1, quantile = 0.5,
   )
 }
 
+#' @rdname AsymLaplace
+#' @export
 rasym_laplace <- function(n, mu = 0, sigma = 1, quantile = 0.5) {
   # random numbers of the asymmetric laplace distribution
   u <- runif(n)
   qasym_laplace(u, mu = mu, sigma = sigma, quantile = quantile)
 }
 
+#' The Wiener Diffusion Model Distribution
+#' 
+#' Density function and random generation for the Wiener
+#' diffusion model distribution with boundary separation \code{alpha},
+#' non-decision time \code{tau}, bias  \code{beta} and 
+#' drift rate \code{delta}.
+#' 
+#' @name Wiener
+#' 
+#' @inheritParams Student
+#' @param alpha Boundary separation parameter.
+#' @param tau Non-decision time parameter.
+#' @param beta Bias parameter.
+#' @param delta Drift rate parameter.
+#' @param resp Response: \code{"upper"} or \code{"lower"}. 
+#'   If no character vector, it is coerced to logical 
+#'   where \code{TRUE} indicates \code{"upper"} and 
+#'   \code{FALSE} indicates \code{"lower"}.
+#' @param col Which response to return? If \code{NULL} (default),
+#'   return both response times \code{q} and responses \code{"resp"}.
+#'   If \code{"q"} or \code{"resp"} return only one of the two.
+#'   
+#' @details These are wrappers around functions of the \pkg{RWiener} package.  
+#' See \code{vignette("brms_families")} for details on the parameterization.
+#' 
+#' @seealso \code{\link[RWiener:wienerdist]{wienerdist}}
+#' 
+#' @export
 dwiener <- function(x, alpha, tau, beta, delta, resp = 1, log = FALSE) {
-  # compute the density of the wiener diffusion model
-  # Args:
-  #   see RWiener::dwiener
   alpha <- as.numeric(alpha)
   tau <- as.numeric(tau)
   beta <- as.numeric(beta)
@@ -673,11 +821,9 @@ dwiener <- function(x, alpha, tau, beta, delta, resp = 1, log = FALSE) {
   do.call(.dwiener, args)
 }
 
+#' @rdname Wiener
+#' @export
 rwiener <- function(n, alpha, tau, beta, delta, col = NULL) {
-  # create random numbers of the wiener diffusion model
-  # Args:
-  #   see RWiener::rwiener
-  #   col: which response to return (RTs or decision or both)?
   alpha <- as.numeric(alpha)
   tau <- as.numeric(tau)
   beta <- as.numeric(beta)
