@@ -64,11 +64,8 @@
 #' @param sparse Logical; indicates whether the population-level 
 #'   design matrix should be treated as sparse (defaults to \code{FALSE}). 
 #'   For design matrices with many zeros, this can considerably 
-#'   reduce required memory. For univariate sparse models, it may be
-#'   sensible to prevent the design matrix from being centered
-#'   (see 'Details' for more information), as centering may
-#'   reduce sparsity. Sampling speed is currently not improved or 
-#'   even slightly decreased.
+#'   reduce required memory. Sampling speed is currently not 
+#'   improved or even slightly decreased.
 #' @param cov_ranef A list of matrices that are proportional to the 
 #'   (within) covariance structure of the group-level effects. 
 #'   The names of the matrices should correspond to columns 
