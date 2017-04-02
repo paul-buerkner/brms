@@ -2398,12 +2398,13 @@ loo_predictive_interval.brmsfit <- function(object, prob = 0.9,
 #' @importFrom rstantools log_lik
 log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                             allow_new_levels = FALSE, 
-                            sample_new_levels = "uncertainty", subset = NULL,
+                            sample_new_levels = "uncertainty", 
+                            incl_autocor = TRUE, subset = NULL,
                             nsamples = NULL, pointwise = FALSE, ...) {
   contains_samples(object)
   object <- restructure(object)
   draws_args <- nlist(
-    x = object, newdata, re_formula, allow_new_levels,
+    x = object, newdata, re_formula, allow_new_levels, incl_autocor,
     sample_new_levels, subset, nsamples, check_response = TRUE
   )
   draws <- do.call(extract_draws, draws_args)
@@ -2422,14 +2423,15 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     if (is.list(draws$mu[["mv"]])) {
       draws$mu <- get_eta(draws$mu)
     }
-    for (ap in intersect(auxpars(), names(draws))) {
+    auxpars <- intersect(valid_auxpars(family(object)), names(draws))
+    for (ap in auxpars) {
       if (is.list(draws[[ap]])) {
         draws[[ap]] <- get_auxpar(draws[[ap]])
       }
     }
     loglik <- do.call(cbind, lapply(seq_len(N), loglik_fun, draws = draws))
     old_order <- attr(draws$data, "old_order")
-    # do not loglik reorder for ARMA covariance models
+    # do not reorder loglik for ARMA covariance models
     sort <- use_cov(object$autocor)
     loglik <- reorder_obs(loglik, old_order, sort = sort)
     colnames(loglik) <- NULL
@@ -2440,7 +2442,8 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' @export
 logLik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                            allow_new_levels = FALSE,
-                           sample_new_levels = "uncertainty", subset = NULL,
+                           sample_new_levels = "uncertainty", 
+                           incl_autocor = TRUE, subset = NULL,
                            nsamples = NULL, pointwise = FALSE, ...) {
   cl <- match.call()
   cl[[1]] <- quote(log_lik)
