@@ -83,7 +83,7 @@ rstudent <-  function(n, df, mu = 0, sigma = 1) {
 #'   
 #' @export
 dmulti_normal <- function(x, mu, Sigma, log = FALSE, check = FALSE) {
-  if (is.vector(x)) {
+  if (is.vector(x) || length(dim(x)) == 1L) {
     x <- matrix(x, ncol = length(x))
   }
   p <- ncol(x)
@@ -157,7 +157,7 @@ rmulti_normal <- function(n, mu, Sigma, check = FALSE) {
 #'   
 #' @export
 dmulti_student <- function(x, df, mu, Sigma, log = FALSE, check = FALSE) {
-  if (is.vector(x)) {
+  if (is.vector(x) || length(dim(x)) == 1L) {
     x <- matrix(x, ncol = length(x))
   }
   p <- ncol(x)
