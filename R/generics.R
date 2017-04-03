@@ -580,16 +580,14 @@ stanplot <- function(object, ...) {
 #'   It is recommended to only define a few rows in order to keep the plots clear.
 #'   If \code{NULL} (the default), numeric variables will be marginalized
 #'   by using their means and factors will get their reference level assigned.
-#' @param Iconditions An optional named \code{list} whose elements are vectors 
-#'   of values of the second variables in two-way interactions. 
+#' @param Iconditions An optional named \code{list} whose elements are numeric
+#'   vectors of values of the second variables in two-way interactions. 
 #'   At these values, predictions are evaluated. 
 #'   The names of \code{Iconditions} have to match the variable names exactly.
 #'   Instead of vectors, functions returning vectors may be passed and are
 #'   applied on the original values of the corresponding variable.
-#'   If \code{NULL} (the default), values are computed internally.
-#'   For numeric variables, predictions are evaluated at the \eqn{mean} 
-#'   and at \eqn{mean +/- SD}. For factors, predictions are evaluated 
-#'   for all factor levels.
+#'   If \code{NULL} (the default), predictions are evaluated at the 
+#'   \eqn{mean} and at \eqn{mean +/- SD}. 
 #' @param re_formula A formula containing random effects to be considered 
 #'   in the marginal predictions. If \code{NULL}, include all random effects; 
 #'   if \code{NA} (default), include no random effects.
@@ -699,8 +697,11 @@ stanplot <- function(object, ...) {
 #'      points = TRUE, rug = TRUE)
 #'  
 #' ## change handling of two-way interactions
+#' Iconditions <- list(
+#'   log_Base4_c = setNames(c(-2, 1, 0), c("b", "c", "a"))
+#' )
 #' marginal_effects(fit, effects = "Trt_c:log_Base4_c",
-#'                  Iconditions = list(log_Base4_c = c(-2, 0, 1)))
+#'                  Iconditions = Iconditions)
 #' marginal_effects(fit, effects = "Trt_c:log_Base4_c",
 #'                  Iconditions = list(log_Base4_c = quantile))        
 #'      

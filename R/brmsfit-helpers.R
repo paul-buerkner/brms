@@ -315,13 +315,7 @@ prepare_marg_data <- function(data, conditions, Iconditions = NULL,
   if (length(effects) == 2L) {
     if (pred_types[1] == "numeric") {
       values <- setNames(list(values, NA), effects)
-      if (effects[2] %in% names(Iconditions)) {
-        Icond <- Iconditions[[effects[2]]]
-        if (is.function(Icond)) {
-          Icond <- Icond(data[, effects[2]])
-        }
-        values[[2]] <- Icond
-      } else if (pred_types[2] == "numeric") {
+      if (pred_types[2] == "numeric") {
         if (surface) {
           min2 <- min(data[, effects[2]])
           max2 <- max(data[, effects[2]])
@@ -331,7 +325,13 @@ prepare_marg_data <- function(data, conditions, Iconditions = NULL,
             values[[2]] <- seq(min2, max2, length.out = resolution)
           }
         } else {
-          if (mono[2]) {
+          if (effects[2] %in% names(Iconditions)) {
+            Icond <- Iconditions[[effects[2]]]
+            if (is.function(Icond)) {
+              Icond <- Icond(data[, effects[2]])
+            }
+            values[[2]] <- Icond
+          } else if (mono[2]) {
             median2 <- median(data[, effects[2]])
             mad2 <- mad(data[, effects[2]])
             values[[2]] <- round((-1:1) * mad2 + median2)

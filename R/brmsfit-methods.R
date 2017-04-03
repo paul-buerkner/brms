@@ -1342,10 +1342,15 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     x, conditions = conditions, effects = effects, 
     re_formula = re_formula, rsv_vars = rsv_vars
   )
-  int_effects <- c(get_effect(bterms, "mo"), 
-                   rmNULL(bterms[c("trials", "cat")]))
+  int_effects <- c(
+    get_effect(bterms, "mo"), 
+    rmNULL(bterms[c("trials", "cat")])
+  )
   int_vars <- unique(ulapply(int_effects, all.vars))
   mf <- model.frame(x)
+  Iconditions <- lapply(Iconditions, 
+    function(x) if (is.numeric(x)) sort(x, TRUE) else x
+  )
   results <- list()
   for (i in seq_along(effects)) {
     marg_data <- mf[, effects[[i]], drop = FALSE]
@@ -1396,8 +1401,12 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     if (both_numeric && !surface) {
       # can only be converted to factor after having called method
       mde2 <- round(marg_data[[effects[[i]][2]]], 2)
-      marg_data[[effects[[i]][2]]] <- 
-        factor(mde2, levels = sort(unique(mde2), TRUE))
+      levels2 <- sort(unique(mde2), TRUE)
+      marg_data[[effects[[i]][2]]] <- factor(mde2, levels = levels2)
+      labels2 <- names(Iconditions[[effects[[i]][2]]])
+      if (length(labels2) == length(levels2)) {
+        levels(marg_data[[effects[[i]][2]]]) <- labels2
+      }
     }
     marg_res = cbind(marg_data, marg_res)
     attr(marg_res, "response") <- as.character(x$formula$formula[2])
