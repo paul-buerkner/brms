@@ -1570,6 +1570,11 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
 #' @param incl_autocor A flag indicating if autocorrelation
 #'  parameters should be included in the predictions. 
 #'  Defaults to \code{TRUE}.
+#' @param negative_rt Only relevant for Wiener diffusion models. 
+#'   A flag indicating whether response times of responses
+#'   on the lower boundary should be returned as negative values.
+#'   This allows to distinquish responses on the upper and
+#'   lower boundary. Defaults to \code{FALSE}.
 #' @param summary Should summary statistics 
 #'   (i.e. means, sds, and 95\% intervals) be returned
 #'  instead of the raw values? Default is \code{TRUE}.
@@ -1652,8 +1657,8 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
 predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                             transform = NULL, allow_new_levels = FALSE,
                             sample_new_levels = "uncertainty", 
-                            incl_autocor = TRUE, subset = NULL, 
-                            nsamples = NULL, sort = FALSE,
+                            incl_autocor = TRUE, negative_rt = FALSE,
+                            subset = NULL, nsamples = NULL, sort = FALSE,
                             ntrys = 5, summary = TRUE, robust = FALSE,
                             probs = c(0.025, 0.975), ...) {
   contains_samples(object)
@@ -1677,7 +1682,8 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   predict_fun <- get(predict_fun, asNamespace("brms"))
   N <- choose_N(draws)
   out <- do.call(cbind, 
-    lapply(seq_len(N), predict_fun, draws = draws, ntrys = ntrys)
+    lapply(seq_len(N), predict_fun, draws = draws, 
+           ntrys = ntrys, negative_rt = negative_rt)
   )
   # percentage of invalid samples for truncated discrete models
   # should always be zero for all other models; see predict.R
@@ -1685,6 +1691,10 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (pct_invalid >= 0.01) {
     warning2(round(pct_invalid * 100), "% of all predicted values ", 
              "were invalid. Increasing argument 'ntrys' may help.")
+  }
+  if (is_wiener(draws$f$family) && summary && negative_rt) {
+    warning2("Summarizing positive and negative ", 
+             "response times may not be reasonable.")
   }
 
   # reorder predicted responses in case of multivariate models
@@ -1722,8 +1732,8 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 posterior_predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                                       transform = NULL, allow_new_levels = FALSE,
                                       sample_new_levels = "uncertainty", 
-                                      incl_autocor = TRUE, subset = NULL, 
-                                      nsamples = NULL, sort = FALSE,
+                                      incl_autocor = TRUE, negative_rt = FALSE,
+                                      subset = NULL, nsamples = NULL, sort = FALSE,
                                       ntrys = 5, robust = FALSE,
                                       probs = c(0.025, 0.975), ...) {
   cl <- match.call()

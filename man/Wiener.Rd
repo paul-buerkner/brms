@@ -8,7 +8,7 @@
 \usage{
 dwiener(x, alpha, tau, beta, delta, resp = 1, log = FALSE)
 
-rwiener(n, alpha, tau, beta, delta, col = NULL)
+rwiener(n, alpha, tau, beta, delta, types = c("q", "resp"))
 }
 \arguments{
 \item{x}{Vector of quantiles.}
@@ -31,9 +31,10 @@ where \code{TRUE} indicates \code{"upper"} and
 \item{n}{Number of observations. If \code{length(n) > 1}, the length 
 is taken to be the number required.}
 
-\item{col}{Which response to return? If \code{NULL} (default),
-return both response times \code{q} and responses \code{"resp"}.
-If \code{"q"} or \code{"resp"} return only one of the two.}
+\item{types}{Which types of responses to return? By default,
+return both the response times \code{"q"} and the dichotomous 
+responses \code{"resp"}. If \code{"q"} or \code{"resp"}, 
+return only one of the two types.}
 }
 \description{
 Density function and random generation for the Wiener

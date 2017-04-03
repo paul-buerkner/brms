@@ -8,15 +8,16 @@
 \usage{
 \method{predict}{brmsfit}(object, newdata = NULL, re_formula = NULL,
   transform = NULL, allow_new_levels = FALSE,
-  sample_new_levels = "uncertainty", incl_autocor = TRUE, subset = NULL,
-  nsamples = NULL, sort = FALSE, ntrys = 5, summary = TRUE,
-  robust = FALSE, probs = c(0.025, 0.975), ...)
+  sample_new_levels = "uncertainty", incl_autocor = TRUE,
+  negative_rt = FALSE, subset = NULL, nsamples = NULL, sort = FALSE,
+  ntrys = 5, summary = TRUE, robust = FALSE, probs = c(0.025, 0.975),
+  ...)
 
 \method{posterior_predict}{brmsfit}(object, newdata = NULL,
   re_formula = NULL, transform = NULL, allow_new_levels = FALSE,
-  sample_new_levels = "uncertainty", incl_autocor = TRUE, subset = NULL,
-  nsamples = NULL, sort = FALSE, ntrys = 5, robust = FALSE,
-  probs = c(0.025, 0.975), ...)
+  sample_new_levels = "uncertainty", incl_autocor = TRUE,
+  negative_rt = FALSE, subset = NULL, nsamples = NULL, sort = FALSE,
+  ntrys = 5, robust = FALSE, probs = c(0.025, 0.975), ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}}
@@ -54,6 +55,12 @@ existing levels.}
 \item{incl_autocor}{A flag indicating if autocorrelation
 parameters should be included in the predictions. 
 Defaults to \code{TRUE}.}
+
+\item{negative_rt}{Only relevant for Wiener diffusion models. 
+A flag indicating whether response times of responses
+on the lower boundary should be returned as negative values.
+This allows to distinquish responses on the upper and
+lower boundary. Defaults to \code{FALSE}.}
 
 \item{subset}{A numeric vector specifying
 the posterior samples to be used. 

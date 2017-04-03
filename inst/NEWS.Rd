@@ -24,6 +24,11 @@
       non-linear and distributional models.
       \item Allow using the \code{identity} link for
       all auxiliary parameters.
+      \item Introduce argument \code{negative_rt} in
+      \code{predict} and \code{posterior_predict} to 
+      distinquish responses on the upper and lower 
+      boundary in \code{wiener} diffusion models
+      thanks to Guido Biele.
       \item Introduce method \code{control_params} to
       conveniently extract control parameters of the 
       NUTS sampler.

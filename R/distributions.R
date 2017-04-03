@@ -794,9 +794,10 @@ rasym_laplace <- function(n, mu = 0, sigma = 1, quantile = 0.5) {
 #'   If no character vector, it is coerced to logical 
 #'   where \code{TRUE} indicates \code{"upper"} and 
 #'   \code{FALSE} indicates \code{"lower"}.
-#' @param col Which response to return? If \code{NULL} (default),
-#'   return both response times \code{q} and responses \code{"resp"}.
-#'   If \code{"q"} or \code{"resp"} return only one of the two.
+#' @param types Which types of responses to return? By default,
+#'   return both the response times \code{"q"} and the dichotomous 
+#'   responses \code{"resp"}. If \code{"q"} or \code{"resp"}, 
+#'   return only one of the two types.
 #'   
 #' @details These are wrappers around functions of the \pkg{RWiener} package.  
 #' See \code{vignette("brms_families")} for details on the parameterization.
@@ -823,7 +824,8 @@ dwiener <- function(x, alpha, tau, beta, delta, resp = 1, log = FALSE) {
 
 #' @rdname Wiener
 #' @export
-rwiener <- function(n, alpha, tau, beta, delta, col = NULL) {
+rwiener <- function(n, alpha, tau, beta, delta, types = c("q", "resp")) {
+  stopifnot(all(types %in% c("q", "resp")))
   alpha <- as.numeric(alpha)
   tau <- as.numeric(tau)
   beta <- as.numeric(beta)
@@ -846,19 +848,17 @@ rwiener <- function(n, alpha, tau, beta, delta, col = NULL) {
     )
     do.call(rbind, fun(...))
   }
-  args <- nlist(n, alpha, tau, beta, delta, col)
+  args <- nlist(n, alpha, tau, beta, delta, types)
   do.call(.rwiener, args)
 }
 
-rwiener_num <- function(n, alpha, tau, beta, delta, col = NULL) {
+rwiener_num <- function(n, alpha, tau, beta, delta, types) {
   # helper function to return a numeric vector instead
   # of a data.frame with two columns as for RWiener::rwiener
   out <- RWiener::rwiener(n, alpha, tau, beta, delta)
-  if (length(col) == 1L && col %in% c("q", "resp")) {
-    out <- out[[col]]
-    if (col == "resp") {
-      out <- ifelse(out == "upper", 1, 0)
-    }
+  out[["resp"]] <- ifelse(out[["resp"]] == "upper", 1, 0)
+  if (length(types) == 1L) {
+    out <- out[[types]]
   }
   out
 }
