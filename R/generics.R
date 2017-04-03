@@ -580,10 +580,10 @@ stanplot <- function(object, ...) {
 #'   It is recommended to only define a few rows in order to keep the plots clear.
 #'   If \code{NULL} (the default), numeric variables will be marginalized
 #'   by using their means and factors will get their reference level assigned.
-#' @param Iconditions An optional named \code{list} whose elements are numeric
+#' @param int_conditions An optional named \code{list} whose elements are numeric
 #'   vectors of values of the second variables in two-way interactions. 
-#'   At these values, predictions are evaluated. 
-#'   The names of \code{Iconditions} have to match the variable names exactly.
+#'   At these values, predictions are evaluated. The names of 
+#'   \code{int_conditions} have to match the variable names exactly.
 #'   Instead of vectors, functions returning vectors may be passed and are
 #'   applied on the original values of the corresponding variable.
 #'   If \code{NULL} (the default), predictions are evaluated at the 
@@ -697,13 +697,13 @@ stanplot <- function(object, ...) {
 #'      points = TRUE, rug = TRUE)
 #'  
 #' ## change handling of two-way interactions
-#' Iconditions <- list(
+#' int_conditions <- list(
 #'   log_Base4_c = setNames(c(-2, 1, 0), c("b", "c", "a"))
 #' )
 #' marginal_effects(fit, effects = "Trt_c:log_Base4_c",
-#'                  Iconditions = Iconditions)
+#'                  int_conditions = int_conditions)
 #' marginal_effects(fit, effects = "Trt_c:log_Base4_c",
-#'                  Iconditions = list(log_Base4_c = quantile))        
+#'                  int_conditions = list(log_Base4_c = quantile))        
 #'      
 #' ## fit a model to illustrate how to plot 3-way interactions
 #' fit3way <- brm(count ~ log_Age_c * log_Base4_c * Trt_c, data = epilepsy)

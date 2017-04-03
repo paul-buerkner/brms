@@ -1270,7 +1270,7 @@ pairs.brmsfit <- function(x, pars = NA, exact_match = FALSE, ...) {
 #' @rdname marginal_effects
 #' @export
 marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL, 
-                                     Iconditions = NULL, re_formula = NA, 
+                                     int_conditions = NULL, re_formula = NA, 
                                      robust = TRUE, probs = c(0.025, 0.975),
                                      method = c("fitted", "predict"), 
                                      surface = FALSE, resolution = 100,
@@ -1348,14 +1348,14 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
   )
   int_vars <- unique(ulapply(int_effects, all.vars))
   mf <- model.frame(x)
-  Iconditions <- lapply(Iconditions, 
+  int_conditions <- lapply(int_conditions, 
     function(x) if (is.numeric(x)) sort(x, TRUE) else x
   )
   results <- list()
   for (i in seq_along(effects)) {
     marg_data <- mf[, effects[[i]], drop = FALSE]
     marg_args <- nlist(
-      data = marg_data, conditions, Iconditions,
+      data = marg_data, conditions, int_conditions,
       int_vars, surface, resolution
     )
     marg_data <- do.call(prepare_marg_data, marg_args)
@@ -1403,7 +1403,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
       mde2 <- round(marg_data[[effects[[i]][2]]], 2)
       levels2 <- sort(unique(mde2), TRUE)
       marg_data[[effects[[i]][2]]] <- factor(mde2, levels = levels2)
-      labels2 <- names(Iconditions[[effects[[i]][2]]])
+      labels2 <- names(int_conditions[[effects[[i]][2]]])
       if (length(labels2) == length(levels2)) {
         levels(marg_data[[effects[[i]][2]]]) <- labels2
       }

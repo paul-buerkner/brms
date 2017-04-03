@@ -283,14 +283,14 @@ prepare_conditions <- function(x, conditions = NULL, effects = NULL,
   )
 }
 
-prepare_marg_data <- function(data, conditions, Iconditions = NULL, 
+prepare_marg_data <- function(data, conditions, int_conditions = NULL,
                               int_vars = NULL, surface = FALSE, 
                               resolution = 100) {
   # prepare data to be used in marginal_effects
   # Args:
   #  data: data.frame containing only data of the predictors of interest
   #  conditions: see argument 'conditions' of marginal_effects
-  #  Iconditions: see argument 'Iconditions' of marginal_effects
+  #  int_conditions: see argument 'int_conditions' of marginal_effects
   #  int_vars: names of variables being treated as integers
   #  surface: generate surface plots later on?
   #  resolution: number of distinct points at which to evaluate
@@ -325,12 +325,12 @@ prepare_marg_data <- function(data, conditions, Iconditions = NULL,
             values[[2]] <- seq(min2, max2, length.out = resolution)
           }
         } else {
-          if (effects[2] %in% names(Iconditions)) {
-            Icond <- Iconditions[[effects[2]]]
-            if (is.function(Icond)) {
-              Icond <- Icond(data[, effects[2]])
+          if (effects[2] %in% names(int_conditions)) {
+            int_cond <- int_conditions[[effects[2]]]
+            if (is.function(int_cond)) {
+              int_cond <- int_cond(data[, effects[2]])
             }
-            values[[2]] <- Icond
+            values[[2]] <- int_cond
           } else if (mono[2]) {
             median2 <- median(data[, effects[2]])
             mad2 <- mad(data[, effects[2]])

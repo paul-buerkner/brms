@@ -231,11 +231,11 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(nrow(me[[1]]), exp_nrow)
   
   me <- marginal_effects(
-    fit1, "Trt:Age", Iconditions = list(Age = rnorm(5))
+    fit1, "Trt:Age", int_conditions = list(Age = rnorm(5))
   )
   expect_equal(nrow(me[[1]]), 500)
   me <- marginal_effects(
-    fit1, "Trt:Age", Iconditions = list(Age = quantile)
+    fit1, "Trt:Age", int_conditions = list(Age = quantile)
   )
   expect_equal(nrow(me[[1]]), 500)
   
