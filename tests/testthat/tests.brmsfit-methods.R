@@ -341,6 +341,12 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_error(pp_check(fit4, "error_binned"),
                "Type 'error_binned' is not available")
   
+  # pp_mixture
+  expect_equal(dim(pp_mixture(fit5)), c(nobs(fit5), 4, 2))
+  expect_error(pp_mixture(fit1), 
+    "Method 'pp_mixture' can only be applied on mixture models"
+  )
+  
   # predict
   pred <- predict(fit1)
   expect_equal(dim(pred), c(nobs(fit1), 4))

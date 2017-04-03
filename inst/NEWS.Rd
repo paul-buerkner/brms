@@ -7,6 +7,9 @@
     \itemize{
       \item Fit finite mixture models using family
       function \code{mixture}.
+      \item Introduce method \code{pp_mixture} to compute
+      posterior probabilities of mixture component 
+      memberships thanks to a discussion with Stephen Martin.
       \item Implement different ways to sample new levels
       of grouping factors in \code{predict} and related 
       methods through argument \code{sample_new_levels}.

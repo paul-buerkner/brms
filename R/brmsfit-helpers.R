@@ -807,6 +807,7 @@ reorder_obs <- function(eta, old_order = NULL, sort = FALSE) {
   #   sort: keep the new order as defined by the time-series?
   # Returns:
   #   eta with possibly reordered columns
+  stopifnot(length(dim(eta)) %in% c(2L, 3L))
   if (!is.null(old_order) && !sort) {
     N <- length(old_order)
     if (ncol(eta) %% N != 0) {
@@ -820,9 +821,13 @@ reorder_obs <- function(eta, old_order = NULL, sort = FALSE) {
       old_order <- rep(old_order, nresp)
       old_order <- old_order + rep(0:(nresp - 1) * N, each = N)
     }
-    eta <- eta[, old_order, drop = FALSE]  
-    colnames(eta) <- NULL
+    if (length(dim(eta)) == 3L) {
+      eta <- eta[, old_order, , drop = FALSE]   
+    } else {
+      eta <- eta[, old_order, drop = FALSE]   
+    }
   }
+  colnames(eta) <- NULL
   eta
 }
 

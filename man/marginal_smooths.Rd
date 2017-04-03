@@ -12,7 +12,7 @@
 marginal_smooths(x, ...)
 }
 \arguments{
-\item{x}{An object usually of class \code{brmsfit}.}
+\item{x}{An \R object usually of class \code{brmsfit}.}
 
 \item{smooths}{Optional character vector of smooth terms
 to display. If \code{NULL} (the default) all smooth terms

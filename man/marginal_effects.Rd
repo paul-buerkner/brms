@@ -18,7 +18,7 @@ marginal_effects(x, ...)
   theme = bayesplot::theme_default(), ask = TRUE, plot = TRUE, ...)
 }
 \arguments{
-\item{x}{An object usually of class \code{brmsfit}.}
+\item{x}{An \R object usually of class \code{brmsfit}.}
 
 \item{effects}{An optional character vector naming effects
 (main effects or interactions) for which to compute marginal plots.

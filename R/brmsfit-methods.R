@@ -1696,7 +1696,6 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   }
   old_order <- attr(draws$data, "old_order")
   out <- reorder_obs(out, old_order, sort = sort)
-  colnames(out) <- NULL
   # transform predicted response samples before summarizing them 
   is_catordinal <- is_ordinal(draws$f) || is_categorical(draws$f)
   if (!is.null(transform) && !is_catordinal) {
@@ -1840,7 +1839,6 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   }
   old_order <- attr(draws$data, "old_order")
   draws$mu <- reorder_obs(draws$mu, old_order, sort = sort)
-  colnames(draws$mu) <- NULL
   if (summary) {
     draws$mu <- get_summary(draws$mu, probs = probs, robust = robust)
     rownames(draws$mu) <- seq_len(nrow(draws$mu))
@@ -2429,7 +2427,6 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     # do not reorder loglik for ARMA covariance models
     sort <- use_cov(object$autocor)
     loglik <- reorder_obs(loglik, old_order, sort = sort)
-    colnames(loglik) <- NULL
   }
   loglik
 }
@@ -2443,6 +2440,54 @@ logLik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   cl <- match.call()
   cl[[1]] <- quote(log_lik)
   eval(cl, parent.frame())
+}
+
+#' @rdname pp_mixture
+#' @export
+pp_mixture.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
+                               allow_new_levels = FALSE, 
+                               sample_new_levels = "uncertainty", 
+                               incl_autocor = TRUE, subset = NULL,
+                               nsamples = NULL, summary = TRUE, 
+                               robust = FALSE, probs = c(0.025, 0.975), 
+                               log = FALSE, ...) {
+  if (!is.mixfamily(family(x))) {
+    stop2("Method 'pp_mixture' can only be applied on mixture models.")
+  }
+  contains_samples(x)
+  x <- restructure(x)
+  draws_args <- nlist(
+    x, newdata, re_formula, allow_new_levels, incl_autocor,
+    sample_new_levels, subset, nsamples, check_response = TRUE
+  )
+  draws <- do.call(extract_draws, draws_args)
+  draws$pp_mixture <- TRUE
+  
+  auxpars <- intersect(valid_auxpars(family(x)), names(draws))
+  for (ap in auxpars) {
+    if (is.list(draws[[ap]])) {
+      draws[[ap]] <- get_auxpar(draws[[ap]])
+    }
+  }
+  N <- choose_N(draws)
+  loglik <- lapply(seq_len(N), loglik_mixture, draws = draws)
+  loglik <- do.call(abind, c(loglik, along = 3))
+  loglik <- aperm(loglik, c(1, 3, 2))
+  old_order <- attr(draws$data, "old_order")
+  # do not reorder loglik for ARMA covariance models
+  sort <- use_cov(x$autocor)
+  loglik <- reorder_obs(loglik, old_order, sort = sort)
+  if (!log) {
+    loglik <- exp(loglik)
+  }
+  if (summary) {
+    loglik <- get_summary(loglik, probs = probs, robust = robust)
+    dimnames(loglik) <- list(
+      seq_len(nrow(loglik)), colnames(loglik),
+      paste0("P(K = ", seq_len(dim(loglik)[3]), " | Y)")
+    )
+  }
+  loglik
 }
 
 #' @rdname hypothesis

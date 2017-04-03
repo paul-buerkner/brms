@@ -565,7 +565,7 @@ stanplot <- function(object, ...) {
 #' Display marginal effects of one or more numeric and/or categorical 
 #' predictors including two-way interaction effects.
 #' 
-#' @param x An object usually of class \code{brmsfit}.
+#' @param x An \R object usually of class \code{brmsfit}.
 #' @param effects An optional character vector naming effects
 #'   (main effects or interactions) for which to compute marginal plots.
 #'   Interactions are specified by a \code{:} between variable names.
@@ -764,6 +764,73 @@ marginal_effects <- function(x, ...) {
 #' @export
 marginal_smooths <- function(x, ...) {
   UseMethod("marginal_smooths")
+}
+
+#' Posterior Probabilities of Mixture Component Memberships
+#' 
+#' Compute the posterior probabilities of mixture component 
+#' memberships for each observation including uncertainty
+#' estimates.
+#' 
+#' @inheritParams predict.brmsfit
+#' @param x An \R object usually of class \code{brmsfit}.
+#' @param log Logical; Indicates whether to return 
+#'   probabilities on the log-scale.
+#' 
+#' @return 
+#' If \code{summary = TRUE}, an N x E x K array,
+#' where N is the number of observations, K is the number
+#' of mixture components, and E is equal to \code{length(probs) + 2}.
+#' If \code{summary = FALSE}, an S x N x K arrary, where
+#' S is the number of posterior samples.
+#' 
+#' @details 
+#' The returned probabilities can be written as
+#' \eqn{P(K_n = k | Y_n)}, that is the posterior probability 
+#' that observation n orginiates from component k. 
+#' They are computed using Bayes' Theorem
+#' \deqn{P(K_n = k | Y_n) = P(Y_n | K_n = k) P(K_n = k) / P(Y_n),}
+#' where \eqn{P(Y_n | K_n = k)} is the (posterior) likelihood
+#' of observation n for component k, \eqn{P(K_n = k)} is 
+#' the (posterior) mixing probability of component k 
+#' (i.e. parameter \code{theta<k>}), and 
+#' \deqn{P(Y_n) = \sum {k=1}^K P(Y_n | K_n = k) P(K_n = k)}
+#' is a normalizing constant.
+#' 
+#' @examples 
+#' \dontrun{
+#' ## simulate some data
+#' set.seed(1234)
+#' dat <- data.frame(
+#'   y = c(rnorm(100), rnorm(50, 2)), 
+#'   x = rnorm(150)
+#' )
+#' ## fit a simple normal mixture model
+#' mix <- mixture(gaussian, nmix = 2)
+#' prior <- c(
+#'   prior(normal(0, 5), Intercept, nlpar = mu1),
+#'   prior(normal(0, 5), Intercept, nlpar = mu2),
+#'   prior(dirichlet(2, 2), theta)
+#' )
+#' fit1 <- brm(bf(y ~ x), dat, family = mix,
+#'             prior = prior, chains = 2, inits = 0)
+#' summary(fit1)
+#'    
+#' ## compute the membership probabilities         
+#' ppm <- pp_mixture(fit1)
+#' str(ppm)
+#' 
+#' ## extract point estimates for each observation
+#' head(ppm[, 1, ])
+#' 
+#' ## classify every observation according to 
+#' ## the most likely component
+#' apply(ppm[, 1, ], 1, which.max)
+#' }
+#' 
+#' @export
+pp_mixture <- function(x, ...) {
+  UseMethod("pp_mixture")
 }
 
 #' Expose user-defined \pkg{Stan} functions

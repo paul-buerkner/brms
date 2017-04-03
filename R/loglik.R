@@ -500,7 +500,7 @@ loglik_acat <- function(i, draws, data = data.frame()) {
 loglik_mixture <- function(i, draws, data = data.frame()) {
   families <- family_names(draws$f)
   theta <- get_theta(draws, i = i)
-  out <- 0
+  out <- array(NA, dim = dim(theta))
   for (j in seq_along(families)) {
     loglik_fun <- paste0("loglik_", families[j])
     loglik_fun <- get(loglik_fun, asNamespace("brms"))
@@ -513,9 +513,14 @@ loglik_mixture <- function(i, draws, data = data.frame()) {
     for (ap in auxpars) {
       tmp_draws[[ap]] <- draws[[paste0(ap, j)]]
     }
-    out <- out + exp(log(theta[, j]) + loglik_fun(i, tmp_draws))
+    out[, j] <- exp(log(theta[, j]) + loglik_fun(i, tmp_draws))
   }
-  log(out)
+  if (isTRUE(draws[["pp_mixture"]])) {
+    out <- log(out) - log(rowSums(out))
+  } else {
+    out <- log(rowSums(out))
+  }
+  out
 }
 
 # ----------- loglik helper-functions -----------
