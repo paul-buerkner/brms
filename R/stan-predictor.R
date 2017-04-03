@@ -1,7 +1,7 @@
 stan_effects.btl <- function(x, data, ranef, prior, center_X = TRUE, 
                              sparse = FALSE, threshold = "flexible",
                              nlpar = "", eta = "mu", ilink = rep("", 2),
-                             order_mixture = FALSE,  ...) {
+                             order_mixture = 'none',  ...) {
   # combine effects for the predictors of a single (non-linear) parameter
   # Args:
   #   center_X: center population-level design matrix if possible?
@@ -166,7 +166,7 @@ stan_effects.brmsterms <- function(x, data, ranef, prior, sparse = FALSE,
       eta <- ifelse(ap == "mu", "mu", "")
       ap_args <- list(
         ap_terms, nlpar = ap, eta = eta, ilink = ilink,
-        sparse = sparse, order_mixture = isTRUE(x$family$order)
+        sparse = sparse, order_mixture = x$family$order
       )
       out[[ap]] <- do.call(stan_effects, c(ap_args, args))
     } else if (is.numeric(x$fauxpars[[ap]])) {
@@ -235,7 +235,7 @@ stan_effects_mv <- function(bterms, data, ranef, prior, sparse = FALSE) {
 
 stan_fe <- function(fixef, prior, family = gaussian(),
                     center_X = TRUE, nlpar = "", sparse = FALSE,
-                    threshold = "flexible", order_mixture = FALSE) {
+                    threshold = "flexible", order_mixture = 'none') {
   # Stan code for population-level effects
   # Args:
   #   fixef: names of the population-level effects
@@ -344,7 +344,7 @@ stan_fe <- function(fixef, prior, family = gaussian(),
         "  b_Intercept = temp_Intercept", sub_X_means, "; \n"
       )
     } else {
-       if (order_mixture && auxpar_class(nlpar) == "mu") {
+       if (identical(auxpar_class(nlpar), order_mixture)) {
          # identify mixtures via ordering of the intercepts
          out$transD <- paste0(out$transD, 
            "  real temp", p, "_Intercept;  // temporary intercept \n"
@@ -373,10 +373,10 @@ stan_fe <- function(fixef, prior, family = gaussian(),
                             prefix = prefix, suffix = suffix)
     out$prior <- paste0(out$prior, int_prior)
   } else {
-    if (order_mixture && auxpar_class(nlpar) == "mu") {
+    if (identical(auxpar_class(nlpar), order_mixture)) {
       stop2("Identifying mixture components via ordering requires ",
             "population-level intercepts to be present.\n",
-            "Try setting 'order = FALSE' in function 'mixture'.")
+            "Try setting order = 'none' in function 'mixture'.")
     }
   }
   out$eta <- stan_eta_fe(fixef, center_X, sparse, nlpar)

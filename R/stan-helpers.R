@@ -498,7 +498,7 @@ stan_mixture <- function(bterms, prior) {
         collapse("  theta", 1:nmix, " = theta[", 1:nmix, "]; \n")
       )
     }
-    if (bterms$family$order) {
+    if (bterms$family$order %in% "mu") {
       out$par <- paste0(out$par, 
         "  ordered[", nmix, "] ordered_Intercept;",
         "  // to identify mixtures \n"

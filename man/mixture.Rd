@@ -21,10 +21,13 @@ same way as objects passed via the \code{...} argument.}
 each family is repeated. If specified, it must have the same length 
 as the number of families passed via \code{...} or \code{flist}.}
 
-\item{order}{Logical; indicating whether population-level intercepts
-of the families should be ordered to identify mixture components.
-If \code{NULL} (the default), \code{order} is set to \code{TRUE}
-if all families are the same and \code{FALSE} otherwise.}
+\item{order}{Ordering constraint to identify mixture components.
+If \code{'mu'} or \code{TRUE}, population-level intercepts
+of the mean parameters are ordered. 
+If \code{'none'} or \code{FALSE}, no ordering constraint is applied.
+If \code{NULL} (the default), \code{order} is set to \code{'mu'}
+if all families are the same and \code{'none'} otherwise.
+Other ordering constraints may be implemented in the future.}
 }
 \value{
 An object of class \code{mixfamily}.

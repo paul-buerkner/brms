@@ -596,7 +596,8 @@ get_prior <- function(formula, data, family = NULL,
     prior <- rbind(prior, brmsprior(class = "delta"))
   }
   # priors for mixture models
-  if (is.mixfamily(family)) {
+  ap_classes <- auxpar_class(names(c(bterms$auxpars, bterms$fauxpars)))
+  if (is.mixfamily(family) && !any(ap_classes == "theta")) {
     prior <- rbind(prior, brmsprior(class = "theta"))
   }
   # priors for auxiliary parameters of multivariate models

@@ -536,10 +536,13 @@ check_family <- function(family, link = NULL) {
 #' @param nmix Optional numeric vector specifying the number of times
 #'   each family is repeated. If specified, it must have the same length 
 #'   as the number of families passed via \code{...} or \code{flist}.
-#' @param order Logical; indicating whether population-level intercepts
-#'   of the families should be ordered to identify mixture components.
-#'   If \code{NULL} (the default), \code{order} is set to \code{TRUE}
-#'   if all families are the same and \code{FALSE} otherwise.
+#' @param order Ordering constraint to identify mixture components.
+#'   If \code{'mu'} or \code{TRUE}, population-level intercepts
+#'   of the mean parameters are ordered. 
+#'   If \code{'none'} or \code{FALSE}, no ordering constraint is applied.
+#'   If \code{NULL} (the default), \code{order} is set to \code{'mu'}
+#'   if all families are the same and \code{'none'} otherwise.
+#'   Other ordering constraints may be implemented in the future.
 #'
 #' @return An object of class \code{mixfamily}.
 #' 
@@ -643,16 +646,25 @@ mixture <- function(..., flist = NULL, nmix = 1, order = NULL) {
   }
   if (is.null(order)) {
     if (length(unique(families)) == 1L) {
-      family$order <- TRUE
-      message("Setting 'order = TRUE' for mixtures of the same family.")
+      family$order <- "mu"
+      message("Setting order = 'mu' for mixtures of the same family.")
     } else {
-      family$order <- FALSE
-      message("Setting 'order = FALSE' for mixtures of different families.")
+      family$order <- "none"
+      message("Setting order = 'none' for mixtures of different families.")
     }
   } else {
-    family$order <- as.logical(order)
-    if (!isTRUE(family$order %in% c(TRUE, FALSE))) {
-      stop2("Argument 'order' must be either TRUE or FALSE.")
+    if (length(order) != 1L) {
+      stop2("Argument 'order' must be of length 1.")
+    }
+    if (is.character(order)) {
+      valid_order <- c("none", "mu")
+      if (!order %in% valid_order) {
+        stop2("Argument 'order' is invalid. Valid options are: ",
+              collapse_comma(valid_order))
+      }
+      family$order <- order
+    } else {
+      family$order <- ifelse(as.logical(order), "mu", "none")
     }
   }
   family

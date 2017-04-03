@@ -76,5 +76,5 @@ test_that("mixture returns expected results and errors", {
   expect_error(mixture(lognormal), 
                "Expecting at least 2 mixture components")
   expect_error(mixture(poisson, binomial, order = "x"),
-               "Argument 'order' must be either TRUE or FALSE")
+               "Argument 'order' is invalid")
 })
