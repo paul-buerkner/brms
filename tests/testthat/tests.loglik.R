@@ -10,14 +10,17 @@ test_that("loglik for location shift models works as expected", {
   ll <- loglik_gaussian(1, draws = draws)
   expect_equal(ll, as.matrix(ll_gaussian))
   
-  ll_cauchy <- dstudent(x = draws$data$Y[2], df = 1, mu = draws$mu[, 2], 
-                        sigma = draws$sigma, log = TRUE)
+  ll_cauchy <- dstudent_t(
+    x = draws$data$Y[2], df = 1, mu = draws$mu[, 2], 
+    sigma = draws$sigma, log = TRUE
+  )
   ll <- loglik_cauchy(2, draws = draws)
   expect_equal(ll, as.matrix(ll_cauchy))
   
-  ll_student <- dstudent(x = draws$data$Y[2], df = draws$nu, 
-                         mu = 1 / draws$mu[, 2], 
-                         sigma = draws$sigma, log = TRUE)
+  ll_student <- dstudent_t(
+    x = draws$data$Y[2], df = draws$nu, mu = 1 / draws$mu[, 2], 
+    sigma = draws$sigma, log = TRUE
+  )
   draws$f$link <- "inverse"
   ll <- loglik_student(2, draws = draws)
   expect_equal(ll, as.matrix(ll_student))

@@ -4,7 +4,7 @@
 #' for the Student-t distribution with location \code{mu}, scale \code{sigma},
 #' and degrees of freedom \code{df}.
 #' 
-#' @name Student 
+#' @name StudentT 
 #' 
 #' @param x,q Vector of quantiles.
 #' @param p Vector of probabilities.
@@ -23,7 +23,7 @@
 #' @seealso \code{\link[stats:TDist]{TDist}}
 #' 
 #' @export
-dstudent <- function(x, df, mu = 0, sigma = 1, log = FALSE) {
+dstudent_t <- function(x, df, mu = 0, sigma = 1, log = FALSE) {
   if (any(sigma <= 0)) {
     stop2("sigma must be greater than 0.")
   }
@@ -34,28 +34,28 @@ dstudent <- function(x, df, mu = 0, sigma = 1, log = FALSE) {
   }
 }
 
-#' @rdname Student
+#' @rdname StudentT
 #' @export
-pstudent <- function(q, df, mu = 0, sigma = 1, 
-                     lower.tail = TRUE, log.p = FALSE) {
+pstudent_t <- function(q, df, mu = 0, sigma = 1, 
+                       lower.tail = TRUE, log.p = FALSE) {
   if (any(sigma <= 0)) {
     stop2("sigma must be greater than 0.")
   }
   pt((q - mu) / sigma, df = df, lower.tail = lower.tail, log.p = log.p)
 }
 
-#' @rdname Student
+#' @rdname StudentT
 #' @export
-qstudent <-  function(p, df, mu = 0, sigma = 1) {
+qstudent_t <-  function(p, df, mu = 0, sigma = 1) {
   if (any(sigma <= 0)) {
     stop2("sigma must be greater than 0.")
   }
   mu + sigma * qt(p, df = df)
 }
 
-#' @rdname Student
+#' @rdname StudentT
 #' @export
-rstudent <-  function(n, df, mu = 0, sigma = 1) {
+rstudent_t <- function(n, df, mu = 0, sigma = 1) {
   if (any(sigma <= 0)) {
     stop2("sigma must be greater than 0.")
   }
@@ -69,7 +69,7 @@ rstudent <-  function(n, df, mu = 0, sigma = 1) {
 #' 
 #' @name MultiNormal
 #' 
-#' @inheritParams Student
+#' @inheritParams StudentT
 #' @param x Vector or matrix of quantiles. If \code{x} is a matrix, 
 #'   each row is taken to be a quantile.
 #' @param mu Mean vector with length equal to the number of dimensions.
@@ -141,9 +141,9 @@ rmulti_normal <- function(n, mu, Sigma, check = FALSE) {
 #' distribution with location vector \code{mu}, covariance matrix \code{Sigma},
 #' and degrees of freedom \code{df}.
 #' 
-#' @name MultiStudent
+#' @name MultiStudentT
 #' 
-#' @inheritParams Student
+#' @inheritParams StudentT
 #' @param x Vector or matrix of quantiles. If \code{x} is a matrix, 
 #'   each row is taken to be a quantile.
 #' @param mu Location vector with length equal to the number of dimensions.
@@ -156,7 +156,7 @@ rmulti_normal <- function(n, mu, Sigma, check = FALSE) {
 #'   for details on the parameterization
 #'   
 #' @export
-dmulti_student <- function(x, df, mu, Sigma, log = FALSE, check = FALSE) {
+dmulti_student_t <- function(x, df, mu, Sigma, log = FALSE, check = FALSE) {
   if (is.vector(x) || length(dim(x)) == 1L) {
     x <- matrix(x, ncol = length(x))
   }
@@ -186,9 +186,9 @@ dmulti_student <- function(x, df, mu, Sigma, log = FALSE, check = FALSE) {
   out
 }
 
-#' @rdname MultiStudent
+#' @rdname MultiStudentT
 #' @export
-rmulti_student <- function(n, df, mu, Sigma, check = FALSE) {
+rmulti_student_t <- function(n, df, mu, Sigma, check = FALSE) {
   p <- length(mu)
   if (any(df <= 0)) {
     stop2("df must be greater than 0.")
@@ -205,7 +205,7 @@ rmulti_student <- function(n, df, mu, Sigma, check = FALSE) {
 #' 
 #' @name VonMises
 #' 
-#' @inheritParams Student
+#' @inheritParams StudentT
 #' @param x,q Vector of quantiles.
 #' @param kappa Vector of precision values.
 #' @param acc Accuracy of numerical approximations.
@@ -364,7 +364,7 @@ rvon_mises <- function(n, mu, kappa) {
 #' 
 #' @name ExGaussian 
 #' 
-#' @inheritParams Student
+#' @inheritParams StudentT
 #' @param x,q Vector of quantiles.
 #' @param mu Vector of means of the gaussian component.
 #' @param sigma Vector of standard deviations of the gaussian component.
@@ -452,7 +452,7 @@ rexgaussian <- function(n, mu, sigma, beta) {
 #' 
 #' @name Frechet
 #' 
-#' @inheritParams Student
+#' @inheritParams StudentT
 #' @param x,q Vector of quantiles.
 #' @param loc Vector of locations.
 #' @param scale Vector of scales.
@@ -544,7 +544,7 @@ rfrechet <- function(n, loc = 0, scale = 1, shape = 1) {
 #' 
 #' @name InvGaussian
 #' 
-#' @inheritParams Student
+#' @inheritParams StudentT
 #' @param x,q Vector of quantiles.
 #' @param mu Vector of locations.
 #' @param shape Vector of shapes.
@@ -629,7 +629,7 @@ rinv_gaussian <- function(n, mu = 1, shape = 1) {
 #' 
 #' @name GenExtremeValue
 #' 
-#' @inheritParams Student
+#' @inheritParams StudentT
 #' @param x,q Vector of quantiles.
 #' @param mu Vector of locations.
 #' @param sigma Vector of scales.
@@ -706,7 +706,7 @@ rgen_extreme_value <- function(n, mu = 0, sigma = 1, xi = 0) {
 #' 
 #' @name AsymLaplace
 #' 
-#' @inheritParams Student
+#' @inheritParams StudentT
 #' @param x,q Vector of quantiles.
 #' @param mu Vector of locations.
 #' @param sigma Vector of scales.
@@ -785,7 +785,7 @@ rasym_laplace <- function(n, mu = 0, sigma = 1, quantile = 0.5) {
 #' 
 #' @name Wiener
 #' 
-#' @inheritParams Student
+#' @inheritParams StudentT
 #' @param alpha Boundary separation parameter.
 #' @param tau Non-decision time parameter.
 #' @param beta Bias parameter.

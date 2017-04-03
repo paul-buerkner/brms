@@ -20,14 +20,14 @@ predict_student <- function(i, draws, ...) {
   args <- list(df = get_auxpar(draws$nu, i = i), 
                mu = ilink(get_eta(draws$mu, i), draws$f$link), 
                sigma = get_sigma(draws$sigma, data = draws$data, i = i))
-  rng_continuous(nrng = draws$nsamples, dist = "student", args = args, 
+  rng_continuous(nrng = draws$nsamples, dist = "student_t", args = args, 
                  lb = draws$data$lb[i], ub = draws$data$ub[i])
 }
 
 predict_cauchy <- function(i, draws, ...) {
   args <- list(df = 1, mu = ilink(get_eta(draws$mu, i), draws$f$link), 
                sigma = get_sigma(draws$sigma, data = draws$data, i = i))
-  rng_continuous(nrng = draws$nsamples, dist = "student", args = args,
+  rng_continuous(nrng = draws$nsamples, dist = "student_t", args = args,
                  lb = draws$data$lb[i], ub = draws$data$ub[i])
 }
 
@@ -62,8 +62,8 @@ predict_student_mv <- function(i, draws, ...) {
   }
   nu <- get_auxpar(draws$nu, i = i)
   .fun <- function(s) {
-    rmulti_student(1, df = nu[s, ], mu = mu[s, ], 
-                   Sigma = draws$Sigma[s, , ])
+    rmulti_student_t(1, df = nu[s, ], mu = mu[s, ], 
+                     Sigma = draws$Sigma[s, , ])
   }
   do.call(rbind, lapply(1:draws$nsamples, .fun))
 }
@@ -77,8 +77,8 @@ predict_cauchy_mv <- function(i, draws, ...) {
     mu <- ilink(get_eta(draws$mu, i), draws$f$link)[, 1, ]
   }
   .fun <- function(s) {
-    rmulti_student(1, df = 1, mu = mu[s, ],
-                   Sigma = draws$Sigma[s, , ])
+    rmulti_student_t(1, df = 1, mu = mu[s, ],
+                     Sigma = draws$Sigma[s, , ])
   }
   do.call(rbind, lapply(1:draws$nsamples, .fun))
 }
@@ -135,8 +135,8 @@ predict_student_cov <- function(i, draws, ...) {
   }
   nu <- get_auxpar(draws$nu, i = i)
   .fun <- function(s) {
-    rmulti_student(1, df = nu[s, ], mu = mu[s, ], 
-                   Sigma = Sigma[s, , ])
+    rmulti_student_t(1, df = nu[s, ], mu = mu[s, ], 
+                     Sigma = Sigma[s, , ])
   }
   do.call(rbind, lapply(1:draws$nsamples, .fun))
 }
@@ -160,7 +160,7 @@ predict_student_fixed <- function(i, draws, ...) {
   mu <- ilink(get_eta(draws$mu, 1:nrow(draws$data$V)), draws$f$link)
   nu <- get_auxpar(draws$nu, 1:nrow(draws$data$V))
   .fun <- function(s) {
-    rmulti_student(1, df = nu[s, ], mu = mu[s, ], Sigma = draws$data$V)
+    rmulti_student_t(1, df = nu[s, ], mu = mu[s, ], Sigma = draws$data$V)
   }
   do.call(rbind, lapply(1:draws$nsamples, .fun))
 }

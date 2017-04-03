@@ -23,7 +23,8 @@ loglik_student <- function(i, draws, data = data.frame()) {
   args <- list(df = get_auxpar(draws$nu, i = i), 
                mu = ilink(get_eta(draws$mu, i), draws$f$link), 
                sigma = get_sigma(draws$sigma, data = draws$data, i = i))
-  out <- loglik_censor(dist = "student", args = args, i = i, data = draws$data)
+  out <- loglik_censor(dist = "student_t", args = args, 
+                       i = i, data = draws$data)
   out <- loglik_truncate(out, cdf = pstudent, args = args, 
                          i = i, data = draws$data)
   loglik_weight(out, i = i, data = draws$data)
@@ -32,7 +33,8 @@ loglik_student <- function(i, draws, data = data.frame()) {
 loglik_cauchy <- function(i, draws, data = data.frame()) {
   args <- list(df = 1, mu = ilink(get_eta(draws$mu, i), draws$f$link), 
                sigma = get_sigma(draws$sigma, data = draws$data, i = i))
-  out <- loglik_censor(dist = "student", args = args, i = i, data = draws$data)
+  out <- loglik_censor(dist = "student_t", args = args, 
+                       i = i, data = draws$data)
   out <- loglik_truncate(out, cdf = pstudent, args = args, 
                          i = i, data = draws$data)
   loglik_weight(out, i = i, data = draws$data)
@@ -70,7 +72,7 @@ loglik_student_mv <- function(i, draws, data = data.frame()) {
   }
   nu <- get_auxpar(draws$nu, obs)
   out <- sapply(1:draws$nsamples, function(s) 
-    dmulti_student(draws$data$Y[i, ], df = nu[s, ], mu = mu[s, ],
+    dmulti_student_t(draws$data$Y[i, ], df = nu[s, ], mu = mu[s, ],
                    Sigma = draws$Sigma[s, , ], log = TRUE))
   # no truncation allowed
   loglik_weight(out, i = i, data = draws$data)
@@ -84,7 +86,7 @@ loglik_cauchy_mv <- function(i, draws, data = data.frame()) {
     mu <- ilink(get_eta(draws$mu, i), draws$f$link)[, 1, ]
   }
   out <- sapply(1:draws$nsamples, function(s) 
-    dmulti_student(draws$data$Y[i, ], df = 1, mu = mu[s, ],
+    dmulti_student_t(draws$data$Y[i, ], df = 1, mu = mu[s, ],
                    Sigma = draws$Sigma[s, , ], log = TRUE))
   # no truncation allowed
   loglik_weight(out, i = i, data = draws$data)
@@ -137,7 +139,7 @@ loglik_student_cov <- function(i, draws, data = data.frame()) {
   mu <- ilink(get_eta(draws$mu, obs), draws$f$link)
   nu <- get_auxpar(draws$nu, obs)
   out <- sapply(1:draws$nsamples, function(s)
-    dmulti_student(draws$data$Y[obs], df = nu[s, ], 
+    dmulti_student_t(draws$data$Y[obs], df = nu[s, ], 
                    mu = mu[s, ], Sigma = Sigma[s, , ], log = TRUE))
   # weights, truncation and censoring not yet allowed
   out
@@ -161,7 +163,7 @@ loglik_student_fixed <- function(i, draws, data = data.frame()) {
   mu <- ilink(get_eta(draws$mu, 1:nrow(draws$data$V)), draws$f$link)
   nu <- get_auxpar(draws$nu, 1:nrow(draws$data$V))
   sapply(1:draws$nsamples, function(s) 
-    dmulti_student(draws$data$Y, df = nu[s, ], mu = mu[s, ],
+    dmulti_student_t(draws$data$Y, df = nu[s, ], mu = mu[s, ],
                    Sigma = draws$data$V, log = TRUE))
 }
   
@@ -169,7 +171,7 @@ loglik_cauchy_fixed <- function(i, draws, data = data.frame()) {
   stopifnot(i == 1)
   mu <- ilink(get_eta(draws$mu, 1:nrow(draws$data$V)), draws$f$link)
   sapply(1:draws$nsamples, function(s) 
-    dmulti_student(draws$data$Y, df = 1, mu = mu[s, ],
+    dmulti_student_t(draws$data$Y, df = 1, mu = mu[s, ],
                    Sigma = draws$data$V, log = TRUE))
 }
 
