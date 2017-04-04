@@ -32,9 +32,10 @@
       \item Introduce method \code{control_params} to
       conveniently extract control parameters of the 
       NUTS sampler.
-      \item Introduce argument \code{Iconditions} in
+      \item Introduce argument \code{int_conditions} in
       \code{marginal_effects} for enhanced plotting of 
-      two-way interactions.
+      two-way interactions thanks to a discussion with
+      Thomas Kluth.
       \item Improve flexibility of the \code{conditions} 
       argument of \code{marginal_effects}.
       \item Extend method \code{stanplot} to correctly 
