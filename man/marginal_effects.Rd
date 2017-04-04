@@ -40,10 +40,12 @@ by using their means and factors will get their reference level assigned.}
 vectors of values of the second variables in two-way interactions. 
 At these values, predictions are evaluated. The names of 
 \code{int_conditions} have to match the variable names exactly.
+Additionally, the elements of the numeric vectors may be named themselves,
+in which case their names appear as labels for the conditions in the plots.
 Instead of vectors, functions returning vectors may be passed and are
 applied on the original values of the corresponding variable.
 If \code{NULL} (the default), predictions are evaluated at the 
-\eqn{mean} and at \eqn{mean +/- SD}.}
+\eqn{mean} and at \eqn{mean +/- sd}.}
 
 \item{re_formula}{A formula containing random effects to be considered 
 in the marginal predictions. If \code{NULL}, include all random effects; 
