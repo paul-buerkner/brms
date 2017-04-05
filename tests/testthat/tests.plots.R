@@ -23,15 +23,17 @@ test_that("plotting functions don't throw unexpected errors", {
   expect_error(stanplot(fit, type = "density"), "Invalid plot type")
   
   # pairs.brmsfit
-  expect_identical(SW(pairs(fit, pars = parnames(fit)[1:3])), NULL)
+  expect_s3_class(pairs(fit, pars = parnames(fit)[1:3]), "bayesplot_grid")
   
   # marginal_effects: manual checks of plotting method
   N <- 90
-  marg_results <- data.frame(P1 = rpois(N, 20), 
-                             P2 = factor(rep(1:3, each = N / 3)),
-                             Estimate = rnorm(N, sd = 5), 
-                             Est.Error = rt(N, df = 10), 
-                             MargRow = rep(1:2, each = N / 2))
+  marg_results <- data.frame(
+    P1 = rpois(N, 20), 
+    P2 = factor(rep(1:3, each = N / 3)),
+    Estimate = rnorm(N, sd = 5), 
+    Est.Error = rt(N, df = 10), 
+    MargRow = rep(1:2, each = N / 2)
+  )
   marg_results[["lowerCI"]] <- marg_results$Estimate - 2
   marg_results[["upperCI"]] <- marg_results$Estimate + 2
   marg_results <- list(marg_results[order(marg_results$P1), ])

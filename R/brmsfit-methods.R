@@ -1019,8 +1019,9 @@ stanplot.brmsfit <- function(object, pars = NA, type = "intervals",
       mcmc_args[["x"]] <- nuts_params(object)
     } else {
       # x refers to a data.frame of samples
-      samples <- posterior_samples(object, pars, add_chain = TRUE,
-                                   exact_match = exact_match)
+      samples <- posterior_samples(
+        object, pars, add_chain = TRUE, exact_match = exact_match
+      )
       samples$iter <- NULL
       sel_pars <- names(samples)[!names(samples) %in% "chain"]
       if (type %in% c("scatter", "hex") && length(sel_pars) != 2L) {
@@ -1236,20 +1237,15 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
 #' Create a matrix of output plots from a \code{brmsfit} object
 #'
 #' A \code{\link[graphics:pairs]{pairs}} 
-#' method that is customized for MCMC output
+#' method that is customized for MCMC output.
 #' 
-#' @param x An object of class \code{stanfit}
-#' @param pars Names of the parameters to plot, as given by 
-#'  a character vector or a regular expression. 
-#'  By default, all parameters are plotted. 
-#' @param exact_match Indicates whether parameter names 
-#'   should be matched exactly or treated as regular expression. 
-#'   Default is \code{FALSE}.
+#' @param x An object of class \code{brmsfit}
+#' @inheritParams posterior_samples
 #' @param ... Further arguments to be passed to 
-#'  \code{\link[rstan:pairs.stanfit]{pairs.stanfit}}.
+#'  \code{\link[bayesplot:mcmc_pairs]{mcmc_pairs}}.
 #'  
 #' @details For a detailed description see 
-#'  \code{\link[rstan:pairs.stanfit]{pairs.stanfit}}.
+#'  \code{\link[bayesplot:mcmc_pairs]{mcmc_pairs}}.
 #'  
 #' @examples 
 #' \dontrun{
@@ -1257,14 +1253,20 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
 #'            + (1|patient) + (1|visit), 
 #'            data = epilepsy, family = "poisson")  
 #' pairs(fit, pars = parnames(fit)[1:3], exact_match = TRUE)
-#' pairs(fit, pars = "^sd")
+#' pairs(fit, pars = "^sd_")
 #' }
 #'
 #' @export
 pairs.brmsfit <- function(x, pars = NA, exact_match = FALSE, ...) {
-  pars <- extract_pars(pars, all_pars = parnames(x),
-                       exact_match = exact_match, na_value = NULL)
-  graphics::pairs(x$fit, pars = pars, ...)
+  if (!is.character(pars)) {
+    pars <- default_plot_pars()
+    exact_match <- FALSE
+  }
+  samples <- posterior_samples(
+    x, pars, add_chain = TRUE, exact_match = exact_match
+  )
+  samples$iter <- NULL
+  bayesplot::mcmc_pairs(samples, ...)
 }
 
 #' @rdname marginal_effects
