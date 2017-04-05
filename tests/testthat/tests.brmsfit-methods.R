@@ -322,12 +322,13 @@ test_that("all S3 methods have reasonable ouputs", {
                  group = "visit", newdata = fit1$data[1:100, ])
   expect_true(is(pp, "ggplot"))
   
-  pp <- SW(pp_check(fit1, type = "loo_pit", loo_args = list(cores = 1)))
-  expect_true(is(pp, "ggplot"))
-  lw <- SW(loo::psislw(-log_lik(fit1), cores = 1)$lw_smooth)
+  # uncomment as soon as bayesplot 1.2.0 is on CRAN
+  # pp <- SW(pp_check(fit1, type = "loo_pit", loo_args = list(cores = 1)))
+  # expect_true(is(pp, "ggplot"))
+  # lw <- SW(loo::psislw(-log_lik(fit1), cores = 1)$lw_smooth)
   # not getting warnings implies that the precomputed lw is used
-  pp <- pp_check(fit1, type = "loo_intervals", lw = lw)
-  expect_true(is(pp, "ggplot"))
+  # pp <- pp_check(fit1, type = "loo_intervals", lw = lw)
+  # expect_true(is(pp, "ggplot"))
   
   expect_true(is(pp_check(fit3), "ggplot"))
   expect_true(is(pp_check(fit2, "ribbon", x = "Trt"), "ggplot"))

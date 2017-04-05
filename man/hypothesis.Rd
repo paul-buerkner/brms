@@ -107,7 +107,7 @@ Among others, \code{hypothesis} computes an
  When interpreting Bayes factors, make sure 
  that your priors are reasonable and carefully chosen,
  as the result will depend heavily on the priors. 
- It particular, avoid using default priors.
+ In particular, avoid using default priors.
  
  The argument \code{alpha} specifies the size of the credible interval
  (i.e., Bayesian confidence interval).

@@ -1262,11 +1262,16 @@ pairs.brmsfit <- function(x, pars = NA, exact_match = FALSE, ...) {
     pars <- default_plot_pars()
     exact_match <- FALSE
   }
-  samples <- posterior_samples(
-    x, pars, add_chain = TRUE, exact_match = exact_match
-  )
-  samples$iter <- NULL
-  bayesplot::mcmc_pairs(samples, ...)
+  if (packageVersion("bayesplot") >= "1.2.0") {
+    samples <- posterior_samples(
+      x, pars, add_chain = TRUE, exact_match = exact_match
+    )
+    samples$iter <- NULL
+    bayesplot::mcmc_pairs(samples, ...) 
+  } else {
+    # remove as soon as bayesplot 1.2.0 is on CRAN
+    graphics::pairs(x$fit, pars = pars, ...)
+  }
 }
 
 #' @rdname marginal_effects
