@@ -1148,23 +1148,22 @@ evidence_ratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"),
   out  
 }
 
-make_point_frame <- function(mf, effects, conditions, groups, family) {
+make_point_frame <- function(mf, effects, conditions, groups, 
+                             family, select_points = 0) {
   # helper function for marginal_effects.brmsfit
   # allowing add data points to the marginal plots
   # Args:
   #   mf: the original model.frame
-  #   effects: see argument 'effects' of marginal_effects
-  #   conditions: see argument 'conditions' of marginal_effects
+  #   effects: see marginal_effects
+  #   conditions: see marginal_effects
   #   groups: names of the grouping factors
   #   family: the model family
+  #   select_points: see marginal_effects
   # Returns:
   #   a data.frame containing the data points to be plotted
   points <- mf[, effects, drop = FALSE]
   points$resp__ <- model.response(mf)
-  # get required variables i.e. (grouping) factors
-  list_mf <- lapply(as.list(mf), function(x)
-    if (is.numeric(x)) x else as.factor(x))
-  req_vars <- names(mf)[sapply(list_mf, is.factor)]
+  req_vars <- names(mf)
   if (length(groups)) {
     req_vars <- c(req_vars, unlist(strsplit(groups, ":")))
   }
@@ -1178,11 +1177,35 @@ make_point_frame <- function(mf, effects, conditions, groups, family) {
     points <- replicate(nrow(conditions), points, simplify = FALSE)
     for (i in seq_along(points)) {
       cond <- conditions[i, , drop = FALSE]
-      not_na <- which(!(is.na(cond) | cond == "zero__"))
-      if (length(not_na)) {
+      not_na <- !(is.na(cond) | cond == "zero__")
+      cond <- cond[, not_na, drop = FALSE]
+      mf_tmp <- mf[, not_na, drop = FALSE]
+      if (ncol(mf_tmp)) {
+        is_num <- sapply(mf_tmp, is.numeric)
+        if (sum(is_num)) {
+          stopifnot(select_points >= 0)
+          if (select_points > 0) {
+            for (v in names(mf_tmp)[is_num]) {
+              min <- min(mf_tmp[, v])
+              max <- max(mf_tmp[, v])
+              unit <- (mf_tmp[, v] - min) / (max - min)
+              unit_cond <- (cond[, v] - min) / (max - min)
+              unit_diff <- abs(unit - unit_cond)
+              close_enough <- unit_diff <= select_points
+              mf_tmp[close_enough, v] <- cond[, v]
+              mf_tmp[!close_enough, v] <- NA
+            }
+          } else {
+            # take all numeric values if select_points is zero
+            cond <- cond[, !is_num, drop = FALSE]
+            mf_tmp <- mf[, !is_num, drop = FALSE]
+          }
+        }
+      }
+      if (ncol(mf_tmp)) {
         # do it like base::duplicated
-        K <- do.call("paste", c(mf[, not_na, drop = FALSE], sep = "\r")) %in% 
-             do.call("paste", c(cond[, not_na, drop = FALSE], sep = "\r"))
+        K <- do.call("paste", c(mf_tmp, sep = "\r")) %in%
+             do.call("paste", c(cond, sep = "\r"))
       } else {
         K <- seq_len(nrow(mf))
       }

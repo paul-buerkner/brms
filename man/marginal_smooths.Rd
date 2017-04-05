@@ -28,7 +28,8 @@ this implies \code{10000} support points for interaction terms,
 so it might be necessary to reduce \code{resolution} 
 when only few RAM is available.}
 
-\item{too_far}{For surface plots only: Grid points that are too 
+\item{too_far}{Positive number. 
+For surface plots only: Grid points that are too 
 far away from the actual data points can be excluded from the plot. 
 \code{too_far} determines what is too far. The grid is scaled into 
 the unit square and then grid points more than \code{too_far} 

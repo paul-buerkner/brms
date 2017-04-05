@@ -210,6 +210,9 @@ test_that("all S3 methods have reasonable ouputs", {
                  ask = FALSE, plot = FALSE)
   expect_true(is(meplot[[1]], "ggplot"))
   
+  me <- marginal_effects(fit1, "Trt", select_points = 0.1)
+  expect_lt(nrow(attr(me[[1]], "points")), nobs(fit1))
+  
   me <- marginal_effects(fit1, "Trt:Age", surface = TRUE, 
                          resolution = 15, too_far = 0.2)
   meplot <- plot(me, plot = FALSE)

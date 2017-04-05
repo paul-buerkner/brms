@@ -610,12 +610,21 @@ stanplot <- function(object, ...) {
 #'   this implies \code{10000} support points for interaction terms,
 #'   so it might be necessary to reduce \code{resolution} 
 #'   when only few RAM is available.
-#' @param too_far For surface plots only: Grid points that are too 
+#' @param too_far Positive number. 
+#'   For surface plots only: Grid points that are too 
 #'   far away from the actual data points can be excluded from the plot. 
 #'   \code{too_far} determines what is too far. The grid is scaled into 
 #'   the unit square and then grid points more than \code{too_far} 
 #'   from the predictor variables are excluded. By default, all
 #'   grid points are used. Ignored for non-surface plots.
+#' @param select_points Positive number. 
+#'   Only relevant if \code{points} or \code{rug} are set to \code{TRUE}: 
+#'   Actual data points of numeric variables that 
+#'   are too far away from the values specified in \code{conditions} 
+#'   can be excluded from the plot. Values are scaled into 
+#'   the unit interval and then points more than \code{select_points} 
+#'   from the values in \code{conditions} are excluded. 
+#'   By default, all points are used.
 #' @param ncol Number of plots to display per column for each effect.
 #'   If \code{NULL} (default), \code{ncol} is computed internally based
 #'   on the number of rows of \code{data}.
@@ -623,9 +632,13 @@ stanplot <- function(object, ...) {
 #'   should be added via \code{\link[ggplot2:geom_point]{geom_point}}.
 #'   Default is \code{FALSE}. Note that only those data points will be added
 #'   that match the specified conditions defined in \code{conditions}.
+#'   For categorical predictors, the conditions have to match exactly. 
+#'   For numeric predictors, argument \code{select_points} is used to
+#'   determine, which points do match a condition.
 #' @param rug Logical; indicating whether a rug representation of predictor
 #'   values should be added via \code{\link[ggplot2:geom_rug]{geom_rug}}.
-#'   Default is \code{FALSE}.
+#'   Default is \code{FALSE}. Depends on \code{select_points} in the same
+#'   way as \code{points} does.
 #' @param stype Indicates how surface plots should be displayed.
 #'   Either \code{"contour"} or \code{"raster"}.
 #' @inheritParams plot.brmsfit
@@ -711,9 +724,15 @@ stanplot <- function(object, ...) {
 #' fit3way <- brm(count ~ log_Age_c * log_Base4_c * Trt_c, data = epilepsy)
 #' conditions <- data.frame(log_Age_c = c(-0.3, 0, 0.3))
 #' rownames(conditions) <- paste("log_Age_c =", conditions$log_Age_c)
-#' marginal_effects(fit3way, "log_Base4_c:Trt_c",
-#'                  conditions = conditions)
-#'                    
+#' marginal_effects(
+#'   fit3way, "log_Base4_c:Trt_c", conditions = conditions
+#' )
+#' ## only include points close to the specified values of log_Age_c
+#' me <- marginal_effects(
+#'  fit3way, "log_Base4_c:Trt_c", conditions = conditions, 
+#'  select_points = 0.1
+#' )
+#' plot(me, points = TRUE)
 #' }
 #' 
 #' @export

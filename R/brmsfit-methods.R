@@ -1274,7 +1274,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
                                      robust = TRUE, probs = c(0.025, 0.975),
                                      method = c("fitted", "predict"), 
                                      surface = FALSE, resolution = 100,
-                                     too_far = 0, ...) {
+                                     select_points = 0, too_far = 0, ...) {
   method <- match.arg(method)
   dots <- list(...)
   conditions <- use_alias(conditions, dots[["data"]])
@@ -1412,8 +1412,10 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     attr(marg_res, "response") <- as.character(x$formula$formula[2])
     attr(marg_res, "effects") <- effects[[i]]
     attr(marg_res, "surface") <- both_numeric && surface
-    point_args <- nlist(mf, effects = effects[[i]], conditions,
-                        groups = get_re(bterms)$group, family = x$family)
+    point_args <- nlist(
+      mf, effects = effects[[i]], conditions, select_points,
+      groups = get_re(bterms)$group, family = x$family
+    )
     attr(marg_res, "points") <- do.call(make_point_frame, point_args)
     results[[paste0(effects[[i]], collapse = ":")]] <- marg_res
   }
