@@ -1,8 +1,8 @@
 #' @rdname marginal_effects
 #' @method plot brmsMarginalEffects
 #' @export 
-plot.brmsMarginalEffects <- function(x, ncol = NULL, 
-                                     points = FALSE, rug = FALSE,
+plot.brmsMarginalEffects <- function(x, ncol = NULL, points = FALSE, 
+                                     rug = FALSE, jitter_width = 0,
                                      stype = c("contour", "raster"),
                                      theme = bayesplot::theme_default(), 
                                      ask = TRUE, plot = TRUE, ...) {
@@ -61,8 +61,9 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL,
           aes_points$colour <- parse(text = gvar)[[1]]
         }
         plots[[i]] <- plots[[i]] + 
-          geom_point(aes_points, shape = 1, size = 4 / ncond^0.25,
-                     data = attr(x[[i]], "points"), inherit.aes = FALSE)
+          geom_jitter(aes_points, shape = 1, size = 4 / ncond^0.25,
+                      data = attr(x[[i]], "points"), inherit.aes = FALSE,
+                      height = 0, width = jitter_width)
       }
       if (is.numeric(x[[i]][, effects[1]])) {
         # smooth plots for numeric predictors

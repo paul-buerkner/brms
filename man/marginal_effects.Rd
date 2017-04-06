@@ -15,7 +15,7 @@
 marginal_effects(x, ...)
 
 \method{plot}{brmsMarginalEffects}(x, ncol = NULL, points = FALSE,
-  rug = FALSE, stype = c("contour", "raster"),
+  rug = FALSE, jitter_width = 0, stype = c("contour", "raster"),
   theme = bayesplot::theme_default(), ask = TRUE, plot = TRUE, ...)
 }
 \arguments{
@@ -111,6 +111,11 @@ determine, which points do match a condition.}
 values should be added via \code{\link[ggplot2:geom_rug]{geom_rug}}.
 Default is \code{FALSE}. Depends on \code{select_points} in the same
 way as \code{points} does.}
+
+\item{jitter_width}{Only used if \code{points = TRUE}: 
+Amount of horizontal jittering of the data points.
+Mainly useful for ordinal models. Defaults to \code{0} that 
+is no jittering.}
 
 \item{stype}{Indicates how surface plots should be displayed.
 Either \code{"contour"} or \code{"raster"}.}
