@@ -20,17 +20,16 @@ rvon_mises(n, mu, kappa)
 
 \item{kappa}{Vector of precision values.}
 
-\item{log}{Logical; If \code{TRUE} values are returned on the log scale.}
+\item{log}{Logical; If \code{TRUE}, values are returned on the log scale.}
 
-\item{lower.tail}{Logical; If \code{TRUE} (default), probabilities are 
-P(X <= x), otherwise, P(X > x).}
+\item{lower.tail}{Logical; If \code{TRUE} (default), return P(X <= x). 
+Else, return P(X > x) .}
 
-\item{log.p}{Logical; If \code{TRUE} values are returned on the log scale.}
+\item{log.p}{Logical; If \code{TRUE}, values are returned on the log scale.}
 
 \item{acc}{Accuracy of numerical approximations.}
 
-\item{n}{Number of observations. If \code{length(n) > 1}, the length 
-is taken to be the number required.}
+\item{n}{Number of samples to draw from the distribution.}
 }
 \description{
 Density, distribution function, and random generation for the 

@@ -8,14 +8,13 @@
 #' 
 #' @param x,q Vector of quantiles.
 #' @param p Vector of probabilities.
-#' @param n Number of observations. If \code{length(n) > 1}, the length 
-#'   is taken to be the number required.
+#' @param n Number of samples to draw from the distribution.
 #' @param mu Vector of location values.
 #' @param sigma Vector of scale values.
 #' @param df Vector of degrees of freedom.
-#' @param log,log.p Logical; If \code{TRUE} values are returned on the log scale.
-#' @param lower.tail Logical; If \code{TRUE} (default), probabilities are 
-#'   P(X <= x), otherwise, P(X > x).
+#' @param log,log.p Logical; If \code{TRUE}, values are returned on the log scale.
+#' @param lower.tail Logical; If \code{TRUE} (default), return P(X <= x). 
+#'   Else, return P(X > x) .
 #'   
 #' @details See \code{vignette("brms_families")} for details
 #' on the parameterization.
@@ -796,7 +795,7 @@ rasym_laplace <- function(n, mu = 0, sigma = 1, quantile = 0.5) {
 #'   \code{FALSE} indicates \code{"lower"}.
 #' @param types Which types of responses to return? By default,
 #'   return both the response times \code{"q"} and the dichotomous 
-#'   responses \code{"resp"}. If \code{"q"} or \code{"resp"}, 
+#'   responses \code{"resp"}. If either \code{"q"} or \code{"resp"}, 
 #'   return only one of the two types.
 #'   
 #' @details These are wrappers around functions of the \pkg{RWiener} package.  

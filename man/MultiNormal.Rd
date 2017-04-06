@@ -18,14 +18,13 @@ each row is taken to be a quantile.}
 
 \item{Sigma}{Covariance matrix.}
 
-\item{log}{Logical; If \code{TRUE} values are returned on the log scale.}
+\item{log}{Logical; If \code{TRUE}, values are returned on the log scale.}
 
 \item{check}{Logical; Indicates whether several input checks
 should be performed. Defaults to \code{FALSE} to improve
 efficiency.}
 
-\item{n}{Number of observations. If \code{length(n) > 1}, the length 
-is taken to be the number required.}
+\item{n}{Number of samples to draw from the distribution.}
 }
 \description{
 Density function and random generation for the multivariate normal 

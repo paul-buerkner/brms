@@ -25,15 +25,14 @@ rstudent_t(n, df, mu = 0, sigma = 1)
 
 \item{sigma}{Vector of scale values.}
 
-\item{log, log.p}{Logical; If \code{TRUE} values are returned on the log scale.}
+\item{log, log.p}{Logical; If \code{TRUE}, values are returned on the log scale.}
 
-\item{lower.tail}{Logical; If \code{TRUE} (default), probabilities are 
-P(X <= x), otherwise, P(X > x).}
+\item{lower.tail}{Logical; If \code{TRUE} (default), return P(X <= x). 
+Else, return P(X > x) .}
 
 \item{p}{Vector of probabilities.}
 
-\item{n}{Number of observations. If \code{length(n) > 1}, the length 
-is taken to be the number required.}
+\item{n}{Number of samples to draw from the distribution.}
 }
 \description{
 Density, distribution function, quantile function and random generation 

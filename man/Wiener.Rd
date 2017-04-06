@@ -26,14 +26,13 @@ If no character vector, it is coerced to logical
 where \code{TRUE} indicates \code{"upper"} and 
 \code{FALSE} indicates \code{"lower"}.}
 
-\item{log}{Logical; If \code{TRUE} values are returned on the log scale.}
+\item{log}{Logical; If \code{TRUE}, values are returned on the log scale.}
 
-\item{n}{Number of observations. If \code{length(n) > 1}, the length 
-is taken to be the number required.}
+\item{n}{Number of samples to draw from the distribution.}
 
 \item{types}{Which types of responses to return? By default,
 return both the response times \code{"q"} and the dichotomous 
-responses \code{"resp"}. If \code{"q"} or \code{"resp"}, 
+responses \code{"resp"}. If either \code{"q"} or \code{"resp"}, 
 return only one of the two types.}
 }
 \description{
