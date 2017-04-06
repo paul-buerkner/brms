@@ -23,7 +23,7 @@ rvon_mises(n, mu, kappa)
 \item{log}{Logical; If \code{TRUE} values are returned on the log scale.}
 
 \item{lower.tail}{Logical; If \code{TRUE} (default), probabilities are 
-P[X ≤ x], otherwise, P[X > x].}
+P(X <= x), otherwise, P(X > x).}
 
 \item{log.p}{Logical; If \code{TRUE} values are returned on the log scale.}
 

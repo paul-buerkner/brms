@@ -25,7 +25,7 @@ loglik_student <- function(i, draws, data = data.frame()) {
                sigma = get_sigma(draws$sigma, data = draws$data, i = i))
   out <- loglik_censor(dist = "student_t", args = args, 
                        i = i, data = draws$data)
-  out <- loglik_truncate(out, cdf = pstudent, args = args, 
+  out <- loglik_truncate(out, cdf = pstudent_t, args = args, 
                          i = i, data = draws$data)
   loglik_weight(out, i = i, data = draws$data)
 }
@@ -35,7 +35,7 @@ loglik_cauchy <- function(i, draws, data = data.frame()) {
                sigma = get_sigma(draws$sigma, data = draws$data, i = i))
   out <- loglik_censor(dist = "student_t", args = args, 
                        i = i, data = draws$data)
-  out <- loglik_truncate(out, cdf = pstudent, args = args, 
+  out <- loglik_truncate(out, cdf = pstudent_t, args = args, 
                          i = i, data = draws$data)
   loglik_weight(out, i = i, data = draws$data)
 }

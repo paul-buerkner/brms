@@ -18,15 +18,17 @@ should be matched exactly or treated as regular expression.
 Default is \code{FALSE}.}
 
 \item{...}{Further arguments to be passed to 
-\code{\link[bayesplot:mcmc_pairs]{mcmc_pairs}}.}
+\code{bayesplot::mcmc_pairs}.}
 }
 \description{
 A \code{\link[graphics:pairs]{pairs}} 
 method that is customized for MCMC output.
 }
 \details{
-For a detailed description see 
- \code{\link[bayesplot:mcmc_pairs]{mcmc_pairs}}.
+If you have \pkg{bayesplot} 1.2.0 or higher installed,
+  the \code{bayesplot::mcmc_pairs} function is called.
+  Else, we fall fack to the \code{pairs} method for \code{stanfit}
+  objects.
 }
 \examples{
 \dontrun{

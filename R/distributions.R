@@ -15,7 +15,7 @@
 #' @param df Vector of degrees of freedom.
 #' @param log,log.p Logical; If \code{TRUE} values are returned on the log scale.
 #' @param lower.tail Logical; If \code{TRUE} (default), probabilities are 
-#'   P[X ≤ x], otherwise, P[X > x].
+#'   P(X <= x), otherwise, P(X > x).
 #'   
 #' @details See \code{vignette("brms_families")} for details
 #' on the parameterization.

@@ -808,15 +808,15 @@ marginal_smooths <- function(x, ...) {
 #' 
 #' @details 
 #' The returned probabilities can be written as
-#' \eqn{P(K_n = k | Y_n)}, that is the posterior probability 
+#' \eqn{P(Kn = k | Yn)}, that is the posterior probability 
 #' that observation n orginiates from component k. 
 #' They are computed using Bayes' Theorem
-#' \deqn{P(K_n = k | Y_n) = P(Y_n | K_n = k) P(K_n = k) / P(Y_n),}
-#' where \eqn{P(Y_n | K_n = k)} is the (posterior) likelihood
-#' of observation n for component k, \eqn{P(K_n = k)} is 
+#' \deqn{P(Kn = k | Yn) = P(Yn | Kn = k) P(Kn = k) / P(Yn),}
+#' where \eqn{P(Yn | Kn = k)} is the (posterior) likelihood
+#' of observation n for component k, \eqn{P(Kn = k)} is 
 #' the (posterior) mixing probability of component k 
 #' (i.e. parameter \code{theta<k>}), and 
-#' \deqn{P(Y_n) = \sum {k=1}^K P(Y_n | K_n = k) P(K_n = k)}
+#' \deqn{P(Yn) = \sum (k=1,...,K) P(Yn | Kn = k) P(Kn = k)}
 #' is a normalizing constant.
 #' 
 #' @examples 
