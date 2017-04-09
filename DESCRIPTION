@@ -48,8 +48,8 @@ Description: Fit Bayesian generalized (non-)linear multilevel models
     response distribution can be predicted in order to perform distributional 
     regression. Prior specifications are flexible and explicitly encourage 
     users to apply prior distributions that actually reflect their beliefs.
-    In addition, model fit can easily be assessed and compared with
-    posterior predictive checks and leave-one-out cross-validation.
+    Model fit can easily be assessed and compared with posterior predictive 
+    checks and leave-one-out cross-validation.
 LazyData: true
 NeedsCompilation: no
 License: GPL (>= 3)
