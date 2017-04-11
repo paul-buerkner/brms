@@ -257,7 +257,7 @@ stan_llh.default <- function(family, bterms, data, autocor,
       ),
       zero_one_inflated_beta = c(
         "zero_one_inflated_beta", 
-        sargs(p$mu, p$zoi, p$coi, p$phi)
+        sargs(p$mu, p$phi, p$zoi, p$coi)
       )
     )
   }
