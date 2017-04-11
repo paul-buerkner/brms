@@ -856,7 +856,8 @@ stan_eta_transform <- function(family, llh_adj = FALSE) {
   link <- family$link
   !(!is_skewed(family) && link == "identity" ||
     is_ordinal(family) || is_categorical(family) ||
-    is_zero_inflated(family) || is_hurdle(family)) &&
+    is_zero_inflated(family) || is_hurdle(family) ||
+    is_zero_one_inflated(family)) &&
   (llh_adj || !stan_has_built_in_fun(family))
 }
 
@@ -939,6 +940,14 @@ stan_auxpar_defs <- function(auxpar) {
     hu = c(
       "  real<lower=0,upper=1> ", 
       ";  // hurdle probability \n"
+    ),
+    zoi = c(
+      "  real<lower=0,upper=1> ", 
+      ";  // zero-one-inflation probability \n"
+    ), 
+    coi = c(
+      "  real<lower=0,upper=1> ", 
+      ";  // conditional one-inflation probability \n"
     ),
     bs = c(
       "  real<lower=0> ", 

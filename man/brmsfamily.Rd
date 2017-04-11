@@ -21,6 +21,7 @@
 \alias{hurdle_gamma}
 \alias{hurdle_lognormal}
 \alias{zero_inflated_beta}
+\alias{zero_one_inflated_beta}
 \alias{zero_inflated_poisson}
 \alias{zero_inflated_negbinomial}
 \alias{zero_inflated_binomial}
@@ -34,8 +35,9 @@
 brmsfamily(family, link = NULL, link_sigma = "log", link_shape = "log",
   link_nu = "logm1", link_phi = "log", link_kappa = "log",
   link_beta = "log", link_zi = "logit", link_hu = "logit",
-  link_disc = "log", link_bs = "log", link_ndt = "log",
-  link_bias = "logit", link_quantile = "logit", link_xi = "log1p")
+  link_zoi = "logit", link_coi = "logit", link_disc = "log",
+  link_bs = "log", link_ndt = "log", link_bias = "logit",
+  link_xi = "log1p", link_quantile = "logit")
 
 student(link = "identity", link_sigma = "log", link_nu = "logm1")
 
@@ -77,6 +79,9 @@ hurdle_gamma(link = "log", link_shape = "log", link_hu = "logit")
 hurdle_lognormal(link = "identity", link_sigma = "log", link_hu = "logit")
 
 zero_inflated_beta(link = "logit", link_phi = "log", link_zi = "logit")
+
+zero_one_inflated_beta(link = "logit", link_phi = "log",
+  link_zoi = "logit", link_coi = "logit")
 
 zero_inflated_poisson(link = "log", link_zi = "logit")
 
@@ -141,9 +146,9 @@ functions supported by each family.}
 
 \item{link_bias}{Link of auxiliary parameter \code{bias} if being predicted.}
 
-\item{link_quantile}{Link of auxiliary parameter \code{quantile} if being predicted.}
-
 \item{link_xi}{Link of auxiliary parameter \code{xi} if being predicted.}
+
+\item{link_quantile}{Link of auxiliary parameter \code{quantile} if being predicted.}
 }
 \description{
 Family objects provide a convenient way to specify the details of the models 
