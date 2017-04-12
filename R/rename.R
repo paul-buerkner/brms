@@ -393,7 +393,8 @@ change_prior <- function(class, pars, names = NULL, new_class = class,
   # Return:
   #   a list whose elements can be interpreted by do_renaming
   change <- list()
-  pos_priors <- which(grepl(paste0("^prior_", class, "(_|$|\\[)"), pars))
+  regex <- paste0("^prior_", class, "(_[[:digit:]]+|$|\\[)")
+  pos_priors <- which(grepl(regex, pars))
   if (length(pos_priors)) {
     priors <- gsub(
       paste0("^prior_", class), 
@@ -712,7 +713,7 @@ do_renaming <- function(x, change) {
     if (is.null(onp) || is.na(onp)) {
       warning2("Parameter ", change$oldname, " could not be renamed. ",
                "This should not happen. \nPlease inform me so that ",
-               "I can fix this problem.", call. = FALSE)
+               "I can fix this problem.")
     } else {
       if (is.null(change$pnames)) {
         # only needed to collapse multiple r_<i> of the same grouping factor
