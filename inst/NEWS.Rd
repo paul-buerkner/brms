@@ -2,6 +2,18 @@
 \title{brms News}
 \encoding{UTF-8}
 
+\section{CHANGES IN VERSION 1.6.0++}{
+  \subsection{BUG FIXES}{
+    \itemize{
+      \item Fix problems when setting priors
+      on coefficients of auxiliary parameters 
+      when also setting priors on the corresponding
+      coefficients of the mean parameter.
+      Thanks to Matti Vuorre for reporting this bug.
+    }
+  }
+}
+
 \section{CHANGES IN VERSION 1.6.0}{
   \subsection{NEW FEATURES}{
     \itemize{

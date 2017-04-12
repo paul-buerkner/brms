@@ -90,6 +90,13 @@ test_that("specified priors appear in the Stan code", {
                          sample_prior = TRUE)
   expect_match2(scode, "prior_b_Intercept = prior_temp_Intercept;")
   
+  # test for problem described in #213
+  prior <- c(prior(normal(0, 1), coef = x1),
+             prior(normal(0, 2), coef = x1, nlpar = sigma))
+  scode <- make_stancode(bf(y ~ x1, sigma ~ x1), dat, prior = prior)
+  expect_match2(scode, "b ~ normal(0, 1);")
+  expect_match2(scode, "b_sigma ~ normal(0, 2);")
+  
   prior <- c(set_prior("target += normal_lpdf(b[1] | 0, 1)", check = FALSE),
              set_prior("", class = "sigma"))
   scode <- make_stancode(y ~ x1, dat, prior = prior,
@@ -764,8 +771,8 @@ test_that("priors on intercepts appear in the Stan code", {
                           "- dot_product(means_X, b);"))
   scode <- make_stancode(cbind(count, count) ~ log_Age_c + log_Base4_c * Trt_c,
                       data = epilepsy, family = gaussian(), 
-                      prior = c(prior(student_t(5,0,10), class = b),
-                                prior(normal(0,5), class = Intercept)),
+                      prior = c(prior(student_t(5,0,10), class = b, nlpar = count),
+                                prior(normal(0,5), class = Intercept, nlpar = count)),
                       sample_prior = TRUE)
   expect_match2(scode, paste0("prior_b_count_Intercept = prior_temp_count_Intercept ", 
                           "- dot_product(means_X_count, b_count);"))

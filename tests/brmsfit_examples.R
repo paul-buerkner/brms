@@ -17,7 +17,8 @@ brmsfit_example1 <- brm(bf(count ~ Trt*Age + mono(Exp) + s(Age) +
                         data = dat, family = student(), 
                         autocor = cor_arma(~visit|patient, 1, 1),
                         prior = c(set_prior("normal(0,5)", class = "b"),
-                                  set_prior("cauchy(0,2)", class = "sd")),
+                                  set_prior("cauchy(0,2)", class = "sd"),
+                                  set_prior("normal(0,3)", nlpar = "sigma")),
                         sample_prior = TRUE,
                         warmup = 150, iter = 200, chains = 2,
                         save_dso = FALSE, testmode = TRUE)

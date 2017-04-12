@@ -620,9 +620,14 @@ stan_prior <- function(prior, class, coef = "", group = "",
   wsp <- collapse(rep(" ", wsp))
   prior_only <- isTRUE(attr(prior, "prior_only"))
   keep <- prior$class == class & 
-          (prior$coef %in% coef | !nzchar(prior$coef)) &
-          (prior$group == group | !nzchar(prior$group)) & 
-          (prior$nlpar %in% nlpar | !nzchar(prior$nlpar))
+    (prior$coef %in% coef | !nzchar(prior$coef)) &
+    (prior$group == group | !nzchar(prior$group))
+  if (class %in% c("sd", "cor")) {
+    # only sd and cor parameters have global parameters
+    keep <- keep & (prior$nlpar %in% nlpar | !nzchar(prior$nlpar)) 
+  } else {
+    keep <- keep & prior$nlpar %in% nlpar
+  }
   prior <- prior[keep, ]
   if (!nchar(class) && nrow(prior)) {
     # increment_log_prob statements are directly put into the Stan code
@@ -651,7 +656,7 @@ stan_prior <- function(prior, class, coef = "", group = "",
   individual_prior <- function(i, max_index) {
     # individual priors for each parameter of a class
     if (max_index > 1L || matrix) {
-      index <- paste0("[",i,"]")      
+      index <- paste0("[", i, "]")      
     } else {
       index <- ""
     }

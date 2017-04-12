@@ -61,14 +61,14 @@ test_that("get_prior returns global priors in multivariate models", {
   # MV normal
   prior <- get_prior(cbind(y1, y2) ~ x + (x|ID1|g), 
                      data = dat, family = gaussian())
-  expect_equal(prior[prior$nlpar == "" & prior$class == "b", "coef"],
+  expect_equal(prior[prior$nlpar == "y1" & prior$class == "b", "coef"],
                c("", "Intercept", "x"))
   expect_equal(prior[prior$nlpar == "" & prior$class == "sd", "prior"],
                c("student_t(3, 0, 10)"))
   # categorical
   prior <- get_prior(y2 ~ x + (x|ID1|g), 
                      data = dat, family = categorical())
-  expect_equal(prior[prior$nlpar == "" & prior$class == "b", "coef"],
+  expect_equal(prior[prior$nlpar == "X2" & prior$class == "b", "coef"],
                c("", "Intercept", "x"))
   expect_equal(prior[prior$nlpar == "" & prior$class == "sd", "prior"],
                c("student_t(3, 0, 10)"))

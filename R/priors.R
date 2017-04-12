@@ -541,8 +541,7 @@ get_prior <- function(formula, data, family = NULL,
   prior <- empty_brmsprior()
   if (length(bterms$response) > 1L) {
     # priors for effects in multivariate models
-    for (r in c("", bterms$response)) {
-      # r = "" adds global priors affecting responses
+    for (r in bterms$response) {
       prior_eff <- prior_effects(
         bterms$auxpars[["mu"]], data = data,
         def_scale_prior = def_scale_prior,
