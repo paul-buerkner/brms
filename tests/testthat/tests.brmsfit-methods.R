@@ -560,4 +560,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_true(is(nuts_params(fit1), "data.frame"))
   expect_true(is(rhat(fit1), "numeric"))
   expect_true(is(neff_ratio(fit1), "numeric"))
+  
+  # test fix of issue #214
+  expect_true(is.null(attr(fit1$data$patient, "contrasts")))
 })

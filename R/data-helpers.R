@@ -58,8 +58,9 @@ update_data <- function(data, family, bterms,
       stop2("Variable names may not contain double underscores ",
             "or underscores at the end.")
     }
-    data <- combine_groups(data, get_re(bterms)$group, bterms$time$group)
-    data <- fix_factor_contrasts(data)
+    groups <- c(get_re(bterms)$group, bterms$time$group)
+    data <- combine_groups(data, groups)
+    data <- fix_factor_contrasts(data, ignore = groups)
     attr(data, "knots") <- knots
     attr(data, "brmsframe") <- TRUE
   }
@@ -185,20 +186,22 @@ combine_groups <- function(data, ...) {
   data
 }
 
-fix_factor_contrasts <- function(data, optdata = NULL) {
+fix_factor_contrasts <- function(data, optdata = NULL, ignore = NULL) {
   # hard code factor contrasts to be independent
   # of the global "contrasts" option
   # Args:
   #   data: a data.frame
   #   optdata: optional data.frame from which contrasts
   #            are taken if present
+  #   ignore: names of variables for which not to fix contrasts
   # Returns:
   #   a data.frame with amended contrasts attributes
   stopifnot(is(data, "data.frame"))
   stopifnot(is.null(optdata) || is.list(optdata))
   optdata <- as.data.frame(optdata)  # fixes issue #105
   for (i in seq_along(data)) {
-    if (is.factor(data[[i]]) && is.null(attr(data[[i]], "contrasts"))) {
+    needs_contrast <- is.factor(data[[i]]) && !names(data)[i] %in% ignore
+    if (needs_contrast && is.null(attr(data[[i]], "contrasts"))) {
       if (!is.null(attr(optdata[[names(data)[i]]], "contrasts"))) {
         # take contrasts from optdata
         contrasts(data[[i]]) <- attr(optdata[[names(data)[i]]], "contrasts")

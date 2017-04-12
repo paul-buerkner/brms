@@ -10,6 +10,9 @@
       when also setting priors on the corresponding
       coefficients of the mean parameter.
       Thanks to Matti Vuorre for reporting this bug.
+      \item Allow ordered factors to be used
+      as grouping variables thanks to the GitHub
+      user itissid.
     }
   }
 }
