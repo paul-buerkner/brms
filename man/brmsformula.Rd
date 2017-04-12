@@ -326,16 +326,17 @@ models for all parameters of the assumed response distribution.
   
   The population-level intercept (if incorporated) is estimated separately 
   and not as part of population-level parameter vector \code{b}. 
-  also have to be specified separately
-  (see \code{\link[brms:set_prior]{set_prior}} for more details).
+  As a result, priors on the intercept also have to be specified separately.
   Furthermore, to increase sampling efficiency, the population-level 
   design matrix \code{X} is centered around its column means 
   \code{X_means} if the intercept is incorporated. 
   This leads to a temporary bias in the intercept equal to 
   \code{<X_means, b>}, where \code{<,>} is the scalar product. 
   The bias is corrected after fitting the model, but be aware 
-  that you are effectively defining a prior on the temporary
-  intercept of the centered design matrix not on the real intercept.
+  that you are effectively defining a prior on the intercept 
+  of the centered design matrix not on the real intercept.
+  For more details on setting priors on population-level intercepts,
+  see \code{\link[brms:set_prior]{set_prior}}.
   
   This behavior can be avoided by using the reserved 
   (and internally generated) variable \code{intercept}. 
