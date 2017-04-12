@@ -18,7 +18,7 @@ Imports:
     Matrix (>= 1.1.1),
     mgcv (>= 1.8-13),
     rstantools (>= 1.2.0),
-    bayesplot (>= 1.1.0),
+    bayesplot (>= 1.2.0),
     matrixStats,
     nlme,
     coda,
@@ -33,7 +33,6 @@ Suggests:
     testthat (>= 0.9.1),
     arm,
     mvtnorm,
-    KernSmooth,
     R.rsp,
     knitr,
     rmarkdown

@@ -1242,12 +1242,10 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
 #' @param x An object of class \code{brmsfit}
 #' @inheritParams posterior_samples
 #' @param ... Further arguments to be passed to 
-#'   \code{bayesplot::mcmc_pairs}.
+#'   \code{\link[bayesplot:mcmc_pairs]{mcmc_pairs}}.
 #'  
-#' @details If you have \pkg{bayesplot} 1.2.0 or higher installed,
-#'   the \code{bayesplot::mcmc_pairs} function is called.
-#'   Else, we fall fack to the \code{pairs} method for \code{stanfit}
-#'   objects.
+#' @details For a detailed description see  
+#'   \code{\link[bayesplot:mcmc_pairs]{mcmc_pairs}}.
 #'  
 #' @examples 
 #' \dontrun{
@@ -1264,17 +1262,11 @@ pairs.brmsfit <- function(x, pars = NA, exact_match = FALSE, ...) {
     pars <- default_plot_pars()
     exact_match <- FALSE
   }
-  if (utils::packageVersion("bayesplot") >= "1.2.0") {
-    samples <- posterior_samples(
-      x, pars, add_chain = TRUE, exact_match = exact_match
-    )
-    samples$iter <- NULL
-    # avoid CRAN warning
-    get("mcmc_pairs", asNamespace("bayesplot"))(samples, ...)
-  } else {
-    # remove as soon as bayesplot 1.2.0 is on CRAN
-    graphics::pairs(x$fit, pars = pars, ...)
-  }
+  samples <- posterior_samples(
+    x, pars, add_chain = TRUE, exact_match = exact_match
+  )
+  samples$iter <- NULL
+  bayesplot::mcmc_pairs(samples, ...)
 }
 
 #' @rdname marginal_effects
