@@ -616,15 +616,13 @@ stan_prior <- function(prior, class, coef = "", group = "",
   #   A character strings in stan language that defines priors 
   #   for a given class of parameters. If a parameter has has 
   #   no corresponding prior in prior, an empty string is returned.
-  # only consider user defined priors related to this class and group
   wsp <- collapse(rep(" ", wsp))
   prior_only <- isTRUE(attr(prior, "prior_only"))
   keep <- prior$class == class & 
-    (prior$coef %in% coef | !nzchar(prior$coef)) &
-    (prior$group == group | !nzchar(prior$group))
+    prior$coef %in% c(coef, "") & prior$group %in% c(group, "")
   if (class %in% c("sd", "cor")) {
-    # only sd and cor parameters have global parameters
-    keep <- keep & (prior$nlpar %in% nlpar | !nzchar(prior$nlpar)) 
+    # only sd and cor parameters have global priors
+    keep <- keep & prior$nlpar %in% c(nlpar, "") 
   } else {
     keep <- keep & prior$nlpar %in% nlpar
   }
