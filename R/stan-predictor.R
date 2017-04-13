@@ -940,6 +940,14 @@ stan_auxpar_defs <- function(auxpar) {
       "  real<lower=0,upper=1> ", 
       ";  // hurdle probability \n"
     ),
+    zoi = c(
+      "  real<lower=0,upper=1> ", 
+      ";  // zero-one-inflation probability \n"
+    ), 
+    coi = c(
+      "  real<lower=0,upper=1> ", 
+      ";  // conditional one-inflation probability \n"
+    ),
     bs = c(
       "  real<lower=0> ", 
       ";  // boundary separation parameter \n"

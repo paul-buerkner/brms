@@ -20,7 +20,6 @@ stan_llh.default <- function(family, bterms, data, autocor,
   is_ordinal <- is_ordinal(family)
   is_hurdle <- is_hurdle(family)
   is_zero_inflated <- is_zero_inflated(family)
-  is_forked <- is_forked(family)
   is_mv <- is_linear(family) && length(bterms$response) > 1L
   
   has_sigma <- has_sigma(family, bterms)
@@ -52,6 +51,7 @@ stan_llh.default <- function(family, bterms, data, autocor,
   auxpars <- names(bterms$auxpars)
   reqn <- llh_adj || is_categorical || is_ordinal || 
           is_hurdle || is_zero_inflated || is_mix ||
+          is_zero_one_inflated(family) ||
           is_wiener(family) || is_exgaussian(family) || 
           is_asym_laplace(family) || is_gev(family) ||
           has_sigma && has_se && !use_cov(autocor) ||
@@ -254,6 +254,10 @@ stan_llh.default <- function(family, bterms, data, autocor,
       zero_inflated_beta = c(
         paste0("zero_inflated_beta", usc_logit), 
         sargs(p$mu, p$zi, p$phi)
+      ),
+      zero_one_inflated_beta = c(
+        "zero_one_inflated_beta", 
+        sargs(p$mu, p$phi, p$zoi, p$coi)
       )
     )
   }

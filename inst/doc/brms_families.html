@@ -12,7 +12,7 @@
 
 <meta name="author" content="Paul Bürkner" />
 
-<meta name="date" content="2017-04-03" />
+<meta name="date" content="2017-04-13" />
 
 <title>Parameterization of Response Distributions in brms</title>
 
@@ -32,7 +32,7 @@
 
 <h1 class="title toc-ignore">Parameterization of Response Distributions in brms</h1>
 <h4 class="author"><em>Paul Bürkner</em></h4>
-<h4 class="date"><em>2017-04-03</em></h4>
+<h4 class="date"><em>2017-04-13</em></h4>
 
 
 
@@ -149,11 +149,15 @@ f(y_i) = \frac{\exp(\eta_{iy_i})}{\sum_{k = 1}^{K} \exp(\eta_{ik})}
 <h2>Zero-inflated and hurdle models</h2>
 <p><strong>Zero-inflated</strong> and <strong>hurdle</strong> families extend existing families by adding special processes for responses that are zero. The densitiy of a <strong>zero-inflated</strong> family is given by <span class="math display">\[
 f_z(y_i) = z + (1 - z) f(0) \quad \text{if } y_i = 0 \\
-  f_z(y_i) = (1 - z) f(y_i) \quad \text{if } y_i &gt; 0
+f_z(y_i) = (1 - z) f(y_i) \quad \text{if } y_i &gt; 0
 \]</span> where <span class="math inline">\(z\)</span> denotes the zero-inflation probability. Currently implemented families are <strong>zero_inflated_poisson</strong>, <strong>zero_inflated_binomial</strong>, <strong>zero_inflated_negbinomial</strong>, and <strong>zero_inflated_beta</strong>. The density of a <strong>hurdle</strong> family is given by <span class="math display">\[
 f_z(y_i) = z \quad \text{if } y_i = 0 \\
-  f_z(y_i) = (1 - z) f(y_i) / (1 - f(0)) \quad \text{if } y_i &gt; 0
-\]</span> Currently implemented families are <strong>hurdle_poisson</strong>, <strong>hurdle_negbinomial</strong>, <strong>hurdle_gamma</strong>, and <strong>hurdle_lognormal</strong>.</p>
+f_z(y_i) = (1 - z) f(y_i) / (1 - f(0)) \quad \text{if } y_i &gt; 0
+\]</span> Currently implemented families are <strong>hurdle_poisson</strong>, <strong>hurdle_negbinomial</strong>, <strong>hurdle_gamma</strong>, and <strong>hurdle_lognormal</strong>. The density of a <strong>zero-one-inflated</strong> family is given by <span class="math display">\[
+f_{\alpha, \gamma}(y_i) = \alpha (1 - \gamma) \quad \text{if } y_i = 0 \\
+f_{\alpha, \gamma}(y_i) = \alpha \gamma \quad \text{if } y_i = 1 \\
+f_{\alpha, \gamma}(y_i) = (1 - \alpha) f(y_i) \quad \text{if } y_i \notin \{0, 1\}
+\]</span> where <span class="math inline">\(\alpha\)</span> is the zero-one-inflation probability (i.e. the probability that zero or one occurs) and <span class="math inline">\(\gamma\)</span> is the conditional one-inflation probability (i.e. the probability that one occurs rather than zero). Currently implemented families are <strong>zero_one_inflated_beta</strong>.</p>
 </div>
 
 

@@ -203,6 +203,13 @@ fitted_zero_inflated_beta <- function(draws) {
   ilink(draws$mu, draws$f$link) * (1 - draws$zi)
 }
 
+fitted_zero_one_inflated_beta <- function(draws) {
+  draws$zoi <- get_auxpar(draws$zoi)
+  draws$coi <- get_auxpar(draws$coi)
+  draws$zoi * draws$coi + 
+    ilink(draws$mu, draws$f$link) * (1 - draws$zoi)
+}
+
 fitted_categorical <- function(draws) {
   fitted_catordinal(draws)
 }

@@ -363,6 +363,19 @@ predict_zero_inflated_beta <- function(i, draws, ...) {
                               shape2 = (1 - mu) * phi))
 }
 
+predict_zero_one_inflated_beta <- function(i, draws, ...) {
+  zoi <- get_auxpar(draws$zoi, i)
+  coi <- get_auxpar(draws$coi, i)
+  mu <- ilink(get_eta(draws$mu, i), draws$f$link)
+  phi <- get_auxpar(draws$phi, i = i)
+  hu <- runif(draws$nsamples, 0, 1)
+  one_or_zero <- runif(draws$nsamples, 0, 1)
+  ifelse(hu < zoi, 
+    ifelse(one_or_zero < coi, 1, 0),
+    rbeta(draws$nsamples, shape1 = mu * phi, shape2 = (1 - mu) * phi)
+  )
+}
+
 predict_zero_inflated_poisson <- function(i, draws, ...) {
   # theta is the bernoulli zero-inflation parameter
   theta <- get_zi_hu(draws, i, par = "zi")

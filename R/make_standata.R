@@ -110,13 +110,17 @@ make_standata <- function(formula, data, family = NULL,
         stop2("Family '", family4error, "' requires responses ", 
               "to contain only two different values.")
       }
-    } else if (any(families %in% c("beta", "zero_inflated_beta"))) {
+    } else if (any(grepl("(^|_)beta$", families))) {
       if (any(families %in% "beta")) {
         lower <- any(standata$Y <= 0)
       } else {
         lower <- any(standata$Y < 0) 
       } 
-      upper <- any(standata$Y >= 1)
+      if (any(families %in% "zero_one_inflated_beta")) {
+        upper <- any(standata$Y > 1) 
+      } else {
+        upper <- any(standata$Y >= 1) 
+      }
       if (lower || upper) {
         stop2("Family '", family4error, "' requires responses ", 
               "between 0 and 1.")

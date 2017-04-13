@@ -236,13 +236,13 @@ test_that("loglik for zero-inflated and hurdle models runs without erros", {
   ns <- 50
   nobs <- 8
   trials <- sample(10:30, nobs, replace = TRUE)
-  resp <- rbinom(nobs / 2, size = trials[1:(nobs / 2)], 
-                 prob = rbeta(nobs / 2, 1, 1))
-  draws <- list(mu = matrix(rnorm(ns*nobs*2), ncol = nobs*2),
+  resp <- rbinom(nobs, size = trials, prob = rbeta(nobs, 1, 1))
+  draws <- list(mu = matrix(rnorm(ns*nobs), ncol = nobs),
                 shape = matrix(rgamma(ns, 4)), 
-                phi = matrix(rgamma(ns, 1)))
-  draws$data <- list(Y = c(resp, rep(0, 4)), N_trait = nobs, 
-                     trials = trials)
+                phi = matrix(rgamma(ns, 1)),
+                zi = rbeta(ns, 1, 1), coi = rbeta(ns, 5, 7))
+  draws$hu <- draws$zoi <- draws$zi
+  draws$data <- list(Y = c(resp, rep(0, 4)), trials = trials)
   draws$f$link <- "log"
   
   ll <- loglik_hurdle_poisson(1, draws = draws)
@@ -267,8 +267,11 @@ test_that("loglik for zero-inflated and hurdle models runs without erros", {
   ll <- loglik_zero_inflated_binomial(4, draws = draws)
   expect_equal(length(ll), ns)
   
-  draws$data$Y[1:(nobs / 2)] <- rbeta(nobs / 2, 0.5, 4)
+  draws$data$Y[1:nobs] <- rbeta(nobs / 2, 0.5, 4)
   ll <- loglik_zero_inflated_beta(6, draws = draws)
+  expect_equal(length(ll), ns)
+  
+  ll <- loglik_zero_one_inflated_beta(7, draws = draws)
   expect_equal(length(ll), ns)
 })
 

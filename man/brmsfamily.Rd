@@ -21,6 +21,7 @@
 \alias{hurdle_gamma}
 \alias{hurdle_lognormal}
 \alias{zero_inflated_beta}
+\alias{zero_one_inflated_beta}
 \alias{zero_inflated_poisson}
 \alias{zero_inflated_negbinomial}
 \alias{zero_inflated_binomial}
@@ -34,8 +35,9 @@
 brmsfamily(family, link = NULL, link_sigma = "log", link_shape = "log",
   link_nu = "logm1", link_phi = "log", link_kappa = "log",
   link_beta = "log", link_zi = "logit", link_hu = "logit",
-  link_disc = "log", link_bs = "log", link_ndt = "log",
-  link_bias = "logit", link_quantile = "logit", link_xi = "log1p")
+  link_zoi = "logit", link_coi = "logit", link_disc = "log",
+  link_bs = "log", link_ndt = "log", link_bias = "logit",
+  link_xi = "log1p", link_quantile = "logit")
 
 student(link = "identity", link_sigma = "log", link_nu = "logm1")
 
@@ -78,6 +80,9 @@ hurdle_lognormal(link = "identity", link_sigma = "log", link_hu = "logit")
 
 zero_inflated_beta(link = "logit", link_phi = "log", link_zi = "logit")
 
+zero_one_inflated_beta(link = "logit", link_phi = "log",
+  link_zoi = "logit", link_coi = "logit")
+
 zero_inflated_poisson(link = "log", link_zi = "logit")
 
 zero_inflated_negbinomial(link = "log", link_shape = "log",
@@ -104,13 +109,13 @@ Currently, the following families are supported:
 \code{geometric}, \code{Gamma}, \code{lognormal}, 
 \code{exgaussian}, \code{wiener}, \code{inverse.gaussian}, 
 \code{exponential}, \code{weibull}, \code{frechet},
-\code{Beta}, \code{von_mises},
-\code{categorical}, \code{cumulative}, \code{cratio}, \code{sratio},
-\code{acat}, \code{hurdle_poisson}, \code{hurdle_negbinomial}, 
-\code{hurdle_gamma}, \code{hurdle_lognormal}, 
+\code{Beta}, \code{von_mises}, \code{asym_laplace},
+\code{gen_extreme_value}, \code{categorical}, \code{cumulative}, 
+\code{cratio}, \code{sratio}, \code{acat}, \code{hurdle_poisson}, 
+\code{hurdle_negbinomial}, \code{hurdle_gamma}, \code{hurdle_lognormal},
 \code{zero_inflated_binomial}, \code{zero_inflated_beta},
-\code{zero_inflated_negbinomial}, 
-and \code{zero_inflated_poisson}.}
+\code{zero_inflated_negbinomial}, \code{zero_inflated_poisson},
+and \code{zero_one_inflated_beta}.}
 
 \item{link}{A specification for the model link function. 
 This can be a name/expression or character string. 
@@ -133,6 +138,10 @@ functions supported by each family.}
 
 \item{link_hu}{Link of auxiliary parameter \code{hu} if being predicted.}
 
+\item{link_zoi}{Link of auxiliary parameter \code{zoi} if being predicted.}
+
+\item{link_coi}{Link of auxiliary parameter \code{coi} if being predicted.}
+
 \item{link_disc}{Link of auxiliary parameter \code{disc} if being predicted.}
 
 \item{link_bs}{Link of auxiliary parameter \code{bs} if being predicted.}
@@ -141,9 +150,9 @@ functions supported by each family.}
 
 \item{link_bias}{Link of auxiliary parameter \code{bias} if being predicted.}
 
-\item{link_quantile}{Link of auxiliary parameter \code{quantile} if being predicted.}
-
 \item{link_xi}{Link of auxiliary parameter \code{xi} if being predicted.}
+
+\item{link_quantile}{Link of auxiliary parameter \code{quantile} if being predicted.}
 }
 \description{
 Family objects provide a convenient way to specify the details of the models 
@@ -177,11 +186,13 @@ Family \code{gaussian} with \code{identity} link leads to linear regression.
   the main formula predicts the drift parameter 'delta' and
   all other parameters are modeled as auxiliary parameters 
   (see \code{\link[brms:brmsformula]{brmsformula}} for details).
-  Families \code{hurdle_poisson}, \code{hurdle_negbinomial}, \code{hurdle_gamma}, 
-  \code{hurdle_lognormal}, \code{zero_inflated_poisson},
-  \code{zero_inflated_negbinomial}, \code{zero_inflated_binomial}, and
-  \code{zero_inflated_beta} allow to estimate zero-inflated and hurdle models. 
+  Families \code{hurdle_poisson}, \code{hurdle_negbinomial}, 
+  \code{hurdle_gamma}, \code{hurdle_lognormal}, \code{zero_inflated_poisson},
+  \code{zero_inflated_negbinomial}, \code{zero_inflated_binomial},
+  \code{zero_inflated_beta}, and \code{zero_one_inflated_beta} 
+  allow to estimate zero-inflated and hurdle models. 
   These models can be very helpful when there are many zeros in the data 
+  (or ones in case of one-inflated models)
   that cannot be explained by the primary distribution of the response. 
   Families \code{hurdle_lognormal} and \code{hurdle_gamma} are 
   especially useful, as traditional \code{lognormal} or \code{Gamma}
@@ -197,7 +208,8 @@ Family \code{gaussian} with \code{identity} link leads to linear regression.
   \code{cumulative}, \code{cratio}, \code{sratio}, and \code{acat} 
   the links \code{logit}, \code{probit}, \code{probit_approx}, 
   \code{cloglog}, and \code{cauchit}; 
-  family \code{categorical} the link \code{logit};
+  families \code{categorical}, \code{zero_inflated_beta}, and 
+  \code{zero_one_inflated_beta} the link \code{logit};
   families \code{Gamma}, \code{weibull}, \code{exponential}, and 
   \code{frechet} the links \code{log}, \code{identity}, and \code{inverse};
   family \code{lognormal} the links \code{identity} and \code{inverse};

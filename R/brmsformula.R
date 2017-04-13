@@ -31,6 +31,8 @@
 #'   \code{quantile} (quantile parameter of the \code{asym_laplace} family);
 #'   \code{zi} (zero-inflation probability); 
 #'   \code{hu} (hurdle probability);
+#'   \code{zoi} (zero-one-inflation probability);
+#'   \code{coi} (conditional one-inflation probability);
 #'   \code{disc} (discrimination) for ordinal models;
 #'   \code{bs}, \code{ndt}, and \code{bias} (boundary separation,
 #'   non-decision time, and initial bias of the \code{wiener}
@@ -654,7 +656,8 @@ prepare_auxformula <- function(formula, par = NULL, rsv_pars = NULL) {
 auxpars <- function() {
   # names of auxiliary parameters
   c("mu", "sigma", "shape", "nu", "phi", "kappa", "beta", "xi",
-    "zi", "hu", "disc", "bs", "ndt", "bias", "quantile", "theta")
+    "zi", "hu", "zoi", "coi", "disc", "bs", "ndt", "bias", 
+    "quantile", "theta")
 }
 
 links_auxpars <- function(ap) {
@@ -669,6 +672,8 @@ links_auxpars <- function(ap) {
     beta = c("log", "identity"),
     zi = c("logit", "identity"), 
     hu = c("logit", "identity"),
+    zoi = c("logit", "identity"), 
+    coi = c("logit", "identity"), 
     disc = c("log", "identity"),
     bs = c("log", "identity"), 
     ndt = c("log", "identity"),
@@ -693,6 +698,8 @@ valid_auxpars.default <- function(family, bterms = NULL, ...) {
     beta = has_beta(family),
     zi = is_zero_inflated(family, zi_beta = TRUE), 
     hu = is_hurdle(family, zi_beta = FALSE),
+    zoi = is_zero_one_inflated(family),
+    coi = is_zero_one_inflated(family),
     bs = is_wiener(family), 
     ndt = is_wiener(family), 
     bias = is_wiener(family), 

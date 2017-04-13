@@ -392,6 +392,8 @@ stan_families <- function(family, bterms) {
     out$fun <- "  #include 'fun_zero_inflated_binomial.stan' \n"
   } else if (any(families %in% "zero_inflated_beta")) {
     out$fun <- "  #include 'fun_zero_inflated_beta.stan' \n"
+  } else if (any(families %in% "zero_one_inflated_beta")) {
+    out$fun <- "  #include 'fun_zero_one_inflated_beta.stan' \n"
   } else if (any(families %in% "hurdle_poisson")) {
     out$fun <- "  #include 'fun_hurdle_poisson.stan' \n"
   } else if (any(families %in% "hurdle_negbinomial")) {
