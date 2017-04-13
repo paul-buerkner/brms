@@ -31,6 +31,8 @@
 #'   \code{quantile} (quantile parameter of the \code{asym_laplace} family);
 #'   \code{zi} (zero-inflation probability); 
 #'   \code{hu} (hurdle probability);
+#'   \code{zoi} (zero-one-inflation probability);
+#'   \code{coi} (conditional one-inflation probability);
 #'   \code{disc} (discrimination) for ordinal models;
 #'   \code{bs}, \code{ndt}, and \code{bias} (boundary separation,
 #'   non-decision time, and initial bias of the \code{wiener}

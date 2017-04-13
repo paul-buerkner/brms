@@ -15,13 +15,13 @@
 #'   \code{geometric}, \code{Gamma}, \code{lognormal}, 
 #'   \code{exgaussian}, \code{wiener}, \code{inverse.gaussian}, 
 #'   \code{exponential}, \code{weibull}, \code{frechet},
-#'   \code{Beta}, \code{von_mises},
-#'   \code{categorical}, \code{cumulative}, \code{cratio}, \code{sratio},
-#'   \code{acat}, \code{hurdle_poisson}, \code{hurdle_negbinomial}, 
-#'   \code{hurdle_gamma}, \code{hurdle_lognormal}, 
+#'   \code{Beta}, \code{von_mises}, \code{asym_laplace},
+#'   \code{gen_extreme_value}, \code{categorical}, \code{cumulative}, 
+#'   \code{cratio}, \code{sratio}, \code{acat}, \code{hurdle_poisson}, 
+#'   \code{hurdle_negbinomial}, \code{hurdle_gamma}, \code{hurdle_lognormal},
 #'   \code{zero_inflated_binomial}, \code{zero_inflated_beta},
-#'   \code{zero_inflated_negbinomial}, 
-#'   and \code{zero_inflated_poisson}.
+#'   \code{zero_inflated_negbinomial}, \code{zero_inflated_poisson},
+#'   and \code{zero_one_inflated_beta}.
 #' @param link A specification for the model link function. 
 #'   This can be a name/expression or character string. 
 #'   See the 'Details' section for more information on link
@@ -34,6 +34,8 @@
 #' @param link_beta Link of auxiliary parameter \code{beta} if being predicted.
 #' @param link_zi Link of auxiliary parameter \code{zi} if being predicted.
 #' @param link_hu Link of auxiliary parameter \code{hu} if being predicted.
+#' @param link_zoi Link of auxiliary parameter \code{zoi} if being predicted.
+#' @param link_coi Link of auxiliary parameter \code{coi} if being predicted.
 #' @param link_disc Link of auxiliary parameter \code{disc} if being predicted.
 #' @param link_bs Link of auxiliary parameter \code{bs} if being predicted.
 #' @param link_ndt Link of auxiliary parameter \code{ndt} if being predicted.
@@ -65,11 +67,13 @@
 #'   the main formula predicts the drift parameter 'delta' and
 #'   all other parameters are modeled as auxiliary parameters 
 #'   (see \code{\link[brms:brmsformula]{brmsformula}} for details).
-#'   Families \code{hurdle_poisson}, \code{hurdle_negbinomial}, \code{hurdle_gamma}, 
-#'   \code{hurdle_lognormal}, \code{zero_inflated_poisson},
-#'   \code{zero_inflated_negbinomial}, \code{zero_inflated_binomial}, and
-#'   \code{zero_inflated_beta} allow to estimate zero-inflated and hurdle models. 
+#'   Families \code{hurdle_poisson}, \code{hurdle_negbinomial}, 
+#'   \code{hurdle_gamma}, \code{hurdle_lognormal}, \code{zero_inflated_poisson},
+#'   \code{zero_inflated_negbinomial}, \code{zero_inflated_binomial},
+#'   \code{zero_inflated_beta}, and \code{zero_one_inflated_beta} 
+#'   allow to estimate zero-inflated and hurdle models. 
 #'   These models can be very helpful when there are many zeros in the data 
+#'   (or ones in case of one-inflated models)
 #'   that cannot be explained by the primary distribution of the response. 
 #'   Families \code{hurdle_lognormal} and \code{hurdle_gamma} are 
 #'   especially useful, as traditional \code{lognormal} or \code{Gamma}
@@ -85,7 +89,8 @@
 #'   \code{cumulative}, \code{cratio}, \code{sratio}, and \code{acat} 
 #'   the links \code{logit}, \code{probit}, \code{probit_approx}, 
 #'   \code{cloglog}, and \code{cauchit}; 
-#'   family \code{categorical} the link \code{logit};
+#'   families \code{categorical}, \code{zero_inflated_beta}, and 
+#'   \code{zero_one_inflated_beta} the link \code{logit};
 #'   families \code{Gamma}, \code{weibull}, \code{exponential}, and 
 #'   \code{frechet} the links \code{log}, \code{identity}, and \code{inverse};
 #'   family \code{lognormal} the links \code{identity} and \code{inverse};

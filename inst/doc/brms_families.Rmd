@@ -176,12 +176,19 @@ Note that $\eta$ does also depend on the category $k$. For reasons of identifiab
 **Zero-inflated** and **hurdle** families extend existing families by adding special processes for responses that are zero. The densitiy of a **zero-inflated** family is given by
 $$
 f_z(y_i) = z + (1 - z) f(0) \quad \text{if } y_i = 0 \\
-  f_z(y_i) = (1 - z) f(y_i) \quad \text{if } y_i > 0
+f_z(y_i) = (1 - z) f(y_i) \quad \text{if } y_i > 0
 $$
 where $z$ denotes the zero-inflation probability. Currently implemented families are **zero_inflated_poisson**, **zero_inflated_binomial**, **zero_inflated_negbinomial**, and **zero_inflated_beta**.
 The density of a **hurdle** family is given by 
 $$
 f_z(y_i) = z \quad \text{if } y_i = 0 \\
-  f_z(y_i) = (1 - z) f(y_i) / (1 - f(0)) \quad \text{if } y_i > 0
+f_z(y_i) = (1 - z) f(y_i) / (1 - f(0)) \quad \text{if } y_i > 0
 $$
 Currently implemented families are **hurdle_poisson**, **hurdle_negbinomial**, **hurdle_gamma**, and **hurdle_lognormal**.
+The density of a **zero-one-inflated** family is given by
+$$
+f_{\alpha, \gamma}(y_i) = \alpha (1 - \gamma) \quad \text{if } y_i = 0 \\
+f_{\alpha, \gamma}(y_i) = \alpha \gamma \quad \text{if } y_i = 1 \\
+f_{\alpha, \gamma}(y_i) = (1 - \alpha) f(y_i) \quad \text{if } y_i \notin \{0, 1\}
+$$
+where $\alpha$ is the zero-one-inflation probability (i.e. the probability that zero or one occurs) and $\gamma$ is the conditional one-inflation probability (i.e. the probability that one occurs rather than zero). Currently implemented families are **zero_one_inflated_beta**.
