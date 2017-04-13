@@ -3,6 +3,18 @@
 \encoding{UTF-8}
 
 \section{CHANGES IN VERSION 1.6.0++}{
+  \subsection{NEW FEATURES}{
+    \itemize{
+      \item Implement zero-one-inflated beta models
+      via family \code{zero_one_inflated_beta}.
+    }
+  }
+  \subsection{OTHER CHANGES}{
+    \itemize{
+      \item Ensure full compatibility with 
+      \pkg{bayesplot} version 1.2.0.
+    }
+  }
   \subsection{BUG FIXES}{
     \itemize{
       \item Fix problems when setting priors
