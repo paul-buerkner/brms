@@ -406,6 +406,22 @@ loglik_zero_inflated_beta <- function(i, draws, data = data.frame()) {
   loglik_weight(out, i = i, data = draws$data)
 }
 
+loglik_zero_one_inflated_beta <- function(i, draws, data = data.frame()) {
+  zoi <- get_auxpar(draws$zoi, i)
+  coi <- get_auxpar(draws$coi, i)
+  if (draws$data$Y[i] %in% c(0, 1)) {
+    out <- dbinom(1, size = 1, prob = zoi, log = TRUE) + 
+      dbinom(draws$data$Y[i], size = 1, prob = coi, log = TRUE)
+  } else {
+    phi <- get_auxpar(draws$phi, i)
+    mu <- ilink(get_eta(draws$mu, i), draws$f$link)
+    args <- list(shape1 = mu * phi, shape2 = (1 - mu) * phi)
+    out <- dbinom(0, size = 1, prob = zoi, log = TRUE) + 
+      do.call(dbeta, c(draws$data$Y[i], args, log = TRUE))
+  }
+  loglik_weight(out, i = i, data = draws$data)
+}
+
 loglik_categorical <- function(i, draws, data = data.frame()) {
   if (draws$f$link == "logit") {
     p <- cbind(rep(0, draws$nsamples), get_eta(draws$mu, i)[, 1, ])
