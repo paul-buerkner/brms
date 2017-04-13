@@ -182,7 +182,9 @@ test_that("predict for zero-inflated and hurdle models runs without erros", {
   trials <- sample(10:30, nobs, replace = TRUE)
   draws <- list(mu = matrix(rnorm(ns * nobs * 2), ncol = nobs * 2),
                 shape = rgamma(ns, 4), phi = rgamma(ns, 1),
+                zi = rbeta(ns, 1, 1), coi = rbeta(ns, 5, 7), 
                 nsamples = ns)
+  draws$hu <- draws$zoi <- draws$zi
   draws$data <- list(N_trait = nobs, trials = trials)
   draws$f$link <- "log"
   
@@ -206,6 +208,9 @@ test_that("predict for zero-inflated and hurdle models runs without erros", {
   expect_equal(length(pred), ns)
   
   pred <- predict_zero_inflated_beta(8, draws = draws)
+  expect_equal(length(pred), ns)
+  
+  pred <- predict_zero_one_inflated_beta(7, draws = draws)
   expect_equal(length(pred), ns)
 })
 

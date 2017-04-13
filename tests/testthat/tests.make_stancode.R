@@ -300,6 +300,9 @@ test_that("self-defined functions appear in the Stan code", {
                              family = "zero_inflated_beta"),
                "real zero_inflated_beta_lpdf(real y")
   expect_match2(make_stancode(count ~ Trt_c, data = epilepsy, 
+                              family = "zero_one_inflated_beta"),
+                "real zero_one_inflated_beta_lpdf(real y")
+  expect_match2(make_stancode(count ~ Trt_c, data = epilepsy, 
                              family = hurdle_poisson()),
                "real hurdle_poisson_lpmf(int y")
   expect_match2(make_stancode(count ~ Trt_c, data = epilepsy, 
