@@ -971,6 +971,12 @@ extract_draws <- function(x, ...) {
   UseMethod("extract_draws")
 }
 
+make_smooth_list <- function(x, data, ...) {
+  # compute smoothing objects based on the original data
+  # as the basis for doing predictions with new data
+  UseMethod("make_smooth_list")
+}
+
 check_prior_special <- function(x, ...) {
   # prepare special priors for use in Stan
   UseMethod("check_prior_special")
@@ -992,5 +998,6 @@ valid_auxpars <- function(family, ...) {
 }
 
 stan_llh <- function(family, ...) {
+  # Stan code for the model likelihood 
   UseMethod("stan_llh")
 }

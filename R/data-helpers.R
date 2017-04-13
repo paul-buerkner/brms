@@ -494,48 +494,39 @@ prepare_mo_vars <- function(formula, data, check = TRUE) {
   out
 }
 
-make_smooth_list <- function(bterms, data) {
-  # compute smoothing objects based on the original data
-  # as the basis for doing predictions with new data
-  # Args:
-  #   bterms: object of class brmsterms
-  #   data: the original model.frame
-  # Returns:
-  #   A named list of lists of smoothing objects
-  #   one element per (non-linear) parameter    
-  if (has_smooths(bterms)) {
+#' @export
+make_smooth_list.btl <- function(x, data, ...) {
+  if (has_smooths(x)) {
     knots <- attr(data, "knots")
     data <- rm_attr(data, "terms")
     gam_args <- list(data = data, knots = knots, 
                      absorb.cons = TRUE, modCon = 3)
-    if (length(bterms$nlpars)) {
-      smooth <- named_list(names(bterms$nlpars))
-      for (nlp in names(smooth)) {
-        sm_labels <- get_sm_labels(bterms$nlpars[[nlp]])
-        for (i in seq_along(sm_labels)) {
-          sc_args <- c(list(eval_smooth(sm_labels[i])), gam_args)
-          smooth[[nlp]][[i]] <- do.call(mgcv::smoothCon, sc_args)
-        }
-      }
-    } else {
-      smooth <- named_list("mu")
-      sm_labels <- get_sm_labels(bterms)
-      for (i in seq_along(sm_labels)) {
-        sc_args <- c(list(eval_smooth(sm_labels[i])), gam_args)
-        smooth[["mu"]][[i]] <- do.call(mgcv::smoothCon, sc_args)
-      }
-    }
-    auxpars <- names(bterms$auxpars)
-    smooth <- c(smooth, named_list(auxpars))
-    for (ap in auxpars) {
-      sm_labels <- get_sm_labels(bterms$auxpars[[ap]])
-      for (i in seq_along(sm_labels)) {
-        sc_args <- c(list(eval_smooth(sm_labels[i])), gam_args)
-        smooth[[ap]][[i]] <- do.call(mgcv::smoothCon, sc_args)
-      }
+    sm_labels <- get_sm_labels(x)
+    smooth <- named_list(sm_labels)
+    for (i in seq_along(sm_labels)) {
+      sc_args <- c(list(eval_smooth(sm_labels[i])), gam_args)
+      smooth[[i]] <- do.call(mgcv::smoothCon, sc_args)
     }
   } else {
     smooth <- list()
+  }
+  smooth
+}
+
+#' @export
+make_smooth_list.btnl <- function(x, data, ...) {
+  smooth <- named_list(names(x$nlpars))
+  for (i in seq_along(smooth)) {
+    smooth[[i]] <- make_smooth_list(x$nlpars[[i]], data, ...)
+  }
+  smooth
+}
+
+#' @export
+make_smooth_list.brmsterms <- function(x, data, ...) {
+  smooth <- named_list(names(x$auxpars))
+  for (i in seq_along(smooth)) {
+    smooth[[i]] <- make_smooth_list(x$auxpars[[i]], data, ...)
   }
   smooth
 }

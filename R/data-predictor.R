@@ -62,7 +62,8 @@ data_effects.btnl <- function(x, data, ranef = empty_ranef(),
       data_effects(
         x$nlpars[[nlp]], data, ranef = ranef,
         prior = prior, knots = knots, nlpar = nlp,
-        not4stan = not4stan, smooth = smooth, Jmo = Jmo
+        not4stan = not4stan, smooth = smooth[[nlp]], 
+        Jmo = Jmo
       )
     )
   }
