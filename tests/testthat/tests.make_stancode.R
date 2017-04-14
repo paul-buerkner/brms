@@ -545,34 +545,37 @@ test_that("known standard errors appear in the Stan code", {
 })
 
 test_that("Addition term 'disp' appears in the Stan code", {
-  scode <- make_stancode(time | disp(sqrt(age)) ~ sex + age, data = kidney)
+  SW(scode <- make_stancode(time | disp(sqrt(age)) ~ sex + age, data = kidney))
   expect_match2(scode, "disp_sigma = sigma * disp;")
   expect_match2(scode, "Y ~ normal(mu, disp_sigma)")
   
-  scode <- make_stancode(time | disp(1/age) ~ sex + age, 
-                         data = kidney, family = lognormal())
+  SW(scode <- make_stancode(time | disp(1/age) ~ sex + age, 
+                            data = kidney, family = lognormal()))
   expect_match2(scode, "Y ~ lognormal(mu, disp_sigma);")
   
-  scode <- make_stancode(time | disp(1/age) ~ sex + age + (1|patient), 
-                         data = kidney, family = Gamma())
+  SW(scode <- make_stancode(time | disp(1/age) ~ sex + age + (1|patient), 
+                            data = kidney, family = Gamma()))
   expect_match2(scode, "mu[n] = disp_shape[n] * (")
   expect_match2(scode, "Y ~ gamma(disp_shape, mu)")
   
-  scode <- make_stancode(time | disp(1/age) ~ sex + age, 
-                         data = kidney, family = weibull())
+  SW(scode <- make_stancode(time | disp(1/age) ~ sex + age, 
+                            data = kidney, family = weibull()))
   expect_match2(scode, "mu[n] = exp((mu[n]) / disp_shape[n]);")
   
-  scode <- make_stancode(time | disp(1/age) ~ sex + age, 
-                         data = kidney, family = negbinomial())
+  SW(scode <- make_stancode(time | disp(1/age) ~ sex + age, 
+                            data = kidney, family = negbinomial()))
   expect_match2(scode, "Y ~ neg_binomial_2_log(mu, disp_shape);")
   
-  scode <- make_stancode(bf(y | disp(y) ~ a - b^x, a + b ~ 1, nl = TRUE),
-                            family = weibull(),
-                            data = data.frame(y = rpois(10, 10), x = rnorm(10)),
-                            prior = c(set_prior("normal(0,1)", nlpar = "a"),
-                                      set_prior("normal(0,1)", nlpar = "b")))
+  SW(scode <- make_stancode(
+    bf(y | disp(y) ~ a - b^x, a + b ~ 1, nl = TRUE),
+    family = weibull(),
+    data = data.frame(y = rpois(10, 10), x = rnorm(10)),
+    prior = c(set_prior("normal(0,1)", nlpar = "a"),
+              set_prior("normal(0,1)", nlpar = "b"))
+  ))
   expect_match2(scode,
-    "mu[n] = exp((mu_a[n] - mu_b[n] ^ C_1[n]) / disp_shape[n]);")
+    "mu[n] = exp((mu_a[n] - mu_b[n] ^ C_1[n]) / disp_shape[n]);"
+  )
 })
 
 test_that("functions defined in 'stan_funs' appear in the functions block", {

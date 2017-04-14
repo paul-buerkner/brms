@@ -13,6 +13,7 @@
     \itemize{
       \item Ensure full compatibility with 
       \pkg{bayesplot} version 1.2.0.
+      \item Deprecate addition argument \code{disp}.
     }
   }
   \subsection{BUG FIXES}{

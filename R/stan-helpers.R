@@ -546,6 +546,8 @@ stan_disp <- function(bterms, family) {
   stopifnot(is.family(family))
   out <- list()
   if (is.formula(bterms$adforms$disp)) {
+    warning2("Addition argument 'disp' is deprecated. ",
+             "See help(brmsformula) for more details.")
     par <- if (has_sigma(family)) "sigma"
            else if (has_shape(family)) "shape"
     if (!is.null(bterms[[par]])) {

@@ -23,7 +23,7 @@ brmsfit_example1 <- brm(bf(count ~ Trt*Age + mono(Exp) + s(Age) +
                         warmup = 150, iter = 200, chains = 2,
                         save_dso = FALSE, testmode = TRUE)
 
-brmsfit_example2 <- brm(bf(count | disp(Exp) ~ inv_logit(a) * exp(b * Trt),
+brmsfit_example2 <- brm(bf(count | weights(Exp) ~ inv_logit(a) * exp(b * Trt),
                            a + b ~ Age + (1|ID1|patient), nl = TRUE),
                         data = dat, family = Gamma(), 
                         prior = c(set_prior("normal(2,2)", nlpar = "a"),

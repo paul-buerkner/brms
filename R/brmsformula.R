@@ -184,8 +184,8 @@
 #'   Then, formula \code{yi | weights(wei) ~ predictors} 
 #'   implements a weighted regression. 
 #'   
-#'   The addition argument \code{disp} (short for dispersion) serves a
-#'   similar purpose than \code{weight}. However, it has a different 
+#'   (DEPRECATED) The addition argument \code{disp} (short for dispersion) 
+#'   serves a similar purpose than \code{weight}. However, it has a different 
 #'   implementation and is less general as it is only usable for the
 #'   families \code{gaussian}, \code{student}, \code{lognormal},
 #'   \code{exgaussian}, \code{asym_laplace}, \code{Gamma}, 
@@ -197,6 +197,12 @@
 #'   is multiplied by the values given in \code{disp}. As \code{shape}
 #'   can be understood as a precision parameter (inverse of the variance),
 #'   higher values will lead to higher weights in this case.
+#'   Instead of using addition argument \code{disp}, you may 
+#'   equivalently use the distributional regression approach
+#'   by specifying \code{sigma ~ 1 + offset(log(xdisp))} or
+#'   \code{shape ~ 1 + offset(log(xdisp))}, where \code{xdisp} is
+#'   the variable being passed to \code{disp}.
+#'   
 #'   
 #'   For families \code{binomial} and \code{zero_inflated_binomial}, 
 #'   addition should contain a variable indicating the number of trials 
