@@ -878,14 +878,19 @@ stan_eta_ilink <- function(family, auxpars = NULL,
     )
     nu <- paste0("nu", mix)
     nu <- ifelse(nu %in% auxpars, paste0(nu, "[n]"), nu)
-    fl <- ifelse(family %in% c("gamma", "exponential"), 
-                 paste0(family, "_", link), family)
+    fl <- ifelse(
+      family %in% c("gamma", "hurdle_gamma", "exponential"), 
+      paste0(family, "_", link), family
+    )
     ilink <- stan_ilink(link)
     out <- switch(fl,
       c(paste0(ilink, "("), ")"),
       gamma_log = c(paste0(shape, " * exp(-("), "))"),
       gamma_inverse = c(paste0(shape, " * ("), ")"),
       gamma_identity = c(paste0(shape, " / ("), ")"),
+      hurdle_gamma_log = c(paste0(shape, " * exp(-("), "))"),
+      hurdle_gamma_inverse = c(paste0(shape, " * ("), ")"),
+      hurdle_gamma_identity = c(paste0(shape, " / ("), ")"),
       exponential_log = c("exp(-(", "))"),
       exponential_inverse = c("(", ")"),
       exponential_identity = c("inv(", ")"),

@@ -850,11 +850,13 @@ test_that("predicting zi and hu works correctly", {
                          family = "hurdle_gamma")
   expect_match2(scode, "Y[n] ~ hurdle_gamma_logit(shape, mu[n], hu[n])")
   expect_true(!grepl("inv_logit\\(", scode))
+  expect_match2(scode, "mu[n] = shape * exp(-(mu[n]));")
   
   scode <- make_stancode(bf(count ~ Trt_c, hu ~ Trt_c), epilepsy, 
                          family = hurdle_gamma(link_hu = "identity"))
   expect_match2(scode, "Y[n] ~ hurdle_gamma(shape, mu[n], hu[n])")
   expect_true(!grepl("inv_logit\\(", scode))
+  expect_match2(scode, "mu[n] = shape * exp(-(mu[n]));")
 })
 
 test_that("fixing auxiliary parameters is possible", {
