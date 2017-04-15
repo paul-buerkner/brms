@@ -99,8 +99,29 @@ stan_llh.default <- function(family, bterms, data, autocor,
       ), 
       bernoulli = c(
         "bernoulli_logit", 
-        p$mu)
+        p$mu
+      ),
+      hurdle_poisson = c(
+        paste0("hurdle_poisson_log", usc_logit), 
+        sargs(p$mu, p$hu)
+      ),
+      hurdle_negbinomial = c(
+        paste0("hurdle_neg_binomial_log", usc_logit), 
+        sargs(p$mu, p$shape, p$hu)
+      ),
+      zero_inflated_poisson = c(
+        paste0("zero_inflated_poisson_log", usc_logit), 
+        sargs(p$mu, p$zi)
+      ),
+      zero_inflated_negbinomial = c(
+        paste0("zero_inflated_neg_binomial_log", usc_logit),
+        sargs(p$mu, p$shape, p$zi)
+      ),
+      zero_inflated_binomial = c(
+        paste0("zero_inflated_binomial_blogit", usc_logit), 
+        sargs(trials, p$mu, p$zi)
       )
+    )
   } else {
     llh_pre <- switch(family,
       gaussian = c(
@@ -229,7 +250,7 @@ stan_llh.default <- function(family, bterms, data, autocor,
       ),
       hurdle_negbinomial = c(
         paste0("hurdle_neg_binomial", usc_logit), 
-        sargs(p$mu, p$hu, p$shape)
+        sargs(p$mu, p$shape, p$hu)
       ),
       hurdle_gamma = c(
         paste0("hurdle_gamma", usc_logit), 
@@ -237,7 +258,7 @@ stan_llh.default <- function(family, bterms, data, autocor,
       ),
       hurdle_lognormal = c(
         paste0("hurdle_lognormal", usc_logit), 
-        sargs(p$mu, p$hu, p$sigma)
+        sargs(p$mu, p$sigma, p$hu)
       ),
       zero_inflated_poisson = c(
         paste0("zero_inflated_poisson", usc_logit), 
@@ -245,7 +266,7 @@ stan_llh.default <- function(family, bterms, data, autocor,
       ),
       zero_inflated_negbinomial = c(
         paste0("zero_inflated_neg_binomial", usc_logit),
-        sargs(p$mu, p$zi, p$shape)
+        sargs(p$mu, p$shape, p$zi)
       ),
       zero_inflated_binomial = c(
         paste0("zero_inflated_binomial", usc_logit), 
@@ -253,7 +274,7 @@ stan_llh.default <- function(family, bterms, data, autocor,
       ),
       zero_inflated_beta = c(
         paste0("zero_inflated_beta", usc_logit), 
-        sargs(p$mu, p$zi, p$phi)
+        sargs(p$mu, p$phi, p$zi)
       ),
       zero_one_inflated_beta = c(
         "zero_one_inflated_beta", 

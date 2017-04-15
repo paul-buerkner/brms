@@ -940,9 +940,17 @@ stan_has_built_in_fun <- function(family) {
   link <- family$link
   par <- family$par
   family <- family$family
-  logit_families <- c("binomial", "bernoulli", "cumulative", "categorical")
+  log_families <- c(
+    "poisson", "negbinomial", "geometric", 
+    "zero_inflated_poisson", "zero_inflated_negbinomial",
+    "hurdle_poisson", "hurdle_negbinomial"
+  )
+  logit_families <- c(
+    "binomial", "bernoulli", "cumulative", "categorical",
+    "zero_inflated_binomial"
+  )
   isTRUE(
-    is_count(family) && link == "log" ||
+    family %in% log_families && link == "log" ||
     family %in% logit_families && link == "logit" ||
     isTRUE(par %in% c("zi", "hu")) && link == "logit"
   )

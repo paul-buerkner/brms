@@ -855,8 +855,7 @@ stan_eta_transform <- function(family, llh_adj = FALSE) {
   stopifnot(all(c("family", "link") %in% names(family)))
   link <- family$link
   !(!is_skewed(family) && link == "identity" ||
-    is_ordinal(family) || is_categorical(family) ||
-    is_zero_inflated(family) || is_hurdle(family)) &&
+    is_ordinal(family) || is_categorical(family)) &&
   (llh_adj || !stan_has_built_in_fun(family))
 }
 

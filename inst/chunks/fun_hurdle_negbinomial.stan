@@ -1,39 +1,76 @@
   /* hurdle negative binomial log-PDF of a single response 
    * Args: 
    *   y: the response value 
-   *   eta: linear predictor for negative binomial part 
+   *   mu: mean parameter of negative binomial distribution
+   *   phi: shape parameter of negative binomial distribution
    *   hu: hurdle probability
-   *   shape: shape parameter of negative binomial distribution
    * Returns:  
    *   a scalar to be added to the log posterior 
    */ 
-   real hurdle_neg_binomial_lpmf(int y, real eta, 
-                                 real hu, real shape) { 
-     if (y == 0) { 
-       return bernoulli_lpmf(1 | hu); 
-     } else { 
-       return bernoulli_lpmf(0 | hu) +  
-              neg_binomial_2_log_lpmf(y | eta, shape) - 
-              log(1 - (shape / (exp(eta) + shape))^shape); 
-     } 
-   }
+  real hurdle_neg_binomial_lpmf(int y, real mu, real phi, real hu) { 
+    if (y == 0) { 
+      return bernoulli_lpmf(1 | hu); 
+    } else { 
+      return bernoulli_lpmf(0 | hu) +  
+             neg_binomial_2_lpmf(y | mu, phi) - 
+             log(1 - (phi / (mu + phi))^phi); 
+    } 
+  }
   /* hurdle negative binomial log-PDF of a single response 
    * logit parameterization for the hurdle part
    * Args: 
    *   y: the response value 
-   *   eta: linear predictor for negative binomial part 
+   *   mu: mean parameter of negative binomial distribution 
+   *   phi: phi parameter of negative binomial distribution 
    *   hu: linear predictor of hurdle part 
-   *   shape: shape parameter of negative binomial distribution 
    * Returns:  
    *   a scalar to be added to the log posterior 
    */ 
-   real hurdle_neg_binomial_logit_lpmf(int y, real eta, 
-                                       real hu, real shape) { 
-     if (y == 0) { 
-       return bernoulli_logit_lpmf(1 | hu); 
-     } else { 
-       return bernoulli_logit_lpmf(0 | hu) +  
-              neg_binomial_2_log_lpmf(y | eta, shape) - 
-              log(1 - (shape / (exp(eta) + shape))^shape); 
-     } 
-   }
+  real hurdle_neg_binomial_logit_lpmf(int y, real mu, real phi, real hu) { 
+   if (y == 0) { 
+     return bernoulli_logit_lpmf(1 | hu); 
+   } else { 
+     return bernoulli_logit_lpmf(0 | hu) +  
+            neg_binomial_2_lpmf(y | mu, phi) - 
+            log(1 - (phi / (mu + phi))^phi); 
+   } 
+  }
+  /* hurdle negative binomial log-PDF of a single response 
+   * log parameterization for the negative binomial part
+   * Args: 
+   *   y: the response value 
+   *   eta: linear predictor for negative binomial distribution 
+   *   phi phi parameter of negative binomial distribution
+   *   hu: hurdle probability
+   * Returns:  
+   *   a scalar to be added to the log posterior 
+   */ 
+  real hurdle_neg_binomial_log_lpmf(int y, real eta, real phi, real hu) { 
+    if (y == 0) { 
+      return bernoulli_lpmf(1 | hu); 
+    } else { 
+      return bernoulli_lpmf(0 | hu) +  
+             neg_binomial_2_log_lpmf(y | eta, phi) - 
+             log(1 - (phi / (exp(eta) + phi))^phi); 
+    } 
+  }
+  /* hurdle negative binomial log-PDF of a single response 
+   * log parameterization for the negative binomial part
+   * logit parameterization for the hurdle part
+   * Args: 
+   *   y: the response value 
+   *   eta: linear predictor for negative binomial distribution
+   *   phi: phi parameter of negative binomial distribution 
+   *   hu: linear predictor of hurdle part 
+   * Returns:  
+   *   a scalar to be added to the log posterior 
+   */ 
+  real hurdle_neg_binomial_log_logit_lpmf(int y, real eta, real phi, real hu) {
+    if (y == 0) { 
+      return bernoulli_logit_lpmf(1 | hu); 
+   } else { 
+      return bernoulli_logit_lpmf(0 | hu) +  
+             neg_binomial_2_log_lpmf(y | eta, phi) - 
+             log(1 - (phi / (exp(eta) + phi))^phi); 
+    } 
+  }

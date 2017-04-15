@@ -825,8 +825,26 @@ test_that("Group syntax | and || is handled correctly,", {
 test_that("predicting zi and hu works correctly", {
   scode <- make_stancode(bf(count ~ Trt_c, zi ~ Trt_c), epilepsy, 
                          family = "zero_inflated_poisson")
-  expect_match2(scode, "Y[n] ~ zero_inflated_poisson_logit(mu[n], zi[n])")
+  expect_match2(scode, 
+    "Y[n] ~ zero_inflated_poisson_log_logit(mu[n], zi[n])"
+  )
   expect_true(!grepl("inv_logit\\(", scode))
+  expect_true(!grepl("exp(mu[n])", scode, fixed = TRUE))
+  
+  scode <- make_stancode(bf(count ~ Trt_c, zi ~ Trt_c), epilepsy, 
+                         family = "zero_inflated_binomial")
+  expect_match2(scode, 
+    "Y[n] ~ zero_inflated_binomial_blogit_logit(trials[n], mu[n], zi[n])"
+  )
+  expect_true(!grepl("inv_logit\\(", scode))
+  
+  scode <- make_stancode(bf(count ~ Trt_c, hu ~ Trt_c), epilepsy, 
+                         family = "hurdle_negbinomial")
+  expect_match2(scode, 
+    "Y[n] ~ hurdle_neg_binomial_log_logit(mu[n], shape, hu[n])"
+  )
+  expect_true(!grepl("inv_logit\\(", scode))
+  expect_true(!grepl("exp(mu[n])", scode, fixed = TRUE))
   
   scode <- make_stancode(bf(count ~ Trt_c, hu ~ Trt_c), epilepsy, 
                          family = "hurdle_gamma")
