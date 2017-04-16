@@ -185,32 +185,50 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
   }
   
   # check validity of link
-  as_lin <- family %in% c("exgaussian", "asym_laplace", "gen_extreme_value")
-  infl_beta <- family %in% c("zero_inflated_beta", "zero_one_inflated_beta")
-  if (is_linear(family) || as_lin) {
+  is_linear <- family %in% c(
+    "gaussian", "student", "exgaussian", 
+    "asym_laplace", "gen_extreme_value"
+  )  
+  is_count <- family %in% c(
+    "poisson", "negbinomial", "geometric", "hurdle_poisson",
+    "hurdle_negbinomial", "zero_inflated_poisson",
+    "zero_inflated_negbinomial"
+  )
+  is_binomial <- family %in% c(
+    "binomial", "bernoulli", "zero_inflated_binomial"
+  )
+  is_beta <- family %in% c(
+    "beta", "zero_inflated_beta", "zero_one_inflated_beta"
+  )
+  is_skewed <- family %in% c(
+    "gamma", "weibull", "exponential", "frechet", "hurdle_gamma"
+  )
+  is_lognormal <- family %in% c("lognormal", "hurdle_lognormal")
+  if (is_linear) {
     ok_links <- c("identity", "log", "inverse")
-  } else if (family == "inverse.gaussian") {
-    ok_links <- c("1/mu^2", "inverse", "identity", "log")
-  } else if (is_count(family)) {
+  } else if (is_count) {
     ok_links <- c("log", "identity", "sqrt")
-  } else if (is_ordinal(family) || infl_beta) {
-    ok_links <- c("logit", "probit", "probit_approx", "cloglog", "cauchit")
-  } else if (is_binary(family) || family %in% "beta") {
-    ok_links <- c("logit", "probit", "probit_approx", 
-                 "cloglog", "cauchit", "identity")
-  } else if (family %in% c("categorical", "zero_inflated_binomial")) {
-    ok_links <- c("logit")
-  } else if (is_skewed(family)) {
+  } else if (is_binomial || is_beta) {
+    ok_links <- c(
+      "logit", "probit", "probit_approx", 
+      "cloglog", "cauchit", "identity"
+    )
+  } else if (is_skewed) {
     ok_links <- c("log", "identity", "inverse")
-  } else if (is_lognormal(family)) {
+  } else if (is_lognormal) {
     ok_links <- c("identity", "inverse")
-  } else if (family %in% c("hurdle_lognormal", "wiener")) {
+  } else if (is_categorical(family)) {
+    ok_links <- c("logit")
+  } else if (is_ordinal(family)) {
+    ok_links <- c(
+      "logit", "probit", "probit_approx", "cloglog", "cauchit"
+    )
+  } else if (family %in% "inverse.gaussian") {
+    ok_links <- c("1/mu^2", "inverse", "identity", "log")
+  } else if (is_wiener(family)) {
     ok_links <- c("identity")
-  } else if (family %in% c("von_mises")) {
+  } else if (family %in% "von_mises") {
     ok_links <- c("tan_half")
-  } else if (is_hurdle(family) || is_zero_inflated(family)) {
-    # does not include zi_binomial, zi_beta, or hu_lognormal
-    ok_links <- c("log")
   }
   # non-standard evaluation of link
   if (!is.character(slink)) {
@@ -224,7 +242,7 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
     }
   }
   if (length(slink) != 1L) {
-    stop("Argument 'link' must be of length 1.", call. = FALSE)
+    stop2("Argument 'link' must be of length 1.")
   }
   if (is.na(slink)) {
     slink <- ok_links[1]

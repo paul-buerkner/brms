@@ -832,11 +832,25 @@ test_that("predicting zi and hu works correctly", {
   expect_true(!grepl("exp(mu[n])", scode, fixed = TRUE))
   
   scode <- make_stancode(bf(count ~ Trt_c, zi ~ Trt_c), epilepsy, 
+                         family = zero_inflated_poisson(identity))
+  expect_match2(scode, 
+    "Y[n] ~ zero_inflated_poisson_logit(mu[n], zi[n])"
+  )
+  
+  scode <- make_stancode(bf(count ~ Trt_c, zi ~ Trt_c), epilepsy, 
                          family = "zero_inflated_binomial")
   expect_match2(scode, 
     "Y[n] ~ zero_inflated_binomial_blogit_logit(trials[n], mu[n], zi[n])"
   )
   expect_true(!grepl("inv_logit\\(", scode))
+  
+  fam <- zero_inflated_binomial("probit", link_zi = "identity")
+  scode <- make_stancode(bf(count ~ Trt_c, zi ~ Trt_c), epilepsy, 
+                         family = fam)
+  expect_match2(scode, 
+    "Y[n] ~ zero_inflated_binomial(trials[n], mu[n], zi[n])"
+  )
+  expect_match2(scode, "mu[n] = Phi(mu[n]);")
   
   scode <- make_stancode(bf(count ~ Trt_c, hu ~ Trt_c), epilepsy, 
                          family = "hurdle_negbinomial")

@@ -7,6 +7,8 @@
     \itemize{
       \item Implement zero-one-inflated beta models
       via family \code{zero_one_inflated_beta}.
+      \item Allow for more link functions in 
+      zero-inflated and hurdle models.
     }
   }
   \subsection{OTHER CHANGES}{

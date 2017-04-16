@@ -15,7 +15,6 @@ test_that("family functions returns expected results", {
   expect_equal(Beta("probit")$link, "probit")
   expect_error(Beta(log), "beta")
   expect_equal(hurdle_poisson()$link, "log")
-  expect_error(hurdle_poisson(identity), "hurdle_poisson")
   expect_equal(hurdle_negbinomial(log)$link, "log")
   expect_error(hurdle_negbinomial("inverse"), "hurdle_negbinomial")
   expect_equal(hurdle_gamma()$family, "hurdle_gamma")
