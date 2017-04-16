@@ -202,23 +202,28 @@ Family \code{gaussian} with \code{identity} link leads to linear regression.
   The families \code{gaussian}, \code{student}, \code{exgaussian},
   \code{asym_laplace}, and \code{gen_extreme_value} accept the links 
   (as names) \code{identity}, \code{log}, and \code{inverse};
-  families \code{poisson}, \code{negbinomial}, and \code{geometric} the links 
+  families \code{poisson}, \code{negbinomial}, \code{geometric},
+  \code{zero_inflated_poisson}, \code{zero_inflated_negbinomial},
+  \code{hurdle_poisson}, and \code{hurdle_negbinomial} the links 
   \code{log}, \code{identity}, and \code{sqrt}; 
-  families \code{binomial}, \code{bernoulli}, \code{Beta},
-  \code{cumulative}, \code{cratio}, \code{sratio}, and \code{acat} 
-  the links \code{logit}, \code{probit}, \code{probit_approx}, 
-  \code{cloglog}, and \code{cauchit}; 
-  families \code{categorical}, \code{zero_inflated_beta}, and 
-  \code{zero_one_inflated_beta} the link \code{logit};
-  families \code{Gamma}, \code{weibull}, \code{exponential}, and 
-  \code{frechet} the links \code{log}, \code{identity}, and \code{inverse};
-  family \code{lognormal} the links \code{identity} and \code{inverse};
+  families \code{binomial}, \code{bernoulli}, \code{Beta}, 
+  \code{zero_inflated_binomial}, \code{zero_inflated_beta}, 
+  and \code{zero_one_inflated_beta} the links \code{logit}, 
+  \code{probit}, \code{probit_approx}, \code{cloglog}, 
+  \code{cauchit}, and \code{identity}; 
+  families \code{cumulative}, \code{cratio}, \code{sratio}, 
+  and \code{acat} the links \code{logit}, \code{probit}, 
+  \code{probit_approx}, \code{cloglog}, and \code{cauchit}; 
+  family \code{categorical} the link \code{logit};
+  families \code{Gamma}, \code{weibull}, \code{exponential}, 
+  \code{frechet}, and \code{hurdle_gamma} the links 
+  \code{log}, \code{identity}, and \code{inverse};
+  families \code{lognormal} and \code{hurdle_lognormal} 
+  the links \code{identity} and \code{inverse};
   family \code{inverse.gaussian} the links \code{1/mu^2}, 
-  \code{inverse}, \code{identity} and \code{log}; 
-  families \code{hurdle_poisson}, \code{hurdle_negbinomial},
-  \code{hurdle_gamma}, \code{zero_inflated_poisson}, and
-  \code{zero_inflated_negbinomial} the link \code{log};
-  families \code{wiener} and \code{hurdle_lognormal} the link \code{identity}.
+  \code{inverse}, \code{identity} and \code{log};
+  family \code{von_mises} the link \code{tan_half};
+  family \code{wiener} the link \code{identity}.
   The first link mentioned for each family is the default.     
   
   Please note that when calling the \code{\link[stats:family]{Gamma}} 
@@ -230,7 +235,7 @@ Family \code{gaussian} with \code{identity} link leads to linear regression.
   convergence problems and requires carefully chosen prior distributions 
   to work efficiently. For this reason, we currently do not recommend
   to use the \code{inverse.gaussian} family, unless you really feel
-  that your data requires exactly this type of model. \cr
+  that your data requires exactly this type of model.
 }
 \examples{
  # create a family object
