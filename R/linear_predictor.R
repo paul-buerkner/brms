@@ -30,11 +30,11 @@ linear_predictor <- function(draws, i = NULL) {
   monef <- names(draws[["bmo"]])
   for (j in seq_along(monef)) {
     # prepare monotonic group-level effects
-    rmo_temp <- draws[["rmo"]][[monef[j]]]
-    rmo <- named_list(names(rmo_temp))
-    for (g in names(rm)) {
+    rmo <- named_list(names(draws[["rmo"]][[monef[j]]]))
+    for (g in names(rmo)) {
       rmo[[g]] <- re_predictor(
-        Z = p(draws[["Zmo"]][[g]], i), r = rmo[[g]]
+        Z = p(draws[["Zmo"]][[g]], i), 
+        r = draws[["rmo"]][[monef[j]]][[g]]
       )
     }
     eta <- eta + 
