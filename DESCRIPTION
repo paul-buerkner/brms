@@ -25,7 +25,6 @@ Imports:
     abind,
     stats,
     RWiener,
-    graphics,
     utils,
     parallel,
     grDevices,
