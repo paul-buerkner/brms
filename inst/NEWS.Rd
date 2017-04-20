@@ -2,6 +2,17 @@
 \title{brms News}
 \encoding{UTF-8}
 
+
+\section{CHANGES IN VERSION 1.6.1++}{
+  \subsection{NEW FEATURES}{
+    \itemize{
+      \item Visualize predictions via spaghetti 
+      plots using argument \code{spaghetti} in
+      \code{marginal_effects} and \code{marginal_smooths}.
+    }
+  }
+}
+
 \section{CHANGES IN VERSION 1.6.1}{
   \subsection{NEW FEATURES}{
     \itemize{

@@ -600,6 +600,11 @@ stanplot <- function(object, ...) {
 #' @param method Either \code{"fitted"} or \code{"predict"}. 
 #'   If \code{"fitted"}, plot marginal predictions of the regression curve. 
 #'   If \code{"predict"}, plot marginal predictions of the responses.
+#' @param spaghetti Logical; Indicates whether predictions should
+#'   be visualized via spagetti plots. Only applied for numeric
+#'   predictors. If \code{TRUE}, it is recommended 
+#'   to set argument \code{nsamples} to a relatively small value 
+#'   (e.g. \code{100}) in order to reduce computation time.
 #' @param surface Logical; Indicates whether interactions or 
 #'   two-dimensional smooths should be visualized as a surface. 
 #'   Defaults to \code{FALSE}. The surface type can be controlled 

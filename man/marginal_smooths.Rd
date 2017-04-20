@@ -6,8 +6,8 @@
 \title{Display Smooth Terms}
 \usage{
 \method{marginal_smooths}{brmsfit}(x, smooths = NULL, probs = c(0.025,
-  0.975), resolution = 100, too_far = 0, subset = NULL, nsamples = NULL,
-  ...)
+  0.975), spaghetti = FALSE, resolution = 100, too_far = 0,
+  subset = NULL, nsamples = NULL, ...)
 
 marginal_smooths(x, ...)
 }
@@ -20,6 +20,12 @@ are shown.}
 
 \item{probs}{The quantiles to be used in the computation of credible
 intervals (defaults to 2.5 and 97.5 percent quantiles)}
+
+\item{spaghetti}{Logical; Indicates whether predictions should
+be visualized via spagetti plots. Only applied for numeric
+predictors. If \code{TRUE}, it is recommended 
+to set argument \code{nsamples} to a relatively small value 
+(e.g. \code{100}) in order to reduce computation time.}
 
 \item{resolution}{Number of support points used to generate 
 the plots. Higher resolution leads to smoother plots. 

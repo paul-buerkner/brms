@@ -48,11 +48,18 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, points = FALSE,
       # plot effects of single predictors / smooths
       # as well as two-way interactions
       gvar <- if (length(effects) == 2L) effects[2]
+      spaghetti <- isTRUE(attr(x[[i]], "spaghetti"))
       plots[[i]] <- ggplot(x[[i]]) + 
-        aes_string(x = effects[1], y = "estimate__",
-                   ymin = "lower__", ymax = "upper__", 
-                   colour = gvar, fill = gvar) + 
+        aes_string(x = effects[1], y = "estimate__") +
         ylab(response)
+      if (spaghetti) {
+        plots[[i]] <- plots[[i]] + 
+          aes_string(group = "sample__", colour = gvar)
+      } else {
+        plots[[i]] <- plots[[i]] +
+          aes_string(ymin = "lower__", ymax = "upper__", 
+                     colour = gvar, fill = gvar) 
+      }
       if (points) {
         # show the data as points in the plot
         # add points first so that they appear behind the regression lines
@@ -67,7 +74,13 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, points = FALSE,
       }
       if (is.numeric(x[[i]][, effects[1]])) {
         # smooth plots for numeric predictors
-        plots[[i]] <- plots[[i]] + geom_smooth(stat = "identity")
+        if (spaghetti) {
+          plots[[i]] <- plots[[i]] +
+            geom_smooth(stat = "identity", size = 0.5)
+        } else {
+          plots[[i]] <- plots[[i]] + 
+            geom_smooth(stat = "identity")
+        }
         if (rug) {
           plots[[i]] <- plots[[i]] +
             geom_rug(aes_string(x = effects[1]),

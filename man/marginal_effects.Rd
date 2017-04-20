@@ -9,8 +9,8 @@
 \method{marginal_effects}{brmsfit}(x, effects = NULL, conditions = NULL,
   int_conditions = NULL, re_formula = NA, robust = TRUE,
   probs = c(0.025, 0.975), method = c("fitted", "predict"),
-  surface = FALSE, resolution = 100, select_points = 0, too_far = 0,
-  ...)
+  spaghetti = FALSE, surface = FALSE, resolution = 100,
+  select_points = 0, too_far = 0, ...)
 
 marginal_effects(x, ...)
 
@@ -61,6 +61,12 @@ intervals (defaults to 2.5 and 97.5 percent quantiles)}
 \item{method}{Either \code{"fitted"} or \code{"predict"}. 
 If \code{"fitted"}, plot marginal predictions of the regression curve. 
 If \code{"predict"}, plot marginal predictions of the responses.}
+
+\item{spaghetti}{Logical; Indicates whether predictions should
+be visualized via spagetti plots. Only applied for numeric
+predictors. If \code{TRUE}, it is recommended 
+to set argument \code{nsamples} to a relatively small value 
+(e.g. \code{100}) in order to reduce computation time.}
 
 \item{surface}{Logical; Indicates whether interactions or 
 two-dimensional smooths should be visualized as a surface. 

@@ -1275,12 +1275,14 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
                                      int_conditions = NULL, re_formula = NA, 
                                      robust = TRUE, probs = c(0.025, 0.975),
                                      method = c("fitted", "predict"), 
-                                     surface = FALSE, resolution = 100,
-                                     select_points = 0, too_far = 0, ...) {
+                                     spaghetti = FALSE, surface = FALSE, 
+                                     resolution = 100, select_points = 0, 
+                                     too_far = 0, ...) {
   method <- match.arg(method)
   dots <- list(...)
   conditions <- use_alias(conditions, dots[["data"]])
-  surface <- use_alias(surface, dots[["contour"]])
+  spaghetti <- as.logical(spaghetti)
+  surface <- as.logical(use_alias(surface, dots[["contour"]]))
   dots[["data"]] <- dots[["contour"]] <- NULL
   contains_samples(x)
   x <- restructure(x)
@@ -1376,11 +1378,10 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     args <- list(
       x, newdata = marg_data, re_formula = re_formula,
       allow_new_levels = TRUE, incl_autocor = FALSE, 
-      probs = probs, robust = robust
+      probs = probs, robust = robust, summary = FALSE
     )
     args <- c(args, dots)
     if (is_ordinal(x$family) || is_categorical(x$family)) {
-      args$summary <- FALSE 
       marg_res <- do.call(method, args)
       if (method == "fitted") {
         for (k in seq_len(dim(marg_res)[3])) {
@@ -1391,12 +1392,10 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
           function(s) rowSums(marg_res[, s, ])
         )
         marg_res <- do.call(cbind, marg_res)
-      } 
-      marg_res <- get_summary(marg_res, probs = probs, robust = robust)
+      }
     } else {
       marg_res <- do.call(method, args)
     }
-    colnames(marg_res) <- c("estimate__", "se__", "lower__", "upper__")
     
     types <- attr(marg_data, "types")
     both_numeric <- length(types) == 2L && all(types == "numeric")
@@ -1410,10 +1409,29 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
         levels(marg_data[[effects[[i]][2]]]) <- labels2
       }
     }
+    first_numeric <- types[1] == "numeric"
+    if (first_numeric && spaghetti) {
+      if (surface) {
+        stop2("Cannot use 'spaghetti' and 'surface' at the same time.")
+      }
+      sample <- rep(seq_len(nrow(marg_res)), each = ncol(marg_res))
+      if (length(types) == 2L) {
+        # samples should be unique across plotting groups
+        sample <- paste0(sample, "_", marg_data[[effects[[i]][2]]])
+      }
+      marg_res <- data.frame(as.numeric(t(marg_res)), factor(sample))
+      colnames(marg_res) <- c("estimate__", "sample__")
+    } else {
+      marg_res <- get_summary(marg_res, probs = probs, robust = robust)
+      colnames(marg_res) <- c("estimate__", "se__", "lower__", "upper__") 
+    }
+    
+    rownames(marg_data) <- NULL
     marg_res = cbind(marg_data, marg_res)
     attr(marg_res, "response") <- as.character(x$formula$formula[2])
     attr(marg_res, "effects") <- effects[[i]]
     attr(marg_res, "surface") <- both_numeric && surface
+    attr(marg_res, "spaghetti") <- first_numeric && spaghetti
     point_args <- nlist(
       mf, effects = effects[[i]], conditions, select_points,
       groups = get_re(bterms)$group, family = x$family
@@ -1429,9 +1447,11 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
 #' @export
 marginal_smooths.brmsfit <- function(x, smooths = NULL,
                                      probs = c(0.025, 0.975),
+                                     spaghetti = FALSE,
                                      resolution = 100, too_far = 0,
                                      subset = NULL, nsamples = NULL,
                                      ...) {
+  spaghetti <- as.logical(spaghetti)
   contains_samples(x)
   x <- restructure(x)
   mf <- model.frame(x)
@@ -1513,8 +1533,14 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
         draws[["Zs"]] <- draws[["Zs"]][J] 
         draws[["s"]] <- draws[["s"]][J]
         eta <- get_eta(draws = draws, i = NULL)
-        eta <- get_summary(eta, robust = TRUE, probs = probs)
-        colnames(eta) <- c("estimate__", "se__", "lower__", "upper__")
+        if (spaghetti && ncovars == 1L) {
+          sample <- rep(seq_len(nrow(eta)), each = ncol(eta))
+          eta <- data.frame(as.numeric(t(eta)), factor(sample))
+          colnames(eta) <- c("estimate__", "sample__")
+        } else {
+          eta <- get_summary(eta, robust = TRUE, probs = probs)
+          colnames(eta) <- c("estimate__", "se__", "lower__", "upper__")
+        }
         res <- cbind(newdata[, covars[[i]], drop = FALSE], eta)
         if (length(byfactors)) {
           res$cond__ <- Reduce(paste_colon, res[, byfactors, drop = FALSE]) 
@@ -1526,6 +1552,7 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
         attr(res, "response") <- response
         attr(res, "effects") <- covars_no_byfactor
         attr(res, "surface") <- ncovars == 2L
+        attr(res, "spaghetti") <- spaghetti && ncovars == 1L
         attr(res, "points") <- mf[, covars[[i]], drop = FALSE]
         results[[response]] <- res
       }
