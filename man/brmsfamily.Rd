@@ -171,7 +171,7 @@ Family \code{gaussian} with \code{identity} link leads to linear regression.
   Families \code{binomial} and \code{bernoulli} with \code{logit} link leads to 
   logistic regression and family \code{categorical} to multi-logistic regression 
   when there are more than two possible outcomes.
-  Families \code{cumulative}, \code{cratio} ('contiuation ratio'), 
+  Families \code{cumulative}, \code{cratio} ('continuation ratio'), 
   \code{sratio} ('stopping ratio'), and \code{acat} ('adjacent category') 
   leads to ordinal regression. Families \code{Gamma}, \code{weibull}, 
   \code{exponential}, \code{lognormal}, \code{frechet}, and 
