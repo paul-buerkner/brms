@@ -1887,6 +1887,9 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
       draws$mu <- get_auxpar(draws[[auxpar]]) 
     }
   }
+  if (is.null(dim(draws$mu))) {
+    draws$mu <- as.matrix(draws$mu)
+  }
   old_order <- attr(draws$data, "old_order")
   draws$mu <- reorder_obs(draws$mu, old_order, sort = sort)
   if (summary) {
