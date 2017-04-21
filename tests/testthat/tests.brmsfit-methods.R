@@ -222,12 +222,12 @@ test_that("all S3 methods have reasonable ouputs", {
   
   me <- marginal_effects(fit1, "Trt", spaghetti = TRUE, nsamples = 10)
   expect_equal(nrow(me$Trt), 1000)
-  expect_true(is(plot(me)[[1]], "ggplot"))
+  meplot <- plot(me, plot = FALSE)
+  expect_true(is(meplot[[1]], "ggplot"))
   expect_error(
     marginal_effects(fit1, "Trt", spaghetti = TRUE, surface = TRUE),
     "Cannot use 'spaghetti' and 'surface' at the same time"
   )
-               
   
   mdata = data.frame(
     Age = c(-0.3, 0, 0.3), 
@@ -278,7 +278,7 @@ test_that("all S3 methods have reasonable ouputs", {
   
   ms <- marginal_smooths(fit1, spaghetti = TRUE, nsamples = 10)
   expect_equal(nrow(ms[[1]]), 1000)
-  expect_true(is(plot(ms)[[1]], "ggplot"))
+  expect_equal(attr(ms[[1]], "spaghetti"), TRUE)
   
   expect_error(marginal_smooths(fit1, smooths = "s3"),
                "No valid smooth terms found in the model")

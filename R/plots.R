@@ -75,8 +75,18 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, points = FALSE,
       if (is.numeric(x[[i]][, effects[1]])) {
         # smooth plots for numeric predictors
         if (spaghetti) {
+          smooth_args <- list(stat = "identity", size = 0.5)
+          if (length(effects) == 1L) {
+            smooth_args$colour <- alpha("blue", 0.1)
+          } else {
+            # workaround to get transparent lines
+            colors <- ggplot_build(plots[[i]])
+            colors <- unique(colors$data[[1]][["colour"]])
+            plots[[i]] <- plots[[i]] +
+              scale_color_manual(values = alpha(colors, 0.1))
+          }
           plots[[i]] <- plots[[i]] +
-            geom_smooth(stat = "identity", size = 0.5)
+            do.call(geom_smooth, smooth_args)
         } else {
           plots[[i]] <- plots[[i]] + 
             geom_smooth(stat = "identity")
