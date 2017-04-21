@@ -1378,7 +1378,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     args <- list(
       x, newdata = marg_data, re_formula = re_formula,
       allow_new_levels = TRUE, incl_autocor = FALSE, 
-      probs = probs, robust = robust, summary = FALSE
+      summary = FALSE
     )
     args <- c(args, dots)
     if (is_ordinal(x$family) || is_categorical(x$family)) {
