@@ -94,6 +94,23 @@ linear_predictor <- function(draws, i = NULL) {
       eta <- eta + fe_predictor(X = Zs, b = s)
     }
   }
+  # incorporate gaussian processes
+  # gps <- names(draws[["gp"]])
+  if (!is.null(draws[["yL"]])) {
+    draws[["yL"]] <- get_eta(draws[["yL"]], i)
+  }
+  for (k in seq_along(draws[["gp"]])) {
+    gp <- draws[["gp"]][[k]]
+    gp[["x"]] <- p(gp[["x"]], i)
+    if (!is.null(gp[["x_new"]])) {
+      gp[["x_new"]] <- p(gp[["x_new"]], i)
+      eta <- eta + do.call(gp_predictor, gp)  
+    } else {
+      gp[["zgp"]] <- p(gp[["zgp"]], i, row = FALSE)
+      eta <- eta + do.call(gp_predictor, gp)  
+    }
+  }
+  # incorporate autocorrelation structures
   if (!is.null(draws[["arr"]])) {
     eta <- eta + fe_predictor(X = p(draws$data$Yarr, i), b = draws[["arr"]])
   }
@@ -288,6 +305,63 @@ cs_predictor <- function(X, b, eta, ncat, r = NULL) {
     }
   }
   eta
+}
+
+gp_predictor <- function(x, sdgp, lscale, zgp = NULL, x_new = NULL,
+                         yL = NULL, nug = 1e-8) {
+  # compute predictions for gaussian processes
+  # Args:
+  #   x: old predictor values
+  #   sdgp: sample of parameter sdgp
+  #   lscale: sample of parameter lscale
+  #   zgp: only for old data; samples of parameter vector zgp
+  #   x_new: only for new data: new predictor values
+  #   yL: only for new data: linear predictor of the old data
+  # Returns:
+  #   A S x N matrix to be added to the linear predictor
+  .gp_predictor_old <- function(x, sdgp, lscale, zgp) {
+    Sigma <- cov_exp_quad(x, sdgp = sdgp, lscale = lscale)
+    Sigma <- Sigma + diag(rep(nug, length(x)))
+    as.numeric(t(chol(Sigma)) %*% zgp)
+  }
+  .gp_predictor_new <- function(x_new, yL, x, sdgp, lscale) {
+    Sigma <- cov_exp_quad(x, sdgp = sdgp, lscale = lscale)
+    Sigma <- Sigma + diag(rep(nug, length(x)))
+    L_Sigma <- t(chol(Sigma))
+    L_Sigma_inverse <- solve(L_Sigma)
+    K_div_yL <- L_Sigma_inverse %*% yL
+    K_div_yL <- t(t(K_div_yL) %*% L_Sigma_inverse)
+    k_x_x_new <- cov_exp_quad(x, x_new, sdgp = sdgp, lscale = lscale)
+    mu_yL_new <- as.numeric(t(k_x_x_new) %*% K_div_yL)
+    v_new <- L_Sigma_inverse %*% k_x_x_new
+    cov_yL_new <- cov_exp_quad(x_new, sdgp = sdgp, lscale = lscale) -
+      t(v_new) %*% v_new + diag(rep(nug, length(x_new)))
+    yL_new <- rmulti_normal(1, mu = mu_yL_new, Sigma = cov_yL_new)
+    return(yL_new)
+  }
+  sdgp <- as.numeric(sdgp)
+  lscale <- as.numeric(lscale)
+  nsamples <- length(sdgp)
+  out <- as.list(rep(NA, nsamples))
+  if (!is.null(x_new)) {
+    # compute the gaussian process for new data
+    stopifnot(!is.null(yL))
+    for (i in seq_along(out)) {
+      out[[i]] <- .gp_predictor_new(
+        x_new = x_new, yL = yL[i, ], x = x, 
+        sdgp = sdgp[i], lscale = lscale[i]
+      ) 
+    }
+  } else {
+    # compute the gaussian process for the old data
+    stopifnot(!is.null(zgp))
+    for (i in seq_along(out)) {
+      out[[i]] <- .gp_predictor_old(
+        x = x, sdgp = sdgp[i], lscale = lscale[i], zgp = zgp[i, ]
+      ) 
+    }
+  }
+  do.call(rbind, out)  
 }
 
 arma_predictor <- function(standata, eta, ar = NULL, ma = NULL, 

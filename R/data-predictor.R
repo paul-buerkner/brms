@@ -28,8 +28,9 @@ data_effects.btl <- function(x, data, ranef = empty_ranef(),
                      not4stan = not4stan)
   data_me <- data_me(x, data = data, nlpar = nlpar)
   data_cs <- data_cs(x, data = data, nlpar = nlpar)
+  data_gp <- data_gp(x, data = data, nlpar = nlpar)
   data_offset <- data_offset(x, data = data, nlpar = nlpar)
-  c(data_fe, data_mo, data_re, data_me, data_cs, data_offset)
+  c(data_fe, data_mo, data_re, data_me, data_cs, data_gp, data_offset)
 }
 
 #' @export 
@@ -327,6 +328,20 @@ data_me <- function(bterms, data, nlpar = "") {
   }
   out
 }
+
+data_gp <- function(bterms, data, nlpar = "") {
+  out <- list()
+  gpef <- get_gp_labels(bterms)
+  if (length(gpef)) {
+    p <- usc(nlpar, "prefix")
+    out[[paste0("Kgp", p)]] <- length(gpef)
+    for (i in seq_along(gpef)) {
+      gp <- eval2(gpef[i])
+      out[[paste0("Xgp", p, "_", i)]] <- eval2(gp$term, data)
+    }
+  }
+  out
+} 
 
 data_offset <- function(bterms, data, nlpar = "") {
   # prepare data of offsets for use in Stan

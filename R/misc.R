@@ -487,6 +487,16 @@ log1m_inv_logit <- function(x) {
   log(1 - inv_logit(x))
 }
 
+cov_exp_quad <- function(x, x_new = NULL, sdgp = 1, lscale = 1) {
+  .cov_exp_quad <- function(x1, x2) {
+    sdgp^2 * exp(-(x1 - x2)^2 / (2 * lscale^2))
+  }
+  if (is.null(x_new)) {
+    x_new <- x
+  } 
+  outer(x, x_new, .cov_exp_quad)
+}
+
 fabs <- function(x) {
   abs(x)
 }

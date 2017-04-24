@@ -90,7 +90,9 @@ change_effects.btl <- function(x, data, pars, dims, nlpar = "",
   change_mo <- change_mo(monef, pars, nlpar = nlpar)
   meef <- get_me_labels(x, data)
   change_me <- change_me(meef, pars, dims = dims, nlpar = nlpar)
-  c(change_fe, change_sm, change_cs, change_mo, change_me)
+  gpef <- get_gp_labels(x)
+  change_gp <- change_gp(gpef, pars, dims = dims, nlpar = nlpar)
+  c(change_fe, change_sm, change_cs, change_mo, change_me, change_gp)
 }
 
 change_effects.btnl <- function(x, data, pars, dims, ...) {
@@ -229,6 +231,46 @@ change_me <- function(meef, pars, dims, nlpar = "") {
           fnames = fnames, dims = dims[[Xme]]
         )
         change <- lc(change, change_Xme)
+      }
+    }
+  }
+  change
+}
+
+change_gp <- function(gpef, pars, dims, nlpar = "") {
+  change <- list()
+  if (length(gpef)) {
+    p <- usc(nlpar, "prefix")
+    gpef <- rename(gpef)
+    # rename GP hyperparameters
+    sdgp <- paste0("sdgp", p)
+    pos_sdgp <- grepl(paste0("^", sdgp, "\\["), pars)
+    sdgp_names <- paste0(sdgp, "_", gpef)
+    lscale <- paste0("lscale", p)
+    pos_lscale <- grepl(paste0("^", lscale, "\\["), pars)
+    lscale_names <- paste0(lscale, "_", gpef)
+    change <- lc(change, 
+      nlist(pos = pos_sdgp, oldname = sdgp, 
+            pnames = sdgp_names, fnames = sdgp_names),
+      nlist(pos = pos_lscale, oldname = lscale, 
+            pnames = lscale_names, fnames = lscale_names)
+    )
+    change <- c(change,
+      change_prior(class = sdgp, pars = pars, names = gpef),
+      change_prior(class = lscale, pars = pars, names = gpef)
+    )
+    if (any(grepl("^zgp", pars))) {
+      # users may choose not to save zgp
+      for (i in seq_along(gpef)) {
+        zgp <- paste0("zgp", p, "_", i)
+        pos <- grepl(paste0("^", zgp, "\\["), pars)
+        zgp_new <- paste0("zgp", p, "_", gpef[i])
+        fnames <- paste0(zgp_new, "[", seq_len(sum(pos)), "]")
+        change_zgp <- nlist(
+          pos, oldname = zgp, pnames = zgp_new, 
+          fnames = fnames, dims = dims[[zgp]]
+        )
+        change <- lc(change, change_zgp)
       }
     }
   }
@@ -742,8 +784,9 @@ reorder_pars <- function(x) {
   #   x: brmsfit object
   all_classes <- c(
     "b", "bmo", "bcs", "bme", "ar", "ma", "arr", "sd", "cor", 
-    "sds", auxpars(), "temp", "sigmaLL", "rescor", "delta",
-    "lasso", "simplex", "r", "s", "loclev", "Xme", "prior", "lp"
+    "sds", "sdgp", "lscale", auxpars(), "temp", "sigmaLL", 
+    "rescor", "delta", "lasso", "simplex", "r", "s", "zgp", 
+    "loclev", "Xme", "prior", "lp"
   )
   # reorder parameter classes
   class <- get_matches("^[^[:digit:]_]+", x$fit@sim$pars_oi)

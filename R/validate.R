@@ -193,11 +193,15 @@ parse_lf <- function(formula, family = NULL) {
   if (is.formula(sm_form)) {
     y[["sm"]] <- sm_form
   }
+  gp_form <- parse_gp(formula)
+  if (is.formula(gp_form)) {
+    y[["gp"]] <- gp_form
+  }
   offset_form <- parse_offset(formula)
   if (is.formula(offset_form)) {
     y[["offset"]] <- offset_form
   }
-  rm_pos <- list(mo_form, cs_form, me_form, sm_form)
+  rm_pos <- list(mo_form, cs_form, me_form, sm_form, gp_form)
   rm_pos <- c(lapply(rm_pos, attr, "pos"), list(pos_re_terms))
   fe_terms <- all_terms[!Reduce("|", rm_pos)]
   int_term <- ifelse(attr(terms, "intercept") == 1, "1", "0")
@@ -216,8 +220,8 @@ parse_lf <- function(formula, family = NULL) {
   y$re <- parse_re(re_terms)
   lformula <- c(
     y[c("fe", "cs", "mo", "me")], 
-    attr(y$sm, "allvars"), y$re$form,
-    lapply(y$re$gcall, "[[", "allvars"),
+    attr(y$sm, "allvars"), attr(y$gp, "allvars"),
+    y$re$form, lapply(y$re$gcall, "[[", "allvars"),
     str2formula(all.vars(y$offset))
   )
   y$allvars <- allvars_formula(lformula)
@@ -394,6 +398,28 @@ parse_me <- function(formula) {
     attr(me_terms, "rsv_intercept") <- TRUE
   }
   structure(me_terms, pos = pos_me_terms)
+}
+
+parse_gp <- function(formula) {
+  # extract terms for gaussian processes
+  # Args:
+  #   formula: a formula object
+  all_terms <- all_terms(formula)
+  pos_gp_terms <- grepl_expr("^gp\\([^:]*\\)$", all_terms)
+  gp_terms <- all_terms[pos_gp_terms]
+  if (length(gp_terms)) {
+    eterms <- lapply(gp_terms, eval2)
+    allvars <- str2formula(ulapply(eterms, "[[", "term"))
+    if (!length(all.vars(allvars))) {
+      stop2("No variable supplied to function 'gp'.")
+    }
+    gp_terms <- str2formula(gp_terms)
+    attr(gp_terms, "rsv_intercept") <- TRUE
+  } else {
+    allvars <- ~ 1
+  }
+  structure(gp_terms, pos = pos_gp_terms,
+            allvars = allvars)
 }
 
 parse_offset <- function(formula) {
@@ -949,7 +975,7 @@ get_all_effects.btl <- function(x, ...) {
   byvars <- attr(x$sm, "byvars")
   svars <- mapply(c, covars, byvars, SIMPLIFY = FALSE)
   alist <- lapply(svars, int_formula)
-  get_var_combs(x$fe, x$mo, x$cs, x$me, alist = alist)
+  get_var_combs(x$fe, x$mo, x$cs, x$me, x$gp, alist = alist)
 }
 
 #' @export
@@ -1029,7 +1055,7 @@ get_sm_labels <- function(x, data = NULL, covars = FALSE,
 get_me_labels <- function(x, data) {
   # get labels of measurement error terms
   # Args:
-  #   x: either a formula or a list containing an element "sm"
+  #   x: either a formula or a list containing an element "me"
   #   data: data frame containing the noisy variables
   if (is.formula(x)) {
     x <- parse_bf(x, check_response = FALSE)
@@ -1045,6 +1071,22 @@ get_me_labels <- function(x, data) {
   uni_me <- get_matches_expr("^me\\([^:]*\\)$", colnames(mm))
   uni_me <- unique(gsub("[[:space:]]", "", uni_me))
   structure(colnames(mm), not_one = not_one, uni_me = uni_me)
+}
+
+get_gp_labels <- function(x) {
+  # get labels of gaussian process terms
+  # Args:
+  #   x: either a formula or a list containing an element "gp"
+  if (is.formula(x)) {
+    x <- parse_bf(x, check_response = FALSE)
+    gp_form <- x$auxpars$mu[["gp"]]
+  } else {
+    gp_form <- x[["gp"]]
+  }
+  if (!is.formula(gp_form)) {
+    return(NULL)
+  }
+  all_terms(gp_form)
 }
 
 all_terms <- function(formula) {

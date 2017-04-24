@@ -570,6 +570,16 @@ stan_monotonic <- function(x) {
   out
 }
 
+stan_gaussian_process <- function(x) {
+  # add the monotonic function to Stan's functions block
+  if (grepl("[^[:alnum:]]gaussian_process\\(", collapse(x))) {
+    out <- "  #include fun_gaussian_process.stan \n"
+  } else {
+    out <- ""
+  }
+  out
+}
+
 stan_misc_functions <- function(family, prior, kronecker) {
   # stan code for user defined functions
   # Args:

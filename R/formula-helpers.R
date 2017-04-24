@@ -347,6 +347,27 @@ monotonic <- function(expr) {
   deparse_no_string(substitute(expr))
 }
 
+#' Set up gaussian process terms in \pkg{brms}
+#' 
+#' Function used to set up a gaussian process term in \pkg{brms}.
+#' The function does not evaluate its arguments --
+#' it exists purely to help set up a model with gaussian process terms.
+#' 
+#' @param ... One or more terms containing covariates for
+#'   the gaussian process.
+#' 
+#' @seealso \code{\link[brms:brmsformula]{brmsformula}}
+#' @export
+gp <- function(...) {
+  label <- deparse(match.call())
+  vars <- as.list(substitute(list(...)))[-1]
+  if (length(vars) != 1L) {
+    stop2("'gp' currently allows only one covariate.")
+  }
+  term <- ulapply(vars, deparse, backtick = TRUE, width.cutoff = 500)
+  list(term = term, label = label)
+}
+
 #' Set up basic grouping terms in \pkg{brms}
 #' 
 #' Function used to set up a basic grouping term in \pkg{brms}.

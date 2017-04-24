@@ -99,6 +99,7 @@ make_stancode <- function(formula, data, family = NULL,
   kron <- stan_needs_kronecker(ranef, names_cov_ranef = names(cov_ranef))
   text_misc_funs <- stan_misc_functions(family, prior, kronecker = kron)
   text_monotonic <- stan_monotonic(text_effects)
+  text_gaussian_process <- stan_gaussian_process(text_effects)
     
   # get priors for all parameters in the model
   text_prior <- paste0(
@@ -117,6 +118,7 @@ make_stancode <- function(formula, data, family = NULL,
     "functions { \n",
       text_misc_funs,
       text_monotonic,
+      text_gaussian_process,
       text_autocor$fun,
       text_ordinal$fun,
       text_families$fun,

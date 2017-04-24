@@ -170,18 +170,26 @@ extract_draws.btl <- function(x, fit, newdata = NULL, re_formula = NULL,
   }
   
   args <- nlist(x = fit, subset)
+  new <- !is.null(newdata)
   fixef <- colnames(draws$data[["X"]])
   monef <- colnames(draws$data[["Xmo"]])
   csef <- colnames(draws$data[["Xcs"]])
   meef <- get_me_labels(bterms$auxpars$mu, fit$data)
   smooths <- rename(get_sm_labels(bterms$auxpars$mu, fit$data, covars = TRUE))
+  gpef <- get_gp_labels(bterms$auxpars$mu)
+  sdata_old <- NULL
+  if (length(gpef) && new) {
+    oldd_args <- newd_args[!names(newd_args) %in% "newdata"]
+    sdata_old <- do.call(amend_newdata, c(oldd_args, list(newdata = NULL)))
+  }
   draws <- c(draws,
     extract_draws_fe(fixef, args, nlpar = nlpar, old_cat = draws$old_cat),
     extract_draws_mo(monef, args, sdata = draws$data, nlpar = nlpar),
     extract_draws_cs(csef, args, nlpar = nlpar, old_cat = draws$old_cat),
-    extract_draws_me(meef, args, sdata = draws$data, nlpar = nlpar,
-                     is_newdata = !is.null(newdata)),
+    extract_draws_me(meef, args, sdata = draws$data, nlpar = nlpar, new = new),
     extract_draws_sm(smooths, args, sdata = draws$data, nlpar = nlpar),
+    extract_draws_gp(gpef, args, sdata = draws$data, sdata_old = sdata_old, 
+                     nlpar = nlpar, new = new),
     extract_draws_re(new_ranef, args, sdata = draws$data, nlpar = nlpar,
                      sample_new_levels = sample_new_levels)
   )
@@ -280,21 +288,21 @@ extract_draws_cs <- function(csef, args, nlpar = "", old_cat = 0L) {
 }
 
 extract_draws_me <- function(meef, args, sdata, nlpar = "",
-                             is_newdata = FALSE) {
+                             new = FALSE) {
   # extract draws of noise-free effects
   # Args:
   #   meef: names of the noise free effects
   #   args: list of arguments passed to as.matrix.brmsfit
   #   sdata: list returned by make_standata
   #   nlpar: name of a non-linear parameter
-  #   is_newdata: logical; are new data specified?
+  #   new: logical; are new data specified?
   # Returns: 
   #   A named list to be interpreted by linear_predictor
   stopifnot("x" %in% names(args))
   nlpar_usc <- usc(nlpar, "suffix")
   draws <- list()
   if (length(meef)) {
-    if (is_newdata) {
+    if (new) {
       stop2("Predictions with noise-free variables are not yet ",
             "possible when passing new data.")
     }
@@ -373,6 +381,41 @@ extract_draws_sm <- function(smooths, args, sdata, nlpar = "") {
         draws[["s"]][[smooths[i]]][[j]] <- 
           do.call(as.matrix, c(args, list(pars = s_pars)))
       }
+    }
+  }
+  draws
+}
+
+extract_draws_gp <- function(gpef, args, sdata, sdata_old = NULL,
+                             nlpar = "", new = FALSE) {
+  # extract draws for gaussian processes
+  # Args:
+  #   gpef: names of the gaussian process terms
+  stopifnot("x" %in% names(args))
+  nlpar_usc <- usc(nlpar, "suffix")
+  draws <- list()
+  if (length(gpef)) {
+    draws[["gp"]] <- named_list(gpef)
+    for (i in seq_along(gpef)) {
+      gp <- list()
+      sdgp <- paste0("^sdgp_", nlpar_usc, gpef[i])
+      gp[["sdgp"]] <- do.call(as.matrix, c(args, list(pars = sdgp)))
+      lscale <- paste0("^lscale_", nlpar_usc, gpef[i])
+      gp[["lscale"]] <- do.call(as.matrix, c(args, list(pars = lscale)))
+      zgp <- paste0("^zgp_", nlpar_usc, gpef[i], "\\[")
+      gp[["zgp"]] <- do.call(as.matrix, c(args, list(pars = zgp)))
+      if (new) {
+        gp[["x"]] <- sdata_old[[paste0("Xgp_", i)]]
+        gp[["x_new"]] <- sdata[[paste0("Xgp_", i)]]
+        # computing GPs for new data requires the old GP terms
+        gp[["yL"]] <- gp_predictor(
+          x = gp[["x"]], sdgp = gp[["sdgp"]], 
+          lscale = gp[["lscale"]], zgp = gp[["zgp"]]
+        )
+      } else {
+        gp[["x"]] <- sdata[[paste0("Xgp_", i)]]
+      }
+      draws[["gp"]][[i]] <- gp
     }
   }
   draws

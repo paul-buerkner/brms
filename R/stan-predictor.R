@@ -40,10 +40,13 @@ stan_effects.btl <- function(x, data, ranef, prior, center_X = TRUE,
   # include measurement error variables
   meef <- get_me_labels(x, data = data)
   text_me <- stan_me(meef, ranef, prior = prior, nlpar = nlpar)
-  out <- collapse_lists(list(
-    out, text_fe, text_cs, text_mo, text_me, text_sm
-  ))
+  # include gaussian processes
+  gpef <- get_gp_labels(x)
+  text_gp <- stan_gp(gpef, prior = prior, nlpar = nlpar)
   
+  out <- collapse_lists(list(
+    out, text_fe, text_cs, text_mo, text_me, text_sm, text_gp
+  ))
   p <- usc(nlpar, "prefix")
   if (is.formula(x$offset)) {
     out$data <- paste0(out$data, "  vector[N] offset", p, "; \n")
@@ -51,7 +54,7 @@ stan_effects.btl <- function(x, data, ranef, prior, center_X = TRUE,
   # initialize and compute eta_<nlpar>
   out$modelC1 <- paste0(
     out$modelC1, "  ", eta, " = ", 
-    text_fe$eta, text_sm$eta,
+    text_fe$eta, text_sm$eta, text_gp$eta,
     if (center_X && !is_ordinal(x$family)) 
       paste0(" + temp", p, "_Intercept"),
     if (is.formula(x$offset)) paste0(" + offset", p),
@@ -553,7 +556,7 @@ stan_mo <- function(monef, ranef, prior, nlpar = "") {
   #   monef: names of the monotonic effects
   #   prior: a data.frame containing user defined priors 
   #          as returned by check_prior
-  p <- if (nchar(nlpar)) paste0("_", nlpar) else ""
+  p <- usc(nlpar)
   out <- list()
   if (length(monef)) {
     I <- seq_along(monef)
@@ -716,6 +719,42 @@ stan_me <- function(meef, ranef, prior, nlpar = "") {
                  nlpar = nlpar, suffix = paste0("me", p)),
       collapse("  Xme", pK, " ~ normal(Xn", pK, ", noise", pK,"); \n")
     )
+  }
+  out
+}
+
+stan_gp <- function(gpef, prior, nlpar = "") {
+  # Stan code for monotonic effects
+  # Args:
+  #   monef: names of the monotonic effects
+  #   prior: a data.frame containing user defined priors 
+  #          as returned by check_prior
+  p <- usc(nlpar)
+  out <- list()
+  if (length(gpef)) {
+    I <- seq_along(gpef)
+    out$data <- paste0(
+      "  // data for gaussian processes \n",
+      "  int<lower=1> Kgp", p, "; \n",
+      collapse("  real Xgp", p, "_", I, "[N]; \n")
+    )
+    out$par <- paste0(
+      "  // GP hyperparameters \n", 
+      "  vector<lower=0>[Kgp", p, "] sdgp", p, "; \n",
+      "  vector<lower=0>[Kgp", p, "] lscale", p, "; \n",
+      collapse("  vector[N] zgp", p, "_", I, "; \n")
+    ) 
+    gpef <- rename(gpef)
+    out$prior <- paste0(
+      stan_prior(prior, class = "sdgp", coef = gpef, nlpar = nlpar),
+      stan_prior(prior, class = "lscale", coef = gpef, nlpar = nlpar),
+      collapse("  zgp", p, "_", I, " ~ normal(0, 1); \n")
+    )
+    gp_args <- paste0(
+      "Xgp", p, "_", I, ", sdgp", p, "[", I, "], ", 
+      "lscale", p, "[", I, "], zgp", p, "_", I
+    )
+    out$eta <- collapse(" + gaussian_process(", gp_args, ")")
   }
   out
 }
