@@ -1198,7 +1198,7 @@ make_point_frame <- function(mf, effects, conditions, groups,
           } else {
             # take all numeric values if select_points is zero
             cond <- cond[, !is_num, drop = FALSE]
-            mf_tmp <- mf[, !is_num, drop = FALSE]
+            mf_tmp <- mf_tmp[, !is_num, drop = FALSE]
           }
         }
       }
