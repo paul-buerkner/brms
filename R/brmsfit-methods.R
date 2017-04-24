@@ -691,105 +691,120 @@ summary.brmsfit <- function(object, waic = FALSE, priors = FALSE,
                      autocor = object$autocor,
                      algorithm = algorithm(object))
   
-  if (length(object$fit@sim)) {
-    out$chains <- object$fit@sim$chains
-    out$iter <- object$fit@sim$iter
-    out$warmup <- object$fit@sim$warmup
-    out$thin <- object$fit@sim$thin
-    stan_args <- object$fit@stan_args[[1]]
-    out$sampler <- paste0(stan_args$method, "(", stan_args$algorithm, ")")
-    allow_waic <- !nrow(object$ranef) || any(grepl("^r_", parnames(object)))
-    if (waic && allow_waic) {
-      out$WAIC <- SW(WAIC(object)$waic)
-    }
-    if (priors) {
-      out$prior <- prior_summary(object, all = FALSE)
-    }
-    
-    pars <- parnames(object)
-    meta_pars <- object$fit@sim$pars_oi
-    meta_pars <- meta_pars[!grepl("^(r|s|Xme|prior)_", meta_pars)]
-    fit_summary <- summary(object$fit, pars = meta_pars,
-                           probs = c(0.025, 0.975),
-                           use_cache = use_cache)$summary
-    algorithm <- algorithm(object)
-    if (algorithm == "sampling") {
-      fit_summary <- fit_summary[, -2]
-      colnames(fit_summary) <- c(
-        "Estimate", "Est.Error", "l-95% CI", "u-95% CI", 
-        "Eff.Sample", "Rhat"
-      )
-      Rhats <- fit_summary[, "Rhat"]
-      if (any(Rhats > 1.1, na.rm = TRUE) || anyNA(Rhats)) {
-        warning2(
-          "The model has not converged (some Rhats are > 1.1). ",
-          "Do not analyse the results! \nWe recommend running ", 
-          "more iterations and/or setting stronger priors."
-        )
-      }
-      div_trans <- sum(nuts_params(object, pars = "divergent__")$Value)
-      adapt_delta <- control_params(object)$adapt_delta
-      if (div_trans > 0) {
-        warning2(
-          "There were ", div_trans, " divergent transitions after warmup. ", 
-          "Increasing adapt_delta above ", adapt_delta, " may help. See ",
-          "http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup"
-        )
-      }
-    } else {
-      colnames(fit_summary) <- c(
-        "Estimate", "Est.Error", "l-95% CI", "u-95% CI"
+  if (!length(object$fit@sim)) {
+    # the model does not contain posterior samples
+    return(out)
+  }
+  out$chains <- object$fit@sim$chains
+  out$iter <- object$fit@sim$iter
+  out$warmup <- object$fit@sim$warmup
+  out$thin <- object$fit@sim$thin
+  stan_args <- object$fit@stan_args[[1]]
+  out$sampler <- paste0(stan_args$method, "(", stan_args$algorithm, ")")
+  allow_waic <- !nrow(object$ranef) || any(grepl("^r_", parnames(object)))
+  if (waic && allow_waic) {
+    out$WAIC <- SW(WAIC(object)$waic)
+  }
+  if (priors) {
+    out$prior <- prior_summary(object, all = FALSE)
+  }
+  
+  pars <- parnames(object)
+  meta_pars <- object$fit@sim$pars_oi
+  meta_pars <- meta_pars[!grepl("^(r|s|Xme|prior)_", meta_pars)]
+  fit_summary <- summary(object$fit, pars = meta_pars,
+                         probs = c(0.025, 0.975),
+                         use_cache = use_cache)$summary
+  algorithm <- algorithm(object)
+  if (algorithm == "sampling") {
+    fit_summary <- fit_summary[, -2]
+    colnames(fit_summary) <- c(
+      "Estimate", "Est.Error", "l-95% CI", "u-95% CI", 
+      "Eff.Sample", "Rhat"
+    )
+    Rhats <- fit_summary[, "Rhat"]
+    if (any(Rhats > 1.1, na.rm = TRUE) || anyNA(Rhats)) {
+      warning2(
+        "The model has not converged (some Rhats are > 1.1). ",
+        "Do not analyse the results! \nWe recommend running ", 
+        "more iterations and/or setting stronger priors."
       )
     }
-    
-    # fixed effects summary
-    fe_pars <- pars[grepl(fixef_pars(), pars)]
-    out$fixed <- fit_summary[fe_pars, , drop = FALSE]
-    rownames(out$fixed) <- gsub(fixef_pars(), "", fe_pars)
-    
-    # summary of family specific parameters
-    spec_pars <- c(auxpars(), "delta", "theta", "rescor")
-    spec_pars <- paste0("^(", paste0(spec_pars, collapse = "|"), ")")
-    spec_pars <- pars[grepl(spec_pars, pars)]
-    out$spec_pars <- fit_summary[spec_pars, , drop = FALSE]
-    if (is_linear(family(object)) && length(bterms$response) > 1L) {
-      sigma_names <- paste0("sigma(", bterms$response, ")")
-      rescor_names <- get_cornames(bterms$response, type = "rescor")   
-      spec_pars[grepl("^sigma_", spec_pars)] <- sigma_names
-      spec_pars[grepl("^rescor_", spec_pars)] <- rescor_names 
-    }    
-    rownames(out$spec_pars) <- spec_pars
-    
-    # summary of autocorrelation effects
-    cor_pars <- pars[grepl("^ar|^ma|^sigmaLL$", pars)]
-    out$cor_pars <- fit_summary[cor_pars, , drop = FALSE]
-    rownames(out$cor_pars) <- cor_pars
-    
-    # summary of group-level effects
-    for (g in out$group) {
-      r <- object$ranef[object$ranef$group == g, ]
-      nlpar_usc <- usc(r$nlpar, "suffix")
-      rnames <- paste0(nlpar_usc, r$coef)
-      sd_pars <- paste0("sd_", g, "__", rnames)
-      sd_names <- paste0("sd", "(", rnames ,")")
-      # construct correlation names
-      type <- paste0("cor_", g)
-      all_cor_pars <- get_cornames(rnames, brackets = FALSE, type = type)
-      take <- all_cor_pars %in% parnames(object)
-      cor_pars <- all_cor_pars[take]
-      cor_names <- get_cornames(rnames)[take]
-      # extract sd and cor parameters from the summary
-      out$random[[g]] <- fit_summary[c(sd_pars, cor_pars), , drop = FALSE]
-      rownames(out$random[[g]]) <- c(sd_names, cor_names)
+    div_trans <- sum(nuts_params(object, pars = "divergent__")$Value)
+    adapt_delta <- control_params(object)$adapt_delta
+    if (div_trans > 0) {
+      warning2(
+        "There were ", div_trans, " divergent transitions after warmup. ", 
+        "Increasing adapt_delta above ", adapt_delta, " may help. See ",
+        "http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup"
+      )
     }
-    
-    # summary of smooths
-    spline_pars <- pars[grepl("^sds_", pars)]
-    if (length(spline_pars)) {
-      out$splines <- fit_summary[spline_pars, , drop = FALSE]
-      rownames(out$splines) <- paste0(gsub("^sds_", "sds(", spline_pars), ")")
-    }
-  }  
+  } else {
+    colnames(fit_summary) <- c(
+      "Estimate", "Est.Error", "l-95% CI", "u-95% CI"
+    )
+  }
+  
+  # fixed effects summary
+  fe_pars <- pars[grepl(fixef_pars(), pars)]
+  out$fixed <- fit_summary[fe_pars, , drop = FALSE]
+  rownames(out$fixed) <- gsub(fixef_pars(), "", fe_pars)
+  
+  # summary of family specific parameters
+  spec_pars <- c(auxpars(), "delta", "theta", "rescor")
+  spec_pars <- paste0("^(", paste0(spec_pars, collapse = "|"), ")")
+  spec_pars <- pars[grepl(spec_pars, pars)]
+  out$spec_pars <- fit_summary[spec_pars, , drop = FALSE]
+  if (is_linear(family(object)) && length(bterms$response) > 1L) {
+    sigma_names <- paste0("sigma(", bterms$response, ")")
+    rescor_names <- get_cornames(bterms$response, type = "rescor")   
+    spec_pars[grepl("^sigma_", spec_pars)] <- sigma_names
+    spec_pars[grepl("^rescor_", spec_pars)] <- rescor_names 
+  }    
+  rownames(out$spec_pars) <- spec_pars
+  
+  # summary of autocorrelation effects
+  cor_pars <- pars[grepl("^ar|^ma|^sigmaLL$", pars)]
+  out$cor_pars <- fit_summary[cor_pars, , drop = FALSE]
+  rownames(out$cor_pars) <- cor_pars
+  
+  # summary of group-level effects
+  for (g in out$group) {
+    r <- object$ranef[object$ranef$group == g, ]
+    nlpar_usc <- usc(r$nlpar, "suffix")
+    rnames <- paste0(nlpar_usc, r$coef)
+    sd_pars <- paste0("sd_", g, "__", rnames)
+    sd_names <- paste0("sd", "(", rnames ,")")
+    # construct correlation names
+    type <- paste0("cor_", g)
+    all_cor_pars <- get_cornames(rnames, brackets = FALSE, type = type)
+    take <- all_cor_pars %in% parnames(object)
+    cor_pars <- all_cor_pars[take]
+    cor_names <- get_cornames(rnames)[take]
+    # extract sd and cor parameters from the summary
+    out$random[[g]] <- fit_summary[c(sd_pars, cor_pars), , drop = FALSE]
+    rownames(out$random[[g]]) <- c(sd_names, cor_names)
+  }
+  # summary of smooths
+  sm_pars <- pars[grepl("^sds_", pars)]
+  if (length(sm_pars)) {
+    out$splines <- fit_summary[sm_pars, , drop = FALSE]
+    rownames(out$splines) <- paste0(gsub("^sds_", "sds(", sm_pars), ")")
+  }
+  # summary of monotonic parameters
+  mo_pars <- pars[grepl("^simplex_", pars)]
+  if (length(mo_pars)) {
+    out$mo <- fit_summary[mo_pars, , drop = FALSE]
+    rownames(out$mo) <- gsub("^simplex_", "", mo_pars)
+  }
+  # summary of gaussian processes
+  gp_pars <- pars[grepl("^(sdgp|lscale)_", pars)]
+  if (length(gp_pars)) {
+    out$gp <- fit_summary[gp_pars, , drop = FALSE]
+    rownames(out$gp) <- gsub("^sdgp_", "sdgp(", rownames(out$gp))
+    rownames(out$gp) <- gsub("^lscale_", "lscale(", rownames(out$gp))
+    rownames(out$gp) <- paste0(rownames(out$gp), ")")
+  }
   out
 }
 

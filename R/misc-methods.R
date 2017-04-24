@@ -30,6 +30,7 @@ print.brmssummary <- function(x, digits = 2, ...) {
       print(x$prior, show_df = FALSE)
       cat("\n")
     }
+    
     if (length(x$splines)) {
       cat("Smooth Terms: \n")
       if (x$algorithm == "sampling") {
@@ -37,6 +38,16 @@ print.brmssummary <- function(x, digits = 2, ...) {
           round(x$splines[, "Eff.Sample"], digits = 0)
       }
       print(round(x$splines, digits = digits)) 
+      cat("\n")
+    }
+    
+    if (length(x$gp)) {
+      cat("Gaussian Process Terms: \n")
+      if (x$algorithm == "sampling") {
+        x$gp[, "Eff.Sample"] <- 
+          round(x$gp[, "Eff.Sample"], digits = 0)
+      }
+      print(round(x$gp, digits = digits)) 
       cat("\n")
     }
     
@@ -73,6 +84,16 @@ print.brmssummary <- function(x, digits = 2, ...) {
           round(x$fixed[, "Eff.Sample"], digits = 0)
       }
       print(round(x$fixed, digits = digits)) 
+      cat("\n")
+    }
+    
+    if (length(x$mo)) {
+      cat("Simplex Parameters: \n")
+      if (x$algorithm == "sampling") {
+        x$mo[, "Eff.Sample"] <- 
+          round(x$mo[, "Eff.Sample"], digits = 0)
+      }
+      print(round(x$mo, digits = digits)) 
       cat("\n")
     }
     
