@@ -347,25 +347,59 @@ monotonic <- function(expr) {
   deparse_no_string(substitute(expr))
 }
 
-#' Set up gaussian process terms in \pkg{brms}
+#' Set up Gaussian process terms in \pkg{brms}
 #' 
-#' Function used to set up a gaussian process term in \pkg{brms}.
+#' Function used to set up a Gaussian process term in \pkg{brms}.
 #' The function does not evaluate its arguments --
-#' it exists purely to help set up a model with gaussian process terms.
+#' it exists purely to help set up a model with Gaussian process terms.
 #' 
-#' @param ... One or more terms containing covariates for
-#'   the gaussian process.
+#' @param ... One or more terms containing predictores for
+#'   the Gaussian process.
+#' @param cov Name of the covariance kernel. By default, 
+#'   the exponentiated-quadratic kernel \code{"exp_quad"} is used.
+#'   
+#' @details TODO: Explain the idea of Gaussian processes
+#' 
+#'  Currently, only a single predictor may be passed
+#'  and the exponentiated-quadratic kernel is the only supported 
+#'  covariance kernel. More options will follow in the future.  
+#'  
+#' @return An object of class \code{'gpterm'}, which is a list 
+#'   of arguments to be interpreted by the formula 
+#'   parsing functions of \code{brms}.
+#'   
+#' @examples
+#' \dontrun{
+#' # simulate data using the mgcv package
+#' dat <- mgcv::gamSim(1, n = 30, scale = 2)
+#' 
+#' # fit a simple gaussian process model
+#' fit1 <- brm(y ~ gp(x2), dat)
+#' summary(fit1)
+#' me1 <- marginal_effects(fit1, nsamples = 200, spaghetti = TRUE)
+#' plot(me1, points = TRUE)
+#' 
+#' # fit a more complicated gaussian process model
+#' fit2 <- brm(y ~ gp(x0) + x1 + gp(x2) + x3, dat)
+#' summary(fit2)
+#' me2 <- marginal_effects(fit2, nsamples = 200, spaghetti = TRUE)
+#' plot(me2, points = TRUE)
+#' 
+#' # compare model fit
+#' LOO(fit1, fit2)
+#' }
 #' 
 #' @seealso \code{\link[brms:brmsformula]{brmsformula}}
 #' @export
-gp <- function(...) {
+gp <- function(..., cov = "exp_quad") {
+  cov <- match.arg(cov)
   label <- deparse(match.call())
   vars <- as.list(substitute(list(...)))[-1]
   if (length(vars) != 1L) {
-    stop2("'gp' currently allows only one covariate.")
+    stop2("'gp' currently allows only one predictor.")
   }
   term <- ulapply(vars, deparse, backtick = TRUE, width.cutoff = 500)
-  list(term = term, label = label)
+  structure(nlist(term, label, cov), class = "gpterm")
 }
 
 #' Set up basic grouping terms in \pkg{brms}
