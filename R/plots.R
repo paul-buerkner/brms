@@ -68,7 +68,7 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, points = FALSE,
           aes_points$colour <- parse(text = gvar)[[1]]
         }
         plots[[i]] <- plots[[i]] + 
-          geom_jitter(aes_points, shape = 1, size = 4 / ncond^0.25,
+          geom_jitter(aes_points, size = 2 / ncond^0.25,
                       data = attr(x[[i]], "points"), inherit.aes = FALSE,
                       height = 0, width = jitter_width)
       }
