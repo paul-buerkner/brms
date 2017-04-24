@@ -219,6 +219,7 @@ prepare_conditions <- function(x, conditions = NULL, effects = NULL,
     lapply(get_effect(bterms, "me"), rhs),
     lapply(get_effect(bterms, "sm"), rhs),
     lapply(get_effect(bterms, "cs"), rhs),
+    lapply(get_effect(bterms, "gp"), rhs),
     lapply(get_effect(bterms, "offset"), rhs),
     re$form, lapply(re$gcall, "[[", "weightvars"),
     bterms$adforms[c("se", "disp", "trials", "cat")],
@@ -840,7 +841,8 @@ default_plot_pars <- function() {
   # list all parameter classes to be included in plots by default
   c(fixef_pars(), "^sd_", "^cor_", "^sigma_", "^rescor_", 
     paste0("^", auxpars(), "[[:digit:]]*$"), "^delta$",
-    "^theta", "^ar", "^ma", "^arr", "^sigmaLL", "^sds_")
+    "^theta", "^ar", "^ma", "^arr", "^sigmaLL", "^sds_",
+    "^sdgp_", "^lscale_")
 }
 
 extract_pars <- function(pars, all_pars, exact_match = FALSE,
