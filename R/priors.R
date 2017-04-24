@@ -683,7 +683,7 @@ prior_effects.btnl <- function(x, data, def_scale_prior = "", ...) {
     prior_eff <- prior_effects(
       x$nlpars[[i]], data = data, nlpar = nlpars[i], 
       def_scale_prior = def_scale_prior,
-      spec_intercept = FALSE, ...
+      spec_intercept = FALSE
     )
     prior <- rbind(prior, prior_eff)
   }
@@ -745,9 +745,9 @@ prior_cs <- function(csef, fixef = NULL, nlpar = "") {
   #   fixef: names of the population-level effects
   # Returns:
   #   an object of class brmsprior
-  stopifnot(!nzchar(nlpar))
   prior <- empty_brmsprior()
   if (length(csef)) {
+    stopifnot(!nzchar(nlpar))
     invalid <- intersect(fixef, csef)
     if (length(invalid)) {
       stop2("Variables cannot be modeled as fixed and ", 
