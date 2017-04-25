@@ -355,7 +355,8 @@ change_re <- function(ranef, pars, dims) {
       change <- c(change,
         change_prior(
           class = paste0("sd_", id), pars = pars,
-          new_class = paste0("sd_", g), names = suffix
+          new_class = paste0("sd_", g), 
+          names = paste0("_", suffix)
         )
       )
       # rename group-level correlations
