@@ -682,10 +682,12 @@ stan_prior <- function(prior, class, coef = "", group = "",
     } else { # base prior for this parameter
       coef_prior <- base_prior 
     }  
-    if (nchar(coef_prior) > 0) {  # implies a proper prior
+    if (nchar(coef_prior) > 0) {  
+      # implies a proper prior
       out <- paste0(wsp, class, index, " ~ ", coef_prior, "; \n")
     } else {
-      out <- ""  # implies an improper flat prior
+      # implies an improper flat prior
+      out <- ""
     }
     return(out)
   }

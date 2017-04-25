@@ -746,8 +746,10 @@ stan_gp <- function(gpef, prior, nlpar = "") {
     ) 
     gpef <- rename(gpef)
     out$prior <- paste0(
-      stan_prior(prior, class = "sdgp", coef = gpef, nlpar = nlpar),
-      stan_prior(prior, class = "lscale", coef = gpef, nlpar = nlpar),
+      stan_prior(prior, class = "sdgp", coef = gpef, 
+                 nlpar = nlpar, suffix = p),
+      stan_prior(prior, class = "lscale", coef = gpef, 
+                 nlpar = nlpar, suffix = p),
       collapse("  zgp", p, "_", I, " ~ normal(0, 1); \n")
     )
     gp_args <- paste0(
