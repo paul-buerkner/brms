@@ -1183,8 +1183,10 @@ make_point_frame <- function(mf, effects, conditions, groups,
       cond <- cond[, not_na, drop = FALSE]
       mf_tmp <- mf[, not_na, drop = FALSE]
       if (ncol(mf_tmp)) {
-        is_num <- sapply(mf_tmp, is.numeric)
+        is_num <- sapply(mf_tmp, is.numeric) 
+        is_num <- is_num & !names(mf_tmp) %in% groups
         if (sum(is_num)) {
+          # handle numeric variables
           stopifnot(select_points >= 0)
           if (select_points > 0) {
             for (v in names(mf_tmp)[is_num]) {
@@ -1205,6 +1207,7 @@ make_point_frame <- function(mf, effects, conditions, groups,
         }
       }
       if (ncol(mf_tmp)) {
+        # handle factors and grouping variables
         # do it like base::duplicated
         K <- do.call("paste", c(mf_tmp, sep = "\r")) %in%
              do.call("paste", c(cond, sep = "\r"))
