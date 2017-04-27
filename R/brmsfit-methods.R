@@ -1131,7 +1131,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
                              re_formula = NULL, allow_new_levels = FALSE,
                              sample_new_levels = "uncertainty", 
                              incl_autocor = TRUE, subset = NULL, 
-                             nug = NULL, trys = 5, loo_args = list(), ...) {
+                             nug = NULL, ntrys = 5, loo_args = list(), ...) {
   if (missing(type)) {
     type <- "dens_overlay"
   }
