@@ -1131,7 +1131,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
                              re_formula = NULL, allow_new_levels = FALSE,
                              sample_new_levels = "uncertainty", 
                              incl_autocor = TRUE, subset = NULL, 
-                             ntrys = 5, loo_args = list(), ...) {
+                             nug = NULL, trys = 5, loo_args = list(), ...) {
   if (missing(type)) {
     type <- "dens_overlay"
   }
@@ -1224,7 +1224,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
   pred_args <- nlist(
     object, newdata, re_formula, allow_new_levels, 
     sample_new_levels, incl_autocor, nsamples, subset, 
-    ntrys, sort = FALSE, summary = FALSE
+    nug, ntrys, sort = FALSE, summary = FALSE
   )
   yrep <- as.matrix(do.call(method, pred_args))
   if (family(object)$family %in% "binomial") {
@@ -1654,7 +1654,12 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
 #' @param ntrys Parameter used in rejection sampling 
 #'   for truncated discrete models only 
 #'   (defaults to \code{5}). See Details for more information.
-#' @param ... Currently ignored
+#' @param nug Small positive number for Gaussian process terms only. 
+#'   For numerical reasons, the covariance matrix of a Gaussian 
+#'   process might not be positive definite. Adding a very small 
+#'   number to the matrix's diagonal often solves this problem. 
+#'   If \code{NULL} (the default), \code{nug} is chosen internally.
+#' @param ... Currently ignored.
 #' 
 #' @return Predicted values of the response variable. 
 #'   If \code{summary = TRUE} the output depends on the family:
@@ -1714,12 +1719,12 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                             sample_new_levels = "uncertainty", 
                             incl_autocor = TRUE, negative_rt = FALSE,
                             subset = NULL, nsamples = NULL, sort = FALSE,
-                            ntrys = 5, summary = TRUE, robust = FALSE,
+                            nug = NULL, ntrys = 5, summary = TRUE, robust = FALSE,
                             probs = c(0.025, 0.975), ...) {
   contains_samples(object)
   object <- restructure(object)
   draws_args <- nlist(
-    x = object, newdata, re_formula, incl_autocor, 
+    x = object, newdata, re_formula, incl_autocor, nug,
     allow_new_levels, sample_new_levels, subset, nsamples
   )
   draws <- do.call(extract_draws, draws_args)
@@ -1789,7 +1794,7 @@ posterior_predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                                       sample_new_levels = "uncertainty", 
                                       incl_autocor = TRUE, negative_rt = FALSE,
                                       subset = NULL, nsamples = NULL, sort = FALSE,
-                                      ntrys = 5, robust = FALSE,
+                                      nug = NULL, ntrys = 5, robust = FALSE,
                                       probs = c(0.025, 0.975), ...) {
   cl <- match.call()
   cl[[1]] <- quote(predict)
@@ -1851,13 +1856,14 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                            allow_new_levels = FALSE, 
                            sample_new_levels = "uncertainty", 
                            incl_autocor = TRUE, auxpar = NULL, subset = NULL, 
-                           nsamples = NULL, sort = FALSE, summary = TRUE, 
-                           robust = FALSE, probs = c(0.025, 0.975), ...) {
+                           nsamples = NULL, sort = FALSE, nug = NULL,
+                           summary = TRUE, robust = FALSE, 
+                           probs = c(0.025, 0.975), ...) {
   scale <- match.arg(scale)
   contains_samples(object)
   object <- restructure(object)
   draws_args <- nlist(
-    x = object, newdata, re_formula, incl_autocor, 
+    x = object, newdata, re_formula, incl_autocor, nug,
     allow_new_levels, sample_new_levels, subset, nsamples
   )
   draws <- do.call(extract_draws, draws_args)
@@ -1967,7 +1973,7 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                               allow_new_levels = FALSE, 
                               sample_new_levels = "uncertainty",
                               incl_autocor = TRUE, subset = NULL, 
-                              nsamples = NULL, sort = FALSE,
+                              nsamples = NULL, sort = FALSE, nug = NULL,
                               summary = TRUE, robust = FALSE, 
                               probs = c(0.025, 0.975), ...) {
   type <- match.arg(type)
@@ -1992,7 +1998,7 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   pred_args <- nlist(
     object, newdata, re_formula, allow_new_levels,
     sample_new_levels, incl_autocor, subset, sort, 
-    summary = FALSE
+    nug, summary = FALSE
   )
   mu <- do.call(method, pred_args)
   Y <- matrix(rep(as.numeric(standata$Y), nrow(mu)), 
@@ -2023,7 +2029,7 @@ predictive_error.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                                      allow_new_levels = FALSE, 
                                      sample_new_levels = "uncertainty",
                                      incl_autocor = TRUE, subset = NULL, 
-                                     nsamples = NULL, sort = FALSE,
+                                     nsamples = NULL, sort = FALSE, nug = NULL,
                                      robust = FALSE, probs = c(0.025, 0.975),
                                      ...) {
   cl <- match.call()
@@ -2222,7 +2228,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
 WAIC.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL, 
                          re_formula = NULL, allow_new_levels = FALSE,
                          sample_new_levels = "uncertainty", subset = NULL,
-                         nsamples = NULL, pointwise = NULL) {
+                         nsamples = NULL, pointwise = NULL, nug = NULL) {
   models <- list(x, ...)
   mnames <- deparse(substitute(x))
   mnames <- c(mnames, sapply(substitute(list(...))[-1], deparse))
@@ -2233,7 +2239,7 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
     x, pointwise, subset = subset, newdata = newdata
   )
   args = nlist(
-    ic = "waic", newdata, re_formula, subset,
+    ic = "waic", newdata, re_formula, subset, nug,
     allow_new_levels, sample_new_levels, pointwise
   )
   if (length(models) > 1L) {
@@ -2261,7 +2267,7 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
 waic.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
                          re_formula = NULL, allow_new_levels = FALSE,
                          sample_new_levels = "uncertainty", subset = NULL, 
-                         nsamples = NULL, pointwise = NULL) {
+                         nsamples = NULL, pointwise = NULL, nug = NULL) {
   cl <- match.call()
   cl[[1]] <- quote(WAIC)
   eval(cl, parent.frame())
@@ -2272,7 +2278,7 @@ waic.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
 LOO.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL, 
                         re_formula = NULL, allow_new_levels = FALSE, 
                         sample_new_levels = "uncertainty", subset = NULL, 
-                        nsamples = NULL, pointwise = NULL,
+                        nsamples = NULL, pointwise = NULL, nug = NULL,
                         cores = 1, wcp = 0.2, wtrunc = 3/4) {
   models <- list(x, ...)
   mnames <- deparse(substitute(x))
@@ -2286,7 +2292,7 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
   loo_args <- nlist(wcp, wtrunc, cores)
   args = nlist(
     ic = "loo", loo_args, newdata, re_formula, subset,
-    allow_new_levels, sample_new_levels, pointwise
+    allow_new_levels, sample_new_levels, pointwise, nug
   )
   if (length(models) > 1L) {
     out <- named_list(mnames)
@@ -2313,7 +2319,7 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
 loo.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
                         re_formula = NULL, allow_new_levels = FALSE,
                         sample_new_levels = "uncertainty", subset = NULL,
-                        nsamples = NULL, pointwise = NULL,
+                        nsamples = NULL, pointwise = NULL, nug = NULL,
                         cores = 1, wcp = 0.2, wtrunc = 3/4) {
   cl <- match.call()
   cl[[1]] <- quote(LOO)
@@ -2463,12 +2469,13 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                             allow_new_levels = FALSE, 
                             sample_new_levels = "uncertainty", 
                             incl_autocor = TRUE, subset = NULL,
-                            nsamples = NULL, pointwise = FALSE, ...) {
+                            nsamples = NULL, pointwise = FALSE,
+                            nug = NULL, ...) {
   contains_samples(object)
   object <- restructure(object)
   draws_args <- nlist(
     x = object, newdata, re_formula, allow_new_levels, incl_autocor,
-    sample_new_levels, subset, nsamples, check_response = TRUE
+    sample_new_levels, subset, nsamples, nug, check_response = TRUE
   )
   draws <- do.call(extract_draws, draws_args)
   
@@ -2504,7 +2511,8 @@ logLik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                            allow_new_levels = FALSE,
                            sample_new_levels = "uncertainty", 
                            incl_autocor = TRUE, subset = NULL,
-                           nsamples = NULL, pointwise = FALSE, ...) {
+                           nsamples = NULL, pointwise = FALSE,
+                           nug = NULL, ...) {
   cl <- match.call()
   cl[[1]] <- quote(log_lik)
   eval(cl, parent.frame())
@@ -2516,7 +2524,7 @@ pp_mixture.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
                                allow_new_levels = FALSE, 
                                sample_new_levels = "uncertainty", 
                                incl_autocor = TRUE, subset = NULL,
-                               nsamples = NULL, summary = TRUE, 
+                               nsamples = NULL, nug = NULL, summary = TRUE, 
                                robust = FALSE, probs = c(0.025, 0.975), 
                                log = FALSE, ...) {
   if (!is.mixfamily(family(x))) {
@@ -2525,7 +2533,7 @@ pp_mixture.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
   contains_samples(x)
   x <- restructure(x)
   draws_args <- nlist(
-    x, newdata, re_formula, allow_new_levels, incl_autocor,
+    x, newdata, re_formula, allow_new_levels, incl_autocor, nug,
     sample_new_levels, subset, nsamples, check_response = TRUE
   )
   draws <- do.call(extract_draws, draws_args)

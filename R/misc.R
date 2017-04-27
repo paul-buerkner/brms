@@ -497,6 +497,10 @@ cov_exp_quad <- function(x, x_new = NULL, sdgp = 1, lscale = 1) {
   outer(x, x_new, .cov_exp_quad)
 }
 
+scale_unit <- function(x, lb = min(x), ub = max(x)) {
+  (x - lb) / (ub - lb)
+}
+
 fabs <- function(x) {
   abs(x)
 }
@@ -579,8 +583,8 @@ expect_match2 <- function(object, regexp, ..., all = TRUE) {
   testthat::expect_match(object, regexp, fixed = TRUE, ..., all = all)
 }
 
-# startup messages for brms
 .onAttach <- function(libname, pkgname) {
+  # startup messages for brms
   packageStartupMessage(paste0(
     "Loading 'brms' package (version ", utils::packageVersion("brms"), "). ",
     "Useful instructions \n", 

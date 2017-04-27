@@ -1192,8 +1192,8 @@ make_point_frame <- function(mf, effects, conditions, groups,
             for (v in names(mf_tmp)[is_num]) {
               min <- min(mf_tmp[, v])
               max <- max(mf_tmp[, v])
-              unit <- (mf_tmp[, v] - min) / (max - min)
-              unit_cond <- (cond[, v] - min) / (max - min)
+              unit <- scale_unit(mf_tmp[, v], min, max)
+              unit_cond <- scale_unit(cond[, v], min, max)
               unit_diff <- abs(unit - unit_cond)
               close_enough <- unit_diff <= select_points
               mf_tmp[close_enough, v] <- cond[, v]

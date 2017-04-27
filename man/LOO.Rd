@@ -11,7 +11,7 @@
 \method{LOO}{brmsfit}(x, ..., compare = TRUE, newdata = NULL,
   re_formula = NULL, allow_new_levels = FALSE,
   sample_new_levels = "uncertainty", subset = NULL, nsamples = NULL,
-  pointwise = NULL, cores = 1, wcp = 0.2, wtrunc = 3/4)
+  pointwise = NULL, nug = NULL, cores = 1, wcp = 0.2, wtrunc = 3/4)
 
 LOO(x, ...)
 }
@@ -66,6 +66,12 @@ requires much less working memory. Accordingly, if one runs
 into memory issues, \code{pointwise = TRUE} is the way to go.
 By default, \code{pointwise} is automatically chosen based on 
 the size of the model.}
+
+\item{nug}{Small positive number for Gaussian process terms only. 
+For numerical reasons, the covariance matrix of a Gaussian 
+process might not be positive definite. Adding a very small 
+number to the matrix's diagonal often solves this problem. 
+If \code{NULL} (the default), \code{nug} is chosen internally.}
 
 \item{cores}{The number of cores to use for parallelization. 
 Default is \code{1}.}

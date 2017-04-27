@@ -7,8 +7,8 @@
 \method{fitted}{brmsfit}(object, newdata = NULL, re_formula = NULL,
   scale = c("response", "linear"), allow_new_levels = FALSE,
   sample_new_levels = "uncertainty", incl_autocor = TRUE, auxpar = NULL,
-  subset = NULL, nsamples = NULL, sort = FALSE, summary = TRUE,
-  robust = FALSE, probs = c(0.025, 0.975), ...)
+  subset = NULL, nsamples = NULL, sort = FALSE, nug = NULL,
+  summary = TRUE, robust = FALSE, probs = c(0.025, 0.975), ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}}
@@ -65,6 +65,12 @@ Indicating whether to return predicted values in the original
 order (\code{FALSE}; default) or in the order of the 
 time series (\code{TRUE}).}
 
+\item{nug}{Small positive number for Gaussian process terms only. 
+For numerical reasons, the covariance matrix of a Gaussian 
+process might not be positive definite. Adding a very small 
+number to the matrix's diagonal often solves this problem. 
+If \code{NULL} (the default), \code{nug} is chosen internally.}
+
 \item{summary}{Should summary statistics 
  (i.e. means, sds, and 95\% intervals) be returned
 instead of the raw values? Default is \code{TRUE}.}
@@ -78,7 +84,7 @@ Only used if \code{summary} is \code{TRUE}.}
 \item{probs}{The percentiles to be computed by the \code{quantile} 
 function. Only used if \code{summary} is \code{TRUE}.}
 
-\item{...}{Currently ignored}
+\item{...}{Currently ignored.}
 }
 \value{
 Fitted values extracted from \code{object}. 

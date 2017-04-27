@@ -410,6 +410,7 @@ parse_gp <- function(formula) {
   if (length(gp_terms)) {
     eterms <- lapply(gp_terms, eval2)
     allvars <- str2formula(ulapply(eterms, "[[", "term"))
+    allvars <- str2formula(all.vars(allvars))
     if (!length(all.vars(allvars))) {
       stop2("No variable supplied to function 'gp'.")
     }

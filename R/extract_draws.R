@@ -3,7 +3,7 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
                                   allow_new_levels = FALSE, 
                                   sample_new_levels = "uncertainty",
                                   incl_autocor = TRUE, subset = NULL, 
-                                  nsamples = NULL, ...) {
+                                  nsamples = NULL, nug = NULL, ...) {
   # extract all data and posterior draws required in (non)linear_predictor
   # Args:
   #   incl_autocor: include autocorrelation parameters in the output?
@@ -24,8 +24,7 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
     data = do.call(amend_newdata, c(newd_args, list(...)))
   )
   args <- c(newd_args, nlist(
-    sample_new_levels, subset, 
-    nsamples, C = draws$data[["C"]]
+    sample_new_levels, subset, nsamples, nug, C = draws$data[["C"]]
   ))
   keep <- !grepl("^(X|Z|J|C)", names(draws$data))
   draws$data <- subset_attr(draws$data, keep)
@@ -124,8 +123,9 @@ extract_draws.btnl <- function(x, C, nlpar = "", ...) {
 extract_draws.btl <- function(x, fit, newdata = NULL, re_formula = NULL, 
                               allow_new_levels = FALSE, 
                               sample_new_levels = FALSE,
-                              incl_autocor = TRUE, subset = NULL, nlpar = "",
-                              smooths_only = FALSE, mv = FALSE, ...) {
+                              incl_autocor = TRUE, subset = NULL,
+                              nlpar = "", smooths_only = FALSE, 
+                              mv = FALSE, nug = NULL, ...) {
   # extract draws of all kinds of effects
   # Args:
   #   fit: a brmsfit object
@@ -189,7 +189,7 @@ extract_draws.btl <- function(x, fit, newdata = NULL, re_formula = NULL,
     extract_draws_me(meef, args, sdata = draws$data, nlpar = nlpar, new = new),
     extract_draws_sm(smooths, args, sdata = draws$data, nlpar = nlpar),
     extract_draws_gp(gpef, args, sdata = draws$data, sdata_old = sdata_old, 
-                     nlpar = nlpar, new = new),
+                     nlpar = nlpar, new = new, nug = nug),
     extract_draws_re(new_ranef, args, sdata = draws$data, nlpar = nlpar,
                      sample_new_levels = sample_new_levels)
   )
@@ -387,7 +387,7 @@ extract_draws_sm <- function(smooths, args, sdata, nlpar = "") {
 }
 
 extract_draws_gp <- function(gpef, args, sdata, sdata_old = NULL,
-                             nlpar = "", new = FALSE) {
+                             nlpar = "", new = FALSE, nug = NULL) {
   # extract draws for gaussian processes
   # Args:
   #   gpef: names of the gaussian process terms
@@ -395,7 +395,11 @@ extract_draws_gp <- function(gpef, args, sdata, sdata_old = NULL,
   nlpar_usc <- usc(nlpar, "suffix")
   draws <- list()
   if (length(gpef)) {
+    gpef <- rename(gpef)
     draws[["gp"]] <- named_list(gpef)
+    if (is.null(nug)) {
+      nug <- ifelse(new, 1e-8, 1e-11)
+    }
     for (i in seq_along(gpef)) {
       gp <- list()
       sdgp <- paste0("^sdgp_", nlpar_usc, gpef[i])
@@ -409,12 +413,13 @@ extract_draws_gp <- function(gpef, args, sdata, sdata_old = NULL,
         gp[["x_new"]] <- sdata[[paste0("Xgp_", i)]]
         # computing GPs for new data requires the old GP terms
         gp[["yL"]] <- gp_predictor(
-          x = gp[["x"]], sdgp = gp[["sdgp"]], 
+          x = gp[["x"]], sdgp = gp[["sdgp"]],
           lscale = gp[["lscale"]], zgp = gp[["zgp"]]
         )
       } else {
         gp[["x"]] <- sdata[[paste0("Xgp_", i)]]
       }
+      gp[["nug"]] <- nug
       draws[["gp"]][[i]] <- gp
     }
   }

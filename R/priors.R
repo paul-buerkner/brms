@@ -783,7 +783,7 @@ prior_gp <- function(gpef, def_scale_prior, nlpar = "") {
     prior <- rbind(
       brmsprior(class = "sdgp", prior = def_scale_prior, nlpar = nlpar),
       brmsprior(class = "sdgp", coef = gpef, nlpar = nlpar),
-      brmsprior(class = "lscale", prior = "gamma(2, 20)", nlpar = nlpar),
+      brmsprior(class = "lscale", prior = "normal(0, 0.5)", nlpar = nlpar),
       brmsprior(class = "lscale", coef = gpef, nlpar = nlpar)
     )
   }

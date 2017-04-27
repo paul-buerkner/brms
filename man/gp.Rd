@@ -7,8 +7,9 @@
 gp(..., cov = "exp_quad")
 }
 \arguments{
-\item{...}{One or more terms containing predictores for
-the Gaussian process.}
+\item{...}{One or more predictors for the Gaussian process. 
+Each predictor is internally scaled to the unit interval 
+to improve sampling efficiency and stability.}
 
 \item{cov}{Name of the covariance kernel. By default, 
 the exponentiated-quadratic kernel \code{"exp_quad"} is used.}

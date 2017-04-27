@@ -337,7 +337,13 @@ data_gp <- function(bterms, data, nlpar = "") {
     out[[paste0("Kgp", p)]] <- length(gpef)
     for (i in seq_along(gpef)) {
       gp <- eval2(gpef[i])
-      out[[paste0("Xgp", p, "_", i)]] <- eval2(gp$term, data)
+      Xgp <- eval2(gp$term, data)
+      if (!is.numeric(Xgp) || isTRUE(length(dim(Xgp)) > 1L)) {
+        stop2("Predictors of Gaussian processes ", 
+              "should be numeric vectors.")
+      }
+      # scale predictor for easier specification of priors
+      out[[paste0("Xgp", p, "_", i)]] <- scale_unit(Xgp)
     }
   }
   out

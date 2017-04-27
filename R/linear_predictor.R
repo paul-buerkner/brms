@@ -95,10 +95,6 @@ linear_predictor <- function(draws, i = NULL) {
     }
   }
   # incorporate gaussian processes
-  # gps <- names(draws[["gp"]])
-  if (!is.null(draws[["yL"]])) {
-    draws[["yL"]] <- get_eta(draws[["yL"]], i)
-  }
   for (k in seq_along(draws[["gp"]])) {
     gp <- draws[["gp"]][[k]]
     gp[["x"]] <- p(gp[["x"]], i)
@@ -308,7 +304,7 @@ cs_predictor <- function(X, b, eta, ncat, r = NULL) {
 }
 
 gp_predictor <- function(x, sdgp, lscale, zgp = NULL, x_new = NULL,
-                         yL = NULL, nug = 1e-8) {
+                         yL = NULL, nug = 1e-11) {
   # compute predictions for gaussian processes
   # Args:
   #   x: old predictor values
@@ -319,15 +315,24 @@ gp_predictor <- function(x, sdgp, lscale, zgp = NULL, x_new = NULL,
   #   yL: only for new data: linear predictor of the old data
   # Returns:
   #   A S x N matrix to be added to the linear predictor
+  try_expr <- function(expr, nug) {
+    out <- try(expr, silent = TRUE)
+    if (is(out, "try-error")) {
+      stop2("For numerical reasons, the GP covariance matrix was not ", 
+            "positive definite.\nSetting 'nug' above ", nug, " may help.")
+    }
+    out
+  }
   .gp_predictor_old <- function(x, sdgp, lscale, zgp) {
     Sigma <- cov_exp_quad(x, sdgp = sdgp, lscale = lscale)
     Sigma <- Sigma + diag(rep(nug, length(x)))
-    as.numeric(t(chol(Sigma)) %*% zgp)
+    L_Sigma <- try_expr(t(chol(Sigma)))
+    as.numeric(L_Sigma %*% zgp)
   }
   .gp_predictor_new <- function(x_new, yL, x, sdgp, lscale) {
     Sigma <- cov_exp_quad(x, sdgp = sdgp, lscale = lscale)
     Sigma <- Sigma + diag(rep(nug, length(x)))
-    L_Sigma <- t(chol(Sigma))
+    L_Sigma <- try_expr(t(chol(Sigma)), nug)
     L_Sigma_inverse <- solve(L_Sigma)
     K_div_yL <- L_Sigma_inverse %*% yL
     K_div_yL <- t(t(K_div_yL) %*% L_Sigma_inverse)
@@ -336,7 +341,9 @@ gp_predictor <- function(x, sdgp, lscale, zgp = NULL, x_new = NULL,
     v_new <- L_Sigma_inverse %*% k_x_x_new
     cov_yL_new <- cov_exp_quad(x_new, sdgp = sdgp, lscale = lscale) -
       t(v_new) %*% v_new + diag(rep(nug, length(x_new)))
-    yL_new <- rmulti_normal(1, mu = mu_yL_new, Sigma = cov_yL_new)
+    yL_new <- try_expr(
+      rmulti_normal(1, mu = mu_yL_new, Sigma = cov_yL_new), nug
+    )
     return(yL_new)
   }
   sdgp <- as.numeric(sdgp)
