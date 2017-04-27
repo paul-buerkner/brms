@@ -318,8 +318,9 @@ gp_predictor <- function(x, sdgp, lscale, zgp = NULL, x_new = NULL,
   try_expr <- function(expr, nug) {
     out <- try(expr, silent = TRUE)
     if (is(out, "try-error")) {
-      stop2("For numerical reasons, the GP covariance matrix was not ", 
-            "positive definite.\nSetting 'nug' above ", nug, " may help.")
+      stop2("The Gaussian process covariance matrix is not positive ", 
+            "definite.\nThis occurs for numerical reasons. Setting ",
+            "'nug' above ", nug, " may help.")
     }
     out
   }

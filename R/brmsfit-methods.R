@@ -735,7 +735,7 @@ summary.brmsfit <- function(object, waic = FALSE, priors = FALSE,
     if (div_trans > 0) {
       warning2(
         "There were ", div_trans, " divergent transitions after warmup. ", 
-        "Increasing adapt_delta above ", adapt_delta, " may help. See ",
+        "Increasing adapt_delta above ", adapt_delta, " may help.\nSee ",
         "http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup"
       )
     }
