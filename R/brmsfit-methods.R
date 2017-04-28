@@ -1411,7 +1411,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     } else {
       marg_res <- do.call(method, args)
     }
-    
+    rownames(marg_data) <- NULL
     types <- attr(marg_data, "types")
     both_numeric <- length(types) == 2L && all(types == "numeric")
     if (both_numeric && !surface) {
@@ -1434,19 +1434,19 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
         # samples should be unique across plotting groups
         sample <- paste0(sample, "_", marg_data[[effects[[i]][2]]])
       }
-      marg_res <- data.frame(as.numeric(t(marg_res)), factor(sample))
-      colnames(marg_res) <- c("estimate__", "sample__")
+      spaghetti_data <- data.frame(as.numeric(t(marg_res)), factor(sample))
+      colnames(spaghetti_data) <- c("estimate__", "sample__")
+      spaghetti_data <- cbind(marg_data, spaghetti_data)
     } else {
-      marg_res <- get_summary(marg_res, probs = probs, robust = robust)
-      colnames(marg_res) <- c("estimate__", "se__", "lower__", "upper__") 
+      spaghetti_data <- NULL
     }
-    
-    rownames(marg_data) <- NULL
+    marg_res <- get_summary(marg_res, probs = probs, robust = robust)
+    colnames(marg_res) <- c("estimate__", "se__", "lower__", "upper__")
     marg_res = cbind(marg_data, marg_res)
     attr(marg_res, "response") <- as.character(x$formula$formula[2])
     attr(marg_res, "effects") <- effects[[i]]
-    attr(marg_res, "surface") <- both_numeric && surface
-    attr(marg_res, "spaghetti") <- first_numeric && spaghetti
+    attr(marg_res, "surface") <- unname(both_numeric && surface)
+    attr(marg_res, "spaghetti") <- spaghetti_data
     point_args <- nlist(
       mf, effects = effects[[i]], conditions, select_points,
       groups = get_re(bterms)$group, family = x$family

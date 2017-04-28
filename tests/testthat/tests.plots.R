@@ -30,12 +30,12 @@ test_that("plotting functions don't throw unexpected errors", {
   marg_results <- data.frame(
     P1 = rpois(N, 20), 
     P2 = factor(rep(1:3, each = N / 3)),
-    Estimate = rnorm(N, sd = 5), 
-    Est.Error = rt(N, df = 10), 
-    MargRow = rep(1:2, each = N / 2)
+    estimate__ = rnorm(N, sd = 5), 
+    se__ = rt(N, df = 10), 
+    cond__ = rep(1:2, each = N / 2)
   )
-  marg_results[["lowerCI"]] <- marg_results$Estimate - 2
-  marg_results[["upperCI"]] <- marg_results$Estimate + 2
+  marg_results[["lower__"]] <- marg_results$estimate__ - 2
+  marg_results[["upper__"]] <- marg_results$estimate__ + 2
   marg_results <- list(marg_results[order(marg_results$P1), ])
   class(marg_results) <- "brmsMarginalEffects"
   attr(marg_results[[1]], "response") <- "count"

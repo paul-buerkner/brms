@@ -221,7 +221,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_true(is(meplot[[1]], "ggplot"))
   
   me <- marginal_effects(fit1, "Trt", spaghetti = TRUE, nsamples = 10)
-  expect_equal(nrow(me$Trt), 1000)
+  expect_equal(nrow(attr(me$Trt, "spaghetti")), 1000)
   meplot <- plot(me, plot = FALSE)
   expect_true(is(meplot[[1]], "ggplot"))
   expect_error(
