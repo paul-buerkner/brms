@@ -277,8 +277,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_true(is(ms, "brmsMarginalEffects"))
   
   ms <- marginal_smooths(fit1, spaghetti = TRUE, nsamples = 10)
-  expect_equal(nrow(ms[[1]]), 1000)
-  expect_equal(attr(ms[[1]], "spaghetti"), TRUE)
+  expect_equal(nrow(attr(ms[[1]], "spaghetti")), 1000)
   
   expect_error(marginal_smooths(fit1, smooths = "s3"),
                "No valid smooth terms found in the model")

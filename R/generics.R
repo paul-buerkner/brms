@@ -644,6 +644,9 @@ stanplot <- function(object, ...) {
 #'   values should be added via \code{\link[ggplot2:geom_rug]{geom_rug}}.
 #'   Default is \code{FALSE}. Depends on \code{select_points} in the same
 #'   way as \code{points} does.
+#' @param mean Logical; only relevant for spaghetti plots.
+#'   If \code{TRUE} (the default), display the mean regression 
+#'   line on top of the regression lines for each sample.
 #' @param jitter_width Only used if \code{points = TRUE}: 
 #'   Amount of horizontal jittering of the data points.
 #'   Mainly useful for ordinal models. Defaults to \code{0} that 

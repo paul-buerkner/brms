@@ -15,8 +15,9 @@
 marginal_effects(x, ...)
 
 \method{plot}{brmsMarginalEffects}(x, ncol = NULL, points = FALSE,
-  rug = FALSE, jitter_width = 0, stype = c("contour", "raster"),
-  theme = bayesplot::theme_default(), ask = TRUE, plot = TRUE, ...)
+  rug = FALSE, mean = TRUE, jitter_width = 0, stype = c("contour",
+  "raster"), theme = bayesplot::theme_default(), ask = TRUE, plot = TRUE,
+  ...)
 }
 \arguments{
 \item{x}{An \R object usually of class \code{brmsfit}.}
@@ -117,6 +118,10 @@ determine, which points do match a condition.}
 values should be added via \code{\link[ggplot2:geom_rug]{geom_rug}}.
 Default is \code{FALSE}. Depends on \code{select_points} in the same
 way as \code{points} does.}
+
+\item{mean}{Logical; only relevant for spaghetti plots.
+If \code{TRUE} (the default), display the mean regression 
+line on top of the regression lines for each sample.}
 
 \item{jitter_width}{Only used if \code{points = TRUE}: 
 Amount of horizontal jittering of the data points.

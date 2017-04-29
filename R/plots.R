@@ -2,7 +2,8 @@
 #' @method plot brmsMarginalEffects
 #' @export 
 plot.brmsMarginalEffects <- function(x, ncol = NULL, points = FALSE, 
-                                     rug = FALSE, jitter_width = 0,
+                                     rug = FALSE, mean = TRUE, 
+                                     jitter_width = 0,
                                      stype = c("contour", "raster"),
                                      theme = bayesplot::theme_default(), 
                                      ask = TRUE, plot = TRUE, ...) {
@@ -94,8 +95,10 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, points = FALSE,
           smooth_args$mapping <- aes_string(group = gvar)
           smooth_args$colour <- alpha("white", 0.8)
         }
-        plots[[i]] <- plots[[i]] + 
-          do.call(geom_smooth, smooth_args)
+        if (mean || is.null(spaghetti)) {
+          plots[[i]] <- plots[[i]] + 
+            do.call(geom_smooth, smooth_args)
+        }
         if (rug) {
           plots[[i]] <- plots[[i]] +
             geom_rug(aes_string(x = effects[1]),

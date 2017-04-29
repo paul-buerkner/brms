@@ -1546,12 +1546,16 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
         eta <- get_eta(draws = draws, i = NULL)
         if (spaghetti && ncovars == 1L) {
           sample <- rep(seq_len(nrow(eta)), each = ncol(eta))
-          eta <- data.frame(as.numeric(t(eta)), factor(sample))
-          colnames(eta) <- c("estimate__", "sample__")
+          spaghetti_data <- data.frame(as.numeric(t(eta)), factor(sample))
+          colnames(spaghetti_data) <- c("estimate__", "sample__")
+          spaghetti_data <- cbind(
+            newdata[, covars[[i]], drop = FALSE], spaghetti_data
+          )
         } else {
-          eta <- get_summary(eta, robust = TRUE, probs = probs)
-          colnames(eta) <- c("estimate__", "se__", "lower__", "upper__")
+          spaghetti_data <- NULL
         }
+        eta <- get_summary(eta, robust = TRUE, probs = probs)
+        colnames(eta) <- c("estimate__", "se__", "lower__", "upper__")
         res <- cbind(newdata[, covars[[i]], drop = FALSE], eta)
         if (length(byfactors)) {
           res$cond__ <- Reduce(paste_colon, res[, byfactors, drop = FALSE]) 
@@ -1563,7 +1567,7 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
         attr(res, "response") <- response
         attr(res, "effects") <- covars_no_byfactor
         attr(res, "surface") <- ncovars == 2L
-        attr(res, "spaghetti") <- spaghetti && ncovars == 1L
+        attr(res, "spaghetti") <- spaghetti_data
         attr(res, "points") <- mf[, covars[[i]], drop = FALSE]
         results[[response]] <- res
       }
