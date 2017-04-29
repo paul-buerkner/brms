@@ -44,7 +44,7 @@ make_stancode <- function(formula, data, family = NULL,
   )
   prior_only <- identical(sample_prior, "only")
   sample_prior <- if (prior_only) FALSE else sample_prior
-  data <- update_data(data, family = family, bterms = bterms)
+  data <- update_data(data, bterms = bterms)
   
   # flags to indicate the family type
   is_categorical <- is_categorical(family)

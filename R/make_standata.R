@@ -54,10 +54,11 @@ make_standata <- function(formula, data, family = NULL,
   bterms <- parse_bf(formula, family = family, autocor = autocor)
   check_prior_content(prior, family = family, warn = FALSE)
   na_action <- if (is_newdata) na.pass else na.omit
-  data <- update_data(data, family = family, bterms = bterms,
-                      drop.unused.levels = !is_newdata, 
-                      na.action = na_action, knots = knots,
-                      terms_attr = control$terms_attr)
+  data <- update_data(
+    data, bterms = bterms, na.action = na_action, 
+    drop.unused.levels = !is_newdata, knots = knots,
+    terms_attr = control$terms_attr
+  )
   
   # sort data in case of autocorrelation models
   if (has_arma(autocor) || is(autocor, "cor_bsts")) {

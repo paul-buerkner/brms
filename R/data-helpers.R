@@ -1,11 +1,9 @@
-update_data <- function(data, family, bterms,
-                        na.action = na.omit,
+update_data <- function(data, bterms, na.action = na.omit,
                         drop.unused.levels = TRUE,
                         terms_attr = NULL, knots = NULL) {
   # Update data for use in brms functions
   # Args:
   #   data: the original data.frame
-  #   family: the model family
   #   bterms: object of class brmsterms
   #   na.action: function defining how to treat NAs
   #   drop.unused.levels: indicates if unused factor levels
@@ -37,9 +35,9 @@ update_data <- function(data, family, bterms,
     bterms$allvars <- terms(bterms$allvars)
     attributes(bterms$allvars)[names(terms_attr)] <- terms_attr
     if (isTRUE(attr(bterms$formula, "old_mv"))) {
-      data <- melt_data(data, family = family, bterms = bterms)
+      data <- melt_data(data, bterms = bterms)
     } else {
-      check_data_old_mv(data, family = family, bterms = bterms)
+      check_data_old_mv(data, bterms = bterms)
     }
     data <- data_rsv_intercept(data, bterms = bterms)
     missing_vars <- setdiff(all.vars(bterms$allvars), names(data))
@@ -67,14 +65,14 @@ update_data <- function(data, family, bterms,
   data
 }
 
-melt_data <- function(data, family, bterms) {
+melt_data <- function(data, bterms) {
   # add reserved variables to the data
   # and transform it into long format for mv models
   # DEPRECATED as of brms 1.0.0
   # Args:
   #   data: a data.frame
-  #   family: the model family
   #   bterms: object of class brmsterms
+  family <- bterms$family
   response <- bterms$response
   nresp <- length(response)
   if (is_mv(family, response = response)) {
@@ -132,7 +130,7 @@ melt_data <- function(data, family, bterms) {
   data
 }
 
-check_data_old_mv <- function(data, family, bterms) {
+check_data_old_mv <- function(data, bterms) {
   # check if the deprecated MV syntax was used in a new model
   # Args:
   #   see update_data

@@ -2181,9 +2181,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
       dots$formula <- NULL
     }
     bterms <- parse_bf(object$formula, family = object$family)
-    object$data <- update_data(
-      dots$data, bterms = bterms, family = object$family
-    )
+    object$data <- update_data(dots$data, bterms = bterms)
     if (!is.null(newdata)) {
       object$data.name <- Reduce(paste, deparse(substitute(newdata)))
       object$ranef <- tidy_ranef(bterms, data = object$data)

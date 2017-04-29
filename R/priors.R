@@ -524,7 +524,7 @@ get_prior <- function(formula, data, family = NULL,
   threshold <- match.arg(threshold)
   autocor <- check_autocor(autocor)
   bterms <- parse_bf(formula, family = family)
-  data <- update_data(data, family = family, bterms = bterms)
+  data <- update_data(data, bterms = bterms)
   ranef <- tidy_ranef(bterms, data)
   
   # ensure that RE and residual SDs only have a weakly informative prior by default

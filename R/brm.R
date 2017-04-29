@@ -368,10 +368,12 @@ brm <- function(formula, data, family = NULL, prior = NULL,
     dots$is_newdata <- NULL
     # extract the compiled model
     x$fit <- rstan::get_stanmodel(x$fit)
-  } else {  # build new model
+  } else {  
+    # build new model
     # see validate.R and formula-helpers.R
-    formula <- amend_formula(formula, data = data, family = family, 
-                             nonlinear = nonlinear)
+    formula <- amend_formula(
+      formula, data = data, family = family, nonlinear = nonlinear
+    )
     family <- formula$family
     check_brm_input(nlist(family))
     bterms <- parse_bf(formula, autocor = autocor)
@@ -382,7 +384,7 @@ brm <- function(formula, data, family = NULL, prior = NULL,
       dots$data.name <- NULL
     }
     # see data-helpers.R
-    data <- update_data(data, family = family, bterms = bterms)
+    data <- update_data(data, bterms = bterms)
     # see priors.R
     prior <- check_prior(
       prior, formula = formula, data = data, family = family, 
