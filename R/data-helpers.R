@@ -136,8 +136,7 @@ check_data_old_mv <- function(data, family, bterms) {
   # check if the deprecated MV syntax was used in a new model
   # Args:
   #   see update_data
-  rsv_vars <- rsv_vars(family, nresp = length(bterms$response),
-                       old_mv = TRUE)
+  rsv_vars <- rsv_vars(bterms, incl_intercept = FALSE)
   rsv_vars <- setdiff(rsv_vars, names(data))
   used_rsv_vars <- intersect(rsv_vars, all.vars(bterms$allvars))
   if (length(used_rsv_vars)) {
@@ -358,11 +357,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     }
     # brms:::update_data expects all original variables to be present
     # even if not actually used later on
-    rsv_vars <- rsv_vars(
-      family(fit), nresp = length(bterms$response),
-      rsv_intercept = has_rsv_intercept(bterms$formula),
-      old_mv = attr(bterms$formula, "old_mv")
-    )
+    rsv_vars <- rsv_vars(bterms)
     used_vars <- unique(c(names(newdata), all.vars(bterms$allvars), rsv_vars))
     all_vars <- all.vars(str2formula(names(model.frame(fit))))
     unused_vars <- setdiff(all_vars, used_vars)

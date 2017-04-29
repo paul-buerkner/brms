@@ -1175,13 +1175,17 @@ has_rsv_intercept <- function(formula) {
   # can handle non-linear formulae
   # Args:
   #   formula: a formula object
-  formula <- as.formula(formula)
-  try_terms <- try(terms(formula), silent = TRUE)
-  if (is(try_terms, "try-error")) {
+  formula <- try(as.formula(formula), silent = TRUE)
+  if (is(formula, "try-error")) {
     out <- FALSE
   } else {
-    has_intercept <- attr(try_terms, "intercept")
-    out <- !has_intercept && "intercept" %in% all.vars(rhs(formula))
+    try_terms <- try(terms(formula), silent = TRUE)
+    if (is(try_terms, "try-error")) {
+      out <- FALSE
+    } else {
+      has_intercept <- attr(try_terms, "intercept")
+      out <- !has_intercept && "intercept" %in% all.vars(rhs(formula))
+    }
   }
   out
 }
@@ -1324,25 +1328,28 @@ empty_ranef <- function() {
   )
 }
 
-rsv_vars <- function(family, nresp = 1L, rsv_intercept = FALSE,
-                     old_mv = FALSE) {
+rsv_vars <- function(bterms, incl_intercept = TRUE) {
   # returns names of reserved variables
   # Args:
-  #   family: the model family
-  #   nresp: number of response variables
-  #   rsv_intercept: is the reserved variable "intercept" used?
-  if (isTRUE(old_mv)) {
+  #   bterms: object of class brmsterms
+  #   incl_intercept: treat variable 'intercept' as reserved?
+  stopifnot(is.brmsterms(bterms))
+  nresp <- length(bterms$response)
+  family <- bterms$family
+  old_mv <- isTRUE(attr(bterms$formula, "old_mv"))
+  rsv_intercept <- any(ulapply(bterms$auxpars, has_rsv_intercept))
+  if (old_mv) {
     if (is_linear(family) && nresp > 1L || is_categorical(family)) {
       rsv <- c("trait", "response")
     } else if (is_forked(family)) {
       rsv <- c("trait", "response", "main", "spec")
     } else {
-      rsv <- NULL
+      rsv <- character(0)
     }
   } else {
-    rsv <- NULL
+    rsv <- character(0)
   }
-  if (isTRUE(rsv_intercept)) {
+  if (incl_intercept && rsv_intercept) {
     rsv <- c(rsv, "intercept")
   }
   rsv

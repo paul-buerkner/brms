@@ -1312,11 +1312,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
              "in marginal plots, \nwhich is likely an invalid ", 
              "assumption for family ", x$family$family, ".")
   }
-  rsv_vars <- rsv_vars(
-    x$family, nresp = length(bterms$response),
-    rsv_intercept = attr(bterms$fe, "rsv_intercept"),
-    old_mv = attr(bterms$formula, "old_mv")
-  )
+  rsv_vars <- rsv_vars(bterms)
   if (is.null(effects)) {
     effects <- get_all_effects(bterms, rsv_vars = rsv_vars)
     if (!length(effects)) {
