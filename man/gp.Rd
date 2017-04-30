@@ -4,7 +4,7 @@
 \alias{gp}
 \title{Set up Gaussian process terms in \pkg{brms}}
 \usage{
-gp(..., cov = "exp_quad")
+gp(..., cov = "exp_quad", scale = TRUE)
 }
 \arguments{
 \item{...}{One or more predictors for the Gaussian process. 
@@ -13,6 +13,12 @@ to improve sampling efficiency and stability.}
 
 \item{cov}{Name of the covariance kernel. By default, 
 the exponentiated-quadratic kernel \code{"exp_quad"} is used.}
+
+\item{scale}{Logical; If \code{TRUE} (the default), scale predictors
+so that the maximum Euclidean distance between two points
+is 1. Since the default prior on \code{lscale} expects scaled
+predictors, it is recommended to manually specify priors
+on \code{lscale}, if \code{scale} is set to \code{FALSE}.}
 }
 \value{
 An object of class \code{'gpterm'}, which is a list 

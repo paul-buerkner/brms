@@ -346,13 +346,15 @@ data_gp <- function(bterms, data, nlpar = "", gps = NULL) {
               "should be numeric vectors.")
       }
       # scale predictor for easier specification of priors
-      if (!is.null(gps)) {
-        # scale Xgp based on the original data
-        out[[paste0("Xgp", p, "_", i)]] <- 
-          scale_unit(Xgp, gps[[i]]$min, gps[[i]]$max)
-      } else {
-        out[[paste0("Xgp", p, "_", i)]] <- scale_unit(Xgp)
+      if (gp$scale) {
+        if (!is.null(gps)) {
+          # scale Xgp based on the original data
+          Xgp <- scale_distance(Xgp, d = gps[[i]]$dmax)
+        } else {
+          Xgp <- scale_distance(Xgp)
+        }
       }
+      out[[paste0("Xgp", p, "_", i)]] <- Xgp
     }
   }
   out

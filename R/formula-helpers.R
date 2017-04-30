@@ -358,6 +358,11 @@ monotonic <- function(expr) {
 #'   to improve sampling efficiency and stability.
 #' @param cov Name of the covariance kernel. By default, 
 #'   the exponentiated-quadratic kernel \code{"exp_quad"} is used.
+#' @param scale Logical; If \code{TRUE} (the default), scale predictors
+#'   so that the maximum Euclidean distance between two points
+#'   is 1. Since the default prior on \code{lscale} expects scaled
+#'   predictors, it is recommended to manually specify priors
+#'   on \code{lscale}, if \code{scale} is set to \code{FALSE}.
 #'   
 #' @details TODO: Explain the idea of Gaussian processes
 #' 
@@ -392,15 +397,19 @@ monotonic <- function(expr) {
 #' 
 #' @seealso \code{\link[brms:brmsformula]{brmsformula}}
 #' @export
-gp <- function(..., cov = "exp_quad") {
+gp <- function(..., cov = "exp_quad", scale = TRUE) {
   cov <- match.arg(cov)
   label <- deparse(match.call())
   vars <- as.list(substitute(list(...)))[-1]
   if (length(vars) != 1L) {
     stop2("'gp' currently allows only one predictor.")
   }
+  scale <- as.logical(scale)
+  if (anyNA(scale) || length(scale) != 1L) {
+    stop2("'scale' should be either TRUE or FALSE.")
+  }
   term <- ulapply(vars, deparse, backtick = TRUE, width.cutoff = 500)
-  structure(nlist(term, label, cov), class = "gpterm")
+  structure(nlist(term, label, cov, scale), class = "gpterm")
 }
 
 #' Set up basic grouping terms in \pkg{brms}

@@ -501,6 +501,23 @@ scale_unit <- function(x, lb = min(x), ub = max(x)) {
   (x - lb) / (ub - lb)
 }
 
+scale_distance <- function(x, d) {
+  # scale x according to d
+  # Args:
+  #   x: A numeric vector or array
+  #   d: The (inverse of the) scaling factor
+  #      If NULL, use the maximum Euclidean distance
+  # Return:
+  #   A numeric vector or array of the same dimension as x
+  if (isTRUE(dim(x) > 1L)) {
+    stop("Only one dimensional input is currently supported.")
+  }
+  if (missing(d)) {
+    d <- max(x) - min(x)
+  }
+  x / d
+}
+
 fabs <- function(x) {
   abs(x)
 }
