@@ -144,7 +144,7 @@ parse_bf <- function(formula, family = NULL, autocor = NULL,
             "addition argument 'weights'.")
     }
     if (length(y$auxpars) > 1L) {
-      stop2("Auxiliary parameter cannot yet be ", 
+      stop2("Auxiliary parameters cannot yet be ", 
             "predicted in multivariate models.")
     }
   }

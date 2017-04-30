@@ -326,13 +326,16 @@ gp_predictor <- function(x, sdgp, lscale, zgp = NULL, x_new = NULL,
   }
   .gp_predictor_old <- function(x, sdgp, lscale, zgp) {
     Sigma <- cov_exp_quad(x, sdgp = sdgp, lscale = lscale)
-    Sigma <- Sigma + diag(rep(nug, length(x)))
+    lx <- length(x)
+    Sigma <- Sigma + diag(rep(nug, lx), lx, lx)
     L_Sigma <- try_expr(t(chol(Sigma)))
     as.numeric(L_Sigma %*% zgp)
   }
   .gp_predictor_new <- function(x_new, yL, x, sdgp, lscale) {
     Sigma <- cov_exp_quad(x, sdgp = sdgp, lscale = lscale)
-    Sigma <- Sigma + diag(rep(nug, length(x)))
+    lx <- length(x)
+    lx_new <- length(x_new)
+    Sigma <- Sigma + diag(rep(nug, lx), lx, lx)
     L_Sigma <- try_expr(t(chol(Sigma)), nug)
     L_Sigma_inverse <- solve(L_Sigma)
     K_div_yL <- L_Sigma_inverse %*% yL
@@ -341,7 +344,7 @@ gp_predictor <- function(x, sdgp, lscale, zgp = NULL, x_new = NULL,
     mu_yL_new <- as.numeric(t(k_x_x_new) %*% K_div_yL)
     v_new <- L_Sigma_inverse %*% k_x_x_new
     cov_yL_new <- cov_exp_quad(x_new, sdgp = sdgp, lscale = lscale) -
-      t(v_new) %*% v_new + diag(rep(nug, length(x_new)))
+      t(v_new) %*% v_new + diag(rep(nug, lx_new), lx_new, lx_new)
     yL_new <- try_expr(
       rmulti_normal(1, mu = mu_yL_new, Sigma = cov_yL_new), nug
     )
