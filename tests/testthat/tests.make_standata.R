@@ -492,3 +492,11 @@ test_that("make_standata includes data for mixture models", {
   expect_equal(sdata$theta1, 1/4)
   expect_equal(sdata$theta2, 3/4)
 })
+
+test_that("make_standata includes data for Gaussian processes", {
+  dat <- data.frame(y = rnorm(10), x1 = sample(1:10, 10))
+  sdata <- make_standata(y ~ gp(x1), dat)
+  expect_equal(max(sdata$Xgp_1) - min(sdata$Xgp_1), 1) 
+  sdata <- make_standata(y ~ gp(x1, scale = FALSE), dat)
+  expect_equal(max(sdata$Xgp_1) - min(sdata$Xgp_1), 9) 
+})

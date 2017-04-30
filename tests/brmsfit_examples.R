@@ -9,7 +9,8 @@ dat <- data.frame(count = rpois(236, lambda = 20),
 dat2 <- data.frame(rating = sample(1:4, 50, TRUE), 
                    subject = rep(1:10, 5),
                    x1 = rnorm(50), 
-                   x2 = rnorm(50))
+                   x2 = rnorm(50),
+                   x3 = rnorm(50))
 
 library(brms)
 brmsfit_example1 <- brm(bf(count ~ Trt*Age + mono(Exp) + s(Age) +
@@ -32,10 +33,11 @@ brmsfit_example2 <- brm(bf(count | weights(Exp) ~ inv_logit(a) * exp(b * Trt),
                         warmup = 150, iter = 200, chains = 2,
                         save_dso = FALSE, testmode = TRUE)
 
-brmsfit_example3 <- brm(count ~ Trt*me(Age, AgeSD) + (1|mm(patient, visit)), 
+brmsfit_example3 <- brm(count ~ Trt*me(Age, AgeSD) + (1|mm(patient, visit)),
                         data = dat[1:30, ],
                         warmup = 150, iter = 200, chains = 2,
-                        save_mevars = TRUE, save_dso = FALSE, testmode = TRUE)
+                        save_mevars = TRUE, save_dso = FALSE, 
+                        testmode = TRUE)
 
 brmsfit_example4 <- brm(bf(rating ~ x1 + cs(x2) + (cs(x2)||subject),
                            disc ~ 1),
@@ -51,8 +53,14 @@ brmsfit_example5 <- brm(bf(count ~ Age + (1|visit), mu2 ~ Age), dat,
                         warmup = 150, iter = 200, chains = 2,
                         save_dso = FALSE, testmode = TRUE)
 
+brmsfit_example6 <- brm(count ~ Trt + gp(Age), data = dat[1:30, ],
+                        prior = c(prior(normal(0, 0.25), lscale),
+                                  prior(normal(0, 10), sdgp)),
+                        warmup = 150, iter = 200, chains = 2,
+                        save_dso = FALSE, testmode = TRUE)
+
 devtools::use_data(
   brmsfit_example1, brmsfit_example2, brmsfit_example3, 
-  brmsfit_example4, brmsfit_example5,
+  brmsfit_example4, brmsfit_example5, brmsfit_example6,
   internal = TRUE, overwrite = TRUE
 )

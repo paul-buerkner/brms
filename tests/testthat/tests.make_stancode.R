@@ -996,3 +996,23 @@ test_that("sparse matrix multiplication is applied correctly", {
     "mu_a = csr_matrix_times_vector(rows(X_a), cols(X_a), wX_a, vX_a, uX_a, b_a);"
   )
 })
+
+test_that("stan code for Gaussian processes is correct", {
+  dat <- data.frame(y = rnorm(30), x1 = rnorm(30), x2 = rnorm(30))
+  
+  prior <- c(prior(normal(0, 10), lscale),
+             prior(gamma(0.1, 0.1), sdgp))
+  scode <- make_stancode(y ~ gp(x1) + gp(x2), dat, prior = prior)
+  expect_match2(scode, "lscale ~ normal(0, 10);")
+  expect_match2(scode, "sdgp ~ gamma(0.1, 0.1);")
+  expect_match2(scode, "gaussian_process(Xgp_2, sdgp[2], lscale[2], zgp_2)")
+  
+  prior <- c(prior(normal(0, 10), lscale, nlpar = eta),
+             prior(gamma(0.1, 0.1), sdgp, nlpar = eta),
+             prior(normal(0, 1), b, nlpar = eta))
+  scode <- make_stancode(bf(y ~ eta, eta ~ gp(x1), nl = TRUE), 
+                         data = dat, prior = prior)
+  expect_match2(scode, "lscale_eta ~ normal(0, 10);")
+  expect_match2(scode, "sdgp_eta ~ gamma(0.1, 0.1);")
+  expect_match2(scode, "gaussian_process(Xgp_eta_1, sdgp_eta[1], lscale_eta[1], zgp_eta_1)")
+})

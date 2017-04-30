@@ -4,6 +4,11 @@ test_that("all S3 methods have reasonable ouputs", {
   fit3 <- brms:::rename_pars(brms:::brmsfit_example3)
   fit4 <- brms:::rename_pars(brms:::brmsfit_example4)
   fit5 <- brms:::rename_pars(brms:::brmsfit_example5)
+  fit6 <- brms:::rename_pars(brms:::brmsfit_example6)
+  
+  expect_range <- function(object, lower = -Inf, upper = Inf, ...) {
+    testthat::expect_true(all(object >= lower & object <= upper), ...)
+  }
   
   # test S3 methods in alphabetical order
   # as.data.frame
@@ -96,6 +101,9 @@ test_that("all S3 methods have reasonable ouputs", {
   fi <- fitted(fit5)
   expect_equal(dim(fi), c(nobs(fit5), 4))
   
+  fi <- fitted(fit6)
+  expect_equal(dim(fi), c(nobs(fit6), 4))
+  
   # fixef
   fixef1 <- fixef(fit1, estimate = c("mean", "sd"))  
   expect_equal(dimnames(fixef1), 
@@ -175,6 +183,13 @@ test_that("all S3 methods have reasonable ouputs", {
   
   loo5 <- SW(LOO(fit5, cores = 1))
   expect_true(is.numeric(loo5[["looic"]]))
+  
+  loo6_1 <- SW(LOO(fit6, cores = 1))
+  expect_true(is.numeric(loo6_1[["looic"]]))
+  loo6_2 <- SW(LOO(fit6, cores = 1, newdata = fit6$data[1:30, ]))
+  expect_true(is.numeric(loo6_2[["looic"]]))
+  loo_compare <- compare_ic(loo6_1, loo6_2)
+  expect_range(loo_compare$ic_diffs__[1, 1], -1, 1)
 
   # loo_linpred
   llp <- SW(loo_linpred(fit1))
@@ -271,6 +286,9 @@ test_that("all S3 methods have reasonable ouputs", {
   me5 <- marginal_effects(fit5)
   expect_true(is(me5, "brmsMarginalEffects"))
   
+  me6 <- marginal_effects(fit6, nsamples = 100)
+  expect_true(is(me6, "brmsMarginalEffects"))
+  
   # marginal_smooths
   ms <- marginal_smooths(fit1)
   expect_equal(nrow(ms[[1]]), 100)
@@ -309,6 +327,7 @@ test_that("all S3 methods have reasonable ouputs", {
                  "cor_patient__a_Intercept__b_Intercept", 
                  "r_patient__a[1,Intercept]", "r_patient__b[4,Intercept]",
                  "prior_b_a"))
+  expect_true(all(c("sdgp_gpAge", "lscale_gpAge") %in% parnames(fit6)))
   
   # plot tested in tests.plots.R
   
@@ -335,13 +354,12 @@ test_that("all S3 methods have reasonable ouputs", {
                  group = "visit", newdata = fit1$data[1:100, ])
   expect_true(is(pp, "ggplot"))
   
-  # uncomment as soon as bayesplot 1.2.0 is on CRAN
-  # pp <- SW(pp_check(fit1, type = "loo_pit", loo_args = list(cores = 1)))
-  # expect_true(is(pp, "ggplot"))
-  # lw <- SW(loo::psislw(-log_lik(fit1), cores = 1)$lw_smooth)
+  pp <- SW(pp_check(fit1, type = "loo_pit", loo_args = list(cores = 1)))
+  expect_true(is(pp, "ggplot"))
+  lw <- SW(loo::psislw(-log_lik(fit1), cores = 1)$lw_smooth)
   # not getting warnings implies that the precomputed lw is used
-  # pp <- pp_check(fit1, type = "loo_intervals", lw = lw)
-  # expect_true(is(pp, "ggplot"))
+  pp <- pp_check(fit1, type = "loo_intervals", lw = lw)
+  expect_true(is(pp, "ggplot"))
   
   expect_true(is(pp_check(fit3), "ggplot"))
   expect_true(is(pp_check(fit2, "ribbon", x = "Trt"), "ggplot"))
