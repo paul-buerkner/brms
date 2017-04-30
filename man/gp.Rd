@@ -7,15 +7,13 @@
 gp(..., cov = "exp_quad", scale = TRUE)
 }
 \arguments{
-\item{...}{One or more predictors for the Gaussian process. 
-Each predictor is internally scaled to the unit interval 
-to improve sampling efficiency and stability.}
+\item{...}{One or more predictors for the Gaussian process.}
 
 \item{cov}{Name of the covariance kernel. By default, 
 the exponentiated-quadratic kernel \code{"exp_quad"} is used.}
 
-\item{scale}{Logical; If \code{TRUE} (the default), scale predictors
-so that the maximum Euclidean distance between two points
+\item{scale}{Logical; If \code{TRUE} (the default), predictors are
+scaled so that the maximum Euclidean distance between two points
 is 1. Since the default prior on \code{lscale} expects scaled
 predictors, it is recommended to manually specify priors
 on \code{lscale}, if \code{scale} is set to \code{FALSE}.}
@@ -47,9 +45,20 @@ A Gaussian process is a stochastic process, whichs
  depends only on the choice of covariance kernel. 
  For a more detailed introduction to Gaussian processes,
  see \url{https://en.wikipedia.org/wiki/Gaussian_process}.
+ 
+ Below, we describe the currently supported covariance kernels:
+ \itemize{
+   \item{"exp_quad": }{The exponentiated-quadratic kernel is defined as
+   \eqn{k(x_i, x_j) = sdgp^2 exp(- || x_i - x_j || / (2 lscale^2)},
+   where \eqn{|| . ||} is the Euclidean norm, \eqn{sdgp} is a 
+   standard deviation parameter, and \eqn{lscale} is characteristic 
+   length-scale parameter. The latter practically measures how close two 
+   points \eqn{x_i} and \eqn{x_j} have to be to influence each other 
+   substantially.}
+ }
 
  In the current implementation, only a single predictor can be 
- passed and the exponentiated-quadratic kernel is the only supported 
+ passed, and \code{"exp_quad"} is the only supported 
  covariance kernel. More options will follow in the future.
 }
 \examples{
