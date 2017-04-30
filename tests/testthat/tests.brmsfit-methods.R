@@ -327,7 +327,7 @@ test_that("all S3 methods have reasonable ouputs", {
                  "cor_patient__a_Intercept__b_Intercept", 
                  "r_patient__a[1,Intercept]", "r_patient__b[4,Intercept]",
                  "prior_b_a"))
-  expect_true(all(c("sdgp_gpAge", "lscale_gpAge") %in% parnames(fit6)))
+  expect_true(all(c("sdgp_gpAge_1", "lscale_gpAge_1") %in% parnames(fit6)))
   
   # plot tested in tests.plots.R
   

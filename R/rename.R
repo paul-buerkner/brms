@@ -90,7 +90,7 @@ change_effects.btl <- function(x, data, pars, dims, nlpar = "",
   change_mo <- change_mo(monef, pars, nlpar = nlpar)
   meef <- get_me_labels(x, data)
   change_me <- change_me(meef, pars, dims = dims, nlpar = nlpar)
-  gpef <- get_gp_labels(x)
+  gpef <- get_gp_labels(x, call = FALSE)
   change_gp <- change_gp(gpef, pars, dims = dims, nlpar = nlpar)
   c(change_fe, change_sm, change_cs, change_mo, change_me, change_gp)
 }
@@ -241,7 +241,6 @@ change_gp <- function(gpef, pars, dims, nlpar = "") {
   change <- list()
   if (length(gpef)) {
     p <- usc(nlpar, "prefix")
-    gpef <- rename(gpef)
     # rename GP hyperparameters
     sdgp <- paste0("sdgp", p)
     pos_sdgp <- grepl(paste0("^", sdgp, "\\["), pars)
