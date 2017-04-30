@@ -381,9 +381,9 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
     stop2("All arguments of set_prior must be of length 1.")
   }
     
-  valid_classes <- c("Intercept", "b", "sd", "sds", "simplex", "cor", "L", 
-                     "ar", "ma", "arr", "sigmaLL", "rescor", "Lrescor", 
-                     "delta", "theta", "sdgp", "lscale", if (!check) "")
+  valid_classes <- c("Intercept", "b", "sd", "sds", "sdgp", "lscale",
+                     "simplex", "cor", "L", "ar", "ma", "arr", "sigmaLL", 
+                     "rescor", "Lrescor", "delta", "theta", if (!check) "")
   if (!(class %in% valid_classes || auxpar_class(class) %in% auxpars())) {
     stop2("'", class, "' is not a valid parameter class.")
   }
@@ -397,7 +397,7 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
   if (nchar(coef) && !class %in% coef_classes) {
     stop2("Argument 'coef' ia not meaningful for class '", class, "'.")
   }
-  if (nchar(nlpar) && !class %in% valid_classes[1:5]) {
+  if (nchar(nlpar) && !class %in% valid_classes[1:7]) {
     stop2("Argument 'nlpar' is not meaningful for class '", class, "'.")
   }
   is_arma <- class %in% c("ar", "ma")
