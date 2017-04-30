@@ -985,6 +985,12 @@ make_smooth_list <- function(x, data, ...) {
   UseMethod("make_smooth_list")
 }
 
+make_gp_list <- function(x, data, ...) {
+  # compute objects for GP terms based on the original data
+  # as the basis for doing predictions with new data
+  UseMethod("make_gp_list")
+}
+
 check_prior_special <- function(x, ...) {
   # prepare special priors for use in Stan
   UseMethod("check_prior_special")

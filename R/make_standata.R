@@ -171,9 +171,8 @@ make_standata <- function(formula, data, family = NULL,
     resp <- bterms$response
     if (length(resp) > 1L && !old_mv) {
       args_eff_spec <- list(
-        x = bterms$auxpars[["mu"]],
-        smooth = control$smooth[["mu"]],
-        Jmo = control$Jmo[["mu"]]
+        x = bterms$auxpars[["mu"]], smooths = control$smooths[["mu"]],
+        gps = control$gps[["mu"]], Jmo = control$Jmo[["mu"]]
       )
       bterms$auxpars[["mu"]] <- NULL
       for (r in resp) {
@@ -191,9 +190,9 @@ make_standata <- function(formula, data, family = NULL,
     # data for predictors of auxiliary parameters
     for (ap in names(bterms$auxpars)) {
       args_eff_spec <- list(
-        x = bterms$auxpars[[ap]], nlpar = ap,
-        smooth = control$smooth[[ap]], 
-        Jmo = control$Jmo[[ap]]
+        x = bterms$auxpars[[ap]], nlpar = ap, 
+        smooths = control$smooths[[ap]],
+        gps = control$gps[[ap]], Jmo = control$Jmo[[ap]]
       )
       data_aux_eff <- do.call(data_effects, c(args_eff_spec, args_eff))
       standata <- c(standata, data_aux_eff)

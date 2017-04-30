@@ -385,7 +385,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       old_levels = old_levels, save_order = TRUE, 
       omit_response = !check_response,
       only_response = only_response,
-      old_cat <- is_old_categorical(fit)
+      old_cat = is_old_categorical(fit)
     )
     old_terms <- attr(model.frame(fit), "terms")
     terms_attr <- c("variables", "predvars")
@@ -401,7 +401,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       names(Jmo) <- sub("^Jmo$", "mu", sub("^Jmo_", "", names(Jmo)))
       control[["Jmo"]] <- Jmo 
     }
-    control$smooth <- make_smooth_list(bterms, model.frame(fit))
+    control$smooths <- make_smooth_list(bterms, model.frame(fit))
+    control$gps <- make_gp_list(bterms, model.frame(fit))
     if (is(fit$autocor, "cov_fixed")) {
       median_V <- median(diag(fit$autocor$V), na.rm = TRUE)
       fit$autocor$V <- diag(median_V, nrow(newdata))
@@ -495,33 +496,63 @@ make_smooth_list.btl <- function(x, data, ...) {
     gam_args <- list(data = data, knots = knots, 
                      absorb.cons = TRUE, modCon = 3)
     sm_labels <- get_sm_labels(x)
-    smooth <- named_list(sm_labels)
+    out <- named_list(sm_labels)
     for (i in seq_along(sm_labels)) {
       sc_args <- c(list(eval_smooth(sm_labels[i])), gam_args)
-      smooth[[i]] <- do.call(mgcv::smoothCon, sc_args)
+      out[[i]] <- do.call(mgcv::smoothCon, sc_args)
     }
   } else {
-    smooth <- list()
+    out <- list()
   }
-  smooth
+  out
 }
 
 #' @export
 make_smooth_list.btnl <- function(x, data, ...) {
-  smooth <- named_list(names(x$nlpars))
-  for (i in seq_along(smooth)) {
-    smooth[[i]] <- make_smooth_list(x$nlpars[[i]], data, ...)
+  out <- named_list(names(x$nlpars))
+  for (i in seq_along(out)) {
+    out[[i]] <- make_smooth_list(x$nlpars[[i]], data, ...)
   }
-  smooth
+  out
 }
 
 #' @export
 make_smooth_list.brmsterms <- function(x, data, ...) {
-  smooth <- named_list(names(x$auxpars))
-  for (i in seq_along(smooth)) {
-    smooth[[i]] <- make_smooth_list(x$auxpars[[i]], data, ...)
+  out <- named_list(names(x$auxpars))
+  for (i in seq_along(out)) {
+    out[[i]] <- make_smooth_list(x$auxpars[[i]], data, ...)
   }
-  smooth
+  out
+}
+
+#' @export
+make_gp_list.btl <- function(x, data, ...) {
+  gpef <- get_gp_labels(x)
+  out <- named_list(gpef)
+  for (i in seq_along(gpef)) {
+    gp <- eval2(gpef[i])
+    Xgp <- eval2(gp$term, data)
+    out[[i]] <- list(min = min(Xgp), max = max(Xgp))
+  }
+  out
+}
+
+#' @export
+make_gp_list.btnl <- function(x, data, ...) {
+  out <- named_list(names(x$nlpars))
+  for (i in seq_along(out)) {
+    out[[i]] <- make_gp_list(x$nlpars[[i]], data, ...)
+  }
+  out
+}
+
+#' @export
+make_gp_list.brmsterms <- function(x, data, ...) {
+  out <- named_list(names(x$auxpars))
+  for (i in seq_along(out)) {
+    out[[i]] <- make_gp_list(x$auxpars[[i]], data, ...)
+  }
+  out
 }
 
 arr_design_matrix <- function(Y, r, group)  { 
