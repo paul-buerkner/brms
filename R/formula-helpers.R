@@ -364,10 +364,25 @@ monotonic <- function(expr) {
 #'   predictors, it is recommended to manually specify priors
 #'   on \code{lscale}, if \code{scale} is set to \code{FALSE}.
 #'   
-#' @details TODO: Explain the idea of Gaussian processes
+#' @details A Gaussian process is a stochastic process, whichs
+#'  describes the relation between one or more predictors 
+#'  \eqn{x = (x_1, ..., x_d)} and a response \eqn{f(x)}, where 
+#'  \eqn{d} is the number of predictors. A Gaussian process is the
+#'  generalization of the multivariate normal distribution
+#'  to an infinite number of dimensions. Thus, it can be
+#'  interpreted as a prior over functions. Any finite sample 
+#'  realized from this stochastic process is jointly multivariate 
+#'  normal, with a covariance matrix defined by the covariance
+#'  kernel \eqn{k_p(x)}, where \eqn{p} is the vector of parameters
+#'  of the Gaussian process:
+#'  \deqn{f(x) ~ MVN(0, k_p(x))}
+#'  The smoothness and general behavior of the function \eqn{f} 
+#'  depends only on the choice of covariance kernel. 
+#'  For a more detailed introduction to Gaussian processes,
+#'  see \url{https://en.wikipedia.org/wiki/Gaussian_process}.
 #' 
-#'  Currently, only a single predictor may be passed
-#'  and the exponentiated-quadratic kernel is the only supported 
+#'  In the current implementation, only a single predictor can be 
+#'  passed and the exponentiated-quadratic kernel is the only supported 
 #'  covariance kernel. More options will follow in the future.  
 #'  
 #' @return An object of class \code{'gpterm'}, which is a list 
@@ -383,13 +398,13 @@ monotonic <- function(expr) {
 #' fit1 <- brm(y ~ gp(x2), dat)
 #' summary(fit1)
 #' me1 <- marginal_effects(fit1, nsamples = 200, spaghetti = TRUE)
-#' plot(me1, points = TRUE)
+#' plot(me1, ask = FALSE, points = TRUE)
 #' 
 #' # fit a more complicated gaussian process model
 #' fit2 <- brm(y ~ gp(x0) + x1 + gp(x2) + x3, dat)
 #' summary(fit2)
 #' me2 <- marginal_effects(fit2, nsamples = 200, spaghetti = TRUE)
-#' plot(me2, points = TRUE)
+#' plot(me2, ask = FALSE points = TRUE)
 #' 
 #' # compare model fit
 #' LOO(fit1, fit2)
