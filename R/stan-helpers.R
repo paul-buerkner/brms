@@ -126,6 +126,9 @@ stan_autocor <- function(autocor, bterms, family, prior) {
   }
   if (Karr) {
     # autoregressive effects of the response
+    if (length(bterms$auxpars[["mu"]]$nlpars)) {
+      stop2("Cannot use the ARR structure in non-linear models.")
+    }
     out$data <- paste0(out$data,
       "  // data needed for ARR effects \n",
       "  int<lower=1> Karr; \n",
