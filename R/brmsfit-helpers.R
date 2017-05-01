@@ -1052,6 +1052,17 @@ set_pointwise <- function(x, pointwise = NULL, newdata = NULL,
   pointwise
 }
 
+is.ic <- function(x) {
+  # objects of class 'ic' are returned by LOO and WAIC
+  inherits(x, "ic")
+}
+
+args_not_for_add_ic <- function() {
+  # arguments of WAIC and LOO not usable in add_ic
+  c("newdata", "re_formula", "subset", "nsamples",
+    "allow_new_levels", "sample_new_levels")
+}
+
 match_response <- function(models) {
   # compare the response parts of multiple brmsfit objects
   # Args:

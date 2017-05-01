@@ -496,7 +496,7 @@ test_that("all S3 methods have reasonable ouputs", {
                  "u-95% CI", "Eff.Sample", "Rhat"))
   expect_equal(rownames(summary1$random$visit), 
                c("sd(Intercept)", "sd(Trt)", "cor(Intercept,Trt)"))
-  expect_true(is.numeric(summary1$WAIC))
+  expect_true(is.numeric(summary1$waic))
   expect_output(print(summary1), "Population-Level Effects:")
   expect_output(print(summary1), "Priors:")
   

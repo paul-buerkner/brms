@@ -4,15 +4,15 @@
 \alias{summary.brmsfit}
 \title{Create a summary of a fitted model represented by a \code{brmsfit} object}
 \usage{
-\method{summary}{brmsfit}(object, waic = FALSE, priors = FALSE,
-  use_cache = TRUE, ...)
+\method{summary}{brmsfit}(object, waic = FALSE, loo = FALSE,
+  priors = FALSE, use_cache = TRUE, ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}}
 
-\item{waic}{Logical; Indicating if the WAIC should be computed
-(this will take some time for larger models). 
-Default is \code{FALSE}.}
+\item{waic, loo}{Logical; Indicating if the LOO or WAIC information
+criteria should be computed and shown in the summary. 
+Defaults to \code{FALSE}.}
 
 \item{priors}{Logical; Indicating if priors should be included 
 in the summary. Default is \code{FALSE}.}

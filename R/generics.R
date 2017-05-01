@@ -33,11 +33,12 @@ brmssummary <- function(formula = NULL, family = NULL, link = "",
                         autocor = NULL, fixed = NULL, random = NULL, 
                         cor_pars = NULL, spec_pars = NULL, 
                         mult_pars = NULL, prior = empty_brmsprior(),
-                        WAIC = "Not computed", algorithm = "sampling") {
+                        loo = "Not computed", waic = "Not computed", 
+                        algorithm = "sampling") {
   # brmssummary class
   x <- nlist(formula, family, link, data.name, group, nobs, ngrps, chains, 
-             iter,  warmup, thin, sampler, autocor, fixed, random, cor_pars, 
-             spec_pars, mult_pars, prior, WAIC, algorithm)
+             iter, warmup, thin, sampler, autocor, fixed, random, cor_pars, 
+             spec_pars, mult_pars, prior, loo, waic, algorithm)
   class(x) <- "brmssummary"
   x
 }

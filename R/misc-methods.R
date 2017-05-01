@@ -1,5 +1,9 @@
 #' @export
 print.brmssummary <- function(x, digits = 2, ...) {
+  if (!is.null(x[["WAIC"]])) {
+    # deprecated as of 1.7.0
+    x[["waic"]] <- x[["WAIC"]]
+  }
   cat(" Family: ")
   if (is.family(x$family)) {
     cat(summary(x$family), "\n")
@@ -19,11 +23,16 @@ print.brmssummary <- function(x, digits = 2, ...) {
       x[args] <- x[paste0("n.", args)]
     }
     final_samples <- ceiling((x$iter - x$warmup) / x$thin * x$chains)
-    waic <- ifelse(is.numeric(x$WAIC), round(x$WAIC, digits = digits), x$WAIC)
+    if (is.numeric(x$loo)) {
+      x$loo <- round(x$loo, digits = digits)
+    }
+    if (is.numeric(x$waic)) {
+      x$waic <- round(x$waic, digits = digits)
+    }
     cat(paste0("Samples: ", x$chains, " chains, each with iter = ", x$iter, 
                "; warmup = ", x$warmup, "; thin = ", x$thin, "; \n",
                "         total post-warmup samples = ", final_samples, "\n"))
-    cat(paste0("   WAIC: ", waic, "\n \n"))
+    cat(paste0("    ICs: LOO = ", x$loo, "; WAIC = ", x$waic, "\n \n"))
     
     if (nrow(x$prior)) {
       cat("Priors: \n")

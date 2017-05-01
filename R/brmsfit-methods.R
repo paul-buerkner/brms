@@ -661,9 +661,9 @@ print.brmsfit <- function(x, digits = 2, ...) {
 #' Create a summary of a fitted model represented by a \code{brmsfit} object
 #'
 #' @param object An object of class \code{brmsfit}
-#' @param waic Logical; Indicating if the WAIC should be computed
-#'   (this will take some time for larger models). 
-#'   Default is \code{FALSE}.
+#' @param waic,loo Logical; Indicating if the LOO or WAIC information
+#'   criteria should be computed and shown in the summary. 
+#'   Defaults to \code{FALSE}.
 #' @param priors Logical; Indicating if priors should be included 
 #'   in the summary. Default is \code{FALSE}.
 #' @param use_cache Logical; Indicating if summary results should
@@ -678,8 +678,8 @@ print.brmsfit <- function(x, digits = 2, ...) {
 #' 
 #' @method summary brmsfit
 #' @export
-summary.brmsfit <- function(object, waic = FALSE, priors = FALSE,
-                            use_cache = TRUE, ...) {
+summary.brmsfit <- function(object, waic = FALSE, loo = FALSE,
+                            priors = FALSE, use_cache = TRUE, ...) {
   object <- restructure(object, rstr_summary = use_cache)
   bterms <- parse_bf(formula(object), family = family(object))
   out <- brmssummary(formula = formula(object), 
@@ -701,10 +701,11 @@ summary.brmsfit <- function(object, waic = FALSE, priors = FALSE,
   out$thin <- object$fit@sim$thin
   stan_args <- object$fit@stan_args[[1]]
   out$sampler <- paste0(stan_args$method, "(", stan_args$algorithm, ")")
-  allow_waic <- !nrow(object$ranef) || any(grepl("^r_", parnames(object)))
-  show_waic <- inherits(object[["waic"]], "ic") || waic && allow_waic
-  if (show_waic) {
-    out$WAIC <- SW(WAIC(object)$waic)
+  if (loo || is.ic(object[["loo"]])) {
+    out$loo <- SW(LOO(object)$looic)
+  }
+  if (waic || is.ic(object[["waic"]])) {
+    out$waic <- SW(WAIC(object)$waic)
   }
   if (priors) {
     out$prior <- prior_summary(object, all = FALSE)
@@ -2237,15 +2238,15 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
   pointwise <- set_pointwise(
     x, pointwise, subset = subset, newdata = newdata
   )
-  args = nlist(
+  args <- nlist(
     ic = "waic", newdata, re_formula, subset, nug,
     allow_new_levels, sample_new_levels, pointwise
   )
+  use_stored_ic <- !any(names(match.call()) %in% args_not_for_add_ic())
   if (length(models) > 1L) {
     out <- named_list(mnames)
     for (i in seq_along(models)) {
-      if (inherits(models[[i]][["waic"]], "ic")) {
-        # use precomputed waic
+      if (use_stored_ic && is.ic(models[[i]][["waic"]])) {
         out[[i]] <- models[[i]][["waic"]]
       } else {
         args[["x"]] <- models[[i]]
@@ -2259,8 +2260,7 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
     }
     class(out) <- "iclist"
   } else {
-    if (inherits(x[["waic"]], "ic")) {
-      # use precomputed waic
+    if (use_stored_ic && is.ic(x[["waic"]])) {
       out <- x[["waic"]]
     } else {
       out <- do.call(compute_ic, c(nlist(x), args)) 
@@ -2299,15 +2299,15 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
     x, pointwise, subset = subset, newdata = newdata
   )
   loo_args <- nlist(wcp, wtrunc, cores)
-  args = nlist(
+  args <- nlist(
     ic = "loo", loo_args, newdata, re_formula, subset,
     allow_new_levels, sample_new_levels, pointwise, nug
   )
+  use_stored_ic <- !any(names(match.call()) %in% args_not_for_add_ic())
   if (length(models) > 1L) {
     out <- named_list(mnames)
     for (i in seq_along(models)) {
-      if (inherits(models[[i]][["loo"]], "ic")) {
-        # use precomputed loo
+      if (use_stored_ic && is.ic(models[[i]][["loo"]])) {
         out[[i]] <- models[[i]][["loo"]]
       } else {
         args[["x"]] <- models[[i]]
@@ -2321,8 +2321,7 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
     }
     class(out) <- "iclist"
   } else {
-    if (inherits(x[["loo"]], "ic")) {
-      # use precomputed loo
+    if (use_stored_ic && is.ic(x[["loo"]])) {
       out <- x[["loo"]]
     } else {
       out <- do.call(compute_ic, c(nlist(x), args)) 
@@ -2349,6 +2348,11 @@ loo.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
 #' @export
 add_ic.brmsfit <- function(x, ic = "loo", ...) {
   dots <- list(...)
+  unused_args <- intersect(names(dots), args_not_for_add_ic())
+  if (length(unused_args)) {
+    unused_args <- collapse_comma(unused_args)
+    stop2("Cannot use arguments ", unused_args," in calls to 'add_ic'.")
+  }
   model_name <- deparse(substitute(x))
   ic <- unique(tolower(as.character(ic)))
   valid_ics <- c("loo", "waic")
