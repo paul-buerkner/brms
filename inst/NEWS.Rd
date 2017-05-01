@@ -9,6 +9,9 @@
       \item Visualize predictions via spaghetti 
       plots using argument \code{spaghetti} in
       \code{marginal_effects} and \code{marginal_smooths}.
+      \item Introduce method \code{add_ic} to
+      store and reuse information criteria in 
+      fitted model objects.
     }
   }
 }

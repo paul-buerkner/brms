@@ -575,6 +575,9 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_true(is.numeric(waic1[["se_waic"]]))
   expect_equal(waic1, SW(waic(fit1)))
   
+  fit1 <- SW(add_ic(fit1, "waic"))
+  expect_equal(WAIC(fit1), fit1$waic)
+  
   waic_compare <- SW(WAIC(fit1, fit1))
   expect_equal(length(waic_compare), 3)
   expect_equal(dim(waic_compare$ic_diffs__), c(1, 2))

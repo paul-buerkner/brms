@@ -1,15 +1,18 @@
-brmsfit <- function(formula = NULL, family = "", link = "", data.name = "", 
-                    data = data.frame(), model = "", exclude = NULL,
-                    prior = brmsprior(), ranef = TRUE, autocor = NULL,
-                    threshold = "", cov_ranef = NULL, fit = NA, 
-                    algorithm = "sampling") {
+brmsfit <- function(formula = NULL, family = NULL, data = data.frame(), 
+                    data.name = "", model = "", prior = empty_brmsprior(), 
+                    autocor = NULL, threshold = "", ranef = empty_ranef(), 
+                    cov_ranef = NULL, loo = NULL, waic = NULL, fit = NA, 
+                    exclude = NULL, algorithm = "sampling") {
   # brmsfit class
   version <- list(
     brms = utils::packageVersion("brms"),
     rstan = utils::packageVersion("rstan")
   )
-  x <- nlist(formula, family, link, data.name, data, model, exclude, prior, 
-             ranef, autocor, threshold, cov_ranef, fit, algorithm, version)
+  x <- nlist(
+    formula, family, data, data.name, model, 
+    prior, autocor, threshold, ranef, cov_ranef, 
+    loo, waic, fit, exclude, algorithm, version
+  )
   class(x) <- "brmsfit"
   x
 }
@@ -23,11 +26,11 @@ is.brmsfit <- function(x) {
   inherits(x, "brmsfit")
 }
 
-brmssummary <- function(formula = NULL, family = "", link = "", 
+brmssummary <- function(formula = NULL, family = NULL, link = "", 
                         data.name = "", group = NULL, nobs = NULL, 
-                        ngrps = NULL, chains = 1, iter = 2000, 
-                        warmup = 500, thin = 1, sampler = "", 
-                        autocor = NULL, fixed = NULL, random = list(), 
+                        ngrps = NULL, chains = 4, iter = 2000, 
+                        warmup = 1000, thin = 1, sampler = "", 
+                        autocor = NULL, fixed = NULL, random = NULL, 
                         cor_pars = NULL, spec_pars = NULL, 
                         mult_pars = NULL, prior = empty_brmsprior(),
                         WAIC = "Not computed", algorithm = "sampling") {
@@ -345,6 +348,9 @@ ngrps <- function(object, ...) {
 #' @details When comparing models fitted to the same data, 
 #'  the smaller the WAIC, the better the fit.
 #'  For \code{brmsfit} objects, \code{waic} is an alias of \code{WAIC}.
+#'  Use method \code{\link[brms:add_ic]{add_ic}} to store
+#'  information criteria in the fitted model object for later usage.
+#'  
 #' @return If just one object is provided, an object of class \code{ic}. 
 #'  If multiple objects are provided, an object of class \code{iclist}.
 #' 
@@ -399,6 +405,9 @@ WAIC <- function(x, ...) {
 #' @details When comparing models fitted to the same data, 
 #'  the smaller the LOO, the better the fit.
 #'  For \code{brmsfit} objects, \code{loo} is an alias of \code{LOO}.
+#'  Use method \code{\link[brms:add_ic]{add_ic}} to store
+#'  information criteria in the fitted model object for later usage.
+#'  
 #' @return If just one object is provided, an object of class \code{ic}. 
 #'  If multiple objects are provided, an object of class \code{iclist}.
 #' 
@@ -434,6 +443,31 @@ WAIC <- function(x, ...) {
 #' @export
 LOO <- function(x, ...) {
   UseMethod("LOO")
+}
+
+#' Add information criteria to fitted model objects
+#' 
+#' @param x An \R object typically of class \code{brmsfit}.
+#' @param ic Names of the information criteria to compute.
+#'   Currently supported are \code{"loo"} and \code{"waic"}.
+#' @param ... Further arguments passed to 
+#'   \code{\link[brms:LOO]{LOO}} or \code{\link[brms:WAIC]{WAIC}}.
+#'   
+#' @return An object of the same class as \code{x}, but
+#'   with information criteria added for later usage.
+#'   
+#' @examples
+#' \dontrun{
+#' fit <- brm(count ~ Trt, epilepsy, poisson())
+#' # add both LOO and WAIC at once
+#' fit <- add_ic(fit, ic = c("loo", "waic"))
+#' print(fit$loo)
+#' print(fit$waic)
+#' }
+#' 
+#' @export
+add_ic <- function(x, ...) {
+  UseMethod("add_ic")
 }
 
 #' Interface to \pkg{shinystan}

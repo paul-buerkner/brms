@@ -913,10 +913,14 @@ compute_ic <- function(x, ic = c("waic", "loo", "psislw"),
 #' 
 #' @param ... At least two objects returned by 
 #'   \code{\link[brms:WAIC]{WAIC}} or \code{\link[brms:LOO]{LOO}}.
-#' @param x A list of at least two objects returned by
-#'   \code{\link[brms:WAIC]{WAIC}} or \code{\link[brms:LOO]{LOO}}.
-#'   This argument can be used as an alternative to specifying the 
-#'   models in \code{...}.
+#'   Alternatively, \code{brmsfit} objects with information 
+#'   criteria precomputed via \code{\link[brms:add_ic]{add_ic}}
+#'   may be passed, as well.
+#' @param x A \code{list} containing the same types of objects as
+#'   can be passed via \code{...}.
+#' @param ic The name of the information criterion to be extracted 
+#'   from \code{brmsfit} objects. Ignored if information 
+#'   criterion objects are only passed directly.
 #'   
 #' @return An object of class \code{iclist}.
 #' 
@@ -925,6 +929,7 @@ compute_ic <- function(x, ic = c("waic", "loo", "psislw"),
 #' @seealso 
 #'   \code{\link[brms:WAIC]{WAIC}}, 
 #'   \code{\link[brms:LOO]{LOO}},
+#'   \code{\link[brms:add_ic]{add_ic}},
 #'   \code{\link[loo:compare]{compare}}
 #'   
 #' @examples 
@@ -944,28 +949,29 @@ compute_ic <- function(x, ic = c("waic", "loo", "psislw"),
 #' }
 #' 
 #' @export
-compare_ic <- function(..., x = NULL) {
-  # compare information criteria of different models
-  # Args:
-  #   x: A list containing loo objects
-  #   ic: the information criterion to be computed
-  # Returns:
-  #   A matrix with differences in the ICs 
-  #   as well as corresponding standard errors
+compare_ic <- function(..., x = NULL, ic = c("loo", "waic")) {
+  ic <- match.arg(ic)
   if (!(is.null(x) || is.list(x))) {
     stop2("Argument 'x' should be a list.")
   }
   x$ic_diffs__ <- NULL
   x <- c(list(...), x)
+  for (i in seq_along(x)) {
+    # extract precomputed values from brmsfit objects
+    if (is.brmsfit(x[[i]]) && !is.null(x[[i]][[ic]])) {
+      x[[i]] <- x[[i]][[ic]]
+    }
+  }
   if (!all(sapply(x, inherits, "ic"))) {
-    stop2("All inputs should have class 'ic'.")
+    stop2("All inputs should have class 'ic' ", 
+          "or contain precomputed 'ic' objects.")
   }
   if (length(x) < 2L) {
     stop2("Expecting at least two objects.")
   }
   ics <- unname(sapply(x, function(y) names(y)[3]))
   if (!all(sapply(ics, identical, ics[1]))) {
-    stop2("All inputs should be from the the same criterion.")
+    stop2("All inputs should be from the same criterion.")
   }
   names(x) <- ulapply(x, "[[", "model_name")
   n_models <- length(x)

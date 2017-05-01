@@ -702,7 +702,8 @@ summary.brmsfit <- function(object, waic = FALSE, priors = FALSE,
   stan_args <- object$fit@stan_args[[1]]
   out$sampler <- paste0(stan_args$method, "(", stan_args$algorithm, ")")
   allow_waic <- !nrow(object$ranef) || any(grepl("^r_", parnames(object)))
-  if (waic && allow_waic) {
+  show_waic <- inherits(object[["waic"]], "ic") || waic && allow_waic
+  if (show_waic) {
     out$WAIC <- SW(WAIC(object)$waic)
   }
   if (priors) {
@@ -2243,18 +2244,28 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
   if (length(models) > 1L) {
     out <- named_list(mnames)
     for (i in seq_along(models)) {
-      args[["x"]] <- models[[i]]
-      out[[i]] <- do.call(compute_ic, args)
-      out[[i]]$model_name <- mnames[i]
+      if (inherits(models[[i]][["waic"]], "ic")) {
+        # use precomputed waic
+        out[[i]] <- models[[i]][["waic"]]
+      } else {
+        args[["x"]] <- models[[i]]
+        out[[i]] <- do.call(compute_ic, args) 
+      }
+      out[[i]]$model_name <- mnames[[i]]
     }
     if (compare) {
       match_response(models)
       out <- compare_ic(x = out)
     }
-    class(out) <- c("iclist", "list")
+    class(out) <- "iclist"
   } else {
-    out <- do.call(compute_ic, c(nlist(x), args))
-    out$model_name <- mnames
+    if (inherits(x[["waic"]], "ic")) {
+      # use precomputed waic
+      out <- x[["waic"]]
+    } else {
+      out <- do.call(compute_ic, c(nlist(x), args)) 
+    }
+    out$model_name <- mnames[[1]]
   }
   out
 }
@@ -2295,8 +2306,13 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
   if (length(models) > 1L) {
     out <- named_list(mnames)
     for (i in seq_along(models)) {
-      args[["x"]] <- models[[i]]
-      out[[i]] <- do.call(compute_ic, args)
+      if (inherits(models[[i]][["loo"]], "ic")) {
+        # use precomputed loo
+        out[[i]] <- models[[i]][["loo"]]
+      } else {
+        args[["x"]] <- models[[i]]
+        out[[i]] <- do.call(compute_ic, args) 
+      }
       out[[i]]$model_name <- mnames[i]
     }
     if (compare) {
@@ -2305,7 +2321,12 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
     }
     class(out) <- c("iclist", "list")
   } else {
-    out <- do.call(compute_ic, c(nlist(x), args))
+    if (inherits(x[["loo"]], "ic")) {
+      # use precomputed loo
+      out <- x[["loo"]]
+    } else {
+      out <- do.call(compute_ic, c(nlist(x), args)) 
+    }
     out$model_name <- mnames
   }
   out
@@ -2322,6 +2343,24 @@ loo.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
   cl <- match.call()
   cl[[1]] <- quote(LOO)
   eval(cl, parent.frame())
+}
+
+#' @rdname add_ic
+#' @export
+add_ic.brmsfit <- function(x, ic = "loo", ...) {
+  dots <- list(...)
+  model_name <- deparse(substitute(x))
+  ic <- unique(tolower(as.character(ic)))
+  valid_ics <- c("loo", "waic")
+  if (!length(ic) || !all(ic %in% valid_ics)) {
+    stop2("Argument 'ic' should be a subset of ",
+          collapse_comma(valid_ics))
+  }
+  for (i in seq_along(ic)) {
+    x[[ic[i]]] <- do.call(ic[i], c(list(x), dots))
+    x[[ic[i]]]$model_name <- model_name
+  }
+  x
 }
 
 #' Compute Weighted Expectations Using LOO

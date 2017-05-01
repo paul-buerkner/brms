@@ -58,20 +58,24 @@ Models fitted with the \code{\link[brms:brms]{brms}} package are represented as 
     \item{\code{data.name}:}{name of the data frame; a character string} 
     \item{\code{model}:}{model in Stan language; a character string}
     \item{\code{prior}:}{priors applied in the model; a tidy data.frame}
-    \item{\code{ranef}:}{structure of group-level terms; a tidy data.frame}
     \item{\code{autocor}:}{an object of class \code{cor_brms} 
     containing the autocorrelation structure}
     \item{\code{threshold}:}{character string defining the threshold
     type used in ordinal models}
+        \item{\code{ranef}:}{structure of group-level terms; a tidy data.frame}
     \item{\code{cov_ranef}:}{a list of customized group-level 
     covariance matrices}
-    \item{\code{exclude}:}{parameters for which samples are not saved; 
-    a character vector}
+    \item{\code{loo}:}{empty slot for adding the \code{loo} information 
+    criterion after model fitting}
+    \item{\code{waic}:}{empty slot for adding the \code{waic} information 
+    criterion after model fitting}
     \item{\code{fit}:}{fitted results including the posterior samples; 
     an object of class \code{stanfit}}
+    \item{\code{exclude}:}{names of parameters for which samples 
+    are not saved; a character vector}
     \item{\code{algorithm}:}{the name of the algorithm used to fit the model}
-     \item{\code{version}:}{the version of \pkg{brms} with which the
-     model was fitted}
+     \item{\code{version}:}{the version of \pkg{brms} and \pkg{rstan} with 
+     which the model was fitted}
   }
 }
 

@@ -92,6 +92,8 @@ using the \pkg{loo} package.
 When comparing models fitted to the same data, 
  the smaller the LOO, the better the fit.
  For \code{brmsfit} objects, \code{loo} is an alias of \code{LOO}.
+ Use method \code{\link[brms:add_ic]{add_ic}} to store
+ information criteria in the fitted model object for later usage.
 }
 \section{Methods (by class)}{
 \itemize{

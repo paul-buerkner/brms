@@ -4,16 +4,21 @@
 \alias{compare_ic}
 \title{Compare Information Criteria of Different Models}
 \usage{
-compare_ic(..., x = NULL)
+compare_ic(..., x = NULL, ic = c("loo", "waic"))
 }
 \arguments{
 \item{...}{At least two objects returned by 
-\code{\link[brms:WAIC]{WAIC}} or \code{\link[brms:LOO]{LOO}}.}
-
-\item{x}{A list of at least two objects returned by
 \code{\link[brms:WAIC]{WAIC}} or \code{\link[brms:LOO]{LOO}}.
-This argument can be used as an alternative to specifying the 
-models in \code{...}.}
+Alternatively, \code{brmsfit} objects with information 
+criteria precomputed via \code{\link[brms:add_ic]{add_ic}}
+may be passed, as well.}
+
+\item{x}{A \code{list} containing the same types of objects as
+can be passed via \code{...}.}
+
+\item{ic}{The name of the information criterion to be extracted 
+from \code{brmsfit} objects. Ignored if information 
+criterion objects are only passed directly.}
 }
 \value{
 An object of class \code{iclist}.
@@ -45,5 +50,6 @@ compare_ic(w1, w2)
 \seealso{
 \code{\link[brms:WAIC]{WAIC}}, 
   \code{\link[brms:LOO]{LOO}},
+  \code{\link[brms:add_ic]{add_ic}},
   \code{\link[loo:compare]{compare}}
 }
