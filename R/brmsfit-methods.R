@@ -2319,7 +2319,7 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
       match_response(models)
       out <- compare_ic(x = out)
     }
-    class(out) <- c("iclist", "list")
+    class(out) <- "iclist"
   } else {
     if (inherits(x[["loo"]], "ic")) {
       # use precomputed loo
