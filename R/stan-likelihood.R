@@ -207,8 +207,8 @@ stan_llh.default <- function(family, bterms, data, autocor,
         sargs(p$mu, p$sigma, p$xi)
       ),
       exgaussian = c(
-        "exgaussian", 
-        sargs(p$mu, p$sigma, p$beta)
+        "exp_mod_normal", 
+        sargs(p$mu, p$sigma, paste0("inv(", p$beta, ")"))
       ),
       inverse.gaussian = c(
         paste0("inv_gaussian", if (!reqn) "_vector"),

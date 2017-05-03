@@ -14,6 +14,13 @@
       fitted model objects.
     }
   }
+  \subsection{OTHER CHANGES}{
+    \itemize{
+      \item Improve sampling efficiency for
+      \code{exgaussian} models thanks to
+      Alex Forrence.
+    }
+  }
 }
 
 \section{CHANGES IN VERSION 1.6.1}{

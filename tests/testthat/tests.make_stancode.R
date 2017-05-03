@@ -650,19 +650,19 @@ test_that("Stan code of exgaussian models is correct", {
   scode <- make_stancode(count ~ Trt_c + (1|patient),
                       data = dat, family = exgaussian("log"),
                       prior = prior(gamma(1,1), class = beta))
-  expect_match2(scode, "Y[n] ~ exgaussian(mu[n], sigma, beta)")
+  expect_match2(scode, "Y[n] ~ exp_mod_normal(mu[n], sigma, inv(beta))")
   expect_match2(scode, "mu[n] = exp(mu[n])")
   expect_match2(scode, "beta ~ gamma(1, 1)")
   
   scode <- make_stancode(bf(count ~ Trt_c + (1|patient),
                          sigma ~ Trt_c, beta ~ Trt_c),
                       data = dat, family = exgaussian())
-  expect_match2(scode, "Y[n] ~ exgaussian(mu[n], sigma[n], beta[n])")
+  expect_match2(scode, "Y[n] ~ exp_mod_normal(mu[n], sigma[n], inv(beta[n]))")
   expect_match2(scode, "beta[n] = exp(beta[n])")
   
   scode <- make_stancode(count | cens(cens) ~ Trt_c + (1|patient),
                       data = dat, family = exgaussian("inverse"))
-  expect_match2(scode, "exgaussian_lccdf(Y[n] | mu[n], sigma, beta)")
+  expect_match2(scode, "exp_mod_normal_lccdf(Y[n] | mu[n], sigma, inv(beta))")
 })
 
 test_that("Stan code of wiener diffusion models is correct", {
@@ -960,7 +960,7 @@ test_that("Stan code of mixture model is correct", {
   scode <- make_stancode(bf(y ~ x), data = data, family = fam)
   expect_match(scode, "parameters \\{[^\\}]*real temp_mu3_Intercept;")
   expect_match2(scode, "ps[2] = log(theta2) + student_t_lpdf(Y[n] | nu2, mu2[n], sigma2);")
-  expect_match2(scode, "ps[3] = log(theta3) + exgaussian_lpdf(Y[n] | mu3[n], sigma3, beta3);")
+  expect_match2(scode, "ps[3] = log(theta3) + exp_mod_normal_lpdf(Y[n] | mu3[n], sigma3, inv(beta3));")
   
   scode <- make_stancode(bf(y ~ x, theta1 ~ x, theta3 ~ x), 
                          data = data, family = fam)
