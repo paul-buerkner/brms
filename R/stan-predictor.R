@@ -849,7 +849,7 @@ stan_eta_mo <- function(monef, ranef, nlpar = "") {
       rpars <- ""
     }
     eta_mo <- paste0(eta_mo,
-      " + (bmo", p, "[", i, "]", rpars, ") * monotonic(",
+      " + (bmo", p, "[", i, "]", rpars, ") * mo(",
       "simplex", p, "_", i, ", Xmo", p, "[n, ", i, "])"
     )
   }

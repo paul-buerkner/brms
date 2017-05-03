@@ -477,12 +477,12 @@ test_that("monotonic effects appear in the Stan code", {
   scode <- make_stancode(y ~ mo(x1) + mo(x2), dat, prior = prior)
   expect_match2(scode, "int Xmo[N, Kmo];")
   expect_match2(scode, "simplex[Jmo[1]] simplex_1;")
-  expect_match2(scode, "(bmo[2]) * monotonic(simplex_2, Xmo[n, 2]);")
+  expect_match2(scode, "(bmo[2]) * mo(simplex_2, Xmo[n, 2]);")
   expect_match2(scode, "bmo[1] ~ normal(0, 1)")
   expect_match2(scode, "simplex_1 ~ dirichlet(con_simplex_1);")
   expect_match2(scode, "simplex_2 ~ dirichlet(con_simplex_2);")
   scode <- make_stancode(y ~ mono(x1) + (mono(x1)|x2) + (1|x2), dat)
-  expect_match2(scode, "(bmo[1] + r_1_1[J_1[n]]) * monotonic(simplex_1, Xmo[n, 1]);")
+  expect_match2(scode, "(bmo[1] + r_1_1[J_1[n]]) * mo(simplex_1, Xmo[n, 1]);")
   # test that Z_1_1 is (correctly) undefined
   expect_match2(scode, paste0("  int<lower=1> M_1; \n",
     "  // data for group-level effects of ID 2"))
@@ -1005,7 +1005,7 @@ test_that("stan code for Gaussian processes is correct", {
   scode <- make_stancode(y ~ gp(x1) + gp(x2), dat, prior = prior)
   expect_match2(scode, "lscale ~ normal(0, 10);")
   expect_match2(scode, "sdgp ~ gamma(0.1, 0.1);")
-  expect_match2(scode, "gaussian_process(Xgp_2, sdgp[2], lscale[2], zgp_2)")
+  expect_match2(scode, "gp(Xgp_2, sdgp[2], lscale[2], zgp_2)")
   
   prior <- c(prior(normal(0, 10), lscale, nlpar = eta),
              prior(gamma(0.1, 0.1), sdgp, nlpar = eta),
@@ -1014,5 +1014,5 @@ test_that("stan code for Gaussian processes is correct", {
                          data = dat, prior = prior)
   expect_match2(scode, "lscale_eta ~ normal(0, 10);")
   expect_match2(scode, "sdgp_eta ~ gamma(0.1, 0.1);")
-  expect_match2(scode, "gaussian_process(Xgp_eta_1, sdgp_eta[1], lscale_eta[1], zgp_eta_1)")
+  expect_match2(scode, "gp(Xgp_eta_1, sdgp_eta[1], lscale_eta[1], zgp_eta_1)")
 })

@@ -563,22 +563,14 @@ stan_disp <- function(bterms, family) {
   out
 }
 
-stan_monotonic <- function(x) {
-  # add the monotonic function to Stan's functions block
-  if (grepl("[^[:alnum:]]monotonic\\(", collapse(x))) {
-    out <- "  #include fun_monotonic.stan \n"
-  } else {
-    out <- ""
-  }
-  out
-}
-
-stan_gaussian_process <- function(x) {
-  # add the monotonic function to Stan's functions block
-  if (grepl("[^[:alnum:]]gaussian_process\\(", collapse(x))) {
-    out <- "  #include fun_gaussian_process.stan \n"
-  } else {
-    out <- ""
+stan_pred_functions <- function(x) {
+  # add certain predictor functions to Stan's functions block
+  out <- ""
+  if (grepl("[^[:alnum:]]mo\\(", collapse(x))) {
+    out <- paste0(out, "  #include fun_monotonic.stan \n")
+  } 
+  if (grepl("[^[:alnum:]]gp\\(", collapse(x))) {
+    out <- paste0(out, "  #include fun_gaussian_process.stan \n")
   }
   out
 }

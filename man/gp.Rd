@@ -66,19 +66,19 @@ A Gaussian process is a stochastic process, whichs
 dat <- mgcv::gamSim(1, n = 30, scale = 2)
 
 # fit a simple gaussian process model
-fit1 <- brm(y ~ gp(x2), dat)
+fit1 <- brm(y ~ gp(x2), dat, chains = 2)
 summary(fit1)
 me1 <- marginal_effects(fit1, nsamples = 200, spaghetti = TRUE)
 plot(me1, ask = FALSE, points = TRUE)
 
 # fit a more complicated gaussian process model
-fit2 <- brm(y ~ gp(x0) + x1 + gp(x2) + x3, dat)
+fit2 <- brm(y ~ gp(x0) + x1 + gp(x2) + x3, dat, chains = 2)
 summary(fit2)
 me2 <- marginal_effects(fit2, nsamples = 200, spaghetti = TRUE)
 plot(me2, ask = FALSE, points = TRUE)
 
 # fit a multivariate gaussian process model
-fit3 <- brm(y ~ gp(x1, x2), dat)
+fit3 <- brm(y ~ gp(x1, x2), dat, chains = 2)
 summary(fit3)
 me3 <- marginal_effects(fit3, nsamples = 200, spaghetti = TRUE)
 plot(me3, ask = FALSE, points = TRUE)
