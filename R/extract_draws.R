@@ -176,7 +176,7 @@ extract_draws.btl <- function(x, fit, newdata = NULL, re_formula = NULL,
   csef <- colnames(draws$data[["Xcs"]])
   meef <- get_me_labels(bterms$auxpars$mu, fit$data)
   smooths <- rename(get_sm_labels(bterms$auxpars$mu, fit$data, covars = TRUE))
-  gpef <- get_gp_labels(bterms$auxpars$mu, call = FALSE)
+  gpef <- get_gp_labels(bterms$auxpars$mu, covars = TRUE)
   sdata_old <- NULL
   if (length(gpef) && new) {
     oldd_args <- newd_args[!names(newd_args) %in% "newdata"]

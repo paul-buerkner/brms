@@ -57,8 +57,7 @@ A Gaussian process is a stochastic process, whichs
    substantially.}
  }
 
- In the current implementation, only a single predictor can be 
- passed, and \code{"exp_quad"} is the only supported 
+ In the current implementation, \code{"exp_quad"} is the only supported 
  covariance kernel. More options will follow in the future.
 }
 \examples{
@@ -76,10 +75,16 @@ plot(me1, ask = FALSE, points = TRUE)
 fit2 <- brm(y ~ gp(x0) + x1 + gp(x2) + x3, dat)
 summary(fit2)
 me2 <- marginal_effects(fit2, nsamples = 200, spaghetti = TRUE)
-plot(me2, ask = FALSE points = TRUE)
+plot(me2, ask = FALSE, points = TRUE)
+
+# fit a multivariate gaussian process model
+fit3 <- brm(y ~ gp(x1, x2), dat)
+summary(fit3)
+me3 <- marginal_effects(fit3, nsamples = 200, spaghetti = TRUE)
+plot(me3, ask = FALSE, points = TRUE)
 
 # compare model fit
-LOO(fit1, fit2)
+LOO(fit1, fit2, fit3)
 }
 
 }

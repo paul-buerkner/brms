@@ -1074,12 +1074,12 @@ get_me_labels <- function(x, data) {
   structure(colnames(mm), not_one = not_one, uni_me = uni_me)
 }
 
-get_gp_labels <- function(x, call = TRUE) {
+get_gp_labels <- function(x, covars = FALSE) {
   # get labels of gaussian process terms
   # Args:
   #   x: either a formula or a list containing an element "gp"
-  #   call: Return the characters of the call to gp?
-  #         If FALSE, return the suffixes of the parameter names
+  #   covars: should the conbined names of the covariates be 
+  #           returned instead of the full term names?
   if (is.formula(x)) {
     x <- parse_bf(x, check_response = FALSE)
     gp_form <- x$auxpars$mu[["gp"]]
@@ -1090,13 +1090,16 @@ get_gp_labels <- function(x, call = TRUE) {
     return(character(0))
   }
   gp_terms <- all_terms(gp_form)
-  gp_terms <- lapply(gp_terms, eval2)
-  out <- ulapply(gp_terms, "[[", "label")
-  if (length(out) && !call) {
-    # the suffixes of the parameter names do not match
-    # the call to gp and contain an index at the end
-    # for future compatibility with the 'by' argument
-    out <- paste0(rename(out), "_1")
+  out <- rep(NA, length(gp_terms))
+  for (i in seq_along(gp_terms)) {
+    gp <- eval2(gp_terms[i])
+    if (covars) {
+      out[i] <- paste0("gp", collapse(gp$term))
+      # for future compatibility with the 'by' argument
+      out[i] <- paste0(rename(out[i]), "_1")
+    } else {
+      out[i] <- gp$label
+    }
   }
   out
 }

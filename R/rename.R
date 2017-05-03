@@ -90,7 +90,7 @@ change_effects.btl <- function(x, data, pars, dims, nlpar = "",
   change_mo <- change_mo(monef, pars, nlpar = nlpar)
   meef <- get_me_labels(x, data)
   change_me <- change_me(meef, pars, dims = dims, nlpar = nlpar)
-  gpef <- get_gp_labels(x, call = FALSE)
+  gpef <- get_gp_labels(x, covars = TRUE)
   change_gp <- change_gp(gpef, pars, dims = dims, nlpar = nlpar)
   c(change_fe, change_sm, change_cs, change_mo, change_me, change_gp)
 }

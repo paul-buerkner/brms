@@ -1,13 +1,13 @@
-  /* compute a univariate gaussian process 
-   * Args: 
-   *   x: vector of continuous predictor values
+  /* compute a Gaussian process term
+   * Args:
+   *   x: array of continuous predictor values
    *   sdgp: marginal SD parameter
    *   lscale: length-scale parameter
    *   zgp: vector of independent standard normal variables 
    * Returns:  
    *   a vector to be added to the linear predictor
    */ 
-  vector gaussian_process(real[] x, real sdgp, real lscale, vector zgp) { 
+  vector gp(vector[] x, real sdgp, real lscale, vector zgp) { 
     matrix[size(x), size(x)] cov;
     cov = cov_exp_quad(x, sdgp, lscale);
     for (n in 1:size(x)) {

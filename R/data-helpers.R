@@ -531,9 +531,8 @@ make_gp_list.btl <- function(x, data, ...) {
   out <- named_list(gpef)
   for (i in seq_along(gpef)) {
     gp <- eval2(gpef[i])
-    Xgp <- eval2(gp$term, data)
-    # currently works for unidimensional input only
-    out[[i]] <- list(dmax = max(Xgp) - min(Xgp))
+    Xgp <- do.call(cbind, lapply(gp$term, eval2, data))
+    out[[i]] <- list(dmax = sqrt(max(diff_quad(Xgp))))
   }
   out
 }

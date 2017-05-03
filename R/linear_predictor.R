@@ -326,15 +326,15 @@ gp_predictor <- function(x, sdgp, lscale, zgp = NULL, x_new = NULL,
   }
   .gp_predictor_old <- function(x, sdgp, lscale, zgp) {
     Sigma <- cov_exp_quad(x, sdgp = sdgp, lscale = lscale)
-    lx <- length(x)
+    lx <- nrow(x)
     Sigma <- Sigma + diag(rep(nug, lx), lx, lx)
     L_Sigma <- try_expr(t(chol(Sigma)))
     as.numeric(L_Sigma %*% zgp)
   }
   .gp_predictor_new <- function(x_new, yL, x, sdgp, lscale) {
     Sigma <- cov_exp_quad(x, sdgp = sdgp, lscale = lscale)
-    lx <- length(x)
-    lx_new <- length(x_new)
+    lx <- nrow(x)
+    lx_new <- nrow(x_new)
     Sigma <- Sigma + diag(rep(nug, lx), lx, lx)
     L_Sigma <- try_expr(t(chol(Sigma)), nug)
     L_Sigma_inverse <- solve(L_Sigma)

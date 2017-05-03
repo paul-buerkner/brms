@@ -390,8 +390,7 @@ monotonic <- function(expr) {
 #'    substantially.}
 #'  }
 #'
-#'  In the current implementation, only a single predictor can be 
-#'  passed, and \code{"exp_quad"} is the only supported 
+#'  In the current implementation, \code{"exp_quad"} is the only supported 
 #'  covariance kernel. More options will follow in the future.  
 #'  
 #' @return An object of class \code{'gpterm'}, which is a list 
@@ -413,10 +412,16 @@ monotonic <- function(expr) {
 #' fit2 <- brm(y ~ gp(x0) + x1 + gp(x2) + x3, dat)
 #' summary(fit2)
 #' me2 <- marginal_effects(fit2, nsamples = 200, spaghetti = TRUE)
-#' plot(me2, ask = FALSE points = TRUE)
+#' plot(me2, ask = FALSE, points = TRUE)
+#' 
+#' # fit a multivariate gaussian process model
+#' fit3 <- brm(y ~ gp(x1, x2), dat)
+#' summary(fit3)
+#' me3 <- marginal_effects(fit3, nsamples = 200, spaghetti = TRUE)
+#' plot(me3, ask = FALSE, points = TRUE)
 #' 
 #' # compare model fit
-#' LOO(fit1, fit2)
+#' LOO(fit1, fit2, fit3)
 #' }
 #' 
 #' @seealso \code{\link[brms:brmsformula]{brmsformula}}
@@ -425,9 +430,6 @@ gp <- function(..., cov = "exp_quad", scale = TRUE) {
   cov <- match.arg(cov)
   label <- deparse(match.call())
   vars <- as.list(substitute(list(...)))[-1]
-  if (length(vars) != 1L) {
-    stop2("'gp' currently allows only one predictor.")
-  }
   scale <- as.logical(scale)
   if (anyNA(scale) || length(scale) != 1L) {
     stop2("'scale' should be either TRUE or FALSE.")

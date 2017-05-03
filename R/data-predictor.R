@@ -338,20 +338,26 @@ data_gp <- function(bterms, data, nlpar = "", gps = NULL) {
   if (length(gpef)) {
     p <- usc(nlpar, "prefix")
     out[[paste0("Kgp", p)]] <- length(gpef)
+    out[[paste0("Mgp", p)]] <- as.array(rep(NA, length(gpef)))
     for (i in seq_along(gpef)) {
       gp <- eval2(gpef[i])
-      Xgp <- eval2(gp$term, data)
-      if (!is.numeric(Xgp) || isTRUE(length(dim(Xgp)) > 1L)) {
-        stop2("Predictors of Gaussian processes ", 
-              "should be numeric vectors.")
+      Xgp <- lapply(gp$term, eval2, data)
+      out[[paste0("Mgp", p)]][[i]] <- length(Xgp)
+      invalid <- ulapply(Xgp, function(x)
+        !is.numeric(x) || isTRUE(length(dim(x)) > 1L)
+      )
+      if (any(invalid)) {
+        stop2("Predictors of Gaussian processes should be numeric vectors.")
       }
-      # scale predictor for easier specification of priors
+      Xgp <- do.call(cbind, Xgp)
       if (gp$scale) {
+        # scale predictor for easier specification of priors
         if (!is.null(gps)) {
           # scale Xgp based on the original data
-          Xgp <- scale_distance(Xgp, d = gps[[i]]$dmax)
+          Xgp <- Xgp / gps[[i]]$dmax
         } else {
-          Xgp <- scale_distance(Xgp)
+          dmax <- sqrt(max(diff_quad(Xgp)))
+          Xgp <- Xgp / dmax
         }
       }
       out[[paste0("Xgp", p, "_", i)]] <- Xgp

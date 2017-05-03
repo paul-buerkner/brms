@@ -736,7 +736,8 @@ stan_gp <- function(gpef, prior, nlpar = "") {
     out$data <- paste0(
       "  // data for gaussian processes \n",
       "  int<lower=1> Kgp", p, "; \n",
-      collapse("  real Xgp", p, "_", I, "[N]; \n")
+      "  int<lower=1> Mgp", p, "[Kgp", p, "]; \n",
+      collapse("  vector[Mgp", p, "[", I, "]] Xgp", p, "_", I, "[N]; \n")
     )
     out$par <- paste0(
       "  // GP hyperparameters \n", 
@@ -756,7 +757,7 @@ stan_gp <- function(gpef, prior, nlpar = "") {
       "Xgp", p, "_", I, ", sdgp", p, "[", I, "], ", 
       "lscale", p, "[", I, "], zgp", p, "_", I
     )
-    out$eta <- collapse(" + gaussian_process(", gp_args, ")")
+    out$eta <- collapse(" + gp(", gp_args, ")")
   }
   out
 }
