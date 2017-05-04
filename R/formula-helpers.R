@@ -463,6 +463,7 @@ gp <- function(..., cov = "exp_quad", scale = TRUE) {
 #' 
 #' @export
 gr <- function(...) {
+  label <- deparse(match.call())
   groups <- as.character(as.list(substitute(list(...)))[-1])
   if (length(groups) > 1L) {
     stop2("Grouping structure 'gr' expects only a single grouping term")
@@ -472,7 +473,7 @@ gr <- function(...) {
           "only variable names combined by the symbol ':'")
   }
   allvars <- str2formula(groups)
-  nlist(groups, allvars, type = "")
+  nlist(groups, allvars, label, type = "")
 }
 
 #' Set up multi-membership grouping terms in \pkg{brms}
@@ -511,6 +512,7 @@ gr <- function(...) {
 #'   
 #' @export
 mm <- function(..., weights = NULL, scale = TRUE) {
+  label <- deparse(match.call())
   groups <- as.character(as.list(substitute(list(...)))[-1])
   for (i in seq_along(groups)) {
     if (illegal_group_expr(groups[i])) {
@@ -530,7 +532,7 @@ mm <- function(..., weights = NULL, scale = TRUE) {
     attr(weights, "scale") <- scale
     weightvars <- str2formula(weightvars)
   }
-  nlist(groups, weights, weightvars, allvars, type = "mm")
+  nlist(groups, weights, weightvars, allvars, label, type = "mm")
 }
 
 rhs <- function(x) {

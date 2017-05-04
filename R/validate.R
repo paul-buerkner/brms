@@ -732,7 +732,8 @@ check_re_formula <- function(re_formula, formula) {
       new <- new[found, ]
       if (nrow(new)) {
         forms <- ulapply(new$form, formula2str, rm = 1)
-        re_terms <- paste("(", forms, "|", new$group, ")")
+        groups <- ulapply(new$gcall, "[[", "label")
+        re_terms <- paste("(", forms, "|", groups, ")")
         re_formula <- formula(paste("~", paste(re_terms, collapse = "+")))
       } else {
         re_formula <- ~ 1

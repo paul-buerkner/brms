@@ -41,17 +41,17 @@ test_that("(deprecated) amend_formula returns correct formulas", {
 test_that("check_re_formula returns correct REs", {
   old_form <- y ~ x + (1|patient) + (Trt_c|visit)
   form <- check_re_formula(~ (1 | visit), old_form)
-  expect_equivalent(form, ~ (1 | visit))
+  expect_equivalent(form, ~ (1 | gr(visit)))
   form <- check_re_formula(~ (1 + Trt_c|visit), old_form)
-  expect_equivalent(form, ~ (1 + Trt_c | visit))
+  expect_equivalent(form, ~ (1 + Trt_c | gr(visit)))
   form <- check_re_formula(~ (0 + Trt_c | visit) + (1|patient), old_form)
-  expect_equivalent(form, ~ (1|patient) + (0+Trt_c | visit))
+  expect_equivalent(form, ~ (1|gr(patient)) + (0 + Trt_c | gr(visit)))
 })
 
 test_that("update_re_terms works correctly", {
   expect_equivalent(update_re_terms(y ~ x, ~ (1|visit)), y ~ x)
   expect_equivalent(update_re_terms(y ~ x + (1+Trt_c|patient), ~ (1|patient)), 
-                    y ~ x + (1|patient))
+                    y ~ x + (1|gr(patient)))
   expect_equivalent(update_re_terms(y ~ x + (1|patient), ~ 1), 
                     y ~ x)
   expect_equivalent(update_re_terms(y ~ x + (1+visit|patient), NA), 
@@ -60,13 +60,13 @@ test_that("update_re_terms works correctly", {
                     y ~ x + (1+visit|patient))
   expect_equivalent(update_re_terms(y ~ (1|patient), NA), y ~ 1)
   expect_equivalent(update_re_terms(y ~ x + (1+x|visit), ~ (1|visit)), 
-                    y ~ x + (1|visit))
+                    y ~ x + (1|gr(visit)))
   expect_equivalent(update_re_terms(y ~ x + (1|visit), ~ (1|visit) + (x|visit)),
-                    y ~ x + (1|visit))
+                    y ~ x + (1|gr(visit)))
   expect_equal(update_re_terms(bf(y ~ x, sigma = ~ x + (x|g)), ~ (1|g)),
-               bf(y ~ x, sigma = ~ x + (1|g)))
+               bf(y ~ x, sigma = ~ x + (1|gr(g))))
   expect_equal(update_re_terms(bf(y ~ x, x ~ z + (1|g), nl = TRUE), ~ (1|g)),
-               bf(y ~ x, x ~ z + (1|g), nl = TRUE))
+               bf(y ~ x, x ~ z + (1|gr(g)), nl = TRUE))
 })
 
 test_that("(deprecated) amend_terms performs expected changes", {
