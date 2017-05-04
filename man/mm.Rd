@@ -4,15 +4,19 @@
 \alias{mm}
 \title{Set up multi-membership grouping terms in \pkg{brms}}
 \usage{
-mm(..., weights = NULL)
+mm(..., weights = NULL, scale = TRUE)
 }
 \arguments{
 \item{...}{One or more terms containing grouping factors.}
 
 \item{weights}{A matrix specifying the weights of each member.
 It should have as many columns as grouping terms specified in \code{...}.
-Weights are standardized in order to sum to one per row.
 If \code{NULL} (the default), equally weights are used.}
+
+\item{scale}{Logical; if \code{TRUE} (the default), 
+weights are standardized in order to sum to one per row.
+If negative weights are specified, \code{scale} needs
+to be set to \code{FALSE}.}
 }
 \description{
 Function to set up a multi-membership grouping term in \pkg{brms}.

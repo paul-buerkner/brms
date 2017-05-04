@@ -12,6 +12,8 @@
       \item Introduce method \code{add_ic} to
       store and reuse information criteria in 
       fitted model objects.
+      \item Allow for negative weights in 
+      multi-membership grouping structures.
     }
   }
   \subsection{OTHER CHANGES}{

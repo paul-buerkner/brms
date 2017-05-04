@@ -405,7 +405,7 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
     if (r$gtype[1] == "mm") {
       collapse(
         "  int<lower=1> J_", id, "_", ng, "[N]; \n",
-        "  real<lower=0> W_", id, "_", ng, "[N]; \n"
+        "  real W_", id, "_", ng, "[N]; \n"
       )
     } else {
       paste0("  int<lower=1> J_", id, "[N]; \n")

@@ -484,8 +484,11 @@ gr <- function(...) {
 #' @inheritParams gr
 #' @param weights A matrix specifying the weights of each member.
 #'  It should have as many columns as grouping terms specified in \code{...}.
-#'  Weights are standardized in order to sum to one per row.
 #'  If \code{NULL} (the default), equally weights are used. 
+#' @param scale Logical; if \code{TRUE} (the default), 
+#'  weights are standardized in order to sum to one per row.
+#'  If negative weights are specified, \code{scale} needs
+#'  to be set to \code{FALSE}.
 #'  
 #' @seealso \code{\link[brms:brmsformula]{brmsformula}}
 #'  
@@ -507,7 +510,7 @@ gr <- function(...) {
 #' }
 #'   
 #' @export
-mm <- function(..., weights = NULL) {
+mm <- function(..., weights = NULL, scale = TRUE) {
   groups <- as.character(as.list(substitute(list(...)))[-1])
   for (i in seq_along(groups)) {
     if (illegal_group_expr(groups[i])) {
@@ -515,11 +518,16 @@ mm <- function(..., weights = NULL) {
             "only variable names combined by the symbol ':'")
     }
   }
+  scale <- as.logical(scale)
+  if (anyNA(scale) || length(scale) != 1L) {
+    stop2("'scale' should be either TRUE or FALSE.")
+  }
   weights <- substitute(weights)
   weightvars <- all.vars(weights)
   allvars <- str2formula(c(groups, weightvars))
   if (!is.null(weights)) {
     weights <- str2formula(deparse_no_string(weights))
+    attr(weights, "scale") <- scale
     weightvars <- str2formula(weightvars)
   }
   nlist(groups, weights, weightvars, allvars, type = "mm")

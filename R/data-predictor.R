@@ -227,12 +227,18 @@ data_gr <- function(ranef, data, cov_ranef = NULL) {
       ngs <- length(gs)
       weights <- id_ranef$gcall[[1]]$weights
       if (is.formula(weights)) {
+        scale <- isTRUE(attr(weights, "scale"))
         weights <- as.matrix(eval_rhs(weights, data))
         if (!identical(dim(weights), c(nrow(data), ngs))) {
           stop2("Grouping structure 'mm' expects 'weights' to be a matrix ", 
                 "with as many columns as grouping factors.")
         }
-        weights <- sweep(weights, 1, rowSums(weights), "/")
+        if (scale) {
+          if (any(weights < 0)) {
+            stop2("Cannot scale negative weights.")
+          }         
+          weights <- sweep(weights, 1, rowSums(weights), "/")
+        }
       } else {
         # all members get equal weights by default
         weights <- matrix(1 / ngs, nrow = nrow(data), ncol = ngs)
