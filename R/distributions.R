@@ -384,11 +384,10 @@ dexgaussian <- function(x, mu, sigma, beta, log = FALSE) {
   args <- do.call(expand, args)
   args$z <- with(args, x - mu - sigma^2 / beta)
   
-  out <- with(args, ifelse(
-    beta > 0.05 * sigma, 
-    -log(beta) - (z + sigma^2 / (2 * beta)) / beta + log(pnorm(z / sigma)),
-    dnorm(x, mean = mu, sd = sigma, log = TRUE)
-  ))
+  out <- with(args, 
+    -log(beta) - (z + sigma^2 / (2 * beta)) / beta + 
+      pnorm(z / sigma, log.p = TRUE)
+  )
   if (!log) {
     out <- exp(out)
   }
@@ -399,9 +398,6 @@ dexgaussian <- function(x, mu, sigma, beta, log = FALSE) {
 #' @export
 pexgaussian <- function(q, mu, sigma, beta, 
                         lower.tail = TRUE, log.p = FALSE) {
-  # CDF of the exponentially modified gaussian distribution
-  # Args:
-  #   see dexgauss
   if (any(sigma <= 0)) {
     stop2("sigma must be greater than 0.")
   }
@@ -412,13 +408,11 @@ pexgaussian <- function(q, mu, sigma, beta,
   args <- do.call(expand, args)
   args$z <- with(args, q - mu - sigma^2 / beta)
   
-  out <- with(args, ifelse(
-    beta > 0.05 * sigma, 
+  out <- with(args, 
     pnorm((q - mu) / sigma) - pnorm(z / sigma) * 
       exp(((mu + sigma^2 / beta)^2 - mu^2 - 2 * q * sigma^2 / beta) / 
-            (2 * sigma^2)), 
-    pnorm(q, mean = mu, sd = sigma)
-  ))
+            (2 * sigma^2))
+  )
   if (!lower.tail) {
     out <- 1 - out
   } 
@@ -431,9 +425,6 @@ pexgaussian <- function(q, mu, sigma, beta,
 #' @rdname ExGaussian
 #' @export
 rexgaussian <- function(n, mu, sigma, beta) {
-  # create random numbers of the exgaussian distribution
-  # Args:
-  #   see dexgauss
   if (any(sigma <= 0)) {
     stop2("sigma must be greater than 0.")
   }
