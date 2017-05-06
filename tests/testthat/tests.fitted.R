@@ -41,18 +41,19 @@ test_that("fitted helper functions run without errors", {
   
   # pseudo binomial model
   fit$autocor <- cor_arma()
-  fit$family <- attr(fit$formula, "family") <- binomial()
+  fit$family <- fit$formula$family <- binomial()
   expect_equal(dim(fitted(fit, summary = FALSE)), 
                c(nsamples, nobs))
   
   # pseudo hurdle poisson model
   fit$family <- hurdle_poisson()
-  fit$formula <- bf(count ~ Trt*Age + mono(Exp) + offset(Age) + (1+Trt|visit))
+  fit$formula <- bf(count ~ Trt*Age + mono(Exp) + offset(Age) + (1+Trt|visit),
+                    family = family(fit))
   expect_equal(dim(fitted(fit, summary = FALSE)), 
                c(nsamples, nobs))
   
   # pseudo zero-inflated poisson model
-  fit$family <- attr(fit$formula, "family") <- zero_inflated_poisson()
+  fit$family <- fit$formula$family <- zero_inflated_poisson()
   expect_equal(dim(fitted(fit, summary = FALSE)), 
                c(nsamples, nobs))
   

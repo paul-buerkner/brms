@@ -4,7 +4,7 @@
 \alias{brm}
 \title{Fit Bayesian Generalized (Non-)Linear Multilevel Models}
 \usage{
-brm(formula, data, family = NULL, prior = NULL, autocor = NULL,
+brm(formula, data, family = gaussian(), prior = NULL, autocor = NULL,
   nonlinear = NULL, threshold = c("flexible", "equidistant"),
   cov_ranef = NULL, save_ranef = TRUE, save_mevars = FALSE,
   sparse = FALSE, sample_prior = FALSE, knots = NULL, stan_funs = NULL,

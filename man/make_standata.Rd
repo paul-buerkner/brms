@@ -5,9 +5,9 @@
 \alias{brmdata}
 \title{Data for \pkg{brms} Models}
 \usage{
-make_standata(formula, data, family = NULL, prior = NULL, autocor = NULL,
-  nonlinear = NULL, cov_ranef = NULL, sample_prior = FALSE,
-  knots = NULL, control = list(), ...)
+make_standata(formula, data, family = gaussian(), prior = NULL,
+  autocor = NULL, nonlinear = NULL, cov_ranef = NULL,
+  sample_prior = FALSE, knots = NULL, control = list(), ...)
 }
 \arguments{
 \item{formula}{An object of class 

@@ -2096,9 +2096,10 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     warning2("Updating models fitted with older versions of brms may fail.")
   }
   if (missing(formula.)) {
-    dots$formula <- object$formula
+    family <- get_arg("family", dots, object)
+    dots$formula <- bf(object$formula, family = family)
   } else {
-    family <- get_arg("family", dots, formula., object)
+    family <- get_arg("family", formula., dots, object)
     nl <- get_arg("nl", formula., formula(object))
     dots$formula <- bf(formula., family = family, nl = nl)
     if (is_nonlinear(object)) {

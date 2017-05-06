@@ -49,15 +49,9 @@ See 'Details' for more explanation.}
 \item{flist}{Optional list of formulas, which are treated in the 
 same way as formulas passed via the \code{...} argument.}
 
-\item{family}{A description of the response distribution and link function 
-to be used in the model. This can be a family function, 
-a call to a family function or a character string naming the family.
-Every family function has a \code{link} argument allowing to specify
-the link function to be applied on the response variable.
-If not specified, default links are used.
-For details of supported families see 
-\code{\link[brms:brmsfamily]{brmsfamily}}.
-By default, a linear \code{gaussian} model is applied.}
+\item{family}{Same argument as in \code{\link[brms:brm]{brm}}.
+If \code{family} is specified \code{brmsformula}, it will overwrite
+the value specified in \code{\link[brms:brm]{brm}}.}
 
 \item{nl}{Logical; Indicates whether \code{formula} should be
 treated as specifying a non-linear model. By default, \code{formula} 

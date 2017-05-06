@@ -512,7 +512,7 @@ prior_string <- function(prior, ...) {
 #'               prior = prior)
 #' 
 #' @export
-get_prior <- function(formula, data, family = NULL,
+get_prior <- function(formula, data, family = gaussian(),
                       autocor = NULL, nonlinear = NULL,
                       threshold = c("flexible", "equidistant"), 
                       internal = FALSE) {

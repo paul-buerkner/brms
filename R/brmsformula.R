@@ -46,6 +46,9 @@
 #' @param nl Logical; Indicates whether \code{formula} should be
 #'   treated as specifying a non-linear model. By default, \code{formula} 
 #'   is treated as an ordinary linear model formula.
+#' @param family Same argument as in \code{\link[brms:brm]{brm}}.
+#'   If \code{family} is specified \code{brmsformula}, it will overwrite
+#'   the value specified in \code{\link[brms:brm]{brm}}.
 #' @inheritParams brm
 #' 
 #' @return An object of class \code{brmsformula}, which
@@ -769,7 +772,7 @@ pfix <- function(x, ...) {
   bf(x, ...)[["pfix"]]
 }
 
-amend_formula <- function(formula, data = NULL, family = NULL,
+amend_formula <- function(formula, data = NULL, family = gaussian(),
                           nonlinear = NULL, partial = NULL) {
   # incorporate additional arguments into formula
   # Args:
@@ -779,7 +782,7 @@ amend_formula <- function(formula, data = NULL, family = NULL,
   #   nonlinear, partial: deprecated arguments of brm
   # Returns:
   #   a brmsformula object compatible with the current version of brms
-  out <- bf(formula, family = family, nonlinear = nonlinear)
+  out <- bf(formula, nonlinear = nonlinear)
   fnew <- ". ~ ."
   if (!is.null(partial)) {
     warning2("Argument 'partial' is deprecated. Please use the 'cs' ", 
@@ -796,7 +799,7 @@ amend_formula <- function(formula, data = NULL, family = NULL,
     out$formula <- update.formula(out$formula, formula(fnew))
   }
   if (is.null(out$family)) {
-    out$family <- check_family(gaussian())
+    out$family <- check_family(family)
   }
   if (is_ordinal(out$family)) {
     # fix discrimination to 1 by default

@@ -326,7 +326,7 @@
 #' @import methods
 #' @import stats   
 #' @export 
-brm <- function(formula, data, family = NULL, prior = NULL, 
+brm <- function(formula, data, family = gaussian(), prior = NULL, 
                 autocor = NULL, nonlinear = NULL, 
                 threshold = c("flexible", "equidistant"), 
                 cov_ranef = NULL, save_ranef = TRUE, save_mevars = FALSE, 

@@ -24,7 +24,7 @@
 #' names(data2)
 #'          
 #' @export
-make_standata <- function(formula, data, family = NULL, 
+make_standata <- function(formula, data, family = gaussian(), 
                           prior = NULL, autocor = NULL, nonlinear = NULL, 
                           cov_ranef = NULL, sample_prior = FALSE, 
                           knots = NULL, control = list(), ...) {
