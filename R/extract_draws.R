@@ -175,7 +175,7 @@ extract_draws.btl <- function(x, fit, newdata = NULL, re_formula = NULL,
   monef <- colnames(draws$data[["Xmo"]])
   csef <- colnames(draws$data[["Xcs"]])
   meef <- get_me_labels(bterms$auxpars$mu, fit$data)
-  smooths <- rename(get_sm_labels(bterms$auxpars$mu, fit$data, covars = TRUE))
+  smooths <- get_sm_labels(bterms$auxpars$mu, fit$data, covars = TRUE)
   gpef <- get_gp_labels(bterms$auxpars$mu, covars = TRUE)
   sdata_old <- NULL
   if (length(gpef) && new) {

@@ -288,7 +288,6 @@ change_sm <- function(smooths, pars, nlpar = "") {
   if (length(smooths)) {
     stopifnot(!is.null(attr(smooths, "nbases")))
     p <- usc(nlpar, "prefix")
-    smooths <- rename(smooths)
     sds <- paste0("sds", p)
     sds_names <- paste0(sds, "_", smooths)
     s <- paste0("s", p)

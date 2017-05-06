@@ -779,7 +779,6 @@ prior_gp <- function(gpef, def_scale_prior, nlpar = "") {
   #   meef: terms containing noisy variables
   prior <- empty_brmsprior()
   if (length(gpef)) {
-    gpef <- rename(gpef)
     prior <- rbind(
       brmsprior(class = "sdgp", prior = def_scale_prior, nlpar = nlpar),
       brmsprior(class = "sdgp", coef = gpef, nlpar = nlpar),

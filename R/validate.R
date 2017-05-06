@@ -1024,7 +1024,7 @@ get_sm_labels <- function(x, data = NULL, covars = FALSE,
       covars[[i]] <- c(covars[[i]], byvars[[i]])
     }
     if (combine) {
-      sms <- paste0(sfuns, ulapply(covars, collapse))
+      sms <- paste0(sfuns, rename(ulapply(covars, collapse)))
     } else {
       sms <- covars
     }
