@@ -1231,10 +1231,11 @@ make_point_frame <- function(mf, effects, conditions, groups,
       } else {
         K <- seq_len(nrow(mf))
       }
-      points[[i]]$cond__[K] <- rownames(conditions)[i] 
+      # cond__ allows to assign points to conditions
+      points[[i]]$cond__[K] <- rownames(conditions)[i]
     }
     points <- do.call(rbind, points)
-    # cond__ allows to assign points to conditions
+    points <- points[!is.na(points$cond__), , drop = FALSE]
     points$cond__ <- factor(points$cond__, rownames(conditions))
   }
   if (!is.numeric(points$resp__)) {
@@ -1243,7 +1244,7 @@ make_point_frame <- function(mf, effects, conditions, groups,
       points$resp__ <- points$resp__ - 1
     }
   }
-  na.omit(points)
+  points
 }
 
 add_samples <- function(x, newpar, dim = numeric(0), dist = "norm", ...) {
