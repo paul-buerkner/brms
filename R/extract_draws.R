@@ -6,19 +6,16 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
                                   nsamples = NULL, nug = NULL, ...) {
   # extract all data and posterior draws required in (non)linear_predictor
   # Args:
-  #   incl_autocor: include autocorrelation parameters in the output?
-  #   other arguments: see doc of logLik.brmsfit
+  #   see doc of logLik.brmsfit
   # Returns:
   #   A named list to be interpreted by linear_predictor
-  sample_new_levels <- match.arg(
-    sample_new_levels, c("uncertainty", "gaussian", "old_levels")
-  )
+  snl_options <- c("uncertainty", "gaussian", "old_levels")
+  sample_new_levels <- match.arg(sample_new_levels, snl_options)
+  x <- remove_autocor(x, incl_autocor)
   bterms <- parse_bf(formula(x), family = family(x))
   subset <- subset_samples(x, subset, nsamples)
   nsamples <- nsamples(x, subset = subset)
-  newd_args <- nlist(
-    fit = x, newdata, re_formula, allow_new_levels, incl_autocor
-  )
+  newd_args <- nlist(fit = x, newdata, re_formula, allow_new_levels)
   draws <- nlist(
     f = prepare_family(x), nsamples = nsamples,
     data = do.call(amend_newdata, c(newd_args, list(...)))
@@ -86,7 +83,7 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
     draws$rescor <- do.call(as.matrix, c(am_args, pars = "^rescor_"))
     draws$Sigma <- get_cov_matrix(sd = draws$sigma, cor = draws$rescor)$cov
   }
-  if (incl_autocor && use_cov(x$autocor)) {
+  if (use_cov(x$autocor)) {
     # only include autocor samples on the top-level of draws 
     # when using the covariance formulation of ARMA structures
     draws <- c(draws, 
@@ -123,7 +120,7 @@ extract_draws.btnl <- function(x, C, nlpar = "", ...) {
 extract_draws.btl <- function(x, fit, newdata = NULL, re_formula = NULL, 
                               allow_new_levels = FALSE, 
                               sample_new_levels = FALSE,
-                              incl_autocor = TRUE, subset = NULL,
+                              incl_autocor = TRUE, subset = NULL, 
                               nlpar = "", smooths_only = FALSE, 
                               mv = FALSE, nug = NULL, ...) {
   # extract draws of all kinds of effects
@@ -137,6 +134,7 @@ extract_draws.btl <- function(x, fit, newdata = NULL, re_formula = NULL,
   #   A named list to be interpreted by linear_predictor
   dots <- list(...)
   stopifnot(is.brmsfit(fit), is.brmsformula(fit$formula))
+  fit <- remove_autocor(fit, incl_autocor)
   nlpar <- check_nlpar(nlpar)
   nsamples <- nsamples(fit, subset = subset)
   fit$formula$formula <- update(fit$formula$formula, rhs(x$formula))
@@ -156,7 +154,7 @@ extract_draws.btl <- function(x, fit, newdata = NULL, re_formula = NULL,
   usc_nlpar <- usc(usc(nlpar))
   newd_args <- nlist(
     fit, newdata, re_formula, allow_new_levels, 
-    incl_autocor, check_response = FALSE
+    check_response = FALSE
   )
   draws <- list(data = do.call(amend_newdata, newd_args), 
                 old_cat = is_old_categorical(fit))
@@ -193,7 +191,7 @@ extract_draws.btl <- function(x, fit, newdata = NULL, re_formula = NULL,
     extract_draws_re(new_ranef, args, sdata = draws$data, nlpar = nlpar,
                      sample_new_levels = sample_new_levels)
   )
-  if (incl_autocor && !use_cov(fit$autocor) && (!nzchar(nlpar) || mv)) {
+  if (!use_cov(fit$autocor) && (!nzchar(nlpar) || mv)) {
     # only include autocorrelation parameters in draws for mu
     draws <- c(draws, 
       extract_draws_autocor(fit, newdata = newdata, subset = subset)

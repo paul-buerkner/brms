@@ -231,9 +231,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   #                    or just return the updated newdata?
   # Returns:
   #   updated data.frame being compatible with formula(fit)
-  if (!incl_autocor) {
-    fit$autocor <- NULL
-  }
+  fit <- remove_autocor(fit, incl_autocor)
   if (is.null(newdata)) {
     # to shorten expressions in S3 methods such as predict.brmsfit
     if (return_standata) {
@@ -403,7 +401,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     }
     control$smooths <- make_smooth_list(bterms, model.frame(fit))
     control$gps <- make_gp_list(bterms, model.frame(fit))
-    if (is(fit$autocor, "cov_fixed")) {
+    if (is(fit$autocor, "cor_fixed")) {
       median_V <- median(diag(fit$autocor$V), na.rm = TRUE)
       fit$autocor$V <- diag(median_V, nrow(newdata))
     }
