@@ -482,17 +482,20 @@ posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,
   samples_taken <- seq(warmup + 1, iter, thin)
   
   if (length(pars)) {
-    samples <- as.data.frame(x$fit, pars = pars)
+    if (as.matrix) {
+      samples <- as.matrix(x$fit, pars = pars)
+    } else {
+      samples <- as.data.frame(x$fit, pars = pars) 
+    }
     if (add_chain) {
       # name the column 'chain' not 'chains' (#32)
-      samples$chain <- factor(rep(1:chains, each = final_iter))
-      samples$iter <- rep(samples_taken, chains)
+      samples <- cbind(samples,
+        chain = factor(rep(1:chains, each = final_iter)),
+        iter = rep(samples_taken, chains)           
+      )
     }
     if (!is.null(subset)) {
       samples <- samples[subset, , drop = FALSE]
-    }
-    if (as.matrix) {
-      samples <- as.matrix(samples)
     }
   } else {
     samples <- NULL 
