@@ -4,6 +4,7 @@
 \alias{posterior_samples.brmsfit}
 \alias{as.data.frame.brmsfit}
 \alias{as.matrix.brmsfit}
+\alias{as.array.brmsfit}
 \alias{posterior_samples}
 \alias{posterior.samples}
 \alias{posterior_samples.brmsfit}
@@ -12,11 +13,13 @@
 \usage{
 \method{posterior_samples}{brmsfit}(x, pars = NA, parameters = NA,
   exact_match = FALSE, add_chain = FALSE, add_chains = FALSE,
-  subset = NULL, as.matrix = FALSE, ...)
+  subset = NULL, as.matrix = FALSE, as.array = FALSE, ...)
 
 \method{as.data.frame}{brmsfit}(x, row.names = NULL, optional = FALSE, ...)
 
 \method{as.matrix}{brmsfit}(x, ...)
+
+\method{as.array}{brmsfit}(x, ...)
 
 posterior_samples(x, pars = NA, ...)
 }
@@ -47,22 +50,27 @@ If \code{NULL} (the default), all  posterior samples are returned.}
 \item{as.matrix}{Should the output be a \code{matrix} 
 instead of a \code{data.frame}? Defaults to \code{FALSE}.}
 
-\item{...}{For \code{as.data.frame} and \code{as.matrix}:
+\item{as.array}{Should the output be an \code{array} 
+instead of a \code{data.frame}? Defaults to \code{FALSE}.}
+
+\item{...}{For \code{as.data.frame}, \code{as.matrix}, and \code{as.array}:
 Further arguments to be passed to \code{posterior_samples}.}
 
 \item{row.names, optional}{See \code{\link[base:as.data.frame]{as.data.frame}}.}
 }
 \value{
-A data frame (or matrix) containing the posterior samples, 
-  with one column per parameter.
+A data frame (matrix or array) containing the posterior samples, 
+  with one column per parameter. In case an array is returned,
+  it contains one additional dimension for the chains.
 }
 \description{
 Extract posterior samples of specified parameters
 }
 \details{
 Currently there are methods for \code{brmsfit} objects.
-  \code{as.data.frame.brmsfit} and \code{as.matrix.brmsfit} are basically 
-  just aliases of \code{posterior_samples.brmsfit} and differ from
+  \code{as.data.frame.brmsfit}, \code{as.matrix.brmsfit}, and
+  \code{as.array.brmsfit} are basically aliases of 
+  \code{posterior_samples.brmsfit} and differ from
   each other only in type of the returend object.
 }
 \examples{

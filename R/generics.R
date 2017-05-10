@@ -185,16 +185,20 @@ hypothesis <- function(x, hypothesis, ...) {
 #'   If \code{NULL} (the default), all  posterior samples are returned.
 #' @param as.matrix Should the output be a \code{matrix} 
 #'   instead of a \code{data.frame}? Defaults to \code{FALSE}.
+#' @param as.array Should the output be an \code{array} 
+#'   instead of a \code{data.frame}? Defaults to \code{FALSE}.
 #' @param row.names,optional See \code{\link[base:as.data.frame]{as.data.frame}}.
-#' @param ... For \code{as.data.frame} and \code{as.matrix}:
+#' @param ... For \code{as.data.frame}, \code{as.matrix}, and \code{as.array}:
 #'   Further arguments to be passed to \code{posterior_samples}.
 #'   
 #' @details Currently there are methods for \code{brmsfit} objects.
-#'   \code{as.data.frame.brmsfit} and \code{as.matrix.brmsfit} are basically 
-#'   just aliases of \code{posterior_samples.brmsfit} and differ from
+#'   \code{as.data.frame.brmsfit}, \code{as.matrix.brmsfit}, and
+#'   \code{as.array.brmsfit} are basically aliases of 
+#'   \code{posterior_samples.brmsfit} and differ from
 #'   each other only in type of the returend object.
-#' @return A data frame (or matrix) containing the posterior samples, 
-#'   with one column per parameter.
+#' @return A data frame (matrix or array) containing the posterior samples, 
+#'   with one column per parameter. In case an array is returned,
+#'   it contains one additional dimension for the chains.
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 

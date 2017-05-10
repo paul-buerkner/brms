@@ -462,13 +462,18 @@ model.frame.brmsfit <- function(formula, ...) {
 #' @rdname posterior_samples
 #' @export
 posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,  
-                                      exact_match = FALSE, 
-                                      add_chain = FALSE,
-                                      add_chains = FALSE, 
-                                      subset = NULL, as.matrix = FALSE, 
+                                      exact_match = FALSE, add_chain = FALSE, 
+                                      add_chains = FALSE, subset = NULL, 
+                                      as.matrix = FALSE, as.array = FALSE,
                                       ...) {
   pars <- use_alias(pars, parameters, default = NA)
   add_chain <- use_alias(add_chain, add_chains, default = FALSE)
+  if (all(c(as.matrix, as.array))) {
+    stop2("Cannot use 'as.matrix' and 'as.array' at the same time.")
+  }
+  if (add_chain && as.array) {
+    stop2("Cannot use 'add_chain' and 'as.array' at the same time.")
+  }
   contains_samples(x)
   pars <- extract_pars(pars, all_pars = parnames(x), 
                        exact_match = exact_match, ...)
@@ -484,6 +489,8 @@ posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,
   if (length(pars)) {
     if (as.matrix) {
       samples <- as.matrix(x$fit, pars = pars)
+    } else if (as.array) {
+      samples <- as.array(x$fit, pars = pars)
     } else {
       samples <- as.data.frame(x$fit, pars = pars) 
     }
@@ -495,7 +502,11 @@ posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,
       )
     }
     if (!is.null(subset)) {
-      samples <- samples[subset, , drop = FALSE]
+      if (as.array) {
+        samples <- samples[subset, , , drop = FALSE] 
+      } else {
+        samples <- samples[subset, , drop = FALSE] 
+      }
     }
   } else {
     samples <- NULL 
@@ -514,6 +525,12 @@ as.data.frame.brmsfit <- function(x, row.names = NULL, optional = FALSE, ...) {
 #' @export
 as.matrix.brmsfit <- function(x, ...) {
   posterior_samples(x, ..., as.matrix = TRUE)
+}
+
+#' @rdname posterior_samples
+#' @export
+as.array.brmsfit <- function(x, ...) {
+  posterior_samples(x, ..., as.array = TRUE)
 }
 
 #' Extract posterior samples for use with the \pkg{coda} package

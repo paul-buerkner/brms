@@ -14,6 +14,8 @@
       fitted model objects.
       \item Allow for negative weights in 
       multi-membership grouping structures.
+      \item Introduce an \code{as.array} method
+      for \code{brmsfit} objects.
     }
   }
   \subsection{OTHER CHANGES}{
