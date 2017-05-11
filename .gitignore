@@ -4,4 +4,6 @@
 brm.stan
 tests/testthat/Rplots.pdf
 cran-comments.md
-tests/local/
+tests/local/models_0.8.0.Rda
+tests/local/models_0.10.0.Rda
+tests/local/models_1.2.0.Rda
