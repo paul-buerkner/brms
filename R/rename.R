@@ -90,7 +90,7 @@ change_effects.btl <- function(x, data, pars, dims, nlpar = "",
   change_mo <- change_mo(monef, pars, nlpar = nlpar)
   meef <- get_me_labels(x, data)
   change_me <- change_me(meef, pars, dims = dims, nlpar = nlpar)
-  gpef <- get_gp_labels(x, covars = TRUE)
+  gpef <- get_gp_labels(x, data = data, covars = TRUE)
   change_gp <- change_gp(gpef, pars, dims = dims, nlpar = nlpar)
   c(change_fe, change_sm, change_cs, change_mo, change_me, change_gp)
 }
@@ -239,38 +239,43 @@ change_me <- function(meef, pars, dims, nlpar = "") {
 
 change_gp <- function(gpef, pars, dims, nlpar = "") {
   change <- list()
-  if (length(gpef)) {
-    p <- usc(nlpar, "prefix")
+  p <- usc(nlpar, "prefix")
+  for (i in seq_along(gpef)) {
     # rename GP hyperparameters
+    by_levels = attr(gpef, "by_levels")[[i]]
+    gp_names <- paste0(gpef[i], usc(by_levels))
     sdgp <- paste0("sdgp", p)
-    pos_sdgp <- grepl(paste0("^", sdgp, "\\["), pars)
-    sdgp_names <- paste0(sdgp, "_", gpef)
+    sdgp_old <- paste0(sdgp, "_", i)
+    sdgp_pos <- grepl(paste0("^", sdgp_old, "\\["), pars)
+    sdgp_names <- paste0(sdgp, "_", gp_names)
     lscale <- paste0("lscale", p)
-    pos_lscale <- grepl(paste0("^", lscale, "\\["), pars)
-    lscale_names <- paste0(lscale, "_", gpef)
+    lscale_old <- paste0(lscale, "_", i)
+    lscale_pos <- grepl(paste0("^", lscale_old, "\\["), pars)
+    lscale_names <- paste0(lscale, "_", gp_names)
     change <- lc(change, 
-      nlist(pos = pos_sdgp, oldname = sdgp, 
+      nlist(pos = sdgp_pos, oldname = sdgp_old, 
             pnames = sdgp_names, fnames = sdgp_names),
-      nlist(pos = pos_lscale, oldname = lscale, 
+      nlist(pos = lscale_pos, oldname = lscale_old, 
             pnames = lscale_names, fnames = lscale_names)
     )
     change <- c(change,
-      change_prior(class = sdgp, pars = pars, names = gpef),
-      change_prior(class = lscale, pars = pars, names = gpef)
+      change_prior(class = sdgp_old, pars = pars, 
+                   names = gpef[i], new_class = sdgp),
+      change_prior(class = lscale_old, pars = pars, 
+                   names = gpef[i], new_class = lscale)
     )
-    if (any(grepl("^zgp", pars))) {
+    zgp <- paste0("zgp", p)
+    zgp_old <- paste0(zgp, "_", i)
+    zgp_pos <- grepl(paste0("^", zgp_old, "\\["), pars)
+    if (any(zgp_pos)) {
       # users may choose not to save zgp
-      for (i in seq_along(gpef)) {
-        zgp <- paste0("zgp", p, "_", i)
-        pos <- grepl(paste0("^", zgp, "\\["), pars)
-        zgp_new <- paste0("zgp", p, "_", gpef[i])
-        fnames <- paste0(zgp_new, "[", seq_len(sum(pos)), "]")
-        change_zgp <- nlist(
-          pos, oldname = zgp, pnames = zgp_new, 
-          fnames = fnames, dims = dims[[zgp]]
-        )
-        change <- lc(change, change_zgp)
-      }
+      zgp_new <- paste0(zgp, "_", gpef[i])
+      fnames <- paste0(zgp_new, "[", seq_len(sum(zgp_pos)), "]")
+      change_zgp <- nlist(
+        pos = zgp_pos, oldname = zgp_old, pnames = zgp_new, 
+        fnames = fnames, dims = dims[[zgp]]
+      )
+      change <- lc(change, change_zgp)
     }
   }
   change

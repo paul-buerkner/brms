@@ -376,9 +376,10 @@ parse_sm <- function(formula) {
     covars <- byvars <- NULL
     allvars <- ~ 1
   }
-  structure(sm_terms, pos = pos_sm_terms, 
-            covars = covars, byvars = byvars,  
-            allvars = allvars)
+  structure_not_null(
+    sm_terms, pos = pos_sm_terms, covars = covars, 
+    byvars = byvars, allvars = allvars
+  )
 }
 
 parse_me <- function(formula) {
@@ -409,18 +410,22 @@ parse_gp <- function(formula) {
   gp_terms <- all_terms[pos_gp_terms]
   if (length(gp_terms)) {
     eterms <- lapply(gp_terms, eval2)
-    allvars <- str2formula(ulapply(eterms, "[[", "term"))
+    covars <- lapply(eterms, "[[", "term")
+    byvars <- lapply(eterms, "[[", "by")
+    allvars <- str2formula(unlist(c(covars, byvars)))
     allvars <- str2formula(all.vars(allvars))
     if (!length(all.vars(allvars))) {
       stop2("No variable supplied to function 'gp'.")
     }
     gp_terms <- str2formula(gp_terms)
-    attr(gp_terms, "rsv_intercept") <- TRUE
   } else {
+    byvars <- NULL
     allvars <- ~ 1
   }
-  structure(gp_terms, pos = pos_gp_terms,
-            allvars = allvars)
+  structure_not_null(
+    gp_terms, pos = pos_gp_terms, 
+    byvars = byvars, allvars = allvars
+  )
 }
 
 parse_offset <- function(formula) {
@@ -1075,7 +1080,7 @@ get_me_labels <- function(x, data) {
   structure(colnames(mm), not_one = not_one, uni_me = uni_me)
 }
 
-get_gp_labels <- function(x, covars = FALSE) {
+get_gp_labels <- function(x, data = NULL, covars = FALSE) {
   # get labels of gaussian process terms
   # Args:
   #   x: either a formula or a list containing an element "gp"
@@ -1090,19 +1095,33 @@ get_gp_labels <- function(x, covars = FALSE) {
   if (!is.formula(gp_form)) {
     return(character(0))
   }
+  byvars = attr(gp_form, "byvars")
   gp_terms <- all_terms(gp_form)
+  by_levels <- named_list(gp_terms)
   out <- rep(NA, length(gp_terms))
   for (i in seq_along(gp_terms)) {
     gp <- eval2(gp_terms[i])
     if (covars) {
       out[i] <- paste0("gp", collapse(gp$term))
-      # for future compatibility with the 'by' argument
-      out[i] <- paste0(rename(out[i]), "_1")
+      if (gp$by != "NA") {
+        out[i] <- paste0(out[i], gp$by)
+      }
     } else {
       out[i] <- gp$label
     }
+    if (!is.null(data)) {
+      if (gp$by != "NA") {
+        Cgp <- get(gp$by, data)
+        if (!is.numeric(Cgp)) {
+          by_levels[[i]] <- levels(factor(Cgp))
+        }
+      }
+    }
   }
-  out
+  if (covars) {
+    out <- rename(out)
+  }
+  structure_not_null(out, byvars = byvars, by_levels = by_levels)
 }
 
 all_terms <- function(formula) {

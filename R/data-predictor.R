@@ -343,12 +343,11 @@ data_gp <- function(bterms, data, nlpar = "", gps = NULL) {
   gpef <- get_gp_labels(bterms)
   if (length(gpef)) {
     p <- usc(nlpar, "prefix")
-    out[[paste0("Kgp", p)]] <- length(gpef)
-    out[[paste0("Mgp", p)]] <- as.array(rep(NA, length(gpef)))
     for (i in seq_along(gpef)) {
+      pi <- paste0(p, "_", i)
       gp <- eval2(gpef[i])
       Xgp <- lapply(gp$term, eval2, data)
-      out[[paste0("Mgp", p)]][[i]] <- length(Xgp)
+      out[[paste0("Mgp", pi)]] <- length(Xgp)
       invalid <- ulapply(Xgp, function(x)
         !is.numeric(x) || isTRUE(length(dim(x)) > 1L)
       )
@@ -366,7 +365,22 @@ data_gp <- function(bterms, data, nlpar = "", gps = NULL) {
           Xgp <- Xgp / dmax
         }
       }
-      out[[paste0("Xgp", p, "_", i)]] <- Xgp
+      out[[paste0("Xgp", pi)]] <- Xgp
+      out[[paste0("Kgp", pi)]] <- 1L
+      if (gp$by != "NA") {
+        Cgp <- get(gp$by, data)
+        if (is.numeric(Cgp)) {
+          out[[paste0("Cgp", pi)]] <- Cgp
+        } else {
+          Cgp <- factor(Cgp)
+          lCgp <- levels(Cgp)
+          Jgp <- lapply(lCgp, function(x) which(Cgp == x))
+          out[[paste0("Kgp", pi)]] <- length(Jgp)
+          out[[paste0("Igp", pi)]] <- lengths(Jgp)
+          Jgp_names <- paste0("Jgp", pi, "_", seq_along(Jgp))
+          out <- c(out, setNames(Jgp, Jgp_names))
+        }
+      }
     }
   }
   out

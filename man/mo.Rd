@@ -10,8 +10,8 @@ mo(expr)
 }
 \arguments{
 \item{expr}{Expression containing predictors,
-for which monotonic effects should
-be estimated. For evaluation, \R formula syntax is applied.}
+for which monotonic effects should be estimated. 
+For evaluation, \R formula syntax is applied.}
 }
 \description{
 Monotonic Predictors in \pkg{brms} Models

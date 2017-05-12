@@ -998,21 +998,30 @@ test_that("sparse matrix multiplication is applied correctly", {
 })
 
 test_that("stan code for Gaussian processes is correct", {
-  dat <- data.frame(y = rnorm(30), x1 = rnorm(30), x2 = rnorm(30))
+  dat <- data.frame(y = rnorm(30), x1 = rnorm(30), x2 = rnorm(30),
+                    z = factor(rep(4:6, each = 10)))
   
   prior <- c(prior(normal(0, 10), lscale),
              prior(gamma(0.1, 0.1), sdgp))
-  scode <- make_stancode(y ~ gp(x1) + gp(x2), dat, prior = prior)
-  expect_match2(scode, "lscale ~ normal(0, 10);")
-  expect_match2(scode, "sdgp ~ gamma(0.1, 0.1);")
-  expect_match2(scode, "gp(Xgp_2, sdgp[2], lscale[2], zgp_2)")
+  scode <- make_stancode(y ~ gp(x1) + gp(x2, by = x1), dat, prior = prior)
+  expect_match2(scode, "lscale_1 ~ normal(0, 10);")
+  expect_match2(scode, "sdgp_1 ~ gamma(0.1, 0.1);")
+  expect_match2(scode, "Cgp_2 .* gp(Xgp_2, sdgp_2[1], lscale_2[1], zgp_2)")
+  
+  # Suppress Stan parser warnings that can currently not be avoided
+  scode <- SW(make_stancode(y ~ gp(x1, x2) + gp(x1, by = z), dat))
+  expect_match2(scode, "gp(Xgp_1, sdgp_1[1], lscale_1[1], zgp_1)")
+  expect_match2(scode, paste0(
+    "mu[Jgp_2_2] = mu[Jgp_2_2] + gp(Xgp_2[Jgp_2_2], ", 
+    "sdgp_2[2], lscale_2[2], zgp_2[Jgp_2_2]);"
+  ))
   
   prior <- c(prior(normal(0, 10), lscale, nlpar = eta),
              prior(gamma(0.1, 0.1), sdgp, nlpar = eta),
              prior(normal(0, 1), b, nlpar = eta))
   scode <- make_stancode(bf(y ~ eta, eta ~ gp(x1), nl = TRUE), 
                          data = dat, prior = prior)
-  expect_match2(scode, "lscale_eta ~ normal(0, 10);")
-  expect_match2(scode, "sdgp_eta ~ gamma(0.1, 0.1);")
-  expect_match2(scode, "gp(Xgp_eta_1, sdgp_eta[1], lscale_eta[1], zgp_eta_1)")
+  expect_match2(scode, "lscale_eta_1 ~ normal(0, 10);")
+  expect_match2(scode, "sdgp_eta_1 ~ gamma(0.1, 0.1);")
+  expect_match2(scode, "gp(Xgp_eta_1, sdgp_eta_1[1], lscale_eta_1[1], zgp_eta_1)")
 })

@@ -18,6 +18,21 @@ p <- function(x, i = NULL, row = TRUE) {
   }
 }
 
+select_indices <- function(x, i) {
+  # select indices and restart indexing at 1
+  # Args:
+  #   x: list of index vectors
+  #   i: vector of indices to select
+  if (!is.null(i)) {
+    x <- as.list(x)
+    si <- sort(i)
+    for (j in seq_along(x)) {
+      x[[j]] <- match(intersect(i, x[[j]]), si)
+    }
+  }
+  x
+}
+
 isNULL <- function(x) {
   # check if an object is NULL
   is.null(x) || ifelse(is.vector(x), all(sapply(x, is.null)), FALSE)

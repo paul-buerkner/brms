@@ -264,8 +264,8 @@ me <- function(x, sdx = NULL) {
 #' @aliases cse
 #' 
 #' @param expr Expression containing predictors,
-#'  for which category specific effects should
-#'  be estimated. For evaluation, \R formula syntax is applied.
+#'  for which category specific effects should be estimated. 
+#'  For evaluation, \R formula syntax is applied.
 #'  
 #' @details For detailed documentation see \code{help(brmsformula)}
 #'   as well as \code{vignette("brms_overview")}.
@@ -300,8 +300,8 @@ cse <- function(expr) {
 #' @aliases mono monotonic
 #' 
 #' @param expr Expression containing predictors,
-#'  for which monotonic effects should
-#'  be estimated. For evaluation, \R formula syntax is applied.
+#'  for which monotonic effects should be estimated. 
+#'  For evaluation, \R formula syntax is applied.
 #'  
 #' @details For detailed documentation see \code{help(brmsformula)}
 #'   as well as \code{vignette("brms_monotonic")}.
@@ -354,6 +354,12 @@ monotonic <- function(expr) {
 #' it exists purely to help set up a model with Gaussian process terms.
 #' 
 #' @param ... One or more predictors for the Gaussian process.
+#' @param by A numeric or factor variable of the same length as 
+#'   each predictor. In the numeric vector case the elements multiply 
+#'   the values returned by the Gaussian process. In the factor variable 
+#'   case, a replicate of the Gaussian process is produced for each factor 
+#'   level so that separate Gaussian processes for different groups are 
+#'   fitted within the same model.
 #' @param cov Name of the covariance kernel. By default, 
 #'   the exponentiated-quadratic kernel \code{"exp_quad"} is used.
 #' @param scale Logical; If \code{TRUE} (the default), predictors are
@@ -391,7 +397,10 @@ monotonic <- function(expr) {
 #'  }
 #'
 #'  In the current implementation, \code{"exp_quad"} is the only supported 
-#'  covariance kernel. More options will follow in the future.  
+#'  covariance kernel. More options will follow in the future.
+#'  
+#'  When \code{by} is a factor variable, the \pkg{Stan} parser may return
+#'  a couple of warnings, which may savely be ignored.
 #'  
 #' @return An object of class \code{'gpterm'}, which is a list 
 #'   of arguments to be interpreted by the formula 
@@ -422,20 +431,29 @@ monotonic <- function(expr) {
 #' 
 #' # compare model fit
 #' LOO(fit1, fit2, fit3)
+#' 
+#' # simulate data with a factor covariate
+#' dat2 <- mgcv::gamSim(4, n = 90, scale = 2)
+#' 
+#' # fit separate gaussian processes for different levels of 'fac'
+#' fit4 <- brm(y ~ gp(x2, by = fac), dat2, chains = 2)
+#' summary(fit4)
+#' plot(marginal_effects(fit4), points = TRUE)
 #' }
 #' 
 #' @seealso \code{\link[brms:brmsformula]{brmsformula}}
 #' @export
-gp <- function(..., cov = "exp_quad", scale = TRUE) {
-  cov <- match.arg(cov)
+gp <- function(..., by = NA, cov = "exp_quad", scale = TRUE) {
+  cov <- match.arg(cov, choices = c("exp_quad"))
   label <- deparse(match.call())
   vars <- as.list(substitute(list(...)))[-1]
+  by <- deparse(substitute(by)) 
   scale <- as.logical(scale)
   if (anyNA(scale) || length(scale) != 1L) {
     stop2("'scale' should be either TRUE or FALSE.")
   }
   term <- ulapply(vars, deparse, backtick = TRUE, width.cutoff = 500)
-  structure(nlist(term, label, cov, scale), class = "gpterm")
+  structure(nlist(term, label, by, cov, scale), class = "gpterm")
 }
 
 #' Set up basic grouping terms in \pkg{brms}

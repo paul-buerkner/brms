@@ -4,10 +4,17 @@
 \alias{gp}
 \title{Set up Gaussian process terms in \pkg{brms}}
 \usage{
-gp(..., cov = "exp_quad", scale = TRUE)
+gp(..., by = NA, cov = "exp_quad", scale = TRUE)
 }
 \arguments{
 \item{...}{One or more predictors for the Gaussian process.}
+
+\item{by}{A numeric or factor variable of the same length as 
+each predictor. In the numeric vector case the elements multiply 
+the values returned by the Gaussian process. In the factor variable 
+case, a replicate of the Gaussian process is produced for each factor 
+level so that separate Gaussian processes for different groups are 
+fitted within the same model.}
 
 \item{cov}{Name of the covariance kernel. By default, 
 the exponentiated-quadratic kernel \code{"exp_quad"} is used.}
@@ -59,6 +66,9 @@ A Gaussian process is a stochastic process, whichs
 
  In the current implementation, \code{"exp_quad"} is the only supported 
  covariance kernel. More options will follow in the future.
+ 
+ When \code{by} is a factor variable, the \pkg{Stan} parser may return
+ a couple of warnings, which may savely be ignored.
 }
 \examples{
 \dontrun{
@@ -85,6 +95,14 @@ plot(me3, ask = FALSE, points = TRUE)
 
 # compare model fit
 LOO(fit1, fit2, fit3)
+
+# simulate data with a factor covariate
+dat2 <- mgcv::gamSim(4, n = 90, scale = 2)
+
+# fit separate gaussian processes for different levels of 'fac'
+fit4 <- brm(y ~ gp(x2, by = fac), dat2, chains = 2)
+summary(fit4)
+plot(marginal_effects(fit4), points = TRUE)
 }
 
 }

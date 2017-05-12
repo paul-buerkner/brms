@@ -174,7 +174,7 @@ extract_draws.btl <- function(x, fit, newdata = NULL, re_formula = NULL,
   csef <- colnames(draws$data[["Xcs"]])
   meef <- get_me_labels(bterms$auxpars$mu, fit$data)
   smooths <- get_sm_labels(bterms$auxpars$mu, fit$data, covars = TRUE)
-  gpef <- get_gp_labels(bterms$auxpars$mu, covars = TRUE)
+  gpef <- get_gp_labels(bterms$auxpars$mu, fit$data, covars = TRUE)
   sdata_old <- NULL
   if (length(gpef) && new) {
     oldd_args <- newd_args[!names(newd_args) %in% "newdata"]
@@ -399,22 +399,30 @@ extract_draws_gp <- function(gpef, args, sdata, sdata_old = NULL,
     }
     for (i in seq_along(gpef)) {
       gp <- list()
-      sdgp <- paste0("^sdgp_", nlpar_usc, gpef[i])
+      by_levels <- attr(gpef, "by_levels")[[i]]
+      gp_names <- paste0(gpef[i], usc(by_levels))
+      sdgp <- paste0("^sdgp_", nlpar_usc, gp_names)
       gp[["sdgp"]] <- do.call(as.matrix, c(args, list(pars = sdgp)))
-      lscale <- paste0("^lscale_", nlpar_usc, gpef[i])
+      lscale <- paste0("^lscale_", nlpar_usc, gp_names)
       gp[["lscale"]] <- do.call(as.matrix, c(args, list(pars = lscale)))
       zgp <- paste0("^zgp_", nlpar_usc, gpef[i], "\\[")
       gp[["zgp"]] <- do.call(as.matrix, c(args, list(pars = zgp)))
+      gp[["bynum"]] <- sdata[[paste0("Cgp_", i)]]
+      Jgp_pos <- grepl(paste0("^Jgp_", i), names(sdata))
       if (new) {
         gp[["x"]] <- sdata_old[[paste0("Xgp_", i)]]
         gp[["x_new"]] <- sdata[[paste0("Xgp_", i)]]
+        gp[["Jgp"]] <- sdata_old[Jgp_pos]
+        gp[["Jgp_new"]] <- sdata[Jgp_pos]
         # computing GPs for new data requires the old GP terms
         gp[["yL"]] <- gp_predictor(
           x = gp[["x"]], sdgp = gp[["sdgp"]],
-          lscale = gp[["lscale"]], zgp = gp[["zgp"]]
+          lscale = gp[["lscale"]], zgp = gp[["zgp"]], 
+          Jgp = gp[["Jgp"]]
         )
       } else {
         gp[["x"]] <- sdata[[paste0("Xgp_", i)]]
+        gp[["Jgp"]] <- sdata[Jgp_pos]
       }
       gp[["nug"]] <- nug
       draws[["gp"]][[i]] <- gp
