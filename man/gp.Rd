@@ -10,11 +10,9 @@ gp(..., by = NA, cov = "exp_quad", scale = TRUE)
 \item{...}{One or more predictors for the Gaussian process.}
 
 \item{by}{A numeric or factor variable of the same length as 
-each predictor. In the numeric vector case the elements multiply 
+each predictor. In the numeric vector case, the elements multiply 
 the values returned by the Gaussian process. In the factor variable 
-case, a replicate of the Gaussian process is produced for each factor 
-level so that separate Gaussian processes for different groups are 
-fitted within the same model.}
+case, a separate Gaussian process is fitted for each factor level.}
 
 \item{cov}{Name of the covariance kernel. By default, 
 the exponentiated-quadratic kernel \code{"exp_quad"} is used.}

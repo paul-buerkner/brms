@@ -733,7 +733,7 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE,
   
   pars <- parnames(object)
   meta_pars <- object$fit@sim$pars_oi
-  meta_pars <- meta_pars[!grepl("^(r|s|Xme|prior)_", meta_pars)]
+  meta_pars <- meta_pars[!grepl("^(r|s|zgp|Xme|prior|lp)_", meta_pars)]
   fit_summary <- summary(object$fit, pars = meta_pars,
                          probs = c(0.025, 0.975),
                          use_cache = use_cache)$summary

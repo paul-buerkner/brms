@@ -104,6 +104,13 @@
 #'   For more details on this model class see \code{\link[mgcv:gam]{gam}} 
 #'   and \code{\link[mgcv:gamm]{gamm}}.
 #'   
+#'   Gaussian process terms can be fitted using the \code{\link[brms:gp]{gp}}
+#'   function in the \code{pterms} part of the model formula. Similar to
+#'   smooth terms, Gaussian processes can be used to model complex non-linear
+#'   relationsships, for instance temporal or spatial autocorrelation. 
+#'   However, they are computationally demanding and are thus not recommended 
+#'   for very large datasets.
+#'   
 #'   The \code{pterms} and \code{gterms} parts may contain three non-standard
 #'   effect types namely monotonic, measurement error, and category specific effects,
 #'   which can be specified using terms of the form \code{mo(<predictors>)},

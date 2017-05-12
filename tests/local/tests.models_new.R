@@ -429,3 +429,42 @@ expect_ggplot(pp_check(fit3))
 loo3 <- LOO(fit3, pointwise = TRUE)
 expect_range(loo3$looic, loo1$looic - 20, loo1$looic + 20)
 expect_equal(dim(pp_mixture(fit3)), c(nobs(fit3), 4, 3))
+
+
+## Gaussian processes
+dat <- mgcv::gamSim(1, n = 30, scale = 2)
+fit1 <- brm(y ~ gp(x0) + x1 + gp(x2) + x3, dat, 
+            chains = 2, cores = 2)
+print(fit1)
+expect_ggplot(pp_check(fit1))
+me = marginal_effects(fit1, nsamples = 200, nug = 1e-07)
+expect_ggplot(plot(me, ask = FALSE)[[3]])
+expect_range(WAIC(fit1)$waic, 100, 200)
+
+# multivariate GP
+fit2 <- brm(y ~ gp(x1, x2), dat, chains = 2, cores = 2)
+print(fit2)
+expect_ggplot(pp_check(fit2))
+me = marginal_effects(
+  fit2, nsamples = 200, nug = 1e-07,
+  surface = TRUE, resolution = 10
+)
+expect_ggplot(plot(me, ask = FALSE)[[1]])
+expect_range(WAIC(fit2)$waic, 100, 200)
+
+# continuous 'by' variable
+fit3 <- brm(y ~ gp(x1, by = x2), dat, chains = 2)
+print(fit3)
+expect_ggplot(pp_check(fit3))
+me = marginal_effects(fit3, nsamples = 200, nug = 1e-07)
+expect_ggplot(plot(me, ask = FALSE)[[1]])
+expect_range(WAIC(fit3)$waic, 100, 200)
+
+# factor 'by' variable
+dat2 <- mgcv::gamSim(4, n = 100, scale = 2)
+fit4 <- brm(y ~ gp(x2, by = fac), dat2, chains = 2, cores = 2)
+print(fit4)
+expect_ggplot(pp_check(fit4))
+me = marginal_effects(fit4, nsamples = 200, nug = 1e-07)
+expect_ggplot(plot(me, ask = FALSE)[[1]])
+expect_range(WAIC(fit4)$waic, 400, 600)
