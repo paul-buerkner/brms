@@ -829,7 +829,8 @@ allvars_formula <- function(lformula) {
   # Args:
   #   lformula: list of formulas or character strings
   out <- collapse(ulapply(rmNULL(lformula), plus_rhs))
-  str2formula(c(out, all.vars(parse(text = out)))) 
+  out <- str2formula(c(out, all.vars(parse(text = out))))
+  update(out, ~ .)
 }
 
 plus_rhs <- function(x) {

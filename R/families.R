@@ -594,13 +594,10 @@ check_family <- function(family, link = NULL) {
 #' has to be specified by the user. It is not yet possible to estimate 
 #' the number of mixture components from the data.
 #' 
-#' For some mixture models, you may want to specify priors on the population-level
+#' For most mixture models, you may want to specify priors on the population-level
 #' intercepts via \code{\link[brms:set_prior]{set_prior}} to improve convergence. 
-#' If you do, you will notice some parser warnings starting with 
-#' "Left-hand side of sampling statement (~) may contain a non-linear transform ...". 
-#' These warnings can be safely ignored. In addition, it is sometimes necessary to 
-#' set \code{inits = 0} in the call to \code{\link[brms:brms]{brm}} to allow chains
-#' to initialize properly.
+#' In addition, it is sometimes necessary to set \code{inits = 0} in the call to 
+#' \code{\link[brms:brms]{brm}} to allow chains to initialize properly.
 #' 
 #' For more details on the specification of mixture
 #' models, see \code{\link[brms:brmsformula]{brmsformula}}.

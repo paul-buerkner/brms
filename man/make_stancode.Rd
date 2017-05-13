@@ -7,7 +7,7 @@
 make_stancode(formula, data, family = gaussian(), prior = NULL,
   autocor = NULL, nonlinear = NULL, threshold = c("flexible",
   "equidistant"), sparse = FALSE, cov_ranef = NULL, sample_prior = FALSE,
-  stan_funs = NULL, save_model = NULL, ...)
+  stan_funs = NULL, save_model = NULL, silent = FALSE, ...)
 }
 \arguments{
 \item{formula}{An object of class 
@@ -96,6 +96,9 @@ In the latter case, the model code is
 saved in a file named after the string supplied in \code{save_model}, 
 which may also contain the full path where to save the file.
 If only a name is given, the file is saved in the current working directory.}
+
+\item{silent}{logical; If \code{TRUE}, warnings of
+the Stan parser will be suppressed.}
 
 \item{...}{Other arguments for internal usage only}
 }

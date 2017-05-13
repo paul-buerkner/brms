@@ -1009,7 +1009,8 @@ test_that("stan code for Gaussian processes is correct", {
   expect_match2(scode, "Cgp_2 .* gp(Xgp_2, sdgp_2[1], lscale_2[1], zgp_2)")
   
   # Suppress Stan parser warnings that can currently not be avoided
-  scode <- SW(make_stancode(y ~ gp(x1, x2) + gp(x1, by = z), dat))
+  scode <- make_stancode(y ~ gp(x1, x2) + gp(x1, by = z), 
+                         dat, silent = TRUE)
   expect_match2(scode, "gp(Xgp_1, sdgp_1[1], lscale_1[1], zgp_1)")
   expect_match2(scode, paste0(
     "mu[Jgp_2_2] = mu[Jgp_2_2] + gp(Xgp_2[Jgp_2_2], ", 

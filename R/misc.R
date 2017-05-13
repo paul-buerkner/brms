@@ -266,6 +266,22 @@ eval2 <- function(text, ...) {
   eval(parse(text = text), ...)
 }
 
+eval_silent <- function(expr, type = "output", silent = TRUE, ...) {
+  # evaluate an expression without printing output or messages
+  # Args:
+  #   expr: expression to be evaluated
+  #   type: type of output to be suppressed (see ?sink)
+  #   silent: actually evaluate silently?
+  expr <- substitute(expr)
+  envir <- parent.frame()
+  if (silent) {
+    utils::capture.output(out <- eval(expr, envir), type = type, ...)
+  } else {
+    out <- eval(expr, envir)
+  }
+  out
+}
+
 eval_smooth <- function(x) {
   eval2(paste0("mgcv::", x))
 }

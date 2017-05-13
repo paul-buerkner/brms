@@ -397,9 +397,6 @@ monotonic <- function(expr) {
 #'  In the current implementation, \code{"exp_quad"} is the only supported 
 #'  covariance kernel. More options will follow in the future.
 #'  
-#'  When \code{by} is a factor variable, the \pkg{Stan} parser may return
-#'  a couple of warnings, which may savely be ignored.
-#'  
 #' @return An object of class \code{'gpterm'}, which is a list 
 #'   of arguments to be interpreted by the formula 
 #'   parsing functions of \code{brms}.

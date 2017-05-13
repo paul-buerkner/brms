@@ -3,6 +3,8 @@
 #' Generate Stan code for \pkg{brms} models
 #' 
 #' @inheritParams brm
+#' @param silent logical; If \code{TRUE}, warnings of
+#'   the Stan parser will be suppressed.
 #' @param ... Other arguments for internal usage only
 #' 
 #' @return A character string containing the fully commented \pkg{Stan} code 
@@ -22,7 +24,7 @@ make_stancode <- function(formula, data, family = gaussian(),
                           threshold = c("flexible", "equidistant"),
                           sparse = FALSE,  cov_ranef = NULL, 
                           sample_prior = FALSE, stan_funs = NULL, 
-                          save_model = NULL, ...) {
+                          save_model = NULL, silent = FALSE, ...) {
   dots <- list(...)
   # use deprecated arguments if specified
   cov_ranef <- use_alias(cov_ranef, dots$cov.ranef)
@@ -293,8 +295,12 @@ make_stancode <- function(formula, data, family = gaussian(),
     temp_file <- tempfile(fileext = ".stan")
     cat(complete_model, file = temp_file) 
     isystem <- system.file("chunks", package = "brms")
-    complete_model <- rstan::stanc_builder(
-      file = temp_file, isystem = isystem, obfuscate_model_name = TRUE
+    complete_model <- eval_silent(
+      rstan::stanc_builder(
+        file = temp_file, isystem = isystem, 
+        obfuscate_model_name = TRUE
+      ),
+      type = "message"
     )
     complete_model$model_name <- name_model(family)
     class(complete_model$model_code) <- c("character", "brmsmodel")
