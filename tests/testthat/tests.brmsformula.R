@@ -10,8 +10,8 @@ test_that("brmsformula validates formulas of non-linear parameters", {
 test_that("brmsformula validates formulas of auxiliary parameters", {
   expect_error(bf(y ~ a, ~ 1, sigma ~ 1),
                "Additional formulas must be named")
-  expect_error(bf(y ~ a^x, a ~ 1),
-               "The following parameter names are invalid: 'a'")
+  expect_error(bf(y ~ a^x, a ~ 1, family = gaussian()),
+               "The parameter 'a' is not an auxiliary parameter")
 })
 
 test_that("brmsformula does not change a 'brmsformula' object", {

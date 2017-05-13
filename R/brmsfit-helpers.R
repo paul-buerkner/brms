@@ -74,10 +74,9 @@ restructure <- function(x, rstr_summary = FALSE) {
   version <- x$version$brms
   if (version < utils::packageVersion("brms")) {
     # element 'nonlinear' deprecated as of brms > 0.9.1
-    # element 'partial' deprecated as of brms > 0.8.0
     x$formula <- SW(amend_formula(
-      formula(x), data = model.frame(x), family = family(x), 
-      partial = x$partial, nonlinear = x$nonlinear
+      formula(x), data = model.frame(x), 
+      family = family(x), nonlinear = x$nonlinear
     ))
     x$nonlinear <- x$partial <- NULL
     x$formula[["old_mv"]] <- is_old_mv(x)

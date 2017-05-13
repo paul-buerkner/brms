@@ -562,14 +562,6 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
     fix_theta <- lapply(fix_theta, "/", sum_theta)
     fix[names(fix_theta)] <- fix_theta
   }
-  if (!isTRUE(nl)) {
-    inv_names <- !is_auxpar_name(names(forms))
-    if (any(inv_names)) {
-      inv_names <- collapse_comma(names(forms)[inv_names])
-      stop2("The following parameter names are invalid: ", inv_names,
-            "\nSet 'nl = TRUE' if you want to specify non-linear models.")
-    }
-  }
   out$pforms[names(forms)] <- forms
   out$pfix[names(fix)] <- fix
   for (ap in names(out$pfix)) {
@@ -604,9 +596,28 @@ brmsformula <- function(formula, ..., flist = NULL, family = NULL,
   if (!is.null(family)) {
     out[["family"]] <- check_family(family)
   }
+  if (!is.null(out[["family"]])) {
+    # check for the presence of non-linear parameters
+    auxpars <- is_auxpar_name(names(out$pforms), out$family)
+    auxpars <- names(out$pforms)[auxpars]
+    for (ap in names(out$pforms)) {
+      if (!ap %in% auxpars) {
+        if (!isTRUE(out$nl)) {
+          stop2("The parameter '", ap, "' is not an auxiliary parameter.\n",
+                "Set 'nl = TRUE' if you want to specify non-linear models.")
+        }
+        # indicate the correspondence to an auxiliary parameter 
+        if (is.null(attr(out$pforms[[ap]], "auxpar"))) {
+          attr(out$pforms[[ap]], "auxpar") <- "mu"
+        }
+      }
+    }
+  }
   # add default values for unspecified elements
-  defs <- list(pforms = list(), pfix = list(), family = NULL, 
-               nl = FALSE, response = NULL, old_mv = FALSE)
+  defs <- list(
+    pforms = list(), pfix = list(), family = NULL, 
+    nl = FALSE, response = NULL, old_mv = FALSE
+  )
   defs <- defs[setdiff(names(defs), names(rmNULL(out, FALSE)))]
   out[names(defs)] <- defs
   class(out) <- "brmsformula"
@@ -780,7 +791,7 @@ pfix <- function(x, ...) {
 }
 
 amend_formula <- function(formula, data = NULL, family = gaussian(),
-                          nonlinear = NULL, partial = NULL) {
+                          nonlinear = NULL) {
   # incorporate additional arguments into formula
   # Args:
   #   formula: object of class 'formula' of 'brmsformula'
@@ -790,23 +801,13 @@ amend_formula <- function(formula, data = NULL, family = gaussian(),
   # Returns:
   #   a brmsformula object compatible with the current version of brms
   out <- bf(formula, nonlinear = nonlinear)
-  fnew <- ". ~ ."
-  if (!is.null(partial)) {
-    warning2("Argument 'partial' is deprecated. Please use the 'cs' ", 
-             "function inside the model formula instead.")
-    partial <- formula2str(partial, rm = 1)
-    fnew <- paste(fnew, "+ cs(", partial, ")")
+  if (is.null(out$family)) {
+    out <- bf(out, family = family)
   }
   # to allow the '.' symbol in formula
   try_terms <- try(terms(out$formula, data = data), silent = TRUE)
   if (!is(try_terms, "try-error")) {
     out$formula <- formula(try_terms)
-  }
-  if (fnew != ". ~ .") {
-    out$formula <- update.formula(out$formula, formula(fnew))
-  }
-  if (is.null(out$family)) {
-    out$family <- check_family(family)
   }
   if (is_ordinal(out$family)) {
     # fix discrimination to 1 by default

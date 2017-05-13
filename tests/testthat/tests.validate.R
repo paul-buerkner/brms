@@ -33,11 +33,6 @@ test_that("parse_bf correctly check fixed auxiliary parameters", {
   expect_error(parse_bf(bform), "Parameter 'quantile' must be between 0 and 1")
 })
 
-test_that("(deprecated) amend_formula returns correct formulas", {
-  expect_warning(uf <- brms:::amend_formula(y ~ x, partial = ~ a + I(a^2)))
-  expect_equal(uf$formula, y ~ x + cs(a + I(a^2)))
-})
-
 test_that("check_re_formula returns correct REs", {
   old_form <- y ~ x + (1|patient) + (Trt_c|visit)
   form <- check_re_formula(~ (1 | visit), old_form)

@@ -86,6 +86,7 @@ parse_bf <- function(formula, family = NULL, autocor = NULL,
   }
   auxpars <- is_auxpar_name(names(x$pforms), family, bterms = y)
   auxpars <- names(x$pforms)[auxpars]
+  # amend when generalizing non-linear models to auxiliary parameters
   nlpars <- setdiff(names(x$pforms), auxpars)
   if (isTRUE(x[["nl"]])) {
     if (is.mixfamily(family) || is_ordinal(family) || is_categorical(family)) {
@@ -96,9 +97,7 @@ parse_bf <- function(formula, family = NULL, autocor = NULL,
     auxpars <- setdiff(auxpars, "mu")
   } else {
     if (length(nlpars)) {
-      nlpars <- collapse_comma(nlpars)
-      stop2("Prediction of parameter(s) ", nlpars,
-            " is not allowed for this model.")
+      stop2("Parameter '", nlpars[1], "' is not part of the model.")
     }
   }
   

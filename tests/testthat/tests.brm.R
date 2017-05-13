@@ -12,6 +12,8 @@ test_that("brm produces expected errors", {
                "Non-linear formulas are not yet allowed for this family")
   expect_error(brm(y ~ mono(1), dat),
                "No variable supplied to function 'mo'")
+  expect_error(brm(bf(y | se(sei) ~ x, sigma ~ x), dat),
+               "Parameter 'sigma' is not part of the model")
   expect_error(brm(y | se(sei) ~ x, dat, family = weibull()),
                "Argument 'se' is not supported for family")
   expect_error(brm(y | se(sei) + se(sei2) ~ x, dat, family = gaussian()),
@@ -24,8 +26,7 @@ test_that("brm produces expected errors", {
   expect_error(brm(cbind(y, x) | se(z) ~ x, dat, family = gaussian()),
                "allow only addition argument 'weights'")
   expect_error(brm(bf(y ~ x, shape ~ x), family = gaussian()),
-               "Prediction of parameter(s) 'shape' is not allowed",
-               fixed = TRUE)
+               "The parameter 'shape' is not an auxiliary parameter")
   expect_error(brm(y ~ x + (1|abc|g/x), dat), 
                "Can only combine group-level terms")
   expect_error(brm(y ~ x + (1|g) + (x|g), dat), 
