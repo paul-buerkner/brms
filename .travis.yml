@@ -5,6 +5,9 @@ cache: packages
 
 warnings_are_errors: TRUE
 
+r_build_args: '--no-build-vignettes'
+r_check_args: '--ignore-vignettes'
+
 r_github_packages:
   - jimhester/covr
   
