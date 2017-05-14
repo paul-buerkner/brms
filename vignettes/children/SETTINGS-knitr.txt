@@ -1,5 +1,6 @@
 ```{r, SETTINGS-knitr, include=FALSE}
 stopifnot(require(knitr))
+options(width = 90)
 opts_chunk$set(
   comment = NA,
   message = FALSE,

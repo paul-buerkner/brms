@@ -6,8 +6,7 @@ output:
   rmarkdown::html_vignette:
     toc: yes
 params:
-  # EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
-  EVAL: !r FALSE
+  EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
 ---
 
 <!--
@@ -31,8 +30,6 @@ where $b_i$ is the regression coefficient of predictor $i$ and $x_{ni}$ is the d
 $$\eta_n = b_1 \exp(b_2 x_n)$$ 
 
 would *not* be a *linear* predictor anymore and we could not fit it using classical techniques of generalized linear models. We thus need a more general model class, which we will call *non-linear* models. Note that the term 'non-linear' does not say anything about the assumed distribution of the response variable. In particular it does not mean 'not normally distributed' as we can apply non-linear predictor terms to all kinds of response distributions (for more details on response distributions available in **brms** see `vignette("brms_families")`).
-
-Throughout the vignette, **R** code output is not shown to reduce installation time and size of the package.
 
 ## A Simple Non-Linear Model
 
@@ -126,7 +123,7 @@ We estimate a group-level effect of accident year (variable `AY`) for the ultima
 
 ```{r}
 summary(fit_loss)
-plot(fit_loss)
+plot(fit_loss, N = 3, ask = FALSE)
 marginal_effects(fit_loss)
 ```
 

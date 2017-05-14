@@ -6,8 +6,7 @@ output:
   rmarkdown::html_vignette:
     toc: yes
 params:
-  # EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
-  EVAL: !r FALSE
+  EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
 ---
 
 <!--
@@ -23,8 +22,6 @@ params:
 
 In the present vignette, we want to discuss how to specify phylogenetic multilevel models using **brms**. These models are relevant in evolutionary biology when data of many species are analyzed at the same time. The usual approach would be to model species as a grouping factor in a multilevel model and estimate varying intercepts (and possibly also varying slopes) over species. However, species are not independent as they come from the same phylogenetic tree and we thus have to adjust our model to incorporate this dependency. The examples discussed here are from the book *Modern Phylogenetic Comparative Methods and the application in Evolutionary Biology* (Garamszegi, 2014) -- more specifically from the online practice material of Chapter 11. The necessary data can be downloaded from  http://www.mpcm-evolution.org/practice/online-practical-material-chapter-11. Some of these models may take a few minutes to fit.
 
-Throughout the vignette, **R** code output is not shown to reduce installation time and size of the package.
-
 ## A Simple Phylogenetic Model
 
 Assume we have measurements of a phenotype, `phen` (say the body size), and a `cofactor` variable (say the temperature of the environment). We prepare the data using the following code.
@@ -35,7 +32,7 @@ library(MCMCglmm)
 ```
 
 ```{r, include = FALSE}
-my_path <- "C:\\Users\\paulb\\Dropbox\\Psychologie\\Paper\\2015_Bayesian_Regression_Models\\Models\\MCMCglmm\\"
+my_path <- "C:/Users/paulb/Dropbox/Psychologie/Paper/2015_Bayesian_Regression_Models/Models/MCMCglmm/"
 ```
 
 
@@ -71,7 +68,7 @@ With the exception of `cov_ranef = list(phylo = A)` this is a basic multilevel m
 
 ```{r}
 summary(model_simple)
-plot(model_simple)
+plot(model_simple, N = 2, ask = FALSE)
 plot(marginal_effects(model_simple), points = TRUE) 
 ```
 
@@ -186,7 +183,7 @@ summary(model_fisher)
 plot(model_fisher)
 ```
 
-The meta-analytic mean (i.e., the model intercept) is $0.16$ with a credible interval of $[0.07, 0.24]$. Thus the mean correlation across species is positive according to the model.
+The meta-analytic mean (i.e., the model intercept) is $0.16$ with a credible interval of $[0.08, 0.25]$. Thus the mean correlation across species is positive according to the model.
 
 
 ## A phylogenetic count-data model

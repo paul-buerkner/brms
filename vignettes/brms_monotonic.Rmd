@@ -6,8 +6,7 @@ output:
   rmarkdown::html_vignette:
     toc: yes
 params:
-  # EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
-  EVAL: !r FALSE
+  EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
 ---
 
 <!--
@@ -26,8 +25,6 @@ This vignette is about monotonic effects, a special way of handling discrete pre
 $$\eta_n = b \sum_{i = 1}^{x_n} \zeta_i$$
 
 The parameter $b$ can take on any real value, while $\zeta$ is a simplex, which means that is it satisfies $\zeta_i \in [0,1]$ and $\sum_{i = 1}^C \zeta_i = 1$ with $C$ being the number of categories (or highest integer in the data).
-
-Throughout the vignette, **R** code output is not shown to reduce installation time and size of the package.
 
 ## A Simple Monotonic Model
 

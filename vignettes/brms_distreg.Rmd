@@ -6,8 +6,7 @@ output:
   rmarkdown::html_vignette:
     toc: yes
 params:
-  # EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
-  EVAL: !r FALSE
+  EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
 ---
 
 <!--
@@ -32,8 +31,6 @@ where $x_{\theta i n}$ denotes the value of the $i$th predictor of parameter $\t
 $$y_n \sim \mathcal{N}\left(\eta_{\mu n}, \, \exp(\eta_{\sigma n}) \right)$$
 We used the exponential function around $\eta_{\sigma}$ to reflect that $\sigma$ constitutes a standard deviation and thus only takes on positive values, while a linear predictor can be any real number.
 
-Throughout the vignette, **R** code output is not shown to reduce installation time and size of the package.
-
 ## A simple distributional model
 
 Unequal variance models are possibly the most simple, but nevertheless very important application of distributional models. Suppose we have two groups of patients: One group recieves a treatment (e.g., an antidepressive drug) and another group recieves placebo. Since the treatment may not work equally well for all patients, the symptom variance of the treatment group may be larger than the symptom variance of the placebo group after some weeks of treatment. For simplicity, assume that we only investigate the post-treatment values.
@@ -48,6 +45,7 @@ head(dat1)
 The following model estimates the effect of `group` on both the mean and the residual standard deviation of the normal response distribution.
 
 ```{r, results='hide'}
+library(brms)
 fit1 <- brm(bf(symptom_post ~ group, sigma ~ group), 
             data = dat1, family = gaussian())
 ```
@@ -56,7 +54,7 @@ Useful summary statistics and plots can be obtained via
 
 ```{r, results='hide'}
 summary(fit1)
-plot(fit1)
+plot(fit1, N = 2, ask = FALSE)
 plot(marginal_effects(fit1), points = TRUE)
 ```
 
@@ -84,7 +82,7 @@ Indeed, the residual standard deviation of the treatment group seems to larger t
 Another important application of the distributional regression framework are so called zero-inflated models. These models are helpful whenever there are more zeros in the response variable than one would naturally expect. For example, if one seeks to predict the number of cigarettes people smoke per day and also includes non-smokers, there will be a huge amount of zeros which, when not modeled appropriately, can seriously distort parameter estimates. Here, we consider an example dealing with the number of fish caught by various groups of people. On the UCLA website (\url{http://www.ats.ucla.edu/stat/r/dae/zipoisson.htm}), the data are described as follows: "The state wildlife biologists want to model how many fish are being caught by fishermen at a state park. Visitors are asked how long they stayed, how many people were in the group, were there children in the group and how many fish were caught. Some visitors do not fish, but there is no data on whether a person fished or not. Some visitors who did fish did not catch any fish so there are excess zeros in the data because of the people that did not fish."
 
 ```{r}
-zinb <- read.csv("http://www.ats.ucla.edu/stat/data/fish.csv")
+zinb <- read.csv("http://stats.idre.ucla.edu/stat/data/fish.csv")
 head(zinb)
 ```
 
@@ -99,7 +97,6 @@ Again, we summarize the results using the usual methods.
 
 ```{r}
 summary(fit_zinb1)
-plot(fit_zinb1)
 plot(marginal_effects(fit_zinb1), ask = FALSE)
 ```
 
@@ -114,7 +111,6 @@ fit_zinb2 <- brm(bf(count ~ persons + child + camper, zi ~ child),
 
 ```{r}
 summary(fit_zinb2)
-plot(fit_zinb2, N = 6)
 plot(marginal_effects(fit_zinb2), ask = FALSE)
 ```
 
@@ -131,9 +127,8 @@ According to the model, trying to fish with children not only decreases the over
 In the examples so far, we did not have multilevel data and thus did not fully use the capabilities of the distributional regression framework of **brms**. In the example presented below, we will not only show how to deal with multilevel data in distributional models, but also how to incorporate smooth terms (i.e., splines) into the model. In many applications, we have no or only a very vaque idea how the relationship between a predictor and the response looks like. A very flexible approach to tackle this problems is to use splines and let them figure out the form of the relationship. For illustration purposes, we simulate some data with the **mgcv** package, which is also used in **brms** to prepare smooth terms.
 
 ```{r}
-library(mgcv)
-dat_smooth <- gamSim(eg = 6, n = 200, scale = 2)
-head(dat_smooth)
+dat_smooth <- mgcv::gamSim(eg = 6, n = 200, scale = 2, verbose = FALSE)
+head(dat_smooth[, 1:6])
 ```
 
 The data contains the predictors `x0` to `x3` as well as the grouping factor `fac` indicating the nested structure of the data. We predict the response variable `y` using smooth terms of `x1` and `x2` and a varying intercept of `fac`. In addition, we assume the residual standard deviation `sigma` to vary by a smoothing term of `x0` and a varying intercept of `fac`.
@@ -146,7 +141,6 @@ fit_smooth1 <- brm(bf(y ~ s(x1) + s(x2) + (1|fac), sigma ~ s(x0) + (1|fac)),
 
 ```{r}
 summary(fit_smooth1)
-plot(fit_smooth1, ask = FALSE)
 plot(marginal_effects(fit_smooth1), points = TRUE, ask = FALSE)
 ```
 
