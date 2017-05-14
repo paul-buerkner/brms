@@ -778,7 +778,7 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
     prior <- gsub(" ", "", paste0("\n", prior))
     pars <- get_matches("\\\n[^~]+", prior)
     pars <- gsub("\\\n|to_vector\\(|\\)", "", pars)
-    regex <- "^(z|zs|zb|Xme|hs)_?|^increment_log_prob\\(|^target ?(\\+=)"
+    regex <- "^(z|zs|zb|zgp|Xme|hs)_?|^increment_log_prob\\(|^target ?(\\+=)"
     take <- !grepl(regex, pars)
     pars <- rename(pars[take], symbols = c("^L_", "^Lrescor"), 
                    subs = c("cor_", "rescor"), fixed = FALSE)
@@ -797,7 +797,7 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
     # special treatment of lkj_corr_cholesky priors
     args <- ifelse(
       grepl("corr_cholesky$", dis), 
-      paste0("(2,", substr(args, 2, nchar(args)-1), "[1, 2];"),
+      paste0("(2,", substr(args, 2, nchar(args) - 1), "[1, 2];"),
       args
     )
     dis <- sub("corr_cholesky$", "corr", dis)
