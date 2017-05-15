@@ -9,6 +9,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_range <- function(object, lower = -Inf, upper = Inf, ...) {
     testthat::expect_true(all(object >= lower & object <= upper), ...)
   }
+  SM <- suppressMessages
   
   # test S3 methods in alphabetical order
   # as.data.frame
@@ -33,12 +34,21 @@ test_that("all S3 methods have reasonable ouputs", {
                c(fit1$fit@sim$iter, length(parnames(fit1))))
   
   # coef
-  coef1 <- coef(fit1)
+  coef1 <- SM(coef(fit1))
+  expect_equal(dim(coef1$visit), c(4, 4, 8))
+  coef1 <- SM(coef(fit1, summary = FALSE))
+  expect_equal(dim(coef1$visit), c(nsamples(fit1), 4, 8))
+  coef2 <- SM(coef(fit2))
+  expect_equal(dim(coef2$patient), c(59, 4, 4))
+  coef4 <- SM(coef(fit4))
+  expect_equal(dim(coef4$subject), c(10, 4, 8))
+  # deprecated as of brms 1.7.0
+  coef1 <- coef(fit1, old = TRUE)
   expect_equal(dim(coef1$visit), c(4, 8))
-  coef2 <- coef(fit2)
+  coef2 <- coef(fit2, old = TRUE)
   expect_equal(dim(coef2[[2]]), c(59, 2))
   expect_equal(attr(coef2[[1]], "nlpar"), "a")
-  coef4 <- coef(fit4)
+  coef4 <- coef(fit4, old = TRUE)
   expect_equal(dim(coef4$subject), c(10, 8))
   
   # family
@@ -105,19 +115,24 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(dim(fi), c(nobs(fit6), 4))
   
   # fixef
-  fixef1 <- fixef(fit1, estimate = c("mean", "sd"))  
-  expect_equal(dimnames(fixef1), 
-    list(
-      c("Intercept", "sigma_Intercept", "Trt", "Age", 
-        "Trt:Age", "sAge_1", "sigma_Trt", "Exp"),
-      c("mean", "sd")
-    )
+  fixef1 <- SM(fixef(fit1))
+  expect_equal(rownames(fixef1), 
+    c("Intercept", "sigma_Intercept", "Trt", "Age", 
+      "Trt:Age", "sAge_1", "sigma_Trt", "Exp")
   )
+  # deprecated as of brms 1.7.0
+  fixef1 <- fixef(fit1, old = TRUE, estimate = c("mean", "sd"))  
+  expect_equal(rownames(fixef1), 
+   c("Intercept", "sigma_Intercept", "Trt", "Age", 
+     "Trt:Age", "sAge_1", "sigma_Trt", "Exp")
+  )
+  expect_equal(colnames(fixef1), c("mean", "sd"))
   fixef2 <- fixef(fit2, estimate = c("median", "quantile"), 
-                  probs = c(0.05, 0.95))
-  expect_equal(dimnames(fixef2),
-               list(c("a_Intercept", "a_Age", "b_Intercept", "b_Age"),
-                    c("median", "5%", "95%")))
+                  probs = c(0.05, 0.95), old = TRUE)
+  expect_equal(rownames(fixef2), 
+    c("a_Intercept", "a_Age", "b_Intercept", "b_Age")
+  )
+  expect_equal(colnames(fixef2), c("median", "5%", "95%"))
   
   # formula
   expect_equal(formula(fit1)$formula, 
@@ -443,11 +458,18 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_true(is(prior_summary(fit1), "brmsprior"))
   
   # ranef
-  ranef1 <- ranef(fit1, estimate = "median", var = TRUE)
+  ranef1 <- SM(ranef(fit1))
+  expect_equal(dim(ranef1$visit), c(4, 4, 2))
+  
+  ranef2 <- SM(ranef(fit2, summary = FALSE))
+  expect_equal(dim(ranef2$patient), c(nsamples(fit2), 59, 2))
+  
+  # deprecated as of brms 1.7.0
+  ranef1 <- ranef(fit1, estimate = "median", var = TRUE, old = TRUE)
   expect_equal(dim(ranef1$visit), c(4, 2))
   expect_equal(dim(attr(ranef1$visit, "var")), c(2, 2, 4))
   
-  ranef2 <- ranef(fit2, estimate = "mean", var = TRUE)
+  ranef2 <- ranef(fit2, estimate = "mean", var = TRUE, old = TRUE)
   expect_equal(dim(ranef2[[1]]), c(59, 1))
   expect_equal(dim(attr(ranef2[[1]], "var")), c(1, 1, 59))
   
@@ -550,17 +572,28 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_true(is(up, "brmsfit"))
   
   # VarCorr
-  vc <- VarCorr(fit1)
+  vc <- SM(VarCorr(fit1))
   expect_equal(names(vc), c("visit"))
   Names <- c("Intercept", "Trt")
-  expect_equivalent(dimnames(vc$visit$cov$mean), 
-                    list(Names, Names))
+  expect_equal(dimnames(vc$visit$cov)[c(1, 3)], list(Names, Names))
+  vc <- SM(VarCorr(fit2))
+  expect_equal(names(vc), c("patient"))
+  expect_equal(dim(vc$patient$cor), c(2, 4, 2))
+  vc <- SM(VarCorr(fit2, summary = FALSE))
+  expect_equal(dim(vc$patient$cor), c(nsamples(fit2), 2, 2))
+  
+  # deprecated as of brms 1.7.0
+  vc <- VarCorr(fit1, old = TRUE)
+  expect_equal(names(vc), c("visit"))
+  Names <- c("Intercept", "Trt")
+  expect_equivalent(dimnames(vc$visit$cov$mean), list(Names, Names))
   expect_output(print(vc), "visit")
   data_vc <- as.data.frame(vc)
   expect_equal(dim(data_vc), c(2, 7))
-  expect_equal(names(data_vc), c("Estimate", "Group", "Name", 
-                                 "Std.Dev", "Cor", "Cov", "Cov"))
-  vc <- VarCorr(fit2)
+  expect_equal(names(data_vc), 
+    c("Estimate", "Group", "Name", "Std.Dev", "Cor", "Cov", "Cov")
+  )
+  vc <- VarCorr(fit2, old = TRUE)
   expect_equal(names(vc), c("patient"))
   data_vc <- as.data.frame(vc)
   expect_equal(dim(data_vc), c(2, 7))

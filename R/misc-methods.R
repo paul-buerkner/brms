@@ -129,65 +129,6 @@ print.brmssummary <- function(x, digits = 2, ...) {
   invisible(x)
 }
 
-#' @rdname VarCorr.brmsfit
-#' @export
-as.data.frame.brmsVarCorr <- function(x, ...) {
-  estimates <- colnames(x[[1]]$sd)
-  groups <- names(x)
-  n_groups <- length(groups)
-  names_coef <- lapply(x, function(y) rownames(y$sd))
-  groups_col <- ulapply(1:n_groups, function(i) 
-    c(groups[i], rep("", length(names_coef[[i]]) - 1)))
-  max_cor <- max(ulapply(names_coef, length)) - 1
-  # basic data.frame to be used in fill_base_frame
-  base_frame <- as.data.frame(matrix(NA, nrow = length(groups_col),
-                                     ncol = 4 + 2 * max_cor))
-  names(base_frame) <- c("Group", "Name", "Std.Dev", rep("Cor", max_cor),
-                         rep("Cov", max_cor + 1))
-  base_frame[, 1:2] <- cbind(groups_col, unlist(names_coef))
-  
-  fill_base_frame <- function(estimate) {
-    # fills the base_frame with SD and COR estimates
-    # Args:
-    #   estimate: The estimate being applied on the SD and COR parameters
-    out <- base_frame
-    pos <- 1
-    for (i in 1:n_groups) {
-      len <- length(names_coef[[i]])
-      rows <- pos:(pos + len - 1)
-      out[rows, "Std.Dev"] <- x[[i]]$sd[, estimate]
-      if (len > 1) {
-        # covariances and correlations present; add correlations
-        cor_pos <- 4:(2 + len)
-        cormat <- x[[i]]$cor[[estimate]][2:len, 1:(len-1), drop = FALSE]
-        lt <- lower.tri(cormat, diag = TRUE)
-        out[rows[2:length(rows)], cor_pos][lt] <- cormat[lt]
-      }
-      # add covariances
-      cov_pos <- (4 + max_cor):(3 + max_cor + len)
-      covmat <- x[[i]]$cov[[estimate]]
-      lt <- lower.tri(covmat, diag = TRUE)
-      out[rows, cov_pos][lt] <- covmat[lt]
-      pos <- pos + len
-    }
-    out
-  }
-  
-  out <- do.call(rbind, lapply(estimates, fill_base_frame))
-  estimates_col <- ulapply(estimates, function(e)
-    c(e, rep("", length(groups_col) - 1)))
-  cbind(Estimate = estimates_col, out)
-}
-
-#' @export
-print.brmsVarCorr <- function(x, digits = 2, ...) {
-  dat <- as.data.frame(x)
-  dat[, 4:ncol(dat)] <- round(as.matrix(dat[, 4:ncol(dat)]), digits = digits)
-  dat[is.na(dat)] <- ""
-  print(dat, row.names = FALSE, ...)
-  invisible(x)
-}
-
 #' @export
 print.brmsmodel <- function(x, ...) {
   cat(x)

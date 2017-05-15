@@ -5,25 +5,50 @@
 \alias{ranef}
 \title{Extract Group-Level Estimates}
 \usage{
-\method{ranef}{brmsfit}(object, estimate = c("mean", "median"), var = FALSE,
-  ...)
+\method{ranef}{brmsfit}(object, summary = TRUE, robust = FALSE,
+  probs = c(0.025, 0.975), old = FALSE, estimate = c("mean", "median"),
+  var = FALSE, ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
 
-\item{estimate}{The point estimate to be calculated 
+\item{summary}{Should summary statistics 
+ (i.e. means, sds, and 95\% intervals) be returned
+instead of the raw values? Default is \code{TRUE}.}
+
+\item{robust}{If \code{FALSE} (the default) the mean is used as 
+the measure of central tendency and the standard deviation as 
+the measure of variability. If \code{TRUE}, the median and the 
+median absolute deivation (MAD) are applied instead.
+Only used if \code{summary} is \code{TRUE}.}
+
+\item{probs}{The percentiles to be computed by the \code{quantile} 
+function. Only used if \code{summary} is \code{TRUE}.}
+
+\item{old}{Logical; indicates if the old implementation
+of this method (prior to version 1.7.0) should be used.
+Defaults to \code{FALSE}.}
+
+\item{estimate}{(Deprecated) The point estimate to be calculated 
 for the group-level effects, either \code{"mean"} or \code{"median"}.}
 
-\item{var}{logical; indicating if the covariance matrix 
+\item{var}{(Deprecated) Logical; indicates if the covariance matrix 
 for each group-level effects should be computed.}
 
 \item{...}{Further arguments to be passed to the function 
 specified in \code{estimate}.}
 }
 \value{
-A list of matrices (one per grouping factor), 
- with factor levels as row names and 
- group-level effects as column names.
+If \code{old} is \code{FALSE}: A list of arrays 
+ (one per grouping factor). If \code{summary} is \code{TRUE},
+ names of the first dimension are the factor levels and names
+ of the third dimension are the group-level effects. 
+ If \code{summary} is \code{FALSE}, names of the second dimension
+ are the factor levels and names of the third dimension are the 
+ group-level effects.
+ 
+ If \code{old} is \code{TRUE}: A list of matrices (one per grouping factor),
+ with factor levels as row names and group-level effects as column names.
 }
 \description{
 Extract the group-level ('random') effects of each level 
@@ -32,12 +57,8 @@ from a \code{brmsfit} object.
 \examples{
 \dontrun{
 fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
-           data = epilepsy, family = "poisson", chains = 1)
-## group-level means with corresponding covariances
-rf <- ranef(fit, var = TRUE)
-attr(rf, "var")
-## group-level medians
-ranef(fit, estimate = "median")                                                        
+           data = epilepsy, family = gaussian(), chains = 2)
+ranef(fit)
 }
 
 }

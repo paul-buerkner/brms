@@ -26,3 +26,11 @@ correlation matrix of population-level parameters
 Estimates are obtained by calculating the maximum likelihood 
   covariances (correlations) of the posterior samples.
 }
+\examples{
+\dontrun{
+fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
+           data = epilepsy, family = gaussian(), chains = 2)
+vcov(fit)
+}
+
+}

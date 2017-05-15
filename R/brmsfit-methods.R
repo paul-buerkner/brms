@@ -11,39 +11,56 @@ parnames.brmsfit <- function(x, ...) {
 #' 
 #' @aliases fixef
 #' 
-#' @param object An object of class \code{brmsfit}
-#' @param estimate A character vector specifying which coefficients 
-#'  (e.g., \code{"mean"}, \code{"median"}, \code{"sd"}, or \code{"quantile"})
-#'  should be calculated for the population-level effects.
+#' @param object An object of class \code{brmsfit}.
+#' @param old Logical; indicates if the old implementation
+#'  of this method (prior to version 1.7.0) should be used.
+#'  Defaults to \code{FALSE}.
+#' @param estimate (Deprecated) A character vector specifying 
+#'  which coefficients (e.g., \code{"mean"}, \code{"median"}, 
+#'  \code{"sd"}, or \code{"quantile"}) should be calculated 
+#'  for the population-level effects. Only used if \code{old}
+#'  is \code{TRUE}.
 #' @param ... Further arguments to be passed to the functions 
-#'  specified in \code{estimate}
+#'  specified in \code{estimate}.
+#' @inheritParams predict.brmsfit
 #' 
-#' @return A matrix with one row per population-level effect 
-#'   and one column per calculated estimate.
-#' 
+#' @return If \code{summary} is \code{TRUE}, a matrix with one row per 
+#'   population-level effect and one column per calculated estimate. 
+#'   If \code{summary} is \code{FALSE}, a matrix with one row per 
+#'   posterior sample and one column per population-level effect.
+#'   
 #' @author Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 #' 
 #' @examples
 #' \dontrun{
 #' fit <- brm(time | cens(censored) ~ age + sex + disease, 
 #'            data = kidney, family = "exponential")
-#' fixef(fit, estimate = c("mean", "sd"))
+#' fixef(fit)
 #' }
 #' 
 #' @method fixef brmsfit
 #' @export
 #' @export fixef
 #' @importFrom nlme fixef
-fixef.brmsfit <-  function(object, estimate = "mean", ...) {
+fixef.brmsfit <-  function(object, summary = TRUE, robust = FALSE,
+                           probs = c(0.025, 0.975), old = FALSE, 
+                           estimate = "mean", ...) {
   contains_samples(object)
   pars <- parnames(object)
   fpars <- pars[grepl(fixef_pars(), pars)]
   if (!length(fpars)) {
     stop2("The model does not contain population-level effects.")
   }
-  out <- posterior_samples(object, pars = fpars, exact_match = TRUE)
-  out <- do.call(cbind, lapply(estimate, get_estimate, samples = out, ...))
-  rownames(out) <- gsub(fixef_pars(), "", fpars)
+  if (old) {
+    out <- old_fixef_brmsfit(object, estimate, probs = probs, ...)
+  } else {
+    message_new_method("fixef", version = "1.7.0")
+    out <- as.matrix(object, pars = fpars, exact_match = TRUE)
+    colnames(out) <- gsub(fixef_pars(), "", fpars)
+    if (summary) {
+      out <- get_summary(out, probs, robust, keep_names = TRUE)
+    }
+  }
   out
 }
 
@@ -62,6 +79,13 @@ fixef.brmsfit <-  function(object, estimate = "mean", ...) {
 #' 
 #' @details Estimates are obtained by calculating the maximum likelihood 
 #'   covariances (correlations) of the posterior samples. 
+#'   
+#' @examples
+#' \dontrun{
+#' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
+#'            data = epilepsy, family = gaussian(), chains = 2)
+#' vcov(fit)
+#' }
 #'
 #' @export
 vcov.brmsfit <- function(object, correlation = FALSE, ...) {
@@ -74,10 +98,11 @@ vcov.brmsfit <- function(object, correlation = FALSE, ...) {
   samples <- posterior_samples(object, pars = fpars, exact_match = TRUE)
   names(samples) <- sub(fixef_pars(), "", names(samples))
   if (correlation) {
-    cor(samples) 
+    out <- cor(samples) 
   } else {
-    cov(samples)
+    out <- cov(samples)
   }
+  out
 }
 
 #' Extract Group-Level Estimates
@@ -88,107 +113,73 @@ vcov.brmsfit <- function(object, correlation = FALSE, ...) {
 #' @aliases ranef
 #' 
 #' @param object An object of class \code{brmsfit}.
-#' @param estimate The point estimate to be calculated 
+#' @inheritParams fixef.brmsfit
+#' @param estimate (Deprecated) The point estimate to be calculated 
 #'  for the group-level effects, either \code{"mean"} or \code{"median"}.
-#' @param var logical; indicating if the covariance matrix 
+#' @param var (Deprecated) Logical; indicates if the covariance matrix 
 #'  for each group-level effects should be computed.
 #' @param ... Further arguments to be passed to the function 
 #'  specified in \code{estimate}.
 #'
-#' @return A list of matrices (one per grouping factor), 
-#'  with factor levels as row names and 
-#'  group-level effects as column names.
-#'     
+#' @return If \code{old} is \code{FALSE}: A list of arrays 
+#'  (one per grouping factor). If \code{summary} is \code{TRUE},
+#'  names of the first dimension are the factor levels and names
+#'  of the third dimension are the group-level effects. 
+#'  If \code{summary} is \code{FALSE}, names of the second dimension
+#'  are the factor levels and names of the third dimension are the 
+#'  group-level effects.
+#'  
+#'  If \code{old} is \code{TRUE}: A list of matrices (one per grouping factor),
+#'  with factor levels as row names and group-level effects as column names.
+#'  
 #' @author Paul-Christian Buerkner \email{paul.buerkner@gmail.com}   
 #'   
 #' @examples
 #' \dontrun{
 #' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
-#'            data = epilepsy, family = "poisson", chains = 1)
-#' ## group-level means with corresponding covariances
-#' rf <- ranef(fit, var = TRUE)
-#' attr(rf, "var")
-#' ## group-level medians
-#' ranef(fit, estimate = "median")                                                        
+#'            data = epilepsy, family = gaussian(), chains = 2)
+#' ranef(fit)
 #' }
 #' 
 #' @method ranef brmsfit
 #' @export
 #' @export ranef
 #' @importFrom nlme ranef
-ranef.brmsfit <- function(object, estimate = c("mean", "median"), 
-                          var = FALSE, ...) {
+ranef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
+                          probs = c(0.025, 0.975), old = FALSE, 
+                          estimate = c("mean", "median"), var = FALSE,
+                          ...) {
   contains_samples(object)
   object <- restructure(object)
-  estimate <- match.arg(estimate)
   if (!nrow(object$ranef)) {
     stop2("The model does not contain group-level effects.")
   }
-  pars <- parnames(object)
-  
-  .ranef <- function(group, nlpar = "") {
-    # get group-level effects of a grouping factor
-    # Args:
-    #   group: name of a grouping factor
-    #   nlpar: name of a non-linear parameter
-    rnames <- object$ranef[object$ranef$group == group & 
-                           object$ranef$nlpar == nlpar, "coef"]
-    usc_nlpar <- usc(usc(nlpar))
-    rpars <- pars[grepl(paste0("^r_", group, usc_nlpar, "\\["), pars)]
-    if (!length(rpars)) {
-      return(NULL)
-    }
-    rdims <- object$fit@sim$dims_oi[[paste0("r_", group, usc_nlpar)]]
-    if (is.na(rdims[2])) rdims[2] <- 1
-    levels <- attr(object$ranef, "levels")[[group]]
-    if (is.null(levels)) {
-      # avoid error in dimnames if levels are NULL 
-      # for backwards compatibility with brms < 0.5.0 
-      levels <- seq_len(rdims[1])
-    }
-    rs <- posterior_samples(object, pars = rpars, exact_match = TRUE)
-    rs_array <- array(dim = c(rdims[1], rdims[2], nrow(rs)))
-    k <- 0
-    for (j in seq_len(rdims[2])) {
-      for (l in seq_len(rdims[1])) {
-        k <- k + 1
-        rs_array[l, j, ] <- rs[, k]
+  if (old) {
+    out <- old_ranef_brmsfit(object, estimate, var = var, ...)
+  } else {
+    message_new_method("ranef", version = "1.7.0")
+    pars <- parnames(object)
+    ranef <- object$ranef
+    groups <- unique(ranef$group)
+    out <- named_list(groups)
+    for (g in groups) {
+      take <- ranef$group == g
+      nlpars_usc <- usc(ranef[take, "nlpar"], "suffix")
+      coefs <- paste0(nlpars_usc, ranef[take, "coef"])
+      levels <- attr(ranef, "levels")[[g]]
+      rpars <- pars[grepl(paste0("^r_", g, "(__.+\\[|\\[)"), pars)]
+      out[[g]] <- as.matrix(object, rpars, exact_match = TRUE)
+      dim(out[[g]]) <- c(nrow(out[[g]]), length(levels), length(coefs))
+      dimnames(out[[g]])[2:3] <- list(levels, coefs)
+      if (summary) {
+        out[[g]] <- get_summary(out[[g]], probs, robust, keep_names = TRUE)
       }
     }
-    out <- get_estimate(estimate, samples = rs_array, margin = 1:2, ...)
-    colnames(out) <- rnames
-    if (var) {
-      Var <- array(dim = c(rep(rdims[2], 2), rdims[1]), 
-                   dimnames = list(rnames, rnames, seq_len(rdims[1])))
-      if (rdims[2] == 1L) {
-        for (j in seq_len(rdims[1])) {
-          Var[, , j] <- var(rs_array[j, 1, ]) 
-        }
-      } else {
-        for (j in seq_len(rdims[1])) {
-          Var[, , j] <- cov(t(rs_array[j, , ]))
-        }
-      }
-      dimnames(Var)[[3]] <- levels
-      attr(out, "var") <- Var
-    }
-    rownames(out) <- levels
-    if (nchar(nlpar)) {
-      attr(out, "nlpar") <- nlpar
-    }
-    return(out)
   }
-  
-  group_nlpar <- unique(object$ranef[, c("group", "nlpar")])
-  ranef <- named_list(group_nlpar$group)
-  for (i in seq_along(ranef)) {
-    ranef[[i]] <- .ranef(group = group_nlpar$group[i], 
-                         nlpar = group_nlpar$nlpar[i])
-  }
-  rmNULL(ranef) 
+  out
 } 
 
-#' Extract model coefficients
+#' Extract Model Coefficients
 #'
 #' Extract model coefficients, which are the sum of population-level 
 #' effects and corresponding group-level effects
@@ -196,16 +187,23 @@ ranef.brmsfit <- function(object, estimate = c("mean", "median"),
 #' @param object An object of class \code{brmsfit}
 #' @inheritParams ranef.brmsfit
 #'
-#' @return A list of matrices (one per grouping factor and 
-#'  non-linear parameter) with factor levels as row names and 
-#'  coefficients as column names.
+#' @return If \code{old} is \code{FALSE}: A list of arrays 
+#'  (one per grouping factor). If \code{summary} is \code{TRUE},
+#'  names of the first dimension are the factor levels and names
+#'  of the third dimension are the group-level effects. 
+#'  If \code{summary} is \code{FALSE}, names of the second dimension
+#'  are the factor levels and names of the third dimension are the 
+#'  group-level effects.
+#'  
+#'  If \code{old} is \code{TRUE}: A list of matrices (one per grouping factor),
+#'  with factor levels as row names and group-level effects as column names.
 #'  
 #' @author Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 #'  
 #' @examples
 #' \dontrun{
 #' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
-#'            data = epilepsy, family = "poisson", chains = 1)
+#'            data = epilepsy, family = gaussian(), chains = 2)
 #' ## extract population and group-level coefficients separately
 #' fixef(fit)
 #' ranef(fit)
@@ -214,88 +212,74 @@ ranef.brmsfit <- function(object, estimate = c("mean", "median"),
 #' }
 #' 
 #' @export
-coef.brmsfit <- function(object, estimate = c("mean", "median"), ...) {
+coef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
+                         probs = c(0.025, 0.975), old = FALSE, 
+                         estimate = c("mean", "median"), ...) {
   contains_samples(object)
   object <- restructure(object)
-  estimate <- match.arg(estimate)
   if (!nrow(object$ranef)) {
     stop2("No group-level effects detected. Call method ", 
           "'fixef' to access population-level effects.")
   }
-  
-  .coef <- function(ranef, fixef) {
-    # helper function to combine group and population-level effects
-    all_ranef_names <- unique(ulapply(ranef, colnames))
-    fixef_no_digits <- get_matches("^[^\\[]+", rownames(fixef))
-    miss_fixef <- setdiff(all_ranef_names, rownames(fixef))
+  if (old) {
+    coef <- old_coef_brmsfit(object, estimate, ...)
+  } else {
+    message_new_method("coef", version = "1.7.0")
+    fixef <- suppressMessages(fixef(object, summary = FALSE, ...))
+    coef <- suppressMessages(ranef(object, summary = FALSE, ...))
+    # add missing coefficients to fixef
+    all_ranef_names <- unique(ulapply(coef, function(x) dimnames(x)[[3]]))
+    fixef_names <- colnames(fixef)
+    fixef_no_digits <- get_matches("^[^\\[]+", fixef_names)
+    miss_fixef <- setdiff(all_ranef_names, fixef_names)
     miss_fixef_no_digits <- get_matches("^[^\\[]+", miss_fixef)
     new_fixef <- named_list(miss_fixef)
     for (k in seq_along(miss_fixef)) {
       # digits occur in ordinal models with category specific effects
-      match_fixef <- match(miss_fixef_no_digits[k], rownames(fixef))
+      match_fixef <- match(miss_fixef_no_digits[k], fixef_names)
       if (!is.na(match_fixef)) {
-        new_fixef[[k]] <- fixef[match_fixef, 1]
+        new_fixef[[k]] <- fixef[, match_fixef]
       } else if (!miss_fixef[k] %in% fixef_no_digits) {
         new_fixef[[k]] <- 0
       }
     }
-    rm_fixef <- rownames(fixef) %in% miss_fixef_no_digits
-    fixef <- fixef[!rm_fixef, , drop = FALSE]
-    fixef <- do.call(rbind, c(list(fixef), rmNULL(new_fixef)))
-    coef <- ranef
-    for (i in seq_along(coef)) {
-      ranef_names <- colnames(coef[[i]])
+    rm_fixef <- fixef_names %in% miss_fixef_no_digits
+    fixef <- fixef[, !rm_fixef, drop = FALSE]
+    fixef <- do.call(cbind, c(list(fixef), rmNULL(new_fixef)))
+    
+    for (g in names(coef)) {
+      # add missing coefficients to ranef
+      ranef_names <- dimnames(coef[[g]])[[3]]
       ranef_no_digits <- get_matches("^[^\\[]+", ranef_names)
-      miss_ranef <- setdiff(rownames(fixef), ranef_names)
+      miss_ranef <- setdiff(fixef_names, ranef_names)
       miss_ranef_no_digits <- get_matches("^[^\\[]+", miss_ranef)
       new_ranef <- named_list(miss_ranef)
       for (k in seq_along(miss_ranef)) {
         # digits occur in ordinal models with category specific effects
         match_ranef <- match(miss_ranef_no_digits[k], ranef_names)
         if (!is.na(match_ranef)) {
-          new_ranef[[k]] <- coef[[i]][, match_ranef]
+          new_ranef[[k]] <- coef[[g]][, , match_ranef]
         } else if (!miss_ranef[k] %in% ranef_no_digits) {
-          new_ranef[[k]] <- 0
+          new_ranef[[k]] <- array(0, dim = dim(coef[[g]])[1:2])
         }
       }
       rm_ranef <- ranef_names %in% miss_ranef_no_digits
-      coef[[i]] <- coef[[i]][, !rm_ranef, drop = FALSE]
-      coef[[i]] <- do.call(cbind, c(list(coef[[i]]), rmNULL(new_ranef)))
-      for (nm in colnames(coef[[i]])) {
+      coef[[g]] <- coef[[g]][, , !rm_ranef, drop = FALSE]
+      coef[[g]] <- do.call(abind, c(list(coef[[g]]), rmNULL(new_ranef)))
+      for (nm in dimnames(coef[[g]])[[3]]) {
         # correct the sign of thresholds in ordinal models
         sign <- ifelse(grepl("^Intercept\\[[[:digit:]]+\\]$", nm), -1, 1)
-        coef[[i]][, nm] <- coef[[i]][, nm] + sign * fixef[nm, 1]
+        coef[[g]][, , nm] <- coef[[g]][, , nm] + sign * fixef[, nm]
+      }
+      if (summary) {
+        coef[[g]] <- get_summary(coef[[g]], probs, robust, keep_names = TRUE)
       }
     }
-    return(coef)
-  }
-  
-  fixef <- fixef(object, estimate = estimate, ...)
-  ranef <- ranef(object, estimate = estimate, ...)
-  nlpars <- ulapply(ranef, attr, "nlpar")
-  if (length(nlpars)) {
-    # do not combine effects of different nlpars
-    unique_nlpars <- unique(nlpars)
-    coef <- named_list(unique_nlpars)
-    for (p in unique_nlpars) {
-      ranef_temp <- ranef[nlpars %in% p]
-      rx <- paste0("^", p, "_")
-      take_rows <- grepl(rx, rownames(fixef))
-      fixef_temp <- fixef[take_rows, , drop = FALSE]
-      rownames(fixef_temp) <- sub(rx, "", rownames(fixef_temp))
-      coef[[p]] <- .coef(ranef_temp, fixef_temp)
-      for (i in seq_along(coef[[p]])) {
-        attr(coef[[p]][[i]], "nlpar") <- p
-      }
-    }
-    coef <- unlist(unname(coef), recursive = FALSE)
-  } else {
-    coef <- .coef(ranef, fixef)
   }
   coef
 }
 
-#' Extract variance and correlation components
+#' Extract Variance and Correlation Components
 #' 
 #' This function calculates the estimated standard deviations, 
 #' correlations and covariances of the group-level terms 
@@ -306,38 +290,28 @@ coef.brmsfit <- function(object, estimate = c("mean", "median"), ...) {
 #' @aliases VarCorr
 #' 
 #' @param x An object of class \code{brmsfit}. 
-#' @param estimate A character vector specifying which coefficients 
-#'  (e.g. \code{"mean"}, \code{"median"}, \code{"sd"}, or \code{"quantile"})
-#'  should be calculated for the extracted parameters.
-#' @param as.list logical; Indicates if covariance 
-#'  and correlation matrices should be returned as 
-#'  lists of matrices (\code{TRUE}; the default)
-#'  or as 3-dimensional arrays (\code{FALSE}).
-#'  This option is kept for backwards compatibility and 
-#'  we recommend not to change it.
+#' @inheritParams fixef.brmsfit
 #' @param sigma Ignored (included for compatibility with 
 #'  \code{\link[nlme:VarCorr]{VarCorr}}).
 #' @param ... Further arguments to be passed to the functions 
 #'  specified in \code{estimate}
 #' 
-#' @return An object of class \code{brmsVarCorr}, 
-#' which is a list of lists (one per grouping factor), 
-#' each containing 3 elements: a matrix containing the standard deviations, 
-#' a list of correlation matrices, and a list of covariance matrices. 
-#' Can be coerced to a \code{data.frame} by using the \code{as.data.frame} method.
+#' @return A list of lists (one per grouping factor), each with
+#' three elements: a matrix containing the standard deviations, 
+#' an array containing the correlation matrix, and an array 
+#' containing the covariance matrix with variances on the diagonial.
+#' 
+#' If \code{old} is \code{TRUE}, the returned object is of class 
+#' \code{brmsVarCorr}, which can be coerced to a \code{data.frame} 
+#' by using the \code{as.data.frame} method.
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@gmail.com}
 #' 
 #' @examples
 #' \dontrun{
 #' fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
-#'              data = epilepsy, family = "poisson", chains = 1)
-#' ## return the means of group-level covariances
-#' (vc <- VarCorr(fit))
-#' as.data.frame(vc)
-#' 
-#' ## return 2.5% and 97.5% quantiles of group-level covariances
-#' VarCorr(fit, estimate = "quantile", probs = c(0.025, 0.975))
+#'            data = epilepsy, family = gaussian(), chains = 2)
+#' VarCorr(fit)
 #' }
 #' 
 #' @method VarCorr brmsfit
@@ -345,110 +319,82 @@ coef.brmsfit <- function(object, estimate = c("mean", "median"), ...) {
 #' @importFrom nlme VarCorr
 #' @export VarCorr
 #' @export
-VarCorr.brmsfit <- function(x, sigma = 1, estimate = "mean", 
-                            as.list = TRUE, ...) {
+VarCorr.brmsfit <- function(x, sigma = 1, summary = TRUE, robust = FALSE,
+                            probs = c(0.025, 0.975), old = FALSE,
+                            estimate = "mean", ...) {
   contains_samples(x)
   x <- restructure(x)
   if (!(nrow(x$ranef) || any(grepl("^sigma($|_)", parnames(x))))) {
     stop2("The model does not contain covariance matrices.")
   }
-  x <- restructure(x)
-  
-  # extracts samples for sd, cor and cov
-  extract <- function(p) {
-    nr <- length(p$sd_pars)
-    sd <- posterior_samples(x, pars = p$sd_pars, exact_match = TRUE)
-    nsamples <- nrow(sd)
-    out <- list(
-      sd = do.call(cbind, lapply(estimate, get_estimate, samples = sd, ...))
-    )
-    rownames(out$sd) <- p$rnames 
-    # calculate correlation and covariance matrices
-    found_cor_pars <- intersect(p$cor_pars, parnames(x))
-    if (length(found_cor_pars)) {
-      cor <- posterior_samples(x, pars = paste0("^", found_cor_pars, "$"))
-      if (length(found_cor_pars) < length(p$cor_pars)) { 
-        # some correlations are missing and will be replaced by 0
-        cor_all <- as.data.frame(
-          matrix(0, nrow = nrow(cor), ncol = length(p$cor_pars))
-        )
-        names(cor_all) <- p$cor_pars
-        for (i in seq_len(ncol(cor_all))) {
-          found <- match(names(cor_all)[i], names(cor))
-          if (!is.na(found)) {
-            # correlation was estimated
-            cor_all[, i] <- cor[, found]
-          }
-        }
-        cor <- cor_all
-      }
-    } else {
-      cor <- NULL
-    } 
-    # get_cov_matrix and array2list can be found in brmsfit-helpers.R
-    matrices <- get_cov_matrix(sd = sd, cor = cor) 
-    out$cor <- abind(lapply(
-      estimate, get_estimate, samples = matrices$cor, 
-      margin = c(2, 3), to.array = TRUE, ...
-    ))
-    out$cov <- abind(lapply(
-      estimate, get_estimate, samples = matrices$cov, 
-      margin = c(2,3), to.array = TRUE, ...
-    )) 
-    if (length(p$rnames) > 1) {
-      dimnames(out$cor) <- list(p$rnames, p$rnames, dimnames(out$cor)[[3]])
-      dimnames(out$cov) <- dimnames(out$cor)   
-    }
-    if (as.list) {
-      out$cor <- lapply(array2list(out$cor), function(x)
-        if (is.null(dim(x))) 
-          structure(matrix(x), dimnames = list(p$rnames, p$rnames)) 
-        else x
-      )
-      out$cov <- lapply(array2list(out$cov), function(x)
-        if (is.null(dim(x))) 
-          structure(matrix(x), dimnames = list(p$rnames, p$rnames)) 
-        else x
-      )
-    }
-    out
-  }
-  
-  family <- family(x)
-  bterms <- parse_bf(x$formula, family = family)
-  if (nrow(x$ranef)) {
-    get_names <- function(group) {
-      # get names of group-level parameters
-      r <- x$ranef[x$ranef$group == group, ]
-      rnames <- paste0(usc(r$nlpar, "suffix"), r$coef)
-      cor_type <- paste0("cor_", group)
-      sd_pars <- paste0("sd_", group, "__", rnames)
-      cor_pars <- get_cornames(rnames, type = cor_type, brackets = FALSE)
-      nlist(rnames, type = cor_type, sd_pars, cor_pars)
-    }
-    group <- unique(x$ranef$group)
-    p <- lapply(group, get_names)
+  if (old) {
+    out <- old_VarCorr_brmsfit(x, estimate, probs = probs, ...)
   } else {
-    p <- group <- NULL
-  } 
-  # special treatment of residuals variances in linear models
-  has_sigma <- has_sigma(family, bterms, incmv = TRUE)
-  if (has_sigma && !"sigma" %in% names(bterms$auxpars)) {
-    cor_pars <- get_cornames(
-      bterms$response, type = "rescor", brackets = FALSE
-    )
-    p <- lc(p, 
-      list(rnames = bterms$response, cor_pars = cor_pars,
-           sd_pars = c("sigma", paste0("sigma_", bterms$response)))
-    )
-    group <- c(group, "RESIDUAL")
-  } 
-  VarCorr <- lapply(p, extract)
-  names(VarCorr) <- group
-  if (as.list) {
-    class(VarCorr) <- "brmsVarCorr" 
+    message_new_method("VarCorr", version = "1.7.0")
+    .VarCorr <- function(y) {
+      # extract samples for sd, cor and cov
+      out <- list(sd = as.matrix(x, pars = y$sd_pars, exact_match = TRUE))
+      colnames(out$sd) <- y$rnames
+      # compute correlation and covariance matrices
+      found_cor_pars <- intersect(y$cor_pars, parnames(x))
+      if (length(found_cor_pars)) {
+        cor <- as.matrix(x, pars = found_cor_pars, exact_match = TRUE)
+        if (length(found_cor_pars) < length(y$cor_pars)) { 
+          # some correlations are missing and will be replaced by 0
+          cor_all <- matrix(0, nrow = nrow(cor), ncol = length(y$cor_pars))
+          names(cor_all) <- y$cor_pars
+          for (i in seq_len(ncol(cor_all))) {
+            found <- match(names(cor_all)[i], names(cor))
+            if (!is.na(found)) {
+              cor_all[, i] <- cor[, found]
+            }
+          }
+          cor <- cor_all
+        }
+        out <- c(out, get_cov_matrix(sd = out$sd, cor = cor))
+        dimnames(out$cor)[2:3] <- list(y$rnames, y$rnames)
+        dimnames(out$cov)[2:3] <- list(y$rnames, y$rnames)
+        if (summary) {
+          out$cor <- get_summary(out$cor, probs, robust, keep_names = TRUE)
+          out$cov <- get_summary(out$cov, probs, robust, keep_names = TRUE)
+        }
+      }
+      if (summary) {
+        out$sd <- get_summary(out$sd, probs, robust, keep_names = TRUE)
+      }
+      out
+    }
+    
+    stopifnot(is.brmsfit(x))
+    if (nrow(x$ranef)) {
+      get_names <- function(group) {
+        # get names of group-level parameters
+        r <- x$ranef[x$ranef$group == group, ]
+        rnames <- paste0(usc(r$nlpar, "suffix"), r$coef)
+        cor_type <- paste0("cor_", group)
+        sd_pars <- paste0("sd_", group, "__", rnames)
+        cor_pars <- get_cornames(rnames, type = cor_type, brackets = FALSE)
+        nlist(rnames, sd_pars, cor_pars)
+      }
+      group <- unique(x$ranef$group)
+      tmp <- lapply(group, get_names)
+    } else {
+      tmp <- group <- NULL
+    }
+    # special treatment of residuals variances in linear models
+    bterms <- parse_bf(x$formula, family = family(x))
+    has_sigma <- has_sigma(family(x), bterms, incmv = TRUE)
+    if (has_sigma && any(grepl("^sigma($|_)", parnames(x)))) {
+      response <- bterms$response
+      cor_pars <- get_cornames(response, type = "rescor", brackets = FALSE)
+      sd_pars <- c("sigma", paste0("sigma_", response))
+      tmp <- lc(tmp, nlist(rnames = response, sd_pars, cor_pars))
+      group <- c(group, "residual__")
+    } 
+    out <- lapply(tmp, .VarCorr)
+    names(out) <- group
   }
-  VarCorr
+  out
 }
 
 #' @export

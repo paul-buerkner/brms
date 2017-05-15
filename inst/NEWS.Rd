@@ -6,6 +6,9 @@
 \section{CHANGES IN VERSION 1.6.1++}{
   \subsection{NEW FEATURES}{
     \itemize{
+      \item Rework methods \code{fixef}, \code{ranef},
+      \code{coef}, and \code{VarCorr} to be more flexible 
+      and consistent with other post-processing methods.
       \item Visualize predictions via spaghetti 
       plots using argument \code{spaghetti} in
       \code{marginal_effects} and \code{marginal_smooths}.

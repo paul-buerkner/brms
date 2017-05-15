@@ -2,23 +2,49 @@
 % Please edit documentation in R/brmsfit-methods.R
 \name{coef.brmsfit}
 \alias{coef.brmsfit}
-\title{Extract model coefficients}
+\title{Extract Model Coefficients}
 \usage{
-\method{coef}{brmsfit}(object, estimate = c("mean", "median"), ...)
+\method{coef}{brmsfit}(object, summary = TRUE, robust = FALSE,
+  probs = c(0.025, 0.975), old = FALSE, estimate = c("mean", "median"),
+  ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}}
 
-\item{estimate}{The point estimate to be calculated 
+\item{summary}{Should summary statistics 
+ (i.e. means, sds, and 95\% intervals) be returned
+instead of the raw values? Default is \code{TRUE}.}
+
+\item{robust}{If \code{FALSE} (the default) the mean is used as 
+the measure of central tendency and the standard deviation as 
+the measure of variability. If \code{TRUE}, the median and the 
+median absolute deivation (MAD) are applied instead.
+Only used if \code{summary} is \code{TRUE}.}
+
+\item{probs}{The percentiles to be computed by the \code{quantile} 
+function. Only used if \code{summary} is \code{TRUE}.}
+
+\item{old}{Logical; indicates if the old implementation
+of this method (prior to version 1.7.0) should be used.
+Defaults to \code{FALSE}.}
+
+\item{estimate}{(Deprecated) The point estimate to be calculated 
 for the group-level effects, either \code{"mean"} or \code{"median"}.}
 
 \item{...}{Further arguments to be passed to the function 
 specified in \code{estimate}.}
 }
 \value{
-A list of matrices (one per grouping factor and 
- non-linear parameter) with factor levels as row names and 
- coefficients as column names.
+If \code{old} is \code{FALSE}: A list of arrays 
+ (one per grouping factor). If \code{summary} is \code{TRUE},
+ names of the first dimension are the factor levels and names
+ of the third dimension are the group-level effects. 
+ If \code{summary} is \code{FALSE}, names of the second dimension
+ are the factor levels and names of the third dimension are the 
+ group-level effects.
+ 
+ If \code{old} is \code{TRUE}: A list of matrices (one per grouping factor),
+ with factor levels as row names and group-level effects as column names.
 }
 \description{
 Extract model coefficients, which are the sum of population-level 
@@ -27,7 +53,7 @@ effects and corresponding group-level effects
 \examples{
 \dontrun{
 fit <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1+Trt_c|visit), 
-           data = epilepsy, family = "poisson", chains = 1)
+           data = epilepsy, family = gaussian(), chains = 2)
 ## extract population and group-level coefficients separately
 fixef(fit)
 ranef(fit)

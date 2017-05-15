@@ -5,21 +5,43 @@
 \alias{fixef}
 \title{Extract Population-Level Estimates}
 \usage{
-\method{fixef}{brmsfit}(object, estimate = "mean", ...)
+\method{fixef}{brmsfit}(object, summary = TRUE, robust = FALSE,
+  probs = c(0.025, 0.975), old = FALSE, estimate = "mean", ...)
 }
 \arguments{
-\item{object}{An object of class \code{brmsfit}}
+\item{object}{An object of class \code{brmsfit}.}
 
-\item{estimate}{A character vector specifying which coefficients 
-(e.g., \code{"mean"}, \code{"median"}, \code{"sd"}, or \code{"quantile"})
-should be calculated for the population-level effects.}
+\item{summary}{Should summary statistics 
+ (i.e. means, sds, and 95\% intervals) be returned
+instead of the raw values? Default is \code{TRUE}.}
+
+\item{robust}{If \code{FALSE} (the default) the mean is used as 
+the measure of central tendency and the standard deviation as 
+the measure of variability. If \code{TRUE}, the median and the 
+median absolute deivation (MAD) are applied instead.
+Only used if \code{summary} is \code{TRUE}.}
+
+\item{probs}{The percentiles to be computed by the \code{quantile} 
+function. Only used if \code{summary} is \code{TRUE}.}
+
+\item{old}{Logical; indicates if the old implementation
+of this method (prior to version 1.7.0) should be used.
+Defaults to \code{FALSE}.}
+
+\item{estimate}{(Deprecated) A character vector specifying 
+which coefficients (e.g., \code{"mean"}, \code{"median"}, 
+\code{"sd"}, or \code{"quantile"}) should be calculated 
+for the population-level effects. Only used if \code{old}
+is \code{TRUE}.}
 
 \item{...}{Further arguments to be passed to the functions 
-specified in \code{estimate}}
+specified in \code{estimate}.}
 }
 \value{
-A matrix with one row per population-level effect 
-  and one column per calculated estimate.
+If \code{summary} is \code{TRUE}, a matrix with one row per 
+  population-level effect and one column per calculated estimate. 
+  If \code{summary} is \code{FALSE}, a matrix with one row per 
+  posterior sample and one column per population-level effect.
 }
 \description{
 Extract the population-level ('fixed') effects 
@@ -29,7 +51,7 @@ from a \code{brmsfit} object.
 \dontrun{
 fit <- brm(time | cens(censored) ~ age + sex + disease, 
            data = kidney, family = "exponential")
-fixef(fit, estimate = c("mean", "sd"))
+fixef(fit)
 }
 
 }

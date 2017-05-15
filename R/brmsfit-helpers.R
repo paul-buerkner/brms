@@ -433,14 +433,16 @@ get_estimate <- function(coef, samples, margin = 2, to.array = FALSE, ...) {
 }
 
 get_summary <- function(samples, probs = c(0.025, 0.975),
-                        robust = FALSE) {
+                        robust = FALSE, keep_names = FALSE) {
   # summarizes parameter samples based on mean, sd, and quantiles
   # Args: 
   #   samples: a matrix or data.frame containing the samples to be summarized. 
   #            rows are samples, columns are parameters
   #   probs: quantiles to be computed
+  #   robust: return median and mas instead of mean and sd?
+  #   keep_names: keep dimnames of the samples?
   # Returns:
-  #   a N x C matric where N is the number of observations and C 
+  #   a N x C matrix where N is the number of observations and C 
   #   is equal to \code{length(probs) + 2}.
   if (robust) {
     coefs <- c("median", "mad", "quantile")
@@ -448,17 +450,34 @@ get_summary <- function(samples, probs = c(0.025, 0.975),
     coefs <- c("mean", "sd", "quantile")
   }
   if (length(dim(samples)) == 2L) {
-    out <- do.call(cbind, lapply(coefs, get_estimate, samples = samples,
-                                 probs = probs, na.rm = TRUE))
+    out <- lapply(
+      coefs, get_estimate, samples = samples, 
+      probs = probs, na.rm = TRUE
+    )
+    out <- do.call(cbind, out)
+    if (keep_names) {
+      rownames(out) <- colnames(samples)
+    } else {
+      rownames(out) <- seq_len(nrow(out))
+    }
   } else if (length(dim(samples)) == 3L) {
-    out <- abind(lapply(seq_len(dim(samples)[3]), function(i)
-      do.call(cbind, lapply(coefs, get_estimate, samples = samples[, , i],
-                            probs = probs))), along = 3)
-    dimnames(out) <- list(NULL, NULL, paste0("P(Y = ", 1:dim(out)[3], ")")) 
+    fun3dim <- function(i) {
+      do.call(cbind, lapply(
+        coefs, get_estimate, samples = samples[, , i], 
+        probs = probs, ra.rm = TRUE
+      ))
+    }
+    out <- abind(lapply(seq_len(dim(samples)[3]), fun3dim), along = 3)
+    if (keep_names) {
+      dimnames(out)[c(1, 3)] <- dimnames(samples)[c(2, 3)]
+    } else {
+      dimnames(out)[c(1, 3)] <- list(
+        seq_len(nrow(out)), paste0("P(Y = ", seq_len(dim(out)[3]), ")")
+      )  
+    }
   } else { 
     stop("Dimension of 'samples' must be either 2 or 3.") 
   }
-  rownames(out) <- seq_len(nrow(out))
   colnames(out) <- c("Estimate", "Est.Error", paste0(probs * 100, "%ile"))
   out  
 }
