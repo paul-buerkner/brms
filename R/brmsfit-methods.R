@@ -55,6 +55,9 @@ fixef.brmsfit <-  function(object, summary = TRUE, robust = FALSE,
     out <- old_fixef_brmsfit(object, estimate, probs = probs, ...)
   } else {
     message_new_method("fixef", version = "1.7.0")
+    if (!is_equal(estimate, "mean")) {
+      warning2("Argument 'estimate' is unused unless 'old' is set to TRUE.")
+    }
     out <- as.matrix(object, pars = fpars, exact_match = TRUE)
     colnames(out) <- gsub(fixef_pars(), "", fpars)
     if (summary) {
@@ -158,6 +161,13 @@ ranef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
     out <- old_ranef_brmsfit(object, estimate, var = var, ...)
   } else {
     message_new_method("ranef", version = "1.7.0")
+    estimate <- match.arg(estimate)
+    if (!is_equal(estimate, "mean")) {
+      warning2("Argument 'estimate' is unused unless 'old' is set to TRUE.")
+    }
+    if (!is_equal(var, FALSE)) {
+      warning2("Argument 'var' is unused unless 'old' is set to TRUE.")
+    }
     pars <- parnames(object)
     ranef <- object$ranef
     groups <- unique(ranef$group)
@@ -331,6 +341,9 @@ VarCorr.brmsfit <- function(x, sigma = 1, summary = TRUE, robust = FALSE,
     out <- old_VarCorr_brmsfit(x, estimate, probs = probs, ...)
   } else {
     message_new_method("VarCorr", version = "1.7.0")
+    if (!is_equal(estimate, "mean")) {
+      warning2("Argument 'estimate' is unused unless 'old' is set to TRUE.")
+    }
     .VarCorr <- function(y) {
       # extract samples for sd, cor and cov
       out <- list(sd = as.matrix(x, pars = y$sd_pars, exact_match = TRUE))
