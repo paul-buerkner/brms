@@ -43,13 +43,12 @@ brmssummary <- function(formula = NULL, family = NULL, link = "",
   x
 }
 
-#' Non-linear hypothesis testing
+#' Non-Linear Hypothesis Testing
 #' 
 #' Perform non-linear hypothesis testing for all model parameters. 
 #' 
-#' @aliases hypothesis.brmsfit
-#' 
-#' @param x An \code{R} object typically of class \code{brmsfit}.
+#' @param x An \code{R} object. If it is no \code{brmsfit} object,
+#'  it must be coercible to a \code{data.frame}.
 #' @param hypothesis A character vector specifying one or more 
 #'  non-linear hypothesis concerning parameters of the model.
 #' @param class A string specifying the class of parameters being tested. 
@@ -65,19 +64,6 @@ brmssummary <- function(formula = NULL, family = NULL, link = "",
 #'  see 'Details' for more information).
 #' @param seed A single numeric value passed to \code{set.seed} 
 #'  to make results reproducible.
-#' @param ignore_prior A flag indicating if prior distributions 
-#'  should also be plotted. Only used if priors were specified on
-#'  the relevant parameters.
-#' @param digits Minimal number of significant digits, 
-#'   see \code{\link[base:print.default]{print.default}}.
-#' @param chars Maximum number of characters of each hypothesis
-#'  to print or plot. If \code{NULL}, print the full hypotheses.
-#'  Defaults to \code{20}.
-#' @param colors Two values specifying the colors of the posterior
-#'  and prior density respectively. If \code{NULL} (the default)
-#'  colors are taken from the current color scheme of 
-#'  the \pkg{bayesplot} package.
-#' @inheritParams plot.brmsfit
 #' @param ... Currently ignored.
 #' 
 #' @details Among others, \code{hypothesis} computes an 
@@ -115,8 +101,9 @@ brmssummary <- function(formula = NULL, family = NULL, link = "",
 #'  testing framework, we strongly argue against using arbitrary cutoffs 
 #'  (e.g., \code{p < .05}) to determine the 'existence' of an effect.
 #' 
-#' @return Summary statistics of the posterior distributions 
-#'  related to the hypotheses. 
+#' @return A \code{\link[brms:brmshypothesis]{brmshypothesis}} object.
+#' 
+#' @seealso \code{\link[brms:brmshypothesis]{brmshypothesis}}
 #' 
 #' @author Paul-Christian Buerkner \email{paul.buerkner@@gmail.com}
 #' 
@@ -154,12 +141,48 @@ brmssummary <- function(formula = NULL, family = NULL, link = "",
 #' (hyp3 <- hypothesis(fit, c("diseaseGN = diseaseAN", 
 #'                            "2 * diseaseGN - diseasePKD = 0")))
 #' plot(hyp3, ignore_prior = TRUE)
+#' 
+#' ## use the default method
+#' dat <- as.data.frame(fit)
+#' hypothesis(dat, "b_age > 0")
 #' }
 #' 
 #' @export
-hypothesis <- function(x, hypothesis, ...) {
+hypothesis <- function(x, ...) {
   UseMethod("hypothesis")
 }
+
+#' Decriptions of \code{brmshypothesis} Objects
+#' 
+#' A \code{brmshypothesis} object contains posterior samples
+#' as well as summary statistics of non-linear hypotheses as 
+#' returned by \code{\link[brms:hypothesis]{hypothesis}}.
+#' 
+#' @name brmshypothesis
+#' 
+#' @param ignore_prior A flag indicating if prior distributions 
+#'  should also be plotted. Only used if priors were specified on
+#'  the relevant parameters.
+#' @param digits Minimal number of significant digits, 
+#'   see \code{\link[base:print.default]{print.default}}.
+#' @param chars Maximum number of characters of each hypothesis
+#'  to print or plot. If \code{NULL}, print the full hypotheses.
+#'  Defaults to \code{20}.
+#' @param colors Two values specifying the colors of the posterior
+#'  and prior density respectively. If \code{NULL} (the default)
+#'  colors are taken from the current color scheme of 
+#'  the \pkg{bayesplot} package.
+#' @param ... Currently ignored.
+#' @inheritParams plot.brmsfit
+#' 
+#' @details 
+#' The two most important elements of a \code{brmshypothesis} object are
+#' \code{hypothesis}, which is a data.frame containing the summary estimates
+#' of the hypotheses, and \code{samples}, which is a data.frame containing 
+#' the corresponding posterior samples.
+#' 
+#' @seealso \code{\link[brms:hypothesis]{hypothesis}}
+NULL
 
 #' Extract posterior samples
 #' 

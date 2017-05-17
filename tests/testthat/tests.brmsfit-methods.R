@@ -139,18 +139,23 @@ test_that("all S3 methods have reasonable ouputs", {
     count ~ Trt * Age + mono(Exp) + s(Age) + offset(Age) + (1 + Trt | visit))
   
   # hypothesis
-  h1 <- hypothesis(fit1, "Intercept > Trt")
-  expect_equal(dim(h1$hypothesis), c(1, 6))
-  expect_output(print(h1), "(Intercept)-(Trt) > 0", fixed = TRUE)
-  expect_silent(p <- plot(h1, plot = FALSE))
+  hyp <- hypothesis(fit1, c("Intercept > Trt", "Trt:Age = -1"))
+  expect_equal(dim(hyp$hypothesis), c(2, 6))
+  expect_output(print(hyp), "(Intercept)-(Trt) > 0", fixed = TRUE)
+  expect_silent(p <- plot(hyp, plot = FALSE))
   
-  h2 <- hypothesis(fit1, "Intercept = 0", class = "sd", group = "visit")
-  expect_true(is.numeric(h2$hypothesis$Evid.Ratio[1]))
-  expect_output(print(h2), "class sd_visit:", fixed = TRUE)
-  expect_silent(p <- plot(h2, ignore_prior = TRUE, plot = FALSE))
+  hyp <- hypothesis(fit1, "Intercept = 0", class = "sd", group = "visit")
+  expect_true(is.numeric(hyp$hypothesis$Evid.Ratio[1]))
+  expect_output(print(hyp), "class sd_visit:", fixed = TRUE)
+  expect_silent(p <- plot(hyp, ignore_prior = TRUE, plot = FALSE))
+  
+  hyp <- hypothesis(fit1, "0 > r_visit[4,Intercept]", class = "", alpha = 0.01)
+  expect_equal(dim(hyp$hypothesis), c(1, 6))
+  expect_output(print(hyp, chars = NULL), "r_visit[4,Intercept]", fixed = TRUE)
+  expect_output(print(hyp), "l-99% CI", fixed = TRUE)
+  
   expect_error(hypothesis(fit1, "Intercept > x"), fixed = TRUE,
                "cannot be found in the model: \n'b_x'")
-  
   expect_error(hypothesis(fit1, 1),
                "Argument 'hypothesis' must be a character vector")
   expect_error(hypothesis(fit2, "b_Age = 0", alpha = 2),
@@ -159,9 +164,13 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_error(hypothesis(fit3, "b_Age x 0"),
                "Every hypothesis must be of the form 'left (= OR < OR >) right'",
                fixed = TRUE)
-  expect_error(hypothesis(fit4, "x1 = 0", class = "a"),
-               "'a' is not a valid parameter class")
-
+  
+  # test hypothesis.default method
+  hyp <- hypothesis(as.data.frame(fit3), "bme_meAgeAgeSD > sigma")
+  expect_equal(dim(hyp$hypothesis), c(1, 6))
+  hyp <- hypothesis(fit3$fit, "bme_meAgeAgeSD > sigma")
+  expect_equal(dim(hyp$hypothesis), c(1, 6))
+  
   # omit launch_shiny
   
   # log_lik
@@ -354,6 +363,10 @@ test_that("all S3 methods have reasonable ouputs", {
                c("b_Intercept", "b_sigma_Intercept", "b_Trt", 
                  "b_Age", "b_Trt:Age", "b_sAge_1", "b_sigma_Trt"))
   
+  # test default method
+  ps <- posterior_samples(fit1$fit, "b_Intercept")
+  expect_equal(dim(ps), c(nsamples(fit1), 1))
+  
   # posterior_predict
   expect_equal(dim(posterior_predict(fit1)), 
                c(nsamples(fit1), nobs(fit1)))
@@ -453,6 +466,10 @@ test_that("all S3 methods have reasonable ouputs", {
   prs2 <- prior_samples(fit1, pars = "b_Trt")
   expect_equal(dimnames(prs2), list(as.character(1:nsamples(fit1)), "b_Trt"))
   expect_equal(sort(prs1$b), sort(prs2$b_Trt))
+  
+  # test default method
+  prs <- prior_samples(fit1$fit, pars = "^sd_visit")
+  expect_equal(names(prs), "prior_sd_visit")
   
   # prior_summary
   expect_true(is(prior_summary(fit1), "brmsprior"))

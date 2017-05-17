@@ -434,8 +434,9 @@ posterior_samples.brmsfit <- function(x, pars = NA, parameters = NA,
     stop2("Cannot use 'add_chain' and 'as.array' at the same time.")
   }
   contains_samples(x)
-  pars <- extract_pars(pars, all_pars = parnames(x), 
-                       exact_match = exact_match, ...)
+  pars <- extract_pars(
+    pars, all_pars = parnames(x), exact_match = exact_match, ...
+  )
   
   # get basic information on the samples 
   iter <- x$fit@sim$iter
@@ -611,8 +612,9 @@ prior_samples.brmsfit <- function(x, pars = NA, parameters = NA, ...) {
         }
         return(out)
       }
-      samples <- data.frame(rmNULL(lapply(pars, .prior_samples)), 
-                            check.names = FALSE)
+      samples <- data.frame(
+        rmNULL(lapply(pars, .prior_samples)), check.names = FALSE
+      )
     }
   } else {
     samples <- NULL
@@ -2591,112 +2593,22 @@ pp_mixture.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
 #' @export
 hypothesis.brmsfit <- function(x, hypothesis, class = "b", group = "",
                                alpha = 0.05, seed = 1234, ...) {
-  set.seed(1234)
-  if (!is.character(hypothesis)) {
-    stop2("Argument 'hypothesis' must be a character vector.")
-  }
-  if (length(alpha) != 1L || alpha < 0 || alpha > 1) {
-    stop2("Argument 'alpha' must be a single value in [0,1].")
-  }
+  # use a seed as prior_samples.brmsfit randomly permutes samples
+  set.seed(seed)
   contains_samples(x)
   x <- restructure(x)
-  
   if (!length(class)) {
     class <- "" 
   }
   if (length(class) != 1L || length(group) != 1L) {
     stop2("Arguments 'class' and 'group' must be of length one.")
   }
-  valid_classes <- c(
-    "", "b", "bcs", "bmo", "bme", "bm", "sd", "cor", 
-    "r", "sds", "s", "simplex", "sigma", "rescor"
-  )
-  if (!class %in% valid_classes) {
-    stop2("'", class, "' is not a valid parameter class.")
-  }
   if (class %in% c("sd", "cor", "r") && nzchar(group)) {
     class <- paste0(class, "_", group, "__")
   } else if (nzchar(class)) {
     class <- paste0(class, "_")
   }
-
-  hyp_fun <- function(h) {
-    # internal function to evaluate hypotheses
-    # Args:
-    #   h: A string containing a hypothesis
-    h <- rename(h, c("[ \t\r\n]", ":"), c("", "___"), fixed = FALSE)
-    sign <- unlist(regmatches(h, gregexpr("=|<|>", h)))
-    lr <- unlist(regmatches(h, gregexpr("[^=<>]+", h)))
-    if (length(sign) != 1 || length(lr) != 2) {
-      stop2("Every hypothesis must be of the form 'left (= OR < OR >) right'.")
-    }
-    h <- paste0("(", lr[1], ")")
-    h <- paste0(h, ifelse(lr[2] != "0", paste0("-(", lr[2], ")"), ""))
-    varsH <- unique(find_names(h))
-    parsH <- paste0(class, varsH)
-    missing_pars <- setdiff(parsH, pars)
-    if (length(missing_pars)) {
-      stop2("The following parameters cannot be found in the model: \n", 
-            collapse_comma(gsub("___", ":", missing_pars)))
-    }
-    # prepare for renaming of parameters so that h can be evaluated
-    parsH <- rename(parsH, "___", ":")
-    h_renamed <- rename(h, c("[", "]", ","), c(".", ".", ".."))
-    symbols <- c(paste0("^", class), ":", "\\[", "\\]", ",")
-    subs <- c("", "___", ".", ".", "..")
-    # get posterior samples
-    samples <- posterior_samples(x, pars = parsH, exact_match = TRUE)
-    names(samples) <- rename(names(samples), symbols = symbols, 
-                             subs = subs, fixed = FALSE)
-    samples <- matrix(with(samples, eval(parse(text = h_renamed))), ncol = 1)
-    # get prior samples
-    prior_samples <- prior_samples(x, pars = parsH, fixed = TRUE)
-    if (!is.null(prior_samples) && ncol(prior_samples) == length(varsH)) {
-      names(prior_samples) <- rename(names(prior_samples), symbols = symbols, 
-                                     subs = subs, fixed = FALSE)
-      prior_samples <- matrix(with(prior_samples, eval(parse(text = h_renamed))), 
-                              ncol = 1)
-    } else {
-      prior_samples <- NULL
-    }
-    # evaluate hypothesis
-    wsign <- ifelse(sign == "=", "equal", ifelse(sign == "<", "less", "greater"))
-    probs <- switch(wsign, equal = c(alpha / 2, 1 - alpha / 2), 
-                    less = c(0, 1 - alpha), greater = c(alpha, 1))
-    sm <- lapply(c("mean", "sd", "quantile", "evidence_ratio"), 
-                 get_estimate, samples = samples, probs = probs, 
-                 wsign = wsign, prior_samples = prior_samples, ...)
-    sm <- as.data.frame(matrix(unlist(sm), nrow = 1))
-    if (sign == "<") {
-      sm[1, 3] <- -Inf
-    } else if (sign == ">") {
-      sm[1, 4] <- Inf
-    }
-    sm <- cbind(sm, ifelse(!(sm[1, 3] <= 0 && 0 <= sm[1, 4]), '*', ''))
-    rownames(sm) <- paste(rename(h, "___", ":"), sign, "0")
-    cl <- (1 - alpha) * 100
-    colnames(sm) <- c("Estimate", "Est.Error", paste0("l-", cl, "% CI"),
-                      paste0("u-", cl, "% CI"), "Evid.Ratio", "Star")
-    if (!is.null(prior_samples)) {
-      samples <- c(samples, prior_samples)
-    } else {
-      samples <- c(samples, rep(NA, nrow(samples)))
-    }
-    nlist(summary = sm, samples = samples)
-  }
-
-  pars <- rename(parnames(x)[grepl("^", class, parnames(x))],
-                 symbols = ":", subs = "___")
-  hlist <- lapply(hypothesis, hyp_fun)
-  hs <- do.call(rbind, lapply(hlist, function(h) h$summary))
-  samples <- do.call(cbind, lapply(hlist, function(h) h$samples))
-  samples <- as.data.frame(samples) 
-  names(samples) <- paste0("H", seq_along(hlist))
-  samples$Type <- factor(rep(c("posterior", "prior"), each = nsamples(x)))
-  class <- sub("_+$", "", class)
-  out <- nlist(hypothesis = hs, samples, class, alpha)
-  class(out) <- "brmshypothesis"
-  out
+  hypothesis_internal(x, hypothesis, class = class, alpha = alpha)
 }
 
 #' @rdname expose_functions

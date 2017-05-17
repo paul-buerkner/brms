@@ -173,7 +173,7 @@ print.iclist <- function(x, digits = 2, ...) {
   invisible(x)
 }
 
-#' @rdname hypothesis
+#' @rdname brmshypothesis
 #' @export
 print.brmshypothesis <- function(x, digits = 2, chars = 20, ...) {
   # make sure rownames are not too long
@@ -191,4 +191,46 @@ print.brmshypothesis <- function(x, digits = 2, chars = 20, ...) {
 print.brmsMarginalEffects <- function(x, ...) {
   plot(x, ...)
 }
-  
+
+#' @export
+parnames.default <- function(x, ...) {
+  names(x)
+}
+
+#' @export
+posterior_samples.default <- function(x, pars = NA, exact_match = FALSE, ...) {
+  x <- as.data.frame(x)
+  if (!anyNA(pars)) {
+    pars <- extract_pars(
+      pars, all_pars = names(x), exact_match = exact_match, ...
+    )
+    x <- x[, pars, drop = FALSE]
+  }
+  if (!ncol(x)) {
+    x <- NULL
+  }
+  x
+}
+
+#' @export
+prior_samples.default <- function(x, pars = NA, exact_match = FALSE, ...) {
+  if (anyNA(pars)) {
+    pars <- "^prior_"
+    exact_match <- FALSE
+  } else {
+    if (exact_match) {
+      pars <- paste0("prior_", pars) 
+    } else {
+      hat <- substr(pars, 1, 1) == "^"
+      pars <- ifelse(hat, substr(pars, 2, nchar(pars)), pars)
+      pars <- paste0("^prior_", pars)  
+    }
+  }
+  posterior_samples(x, pars = pars, exact_match = exact_match, ...)
+}
+
+#' @rdname hypothesis
+#' @export
+hypothesis.default <- function(x, hypothesis, alpha = 0.05, ...) {
+  hypothesis_internal(x, hypothesis, alpha = alpha, ...)
+}

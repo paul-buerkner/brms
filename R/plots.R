@@ -133,7 +133,7 @@ plot.brmsMarginalEffects <- function(x, ncol = NULL, points = FALSE,
   invisible(plots)
 }
 
-#' @rdname hypothesis
+#' @rdname brmshypothesis
 #' @method plot brmshypothesis
 #' @export
 plot.brmshypothesis <- function(x, N = 5, ignore_prior = FALSE,
