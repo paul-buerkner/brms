@@ -26,6 +26,9 @@
       \item Improve sampling efficiency for
       \code{exgaussian} models thanks to
       Alex Forrence.
+      \item Also transform data points when using argument 
+      \code{transform} in \code{marginal_effects}
+      thanks to Markus Gesmann.
     }
   }
   \subsection{BUG FIXES}{

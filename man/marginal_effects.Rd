@@ -9,8 +9,8 @@
 \method{marginal_effects}{brmsfit}(x, effects = NULL, conditions = NULL,
   int_conditions = NULL, re_formula = NA, robust = TRUE,
   probs = c(0.025, 0.975), method = c("fitted", "predict"),
-  spaghetti = FALSE, surface = FALSE, resolution = 100,
-  select_points = 0, too_far = 0, ...)
+  spaghetti = FALSE, surface = FALSE, transform = NULL,
+  resolution = 100, select_points = 0, too_far = 0, ...)
 
 marginal_effects(x, ...)
 

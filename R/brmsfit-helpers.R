@@ -1186,7 +1186,8 @@ evidence_ratio <- function(x, cut = 0, wsign = c("equal", "less", "greater"),
 }
 
 make_point_frame <- function(mf, effects, conditions, groups, 
-                             family, select_points = 0) {
+                             family, select_points = 0, 
+                             transform = NULL) {
   # helper function for marginal_effects.brmsfit
   # allowing add data points to the marginal plots
   # Args:
@@ -1261,6 +1262,9 @@ make_point_frame <- function(mf, effects, conditions, groups,
     if (is_binary(family)) {
       points$resp__ <- points$resp__ - 1
     }
+  }
+  if (!is.null(transform)) {
+    points$resp__ <- do.call(transform, list(points$resp__))
   }
   points
 }

@@ -1273,11 +1273,11 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
                                      int_conditions = NULL, re_formula = NA, 
                                      robust = TRUE, probs = c(0.025, 0.975),
                                      method = c("fitted", "predict"), 
-                                     spaghetti = FALSE, surface = FALSE, 
-                                     resolution = 100, select_points = 0, 
-                                     too_far = 0, ...) {
-  method <- match.arg(method)
+                                     spaghetti = FALSE, surface = FALSE,
+                                     transform = NULL, resolution = 100, 
+                                     select_points = 0, too_far = 0, ...) {
   dots <- list(...)
+  method <- match.arg(method)
   conditions <- use_alias(conditions, dots[["data"]])
   spaghetti <- as.logical(spaghetti)
   surface <- as.logical(use_alias(surface, dots[["contour"]]))
@@ -1294,6 +1294,9 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     warning2("Predictions are treated as continuous variables ", 
              "in marginal plots, \nwhich is likely an invalid ", 
              "assumption for family ", x$family$family, ".")
+  }
+  if (!is.null(transform) && method != "predict") {
+    stop2("'transform' is only allowed when 'method' is set to 'predict'.")
   }
   rsv_vars <- rsv_vars(bterms)
   if (is.null(effects)) {
@@ -1372,7 +1375,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     args <- list(
       x, newdata = marg_data, re_formula = re_formula,
       allow_new_levels = TRUE, incl_autocor = FALSE, 
-      summary = FALSE
+      transform = transform, summary = FALSE
     )
     args <- c(args, dots)
     if (is_ordinal(x$family) || is_categorical(x$family)) {
@@ -1428,7 +1431,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     attr(marg_res, "spaghetti") <- spaghetti_data
     point_args <- nlist(
       mf, effects = effects[[i]], conditions, select_points,
-      groups = get_re(bterms)$group, family = x$family
+      transform, groups = get_re(bterms)$group, family = x$family
     )
     attr(marg_res, "points") <- do.call(make_point_frame, point_args)
     results[[paste0(effects[[i]], collapse = ":")]] <- marg_res
