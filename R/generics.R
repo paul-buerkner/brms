@@ -671,6 +671,10 @@ stanplot <- function(object, ...) {
 #'   two-dimensional smooths should be visualized as a surface. 
 #'   Defaults to \code{FALSE}. The surface type can be controlled 
 #'   via argument \code{stype} of the related plotting method.
+#' @param transform A function or a character string naming 
+#'   a function to be applied on the predicted responses
+#'   before summary statistics are computed. Only allowed
+#'   if \code{method = "predict"}.
 #' @param resolution Number of support points used to generate 
 #'   the plots. Higher resolution leads to smoother plots. 
 #'   Defaults to \code{100}. If \code{surface} is \code{TRUE},
