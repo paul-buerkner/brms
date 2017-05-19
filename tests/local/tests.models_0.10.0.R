@@ -58,7 +58,7 @@ print(fit_old_mv)
 expect_range(WAIC(fit_old_mv)$waic, 1320, 1360)
 expect_equal(dim(predict(fit_old_mv)), c(nobs(fit_old_mv), 4))
 expect_equal(dim(fitted(fit_old_mv)), c(nobs(fit_old_mv), 4))
-expect_equal(dim(as.data.frame(VarCorr(fit_old_mv))), c(6, 9))
+expect_equal(dim(as.data.frame(VarCorr(fit_old_mv, old = TRUE))), c(6, 9))
 
 print(fit_old_hu)
 expect_range(WAIC(fit_old_hu)$waic, 1615, 1645)

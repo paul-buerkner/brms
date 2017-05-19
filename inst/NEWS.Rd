@@ -3,7 +3,7 @@
 \encoding{UTF-8}
 
 
-\section{CHANGES IN VERSION 1.6.1++}{
+\section{CHANGES IN VERSION 1.7.0}{
   \subsection{NEW FEATURES}{
     \itemize{
       \item Fit latent Gaussian processes of one

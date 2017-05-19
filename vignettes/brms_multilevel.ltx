@@ -18,7 +18,7 @@
 
 %% an abstract and keywords
 \Abstract{
-The \pkg{brms} package allows \proglang{R} users to easily specify a wide range of Bayesian multilevel models, which are fitted with the probabilistic programming language \proglang{Stan} behind the scenes. A wide range of response distributions are supported in combination with an intuitive and powerful multilevel formula syntax. Non-linear relationships may be specified using non-linear predictor terms or smooth functions. Additionally, all parameters of the response distribution can be predicted at the same time allowing for distributional regression. Model fit can be investigated and compared using leave-one-out cross-validation and graphical posterior-predictive checks. Many more post-processing and plotting methods are implemented. 
+The \pkg{brms} package allows \proglang{R} users to easily specify a wide range of Bayesian multilevel models, which are fitted with the probabilistic programming language \proglang{Stan} behind the scenes. A wide range of response distributions are supported in combination with an intuitive and powerful multilevel formula syntax. Non-linear relationships may be specified using non-linear predictor terms, splines or Gaussian processes. Additionally, all parameters of the response distribution can be predicted at the same time allowing for distributional regression. Model fit can be investigated and compared using leave-one-out cross-validation and graphical posterior-predictive checks. Many more post-processing and plotting methods are implemented. 
 }
 \Keywords{Bayesian inference, multilevel models, distributional models, \pkg{lme4}, \proglang{Stan}, \proglang{R}}
 \Plainkeywords{Bayesian inference, multilevel models, distributional models, lme4, Stan, R} %% without formatting
@@ -62,7 +62,7 @@ The \pkg{brms} package allows \proglang{R} users to easily specify a wide range 
 
 \section{Introduction}
 
-Multilevel models (MLMs) offer great flexibility for researchers across sciences \citep{brown2015, demidenko2013, gelmanMLM2006, pinheiro2006}. They allow modeling of data measured on different levels at the same time -- for instance data of students nested within classes and schools -- thus taking complex dependency structures into account. It is not surprising that many packages for \proglang{R} \citep{Rcore2015} have been developed to fit MLMs. Usually, however, the functionality of these implementations is limited insofar as it is only possible to predict the mean of the response distribution. Other parameters of the response distribution, such as the residual standard deviation in linear models, are assumed constant across observations, which may be violated in many applications. Accordingly, it is desirable to allow for prediction of \emph{all} response parameters at the same time. Models doing exactly that are often referred to as \emph{distributional models} or more verbosely \emph{models for location, scale and shape} \citep{rigby2005}. Another limitation of basic MLMs is that they only allow for linear predictor terms. While linear predictor terms already offer good flexibility, they are of limited use when relationships are inherently non-linear. Such non-linearity can be handled in at least two ways: (1) by fully specifying a non-linear predictor term with corresponding parameters each of which can be predicted using MLMs \citep{lindstrom1990}, or (2) estimating the form of the non-linear relationship on the fly using smooth terms \citep{wood2004}. The former are often simply called \emph{non-linear models}, while the latter are referred to as \emph{generalized additive models} (GAMs; \citeauthor{hastie1990}, \citeyear{hastie1990}). 
+Multilevel models (MLMs) offer great flexibility for researchers across sciences \citep{brown2015, demidenko2013, gelmanMLM2006, pinheiro2006}. They allow modeling of data measured on different levels at the same time -- for instance data of students nested within classes and schools -- thus taking complex dependency structures into account. It is not surprising that many packages for \proglang{R} \citep{Rcore2015} have been developed to fit MLMs. Usually, however, the functionality of these implementations is limited insofar as it is only possible to predict the mean of the response distribution. Other parameters of the response distribution, such as the residual standard deviation in linear models, are assumed constant across observations, which may be violated in many applications. Accordingly, it is desirable to allow for prediction of \emph{all} response parameters at the same time. Models doing exactly that are often referred to as \emph{distributional models} or more verbosely \emph{models for location, scale and shape} \citep{rigby2005}. Another limitation of basic MLMs is that they only allow for linear predictor terms. While linear predictor terms already offer good flexibility, they are of limited use when relationships are inherently non-linear. Such non-linearity can be handled in at least two ways: (1) by fully specifying a non-linear predictor term with corresponding parameters each of which can be predicted using MLMs \citep{lindstrom1990}, or (2) estimating the form of the non-linear relationship on the fly using splines \citep{wood2004} or Gaussian processes \citep{rasmussen2006}. The former are often simply called \emph{non-linear models}, while models applying splines are referred to as \emph{generalized additive models} (GAMs; \citeauthor{hastie1990}, \citeyear{hastie1990}). 
 
 Combining all of these modeling options into one framework is a complex task, both conceptually and with regard to model fitting. Maximum likelihood methods, which are typically applied in classical 'frequentist' statistics, can reach their limits at some point and fully Bayesian methods become the go-to solutions to fit such complex models \citep{gelman2014}. In addition to being more flexible, the Bayesian framework comes with other advantages, for instance, the ability to derive probability statements for every quantity of interest or explicitly incorporating prior knowledge about parameters into the model. 
 
@@ -103,7 +103,7 @@ While intuitive and visually appealing, the classic \pkg{lme4} syntax is not fle
 
 Further extensions of the classical \pkg{lme4} syntax refer to the \code{group} part. It is rather limited in its flexibility since only variable names combined by \code{:} or \code{/} are supported. We propose two extensions of this syntax: Firstly, \code{group} can generally be split up in its terms so that, say, \code{(1 | g1 + g2)} is expanded to \code{(1 | g1) + (1 | g2)}. This is fully consistent with the way \code{/} is handled so it provides a natural generalization to the existing syntax. Secondly, there are some special grouping structures that cannot be expressed by simply combining grouping variables. For instance, multi-membership models cannot be expressed this way. To overcome this limitation, we propose wrapping terms in \code{group} within special functions that allow specifying alternative grouping structures: \code{(gterms | fun(group))}. In \pkg{brms}, there are currently two such functions implemented, namely \code{gr} for the default behavior and \code{mm} for multi-membership terms. To be compatible with the original syntax and to keep formulas short, \code{gr} is automatically added internally if none of these functions is specified.
 
-There are other syntax extensions implemented in \pkg{brms} that do not directly target grouping terms. Firstly, there are terms formally included in the \code{pterms} part that are handled separately. The most prominent examples are smooth terms specified through the \code{s} and \code{t2} functions of the \pkg{mgcv} package \citep{wood2011}. Other examples are category specific effects \code{cs}, monotonic effects \code{mo}, or noise-free effects \code{me}. The former is explained in \cite{buerkner2016}, while the latter two are documented in \code{help(brmsformula)}. Internally, these terms are extracted from \code{pterms} and not included in the construction of the population-level design matrix $\mathbf{X}$. Secondly, making use of the fact that \code{|} is unused on the left-hand side of $\sim$ in formula, additional information on the response variable may be specified via \code{response | aterms ~ <predictor terms>}. The \code{aterms} part may contain multiple terms of the form \code{fun(<variable>)} seperated by \code{+} each providing special information on the response variable. \code{fun} can be replaced with either \code{se}, \code{weights}, \code{disp}, \code{trials}, \code{cat}, \code{cens}, \code{trunc}, or \code{dec}. As it is not the main topic of the present paper, we refer to \code{help("brmsformula")} and \code{help("addition-terms")} for more details.
+There are other syntax extensions implemented in \pkg{brms} that do not directly target grouping terms. Firstly, there are terms formally included in the \code{pterms} part that are handled separately. The most prominent examples are smooth terms specified through the \code{s} and \code{t2} functions of the \pkg{mgcv} package \citep{wood2011}. Other examples are category specific effects \code{cs}, monotonic effects \code{mo}, noise-free effects \code{me}, or Gaussian process terms \code{gp}. The former is explained in \cite{buerkner2016}, while the latter thee are documented in \code{help(brmsformula)}. Internally, these terms are extracted from \code{pterms} and not included in the construction of the population-level design matrix $\mathbf{X}$. Secondly, making use of the fact that \code{|} is unused on the left-hand side of $\sim$ in formula, additional information on the response variable may be specified via \code{response | aterms ~ <predictor terms>}. The \code{aterms} part may contain multiple terms of the form \code{fun(<variable>)} seperated by \code{+} each providing special information on the response variable. \code{fun} can be replaced with either \code{se}, \code{weights}, \code{disp}, \code{trials}, \code{cat}, \code{cens}, \code{trunc}, or \code{dec}. As it is not the main topic of the present paper, we refer to \code{help("brmsformula")} and \code{help("addition-terms")} for more details.
 
 \section{Examples}
 
@@ -116,7 +116,7 @@ Despite not being covered in the three examples, there are a few more modeling o
 An important application of the distributional regression framework of \pkg{brms} are so called zero-inflated and hurdle models. These models are helpful whenever there are more zeros in the response variable than one would naturally expect. For example, if you seek to predict the number of cigarettes people smoke per day and also includes non-smokers, there will be a huge amount of zeros which, when not modeled appropriately, can seriously distort parameter estimates. Here, we consider another example dealing with the number of fish caught by various groups of people. On the UCLA website (\url{http://www.ats.ucla.edu/stat/r/dae/zipoisson.htm}), the data are described as follows: ``The state wildlife biologists want to model how many fish are being caught by fishermen at a state park. Visitors are asked how long they stayed, how many people were in the group, were there children in the group and how many fish were caught. Some visitors do not fish, but there is no data on whether a person fished or not. Some visitors who did fish did not catch any fish so there are excess zeros in the data because of the people that did not fish.''
 
 \begin{Sinput}
-R> zinb <- read.csv("http://www.ats.ucla.edu/stat/data/fish.csv")
+R> zinb <- read.csv("http://stats.idre.ucla.edu/stat/data/fish.csv")
 R> zinb$camper <- factor(zinb$camper, labels = c("no", "yes"))
 R> head(zinb)
 \end{Sinput}
@@ -134,8 +134,8 @@ R> head(zinb)
 As predictors we choose the number of people per group, the number of children, as well as whether the group consists of campers. Many groups may not catch any fish just because they do not try and so we fit a zero-inflated Poisson model. For now, we assume a constant zero-inflation probability across observations.
 
 \begin{Sinput}
-R> fit_zinb1 <- brm(count ~ persons + child + camper, 
-R>                  data = zinb, family = zero_inflated_poisson())
+R> fit_zinb1 <- brm(count ~ persons + child + camper, data = zinb, 
+R>                  family = zero_inflated_poisson())
 \end{Sinput}
 
 The model is readily summarized via
@@ -263,17 +263,15 @@ R> head(loss)
 and translate the proposed model into a non-linear \pkg{brms} model.
 
 \begin{Sinput}
-R> nlform <- bf(cum ~ ult * (1 - exp(-(dev/theta)^omega)),
-R>              ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1, 
-R>              nl = TRUE)
+R> nlform <- bf(cum ~ ult * (1 - exp(-(dev / theta)^omega)),
+R>              ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1, nl = TRUE)
              
 R> nlprior <- c(prior(normal(5000, 1000), nlpar = "ult"),
 R>              prior(normal(1, 2), nlpar = "omega"),
 R>              prior(normal(45, 10), nlpar = "theta"))
               
-R> fit_loss1 <- brm(formula = nlform, data = loss, 
-R>                  family = gaussian(), prior = nlprior,
-R>                  control = list(adapt_delta = 0.9))
+R> fit_loss1 <- brm(formula = nlform, data = loss, family = gaussian(), 
+R>                  prior = nlprior, control = list(adapt_delta = 0.9))
 \end{Sinput}
 
 In the above functions calls, quite a few things are going on. The formulas are wrapped in \code{bf} to combine them into one object. The first formula specifies the non-linear model. We set argument \code{nl = TRUE} so that \pkg{brms} takes this formula literally and instead of using standard \proglang{R} formula parsing. We specify one additional formula per non-linear parameter (a) to clarify what variables are covariates and what are parameters and (b) to specify the predictor term for the parameters. We estimate a group-level effect of accident year (variable \code{AY}) for the ultimate loss \code{ult}. This also shows nicely how a non-linear parameter is actually a placeholder for a linear predictor, which in the case of \code{ult}, contains only a varying intercept for year. Both \code{omega} and \code{theta} are assumed to be constant across observations so we just fit a population-level intercept. 
@@ -286,7 +284,7 @@ R> summary(fit_loss1)
 
 \begin{Soutput}
  Family: gaussian (identity) 
-Formula: cum ~ ult * (1 - exp(-(dev/theta)^omega)) 
+Formula: cum ~ ult * (1 - exp(-(dev / theta)^omega)) 
          ult ~ 1 + (1 | AY)
          omega ~ 1
          theta ~ 1
@@ -350,11 +348,9 @@ R> plot(me_year, ncol = 5, points = TRUE)
 In the above model, we considered \code{omega} and \code{delta} to be constant across years, which may not necessarily be true. We can easily investigate this by fitting varying intercepts for all three non-linear parameters also estimating group-level correlation using the above introduced \code{ID} syntax.
 
 \begin{Sinput}
-R> nlform2 <- bf(cum ~ ult * (1 - exp(-(dev/theta)^omega)),
-R>               ult ~ 1 + (1|ID1|AY),
-R>               omega ~ 1 + (1|ID1|AY),
-R>               theta ~ 1 + (1|ID1|AY),
-R>               nl = TRUE)
+R> nlform2 <- bf(cum ~ ult * (1 - exp(-(dev / theta)^omega)),
+R>               ult ~ 1 + (1|ID1|AY), omega ~ 1 + (1|ID1|AY),
+R>               theta ~ 1 + (1|ID1|AY), nl = TRUE)
               
 R> fit_loss2 <- update(fit_loss1, formula = nlform2,
 R>                     control = list(adapt_delta = 0.90))
@@ -378,11 +374,10 @@ Since smaller values indicate better expected out-of-sample predictions and thus
 With the above models, we achieve good fit to the data thanks to a tailored non-linear function provided by subject matter experts. Now assume that such a knowledge is not available. We can try finding a reasonable function trough trial and error, or we can use a statistical procedure to find a good function for us. The latter approach naturally leads to fitting smooth terms via splines, which is readily applied to the insurance loss data using \pkg{brms}. All the complicated stuff related to the data for setting up smooth terms is handled by \pkg{mgcv} \citep{wood2011} on the backend.
 
 \begin{Sinput}
-R> fit_loss3 <- brm(cum ~ s(dev) + (1|AY), data = loss,
-R>                  control = list(adapt_delta = 0.90))
+R> fit_loss3 <- brm(cum ~ s(dev) + (1|AY), data = loss)
 \end{Sinput}
 
-As the smooth term itself cannot be modeled as varying by year in a multilevel manner, we add a basic varying intercept in an effort to account for variation between years. The usual methods such as \code{summary} or \code{marginal_effects} can be applied to obtain numerical or graphical summaries of the model. The predictions of each year are looking a follows.
+As the smooth term itself cannot be modeled as varying by year in a multilevel manner, we add a basic varying intercept in an effort to account for variation between years.  The usual methods such as \code{summary} or \code{marginal_effects} can be applied to obtain numerical or graphical summaries of the model. The predictions of each year are looking a follows.
 
 \begin{Sinput}
 R> me_year3 <- marginal_effects(fit_loss3, conditions = conditions, 
@@ -410,7 +405,7 @@ fit_loss3            780.03 12.91
 fit_loss1 - fit_loss3 -64.58 18.59
 \end{Soutput}
 
-We see that \code{fit_loss3} clearly fits worse than the specifically designed non-linear model \code{fit_loss1}, but the former still performs impressively given that we just fitted a non-linear function to the data without knowing anything about its form a-priori. More examples of non-linear models can be found in \code{vignette("brms_nonlinear")}.
+We see that \code{fit_loss3} clearly fits worse than the specifically designed non-linear model \code{fit_loss1}, but the former still performs impressively given that we just fitted a non-linear function to the data without knowing anything about its form a-priori. An alternative to splines for fitting a-priori unknown non-linear relationships are latent Gaussian processes \citep{rasmussen2006}. In \pkg{brms}, Gaussian process terms can be specified in the model formula via function \code{gp} in a similar manner as splines via \code{s} or \code{t2}. More examples of non-linear models can be found in \code{vignette("brms_nonlinear")}.
 
 \subsection{Example 3: Performance of school children}
 
@@ -452,7 +447,7 @@ R> data_mm[101:106, ]
 Thus, school variables are identical, but we still have to specify both in order to pass the data appropriately. Incorporating no other predictors into the model for simplicity, a multi-membership model is specified as
 
 \begin{Sinput}
-R> fit_mm <- brm(y ~ 1 + (1|mm(s1, s2)), data = data_mm)
+R> fit_mm <- brm(y ~ 1 + (1 | mm(s1, s2)), data = data_mm)
 \end{Sinput}
 
 The only new syntax element is that multiple grouping factors (\code{s1} and \code{s2}) are wrapped in \code{mm}. Everything else remains exactly the same. Note that we did not specify the relative weights of schools for each student and thus, by default, equal weights are assumed. 
@@ -523,7 +518,7 @@ R> head(data_mm)
 Incorporating these weights into the model is straight forward.
 
 \begin{Sinput}
-R> fit_mm2 <- brm(y ~ 1 + (1|mm(s1, s2, weights = cbind(w1, w2))), 
+R> fit_mm2 <- brm(y ~ 1 + (1 | mm(s1, s2, weights = cbind(w1, w2))), 
 R>                data = data_mm)
 \end{Sinput}
 
@@ -533,7 +528,7 @@ The summary output is similar to the previous, so we do not show it here. The se
 
 The present paper is meant to introduce users to the flexibility of the distributional regression approach and corresponding formula syntax as implemented in \pkg{brms} and fitted with \proglang{Stan} behind the scenes. Only a subset of modeling options were discussed in detail, which ensured the paper was not too broad. For some of the more basic models that \pkg{brms}  can fit, see \cite{buerkner2016}. Many more examples can be found in the growing number of vignettes accompanying the package (see \code{vignette(package = "brms")} for an overview). 
 
-To date, \pkg{brms} is already one of the most flexible \proglang{R} packages when it comes to regression modeling. However, for the future, there are quite a few more features that I am planning to implement (see \url{https://github.com/paul-buerkner/brms/issues} for the current list of issues). In addition to smaller, incremental updates, I have four specific features in mind: mixture models, extended multivariate models, extended autocorrelation structures, and missing value imputation (in order of current importance). I receive ideas and suggestions from users almost every day -- for which I am always grateful -- and so the list of features that will be implemented in the proceeding versions of \pkg{brms} will continue to grow. 
+To date, \pkg{brms} is already one of the most flexible \proglang{R} packages when it comes to regression modeling. However, for the future, there are quite a few more features that I am planning to implement (see \url{https://github.com/paul-buerkner/brms/issues} for the current list of issues). In addition to smaller, incremental updates, I have three specific features in mind: extended multivariate models, extended autocorrelation structures, and missing value imputation (in order of current importance). I receive ideas and suggestions from users almost every day -- for which I am always grateful -- and so the list of features that will be implemented in the proceeding versions of \pkg{brms} will continue to grow. 
 
 \section*{Acknowledgments}
 

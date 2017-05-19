@@ -13,9 +13,9 @@ fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt_c
             cores = 2)
 print(fit1)
 ## generate a summary of the results
-expect_range(fixef(fit1)[4, ], -0.35, -0.30)
+expect_range(fixef(fit1)[4, 1], -0.35, -0.30)
 ## extract random effects standard devations and covariance matrices
-dVC <- as.data.frame(VarCorr(fit1, estimate = c("mean", "sd")))
+dVC <- as.data.frame(VarCorr(fit1, estimate = c("mean", "sd"), old = TRUE))
 expect_equal(dim(dVC), c(4, 5))
 ## extract group specific effects of each level
 expect_equal(names(ranef(fit1)), c("obs", "patient"))
@@ -123,7 +123,7 @@ fit2 <- brm(rating ~ period + carry + treat + (1|test|subject),
                       set_prior("normal(0,5)", nlpar = "X4")),
             chains = 2, cores = 2)
 print(fit2)
-expect_range(WAIC(fit2)$waic, 850, 900)
+expect_range(WAIC(fit2)$waic, 830, 900)
 ncat <- length(unique(inhaler$rating))
 expect_equal(dim(predict(fit2)), c(nobs(fit2), ncat))
 expect_equal(dim(fitted(fit2)), c(nobs(fit2), 4, ncat))
@@ -182,7 +182,7 @@ fit_mv1 <- brm(cbind(y1,y2) ~ s(x) + poly(month, 3) + (1|x|id),
                 iter = 1000, chains = 2, cores = 2)
 print(fit_mv1)
 
-dVC <- as.data.frame(VarCorr(fit_mv1))
+dVC <- as.data.frame(VarCorr(fit_mv1, old = TRUE))
 expect_equal(dim(dVC), c(4, 7))
 expect_equal(dim(predict(fit_mv1)), c(600, 4))
 expect_equal(dim(fitted(fit_mv1)), c(600, 4))
@@ -244,7 +244,7 @@ url <- "https://raw.githubusercontent.com/mages/diesunddas/master/Data/ClarkTria
 loss <- read.csv(url)
 head(loss)
 fit_loss <- brm(bf(cum ~ ult * (1 - exp(-(dev/theta)^omega)),
-                   ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1, 
+                   ult ~ 1 + (1|AY), omega ~ 1, theta ~ 1,
                    nl = TRUE),
                 data = loss, family = gaussian(),
                 prior = c(prior(normal(5000, 1000), nlpar = "ult"),
@@ -253,7 +253,7 @@ fit_loss <- brm(bf(cum ~ ult * (1 - exp(-(dev/theta)^omega)),
                 control = list(adapt_delta = 0.9))
 print(fit_loss)
 expect_ggplot(plot(marginal_effects(fit_loss))[[1]])
-expect_range(LOO(fit_loss)$looic, 700, 720) 
+expect_range(LOO(fit_loss)$looic, 700, 720)
 
 ## multivariate GAMMs
 n <- 200
