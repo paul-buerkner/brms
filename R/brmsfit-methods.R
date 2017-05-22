@@ -1152,10 +1152,7 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
   if (is.null(group) && is_group_type) {
     stop2("Argument 'group' is required for ppc type '", type, "'.")
   }
-  if ("x" %in% names(formals(ppc_fun))) {
-    if (is.null(x)) {
-      stop2("Argument 'x' is required for ppc type '", type, "'.")
-    }
+  if ("x" %in% names(formals(ppc_fun)) && !is.null(x)) {
     bterms <- parse_bf(formula(object), family = family(object))
     ae_coll <- ulapply(get_all_effects(bterms), paste, collapse = ":")
     if (!x %in% ae_coll) {
