@@ -62,7 +62,9 @@ existing levels.}
 
 \item{incl_autocor}{A flag indicating if autocorrelation
 parameters should be included in the predictions. 
-Defaults to \code{TRUE}.}
+Defaults to \code{TRUE}. Setting it to \code{FALSE} will not 
+affect Bayesian structural time series models fitted via 
+\code{\link[brms:cor_bsts]{cor_bsts}}.}
 
 \item{subset}{A numeric vector specifying
 the posterior samples to be used. 

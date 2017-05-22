@@ -1611,7 +1611,9 @@ marginal_smooths.brmsfit <- function(x, smooths = NULL,
 #'   existing levels. 
 #' @param incl_autocor A flag indicating if autocorrelation
 #'  parameters should be included in the predictions. 
-#'  Defaults to \code{TRUE}.
+#'  Defaults to \code{TRUE}. Setting it to \code{FALSE} will not 
+#'  affect Bayesian structural time series models fitted via 
+#'  \code{\link[brms:cor_bsts]{cor_bsts}}.
 #' @param negative_rt Only relevant for Wiener diffusion models. 
 #'   A flag indicating whether response times of responses
 #'   on the lower boundary should be returned as negative values.
