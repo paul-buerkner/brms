@@ -391,8 +391,6 @@ test_that("all S3 methods have reasonable ouputs", {
   
   expect_true(is(pp_check(fit3), "ggplot"))
   expect_true(is(pp_check(fit2, "ribbon", x = "Trt"), "ggplot"))
-  expect_error(pp_check(fit2, "ribbon"),
-               "Argument 'x' is required")
   expect_error(pp_check(fit2, "ribbon", x = "x"),
                "Variable 'x' is not a valid variable")
   expect_error(pp_check(fit1, "wrong_type"))
