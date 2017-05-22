@@ -46,6 +46,8 @@
       \item Fix an unexpected error in \code{marginal_effects}
       occuring for some models with autocorrelation terms 
       thanks to Markus Gesmann.
+      \item Fix multiple problems occuring for models with  
+      the \code{cor_bsts} structure thanks to Andrew Ellis.
     }
   }
 }

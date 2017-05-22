@@ -659,8 +659,9 @@ rm_int_fe <- function(fixef, stancode, nlpar = "") {
   # identifies if the intercept has to be removed from fixef
   # and returns adjusted fixef names
   p <- usc(nlpar, "suffix")
-  regex <- paste0("b_", p, "Intercept = temp_", p, "Intercept")
-  if (grepl(regex, stancode, fixed = TRUE)) {
+  int <- paste0("b_", p, "Intercept = temp_", p, "Intercept")
+  loclev <- "vector[N] loclev;"
+  if (any(ulapply(c(int, loclev), grepl, stancode, fixed = TRUE))) {
     fixef <- setdiff(fixef, "Intercept")
   } 
   fixef

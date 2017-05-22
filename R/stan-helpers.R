@@ -152,7 +152,8 @@ stan_autocor <- function(autocor, bterms, family, prior) {
     }
   }
   if (is.cor_bsts(autocor)) {
-    if (is_mv || family$family %in% c("bernoulli", "categorical")) {
+    if (is_mv || is_ordinal(family) ||
+        family$family %in% c("bernoulli", "categorical")) {
       stop2("The bsts structure is not yet implemented for this family.")
     }
     if (length(bterms$auxpars[["mu"]]$nlpars)) {
