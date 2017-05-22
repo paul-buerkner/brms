@@ -32,6 +32,8 @@ Suggests:
     testthat (>= 0.9.1),
     arm,
     mvtnorm,
+    MCMCglmm,
+    ape,
     R.rsp,
     knitr,
     rmarkdown

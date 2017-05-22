@@ -17,10 +17,6 @@ opts_chunk$set(
   fig.align = "center"
   )
 
-## ---- results='hide'--------------------------------------------------------------------
-library(ape)
-library(MCMCglmm)
-
 ## ---- include = FALSE-------------------------------------------------------------------
 my_path <- "C:/Users/paulb/Dropbox/Psychologie/Paper/2015_Bayesian_Regression_Models/Models/MCMCglmm/"
 

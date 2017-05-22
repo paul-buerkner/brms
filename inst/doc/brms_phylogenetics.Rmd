@@ -26,11 +26,6 @@ In the present vignette, we want to discuss how to specify phylogenetic multilev
 
 Assume we have measurements of a phenotype, `phen` (say the body size), and a `cofactor` variable (say the temperature of the environment). We prepare the data using the following code.
 
-```{r, results='hide'}
-library(ape)
-library(MCMCglmm)
-```
-
 ```{r, include = FALSE}
 my_path <- "C:/Users/paulb/Dropbox/Psychologie/Paper/2015_Bayesian_Regression_Models/Models/MCMCglmm/"
 ```
@@ -44,7 +39,7 @@ data_simple <- read.table(paste0(my_path, "data_simple.txt"), header = TRUE)
 head(data_simple)
 ```
 
-The packages **ape** and **MCMCglmm** are required only for the data preparation and not for actually fitting the models. The `phylo` object contains information on the relationship between species. Using this information, we can construct a covariance matrix of species.
+The `phylo` object contains information on the relationship between species. Using this information, we can construct a covariance matrix of species.
 
 ```{r}
 inv.phylo <- MCMCglmm::inverseA(phylo, nodes = "TIPS", scale = TRUE)
