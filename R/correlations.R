@@ -343,7 +343,8 @@ check_autocor <- function(autocor) {
 
 remove_autocor <- function(x, keep = FALSE) {
   # convenience function to ignore autocorrelation terms
-  if (!keep && !is.cor_bsts(x$autocor)) {
+  # currently only excludes ARMA structures
+  if (!keep && is.cor_arma(x$autocor)) {
     x$autocor <- cor_arma()
   }
   x
