@@ -16,6 +16,6 @@ BuildType: Package
 PackageUseDevtools: Yes
 PackageInstallArgs: --no-multiarch --with-keep.source
 PackageBuildArgs: --no-build-vignettes
-PackageBuildBinaryArgs: --preclean
+PackageBuildBinaryArgs: --preclean --no-build-vignettes
 PackageCheckArgs: --as-cran --ignore-vignettes
 PackageRoxygenize: rd,namespace
