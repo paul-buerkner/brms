@@ -1,5 +1,5 @@
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-[![Build Status](https://travis-ci.org/paul-buerkner/brms.svg?branch=master)](https://travis-ci.org/paul-buerkner/brms) [![Coverage Status](https://codecov.io/github/paul-buerkner/brms/coverage.svg?branch=master)](https://codecov.io/github/paul-buerkner/brms?branch=master) [![CRAN Version](http://www.r-pkg.org/badges/version/brms)](https://cran.r-project.org/package=brms) [![brms-users](https://www.codewake.com/badges/ask_question.svg)](https://groups.google.com/forum/#!forum/brms-users)
+[![Build Status](https://travis-ci.org/paul-buerkner/brms.svg?branch=master)](https://travis-ci.org/paul-buerkner/brms) [![Coverage Status](https://codecov.io/github/paul-buerkner/brms/coverage.svg?branch=master)](https://codecov.io/github/paul-buerkner/brms?branch=master) [![CRAN Version](http://www.r-pkg.org/badges/version/brms)](https://cran.r-project.org/package=brms)
 
 brms
 ====
@@ -34,24 +34,24 @@ summary(fit, waic = TRUE)
 #>    Data: epilepsy (Number of observations: 236) 
 #> Samples: 4 chains, each with iter = 2000; warmup = 1000; thin = 1; 
 #>          total post-warmup samples = 4000
-#>    WAIC: 1144.41
+#>     ICs: LOO = Not computed; WAIC = 1145.42
 #>  
 #> Group-Level Effects: 
 #> ~obs (Number of levels: 236) 
 #>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> sd(Intercept)     0.37      0.04     0.29     0.46       1333    1
+#> sd(Intercept)     0.37      0.04     0.29     0.46       1239    1
 #> 
 #> ~patient (Number of levels: 59) 
 #>               Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> sd(Intercept)      0.5      0.07     0.38     0.66       1561    1
+#> sd(Intercept)     0.51      0.07     0.38     0.66       1182    1
 #> 
 #> Population-Level Effects: 
 #>                   Estimate Est.Error l-95% CI u-95% CI Eff.Sample Rhat
-#> Intercept             1.56      0.08     1.40     1.71       1491    1
-#> log_Age_c             0.47      0.37    -0.26     1.21       1379    1
-#> log_Base4_c           1.06      0.11     0.86     1.27       1608    1
-#> Trt_c                -0.33      0.16    -0.63    -0.03       1440    1
-#> log_Base4_c:Trt_c     0.35      0.22    -0.09     0.78       1540    1
+#> Intercept             1.56      0.08     1.40     1.72       1208    1
+#> log_Age_c             0.48      0.37    -0.26     1.21        760    1
+#> log_Base4_c           1.06      0.11     0.85     1.28       1202    1
+#> Trt_c                -0.33      0.16    -0.63    -0.03       1203    1
+#> log_Base4_c:Trt_c     0.35      0.22    -0.08     0.78       1212    1
 #> 
 #> Samples were drawn using sampling(NUTS). For each parameter, Eff.Sample 
 #> is a crude measure of effective sample size, and Rhat is the potential 
@@ -80,8 +80,8 @@ There are several methods to compute and visualize model predictions. Suppose th
 newdata <- data.frame(Trt_c = c(0.5, -0.5), log_Age_c = 0, log_Base4_c = 0)
 predict(fit, newdata = newdata, allow_new_levels = TRUE, probs = c(0.05, 0.95))
 #>   Estimate Est.Error 5%ile 95%ile
-#> 1  5.00175  4.138481     0     13
-#> 2  6.98275  5.509632     1     17
+#> 1  4.94375  4.108930     0     13
+#> 2  6.83875  5.450842     1     17
 ```
 
 We need to set `allow_new_levels = TRUE` because we want to predict responses of a person that was not present in the data used to fit the model. While the `predict` method returns predictions of the responses, the `fitted` method returns predictions of the regression line.
@@ -89,8 +89,8 @@ We need to set `allow_new_levels = TRUE` because we want to predict responses of
 ``` r
 fitted(fit, newdata = newdata, allow_new_levels = TRUE, probs = c(0.05, 0.95))
 #>   Estimate Est.Error    5%ile   95%ile
-#> 1 4.911491  3.413325 1.446990 11.50398
-#> 2 6.869297  4.843522 2.034335 16.28492
+#> 1  5.00792  3.568603 1.408698 11.79776
+#> 2  6.95871  4.881711 1.969220 16.04973
 ```
 
 Both methods return the same etimate (up to random error), while the latter has smaller variance, because the uncertainty in the regression line is smaller than the uncertainty in each response. If we want to predict values of the original data, we can just leave the `newdata` argument empty.
@@ -105,24 +105,24 @@ For a complete list of methods to apply on **brms** models see
 
 ``` r
 methods(class = "brmsfit") 
-#>  [1] as.data.frame           as.matrix               as.mcmc                
-#>  [4] coef                    control_params          expose_functions       
-#>  [7] family                  fitted                  fixef                  
-#> [10] formula                 hypothesis              launch_shiny           
-#> [13] log_lik                 log_posterior           logLik                 
-#> [16] loo                     LOO                     loo_linpred            
-#> [19] loo_predict             loo_predictive_interval marginal_effects       
-#> [22] marginal_smooths        model.frame             neff_ratio             
-#> [25] ngrps                   nobs                    nsamples               
-#> [28] nuts_params             pairs                   parnames               
-#> [31] plot                    posterior_predict       posterior_samples      
-#> [34] pp_check                pp_mixture              predict                
-#> [37] predictive_error        print                   prior_samples          
-#> [40] prior_summary           ranef                   residuals              
-#> [43] rhat                    stancode                standata               
-#> [46] stanplot                summary                 update                 
-#> [49] VarCorr                 vcov                    waic                   
-#> [52] WAIC                   
+#>  [1] add_ic                  as.array                as.data.frame          
+#>  [4] as.matrix               as.mcmc                 coef                   
+#>  [7] control_params          expose_functions        family                 
+#> [10] fitted                  fixef                   formula                
+#> [13] hypothesis              launch_shiny            log_lik                
+#> [16] log_posterior           logLik                  loo                    
+#> [19] LOO                     loo_linpred             loo_predict            
+#> [22] loo_predictive_interval marginal_effects        marginal_smooths       
+#> [25] model.frame             neff_ratio              ngrps                  
+#> [28] nobs                    nsamples                nuts_params            
+#> [31] pairs                   parnames                plot                   
+#> [34] posterior_predict       posterior_samples       pp_check               
+#> [37] pp_mixture              predict                 predictive_error       
+#> [40] print                   prior_samples           prior_summary          
+#> [43] ranef                   residuals               rhat                   
+#> [46] stancode                standata                stanplot               
+#> [49] summary                 update                  VarCorr                
+#> [52] vcov                    waic                    WAIC                   
 #> see '?methods' for accessing help and source code
 ```
 
@@ -160,6 +160,11 @@ devtools::install_github("paul-buerkner/brms", dependencies = TRUE)
 ```
 
 Because **brms** is based on Stan, a C++ compiler is required. The program Rtools (available on <https://cran.r-project.org/bin/windows/Rtools/>) comes with a C++ compiler for Windows. On Mac, you should install Xcode. For further instructions on how to get the compilers running, see the prerequisites section on <https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started>.
+
+What is the best way to ask a question or propose a new feature?
+----------------------------------------------------------------
+
+Questions can be asked in the google group [brms-users](https://groups.google.com/forum/#!forum/brms-users). To propose a new feature or report a bug, please open an issue on [github](https://github.com/paul-buerkner/brms). Of course, you can always write me an email (<paul.buerkner@gmail.com>).
 
 How can I extract the generated Stan code?
 ------------------------------------------
@@ -202,8 +207,3 @@ What is the difference between brms and rstanarm?
 ``` r
 vignette("brms_overview")
 ```
-
-What is the best way to ask a question or propose a new feature?
-----------------------------------------------------------------
-
-Questions can be asked in the google group [brms-users](https://groups.google.com/forum/#!forum/brms-users). To propose a new feature or report a bug, please open an issue on [github](https://github.com/paul-buerkner/brms). Of course, you can always write me an email (<paul.buerkner@gmail.com>).
