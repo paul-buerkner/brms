@@ -84,6 +84,7 @@ parse_bf <- function(formula, family = NULL, autocor = NULL,
     stop2("All 'mu' parameters are specified so that ",
           "the right-hand side of 'formula' is unused.")
   }
+  
   auxpars <- is_auxpar_name(names(x$pforms), family, bterms = y)
   auxpars <- names(x$pforms)[auxpars]
   # amend when generalizing non-linear models to auxiliary parameters

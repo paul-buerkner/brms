@@ -26,23 +26,6 @@ is.brmsfit <- function(x) {
   inherits(x, "brmsfit")
 }
 
-brmssummary <- function(formula = NULL, family = NULL, link = "", 
-                        data.name = "", group = NULL, nobs = NULL, 
-                        ngrps = NULL, chains = 4, iter = 2000, 
-                        warmup = 1000, thin = 1, sampler = "", 
-                        autocor = NULL, fixed = NULL, random = NULL, 
-                        cor_pars = NULL, spec_pars = NULL, 
-                        mult_pars = NULL, prior = empty_brmsprior(),
-                        loo = "Not computed", waic = "Not computed", 
-                        algorithm = "sampling") {
-  # brmssummary class
-  x <- nlist(formula, family, link, data.name, group, nobs, ngrps, chains, 
-             iter, warmup, thin, sampler, autocor, fixed, random, cor_pars, 
-             spec_pars, mult_pars, prior, loo, waic, algorithm)
-  class(x) <- "brmssummary"
-  x
-}
-
 #' Non-Linear Hypothesis Testing
 #' 
 #' Perform non-linear hypothesis testing for all model parameters. 

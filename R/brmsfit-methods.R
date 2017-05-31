@@ -663,15 +663,20 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE,
                             priors = FALSE, use_cache = TRUE, ...) {
   object <- restructure(object, rstr_summary = use_cache)
   bterms <- parse_bf(formula(object), family = family(object))
-  out <- brmssummary(formula = formula(object), 
-                     family = family(object), 
-                     data.name = object$data.name, 
-                     group = unique(object$ranef$group), 
-                     nobs = nobs(object), 
-                     ngrps = ngrps(object), 
-                     autocor = object$autocor,
-                     algorithm = algorithm(object))
-  
+  out <- list(
+    formula = formula(object), 
+    family = family(object), 
+    data.name = object$data.name, 
+    group = unique(object$ranef$group), 
+    nobs = nobs(object), 
+    ngrps = ngrps(object), 
+    autocor = object$autocor,
+    prior = empty_brmsprior(),
+    waic = "Not computed",
+    loo = "Not computed",
+    algorithm = algorithm(object)
+  )
+  class(out) <- "brmssummary"
   if (!length(object$fit@sim)) {
     # the model does not contain posterior samples
     return(out)
@@ -682,14 +687,14 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE,
   out$thin <- object$fit@sim$thin
   stan_args <- object$fit@stan_args[[1]]
   out$sampler <- paste0(stan_args$method, "(", stan_args$algorithm, ")")
+  if (priors) {
+    out$prior <- prior_summary(object, all = FALSE)
+  }
   if (loo || is.ic(object[["loo"]])) {
     out$loo <- SW(LOO(object)$looic)
   }
   if (waic || is.ic(object[["waic"]])) {
     out$waic <- SW(WAIC(object)$waic)
-  }
-  if (priors) {
-    out$prior <- prior_summary(object, all = FALSE)
   }
   
   pars <- parnames(object)
