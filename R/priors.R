@@ -1,6 +1,8 @@
 #' Prior Definitions for \pkg{brms} Models
 #'
 #' Define priors for specific parameters or classes of parameters
+#' 
+#' @aliases brmsprior brmsprior-class
 #'
 #' @param prior A character string defining a distribution in \pkg{Stan} language
 #' @param class The parameter class. Defaults to \code{"b"} 

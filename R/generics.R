@@ -1,3 +1,48 @@
+#' Class \code{brmsfit} of models fitted with the \pkg{brms} package
+#' 
+#' Models fitted with the \code{\link[brms:brms]{brms}} package are 
+#' represented as a \code{brmsfit} object, which contains the posterior 
+#' samples, model formula, Stan code, relevant data, and other information.
+#' 
+#' @name brmsfit-class
+#' @aliases brmsfit
+#' @docType class
+#' 
+#' @details 
+#' See \code{methods(class = "brmsfit")} for an overview of available methods.
+#' 
+#' @slot formula A \code{\link[brms:brmsformula]{brmsformula}} object
+#' @slot family A \code{\link[brms:brmsfamily]{brmsfamily}} object
+#' @slot data A \code{data.frame} containing all variables used in the model
+#' @slot data.name The name of \code{data} as specified by the user 
+#' @slot model The model code in \pkg{Stan} language
+#' @slot prior A \code{\link[brms:brmsprior]{brmsprior}} object containing
+#'   information on the priors used in the model
+#' @slot autocor An \code{\link[brms:cor_brms]{cor_brms}} object containing 
+#'   the autocorrelation structure
+#' @slot threshold A character string defining the threshold type used in 
+#'   ordinal models
+#' @slot ranef A \code{data.frame} containing the group-level structure
+#' @slot cov_ranef A \code{list} of customized group-level covariance matrices
+#' @slot loo An empty slot for adding the \code{\link[brms:loo]{loo}} 
+#'   information criterion after model fitting
+#' @slot waic An empty slot for adding the \code{\link[brms:waic]{waic}} 
+#'   information criterion after model fitting
+#' @slot fit An object of class \code{\link[rstan:stanfit]{stanfit}}
+#'   among others containing the posterior samples
+#' @slot exclude The names of the parameters for which samples are not saved
+#' @slot algorithm The name of the algorithm used to fit the model
+#' @slot version The versions of \pkg{brms} and \pkg{rstan} with 
+#'   which the model was fitted
+#' 
+#' @seealso 
+#'   \code{\link[brms:brms]{brms}}, 
+#'   \code{\link[brms:brm]{brm}}, 
+#'   \code{\link[brms:brmsformula]{brmsformula}}, 
+#'   \code{\link[brms:brmsfamily]{brmsfamily}}
+#' 
+NULL
+
 brmsfit <- function(formula = NULL, family = NULL, data = data.frame(), 
                     data.name = "", model = "", prior = empty_brmsprior(), 
                     autocor = NULL, threshold = "", ranef = empty_ranef(), 

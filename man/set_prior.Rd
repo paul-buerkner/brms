@@ -2,6 +2,8 @@
 % Please edit documentation in R/priors.R
 \name{set_prior}
 \alias{set_prior}
+\alias{brmsprior}
+\alias{brmsprior-class}
 \alias{prior}
 \alias{prior_}
 \alias{prior_string}
