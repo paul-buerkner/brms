@@ -70,7 +70,6 @@ rename_pars <- function(x) {
   # perform the actual renaming in x$fit@sim
   x <- do_renaming(x, change)
   x <- compute_quantities(x)
-  x$fit@sim$pars_oi <- names(x$fit@sim$dims_oi)
   x
 }
 
@@ -780,6 +779,7 @@ do_renaming <- function(x, change) {
   for (i in seq_along(change)) {
     x <- .do_renaming(x, change[[i]])
   }
+  x$fit@sim$pars_oi <- names(x$fit@sim$dims_oi)
   x
 }
 
