@@ -718,14 +718,21 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE,
         "more iterations and/or setting stronger priors."
       )
     }
-    div_trans <- sum(nuts_params(object, pars = "divergent__")$Value)
-    adapt_delta <- control_params(object)$adapt_delta
-    if (div_trans > 0) {
-      warning2(
-        "There were ", div_trans, " divergent transitions after warmup. ", 
-        "Increasing adapt_delta above ", adapt_delta, " may help.\nSee ",
-        "http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup"
-      )
+    # nuts_params may not work for some models fitted with brms < 1.0.0
+    div_trans <- try(
+      sum(nuts_params(object, pars = "divergent__")$Value), silent = TRUE
+    )
+    if (is(div_trans, "try-error")) {
+      warning2("Could not extract information about divergent transitions.")
+    } else {
+      adapt_delta <- control_params(object)$adapt_delta
+      if (div_trans > 0) {
+        warning2(
+          "There were ", div_trans, " divergent transitions after warmup. ", 
+          "Increasing adapt_delta above ", adapt_delta, " may help.\nSee ",
+          "http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup"
+        )
+      }
     }
   } else {
     colnames(fit_summary) <- c(
