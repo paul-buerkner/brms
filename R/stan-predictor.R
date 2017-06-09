@@ -361,7 +361,6 @@ stan_fe <- function(fixef, prior, family = gaussian(),
           "  real temp", p, "_Intercept;  // temporary intercept \n"
         )
       }
-
       out$genD <- paste0(
         "  real b", p, "_Intercept;  // population-level intercept \n"
       )

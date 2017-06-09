@@ -1170,6 +1170,9 @@ check_prior_special.btl <- function(x, prior, nlpar = "",
         lasso_scale <- paste0(
           attr(lasso, "scale"), " * lasso_inv_lambda", usc(nlpar)
         )
+        # the parameterization via double_exponential appears to be more
+        # efficient than an indirect parameterization via normal and 
+        # exponential distributions; tested on 2017-06-09
         lasso_prior <- paste0("double_exponential(0, ", lasso_scale, ")")
         prior$prior[b_index] <- lasso_prior
         prior_special$lasso_df <- attr(lasso, "df")

@@ -855,7 +855,7 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
         spars <- c(spars, paste0("lasso_inv_lambda", lasso_nlpars))
       }
       if (length(spars)) {
-        bpars <- grepl("^b(mo|cs|me|_|$)", pars)
+        bpars <- grepl("^b(|mo|cs|me)(_|$)", pars)
         args[bpars] <- rename(args[bpars], spars, paste0("prior_", spars))
       }
       # unbounded parameters can be sampled in the generatated quantities block
