@@ -30,6 +30,7 @@ Imports:
     grDevices,
 Suggests: 
     testthat (>= 0.9.1),
+    future,
     arm,
     mvtnorm,
     MCMCglmm,

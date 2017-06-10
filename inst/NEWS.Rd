@@ -2,6 +2,14 @@
 \title{brms News}
 \encoding{UTF-8}
 
+\section{CHANGES IN VERSION 1.7.0++}{
+  \subsection{NEW FEATURES}{
+    \itemize{
+      \item Improve parallel execution flexibility
+      via the \code{future} package.
+    }
+  }
+}
 
 \section{CHANGES IN VERSION 1.7.0}{
   \subsection{NEW FEATURES}{

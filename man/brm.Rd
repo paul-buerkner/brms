@@ -11,7 +11,8 @@ brm(formula, data, family = gaussian(), prior = NULL, autocor = NULL,
   fit = NA, inits = "random", chains = 4, iter = 2000,
   warmup = floor(iter/2), thin = 1, cores = getOption("mc.cores", 1L),
   control = NULL, algorithm = c("sampling", "meanfield", "fullrank"),
-  silent = TRUE, seed = 12345, save_model = NULL, save_dso = TRUE, ...)
+  future = getOption("future", FALSE), silent = TRUE, seed = 12345,
+  save_model = NULL, save_dso = TRUE, ...)
 }
 \arguments{
 \item{formula}{An object of class 
@@ -162,6 +163,12 @@ Can be \code{"sampling"} for MCMC (the default), \code{"meanfield"} for
 variational inference with independent normal distributions, or
 \code{"fullrank"} for variational inference with a multivariate normal
 distribution.}
+
+\item{future}{Logical; If \code{TRUE}, the \pkg{\link[future:future]{future}}
+package is used for parallel execution of the chains and argument \code{cores}
+will be ignored. Can be set globally for the current \R session via the 
+\code{future} option. The execution type is controlled via 
+\code{\link[future:plan]{plan}} (see the examples section below).}
 
 \item{silent}{logical; If \code{TRUE} (the default), most of the
 informational messages of compiler and sampler are suppressed.
@@ -353,7 +360,11 @@ fit7 <- brm(bf(y ~ x, quantile = 0.25), data = data_het,
             family = asym_laplace())
 summary(fit7)
 marginal_effects(fit7)
-   
+
+## use the future package for parallelization
+library(future)
+plan(multiprocess)
+fit7 <- update(fit7, future = TRUE)
 }
 
 }
