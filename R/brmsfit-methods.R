@@ -2243,6 +2243,9 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
   if (length(models) > 1L) {
     out <- named_list(mnames)
     for (i in seq_along(models)) {
+      if (!is.brmsfit(models[[i]])) {
+        stop2("Object '", mnames[i], "' is not of class 'brmsfit'.")
+      }
       if (use_stored_ic && is.ic(models[[i]][["waic"]])) {
         out[[i]] <- models[[i]][["waic"]]
       } else {
@@ -2304,6 +2307,9 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
   if (length(models) > 1L) {
     out <- named_list(mnames)
     for (i in seq_along(models)) {
+      if (!is.brmsfit(models[[i]])) {
+        stop2("Object '", mnames[i], "' is not of class 'brmsfit'.")
+      }
       if (use_stored_ic && is.ic(models[[i]][["loo"]])) {
         out[[i]] <- models[[i]][["loo"]]
       } else {
