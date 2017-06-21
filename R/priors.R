@@ -640,10 +640,10 @@ get_prior <- function(formula, data, family = gaussian(),
     prior <- rbind(prior, brmsprior(class = "arr"))
   }
   if (is.cor_sar(autocor)) {
-    if (identical(autocor$type, "lagsar")) {
+    if (identical(autocor$type, "lag")) {
       prior <- rbind(prior, brmsprior(class = "lagsar"))
     }
-    if (identical(autocor$type, "errorsar")) {
+    if (identical(autocor$type, "error")) {
       prior <- rbind(prior, brmsprior(class = "errorsar"))
     }
   }

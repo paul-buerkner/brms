@@ -66,9 +66,9 @@ stan_llh.default <- function(family, bterms, data, autocor,
     if (has_se || llh_adj) {
       stop2("Invalid addition arguments for this model.")
     }
-    if (identical(autocor$type, "lagsar")) {
+    if (identical(autocor$type, "lag")) {
       family <- paste0(family, "_lagsar")
-    } else if (identical(autocor$type, "errorsar")) {
+    } else if (identical(autocor$type, "error")) {
       family <- paste0(family, "_errorsar")
     }
   } else if (is.cor_fixed(autocor)) {

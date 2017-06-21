@@ -156,7 +156,7 @@ stan_autocor <- function(autocor, bterms, family, prior) {
     out$data <- paste0(out$data,
       "  matrix[N, N] W;  // spatial weight matrix \n"                  
     )
-    if (identical(autocor$type, "lagsar")) {
+    if (identical(autocor$type, "lag")) {
       if (family$family == "gaussian") {
         out$fun <- paste0(out$fun, "  #include 'fun_normal_lagsar.stan' \n") 
       } else if (family$family == "student") {
@@ -166,7 +166,7 @@ stan_autocor <- function(autocor, bterms, family, prior) {
         "  real<lower=0,upper=1>  lagsar;  // SAR parameter of the responses \n"
       )
       out$prior <- paste0(out$prior, stan_prior(prior, class = "lagsar"))
-    } else if (identical(autocor$type, "errorsar")) {
+    } else if (identical(autocor$type, "error")) {
       if (family$family == "gaussian") {
         out$fun <- paste0(out$fun, "  #include 'fun_normal_errorsar.stan' \n") 
       } else if (family$family == "student") {
