@@ -83,9 +83,9 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
     draws$rescor <- do.call(as.matrix, c(am_args, pars = "^rescor_"))
     draws$Sigma <- get_cov_matrix(sd = draws$sigma, cor = draws$rescor)$cov
   }
-  if (use_cov(x$autocor)) {
+  if (use_cov(x$autocor) || is.cor_sar(x$autocor)) {
     # only include autocor samples on the top-level of draws 
-    # when using the covariance formulation of ARMA structures
+    # when using the covariance formulation of ARMA / SAR structures
     draws <- c(draws, 
       extract_draws_autocor(x, newdata = newdata, subset = subset)
     )
@@ -615,6 +615,10 @@ extract_draws_autocor <- function(fit, newdata = NULL, subset = NULL) {
   }
   if (get_arr(fit$autocor)) {
     draws[["arr"]] <- do.call(as.matrix, c(args, pars = "^arr\\["))
+  }
+  if (is.cor_sar(fit$autocor)) {
+    draws[["lagsar"]] <- do.call(as.matrix, c(args, pars = "^lagsar$"))
+    draws[["errorsar"]] <- do.call(as.matrix, c(args, pars = "^errorsar$"))
   }
   if (is(fit$autocor, "cor_bsts")) {
     if (is.null(newdata)) {

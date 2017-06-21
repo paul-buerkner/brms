@@ -112,8 +112,11 @@ loglik_gaussian_cov <- function(i, draws, data = data.frame()) {
   }
   mu <- ilink(get_eta(draws$mu, obs), draws$f$link)
   out <- sapply(1:draws$nsamples, function(s)
-    dmulti_normal(draws$data$Y[obs], mu = mu[s, ], 
-                  Sigma = Sigma[s, , ], log = TRUE))
+    dmulti_normal(
+      draws$data$Y[obs], mu = mu[s, ], 
+      Sigma = Sigma[s, , ], log = TRUE
+    )
+  )
   # weights, truncation and censoring not allowed
   out
 }
@@ -139,8 +142,11 @@ loglik_student_cov <- function(i, draws, data = data.frame()) {
   mu <- ilink(get_eta(draws$mu, obs), draws$f$link)
   nu <- get_auxpar(draws$nu, obs)
   out <- sapply(1:draws$nsamples, function(s)
-    dmulti_student_t(draws$data$Y[obs], df = nu[s, ], 
-                   mu = mu[s, ], Sigma = Sigma[s, , ], log = TRUE))
+    dmulti_student_t(
+      draws$data$Y[obs], df = nu[s, ], mu = mu[s, ], 
+      Sigma = Sigma[s, , ], log = TRUE
+    )
+  )
   # weights, truncation and censoring not yet allowed
   out
 }
@@ -148,6 +154,69 @@ loglik_student_cov <- function(i, draws, data = data.frame()) {
 loglik_cauchy_cov <- function(i, draws, data = data.frame()) {
   draws$nu <- matrix(rep(1, draws$nsamples))
   loglik_student_cov(i = i, draws = draws, data = data)
+}
+
+loglik_gaussian_lagsar <- function(i, draws, data = data.frame()) {
+  stopifnot(i == 1)
+  .loglik_gaussian_lagsar <- function(s) {
+    W_new <- with(draws, diag(data$N) - lagsar[s, ] * data$W)
+    mu <- as.numeric(solve(W_new) %*% mu[s, ])
+    Sigma <- solve(crossprod(W_new)) * sigma[s]^2
+    dmulti_normal(draws$data$Y, mu = mu, Sigma = Sigma, log = TRUE)
+  }
+  mu <- ilink(get_eta(draws$mu), draws$f$link)
+  sigma <- get_sigma(draws$sigma, data = draws$data)
+  # weights, truncation and censoring not yet allowed
+  sapply(1:draws$nsamples, .loglik_gaussian_lagsar)
+}
+
+loglik_student_lagsar <- function(i, draws, data = data.frame()) {
+  stopifnot(i == 1)
+  .loglik_student_lagsar <- function(s) {
+    W_new <- with(draws, diag(data$N) - lagsar[s, ] * data$W)
+    mu <- as.numeric(solve(W_new) %*% mu[s, ])
+    Sigma <- solve(crossprod(W_new)) * sigma[s]^2
+    dmulti_student_t(
+      draws$data$Y, df = nu[s], mu = mu, 
+      Sigma = Sigma, log = TRUE
+    )
+  }
+  N <- draws$data$N
+  mu <- ilink(get_eta(draws$mu), draws$f$link)
+  sigma <- get_sigma(draws$sigma, data = draws$data)
+  nu <- get_auxpar(draws$nu)
+  # weights, truncation and censoring not yet allowed
+  sapply(1:draws$nsamples, .loglik_student_lagsar)
+}
+
+loglik_gaussian_errorsar <- function(i, draws, data = data.frame()) {
+  stopifnot(i == 1)
+  .loglik_gaussian_errorsar <- function(s) {
+    W_new <- with(draws, diag(data$N) - errorsar[s, ] * data$W)
+    Sigma <- solve(crossprod(W_new)) * sigma[s]^2
+    dmulti_normal(draws$data$Y, mu = mu[s, ], Sigma = Sigma, log = TRUE)
+  }
+  mu <- ilink(get_eta(draws$mu), draws$f$link)
+  sigma <- get_sigma(draws$sigma, data = draws$data)
+  # weights, truncation and censoring not yet allowed
+  sapply(1:draws$nsamples, .loglik_gaussian_errorsar)
+}
+
+loglik_student_errorsar <- function(i, draws, data = data.frame()) {
+  stopifnot(i == 1)
+  .loglik_student_errorsar <- function(s) {
+    W_new <- with(draws, diag(data$N) - errorsar[s, ] * data$W)
+    Sigma <- solve(crossprod(W_new)) * sigma[s]^2
+    dmulti_student_t(
+      draws$data$Y, df = nu[s], mu = mu[s, ], 
+      Sigma = Sigma, log = TRUE
+    )
+  }
+  mu <- ilink(get_eta(draws$mu), draws$f$link)
+  sigma <- get_sigma(draws$sigma, data = draws$data)
+  nu <- get_auxpar(draws$nu)
+  # weights, truncation and censoring not yet allowed
+  sapply(1:draws$nsamples, .loglik_student_errorsar)
 }
 
 loglik_gaussian_fixed <- function(i, draws, data = data.frame()) {

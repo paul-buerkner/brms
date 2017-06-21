@@ -351,6 +351,8 @@ make_standata <- function(formula, data, family = gaussian(),
         stop2("Dimensions of 'W' must be equal to the number of observations.")
       }
       standata$W <- autocor$W
+      # simplifies code of choose_N
+      standata$N_tg <- 1
     } else if (is.cor_fixed(autocor)) {
       V <- autocor$V
       rmd_rows <- attr(data, "na.action")

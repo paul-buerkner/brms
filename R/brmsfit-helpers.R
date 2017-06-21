@@ -811,6 +811,12 @@ prepare_family <- function(x) {
     family$family <- paste0(family$family, "_mv")
   } else if (use_cov(x$autocor) && sum(x$autocor$p, x$autocor$q) > 0) {
     family$family <- paste0(family$family, "_cov")
+  } else if (is.cor_sar(x$autocor)) {
+    if (identical(x$autocor$type, "lagsar")) {
+      family$family <- paste0(family$family, "_lagsar")
+    } else if (identical(x$autocor$type, "errorsar")) {
+      family$family <- paste0(family$family, "_errorsar")
+    }
   } else if (is.cor_fixed(x$autocor)) {
     family$family <- paste0(family$family, "_fixed")
   }
