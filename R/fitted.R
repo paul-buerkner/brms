@@ -269,6 +269,7 @@ fitted_mixture <- function(draws) {
 fitted_default <- function(draws) {
   # default fitted values
   draws$mu <- ilink(draws$mu, draws$f$link)
+  draws$mu <- fitted_lagsar(draws)
   fitted_trunc(draws)
 }
 
@@ -283,6 +284,18 @@ fitted_catordinal <- function(draws) {
   dens <- paste0("d", draws$f$family)
   draws$mu <- abind(lapply(seq_len(ncol(draws$mu)), get_density), along = 3)
   aperm(draws$mu, perm = c(1, 3, 2))
+}
+
+fitted_lagsar <- function(draws) {
+  if (!is.null(draws[["lagsar"]])) {
+    stopifnot(draws$f$family %in% c("gaussian", "student"))
+    .fitted_lagsar <- function(s) {
+      W_new <- with(draws, diag(data$N) - lagsar[s, ] * data$W)
+      as.numeric(solve(W_new) %*% draws$mu[s, ])
+    }
+    draws$mu <- do.call(rbind, lapply(1:draws$nsamples, .fitted_lagsar))
+  }
+  draws$mu
 }
 
 adjust_old_forked <- function(mu, par) {
