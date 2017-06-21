@@ -3,6 +3,7 @@
 \name{is.cor_brms}
 \alias{is.cor_brms}
 \alias{is.cor_arma}
+\alias{is.cor_sar}
 \alias{is.cor_fixed}
 \alias{is.cor_bsts}
 \title{Check if argument is a correlation structure}
@@ -10,6 +11,8 @@
 is.cor_brms(x)
 
 is.cor_arma(x)
+
+is.cor_sar(x)
 
 is.cor_fixed(x)
 

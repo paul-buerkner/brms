@@ -346,8 +346,12 @@ make_standata <- function(formula, data, family = gaussian(),
         standata$Yarr <- arr_design_matrix(standata$Y, Karr, tgroup)
         standata$Karr <- Karr
       }
-    } 
-    if (is.cor_fixed(autocor)) {
+    } else if (is.cor_sar(autocor)) {
+      if (!identical(dim(autocor$W), rep(standata$N, 2))) {
+        stop2("Dimensions of 'W' must be equal to the number of observations.")
+      }
+      standata$W <- autocor$W
+    } else if (is.cor_fixed(autocor)) {
       V <- autocor$V
       rmd_rows <- attr(data, "na.action")
       if (!is.null(rmd_rows)) {
@@ -362,8 +366,7 @@ make_standata <- function(formula, data, family = gaussian(),
       standata$V <- V
       # simplifies code of choose_N
       standata$N_tg <- 1
-    }
-    if (is.cor_bsts(autocor)) {
+    } else if (is.cor_bsts(autocor)) {
       if (length(bterms$response) > 1L) {
         stop2("BSTS structure not yet implemented for multivariate models.")
       }

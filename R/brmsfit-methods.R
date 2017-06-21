@@ -760,7 +760,7 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE,
   rownames(out$spec_pars) <- spec_pars
   
   # summary of autocorrelation effects
-  cor_pars <- pars[grepl("^ar|^ma|^sigmaLL$", pars)]
+  cor_pars <- pars[grepl("^ar|^ma|^lagsar$|^errorsar$|^sigmaLL$", pars)]
   out$cor_pars <- fit_summary[cor_pars, , drop = FALSE]
   rownames(out$cor_pars) <- cor_pars
   
