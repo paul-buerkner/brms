@@ -146,6 +146,59 @@ predict_cauchy_cov <- function(i, draws, ...) {
   predict_student_cov(i = i, draws = draws, ...) 
 }
 
+predict_gaussian_lagsar <- function(i, draws, ...) {
+  stopifnot(i == 1)
+  .predict_gaussian_lagsar <- function(s) {
+    W_new <- with(draws, diag(data$N) - lagsar[s, ] * data$W)
+    mu <- as.numeric(solve(W_new) %*% mu[s, ])
+    Sigma <- solve(crossprod(W_new)) * sigma[s]^2
+    rmulti_normal(1, mu = mu, Sigma = Sigma)
+  }
+  mu <- ilink(get_eta(draws$mu), draws$f$link)
+  sigma <- get_sigma(draws$sigma, data = draws$data)
+  do.call(rbind, lapply(1:draws$nsamples, .predict_gaussian_lagsar))
+}
+
+predict_student_lagsar <- function(i, draws, ...) {
+  stopifnot(i == 1)
+  .predict_student_lagsar <- function(s) {
+    W_new <- with(draws, diag(data$N) - lagsar[s, ] * data$W)
+    mu <- as.numeric(solve(W_new) %*% mu[s, ])
+    Sigma <- solve(crossprod(W_new)) * sigma[s]^2
+    rmulti_student_t(1, df = nu[s], mu = mu, Sigma = Sigma)
+  }
+  N <- draws$data$N
+  mu <- ilink(get_eta(draws$mu), draws$f$link)
+  sigma <- get_sigma(draws$sigma, data = draws$data)
+  nu <- get_auxpar(draws$nu)
+  do.call(rbind, lapply(1:draws$nsamples, .predict_student_lagsar))
+}
+
+predict_gaussian_errorsar <- function(i, draws, ...) {
+  stopifnot(i == 1)
+  .predict_gaussian_errorsar <- function(s) {
+    W_new <- with(draws, diag(data$N) - errorsar[s, ] * data$W)
+    Sigma <- solve(crossprod(W_new)) * sigma[s]^2
+    rmulti_normal(1, mu = mu[s, ], Sigma = Sigma)
+  }
+  mu <- ilink(get_eta(draws$mu), draws$f$link)
+  sigma <- get_sigma(draws$sigma, data = draws$data)
+  do.call(rbind, lapply(1:draws$nsamples, .predict_gaussian_errorsar))
+}
+
+predict_student_errorsar <- function(i, draws, ...) {
+  stopifnot(i == 1)
+  .predict_student_errorsar <- function(s) {
+    W_new <- with(draws, diag(data$N) - errorsar[s, ] * data$W)
+    Sigma <- solve(crossprod(W_new)) * sigma[s]^2
+    rmulti_student_t(1, df = nu[s], mu = mu[s, ], Sigma = Sigma)
+  }
+  mu <- ilink(get_eta(draws$mu), draws$f$link)
+  sigma <- get_sigma(draws$sigma, data = draws$data)
+  nu <- get_auxpar(draws$nu)
+  do.call(rbind, lapply(1:draws$nsamples, .predict_student_errorsar))
+}
+
 predict_gaussian_fixed <- function(i, draws, ...) {
   stopifnot(i == 1)
   mu <- ilink(get_eta(draws$mu, 1:nrow(draws$data$V)), draws$f$link)
