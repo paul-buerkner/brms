@@ -232,7 +232,6 @@ sar_weights <- function(W) {
   if (!requireNamespace("spdep", quietly = TRUE)) {
     stop2("Please install the 'spdep' package.")
   }
-  warning2("SAR correlation structures are currently experimental.")
   if (is(W, "listw")) {
     W <- spdep::listw2mat(W)
   } else if (is(W, "nb")) {
