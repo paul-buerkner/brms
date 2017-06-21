@@ -176,7 +176,8 @@ data <- data.frame(y1, y2, x, month, id, tim)
 
 fit_mv1 <- brm(cbind(y1,y2) ~ s(x) + poly(month, 3) + (1|x|id),
                 data = data, autocor = cor_arma(~tim|id, p = 1),
-                prior = c(prior_(~normal(0,5)),
+                prior = c(prior_(~normal(0,5), resp = "y1"),
+                          prior_(~normal(0,5), resp = "y2"),
                           prior_(~lkj(5), class = "rescor")),
                 sample_prior = TRUE,
                 iter = 1000, chains = 2, cores = 2)

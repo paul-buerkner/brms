@@ -10,14 +10,13 @@ stan_autocor <- function(autocor, bterms, family, prior) {
   is_linear <- is_linear(family)
   resp <- bterms$response
   is_mv <- is_linear && length(resp) > 1L
-  link <- stan_link(family$link)
   Kar <- get_ar(autocor)
   Kma <- get_ma(autocor)
   Karr <- get_arr(autocor)
   out <- list()
   if (Kar || Kma) {
     if (!is_linear) {
-      stop2("The ARMA correlation structure is not yet implemented ", 
+      stop2("ARMA correlation structures are not yet implemented ", 
             "for family '", family$family, "'.") 
     }
     out$data <- paste0(out$data, "  #include 'data_arma.stan' \n")
@@ -93,6 +92,9 @@ stan_autocor <- function(autocor, bterms, family, prior) {
       if (length(bterms$auxpars[["mu"]]$nlpars)) {
         stop2(err_msg, " for non-linear models.")
       }
+      if (!identical(family$link, "identity")) {
+        stop2(err_msg, " when using non-identity links.")
+      }
       if (is_mv) {
         rs <- usc(resp, "prefix")
         index <- paste0("n, ", seq_along(rs))
@@ -112,10 +114,7 @@ stan_autocor <- function(autocor, bterms, family, prior) {
       )
       out$modelC2 <- paste0(
         "    // computation of ARMA effects \n",
-        collapse(
-          "    e", rs, "[n] = ", link, "(Y[", index, "])", 
-          " - mu", rs, "[n]", "; \n"
-        ),
+        collapse("    e", rs, "[n] = Y[", index, "] - mu", rs, "[n]", "; \n"),
         "    for (i in 1:Karma) { \n", 
         "      if (n + 1 - i > 0 && n < N && tg[n + 1] == tg[n + 1 - i]) { \n",
         collapse("        E", rs, "[n + 1, i] = e", rs, "[n + 1 - i]; \n"),
@@ -165,7 +164,9 @@ stan_autocor <- function(autocor, bterms, family, prior) {
       "  real<lower=0> sigmaLL;  // SD of local level terms \n"
     )
     if (is_linear && !is_mv) {
-      # this often helps with convergence
+      # ensures that the means of the loclev priors start close 
+      # to the response values; this often helps with convergence
+      link <- stan_link(family$link)
       center <- paste0(link, "(Y[", c("1", "n"), "])")
     } else {
       center <- c("0", "0")

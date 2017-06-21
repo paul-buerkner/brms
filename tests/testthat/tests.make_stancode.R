@@ -385,23 +385,22 @@ test_that("Stan code for categorical models is correct", {
 
 test_that("Stan code for autocorrelated models is correct", {
   dat <- data.frame(y = rep(1:4, 2), x = 1:8, time = 1:8)
-  scode <- make_stancode(y ~ x, dat, student(log), 
+  scode <- make_stancode(y ~ x, dat, student(), 
                          autocor = cor_ar(~time))
-  expect_match2(scode, "e[n] = log(Y[n]) - mu[n];")
-  expect_match2(scode,
-    "mu[n] = mu[n] + head(E[n], Kar) * ar; \n    mu[n] = exp(mu[n]);")
+  expect_match2(scode, "e[n] = Y[n] - mu[n];")
+  expect_match2(scode, "mu[n] = mu[n] + head(E[n], Kar) * ar;")
   
-  scode <- make_stancode(y ~ x, dat, student(log), 
+  scode <- make_stancode(y ~ x, dat, student(), 
                          autocor = cor_ma(~time, q = 2))
   expect_match2(scode, "mu[n] = mu[n] + head(E[n], Kma) * ma;")
   
-  scode <- make_stancode(y ~ x, dat, student(log), 
+  scode <- make_stancode(y ~ x, dat, student(), 
                          autocor = cor_arr(~time, r = 2))
   expect_match2(scode, "mu = Xc * b + temp_Intercept + Yarr * arr;")
   
-  scode <- make_stancode(cbind(y, x) ~ 1, dat, gaussian(inverse),
+  scode <- make_stancode(cbind(y, x) ~ 1, dat, gaussian(),
                          autocor = cor_ar())
-  expect_match2(scode, "e_y[n] = inv(Y[n, 1]) - mu_y[n];")
+  expect_match2(scode, "e_y[n] = Y[n, 1] - mu_y[n];")
 })
 
 test_that("Stan code for intercept only models is correct", {
