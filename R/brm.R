@@ -450,9 +450,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       nlist(init = inits, warmup, thin, control, show_messages = !silent)
     )
     if (future) {
-      if (!requireNamespace("future", quietly = TRUE)) {
-        stop2("Please install the 'future' package.")
-      }
+      require_package("future")
       if (cores > 1L) {
         warning("Argument 'cores' is ignored when using 'future'.")
       }

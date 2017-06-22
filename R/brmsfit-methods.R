@@ -894,6 +894,7 @@ standata.brmsfit <- function(object, ...) {
 #' @export
 launch_shiny.brmsfit <- function(x, rstudio = getOption("shinystan.rstudio"), 
                                  ...) {
+  require_package("shinystan")
   contains_samples(x)
   shinystan::launch_shinystan(x$fit, rstudio = rstudio, ...)
 }

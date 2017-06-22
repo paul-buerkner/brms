@@ -241,9 +241,7 @@ dskew_normal <- function(x, mu = 0, sigma = 1, alpha = 0, log = FALSE) {
 #' @export 
 pskew_normal <- function(q, mu = 0, sigma = 1, alpha = 0, log.p = FALSE) {
   # algorithm taken from sn::pvn
-  if (!requireNamespace("mnormt", quietly = TRUE)) {
-    stop2("Please install the 'mnormt' package.")
-  }
+  require_package("mnormt")
   if (any(sigma <= 0)) {
     stop2("sigma must be greater than 0.")
   }
@@ -890,6 +888,7 @@ rasym_laplace <- function(n, mu = 0, sigma = 1, quantile = 0.5) {
 #' 
 #' @export
 dwiener <- function(x, alpha, tau, beta, delta, resp = 1, log = FALSE) {
+  require_package("RWiener")
   alpha <- as.numeric(alpha)
   tau <- as.numeric(tau)
   beta <- as.numeric(beta)
@@ -909,6 +908,7 @@ dwiener <- function(x, alpha, tau, beta, delta, resp = 1, log = FALSE) {
 #' @rdname Wiener
 #' @export
 rwiener <- function(n, alpha, tau, beta, delta, types = c("q", "resp")) {
+  require_package("RWiener")
   stopifnot(all(types %in% c("q", "resp")))
   alpha <- as.numeric(alpha)
   tau <- as.numeric(tau)

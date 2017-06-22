@@ -228,9 +228,7 @@ cor_errorsar <- function(W) {
 
 sar_weights <- function(W) {
   # helper function to prepare spatial weights matrices
-  if (!requireNamespace("spdep", quietly = TRUE)) {
-    stop2("Please install the 'spdep' package.")
-  }
+  require_package("spdep")
   if (is(W, "listw")) {
     W <- spdep::listw2mat(W)
   } else if (is(W, "nb")) {

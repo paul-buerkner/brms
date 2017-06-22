@@ -165,6 +165,13 @@ collapse_comma <- function(...) {
   paste0("'", ..., "'", collapse = ", ")
 }
 
+require_package <- function(package) {
+  if (!requireNamespace(package, quietly = TRUE)) {
+    stop2("Please install the '", package, "' package.")
+  }
+  invisible(TRUE)
+}
+
 rename <- function(x, symbols = NULL, subs = NULL, 
                    fixed = TRUE, check_dup = FALSE) {
   # rename certain symbols in a character vector
