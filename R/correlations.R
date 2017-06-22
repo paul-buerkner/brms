@@ -161,6 +161,86 @@ cor_arr <- function(formula = ~ 1, r = 1) {
   cor_arma(formula = formula, p = 0, q = 0, r = r)
 }
 
+#' Spatial simultaneous autoregressive (SAR) structures
+#' 
+#' These functions are constructors for the \code{cor_sar} class
+#' implementing spatial simultaneous autoregressive structures.
+#' The \code{lagsar} structure implements SAR of the response values:
+#' \deqn{y = \rho W y + \eta + e}
+#' The \code{errorsar} structure implements SAR of the residuals:
+#' \deqn{y = \eta + u, u = \rho W u + e}
+#' In the above equations, \eqn{\eta} is the predictor term and
+#' \eqn{e} are independent normally or t-distribued residuals.
+#' 
+#' @param W An object specifying the spatial weighting matrix.
+#'   Can be either the spatial weight matrix itself or an 
+#'   object of class \code{listw} or \code{nb}, from which
+#'   the spatial weighting matrix can be computed.
+#' @param type Type of the SAR structure. Either \code{"lag"} 
+#'   (for SAR of the response values) or \code{"error"} 
+#'   (for SAR of the residuals).
+#'   
+#' @details Currently, only families \code{gaussian} and \code{student} 
+#'   support SAR structures.
+#' 
+#' @return An object of class \code{cor_sar} to be used in calls to
+#'   \code{\link[brms:brm]{brm}}.
+#'   
+#' @examples 
+#' \dontrun{
+#' data(oldcol, package = "spdep")
+#' fit1 <- brm(CRIME ~ INC + HOVAL, data = COL.OLD, 
+#'             autocor = cor_lagsar(COL.nb), 
+#'             chains = 2, cores = 2)
+#' summary(fit1)
+#' plot(fit1)
+#' 
+#' fit2 <- brm(CRIME ~ INC + HOVAL, data = COL.OLD, 
+#'             autocor = cor_errorsar(COL.nb), 
+#'             chains = 2, cores = 2)
+#' summary(fit2)
+#' plot(fit2)
+#' }
+#' 
+#' @export
+cor_sar <- function(W, type = c("lag", "error")) {
+  type <- match.arg(type)
+  W_name <- deparse(substitute(W))
+  W <- sar_weights(W)
+  structure(nlist(W, W_name, type), class = c("cor_sar", "cor_brms"))
+}
+
+#' @rdname cor_sar
+#' @export
+cor_lagsar <- function(W) {
+  out <- cor_sar(W, type = "lag")
+  out$W_name <- deparse(substitute(W))
+  out
+}
+
+#' @rdname cor_sar
+#' @export
+cor_errorsar <- function(W) {
+  out <- cor_sar(W, type = "error")
+  out$W_name <- deparse(substitute(W))
+  out
+}
+
+sar_weights <- function(W) {
+  # helper function to prepare spatial weights matrices
+  if (!requireNamespace("spdep", quietly = TRUE)) {
+    stop2("Please install the 'spdep' package.")
+  }
+  if (is(W, "listw")) {
+    W <- spdep::listw2mat(W)
+  } else if (is(W, "nb")) {
+    W <- spdep::nb2mat(W)
+  } else if (!is.matrix(W)) {
+    stop2("'W' must be of class 'matrix', 'listw', or 'nb'.")
+  }
+  W
+}
+
 #' Fixed user-defined covariance matrices 
 #' 
 #' Define a fixed covariance matrix of the response variable
@@ -254,6 +334,12 @@ is.cor_arma <- function(x) {
 
 #' @rdname is.cor_brms
 #' @export
+is.cor_sar <- function(x) {
+  inherits(x, "cor_sar")
+}
+
+#' @rdname is.cor_brms
+#' @export
 is.cor_fixed <- function(x) {
   inherits(x, "cor_fixed")
 }
@@ -268,6 +354,12 @@ is.cor_bsts <- function(x) {
 print.cor_arma <- function(x, ...) {
   cat(paste0("arma(", formula2str(x$formula), ", ", 
              get_ar(x), ", ", get_ma(x), ", ", get_arr(x),")"))
+  invisible(x)
+}
+
+#' @export
+print.cor_sar <- function(x, ...) {
+  cat(paste0("sar(", x$W_name, ", '", x$type, "')"))
   invisible(x)
 }
 
@@ -344,7 +436,7 @@ check_autocor <- function(autocor) {
 remove_autocor <- function(x, keep = FALSE) {
   # convenience function to ignore autocorrelation terms
   # currently only excludes ARMA structures
-  if (!keep && is.cor_arma(x$autocor)) {
+  if (!keep && (is.cor_arma(x$autocor) || is.cor_sar(x$autocor))) {
     x$autocor <- cor_arma()
   }
   x

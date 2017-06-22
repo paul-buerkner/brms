@@ -98,3 +98,15 @@ test_that("fitted helper functions run without errors", {
   mu <- fitted_trunc_binomial(draws, lb = lb, ub = ub)
   expect_equal(dim(mu), c(nsamples, nobs))
 })
+
+test_that("fitted_lagsar runs without errors", {
+  draws <- list(
+    mu = matrix(rnorm(30), nrow = 3),
+    lagsar = matrix(c(0.3, 0.5, 0.7)),
+    data = list(W = matrix(1:100, 10, 10), N = 10),
+    nsamples = 3
+  )
+  mu_new <- brms:::fitted_lagsar(draws)
+  expect_equal(dim(mu_new), dim(draws$mu))
+  expect_true(!identical(mu_new, draws$mu))
+})

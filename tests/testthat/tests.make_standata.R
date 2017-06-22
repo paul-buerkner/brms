@@ -500,3 +500,16 @@ test_that("make_standata includes data for Gaussian processes", {
   sdata <- make_standata(y ~ gp(x1, scale = FALSE), dat)
   expect_equal(max(sdata$Xgp_1) - min(sdata$Xgp_1), 9) 
 })
+
+test_that("make_standata includes data for SAR models", {
+  data(oldcol, package = "spdep")
+  sdata <- make_standata(CRIME ~ INC + HOVAL, data = COL.OLD, 
+                         autocor = cor_lagsar(COL.nb))
+  expect_equal(dim(sdata$W), rep(nrow(COL.OLD), 2))
+  
+  expect_error(
+    make_standata(CRIME ~ INC + HOVAL, data = COL.OLD, 
+                  autocor = cor_lagsar(matrix(1:4, 2, 2))),
+    "Dimensions of 'W' must be equal to the number of observations"
+  )
+})

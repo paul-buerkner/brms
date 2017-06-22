@@ -383,9 +383,11 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
     stop2("All arguments of set_prior must be of length 1.")
   }
     
-  valid_classes <- c("Intercept", "b", "sd", "sds", "sdgp", "lscale",
-                     "simplex", "cor", "L", "ar", "ma", "arr", "sigmaLL", 
-                     "rescor", "Lrescor", "delta", "theta", if (!check) "")
+  valid_classes <- c(
+    "Intercept", "b", "sd", "sds", "sdgp", "lscale", "simplex", "cor", 
+    "L", "ar", "ma", "arr", "lagsar", "errorsar", "sigmaLL", "rescor", 
+    "Lrescor", "delta", "theta", if (!check) ""
+  )
   if (!(class %in% valid_classes || auxpar_class(class) %in% auxpars())) {
     stop2("'", class, "' is not a valid parameter class.")
   }
@@ -636,6 +638,14 @@ get_prior <- function(formula, data, family = gaussian(),
   }
   if (get_arr(autocor)) {
     prior <- rbind(prior, brmsprior(class = "arr"))
+  }
+  if (is.cor_sar(autocor)) {
+    if (identical(autocor$type, "lag")) {
+      prior <- rbind(prior, brmsprior(class = "lagsar"))
+    }
+    if (identical(autocor$type, "error")) {
+      prior <- rbind(prior, brmsprior(class = "errorsar"))
+    }
   }
   if (is(autocor, "cor_bsts")) {
     prior <- rbind(prior, 

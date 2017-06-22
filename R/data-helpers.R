@@ -217,7 +217,8 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
                           check_response = FALSE,
                           only_response = FALSE,
                           incl_autocor = TRUE,
-                          return_standata = TRUE) {
+                          return_standata = TRUE,
+                          new_objects = list()) {
   # amend newdata passed to predict and fitted methods
   # Args:
   #   newdata: a data.frame containing new data for prediction 
@@ -229,6 +230,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   #   incl_autocor: Check data of autocorrelation terms?
   #   return_standata: Compute the data to be passed to Stan
   #                    or just return the updated newdata?
+  #   new_objects: see function 'add_new_objects'
   # Returns:
   #   updated data.frame being compatible with formula(fit)
   fit <- remove_autocor(fit, incl_autocor)
@@ -378,6 +380,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     }
   }
   if (return_standata) {
+    fit <- add_new_objects(fit, newdata, new_objects)
     control <- list(
       is_newdata = TRUE, not4stan = TRUE, 
       old_levels = old_levels, save_order = TRUE, 
@@ -401,10 +404,6 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     }
     control$smooths <- make_smooth_list(bterms, model.frame(fit))
     control$gps <- make_gp_list(bterms, model.frame(fit))
-    if (is(fit$autocor, "cor_fixed")) {
-      median_V <- median(diag(fit$autocor$V), na.rm = TRUE)
-      fit$autocor$V <- diag(median_V, nrow(newdata))
-    }
     knots <- attr(model.frame(fit), "knots")
     newdata <- make_standata(
       new_formula, data = newdata, family = fit$family, 
@@ -412,6 +411,35 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     )
   }
   newdata
+}
+
+add_new_objects <- function(x, newdata, new_objects = list()) {
+  # allows for updating of objects containing new data
+  # which cannot be passed via argument 'newdata'
+  # Args:
+  #   x: object of class 'brmsfit'
+  #   new_objects: optional list of new objects
+  # Return:
+  #   a possibly updated 'brmsfit' object
+  stopifnot(is.brmsfit(x), is.data.frame(newdata))
+  if (is.cor_sar(x$autocor)) {
+    if ("W" %in% names(new_objects)) {
+      x$autocor <- cor_sar(new_objects$W, type = x$autocor$type)
+    } else {
+      message("Using the identity matrix as weighting matrix by default")
+      x$autocor$W <- diag(nrow(newdata))
+    }
+  }
+  if (is.cor_fixed(x$autocor)) {
+    if ("V" %in% names(new_objects)) {
+      x$autocor <- cor_fixed(new_objects$V)
+    } else {
+      message("Using the median variance by default")
+      median_V <- median(diag(x$autocor$V), na.rm = TRUE)
+      x$autocor$V <- diag(median_V, nrow(newdata)) 
+    }
+  }
+  x
 }
 
 get_model_matrix <- function(formula, data = environment(formula),

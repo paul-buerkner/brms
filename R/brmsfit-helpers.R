@@ -811,6 +811,12 @@ prepare_family <- function(x) {
     family$family <- paste0(family$family, "_mv")
   } else if (use_cov(x$autocor) && sum(x$autocor$p, x$autocor$q) > 0) {
     family$family <- paste0(family$family, "_cov")
+  } else if (is.cor_sar(x$autocor)) {
+    if (identical(x$autocor$type, "lag")) {
+      family$family <- paste0(family$family, "_lagsar")
+    } else if (identical(x$autocor$type, "error")) {
+      family$family <- paste0(family$family, "_errorsar")
+    }
   } else if (is.cor_fixed(x$autocor)) {
     family$family <- paste0(family$family, "_fixed")
   }
@@ -859,8 +865,8 @@ default_plot_pars <- function() {
   # list all parameter classes to be included in plots by default
   c(fixef_pars(), "^sd_", "^cor_", "^sigma_", "^rescor_", 
     paste0("^", auxpars(), "[[:digit:]]*$"), "^delta$",
-    "^theta", "^ar", "^ma", "^arr", "^sigmaLL", "^sds_",
-    "^sdgp_", "^lscale_")
+    "^theta", "^ar", "^ma", "^arr", "^lagsar", "^errorsar", 
+    "^sigmaLL", "^sds_", "^sdgp_", "^lscale_")
 }
 
 extract_pars <- function(pars, all_pars, exact_match = FALSE,

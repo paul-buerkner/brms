@@ -10,8 +10,8 @@
 \usage{
 \method{WAIC}{brmsfit}(x, ..., compare = TRUE, newdata = NULL,
   re_formula = NULL, allow_new_levels = FALSE,
-  sample_new_levels = "uncertainty", subset = NULL, nsamples = NULL,
-  pointwise = NULL, nug = NULL)
+  sample_new_levels = "uncertainty", new_objects = list(), subset = NULL,
+  nsamples = NULL, pointwise = NULL, nug = NULL)
 
 WAIC(x, ...)
 }
@@ -49,6 +49,12 @@ and correlations. This options may be useful for conducting
 Bayesian power analysis. 
 If \code{"old_levels"}, directly sample new levels from the
 existing levels.}
+
+\item{new_objects}{A named \code{list} of objects containing 
+new data, which cannot be passed via argument \code{newdata}.
+Currently, only required for objects passed to 
+\code{\link[brms:cor_sar]{cor_sar}} and 
+\code{\link[brms:cor_fixed]{cor_fixed}}.}
 
 \item{subset}{A numeric vector specifying
 the posterior samples to be used. 

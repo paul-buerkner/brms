@@ -7,8 +7,9 @@
 \usage{
 \method{pp_check}{brmsfit}(object, type, nsamples, group = NULL, x = NULL,
   newdata = NULL, re_formula = NULL, allow_new_levels = FALSE,
-  sample_new_levels = "uncertainty", incl_autocor = TRUE, subset = NULL,
-  nug = NULL, ntrys = 5, loo_args = list(), ...)
+  sample_new_levels = "uncertainty", new_objects = list(),
+  incl_autocor = TRUE, subset = NULL, nug = NULL, ntrys = 5,
+  loo_args = list(), ...)
 }
 \arguments{
 \item{object}{An object of class \code{brmsfit}.}
@@ -58,6 +59,12 @@ and correlations. This options may be useful for conducting
 Bayesian power analysis. 
 If \code{"old_levels"}, directly sample new levels from the
 existing levels.}
+
+\item{new_objects}{A named \code{list} of objects containing 
+new data, which cannot be passed via argument \code{newdata}.
+Currently, only required for objects passed to 
+\code{\link[brms:cor_sar]{cor_sar}} and 
+\code{\link[brms:cor_fixed]{cor_fixed}}.}
 
 \item{incl_autocor}{A flag indicating if ARMA autocorrelation
 parameters should be included in the predictions. Defaults to 

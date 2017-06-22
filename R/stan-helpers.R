@@ -47,8 +47,8 @@ stan_autocor <- function(autocor, bterms, family, prior) {
       if (is.formula(bterms$adforms$disp)) {
         stop2(err_msg, " when specifying 'disp'.")
       }
-      if ("sigma" %in% names(bterms$auxpars)) {
-        stop2(err_msg, " when predicting 'sigma'.")
+      if (any(c("sigma", "nu") %in% names(bterms$auxpars))) {
+        stop2(err_msg, " when predicting 'sigma' or 'nu'.")
       }
       out$data <- paste0(out$data, "  #include 'data_arma_cov.stan' \n")
       if (!is.formula(bterms$adforms$se)) {
@@ -138,6 +138,45 @@ stan_autocor <- function(autocor, bterms, family, prior) {
       "  // autoregressive effects of the response \n"
     )
     out$prior <- paste0(out$prior, stan_prior(prior, class = "arr"))
+  }
+  if (is.cor_sar(autocor)) {
+    err_msg <- "SAR models are not yet working"
+    if (!is_linear) {
+      stop2(err_msg, " for family '", family$family, "'.")
+    }
+    if (is_mv) {
+      stop2(err_msg, " in multivariate models.")
+    }
+    if (is.formula(bterms$adforms$disp)) {
+      stop2(err_msg, " when specifying 'disp'.")
+    }
+    if (any(c("sigma", "nu") %in% names(bterms$auxpars))) {
+      stop2(err_msg, " when predicting 'sigma' or 'nu'.")
+    }
+    out$data <- paste0(out$data,
+      "  matrix[N, N] W;  // spatial weight matrix \n"                  
+    )
+    if (identical(autocor$type, "lag")) {
+      if (family$family == "gaussian") {
+        out$fun <- paste0(out$fun, "  #include 'fun_normal_lagsar.stan' \n") 
+      } else if (family$family == "student") {
+        out$fun <- paste0(out$fun, "  #include 'fun_student_t_lagsar.stan' \n") 
+      }
+      out$par <- paste0(out$par, 
+        "  real<lower=0,upper=1>  lagsar;  // SAR parameter of the responses \n"
+      )
+      out$prior <- paste0(out$prior, stan_prior(prior, class = "lagsar"))
+    } else if (identical(autocor$type, "error")) {
+      if (family$family == "gaussian") {
+        out$fun <- paste0(out$fun, "  #include 'fun_normal_errorsar.stan' \n") 
+      } else if (family$family == "student") {
+        out$fun <- paste0(out$fun, "  #include 'fun_student_t_errorsar.stan' \n") 
+      }
+      out$par <- paste0(out$par, 
+        "  real<lower=0,upper=1> errorsar;  // SAR parameter of the residuals \n"
+      )
+      out$prior <- paste0(out$prior, stan_prior(prior, class = "errorsar"))
+    }
   }
   if (is.cor_fixed(autocor)) {
     if (!is_linear) {
