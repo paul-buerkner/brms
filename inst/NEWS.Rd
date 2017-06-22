@@ -5,6 +5,9 @@
 \section{CHANGES IN VERSION 1.7.0++}{
   \subsection{NEW FEATURES}{
     \itemize{
+      \item Fit spatial autoregressive (SAR) models
+      via function \code{cor_sar}. Currently works
+      for families \code{gaussian} and \code{student}.
       \item Improve parallel execution flexibility
       via the \code{future} package.
     }
