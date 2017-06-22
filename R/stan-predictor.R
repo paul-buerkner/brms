@@ -1041,6 +1041,10 @@ stan_auxpar_defs <- function(auxpar) {
     xi = c(
       "  real ", 
       ";  // shape parameter \n"
+    ),
+    alpha = c(
+      "  real ",
+      ";  // skewness parameter \n"
     )
     # theta is handled in stan_mixture
   )

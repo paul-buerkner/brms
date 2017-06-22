@@ -684,7 +684,7 @@ auxpars <- function() {
   # names of auxiliary parameters
   c("mu", "sigma", "shape", "nu", "phi", "kappa", "beta", "xi",
     "zi", "hu", "zoi", "coi", "disc", "bs", "ndt", "bias", 
-    "quantile", "theta")
+    "quantile", "alpha", "theta")
 }
 
 links_auxpars <- function(ap) {
@@ -707,6 +707,7 @@ links_auxpars <- function(ap) {
     bias = c("logit", "identity"),
     quantile = c("logit", "identity"),
     xi = c("log1p", "identity"),
+    alpha = c("identity"),
     theta = c("identity"), 
     stop2("Parameter '", ap, "' is not supported.")
   )
@@ -732,6 +733,7 @@ valid_auxpars.default <- function(family, bterms = NULL, ...) {
     bias = is_wiener(family), 
     disc = is_ordinal(family),
     quantile = is_asym_laplace(family),
+    alpha = has_alpha(family),
     xi = has_xi(family)
   )
   names(x)[x]

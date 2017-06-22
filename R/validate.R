@@ -806,13 +806,13 @@ ad_families <- function(x) {
       "inverse.gaussian", "binomial", "poisson", 
       "geometric", "negbinomial", "exponential", 
       "weibull", "gamma", "exgaussian", "frechet",
-      "asym_laplace", "gen_extreme_value"
+      "asym_laplace", "gen_extreme_value", "skew_normal"
     ),
     trunc = c(
       "gaussian", "student", "cauchy", "lognormal", 
       "binomial", "poisson", "geometric", "negbinomial",
       "exponential", "weibull", "gamma", "inverse.gaussian",
-      "exgaussian", "frechet", "asym_laplace",
+      "exgaussian", "frechet", "asym_laplace", "skew_normal",
       "gen_extreme_value"
     ),
     disp = c(

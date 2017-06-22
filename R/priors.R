@@ -578,6 +578,7 @@ get_prior <- function(formula, data, family = gaussian(),
     ndt = "uniform(0, min_Y)", 
     bias = "beta(1, 1)", 
     xi = "normal(0, 2.5)",
+    alpha = "normal(0, 5)",
     disc = NA,
     mu = NA
   )

@@ -191,6 +191,10 @@ stan_llh.default <- function(family, bterms, data, autocor,
         "lognormal", 
         sargs(p$mu, p$sigma)
       ),
+      skew_normal = c(
+        "skew_normal",
+        sargs(p$mu, p$sigma, p$alpha)
+      ),
       poisson = c(
         "poisson", 
         p$mu
