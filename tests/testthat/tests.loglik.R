@@ -32,11 +32,11 @@ test_that("loglik for location shift models works as expected", {
   expect_equal(ll, as.matrix(ll_gaussian * draws$data$weights[1]))
 })
 
-test_that("loglik for lognormal and exgaussian models works as expected", {
+test_that("loglik for various skewed normal models works as expected", {
   ns <- 50
   draws <- list(sigma = rchisq(ns, 3), beta = rchisq(ns, 3),
                 mu = matrix(rnorm(ns*2), ncol = 2),
-                f = lognormal())
+                alpha = rnorm(ns), f = lognormal())
   draws$data <- list(Y = rlnorm(ns))
   ll_lognormal <- dlnorm(x = draws$data$Y[1], mean = draws$mu[, 1], 
                          sd = draws$sigma, log = TRUE)
@@ -48,6 +48,13 @@ test_that("loglik for lognormal and exgaussian models works as expected", {
                                log = TRUE)
   ll <- loglik_exgaussian(1, draws = draws)
   expect_equal(ll, ll_exgaussian)
+  
+  ll_skew_normal <- dskew_normal(
+    x = draws$data$Y[1], mu = draws$mu[, 1],
+    sigma = draws$sigma, alpha = draws$alpha, log = TRUE
+  )
+  ll <- as.numeric(loglik_skew_normal(1, draws = draws))
+  expect_equal(ll, ll_skew_normal)
 })
 
 test_that("loglik of aysm_laplace models runs without errors", {

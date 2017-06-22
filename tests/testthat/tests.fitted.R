@@ -3,6 +3,7 @@ test_that("fitted helper functions run without errors", {
   fit <- brms:::rename_pars(brms:::brmsfit_example1)
   add_samples <- brms:::add_samples
   fit <- add_samples(fit, "shape", dist = "exp")
+  fit <- add_samples(fit, "alpha", dist = "norm")
   fit <- add_samples(fit, "hu", dist = "beta", shape1 = 1, shape2 = 1)
   fit <- add_samples(fit, "zi", dist = "beta", shape1 = 1, shape2 = 1)
   fit <- add_samples(fit, "quantile", dist = "beta", shape1 = 2, shape2 = 1)
@@ -20,6 +21,11 @@ test_that("fitted helper functions run without errors", {
   
   # pseudo log-normal model
   fit$family <- lognormal()
+  expect_equal(dim(fitted(fit, summary = FALSE)), 
+               c(nsamples, nobs))
+  
+  # pseudo skew-normal model
+  fit$family <- skew_normal()
   expect_equal(dim(fitted(fit, summary = FALSE)), 
                c(nsamples, nobs))
   

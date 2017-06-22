@@ -7,13 +7,12 @@ test_that("student distribution works correctly", {
 })
 
 test_that("multivariate normal and student distributions work correctly", {
-  library(mvtnorm)
   mu <- rnorm(3)
   Sigma <- cov(matrix(rnorm(300), ncol = 3))
   expect_equal(dmulti_normal(1:3, mu = mu, Sigma = Sigma),
-               dmvnorm(1:3, mean = mu, sigma = Sigma))
+               mnormt::dmnorm(1:3, mu, Sigma))
   expect_equal(dmulti_student_t(1:3, mu = mu, Sigma = Sigma, df = 10, log = TRUE),
-               dmvt(1:3, df = 10, delta = mu, sigma = Sigma, log = TRUE))
+               mnormt::dmt(1:3, df = 10, mean = mu, S = Sigma, log = TRUE))
   expect_equal(dim(rmulti_normal(7, mu = mu, Sigma = Sigma)), c(7, 3))
   expect_equal(dim(rmulti_student_t(7, mu = mu, Sigma = Sigma, df = 10)), 
                c(7, 3))
@@ -44,70 +43,82 @@ test_that("multivariate normal and student distributions work correctly", {
 
 test_that("von_mises distribution functions run without errors", {
   n <- 10
-  res <- brms:::dvon_mises(runif(n, -pi, pi), mu = 1, kappa = 1:n)
+  res <- dvon_mises(runif(n, -pi, pi), mu = 1, kappa = 1:n)
   expect_true(length(res) == n)
-  res <- brms:::pvon_mises(runif(n, -pi, pi), mu = rnorm(n), kappa = 0:(n-1))
+  res <- pvon_mises(runif(n, -pi, pi), mu = rnorm(n), kappa = 0:(n-1))
   expect_true(length(res) == n)
-  res <- brms:::rvon_mises(n, mu = rnorm(n), kappa = 0:(n-1))
+  res <- rvon_mises(n, mu = rnorm(n), kappa = 0:(n-1))
+  expect_true(length(res) == n)
+})
+
+test_that("skew_normal distribution functions run without errors", {
+  n <- 10
+  x <- rnorm(n, 10, 3)
+  res <- dskew_normal(x, mu = 1, sigma = 2, alpha = 1)
+  expect_true(length(res) == n)
+  res <- pskew_normal(x, mu = rnorm(n), sigma = 1:n, 
+                             alpha = 3, log.p = TRUE)
+  expect_true(length(res) == n)
+  res <- rskew_normal(n, mu = rnorm(n), sigma = 10, alpha = -4:5)
   expect_true(length(res) == n)
 })
 
 test_that("exgaussian distribution functions run without errors", {
   n <- 10
   x <- rnorm(n, 10, 3)
-  res <- brms:::dexgaussian(x, mu = 1, sigma = 2, beta = 1)
+  res <- dexgaussian(x, mu = 1, sigma = 2, beta = 1)
   expect_true(length(res) == n)
-  res <- brms:::pexgaussian(x, mu = rnorm(n), sigma = 1:n, 
+  res <- pexgaussian(x, mu = rnorm(n), sigma = 1:n, 
                             beta = 3, log.p = TRUE)
   expect_true(length(res) == n)
-  res <- brms:::rexgaussian(n, mu = rnorm(n), sigma = 10, beta = 1:10)
+  res <- rexgaussian(n, mu = rnorm(n), sigma = 10, beta = 1:10)
   expect_true(length(res) == n)
 })
 
 test_that("frechet distribution functions run without errors", {
   n <- 10
   x <- 21:30
-  res <- brms:::dfrechet(x, loc = 1, scale = 2, shape = 1, log = TRUE)
+  res <- dfrechet(x, loc = 1, scale = 2, shape = 1, log = TRUE)
   expect_true(length(res) == n)
   loc <- 1:10
-  res <- brms:::pfrechet(x, loc = loc, scale = 1:n, shape = 3)
+  res <- pfrechet(x, loc = loc, scale = 1:n, shape = 3)
   expect_true(length(res) == n)
-  q <- brms:::qfrechet(res, loc = loc, scale = 1:n, shape = 3)
+  q <- qfrechet(res, loc = loc, scale = 1:n, shape = 3)
   expect_equal(x, q)
-  res <- brms:::rfrechet(n, loc = loc, scale = 10, shape = 1:10)
+  res <- rfrechet(n, loc = loc, scale = 10, shape = 1:10)
   expect_true(length(res) == n)
 })
 
 test_that("inv_gaussian distribution functions run without errors", {
   n <- 10
   x <- rgamma(n, 10, 3)
-  res <- brms:::dinv_gaussian(x, mu = 1, shape = 1)
+  res <- dinv_gaussian(x, mu = 1, shape = 1)
   expect_true(length(res) == n)
-  res <- brms:::pinv_gaussian(x, mu = abs(rnorm(n)), shape = 3)
+  res <- pinv_gaussian(x, mu = abs(rnorm(n)), shape = 3)
   expect_true(length(res) == n)
-  res <- brms:::rinv_gaussian(n, mu = abs(rnorm(n)), shape = 1:10)
+  res <- rinv_gaussian(n, mu = abs(rnorm(n)), shape = 1:10)
   expect_true(length(res) == n)
 })
 
 test_that("gen_extreme_value distribution functions run without errors", {
   n <- 10
   x <- rgamma(n, 10, 3)
-  res <- brms:::dgen_extreme_value(x, mu = 1, sigma = 2, xi = 1)
+  res <- dgen_extreme_value(x, mu = 1, sigma = 2, xi = 1)
   expect_true(length(res) == n)
-  res <- brms:::pgen_extreme_value(x, mu = rnorm(n), sigma = 1:n, xi = 3)
+  res <- pgen_extreme_value(x, mu = rnorm(n), sigma = 1:n, xi = 3)
   expect_true(length(res) == n)
-  res <- brms:::rgen_extreme_value(n, mu = rnorm(n), sigma = 10, xi = 1:10)
+  res <- rgen_extreme_value(n, mu = rnorm(n), sigma = 10, xi = 1:10)
   expect_true(length(res) == n)
 })
 
 test_that("asym_laplace distribution functions run without errors", {
   n <- 10
   x <- rnorm(n, 10, 3)
-  res <- brms:::dasym_laplace(x, mu = 1, sigma = 2, quantile = 0.5)
+  res <- dasym_laplace(x, mu = 1, sigma = 2, quantile = 0.5)
   expect_true(length(res) == n)
-  res <- brms:::pasym_laplace(x, mu = rnorm(n), sigma = 1:n, quantile = 0.3)
+  res <- pasym_laplace(x, mu = rnorm(n), sigma = 1:n, quantile = 0.3)
   expect_true(length(res) == n)
-  res <- brms:::rasym_laplace(n, mu = rnorm(n), sigma = 10, 
+  res <- rasym_laplace(n, mu = rnorm(n), sigma = 10, 
                               quantile = runif(n, 0, 1))
   expect_true(length(res) == n)
 })
