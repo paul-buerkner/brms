@@ -12,7 +12,7 @@
 
 <meta name="author" content="Paul Bürkner" />
 
-<meta name="date" content="2017-05-14" />
+<meta name="date" content="2017-06-22" />
 
 <title>Parameterization of Response Distributions in brms</title>
 
@@ -32,7 +32,7 @@
 
 <h1 class="title toc-ignore">Parameterization of Response Distributions in brms</h1>
 <h4 class="author"><em>Paul Bürkner</em></h4>
-<h4 class="date"><em>2017-05-14</em></h4>
+<h4 class="date"><em>2017-06-22</em></h4>
 
 
 
@@ -53,7 +53,9 @@ f(y_i) = \frac{1}{\sqrt{2\pi}\sigma} \exp\left(-\frac{1}{2}\left(\frac{y_i - \mu
 \]</span> where <span class="math inline">\(\sigma\)</span> is the residual standard deviation. The density of the <strong>student</strong> family is given by <span class="math display">\[
 f(y_i) = \frac{\Gamma((\nu + 1)/2)}{\Gamma(\nu/2)} \frac{1}{\sqrt{\nu\pi}\sigma}
 \left(1 + \frac{1}{\nu} \left(\frac{y_i - \mu_i}{\sigma}\right)^2\right)^{-(\nu+1)/2}
-\]</span> <span class="math inline">\(\Gamma\)</span> denotes the gamma function and <span class="math inline">\(\nu &gt; 1\)</span> are the degrees of freedom. As <span class="math inline">\(\nu \rightarrow \infty\)</span>, the student distribution becomes the gaussian distribution. For location shift models, <span class="math inline">\(y_i\)</span> can be any real value.</p>
+\]</span> <span class="math inline">\(\Gamma\)</span> denotes the gamma function and <span class="math inline">\(\nu &gt; 1\)</span> are the degrees of freedom. As <span class="math inline">\(\nu \rightarrow \infty\)</span>, the student distribution becomes the gaussian distribution. The densitiy of the <em>skew_normal</em> family is given by <span class="math display">\[
+f(y_i) = \frac{1}{\sqrt{2\pi}\sigma} \exp\left(-\frac{1}{2}\left(\frac{y_i - \mu_i}{\sigma}\right)^2\right) \left(1 + \text{erf} \left( \alpha \left(\frac{y_i - \mu_i}{\sigma \sqrt{2}} \right) \right) \right)
+\]</span> where <span class="math inline">\(\sigma\)</span> is the positive scale parameter, <span class="math inline">\(\alpha\)</span> the skewness parameter and <span class="math inline">\(\text{erf}\)</span> denotes the error function of the gaussian distribution. If <span class="math inline">\(\alpha = 0\)</span>, the skew-normal distribution becomes the gaussian distribution. For location shift models, <span class="math inline">\(y_i\)</span> can be any real value.</p>
 </div>
 <div id="binary-and-count-data-models" class="section level2">
 <h2>Binary and count data models</h2>

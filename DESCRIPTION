@@ -33,7 +33,7 @@ Suggests:
     future,
     arm,
     spdep,
-    mvtnorm,
+    mnormt,
     MCMCglmm,
     ape,
     R.rsp,

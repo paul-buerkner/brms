@@ -197,6 +197,100 @@ rmulti_student_t <- function(n, df, mu, Sigma, check = FALSE) {
   sweep(samples, 2, mu, "+")
 }
 
+#' The Skew-Normal Distribution
+#' 
+#' Density, distribution function, and random generation for the 
+#' skew-normal distribution with location \code{mu}, 
+#' scale \code{sigma}, and skewness \code{alpha}.
+#' 
+#' @name SkewNormal
+#' 
+#' @inheritParams StudentT
+#' @param x,q Vector of quantiles.
+#' @param mu Vector of location values.
+#' @param sigma Vector of scale values.
+#' @param alpha Vector of skewness values.
+#'   
+#' @details See \code{vignette("brms_families")} for details
+#' on the parameterization.
+#' 
+#' @export
+dskew_normal <- function(x, mu = 0, sigma = 1, alpha = 0, log = FALSE) {
+  if (any(sigma <= 0)) {
+    stop2("sigma must be greater than 0.")
+  }
+  z <- (x - mu) / sigma
+  if (length(alpha) == 1L) {
+    alpha <- rep(alpha, length(z))
+  }
+  logN <- -log(sqrt(2 * pi)) - log(sigma) - z^2 / 2
+  logS <- ifelse(
+    abs(alpha) < Inf, 
+    pnorm(alpha * z, log.p = TRUE),
+    log(as.numeric(sign(alpha) * z > 0))
+  )
+  out <- logN + logS - pnorm(0, log.p = TRUE)
+  out <- ifelse(abs(z) == Inf, -Inf, out)
+  if (!log) {
+    out <- exp(out)
+  }
+  out
+}
+
+#' @rdname SkewNormal
+#' @export 
+pskew_normal <- function(q, mu = 0, sigma = 1, alpha = 0, log.p = FALSE) {
+  # algorithm taken from sn::pvn
+  if (!requireNamespace("mnormt", quietly = TRUE)) {
+    stop2("Please install the 'mnormt' package.")
+  }
+  if (any(sigma <= 0)) {
+    stop2("sigma must be greater than 0.")
+  }
+  z <- (q - mu) / sigma
+  nz <- length(z)
+  if (length(alpha) == 1L) {
+    alpha <- rep(alpha, nz)
+  }
+  is_alpha_inf <- abs(alpha) == Inf
+  delta <- alpha / sqrt(1 + alpha^2)
+  delta[is_alpha_inf] <- sign(alpha[is_alpha_inf])
+  out <- numeric(nz)
+  for (k in seq_len(nz)) {
+    if (is_alpha_inf[k]) {
+      if (alpha[k] > 0) {
+        out[k] <- 2 * (pnorm(pmax(z[k], 0)) - 0.5)
+      } else {
+        out[k] <- 1 - 2 * (0.5 - pnorm(pmin(z[k], 0)))
+      }
+    } else {
+      S <- matrix(c(1, -delta[k], -delta[k], 1), 2, 2)
+      out[k] <- 2 * mnormt::biv.nt.prob(
+        0, lower = rep(-Inf, 2), upper = c(z[k], 0),
+        mean = c(0, 0), S = S
+      )
+    }
+  }
+  out <- pmin(1, pmax(0, out))
+  if (log.p) {
+    out <- log(out)
+  }
+  out
+}
+
+#' @rdname SkewNormal
+#' @export
+rskew_normal <- function(n, mu = 0, sigma = 1, alpha = 0) {
+  if (any(sigma <= 0)) {
+    stop2("sigma must be greater than 0.")
+  }
+  z1 <- rnorm(n)
+  z2 <- rnorm(n)
+  id <- z2 > alpha * z1
+  z1[id] <- -z1[id]
+  mu + sigma * z1
+}
+
 #' The von Mises Distribution
 #' 
 #' Density, distribution function, and random generation for the 
