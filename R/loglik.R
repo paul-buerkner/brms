@@ -49,6 +49,20 @@ loglik_lognormal <- function(i, draws, data = data.frame()) {
   loglik_weight(out, i = i, data = draws$data)
 }
 
+loglik_skew_normal <- function(i, draws, data = data.frame()) {
+  sigma <- get_sigma(draws$sigma, data = draws$data, i = i)
+  alpha <- get_auxpar(draws$alpha, i = i)
+  mu <- ilink(get_eta(draws$mu, i), draws$f$link)
+  args <- nlist(mu, sigma, alpha)
+  out <- loglik_censor(
+    dist = "skew_normal", args = args, i = i, data = draws$data
+  )
+  out <- loglik_truncate(
+    out, cdf = pskew_normal, args = args, i = i, data = draws$data
+  )
+  loglik_weight(out, i = i, data = draws$data)
+}
+
 loglik_gaussian_mv <- function(i, draws, data = data.frame()) {
   if (!is.null(draws$data$N_trait)) {
     obs <- seq(i, draws$data$N, draws$data$N_trait)

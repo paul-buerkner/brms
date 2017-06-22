@@ -31,6 +31,17 @@ fitted_lognormal <- function(draws) {
   draws$mu
 }
 
+fitted_skew_normal <- function(draws) {
+  draws$sigma <- get_sigma(
+    draws$sigma, data = draws$data, dim = dim_mu(draws)
+  )
+  draws$alpha <- get_auxpar(draws$alpha)
+  draws$mu <- ilink(draws$mu, draws$f$link)
+  with(draws, 
+    mu + sigma * alpha / sqrt(1 + alpha^2) * sqrt(2 / pi)
+  )
+}
+
 fitted_binomial <- function(draws) {
   trials <- as_draws_matrix(draws$data$trials, dim_mu(draws))
   draws$mu <- ilink(draws$mu, draws$f$link) 

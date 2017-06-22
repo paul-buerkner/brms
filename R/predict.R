@@ -38,6 +38,15 @@ predict_lognormal <- function(i, draws, ...) {
                  lb = draws$data$lb[i], ub = draws$data$ub[i])
 }
 
+predict_skew_normal <- function(i, draws, ...) {
+  sigma <- get_sigma(draws$sigma, data = draws$data, i = i)
+  alpha <- get_auxpar(draws$alpha, i = i)
+  mu <- ilink(get_eta(draws$mu, i), draws$f$link)
+  args <- nlist(mu, sigma, alpha)
+  rng_continuous(nrng = draws$nsamples, dist = "skew_normal", args = args, 
+                 lb = draws$data$lb[i], ub = draws$data$ub[i])
+}
+
 predict_gaussian_mv <- function(i, draws, ...) {
   # currently no truncation available
   if (!is.null(draws$data$N_trait)) {
