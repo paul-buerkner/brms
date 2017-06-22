@@ -296,7 +296,7 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
   if (is.data.frame(fit$data)) {
     # validating is possible (implies brms > 0.5.0)
     list_data <- lapply(as.list(fit$data), function(x)
-      if (is.numeric(x)) x else as.factor(x))
+      if (is_like_factor(x)) as.factor(x) else x)
     is_factor <- sapply(list_data, is.factor)
     all_group_vars <- ulapply(fit$ranef$gcall, "[[", "groups")
     dont_check <- c(all_group_vars, cens_vars)

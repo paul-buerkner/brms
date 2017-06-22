@@ -255,14 +255,15 @@ prepare_conditions <- function(x, conditions = NULL, effects = NULL,
   int_vars <- c(int_vars, get_effect(bterms, "mo"))
   int_vars <- unique(ulapply(int_vars, all.vars))
   for (v in req_vars) {
-    if (is.numeric(mf[[v]])) {
+    if (!is_like_factor(mf[[v]])) {
+      # treat variable as numeric
       if (v %in% int_vars) {
         conditions[[v]] <- round(median(mf[[v]]))
       } else {
         conditions[[v]] <- mean(mf[[v]])
       }
     } else {
-      # use reference category
+      # use reference category for factors
       levels <- attr(as.factor(mf[[v]]), "levels")
       conditions[[v]] <- factor(
         levels[1], levels = levels, ordered = is.ordered(mf[[v]])

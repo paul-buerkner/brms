@@ -73,6 +73,11 @@ is_equal <- function(x, y, ...) {
   isTRUE(all.equal(x, y, ...))
 }
 
+is_like_factor <- function(x) {
+  # check if x behaves like a factor in design matrices
+  is.factor(x) || is.character(x) || is.logical(x)
+}
+
 expand <- function(..., length = NULL) {
   # expand arguments of be of the same length
   # Args:
