@@ -42,15 +42,14 @@ Currently, only families \code{gaussian} and \code{student}
 }
 \examples{
 \dontrun{
-require(spdep)
-data(oldcol)
-fit1 <- brm(CRIME ~ INC + HOVAL, data= COL.OLD, 
+data(oldcol, package = "spdep")
+fit1 <- brm(CRIME ~ INC + HOVAL, data = COL.OLD, 
             autocor = cor_lagsar(COL.nb), 
             chains = 2, cores = 2)
 summary(fit1)
 plot(fit1)
 
-fit2 <- brm(CRIME ~ INC + HOVAL, data= COL.OLD, 
+fit2 <- brm(CRIME ~ INC + HOVAL, data = COL.OLD, 
             autocor = cor_errorsar(COL.nb), 
             chains = 2, cores = 2)
 summary(fit2)

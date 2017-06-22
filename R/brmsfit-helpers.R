@@ -812,9 +812,9 @@ prepare_family <- function(x) {
   } else if (use_cov(x$autocor) && sum(x$autocor$p, x$autocor$q) > 0) {
     family$family <- paste0(family$family, "_cov")
   } else if (is.cor_sar(x$autocor)) {
-    if (identical(x$autocor$type, "lagsar")) {
+    if (identical(x$autocor$type, "lag")) {
       family$family <- paste0(family$family, "_lagsar")
-    } else if (identical(x$autocor$type, "errorsar")) {
+    } else if (identical(x$autocor$type, "error")) {
       family$family <- paste0(family$family, "_errorsar")
     }
   } else if (is.cor_fixed(x$autocor)) {
