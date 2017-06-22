@@ -110,6 +110,30 @@ test_that("loglik for ARMA covariance models runs without errors", {
   expect_equal(length(ll), ns)
 })
 
+test_that("loglik for SAR models runs without errors", {
+  draws <- list(
+    mu = matrix(rnorm(30), nrow = 3),
+    nu = matrix(rep(2, 3)),
+    sigma = matrix(rep(10, 3)),
+    lagsar = matrix(c(0.3, 0.5, 0.7)),
+    nsamples = 3
+  )
+  draws$data <- list(Y = rnorm(10), W = diag(10), N = 10)
+  draws$f$link <- "identity"
+  
+  ll <- loglik_gaussian_lagsar(1, draws = draws)
+  expect_equal(length(ll), 3)
+  ll <- loglik_student_lagsar(1, draws = draws)
+  expect_equal(length(ll), 3)
+  
+  draws$errorsar <- draws$lagsar
+  draws$lagsar <- NULL
+  ll <- loglik_gaussian_errorsar(1, draws = draws)
+  expect_equal(length(ll), 3)
+  ll <- loglik_student_errorsar(1, draws = draws)
+  expect_equal(length(ll), 3)
+})
+
 test_that("loglik for 'cor_fixed' models runs without errors", {
   draws <- list(mu = matrix(rnorm(30), nrow = 3),
                 nu = matrix(rep(2, 3)),

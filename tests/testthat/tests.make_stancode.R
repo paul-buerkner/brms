@@ -996,7 +996,7 @@ test_that("sparse matrix multiplication is applied correctly", {
   )
 })
 
-test_that("stan code for Gaussian processes is correct", {
+test_that("Stan code for Gaussian processes is correct", {
   dat <- data.frame(y = rnorm(30), x1 = rnorm(30), x2 = rnorm(30),
                     z = factor(rep(4:6, each = 10)))
   
@@ -1024,4 +1024,26 @@ test_that("stan code for Gaussian processes is correct", {
   expect_match2(scode, "lscale_eta_1 ~ normal(0, 10);")
   expect_match2(scode, "sdgp_eta_1 ~ gamma(0.1, 0.1);")
   expect_match2(scode, "gp(Xgp_eta_1, sdgp_eta_1[1], lscale_eta_1[1], zgp_eta_1)")
+})
+
+test_that("Stan code for SAR models is correct", {
+  data(oldcol, package = "spdep")
+  scode <- make_stancode(CRIME ~ INC + HOVAL, data = COL.OLD, 
+                         autocor = cor_lagsar(COL.nb),
+                         prior = prior(normal(0.5, 1), lagsar))
+  expect_match2(scode, "Y ~ normal_lagsar(mu, sigma, lagsar, W)")
+  expect_match2(scode, "lagsar ~ normal(0.5, 1)")
+  
+  scode <- make_stancode(CRIME ~ INC + HOVAL, data = COL.OLD, 
+                         family = student(),
+                         autocor = cor_errorsar(COL.nb),
+                         prior = prior(beta(2, 3), errorsar))
+  expect_match2(scode, "Y ~ student_t_errorsar(nu, mu, sigma, errorsar, W)")
+  expect_match2(scode, "errorsar ~ beta(2, 3)")
+  
+  expect_error(
+    make_stancode(bf(CRIME ~ INC + HOVAL, sigma ~ INC),
+                  data = COL.OLD, autocor = cor_lagsar(COL.nb)),
+    "SAR models are not yet working when predicting 'sigma'" 
+  )
 })

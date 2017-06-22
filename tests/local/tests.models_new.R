@@ -469,3 +469,24 @@ expect_ggplot(pp_check(fit4))
 me = marginal_effects(fit4, nsamples = 200, nug = 1e-07)
 expect_ggplot(plot(me, ask = FALSE)[[1]])
 expect_range(WAIC(fit4)$waic, 400, 600)
+
+
+## SAR models
+fit_lagsar <- brm(CRIME ~ INC + HOVAL, data= COL.OLD, 
+                  family = student(),
+                  autocor = cor_lagsar(COL.nb), 
+                  chains = 2, cores = 2)
+print(fit_lagsar)
+expect_ggplot(pp_check(fit_lagsar))
+me = marginal_effects(fit_lagsar, nsamples = 200)
+expect_ggplot(plot(me, ask = FALSE)[[1]])
+expect_range(LOO(fit_lagsar)$loic, 350, 380)
+
+fit_errorsar <- brm(CRIME ~ INC + HOVAL, data = COL.OLD, 
+                    autocor = cor_errorsar(COL.nb), 
+                    chains = 2, cores = 2)
+print(fit_errorsar)
+expect_ggplot(pp_check(fit_errorsar))
+me = marginal_effects(fit_errorsar, nsamples = 200)
+expect_ggplot(plot(me, ask = FALSE)[[1]])
+expect_range(LOO(fit_errorsar)$looic, 350, 380)
