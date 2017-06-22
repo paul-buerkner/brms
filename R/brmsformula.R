@@ -707,7 +707,7 @@ links_auxpars <- function(ap) {
     bias = c("logit", "identity"),
     quantile = c("logit", "identity"),
     xi = c("log1p", "identity"),
-    alpha = c("identity"),
+    alpha = c("identity", "log"),
     theta = c("identity"), 
     stop2("Parameter '", ap, "' is not supported.")
   )
