@@ -1048,7 +1048,7 @@ test_that("Stan code for SAR models is correct", {
   )
 })
 
-test_that("Stan code for skew_normal models is correct" {
+test_that("Stan code for skew_normal models is correct", {
   dat = data.frame(y = rnorm(10), x = rnorm(10))
   scode <- make_stancode(y ~ x, dat, skew_normal())
   expect_match2(scode, "delta = alpha / sqrt(1 + alpha^2);")
