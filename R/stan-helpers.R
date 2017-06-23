@@ -461,6 +461,42 @@ stan_families <- function(family, bterms) {
     out$tdataC <- "  min_Y = min(Y); \n"
   } else if (any(families %in% "asym_laplace")) {
     out$fun <- "  #include 'fun_asym_laplace.stan' \n"
+  } else if (any(families %in% "skew_normal")) {
+    # as suggested by Stephen Martin use sigma and mu of CP 
+    # but the skewness parameter alpha of DP
+    out$tdataD <- "  real sqrt_2_div_pi; \n"
+    out$tdataC <- "  sqrt_2_div_pi = sqrt(2 / pi()); \n"
+    ap_names <- names(bterms$auxpars)
+    for (i in which(families %in% "skew_normal")) {
+      id <- ifelse(length(families) == 1L, "", i)
+      ns <- ifelse(paste0("sigma", id) %in% ap_names, "[n]", "")
+      na <- ifelse(paste0("alpha", id) %in% ap_names, "[n]", "")
+      type_delta <- ifelse(nzchar(na), "vector[N]", "real")
+      no <- ifelse(any(nzchar(c(ns, na))), "[n]", "")
+      type_omega <- ifelse(nzchar(no), "vector[N]", "real")
+      out$modelD <- paste0(out$modelD,
+        "  ", type_delta, " delta", id, "; \n",
+        "  ", type_omega, " omega", id, "; \n"
+      )
+      comp_delta <- paste0(
+        "  delta", id, na, " = alpha", id, na, 
+        " / sqrt(1 + alpha", id, na, "^2); \n"
+      )
+      comp_omega <- paste0(
+        "  omega", id, no, " = sigma", id, ns, 
+        " / sqrt(1 - sqrt_2_div_pi^2 * delta", id, na, "^2); \n"
+      )
+      out$modelC <- paste0(out$modelC,
+        if (!nzchar(na)) comp_delta,
+        if (!nzchar(no)) comp_omega,
+        "  for (n in 1:N) { \n",
+        if (nzchar(na)) paste0("  ", comp_delta),
+        if (nzchar(no)) paste0("  ", comp_omega),
+        "    mu", id, "[n] = mu", id, "[n] - omega", id, no, 
+        " * delta", id, na, " * sqrt_2_div_pi; \n",
+        "  } \n"
+      )
+    }
   } else if (any(families %in% "gen_extreme_value")) {
     out$fun <- paste0(
       "  #include 'fun_gen_extreme_value.stan' \n",

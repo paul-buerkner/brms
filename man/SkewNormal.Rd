@@ -16,9 +16,9 @@ rskew_normal(n, mu = 0, sigma = 1, alpha = 0)
 \arguments{
 \item{x, q}{Vector of quantiles.}
 
-\item{mu}{Vector of location values.}
+\item{mu}{Vector of mean values.}
 
-\item{sigma}{Vector of scale values.}
+\item{sigma}{Vector of standard deviation values.}
 
 \item{alpha}{Vector of skewness values.}
 
@@ -30,8 +30,8 @@ rskew_normal(n, mu = 0, sigma = 1, alpha = 0)
 }
 \description{
 Density, distribution function, and random generation for the 
-skew-normal distribution with location \code{mu}, 
-scale \code{sigma}, and skewness \code{alpha}.
+skew-normal distribution with mean \code{mu}, 
+standard deviation \code{sigma}, and skewness \code{alpha}.
 }
 \details{
 See \code{vignette("brms_families")} for details

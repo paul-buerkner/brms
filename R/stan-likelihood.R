@@ -49,6 +49,11 @@ stan_llh.default <- function(family, bterms, data, autocor,
   for (ap in setdiff(auxpars(), c("mu", "sigma", "shape"))) {
     p[[ap]] <- paste0(ap, mix, if (reqn && ap %in% auxpars) "[n]")
   }
+  if (family == "skew_normal") {
+    # required because of CP parameterization of mu and sigma
+    nomega <- if (reqn && any(c("sigma", "alpha") %in% auxpars)) "[n]"
+    p$omega <- paste0("omega", mix, nomega)
+  }
   ord_args <- sargs(p$mu, if (has_cs) "mucs[n]", "temp_Intercept", p$disc)
   usc_logit <- stan_llh_auxpar_usc_logit(c("zi", "hu"), bterms)
   trials <- ifelse(llh_adj || is_zero_inflated, "trials[n]", "trials")
@@ -193,7 +198,7 @@ stan_llh.default <- function(family, bterms, data, autocor,
       ),
       skew_normal = c(
         "skew_normal",
-        sargs(p$mu, p$sigma, p$alpha)
+        sargs(p$mu, p$omega, p$alpha)
       ),
       poisson = c(
         "poisson", 

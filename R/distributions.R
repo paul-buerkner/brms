@@ -200,15 +200,15 @@ rmulti_student_t <- function(n, df, mu, Sigma, check = FALSE) {
 #' The Skew-Normal Distribution
 #' 
 #' Density, distribution function, and random generation for the 
-#' skew-normal distribution with location \code{mu}, 
-#' scale \code{sigma}, and skewness \code{alpha}.
+#' skew-normal distribution with mean \code{mu}, 
+#' standard deviation \code{sigma}, and skewness \code{alpha}.
 #' 
 #' @name SkewNormal
 #' 
 #' @inheritParams StudentT
 #' @param x,q Vector of quantiles.
-#' @param mu Vector of location values.
-#' @param sigma Vector of scale values.
+#' @param mu Vector of mean values.
+#' @param sigma Vector of standard deviation values.
 #' @param alpha Vector of skewness values.
 #'   
 #' @details See \code{vignette("brms_families")} for details
@@ -219,7 +219,12 @@ dskew_normal <- function(x, mu = 0, sigma = 1, alpha = 0, log = FALSE) {
   if (any(sigma <= 0)) {
     stop2("sigma must be greater than 0.")
   }
-  z <- (x - mu) / sigma
+  # convert to DP parameterization
+  delta <- alpha / sqrt(1 + alpha^2)
+  sigma <- sigma / sqrt(1 - 2 / pi * delta^2)
+  mu <- mu - sigma * delta * sqrt(2 / pi)
+  # do it like sn::dsn
+  z <- (x - mu) / sigma 
   if (length(alpha) == 1L) {
     alpha <- rep(alpha, length(z))
   }
@@ -240,11 +245,15 @@ dskew_normal <- function(x, mu = 0, sigma = 1, alpha = 0, log = FALSE) {
 #' @rdname SkewNormal
 #' @export 
 pskew_normal <- function(q, mu = 0, sigma = 1, alpha = 0, log.p = FALSE) {
-  # algorithm taken from sn::pvn
   require_package("mnormt")
   if (any(sigma <= 0)) {
     stop2("sigma must be greater than 0.")
   }
+  # convert to DP parameterization
+  delta <- alpha / sqrt(1 + alpha^2)
+  sigma <- sigma / sqrt(1 - 2 / pi * delta^2)
+  mu <- mu - sigma * delta * sqrt(2 / pi)
+  # do it like sn::psn
   z <- (q - mu) / sigma
   nz <- length(z)
   if (length(alpha) == 1L) {
@@ -282,6 +291,11 @@ rskew_normal <- function(n, mu = 0, sigma = 1, alpha = 0) {
   if (any(sigma <= 0)) {
     stop2("sigma must be greater than 0.")
   }
+  # convert to DP parameterization
+  delta <- alpha / sqrt(1 + alpha^2)
+  sigma <- sigma / sqrt(1 - 2 / pi * delta^2)
+  mu <- mu - sigma * delta * sqrt(2 / pi)
+  # do it like sn::rsn
   z1 <- rnorm(n)
   z2 <- rnorm(n)
   id <- z2 > alpha * z1

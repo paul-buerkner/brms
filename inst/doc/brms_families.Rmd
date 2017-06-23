@@ -29,11 +29,18 @@ $$
 f(y_i) = \frac{\Gamma((\nu + 1)/2)}{\Gamma(\nu/2)} \frac{1}{\sqrt{\nu\pi}\sigma}
 \left(1 + \frac{1}{\nu} \left(\frac{y_i - \mu_i}{\sigma}\right)^2\right)^{-(\nu+1)/2}
 $$
-$\Gamma$ denotes the gamma function and $\nu > 1$ are the degrees of freedom. As $\nu \rightarrow \infty$, the student distribution becomes the gaussian distribution. The densitiy of the *skew_normal* family is given by
+$\Gamma$ denotes the gamma function and $\nu > 1$ are the degrees of freedom. As $\nu \rightarrow \infty$, the student distribution becomes the gaussian distribution. The density of the *skew_normal* family is given by
 $$
-f(y_i) = \frac{1}{\sqrt{2\pi}\sigma} \exp\left(-\frac{1}{2}\left(\frac{y_i - \mu_i}{\sigma}\right)^2\right) \left(1 + \text{erf} \left( \alpha \left(\frac{y_i - \mu_i}{\sigma \sqrt{2}} \right) \right) \right)
+f(y_i) = \frac{1}{\sqrt{2\pi}\sigma} \exp\left(-\frac{1}{2}\left(\frac{y_i - \xi_i}{\omega}\right)^2\right) \left(1 + \text{erf} \left( \alpha \left(\frac{y_i - \xi_i}{\omega \sqrt{2}} \right) \right) \right)
 $$
-where $\sigma$ is the positive scale parameter, $\alpha$ the skewness parameter and $\text{erf}$ denotes the error function of the gaussian distribution. If $\alpha = 0$, the skew-normal distribution becomes the gaussian distribution. For location shift models, $y_i$ can be any real value. 
+where $\xi$ is the location parameter, $\omega$ is the positive scale parameter, $\alpha$ the skewness parameter, and $\text{erf}$ denotes the error function of the gaussian distribution. To parameterize the skew-normal distribution in terms of the mean $\mu$ and standard deviation $\sigma$, $\omega$ and $\xi$ are computed as
+$$
+\omega = \frac{\sigma}{\sqrt{1 - \frac{2}{\pi} \frac{\alpha^2}{1 + \alpha^2}}}
+$$
+$$
+\xi_i = \mu_i - \omega \frac{\alpha}{\sqrt{1 + \alpha^2}} \sqrt{\frac{2}{\pi}}
+$$
+If $\alpha = 0$, the skew-normal distribution becomes the gaussian distribution. For location shift models, $y_i$ can be any real value. 
 
 ## Binary and count data models
 

@@ -8,8 +8,9 @@
       \item Fit spatial autoregressive (SAR) models
       via function \code{cor_sar}. Currently works
       for families \code{gaussian} and \code{student}.
-      \item Implement skew normal models
-      via family \code{skew_normal}.
+      \item Implement skew normal models via family 
+      \code{skew_normal}. Thanks to Stephen Martin 
+      for suggestions on the parameterization.
       \item Improve parallel execution flexibility
       via the \code{future} package.
     }
