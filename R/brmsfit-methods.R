@@ -1240,6 +1240,10 @@ pp_check.brmsfit <- function(object, type, nsamples, group = NULL,
   }
   if (!is.null(x)) {
     ppc_args$x <- mf[[x]]
+    if (!is_like_factor(ppc_args$x)) {
+      # fixes issue #229
+      ppc_args$x <- as.numeric(ppc_args$x)
+    }
   }
   do.call(ppc_fun, ppc_args)
 }

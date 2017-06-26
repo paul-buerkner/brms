@@ -15,6 +15,14 @@
       via the \code{future} package.
     }
   }
+  \subsection{BUG FIXES}{
+    \itemize{
+      \item Fix problems in \code{pp_check}
+      when the variable specified in argument
+      \code{x} has attributes thanks to 
+      Paul Galpern.
+    }
+  }
 }
 
 \section{CHANGES IN VERSION 1.7.0}{
