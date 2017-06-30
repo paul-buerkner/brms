@@ -3,7 +3,7 @@ data_effects.btl <- function(x, data, ranef = empty_ranef(),
                              prior = brmsprior(), knots = NULL, 
                              nlpar = "", not4stan = FALSE, 
                              smooths = NULL, gps = NULL, Jmo = NULL) {
-  # prepare data for all types of effects fpr use in Stan
+  # prepare data for all types of effects for use in Stan
   # Args:
   #   data: the data passed by the user
   #   family: the model family

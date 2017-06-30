@@ -1315,7 +1315,8 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     stop2("'transform' is only allowed when 'method' is set to 'predict'.")
   }
   rsv_vars <- rsv_vars(bterms)
-  if (is.null(effects)) {
+  use_def_effects <- is.null(effects)
+  if (use_def_effects) {
     effects <- get_all_effects(bterms, rsv_vars = rsv_vars)
     if (!length(effects)) {
       stop2("No valid effects detected.")
@@ -1373,7 +1374,7 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     marg_data <- mf[, effects[[i]], drop = FALSE]
     marg_args <- nlist(
       data = marg_data, conditions, int_conditions,
-      int_vars, surface, resolution
+      int_vars, surface, resolution, reorder = use_def_effects
     )
     marg_data <- do.call(prepare_marg_data, marg_args)
     if (surface && length(effects[[i]]) == 2L && too_far > 0) {
@@ -1411,8 +1412,10 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
     }
     rownames(marg_data) <- NULL
     types <- attr(marg_data, "types")
-    both_numeric <- length(types) == 2L && all(types == "numeric")
-    if (both_numeric && !surface) {
+    first_numeric <- types[1] %in% "numeric"
+    second_numeric <- types[2] %in% "numeric"
+    both_numeric <- first_numeric && second_numeric
+    if (second_numeric && !surface) {
       # can only be converted to factor after having called method
       mde2 <- round(marg_data[[effects[[i]][2]]], 2)
       levels2 <- sort(unique(mde2), TRUE)
@@ -1422,7 +1425,6 @@ marginal_effects.brmsfit <- function(x, effects = NULL, conditions = NULL,
         levels(marg_data[[effects[[i]][2]]]) <- labels2
       }
     }
-    first_numeric <- types[1] == "numeric"
     if (first_numeric && spaghetti) {
       if (surface) {
         stop2("Cannot use 'spaghetti' and 'surface' at the same time.")

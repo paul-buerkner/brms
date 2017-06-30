@@ -286,7 +286,7 @@ prepare_conditions <- function(x, conditions = NULL, effects = NULL,
 
 prepare_marg_data <- function(data, conditions, int_conditions = NULL,
                               int_vars = NULL, surface = FALSE, 
-                              resolution = 100) {
+                              resolution = 100, reorder = TRUE) {
   # prepare data to be used in marginal_effects
   # Args:
   #  data: data.frame containing only data of the predictors of interest
@@ -296,13 +296,16 @@ prepare_marg_data <- function(data, conditions, int_conditions = NULL,
   #  surface: generate surface plots later on?
   #  resolution: number of distinct points at which to evaluate
   #              the predictors of interest
+  #  reorder: reorder predictors so that numeric ones come first?
   effects <- names(data)
   stopifnot(length(effects) %in% c(1L, 2L))
-  pred_types <- ifelse(ulapply(data, is.numeric), "numeric", "factor")
+  pred_types <- ifelse(ulapply(data, is_like_factor), "factor", "numeric")
   # numeric effects should come first
-  new_order <- order(pred_types, decreasing = TRUE)
-  effects <- effects[new_order]
-  pred_types <- pred_types[new_order]
+  if (reorder) {
+    new_order <- order(pred_types, decreasing = TRUE)
+    effects <- effects[new_order]
+    pred_types <- pred_types[new_order]
+  }
   mono <- effects %in% int_vars
   if (pred_types[1] == "numeric") {
     min1 <- min(data[, effects[1]])
@@ -312,43 +315,42 @@ prepare_marg_data <- function(data, conditions, int_conditions = NULL,
     } else {
       values <- seq(min1, max1, length.out = resolution)
     }
+  } else {
+    values <- unique(data[, effects[1]])
   }
   if (length(effects) == 2L) {
-    if (pred_types[1] == "numeric") {
-      values <- setNames(list(values, NA), effects)
-      if (pred_types[2] == "numeric") {
-        if (surface) {
-          min2 <- min(data[, effects[2]])
-          max2 <- max(data[, effects[2]])
-          if (mono[2]) {
-            values[[2]] <- seq(min2, max2, by = 1)
-          } else {
-            values[[2]] <- seq(min2, max2, length.out = resolution)
-          }
+    values <- setNames(list(values, NA), effects)
+    if (pred_types[2] == "numeric") {
+      if (surface) {
+        min2 <- min(data[, effects[2]])
+        max2 <- max(data[, effects[2]])
+        if (mono[2]) {
+          values[[2]] <- seq(min2, max2, by = 1)
         } else {
-          if (effects[2] %in% names(int_conditions)) {
-            int_cond <- int_conditions[[effects[2]]]
-            if (is.function(int_cond)) {
-              int_cond <- int_cond(data[, effects[2]])
-            }
-            values[[2]] <- int_cond
-          } else if (mono[2]) {
-            median2 <- median(data[, effects[2]])
-            mad2 <- mad(data[, effects[2]])
-            values[[2]] <- round((-1:1) * mad2 + median2)
-          } else {
-            mean2 <- mean(data[, effects[2]])
-            sd2 <- sd(data[, effects[2]])
-            values[[2]] <- (-1:1) * sd2 + mean2
-          }
+          values[[2]] <- seq(min2, max2, length.out = resolution)
         }
       } else {
-        values[[2]] <- unique(data[, effects[2]])
+        if (effects[2] %in% names(int_conditions)) {
+          int_cond <- int_conditions[[effects[2]]]
+          if (is.function(int_cond)) {
+            int_cond <- int_cond(data[, effects[2]])
+          }
+          values[[2]] <- int_cond
+        } else if (mono[2]) {
+          median2 <- median(data[, effects[2]])
+          mad2 <- mad(data[, effects[2]])
+          values[[2]] <- round((-1:1) * mad2 + median2)
+        } else {
+          mean2 <- mean(data[, effects[2]])
+          sd2 <- sd(data[, effects[2]])
+          values[[2]] <- (-1:1) * sd2 + mean2
+        }
       }
-      data <- do.call(expand.grid, values)
+    } else {
+      values[[2]] <- unique(data[, effects[2]])
     }
-  } else if (pred_types == "numeric") {
-    # just a single numeric predictor
+    data <- do.call(expand.grid, values)
+  } else {
     data <- structure(data.frame(values), names = effects)
   }
   # no need to have the same value combination more than once
