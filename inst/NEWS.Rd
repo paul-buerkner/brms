@@ -25,6 +25,9 @@
       when the variable specified in argument
       \code{x} has attributes thanks to 
       Paul Galpern.
+      \item Fix unexpected errors when passing
+      models that did not properly initiliaze to 
+      various post-processing methods.
     }
   }
 }
