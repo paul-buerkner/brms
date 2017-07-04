@@ -1,7 +1,10 @@
 #' @export
 parnames.brmsfit <- function(x, ...) {
-  contains_samples(x)
-  dimnames(x$fit)$parameters
+  out <- dimnames(x$fit)
+  if (is.list(out)) {
+    out <- out$parameters
+  }
+  out
 }
 
 #' Extract Population-Level Estimates
