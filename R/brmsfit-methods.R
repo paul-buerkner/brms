@@ -2246,7 +2246,7 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
                          nsamples = NULL, pointwise = NULL, nug = NULL) {
   models <- list(x, ...)
   mnames <- deparse(substitute(x))
-  mnames <- c(mnames, sapply(substitute(list(...))[-1], deparse))
+  mnames <- c(mnames, ulapply(substitute(list(...))[-1], deparse))
   if (is.null(subset) && !is.null(nsamples)) {
     subset <- sample(nsamples(x), nsamples)
   }
@@ -2311,7 +2311,7 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
                         cores = 1, wcp = 0.2, wtrunc = 3/4) {
   models <- list(x, ...)
   mnames <- deparse(substitute(x))
-  mnames <- c(mnames, sapply(substitute(list(...))[-1], deparse))
+  mnames <- c(mnames, ulapply(substitute(list(...))[-1], deparse))
   if (is.null(subset) && !is.null(nsamples)) {
     subset <- sample(nsamples(x), nsamples)
   }
@@ -2366,29 +2366,6 @@ loo.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
   cl <- match.call()
   cl[[1]] <- quote(LOO)
   eval(cl, parent.frame())
-}
-
-#' @rdname add_ic
-#' @export
-add_ic.brmsfit <- function(x, ic = "loo", ...) {
-  dots <- list(...)
-  unused_args <- intersect(names(dots), args_not_for_add_ic())
-  if (length(unused_args)) {
-    unused_args <- collapse_comma(unused_args)
-    stop2("Cannot use arguments ", unused_args," in calls to 'add_ic'.")
-  }
-  model_name <- deparse(substitute(x))
-  ic <- unique(tolower(as.character(ic)))
-  valid_ics <- c("loo", "waic")
-  if (!length(ic) || !all(ic %in% valid_ics)) {
-    stop2("Argument 'ic' should be a subset of ",
-          collapse_comma(valid_ics))
-  }
-  for (i in seq_along(ic)) {
-    x[[ic[i]]] <- do.call(ic[i], c(list(x), dots))
-    x[[ic[i]]]$model_name <- model_name
-  }
-  x
 }
 
 #' Compute Weighted Expectations Using LOO

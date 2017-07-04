@@ -526,6 +526,82 @@ add_ic <- function(x, ...) {
   UseMethod("add_ic")
 }
 
+#' Add the LOO information criterion to fitted model objects
+#' 
+#' @inheritParams add_ic
+#' 
+#' @return An object of the same class as \code{x}, but
+#'   with the LOO information criterion added for later usage.
+#'   
+#' @details For more details see \code{\link[brms:add_ic]{add_ic}}.
+#' 
+#' @export
+add_loo <- function(x, ...) {
+  UseMethod("add_loo")
+}
+
+#' Add the WAIC to fitted model objects
+#' 
+#' @inheritParams add_ic
+#' 
+#' @return An object of the same class as \code{x}, but
+#'   with the WAIC added for later usage.
+#'   
+#' @details For more details see \code{\link[brms:add_ic]{add_ic}}.
+#' 
+#' @export
+add_waic <- function(x, ...) {
+  UseMethod("add_waic")
+}
+
+#' Compute exact cross-validation for problematic observations
+#' 
+#' Compute exact cross-validation for problematic observations
+#' for which approximate leave-one-out cross-validation may
+#' return incorrect results.
+#' 
+#' @param x An \R object typically of class \code{loo} or \code{brmsfit}.
+#' @param fit An \R object typically of class \code{brmsfit}.
+#' @param k_threshold The threshold at which pareto \eqn{k} estimates are
+#'   treated as problematic. Defaults to \code{0.7}. 
+#'   See \code{\link[loo:pareto_k_ids]{pareto_k_ids}}
+#'   for more details.
+#' @param check Logical; If \code{TRUE} (the default), a crude 
+#'   check is performed if the \code{loo} object was generated
+#'   from the \code{brmsfit} object passed to argument \code{fit}.
+#' @param ... Further arguments passed to 
+#'   \code{\link[brms:update.brmsfit]{update.brmsfit}} such
+#'   as \code{iter}, \code{chains}, or \code{cores}.
+#'   
+#' @return An object of the same class as \code{x}.
+#' 
+#' @details 
+#' Warnings about Pareto \eqn{k} estimates indicate observations
+#' for which the approximation to LOO is problematic (this is described in
+#' detail in Vehtari, Gelman, and Gabry (2017) and the 
+#' \pkg{\link[loo:loo-package]{loo}} package documentation).
+#' If there are \eqn{J} observations with \eqn{k} estimates above
+#' \code{k_threshold}, then \code{reloo} will refit the original model 
+#' \eqn{J} times, each time leaving out one of the \eqn{J} 
+#' problematic observations. The pointwise contributions of these observations
+#' to the total ELPD are then computed directly and substituted for the
+#' previous estimates from these \eqn{J} observations that are stored in the
+#' original \code{loo} object.
+#' 
+#' @examples 
+#' \dontrun{
+#' fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient),
+#'            data = epilepsy, family = poisson())
+#' # throws warning about some pareto k estimates being too high
+#' (loo1 <- loo(fit1))
+#' (loo1 <- reloo(loo1, fit1))
+#' }
+#' 
+#' @export
+reloo <- function(x, ...) {
+  UseMethod("reloo")
+}
+  
 #' Interface to \pkg{shinystan}
 #' 
 #' Provide an interface to \pkg{shinystan} for models fitted with \pkg{brms}

@@ -522,6 +522,12 @@ log_sum_exp <- function(x, y) {
   max + log(exp(x - max) + exp(y - max))
 }
 
+log_mean_exp <- function(x) {
+  # just log_sum_exp(x) - log(length(x))
+  max_x <- max(x)
+  max_x + log(sum(exp(x - max_x))) - log(length(x))
+}
+
 log_inv_logit <- function(x) {
   log(inv_logit(x))
 }
