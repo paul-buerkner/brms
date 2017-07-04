@@ -92,8 +92,8 @@ If just one object is provided, an object of class \code{ic}.
  If multiple objects are provided, an object of class \code{iclist}.
 }
 \description{
-Perform Leave-one-out cross-validation based on the posterior likelihood
-using the \pkg{loo} package.
+Perform approximate leave-one-out cross-validation based 
+on the posterior likelihood using the \pkg{loo} package.
 }
 \details{
 When comparing models fitted to the same data, 

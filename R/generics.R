@@ -446,8 +446,8 @@ WAIC <- function(x, ...) {
 
 #' Compute the LOO information criterion
 #' 
-#' Perform Leave-one-out cross-validation based on the posterior likelihood
-#' using the \pkg{loo} package.
+#' Perform approximate leave-one-out cross-validation based 
+#' on the posterior likelihood using the \pkg{loo} package.
 #' 
 #' @aliases LOO.brmsfit loo.brmsfit loo
 #' 
@@ -588,6 +588,8 @@ add_waic <- function(x, ...) {
 #' previous estimates from these \eqn{J} observations that are stored in the
 #' original \code{loo} object.
 #' 
+#' @seealso \code{\link[brms:loo]{loo}}, \code{\link[brms:kfold]{kfold}}
+#' 
 #' @examples 
 #' \dontrun{
 #' fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient),
@@ -600,6 +602,57 @@ add_waic <- function(x, ...) {
 #' @export
 reloo <- function(x, ...) {
   UseMethod("reloo")
+}
+
+#' K-Fold Cross-Validation
+#' 
+#' Perform exact K-fold cross-validation by refitting the model \eqn{K}
+#' times each leaving out one-\eqn{K}th of the original data.
+#' 
+#' @inheritParams LOO
+#' @param K For \code{kfold}, the number of subsets of equal (if possible) size
+#'   into which the data will be randomly partitioned for performing
+#'   \eqn{K}-fold cross-validation. The model is refit \code{K} times, each time
+#'   leaving out one of the \code{K} subsets. If \code{K} is equal to the total
+#'   number of observations in the data then \eqn{K}-fold cross-validation is
+#'   equivalent to exact leave-one-out cross-validation.
+#' @param save_fits If \code{TRUE}, a component \code{fits} is added to 
+#'   the returned object to store the cross-validated \code{brmsfit} 
+#'   objects and the indices of the omitted observations for each fold. 
+#'   Defaults to \code{FALSE}.
+#' @param update_args A \code{list} of further arguments passed to 
+#'   \code{\link[brms:update.brmsfit]{update.brmsfit}} such
+#'   as \code{iter}, \code{chains}, or \code{cores}.
+#'   
+#' @return \code{kfold} returns an object that has a similar structure as the 
+#'   objects returned by the \code{loo} and \code{waic} methods.
+#'    
+#' @details The \code{kfold} function performs exact \eqn{K}-fold
+#'   cross-validation. First the data are randomly partitioned into \eqn{K}
+#'   subsets of equal (or as close to equal as possible) size. Then the model is
+#'   refit \eqn{K} times, each time leaving out one of the \code{K} subsets. If
+#'   \eqn{K} is equal to the total number of observations in the data then
+#'   \eqn{K}-fold cross-validation is equivalent to exact leave-one-out
+#'   cross-validation (to which \code{loo} is an efficient approximation). The
+#'   \code{compare_ic} function is also compatible with the objects returned
+#'   by \code{kfold}.
+#'   
+#' @examples 
+#' \dontrun{
+#' fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + 
+#'               (1|patient) + (1|obs),
+#'            data = epilepsy, family = poisson())
+#' # throws warning about some pareto k estimates being too high
+#' (loo1 <- loo(fit1))
+#' # perform 10-fold cross validation
+#' (kfold1 <- kfold(fit1, chains = 2, cores = 2))
+#' }   
+#'  
+#' @seealso \code{\link[brms:loo]{loo}}, \code{\link[brms:reloo]{reloo}}
+#'  
+#' @export
+kfold <- function(x, ...) {
+  UseMethod("kfold")
 }
   
 #' Interface to \pkg{shinystan}

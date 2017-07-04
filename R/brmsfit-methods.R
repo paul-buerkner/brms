@@ -2271,9 +2271,9 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
         out[[i]] <- models[[i]][["waic"]]
       } else {
         args[["x"]] <- models[[i]]
+        args[["model_name"]] <- mnames[i]
         out[[i]] <- do.call(compute_ic, args) 
       }
-      out[[i]]$model_name <- mnames[[i]]
     }
     if (compare) {
       match_response(models)
@@ -2284,9 +2284,9 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
     if (use_stored_ic && is.ic(x[["waic"]])) {
       out <- x[["waic"]]
     } else {
+      args[["model_name"]] <- mnames
       out <- do.call(compute_ic, c(nlist(x), args)) 
     }
-    out$model_name <- mnames[[1]]
   }
   out
 }
@@ -2337,9 +2337,9 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
         out[[i]] <- models[[i]][["loo"]]
       } else {
         args[["x"]] <- models[[i]]
+        args[["model_name"]] <- mnames[i]
         out[[i]] <- do.call(compute_ic, args) 
       }
-      out[[i]]$model_name <- mnames[i]
     }
     if (compare) {
       match_response(models)
@@ -2350,9 +2350,9 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
     if (use_stored_ic && is.ic(x[["loo"]])) {
       out <- x[["loo"]]
     } else {
+      args$model_name <- mnames
       out <- do.call(compute_ic, c(nlist(x), args)) 
     }
-    out$model_name <- mnames
   }
   out
 }
@@ -2369,6 +2369,50 @@ loo.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
   cl <- match.call()
   cl[[1]] <- quote(LOO)
   eval(cl, parent.frame())
+}
+
+#' @export
+#' @describeIn kfold \code{kfold} method for \code{brmsfit} objects
+kfold.brmsfit <- function(x, ..., compare = TRUE,
+                          K = 10, save_fits = FALSE,
+                          update_args = list()) {
+  models <- list(x, ...)
+  mnames <- deparse(substitute(x))
+  mnames <- c(mnames, ulapply(substitute(list(...))[-1], deparse))
+  args <- c(nlist(ic = "kfold", K, save_fits), update_args)
+  # TODO: allow storing of kfold in the fitted model objects
+  if (length(models) > 1L) {
+    out <- named_list(mnames)
+    for (i in seq_along(models)) {
+      if (!is.brmsfit(models[[i]])) {
+        stop2("Object '", mnames[i], "' is not of class 'brmsfit'.")
+      }
+      kfold_i <- models[[i]][["kfold"]]
+      if (is.ic(kfold_i) && is_equal(kfold_i$K, K)) {
+        out[[i]] <- kfold_i
+      } else {
+        args[["x"]] <- models[[i]]
+        args[["model_name"]] <- mnames[i]
+        out[[i]] <- do.call(compute_ic, args) 
+      }
+      out[[i]]$model_name <- mnames[i]
+    }
+    if (compare) {
+      match_response(models)
+      out <- compare_ic(x = out)
+    }
+    class(out) <- "iclist"
+  } else {
+    kfold <- x[["kfold"]]
+    if (is.ic(kfold) && is_equal(kfold$K, K)) {
+      out <- kfold
+    } else {
+      args[["model_name"]] <- mnames
+      out <- do.call(compute_ic, c(nlist(x), args)) 
+    }
+    out$model_name <- mnames
+  }
+  out
 }
 
 #' Compute Weighted Expectations Using LOO

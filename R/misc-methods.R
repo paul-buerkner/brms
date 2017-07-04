@@ -135,44 +135,6 @@ print.brmsmodel <- function(x, ...) {
   invisible(x) 
 }
 
-#' @export
-print.ic <- function(x, digits = 2, ...) {
-  # print the output of LOO(x) and WAIC(x)
-  ic <- names(x)[3]
-  mat <- matrix(c(x[[ic]], x[[paste0("se_",ic)]]), ncol = 2, 
-                dimnames = list("", c(toupper(ic), "SE")))
-  print(round(mat, digits = digits))
-  invisible(x)
-}
-
-#' @export
-print.iclist <- function(x, digits = 2, ...) {
-  # print the output of LOO and WAIC with multiple models
-  m <- x
-  m$ic_diffs__ <- NULL
-  if (length(m)) {
-    ic <- names(m[[1]])[3]
-    mat <- matrix(0, nrow = length(m), ncol = 2)
-    dimnames(mat) <- list(names(m), c(toupper(ic), "SE"))
-    for (i in seq_along(m)) { 
-      mat[i, ] <- c(m[[i]][[ic]], m[[i]][[paste0("se_", ic)]])
-    }
-  } else {
-    mat <- NULL
-  }
-  ic_diffs <- x$ic_diffs__
-  if (is.matrix(attr(x, "compare"))) {
-    # deprecated as of brms 1.4.0
-    ic_diffs <- attr(x, "compare")
-  }
-  if (is.matrix(ic_diffs)) {
-    # models were compared using the compare_ic function
-    mat <- rbind(mat, ic_diffs)
-  }
-  print(round(mat, digits = digits), na.print = "")
-  invisible(x)
-}
-
 #' @rdname brmshypothesis
 #' @export
 print.brmshypothesis <- function(x, digits = 2, chars = 20, ...) {

@@ -1,38 +1,42 @@
-compute_ic <- function(x, ic = c("waic", "loo", "psislw"), 
-                       loo_args = list(), ...) {
+compute_ic <- function(x, ic = c("waic", "loo", "psislw", "kfold"), 
+                       model_name = "", loo_args = list(), ...) {
   # compute WAIC and LOO using the 'loo' package
   # Args:
   #   x: an object of class brmsfit
   #   ic: the information criterion to be computed
   #   loo_args: passed to functions of the loo package
-  #   ...: passed to log_lik.brmsfit
+  #   ...: passed to log_lik.brmsfit or kfold.brmsfit
   # Returns:
   #   output of the loo functions with amended class attribute
   stopifnot(is.list(loo_args))
   ic <- match.arg(ic)
-  dots <- list(...)
   contains_samples(x)
-  loo_args$x <- do.call(log_lik, c(list(x), dots))
-  pointwise <- is.function(loo_args$x)
-  if (pointwise) {
-    loo_args$args <- attr(loo_args$x, "args")
-    attr(loo_args$x, "args") <- NULL
-  }
-  if (ic == "psislw") {
+  if (ic == "kfold") {
+    IC <- kfold_internal(x, ...)
+  } else {
+    loo_args$x <- log_lik(x, ...)
+    pointwise <- is.function(loo_args$x)
     if (pointwise) {
-      loo_args[["llfun"]] <- loo_args[["x"]]
-      loo_args[["llargs"]] <- loo_args[["args"]]
-      loo_args[["x"]] <- loo_args[["args"]] <- NULL
-    } else {
-      loo_args[["lw"]] <- -loo_args[["x"]]
-      loo_args[["x"]] <- NULL
+      loo_args$args <- attr(loo_args$x, "args")
+      attr(loo_args$x, "args") <- NULL
     }
+    if (ic == "psislw") {
+      if (pointwise) {
+        loo_args[["llfun"]] <- loo_args[["x"]]
+        loo_args[["llargs"]] <- loo_args[["args"]]
+        loo_args[["x"]] <- loo_args[["args"]] <- NULL
+      } else {
+        loo_args[["lw"]] <- -loo_args[["x"]]
+        loo_args[["x"]] <- NULL
+      }
+    }
+    IC <- SW(do.call(eval(parse(text = paste0("loo::", ic))), loo_args)) 
   }
-  IC <- SW(do.call(eval(parse(text = paste0("loo::", ic))), loo_args))
+  IC$model_name <- model_name
   class(IC) <- c("ic", class(IC))
   if (ic == "loo") {
     n_bad_obs <- length(loo::pareto_k_ids(IC, threshold = 0.7))
-    recommend_loo_options(n_bad_obs)
+    recommend_loo_options(n_bad_obs, model_name)
   }
   IC
 }
@@ -101,8 +105,14 @@ compare_ic <- function(..., x = NULL, ic = c("loo", "waic")) {
     stop2("Expecting at least two objects.")
   }
   ics <- unname(sapply(x, function(y) names(y)[3]))
-  if (!all(sapply(ics, identical, ics[1]))) {
+  if (!all(ics %in% ics[1])) {
     stop2("All inputs should be from the same criterion.")
+  }
+  if (ics[1] == "kfoldic") {
+    Ks <- sapply(x, "[[", "K")
+    if (!all(Ks %in% Ks[1])) {
+      stop2("'K' differs across kfold objects.")
+    }
   }
   names(x) <- ulapply(x, "[[", "model_name")
   n_models <- length(x)
@@ -136,7 +146,7 @@ add_ic.brmsfit <- function(x, ic = "loo", ...) {
   }
   model_name <- deparse(substitute(x))
   ic <- unique(tolower(as.character(ic)))
-  valid_ics <- c("loo", "waic")
+  valid_ics <- c("loo", "waic", "kfold")
   if (!length(ic) || !all(ic %in% valid_ics)) {
     stop2("Argument 'ic' should be a subset of ",
           collapse_comma(valid_ics))
@@ -335,20 +345,124 @@ reloo.brmsfit <- function(x, k_threshold = 0.7, ...) {
   x
 }
 
-recommend_loo_options <- function(n) {
-  if (n > 0) {
+kfold_internal <- function(x, K = 10, save_fits = FALSE, ...) {
+  # most of the code is taken from rstanarm::kfold
+  stopifnot(is.brmsfit(x))
+  N <- nobs(x)
+  if (K < 1 || K > N) {
+    stop2("'K' must be greater than one and smaller or ", 
+          "equal to the number of observations in the model.")
+  }
+  mf <- model.frame(x)
+  perm <- sample.int(N)
+  idx <- ceiling(seq(from = 1, to = N, length.out = K + 1))
+  bin <- .bincode(perm, breaks = idx, right = FALSE, include.lowest = TRUE)
+  
+  lppds <- list()
+  if (save_fits) {
+    fits <- array(list(), c(K, 2), list(NULL, c("fit", "omitted")))    
+  }
+  for (k in seq_len(K)) {
+    message("Fitting model ", k, " out of ", K)
+    omitted <- which(bin == k)
+    fit_k <- update(
+      x, newdata = mf[-omitted, , drop = FALSE], 
+      refresh = 0, ...
+    )
+    lppds[[k]] <- log_lik(
+      fit_k, newdata = mf[omitted, , drop = FALSE], 
+      allow_new_levels = TRUE
+    )
+    if (save_fits) {
+      fits[k, ] <- list(fit = fit_k, omitted = omitted) 
+    }
+  }
+  elpds <- ulapply(lppds, function(x) apply(x, 2, log_mean_exp))
+  elpd_kfold <- sum(elpds)
+  se_elpd_kfold <- sqrt(N * var(elpds))
+  out <- nlist(
+    elpd_kfold, p_kfold = NA, kfoldic = - 2 * elpd_kfold,
+    se_elpd_kfold, se_p_kfold = NA, se_kfoldic = 2 * se_elpd_kfold,
+    pointwise = cbind(elpd_kfold = elpds),
+    K = K, model_name = deparse(substitute(x))
+  )
+  if (save_fits) {
+    out$fits <- fits 
+  }
+  structure(out, class = "loo")
+}
+
+recommend_loo_options <- function(n, model_name = "") {
+  model_name <- if (isTRUE(nzchar(model_name))) {
+    paste0(" in model '", substr(model_name, 1, 100), "'")
+  }
+  if (n > 0 && n <= 10) {
     warning2(
-      "Found ", n, " observation(s) with a pareto_k > 0.7. ",
-      "We recommend calling 'reloo' in order to calculate the ",
-      "ELPD without the assumption that these observations are negligible. ", 
-      "This will refit the model ", n, " times to compute the ELPDs ", 
-      "for the problematic observations directly."
+      "Found ", n, " observations with a pareto_k > 0.7", model_name, ". ",
+      "It may be more appropriate to call 'reloo' in order to calculate ", 
+      "the ELPD without the assumption that these observations are ", 
+      "negligible. This will refit the model ", n, " times to compute ", 
+      "the ELPDs for the problematic observations directly."
     )
     out <- "reloo"
-  } else  {
-    out <- "none"
+  } else if (n > 10) {
+    warning2(
+      "Found ", n, " observations with a pareto_k > 0.7", model_name, ". ",
+      "With this many problematic observations, it may be more ", 
+      "appropriate to use 'kfold' with argument 'K = 10' to perform ", 
+      "10-fold cross-validation rather than LOO."
+    )
+    out <- "kfold"
+  } else {
+    out <- "loo"
   }
   invisible(out)
+}
+
+#' @export
+print.ic <- function(x, digits = 2, ...) {
+  # print the output of LOO(x) and WAIC(x)
+  ic <- names(x)[3]
+  mat <- matrix(
+    c(x[[ic]], x[[paste0("se_",ic)]]), ncol = 2, 
+      dimnames = list("", c(toupper(ic), "SE"))
+  )
+  print(round(mat, digits = digits))
+  if (is_equal(ic, "kfoldic")) {
+    cat(paste0("\nBased on ", x$K, "-fold cross-validation\n"))
+  }
+  invisible(x)
+}
+
+#' @export
+print.iclist <- function(x, digits = 2, ...) {
+  # print the output of LOO and WAIC with multiple models
+  m <- x
+  m$ic_diffs__ <- NULL
+  if (length(m)) {
+    ic <- names(m[[1]])[3]
+    mat <- matrix(0, nrow = length(m), ncol = 2)
+    dimnames(mat) <- list(names(m), c(toupper(ic), "SE"))
+    for (i in seq_along(m)) { 
+      mat[i, ] <- c(m[[i]][[ic]], m[[i]][[paste0("se_", ic)]])
+    }
+  } else {
+    mat <- ic <- NULL
+  }
+  ic_diffs <- x$ic_diffs__
+  if (is.matrix(attr(x, "compare"))) {
+    # deprecated as of brms 1.4.0
+    ic_diffs <- attr(x, "compare")
+  }
+  if (is.matrix(ic_diffs)) {
+    # models were compared using the compare_ic function
+    mat <- rbind(mat, ic_diffs)
+  }
+  print(round(mat, digits = digits), na.print = "")
+  if (is_equal(ic, "kfoldic")) {
+    cat(paste0("\nBased on ", x[[1]]$K, "-fold cross-validation\n"))
+  }
+  invisible(x)
 }
 
 is.loo <- function(x) {

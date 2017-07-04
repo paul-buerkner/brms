@@ -61,3 +61,6 @@ fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt_c + (1|patient),
 }
 
 }
+\seealso{
+\code{\link[brms:loo]{loo}}, \code{\link[brms:kfold]{kfold}}
+}
