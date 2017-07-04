@@ -11,6 +11,10 @@
       \item Implement skew normal models via family 
       \code{skew_normal}. Thanks to Stephen Martin 
       for suggestions on the parameterization.
+      \item Add method \code{reloo} to perform exact 
+      cross-validation for problematic observations 
+      and \code{kfold} to perform k-fold cross-validation 
+      thanks to the Stan Team.
       \item Improve parallel execution flexibility
       via the \code{future} package.
     }

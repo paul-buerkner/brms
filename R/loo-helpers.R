@@ -310,7 +310,10 @@ reloo.loo <- function(x, fit, k_threshold = 0.7, check = TRUE, ...) {
     omitted <- obs[j]
     mf_omitted <- mf[-omitted, , drop = FALSE]
     fit_j <- SW(update(fit, newdata = mf_omitted, refresh = 0, ...))
-    lls[[j]] <- log_lik(fit_j, newdata = mf[omitted, , drop = FALSE])
+    lls[[j]] <- log_lik(
+      fit_j, newdata = mf[omitted, , drop = FALSE],
+      allow_new_levels = TRUE
+    )
   }
   # compute elpd_{loo,j} for each of the held out observations
   elpd_loo <- unlist(lapply(lls, log_mean_exp))
@@ -365,10 +368,8 @@ kfold_internal <- function(x, K = 10, save_fits = FALSE, ...) {
   for (k in seq_len(K)) {
     message("Fitting model ", k, " out of ", K)
     omitted <- which(bin == k)
-    fit_k <- update(
-      x, newdata = mf[-omitted, , drop = FALSE], 
-      refresh = 0, ...
-    )
+    mf_omitted <- mf[-omitted, , drop = FALSE]
+    fit_k <- SW(update(x, newdata = mf_omitted, refresh = 0, ...))
     lppds[[k]] <- log_lik(
       fit_k, newdata = mf[omitted, , drop = FALSE], 
       allow_new_levels = TRUE

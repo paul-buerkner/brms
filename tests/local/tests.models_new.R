@@ -27,6 +27,9 @@ expect_ggplot(plot(me1, ask = FALSE)[[4]])
 ## investigare model fit
 expect_range(WAIC(fit1)$waic, 1120, 1160)
 expect_ggplot(pp_check(fit1))
+# test kfold
+kfold1 <- kfold(fit1, update_args = list(chains = 2, iter = 1000))
+expect_range(kfold1$kfoldic, 1220, 1260)
 
 ## Ordinal regression modeling patient's rating of inhaler instructions
 ## category specific effects are estimated for variable 'treat'
@@ -46,9 +49,9 @@ fit3 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient),
             data = kidney, family = lognormal(),
             cores = 2)
 print(fit3)
-expect_range(WAIC(fit3)$waic, 650, 740)
 me3 <- marginal_effects(fit3, method = "predict")
 expect_ggplot(plot(me3, ask = FALSE)[[2]])
+expect_range(LOO(fit3)$looic, 650, 740)
 
 ## Probit regression using the binomial family
 n <- sample(1:10, 100, TRUE)  # number of trials
@@ -101,6 +104,10 @@ fit1 <- brm(count ~ log_Age_c + log_Base4_c * Trt_c +
 print(fit1)
 me <- marginal_effects(fit1)
 expect_ggplot(plot(me, ask = FALSE)[[1]])
+# test reloo
+loo1 <- LOO(fit1)
+reloo1 <- reloo(loo1, fit1, chains = 1, iter = 100)
+expect_range(reloo1$looic, 1620, 1700)
 
 conditions <- data.frame(log_Age_c = 0, log_Base4_c = 0, Trt_c = 0)
 me <- marginal_effects(fit1, conditions = conditions)
