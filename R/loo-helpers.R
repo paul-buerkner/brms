@@ -448,12 +448,12 @@ kfold_internal <- function(x, K = 10, save_fits = FALSE, ...) {
 
 recommend_loo_options <- function(n, model_name = "") {
   model_name <- if (isTRUE(nzchar(model_name))) {
-    paste0(" in model '", substr(model_name, 1, 100), "'")
+    paste0(" in model '", model_name, "'")
   }
   if (n > 0 && n <= 10) {
     warning2(
       "Found ", n, " observations with a pareto_k > 0.7", model_name, ". ",
-      "It may be more appropriate to call 'reloo' in order to calculate ", 
+      "It is recommended to set 'reloo = TRUE' in order to calculate ",
       "the ELPD without the assumption that these observations are ", 
       "negligible. This will refit the model ", n, " times to compute ", 
       "the ELPDs for the problematic observations directly."
