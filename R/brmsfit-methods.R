@@ -2248,47 +2248,21 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
                          new_objects = list(), subset = NULL,
                          nsamples = NULL, pointwise = NULL, nug = NULL) {
   models <- list(x, ...)
-  mnames <- deparse(substitute(x))
-  mnames <- c(mnames, ulapply(substitute(list(...))[-1], deparse))
+  model_names <- c(
+    deparse_combine(substitute(x)),
+    ulapply(substitute(list(...))[-1], deparse_combine)
+  )
   if (is.null(subset) && !is.null(nsamples)) {
     subset <- sample(nsamples(x), nsamples)
   }
-  pointwise <- set_pointwise(
-    x, pointwise, subset = subset, newdata = newdata
-  )
-  args <- nlist(
-    ic = "waic", newdata, re_formula, subset, allow_new_levels, 
-    sample_new_levels, new_objects, pointwise, nug
-  )
+  pointwise <- set_pointwise(x, pointwise, newdata, subset)
   use_stored_ic <- !any(names(match.call()) %in% args_not_for_add_ic())
-  if (length(models) > 1L) {
-    out <- named_list(mnames)
-    for (i in seq_along(models)) {
-      if (!is.brmsfit(models[[i]])) {
-        stop2("Object '", mnames[i], "' is not of class 'brmsfit'.")
-      }
-      if (use_stored_ic && is.ic(models[[i]][["waic"]])) {
-        out[[i]] <- models[[i]][["waic"]]
-      } else {
-        args[["x"]] <- models[[i]]
-        args[["model_name"]] <- mnames[i]
-        out[[i]] <- do.call(compute_ic, args) 
-      }
-    }
-    if (compare) {
-      match_response(models)
-      out <- compare_ic(x = out)
-    }
-    class(out) <- "iclist"
-  } else {
-    if (use_stored_ic && is.ic(x[["waic"]])) {
-      out <- x[["waic"]]
-    } else {
-      args[["model_name"]] <- mnames
-      out <- do.call(compute_ic, c(nlist(x), args)) 
-    }
-  }
-  out
+  args <- nlist(
+    models, model_names, ic = "waic", use_stored_ic,
+    newdata, re_formula, subset, nug, allow_new_levels, 
+    sample_new_levels, new_objects, pointwise, compare
+  )
+  do.call(compute_ics, args)
 }
 
 #' @importFrom loo waic
@@ -2313,48 +2287,22 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
                         nsamples = NULL, pointwise = NULL, nug = NULL,
                         cores = 1, wcp = 0.2, wtrunc = 3/4) {
   models <- list(x, ...)
-  mnames <- deparse(substitute(x))
-  mnames <- c(mnames, ulapply(substitute(list(...))[-1], deparse))
+  model_names <- c(
+    deparse_combine(substitute(x)),
+    ulapply(substitute(list(...))[-1], deparse_combine)
+  )
   if (is.null(subset) && !is.null(nsamples)) {
     subset <- sample(nsamples(x), nsamples)
   }
-  pointwise <- set_pointwise(
-    x, pointwise, subset = subset, newdata = newdata
-  )
+  pointwise <- set_pointwise(x, pointwise, newdata, subset)
   loo_args <- nlist(wcp, wtrunc, cores)
-  args <- nlist(
-    ic = "loo", loo_args, newdata, re_formula, subset, nug,
-    allow_new_levels, sample_new_levels, new_objects, pointwise
-  )
   use_stored_ic <- !any(names(match.call()) %in% args_not_for_add_ic())
-  if (length(models) > 1L) {
-    out <- named_list(mnames)
-    for (i in seq_along(models)) {
-      if (!is.brmsfit(models[[i]])) {
-        stop2("Object '", mnames[i], "' is not of class 'brmsfit'.")
-      }
-      if (use_stored_ic && is.ic(models[[i]][["loo"]])) {
-        out[[i]] <- models[[i]][["loo"]]
-      } else {
-        args[["x"]] <- models[[i]]
-        args[["model_name"]] <- mnames[i]
-        out[[i]] <- do.call(compute_ic, args) 
-      }
-    }
-    if (compare) {
-      match_response(models)
-      out <- compare_ic(x = out)
-    }
-    class(out) <- "iclist"
-  } else {
-    if (use_stored_ic && is.ic(x[["loo"]])) {
-      out <- x[["loo"]]
-    } else {
-      args$model_name <- mnames
-      out <- do.call(compute_ic, c(nlist(x), args)) 
-    }
-  }
-  out
+  args <- nlist(
+    models, model_names, ic = "loo", use_stored_ic, loo_args,
+    newdata, re_formula, subset, nug, allow_new_levels, 
+    sample_new_levels, new_objects, pointwise, compare
+  )
+  do.call(compute_ics, args)
 }
 
 #' @importFrom loo loo
@@ -2377,42 +2325,19 @@ kfold.brmsfit <- function(x, ..., compare = TRUE,
                           K = 10, save_fits = FALSE,
                           update_args = list()) {
   models <- list(x, ...)
-  mnames <- deparse(substitute(x))
-  mnames <- c(mnames, ulapply(substitute(list(...))[-1], deparse))
-  args <- c(nlist(ic = "kfold", K, save_fits), update_args)
-  # TODO: allow storing of kfold in the fitted model objects
-  if (length(models) > 1L) {
-    out <- named_list(mnames)
-    for (i in seq_along(models)) {
-      if (!is.brmsfit(models[[i]])) {
-        stop2("Object '", mnames[i], "' is not of class 'brmsfit'.")
-      }
-      kfold_i <- models[[i]][["kfold"]]
-      if (is.ic(kfold_i) && is_equal(kfold_i$K, K)) {
-        out[[i]] <- kfold_i
-      } else {
-        args[["x"]] <- models[[i]]
-        args[["model_name"]] <- mnames[i]
-        out[[i]] <- do.call(compute_ic, args) 
-      }
-      out[[i]]$model_name <- mnames[i]
-    }
-    if (compare) {
-      match_response(models)
-      out <- compare_ic(x = out)
-    }
-    class(out) <- "iclist"
-  } else {
-    kfold <- x[["kfold"]]
-    if (is.ic(kfold) && is_equal(kfold$K, K)) {
-      out <- kfold
-    } else {
-      args[["model_name"]] <- mnames
-      out <- do.call(compute_ic, c(nlist(x), args)) 
-    }
-    out$model_name <- mnames
-  }
-  out
+  model_names <- c(
+    deparse_combine(substitute(x)),
+    ulapply(substitute(list(...))[-1], deparse_combine)
+  )
+  use_stored_ic <- ulapply(models, 
+    function(x) is.brmsfit(x) && is_equal(x$kfold$K, K)
+  )
+  args <- nlist(
+    models, model_names, ic = "kfold", K, 
+    save_fits, use_stored_ic, compare
+  )
+  args <- c(args, update_args)
+  do.call(compute_ics, args)
 }
 
 #' Compute Weighted Expectations Using LOO

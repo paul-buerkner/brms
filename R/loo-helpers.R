@@ -1,13 +1,71 @@
-compute_ic <- function(x, ic = c("waic", "loo", "psislw", "kfold"), 
+compute_ics <- function(models, model_names, 
+                        ic = c("loo", "waic", "psislw", "kfold"),
+                        use_stored_ic = FALSE, 
+                        compare = TRUE, ...) {
+  # helper function used to create (lists of) 'ic' objects
+  # Args:
+  #   models: list of brmsfit objects
+  #   model_names: character vector containing model names
+  #   ic: name of the information criterion to compute
+  #   use_stored_ic: use recomputed ic objects if possible?
+  #   ...: more arguments passed to compute_ic
+  # Returns:
+  #   If length(models) > 1 an object of class 'iclist'
+  #   If length(models) == 1 an object of class 'ic'
+  ic <- match.arg(ic)
+  args <- nlist(ic, ...)
+  if (length(models) > 1L) {
+    stopifnot(length(models) == length(model_names))
+    if (length(use_stored_ic) == 1L) {
+      use_stored_ic <- rep(use_stored_ic, length(models))
+    }
+    out <- named_list(model_names)
+    for (i in seq_along(models)) {
+      # verify all model objects before computing any ICs
+      if (!is.brmsfit(models[[i]])) {
+        stop2("Object '", model_names[i], "' is not of class 'brmsfit'.")
+      }
+    }
+    for (i in seq_along(models)) {
+      ic_obj <- models[[i]][[ic]]
+      if (use_stored_ic[i] && is.ic(ic_obj)) {
+        out[[i]] <- ic_obj
+      } else {
+        args$x <- models[[i]]
+        args$model_name <- model_names[i]
+        out[[i]] <- do.call(compute_ic, args) 
+      }
+    }
+    if (compare) {
+      match_response(models)
+      out <- compare_ic(x = out)
+    }
+    class(out) <- "iclist"
+  } else {
+    ic_obj <- models[[1]][[ic]]
+    stopifnot(length(use_stored_ic) == 1L)
+    if (use_stored_ic && is.ic(ic_obj)) {
+      out <- ic_obj
+    } else {
+      args$x <- models[[1]]
+      args$model_name <- model_names
+      out <- do.call(compute_ic, args) 
+    }
+  }
+  out
+}
+
+compute_ic <- function(x, ic = c("loo", "waic", "psislw", "kfold"), 
                        model_name = "", loo_args = list(), ...) {
-  # compute WAIC and LOO using the 'loo' package
+  # compute information criteria using the 'loo' package
   # Args:
   #   x: an object of class brmsfit
   #   ic: the information criterion to be computed
+  #   model_name: original variable name of object 'x'
   #   loo_args: passed to functions of the loo package
   #   ...: passed to log_lik.brmsfit or kfold.brmsfit
   # Returns:
-  #   output of the loo functions with amended class attribute
+  #   an object of class 'ic' which inherits from class 'loo'
   stopifnot(is.list(loo_args))
   ic <- match.arg(ic)
   contains_samples(x)

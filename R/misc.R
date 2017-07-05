@@ -273,6 +273,15 @@ deparse_no_string <- function(x) {
   x
 }
 
+deparse_combine <- function(x, max_char = 100) {
+  # combine deparse lines into one string
+  out <- collapse(deparse(x))
+  if (isTRUE(max_char > 0)) {
+    out <- substr(out, 1, max_char)
+  }
+  out
+}
+
 eval2 <- function(text, ...) {
   # evaluate a string
   eval(parse(text = text), ...)
