@@ -3,17 +3,14 @@
 \name{reloo}
 \alias{reloo}
 \alias{reloo.loo}
-\alias{reloo.brmsfit}
 \title{Compute exact cross-validation for problematic observations}
 \usage{
 reloo(x, ...)
 
 \method{reloo}{loo}(x, fit, k_threshold = 0.7, check = TRUE, ...)
-
-\method{reloo}{brmsfit}(x, k_threshold = 0.7, ...)
 }
 \arguments{
-\item{x}{An \R object typically of class \code{loo} or \code{brmsfit}.}
+\item{x}{An \R object typically of class \code{loo}.}
 
 \item{...}{Further arguments passed to 
 \code{\link[brms:update.brmsfit]{update.brmsfit}} such
@@ -21,8 +18,8 @@ as \code{iter}, \code{chains}, or \code{cores}.}
 
 \item{fit}{An \R object typically of class \code{brmsfit}.}
 
-\item{k_threshold}{The threshold at which pareto \eqn{k} estimates are
-treated as problematic. Defaults to \code{0.7}. 
+\item{k_threshold}{The threshold at which pareto \eqn{k} 
+estimates are treated as problematic. Defaults to \code{0.7}. 
 See \code{\link[loo:pareto_k_ids]{pareto_k_ids}}
 for more details.}
 
@@ -31,7 +28,7 @@ check is performed if the \code{loo} object was generated
 from the \code{brmsfit} object passed to argument \code{fit}.}
 }
 \value{
-An object of the same class as \code{x}.
+An object of the class as \code{x}.
 }
 \description{
 Compute exact cross-validation for problematic observations

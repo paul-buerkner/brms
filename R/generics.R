@@ -387,19 +387,7 @@ ngrps <- function(object, ...) {
 #' 
 #' @aliases WAIC.brmsfit waic.brmsfit waic
 #' 
-#' @param x A fitted model object typically of class \code{brmsfit}. 
-#' @param ... Optionally more fitted model objects.
-#' @param compare A flag indicating if the information criteria
-#'  of the models should be compared to each other
-#'  via \code{\link[brms:compare_ic]{compare_ic}}.
-#' @param pointwise A flag indicating whether to compute the full
-#'  log-likelihood matrix at once or separately for each observation. 
-#'  The latter approach is usually considerably slower but 
-#'  requires much less working memory. Accordingly, if one runs 
-#'  into memory issues, \code{pointwise = TRUE} is the way to go.
-#'  By default, \code{pointwise} is automatically chosen based on 
-#'  the size of the model.
-#' @inheritParams predict.brmsfit
+#' @inheritParams LOO
 #' 
 #' @details When comparing models fitted to the same data, 
 #'  the smaller the WAIC, the better the fit.
@@ -451,12 +439,35 @@ WAIC <- function(x, ...) {
 #' 
 #' @aliases LOO.brmsfit loo.brmsfit loo
 #' 
-#' @inheritParams WAIC
+#' @param x A fitted model object typically of class \code{brmsfit}. 
+#' @param ... Optionally more fitted model objects.
+#' @param compare A flag indicating if the information criteria
+#'  of the models should be compared to each other
+#'  via \code{\link[brms:compare_ic]{compare_ic}}.
+#' @param pointwise A flag indicating whether to compute the full
+#'  log-likelihood matrix at once or separately for each observation. 
+#'  The latter approach is usually considerably slower but 
+#'  requires much less working memory. Accordingly, if one runs 
+#'  into memory issues, \code{pointwise = TRUE} is the way to go.
+#'  By default, \code{pointwise} is automatically chosen based on 
+#'  the size of the model.
+#' @param reloo Logical; Indicate whether 
+#'  \code{\link[brms:reloo]{reloo}} should be applied
+#'  on problematic observations. Defaults to \code{FALSE}.
+#' @param k_threshold The threshold at which pareto \eqn{k} 
+#'   estimates are treated as problematic. Defaults to \code{0.7}. 
+#'   Only used if argument \code{reloo} is \code{TRUE}.
+#'   See \code{\link[loo:pareto_k_ids]{pareto_k_ids}}
+#'   for more details.
+#' @param update_args A \code{list} of further arguments passed to 
+#'   \code{\link[brms:update.brmsfit]{update.brmsfit}} such
+#'   as \code{iter}, \code{chains}, or \code{cores}.
 #' @param cores The number of cores to use for parallelization. 
 #'  Default is \code{1}.
 #' @param wcp,wtrunc Parameters used for 
 #'  the Pareto smoothed importance sampling. 
 #'  See \code{\link[loo:loo]{loo}} for details.
+#' @inheritParams predict.brmsfit
 #' 
 #' @details When comparing models fitted to the same data, 
 #'  the smaller the LOO, the better the fit.
@@ -560,10 +571,10 @@ add_waic <- function(x, ...) {
 #' for which approximate leave-one-out cross-validation may
 #' return incorrect results.
 #' 
-#' @param x An \R object typically of class \code{loo} or \code{brmsfit}.
+#' @param x An \R object typically of class \code{loo}.
 #' @param fit An \R object typically of class \code{brmsfit}.
-#' @param k_threshold The threshold at which pareto \eqn{k} estimates are
-#'   treated as problematic. Defaults to \code{0.7}. 
+#' @param k_threshold The threshold at which pareto \eqn{k} 
+#'   estimates are treated as problematic. Defaults to \code{0.7}. 
 #'   See \code{\link[loo:pareto_k_ids]{pareto_k_ids}}
 #'   for more details.
 #' @param check Logical; If \code{TRUE} (the default), a crude 
@@ -573,7 +584,7 @@ add_waic <- function(x, ...) {
 #'   \code{\link[brms:update.brmsfit]{update.brmsfit}} such
 #'   as \code{iter}, \code{chains}, or \code{cores}.
 #'   
-#' @return An object of the same class as \code{x}.
+#' @return An object of the class as \code{x}.
 #' 
 #' @details 
 #' Warnings about Pareto \eqn{k} estimates indicate observations
@@ -620,9 +631,6 @@ reloo <- function(x, ...) {
 #'   the returned object to store the cross-validated \code{brmsfit} 
 #'   objects and the indices of the omitted observations for each fold. 
 #'   Defaults to \code{FALSE}.
-#' @param update_args A \code{list} of further arguments passed to 
-#'   \code{\link[brms:update.brmsfit]{update.brmsfit}} such
-#'   as \code{iter}, \code{chains}, or \code{cores}.
 #'   
 #' @return \code{kfold} returns an object that has a similar structure as the 
 #'   objects returned by the \code{loo} and \code{waic} methods.

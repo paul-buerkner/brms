@@ -2256,7 +2256,7 @@ WAIC.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
     subset <- sample(nsamples(x), nsamples)
   }
   pointwise <- set_pointwise(x, pointwise, newdata, subset)
-  use_stored_ic <- !any(names(match.call()) %in% args_not_for_add_ic())
+  use_stored_ic <- !any(names(match.call()) %in% args_not_for_reloo())
   args <- nlist(
     models, model_names, ic = "waic", use_stored_ic,
     newdata, re_formula, subset, nug, allow_new_levels, 
@@ -2280,12 +2280,15 @@ waic.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
 
 #' @export
 #' @describeIn LOO \code{LOO} method for \code{brmsfit} objects
-LOO.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL, 
-                        re_formula = NULL, allow_new_levels = FALSE, 
+LOO.brmsfit <- function(x, ..., compare = TRUE, reloo = FALSE, 
+                        newdata = NULL, re_formula = NULL, 
+                        allow_new_levels = FALSE, 
                         sample_new_levels = "uncertainty", 
                         new_objects = list(), subset = NULL, 
-                        nsamples = NULL, pointwise = NULL, nug = NULL,
-                        cores = 1, wcp = 0.2, wtrunc = 3/4) {
+                        nsamples = NULL, pointwise = NULL, 
+                        nug = NULL, k_threshold = 0.7, 
+                        update_args = list(), cores = 1, 
+                        wcp = 0.2, wtrunc = 3/4) {
   models <- list(x, ...)
   model_names <- c(
     deparse_combine(substitute(x)),
@@ -2296,11 +2299,17 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
   }
   pointwise <- set_pointwise(x, pointwise, newdata, subset)
   loo_args <- nlist(wcp, wtrunc, cores)
-  use_stored_ic <- !any(names(match.call()) %in% args_not_for_add_ic())
+  not_for_reloo <- intersect(names(match.call()), args_not_for_reloo())
+  if (reloo && length(not_for_reloo)) {
+    stop2("Cannot use 'reloo' with arguments ", 
+          collapse_comma(not_for_reloo), ".")
+  }
+  use_stored_ic <- !length(not_for_reloo)
   args <- nlist(
     models, model_names, ic = "loo", use_stored_ic, loo_args,
     newdata, re_formula, subset, nug, allow_new_levels, 
-    sample_new_levels, new_objects, pointwise, compare
+    sample_new_levels, new_objects, pointwise, compare,
+    reloo, k_threshold, update_args
   )
   do.call(compute_ics, args)
 }
@@ -2308,12 +2317,15 @@ LOO.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
 #' @importFrom loo loo
 #' @export loo
 #' @export
-loo.brmsfit <- function(x, ..., compare = TRUE, newdata = NULL,
-                        re_formula = NULL, allow_new_levels = FALSE,
-                        sample_new_levels = "uncertainty", 
-                        new_objects = list(), subset = NULL,
-                        nsamples = NULL, pointwise = NULL, nug = NULL,
-                        cores = 1, wcp = 0.2, wtrunc = 3/4) {
+loo.brmsfit <-  function(x, ..., compare = TRUE, reloo = FALSE, 
+                         newdata = NULL, re_formula = NULL, 
+                         allow_new_levels = FALSE, 
+                         sample_new_levels = "uncertainty", 
+                         new_objects = list(), subset = NULL, 
+                         nsamples = NULL, pointwise = NULL, 
+                         nug = NULL, k_threshold = 0.7, 
+                         update_args = list(), cores = 1, 
+                         wcp = 0.2, wtrunc = 3/4) {
   cl <- match.call()
   cl[[1]] <- quote(LOO)
   eval(cl, parent.frame())
@@ -2333,10 +2345,9 @@ kfold.brmsfit <- function(x, ..., compare = TRUE,
     function(x) is.brmsfit(x) && is_equal(x$kfold$K, K)
   )
   args <- nlist(
-    models, model_names, ic = "kfold", K, 
-    save_fits, use_stored_ic, compare
+    models, model_names, ic = "kfold", K, save_fits, 
+    use_stored_ic, compare, update_args
   )
-  args <- c(args, update_args)
   do.call(compute_ics, args)
 }
 

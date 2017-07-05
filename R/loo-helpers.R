@@ -55,22 +55,25 @@ compute_ics <- function(models, model_names,
   out
 }
 
-compute_ic <- function(x, ic = c("loo", "waic", "psislw", "kfold"), 
-                       model_name = "", loo_args = list(), ...) {
+compute_ic <- function(x, ic = c("loo", "waic", "psislw", "kfold"),
+                       model_name = "", reloo = FALSE, k_threshold = 0.7,
+                       loo_args = list(), update_args = list(), ...) {
   # compute information criteria using the 'loo' package
   # Args:
   #   x: an object of class brmsfit
   #   ic: the information criterion to be computed
   #   model_name: original variable name of object 'x'
+  #   reloo: call 'reloo' after computing 'loo'?
   #   loo_args: passed to functions of the loo package
-  #   ...: passed to log_lik.brmsfit or kfold.brmsfit
+  #   update_args: passed to update.brmsfit
+  #   ...: passed to log_lik.brmsfit
   # Returns:
   #   an object of class 'ic' which inherits from class 'loo'
   stopifnot(is.list(loo_args))
   ic <- match.arg(ic)
   contains_samples(x)
   if (ic == "kfold") {
-    IC <- kfold_internal(x, ...)
+    IC <- do.call(kfold_internal, c(list(x), update_args))
   } else {
     loo_args$x <- log_lik(x, ...)
     pointwise <- is.function(loo_args$x)
@@ -93,8 +96,13 @@ compute_ic <- function(x, ic = c("loo", "waic", "psislw", "kfold"),
   IC$model_name <- model_name
   class(IC) <- c("ic", class(IC))
   if (ic == "loo") {
-    n_bad_obs <- length(loo::pareto_k_ids(IC, threshold = 0.7))
-    recommend_loo_options(n_bad_obs, model_name)
+    if (reloo) {
+      reloo_args <- nlist(x = IC, fit = x, k_threshold, check = FALSE)
+      IC <- do.call(reloo.loo, c(reloo_args, update_args))
+    } else {
+      n_bad_obs <- length(loo::pareto_k_ids(IC, threshold = k_threshold))
+      recommend_loo_options(n_bad_obs, model_name) 
+    }
   }
   IC
 }
@@ -197,7 +205,7 @@ compare_ic <- function(..., x = NULL, ic = c("loo", "waic")) {
 #' @export
 add_ic.brmsfit <- function(x, ic = "loo", ...) {
   dots <- list(...)
-  unused_args <- intersect(names(dots), args_not_for_add_ic())
+  unused_args <- intersect(names(dots), args_not_for_reloo())
   if (length(unused_args)) {
     unused_args <- collapse_comma(unused_args)
     stop2("Cannot use arguments ", unused_args," in calls to 'add_ic'.")
@@ -286,10 +294,11 @@ set_pointwise <- function(x, pointwise = NULL, newdata = NULL,
   pointwise
 }
 
-args_not_for_add_ic <- function() {
-  # arguments of WAIC and LOO not usable in add_ic
+args_not_for_reloo <- function() {
+  # arguments not usable with 'reloo'
+  # the same arguments cannot be used in add_ic
   c("newdata", "re_formula", "subset", "nsamples",
-    "allow_new_levels", "sample_new_levels")
+    "allow_new_levels", "sample_new_levels", "new_objects")
 }
 
 match_response <- function(models) {
@@ -389,20 +398,6 @@ reloo.loo <- function(x, fit, k_threshold = 0.7, check = TRUE, ...) {
     sqrt(nrow(x$pointwise) * apply(x$pointwise[, sel], 2, var))
   # what should we do about pareto k? for now setting them to 0
   x$pareto_k[obs] <- 0
-  x
-}
-
-#' @rdname reloo
-#' @export
-reloo.brmsfit <- function(x, k_threshold = 0.7, ...) {
-  if (!is.loo(x$loo)) {
-    message(
-      "The model does not contain a precomputed 'loo' object.\n",
-      "Running 'add_loo' first."
-    )
-    x <- add_loo(x)
-  }
-  x$loo <- reloo(x$loo, x, k_threshold = k_threshold, check = FALSE, ...)
   x
 }
 
