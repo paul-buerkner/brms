@@ -397,9 +397,9 @@ skew_normal_cumulants <- function(xi = 0, omega = 1, alpha = 0, n = 4) {
   }
   
   args <- expand(dots = nlist(xi, omega, alpha))
-  args$delta <- with(args, alpha / sqrt(1 + alpha^2))
   with(args, {
     # do it like sn::sn.cumulants
+    delta <- alpha / sqrt(1 + alpha^2)
     kv <- cumulants_half_norm(n)
     if (length(kv) > n)  {
       kv <- kv[-(n + 1)] 
