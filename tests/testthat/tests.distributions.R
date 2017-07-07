@@ -59,6 +59,9 @@ test_that("skew_normal distribution functions run without errors", {
   res <- pskew_normal(x, mu = rnorm(n), sigma = 1:n, 
                              alpha = 3, log.p = TRUE)
   expect_true(length(res) == n)
+  res <- qskew_normal(x, mu = rnorm(n), sigma = 1:n, 
+                      alpha = 3, log.p = TRUE)
+  expect_true(length(res) == n)
   res <- rskew_normal(n, mu = rnorm(n), sigma = 10, alpha = -4:5)
   expect_true(length(res) == n)
 })

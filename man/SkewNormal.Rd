@@ -4,14 +4,20 @@
 \alias{SkewNormal}
 \alias{dskew_normal}
 \alias{pskew_normal}
+\alias{qskew_normal}
 \alias{rskew_normal}
 \title{The Skew-Normal Distribution}
 \usage{
-dskew_normal(x, mu = 0, sigma = 1, alpha = 0, log = FALSE)
+dskew_normal(x, mu = 0, sigma = 1, alpha = 0, xi = NULL, omega = NULL,
+  log = FALSE)
 
-pskew_normal(q, mu = 0, sigma = 1, alpha = 0, log.p = FALSE)
+pskew_normal(q, mu = 0, sigma = 1, alpha = 0, xi = NULL, omega = NULL,
+  lower.tail = TRUE, log.p = FALSE)
 
-rskew_normal(n, mu = 0, sigma = 1, alpha = 0)
+qskew_normal(p, mu = 0, sigma = 1, alpha = 0, xi = NULL, omega = NULL,
+  lower.tail = TRUE, log.p = FALSE, tol = 1e-08)
+
+rskew_normal(n, mu = 0, sigma = 1, alpha = 0, xi = NULL, omega = NULL)
 }
 \arguments{
 \item{x, q}{Vector of quantiles.}
@@ -22,9 +28,23 @@ rskew_normal(n, mu = 0, sigma = 1, alpha = 0)
 
 \item{alpha}{Vector of skewness values.}
 
+\item{xi}{Optional vector of location values.
+If \code{NULL} (the default), will be computed internally.}
+
+\item{omega}{Optional vector of scale values.
+If \code{NULL} (the default), will be computed internally.}
+
 \item{log}{Logical; If \code{TRUE}, values are returned on the log scale.}
 
+\item{lower.tail}{Logical; If \code{TRUE} (default), return P(X <= x). 
+Else, return P(X > x) .}
+
 \item{log.p}{Logical; If \code{TRUE}, values are returned on the log scale.}
+
+\item{p}{Vector of probabilities.}
+
+\item{tol}{Tolerance of the approximation used in the 
+computation of quantiles.}
 
 \item{n}{Number of samples to draw from the distribution.}
 }

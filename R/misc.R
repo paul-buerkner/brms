@@ -78,16 +78,16 @@ is_like_factor <- function(x) {
   is.factor(x) || is.character(x) || is.logical(x)
 }
 
-expand <- function(..., length = NULL) {
+expand <- function(..., dots = list(), length = NULL) {
   # expand arguments of be of the same length
   # Args:
   #   ...: arguments to expand
   #   length: optional expansion length
-  dots <- list(...)
+  dots <- c(dots, list(...))
   if (is.null(length)) {
     length <- max(sapply(dots, length))
   }
-  lapply(dots, rep, length.out = length)
+  as.data.frame(lapply(dots, rep, length.out = length))
 }
 
 rmNum <- function(x) {
