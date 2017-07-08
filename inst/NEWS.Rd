@@ -25,6 +25,9 @@
       when the variable specified in argument
       \code{x} has attributes thanks to 
       Paul Galpern.
+      \item Fix problems when computing fitted 
+      values for truncated discrete models based
+      on new data thanks to Nathan Doogan.
       \item Fix unexpected errors when passing
       models that did not properly initiliaze to 
       various post-processing methods.

@@ -451,46 +451,42 @@ fitted_trunc_binomial <- function(draws, lb, ub) {
     trials <- as_draws_matrix(trials, dim_mu(draws))
   }
   args <- list(size = trials, prob = draws$mu)
-  message("Computing fitted values for a truncated binomial model.",
-          "This may take a while.")
   fitted_trunc_discrete(dist = "binom", args = args, lb = lb, ub = ub)
 }
 
 fitted_trunc_poisson <- function(draws, lb, ub) {
   lb <- ifelse(lb < -1, -1, lb)
-  max_value <- 3 * max(draws$data$Y)
+  max_value <- 3 * max(draws$mu)
   ub <- ifelse(ub > max_value, max_value, ub)
   args <- list(lambda = draws$mu)
-  message("Computing fitted values for a truncated poisson model.",
-          "This may take a while.")
   fitted_trunc_discrete(dist = "pois", args = args, lb = lb, ub = ub)
 }
 
 fitted_trunc_negbinomial <- function(draws, lb, ub) {
   lb <- ifelse(lb < -1, -1, lb)
-  max_value <- 3 * max(draws$data$Y)
+  max_value <- 3 * max(draws$mu)
   ub <- ifelse(ub > max_value, max_value, ub)
   draws$shape <- get_shape(
     draws$shape, data = draws$data, dim = dim_mu(draws)
   )
   args <- list(mu = draws$mu, size = draws$shape)
-  message("Computing fitted values for a truncated negbinomial model.",
-          "This may take a while.")
   fitted_trunc_discrete(dist = "nbinom", args = args, lb = lb, ub = ub)
 }
 
 fitted_trunc_geometric <- function(draws, lb, ub) {
   lb <- ifelse(lb < -1, -1, lb)
-  max_value <- 3 * max(draws$data$Y)
+  max_value <- 3 * max(draws$mu)
   ub <- ifelse(ub > max_value, max_value, ub)
   args <- list(mu = draws$mu, size = 1)
-  message("Computing fitted values for a truncated geometric model.",
-          "This may take a while.")
   fitted_trunc_discrete(dist = "nbinom", args = args, lb = lb, ub = ub)
 }
 
 fitted_trunc_discrete <- function(dist, args, lb, ub) {
   stopifnot(is.matrix(lb), is.matrix(ub))
+  message(
+    "Computing fitted values for truncated ", 
+    "discrete models may take a while."
+  )
   pdf <- get(paste0("d", dist), mode = "function")
   cdf <- get(paste0("p", dist), mode = "function")
   mean_kernel <- function(x, args) {
