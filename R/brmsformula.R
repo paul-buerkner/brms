@@ -816,6 +816,10 @@ amend_formula <- function(formula, data = NULL, family = gaussian(),
     if (!"disc" %in% c(names(pforms(out)), names(pfix(out)))) {
       out <- bf(out, disc = 1)
     }
+    no_intercept <- isTRUE(attr(try_terms, "intercept", TRUE) == 0)
+    if (!is(try_terms, "try-error") && no_intercept) {
+      stop2("Cannot remove the intercept in an ordinal model.")
+    }
   }
   if (is_categorical(out$family) && is.null(out[["response"]])) {
     respform <- parse_bf(out)$respform

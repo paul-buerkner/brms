@@ -19,6 +19,13 @@
       via the \code{future} package.
     }
   }
+  \subsection{OTHER CHANGES}{
+    \itemize{
+      \item Throw an error when the intercept is removed 
+      in an ordinal model instead of silently adding
+      it back again.
+    }
+  }
   \subsection{BUG FIXES}{
     \itemize{
       \item Fix problems in \code{pp_check}

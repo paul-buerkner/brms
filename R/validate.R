@@ -207,9 +207,6 @@ parse_lf <- function(formula, family = NULL) {
   int_term <- ifelse(attr(terms, "intercept") == 1, "1", "0")
   fe_terms <- paste(c(int_term, fe_terms), collapse = "+")
   y[["fe"]] <- str2formula(fe_terms)
-  if (is_ordinal(family)) {
-    y[["fe"]] <- update.formula(y[["fe"]], . ~ . + 1)
-  }
   if (has_rsv_intercept(y[["fe"]])) {
     attr(y[["fe"]], "rsv_intercept") <- TRUE
   }
