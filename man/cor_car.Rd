@@ -10,7 +10,11 @@ cor_car(W, formula = ~1, type = c("escar", "esicar"))
 cor_icar(W, formula = ~1)
 }
 \arguments{
-\item{W}{Adjacency matrix}
+\item{W}{Adjacency matrix of locations. 
+All non-zero entries are treated as if the two locations 
+are adjacent. If \code{formula} contains a grouping factor,
+the row names of \code{W} have to matche the levels
+of the grouping factor.}
 
 \item{formula}{An optional one-sided formula of the form 
 \code{~ 1 | g}, where \code{g} is a grouping factor mapping
@@ -25,4 +29,43 @@ provided in the 'Details' section.}
 \description{
 These functions are constructors for the \code{cor_car} class
 implementing spatial conditional autoregressive structures.
+}
+\details{
+The \code{escar} and \code{esicar} types are 
+  implemented based on the case study of Max Joseph
+  (\url{https://github.com/mbjoseph/CARstan}), who
+  deserves credit for helping to make CAR structures 
+  possible in \pkg{brms}.
+}
+\examples{
+\dontrun{
+# generate some spatial data
+east <- north <- 1:10
+Grid <- expand.grid(east, north)
+K <- nrow(Grid)
+
+# set up distance and neighbourhood matrices
+distance <- as.matrix(dist(Grid))
+W <- array(0, c(K, K))
+W[distance == 1] <- 1 	
+
+# generate the covariates and response data
+x1 <- rnorm(K)
+x2 <- rnorm(K)
+theta <- rnorm(K, sd = 0.05)
+phi <- rmulti_normal(
+  1, mu = rep(0, K), Sigma = 0.4 * exp(-0.1 * distance)
+)
+eta <- x1 + x2 + phi
+prob <- exp(eta) / (1 + exp(eta))
+size <- rep(50, K)
+y <- rbinom(n = K, size = size, prob = prob)
+dat <- data.frame(y, size, x1, x2)
+
+# fit a CAR model
+fit <- brm(y | trials(size) ~ x1 + x2, data = dat, 
+           family = binomial(), autocor = cor_car(W)) 
+summary(fit)
+}
+
 }
