@@ -1450,7 +1450,7 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
   }
   out <- c(
     "temp_Intercept1", "ordered_Intercept", "Rescor", "Lrescor", 
-    "Sigma", "LSigma", "res_cov_matrix", "theta",
+    "Sigma", "LSigma", "res_cov_matrix", "theta", "zcar",
     intersect(auxpars(), names(bterms$auxpars))
   )
   if (length(bterms$response) > 1L) {

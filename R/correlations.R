@@ -7,22 +7,22 @@
 #' @aliases cor_arma-class
 #' 
 #' @param formula A one sided formula of the form \code{~ t}, or \code{~ t | g}, 
-#'   specifying a time covariate \code{t} and, optionally, 
-#'   a grouping factor \code{g}. 
+#'   specifying a time covariate \code{t} and, optionally, a grouping factor \code{g}. 
 #'   A covariate for this correlation structure must be integer valued. 
 #'   When a grouping factor is present in \code{formula}, the correlation structure 
 #'   is assumed to apply only to observations within the same grouping level; 
 #'   observations with different grouping levels are assumed to be uncorrelated. 
 #'   Defaults to \code{~ 1}, which corresponds to using the order of the observations 
 #'   in the data as a covariate, and no groups.
-#' @param p A non-negative integer specifying the autoregressive (AR) order of the ARMA structure. 
-#'   Default is 0.  
-#' @param q A non-negative integer specifying the moving average (MA) order of the ARMA structure. 
-#'   Default is 0. 
-#' @param r A non-negative integer specifying the autoregressive response (ARR) order. 
-#'   See 'Details' for differences of AR and ARR effects. Default is 0. 
-#' @param cov A flag indicating whether ARMA effects should be estimated by means
-#'   of residual covariance matrices
+#' @param p A non-negative integer specifying the autoregressive (AR) 
+#'   order of the ARMA structure. Default is 0.  
+#' @param q A non-negative integer specifying the moving average (MA) 
+#'   order of the ARMA structure. Default is 0. 
+#' @param r A non-negative integer specifying the autoregressive 
+#'   response (ARR) order. See 'Details' for differences of AR and ARR 
+#'   effects. Default is 0. 
+#' @param cov A flag indicating whether ARMA effects should be estimated 
+#'   by means of residual covariance matrices
 #'   (currently only possible for stationary ARMA effects of order 1). 
 #'   If \code{FALSE} (the default) a regression formulation
 #'   is used that is considerably faster and allows for ARMA effects 
@@ -248,25 +248,27 @@ sar_weights <- function(W) {
 #' implementing spatial conditional autoregressive structures.
 #' 
 #' @param W Adjacency matrix
-#' @param formula One-sided formula
-#' @param type Type of the CAR structure
+#' @param formula An optional one-sided formula of the form 
+#'   \code{~ 1 | g}, where \code{g} is a grouping factor mapping
+#'   observations to spatial locations. If not specified,
+#'   each observation is treated as a separate location.
+#' @param type Type of the CAR structure. Currenlty implemented
+#'   are \code{"escar"} (exact sparse CAR) and \code{"esicar"}
+#'   (exact sparse intrinsic CAR). More information is
+#'   provided in the 'Details' section.
 #' 
 #' @export
-cor_car <- function(W, formula = ~1, type = "escar") {
+cor_car <- function(W, formula = ~1, type = c("escar", "esicar")) {
   type <- match.arg(type)
   W_name <- deparse(substitute(W))
   W <- Matrix::Matrix(W, sparse = TRUE)
-  if (!Matrix::isSymmetric(W)) {
+  if (!Matrix::isSymmetric(W, check.attributes = FALSE)) {
     stop2("'W' must be symmetric.")
   }
   not_binary <- !(W == 0 | W == 1)
   if (any(not_binary)) {
     message("Converting all non-zero values in 'W' to 1")
     W[not_binary] <- 1
-  }
-  Nneigh <- Matrix::colSums(W)
-  if (any(Nneigh == 0)) {
-    stop2("All locations should have at least one neighbor.")
   }
   formula <- as.formula(formula)
   if (!is.null(lhs(formula))) {
@@ -279,6 +281,14 @@ cor_car <- function(W, formula = ~1, type = "escar") {
     nlist(W, W_name, formula, type), 
     class = c("cor_car", "cor_brms")
   )
+}
+
+#' @rdname cor_car
+#' @export
+cor_icar <- function(W, formula = ~1) {
+  out <- cor_car(W, formula, type = "esicar")
+  out$W_name <- deparse(substitute(W))
+  out
 }
 
 #' Fixed user-defined covariance matrices 
@@ -489,8 +499,10 @@ check_autocor <- function(autocor) {
 
 remove_autocor <- function(x, keep = FALSE) {
   # convenience function to ignore autocorrelation terms
-  # currently only excludes ARMA structures
-  if (!keep && (is.cor_arma(x$autocor) || is.cor_sar(x$autocor))) {
+  # currently excludes ARMA, SAR, and CAR structures
+  excl_cor <- is.cor_arma(x$autocor) || 
+    is.cor_sar(x$autocor) || is.cor_car(x$autocor)
+  if (!keep && excl_cor) {
     x$autocor <- cor_arma()
   }
   x

@@ -183,35 +183,54 @@ stan_autocor <- function(autocor, bterms, family, prior) {
     if (is_mv) {
       stop2(err_msg, " in multivariate models.")
     }
-    out$fun <- paste0(out$fun,
-      "  #include 'fun_sparse_car_lpdf.stan' \n"        
-    )
     out$data <- paste0(out$data,
       "  // data for the CAR structure \n",
       "  int<lower=1> Nloc; \n",
       "  vector[Nloc] Nneigh; \n",
       "  vector[Nloc] eigenW; \n",
-      "  int<lower=1> Jloc[Nloc]; \n",
+      "  int<lower=1> Jloc[N]; \n",
       "  int<lower=0> Nedges; \n",
       "  int<lower=1> edges1[Nedges]; \n",
       "  int<lower=1> edges2[Nedges]; \n"
     )
     out$par <- paste0(out$par,
       "  // parameters for the CAR structure \n",
-      "  real<lower=0, upper=1> car; \n",
-      "  real<lower=0> sdcar; \n",
-      "  vector[Nloc] rcar; \n"
+      "  real<lower=0> sdcar; \n"
     )
     out$prior <- paste0(out$prior, 
-      stan_prior(prior, class = "car"),
       stan_prior(prior, class = "sdcar")
     )
     if (identical(autocor$type, "escar")) {
+      out$fun <- paste0(out$fun,
+        "  #include 'fun_sparse_car_lpdf.stan' \n"        
+      )
+      out$par <- paste0(out$par,
+        "  real<lower=0, upper=1> car; \n",
+        "  vector[Nloc] rcar; \n"
+      )
       out$prior <- paste0(out$prior,
+        stan_prior(prior, class = "car"),
         "  rcar ~ sparse_car(car, sdcar, Nloc, Nedges, Nneigh,\n",
         "                    eigenW, edges1, edges2); \n"
       )
-    }
+    } else if (identical(autocor$type, "esicar")) {
+      out$fun <- paste0(out$fun,
+        "  #include 'fun_sparse_icar_lpdf.stan' \n"        
+      )
+      out$par <- paste0(out$par,
+        "  vector[Nloc] zcar; \n"
+      )
+      out$transD <- paste0(out$transD,
+        "  vector[Nloc] rcar; \n"                
+      )
+      out$transC1 <- paste0(out$transC1,
+        "  rcar = zcar - mean(zcar); \n"                
+      )
+      out$prior <- paste0(out$prior,
+        "  zcar ~ sparse_icar(sdcar, Nloc, Nedges, Nneigh,\n",
+        "                     eigenW, edges1, edges2); \n"
+      )
+    } 
   }
   if (is.cor_fixed(autocor)) {
     if (!is_linear) {
