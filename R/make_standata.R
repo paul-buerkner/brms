@@ -359,17 +359,32 @@ make_standata <- function(formula, data, family = gaussian(),
         glevels <- levels(factor(gdata))
         Nloc <- length(glevels)
         Jloc <- match(gdata, glevels)
+        found_levels <- rownames(autocor$W)
+        if (is.null(found_levels)) {
+          stop2("Row names are required for 'W'.")
+        }
+        colnames(autocor$W) <- found_levels
+        found <- glevels %in% found_levels
+        if (any(!found)) {
+          stop2("Row names of 'W' do not match ", 
+                "the names of the grouping levels.")
+        }
+        autocor$W <- autocor$W[glevels, glevels, drop = FALSE]
       } else {
         Nloc <- standata$N
         Jloc <- seq_len(Nloc)
-      }
-      if (!identical(dim(autocor$W), rep(Nloc, 2))) {
-        stop2("Dimensions of 'W' must be equal to the number of locations.")
+        if (!identical(dim(autocor$W), rep(Nloc, 2))) {
+          stop2("Dimensions of 'W' must be equal ", 
+                "to the number of observations.")
+        }
       }
       W_tmp <- autocor$W
       W_tmp[upper.tri(W_tmp)] <- NA
       edges <- which(as.matrix(W_tmp == 1), arr.ind = TRUE)
       Nneigh <- Matrix::colSums(autocor$W)
+      if (any(Nneigh == 0)) {
+        stop2("All locations should have at least one neighbor.")
+      }
       inv_sqrt_D <- diag(1 / sqrt(Nneigh))
       eigenW <- t(inv_sqrt_D) %*% autocor$W %*% inv_sqrt_D
       eigenW <- eigen(eigenW, TRUE, only.values = TRUE)$values
