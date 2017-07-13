@@ -91,7 +91,10 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
     # only include autocor samples on the top-level of draws 
     # when using the covariance formulation of ARMA / SAR structures
     draws <- c(draws, 
-      extract_draws_autocor(x, newdata = newdata, subset = subset)
+      extract_draws_autocor(
+        x, subset = subset, standata = draws$data, 
+        is_newdata = !is.null(newdata)
+      )
     )
   }
   draws
@@ -201,7 +204,10 @@ extract_draws.btl <- function(x, fit, newdata = NULL, re_formula = NULL,
   if (!use_cov(fit$autocor) && (!nzchar(nlpar) || mv)) {
     # only include autocorrelation parameters in draws for mu
     draws <- c(draws, 
-      extract_draws_autocor(fit, newdata = newdata, subset = subset)
+      extract_draws_autocor(
+        fit, subset = subset, standata = draws$data,
+        is_newdata = !is.null(newdata)
+      )
     )
   }
   structure(draws, predicted = TRUE)
@@ -609,7 +615,8 @@ extract_draws_re <- function(ranef, args, sdata, nlpar = "",
   draws
 }
 
-extract_draws_autocor <- function(fit, newdata = NULL, subset = NULL) {
+extract_draws_autocor <- function(fit, subset = NULL, standata = NULL,
+                                  is_newdata = FALSE) {
   # extract draws of autocorrelation parameters
   stopifnot(is.brmsfit(fit))
   args <- nlist(x = fit, subset)
@@ -627,12 +634,18 @@ extract_draws_autocor <- function(fit, newdata = NULL, subset = NULL) {
     draws[["lagsar"]] <- do.call(as.matrix, c(args, pars = "^lagsar$"))
     draws[["errorsar"]] <- do.call(as.matrix, c(args, pars = "^errorsar$"))
   }
+  if (is.cor_car(fit$autocor)) {
+    draws[["rcar"]] <- do.call(as.matrix, c(args, pars = "^rcar\\["))
+    gcar <- standata[["Jloc"]]
+    Zcar <- matrix(rep(1, length(gcar)))
+    draws[["Zcar"]] <- prepare_Z(Zcar, list(gcar))
+  }
   if (is(fit$autocor, "cor_bsts")) {
-    if (is.null(newdata)) {
-      draws[["loclev"]] <- do.call(as.matrix, c(args, pars = "^loclev\\["))
-    } else {
+    if (is_newdata) {
       warning2("Local level terms are currently ignored ", 
                "when 'newdata' is specified.")
+    } else {
+      draws[["loclev"]] <- do.call(as.matrix, c(args, pars = "^loclev\\["))
     }
   }
   draws
