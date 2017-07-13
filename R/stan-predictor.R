@@ -49,26 +49,30 @@ stan_effects.btl <- function(x, data, ranef, prior, center_X = TRUE,
   ))
   p <- usc(nlpar, "prefix")
   if (is.formula(x$offset)) {
-    out$data <- paste0(out$data, "  vector[N] offset", p, "; \n")
+    out$data <- paste0(out$data, 
+      "  vector[N] offset", p, "; \n"
+    )
   }
   # initialize and compute eta_<nlpar>
   out$modelC1 <- paste0(
     out$modelC1, "  ", eta, " = ", 
     text_fe$eta, text_sm$eta, text_gp$eta,
-    if (center_X && !is_ordinal(x$family)) 
+    if (center_X && !is_ordinal(x$family))
       paste0(" + temp", p, "_Intercept"),
-    if (is.formula(x$offset)) paste0(" + offset", p),
-    if (get_arr(x$autocor)) " + Yarr * arr", 
+    if (is.formula(x$offset))
+      paste0(" + offset", p),
+    if (get_arr(x$autocor))
+      " + Yarr * arr",
     "; \n"
   )
   
   # repare loop over eta
-  eta_ma <- ifelse(get_ma(x$autocor) && !use_cov(x$autocor),
-                   paste0(" + head(E", p, "[n], Kma) * ma"), "")
   eta_loop <- paste0(
     stan_eta_re(ranef, nlpar = nlpar),
     text_mo$eta, text_me$eta,
-    eta_ma, stan_eta_bsts(x$autocor)
+    stan_eta_ma(x$autocor, nlpar = p), 
+    stan_eta_car(x$autocor),
+    stan_eta_bsts(x$autocor)
   )
   if (nzchar(eta_loop)) {
     out$modelC2 <- paste0(out$modelC2,
@@ -884,8 +888,7 @@ stan_eta_sm <- function(smooths, nlpar = "") {
   # write the linear predictor for smooth terms
   # Args:
   #   smooths: names of the smooth terms
-  #   nlpar: an optional character string to add to the varnames
-  #         (used for non-linear models)
+  #   nlpar: optional character string to add to the varnames
   p <- usc(nlpar)
   eta_smooths <- ""
   if (length(smooths)) {
@@ -901,15 +904,38 @@ stan_eta_sm <- function(smooths, nlpar = "") {
   eta_smooths
 }
 
-stan_eta_bsts <- function(autocor) {
-  # write the linear predictor for bsts terms
+stan_eta_ma <- function(autocor, nlpar = "") {
+  # write the linear predictor for MA terms
   # Args:
   #   autocor: object of class cor_brms
-  eta_bsts <- ""
-  if (is(autocor, "cor_bsts")) {
-    eta_bsts <- " + loclev[n]"
+  #   nlpar: optional character string to add to the varnames
+  out <- ""
+  if (get_ma(autocor) && !use_cov(autocor)) {
+    out <- paste0(" + head(E", nlpar, "[n], Kma) * ma")
   }
-  eta_bsts
+  out
+}
+
+stan_eta_car <- function(autocor) {
+  # write the linear predictor for CAR terms
+  # Args:
+  #   autocor: object of class cor_brms
+  out <- ""
+  if (is.cor_car(autocor)) {
+    out <- " + rcar[Jloc[n]]"
+  }
+  out
+}
+
+stan_eta_bsts <- function(autocor) {
+  # write the linear predictor for BSTS terms
+  # Args:
+  #   autocor: object of class cor_brms
+  out <- ""
+  if (is.cor_bsts(autocor)) {
+    out <- " + loclev[n]"
+  }
+  out
 }
 
 stan_eta_transform <- function(family, llh_adj = FALSE) {

@@ -38,7 +38,7 @@ test_that("brm produces expected errors", {
   expect_error(brm(y ~ 1, dat, autocor = cor_ar(~x+y|g)), 
                "Autocorrelation structures may only contain 1 time variable")
   expect_error(brm(y ~ 1, dat, autocor = cor_ar(x~t1|g1)), 
-               "Autocorrelation formula must be one-sided")
+               "Autocorrelation formulas must be one-sided")
   expect_error(brm(y ~ 1, dat, autocor = cor_ar(~1|g1/g2)), 
                paste("Illegal grouping term: g1/g2"))
   expect_error(brm(y ~ 1, dat, poisson(), autocor = cor_ma(~x)),

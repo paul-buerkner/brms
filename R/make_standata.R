@@ -353,6 +353,30 @@ make_standata <- function(formula, data, family = gaussian(),
       standata$W <- autocor$W
       # simplifies code of choose_N
       standata$N_tg <- 1
+    } else if (is.cor_car(autocor)) {
+      if (isTRUE(nzchar(bterms$time$group))) {
+        gdata <- get(bterms$time$group, data)
+        glevels <- levels(factor(gdata))
+        Nloc <- length(glevels)
+        Jloc <- match(gdata, glevels)
+      } else {
+        Nloc <- standata$N
+        Jloc <- seq_len(Nloc)
+      }
+      if (!identical(dim(autocor$W), rep(Nloc, 2))) {
+        stop2("Dimensions of 'W' must be equal to the number of locations.")
+      }
+      W_tmp <- autocor$W
+      W_tmp[upper.tri(W_tmp)] <- NA
+      edges <- which(as.matrix(W_tmp == 1), arr.ind = TRUE)
+      Nneigh <- Matrix::colSums(autocor$W)
+      inv_sqrt_D <- diag(1 / sqrt(Nneigh))
+      eigenW <- t(inv_sqrt_D) %*% autocor$W %*% inv_sqrt_D
+      eigenW <- eigen(eigenW, TRUE, only.values = TRUE)$values
+      standata <- c(standata, nlist(
+        Nloc, Jloc, Nneigh, eigenW, Nedges = nrow(edges),  
+        edges1 = edges[, 1], edges2 = edges[, 2]
+      ))
     } else if (is.cor_fixed(autocor)) {
       V <- autocor$V
       rmd_rows <- attr(data, "na.action")

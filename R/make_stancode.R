@@ -300,7 +300,7 @@ make_stancode <- function(formula, data, family = gaussian(),
         file = temp_file, isystem = isystem, 
         obfuscate_model_name = TRUE
       ),
-      type = "message"
+      type = "message", silent = silent
     )
     complete_model$model_name <- name_model(family)
     class(complete_model$model_code) <- c("character", "brmsmodel")

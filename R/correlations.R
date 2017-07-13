@@ -207,7 +207,10 @@ cor_sar <- function(W, type = c("lag", "error")) {
   type <- match.arg(type)
   W_name <- deparse(substitute(W))
   W <- sar_weights(W)
-  structure(nlist(W, W_name, type), class = c("cor_sar", "cor_brms"))
+  structure(
+    nlist(W, W_name, type), 
+    class = c("cor_sar", "cor_brms")
+  )
 }
 
 #' @rdname cor_sar
@@ -237,6 +240,45 @@ sar_weights <- function(W) {
     stop2("'W' must be of class 'matrix', 'listw', or 'nb'.")
   }
   W
+}
+
+#' Spatial conditional autoregressive (CAR) structures
+#' 
+#' These functions are constructors for the \code{cor_car} class
+#' implementing spatial conditional autoregressive structures.
+#' 
+#' @param W Adjacency matrix
+#' @param formula One-sided formula
+#' @param type Type of the CAR structure
+#' 
+#' @export
+cor_car <- function(W, formula = ~1, type = "escar") {
+  type <- match.arg(type)
+  W_name <- deparse(substitute(W))
+  W <- Matrix::Matrix(W, sparse = TRUE)
+  if (!Matrix::isSymmetric(W)) {
+    stop2("'W' must be symmetric.")
+  }
+  not_binary <- !(W == 0 | W == 1)
+  if (any(not_binary)) {
+    message("Converting all non-zero values in 'W' to 1")
+    W[not_binary] <- 1
+  }
+  Nneigh <- Matrix::colSums(W)
+  if (any(Nneigh == 0)) {
+    stop2("All locations should have at least one neighbor.")
+  }
+  formula <- as.formula(formula)
+  if (!is.null(lhs(formula))) {
+    stop2("'formula' should be a one-sided formula.")
+  }
+  if (length(attr(terms(formula), "term.labels")) > 1L) {
+    stop2("'formula' should not contain more than one term.")
+  }
+  structure(
+    nlist(W, W_name, formula, type), 
+    class = c("cor_car", "cor_brms")
+  )
 }
 
 #' Fixed user-defined covariance matrices 
@@ -338,6 +380,12 @@ is.cor_sar <- function(x) {
 
 #' @rdname is.cor_brms
 #' @export
+is.cor_car <- function(x) {
+  inherits(x, "cor_car")
+}
+
+#' @rdname is.cor_brms
+#' @export
 is.cor_fixed <- function(x) {
   inherits(x, "cor_fixed")
 }
@@ -358,6 +406,14 @@ print.cor_arma <- function(x, ...) {
 #' @export
 print.cor_sar <- function(x, ...) {
   cat(paste0("sar(", x$W_name, ", '", x$type, "')"))
+  invisible(x)
+}
+
+#' @export
+print.cor_car <- function(x, ...) {
+  cat(paste0(
+    "car(", x$W_name, ", ", formula2str(x$formula), ", '", x$type, "')"
+  ))
   invisible(x)
 }
 
@@ -438,4 +494,10 @@ remove_autocor <- function(x, keep = FALSE) {
     x$autocor <- cor_arma()
   }
   x
+}
+
+regex_cor_pars <- function() {
+  # regex to extract all pars of cor structures
+  # used in summary.brmsfit
+  "^(ar|ma|lagsar$|errorsar$|car$|sdcar$|sigmaLL$)"
 }

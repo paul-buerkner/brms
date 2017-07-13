@@ -178,6 +178,41 @@ stan_autocor <- function(autocor, bterms, family, prior) {
       out$prior <- paste0(out$prior, stan_prior(prior, class = "errorsar"))
     }
   }
+  if (is.cor_car(autocor)) {
+    err_msg <- "CAR models are not yet working"
+    if (is_mv) {
+      stop2(err_msg, " in multivariate models.")
+    }
+    out$fun <- paste0(out$fun,
+      "  #include 'fun_sparse_car_lpdf.stan' \n"        
+    )
+    out$data <- paste0(out$data,
+      "  // data for the CAR structure \n",
+      "  int<lower=1> Nloc; \n",
+      "  vector[Nloc] Nneigh; \n",
+      "  vector[Nloc] eigenW; \n",
+      "  int<lower=1> Jloc[Nloc]; \n",
+      "  int<lower=0> Nedges; \n",
+      "  int<lower=1> edges1[Nedges]; \n",
+      "  int<lower=1> edges2[Nedges]; \n"
+    )
+    out$par <- paste0(out$par,
+      "  // parameters for the CAR structure \n",
+      "  real<lower=0, upper=1> car; \n",
+      "  real<lower=0> sdcar; \n",
+      "  vector[Nloc] rcar; \n"
+    )
+    out$prior <- paste0(out$prior, 
+      stan_prior(prior, class = "car"),
+      stan_prior(prior, class = "sdcar")
+    )
+    if (identical(autocor$type, "escar")) {
+      out$prior <- paste0(out$prior,
+        "  rcar ~ sparse_car(car, sdcar, Nloc, Nedges, Nneigh,\n",
+        "                    eigenW, edges1, edges2); \n"
+      )
+    }
+  }
   if (is.cor_fixed(autocor)) {
     if (!is_linear) {
       stop2("Fixed residual covariance matrices are not yet ", 

@@ -869,7 +869,7 @@ default_plot_pars <- function() {
   c(fixef_pars(), "^sd_", "^cor_", "^sigma_", "^rescor_", 
     paste0("^", auxpars(), "[[:digit:]]*$"), "^delta$",
     "^theta", "^ar", "^ma", "^arr", "^lagsar", "^errorsar", 
-    "^sigmaLL", "^sds_", "^sdgp_", "^lscale_")
+    "^car", "^sdcar", "^sigmaLL", "^sds_", "^sdgp_", "^lscale_")
 }
 
 extract_pars <- function(pars, all_pars, exact_match = FALSE,

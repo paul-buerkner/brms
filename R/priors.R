@@ -385,8 +385,8 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
     
   valid_classes <- c(
     "Intercept", "b", "sd", "sds", "sdgp", "lscale", "simplex", "cor", 
-    "L", "ar", "ma", "arr", "lagsar", "errorsar", "sigmaLL", "rescor", 
-    "Lrescor", "delta", "theta", if (!check) ""
+    "L", "ar", "ma", "arr", "lagsar", "errorsar", "car", "sdcar", 
+    "sigmaLL", "rescor", "Lrescor", "delta", "theta", if (!check) ""
   )
   if (!(class %in% valid_classes || auxpar_class(class) %in% auxpars())) {
     stop2("'", class, "' is not a valid parameter class.")
@@ -646,6 +646,14 @@ get_prior <- function(formula, data, family = gaussian(),
     }
     if (identical(autocor$type, "error")) {
       prior <- rbind(prior, brmsprior(class = "errorsar"))
+    }
+  }
+  if (is.cor_car(autocor)) {
+    prior <- rbind(prior, 
+      brmsprior(def_scale_prior, class = "sdcar")
+    )
+    if (identical(autocor$type, "escar")) {
+      prior <- rbind(prior, brmsprior(class = "car"))
     }
   }
   if (is(autocor, "cor_bsts")) {
