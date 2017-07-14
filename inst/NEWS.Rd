@@ -8,6 +8,9 @@
       \item Fit spatial autoregressive (SAR) models
       via function \code{cor_sar}. Currently works
       for families \code{gaussian} and \code{student}.
+      \item Fit conditional autoregressive (CAR) models
+      via function \code{cor_car} thanks to the case
+      study of Max Joseph.
       \item Implement skew normal models via family 
       \code{skew_normal}. Thanks to Stephen Martin 
       for suggestions on the parameterization.

@@ -292,79 +292,73 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
     }
   }
   newdata <- combine_groups(newdata, group_vars)
-  # try to validate factor levels in newdata
-  if (is.data.frame(fit$data)) {
-    # validating is possible (implies brms > 0.5.0)
-    list_data <- lapply(as.list(fit$data), function(x)
-      if (is_like_factor(x)) as.factor(x) else x)
-    is_factor <- sapply(list_data, is.factor)
-    all_group_vars <- ulapply(fit$ranef$gcall, "[[", "groups")
-    dont_check <- c(all_group_vars, cens_vars)
-    dont_check <- names(list_data) %in% dont_check
-    factors <- list_data[is_factor & !dont_check]
-    if (length(factors)) {
-      factor_names <- names(factors)
-      factor_levels <- lapply(factors, levels) 
-      for (i in seq_along(factors)) {
-        new_factor <- newdata[[factor_names[i]]]
-        if (!is.null(new_factor)) {
-          if (!is.factor(new_factor)) {
-            new_factor <- factor(new_factor)
-          }
-          new_levels <- levels(new_factor)
-          old_levels <- factor_levels[[i]]
-          old_contrasts <- contrasts(factors[[i]])
-          to_zero <- is.na(new_factor) | new_factor %in% "zero__"
-          # don't add the 'zero__' level to response variables
-          is_resp <- factor_names[i] %in% all.vars(bterms$respform)
-          if (!is_resp && any(to_zero)) {
-            levels(new_factor) <- c(new_levels, "zero__")
-            new_factor[to_zero] <- "zero__"
-            old_levels <- c(old_levels, "zero__")
-            old_contrasts <- rbind(old_contrasts, zero__ = 0)
-          }
-          if (any(!new_levels %in% old_levels)) {
-            stop2("New factor levels are not allowed.",
-                  "\nLevels found: ", paste(new_levels, collapse = ", ") ,
-                  "\nLevels allowed: ", paste(old_levels, collapse = ", "))
-          }
-          newdata[[factor_names[i]]] <- factor(new_factor, old_levels)
-          # don't use contrasts(.) here to avoid dimension checks
-          attr(newdata[[factor_names[i]]], "contrasts") <- old_contrasts
+  # validate factor levels in newdata
+  list_data <- lapply(as.list(fit$data), function(x)
+    if (is_like_factor(x)) as.factor(x) else x)
+  is_factor <- sapply(list_data, is.factor)
+  all_group_vars <- ulapply(fit$ranef$gcall, "[[", "groups")
+  dont_check <- c(all_group_vars, cens_vars)
+  dont_check <- names(list_data) %in% dont_check
+  factors <- list_data[is_factor & !dont_check]
+  if (length(factors)) {
+    factor_names <- names(factors)
+    factor_levels <- lapply(factors, levels) 
+    for (i in seq_along(factors)) {
+      new_factor <- newdata[[factor_names[i]]]
+      if (!is.null(new_factor)) {
+        if (!is.factor(new_factor)) {
+          new_factor <- factor(new_factor)
         }
+        new_levels <- levels(new_factor)
+        old_levels <- factor_levels[[i]]
+        old_contrasts <- contrasts(factors[[i]])
+        to_zero <- is.na(new_factor) | new_factor %in% "zero__"
+        # don't add the 'zero__' level to response variables
+        is_resp <- factor_names[i] %in% all.vars(bterms$respform)
+        if (!is_resp && any(to_zero)) {
+          levels(new_factor) <- c(new_levels, "zero__")
+          new_factor[to_zero] <- "zero__"
+          old_levels <- c(old_levels, "zero__")
+          old_contrasts <- rbind(old_contrasts, zero__ = 0)
+        }
+        if (any(!new_levels %in% old_levels)) {
+          stop2("New factor levels are not allowed.",
+                "\nLevels found: ", paste(new_levels, collapse = ", ") ,
+                "\nLevels allowed: ", paste(old_levels, collapse = ", "))
+        }
+        newdata[[factor_names[i]]] <- factor(new_factor, old_levels)
+        # don't use contrasts(.) here to avoid dimension checks
+        attr(newdata[[factor_names[i]]], "contrasts") <- old_contrasts
       }
     }
-    # validate monotonic variables
-    if (is.formula(bterms$mo)) {
-      take_num <- !is_factor & names(list_data) %in% all.vars(bterms$mo)
-      # factors have already been checked
-      num_mo_vars <- names(list_data)[take_num]
-      for (v in num_mo_vars) {
-        # use 'get' to check whether v is defined in newdata
-        new_values <- get(v, newdata)
-        min_value <- min(list_data[[v]])
-        invalid <- new_values < min_value | 
-                   new_values > max(list_data[[v]]) |
-                   !is_wholenumber(new_values)
-        if (sum(invalid)) {
-          stop2("Invalid values in variable '", v, "': ",
-                paste(new_values[invalid], collapse = ","))
-        }
-        attr(newdata[[v]], "min") <- min_value
+  }
+  # validate monotonic variables
+  if (is.formula(bterms$mo)) {
+    take_num <- !is_factor & names(list_data) %in% all.vars(bterms$mo)
+    # factors have already been checked
+    num_mo_vars <- names(list_data)[take_num]
+    for (v in num_mo_vars) {
+      # use 'get' to check whether v is defined in newdata
+      new_values <- get(v, newdata)
+      min_value <- min(list_data[[v]])
+      invalid <- new_values < min_value | 
+                 new_values > max(list_data[[v]]) |
+                 !is_wholenumber(new_values)
+      if (sum(invalid)) {
+        stop2("Invalid values in variable '", v, "': ",
+              paste(new_values[invalid], collapse = ","))
       }
+      attr(newdata[[v]], "min") <- min_value
     }
-    # brms:::update_data expects all original variables to be present
-    # even if not actually used later on
-    rsv_vars <- rsv_vars(bterms)
-    used_vars <- unique(c(names(newdata), all.vars(bterms$allvars), rsv_vars))
-    all_vars <- all.vars(str2formula(names(model.frame(fit))))
-    unused_vars <- setdiff(all_vars, used_vars)
-    if (length(unused_vars)) {
-      newdata[, unused_vars] <- NA
-    }
-  } else {
-    warning2("Validity of factors cannot be checked for ", 
-             "fitted model objects created with brms <= 0.5.0.")
+  }
+  # brms:::update_data expects all original variables to be present
+  # even if not actually used later on
+  rsv_vars <- rsv_vars(bterms)
+  used_vars <- unique(c(names(newdata), all.vars(bterms$allvars), rsv_vars))
+  all_vars <- all.vars(str2formula(names(model.frame(fit))))
+  unused_vars <- setdiff(all_vars, used_vars)
+  if (length(unused_vars)) {
+    newdata[, unused_vars] <- NA
   }
   # validate grouping factors
   gnames <- unique(new_ranef$group)
@@ -388,12 +382,13 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       only_response = only_response,
       old_cat = is_old_categorical(fit)
     )
+    # ensure correct handling of functions like poly or scale
     old_terms <- attr(model.frame(fit), "terms")
     terms_attr <- c("variables", "predvars")
     control$terms_attr <- attributes(old_terms)[terms_attr]
+    # some components should not be computed based on newdata
     has_mo <- length(get_effect(bterms, "mo")) > 0L
     if (has_trials(fit$family) || has_cat(fit$family) || has_mo) {
-      # some components should not be computed based on newdata
       pars <- c(names(bterms$nlpars), intersect(auxpars(), names(bterms)))
       comp <- c("trials", "ncat", paste0("Jmo", c("", paste0("_", pars))))
       old_standata <- rmNULL(standata(fit)[comp])
@@ -401,6 +396,12 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       Jmo <- old_standata[grepl("^Jmo", names(old_standata))]
       names(Jmo) <- sub("^Jmo$", "mu", sub("^Jmo_", "", names(Jmo)))
       control[["Jmo"]] <- Jmo 
+    }
+    if (is.cor_car(fit$autocor)) {
+      if (isTRUE(nzchar(bterms$time$group))) {
+        old_loc_data <- get(bterms$time$group, fit$data)
+        control$old_locations <- levels(factor(old_loc_data))
+      }
     }
     control$smooths <- make_smooth_list(bterms, model.frame(fit))
     control$gps <- make_gp_list(bterms, model.frame(fit))
@@ -430,6 +431,8 @@ add_new_objects <- function(x, newdata, new_objects = list()) {
       x$autocor$W <- diag(nrow(newdata))
     }
   }
+  # do not include cor_car here as the adjacency matrix
+  # (or subsets of it) should be the same for newdata 
   if (is.cor_fixed(x$autocor)) {
     if ("V" %in% names(new_objects)) {
       x$autocor <- cor_fixed(new_objects$V)

@@ -10,12 +10,12 @@
    */ 
    real student_t_errorsar_lpdf(vector y, real nu, vector mu, 
                                 real sigma, real rho, matrix W) {
-     int K;
+     real K;
      matrix[rows(y), rows(y)] W_new;
      vector[rows(y)] half_pred;
      real inv_sigma2;
      K = rows(y);
-     W_new = diag_matrix(rep_vector(1.0, K)) - rho * W;
+     W_new = diag_matrix(rep_vector(1.0, rows(y))) - rho * W;
      half_pred  = W_new * (y - mu);
      inv_sigma2 = 1 / sigma^2;
      return - K / 2 * log(nu) + lgamma((nu + K) / 2) - lgamma(nu / 2) +
