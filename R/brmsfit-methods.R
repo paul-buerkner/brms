@@ -708,7 +708,7 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE,
                          use_cache = use_cache)$summary
   algorithm <- algorithm(object)
   if (algorithm == "sampling") {
-    fit_summary <- fit_summary[, -2]
+    fit_summary <- fit_summary[, -2, drop = FALSE]
     colnames(fit_summary) <- c(
       "Estimate", "Est.Error", "l-95% CI", "u-95% CI", 
       "Eff.Sample", "Rhat"
