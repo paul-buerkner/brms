@@ -90,7 +90,7 @@ stan_autocor <- function(autocor, bterms, family, prior) {
         stop2(err_msg, " when specifying 'se'.")
       }
       if (length(bterms$auxpars[["mu"]]$nlpars)) {
-        stop2(err_msg, " for non-linear models.")
+        stop2(err_msg, " in non-linear models.")
       }
       if (!identical(family$link, "identity")) {
         stop2(err_msg, " when using non-identity links.")
@@ -183,6 +183,9 @@ stan_autocor <- function(autocor, bterms, family, prior) {
     if (is_mv) {
       stop2(err_msg, " in multivariate models.")
     }
+    if (length(bterms$auxpars[["mu"]]$nlpars)) {
+      stop2(err_msg, " in non-linear models.")
+    }
     out$data <- paste0(out$data,
       "  // data for the CAR structure \n",
       "  int<lower=1> Nloc; \n",
@@ -244,12 +247,16 @@ stan_autocor <- function(autocor, bterms, family, prior) {
     }
   }
   if (is.cor_bsts(autocor)) {
-    if (is_mv || is_ordinal(family) ||
+    err_msg <- "The bsts structure is not yet working"
+    if (is_ordinal(family) || 
         family$family %in% c("bernoulli", "categorical")) {
-      stop2("The bsts structure is not yet implemented for this family.")
+      stop2(err_msg, " for family '", family$family, "'.")
+    }
+    if (is_mv) {
+      stop2(err_msg, " in multivariate models.")
     }
     if (length(bterms$auxpars[["mu"]]$nlpars)) {
-      stop2("The bsts structure is not yet implemented for non-linear models.")
+      stop2(err_msg, " in non-linear models.")
     }
     out$data <- "  vector[N] tg;  // indicates independent groups \n"
     out$par <- paste0(

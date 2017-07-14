@@ -383,8 +383,13 @@ make_standata <- function(formula, data, family = gaussian(),
         Nloc <- standata$N
         Jloc <- as.array(seq_len(Nloc))
         if (!identical(dim(autocor$W), rep(Nloc, 2))) {
-          stop2("Dimensions of 'W' must be equal ", 
-                "to the number of observations.")
+          if (is_newdata) {
+            stop2("Cannot handle new data in CAR models ",
+                  "without a grouping factor.")
+          } else {
+            stop2("Dimensions of 'W' must be equal ", 
+                  "to the number of observations.") 
+          }
         }
       }
       W_tmp <- autocor$W
