@@ -1,3 +1,34 @@
+#' Correlation structure classes for the \pkg{brms} package
+#' 
+#' Classes of correlation structures available in the \pkg{brms} package. 
+#' \code{cor_brms} is not a correlation structure itself, 
+#' but the class common to all correlation structures implemented in \pkg{brms}.
+#' 
+#' @name cor_brms
+#' @aliases cor_brms-class
+#' 
+#' @section Available correlation structures:
+#' \describe{
+#'   \item{cor_arma}{autoregressive-moving average (ARMA) structure, 
+#'   with arbitrary orders for the autoregressive and moving
+#'   average components}
+#'   \item{cor_ar}{autoregressive (AR) structure of arbitrary order}
+#'   \item{cor_ma}{moving average (MA) structure of arbitrary order} 
+#'   \item{cor_arr}{response autoregressive (ARR) structure}
+#'   \item{cor_car}{Spatial conditional autoregressive (CAR) structure}
+#'   \item{cor_sar}{Spatial simultaneous autoregressive (SAR) structure}
+#'   \item{cor_bsts}{Bayesian structural time series (BSTS) structure}
+#'   \item{cor_fixed}{fixed user-defined covariance structure}
+#' }
+#' 
+#' @seealso 
+#' \code{\link[brms:cor_arma]{cor_arma}, \link[brms:cor_ar]{cor_ar},
+#'       \link[brms:cor_ma]{cor_ma}, \link[brms:cor_arr]{cor_arr}, 
+#'       \link[brms:cor_car]{cor_car}, \link[brms:cor_sar]{cor_sar},
+#'       \link[brms:cor_bsts]{cor_bsts}, \link[brms:cor_fixed]{cor_fixed}}
+#' 
+NULL
+
 #' ARMA(p,q) correlation structure
 #' 
 #' This functions is a constructor for the \code{cor_arma} class, representing 
@@ -450,6 +481,11 @@ is.cor_bsts <- function(x) {
 }
 
 #' @export
+print.cor_empty <- function(x, ...) {
+  cat("empty()")
+}
+
+#' @export
 print.cor_arma <- function(x, ...) {
   cat(paste0("arma(", formula2str(x$formula), ", ", 
              get_ar(x), ", ", get_ma(x), ", ", get_arr(x),")"))
@@ -531,10 +567,15 @@ stop_not_cor_brms <- function(x) {
   TRUE
 }
 
+cor_empty <- function() {
+  # empty 'cor_brms' object
+  structure(list(), class = c("cor_empty", "cor_brms"))
+}
+
 check_autocor <- function(autocor) {
   # check validity of autocor argument
   if (is.null(autocor))  {
-    autocor <- cor_arma()
+    autocor <- cor_empty()
   }
   stop_not_cor_brms(autocor)
   autocor

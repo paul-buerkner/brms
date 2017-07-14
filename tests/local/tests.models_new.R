@@ -24,11 +24,11 @@ test_that("Poisson model from brm doc works correctly", {
   ## plot marginal effects of each predictor
   me1 <- marginal_effects(fit1)
   expect_ggplot(plot(me1, ask = FALSE)[[4]])
-  ## investigare model fit
+  ## investigate model fit
   expect_range(WAIC(fit1)$waic, 1120, 1160)
   expect_ggplot(pp_check(fit1))
   # test kfold
-  kfold1 <- kfold(fit1, update_args = list(chains = 2, iter = 1000))
+  kfold1 <- kfold(fit1, update_args = list(chains = 1, iter = 1000))
   expect_range(kfold1$kfoldic, 1220, 1260)
 })
 
