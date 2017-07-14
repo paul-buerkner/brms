@@ -1061,11 +1061,12 @@ test_that("Stan code for CAR models is correct", {
   expect_match2(scode, "rcar ~ sparse_car(car, sdcar")
   expect_match2(scode, "mu[n] = mu[n] + rcar[Jloc[n]]")
 
-  scode <- make_stancode(y ~ x, dat, autocor = cor_icar(W))
+  scode <- make_stancode(y ~ x, dat, autocor = cor_icar(W),
+                         silent = TRUE)
   expect_match2(scode, "real sparse_icar_lpdf(vector phi")
-  expect_match2(scode, "zcar ~ sparse_icar(sdcar")
+  expect_match2(scode, "rcar ~ sparse_icar(sdcar")
   expect_match2(scode, "mu[n] = mu[n] + rcar[Jloc[n]]")
-  expect_match2(scode, "rcar = zcar - mean(zcar)")
+  expect_match2(scode, "rcar[Nloc] = - sum(zcar)")
 })
 
 test_that("Stan code for skew_normal models is correct", {

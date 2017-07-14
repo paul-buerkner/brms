@@ -221,16 +221,18 @@ stan_autocor <- function(autocor, bterms, family, prior) {
         "  #include 'fun_sparse_icar_lpdf.stan' \n"        
       )
       out$par <- paste0(out$par,
-        "  vector[Nloc] zcar; \n"
+        "  vector[Nloc - 1] zcar; \n"
       )
       out$transD <- paste0(out$transD,
         "  vector[Nloc] rcar; \n"                
       )
       out$transC1 <- paste0(out$transC1,
-        "  rcar = zcar - mean(zcar); \n"                
+        "  // apply sum-to-zero constraint \n",
+        "  rcar[1:(Nloc - 1)] = zcar; \n",
+        "  rcar[Nloc] = - sum(zcar); \n"
       )
       out$prior <- paste0(out$prior,
-        "  zcar ~ sparse_icar(sdcar, Nloc, Nedges, Nneigh,\n",
+        "  rcar ~ sparse_icar(sdcar, Nloc, Nedges, Nneigh,\n",
         "                     eigenW, edges1, edges2); \n"
       )
     } 
