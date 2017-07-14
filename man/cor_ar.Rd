@@ -9,8 +9,7 @@ cor_ar(formula = ~1, p = 1, cov = FALSE)
 }
 \arguments{
 \item{formula}{A one sided formula of the form \code{~ t}, or \code{~ t | g}, 
-specifying a time covariate \code{t} and, optionally, 
-a grouping factor \code{g}. 
+specifying a time covariate \code{t} and, optionally, a grouping factor \code{g}. 
 A covariate for this correlation structure must be integer valued. 
 When a grouping factor is present in \code{formula}, the correlation structure 
 is assumed to apply only to observations within the same grouping level; 
@@ -18,11 +17,11 @@ observations with different grouping levels are assumed to be uncorrelated.
 Defaults to \code{~ 1}, which corresponds to using the order of the observations 
 in the data as a covariate, and no groups.}
 
-\item{p}{A non-negative integer specifying the autoregressive (AR) order of the ARMA structure. 
-Default is 0.}
+\item{p}{A non-negative integer specifying the autoregressive (AR) 
+order of the ARMA structure. Default is 0.}
 
-\item{cov}{A flag indicating whether ARMA effects should be estimated by means
-of residual covariance matrices
+\item{cov}{A flag indicating whether ARMA effects should be estimated 
+by means of residual covariance matrices
 (currently only possible for stationary ARMA effects of order 1). 
 If \code{FALSE} (the default) a regression formulation
 is used that is considerably faster and allows for ARMA effects 

@@ -7,22 +7,22 @@
 #' @aliases cor_arma-class
 #' 
 #' @param formula A one sided formula of the form \code{~ t}, or \code{~ t | g}, 
-#'   specifying a time covariate \code{t} and, optionally, 
-#'   a grouping factor \code{g}. 
+#'   specifying a time covariate \code{t} and, optionally, a grouping factor \code{g}. 
 #'   A covariate for this correlation structure must be integer valued. 
 #'   When a grouping factor is present in \code{formula}, the correlation structure 
 #'   is assumed to apply only to observations within the same grouping level; 
 #'   observations with different grouping levels are assumed to be uncorrelated. 
 #'   Defaults to \code{~ 1}, which corresponds to using the order of the observations 
 #'   in the data as a covariate, and no groups.
-#' @param p A non-negative integer specifying the autoregressive (AR) order of the ARMA structure. 
-#'   Default is 0.  
-#' @param q A non-negative integer specifying the moving average (MA) order of the ARMA structure. 
-#'   Default is 0. 
-#' @param r A non-negative integer specifying the autoregressive response (ARR) order. 
-#'   See 'Details' for differences of AR and ARR effects. Default is 0. 
-#' @param cov A flag indicating whether ARMA effects should be estimated by means
-#'   of residual covariance matrices
+#' @param p A non-negative integer specifying the autoregressive (AR) 
+#'   order of the ARMA structure. Default is 0.  
+#' @param q A non-negative integer specifying the moving average (MA) 
+#'   order of the ARMA structure. Default is 0. 
+#' @param r A non-negative integer specifying the autoregressive 
+#'   response (ARR) order. See 'Details' for differences of AR and ARR 
+#'   effects. Default is 0. 
+#' @param cov A flag indicating whether ARMA effects should be estimated 
+#'   by means of residual covariance matrices
 #'   (currently only possible for stationary ARMA effects of order 1). 
 #'   If \code{FALSE} (the default) a regression formulation
 #'   is used that is considerably faster and allows for ARMA effects 
@@ -207,7 +207,10 @@ cor_sar <- function(W, type = c("lag", "error")) {
   type <- match.arg(type)
   W_name <- deparse(substitute(W))
   W <- sar_weights(W)
-  structure(nlist(W, W_name, type), class = c("cor_sar", "cor_brms"))
+  structure(
+    nlist(W, W_name, type), 
+    class = c("cor_sar", "cor_brms")
+  )
 }
 
 #' @rdname cor_sar
@@ -237,6 +240,98 @@ sar_weights <- function(W) {
     stop2("'W' must be of class 'matrix', 'listw', or 'nb'.")
   }
   W
+}
+
+#' Spatial conditional autoregressive (CAR) structures
+#' 
+#' These functions are constructors for the \code{cor_car} class
+#' implementing spatial conditional autoregressive structures.
+#' 
+#' @param W Adjacency matrix of locations. 
+#'   All non-zero entries are treated as if the two locations 
+#'   are adjacent. If \code{formula} contains a grouping factor,
+#'   the row names of \code{W} have to matche the levels
+#'   of the grouping factor.
+#' @param formula An optional one-sided formula of the form 
+#'   \code{~ 1 | g}, where \code{g} is a grouping factor mapping
+#'   observations to spatial locations. If not specified,
+#'   each observation is treated as a separate location.
+#'   It is recommended to always specify a grouping factor
+#'   to allow for handling of new data in post-processing methods.
+#' @param type Type of the CAR structure. Currenlty implemented
+#'   are \code{"escar"} (exact sparse CAR) and \code{"esicar"}
+#'   (exact sparse intrinsic CAR). More information is
+#'   provided in the 'Details' section.
+#' 
+#' @details The \code{escar} and \code{esicar} types are 
+#'   implemented based on the case study of Max Joseph
+#'   (\url{https://github.com/mbjoseph/CARstan}), who
+#'   deserves credit for helping to make CAR structures 
+#'   possible in \pkg{brms}.
+#'   
+#' @examples
+#' \dontrun{
+#' # generate some spatial data
+#' east <- north <- 1:10
+#' Grid <- expand.grid(east, north)
+#' K <- nrow(Grid)
+#' 
+#' # set up distance and neighbourhood matrices
+#' distance <- as.matrix(dist(Grid))
+#' W <- array(0, c(K, K))
+#' W[distance == 1] <- 1 	
+#' 
+#' # generate the covariates and response data
+#' x1 <- rnorm(K)
+#' x2 <- rnorm(K)
+#' theta <- rnorm(K, sd = 0.05)
+#' phi <- rmulti_normal(
+#'   1, mu = rep(0, K), Sigma = 0.4 * exp(-0.1 * distance)
+#' )
+#' eta <- x1 + x2 + phi
+#' prob <- exp(eta) / (1 + exp(eta))
+#' size <- rep(50, K)
+#' y <- rbinom(n = K, size = size, prob = prob)
+#' dat <- data.frame(y, size, x1, x2)
+#' 
+#' # fit a CAR model
+#' fit <- brm(y | trials(size) ~ x1 + x2, data = dat, 
+#'            family = binomial(), autocor = cor_car(W)) 
+#' summary(fit)
+#' }
+#' 
+#' @export
+cor_car <- function(W, formula = ~1, type = c("escar", "esicar")) {
+  type <- match.arg(type)
+  W_name <- deparse(substitute(W))
+  W <- Matrix::Matrix(W, sparse = TRUE)
+  if (!Matrix::isSymmetric(W, check.attributes = FALSE)) {
+    stop2("'W' must be symmetric.")
+  }
+  not_binary <- !(W == 0 | W == 1)
+  if (any(not_binary)) {
+    message("Converting all non-zero values in 'W' to 1")
+    W[not_binary] <- 1
+  }
+  formula <- as.formula(formula)
+  if (!is.null(lhs(formula))) {
+    stop2("'formula' should be a one-sided formula.")
+  }
+  if (length(attr(terms(formula), "term.labels")) > 1L) {
+    stop2("'formula' should not contain more than one term.")
+  }
+  structure(
+    nlist(W, W_name, formula, type), 
+    class = c("cor_car", "cor_brms")
+  )
+}
+
+#' @rdname cor_car
+#' @export
+cor_icar <- function(W, formula = ~1) {
+  out <- cor_car(W, formula, type = "esicar")
+  out$W_name <- deparse(substitute(W))
+  out
 }
 
 #' Fixed user-defined covariance matrices 
@@ -338,6 +433,12 @@ is.cor_sar <- function(x) {
 
 #' @rdname is.cor_brms
 #' @export
+is.cor_car <- function(x) {
+  inherits(x, "cor_car")
+}
+
+#' @rdname is.cor_brms
+#' @export
 is.cor_fixed <- function(x) {
   inherits(x, "cor_fixed")
 }
@@ -358,6 +459,14 @@ print.cor_arma <- function(x, ...) {
 #' @export
 print.cor_sar <- function(x, ...) {
   cat(paste0("sar(", x$W_name, ", '", x$type, "')"))
+  invisible(x)
+}
+
+#' @export
+print.cor_car <- function(x, ...) {
+  cat(paste0(
+    "car(", x$W_name, ", ", formula2str(x$formula), ", '", x$type, "')"
+  ))
   invisible(x)
 }
 
@@ -433,9 +542,17 @@ check_autocor <- function(autocor) {
 
 remove_autocor <- function(x, keep = FALSE) {
   # convenience function to ignore autocorrelation terms
-  # currently only excludes ARMA structures
-  if (!keep && (is.cor_arma(x$autocor) || is.cor_sar(x$autocor))) {
+  # currently excludes ARMA, SAR, and CAR structures
+  excl_cor <- is.cor_arma(x$autocor) || 
+    is.cor_sar(x$autocor) || is.cor_car(x$autocor)
+  if (!keep && excl_cor) {
     x$autocor <- cor_arma()
   }
   x
+}
+
+regex_cor_pars <- function() {
+  # regex to extract all pars of cor structures
+  # used in summary.brmsfit
+  "^(ar|ma|lagsar$|errorsar$|car$|sdcar$|sigmaLL$)"
 }

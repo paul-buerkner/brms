@@ -78,11 +78,11 @@ linear_predictor <- function(draws, i = NULL) {
   # incorporate group-level effects
   group <- names(draws[["r"]])
   for (g in group) {
-    eta_re <- re_predictor(
-      Z = p(draws[["Z"]][[g]], i), 
-      r = draws[["r"]][[g]]
-    )
-    eta <- eta + eta_re
+    eta <- eta + 
+      re_predictor(
+        Z = p(draws[["Z"]][[g]], i),
+        r = draws[["r"]][[g]]
+      )
   }
   # incorporate smooths
   smooths <- names(draws[["s"]])
@@ -126,9 +126,14 @@ linear_predictor <- function(draws, i = NULL) {
       ma = draws[["ma"]], eta = eta, link = draws$f$link
     )
   }
-  if (!is.null(draws$loclev)) {
+  if (!is.null(draws[["rcar"]])) {
+    eta <- eta + 
+      re_predictor(Z = p(draws[["Zcar"]], i), r = draws[["rcar"]])
+  }
+  if (!is.null(draws[["loclev"]])) {
     eta <- eta + p(draws$loclev, i, row = FALSE)
   }
+  # incorporate category specific effects
   if (is_ordinal(draws$f)) {
     if (!is.null(draws[["cs"]]) || !is.null(draws[["rcs"]])) {
       ncat <- draws$data$ncat
@@ -152,6 +157,7 @@ linear_predictor <- function(draws, i = NULL) {
         b = draws[["cs"]], eta = eta, 
         ncat = ncat, r = rcs
       )
+      rm(rcs)
     } else {
       eta <- array(eta, dim = c(dim(eta), draws$data$ncat - 1))
     } 

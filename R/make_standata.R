@@ -353,6 +353,59 @@ make_standata <- function(formula, data, family = gaussian(),
       standata$W <- autocor$W
       # simplifies code of choose_N
       standata$N_tg <- 1
+    } else if (is.cor_car(autocor)) {
+      if (isTRUE(nzchar(bterms$time$group))) {
+        loc_data <- get(bterms$time$group, data)
+        locations <- levels(factor(loc_data))
+        if (!is.null(control$old_locations)) {
+          old_locations <- control$old_locations
+          new_locations <- setdiff(locations, old_locations)
+          if (length(new_locations)) {
+            stop2("Cannot handle new locations in CAR models.")
+          }
+        } else {
+          old_locations <- locations
+        }
+        Nloc <- length(locations)
+        Jloc <- as.array(match(loc_data, old_locations))
+        found_locations <- rownames(autocor$W)
+        if (is.null(found_locations)) {
+          stop2("Row names are required for 'W'.")
+        }
+        colnames(autocor$W) <- found_locations
+        found <- locations %in% found_locations
+        if (any(!found)) {
+          stop2("Row names of 'W' do not match ", 
+                "the names of the grouping levels.")
+        }
+        autocor$W <- autocor$W[locations, locations, drop = FALSE]
+      } else {
+        Nloc <- standata$N
+        Jloc <- as.array(seq_len(Nloc))
+        if (!identical(dim(autocor$W), rep(Nloc, 2))) {
+          if (is_newdata) {
+            stop2("Cannot handle new data in CAR models ",
+                  "without a grouping factor.")
+          } else {
+            stop2("Dimensions of 'W' must be equal ", 
+                  "to the number of observations.") 
+          }
+        }
+      }
+      W_tmp <- autocor$W
+      W_tmp[upper.tri(W_tmp)] <- NA
+      edges <- which(as.matrix(W_tmp == 1), arr.ind = TRUE)
+      Nneigh <- Matrix::colSums(autocor$W)
+      if (any(Nneigh == 0)) {
+        stop2("All locations should have at least one neighbor.")
+      }
+      inv_sqrt_D <- diag(1 / sqrt(Nneigh))
+      eigenW <- t(inv_sqrt_D) %*% autocor$W %*% inv_sqrt_D
+      eigenW <- eigen(eigenW, TRUE, only.values = TRUE)$values
+      standata <- c(standata, nlist(
+        Nloc, Jloc, Nneigh, eigenW, Nedges = nrow(edges),  
+        edges1 = as.array(edges[, 1]), edges2 = as.array(edges[, 2])
+      ))
     } else if (is.cor_fixed(autocor)) {
       V <- autocor$V
       rmd_rows <- attr(data, "na.action")
