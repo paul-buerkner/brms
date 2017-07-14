@@ -388,12 +388,13 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       only_response = only_response,
       old_cat = is_old_categorical(fit)
     )
+    # ensure correct handling of functions like poly or scale
     old_terms <- attr(model.frame(fit), "terms")
     terms_attr <- c("variables", "predvars")
     control$terms_attr <- attributes(old_terms)[terms_attr]
+    # some components should not be computed based on newdata
     has_mo <- length(get_effect(bterms, "mo")) > 0L
     if (has_trials(fit$family) || has_cat(fit$family) || has_mo) {
-      # some components should not be computed based on newdata
       pars <- c(names(bterms$nlpars), intersect(auxpars(), names(bterms)))
       comp <- c("trials", "ncat", paste0("Jmo", c("", paste0("_", pars))))
       old_standata <- rmNULL(standata(fit)[comp])
@@ -401,6 +402,12 @@ amend_newdata <- function(newdata, fit, re_formula = NULL,
       Jmo <- old_standata[grepl("^Jmo", names(old_standata))]
       names(Jmo) <- sub("^Jmo$", "mu", sub("^Jmo_", "", names(Jmo)))
       control[["Jmo"]] <- Jmo 
+    }
+    if (is.cor_car(fit$autocor)) {
+      if (isTRUE(nzchar(bterms$time$group))) {
+        old_loc_data <- get(bterms$time$group, fit$data)
+        control$old_locations <- levels(factor(old_loc_data))
+      }
     }
     control$smooths <- make_smooth_list(bterms, model.frame(fit))
     control$gps <- make_gp_list(bterms, model.frame(fit))
@@ -430,6 +437,8 @@ add_new_objects <- function(x, newdata, new_objects = list()) {
       x$autocor$W <- diag(nrow(newdata))
     }
   }
+  # do not include cor_car here as the adjacency matrix
+  # (or subsets of it) should be the same for newdata 
   if (is.cor_fixed(x$autocor)) {
     if ("V" %in% names(new_objects)) {
       x$autocor <- cor_fixed(new_objects$V)

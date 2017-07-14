@@ -256,6 +256,8 @@ sar_weights <- function(W) {
 #'   \code{~ 1 | g}, where \code{g} is a grouping factor mapping
 #'   observations to spatial locations. If not specified,
 #'   each observation is treated as a separate location.
+#'   It is recommended to always specify a grouping factor
+#'   to allow for handling of new data in post-processing methods.
 #' @param type Type of the CAR structure. Currenlty implemented
 #'   are \code{"escar"} (exact sparse CAR) and \code{"esicar"}
 #'   (exact sparse intrinsic CAR). More information is

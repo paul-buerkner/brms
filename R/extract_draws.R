@@ -92,8 +92,7 @@ extract_draws.brmsfit <- function(x, newdata = NULL, re_formula = NULL,
     # when using the covariance formulation of ARMA / SAR structures
     draws <- c(draws, 
       extract_draws_autocor(
-        x, subset = subset, standata = draws$data, 
-        is_newdata = !is.null(newdata)
+        x, subset, newdata = newdata, sdata = draws$data
       )
     )
   }
@@ -205,8 +204,7 @@ extract_draws.btl <- function(x, fit, newdata = NULL, re_formula = NULL,
     # only include autocorrelation parameters in draws for mu
     draws <- c(draws, 
       extract_draws_autocor(
-        fit, subset = subset, standata = draws$data,
-        is_newdata = !is.null(newdata)
+        fit, subset, newdata = newdata, sdata = draws$data
       )
     )
   }
@@ -615,10 +613,13 @@ extract_draws_re <- function(ranef, args, sdata, nlpar = "",
   draws
 }
 
-extract_draws_autocor <- function(fit, subset = NULL, standata = NULL,
-                                  is_newdata = FALSE) {
+extract_draws_autocor <- function(fit, subset = NULL,
+                                  newdata = NULL, sdata = NULL) {
   # extract draws of autocorrelation parameters
+  # Args:
+  #   sdata: output of make_standata
   stopifnot(is.brmsfit(fit))
+  is_newdata <- !is.null(newdata)
   args <- nlist(x = fit, subset)
   draws <- list()
   if (get_ar(fit$autocor)) {
@@ -635,10 +636,18 @@ extract_draws_autocor <- function(fit, subset = NULL, standata = NULL,
     draws[["errorsar"]] <- do.call(as.matrix, c(args, pars = "^errorsar$"))
   }
   if (is.cor_car(fit$autocor)) {
-    draws[["rcar"]] <- do.call(as.matrix, c(args, pars = "^rcar\\["))
-    gcar <- standata[["Jloc"]]
+    if (is_newdata) {
+      group <- parse_time(fit$autocor)$group
+      if (!isTRUE(nzchar(group))) {
+        stop2("Without a grouping factor, CAR models cannot handle newdata.")
+      }
+    }
+    gcar <- sdata[["Jloc"]]
     Zcar <- matrix(rep(1, length(gcar)))
     draws[["Zcar"]] <- prepare_Z(Zcar, list(gcar))
+    rcar <- do.call(as.matrix, c(args, pars = "^rcar\\["))
+    rcar <- rcar[, unique(gcar), drop = FALSE]
+    draws[["rcar"]] <- rcar
   }
   if (is(fit$autocor, "cor_bsts")) {
     if (is_newdata) {
