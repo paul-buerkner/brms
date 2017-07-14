@@ -497,3 +497,47 @@ expect_ggplot(pp_check(fit_errorsar))
 me = marginal_effects(fit_errorsar, nsamples = 200)
 expect_ggplot(plot(me, ask = FALSE)[[1]])
 expect_range(LOO(fit_errorsar)$looic, 350, 380)
+
+
+## CAR models
+# generate some spatial data
+east <- north <- 1:10
+Grid <- expand.grid(east, north)
+K <- nrow(Grid)
+
+# set up distance and neighbourhood matrices
+distance <- as.matrix(dist(Grid))
+W <- array(0, c(K, K))
+W[distance == 1] <- 1
+rownames(W) <- 1:nrow(W)
+
+# generate the covariates and response data
+x1 <- rnorm(K)
+x2 <- rnorm(K)
+theta <- rnorm(K, sd = 0.05)
+phi <- rmulti_normal(
+  1, mu = rep(0, K), Sigma = 0.4 * exp(-0.1 * distance)
+)
+eta <- x1 + x2 + phi
+prob <- exp(eta) / (1 + exp(eta))
+size <- rep(50, K)
+y <- rbinom(n = K, size = size, prob = prob)
+dat <- data.frame(y, size, x1, x2, obs = 1:length(y))
+
+# fit a CAR model
+fit_car <- brm(
+  y | trials(size) ~ x1 + x2, data = dat, 
+  family = binomial(), autocor = cor_car(W, ~1|obs)
+) 
+print(fit_car)
+expect_ggplot(pp_check(fit_car))
+me = marginal_effects(fit_car, nsamples = 200)
+expect_ggplot(plot(me, ask = FALSE)[[1]])
+expect_range(LOO(fit_car)$looic, 450, 550)
+expect_false(isTRUE(all.equal(
+  fitted(fit_car, newdata = dat[1:5, ]), 
+  fitted(fit_car, newdata = dat[1:5, ], incl_autocor = FALSE)
+)))
+newdata <- data.frame(x1 = 0, x2 = 0, size = 50, obs = -1)
+expect_error(predict(fit_car, newdata = newdata),
+             "Cannot handle new locations in CAR models")

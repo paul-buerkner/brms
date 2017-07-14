@@ -513,3 +513,39 @@ test_that("make_standata includes data for SAR models", {
     "Dimensions of 'W' must be equal to the number of observations"
   )
 })
+
+test_that("make_standata includes data for CAR models", {
+  dat = data.frame(y = rnorm(10), x = rnorm(10))
+  edges <- cbind(1:10, 10:1)
+  W <- matrix(0, nrow = 10, ncol = 10)
+  for (i in seq_len(nrow(edges))) {
+    W[edges[i, 1], edges[i, 2]] <- 1 
+  } 
+  
+  sdata <- make_standata(y ~ x, dat, autocor = cor_car(W))
+  expect_equal(sdata$Nloc, 10)
+  expect_equal(sdata$Nneigh, rep(1, 10))
+  expect_equal(sdata$edges1, as.array(10:6))
+  expect_equal(sdata$edges2, as.array(1:5))
+  
+  rownames(W) <- c("a", 2:9, "b")
+  dat$group <- rep(c("a", "b"), each = 5)
+  sdata <- make_standata(y ~ x, dat, autocor = cor_car(W, ~1|group))
+  expect_equal(sdata$Nloc, 2)
+  expect_equal(sdata$edges1, as.array(2))
+  expect_equal(sdata$edges2, as.array(1))
+  
+  # test error messages
+  rownames(W) <- c(1:9, "a")
+  expect_error(make_standata(y ~ x, dat, autocor = cor_car(W, ~1|group)), 
+               "Row names of 'W' do not match")
+  rownames(W) <- NULL
+  expect_error(make_standata(y ~ x, dat, autocor = cor_car(W, ~1|group)),
+               "Row names are required for 'W'")
+  W[1, 10] <- 0
+  expect_error(make_standata(y ~ x, dat, autocor = cor_car(W)),
+               "'W' must be symmetric")
+  W[10, 1] <- 0
+  expect_error(make_standata(y ~ x, dat, autocor = cor_car(W)),
+               "All locations should have at least one neighbor")
+})

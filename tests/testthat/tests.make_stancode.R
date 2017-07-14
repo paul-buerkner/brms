@@ -1048,6 +1048,26 @@ test_that("Stan code for SAR models is correct", {
   )
 })
 
+test_that("Stan code for CAR models is correct", {
+  dat = data.frame(y = rnorm(10), x = rnorm(10))
+  edges <- cbind(1:10, 10:1)
+  W <- matrix(0, nrow = 10, ncol = 10)
+  for (i in seq_len(nrow(edges))) {
+    W[edges[i, 1], edges[i, 2]] <- 1 
+  }
+  
+  scode <- make_stancode(y ~ x, dat, autocor = cor_car(W))
+  expect_match2(scode, "real sparse_car_lpdf(vector phi")
+  expect_match2(scode, "rcar ~ sparse_car(car, sdcar")
+  expect_match2(scode, "mu[n] = mu[n] + rcar[Jloc[n]]")
+
+  scode <- make_stancode(y ~ x, dat, autocor = cor_icar(W))
+  expect_match2(scode, "real sparse_icar_lpdf(vector phi")
+  expect_match2(scode, "zcar ~ sparse_icar(sdcar")
+  expect_match2(scode, "mu[n] = mu[n] + rcar[Jloc[n]]")
+  expect_match2(scode, "rcar = zcar - mean(zcar)")
+})
+
 test_that("Stan code for skew_normal models is correct", {
   dat = data.frame(y = rnorm(10), x = rnorm(10))
   scode <- make_stancode(y ~ x, dat, skew_normal())
