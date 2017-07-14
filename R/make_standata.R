@@ -61,7 +61,7 @@ make_standata <- function(formula, data, family = gaussian(),
   )
   
   # sort data in case of autocorrelation models
-  if (has_arma(autocor) || is(autocor, "cor_bsts")) {
+  if (has_arma(autocor) || is.cor_bsts(autocor)) {
     if (old_mv) {
       to_order <- rmNULL(list(
         data[["trait"]], 
