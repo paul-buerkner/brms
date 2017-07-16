@@ -16,7 +16,7 @@ stan_autocor <- function(autocor, bterms, family, prior) {
   out <- list()
   if (Kar || Kma) {
     if (!is_linear) {
-      stop2("ARMA correlation structures are not yet implemented ", 
+      stop2("ARMA models are not yet implemented ", 
             "for family '", family$family, "'.") 
     }
     out$data <- paste0(out$data, 
@@ -24,8 +24,12 @@ stan_autocor <- function(autocor, bterms, family, prior) {
       "  int<lower=0> Kar;  // AR order \n",
       "  int<lower=0> Kma;  // MA order \n"
     )
-    out$tdataD <- paste0(out$tdataD, "  int max_lag; \n")
-    out$tdataC <- paste0(out$tdataC, "  max_lag = max(Kar, Kma); \n")
+    out$tdataD <- paste0(out$tdataD, 
+      "  int max_lag; \n"
+    )
+    out$tdataC <- paste0(out$tdataC, 
+      "  max_lag = max(Kar, Kma); \n"
+    )
     # restrict ARMA effects to be in [-1,1] when using covariance
     # formulation as they cannot be outside this interval anyway
     if (Kar) {
@@ -55,7 +59,9 @@ stan_autocor <- function(autocor, bterms, family, prior) {
       if (any(c("sigma", "nu") %in% names(bterms$auxpars))) {
         stop2(err_msg, " when predicting 'sigma' or 'nu'.")
       }
-      out$data <- paste0(out$data, "  #include 'data_arma_cov.stan' \n")
+      out$data <- paste0(out$data, 
+        "  #include 'data_arma_cov.stan' \n"
+      )
       if (!is.formula(bterms$adforms$se)) {
         out$tdataD <- "  vector[N] se2; \n"
         out$tdataC <- "  se2 = rep_vector(0, N); \n"
@@ -76,18 +82,28 @@ stan_autocor <- function(autocor, bterms, family, prior) {
         "  res_cov_matrix = cov_matrix_", cov_mat_fun, 
         "(", cov_mat_args, ", sigma, max(nobs_tg)); \n"
       )
-      # defined selfmade functions for the functions block
+      # defined self-made functions for the functions block
       if (family$family == "gaussian") {
-        out$fun <- paste0(out$fun, "  #include 'fun_normal_cov.stan' \n")
-      } else {  # family == "student"
-        out$fun <- paste0(out$fun, "  #include 'fun_student_t_cov.stan' \n")
+        out$fun <- paste0(out$fun, 
+          "  #include 'fun_normal_cov.stan' \n"
+        )
+      } else {  
+        out$fun <- paste0(out$fun, 
+          "  #include 'fun_student_t_cov.stan' \n"
+        )
       }
       if (Kar && !Kma) {
-        out$fun <- paste0(out$fun, "  #include 'fun_cov_matrix_ar1.stan' \n")
+        out$fun <- paste0(out$fun, 
+          "  #include 'fun_cov_matrix_ar1.stan' \n"
+        )
       } else if (!Kar && Kma) {
-        out$fun <- paste0(out$fun, "  #include 'fun_cov_matrix_ma1.stan' \n")
+        out$fun <- paste0(out$fun, 
+          "  #include 'fun_cov_matrix_ma1.stan' \n"
+        )
       } else {
-        out$fun <- paste0(out$fun, "  #include 'fun_cov_matrix_arma1.stan' \n")
+        out$fun <- paste0(out$fun, 
+          "  #include 'fun_cov_matrix_arma1.stan' \n"
+        )
       }
     } else {
       err_msg <- "Please set cov = TRUE in cor_arma / cor_ar / cor_ma"
@@ -122,20 +138,28 @@ stan_autocor <- function(autocor, bterms, family, prior) {
       )
       out$modelC2 <- paste0(
         "    // computation of ARMA correlations \n",
-        collapse("    e", rs, "[n] = Y[", index, "] - mu", rs, "[n]", "; \n"),
+        collapse(
+          "    e", rs, "[n] = Y[", index, "] - mu", rs, "[n]", "; \n"
+        ),
         "    for (i in 1:J_lag[n]) { \n",
-        collapse("      E", rs, "[n + 1, i] = e", rs, "[n + 1 - i]; \n"),
+        collapse(
+         "      E", rs, "[n + 1, i] = e", rs, "[n + 1 - i]; \n"
+        ),
         "    } \n"
       )
     } 
   }
   if (Karr) {
     # autoregressive effects of the response
+    err_msg <- "ARR models are not yet working"
     if (length(bterms$auxpars[["mu"]]$nlpars)) {
-      stop2("Cannot use the ARR structure in non-linear models.")
+      stop2(err_msg, " in non-linear models.")
+    }
+    if (is_mv) {
+      stop2(err_msg, " in multivariate models.")
     }
     out$data <- paste0(out$data,
-      "  // data needed for ARR effects \n",
+      "  // data needed for ARR correlations \n",
       "  int<lower=1> Karr; \n",
       "  matrix[N, Karr] Yarr;  // ARR design matrix \n"
     )
@@ -164,22 +188,30 @@ stan_autocor <- function(autocor, bterms, family, prior) {
     )
     if (identical(autocor$type, "lag")) {
       if (family$family == "gaussian") {
-        out$fun <- paste0(out$fun, "  #include 'fun_normal_lagsar.stan' \n") 
+        out$fun <- paste0(out$fun, 
+          "  #include 'fun_normal_lagsar.stan' \n"
+        ) 
       } else if (family$family == "student") {
-        out$fun <- paste0(out$fun, "  #include 'fun_student_t_lagsar.stan' \n") 
+        out$fun <- paste0(out$fun, 
+          "  #include 'fun_student_t_lagsar.stan' \n"
+        )
       }
       out$par <- paste0(out$par, 
-        "  real<lower=0,upper=1>  lagsar;  // SAR parameter of the responses \n"
+        "  real<lower=0,upper=1>  lagsar;  // SAR parameter \n"
       )
       out$prior <- paste0(out$prior, stan_prior(prior, class = "lagsar"))
     } else if (identical(autocor$type, "error")) {
       if (family$family == "gaussian") {
-        out$fun <- paste0(out$fun, "  #include 'fun_normal_errorsar.stan' \n") 
+        out$fun <- paste0(out$fun, 
+          "  #include 'fun_normal_errorsar.stan' \n"
+        ) 
       } else if (family$family == "student") {
-        out$fun <- paste0(out$fun, "  #include 'fun_student_t_errorsar.stan' \n") 
+        out$fun <- paste0(out$fun, 
+          "  #include 'fun_student_t_errorsar.stan' \n"
+        ) 
       }
       out$par <- paste0(out$par, 
-        "  real<lower=0,upper=1> errorsar;  // SAR parameter of the residuals \n"
+        "  real<lower=0,upper=1> errorsar;  // SAR parameter \n"
       )
       out$prior <- paste0(out$prior, stan_prior(prior, class = "errorsar"))
     }
@@ -243,19 +275,8 @@ stan_autocor <- function(autocor, bterms, family, prior) {
       )
     } 
   }
-  if (is.cor_fixed(autocor)) {
-    if (!is_linear) {
-      stop2("Fixed residual covariance matrices are not yet ", 
-            "implemented for family '", family$family, "'.") 
-    }
-    out$data <- "  matrix[N, N] V;  // known residual covariance matrix \n"
-    if (family$family %in% "gaussian") {
-      out$tdataD <- "  matrix[N, N] LV; \n"
-      out$tdataC <- "  LV = cholesky_decompose(V); \n"
-    }
-  }
   if (is.cor_bsts(autocor)) {
-    err_msg <- "The bsts structure is not yet working"
+    err_msg <- "BSTS models are not yet working"
     if (is_ordinal(family) || 
         family$family %in% c("bernoulli", "categorical")) {
       stop2(err_msg, " for family '", family$family, "'.")
@@ -290,6 +311,17 @@ stan_autocor <- function(autocor, bterms, family, prior) {
       "    } \n",
       "  } \n"
     )
+  }
+  if (is.cor_fixed(autocor)) {
+    if (!is_linear) {
+      stop2("Fixed residual covariance matrices are not yet ", 
+            "implemented for family '", family$family, "'.") 
+    }
+    out$data <- "  matrix[N, N] V;  // known residual covariance matrix \n"
+    if (family$family %in% "gaussian") {
+      out$tdataD <- "  matrix[N, N] LV; \n"
+      out$tdataC <- "  LV = cholesky_decompose(V); \n"
+    }
   }
   out
 }

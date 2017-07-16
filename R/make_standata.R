@@ -352,9 +352,6 @@ make_standata <- function(formula, data, family = gaussian(),
         }
       }
       if (Karr) {
-        if (length(bterms$response) > 1L) {
-          stop2("ARR structure not yet implemented for multivariate models.")
-        }
         # ARR effects (autoregressive effects of the response)
         standata$Yarr <- arr_design_matrix(standata$Y, Karr, tgroup)
         standata$Karr <- Karr
@@ -419,6 +416,8 @@ make_standata <- function(formula, data, family = gaussian(),
         Nloc, Jloc, Nneigh, eigenW, Nedges = nrow(edges),  
         edges1 = as.array(edges[, 1]), edges2 = as.array(edges[, 2])
       ))
+    } else if (is.cor_bsts(autocor)) {
+      standata$tg <- as.array(tgroup)
     } else if (is.cor_fixed(autocor)) {
       V <- autocor$V
       rmd_rows <- attr(data, "na.action")
@@ -434,8 +433,6 @@ make_standata <- function(formula, data, family = gaussian(),
       standata$V <- V
       # simplifies code of choose_N
       standata$N_tg <- 1
-    } else if (is.cor_bsts(autocor)) {
-      standata$tg <- as.array(tgroup)
     }
   }
   
