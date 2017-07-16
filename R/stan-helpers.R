@@ -19,7 +19,13 @@ stan_autocor <- function(autocor, bterms, family, prior) {
       stop2("ARMA correlation structures are not yet implemented ", 
             "for family '", family$family, "'.") 
     }
-    out$data <- paste0(out$data, "  #include 'data_arma.stan' \n")
+    out$data <- paste0(out$data, 
+      "  // data needed for ARMA correlations \n",
+      "  int<lower=0> Kar;  // AR order \n",
+      "  int<lower=0> Kma;  // MA order \n"
+    )
+    out$tdataD <- paste0(out$tdataD, "  int max_lag; \n")
+    out$tdataC <- paste0(out$tdataC, "  max_lag = max(Kar, Kma); \n")
     # restrict ARMA effects to be in [-1,1] when using covariance
     # formulation as they cannot be outside this interval anyway
     if (Kar) {
@@ -36,7 +42,6 @@ stan_autocor <- function(autocor, bterms, family, prior) {
       )
       out$prior <- paste0(out$prior, stan_prior(prior, class = "ma"))
     }
-    
     if (use_cov(autocor)) {
       # if the user wants ARMA effects to be estimated using
       # a covariance matrix for residuals
@@ -95,6 +100,9 @@ stan_autocor <- function(autocor, bterms, family, prior) {
       if (!identical(family$link, "identity")) {
         stop2(err_msg, " when using non-identity links.")
       }
+      out$data <- paste0(out$data, 
+        "  int<lower=0> J_lag[N]; \n"                
+      )
       if (is_mv) {
         rs <- usc(resp, "prefix")
         index <- paste0("n, ", seq_along(rs))
@@ -105,20 +113,18 @@ stan_autocor <- function(autocor, bterms, family, prior) {
       out$modelD <- paste0(
         "  // objects storing residuals \n",
         collapse(
-          "  matrix[N, Karma] E", rs, "; \n",
+          "  matrix[N, max_lag] E", rs, "; \n",
           "  vector[N] e", rs, "; \n"
         )
       )
       out$modelC1 <- collapse(
-        "  E", rs, " = rep_matrix(0.0, N, Karma); \n"
+        "  E", rs, " = rep_matrix(0.0, N, max_lag); \n"
       )
       out$modelC2 <- paste0(
-        "    // computation of ARMA effects \n",
+        "    // computation of ARMA correlations \n",
         collapse("    e", rs, "[n] = Y[", index, "] - mu", rs, "[n]", "; \n"),
-        "    for (i in 1:Karma) { \n", 
-        "      if (n + 1 - i > 0 && n < N && tg[n + 1] == tg[n + 1 - i]) { \n",
-        collapse("        E", rs, "[n + 1, i] = e", rs, "[n + 1 - i]; \n"),
-        "      } \n",
+        "    for (i in 1:J_lag[n]) { \n",
+        collapse("      E", rs, "[n + 1, i] = e", rs, "[n + 1 - i]; \n"),
         "    } \n"
       )
     } 

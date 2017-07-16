@@ -87,11 +87,14 @@ test_that("find_names finds all valid variable names in a string", {
 })
 
 test_that("arma_predictor runs without errors", {
-  ns <- 30
-  nobs <- 18
-  data <- list(Y = rnorm(nobs), tgroup = rep(1:3, each = 6))
-  ar <- matrix(rnorm(ns * nobs), nrow = ns, ncol = nobs)
-  ma <- matrix(rnorm(ns * nobs), nrow = ns, ncol = nobs)
+  ns <- 20
+  nobs <- 30
+  data <- list(
+    Y = rnorm(nobs), 
+    J_lag = c(1:3, 3, 3, rep(c(0:3, 3), 4), 0:3, 0)
+  )
+  ar <- matrix(rnorm(ns * 3), nrow = ns, ncol = 3)
+  ma <- matrix(rnorm(ns * 1), nrow = ns, ncol = 1)
   eta <- matrix(rnorm(ns * nobs), nrow = ns, ncol = nobs)
   expect_equal(arma_predictor(standata = data, eta = eta), eta)
   expect_silent(arma_predictor(standata = data, eta = eta, ar = ar))

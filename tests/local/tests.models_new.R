@@ -175,6 +175,7 @@ test_that("ARMA models work correctly", {
   fit_arr <- brm(y ~ x, data = dat, autocor = cor_arr(r = 5),
                  prior = prior(normal(0, 5), class = "arr"),
                  chains = 2, cores = 2)
+  print(fit_arr)
 })
 
 test_that("multivariate normal models work correctly", {

@@ -215,11 +215,11 @@ test_that(paste("make_standata returns correct data",
                              autocor = cor_arr(~tim|g, r = 2))$Yarr,
                cbind(c(0,9,7,5,3,0,10,8,6,4), c(0,0,9,7,5,0,0,10,8,6)))
   expect_equal(make_standata(y ~ x, data = dat,
-                             autocor = cor_ma(~tim|g))$tg,
-               c(rep(1,5), rep(2,5)))
+                             autocor = cor_ma(~tim|g))$J_lag,
+               c(1, 1, 1, 1, 0, 1, 1, 1, 1, 0))
   expect_equal(make_standata(y ~ x, data = dat,
-                             autocor = cor_ar(~tim|g))$tg,
-               c(rep(1,5), rep(2,5)))
+                             autocor = cor_ar(~tim|g, p = 2))$J_lag,
+               c(1, 2, 2, 2, 0, 1, 2, 2, 2, 0))
   standata <- make_standata(y ~ x, data = dat,
                             autocor = cor_ar(~tim|g, cov = TRUE))
   expect_equal(standata$begin_tg, as.array(c(1, 6)))

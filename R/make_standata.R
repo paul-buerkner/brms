@@ -311,32 +311,45 @@ make_standata <- function(formula, data, family = gaussian(),
   
   # autocorrelation variables
   if (!only_response) {
-    if (has_arma(autocor)) {
+    if (is.cor_arma(autocor) || is.cor_bsts(autocor)) {
       if (nchar(bterms$time$group)) {
-        tgroup <- data[[bterms$time$group]]
+        tgroup <- as.numeric(factor(data[[bterms$time$group]]))
       } else {
         tgroup <- rep(1, standata$N) 
       }
+    }
+    if (has_arma(autocor)) {
       Kar <- get_ar(autocor)
       Kma <- get_ma(autocor)
       Karr <- get_arr(autocor)
       if (Kar || Kma) {
-        # ARMA effects (of residuals)
-        standata$tg <- as.numeric(factor(tgroup))
+        # ARMA correlations (of residuals)
         standata$Kar <- Kar
         standata$Kma <- Kma
-        standata$Karma <- max(Kar, Kma)
         if (use_cov(autocor)) {
-          # data for covariance matrices of ARMA effects 
-          standata$N_tg <- length(unique(standata$tg))
-          standata$begin_tg <- as.array(with(standata, 
+          # data for the 'covariance' version of ARMA 
+          standata$N_tg <- length(unique(tgroup))
+          standata$begin_tg <- as.array(
             ulapply(unique(tgroup), match, tgroup)
-          ))
+          )
           standata$nobs_tg <- as.array(with(standata, 
             c(if (N_tg > 1L) begin_tg[2:N_tg], N + 1) - begin_tg
           ))
           standata$end_tg <- with(standata, begin_tg + nobs_tg - 1)
-        } 
+        } else {
+          # data for the 'predictor' version of ARMA
+          max_lag <- max(Kar, Kma)
+          standata$J_lag <- rep(0, standata$N)
+          for (n in seq_len(standata$N)) {
+            for (i in seq_len(max_lag)) {
+              valid_lag <- n + 1 - i > 0 && n < standata$N && 
+                tgroup[n + 1] == tgroup[n + 1 - i]
+              if (valid_lag) {
+                standata$J_lag[n] <- i
+              }
+            }
+          }
+        }
       }
       if (Karr) {
         if (length(bterms$response) > 1L) {
@@ -422,15 +435,7 @@ make_standata <- function(formula, data, family = gaussian(),
       # simplifies code of choose_N
       standata$N_tg <- 1
     } else if (is.cor_bsts(autocor)) {
-      if (length(bterms$response) > 1L) {
-        stop2("BSTS structure not yet implemented for multivariate models.")
-      }
-      if (nchar(bterms$time$group)) {
-        tgroup <- data[[bterms$time$group]]
-      } else {
-        tgroup <- rep(1, standata$N) 
-      }
-      standata$tg <- as.array(as.numeric(factor(tgroup)))
+      standata$tg <- as.array(tgroup)
     }
   }
   
