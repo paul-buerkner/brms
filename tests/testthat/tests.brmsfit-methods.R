@@ -142,12 +142,12 @@ test_that("all S3 methods have reasonable ouputs", {
   hyp <- hypothesis(fit1, c("Intercept > Trt", "Trt:Age = -1"))
   expect_equal(dim(hyp$hypothesis), c(2, 6))
   expect_output(print(hyp), "(Intercept)-(Trt) > 0", fixed = TRUE)
-  expect_silent(p <- plot(hyp, plot = FALSE))
+  expect_true(is(plot(hyp, plot = FALSE)[[1]], "ggplot"))
   
   hyp <- hypothesis(fit1, "Intercept = 0", class = "sd", group = "visit")
   expect_true(is.numeric(hyp$hypothesis$Evid.Ratio[1]))
   expect_output(print(hyp), "class sd_visit:", fixed = TRUE)
-  expect_silent(p <- plot(hyp, ignore_prior = TRUE, plot = FALSE))
+  expect_true(is(plot(hyp, ignore_prior = TRUE, plot = FALSE)[[1]], "ggplot"))
   
   hyp <- hypothesis(fit1, "0 > r_visit[4,Intercept]", class = "", alpha = 0.01)
   expect_equal(dim(hyp$hypothesis), c(1, 6))
