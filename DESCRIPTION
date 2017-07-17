@@ -12,7 +12,7 @@ Depends:
     ggplot2 (>= 2.0.0),
     methods
 Imports: 
-    rstan (>= 2.14.1),
+    rstan (>= 2.14.2),
     loo (>= 1.1.0),
     Matrix (>= 1.1.1),
     mgcv (>= 1.8-13),

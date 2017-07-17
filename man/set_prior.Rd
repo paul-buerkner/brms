@@ -157,6 +157,9 @@ Define priors for specific parameters or classes of parameters
   Vehtari (2016) for recommendations how to properly set the global scale.
   The degrees of freedom of the global shrinkage prior may also be 
   adjusted via argument \code{df_global}. 
+  As proposed by Piironen and Vehtari (2017), an additional regularization 
+  is applied that only affects non-zero coefficients. The amount of
+  regularization can be controlled via \code{scale_slab} and \code{df_slab}.
   To make sure that shrinkage can equally affect all coefficients, 
   predictors should be one the same scale. 
   Generally, models with horseshoe priors a more likely than other models
@@ -402,6 +405,10 @@ Park, T., & Casella, G. (2008). The Bayesian Lasso. Journal of the American
 Piironen J. & Vehtari A. (2016). On the Hyperprior Choice for the Global 
    Shrinkage Parameter in the Horseshoe Prior. 
    \url{https://arxiv.org/pdf/1610.05559v1.pdf}
+   
+Piironen, J., and Vehtari, A. (2017). Sparsity information and regularization
+   in the horseshoe and other shrinkage priors. 
+   \url{https://arxiv.org/abs/1707.01694}
 }
 \seealso{
 \code{\link[brms:get_prior]{get_prior}}

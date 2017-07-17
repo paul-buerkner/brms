@@ -130,6 +130,9 @@
 #'   Vehtari (2016) for recommendations how to properly set the global scale.
 #'   The degrees of freedom of the global shrinkage prior may also be 
 #'   adjusted via argument \code{df_global}. 
+#'   As proposed by Piironen and Vehtari (2017), an additional regularization 
+#'   is applied that only affects non-zero coefficients. The amount of
+#'   regularization can be controlled via \code{scale_slab} and \code{df_slab}.
 #'   To make sure that shrinkage can equally affect all coefficients, 
 #'   predictors should be one the same scale. 
 #'   Generally, models with horseshoe priors a more likely than other models
@@ -327,6 +330,10 @@
 #' Piironen J. & Vehtari A. (2016). On the Hyperprior Choice for the Global 
 #'    Shrinkage Parameter in the Horseshoe Prior. 
 #'    \url{https://arxiv.org/pdf/1610.05559v1.pdf}
+#'    
+#' Piironen, J., and Vehtari, A. (2017). Sparsity information and regularization
+#'    in the horseshoe and other shrinkage priors. 
+#'    \url{https://arxiv.org/abs/1707.01694}    
 #' 
 #' @examples
 #' ## use alias functions
@@ -1176,10 +1183,13 @@ check_prior_special.btl <- function(x, prior, nlpar = "",
       if (grepl("^horseshoe\\(", b_prior)) {
         hs <- eval2(b_prior)
         prior$prior[b_index] <- ""
-        prior_special$hs_df <- attr(hs, "df")
-        prior_special$hs_df_global <- attr(hs, "df_global")
-        scale_global <- attr(hs, "scale_global")
-        autoscale <- isTRUE(attr(hs, "autoscale"))
+        hs_att <- attributes(hs)
+        prior_special$hs_df <- hs_att[["df"]]
+        prior_special$hs_df_global <- hs_att[["df_global"]]
+        prior_special$hs_df_slab <- hs_att[["df_slab"]]
+        prior_special$hs_scale_slab <- hs_att[["scale_slab"]]
+        scale_global <- hs_att[["scale_global"]]
+        autoscale <- isTRUE(hs_att[["autoscale"]])
         if (autoscale && allow_autoscale) {
           scale_global <- paste(scale_global, "* sigma")
         }
@@ -1316,6 +1326,10 @@ dirichlet <- function(...) {
 #'   multiplied by the residual standard deviation parameter \code{sigma}.
 #' @param df_global Degrees of freedom of student-t prior of the 
 #'   global shrinkage parameter. Defaults to \code{1}.
+#' @param scale_slab Scale of the student-t prior of the regularization
+#'   parameter. Defaults to \code{2}. 
+#' @param df_slab Degrees of freedom of the student-t prior of 
+#'   the regularization parameter. Defaults to \code{4}.   
 #' @param autoscale Logical; indicating whether the horseshoe
 #'   prior should be scaled using the residual standard deviation
 #'   \code{sigma} if possible and sensible (defaults to \code{TRUE}).
@@ -1334,11 +1348,15 @@ dirichlet <- function(...) {
 #' set_prior(horseshoe(df = 3, scale_global = 2))
 #' 
 #' @export
-horseshoe <- function(df = 1, scale_global = 1, df_global = 1, autoscale = TRUE) {
-  out <- deparse(match.call())
+horseshoe <- function(df = 1, scale_global = 1, df_global = 1, 
+                      scale_slab = 2, df_slab = 4,
+                      autoscale = TRUE) {
+  out <- deparse(match.call(), width.cutoff = 500L)
   df <- round(as.numeric(df)[1], 5)
   df_global <- round(as.numeric(df_global)[1], 5)
   scale_global <- round(as.numeric(scale_global)[1], 5)
+  df_slab <- round(as.numeric(df_slab)[1], 5)
+  scale_slab <- round(as.numeric(scale_slab)[1], 5)
   if (!isTRUE(df > 0)) {
     stop2("Invalid horseshoe prior: Degrees of freedom of ", 
           "the local priors must be a single positive number.")
@@ -1351,11 +1369,20 @@ horseshoe <- function(df = 1, scale_global = 1, df_global = 1, autoscale = TRUE)
     stop2("Invalid horseshoe prior: Scale of the global ", 
           "prior must be a single positive number.")
   }
+  if (!isTRUE(df_slab > 0)) {
+    stop2("Invalid horseshoe prior: Degrees of freedom of ", 
+          "the slab part must be a single positive number.")
+  }
+  if (!isTRUE(scale_slab > 0)) {
+    stop2("Invalid horseshoe prior: Scale of the slab ", 
+          "part must be a single positive number.")
+  }
   autoscale <- as.logical(autoscale)
   if (length(autoscale) != 1L) {
     stop2("Argument 'autoscale' must be either TRUE or FALSE.")
   }
-  att <- nlist(df, df_global, scale_global, autoscale)
+  att <- nlist(df, df_global, scale_global,
+               df_slab, scale_slab, autoscale)
   attributes(out)[names(att)] <- att
   out
 }

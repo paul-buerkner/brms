@@ -4,7 +4,8 @@
 \alias{horseshoe}
 \title{Set up a horseshoe prior in \pkg{brms}}
 \usage{
-horseshoe(df = 1, scale_global = 1, df_global = 1, autoscale = TRUE)
+horseshoe(df = 1, scale_global = 1, df_global = 1, scale_slab = 2,
+  df_slab = 4, autoscale = TRUE)
 }
 \arguments{
 \item{df}{Degrees of freedom of student-t prior of the 
@@ -17,6 +18,12 @@ multiplied by the residual standard deviation parameter \code{sigma}.}
 
 \item{df_global}{Degrees of freedom of student-t prior of the 
 global shrinkage parameter. Defaults to \code{1}.}
+
+\item{scale_slab}{Scale of the student-t prior of the regularization
+parameter. Defaults to \code{2}.}
+
+\item{df_slab}{Degrees of freedom of the student-t prior of 
+the regularization parameter. Defaults to \code{4}.}
 
 \item{autoscale}{Logical; indicating whether the horseshoe
 prior should be scaled using the residual standard deviation

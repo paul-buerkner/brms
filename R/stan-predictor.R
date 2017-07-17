@@ -285,15 +285,18 @@ stan_fe <- function(fixef, prior, family = gaussian(),
         "  // horseshoe shrinkage parameters \n",
         "  vector[K", ct, p, "] zb", p, "; \n",
         "  vector<lower=0>[K", ct, p, "] hs_local", p, "[2]; \n",
-        "  real<lower=0> hs_global", p, "[2]; \n"
+        "  real<lower=0> hs_global", p, "[2]; \n",
+        "  real<lower=0> hs_c2", p, "; \n"
       )
       out$transD <- paste0(out$transD, 
         "  vector[K", ct, p, "] b", p, ";",
         "  // population-level effects \n"
       )
+      hs_scale_slab2 <- round(special[["hs_scale_slab"]]^2, 5)
       hs_args <- sargs(
         paste0(c("zb", "hs_local", "hs_global"), p), 
-        special[["hs_scale_global"]]
+        special[["hs_scale_global"]], 
+        paste0(hs_scale_slab2, " * hs_c2", p) 
       )
       out$transC1 <- paste0(out$transC1, 
         "  b", p, " = horseshoe(", hs_args, "); \n"

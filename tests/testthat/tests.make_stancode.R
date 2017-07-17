@@ -128,19 +128,23 @@ test_that("special shrinkage priors appear in the Stan code", {
   dat <- data.frame(y = 1:10, x1 = rnorm(10), x2 = rnorm(10))
   
   # horseshoe prior
-  hs <- horseshoe(7, scale_global = 2, df_global = 3)
+  hs <- horseshoe(7, scale_global = 2, df_global = 3,
+                  df_slab = 6, scale_slab = 3)
   scode <- make_stancode(y ~ x1*x2, data = dat, 
                          prior = set_prior(hs),
                          sample_prior = TRUE)
   expect_match2(scode, "vector<lower=0>[Kc] hs_local[2];") 
   expect_match2(scode, "real<lower=0> hs_global[2];") 
-  expect_match2(scode, "hs_local[2] ~ inv_gamma(0.5 * 7, 0.5 * 7);")
-  expect_match2(scode, "hs_global[2] ~ inv_gamma(0.5 * 3, 0.5 * 3);")
-  expect_match2(scode, "b = horseshoe(zb, hs_local, hs_global, 2 * sigma);")
+  expect_match2(scode, "hs_local[2] ~ inv_gamma(3.5, 3.5);")
+  expect_match2(scode, "hs_global[2] ~ inv_gamma(1.5, 1.5);")
+  expect_match2(scode, "hs_c2 ~ inv_gamma(3, 3);")
+  expect_match2(scode, 
+    "b = horseshoe(zb, hs_local, hs_global, 2 * sigma, 9 * hs_c2);"
+  )
   
   scode <- make_stancode(y ~ x1*x2, data = dat, poisson(),
                          prior = prior(horseshoe(scale_global = 3)))
-  expect_match2(scode, "b = horseshoe(zb, hs_local, hs_global, 3);")
+  expect_match2(scode, "b = horseshoe(zb, hs_local, hs_global, 3, 4 * hs_c2);")
   
   # lasso prior
   scode <- make_stancode(y ~ x1*x2, data = dat,
@@ -163,10 +167,11 @@ test_that("special shrinkage priors appear in the Stan code", {
   )
   expect_match2(scode, "vector<lower=0>[K_a1] hs_local_a1[2];")
   expect_match2(scode, "real<lower=0> hs_global_a1[2];")
-  expect_match2(scode, "hs_local_a1[2] ~ inv_gamma(0.5 * 7, 0.5 * 7);")
-  expect_match2(scode, "hs_global_a1[2] ~ inv_gamma(0.5 * 3, 0.5 * 3);")
+  expect_match2(scode, "hs_local_a1[2] ~ inv_gamma(3.5, 3.5);")
+  expect_match2(scode, "hs_global_a1[2] ~ inv_gamma(1.5, 1.5);")
+  expect_match2(scode, "hs_c2_a1 ~ inv_gamma(2, 2);")
   expect_match2(scode, 
-    "b_a1 = horseshoe(zb_a1, hs_local_a1, hs_global_a1, 2 * sigma);"
+    "b_a1 = horseshoe(zb_a1, hs_local_a1, hs_global_a1, 2 * sigma, 4 * hs_c2_a1);"
   )
   expect_match2(scode, "lasso_inv_lambda_a2 ~ chi_square(2);")
   expect_match2(scode, "b_a2 ~ double_exponential(0, 10 * lasso_inv_lambda_a2);")
