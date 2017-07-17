@@ -973,8 +973,8 @@ check_prior_content <- function(prior, family = gaussian(), warn = TRUE) {
   #  prior: A brmsprior object
   #  family: the model family
   #  warn: logical; print boundary warnings?
-  if (!is(prior, "brmsprior")) {
-    return(invisible(NULL))
+  if (!is.brmsprior(prior)) {
+    return(invisible(TRUE))
   }
   stopifnot(is.family(family))
   family <- family$family
@@ -1055,11 +1055,14 @@ check_prior_content <- function(prior, family = gaussian(), warn = TRUE) {
                "parameters is not recommended.")
     }
   }
-  invisible(NULL)
+  invisible(TRUE)
 }
 
 #' @export
 check_prior_special.brmsterms <- function(x, prior = NULL, ...) {
+  if (isTRUE(attr(prior, "checked"))) {
+    return(prior) 
+  }
   if (is.null(prior)) {
     prior <- empty_brmsprior()
   }
