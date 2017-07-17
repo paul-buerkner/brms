@@ -885,12 +885,11 @@ stan_prior <- function(prior, class, coef = "", group = "",
     special <- attributes(prior)$special[[orig_nlpar]]
     special_priors <- NULL
     if (!is.null(special$hs_df)) {
-      rn <- 5  # digits to be rounded to
-      local_args <- round(0.5 * special$hs_df, rn)
+      local_args <- paste0("0.5 * hs_df", p)
       local_args <- sargs(local_args, local_args)
-      global_args <- round(0.5 * special$hs_df_global, rn)
+      global_args <- paste0("0.5 * hs_df_global", p)
       global_args <- sargs(global_args, global_args)
-      c2_args <- round(0.5 * special$hs_df_slab, rn)
+      c2_args <- paste0("0.5 * hs_df_slab", p)
       c2_args <- sargs(c2_args, c2_args)
       special_priors <- paste0(special_priors,
         "  zb", p, " ~ normal(0, 1); \n",
@@ -903,7 +902,7 @@ stan_prior <- function(prior, class, coef = "", group = "",
     }
     if (!is.null(special$lasso_df)) {
       special_priors <- paste0(special_priors,
-        "  lasso_inv_lambda", p, " ~ chi_square(", special$lasso_df, "); \n"
+        "  lasso_inv_lambda", p, " ~ chi_square(lasso_df", p, "); \n"
       )
     }
     out <- c(special_priors, out) 

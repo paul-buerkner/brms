@@ -135,25 +135,41 @@ test_that("special shrinkage priors appear in the Stan code", {
                          sample_prior = TRUE)
   expect_match2(scode, "vector<lower=0>[Kc] hs_local[2];") 
   expect_match2(scode, "real<lower=0> hs_global[2];") 
-  expect_match2(scode, "hs_local[2] ~ inv_gamma(3.5, 3.5);")
-  expect_match2(scode, "hs_global[2] ~ inv_gamma(1.5, 1.5);")
-  expect_match2(scode, "hs_c2 ~ inv_gamma(3, 3);")
   expect_match2(scode, 
-    "b = horseshoe(zb, hs_local, hs_global, 2 * sigma, 9 * hs_c2);"
+    "hs_local[2] ~ inv_gamma(0.5 * hs_df, 0.5 * hs_df);"
+  )
+  expect_match2(scode, 
+    "hs_global[2] ~ inv_gamma(0.5 * hs_df_global, 0.5 * hs_df_global);"
+  )
+  expect_match2(scode, 
+    "hs_c2 ~ inv_gamma(0.5 * hs_df_slab, 0.5 * hs_df_slab);"
+  )
+  expect_match2(scode, 
+    paste0(
+      "b = horseshoe(zb, hs_local, hs_global, ", 
+      "hs_scale_global * sigma, hs_scale_slab^2 * hs_c2);"
+    )
   )
   
   scode <- make_stancode(y ~ x1*x2, data = dat, poisson(),
                          prior = prior(horseshoe(scale_global = 3)))
-  expect_match2(scode, "b = horseshoe(zb, hs_local, hs_global, 3, 4 * hs_c2);")
+  expect_match2(scode, 
+    paste0(
+      "b = horseshoe(zb, hs_local, hs_global, ", 
+      "hs_scale_global, hs_scale_slab^2 * hs_c2);"
+    )
+  )
   
   # lasso prior
   scode <- make_stancode(y ~ x1*x2, data = dat,
                          prior = prior(lasso(2, scale = 10)),
                          sample_prior = TRUE)
-  expect_match2(scode, "lasso_inv_lambda ~ chi_square(2);")
-  expect_match2(scode, "b ~ double_exponential(0, 10 * lasso_inv_lambda);")
+  expect_match2(scode, "lasso_inv_lambda ~ chi_square(lasso_df);")
+  expect_match2(scode, 
+    "b ~ double_exponential(0, lasso_scale * lasso_inv_lambda);"
+  )
   expect_match2(scode,
-    "prior_b = double_exponential_rng(0,10*prior_lasso_inv_lambda);"
+    "prior_b = double_exponential_rng(0,lasso_scale*prior_lasso_inv_lambda);"
   )
   
   # horseshoe and lasso prior applied in a non-linear model
@@ -167,16 +183,27 @@ test_that("special shrinkage priors appear in the Stan code", {
   )
   expect_match2(scode, "vector<lower=0>[K_a1] hs_local_a1[2];")
   expect_match2(scode, "real<lower=0> hs_global_a1[2];")
-  expect_match2(scode, "hs_local_a1[2] ~ inv_gamma(3.5, 3.5);")
-  expect_match2(scode, "hs_global_a1[2] ~ inv_gamma(1.5, 1.5);")
-  expect_match2(scode, "hs_c2_a1 ~ inv_gamma(2, 2);")
   expect_match2(scode, 
-    "b_a1 = horseshoe(zb_a1, hs_local_a1, hs_global_a1, 2 * sigma, 4 * hs_c2_a1);"
+    "hs_local_a1[2] ~ inv_gamma(0.5 * hs_df_a1, 0.5 * hs_df_a1);"
   )
-  expect_match2(scode, "lasso_inv_lambda_a2 ~ chi_square(2);")
-  expect_match2(scode, "b_a2 ~ double_exponential(0, 10 * lasso_inv_lambda_a2);")
+  expect_match2(scode, 
+    "hs_global_a1[2] ~ inv_gamma(0.5 * hs_df_global_a1, 0.5 * hs_df_global_a1);"
+  )
+  expect_match2(scode, 
+    "hs_c2_a1 ~ inv_gamma(0.5 * hs_df_slab_a1, 0.5 * hs_df_slab_a1);"
+  )
+  expect_match2(scode, 
+    paste0(
+      "b_a1 = horseshoe(zb_a1, hs_local_a1, hs_global_a1, ", 
+      "hs_scale_global_a1 * sigma, hs_scale_slab_a1^2 * hs_c2_a1);"
+    )
+  )
+  expect_match2(scode, "lasso_inv_lambda_a2 ~ chi_square(lasso_df_a2);")
+  expect_match2(scode, 
+    "b_a2 ~ double_exponential(0, lasso_scale_a2 * lasso_inv_lambda_a2);"
+  )
   expect_match2(scode,
-    "prior_b_a2 = double_exponential_rng(0,10*prior_lasso_inv_lambda_a2);"
+    "prior_b_a2 = double_exponential_rng(0,lasso_scale_a2*prior_lasso_inv_lambda_a2);"
   )
   
   # check error messages

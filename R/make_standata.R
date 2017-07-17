@@ -53,6 +53,7 @@ make_standata <- function(formula, data, family = gaussian(),
   is_categorical <- is_categorical(family)
   bterms <- parse_bf(formula, family = family, autocor = autocor)
   check_prior_content(prior, family = family, warn = FALSE)
+  prior <- check_prior_special(bterms, prior = prior)
   na_action <- if (is_newdata) na.pass else na.omit
   data <- update_data(
     data, bterms = bterms, na.action = na_action, 

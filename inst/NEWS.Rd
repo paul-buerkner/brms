@@ -18,6 +18,9 @@
       cross-validation for problematic observations 
       and \code{kfold} to perform k-fold cross-validation 
       thanks to the Stan Team.
+      \item Regularize non-zero coefficients in the 
+      \code{horseshoe} prior thanks to Juho Piironen 
+      and Aki Vehtari.
       \item Add argument \code{new_objects} to various
       post-processing methods to allow for passing of
       data objects, which cannot be passed via 

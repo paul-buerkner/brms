@@ -549,3 +549,40 @@ test_that("make_standata includes data for CAR models", {
   expect_error(make_standata(y ~ x, dat, autocor = cor_car(W)),
                "All locations should have at least one neighbor")
 })
+
+test_that("make_standata incldudes data of special priors", {
+  dat <- data.frame(y = 1:10, x1 = rnorm(10), x2 = rnorm(10))
+  
+  # horseshoe prior
+  hs <- horseshoe(7, scale_global = 2, df_global = 3,
+                  df_slab = 6, scale_slab = 3)
+  sdata <- make_standata(y ~ x1*x2, data = dat, 
+                         prior = set_prior(hs))
+  expect_equal(sdata$hs_df, 7)
+  expect_equal(sdata$hs_df_global, 3)
+  expect_equal(sdata$hs_df_slab, 6)
+  expect_equal(sdata$hs_scale_global, 2)
+  expect_equal(sdata$hs_scale_slab, 3)
+  
+  hs <- horseshoe(par_ratio = 0.1)
+  sdata <- make_standata(y ~ x1*x2, data = dat, prior = set_prior(hs))
+  expect_equal(sdata$hs_scale_global, 0.1 / sqrt(nrow(dat)))
+  
+  # lasso prior
+  sdata <- make_standata(y ~ x1*x2, data = dat,
+                         prior = prior(lasso(2, scale = 10)))
+  expect_equal(sdata$lasso_df, 2)
+  expect_equal(sdata$lasso_scale, 10)
+  
+  # horseshoe and lasso prior applied in a non-linear model
+  hs_a1 <- horseshoe(7, scale_global = 2, df_global = 3)
+  lasso_a2 <- lasso(2, scale = 10)
+  sdata <- make_standata(
+    bf(y ~ a1 + a2, a1 ~ x1, a2 ~ 0 + x2, nl = TRUE),
+    data = dat, sample_prior = TRUE,
+    prior = c(set_prior(hs_a1, nlpar = "a1"),
+              set_prior(lasso_a2, nlpar = "a2"))
+  )
+  expect_equal(sdata$hs_df_a1, 7)
+  expect_equal(sdata$lasso_df_a2, 2)
+})

@@ -281,6 +281,13 @@ stan_fe <- function(fixef, prior, family = gaussian(),
     orig_nlpar <- ifelse(nzchar(nlpar), nlpar, "mu")
     special <- attr(prior, "special")[[orig_nlpar]]
     if (!is.null(special[["hs_df"]])) {
+      out$data <- paste0(out$data,
+        "  real<lower=0> hs_df", p, "; \n",
+        "  real<lower=0> hs_df_global", p, "; \n",
+        "  real<lower=0> hs_df_slab", p, "; \n",
+        "  real<lower=0> hs_scale_global", p, "; \n",
+        "  real<lower=0> hs_scale_slab", p, "; \n"           
+      )
       out$par <- paste0(out$par,
         "  // horseshoe shrinkage parameters \n",
         "  vector[K", ct, p, "] zb", p, "; \n",
@@ -292,11 +299,14 @@ stan_fe <- function(fixef, prior, family = gaussian(),
         "  vector[K", ct, p, "] b", p, ";",
         "  // population-level effects \n"
       )
-      hs_scale_slab2 <- round(special[["hs_scale_slab"]]^2, 5)
+      hs_scale_global <- paste0("hs_scale_global", p)
+      if (isTRUE(special[["hs_autoscale"]])) {
+        hs_scale_global <- paste0(hs_scale_global, " * sigma")
+      }
       hs_args <- sargs(
         paste0(c("zb", "hs_local", "hs_global"), p), 
-        special[["hs_scale_global"]], 
-        paste0(hs_scale_slab2, " * hs_c2", p) 
+        hs_scale_global, 
+        paste0("hs_scale_slab", p, "^2 * hs_c2", p)
       )
       out$transC1 <- paste0(out$transC1, 
         "  b", p, " = horseshoe(", hs_args, "); \n"
@@ -309,6 +319,10 @@ stan_fe <- function(fixef, prior, family = gaussian(),
       )
     }
     if (!is.null(special[["lasso_df"]])) {
+      out$data <- paste0(out$data,
+        "  real<lower=0> lasso_df", p, "; \n",
+        "  real<lower=0> lasso_scale", p, "; \n"
+      )
       out$par <- paste0(out$par,
         "  // lasso shrinkage parameter \n",
         "  real<lower=0> lasso_inv_lambda", p, "; \n"

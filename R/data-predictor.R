@@ -30,7 +30,9 @@ data_effects.btl <- function(x, data, ranef = empty_ranef(),
   data_cs <- data_cs(x, data = data, nlpar = nlpar)
   data_gp <- data_gp(x, data = data, nlpar = nlpar, gps = gps)
   data_offset <- data_offset(x, data = data, nlpar = nlpar)
-  c(data_fe, data_mo, data_re, data_me, data_cs, data_gp, data_offset)
+  data_prior <- data_prior(prior, data = data, nlpar = nlpar)
+  c(data_fe, data_mo, data_re, data_me, data_cs, 
+    data_gp, data_offset, data_prior)
 }
 
 #' @export 
@@ -420,6 +422,35 @@ data_mixture <- function(bterms, prior = brmsprior()) {
         out[["con_theta"]] <- rep(1, length(families)) 
       }
     }
+  }
+  out
+}
+
+data_prior <- function(prior, data, nlpar = "") {
+  # data for special priors such as horseshoe and lasso
+  out <- list()
+  orig_nlpar <- ifelse(nzchar(nlpar), nlpar, "mu")
+  nlpar <- usc(nlpar)
+  special <- attr(prior, "special")[[orig_nlpar]]
+  if (!is.null(special[["hs_df"]])) {
+    # data for the horseshoe prior
+    hs_obj_names <- paste0("hs_", 
+      c("df", "df_global", "df_slab", "scale_global", "scale_slab")
+    )
+    hs_data <- special[hs_obj_names]
+    if (is.null(special[["hs_par_ratio"]])) {
+      hs_data$hs_scale_global <- special$hs_scale_global
+    } else {
+      hs_data$hs_scale_global <- special$hs_par_ratio / sqrt(nrow(data))
+    }
+    names(hs_data) <- paste0(hs_obj_names, nlpar) 
+    out <- c(out, hs_data)
+  }
+  if (!is.null(special[["lasso_df"]])) {
+    lasso_obj_names <- paste0("lasso_", c("df", "scale"))
+    lasso_data <- special[lasso_obj_names]
+    names(lasso_data) <- paste0(lasso_obj_names, nlpar) 
+    out <- c(out, lasso_data)
   }
   out
 }
