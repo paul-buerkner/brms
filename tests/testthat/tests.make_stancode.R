@@ -424,12 +424,20 @@ test_that("Stan code of ordinal models is correct", {
   scode <- make_stancode(y ~ x1, dat, family = cumulative())
   expect_match2(scode, "Y[n] ~ ordered_logistic(mu[n], temp_Intercept);")
   
-  scode <- make_stancode(y ~ x1, dat, family = cumulative("probit"),
-                         threshold = "equidistant")
+  scode <- make_stancode(
+    y ~ x1, dat, cumulative("probit", threshold = "equidistant")
+  )
   expect_match2(scode, "real cumulative_lpmf(int y")
   expect_match2(scode, "p[1] = Phi(disc * (thres[1] - mu));")
   expect_match2(scode, "temp_Intercept[k] = temp_Intercept1 + (k - 1.0) * delta;")
   expect_match2(scode, "b_Intercept = temp_Intercept + dot_product(means_X, b);")
+  expect_warning(
+    scode_old <- make_stancode(
+      y ~ x1, dat, cumulative("probit"), threshold = "equidistant"
+    ),
+    "Specifying 'threshold' outside of family functions is deprecated"
+  )
+  expect_equal(scode, scode_old)
   
   scode <- make_stancode(y ~ x1, dat, family = cratio("probit_approx"))
   expect_match2(scode, "real cratio_lpmf(int y")

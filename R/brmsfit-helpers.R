@@ -73,7 +73,12 @@ restructure <- function(x, rstr_summary = FALSE) {
   }
   version <- x$version$brms
   if (version < utils::packageVersion("brms")) {
-    # element 'nonlinear' deprecated as of brms > 0.9.1
+    # slot 'threshold' deprecated as of brms > 1.7.0
+    if (is_ordinal(x$family) && is.null(x$family$threshold)) {
+      x$family$threshold <- x$threshold
+    }
+    x$threshold <- NULL
+    # slot 'nonlinear' deprecated as of brms > 0.9.1
     x$formula <- SW(amend_formula(
       formula(x), data = model.frame(x), 
       family = family(x), nonlinear = x$nonlinear

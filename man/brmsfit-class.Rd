@@ -30,10 +30,7 @@ See \code{methods(class = "brmsfit")} for an overview of available methods.
 information on the priors used in the model}
 
 \item{\code{autocor}}{An \code{\link[brms:cor_brms]{cor_brms}} object containing 
-the autocorrelation structure}
-
-\item{\code{threshold}}{A character string defining the threshold type used in 
-ordinal models}
+the autocorrelation structure if specified}
 
 \item{\code{ranef}}{A \code{data.frame} containing the group-level structure}
 

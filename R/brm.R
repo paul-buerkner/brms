@@ -56,11 +56,13 @@
 #'   common linear predictor on the right hand side.
 #'   As of \pkg{brms} 1.4.0, we recommend specifying non-linear
 #'   parameters directly within \code{formula}.
-#' @param threshold A character string indicating the type of thresholds 
-#'   (i.e. intercepts) used in an ordinal model. 
+#' @param threshold (Deprecated) A character string indicating the type 
+#'   of thresholds (i.e. intercepts) used in an ordinal model. 
 #'   \code{"flexible"} provides the standard unstructured thresholds and 
 #'   \code{"equidistant"} restricts the distance between 
 #'   consecutive thresholds to the same value.
+#'   As of \pkg{brms} 1.8.0, we recommend specifying threshold
+#'   directly within the ordinal family functions.
 #' @param sparse Logical; indicates whether the population-level 
 #'   design matrix should be treated as sparse (defaults to \code{FALSE}). 
 #'   For design matrices with many zeros, this can considerably 
@@ -364,7 +366,6 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   }
   dots[deprecated_brm_args()] <- NULL
   autocor <- check_autocor(autocor)
-  threshold <- match.arg(threshold)
   algorithm <- match.arg(algorithm)
   
   testmode <- dots$testmode
@@ -379,7 +380,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     x$fit <- rstan::get_stanmodel(x$fit)
   } else {  
     # build new model
-    # see validate.R and formula-helpers.R
+    family <- check_family(family, threshold = threshold)
     formula <- amend_formula(
       formula, data = data, family = family, nonlinear = nonlinear
     )
@@ -392,31 +393,26 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       data.name <- dots$data.name
       dots$data.name <- NULL
     }
-    # see data-helpers.R
     data <- update_data(data, bterms = bterms)
-    # see priors.R
     prior <- check_prior(
       prior, formula = formula, data = data, family = family, 
-      sample_prior = sample_prior, autocor = autocor, 
-      threshold = threshold, warn = TRUE
+      sample_prior = sample_prior, autocor = autocor, warn = TRUE
     )
     # initialize S3 object
     x <- brmsfit(
       formula = formula, family = family, data = data, 
       data.name = data.name, prior = prior, 
       autocor = autocor, cov_ranef = cov_ranef, 
-      threshold = threshold, algorithm = algorithm
+      algorithm = algorithm
     )
-    # see validate.R
     x$ranef <- tidy_ranef(bterms, data = x$data)  
     x$exclude <- exclude_pars(
       bterms, data = x$data, ranef = x$ranef, 
       save_ranef = save_ranef, save_mevars = save_mevars
     )
-    # see make_stancode.R
     x$model <- make_stancode(
       formula = formula, data = data, family = family, 
-      prior = prior, autocor = autocor, threshold = threshold,
+      prior = prior, autocor = autocor, 
       sparse = sparse, cov_ranef = cov_ranef,
       sample_prior = sample_prior, knots = knots, 
       stan_funs = stan_funs, save_model = save_model, 

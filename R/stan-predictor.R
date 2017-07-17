@@ -1,7 +1,7 @@
 stan_effects.btl <- function(x, data, ranef, prior, center_X = TRUE, 
-                             sparse = FALSE, threshold = "flexible",
-                             nlpar = "", eta = "mu", ilink = rep("", 2),
-                             order_mixture = 'none',  ...) {
+                             sparse = FALSE, nlpar = "", eta = "mu", 
+                             ilink = rep("", 2), order_mixture = 'none',  
+                             ...) {
   # combine effects for the predictors of a single (non-linear) parameter
   # Args:
   #   center_X: center population-level design matrix if possible?
@@ -26,7 +26,7 @@ stan_effects.btl <- function(x, data, ranef, prior, center_X = TRUE,
   text_fe <- stan_fe(
     fixef, center_X = center_X, family = x$family, 
     prior = prior, nlpar = nlpar, sparse = sparse, 
-    threshold = threshold, order_mixture = order_mixture
+    order_mixture = order_mixture
   )
   # include smooth terms
   smooths <- get_sm_labels(x, data = data)
@@ -154,8 +154,8 @@ stan_effects.btnl <- function(x, data, ranef, prior, eta = "mu",
   out
 }
 
-stan_effects.brmsterms <- function(x, data, ranef, prior, sparse = FALSE, 
-                                   threshold = "flexible", ...) {
+stan_effects.brmsterms <- function(x, data, ranef, prior, 
+                                   sparse = FALSE, ...) {
   # Stan code for auxiliary parameters
   # Args:
   #   bterms: object of class brmsterms
@@ -242,7 +242,7 @@ stan_effects_mv <- function(bterms, data, ranef, prior, sparse = FALSE) {
 
 stan_fe <- function(fixef, prior, family = gaussian(),
                     center_X = TRUE, nlpar = "", sparse = FALSE,
-                    threshold = "flexible", order_mixture = 'none') {
+                    order_mixture = 'none') {
   # Stan code for population-level effects
   # Args:
   #   fixef: names of the population-level effects
@@ -250,7 +250,6 @@ stan_fe <- function(fixef, prior, family = gaussian(),
   #   family: the model family
   #   prior: a data.frame containing user defined priors 
   #          as returned by check_prior 
-  #   threshold: either "flexible" or "equidistant"
   #   order_mixture: order intercepts to identify mixture models?
   # Returns:
   #   a list containing Stan code related to population-level effects
@@ -374,7 +373,7 @@ stan_fe <- function(fixef, prior, family = gaussian(),
     }
     # for equidistant thresholds only temp_Intercept1 is a parameter
     prefix <- paste0("temp", p, "_")
-    suffix <- ifelse(threshold == "equidistant", "1", "")
+    suffix <- ifelse(is_equal(family$threshold, "equidistant"), "1", "")
     int_prior <- stan_prior(prior, class = "Intercept", nlpar = nlpar,
                             prefix = prefix, suffix = suffix)
     out$prior <- paste0(out$prior, int_prior)

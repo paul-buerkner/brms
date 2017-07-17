@@ -521,11 +521,11 @@ get_prior <- function(formula, data, family = gaussian(),
                       threshold = c("flexible", "equidistant"), 
                       internal = FALSE) {
   # note that default priors are stored in this function
+  family <- check_family(family, threshold = threshold)
   formula <- amend_formula(formula, data = data, family = family, 
                            nonlinear = nonlinear)
   family <- formula$family
   link <- family$link
-  threshold <- match.arg(threshold)
   autocor <- check_autocor(autocor)
   bterms <- parse_bf(formula, family = family)
   data <- update_data(data, bterms = bterms)
@@ -605,7 +605,7 @@ get_prior <- function(formula, data, family = gaussian(),
   )
   prior <- rbind(prior, prior_re)
   # prior for the delta parameter for equidistant thresholds
-  if (is_ordinal(family) && threshold == "equidistant") {
+  if (is_ordinal(family) && is_equal(family$threshold, "equidistant")) {
     prior <- rbind(prior, brmsprior(class = "delta"))
   }
   # priors for mixture models

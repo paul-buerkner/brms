@@ -28,10 +28,13 @@
   }
   \subsection{OTHER CHANGES}{
     \itemize{
+      \item Improve efficiency and stability of ARMA models.
       \item Throw an error when the intercept is removed 
       in an ordinal model instead of silently adding
       it back again.
-      \item Improve efficiency and stability of ARMA models.
+      \item Deprecate argument \code{threshold} in \code{brm}
+      and instead recommend passing \code{threshold} directly 
+      to the ordinal family functions.
       \item Change the default value of the \code{autocor}
       slot in \code{brmsfit} objects to an empty
       \code{cor_brms} object.

@@ -383,14 +383,13 @@ stan_mv <- function(family, response, prior) {
   out
 }
 
-stan_ordinal <- function(family, prior, cs, disc, threshold) {
+stan_ordinal <- function(family, prior, cs, disc) {
   # Ordinal effects in Stan
   # Args:
   #   family: the model family
   #   prior: object of class brmsprior
   #   cs: logical; are there category specific effects?
   #   disc: logical; discrimination parameter used?
-  #   threshold: either "flexible" or "equidistant" 
   # Returns:
   #   A vector of strings containing the ordinal effects in stan language
   stopifnot(is.family(family))
@@ -410,6 +409,7 @@ stan_ordinal <- function(family, prior, cs, disc, threshold) {
       paste0("disc * (", out, ")")
     }
     link <- family$link
+    threshold <- family$threshold
     family <- family$family
     ilink <- stan_ilink(link)
     type <- ifelse(family == "cumulative", "ordered", "vector")

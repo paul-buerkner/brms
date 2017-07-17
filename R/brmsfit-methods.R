@@ -2147,12 +2147,20 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   } else {
     dots$data <- rm_attr(object$data, c("terms", "brmsframe"))
   }
-  if (is.null(dots$threshold)) {
-    # for backwards compatibility with brms <= 0.8.0
-    if (grepl("(k - 1.0) * delta", object$model, fixed = TRUE)) {
-      dots$threshold <- "equidistant"
-    } else {
-      dots$threshold <- "flexible"
+  if (is_ordinal(dots$formula$family)) {
+    if (!is.null(dots$threshold)) {
+      dots$formula$family <- check_family(
+        dots$formula$family, threshold = dots$threshold
+      )
+      dots$threshold <- NULL
+    }
+    if (is.null(dots$formula$family$threshold)) {
+      # for backwards compatibility with brms <= 0.8.0
+      if (grepl("(k - 1.0) * delta", object$model, fixed = TRUE)) {
+        dots$formula$family$threshold <- "equidistant"
+      } else {
+        dots$formula$family$threshold <- "flexible"
+      }
     }
   }
   if ("prior" %in% new_args) {

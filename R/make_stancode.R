@@ -32,17 +32,17 @@ make_stancode <- function(formula, data, family = gaussian(),
   save_model <- use_alias(save_model, dots$save.model)
   dots[c("cov.ranef", "sample.prior", "save.model")] <- NULL
   # some input checks
+  family <- check_family(family, threshold = threshold)
   formula <- amend_formula(
     formula, data = data, family = family, nonlinear = nonlinear
   )
   family <- formula$family
   autocor <- check_autocor(autocor)
-  threshold <- match.arg(threshold)
   bterms <- parse_bf(formula, family = family, autocor = autocor)
   prior <- check_prior(
     prior, formula = formula, data = data, family = family, 
     autocor = autocor, sample_prior = sample_prior, 
-    threshold = threshold, warn = !isTRUE(dots$brm_call)
+    warn = !isTRUE(dots$brm_call)
   )
   prior_only <- identical(sample_prior, "only")
   sample_prior <- if (prior_only) FALSE else sample_prior
@@ -67,8 +67,7 @@ make_stancode <- function(formula, data, family = gaussian(),
   }
   text_effects <- stan_effects(
     bterms, data = data, ranef = ranef, 
-    prior = prior, sparse = sparse,
-    threshold = threshold
+    prior = prior, sparse = sparse
   )
   text_effects <- collapse_lists(list(text_effects, text_effects_mv))
   # because of the ID syntax, group-level effects are evaluated separately
@@ -90,8 +89,7 @@ make_stancode <- function(formula, data, family = gaussian(),
   disc <- "disc" %in% names(bterms$auxpars) || 
     isTRUE(bterms$fauxpars$disc != 1)
   text_ordinal <- stan_ordinal(
-    family, prior = prior, cs = has_cs(bterms), 
-    disc = disc, threshold = threshold
+    family, prior = prior, cs = has_cs(bterms), disc = disc
   )
   text_families <- stan_families(family, bterms)
   text_mixture <- stan_mixture(bterms, prior = prior)

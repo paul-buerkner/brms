@@ -19,9 +19,7 @@
 #' @slot prior A \code{\link[brms:brmsprior]{brmsprior}} object containing
 #'   information on the priors used in the model
 #' @slot autocor An \code{\link[brms:cor_brms]{cor_brms}} object containing 
-#'   the autocorrelation structure
-#' @slot threshold A character string defining the threshold type used in 
-#'   ordinal models
+#'   the autocorrelation structure if specified
 #' @slot ranef A \code{data.frame} containing the group-level structure
 #' @slot cov_ranef A \code{list} of customized group-level covariance matrices
 #' @slot loo An empty slot for adding the \code{\link[brms:loo]{loo}} 
@@ -45,7 +43,7 @@ NULL
 
 brmsfit <- function(formula = NULL, family = NULL, data = data.frame(), 
                     data.name = "", model = "", prior = empty_brmsprior(), 
-                    autocor = NULL, threshold = "", ranef = empty_ranef(), 
+                    autocor = NULL, ranef = empty_ranef(), 
                     cov_ranef = NULL, loo = NULL, waic = NULL, fit = NA, 
                     exclude = NULL, algorithm = "sampling") {
   # brmsfit class
@@ -55,8 +53,8 @@ brmsfit <- function(formula = NULL, family = NULL, data = data.frame(),
   )
   x <- nlist(
     formula, family, data, data.name, model, 
-    prior, autocor, threshold, ranef, cov_ranef, 
-    loo, waic, fit, exclude, algorithm, version
+    prior, autocor, ranef, cov_ranef, loo, 
+    waic, fit, exclude, algorithm, version
   )
   class(x) <- "brmsfit"
   x

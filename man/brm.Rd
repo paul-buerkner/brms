@@ -63,11 +63,13 @@ common linear predictor on the right hand side.
 As of \pkg{brms} 1.4.0, we recommend specifying non-linear
 parameters directly within \code{formula}.}
 
-\item{threshold}{A character string indicating the type of thresholds 
-(i.e. intercepts) used in an ordinal model. 
+\item{threshold}{(Deprecated) A character string indicating the type 
+of thresholds (i.e. intercepts) used in an ordinal model. 
 \code{"flexible"} provides the standard unstructured thresholds and 
 \code{"equidistant"} restricts the distance between 
-consecutive thresholds to the same value.}
+consecutive thresholds to the same value.
+As of \pkg{brms} 1.8.0, we recommend specifying threshold
+directly within the ordinal family functions.}
 
 \item{cov_ranef}{A list of matrices that are proportional to the 
 (within) covariance structure of the group-level effects. 
