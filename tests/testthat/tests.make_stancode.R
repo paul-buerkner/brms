@@ -411,7 +411,9 @@ test_that("Stan code for categorical models is correct", {
   dat <- data.frame(y = rep(1:4, 2), x = 1:8, g = 1:8)
   prior <- c(
     prior(normal(0, 5), "b"),
-    prior(normal(0, 10), "b", resp = X2)
+    prior(normal(0, 10), "b", resp = X2),
+    prior(cauchy(0, 1), "Intercept"),
+    prior(normal(0, 2), "Intercept", resp = X3)
   )
   scode <- make_stancode(y ~ x + (1|ID|g), data = dat, 
                          family = categorical(), prior = prior)
@@ -420,6 +422,8 @@ test_that("Stan code for categorical models is correct", {
   expect_match2(scode, "mu_X4[n] = mu_X4[n] + (r_1_X4_3[J_1[n]]) * Z_1_X4_3[n];")
   expect_match2(scode, "b_X2 ~ normal(0, 10);")
   expect_match2(scode, "b_X4 ~ normal(0, 5);")
+  expect_match2(scode, "temp_X2_Intercept ~ cauchy(0, 1);")
+  expect_match2(scode, "temp_X3_Intercept ~ normal(0, 2);")
 })
 
 test_that("Stan code for autocorrelated models is correct", {

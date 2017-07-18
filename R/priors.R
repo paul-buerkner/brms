@@ -506,9 +506,13 @@ get_prior <- function(formula, data, family = gaussian(),
       prior <- rbind(prior, prior_eff)
     }
     bterms$auxpars[["mu"]] <- NULL
-    # add a "global" prior for population-level effects
+    # add "global" priors for population-level effects
     # in 1.8.0 as users keep asking about this
-    prior <- rbind(prior, brmsprior(class = "b"))
+    for (cl in c("b", "Intercept")) {
+      if (any(with(prior, class == cl & coef == ""))) {
+        prior <- rbind(prior, brmsprior(class = cl)) 
+      }
+    }
   }
   # priors for auxiliary parameters
   def_auxprior <- c(
@@ -909,14 +913,16 @@ check_prior <- function(prior, formula, data = NULL, family = NULL,
   rows2remove <- NULL
   # copy over the global population-level prior in MV models
   if (length(bterms$response) > 1L) {
-    gb_index <- with(prior, nlpar == "" & class == "b" & coef == "")
-    for (resp in bterms$response) {
-      rb_index <- with(prior, nlpar == resp & class == "b" & coef == "")
-      if (isTRUE(!nzchar(prior$prior[rb_index]))) {
-        prior$prior[rb_index] <- prior$prior[gb_index]
+    for (cl in c("b", "Intercept")) {
+      g_index <- with(prior, nlpar == "" & class == cl & coef == "")
+      for (resp in bterms$response) {
+        r_index <- with(prior, nlpar == resp & class == cl & coef == "")
+        if (isTRUE(!nzchar(prior$prior[r_index]))) {
+          prior$prior[r_index] <- prior$prior[g_index]
+        }
       }
+      rows2remove <- c(rows2remove, which(g_index))
     }
-    rows2remove <- c(rows2remove, which(gb_index))
   }
   # special treatment of population-level intercepts
   int_index <- which(prior$class == "Intercept")
