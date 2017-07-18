@@ -471,7 +471,8 @@ get_summary <- function(samples, probs = c(0.025, 0.975),
   } else if (length(dim(samples)) == 3L) {
     fun3dim <- function(i) {
       do.call(cbind, lapply(
-        coefs, get_estimate, samples = samples[, , i], 
+        coefs, get_estimate, 
+        samples = samples[, , i, drop = FALSE], 
         probs = probs, ra.rm = TRUE
       ))
     }
