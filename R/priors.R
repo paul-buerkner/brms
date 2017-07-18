@@ -91,8 +91,8 @@
 #'   In case of the default intercept parameterization 
 #'   (discussed in the 'Details' section of 
 #'   \code{\link[brms:brmsformula]{brmsformula}}),
-#'   general priors on class \code{"b"} will not affect the intercept.
-#'   Instead, the intercept has its own parameter class 
+#'   general priors on class \code{"b"} will \emph{not} affect 
+#'   the intercept. Instead, the intercept has its own parameter class 
 #'   named \code{"Intercept"} and priors can thus be 
 #'   specified via \code{set_prior("<prior>", class = "Intercept")}.
 #'   Setting a prior on the intercept will not break vectorization
@@ -109,7 +109,7 @@
 #'   
 #'   A special shrinkage prior to be applied on population-level effects 
 #'   is the horseshoe prior. See \code{\link[brms:horseshoe]{horseshoe}}
-#'   for details. Another shrinkage prior is the so-called \emph{lasso} prior.
+#'   for details. Another shrinkage prior is the so-called lasso prior.
 #'   See \code{\link[brms:lasso]{lasso}} for details.
 #'   
 #'   In non-linear models, population-level effects are defined separately 
@@ -506,6 +506,9 @@ get_prior <- function(formula, data, family = gaussian(),
       prior <- rbind(prior, prior_eff)
     }
     bterms$auxpars[["mu"]] <- NULL
+    # add a "global" prior for population-level effects
+    # in 1.8.0 as users keep asking about this
+    prior <- rbind(prior, brmsprior(class = "b"))
   }
   # priors for auxiliary parameters
   def_auxprior <- c(
@@ -892,7 +895,7 @@ check_prior <- function(prior, formula, data = NULL, family = NULL,
   nlpars <- names(bterms$auxpars$mu$nlpars)
   for (nlp in nlpars) {
     nlp_prior <- prior$prior[with(prior, nlpar == nlp & class == "b")]
-    if (!any(as.logical(nchar(nlp_prior)))) {
+    if (!any(nzchar(nlp_prior))) {
       stop2("Priors on population-level effects are required in ",
             "non-linear models,\nbut none were found for parameter ", 
             "'", nlp, "'. \nSee help(set_prior) for more details.")
@@ -904,11 +907,22 @@ check_prior <- function(prior, formula, data = NULL, family = NULL,
   prior <- rbind(prior, all_priors)
   prior <- prior[!duplicated(prior[, 2:5]), ]
   rows2remove <- NULL
+  # copy over the global population-level prior in MV models
+  if (length(bterms$response) > 1L) {
+    gb_index <- with(prior, nlpar == "" & class == "b" & coef == "")
+    for (resp in bterms$response) {
+      rb_index <- with(prior, nlpar == resp & class == "b" & coef == "")
+      if (isTRUE(!nzchar(prior$prior[rb_index]))) {
+        prior$prior[rb_index] <- prior$prior[gb_index]
+      }
+    }
+    rows2remove <- c(rows2remove, which(gb_index))
+  }
   # special treatment of population-level intercepts
   int_index <- which(prior$class == "Intercept")
   if (length(int_index)) {
     int_prior <- prior[int_index, ]
-    bint_index <- which(prior$class == "b" & prior$coef %in% "Intercept")
+    bint_index <- with(prior, class == "b" & coef %in% "Intercept")
     bint_prior <- prior[bint_index, ]
     for (t in int_index) {
       tb <- match(prior$nlpar[t], bint_prior$nlpar) 
@@ -927,7 +941,7 @@ check_prior <- function(prior, formula, data = NULL, family = NULL,
         }
       }
     }
-    rows2remove <- c(rows2remove, bint_index)
+    rows2remove <- c(rows2remove, which(bint_index))
   }
   # prepare priors of monotonic effects
   mo_forms <- get_effect(bterms, "mo")

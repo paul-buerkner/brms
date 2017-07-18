@@ -813,7 +813,7 @@ stan_prior <- function(prior, class, coef = "", group = "",
   }
   prior <- prior[keep, ]
   if (!nchar(class) && nrow(prior)) {
-    # increment_log_prob statements are directly put into the Stan code
+    # unchecked prior statements are directly passed to Stan
     return(collapse(wsp, prior$prior, "; \n"))
   } 
   

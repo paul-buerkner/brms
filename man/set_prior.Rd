@@ -118,8 +118,8 @@ Define priors for specific parameters or classes of parameters
   In case of the default intercept parameterization 
   (discussed in the 'Details' section of 
   \code{\link[brms:brmsformula]{brmsformula}}),
-  general priors on class \code{"b"} will not affect the intercept.
-  Instead, the intercept has its own parameter class 
+  general priors on class \code{"b"} will \emph{not} affect 
+  the intercept. Instead, the intercept has its own parameter class 
   named \code{"Intercept"} and priors can thus be 
   specified via \code{set_prior("<prior>", class = "Intercept")}.
   Setting a prior on the intercept will not break vectorization
@@ -136,7 +136,7 @@ Define priors for specific parameters or classes of parameters
   
   A special shrinkage prior to be applied on population-level effects 
   is the horseshoe prior. See \code{\link[brms:horseshoe]{horseshoe}}
-  for details. Another shrinkage prior is the so-called \emph{lasso} prior.
+  for details. Another shrinkage prior is the so-called lasso prior.
   See \code{\link[brms:lasso]{lasso}} for details.
   
   In non-linear models, population-level effects are defined separately 

@@ -409,10 +409,17 @@ test_that("Stan code for multivariate models is correct", {
 
 test_that("Stan code for categorical models is correct", {
   dat <- data.frame(y = rep(1:4, 2), x = 1:8, g = 1:8)
-  scode <- make_stancode(y ~ x + (1|ID|g), dat, categorical())
+  prior <- c(
+    prior(normal(0, 5), "b"),
+    prior(normal(0, 10), "b", resp = X2)
+  )
+  scode <- make_stancode(y ~ x + (1|ID|g), data = dat, 
+                         family = categorical(), prior = prior)
   expect_match2(scode, "Y[n] ~ categorical_logit(append_row(zero, Mu[n]));")
   expect_match2(scode, "mu_X2 = Xc_X2 * b_X2 + temp_X2_Intercept;")
   expect_match2(scode, "mu_X4[n] = mu_X4[n] + (r_1_X4_3[J_1[n]]) * Z_1_X4_3[n];")
+  expect_match2(scode, "b_X2 ~ normal(0, 10);")
+  expect_match2(scode, "b_X4 ~ normal(0, 5);")
 })
 
 test_that("Stan code for autocorrelated models is correct", {
