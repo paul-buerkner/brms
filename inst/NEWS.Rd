@@ -38,6 +38,8 @@
       \item Deprecate argument \code{threshold} in \code{brm}
       and instead recommend passing \code{threshold} directly 
       to the ordinal family functions.
+      \item Throw an error instead of a message when
+      invalid priors are passed.
       \item Change the default value of the \code{autocor}
       slot in \code{brmsfit} objects to an empty
       \code{cor_brms} object.
