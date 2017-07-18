@@ -887,9 +887,11 @@ check_prior <- function(prior, formula, data = NULL, family = NULL,
     invalid <- which(!1:nrow(prior) %in% (valid - nrow(all_priors)))
     if (length(invalid)) {
       msg_priors <- .print_prior(prior[invalid, ])
-      stop2("The following priors don't correspond to any ", 
-            "model parameter and will thus not affect the results: \n",
-            collapse(.print_prior(prior[invalid, ]), "\n"))
+      stop2(
+        "The following priors do not correspond ", 
+        "to any model parameter: \n",
+        collapse(.print_prior(prior[invalid, ]), "\n")
+      )
     }
   }
   prior$prior <- sub("^(lkj|lkj_corr)\\(", "lkj_corr_cholesky(", prior$prior)
