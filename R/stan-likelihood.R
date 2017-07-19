@@ -66,21 +66,21 @@ stan_llh.default <- function(family, bterms, data, autocor,
     if (llh_adj) {
       stop2("Invalid addition arguments for this model.")
     }
-    family <- paste0(family, "_cov")
+    str_add(family) <- "_cov"
   } else if (is.cor_sar(autocor)) {
     if (has_se || llh_adj) {
       stop2("Invalid addition arguments for this model.")
     }
     if (identical(autocor$type, "lag")) {
-      family <- paste0(family, "_lagsar")
+      str_add(family) <- "_lagsar"
     } else if (identical(autocor$type, "error")) {
-      family <- paste0(family, "_errorsar")
+      str_add(family) <- "_errorsar"
     }
   } else if (is.cor_fixed(autocor)) {
     if (has_se || llh_adj) {
       stop2("Invalid addition arguments for this model.")
     }
-    family <- paste0(family, "_fixed")
+    str_add(family) <- "_fixed"
   }
   
   simplify <- stan_has_built_in_fun(nlist(family, link)) &&

@@ -170,6 +170,11 @@ collapse_comma <- function(...) {
   paste0("'", ..., "'", collapse = ", ")
 }
 
+'str_add<-' <- function(x, value) {
+  # add characters to an existing string
+  paste0(x, value)
+}
+
 require_package <- function(package) {
   if (!requireNamespace(package, quietly = TRUE)) {
     stop2("Please install the '", package, "' package.")
@@ -218,12 +223,13 @@ rename <- function(x, symbols = NULL, subs = NULL,
   out
 }
 
-collapse_lists <- function(ls) {
+collapse_lists <- function(..., ls = list()) {
   # collapse strings having the same name in different lists
   # Args:
   #  ls: a list of named lists
   # Returns:
   #  a named list containg the collapsed strings
+  ls <- c(list(...), ls)
   elements <- unique(unlist(lapply(ls, names)))
   out <- do.call(mapply, 
     c(FUN = collapse, lapply(ls, "[", elements), SIMPLIFY = FALSE))

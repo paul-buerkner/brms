@@ -69,13 +69,12 @@ make_stancode <- function(formula, data, family = gaussian(),
     bterms, data = data, ranef = ranef, 
     prior = prior, sparse = sparse
   )
-  text_effects <- collapse_lists(list(text_effects, text_effects_mv))
+  text_effects <- collapse_lists(text_effects, text_effects_mv)
   # because of the ID syntax, group-level effects are evaluated separately
-  text_ranef <- lapply(
+  text_ranef <- collapse_lists(ls = lapply(
     X = unique(ranef$id), FUN = stan_re,
     ranef = ranef, prior = prior, cov_ranef = cov_ranef
-  )
-  text_ranef <- collapse_lists(text_ranef)
+  ))
   
   # generate Stan code of the likelihood
   text_llh <- stan_llh(

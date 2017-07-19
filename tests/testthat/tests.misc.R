@@ -44,10 +44,10 @@ test_that("collapse_lists performs correct collapsing after names", {
   x <- list(a = "a <- ", b = "b <- ")
   y <- list(b = "cauchy(1,2)", c = "normal(0,1)", a = "gamma(1,1)")
   expect_equal(collapse_lists(list()), list())
-  expect_equal(collapse_lists(list(x, y)), 
+  expect_equal(collapse_lists(x, y), 
                list(a = "a <- gamma(1,1)", b = "b <- cauchy(1,2)", 
                     c = "normal(0,1)"))
-  expect_equal(collapse_lists(list(c(x, c = "c <- "), y)),
+  expect_equal(collapse_lists(ls = list(c(x, c = "c <- "), y)),
                list(a = "a <- gamma(1,1)", b = "b <- cauchy(1,2)", 
                     c = "c <- normal(0,1)"))
 })
