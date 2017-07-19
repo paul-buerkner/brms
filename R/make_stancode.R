@@ -186,7 +186,7 @@ make_stancode <- function(formula, data, family = gaussian(),
   text_rngprior <- stan_rngprior(
     sample_prior = sample_prior, 
     par_declars = text_parameters,
-    gen_quantities = text_effects$genC,
+    gen_quantities = text_effects$genD,
     prior = text_prior,
     prior_special = attr(prior, "special")
   )
@@ -308,6 +308,8 @@ make_stancode <- function(formula, data, family = gaussian(),
     if (!isTRUE(dots$brm_call)) {
       complete_model <- complete_model$model_code
     }
+  } else {
+    class(complete_model) <- c("character", "brmsmodel")
   }
   complete_model
 }

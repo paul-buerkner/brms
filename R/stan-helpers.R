@@ -25,10 +25,7 @@ stan_autocor <- function(autocor, bterms, family, prior) {
       "  int<lower=0> Kma;  // MA order \n"
     )
     out$tdataD <- paste0(out$tdataD, 
-      "  int max_lag; \n"
-    )
-    out$tdataC <- paste0(out$tdataC, 
-      "  max_lag = max(Kar, Kma); \n"
+      "  int max_lag = max(Kar, Kma); \n"
     )
     # restrict ARMA effects to be in [-1,1] when using covariance
     # formulation as they cannot be outside this interval anyway
@@ -63,10 +60,11 @@ stan_autocor <- function(autocor, bterms, family, prior) {
         "  #include 'data_arma_cov.stan' \n"
       )
       if (!is.formula(bterms$adforms$se)) {
-        out$tdataD <- "  vector[N] se2; \n"
-        out$tdataC <- "  se2 = rep_vector(0, N); \n"
+        out$tdataD <- "  vector[N] se2 = rep_vector(0, N); \n"
       }
-      out$transD <- "  matrix[max(nobs_tg), max(nobs_tg)] res_cov_matrix; \n"
+      out$transD <- paste0(out$transD,
+        "  matrix[max(nobs_tg), max(nobs_tg)] res_cov_matrix; \n"                  
+      )
       if (Kar && !Kma) {
         cov_mat_fun <- "ar1"
         cov_mat_args <- "ar[1]"
@@ -129,12 +127,10 @@ stan_autocor <- function(autocor, bterms, family, prior) {
       out$modelD <- paste0(
         "  // objects storing residuals \n",
         collapse(
-          "  matrix[N, max_lag] E", rs, "; \n",
+          "  matrix[N, max_lag] E", rs, 
+          " = rep_matrix(0, N, max_lag); \n",
           "  vector[N] e", rs, "; \n"
         )
-      )
-      out$modelC1 <- collapse(
-        "  E", rs, " = rep_matrix(0.0, N, max_lag); \n"
       )
       out$modelC2 <- paste0(
         "    // computation of ARMA correlations \n",
@@ -199,7 +195,9 @@ stan_autocor <- function(autocor, bterms, family, prior) {
       out$par <- paste0(out$par, 
         "  real<lower=0,upper=1>  lagsar;  // SAR parameter \n"
       )
-      out$prior <- paste0(out$prior, stan_prior(prior, class = "lagsar"))
+      out$prior <- paste0(out$prior, 
+        stan_prior(prior, class = "lagsar")
+      )
     } else if (identical(autocor$type, "error")) {
       if (family$family == "gaussian") {
         out$fun <- paste0(out$fun, 
@@ -213,7 +211,9 @@ stan_autocor <- function(autocor, bterms, family, prior) {
       out$par <- paste0(out$par, 
         "  real<lower=0,upper=1> errorsar;  // SAR parameter \n"
       )
-      out$prior <- paste0(out$prior, stan_prior(prior, class = "errorsar"))
+      out$prior <- paste0(out$prior, 
+        stan_prior(prior, class = "errorsar")
+      )
     }
   }
   if (is.cor_car(autocor)) {
@@ -317,10 +317,13 @@ stan_autocor <- function(autocor, bterms, family, prior) {
       stop2("Fixed residual covariance matrices are not yet ", 
             "implemented for family '", family$family, "'.") 
     }
-    out$data <- "  matrix[N, N] V;  // known residual covariance matrix \n"
+    out$data <- paste0(out$data, 
+      "  matrix[N, N] V;  // known residual covariance matrix \n"
+    )
     if (family$family %in% "gaussian") {
-      out$tdataD <- "  matrix[N, N] LV; \n"
-      out$tdataC <- "  LV = cholesky_decompose(V); \n"
+      out$tdataD <- paste0(out$tdataD,
+        "  matrix[N, N] LV = cholesky_decompose(V); \n"
+      )
     }
   }
   out
@@ -351,29 +354,33 @@ stan_mv <- function(family, response, prior) {
         stan_prior(prior, class = "Lrescor")
       )
       if (family$family == "gaussian") {
-        out$transD <- "  cholesky_factor_cov[nresp] LSigma; \n"
-        out$transC1 <- paste0(
-          "  // compute cholesky factor of residual covariance matrix \n",
-          "  LSigma = diag_pre_multiply(sigma, Lrescor); \n"
+        out$transD <- paste0(
+          "  // cholesky factor of residual covariance matrix \n",
+          "  cholesky_factor_cov[nresp] LSigma = ",
+          "diag_pre_multiply(sigma, Lrescor); \n"
         )
       } else if (family$family == "student") {
-        out$transD <- "  cov_matrix[nresp] Sigma; \n"
-        out$transC1 <- paste0(
-          "  // compute residual covariance matrix \n",
-          "  Sigma = multiply_lower_tri_self_transpose(", 
+        out$transD <- paste0(
+          "  // residual covariance matrix \n",
+          "  cov_matrix[nresp] Sigma",
+          " = multiply_lower_tri_self_transpose(", 
           "diag_pre_multiply(sigma, Lrescor)); \n"
         )
       }
       out$genD <- paste0(
-        "  matrix[nresp, nresp] Rescor; \n",
+        "  matrix[nresp, nresp] Rescor",
+        " = multiply_lower_tri_self_transpose(Lrescor); \n",
         "  vector<lower=-1,upper=1>[nrescor] rescor; \n"
+      )
+      rescor_genC <- ulapply(2:nresp, function(i) 
+        lapply(1:(i - 1), function(j) paste0(
+          "  rescor[", (i - 1) * (i - 2) / 2 + j, 
+          "] = Rescor[", j, ", ", i, "]; \n"
+        ))
       )
       out$genC <- paste0(
         "  // take only relevant parts of residual correlation matrix \n",
-        "  Rescor = multiply_lower_tri_self_transpose(Lrescor); \n",
-        collapse(ulapply(2:nresp, function(i) lapply(1:(i-1), function(j)
-          paste0("  rescor[",(i-1)*(i-2)/2+j,"] = Rescor[",j,", ",i,"]; \n")
-        )))
+        collapse(rescor_genC)
       )
     } else if (!is_categorical(family)) {
       stop2("Multivariate models are not yet implemented ", 
@@ -558,15 +565,13 @@ stan_families <- function(family, bterms) {
     )
   } else if (any(families %in% "wiener")) {
     out$fun <- "  #include 'fun_wiener_diffusion.stan' \n"
-    out$tdataD <- "  real min_Y; \n"
-    out$tdataC <- "  min_Y = min(Y); \n"
+    out$tdataD <- "  real min_Y = min(Y); \n"
   } else if (any(families %in% "asym_laplace")) {
     out$fun <- "  #include 'fun_asym_laplace.stan' \n"
   } else if (any(families %in% "skew_normal")) {
     # as suggested by Stephen Martin use sigma and mu of CP 
     # but the skewness parameter alpha of DP
-    out$tdataD <- "  real sqrt_2_div_pi; \n"
-    out$tdataC <- "  sqrt_2_div_pi = sqrt(2 / pi()); \n"
+    out$tdataD <- "  real sqrt_2_div_pi = sqrt(2 / pi()); \n"
     ap_names <- names(bterms$auxpars)
     for (i in which(families %in% "skew_normal")) {
       id <- ifelse(length(families) == 1L, "", i)
@@ -642,11 +647,8 @@ stan_mixture <- function(bterms, prior) {
       }
       missing_id <- setdiff(1:nmix, auxpar_id(names(theta_pred)))
       out$modelD <- paste0(out$modelD,
-        "  vector[N] theta", missing_id, "; \n",                   
+        "  vector[N] theta", missing_id, " = rep_vector(0, N); \n",                   
         "  real log_sum_exp_theta; \n"      
-      )
-      out$modelC1 <- paste0(out$modelC1,
-        "  theta", missing_id, " = rep_vector(0, N); \n"
       )
       sum_exp_theta <- paste0(
         "exp(theta", 1:nmix, "[n])", collapse = " + "
@@ -662,7 +664,12 @@ stan_mixture <- function(bterms, prior) {
       if (length(theta_fix) != nmix) {
         stop2("Can only fix no or all mixing proportions.")
       }
-      out$data <- paste0(out$data, def_thetas)
+      out$data <- paste0(out$data,
+        "  // mixing proportions \n",                
+        collapse(
+          "  real<lower=0,upper=1> theta", 1:nmix, "; \n"
+        )
+      )
     } else {
       out$data <- paste0(out$data,
         "  vector[", nmix, "] con_theta;  // prior concentration \n"                  
@@ -674,9 +681,12 @@ stan_mixture <- function(bterms, prior) {
       out$prior <- paste0(out$prior, 
         "  theta ~ dirichlet(con_theta); \n"                
       )
-      out$transD <- paste0(out$transD, def_thetas)
-      out$transC1 <- paste0(out$transC1,
-        collapse("  theta", 1:nmix, " = theta[", 1:nmix, "]; \n")
+      out$transD <- paste0(out$transD,
+        "  // mixing proportions \n",                
+        collapse(
+          "  real<lower=0,upper=1> theta", 1:nmix, 
+          " = theta[", 1:nmix, "]; \n"
+        )
       )
     }
     if (bterms$family$order %in% "mu") {
@@ -693,8 +703,7 @@ stan_se <- function(se) {
   out <- list()
   if (se) {
     out$data <- "  vector<lower=0>[N] se;  // known sampling error \n"
-    out$tdataD <- "  vector<lower=0>[N] se2; \n"
-    out$tdataC <- "  for (n in 1:N) se2[n] = se[n]^2; \n"
+    out$tdataD <- "  vector<lower=0>[N] se2 = square(se); \n"
   }
   out
 }
@@ -1039,14 +1048,11 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
         args[bpars] <- rename(args[bpars], spars, paste0("prior_", spars))
       }
       # unbounded parameters can be sampled in the generatated quantities block
-      out$genD <- collapse(
-        "  ", types[no_bounds], " prior_", pars[no_bounds], "; \n"
-      )
-      out$genC <- paste0(
+      out$genD <- paste0(
         "  // additionally draw samples from priors \n",
         collapse(
-          "  prior_", pars[no_bounds], " = ",
-          dis[no_bounds], "_rng", args[no_bounds], " \n"
+          "  ", types[no_bounds], " prior_", pars[no_bounds], 
+          " = ", dis[no_bounds], "_rng", args[no_bounds], " \n"
         )
       )
     }
@@ -1062,12 +1068,9 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
         function(x) if (length(x)) x[1] else ""
       )
       out$genD <- paste0(out$genD, 
-        collapse("  real prior_", intercepts, "; \n")
-      )
-      out$genC <- paste0(out$genC, 
         collapse(
-          "  prior_", intercepts, " = ",
-          "prior_", temp_intercepts, sub_X_means, "; \n"
+          "  real prior_", intercepts,
+          " = prior_", temp_intercepts, sub_X_means, "; \n"
         )
       )
     }

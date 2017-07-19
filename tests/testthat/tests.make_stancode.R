@@ -248,9 +248,8 @@ test_that("customized covariances appear in the Stan code", {
   
   scode <- make_stancode(rating ~ treat + period + carry + (1+carry||subject), 
                          data = inhaler, cov_ranef = list(subject = 1))
-  expect_match2(scode, 
-               paste0("  r_1_1 = sd_1[1] * (Lcov_1 * z_1[1]); \n",
-                      "  r_1_2 = sd_1[2] * (Lcov_1 * z_1[2]);"))
+  expect_match2(scode, " r_1_1 = sd_1[1] * (Lcov_1 * z_1[1]);")
+  expect_match2(scode, " r_1_2 = sd_1[2] * (Lcov_1 * z_1[2]);")
 })
 
 test_that("truncation appears in the Stan code", {
@@ -401,7 +400,7 @@ test_that("Stan code for multivariate models is correct", {
   
   scode <- make_stancode(cbind(y1, y2) ~ x, dat, student())
   expect_match2(scode, "Y ~ multi_student_t(nu, Mu, Sigma);")
-  expect_match2(scode, "cov_matrix[nresp] Sigma;")
+  expect_match2(scode, "cov_matrix[nresp] Sigma = multiply_lower_")
   
   expect_match2(make_stancode(cbind(y1, y2) | weights(x) ~ 1, dat),
                 "lp_pre[n] = multi_normal_cholesky_lpdf(Y[n] | Mu[n], LSigma);")
@@ -1028,7 +1027,9 @@ test_that("sparse matrix multiplication is applied correctly", {
   expect_match2(scode, 
     "mu = csr_matrix_times_vector(rows(X), cols(X), wX, vX, uX, b);"
   )
-  expect_match2(scode, "uX_sigma = csr_extract_u(X_sigma);")
+  expect_match2(scode, 
+    "uX_sigma[size(csr_extract_u(X_sigma))] = csr_extract_u(X_sigma);"
+  )
   expect_match2(scode,
     paste0(
       "sigma = csr_matrix_times_vector(rows(X_sigma), cols(X_sigma), ", 
@@ -1041,7 +1042,9 @@ test_that("sparse matrix multiplication is applied correctly", {
     data, sparse = TRUE, 
     prior = prior(normal(0, 1), nlpar = a)
   )
-  expect_match2(scode, "vX_a = csr_extract_v(X_a);")
+  expect_match2(scode, 
+    "vX_a[size(csr_extract_v(X_a))] = csr_extract_v(X_a);"
+  )
   expect_match2(scode, 
     "mu_a = csr_matrix_times_vector(rows(X_a), cols(X_a), wX_a, vX_a, uX_a, b_a);"
   )

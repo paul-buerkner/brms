@@ -43,6 +43,8 @@
       \item Change the default value of the \code{autocor}
       slot in \code{brmsfit} objects to an empty
       \code{cor_brms} object.
+      \item Shorten \pkg{Stan} code by combining 
+      declarations and definitions where possible.
     }
   }
   \subsection{BUG FIXES}{
