@@ -251,8 +251,10 @@ stan_autocor <- function(autocor, bterms, family, prior) {
       )
       str_add(out$prior) <- paste0(
         stan_prior(prior, class = "car"),
-        "  rcar ~ sparse_car(car, sdcar, Nloc, Nedges, Nneigh,\n",
-        "                    eigenW, edges1, edges2); \n"
+        "  target += sparse_car_lpdf(\n", 
+        "    rcar | car, sdcar, Nloc, Nedges,\n",
+        "    Nneigh, eigenW, edges1, edges2\n", 
+        "  ); \n"
       )
     } else if (identical(autocor$type, "esicar")) {
       str_add(out$fun) <- paste0(
@@ -270,8 +272,10 @@ stan_autocor <- function(autocor, bterms, family, prior) {
         "  rcar[Nloc] = - sum(zcar); \n"
       )
       str_add(out$prior) <- paste0(
-        "  rcar ~ sparse_icar(sdcar, Nloc, Nedges, Nneigh,\n",
-        "                     eigenW, edges1, edges2); \n"
+        "  target += sparse_icar_lpdf(\n", 
+        "    rcar | sdcar, Nloc, Nedges,\n",
+        "    Nneigh, eigenW, edges1, edges2\n", 
+        "  ); \n"
       )
     } 
   }
@@ -303,12 +307,12 @@ stan_autocor <- function(autocor, bterms, family, prior) {
     }
     str_add(out$prior) <- paste0(
       stan_prior(prior, class = "sigmaLL"),
-      "  loclev[1] ~ normal(", center[1], ", sigmaLL); \n",
+      "  target += normal_lpdf(loclev[1] | ", center[1], ", sigmaLL); \n",
       "  for (n in 2:N) { \n",
       "    if (tg[n] == tg[n - 1]) { \n",
-      "      loclev[n] ~ normal(loclev[n - 1], sigmaLL); \n",
+      "      target += normal_lpdf(loclev[n] | loclev[n - 1], sigmaLL); \n",
       "    } else { \n",
-      "      loclev[n] ~ normal(", center[2], ", sigmaLL); \n",
+      "      target += normal_lpdf(loclev[n] | ", center[2], ", sigmaLL); \n",
       "    } \n",
       "  } \n"
     )
@@ -680,7 +684,7 @@ stan_mixture <- function(bterms, prior) {
         "  // mixing proportions \n"
       )
       str_add(out$prior) <- paste0(
-        "  theta ~ dirichlet(con_theta); \n"                
+        "  target += dirichlet_lpdf(theta | con_theta); \n"                
       )
       str_add(out$transD) <- paste0(
         "  // mixing proportions \n",                
@@ -812,6 +816,7 @@ stan_prior <- function(prior, class, coef = "", group = "",
   #   for a given class of parameters. If a parameter has has 
   #   no corresponding prior in prior, an empty string is returned.
   wsp <- collapse(rep(" ", wsp))
+  tp <- paste0(wsp, "target += ")
   prior_only <- isTRUE(attr(prior, "prior_only"))
   keep <- prior$class == class & 
     prior$coef %in% c(coef, "") & prior$group %in% c(group, "")
@@ -863,9 +868,10 @@ stan_prior <- function(prior, class, coef = "", group = "",
     } else { # base prior for this parameter
       coef_prior <- base_prior 
     }  
-    if (nchar(coef_prior) > 0) {  
+    if (nzchar(coef_prior)) {  
       # implies a proper prior
-      out <- paste0(wsp, class, index, " ~ ", coef_prior, "; \n")
+      pars <- paste0(class, index)
+      out <- paste0(tp, stan_target_prior(coef_prior, pars), "; \n")
     } else {
       # implies an improper flat prior
       out <- ""
@@ -883,7 +889,7 @@ stan_prior <- function(prior, class, coef = "", group = "",
     if (matrix) {
       class <- paste0("to_vector(", class, ")")
     }
-    out <- paste0(wsp, class, " ~ ", base_prior, "; \n")
+    out <- paste0(tp, stan_target_prior(base_prior, class), "; \n")
   } else {
     out <- ""
   }
@@ -902,17 +908,17 @@ stan_prior <- function(prior, class, coef = "", group = "",
       c2_args <- paste0("0.5 * hs_df_slab", p)
       c2_args <- sargs(c2_args, c2_args)
       str_add(special_priors) <- paste0(
-        "  zb", p, " ~ normal(0, 1); \n",
-        "  hs_local", p, "[1] ~ normal(0, 1); \n",
-        "  hs_local", p, "[2] ~ inv_gamma(", local_args, "); \n",
-        "  hs_global", p, "[1] ~ normal(0, 1); \n",
-        "  hs_global", p, "[2] ~ inv_gamma(", global_args, "); \n",
-        "  hs_c2", p, " ~ inv_gamma(", c2_args, "); \n"
+        tp, "normal_lpdf(zb", p, " | 0, 1); \n",
+        tp, "normal_lpdf(hs_local", p, "[1] | 0, 1); \n",
+        tp, "inv_gamma_lpdf(hs_local", p, "[2] | ", local_args, "); \n",
+        tp, "normal_lpdf(hs_global", p, "[1] | 0, 1); \n",
+        tp, "inv_gamma_lpdf(hs_global", p, "[2] | ", global_args, "); \n",
+        tp, "target += inv_gamma_lpdf(hs_c2", p, " | ", c2_args, "); \n"
       )
     }
     if (!is.null(special$lasso_df)) {
       str_add(special_priors) <- paste0(
-        "  lasso_inv_lambda", p, " ~ chi_square(lasso_df", p, "); \n"
+        tp, "chi_square_lpdf(lasso_inv_lambda", p, " | lasso_df", p, "); \n"
       )
     }
     out <- c(special_priors, out) 
@@ -949,6 +955,25 @@ stan_base_prior <- function(prior) {
   }
   stopifnot(length(base_prior) == 1L)
   base_prior
+}
+
+stan_target_prior <- function(prior, par) {
+  stopifnot(length(prior) == length(par))
+  prior_name <- brms:::get_matches("^[^\\(]+\\(", prior, simplify = FALSE)
+  for (i in seq_along(prior_name)) {
+    if (length(prior_name[[i]]) != 1L) {
+      stop("The prior '", prior[i], "' is invalid.")
+    }
+  }
+  prior_name <- unlist(prior_name)
+  prior_name <- substr(prior_name, 1, nchar(prior_name) - 1)
+  prior_args <- rep(NA, length(prior))
+  for (i in seq_along(prior)) {
+    prior_args[i] <- sub(
+      paste0("^", prior_name[i], "\\("), "", prior[i]
+    )
+  }
+  paste0(prior_name, "_lpdf(", par, " | ", prior_args)
 }
 
 stan_rngprior <- function(sample_prior, prior, par_declars,
