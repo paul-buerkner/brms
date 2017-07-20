@@ -852,7 +852,7 @@ check_prior <- function(prior, formula, data = NULL, family = NULL,
   #   warn: passed to check_prior_content
   # Returns:
   #   a data.frame of prior specifications to be used in stan_prior (see stan.R)
-  sample_prior <- match.arg(sample_prior)
+  sample_prior <- check_sample_prior(sample_prior)
   if (isTRUE(attr(prior, "checked"))) {
     # prior has already been checked; no need to do it twice
     # attributes may still need to be updated
