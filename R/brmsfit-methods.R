@@ -877,8 +877,8 @@ standata.brmsfit <- function(object, ...) {
     object <- restructure(object)
     new_formula <- update_re_terms(object$formula, dots$re_formula)
     dots$control$old_cat <- is_old_categorical(object)
-    prior_only <- attr(object$prior, "prior_only")
-    sample_prior <- ifelse(isTRUE(prior_only), "only", FALSE)
+    sample_prior <- attr(object$prior, "sample_prior")
+    sample_prior <- ifelse(is.null(sample_prior), "no", sample_prior)
     args <- list(formula = new_formula, data = model.frame(object), 
                  family = object$family, prior = object$prior, 
                  autocor = object$autocor, cov_ranef = object$cov_ranef, 
@@ -2172,7 +2172,10 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   }
   pnames <- parnames(object)
   if (is.null(dots$sample_prior)) {
-    dots$sample_prior <- any(grepl("^prior_", pnames))
+    dots$sample_prior <- attr(object$prior, "sample_prior")
+    if (is.null(dots$sample_prior)) {
+      dots$sample_prior <- ifelse(any(grepl("^prior_", pnames)), "yes", "no") 
+    }
   }
   if (is.null(dots$save_ranef)) {
     dots$save_ranef <- any(grepl("^r_", pnames)) || !nrow(object$ranef)
@@ -2219,8 +2222,8 @@ update.brmsfit <- function(object, formula., newdata = NULL,
       dots$is_newdata <- TRUE
     }
     if (!is.null(dots$sample_prior)) {
-      prior_only <- identical(dots$sample_prior, "only")
-      attr(object$prior, "prior_only") <- prior_only
+      dots$sample_prior <- check_sample_prior(dots$sample_prior)
+      attr(object$prior, "sample_prior") <- dots$sample_prior
     }
     if (!is.null(dots$save_ranef) || !is.null(dots$save_mevars)) {
       if (is.null(dots$save_ranef)) {

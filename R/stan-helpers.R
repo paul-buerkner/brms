@@ -812,7 +812,7 @@ stan_prior <- function(prior, class, coef = "", group = "",
   #   for a given class of parameters. If a parameter has has 
   #   no corresponding prior in prior, an empty string is returned.
   wsp <- collapse(rep(" ", wsp))
-  prior_only <- isTRUE(attr(prior, "prior_only"))
+  prior_only <- identical(attr(prior, "sample_prior"), "only")
   keep <- prior$class == class & 
     prior$coef %in% c(coef, "") & prior$group %in% c(group, "")
   if (class %in% c("sd", "cor")) {
@@ -965,7 +965,7 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
   # Returns:
   #   a character string containing the priors to be sampled from in stan code
   out <- list()
-  if (sample_prior) {
+  if (identical(sample_prior, "yes")) {
     prior <- gsub(" ", "", paste0("\n", prior))
     pars <- get_matches("\\\n[^~]+", prior)
     pars <- gsub("\\\n|to_vector\\(|\\)", "", pars)

@@ -7,7 +7,8 @@
 \usage{
 make_standata(formula, data, family = gaussian(), prior = NULL,
   autocor = NULL, nonlinear = NULL, cov_ranef = NULL,
-  sample_prior = FALSE, knots = NULL, control = list(), ...)
+  sample_prior = c("no", "yes", "only"), knots = NULL, control = list(),
+  ...)
 }
 \arguments{
 \item{formula}{An object of class 
@@ -67,13 +68,13 @@ of the corresponding matrix. This argument can be used,
 among others to model pedigrees and phylogenetic effects.
 See \code{vignette("brms_phylogenetics")} for more details.}
 
-\item{sample_prior}{A flag to indicate if samples from all specified 
+\item{sample_prior}{Indicate if samples from all specified 
 proper priors should be drawn additionally to the posterior samples
-(defaults to \code{FALSE}). Among others, these samples can be used 
+(defaults to \code{"no"}). Among others, these samples can be used 
 to calculate Bayes factors for point hypotheses. 
-Alternatively, \code{sample_prior} can be set to \code{"only"} to
-sample solely from the priors. In this case, all parameters must 
-have proper priors.}
+If set to \code{"only"}, samples are drawn solely from
+the priors ignoring the likelihood. In this case, 
+all parameters must have proper priors.}
 
 \item{knots}{Optional list containing user specified knot values to be 
 used for basis construction of smoothing terms. 

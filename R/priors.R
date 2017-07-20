@@ -842,9 +842,9 @@ prior_sm <- function(smooths, def_scale_prior, nlpar = "") {
 }
 
 check_prior <- function(prior, formula, data = NULL, family = NULL, 
-                        sample_prior = FALSE, autocor = NULL, 
-                        threshold = "flexible", check_rows = NULL, 
-                        warn = FALSE) {
+                        sample_prior = c("no", "yes", "only"), 
+                        autocor = NULL, threshold = "flexible", 
+                        check_rows = NULL, warn = FALSE) {
   # check prior input and amend it if needed
   # Args:
   #   same as the respective parameters in brm
@@ -852,11 +852,11 @@ check_prior <- function(prior, formula, data = NULL, family = NULL,
   #   warn: passed to check_prior_content
   # Returns:
   #   a data.frame of prior specifications to be used in stan_prior (see stan.R)
-  prior_only <- identical(sample_prior, "only")
+  sample_prior <- match.arg(sample_prior)
   if (isTRUE(attr(prior, "checked"))) {
     # prior has already been checked; no need to do it twice
     # attributes may still need to be updated
-    attr(prior, "prior_only") <- prior_only
+    attr(prior, "sample_prior") <- sample_prior
     return(prior)
   }
   formula <- bf(formula)
@@ -983,7 +983,7 @@ check_prior <- function(prior, formula, data = NULL, family = NULL,
   prior <- prior[with(prior, order(nlpar, class, group, coef)), ]
   prior <- rbind(prior, prior_no_checks)
   rownames(prior) <- NULL
-  attr(prior, "prior_only") <- prior_only
+  attr(prior, "sample_prior") <- sample_prior
   attr(prior, "checked") <- TRUE
   prior
 }
@@ -1177,6 +1177,16 @@ check_prior_special.btl <- function(x, prior, nlpar = "",
   }
   attributes(prior)$special[[nlpar_original]] <- prior_special
   prior
+}
+
+check_sample_prior <- function(sample_prior) {
+  # validate argument 'sample_prior'
+  options <- c("no", "yes", "only")
+  if (!is.character(sample_prior)) {
+    sample_prior <- as_one_logical(sample_prior)
+    sample_prior <- if (sample_prior) "yes" else "no"
+  }
+  match.arg(sample_prior, options)
 }
 
 get_bound <- function(prior, class = "b", coef = "", 

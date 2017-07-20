@@ -25,8 +25,9 @@
 #'          
 #' @export
 make_standata <- function(formula, data, family = gaussian(), 
-                          prior = NULL, autocor = NULL, nonlinear = NULL, 
-                          cov_ranef = NULL, sample_prior = FALSE, 
+                          prior = NULL, autocor = NULL, 
+                          nonlinear = NULL, cov_ranef = NULL, 
+                          sample_prior = c("no", "yes", "only"), 
                           knots = NULL, control = list(), ...) {
   # internal control arguments:
   #   is_newdata: is make_standata is called with new data?
@@ -52,6 +53,7 @@ make_standata <- function(formula, data, family = gaussian(),
   is_forked <- is_forked(family)
   is_categorical <- is_categorical(family)
   bterms <- parse_bf(formula, family = family, autocor = autocor)
+  sample_prior <- check_sample_prior(sample_prior)
   check_prior_content(prior, family = family, warn = FALSE)
   prior <- check_prior_special(bterms, prior = prior)
   na_action <- if (is_newdata) na.pass else na.omit
@@ -465,7 +467,7 @@ make_standata <- function(formula, data, family = gaussian(),
     }
   }
   
-  out$prior_only <- ifelse(identical(sample_prior, "only"), 1L, 0L)
+  out$prior_only <- as.integer(identical(sample_prior, "only"))
   if (isTRUE(control$save_order)) {
     attr(out, "old_order") <- attr(data, "old_order")
   }
