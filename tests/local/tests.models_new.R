@@ -415,12 +415,14 @@ test_that("Mixture models work correctly", {
   prior <- c(
     prior(normal(0, 5), Intercept, nlpar = mu1),
     prior(normal(5, 5), Intercept, nlpar = mu2),
-    prior(normal(10, 5), Intercept, nlpar = mu3),
-    prior(dirichlet(1, 1, 1), theta)
+    prior(normal(10, 5), Intercept, nlpar = mu3)
   )
 
-  fit1 <- brm(bform1, data = dat, family = mixfam,
-              prior = prior, chains = 2, inits = 0)
+  fit1 <- brm(
+    bform1, data = dat, family = mixfam,
+    prior = c(prior, prior(dirichlet(1, 1, 1), theta)),
+    chains = 2, inits = 0
+  )
   print(fit1)
   expect_ggplot(pp_check(fit1))
   loo1 <- LOO(fit1)

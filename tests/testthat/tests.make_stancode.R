@@ -11,7 +11,7 @@ test_that("specified priors appear in the Stan code", {
              prior(cauchy(0,2), sd, group = g, coef = x1),
              prior(gamma(1, 1), class = sd, group = h))
   scode <- make_stancode(y ~ x1*x2 + (x1*x2|g) + (1 | h), dat,
-                         prior = prior, sample_prior = TRUE)
+                         prior = prior, sample_prior = "yes")
   expect_match2(scode, "b[1] ~ normal(0, 1)")
   expect_match2(scode, "b[2] ~ normal(0, 2)")
   expect_match2(scode, "temp_Intercept ~ normal(0, 5)")

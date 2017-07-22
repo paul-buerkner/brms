@@ -23,13 +23,14 @@ make_stancode <- function(formula, data, family = gaussian(),
                           prior = NULL, autocor = NULL, nonlinear = NULL,
                           threshold = c("flexible", "equidistant"),
                           sparse = FALSE,  cov_ranef = NULL, 
-                          sample_prior = FALSE, stan_funs = NULL, 
-                          save_model = NULL, silent = FALSE, ...) {
+                          sample_prior = c("no", "yes", "only"), 
+                          stan_funs = NULL, save_model = NULL, 
+                          silent = FALSE, ...) {
   dots <- list(...)
   # use deprecated arguments if specified
-  cov_ranef <- use_alias(cov_ranef, dots$cov.ranef)
-  sample_prior <- use_alias(sample_prior, dots$sample.prior)
-  save_model <- use_alias(save_model, dots$save.model)
+  cov_ranef <- use_alias(cov_ranef, dots[["cov.ranef"]])
+  sample_prior <- use_alias(sample_prior, dots[["sample.prior"]])
+  save_model <- use_alias(save_model, dots[["save.model"]])
   dots[c("cov.ranef", "sample.prior", "save.model")] <- NULL
   # some input checks
   family <- check_family(family, threshold = threshold)
@@ -39,13 +40,12 @@ make_stancode <- function(formula, data, family = gaussian(),
   family <- formula$family
   autocor <- check_autocor(autocor)
   bterms <- parse_bf(formula, family = family, autocor = autocor)
+  sample_prior <- check_sample_prior(sample_prior)
   prior <- check_prior(
     prior, formula = formula, data = data, family = family, 
     autocor = autocor, sample_prior = sample_prior, 
     warn = !isTRUE(dots$brm_call)
   )
-  prior_only <- identical(sample_prior, "only")
-  sample_prior <- if (prior_only) FALSE else sample_prior
   data <- update_data(data, bterms = bterms)
   
   # flags to indicate the family type

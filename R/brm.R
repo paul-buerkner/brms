@@ -89,13 +89,13 @@
 #'   \code{predict} with the noise-free variables but 
 #'   leads to very large \R objects even for models
 #'   of moderate size and complexity.
-#' @param sample_prior A flag to indicate if samples from all specified 
+#' @param sample_prior Indicate if samples from all specified 
 #'   proper priors should be drawn additionally to the posterior samples
-#'   (defaults to \code{FALSE}). Among others, these samples can be used 
+#'   (defaults to \code{"no"}). Among others, these samples can be used 
 #'   to calculate Bayes factors for point hypotheses. 
-#'   Alternatively, \code{sample_prior} can be set to \code{"only"} to
-#'   sample solely from the priors. In this case, all parameters must 
-#'   have proper priors.
+#'   If set to \code{"only"}, samples are drawn solely from
+#'   the priors ignoring the likelihood. In this case, 
+#'   all parameters must have proper priors.
 #' @param knots Optional list containing user specified knot values to be 
 #'   used for basis construction of smoothing terms. 
 #'   See \code{\link[mgcv:gamm]{gamm}} for more details.
@@ -341,8 +341,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 autocor = NULL, nonlinear = NULL, 
                 threshold = c("flexible", "equidistant"), 
                 cov_ranef = NULL, save_ranef = TRUE, save_mevars = FALSE, 
-                sparse = FALSE, sample_prior = FALSE, knots = NULL, 
-                stan_funs = NULL, fit = NA, inits = "random", 
+                sparse = FALSE, sample_prior = c("no", "yes", "only"), 
+                knots = NULL, stan_funs = NULL, fit = NA, inits = "random", 
                 chains = 4, iter = 2000, warmup = floor(iter / 2),
                 thin = 1, cores = getOption("mc.cores", 1L), control = NULL,
                 algorithm = c("sampling", "meanfield", "fullrank"),

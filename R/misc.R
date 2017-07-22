@@ -78,6 +78,17 @@ is_like_factor <- function(x) {
   is.factor(x) || is.character(x) || is.logical(x)
 }
 
+as_one_logical <- function(x) {
+  # coerce 'x' to TRUE or FALSE if possible
+  s <- substitute(x)
+  x <- as.logical(x)
+  if (anyNA(x) || length(x) != 1L) {
+    s <- substr(deparse_combine(s), 1L, 100L)
+    stop2("Cannot coerce ", s, " to a single logical value.")
+  }
+  x
+}
+
 expand <- function(..., dots = list(), length = NULL) {
   # expand arguments of be of the same length
   # Args:
