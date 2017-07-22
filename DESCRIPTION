@@ -19,6 +19,7 @@ Imports:
     rstantools (>= 1.2.0),
     bayesplot (>= 1.2.0),
     matrixStats,
+    bridgesampling,
     nlme,
     coda,
     abind,

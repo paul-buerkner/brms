@@ -1116,7 +1116,7 @@ expose_functions <- function(x, ...) {
 #' Extract control parameters of the NUTS sampler such as 
 #' \code{adapt_delta} or \code{max_treedepth}.
 #' 
-#' @param x an \R object
+#' @param x An \R object
 #' @param pars Optional names of the control parameters to be returned.
 #'  If \code{NULL} (the default) all control parameters are returned.
 #'  See \code{\link[rstan:stan]{stan}} for more details.
@@ -1127,6 +1127,20 @@ expose_functions <- function(x, ...) {
 #' @export
 control_params <- function(x, ...) {
   UseMethod("control_params")
+}
+
+#' Bayes Factor(s) for Marginal Likelihoods
+#' 
+#' Generic function that computes Bayes factor(s) from marginal likelihoods.
+#' 
+#' @param x1 An \R object
+#' @param x2 Another \R object
+#' @param log Report Bayes factors on the log-scale?
+#' @param ... More arguments passed to or from other methods.
+#' 
+#' @export
+bayes_factor <- function(x1, x2, ...) {
+  UseMethod("bayes_factor")
 }
 
 #' Extract Diagnostic Quantities of \pkg{brms} Models

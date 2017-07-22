@@ -2681,3 +2681,47 @@ control_params.brmsfit <- function(x, pars = NULL, ...) {
   }
   out
 }
+
+#' @method bridge_sampler brmsfit
+#' @importFrom bridgesampling bridge_sampler 
+#' @export bridge_sampler 
+#' @export
+bridge_sampler.brmsfit <- function(samples, ...) {
+  # see ?bridge_sampler for explanation why to use update
+  stanfit_tmp <- suppressMessages(brm(fit = samples, chains = 0))$fit
+  bridge_sampler(samples$fit, stanfit_model = stanfit_tmp, ...)
+}
+
+#' @rdname bayes_factor
+#' @export
+bayes_factor.brmsfit <- function(x1, x2, log = FALSE, ...) {
+  bs1 <- bridge_sampler(x1, ...)
+  bs2 <- bridge_sampler(x2, ...)
+  bridgesampling::bf(bs1, bs2, log = log)
+}
+
+#' @method post_prob brmsfit
+#' @importFrom bridgesampling post_prob
+#' @export post_prob 
+#' @export
+post_prob.brmsfit <- function(x, ..., prior_prob = NULL, 
+                              model_names = NULL,
+                              bs_args = list()) {
+  models <- list(x, ...)
+  if (is.null(model_names)) {
+    model_names <- c(
+      deparse_combine(substitute(x)),
+      ulapply(substitute(list(...))[-1], deparse_combine)
+    )
+  } else if (length(model_names) != length(models)) {
+    stop2("Number of model names is not equal to the number of models.") 
+  }
+  bs <- vector("list", length(models))
+  for (i in seq_along(models)) {
+    if (!is.brmsfit(models[[i]])) {
+      stop2("Object '", model_names[i], "' is not of class 'brmsfit'.")
+    }
+    bs[[i]] <- do.call(bridge_sampler, c(list(models[[i]]), bs_args))
+  }
+  do.call(post_prob, c(bs, nlist(prior_prob, model_names)))
+}

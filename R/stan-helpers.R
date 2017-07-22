@@ -815,8 +815,8 @@ stan_prior <- function(prior, class, coef = "", group = "",
   #   A character strings in stan language that defines priors 
   #   for a given class of parameters. If a parameter has has 
   #   no corresponding prior in prior, an empty string is returned.
+  tp <- tp(wsp)
   wsp <- collapse(rep(" ", wsp))
-  tp <- paste0(wsp, "target += ")
   prior_only <- identical(attr(prior, "sample_prior"), "only")
   keep <- prior$class == class & 
     prior$coef %in% c(coef, "") & prior$group %in% c(group, "")
