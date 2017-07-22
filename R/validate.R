@@ -1417,7 +1417,8 @@ has_cens <- function(formula, data = NULL) {
 }
 
 exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
-                         save_ranef = TRUE, save_mevars = FALSE) {
+                         save_ranef = TRUE, save_mevars = FALSE,
+                         bridge = TRUE) {
   # list irrelevant parameters NOT to be saved by Stan
   # Args:
   #   bterms: object of class brmsterms
@@ -1427,7 +1428,6 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
   #   save_mevars: should samples of noise-free variables be saved?
   # Returns:
   #   a vector of parameters to be excluded
-  stopifnot(is.brmsterms(bterms))
   .exclude_pars <- function(bt, nlpar = "") {
     stopifnot(is.btl(bt))
     nlpar <- usc(check_nlpar(nlpar))
@@ -1448,30 +1448,37 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
     }
     return(out)
   }
+  
+  stopifnot(is.brmsterms(bterms))
   out <- c(
-    "temp_Intercept1", "ordered_Intercept", "Rescor", "Lrescor", 
-    "Sigma", "LSigma", "res_cov_matrix", "theta", "zcar",
+    "Rescor", "Sigma", "res_cov_matrix",
     intersect(auxpars(), names(bterms$auxpars))
   )
-  if (length(bterms$response) > 1L) {
-    for (r in bterms$response) {
-      out <- c(out, .exclude_pars(bterms$auxpars$mu, nlpar = r))
-    }
-    bterms$auxpars$mu <- NULL
-  }
-  for (ap in names(bterms$auxpars)) {
-    bt <- bterms$auxpars[[ap]]
-    if (length(bt$nlpars)) {
-      for (nlp in names(bt$nlpars)) {
-        out <- c(out, .exclude_pars(bt$nlpars[[nlp]], nlpar = nlp))
+  if (!bridge) {
+    out <- c(out,
+      "temp_Intercept1", "ordered_Intercept", 
+      "Lrescor", "LSigma", "theta", "zcar"
+    )
+    if (length(bterms$response) > 1L) {
+      for (r in bterms$response) {
+        out <- c(out, .exclude_pars(bterms$auxpars$mu, nlpar = r))
       }
-    } else {
-      out <- c(out, .exclude_pars(bt, nlpar = ap))
+      bterms$auxpars$mu <- NULL
+    }
+    for (ap in names(bterms$auxpars)) {
+      bt <- bterms$auxpars[[ap]]
+      if (length(bt$nlpars)) {
+        for (nlp in names(bt$nlpars)) {
+          out <- c(out, .exclude_pars(bt$nlpars[[nlp]], nlpar = nlp))
+        }
+      } else {
+        out <- c(out, .exclude_pars(bt, nlpar = ap))
+      }
     }
   }
   # exclude group-level helper parameters
   if (nrow(ranef)) {
-    rm_re_pars <- c("z", "L", "Cor", "r")
+    rm_re_pars <- c(if (!bridge) c("z", "L"), "Cor", "r")
     for (id in unique(ranef$id)) {
       out <- c(out, paste0(rm_re_pars, "_", id))
     }
