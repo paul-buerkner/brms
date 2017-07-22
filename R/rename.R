@@ -755,25 +755,32 @@ do_renaming <- function(x, change) {
           x$fit@sim$samples[[i]][change$pos][change$sort]
       }
     }
-    onp <- match(change$oldname, names(x$fit@sim$dims_oi))
-    if (is.null(onp) || is.na(onp)) {
-      warning2("Parameter ", change$oldname, " could not be renamed. ",
-               "This should not happen. \nPlease inform me so that ",
-               "I can fix this problem.")
-    } else {
-      if (is.null(change$pnames)) {
-        # only needed to collapse multiple r_<i> of the same grouping factor
-        x$fit@sim$dims_oi[[onp]] <- NULL  
-      } else { 
-        # rename dims_oi to match names in fnames_oi
-        dims <- x$fit@sim$dims_oi
-        x$fit@sim$dims_oi <- c(
-          if (onp > 1) dims[1:(onp - 1)], 
-          make_dims(change),
-          dims[(onp + 1):length(dims)]
-        )
-      }
-    }
+    # interferes with rstan::unconstrain_pars() which is used
+    # in the bridgesampling package. Very likely, the code below
+    # is no longer needed anyway and can be removed without
+    # breaking anything, but this needs to be further explored.
+    # If this is generally removed, we can greatly simplify all
+    # of the change_* functions above.
+    
+    # onp <- match(change$oldname, names(x$fit@sim$dims_oi))
+    # if (is.null(onp) || is.na(onp)) {
+    #   warning2("Parameter ", change$oldname, " could not be renamed. ",
+    #            "This should not happen. \nPlease inform me so that ",
+    #            "I can fix this problem.")
+    # } else {
+    #   if (is.null(change$pnames)) {
+    #     # only needed to collapse multiple r_<i> of the same grouping factor
+    #     x$fit@sim$dims_oi[[onp]] <- NULL  
+    #   } else { 
+    #     # rename dims_oi to match names in fnames_oi
+    #     dims <- x$fit@sim$dims_oi
+    #     x$fit@sim$dims_oi <- c(
+    #       if (onp > 1) dims[1:(onp - 1)], 
+    #       make_dims(change),
+    #       dims[(onp + 1):length(dims)]
+    #     )
+    #   }
+    # }
     return(x)
   }
   for (i in seq_along(change)) {
