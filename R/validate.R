@@ -1418,7 +1418,7 @@ has_cens <- function(formula, data = NULL) {
 
 exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
                          save_ranef = TRUE, save_mevars = FALSE,
-                         bridge = TRUE) {
+                         save_all_pars = TRUE) {
   # list irrelevant parameters NOT to be saved by Stan
   # Args:
   #   bterms: object of class brmsterms
@@ -1454,7 +1454,7 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
     "Rescor", "Sigma", "res_cov_matrix",
     intersect(auxpars(), names(bterms$auxpars))
   )
-  if (!bridge) {
+  if (!save_all_pars) {
     out <- c(out,
       "temp_Intercept1", "ordered_Intercept", 
       "Lrescor", "LSigma", "theta", "zcar"
@@ -1478,7 +1478,7 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
   }
   # exclude group-level helper parameters
   if (nrow(ranef)) {
-    rm_re_pars <- c(if (!bridge) c("z", "L"), "Cor", "r")
+    rm_re_pars <- c(if (!save_all_pars) c("z", "L"), "Cor", "r")
     for (id in unique(ranef$id)) {
       out <- c(out, paste0(rm_re_pars, "_", id))
     }
