@@ -119,7 +119,7 @@ change_fe <- function(fixef, pars, nlpar = "") {
     pos <- grepl(paste0("^", b, "\\["), pars)
     bnames <- paste0(b, "_", fixef)
     change <- lc(change, 
-      list(pos = pos, oldname = b, pnames = bnames, fnames = bnames)
+      list(pos = pos, fnames = bnames)
     )
     change <- c(change,
       change_prior(class = b, pars = pars, names = fixef)
@@ -144,7 +144,6 @@ change_mo <- function(monef, pars, nlpar = "") {
     change <- lc(change, 
       list(
         pos = grepl(paste0("^", bmo, "\\["), pars), 
-        oldname = bmo, pnames = newnames, 
         fnames = newnames
       )
     )
@@ -154,12 +153,9 @@ change_mo <- function(monef, pars, nlpar = "") {
     for (i in seq_along(monef)) {
       simplex <- paste0(paste0("simplex", p, "_"), c(i, monef[i]))
       pos <- grepl(paste0("^", simplex[1], "\\["), pars)
+      simplex_names <- paste0(simplex[2], "[", seq_len(sum(pos)), "]")
       change <- lc(change, 
-        list(
-          pos = pos, oldname = simplex[1], pnames = simplex[2], 
-          fnames = paste0(simplex[2], "[", seq_len(sum(pos)), "]"), 
-          dim = sum(pos)
-        )
+        list(pos = pos, fnames = simplex_names)
       )
       change <- c(change,
         change_prior(
@@ -188,11 +184,7 @@ change_cs <- function(csef, pars, nlpar = "") {
     csenames <- paste0("bcs_", csenames)
     sort_cse <- ulapply(seq_len(ncse), seq, to = thres * ncse, by = ncse)
     change <- lc(change, 
-      list(
-        pos = grepl("^bcs\\[", pars), oldname = "bcs", 
-        pnames = paste0("bcs_", csef), fnames = csenames,
-        sort = sort_cse, dim = thres
-      )
+      list(pos = grepl("^bcs\\[", pars), fnames = csenames, sort = sort_cse)
     )
     change <- c(change, 
       change_prior(class = "bcs", pars = pars, names = csef)
@@ -212,7 +204,7 @@ change_me <- function(meef, pars, dims, nlpar = "") {
     pos <- grepl(paste0("^", bme, "\\["), pars)
     bmenames <- paste0(bme, "_", meef)
     change <- lc(change, 
-      nlist(pos, oldname = bme, pnames = bmenames, fnames = bmenames)
+      nlist(pos, fnames = bmenames)
     )
     change <- c(change,
       change_prior(class = bme, pars = pars, names = meef)
@@ -225,11 +217,7 @@ change_me <- function(meef, pars, dims, nlpar = "") {
         pos <- grepl(paste0("^", Xme, "\\["), pars)
         Xme_new <- paste0("Xme", p, "_", rename(uni_me[i]))
         fnames <- paste0(Xme_new, "[", seq_len(sum(pos)), "]")
-        change_Xme <- nlist(
-          pos, oldname = Xme, pnames = Xme_new, 
-          fnames = fnames, dims = dims[[Xme]]
-        )
-        change <- lc(change, change_Xme)
+        change <- lc(change, nlist(pos, fnames))
       }
     }
   }
@@ -252,10 +240,8 @@ change_gp <- function(gpef, pars, dims, nlpar = "") {
     lscale_pos <- grepl(paste0("^", lscale_old, "\\["), pars)
     lscale_names <- paste0(lscale, "_", gp_names)
     change <- lc(change, 
-      nlist(pos = sdgp_pos, oldname = sdgp_old, 
-            pnames = sdgp_names, fnames = sdgp_names),
-      nlist(pos = lscale_pos, oldname = lscale_old, 
-            pnames = lscale_names, fnames = lscale_names)
+      nlist(pos = sdgp_pos, fnames = sdgp_names),
+      nlist(pos = lscale_pos, fnames = lscale_names)
     )
     change <- c(change,
       change_prior(class = sdgp_old, pars = pars, 
@@ -270,10 +256,7 @@ change_gp <- function(gpef, pars, dims, nlpar = "") {
       # users may choose not to save zgp
       zgp_new <- paste0(zgp, "_", gpef[i])
       fnames <- paste0(zgp_new, "[", seq_len(sum(zgp_pos)), "]")
-      change_zgp <- nlist(
-        pos = zgp_pos, oldname = zgp_old, pnames = zgp_new, 
-        fnames = fnames, dims = dims[[zgp]]
-      )
+      change_zgp <- nlist(pos = zgp_pos, fnames = fnames)
       change <- lc(change, change_zgp)
     }
   }
@@ -302,21 +285,11 @@ change_sm <- function(smooths, pars, nlpar = "") {
         ij <- paste0(i, "_", j)
         sds_pos <- grepl(paste0("^", sds, "_", ij), pars)
         change <- lc(change, 
-          list(
-            pos = sds_pos, oldname = paste0(sds, "_", ij), 
-            pnames = paste0(sds_names[i], "_", j), 
-            fnames = paste0(sds_names[i], "_", j)
-          )
+          list(pos = sds_pos, fnames = paste0(sds_names[i], "_", j))
         )
         s_pos <- grepl(paste0("^", s, "_", ij), pars)
         s_fnames <- paste0(s_names[i], "_", j, "[", seq_len(sum(s_pos)), "]")
-        change <- lc(change, 
-          list(
-            pos = s_pos, oldname = paste0(s, "_", ij), 
-            pnames = s_names[i], fnames = s_fnames, 
-            dim = as.numeric(sum(s_pos))
-          )
-        )
+        change <- lc(change, list(pos = s_pos, fnames = s_fnames))
         new_prior_class <- paste0(sds, "_", smooths[i], "_", j)
         change <- c(change, 
           change_prior(
@@ -347,13 +320,8 @@ change_re <- function(ranef, pars, dims) {
       g <- r$group[1]
       suffix <- paste0(usc(r$nlpar, "suffix"), r$coef)
       rfnames <- paste0("sd_", g, "__", suffix)
-      change <- lc(change,
-        list(
-          pos = grepl(paste0("^sd_", id, "(\\[|$)"), pars),
-          oldname = paste0("sd_", id), pnames = rfnames,
-          fnames = rfnames
-        )
-      )
+      rpos <- grepl(paste0("^sd_", id, "(\\[|$)"), pars)
+      change <- lc(change, list(pos = rpos, fnames = rfnames))
       change <- c(change,
         change_prior(
           class = paste0("sd_", id), pars = pars,
@@ -364,15 +332,11 @@ change_re <- function(ranef, pars, dims) {
       # rename group-level correlations
       if (nrow(r) > 1L && isTRUE(r$cor[1])) {
         type <- paste0("cor_", g)
-        cor_names <- get_cornames(suffix, type = paste0("cor_", g),
-                                  brackets = FALSE)
-        change <- lc(change,
-          list(
-            pos = grepl(paste0("^cor_", id, "(\\[|$)"), pars),
-            oldname = paste0("cor_", id), pnames = cor_names,
-            fnames = cor_names
-          )
+        cor_names <- get_cornames(
+          suffix, type = paste0("cor_", g), brackets = FALSE
         )
+        cor_pos <- grepl(paste0("^cor_", id, "(\\[|$)"), pars)
+        change <- lc(change, list(pos = cor_pos, fnames = cor_names))
         change <- c(change,
           change_prior(
             class = paste0("cor_", id), pars = pars,
@@ -403,20 +367,8 @@ change_re_levels <- function(ranef, pars, dims)  {
     usc_nlpar <- usc(r$nlpar)
     r_parnames <- paste0("r_", r$id, usc_nlpar, "_", r$cn)
     r_regex <- paste0("^", r_parnames, "(\\[|$)")
-    change_rl <- list(pos = grepl(r_regex, pars), 
-                      oldname = r_parnames)
+    change_rl <- list(pos = grepl(r_regex, pars))
     r_new_parname <- paste0("r_", r$group, usc(usc_nlpar))
-    # prepare for removal of redundant parameters r_<i>
-    # and for combining group-level effects into one parameter matrix
-    gf_matches <- which(ranef$group == r$group & ranef$nlpar == r$nlpar)
-    nr <- length(gf_matches)
-    old_dim <- dims[[change_rl$oldname]]
-    if (gf_matches[1] == i) {
-      # if this is the first RE term of this group
-      # counted separately for each non-linear parameter
-      change_rl$pnames <- r_new_parname
-      change_rl$dim <- c(old_dim[1], nr)
-    }
     # rstan doesn't like whitespaces in parameter names
     levels <- gsub("[ \t\r\n]", ".", attr(ranef, "levels")[[r$group]])
     index_names <- make_index_names(levels, r$coef, dim = 2)
@@ -447,30 +399,18 @@ change_prior <- function(class, pars, names = NULL, new_class = class,
       pars[pos_priors]
     )
     if (is_vector) {
-      change <- lc(change, 
-        list(
-          pos = pos_priors, oldname = paste0("prior_", class),
-          pnames = priors, fnames = priors
-        )
-      )
+      change <- lc(change, list(pos = pos_priors, fnames = priors))
     } else {
       digits <- sapply(priors, function(prior) {
         d <- regmatches(prior, gregexpr("_[[:digit:]]+$", prior))[[1]]
-        if (length(d)) 
-          as.numeric(substr(d, 2, nchar(d))) 
-        else 0
+        if (length(d)) as.numeric(substr(d, 2, nchar(d))) else 0
       })
       for (i in seq_along(priors)) {
         if (digits[i] && !is.null(names)) {
           priors[i] <- gsub("[[:digit:]]+$", names[digits[i]], priors[i])
         }
         if (pars[pos_priors[i]] != priors[i]) {
-          change <- lc(change, 
-            list(
-              pos = pos_priors[i], oldname = pars[pos_priors[i]],
-              pnames = priors[i], fnames = priors[i]
-            )
-          )
+          change <- lc(change, list(pos = pos_priors[i], fnames = priors[i]))
         }
       }
     }
@@ -748,45 +688,45 @@ do_renaming <- function(x, change) {
   .do_renaming <- function(x, change) {
     chains <- length(x$fit@sim$samples) 
     x$fit@sim$fnames_oi[change$pos] <- change$fnames
-    for (i in 1:chains) {
+    for (i in seq_len(chains)) {
       names(x$fit@sim$samples[[i]])[change$pos] <- change$fnames
       if (!is.null(change$sort)) {
         x$fit@sim$samples[[i]][change$pos] <- 
           x$fit@sim$samples[[i]][change$pos][change$sort]
       }
     }
-    # interferes with rstan::unconstrain_pars() which is used
-    # in the bridgesampling package. Very likely, the code below
-    # is no longer needed anyway and can be removed without
-    # breaking anything, but this needs to be further explored.
-    # If this is generally removed, we can greatly simplify all
-    # of the change_* functions above.
-    
-    # onp <- match(change$oldname, names(x$fit@sim$dims_oi))
-    # if (is.null(onp) || is.na(onp)) {
-    #   warning2("Parameter ", change$oldname, " could not be renamed. ",
-    #            "This should not happen. \nPlease inform me so that ",
-    #            "I can fix this problem.")
-    # } else {
-    #   if (is.null(change$pnames)) {
-    #     # only needed to collapse multiple r_<i> of the same grouping factor
-    #     x$fit@sim$dims_oi[[onp]] <- NULL  
-    #   } else { 
-    #     # rename dims_oi to match names in fnames_oi
-    #     dims <- x$fit@sim$dims_oi
-    #     x$fit@sim$dims_oi <- c(
-    #       if (onp > 1) dims[1:(onp - 1)], 
-    #       make_dims(change),
-    #       dims[(onp + 1):length(dims)]
-    #     )
-    #   }
-    # }
+    if (!is.null(change$oldname)) {
+      # Changing dims_oi interferes with rstan::unconstrain_pars(), 
+      # which is used in the bridgesampling package. The code below is
+      # only retained for backwards compatibility with older models.
+      onp <- match(change$oldname, names(x$fit@sim$dims_oi))
+      if (is.null(onp) || is.na(onp)) {
+        warning2(
+          "Parameter ", change$oldname, " could not be renamed. ",
+          "This should not happen. \nPlease inform me so that ",
+          "I can fix this problem."
+        )
+      } else {
+        if (is.null(change$pnames)) {
+          # only needed to collapse multiple r_<i> of the same grouping factor
+          x$fit@sim$dims_oi[[onp]] <- NULL
+        } else {
+          # rename dims_oi to match names in fnames_oi
+          dims <- x$fit@sim$dims_oi
+          x$fit@sim$dims_oi <- c(
+            if (onp > 1) dims[1:(onp - 1)],
+            make_dims(change),
+            dims[(onp + 1):length(dims)]
+          )
+        }
+      }
+      x$fit@sim$pars_oi <- names(x$fit@sim$dims_oi)
+    }
     return(x)
   }
   for (i in seq_along(change)) {
     x <- .do_renaming(x, change[[i]])
   }
-  x$fit@sim$pars_oi <- names(x$fit@sim$dims_oi)
   x
 }
 
