@@ -133,7 +133,8 @@ restructure <- function(x, rstr_summary = FALSE) {
           any(grepl("^r_", parnames(object))) || !nrow(object$ranef)
       }
       if (is.null(att$save_mevars)) {
-        attr(object$exclude, "save_mevars") <- any(grepl("^Xme_", pnames))
+        attr(object$exclude, "save_mevars") <- 
+          any(grepl("^Xme_", parnames(object)))
       }
     }
     stan_env <- attributes(x$fit)$.MISC
