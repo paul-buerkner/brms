@@ -385,12 +385,12 @@ stan_llh_cens <- function(llh_pre, family, interval,
   lpdf <- ifelse(use_int(family), "_lpmf", "_lpdf")
   w <- ifelse(weights, "weights[n] * ", "")
   tr <- stan_llh_trunc(llh_pre, bounds = bounds)
+  tp <- tp()
   if (interval) {
     int_cens <- paste0(
       s, "} else if (cens[n] == 2) { \n",
-      s, tp(), w, "log_diff_exp(", 
-      llh_pre[1], "_lcdf(rcens[n] | ", llh_pre[2], "), \n",
-      collapse(rep(" ", 31)),
+      s, tp, w, "log_diff_exp(", 
+      llh_pre[1], "_lcdf(rcens[n] | ", llh_pre[2], "), ",
       llh_pre[1], "_lcdf(Y[n] | ", llh_pre[2], "))", tr, "; \n"
     )
   } else {
@@ -448,7 +448,7 @@ stan_llh_trunc <- function(llh_pre, bounds, short = FALSE) {
     }
   } else {
     # truncation making use of _lcdf functions
-    ms <- paste0(" - \n", collapse(rep(" ", 18)))
+    ms <- paste0(" - \n", collapse(rep(" ", 8)))
     if (any(bounds$lb > -Inf) && !any(bounds$ub < Inf)) {
       tr <- paste0(ms, llh_pre[1], "_lccdf(lb[n] | ", llh_pre[2], ")")
     } else if (!any(bounds$lb > -Inf) && any(bounds$ub < Inf)) {
@@ -456,10 +456,7 @@ stan_llh_trunc <- function(llh_pre, bounds, short = FALSE) {
     } else if (any(bounds$lb > -Inf) && any(bounds$ub < Inf)) {
       trr <- paste0(llh_pre[1], "_lcdf(ub[n] | ", llh_pre[2], ")")
       trl <- paste0(llh_pre[1], "_lcdf(lb[n] | ", llh_pre[2], ")")
-      tr <- paste0(
-        ms, "log_diff_exp(", trr, ", \n",
-        collapse(rep(" ", 31)), trl, ")"
-      )
+      tr <- paste0(ms, "log_diff_exp(", trr, ", ", trl, ")")
     } else {
       tr <- ""
     }

@@ -519,9 +519,7 @@ stan_ordinal <- function(family, prior, cs, disc) {
           )
         }
       }
-      str_add(out$fun) <- paste(
-        "    return categorical_lpmf(y | p); \n   } \n"
-      )
+      str_add(out$fun) <- "    return categorical_lpmf(y | p); \n   } \n"
     }
   }
   out
@@ -913,7 +911,7 @@ stan_prior <- function(prior, class, coef = "", group = "",
         tp, "inv_gamma_lpdf(hs_local", p, "[2] | ", local_args, "); \n",
         tp, "normal_lpdf(hs_global", p, "[1] | 0, 1); \n",
         tp, "inv_gamma_lpdf(hs_global", p, "[2] | ", global_args, "); \n",
-        tp, "target += inv_gamma_lpdf(hs_c2", p, " | ", c2_args, "); \n"
+        tp, "inv_gamma_lpdf(hs_c2", p, " | ", c2_args, "); \n"
       )
     }
     if (!is.null(special$lasso_df)) {
@@ -958,11 +956,10 @@ stan_base_prior <- function(prior) {
 }
 
 stan_target_prior <- function(prior, par) {
-  stopifnot(length(prior) == length(par))
-  prior_name <- brms:::get_matches("^[^\\(]+\\(", prior, simplify = FALSE)
+  prior_name <- get_matches("^[^\\(]+\\(", prior, simplify = FALSE)
   for (i in seq_along(prior_name)) {
     if (length(prior_name[[i]]) != 1L) {
-      stop("The prior '", prior[i], "' is invalid.")
+      stop2("The prior '", prior[i], "' is invalid.")
     }
   }
   prior_name <- unlist(prior_name)
@@ -992,14 +989,16 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
   out <- list()
   if (identical(sample_prior, "yes")) {
     prior <- gsub(" ", "", paste0("\n", prior))
-    pars <- get_matches("\\\n[^~]+", prior)
-    pars <- gsub("\\\n|to_vector\\(|\\)", "", pars)
-    regex <- "^(z|zs|zb|zgp|Xme|hs)_?|^increment_log_prob\\(|^target ?(\\+=)"
+    pars <- get_matches("\\([^|]+", prior)
+    pars <- gsub("^\\(|to_vector\\(|(\\)$)", "", pars)
+    regex <- "^(z|zs|zb|zgp|Xme|hs)_?|^increment_log_prob\\("
     take <- !grepl(regex, pars)
-    pars <- rename(pars[take], symbols = c("^L_", "^Lrescor"), 
-                   subs = c("cor_", "rescor"), fixed = FALSE)
-    dis <- gsub("~", "", get_matches("~[^\\(]+", prior))[take]
-    args <- get_matches("\\([^;~]+\\);", prior)[take]
+    pars <- rename(
+      pars[take], symbols = c("^L_", "^Lrescor"), 
+      subs = c("cor_", "rescor"), fixed = FALSE
+    )
+    dis <- gsub("+=|_lpdf", "", get_matches("+=[^\\(]+", prior)[take])
+    args <- gsub("\\|", "", get_matches("\\|[^;\\|]+\\);", prior)[take])
     type <- rep("real", length(pars))
     
     # rename parameters containing indices
@@ -1013,7 +1012,7 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
     # special treatment of lkj_corr_cholesky priors
     args <- ifelse(
       grepl("corr_cholesky$", dis), 
-      paste0("(2,", substr(args, 2, nchar(args) - 1), "[1, 2];"),
+      paste0("2,", substr(args, 1, nchar(args) - 1), "[1, 2];"),
       args
     )
     dis <- sub("corr_cholesky$", "corr", dis)
@@ -1053,8 +1052,8 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
       str_add(out$model) <- paste0(
         "  // additionally draw samples from priors\n",
         collapse(
-          "  prior_", pars[has_bounds] ," ~ ",
-          dis[has_bounds], args[has_bounds], "\n"
+          "  target += ", dis[has_bounds], "_lpdf(",
+          "prior_", pars[has_bounds], " | ", args[has_bounds], "\n"
         )
       )
     }
@@ -1078,7 +1077,7 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
         "  // additionally draw samples from priors \n",
         collapse(
           "  ", types[no_bounds], " prior_", pars[no_bounds], 
-          " = ", dis[no_bounds], "_rng", args[no_bounds], " \n"
+          " = ", dis[no_bounds], "_rng(", args[no_bounds], " \n"
         )
       )
     }
