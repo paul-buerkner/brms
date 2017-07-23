@@ -126,6 +126,16 @@ restructure <- function(x, rstr_summary = FALSE) {
       x$ranef$type[x$ranef$type == "mono"] <- "mo"
       x$ranef$type[x$ranef$type == "cse"] <- "cs"
     }
+    if (version <= "1.8.0") {
+      att <- attributes(object$exclude)
+      if (is.null(att$save_ranef)) {
+        attr(object$exclude, "save_ranef") <- 
+          any(grepl("^r_", parnames(object))) || !nrow(object$ranef)
+      }
+      if (is.null(att$save_mevars)) {
+        attr(object$exclude, "save_mevars") <- any(grepl("^Xme_", pnames))
+      }
+    }
     stan_env <- attributes(x$fit)$.MISC
     if (rstr_summary && exists("summary", stan_env)) {
       stan_summary <- get("summary", stan_env)

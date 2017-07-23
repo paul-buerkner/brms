@@ -2178,10 +2178,13 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     }
   }
   if (is.null(dots$save_ranef)) {
-    dots$save_ranef <- any(grepl("^r_", pnames)) || !nrow(object$ranef)
+    dots$save_ranef <- isTRUE(attr(object$exclude, "save_ranef"))
   }
   if (is.null(dots$save_mevars)) {
-    dots$save_mevars <- any(grepl("^Xme_", pnames))
+    dots$save_mevars <- isTRUE(attr(object$exclude, "save_mevars"))
+  }
+  if (is.null(dots$save_all_pars)) {
+    dots$save_all_pars <- isTRUE(attr(object$exclude, "save_all_pars"))
   }
   if (is.null(dots$sparse)) {
     dots$sparse <- grepl("sparse matrix", stancode(object))
@@ -2225,18 +2228,11 @@ update.brmsfit <- function(object, formula., newdata = NULL,
       dots$sample_prior <- check_sample_prior(dots$sample_prior)
       attr(object$prior, "sample_prior") <- dots$sample_prior
     }
-    if (!is.null(dots$save_ranef) || !is.null(dots$save_mevars)) {
-      if (is.null(dots$save_ranef)) {
-        dots$save_ranef <- any(grepl("^r_", pnames)) || !nrow(object$ranef)
-      }
-      if (is.null(dots$save_mevars)) {
-        dots$save_mevars <- any(grepl("^Xme_", pnames))
-      }
-      object$exclude <- exclude_pars(
-        bterms, data = object$data, ranef = object$ranef, 
-        save_ranef = dots$save_ranef, save_mevars = dots$save_mevars
-      )
-    }
+    object$exclude <- exclude_pars(
+      bterms, data = object$data, ranef = object$ranef, 
+      save_ranef = dots$save_ranef, save_mevars = dots$save_mevars,
+      save_all_pars = dots$save_all_pars
+    )
     if (!is.null(dots$algorithm)) {
       aopts <- c("sampling", "meanfield", "fullrank")
       algorithm <- match.arg(dots$algorithm, aopts)

@@ -1418,7 +1418,7 @@ has_cens <- function(formula, data = NULL) {
 
 exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
                          save_ranef = TRUE, save_mevars = FALSE,
-                         save_all_pars = TRUE) {
+                         save_all_pars = FALSE) {
   # list irrelevant parameters NOT to be saved by Stan
   # Args:
   #   bterms: object of class brmsterms
@@ -1450,6 +1450,9 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
   }
   
   stopifnot(is.brmsterms(bterms))
+  save_ranef <- as_one_logical(save_ranef)
+  save_mevars <- as_one_logical(save_mevars)
+  save_all_pars <- as_one_logical(save_all_pars)
   out <- c(
     "Rescor", "Sigma", "res_cov_matrix",
     intersect(auxpars(), names(bterms$auxpars))
@@ -1487,5 +1490,6 @@ exclude_pars <- function(bterms, data = NULL, ranef = empty_ranef(),
       out <- c(out, paste0("r_", ranef$id, usc_nlpar, "_", ranef$cn))
     }
   }
-  out
+  att <- nlist(save_ranef, save_mevars, save_all_pars)
+  do.call(structure, c(list(out), att))
 }
