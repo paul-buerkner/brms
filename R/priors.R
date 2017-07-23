@@ -529,6 +529,7 @@ get_prior <- function(formula, data, family = gaussian(),
     bs = "gamma(1, 1)", 
     ndt = "uniform(0, min_Y)", 
     bias = "beta(1, 1)", 
+    quantile = "beta(1, 1)",
     xi = "normal(0, 2.5)",
     alpha = "normal(0, 4)",
     disc = NA,
@@ -558,7 +559,8 @@ get_prior <- function(formula, data, family = gaussian(),
   prior <- rbind(prior, prior_re)
   # prior for the delta parameter for equidistant thresholds
   if (is_ordinal(family) && is_equal(family$threshold, "equidistant")) {
-    prior <- rbind(prior, brmsprior(class = "delta"))
+    bound <- ifelse(family$family == "cumulative", "<lower=0>", "")
+    prior <- rbind(prior, brmsprior(class = "delta", bound = bound))
   }
   # priors for mixture models
   ap_classes <- auxpar_class(names(c(bterms$auxpars, bterms$fauxpars)))
@@ -1222,6 +1224,75 @@ empty_brmsprior <- function() {
   brmsprior(prior = character(0), class = character(0), 
             coef = character(0), group = character(0),
             nlpar = character(0), bound = character(0))
+}
+
+prior_bounds <- function(prior) {
+  # natural upper and lower bounds for priors
+  # Returns:
+  #   A named list with elements 'lb and 'ub'
+  switch(prior,
+    lognormal = list(lb = 0, ub = Inf),
+    chi_square = list(lb = 0, ub = Inf),
+    inv_chi_square = list(lb = 0, ub = Inf),
+    scaled_inv_chi_square = list(lb = 0, ub = Inf),
+    exponential = list(lb = 0, ub = Inf),
+    gamma = list(lb = 0, ub = Inf),
+    inv_gamma = list(lb = 0, ub = Inf),
+    weibull = list(lb = 0, ub = Inf),
+    frechet = list(lb = 0, ub = Inf),
+    rayleigh = list(lb = 0, ub = Inf),
+    pareto = list(lb = 0, ub = Inf),
+    pareto_type_2 = list(lb = 0, ub = Inf),
+    beta = list(lb = 0, ub = 1),
+    von_mises = list(lb = -pi, ub = pi),
+    list(lb = -Inf, ub = Inf)
+  )
+}
+
+par_bounds <- function(par, bound = "") {
+  # upper and lower bounds for parameter classes
+  # Returns:
+  #   A named list with elements 'lb and 'ub'
+  out <- switch(par,
+    sigma = list(lb = 0, ub = Inf),
+    shape = list(lb = 0, ub = Inf),
+    nu = list(lb = 1, ub = Inf),
+    phi = list(lb = 0, ub = Inf),
+    kappa = list(lb = 0, ub = Inf), 
+    beta = list(lb = 0, ub = Inf),
+    zi = list(lb = 0, ub = 1),
+    hu = list(lb = 0, ub = 1),
+    zoi = list(lb = 0, ub = 1),
+    coi = list(lb = 0, ub = 1),
+    bs = list(lb = 0, ub = Inf),
+    ndt = list(lb = 0, ub = "min_Y"), 
+    bias = list(lb = 0, ub = 1), 
+    disc = list(lb = 0, ub = Inf),
+    quantile = list(lb = 0, ub = 1),
+    ar = list(lb = -1, ub = 1),
+    ma = list(lb = -1, ub = 1),
+    lagsar = list(lb = 0, ub = 1),
+    errorsar = list(lb = 0, ub = 1),
+    car = list(lb = 0, ub = 1),
+    sdcar = list(lb = 0, ub = Inf),
+    sigmaLL = list(lb = 0, ub = Inf),
+    sd = list(lb = 0, ub = Inf),
+    sds = list(lb = 0, ub = Inf),
+    sdgp = list(lb = 0, ub = Inf),
+    lscale = list(lb = 0, ub = Inf),
+    list(lb = -Inf, ub = Inf)
+  )
+  if (isTRUE(nzchar(bound))) {
+    opt_lb <- get_matches("(<|,)lower=[^,>]+", bound)
+    if (isTRUE(nzchar(opt_lb))) {
+      out$lb <- substr(opt_lb, 8, nchar(opt_lb))
+    } 
+    opt_ub <- get_matches("(<|,)upper=[^,>]+", bound)
+    if (isTRUE(nzchar(opt_ub))) {
+      out$ub <- substr(opt_ub, 8, nchar(opt_ub)) 
+    } 
+  }
+  out
 }
 
 #' Checks if argument is a \code{brmsprior} object
