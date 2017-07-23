@@ -355,9 +355,15 @@ SW <- function(expr) {
   base::suppressWarnings(expr)
 }
 
-get_matches <- function(pattern, text, simplify = TRUE, ...) {
+get_matches <- function(pattern, text, simplify = TRUE, 
+                        first = FALSE, ...) {
   # get pattern matches in text as vector
-  x <- regmatches(text, gregexpr(pattern, text, ...))
+  if (first) {
+    x <- regexpr(pattern, text, ...)
+  } else {
+    x <- gregexpr(pattern, text, ...)
+  }
+  x <- regmatches(text, x)
   if (simplify) {
     x <- unlist(x)
   }

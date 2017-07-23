@@ -483,6 +483,7 @@ test_that("Stan code of ordinal models is correct", {
   )
   expect_match2(scode, "real cumulative_lpmf(int y")
   expect_match2(scode, "p[1] = Phi(disc * (thres[1] - mu));")
+  expect_match2(scode, "real<lower=0> delta;")
   expect_match2(scode, "temp_Intercept[k] = temp_Intercept1 + (k - 1.0) * delta;")
   expect_match2(scode, "b_Intercept = temp_Intercept + dot_product(means_X, b);")
   expect_warning(
@@ -1089,8 +1090,8 @@ test_that("Stan code for Gaussian processes is correct", {
   prior <- c(prior(normal(0, 10), lscale),
              prior(gamma(0.1, 0.1), sdgp))
   scode <- make_stancode(y ~ gp(x1) + gp(x2, by = x1), dat, prior = prior)
-  expect_match2(scode, "target += normal_lpdf(lscale_1 | 0, 10);")
-  expect_match2(scode, "target += gamma_lpdf(sdgp_1 | 0.1, 0.1);")
+  expect_match2(scode, "target += normal_lpdf(lscale_1 | 0, 10)")
+  expect_match2(scode, "target += gamma_lpdf(sdgp_1 | 0.1, 0.1)")
   expect_match2(scode, "Cgp_2 .* gp(Xgp_2, sdgp_2[1], lscale_2[1], zgp_2)")
   
   # Suppress Stan parser warnings that can currently not be avoided
@@ -1107,8 +1108,8 @@ test_that("Stan code for Gaussian processes is correct", {
              prior(normal(0, 1), b, nlpar = eta))
   scode <- make_stancode(bf(y ~ eta, eta ~ gp(x1), nl = TRUE), 
                          data = dat, prior = prior)
-  expect_match2(scode, "target += normal_lpdf(lscale_eta_1 | 0, 10);")
-  expect_match2(scode, "target += gamma_lpdf(sdgp_eta_1 | 0.1, 0.1);")
+  expect_match2(scode, "target += normal_lpdf(lscale_eta_1 | 0, 10)")
+  expect_match2(scode, "target += gamma_lpdf(sdgp_eta_1 | 0.1, 0.1)")
   expect_match2(scode, "gp(Xgp_eta_1, sdgp_eta_1[1], lscale_eta_1[1], zgp_eta_1)")
 })
 

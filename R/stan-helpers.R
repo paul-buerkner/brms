@@ -435,7 +435,7 @@ stan_ordinal <- function(family, prior, cs, disc) {
     } else if (threshold == "equidistant") {
       str_add(out$par) <- paste0(
         "  real temp_Intercept1;  // threshold 1 \n",
-        "  real", if (family == "cumulative") "<lower=0>",
+        "  real", prior[prior$class == "delta", "bound"],
         " delta;  // distance between thresholds \n"
       )
       str_add(out$transD) <- intercept
@@ -845,8 +845,10 @@ stan_prior <- function(prior, class, coef = "", group = "",
       prior[nzchar(prior$coef), "prior"] <- base_prior[take]
     }
     base_prior <- base_prior[1]
+    bound <- ""
   } else {
     base_prior <- stan_base_prior(prior)
+    bound <- prior[!nzchar(prior$coef), "bound"]
   }
   
   individual_prior <- function(i, max_index) {
@@ -863,13 +865,15 @@ stan_prior <- function(prior, class, coef = "", group = "",
     if (!is.na(uc_prior) & nchar(uc_prior)) { 
       # user defined prior for this parameter
       coef_prior <- uc_prior
-    } else { # base prior for this parameter
+    } else { 
+      # base prior for this parameter
       coef_prior <- base_prior 
     }  
     if (nzchar(coef_prior)) {  
       # implies a proper prior
       pars <- paste0(class, index)
-      out <- paste0(tp, stan_target_prior(coef_prior, pars), "; \n")
+      out <- stan_target_prior(coef_prior, pars, bound = bound)
+      out <- paste0(tp, out, "; \n")
     } else {
       # implies an improper flat prior
       out <- ""
@@ -887,41 +891,17 @@ stan_prior <- function(prior, class, coef = "", group = "",
     if (matrix) {
       class <- paste0("to_vector(", class, ")")
     }
-    out <- paste0(tp, stan_target_prior(base_prior, class), "; \n")
+    out <- stan_target_prior(
+      base_prior, class, ncoef = length(coef), bound = bound
+    )
+    out <- paste0(tp, out, "; \n")
   } else {
     out <- ""
   }
-  p <- usc(unlpar)
-  if (all(class == paste0("b", p))) {
-    stopifnot(length(unlpar) == 1L)
-    # add horseshoe and lasso shrinkage priors
-    orig_nlpar <- ifelse(nzchar(unlpar), unlpar, "mu")
-    special <- attributes(prior)$special[[orig_nlpar]]
-    special_priors <- NULL
-    if (!is.null(special$hs_df)) {
-      local_args <- paste0("0.5 * hs_df", p)
-      local_args <- sargs(local_args, local_args)
-      global_args <- paste0("0.5 * hs_df_global", p)
-      global_args <- sargs(global_args, global_args)
-      c2_args <- paste0("0.5 * hs_df_slab", p)
-      c2_args <- sargs(c2_args, c2_args)
-      str_add(special_priors) <- paste0(
-        tp, "normal_lpdf(zb", p, " | 0, 1); \n",
-        tp, "normal_lpdf(hs_local", p, "[1] | 0, 1); \n",
-        tp, "inv_gamma_lpdf(hs_local", p, "[2] | ", local_args, "); \n",
-        tp, "normal_lpdf(hs_global", p, "[1] | 0, 1); \n",
-        tp, "inv_gamma_lpdf(hs_global", p, "[2] | ", global_args, "); \n",
-        tp, "inv_gamma_lpdf(hs_c2", p, " | ", c2_args, "); \n"
-      )
-    }
-    if (!is.null(special$lasso_df)) {
-      str_add(special_priors) <- paste0(
-        tp, "chi_square_lpdf(lasso_inv_lambda", p, " | lasso_df", p, "); \n"
-      )
-    }
-    out <- c(special_priors, out) 
-  }
-  out <- collapse(out)
+  special_prior <- stan_special_prior(
+    class, prior, ncoef = length(coef), nlpar = nlpar
+  )
+  out <- collapse(c(out, special_prior))
   if (prior_only && nzchar(class) && !nchar(out)) {
     stop2("Sampling from priors is not possible as ", 
           "some parameters have no proper priors. ",
@@ -955,7 +935,7 @@ stan_base_prior <- function(prior) {
   base_prior
 }
 
-stan_target_prior <- function(prior, par) {
+stan_target_prior <- function(prior, par, ncoef = 1, bound = "") {
   prior_name <- get_matches("^[^\\(]+\\(", prior, simplify = FALSE)
   for (i in seq_along(prior_name)) {
     if (length(prior_name[[i]]) != 1L) {
@@ -970,7 +950,67 @@ stan_target_prior <- function(prior, par) {
       paste0("^", prior_name[i], "\\("), "", prior[i]
     )
   }
-  paste0(prior_name, "_lpdf(", par, " | ", prior_args)
+  out <- paste0(prior_name, "_lpdf(", par, " | ", prior_args)
+  par_class <- unique(get_matches("^[^_]+", par))
+  par_bound <- par_bounds(par_class, bound)
+  prior_bound <- prior_bounds(prior_name)
+  trunc_lb <- is.character(par_bound$lb) || par_bound$lb > prior_bound$lb
+  trunc_ub <- is.character(par_bound$ub) || par_bound$ub < prior_bound$ub
+  if (trunc_lb || trunc_ub) {
+    if (trunc_lb && !trunc_ub) {
+      str_add(out) <- paste0(
+        " - ", ncoef, " * ", prior_name, "_lccdf(", 
+        par_bound$lb, " | ", prior_args
+      )
+    } else if (!trunc_lb && trunc_ub) {
+      str_add(out) <- paste0(
+        " - ", ncoef, " * ", prior_name, "_lcdf(", 
+        par_bound$ub, " | ", prior_args
+      )
+    } else if (trunc_lb && trunc_ub) {
+      str_add(out) <- paste0(
+        " - \n", collapse(rep(" ", 8)), ncoef, " * log_diff_exp(", 
+        prior_name, "_lcdf(", par_bound$ub, " | ", prior_args, ", ",
+        prior_name, "_lcdf(", par_bound$lb, " | ", prior_args, ")"
+      )
+    }
+  }
+  out
+}
+
+stan_special_prior <- function(class, prior, ncoef, nlpar = "") {
+  # add special priors such as horseshoe and lasso
+  out <- ""
+  p <- usc(nlpar)
+  if (all(class == paste0("b", p))) {
+    stopifnot(length(nlpar) == 1L)
+    tp <- tp()
+    # add horseshoe and lasso shrinkage priors
+    orig_nlpar <- ifelse(nzchar(nlpar), nlpar, "mu")
+    special <- attributes(prior)$special[[orig_nlpar]]
+    if (!is.null(special$hs_df)) {
+      local_args <- paste0("0.5 * hs_df", p)
+      local_args <- sargs(local_args, local_args)
+      global_args <- paste0("0.5 * hs_df_global", p)
+      global_args <- sargs(global_args, global_args)
+      c2_args <- paste0("0.5 * hs_df_slab", p)
+      c2_args <- sargs(c2_args, c2_args)
+      str_add(out) <- paste0(
+        tp, "normal_lpdf(zb", p, " | 0, 1); \n",
+        tp, "normal_lpdf(hs_local", p, "[1] | 0, 1) - ", ncoef, " * log_half; \n",
+        tp, "inv_gamma_lpdf(hs_local", p, "[2] | ", local_args, "); \n",
+        tp, "normal_lpdf(hs_global", p, "[1] | 0, 1) - log_half; \n",
+        tp, "inv_gamma_lpdf(hs_global", p, "[2] | ", global_args, "); \n",
+        tp, "inv_gamma_lpdf(hs_c2", p, " | ", c2_args, "); \n"
+      )
+    }
+    if (!is.null(special$lasso_df)) {
+      str_add(out) <- paste0(
+        tp, "chi_square_lpdf(lasso_inv_lambda", p, " | lasso_df", p, "); \n"
+      )
+    }
+  }
+  out
 }
 
 stan_rngprior <- function(sample_prior, prior, par_declars,
@@ -988,17 +1028,20 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
   #   a character string containing the priors to be sampled from in stan code
   out <- list()
   if (identical(sample_prior, "yes")) {
-    prior <- gsub(" ", "", paste0("\n", prior))
-    pars <- get_matches("\\([^|]+", prior)
-    pars <- gsub("^\\(|to_vector\\(|(\\)$)", "", pars)
+    prior <- strsplit(gsub(" |\\n", "", prior), ";")[[1]]
+    prior <- prior[nzchar(prior)]
+    pars <- get_matches("_lpdf\\([^|]+", prior, first = TRUE)
+    pars <- gsub("^_lpdf\\(|to_vector\\(|\\)$", "", pars)
     regex <- "^(z|zs|zb|zgp|Xme|hs)_?|^increment_log_prob\\("
     take <- !grepl(regex, pars)
     pars <- rename(
       pars[take], symbols = c("^L_", "^Lrescor"), 
       subs = c("cor_", "rescor"), fixed = FALSE
     )
-    dis <- gsub("+=|_lpdf", "", get_matches("+=[^\\(]+", prior)[take])
-    args <- gsub("\\|", "", get_matches("\\|[^;\\|]+\\);", prior)[take])
+    dis <- get_matches("target\\+=[^\\(]+", prior, first = TRUE)
+    dis <- gsub("target\\+=|_lpdf", "", dis[take])
+    args <- get_matches("\\|[^$\\|]+\\)($|-)", prior, first = TRUE)
+    args <- gsub("\\||(;|-)$", "", args[take])
     type <- rep("real", length(pars))
     
     # rename parameters containing indices
@@ -1012,8 +1055,7 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
     # special treatment of lkj_corr_cholesky priors
     args <- ifelse(
       grepl("corr_cholesky$", dis), 
-      paste0("2,", substr(args, 1, nchar(args) - 1), "[1, 2];"),
-      args
+      paste0("2,", args, "[1, 2]"), args
     )
     dis <- sub("corr_cholesky$", "corr", dis)
     
@@ -1053,7 +1095,7 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
         "  // additionally draw samples from priors\n",
         collapse(
           "  target += ", dis[has_bounds], "_lpdf(",
-          "prior_", pars[has_bounds], " | ", args[has_bounds], "\n"
+          "prior_", pars[has_bounds], " | ", args[has_bounds], "; \n"
         )
       )
     }
@@ -1077,7 +1119,7 @@ stan_rngprior <- function(sample_prior, prior, par_declars,
         "  // additionally draw samples from priors \n",
         collapse(
           "  ", types[no_bounds], " prior_", pars[no_bounds], 
-          " = ", dis[no_bounds], "_rng(", args[no_bounds], " \n"
+          " = ", dis[no_bounds], "_rng(", args[no_bounds], "; \n"
         )
       )
     }
