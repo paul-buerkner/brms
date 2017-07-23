@@ -1011,9 +1011,15 @@ check_prior_content <- function(prior, family = gaussian(), warn = TRUE) {
     lb_priors_reg <- paste0("^(", paste0(lb_priors, collapse = "|"), ")")
     ulb_priors <- c("beta", "uniform", "von_mises")
     ulb_priors_reg <- paste0("^(", paste0(ulb_priors, collapse = "|"), ")")
-    nb_pars <- c("b", "Intercept", if (!family %in% "cumulative") "delta")
-    lb_pars <- c("sd", "sigma", "nu", "shape", "phi", "kappa",
-                 if (family %in% "cumulative") "delta")
+    nb_pars <- c(
+      "b", "Intercept", "alpha", "xi",
+      if (!family %in% "cumulative") "delta"
+    )
+    lb_pars <- c(
+      "sigma", "shape", "nu", "phi", "kappa", "beta", "bs", 
+      "disc", "sdcar", "sigmaLL", "sd", "sds", "sdgp", "lscale", 
+      if (family %in% "cumulative") "delta"
+    )
     cor_pars <- c("cor", "L", "rescor", "Lrescor")
     autocor_pars <- c("ar", "ma")
     lb_warning <- ub_warning <- ""
@@ -1023,17 +1029,17 @@ check_prior_content <- function(prior, family = gaussian(), warn = TRUE) {
       has_lb_prior <- grepl(lb_priors_reg, prior$prior[i])
       has_ulb_prior <- grepl(ulb_priors_reg, prior$prior[i])
       # priors with nchar(coef) inherit their boundaries 
-      j <- with(prior, 
-        which(class == class[i] & group == group[i] & 
-              nlpar == nlpar[i] & !nchar(coef))
-      )
+      j <- which(with(prior, 
+        class == class[i] & group == group[i] & 
+        nlpar == nlpar[i] & !nchar(coef)
+      ))
       bound <- if (length(j)) prior$bound[j] else ""
       has_lb <- grepl("lower", bound)
       has_ub <- grepl("upper", bound)
       if (prior$class[i] %in% nb_pars) {
         if ((has_lb_prior || has_ulb_prior) && !has_lb) {
           lb_warning <- paste0(lb_warning, msg_prior, "\n")
-        } 
+        }
         if (has_ulb_prior && !has_ub) {
           ub_warning <- paste0(ub_warning, msg_prior, "\n")
         }
@@ -1050,7 +1056,7 @@ check_prior_content <- function(prior, family = gaussian(), warn = TRUE) {
       } else if (prior$class[i] %in% autocor_pars) {
         if (prior$bound[i] != "<lower=-1,upper=1>") {
           autocor_warning <- TRUE
-        } 
+        }
       } else if (prior$class[i] %in% c("simplex", "theta")) {
         if (nchar(prior$prior[i]) && !grepl("^dirichlet\\(", prior$prior[i])) {
           stop2("Currently 'dirichlet' is the only valid prior ",
@@ -1058,7 +1064,7 @@ check_prior_content <- function(prior, family = gaussian(), warn = TRUE) {
                 "for more details.")
         }
       }
-    }  # end for  
+    } 
     if (nchar(lb_warning) && warn) {
       warning2("It appears as if you have specified a lower bounded ", 
                "prior on a parameter that has no natural lower bound.",
