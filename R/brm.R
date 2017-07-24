@@ -102,6 +102,9 @@
 #' @param stan_funs An optional character string containing self-defined 
 #'   \pkg{Stan} functions, which will be included in the functions block 
 #'   of the generated \pkg{Stan} code. 
+#'   Note that these functions must additionally be defined 
+#'   as \emph{vectorized} \R functions in the global environment for 
+#'   various post-processing methods to work on the returned model object.
 #' @param fit An instance of S3 class \code{brmsfit} derived from a previous fit; 
 #'   defaults to \code{NA}. 
 #'   If \code{fit} is of class \code{brmsfit}, the compiled model associated 
