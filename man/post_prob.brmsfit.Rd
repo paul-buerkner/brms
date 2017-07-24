@@ -31,8 +31,42 @@ The \code{brmsfit} method is just a thin wrapper around
 the corresponding method for \code{bridge} objects.
 }
 \details{
-More details are provided under
+Computing the marginal likelihood requires samples 
+  of all variables defined in Stan's \code{parameters} block
+  to be saved. Otherwise \code{post_prob} cannot be computed.
+  Thus, please set \code{save_all_pars = TRUE} in the call to \code{brm},
+  if you are planning to apply \code{post_prob} to your models.
+
+  More details are provided under 
   \code{\link[bridgesampling:post_prob]{post_prob}}.
+}
+\examples{
+\dontrun{
+# model with the treatment effect
+fit1 <- brm(
+  count ~ log_Age_c + log_Base4_c + Trt_c,
+  data = epilepsy, family = negbinomial(), 
+  prior = prior(normal(0, 1), class = b),
+  save_all_pars = TRUE
+)
+summary(fit1)
+
+# model without the treatent effect
+fit2 <- brm(
+  count ~ log_Age_c + log_Base4_c,
+  data = epilepsy, family = negbinomial(), 
+  prior = prior(normal(0, 1), class = b),
+  save_all_pars = TRUE
+)
+summary(fit2)
+
+# compute the posterior model probabilities
+post_prob(fit1, fit2)
+
+# specify prior model probabilities
+post_prob(fit1, fit2, prior_prob = c(0.8, 0.2))
+}
+
 }
 \seealso{
 \code{

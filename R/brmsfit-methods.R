@@ -2692,12 +2692,41 @@ control_params.brmsfit <- function(x, pars = NULL, ...) {
 #' @param ... Additional arguments passed to 
 #'   \code{\link[bridgesampling:bridge_sampler]{bridge_sampler.stanfit}}.
 #' 
-#' @details More details are provided under
+#' @details Computing the marginal likelihood requires samples 
+#'   of all variables defined in Stan's \code{parameters} block
+#'   to be saved. Otherwise \code{bridge_sampler} cannot be computed.
+#'   Thus, please set \code{save_all_pars = TRUE} in the call to \code{brm},
+#'   if you are planning to apply \code{bridge_sampler} to your models.
+#' 
+#'   More details are provided under
 #'   \code{\link[bridgesampling:bridge_sampler]{bridge_sampler}}.
 #'   
 #' @seealso \code{
 #'   \link[brms:bayes_factor]{bayes_factor},
 #'   \link[brms:post_prob]{post_prob}
+#' }
+#' 
+#' @examples 
+#' \dontrun{
+#' # model with the treatment effect
+#' fit1 <- brm(
+#'   count ~ log_Age_c + log_Base4_c + Trt_c,
+#'   data = epilepsy, family = negbinomial(), 
+#'   prior = prior(normal(0, 1), class = b),
+#'   save_all_pars = TRUE
+#' )
+#' summary(fit1)
+#' bridge_sampler(fit1)
+#' 
+#' # model without the treatent effect
+#' fit2 <- brm(
+#'   count ~ log_Age_c + log_Base4_c,
+#'   data = epilepsy, family = negbinomial(), 
+#'   prior = prior(normal(0, 1), class = b),
+#'   save_all_pars = TRUE
+#' )
+#' summary(fit2)
+#' bridge_sampler(fit2)
 #' }
 #' 
 #' @method bridge_sampler brmsfit
@@ -2738,12 +2767,45 @@ bayes_factor.brmsfit <- function(x1, x2, log = FALSE, ...) {
 #' @param bs_args A list of additional arguments passed to 
 #'   \code{\link[brms:bridge_sampler]{bridge_sampler}}.
 #'   
-#' @details More details are provided under
+#' @details Computing the marginal likelihood requires samples 
+#'   of all variables defined in Stan's \code{parameters} block
+#'   to be saved. Otherwise \code{post_prob} cannot be computed.
+#'   Thus, please set \code{save_all_pars = TRUE} in the call to \code{brm},
+#'   if you are planning to apply \code{post_prob} to your models.
+#' 
+#'   More details are provided under 
 #'   \code{\link[bridgesampling:post_prob]{post_prob}}. 
 #'   
 #' @seealso \code{
 #'   \link[brms:bridge_sampler]{bridge_sampler},
 #'   \link[brms:bayes_factor]{bayes_factor}
+#' }
+#' 
+#' @examples 
+#' \dontrun{
+#' # model with the treatment effect
+#' fit1 <- brm(
+#'   count ~ log_Age_c + log_Base4_c + Trt_c,
+#'   data = epilepsy, family = negbinomial(), 
+#'   prior = prior(normal(0, 1), class = b),
+#'   save_all_pars = TRUE
+#' )
+#' summary(fit1)
+#' 
+#' # model without the treatent effect
+#' fit2 <- brm(
+#'   count ~ log_Age_c + log_Base4_c,
+#'   data = epilepsy, family = negbinomial(), 
+#'   prior = prior(normal(0, 1), class = b),
+#'   save_all_pars = TRUE
+#' )
+#' summary(fit2)
+#' 
+#' # compute the posterior model probabilities
+#' post_prob(fit1, fit2)
+#' 
+#' # specify prior model probabilities
+#' post_prob(fit1, fit2, prior_prob = c(0.8, 0.2))
 #' }
 #' 
 #' @method post_prob brmsfit

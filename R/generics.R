@@ -1139,8 +1139,13 @@ control_params <- function(x, ...) {
 #' @param ... Additional arguments passed to 
 #'   \code{\link[brms:bridge_sampler]{bridge_sampler}}.
 #' 
-#' @details More details are provided under
-#'   \code{\link[bridgesampling:bf]{bf}}.
+#' @details Computing the marginal likelihood requires samples 
+#'   of all variables defined in Stan's \code{parameters} block
+#'   to be saved. Otherwise \code{bayes_factor} cannot be computed.
+#'   Thus, please set \code{save_all_pars = TRUE} in the call to \code{brm},
+#'   if you are planning to apply \code{bayes_factor} to your models.
+#' 
+#'   More details are provided under \code{\link[bridgesampling:bf]{bf}}.
 #'   
 #' @note The \code{bayes_factor} method is an alias of the
 #'  \code{\link[bridgesampling:bf]{bf}} method provided by
@@ -1151,6 +1156,30 @@ control_params <- function(x, ...) {
 #' @seealso \code{
 #'   \link[brms:bridge_sampler]{bridge_sampler},
 #'   \link[brms:post_prob]{post_prob}
+#' }
+#' 
+#' @examples 
+#' \dontrun{
+#' # model with the treatment effect
+#' fit1 <- brm(
+#'   count ~ log_Age_c + log_Base4_c + Trt_c,
+#'   data = epilepsy, family = negbinomial(), 
+#'   prior = prior(normal(0, 1), class = b),
+#'   save_all_pars = TRUE
+#' )
+#' summary(fit1)
+#' 
+#' # model without the treatent effect
+#' fit2 <- brm(
+#'   count ~ log_Age_c + log_Base4_c,
+#'   data = epilepsy, family = negbinomial(), 
+#'   prior = prior(normal(0, 1), class = b),
+#'   save_all_pars = TRUE
+#' )
+#' summary(fit2)
+#' 
+#' # compute the bayes factor
+#' bayes_factor(fit1, fit2)
 #' }
 #' 
 #' @export
