@@ -2678,6 +2678,28 @@ control_params.brmsfit <- function(x, pars = NULL, ...) {
   out
 }
 
+#' Log Marginal Likelihood via Bridge Sampling
+#' 
+#' Computes log marginal likelihood via bridge sampling,
+#' which can be used in the computation of bayes factors
+#' and posterior model probabilities.
+#' The \code{brmsfit} method is just a thin wrapper around
+#' the corresponding method for \code{stanfit} objects.
+#' 
+#' @aliases bridge_sampler
+#' 
+#' @param samples A \code{brmsfit} object.
+#' @param ... Additional arguments passed to 
+#'   \code{\link[bridgesampling:bridge_sampler]{bridge_sampler.stanfit}}.
+#' 
+#' @details More details are provided under
+#'   \code{\link[bridgesampling:bridge_sampler]{bridge_sampler}}.
+#'   
+#' @seealso \code{
+#'   \link[brms:bayes_factor]{bayes_factor},
+#'   \link[brms:post_prob]{post_prob}
+#' }
+#' 
 #' @method bridge_sampler brmsfit
 #' @importFrom bridgesampling bridge_sampler 
 #' @export bridge_sampler 
@@ -2696,6 +2718,34 @@ bayes_factor.brmsfit <- function(x1, x2, log = FALSE, ...) {
   bridgesampling::bf(bs1, bs2, log = log)
 }
 
+#' Posterior Model Probabilities from Marginal Likelihoods
+#' 
+#' Compute posterior model probabilities from marginal likelihoods.
+#' The \code{brmsfit} method is just a thin wrapper around
+#' the corresponding method for \code{bridge} objects.
+#' 
+#' @aliases post_prob
+#' 
+#' @param x A \code{brmsfit} object.
+#' @param ... More \code{brmsfit} objects.
+#' @param prior_prob Numeric vector with prior model probabilities. 
+#'   If omitted, a uniform prior is used (i.e., all models are equally 
+#'   likely a priori). The default \code{NULL} corresponds to equal 
+#'   prior model weights.
+#' @param model_names If \code{NULL} (the default) will use model names 
+#'   derived from deparsing the call. Otherwise will use the passed 
+#'   values as model names.
+#' @param bs_args A list of additional arguments passed to 
+#'   \code{\link[brms:bridge_sampler]{bridge_sampler}}.
+#'   
+#' @details More details are provided under
+#'   \code{\link[bridgesampling:post_prob]{post_prob}}. 
+#'   
+#' @seealso \code{
+#'   \link[brms:bridge_sampler]{bridge_sampler},
+#'   \link[brms:bayes_factor]{bayes_factor}
+#' }
+#' 
 #' @method post_prob brmsfit
 #' @importFrom bridgesampling post_prob
 #' @export post_prob 

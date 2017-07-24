@@ -1129,14 +1129,29 @@ control_params <- function(x, ...) {
   UseMethod("control_params")
 }
 
-#' Bayes Factor(s) for Marginal Likelihoods
+#' Bayes Factors from Marginal Likelihoods
 #' 
-#' Generic function that computes Bayes factor(s) from marginal likelihoods.
+#' Generic function that computes Bayes factors from marginal likelihoods.
 #' 
 #' @param x1 An \R object
 #' @param x2 Another \R object
 #' @param log Report Bayes factors on the log-scale?
-#' @param ... More arguments passed to or from other methods.
+#' @param ... Additional arguments passed to 
+#'   \code{\link[brms:bridge_sampler]{bridge_sampler}}.
+#' 
+#' @details More details are provided under
+#'   \code{\link[bridgesampling:bf]{bf}}.
+#'   
+#' @note The \code{bayes_factor} method is an alias of the
+#'  \code{\link[bridgesampling:bf]{bf}} method provided by
+#'  the \pkg{bridge_sampler} package. Using an alias
+#'  is necessary, because the function name \code{bf}
+#'  is already taken in \pkg{brms}. 
+#'  
+#' @seealso \code{
+#'   \link[brms:bridge_sampler]{bridge_sampler},
+#'   \link[brms:post_prob]{post_prob}
+#' }
 #' 
 #' @export
 bayes_factor <- function(x1, x2, ...) {

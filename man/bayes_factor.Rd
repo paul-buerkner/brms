@@ -3,7 +3,7 @@
 \name{bayes_factor.brmsfit}
 \alias{bayes_factor.brmsfit}
 \alias{bayes_factor}
-\title{Bayes Factor(s) for Marginal Likelihoods}
+\title{Bayes Factors from Marginal Likelihoods}
 \usage{
 \method{bayes_factor}{brmsfit}(x1, x2, log = FALSE, ...)
 
@@ -16,8 +16,26 @@ bayes_factor(x1, x2, ...)
 
 \item{log}{Report Bayes factors on the log-scale?}
 
-\item{...}{More arguments passed to or from other methods.}
+\item{...}{Additional arguments passed to 
+\code{\link[brms:bridge_sampler]{bridge_sampler}}.}
 }
 \description{
-Generic function that computes Bayes factor(s) from marginal likelihoods.
+Generic function that computes Bayes factors from marginal likelihoods.
+}
+\details{
+More details are provided under
+  \code{\link[bridgesampling:bf]{bf}}.
+}
+\note{
+The \code{bayes_factor} method is an alias of the
+ \code{\link[bridgesampling:bf]{bf}} method provided by
+ the \pkg{bridge_sampler} package. Using an alias
+ is necessary, because the function name \code{bf}
+ is already taken in \pkg{brms}.
+}
+\seealso{
+\code{
+  \link[brms:bridge_sampler]{bridge_sampler},
+  \link[brms:post_prob]{post_prob}
+}
 }
