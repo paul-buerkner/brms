@@ -49,7 +49,7 @@ fit1 <- brm(
 )
 summary(fit1)
 
-# model without the treatent effect
+# model without the treatment effect
 fit2 <- brm(
   count ~ log_Age_c + log_Base4_c,
   data = epilepsy, family = negbinomial(), 
