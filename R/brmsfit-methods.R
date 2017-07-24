@@ -2735,6 +2735,20 @@ control_params.brmsfit <- function(x, pars = NULL, ...) {
 #' @export
 bridge_sampler.brmsfit <- function(samples, ...) {
   # see ?bridge_sampler for explanation why to use update
+  samples <- restructure(samples)
+  if (samples$version$brms <= "1.8.0") {
+    stop2(
+      "Models fitted with brms 1.8.0 or lower are not ",
+      "usable in method 'bridge_sampler'."
+    )
+  }
+  sample_prior <- attr(samples$prior, "sample_prior")
+  if (isTRUE(sample_prior %in% c("yes", "only"))) {
+    stop2(
+      "Models including prior samples are not usable ",
+      "in method 'bridge_sampler'."
+    )
+  }
   stanfit_tmp <- suppressMessages(brm(fit = samples, chains = 0))$fit
   bridge_sampler(samples$fit, stanfit_model = stanfit_tmp, ...)
 }
@@ -2742,6 +2756,7 @@ bridge_sampler.brmsfit <- function(samples, ...) {
 #' @rdname bayes_factor
 #' @export
 bayes_factor.brmsfit <- function(x1, x2, log = FALSE, ...) {
+  match_response(list(x1, x2))
   bs1 <- bridge_sampler(x1, ...)
   bs2 <- bridge_sampler(x2, ...)
   bridgesampling::bf(bs1, bs2, log = log)
@@ -2824,11 +2839,14 @@ post_prob.brmsfit <- function(x, ..., prior_prob = NULL,
   } else if (length(model_names) != length(models)) {
     stop2("Number of model names is not equal to the number of models.") 
   }
-  bs <- vector("list", length(models))
   for (i in seq_along(models)) {
     if (!is.brmsfit(models[[i]])) {
       stop2("Object '", model_names[i], "' is not of class 'brmsfit'.")
     }
+  }
+  match_response(models)
+  bs <- vector("list", length(models))
+  for (i in seq_along(models)) {
     bs[[i]] <- do.call(bridge_sampler, c(list(models[[i]]), bs_args))
   }
   do.call(post_prob, c(bs, nlist(prior_prob, model_names)))
