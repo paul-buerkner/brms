@@ -814,7 +814,7 @@ stan_prior <- function(prior, class, coef = "", group = "",
   #   for a given class of parameters. If a parameter has has 
   #   no corresponding prior in prior, an empty string is returned.
   tp <- tp(wsp)
-  wsp <- collapse(rep(" ", wsp))
+  wsp <- wsp(nsp = wsp)
   prior_only <- identical(attr(prior, "sample_prior"), "only")
   keep <- prior$class == class & 
     prior$coef %in% c(coef, "") & prior$group %in% c(group, "")
@@ -957,19 +957,20 @@ stan_target_prior <- function(prior, par, ncoef = 1, bound = "") {
   trunc_lb <- is.character(par_bound$lb) || par_bound$lb > prior_bound$lb
   trunc_ub <- is.character(par_bound$ub) || par_bound$ub < prior_bound$ub
   if (trunc_lb || trunc_ub) {
+    wsp <- wsp(nsp = 4)
     if (trunc_lb && !trunc_ub) {
       str_add(out) <- paste0(
-        " - ", ncoef, " * ", prior_name, "_lccdf(", 
+        "\n", wsp, "- ", ncoef, " * ", prior_name, "_lccdf(", 
         par_bound$lb, " | ", prior_args
       )
     } else if (!trunc_lb && trunc_ub) {
       str_add(out) <- paste0(
-        " - ", ncoef, " * ", prior_name, "_lcdf(", 
+        "\n", wsp, "- ", ncoef, " * ", prior_name, "_lcdf(", 
         par_bound$ub, " | ", prior_args
       )
     } else if (trunc_lb && trunc_ub) {
       str_add(out) <- paste0(
-        " - \n", collapse(rep(" ", 8)), ncoef, " * log_diff_exp(", 
+        "\n", wsp, "- ", ncoef, " * log_diff_exp(", 
         prior_name, "_lcdf(", par_bound$ub, " | ", prior_args, ", ",
         prior_name, "_lcdf(", par_bound$lb, " | ", prior_args, ")"
       )
@@ -995,11 +996,14 @@ stan_special_prior <- function(class, prior, ncoef, nlpar = "") {
       global_args <- sargs(global_args, global_args)
       c2_args <- paste0("0.5 * hs_df_slab", p)
       c2_args <- sargs(c2_args, c2_args)
+      wsp <- wsp(nsp = 4)
       str_add(out) <- paste0(
         tp, "normal_lpdf(zb", p, " | 0, 1); \n",
-        tp, "normal_lpdf(hs_local", p, "[1] | 0, 1) - ", ncoef, " * log_half; \n",
+        tp, "normal_lpdf(hs_local", p, "[1] | 0, 1)\n", 
+        wsp, "- ", ncoef, " * log(0.5); \n",
         tp, "inv_gamma_lpdf(hs_local", p, "[2] | ", local_args, "); \n",
-        tp, "normal_lpdf(hs_global", p, "[1] | 0, 1) - log_half; \n",
+        tp, "normal_lpdf(hs_global", p, "[1] | 0, 1)\n", 
+        wsp, "- 1 * log(0.5); \n",
         tp, "inv_gamma_lpdf(hs_global", p, "[2] | ", global_args, "); \n",
         tp, "inv_gamma_lpdf(hs_c2", p, " | ", c2_args, "); \n"
       )

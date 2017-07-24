@@ -285,7 +285,6 @@ stan_fe <- function(fixef, prior, family = gaussian(),
         "  real<lower=0> hs_scale_global", p, "; \n",
         "  real<lower=0> hs_scale_slab", p, "; \n"           
       )
-      str_add(out$tdataD) <- "real log_half = log(0.5); \n"
       str_add(out$par) <- paste0(
         "  // horseshoe shrinkage parameters \n",
         "  vector[K", ct, p, "] zb", p, "; \n",
