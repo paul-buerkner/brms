@@ -16,8 +16,10 @@ test_that("specified priors appear in the Stan code", {
   expect_match2(scode, "target += normal_lpdf(b[2] | 0, 2)")
   expect_match2(scode, "target += normal_lpdf(temp_Intercept | 0, 5)")
   expect_match2(scode, "target += cauchy_lpdf(sd_1[1] | 0, 1)")
+  expect_match2(scode, "- 1 * cauchy_lccdf(0 | 0, 1)")
   expect_match2(scode, "target += cauchy_lpdf(sd_1[2] | 0, 2)")
   expect_match2(scode, "target += student_t_lpdf(sigma | 3, 0, 10)")
+  expect_match2(scode, "- 1 * student_t_lccdf(0 | 3, 0, 10)")
   expect_match2(scode, "target += gamma_lpdf(sd_2 | 1, 1)")
   expect_match2(scode, "prior_b_1 = normal_rng(0,1);")
   expect_match2(scode, "target += cauchy_lpdf(prior_sd_1_1 | 0,1)")
@@ -66,7 +68,7 @@ test_that("specified priors appear in the Stan code", {
   expect_match2(scode, "target += lkj_corr_cholesky_lpdf(Lrescor | 2)")
   expect_match2(scode, "prior_rescor = lkj_corr_rng(2,2)[1, 2]")
   
-  prior <- c(prior(uniform(-1, 1), ar, lb = -0.7, ub = 0.5),
+  prior <- c(prior(uniform(0, 1), ar, lb = -0.7, ub = 0.5),
              prior(normal(0, 0.5), ma),
              prior(double_exponential(0, 1), arr),
              prior(normal(0, 5)))
@@ -77,8 +79,11 @@ test_that("specified priors appear in the Stan code", {
     "Changing the boundaries of autocorrelation parameters"
   )
   expect_match2(scode, "vector<lower=-0.7,upper=0.5>[Kar] ar;")
-  expect_match2(scode, "target += uniform_lpdf(ar | -1, 1)")
+  expect_match2(scode, "target += uniform_lpdf(ar | 0, 1)")
   expect_match2(scode, "target += normal_lpdf(ma | 0, 0.5)")
+  expect_match2(scode, 
+    "- 1 * log_diff_exp(normal_lcdf(1 | 0, 0.5), normal_lcdf(-1 | 0, 0.5))"
+  )
   expect_match2(scode, "target += double_exponential_lpdf(arr | 0, 1)")
   expect_match2(scode, "target += normal_lpdf(bmo | 0, 5)")
   expect_match2(scode, "target += dirichlet_lpdf(simplex_1 | con_simplex_1)")
@@ -296,8 +301,11 @@ test_that("make_stancode correctly restricts FE parameters", {
   scode <- make_stancode(y ~ x, data, prior = set_prior("", lb = 2))
   expect_match2(scode, "vector<lower=2>[Kc] b")
   
-  scode <- make_stancode(y ~ x, data, prior = set_prior("normal(0,2)", ub = "4"))
+  scode <- make_stancode(
+    y ~ x, data, prior = set_prior("normal(0, 2)", ub = "4")
+  )
   expect_match2(scode, "vector<upper=4>[Kc] b")
+  expect_match2(scode, "- 1 * normal_lcdf(4 | 0, 2)")
   
   prior <- set_prior("normal(0,5)", lb = "-3", ub = 5)
   scode <- make_stancode(y ~ 0 + x, data, prior = prior)

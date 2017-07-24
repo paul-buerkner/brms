@@ -73,7 +73,7 @@ test_that("Binomial model from brm doc works correctly", {
   expect_ggplot(plot(me4, ask = FALSE)[[1]])
 })
 
-test_that("Models from hypotheses doc work correctly", {
+test_that("Models from hypothesis doc work correctly", {
   prior <- c(set_prior("normal(0,2)", class = "b"),
              set_prior("student_t(10,0,1)", class = "sigma"),
              set_prior("student_t(10,0,1)", class = "sd"))
@@ -100,6 +100,34 @@ test_that("Models from hypotheses doc work correctly", {
   hyp3 <- c("diseaseGN = diseaseAN", "2 * diseaseGN - diseasePKD = 0")
   hyp3 <- hypothesis(fit, hyp3)
   expect_equal(dim(hyp3$hypothesis), c(2, 6))
+})
+
+test_that("bridgesampling methods work correctly", {
+  # model with the treatment effect
+  fit1 <- brm(
+    count ~ log_Age_c + log_Base4_c + Trt_c,
+    data = epilepsy, family = negbinomial(), 
+    prior = prior(normal(0, 1), class = b),
+    save_all_pars = TRUE
+  )
+  print(fit1)
+  # model without the treatent effect
+  fit2 <- brm(
+    count ~ log_Age_c + log_Base4_c,
+    data = epilepsy, family = negbinomial(), 
+    prior = prior(normal(0, 1), class = b),
+    save_all_pars = TRUE
+  )
+  print(fit2)
+  
+  # compute the bayes factor
+  expect_gt(bayes_factor(fit1, fit2)$bf, 1)
+  # compute the posterior model probabilities
+  pp1 <- post_prob(fit1, fit2)
+  expect_gt(pp1[1], pp1[2])
+  # specify prior model probabilities
+  pp2 <- post_prob(fit1, fit2, prior_prob = c(0.8, 0.2))
+  expect_gt(pp2[1], pp1[1])
 })
 
 test_that("varying slopes without a fixed effect work", {

@@ -33,6 +33,14 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(dim(as.mcmc(fit1, inc_warmup = TRUE)[[1]]), 
                c(fit1$fit@sim$iter, length(parnames(fit1))))
   
+  # bayes_factor
+  # don't test for now as it requires calling Stan's C++ code
+  
+  # bridge_sampler
+  # only test error messages for now
+  expect_error(bridge_sampler(fit1), 
+               "Models including prior samples are not usable")
+  
   # coef
   coef1 <- SM(coef(fit1))
   expect_equal(dim(coef1$visit), c(4, 4, 8))
@@ -356,6 +364,13 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_true(all(c("sdgp_gpAge", "lscale_gpAge") %in% parnames(fit6)))
   
   # plot tested in tests.plots.R
+  
+  # post_prob
+  # only test error messages for now
+  expect_error(post_prob(fit1, fit2, model_names = "test1"),
+               "Number of model names is not equal to the number of models")
+  expect_error(post_prob(fit2, 3),
+               "Object '3' is not of class 'brmsfit'")
   
   # posterior_samples
   ps <- posterior_samples(fit1)
