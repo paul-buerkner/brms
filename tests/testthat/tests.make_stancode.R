@@ -68,7 +68,7 @@ test_that("specified priors appear in the Stan code", {
   expect_match2(scode, "target += lkj_corr_cholesky_lpdf(Lrescor | 2)")
   expect_match2(scode, "prior_rescor = lkj_corr_rng(2,2)[1, 2]")
   
-  prior <- c(prior(uniform(0, 1), ar, lb = -0.7, ub = 0.5),
+  prior <- c(prior(uniform(-1, 1), ar, lb = -0.7, ub = 0.5),
              prior(normal(0, 0.5), ma),
              prior(double_exponential(0, 1), arr),
              prior(normal(0, 5)))
@@ -79,7 +79,7 @@ test_that("specified priors appear in the Stan code", {
     "Changing the boundaries of autocorrelation parameters"
   )
   expect_match2(scode, "vector<lower=-0.7,upper=0.5>[Kar] ar;")
-  expect_match2(scode, "target += uniform_lpdf(ar | 0, 1)")
+  expect_match2(scode, "target += uniform_lpdf(ar | -1, 1)")
   expect_match2(scode, "target += normal_lpdf(ma | 0, 0.5)")
   expect_match2(scode, 
     "- 1 * log_diff_exp(normal_lcdf(1 | 0, 0.5), normal_lcdf(-1 | 0, 0.5))"
