@@ -62,7 +62,7 @@ stan_autocor <- function(autocor, bterms, family, prior) {
       if (!is.formula(bterms$adforms$se)) {
         str_add(out$tdataD) <- "  vector[N] se2 = rep_vector(0, N); \n"
       }
-      str_add(out$transD) <- paste0(
+      str_add(out$tparD) <- paste0(
         "  matrix[max(nobs_tg), max(nobs_tg)] res_cov_matrix; \n"                  
       )
       if (Kar && !Kma) {
@@ -75,7 +75,7 @@ stan_autocor <- function(autocor, bterms, family, prior) {
         cov_mat_fun <- "arma1"
         cov_mat_args <- "ar[1], ma[1]"
       }
-      str_add(out$transC1) <- paste0(
+      str_add(out$tparC1) <- paste0(
         "  // compute residual covariance matrix \n",
         "  res_cov_matrix = cov_matrix_", cov_mat_fun, 
         "(", cov_mat_args, ", sigma, max(nobs_tg)); \n"
@@ -263,10 +263,10 @@ stan_autocor <- function(autocor, bterms, family, prior) {
       str_add(out$par) <- paste0(
         "  vector[Nloc - 1] zcar; \n"
       )
-      str_add(out$transD) <- paste0(
+      str_add(out$tparD) <- paste0(
         "  vector[Nloc] rcar; \n"                
       )
-      str_add(out$transC1) <- paste0(
+      str_add(out$tparC1) <- paste0(
         "  // apply sum-to-zero constraint \n",
         "  rcar[1:(Nloc - 1)] = zcar; \n",
         "  rcar[Nloc] = - sum(zcar); \n"
@@ -359,13 +359,13 @@ stan_mv <- function(family, response, prior) {
         stan_prior(prior, class = "Lrescor")
       )
       if (family$family == "gaussian") {
-        str_add(out$transD) <- paste0(
+        str_add(out$tparD) <- paste0(
           "  // cholesky factor of residual covariance matrix \n",
           "  cholesky_factor_cov[nresp] LSigma = ",
           "diag_pre_multiply(sigma, Lrescor); \n"
         )
       } else if (family$family == "student") {
-        str_add(out$transD) <- paste0(
+        str_add(out$tparD) <- paste0(
           "  // residual covariance matrix \n",
           "  cov_matrix[nresp] Sigma",
           " = multiply_lower_tri_self_transpose(", 
@@ -438,8 +438,8 @@ stan_ordinal <- function(family, prior, cs, disc) {
         "  real", prior[prior$class == "delta", "bound"],
         " delta;  // distance between thresholds \n"
       )
-      str_add(out$transD) <- intercept
-      str_add(out$transC1) <- paste0(
+      str_add(out$tparD) <- intercept
+      str_add(out$tparC1) <- paste0(
         "  // compute equidistant thresholds \n",
         "  for (k in 1:(ncat - 1)) { \n",
         "    temp_Intercept[k] = temp_Intercept1 + (k - 1.0) * delta; \n",
@@ -684,7 +684,7 @@ stan_mixture <- function(bterms, prior) {
       str_add(out$prior) <- paste0(
         "  target += dirichlet_lpdf(theta | con_theta); \n"                
       )
-      str_add(out$transD) <- paste0(
+      str_add(out$tparD) <- paste0(
         "  // mixing proportions \n",                
         collapse(
           "  real<lower=0,upper=1> theta", 1:nmix, 

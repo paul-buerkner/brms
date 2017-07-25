@@ -182,8 +182,8 @@ stan_effects.brmsterms <- function(x, data, ranef, prior,
         stop2("Parameter '", x$fauxpars[[ap]], "' cannot be found.")
       }
       out[[ap]] <- list(
-        transD = stan_auxpar_defs(ap),
-        transC1 = paste0("  ", ap, " = ", x$fauxpars[[ap]], "; \n") 
+        tparD = stan_auxpar_defs(ap),
+        tparC1 = paste0("  ", ap, " = ", x$fauxpars[[ap]], "; \n") 
       )
     } else {
       def_temp <- stan_auxpar_defs_temp(ap)
@@ -301,7 +301,7 @@ stan_fe <- function(fixef, prior, family = gaussian(),
         hs_scale_global, 
         paste0("hs_scale_slab", p, "^2 * hs_c2", p)
       )
-      str_add(out$transD) <- paste0(
+      str_add(out$tparD) <- paste0(
         "  // population-level effects \n",
         "  vector[K", ct, p, "] b", p,
         " = horseshoe(", hs_args, "); \n"
@@ -363,7 +363,7 @@ stan_fe <- function(fixef, prior, family = gaussian(),
        if (identical(auxpar_class(nlpar), order_mixture)) {
          # identify mixtures via ordering of the intercepts
          ap_id <- auxpar_id(nlpar)
-         str_add(out$transD) <- paste0(
+         str_add(out$tparD) <- paste0(
            "  // identify mixtures via ordering of the intercepts \n",                   
            "  real temp", p, "_Intercept",
            " = ordered_Intercept[", ap_id, "]; \n"
@@ -460,7 +460,7 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
                  suffix = paste0("_", id)),
       "  target += normal_lpdf(to_vector(z_", id, ") | 0, 1); \n"
     )
-    str_add(out$transD) <- paste0(
+    str_add(out$tparD) <- paste0(
       "  // group-level effects \n",
       "  matrix[N_", id, ", M_", id, "] r_", id, 
       if (ccov) {
@@ -505,7 +505,7 @@ stan_re <- function(id, ranef, prior, cov_ranef = NULL) {
     str_add(out$prior) <- collapse(
       "  target += normal_lpdf(z_", id, "[", 1:nrow(r), "] | 0, 1); \n"
     )
-    str_add(out$transD) <- paste0(
+    str_add(out$tparD) <- paste0(
       "  // group-level effects \n", 
       collapse(
         "  vector[N_", id, "] r_", idp, "_", r$cn,
@@ -549,7 +549,7 @@ stan_sm <- function(smooths, prior, nlpar = "") {
           "  real<lower=0> sds", pi, "_", nb, "; \n"
         )
       )
-      str_add(out$transD) <- collapse(
+      str_add(out$tparD) <- collapse(
         "  vector[knots", pi, "[", nb, "]] s", pi, "_", nb, 
         " = sds", pi,  "_", nb, " * zs", pi, "_", nb, "; \n"
       )

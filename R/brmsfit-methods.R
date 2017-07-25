@@ -2734,7 +2734,6 @@ control_params.brmsfit <- function(x, pars = NULL, ...) {
 #' @export bridge_sampler 
 #' @export
 bridge_sampler.brmsfit <- function(samples, ...) {
-  # see ?bridge_sampler for explanation why to use update
   samples <- restructure(samples)
   if (samples$version$brms <= "1.8.0") {
     stop2(
@@ -2749,6 +2748,7 @@ bridge_sampler.brmsfit <- function(samples, ...) {
       "in method 'bridge_sampler'."
     )
   }
+  # otherwise bridge_sampler might not work in a new R session
   stanfit_tmp <- suppressMessages(brm(fit = samples, chains = 0))$fit
   bridge_sampler(samples$fit, stanfit_model = stanfit_tmp, ...)
 }
