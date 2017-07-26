@@ -879,11 +879,13 @@ standata.brmsfit <- function(object, ...) {
     dots$control$old_cat <- is_old_categorical(object)
     sample_prior <- attr(object$prior, "sample_prior")
     sample_prior <- ifelse(is.null(sample_prior), "no", sample_prior)
-    args <- list(formula = new_formula, data = model.frame(object), 
-                 family = object$family, prior = object$prior, 
-                 autocor = object$autocor, cov_ranef = object$cov_ranef, 
-                 knots = attr(model.frame(object), "knots"),
-                 sample_prior = sample_prior)
+    args <- list(
+      formula = new_formula, data = model.frame(object), 
+      family = object$family, prior = object$prior, 
+      autocor = object$autocor, cov_ranef = object$cov_ranef, 
+      knots = attr(model.frame(object), "knots"),
+      sample_prior = sample_prior
+    )
     standata <- do.call(make_standata, c(args, dots))
   } else {
     # brms <= 0.5.0 only stores the data passed to Stan 
@@ -1998,9 +2000,8 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   object <- restructure(object)
   family <- family(object)
   if (is_ordinal(family) || is_categorical(family)) {
-    stop2("Residuals not implemented for family '", family$family, "'.")
+    stop2("Residuals not defined for family '", family$family, "'.")
   }
-  
   newd_args <- nlist(
     newdata, fit = object, re_formula, allow_new_levels,
     new_objects, check_response = TRUE
@@ -2015,20 +2016,19 @@ residuals.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   pred_args <- nlist(
     object, newdata, re_formula, allow_new_levels,
     sample_new_levels, new_objects, incl_autocor, 
-    subset, sort, nug, summary = FALSE
+    subset, nug, summary = FALSE, sort = TRUE
   )
   mu <- do.call(method, pred_args)
-  Y <- matrix(rep(as.numeric(standata$Y), nrow(mu)), 
-              nrow = nrow(mu), byrow = TRUE)
+  Y <- as_draws_matrix(as.numeric(standata$Y), dim = dim(mu))
   res <- Y - mu
-  colnames(res) <- NULL
+  remove(Y, mu)
   if (type == "pearson") {
     # get predicted standard deviation for each observation
     pred_args$summary <- TRUE
-    sd <- do.call(predict, pred_args)[, 2]
-    sd <- matrix(rep(sd, nrow(mu)), nrow = nrow(mu), byrow = TRUE)
-    res <- res / sd
+    sd_pred <- do.call(predict, pred_args)[, 2]
+    res <- res / as_draws_matrix(sd_pred, dim = dim(res))
   }
+  res <- reorder_obs(res, attr(standata, "old_order"), sort = sort)
   if (summary) {
     res <- get_summary(res, probs = probs, robust = robust)
   }

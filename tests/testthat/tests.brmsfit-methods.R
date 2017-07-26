@@ -506,7 +506,7 @@ test_that("all S3 methods have reasonable ouputs", {
   expect_equal(dim(res4), c(nobs(fit2), 4))
   
   expect_error(residuals(fit4), 
-               "Residuals not implemented for family 'sratio'")
+               "Residuals not defined for family 'sratio'")
   
   # stancode
   expect_true(is.character(stancode(fit1)))
