@@ -648,6 +648,9 @@ print.brmsfit <- function(x, digits = 2, ...) {
 #' @param waic,loo Logical; Indicating if the LOO or WAIC information
 #'   criteria should be computed and shown in the summary. 
 #'   Defaults to \code{FALSE}.
+#' @param R2 Logical; Indicating if the Bayesian R-squared
+#'   should be computed and shown in the summary. 
+#'   Defaults to \code{FALSE}.
 #' @param priors Logical; Indicating if priors should be included 
 #'   in the summary. Default is \code{FALSE}.
 #' @param use_cache Logical; Indicating if summary results should

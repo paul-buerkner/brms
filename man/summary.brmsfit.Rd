@@ -14,6 +14,10 @@
 criteria should be computed and shown in the summary. 
 Defaults to \code{FALSE}.}
 
+\item{R2}{Logical; Indicating if the Bayesian R-squared
+should be computed and shown in the summary. 
+Defaults to \code{FALSE}.}
+
 \item{priors}{Logical; Indicating if priors should be included 
 in the summary. Default is \code{FALSE}.}
 

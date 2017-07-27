@@ -1133,6 +1133,7 @@ control_params <- function(x, ...) {
 #' @rdname bayes_R2.brmsfit
 #' @export
 bayes_R2 <- function(object, ...) {
+  # replace as soon as rstantools 1.3.0 is on CRAN
   UseMethod("bayes_R2")
 }
 
