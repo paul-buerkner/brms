@@ -2099,7 +2099,6 @@ bayes_R2.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (is_ordinal(family) || is_categorical(family)) {
     stop2("Residuals not defined for family '", family$family, "'.")
   }
-  # 
   use_stored_ic <- !length(
     intersect(names(match.call()), args_not_for_reloo())
   )

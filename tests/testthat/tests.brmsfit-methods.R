@@ -51,6 +51,14 @@ test_that("all S3 methods have reasonable ouputs", {
   coef4 <- coef(fit4, old = TRUE)
   expect_equal(dim(coef4$subject), c(10, 8))
   
+  # bayes_R2
+  fit1 <- add_ic(fit1, "R2")
+  R2 <- bayes_R2(fit1, summary = FALSE)
+  expect_equal(dim(R2), c(nsamples(fit1), 1))
+  R2 <- bayes_R2(fit2, newdata = model.frame(fit2)[1:5, ])
+  expect_equal(dim(R2), c(1, 4))
+  expect_error(bayes_R2(fit4), "Residuals not defined for family 'sratio'")
+  
   # family
   expect_equal(family(fit1), brmsfamily("student", link = "identity"))
   
