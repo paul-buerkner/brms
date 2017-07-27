@@ -8,7 +8,7 @@
 \usage{
 add_ic(x, ...)
 
-add_ic(x, ...) <- value
+add_ic(x) <- value
 
 \method{add_ic}{brmsfit}(x, ic = "loo", ...)
 }
