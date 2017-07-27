@@ -3,6 +3,7 @@
 \name{bayes_factor.brmsfit}
 \alias{bayes_factor.brmsfit}
 \alias{bayes_factor}
+\alias{bayes_factor}
 \title{Bayes Factors from Marginal Likelihoods}
 \usage{
 \method{bayes_factor}{brmsfit}(x1, x2, log = FALSE, ...)
@@ -10,9 +11,9 @@
 bayes_factor(x1, x2, ...)
 }
 \arguments{
-\item{x1}{An \R object}
+\item{x1}{A \code{brmsfit} object}
 
-\item{x2}{Another \R object}
+\item{x2}{Another \code{brmsfit} object based on the same responses.}
 
 \item{log}{Report Bayes factors on the log-scale?}
 
@@ -20,7 +21,7 @@ bayes_factor(x1, x2, ...)
 \code{\link[brms:bridge_sampler]{bridge_sampler}}.}
 }
 \description{
-Generic function that computes Bayes factors from marginal likelihoods.
+Compute Bayes factors from marginal likelihoods.
 }
 \details{
 Computing the marginal likelihood requires samples 

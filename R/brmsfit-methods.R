@@ -2837,7 +2837,61 @@ bridge_sampler.brmsfit <- function(samples, ...) {
   bridge_sampler(samples$fit, stanfit_model = stanfit_tmp, ...)
 }
 
-#' @rdname bayes_factor
+#' Bayes Factors from Marginal Likelihoods
+#' 
+#' Compute Bayes factors from marginal likelihoods.
+#' 
+#' @aliases bayes_factor
+#' 
+#' @param x1 A \code{brmsfit} object
+#' @param x2 Another \code{brmsfit} object based on the same responses.
+#' @param log Report Bayes factors on the log-scale?
+#' @param ... Additional arguments passed to 
+#'   \code{\link[brms:bridge_sampler]{bridge_sampler}}.
+#' 
+#' @details Computing the marginal likelihood requires samples 
+#'   of all variables defined in Stan's \code{parameters} block
+#'   to be saved. Otherwise \code{bayes_factor} cannot be computed.
+#'   Thus, please set \code{save_all_pars = TRUE} in the call to \code{brm},
+#'   if you are planning to apply \code{bayes_factor} to your models.
+#' 
+#'   More details are provided under \code{\link[bridgesampling:bf]{bf}}.
+#'   
+#' @note The \code{bayes_factor} method is an alias of the
+#'  \code{\link[bridgesampling:bf]{bf}} method provided by
+#'  the \pkg{bridge_sampler} package. Using an alias
+#'  is necessary, because the function name \code{bf}
+#'  is already taken in \pkg{brms}. 
+#'  
+#' @seealso \code{
+#'   \link[brms:bridge_sampler]{bridge_sampler},
+#'   \link[brms:post_prob]{post_prob}
+#' }
+#' 
+#' @examples 
+#' \dontrun{
+#' # model with the treatment effect
+#' fit1 <- brm(
+#'   count ~ log_Age_c + log_Base4_c + Trt_c,
+#'   data = epilepsy, family = negbinomial(), 
+#'   prior = prior(normal(0, 1), class = b),
+#'   save_all_pars = TRUE
+#' )
+#' summary(fit1)
+#' 
+#' # model without the treatment effect
+#' fit2 <- brm(
+#'   count ~ log_Age_c + log_Base4_c,
+#'   data = epilepsy, family = negbinomial(), 
+#'   prior = prior(normal(0, 1), class = b),
+#'   save_all_pars = TRUE
+#' )
+#' summary(fit2)
+#' 
+#' # compute the bayes factor
+#' bayes_factor(fit1, fit2)
+#' }
+#' 
 #' @export
 bayes_factor.brmsfit <- function(x1, x2, log = FALSE, ...) {
   match_response(list(x1, x2))
