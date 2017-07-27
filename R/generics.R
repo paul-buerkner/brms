@@ -510,13 +510,14 @@ LOO <- function(x, ...) {
   UseMethod("LOO")
 }
 
-#' Add information criteria to fitted model objects
+#' Add information criteria and fit indices to fitted model objects
 #' 
 #' @param x An \R object typically of class \code{brmsfit}.
 #' @param ic Names of the information criteria to compute.
-#'   Currently supported are \code{"loo"} and \code{"waic"}.
-#' @param ... Further arguments passed to 
-#'   \code{\link[brms:LOO]{LOO}} or \code{\link[brms:WAIC]{WAIC}}.
+#'   Currently supported are \code{"loo"}, \code{"waic"}, 
+#'   \code{"kfold"}, and \code{"R2"}.
+#' @param ... Further arguments passed to the underlying 
+#'   functions computing the information criteria.
 #'   
 #' @return An object of the same class as \code{x}, but
 #'   with information criteria added for later usage.

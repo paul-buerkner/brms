@@ -12,8 +12,8 @@ add_loo(x, ...)
 \arguments{
 \item{x}{An \R object typically of class \code{brmsfit}.}
 
-\item{...}{Further arguments passed to 
-\code{\link[brms:LOO]{LOO}} or \code{\link[brms:WAIC]{WAIC}}.}
+\item{...}{Further arguments passed to the underlying 
+functions computing the information criteria.}
 }
 \value{
 An object of the same class as \code{x}, but

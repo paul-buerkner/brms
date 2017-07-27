@@ -662,7 +662,7 @@ print.brmsfit <- function(x, digits = 2, ...) {
 #' 
 #' @method summary brmsfit
 #' @export
-summary.brmsfit <- function(object, waic = FALSE, loo = FALSE,
+summary.brmsfit <- function(object, waic = FALSE, loo = FALSE, R2 = FALSE,
                             priors = FALSE, use_cache = TRUE, ...) {
   object <- restructure(object, rstr_summary = use_cache)
   bterms <- parse_bf(formula(object), family = family(object))
@@ -675,9 +675,8 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE,
     ngrps = ngrps(object), 
     autocor = object$autocor,
     prior = empty_brmsprior(),
-    waic = "Not computed",
-    loo = "Not computed",
-    algorithm = algorithm(object)
+    algorithm = algorithm(object),
+    waic = NA, loo = NA, R2 = NA
   )
   class(out) <- "brmssummary"
   if (!length(object$fit@sim)) {
@@ -698,6 +697,9 @@ summary.brmsfit <- function(object, waic = FALSE, loo = FALSE,
   }
   if (waic || is.ic(object[["waic"]])) {
     out$waic <- SW(WAIC(object)$waic)
+  }
+  if (R2 || is.matrix(object[["R2"]])) {
+    out$R2 <- mean(bayes_R2(object, summary = FALSE))
   }
   
   pars <- parnames(object)
@@ -2097,30 +2099,38 @@ bayes_R2.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   if (is_ordinal(family) || is_categorical(family)) {
     stop2("Residuals not defined for family '", family$family, "'.")
   }
-  newd_args <- nlist(
-    newdata, fit = object, re_formula, allow_new_levels,
-    new_objects, check_response = TRUE
+  # 
+  use_stored_ic <- !length(
+    intersect(names(match.call()), args_not_for_reloo())
   )
-  standata <- do.call(amend_newdata, newd_args)
-  if (!is.null(standata$cens)) {
-    warning2("Residuals may not be meaningful for censored models.")
+  if (use_stored_ic && is.matrix(object[["R2"]])) {
+    R2 <- object[["R2"]]
+  } else {
+    newd_args <- nlist(
+      newdata, fit = object, re_formula, allow_new_levels,
+      new_objects, check_response = TRUE
+    )
+    standata <- do.call(amend_newdata, newd_args)
+    if (!is.null(standata$cens)) {
+      warning2("Residuals may not be meaningful for censored models.")
+    }
+    if (is.null(subset) && !is.null(nsamples)) {
+      subset <- sample(nsamples(object), nsamples)
+    }
+    pred_args <- nlist(
+      object, newdata, re_formula, allow_new_levels,
+      sample_new_levels, new_objects, incl_autocor, 
+      subset, nug, summary = FALSE, sort = TRUE
+    )
+    # see https://github.com/jgabry/bayes_R2/blob/master/bayes_R2.pdf
+    ypred <- do.call(fitted, pred_args)
+    y <- as.numeric(standata$Y)
+    e <- - 1 * sweep(ypred, 2, y)
+    var_ypred <- apply(ypred, 1, var)
+    var_e <- apply(e, 1, var)
+    R2 <- as.matrix(var_ypred / (var_ypred + var_e))
+    colnames(R2) <- "R2"
   }
-  if (is.null(subset) && !is.null(nsamples)) {
-    subset <- sample(nsamples(object), nsamples)
-  }
-  pred_args <- nlist(
-    object, newdata, re_formula, allow_new_levels,
-    sample_new_levels, new_objects, incl_autocor, 
-    subset, nug, summary = FALSE, sort = TRUE
-  )
-  # see https://github.com/jgabry/bayes_R2/blob/master/bayes_R2.pdf
-  ypred <- do.call(fitted, pred_args)
-  y <- as.numeric(standata$Y)
-  e <- - 1 * sweep(ypred, 2, y)
-  var_ypred <- apply(ypred, 1, var)
-  var_e <- apply(e, 1, var)
-  R2 <- as.matrix(var_ypred / (var_ypred + var_e))
-  colnames(R2) <- "R2"
   if (summary) {
     R2 <- get_summary(R2, probs = probs, robust = robust)
     rownames(R2) <- "R2"
