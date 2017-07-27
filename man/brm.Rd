@@ -225,12 +225,11 @@ posterior predictive checks and leave-one-out cross-validation.
 }
 \details{
 Fit a generalized (non-)linear multilevel model
-  via full Bayesian inference using Stan. 
-  See \code{vignette("brms_overview")} for a general 
-  introduction and overview of \pkg{brms}.
-  For a full list of available vignettes see
-  \code{vignette(package = "brms")}.
-  
+  via full Bayesian inference using Stan. A general overview is provided 
+  in the vignettes \code{vignette("brms_overview")} and 
+  \code{vignette("brms_multilevel")}. For a full list of available 
+  vignettes see \code{vignette(package = "brms")}.
+ 
   \bold{Formula syntax of brms models}
   
   Details of the formula syntax applied in \pkg{brms} 

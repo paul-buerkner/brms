@@ -42,6 +42,9 @@ information criterion after model fitting}
 \item{\code{waic}}{An empty slot for adding the \code{\link[brms:waic]{waic}} 
 information criterion after model fitting}
 
+\item{\code{R2}}{An empty slot for adding the \code{\link[brms:bayes_R2]{bayes_R2}}
+(Bayesian R-squared) value after model fitting}
+
 \item{\code{fit}}{An object of class \code{\link[rstan:stanfit]{stanfit}}
 among others containing the posterior samples}
 

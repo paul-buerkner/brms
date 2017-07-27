@@ -237,7 +237,6 @@ models for all parameters of the assumed response distribution.
   \code{shape ~ 1 + offset(log(xdisp))}, where \code{xdisp} is
   the variable being passed to \code{disp}.
   
-  
   For families \code{binomial} and \code{zero_inflated_binomial}, 
   addition should contain a variable indicating the number of trials 
   underlying each observation. In \code{lme4} syntax, we may write for instance 
@@ -283,7 +282,7 @@ models for all parameters of the assumed response distribution.
   consisting of \code{'lower'} and \code{'upper'}.
 
   Mutiple addition terms may be specified at the same time using 
-  the \code{+} operator, for instance 
+  the \code{+} operator, for instance \cr
   \code{formula = yi | se(sei) + cens(censored) ~ 1} 
   for a censored meta-analytic model. 
   
