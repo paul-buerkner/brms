@@ -2067,8 +2067,8 @@ predictive_error.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
 #' 
 #' @inheritParams predict.brmsfit
 #' 
-#' @return If \code{summary = TRUE} this is a 1 x C matrix
-#'  (\code{C = \code{length(probs) + 2}), containing summary estimates 
+#' @return If \code{summary = TRUE} a 1 x C matrix is returned
+#'  (\code{C = length(probs) + 2}) containing summary statistics
 #'  of Bayesian R-squared values.
 #'  If \code{summary = FALSE} the posterior samples of the R-squared values
 #'  are returned in a S x 1 matrix (S is the number of samples).
@@ -2128,8 +2128,8 @@ bayes_R2.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
     ypred <- do.call(fitted, pred_args)
     y <- as.numeric(standata$Y)
     e <- - 1 * sweep(ypred, 2, y)
-    var_ypred <- apply(ypred, 1, var)
-    var_e <- apply(e, 1, var)
+    var_ypred <- matrixStats::rowVars(ypred)
+    var_e <- matrixStats::rowVars(e)
     R2 <- as.matrix(var_ypred / (var_ypred + var_e))
     colnames(R2) <- "R2"
   }
