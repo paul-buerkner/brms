@@ -203,8 +203,8 @@ compare_ic <- function(..., x = NULL, ic = c("loo", "waic")) {
 
 #' @rdname add_ic 
 #' @export
-'add_ic<-' <- function(x, value) {
-  add_ic(x, ic = value)
+'add_ic<-' <- function(x, ..., value) {
+  add_ic(x, ic = value, ...)
 }
 
 #' @rdname add_ic
