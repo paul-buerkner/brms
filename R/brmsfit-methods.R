@@ -2056,6 +2056,78 @@ predictive_error.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   eval(cl, parent.frame())
 }
 
+#' Compute a Bayesian version of R-squared for regression models
+#' 
+#' @aliases bayes_R2
+#' 
+#' @inheritParams predict.brmsfit
+#' 
+#' @return If \code{summary = TRUE} this is a 1 x C matrix
+#'  (\code{C = \code{length(probs) + 2}), containing summary estimates 
+#'  of Bayesian R-squared values.
+#'  If \code{summary = FALSE} the posterior samples of the R-squared values
+#'  are returned in a S x 1 matrix (S is the number of samples).
+#'  
+#' @details For an introduction to the approach, see
+#'   \url{https://github.com/jgabry/bayes_R2/blob/master/bayes_R2.pdf}.
+#'  
+#' @examples 
+#' \dontrun{
+#' fit <- brm(mpg ~ wt + cyl, data = mtcars)
+#' summary(fit)
+#' bayes_R2(fit)
+#' 
+#' # compute R2 with new data
+#' nd <- data.frame(mpg = c(10, 20, 30), wt = c(4, 3, 2), cyl = c(8, 6, 4))
+#' bayes_R2(fit, newdata = nd)
+#' }
+#' 
+#' @export
+bayes_R2.brmsfit <- function(object, newdata = NULL, re_formula = NULL, 
+                             allow_new_levels = FALSE, 
+                             sample_new_levels = "uncertainty",
+                             new_objects = list(), incl_autocor = TRUE, 
+                             subset = NULL, nsamples = NULL, 
+                             nug = NULL, summary = TRUE, robust = FALSE, 
+                             probs = c(0.025, 0.975), ...) {
+  # do it like residuals.brmsfit
+  contains_samples(object)
+  object <- restructure(object)
+  family <- family(object)
+  if (is_ordinal(family) || is_categorical(family)) {
+    stop2("Residuals not defined for family '", family$family, "'.")
+  }
+  newd_args <- nlist(
+    newdata, fit = object, re_formula, allow_new_levels,
+    new_objects, check_response = TRUE
+  )
+  standata <- do.call(amend_newdata, newd_args)
+  if (!is.null(standata$cens)) {
+    warning2("Residuals may not be meaningful for censored models.")
+  }
+  if (is.null(subset) && !is.null(nsamples)) {
+    subset <- sample(nsamples(object), nsamples)
+  }
+  pred_args <- nlist(
+    object, newdata, re_formula, allow_new_levels,
+    sample_new_levels, new_objects, incl_autocor, 
+    subset, nug, summary = FALSE, sort = TRUE
+  )
+  # see https://github.com/jgabry/bayes_R2/blob/master/bayes_R2.pdf
+  ypred <- do.call(fitted, pred_args)
+  y <- as.numeric(standata$Y)
+  e <- - 1 * sweep(ypred, 2, y)
+  var_ypred <- apply(ypred, 1, var)
+  var_e <- apply(e, 1, var)
+  R2 <- as.matrix(var_ypred / (var_ypred + var_e))
+  colnames(R2) <- "R2"
+  if (summary) {
+    R2 <- get_summary(R2, probs = probs, robust = robust)
+    rownames(R2) <- "R2"
+  }
+  R2
+}
+
 #' Update \pkg{brms} models
 #' 
 #' This method allows to update an existing \code{brmsfit} object

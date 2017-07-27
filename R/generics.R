@@ -1129,6 +1129,12 @@ control_params <- function(x, ...) {
   UseMethod("control_params")
 }
 
+#' @rdname bayes_R2.brmsfit
+#' @export
+bayes_R2 <- function(object, ...) {
+  UseMethod("bayes_R2")
+}
+
 #' Extract Diagnostic Quantities of \pkg{brms} Models
 #' 
 #' Extract quantities that can be used to diagnose sampling behavior
